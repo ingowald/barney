@@ -14,39 +14,35 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "barney/Context.h"
+#include "mori/DeviceGroup.h"
 
-#include "barney/common.h"
-#include <mpi.h>
-#include <stdexcept>
-
-#define BN_MPI_CALL(fctCall, err)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc,err); }
-    
 namespace barney {
-  namespace mpi {
-
-    struct Exception : public std::runtime_error {
-      Exception(const std::string &where, int rc, const std::string &msg)
-        : std::runtime_error("#barney.mpi (@"+where+") : " + msg)
-      {}
-    };
-    
-    void init(int &ac, char **av);
-    void finalize();
-    
-    struct Comm {
-      Comm(MPI_Comm comm);
-
-      inline operator MPI_Comm() { return comm; }
-      void assertValid() const;
-      int  allReduceMax(int value) const;
-      int  allReduceMin(int value) const;
-      void barrier() const;
-      
-      int rank = -1, size = -1;
-      MPI_Comm comm = MPI_COMM_NULL;
-    };
-    
+  
+  Context::Context(const std::vector<int> &dataGroupIDs,
+                   const std::vector<int> &gpuIDs)
+    : dataGroupIDs(dataGroupIDs),
+      gpuIDs(gpuIDs)
+  {
+    if (gpuIDs.size() < dataGroupIDs.size())
+      throw std::runtime_error("not enough GPUs ("
+                               +std::to_string(gpuIDs.size())
+                               +") for requested num data groups ("
+                               +std::to_string(gpuIDs.size())
+                               +")");
+    if (gpuIDs.size() % dataGroupIDs.size())
+      throw std::runtime_error("requested num GPUs is not a multiple of "
+                               "requested num data groups");
+    int numMoris = dataGroupIDs.size();
+    int gpusPerMori = gpuIDs.size() / numMoris;
+    moris.resize(numMoris);
+    for (int moriID=0;moriID<numMoris;moriID++) {
+      std::vector<int> gpusThisMori(gpusPerMori);
+      for (int j=0;j<gpusPerMori;j++)
+        gpusThisMori[j] = gpuIDs[moriID*gpusPerMori+j];
+      moris[moriID] = mori::DeviceGroup::create(gpusThisMori);
+    }
   }
+      
 }
+

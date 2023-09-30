@@ -16,23 +16,34 @@
 
 #pragma once
 
-#include "owl/common/math/box.h"
+#include "barney/Context.h"
+#include "barney/mpi/MPIWrappers.h"
 
 namespace barney {
-  namespace core {
-    using namespace owl;
-    using namespace owl::common;
 
-    template<typename Payload>
-    struct Ray {
-      vec3f    origin;
-      vec3f    direction;
-      float    tMax;
-      int      instID, geomID, primID;
-      float    u,v;
-      uint32_t seed;
-      Payload  pay;
-    };
+  struct DistFB : public FrameBuffer {
+    enum { tileSize = 32 };
     
-  }
+    typedef std::shared_ptr<DistFB> SP;
+
+    static SP create()
+    { return std::make_shared<DistFB>(); }
+    
+    void resize(vec2i size) override { PING; }
+
+    int numTiles = 0;
+  };
+  
+  struct MPIContext : public Context
+  {
+    MPIContext(const mpi::Comm &comm,
+               const std::vector<int> &dataGroupIDs,
+               const std::vector<int> &gpuIDs);
+
+    FrameBuffer *createFB() override
+    { return initReference(DistFB::create()); }
+    
+    mpi::Comm comm;
+  };
+
 }

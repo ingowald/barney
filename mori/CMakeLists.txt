@@ -14,26 +14,12 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-add_subdirectory(../../miniScene ext_miniScene EXCLUDE_FROM_ALL)
+add_library(mori SHARED
+  DeviceGroup.h
+  DeviceGroup.cpp
+  )
+target_link_libraries(mori PUBLIC owl)
+target_include_directories(mori PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/..
+  )
 
-add_executable(bnMpiStrawman
-  strawman.cpp)
-target_link_libraries(bnMpiStrawman PUBLIC
-  barney_mpi
-  miniScene)
-target_compile_definitions(bnMpiStrawman PUBLIC -DSM_USE_MPI=1)
-
-
-add_executable(bnSingleStrawman
-  strawman.cpp)
-target_link_libraries(bnSingleStrawman PUBLIC
-  barney
-  miniScene)
-target_compile_definitions(bnSingleStrawman PUBLIC -DSM_NUM_LOCAL_DATA=1)
-
-add_executable(bnMultiStrawman
-  strawman.cpp)
-target_link_libraries(bnMultiStrawman PUBLIC
-  barney
-  miniScene)
-target_compile_definitions(bnMultiStrawman PUBLIC -DSM_NUM_LOCAL_DATA=2)

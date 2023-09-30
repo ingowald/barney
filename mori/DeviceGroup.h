@@ -16,37 +16,28 @@
 
 #pragma once
 
-#include "barney/common.h"
-#include <mpi.h>
-#include <stdexcept>
+#include "mori/common.h"
+#include "owl/owl.h"
 
-#define BN_MPI_CALL(fctCall, err)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc,err); }
-    
-namespace barney {
-  namespace mpi {
+namespace mori {
 
-    struct Exception : public std::runtime_error {
-      Exception(const std::string &where, int rc, const std::string &msg)
-        : std::runtime_error("#barney.mpi (@"+where+") : " + msg)
-      {}
-    };
-    
-    void init(int &ac, char **av);
-    void finalize();
-    
-    struct Comm {
-      Comm(MPI_Comm comm);
+  struct DeviceGroup {
+    typedef std::shared_ptr<DeviceGroup> SP;
 
-      inline operator MPI_Comm() { return comm; }
-      void assertValid() const;
-      int  allReduceMax(int value) const;
-      int  allReduceMin(int value) const;
-      void barrier() const;
-      
-      int rank = -1, size = -1;
-      MPI_Comm comm = MPI_COMM_NULL;
-    };
+    static SP create(const std::vector<int> &gpuIDs)
+    { return std::make_shared<DeviceGroup>(gpuIDs); }
     
-  }
+    DeviceGroup(const std::vector<int> &gpuIDs);
+
+    OWLContext owl;
+  };
+  
+  // struct GPU {
+  //   RayQueue in, out;
+  // };
+  
+  // struct GPUGroup {
+  //   int numGPUs;
+  // };
+  
 }

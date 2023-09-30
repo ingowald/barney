@@ -14,39 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "mori/DeviceGroup.h"
 
-#include "barney/common.h"
-#include <mpi.h>
-#include <stdexcept>
+namespace mori {
 
-#define BN_MPI_CALL(fctCall, err)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc,err); }
-    
-namespace barney {
-  namespace mpi {
-
-    struct Exception : public std::runtime_error {
-      Exception(const std::string &where, int rc, const std::string &msg)
-        : std::runtime_error("#barney.mpi (@"+where+") : " + msg)
-      {}
-    };
-    
-    void init(int &ac, char **av);
-    void finalize();
-    
-    struct Comm {
-      Comm(MPI_Comm comm);
-
-      inline operator MPI_Comm() { return comm; }
-      void assertValid() const;
-      int  allReduceMax(int value) const;
-      int  allReduceMin(int value) const;
-      void barrier() const;
-      
-      int rank = -1, size = -1;
-      MPI_Comm comm = MPI_COMM_NULL;
-    };
-    
+  DeviceGroup::DeviceGroup(const std::vector<int> &gpuIDs)
+  {
+    owl = owlContextCreate((int *)gpuIDs.data(),gpuIDs.size());
   }
+  
 }

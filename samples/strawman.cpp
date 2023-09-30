@@ -14,16 +14,20 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include <mpi.h>
+#ifdef SM_USE_MPI
+# include <mpi.h>
+# include "barney/mpi/MPIWrappers.h"
+# define SM_MPI(a) a
+#else
+# define SM_MPI(a)
+#endif
 #include "barney.h"
-#include "barney/mpi/MPIWrappers.h"
 #include "miniScene/Scene.h"
 
 using namespace mini;
 
-BNModel createStrawmanModel(BNContext ctx,
-                         BNModel model,
-                         int rank, int size)
+void createStrawmanGeometry(BNDataGroup dataGroup,
+                            int rank, int size)
 {
   std::vector<BNGroup> groups;
   int gridSize = int(ceilf(2+powf(2*size,1.f/3.f)));
@@ -65,65 +69,126 @@ BNModel createStrawmanModel(BNContext ctx,
         float b = ((0x123+27*37*boxID) % 256) / 255.f;
         (vec3f&)material.diffuseColor = vec3f(r,g,b);
         
-        BNGeom mesh = bnTriangleMeshCreate(ctx,0,
-                                           &material,
-                                           (int3*)indices.data(),indices.size(),
-                                           (float3*)vertices.data(),vertices.size(),
-                                           nullptr,
-                                           nullptr);
-        BNGroup group = bnGroupCreate(ctx,0,
-                                      /* geometry */
-                                      &mesh,1,
-                                      /* volumes */
-                                      nullptr,0);
+        BNGeom mesh
+          = bnTriangleMeshCreate(dataGroup,
+                                 &material,
+                                 (int3*)indices.data(),indices.size(),
+                                 (float3*)vertices.data(),vertices.size(),
+                                 nullptr,
+                                 nullptr);
+        BNGroup group
+          = bnGroupCreate(dataGroup,
+                          /* geometry */
+                          &mesh,1,
+                          /* volumes */
+                          nullptr,0);
       }
-  return bnModelCreate(ctx,0,
-                       /* groups */
-                       groups.data(),groups.size(),
-                       /* instances */
-                       nullptr,0);
+
+  bnModelSetInstances(dataGroup,
+                      groups.data(),groups.size(),
+                      /* instances */
+                      nullptr,0);
+  // return bnModelCreate(ctx,0,
+  //                      /* groups */
+  //                      groups.data(),groups.size(),
+  //                      /* instances */
+  //                      nullptr,0);
 }
   
 int main(int ac, char **av)
 {
   /* "APP" inits ts own MPI stuff here ... */
+  /*! query which GPU(s) barney suggests to use for given rank */
+#if SM_USE_MPI
   barney::mpi::init(ac,av);
   barney::mpi::Comm world(MPI_COMM_WORLD);
-
+  
   PRINT(world.rank);
   PRINT(world.size);
 
-  /*! query which GPU(s) barney suggests to use for given rank */
   BNHardwareInfo hardware;
-  bnQueryHardwareMPI(&hardware,world.comm);
-  printf("#bn.sm(%i): node has %i GPUs, %i ranks on this node, and %i GPUs/rank\n",
-         world.rank,hardware.gpusOnNode,hardware.ranksOnNode,hardware.gpusOnRank);
-
+  bnMPIQueryHardware(&hardware,world.comm);
+  printf("#bn.sm(%i): host has %i GPUs, %i ranks on this host, and %i GPUs/rank\n",
+         world.rank,
+         hardware.numGPUsThisHost,
+         hardware.numRanksThisHost,
+         hardware.numGPUsThisRank);
   /*! which data group(s) to use in the context we are going to
     create. for this exapmle we'll create a distributed context,
     where each rank contains exactly one data group */
   std::vector<int> dataGroupsOnThisRank = { world.rank };
-  
   /*! create the context */
-  BNContext ctx = bnContextCreateMPI
+  BNContext ctx = bnMPIContextCreate
     (/* the ring that binds them all...*/world.comm,
      /* what kind of data for this model _we_ own */
      dataGroupsOnThisRank.data(),dataGroupsOnThisRank.size(),
      /* GPUs we are going to use */
      nullptr,0
      );
+  world.barrier();
+#else
+  std::vector<int> dataGroupsOnThisRank;
+  for (int i=0;i<SM_NUM_LOCAL_DATA;i++)
+    dataGroupsOnThisRank.push_back(i);
+  BNContext ctx = bnContextCreate
+    (/* what kind of data for this model _we_ own */
+     dataGroupsOnThisRank.data(),dataGroupsOnThisRank.size(),
+     /* GPUs we are going to use */
+     nullptr,0);
+#endif
+  
+  
 
   /* which data groups we will have on this rank - in this simple mpi
      sample, each rank has exactly one piece of the data */
   BNModel model
-    = createStrawmanModel(ctx,model,world.rank,world.size);
+    = bnModelCreate(ctx);
 
+#if SM_USE_MPI
+  createStrawmanGeometry(bnGetDataGroup(model,world.rank),
+                         world.rank,world.size);
+  world.barrier();
+#else
+  for (auto dataID : dataGroupsOnThisRank) 
+    createStrawmanGeometry(bnGetDataGroup(model,dataID),
+                           dataID,dataGroupsOnThisRank.size());
+#endif
+
+  /* finalize geometry */
+  bnModelBuild(model);
+  SM_MPI(world.barrier());
+
+  vec2i fbSize(1600,1200);
+  BNFrameBuffer fb
+    = bnFrameBufferCreate(ctx,
+                          fbSize.x,fbSize.y);
+  
+  
+  std::vector<uint32_t> hostFB(fbSize.x*fbSize.y);
+  
+  BNCamera camera;
+  bnPinholeCamera(&camera,
+                  /*from*/-3,-1,-2,
+                  /* at */0,0,0,
+                  /* up */0,1,0,
+                  /*fovy*/BN_FOVY_DEGREES(30),
+                  /*aspt*/0.f);
+  
+  bnRender(model,&camera,fb,
+#if SM_USE_MPI
+           (world.rank==0)?hostFB.data():nullptr,
+#else
+           hostFB.data(),
+#endif
+           /* &renderRequest */nullptr);
+  
   /* do *something* with that context .... later */
   bnContextDestroy(ctx);
 
-  
+#if SM_USE_MPI
   /*! "APP" closes out */
   barney::mpi::finalize();
+#endif
 }
 
 

@@ -14,13 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney.h"
-#include "barney/mpi/MPIWrappers.h"
+#include "barney/mpi/MPIContext.h"
 
 namespace barney {
 
+
   BN_API
-  void  bnQueryHardwareMPI(BNHardwareInfo *_hardware, MPI_Comm _comm)
+  void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
   {
     assert(_hardware);
     BNHardwareInfo &hardware = *_hardware;
@@ -28,44 +28,119 @@ namespace barney {
     assert(_comm != MPI_COMM_NULL);
     mpi::Comm comm(_comm);
 
+    hardware.numRanks = comm.size;
+    char hostName[MPI_MAX_PROCESSOR_NAME];
+    memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
+    int hostNameLen = 0;
+    BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen),
+                "getting processor name");
     
+    std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
+    memset(recvBuf.data(),0,recvBuf.size());
+
+    // ------------------------------------------------------------------
+    // determine which (world) rank lived on which host, and assign
+    // GPUSs
+    // ------------------------------------------------------------------
+    BN_MPI_CALL(Allgather(hostName,
+                          MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
+                          recvBuf.data(),
+                          /* PER rank size */MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
+                          comm.comm),
+                "gathering ranks' host names");
+    std::vector<std::string>  hostNames;
+    std::map<std::string,int> ranksOnHost;
+    for (int i=0;i<comm.size;i++)  {
+      std::string host_i = recvBuf.data()+i*MPI_MAX_PROCESSOR_NAME;
+      hostNames.push_back(host_i);
+      ranksOnHost[host_i] ++;
+    }
+    
+    hardware.numRanksThisHost = ranksOnHost[hostName];
+    hardware.numHosts         = ranksOnHost.size();
+    
+    // ------------------------------------------------------------------
+    // count how many other ranks are already on this same node
+    // ------------------------------------------------------------------
+    BN_MPI_CALL(Barrier(comm.comm),"barriering...");
+    int localRank = 0;
+    for (int i=0;i<comm.size;i++) 
+      if (hostNames[i] == hostName)
+        localRank++;
+    BN_MPI_CALL(Barrier(comm.comm),"barriering...");
+    hardware.localRank = localRank;
+    hardware.numRanksThisHost = ranksOnHost[hostName];
+
+    // ------------------------------------------------------------------
+    // assign a GPU to this rank
+    // ------------------------------------------------------------------
+    int numGPUsOnThisHost;
+    cudaGetDeviceCount(&numGPUsOnThisHost);
+    if (numGPUsOnThisHost == 0)
+      throw std::runtime_error("no GPU on this rank!");
+    hardware.numGPUsThisHost = numGPUsOnThisHost;
+    hardware.numGPUsThisRank
+      = comm.allReduceMin(std::max(hardware.numGPUsThisHost/
+                                   hardware.numRanksThisHost,
+                                   1));
+    assert(hardware.numGPUsThisRank > 0);
   }
 
   BN_API
-  BNContext bnContextCreateMPI(MPI_Comm _comm,
+  BNContext bnMPIContextCreate(MPI_Comm _comm,
                                /*! which data group(s) this rank will
                                  owl - default is 1 group, with data
                                  group equal to mpi rank */
-                               int *dataGroupsOnThisRank,
+                               const int *dataGroupsOnThisRank,
                                int  numDataGroupsOnThisRank,
                                /*! which gpu(s) to use for this
                                  process. default is to distribute
                                  node's GPUs equally over all ranks on
                                  that given node */
-                               int *gpuIDs,
+                               const int *_gpuIDs,
                                int  numGPUs
                                )
   {
-    assert(dataGroupsOnThisRank != nullptr);
+    // ------------------------------------------------------------------
+    // create vector of data groups; if actual specified by user we
+    // use those; otherwise we use IDs
+    // [0,1,...numDataGroupsOnThisHost)
+    // ------------------------------------------------------------------
     assert(numDataGroupsOnThisRank > 0);
-    
-    mpi::Comm comm(_comm);
-    comm.assertValid();
-    PING;
+    std::vector<int> dataGroupIDs;
+    for (int i=0;i<numDataGroupsOnThisRank;i++)
+      dataGroupIDs.push_back
+        (dataGroupsOnThisRank
+         ? dataGroupsOnThisRank[i]
+         : i);
 
-    /* compute num data groups. this code assumes that user uses IDs
-       0,1,2, ...; if thi sis not the case this code will break */
-    int myMaxDataID = 0;
-    for (int i=0;i<numDataGroupsOnThisRank;i++) {
-      int dataID = dataGroupsOnThisRank[i];
-      assert(dataID >= 0);
-      myMaxDataID = std::max(myMaxDataID,dataID);
+    // ------------------------------------------------------------------
+    // create list of GPUs to use for this rank. if specified by user
+    // we use this; otherwise we use GPUs in order, split into groups
+    // according to how many ranks there are on this host. Ie, if host
+    // has four GPUs the first rank will take 0 and 1; and the second
+    // one will take 2 and 3.
+    // ------------------------------------------------------------------
+    BNHardwareInfo hardware;
+    bnMPIQueryHardware(&hardware,_comm);
+    
+    std::vector<int> gpuIDs;
+    if (_gpuIDs) {
+      for (int i=0;i<numGPUs;i++)
+        gpuIDs.push_back(_gpuIDs[i]);
+    } else {
+      if (numGPUs == 0)
+        numGPUs = hardware.numGPUsThisRank;
+      for (int i=0;i<numGPUs;i++)
+        gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
+                          + i) % hardware.numGPUsThisHost);
     }
     
-    int numDifferentData = comm.allReduceMax(myMaxDataID)+1;
-    PRINT(numDifferentData);
-
-    return 0;
+    mpi::Comm comm(_comm);
+    
+    return (BNContext)new MPIContext(comm,
+                                     dataGroupIDs,
+                                     gpuIDs);
   }
   
 }

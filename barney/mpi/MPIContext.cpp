@@ -14,39 +14,31 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "barney/mpi/MPIContext.h"
 
-#include "barney/common.h"
-#include <mpi.h>
-#include <stdexcept>
-
-#define BN_MPI_CALL(fctCall, err)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc,err); }
-    
 namespace barney {
-  namespace mpi {
-
-    struct Exception : public std::runtime_error {
-      Exception(const std::string &where, int rc, const std::string &msg)
-        : std::runtime_error("#barney.mpi (@"+where+") : " + msg)
-      {}
-    };
+  
+  MPIContext::MPIContext(const mpi::Comm &comm,
+                         const std::vector<int> &dataGroupIDs,
+                         const std::vector<int> &gpuIDs)
+    : Context(dataGroupIDs,gpuIDs),
+      comm(comm)
+  {
+    comm.assertValid();
     
-    void init(int &ac, char **av);
-    void finalize();
+    /* compute num data groups. this code assumes that user uses IDs
+       0,1,2, ...; if thi sis not the case this code will break */
+    int myMaxDataID = 0;
+    for (auto dataID : dataGroupIDs) {
+      assert(dataID >= 0);
+      myMaxDataID = std::max(myMaxDataID,dataID);
+    }
     
-    struct Comm {
-      Comm(MPI_Comm comm);
-
-      inline operator MPI_Comm() { return comm; }
-      void assertValid() const;
-      int  allReduceMax(int value) const;
-      int  allReduceMin(int value) const;
-      void barrier() const;
-      
-      int rank = -1, size = -1;
-      MPI_Comm comm = MPI_COMM_NULL;
-    };
-    
+    int numDifferentDataGroups = comm.allReduceMax(myMaxDataID)+1;
+    PRINT(numDifferentDataGroups);
+    assert(numDifferentDataGroups % dataGroupIDs.size() == 0);
+    int numRanksPerIsland = numDifferentDataGroups / (int)dataGroupIDs.size();
+    int numIslands = comm.size / numRanksPerIsland;
   }
+  
 }

@@ -14,39 +14,18 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "barney.h"
+#include "barney/mpi/MPIWrappers.h"
 
-#include "barney/common.h"
-#include <mpi.h>
-#include <stdexcept>
-
-#define BN_MPI_CALL(fctCall, err)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc,err); }
-    
 namespace barney {
-  namespace mpi {
+  namespace core {
 
-    struct Exception : public std::runtime_error {
-      Exception(const std::string &where, int rc, const std::string &msg)
-        : std::runtime_error("#barney.mpi (@"+where+") : " + msg)
-      {}
+    struct Geometry {
+      struct DD {
+      };
     };
-    
-    void init(int &ac, char **av);
-    void finalize();
-    
-    struct Comm {
-      Comm(MPI_Comm comm);
 
-      inline operator MPI_Comm() { return comm; }
-      void assertValid() const;
-      int  allReduceMax(int value) const;
-      int  allReduceMin(int value) const;
-      void barrier() const;
-      
-      int rank = -1, size = -1;
-      MPI_Comm comm = MPI_COMM_NULL;
-    };
+    struct OptixGeometry : public Geometry {};
     
   }
 }

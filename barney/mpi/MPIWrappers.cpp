@@ -19,9 +19,6 @@
 namespace barney {
   namespace mpi {
 
-#define BN_MPI_CALL(fctCall, err)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc,err); }
-    
     void init(int &ac, char **av)
     {
       int required = MPI_THREAD_MULTIPLE;
@@ -32,7 +29,6 @@ namespace barney {
                                      "MPI runtime does not provide threading support");
     }
 
-    
     void finalize()
     {
       BN_MPI_CALL(Finalize(),"error in mpi::finalize");
@@ -47,14 +43,14 @@ namespace barney {
       }
     }
 
-    void Comm::assertValid()
+    void Comm::assertValid() const
     {
       if (comm == MPI_COMM_NULL)
         throw barney::mpi::Exception(__PRETTY_FUNCTION__,-1,
                                      "not a valid mpi communicator"); 
     }
 
-    int Comm::allReduceMax(int value)
+    int Comm::allReduceMax(int value) const
     {
       int result = 0;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MAX,comm),
@@ -62,5 +58,18 @@ namespace barney {
       return result;
     }
     
+    int Comm::allReduceMin(int value) const
+    {
+      int result = 0;
+      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MIN,comm),
+                  "could not compute mpi reduce-min");
+      return result;
+    }
+    
+    void Comm::barrier() const
+    {
+      BN_MPI_CALL(Barrier(comm),
+                  "error in mpi-barrier");
+    }
   }
 }

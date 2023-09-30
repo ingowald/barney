@@ -14,11 +14,16 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-add_library(barney SHARED barney.cpp)
-target_link_libraries(barney PUBLIC owl)
+add_library(barney SHARED
+  barney.cpp
+  Context.h
+  Context.cpp
+  )
+target_link_libraries(barney
+  PUBLIC
+  mori)
 target_include_directories(barney PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/include
-  ${CMAKE_CURRENT_LIST_DIR}/..
   )
 
 # ------------------------------------------------------------------
@@ -28,6 +33,8 @@ add_library(barney_mpi SHARED
   mpi/impl.cpp
   mpi/MPIWrappers.h
   mpi/MPIWrappers.cpp
+  mpi/MPIContext.h
+  mpi/MPIContext.cpp
   )
 target_link_libraries(barney_mpi PUBLIC
   barney
