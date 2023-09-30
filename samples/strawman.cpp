@@ -31,6 +31,9 @@ void createStrawmanGeometry(BNDataGroup dataGroup,
 {
   std::vector<BNGroup> groups;
   int gridSize = int(ceilf(2+powf(2*size,1.f/3.f)));
+  if (rank == 0)
+    std::cout << "#bn.sm: picking test cube grid size of "
+              << gridSize << "^3" << std::endl;
   for (int iz=0;iz<gridSize;iz++)
     for (int iy=0;iy<gridSize;iy++)
       for (int ix=0;ix<gridSize;ix++) {

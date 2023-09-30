@@ -16,53 +16,19 @@
 
 #pragma once
 
-#include "barney.h"
-#include "mori/DeviceGroup.h"
-#include <string.h>
-#include <cuda_runtime.h>
-#include <mutex>
-#include <map>
+#include "barney/FrameBuffer.h"
 
 namespace barney {
-  using namespace owl::common;
-  
-  struct Object {
-    typedef std::shared_ptr<Object> SP;
 
-    /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const
-    { return "<Object>"; }
-  };
+  struct DistFB : public FrameBuffer {
+    typedef std::shared_ptr<DistFB> SP;
 
-  struct FrameBuffer;
-
-  struct Context : public Object {
-
-    /*! create a frame buffer object suitable to this context */
-    virtual FrameBuffer *createFB() = 0;
+    static SP create()
+    { return std::make_shared<DistFB>(); }
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "<Context(abstract)>"; }
+    void resize(vec2i size) override;
 
-    template<typename T>
-    T *initReference(std::shared_ptr<T> sp)
-    {
-      std::lock_guard<std::mutex> lock(mutex);
-      hostOwnedHandles[sp]++;
-      return sp.get();
-    }
-
-    Context(const std::vector<int> &dataGroupIDs,
-            const std::vector<int> &gpuIDs);
-            
-    const std::vector<int> dataGroupIDs;
-    const std::vector<int> gpuIDs;
-            
-    std::mutex mutex;
-    std::map<Object::SP,int> hostOwnedHandles;
-    std::vector<mori::DeviceGroup::SP> moris;
+    int numTiles = 0;
   };
-  
-}
 
+}

@@ -16,6 +16,8 @@
 
 #include "barney.h"
 #include "barney/Context.h"
+#include "barney/LocalContext.h"
+#include "barney/FrameBuffer.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 

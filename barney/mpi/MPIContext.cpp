@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "barney/mpi/MPIContext.h"
+#include "barney/mpi/DistFB.h"
 
 namespace barney {
   
@@ -40,5 +41,9 @@ namespace barney {
     int numRanksPerIsland = numDifferentDataGroups / (int)dataGroupIDs.size();
     int numIslands = comm.size / numRanksPerIsland;
   }
+
+  /*! create a frame buffer object suitable to this context */
+  FrameBuffer *MPIContext::createFB() 
+  { return initReference(DistFB::create()); }
   
 }

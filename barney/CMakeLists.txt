@@ -18,6 +18,10 @@ add_library(barney SHARED
   barney.cpp
   Context.h
   Context.cpp
+  LocalContext.h
+  LocalContext.cu
+  LocalFB.h
+  LocalFB.cu
   )
 target_link_libraries(barney
   PUBLIC
@@ -35,6 +39,8 @@ add_library(barney_mpi SHARED
   mpi/MPIWrappers.cpp
   mpi/MPIContext.h
   mpi/MPIContext.cpp
+  mpi/DistFB.h
+  mpi/DistFB.cu
   )
 target_link_libraries(barney_mpi PUBLIC
   barney

@@ -24,12 +24,12 @@ target_link_libraries(bnMpiStrawman PUBLIC
 target_compile_definitions(bnMpiStrawman PUBLIC -DSM_USE_MPI=1)
 
 
-add_executable(bnSingleStrawman
+add_executable(bnLocalStrawman
   strawman.cpp)
-target_link_libraries(bnSingleStrawman PUBLIC
+target_link_libraries(bnLocalStrawman PUBLIC
   barney
   miniScene)
-target_compile_definitions(bnSingleStrawman PUBLIC -DSM_NUM_LOCAL_DATA=1)
+target_compile_definitions(bnLocalStrawman PUBLIC -DSM_NUM_LOCAL_DATA=1)
 
 add_executable(bnMultiStrawman
   strawman.cpp)

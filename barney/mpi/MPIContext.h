@@ -21,27 +21,15 @@
 
 namespace barney {
 
-  struct DistFB : public FrameBuffer {
-    enum { tileSize = 32 };
-    
-    typedef std::shared_ptr<DistFB> SP;
-
-    static SP create()
-    { return std::make_shared<DistFB>(); }
-    
-    void resize(vec2i size) override { PING; }
-
-    int numTiles = 0;
-  };
-  
+  /*! barney context for collaborative MPI-parallel rendering */
   struct MPIContext : public Context
   {
     MPIContext(const mpi::Comm &comm,
                const std::vector<int> &dataGroupIDs,
                const std::vector<int> &gpuIDs);
 
-    FrameBuffer *createFB() override
-    { return initReference(DistFB::create()); }
+    /*! create a frame buffer object suitable to this context */
+    FrameBuffer *createFB() override;
     
     mpi::Comm comm;
   };
