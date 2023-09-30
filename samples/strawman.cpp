@@ -24,6 +24,9 @@
 #include "barney.h"
 #include "miniScene/Scene.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION 1
+#include "stb/stb_image_write.h"
+
 using namespace mini;
 
 void createStrawmanGeometry(BNDataGroup dataGroup,
@@ -176,14 +179,34 @@ int main(int ac, char **av)
                   /* up */0,1,0,
                   /*fovy*/BN_FOVY_DEGREES(30),
                   /*aspt*/0.f);
-  
-  bnRender(model,&camera,fb,
+
+  uint32_t *fbPointer
+    = 
 #if SM_USE_MPI
-           (world.rank==0)?hostFB.data():nullptr,
-#else
-           hostFB.data(),
+    (world.rank>0)?nullptr:
 #endif
+    hostFB.data();
+  
+  bnRender(model,&camera,fb,fbPointer,           
            /* &renderRequest */nullptr);
+  
+  if (fbPointer)
+    {
+      std::cout << "saving rendered image..." << std::endl;
+      std::string fileName = "strawman.png";
+      const uint32_t *fb
+        = (const uint32_t*)fbPointer;
+
+      std::vector<uint32_t> pixels;
+      for (int y=0;y<fbSize.y;y++) {
+        const uint32_t *line = fb + (fbSize.y-1-y)*fbSize.x;
+        for (int x=0;x<fbSize.x;x++) {
+          pixels.push_back(line[x] | (0xff << 24));
+        }
+      }
+      stbi_write_png(fileName.c_str(),fbSize.x,fbSize.y,4,
+                     pixels.data(),fbSize.x*sizeof(uint32_t));
+    }
   
   /* do *something* with that context .... later */
   bnContextDestroy(ctx);
