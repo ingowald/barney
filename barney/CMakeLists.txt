@@ -20,8 +20,12 @@ add_library(barney SHARED
   Context.cpp
   LocalContext.h
   LocalContext.cu
+  FrameBuffer.h
+  FrameBuffer.cu
   LocalFB.h
   LocalFB.cu
+  Model.h
+  Model.cu
   )
 target_link_libraries(barney
   PUBLIC

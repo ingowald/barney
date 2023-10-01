@@ -31,8 +31,7 @@ namespace barney {
     static SP create()
     { return std::make_shared<LocalFB>(); }
     
-    void resize(vec2i size) override { PING; }
-
+    void resize(vec2i size) override;
   };
 
 }

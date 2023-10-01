@@ -164,7 +164,7 @@ int main(int ac, char **av)
   bnModelBuild(model);
   SM_MPI(world.barrier());
 
-  vec2i fbSize(1600,1200);
+  vec2i fbSize(800,600);
   BNFrameBuffer fb
     = bnFrameBufferCreate(ctx,
                           fbSize.x,fbSize.y);

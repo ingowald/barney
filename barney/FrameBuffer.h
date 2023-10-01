@@ -33,8 +33,20 @@ namespace barney {
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
-    { return "<FrameBuffer(abstract)>"; }
+    { return "<FrameBuffer(base)>"; }
     
-    virtual void resize(vec2i size) = 0;
+    virtual void resize(vec2i size);
+    
+    /*! number of (valid) pixels */
+    vec2i fbSize;
+    
+    /*! number of tiles to cover the entire frame buffer; some on the
+      right/bottom may be partly filled */
+    vec2i numTiles        = { 0, 0 };
+    int   numActiveTiles  = 0;
+    int   tileIndexOffset = 0;
+    int   tileIndexScale  = 1;
+    Tile *tiles = 0;
+    uint32_t *finalFB     = 0;
   };
 }

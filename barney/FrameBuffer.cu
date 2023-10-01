@@ -14,57 +14,28 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney.h"
-#include "mori/DeviceGroup.h"
-#include "mori/cuda-helper.h"
-#include <string.h>
-#include <cuda_runtime.h>
-#include <mutex>
-#include <map>
+#include "barney/FrameBuffer.h"
 
 namespace barney {
-  using namespace owl::common;
-  
-  struct Object {
-    typedef std::shared_ptr<Object> SP;
 
-    /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const
-    { return "<Object>"; }
-  };
+  void FrameBuffer::resize(vec2i size)
+  {
+    fbSize = size;
+    numTiles = divRoundUp(size,vec2i(tileSize));
+    numActiveTiles
+      = (numTiles.x*numTiles.y-tileIndexOffset)
+      / tileIndexScale;
+    if (tiles) 
+      MORI_CUDA_CALL(Free(tiles));
+    MORI_CUDA_CALL(MallocManaged(&tiles, numActiveTiles * sizeof(Tile)));
 
-  struct FrameBuffer;
-  struct Model;
-  
-  struct Context : public Object {
-
-    /*! create a frame buffer object suitable to this context */
-    virtual FrameBuffer *createFB() = 0;
+    if (finalFB)
+      MORI_CUDA_CALL(Free(finalFB));
+    MORI_CUDA_CALL(MallocManaged(&finalFB, fbSize.x*fbSize.y * sizeof(uint32_t)));
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "<Context(abstract)>"; }
-
-    template<typename T>
-    T *initReference(std::shared_ptr<T> sp)
-    {
-      std::lock_guard<std::mutex> lock(mutex);
-      hostOwnedHandles[sp]++;
-      return sp.get();
-    }
-
-    Context(const std::vector<int> &dataGroupIDs,
-            const std::vector<int> &gpuIDs);
-            
-    const std::vector<int> dataGroupIDs;
-    const std::vector<int> gpuIDs;
-            
-    std::mutex mutex;
-    std::map<Object::SP,int> hostOwnedHandles;
-    std::vector<mori::DeviceGroup::SP> moris;
-  };
+    PING;
+    PRINT(numActiveTiles);
+    PRINT(tiles);
+  }
   
 }
-

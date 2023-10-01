@@ -18,6 +18,7 @@
 #include "barney/Context.h"
 #include "barney/LocalContext.h"
 #include "barney/FrameBuffer.h"
+#include "barney/Model.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
@@ -27,6 +28,18 @@ namespace barney {
   {
     assert(context);
     return (Context *)context;
+  }
+  
+  inline Model *checkGet(BNModel model)
+  {
+    assert(model);
+    return (Model *)model;
+  }
+  
+  inline FrameBuffer *checkGet(BNFrameBuffer frameBuffer)
+  {
+    assert(frameBuffer);
+    return (FrameBuffer *)frameBuffer;
   }
   
   BN_API
@@ -58,7 +71,7 @@ namespace barney {
   BN_API
   void bnContextDestroy(BNContext context)
   {
-    WARN_NOTIMPLEMENTED;
+    delete (Context *)context;
   }
 
   BN_API
@@ -88,15 +101,6 @@ namespace barney {
   }
 
   BN_API
-  void bnRender(BNModel model,
-                const BNCamera *camera,
-                BNFrameBuffer fb,
-                uint32_t *appFB,
-                BNRenderRequest *req)
-  {
-  }
-
-  BN_API
   void bnPinholeCamera(BNCamera *camera,
                        float from_x,
                        float from_y,
@@ -119,6 +123,19 @@ namespace barney {
     FrameBuffer *fb = checkGet(context)->createFB();
     fb->resize({sizeX,sizeY});
     return (BNFrameBuffer)fb;
+  }
+
+  BN_API
+  void bnRender(BNModel model,
+                const BNCamera *camera,
+                BNFrameBuffer fb,
+                uint32_t *appFB,
+                BNRenderRequest *req)
+  {
+    assert(camera);
+    assert(appFB);
+
+    checkGet(model)->render(camera,checkGet(fb),appFB);
   }
 
   BN_API

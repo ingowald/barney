@@ -16,55 +16,22 @@
 
 #pragma once
 
-#include "barney.h"
-#include "mori/DeviceGroup.h"
-#include "mori/cuda-helper.h"
-#include <string.h>
-#include <cuda_runtime.h>
-#include <mutex>
-#include <map>
+#include "barney/Context.h"
 
 namespace barney {
-  using namespace owl::common;
-  
-  struct Object {
-    typedef std::shared_ptr<Object> SP;
 
-    /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const
-    { return "<Object>"; }
-  };
+  struct Model : public Object {
+    typedef std::shared_ptr<Model> SP;
 
-  struct FrameBuffer;
-  struct Model;
-  
-  struct Context : public Object {
-
-    /*! create a frame buffer object suitable to this context */
-    virtual FrameBuffer *createFB() = 0;
-    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
-    { return "<Context(abstract)>"; }
+    { return "Model{}"; }
+    
+    void render(const BNCamera *camera,
+                FrameBuffer *fb,
+                uint32_t *appfB);
 
-    template<typename T>
-    T *initReference(std::shared_ptr<T> sp)
-    {
-      std::lock_guard<std::mutex> lock(mutex);
-      hostOwnedHandles[sp]++;
-      return sp.get();
-    }
-
-    Context(const std::vector<int> &dataGroupIDs,
-            const std::vector<int> &gpuIDs);
-            
-    const std::vector<int> dataGroupIDs;
-    const std::vector<int> gpuIDs;
-            
-    std::mutex mutex;
-    std::map<Object::SP,int> hostOwnedHandles;
-    std::vector<mori::DeviceGroup::SP> moris;
+    Context *context;
   };
-  
-}
 
+}
