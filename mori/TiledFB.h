@@ -16,30 +16,44 @@
 
 #pragma once
 
-#include "barney/Context.h"
-#include "barney/FrameBuffer.h"
+#include "mori/common.h"
 
-namespace barney {
+namespace mori {
 
-  struct LocalFB : public FrameBuffer {
-    typedef std::shared_ptr<LocalFB> SP;
-
-    LocalFB(Context *context,
-            int tileIndexOffset,
-            int tileIndexScale)
-      : FrameBuffer(context,tileIndexOffset,tileIndexScale)
-    {}
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "LocalFB{}"; }
-    
-    static SP create(Context *context,
-            int tileIndexOffset,
-            int tileIndexScale)
-    { return std::make_shared<LocalFB>(context,tileIndexOffset,tileIndexScale); }
-    
-    void resize(vec2i size) override;
+  enum { tileSize = 32 };
+  struct Tile {
+    float4 accum[tileSize*tileSize];
   };
+  
+  struct TiledFB {
 
+    typedef std::shared_ptr<TiledFB> SP;
+    static SP create(int gpuID,
+                     int tileIndexOffset,
+                     int tileIndexScale);
+
+    TiledFB(int gpuID,
+            int tileIndexOffset,
+            int tileIndexScale);
+    
+    void resize(vec2i newSize);
+
+    /*! write this tiledFB's tiles into given "final" frame buffer
+        (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
+        pixels) */
+    void writeFinal(uint32_t *finalFB, cudaStream_t stream);
+    
+    /*! number of (valid) pixels */
+    vec2i numPixels       = { 0,0 };
+    
+    /*! number of tiles to cover the entire frame buffer; some on the
+      right/bottom may be partly filled */
+    vec2i numTiles        = { 0, 0 };
+    int   numActiveTiles  = 0;
+    int   tileIndexOffset = 0;
+    int   tileIndexScale  = 1;
+    Tile *tiles = 0;
+    const int gpuID;
+  };
+  
 }

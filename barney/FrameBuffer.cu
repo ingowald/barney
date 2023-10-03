@@ -18,24 +18,33 @@
 
 namespace barney {
 
+  FrameBuffer::FrameBuffer(Context *context,
+                int tileIndexOffset,
+                int tileIndexScale)
+    : context(context)
+    // ,
+    //   tileIndexOffset(tileIndexOffset),
+    //   tileIndexScale(tileIndexScale)
+  {
+    perGPU.resize(context->gpuIDs.size());
+    for (int localID=0;localID<context->gpuIDs.size();localID++) {
+      perGPU[localID]
+        = mori::TiledFB::create(context->gpuIDs[localID],
+                                tileIndexOffset+localID,tileIndexScale);
+    }
+  }
+
   void FrameBuffer::resize(vec2i size)
   {
-    fbSize = size;
-    numTiles = divRoundUp(size,vec2i(tileSize));
-    numActiveTiles
-      = (numTiles.x*numTiles.y-tileIndexOffset)
-      / tileIndexScale;
-    if (tiles) 
-      MORI_CUDA_CALL(Free(tiles));
-    MORI_CUDA_CALL(MallocManaged(&tiles, numActiveTiles * sizeof(Tile)));
+    for (auto &devFB: perGPU)
+      devFB->resize(size);
+    
+    numPixels = size;
+    // numTiles  = divRoundUp(size,vec2i(mori::tileSize));
 
     if (finalFB)
       MORI_CUDA_CALL(Free(finalFB));
-    MORI_CUDA_CALL(MallocManaged(&finalFB, fbSize.x*fbSize.y * sizeof(uint32_t)));
-    
-    PING;
-    PRINT(numActiveTiles);
-    PRINT(tiles);
+    MORI_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
   }
   
 }

@@ -17,19 +17,15 @@
 #pragma once
 
 #include "barney/Context.h"
+#include "mori/TiledFB.h"
 
 namespace barney {
 
   struct FrameBuffer : public Object {
-    
-    enum { tileSize = 32 };
 
-    struct Tile {
-      float4 accum[tileSize*tileSize];
-    };
-    struct DD {
-      Tile *tiles;
-    };
+    FrameBuffer(Context *context,
+                int tileIndexOffset,
+                int tileIndexScale);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -37,16 +33,13 @@ namespace barney {
     
     virtual void resize(vec2i size);
     
-    /*! number of (valid) pixels */
-    vec2i fbSize;
+    std::vector<mori::TiledFB::SP> perGPU;
     
-    /*! number of tiles to cover the entire frame buffer; some on the
-      right/bottom may be partly filled */
-    vec2i numTiles        = { 0, 0 };
-    int   numActiveTiles  = 0;
-    int   tileIndexOffset = 0;
-    int   tileIndexScale  = 1;
-    Tile *tiles = 0;
+    vec2i     numPixels   = { 0,0 };
+    // vec2i     numTiles    = { 0,0 };
     uint32_t *finalFB     = 0;
+    Context  *const context;
+    // int tileIndexOffset;
+    // int tileIndexScale; 
   };
 }

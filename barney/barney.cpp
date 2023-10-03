@@ -45,8 +45,7 @@ namespace barney {
   BN_API
   BNModel bnModelCreate(BNContext ctx)
   {
-    WARN_NOTIMPLEMENTED;
-    return 0;
+    return (BNModel)checkGet(ctx)->createModel();
   }
 
   BN_API

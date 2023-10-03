@@ -18,7 +18,7 @@
 #include "barney/mpi/DistFB.h"
 
 namespace barney {
-  
+
   MPIContext::MPIContext(const mpi::Comm &comm,
                          const std::vector<int> &dataGroupIDs,
                          const std::vector<int> &gpuIDs)
@@ -44,6 +44,32 @@ namespace barney {
 
   /*! create a frame buffer object suitable to this context */
   FrameBuffer *MPIContext::createFB() 
-  { return initReference(DistFB::create()); }
+  { return initReference(DistFB::create(this,
+                                        comm.rank*gpuIDs.size(),
+                                        comm.size*gpuIDs.size())); }
+
+  void MPIContext::render(Model *model,
+                          const BNCamera *camera,
+                          FrameBuffer *fb,
+                          uint32_t *appFB)
+  {
+    DistFB *local = (DistFB *)fb;
+
+    for (int localID = 0; localID < gpuIDs.size(); localID++)
+      renderTiles(this,localID,model,fb,camera);
+    
+    for (int localID = 0; localID < gpuIDs.size(); localID++)
+      fb->perGPU[localID]->writeFinal(local->finalFB,perGPU[localID]->stream);
+
+    for (int localID = 0; localID < gpuIDs.size(); localID++)
+      MORI_CUDA_CALL(StreamSynchronize(perGPU[localID]->stream));
+
+    throw std::runtime_error("need to gather to master here ...");
+    
+    MORI_CUDA_CALL(Memcpy(appFB,fb->finalFB,
+                          fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
+                          cudaMemcpyDefault));
+    MORI_CUDA_SYNC_CHECK();
+  }
   
 }

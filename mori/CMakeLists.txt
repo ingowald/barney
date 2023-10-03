@@ -17,6 +17,8 @@
 add_library(mori SHARED
   DeviceGroup.h
   DeviceGroup.cpp
+  TiledFB.h
+  TiledFB.cu
   )
 target_link_libraries(mori PUBLIC owl)
 target_include_directories(mori PUBLIC

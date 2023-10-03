@@ -23,8 +23,17 @@ namespace barney {
   struct DistFB : public FrameBuffer {
     typedef std::shared_ptr<DistFB> SP;
 
-    static SP create()
-    { return std::make_shared<DistFB>(); }
+    DistFB(Context *context,
+           int tileIndexOffset,
+           int tileIndexScale)
+      : 
+      FrameBuffer(context,tileIndexOffset,tileIndexScale)
+    {}
+    
+    static SP create(Context *context,
+           int tileIndexOffset,
+           int tileIndexScale)
+    { return std::make_shared<DistFB>(context,tileIndexOffset,tileIndexScale); }
     
     void resize(vec2i size) override;
 

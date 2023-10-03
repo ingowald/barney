@@ -20,6 +20,7 @@
 #include <vector>
 #include <map>
 #include <mutex>
+#include "mori/cuda-helper.h"
 
 namespace mori {
   using namespace owl;

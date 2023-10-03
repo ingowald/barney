@@ -19,6 +19,7 @@
 #include "barney.h"
 #include "mori/DeviceGroup.h"
 #include "mori/cuda-helper.h"
+#include "mori/TiledFB.h"
 #include <string.h>
 #include <cuda_runtime.h>
 #include <mutex>
@@ -37,11 +38,23 @@ namespace barney {
 
   struct FrameBuffer;
   struct Model;
-  
+
+
   struct Context : public Object {
 
+    struct PerGPU {
+      int devID = -1;
+      cudaStream_t stream;
+    };
+    
+    Context(const std::vector<int> &dataGroupIDs,
+            const std::vector<int> &gpuIDs);
+    ~Context()
+    { for (auto pg : perGPU) delete pg; }
+    
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB() = 0;
+    Model *createModel();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -55,16 +68,27 @@ namespace barney {
       return sp.get();
     }
 
-    Context(const std::vector<int> &dataGroupIDs,
-            const std::vector<int> &gpuIDs);
-            
+    virtual void render(Model *model,
+                        const BNCamera *camera,
+                        FrameBuffer *fb,
+                        uint32_t *appFB) = 0;
+    
     const std::vector<int> dataGroupIDs;
     const std::vector<int> gpuIDs;
             
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;
     std::vector<mori::DeviceGroup::SP> moris;
+
+    std::vector<PerGPU *> perGPU;
   };
+  
+  /*! TEMP function - will die pretty soon */
+  void renderTiles(Context *context,
+                   int localID,
+                   Model *model,
+                   FrameBuffer *fb,
+                   const BNCamera *camera);
   
 }
 

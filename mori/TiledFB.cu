@@ -14,32 +14,45 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "mori/TiledFB.h"
 
-#include "barney/Context.h"
-#include "barney/FrameBuffer.h"
+namespace mori {
 
-namespace barney {
+  TiledFB::SP TiledFB::create(int gpuID,
+                              int tileIndexOffset,
+                              int tileIndexScale)
+  {
+    return std::make_shared<TiledFB>(gpuID,
+                                     tileIndexOffset,
+                                     tileIndexScale);
+  }
+  
+  TiledFB::TiledFB(int gpuID,
+                   int tileIndexOffset,
+                   int tileIndexScale)
+    : gpuID(gpuID),
+      tileIndexOffset(tileIndexOffset),
+      tileIndexScale(tileIndexScale)
+  {}
 
-  struct LocalFB : public FrameBuffer {
-    typedef std::shared_ptr<LocalFB> SP;
+  void TiledFB::resize(vec2i newSize)
+  {
+    numPixels = newSize;
+    numTiles  = divRoundUp(numPixels,vec2i(tileSize));
+    numActiveTiles
+      = (numTiles.x*numTiles.y-tileIndexOffset)
+      / tileIndexScale;
+    if (tiles) 
+      MORI_CUDA_CALL(Free(tiles));
+    MORI_CUDA_CALL(MallocManaged(&tiles, numActiveTiles * sizeof(Tile)));
+  }
+  
 
-    LocalFB(Context *context,
-            int tileIndexOffset,
-            int tileIndexScale)
-      : FrameBuffer(context,tileIndexOffset,tileIndexScale)
-    {}
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "LocalFB{}"; }
-    
-    static SP create(Context *context,
-            int tileIndexOffset,
-            int tileIndexScale)
-    { return std::make_shared<LocalFB>(context,tileIndexOffset,tileIndexScale); }
-    
-    void resize(vec2i size) override;
-  };
-
+    /*! write this tiledFB's tiles into given "final" frame buffer
+        (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
+        pixels) */
+  void TiledFB::writeFinal(uint32_t *finalFB, cudaStream_t stream)
+  {
+    PING;
+  }
 }

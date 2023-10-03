@@ -23,6 +23,12 @@ namespace barney {
   struct Model : public Object {
     typedef std::shared_ptr<Model> SP;
 
+    static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
+    
+    Model(Context *context)
+      : context(context)
+    {}
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Model{}"; }
@@ -30,8 +36,8 @@ namespace barney {
     void render(const BNCamera *camera,
                 FrameBuffer *fb,
                 uint32_t *appfB);
-
-    Context *context;
+    
+    Context *const context;
   };
 
 }

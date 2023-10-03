@@ -17,7 +17,7 @@
 add_library(barney SHARED
   barney.cpp
   Context.h
-  Context.cpp
+  Context.cu
   LocalContext.h
   LocalContext.cu
   FrameBuffer.h

@@ -22,12 +22,18 @@ namespace barney {
 
   /*! a barney context for "local"-node rendering - no MPI */
   struct LocalContext : public Context {
+    
     LocalContext(const std::vector<int> &dataGroupIDs,
                  const std::vector<int> &gpuIDs);
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "LocalFB{}"; }
+
+    void render(Model *model,
+                const BNCamera *camera,
+                FrameBuffer *fb,
+                uint32_t *appFB) override;
 
     /*! create a frame buffer object suitable to this context */
     FrameBuffer *createFB() override;
