@@ -67,7 +67,7 @@ namespace barney {
 
       void wait(MPI_Request &req)
       {
-        // BN_MPI_CALL(Wait(&req,MPI_STATUS_IGNORE),"mpi-wait");
+        BN_MPI_CALL(Wait(&req,MPI_STATUS_IGNORE),"mpi-wait");
       }
       
       int rank = -1, size = -1;
@@ -78,24 +78,24 @@ namespace barney {
     inline void Comm::recv(int fromRank, int tag,
                                   T *buffer, int numItems, MPI_Request &req)
     {
-      BN_MPI_CALL(Recv(buffer,numItems*sizeof(T),MPI_BYTE,
-                       fromRank,tag,comm,MPI_STATUS_IGNORE),
-                  "Irecv");
-      // BN_MPI_CALL(Irecv(buffer,numItems*sizeof(T),MPI_BYTE,
-      //                   fromRank,tag,comm,&req),
+      // BN_MPI_CALL(Recv(buffer,numItems*sizeof(T),MPI_BYTE,
+      //                  fromRank,tag,comm,MPI_STATUS_IGNORE),
       //             "Irecv");
+      BN_MPI_CALL(Irecv(buffer,numItems*sizeof(T),MPI_BYTE,
+                        fromRank,tag,comm,&req),
+                  "Irecv");
     }
     
     template<typename T>
     inline void Comm::send(int toRank, int tag,
                            const T *buffer, int numItems, MPI_Request &req)
     {
-      BN_MPI_CALL(Send(buffer,numItems*sizeof(T),MPI_BYTE,
-                       toRank,tag,comm),
-                  "Isend");
-      // BN_MPI_CALL(Isend(buffer,numItems*sizeof(T),MPI_BYTE,
-      //                   toRank,tag,comm,&req),
+      // BN_MPI_CALL(Send(buffer,numItems*sizeof(T),MPI_BYTE,
+      //                  toRank,tag,comm),
       //             "Isend");
+      BN_MPI_CALL(Isend(buffer,numItems*sizeof(T),MPI_BYTE,
+                        toRank,tag,comm,&req),
+                  "Isend");
     }
     
     /*! master-side of a gather where clietn gathers a fixed number

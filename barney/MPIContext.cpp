@@ -42,7 +42,6 @@ namespace barney {
     }
     
     int numDifferentDataGroups = comm.allReduceMax(myMaxDataID)+1;
-    PRINT(numDifferentDataGroups);
     assert(numDifferentDataGroups % dataGroupIDs.size() == 0);
     int numRanksPerIsland = numDifferentDataGroups / (int)dataGroupIDs.size();
     int numIslands = comm.size / numRanksPerIsland;
@@ -68,16 +67,16 @@ namespace barney {
       // accum to rgba conversion:
       fb->perGPU[localID]->finalizeTiles();
 
-    for (int localID = 0; localID < gpuIDs.size(); localID++) {
-      auto &devFB = *fb->perGPU[localID];
-      SetActiveGPU forDuration(devFB.device);
-      mori::TiledFB::writeFinalPixels(fb->finalFB,
-                                      fb->numPixels,
-                                      devFB.finalTiles,
-                                      devFB.tileDescs,
-                                      devFB.numActiveTiles,
-                                      devFB.device->stream);
-    }
+    // for (int localID = 0; localID < gpuIDs.size(); localID++) {
+    //   auto &devFB = *fb->perGPU[localID];
+    //   SetActiveGPU forDuration(devFB.device);
+    //   mori::TiledFB::writeFinalPixels(fb->finalFB,
+    //                                   fb->numPixels,
+    //                                   devFB.finalTiles,
+    //                                   devFB.tileDescs,
+    //                                   devFB.numActiveTiles,
+    //                                   devFB.device->stream);
+    // }
 
 
     for (int localID = 0; localID < gpuIDs.size(); localID++)
@@ -103,17 +102,12 @@ namespace barney {
                                       ((DistFB *)fb)->masterGather.tileDescs,
                                       ((DistFB *)fb)->masterGather.numActiveTiles,
                                       (cudaStream_t)0);
-      PING; PRINT(comm.rank); fflush(0);
-      MORI_CUDA_SYNC_CHECK();
       // copy to app framebuffer - only if we're the one having that
       // frame buffer of course
       MORI_CUDA_CALL(Memcpy(appFB,fb->finalFB,
                             fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                             cudaMemcpyDefault));
-      PING; PRINT(comm.rank); fflush(0);
     }
-    comm.barrier();
-    PING; PRINT(comm.rank); fflush(0);
     MORI_CUDA_SYNC_CHECK();
   }
   

@@ -72,8 +72,6 @@ namespace barney {
     auto device = devFB.device;
     
     SetActiveGPU forDuration(device->gpuID);
-    PING;
-    PRINT(devFB.numActiveTiles);
     g_renderTiles
       <<<devFB.numActiveTiles,vec2i(mori::tileSize),0,device->stream>>>
       (devFB.accumTiles,
@@ -87,14 +85,25 @@ namespace barney {
                             FrameBuffer *fb,
                             uint32_t *appFB)
   {
-    for (int localID = 0; localID < gpuIDs.size(); localID++)
-      // computation of Tile::accum color
+    // ------------------------------------------------------------------
+    // tell each device to start rendering accum tiles
+    // ------------------------------------------------------------------
+    for (int localID = 0; localID < gpuIDs.size(); localID++) {
+      auto &devFB = *fb->perGPU[localID];
+      SetActiveGPU forDuration(devFB.device);
       renderTiles(this,localID,model,fb,camera);
+    }
     
+    // ------------------------------------------------------------------
+    // tell each device to finalize its rendered accum tiles
+    // ------------------------------------------------------------------
     for (int localID = 0; localID < gpuIDs.size(); localID++)
-      // accum to rgba conversion:
+      // (will set active GPU internally)
       fb->perGPU[localID]->finalizeTiles();
 
+    // ------------------------------------------------------------------
+    // 
+    // ------------------------------------------------------------------
     for (int localID = 0; localID < gpuIDs.size(); localID++) {
       auto &devFB = *fb->perGPU[localID];
       SetActiveGPU forDuration(devFB.device);
@@ -109,17 +118,9 @@ namespace barney {
     for (int localID = 0; localID < gpuIDs.size(); localID++)
       fb->perGPU[localID]->sync();
 
-
-    // render_testFrame
-    //   <<<fb->numActiveTiles,vec2i(fb->mori::tileSize,fb->mori::tileSize)>>>
-    //   (fb->fbSize,fb->tiles,fb->numTiles,0,1,fb->finalFB);
-      
-    //   MORI_CUDA_SYNC_CHECK();
-    //   MORI_CUDA_CALL(Memcpy(appFB,fb->finalFB,
-    //                         fb->fbSize.x*fb->fbSize.y*sizeof(uint32_t),
-    //                         cudaMemcpyDefault));
-    MORI_CUDA_SYNC_CHECK();
-    PING;
+    // ------------------------------------------------------------------
+    // copy final frame buffer to app's frame buffer memory
+    // ------------------------------------------------------------------
     MORI_CUDA_CALL(Memcpy(appFB,fb->finalFB,
                           fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                           cudaMemcpyDefault));

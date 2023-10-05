@@ -28,14 +28,17 @@ namespace mori {
     : device(device)
   {}
 
-  __global__ void setTileCoords(TileDesc *tileDescs, int numActiveTiles,
+  __global__ void setTileCoords(TileDesc *tileDescs,
+                                int numActiveTiles,
                                 vec2i numTiles,
-                                int tileIndexOffset, int tileIndexScale)
+                                int tileIndexOffset,
+                                int tileIndexScale)
   {
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
-    int tileID = tid * tileIndexScale + tileIndexOffset;
-    if (tileID >= numActiveTiles)
+    if (tid >= numActiveTiles)
       return;
+    
+    int tileID = tid * tileIndexScale + tileIndexOffset;
 
     int tile_x = tileID % numTiles.x;
     int tile_y = tileID / numTiles.x;
@@ -57,18 +60,17 @@ namespace mori {
     numPixels = newSize;
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles
-      = (numTiles.x*numTiles.y - device->tileIndexOffset)
-      / device->tileIndexScale;
+      = divRoundUp(numTiles.x*numTiles.y - device->tileIndexOffset,
+                   device->tileIndexScale);
     MORI_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
     MORI_CUDA_CALL(Malloc(&finalTiles, numActiveTiles * sizeof(FinalTile)));
-    MORI_CUDA_CALL(Malloc(&tileDescs, numActiveTiles * sizeof(TileDesc)));
+    MORI_CUDA_CALL(MallocManaged(&tileDescs, numActiveTiles * sizeof(TileDesc)));
     // MORI_CUDA_CALL(MallocAsync(&accumTiles, numActiveTiles * sizeof(AccumTile),
     //                            device->stream));
     // MORI_CUDA_CALL(MallocAsync(&finalTiles, numActiveTiles * sizeof(FinalTile),
     //                            device->stream));
-    // MORI_CUDA_CALL(MallocAsync(&tileDescs, numActiveTiles * sizeof(TileDsc),
+    // MORI_CUDA_CALL(MallocAsync(&tileDescs, numActiveTiles * sizeof(TileDesc),
     //                            device->stream));
-    std::cout << "allocated tile offsets " << tileDescs << std::endl;
     setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,device->stream>>>
       (tileDescs,numActiveTiles,numTiles,
        device->tileIndexOffset,device->tileIndexScale);
@@ -116,6 +118,7 @@ namespace mori {
     pixels) */
   void TiledFB::finalizeTiles()
   {
+    SetActiveGPU forDuration(device);
     g_finalizeTiles<<<numActiveTiles,vec2i(tileSize),0,device->stream>>>
       (finalTiles,accumTiles);
   }

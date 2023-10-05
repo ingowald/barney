@@ -32,8 +32,8 @@ namespace mori {
     OWLContext   owl;
     int          gpuID;
     cudaStream_t stream;
-    int          tileIndexOffset;
-    int          tileIndexScale;
+    int          tileIndexOffset = 0;
+    int          tileIndexScale  = 0;
   };
   
   /*! stolen from owl/DeviceContext: helper class that will set the
