@@ -16,28 +16,36 @@
 
 #pragma once
 
-#include "barney/Context.h"
-#include "barney/mpi/MPIWrappers.h"
+#include "barney/FrameBuffer.h"
+#include "barney/MPIWrappers.h"
 
 namespace barney {
 
-  /*! barney context for collaborative MPI-parallel rendering */
-  struct MPIContext : public Context
-  {
-    MPIContext(const mpi::Comm &comm,
-               const std::vector<int> &dataGroupIDs,
-               const std::vector<int> &gpuIDs);
+  struct DistFB : public FrameBuffer {
+    typedef std::shared_ptr<DistFB> SP;
 
-    /*! create a frame buffer object suitable to this context */
-    FrameBuffer *createFB() override;
-
-    void render(Model *model,
-                const BNCamera *camera,
-                FrameBuffer *fb,
-                uint32_t *appFB) override;
+    DistFB(Context *context, mpi::Comm &comm)
+      : FrameBuffer(context),
+        comm(comm)
+    {}
     
-      
-    mpi::Comm comm;
+    static SP create(Context *context, mpi::Comm &comm)
+    { return std::make_shared<DistFB>(context,comm); }
+    
+    void resize(vec2i size) override;
+
+    void masterGatherFinalTiles(mpi::Comm &comm);
+    
+    struct {
+      /*! list of *all* ranks' tileOffset, gathered (only at master) */
+      mori::FinalTile *finalTiles = 0;
+      TileDesc        *tileDescs = 0;
+      std::vector<int> numTilesOnGPU;
+      std::vector<int> firstTileOnGPU;
+      int numActiveTiles;
+      int numGPUs;
+    } masterGather;
+    mpi::Comm &comm;
   };
 
 }

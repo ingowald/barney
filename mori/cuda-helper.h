@@ -18,25 +18,27 @@
 
 #include "owl/common.h"
 #include <cuda_runtime.h>
+#include <unistd.h>
 
-inline void moriRaise_impl(std::string str)
-{
-  fprintf(stderr,"%s\n",str.c_str());
-#ifdef WIN32
-  if (IsDebuggerPresent())
-    DebugBreak();
-  else
-    throw std::runtime_error(str);
-#else
-#ifndef NDEBUG
-  std::string bt = ::detail::backtrace();
-  fprintf(stderr,"%s\n",bt.c_str());
-#endif
-  raise(SIGINT);
-#endif
-}
+// inline void moriRaise_impl(std::string str)
+// {
+//   fprintf(stderr,"%s\n",str.c_str());
+// #ifdef WIN32
+//   if (IsDebuggerPresent())
+//     DebugBreak();
+//   else
+//     throw std::runtime_error(str);
+// #else
+// #ifndef NDEBUG
+//   std::string bt = ::detail::backtrace();
+//   fprintf(stderr,"%s\n",bt.c_str());
+// #endif
+//   raise(SIGINT);
+// #endif
+// }
 
-#define MORI_RAISE(MSG) ::moriRaise_impl(MSG);
+#define MORI_RAISE(MSG) throw std::runtime_error("fatal mori cuda error ... ")
+// #define MORI_RAISE(MSG) ::moriRaise_impl(MSG);
 
 
 
@@ -44,6 +46,7 @@ inline void moriRaise_impl(std::string str)
   {                                                                     \
     cudaError_t rc = call;                                              \
     if (rc != cudaSuccess) {                                            \
+      printf("error code %i\n",rc); fflush(0);usleep(100);              \
       fprintf(stderr,                                                   \
               "CUDA call (%s) failed with code %d (line %d): %s\n",     \
               #call, rc, __LINE__, cudaGetErrorString(rc));             \
@@ -108,4 +111,5 @@ inline void moriRaise_impl(std::string str)
       exit(2);                                                          \
     }                                                                   \
   }
+
 

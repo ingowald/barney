@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-add_library(mori SHARED
+add_library(mori STATIC #SHARED
   DeviceGroup.h
   DeviceGroup.cpp
   TiledFB.h
@@ -24,4 +24,12 @@ target_link_libraries(mori PUBLIC owl)
 target_include_directories(mori PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/..
   )
+set_target_properties(mori
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+)
+
 

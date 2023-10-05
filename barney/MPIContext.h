@@ -14,10 +14,30 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/mpi/DistFB.h"
+#pragma once
+
+#include "barney/Context.h"
+#include "barney/MPIWrappers.h"
 
 namespace barney {
 
-  void DistFB::resize(vec2i size) { PING; }
+  /*! barney context for collaborative MPI-parallel rendering */
+  struct MPIContext : public Context
+  {
+    MPIContext(const mpi::Comm &comm,
+               const std::vector<int> &dataGroupIDs,
+               const std::vector<int> &gpuIDs);
+
+    /*! create a frame buffer object suitable to this context */
+    FrameBuffer *createFB() override;
+
+    void render(Model *model,
+                const BNCamera *camera,
+                FrameBuffer *fb,
+                uint32_t *appFB) override;
+    
+      
+    mpi::Comm comm;
+  };
 
 }

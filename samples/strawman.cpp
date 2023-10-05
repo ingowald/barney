@@ -16,7 +16,7 @@
 
 #ifdef SM_USE_MPI
 # include <mpi.h>
-# include "barney/mpi/MPIWrappers.h"
+# include "barney/MPIWrappers.h"
 # define SM_MPI(a) a
 #else
 # define SM_MPI(a)
@@ -109,9 +109,6 @@ int main(int ac, char **av)
   barney::mpi::init(ac,av);
   barney::mpi::Comm world(MPI_COMM_WORLD);
   
-  PRINT(world.rank);
-  PRINT(world.size);
-
   BNHardwareInfo hardware;
   bnMPIQueryHardware(&hardware,world.comm);
   printf("#bn.sm(%i): host has %i GPUs, %i ranks on this host, and %i GPUs/rank\n",

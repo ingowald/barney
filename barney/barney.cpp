@@ -132,8 +132,6 @@ namespace barney {
                 BNRenderRequest *req)
   {
     assert(camera);
-    assert(appFB);
-
     checkGet(model)->render(camera,checkGet(fb),appFB);
   }
 
@@ -145,8 +143,7 @@ namespace barney {
                                  node's GPUs equally over all ranks on
                                  that given node */
                             const int *_gpuIDs,
-                            int  numGPUs
-                            )
+                            int  numGPUs)
   {
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we

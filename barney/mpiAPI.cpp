@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/mpi/MPIContext.h"
+#include "barney/MPIContext.h"
 
 namespace barney {
 

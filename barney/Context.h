@@ -27,6 +27,7 @@
 
 namespace barney {
   using namespace owl::common;
+  using mori::SetActiveGPU;
   
   struct Object {
     typedef std::shared_ptr<Object> SP;
@@ -39,18 +40,18 @@ namespace barney {
   struct FrameBuffer;
   struct Model;
 
+  struct Context;
+  
+  struct DeviceContext : public mori::DeviceContext {
+    Context *barney = 0;
+  };
 
   struct Context : public Object {
 
-    struct PerGPU {
-      int devID = -1;
-      cudaStream_t stream;
-    };
-    
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs);
     ~Context()
-    { for (auto pg : perGPU) delete pg; }
+    { for (auto devCon : deviceContexts) delete devCon; }
     
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB() = 0;
@@ -80,7 +81,7 @@ namespace barney {
     std::map<Object::SP,int> hostOwnedHandles;
     std::vector<mori::DeviceGroup::SP> moris;
 
-    std::vector<PerGPU *> perGPU;
+    std::vector<DeviceContext *> deviceContexts;
   };
   
   /*! TEMP function - will die pretty soon */

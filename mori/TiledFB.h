@@ -17,31 +17,93 @@
 #pragma once
 
 #include "mori/common.h"
+#include "owl/owl.h"
 
 namespace mori {
 
+
+  struct DeviceContext {
+    
+    void sync() const
+    {
+      MORI_CUDA_CALL(StreamSynchronize(stream));
+    }
+
+    OWLContext   owl;
+    int          gpuID;
+    cudaStream_t stream;
+    int          tileIndexOffset;
+    int          tileIndexScale;
+  };
+  
+  /*! stolen from owl/DeviceContext: helper class that will set the
+      active cuda device (to the device associated with a given
+      Context::DeviceData) for the duration fo the lifetime of this
+      class, and resets it to whatever it was after class dies */
+  struct SetActiveGPU {
+    inline SetActiveGPU(const DeviceContext *device)
+    {
+      assert(device);
+      MORI_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      MORI_CUDA_CHECK(cudaSetDevice(device->gpuID));
+    }
+    
+    inline SetActiveGPU(int cudaDeviceID)
+    {
+      MORI_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      MORI_CUDA_CHECK(cudaSetDevice(cudaDeviceID));
+    }
+    inline ~SetActiveGPU()
+    {
+      MORI_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
+    }
+  private:
+    int savedActiveDeviceID = -1;
+  };
+  
+  
   enum { tileSize = 32 };
-  struct Tile {
+  
+  struct AccumTile {
     float4 accum[tileSize*tileSize];
   };
+  struct FinalTile {
+    uint32_t rgba[tileSize*tileSize];
+  };
+  struct TileDesc {
+    union {
+      int4 forAlign;
+      vec2i lower;
+    };
+  };
+  
   
   struct TiledFB {
 
     typedef std::shared_ptr<TiledFB> SP;
-    static SP create(int gpuID,
-                     int tileIndexOffset,
-                     int tileIndexScale);
+    static SP create(DeviceContext *device);
 
-    TiledFB(int gpuID,
-            int tileIndexOffset,
-            int tileIndexScale);
+    TiledFB(DeviceContext *device);
     
     void resize(vec2i newSize);
 
     /*! write this tiledFB's tiles into given "final" frame buffer
         (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
         pixels) */
-    void writeFinal(uint32_t *finalFB, cudaStream_t stream);
+    static
+    void writeFinalPixels(uint32_t  *finalFB,
+                          vec2i      numPixels,
+                          FinalTile *finalTiles,
+                          TileDesc  *tileDescs,
+                          int        numTiles,
+                          cudaStream_t stream);
+    
+    void finalizeTiles();
+
+    void sync()
+    {
+      device->sync();
+    }
     
     /*! number of (valid) pixels */
     vec2i numPixels       = { 0,0 };
@@ -50,10 +112,11 @@ namespace mori {
       right/bottom may be partly filled */
     vec2i numTiles        = { 0, 0 };
     int   numActiveTiles  = 0;
-    int   tileIndexOffset = 0;
-    int   tileIndexScale  = 1;
-    Tile *tiles = 0;
-    const int gpuID;
+    /*! lower-left pixel coordinate for given tile ... */
+    TileDesc  *tileDescs  = 0;
+    AccumTile *accumTiles = 0;
+    FinalTile *finalTiles = 0;
+    DeviceContext *const device;
   };
   
 }

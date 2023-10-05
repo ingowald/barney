@@ -38,13 +38,13 @@ target_include_directories(barney PUBLIC
 find_package(MPI REQUIRED)
 
 add_library(barney_mpi SHARED
-  mpi/impl.cpp
-  mpi/MPIWrappers.h
-  mpi/MPIWrappers.cpp
-  mpi/MPIContext.h
-  mpi/MPIContext.cpp
-  mpi/DistFB.h
-  mpi/DistFB.cu
+  mpiAPI.cpp
+  MPIWrappers.h
+  MPIWrappers.cpp
+  MPIContext.h
+  MPIContext.cpp
+  DistFB.h
+  DistFB.cu
   )
 target_link_libraries(barney_mpi PUBLIC
   barney

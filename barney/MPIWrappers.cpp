@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/mpi/MPIWrappers.h"
+#include "barney/MPIWrappers.h"
 
 namespace barney {
   namespace mpi {

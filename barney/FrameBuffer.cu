@@ -18,19 +18,13 @@
 
 namespace barney {
 
-  FrameBuffer::FrameBuffer(Context *context,
-                int tileIndexOffset,
-                int tileIndexScale)
+  FrameBuffer::FrameBuffer(Context *context)
     : context(context)
-    // ,
-    //   tileIndexOffset(tileIndexOffset),
-    //   tileIndexScale(tileIndexScale)
   {
     perGPU.resize(context->gpuIDs.size());
     for (int localID=0;localID<context->gpuIDs.size();localID++) {
       perGPU[localID]
-        = mori::TiledFB::create(context->gpuIDs[localID],
-                                tileIndexOffset+localID,tileIndexScale);
+        = mori::TiledFB::create(context->deviceContexts[localID]);
     }
   }
 

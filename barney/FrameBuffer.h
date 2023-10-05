@@ -21,11 +21,11 @@
 
 namespace barney {
 
+  using mori::TileDesc;
+
   struct FrameBuffer : public Object {
 
-    FrameBuffer(Context *context,
-                int tileIndexOffset,
-                int tileIndexScale);
+    FrameBuffer(Context *context);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
