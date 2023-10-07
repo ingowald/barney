@@ -14,7 +14,9 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-add_subdirectory(../../miniScene ext_miniScene EXCLUDE_FROM_ALL)
+if (NOT (TARGET miniScene))
+  add_subdirectory(../../miniScene ext_miniScene EXCLUDE_FROM_ALL)
+endif()
 
 add_executable(bnMpiStrawman
   strawman.cpp)

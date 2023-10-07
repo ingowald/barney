@@ -14,6 +14,11 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
+add_subdirectory(../../mpiRenderInf buildDir_mpiInf EXCLUDE_FROM_ALL)
 add_executable(bnViewer main.cpp)
-target_link_libraries(bnViewer barney)
+
+target_link_libraries(bnViewer
+  barney
+  mpiRenderInf
+  )
 

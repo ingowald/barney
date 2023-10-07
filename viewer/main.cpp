@@ -15,8 +15,44 @@
 // ======================================================================== //
 
 #include "barney.h"
+#include "mpiInf/Renderer.h"
+#if CUTEE
+# include "qtOWL/OWLViewer.h"
+# include "qtOWL/XFEditor.h"
+#else
+# include "samples/common/owlViewer/InspectMode.h"
+# include "samples/common/owlViewer/OWLViewer.h"
+#endif
+
+namespace bo {
+  
+  struct SphereSet {
+    struct Sphere {
+      float3   position;
+      half     radius;
+      uint16_t type;
+    };
+    std::vector<Sphere> spheres;
+  }
+      
+  struct BarnOWL {
+
+    struct RankData {
+      mini::Scene::SP               triangles;
+      SphereSet                     spheres;
+      std::vector<umesh::UMesh::SP> unsts;
+    };
+
+    BarnOWN(const std::vector<RankData> &data,
+            BarnComm &comm);
+    const std::vector<RankData> rankData;
+  };
+  
+}
+
+using namespace bo;
 
 int main(int ac, char **av)
 {
-  return 0;
+    mpiInf::Comms comms(ac,(char **&)av);
 }

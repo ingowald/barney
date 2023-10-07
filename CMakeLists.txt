@@ -62,7 +62,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ------------------------------------------------------------------
 # subprojects we depend on
 # ------------------------------------------------------------------
-add_subdirectory(../owl builddir-owl EXCLUDE_FROM_ALL)
+if (NOT (TARGET owl::owl))
+  add_subdirectory(../owl builddir-owl EXCLUDE_FROM_ALL)
+endif()
 
 # ------------------------------------------------------------------
 # barney itself
@@ -73,7 +75,7 @@ add_subdirectory(barney)
 # ------------------------------------------------------------------
 # sample viewer
 # ------------------------------------------------------------------
-add_subdirectory(viewer)
+#add_subdirectory(viewer)
 
 # ------------------------------------------------------------------
 # general samples 

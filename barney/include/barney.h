@@ -107,7 +107,7 @@ struct BNHardwareInfo {
 BN_API
 BNContext bnMPIContextCreate(MPI_Comm comm,
                              /*! which data group(s) this rank will
-                               owl - default is 1 group, with data
+                               own - default is 1 group, with data
                                  group equal to mpi rank */
                              const int *dataGroupsOnThisRank=0,
                              int  numDataGroupsOnThisRank=1,

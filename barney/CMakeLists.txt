@@ -31,7 +31,8 @@ target_link_libraries(barney
   PUBLIC
   mori)
 target_include_directories(barney PUBLIC
-  ${CMAKE_CURRENT_LIST_DIR}/include
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/barney/include
   )
 
 # ------------------------------------------------------------------
@@ -49,10 +50,6 @@ add_library(barney_mpi SHARED
 target_link_libraries(barney_mpi PUBLIC
   barney
   MPI::MPI_CXX
-  )
-target_include_directories(barney_mpi PUBLIC
-  ${CMAKE_CURRENT_LIST_DIR}/include
-  ${CMAKE_CURRENT_LIST_DIR}/..
   )
 target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 
