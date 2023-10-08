@@ -43,6 +43,24 @@ namespace barney {
       }
     }
 
+    /*! master's send side of broadcast - must be done on rank 0,
+      and matched by bc_recv on all workers */
+    void Comm::bc_send(const void *data, size_t numBytes)
+    {
+      BN_MPI_CALL(Bcast((void *)data,size,MPI_BYTE,0,comm),
+                  "broadcast-send (on rank 0)");
+      // BN_MPI_CALL(Bcast((void *)data,size,MPI_BYTE,MPI_ROOT,comm),
+      //             "broadcast-send (on rank 0)");
+    }
+    
+    /*! receive side of a broadcast - must be called on all ranks >
+      0, and match a bc_send on rank 0 */
+    void Comm::bc_recv(void *data, size_t numBytes)
+    {
+      BN_MPI_CALL(Bcast(data,size,MPI_BYTE,0,comm),
+                  "broadcast recv (on workers)");
+    }
+    
     void Comm::assertValid() const
     {
       if (comm == MPI_COMM_NULL)
@@ -65,6 +83,28 @@ namespace barney {
                   "could not compute mpi reduce-min");
       return result;
     }
+
+    /*! free/close this communicator */
+    void Comm::free()
+    {
+      BN_MPI_CALL(Comm_free(&comm),"mpi-free");
+    }
+      
+    /*! equivalent of MPI_Comm_split - splits this comm into
+      possibly multiple comms, each one containing exactly those
+      former ranks of the same color. E.g. split(old.rank > 0)
+      would have rank 0 get a communicator that contains only
+      itself, and all others get a communicator that contains all
+      other former ranks */
+    Comm Comm::split(int color)
+    {
+      MPI_Comm newComm;
+      BN_MPI_CALL(Comm_split(comm,color,rank,&newComm),
+                  "splitting off new communicator");
+      return Comm(newComm);
+    }
+      
+
     
     void Comm::barrier() const
     {

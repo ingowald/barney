@@ -36,14 +36,25 @@ namespace barney {
     void finalize();
     
     struct Comm {
-      Comm(MPI_Comm comm);
+      Comm(MPI_Comm comm=MPI_COMM_NULL);
 
+      /*! equivalent of MPI_Comm_split - splits this comm into
+          possibly multiple comms, each one containing exactly those
+          former ranks of the same color. E.g. split(old.rank > 0)
+          would have rank 0 get a communicator that contains only
+          itself, and all others get a communicator that contains all
+          other former ranks */
+      Comm split(int color);
+      
       inline operator MPI_Comm() { return comm; }
       void assertValid() const;
       int  allReduceMax(int value) const;
       int  allReduceMin(int value) const;
       void barrier() const;
 
+      /*! free/close this communicator */
+      void free();
+      
       /*! master-side of a gather where clietn gathers a fixed number
           of itmes from each rank */
       template<typename T>
@@ -69,7 +80,15 @@ namespace barney {
       {
         BN_MPI_CALL(Wait(&req,MPI_STATUS_IGNORE),"mpi-wait");
       }
+
+      /*! master's send side of broadcast - must be done on rank 0,
+          and matched by bc_recv on all workers */
+      void bc_send(const void *ptr, size_t numBytes);
       
+      /*! receive side of a broadcast - must be called on all ranks >
+          0, and match a bc_send on rank 0 */
+      void bc_recv(void *ptr, size_t numBytes);
+
       int rank = -1, size = -1;
       MPI_Comm comm = MPI_COMM_NULL;
     };
