@@ -127,7 +127,7 @@ namespace barney {
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(_gpuIDs[i]);
     } else {
-      if (numGPUs == 0)
+      if (numGPUs < 1)
         numGPUs = hardware.numGPUsThisRank;
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank

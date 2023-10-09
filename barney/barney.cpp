@@ -177,7 +177,7 @@ namespace barney {
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(_gpuIDs[i]);
     } else {
-      if (numGPUs == 0)
+      if (numGPUs < 1)
         cudaGetDeviceCount(&numGPUs);
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(i);

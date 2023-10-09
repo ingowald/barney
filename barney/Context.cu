@@ -27,6 +27,8 @@ namespace barney {
       gpuIDs(gpuIDs),
       isActiveWorker(!dataGroupIDs.empty())
   {
+    if (gpuIDs.empty())
+      throw std::runtime_error("error - no GPUs...");
     deviceContexts.resize(gpuIDs.size());
     for (int localID=0;localID<gpuIDs.size();localID++) {
       DeviceContext *devCon = new DeviceContext;
@@ -43,7 +45,7 @@ namespace barney {
         throw std::runtime_error("not enough GPUs ("
                                  +std::to_string(gpuIDs.size())
                                  +") for requested num data groups ("
-                                 +std::to_string(gpuIDs.size())
+                                 +std::to_string(dataGroupIDs.size())
                                  +")");
       if (gpuIDs.size() % dataGroupIDs.size())
         throw std::runtime_error("requested num GPUs is not a multiple of "
