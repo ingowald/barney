@@ -26,6 +26,7 @@ namespace barney {
     assert(context);
     assert(fb);
     assert(camera);
+    context->ensureRayQueuesLargeEnoughFor(fb->numPixels);
     context->render(this,camera,fb);
   }
 

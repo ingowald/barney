@@ -16,15 +16,51 @@
 
 #pragma once
 
-#include "owl/common/math/box.h"
-#include <vector>
-#include <map>
-#include <mutex>
-#include "mori/cuda-helper.h"
+#include "mori/DeviceGroup.h"
 
 namespace mori {
 
-  using namespace owl;
-  using namespace owl::common;
-  
+  struct Ray {
+    vec3f    origin;
+    vec3f    direction;
+    float    tMax;
+    int      instID, geomID, primID;
+    float    u,v;
+    uint32_t seed;
+    // Payload  pay;
+  };
+
+  struct RayQueue {
+    void init(DeviceContext *device)
+    { this->device = device; }
+    
+    Ray *inQueue  = nullptr;
+    Ray *outQueue = nullptr;
+    int  numIn    = 0;
+    int  numOut   = 0;
+    int  size     = 0;
+
+    DeviceContext *device = 0;
+    
+    void swap()
+    {
+      std::swap(inQueue, outQueue);
+      std::swap(numIn,numOut);
+    }
+
+    void resize(int newSize)
+    {
+      SetActiveGPU forDuration(device);
+      
+      if (inQueue) MORI_CUDA_CALL(Free(inQueue));
+      if (outQueue) MORI_CUDA_CALL(Free(outQueue));
+
+      MORI_CUDA_CALL(Malloc(&inQueue,newSize*sizeof(Ray)));
+      MORI_CUDA_CALL(Malloc(&outQueue,newSize*sizeof(Ray)));
+
+      numIn = numOut = 0;
+      size = newSize;
+    }
+    
+  };
 }

@@ -66,6 +66,14 @@ namespace barney {
   {
     return initReference(Model::create(this));
   }
-      
+
+  void Context::ensureRayQueuesLargeEnoughFor(vec2i fbSize)
+  {
+    size_t requiredSize = fbSize.x*fbSize.y*2;
+    if (requiredSize < currentRayQueueSize)
+      for (auto dev : deviceContexts)
+        dev->rays.resize(requiredSize);
+  }
+  
 }
 

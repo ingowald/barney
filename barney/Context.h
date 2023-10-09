@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney.h"
-#include "mori/DeviceGroup.h"
+#include "mori/Ray.h"
 #include "mori/cuda-helper.h"
 #include "mori/TiledFB.h"
 #include <string.h>
@@ -44,10 +44,12 @@ namespace barney {
   
   struct DeviceContext : public mori::DeviceContext {
     Context *barney = 0;
+    mori::RayQueue rays;
+    struct { int rank = -1; int gpu = -1; } next, prev;
   };
 
   struct Context : public Object {
-
+    
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs);
     ~Context()
@@ -75,15 +77,30 @@ namespace barney {
     
     const std::vector<int> dataGroupIDs;
     const std::vector<int> gpuIDs;
-            
+
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;
     std::vector<mori::DeviceGroup::SP> moris;
 
+    void ensureRayQueuesLargeEnoughFor(vec2i fbSize);
+    size_t currentRayQueueSize = 0;
+    
     std::vector<DeviceContext *> deviceContexts;
     const bool isActiveWorker;
   };
   
+  /*! TEMP function - will die pretty soon */
+  void renderTiles_testFrame(Context *context,
+                             int localID,
+                             Model *model,
+                             FrameBuffer *fb,
+                             const BNCamera *camera);
+  /*! TEMP function - will die pretty soon */
+  void renderTiles_rayDir(Context *context,
+                          int localID,
+                          Model *model,
+                          FrameBuffer *fb,
+                          const BNCamera *camera);
   /*! TEMP function - will die pretty soon */
   void renderTiles(Context *context,
                    int localID,

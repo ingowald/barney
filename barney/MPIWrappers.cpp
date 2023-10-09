@@ -65,18 +65,42 @@ namespace barney {
     
     int Comm::allReduceMax(int value) const
     {
-      int result = 0;
+      int result;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MAX,comm));
       return result;
     }
     
     int Comm::allReduceMin(int value) const
     {
-      int result = 0;
+      int result;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MIN,comm));
       return result;
     }
 
+    float Comm::allReduceMax(float value) const
+    {
+      float result;
+      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_FLOAT,MPI_MAX,comm));
+      return result;
+    }
+    
+    float Comm::allReduceMin(float value) const
+    {
+      float result;
+      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_FLOAT,MPI_MIN,comm));
+      return result;
+    }
+
+    vec3f Comm::allReduceMin(vec3f v) const
+    {
+      return vec3f(allReduceMin(v.x),allReduceMin(v.y),allReduceMin(v.z));
+    }
+    
+    vec3f Comm::allReduceMax(vec3f v) const
+    {
+      return vec3f(allReduceMax(v.x),allReduceMax(v.y),allReduceMax(v.z));
+    }
+    
     void Comm::allGather(int *allValues, int myValue)
     {
       BN_MPI_CALL(Allgather(&myValue,1,MPI_INT,allValues,1,MPI_INT,comm));

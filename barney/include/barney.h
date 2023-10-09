@@ -42,15 +42,17 @@ struct BNMaterial {
 };
 
 struct BNCamera {
-  float3 lensCenter;
+  /*! vector from camera center to to lower-left pixel (i.e., pixel
+    (0,0)) on the focal plane */
+  float3 dir_00;
+  /* vector along u direction, for ONE pixel */
+  float3 dir_du;
+  /* vector along v direction, for ONE pixel */
+  float3 dir_dv;
+  /*! lens center ... */
+  float3 lens_00;
+  /* vector along v direction, for ONE pixel */
   float  lensRadius;
-  float3 focalPoint;
-  float  fovy;
-  float  aspect;
-  struct {
-    float2 lower;
-    float2 upper;
-  } imageRegion;
 };
 
 #define BN_DEFAULT_MATERIAL  { { .5f,.5f,.5f }, 0.f, 1.f, -1, -1 }
@@ -65,17 +67,11 @@ struct BNGridlet {
 
 BN_API
 void bnPinholeCamera(BNCamera *camera,
-                     float from_x,
-                     float from_y,
-                     float from_z,
-                     float at_x,
-                     float at_y,
-                     float at_z,
-                     float up_x,
-                     float up_y,
-                     float up_z,
-                     float fovy,
-                     float aspect);
+                     float3 from,
+                     float3 at,
+                     float3 up,
+                     float  fovy,
+                     int2   fbSize);
 
 BN_API
 BNContext bnContextCreate(/*! which data group(s) this rank will

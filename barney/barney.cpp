@@ -101,18 +101,33 @@ namespace barney {
 
   BN_API
   void bnPinholeCamera(BNCamera *camera,
-                       float from_x,
-                       float from_y,
-                       float from_z,
-                       float at_x,
-                       float at_y,
-                       float at_z,
-                       float up_x,
-                       float up_y,
-                       float up_z,
-                       float fovy,
-                       float aspect)
+                       float3 _from,
+                       float3 _at,
+                       float3 _up,
+                       float  fov,
+                       int2   fbSize)
   {
+    assert(camera);
+    vec3f from = (const vec3f&)_from;
+    vec3f at   = (const vec3f&)_at;
+    vec3f up   = (const vec3f&)_up;
+    
+    vec3f dir_00  = normalize(at-from);
+    
+    vec3f dir_du = normalize(cross(dir_00, up));
+    vec3f dir_dv = normalize(cross(dir_du, dir_00));
+    
+    float min_xy = (float)std::min(fbSize.x, fbSize.y);
+    
+    dir_00 *= (float)((float)min_xy / (2.0f * tanf((0.5f * fov) * M_PI / 180.0f)));
+    dir_00 -= 0.5f * (float)fbSize.x * dir_du;
+    dir_00 -= 0.5f * (float)fbSize.y * dir_dv;
+
+    camera->dir_00 = (float3&)dir_00;
+    camera->dir_du = (float3&)dir_du;
+    camera->dir_dv = (float3&)dir_dv;
+    camera->lens_00 = (float3&)from;
+    camera->lensRadius = 0.f;
   }
   
   BN_API

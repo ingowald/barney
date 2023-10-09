@@ -31,10 +31,64 @@ namespace barney {
     return initReference(LocalFB::create(this));
   }
 
-  __global__ void g_renderTiles(mori::AccumTile *tiles,
-                                mori::TileDesc  *tileDescs,
-                                int numTiles,
-                                vec2i fbSize)
+  __global__ void g_renderTiles_rayDir(mori::AccumTile *tiles,
+                                       mori::TileDesc  *tileDescs,
+                                       int numTiles,
+                                       vec2i fbSize,
+                                       BNCamera camera)
+  {
+    int tileID = blockIdx.x;
+    vec2i tileOffset = tileDescs[tileID].lower;
+    int ix = threadIdx.x + tileOffset.x;
+    int iy = threadIdx.y + tileOffset.y;
+
+    if (ix >= fbSize.x) return;
+    if (iy >= fbSize.y) return;
+    mori::AccumTile &tile = tiles[tileID];
+
+    vec3f dir
+      = (const vec3f&)camera.dir_00
+      + (ix+.5f)*(const vec3f&)camera.dir_du
+      + (iy+.5f)*(const vec3f&)camera.dir_dv;
+    
+    vec3f color = abs(normalize(dir));
+    tile.accum[threadIdx.y*mori::tileSize+threadIdx.x]
+      = make_float4(color.x,color.y,color.z,1.f);
+  }
+  
+  void renderTiles_rayDir(Context *context,
+                             int localID,
+                             Model *model,
+                             FrameBuffer *fb,
+                             const BNCamera *camera)
+  {
+    auto &devFB = *fb->perGPU[localID];
+    auto device = devFB.device;
+    
+    SetActiveGPU forDuration(device->gpuID);
+    g_renderTiles_rayDir
+      <<<devFB.numActiveTiles,vec2i(mori::tileSize),0,device->stream>>>
+      (devFB.accumTiles,
+       devFB.tileDescs,
+       devFB.numActiveTiles,
+       devFB.numPixels,
+       *camera);
+  }
+  
+  void renderTiles(Context *context,
+                   int localID,
+                   Model *model,
+                   FrameBuffer *fb,
+                   const BNCamera *camera)
+  {
+    renderTiles_rayDir(context,localID,model,fb,camera);
+  }    
+
+
+  __global__ void g_renderTiles_testFrame(mori::AccumTile *tiles,
+                                          mori::TileDesc  *tileDescs,
+                                          int numTiles,
+                                          vec2i fbSize)
   {
     int tileID = blockIdx.x;
     vec2i tileOffset = tileDescs[tileID].lower;
@@ -46,30 +100,24 @@ namespace barney {
     if (iy >= fbSize.y) return;
     mori::AccumTile &tile = tiles[tileID];
 
-    // int sx = 13*17;
-    // int sy = 11*19;
-    // float r = (ix % sx)/(sx-1.f);
-    // float g = (iy % sy)/(sy-1.f);
     float r = ix / (fbSize.x-1.f);
     float g = iy / (fbSize.y-1.f);
     float b = 1.f - (ix+iy)/(fbSize.x+fbSize.y-1.f);
 
-    bool dbg = (ix == 118 && iy == 123);
-
     tile.accum[threadIdx.y*mori::tileSize+threadIdx.x] = make_float4(r,g,b,1.f);
   }
   
-  void renderTiles(Context *context,
-                   int localID,
-                   Model *model,
-                   FrameBuffer *fb,
-                   const BNCamera *camera)
+  void renderTiles_testFrame(Context *context,
+                             int localID,
+                             Model *model,
+                             FrameBuffer *fb,
+                             const BNCamera *camera)
   {
     auto &devFB = *fb->perGPU[localID];
     auto device = devFB.device;
     
     SetActiveGPU forDuration(device->gpuID);
-    g_renderTiles
+    g_renderTiles_testFrame
       <<<devFB.numActiveTiles,vec2i(mori::tileSize),0,device->stream>>>
       (devFB.accumTiles,
        devFB.tileDescs,
