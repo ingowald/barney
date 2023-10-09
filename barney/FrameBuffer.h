@@ -25,21 +25,20 @@ namespace barney {
 
   struct FrameBuffer : public Object {
 
-    FrameBuffer(Context *context);
+    FrameBuffer(Context *context, const bool isOwner);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "<FrameBuffer(base)>"; }
     
-    virtual void resize(vec2i size);
+    virtual void resize(vec2i size, uint32_t *hostFB);
     
     std::vector<mori::TiledFB::SP> perGPU;
     
-    vec2i     numPixels   = { 0,0 };
-    // vec2i     numTiles    = { 0,0 };
-    uint32_t *finalFB     = 0;
-    Context  *const context;
-    // int tileIndexOffset;
-    // int tileIndexScale; 
+    vec2i       numPixels   = { 0,0 };
+    uint32_t   *finalFB     = 0;
+    uint32_t   *hostFB      = 0;
+    Context    *const context;
+    const bool  isOwner;
   };
 }

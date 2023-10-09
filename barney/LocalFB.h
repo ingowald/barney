@@ -25,7 +25,7 @@ namespace barney {
     typedef std::shared_ptr<LocalFB> SP;
 
     LocalFB(Context *context)
-      : FrameBuffer(context)
+      : FrameBuffer(context, true)
     {}
     
     /*! pretty-printer for printf-debugging */
@@ -35,7 +35,7 @@ namespace barney {
     static SP create(Context *context)
     { return std::make_shared<LocalFB>(context); }
     
-    void resize(vec2i size) override;
+    void resize(vec2i size, uint32_t *hostFB) override;
   };
 
 }

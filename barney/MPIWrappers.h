@@ -20,15 +20,23 @@
 #include <mpi.h>
 #include <stdexcept>
 
-#define BN_MPI_CALL(fctCall, err)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc,err); }
+#define BN_MPI_CALL(fctCall)                                                 \
+    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc); }
     
 namespace barney {
   namespace mpi {
 
+    inline std::string mpiErrorString(int rc)
+    {
+      char s[MPI_MAX_ERROR_STRING];
+      memset(s,0,MPI_MAX_ERROR_STRING);
+      int len = MPI_MAX_ERROR_STRING;
+      MPI_Error_string(rc,s,&len);
+      return s;
+    }
     struct Exception : public std::runtime_error {
-      Exception(const std::string &where, int rc, const std::string &msg)
-        : std::runtime_error("#barney.mpi (@"+where+") : " + msg)
+      Exception(const std::string &where, int rc)
+        : std::runtime_error("#barney.mpi (@"+where+") : " + mpiErrorString(rc))
       {}
     };
     
@@ -54,6 +62,8 @@ namespace barney {
 
       /*! free/close this communicator */
       void free();
+
+      void allGather(int *allValues, int myValue);
       
       /*! master-side of a gather where clietn gathers a fixed number
           of itmes from each rank */
@@ -78,7 +88,7 @@ namespace barney {
 
       void wait(MPI_Request &req)
       {
-        BN_MPI_CALL(Wait(&req,MPI_STATUS_IGNORE),"mpi-wait");
+        BN_MPI_CALL(Wait(&req,MPI_STATUS_IGNORE));
       }
 
       /*! master's send side of broadcast - must be done on rank 0,
@@ -101,8 +111,7 @@ namespace barney {
       //                  fromRank,tag,comm,MPI_STATUS_IGNORE),
       //             "Irecv");
       BN_MPI_CALL(Irecv(buffer,numItems*sizeof(T),MPI_BYTE,
-                        fromRank,tag,comm,&req),
-                  "Irecv");
+                        fromRank,tag,comm,&req));
     }
     
     template<typename T>
@@ -113,8 +122,7 @@ namespace barney {
       //                  toRank,tag,comm),
       //             "Isend");
       BN_MPI_CALL(Isend(buffer,numItems*sizeof(T),MPI_BYTE,
-                        toRank,tag,comm,&req),
-                  "Isend");
+                        toRank,tag,comm,&req));
     }
     
     /*! master-side of a gather where clietn gathers a fixed number
@@ -127,8 +135,7 @@ namespace barney {
     {
       BN_MPI_CALL(Gather(sendBuffer,numItemsSentOnEachRank*sizeof(T),MPI_BYTE,
                           recvBuffer,numItemsSentOnEachRank*sizeof(T),MPI_BYTE,
-                          0,comm),
-                  "Gather - recv");
+                          0,comm));
     }
     
     /*! client-side of a gather where each client send a fixed number
@@ -139,8 +146,7 @@ namespace barney {
     {
       BN_MPI_CALL(Gather(sendBuffer,numItemsSentOnEachRank*sizeof(T),MPI_BYTE,
                           nullptr,numItemsSentOnEachRank*sizeof(T),MPI_BYTE,
-                          0,comm),
-                  "Gather - send");
+                          0,comm));
     }
     
 

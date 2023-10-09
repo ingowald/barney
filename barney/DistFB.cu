@@ -15,162 +15,151 @@
 // ======================================================================== //
 
 #include "barney/DistFB.h"
+#include "barney/MPIContext.h"
 
 namespace barney {
 
-  void DistFB::resize(vec2i size)
+  DistFB::DistFB(MPIContext *context,
+           int owningRank)
+      : FrameBuffer(context,owningRank == context->world.rank),
+        context(context),
+        owningRank(owningRank),
+        isOwner(context->world.rank == owningRank),
+        ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
   {
-    FrameBuffer::resize(size);
+    if (isOwner) {
+      ownerGather.numGPUs = context->workers.size * context->gpusPerWorker;
+      ownerGather.numTilesOnGPU.resize(ownerGather.numGPUs);
+    }
+  }
 
+  void DistFB::resize(vec2i size, uint32_t *hostFB)
+  {
+    FrameBuffer::resize(size, hostFB);
+    
     std::vector<int> tilesOnGPU(perGPU.size());
     for (int localID = 0;localID < perGPU.size(); localID++) {
       tilesOnGPU[localID] = perGPU[localID]->numActiveTiles;
     }
-    if (comm.rank == 0) {
-      // ==================================================================
-      // master
-      // ==================================================================
-      masterGather.numGPUs = comm.size * context->gpuIDs.size();
-      masterGather.numTilesOnGPU.resize(masterGather.numGPUs);
 
-      comm.masterGather(// where we'll receive into:
-                        masterGather.numTilesOnGPU.data(),
-                        // what we're sending:
-                        tilesOnGPU.data(),tilesOnGPU.size());
+    std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
+    std::vector<MPI_Request> send_requests(tilesOnGPU.size());
+    
+    // ------------------------------------------------------------------
+    // trigger all sends and receives - for gpu tile count
+    // ------------------------------------------------------------------
+    if (isOwner)
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
+        int rankOfGPU = ggID / context->gpusPerWorker;
+        int localID   = ggID % context->gpusPerWorker;
+        context->world.recv(rankOfGPU,localID,
+                            &ownerGather.numTilesOnGPU[ggID],1,
+                            recv_requests[ggID]);
+      }
+    if (context->isActiveWorker)
+      for (int localID=0;localID<tilesOnGPU.size();localID++)
+        context->world.send(owningRank,localID,
+                            &tilesOnGPU[localID],1,
+                            send_requests[localID]);
+    
+    // ------------------------------------------------------------------
+    // and wait for those to complete
+    // ------------------------------------------------------------------
+    if (isOwner)
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
+        context->world.wait(recv_requests[ggID]);
+    
+    if (context->isActiveWorker)
+      for (int localID=0;localID<tilesOnGPU.size();localID++)
+        context->world.wait(send_requests[localID]);    
+    
+    // ------------------------------------------------------------------
+    // ------------------------------------------------------------------
 
-      masterGather.firstTileOnGPU.resize(masterGather.numGPUs);
+    if (isOwner) {
+      ownerGather.firstTileOnGPU.resize(ownerGather.numGPUs);
       int sumTiles = 0;
-      for (int ggID = 0; ggID < masterGather.numGPUs; ggID++) {
-        masterGather.firstTileOnGPU[ggID] = sumTiles;
-        sumTiles += masterGather.numTilesOnGPU[ggID];
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
+        ownerGather.firstTileOnGPU[ggID] = sumTiles;
+        sumTiles += ownerGather.numTilesOnGPU[ggID];
       }
-      masterGather.numActiveTiles = sumTiles;
+      ownerGather.numActiveTiles = sumTiles;
 
-      if (masterGather.finalTiles)
-        MORI_CUDA_CALL(Free(masterGather.finalTiles));
-      MORI_CUDA_CALL(Malloc(&masterGather.finalTiles,
-                            sumTiles*sizeof(*masterGather.finalTiles)));
-      if (masterGather.tileDescs)
-        MORI_CUDA_CALL(Free(masterGather.tileDescs));
-      MORI_CUDA_CALL(MallocManaged(&masterGather.tileDescs,
-                            sumTiles*sizeof(*masterGather.tileDescs)));
+      if (ownerGather.finalTiles)
+        MORI_CUDA_CALL(Free(ownerGather.finalTiles));
+      MORI_CUDA_CALL(Malloc(&ownerGather.finalTiles,
+                            sumTiles*sizeof(*ownerGather.finalTiles)));
+      if (ownerGather.tileDescs)
+        MORI_CUDA_CALL(Free(ownerGather.tileDescs));
+      MORI_CUDA_CALL(MallocManaged(&ownerGather.tileDescs,
+                            sumTiles*sizeof(*ownerGather.tileDescs)));
       MORI_CUDA_SYNC_CHECK();
-      
-      std::vector<MPI_Request> requests(masterGather.numGPUs);
-      int gpusPerRank = context->gpuIDs.size();
-      for (int ggID = 0; ggID < masterGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / gpusPerRank;
-        int localID   = ggID % gpusPerRank;
-        if (rankOfGPU == 0) {
-          auto &dev = context->deviceContexts[localID];
-          SetActiveGPU forDuration(dev);
-          MORI_CUDA_CALL
-            (MemcpyAsync(masterGather.tileDescs+masterGather.firstTileOnGPU[ggID],
-                         perGPU[localID]->tileDescs,
-                         masterGather.numTilesOnGPU[ggID]*sizeof(TileDesc),
-                         cudaMemcpyDefault,
-                         dev->stream));
-        } else {
-          comm.recv(rankOfGPU,localID,
-                    masterGather.tileDescs+masterGather.firstTileOnGPU[ggID],
-                    masterGather.numTilesOnGPU[ggID],
-                    requests[ggID]);
-        }
-      }
-      for (int ggID = 0; ggID < masterGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / gpusPerRank;
-        int localID   = ggID % gpusPerRank;
-        if (rankOfGPU == 0) {
-          auto &dev = context->deviceContexts[localID];
-          MORI_CUDA_CALL(StreamSynchronize(dev->stream));
-        } else {
-          comm.wait(requests[ggID]);
-        }
-      }
-    } else {
-      // ==================================================================
-      // worker
-      // ==================================================================
-      comm.masterGather(// what we're sending:
-                        tilesOnGPU.data(),tilesOnGPU.size());
-      std::vector<MPI_Request> requests(context->gpuIDs.size());
-      for (int localID=0;localID<context->gpuIDs.size();localID++) {
-        comm.send(/*to*/0,/*tag*/localID,
-                  perGPU[localID]->tileDescs,
-                  perGPU[localID]->numActiveTiles,
-                  requests[localID]);
-      }
-      for (int localID=0;localID<context->gpuIDs.size();localID++)
-        comm.wait(requests[localID]);
     }
+    
+    // ------------------------------------------------------------------
+    // trigger all sends and receives - for gpu descs
+    // ------------------------------------------------------------------
+    if (isOwner) 
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
+        int rankOfGPU = ggID / context->gpusPerWorker;
+        int localID   = ggID % context->gpusPerWorker;
+        context->world.recv(rankOfGPU,localID,
+                            ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
+                            ownerGather.numTilesOnGPU[ggID],
+                            recv_requests[ggID]);
+      }
+
+    if (context->isActiveWorker)
+      for (int localID=0;localID<tilesOnGPU.size();localID++)
+        context->world.send(owningRank,localID,
+                            perGPU[localID]->tileDescs,tilesOnGPU[localID],
+                            send_requests[localID]);
+
+    // ------------------------------------------------------------------
+    // and wait for those to complete
+    // ------------------------------------------------------------------
+    if (isOwner)
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
+        context->world.wait(recv_requests[ggID]);
+    
+    if (context->isActiveWorker)
+      for (int localID=0;localID<tilesOnGPU.size();localID++)
+        context->world.wait(send_requests[localID]);    
   }
 
-  void DistFB::masterGatherFinalTiles(mpi::Comm &comm)
+  void DistFB::ownerGatherFinalTiles()
   {
-    std::vector<int> tilesOnGPU(perGPU.size());
-    if (comm.rank == 0) {
-      // ==================================================================
-      // master
-      // ==================================================================
-      std::vector<MPI_Request> requests(masterGather.numGPUs);
-      int gpusPerRank = context->gpuIDs.size();
-      // ------------------------------------------------------------------
-      // trigger the async copies
-      // ------------------------------------------------------------------
-      for (int ggID = 0; ggID < masterGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / gpusPerRank;
-        int localID   = ggID % gpusPerRank;
-        if (rankOfGPU == 0) {
-          auto &dev = context->deviceContexts[localID];
-          SetActiveGPU forDuration(dev);
-          MORI_CUDA_CALL
-            (MemcpyAsync(masterGather.finalTiles+masterGather.firstTileOnGPU[ggID],
-                         perGPU[localID]->finalTiles,
-                         masterGather.numTilesOnGPU[ggID]*sizeof(*perGPU[localID]->finalTiles),
-                         cudaMemcpyDefault,
-                         dev->stream));
-        } else {
-          comm.recv(rankOfGPU,localID,
-                    masterGather.finalTiles+masterGather.firstTileOnGPU[ggID],
-                    masterGather.numTilesOnGPU[ggID],
-                    requests[ggID]);
-        }
+    std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
+    std::vector<MPI_Request> send_requests(perGPU.size());
+    // ------------------------------------------------------------------
+    // trigger all sends and receives - for gpu descs
+    // ------------------------------------------------------------------
+    if (isOwner) 
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
+        int rankOfGPU = ggID / context->gpusPerWorker;
+        int localID   = ggID % context->gpusPerWorker;
+        context->world.recv(rankOfGPU,localID,
+                            ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
+                            ownerGather.numTilesOnGPU[ggID],
+                            recv_requests[ggID]);
       }
-      // ------------------------------------------------------------------
-      // ... and wait for them
-      // ------------------------------------------------------------------
-      for (int ggID = 0; ggID < masterGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / gpusPerRank;
-        int localID   = ggID % gpusPerRank;
-        if (rankOfGPU == 0) {
-          auto &dev = context->deviceContexts[localID];
-          MORI_CUDA_CALL(StreamSynchronize(dev->stream));
-        } else {
-          comm.wait(requests[ggID]);
-        }
-      }
-    } else {
-      // ==================================================================
-      // worker
-      // ==================================================================
-      std::vector<MPI_Request> requests(context->gpuIDs.size());
-      
-      // ------------------------------------------------------------------
-      // trigger the async copies
-      // ------------------------------------------------------------------
-      for (int localID=0;localID<context->gpuIDs.size();localID++) {
-        comm.send(/*to*/0,/*tag*/localID,
-                  perGPU[localID]->finalTiles,
-                  perGPU[localID]->numActiveTiles,
-                  requests[localID]);
-      }
-      // ------------------------------------------------------------------
-      // ... and wait for them
-      // ------------------------------------------------------------------
-      for (int localID=0;localID<context->gpuIDs.size();localID++) {
-        comm.wait(requests[localID]);
-      }
-    }
+
+    if (context->isActiveWorker)
+      for (int localID=0;localID<perGPU.size();localID++)
+        context->world.send(owningRank,localID,
+                            perGPU[localID]->tileDescs,perGPU[localID]->numActiveTiles,
+                            send_requests[localID]);
+
+    // ------------------------------------------------------------------
+    // and wait for those to complete
+    // ------------------------------------------------------------------
+    if (isOwner)
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
+        context->world.wait(recv_requests[ggID]);
+    
+    if (context->isActiveWorker)
+      for (int localID=0;localID<perGPU.size();localID++)
+        context->world.wait(send_requests[localID]);    
   }
   
 }

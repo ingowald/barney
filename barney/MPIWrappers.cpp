@@ -23,23 +23,22 @@ namespace barney {
     {
       int required = MPI_THREAD_MULTIPLE;
       int provided = 0;
-      BN_MPI_CALL(Init_thread(&ac,&av,required,&provided),"could not init mpi");
+      BN_MPI_CALL(Init_thread(&ac,&av,required,&provided));
       if (provided != required)
-        throw barney::mpi::Exception(__PRETTY_FUNCTION__,-1,
-                                     "MPI runtime does not provide threading support");
+        throw std::runtime_error("MPI runtime does not provide threading support");
     }
 
     void finalize()
     {
-      BN_MPI_CALL(Finalize(),"error in mpi::finalize");
+      BN_MPI_CALL(Finalize());
     }
 
     Comm::Comm(MPI_Comm comm)
       : comm(comm)
     {
       if (comm != MPI_COMM_NULL) {
-        BN_MPI_CALL(Comm_rank(comm,&rank),"cannot query comm rank");
-        BN_MPI_CALL(Comm_size(comm,&size),"cannot query comm size");
+        BN_MPI_CALL(Comm_rank(comm,&rank));
+        BN_MPI_CALL(Comm_size(comm,&size));
       }
     }
 
@@ -47,8 +46,7 @@ namespace barney {
       and matched by bc_recv on all workers */
     void Comm::bc_send(const void *data, size_t numBytes)
     {
-      BN_MPI_CALL(Bcast((void *)data,size,MPI_BYTE,0,comm),
-                  "broadcast-send (on rank 0)");
+      BN_MPI_CALL(Bcast((void *)data,size,MPI_BYTE,0,comm));
       // BN_MPI_CALL(Bcast((void *)data,size,MPI_BYTE,MPI_ROOT,comm),
       //             "broadcast-send (on rank 0)");
     }
@@ -57,37 +55,39 @@ namespace barney {
       0, and match a bc_send on rank 0 */
     void Comm::bc_recv(void *data, size_t numBytes)
     {
-      BN_MPI_CALL(Bcast(data,size,MPI_BYTE,0,comm),
-                  "broadcast recv (on workers)");
+      BN_MPI_CALL(Bcast(data,size,MPI_BYTE,0,comm));
     }
     
     void Comm::assertValid() const
     {
       if (comm == MPI_COMM_NULL)
-        throw barney::mpi::Exception(__PRETTY_FUNCTION__,-1,
-                                     "not a valid mpi communicator"); 
+        throw std::runtime_error(std::string(__PRETTY_FUNCTION__)
+                                 +" : not a valid mpi communicator"); 
     }
-
+    
     int Comm::allReduceMax(int value) const
     {
       int result = 0;
-      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MAX,comm),
-                  "could not compute mpi reduce-max");
+      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MAX,comm));
       return result;
     }
     
     int Comm::allReduceMin(int value) const
     {
       int result = 0;
-      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MIN,comm),
-                  "could not compute mpi reduce-min");
+      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MIN,comm));
       return result;
     }
 
+    void Comm::allGather(int *allValues, int myValue)
+    {
+      BN_MPI_CALL(Allgather(&myValue,1,MPI_INT,allValues,1,MPI_INT,comm));
+    }
+    
     /*! free/close this communicator */
     void Comm::free()
     {
-      BN_MPI_CALL(Comm_free(&comm),"mpi-free");
+      BN_MPI_CALL(Comm_free(&comm));
     }
       
     /*! equivalent of MPI_Comm_split - splits this comm into
@@ -99,8 +99,7 @@ namespace barney {
     Comm Comm::split(int color)
     {
       MPI_Comm newComm;
-      BN_MPI_CALL(Comm_split(comm,color,rank,&newComm),
-                  "splitting off new communicator");
+      BN_MPI_CALL(Comm_split(comm,color,rank,&newComm));
       return Comm(newComm);
     }
       
@@ -108,8 +107,7 @@ namespace barney {
     
     void Comm::barrier() const
     {
-      BN_MPI_CALL(Barrier(comm),
-                  "error in mpi-barrier");
+      BN_MPI_CALL(Barrier(comm));
     }
   }
 }

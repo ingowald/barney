@@ -23,15 +23,26 @@ namespace barney {
                          const std::vector<int> &dataGroupIDs,
                          const std::vector<int> &gpuIDs)
     : Context(dataGroupIDs,gpuIDs),
-      comm(comm)
+      world(comm),
+      workers(world.split(isActiveWorker))
   {
-    comm.assertValid();
+    world.assertValid();
+    workers.assertValid();
 
-    for (int localID=0;localID<gpuIDs.size();localID++) {
-      DeviceContext *devCon = deviceContexts[localID];
-      devCon->tileIndexOffset += comm.rank * devCon->tileIndexScale;
-      devCon->tileIndexScale  *= comm.size;
-    }
+    workerRankOfWorldRank.resize(world.size);
+    world.allGather(workerRankOfWorldRank.data(),
+                    isActiveWorker?workers.rank:-1);
+    worldRankOfWorker.resize(workers.size);
+    for (int i=0;i<workerRankOfWorldRank.size();i++)
+      if (workerRankOfWorldRank[i] != -1)
+        worldRankOfWorker[workerRankOfWorldRank[i]] = i;
+    
+    if (isActiveWorker)
+      for (int localID=0;localID<gpuIDs.size();localID++) {
+        DeviceContext *devCon = deviceContexts[localID];
+        devCon->tileIndexOffset += workers.rank * devCon->tileIndexScale;
+        devCon->tileIndexScale  *= workers.size;
+      }
     
     /* compute num data groups. this code assumes that user uses IDs
        0,1,2, ...; if thi sis not the case this code will break */
@@ -41,24 +52,35 @@ namespace barney {
       myMaxDataID = std::max(myMaxDataID,dataID);
     }
     
-    int numDifferentDataGroups = comm.allReduceMax(myMaxDataID)+1;
-    assert(numDifferentDataGroups % dataGroupIDs.size() == 0);
-    int numRanksPerIsland = numDifferentDataGroups / (int)dataGroupIDs.size();
-    int numIslands = comm.size / numRanksPerIsland;
+    int numDifferentDataGroups = world.allReduceMax(myMaxDataID)+1;
+    assert(!isActiveWorker || (numDifferentDataGroups % dataGroupIDs.size() == 0));
+
+    int myWorkerGPUs
+      = isActiveWorker
+      ? (int)gpuIDs.size()
+      : 0;
+    int maxWorkerGPUs = world.allReduceMax(myWorkerGPUs);
+    if (isActiveWorker && gpuIDs.size() != maxWorkerGPUs)
+      throw std::runtime_error("inconsistent number of GPUs across different workers...");
+    gpusPerWorker = maxWorkerGPUs;
+    // int numRanksPerIsland = numDifferentDataGroups / (int)dataGroupIDs.size();
+    // int numIslands = comm.size / numRanksPerIsland;
   }
 
   /*! create a frame buffer object suitable to this context */
-  FrameBuffer *MPIContext::createFB() 
-  { return initReference(DistFB::create(this,comm)); }
+  FrameBuffer *MPIContext::createFB(int owningRank) 
+  {
+    return initReference(DistFB::create(this,owningRank));
+  }
     // ,
     //                                     comm.rank*gpuIDs.size(),
     //                                     comm.size*gpuIDs.size())); }
 
   void MPIContext::render(Model *model,
                           const BNCamera *camera,
-                          FrameBuffer *fb,
-                          uint32_t *appFB)
+                          FrameBuffer *_fb)
   {
+    DistFB *fb = (DistFB *)_fb;
     for (int localID = 0; localID < gpuIDs.size(); localID++)
       // computation of Tile::accum color
       renderTiles(this,localID,model,fb,camera);
@@ -85,9 +107,9 @@ namespace barney {
     // ------------------------------------------------------------------
     // done rendering, now gather all final tiles at master 
     // ------------------------------------------------------------------
-    ((DistFB *)fb)->masterGatherFinalTiles(comm);
+    fb->ownerGatherFinalTiles();
 
-    if (appFB) {
+    if (fb->hostFB) {
       // ==================================================================
       // now MASTER (who has gathered all the ranks' final tiles) -
       // writes them into proper row-major frame buffer order
@@ -98,15 +120,16 @@ namespace barney {
       // use default gpu for this:
       mori::TiledFB::writeFinalPixels(fb->finalFB,
                                       fb->numPixels,
-                                      ((DistFB *)fb)->masterGather.finalTiles,
-                                      ((DistFB *)fb)->masterGather.tileDescs,
-                                      ((DistFB *)fb)->masterGather.numActiveTiles,
+                                      fb->ownerGather.finalTiles,
+                                      fb->ownerGather.tileDescs,
+                                      fb->ownerGather.numActiveTiles,
                                       (cudaStream_t)0);
       // copy to app framebuffer - only if we're the one having that
       // frame buffer of course
-      MORI_CUDA_CALL(Memcpy(appFB,fb->finalFB,
-                            fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
-                            cudaMemcpyDefault));
+      if (fb->finalFB != fb->hostFB)
+        MORI_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
+                              fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
+                              cudaMemcpyDefault));
     }
     MORI_CUDA_SYNC_CHECK();
   }

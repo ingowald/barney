@@ -18,8 +18,9 @@
 
 namespace barney {
 
-  FrameBuffer::FrameBuffer(Context *context)
-    : context(context)
+  FrameBuffer::FrameBuffer(Context *context, const bool isOwner)
+    : context(context),
+      isOwner(isOwner)
   {
     perGPU.resize(context->gpuIDs.size());
     for (int localID=0;localID<context->gpuIDs.size();localID++) {
@@ -28,7 +29,7 @@ namespace barney {
     }
   }
 
-  void FrameBuffer::resize(vec2i size)
+  void FrameBuffer::resize(vec2i size, uint32_t *hostFB)
   {
     for (auto &devFB: perGPU)
       devFB->resize(size);
@@ -36,9 +37,19 @@ namespace barney {
     numPixels = size;
     // numTiles  = divRoundUp(size,vec2i(mori::tileSize));
 
-    if (finalFB)
-      MORI_CUDA_CALL(Free(finalFB));
-    MORI_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
+    if (isOwner) {
+      if (finalFB && finalFB != this->hostFB) 
+        MORI_CUDA_CALL(Free(finalFB));
+      
+      this->hostFB = hostFB;
+      cudaPointerAttributes attr;
+      MORI_CUDA_CALL(PointerGetAttributes(&attr,hostFB));
+      if (attr.type == cudaMemoryTypeHost) {
+        MORI_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
+      } else {
+        finalFB = hostFB;
+      }
+    }
   }
   
 }

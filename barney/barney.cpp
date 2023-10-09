@@ -117,22 +117,29 @@ namespace barney {
   
   BN_API
   BNFrameBuffer bnFrameBufferCreate(BNContext context,
-                                    int sizeX, int sizeY)
+                                    int owningRank)
   {
-    FrameBuffer *fb = checkGet(context)->createFB();
-    fb->resize({sizeX,sizeY});
+    FrameBuffer *fb = checkGet(context)->createFB(owningRank);
+    // fb->resize({sizeX,sizeY});
     return (BNFrameBuffer)fb;
+  }
+
+  BN_API
+  void bnFrameBufferResize(BNFrameBuffer fb,
+                           int sizeX, int sizeY,
+                           uint32_t *hostRGBA)
+  {
+    checkGet(fb)->resize(vec2i{sizeX,sizeY},hostRGBA);
   }
 
   BN_API
   void bnRender(BNModel model,
                 const BNCamera *camera,
                 BNFrameBuffer fb,
-                uint32_t *appFB,
                 BNRenderRequest *req)
   {
     assert(camera);
-    checkGet(model)->render(camera,checkGet(fb),appFB);
+    checkGet(model)->render(camera,checkGet(fb));
   }
 
   BN_API

@@ -29,15 +29,21 @@ namespace barney {
                const std::vector<int> &gpuIDs);
 
     /*! create a frame buffer object suitable to this context */
-    FrameBuffer *createFB() override;
+    FrameBuffer *createFB(int owningRank) override;
 
     void render(Model *model,
                 const BNCamera *camera,
-                FrameBuffer *fb,
-                uint32_t *appFB) override;
+                FrameBuffer *fb) override;
+
+    /*! gives, for a given worker rank, the rank that this same rank
+        has in the parent 'world' communicator */
+    std::vector<int> worldRankOfWorker;
+    std::vector<int> workerRankOfWorldRank;
     
-      
-    mpi::Comm comm;
+    int gpusPerWorker;
+    
+    mpi::Comm world;
+    mpi::Comm workers;
   };
 
 }

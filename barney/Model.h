@@ -34,8 +34,7 @@ namespace barney {
     { return "Model{}"; }
     
     void render(const BNCamera *camera,
-                FrameBuffer *fb,
-                uint32_t *appfB);
+                FrameBuffer *fb);
     
     Context *const context;
   };

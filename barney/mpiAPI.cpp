@@ -32,8 +32,7 @@ namespace barney {
     char hostName[MPI_MAX_PROCESSOR_NAME];
     memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
     int hostNameLen = 0;
-    BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen),
-                "getting processor name");
+    BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen));
     
     std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
     memset(recvBuf.data(),0,recvBuf.size());
@@ -46,8 +45,7 @@ namespace barney {
                           MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
                           recvBuf.data(),
                           /* PER rank size */MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
-                          comm.comm),
-                "gathering ranks' host names");
+                          comm.comm));
     std::vector<std::string>  hostNames;
     std::map<std::string,int> ranksOnHost;
     for (int i=0;i<comm.size;i++)  {
@@ -62,12 +60,12 @@ namespace barney {
     // ------------------------------------------------------------------
     // count how many other ranks are already on this same node
     // ------------------------------------------------------------------
-    BN_MPI_CALL(Barrier(comm.comm),"barriering...");
+    BN_MPI_CALL(Barrier(comm.comm));
     int localRank = 0;
     for (int i=0;i<comm.size;i++) 
       if (hostNames[i] == hostName)
         localRank++;
-    BN_MPI_CALL(Barrier(comm.comm),"barriering...");
+    BN_MPI_CALL(Barrier(comm.comm));
     hardware.localRank = localRank;
     hardware.numRanksThisHost = ranksOnHost[hostName];
 

@@ -32,10 +32,9 @@ namespace barney {
 
     void render(Model *model,
                 const BNCamera *camera,
-                FrameBuffer *fb,
-                uint32_t *appFB) override;
+                FrameBuffer *fb) override;
 
     /*! create a frame buffer object suitable to this context */
-    FrameBuffer *createFB() override;
+    FrameBuffer *createFB(int owningRank) override;
   };
 }

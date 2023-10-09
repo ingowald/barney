@@ -21,13 +21,12 @@
 namespace barney {
 
   void Model::render(const BNCamera *camera,
-                     FrameBuffer *fb,
-                     uint32_t *appFB)
+                     FrameBuffer *fb)
   {
     assert(context);
     assert(fb);
     assert(camera);
-    context->render(this,camera,fb,appFB);
+    context->render(this,camera,fb);
   }
 
 }

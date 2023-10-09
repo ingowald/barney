@@ -54,7 +54,7 @@ namespace barney {
     { for (auto devCon : deviceContexts) delete devCon; }
     
     /*! create a frame buffer object suitable to this context */
-    virtual FrameBuffer *createFB() = 0;
+    virtual FrameBuffer *createFB(int owningRank) = 0;
     Model *createModel();
     
     /*! pretty-printer for printf-debugging */
@@ -71,8 +71,7 @@ namespace barney {
 
     virtual void render(Model *model,
                         const BNCamera *camera,
-                        FrameBuffer *fb,
-                        uint32_t *appFB) = 0;
+                        FrameBuffer *fb) = 0;
     
     const std::vector<int> dataGroupIDs;
     const std::vector<int> gpuIDs;
@@ -82,6 +81,7 @@ namespace barney {
     std::vector<mori::DeviceGroup::SP> moris;
 
     std::vector<DeviceContext *> deviceContexts;
+    const bool isActiveWorker;
   };
   
   /*! TEMP function - will die pretty soon */

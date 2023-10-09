@@ -21,20 +21,20 @@
 
 namespace barney {
 
+  struct MPIContext;
+  
   struct DistFB : public FrameBuffer {
     typedef std::shared_ptr<DistFB> SP;
 
-    DistFB(Context *context, mpi::Comm &comm)
-      : FrameBuffer(context),
-        comm(comm)
-    {}
+    DistFB(MPIContext *context,
+           int owningRank);
     
-    static SP create(Context *context, mpi::Comm &comm)
-    { return std::make_shared<DistFB>(context,comm); }
+    static SP create(MPIContext *context, int owningRank)
+    { return std::make_shared<DistFB>(context,owningRank); }
     
-    void resize(vec2i size) override;
+    void resize(vec2i size, uint32_t *hostFB) override;
 
-    void masterGatherFinalTiles(mpi::Comm &comm);
+    void ownerGatherFinalTiles();
     
     struct {
       /*! list of *all* ranks' tileOffset, gathered (only at master) */
@@ -44,8 +44,12 @@ namespace barney {
       std::vector<int> firstTileOnGPU;
       int numActiveTiles;
       int numGPUs;
-    } masterGather;
-    mpi::Comm &comm;
+    } ownerGather;
+    // (world)rank that owns this frame buffer
+    const int owningRank;
+    const bool isOwner;
+    const bool ownerIsWorker;
+    MPIContext *context;
   };
 
 }

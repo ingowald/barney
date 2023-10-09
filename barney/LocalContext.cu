@@ -25,8 +25,11 @@ namespace barney {
   {
   }
   
-  FrameBuffer *LocalContext::createFB() 
-  { return initReference(LocalFB::create(this)); }
+  FrameBuffer *LocalContext::createFB(int owningRank) 
+  {
+    assert(owningRank == 0);
+    return initReference(LocalFB::create(this));
+  }
 
   __global__ void g_renderTiles(mori::AccumTile *tiles,
                                 mori::TileDesc  *tileDescs,
@@ -82,8 +85,7 @@ namespace barney {
   
   void LocalContext::render(Model *model,
                             const BNCamera *camera,
-                            FrameBuffer *fb,
-                            uint32_t *appFB)
+                            FrameBuffer *fb)
   {
     // ------------------------------------------------------------------
     // tell each device to start rendering accum tiles
@@ -121,9 +123,10 @@ namespace barney {
     // ------------------------------------------------------------------
     // copy final frame buffer to app's frame buffer memory
     // ------------------------------------------------------------------
-    MORI_CUDA_CALL(Memcpy(appFB,fb->finalFB,
-                          fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
-                          cudaMemcpyDefault));
+    if (fb->hostFB != fb->finalFB)
+      MORI_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
+                            fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
+                            cudaMemcpyDefault));
     MORI_CUDA_SYNC_CHECK();
   }
   

@@ -133,7 +133,12 @@ void  bnModelBuild(BNModel model);
 
 BN_API
 BNFrameBuffer bnFrameBufferCreate(BNContext context,
-                                  int sizeX, int sizeY);
+                                  int owningRank);
+BN_API
+void bnFrameBufferResize(BNFrameBuffer fb,
+                         int sizeX, int sizeY,
+                         uint32_t *hostRGBA);
+
 // void bnFBResize(BNFrameBuffer fb, int sizeX, int sizeY);
 
 // struct BNRenderJob {
@@ -165,7 +170,6 @@ BN_API
 void bnRender(BNModel model,
               const BNCamera *camera,
               BNFrameBuffer fb,
-              uint32_t *appFB,
               BNRenderRequest *req);
 
 BN_API
