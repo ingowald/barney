@@ -47,17 +47,26 @@ namespace mori {
   
   void TiledFB::resize(vec2i newSize)
   {
+    PING; PRINT(newSize);
     SetActiveGPU forDuration(device);
-    if (accumTiles) 
-      MORI_CUDA_CALL(FreeAsync(accumTiles,device->stream));
-    if (finalTiles) 
-      MORI_CUDA_CALL(FreeAsync(finalTiles,device->stream));
-    if (tileDescs) 
-      MORI_CUDA_CALL(FreeAsync(tileDescs,device->stream));
-    accumTiles = nullptr;
-    finalTiles = nullptr;
+    if (accumTiles)  {
+      MORI_CUDA_CALL(Free(accumTiles));
+      // MORI_CUDA_CALL(FreeAsync(accumTiles,device->stream));
+      accumTiles = nullptr;
+    }
+    if (finalTiles) {
+      MORI_CUDA_CALL(Free(finalTiles));
+      // MORI_CUDA_CALL(FreeAsync(finalTiles,device->stream));
+      finalTiles = nullptr;
+    }
+    if (tileDescs) {
+      MORI_CUDA_CALL(Free(tileDescs));
+      // MORI_CUDA_CALL(FreeAsync(tileDescs,device->stream));
+      tileDescs = nullptr;
+    }
     
     numPixels = newSize;
+    PING; PRINT(newSize);
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles
       = divRoundUp(numTiles.x*numTiles.y - device->tileIndexOffset,
@@ -71,9 +80,12 @@ namespace mori {
     //                            device->stream));
     // MORI_CUDA_CALL(MallocAsync(&tileDescs, numActiveTiles * sizeof(TileDesc),
     //                            device->stream));
-    setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,device->stream>>>
-      (tileDescs,numActiveTiles,numTiles,
-       device->tileIndexOffset,device->tileIndexScale);
+    MORI_CUDA_SYNC_CHECK();
+    PRINT(numActiveTiles);
+    if (numActiveTiles)
+      setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,device->stream>>>
+        (tileDescs,numActiveTiles,numTiles,
+         device->tileIndexOffset,device->tileIndexScale);
     MORI_CUDA_SYNC_CHECK();
   }
 

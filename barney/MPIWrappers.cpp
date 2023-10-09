@@ -46,7 +46,11 @@ namespace barney {
       and matched by bc_recv on all workers */
     void Comm::bc_send(const void *data, size_t numBytes)
     {
-      BN_MPI_CALL(Bcast((void *)data,size,MPI_BYTE,0,comm));
+      std::cout << "sending " << numBytes << " bytes..." << std::endl;
+      // std::vector<char> tmp(numBytes);
+      // memcpy(tmp.data(),data,numBytes);
+      // BN_MPI_CALL(Bcast((void *)tmp.data(),numBytes,MPI_BYTE,0,comm));
+      BN_MPI_CALL(Bcast((void *)data,numBytes,MPI_BYTE,0,comm));
       // BN_MPI_CALL(Bcast((void *)data,size,MPI_BYTE,MPI_ROOT,comm),
       //             "broadcast-send (on rank 0)");
     }
@@ -55,7 +59,7 @@ namespace barney {
       0, and match a bc_send on rank 0 */
     void Comm::bc_recv(void *data, size_t numBytes)
     {
-      BN_MPI_CALL(Bcast(data,size,MPI_BYTE,0,comm));
+      BN_MPI_CALL(Bcast(data,numBytes,MPI_BYTE,0,comm));
     }
     
     void Comm::assertValid() const

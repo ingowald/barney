@@ -35,6 +35,7 @@ namespace barney {
 
   void DistFB::resize(vec2i size, uint32_t *hostFB)
   {
+    // context->world.barrier();
     FrameBuffer::resize(size, hostFB);
     
     std::vector<int> tilesOnGPU(perGPU.size());
@@ -107,6 +108,10 @@ namespace barney {
                             ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
+        
+        if (isOwner)
+          std::cout << "#bn: getting " << ownerGather.numTilesOnGPU[ggID] << " tile descs from worker gpu " << rankOfGPU << "." << localID << std::endl;
+        
       }
 
     if (context->isActiveWorker)
@@ -124,7 +129,12 @@ namespace barney {
     
     if (context->isActiveWorker)
       for (int localID=0;localID<tilesOnGPU.size();localID++)
-        context->world.wait(send_requests[localID]);    
+        context->world.wait(send_requests[localID]);
+    
+    if (isOwner)
+      std::cout << "#bn: resize done, have "
+                << ownerGather.numActiveTiles << " tiles total." << std::endl;
+        
   }
 
   void DistFB::ownerGatherFinalTiles()
@@ -160,6 +170,7 @@ namespace barney {
     if (context->isActiveWorker)
       for (int localID=0;localID<perGPU.size();localID++)
         context->world.wait(send_requests[localID]);    
+
   }
   
 }
