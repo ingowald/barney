@@ -72,44 +72,30 @@ namespace barney {
   {
     return initReference(DistFB::create(this,owningRank));
   }
-    // ,
-    //                                     comm.rank*gpuIDs.size(),
-    //                                     comm.size*gpuIDs.size())); }
 
   void MPIContext::render(Model *model,
                           const BNCamera *camera,
                           FrameBuffer *_fb)
   {
     DistFB *fb = (DistFB *)_fb;
-    for (int localID = 0; localID < gpuIDs.size(); localID++)
-      // computation of Tile::accum color
-      renderTiles(this,localID,model,fb,camera);
-    
-    for (int localID = 0; localID < gpuIDs.size(); localID++)
-      // accum to rgba conversion:
-      fb->perGPU[localID]->finalizeTiles();
-
-    // for (int localID = 0; localID < gpuIDs.size(); localID++) {
-    //   auto &devFB = *fb->perGPU[localID];
-    //   SetActiveGPU forDuration(devFB.device);
-    //   mori::TiledFB::writeFinalPixels(fb->finalFB,
-    //                                   fb->numPixels,
-    //                                   devFB.finalTiles,
-    //                                   devFB.tileDescs,
-    //                                   devFB.numActiveTiles,
-    //                                   devFB.device->stream);
-    // }
-
-
-    for (int localID = 0; localID < gpuIDs.size(); localID++)
-      fb->perGPU[localID]->sync();
-
+    if (isActiveWorker) {
+      for (int localID = 0; localID < gpuIDs.size(); localID++)
+        // computation of Tile::accum color
+        renderTiles(this,localID,model,fb,camera);
+      
+      for (int localID = 0; localID < gpuIDs.size(); localID++)
+        // accum to rgba conversion:
+        fb->perGPU[localID]->finalizeTiles();
+      
+      for (int localID = 0; localID < gpuIDs.size(); localID++)
+        fb->perGPU[localID]->sync();
+    }
     // ------------------------------------------------------------------
     // done rendering, now gather all final tiles at master 
     // ------------------------------------------------------------------
     fb->ownerGatherFinalTiles();
 
-    if (fb->hostFB) {
+    if (fb->isOwner) {
       // ==================================================================
       // now MASTER (who has gathered all the ranks' final tiles) -
       // writes them into proper row-major frame buffer order
@@ -126,10 +112,12 @@ namespace barney {
                                       (cudaStream_t)0);
       // copy to app framebuffer - only if we're the one having that
       // frame buffer of course
-      if (fb->finalFB != fb->hostFB)
+      MORI_CUDA_SYNC_CHECK();
+      if (fb->hostFB && fb->finalFB != fb->hostFB) {
         MORI_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
                               fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
+      }
     }
     MORI_CUDA_SYNC_CHECK();
   }

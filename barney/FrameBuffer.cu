@@ -38,17 +38,22 @@ namespace barney {
     // numTiles  = divRoundUp(size,vec2i(mori::tileSize));
 
     if (isOwner) {
-      if (finalFB && finalFB != this->hostFB) 
+      if (finalFB && finalFB != this->hostFB) {
         MORI_CUDA_CALL(Free(finalFB));
+        finalFB = nullptr;
+      }
       
       this->hostFB = hostFB;
       cudaPointerAttributes attr;
       MORI_CUDA_CALL(PointerGetAttributes(&attr,hostFB));
       if (attr.type == cudaMemoryTypeHost) {
         MORI_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
+        std::cout << "#### OWNER ALLOCED FINAL FB " << finalFB << " of size << " << numPixels << std::endl;
       } else {
+        std::cout << "### simply using host-supplied frame buffer " << hostFB << std::endl;
         finalFB = hostFB;
       }
+      fflush(0);
     }
   }
   

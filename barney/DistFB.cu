@@ -35,9 +35,8 @@ namespace barney {
 
   void DistFB::resize(vec2i size, uint32_t *hostFB)
   {
-    // context->world.barrier();
     FrameBuffer::resize(size, hostFB);
-    
+
     std::vector<int> tilesOnGPU(perGPU.size());
     for (int localID = 0;localID < perGPU.size(); localID++) {
       tilesOnGPU[localID] = perGPU[localID]->numActiveTiles;
@@ -170,7 +169,6 @@ namespace barney {
     if (context->isActiveWorker)
       for (int localID=0;localID<perGPU.size();localID++)
         context->world.wait(send_requests[localID]);    
-
   }
   
 }

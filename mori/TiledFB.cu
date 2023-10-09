@@ -116,10 +116,13 @@ namespace mori {
                                  int        numTiles,
                                  cudaStream_t stream)
   {
-    g_writeFinalPixels
-      <<<numTiles,vec2i(tileSize),0,stream>>>
-      (finalFB,numPixels,
-       finalTiles,tileDescs);
+    if (finalFB == 0) throw std::runtime_error("invalid finalfb of null!");
+    
+    if (numTiles > 0)
+      g_writeFinalPixels
+        <<<numTiles,vec2i(tileSize),0,stream>>>
+        (finalFB,numPixels,
+         finalTiles,tileDescs);
   }
   
   /*! write this tiledFB's tiles into given "final" frame buffer
@@ -128,7 +131,8 @@ namespace mori {
   void TiledFB::finalizeTiles()
   {
     SetActiveGPU forDuration(device);
-    g_finalizeTiles<<<numActiveTiles,vec2i(tileSize),0,device->stream>>>
+    if (numActiveTiles > 0)
+      g_finalizeTiles<<<numActiveTiles,vec2i(tileSize),0,device->stream>>>
       (finalTiles,accumTiles);
   }
 }
