@@ -47,7 +47,6 @@ namespace mori {
   
   void TiledFB::resize(vec2i newSize)
   {
-    PING; PRINT(newSize);
     SetActiveGPU forDuration(device);
     if (accumTiles)  {
       MORI_CUDA_CALL(Free(accumTiles));
@@ -66,7 +65,6 @@ namespace mori {
     }
     
     numPixels = newSize;
-    PING; PRINT(newSize);
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles
       = divRoundUp(numTiles.x*numTiles.y - device->tileIndexOffset,
@@ -81,7 +79,6 @@ namespace mori {
     // MORI_CUDA_CALL(MallocAsync(&tileDescs, numActiveTiles * sizeof(TileDesc),
     //                            device->stream));
     MORI_CUDA_SYNC_CHECK();
-    PRINT(numActiveTiles);
     if (numActiveTiles)
       setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,device->stream>>>
         (tileDescs,numActiveTiles,numTiles,

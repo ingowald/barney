@@ -46,13 +46,7 @@ namespace barney {
       and matched by bc_recv on all workers */
     void Comm::bc_send(const void *data, size_t numBytes)
     {
-      std::cout << "sending " << numBytes << " bytes..." << std::endl;
-      // std::vector<char> tmp(numBytes);
-      // memcpy(tmp.data(),data,numBytes);
-      // BN_MPI_CALL(Bcast((void *)tmp.data(),numBytes,MPI_BYTE,0,comm));
       BN_MPI_CALL(Bcast((void *)data,numBytes,MPI_BYTE,0,comm));
-      // BN_MPI_CALL(Bcast((void *)data,size,MPI_BYTE,MPI_ROOT,comm),
-      //             "broadcast-send (on rank 0)");
     }
     
     /*! receive side of a broadcast - must be called on all ranks >
