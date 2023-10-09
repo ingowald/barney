@@ -117,7 +117,7 @@ namespace mori {
                                  cudaStream_t stream)
   {
     if (finalFB == 0) throw std::runtime_error("invalid finalfb of null!");
-    
+
     if (numTiles > 0)
       g_writeFinalPixels
         <<<numTiles,vec2i(tileSize),0,stream>>>

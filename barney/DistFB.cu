@@ -28,7 +28,7 @@ namespace barney {
         ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
   {
     if (isOwner) {
-      ownerGather.numGPUs = context->workers.size * context->gpusPerWorker;
+      ownerGather.numGPUs = context->numWorkers * context->gpusPerWorker;
       ownerGather.numTilesOnGPU.resize(ownerGather.numGPUs);
     }
   }
@@ -36,7 +36,7 @@ namespace barney {
   void DistFB::resize(vec2i size, uint32_t *hostFB)
   {
     FrameBuffer::resize(size, hostFB);
-
+    
     std::vector<int> tilesOnGPU(perGPU.size());
     for (int localID = 0;localID < perGPU.size(); localID++) {
       tilesOnGPU[localID] = perGPU[localID]->numActiveTiles;
@@ -48,14 +48,15 @@ namespace barney {
     // ------------------------------------------------------------------
     // trigger all sends and receives - for gpu tile count
     // ------------------------------------------------------------------
-    if (isOwner)
+    if (isOwner) {
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(rankOfGPU,localID,
+        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
                             &ownerGather.numTilesOnGPU[ggID],1,
                             recv_requests[ggID]);
       }
+    }
     if (context->isActiveWorker)
       for (int localID=0;localID<tilesOnGPU.size();localID++)
         context->world.send(owningRank,localID,
@@ -103,7 +104,7 @@ namespace barney {
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(rankOfGPU,localID,
+        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
                             ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
@@ -133,7 +134,6 @@ namespace barney {
     if (isOwner)
       std::cout << "#bn: resize done, have "
                 << ownerGather.numActiveTiles << " tiles total." << std::endl;
-        
   }
 
   void DistFB::ownerGatherFinalTiles()
@@ -147,8 +147,8 @@ namespace barney {
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(rankOfGPU,localID,
-                            ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
+        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+                            ownerGather.finalTiles+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
@@ -156,7 +156,7 @@ namespace barney {
     if (context->isActiveWorker)
       for (int localID=0;localID<perGPU.size();localID++)
         context->world.send(owningRank,localID,
-                            perGPU[localID]->tileDescs,perGPU[localID]->numActiveTiles,
+                            perGPU[localID]->finalTiles,perGPU[localID]->numActiveTiles,
                             send_requests[localID]);
 
     // ------------------------------------------------------------------

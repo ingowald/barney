@@ -33,9 +33,13 @@ namespace barney {
     world.allGather(workerRankOfWorldRank.data(),
                     isActiveWorker?workers.rank:-1);
     worldRankOfWorker.resize(workers.size);
+    numWorkers = 0;
     for (int i=0;i<workerRankOfWorldRank.size();i++)
-      if (workerRankOfWorldRank[i] != -1)
+      if (workerRankOfWorldRank[i] != -1) {
         worldRankOfWorker[workerRankOfWorldRank[i]] = i;
+        numWorkers++;
+      }
+    workers.size = numWorkers;
     
     if (isActiveWorker)
       for (int localID=0;localID<gpuIDs.size();localID++) {

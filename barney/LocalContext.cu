@@ -41,14 +41,6 @@ namespace barney {
     int ix = threadIdx.x + tileOffset.x;
     int iy = threadIdx.y + tileOffset.y;
     
-    // if (threadIdx.x == 0 && threadIdx.y == 0)
-    //   printf("tile %i ofs %i %i\n",
-    //          tileID,tile             globalTileIdx,
-    //          tile_
-    //          bool dbg = (ix == 118 && iy == 123);
-    //          if (dbg)
-    //            printf("(%i %i) fb %i %i tile %i %i\n",
-    //          ix,iy,fbSize.x,fbSize.y,tile_x,tile_y);
     
     if (ix >= fbSize.x) return;
     if (iy >= fbSize.y) return;
@@ -61,6 +53,8 @@ namespace barney {
     float r = ix / (fbSize.x-1.f);
     float g = iy / (fbSize.y-1.f);
     float b = 1.f - (ix+iy)/(fbSize.x+fbSize.y-1.f);
+
+    bool dbg = (ix == 118 && iy == 123);
 
     tile.accum[threadIdx.y*mori::tileSize+threadIdx.x] = make_float4(r,g,b,1.f);
   }

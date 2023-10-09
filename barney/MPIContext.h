@@ -44,6 +44,7 @@ namespace barney {
     
     mpi::Comm world;
     mpi::Comm workers;
+    int numWorkers;
   };
 
 }
