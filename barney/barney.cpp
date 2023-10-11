@@ -154,7 +154,7 @@ namespace barney {
                 BNRenderRequest *req)
   {
     assert(camera);
-    checkGet(model)->render(camera,checkGet(fb));
+    checkGet(model)->render((mori::Camera *)camera,checkGet(fb));
   }
 
   BN_API

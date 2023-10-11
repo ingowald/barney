@@ -63,13 +63,20 @@ namespace barney {
                                  +" : not a valid mpi communicator"); 
     }
     
-    int Comm::allReduceMax(int value) const
+    int Comm::allReduceAdd(int value) const
     {
       int result;
-      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MAX,comm));
+      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_SUM,comm));
       return result;
     }
-    
+
+    float Comm::allReduceAdd(float value) const
+    {
+      float result;
+      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_FLOAT,MPI_SUM,comm));
+      return result;
+    }
+
     int Comm::allReduceMin(int value) const
     {
       int result;
@@ -77,6 +84,13 @@ namespace barney {
       return result;
     }
 
+    int Comm::allReduceMax(int value) const
+    {
+      int result;
+      BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MAX,comm));
+      return result;
+    }
+    
     float Comm::allReduceMax(float value) const
     {
       float result;

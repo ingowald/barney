@@ -20,14 +20,17 @@
 
 namespace barney {
 
-  void Model::render(const BNCamera *camera,
+  void Model::render(const mori::Camera *camera,
                      FrameBuffer *fb)
   {
     assert(context);
     assert(fb);
     assert(camera);
-    context->ensureRayQueuesLargeEnoughFor(fb->numPixels);
+    PING; PRINT(fb->numPixels);
+    context->ensureRayQueuesLargeEnoughFor(fb);
+    std::cout << "###################### Model calls context render" << std::endl;
     context->render(this,camera,fb);
+    std::cout << "###################### Model DONE context render" << std::endl;
   }
 
 }

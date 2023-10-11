@@ -61,7 +61,7 @@ namespace mori {
   };
   
 
-  // still need this!?
+  // still need this?
   struct DeviceGroup {
     typedef std::shared_ptr<DeviceGroup> SP;
 
@@ -70,15 +70,6 @@ namespace mori {
     
     DeviceGroup(const std::vector<int> &gpuIDs);
 
-    OWLContext owl;
   };
-  
-  // struct GPU {
-  //   RayQueue in, out;
-  // };
-  
-  // struct GPUGroup {
-  //   int numGPUs;
-  // };
   
 }

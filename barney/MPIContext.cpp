@@ -43,7 +43,7 @@ namespace barney {
     
     if (isActiveWorker)
       for (int localID=0;localID<gpuIDs.size();localID++) {
-        DeviceContext *devCon = deviceContexts[localID];
+        DeviceContext *devCon = perGPU[localID];
         devCon->tileIndexOffset += workers.rank * devCon->tileIndexScale;
         devCon->tileIndexScale  *= workers.size;
       }
@@ -77,22 +77,25 @@ namespace barney {
     return initReference(DistFB::create(this,owningRank));
   }
 
+  /*! returns how many rays are active in all ray queues, across all
+    devices and, where applicable, across all ranks */
+  int MPIContext::numRaysActiveGlobally() 
+  {
+    assert(isActiveWorker);
+    return workers.allReduceAdd(numRaysActiveLocally());
+  }
+    
+  
   void MPIContext::render(Model *model,
-                          const BNCamera *camera,
+                          const mori::Camera *camera,
                           FrameBuffer *_fb)
   {
+    std::cout << "====================== MPIContext::render()" << std::endl;
     DistFB *fb = (DistFB *)_fb;
     if (isActiveWorker) {
-      for (int localID = 0; localID < gpuIDs.size(); localID++)
-        // computation of Tile::accum color
-        renderTiles(this,localID,model,fb,camera);
-      
-      for (int localID = 0; localID < gpuIDs.size(); localID++)
-        // accum to rgba conversion:
-        fb->perGPU[localID]->finalizeTiles();
-      
-      for (int localID = 0; localID < gpuIDs.size(); localID++)
-        fb->perGPU[localID]->sync();
+      assert(camera);
+      renderTiles(model,*camera,fb);
+      finalizeTiles(fb);
     }
     // ------------------------------------------------------------------
     // done rendering, now gather all final tiles at master 
@@ -108,12 +111,13 @@ namespace barney {
       // write into.
       // ==================================================================
       // use default gpu for this:
-      mori::TiledFB::writeFinalPixels(fb->finalFB,
+      assert(fb->perGPU.size() > 0);
+      mori::TiledFB::writeFinalPixels(fb->perGPU[0]->device,
+                                      fb->finalFB,
                                       fb->numPixels,
                                       fb->ownerGather.finalTiles,
                                       fb->ownerGather.tileDescs,
-                                      fb->ownerGather.numActiveTiles,
-                                      (cudaStream_t)0);
+                                      fb->ownerGather.numActiveTiles);
       // copy to app framebuffer - only if we're the one having that
       // frame buffer of course
       MORI_CUDA_SYNC_CHECK();

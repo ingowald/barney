@@ -31,9 +31,19 @@ namespace barney {
     { return "LocalFB{}"; }
 
     void render(Model *model,
-                const BNCamera *camera,
+                const mori::Camera *camera,
                 FrameBuffer *fb) override;
 
+    /*! forward rays (during global trace); returns if _after_ that
+        forward the rays need more tracing (true) or whether they're
+        done (false) */
+    bool forwardRays() override;
+
+    /*! returns how many rays are active in all ray queues, across all
+        devices and, where applicable, across all ranks */
+    int numRaysActiveGlobally() override;
+    
+    
     /*! create a frame buffer object suitable to this context */
     FrameBuffer *createFB(int owningRank) override;
   };

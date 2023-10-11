@@ -21,12 +21,13 @@
 namespace mori {
 
   enum { tileSize = 32 };
+  enum { pixelsPerTile = tileSize*tileSize };
   
   struct AccumTile {
-    float4 accum[tileSize*tileSize];
+    float4 accum[pixelsPerTile];
   };
   struct FinalTile {
-    uint32_t rgba[tileSize*tileSize];
+    uint32_t rgba[pixelsPerTile];
   };
   struct TileDesc {
     union {
@@ -47,12 +48,12 @@ namespace mori {
         (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
         pixels) */
     static
-    void writeFinalPixels(uint32_t  *finalFB,
+    void writeFinalPixels(DeviceContext *device,
+                          uint32_t  *finalFB,
                           vec2i      numPixels,
                           FinalTile *finalTiles,
                           TileDesc  *tileDescs,
-                          int        numTiles,
-                          cudaStream_t stream);
+                          int        numTiles);
     
     void finalizeTiles();
 

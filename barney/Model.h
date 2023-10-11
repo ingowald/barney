@@ -33,7 +33,7 @@ namespace barney {
     std::string toString() const override
     { return "Model{}"; }
     
-    void render(const BNCamera *camera,
+    void render(const mori::Camera *camera,
                 FrameBuffer *fb);
     
     Context *const context;

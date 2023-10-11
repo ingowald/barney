@@ -23,9 +23,12 @@ namespace barney {
       isOwner(isOwner)
   {
     perGPU.resize(context->gpuIDs.size());
+    owned_perGPU.resize(context->gpuIDs.size());
     for (int localID=0;localID<context->gpuIDs.size();localID++) {
+      owned_perGPU[localID]
+        = mori::TiledFB::create(context->perGPU[localID]);
       perGPU[localID]
-        = mori::TiledFB::create(context->deviceContexts[localID]);
+        = owned_perGPU[localID].get();
     }
   }
 

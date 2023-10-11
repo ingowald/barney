@@ -55,13 +55,15 @@ namespace barney {
       Comm split(int color);
       
       inline operator MPI_Comm() { return comm; }
-      void assertValid() const;
-      int  allReduceMax(int value) const;
-      int  allReduceMin(int value) const;
-      float  allReduceMax(float value) const;
-      float  allReduceMin(float value) const;
-      vec3f  allReduceMax(vec3f value) const;
-      vec3f  allReduceMin(vec3f value) const;
+      void  assertValid() const;
+      int   allReduceMax(int value) const;
+      int   allReduceMin(int value) const;
+      float allReduceMax(float value) const;
+      float allReduceMin(float value) const;
+      vec3f allReduceMax(vec3f value) const;
+      vec3f allReduceMin(vec3f value) const;
+      int   allReduceAdd(int value) const;
+      float allReduceAdd(float value) const;
       void barrier() const;
 
       /*! free/close this communicator */

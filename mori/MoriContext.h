@@ -14,13 +14,27 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/DeviceGroup.h"
+#pragma once
+
+#include "mori/Ray.h"
+#include "mori/TiledFB.h"
+#include "mori/Camera.h"
 
 namespace mori {
 
-  DeviceGroup::DeviceGroup(const std::vector<int> &gpuIDs)
-  {
-    // owl = owlContextCreate((int *)gpuIDs.data(),gpuIDs.size());
-  }
   
+  struct MoriContext : public DeviceContext
+  {
+    MoriContext() : rays(this) {}
+
+    void shadeRays_launch(TiledFB *fb);
+
+    void  generateRays_launch(TiledFB *fb,
+                              const Camera &camera,
+                              int rngSeed);
+    void  generateRays_sync();
+    
+    mori::RayQueue rays;
+  };
+    
 }

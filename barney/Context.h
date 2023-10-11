@@ -18,6 +18,8 @@
 
 #include "barney.h"
 #include "mori/Ray.h"
+#include "mori/Camera.h"
+#include "mori/MoriContext.h"
 #include "mori/cuda-helper.h"
 #include "mori/TiledFB.h"
 #include <string.h>
@@ -42,9 +44,9 @@ namespace barney {
 
   struct Context;
   
-  struct DeviceContext : public mori::DeviceContext {
+  struct DeviceContext : public mori::MoriContext {
     Context *barney = 0;
-    mori::RayQueue rays;
+    
     struct { int rank = -1; int gpu = -1; } next, prev;
   };
 
@@ -53,7 +55,7 @@ namespace barney {
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs);
     ~Context()
-    { for (auto devCon : deviceContexts) delete devCon; }
+    { for (auto devCon : perGPU) delete devCon; }
     
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB(int owningRank) = 0;
@@ -71,8 +73,40 @@ namespace barney {
       return sp.get();
     }
 
+    /*! generate a new wave-front of rays */
+    void generateRays(const mori::Camera &camera,
+                      FrameBuffer *fb);
+    
+    /*! have each *local* GPU trace its current wave-front of rays */
+    void traceRaysLocally();
+    
+    /*! trace all rays currently in a ray queue, including forwarding
+        if and where applicable, untile every ray in the ray queue as
+        found its intersection */
+    void traceRaysGlobally();
+
+    /*! forward rays (during global trace); returns if _after_ that
+        forward the rays need more tracing (true) or whether they're
+        done (false) */
+    virtual bool forwardRays() = 0;
+
+    /*! returns how many rays are active in all ray queues, across all
+        devices and, where applicable, across all ranks */
+    int numRaysActiveLocally();
+
+    /*! returns how many rays are active in all ray queues, across all
+        devices and, where applicable, across all ranks */
+    virtual int numRaysActiveGlobally() = 0;
+
+    void shadeRaysLocally(FrameBuffer *fb);
+    void finalizeTiles(FrameBuffer *fb);
+    
+    void renderTiles(Model *model,
+                     const mori::Camera &camera,
+                     FrameBuffer *fb);
+    
     virtual void render(Model *model,
-                        const BNCamera *camera,
+                        const mori::Camera *camera,
                         FrameBuffer *fb) = 0;
     
     const std::vector<int> dataGroupIDs;
@@ -82,31 +116,30 @@ namespace barney {
     std::map<Object::SP,int> hostOwnedHandles;
     std::vector<mori::DeviceGroup::SP> moris;
 
-    void ensureRayQueuesLargeEnoughFor(vec2i fbSize);
-    size_t currentRayQueueSize = 0;
+    void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
     
-    std::vector<DeviceContext *> deviceContexts;
+    std::vector<DeviceContext *> perGPU;
     const bool isActiveWorker;
   };
   
-  /*! TEMP function - will die pretty soon */
-  void renderTiles_testFrame(Context *context,
-                             int localID,
-                             Model *model,
-                             FrameBuffer *fb,
-                             const BNCamera *camera);
-  /*! TEMP function - will die pretty soon */
-  void renderTiles_rayDir(Context *context,
-                          int localID,
-                          Model *model,
-                          FrameBuffer *fb,
-                          const BNCamera *camera);
-  /*! TEMP function - will die pretty soon */
-  void renderTiles(Context *context,
-                   int localID,
-                   Model *model,
-                   FrameBuffer *fb,
-                   const BNCamera *camera);
+  // /*! TEMP function - will die pretty soon */
+  // void renderTiles_testFrame(Context *context,
+  //                            int localID,
+  //                            Model *model,
+  //                            FrameBuffer *fb,
+  //                            const BNCamera *camera);
+  // /*! TEMP function - will die pretty soon */
+  // void renderTiles_rayDir(Context *context,
+  //                         int localID,
+  //                         Model *model,
+  //                         FrameBuffer *fb,
+  //                         const BNCamera *camera);
+  // /*! TEMP function - will die pretty soon */
+  // void renderTiles(Context *context,
+  //                  int localID,
+  //                  Model *model,
+  //                  FrameBuffer *fb,
+  //                  const BNCamera *camera);
   
 }
 

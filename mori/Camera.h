@@ -14,13 +14,26 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/DeviceGroup.h"
+#pragma once
+
+#include "mori/Ray.h"
+#include "mori/TiledFB.h"
 
 namespace mori {
 
-  DeviceGroup::DeviceGroup(const std::vector<int> &gpuIDs)
-  {
-    // owl = owlContextCreate((int *)gpuIDs.data(),gpuIDs.size());
-  }
-  
+  struct Camera {
+    /*! vector from camera center to to lower-left pixel (i.e., pixel
+      (0,0)) on the focal plane */
+    vec3f dir_00;
+    /* vector along u direction, for ONE pixel */
+    vec3f dir_du;
+    /* vector along v direction, for ONE pixel */
+    vec3f dir_dv;
+    /*! lens center ... */
+    vec3f lens_00;
+    /* vector along v direction, for ONE pixel */
+    float  lensRadius;
+  };
+    
 }
+

@@ -32,13 +32,25 @@ namespace barney {
     FrameBuffer *createFB(int owningRank) override;
 
     void render(Model *model,
-                const BNCamera *camera,
+                const mori::Camera *camera,
                 FrameBuffer *fb) override;
 
     /*! gives, for a given worker rank, the rank that this same rank
         has in the parent 'world' communicator */
     std::vector<int> worldRankOfWorker;
     std::vector<int> workerRankOfWorldRank;
+
+    /*! forward rays (during global trace); returns if _after_ that
+        forward the rays need more tracing (true) or whether they're
+        done (false) */
+    bool forwardRays() override {
+      std::cout << "SHOULD BE FORWARDING HERE!" << std::endl;
+      return false;
+    }
+
+    /*! returns how many rays are active in all ray queues, across all
+        devices and, where applicable, across all ranks */
+    int numRaysActiveGlobally() override;
     
     int gpusPerWorker;
     

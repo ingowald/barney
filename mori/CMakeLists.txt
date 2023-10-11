@@ -19,6 +19,10 @@ add_library(mori STATIC #SHARED
   DeviceGroup.cpp
   TiledFB.h
   TiledFB.cu
+  Camera.h
+  Camera.cu
+  MoriContext.h
+  MoriContext.cu
   )
 target_link_libraries(mori PUBLIC owl)
 target_include_directories(mori PUBLIC

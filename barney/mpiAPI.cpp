@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "barney/MPIContext.h"
+#include "barney/LocalContext.h"
 
 namespace barney {
 
@@ -104,7 +105,8 @@ namespace barney {
     // use those; otherwise we use IDs
     // [0,1,...numDataGroupsOnThisHost)
     // ------------------------------------------------------------------
-    assert(numDataGroupsOnThisRank > 0);
+    assert(/* data groups == 0 is allowed for passive nodes*/
+           numDataGroupsOnThisRank >= 0);
     std::vector<int> dataGroupIDs;
     for (int i=0;i<numDataGroupsOnThisRank;i++)
       dataGroupIDs.push_back
@@ -135,10 +137,15 @@ namespace barney {
     }
     
     mpi::Comm comm(_comm);
-    
-    return (BNContext)new MPIContext(comm,
-                                     dataGroupIDs,
-                                     gpuIDs);
+
+    if (comm.size == 0) {
+      std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
+      return (BNContext)new LocalContext(dataGroupIDs,
+                                         gpuIDs);
+    } else
+      return (BNContext)new MPIContext(comm,
+                                       dataGroupIDs,
+                                       gpuIDs);
   }
   
 }

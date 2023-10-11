@@ -31,133 +31,63 @@ namespace barney {
     return initReference(LocalFB::create(this));
   }
 
-  __global__ void g_renderTiles_rayDir(mori::AccumTile *tiles,
-                                       mori::TileDesc  *tileDescs,
-                                       int numTiles,
-                                       vec2i fbSize,
-                                       BNCamera camera)
+  /*! returns how many rays are active in all ray queues, across all
+    devices and, where applicable, across all ranks */
+  int LocalContext::numRaysActiveGlobally()
   {
-    int tileID = blockIdx.x;
-    vec2i tileOffset = tileDescs[tileID].lower;
-    int ix = threadIdx.x + tileOffset.x;
-    int iy = threadIdx.y + tileOffset.y;
-
-    if (ix >= fbSize.x) return;
-    if (iy >= fbSize.y) return;
-    mori::AccumTile &tile = tiles[tileID];
-
-    vec3f dir
-      = (const vec3f&)camera.dir_00
-      + (ix+.5f)*(const vec3f&)camera.dir_du
-      + (iy+.5f)*(const vec3f&)camera.dir_dv;
-    
-    vec3f color = abs(normalize(dir));
-    tile.accum[threadIdx.y*mori::tileSize+threadIdx.x]
-      = make_float4(color.x,color.y,color.z,1.f);
+    return numRaysActiveLocally();
   }
-  
-  void renderTiles_rayDir(Context *context,
-                             int localID,
-                             Model *model,
-                             FrameBuffer *fb,
-                             const BNCamera *camera)
+
+  bool LocalContext::forwardRays()
   {
-    auto &devFB = *fb->perGPU[localID];
-    auto device = devFB.device;
-    
-    SetActiveGPU forDuration(device->gpuID);
-    g_renderTiles_rayDir
-      <<<devFB.numActiveTiles,vec2i(mori::tileSize),0,device->stream>>>
-      (devFB.accumTiles,
-       devFB.tileDescs,
-       devFB.numActiveTiles,
-       devFB.numPixels,
-       *camera);
+    for (auto dev : perGPU)
+      dev->rays.numActive = 0;
+    return false;
   }
-  
-  void renderTiles(Context *context,
-                   int localID,
-                   Model *model,
-                   FrameBuffer *fb,
-                   const BNCamera *camera)
-  {
-    renderTiles_rayDir(context,localID,model,fb,camera);
-  }    
 
-
-  __global__ void g_renderTiles_testFrame(mori::AccumTile *tiles,
-                                          mori::TileDesc  *tileDescs,
-                                          int numTiles,
-                                          vec2i fbSize)
-  {
-    int tileID = blockIdx.x;
-    vec2i tileOffset = tileDescs[tileID].lower;
-    int ix = threadIdx.x + tileOffset.x;
-    int iy = threadIdx.y + tileOffset.y;
-    
-    
-    if (ix >= fbSize.x) return;
-    if (iy >= fbSize.y) return;
-    mori::AccumTile &tile = tiles[tileID];
-
-    float r = ix / (fbSize.x-1.f);
-    float g = iy / (fbSize.y-1.f);
-    float b = 1.f - (ix+iy)/(fbSize.x+fbSize.y-1.f);
-
-    tile.accum[threadIdx.y*mori::tileSize+threadIdx.x] = make_float4(r,g,b,1.f);
-  }
-  
-  void renderTiles_testFrame(Context *context,
-                             int localID,
-                             Model *model,
-                             FrameBuffer *fb,
-                             const BNCamera *camera)
-  {
-    auto &devFB = *fb->perGPU[localID];
-    auto device = devFB.device;
-    
-    SetActiveGPU forDuration(device->gpuID);
-    g_renderTiles_testFrame
-      <<<devFB.numActiveTiles,vec2i(mori::tileSize),0,device->stream>>>
-      (devFB.accumTiles,
-       devFB.tileDescs,
-       devFB.numActiveTiles,
-       devFB.numPixels);
-  }
-  
   void LocalContext::render(Model *model,
-                            const BNCamera *camera,
+                            const mori::Camera *camera,
                             FrameBuffer *fb)
   {
-    // ------------------------------------------------------------------
-    // tell each device to start rendering accum tiles
-    // ------------------------------------------------------------------
-    for (int localID = 0; localID < gpuIDs.size(); localID++) {
-      auto &devFB = *fb->perGPU[localID];
-      SetActiveGPU forDuration(devFB.device);
-      renderTiles(this,localID,model,fb,camera);
-    }
-    
-    // ------------------------------------------------------------------
-    // tell each device to finalize its rendered accum tiles
-    // ------------------------------------------------------------------
-    for (int localID = 0; localID < gpuIDs.size(); localID++)
-      // (will set active GPU internally)
-      fb->perGPU[localID]->finalizeTiles();
+// #if 1
+    std::cout << "====================== LocalContext::render()" << std::endl;
+    assert(camera);
+    assert(model);
+    assert(fb);
+    std::cout << "### LocalContext::render() calls renderTiles()" << std::endl;
+    renderTiles(model,*camera,fb);
+    std::cout << "### DONE RENDERTILES" << std::endl;
+    finalizeTiles(fb);
+// #else
+//     // ------------------------------------------------------------------
+//     // tell each device to start rendering accum tiles
+//     // ------------------------------------------------------------------
+//     for (int localID = 0; localID < gpuIDs.size(); localID++) {
+//       auto &devFB = *fb->perGPU[localID];
+//       SetActiveGPU forDuration(devFB.device);
+//       renderTiles(this,localID,model,fb,camera);
+//     }
+// #endif
 
+    PING;
+    
+    
+    
     // ------------------------------------------------------------------
     // 
     // ------------------------------------------------------------------
     for (int localID = 0; localID < gpuIDs.size(); localID++) {
       auto &devFB = *fb->perGPU[localID];
-      SetActiveGPU forDuration(devFB.device);
-      mori::TiledFB::writeFinalPixels(fb->finalFB,
+      mori::TiledFB::writeFinalPixels(devFB.device,
+                                      fb->finalFB,
                                       fb->numPixels,
                                       devFB.finalTiles,
                                       devFB.tileDescs,
-                                      devFB.numActiveTiles,
-                                      devFB.device->stream);
+                                      devFB.numActiveTiles);
     }
+    
+
+    PING;
     
     for (int localID = 0; localID < gpuIDs.size(); localID++)
       fb->perGPU[localID]->sync();

@@ -86,14 +86,38 @@ namespace mori {
     MORI_CUDA_SYNC_CHECK();
   }
 
+  // ==================================================================
+
   __global__ void g_finalizeTiles(FinalTile *finalTiles,
                                   AccumTile *accumTiles)
   {
-    int pixelID = threadIdx.x+tileSize*threadIdx.y;
-    int tileID = blockIdx.x;
-    finalTiles[tileID].rgba[pixelID]
+    int pixelID = threadIdx.x;
+    int tileID  = blockIdx.x;
+
+    uint32_t rgba32
       = owl::make_rgba(vec4f(accumTiles[tileID].accum[pixelID]));
+    
+    if (tileID == 0 && pixelID == 33)
+      printf("### writing final tile:pixel %i:%i, value %i\n",
+             tileID,pixelID,rgba32);
+             
+    finalTiles[tileID].rgba[pixelID] = rgba32;
   }
+
+  /*! write this tiledFB's tiles into given "final" frame buffer
+    (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
+    pixels) */
+  void TiledFB::finalizeTiles()
+  {
+    SetActiveGPU forDuration(device);
+    PING; PRINT(numActiveTiles);
+    if (numActiveTiles > 0)
+      g_finalizeTiles<<<numActiveTiles,pixelsPerTile,0,device->stream>>>
+      (finalTiles,accumTiles);
+  }
+
+
+  // ==================================================================
 
   __global__ void g_writeFinalPixels(uint32_t  *finalFB,
                                      vec2i      numPixels,
@@ -105,34 +129,34 @@ namespace mori {
     int iy = threadIdx.y + tileDescs[tileID].lower.y;
     if (ix >= numPixels.x) return;
     if (iy >= numPixels.y) return;
-    finalFB[ix + numPixels.x*iy]
-      = finalTiles[tileID].rgba[threadIdx.x+threadIdx.y*tileSize];
+
+    uint32_t pixelValue
+      = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
+    
+    if (ix == 1100 && iy == 700)
+      printf("pixel %i %i tile %i lower %i %i value %i\n",
+             ix,iy,tileID,tileDescs[tileID].lower.x,tileDescs[tileID].lower.y,
+             pixelValue);
+             
+
+    finalFB[ix + numPixels.x*iy] = pixelValue;
   }
                                  
-  void TiledFB::writeFinalPixels(uint32_t  *finalFB,
+  void TiledFB::writeFinalPixels(DeviceContext *device,
+                                 uint32_t  *finalFB,
                                  vec2i      numPixels,
                                  FinalTile *finalTiles,
                                  TileDesc  *tileDescs,
-                                 int        numTiles,
-                                 cudaStream_t stream)
+                                 int        numTiles)
   {
     if (finalFB == 0) throw std::runtime_error("invalid finalfb of null!");
 
+    SetActiveGPU forDuration(device);
     if (numTiles > 0)
       g_writeFinalPixels
-        <<<numTiles,vec2i(tileSize),0,stream>>>
+        <<<numTiles,vec2i(tileSize),0,device->stream>>>
         (finalFB,numPixels,
          finalTiles,tileDescs);
   }
   
-  /*! write this tiledFB's tiles into given "final" frame buffer
-    (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
-    pixels) */
-  void TiledFB::finalizeTiles()
-  {
-    SetActiveGPU forDuration(device);
-    if (numActiveTiles > 0)
-      g_finalizeTiles<<<numActiveTiles,vec2i(tileSize),0,device->stream>>>
-      (finalTiles,accumTiles);
-  }
 }

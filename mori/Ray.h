@@ -17,6 +17,7 @@
 #pragma once
 
 #include "mori/DeviceGroup.h"
+#include "mori/TiledFB.h"
 
 namespace mori {
 
@@ -27,38 +28,68 @@ namespace mori {
     int      instID, geomID, primID;
     float    u,v;
     uint32_t seed;
-    // Payload  pay;
+    int      pixelID;
   };
 
   struct RayQueue {
-    void init(DeviceContext *device)
-    { this->device = device; }
+    RayQueue(DeviceContext *device) : device(device) {}
+
+    /*! the read queue, where local kernels operating on rays (trace
+      and shade) can read rays from. this is actually a misnomer
+      becasue both shade and trace can actually modify trays (and
+      thus, strictly speaking, are 'writing' to those rays), but
+      haven't yet found a better name */
+    Ray *readQueue  = nullptr;
+
+    /*! the queue where local kernels that write *new* rays
+      (ie, ray gen and shading) will write their rays into */
+    Ray *writeQueue = nullptr;
+
+    /*! current write position in the write queue (during shading and
+      ray generation) */
+    int *d_nextWritePos  = 0;
     
-    Ray *inQueue  = nullptr;
-    Ray *outQueue = nullptr;
-    int  numIn    = 0;
-    int  numOut   = 0;
+    /*! how many rays are active in the *READ* queue */
+    int numActiveRays() const { return numActive; }
+    
+    /*! how many rays are active in the *READ* queue */
+    int  numActive = 0;
     int  size     = 0;
 
     DeviceContext *device = 0;
+
+    void resetWriteQueue()
+    {
+      if (d_nextWritePos)
+        *d_nextWritePos = 0;
+    }
     
     void swap()
     {
-      std::swap(inQueue, outQueue);
-      std::swap(numIn,numOut);
+      std::swap(readQueue, writeQueue);
     }
 
+    void ensureRayQueuesLargeEnoughFor(TiledFB *fb)
+    {
+      int requiredSize = fb->numActiveTiles * 2 * tileSize*tileSize;
+      if (size >= requiredSize) return;
+      resize(requiredSize);
+    }
+    
     void resize(int newSize)
     {
+      assert(device);
       SetActiveGPU forDuration(device);
       
-      if (inQueue) MORI_CUDA_CALL(Free(inQueue));
-      if (outQueue) MORI_CUDA_CALL(Free(outQueue));
+      if (readQueue) MORI_CUDA_CALL(Free(readQueue));
+      if (writeQueue) MORI_CUDA_CALL(Free(writeQueue));
 
-      MORI_CUDA_CALL(Malloc(&inQueue,newSize*sizeof(Ray)));
-      MORI_CUDA_CALL(Malloc(&outQueue,newSize*sizeof(Ray)));
+      if (!d_nextWritePos)
+        MORI_CUDA_CALL(MallocManaged(&d_nextWritePos,sizeof(int)));
+        
+      MORI_CUDA_CALL(Malloc(&readQueue,newSize*sizeof(Ray)));
+      MORI_CUDA_CALL(Malloc(&writeQueue, newSize*sizeof(Ray)));
 
-      numIn = numOut = 0;
       size = newSize;
     }
     

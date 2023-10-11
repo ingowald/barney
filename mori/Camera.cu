@@ -14,13 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/DeviceGroup.h"
+#include "mori/Camera.h"
 
 namespace mori {
 
-  DeviceGroup::DeviceGroup(const std::vector<int> &gpuIDs)
-  {
-    // owl = owlContextCreate((int *)gpuIDs.data(),gpuIDs.size());
-  }
-  
+ 
 }
+
