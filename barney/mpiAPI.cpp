@@ -138,7 +138,7 @@ namespace barney {
     
     mpi::Comm comm(_comm);
 
-    if (comm.size == 0) {
+    if (comm.size == 1) {
       std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
       return (BNContext)new LocalContext(dataGroupIDs,
                                          gpuIDs);

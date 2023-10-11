@@ -103,12 +103,6 @@ namespace mori {
 
     Ray ray = readQueue[tid];
     vec3f color = abs(normalize(ray.direction));
-    if (ray.pixelID == 33)
-      printf("### shaded ray %i, color %f %f %f\n",
-             ray.pixelID,
-             color.x,
-             color.y,
-             color.z);
     int tileID  = ray.pixelID / pixelsPerTile;
     int tileOfs = ray.pixelID % pixelsPerTile;
     accumTiles[tileID].accum[tileOfs] = vec4f(color,0.f);
@@ -123,7 +117,6 @@ namespace mori {
     
     int bs = 1024;
     int nb = divRoundUp(numRays,bs);
-    std::cout << "SHADING RAYS " << numRays << std::endl; fflush(0);
     g_shadeRays<<<nb,bs,0,stream>>>
       (fb->accumTiles,rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
   }

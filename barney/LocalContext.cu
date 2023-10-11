@@ -49,32 +49,17 @@ namespace barney {
                             const mori::Camera *camera,
                             FrameBuffer *fb)
   {
-// #if 1
-    std::cout << "====================== LocalContext::render()" << std::endl;
     assert(camera);
     assert(model);
     assert(fb);
-    std::cout << "### LocalContext::render() calls renderTiles()" << std::endl;
-    renderTiles(model,*camera,fb);
-    std::cout << "### DONE RENDERTILES" << std::endl;
-    finalizeTiles(fb);
-// #else
-//     // ------------------------------------------------------------------
-//     // tell each device to start rendering accum tiles
-//     // ------------------------------------------------------------------
-//     for (int localID = 0; localID < gpuIDs.size(); localID++) {
-//       auto &devFB = *fb->perGPU[localID];
-//       SetActiveGPU forDuration(devFB.device);
-//       renderTiles(this,localID,model,fb,camera);
-//     }
-// #endif
 
-    PING;
-    
-    
-    
+    // render all tiles, in tile format and writing into accum buffer
+    renderTiles(model,*camera,fb);
+    // convert all tiles from accum to RGBA
+    finalizeTiles(fb);
+
     // ------------------------------------------------------------------
-    // 
+    // tell all GPUs to write their final pixels
     // ------------------------------------------------------------------
     for (int localID = 0; localID < gpuIDs.size(); localID++) {
       auto &devFB = *fb->perGPU[localID];
@@ -86,9 +71,10 @@ namespace barney {
                                       devFB.numActiveTiles);
     }
     
-
-    PING;
-    
+    // ------------------------------------------------------------------
+    // wait for all GPUs to complete, so pixels are all written before
+    // we return and/or copy to app
+    // ------------------------------------------------------------------
     for (int localID = 0; localID < gpuIDs.size(); localID++)
       fb->perGPU[localID]->sync();
 

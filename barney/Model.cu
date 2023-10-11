@@ -26,11 +26,8 @@ namespace barney {
     assert(context);
     assert(fb);
     assert(camera);
-    PING; PRINT(fb->numPixels);
     context->ensureRayQueuesLargeEnoughFor(fb);
-    std::cout << "###################### Model calls context render" << std::endl;
     context->render(this,camera,fb);
-    std::cout << "###################### Model DONE context render" << std::endl;
   }
 
 }

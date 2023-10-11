@@ -50,17 +50,14 @@ namespace mori {
     SetActiveGPU forDuration(device);
     if (accumTiles)  {
       MORI_CUDA_CALL(Free(accumTiles));
-      // MORI_CUDA_CALL(FreeAsync(accumTiles,device->stream));
       accumTiles = nullptr;
     }
     if (finalTiles) {
       MORI_CUDA_CALL(Free(finalTiles));
-      // MORI_CUDA_CALL(FreeAsync(finalTiles,device->stream));
       finalTiles = nullptr;
     }
     if (tileDescs) {
       MORI_CUDA_CALL(Free(tileDescs));
-      // MORI_CUDA_CALL(FreeAsync(tileDescs,device->stream));
       tileDescs = nullptr;
     }
     
@@ -72,12 +69,6 @@ namespace mori {
     MORI_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
     MORI_CUDA_CALL(Malloc(&finalTiles, numActiveTiles * sizeof(FinalTile)));
     MORI_CUDA_CALL(MallocManaged(&tileDescs, numActiveTiles * sizeof(TileDesc)));
-    // MORI_CUDA_CALL(MallocAsync(&accumTiles, numActiveTiles * sizeof(AccumTile),
-    //                            device->stream));
-    // MORI_CUDA_CALL(MallocAsync(&finalTiles, numActiveTiles * sizeof(FinalTile),
-    //                            device->stream));
-    // MORI_CUDA_CALL(MallocAsync(&tileDescs, numActiveTiles * sizeof(TileDesc),
-    //                            device->stream));
     MORI_CUDA_SYNC_CHECK();
     if (numActiveTiles)
       setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,device->stream>>>
@@ -97,10 +88,6 @@ namespace mori {
     uint32_t rgba32
       = owl::make_rgba(vec4f(accumTiles[tileID].accum[pixelID]));
     
-    if (tileID == 0 && pixelID == 33)
-      printf("### writing final tile:pixel %i:%i, value %i\n",
-             tileID,pixelID,rgba32);
-             
     finalTiles[tileID].rgba[pixelID] = rgba32;
   }
 
@@ -110,7 +97,6 @@ namespace mori {
   void TiledFB::finalizeTiles()
   {
     SetActiveGPU forDuration(device);
-    PING; PRINT(numActiveTiles);
     if (numActiveTiles > 0)
       g_finalizeTiles<<<numActiveTiles,pixelsPerTile,0,device->stream>>>
       (finalTiles,accumTiles);
@@ -133,12 +119,6 @@ namespace mori {
     uint32_t pixelValue
       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
     
-    if (ix == 1100 && iy == 700)
-      printf("pixel %i %i tile %i lower %i %i value %i\n",
-             ix,iy,tileID,tileDescs[tileID].lower.x,tileDescs[tileID].lower.y,
-             pixelValue);
-             
-
     finalFB[ix + numPixels.x*iy] = pixelValue;
   }
                                  
