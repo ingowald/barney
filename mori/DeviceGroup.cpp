@@ -18,6 +18,13 @@
 
 namespace mori {
 
+  DeviceContext::DeviceContext(int gpuID)
+    : gpuID(gpuID)
+  {
+    owl   = owlContextCreate(&gpuID,1);
+    stream = owlContextGetStream(owl,0);
+  }
+  
   DeviceGroup::DeviceGroup(const std::vector<int> &gpuIDs)
   {
     // owl = owlContextCreate((int *)gpuIDs.data(),gpuIDs.size());

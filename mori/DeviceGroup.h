@@ -22,6 +22,7 @@
 namespace mori {
 
   struct DeviceContext {
+    DeviceContext(int gpuID);
     
     void sync() const
     {

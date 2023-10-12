@@ -130,12 +130,10 @@ namespace barney {
       throw std::runtime_error("error - no GPUs...");
     perGPU.resize(gpuIDs.size());
     for (int localID=0;localID<gpuIDs.size();localID++) {
-      DeviceContext *devCon = new DeviceContext;
+      DeviceContext *devCon = new DeviceContext(gpuIDs[localID]);
       devCon->tileIndexScale  = gpuIDs.size();
       devCon->tileIndexOffset = localID;
       devCon->gpuID = gpuIDs[localID];
-      devCon->owl   = owlContextCreate(&devCon->gpuID,1);
-      devCon->stream = owlContextGetStream(devCon->owl,0);
       perGPU[localID] = devCon;
     }
 

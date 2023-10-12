@@ -22,19 +22,19 @@
 
 namespace mori {
 
-  
   struct MoriContext : public DeviceContext
   {
-    MoriContext() : rays(this) {}
+    MoriContext(int gpuID);
 
     void shadeRays_launch(TiledFB *fb);
-
-    void  generateRays_launch(TiledFB *fb,
-                              const Camera &camera,
-                              int rngSeed);
-    void  generateRays_sync();
     
+    void generateRays_launch(TiledFB *fb,
+                             const Camera &camera,
+                             int rngSeed);
+    void generateRays_sync();
+
     mori::RayQueue rays;
+    OWLLaunchParams lp;
   };
     
 }

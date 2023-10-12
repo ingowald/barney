@@ -168,12 +168,22 @@ void bnRender(BNModel model,
               BNFrameBuffer fb,
               BNRenderRequest *req);
 
+struct BNInstance {
+  struct {
+    struct {
+      float3 vx;
+      float3 vy;
+      float3 vz;
+    } l;
+  } xfm;
+  BNGroup  group;
+  uint64_t unused;
+};
+
 BN_API
 void bnModelSetInstances(BNDataGroup dataGroup,
-                         BNGroup *groups,
-                         int numGroups,
-                         BNVolume *volumes,
-                         int numVolumes);
+                         BNInstance *instances,
+                         int numInstances);
 
 BN_API
 BNModel bnModelCreate(BNContext ctx);
@@ -206,6 +216,14 @@ BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
                             int numVertices,
                             const float3 *normals,
                             const float2 *texcoords);
+
+BN_API
+BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
+                       const BNMaterial *material,
+                       const float3     *origins,
+                       int               numOrigins,
+                       const float      *radii,
+                       float             defaultRadius);
 
 BN_API
 void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);

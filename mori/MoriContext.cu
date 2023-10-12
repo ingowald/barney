@@ -18,6 +18,11 @@
 
 namespace mori {
 
+  MoriContext::MoriContext(int gpuID)
+    : DeviceContext(gpuID),
+      rays(this)
+  {}
+
   __global__
   void g_generateRays(Camera camera,
                       int rngSeed,

@@ -45,6 +45,8 @@ namespace barney {
   struct Context;
   
   struct DeviceContext : public mori::MoriContext {
+    DeviceContext(int gpuID) : MoriContext(gpuID) {}
+    
     Context *barney = 0;
     
     struct { int rank = -1; int gpu = -1; } next, prev;

@@ -57,11 +57,21 @@ namespace barney {
   }
   
   BN_API
+  BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
+                         const BNMaterial *material,
+                         const float3     *origins,
+                         int               numOrigins,
+                         const float      *radii,
+                         float             defaultRadius)
+  {
+    WARN_NOTIMPLEMENTED;
+    return 0;
+  }
+
+  BN_API
   void bnModelSetInstances(BNDataGroup dataGroup,
-                           BNGroup *groups,
-                           int numGroups,
-                           BNVolume *volumes,
-                           int numVolumes)
+                           BNInstance *instances,
+                           int numInstances)
   {
     WARN_NOTIMPLEMENTED;
   }
