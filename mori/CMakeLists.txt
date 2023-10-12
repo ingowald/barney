@@ -14,6 +14,11 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
+add_library(mori-config INTERFACE)
+target_include_directories(mori-config INTERFACE
+  ${CMAKE_CURRENT_LIST_DIR}/..
+  )
+
 add_library(mori STATIC #SHARED
   DeviceGroup.h
   DeviceGroup.cpp
@@ -26,7 +31,22 @@ add_library(mori STATIC #SHARED
   Spheres.h
   Spheres.cu
   )
-target_link_libraries(mori PUBLIC owl)
+
+embed_ptx(
+  OUTPUT_TARGET      mori-spheres-ptx
+  PTX_LINK_LIBRARIES owl::owl mori-config
+  SOURCES            SpheresProgs.cu
+)
+
+target_link_libraries(mori
+  PUBLIC
+  owl
+  )
+target_link_libraries(mori
+  PRIVATE
+  mori-spheres-ptx
+  )
+
 target_include_directories(mori PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/..
   )

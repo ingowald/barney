@@ -18,6 +18,8 @@
 
 namespace mori {
   
+  extern "C" char SpheresProgs_ptx[];
+  
   Spheres::Spheres(DeviceContext *device,
                    const Material &material,
                    const vec3f *origins,
@@ -48,9 +50,16 @@ namespace mori {
          { "origins", OWL_BUFPTR, OWL_OFFSETOF(OnDev,origins) },
          { nullptr }
     };
+    OWLModule module = owlModuleCreate
+      (device->owlContext,SpheresProgs_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (device->owlContext,OWL_GEOM_USER,sizeof(Spheres::OnDev),
        params,-1);
+    owlGeomTypeSetBoundsProg(gt,module,"SpheresBounds");
+    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"SpheresIsec");
+    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"SpheresCH");
+    
     return gt;
   }
+  
 }
