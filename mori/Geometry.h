@@ -16,53 +16,26 @@
 
 #pragma once
 
-#include "barney/Context.h"
-#include "mori/Geometry.h"
+#include "mori/DeviceGroup.h"
 
-namespace barney {
+namespace mori {
 
-  struct Geom : public Object {
-    typedef std::shared_ptr<Geom> SP;
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Geom{}"; }
-
-    std::vector<mori::Geom::SP> onGPU;
+  struct Material {
+    vec3f diffuseColor;
   };
+  
+  struct Geom {
+    typedef std::vector<Geom> SP;
 
-  struct Group : public Object {
-    typedef std::shared_ptr<Geom> SP;
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Group{}"; }
-
-    std::vector<Geom::SP> geoms;
-  };
-
-  struct Model : public Object {
-    typedef std::shared_ptr<Model> SP;
-
-    static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
-    
-    Model(Context *context)
-      : context(context)
+    Geom(DeviceContext *device,
+         const Material &material)
+      : device(device),
+        material(material)
     {}
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Model{}"; }
-    
-    void render(const mori::Camera *camera,
-                FrameBuffer *fb);
 
-    struct {
-      std::vector<Group::SP> groups;
-      std::vector<affine3f>  xfms;
-    } instances;
-    
-    Context *const context;
+    Material       material;
+    OWLGeom        owlGeom = 0;
+    DeviceContext *device  = 0;
   };
-
+  
 }

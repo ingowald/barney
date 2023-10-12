@@ -23,13 +23,17 @@ namespace mori {
 
   struct DeviceContext {
     DeviceContext(int gpuID);
-    
+
+    OWLGeomType getOrCreateTypeFor(const std::string &geomTypeString,
+                                   OWLGeomType (*createOnce)(DeviceContext *));
     void sync() const
     {
       MORI_CUDA_CALL(StreamSynchronize(stream));
     }
 
-    OWLContext   owl;
+    OWLContext   owlContext;
+    std::map<std::string,OWLGeomType> geomTypes;
+    std::mutex   mutex;
     int          gpuID;
     cudaStream_t stream;
     int          tileIndexOffset = 0;

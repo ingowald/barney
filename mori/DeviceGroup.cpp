@@ -21,9 +21,22 @@ namespace mori {
   DeviceContext::DeviceContext(int gpuID)
     : gpuID(gpuID)
   {
-    owl   = owlContextCreate(&gpuID,1);
-    stream = owlContextGetStream(owl,0);
+    owlContext = owlContextCreate(&gpuID,1);
+    stream = owlContextGetStream(owlContext,0);
   }
+
+  OWLGeomType DeviceContext::getOrCreateTypeFor(const std::string &geomTypeString,
+                                                OWLGeomType (*createOnce)(DeviceContext *))
+  {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    OWLGeomType gt = geomTypes[geomTypeString];
+    if (gt)
+      return gt;
+    
+    gt = geomTypes[geomTypeString] = createOnce(this);
+    return gt;
+  }
+  
   
   DeviceGroup::DeviceGroup(const std::vector<int> &gpuIDs)
   {

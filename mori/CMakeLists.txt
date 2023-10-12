@@ -23,6 +23,8 @@ add_library(mori STATIC #SHARED
   Camera.cu
   MoriContext.h
   MoriContext.cu
+  Spheres.h
+  Spheres.cu
   )
 target_link_libraries(mori PUBLIC owl)
 target_include_directories(mori PUBLIC

@@ -16,53 +16,31 @@
 
 #pragma once
 
-#include "barney/Context.h"
 #include "mori/Geometry.h"
 
-namespace barney {
+namespace mori {
 
-  struct Geom : public Object {
-    typedef std::shared_ptr<Geom> SP;
+  /* the host side representation */
+  struct Spheres : public Geom {
+    Spheres(DeviceContext *device,
+            const Material &material,
+            const vec3f *origins,
+            int numOrigins,
+            const float *radii,
+            float defaultRadius);
 
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Geom{}"; }
+    struct OnDev {
+      vec3f   *origins;
+      float   *radii;
+      float    defaultRadius;
+      Material material;
+    };
+    
+    static OWLGeomType createGeomType(DeviceContext *device);
 
-    std::vector<mori::Geom::SP> onGPU;
+    OWLBuffer   originsBuffer = 0;
+    OWLBuffer   radiiBuffer   = 0;
+    float       defaultRadius = .1f;
   };
-
-  struct Group : public Object {
-    typedef std::shared_ptr<Geom> SP;
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Group{}"; }
-
-    std::vector<Geom::SP> geoms;
-  };
-
-  struct Model : public Object {
-    typedef std::shared_ptr<Model> SP;
-
-    static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
-    
-    Model(Context *context)
-      : context(context)
-    {}
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Model{}"; }
-    
-    void render(const mori::Camera *camera,
-                FrameBuffer *fb);
-
-    struct {
-      std::vector<Group::SP> groups;
-      std::vector<affine3f>  xfms;
-    } instances;
-    
-    Context *const context;
-  };
-
+  
 }
