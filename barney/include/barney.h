@@ -121,7 +121,9 @@ void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 #endif
 
 BN_API
-void  bnModelBuild(BNModel model);
+void  bnModelBuild(BNDataGroup dataGroup);
+// BN_API
+// void  bnModelBuild(BNModel model);
 
 // ==================================================================
 // render interface

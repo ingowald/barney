@@ -29,22 +29,22 @@ namespace barney {
     // ------------------------------------------------------------------
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
-    for (int localID=0; localID<fb->perGPU.size(); localID++) {
-      mori::TiledFB *mfb = fb->perGPU[localID];
+    for (int localID=0; localID<moris.size(); localID++) {
+      mori::TiledFB *mfb = fb->moris[localID].get();
       assert(mfb);
       
-      auto dev = perGPU[localID];
-      assert(dev);
+      auto mori = moris[localID];
+      assert(mori);
       
-      dev->rays.resetWriteQueue();
-      dev->generateRays_launch(mfb,camera,accumID);
+      mori->rays.resetWriteQueue();
+      mori->generateRays_launch(mfb,camera,accumID);
     }
     // ------------------------------------------------------------------
     // wait for all GPUs' completion
     // ------------------------------------------------------------------
-    for (int localID=0; localID<fb->perGPU.size(); localID++) {
-      auto dev = perGPU[localID];
-      dev->generateRays_sync();
+    for (int localID=0; localID<moris.size(); localID++) {
+      auto mori = moris[localID];
+      mori->generateRays_sync();
     }
   }
   
@@ -53,28 +53,28 @@ namespace barney {
   int Context::numRaysActiveLocally()
   {
     int numActive = 0;
-    for (auto dev : perGPU)
-      numActive += dev->rays.numActiveRays();
+    for (auto mori : moris)
+      numActive += mori->rays.numActiveRays();
     return numActive;
   }
 
   void Context::shadeRaysLocally(FrameBuffer *fb)
   {
-    for (int localID=0; localID<perGPU.size(); localID++) {
-      auto dev = perGPU[localID];
-      dev->shadeRays_launch(fb->perGPU[localID]);
+    for (int localID=0; localID<moris.size(); localID++) {
+      auto mori = moris[localID];
+      mori->shadeRays_launch(fb->moris[localID].get());
     }
-    for (int localID=0; localID<perGPU.size(); localID++) {
-      auto dev = perGPU[localID];
-      dev->sync();
+    for (int localID=0; localID<moris.size(); localID++) {
+      auto mori = moris[localID];
+      mori->launch_sync();
     }
   }
   
   void Context::traceRaysLocally()
   {
-    for (int localID=0; localID<perGPU.size(); localID++) {
-      auto dev = perGPU[localID];
-      dev->rays.numActive = 0;
+    for (int localID=0; localID<moris.size(); localID++) {
+      auto mori = moris[localID];
+      mori->rays.numActive = 0;
     }
   }
 
@@ -96,10 +96,10 @@ namespace barney {
     // ------------------------------------------------------------------
     for (int localID = 0; localID < gpuIDs.size(); localID++)
       // (will set active GPU internally)
-      fb->perGPU[localID]->finalizeTiles();
+      fb->moris[localID]->finalizeTiles();
 
     for (int localID = 0; localID < gpuIDs.size(); localID++)
-      perGPU[localID]->sync();
+      moris[localID]->launch_sync();
   }
   
   void Context::renderTiles(Model *model,
@@ -121,20 +121,26 @@ namespace barney {
 
   
   Context::Context(const std::vector<int> &dataGroupIDs,
-                   const std::vector<int> &gpuIDs)
+                   const std::vector<int> &gpuIDs,
+                   int globalIndex,
+                   int globalIndexStep)
     : dataGroupIDs(dataGroupIDs),
       gpuIDs(gpuIDs),
       isActiveWorker(!dataGroupIDs.empty())
   {
     if (gpuIDs.empty())
       throw std::runtime_error("error - no GPUs...");
-    perGPU.resize(gpuIDs.size());
+    moris.resize(gpuIDs.size());
     for (int localID=0;localID<gpuIDs.size();localID++) {
-      DeviceContext *devCon = new DeviceContext(gpuIDs[localID]);
-      devCon->tileIndexScale  = gpuIDs.size();
-      devCon->tileIndexOffset = localID;
-      devCon->gpuID = gpuIDs[localID];
-      perGPU[localID] = devCon;
+      mori::Device::SP moriDev
+        = std::make_shared
+        <mori::Device>(gpuIDs[localID],
+                       globalIndex * gpuIDs.size() + localID,
+                       globalIndexStep * gpuIDs.size());
+      mori::MoriContext::SP
+        mori = std::make_shared
+        <mori::MoriContext>(moriDev);
+      moris.push_back(mori);
     }
 
     if (isActiveWorker) {
@@ -147,14 +153,16 @@ namespace barney {
       if (gpuIDs.size() % dataGroupIDs.size())
         throw std::runtime_error("requested num GPUs is not a multiple of "
                                  "requested num data groups");
-      int numMoris = dataGroupIDs.size();
-      int gpusPerMori = gpuIDs.size() / numMoris;
-      moris.resize(numMoris);
-      for (int moriID=0;moriID<numMoris;moriID++) {
-        std::vector<int> gpusThisMori(gpusPerMori);
-        for (int j=0;j<gpusPerMori;j++)
-          gpusThisMori[j] = gpuIDs[moriID*gpusPerMori+j];
-        moris[moriID] = mori::DeviceGroup::create(gpusThisMori);
+      int numDGs = dataGroupIDs.size();
+      int gpusPerDG = gpuIDs.size() / numDGs;
+      perDG.resize(numDGs);
+      for (int localID=0;localID<numDGs;localID++) {
+        std::vector<mori::Device::SP> devs;
+        perDG[localID].dataGroupID = dataGroupIDs[localID];
+        for (int j=0;j<gpusPerDG;j++)
+          devs.push_back(moris[localID*gpusPerDG+j]->device);
+        perDG[localID].devGroup
+          = mori::DevGroup::create(devs);
       }
     }
   }
@@ -169,9 +177,9 @@ namespace barney {
     if (!isActiveWorker)
       return;
 
-    for (int localID = 0; localID < perGPU.size(); localID++) {
-      auto dev = perGPU[localID];
-      dev->rays.ensureRayQueuesLargeEnoughFor(fb->perGPU[localID]);
+    for (int localID = 0; localID < moris.size(); localID++) {
+      auto mori = moris[localID];
+      mori->rays.ensureRayQueuesLargeEnoughFor(fb->moris[localID].get());
     }
   }
   

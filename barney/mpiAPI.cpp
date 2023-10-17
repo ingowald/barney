@@ -136,16 +136,22 @@ namespace barney {
                           + i) % hardware.numGPUsThisHost);
     }
     
-    mpi::Comm comm(_comm);
+    mpi::Comm world(_comm);
 
-    if (comm.size == 1) {
+    if (world.size == 1) {
       std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
       return (BNContext)new LocalContext(dataGroupIDs,
                                          gpuIDs);
-    } else
-      return (BNContext)new MPIContext(comm,
+    } else {
+      bool isActiveWorker = !dataGroupIDs.empty();
+      mpi::Comm workers = world.split(isActiveWorker);
+      
+      return (BNContext)new MPIContext(world,
+                                       workers,
+                                       isActiveWorker,
                                        dataGroupIDs,
                                        gpuIDs);
+    }
   }
   
 }

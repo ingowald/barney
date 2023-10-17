@@ -26,6 +26,8 @@ add_library(barney SHARED
   LocalFB.cu
   Model.h
   Model.cu
+  Spheres.h
+  Spheres.cu
   )
 target_link_libraries(barney
   PUBLIC

@@ -22,25 +22,31 @@ namespace mori {
 
   /* the host side representation */
   struct Spheres : public Geom {
-    Spheres(DeviceContext *device,
+    typedef std::shared_ptr<Spheres> SP;
+    
+    Spheres(DevGroup *devGroup,
             const Material &material,
             const vec3f *origins,
             int numOrigins,
             const float *radii,
             float defaultRadius);
 
-    struct OnDev {
+    struct DD {
       vec3f   *origins;
       float   *radii;
       float    defaultRadius;
       Material material;
     };
     
-    static OWLGeomType createGeomType(DeviceContext *device);
+    static OWLGeomType createGeomType(Device *device);
 
-    OWLBuffer   originsBuffer = 0;
-    OWLBuffer   radiiBuffer   = 0;
+    struct PerDev {
+      OWLGeom   geom = 0;
+      OWLBuffer originsBuffer = 0;
+      OWLBuffer radiiBuffer   = 0;
+    };
     float       defaultRadius = .1f;
+    std::vector<PerDev> perDev;
   };
   
 }

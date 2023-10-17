@@ -17,12 +17,30 @@
 #include "mori/MoriContext.h"
 
 namespace mori {
-
-  MoriContext::MoriContext(int gpuID)
-    : DeviceContext(gpuID),
-      rays(this)
+  
+  MoriContext::MoriContext(Device::SP device)
+    : device(device),
+      rays(device.get()),
+      lp(createLP(device.get())),
+      launchStream(owlParamsGetCudaStream(lp,0))
   {}
 
+
+  OWLParams MoriContext::createLP(Device *device)
+  {
+    OWLVarDecl params[]
+      = {
+         { "world", OWL_GROUP, OWL_OFFSETOF(DD, world) },
+         { "rayQueue", OWL_USER_TYPE(RayQueue::DD), OWL_OFFSETOF(DD,rayQueue) },
+         { nullptr }
+    };
+    OWLParams lp = owlParamsCreate(device->owlContext,
+                                   sizeof(DD),
+                                   params,
+                                   -1);
+    return lp;
+  }
+    
   __global__
   void g_generateRays(Camera camera,
                       int rngSeed,
@@ -80,7 +98,7 @@ namespace mori {
   {
     SetActiveGPU(fb->device);
     g_generateRays
-      <<<fb->numActiveTiles,pixelsPerTile,0,fb->device->stream>>>
+      <<<fb->numActiveTiles,pixelsPerTile,0,launchStream>>>
       (camera,
        rngSeed,
        fb->numPixels,
@@ -91,7 +109,7 @@ namespace mori {
   
   void  MoriContext::generateRays_sync()
   {
-    this->sync();
+    this->launch_sync();
     rays.numActive = *rays.d_nextWritePos;
   }
   
@@ -122,7 +140,7 @@ namespace mori {
     
     int bs = 1024;
     int nb = divRoundUp(numRays,bs);
-    g_shadeRays<<<nb,bs,0,stream>>>
+    g_shadeRays<<<nb,bs,0,launchStream>>>
       (fb->accumTiles,rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
   }
     

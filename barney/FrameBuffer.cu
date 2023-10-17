@@ -22,20 +22,17 @@ namespace barney {
     : context(context),
       isOwner(isOwner)
   {
-    perGPU.resize(context->gpuIDs.size());
-    owned_perGPU.resize(context->gpuIDs.size());
+    moris.resize(context->gpuIDs.size());
     for (int localID=0;localID<context->gpuIDs.size();localID++) {
-      owned_perGPU[localID]
-        = mori::TiledFB::create(context->perGPU[localID]);
-      perGPU[localID]
-        = owned_perGPU[localID].get();
+      moris[localID]
+        = mori::TiledFB::create(context->moris[localID]->device);
     }
   }
 
   void FrameBuffer::resize(vec2i size, uint32_t *hostFB)
   {
-    for (auto &devFB: perGPU)
-      devFB->resize(size);
+    for (auto &mori: moris)
+      mori->resize(size);
     
     numPixels = size;
     // numTiles  = divRoundUp(size,vec2i(mori::tileSize));

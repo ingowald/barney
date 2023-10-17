@@ -18,15 +18,19 @@
 
 namespace mori {
 
-  DeviceContext::DeviceContext(int gpuID)
-    : gpuID(gpuID)
-  {
-    owlContext = owlContextCreate(&gpuID,1);
-    stream = owlContextGetStream(owlContext,0);
-  }
+  Device::Device(int cudaID,
+                 int globalIndex,
+                 int globalIndexStep)
+    : cudaID(cudaID),
+      owlContext(owlContextCreate(&cudaID,1)),
+      nonLaunchStream(owlContextGetStream(owlContext,0)),
+      globalIndex(globalIndex),
+      globalIndexStep(globalIndexStep)
+  {}
 
-  OWLGeomType DeviceContext::getOrCreateTypeFor(const std::string &geomTypeString,
-                                                OWLGeomType (*createOnce)(DeviceContext *))
+  OWLGeomType
+  Device::getOrCreateGeomTypeFor(const std::string &geomTypeString,
+                                 OWLGeomType (*createOnce)(Device *))
   {
     std::lock_guard<std::mutex> lock(this->mutex);
     OWLGeomType gt = geomTypes[geomTypeString];
@@ -38,9 +42,8 @@ namespace mori {
   }
   
   
-  DeviceGroup::DeviceGroup(const std::vector<int> &gpuIDs)
-  {
-    // owl = owlContextCreate((int *)gpuIDs.data(),gpuIDs.size());
-  }
+  DevGroup::DevGroup(const std::vector<Device::SP> &devices)
+    : devices(devices)
+  {}
   
 }

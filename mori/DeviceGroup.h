@@ -21,35 +21,41 @@
 
 namespace mori {
 
-  struct DeviceContext {
-    DeviceContext(int gpuID);
-
-    OWLGeomType getOrCreateTypeFor(const std::string &geomTypeString,
-                                   OWLGeomType (*createOnce)(DeviceContext *));
-    void sync() const
-    {
-      MORI_CUDA_CALL(StreamSynchronize(stream));
-    }
-
-    OWLContext   owlContext;
+  struct Device {
+    typedef std::shared_ptr<Device> SP;
+    
+    Device(int gpuID,
+           int globalIndex,
+           int globalIndexStep);
+    
+    std::mutex               mutex;
+    cudaStream_t       const nonLaunchStream;
+    int                const cudaID;
+    OWLContext         const owlContext;
+    int                const globalIndex;
+    int                const globalIndexStep;
+    
     std::map<std::string,OWLGeomType> geomTypes;
-    std::mutex   mutex;
-    int          gpuID;
-    cudaStream_t stream;
-    int          tileIndexOffset = 0;
-    int          tileIndexScale  = 0;
+    OWLGeomType getOrCreateGeomTypeFor(const std::string &geomTypeString,
+                                       OWLGeomType (*createOnce)(Device *));
   };
   
-  /*! stolen from owl/DeviceContext: helper class that will set the
+  /*! stolen from owl/Device: helper class that will set the
       active cuda device (to the device associated with a given
       Context::DeviceData) for the duration fo the lifetime of this
       class, and resets it to whatever it was after class dies */
   struct SetActiveGPU {
-    inline SetActiveGPU(const DeviceContext *device)
+    inline SetActiveGPU(const Device *device)
     {
       assert(device);
       MORI_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      MORI_CUDA_CHECK(cudaSetDevice(device->gpuID));
+      MORI_CUDA_CHECK(cudaSetDevice(device->cudaID));
+    }
+    inline SetActiveGPU(const Device::SP &device)
+    {
+      assert(device);
+      MORI_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      MORI_CUDA_CHECK(cudaSetDevice(device->cudaID));
     }
     
     inline SetActiveGPU(int cudaDeviceID)
@@ -67,14 +73,18 @@ namespace mori {
   
 
   // still need this?
-  struct DeviceGroup {
-    typedef std::shared_ptr<DeviceGroup> SP;
+  struct DevGroup {
+    typedef std::shared_ptr<DevGroup> SP;
 
-    static SP create(const std::vector<int> &gpuIDs)
-    { return std::make_shared<DeviceGroup>(gpuIDs); }
+    static SP create(const std::vector<Device::SP> &devices)
+    { return std::make_shared<DevGroup>(devices); }
     
-    DeviceGroup(const std::vector<int> &gpuIDs);
-
+    DevGroup(const std::vector<Device::SP> &devices);
+    
+    int size() const { return devices.size(); }
+    
+    std::mutex            mutex;
+    std::vector<Device::SP> devices;
   };
   
 }

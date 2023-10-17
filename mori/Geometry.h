@@ -25,17 +25,64 @@ namespace mori {
   };
   
   struct Geom {
-    typedef std::vector<Geom> SP;
+    typedef std::shared_ptr<Geom> SP;
 
-    Geom(DeviceContext *device,
+    Geom(DevGroup *devGroup,
          const Material &material)
-      : device(device),
+      : devGroup(devGroup),
         material(material)
     {}
 
-    Material       material;
-    OWLGeom        owlGeom = 0;
-    DeviceContext *device  = 0;
+    Material     material;
+    std::vector<OWLGeom> perDev;
+    DevGroup         *devGroup  = 0;
+  };
+
+  struct Group {
+    typedef std::shared_ptr<Group> SP;
+
+    Group(DevGroup *devGroup)
+      : devGroup(devGroup)
+    {}
+    
+    virtual void build() = 0;
+
+    DevGroup         *devGroup  = 0;
+    std::vector<OWLGroup> perDev;
   };
   
+  struct TriangleGeomsGroup : public Group {
+    TriangleGeomsGroup(DevGroup *devGroup,
+                       const std::vector<Geom::SP> &triangleGeoms)
+      : Group(devGroup),
+        triangleGeoms(triangleGeoms)
+    {}
+    
+    void build() override;
+    std::vector<Geom::SP> triangleGeoms;
+  };
+  struct UserGeomsGroup : public Group {
+    UserGeomsGroup(DevGroup *devGroup,
+                   const std::vector<Geom::SP> &userGeoms)
+      : Group(devGroup),
+        userGeoms(userGeoms)
+    {}
+    
+    void build() override;
+    const std::vector<Geom::SP> userGeoms;
+  };
+  struct InstanceGroup : public Group {
+    InstanceGroup(DevGroup *devGroup,
+                  const std::vector<Group::SP> &groups,
+                  const std::vector<affine3f>  &xfms)
+      : Group(devGroup),
+        groups(groups),
+        xfms(xfms)
+    {}
+        
+    void build() override;
+    
+    const std::vector<Group::SP> groups;
+    const std::vector<affine3f>  xfms;
+  };
 }

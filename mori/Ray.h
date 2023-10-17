@@ -32,7 +32,21 @@ namespace mori {
   };
 
   struct RayQueue {
-    RayQueue(DeviceContext *device) : device(device) {}
+    struct DD {
+      Ray *readQueue  = nullptr;
+      
+      /*! the queue where local kernels that write *new* rays
+        (ie, ray gen and shading) will write their rays into */
+      Ray *writeQueue = nullptr;
+      
+      /*! current write position in the write queue (during shading and
+        ray generation) */
+      int *d_nextWritePos  = 0;
+      int  numActive = 0;
+      int  size     = 0;
+    };
+    
+    RayQueue(Device *device) : device(device) {}
 
     /*! the read queue, where local kernels operating on rays (trace
       and shade) can read rays from. this is actually a misnomer
@@ -56,7 +70,7 @@ namespace mori {
     int  numActive = 0;
     int  size     = 0;
 
-    DeviceContext *device = 0;
+    Device *device = 0;
 
     void resetWriteQueue()
     {

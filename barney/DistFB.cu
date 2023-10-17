@@ -37,9 +37,9 @@ namespace barney {
   {
     FrameBuffer::resize(size, hostFB);
     
-    std::vector<int> tilesOnGPU(perGPU.size());
-    for (int localID = 0;localID < perGPU.size(); localID++) {
-      tilesOnGPU[localID] = perGPU[localID]->numActiveTiles;
+    std::vector<int> tilesOnGPU(moris.size());
+    for (int localID = 0;localID < moris.size(); localID++) {
+      tilesOnGPU[localID] = moris[localID]->numActiveTiles;
     }
 
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
@@ -117,7 +117,7 @@ namespace barney {
     if (context->isActiveWorker)
       for (int localID=0;localID<tilesOnGPU.size();localID++)
         context->world.send(owningRank,localID,
-                            perGPU[localID]->tileDescs,tilesOnGPU[localID],
+                            moris[localID]->tileDescs,tilesOnGPU[localID],
                             send_requests[localID]);
 
     // ------------------------------------------------------------------
@@ -139,7 +139,7 @@ namespace barney {
   void DistFB::ownerGatherFinalTiles()
   {
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
-    std::vector<MPI_Request> send_requests(perGPU.size());
+    std::vector<MPI_Request> send_requests(moris.size());
     // ------------------------------------------------------------------
     // trigger all sends and receives - for gpu descs
     // ------------------------------------------------------------------
@@ -154,9 +154,9 @@ namespace barney {
       }
 
     if (context->isActiveWorker)
-      for (int localID=0;localID<perGPU.size();localID++)
+      for (int localID=0;localID<moris.size();localID++)
         context->world.send(owningRank,localID,
-                            perGPU[localID]->finalTiles,perGPU[localID]->numActiveTiles,
+                            moris[localID]->finalTiles,moris[localID]->numActiveTiles,
                             send_requests[localID]);
 
     // ------------------------------------------------------------------
@@ -167,7 +167,7 @@ namespace barney {
         context->world.wait(recv_requests[ggID]);
     
     if (context->isActiveWorker)
-      for (int localID=0;localID<perGPU.size();localID++)
+      for (int localID=0;localID<moris.size();localID++)
         context->world.wait(send_requests[localID]);    
   }
   

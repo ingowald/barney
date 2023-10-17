@@ -21,7 +21,7 @@ namespace barney {
 
   LocalContext::LocalContext(const std::vector<int> &dataGroupIDs,
                              const std::vector<int> &gpuIDs)
-    : Context(dataGroupIDs,gpuIDs)
+    : Context(dataGroupIDs,gpuIDs,0,1)
   {
   }
   
@@ -40,8 +40,8 @@ namespace barney {
 
   bool LocalContext::forwardRays()
   {
-    for (auto dev : perGPU)
-      dev->rays.numActive = 0;
+    for (auto mori : moris)
+      mori->rays.numActive = 0;
     return false;
   }
 
@@ -61,9 +61,9 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell all GPUs to write their final pixels
     // ------------------------------------------------------------------
-    for (int localID = 0; localID < gpuIDs.size(); localID++) {
-      auto &devFB = *fb->perGPU[localID];
-      mori::TiledFB::writeFinalPixels(devFB.device,
+    for (int localID = 0; localID < moris.size(); localID++) {
+      auto &devFB = *fb->moris[localID];
+      mori::TiledFB::writeFinalPixels(devFB.device.get(),
                                       fb->finalFB,
                                       fb->numPixels,
                                       devFB.finalTiles,
@@ -76,7 +76,7 @@ namespace barney {
     // we return and/or copy to app
     // ------------------------------------------------------------------
     for (int localID = 0; localID < gpuIDs.size(); localID++)
-      fb->perGPU[localID]->sync();
+      moris[localID]->launch_sync();
 
     // ------------------------------------------------------------------
     // copy final frame buffer to app's frame buffer memory

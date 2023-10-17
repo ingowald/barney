@@ -14,12 +14,68 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Model.h"
 #include "barney/LocalFB.h"
+#include "barney/Model.h"
+#include "barney/Spheres.h"
 #include "owl/owl.h"
 
 namespace barney {
 
+  Model::Model(Context *context)
+    : context(context)
+  {
+    for (int localID=0;localID<context->dataGroupIDs.size();localID++) {
+      dataGroups.push_back(DataGroup::create(this,localID));
+    }
+  }
+
+  DataGroup::DataGroup(Model *model, int localID)
+    : model(model),
+      localID(localID),
+      devGroup(model->context->perDG[localID].devGroup)
+  {}
+
+  Group::Group(DataGroup *owner,
+               const std::vector<Geom::SP> &geoms)
+    : geoms(geoms)
+  {
+  }
+  
+  void Group::build()
+  {
+  }
+  
+  Group   *DataGroup::createGroup(const std::vector<Geom::SP> &geoms)
+  {
+    assert(model);
+    assert(model->context);
+    return model->context->initReference(Group::create(this,geoms));
+  }
+
+  Spheres *DataGroup::createSpheres(const mori::Material &material,
+                                    const vec3f *origins,
+                                    int numOrigins,
+                                    const float *radii,
+                                    float defaultRadius)
+  {
+    assert(model);
+    assert(model->context);
+    return model->context->initReference
+      (Spheres::create(this,material,origins,numOrigins,radii,defaultRadius));
+  }
+  
+  
+  void DataGroup::build()
+  {
+    std::set<Group::SP> groups;
+    for (auto group : instances.groups)
+      groups.insert(group);
+
+    for (auto group : groups)
+      group->build();
+  }
+  
+  
   void Model::render(const mori::Camera *camera,
                      FrameBuffer *fb)
   {

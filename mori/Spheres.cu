@@ -20,40 +20,45 @@ namespace mori {
   
   extern "C" char SpheresProgs_ptx[];
   
-  Spheres::Spheres(DeviceContext *device,
+  Spheres::Spheres(DevGroup *devGroup,
                    const Material &material,
                    const vec3f *origins,
                    int numOrigins,
                    const float *radii,
                    float defaultRadius)
-    : Geom(device,material),
-      defaultRadius(defaultRadius)
+    : Geom(devGroup,material),
+      defaultRadius(defaultRadius),
+      perDev(devGroup->size())
   {
-    OWLGeomType gt = device->getOrCreateTypeFor
-      ("Spheres",Spheres::createGeomType);
-    owlGeom = owlGeomCreate(device->owlContext,gt);
-    originsBuffer = owlDeviceBufferCreate
-      (device->owlContext,OWL_FLOAT3,numOrigins,origins);
+    for (int devID=0;devID<devGroup->size();devID++) {
+      auto pd = perDev[devID];
+      auto device = devGroup->devices[devID];
+      OWLGeomType gt = device->getOrCreateGeomTypeFor
+        ("Spheres",Spheres::createGeomType);
+      pd.geom = owlGeomCreate(device->owlContext,gt);
+      pd.originsBuffer = owlDeviceBufferCreate
+        (device->owlContext,OWL_FLOAT3,numOrigins,origins);
     
-    owlGeomSetRaw(owlGeom,"material",&material);
-    owlGeomSet1f(owlGeom,"defaultRadius",defaultRadius);
-    owlGeomSetBuffer(owlGeom,"origins",originsBuffer);
+      owlGeomSetRaw(pd.geom,"material",&material);
+      owlGeomSet1f(pd.geom,"defaultRadius",defaultRadius);
+      owlGeomSetBuffer(pd.geom,"origins",pd.originsBuffer);
+    }
   }
 
-  OWLGeomType Spheres::createGeomType(DeviceContext *device)
+  OWLGeomType Spheres::createGeomType(Device *device)
   {
     static OWLVarDecl params[]
       = {
-         { "material", OWL_USER_TYPE(Material), OWL_OFFSETOF(OnDev,material) },
-         { "radii", OWL_BUFPTR, OWL_OFFSETOF(OnDev,radii) },
-         { "defaultRadius", OWL_FLOAT, OWL_OFFSETOF(OnDev,defaultRadius) },
-         { "origins", OWL_BUFPTR, OWL_OFFSETOF(OnDev,origins) },
+         { "material", OWL_USER_TYPE(Material), OWL_OFFSETOF(DD,material) },
+         { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
+         { "defaultRadius", OWL_FLOAT, OWL_OFFSETOF(DD,defaultRadius) },
+         { "origins", OWL_BUFPTR, OWL_OFFSETOF(DD,origins) },
          { nullptr }
     };
     OWLModule module = owlModuleCreate
       (device->owlContext,SpheresProgs_ptx);
     OWLGeomType gt = owlGeomTypeCreate
-      (device->owlContext,OWL_GEOM_USER,sizeof(Spheres::OnDev),
+      (device->owlContext,OWL_GEOM_USER,sizeof(Spheres::DD),
        params,-1);
     owlGeomTypeSetBoundsProg(gt,module,"SpheresBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"SpheresIsec");

@@ -17,23 +17,39 @@
 #pragma once
 
 #include "barney/Context.h"
+#include "mori/Spheres.h"
 
 namespace barney {
 
+  struct DataGroup;
+  
   struct Spheres : public Object {
     typedef std::shared_ptr<Spheres> SP;
 
-    static SP create(Context *ctx) { return std::make_shared<Spheres>(ctx); }
+    Spheres(DataGroup *owner,
+            const mori::Material &material,
+            const vec3f *origins,
+            int numOrigins,
+            const float *radii,
+            float defaultRadius);
     
-    Spheres(Context *context)
-      : context(context)
-    {}
+    static SP create(DataGroup *owner,
+                     const mori::Material &material,
+                     const vec3f *origins,
+                     int numOrigins,
+                     const float *radii,
+                     float defaultRadius)
+    {
+      return std::make_shared<Spheres>(owner,material,origins,numOrigins,
+                                       radii,defaultRadius);
+    }
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Spheres{}"; }
     
-    Context *const context;
+    DataGroup *const owner;
+    mori::Spheres::SP mori;
   };
 
 }

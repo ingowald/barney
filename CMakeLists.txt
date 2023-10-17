@@ -73,16 +73,7 @@ add_subdirectory(mori)
 add_subdirectory(barney)
 
 # ------------------------------------------------------------------
-# sample viewer
+# sample distributed viewer/renderer
 # ------------------------------------------------------------------
-#add_subdirectory(viewer)
+#add_subdirectory(hayMaker)
 
-# ------------------------------------------------------------------
-# general samples 
-# ------------------------------------------------------------------
-add_subdirectory(samples)
-
-# ------------------------------------------------------------------
-# some basic testing
-# ------------------------------------------------------------------
-#add_subdirectory(testing)

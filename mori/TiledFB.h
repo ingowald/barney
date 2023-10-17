@@ -38,9 +38,9 @@ namespace mori {
   
   struct TiledFB {
     typedef std::shared_ptr<TiledFB> SP;
-    static SP create(DeviceContext *device);
+    static SP create(Device::SP device);
 
-    TiledFB(DeviceContext *device);
+    TiledFB(Device::SP device);
     
     void resize(vec2i newSize);
 
@@ -48,7 +48,7 @@ namespace mori {
         (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
         pixels) */
     static
-    void writeFinalPixels(DeviceContext *device,
+    void writeFinalPixels(Device    *device,
                           uint32_t  *finalFB,
                           vec2i      numPixels,
                           FinalTile *finalTiles,
@@ -57,11 +57,6 @@ namespace mori {
     
     void finalizeTiles();
 
-    void sync()
-    {
-      device->sync();
-    }
-    
     /*! number of (valid) pixels */
     vec2i numPixels       = { 0,0 };
     
@@ -73,7 +68,7 @@ namespace mori {
     TileDesc  *tileDescs  = 0;
     AccumTile *accumTiles = 0;
     FinalTile *finalTiles = 0;
-    DeviceContext *const device;
+    Device::SP const device;
   };
   
 }

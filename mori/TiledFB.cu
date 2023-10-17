@@ -19,26 +19,26 @@
 
 namespace mori {
 
-  TiledFB::SP TiledFB::create(DeviceContext *device)
+  TiledFB::SP TiledFB::create(Device::SP device)
   {
     return std::make_shared<TiledFB>(device);
   }
   
-  TiledFB::TiledFB(DeviceContext *device)
+  TiledFB::TiledFB(Device::SP device)
     : device(device)
   {}
 
   __global__ void setTileCoords(TileDesc *tileDescs,
                                 int numActiveTiles,
                                 vec2i numTiles,
-                                int tileIndexOffset,
-                                int tileIndexScale)
+                                int globalIndex,
+                                int globalIndexStep)
   {
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
     if (tid >= numActiveTiles)
       return;
     
-    int tileID = tid * tileIndexScale + tileIndexOffset;
+    int tileID = tid * globalIndexStep + globalIndex;
 
     int tile_x = tileID % numTiles.x;
     int tile_y = tileID / numTiles.x;
@@ -64,16 +64,16 @@ namespace mori {
     numPixels = newSize;
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles
-      = divRoundUp(numTiles.x*numTiles.y - device->tileIndexOffset,
-                   device->tileIndexScale);
+      = divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
+                   device->globalIndexStep);
     MORI_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
     MORI_CUDA_CALL(Malloc(&finalTiles, numActiveTiles * sizeof(FinalTile)));
     MORI_CUDA_CALL(MallocManaged(&tileDescs, numActiveTiles * sizeof(TileDesc)));
     MORI_CUDA_SYNC_CHECK();
     if (numActiveTiles)
-      setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,device->stream>>>
+      setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,device->nonLaunchStream>>>
         (tileDescs,numActiveTiles,numTiles,
-         device->tileIndexOffset,device->tileIndexScale);
+         device->globalIndex,device->globalIndexStep);
     MORI_CUDA_SYNC_CHECK();
   }
 
@@ -98,7 +98,7 @@ namespace mori {
   {
     SetActiveGPU forDuration(device);
     if (numActiveTiles > 0)
-      g_finalizeTiles<<<numActiveTiles,pixelsPerTile,0,device->stream>>>
+      g_finalizeTiles<<<numActiveTiles,pixelsPerTile,0,device->nonLaunchStream>>>
       (finalTiles,accumTiles);
   }
 
@@ -122,7 +122,7 @@ namespace mori {
     finalFB[ix + numPixels.x*iy] = pixelValue;
   }
                                  
-  void TiledFB::writeFinalPixels(DeviceContext *device,
+  void TiledFB::writeFinalPixels(Device    *device,
                                  uint32_t  *finalFB,
                                  vec2i      numPixels,
                                  FinalTile *finalTiles,
@@ -134,7 +134,7 @@ namespace mori {
     SetActiveGPU forDuration(device);
     if (numTiles > 0)
       g_writeFinalPixels
-        <<<numTiles,vec2i(tileSize),0,device->stream>>>
+        <<<numTiles,vec2i(tileSize),0,device->nonLaunchStream>>>
         (finalFB,numPixels,
          finalTiles,tileDescs);
   }

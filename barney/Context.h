@@ -18,6 +18,7 @@
 
 #include "barney.h"
 #include "mori/Ray.h"
+#include "mori/Geometry.h"
 #include "mori/Camera.h"
 #include "mori/MoriContext.h"
 #include "mori/cuda-helper.h"
@@ -30,10 +31,13 @@
 namespace barney {
   using namespace owl::common;
   using mori::SetActiveGPU;
-  
-  struct Object {
+
+  struct Object : public std::enable_shared_from_this<Object> {
     typedef std::shared_ptr<Object> SP;
 
+    template<typename T>
+    inline std::shared_ptr<T> as()
+    { return std::dynamic_pointer_cast<T>(shared_from_this()); }
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const
     { return "<Object>"; }
@@ -44,25 +48,28 @@ namespace barney {
 
   struct Context;
   
-  struct DeviceContext : public mori::MoriContext {
-    DeviceContext(int gpuID) : MoriContext(gpuID) {}
+  // struct DeviceContext : public mori::MoriContext {
+  //   DeviceContext(mori::Device *moriDev)
+  //     : MoriContext(moriDev) {}
     
-    Context *barney = 0;
+  //   Context *barney = 0;
     
-    struct { int rank = -1; int gpu = -1; } next, prev;
-  };
+  //   struct { int rank = -1; int gpu = -1; } next, prev;
+  // };
 
   struct Context : public Object {
     
     Context(const std::vector<int> &dataGroupIDs,
-            const std::vector<int> &gpuIDs);
+            const std::vector<int> &gpuIDs,
+            int globalIndex,
+            int globalIndexStep);
     ~Context()
-    { for (auto devCon : perGPU) delete devCon; }
+    { }
     
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB(int owningRank) = 0;
     Model *createModel();
-    
+
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "<Context(abstract)>"; }
@@ -75,6 +82,8 @@ namespace barney {
       return sp.get();
     }
 
+    std::vector<mori::MoriContext::SP> moris;
+    
     /*! generate a new wave-front of rays */
     void generateRays(const mori::Camera &camera,
                       FrameBuffer *fb);
@@ -83,21 +92,21 @@ namespace barney {
     void traceRaysLocally();
     
     /*! trace all rays currently in a ray queue, including forwarding
-        if and where applicable, untile every ray in the ray queue as
-        found its intersection */
+      if and where applicable, untile every ray in the ray queue as
+      found its intersection */
     void traceRaysGlobally();
 
     /*! forward rays (during global trace); returns if _after_ that
-        forward the rays need more tracing (true) or whether they're
-        done (false) */
+      forward the rays need more tracing (true) or whether they're
+      done (false) */
     virtual bool forwardRays() = 0;
 
     /*! returns how many rays are active in all ray queues, across all
-        devices and, where applicable, across all ranks */
+      devices and, where applicable, across all ranks */
     int numRaysActiveLocally();
 
     /*! returns how many rays are active in all ray queues, across all
-        devices and, where applicable, across all ranks */
+      devices and, where applicable, across all ranks */
     virtual int numRaysActiveGlobally() = 0;
 
     void shadeRaysLocally(FrameBuffer *fb);
@@ -116,11 +125,21 @@ namespace barney {
 
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;
-    std::vector<mori::DeviceGroup::SP> moris;
+    // std::vector<mori::DeviceGroup::SP> moris;
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
+
+    /*! list of all device(s) in this context */
+    // std::vector<DeviceContext *> devices;
+
+    struct PerDG {
+      int dataGroupID;
+      /*! device(s) inside this data group; will be a subset of
+        Context::devices */
+      mori::DevGroup::SP devGroup;
+    };
+    std::vector<PerDG> perDG;
     
-    std::vector<DeviceContext *> perGPU;
     const bool isActiveWorker;
   };
   

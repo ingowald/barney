@@ -17,14 +17,23 @@
 #pragma once
 
 #include "mori/Ray.h"
-#include "mori/TiledFB.h"
 #include "mori/Camera.h"
 
 namespace mori {
 
-  struct MoriContext : public DeviceContext
+  struct TiledFB;
+  
+  struct MoriContext
   {
-    MoriContext(int gpuID);
+    typedef std::shared_ptr<MoriContext> SP;
+    
+    /*! this is the device data for the launch params */
+    struct DD {
+      OptixTraversableHandle world;
+      RayQueue::DD rayQueue;
+    };
+    
+    MoriContext(Device::SP device);
 
     void shadeRays_launch(TiledFB *fb);
     
@@ -33,8 +42,26 @@ namespace mori {
                              int rngSeed);
     void generateRays_sync();
 
+    static OWLParams createLP(Device *device);
+
+    
+    void launch_sync() const
+    {
+      MORI_CUDA_CALL(StreamSynchronize(launchStream));
+    }
+
+    OWLLaunchParams    const lp;
+    /*! this is the stream (from the *launch params*) for all *launch*
+        related operations */
+    cudaStream_t       const launchStream;
+    
     mori::RayQueue rays;
-    OWLLaunchParams lp;
+    /*! each moricontext gets its own LP: even though that lp's
+        context is (possibly) shared across multiple device contextes
+        (and thus, across multiple mori contexts) well still have one
+        LP for each device/mori context. thus, we'll have a separate
+        stream for each device/mori context */
+    Device::SP device;
   };
     
 }

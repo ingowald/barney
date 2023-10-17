@@ -24,7 +24,9 @@ namespace barney {
   /*! barney context for collaborative MPI-parallel rendering */
   struct MPIContext : public Context
   {
-    MPIContext(const mpi::Comm &comm,
+    MPIContext(const mpi::Comm &worldComm,
+               const mpi::Comm &workersComm,
+               bool isActiveWorker,
                const std::vector<int> &dataGroupIDs,
                const std::vector<int> &gpuIDs);
 

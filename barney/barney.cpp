@@ -30,11 +30,32 @@ namespace barney {
     return (Context *)context;
   }
   
+  inline mori::Material checkGet(const BNMaterial *material)
+  {
+    assert(material);
+    mori::Material result;
+    result.diffuseColor = (const vec3f&)material->diffuseColor;
+    return result;
+  }
+  
+  inline DataGroup *checkGet(BNDataGroup dg)
+  {
+    assert(dg);
+    return (DataGroup *)dg;
+  }
+  
   inline Model *checkGet(BNModel model)
   {
     assert(model);
     return (Model *)model;
   }
+  
+  inline Geom *checkGet(BNGeom geom)
+  {
+    assert(geom);
+    return (Geom *)geom;
+  }
+  
   
   inline FrameBuffer *checkGet(BNFrameBuffer frameBuffer)
   {
@@ -52,22 +73,9 @@ namespace barney {
   BNDataGroup bnGetDataGroup(BNModel model,
                              int dataGroupID)
   {
-    WARN_NOTIMPLEMENTED;
-    return 0;
+    return (BNDataGroup)checkGet(model)->getDG(dataGroupID);
   }
   
-  BN_API
-  BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
-                         const BNMaterial *material,
-                         const float3     *origins,
-                         int               numOrigins,
-                         const float      *radii,
-                         float             defaultRadius)
-  {
-    WARN_NOTIMPLEMENTED;
-    return 0;
-  }
-
   BN_API
   void bnModelSetInstances(BNDataGroup dataGroup,
                            BNInstance *instances,
@@ -101,13 +109,23 @@ namespace barney {
                         BNGeom *geoms, int numGeoms,
                         BNVolume *volumes, int numVolumes)
   {
-    return 0;
+    std::vector<Geom::SP> _geoms;
+    for (int i=0;i<numGeoms;i++)
+      _geoms.push_back(checkGet(geoms[i])->as<Geom>());
+    Group *group = checkGet(dataGroup)->createGroup(_geoms);
+    return (BNGroup)group;
   }
   
   BN_API
-  void  bnModelBuild(BNModel model)
+  void  bnModelBuild(BNDataGroup dataGroup)
   {
+    checkGet(dataGroup)->build();
   }
+  // BN_API
+  // void  bnModelBuild(BNModel model)
+  // {
+  //   checkGet(model)->build();
+  // }
 
   BN_API
   void bnPinholeCamera(BNCamera *camera,
@@ -141,11 +159,23 @@ namespace barney {
   }
   
   BN_API
+  BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
+                         const BNMaterial *material,
+                         const float3     *origins,
+                         int               numOrigins,
+                         const float      *radii,
+                         float             defaultRadius)
+  {
+    Spheres *spheres = checkGet(dataGroup)->createSpheres
+      (checkGet(material),(const vec3f*)origins,numOrigins,radii,defaultRadius);
+    return (BNGeom)spheres;
+  }
+
+  BN_API
   BNFrameBuffer bnFrameBufferCreate(BNContext context,
                                     int owningRank)
   {
     FrameBuffer *fb = checkGet(context)->createFB(owningRank);
-    // fb->resize({sizeX,sizeY});
     return (BNFrameBuffer)fb;
   }
 

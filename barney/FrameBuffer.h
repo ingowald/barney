@@ -33,8 +33,7 @@ namespace barney {
     
     virtual void resize(vec2i size, uint32_t *hostFB);
     
-    std::vector<mori::TiledFB *> perGPU;
-    std::vector<mori::TiledFB::SP> owned_perGPU;
+    std::vector<mori::TiledFB::SP> moris;
     
     vec2i       numPixels   = { 0,0 };
     uint32_t   *finalFB     = 0;

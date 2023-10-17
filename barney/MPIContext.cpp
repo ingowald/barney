@@ -19,12 +19,16 @@
 
 namespace barney {
 
-  MPIContext::MPIContext(const mpi::Comm &comm,
+  MPIContext::MPIContext(const mpi::Comm &worldComm,
+                         const mpi::Comm &workersComm,
+                         bool isActiveWorker,
                          const std::vector<int> &dataGroupIDs,
                          const std::vector<int> &gpuIDs)
-    : Context(dataGroupIDs,gpuIDs),
-      world(comm),
-      workers(world.split(isActiveWorker))
+    : Context(dataGroupIDs,gpuIDs,
+              isActiveWorker?workersComm.rank:0,
+              isActiveWorker?workersComm.size:1),
+      world(worldComm),
+      workers(workersComm)
   {
     world.assertValid();
     workers.assertValid();
@@ -40,13 +44,6 @@ namespace barney {
         numWorkers++;
       }
     workers.size = numWorkers;
-    
-    if (isActiveWorker)
-      for (int localID=0;localID<gpuIDs.size();localID++) {
-        DeviceContext *devCon = perGPU[localID];
-        devCon->tileIndexOffset += workers.rank * devCon->tileIndexScale;
-        devCon->tileIndexScale  *= workers.size;
-      }
     
     /* compute num data groups. this code assumes that user uses IDs
        0,1,2, ...; if thi sis not the case this code will break */
@@ -111,8 +108,8 @@ namespace barney {
       // write into.
       // ==================================================================
       // use default gpu for this:
-      assert(fb->perGPU.size() > 0);
-      mori::TiledFB::writeFinalPixels(fb->perGPU[0]->device,
+      assert(fb->moris.size() > 0);
+      mori::TiledFB::writeFinalPixels(fb->moris[0]->device.get(),
                                       fb->finalFB,
                                       fb->numPixels,
                                       fb->ownerGather.finalTiles,

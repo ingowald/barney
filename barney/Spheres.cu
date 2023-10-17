@@ -14,45 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney.h"
-#include "mpiInf/Renderer.h"
-#if CUTEE
-# include "qtOWL/OWLViewer.h"
-# include "qtOWL/XFEditor.h"
-#else
-# include "samples/common/owlViewer/InspectMode.h"
-# include "samples/common/owlViewer/OWLViewer.h"
-#endif
+#include "barney/Spheres.h"
+#include "barney/Model.h"
 
-namespace bo {
+namespace barney {
   
-  struct SphereSet {
-    struct Sphere {
-      float3   position;
-      half     radius;
-      uint16_t type;
-    };
-    std::vector<Sphere> spheres;
+  Spheres::Spheres(DataGroup *owner,
+                          const mori::Material &material,
+                          const vec3f *origins,
+                          int numOrigins,
+                          const float *radii,
+                          float defaultRadius)
+    : owner(owner)
+  {
+    mori = std::make_shared<mori::Spheres>
+      (owner->devGroup.get(),material,origins,
+       numOrigins,radii,defaultRadius);
   }
-      
-  struct BarnOWL {
 
-    struct RankData {
-      mini::Scene::SP               triangles;
-      SphereSet                     spheres;
-      std::vector<umesh::UMesh::SP> unsts;
-    };
-
-    BarnOWN(const std::vector<RankData> &data,
-            BarnComm &comm);
-    const std::vector<RankData> rankData;
-  };
-  
 }
 
-using namespace bo;
-
-int main(int ac, char **av)
-{
-    mpiInf::Comms comms(ac,(char **&)av);
-}
