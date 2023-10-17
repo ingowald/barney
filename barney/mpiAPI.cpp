@@ -19,10 +19,17 @@
 
 namespace barney {
 
+#if 1
+# define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
+#else
+# define LOG_API_ENTRY /**/
+#endif
 
   BN_API
   void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
   {
+    LOG_API_ENTRY;
+    
     assert(_hardware);
     BNHardwareInfo &hardware = *_hardware;
 
@@ -100,6 +107,25 @@ namespace barney {
                                int  numGPUs
                                )
   {
+    LOG_API_ENTRY;
+
+    mpi::Comm world(_comm);
+
+    if (world.size == 1) {
+      std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
+      return bnContextCreate(dataGroupsOnThisRank,
+                             numDataGroupsOnThisRank == 0
+                             ? 1 : numDataGroupsOnThisRank,
+                               /*! which gpu(s) to use for this
+                                 process. default is to distribute
+                                 node's GPUs equally over all ranks on
+                                 that given node */
+                             _gpuIDs,
+                             numGPUs);
+      // return (BNContext)new LocalContext(dataGroupIDs,
+      //                                    gpuIDs);
+    } 
+
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
     // use those; otherwise we use IDs
@@ -136,22 +162,14 @@ namespace barney {
                           + i) % hardware.numGPUsThisHost);
     }
     
-    mpi::Comm world(_comm);
-
-    if (world.size == 1) {
-      std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
-      return (BNContext)new LocalContext(dataGroupIDs,
-                                         gpuIDs);
-    } else {
       bool isActiveWorker = !dataGroupIDs.empty();
       mpi::Comm workers = world.split(isActiveWorker);
-      
+
       return (BNContext)new MPIContext(world,
                                        workers,
                                        isActiveWorker,
                                        dataGroupIDs,
                                        gpuIDs);
-    }
   }
   
 }

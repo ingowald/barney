@@ -27,11 +27,14 @@ namespace mori {
     Device(int gpuID,
            int globalIndex,
            int globalIndexStep);
+
+    ~Device()
+    { printf("MORI DEVICE IS DYING\n"); }
     
     std::mutex               mutex;
-    cudaStream_t       const nonLaunchStream;
     int                const cudaID;
     OWLContext         const owlContext;
+    cudaStream_t       const nonLaunchStream;
     int                const globalIndex;
     int                const globalIndexStep;
     
@@ -80,6 +83,8 @@ namespace mori {
     { return std::make_shared<DevGroup>(devices); }
     
     DevGroup(const std::vector<Device::SP> &devices);
+    ~DevGroup()
+    { printf("MORI DEVICE *GROUP* IS DYING\n"); }
     
     int size() const { return devices.size(); }
     

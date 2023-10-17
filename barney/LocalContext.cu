@@ -23,6 +23,7 @@ namespace barney {
                              const std::vector<int> &gpuIDs)
     : Context(dataGroupIDs,gpuIDs,0,1)
   {
+    PING;
   }
   
   FrameBuffer *LocalContext::createFB(int owningRank) 
@@ -75,7 +76,7 @@ namespace barney {
     // wait for all GPUs to complete, so pixels are all written before
     // we return and/or copy to app
     // ------------------------------------------------------------------
-    for (int localID = 0; localID < gpuIDs.size(); localID++)
+    for (int localID = 0; localID < moris.size(); localID++)
       moris[localID]->launch_sync();
 
     // ------------------------------------------------------------------

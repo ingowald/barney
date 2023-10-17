@@ -26,6 +26,8 @@ namespace barney {
     LocalContext(const std::vector<int> &dataGroupIDs,
                  const std::vector<int> &gpuIDs);
 
+    ~LocalContext() { PING; PING; fflush(0); }
+
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "LocalFB{}"; }

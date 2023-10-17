@@ -120,8 +120,8 @@ namespace barney {
                         const mori::Camera *camera,
                         FrameBuffer *fb) = 0;
     
-    const std::vector<int> dataGroupIDs;
-    const std::vector<int> gpuIDs;
+    // const std::vector<int> dataGroupIDs;
+    // const std::vector<int> gpuIDs;
 
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;

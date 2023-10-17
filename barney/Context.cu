@@ -94,11 +94,11 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell each device to finalize its rendered accum tiles
     // ------------------------------------------------------------------
-    for (int localID = 0; localID < gpuIDs.size(); localID++)
+    for (int localID = 0; localID < moris.size(); localID++)
       // (will set active GPU internally)
       fb->moris[localID]->finalizeTiles();
 
-    for (int localID = 0; localID < gpuIDs.size(); localID++)
+    for (int localID = 0; localID < moris.size(); localID++)
       moris[localID]->launch_sync();
   }
   
@@ -124,25 +124,34 @@ namespace barney {
                    const std::vector<int> &gpuIDs,
                    int globalIndex,
                    int globalIndexStep)
-    : dataGroupIDs(dataGroupIDs),
-      gpuIDs(gpuIDs),
+    : // dataGroupIDs(dataGroupIDs),
+      // gpuIDs(gpuIDs),
       isActiveWorker(!dataGroupIDs.empty())
   {
+    PING;
     if (gpuIDs.empty())
       throw std::runtime_error("error - no GPUs...");
     moris.resize(gpuIDs.size());
+    PING;
+    PRINT(this);
+    PRINT(gpuIDs.size());
+    PRINT(gpuIDs.data());
     for (int localID=0;localID<gpuIDs.size();localID++) {
+      PRINT(localID);
+      PRINT(gpuIDs[localID]);
       mori::Device::SP moriDev
         = std::make_shared
         <mori::Device>(gpuIDs[localID],
                        globalIndex * gpuIDs.size() + localID,
                        globalIndexStep * gpuIDs.size());
+      PING; fflush(0);
       mori::MoriContext::SP
         mori = std::make_shared
         <mori::MoriContext>(moriDev);
-      moris.push_back(mori);
+      moris[localID] = mori;
     }
 
+    PING;
     if (isActiveWorker) {
       if (gpuIDs.size() < dataGroupIDs.size())
         throw std::runtime_error("not enough GPUs ("
@@ -165,6 +174,7 @@ namespace barney {
           = mori::DevGroup::create(devs);
       }
     }
+    PING;
   }
 
   Model *Context::createModel()

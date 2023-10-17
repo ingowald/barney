@@ -26,7 +26,11 @@ namespace mori {
       nonLaunchStream(owlContextGetStream(owlContext,0)),
       globalIndex(globalIndex),
       globalIndexStep(globalIndexStep)
-  {}
+  {
+    PING;
+    PRINT(cudaID);
+    PRINT(globalIndex);
+  }
 
   OWLGeomType
   Device::getOrCreateGeomTypeFor(const std::string &geomTypeString,

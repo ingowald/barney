@@ -22,8 +22,8 @@ namespace barney {
     : context(context),
       isOwner(isOwner)
   {
-    moris.resize(context->gpuIDs.size());
-    for (int localID=0;localID<context->gpuIDs.size();localID++) {
+    moris.resize(context->moris.size());
+    for (int localID=0;localID<context->moris.size();localID++) {
       moris[localID]
         = mori::TiledFB::create(context->moris[localID]->device);
     }

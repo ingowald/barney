@@ -22,6 +22,12 @@
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
+#if 1
+# define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
+#else
+# define LOG_API_ENTRY /**/
+#endif
+
 namespace barney {
 
   inline Context *checkGet(BNContext context)
@@ -66,6 +72,7 @@ namespace barney {
   BN_API
   BNModel bnModelCreate(BNContext ctx)
   {
+    LOG_API_ENTRY;
     return (BNModel)checkGet(ctx)->createModel();
   }
 
@@ -73,6 +80,7 @@ namespace barney {
   BNDataGroup bnGetDataGroup(BNModel model,
                              int dataGroupID)
   {
+    LOG_API_ENTRY;
     return (BNDataGroup)checkGet(model)->getDG(dataGroupID);
   }
   
@@ -81,6 +89,7 @@ namespace barney {
                            BNInstance *instances,
                            int numInstances)
   {
+    LOG_API_ENTRY;
     WARN_NOTIMPLEMENTED;
   }
   
@@ -88,6 +97,7 @@ namespace barney {
   BN_API
   void bnContextDestroy(BNContext context)
   {
+    LOG_API_ENTRY;
     delete (Context *)context;
   }
 
@@ -101,6 +111,7 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
+    LOG_API_ENTRY;
     return 0;
   }
 
@@ -109,6 +120,7 @@ namespace barney {
                         BNGeom *geoms, int numGeoms,
                         BNVolume *volumes, int numVolumes)
   {
+    LOG_API_ENTRY;
     std::vector<Geom::SP> _geoms;
     for (int i=0;i<numGeoms;i++)
       _geoms.push_back(checkGet(geoms[i])->as<Geom>());
@@ -119,6 +131,7 @@ namespace barney {
   BN_API
   void  bnModelBuild(BNDataGroup dataGroup)
   {
+    LOG_API_ENTRY;
     checkGet(dataGroup)->build();
   }
   // BN_API
@@ -135,6 +148,7 @@ namespace barney {
                        float  fov,
                        int2   fbSize)
   {
+    LOG_API_ENTRY;
     assert(camera);
     vec3f from = (const vec3f&)_from;
     vec3f at   = (const vec3f&)_at;
@@ -166,6 +180,7 @@ namespace barney {
                          const float      *radii,
                          float             defaultRadius)
   {
+    LOG_API_ENTRY;
     Spheres *spheres = checkGet(dataGroup)->createSpheres
       (checkGet(material),(const vec3f*)origins,numOrigins,radii,defaultRadius);
     return (BNGeom)spheres;
@@ -175,6 +190,7 @@ namespace barney {
   BNFrameBuffer bnFrameBufferCreate(BNContext context,
                                     int owningRank)
   {
+    LOG_API_ENTRY;
     FrameBuffer *fb = checkGet(context)->createFB(owningRank);
     return (BNFrameBuffer)fb;
   }
@@ -184,6 +200,7 @@ namespace barney {
                            int sizeX, int sizeY,
                            uint32_t *hostRGBA)
   {
+    LOG_API_ENTRY;
     checkGet(fb)->resize(vec2i{sizeX,sizeY},hostRGBA);
   }
 
@@ -193,6 +210,7 @@ namespace barney {
                 BNFrameBuffer fb,
                 BNRenderRequest *req)
   {
+    LOG_API_ENTRY;
     assert(camera);
     checkGet(model)->render((mori::Camera *)camera,checkGet(fb));
   }
@@ -207,6 +225,7 @@ namespace barney {
                             const int *_gpuIDs,
                             int  numGPUs)
   {
+    LOG_API_ENTRY;
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
     // use those; otherwise we use IDs
