@@ -27,9 +27,6 @@ namespace mori {
       globalIndex(globalIndex),
       globalIndexStep(globalIndexStep)
   {
-    PING;
-    PRINT(cudaID);
-    PRINT(globalIndex);
   }
 
   OWLGeomType

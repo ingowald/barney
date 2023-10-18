@@ -23,7 +23,7 @@ namespace mori {
                                      owl::common::box3f &bounds,  
                                      const int32_t primID)
   {
-    const Spheres::OnDev &geom = *(const Spheres::OnDev *)geomData;
+    const Spheres::DD &geom = *(const Spheres::DD *)geomData;
     vec3f origin = geom.origins[primID];
     bounds.lower = origin - geom.defaultRadius;
     bounds.upper = origin + geom.defaultRadius;
@@ -33,7 +33,7 @@ namespace mori {
   {
     const int primID = optixGetPrimitiveIndex();
     const auto &self
-      = owl::getProgramData<Spheres::OnDev>();
+      = owl::getProgramData<Spheres::DD>();
 
     vec3f center = self.origins[primID];
     float radius = self.defaultRadius;

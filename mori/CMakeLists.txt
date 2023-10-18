@@ -43,7 +43,7 @@ target_link_libraries(mori
   owl
   )
 target_link_libraries(mori
-  PRIVATE
+  PUBLIC
   mori-spheres-ptx
   )
 

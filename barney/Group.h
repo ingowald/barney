@@ -16,37 +16,31 @@
 
 #pragma once
 
-#include "barney/Model.h"
-#include "mori/Spheres.h"
+#include "barney/Geometry.h"
 
 namespace barney {
 
-  struct DataGroup;
-  
-  struct Spheres : public Geometry {
-    typedef std::shared_ptr<Spheres> SP;
+  struct Group : public Object {
+    typedef std::shared_ptr<Group> SP;
 
-    Spheres(DataGroup *owner,
-            const mori::Material &material,
-            const vec3f *origins,
-            int numOrigins,
-            const float *radii,
-            float defaultRadius);
-    
     static SP create(DataGroup *owner,
-                     const mori::Material &material,
-                     const vec3f *origins,
-                     int numOrigins,
-                     const float *radii,
-                     float defaultRadius)
-    {
-      return std::make_shared<Spheres>(owner,material,origins,numOrigins,
-                                       radii,defaultRadius);
-    }
+                     const std::vector<Geometry::SP> &geoms)
+    { return std::make_shared<Group>(owner,geoms); }
     
+    Group(DataGroup *owner,
+          const std::vector<Geometry::SP> &geoms);
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
-    { return "Spheres{}"; }
+    { return "Group{}"; }
+
+    void build();
+    
+    std::vector<Geometry::SP> geoms;
+    // struct PerGPU {
+    mori::TriangleGeomsGroup::SP triangleGeomsGroup;
+    mori::UserGeomsGroup::SP     userGeomsGroup;
+    // };
+    // std::vector<PerGPU> perGPU;
   };
 
 }

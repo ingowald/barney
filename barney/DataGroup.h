@@ -16,37 +16,37 @@
 
 #pragma once
 
-#include "barney/Model.h"
-#include "mori/Spheres.h"
+#include "barney/Group.h"
 
 namespace barney {
 
-  struct DataGroup;
-  
-  struct Spheres : public Geometry {
-    typedef std::shared_ptr<Spheres> SP;
+  struct Spheres;
 
-    Spheres(DataGroup *owner,
-            const mori::Material &material,
-            const vec3f *origins,
-            int numOrigins,
-            const float *radii,
-            float defaultRadius);
+  struct DataGroup : public Object {
+    typedef std::shared_ptr<DataGroup> SP;
+
+    DataGroup(Model *model, int localID);
     
-    static SP create(DataGroup *owner,
-                     const mori::Material &material,
-                     const vec3f *origins,
-                     int numOrigins,
-                     const float *radii,
-                     float defaultRadius)
-    {
-      return std::make_shared<Spheres>(owner,material,origins,numOrigins,
-                                       radii,defaultRadius);
-    }
+    static SP create(Model *model, int localID)
+    { return std::make_shared<DataGroup>(model,localID); }
+
+    Group   *createGroup(const std::vector<Geometry::SP> &geoms);
+    Spheres *createSpheres(const mori::Material &material,
+                           const vec3f *origins,
+                           int numOrigins,
+                           const float *radii,
+                           float defaultRadius);
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Spheres{}"; }
+    struct {
+      std::vector<Group::SP> groups;
+      std::vector<affine3f>  xfms;
+    } instances;
+
+    void build();
+
+    mori::DevGroup::SP const devGroup;
+    Model *const model;
+    int    const localID;
   };
-
+  
 }

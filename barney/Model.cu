@@ -17,6 +17,7 @@
 #include "barney/LocalFB.h"
 #include "barney/Model.h"
 #include "barney/Spheres.h"
+#include "barney/Triangles.h"
 #include "owl/owl.h"
 
 namespace barney {
@@ -24,7 +25,6 @@ namespace barney {
   Model::Model(Context *context)
     : context(context)
   {
-    PING; PRINT(context->perDG.size());
     for (int localID=0;localID<context->perDG.size();localID++) {
       dataGroups.push_back(DataGroup::create(this,localID));
     }
@@ -37,16 +37,31 @@ namespace barney {
   {}
 
   Group::Group(DataGroup *owner,
-               const std::vector<Geom::SP> &geoms)
+               const std::vector<Geometry::SP> &geoms)
     : geoms(geoms)
   {
+    std::vector<mori::Geometry::SP> triangleGeoms;
+    std::vector<mori::Geometry::SP> userGeoms;
+    for (auto geom : geoms)
+      if (auto asTris = geom->as<Triangles>())
+        triangleGeoms.push_back(asTris->mori);
+      else
+        userGeoms.push_back(geom->mori);
+    if (!triangleGeoms.empty())
+      triangleGeomsGroup
+        = std::make_shared<mori::TriangleGeomsGroup>(owner->devGroup.get(),
+                                                     triangleGeoms);
+    if (!userGeoms.empty())
+      userGeomsGroup
+        = std::make_shared<mori::UserGeomsGroup>(owner->devGroup.get(),
+                                                 userGeoms);
   }
   
   void Group::build()
   {
   }
   
-  Group   *DataGroup::createGroup(const std::vector<Geom::SP> &geoms)
+  Group   *DataGroup::createGroup(const std::vector<Geometry::SP> &geoms)
   {
     assert(model);
     assert(model->context);

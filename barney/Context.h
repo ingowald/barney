@@ -16,32 +16,17 @@
 
 #pragma once
 
-#include "barney.h"
 #include "mori/Ray.h"
 #include "mori/Geometry.h"
 #include "mori/Camera.h"
 #include "mori/MoriContext.h"
 #include "mori/cuda-helper.h"
 #include "mori/TiledFB.h"
-#include <string.h>
-#include <cuda_runtime.h>
-#include <mutex>
-#include <map>
+#include "barney/Object.h"
 
 namespace barney {
   using namespace owl::common;
   using mori::SetActiveGPU;
-
-  struct Object : public std::enable_shared_from_this<Object> {
-    typedef std::shared_ptr<Object> SP;
-
-    template<typename T>
-    inline std::shared_ptr<T> as()
-    { return std::dynamic_pointer_cast<T>(shared_from_this()); }
-    /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const
-    { return "<Object>"; }
-  };
 
   struct FrameBuffer;
   struct Model;

@@ -26,12 +26,13 @@ namespace mori {
                    int numOrigins,
                    const float *radii,
                    float defaultRadius)
-    : Geom(devGroup,material),
+    : Geometry(devGroup,material),
       defaultRadius(defaultRadius),
       perDev(devGroup->size())
   {
+    PING;
     for (int devID=0;devID<devGroup->size();devID++) {
-      auto pd = perDev[devID];
+      auto &pd = perDev[devID];
       auto device = devGroup->devices[devID];
       OWLGeomType gt = device->getOrCreateGeomTypeFor
         ("Spheres",Spheres::createGeomType);

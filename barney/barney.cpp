@@ -56,10 +56,10 @@ namespace barney {
     return (Model *)model;
   }
   
-  inline Geom *checkGet(BNGeom geom)
+  inline Geometry *checkGet(BNGeom geom)
   {
     assert(geom);
-    return (Geom *)geom;
+    return (Geometry *)geom;
   }
   
   
@@ -121,9 +121,9 @@ namespace barney {
                         BNVolume *volumes, int numVolumes)
   {
     LOG_API_ENTRY;
-    std::vector<Geom::SP> _geoms;
+    std::vector<Geometry::SP> _geoms;
     for (int i=0;i<numGeoms;i++)
-      _geoms.push_back(checkGet(geoms[i])->as<Geom>());
+      _geoms.push_back(checkGet(geoms[i])->as<Geometry>());
     Group *group = checkGet(dataGroup)->createGroup(_geoms);
     return (BNGroup)group;
   }
@@ -210,7 +210,9 @@ namespace barney {
                 BNFrameBuffer fb,
                 BNRenderRequest *req)
   {
-    LOG_API_ENTRY;
+    static int count = 0;
+    if (count++ < 3)
+      LOG_API_ENTRY;
     assert(camera);
     checkGet(model)->render((mori::Camera *)camera,checkGet(fb));
   }

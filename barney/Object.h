@@ -16,37 +16,23 @@
 
 #pragma once
 
-#include "barney/Model.h"
-#include "mori/Spheres.h"
+#include "barney.h"
+#include <string.h>
+#include <cuda_runtime.h>
+#include <mutex>
+#include <map>
 
 namespace barney {
 
-  struct DataGroup;
-  
-  struct Spheres : public Geometry {
-    typedef std::shared_ptr<Spheres> SP;
+  struct Object : public std::enable_shared_from_this<Object> {
+    typedef std::shared_ptr<Object> SP;
 
-    Spheres(DataGroup *owner,
-            const mori::Material &material,
-            const vec3f *origins,
-            int numOrigins,
-            const float *radii,
-            float defaultRadius);
-    
-    static SP create(DataGroup *owner,
-                     const mori::Material &material,
-                     const vec3f *origins,
-                     int numOrigins,
-                     const float *radii,
-                     float defaultRadius)
-    {
-      return std::make_shared<Spheres>(owner,material,origins,numOrigins,
-                                       radii,defaultRadius);
-    }
-    
+    template<typename T>
+    inline std::shared_ptr<T> as()
+    { return std::dynamic_pointer_cast<T>(shared_from_this()); }
     /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Spheres{}"; }
+    virtual std::string toString() const
+    { return "<Object>"; }
   };
 
 }

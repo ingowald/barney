@@ -16,37 +16,40 @@
 
 #pragma once
 
-#include "barney/Model.h"
-#include "mori/Spheres.h"
+#include "mori/Geometry.h"
 
-namespace barney {
+namespace mori {
 
-  struct DataGroup;
-  
-  struct Spheres : public Geometry {
-    typedef std::shared_ptr<Spheres> SP;
-
-    Spheres(DataGroup *owner,
-            const mori::Material &material,
-            const vec3f *origins,
-            int numOrigins,
-            const float *radii,
-            float defaultRadius);
+  /* the host side representation */
+  struct Triangles : public Geometry {
+    typedef std::shared_ptr<Triangles> SP;
     
-    static SP create(DataGroup *owner,
-                     const mori::Material &material,
-                     const vec3f *origins,
-                     int numOrigins,
-                     const float *radii,
-                     float defaultRadius)
-    {
-      return std::make_shared<Spheres>(owner,material,origins,numOrigins,
-                                       radii,defaultRadius);
-    }
+    Triangles(DevGroup *devGroup,
+              const Material &material,
+              int numIndices,
+              const vec3i *indices,
+              int numVertices,
+              const vec3f *vertices,
+              const vec3f *normals,
+              const vec2f *texcoords);
+
+    struct DD {
+      int          numIndices;
+      int          numVertices;
+      const vec3i *indices;
+      const vec3f *vertices;
+      const vec3f *normals;
+      const vec2f *texcoords;
+      Material     material;
+    };
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Spheres{}"; }
+    static OWLGeomType createGeomType(Device *device);
+
+    struct PerDev {
+      OWLBuffer indicesBuffer  = 0;
+      OWLBuffer verticesBuffer = 0;
+    };
+    std::vector<PerDev> perDev;
   };
-
+  
 }

@@ -24,18 +24,17 @@ namespace mori {
     vec3f diffuseColor;
   };
   
-  struct Geom {
-    typedef std::shared_ptr<Geom> SP;
+  struct Geometry {
+    typedef std::shared_ptr<Geometry> SP;
 
-    Geom(DevGroup *devGroup,
+    Geometry(DevGroup *devGroup,
          const Material &material)
       : devGroup(devGroup),
         material(material)
     {}
 
     Material     material;
-    std::vector<OWLGeom> perDev;
-    DevGroup         *devGroup  = 0;
+    DevGroup    *devGroup  = 0;
   };
 
   struct Group {
@@ -53,23 +52,24 @@ namespace mori {
   
   struct TriangleGeomsGroup : public Group {
     TriangleGeomsGroup(DevGroup *devGroup,
-                       const std::vector<Geom::SP> &triangleGeoms)
+                       const std::vector<Geometry::SP> &triangleGeoms)
       : Group(devGroup),
         triangleGeoms(triangleGeoms)
     {}
     
-    void build() override;
-    std::vector<Geom::SP> triangleGeoms;
+    void build() override { PING; }
+    std::vector<Geometry::SP> triangleGeoms;
   };
+  
   struct UserGeomsGroup : public Group {
     UserGeomsGroup(DevGroup *devGroup,
-                   const std::vector<Geom::SP> &userGeoms)
+                   const std::vector<Geometry::SP> &userGeoms)
       : Group(devGroup),
         userGeoms(userGeoms)
     {}
     
-    void build() override;
-    const std::vector<Geom::SP> userGeoms;
+    void build() override { PING; }
+    const std::vector<Geometry::SP> userGeoms;
   };
   struct InstanceGroup : public Group {
     InstanceGroup(DevGroup *devGroup,
@@ -80,7 +80,7 @@ namespace mori {
         xfms(xfms)
     {}
         
-    void build() override;
+    void build() override { PING; }
     
     const std::vector<Group::SP> groups;
     const std::vector<affine3f>  xfms;

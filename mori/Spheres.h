@@ -21,7 +21,7 @@
 namespace mori {
 
   /* the host side representation */
-  struct Spheres : public Geom {
+  struct Spheres : public Geometry {
     typedef std::shared_ptr<Spheres> SP;
     
     Spheres(DevGroup *devGroup,

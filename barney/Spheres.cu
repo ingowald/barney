@@ -16,20 +16,22 @@
 
 #include "barney/Spheres.h"
 #include "barney/Model.h"
+#include "mori/Spheres.h"
 
 namespace barney {
   
   Spheres::Spheres(DataGroup *owner,
-                          const mori::Material &material,
-                          const vec3f *origins,
-                          int numOrigins,
-                          const float *radii,
-                          float defaultRadius)
-    : owner(owner)
+                   const mori::Material &material,
+                   const vec3f *origins,
+                   int numOrigins,
+                   const float *radii,
+                   float defaultRadius)
+    : Geometry(owner)
   {
     mori = std::make_shared<mori::Spheres>
       (owner->devGroup.get(),material,origins,
        numOrigins,radii,defaultRadius);
+    PING;
   }
 
 }

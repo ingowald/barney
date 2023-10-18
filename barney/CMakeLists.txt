@@ -31,7 +31,8 @@ add_library(barney SHARED
   )
 target_link_libraries(barney
   PUBLIC
-  mori)
+  mori
+  )
 target_include_directories(barney PUBLIC
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/barney/include
