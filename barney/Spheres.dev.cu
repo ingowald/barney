@@ -14,12 +14,12 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/Spheres.h"
+#include "barney/Spheres.h"
 #include "owl/owl_device.h"
 
-namespace mori {
+namespace barney {
   
-  OPTIX_BOUNDS_PROGRAM(SphereBounds)(const void *geomData,                
+  OPTIX_BOUNDS_PROGRAM(SpheresBounds)(const void *geomData,                
                                      owl::common::box3f &bounds,  
                                      const int32_t primID)
   {
@@ -27,9 +27,24 @@ namespace mori {
     vec3f origin = geom.origins[primID];
     bounds.lower = origin - geom.defaultRadius;
     bounds.upper = origin + geom.defaultRadius;
+    // printf("bounds %i (%f %f %f) (%f %f %f)\n",primID,
+    //        bounds.lower.x,
+    //        bounds.lower.y,
+    //        bounds.lower.z,
+    //        bounds.upper.x,
+    //        bounds.upper.y,
+    //        bounds.upper.z
+    //        );
   }
 
-  OPTIX_INTERSECT_PROGRAM(SphereIsec)()
+  OPTIX_CLOSEST_HIT_PROGRAM(SpheresCH)()
+  {
+    auto &ray = owl::getPRD<Ray>();
+    ray.hadHit = true;
+    // printf("Marking ray %i as hit\n",ray.pixelID);
+  }
+  
+  OPTIX_INTERSECT_PROGRAM(SpheresIsec)()
   {
     const int primID = optixGetPrimitiveIndex();
     const auto &self
@@ -38,10 +53,6 @@ namespace mori {
     vec3f center = self.origins[primID];
     float radius = self.defaultRadius;
     
-    /* iw, jan 11, 2020: for this particular example (where we do not
-       yet use instancing) we could also use the World ray; but this
-       version is cleaner since it would/will also work with
-       instancing */
     const vec3f org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
     float hit_t      = optixGetRayTmax();

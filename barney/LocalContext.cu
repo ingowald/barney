@@ -39,13 +39,13 @@ namespace barney {
 
   bool LocalContext::forwardRays()
   {
-    for (auto mori : moris)
-      mori->rays.numActive = 0;
+    // for (auto device : devices)
+    //   device->rays.numActive = 0;
     return false;
   }
 
   void LocalContext::render(Model *model,
-                            const mori::Camera *camera,
+                            const Camera *camera,
                             FrameBuffer *fb)
   {
     assert(camera);
@@ -60,31 +60,31 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell all GPUs to write their final pixels
     // ------------------------------------------------------------------
-    for (int localID = 0; localID < moris.size(); localID++) {
-      auto &devFB = *fb->moris[localID];
-      mori::TiledFB::writeFinalPixels(devFB.device.get(),
-                                      fb->finalFB,
-                                      fb->numPixels,
-                                      devFB.finalTiles,
-                                      devFB.tileDescs,
-                                      devFB.numActiveTiles);
+    for (int localID = 0; localID < devices.size(); localID++) {
+      auto &devFB = *fb->perDev[localID];
+      TiledFB::writeFinalPixels(devFB.device.get(),
+                                fb->finalFB,
+                                fb->numPixels,
+                                devFB.finalTiles,
+                                devFB.tileDescs,
+                                devFB.numActiveTiles);
     }
     
     // ------------------------------------------------------------------
     // wait for all GPUs to complete, so pixels are all written before
     // we return and/or copy to app
     // ------------------------------------------------------------------
-    for (int localID = 0; localID < moris.size(); localID++)
-      moris[localID]->launch_sync();
+    for (int localID = 0; localID < devices.size(); localID++)
+      devices[localID]->launch_sync();
 
     // ------------------------------------------------------------------
     // copy final frame buffer to app's frame buffer memory
     // ------------------------------------------------------------------
     if (fb->hostFB != fb->finalFB)
-      MORI_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
+      BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
                             fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                             cudaMemcpyDefault));
-    MORI_CUDA_SYNC_CHECK();
+    BARNEY_CUDA_SYNC_CHECK();
   }
   
 }

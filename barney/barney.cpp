@@ -36,10 +36,10 @@ namespace barney {
     return (Context *)context;
   }
   
-  inline mori::Material checkGet(const BNMaterial *material)
+  inline Material checkGet(const BNMaterial *material)
   {
     assert(material);
-    mori::Material result;
+    Material result;
     result.diffuseColor = (const vec3f&)material->diffuseColor;
     return result;
   }
@@ -60,6 +60,16 @@ namespace barney {
   {
     assert(geom);
     return (Geometry *)geom;
+  }
+  
+  inline Group *checkGet(BNGroup group)
+  {
+    assert(group);
+    return (Group *)group;
+  }
+  inline Group::SP checkGetSP(BNGroup group)
+  {
+    return checkGet(group)->shared_from_this()->as<Group>();
   }
   
   
@@ -86,11 +96,17 @@ namespace barney {
   
   BN_API
   void bnModelSetInstances(BNDataGroup dataGroup,
-                           BNInstance *instances,
+                           BNGroup *_groups,
+                           BNTransform *xfms,
                            int numInstances)
   {
     LOG_API_ENTRY;
-    WARN_NOTIMPLEMENTED;
+    
+    std::vector<Group::SP> groups;
+    for (int i=0;i<numInstances;i++) {
+      groups.push_back(checkGetSP(_groups[i]));
+    }
+    checkGet(dataGroup)->setInstances(groups,(const affine3f *)xfms);
   }
   
 
@@ -126,6 +142,13 @@ namespace barney {
       _geoms.push_back(checkGet(geoms[i])->as<Geometry>());
     Group *group = checkGet(dataGroup)->createGroup(_geoms);
     return (BNGroup)group;
+  }
+
+  BN_API
+  void  bnGroupBuild(BNGroup group)
+  {
+    LOG_API_ENTRY;
+    checkGet(group)->build();
   }
   
   BN_API
@@ -176,13 +199,13 @@ namespace barney {
   BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
                          const BNMaterial *material,
                          const float3     *origins,
-                         int               numOrigins,
+                         int               nubarneygins,
                          const float      *radii,
                          float             defaultRadius)
   {
     LOG_API_ENTRY;
     Spheres *spheres = checkGet(dataGroup)->createSpheres
-      (checkGet(material),(const vec3f*)origins,numOrigins,radii,defaultRadius);
+      (checkGet(material),(const vec3f*)origins,nubarneygins,radii,defaultRadius);
     return (BNGeom)spheres;
   }
 
@@ -214,7 +237,7 @@ namespace barney {
     if (count++ < 3)
       LOG_API_ENTRY;
     assert(camera);
-    checkGet(model)->render((mori::Camera *)camera,checkGet(fb));
+    checkGet(model)->render((Camera *)camera,checkGet(fb));
   }
 
   BN_API

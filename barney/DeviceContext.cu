@@ -14,33 +14,17 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/MoriContext.h"
+#include "barney/DeviceContext.h"
+#include "barney/Ray.h"
+#include "barney/Model.h"
 
-namespace mori {
+namespace barney {
   
-  MoriContext::MoriContext(Device::SP device)
+  DeviceContext::DeviceContext(Device::SP device)
     : device(device),
-      rays(device.get()),
-      lp(createLP(device.get())),
-      launchStream(owlParamsGetCudaStream(lp,0))
+      rays(device.get())
   {}
 
-
-  OWLParams MoriContext::createLP(Device *device)
-  {
-    OWLVarDecl params[]
-      = {
-         { "world", OWL_GROUP, OWL_OFFSETOF(DD, world) },
-         { "rayQueue", OWL_USER_TYPE(RayQueue::DD), OWL_OFFSETOF(DD,rayQueue) },
-         { nullptr }
-    };
-    OWLParams lp = owlParamsCreate(device->owlContext,
-                                   sizeof(DD),
-                                   params,
-                                   -1);
-    return lp;
-  }
-    
   __global__
   void g_generateRays(Camera camera,
                       int rngSeed,
@@ -76,6 +60,7 @@ namespace mori {
     ray.v       = 0.f;
     ray.seed    = rngSeed;
     ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
+    ray.hadHit = false;
 
     int pos = -1;
     if (ix < fbSize.x && iy < fbSize.y) 
@@ -92,13 +77,14 @@ namespace mori {
       rayQueue[l_count + pos] = ray;
   }
   
-  void  MoriContext::generateRays_launch(TiledFB *fb,
+  void  DeviceContext::generateRays_launch(TiledFB *fb,
                                          const Camera &camera,
                                          int rngSeed)
   {
-    SetActiveGPU(fb->device);
+    SetActiveGPU forDuration(fb->device);
+    
     g_generateRays
-      <<<fb->numActiveTiles,pixelsPerTile,0,launchStream>>>
+      <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,
        rngSeed,
        fb->numPixels,
@@ -107,13 +93,16 @@ namespace mori {
        fb->tileDescs);
   }
   
-  void  MoriContext::generateRays_sync()
+  void  DeviceContext::generateRays_sync()
   {
+    SetActiveGPU forDuration(device);
+    
     this->launch_sync();
+    std::swap(rays.readQueue, rays.writeQueue);
     rays.numActive = *rays.d_nextWritePos;
+    *rays.d_nextWritePos = 0;
   }
   
-
   __global__
   void g_shadeRays(AccumTile *accumTiles,
                    Ray *readQueue,
@@ -126,22 +115,45 @@ namespace mori {
 
     Ray ray = readQueue[tid];
     vec3f color = abs(normalize(ray.direction));
+    if (ray.hadHit)
+      color = vec3f(1.f);
     int tileID  = ray.pixelID / pixelsPerTile;
     int tileOfs = ray.pixelID % pixelsPerTile;
     accumTiles[tileID].accum[tileOfs] = vec4f(color,0.f);
   }
   
-  void MoriContext::shadeRays_launch(TiledFB *fb)
+  void DeviceContext::shadeRays_launch(TiledFB *fb)
   {
-    int numRays = *rays.d_nextWritePos;
-    *rays.d_nextWritePos = 0;
-
-    std::swap(rays.readQueue, rays.writeQueue);
-    
+    SetActiveGPU forDuration(device);
+    int numRays = rays.numActive;
     int bs = 1024;
     int nb = divRoundUp(numRays,bs);
-    g_shadeRays<<<nb,bs,0,launchStream>>>
+    
+    PING; PRINT(numRays);
+    g_shadeRays<<<nb,bs,0,device->launchStream>>>
       (fb->accumTiles,rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
   }
-    
+
+  void DeviceContext::shadeRays_sync()
+  {
+    SetActiveGPU forDuration(device);
+    launch_sync();
+    std::swap(rays.readQueue, rays.writeQueue);
+    rays.numActive = *rays.d_nextWritePos;
+    *rays.d_nextWritePos = 0;
+  }
+
+  void DeviceContext::traceRays_launch(Model *model)
+  {
+    DevGroup *dg = device->devGroup;
+    PING;
+    PRINT(rays.numActive);
+    owlParamsSetPointer(dg->lp,"rays",rays.readQueue);
+    owlParamsSet1i(dg->lp,"numRays",rays.numActive);
+    OWLGroup world = model->getDG(dg->ldgID)->instances.group;
+    owlParamsSetGroup(dg->lp,"world",world);
+    int bs = 1024;
+    int nb = divRoundUp(rays.numActive,bs);
+    owlAsyncLaunch2DOnDevice(dg->rg,bs,nb,device->owlID,dg->lp);
+  }
 }

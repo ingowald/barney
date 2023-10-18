@@ -84,7 +84,7 @@ namespace barney {
     
   
   void MPIContext::render(Model *model,
-                          const mori::Camera *camera,
+                          const Camera *camera,
                           FrameBuffer *_fb)
   {
     std::cout << "====================== MPIContext::render()" << std::endl;
@@ -108,23 +108,22 @@ namespace barney {
       // write into.
       // ==================================================================
       // use default gpu for this:
-      assert(fb->moris.size() > 0);
-      mori::TiledFB::writeFinalPixels(fb->moris[0]->device.get(),
-                                      fb->finalFB,
-                                      fb->numPixels,
-                                      fb->ownerGather.finalTiles,
-                                      fb->ownerGather.tileDescs,
-                                      fb->ownerGather.numActiveTiles);
+      barney::TiledFB::writeFinalPixels(nullptr,
+                                        fb->finalFB,
+                                        fb->numPixels,
+                                        fb->ownerGather.finalTiles,
+                                        fb->ownerGather.tileDescs,
+                                        fb->ownerGather.numActiveTiles);
       // copy to app framebuffer - only if we're the one having that
       // frame buffer of course
-      MORI_CUDA_SYNC_CHECK();
+      BARNEY_CUDA_SYNC_CHECK();
       if (fb->hostFB && fb->finalFB != fb->hostFB) {
-        MORI_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
+        BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
                               fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
       }
     }
-    MORI_CUDA_SYNC_CHECK();
+    BARNEY_CUDA_SYNC_CHECK();
   }
   
 }

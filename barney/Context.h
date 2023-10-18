@@ -16,26 +16,25 @@
 
 #pragma once
 
-#include "mori/Ray.h"
-#include "mori/Geometry.h"
-#include "mori/Camera.h"
-#include "mori/MoriContext.h"
-#include "mori/cuda-helper.h"
-#include "mori/TiledFB.h"
+#include "barney/Ray.h"
+#include "barney/Geometry.h"
+#include "barney/Camera.h"
+#include "barney/DeviceContext.h"
+#include "barney/cuda-helper.h"
+#include "barney/TiledFB.h"
 #include "barney/Object.h"
 
 namespace barney {
   using namespace owl::common;
-  using mori::SetActiveGPU;
 
   struct FrameBuffer;
   struct Model;
 
   struct Context;
   
-  // struct DeviceContext : public mori::MoriContext {
-  //   DeviceContext(mori::Device *moriDev)
-  //     : MoriContext(moriDev) {}
+  // struct DeviceContext : public barney::BarneyContext {
+  //   DeviceContext(barney::Device *barneyDev)
+  //     : BarneyContext(barneyDev) {}
     
   //   Context *barney = 0;
     
@@ -67,19 +66,28 @@ namespace barney {
       return sp.get();
     }
 
-    std::vector<mori::MoriContext::SP> moris;
+    Device::SP getDevice(int localID)
+    {
+      assert(localID >= 0);
+      assert(localID < devices.size());
+      assert(devices[localID]);
+      assert(devices[localID]->device);
+      return devices[localID]->device;
+    }
     
+    std::vector<DeviceContext::SP> devices;
+
     /*! generate a new wave-front of rays */
-    void generateRays(const mori::Camera &camera,
+    void generateRays(const barney::Camera &camera,
                       FrameBuffer *fb);
     
     /*! have each *local* GPU trace its current wave-front of rays */
-    void traceRaysLocally();
+    void traceRaysLocally(Model *model);
     
     /*! trace all rays currently in a ray queue, including forwarding
       if and where applicable, untile every ray in the ray queue as
       found its intersection */
-    void traceRaysGlobally();
+    void traceRaysGlobally(Model *model);
 
     /*! forward rays (during global trace); returns if _after_ that
       forward the rays need more tracing (true) or whether they're
@@ -98,11 +106,11 @@ namespace barney {
     void finalizeTiles(FrameBuffer *fb);
     
     void renderTiles(Model *model,
-                     const mori::Camera &camera,
+                     const barney::Camera &camera,
                      FrameBuffer *fb);
     
     virtual void render(Model *model,
-                        const mori::Camera *camera,
+                        const barney::Camera *camera,
                         FrameBuffer *fb) = 0;
     
     // const std::vector<int> dataGroupIDs;
@@ -110,7 +118,7 @@ namespace barney {
 
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;
-    // std::vector<mori::DeviceGroup::SP> moris;
+    // std::vector<barney::DeviceGroup::SP> barneys;
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
 
@@ -121,7 +129,8 @@ namespace barney {
       int dataGroupID;
       /*! device(s) inside this data group; will be a subset of
         Context::devices */
-      mori::DevGroup::SP devGroup;
+      std::vector<int>     gpuIDs;
+      barney::DevGroup::SP devGroup;
     };
     std::vector<PerDG> perDG;
     

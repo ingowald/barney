@@ -37,9 +37,9 @@ namespace barney {
   {
     FrameBuffer::resize(size, hostFB);
     
-    std::vector<int> tilesOnGPU(moris.size());
-    for (int localID = 0;localID < moris.size(); localID++) {
-      tilesOnGPU[localID] = moris[localID]->numActiveTiles;
+    std::vector<int> tilesOnGPU(perDev.size());
+    for (int localID = 0;localID < perDev.size(); localID++) {
+      tilesOnGPU[localID] = perDev[localID]->numActiveTiles;
     }
 
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
@@ -87,14 +87,14 @@ namespace barney {
       ownerGather.numActiveTiles = sumTiles;
 
       if (ownerGather.finalTiles)
-        MORI_CUDA_CALL(Free(ownerGather.finalTiles));
-      MORI_CUDA_CALL(Malloc(&ownerGather.finalTiles,
+        BARNEY_CUDA_CALL(Free(ownerGather.finalTiles));
+      BARNEY_CUDA_CALL(Malloc(&ownerGather.finalTiles,
                             sumTiles*sizeof(*ownerGather.finalTiles)));
       if (ownerGather.tileDescs)
-        MORI_CUDA_CALL(Free(ownerGather.tileDescs));
-      MORI_CUDA_CALL(MallocManaged(&ownerGather.tileDescs,
+        BARNEY_CUDA_CALL(Free(ownerGather.tileDescs));
+      BARNEY_CUDA_CALL(MallocManaged(&ownerGather.tileDescs,
                             sumTiles*sizeof(*ownerGather.tileDescs)));
-      MORI_CUDA_SYNC_CHECK();
+      BARNEY_CUDA_SYNC_CHECK();
     }
     
     // ------------------------------------------------------------------
@@ -115,9 +115,9 @@ namespace barney {
       }
 
     if (context->isActiveWorker)
-      for (int localID=0;localID<tilesOnGPU.size();localID++)
+      for (int localID=0;localID<perDev.size();localID++)
         context->world.send(owningRank,localID,
-                            moris[localID]->tileDescs,tilesOnGPU[localID],
+                            perDev[localID]->tileDescs,tilesOnGPU[localID],
                             send_requests[localID]);
 
     // ------------------------------------------------------------------
@@ -139,7 +139,7 @@ namespace barney {
   void DistFB::ownerGatherFinalTiles()
   {
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
-    std::vector<MPI_Request> send_requests(moris.size());
+    std::vector<MPI_Request> send_requests(perDev.size());
     // ------------------------------------------------------------------
     // trigger all sends and receives - for gpu descs
     // ------------------------------------------------------------------
@@ -154,9 +154,10 @@ namespace barney {
       }
 
     if (context->isActiveWorker)
-      for (int localID=0;localID<moris.size();localID++)
+      for (int localID=0;localID<perDev.size();localID++)
         context->world.send(owningRank,localID,
-                            moris[localID]->finalTiles,moris[localID]->numActiveTiles,
+                            perDev[localID]->finalTiles,
+                            perDev[localID]->numActiveTiles,
                             send_requests[localID]);
 
     // ------------------------------------------------------------------
@@ -167,7 +168,7 @@ namespace barney {
         context->world.wait(recv_requests[ggID]);
     
     if (context->isActiveWorker)
-      for (int localID=0;localID<moris.size();localID++)
+      for (int localID=0;localID<perDev.size();localID++)
         context->world.wait(send_requests[localID]);    
   }
   

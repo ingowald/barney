@@ -16,26 +16,30 @@
 
 #pragma once
 
-#include "mori/Ray.h"
-#include "mori/Camera.h"
+#include "barney/Ray.h"
+#include "barney/Camera.h"
 
-namespace mori {
+namespace barney {
 
   struct TiledFB;
+  struct Model;
   
-  struct MoriContext
+  struct DeviceContext
   {
-    typedef std::shared_ptr<MoriContext> SP;
+    typedef std::shared_ptr<DeviceContext> SP;
     
     /*! this is the device data for the launch params */
     struct DD {
       OptixTraversableHandle world;
-      RayQueue::DD rayQueue;
+      Ray                   *rays;
+      int                    numRays;
     };
     
-    MoriContext(Device::SP device);
+    DeviceContext(Device::SP device);
 
     void shadeRays_launch(TiledFB *fb);
+    void shadeRays_sync();
+    void traceRays_launch(Model *model);
     
     void generateRays_launch(TiledFB *fb,
                              const Camera &camera,
@@ -47,20 +51,20 @@ namespace mori {
     
     void launch_sync() const
     {
-      MORI_CUDA_CALL(StreamSynchronize(launchStream));
+      BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
     }
 
-    OWLLaunchParams    const lp;
-    /*! this is the stream (from the *launch params*) for all *launch*
-        related operations */
-    cudaStream_t       const launchStream;
+    // OWLLaunchParams    const lp;
+    // /*! this is the stream (from the *launch params*) for all *launch*
+    //     related operations */
+    // cudaStream_t       const launchStream;
     
-    mori::RayQueue rays;
-    /*! each moricontext gets its own LP: even though that lp's
+    barney::RayQueue rays;
+    /*! each barneycontext gets its own LP: even though that lp's
         context is (possibly) shared across multiple device contextes
-        (and thus, across multiple mori contexts) well still have one
-        LP for each device/mori context. thus, we'll have a separate
-        stream for each device/mori context */
+        (and thus, across multiple barney contexts) well still have one
+        LP for each device/barney context. thus, we'll have a separate
+        stream for each device/barney context */
     Device::SP device;
   };
     

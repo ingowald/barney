@@ -20,8 +20,10 @@
 
 namespace barney {
 
+  struct Model;
   struct Spheres;
-
+  struct Triangles;
+  
   struct DataGroup : public Object {
     typedef std::shared_ptr<DataGroup> SP;
 
@@ -31,22 +33,25 @@ namespace barney {
     { return std::make_shared<DataGroup>(model,localID); }
 
     Group   *createGroup(const std::vector<Geometry::SP> &geoms);
-    Spheres *createSpheres(const mori::Material &material,
+    Spheres *createSpheres(const barney::Material &material,
                            const vec3f *origins,
                            int numOrigins,
                            const float *radii,
                            float defaultRadius);
+    void setInstances(std::vector<Group::SP> &groups,
+                      const affine3f *xfms);
     
     struct {
       std::vector<Group::SP> groups;
       std::vector<affine3f>  xfms;
+      OWLGroup group = 0;
     } instances;
 
     void build();
 
-    mori::DevGroup::SP const devGroup;
-    Model *const model;
-    int    const localID;
+    DevGroup::SP const devGroup;
+    Model       *const model;
+    int          const localID;
   };
   
 }

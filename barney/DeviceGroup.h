@@ -16,31 +16,27 @@
 
 #pragma once
 
-#include "mori/common.h"
-#include "owl/owl.h"
+#include "barney/common.h"
 
-namespace mori {
+namespace barney {
 
+  struct DevGroup;
+  
   struct Device {
     typedef std::shared_ptr<Device> SP;
     
-    Device(int gpuID,
+    Device(DevGroup *devGroup,
+           int gpuID,
+           int owlID,
            int globalIndex,
            int globalIndexStep);
 
-    ~Device()
-    { printf("MORI DEVICE IS DYING\n"); }
-    
-    std::mutex               mutex;
     int                const cudaID;
-    OWLContext         const owlContext;
-    cudaStream_t       const nonLaunchStream;
+    int                const owlID;
     int                const globalIndex;
     int                const globalIndexStep;
-    
-    std::map<std::string,OWLGeomType> geomTypes;
-    OWLGeomType getOrCreateGeomTypeFor(const std::string &geomTypeString,
-                                       OWLGeomType (*createOnce)(Device *));
+    DevGroup          *const devGroup;
+    cudaStream_t       const launchStream;
   };
   
   /*! stolen from owl/Device: helper class that will set the
@@ -51,24 +47,24 @@ namespace mori {
     inline SetActiveGPU(const Device *device)
     {
       assert(device);
-      MORI_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      MORI_CUDA_CHECK(cudaSetDevice(device->cudaID));
+      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
     }
     inline SetActiveGPU(const Device::SP &device)
     {
       assert(device);
-      MORI_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      MORI_CUDA_CHECK(cudaSetDevice(device->cudaID));
+      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      BARNEY_CUDA_CHECK(cudaSetDevice(device->cudaID));
     }
     
     inline SetActiveGPU(int cudaDeviceID)
     {
-      MORI_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      MORI_CUDA_CHECK(cudaSetDevice(cudaDeviceID));
+      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      BARNEY_CUDA_CHECK(cudaSetDevice(cudaDeviceID));
     }
     inline ~SetActiveGPU()
     {
-      MORI_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
+      BARNEY_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
     }
   private:
     int savedActiveDeviceID = -1;
@@ -79,17 +75,27 @@ namespace mori {
   struct DevGroup {
     typedef std::shared_ptr<DevGroup> SP;
 
-    static SP create(const std::vector<Device::SP> &devices)
-    { return std::make_shared<DevGroup>(devices); }
-    
-    DevGroup(const std::vector<Device::SP> &devices);
-    ~DevGroup()
-    { printf("MORI DEVICE *GROUP* IS DYING\n"); }
+    DevGroup(int ldgID,
+             const std::vector<int> &gpuIDs,
+             int globalIndex,
+             int globalIndexStep);
     
     int size() const { return devices.size(); }
     
-    std::mutex            mutex;
-    std::vector<Device::SP> devices;
+    OWLGeomType getOrCreateGeomTypeFor(const std::string &geomTypeString,
+                                       OWLGeomType (*createOnce)(DevGroup *));
+    void update();
+    
+    std::map<std::string,OWLGeomType> geomTypes;
+    std::mutex               mutex;
+    OWLContext               owl = 0;
+    OWLRayGen                rg = 0;
+    OWLLaunchParams          lp = 0;
+    std::vector<Device::SP>  devices;
+    bool programsDirty = true;
+    bool sbtDirty = true;
+    /*! local device group ID */
+    int const ldgID;
   };
   
 }

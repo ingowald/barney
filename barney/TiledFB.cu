@@ -14,10 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/TiledFB.h"
-#include "owl/owl.h"
+#include "barney/TiledFB.h"
 
-namespace mori {
+namespace barney {
 
   TiledFB::SP TiledFB::create(Device::SP device)
   {
@@ -49,32 +48,35 @@ namespace mori {
   {
     SetActiveGPU forDuration(device);
     if (accumTiles)  {
-      MORI_CUDA_CALL(Free(accumTiles));
+      BARNEY_CUDA_CALL(Free(accumTiles));
       accumTiles = nullptr;
     }
     if (finalTiles) {
-      MORI_CUDA_CALL(Free(finalTiles));
+      BARNEY_CUDA_CALL(Free(finalTiles));
       finalTiles = nullptr;
     }
     if (tileDescs) {
-      MORI_CUDA_CALL(Free(tileDescs));
+      BARNEY_CUDA_CALL(Free(tileDescs));
       tileDescs = nullptr;
     }
     
     numPixels = newSize;
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles
-      = divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
-                   device->globalIndexStep);
-    MORI_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
-    MORI_CUDA_CALL(Malloc(&finalTiles, numActiveTiles * sizeof(FinalTile)));
-    MORI_CUDA_CALL(MallocManaged(&tileDescs, numActiveTiles * sizeof(TileDesc)));
-    MORI_CUDA_SYNC_CHECK();
+      = device
+      ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
+                   device->globalIndexStep)
+      : 0;
+    BARNEY_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
+    BARNEY_CUDA_CALL(Malloc(&finalTiles, numActiveTiles * sizeof(FinalTile)));
+    BARNEY_CUDA_CALL(MallocManaged(&tileDescs, numActiveTiles * sizeof(TileDesc)));
+    BARNEY_CUDA_SYNC_CHECK();
     if (numActiveTiles)
-      setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,device->nonLaunchStream>>>
+      setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,
+      device?device->launchStream:0>>>
         (tileDescs,numActiveTiles,numTiles,
          device->globalIndex,device->globalIndexStep);
-    MORI_CUDA_SYNC_CHECK();
+    BARNEY_CUDA_SYNC_CHECK();
   }
 
   // ==================================================================
@@ -98,7 +100,7 @@ namespace mori {
   {
     SetActiveGPU forDuration(device);
     if (numActiveTiles > 0)
-      g_finalizeTiles<<<numActiveTiles,pixelsPerTile,0,device->nonLaunchStream>>>
+      g_finalizeTiles<<<numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (finalTiles,accumTiles);
   }
 
@@ -134,7 +136,8 @@ namespace mori {
     SetActiveGPU forDuration(device);
     if (numTiles > 0)
       g_writeFinalPixels
-        <<<numTiles,vec2i(tileSize),0,device->nonLaunchStream>>>
+        <<<numTiles,vec2i(tileSize),0,
+      device?device->launchStream:0>>>
         (finalFB,numPixels,
          finalTiles,tileDescs);
   }

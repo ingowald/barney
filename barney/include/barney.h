@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "owl/owl_host.h"
+#include "owl/owl.h"
 #if BARNEY_MPI
 # include <mpi.h>
 #endif
@@ -170,21 +170,21 @@ void bnRender(BNModel model,
               BNFrameBuffer fb,
               BNRenderRequest *req);
 
-struct BNInstance {
+struct BNTransform {
   struct {
     struct {
       float3 vx;
       float3 vy;
       float3 vz;
     } l;
+    float3 p;
   } xfm;
-  BNGroup  group;
-  uint64_t unused;
 };
 
 BN_API
 void bnModelSetInstances(BNDataGroup dataGroup,
-                         BNInstance *instances,
+                         BNGroup *groupsToInstantiate,
+                         BNTransform *instanceTransforms,
                          int numInstances);
 
 BN_API
@@ -203,6 +203,8 @@ BN_API
 BNGroup bnGroupCreate(BNDataGroup dataGroup,
                       BNGeom *geoms, int numGeoms,
                       BNVolume *volumes, int numVolumes);
+BN_API
+void bnGroupBuild(BNGroup group);
 
 
 // ------------------------------------------------------------------

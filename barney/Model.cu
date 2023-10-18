@@ -16,9 +16,6 @@
 
 #include "barney/LocalFB.h"
 #include "barney/Model.h"
-#include "barney/Spheres.h"
-#include "barney/Triangles.h"
-#include "owl/owl.h"
 
 namespace barney {
 
@@ -30,69 +27,42 @@ namespace barney {
     }
   }
 
-  DataGroup::DataGroup(Model *model, int localID)
-    : model(model),
-      localID(localID),
-      devGroup(model->context->perDG[localID].devGroup)
-  {}
-
   Group::Group(DataGroup *owner,
                const std::vector<Geometry::SP> &geoms)
-    : geoms(geoms)
+    : owner(owner), geoms(geoms)
   {
-    std::vector<mori::Geometry::SP> triangleGeoms;
-    std::vector<mori::Geometry::SP> userGeoms;
-    for (auto geom : geoms)
-      if (auto asTris = geom->as<Triangles>())
-        triangleGeoms.push_back(asTris->mori);
-      else
-        userGeoms.push_back(geom->mori);
-    if (!triangleGeoms.empty())
-      triangleGeomsGroup
-        = std::make_shared<mori::TriangleGeomsGroup>(owner->devGroup.get(),
-                                                     triangleGeoms);
+    std::vector<OWLGeom> triangleGeoms;
+    std::vector<OWLGeom> userGeoms;
+    for (auto geom : geoms) {
+      for (auto g : geom->triangleGeoms)
+        triangleGeoms.push_back(g);
+      for (auto g : geom->userGeoms)
+        userGeoms.push_back(g);
+    }
+    PING;
+    PRINT(userGeoms.size());
+    PRINT(triangleGeoms.size());
     if (!userGeoms.empty())
-      userGeomsGroup
-        = std::make_shared<mori::UserGeomsGroup>(owner->devGroup.get(),
-                                                 userGeoms);
+      userGeomGroup = owlUserGeomGroupCreate
+        (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
+    if (!triangleGeoms.empty())
+      triangleGeomGroup = owlTrianglesGeomGroupCreate
+        (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
   }
   
   void Group::build()
   {
+    if (userGeomGroup) {
+      std::cout << "building USER group" << std::endl;
+      owlGroupBuildAccel(userGeomGroup);
+    }
+    if (triangleGeomGroup) {
+      std::cout << "building TRIANGLES group" << std::endl;
+      owlGroupBuildAccel(triangleGeomGroup);
+    }
   }
   
-  Group   *DataGroup::createGroup(const std::vector<Geometry::SP> &geoms)
-  {
-    assert(model);
-    assert(model->context);
-    return model->context->initReference(Group::create(this,geoms));
-  }
-
-  Spheres *DataGroup::createSpheres(const mori::Material &material,
-                                    const vec3f *origins,
-                                    int numOrigins,
-                                    const float *radii,
-                                    float defaultRadius)
-  {
-    assert(model);
-    assert(model->context);
-    return model->context->initReference
-      (Spheres::create(this,material,origins,numOrigins,radii,defaultRadius));
-  }
-  
-  
-  void DataGroup::build()
-  {
-    std::set<Group::SP> groups;
-    for (auto group : instances.groups)
-      groups.insert(group);
-
-    for (auto group : groups)
-      group->build();
-  }
-  
-  
-  void Model::render(const mori::Camera *camera,
+  void Model::render(const Camera *camera,
                      FrameBuffer *fb)
   {
     assert(context);

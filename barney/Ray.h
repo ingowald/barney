@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "mori/DeviceGroup.h"
-#include "mori/TiledFB.h"
+#include "barney/DeviceGroup.h"
+#include "barney/TiledFB.h"
 
-namespace mori {
+namespace barney {
 
   struct Ray {
     vec3f    origin;
@@ -28,7 +28,10 @@ namespace mori {
     int      instID, geomID, primID;
     float    u,v;
     uint32_t seed;
-    int      pixelID;
+    struct {
+      uint32_t  pixelID:30;
+      uint32_t  hadHit:1;
+    };
   };
 
   struct RayQueue {
@@ -95,14 +98,14 @@ namespace mori {
       assert(device);
       SetActiveGPU forDuration(device);
       
-      if (readQueue) MORI_CUDA_CALL(Free(readQueue));
-      if (writeQueue) MORI_CUDA_CALL(Free(writeQueue));
+      if (readQueue)  BARNEY_CUDA_CALL(Free(readQueue));
+      if (writeQueue) BARNEY_CUDA_CALL(Free(writeQueue));
 
       if (!d_nextWritePos)
-        MORI_CUDA_CALL(MallocManaged(&d_nextWritePos,sizeof(int)));
+        BARNEY_CUDA_CALL(MallocManaged(&d_nextWritePos,sizeof(int)));
         
-      MORI_CUDA_CALL(Malloc(&readQueue,newSize*sizeof(Ray)));
-      MORI_CUDA_CALL(Malloc(&writeQueue, newSize*sizeof(Ray)));
+      BARNEY_CUDA_CALL(Malloc(&readQueue, newSize*sizeof(Ray)));
+      BARNEY_CUDA_CALL(Malloc(&writeQueue,newSize*sizeof(Ray)));
 
       size = newSize;
     }

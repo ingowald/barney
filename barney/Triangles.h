@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "barney/Model.h"
-#include "mori/Triangles.h"
+#include "barney/Geometry.h"
 
 namespace barney {
 
@@ -26,23 +25,40 @@ namespace barney {
   struct Triangles : public Geometry {
     typedef std::shared_ptr<Triangles> SP;
 
+    struct DD {
+      int          numIndices;
+      int          numVertices;
+      const vec3i *indices;
+      const vec3f *vertices;
+      const vec3f *normals;
+      const vec2f *texcoords;
+      Material     material;
+    };
+    
     Triangles(DataGroup *owner,
-              const mori::Material &material,
+              const Material &material,
               int numIndices,
               const vec3i *indices,
               int numVertices,
               const vec3f *vertices,
               const vec3f *normals,
               const vec2f *texcoords)
-      : Geometry(owner)
+      : Geometry(owner,material)
     {
-      mori = std::make_shared<mori::Triangles>
-        (owner->devGroup.get(),
-         material,
-         numIndices,indices,
-         numVertices,vertices,normals,texcoords);
+      // mori = std::make_shared<mori::Triangles>
+      //   (owner->devGroup.get(),
+      //    material,
+      //    numIndices,indices,
+      //    numVertices,vertices,normals,texcoords);
     }
     
+    static OWLGeomType createGeomType(Device *device);
+
+    int       numIndices;
+    int       numVertices;
+    OWLBuffer indicesBuffer  = 0;
+    OWLBuffer verticesBuffer = 0;
+
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Triangles{}"; }

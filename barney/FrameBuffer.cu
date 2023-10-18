@@ -22,32 +22,33 @@ namespace barney {
     : context(context),
       isOwner(isOwner)
   {
-    moris.resize(context->moris.size());
-    for (int localID=0;localID<context->moris.size();localID++) {
-      moris[localID]
-        = mori::TiledFB::create(context->moris[localID]->device);
+    assert(context);
+    perDev.resize(context->devices.size());
+    for (int localID=0;localID<context->devices.size();localID++) {
+      perDev[localID]
+        = TiledFB::create(context->getDevice(localID));
     }
   }
 
   void FrameBuffer::resize(vec2i size, uint32_t *hostFB)
   {
-    for (auto &mori: moris)
-      mori->resize(size);
+    for (auto &pd: perDev)
+      pd->resize(size);
     
     numPixels = size;
-    // numTiles  = divRoundUp(size,vec2i(mori::tileSize));
+    // numTiles  = divRoundUp(size,vec2i(barney::tileSize));
 
     if (isOwner) {
       if (finalFB && finalFB != this->hostFB) {
-        MORI_CUDA_CALL(Free(finalFB));
+        BARNEY_CUDA_CALL(Free(finalFB));
         finalFB = nullptr;
       }
       
       this->hostFB = hostFB;
       cudaPointerAttributes attr;
-      MORI_CUDA_CALL(PointerGetAttributes(&attr,hostFB));
+      BARNEY_CUDA_CALL(PointerGetAttributes(&attr,hostFB));
       if (attr.type == cudaMemoryTypeHost) {
-        MORI_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
+        BARNEY_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
         std::cout << "#### OWNER ALLOCED FINAL FB " << finalFB << " of size << " << numPixels << std::endl;
       } else {
         std::cout << "### simply using host-supplied frame buffer " << hostFB << std::endl;

@@ -14,37 +14,26 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/DeviceGroup.h"
+#pragma once
 
-namespace mori {
+#include "barney/Ray.h"
+#include "barney/TiledFB.h"
 
-  Device::Device(int cudaID,
-                 int globalIndex,
-                 int globalIndexStep)
-    : cudaID(cudaID),
-      owlContext(owlContextCreate(&cudaID,1)),
-      nonLaunchStream(owlContextGetStream(owlContext,0)),
-      globalIndex(globalIndex),
-      globalIndexStep(globalIndexStep)
-  {
-  }
+namespace barney {
 
-  OWLGeomType
-  Device::getOrCreateGeomTypeFor(const std::string &geomTypeString,
-                                 OWLGeomType (*createOnce)(Device *))
-  {
-    std::lock_guard<std::mutex> lock(this->mutex);
-    OWLGeomType gt = geomTypes[geomTypeString];
-    if (gt)
-      return gt;
+  struct Camera {
+    /*! vector from camera center to to lower-left pixel (i.e., pixel
+      (0,0)) on the focal plane */
+    vec3f dir_00;
+    /* vector along u direction, for ONE pixel */
+    vec3f dir_du;
+    /* vector along v direction, for ONE pixel */
+    vec3f dir_dv;
+    /*! lens center ... */
+    vec3f lens_00;
+    /* vector along v direction, for ONE pixel */
+    float  lensRadius;
+  };
     
-    gt = geomTypes[geomTypeString] = createOnce(this);
-    return gt;
-  }
-  
-  
-  DevGroup::DevGroup(const std::vector<Device::SP> &devices)
-    : devices(devices)
-  {}
-  
 }
+

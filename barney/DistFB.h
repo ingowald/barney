@@ -38,7 +38,7 @@ namespace barney {
     
     struct {
       /*! list of *all* ranks' tileOffset, gathered (only at master) */
-      mori::FinalTile *finalTiles = 0;
+      FinalTile       *finalTiles = 0;
       TileDesc        *tileDescs = 0;
       std::vector<int> numTilesOnGPU;
       std::vector<int> firstTileOnGPU;

@@ -14,26 +14,40 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "barney/DeviceContext.h"
+#include "owl/owl_device.h"
 
-#include "mori/Ray.h"
-#include "mori/TiledFB.h"
+__constant__ struct {
+  __forceinline__ __device__ const barney::DeviceContext::DD &get() const
+  { return *(const barney::DeviceContext::DD*)this; }
+  
+  float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
+} optixLaunchParams;
 
-namespace mori {
-
-  struct Camera {
-    /*! vector from camera center to to lower-left pixel (i.e., pixel
-      (0,0)) on the focal plane */
-    vec3f dir_00;
-    /* vector along u direction, for ONE pixel */
-    vec3f dir_du;
-    /* vector along v direction, for ONE pixel */
-    vec3f dir_dv;
-    /*! lens center ... */
-    vec3f lens_00;
-    /* vector along v direction, for ONE pixel */
-    float  lensRadius;
-  };
+namespace barney {
+  
+  OPTIX_RAYGEN_PROGRAM(traceRays)()
+  {
+    auto &lp = optixLaunchParams.get();
+    const int rayID
+      = owl::getLaunchIndex().x
+      + owl::getLaunchDims().x
+      * owl::getLaunchIndex().y;
     
-}
+    if (rayID >= lp.numRays)
+      return;
 
+    Ray &ray = lp.rays[rayID];
+    // if (rayID == 0)
+    //   printf("tracing ray... into world %lx\n",lp.world);
+    owl::traceRay(lp.world,
+                  owl::Ray(ray.origin,
+                           ray.direction,
+                           0.f,ray.tMax),
+                  ray);
+
+    // if (ray.hadHit)
+    //   printf("ray %i was hit!\n",ray.pixelID);
+  }
+
+}

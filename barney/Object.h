@@ -16,11 +16,7 @@
 
 #pragma once
 
-#include "barney.h"
-#include <string.h>
-#include <cuda_runtime.h>
-#include <mutex>
-#include <map>
+#include "barney/common.h"
 
 namespace barney {
 

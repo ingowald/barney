@@ -17,11 +17,9 @@
 #pragma once
 
 #include "barney/Context.h"
-#include "mori/TiledFB.h"
+#include "barney/TiledFB.h"
 
 namespace barney {
-
-  using mori::TileDesc;
 
   struct FrameBuffer : public Object {
 
@@ -33,7 +31,7 @@ namespace barney {
     
     virtual void resize(vec2i size, uint32_t *hostFB);
     
-    std::vector<mori::TiledFB::SP> moris;
+    std::vector<TiledFB::SP> perDev;
     
     vec2i       numPixels   = { 0,0 };
     uint32_t   *finalFB     = 0;

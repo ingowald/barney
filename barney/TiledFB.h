@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "mori/DeviceGroup.h"
+#include "barney/DeviceGroup.h"
 
-namespace mori {
+namespace barney {
 
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };

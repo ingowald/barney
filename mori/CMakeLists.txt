@@ -14,48 +14,38 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-add_library(mori-config INTERFACE)
-target_include_directories(mori-config INTERFACE
-  ${CMAKE_CURRENT_LIST_DIR}/..
-  )
+# add_library(mori STATIC #SHARED
+#   DeviceGroup.h
+#   DeviceGroup.cpp
+#   TiledFB.h
+#   TiledFB.cu
+#   Camera.h
+#   Camera.cu
+#   MoriContext.h
+#   MoriContext.cu
+#   Spheres.h
+#   Spheres.cu
+#   )
 
-add_library(mori STATIC #SHARED
-  DeviceGroup.h
-  DeviceGroup.cpp
-  TiledFB.h
-  TiledFB.cu
-  Camera.h
-  Camera.cu
-  MoriContext.h
-  MoriContext.cu
-  Spheres.h
-  Spheres.cu
-  )
 
-embed_ptx(
-  OUTPUT_TARGET      mori-spheres-ptx
-  PTX_LINK_LIBRARIES owl::owl mori-config
-  SOURCES            SpheresProgs.cu
-)
+# target_link_libraries(mori
+#   PUBLIC
+#   owl
+#   )
+# target_link_libraries(mori
+#   PUBLIC
+#   mori-spheres-ptx
+#   )
 
-target_link_libraries(mori
-  PUBLIC
-  owl
-  )
-target_link_libraries(mori
-  PUBLIC
-  mori-spheres-ptx
-  )
-
-target_include_directories(mori PUBLIC
-  ${CMAKE_CURRENT_LIST_DIR}/..
-  )
-set_target_properties(mori
-  PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-)
+# target_include_directories(mori PUBLIC
+#   ${CMAKE_CURRENT_LIST_DIR}/..
+#   )
+# set_target_properties(mori
+#   PROPERTIES
+#   CUDA_SEPARABLE_COMPILATION ON
+#   POSITION_INDEPENDENT_CODE ON
+#   CUDA_RESOLVE_DEVICE_SYMBOLS ON
+#   CUDA_USE_STATIC_CUDA_RUNTIME ON
+# )
 
 

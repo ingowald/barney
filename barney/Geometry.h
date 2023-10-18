@@ -17,24 +17,36 @@
 #pragma once
 
 #include "barney/Object.h"
+#include "barney/DeviceGroup.h"
+#include "barney/Ray.h"
 
 namespace barney {
 
   struct DataGroup;
   
+  struct Material {
+    vec3f diffuseColor;
+  };
+
   struct Geometry : public Object {
     typedef std::shared_ptr<Geometry> SP;
 
-    Geometry(DataGroup *const owner)
-      : owner(owner)
+    Geometry(DataGroup *owner,
+             const Material &material)
+      : owner(owner),
+        material(material)
     {}
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Geometry{}"; }
-
-    mori::Geometry::SP mori;
-    DataGroup *const owner;
+    
+    Material    material;
+    DataGroup  *owner;
+    
+    std::vector<OWLGeom>  triangleGeoms;
+    std::vector<OWLGeom>  userGeoms;
+    std::vector<OWLGroup> secondPassGroups;
   };
 
 }

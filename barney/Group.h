@@ -23,24 +23,20 @@ namespace barney {
   struct Group : public Object {
     typedef std::shared_ptr<Group> SP;
 
-    static SP create(DataGroup *owner,
-                     const std::vector<Geometry::SP> &geoms)
-    { return std::make_shared<Group>(owner,geoms); }
-    
     Group(DataGroup *owner,
           const std::vector<Geometry::SP> &geoms);
+    
+    void build();
+
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Group{}"; }
 
-    void build();
-    
-    std::vector<Geometry::SP> geoms;
-    // struct PerGPU {
-    mori::TriangleGeomsGroup::SP triangleGeomsGroup;
-    mori::UserGeomsGroup::SP     userGeomsGroup;
-    // };
-    // std::vector<PerGPU> perGPU;
+    OWLGroup userGeomGroup = 0;
+    OWLGroup triangleGeomGroup = 0;
+    std::vector<OWLGroup> secondPassGroups;
+    DataGroup *const owner;
+    const std::vector<Geometry::SP> geoms;
   };
-
+  
 }

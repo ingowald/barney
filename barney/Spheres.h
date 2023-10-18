@@ -16,37 +16,37 @@
 
 #pragma once
 
-#include "barney/Model.h"
-#include "mori/Spheres.h"
+#include "barney/Geometry.h"
 
 namespace barney {
 
-  struct DataGroup;
-  
   struct Spheres : public Geometry {
     typedef std::shared_ptr<Spheres> SP;
 
+    struct DD {
+      vec3f   *origins;
+      float   *radii;
+      float    defaultRadius;
+      Material material;
+    };
+
     Spheres(DataGroup *owner,
-            const mori::Material &material,
+            const Material &material,
             const vec3f *origins,
             int numOrigins,
             const float *radii,
             float defaultRadius);
     
-    static SP create(DataGroup *owner,
-                     const mori::Material &material,
-                     const vec3f *origins,
-                     int numOrigins,
-                     const float *radii,
-                     float defaultRadius)
-    {
-      return std::make_shared<Spheres>(owner,material,origins,numOrigins,
-                                       radii,defaultRadius);
-    }
+    static OWLGeomType createGeomType(DevGroup *device);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Spheres{}"; }
-  };
 
+    OWLBuffer originsBuffer = 0;
+    OWLBuffer radiiBuffer   = 0;
+    float       defaultRadius = .1f;
+  };
+  
 }
+  

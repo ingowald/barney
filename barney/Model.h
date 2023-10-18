@@ -34,14 +34,14 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Model{}"; }
-    
-    void build()
-    {
-      // todo: parallel
-      for (auto &dg : dataGroups)
-        dg->build();
-    }
-    void render(const mori::Camera *camera,
+
+    // void build()
+    // {
+    //   // todo: parallel
+    //   for (auto &dg : dataGroups)
+    //     dg->build();
+    // }
+    void render(const Camera *camera,
                 FrameBuffer *fb);
 
     DataGroup *getDG(int localID)

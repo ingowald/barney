@@ -20,7 +20,7 @@
 #include <cuda_runtime.h>
 #include <unistd.h>
 
-// inline void moriRaise_impl(std::string str)
+// inline void barneyRaise_impl(std::string str)
 // {
 //   fprintf(stderr,"%s\n",str.c_str());
 // #ifdef WIN32
@@ -37,12 +37,12 @@
 // #endif
 // }
 
-#define MORI_RAISE(MSG) throw std::runtime_error("fatal mori cuda error ... ")
-// #define MORI_RAISE(MSG) ::moriRaise_impl(MSG);
+#define BARNEY_RAISE(MSG) throw std::runtime_error("fatal barney cuda error ... ")
+// #define BARNEY_RAISE(MSG) ::barneyRaise_impl(MSG);
 
 
 
-#define MORI_CUDA_CHECK( call )                                              \
+#define BARNEY_CUDA_CHECK( call )                                              \
   {                                                                     \
     cudaError_t rc = call;                                              \
     if (rc != cudaSuccess) {                                            \
@@ -50,13 +50,13 @@
       fprintf(stderr,                                                   \
               "CUDA call (%s) failed with code %d (line %d): %s\n",     \
               #call, rc, __LINE__, cudaGetErrorString(rc));             \
-      MORI_RAISE("fatal cuda error");                                    \
+      BARNEY_RAISE("fatal cuda error");                                    \
     }                                                                   \
   }
 
-#define MORI_CUDA_CALL(call) MORI_CUDA_CHECK(cuda##call)
+#define BARNEY_CUDA_CALL(call) BARNEY_CUDA_CHECK(cuda##call)
 
-#define MORI_CUDA_CHECK2( where, call )                                      \
+#define BARNEY_CUDA_CHECK2( where, call )                                      \
   {                                                                     \
     cudaError_t rc = call;                                              \
     if(rc != cudaSuccess) {                                             \
@@ -67,24 +67,24 @@
       fprintf(stderr,                                                   \
               "CUDA call (%s) failed with code %d (line %d): %s\n",     \
               #call, rc, __LINE__, cudaGetErrorString(rc));             \
-      MORI_RAISE("fatal cuda error");                                    \
+      BARNEY_RAISE("fatal cuda error");                                    \
     }                                                                   \
   }
 
-#define MORI_CUDA_SYNC_CHECK()                                       \
+#define BARNEY_CUDA_SYNC_CHECK()                                       \
   {                                                             \
     cudaDeviceSynchronize();                                    \
     cudaError_t rc = cudaGetLastError();                        \
     if (rc != cudaSuccess) {                                    \
       fprintf(stderr, "error (%s: line %d): %s\n",              \
               __FILE__, __LINE__, cudaGetErrorString(rc));      \
-      MORI_RAISE("fatal cuda error");                            \
+      BARNEY_RAISE("fatal cuda error");                            \
     }                                                           \
   }
 
 
 
-#define MORI_CUDA_CHECK_NOTHROW( call )                                      \
+#define BARNEY_CUDA_CHECK_NOTHROW( call )                                      \
   {                                                                     \
     cudaError_t rc = call;                                              \
     if (rc != cudaSuccess) {                                            \
@@ -95,9 +95,9 @@
     }                                                                   \
   }
 
-#define MORI_CUDA_CALL_NOTHROW(call) MORI_CUDA_CHECK_NOTHROW(cuda##call)
+#define BARNEY_CUDA_CALL_NOTHROW(call) BARNEY_CUDA_CHECK_NOTHROW(cuda##call)
 
-#define MORI_CUDA_CHECK2_NOTHROW( where, call )                              \
+#define BARNEY_CUDA_CHECK2_NOTHROW( where, call )                              \
   {                                                                     \
     cudaError_t rc = call;                                              \
     if(rc != cudaSuccess) {                                             \
