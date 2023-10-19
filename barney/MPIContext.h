@@ -52,6 +52,8 @@ namespace barney {
     int numRaysActiveGlobally() override;
     
     int gpusPerWorker;
+    int numDifferentDataGroups = -1;
+    int numTimesForwarded = 0;
     
     mpi::Comm world;
     mpi::Comm workers;

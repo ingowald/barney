@@ -40,6 +40,9 @@ namespace barney {
   bool LocalContext::forwardRays()
   {
     const int numDataGroups = perDG.size();
+    if (numDataGroups == 1)
+      return false;
+    
     const int numDevices = devices.size();
     const int dgSize = numDevices / numDataGroups;
     int numCopied[numDevices];

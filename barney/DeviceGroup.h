@@ -40,8 +40,10 @@ namespace barney {
 
     /* for ray queue cycling - who to cycle with */
     struct {
-      int nextWorkerRank  = -1;
-      int nextWorkerLocal = -1;
+      int sendWorkerRank  = -1;
+      int sendWorkerLocal = -1;
+      int recvWorkerRank  = -1;
+      int recvWorkerLocal = -1;
     } rqs;
   };
   
