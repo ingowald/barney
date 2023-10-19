@@ -39,9 +39,35 @@ namespace barney {
 
   bool LocalContext::forwardRays()
   {
-    // for (auto device : devices)
-    //   device->rays.numActive = 0;
-    return false;
+    const int numDataGroups = perDG.size();
+    const int numDevices = devices.size();
+    const int dgSize = numDevices / numDataGroups;
+    int numCopied[numDevices];
+    for (int devID=0;devID<numDevices;devID++) {
+      auto thisDev = devices[devID];
+      SetActiveGPU forDuration(thisDev->device);
+      
+      int nextID = (devID + dgSize) % numDevices;
+      auto nextDev = devices[nextID];
+      
+      int count = nextDev->rays.numActive;
+      numCopied[devID] = count;
+      Ray *src = nextDev->rays.readQueue;
+      Ray *dst = thisDev->rays.writeQueue;
+      BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
+                                   cudaMemcpyDefault,
+                                   thisDev->device->launchStream));
+    }
+
+    for (int devID=0;devID<numDevices;devID++) {
+      auto thisDev = devices[devID];
+      thisDev->launch_sync();
+      thisDev->rays.numActive = numCopied[devID];
+    }
+    
+    ++numTimesForwarded;
+    return (numTimesForwarded % numDataGroups) != 0;
+    // return false;
   }
 
   void LocalContext::render(Model *model,

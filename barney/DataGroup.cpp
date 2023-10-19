@@ -67,12 +67,9 @@ namespace barney {
     std::vector<OWLGroup> owlGroups;
     for (int i=0;i<instances.groups.size();i++) {
       Group *group = instances.groups[i].get();
-      PRINT(group->userGeomGroup);
-      PRINT(group->triangleGeomGroup);
         
       if (group->userGeomGroup) {
         owlGroups.push_back(group->userGeomGroup);
-        PRINT(instances.xfms.size());
         owlTransforms.push_back(instances.xfms[i]);
       }
       if (group->triangleGeomGroup) {
@@ -80,23 +77,17 @@ namespace barney {
         owlTransforms.push_back(instances.xfms[i]);
       }
     }
-    std::cout << "-----------" << std::endl;
-    std::cout << "Data group build" << std::endl;
-    PRINT(model);
-    PRINT(model->dataGroups.size());
-    PRINT(model->dataGroups[0].get());
-    PRINT(this);
+    if (owlGroups.size() == 0)
+      std::cout << OWL_TERMINAL_RED
+                << "warning: data group is empty..."
+                << OWL_TERMINAL_DEFAULT << std::endl;
     instances.group
       = owlInstanceGroupCreate(devGroup->owl,
                                owlGroups.size(),
                                owlGroups.data(),
                                nullptr,
                                (const float *)owlTransforms.data());
-    PRINT(owlTransforms[0]);
     owlGroupBuildAccel(instances.group);
-    PRINT(instances.group);
-    PRINT(this);
-    PRINT(&instances.group);
   }
 
 }

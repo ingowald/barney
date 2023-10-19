@@ -48,5 +48,7 @@ namespace barney {
     
     /*! create a frame buffer object suitable to this context */
     FrameBuffer *createFB(int owningRank) override;
+
+    int numTimesForwarded = 0;
   };
 }

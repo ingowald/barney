@@ -129,7 +129,6 @@ namespace barney {
     int bs = 1024;
     int nb = divRoundUp(numRays,bs);
     
-    PING; PRINT(numRays);
     g_shadeRays<<<nb,bs,0,device->launchStream>>>
       (fb->accumTiles,rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
   }
@@ -146,8 +145,6 @@ namespace barney {
   void DeviceContext::traceRays_launch(Model *model)
   {
     DevGroup *dg = device->devGroup;
-    PING;
-    PRINT(rays.numActive);
     owlParamsSetPointer(dg->lp,"rays",rays.readQueue);
     owlParamsSet1i(dg->lp,"numRays",rays.numActive);
     OWLGroup world = model->getDG(dg->ldgID)->instances.group;

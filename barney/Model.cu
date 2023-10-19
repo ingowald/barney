@@ -39,9 +39,6 @@ namespace barney {
       for (auto g : geom->userGeoms)
         userGeoms.push_back(g);
     }
-    PING;
-    PRINT(userGeoms.size());
-    PRINT(triangleGeoms.size());
     if (!userGeoms.empty())
       userGeomGroup = owlUserGeomGroupCreate
         (owner->devGroup->owl,userGeoms.size(),userGeoms.data());

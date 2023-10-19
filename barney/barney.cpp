@@ -281,6 +281,13 @@ namespace barney {
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(i);
     }
+
+    if (gpuIDs.size() < numDataGroupsOnThisRank) {
+      std::vector<int> replicatedIDs;
+      for (int i=0;i<numDataGroupsOnThisRank;i++)
+        replicatedIDs.push_back(gpuIDs[i % gpuIDs.size()]);
+      gpuIDs = replicatedIDs;
+    }
     
     return (BNContext)new LocalContext(dataGroupIDs,
                                        gpuIDs);
