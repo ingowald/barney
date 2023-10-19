@@ -60,12 +60,16 @@ namespace barney {
                                    thisDev->device->launchStream));
     }
 
+    for (auto dev : devices) dev->sync();
+
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
       thisDev->launch_sync();
       thisDev->rays.swap();
       thisDev->rays.numActive = numCopied[devID];
     }
+
+    for (auto dev : devices) dev->sync();
 
     ++numTimesForwarded;
     return (numTimesForwarded % numDataGroups) != 0;
@@ -82,8 +86,11 @@ namespace barney {
 
     // render all tiles, in tile format and writing into accum buffer
     renderTiles(model,*camera,fb);
+    for (auto dev : devices) dev->sync();
+    
     // convert all tiles from accum to RGBA
     finalizeTiles(fb);
+    for (auto dev : devices) dev->sync();
 
     // ------------------------------------------------------------------
     // tell all GPUs to write their final pixels
@@ -97,6 +104,7 @@ namespace barney {
                                 devFB.tileDescs,
                                 devFB.numActiveTiles);
     }
+    for (auto dev : devices) dev->sync();
     
     // ------------------------------------------------------------------
     // wait for all GPUs to complete, so pixels are all written before
@@ -112,7 +120,7 @@ namespace barney {
       BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
                             fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                             cudaMemcpyDefault));
-    BARNEY_CUDA_SYNC_CHECK();
+    for (auto dev : devices) dev->sync();
   }
   
 }

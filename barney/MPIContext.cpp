@@ -101,8 +101,8 @@ namespace barney {
         maxDataGroupID = std::max(maxDataGroupID,dgID_i);
         dataGroupCount[dgID_i]++;
       }
-      int numDataGlobally = dataGroupCount.size();
-      if (maxDataGroupID >= numDataGlobally)
+      int numDifferentDataGroups = dataGroupCount.size();
+      if (maxDataGroupID >= numDifferentDataGroups)
         throw std::runtime_error("data group IDs not numbered sequentially");
 
       int numIslands = dataGroupCount[0];
@@ -137,7 +137,7 @@ namespace barney {
         int myGlobal = dev->globalIndex;
         int myDG     = dataOnGlobal[myGlobal];
         int myIsland = islandOfGlobal[myGlobal];
-        int nextDG   = (myDG+1) % numDataGlobally;
+        int nextDG   = (myDG+1) % numDifferentDataGroups;
         for (int peerGlobal=0;peerGlobal<numDevicesGlobally;peerGlobal++) {
           if (islandOfGlobal[peerGlobal] != myIsland)
             continue;
@@ -150,8 +150,6 @@ namespace barney {
         }
       }
     }
-    
-    assert(!isActiveWorker || (numDifferentDataGroups % dataGroupIDs.size() == 0));
   }
 
   /*! create a frame buffer object suitable to this context */

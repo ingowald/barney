@@ -80,15 +80,14 @@ namespace barney {
       auto dev = devices[localID];
       dev->traceRays_launch(model);
     }
-    for (int localID=0; localID<devices.size(); localID++) {
-      auto dev = devices[localID];
-      dev->launch_sync();
-    }
-    BARNEY_CUDA_SYNC_CHECK();
+    for (auto dev : devices) dev->sync();
+      
     // for (int localID=0; localID<devices.size(); localID++) {
     //   auto dev = devices[localID];
-    //   dev->rays.numActive = 0;
+    //   dev->launch_sync();
     // }
+    // for (auto dev : devices) dev->sync();
+
   }
 
   void Context::traceRaysGlobally(Model *model)
@@ -126,9 +125,14 @@ namespace barney {
       pd.devGroup->update();
     
     generateRays(camera,fb);
+    for (auto dev : devices) dev->sync();
+
     while (true) {
       traceRaysGlobally(model);
+      
       shadeRaysLocally(fb);
+      for (auto dev : devices) dev->sync();
+      
       if (numRaysActiveGlobally() > 0)
         continue;
       break;

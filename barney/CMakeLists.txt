@@ -82,6 +82,7 @@ set_target_properties(barney
   POSITION_INDEPENDENT_CODE ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_ARCHITECTURES OFF
 )
 
 # ------------------------------------------------------------------
@@ -96,6 +97,14 @@ add_library(barney_mpi SHARED
   DistFB.h
   DistFB.cu
   )
+set_target_properties(barney_mpi
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_ARCHITECTURES OFF
+)
 target_link_libraries(barney_mpi PUBLIC
   barney
   MPI::MPI_CXX
