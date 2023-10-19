@@ -37,6 +37,12 @@ namespace barney {
     int                const globalIndexStep;
     DevGroup          *const devGroup;
     cudaStream_t       const launchStream;
+
+    /* for ray queue cycling - who to cycle with */
+    struct {
+      int nextWorkerRank  = -1;
+      int nextWorkerLocal = -1;
+    } rqs;
   };
   
   /*! stolen from owl/Device: helper class that will set the
@@ -96,6 +102,7 @@ namespace barney {
     bool sbtDirty = true;
     /*! local device group ID */
     int const ldgID;
+
   };
   
 }

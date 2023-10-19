@@ -70,6 +70,7 @@ namespace barney {
       void free();
 
       void allGather(int *allValues, int myValue);
+      void allGather(int *allValues, const int *myValues, int numMyValues);
       
       /*! master-side of a gather where clietn gathers a fixed number
           of itmes from each rank */

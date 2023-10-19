@@ -45,27 +45,113 @@ namespace barney {
       }
     workers.size = numWorkers;
     
-    /* compute num data groups. this code assumes that user uses IDs
-       0,1,2, ...; if thi sis not the case this code will break */
-    int myMaxDataID = 0;
-    for (auto dataID : dataGroupIDs) {
-      assert(dataID >= 0);
-      myMaxDataID = std::max(myMaxDataID,dataID);
+    if (isActiveWorker) {
+      int numDGsPerWorker = (int)perDG.size();
+      int numDevicesPerWorker = (int)devices.size();
+      int numWorkers = workers.size;
+      
+      // ------------------------------------------------------------------
+      // sanity check - make sure all workers have same num data groups
+      // ------------------------------------------------------------------
+      std::vector<int> numDataGroupsOnWorker(workers.size);
+      workers.allGather(numDataGroupsOnWorker.data(),numDGsPerWorker);
+      for (int i=0;i<numWorkers;i++)
+        if (numDataGroupsOnWorker[i] != numDGsPerWorker)
+          throw std::runtime_error
+            ("worker rank "+std::to_string(i)+
+             " has different number of data groups ("+
+             std::to_string(numDataGroupsOnWorker[i])+
+             " than worker rank "+std::to_string(workers.rank)+
+             " ("+std::to_string(numDGsPerWorker)+")");
+      
+      // ------------------------------------------------------------------
+      // sanity check - make sure all workers have same num devices
+      // ------------------------------------------------------------------
+      std::vector<int> numDevicesOnWorker(workers.size);
+      workers.allGather(numDevicesOnWorker.data(),(int)devices.size());
+      for (int i=0;i<numWorkers;i++)
+        if (numDevicesOnWorker[i] != devices.size())
+          throw std::runtime_error
+            ("worker rank "+std::to_string(i)+
+             " has different number of data groups ("+
+             std::to_string(numDevicesOnWorker[i])+
+             " than worker rank "+std::to_string(workers.rank)+
+             " ("+std::to_string(devices.size())+")");
+      int numDevicesTotal = numDevicesOnWorker[0] * workers.size;
+      
+      // ------------------------------------------------------------------
+      // gather who has which data(groups)
+      // ------------------------------------------------------------------
+      std::vector<int> allDataGroups(workers.size*numDGsPerWorker);
+      workers.allGather(allDataGroups.data(),
+                        dataGroupIDs.data(),
+                        dataGroupIDs.size());
+
+      // ------------------------------------------------------------------
+      // sanity check: data groups are numbered 0,1,2 .... and each
+      // data group appears same number of times.
+      // ------------------------------------------------------------------
+      std::map<int,int> dataGroupCount;
+      int maxDataGroupID = -1;
+      for (int i=0;i<allDataGroups.size();i++) {
+        int dgID_i = allDataGroups[i];
+        if (dgID_i < 0)
+          throw std::runtime_error
+            ("invalid data group ID ("+std::to_string(dgID_i)+")");
+        maxDataGroupID = std::max(maxDataGroupID,dgID_i);
+        dataGroupCount[dgID_i]++;
+      }
+      int numDataGlobally = dataGroupCount.size();
+      if (maxDataGroupID >= numDataGlobally)
+        throw std::runtime_error("data group IDs not numbered sequentially");
+
+      int numIslands = dataGroupCount[0];
+      for (auto dgc : dataGroupCount)
+        if (dgc.second != numIslands)
+          throw std::runtime_error
+            ("some data groups used more often than others!?");
+      
+      // ------------------------------------------------------------------
+      // for each local device, find which othe rdevice has 'next'
+      // data group to cycle with. we already sanity checked that
+      // there's symmetry in num devices, num data groups, etc.
+      // ------------------------------------------------------------------
+      std::vector<int> myDataOnLocal(devices.size());
+      for (int i=0;i<devices.size();i++)
+        myDataOnLocal[i]
+          = perDG[devices[i]->device->devGroup->ldgID].dataGroupID;
+      int numDevicesGlobally = numDevicesPerWorker*workers.size;
+      std::vector<int> dataOnGlobal(numDevicesGlobally);
+      workers.allGather(dataOnGlobal.data(),
+                        myDataOnLocal.data(),
+                        myDataOnLocal.size());
+
+      dataGroupCount.clear();
+      std::vector<int> islandOfGlobal(devices.size());
+      for (int i=0;i<numDevicesGlobally;i++)
+        islandOfGlobal[i]
+          = dataGroupCount[dataOnGlobal[i]]++;
+        
+      for (int localID=0;localID<devices.size();localID++) {
+        auto dev = devices[localID]->device;
+        int myGlobal = dev->globalIndex;
+        int myDG     = dataOnGlobal[myGlobal];
+        int myIsland = islandOfGlobal[myGlobal];
+        int nextDG   = (myDG+1) % numDataGlobally;
+        for (int peerGlobal=0;peerGlobal<numDevicesGlobally;peerGlobal++) {
+          if (islandOfGlobal[peerGlobal] != myIsland)
+            continue;
+          if (dataOnGlobal[peerGlobal] != nextDG)
+            continue;
+          // *found* the global next
+          dev->rqs.nextWorkerRank  = peerGlobal / numDevicesPerWorker;
+          dev->rqs.nextWorkerLocal = peerGlobal % numDevicesPerWorker;
+          break;
+        }
+      }
     }
     
-    int numDifferentDataGroups = world.allReduceMax(myMaxDataID)+1;
     assert(!isActiveWorker || (numDifferentDataGroups % dataGroupIDs.size() == 0));
-
-    int myWorkerGPUs
-      = isActiveWorker
-      ? (int)gpuIDs.size()
-      : 0;
-    int maxWorkerGPUs = world.allReduceMax(myWorkerGPUs);
-    if (isActiveWorker && gpuIDs.size() != maxWorkerGPUs)
-      throw std::runtime_error("inconsistent number of GPUs across different workers...");
-    gpusPerWorker = maxWorkerGPUs;
-    // int numRanksPerIsland = numDifferentDataGroups / (int)dataGroupIDs.size();
-    // int numIslands = comm.size / numRanksPerIsland;
   }
 
   /*! create a frame buffer object suitable to this context */
@@ -119,8 +205,8 @@ namespace barney {
       BARNEY_CUDA_SYNC_CHECK();
       if (fb->hostFB && fb->finalFB != fb->hostFB) {
         BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
-                              fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
-                              cudaMemcpyDefault));
+                                fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
+                                cudaMemcpyDefault));
       }
     }
     BARNEY_CUDA_SYNC_CHECK();
