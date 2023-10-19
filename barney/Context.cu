@@ -174,14 +174,15 @@ namespace barney {
     int gpusPerDG = gpuIDs.size() / numDGs;
     std::vector<std::vector<int>> gpuInDG(numDGs);
     perDG.resize(numDGs);
-    for (int dgID=0;dgID<numDGs;dgID++) {
-      auto &dg = perDG[dgID];
+    for (int ldgID=0;ldgID<numDGs;ldgID++) {
+      auto &dg = perDG[ldgID];
+      dg.dataGroupID = dataGroupIDs[ldgID];
       for (int j=0;j<gpusPerDG;j++)
-        dg.gpuIDs.push_back(gpuIDs[dgID*gpusPerDG+j]);
+        dg.gpuIDs.push_back(gpuIDs[ldgID*gpusPerDG+j]);
       dg.devGroup = std::make_shared
-        <DevGroup>(dgID,
+        <DevGroup>(ldgID,
                    dg.gpuIDs,
-                   globalIndex*numDGs+dgID,
+                   globalIndex*numDGs+ldgID,
                    globalIndexStep*numDGs);
       for (auto dev : dg.devGroup->devices)
         devices.push_back(std::make_shared<DeviceContext>(dev));

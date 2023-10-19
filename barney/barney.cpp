@@ -141,7 +141,7 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
-    LOG_API_ENTRY;
+    // LOG_API_ENTRY;
     Triangles *triangles = checkGet(dataGroup)->createTriangles
       (checkGet(material),
        numIndices,

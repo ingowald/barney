@@ -52,15 +52,15 @@ namespace barney {
   struct SetActiveGPU {
     inline SetActiveGPU(const Device *device)
     {
-      assert(device);
+      // assert(device);
       BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
       BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
     }
     inline SetActiveGPU(const Device::SP &device)
     {
-      assert(device);
+      // assert(device);
       BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      BARNEY_CUDA_CHECK(cudaSetDevice(device->cudaID));
+      BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
     }
     
     inline SetActiveGPU(int cudaDeviceID)

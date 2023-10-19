@@ -30,9 +30,21 @@ namespace barney {
       world(worldComm),
       workers(workersComm)
   {
+    bool dbg = true;
+
+    if (dbg) {
+      std::stringstream ss;
+      ss << "#bn." << workers.rank << " data group IDs ";
+      for (auto dgID : dataGroupIDs)
+        ss << dgID << " ";
+      ss << std::endl;
+      std::cout << ss.str();
+    }
     world.assertValid();
     workers.assertValid();
 
+
+    
     workerRankOfWorldRank.resize(world.size);
     world.allGather(workerRankOfWorldRank.data(),
                     isActiveWorker?workers.rank:-1);
@@ -44,6 +56,9 @@ namespace barney {
         numWorkers++;
       }
     workers.size = numWorkers;
+
+    gpusPerWorker = world.allReduceMax(int(gpuIDs.size()));
+    numWorkers = world.allReduceAdd(isActiveWorker?1:0);
     
     if (isActiveWorker) {
       int numDGsPerWorker = (int)perDG.size();
@@ -110,7 +125,7 @@ namespace barney {
         if (dgc.second != numIslands)
           throw std::runtime_error
             ("some data groups used more often than others!?");
-      
+
       // ------------------------------------------------------------------
       // for each local device, find which othe rdevice has 'next'
       // data group to cycle with. we already sanity checked that
@@ -120,11 +135,26 @@ namespace barney {
       for (int i=0;i<devices.size();i++)
         myDataOnLocal[i]
           = perDG[devices[i]->device->devGroup->ldgID].dataGroupID;
+      if (dbg) {
+        std::stringstream ss;
+        ss << "bn." << workers.rank << ": ";
+        ss << "*my* data locally (myDataOnLocal): ";
+        for (auto d : myDataOnLocal) ss << d << " ";
+        std::cout << ss.str() << std::endl;
+      }
       int numDevicesGlobally = numDevicesPerWorker*workers.size;
       std::vector<int> dataOnGlobal(numDevicesGlobally);
       workers.allGather(dataOnGlobal.data(),
                         myDataOnLocal.data(),
                         myDataOnLocal.size());
+
+      if (dbg) {
+        std::stringstream ss;
+        ss << "bn." << workers.rank << ": ";
+        ss << "*all* data globally  (dataOnGlobal): ";
+        for (auto d : dataOnGlobal) ss << d << " ";
+        std::cout << ss.str() << std::endl;
+      }
 
       dataGroupCount.clear();
       std::vector<int> islandOfGlobal(devices.size());
@@ -148,6 +178,8 @@ namespace barney {
           dev->rqs.nextWorkerLocal = peerGlobal % numDevicesPerWorker;
           break;
         }
+        if (dbg) 
+          std::cout << "local device " << localID << " cycles with device " << dev->rqs.nextWorkerRank << "." << dev->rqs.nextWorkerLocal << std::endl;
       }
     }
   }
@@ -210,4 +242,13 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
   
+  /*! forward rays (during global trace); returns if _after_ that
+    forward the rays need more tracing (true) or whether they're
+    done (false) */
+  bool MPIContext::forwardRays() 
+  {
+    std::cout << "SHOULD BE FORWARDING HERE!" << std::endl;
+    return false;
+  }
+
 }

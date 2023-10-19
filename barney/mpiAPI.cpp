@@ -70,7 +70,7 @@ namespace barney {
     // ------------------------------------------------------------------
     BN_MPI_CALL(Barrier(comm.comm));
     int localRank = 0;
-    for (int i=0;i<comm.size;i++) 
+    for (int i=0;i<comm.rank;i++) 
       if (hostNames[i] == hostName)
         localRank++;
     BN_MPI_CALL(Barrier(comm.comm));
@@ -161,15 +161,28 @@ namespace barney {
         gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
                           + i) % hardware.numGPUsThisHost);
     }
-    
-      bool isActiveWorker = !dataGroupIDs.empty();
-      mpi::Comm workers = world.split(isActiveWorker);
 
-      return (BNContext)new MPIContext(world,
-                                       workers,
-                                       isActiveWorker,
-                                       dataGroupIDs,
-                                       gpuIDs);
+    // if (1) {
+    //   std::stringstream ss;
+    //   ss << "#bn." << world.rank << ": gpuIDs ";
+    //   for (auto i : gpuIDs) ss << i << " ";
+    //   ss << std::endl;
+    //   ss << "localRank " << hardware.localRank << std::endl;
+    //   ss << "numGPUsThisRank " << hardware.numGPUsThisRank << std::endl;
+    //   ss << "numGPUsThisHost " << hardware.numGPUsThisHost << std::endl;
+    //   std::cout << ss.str() << std::flush;
+    //   world.barrier();
+    //   exit(0);
+    // }
+    
+    bool isActiveWorker = !dataGroupIDs.empty();
+    mpi::Comm workers = world.split(isActiveWorker);
+
+    return (BNContext)new MPIContext(world,
+                                     workers,
+                                     isActiveWorker,
+                                     dataGroupIDs,
+                                     gpuIDs);
   }
   
 }
