@@ -45,6 +45,7 @@ namespace barney {
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
       dev->generateRays_sync();
+      // std::cout << "num rays generated in dev " << localID << " is " << dev->rays.numActive << std::endl;
     }
   }
   
@@ -176,8 +177,8 @@ namespace barney {
       dg.devGroup = std::make_shared
         <DevGroup>(dgID,
                    dg.gpuIDs,
-                   globalIndex*gpusPerDG+dgID,
-                   globalIndexStep*gpusPerDG);
+                   globalIndex*numDGs+dgID,
+                   globalIndexStep*numDGs);
       for (auto dev : dg.devGroup->devices)
         devices.push_back(std::make_shared<DeviceContext>(dev));
     }

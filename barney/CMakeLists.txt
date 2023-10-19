@@ -30,6 +30,11 @@ embed_ptx(
   SOURCES            Spheres.dev.cu
 )
 embed_ptx(
+  OUTPUT_TARGET      barney-triangles-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            Triangles.dev.cu
+)
+embed_ptx(
   OUTPUT_TARGET      barney-traceRays-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            traceRays.cu
@@ -57,12 +62,15 @@ add_library(barney SHARED
   DataGroup.cpp
   Spheres.h
   Spheres.cu
+  Triangles.h
+  Triangles.cu
   )
 target_link_libraries(barney
   PUBLIC
   owl::owl 
   barney-config
   barney-spheres-ptx
+  barney-triangles-ptx
   barney-traceRays-ptx  
   )
 #target_include_directories(barney PUBLIC

@@ -42,17 +42,9 @@ namespace barney {
               int numVertices,
               const vec3f *vertices,
               const vec3f *normals,
-              const vec2f *texcoords)
-      : Geometry(owner,material)
-    {
-      // mori = std::make_shared<mori::Triangles>
-      //   (owner->devGroup.get(),
-      //    material,
-      //    numIndices,indices,
-      //    numVertices,vertices,normals,texcoords);
-    }
+              const vec2f *texcoords);
     
-    static OWLGeomType createGeomType(Device *device);
+    static OWLGeomType createGeomType(DevGroup *devGroup);
 
     int       numIndices;
     int       numVertices;

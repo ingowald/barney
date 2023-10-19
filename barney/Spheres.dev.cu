@@ -40,9 +40,22 @@ namespace barney {
   OPTIX_CLOSEST_HIT_PROGRAM(SpheresCH)()
   {
     auto &ray = owl::getPRD<Ray>();
+    auto &self = owl::getProgramData<Spheres::DD>();
+    int primID = optixGetPrimitiveIndex();
+
     ray.hadHit = true;
+    ray.tMax = optixGetRayTmax();
+
+    vec3f org = optixGetWorldRayOrigin();
+    vec3f dir = optixGetWorldRayDirection();
+    vec3f hitPos = org + ray.tMax * dir;
+    vec3f center = self.origins[primID];
+    vec3f n = normalize(hitPos - center);
+    vec3f baseColor = owl::randomColor(primID);
+    ray.color = .3f + baseColor*abs(dot(dir,n));
+
     // printf("Marking ray %i as hit\n",ray.pixelID);
-  }
+      }
   
   OPTIX_INTERSECT_PROGRAM(SpheresIsec)()
   {

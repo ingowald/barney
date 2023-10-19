@@ -59,6 +59,26 @@ namespace barney {
     return model->context->initReference
       (std::make_shared<Spheres>(this,material,origins,numOrigins,radii,defaultRadius));
   }
+
+  Triangles *DataGroup::createTriangles(const barney::Material &material,
+                                        int numIndices,
+                                        const vec3i *indices,
+                                        int numVertices,
+                                        const vec3f *vertices,
+                                        const vec3f *normals,
+                                        const vec2f *texcoords)
+  {
+    assert(model);
+    assert(model->context);
+    return model->context->initReference
+      (std::make_shared<Triangles>(this,material,
+                                   numIndices,
+                                   indices,
+                                   numVertices,
+                                   vertices,
+                                   normals,
+                                   texcoords));
+  }
   
   
   void DataGroup::build()

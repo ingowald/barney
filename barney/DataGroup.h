@@ -38,6 +38,13 @@ namespace barney {
                            int numOrigins,
                            const float *radii,
                            float defaultRadius);
+    Triangles *createTriangles(const barney::Material &material,
+                               int numIndices,
+                               const vec3i *indices,
+                               int numVertices,
+                               const vec3f *vertices,
+                               const vec3f *normals,
+                               const vec2f *texcoords);
     void setInstances(std::vector<Group::SP> &groups,
                       const affine3f *xfms);
     

@@ -26,6 +26,7 @@ namespace barney {
     vec3f    direction;
     float    tMax;
     int      instID, geomID, primID;
+    vec3f    color;
     float    u,v;
     uint32_t seed;
     struct {

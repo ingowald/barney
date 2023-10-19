@@ -14,39 +14,27 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/Geometry.h"
+#include "barney/Triangles.h"
+#include "owl/owl_device.h"
 
 namespace barney {
-
-  struct Spheres : public Geometry {
-    typedef std::shared_ptr<Spheres> SP;
-
-    struct DD {
-      vec3f   *origins;
-      float   *radii;
-      float    defaultRadius;
-      Material material;
-    };
-
-    Spheres(DataGroup *owner,
-            const Material &material,
-            const vec3f *origins,
-            int numOrigins,
-            const float *radii,
-            float defaultRadius);
-    
-    static OWLGeomType createGeomType(DevGroup *device);
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Spheres{}"; }
-
-    OWLBuffer originsBuffer = 0;
-    OWLBuffer radiiBuffer   = 0;
-    float     defaultRadius = .1f;
-  };
+  
+  OPTIX_CLOSEST_HIT_PROGRAM(TrianglesCH)()
+  {
+    auto &ray = owl::getPRD<Ray>();
+    auto &self = owl::getProgramData<Triangles::DD>();
+    ray.hadHit = true;
+    ray.tMax = optixGetRayTmax();
+    int primID = optixGetPrimitiveIndex();
+    vec3i triangle = self.indices[primID];
+    vec3f a = self.vertices[triangle.x];
+    vec3f b = self.vertices[triangle.y];
+    vec3f c = self.vertices[triangle.z];
+    vec3f n = normalize(cross(b-a,c-a));
+    vec3f dir = optixGetWorldRayDirection();
+    vec3f baseColor = owl::randomColor(primID);
+    ray.color = .3f + .7f*baseColor*abs(dot(dir,n));
+    // printf("Marking ray %i as hit\n",ray.pixelID);
+  }
   
 }
-  

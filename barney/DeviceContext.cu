@@ -52,6 +52,7 @@ namespace barney {
       = camera.dir_00
       + (ix+.5f)*camera.dir_du
       + (iy+.5f)*camera.dir_dv;
+    ray.direction = normalize(ray.direction);
     ray.tMax = 1e30f;
     ray.instID  = -1;
     ray.geomID  = -1;
@@ -116,7 +117,7 @@ namespace barney {
     Ray ray = readQueue[tid];
     vec3f color = abs(normalize(ray.direction));
     if (ray.hadHit)
-      color = vec3f(1.f);
+      color = ray.color;
     int tileID  = ray.pixelID / pixelsPerTile;
     int tileOfs = ray.pixelID % pixelsPerTile;
     accumTiles[tileID].accum[tileOfs] = vec4f(color,0.f);
@@ -128,9 +129,11 @@ namespace barney {
     int numRays = rays.numActive;
     int bs = 1024;
     int nb = divRoundUp(numRays,bs);
-    
-    g_shadeRays<<<nb,bs,0,device->launchStream>>>
-      (fb->accumTiles,rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
+
+    // std::cout << "*shading* " << numRays << " on device " << fb->device->globalIndex << std::endl;
+    if (nb)
+      g_shadeRays<<<nb,bs,0,device->launchStream>>>
+        (fb->accumTiles,rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
   }
 
   void DeviceContext::shadeRays_sync()
@@ -151,6 +154,8 @@ namespace barney {
     owlParamsSetGroup(dg->lp,"world",world);
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);
-    owlAsyncLaunch2DOnDevice(dg->rg,bs,nb,device->owlID,dg->lp);
+    // std::cout << "tracing " << rays.numActive << " rays on dg " << dg->ldgID << std::endl;
+    if (nb)
+      owlAsyncLaunch2DOnDevice(dg->rg,bs,nb,device->owlID,dg->lp);
   }
 }

@@ -67,6 +67,11 @@ namespace barney {
       ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
                    device->globalIndexStep)
       : 0;
+    // PING;
+    // PRINT(device->globalIndex);
+    // PRINT(device->globalIndexStep);
+    // PRINT(numTiles.x*numTiles.y);
+    // PRINT(numActiveTiles);
     BARNEY_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
     BARNEY_CUDA_CALL(Malloc(&finalTiles, numActiveTiles * sizeof(FinalTile)));
     BARNEY_CUDA_CALL(MallocManaged(&tileDescs, numActiveTiles * sizeof(TileDesc)));

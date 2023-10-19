@@ -118,6 +118,20 @@ namespace barney {
   }
 
   BN_API
+  BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
+                         const BNMaterial *material,
+                         const float3     *origins,
+                         int               nubarneygins,
+                         const float      *radii,
+                         float             defaultRadius)
+  {
+    LOG_API_ENTRY;
+    Spheres *spheres = checkGet(dataGroup)->createSpheres
+      (checkGet(material),(const vec3f*)origins,nubarneygins,radii,defaultRadius);
+    return (BNGeom)spheres;
+  }
+
+  BN_API
   BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
                               const BNMaterial *material,
                               const int3 *indices,
@@ -128,7 +142,15 @@ namespace barney {
                               const float2 *texcoords)
   {
     LOG_API_ENTRY;
-    return 0;
+    Triangles *triangles = checkGet(dataGroup)->createTriangles
+      (checkGet(material),
+       numIndices,
+       (const vec3i*)indices,
+       numVertices,
+       (const vec3f*)vertices,
+       (const vec3f*)normals,
+       (const vec2f*)texcoords);
+    return (BNGeom)triangles;
   }
 
   BN_API
@@ -195,20 +217,6 @@ namespace barney {
     camera->lensRadius = 0.f;
   }
   
-  BN_API
-  BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
-                         const BNMaterial *material,
-                         const float3     *origins,
-                         int               nubarneygins,
-                         const float      *radii,
-                         float             defaultRadius)
-  {
-    LOG_API_ENTRY;
-    Spheres *spheres = checkGet(dataGroup)->createSpheres
-      (checkGet(material),(const vec3f*)origins,nubarneygins,radii,defaultRadius);
-    return (BNGeom)spheres;
-  }
-
   BN_API
   BNFrameBuffer bnFrameBufferCreate(BNContext context,
                                     int owningRank)

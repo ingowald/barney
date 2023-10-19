@@ -51,6 +51,7 @@ namespace barney {
       auto nextDev = devices[nextID];
       
       int count = nextDev->rays.numActive;
+      // std::cout << "forwarding " << count << " rays between " << devID << " and " << nextID << std::endl;
       numCopied[devID] = count;
       Ray *src = nextDev->rays.readQueue;
       Ray *dst = thisDev->rays.writeQueue;
@@ -62,9 +63,10 @@ namespace barney {
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
       thisDev->launch_sync();
+      thisDev->rays.swap();
       thisDev->rays.numActive = numCopied[devID];
     }
-    
+
     ++numTimesForwarded;
     return (numTimesForwarded % numDataGroups) != 0;
     // return false;
