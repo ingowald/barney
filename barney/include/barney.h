@@ -24,17 +24,18 @@
 #define BN_API extern "C"
 
 typedef struct _BNContext       *BNContext;
+typedef struct _BNScalarField   *BNScalarField;
 typedef struct _BNGeom          *BNGeom;
 typedef struct _BNVolume        *BNVolume;
 typedef struct _BNGroup         *BNGroup;
-typedef struct _BNXF            *BNXF;
+typedef struct _BNTransferFunction         *BNTransferFunction;
 typedef struct _BNModel         *BNModel;
 typedef struct _BNRenderRequest *BNRenderRequest;
 typedef struct _BNFrameBuffer   *BNFrameBuffer;
 typedef struct _BNDataGroup     *BNDataGroup;
 
 struct BNMaterial {
-  float3 diffuseColor;
+  float3 baseColor;
   float  transparency;
   float  ior;
   int    alphaTextureID;
@@ -231,45 +232,83 @@ BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
 
 BN_API
 void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
+
 // ------------------------------------------------------------------
 // volume stuff
 // ------------------------------------------------------------------
 
+// /*! phase function for volumetric stuff - should at some point define
+//     scattering/absorption(/emission?) parameters */
+// struct BNPhaseFunction {
+//   /* iw - should density be part of this rather than of xf? */
+//   float3 baseColor;
+//   /*! blend function describes how much we blend the basecolor with
+//       the value from the transfer function. xfBlend = 0.f means 'use
+//       only transfer function value', xfBlend=1 means 'use only
+//       baseColor' */
+//   float  xfBlend;
+// };
+
+// #define BN_DEFAULT_PHASE_FUNCTION { { .5f,.5f,.5f }, 0.f }
+
+
 BN_API
-BNXF bnXFCreate(BNDataGroup dataGroup,
+BNTransferFunction bnTransferFunctionCreate(BNDataGroup dataGroup,
                 int numScalars);
 BN_API
-void bnXFSet(float domain_lower, float domain_upper,
-             const float4 *values,
-             float densityAt1);
+void bnTransferFunctionSet(float domain_lower,
+                           float domain_upper,
+                           const float4 *values,
+                           float densityAt1);
+
+
+/*! iw - TODO:
+  - is this a 'geom' ? or should we have a volume?
+  - should this have a transfer function/ mapper? 
+  - should this have a phase function instead of a material?
+*/
+BN_API
+BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
+                            // vertices, 4 floats each (3 floats position,
+                            // 4th float scalar value)
+                            const float *vertices, int numVertices,
+                            // tets, 4 ints in vtk-style each
+                            const int *tets,       int numTets,
+                            // pyramids, 5 ints in vtk-style each
+                            const int *pyrs,       int numPyrs,
+                            // wedges/tents, 6 ints in vtk-style each
+                            const int *wedges,     int numWedges,
+                            // general (non-guaranteed cube/voxel) hexes, 8
+                            // ints in vtk-style each
+                            const int *hexes,      int numHexes);
 
 
 BN_API
-BNVolume bnUMeshCreate(BNContext context,
-                       const float3 *vertices,
-                       int numVertices,
-                       BNXF xf);
+BNVolume bnVolumeCreate(BNDataGroup dataGroup,
+                        // const BNPhaseFunction *phaseFunction,
+                        BNScalarField field,
+                        BNTransferFunction xf);
 
-BN_API
-void bnUMeshSetScalars(BNVolume umesh,
-                       const float *scalars);
+// BN_API
+// void bnUMeshSetScalars(BNVolume umesh,
+//                        const float *scalars);
 
-BN_API
-void bnUMeshSetTets(BNVolume umesh,
-                    const int *indices,
-                    int numTets);
+// BN_API
+// void bnUMeshSetTets(BNVolume umesh,
+//                     const int *indices,
+//                     int numTets);
 
-BN_API
-void bnUMeshSetHexes(BNVolume umesh,
-                     const int *indices,
-                     int numHexes);
+// BN_API
+// void bnUMeshSetHexes(BNVolume umesh,
+//                      const int *indices,
+//                      int numHexes);
 
-BN_API
-void bnUMeshSetGridlets(BNVolume umesh,
-                        const int *indices,
-                        int numIndices,
-                        const BNGridlet *gridlets,
-                        int numGridlets);
+// BN_API
+// void bnUMeshSetGridlets(BNVolume umesh,
+//                         const int *indices,
+//                         int numIndices,
+//                         const BNGridlet *gridlets,
+//                         int numGridlets);
 
                          
 

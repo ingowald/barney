@@ -40,7 +40,7 @@ namespace barney {
   {
     assert(material);
     Material result;
-    result.diffuseColor = (const vec3f&)material->diffuseColor;
+    result.diffuseColor = (const vec3f&)material->baseColor;
     return result;
   }
   
@@ -152,6 +152,26 @@ namespace barney {
        (const vec2f*)texcoords);
     return (BNGeom)triangles;
   }
+
+  BN_API
+  BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
+                              // vertices, 4 floats each (3 floats position,
+                              // 4th float scalar value)
+                              const float *vertices, int numVertices,
+                              // tets, 4 ints in vtk-style each
+                              const int *tets,       int numTets,
+                              // pyramids, 5 ints in vtk-style each
+                              const int *pyrs,       int numPyrs,
+                              // wedges/tents, 6 ints in vtk-style each
+                              const int *wedges,     int numWedges,
+                              // general (non-guaranteed cube/voxel) hexes, 8
+                              // ints in vtk-style each
+                              const int *hexes,      int numHexes)
+  {
+    LOG_API_ENTRY;
+    return 0;
+  }
+  
 
   BN_API
   BNGroup bnGroupCreate(BNDataGroup dataGroup,
