@@ -150,8 +150,6 @@ namespace barney {
         }
       }
     }
-    
-    assert(!isActiveWorker || (numDifferentDataGroups % dataGroupIDs.size() == 0));
   }
 
   /*! create a frame buffer object suitable to this context */

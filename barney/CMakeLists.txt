@@ -41,7 +41,10 @@ embed_ptx(
 )
 
 add_library(barney SHARED
-  barney.cpp
+  # actual device kernels for CUDA ray gen and shading
+  generateRays.cu
+  shadeRays.cu
+  # all the barney "plumbing" stuff on the host
   DeviceContext.h
   DeviceContext.cu
   Context.h
@@ -50,20 +53,25 @@ add_library(barney SHARED
   DeviceGroup.cpp
   LocalContext.h
   LocalContext.cu
+  # all frame buffer related stuff (DistFB in barney_mpi)
   FrameBuffer.h
   FrameBuffer.cu
   LocalFB.h
   LocalFB.cu
   TiledFB.h
   TiledFB.cu
+  # model/group/data group handling
   Model.h
   Model.cu
   DataGroup.h
   DataGroup.cpp
+  # actual geometry types
   Spheres.h
   Spheres.cu
   Triangles.h
   Triangles.cu
+  # implements the c99 barney api calls
+  barney.cpp
   )
 target_link_libraries(barney
   PUBLIC
