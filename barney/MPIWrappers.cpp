@@ -120,6 +120,11 @@ namespace barney {
       BN_MPI_CALL(Allgather(&myValue,1,MPI_INT,allValues,1,MPI_INT,comm));
     }
     
+    void Comm::allGather(int *allValues, const int *myValues, int numMyValues)
+    {
+      BN_MPI_CALL(Allgather(myValues,numMyValues,MPI_INT,allValues,numMyValues,MPI_INT,comm));
+    }
+    
     /*! free/close this communicator */
     void Comm::free()
     {

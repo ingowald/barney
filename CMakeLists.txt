@@ -63,7 +63,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # subprojects we depend on
 # ------------------------------------------------------------------
 if (NOT (TARGET owl::owl))
-  add_subdirectory(../owl builddir-owl EXCLUDE_FROM_ALL)
+  add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 endif()
 
 # ------------------------------------------------------------------

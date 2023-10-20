@@ -30,9 +30,21 @@ namespace barney {
       world(worldComm),
       workers(workersComm)
   {
+    bool dbg = true;
+
+    if (dbg) {
+      std::stringstream ss;
+      ss << "#bn." << workers.rank << " data group IDs ";
+      for (auto dgID : dataGroupIDs)
+        ss << dgID << " ";
+      ss << std::endl;
+      std::cout << ss.str();
+    }
     world.assertValid();
     workers.assertValid();
 
+
+    
     workerRankOfWorldRank.resize(world.size);
     world.allGather(workerRankOfWorldRank.data(),
                     isActiveWorker?workers.rank:-1);
@@ -44,6 +56,9 @@ namespace barney {
         numWorkers++;
       }
     workers.size = numWorkers;
+
+    gpusPerWorker = world.allReduceMax(int(gpuIDs.size()));
+    numWorkers = world.allReduceAdd(isActiveWorker?1:0);
     
     if (isActiveWorker) {
       int numDGsPerWorker = (int)perDG.size();
@@ -101,8 +116,8 @@ namespace barney {
         maxDataGroupID = std::max(maxDataGroupID,dgID_i);
         dataGroupCount[dgID_i]++;
       }
-      int numDataGlobally = dataGroupCount.size();
-      if (maxDataGroupID >= numDataGlobally)
+      numDifferentDataGroups = dataGroupCount.size();
+      if (maxDataGroupID >= numDifferentDataGroups)
         throw std::runtime_error("data group IDs not numbered sequentially");
 
       int numIslands = dataGroupCount[0];
@@ -110,7 +125,7 @@ namespace barney {
         if (dgc.second != numIslands)
           throw std::runtime_error
             ("some data groups used more often than others!?");
-      
+
       // ------------------------------------------------------------------
       // for each local device, find which othe rdevice has 'next'
       // data group to cycle with. we already sanity checked that
@@ -120,11 +135,26 @@ namespace barney {
       for (int i=0;i<devices.size();i++)
         myDataOnLocal[i]
           = perDG[devices[i]->device->devGroup->ldgID].dataGroupID;
+      if (dbg) {
+        std::stringstream ss;
+        ss << "bn." << workers.rank << ": ";
+        ss << "*my* data locally (myDataOnLocal): ";
+        for (auto d : myDataOnLocal) ss << d << " ";
+        std::cout << ss.str() << std::endl;
+      }
       int numDevicesGlobally = numDevicesPerWorker*workers.size;
       std::vector<int> dataOnGlobal(numDevicesGlobally);
       workers.allGather(dataOnGlobal.data(),
                         myDataOnLocal.data(),
                         myDataOnLocal.size());
+
+      if (dbg) {
+        std::stringstream ss;
+        ss << "bn." << workers.rank << ": ";
+        ss << "*all* data globally  (dataOnGlobal): ";
+        for (auto d : dataOnGlobal) ss << d << " ";
+        std::cout << ss.str() << std::endl;
+      }
 
       dataGroupCount.clear();
       std::vector<int> islandOfGlobal(devices.size());
@@ -137,17 +167,25 @@ namespace barney {
         int myGlobal = dev->globalIndex;
         int myDG     = dataOnGlobal[myGlobal];
         int myIsland = islandOfGlobal[myGlobal];
-        int nextDG   = (myDG+1) % numDataGlobally;
+        int nextDG   = (myDG+1) % numDifferentDataGroups;
+        int prevDG   = (myDG+numDifferentDataGroups-1) % numDifferentDataGroups;
         for (int peerGlobal=0;peerGlobal<numDevicesGlobally;peerGlobal++) {
           if (islandOfGlobal[peerGlobal] != myIsland)
             continue;
-          if (dataOnGlobal[peerGlobal] != nextDG)
-            continue;
-          // *found* the global next
-          dev->rqs.nextWorkerRank  = peerGlobal / numDevicesPerWorker;
-          dev->rqs.nextWorkerLocal = peerGlobal % numDevicesPerWorker;
-          break;
+          if (dataOnGlobal[peerGlobal] == nextDG) {
+            // *found* the global next
+            dev->rqs.recvWorkerRank  = peerGlobal / numDevicesPerWorker;
+            dev->rqs.recvWorkerLocal = peerGlobal % numDevicesPerWorker;
+          }
+          if (dataOnGlobal[peerGlobal] == prevDG) {
+            // *found* the global prev
+            dev->rqs.sendWorkerRank  = peerGlobal / numDevicesPerWorker;
+            dev->rqs.sendWorkerLocal = peerGlobal % numDevicesPerWorker;
+          }
         }
+        if (dbg) 
+          std::cout << "local device " << localID << " recvs from device " << dev->rqs.recvWorkerRank << "." << dev->rqs.recvWorkerLocal << ", and sends to " <<
+            dev->rqs.sendWorkerRank << "." << dev->rqs.recvWorkerLocal << std::endl;
       }
     }
   }
@@ -171,7 +209,6 @@ namespace barney {
                           const Camera *camera,
                           FrameBuffer *_fb)
   {
-    std::cout << "====================== MPIContext::render()" << std::endl;
     DistFB *fb = (DistFB *)_fb;
     if (isActiveWorker) {
       assert(camera);
@@ -210,4 +247,66 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
   
+  /*! forward rays (during global trace); returns if _after_ that
+    forward the rays need more tracing (true) or whether they're
+    done (false) */
+  bool MPIContext::forwardRays() 
+  {
+    if (numDifferentDataGroups == 1)
+      return false;
+    
+    int numDevices = devices.size();
+    std::vector<MPI_Request> recv_requests(numDevices);
+    std::vector<MPI_Request> send_requests(numDevices);
+
+    // ------------------------------------------------------------------
+    // exchange how many we're going to send/recv
+    // ------------------------------------------------------------------
+    int numIncoming[numDevices];
+    for (int devID=0;devID<numDevices;devID++) {
+      auto dev = devices[devID]->device;
+      auto &rays = devices[devID]->rays;
+
+      int numOutgoing = rays.numActive;
+      workers.recv(dev->rqs.recvWorkerRank,dev->rqs.recvWorkerLocal,
+                   &numIncoming[devID],1,recv_requests[devID]);
+      workers.send(dev->rqs.sendWorkerRank,dev->rqs.sendWorkerLocal,
+                   &numOutgoing,1,send_requests[devID]);
+    }
+    for (int devID=0;devID<numDevices;devID++) {
+      workers.wait(recv_requests[devID]);
+      workers.wait(send_requests[devID]);
+    }
+    
+    // ------------------------------------------------------------------
+    // exchange actual rays
+    // ------------------------------------------------------------------
+    for (int devID=0;devID<numDevices;devID++) {
+      auto dev = devices[devID]->device;
+      auto &rays = devices[devID]->rays;
+
+      int numOutgoing = rays.numActive;
+      workers.recv(dev->rqs.recvWorkerRank,dev->rqs.recvWorkerLocal,
+                   rays.writeQueue,numIncoming[devID],recv_requests[devID]);
+      workers.send(dev->rqs.sendWorkerRank,dev->rqs.sendWorkerLocal,
+                   rays.readQueue,numOutgoing,send_requests[devID]);
+    }
+    for (int devID=0;devID<numDevices;devID++) {
+      workers.wait(recv_requests[devID]);
+      workers.wait(send_requests[devID]);
+    }
+              
+    // ------------------------------------------------------------------
+    // now all rays should be exchanged -- swap queues
+    // ------------------------------------------------------------------
+    for (int devID=0;devID<numDevices;devID++) {
+      auto dev = devices[devID];
+      dev->rays.swap();
+      dev->rays.numActive = numIncoming[devID];
+    }
+
+    ++numTimesForwarded;
+    return (numTimesForwarded % numDifferentDataGroups) != 0;
+  }
+
 }

@@ -40,8 +40,10 @@ namespace barney {
 
     /* for ray queue cycling - who to cycle with */
     struct {
-      int nextWorkerRank  = -1;
-      int nextWorkerLocal = -1;
+      int sendWorkerRank  = -1;
+      int sendWorkerLocal = -1;
+      int recvWorkerRank  = -1;
+      int recvWorkerLocal = -1;
     } rqs;
   };
   
@@ -52,15 +54,15 @@ namespace barney {
   struct SetActiveGPU {
     inline SetActiveGPU(const Device *device)
     {
-      assert(device);
+      // assert(device);
       BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
       BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
     }
     inline SetActiveGPU(const Device::SP &device)
     {
-      assert(device);
+      // assert(device);
       BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      BARNEY_CUDA_CHECK(cudaSetDevice(device->cudaID));
+      BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
     }
     
     inline SetActiveGPU(int cudaDeviceID)

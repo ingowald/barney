@@ -80,15 +80,14 @@ namespace barney {
       auto dev = devices[localID];
       dev->traceRays_launch(model);
     }
-    for (int localID=0; localID<devices.size(); localID++) {
-      auto dev = devices[localID];
-      dev->launch_sync();
-    }
-    BARNEY_CUDA_SYNC_CHECK();
+    for (auto dev : devices) dev->sync();
+      
     // for (int localID=0; localID<devices.size(); localID++) {
     //   auto dev = devices[localID];
-    //   dev->rays.numActive = 0;
+    //   dev->launch_sync();
     // }
+    // for (auto dev : devices) dev->sync();
+
   }
 
   void Context::traceRaysGlobally(Model *model)
@@ -126,9 +125,14 @@ namespace barney {
       pd.devGroup->update();
     
     generateRays(camera,fb);
+    for (auto dev : devices) dev->sync();
+
     while (true) {
       traceRaysGlobally(model);
+      
       shadeRaysLocally(fb);
+      for (auto dev : devices) dev->sync();
+      
       if (numRaysActiveGlobally() > 0)
         continue;
       break;
@@ -170,14 +174,15 @@ namespace barney {
     int gpusPerDG = gpuIDs.size() / numDGs;
     std::vector<std::vector<int>> gpuInDG(numDGs);
     perDG.resize(numDGs);
-    for (int dgID=0;dgID<numDGs;dgID++) {
-      auto &dg = perDG[dgID];
+    for (int ldgID=0;ldgID<numDGs;ldgID++) {
+      auto &dg = perDG[ldgID];
+      dg.dataGroupID = dataGroupIDs[ldgID];
       for (int j=0;j<gpusPerDG;j++)
-        dg.gpuIDs.push_back(gpuIDs[dgID*gpusPerDG+j]);
+        dg.gpuIDs.push_back(gpuIDs[ldgID*gpusPerDG+j]);
       dg.devGroup = std::make_shared
-        <DevGroup>(dgID,
+        <DevGroup>(ldgID,
                    dg.gpuIDs,
-                   globalIndex*numDGs+dgID,
+                   globalIndex*numDGs+ldgID,
                    globalIndexStep*numDGs);
       for (auto dev : dg.devGroup->devices)
         devices.push_back(std::make_shared<DeviceContext>(dev));

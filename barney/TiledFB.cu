@@ -125,6 +125,7 @@ namespace barney {
 
     uint32_t pixelValue
       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
+    pixelValue |= 0xff000000;
     
     finalFB[ix + numPixels.x*iy] = pixelValue;
   }

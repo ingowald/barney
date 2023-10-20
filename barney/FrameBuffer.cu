@@ -32,6 +32,7 @@ namespace barney {
 
   void FrameBuffer::resize(vec2i size, uint32_t *hostFB)
   {
+    PING;
     for (auto &pd: perDev)
       pd->resize(size);
     
@@ -56,6 +57,7 @@ namespace barney {
       }
       fflush(0);
     }
+    PING;
   }
   
 }
