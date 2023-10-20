@@ -14,41 +14,40 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/Object.h"
-#include "barney/DeviceGroup.h"
-#include "barney/Ray.h"
+#include "barney/DataGroup.h"
 
 namespace barney {
-
-  struct DataGroup;
+  Group::Group(DataGroup *owner,
+               const std::vector<Geometry::SP> &geoms)
+    : owner(owner), geoms(geoms)
+  {
+    std::vector<OWLGeom> triangleGeoms;
+    std::vector<OWLGeom> userGeoms;
+    for (auto geom : geoms) {
+      geom->build();
+      for (auto g : geom->triangleGeoms)
+        triangleGeoms.push_back(g);
+      for (auto g : geom->userGeoms)
+        userGeoms.push_back(g);
+    }
+    if (!userGeoms.empty())
+      userGeomGroup = owlUserGeomGroupCreate
+        (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
+    if (!triangleGeoms.empty())
+      triangleGeomGroup = owlTrianglesGeomGroupCreate
+        (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
+  }
   
-  struct Material {
-    vec3f diffuseColor;
-  };
-
-  struct Geometry : public Object {
-    typedef std::shared_ptr<Geometry> SP;
-
-    Geometry(DataGroup *owner,
-             const Material &material)
-      : owner(owner),
-        material(material)
-    {}
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Geometry{}"; }
-
-    virtual void build() {}
-    
-    Material    material;
-    DataGroup  *owner;
-    
-    std::vector<OWLGeom>  triangleGeoms;
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGroup> secondPassGroups;
-  };
-
+  void Group::build()
+  {
+    if (userGeomGroup) {
+      std::cout << "building USER group" << std::endl;
+      owlGroupBuildAccel(userGeomGroup);
+    }
+    if (triangleGeomGroup) {
+      std::cout << "building TRIANGLES group" << std::endl;
+      owlGroupBuildAccel(triangleGeomGroup);
+    }
+  }
+  
 }

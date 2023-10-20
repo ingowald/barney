@@ -15,6 +15,10 @@
 # ======================================================================== #
 
 add_library(barney-config INTERFACE)
+target_link_libraries(barney-config
+  INTERFACE
+  cuBQL_interface
+  )
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/barney/include
@@ -63,6 +67,8 @@ add_library(barney SHARED
   # model/group/data group handling
   Model.h
   Model.cu
+  Group.h
+  Group.cpp
   DataGroup.h
   DataGroup.cpp
   # actual geometry types
@@ -70,12 +76,16 @@ add_library(barney SHARED
   Spheres.cu
   Triangles.h
   Triangles.cu
+  unstructured/QuickClusters.cu
+#  unstructured/qbvh.h
+#  unstructured/qbvh.cpp
   # implements the c99 barney api calls
   barney.cpp
   )
 target_link_libraries(barney
   PUBLIC
-  owl::owl 
+  owl::owl
+  cuBQL_impl
   barney-config
   barney-spheres-ptx
   barney-triangles-ptx

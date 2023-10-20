@@ -27,38 +27,6 @@ namespace barney {
     }
   }
 
-  Group::Group(DataGroup *owner,
-               const std::vector<Geometry::SP> &geoms)
-    : owner(owner), geoms(geoms)
-  {
-    std::vector<OWLGeom> triangleGeoms;
-    std::vector<OWLGeom> userGeoms;
-    for (auto geom : geoms) {
-      for (auto g : geom->triangleGeoms)
-        triangleGeoms.push_back(g);
-      for (auto g : geom->userGeoms)
-        userGeoms.push_back(g);
-    }
-    if (!userGeoms.empty())
-      userGeomGroup = owlUserGeomGroupCreate
-        (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
-    if (!triangleGeoms.empty())
-      triangleGeomGroup = owlTrianglesGeomGroupCreate
-        (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
-  }
-  
-  void Group::build()
-  {
-    if (userGeomGroup) {
-      std::cout << "building USER group" << std::endl;
-      owlGroupBuildAccel(userGeomGroup);
-    }
-    if (triangleGeomGroup) {
-      std::cout << "building TRIANGLES group" << std::endl;
-      owlGroupBuildAccel(triangleGeomGroup);
-    }
-  }
-  
   void Model::render(const Camera *camera,
                      FrameBuffer *fb)
   {

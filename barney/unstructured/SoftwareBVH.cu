@@ -14,41 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/Object.h"
-#include "barney/DeviceGroup.h"
-#include "barney/Ray.h"
+#include "barney/Geometry.h"
+#include "barney/DataGroup.h"
+#include "cuBQL/bvh.h"
 
 namespace barney {
 
-  struct DataGroup;
-  
-  struct Material {
-    vec3f diffuseColor;
-  };
-
-  struct Geometry : public Object {
-    typedef std::shared_ptr<Geometry> SP;
-
-    Geometry(DataGroup *owner,
+  struct UMesh_SoftwareBVH {
+    
+    UMesh_SoftwareBVH(DataGroup *owner,
              const Material &material)
-      : owner(owner),
-        material(material)
+      : Geometry(owner,material)
     {}
-
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Geometry{}"; }
-
-    virtual void build() {}
     
-    Material    material;
-    DataGroup  *owner;
-    
-    std::vector<OWLGeom>  triangleGeoms;
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGroup> secondPassGroups;
   };
-
+    
 }

@@ -66,10 +66,11 @@ if (NOT (TARGET owl::owl))
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 endif()
 
+add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
+
 # ------------------------------------------------------------------
 # barney itself
 # ------------------------------------------------------------------
-add_subdirectory(mori)
 add_subdirectory(barney)
 
 # ------------------------------------------------------------------
