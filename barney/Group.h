@@ -35,7 +35,7 @@ namespace barney {
     { return "Group{}"; }
 
     DataGroup *const owner;
-    const std::vector<Volume::SP> &volumes;
+    const std::vector<Volume::SP>   volumes;
     const std::vector<Geometry::SP> geoms;
 
     std::vector<OWLGeom> triangleGeoms;

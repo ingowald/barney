@@ -33,6 +33,7 @@ namespace barney {
                std::vector<WedIndices> &wedIndices,
                std::vector<HexIndices> &hexIndices)
       : ScalarField(owner),
+        vertices(std::move(vertices)),
         tetIndices(std::move(tetIndices)),
         pyrIndices(std::move(pyrIndices)),
         wedIndices(std::move(wedIndices)),
@@ -113,7 +114,7 @@ namespace barney {
     for (int i=0;i<tetIndices.size();i++) 
       hilbertPrims.push_back({encodeTet(i),(i<<3)|TET});
     for (int i=0;i<hexIndices.size();i++) 
-      hilbertPrims.push_back({encodeHex(i),(i<<3)|TET});
+      hilbertPrims.push_back({encodeHex(i),(i<<3)|HEX});
     std::sort(hilbertPrims.begin(),hilbertPrims.end());
   }
 
