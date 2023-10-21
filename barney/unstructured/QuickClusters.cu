@@ -14,57 +14,53 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Geometry.h"
+#include "barney/Volume.h"
 #include "barney/DataGroup.h"
 #include "cuBQL/bvh.h"
 #include "hilbert.h"
+// temp:
+#include "barney/Context.h"
 
 namespace barney {
 
-  struct UMeshGeometry : public Geometry {
-    UMeshGeometry(DataGroup *owner,
-                  const Material &material,
-                  const vec4f *vertices, int numVertices,
-                  const int *tets,       int numTets,
-                  const int *pyrs,       int numPyrs,
-                  const int *wedges,     int numWedges,
-                  const int *hexes,      int numHexes
-                  // ,
-                  // const int *gridDescs,
-                  // const int *gridIndices,
-                  // int numGrids
-                  )
-      : Geometry(owner,material),
-        tets(tets), numTets(numTets),
-        pyrs(pyrs), numPyrs(numPyrs),
-        wedges(wedges), numWedges(numWedges),
-        hexes(hexes), numHexes(numHexes)
+  struct UMeshField : public ScalarField {
+    typedef std::shared_ptr<UMeshField> SP;
+    
+    UMeshField(DataGroup *owner,
+               std::vector<vec4f> &vertices,
+               std::vector<TetIndices> &tetIndices,
+               std::vector<PyrIndices> &pyrIndices,
+               std::vector<WedIndices> &wedIndices,
+               std::vector<HexIndices> &hexIndices)
+      : ScalarField(owner),
+        tetIndices(std::move(tetIndices)),
+        pyrIndices(std::move(pyrIndices)),
+        wedIndices(std::move(wedIndices)),
+        hexIndices(std::move(hexIndices))
     {}
 
-    const vec4f *vertices;
-    int numVertices;
-    const int *tets;   int numTets;
-    const int *pyrs;   int numPyrs;
-    const int *wedges; int numWedges;
-    const int *hexes;  int numHexes;
+    std::vector<vec4f>      vertices;
+    std::vector<TetIndices> tetIndices;
+    std::vector<PyrIndices> pyrIndices;
+    std::vector<WedIndices> wedIndices;
+    std::vector<HexIndices> hexIndices;
   };
   
-  struct UMesh_QC : public UMeshGeometry {
+  struct UMesh_QC : public UMeshField {
     enum { numHilbertBits = 20 };
     enum { TET=0, HEX } PrimType;
     UMesh_QC(DataGroup *owner,
-             const Material &material,
-             const vec4f *vertices, int numVertices,
-             const int *tets,       int numTets,
-             const int *pyrs,       int numPyrs,
-             const int *wedges,     int numWedges,
-             const int *hexes,      int numHexes)
-      : UMeshGeometry(owner,material,
-                      vertices,  numVertices,
-                      tets,      numTets,
-                      pyrs,      numPyrs,
-                      wedges,    numWedges,
-                      hexes,     numHexes)
+             std::vector<vec4f> &vertices,
+             std::vector<TetIndices> &tetIndices,
+             std::vector<PyrIndices> &pyrIndices,
+             std::vector<WedIndices> &wedIndices,
+             std::vector<HexIndices> &hexIndices)
+      : UMeshField(owner,
+                   vertices,
+                   tetIndices,
+                   pyrIndices,
+                   wedIndices,
+                   hexIndices)
     {}
 
     uint64_t encodeBox(const box4f &box4f)
@@ -79,7 +75,7 @@ namespace barney {
     }
     uint64_t encodeTet(int primID)
     {
-      const int *indices = this->tets + 3*primID;
+      const TetIndices indices = tetIndices[primID];
       return encodeBox(box4f()
                        .including(vertices[indices[0]])
                        .including(vertices[indices[1]])
@@ -87,7 +83,7 @@ namespace barney {
     }
     uint64_t encodeHex(int primID)
     {
-      const int *indices = this->hexes + 8*primID;
+      const HexIndices indices = hexIndices[primID];
       return encodeBox(box4f()
                        .including(vertices[indices[0]])
                        .including(vertices[indices[1]])
@@ -103,22 +99,41 @@ namespace barney {
     std::string toString() const override
     { return "UMesh(via quick clusters){}"; }
 
-    void build() override;
+    void build(Volume *volume) override;
 
     box3f worldBounds;
   };
 
-  void UMesh_QC::build()
+  void UMesh_QC::build(Volume *volume)
   {
     worldBounds = box3f();
-    for (int i=0;i<numVertices;i++)
+    for (int i=0;i<vertices.size();i++)
       worldBounds.extend((const vec3f&)vertices[i]);
     std::vector<std::pair<uint64_t,uint32_t>> hilbertPrims;
-    for (int i=0;i<numTets;i++) 
+    for (int i=0;i<tetIndices.size();i++) 
       hilbertPrims.push_back({encodeTet(i),(i<<3)|TET});
-    for (int i=0;i<numHexes;i++) 
+    for (int i=0;i<hexIndices.size();i++) 
       hilbertPrims.push_back({encodeHex(i),(i<<3)|TET});
     std::sort(hilbertPrims.begin(),hilbertPrims.end());
   }
+
+
+  ScalarField *DataGroup::createUMesh(std::vector<vec4f> &vertices,
+                                      std::vector<TetIndices> &tetIndices,
+                                      std::vector<PyrIndices> &pyrIndices,
+                                      std::vector<WedIndices> &wedIndices,
+                                      std::vector<HexIndices> &hexIndices)
+  {
+    ScalarField::SP sf
+      = std::make_shared<UMesh_QC>(this,
+                                   vertices,
+                                   tetIndices,
+                                   pyrIndices,
+                                   wedIndices,
+                                   hexIndices);
+    
+    return getContext()->initReference(sf);
+  }
+  
 
 }

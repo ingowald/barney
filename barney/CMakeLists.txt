@@ -76,6 +76,9 @@ add_library(barney SHARED
   Spheres.cu
   Triangles.h
   Triangles.cu
+  # actual volume types
+  Volume.h
+  Volume.cpp
   unstructured/QuickClusters.cu
 #  unstructured/qbvh.h
 #  unstructured/qbvh.cpp

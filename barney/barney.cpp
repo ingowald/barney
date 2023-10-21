@@ -62,6 +62,18 @@ namespace barney {
     return (Geometry *)geom;
   }
   
+  inline Volume *checkGet(BNVolume volume)
+  {
+    assert(volume);
+    return (Volume *)volume;
+  }
+  
+  inline TransferFunction *checkGet(BNTransferFunction xf)
+  {
+    assert(xf);
+    return (TransferFunction *)xf;
+  }
+  
   inline Group *checkGet(BNGroup group)
   {
     assert(group);
@@ -157,12 +169,20 @@ namespace barney {
   BNTransferFunction bnTransferFunctionCreate(BNDataGroup dataGroup,
                                               float domain_lower,
                                               float domain_upper,
-                                              const float4 *values,
+                                              const float4 *_values,
                                               int numValues,
                                               float densityAt1)
   {
     LOG_API_ENTRY;
-    return 0;
+    std::vector<float4> values;
+    assert(_values);
+    for (int i=0;i<numValues;i++)
+      values.push_back(_values[i]);
+    TransferFunction *xf
+      = checkGet(dataGroup)->createTransferFunction
+      (range1f{domain_lower,domain_upper},
+       values,densityAt1);
+    return (BNTransferFunction)xf;
   }
   
   BN_API
@@ -178,19 +198,34 @@ namespace barney {
   BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
                               // vertices, 4 floats each (3 floats position,
                               // 4th float scalar value)
-                              const float *vertices, int numVertices,
+                              const float *_vertices, int numVertices,
                               // tets, 4 ints in vtk-style each
-                              const int *tets,       int numTets,
+                              const int *_tetIndices, int numTets,
                               // pyramids, 5 ints in vtk-style each
-                              const int *pyrs,       int numPyrs,
+                              const int *_pyrIndices, int numPyrs,
                               // wedges/tents, 6 ints in vtk-style each
-                              const int *wedges,     int numWedges,
+                              const int *_wedIndices, int numWeds,
                               // general (non-guaranteed cube/voxel) hexes, 8
                               // ints in vtk-style each
-                              const int *hexes,      int numHexes)
+                              const int *_hexIndices, int numHexes)
   {
-    LOG_API_ENTRY;
-    return 0;
+    std::vector<vec4f>      vertices(numVertices);
+    std::vector<TetIndices> tetIndices(numTets);
+    std::vector<PyrIndices> pyrIndices(numPyrs);
+    std::vector<WedIndices> wedIndices(numWeds);
+    std::vector<HexIndices> hexIndices(numHexes);
+    memcpy(tetIndices.data(),_tetIndices,tetIndices.size()*sizeof(tetIndices[0]));
+    memcpy(pyrIndices.data(),_pyrIndices,pyrIndices.size()*sizeof(pyrIndices[0]));
+    memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
+    memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
+    memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
+
+    ScalarField *sf = checkGet(dataGroup)->createUMesh(vertices,
+                                                       tetIndices,
+                                                       pyrIndices,
+                                                       wedIndices,
+                                                       hexIndices);
+    return (BNScalarField)sf;
   }
   
 
@@ -203,7 +238,10 @@ namespace barney {
     std::vector<Geometry::SP> _geoms;
     for (int i=0;i<numGeoms;i++)
       _geoms.push_back(checkGet(geoms[i])->as<Geometry>());
-    Group *group = checkGet(dataGroup)->createGroup(_geoms);
+    std::vector<Volume::SP> _volumes;
+    for (int i=0;i<numVolumes;i++)
+      _volumes.push_back(checkGet(volumes[i])->as<Volume>());
+    Group *group = checkGet(dataGroup)->createGroup(_geoms,_volumes);
     return (BNGroup)group;
   }
 

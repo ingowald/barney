@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/Geometry.h"
+#include "barney/Volume.h"
 
 namespace barney {
 
@@ -24,7 +25,8 @@ namespace barney {
     typedef std::shared_ptr<Group> SP;
 
     Group(DataGroup *owner,
-          const std::vector<Geometry::SP> &geoms);
+          const std::vector<Geometry::SP> &geoms,
+          const std::vector<Volume::SP> &volumes);
     
     void build();
 
@@ -32,11 +34,15 @@ namespace barney {
     std::string toString() const override
     { return "Group{}"; }
 
+    DataGroup *const owner;
+    const std::vector<Volume::SP> &volumes;
+    const std::vector<Geometry::SP> geoms;
+
+    std::vector<OWLGeom> triangleGeoms;
+    std::vector<OWLGeom> userGeoms;
     OWLGroup userGeomGroup = 0;
     OWLGroup triangleGeomGroup = 0;
     std::vector<OWLGroup> secondPassGroups;
-    DataGroup *const owner;
-    const std::vector<Geometry::SP> geoms;
   };
   
 }

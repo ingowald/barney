@@ -14,22 +14,24 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "owl/common/math/box.h"
-#include "owl/owl.h"
-#include "barney.h"
-#include "barney/cuda-helper.h"
-#include <cuda_runtime.h>
-#include <string.h>
-#include <mutex>
-#include <vector>
-#include <map>
-#include <memory>
+#include "barney/Volume.h"
+#include "barney/DataGroup.h"
 
 namespace barney {
-  using namespace owl;
-  using namespace owl::common;
 
-  using range1f = interval<float>;
+  TransferFunction::TransferFunction(DataGroup *owner,
+                                     const range1f &domain,
+                                     const std::vector<float4> &values,
+                                     float baseDensity)
+    : owner(owner),
+      domain(domain),
+      values(values),
+      baseDensity(baseDensity)
+  {
+    valuesBuffer = owlDeviceBufferCreate(owner->devGroup->owl,
+                                         OWL_FLOAT4,
+                                         values.size(),
+                                         values.data());
+  }
+  
 }

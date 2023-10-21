@@ -18,11 +18,24 @@
 
 namespace barney {
   Group::Group(DataGroup *owner,
-               const std::vector<Geometry::SP> &geoms)
-    : owner(owner), geoms(geoms)
+               const std::vector<Geometry::SP> &geoms,
+               const std::vector<Volume::SP> &volumes)
+    : owner(owner),
+      geoms(geoms),
+      volumes(volumes)
   {
-    std::vector<OWLGeom> triangleGeoms;
-    std::vector<OWLGeom> userGeoms;
+  }
+  
+  void Group::build()
+  {
+    userGeoms.clear();
+    triangleGeoms.clear();
+    
+    if (triangleGeomGroup)
+      owlGroupRelease(triangleGeomGroup);
+    if (userGeomGroup)
+      owlGroupRelease(userGeomGroup);
+    
     for (auto geom : geoms) {
       geom->build();
       for (auto g : geom->triangleGeoms)
@@ -30,20 +43,24 @@ namespace barney {
       for (auto g : geom->userGeoms)
         userGeoms.push_back(g);
     }
+    for (auto volume : volumes) {
+      volume->build();
+      for (auto g : volume->triangleGeoms)
+        triangleGeoms.push_back(g);
+      for (auto g : volume->userGeoms)
+        userGeoms.push_back(g);
+    }
     if (!userGeoms.empty())
       userGeomGroup = owlUserGeomGroupCreate
         (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
-    if (!triangleGeoms.empty())
-      triangleGeomGroup = owlTrianglesGeomGroupCreate
-        (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
-  }
-  
-  void Group::build()
-  {
     if (userGeomGroup) {
       std::cout << "building USER group" << std::endl;
       owlGroupBuildAccel(userGeomGroup);
     }
+
+    if (!triangleGeoms.empty())
+      triangleGeomGroup = owlTrianglesGeomGroupCreate
+        (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
     if (triangleGeomGroup) {
       std::cout << "building TRIANGLES group" << std::endl;
       owlGroupBuildAccel(triangleGeomGroup);

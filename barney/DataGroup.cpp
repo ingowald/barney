@@ -21,6 +21,13 @@
 
 namespace barney {
 
+  Context *DataGroup::getContext() const
+  {
+    assert(model);
+    assert(model->context);
+    return model->context;
+  }
+  
   DataGroup::DataGroup(Model *model, int localID)
     : model(model),
       localID(localID),
@@ -40,23 +47,30 @@ namespace barney {
     }
   }
   
-  Group   *DataGroup::createGroup(const std::vector<Geometry::SP> &geoms)
+  Group *DataGroup::createGroup(const std::vector<Geometry::SP> &geoms,
+                                const std::vector<Volume::SP> &volumes)
   {
-    assert(model);
-    assert(model->context);
-    return model->context->initReference
-      (std::make_shared<Group>(this,geoms));
+    return getContext()->initReference
+      (std::make_shared<Group>(this,geoms,volumes));
   }
 
+  TransferFunction *
+  DataGroup::createTransferFunction(const range1f &domain,
+                                    const std::vector<float4> &values,
+                                    float densityAt1)
+  {
+    return getContext()->initReference
+      (std::make_shared<TransferFunction>(this,domain,values,densityAt1));
+  }
+  
+  
   Spheres *DataGroup::createSpheres(const Material &material,
                                     const vec3f *origins,
                                     int numOrigins,
                                     const float *radii,
                                     float defaultRadius)
   {
-    assert(model);
-    assert(model->context);
-    return model->context->initReference
+    return getContext()->initReference
       (std::make_shared<Spheres>(this,material,origins,numOrigins,radii,defaultRadius));
   }
 
@@ -68,9 +82,7 @@ namespace barney {
                                         const vec3f *normals,
                                         const vec2f *texcoords)
   {
-    assert(model);
-    assert(model->context);
-    return model->context->initReference
+    return getContext()->initReference
       (std::make_shared<Triangles>(this,material,
                                    numIndices,
                                    indices,

@@ -23,6 +23,7 @@ namespace barney {
   struct Model;
   struct Spheres;
   struct Triangles;
+  struct Context;
   
   struct DataGroup : public Object {
     typedef std::shared_ptr<DataGroup> SP;
@@ -32,19 +33,37 @@ namespace barney {
     static SP create(Model *model, int localID)
     { return std::make_shared<DataGroup>(model,localID); }
 
-    Group   *createGroup(const std::vector<Geometry::SP> &geoms);
-    Spheres *createSpheres(const barney::Material &material,
-                           const vec3f *origins,
-                           int numOrigins,
-                           const float *radii,
-                           float defaultRadius);
-    Triangles *createTriangles(const barney::Material &material,
-                               int numIndices,
-                               const vec3i *indices,
-                               int numVertices,
-                               const vec3f *vertices,
-                               const vec3f *normals,
-                               const vec2f *texcoords);
+    Group   *
+    createGroup(const std::vector<Geometry::SP> &geoms,
+                const std::vector<Volume::SP> &volumes);
+    
+    TransferFunction *
+    createTransferFunction(const range1f &domain,
+                           const std::vector<float4> &values,
+                           float densityAt1);
+    
+    Spheres *
+    createSpheres(const barney::Material &material,
+                  const vec3f *origins,
+                  int numOrigins,
+                  const float *radii,
+                  float defaultRadius);
+    
+    Triangles *
+    createTriangles(const barney::Material &material,
+                    int numIndices,
+                    const vec3i *indices,
+                    int numVertices,
+                    const vec3f *vertices,
+                    const vec3f *normals,
+                    const vec2f *texcoords);
+
+    ScalarField *createUMesh(std::vector<vec4f> &vertices,
+                             std::vector<TetIndices> &tetIndices,
+                             std::vector<PyrIndices> &pyrIndices,
+                             std::vector<WedIndices> &wedIndices,
+                             std::vector<HexIndices> &hexIndices);
+    
     void setInstances(std::vector<Group::SP> &groups,
                       const affine3f *xfms);
     
@@ -56,6 +75,8 @@ namespace barney {
 
     void build();
 
+    Context *getContext() const;
+    
     DevGroup::SP const devGroup;
     Model       *const model;
     int          const localID;
