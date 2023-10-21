@@ -48,6 +48,9 @@ namespace barney {
                   int numOrigins,
                   const float *radii,
                   float defaultRadius);
+
+    Volume *createVolume(TransferFunction::SP xf,
+                         ScalarField::SP sf);
     
     Triangles *
     createTriangles(const barney::Material &material,

@@ -289,8 +289,8 @@ BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
 
 BN_API
 BNVolume bnVolumeCreate(BNDataGroup dataGroup,
-                        BNScalarField field,
-                        BNTransferFunction xf);
+                        BNTransferFunction xf,
+                        BNScalarField sf);
 
 // BN_API
 // void bnUMeshSetScalars(BNVolume umesh,

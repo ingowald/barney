@@ -62,8 +62,15 @@ namespace barney {
     return getContext()->initReference
       (std::make_shared<TransferFunction>(this,domain,values,densityAt1));
   }
-  
-  
+
+  Volume *DataGroup::createVolume(TransferFunction::SP xf,
+                                  ScalarField::SP sf)
+  {
+    return getContext()->initReference
+      (std::make_shared<Volume>(this,xf,sf));
+  }
+
+
   Spheres *DataGroup::createSpheres(const Material &material,
                                     const vec3f *origins,
                                     int numOrigins,

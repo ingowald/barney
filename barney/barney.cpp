@@ -67,6 +67,11 @@ namespace barney {
     assert(volume);
     return (Volume *)volume;
   }
+  inline ScalarField *checkGet(BNScalarField sf)
+  {
+    assert(sf);
+    return (ScalarField *)sf;
+  }
   
   inline TransferFunction *checkGet(BNTransferFunction xf)
   {
@@ -79,10 +84,6 @@ namespace barney {
     assert(group);
     return (Group *)group;
   }
-  inline Group::SP checkGetSP(BNGroup group)
-  {
-    return checkGet(group)->shared_from_this()->as<Group>();
-  }
   
   
   inline FrameBuffer *checkGet(BNFrameBuffer frameBuffer)
@@ -90,6 +91,23 @@ namespace barney {
     assert(frameBuffer);
     return (FrameBuffer *)frameBuffer;
   }
+
+  // ------------------------------------------------------------------
+
+  inline Group::SP checkGetSP(BNGroup group)
+  {
+    return checkGet(group)->shared_from_this()->as<Group>();
+  }
+  inline ScalarField::SP checkGetSP(BNScalarField sf)
+  {
+    return checkGet(sf)->shared_from_this()->as<ScalarField>();
+  }
+  inline TransferFunction::SP checkGetSP(BNTransferFunction xf)
+  {
+    return checkGet(xf)->shared_from_this()->as<TransferFunction>();
+  }
+
+  // ------------------------------------------------------------------
   
   BN_API
   BNModel bnModelCreate(BNContext ctx)
@@ -187,11 +205,12 @@ namespace barney {
   
   BN_API
   BNVolume bnVolumeCreate(BNDataGroup dataGroup,
-                          BNScalarField field,
-                          BNTransferFunction xf)
+                          BNTransferFunction _xf,
+                          BNScalarField _sf)
   {
-    LOG_API_ENTRY;
-    return 0;
+    ScalarField::SP sf = checkGetSP(_sf);
+    TransferFunction::SP xf = checkGetSP(_xf);
+    return (BNVolume)checkGet(dataGroup)->createVolume(xf,sf);
   }
 
   BN_API
