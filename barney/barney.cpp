@@ -154,6 +154,27 @@ namespace barney {
   }
 
   BN_API
+  BNTransferFunction bnTransferFunctionCreate(BNDataGroup dataGroup,
+                                              float domain_lower,
+                                              float domain_upper,
+                                              const float4 *values,
+                                              int numValues,
+                                              float densityAt1)
+  {
+    LOG_API_ENTRY;
+    return 0;
+  }
+  
+  BN_API
+  BNVolume bnVolumeCreate(BNDataGroup dataGroup,
+                          BNScalarField field,
+                          BNTransferFunction xf)
+  {
+    LOG_API_ENTRY;
+    return 0;
+  }
+
+  BN_API
   BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
                               // vertices, 4 floats each (3 floats position,
                               // 4th float scalar value)

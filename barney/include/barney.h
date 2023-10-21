@@ -254,12 +254,16 @@ void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
 
 BN_API
 BNTransferFunction bnTransferFunctionCreate(BNDataGroup dataGroup,
-                int numScalars);
-BN_API
-void bnTransferFunctionSet(float domain_lower,
-                           float domain_upper,
-                           const float4 *values,
-                           float densityAt1);
+                                            float domain_lower,
+                                            float domain_upper,
+                                            const float4 *values,
+                                            int numValues,
+                                            float densityAt1);
+// BN_API
+// void bnTransferFunctionSet(float domain_lower,
+//                            float domain_upper,
+//                            const float4 *values,
+//                            float densityAt1);
 
 
 /*! iw - TODO:
@@ -285,7 +289,6 @@ BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
 
 BN_API
 BNVolume bnVolumeCreate(BNDataGroup dataGroup,
-                        // const BNPhaseFunction *phaseFunction,
                         BNScalarField field,
                         BNTransferFunction xf);
 
