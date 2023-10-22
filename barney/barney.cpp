@@ -238,7 +238,8 @@ namespace barney {
     memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
     memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
     memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
-
+    for (int i=0;i<10;i++)
+      PRINT(vertices[i]);
     ScalarField *sf = checkGet(dataGroup)->createUMesh(vertices,
                                                        tetIndices,
                                                        pyrIndices,
@@ -301,9 +302,9 @@ namespace barney {
     
     vec3f dir_du = normalize(cross(dir_00, up));
     vec3f dir_dv = normalize(cross(dir_du, dir_00));
-    
+
     float min_xy = (float)std::min(fbSize.x, fbSize.y);
-    
+
     dir_00 *= (float)((float)min_xy / (2.0f * tanf((0.5f * fov) * M_PI / 180.0f)));
     dir_00 -= 0.5f * (float)fbSize.x * dir_du;
     dir_00 -= 0.5f * (float)fbSize.y * dir_dv;
@@ -313,6 +314,8 @@ namespace barney {
     camera->dir_dv = (float3&)dir_dv;
     camera->lens_00 = (float3&)from;
     camera->lensRadius = 0.f;
+    camera->dbg_vi = _at;
+    camera->dbg_vp = _from;
   }
   
   BN_API
@@ -335,15 +338,23 @@ namespace barney {
 
   BN_API
   void bnRender(BNModel model,
-                const BNCamera *camera,
+                const BNCamera *_camera,
                 BNFrameBuffer fb,
                 BNRenderRequest *req)
   {
     static int count = 0;
     if (count++ < 3)
       LOG_API_ENTRY;
-    assert(camera);
-    checkGet(model)->render((Camera *)camera,checkGet(fb));
+    assert(_camera);
+    Camera camera;
+    camera.dbg_vi = (const vec3f&)_camera->dbg_vi;
+    camera.dbg_vp = (const vec3f&)_camera->dbg_vp;
+    camera.lens_00 = (const vec3f&)_camera->lens_00;
+    camera.dir_00 = (const vec3f&)_camera->dir_00;
+    camera.dir_du = (const vec3f&)_camera->dir_du;
+    camera.dir_dv = (const vec3f&)_camera->dir_dv;
+    camera.lensRadius = _camera->lensRadius;
+    checkGet(model)->render(camera,checkGet(fb));
   }
 
   BN_API

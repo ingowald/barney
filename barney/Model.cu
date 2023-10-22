@@ -27,12 +27,11 @@ namespace barney {
     }
   }
 
-  void Model::render(const Camera *camera,
+  void Model::render(const Camera &camera,
                      FrameBuffer *fb)
   {
     assert(context);
     assert(fb);
-    assert(camera);
     context->ensureRayQueuesLargeEnoughFor(fb);
     context->render(this,camera,fb);
   }

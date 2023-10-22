@@ -36,6 +36,8 @@ namespace barney {
       : owner(owner)
     {}
 
+    OWLContext getOWL() const;
+    
     virtual void build(Volume *) {}
     
     DataGroup *owner;

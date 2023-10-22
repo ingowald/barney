@@ -14,44 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/Context.h"
 #include "barney/Geometry.h"
 #include "barney/DataGroup.h"
 
 namespace barney {
-
-  struct DataGroup;
   
-  struct Model : public Object {
-    typedef std::shared_ptr<Model> SP;
-
-    static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
-    
-    Model(Context *context);
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Model{}"; }
-
-    // void build()
-    // {
-    //   // todo: parallel
-    //   for (auto &dg : dataGroups)
-    //     dg->build();
-    // }
-    void render(const Camera &camera,
-                FrameBuffer *fb);
-
-    DataGroup *getDG(int localID)
-    {
-      assert(localID >= 0);
-      assert(localID < dataGroups.size());
-      return dataGroups[localID].get();
-    }
-    std::vector<DataGroup::SP> dataGroups;
-    Context *const context;
-  };
+  OWLContext Geometry::getOWL() const
+  { return owner->getOWL(); }
 
 }
+

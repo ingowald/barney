@@ -14,108 +14,183 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Volume.h"
-#include "barney/DataGroup.h"
-#include "cuBQL/bvh.h"
-#include "hilbert.h"
-// temp:
+#include "barney/unstructured/QuickClusters.h"
 #include "barney/Context.h"
+#include "hilbert.h"
 
 namespace barney {
 
-  struct UMeshField : public ScalarField {
-    typedef std::shared_ptr<UMeshField> SP;
-    
-    UMeshField(DataGroup *owner,
-               std::vector<vec4f> &vertices,
-               std::vector<TetIndices> &tetIndices,
-               std::vector<PyrIndices> &pyrIndices,
-               std::vector<WedIndices> &wedIndices,
-               std::vector<HexIndices> &hexIndices)
-      : ScalarField(owner),
-        vertices(std::move(vertices)),
-        tetIndices(std::move(tetIndices)),
-        pyrIndices(std::move(pyrIndices)),
-        wedIndices(std::move(wedIndices)),
-        hexIndices(std::move(hexIndices))
-    {}
-
-    std::vector<vec4f>      vertices;
-    std::vector<TetIndices> tetIndices;
-    std::vector<PyrIndices> pyrIndices;
-    std::vector<WedIndices> wedIndices;
-    std::vector<HexIndices> hexIndices;
-  };
+  extern "C" char QuickClusters_ptx[];
   
-  struct UMesh_QC : public UMeshField {
-    enum { numHilbertBits = 20 };
-    enum { TET=0, HEX } PrimType;
-    UMesh_QC(DataGroup *owner,
-             std::vector<vec4f> &vertices,
-             std::vector<TetIndices> &tetIndices,
-             std::vector<PyrIndices> &pyrIndices,
-             std::vector<WedIndices> &wedIndices,
-             std::vector<HexIndices> &hexIndices)
-      : UMeshField(owner,
-                   vertices,
-                   tetIndices,
-                   pyrIndices,
-                   wedIndices,
-                   hexIndices)
-    {}
-
-    uint64_t encodeBox(const box4f &box4f)
-    {
-      box3f box((const vec3f&)box4f.lower,(const vec3f&)box4f.upper);
-      int maxValue = (1<<numHilbertBits)-1;
-      vec3f center = box.center();
-      center = (center - box.lower) * rcp(min(vec3f(1e-10f),box.size()));
-      center = clamp(center,vec3f(0.f),vec3f(1.f));
-      vec3ul coords = vec3ul(center * maxValue);
-      return hilbert_c2i(3,numHilbertBits,(bitmask_t*)&coords.x);
-    }
-    uint64_t encodeTet(int primID)
-    {
-      const TetIndices indices = tetIndices[primID];
-      return encodeBox(box4f()
-                       .including(vertices[indices[0]])
-                       .including(vertices[indices[1]])
-                       .including(vertices[indices[2]]));
-    }
-    uint64_t encodeHex(int primID)
-    {
-      const HexIndices indices = hexIndices[primID];
-      return encodeBox(box4f()
-                       .including(vertices[indices[0]])
-                       .including(vertices[indices[1]])
-                       .including(vertices[indices[2]])
-                       .including(vertices[indices[3]])
-                       .including(vertices[indices[4]])
-                       .including(vertices[indices[5]])
-                       .including(vertices[indices[6]])
-                       .including(vertices[indices[7]]));
-    }
+  OWLGeomType UMeshQC::createGeomType(DevGroup *devGroup)
+  {
+    std::cout << OWL_TERMINAL_GREEN
+              << "creating 'UMeshQC' geometry type"
+              << OWL_TERMINAL_DEFAULT << std::endl;
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "UMesh(via quick clusters){}"; }
+    static OWLVarDecl params[]
+      = {
+         { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
+         { "tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,tetIndices) },
+         { "hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,hexIndices) },
+         { "elements", OWL_BUFPTR, OWL_OFFSETOF(DD,elements) },
+         { "numElements", OWL_INT, OWL_OFFSETOF(DD,numElements) },
+         { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
+         { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
+         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
+         { nullptr }
+    };
+    OWLModule module = owlModuleCreate
+      (devGroup->owl,QuickClusters_ptx);
+    OWLGeomType gt = owlGeomTypeCreate
+      (devGroup->owl,OWL_GEOM_USER,sizeof(UMeshQC::DD),
+       params,-1);
+    owlGeomTypeSetBoundsProg(gt,module,"UMeshQCBounds");
+    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"UMeshQCIsec");
+    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"UMeshQCCH");
+    owlBuildPrograms(devGroup->owl);
+    
+    return gt;
+  }
+  
+  UMeshQC::UMeshQC(DataGroup *owner,
+                     std::vector<vec4f> &vertices,
+                     std::vector<TetIndices> &tetIndices,
+                     std::vector<PyrIndices> &pyrIndices,
+                     std::vector<WedIndices> &wedIndices,
+                     std::vector<HexIndices> &hexIndices)
+    : UMeshField(owner,
+                 vertices,
+                 tetIndices,
+                 pyrIndices,
+                 wedIndices,
+                 hexIndices)
+  {
+  }
+    
+  uint64_t UMeshQC::encodeBox(const box4f &box4f)
+  {
+    box3f box((const vec3f&)box4f.lower,(const vec3f&)box4f.upper);
+    
+    int maxValue = (1<<numHilbertBits)-1;
+    vec3f center = box.center();
+    // PRINT(box);
+    // PRINT(worldBounds);
+    center = (center - worldBounds.lower) * rcp(max(vec3f(1e-10f),worldBounds.size()));
+    // PRINT(center);
+    center = clamp(center,vec3f(0.f),vec3f(1.f));
+    vec3ul coords = vec3ul(center * maxValue);
+    // PRINT(coords);
+    bitmask_t _coords[3];
+    _coords[0] = coords.x;
+    _coords[1] = coords.y;
+    _coords[2] = coords.z;
+    return hilbert_c2i(3,numHilbertBits,_coords);
+  }
 
-    void build(Volume *volume) override;
+  uint64_t UMeshQC::encodeTet(int primID)
+  {
+    const TetIndices indices = tetIndices[primID];
+    return encodeBox(box4f()
+                     .including(vertices[indices[0]])
+                     .including(vertices[indices[1]])
+                     .including(vertices[indices[2]])
+                     .including(vertices[indices[3]]));
+  }
 
-    box3f worldBounds;
-  };
+  uint64_t UMeshQC::encodeHex(int primID)
+  {
+    const HexIndices indices = hexIndices[primID];
+    return encodeBox(box4f()
+                     .including(vertices[indices[0]])
+                     .including(vertices[indices[1]])
+                     .including(vertices[indices[2]])
+                     .including(vertices[indices[3]])
+                     .including(vertices[indices[4]])
+                     .including(vertices[indices[5]])
+                     .including(vertices[indices[6]])
+                     .including(vertices[indices[7]]));
+  }
+    
 
-  void UMesh_QC::build(Volume *volume)
+  
+  void UMeshQC::build(Volume *volume)
   {
     worldBounds = box3f();
     for (int i=0;i<vertices.size();i++)
       worldBounds.extend((const vec3f&)vertices[i]);
+    // PING; PRINT(worldBounds);
+    
     std::vector<std::pair<uint64_t,uint32_t>> hilbertPrims;
     for (int i=0;i<tetIndices.size();i++) 
       hilbertPrims.push_back({encodeTet(i),(i<<3)|TET});
     for (int i=0;i<hexIndices.size();i++) 
       hilbertPrims.push_back({encodeHex(i),(i<<3)|HEX});
     std::sort(hilbertPrims.begin(),hilbertPrims.end());
+
+    // for (int i=0;i<100;i++)
+    //   PRINT((int*)hilbertPrims[i].first);
+    
+    std::vector<Element> elements;
+    for (auto prim : hilbertPrims) {
+      Element elt;
+      elt.ID = prim.second >> 3;
+      elt.type = prim.second & 0x7;
+      elements.push_back(elt);
+    }
+
+    OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+      ("UMeshQC",UMeshQC::createGeomType);
+    OWLGeom geom = owlGeomCreate(getOWL(),gt);
+    owlGeomSet1i(geom,"numElements",(int)elements.size());
+
+    PING; std::cout << "MEMORY LEAK!" << std::endl;
+    OWLBuffer elementsBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_INT,
+                              elements.size(),
+                              elements.data());
+    owlGeomSetBuffer(geom,"elements",elementsBuffer);
+    
+    TransferFunction *xf = volume->xf.get();
+    owlGeomSet2f(geom,"xf.domain",xf->domain.lower,xf->domain.upper);
+    owlGeomSet1f(geom,"xf.baseDensity",xf->baseDensity);
+
+    PING; std::cout << "MEMORY LEAK!" << std::endl;
+    OWLBuffer xfValuesBuffer = owlDeviceBufferCreate(getOWL(),
+                                               OWL_FLOAT4,
+                                               xf->values.size(),
+                                               xf->values.data());
+    owlGeomSetBuffer(geom,"xf.values",xfValuesBuffer);
+    
+    PING; std::cout << "MEMORY LEAK!" << std::endl;
+    OWLBuffer verticesBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_FLOAT4,
+                              vertices.size(),
+                              vertices.data());
+    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
+
+
+    PING; std::cout << "MEMORY LEAK!" << std::endl;
+    OWLBuffer tetIndicesBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_INT,
+                              4*tetIndices.size(),
+                              tetIndices.data());
+    owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
+    
+    OWLBuffer hexIndicesBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_INT,
+                              8*hexIndices.size(),
+                              hexIndices.data());
+    owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
+
+    int numClusters = divRoundUp((int)elements.size(),clusterSize);
+    owlGeomSetPrimCount(geom,numClusters);
+    
+    volume->userGeoms.push_back(geom);
   }
 
 
@@ -126,8 +201,8 @@ namespace barney {
                                       std::vector<HexIndices> &hexIndices)
   {
     ScalarField::SP sf
-      = std::make_shared<UMesh_QC>(this,
-                                   vertices,
+      = std::make_shared<UMeshQC>(this,
+                                  vertices,
                                    tetIndices,
                                    pyrIndices,
                                    wedIndices,

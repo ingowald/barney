@@ -17,6 +17,7 @@
 #pragma once
 
 #include "owl/common/math/box.h"
+#include "owl/common/math/random.h"
 #include "owl/owl.h"
 #include "barney.h"
 #include "barney/cuda-helper.h"
@@ -32,4 +33,8 @@ namespace barney {
   using namespace owl::common;
 
   using range1f = interval<float>;
+
+  using Random = LCG<4>;
 }
+
+

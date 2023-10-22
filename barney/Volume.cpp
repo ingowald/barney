@@ -19,6 +19,9 @@
 
 namespace barney {
 
+  OWLContext ScalarField::getOWL() const
+  { return owner->getOWL(); }
+  
   TransferFunction::TransferFunction(DataGroup *owner,
                                      const range1f &domain,
                                      const std::vector<float4> &values,

@@ -110,7 +110,7 @@ namespace barney {
                      FrameBuffer *fb);
     
     virtual void render(Model *model,
-                        const barney::Camera *camera,
+                        const barney::Camera &camera,
                         FrameBuffer *fb) = 0;
     
     // const std::vector<int> dataGroupIDs;

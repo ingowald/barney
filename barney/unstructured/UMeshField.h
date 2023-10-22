@@ -16,42 +16,33 @@
 
 #pragma once
 
-#include "barney/Context.h"
-#include "barney/Geometry.h"
+#include "barney/Volume.h"
 #include "barney/DataGroup.h"
 
 namespace barney {
 
-  struct DataGroup;
-  
-  struct Model : public Object {
-    typedef std::shared_ptr<Model> SP;
-
-    static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
+  struct UMeshField : public ScalarField {
+    typedef std::shared_ptr<UMeshField> SP;
     
-    Model(Context *context);
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Model{}"; }
+    UMeshField(DataGroup *owner,
+               std::vector<vec4f> &vertices,
+               std::vector<TetIndices> &tetIndices,
+               std::vector<PyrIndices> &pyrIndices,
+               std::vector<WedIndices> &wedIndices,
+               std::vector<HexIndices> &hexIndices)
+      : ScalarField(owner),
+        vertices(std::move(vertices)),
+        tetIndices(std::move(tetIndices)),
+        pyrIndices(std::move(pyrIndices)),
+        wedIndices(std::move(wedIndices)),
+        hexIndices(std::move(hexIndices))
+    {}
 
-    // void build()
-    // {
-    //   // todo: parallel
-    //   for (auto &dg : dataGroups)
-    //     dg->build();
-    // }
-    void render(const Camera &camera,
-                FrameBuffer *fb);
-
-    DataGroup *getDG(int localID)
-    {
-      assert(localID >= 0);
-      assert(localID < dataGroups.size());
-      return dataGroups[localID].get();
-    }
-    std::vector<DataGroup::SP> dataGroups;
-    Context *const context;
+    std::vector<vec4f>      vertices;
+    std::vector<TetIndices> tetIndices;
+    std::vector<PyrIndices> pyrIndices;
+    std::vector<WedIndices> wedIndices;
+    std::vector<HexIndices> hexIndices;
   };
 
 }

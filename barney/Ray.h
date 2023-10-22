@@ -28,7 +28,7 @@ namespace barney {
     int      instID, geomID, primID;
     vec3f    color;
     float    u,v;
-    uint32_t seed;
+    uint32_t rngSeed;
     struct {
       uint32_t  pixelID:30;
       uint32_t  hadHit:1;

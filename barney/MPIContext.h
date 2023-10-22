@@ -34,7 +34,7 @@ namespace barney {
     FrameBuffer *createFB(int owningRank) override;
 
     void render(Model *model,
-                const Camera *camera,
+                const Camera &camera,
                 FrameBuffer *fb) override;
 
     /*! gives, for a given worker rank, the rank that this same rank

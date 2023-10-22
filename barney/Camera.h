@@ -33,6 +33,9 @@ namespace barney {
     vec3f lens_00;
     /* vector along v direction, for ONE pixel */
     float  lensRadius;
+
+    vec3f dbg_vi;
+    vec3f dbg_vp;
   };
     
 }

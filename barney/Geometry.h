@@ -17,7 +17,6 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/DeviceGroup.h"
 #include "barney/Ray.h"
 
 namespace barney {
@@ -45,6 +44,8 @@ namespace barney {
     
     Material    material;
     DataGroup  *owner;
+
+    OWLContext getOWL() const;
     
     std::vector<OWLGeom>  triangleGeoms;
     std::vector<OWLGeom>  userGeoms;

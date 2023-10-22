@@ -43,6 +43,11 @@ embed_ptx(
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            traceRays.cu
 )
+embed_ptx(
+  OUTPUT_TARGET      barney-UMeshQC-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            unstructured/QuickClusters.dev.cu
+)
 
 add_library(barney SHARED
   # actual device kernels for CUDA ray gen and shading
@@ -72,6 +77,8 @@ add_library(barney SHARED
   DataGroup.h
   DataGroup.cpp
   # actual geometry types
+  Geometry.h
+  Geometry.cpp
   Spheres.h
   Spheres.cu
   Triangles.h
@@ -93,6 +100,7 @@ target_link_libraries(barney
   barney-spheres-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
+  barney-UMeshQC-ptx  
   )
 #target_include_directories(barney PUBLIC
 #  )

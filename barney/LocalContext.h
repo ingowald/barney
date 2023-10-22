@@ -33,7 +33,7 @@ namespace barney {
     { return "LocalFB{}"; }
 
     void render(Model *model,
-                const Camera *camera,
+                const Camera &camera,
                 FrameBuffer *fb) override;
 
     /*! forward rays (during global trace); returns if _after_ that

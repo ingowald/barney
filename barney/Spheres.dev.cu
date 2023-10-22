@@ -27,14 +27,6 @@ namespace barney {
     vec3f origin = geom.origins[primID];
     bounds.lower = origin - geom.defaultRadius;
     bounds.upper = origin + geom.defaultRadius;
-    // printf("bounds %i (%f %f %f) (%f %f %f)\n",primID,
-    //        bounds.lower.x,
-    //        bounds.lower.y,
-    //        bounds.lower.z,
-    //        bounds.upper.x,
-    //        bounds.upper.y,
-    //        bounds.upper.z
-    //        );
   }
 
   OPTIX_CLOSEST_HIT_PROGRAM(SpheresCH)()
@@ -68,8 +60,8 @@ namespace barney {
     
     const vec3f org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
-    float hit_t      = optixGetRayTmax();
     const float tmin = optixGetRayTmin();
+    float hit_t      = optixGetRayTmax();
     
     const vec3f oc = org - center;
     const float a = dot(dir,dir);

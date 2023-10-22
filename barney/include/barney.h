@@ -54,6 +54,9 @@ struct BNCamera {
   float3 lens_00;
   /* vector along v direction, for ONE pixel */
   float  lensRadius;
+
+  float3 dbg_vp;
+  float3 dbg_vi;
 };
 
 #define BN_DEFAULT_MATERIAL  { { .5f,.5f,.5f }, 0.f, 1.f, -1, -1 }

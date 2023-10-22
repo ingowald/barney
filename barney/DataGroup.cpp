@@ -27,7 +27,14 @@ namespace barney {
     assert(model->context);
     return model->context;
   }
-  
+
+  OWLContext DataGroup::getOWL() const
+  {
+    assert(devGroup);
+    assert(devGroup->owl);
+    return devGroup->owl;
+  }
+
   DataGroup::DataGroup(Model *model, int localID)
     : model(model),
       localID(localID),

@@ -30,6 +30,8 @@ namespace barney {
 
     DataGroup(Model *model, int localID);
     
+    OWLContext getOWL() const;
+    
     static SP create(Model *model, int localID)
     { return std::make_shared<DataGroup>(model,localID); }
 
