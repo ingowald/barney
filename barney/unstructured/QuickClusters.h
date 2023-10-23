@@ -47,7 +47,7 @@ namespace barney {
     box4f bounds;
     float majorant;
   };
-    
+
   struct UMeshQC : public UMeshField {
     enum { clusterSize = 1 };
     // enum { clusterSize = 16 };
@@ -55,23 +55,24 @@ namespace barney {
       uint32_t ID:29;
       uint32_t type:3;
     };
+  
     struct DD {
       inline __device__
       box4f getBounds(Element element) const;
 
-      inline __device__
-      bool sampleAndMap(vec4f &color,
-                        int elts_begin, int elts_end,
-                        vec3f position) const;
+      // inline __device__
+      // bool sampleAndMap(vec4f &color,
+      //                   int elts_begin, int elts_end,
+      //                   vec3f position) const;
                         
-      inline __device__
-      bool sample(float &scalar,
-                  Element element,
-                  vec3f position) const;
-      inline __device__
-      bool sampleAndMap(vec4f &color,
-                        Element element,
-                        vec3f position) const;
+      // inline __device__
+      // bool sample(float &scalar,
+      //             Element element,
+      //             vec3f position) const;
+      // inline __device__
+      // bool sampleAndMap(vec4f &color,
+      //                   Element element,
+      //                   vec3f position) const;
       
       DeviceXF xf;
 

@@ -33,16 +33,31 @@ namespace barney {
     return r;
   }
 
-  inline __device__
-  bool UMeshQC::DD::sampleAndMap(vec4f &color,
-                                 int elts_begin, int elts_end,
-                                 vec3f position) const
+  struct MeshSampler
   {
-    for (int i=elts_begin;i<elts_end;i++)
-      if (sampleAndMap(color,elements[i],position))
-        return true;
-    return false;
-  }
+    inline __device__
+    MeshSampler(const UMeshQC::DD &mesh) : mesh(mesh) {}
+    inline __device__
+    void computeGradient()
+    {
+    };
+    inline __device__
+    bool sample();
+    inline __device__
+    bool sampleAndMap();
+    inline __device__
+    bool sampleAndMap(int elts_begin, int elts_end);
+      
+    UMeshQC::Element element;
+    vec3f P;
+
+    float scalar;
+    /*! color- and alpha-mapped sample */
+    vec4f mapped;
+    vec3f gradient;
+
+    const UMeshQC::DD &mesh;    
+  };
 
   template<typename T>
   inline __device__
@@ -71,13 +86,13 @@ namespace barney {
       swap(s0,s1);
       a = -a;
     }
-      // clipPlane(v0,v1,v2);
-      // // if (tRange.empty()) return;
-      // clipPlane(v0,v3,v1);
-      // // if (tRange.empty()) return;
-      // clipPlane(v0,v2,v3);
-      // // if (tRange.empty()) return;
-      // clipPlane(v1,v3,v2);
+    // clipPlane(v0,v1,v2);
+    // // if (tRange.empty()) return;
+    // clipPlane(v0,v3,v1);
+    // // if (tRange.empty()) return;
+    // clipPlane(v0,v2,v3);
+    // // if (tRange.empty()) return;
+    // clipPlane(v1,v3,v2);
 
     float w3 = doPlane(P, v0,v1,v2)/a; if (w3 < 0.f) return false;
     float w2 = doPlane(v3,v0,v1,P )/a; if (w2 < 0.f) return false;
@@ -95,36 +110,62 @@ namespace barney {
   }
 
   inline __device__
-  bool UMeshQC::DD::sample(float &scalar,
-                           Element element,
-                           vec3f position) const
+  bool MeshSampler::sample() 
   {
-    if (element.type == TET) {
-      auto indices = tetIndices[element.ID];
-      vec4f a = vertices[indices.x];
-      vec4f b = vertices[indices.y];
-      vec4f c = vertices[indices.z];
-      vec4f d = vertices[indices.w];
+    if (element.type == UMeshQC::TET) {
+      auto indices = mesh.tetIndices[element.ID];
+      vec4f a = mesh.vertices[indices.x];
+      vec4f b = mesh.vertices[indices.y];
+      vec4f c = mesh.vertices[indices.z];
+      vec4f d = mesh.vertices[indices.w];
       return evaluateTet(getPos(a),a.w,
-                         getPos(b),b.w,
-                         getPos(c),c.w,
-                         getPos(d),d.w,
-                         scalar, position);
+                      getPos(b),b.w,
+                      getPos(c),c.w,
+                      getPos(d),d.w,
+                         scalar, P);
     }
     return false;
   }
   
   inline __device__
-  bool UMeshQC::DD::sampleAndMap(vec4f &color,
-                                 Element element,
-                                 vec3f position) const
+  bool MeshSampler::sampleAndMap() 
   {
-    float s = 0.f;
-    if (!sample(s,element,position))
-      return false;
-    color = xf.map(s);
-    return true;
+    if (element.type == UMeshQC::TET) {
+      auto indices = mesh.tetIndices[element.ID];
+      vec4f a = mesh.vertices[indices.x];
+      vec4f b = mesh.vertices[indices.y];
+      vec4f c = mesh.vertices[indices.z];
+      vec4f d = mesh.vertices[indices.w];
+      if (!evaluateTet(getPos(a),a.w,
+                       getPos(b),b.w,
+                       getPos(c),c.w,
+                       getPos(d),d.w,
+                       scalar, P))
+        return false;
+      mapped = mesh.xf.map(scalar);
+      gradient
+        = (mesh.xf.map(a.w).w-mapped.w)*(getPos(a)-P)
+        + (mesh.xf.map(b.w).w-mapped.w)*(getPos(b)-P)
+        + (mesh.xf.map(c.w).w-mapped.w)*(getPos(c)-P)
+        + (mesh.xf.map(d.w).w-mapped.w)*(getPos(d)-P);
+      
+      return true;
+    }
+    return false;
   }
+  
+  inline __device__
+  bool MeshSampler::sampleAndMap(int elts_begin, int elts_end) 
+  {
+    for (int i=elts_begin;i<elts_end;i++) {
+      element = mesh.elements[i];
+      if (sampleAndMap())
+        return true;
+    }
+    return false;
+  }
+
+
   
       
   
@@ -217,7 +258,7 @@ namespace barney {
     ray.tMax = optixGetRayTmax();
 
   }
-  
+
   OPTIX_INTERSECT_PROGRAM(UMeshQCIsec)()
   {
     const int primID = optixGetPrimitiveIndex();
@@ -236,7 +277,8 @@ namespace barney {
     float t1 = min(ray_t1,hit_t);
     if (!boxTest(t0,t1,cluster.bounds,org,dir))
       return;
-    
+
+    MeshSampler isec(self);
     int begin = primID * UMeshQC::clusterSize;
     int end   = min(begin+UMeshQC::clusterSize,self.numElements);
     
@@ -250,17 +292,28 @@ namespace barney {
       if (t >= t1)
         break;
 
-      vec4f s;
-      if (!self.sampleAndMap(s,begin,end,org+t*dir))
+      isec.P = org+t*dir;
+      if (!isec.sampleAndMap(begin,end))
         continue;
 
-      bool accept = (s.w > rand()*cluster.majorant);
+      bool accept = (isec.mapped.w > rand()*cluster.majorant);
       if (!accept)
         continue;
 
+      isec.computeGradient();
+      // printf("grad %f %f %f\n",
+      //        isec.gradient.x,
+      //        isec.gradient.y,
+      //        isec.gradient.z);
+      vec3f N
+        = (isec.gradient == vec3f(0.f))
+        ? vec3f(dir)
+        : normalize(isec.gradient);
       ray.hadHit = 1;
       ray.tMax   = t;
-      ray.color  = { s.x,s.y,s.z };
+      ray.color
+        = vec3f(isec.mapped.x,isec.mapped.y,isec.mapped.z)
+        * (.3f+.7f*fabsf(dot(normalize(dir),normalize(N))));
       optixReportIntersection(t, 0);
       return;
     }
