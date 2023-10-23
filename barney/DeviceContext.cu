@@ -17,6 +17,7 @@
 #include "barney/DeviceContext.h"
 #include "barney/Ray.h"
 #include "barney/Model.h"
+#include "barney/FrameBuffer.h"
 
 namespace barney {
   
@@ -63,6 +64,7 @@ namespace barney {
   /*! see shadeRays.cu for implementation */
   __global__
   void g_shadeRays(AccumTile *accumTiles,
+                   int accumID,
                    Ray *readQueue,
                    int numRays,
                    Ray *writeQueue,
@@ -78,7 +80,8 @@ namespace barney {
     // std::cout << "*shading* " << numRays << " on device " << fb->device->globalIndex << std::endl;
     if (nb)
       g_shadeRays<<<nb,bs,0,device->launchStream>>>
-        (fb->accumTiles,rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
+        (fb->accumTiles,fb->owner->accumID,
+         rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
   }
 
   void DeviceContext::shadeRays_sync()

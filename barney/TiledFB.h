@@ -20,6 +20,8 @@
 
 namespace barney {
 
+  struct FrameBuffer;
+  
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
   
@@ -38,9 +40,9 @@ namespace barney {
   
   struct TiledFB {
     typedef std::shared_ptr<TiledFB> SP;
-    static SP create(Device::SP device);
+    static SP create(Device::SP device, FrameBuffer *owner);
 
-    TiledFB(Device::SP device);
+    TiledFB(Device::SP device, FrameBuffer *owner);
     
     void resize(vec2i newSize);
 
@@ -68,6 +70,7 @@ namespace barney {
     TileDesc  *tileDescs  = 0;
     AccumTile *accumTiles = 0;
     FinalTile *finalTiles = 0;
+    FrameBuffer *const owner;
     Device::SP const device;
   };
   

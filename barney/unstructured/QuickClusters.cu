@@ -34,10 +34,12 @@ namespace barney {
          { "tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,tetIndices) },
          { "hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,hexIndices) },
          { "elements", OWL_BUFPTR, OWL_OFFSETOF(DD,elements) },
+         { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
          { "numElements", OWL_INT, OWL_OFFSETOF(DD,numElements) },
          { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
          { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
          { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
+         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
          { nullptr }
     };
     OWLModule module = owlModuleCreate
@@ -76,7 +78,9 @@ namespace barney {
     vec3f center = box.center();
     // PRINT(box);
     // PRINT(worldBounds);
-    center = (center - worldBounds.lower) * rcp(max(vec3f(1e-10f),worldBounds.size()));
+    center
+      = (center - getPos(worldBounds.lower))
+      * rcp(max(vec3f(1e-10f),getPos(worldBounds.size())));
     // PRINT(center);
     center = clamp(center,vec3f(0.f),vec3f(1.f));
     vec3ul coords = vec3ul(center * maxValue);
@@ -116,9 +120,9 @@ namespace barney {
   
   void UMeshQC::build(Volume *volume)
   {
-    worldBounds = box3f();
+    worldBounds = box4f();
     for (int i=0;i<vertices.size();i++)
-      worldBounds.extend((const vec3f&)vertices[i]);
+      worldBounds.extend((const vec4f&)vertices[i]);
     // PING; PRINT(worldBounds);
     
     std::vector<std::pair<uint64_t,uint32_t>> hilbertPrims;
@@ -153,8 +157,16 @@ namespace barney {
     owlGeomSetBuffer(geom,"elements",elementsBuffer);
     
     TransferFunction *xf = volume->xf.get();
-    owlGeomSet2f(geom,"xf.domain",xf->domain.lower,xf->domain.upper);
+    PING; PRINT(worldBounds);
+    PRINT(worldBounds.lower.w);
+    PRINT(worldBounds.upper.w);
+    if (xf->domain.lower < xf->domain.upper) {
+      owlGeomSet2f(geom,"xf.domain",xf->domain.lower,xf->domain.upper);
+    } else {
+      owlGeomSet2f(geom,"xf.domain",worldBounds.lower.w,worldBounds.upper.w);
+    }
     owlGeomSet1f(geom,"xf.baseDensity",xf->baseDensity);
+    owlGeomSet1i(geom,"xf.numValues",(int)xf->values.size());
 
     PING; std::cout << "MEMORY LEAK!" << std::endl;
     OWLBuffer xfValuesBuffer = owlDeviceBufferCreate(getOWL(),
@@ -188,6 +200,14 @@ namespace barney {
     owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
 
     int numClusters = divRoundUp((int)elements.size(),clusterSize);
+
+    PING; std::cout << "MEMORY LEAK!" << std::endl;
+    OWLBuffer clustersBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_USER_TYPE(Cluster),
+                              numClusters,nullptr);
+    owlGeomSetBuffer(geom,"clusters",clustersBuffer);
+
     owlGeomSetPrimCount(geom,numClusters);
     
     volume->userGeoms.push_back(geom);

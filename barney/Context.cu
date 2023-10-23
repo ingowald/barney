@@ -25,7 +25,7 @@ namespace barney {
                              FrameBuffer *fb)
   {
     assert(fb);
-    int accumID=0;
+    int accumID=fb->accumID;
     // ------------------------------------------------------------------
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
@@ -123,7 +123,7 @@ namespace barney {
 
     for (auto &pd : perDG) 
       pd.devGroup->update();
-    
+
     generateRays(camera,fb);
     for (auto dev : devices) dev->sync();
 
@@ -137,6 +137,8 @@ namespace barney {
         continue;
       break;
     }
+    
+    ++ fb->accumID;
   }
 
   

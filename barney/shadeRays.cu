@@ -21,6 +21,7 @@ namespace barney {
   
   __global__
   void g_shadeRays(AccumTile *accumTiles,
+                   int accumID,
                    Ray *readQueue,
                    int numRays,
                    Ray *writeQueue,
@@ -35,7 +36,13 @@ namespace barney {
       color = ray.color;
     int tileID  = ray.pixelID / pixelsPerTile;
     int tileOfs = ray.pixelID % pixelsPerTile;
-    accumTiles[tileID].accum[tileOfs] = vec4f(color,0.f);
+
+    float4 &valueToAccumInto
+      = accumTiles[tileID].accum[tileOfs];
+    vec4f valueToAccum = make_float4(color.x,color.y,color.z,0.f);
+    if (accumID > 0)
+      valueToAccum = valueToAccum + (vec4f)valueToAccumInto;
+    valueToAccumInto = valueToAccum;
   }
   
 }

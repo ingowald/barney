@@ -336,6 +336,13 @@ namespace barney {
     checkGet(fb)->resize(vec2i{sizeX,sizeY},hostRGBA);
   }
 
+
+  BN_API
+  void bnAccumReset(BNFrameBuffer fb)
+  {
+    checkGet(fb)->resetAccumulation();
+  }
+  
   BN_API
   void bnRender(BNModel model,
                 const BNCamera *_camera,

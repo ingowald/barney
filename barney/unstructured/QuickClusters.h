@@ -20,8 +20,37 @@
 
 namespace barney {
 
+  inline __both__
+  vec3f getPos(vec4f v)
+  { return {v.x,v.y,v.z}; }
+
+  inline __both__
+  box3f getBox(box4f bb)
+  { return {getPos(bb.lower),getPos(bb.upper)}; }
+
+  inline __both__
+  range1f getRange(box4f bb)
+  { return {bb.lower.w,bb.upper.w}; }
+
+  
+  struct DeviceXF {
+    inline __device__ vec4f map(float s) const;
+    inline __device__ float majorant(range1f r) const;
+
+    float4  *values;
+    range1f  domain;
+    float    baseDensity;
+    int      numValues;
+  };
+
+  struct Cluster {
+    box4f bounds;
+    float majorant;
+  };
+    
   struct UMeshQC : public UMeshField {
-    enum { clusterSize = 16 };
+    enum { clusterSize = 1 };
+    // enum { clusterSize = 16 };
     struct Element {
       uint32_t ID:29;
       uint32_t type:3;
@@ -29,18 +58,29 @@ namespace barney {
     struct DD {
       inline __device__
       box4f getBounds(Element element) const;
+
+      inline __device__
+      bool sampleAndMap(vec4f &color,
+                        int elts_begin, int elts_end,
+                        vec3f position) const;
+                        
+      inline __device__
+      bool sample(float &scalar,
+                  Element element,
+                  vec3f position) const;
+      inline __device__
+      bool sampleAndMap(vec4f &color,
+                        Element element,
+                        vec3f position) const;
       
-      struct {
-        float4   *values;
-        range1f   domain;
-        float     baseDensity;
-      } xf;
-      
+      DeviceXF xf;
+
       float4     *vertices;
-      TetIndices *tetIndices;
+      int4       *tetIndices;
       HexIndices *hexIndices;
       Element    *elements;
       int         numElements;
+      Cluster    *clusters;
     };
     
     enum { numHilbertBits = 20 };
@@ -62,7 +102,7 @@ namespace barney {
     void build(Volume *volume) override;
     static OWLGeomType createGeomType(DevGroup *devGroup);
 
-    box3f worldBounds;
+    box4f worldBounds;
   };
 
   inline __device__

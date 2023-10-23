@@ -26,7 +26,7 @@ namespace barney {
     perDev.resize(context->devices.size());
     for (int localID=0;localID<context->devices.size();localID++) {
       perDev[localID]
-        = TiledFB::create(context->getDevice(localID));
+        = TiledFB::create(context->getDevice(localID),this);
     }
   }
 

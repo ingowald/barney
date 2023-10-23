@@ -15,16 +15,17 @@
 // ======================================================================== //
 
 #include "barney/TiledFB.h"
+#include "barney/FrameBuffer.h"
 
 namespace barney {
 
-  TiledFB::SP TiledFB::create(Device::SP device)
+  TiledFB::SP TiledFB::create(Device::SP device, FrameBuffer *owner)
   {
-    return std::make_shared<TiledFB>(device);
+    return std::make_shared<TiledFB>(device, owner);
   }
   
-  TiledFB::TiledFB(Device::SP device)
-    : device(device)
+  TiledFB::TiledFB(Device::SP device, FrameBuffer *owner)
+    : device(device), owner(owner)
   {}
 
   __global__ void setTileCoords(TileDesc *tileDescs,
@@ -87,13 +88,14 @@ namespace barney {
   // ==================================================================
 
   __global__ void g_finalizeTiles(FinalTile *finalTiles,
-                                  AccumTile *accumTiles)
+                                  AccumTile *accumTiles,
+                                  float      accumScale)
   {
     int pixelID = threadIdx.x;
     int tileID  = blockIdx.x;
 
     uint32_t rgba32
-      = owl::make_rgba(vec4f(accumTiles[tileID].accum[pixelID]));
+      = owl::make_rgba(vec4f(accumTiles[tileID].accum[pixelID])*accumScale);
     
     finalTiles[tileID].rgba[pixelID] = rgba32;
   }
@@ -106,7 +108,7 @@ namespace barney {
     SetActiveGPU forDuration(device);
     if (numActiveTiles > 0)
       g_finalizeTiles<<<numActiveTiles,pixelsPerTile,0,device->launchStream>>>
-      (finalTiles,accumTiles);
+        (finalTiles,accumTiles,1.f/(owner->accumID));
   }
 
 

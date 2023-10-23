@@ -20,6 +20,134 @@
 namespace barney {
 
   inline __device__
+  vec4f DeviceXF::map(float s) const
+  {
+    float f = (s-domain.lower)/domain.span();
+    f = clamp(f,0.f,1.f);
+    f *= (numValues-1);
+    int idx0 = clamp(int(f),0,numValues-1);
+    int idx1 = clamp(idx0+1,0,numValues-1);
+    f -= idx0;
+    vec4f r = (1.f-f)*(vec4f)values[idx0]+f*(vec4f)values[idx1];
+    r.w *= baseDensity;
+    return r;
+  }
+
+  inline __device__
+  bool UMeshQC::DD::sampleAndMap(vec4f &color,
+                                 int elts_begin, int elts_end,
+                                 vec3f position) const
+  {
+    for (int i=elts_begin;i<elts_end;i++)
+      if (sampleAndMap(color,elements[i],position))
+        return true;
+    return false;
+  }
+
+  template<typename T>
+  inline __device__
+  void swap(T &a, T &b) { T c = a; a = b; b = c; }
+  
+  inline __device__
+  float doPlane(vec3f P, vec3f a, vec3f b, vec3f c)
+  {
+    vec3f n = cross(b-a,c-a);
+    return dot(P-a,n);
+  }
+  
+  
+  inline __device__
+  bool evaluateTet(vec3f v0, float s0,
+                   vec3f v1, float s1,
+                   vec3f v2, float s2,
+                   vec3f v3, float s3,
+                   float &scalar,
+                   vec3f P)
+  {
+    float a = doPlane(v3,v0,v1,v2);
+    if (a == 0.f) return false;
+    if (a < 0.f) {
+      swap(v0,v1);
+      swap(s0,s1);
+      a = -a;
+    }
+      // clipPlane(v0,v1,v2);
+      // // if (tRange.empty()) return;
+      // clipPlane(v0,v3,v1);
+      // // if (tRange.empty()) return;
+      // clipPlane(v0,v2,v3);
+      // // if (tRange.empty()) return;
+      // clipPlane(v1,v3,v2);
+
+    float w3 = doPlane(P, v0,v1,v2)/a; if (w3 < 0.f) return false;
+    float w2 = doPlane(v3,v0,v1,P )/a; if (w2 < 0.f) return false;
+    float w1 = doPlane(v3,v0,P ,v2)/a; if (w1 < 0.f) return false;
+    float w0 = doPlane(v3,P ,v1,v2)/a; if (w0 < 0.f) return false;
+
+    // float ww = w0+w1+w2+w3;
+    // if (ww < .98 || ww > 1.02)
+    //   printf("weird w %f\n",ww);
+    // float w2 = doPlane(P,v0,v3,v1)/a; if (w2 < 0.f) return false;
+    // float w1 = doPlane(P,v0,v2,v3)/a; if (w1 < 0.f) return false;
+    // float w0 = doPlane(P,v1,v3,v2)/a; if (w0 < 0.f) return false;
+    scalar = w0*s0 + w1*s1 + w2*s2 + w3*s3;
+    return true;
+  }
+
+  inline __device__
+  bool UMeshQC::DD::sample(float &scalar,
+                           Element element,
+                           vec3f position) const
+  {
+    if (element.type == TET) {
+      auto indices = tetIndices[element.ID];
+      vec4f a = vertices[indices.x];
+      vec4f b = vertices[indices.y];
+      vec4f c = vertices[indices.z];
+      vec4f d = vertices[indices.w];
+      return evaluateTet(getPos(a),a.w,
+                         getPos(b),b.w,
+                         getPos(c),c.w,
+                         getPos(d),d.w,
+                         scalar, position);
+    }
+    return false;
+  }
+  
+  inline __device__
+  bool UMeshQC::DD::sampleAndMap(vec4f &color,
+                                 Element element,
+                                 vec3f position) const
+  {
+    float s = 0.f;
+    if (!sample(s,element,position))
+      return false;
+    color = xf.map(s);
+    return true;
+  }
+  
+      
+  
+  inline __device__
+  float DeviceXF::majorant(range1f r) const
+  {
+    float f_lo = (r.lower-domain.lower)/domain.span();
+    float f_hi = (r.upper-domain.lower)/domain.span();
+    f_lo = clamp(f_lo,0.f,1.f);
+    f_hi = clamp(f_hi,0.f,1.f);
+    f_lo *= (numValues-1);
+    f_hi *= (numValues-1);
+    int idx0 = clamp(int(f_lo),0,numValues-1);
+    int idx1 = clamp(int(f_hi)+1,0,numValues-1);
+    float m = 0.f;
+    for (int i=idx0;i<=idx1;i++)
+      m = max(m,values[i].w);
+    // printf("maj [%f %f] domain [%f %f]-> idx [%i %i] max %f dens %f\n",
+    //        r.lower,r.upper,domain.lower,domain.upper,idx0,idx1,m,baseDensity);
+    return m * baseDensity;
+  }
+
+  inline __device__
   bool boxTest(float &t0, float &t1,
                box3f box,
                const vec3f org,
@@ -46,8 +174,8 @@ namespace barney {
   }
   
   OPTIX_BOUNDS_PROGRAM(UMeshQCBounds)(const void *geomData,                
-                                     owl::common::box3f &bounds,  
-                                     const int32_t primID)
+                                      owl::common::box3f &bounds,  
+                                      const int32_t primID)
   {
     const auto &self = *(const UMeshQC::DD *)geomData;
 
@@ -59,18 +187,23 @@ namespace barney {
       clusterBounds.extend(self.getBounds(elt));
     }
 
-    bounds.lower = (const vec3f&)clusterBounds.lower;
-    bounds.upper = (const vec3f&)clusterBounds.upper;
+    bounds = getBox(clusterBounds);
 
-    if (length(bounds.span())>30) {
-    printf("bounds %f %f %f : %f %f %f\n",
-           bounds.lower.x,
-           bounds.lower.y,
-           bounds.lower.z,
-           bounds.upper.x,
-           bounds.upper.y,
-           bounds.upper.z);
-    }
+    Cluster &cluster = self.clusters[primID];
+    cluster.bounds = clusterBounds;
+    cluster.majorant = self.xf.majorant(getRange(clusterBounds));
+    if (cluster.majorant == 0.f)
+      bounds = box3f();
+    
+    // if (length(bounds.span())>30) {
+    // printf("bounds %f %f %f : %f %f %f\n",
+    //        bounds.lower.x,
+    //        bounds.lower.y,
+    //        bounds.lower.z,
+    //        bounds.upper.x,
+    //        bounds.upper.y,
+    //        bounds.upper.z);
+    // }
   }
 
   OPTIX_CLOSEST_HIT_PROGRAM(UMeshQCCH)()
@@ -79,8 +212,8 @@ namespace barney {
     auto &self = owl::getProgramData<UMeshQC::DD>();
     int primID = optixGetPrimitiveIndex();
 
-    ray.hadHit = true;
-    ray.color = owl::randomColor(primID);
+    // ray.hadHit = true;
+    // ray.color = .8f;//owl::randomColor(primID);
     ray.tMax = optixGetRayTmax();
 
   }
@@ -98,45 +231,39 @@ namespace barney {
 
     float hit_t = INFINITY;
     
+    Cluster cluster = self.clusters[primID];
+    float t0 = ray_t0;
+    float t1 = min(ray_t1,hit_t);
+    if (!boxTest(t0,t1,cluster.bounds,org,dir))
+      return;
+    
     int begin = primID * UMeshQC::clusterSize;
     int end   = min(begin+UMeshQC::clusterSize,self.numElements);
-    for (int eid=begin;eid<end;eid++) {
-      UMeshQC::Element elt = self.elements[eid];
-      box4f eltBounds = self.getBounds(elt);
-
-      // printf("isec %f %f %f:%f %f %f box %f %f %f : %f %f %f\n",
-      //        org.x,
-      //        org.y,
-      //        org.z,
-      //        dir.x,
-      //        dir.y,
-      //        dir.z,
-      //        eltBounds.lower.x,
-      //        eltBounds.lower.y,
-      //        eltBounds.lower.z,
-      //        eltBounds.upper.x,
-      //        eltBounds.upper.y,
-      //        eltBounds.upper.z);
-      
-      float t0 = ray_t0;
-      float t1 = min(ray_t1,hit_t);
-      if (boxTest(t0,t1,eltBounds,org,dir)) {
-        hit_t = t0;
-      }
-    }
-
     
     auto &ray = owl::getPRD<Ray>();
-    Random rng(ray.rngSeed++,primID);
+    Random rand(ray.rngSeed++,primID);
+    
+    float t = t0;
+    while (true) {
+      float dt = - logf(1-rand())/(cluster.majorant);
+      t += dt;
+      if (t >= t1)
+        break;
 
-    // if ((primID % 16) == 0) {
-    if (hit_t < 1e10f) {
-      // printf("hit at %f\n",hit_t);
-      optixReportIntersection(hit_t, 0);
+      vec4f s;
+      if (!self.sampleAndMap(s,begin,end,org+t*dir))
+        continue;
+
+      bool accept = (s.w > rand()*cluster.majorant);
+      if (!accept)
+        continue;
+
+      ray.hadHit = 1;
+      ray.tMax   = t;
+      ray.color  = { s.x,s.y,s.z };
+      optixReportIntersection(t, 0);
+      return;
     }
-    // if (hit_t < optixGetRayTmax()) {
-    //   optixReportIntersection(hit_t, 0);
-    // }
   }
   
 }

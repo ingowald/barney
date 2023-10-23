@@ -30,12 +30,14 @@ namespace barney {
     { return "<FrameBuffer(base)>"; }
     
     virtual void resize(vec2i size, uint32_t *hostFB);
+    virtual void resetAccumulation() { accumID = 0; }
     
     std::vector<TiledFB::SP> perDev;
     
     vec2i       numPixels   = { 0,0 };
     uint32_t   *finalFB     = 0;
     uint32_t   *hostFB      = 0;
+    uint32_t    accumID     = 0;
     Context    *const context;
     const bool  isOwner;
   };

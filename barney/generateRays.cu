@@ -88,8 +88,9 @@ namespace barney {
     ray.primID  = -1;
     ray.u       = 0.f;
     ray.v       = 0.f;
-    ray.rngSeed = rngSeed;
     ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
+    Random rand(rngSeed,ray.pixelID);
+    ray.rngSeed = rand.state;
     ray.hadHit = false;
 
     int pos = -1;

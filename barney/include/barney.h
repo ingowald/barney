@@ -134,6 +134,9 @@ void  bnModelBuild(BNDataGroup dataGroup);
 // ==================================================================
 
 BN_API
+void bnAccumReset(BNFrameBuffer fb);
+
+BN_API
 BNFrameBuffer bnFrameBufferCreate(BNContext context,
                                   int owningRank);
 BN_API
