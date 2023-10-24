@@ -49,7 +49,7 @@ embed_ptx(
   SOURCES            unstructured/QuickClusters.dev.cu
 )
 
-add_library(barney SHARED
+add_library(barney STATIC
   # actual device kernels for CUDA ray gen and shading
   generateRays.cu
   shadeRays.cu
@@ -117,7 +117,7 @@ set_target_properties(barney
 # ------------------------------------------------------------------
 find_package(MPI REQUIRED)
 
-add_library(barney_mpi SHARED
+add_library(barney_mpi STATIC
   mpiAPI.cpp
   MPIWrappers.h
   MPIWrappers.cpp
