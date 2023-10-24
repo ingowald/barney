@@ -37,10 +37,18 @@ namespace barney {
   {
     inline __device__
     MeshSampler(const UMeshQC::DD &mesh) : mesh(mesh) {}
-    inline __device__
-    void computeGradient()
+
+    inline __device__ void operator=(const MeshSampler &other)
     {
-    };
+      P = other.P;
+      mapped = other.mapped;
+      scalar = other.scalar;
+    }
+
+    // inline __device__
+    // void computeGradient()
+    // {
+    // };
     inline __device__
     bool sample();
     inline __device__
@@ -54,7 +62,7 @@ namespace barney {
     float scalar;
     /*! color- and alpha-mapped sample */
     vec4f mapped;
-    vec3f gradient;
+    // vec3f gradient;
 
     const UMeshQC::DD &mesh;    
   };
@@ -62,6 +70,9 @@ namespace barney {
   template<typename T>
   inline __device__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }
+
+  inline __device__
+  float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
   
   inline __device__
   float doPlane(vec3f P, vec3f a, vec3f b, vec3f c)
@@ -119,9 +130,9 @@ namespace barney {
       vec4f c = mesh.vertices[indices.z];
       vec4f d = mesh.vertices[indices.w];
       return evaluateTet(getPos(a),a.w,
-                      getPos(b),b.w,
-                      getPos(c),c.w,
-                      getPos(d),d.w,
+                         getPos(b),b.w,
+                         getPos(c),c.w,
+                         getPos(d),d.w,
                          scalar, P);
     }
     return false;
@@ -143,11 +154,11 @@ namespace barney {
                        scalar, P))
         return false;
       mapped = mesh.xf.map(scalar);
-      gradient
-        = (mesh.xf.map(a.w).w-mapped.w)*(getPos(a)-P)
-        + (mesh.xf.map(b.w).w-mapped.w)*(getPos(b)-P)
-        + (mesh.xf.map(c.w).w-mapped.w)*(getPos(c)-P)
-        + (mesh.xf.map(d.w).w-mapped.w)*(getPos(d)-P);
+      // gradient
+      //   = (mesh.xf.map(a.w).w-mapped.w)*(getPos(a)-P)
+      //   + (mesh.xf.map(b.w).w-mapped.w)*(getPos(b)-P)
+      //   + (mesh.xf.map(c.w).w-mapped.w)*(getPos(c)-P)
+      //   + (mesh.xf.map(d.w).w-mapped.w)*(getPos(d)-P);
       
       return true;
     }
@@ -300,15 +311,39 @@ namespace barney {
       if (!accept)
         continue;
 
-      isec.computeGradient();
-      // printf("grad %f %f %f\n",
-      //        isec.gradient.x,
-      //        isec.gradient.y,
-      //        isec.gradient.z);
-      vec3f N
-        = (isec.gradient == vec3f(0.f))
-        ? vec3f(dir)
-        : normalize(isec.gradient);
+      MeshSampler dx0(self);
+      MeshSampler dy0(self);
+      MeshSampler dz0(self);
+      MeshSampler dx1(self);
+      MeshSampler dy1(self);
+      MeshSampler dz1(self);
+      const float delta = .1f;
+      dx0.P = isec.P - delta * vec3f(1.f,0.f,0.f);
+      dy0.P = isec.P - delta * vec3f(0.f,1.f,0.f);
+      dz0.P = isec.P - delta * vec3f(0.f,0.f,1.f);
+      dx1.P = isec.P + delta * vec3f(1.f,0.f,0.f);
+      dy1.P = isec.P + delta * vec3f(0.f,1.f,0.f);
+      dz1.P = isec.P + delta * vec3f(0.f,0.f,1.f);
+      if (!dx0.sampleAndMap(begin,end))
+        dx0 = isec;
+      if (!dx1.sampleAndMap(begin,end))
+        dx1 = isec;
+      if (!dy0.sampleAndMap(begin,end))
+        dy0 = isec;
+      if (!dy1.sampleAndMap(begin,end))
+        dy1 = isec;
+      if (!dz0.sampleAndMap(begin,end))
+        dz0 = isec;
+      if (!dz1.sampleAndMap(begin,end))
+        dz1 = isec;
+      
+      vec3f N;
+      N.x = safeDiv(dx1.mapped.w-dx0.mapped.w,dx1.P.x - dx0.P.x);
+      N.y = safeDiv(dy1.mapped.w-dy0.mapped.w,dy1.P.y - dy0.P.y);
+      N.z = safeDiv(dz1.mapped.w-dz0.mapped.w,dz1.P.z - dz0.P.z);
+      N = normalize
+        ((N == vec3f(0.f)) ? dir : N);
+      
       ray.hadHit = 1;
       ray.tMax   = t;
       ray.color

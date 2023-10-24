@@ -31,9 +31,15 @@ namespace barney {
     if (tid >= numRays) return;
 
     Ray ray = readQueue[tid];
-    vec3f color = abs(normalize(ray.direction));
-    if (ray.hadHit)
-      color = ray.color;
+    vec3f color = ray.color;
+
+
+    // if (ray.hadHit) {
+    //   color = ray.color;
+    // } else {
+    //   const float t = 0.5f*(ray.direction.y + 1.0f);
+    //   color = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
+    // }
     int tileID  = ray.pixelID / pixelsPerTile;
     int tileOfs = ray.pixelID % pixelsPerTile;
 

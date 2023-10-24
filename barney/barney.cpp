@@ -228,6 +228,7 @@ namespace barney {
                               // ints in vtk-style each
                               const int *_hexIndices, int numHexes)
   {
+    std::cout << "#bn: copying umesh from app ..." << std::endl;
     std::vector<vec4f>      vertices(numVertices);
     std::vector<TetIndices> tetIndices(numTets);
     std::vector<PyrIndices> pyrIndices(numPyrs);
@@ -238,8 +239,6 @@ namespace barney {
     memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
     memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
     memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
-    for (int i=0;i<10;i++)
-      PRINT(vertices[i]);
     ScalarField *sf = checkGet(dataGroup)->createUMesh(vertices,
                                                        tetIndices,
                                                        pyrIndices,

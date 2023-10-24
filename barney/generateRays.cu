@@ -93,6 +93,9 @@ namespace barney {
     ray.rngSeed = rand.state;
     ray.hadHit = false;
 
+    const float t = (iy+.5f)/float(fbSize.y);
+    ray.color = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
+    
     int pos = -1;
     if (ix < fbSize.x && iy < fbSize.y) 
       pos = atomicAdd(&l_count,1);

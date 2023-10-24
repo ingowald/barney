@@ -120,16 +120,31 @@ namespace barney {
   
   void UMeshQC::build(Volume *volume)
   {
+    std::cout << "umesh: computing world bounds" << std::endl;
     worldBounds = box4f();
     for (int i=0;i<vertices.size();i++)
       worldBounds.extend((const vec4f&)vertices[i]);
     // PING; PRINT(worldBounds);
-    
-    std::vector<std::pair<uint64_t,uint32_t>> hilbertPrims;
-    for (int i=0;i<tetIndices.size();i++) 
-      hilbertPrims.push_back({encodeTet(i),(i<<3)|TET});
-    for (int i=0;i<hexIndices.size();i++) 
-      hilbertPrims.push_back({encodeHex(i),(i<<3)|HEX});
+
+    std::cout << "umesh: building hilbert prims" << std::endl;
+    std::vector<std::pair<uint64_t,uint32_t>> hilbertPrims
+      (tetIndices.size()+hexIndices.size());
+    owl::common::parallel_for_blocked
+      (0,(int)tetIndices.size(),1024,
+       [&](int begin, int end) {
+         for (int i=begin;i<end;i++)
+           hilbertPrims[i] = {encodeTet(i),(i<<3)|TET};
+       });
+    // for (int i=0;i<tetIndices.size();i++) 
+    //   hilbertPrims[i] = {encodeTet(i),(i<<3)|TET};
+    owl::common::parallel_for_blocked
+      (0,(int)hexIndices.size(),1024,
+       [&](int begin, int end) {
+         for (int i=begin;i<end;i++)
+           // for (int i=0;i<hexIndices.size();i++) 
+           hilbertPrims[tetIndices.size()+i] = {encodeHex(i),(i<<3)|HEX};
+       });
+    std::cout << "umesh: sorting prims" << std::endl;
     std::sort(hilbertPrims.begin(),hilbertPrims.end());
 
     // for (int i=0;i<100;i++)

@@ -49,8 +49,8 @@ namespace barney {
   };
 
   struct UMeshQC : public UMeshField {
-    enum { clusterSize = 1 };
-    // enum { clusterSize = 16 };
+    // enum { clusterSize = 1 };
+    enum { clusterSize = 16 };
     struct Element {
       uint32_t ID:29;
       uint32_t type:3;

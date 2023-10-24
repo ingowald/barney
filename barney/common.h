@@ -18,6 +18,7 @@
 
 #include "owl/common/math/box.h"
 #include "owl/common/math/random.h"
+#include "owl/common/parallel/parallel_for.h"
 #include "owl/owl.h"
 #include "barney.h"
 #include "barney/cuda-helper.h"
