@@ -73,12 +73,6 @@ namespace barney {
     return (ScalarField *)sf;
   }
   
-  inline TransferFunction *checkGet(BNTransferFunction xf)
-  {
-    assert(xf);
-    return (TransferFunction *)xf;
-  }
-  
   inline Group *checkGet(BNGroup group)
   {
     assert(group);
@@ -102,10 +96,10 @@ namespace barney {
   {
     return checkGet(sf)->shared_from_this()->as<ScalarField>();
   }
-  inline TransferFunction::SP checkGetSP(BNTransferFunction xf)
-  {
-    return checkGet(xf)->shared_from_this()->as<TransferFunction>();
-  }
+  // inline TransferFunction::SP checkGetSP(BNTransferFunction xf)
+  // {
+  //   return checkGet(xf)->shared_from_this()->as<TransferFunction>();
+  // }
 
   // ------------------------------------------------------------------
   
@@ -184,33 +178,26 @@ namespace barney {
   }
 
   BN_API
-  BNTransferFunction bnTransferFunctionCreate(BNDataGroup dataGroup,
-                                              float domain_lower,
-                                              float domain_upper,
-                                              const float4 *_values,
-                                              int numValues,
-                                              float densityAt1)
+  void bnVolumeSetXF(BNVolume volume,
+                     float2 domain,
+                     const float4 *_values,
+                     int numValues,
+                     float densityAt1)
   {
     LOG_API_ENTRY;
-    std::vector<float4> values;
+    std::vector<vec4f> values;
     assert(_values);
     for (int i=0;i<numValues;i++)
-      values.push_back(_values[i]);
-    TransferFunction *xf
-      = checkGet(dataGroup)->createTransferFunction
-      (range1f{domain_lower,domain_upper},
-       values,densityAt1);
-    return (BNTransferFunction)xf;
+      values.push_back((const vec4f &)_values[i]);
+    checkGet(volume)->setXF(range1f(domain.x,domain.y),values,densityAt1);
   }
   
   BN_API
   BNVolume bnVolumeCreate(BNDataGroup dataGroup,
-                          BNTransferFunction _xf,
                           BNScalarField _sf)
   {
     ScalarField::SP sf = checkGetSP(_sf);
-    TransferFunction::SP xf = checkGetSP(_xf);
-    return (BNVolume)checkGet(dataGroup)->createVolume(xf,sf);
+    return (BNVolume)checkGet(dataGroup)->createVolume(sf);
   }
 
   BN_API

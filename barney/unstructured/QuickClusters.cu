@@ -171,23 +171,18 @@ namespace barney {
                               elements.data());
     owlGeomSetBuffer(geom,"elements",elementsBuffer);
     
-    TransferFunction *xf = volume->xf.get();
     PING; PRINT(worldBounds);
     PRINT(worldBounds.lower.w);
     PRINT(worldBounds.upper.w);
-    if (xf->domain.lower < xf->domain.upper) {
-      owlGeomSet2f(geom,"xf.domain",xf->domain.lower,xf->domain.upper);
+    if (volume->xf.domain.lower < volume->xf.domain.upper) {
+      owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
     } else {
       owlGeomSet2f(geom,"xf.domain",worldBounds.lower.w,worldBounds.upper.w);
     }
-    owlGeomSet1f(geom,"xf.baseDensity",xf->baseDensity);
-    owlGeomSet1i(geom,"xf.numValues",(int)xf->values.size());
+    owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+    owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
 
-    PING; std::cout << "MEMORY LEAK!" << std::endl;
-    OWLBuffer xfValuesBuffer = owlDeviceBufferCreate(getOWL(),
-                                               OWL_FLOAT4,
-                                               xf->values.size(),
-                                               xf->values.data());
+    OWLBuffer xfValuesBuffer = volume->xf.valuesBuffer;
     owlGeomSetBuffer(geom,"xf.values",xfValuesBuffer);
     
     PING; std::cout << "MEMORY LEAK!" << std::endl;

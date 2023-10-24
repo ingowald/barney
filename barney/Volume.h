@@ -43,35 +43,32 @@ namespace barney {
     DataGroup *owner;
   };
 
-  struct TransferFunction : public Object
-  {
-    typedef std::shared_ptr<TransferFunction> SP;
+  // struct TransferFunction : public Object
+  // {
+  //   typedef std::shared_ptr<TransferFunction> SP;
     
-    TransferFunction(DataGroup *owner,
-                     const range1f &domain,
-                     const std::vector<float4> &values,
-                     float baseDensity);
+  //   TransferFunction(DataGroup *owner,
+  //                    const range1f &domain,
+  //                    const std::vector<float4> &values,
+  //                    float baseDensity);
 
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "TransferFunction{}"; }
+  //   /*! pretty-printer for printf-debugging */
+  //   std::string toString() const override
+  //   { return "TransferFunction{}"; }
 
-    range1f             domain;
-    std::vector<float4> values;
-    OWLBuffer           valuesBuffer;
-    float               baseDensity;
-    DataGroup *owner;
-  };
+    // range1f             domain;
+    // std::vector<float4> values;
+    // OWLBuffer           valuesBuffer;
+    // float               baseDensity;
+  //   DataGroup *owner;
+  // };
     
   struct Volume : public Object
   {
     typedef std::shared_ptr<Volume> SP;
-
+    
     Volume(DataGroup *owner,
-           TransferFunction::SP xf,
-           ScalarField::SP sf)
-      : owner(owner), xf(xf), sf(sf)
-    {}
+           ScalarField::SP sf);
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -81,8 +78,19 @@ namespace barney {
     { sf->build(this); }
     
     DataGroup  *owner;
-    TransferFunction::SP xf;
+    
+    void setXF(const range1f &domain,
+               const std::vector<vec4f> &values,
+               float baseDensity);
+               
     ScalarField::SP      sf;
+
+    struct {
+      range1f             domain;
+      std::vector<vec4f>  values;
+      OWLBuffer           valuesBuffer;
+      float               baseDensity;
+    } xf;
     
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGeom>  triangleGeoms;

@@ -28,7 +28,7 @@ typedef struct _BNScalarField   *BNScalarField;
 typedef struct _BNGeom          *BNGeom;
 typedef struct _BNVolume        *BNVolume;
 typedef struct _BNGroup         *BNGroup;
-typedef struct _BNTransferFunction         *BNTransferFunction;
+// typedef struct _BNTransferFunction         *BNTransferFunction;
 typedef struct _BNModel         *BNModel;
 typedef struct _BNRenderRequest *BNRenderRequest;
 typedef struct _BNFrameBuffer   *BNFrameBuffer;
@@ -258,13 +258,20 @@ void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
 // #define BN_DEFAULT_PHASE_FUNCTION { { .5f,.5f,.5f }, 0.f }
 
 
-BN_API
-BNTransferFunction bnTransferFunctionCreate(BNDataGroup dataGroup,
-                                            float domain_lower,
-                                            float domain_upper,
-                                            const float4 *values,
-                                            int numValues,
-                                            float densityAt1);
+// BN_API
+// BNTransferFunction bnTransferFunctionCreate(BNDataGroup dataGroup,
+//                                             float domain_lower,
+//                                             float domain_upper,
+//                                             const float4 *colorMap,
+//                                             int numColorMapValues,
+//                                             float densityAt1);
+
+// BN_API
+// void bnTransferFunctionSet(BNTransferFunction xf,
+//                            float2 domain,
+//                            const float4 *colorMap,
+//                            int numColorMapValues,
+//                            float densityAt1);
 // BN_API
 // void bnTransferFunctionSet(float domain_lower,
 //                            float domain_upper,
@@ -295,8 +302,14 @@ BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
 
 BN_API
 BNVolume bnVolumeCreate(BNDataGroup dataGroup,
-                        BNTransferFunction xf,
                         BNScalarField sf);
+
+BN_API
+void bnVolumeSetXF(BNVolume volume,
+                   float2 domain,
+                   const float4 *colorMap,
+                   int numColorMapValues,
+                   float densityAt1);
 
 // BN_API
 // void bnUMeshSetScalars(BNVolume umesh,

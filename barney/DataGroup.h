@@ -39,11 +39,6 @@ namespace barney {
     createGroup(const std::vector<Geometry::SP> &geoms,
                 const std::vector<Volume::SP> &volumes);
     
-    TransferFunction *
-    createTransferFunction(const range1f &domain,
-                           const std::vector<float4> &values,
-                           float densityAt1);
-    
     Spheres *
     createSpheres(const barney::Material &material,
                   const vec3f *origins,
@@ -51,8 +46,7 @@ namespace barney {
                   const float *radii,
                   float defaultRadius);
 
-    Volume *createVolume(TransferFunction::SP xf,
-                         ScalarField::SP sf);
+    Volume *createVolume(ScalarField::SP sf);
     
     Triangles *
     createTriangles(const barney::Material &material,

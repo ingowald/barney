@@ -61,20 +61,10 @@ namespace barney {
       (std::make_shared<Group>(this,geoms,volumes));
   }
 
-  TransferFunction *
-  DataGroup::createTransferFunction(const range1f &domain,
-                                    const std::vector<float4> &values,
-                                    float densityAt1)
+  Volume *DataGroup::createVolume(ScalarField::SP sf)
   {
     return getContext()->initReference
-      (std::make_shared<TransferFunction>(this,domain,values,densityAt1));
-  }
-
-  Volume *DataGroup::createVolume(TransferFunction::SP xf,
-                                  ScalarField::SP sf)
-  {
-    return getContext()->initReference
-      (std::make_shared<Volume>(this,xf,sf));
+      (std::make_shared<Volume>(this,sf));
   }
 
 

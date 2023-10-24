@@ -22,19 +22,28 @@ namespace barney {
   OWLContext ScalarField::getOWL() const
   { return owner->getOWL(); }
   
-  TransferFunction::TransferFunction(DataGroup *owner,
-                                     const range1f &domain,
-                                     const std::vector<float4> &values,
-                                     float baseDensity)
-    : owner(owner),
-      domain(domain),
-      values(values),
-      baseDensity(baseDensity)
+  Volume::Volume(DataGroup *owner,
+                 ScalarField::SP sf)
+    : owner(owner), sf(sf)
   {
-    valuesBuffer = owlDeviceBufferCreate(owner->devGroup->owl,
-                                         OWL_FLOAT4,
-                                         values.size(),
-                                         values.data());
+    xf.domain = { 0.f,0.f };
+    xf.values = { vec4f(0.f), vec4f(1.f) };
+    xf.baseDensity  = 1.f;
+    xf.valuesBuffer = owlDeviceBufferCreate(owner->devGroup->owl,
+                                            OWL_FLOAT4,
+                                            xf.values.size(),
+                                            xf.values.data());
   }
-  
+
+  void Volume::setXF(const range1f &domain,
+                     const std::vector<vec4f> &values,
+                     float baseDensity)
+  {
+    xf.domain = domain;
+    xf.baseDensity = baseDensity;
+    xf.values = values;
+    owlBufferResize(xf.valuesBuffer,xf.values.size());
+    owlBufferUpload(xf.valuesBuffer,xf.values.data());
+  }
+
 }
