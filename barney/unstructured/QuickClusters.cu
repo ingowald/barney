@@ -120,107 +120,120 @@ namespace barney {
   
   void UMeshQC::build(Volume *volume)
   {
-    std::cout << "umesh: computing world bounds" << std::endl;
-    worldBounds = box4f();
-    for (int i=0;i<vertices.size();i++)
-      worldBounds.extend((const vec4f&)vertices[i]);
-    // PING; PRINT(worldBounds);
+    PING;
+    if (!geom) {
+      std::cout << "UMeshQC: seems this is the first time we're building this thing ...." << std::endl;
+      std::cout << "umesh: computing world bounds" << std::endl;
+      worldBounds = box4f();
+      for (int i=0;i<vertices.size();i++)
+        worldBounds.extend((const vec4f&)vertices[i]);
+      // PING; PRINT(worldBounds);
+      
+      std::cout << "umesh: building hilbert prims" << std::endl;
+      std::vector<std::pair<uint64_t,uint32_t>> hilbertPrims
+        (tetIndices.size()+hexIndices.size());
+      owl::common::parallel_for_blocked
+        (0,(int)tetIndices.size(),1024,
+         [&](int begin, int end) {
+           for (int i=begin;i<end;i++)
+             hilbertPrims[i] = {encodeTet(i),(i<<3)|TET};
+         });
+      // for (int i=0;i<tetIndices.size();i++) 
+      //   hilbertPrims[i] = {encodeTet(i),(i<<3)|TET};
+      owl::common::parallel_for_blocked
+        (0,(int)hexIndices.size(),1024,
+         [&](int begin, int end) {
+           for (int i=begin;i<end;i++)
+             // for (int i=0;i<hexIndices.size();i++) 
+             hilbertPrims[tetIndices.size()+i] = {encodeHex(i),(i<<3)|HEX};
+         });
+      std::cout << "umesh: sorting prims" << std::endl;
+      std::sort(hilbertPrims.begin(),hilbertPrims.end());
+      
+      // for (int i=0;i<100;i++)
+      //   PRINT((int*)hilbertPrims[i].first);
+      
+      std::vector<Element> elements;
+      for (auto prim : hilbertPrims) {
+        Element elt;
+        elt.ID = prim.second >> 3;
+        elt.type = prim.second & 0x7;
+        elements.push_back(elt);
+      }
 
-    std::cout << "umesh: building hilbert prims" << std::endl;
-    std::vector<std::pair<uint64_t,uint32_t>> hilbertPrims
-      (tetIndices.size()+hexIndices.size());
-    owl::common::parallel_for_blocked
-      (0,(int)tetIndices.size(),1024,
-       [&](int begin, int end) {
-         for (int i=begin;i<end;i++)
-           hilbertPrims[i] = {encodeTet(i),(i<<3)|TET};
-       });
-    // for (int i=0;i<tetIndices.size();i++) 
-    //   hilbertPrims[i] = {encodeTet(i),(i<<3)|TET};
-    owl::common::parallel_for_blocked
-      (0,(int)hexIndices.size(),1024,
-       [&](int begin, int end) {
-         for (int i=begin;i<end;i++)
-           // for (int i=0;i<hexIndices.size();i++) 
-           hilbertPrims[tetIndices.size()+i] = {encodeHex(i),(i<<3)|HEX};
-       });
-    std::cout << "umesh: sorting prims" << std::endl;
-    std::sort(hilbertPrims.begin(),hilbertPrims.end());
+      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+        ("UMeshQC",UMeshQC::createGeomType);
+      geom = owlGeomCreate(getOWL(),gt);
+      owlGeomSet1i(geom,"numElements",(int)elements.size());
+      
+      PING; std::cout << "MEMORY LEAK!" << std::endl;
+      OWLBuffer elementsBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_INT,
+                                elements.size(),
+                                elements.data());
+      owlGeomSetBuffer(geom,"elements",elementsBuffer);
+      // this is the first time we're building this!
+      owlGeomSet1f(geom,"xf.baseDensity",0.f);
+      owlGeomSet1i(geom,"xf.numValues",0);
+      
+      PING; std::cout << "MEMORY LEAK!" << std::endl;
+      OWLBuffer verticesBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_FLOAT4,
+                              vertices.size(),
+                                vertices.data());
+      owlGeomSetBuffer(geom,"vertices",verticesBuffer);
+      
+      
+      PING; std::cout << "MEMORY LEAK!" << std::endl;
+      OWLBuffer tetIndicesBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_INT,
+                                4*tetIndices.size(),
+                                tetIndices.data());
+      owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
+      
+      OWLBuffer hexIndicesBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_INT,
+                                8*hexIndices.size(),
+                                hexIndices.data());
+      owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
 
-    // for (int i=0;i<100;i++)
-    //   PRINT((int*)hilbertPrims[i].first);
-    
-    std::vector<Element> elements;
-    for (auto prim : hilbertPrims) {
-      Element elt;
-      elt.ID = prim.second >> 3;
-      elt.type = prim.second & 0x7;
-      elements.push_back(elt);
+      int numClusters = divRoundUp((int)elements.size(),clusterSize);
+
+      PING; std::cout << "MEMORY LEAK!" << std::endl;
+      OWLBuffer clustersBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_USER_TYPE(Cluster),
+                                numClusters,nullptr);
+      owlGeomSetBuffer(geom,"clusters",clustersBuffer);
+      owlGeomSetPrimCount(geom,numClusters);
+
+      OWLGroup group
+        = owlUserGeomGroupCreate(getOWL(),1,&geom);
+      std::cout << "performing initial accel build" << std::endl;
+      owlGroupBuildAccel(group);
+      volume->generatedGroups.push_back(group);
     }
 
-    OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
-      ("UMeshQC",UMeshQC::createGeomType);
-    OWLGeom geom = owlGeomCreate(getOWL(),gt);
-    owlGeomSet1i(geom,"numElements",(int)elements.size());
-
-    PING; std::cout << "MEMORY LEAK!" << std::endl;
-    OWLBuffer elementsBuffer
-      = owlDeviceBufferCreate(getOWL(),
-                              OWL_INT,
-                              elements.size(),
-                              elements.data());
-    owlGeomSetBuffer(geom,"elements",elementsBuffer);
-    
-    PING; PRINT(worldBounds);
-    PRINT(worldBounds.lower.w);
-    PRINT(worldBounds.upper.w);
+    std::cout << "updating volume transfer function" << std::endl;
     if (volume->xf.domain.lower < volume->xf.domain.upper) {
       owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+      PRINT(volume->xf.domain);
     } else {
       owlGeomSet2f(geom,"xf.domain",worldBounds.lower.w,worldBounds.upper.w);
     }
     owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+    PRINT(volume->xf.values.size());
     owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
 
     OWLBuffer xfValuesBuffer = volume->xf.valuesBuffer;
     owlGeomSetBuffer(geom,"xf.values",xfValuesBuffer);
-    
-    PING; std::cout << "MEMORY LEAK!" << std::endl;
-    OWLBuffer verticesBuffer
-      = owlDeviceBufferCreate(getOWL(),
-                              OWL_FLOAT4,
-                              vertices.size(),
-                              vertices.data());
-    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
 
-
-    PING; std::cout << "MEMORY LEAK!" << std::endl;
-    OWLBuffer tetIndicesBuffer
-      = owlDeviceBufferCreate(getOWL(),
-                              OWL_INT,
-                              4*tetIndices.size(),
-                              tetIndices.data());
-    owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
-    
-    OWLBuffer hexIndicesBuffer
-      = owlDeviceBufferCreate(getOWL(),
-                              OWL_INT,
-                              8*hexIndices.size(),
-                              hexIndices.data());
-    owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
-
-    int numClusters = divRoundUp((int)elements.size(),clusterSize);
-
-    PING; std::cout << "MEMORY LEAK!" << std::endl;
-    OWLBuffer clustersBuffer
-      = owlDeviceBufferCreate(getOWL(),
-                              OWL_USER_TYPE(Cluster),
-                              numClusters,nullptr);
-    owlGeomSetBuffer(geom,"clusters",clustersBuffer);
-
-    owlGeomSetPrimCount(geom,numClusters);
-    
-    volume->userGeoms.push_back(geom);
+    std::cout << "rebuilding volume accel after xf set" << std::endl;
+    owlGroupBuildAccel(volume->generatedGroups[0]);
   }
 
 

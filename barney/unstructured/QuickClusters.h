@@ -35,7 +35,7 @@ namespace barney {
   
   struct DeviceXF {
     inline __device__ vec4f map(float s) const;
-    inline __device__ float majorant(range1f r) const;
+    inline __device__ float majorant(range1f r, bool dbg = false) const;
 
     float4  *values;
     range1f  domain;
@@ -104,6 +104,7 @@ namespace barney {
     static OWLGeomType createGeomType(DevGroup *devGroup);
 
     box4f worldBounds;
+    OWLGeom geom = 0;
   };
 
   inline __device__

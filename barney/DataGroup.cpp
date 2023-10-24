@@ -112,7 +112,14 @@ namespace barney {
         owlGroups.push_back(group->triangleGeomGroup);
         owlTransforms.push_back(instances.xfms[i]);
       }
+      for (auto volume : group->volumes)
+        for (auto gg : volume->generatedGroups) {
+          owlGroups.push_back(gg);
+          owlTransforms.push_back(instances.xfms[i]);
+        }
     }
+    
+    
     if (owlGroups.size() == 0)
       std::cout << OWL_TERMINAL_RED
                 << "warning: data group is empty..."
@@ -124,6 +131,7 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
+    owlBuildSBT(devGroup->owl);
   }
 
 }

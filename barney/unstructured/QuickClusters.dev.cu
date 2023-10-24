@@ -181,7 +181,7 @@ namespace barney {
       
   
   inline __device__
-  float DeviceXF::majorant(range1f r) const
+  float DeviceXF::majorant(range1f r, bool dbg) const
   {
     float f_lo = (r.lower-domain.lower)/domain.span();
     float f_hi = (r.upper-domain.lower)/domain.span();
@@ -192,6 +192,7 @@ namespace barney {
     int idx0 = clamp(int(f_lo),0,numValues-1);
     int idx1 = clamp(int(f_hi)+1,0,numValues-1);
     float m = 0.f;
+    if (dbg) printf("maj range %f %f indices %i %i\n",r.lower,r.upper,idx0,idx1);
     for (int i=idx0;i<=idx1;i++)
       m = max(m,values[i].w);
     // printf("maj [%f %f] domain [%f %f]-> idx [%i %i] max %f dens %f\n",
@@ -239,13 +240,31 @@ namespace barney {
       clusterBounds.extend(self.getBounds(elt));
     }
 
+    bool dbg = primID < 10;
+    
     bounds = getBox(clusterBounds);
 
+    if (dbg) printf("clusterbounds %f %f %f:%f - %f %f %f:%f, xfnum %i\n",
+                    clusterBounds.lower.x,
+                    clusterBounds.lower.y,
+                    clusterBounds.lower.z,
+                    clusterBounds.lower.w,
+                    clusterBounds.upper.x,
+                    clusterBounds.upper.y,
+                    clusterBounds.upper.z,
+                    clusterBounds.upper.w,
+                    self.xf.numValues);
+                    
     Cluster &cluster = self.clusters[primID];
     cluster.bounds = clusterBounds;
-    cluster.majorant = self.xf.majorant(getRange(clusterBounds));
-    if (cluster.majorant == 0.f)
-      bounds = box3f();
+    
+    if (self.xf.numValues > 0) {
+      cluster.majorant = self.xf.majorant(getRange(clusterBounds),dbg);
+      if (dbg) printf("domain %f %f majorant is %f\n",self.xf.domain.lower,self.xf.domain.upper,
+                      cluster.majorant);
+      if (cluster.majorant == 0.f)
+        bounds = box3f(bounds.center());
+    }
     
     // if (length(bounds.span())>30) {
     // printf("bounds %f %f %f : %f %f %f\n",
@@ -295,7 +314,7 @@ namespace barney {
     
     auto &ray = owl::getPRD<Ray>();
     Random rand(ray.rngSeed++,primID);
-    
+
     float t = t0;
     while (true) {
       float dt = - logf(1-rand())/(cluster.majorant);

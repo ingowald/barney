@@ -91,9 +91,10 @@ namespace barney {
       OWLBuffer           valuesBuffer;
       float               baseDensity;
     } xf;
-    
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGeom>  triangleGeoms;
+
+    std::vector<OWLGroup> generatedGroups;
+    // std::vector<OWLGeom>  userGeoms;
+    // std::vector<OWLGeom>  triangleGeoms;
   };
 
 }
