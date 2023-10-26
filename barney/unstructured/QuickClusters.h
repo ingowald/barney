@@ -43,44 +43,42 @@ namespace barney {
     int      numValues;
   };
 
+//#define CLUSTERS_FROM_QC 1
+  
   struct Cluster {
     box4f bounds;
     float majorant;
+#if CLUSTERS_FROM_QC
+#else
+    int begin, end;
+#endif
   };
 
+  struct Element {
+    inline __both__ Element() {}
+    inline __both__ Element(int ID, int type) : ID(ID), type(type) {}
+    uint32_t ID:29;
+    uint32_t type:3;
+  };
+
+  struct DevMesh {
+    inline __device__
+    box4f getBounds(Element element) const;
+
+    const float4     *vertices;
+    const int4       *tetIndices;
+    const HexIndices *hexIndices;
+    const Element    *elements;
+    int               numElements;
+  };
+  
   struct UMeshQC : public UMeshField {
-    // enum { clusterSize = 1 };
-    enum { clusterSize = 16 };
-    struct Element {
-      uint32_t ID:29;
-      uint32_t type:3;
-    };
+    enum { clusterSize = 8 };
+    // enum { clusterSize = 16 };
   
     struct DD {
-      inline __device__
-      box4f getBounds(Element element) const;
-
-      // inline __device__
-      // bool sampleAndMap(vec4f &color,
-      //                   int elts_begin, int elts_end,
-      //                   vec3f position) const;
-                        
-      // inline __device__
-      // bool sample(float &scalar,
-      //             Element element,
-      //             vec3f position) const;
-      // inline __device__
-      // bool sampleAndMap(vec4f &color,
-      //                   Element element,
-      //                   vec3f position) const;
-      
-      DeviceXF xf;
-
-      float4     *vertices;
-      int4       *tetIndices;
-      HexIndices *hexIndices;
-      Element    *elements;
-      int         numElements;
+      DevMesh  mesh;
+      DeviceXF    xf;
       Cluster    *clusters;
     };
     
@@ -108,7 +106,7 @@ namespace barney {
   };
 
   inline __device__
-  box4f UMeshQC::DD::getBounds(Element element) const
+  box4f DevMesh::getBounds(Element element) const
   {
     switch (element.type) {
     case UMeshQC::TET: {

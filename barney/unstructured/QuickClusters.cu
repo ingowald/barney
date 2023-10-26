@@ -16,11 +16,24 @@
 
 #include "barney/unstructured/QuickClusters.h"
 #include "barney/Context.h"
-#include "hilbert.h"
+
+#if CLUSTERS_FROM_QC
+# include "hilbert.h"
+#else
+# include "cuBQL/bvh.h"
+#endif
 
 namespace barney {
 
   extern "C" char QuickClusters_ptx[];
+
+  __global__
+  void computeElementBounds(box3f *primBounds, DevMesh mesh)
+  {
+    int tid = threadIdx.x + blockIdx.x*blockDim.x;
+    if (tid >= mesh.numElements) return;
+    primBounds[tid] = getBox(mesh.getBounds(mesh.elements[tid]));
+  }
   
   OWLGeomType UMeshQC::createGeomType(DevGroup *devGroup)
   {
@@ -30,12 +43,12 @@ namespace barney {
     
     static OWLVarDecl params[]
       = {
-         { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-         { "tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,tetIndices) },
-         { "hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,hexIndices) },
-         { "elements", OWL_BUFPTR, OWL_OFFSETOF(DD,elements) },
+         { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
+         { "tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
+         { "hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
+         { "elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
+         { "numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
          { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
-         { "numElements", OWL_INT, OWL_OFFSETOF(DD,numElements) },
          { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
          { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
          { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
@@ -56,11 +69,11 @@ namespace barney {
   }
   
   UMeshQC::UMeshQC(DataGroup *owner,
-                     std::vector<vec4f> &vertices,
-                     std::vector<TetIndices> &tetIndices,
-                     std::vector<PyrIndices> &pyrIndices,
-                     std::vector<WedIndices> &wedIndices,
-                     std::vector<HexIndices> &hexIndices)
+                   std::vector<vec4f> &vertices,
+                   std::vector<TetIndices> &tetIndices,
+                   std::vector<PyrIndices> &pyrIndices,
+                   std::vector<WedIndices> &wedIndices,
+                   std::vector<HexIndices> &hexIndices)
     : UMeshField(owner,
                  vertices,
                  tetIndices,
@@ -69,7 +82,8 @@ namespace barney {
                  hexIndices)
   {
   }
-    
+
+#if CLUSTERS_FROM_QC
   uint64_t UMeshQC::encodeBox(const box4f &box4f)
   {
     box3f box((const vec3f&)box4f.lower,(const vec3f&)box4f.upper);
@@ -115,20 +129,45 @@ namespace barney {
                      .including(vertices[indices[6]])
                      .including(vertices[indices[7]]));
   }
+#endif
     
-
+  
   
   void UMeshQC::build(Volume *volume)
   {
-    PING;
     if (!geom) {
       std::cout << "UMeshQC: seems this is the first time we're building this thing ...." << std::endl;
-      std::cout << "umesh: computing world bounds" << std::endl;
+      std::cout << "#bn.umesh: computing world bounds" << std::endl;
       worldBounds = box4f();
       for (int i=0;i<vertices.size();i++)
         worldBounds.extend((const vec4f&)vertices[i]);
-      // PING; PRINT(worldBounds);
+
+      // ------------------------------------------------------------------
+      std::cout << "#bn.umesh: uploading vertices and indices" << std::endl;
+      PING; std::cout << "MEMORY LEAK!" << std::endl;
+      OWLBuffer verticesBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_FLOAT4,
+                                vertices.size(),
+                                vertices.data());
       
+      PING; std::cout << "MEMORY LEAK!" << std::endl;
+      OWLBuffer tetIndicesBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_INT,
+                                4*tetIndices.size(),
+                                tetIndices.data());
+      
+      OWLBuffer hexIndicesBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_INT,
+                                8*hexIndices.size(),
+                                hexIndices.data());
+      
+      // ------------------------------------------------------------------
+      std::cout << "umesh: creating list of elements" << std::endl;
+      
+#if CLUSTERS_FROM_QC
       std::cout << "umesh: building hilbert prims" << std::endl;
       std::vector<std::pair<uint64_t,uint32_t>> hilbertPrims
         (tetIndices.size()+hexIndices.size());
@@ -149,58 +188,26 @@ namespace barney {
          });
       std::cout << "umesh: sorting prims" << std::endl;
       std::sort(hilbertPrims.begin(),hilbertPrims.end());
-      
-      // for (int i=0;i<100;i++)
-      //   PRINT((int*)hilbertPrims[i].first);
-      
-      std::vector<Element> elements;
+
       for (auto prim : hilbertPrims) {
         Element elt;
         elt.ID = prim.second >> 3;
         elt.type = prim.second & 0x7;
         elements.push_back(elt);
       }
-
-      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
-        ("UMeshQC",UMeshQC::createGeomType);
-      geom = owlGeomCreate(getOWL(),gt);
-      owlGeomSet1i(geom,"numElements",(int)elements.size());
-      
+      std::vector<Element> elements;
+      for (auto int i=0;i<prim : hilbertPrims) {
+        Element elt;
+        elt.ID = prim.second >> 3;
+        elt.type = prim.second & 0x7;
+        elements.push_back(elt);
+      }
       PING; std::cout << "MEMORY LEAK!" << std::endl;
       OWLBuffer elementsBuffer
         = owlDeviceBufferCreate(getOWL(),
                                 OWL_INT,
                                 elements.size(),
                                 elements.data());
-      owlGeomSetBuffer(geom,"elements",elementsBuffer);
-      // this is the first time we're building this!
-      owlGeomSet1f(geom,"xf.baseDensity",0.f);
-      owlGeomSet1i(geom,"xf.numValues",0);
-      
-      PING; std::cout << "MEMORY LEAK!" << std::endl;
-      OWLBuffer verticesBuffer
-        = owlDeviceBufferCreate(getOWL(),
-                                OWL_FLOAT4,
-                              vertices.size(),
-                                vertices.data());
-      owlGeomSetBuffer(geom,"vertices",verticesBuffer);
-      
-      
-      PING; std::cout << "MEMORY LEAK!" << std::endl;
-      OWLBuffer tetIndicesBuffer
-        = owlDeviceBufferCreate(getOWL(),
-                                OWL_INT,
-                                4*tetIndices.size(),
-                                tetIndices.data());
-      owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
-      
-      OWLBuffer hexIndicesBuffer
-        = owlDeviceBufferCreate(getOWL(),
-                                OWL_INT,
-                                8*hexIndices.size(),
-                                hexIndices.data());
-      owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
-
       int numClusters = divRoundUp((int)elements.size(),clusterSize);
 
       PING; std::cout << "MEMORY LEAK!" << std::endl;
@@ -208,6 +215,88 @@ namespace barney {
         = owlDeviceBufferCreate(getOWL(),
                                 OWL_USER_TYPE(Cluster),
                                 numClusters,nullptr);
+#else
+      std::vector<Element> elements;
+      for (int i=0;i<tetIndices.size();i++) elements.push_back(Element(i, TET));
+      for (int i=0;i<hexIndices.size();i++) elements.push_back(Element(i, HEX));
+
+      PING; std::cout << "MEMORY LEAK!" << std::endl;
+      OWLBuffer elementsBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_INT,
+                                elements.size(),
+                                elements.data());
+      PRINT(elements.size());
+      
+      DevMesh devMesh;
+      devMesh.vertices    = (const float4*)owlBufferGetPointer(verticesBuffer,0);
+      devMesh.tetIndices  = (const int4*)owlBufferGetPointer(tetIndicesBuffer,0);
+      devMesh.hexIndices  = (const HexIndices*)owlBufferGetPointer(hexIndicesBuffer,0);
+      devMesh.elements    = (const Element *)owlBufferGetPointer(elementsBuffer,0);
+      devMesh.numElements = elements.size();
+
+      cuBQL::BinaryBVH<float,3> bvh;
+      cuBQL::BuildConfig buildConfig;
+      box3f *d_primBounds = 0;
+      PING;
+      BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,elements.size()*sizeof(box3f)));
+      computeElementBounds<<<divRoundUp(devMesh.numElements,1024),1024>>>
+        (d_primBounds,devMesh);
+
+      PING;
+      buildConfig.makeLeafThreshold = 8;
+      static cuBQL::ManagedMemMemoryResource managedMem;
+      cuBQL::gpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)d_primBounds,
+                        (uint32_t)elements.size(),
+                        buildConfig,
+                        (cudaStream_t)0,
+                        managedMem);
+      BARNEY_CUDA_SYNC_CHECK();
+      PING;
+      std::vector<Element> reorderedElements(devMesh.numElements);
+      for (int i=0;i<devMesh.numElements;i++) {
+        reorderedElements[i] = elements[bvh.primIDs[i]];
+      }
+      PING;
+      owlBufferUpload(elementsBuffer,reorderedElements.data());
+      PING;
+
+      std::cout << "finding leaves to create clusters ..." << std::endl;
+      std::vector<Cluster> h_clusters;
+      PRINT(bvh.numNodes);
+      for (int i=0;i<bvh.numNodes;i++) {
+        auto node = bvh.nodes[i];
+        if (node.count == 0) continue;
+        Cluster c;
+        c.begin = node.offset;
+        c.end = node.offset + node.count;
+        h_clusters.push_back(c);
+      }
+
+      int numClusters = h_clusters.size();
+
+      PING; std::cout << "MEMORY LEAK!" << std::endl;
+      OWLBuffer clustersBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_USER_TYPE(Cluster),
+                                numClusters,h_clusters.data());
+#endif
+      
+      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+        ("UMeshQC",UMeshQC::createGeomType);
+      geom = owlGeomCreate(getOWL(),gt);
+      owlGeomSet1i(geom,"numElements",(int)elements.size());
+      owlGeomSetBuffer(geom,"elements",elementsBuffer);
+      owlGeomSetBuffer(geom,"vertices",verticesBuffer);
+      owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
+      owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
+
+
+      // this is the first time we're building this!
+      owlGeomSet1f(geom,"xf.baseDensity",0.f);
+      owlGeomSet1i(geom,"xf.numValues",0);
+      
       owlGeomSetBuffer(geom,"clusters",clustersBuffer);
       owlGeomSetPrimCount(geom,numClusters);
 
@@ -218,10 +307,10 @@ namespace barney {
       volume->generatedGroups.push_back(group);
     }
 
-    std::cout << "updating volume transfer function" << std::endl;
+    // std::cout << "updating volume transfer function" << std::endl;
     if (volume->xf.domain.lower < volume->xf.domain.upper) {
       owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
-      PRINT(volume->xf.domain);
+      // PRINT(volume->xf.domain);
     } else {
       owlGeomSet2f(geom,"xf.domain",worldBounds.lower.w,worldBounds.upper.w);
     }

@@ -33,6 +33,9 @@ namespace barney {
       uint32_t  pixelID:30;
       uint32_t  hadHit:1;
     };
+    struct {
+      uint32_t centerPixel:1;
+    };
   };
 
   struct RayQueue {

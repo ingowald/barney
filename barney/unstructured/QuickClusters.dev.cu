@@ -36,7 +36,7 @@ namespace barney {
   struct MeshSampler
   {
     inline __device__
-    MeshSampler(const UMeshQC::DD &mesh) : mesh(mesh) {}
+    MeshSampler(const UMeshQC::DD &dd) : dd(dd) {}
 
     inline __device__ void operator=(const MeshSampler &other)
     {
@@ -56,7 +56,7 @@ namespace barney {
     inline __device__
     bool sampleAndMap(int elts_begin, int elts_end);
       
-    UMeshQC::Element element;
+    Element element;
     vec3f P;
 
     float scalar;
@@ -64,7 +64,7 @@ namespace barney {
     vec4f mapped;
     // vec3f gradient;
 
-    const UMeshQC::DD &mesh;    
+    const UMeshQC::DD &dd;    
   };
 
   template<typename T>
@@ -123,6 +123,7 @@ namespace barney {
   inline __device__
   bool MeshSampler::sample() 
   {
+    auto &mesh = dd.mesh;
     if (element.type == UMeshQC::TET) {
       auto indices = mesh.tetIndices[element.ID];
       vec4f a = mesh.vertices[indices.x];
@@ -141,6 +142,7 @@ namespace barney {
   inline __device__
   bool MeshSampler::sampleAndMap() 
   {
+    auto &mesh = dd.mesh;
     if (element.type == UMeshQC::TET) {
       auto indices = mesh.tetIndices[element.ID];
       vec4f a = mesh.vertices[indices.x];
@@ -153,7 +155,7 @@ namespace barney {
                        getPos(d),d.w,
                        scalar, P))
         return false;
-      mapped = mesh.xf.map(scalar);
+      mapped = dd.xf.map(scalar);
       // gradient
       //   = (mesh.xf.map(a.w).w-mapped.w)*(getPos(a)-P)
       //   + (mesh.xf.map(b.w).w-mapped.w)*(getPos(b)-P)
@@ -168,6 +170,7 @@ namespace barney {
   inline __device__
   bool MeshSampler::sampleAndMap(int elts_begin, int elts_end) 
   {
+    auto &mesh = dd.mesh;
     for (int i=elts_begin;i<elts_end;i++) {
       element = mesh.elements[i];
       if (sampleAndMap())
@@ -192,7 +195,6 @@ namespace barney {
     int idx0 = clamp(int(f_lo),0,numValues-1);
     int idx1 = clamp(int(f_hi)+1,0,numValues-1);
     float m = 0.f;
-    if (dbg) printf("maj range %f %f indices %i %i\n",r.lower,r.upper,idx0,idx1);
     for (int i=idx0;i<=idx1;i++)
       m = max(m,values[i].w);
     // printf("maj [%f %f] domain [%f %f]-> idx [%i %i] max %f dens %f\n",
@@ -233,35 +235,40 @@ namespace barney {
     const auto &self = *(const UMeshQC::DD *)geomData;
 
     box4f clusterBounds;
+#if CLUSTERS_FROM_QC
     int begin = primID * UMeshQC::clusterSize;
-    int end   = min(begin+UMeshQC::clusterSize,self.numElements);
+    int end   = min(begin+UMeshQC::clusterSize,self.mesh.numElements);
+#else
+    int begin = self.clusters[primID].begin;
+    int end   = self.clusters[primID].end;
+#endif
     for (int i=begin;i<end;i++) {
-      UMeshQC::Element elt = self.elements[i];
-      clusterBounds.extend(self.getBounds(elt));
+      Element elt = self.mesh.elements[i];
+      clusterBounds.extend(self.mesh.getBounds(elt));
     }
 
     bool dbg = primID < 10;
     
     bounds = getBox(clusterBounds);
 
-    if (dbg) printf("clusterbounds %f %f %f:%f - %f %f %f:%f, xfnum %i\n",
-                    clusterBounds.lower.x,
-                    clusterBounds.lower.y,
-                    clusterBounds.lower.z,
-                    clusterBounds.lower.w,
-                    clusterBounds.upper.x,
-                    clusterBounds.upper.y,
-                    clusterBounds.upper.z,
-                    clusterBounds.upper.w,
-                    self.xf.numValues);
+    // if (dbg) printf("clusterbounds %f %f %f:%f - %f %f %f:%f, xfnum %i\n",
+    //                 clusterBounds.lower.x,
+    //                 clusterBounds.lower.y,
+    //                 clusterBounds.lower.z,
+    //                 clusterBounds.lower.w,
+    //                 clusterBounds.upper.x,
+    //                 clusterBounds.upper.y,
+    //                 clusterBounds.upper.z,
+    //                 clusterBounds.upper.w,
+    //                 self.xf.numValues);
                     
     Cluster &cluster = self.clusters[primID];
     cluster.bounds = clusterBounds;
     
     if (self.xf.numValues > 0) {
       cluster.majorant = self.xf.majorant(getRange(clusterBounds),dbg);
-      if (dbg) printf("domain %f %f majorant is %f\n",self.xf.domain.lower,self.xf.domain.upper,
-                      cluster.majorant);
+      // if (dbg) printf("domain %f %f majorant is %f\n",self.xf.domain.lower,self.xf.domain.upper,
+      //                 cluster.majorant);
       if (cluster.majorant == 0.f)
         bounds = box3f(bounds.center());
     }
@@ -294,31 +301,56 @@ namespace barney {
     const int primID = optixGetPrimitiveIndex();
     const auto &self
       = owl::getProgramData<UMeshQC::DD>();
+    auto &ray
+      = owl::getPRD<Ray>();
     
     const vec3f org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
     float ray_t0     = optixGetRayTmin();
     float ray_t1     = optixGetRayTmax();
 
+    bool dbg = ray.centerPixel;
+    
     float hit_t = INFINITY;
     
     Cluster cluster = self.clusters[primID];
     float t0 = ray_t0;
     float t1 = min(ray_t1,hit_t);
-    if (!boxTest(t0,t1,cluster.bounds,org,dir))
+    if (dbg) printf("intersect primID %i box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
+                    cluster.bounds.lower.x,
+                    cluster.bounds.lower.y,
+                    cluster.bounds.lower.z,
+                    cluster.bounds.upper.x,
+                    cluster.bounds.upper.y,
+                    cluster.bounds.upper.z,
+                    org.x+t0*dir.x,
+                    org.y+t0*dir.y,
+                    org.z+t0*dir.z
+                    );
+    if (!boxTest(t0,t1,cluster.bounds,org,dir)) {
+      if (dbg) printf(" -> miss bounds\n");
       return;
-
-    MeshSampler isec(self);
-    int begin = primID * UMeshQC::clusterSize;
-    int end   = min(begin+UMeshQC::clusterSize,self.numElements);
+    }
     
-    auto &ray = owl::getPRD<Ray>();
+    MeshSampler isec(self);
+#if CLUSTERS_FROM_QC
+    int begin = primID * UMeshQC::clusterSize;
+    int end   = min(begin+UMeshQC::clusterSize,self.mesh.numElements);
+#else
+    int begin = cluster.begin;
+    int end   = cluster.end;
+#endif
+    
     Random rand(ray.rngSeed++,primID);
-
+    
+    int numStepsTaken = 0;
     float t = t0;
+    if (dbg) printf(" -> stepping range %f %f, majorant %f\n",
+                    t0,t1,cluster.majorant);
     while (true) {
       float dt = - logf(1-rand())/(cluster.majorant);
       t += dt;
+      ++numStepsTaken;
       if (t >= t1)
         break;
 
@@ -369,8 +401,14 @@ namespace barney {
         = vec3f(isec.mapped.x,isec.mapped.y,isec.mapped.z)
         * (.3f+.7f*fabsf(dot(normalize(dir),normalize(N))));
       optixReportIntersection(t, 0);
+
+      if (dbg)
+        printf(" accepted sample at %f, steps taken %i\n",t,numStepsTaken);
+      
       return;
     }
+    if (dbg)
+      printf(" did not accept any sample, steps taken %i\n",numStepsTaken);
   }
   
 }
