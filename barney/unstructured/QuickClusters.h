@@ -22,15 +22,15 @@ namespace barney {
 
   inline __both__
   vec3f getPos(vec4f v)
-  { return {v.x,v.y,v.z}; }
+  { return vec3f{v.x,v.y,v.z}; }
 
   inline __both__
   box3f getBox(box4f bb)
-  { return {getPos(bb.lower),getPos(bb.upper)}; }
+  { return box3f{getPos(bb.lower),getPos(bb.upper)}; }
 
   inline __both__
   range1f getRange(box4f bb)
-  { return {bb.lower.w,bb.upper.w}; }
+  { return range1f{bb.lower.w,bb.upper.w}; }
 
   
   struct DeviceXF {
@@ -43,7 +43,7 @@ namespace barney {
     int      numValues;
   };
 
-//#define CLUSTERS_FROM_QC 1
+// #define CLUSTERS_FROM_QC 1
   
   struct Cluster {
     box4f bounds;

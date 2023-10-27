@@ -189,14 +189,8 @@ namespace barney {
       std::cout << "umesh: sorting prims" << std::endl;
       std::sort(hilbertPrims.begin(),hilbertPrims.end());
 
-      for (auto prim : hilbertPrims) {
-        Element elt;
-        elt.ID = prim.second >> 3;
-        elt.type = prim.second & 0x7;
-        elements.push_back(elt);
-      }
       std::vector<Element> elements;
-      for (auto int i=0;i<prim : hilbertPrims) {
+      for (auto prim : hilbertPrims) {
         Element elt;
         elt.ID = prim.second >> 3;
         elt.type = prim.second & 0x7;

@@ -41,8 +41,8 @@ namespace barney {
     // if (rayID == 0)
     //   printf("tracing ray... into world %lx\n",lp.world);
     owl::traceRay(lp.world,
-                  owl::Ray(ray.origin,
-                           ray.direction,
+                  owl::Ray(ray.org,
+                           ray.dir,
                            0.f,ray.tMax),
                   ray);
 

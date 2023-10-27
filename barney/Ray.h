@@ -22,10 +22,17 @@
 namespace barney {
 
   struct Ray {
-    vec3f    origin;
-    vec3f    direction;
+    vec3f    org;
+    vec3f    dir;
     float    tMax;
+    // these are only for debugging right now - eventually with ray
+    // queue cycling there's no reaon why a ray should track those,
+    // because they're not valid during shding, anyway, when the ray
+    // gets shaded on another gpu than the one that found the
+    // intersection:
     int      instID, geomID, primID;
+    // only for debugging right now; should eventualy become
+    // 'throughput' for a path tracer
     vec3f    color;
     float    u,v;
     uint32_t rngSeed;

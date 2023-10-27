@@ -335,9 +335,14 @@ namespace barney {
                 BNFrameBuffer fb,
                 BNRenderRequest *req)
   {
+    // std::cout << "------------------------------------------------------------------ " << std::endl;
+    
     static int count = 0;
     if (count++ < 3)
       LOG_API_ENTRY;
+
+    // if (count > 2) exit(0);
+
     assert(_camera);
     Camera camera;
     camera.dbg_vi = (const vec3f&)_camera->dbg_vi;

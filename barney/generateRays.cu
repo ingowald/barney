@@ -62,12 +62,12 @@ namespace barney {
     // bool dbg = ((ix == 0) || (ix == fbSize.x-1)) && ((iy==0) || (iy == fbSize.y-1));
     
     Ray ray;
-    ray.origin  = camera.lens_00;
-    ray.direction
+    ray.org  = camera.lens_00;
+    ray.dir
       = camera.dir_00
       + (ix+.5f)*camera.dir_du
       + (iy+.5f)*camera.dir_dv;
-    ray.direction = normalize(ray.direction);
+    ray.dir = normalize(ray.dir);
 
     ray.centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
     // if (dbg) {

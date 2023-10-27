@@ -19,6 +19,13 @@
 
 namespace barney {
 
+  template<typename T>
+  inline __device__
+  void swap(T &a, T &b) { T c = a; a = b; b = c; }
+
+  inline __device__
+  float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
+  
   inline __device__
   vec4f DeviceXF::map(float s) const
   {
@@ -67,13 +74,114 @@ namespace barney {
     const UMeshQC::DD &dd;    
   };
 
-  template<typename T>
-  inline __device__
-  void swap(T &a, T &b) { T c = a; a = b; b = c; }
+  struct ElementIntersector : public MeshSampler
+  {
+    inline __device__
+    ElementIntersector(const UMeshQC::DD &dd,
+                       Ray &ray,
+                       range1f leafRange
+                       )
+      : MeshSampler(dd), ray(ray), leafRange(leafRange)
+    {}
 
-  inline __device__
-  float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
-  
+    inline __device__
+    void setElement(Element elt)
+    {
+      element = elt;
+      // currently only supporting tets ....
+      int4 indices = dd.mesh.tetIndices[elt.ID];
+      v0 = dd.mesh.vertices[indices.x];
+      v1 = dd.mesh.vertices[indices.y];
+      v2 = dd.mesh.vertices[indices.z];
+      v3 = dd.mesh.vertices[indices.w];
+      if (dot(getPos(v1)-getPos(v0),cross(getPos(v2)-getPos(v0),getPos(v3)-getPos(v0))) < 0.f) {
+        swap(v0,v1);
+      }
+    }
+
+    // using inward-facing planes here, like vtk
+    inline __device__
+    float evalToPlane(vec3f P, vec4f a, vec4f b, vec4f c)
+    {
+      vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
+      return dot(P-getPos(a),N);
+    }
+
+    // using inward-facing planes here, like vtk
+    inline __device__
+    void clipRangeToPlane(vec4f a, vec4f b, vec4f c, bool dbg = false)
+    {
+      vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
+      float NdotD = dot(ray.dir, N);
+      if (dbg)
+        printf(" clipping: N is %f %f %f, NdotD %f\n",
+               N.x,N.y,N.z,NdotD);
+      if (NdotD == 0.f)
+        return;
+      float plane_t = dot(getPos(a) - ray.org, N) / NdotD;
+      if (NdotD < 0.f)
+        elementTRange.upper = min(elementTRange.upper,plane_t);
+      else
+        elementTRange.lower = max(elementTRange.lower,plane_t);
+
+      if (dbg)
+        printf(" clipping to t_plane %f, range now %f %f\n",
+               plane_t, elementTRange.lower, elementTRange.upper);
+    }
+
+    inline __device__
+    float evalTet(vec3f P)
+    {
+      float t3 = evalToPlane(P,v0,v1,v2);
+      float t2 = evalToPlane(P,v0,v3,v1);
+      float t1 = evalToPlane(P,v0,v2,v3);
+      float t0 = evalToPlane(P,v1,v3,v2);
+
+      float scale = 1.f/(t0+t1+t2+t3);
+
+      return scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
+    }
+
+    inline __device__
+    range1f computeElementScalarRange()
+    {
+      float scalar_t0 = evalTet(ray.org+elementTRange.lower*ray.dir);
+      float scalar_t1 = evalTet(ray.org+elementTRange.upper*ray.dir);
+      return { min(scalar_t0,scalar_t1),max(scalar_t0,scalar_t1) };
+    }
+    
+    inline __device__
+    bool computeElementRange(bool dbg = false)
+    {
+      elementTRange = leafRange;
+      if (dbg) printf("eltrange at start %f %f\n",
+                      elementTRange.lower,
+                      elementTRange.upper);
+      clipRangeToPlane(v0,v1,v2,dbg);
+      clipRangeToPlane(v0,v3,v1,dbg);
+      clipRangeToPlane(v0,v2,v3,dbg);
+      clipRangeToPlane(v1,v3,v2,dbg);
+      return !elementTRange.empty();
+    }
+
+    inline __device__
+    float computeRangeMajorant()
+    {
+      return dd.xf.majorant(computeElementScalarRange());
+    }
+    
+    Ray &ray;
+    // parameter interval of where ray has valid overlap with the
+    // leaf's bbox (ie, where ray overlaps the box, up to tMax/tHit
+    range1f leafRange;
+    
+    // paramter interval where ray's valid range overlaps the current *element*
+    range1f elementTRange;
+    
+    // current tet:
+    vec4f v0, v1, v2, v3;
+  };
+
   inline __device__
   float doPlane(vec3f P, vec3f a, vec3f b, vec3f c)
   {
@@ -242,26 +350,68 @@ namespace barney {
     int begin = self.clusters[primID].begin;
     int end   = self.clusters[primID].end;
 #endif
+
     for (int i=begin;i<end;i++) {
       Element elt = self.mesh.elements[i];
       clusterBounds.extend(self.mesh.getBounds(elt));
     }
 
-    bool dbg = primID < 10;
+    // bool dbg = primID < 10;
     
     bounds = getBox(clusterBounds);
 
-    // if (dbg) printf("clusterbounds %f %f %f:%f - %f %f %f:%f, xfnum %i\n",
-    //                 clusterBounds.lower.x,
-    //                 clusterBounds.lower.y,
-    //                 clusterBounds.lower.z,
-    //                 clusterBounds.lower.w,
-    //                 clusterBounds.upper.x,
-    //                 clusterBounds.upper.y,
-    //                 clusterBounds.upper.z,
-    //                 clusterBounds.upper.w,
-    //                 self.xf.numValues);
-                    
+
+    vec3f point = vec3f(44.499, 108.007, 126.998);
+    box3f box = getBox(clusterBounds);
+    
+    bool containsPoint = box.contains(point);
+    bool dbg
+      = containsPoint
+      || (primID == 90183);
+    
+    
+    // if (dbg) {
+    //   printf("cluster %i range %i:%i is (%f %f %f):(%f %f %f)/(%f:%f), contains? %i\n",
+    //          primID,
+    //          begin,end,
+    //          clusterBounds.lower.x,
+    //          clusterBounds.lower.y,
+    //          clusterBounds.lower.z,
+    //          clusterBounds.upper.x,
+    //          clusterBounds.upper.y,
+    //          clusterBounds.upper.z,
+    //          clusterBounds.lower.w,
+    //          clusterBounds.upper.w,
+    //          int(containsPoint));
+      // printf("box (%f %f %f)(%f %f %f) point %f %f %f contains %i\n",
+      //        box.lower.x,
+      //        box.lower.y,
+      //        box.lower.z,
+      //        box.upper.x,
+      //        box.upper.y,
+      //        box.upper.z,
+      //        point.x,
+      //        point.y,
+      //        point.z,
+      //        int(containsPoint));
+             
+      // for (int i=begin;i<end;i++) {
+      //   Element elt = self.mesh.elements[i];
+      //   box4f eltBounds = self.mesh.getBounds(elt);
+      //   printf(" > elt %i:%i (%f %f %f)(%f %f %f) sz (%f %f %f)\n",
+      //          primID,i,
+      //          eltBounds.lower.x,
+      //          eltBounds.lower.y,
+      //          eltBounds.lower.z,
+      //          eltBounds.upper.x,
+      //          eltBounds.upper.y,
+      //          eltBounds.upper.z,
+      //          eltBounds.size().x,
+      //          eltBounds.size().y,
+      //          eltBounds.size().z
+      //          );
+      // }
+    // }       
     Cluster &cluster = self.clusters[primID];
     cluster.bounds = clusterBounds;
     
@@ -292,6 +442,7 @@ namespace barney {
 
     // ray.hadHit = true;
     // ray.color = .8f;//owl::randomColor(primID);
+    ray.primID = primID;
     ray.tMax = optixGetRayTmax();
 
   }
@@ -303,20 +454,19 @@ namespace barney {
       = owl::getProgramData<UMeshQC::DD>();
     auto &ray
       = owl::getPRD<Ray>();
+    bool dbg = false;//ray.centerPixel;
+    
+    Cluster cluster = self.clusters[primID];
+    
     
     const vec3f org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
-    float ray_t0     = optixGetRayTmin();
-    float ray_t1     = optixGetRayTmax();
-
-    bool dbg = ray.centerPixel;
-    
-    float hit_t = INFINITY;
-    
-    Cluster cluster = self.clusters[primID];
-    float t0 = ray_t0;
-    float t1 = min(ray_t1,hit_t);
-    if (dbg) printf("intersect primID %i box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
+    float t0 = optixGetRayTmin();
+    float t1 = optixGetRayTmax();
+    bool isHittingTheBox
+      = boxTest(t0,t1,cluster.bounds,org,dir);
+    if (dbg)
+      printf("intersect primID %i box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
                     cluster.bounds.lower.x,
                     cluster.bounds.lower.y,
                     cluster.bounds.lower.z,
@@ -327,12 +477,11 @@ namespace barney {
                     org.y+t0*dir.y,
                     org.z+t0*dir.z
                     );
-    if (!boxTest(t0,t1,cluster.bounds,org,dir)) {
+    if (!isHittingTheBox) {
       if (dbg) printf(" -> miss bounds\n");
       return;
     }
-    
-    MeshSampler isec(self);
+
 #if CLUSTERS_FROM_QC
     int begin = primID * UMeshQC::clusterSize;
     int end   = min(begin+UMeshQC::clusterSize,self.mesh.numElements);
@@ -342,7 +491,108 @@ namespace barney {
 #endif
     
     Random rand(ray.rngSeed++,primID);
+#if 1
+    ElementIntersector isec(self,ray,range1f(t0,t1));
+    // use prim box only to find candidates (similar to ray tracing
+    // for triangles), but each ray then intersects each prim
+    // individually.
+    int it = begin;
+    Element hit_elt;
+    float hit_t = INFINITY;
+    while (it < end) {
+      // find next prim:
+      int next = it++;
+      isec.setElement(self.mesh.elements[next]);
+                      
+      if (dbg) printf("element %i\n",isec.element.ID);
+      
+      // check for GEOMETRIC overlap of ray and prim
+      if (!isec.computeElementRange(dbg))
+        continue;
+
+      // compute majorant for given overlap range
+      float majorant = isec.computeRangeMajorant();
+      if (dbg) printf("element majorant is %f\n",majorant);
+      if (majorant == 0.f)
+        continue;
+      
+      float t = isec.elementTRange.lower;
+      while (true) {
+        float dt = - logf(1-rand())/(majorant);
+        t += dt;
+        if (t >= isec.elementTRange.upper)
+          break;
+
+        isec.P = ray.org + t * ray.dir;
+        isec.sampleAndMap();
+        bool accept = (isec.mapped.w > rand()*majorant);
+        if (!accept)
+          continue;
+        
+        hit_t = t;
+        hit_elt = isec.element;
+        isec.leafRange.upper = hit_t;
+        break;
+      }
+      
+    }
+    if (hit_t < optixGetRayTmax()) {
+      // TODO : compute gradient in element only?
+      MeshSampler dx0(self);
+      MeshSampler dy0(self);
+      MeshSampler dz0(self);
+      MeshSampler dx1(self);
+      MeshSampler dy1(self);
+      MeshSampler dz1(self);
+      const float delta = .1f;
+      dx0.P = isec.P - delta * vec3f(1.f,0.f,0.f);
+      dy0.P = isec.P - delta * vec3f(0.f,1.f,0.f);
+      dz0.P = isec.P - delta * vec3f(0.f,0.f,1.f);
+      dx1.P = isec.P + delta * vec3f(1.f,0.f,0.f);
+      dy1.P = isec.P + delta * vec3f(0.f,1.f,0.f);
+      dz1.P = isec.P + delta * vec3f(0.f,0.f,1.f);
+      if (!dx0.sampleAndMap(begin,end))
+        dx0 = isec;
+      if (!dx1.sampleAndMap(begin,end))
+        dx1 = isec;
+      if (!dy0.sampleAndMap(begin,end))
+        dy0 = isec;
+      if (!dy1.sampleAndMap(begin,end))
+        dy1 = isec;
+      if (!dz0.sampleAndMap(begin,end))
+        dz0 = isec;
+      if (!dz1.sampleAndMap(begin,end))
+        dz1 = isec;
+      
+      vec3f N;
+      N.x = safeDiv(dx1.mapped.w-dx0.mapped.w,dx1.P.x - dx0.P.x);
+      N.y = safeDiv(dy1.mapped.w-dy0.mapped.w,dy1.P.y - dy0.P.y);
+      N.z = safeDiv(dz1.mapped.w-dz0.mapped.w,dz1.P.z - dz0.P.z);
+      N = normalize
+        ((N == vec3f(0.f)) ? dir : N);
+      
+      ray.hadHit = 1;
+      ray.tMax   = hit_t;
+      ray.color
+        = vec3f(isec.mapped.x,isec.mapped.y,isec.mapped.z)
+        * (.3f+.7f*fabsf(dot(normalize(dir),normalize(N))));
+      optixReportIntersection(hit_t, 0);
+    }
     
+#else
+
+#if CLUSTERS_FROM_QC
+    int begin = primID * UMeshQC::clusterSize;
+    int end   = min(begin+UMeshQC::clusterSize,self.mesh.numElements);
+#else
+    int begin = cluster.begin;
+    int end   = cluster.end;
+#endif
+    
+    MeshSampler isec(self);
+    float hit_t = INFINITY;
+    
+    // step along the leaf box, each sample then goes against all prims equally
     int numStepsTaken = 0;
     float t = t0;
     if (dbg) printf(" -> stepping range %f %f, majorant %f\n",
@@ -409,6 +659,7 @@ namespace barney {
     }
     if (dbg)
       printf(" did not accept any sample, steps taken %i\n",numStepsTaken);
+#endif
   }
   
 }
