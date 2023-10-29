@@ -22,7 +22,9 @@
 
 namespace barney {
 
-   /*! can sample umeshes using cuda-point location of cuBQL-bvh */
+   /*! can sample umeshes using cuda-point location of cuBQL-bvh. this
+       samples a *field* and thus doesn't know anything about transfer
+       functions or acceleration */
   struct UMeshCUBQLSampler {
     using bvh_t  = cuBQL::BinaryBVH<float,3>;
     using node_t = typename bvh_t::Node;
@@ -30,10 +32,10 @@ namespace barney {
     struct DD {
       /*! sample the umesh field; can return NaN if sample did not hit
         any unstructured element at all */
-      inline __device__ float sample(vec3f P);
+      inline __device__ float sample(vec3f P, bool dbg=false) const;
 
-      UMeshField::DD mesh;
       bvh_t          bvh;
+      UMeshField::DD mesh;
     };
     
     UMeshCUBQLSampler(ScalarField *field);
@@ -43,5 +45,37 @@ namespace barney {
     OWLBuffer   bvhNodesBuffer = 0;
     OWLBuffer   primIDsBuffer  = 0;
   };
+
+  /*! sample the umesh field; can return NaN if sample did not hit
+    any unstructured element at all */
+  inline __device__
+  float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
+  {
+    // return .5f;
+    int nodeStack[30];
+    int *stackPtr = nodeStack;
+    *stackPtr++ = 0;
+    if (dbg) printf("sample %f %f %f\n",P.x,P.y,P.z);
+    while (stackPtr > nodeStack) {
+      node_t node = bvh.nodes[*--stackPtr];
+      if (!((const box3f&)node.bounds).contains(P))
+        continue;
+      if (node.count == 0) {
+        *stackPtr++ = node.offset + 0;
+        *stackPtr++ = node.offset + 1;
+      } else {
+        int primID = bvh.primIDs[node.offset];
+        auto idx = mesh.tetIndices[primID];
+        auto vtx = mesh.vertices[idx.x];
+        if (dbg) {
+          printf("primID %i/%i -> %i %i %i %i vtx %f %f %f %f\n",primID,int(stackPtr-nodeStack),
+                 idx.x,idx.y,idx.z,idx.w,
+                 vtx.x,vtx.y,vtx.z,vtx.w
+                 );
+        }
+        return vtx.w;
+      }
+    }
+  }
   
 }

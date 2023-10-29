@@ -85,6 +85,7 @@ namespace barney {
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
 
+    std::cout << "create nodes buffer, num nodes " << bvh.numNodes << std::endl;
     bvhNodesBuffer
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);

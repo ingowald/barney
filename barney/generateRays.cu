@@ -70,6 +70,7 @@ namespace barney {
     ray.dir = normalize(ray.dir);
 
     ray.centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
+    ray.dbg = ray.centerPixel;
     // if (dbg) {
     //   vec3f ctr = normalize(camera.dbg_vi - camera.dbg_vp);
     //   float angle = dot(ctr,ray.direction);

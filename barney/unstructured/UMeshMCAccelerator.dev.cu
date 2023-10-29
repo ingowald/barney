@@ -19,16 +19,43 @@
 
 namespace barney {
 
+  struct Woodcock {
+    template<typename VolumeSampler>
+    static inline __device__
+    bool sampleRange(vec4f &sample,
+                     const VolumeSampler &volume,
+                     vec3f org, vec3f dir,
+                     range1f &tRange,
+                     float majorant,
+                     uint32_t &rngSeed,
+                     bool dbg=false)
+    {
+      LCG<4> &rand = (LCG<4> &)rngSeed;
+      float t = tRange.lower;
+      while (true) {
+        float dt = - logf(1.f-rand())/majorant;
+        t += dt;
+        if (t >= tRange.upper)
+          return false;
+      
+        sample = volume.sampleAndMap(org+t*dir,dbg);
+        if (sample.w >= rand()*majorant)
+          return true;
+      }
+    }
+  };
+  
   OPTIX_BOUNDS_PROGRAM(UMesh_MC_CUBQL_Bounds)(const void *geomData,                
-                                       owl::common::box3f &bounds,  
-                                       const int32_t primID)
+                                              owl::common::box3f &bounds,  
+                                              const int32_t primID)
   {
     auto self = *(const UMeshAccel_MC_CUBQL::DD*)geomData;
     vec3i dims = self.mcGrid.dims;
+    const auto &mesh = self.sampler.mesh;
 #if UMESH_MC_USE_DDA
     if (primID > 0)
       return;
-    bounds = getBox(self.mesh.worldBounds);
+    bounds = getBox(mesh.worldBounds);
 #else
     if (primID >= dims.x*dims.y*dims.z)
       return;
@@ -38,10 +65,10 @@ namespace barney {
 
     // compute world-space bounds of macro cells
     bounds.lower
-      = lerp(getBox(self.mesh.worldBounds),
+      = lerp(getBox(mesh.worldBounds),
              vec3f(cellID)*rcp(vec3f(dims)));
     bounds.upper
-      = lerp(getBox(self.mesh.worldBounds),
+      = lerp(getBox(mesh.worldBounds),
              vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
 
     // printf("bounds (%f %f %f)(%f %f %f)\n",
@@ -79,6 +106,7 @@ namespace barney {
     
     auto &ray = owl::getPRD<Ray>();
     const auto &self = getProgramData<UMeshAccel_MC_CUBQL::DD>();
+    const auto &mesh = self.sampler.mesh;
     vec3i dims = self.mcGrid.dims;
     vec3i cellID(primID % dims.x,
                  (primID / dims.x) % dims.y,
@@ -87,13 +115,24 @@ namespace barney {
     // compute world-space bounds of macro cells
     box3f bounds;
     bounds.lower
-      = lerp(getBox(self.mesh.worldBounds),
+      = lerp(getBox(mesh.worldBounds),
              vec3f(cellID)*rcp(vec3f(dims)));
     bounds.upper
-      = lerp(getBox(self.mesh.worldBounds),
+      = lerp(getBox(mesh.worldBounds),
              vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
-    if (boxTest(ray,tRange,bounds))
-      optixReportIntersection(tRange.upper, 0);
+    if (!boxTest(ray,tRange,bounds))
+      return;
+
+    float majorant = self.mcGrid.majorants[primID];
+    vec4f sample = 0.f;
+    if (!Woodcock::sampleRange(sample,self,
+                               ray.org,ray.dir,tRange,majorant,ray.rngSeed,
+                               ray.dbg))
+      return;
+
+    ray.color = vec3f(sample);
+    ray.tMax = tRange.upper;
+    optixReportIntersection(tRange.upper, 0);
   }
 }

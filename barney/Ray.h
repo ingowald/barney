@@ -42,6 +42,7 @@ namespace barney {
     };
     struct {
       uint32_t centerPixel:1;
+      uint32_t dbg:1;
     };
   };
 

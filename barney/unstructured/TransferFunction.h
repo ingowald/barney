@@ -63,6 +63,24 @@ namespace barney {
 
 
 
+  inline __device__
+  vec4f TransferFunction::DD::map(float s, bool dbg) const
+  {
+    if (dbg) printf("mapping %f, range %f %f, numval %i\n",s,domain.lower,domain.upper,numValues);
+    float f = (s-domain.lower)/domain.span();
+    f = clamp(f,0.f,1.f);
+    f *= (numValues-1);
+    int idx = clamp(int(f),0,numValues-2);
+    f -= idx;
+
+    float4 v0 = values[idx];
+    float4 v1 = values[idx+1];
+    vec4f r = (1.f-f)*(const vec4f&)v0 + f*(const vec4f&)v1;
+    if (dbg) printf("idx %i f %f result %f %f %f : %f\n",
+                    idx,f,r.x,r.y,r.z,r.w);
+    r.w *= baseDensity;
+    return r;
+  }
 
 
   /*! compute the majorant (max opacity times baseDensity) for

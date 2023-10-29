@@ -23,18 +23,19 @@
 namespace barney {
 
   /*! a macrocell accelerator built over umeshes */
-  template<typename VolumeSampler>
-  struct UMeshMCAccelerator : public MCAccelerator<VolumeSampler>
+  template<typename FieldSampler>
+  struct UMeshMCAccelerator : public MCAccelerator<FieldSampler>
   {
-    using MCAccelerator<VolumeSampler>::mcGrid;
-    using MCAccelerator<VolumeSampler>::volume;
+    using MCAccelerator<FieldSampler>::mcGrid;
+    using MCAccelerator<FieldSampler>::volume;
 
-    struct DD : public MCAccelerator<VolumeSampler>::DD {
-      UMeshField::DD mesh;
+    struct DD : public MCAccelerator<FieldSampler>::DD {
+      using MCAccelerator<FieldSampler>::DD::sampleAndMap;
+      // UMeshField::DD mesh;
     };
     
     UMeshMCAccelerator(UMeshField *mesh, Volume *volume)
-      : MCAccelerator<VolumeSampler>(mesh,volume),
+      : MCAccelerator<FieldSampler>(mesh,volume),
         mesh(mesh)
     {}
     static OWLGeomType createGeomType(DevGroup *devGroup);
@@ -42,7 +43,9 @@ namespace barney {
     
     void buildMCs() override;
     void build() override;
-    
+
+    OWLGeom geom = 0;
+      
     UMeshField *const mesh;
   };
 

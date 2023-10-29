@@ -33,6 +33,19 @@ namespace barney {
   struct VolumeAccel {
     typedef std::shared_ptr<VolumeAccel> SP;
 
+    struct DD {
+      template<typename FieldSampler>
+      inline __device__
+      vec4f sampleAndMap(const FieldSampler &field,
+                         vec3f point, bool dbg=false) const
+      {
+        float f = field.sample(point,dbg);
+        if (isnan(f)) return vec4f(0.f);
+        return xf.map(f,dbg);
+      }
+      TransferFunction::DD xf;
+    };
+    
     VolumeAccel(ScalarField *field, Volume *volume);
     
     virtual void build() = 0;
@@ -43,8 +56,8 @@ namespace barney {
   };
 
   /*! abstracts any sort of scalar field (unstructured, amr,
-      structured, rbfs....) _before_ any transfer function(s) get
-      applied to it */
+    structured, rbfs....) _before_ any transfer function(s) get
+    applied to it */
   struct ScalarField : public Object
   {
     typedef std::shared_ptr<ScalarField> SP;

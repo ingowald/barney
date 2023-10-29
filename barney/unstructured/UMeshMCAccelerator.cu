@@ -41,19 +41,19 @@ namespace barney {
     
     static OWLVarDecl params[]
       = {
-         { "vertices",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
-         { "tetIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
-         { "hexIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
-         { "elements",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
-         { "numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
-         { "xf.values",   OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
-         { "xf.domain",   OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
-         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
-         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
+         { "mesh.vertices",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.vertices) },
+         { "mesh.tetIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.tetIndices) },
+         { "mesh.hexIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.hexIndices) },
+         { "mesh.elements",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.elements) },
+         { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.lower) },
+         { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.upper) },
+         { "numElements", OWL_INT, OWL_OFFSETOF(DD,sampler.mesh.numElements) },
+         { "xf.values",   OWL_BUFPTR, OWL_OFFSETOF(DD,volume.xf.values) },
+         { "xf.domain",   OWL_FLOAT2, OWL_OFFSETOF(DD,volume.xf.domain) },
+         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,volume.xf.baseDensity) },
+         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,volume.xf.numValues) },
          { "bvh.nodes",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.bvh.nodes) },
          { "bvh.primIDs",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.bvh.primIDs) },
-         { "worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
-         { "worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
          { "mcGrid.dims", OWL_INT3, OWL_OFFSETOF(DD,mcGrid.dims) },
          { "mcGrid.majorants", OWL_BUFPTR, OWL_OFFSETOF(DD,mcGrid.majorants) },
          { nullptr }
@@ -86,7 +86,7 @@ namespace barney {
       std::string gtTypeName = "UMesh_MC_CUBQL";
       OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
         (gtTypeName,createGeomType);
-      OWLGeom geom
+      geom
         = owlGeomCreate(devGroup->owl,gt);
 #if UMESH_MC_USE_DDA
       owlGeomSetPrimCount(geom,1);
@@ -96,14 +96,40 @@ namespace barney {
       PING; PRINT(dims); PRINT(primCount);
       owlGeomSetPrimCount(geom,primCount);
 #endif
+
+      // ------------------------------------------------------------------      
       owlGeomSet3iv(geom,"mcGrid.dims",&mcGrid.dims.x);
       // intentionally set to null for first-time build
       owlGeomSetBuffer(geom,"mcGrid.majorants",0);
-      owlGeomSet4fv(geom,"worldBounds.lower",&mesh->worldBounds.lower.x);
-      owlGeomSet4fv(geom,"worldBounds.upper",&mesh->worldBounds.upper.x);
+      
+      // ------------------------------------------------------------------
+      assert(mesh->tetIndicesBuffer);
+      owlGeomSet4fv(geom,"mesh.worldBounds.lower",&mesh->worldBounds.lower.x);
+      owlGeomSet4fv(geom,"mesh.worldBounds.upper",&mesh->worldBounds.upper.x);
+      owlGeomSetBuffer(geom,"mesh.vertices",mesh->verticesBuffer);
+      std::cout << "SETTING TETINDICES BUFFER " << mesh->tetIndicesBuffer << " " << (int*)owlBufferGetPointer(mesh->tetIndicesBuffer,0) << std::endl;
+      
+      owlGeomSetBuffer(geom,"mesh.tetIndices",mesh->tetIndicesBuffer);
+      owlGeomSetBuffer(geom,"mesh.hexIndices",mesh->hexIndicesBuffer);
+      owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
+      
+      // ------------------------------------------------------------------      
       owlGeomSetBuffer(geom,"bvh.nodes",this->sampler.bvhNodesBuffer);
       owlGeomSetBuffer(geom,"bvh.primIDs",this->sampler.primIDsBuffer);
       
+      // ------------------------------------------------------------------      
+      
+      if (volume->xf.domain.lower < volume->xf.domain.upper) {
+        owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+      } else {
+        owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
+      }
+      owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+      owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
+      PING; PRINT(volume->xf.values.size());
+      owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
+      
+      // ------------------------------------------------------------------      
       OWLGroup group
         = owlUserGeomGroupCreate(devGroup->owl,1,&geom,OPTIX_BUILD_FLAG_ALLOW_UPDATE);
       owlGroupBuildAccel(group);
@@ -113,10 +139,18 @@ namespace barney {
       owlGeomSetBuffer(geom,"mcGrid.majorants",mcGrid.majorantsBuffer);
     }
     
+    if (volume->xf.domain.lower < volume->xf.domain.upper) {
+      owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+    } else {
+      owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
+    }
+    owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+    owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
+    PING; PRINT(volume->xf.values.size());
+    owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
+
     std::cout << "refitting ... umesh mc geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);
-    
-    
   }
 
   // template struct UMeshMCAccelerator<UMeshQCSampler>;
