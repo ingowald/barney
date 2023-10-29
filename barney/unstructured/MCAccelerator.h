@@ -32,6 +32,8 @@ namespace barney {
       
       MCGrid::DD                 mcGrid;
       typename VolumeSampler::DD sampler;
+      TransferFunction::DD       xf;
+      // box4f                      worldBoundsOfGrid;
     };
 
     MCAccelerator(ScalarField *field, Volume *volume);

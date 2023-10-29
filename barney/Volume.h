@@ -89,17 +89,8 @@ namespace barney {
     ScalarField::SP  sf;
     VolumeAccel::SP  accel;
     TransferFunction xf;
-    // struct {
-    //   range1f             domain;
-    //   std::vector<vec4f>  values;
-    //   OWLBuffer           valuesBuffer;
-    //   float               baseDensity;
-    // } xf;
 
     std::vector<OWLGroup> generatedGroups;
-    // std::vector<OWLGeom>  userGeoms;
-    // std::vector<OWLGeom>  triangleGeoms;
-    // DataGroup  *owner;
     DevGroup *const devGroup;
   };
 

@@ -48,6 +48,11 @@ embed_ptx(
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            unstructured/QuickClusters.dev.cu
 )
+embed_ptx(
+  OUTPUT_TARGET      barney-UMeshMCAccelerator-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            unstructured/UMeshMCAccelerator.dev.cu
+)
 
 add_library(barney STATIC
 
@@ -116,6 +121,7 @@ target_link_libraries(barney
   barney-triangles-ptx
   barney-traceRays-ptx  
   barney-UMeshQC-ptx  
+  barney-UMeshMCAccelerator-ptx  
   )
 #target_include_directories(barney PUBLIC
 #  )

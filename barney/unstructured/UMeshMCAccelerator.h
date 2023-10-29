@@ -28,11 +28,17 @@ namespace barney {
   {
     using MCAccelerator<VolumeSampler>::mcGrid;
     using MCAccelerator<VolumeSampler>::volume;
+
+    struct DD : public MCAccelerator<VolumeSampler>::DD {
+      UMeshField::DD mesh;
+    };
     
     UMeshMCAccelerator(UMeshField *mesh, Volume *volume)
       : MCAccelerator<VolumeSampler>(mesh,volume),
         mesh(mesh)
     {}
+    static OWLGeomType createGeomType(DevGroup *devGroup);
+    
     
     void buildMCs() override;
     void build() override;

@@ -63,12 +63,15 @@ namespace barney {
     PRINT(dims);
     
     for (auto dev : xf->devGroup->devices) {
+      BARNEY_CUDA_SYNC_CHECK();
       // for (int devID=0;devID<xf->devGroup->size();devID++) {
       SetActiveGPU forDuration(dev);
-      auto dd = xf->getDD(dev->owlID);
+      auto d_xf = xf->getDD(dev->owlID);
+      PRINT(d_xf.values);
+      PRINT(d_xf.domain);
       mapMacroCells
         <<<(dim3)nb,(dim3)bs>>>
-        (getDD(dev->owlID),xf->getDD(dev->owlID));
+        (getDD(dev->owlID),d_xf);
       BARNEY_CUDA_SYNC_CHECK();
     }
   }
@@ -101,6 +104,8 @@ namespace barney {
     assert(scalarRangesBuffer);
     dd.scalarRanges
       = (range1f*)owlBufferGetPointer(scalarRangesBuffer,devID);
+    
+    dd.dims = dims;
     
     return dd;
   }

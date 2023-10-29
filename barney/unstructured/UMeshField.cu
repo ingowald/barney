@@ -76,6 +76,19 @@ namespace barney {
   {
     box3f pb = box3f(vec3f(primBounds4.lower),
                      vec3f(primBounds4.upper));
+    // printf("prim (%f %f %f)(%f %f %f) world (%f %f %f)(%f %f %f)\n",
+    //        primBounds4.lower.x,
+    //        primBounds4.lower.y,
+    //        primBounds4.lower.z,
+    //        primBounds4.upper.x,
+    //        primBounds4.upper.y,
+    //        primBounds4.upper.z,
+    //        worldBounds.lower.x,
+    //        worldBounds.lower.y,
+    //        worldBounds.lower.z,
+    //        worldBounds.upper.x,
+    //        worldBounds.upper.y,
+    //        worldBounds.upper.z);
     if (pb.lower.x >= pb.upper.x) return;
     if (pb.lower.y >= pb.upper.y) return;
     if (pb.lower.z >= pb.upper.z) return;
@@ -83,6 +96,10 @@ namespace barney {
     vec3i lo = project(pb.lower,worldBounds,grid.dims);
     vec3i hi = project(pb.upper,worldBounds,grid.dims);
 
+    // printf("rastering %i %i %i : %i %i %i\n",
+    //        lo.x,lo.y,lo.z,
+    //        hi.x,hi.y,hi.z);
+    // return;
     for (int iz=lo.z;iz<=hi.z;iz++)
       for (int iy=lo.y;iy<=hi.y;iy++)
         for (int ix=lo.x;ix<=hi.x;ix++) {
@@ -103,34 +120,33 @@ namespace barney {
     int iz = threadIdx.z+blockIdx.z*blockDim.z; if (iz >= grid.dims.z) return;
     
     int ii = ix + grid.dims.x*(iy + grid.dims.y*(iz));
-    grid.scalarRanges[ii] = range1f();
+    grid.scalarRanges[ii] = { 1e+30f,-1e+30f };//range1f();
   }
   
   __global__ void rasterElements(MCGrid::DD grid,
-                                 UMeshField::DD mesh,
-                                 box3f worldBounds)
+                                 UMeshField::DD mesh)
   {
     const int eltIdx = blockIdx.x*blockDim.x + threadIdx.x;
     if (eltIdx >= mesh.numElements) return;    
 
-    if (eltIdx >= 10000)
-      return;
+    // if (eltIdx >= 10)
+    //   return;
     
     auto elt = mesh.elements[eltIdx];
-    const box4f eltBounds = mesh.elementBounds(mesh.elements[eltIdx]);
-    if (eltIdx < 100 || (eltIdx % 12000) == 0) {
-      printf("elt %lx %i : %i/%i\n",mesh.elements,eltIdx,elt.ID,elt.type);
-      printf("(%f %f %f:%f)(%f %f %f:%f)\n",
-           eltBounds.lower.x,
-           eltBounds.lower.y,
-           eltBounds.lower.z,
-           eltBounds.lower.w,
-           eltBounds.upper.x,
-           eltBounds.upper.y,
-           eltBounds.upper.z,
-           eltBounds.upper.w);
-    }
-    // rasterBox(grid,worldBounds,eltBounds);
+    const box4f eltBounds = mesh.elementBounds(elt);
+    // if (eltIdx < 100 || (eltIdx % 12000) == 0) {
+    //   printf("elt %lx %i : %i/%i\n",mesh.elements,eltIdx,elt.ID,elt.type);
+    //   printf("(%f %f %f:%f)(%f %f %f:%f)\n",
+    //        eltBounds.lower.x,
+    //        eltBounds.lower.y,
+    //        eltBounds.lower.z,
+    //        eltBounds.lower.w,
+    //        eltBounds.upper.x,
+    //        eltBounds.upper.y,
+    //        eltBounds.upper.z,
+    //        eltBounds.upper.w);
+    // }
+    rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
   }
 
   /*! build *initial* macro-cell grid (ie, the scalar field min/max
@@ -181,7 +197,7 @@ namespace barney {
       PRINT(worldBounds);
       rasterElements
         <<<divRoundUp(int(elements.size()),1024),1024>>>
-        (d_grid,d_mesh,getBox(worldBounds));
+        (d_grid,d_mesh);
       BARNEY_CUDA_SYNC_CHECK();
     }
   }
@@ -253,11 +269,12 @@ namespace barney {
   {
     UMeshField::DD dd;
 
-    dd.vertices   = (const float4  *)owlBufferGetPointer(verticesBuffer,devID);
-    dd.tetIndices = (const int4    *)owlBufferGetPointer(tetIndicesBuffer,devID);
-    dd.hexIndices = (const ints<8> *)owlBufferGetPointer(hexIndicesBuffer,devID);
-    dd.elements   = (const Element *)owlBufferGetPointer(elementsBuffer,devID);
+    dd.vertices    = (const float4  *)owlBufferGetPointer(verticesBuffer,devID);
+    dd.tetIndices  = (const int4    *)owlBufferGetPointer(tetIndicesBuffer,devID);
+    dd.hexIndices  = (const ints<8> *)owlBufferGetPointer(hexIndicesBuffer,devID);
+    dd.elements    = (const Element *)owlBufferGetPointer(elementsBuffer,devID);
     dd.numElements = elements.size();
+    dd.worldBounds = worldBounds;
 
     PING;
     PRINT(dd.numElements);
