@@ -14,27 +14,19 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Volume.h"
-#include "barney/DataGroup.h"
+#pragma once
+
+#include "barney/unstructured/UMeshField.h"
 
 namespace barney {
 
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }//owner->getOWL(); }
+  /*! can sample umeshes using cuda-point location of quickclusters-bvh */
+  struct UMeshQCSampler {
+    struct DD {
+    };
+    
+    UMeshQCSampler(UMeshField *field);
+    void build();
+  };
   
-  Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
-  {
-    accel = sf->createAccel(this);
-  }
-
-    /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
-  void Volume::build()
-  {
-    assert(accel);
-    accel->build();
-  }
-
 }

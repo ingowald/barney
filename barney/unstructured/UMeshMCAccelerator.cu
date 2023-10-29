@@ -14,27 +14,33 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Volume.h"
-#include "barney/DataGroup.h"
+#include "barney/unstructured/UMeshMCAccelerator.h"
 
 namespace barney {
-
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }//owner->getOWL(); }
-  
-  Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
+  template<typename VolumeSampler>
+  void UMeshMCAccelerator<VolumeSampler>::buildMCs() 
   {
-    accel = sf->createAccel(this);
+    assert(mesh);
+    assert(volume);
+    PING;
+    mesh->buildInitialMacroCells(mcGrid);
+    PRINT(mcGrid.dims);
+    PING;
+    mcGrid.computeMajorants(&volume->xf);
+    PING;
   }
 
-    /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
-  void Volume::build()
+  template<typename VolumeSampler>
+  void UMeshMCAccelerator<VolumeSampler>::build()
   {
-    assert(accel);
-    accel->build();
+    BARNEY_CUDA_SYNC_CHECK();
+    buildMCs();
+    BARNEY_CUDA_SYNC_CHECK();
+    this->sampler.build();
+    BARNEY_CUDA_SYNC_CHECK();
   }
 
+  // template struct UMeshMCAccelerator<UMeshQCSampler>;
+  template struct UMeshMCAccelerator<UMeshCUBQLSampler>;
 }
+

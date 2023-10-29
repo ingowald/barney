@@ -14,27 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Volume.h"
-#include "barney/DataGroup.h"
+#include "barney/Context.h"
+#include "barney/unstructured/MCAccelerator.h"
 
 namespace barney {
-
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }//owner->getOWL(); }
   
-  Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
-  {
-    accel = sf->createAccel(this);
-  }
-
-    /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
-  void Volume::build()
-  {
-    assert(accel);
-    accel->build();
-  }
-
 }

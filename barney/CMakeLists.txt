@@ -50,6 +50,7 @@ embed_ptx(
 )
 
 add_library(barney STATIC
+
   # actual device kernels for CUDA ray gen and shading
   generateRays.cu
   shadeRays.cu
@@ -86,7 +87,21 @@ add_library(barney STATIC
   # actual volume types
   Volume.h
   Volume.cpp
-  unstructured/QuickClusters.cu
+  unstructured/MCAccelerator.h
+  unstructured/MCAccelerator.cu
+  unstructured/UMeshField.h
+  unstructured/UMeshField.cu
+  unstructured/TransferFunction.h
+  unstructured/TransferFunction.cu
+  unstructured/MCGrid.h
+  unstructured/MCGrid.cu
+  unstructured/MCAccelerator.h
+  unstructured/UMeshMCAccelerator.cu
+  unstructured/UMeshCUBQLSampler.cu
+  
+#  unstructured/QuickClusters.cu
+#  unstructured/SpatialAccelWithRTXSampling.h
+#  unstructured/SpatialAccelWithRTXSampling.cu
 #  unstructured/qbvh.h
 #  unstructured/qbvh.cpp
   # implements the c99 barney api calls

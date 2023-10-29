@@ -14,27 +14,42 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
+#include "barney/DeviceGroup.h"
 #include "barney/Volume.h"
-#include "barney/DataGroup.h"
+#include "barney/unstructured/MCGrid.h"
 
 namespace barney {
 
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }//owner->getOWL(); }
+  template<typename VolumeSampler>
+  struct MCAccelerator : public VolumeAccel
+  {
+    struct DD {
+      template<typename FieldSampler>
+      inline __device__
+      void traceRay(const FieldSampler &sampler, Ray &ray);
+      
+      MCGrid::DD                 mcGrid;
+      typename VolumeSampler::DD sampler;
+    };
+
+    MCAccelerator(ScalarField *field, Volume *volume);
+    
+    virtual void buildMCs() = 0;
+    
+    MCGrid        mcGrid;
+    VolumeSampler sampler;
+  };
+
+  template<typename VolumeSampler>
+  MCAccelerator<VolumeSampler>::MCAccelerator(ScalarField *field,
+                                              Volume *volume)
+    : VolumeAccel(field, volume),
+      sampler(field),
+      mcGrid(devGroup)
+  {}
+
   
-  Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
-  {
-    accel = sf->createAccel(this);
-  }
-
-    /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
-  void Volume::build()
-  {
-    assert(accel);
-    accel->build();
-  }
-
 }
+

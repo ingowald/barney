@@ -14,27 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
 #include "barney/Volume.h"
-#include "barney/DataGroup.h"
+#include "barney/unstructured/UMeshField.h"
+#include "cuBQL/bvh.h"
 
 namespace barney {
 
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }//owner->getOWL(); }
+   /*! can sample umeshes using cuda-point location of cuBQL-bvh */
+  struct UMeshCUBQLSampler {
+    using bvh_t  = cuBQL::BinaryBVH<float,3>;
+    using node_t = typename bvh_t::Node;
+    
+    struct DD {
+      /*! sample the umesh field; can return NaN if sample did not hit
+        any unstructured element at all */
+      inline __device__ float sample(vec3f P);
+
+      UMeshField::DD mesh;
+      bvh_t          bvh;
+    };
+    
+    UMeshCUBQLSampler(ScalarField *field);
+    void build();
+
+    UMeshField *const mesh;
+    OWLBuffer   bvhNodesBuffer = 0;
+    OWLBuffer   primIDsBuffer  = 0;
+  };
   
-  Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
-  {
-    accel = sf->createAccel(this);
-  }
-
-    /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
-  void Volume::build()
-  {
-    assert(accel);
-    accel->build();
-  }
-
 }

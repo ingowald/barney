@@ -20,29 +20,6 @@
 
 namespace barney {
 
-  inline __both__
-  vec3f getPos(vec4f v)
-  { return vec3f{v.x,v.y,v.z}; }
-
-  inline __both__
-  box3f getBox(box4f bb)
-  { return box3f{getPos(bb.lower),getPos(bb.upper)}; }
-
-  inline __both__
-  range1f getRange(box4f bb)
-  { return range1f{bb.lower.w,bb.upper.w}; }
-
-  
-  struct DeviceXF {
-    inline __device__ vec4f map(float s) const;
-    inline __device__ float majorant(range1f r, bool dbg = false) const;
-
-    float4  *values;
-    range1f  domain;
-    float    baseDensity;
-    int      numValues;
-  };
-
 // #define CLUSTERS_FROM_QC 1
   
   struct Cluster {
@@ -54,36 +31,17 @@ namespace barney {
 #endif
   };
 
-  struct Element {
-    inline __both__ Element() {}
-    inline __both__ Element(int ID, int type) : ID(ID), type(type) {}
-    uint32_t ID:29;
-    uint32_t type:3;
-  };
-
-  struct DevMesh {
-    inline __device__
-    box4f getBounds(Element element) const;
-
-    const float4     *vertices;
-    const int4       *tetIndices;
-    const HexIndices *hexIndices;
-    const Element    *elements;
-    int               numElements;
-  };
-  
   struct UMeshQC : public UMeshField {
     enum { clusterSize = 8 };
     // enum { clusterSize = 16 };
   
     struct DD {
-      DevMesh  mesh;
-      DeviceXF    xf;
+      UMeshField::DD       mesh;
+      TransferFunction::DD xf;
       Cluster    *clusters;
     };
     
     enum { numHilbertBits = 20 };
-    enum { TET=0, HEX } ElementType;
 
     UMeshQC(DataGroup *owner,
              std::vector<vec4f> &vertices,
@@ -104,22 +62,5 @@ namespace barney {
     box4f worldBounds;
     OWLGeom geom = 0;
   };
-
-  inline __device__
-  box4f DevMesh::getBounds(Element element) const
-  {
-    switch (element.type) {
-    case UMeshQC::TET: {
-      const int *indices = (const int *)&tetIndices[element.ID];
-      return box4f()
-        .including(vertices[indices[0]])
-        .including(vertices[indices[1]])
-        .including(vertices[indices[2]])
-        .including(vertices[indices[3]]);
-    }
-    default:
-      return box4f(); 
-    }
-  }
 
 }

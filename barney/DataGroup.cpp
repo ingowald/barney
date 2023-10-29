@@ -20,7 +20,7 @@
 #include "barney/Triangles.h"
 
 namespace barney {
-
+  
   Context *DataGroup::getContext() const
   {
     assert(model);
@@ -64,7 +64,7 @@ namespace barney {
   Volume *DataGroup::createVolume(ScalarField::SP sf)
   {
     return getContext()->initReference
-      (std::make_shared<Volume>(this,sf));
+      (std::make_shared<Volume>(devGroup.get(),sf));
   }
 
 
