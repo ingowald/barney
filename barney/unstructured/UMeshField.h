@@ -43,7 +43,7 @@ namespace barney {
   inline __both__ vec3f lerp(vec3f f, box3f box)
   { return lerp(f,box.lower,box.upper); }
   
-  
+
   struct Element {
     typedef enum { TET=0, HEX } Type;
     
@@ -68,6 +68,8 @@ namespace barney {
       inline __both__ box4f elementBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
       inline __both__ box4f hexBounds(int primID) const;
+      inline __device__
+      bool tetIntersect(int tetID, float &scalar, vec3f P, bool dbg = false) const;
       
       const float4     *vertices;
       const int4       *tetIndices;
@@ -158,4 +160,40 @@ namespace barney {
     return box4f(); 
   }
 
+  // using inward-facing planes here, like vtk
+  inline __device__
+  float evalToImplicitPlane(vec3f P, vec4f a, vec4f b, vec4f c)
+  {
+    vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
+    return dot(P-getPos(a),N);
+  }
+
+  inline __device__
+  bool UMeshField::DD::tetIntersect(int tetID, float &scalar, vec3f P, bool dbg) const
+  {
+    int4 indices = tetIndices[tetID];
+    float4 v0 = vertices[indices.x];
+    float4 v1 = vertices[indices.y];
+    float4 v2 = vertices[indices.z];
+    float4 v3 = vertices[indices.w];
+    
+    float t3 = evalToImplicitPlane(P,v0,v1,v2);
+    if (t3 < 0.f) return false;
+    float t2 = evalToImplicitPlane(P,v0,v3,v1);
+    if (t2 < 0.f) return false;
+    float t1 = evalToImplicitPlane(P,v0,v2,v3);
+    if (t1 < 0.f) return false;
+    float t0 = evalToImplicitPlane(P,v1,v3,v2);
+    if (t0 < 0.f) return false;
+    
+    float scale = 1.f/(t0+t1+t2+t3);
+    // if (dbg) printf("eval %f %f %f %f check %f -> scale %f, vtx.w %f %f %f %f\n",
+    //                 t0,t1,t2,t3,evalToImplicitPlane(getPos(v3),v0,v1,v2),scale,
+    //                 v0.w,v1.w,v2.w,v3.w);
+    scalar = scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
+    return true;
+  }
+
+
+  
 }

@@ -51,6 +51,7 @@ namespace barney {
   inline __device__
   float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
+    float retVal = NAN;
     // return .5f;
     int nodeStack[30];
     int *stackPtr = nodeStack;
@@ -64,18 +65,23 @@ namespace barney {
         *stackPtr++ = node.offset + 0;
         *stackPtr++ = node.offset + 1;
       } else {
-        int primID = bvh.primIDs[node.offset];
-        auto idx = mesh.tetIndices[primID];
-        auto vtx = mesh.vertices[idx.x];
-        if (dbg) {
-          printf("primID %i/%i -> %i %i %i %i vtx %f %f %f %f\n",primID,int(stackPtr-nodeStack),
-                 idx.x,idx.y,idx.z,idx.w,
-                 vtx.x,vtx.y,vtx.z,vtx.w
-                 );
+        for (int i=0;i<node.count;i++) {
+          int primID = bvh.primIDs[node.offset+i];
+          if (mesh.tetIntersect(primID,retVal,P,dbg))
+            return retVal;
         }
-        return vtx.w;
+        //   auto idx = mesh.tetIndices[primID];
+        //auto vtx = mesh.vertices[idx.x];
+        // if (dbg) {
+        //   printf("primID %i/%i -> %i %i %i %i vtx %f %f %f %f\n",primID,int(stackPtr-nodeStack),
+        //          idx.x,idx.y,idx.z,idx.w,
+        //          vtx.x,vtx.y,vtx.z,vtx.w
+        //          );
+        // }
+        //  return vtx.w;
       }
     }
+    return retVal;
   }
   
 }
