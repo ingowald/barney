@@ -18,31 +18,190 @@
 
 #include "barney/Volume.h"
 #include "barney/DataGroup.h"
+#include "barney/unstructured/MCGrid.h"
 
 namespace barney {
 
-  struct UMeshField : public ScalarField {
-    typedef std::shared_ptr<UMeshField> SP;
+  /*! helper functoin to extrace 3f spatial component from 4f point-plus-scalar */
+  inline __both__ vec3f getPos(vec4f v)
+  {return vec3f{v.x,v.y,v.z}; }
+
+  /*! helper functoin to extrace 3f spatial component from 4f point-plus-scalar */
+  inline __both__ box3f getBox(box4f bb)
+  { return box3f{getPos(bb.lower),getPos(bb.upper)}; }
+
+  /*! helper functoin to extract 1f scalar range from 4f point-plus-scalar */
+  inline __both__ range1f getRange(box4f bb)
+  { return range1f{bb.lower.w,bb.upper.w}; }
+
+  inline __both__ vec3f lerp(vec3f f, vec3f v0, vec3f v1)
+  { return (vec3f(1.f)-f)*v0 + f*v1; }
+
+  inline __both__ vec3f lerp(box3f box, vec3f f)
+  { return lerp(f,box.lower,box.upper); }
+  
+  inline __both__ vec3f lerp(vec3f f, box3f box)
+  { return lerp(f,box.lower,box.upper); }
+  
+
+  struct Element {
+    typedef enum { TET=0, HEX } Type;
     
-    UMeshField(DataGroup *owner,
+    inline __both__ Element() {}
+    inline __both__ Element(int ID, int type)
+      : ID(ID), type(type)
+    {}
+    uint32_t ID:29;
+    uint32_t type:3;
+  };
+  
+  struct UMeshField : public ScalarField {
+    
+    typedef std::shared_ptr<UMeshField> SP;
+
+    template<int N>
+    struct ints { int v[N];
+      inline __both__ int &operator[](int i)      { return v[i]; }
+      inline __both__ int operator[](int i) const { return v[i]; }
+    };
+    struct DD {
+      inline __both__ box4f eltBounds(Element element) const;
+      inline __both__ box4f tetBounds(int primID) const;
+      inline __both__ box4f hexBounds(int primID) const;
+
+      inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P) const;
+      inline __both__ bool tetScalar(float &retVal, int primID, vec3f P) const;
+      
+      const float4     *vertices;
+      const int4       *tetIndices;
+      const ints<8>    *hexIndices;
+      const Element    *elements;
+      int               numElements;
+      box4f             worldBounds;
+    };
+
+    /*! build *initial* macro-cell grid (ie, the scalar field min/max
+        ranges, but not yet the majorants) over a umesh */
+    void buildInitialMacroCells(MCGrid &grid);
+
+    UMeshField(DevGroup *devGroup,
                std::vector<vec4f> &vertices,
                std::vector<TetIndices> &tetIndices,
                std::vector<PyrIndices> &pyrIndices,
                std::vector<WedIndices> &wedIndices,
-               std::vector<HexIndices> &hexIndices)
-      : ScalarField(owner),
-        vertices(std::move(vertices)),
-        tetIndices(std::move(tetIndices)),
-        pyrIndices(std::move(pyrIndices)),
-        wedIndices(std::move(wedIndices)),
-        hexIndices(std::move(hexIndices))
-    {}
+               std::vector<HexIndices> &hexIndices);
+
+    DD getDD(int devID);
+    
+    VolumeAccel::SP createAccel(Volume *volume) override;
+    // void buildParams(std::vector<OWLVarDecl> &params, size_t offset);
+    // void setParams(OWLLaunchParams lp);
 
     std::vector<vec4f>      vertices;
     std::vector<TetIndices> tetIndices;
     std::vector<PyrIndices> pyrIndices;
     std::vector<WedIndices> wedIndices;
     std::vector<HexIndices> hexIndices;
+    std::vector<Element>    elements;
+    
+    OWLBuffer verticesBuffer   = 0;
+    OWLBuffer tetIndicesBuffer = 0;
+    OWLBuffer hexIndicesBuffer = 0;
+    OWLBuffer elementsBuffer   = 0;
+
+    box4f worldBounds;
   };
 
+
+  /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds, and
+      writes those into givne pre-allocated device mem location */
+  __global__
+  void computeElementBoundingBoxes(box3f *d_primBounds, UMeshField::DD mesh);
+  
+  // ==================================================================
+  // IMPLEMENTATION
+  // ==================================================================
+  
+  inline __both__
+  box4f UMeshField::DD::tetBounds(int tetID) const
+  {
+    const int4 indices = tetIndices[tetID];
+    return box4f()
+      .including(vertices[indices.x])
+      .including(vertices[indices.y])
+      .including(vertices[indices.z])
+      .including(vertices[indices.w]);
+  }
+  
+  inline __both__
+  box4f UMeshField::DD::hexBounds(int hexID) const
+  {
+    UMeshField::ints<8> indices = hexIndices[hexID];
+    return box4f()
+      .including(vertices[indices[0]])
+      .including(vertices[indices[1]])
+      .including(vertices[indices[2]])
+      .including(vertices[indices[3]])
+      .including(vertices[indices[4]])
+      .including(vertices[indices[5]])
+      .including(vertices[indices[6]])
+      .including(vertices[indices[7]]);
+  }
+  
+  inline __both__
+  box4f UMeshField::DD::eltBounds(Element element) const
+  {
+    switch (element.type) {
+    case Element::TET: 
+      return tetBounds(element.ID);
+    case Element::HEX: 
+      return hexBounds(element.ID);
+    }
+    // ugh: could not recognize this element type!?
+    return box4f(); 
+  }
+
+  // using inward-facing planes here, like vtk
+  inline __both__
+  float evalToImplicitPlane(vec3f P, vec4f a, vec4f b, vec4f c)
+  {
+    vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
+    return dot(P-getPos(a),N);
+  }
+
+  inline __both__
+  bool UMeshField::DD::eltScalar(float &retVal, Element elt, vec3f P) const
+  {
+    switch (elt.type) {
+    case Element::TET: 
+      return tetScalar(retVal,elt.ID,P);
+    }
+    return false;
+  }
+  
+  inline __both__
+  bool UMeshField::DD::tetScalar(float &retVal, int primID, vec3f P) const
+  {
+    int4 indices = tetIndices[primID];
+    float4 v0 = vertices[indices.x];
+    float4 v1 = vertices[indices.y];
+    float4 v2 = vertices[indices.z];
+    float4 v3 = vertices[indices.w];
+    
+    float t3 = evalToImplicitPlane(P,v0,v1,v2);
+    if (t3 < 0.f) return false;
+    float t2 = evalToImplicitPlane(P,v0,v3,v1);
+    if (t2 < 0.f) return false;
+    float t1 = evalToImplicitPlane(P,v0,v2,v3);
+    if (t1 < 0.f) return false;
+    float t0 = evalToImplicitPlane(P,v1,v3,v2);
+    if (t0 < 0.f) return false;
+    
+    float scale = 1.f/(t0+t1+t2+t3);
+    retVal = scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
+    return true;
+  }
+
+
+  
 }

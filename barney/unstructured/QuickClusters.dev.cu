@@ -14,11 +14,12 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/unstructured/QuickClusters.h"
+#include "barney/unstructured/UMeshQCSampler.h"
 #include "owl/owl_device.h"
 
 namespace barney {
 
+#if 0
   template<typename T>
   inline __device__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }
@@ -27,7 +28,7 @@ namespace barney {
   float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
   
   inline __device__
-  vec4f DeviceXF::map(float s) const
+  vec4f DeviceXF::map(float s, bool dbg) const
   {
     float f = (s-domain.lower)/domain.span();
     f = clamp(f,0.f,1.f);
@@ -35,7 +36,17 @@ namespace barney {
     int idx0 = clamp(int(f),0,numValues-1);
     int idx1 = clamp(idx0+1,0,numValues-1);
     f -= idx0;
-    vec4f r = (1.f-f)*(vec4f)values[idx0]+f*(vec4f)values[idx1];
+    vec4f v0 = (vec4f)values[idx0];
+    vec4f v1 = (vec4f)values[idx1];
+    if (dbg)
+      printf("map() indices %i %i values %f %f %f %f : %f %f %f %f f %f base %f\n",
+             idx0,idx1,
+             v0.x,v0.y,v0.z,v0.w,
+             v1.x,v1.y,v1.z,v1.w,
+             f,baseDensity);
+        
+      
+    vec4f r = (1.f-f)*v0+f*v1;
     r.w *= baseDensity;
     return r;
   }
@@ -85,6 +96,9 @@ namespace barney {
     {}
 
     inline __device__
+    void sampleAndMap(bool dbg);
+
+    inline __device__
     void setElement(Element elt)
     {
       element = elt;
@@ -130,7 +144,7 @@ namespace barney {
     }
 
     inline __device__
-    float evalTet(vec3f P)
+    float evalTet(vec3f P, bool dbg = false)
     {
       float t3 = evalToPlane(P,v0,v1,v2);
       float t2 = evalToPlane(P,v0,v3,v1);
@@ -138,7 +152,9 @@ namespace barney {
       float t0 = evalToPlane(P,v1,v3,v2);
 
       float scale = 1.f/(t0+t1+t2+t3);
-
+      if (dbg) printf("eval %f %f %f %f check %f -> scale %f, vtx.w %f %f %f %f\n",
+                      t0,t1,t2,t3,evalToPlane(getPos(v3),v0,v1,v2),scale,
+                      v0.w,v1.w,v2.w,v3.w);
       return scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
     }
 
@@ -248,6 +264,18 @@ namespace barney {
   }
   
   inline __device__
+  void ElementIntersector::sampleAndMap(bool dbg) 
+  {
+    scalar = evalTet(P,dbg);
+    mapped = dd.xf.map(scalar,dbg);
+    if (dbg)
+      printf("***** scalar %f mapped %f %f %f: %f\n",scalar,
+             mapped.x,mapped.y,mapped.z,mapped.w);
+  }
+  
+
+  
+  inline __device__
   bool MeshSampler::sampleAndMap() 
   {
     auto &mesh = dd.mesh;
@@ -275,6 +303,7 @@ namespace barney {
     return false;
   }
   
+
   inline __device__
   bool MeshSampler::sampleAndMap(int elts_begin, int elts_end) 
   {
@@ -454,7 +483,7 @@ namespace barney {
       = owl::getProgramData<UMeshQC::DD>();
     auto &ray
       = owl::getPRD<Ray>();
-    bool dbg = false;//ray.centerPixel;
+    bool dbg = ray.centerPixel;
     
     Cluster cluster = self.clusters[primID];
     
@@ -466,7 +495,8 @@ namespace barney {
     bool isHittingTheBox
       = boxTest(t0,t1,cluster.bounds,org,dir);
     if (dbg)
-      printf("intersect primID %i box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
+      printf("======== intersect primID %i range %f %f box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
+             t0,t1,
                     cluster.bounds.lower.x,
                     cluster.bounds.lower.y,
                     cluster.bounds.lower.z,
@@ -490,8 +520,10 @@ namespace barney {
     int end   = cluster.end;
 #endif
     
-    Random rand(ray.rngSeed++,primID);
+    // Random rand(ray.rngSeed++,primID);
+    LCG<4> &rand = (LCG<4> &)ray.rngSeed;
 #if 1
+    int numStepsTaken = 0, numSamplesTaken = 0, numRangesComputed = 0, numSamplesRejected = 0;
     ElementIntersector isec(self,ray,range1f(t0,t1));
     // use prim box only to find candidates (similar to ray tracing
     // for triangles), but each ray then intersects each prim
@@ -502,17 +534,22 @@ namespace barney {
     while (it < end) {
       // find next prim:
       int next = it++;
+      // if (dbg) printf("------ new prim\n");
       isec.setElement(self.mesh.elements[next]);
                       
-      if (dbg) printf("element %i\n",isec.element.ID);
+       if (dbg) printf("element %i\n",isec.element.ID);
       
       // check for GEOMETRIC overlap of ray and prim
-      if (!isec.computeElementRange(dbg))
+      numRangesComputed++;
+      if (!isec.computeElementRange())
         continue;
 
       // compute majorant for given overlap range
       float majorant = isec.computeRangeMajorant();
-      if (dbg) printf("element majorant is %f\n",majorant);
+      if (dbg) printf("element range %f %f majorant is %f\n",
+                      isec.elementTRange.lower,
+                      isec.elementTRange.upper,
+                      majorant);
       if (majorant == 0.f)
         continue;
       
@@ -520,22 +557,42 @@ namespace barney {
       while (true) {
         float dt = - logf(1-rand())/(majorant);
         t += dt;
+        numStepsTaken++;
         if (t >= isec.elementTRange.upper)
           break;
 
         isec.P = ray.org + t * ray.dir;
-        isec.sampleAndMap();
-        bool accept = (isec.mapped.w > rand()*majorant);
-        if (!accept)
+        numSamplesTaken++;
+        isec.sampleAndMap(dbg);
+        // if (!isec.sampleAndMap()) {
+        //   if (dbg) printf("COULD NOT SAMPLE TET t %f range %f %f!?!?!?!\n",t,
+        //                   isec.elementTRange.lower,
+        //                   isec.elementTRange.upper
+        //                   );
+        //   continue;
+        // }
+        float r = rand();
+        bool accept = (isec.mapped.w > r*majorant);
+        if (!accept) {
+          if (dbg)printf("REJECTED w = %f, rnd = %f, majorant %f\n",
+                         isec.mapped.w,r,majorant);
+          numSamplesRejected++;
           continue;
+        }
         
         hit_t = t;
         hit_elt = isec.element;
         isec.leafRange.upper = hit_t;
+        if (dbg) printf("**** ACCEPTED at t = %f\n",
+                        t);
         break;
       }
       
     }
+    if (dbg)
+      printf("num ranges computed %i steps taken %i samples taken %i rejected %i\n",
+             numRangesComputed, numStepsTaken, numSamplesTaken,
+             numSamplesRejected);
     if (hit_t < optixGetRayTmax()) {
       // TODO : compute gradient in element only?
       MeshSampler dx0(self);
@@ -661,5 +718,5 @@ namespace barney {
       printf(" did not accept any sample, steps taken %i\n",numStepsTaken);
 #endif
   }
-  
+#endif  
 }

@@ -25,16 +25,9 @@
 
 namespace barney {
 
+#if 0
   extern "C" char QuickClusters_ptx[];
 
-  __global__
-  void computeElementBounds(box3f *primBounds, DevMesh mesh)
-  {
-    int tid = threadIdx.x + blockIdx.x*blockDim.x;
-    if (tid >= mesh.numElements) return;
-    primBounds[tid] = getBox(mesh.getBounds(mesh.elements[tid]));
-  }
-  
   OWLGeomType UMeshQC::createGeomType(DevGroup *devGroup)
   {
     std::cout << OWL_TERMINAL_GREEN
@@ -211,8 +204,8 @@ namespace barney {
                                 numClusters,nullptr);
 #else
       std::vector<Element> elements;
-      for (int i=0;i<tetIndices.size();i++) elements.push_back(Element(i, TET));
-      for (int i=0;i<hexIndices.size();i++) elements.push_back(Element(i, HEX));
+      for (int i=0;i<tetIndices.size();i++) elements.push_back(Element(i, Element::TET));
+      for (int i=0;i<hexIndices.size();i++) elements.push_back(Element(i, Element::HEX));
 
       PING; std::cout << "MEMORY LEAK!" << std::endl;
       OWLBuffer elementsBuffer
@@ -222,7 +215,7 @@ namespace barney {
                                 elements.data());
       PRINT(elements.size());
       
-      DevMesh devMesh;
+      UMeshField::DD devMesh;
       devMesh.vertices    = (const float4*)owlBufferGetPointer(verticesBuffer,0);
       devMesh.tetIndices  = (const int4*)owlBufferGetPointer(tetIndicesBuffer,0);
       devMesh.hexIndices  = (const HexIndices*)owlBufferGetPointer(hexIndicesBuffer,0);
@@ -240,6 +233,9 @@ namespace barney {
       PING;
       buildConfig.makeLeafThreshold = 8;
       static cuBQL::ManagedMemMemoryResource managedMem;
+#if 1
+      buildConfig.enableSAH();
+#endif
       cuBQL::gpuBuilder(bvh,
                         (const cuBQL::box_t<float,3>*)d_primBounds,
                         (uint32_t)elements.size(),
@@ -320,22 +316,5 @@ namespace barney {
   }
 
 
-  ScalarField *DataGroup::createUMesh(std::vector<vec4f> &vertices,
-                                      std::vector<TetIndices> &tetIndices,
-                                      std::vector<PyrIndices> &pyrIndices,
-                                      std::vector<WedIndices> &wedIndices,
-                                      std::vector<HexIndices> &hexIndices)
-  {
-    ScalarField::SP sf
-      = std::make_shared<UMeshQC>(this,
-                                  vertices,
-                                   tetIndices,
-                                   pyrIndices,
-                                   wedIndices,
-                                   hexIndices);
-    
-    return getContext()->initReference(sf);
-  }
-  
-
+#endif
 }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2022++ Ingo Wald                                               //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,27 +14,43 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Volume.h"
-#include "barney/DataGroup.h"
+#pragma once
+
+#include "barney/DeviceGroup.h"
+#include "barney/unstructured/TransferFunction.h"
 
 namespace barney {
-
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }//owner->getOWL(); }
   
-  Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
-  {
-    accel = sf->createAccel(this);
-  }
+  struct MCGrid {
+    struct DD {
+      float   *majorants;
+      range1f *scalarRanges;
+      vec3i    dims;
+    };
 
-    /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
-  void Volume::build()
-  {
-    assert(accel);
-    accel->build();
-  }
+    MCGrid(DevGroup *devGroup);
+    
+    /*! get cuda-usable device-data for given device ID (relative to
+        devices in the devgroup that this gris is in */
+    DD getDD(int devID) const;
 
+    /*! allocate memory for the given grid */
+    void resize(vec3i dims);
+    
+    /*! build *initial* macro-cell grid (ie, the scalar field min/max
+      ranges, but not yet the majorants) over a umesh */
+    void computeMajorants(TransferFunction *xf);
+
+    inline bool built() const { return (dims != vec3i(0)); }
+    
+    /* buffer of range1f's, the min/max scalar values per cell */
+    OWLBuffer scalarRangesBuffer = 0;
+    /* buffer of floats, the actual per-cell majorants */
+    OWLBuffer majorantsBuffer = 0;
+    vec3i     dims { 0,0,0 };
+    DevGroup *const devGroup;
+  };
+  
 }
+
+

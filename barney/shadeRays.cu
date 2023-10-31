@@ -33,7 +33,7 @@ namespace barney {
     Ray ray = readQueue[tid];
     vec3f color = ray.color;
 
-    color *= randomColor(ray.primID);
+    // color *= randomColor(ray.primID);
 
     // if (ray.hadHit) {
     //   color = ray.color;

@@ -36,6 +36,15 @@ namespace barney {
   using range1f = interval<float>;
 
   using Random = LCG<4>;
+
+
+  template<typename T>
+  inline __device__
+  void swap(T &a, T &b) { T c = a; a = b; b = c; }
+
+  inline __device__
+  float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
+  
 }
 
 

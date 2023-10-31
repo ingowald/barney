@@ -17,84 +17,103 @@
 #pragma once
 
 #include "barney/Object.h"
-
+// todo: move to barney/volume/TransferFunction :
+#include "barney/unstructured/TransferFunction.h"
 namespace barney {
 
   struct DataGroup;
   struct Volume;
-
+  struct ScalarField;
+  
   typedef std::array<int,4> TetIndices;
   typedef std::array<int,5> PyrIndices;
   typedef std::array<int,6> WedIndices;
   typedef std::array<int,8> HexIndices;
 
+  struct VolumeAccel {
+    typedef std::shared_ptr<VolumeAccel> SP;
+
+    struct DD {
+      template<typename FieldSampler>
+      inline __device__
+      vec4f sampleAndMap(const FieldSampler &field,
+                         vec3f point, bool dbg=false) const
+      {
+        float f = field.sample(point,dbg);
+        if (isnan(f)) return vec4f(0.f);
+        return xf.map(f,dbg);
+      }
+      TransferFunction::DD xf;
+    };
+    
+    VolumeAccel(ScalarField *field, Volume *volume);
+    
+    virtual void build() = 0;
+    
+    ScalarField *const field;
+    Volume      *const volume;
+    DevGroup    *const devGroup;
+  };
+
+  /*! abstracts any sort of scalar field (unstructured, amr,
+    structured, rbfs....) _before_ any transfer function(s) get
+    applied to it */
   struct ScalarField : public Object
   {
     typedef std::shared_ptr<ScalarField> SP;
     
-    ScalarField(DataGroup *owner)
-      : owner(owner)
+    ScalarField(DevGroup *devGroup)
+      : devGroup(devGroup)
     {}
 
     OWLContext getOWL() const;
     
-    virtual void build(Volume *) {}
+    virtual VolumeAccel::SP createAccel(Volume *volume) = 0;
     
-    DataGroup *owner;
+    DevGroup    *const devGroup;
   };
 
-  // struct TransferFunction : public Object
-  // {
-  //   typedef std::shared_ptr<TransferFunction> SP;
-    
-  //   TransferFunction(DataGroup *owner,
-  //                    const range1f &domain,
-  //                    const std::vector<float4> &values,
-  //                    float baseDensity);
-
-  //   /*! pretty-printer for printf-debugging */
-  //   std::string toString() const override
-  //   { return "TransferFunction{}"; }
-
-    // range1f             domain;
-    // std::vector<float4> values;
-    // OWLBuffer           valuesBuffer;
-    // float               baseDensity;
-  //   DataGroup *owner;
-  // };
-    
+  /*! a *volume* is a scalar field with a transfer function applied to
+      it; it's main job is to create something that can intersect a
+      ray with that scalars-plus-transferfct thingy, for which it will
+      use some kind of volume accelerator that implements the
+      scalar-field type specific stuff (eg, traverse a bvh over
+      elements, or look up a 3d texture, etc) */
   struct Volume : public Object
   {
     typedef std::shared_ptr<Volume> SP;
     
-    Volume(DataGroup *owner,
+    Volume(DevGroup *devGroup,
            ScalarField::SP sf);
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Volume{}"; }
 
-    virtual void build()
-    { sf->build(this); }
-    
-    DataGroup  *owner;
+    /*! (re-)build the accel structure for this volume, probably after
+        changes to transfer functoin (or later, scalar field) */
+    virtual void build();
     
     void setXF(const range1f &domain,
                const std::vector<vec4f> &values,
-               float baseDensity);
+               float baseDensity)
+    { xf.set(domain,values,baseDensity); }
                
-    ScalarField::SP      sf;
-
-    struct {
-      range1f             domain;
-      std::vector<vec4f>  values;
-      OWLBuffer           valuesBuffer;
-      float               baseDensity;
-    } xf;
+    ScalarField::SP  sf;
+    VolumeAccel::SP  accel;
+    TransferFunction xf;
 
     std::vector<OWLGroup> generatedGroups;
-    // std::vector<OWLGeom>  userGeoms;
-    // std::vector<OWLGeom>  triangleGeoms;
+    DevGroup *const devGroup;
   };
 
+
+  inline VolumeAccel::VolumeAccel(ScalarField *field, Volume *volume)
+    : field(field), volume(volume), devGroup(field->devGroup)
+  {
+    assert(field);
+    assert(volume);
+    assert(field->devGroup);
+    assert(field->devGroup == volume->devGroup);
+  }
 }

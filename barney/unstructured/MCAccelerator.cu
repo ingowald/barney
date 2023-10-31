@@ -14,23 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Geometry.h"
-#include "barney/DataGroup.h"
-#include "cuBQL/bvh.h"
+#include "barney/Context.h"
+#include "barney/unstructured/MCAccelerator.h"
 
 namespace barney {
-
-  struct UMesh_SoftwareBVH {
-    
-    UMesh_SoftwareBVH(DataGroup *owner,
-             const Material &material)
-      : Geometry(owner,material)
-    {}
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Geometry{}"; }
-    
-  };
-    
+  
 }
