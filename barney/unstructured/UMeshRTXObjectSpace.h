@@ -51,7 +51,7 @@ namespace barney {
     void createClusters();
     
     std::vector<Cluster> clusters;
-    OWLBuffer clustersBuffer;
+    OWLBuffer clustersBuffer = 0;
     OWLGeom  geom  = 0;
     OWLGroup group = 0;
     UMeshField *const mesh;

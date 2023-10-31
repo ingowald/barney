@@ -22,11 +22,11 @@ namespace barney {
   using Cluster = UMeshRTXObjectSpace::Cluster;
 
   struct CentralDifference {
-    const bool dbg;
-    
     inline __device__
-    CentralDifference(const UMeshField::DD &dd, vec3f P, int begin, int end, bool dbg)
-      : dd(dd), dbg(dbg)
+    CentralDifference(const UMeshField::DD &dd,
+                      const TransferFunction::DD &xf,
+                      vec3f P, int begin, int end, bool dbg)
+      : dd(dd), xf(xf), dbg(dbg)
     {
       const float delta = .1f;
       this->P[0] = P - delta * vec3f(1.f,0.f,0.f);
@@ -61,6 +61,8 @@ namespace barney {
     void eval(int begin, int end)
     {
       for (int ei=begin;ei<end;ei++) {
+        // if (dbg) printf("evaluating element %i [%i %i]\n",
+        //                 ei,begin,end);
         Element elt = dd.elements[ei];
         if (elt.type != Element::TET)
           continue;
@@ -68,24 +70,33 @@ namespace barney {
         if (evalTet(elt.ID))
           break;
       }
-      if (scalar[6] < 0.f)
-        if (dbg)
-          printf("NO HIT IN CENTER!?!?!?!\n");
+      float mapped_scalar[6];
+      // if (scalar[6] < 0.f)
+      //   if (dbg)
+      //     printf("NO HIT IN CENTER!?!?!?!\n");
 #pragma unroll
       for (int i=0;i<6;i++) {
         if (scalar[i] < 0.f)
           { scalar[i] = scalar[6]; P[i] = P[6]; }
+        mapped_scalar[i] = xf.map(scalar[i]).w;
       }
+#if 0
       N.x = safeDiv(scalar[1]-scalar[0], P[1].x-P[0].x);
       N.y = safeDiv(scalar[3]-scalar[2], P[3].y-P[2].y);
       N.z = safeDiv(scalar[5]-scalar[4], P[5].z-P[4].z);
+#else
+      N.x = safeDiv(mapped_scalar[1]-mapped_scalar[0], P[1].x-P[0].x);
+      N.y = safeDiv(mapped_scalar[3]-mapped_scalar[2], P[3].y-P[2].y);
+      N.z = safeDiv(mapped_scalar[5]-mapped_scalar[4], P[5].z-P[4].z);
+#endif
+      mappedColor = getPos(xf.map(scalar[6]));
       // N.x = safeDiv(dx1.mapped.w-dx0.mapped.w,dx1.P.x - dx0.P.x);
       // N.y = safeDiv(dy1.mapped.w-dy0.mapped.w,dy1.P.y - dy0.P.y);
       // N.z = safeDiv(dz1.mapped.w-dz0.mapped.w,dz1.P.z - dz0.P.z);
     }
     
     inline __device__
-    void evalPlane(Plane plane)
+    void evalPlane(Plane plane, float v)
     {
 #pragma unroll
       for (int i=0;i<7;i++) {
@@ -94,7 +105,7 @@ namespace barney {
           sw[i] = -INFINITY;
         } else {
           sw[i] += f;
-          sv[i] += plane.p.w * f;
+          sv[i] += v * f;
         }
       }
     }
@@ -102,7 +113,7 @@ namespace barney {
     inline __device__
     bool evalTet(int tetID)
     {
-      if (dbg) printf("cd: evaluating tet %i\n",tetID);
+      // if (dbg) printf("cd: evaluating tet %i\n",tetID);
       
       int4 indices = dd.tetIndices[tetID];
       v0 = dd.vertices[indices.x];
@@ -114,22 +125,22 @@ namespace barney {
       for (int i=0;i<7;i++)
         sw[i] = sv[i] = 0.f;
       
-      evalPlane(Plane(v0,v1,v2));
-      evalPlane(Plane(v0,v3,v1));
-      evalPlane(Plane(v0,v2,v3));
-      evalPlane(Plane(v1,v3,v2));
+      evalPlane(Plane(v0,v1,v2),v3.w);
+      evalPlane(Plane(v0,v3,v1),v2.w);
+      evalPlane(Plane(v0,v2,v3),v1.w);
+      evalPlane(Plane(v1,v3,v2),v0.w);
       
 #pragma unroll
-      for (int i=0;i<6;i++)
+      for (int i=0;i<7;i++)
         if (sw[i] >= 0.f)
           scalar[i] = sv[i] / sw[i];
       
       bool done = true;
 #pragma unroll
-      for (int i=0;i<6;i++)
+      for (int i=0;i<7;i++)
         if (scalar[i] < 0.f)
           done = false;
-
+      
       return done;
     }
     
@@ -138,7 +149,10 @@ namespace barney {
     float sw[7], sv[7];
     vec3f N;
     float4 v0, v1, v2, v3;
+    const bool dbg;
+    vec3f mappedColor;
     const UMeshField::DD &dd;
+    const TransferFunction::DD &xf;
   };
   
   struct ElementIntersector
@@ -180,9 +194,9 @@ namespace barney {
     {
       vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
       float NdotD = dot(ray.dir, N);
-      if (dbg)
-        printf(" clipping: N is %f %f %f, NdotD %f\n",
-               N.x,N.y,N.z,NdotD);
+      // if (dbg)
+      //   printf(" clipping: N is %f %f %f, NdotD %f\n",
+      //          N.x,N.y,N.z,NdotD);
       if (NdotD == 0.f)
         return;
       float plane_t = dot(getPos(a) - ray.org, N) / NdotD;
@@ -191,9 +205,9 @@ namespace barney {
       else
         elementTRange.lower = max(elementTRange.lower,plane_t);
 
-      if (dbg)
-        printf(" clipping to t_plane %f, range now %f %f\n",
-               plane_t, elementTRange.lower, elementTRange.upper);
+      // if (dbg)
+      //   printf(" clipping to t_plane %f, range now %f %f\n",
+      //          plane_t, elementTRange.lower, elementTRange.upper);
     }
 
     inline __device__
@@ -223,9 +237,9 @@ namespace barney {
     bool computeElementRange(bool dbg = false)
     {
       elementTRange = leafRange;
-      if (dbg) printf("eltrange at start %f %f\n",
-                      elementTRange.lower,
-                      elementTRange.upper);
+      // if (dbg) printf("eltrange at start %f %f\n",
+      //                 elementTRange.lower,
+      //                 elementTRange.upper);
       clipRangeToPlane(v0,v1,v2,dbg);
       clipRangeToPlane(v0,v3,v1,dbg);
       clipRangeToPlane(v0,v2,v3,dbg);
@@ -331,9 +345,9 @@ namespace barney {
   {
     scalar = evalTet(P,dbg);
     mapped = dd.xf.map(scalar,dbg);
-    if (dbg)
-      printf("***** scalar %f mapped %f %f %f: %f\n",scalar,
-             mapped.x,mapped.y,mapped.z,mapped.w);
+    // if (dbg)
+    //   printf("***** scalar %f mapped %f %f %f: %f\n",scalar,
+    //          mapped.x,mapped.y,mapped.z,mapped.w);
   }
   
 
@@ -467,28 +481,28 @@ namespace barney {
     ray.tMax = optixGetRayTmax();
 
     vec3f P = ray.org + ray.tMax * ray.dir;
-    if (ray.dbg)
-      printf("CENTRAL DIFF prim %i at %f %f %f\n",
-             primID,
-             P.x,P.y,P.z);
-    CentralDifference cd(self.mesh,P,cluster.begin,cluster.end,ray.dbg);
-
+    // if (ray.dbg)
+    //   printf("CENTRAL DIFF prim %i at %f %f %f\n",
+    //          primID,
+    //          P.x,P.y,P.z);
+    CentralDifference cd(self.mesh,self.xf,P,cluster.begin,cluster.end,ray.dbg);
     
     // eval(cd,self.mesh,self.clusters[primID].begin,self.clusters[primID].end);
 
     vec3f N = normalize
       ((cd.N == vec3f(0.f)) ? ray.dir : cd.N);
 
-    if (ray.dbg)
-      printf("cd.N %f %f %f, dot %f\n",
-             cd.N.x,
-             cd.N.y,
-             cd.N.z,
-             fabsf(dot(normalize(ray.dir),normalize(N))));
+    // if (ray.dbg)
+    //   printf("cd.N %f %f %f, dot %f\n",
+    //          cd.N.x,
+    //          cd.N.y,
+    //          cd.N.z,
+    //          fabsf(dot(normalize(ray.dir),normalize(N))));
 
     ray.hadHit = 1;
     ray.color
-      = randomColor(primID)
+      = //randomColor(primID)
+      cd.mappedColor
       * (.3f+.7f*fabsf(dot(normalize(ray.dir),normalize(N))));
   }
 
@@ -510,21 +524,21 @@ namespace barney {
     float t1 = optixGetRayTmax();
     bool isHittingTheBox
       = boxTest(t0,t1,cluster.bounds,org,dir);
-    if (dbg)
-      printf("======== intersect primID %i range %f %f box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
-             t0,t1,
-             cluster.bounds.lower.x,
-             cluster.bounds.lower.y,
-             cluster.bounds.lower.z,
-             cluster.bounds.upper.x,
-             cluster.bounds.upper.y,
-             cluster.bounds.upper.z,
-             org.x+t0*dir.x,
-             org.y+t0*dir.y,
-             org.z+t0*dir.z
-             );
+    // if (dbg)
+    //   printf("======== intersect primID %i range %f %f box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
+    //          t0,t1,
+    //          cluster.bounds.lower.x,
+    //          cluster.bounds.lower.y,
+    //          cluster.bounds.lower.z,
+    //          cluster.bounds.upper.x,
+    //          cluster.bounds.upper.y,
+    //          cluster.bounds.upper.z,
+    //          org.x+t0*dir.x,
+    //          org.y+t0*dir.y,
+    //          org.z+t0*dir.z
+    //          );
     if (!isHittingTheBox) {
-      if (dbg) printf(" -> miss bounds\n");
+      // if (dbg) printf(" -> miss bounds\n");
       return;
     }
 
@@ -552,7 +566,7 @@ namespace barney {
       // if (dbg) printf("------ new prim\n");
       isec.setElement(self.mesh.elements[next]);
                       
-      if (dbg) printf("element %i\n",isec.element.ID);
+      // if (dbg) printf("element %i\n",isec.element.ID);
       
       // check for GEOMETRIC overlap of ray and prim
       numRangesComputed++;
@@ -561,10 +575,10 @@ namespace barney {
 
       // compute majorant for given overlap range
       float majorant = isec.computeRangeMajorant();
-      if (dbg) printf("element range %f %f majorant is %f\n",
-                      isec.elementTRange.lower,
-                      isec.elementTRange.upper,
-                      majorant);
+      // if (dbg) printf("element range %f %f majorant is %f\n",
+      //                 isec.elementTRange.lower,
+      //                 isec.elementTRange.upper,
+      //                 majorant);
       if (majorant == 0.f)
         continue;
       
@@ -589,8 +603,8 @@ namespace barney {
         float r = rand();
         bool accept = (isec.mapped.w > r*majorant);
         if (!accept) {
-          if (dbg)printf("REJECTED w = %f, rnd = %f, majorant %f\n",
-                         isec.mapped.w,r,majorant);
+          // if (dbg)printf("REJECTED w = %f, rnd = %f, majorant %f\n",
+          //                isec.mapped.w,r,majorant);
           numSamplesRejected++;
           continue;
         }
@@ -598,22 +612,22 @@ namespace barney {
         hit_t = t;
         hit_elt = isec.element;
         isec.leafRange.upper = hit_t;
-        if (dbg) printf("**** ACCEPTED at t = %f, P = %f %f %f\n",
-                        t, P.x,P.y,P.z);
+        // if (dbg) printf("**** ACCEPTED at t = %f, P = %f %f %f, tet ID %i\n",
+        //                 t, P.x,P.y,P.z,isec.element.ID);
         break;
       }
       
     }
-    if (dbg)
-      printf("num ranges computed %i steps taken %i samples taken %i rejected %i\n",
-             numRangesComputed, numStepsTaken, numSamplesTaken,
-             numSamplesRejected);
+    // if (dbg)
+    //   printf("num ranges computed %i steps taken %i samples taken %i rejected %i\n",
+    //          numRangesComputed, numStepsTaken, numSamplesTaken,
+    //          numSamplesRejected);
 
 
     if (hit_t < optixGetRayTmax())  {
-      if (ray.dbg)
-        printf("ISEC at prim %i, tet %i, t %f\n",
-               primID,isec.element.ID,hit_t);
+      // if (ray.dbg)
+      //   printf("ISEC at prim %i, tet %i, t %f\n",
+      //          primID,isec.element.ID,hit_t);
       optixReportIntersection(hit_t, 0);
     }
   }

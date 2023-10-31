@@ -58,7 +58,7 @@ namespace barney {
   
   void UMeshRTXObjectSpace::createClusters()
   {
-    assert(clusters.emtpy());
+    assert(clusters.empty());
     assert(!clustersBuffer);
 
     // ==================================================================
