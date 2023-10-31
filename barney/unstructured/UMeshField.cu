@@ -17,6 +17,7 @@
 #include "barney/unstructured/UMeshField.h"
 #include "barney/Context.h"
 #include "barney/unstructured/UMeshMCAccelerator.h"
+#include "barney/unstructured/UMeshRTXObjectSpace.h"
 
 namespace barney {
 
@@ -76,19 +77,6 @@ namespace barney {
   {
     box3f pb = box3f(vec3f(primBounds4.lower),
                      vec3f(primBounds4.upper));
-    // printf("prim (%f %f %f)(%f %f %f) world (%f %f %f)(%f %f %f)\n",
-    //        primBounds4.lower.x,
-    //        primBounds4.lower.y,
-    //        primBounds4.lower.z,
-    //        primBounds4.upper.x,
-    //        primBounds4.upper.y,
-    //        primBounds4.upper.z,
-    //        worldBounds.lower.x,
-    //        worldBounds.lower.y,
-    //        worldBounds.lower.z,
-    //        worldBounds.upper.x,
-    //        worldBounds.upper.y,
-    //        worldBounds.upper.z);
     if (pb.lower.x >= pb.upper.x) return;
     if (pb.lower.y >= pb.upper.y) return;
     if (pb.lower.z >= pb.upper.z) return;
@@ -96,10 +84,6 @@ namespace barney {
     vec3i lo = project(pb.lower,worldBounds,grid.dims);
     vec3i hi = project(pb.upper,worldBounds,grid.dims);
 
-    // printf("rastering %i %i %i : %i %i %i\n",
-    //        lo.x,lo.y,lo.z,
-    //        hi.x,hi.y,hi.z);
-    // return;
     for (int iz=lo.z;iz<=hi.z;iz++)
       for (int iy=lo.y;iy<=hi.y;iy++)
         for (int ix=lo.x;ix<=hi.x;ix++) {
@@ -129,23 +113,8 @@ namespace barney {
     const int eltIdx = blockIdx.x*blockDim.x + threadIdx.x;
     if (eltIdx >= mesh.numElements) return;    
 
-    // if (eltIdx >= 10)
-    //   return;
-    
     auto elt = mesh.elements[eltIdx];
-    const box4f eltBounds = mesh.elementBounds(elt);
-    // if (eltIdx < 100 || (eltIdx % 12000) == 0) {
-    //   printf("elt %lx %i : %i/%i\n",mesh.elements,eltIdx,elt.ID,elt.type);
-    //   printf("(%f %f %f:%f)(%f %f %f:%f)\n",
-    //        eltBounds.lower.x,
-    //        eltBounds.lower.y,
-    //        eltBounds.lower.z,
-    //        eltBounds.lower.w,
-    //        eltBounds.upper.x,
-    //        eltBounds.upper.y,
-    //        eltBounds.upper.z,
-    //        eltBounds.upper.w);
-    // }
+    const box4f eltBounds = mesh.eltBounds(elt);
     rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
   }
 
@@ -154,7 +123,6 @@ namespace barney {
   void UMeshField::buildInitialMacroCells(MCGrid &grid)
   {
     if (grid.built()) {
-      std::cout << "grid already built!" << std::endl;
       // initial grid already built
       return;
     }
@@ -174,27 +142,18 @@ namespace barney {
     grid.resize(dims);
 
     const vec3i bs = 4;
-    // cuda num blocks
     const vec3i nb = divRoundUp(dims,bs);
     for (auto dev : devGroup->devices) {
       SetActiveGPU forDuration(dev);
       BARNEY_CUDA_SYNC_CHECK();
       std::cout << "clearing macro cells" << std::endl;
-      PRINT(nb);
       auto d_grid = grid.getDD(dev->owlID);
-      PRINT(d_grid.scalarRanges);
       clearMCs
         <<<(dim3)nb,(dim3)bs>>>
         (d_grid);
       BARNEY_CUDA_SYNC_CHECK();
 
-      std::cout << "rastering elements" << std::endl;
       auto d_mesh = getDD(dev->owlID);
-      PRINT(d_grid.dims);
-      PRINT(d_mesh.vertices);
-      PRINT(d_mesh.tetIndices);
-      PRINT(d_mesh.elements);
-      PRINT(worldBounds);
       rasterElements
         <<<divRoundUp(int(elements.size()),1024),1024>>>
         (d_grid,d_mesh);
@@ -210,7 +169,7 @@ namespace barney {
     if (tid >= mesh.numElements) return;
 
     auto elt = mesh.elements[tid];
-    d_primBounds[tid] = getBox(mesh.elementBounds(elt));
+    d_primBounds[tid] = getBox(mesh.eltBounds(elt));
   }
 
 
@@ -231,12 +190,10 @@ namespace barney {
     for (int i=0;i<tetIndices.size();i++)
       elements.push_back(Element(i,Element::TET));
 
-    PING; PRINT(elements.size());
     assert(!elements.empty());
     
     for (int i=0;i<hexIndices.size();i++)
       elements.push_back(Element(i,Element::HEX));
-    PING; PRINT(elements.size());
     
     verticesBuffer
       = owlDeviceBufferCreate(getOWL(),
@@ -256,7 +213,6 @@ namespace barney {
                               8*hexIndices.size(),
                               hexIndices.data());
 
-    PRINT(sizeof(Element));
     assert(sizeof(Element) == sizeof(int));
     elementsBuffer
       = owlDeviceBufferCreate(getOWL(),
@@ -276,9 +232,6 @@ namespace barney {
     dd.numElements = elements.size();
     dd.worldBounds = worldBounds;
 
-    PING;
-    PRINT(dd.numElements);
-    
     return dd;
   }
 
@@ -301,8 +254,12 @@ namespace barney {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
+#if 0
     return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
     // return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
+#else
+    return std::make_shared<UMeshRTXObjectSpace>(this,volume);
+#endif
   }
 
 }

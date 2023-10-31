@@ -29,7 +29,6 @@ namespace barney {
     assert(mesh);
     assert(!mesh->elements.empty());
     
-    PING;
     if (bvhNodesBuffer != 0) {
       std::cout << "cubql bvh already built..." << std::endl;
       return;
@@ -39,33 +38,17 @@ namespace barney {
     bvh_t bvh;
 
     // this initially builds ONLY on first GPU!
-    PING;
     box3f *d_primBounds = 0;
-    PRINT(mesh);
-    PRINT(mesh->elements.size());
     BARNEY_CUDA_SYNC_CHECK();
     BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,mesh->elements.size()*sizeof(box3f)));
     
-    PING;
-    PRINT(mesh->getDD(0).elements);
-    PRINT(mesh->getDD(0).vertices);
-    PRINT(mesh->getDD(0).tetIndices);
     BARNEY_CUDA_SYNC_CHECK();
 
     auto d_mesh = mesh->getDD(0);
-    PRINT(d_mesh.elements);
-    PRINT(d_mesh.vertices);
-    PRINT(mesh->elements.size());
     computeElementBoundingBoxes
       <<<divRoundUp((int)mesh->elements.size(),1024),1024>>>
       (d_primBounds,d_mesh);
-    PING;
     BARNEY_CUDA_SYNC_CHECK();
-    // for (int i=0;i<mesh->elements.size();i++)
-    //   PRINT(d_primBounds[i]);
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
-    PING;
     
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = 8;
@@ -85,16 +68,13 @@ namespace barney {
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
 
-    std::cout << "create nodes buffer, num nodes " << bvh.numNodes << std::endl;
     bvhNodesBuffer
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
-    primIDsBuffer
-      = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
-                              bvh.numPrims,bvh.primIDs);
-    PING;
+    // primIDsBuffer
+    //   = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
+    //                           bvh.numPrims,bvh.primIDs);
     cuBQL::free(bvh,0,managedMem);
-    PING;
   }
   
 }

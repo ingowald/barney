@@ -65,11 +65,12 @@ namespace barney {
       inline __both__ int operator[](int i) const { return v[i]; }
     };
     struct DD {
-      inline __both__ box4f elementBounds(Element element) const;
+      inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
       inline __both__ box4f hexBounds(int primID) const;
-      inline __device__
-      bool tetIntersect(int tetID, float &scalar, vec3f P, bool dbg = false) const;
+
+      inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P) const;
+      inline __both__ bool tetScalar(float &retVal, int primID, vec3f P) const;
       
       const float4     *vertices;
       const int4       *tetIndices;
@@ -93,8 +94,8 @@ namespace barney {
     DD getDD(int devID);
     
     VolumeAccel::SP createAccel(Volume *volume) override;
-    void buildParams(std::vector<OWLVarDecl> &params, size_t offset);
-    void setParams(OWLLaunchParams lp);
+    // void buildParams(std::vector<OWLVarDecl> &params, size_t offset);
+    // void setParams(OWLLaunchParams lp);
 
     std::vector<vec4f>      vertices;
     std::vector<TetIndices> tetIndices;
@@ -148,7 +149,7 @@ namespace barney {
   }
   
   inline __both__
-  box4f UMeshField::DD::elementBounds(Element element) const
+  box4f UMeshField::DD::eltBounds(Element element) const
   {
     switch (element.type) {
     case Element::TET: 
@@ -161,17 +162,27 @@ namespace barney {
   }
 
   // using inward-facing planes here, like vtk
-  inline __device__
+  inline __both__
   float evalToImplicitPlane(vec3f P, vec4f a, vec4f b, vec4f c)
   {
     vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
     return dot(P-getPos(a),N);
   }
 
-  inline __device__
-  bool UMeshField::DD::tetIntersect(int tetID, float &scalar, vec3f P, bool dbg) const
+  inline __both__
+  bool UMeshField::DD::eltScalar(float &retVal, Element elt, vec3f P) const
   {
-    int4 indices = tetIndices[tetID];
+    switch (elt.type) {
+    case Element::TET: 
+      return tetScalar(retVal,elt.ID,P);
+    }
+    return false;
+  }
+  
+  inline __both__
+  bool UMeshField::DD::tetScalar(float &retVal, int primID, vec3f P) const
+  {
+    int4 indices = tetIndices[primID];
     float4 v0 = vertices[indices.x];
     float4 v1 = vertices[indices.y];
     float4 v2 = vertices[indices.z];
@@ -187,10 +198,7 @@ namespace barney {
     if (t0 < 0.f) return false;
     
     float scale = 1.f/(t0+t1+t2+t3);
-    // if (dbg) printf("eval %f %f %f %f check %f -> scale %f, vtx.w %f %f %f %f\n",
-    //                 t0,t1,t2,t3,evalToImplicitPlane(getPos(v3),v0,v1,v2),scale,
-    //                 v0.w,v1.w,v2.w,v3.w);
-    scalar = scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
+    retVal = scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
     return true;
   }
 

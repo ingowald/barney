@@ -26,10 +26,6 @@ namespace barney {
   struct MCAccelerator : public VolumeAccel
   {
     struct DD {
-      // template<typename FieldSampler>
-      // inline __device__
-      // void traceRay(const FieldSampler &sampler, Ray &ray);
-
       inline __device__
       vec4f sampleAndMap(vec3f P, bool dbg=false) const
       { return volume.sampleAndMap(sampler,P,dbg); }
@@ -37,7 +33,6 @@ namespace barney {
       MCGrid::DD       mcGrid;
       typename FieldSampler::DD sampler;
       VolumeAccel::DD  volume;
-      // box4f                      worldBoundsOfGrid;
     };
 
     MCAccelerator(ScalarField *field, Volume *volume);

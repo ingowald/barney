@@ -28,25 +28,35 @@ target_include_directories(barney-config INTERFACE
 
 
 
-embed_ptx(
-  OUTPUT_TARGET      barney-spheres-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            Spheres.dev.cu
-)
-embed_ptx(
-  OUTPUT_TARGET      barney-triangles-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            Triangles.dev.cu
-)
+# ray gen program that launches kernel to trace rays
 embed_ptx(
   OUTPUT_TARGET      barney-traceRays-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            traceRays.cu
-)
+  )
+# ------------------------------------------------------------------
+# surface geometry:
+# ------------------------------------------------------------------
+# ray-sphere geom intersectoin
 embed_ptx(
-  OUTPUT_TARGET      barney-UMeshQC-ptx
+  OUTPUT_TARGET      barney-spheres-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            unstructured/QuickClusters.dev.cu
+  SOURCES            Spheres.dev.cu
+  )
+# ray triangles geom intersection
+embed_ptx(
+  OUTPUT_TARGET      barney-triangles-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            Triangles.dev.cu
+  )
+
+# ------------------------------------------------------------------
+# unstucture mesh variants:
+# ------------------------------------------------------------------
+embed_ptx(
+  OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            unstructured/UMeshRTXObjectSpace.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshMCAccelerator-ptx
@@ -103,6 +113,8 @@ add_library(barney STATIC
   unstructured/MCAccelerator.h
   unstructured/UMeshMCAccelerator.cu
   unstructured/UMeshCUBQLSampler.cu
+  unstructured/UMeshRTXObjectSpace.h
+  unstructured/UMeshRTXObjectSpace.cu
   
 #  unstructured/QuickClusters.cu
 #  unstructured/SpatialAccelWithRTXSampling.h
@@ -120,7 +132,7 @@ target_link_libraries(barney
   barney-spheres-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
-  barney-UMeshQC-ptx  
+  barney-UMeshRTXObjectSpace-ptx  
   barney-UMeshMCAccelerator-ptx  
   )
 #target_include_directories(barney PUBLIC

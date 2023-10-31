@@ -23,10 +23,12 @@ namespace barney {
   struct TransferFunction {
     struct DD {
 
-      /*! perform transfer function lookup for given scalar value, and
-        return color/opacity-times-density value for that
-        scalar. Mind: 'w' component of returend value is a *density*,
-        not a alpha-opacity! */
+      /*! maps given scalar through this trnasfer function, and
+        returns /opacity-times-density value for that scalar. scalars
+        outside the specified domain get mapped to the boundary
+        values; values inside the domain get linearly interpolated
+        from the array of values.  Mind: 'w' component of returned
+        value is a *density*, not a alpha-opacity! */
       inline __device__
       vec4f map(float s, bool dbg=false) const;
 
@@ -62,11 +64,15 @@ namespace barney {
 
 
 
-
+  /*! maps given scalar through this trnasfer function, and returns
+    /opacity-times-density value for that scalar. scalars outside the
+    specified domain get mapped to the boundary values; values inside
+    the domain get linearly interpolated from the array of values.
+    Mind: 'w' component of returned value is a *density*, not a
+    alpha-opacity! */
   inline __device__
   vec4f TransferFunction::DD::map(float s, bool dbg) const
   {
-    if (dbg) printf("mapping %f, range %f %f, numval %i\n",s,domain.lower,domain.upper,numValues);
     float f = (s-domain.lower)/domain.span();
     f = clamp(f,0.f,1.f);
     f *= (numValues-1);
@@ -76,8 +82,6 @@ namespace barney {
     float4 v0 = values[idx];
     float4 v1 = values[idx+1];
     vec4f r = (1.f-f)*(const vec4f&)v0 + f*(const vec4f&)v1;
-    if (dbg) printf("idx %i f %f result %f %f %f : %f\n",
-                    idx,f,r.x,r.y,r.z,r.w);
     r.w *= baseDensity;
     return r;
   }

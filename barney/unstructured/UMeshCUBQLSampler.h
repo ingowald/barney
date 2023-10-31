@@ -34,8 +34,8 @@ namespace barney {
         any unstructured element at all */
       inline __device__ float sample(vec3f P, bool dbg=false) const;
 
-      bvh_t          bvh;
-      UMeshField::DD mesh;
+      node_t         *bvhNodes;
+      UMeshField::DD  mesh;
     };
     
     UMeshCUBQLSampler(ScalarField *field);
@@ -43,7 +43,6 @@ namespace barney {
 
     UMeshField *const mesh;
     OWLBuffer   bvhNodesBuffer = 0;
-    OWLBuffer   primIDsBuffer  = 0;
   };
 
   /*! sample the umesh field; can return NaN if sample did not hit
@@ -56,9 +55,9 @@ namespace barney {
     int nodeStack[30];
     int *stackPtr = nodeStack;
     *stackPtr++ = 0;
-    if (dbg) printf("sample %f %f %f\n",P.x,P.y,P.z);
+    // if (dbg) printf("sample %f %f %f\n",P.x,P.y,P.z);
     while (stackPtr > nodeStack) {
-      node_t node = bvh.nodes[*--stackPtr];
+      node_t node = bvhNodes[*--stackPtr];
       if (!((const box3f&)node.bounds).contains(P))
         continue;
       if (node.count == 0) {
@@ -66,8 +65,8 @@ namespace barney {
         *stackPtr++ = node.offset + 1;
       } else {
         for (int i=0;i<node.count;i++) {
-          int primID = bvh.primIDs[node.offset+i];
-          if (mesh.tetIntersect(primID,retVal,P,dbg))
+          auto elt = mesh.elements[node.offset+i];
+          if (mesh.eltScalar(retVal,elt,P))
             return retVal;
         }
         //   auto idx = mesh.tetIndices[primID];

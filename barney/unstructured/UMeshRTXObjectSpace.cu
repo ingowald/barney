@@ -14,96 +14,113 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/unstructured/UMeshMCAccelerator.h"
+#include "UMeshRTXObjectSpace.h"
+#include "cuBQL/bvh.h"
 
 namespace barney {
-  
-  extern "C" char UMeshMCAccelerator_ptx[];
-  
-  template<typename VolumeSampler>
-  void UMeshMCAccelerator<VolumeSampler>::buildMCs() 
-  {
-    std::cout << OWL_TERMINAL_BLUE
-              << "#bn.um: (re-)building macro cells\n"
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    assert(mesh);
-    assert(volume);
-    mesh->buildInitialMacroCells(mcGrid);
-    mcGrid.computeMajorants(&volume->xf);
-  }
 
-  template<typename VolumeSampler>
-  OWLGeomType UMeshMCAccelerator<VolumeSampler>::createGeomType(DevGroup *devGroup)
+  extern "C" char UMeshRTXObjectSpace_ptx[];
+  
+  OWLGeomType UMeshRTXObjectSpace::createGeomType(DevGroup *devGroup)
   {
     std::cout << OWL_TERMINAL_GREEN
-              << "creating 'UMesh_MC_CUBQL' geometry type"
+              << "creating 'UMeshRTXObjectSpace' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
-
-    // TODO - this needs to get split into different classes'
-    // 'addParams()', so mesh, sampler, tec can all declare and set
-    // set theit own
+    
     static OWLVarDecl params[]
       = {
-         { "mesh.vertices",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.vertices) },
-         { "mesh.tetIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.tetIndices) },
-         { "mesh.hexIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.hexIndices) },
-         { "mesh.elements",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.elements) },
-         { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.lower) },
-         { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.upper) },
-         { "numElements", OWL_INT, OWL_OFFSETOF(DD,sampler.mesh.numElements) },
-         { "xf.values",   OWL_BUFPTR, OWL_OFFSETOF(DD,volume.xf.values) },
-         { "xf.domain",   OWL_FLOAT2, OWL_OFFSETOF(DD,volume.xf.domain) },
-         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,volume.xf.baseDensity) },
-         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,volume.xf.numValues) },
-         { "bvhNodes",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.bvhNodes) },
-         { "mcGrid.dims", OWL_INT3, OWL_OFFSETOF(DD,mcGrid.dims) },
-         { "mcGrid.majorants", OWL_BUFPTR, OWL_OFFSETOF(DD,mcGrid.majorants) },
+         { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
+         { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
+         { "mesh.vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
+         { "mesh.tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
+         { "mesh.hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
+         { "mesh.elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
+         { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
+         { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
+         { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
+         { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
+         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
+         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
          { nullptr }
     };
     OWLModule module = owlModuleCreate
-      (devGroup->owl,UMeshMCAccelerator_ptx);
+      (devGroup->owl,UMeshRTXObjectSpace_ptx);
     OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_USER,sizeof(DD),
+      (devGroup->owl,OWL_GEOM_USER,sizeof(UMeshRTXObjectSpace::DD),
        params,-1);
-    owlGeomTypeSetBoundsProg(gt,module,"UMesh_MC_CUBQL_Bounds");
-    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"UMesh_MC_CUBQL_Isec");
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"UMesh_MC_CUBQL_CH");
+    owlGeomTypeSetBoundsProg(gt,module,"UMeshRTXObjectSpaceBounds");
+    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"UMeshRTXObjectSpaceIsec");
+    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"UMeshRTXObjectSpaceCH");
     owlBuildPrograms(devGroup->owl);
     
     return gt;
   }
   
-  template<typename VolumeSampler>
-  void UMeshMCAccelerator<VolumeSampler>::build()
+  void UMeshRTXObjectSpace::createClusters()
   {
-    auto devGroup = mesh->devGroup;
+    assert(clusters.emtpy());
+    assert(!clustersBuffer);
 
-    BARNEY_CUDA_SYNC_CHECK();
-    buildMCs();
-    BARNEY_CUDA_SYNC_CHECK();
-    this->sampler.build();
+    // ==================================================================
+    
+    cuBQL::BinaryBVH<float,3> bvh;
+    box3f *d_primBounds = 0;
+    PING;
+    BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,mesh->elements.size()*sizeof(box3f)));
+    
+    auto d_mesh = mesh->getDD(0);
+    computeElementBoundingBoxes
+      <<<divRoundUp((int)mesh->elements.size(),1024),1024>>>
+      (d_primBounds,d_mesh);
+    
+    cuBQL::BuildConfig buildConfig;
+    buildConfig.makeLeafThreshold = 8;
+    buildConfig.enableSAH();
+    static cuBQL::ManagedMemMemoryResource managedMem;
+    cuBQL::gpuBuilder(bvh,
+                      (const cuBQL::box_t<float,3>*)d_primBounds,
+                      (uint32_t)mesh->elements.size(),
+                      buildConfig,
+                      (cudaStream_t)0,
+                      managedMem);
+    std::vector<Element> reorderedElements(mesh->elements.size());
+    for (int i=0;i<mesh->elements.size();i++) {
+      reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
+    }
+    mesh->elements = reorderedElements;
+    owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
+    BARNEY_CUDA_CALL(Free(d_primBounds));
+
+    for (int i=0;i<bvh.numNodes;i++) {
+      auto node = bvh.nodes[i];
+      if (node.count == 0) continue;
+      Cluster c;
+      c.begin = node.offset;
+      c.end = node.offset + node.count;
+      clusters.push_back(c);
+    }
+    cuBQL::free(bvh,0,managedMem);
+    
+    // ==================================================================
+
+    clustersBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(Cluster),
+                                           clusters.size(),clusters.data());
+  }
+  
+  void UMeshRTXObjectSpace::build()
+  {
     BARNEY_CUDA_SYNC_CHECK();
     
-    if (volume->generatedGroups.empty()) {
-      std::string gtTypeName = "UMesh_MC_CUBQL";
+    if (!group) {
+      createClusters();
+      
+      std::string gtTypeName = "UMeshRTXObjectSpace";
       OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
         (gtTypeName,createGeomType);
       geom
         = owlGeomCreate(devGroup->owl,gt);
-#if UMESH_MC_USE_DDA
-      owlGeomSetPrimCount(geom,1);
-#else
-      vec3i dims = mcGrid.dims;
-      int primCount = dims.x*dims.y*dims.z;
-      PING; PRINT(dims); PRINT(primCount);
-      owlGeomSetPrimCount(geom,primCount);
-#endif
+      owlGeomSetPrimCount(geom,(int)clusters.size());
 
-      // ------------------------------------------------------------------      
-      owlGeomSet3iv(geom,"mcGrid.dims",&mcGrid.dims.x);
-      // intentionally set to null for first-time build
-      owlGeomSetBuffer(geom,"mcGrid.majorants",0);
-      
       // ------------------------------------------------------------------
       assert(mesh->tetIndicesBuffer);
       owlGeomSet4fv(geom,"mesh.worldBounds.lower",&mesh->worldBounds.lower.x);
@@ -115,7 +132,7 @@ namespace barney {
       owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
       
       // ------------------------------------------------------------------      
-      owlGeomSetBuffer(geom,"bvhNodes",this->sampler.bvhNodesBuffer);
+      owlGeomSetBuffer(geom,"clusters",clustersBuffer);
       
       // ------------------------------------------------------------------      
       
@@ -126,17 +143,14 @@ namespace barney {
       }
       owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
       owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
-      PING; PRINT(volume->xf.values.size());
-      owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
+      // intentionally set to null for first-time build
+      owlGeomSetBuffer(geom,"xf.values",0/*volume->xf.valuesBuffer*/);
       
       // ------------------------------------------------------------------      
-      OWLGroup group
+      group
         = owlUserGeomGroupCreate(devGroup->owl,1,&geom,OPTIX_BUILD_FLAG_ALLOW_UPDATE);
       owlGroupBuildAccel(group);
       volume->generatedGroups.push_back(group);
-
-      // (re-)set this to valid AFTER initial build
-      owlGeomSetBuffer(geom,"mcGrid.majorants",mcGrid.majorantsBuffer);
     }
     
     if (volume->xf.domain.lower < volume->xf.domain.upper) {
@@ -146,14 +160,12 @@ namespace barney {
     }
     owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
     owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
-    PING; PRINT(volume->xf.values.size());
     owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
 
     std::cout << "refitting ... umesh mc geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);
   }
 
-  // template struct UMeshMCAccelerator<UMeshQCSampler>;
-  template struct UMeshMCAccelerator<UMeshCUBQLSampler>;
+
 }
 
