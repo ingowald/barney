@@ -39,8 +39,10 @@ namespace barney {
           return false;
       
         sample = volume.sampleAndMap(org+t*dir,dbg);
-        if (sample.w >= rand()*majorant)
+        if (sample.w >= rand()*majorant) {
+          tRange.upper = t;
           return true;
+        }
       }
     }
   };
@@ -98,6 +100,50 @@ namespace barney {
     // ray.color = .8f;//owl::randomColor(primID);
     ray.primID = primID;
     ray.tMax = optixGetRayTmax();
+
+    float delta = .1f;
+    vec3f P[7];
+    P[6] = ray.org + ray.tMax * ray.dir;
+    P[0] = P[6] - delta * vec3f(1.f,0.f,0.f);
+    P[1] = P[6] + delta * vec3f(1.f,0.f,0.f);
+    P[2] = P[6] - delta * vec3f(0.f,1.f,0.f);
+    P[3] = P[6] + delta * vec3f(0.f,1.f,0.f);
+    P[4] = P[6] - delta * vec3f(0.f,0.f,1.f);
+    P[5] = P[6] + delta * vec3f(0.f,0.f,1.f);
+
+    vec4f mapped[7];
+#pragma unroll
+    for (int i=0;i<7;i++) {
+      mapped[i] = self.sampleAndMap(P[i]);
+      // if (ray.dbg)
+      //   printf("mapped[%i] = %f %f %f : %f\n",
+      //          i,
+      //          mapped[i].x,
+      //          mapped[i].y,
+      //          mapped[i].z,
+      //          mapped[i].w);
+    }
+
+#pragma unroll
+    for (int i=0;i<6;i++) {
+      if (mapped[i] == vec4f(0.f)) {
+        mapped[i] = mapped[6];
+        P[i] = P[6];
+      }
+    }
+    vec3f N;
+    N.x = safeDiv(mapped[1].w-mapped[0].w, P[1].x-P[0].x);
+    N.y = safeDiv(mapped[3].w-mapped[2].w, P[3].y-P[2].y);
+    N.z = safeDiv(mapped[5].w-mapped[4].w, P[5].z-P[4].z);
+    if (N == vec3f(0.f)) {
+      // printf("no normal\n");
+      N = ray.dir;
+    }
+
+    ray.color
+      = getPos(mapped[6])
+      * (.3f+.7f*fabsf(dot(normalize(ray.dir),normalize(N))));
+    
   }
 
   OPTIX_INTERSECT_PROGRAM(UMesh_MC_CUBQL_Isec)()
