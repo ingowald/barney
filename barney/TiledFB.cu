@@ -68,14 +68,9 @@ namespace barney {
       ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
                    device->globalIndexStep)
       : 0;
-    // PING;
-    // PRINT(device->globalIndex);
-    // PRINT(device->globalIndexStep);
-    // PRINT(numTiles.x*numTiles.y);
-    // PRINT(numActiveTiles);
     BARNEY_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
     BARNEY_CUDA_CALL(Malloc(&finalTiles, numActiveTiles * sizeof(FinalTile)));
-    BARNEY_CUDA_CALL(MallocManaged(&tileDescs, numActiveTiles * sizeof(TileDesc)));
+    BARNEY_CUDA_CALL(Malloc(&tileDescs, numActiveTiles * sizeof(TileDesc)));
     BARNEY_CUDA_SYNC_CHECK();
     if (numActiveTiles)
       setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,
@@ -122,14 +117,15 @@ namespace barney {
     int tileID = blockIdx.x;
     int ix = threadIdx.x + tileDescs[tileID].lower.x;
     int iy = threadIdx.y + tileDescs[tileID].lower.y;
-    if (ix >= numPixels.x) return;
-    if (iy >= numPixels.y) return;
+    if (ix < 0 || ix >= numPixels.x) return;
+    if (iy < 0 || iy >= numPixels.y) return;
 
     uint32_t pixelValue
       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
     pixelValue |= 0xff000000;
-    
-    finalFB[ix + numPixels.x*iy] = pixelValue;
+
+    uint32_t ofs = ix + numPixels.x*iy;
+    finalFB[ofs] = pixelValue;
   }
                                  
   void TiledFB::writeFinalPixels(Device    *device,
@@ -141,7 +137,12 @@ namespace barney {
   {
     if (finalFB == 0) throw std::runtime_error("invalid finalfb of null!");
 
-    SetActiveGPU forDuration(device);
+
+    /*! do NOT set active GPU: app might run on a different GPU than
+        what we think of as GPU 0, and taht may or may not be
+        writeable by what we might think of a "first" gpu */
+    // SetActiveGPU forDuration(device);
+
     if (numTiles > 0)
       g_writeFinalPixels
         <<<numTiles,vec2i(tileSize),0,

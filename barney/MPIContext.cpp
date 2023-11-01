@@ -219,15 +219,25 @@ namespace barney {
     // ------------------------------------------------------------------
     fb->ownerGatherFinalTiles();
 
+    // ==================================================================
+    // now MASTER (who has gathered all the ranks' final tiles) -
+    // writes them into proper row-major frame buffer order
+    // (writeFinalPixels), then copies them to app FB). only master
+    // can/shuld do this - ranks don't even have a 'finalFB' to
+    // write into.
+    // ==================================================================
     if (fb->isOwner) {
-      // ==================================================================
-      // now MASTER (who has gathered all the ranks' final tiles) -
-      // writes them into proper row-major frame buffer order
-      // (writeFinalPixels), then copies them to app FB). only master
-      // can/shuld do this - ranks don't even have a 'finalFB' to
-      // write into.
-      // ==================================================================
+      /* ******************************************************* *
+       CAREFUL: do NOT set active gpu here - the app might have its
+       'finalFB' frame buffer allocated on another device than our
+       device[0]; setting that to active will cause segfault when
+       writing final pixel!!!!  *
+       ******************************************************* */
+      // SetActiveGPU forDuration(devices[0]->device);
+
       // use default gpu for this:
+      fb->finalFB[0] = -1;
+      fb->finalFB[fb->numPixels.x*fb->numPixels.y-1] = -1;
       barney::TiledFB::writeFinalPixels(nullptr,
                                         fb->finalFB,
                                         fb->numPixels,
@@ -255,27 +265,31 @@ namespace barney {
       return false;
     
     int numDevices = devices.size();
-    std::vector<MPI_Request> recv_requests(numDevices);
-    std::vector<MPI_Request> send_requests(numDevices);
+    std::vector<MPI_Request> allRequests;
 
     // ------------------------------------------------------------------
     // exchange how many we're going to send/recv
     // ------------------------------------------------------------------
-    int numIncoming[numDevices];
+    std::vector<int> numIncoming(numDevices);
+    std::vector<int> numOutgoing(numDevices);
+    for (auto &ni : numIncoming) ni = -1;
     for (int devID=0;devID<numDevices;devID++) {
       auto dev = devices[devID]->device;
       auto &rays = devices[devID]->rays;
 
-      int numOutgoing = rays.numActive;
+      MPI_Request sendReq, recvReq;
+      numOutgoing[devID] = rays.numActive;
       workers.recv(dev->rqs.recvWorkerRank,dev->rqs.recvWorkerLocal,
-                   &numIncoming[devID],1,recv_requests[devID]);
-      workers.send(dev->rqs.sendWorkerRank,dev->rqs.sendWorkerLocal,
-                   &numOutgoing,1,send_requests[devID]);
+                   &numIncoming[devID],1,recvReq);
+      workers.send(dev->rqs.sendWorkerRank,
+                   devID,//dev->rqs.sendWorkerLocal,
+                   &numOutgoing[devID],1,sendReq);
+      allRequests.push_back(sendReq);
+      allRequests.push_back(recvReq);
     }
-    for (int devID=0;devID<numDevices;devID++) {
-      workers.wait(recv_requests[devID]);
-      workers.wait(send_requests[devID]);
-    }
+
+    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    allRequests.clear();
     
     // ------------------------------------------------------------------
     // exchange actual rays
@@ -284,16 +298,17 @@ namespace barney {
       auto dev = devices[devID]->device;
       auto &rays = devices[devID]->rays;
 
-      int numOutgoing = rays.numActive;
+      numOutgoing[devID] = rays.numActive;
+      MPI_Request sendReq, recvReq;
       workers.recv(dev->rqs.recvWorkerRank,dev->rqs.recvWorkerLocal,
-                   rays.writeQueue,numIncoming[devID],recv_requests[devID]);
-      workers.send(dev->rqs.sendWorkerRank,dev->rqs.sendWorkerLocal,
-                   rays.readQueue,numOutgoing,send_requests[devID]);
+                   rays.writeQueue,numIncoming[devID],recvReq);
+      workers.send(dev->rqs.sendWorkerRank,devID,//dev->rqs.sendWorkerLocal,
+                   rays.readQueue,numOutgoing[devID],sendReq);
+      allRequests.push_back(sendReq);
+      allRequests.push_back(recvReq);
     }
-    for (int devID=0;devID<numDevices;devID++) {
-      workers.wait(recv_requests[devID]);
-      workers.wait(send_requests[devID]);
-    }
+    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    allRequests.clear();
               
     // ------------------------------------------------------------------
     // now all rays should be exchanged -- swap queues

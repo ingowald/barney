@@ -69,27 +69,10 @@ namespace barney {
       + (iy+.5f)*camera.dir_dv;
     ray.dir = normalize(ray.dir);
 
-    ray.centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
-    ray.dbg = ray.centerPixel;
-    // if (dbg) {
-    //   vec3f ctr = normalize(camera.dbg_vi - camera.dbg_vp);
-    //   float angle = dot(ctr,ray.direction);
-    //   printf("pixel (%4i %4i) org %.1f %.1f %.1f dir %6.3f %6.3f %6.3f ctr %6.3f %6.3f %6.3f angle %f\n",
-    //          ix,iy,
-    //          ray.origin.x,
-    //          ray.origin.y,
-    //          ray.origin.z,
-    //          ray.direction.x,
-    //          ray.direction.y,
-    //          ray.direction.z,ctr.x,ctr.y,ctr.z,angle);
-    // }
+    bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
+    ray.dbg = centerPixel;
     
     ray.tMax = 1e30f;
-    ray.instID  = -1;
-    ray.geomID  = -1;
-    ray.primID  = -1;
-    ray.u       = 0.f;
-    ray.v       = 0.f;
     ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
     Random rand(rngSeed,ray.pixelID);
     ray.rngSeed = rand.state;

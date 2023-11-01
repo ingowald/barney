@@ -117,8 +117,10 @@ namespace barney {
       // BN_MPI_CALL(Recv(buffer,numItems*sizeof(T),MPI_BYTE,
       //                  fromRank,tag,comm,MPI_STATUS_IGNORE),
       //             "Irecv");
-      BN_MPI_CALL(Irecv(buffer,numItems*sizeof(T),MPI_BYTE,
-                        fromRank,tag,comm,&req));
+      BN_MPI_CALL(Irecv(buffer,
+                        numItems*sizeof(T),MPI_BYTE,
+                        // 1,MPI_INT,
+                        fromRank,0x123+tag,comm,&req));
     }
     
     template<typename T>
@@ -128,8 +130,10 @@ namespace barney {
       // BN_MPI_CALL(Send(buffer,numItems*sizeof(T),MPI_BYTE,
       //                  toRank,tag,comm),
       //             "Isend");
-      BN_MPI_CALL(Isend(buffer,numItems*sizeof(T),MPI_BYTE,
-                        toRank,tag,comm,&req));
+      BN_MPI_CALL(Isend(buffer,
+                        numItems*sizeof(T),MPI_BYTE,
+                        // 1,MPI_INT,
+                        toRank,0x123+tag,comm,&req));
     }
     
     /*! master-side of a gather where clietn gathers a fixed number

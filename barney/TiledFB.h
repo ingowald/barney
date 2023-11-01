@@ -32,10 +32,10 @@ namespace barney {
     uint32_t rgba[pixelsPerTile];
   };
   struct TileDesc {
-    union {
-      int4 forAlign;
-      vec2i lower;
-    };
+    // union {
+    //   int4 forAlign;
+    vec2i lower;
+    // };
   };
   
   struct TiledFB {

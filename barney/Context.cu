@@ -26,6 +26,7 @@ namespace barney {
   {
     assert(fb);
     int accumID=fb->accumID;
+
     // ------------------------------------------------------------------
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
@@ -76,18 +77,17 @@ namespace barney {
   
   void Context::traceRaysLocally(Model *model)
   {
+    // ------------------------------------------------------------------
+    // launch all in parallel ...
+    // ------------------------------------------------------------------
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
       dev->traceRays_launch(model);
     }
+    // ------------------------------------------------------------------
+    // ... and sync 'til all are done
+    // ------------------------------------------------------------------
     for (auto dev : devices) dev->sync();
-      
-    // for (int localID=0; localID<devices.size(); localID++) {
-    //   auto dev = devices[localID];
-    //   dev->launch_sync();
-    // }
-    // for (auto dev : devices) dev->sync();
-
   }
 
   void Context::traceRaysGlobally(Model *model)
@@ -125,16 +125,19 @@ namespace barney {
       pd.devGroup->update();
 
     generateRays(camera,fb);
-    for (auto dev : devices) dev->sync();
+    
+    for (auto dev : devices) dev->launch_sync();
 
     while (true) {
       traceRaysGlobally(model);
-      
+
       shadeRaysLocally(fb);
-      for (auto dev : devices) dev->sync();
+      for (auto dev : devices) dev->launch_sync();
       
-      if (numRaysActiveGlobally() > 0)
+      const int numActiveGlobally = numRaysActiveGlobally();
+      if (numActiveGlobally > 0)
         continue;
+    
       break;
     }
     
@@ -151,16 +154,13 @@ namespace barney {
     if (gpuIDs.empty())
       throw std::runtime_error("error - no GPUs...");
     
-    if (!isActiveWorker) {
-      // // not an active worker: no device groups etc, just create a
-      // // single default device
-      // Device::SP dev
-      //   = std::make_shared
-      //   <barney::Device>(nullptr,gpuIDs[0],-1,
-      //                    globalIndex,globalIndexStep);
-      // devices.push_back(dev);
+    globalContextAcrossAllGPUs
+      = owlContextCreate((int32_t*)gpuIDs.data(),gpuIDs.size());
+
+    if (!isActiveWorker) 
+      // not an active worker: no device groups etc, just create a
+      // single default device
       return;
-    }
 
 
     if (gpuIDs.size() < dataGroupIDs.size())

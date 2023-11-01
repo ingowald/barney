@@ -55,8 +55,10 @@ namespace barney {
     inline SetActiveGPU(const Device *device)
     {
       // assert(device);
-      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
+      if (device) {
+        BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+        BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
+      }
     }
     inline SetActiveGPU(const Device::SP &device)
     {
@@ -72,7 +74,8 @@ namespace barney {
     }
     inline ~SetActiveGPU()
     {
-      BARNEY_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
+      if (savedActiveDeviceID >= 0)
+        BARNEY_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
     }
   private:
     int savedActiveDeviceID = -1;

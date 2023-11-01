@@ -47,6 +47,10 @@ namespace barney {
         done (false) */
     bool forwardRays() override;
 
+    // for debugging ...
+    void barrier() override { PING; workers.barrier(); usleep(100); }
+    
+
     /*! returns how many rays are active in all ray queues, across all
         devices and, where applicable, across all ranks */
     int numRaysActiveGlobally() override;

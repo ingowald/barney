@@ -43,7 +43,7 @@ namespace barney {
     // }
     int tileID  = ray.pixelID / pixelsPerTile;
     int tileOfs = ray.pixelID % pixelsPerTile;
-
+    
     float4 &valueToAccumInto
       = accumTiles[tileID].accum[tileOfs];
     vec4f valueToAccum = make_float4(color.x,color.y,color.z,0.f);

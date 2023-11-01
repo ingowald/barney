@@ -28,6 +28,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <sstream>
 
 namespace barney {
   using namespace owl;

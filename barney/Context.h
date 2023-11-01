@@ -32,15 +32,6 @@ namespace barney {
 
   struct Context;
   
-  // struct DeviceContext : public barney::BarneyContext {
-  //   DeviceContext(barney::Device *barneyDev)
-  //     : BarneyContext(barneyDev) {}
-    
-  //   Context *barney = 0;
-    
-  //   struct { int rank = -1; int gpu = -1; } next, prev;
-  // };
-
   struct Context : public Object {
     
     Context(const std::vector<int> &dataGroupIDs,
@@ -48,7 +39,7 @@ namespace barney {
             int globalIndex,
             int globalIndexStep);
     ~Context()
-    { }
+    {}
     
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB(int owningRank) = 0;
@@ -77,6 +68,14 @@ namespace barney {
     
     std::vector<DeviceContext::SP> devices;
 
+    /* goes across all devices, syncs that device, and checks for
+       errors - careful, this will be very slow, shoudl only be used
+       for debugging multi-gpu race conditions and such */
+    void syncCheckAll(const char *where);
+    
+    // for debugging ...
+    virtual void barrier() {}
+    
     /*! generate a new wave-front of rays */
     void generateRays(const barney::Camera &camera,
                       FrameBuffer *fb);
@@ -135,26 +134,39 @@ namespace barney {
     std::vector<PerDG> perDG;
     
     const bool isActiveWorker;
+
+    /* as the name implies, a single, global owl context across all
+       GPUs; this is merely there to enable peer access across all
+       GPUs; for actual rendering data each data group will have to
+       have its own context */
+    OWLContext globalContextAcrossAllGPUs = 0 ;
   };
   
-  // /*! TEMP function - will die pretty soon */
-  // void renderTiles_testFrame(Context *context,
-  //                            int localID,
-  //                            Model *model,
-  //                            FrameBuffer *fb,
-  //                            const BNCamera *camera);
-  // /*! TEMP function - will die pretty soon */
-  // void renderTiles_rayDir(Context *context,
-  //                         int localID,
-  //                         Model *model,
-  //                         FrameBuffer *fb,
-  //                         const BNCamera *camera);
-  // /*! TEMP function - will die pretty soon */
-  // void renderTiles(Context *context,
-  //                  int localID,
-  //                  Model *model,
-  //                  FrameBuffer *fb,
-  //                  const BNCamera *camera);
-  
+
+  // ==================================================================
+  // IMPLEMENTATION
+  // ==================================================================
+
+
+  /* goes across all devices, syncs that device, and checks for
+     errors - careful, this will be very slow, shoudl only be used
+     for debugging multi-gpu race conditions and such */
+  inline void Context::syncCheckAll(const char *where)
+  {
+    for (auto dev : devices) {
+      SetActiveGPU forDuration(dev->device);
+
+      cudaDeviceSynchronize();                                   
+      cudaError_t rc = cudaGetLastError();                        
+      if (rc != cudaSuccess) {                                    
+        printf("******************************************************************\nCUDA fatal error %s (%s)\n",
+               cudaGetErrorString(rc),where);
+        fflush(0);
+        sleep(3);
+        *(int*)0 = 0;
+      }                                                              
+    }
+  }
+    
 }
 

@@ -67,6 +67,7 @@ namespace barney {
 
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
+      PING; fflush(0);
       thisDev->launch_sync();
       thisDev->rays.swap();
       thisDev->rays.numActive = numCopied[devID];

@@ -30,18 +30,15 @@ namespace barney {
     // because they're not valid during shding, anyway, when the ray
     // gets shaded on another gpu than the one that found the
     // intersection:
-    int      instID, geomID, primID;
+    // int      instID, geomID, primID;
     // only for debugging right now; should eventualy become
     // 'throughput' for a path tracer
     vec3f    color;
-    float    u,v;
+    // float    u,v;
     uint32_t rngSeed;
     struct {
       uint32_t  pixelID:30;
       uint32_t  hadHit:1;
-    };
-    struct {
-      uint32_t centerPixel:1;
       uint32_t dbg:1;
     };
   };

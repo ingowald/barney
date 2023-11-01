@@ -96,9 +96,6 @@ namespace barney {
     const auto &self = getProgramData<UMeshAccel_MC_CUBQL::DD>();
     int primID = optixGetPrimitiveIndex();
 
-    // ray.hadHit = true;
-    // ray.color = .8f;//owl::randomColor(primID);
-    ray.primID = primID;
     ray.tMax = optixGetRayTmax();
 
     float delta = .1f;
@@ -115,13 +112,6 @@ namespace barney {
 #pragma unroll
     for (int i=0;i<7;i++) {
       mapped[i] = self.sampleAndMap(P[i]);
-      // if (ray.dbg)
-      //   printf("mapped[%i] = %f %f %f : %f\n",
-      //          i,
-      //          mapped[i].x,
-      //          mapped[i].y,
-      //          mapped[i].z,
-      //          mapped[i].w);
     }
 
 #pragma unroll
@@ -136,7 +126,6 @@ namespace barney {
     N.y = safeDiv(mapped[3].w-mapped[2].w, P[3].y-P[2].y);
     N.z = safeDiv(mapped[5].w-mapped[4].w, P[5].z-P[4].z);
     if (N == vec3f(0.f)) {
-      // printf("no normal\n");
       N = ray.dir;
     }
 

@@ -40,7 +40,7 @@ namespace barney {
                                          int rngSeed)
   {
     SetActiveGPU forDuration(fb->device);
-    
+
     g_generateRays
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,
@@ -54,7 +54,7 @@ namespace barney {
   void  DeviceContext::generateRays_sync()
   {
     SetActiveGPU forDuration(device);
-    
+
     this->launch_sync();
     std::swap(rays.readQueue, rays.writeQueue);
     rays.numActive = *rays.d_nextWritePos;
@@ -77,7 +77,6 @@ namespace barney {
     int bs = 1024;
     int nb = divRoundUp(numRays,bs);
 
-    // std::cout << "*shading* " << numRays << " on device " << fb->device->globalIndex << std::endl;
     if (nb)
       g_shadeRays<<<nb,bs,0,device->launchStream>>>
         (fb->accumTiles,fb->owner->accumID,
@@ -102,7 +101,6 @@ namespace barney {
     owlParamsSetGroup(dg->lp,"world",world);
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);
-    // std::cout << "tracing " << rays.numActive << " rays on dg " << dg->ldgID << std::endl;
     if (nb)
       owlAsyncLaunch2DOnDevice(dg->rg,bs,nb,device->owlID,dg->lp);
   }

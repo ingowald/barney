@@ -61,6 +61,7 @@ namespace barney {
     assert(clusters.empty());
     assert(!clustersBuffer);
 
+    SetActiveGPU forDuration(devGroup->devices[0]);
     // ==================================================================
     
     cuBQL::BinaryBVH<float,3> bvh;

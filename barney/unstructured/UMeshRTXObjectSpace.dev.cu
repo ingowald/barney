@@ -477,7 +477,7 @@ namespace barney {
     
     // ray.hadHit = true;
     // ray.color = .8f;//owl::randomColor(primID);
-    ray.primID = primID;
+    // ray.primID = primID;
     ray.tMax = optixGetRayTmax();
 
     vec3f P = ray.org + ray.tMax * ray.dir;
@@ -513,7 +513,7 @@ namespace barney {
       = owl::getProgramData<typename UMeshRTXObjectSpace::DD>();
     auto &ray
       = owl::getPRD<Ray>();
-    bool dbg = ray.centerPixel;
+    bool dbg = 0;//ray.dbg;
     
     Cluster cluster = self.clusters[primID];
     
