@@ -137,7 +137,6 @@ namespace barney {
   {
     if (finalFB == 0) throw std::runtime_error("invalid finalfb of null!");
 
-
     /*! do NOT set active GPU: app might run on a different GPU than
         what we think of as GPU 0, and taht may or may not be
         writeable by what we might think of a "first" gpu */

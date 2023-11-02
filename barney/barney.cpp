@@ -278,7 +278,7 @@ namespace barney {
                        float  fov,
                        int2   fbSize)
   {
-    LOG_API_ENTRY;
+    // LOG_API_ENTRY;
     assert(camera);
     vec3f from = (const vec3f&)_from;
     vec3f at   = (const vec3f&)_at;
