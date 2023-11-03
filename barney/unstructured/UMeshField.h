@@ -45,7 +45,7 @@ namespace barney {
   
 
   struct Element {
-    typedef enum { TET=0, HEX } Type;
+    typedef enum { TET=0, PYR, WED, HEX } Type;
     
     inline __both__ Element() {}
     inline __both__ Element(int ID, int type)
@@ -67,6 +67,8 @@ namespace barney {
     struct DD {
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
+      inline __both__ box4f pyrBounds(int primID) const;
+      inline __both__ box4f wedBounds(int primID) const;
       inline __both__ box4f hexBounds(int primID) const;
 
       inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P) const;
@@ -74,6 +76,8 @@ namespace barney {
       
       const float4     *vertices;
       const int4       *tetIndices;
+      const ints<5>    *pyrIndices;
+      const ints<6>    *wedIndices;
       const ints<8>    *hexIndices;
       const Element    *elements;
       int               numElements;
@@ -106,6 +110,8 @@ namespace barney {
     
     OWLBuffer verticesBuffer   = 0;
     OWLBuffer tetIndicesBuffer = 0;
+    OWLBuffer pyrIndicesBuffer = 0;//todo wire in
+    OWLBuffer wedIndicesBuffer = 0;//todo wire in
     OWLBuffer hexIndicesBuffer = 0;
     OWLBuffer elementsBuffer   = 0;
 
@@ -132,6 +138,31 @@ namespace barney {
       .including(vertices[indices.z])
       .including(vertices[indices.w]);
   }
+
+  inline __both__
+  box4f UMeshField::DD::pyrBounds(int pyrID) const
+  {
+    UMeshField::ints<5> indices = pyrIndices[pyrID];
+    return box4f()
+      .including(vertices[indices[0]])
+      .including(vertices[indices[1]])
+      .including(vertices[indices[2]])
+      .including(vertices[indices[3]])
+      .including(vertices[indices[4]]);
+  }
+
+  inline __both__
+  box4f UMeshField::DD::wedBounds(int wedID) const
+  {
+    UMeshField::ints<6> indices = wedIndices[wedID];
+    return box4f()
+      .including(vertices[indices[0]])
+      .including(vertices[indices[1]])
+      .including(vertices[indices[2]])
+      .including(vertices[indices[3]])
+      .including(vertices[indices[4]])
+      .including(vertices[indices[5]]);
+  }
   
   inline __both__
   box4f UMeshField::DD::hexBounds(int hexID) const
@@ -154,11 +185,16 @@ namespace barney {
     switch (element.type) {
     case Element::TET: 
       return tetBounds(element.ID);
+    case Element::PYR:
+      return pyrBounds(element.ID);
+    case Element::WED:
+      return wedBounds(element.ID);
     case Element::HEX: 
       return hexBounds(element.ID);
-    }
     // ugh: could not recognize this element type!?
-    return box4f(); 
+    default:
+      return box4f(); 
+    }
   }
 
   // using inward-facing planes here, like vtk

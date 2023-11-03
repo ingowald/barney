@@ -172,12 +172,44 @@ namespace barney {
     void setElement(Element elt)
     {
       element = elt;
-      // currently only supporting tets ....
-      int4 indices = dd.mesh.tetIndices[elt.ID];
-      v0 = dd.mesh.vertices[indices.x];
-      v1 = dd.mesh.vertices[indices.y];
-      v2 = dd.mesh.vertices[indices.z];
-      v3 = dd.mesh.vertices[indices.w];
+      switch (elt.type)
+      {
+      case Element::TET:
+        int4 indices = dd.mesh.tetIndices[elt.ID];
+        v0 = dd.mesh.vertices[indices.x];
+        v1 = dd.mesh.vertices[indices.y];
+        v2 = dd.mesh.vertices[indices.z];
+        v3 = dd.mesh.vertices[indices.w];
+        break;
+      case Element::PYR:
+        auto pyrIndices = dd.mesh.pyrIndices[elt.ID];
+        v0 = dd.mesh.vertices[pyrIndices[0]];
+        v1 = dd.mesh.vertices[pyrIndices[1]];
+        v2 = dd.mesh.vertices[pyrIndices[2]];
+        v3 = dd.mesh.vertices[pyrIndices[3]];
+        v4 = dd.mesh.vertices[pyrIndices[4]];
+        break;
+      case Element::WED:
+        auto wedIndices = dd.mesh.wedIndices[elt.ID];
+        v0 = dd.mesh.vertices[wedIndices[0]];
+        v1 = dd.mesh.vertices[wedIndices[1]];
+        v2 = dd.mesh.vertices[wedIndices[2]];
+        v3 = dd.mesh.vertices[wedIndices[3]];
+        v4 = dd.mesh.vertices[wedIndices[4]];
+        v5 = dd.mesh.vertices[wedIndices[5]];
+        break;
+      case Element::HEX:
+        auto hexIndices = dd.mesh.hexIndices[elt.ID];
+        v0 = dd.mesh.vertices[hexIndices[0]];
+        v1 = dd.mesh.vertices[hexIndices[1]];
+        v2 = dd.mesh.vertices[hexIndices[2]];
+        v3 = dd.mesh.vertices[hexIndices[3]];
+        v4 = dd.mesh.vertices[hexIndices[4]];
+        v5 = dd.mesh.vertices[hexIndices[5]];
+        v6 = dd.mesh.vertices[hexIndices[6]];
+        v7 = dd.mesh.vertices[hexIndices[7]];
+        break;
+      }
     }
 
     // using inward-facing planes here, like vtk
@@ -224,12 +256,208 @@ namespace barney {
       //                 v0.w,v1.w,v2.w,v3.w);
       return scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
     }
+    //======================================================================//
+    #define PYRAMID_DIVERGED 1.e6f
+    #define PYRAMID_MAX_ITERATION 10
+    #define PYRAMID_CONVERGED 1.e-04f
+    #define PYRAMID_OUTSIDE_CELL_TOLERANCE 1.e-06f
+
+    inline __device__
+    void pyramidInterpolationFunctions(
+        float pcoords[3],
+        float sf[5])
+    {
+        float rm, sm, tm;
+
+        rm = 1.f - pcoords[0];
+        sm = 1.f - pcoords[1];
+        tm = 1.f - pcoords[2];
+
+        sf[0] = rm * sm * tm;
+        sf[1] = pcoords[0] * sm * tm;
+        sf[2] = pcoords[0] * pcoords[1] * tm;
+        sf[3] = rm * pcoords[1] * tm;
+        sf[4] = pcoords[2];
+    }
+
+    inline __device__
+    void pyramidInterpolationDerivs(
+        float pcoords[3],
+        float derivs[15])
+    {
+        // r-derivatives
+        derivs[0] = -(pcoords[1] - 1.f) * (pcoords[2] - 1.f);
+        derivs[1] = (pcoords[1] - 1.f) * (pcoords[2] - 1.f);
+        derivs[2] = pcoords[1] - pcoords[1] * pcoords[2];
+        derivs[3] = pcoords[1] * (pcoords[2] - 1.f);
+        derivs[4] = 0.f;
+
+        // s-derivatives
+        derivs[5] = -(pcoords[0] - 1.f) * (pcoords[2] - 1.f);
+        derivs[6] = pcoords[0] * (pcoords[2] - 1.f);
+        derivs[7] = pcoords[0] - pcoords[0] * pcoords[2];
+        derivs[8] = (pcoords[0] - 1.f) * (pcoords[2] - 1.f);
+        derivs[9] = 0.f;
+
+        // t-derivatives
+        derivs[10] = -(pcoords[0] - 1.f) * (pcoords[1] - 1.f);
+        derivs[11] = pcoords[0] * (pcoords[1] - 1.f);
+        derivs[12] = -pcoords[0] * pcoords[1];
+        derivs[13] = (pcoords[0] - 1.f) * pcoords[1];
+        derivs[14] = 1.f;
+    }
+
+    inline __device__
+    float evalPyr(vec3f P, bool dbg = false)
+    {
+      float params[3] = {0.5, 0.5, 0.5};
+      float pcoords[3] = {0.5, 0.5, 0.5};
+      float derivs[15];
+      float weights[5];
+
+      vec3f vertices[5] = {getPos(v0), getPos(v1), getPos(v2), getPos(v3), getPos(v4)};
+
+      memset(derivs, 0, sizeof(derivs));
+      memset(weights, 0, sizeof(weights));
+
+      const int edges[8][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0},
+                               {0, 4}, {1, 4}, {2, 4}, {3, 4}};
+
+      float longestEdge = 0;
+      for (int i = 0; i < 8; i++)
+      {
+          vec3f p0 = vertices[edges[i][0]];
+          vec3f p1 = vertices[edges[i][1]];
+
+          float dist = length(p1 - p0);
+          if (longestEdge < dist)
+              longestEdge = dist;
+      }
+      float volumeBound = powf(longestEdge, 3);
+      float determinantTolerance =
+          1e-20f < .00001f * volumeBound ? 1e-20f : .00001f * volumeBound;
+
+      //  Enter iteration loop
+      bool converged = false;
+      for (int iteration = 0; !converged && (iteration < PYRAMID_MAX_ITERATION); iteration++)
+      {
+          //  calculate element interpolation functions and derivatives
+          pyramidInterpolationFunctions(pcoords, weights);
+          pyramidInterpolationDerivs(pcoords, derivs);
+          //  calculate newton functions
+          vec3f fcol = vec3f(0.f, 0.f, 0.f);
+          vec3f rcol = vec3f(0.f, 0.f, 0.f);
+          vec3f scol = vec3f(0.f, 0.f, 0.f);
+          vec3f tcol = vec3f(0.f, 0.f, 0.f);
+          for (int i = 0; i < 5; i++)
+          {
+              vec3f pt = (vec3f)vertices[i];
+              fcol = fcol + pt * weights[i];
+              rcol = rcol + pt * derivs[i];
+              scol = scol + pt * derivs[i + 5];
+              tcol = tcol + pt * derivs[i + 10];
+          }
+          fcol = fcol - P;
+          // compute determinants and generate improvements
+          float d = LinearSpace3f(rcol, scol, tcol).det();
+          if (fabs(d) < determinantTolerance)
+          {
+              //return false;
+              return NAN;
+          }
+          pcoords[0] = params[0] - LinearSpace3f(fcol, scol, tcol).det() / d;
+          pcoords[1] = params[1] - LinearSpace3f(rcol, fcol, tcol).det() / d;
+          pcoords[2] = params[2] - LinearSpace3f(rcol, scol, fcol).det() / d;
+          // convergence/divergence test - if neither, repeat
+          if (((fabs(pcoords[0] - params[0])) < PYRAMID_CONVERGED) &&
+              ((fabs(pcoords[1] - params[1])) < PYRAMID_CONVERGED) &&
+              ((fabs(pcoords[2] - params[2])) < PYRAMID_CONVERGED))
+          {
+              converged = true;
+          }
+          else if ((fabs(pcoords[0]) > PYRAMID_DIVERGED) ||
+                  (fabs(pcoords[1]) > PYRAMID_DIVERGED) ||
+                  (fabs(pcoords[2]) > PYRAMID_DIVERGED))
+          {
+              //return false;
+              return NAN;
+          }
+          else
+          {
+              params[0] = pcoords[0];
+              params[1] = pcoords[1];
+              params[2] = pcoords[2];
+          }
+      }
+      if (!converged)
+      {
+          //return false;
+          return NAN;
+      }
+      float attrs[5];
+      attrs[0] = v0.w;
+      attrs[1] = v1.w;
+      attrs[2] = v2.w;
+      attrs[3] = v3.w;
+      attrs[4] = v4.w;
+
+      float lowerlimit = 0.0f - PYRAMID_OUTSIDE_CELL_TOLERANCE;
+      float upperlimit = 1.0f + PYRAMID_OUTSIDE_CELL_TOLERANCE;
+      if (pcoords[0] >= lowerlimit && pcoords[0] <= upperlimit &&
+          pcoords[1] >= lowerlimit && pcoords[1] <= upperlimit &&
+          pcoords[2] >= lowerlimit && pcoords[2] <= upperlimit)
+      {
+          // evaluation
+          float value = 0.f;
+          pyramidInterpolationFunctions(pcoords, weights);
+          for (int i = 0; i < 5; i++)
+          {
+              value += weights[i] * attrs[i];
+          }
+          return value;
+      }
+      //retrun false;
+      return NAN;
+    }
+
+    //======================================================================//
+    inline __device__
+    float evalWed(vec3f P, bool dbg = false)
+    {
+      return NAN;
+    }
+
+    //======================================================================//
+    inline __device__
+    float evalHex(vec3f P, bool dbg = false)
+    {
+      return NAN;
+    }
 
     inline __device__
     range1f computeElementScalarRange()
     {
-      float scalar_t0 = evalTet(ray.org+elementTRange.lower*ray.dir);
-      float scalar_t1 = evalTet(ray.org+elementTRange.upper*ray.dir);
+      float scalar_t0 = 0.f;
+      float scalar_t1 = 0.f;
+      switch (element.type)
+      {
+      case Element::TET:
+        scalar_t0 = evalTet(ray.org+elementTRange.lower*ray.dir);
+        scalar_t1 = evalTet(ray.org+elementTRange.upper*ray.dir);
+        break;
+      case Element::PYR:
+        scalar_t0 = evalPyr(ray.org+elementTRange.lower*ray.dir);
+        scalar_t1 = evalPyr(ray.org+elementTRange.upper*ray.dir);
+        break;
+      case Element::WED:
+        scalar_t0 = evalWed(ray.org+elementTRange.lower*ray.dir);
+        scalar_t1 = evalWed(ray.org+elementTRange.upper*ray.dir);
+        break;
+      case Element::HEX:
+        scalar_t0 = evalHex(ray.org+elementTRange.lower*ray.dir);
+        scalar_t1 = evalHex(ray.org+elementTRange.upper*ray.dir);
+        break;
+      }
       return { min(scalar_t0,scalar_t1),max(scalar_t0,scalar_t1) };
     }
     
@@ -240,10 +468,22 @@ namespace barney {
       // if (dbg) printf("eltrange at start %f %f\n",
       //                 elementTRange.lower,
       //                 elementTRange.upper);
-      clipRangeToPlane(v0,v1,v2,dbg);
-      clipRangeToPlane(v0,v3,v1,dbg);
-      clipRangeToPlane(v0,v2,v3,dbg);
-      clipRangeToPlane(v1,v3,v2,dbg);
+      switch (element.type)
+      {
+      case Element::TET:
+        clipRangeToPlane(v0,v1,v2,dbg);
+        clipRangeToPlane(v0,v3,v1,dbg);
+        clipRangeToPlane(v0,v2,v3,dbg);
+        clipRangeToPlane(v1,v3,v2,dbg);
+        break;
+      case Element::PYR:
+        //todo
+        break;
+      case Element::WED:
+        return false;
+      case Element::HEX:
+        return false;
+      }
       return !elementTRange.empty();
     }
 
@@ -268,7 +508,8 @@ namespace barney {
     
     // current tet:
     Element element;
-    vec4f v0, v1, v2, v3;
+    vec4f v0, v1, v2, v3,
+          v4, v5, v6, v7;
 
     const UMeshRTXObjectSpace::DD &dd;
   };
