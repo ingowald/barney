@@ -20,6 +20,8 @@
 #include "barney/DataGroup.h"
 #include "barney/unstructured/MCGrid.h"
 
+#include "barney/unstructured/UElems.h"
+
 namespace barney {
 
   /*! helper functoin to extrace 3f spatial component from 4f point-plus-scalar */
@@ -73,7 +75,10 @@ namespace barney {
 
       inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P) const;
       inline __both__ bool tetScalar(float &retVal, int primID, vec3f P) const;
-      
+      inline __both__ bool pyrScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool wedScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool hexScalar(float &retVal, int primID, vec3f P) const;
+
       const float4     *vertices;
       const int4       *tetIndices;
       const ints<5>    *pyrIndices;
@@ -211,8 +216,15 @@ namespace barney {
     switch (elt.type) {
     case Element::TET: 
       return tetScalar(retVal,elt.ID,P);
+    case Element::PYR:
+      return pyrScalar(retVal,elt.ID,P);
+    case Element::WED:
+      return wedScalar(retVal,elt.ID,P);
+    case Element::HEX:
+      return hexScalar(retVal,elt.ID,P);
+    default:
+      return false;
     }
-    return false;
   }
   
   inline __both__
@@ -238,6 +250,43 @@ namespace barney {
     return true;
   }
 
+  inline __both__
+  bool UMeshField::DD::pyrScalar(float &retVal, int primID, vec3f P) const
+  {
+    const auto& indices = pyrIndices[primID];
+    return intersectPyrEXT(retVal, P,
+                           vertices[indices[0]],
+                           vertices[indices[1]],
+                           vertices[indices[2]],
+                           vertices[indices[3]],
+                           vertices[indices[4]]);
+  }
 
-  
+  inline __both__
+  bool UMeshField::DD::wedScalar(float &retVal, int primID, vec3f P) const
+  {
+    const auto& indices = wedIndices[primID];
+    return intersectWedgeEXT(retVal, P,
+                           vertices[indices[0]],
+                           vertices[indices[1]],
+                           vertices[indices[2]],
+                           vertices[indices[3]],
+                           vertices[indices[4]],
+                           vertices[indices[5]]);
+  }
+
+  inline __both__
+  bool UMeshField::DD::hexScalar(float &retVal, int primID, vec3f P) const
+  {
+    auto indices = hexIndices[primID];
+    return intersectHexEXT(retVal, P,
+                               vertices[indices[0]],
+                               vertices[indices[1]],
+                               vertices[indices[2]],
+                               vertices[indices[3]],
+                               vertices[indices[4]],
+                               vertices[indices[5]],
+                               vertices[indices[6]],
+                               vertices[indices[7]]);
+  }
 }

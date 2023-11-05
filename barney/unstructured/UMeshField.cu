@@ -191,7 +191,13 @@ namespace barney {
       elements.push_back(Element(i,Element::TET));
 
     assert(!elements.empty());
-    
+
+    for (int i=0;i<pyrIndices.size();i++)
+      elements.push_back(Element(i,Element::PYR));
+
+    for (int i=0;i<wedIndices.size();i++)
+      elements.push_back(Element(i,Element::WED));
+
     for (int i=0;i<hexIndices.size();i++)
       elements.push_back(Element(i,Element::HEX));
     
@@ -205,6 +211,17 @@ namespace barney {
                               OWL_INT,
                               4*tetIndices.size(),
                               tetIndices.data());
+
+    pyrIndicesBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_INT,
+                                5*pyrIndices.size(),
+                                pyrIndices.data());
+    wedIndicesBuffer
+        = owlDeviceBufferCreate(getOWL(),
+                                OWL_INT,
+                                6*wedIndices.size(),
+                                wedIndices.data());
     
     assert(sizeof(ints<8>) == 8*sizeof(int));
     hexIndicesBuffer
@@ -227,6 +244,8 @@ namespace barney {
 
     dd.vertices    = (const float4  *)owlBufferGetPointer(verticesBuffer,devID);
     dd.tetIndices  = (const int4    *)owlBufferGetPointer(tetIndicesBuffer,devID);
+    dd.pyrIndices  = (const ints<5> *)owlBufferGetPointer(pyrIndicesBuffer,devID);
+    dd.wedIndices  = (const ints<6> *)owlBufferGetPointer(wedIndicesBuffer,devID);
     dd.hexIndices  = (const ints<8> *)owlBufferGetPointer(hexIndicesBuffer,devID);
     dd.elements    = (const Element *)owlBufferGetPointer(elementsBuffer,devID);
     dd.numElements = elements.size();

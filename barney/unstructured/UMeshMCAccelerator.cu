@@ -46,6 +46,8 @@ namespace barney {
       = {
          { "mesh.vertices",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.vertices) },
          { "mesh.tetIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.tetIndices) },
+         { "mesh.pyrIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.pyrIndices) },
+         { "mesh.wedIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.wedIndices) },
          { "mesh.hexIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.hexIndices) },
          { "mesh.elements",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.elements) },
          { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.lower) },
@@ -111,6 +113,8 @@ namespace barney {
       owlGeomSetBuffer(geom,"mesh.vertices",mesh->verticesBuffer);
       
       owlGeomSetBuffer(geom,"mesh.tetIndices",mesh->tetIndicesBuffer);
+      owlGeomSetBuffer(geom,"mesh.pyrIndices",mesh->pyrIndicesBuffer);
+      owlGeomSetBuffer(geom,"mesh.wedIndices",mesh->wedIndicesBuffer);
       owlGeomSetBuffer(geom,"mesh.hexIndices",mesh->hexIndicesBuffer);
       owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
       

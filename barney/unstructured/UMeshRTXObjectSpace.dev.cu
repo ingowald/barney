@@ -17,6 +17,8 @@
 #include "barney/unstructured/UMeshRTXObjectSpace.h"
 #include "owl/owl_device.h"
 
+#include <barney/unstructured/UElems.h>
+
 namespace barney {
 
   using Cluster = UMeshRTXObjectSpace::Cluster;
@@ -174,22 +176,24 @@ namespace barney {
       element = elt;
       switch (elt.type)
       {
-      case Element::TET:
+      case Element::TET: {
         int4 indices = dd.mesh.tetIndices[elt.ID];
         v0 = dd.mesh.vertices[indices.x];
         v1 = dd.mesh.vertices[indices.y];
         v2 = dd.mesh.vertices[indices.z];
         v3 = dd.mesh.vertices[indices.w];
+      }
         break;
-      case Element::PYR:
+      case Element::PYR: {
         auto pyrIndices = dd.mesh.pyrIndices[elt.ID];
         v0 = dd.mesh.vertices[pyrIndices[0]];
         v1 = dd.mesh.vertices[pyrIndices[1]];
         v2 = dd.mesh.vertices[pyrIndices[2]];
         v3 = dd.mesh.vertices[pyrIndices[3]];
         v4 = dd.mesh.vertices[pyrIndices[4]];
+      }
         break;
-      case Element::WED:
+      case Element::WED: {
         auto wedIndices = dd.mesh.wedIndices[elt.ID];
         v0 = dd.mesh.vertices[wedIndices[0]];
         v1 = dd.mesh.vertices[wedIndices[1]];
@@ -197,8 +201,9 @@ namespace barney {
         v3 = dd.mesh.vertices[wedIndices[3]];
         v4 = dd.mesh.vertices[wedIndices[4]];
         v5 = dd.mesh.vertices[wedIndices[5]];
+      }
         break;
-      case Element::HEX:
+      case Element::HEX: {
         auto hexIndices = dd.mesh.hexIndices[elt.ID];
         v0 = dd.mesh.vertices[hexIndices[0]];
         v1 = dd.mesh.vertices[hexIndices[1]];
@@ -208,6 +213,7 @@ namespace barney {
         v5 = dd.mesh.vertices[hexIndices[5]];
         v6 = dd.mesh.vertices[hexIndices[6]];
         v7 = dd.mesh.vertices[hexIndices[7]];
+      }
         break;
       }
     }
@@ -242,8 +248,30 @@ namespace barney {
       //          plane_t, elementTRange.lower, elementTRange.upper);
     }
 
+    // TODO: optimize
     inline __device__
-    float evalTet(vec3f P, bool dbg = false)
+        void clipRangeToPatch(vec4f a, vec4f b, vec4f c, vec4f d, bool dbg = false)
+    {
+      return;
+    }
+
+    inline __device__ bool evalElement(const vec3f& P, float& sample) {
+      switch(element.type){
+      case Element::Type::TET:
+        return evalTet(P, sample);
+      case Element::Type::PYR:
+        return evalPyr(P, sample);
+      case Element::Type::WED:
+        return evalWed(P, sample);
+      case Element::Type::HEX:
+        return evalHex(P, sample);
+      default:
+        return false;
+      }
+    }
+
+    inline __device__
+    bool evalTet(vec3f P, float& sample, bool dbg = false)
     {
       float t3 = evalToPlane(P,v0,v1,v2);
       float t2 = evalToPlane(P,v0,v3,v1);
@@ -254,184 +282,29 @@ namespace barney {
       // if (dbg) printf("eval %f %f %f %f check %f -> scale %f, vtx.w %f %f %f %f\n",
       //                 t0,t1,t2,t3,evalToPlane(getPos(v3),v0,v1,v2),scale,
       //                 v0.w,v1.w,v2.w,v3.w);
-      return scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
+      sample = scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
+      return true;
     }
     //======================================================================//
-    #define PYRAMID_DIVERGED 1.e6f
-    #define PYRAMID_MAX_ITERATION 10
-    #define PYRAMID_CONVERGED 1.e-04f
-    #define PYRAMID_OUTSIDE_CELL_TOLERANCE 1.e-06f
 
     inline __device__
-    void pyramidInterpolationFunctions(
-        float pcoords[3],
-        float sf[5])
+    bool evalPyr(vec3f P, float& sample, bool dbg = false)
     {
-        float rm, sm, tm;
-
-        rm = 1.f - pcoords[0];
-        sm = 1.f - pcoords[1];
-        tm = 1.f - pcoords[2];
-
-        sf[0] = rm * sm * tm;
-        sf[1] = pcoords[0] * sm * tm;
-        sf[2] = pcoords[0] * pcoords[1] * tm;
-        sf[3] = rm * pcoords[1] * tm;
-        sf[4] = pcoords[2];
-    }
-
-    inline __device__
-    void pyramidInterpolationDerivs(
-        float pcoords[3],
-        float derivs[15])
-    {
-        // r-derivatives
-        derivs[0] = -(pcoords[1] - 1.f) * (pcoords[2] - 1.f);
-        derivs[1] = (pcoords[1] - 1.f) * (pcoords[2] - 1.f);
-        derivs[2] = pcoords[1] - pcoords[1] * pcoords[2];
-        derivs[3] = pcoords[1] * (pcoords[2] - 1.f);
-        derivs[4] = 0.f;
-
-        // s-derivatives
-        derivs[5] = -(pcoords[0] - 1.f) * (pcoords[2] - 1.f);
-        derivs[6] = pcoords[0] * (pcoords[2] - 1.f);
-        derivs[7] = pcoords[0] - pcoords[0] * pcoords[2];
-        derivs[8] = (pcoords[0] - 1.f) * (pcoords[2] - 1.f);
-        derivs[9] = 0.f;
-
-        // t-derivatives
-        derivs[10] = -(pcoords[0] - 1.f) * (pcoords[1] - 1.f);
-        derivs[11] = pcoords[0] * (pcoords[1] - 1.f);
-        derivs[12] = -pcoords[0] * pcoords[1];
-        derivs[13] = (pcoords[0] - 1.f) * pcoords[1];
-        derivs[14] = 1.f;
-    }
-
-    inline __device__
-    float evalPyr(vec3f P, bool dbg = false)
-    {
-      float params[3] = {0.5, 0.5, 0.5};
-      float pcoords[3] = {0.5, 0.5, 0.5};
-      float derivs[15];
-      float weights[5];
-
-      vec3f vertices[5] = {getPos(v0), getPos(v1), getPos(v2), getPos(v3), getPos(v4)};
-
-      memset(derivs, 0, sizeof(derivs));
-      memset(weights, 0, sizeof(weights));
-
-      const int edges[8][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0},
-                               {0, 4}, {1, 4}, {2, 4}, {3, 4}};
-
-      float longestEdge = 0;
-      for (int i = 0; i < 8; i++)
-      {
-          vec3f p0 = vertices[edges[i][0]];
-          vec3f p1 = vertices[edges[i][1]];
-
-          float dist = length(p1 - p0);
-          if (longestEdge < dist)
-              longestEdge = dist;
-      }
-      float volumeBound = powf(longestEdge, 3);
-      float determinantTolerance =
-          1e-20f < .00001f * volumeBound ? 1e-20f : .00001f * volumeBound;
-
-      //  Enter iteration loop
-      bool converged = false;
-      for (int iteration = 0; !converged && (iteration < PYRAMID_MAX_ITERATION); iteration++)
-      {
-          //  calculate element interpolation functions and derivatives
-          pyramidInterpolationFunctions(pcoords, weights);
-          pyramidInterpolationDerivs(pcoords, derivs);
-          //  calculate newton functions
-          vec3f fcol = vec3f(0.f, 0.f, 0.f);
-          vec3f rcol = vec3f(0.f, 0.f, 0.f);
-          vec3f scol = vec3f(0.f, 0.f, 0.f);
-          vec3f tcol = vec3f(0.f, 0.f, 0.f);
-          for (int i = 0; i < 5; i++)
-          {
-              vec3f pt = (vec3f)vertices[i];
-              fcol = fcol + pt * weights[i];
-              rcol = rcol + pt * derivs[i];
-              scol = scol + pt * derivs[i + 5];
-              tcol = tcol + pt * derivs[i + 10];
-          }
-          fcol = fcol - P;
-          // compute determinants and generate improvements
-          float d = LinearSpace3f(rcol, scol, tcol).det();
-          if (fabs(d) < determinantTolerance)
-          {
-              //return false;
-              return NAN;
-          }
-          pcoords[0] = params[0] - LinearSpace3f(fcol, scol, tcol).det() / d;
-          pcoords[1] = params[1] - LinearSpace3f(rcol, fcol, tcol).det() / d;
-          pcoords[2] = params[2] - LinearSpace3f(rcol, scol, fcol).det() / d;
-          // convergence/divergence test - if neither, repeat
-          if (((fabs(pcoords[0] - params[0])) < PYRAMID_CONVERGED) &&
-              ((fabs(pcoords[1] - params[1])) < PYRAMID_CONVERGED) &&
-              ((fabs(pcoords[2] - params[2])) < PYRAMID_CONVERGED))
-          {
-              converged = true;
-          }
-          else if ((fabs(pcoords[0]) > PYRAMID_DIVERGED) ||
-                  (fabs(pcoords[1]) > PYRAMID_DIVERGED) ||
-                  (fabs(pcoords[2]) > PYRAMID_DIVERGED))
-          {
-              //return false;
-              return NAN;
-          }
-          else
-          {
-              params[0] = pcoords[0];
-              params[1] = pcoords[1];
-              params[2] = pcoords[2];
-          }
-      }
-      if (!converged)
-      {
-          //return false;
-          return NAN;
-      }
-      float attrs[5];
-      attrs[0] = v0.w;
-      attrs[1] = v1.w;
-      attrs[2] = v2.w;
-      attrs[3] = v3.w;
-      attrs[4] = v4.w;
-
-      float lowerlimit = 0.0f - PYRAMID_OUTSIDE_CELL_TOLERANCE;
-      float upperlimit = 1.0f + PYRAMID_OUTSIDE_CELL_TOLERANCE;
-      if (pcoords[0] >= lowerlimit && pcoords[0] <= upperlimit &&
-          pcoords[1] >= lowerlimit && pcoords[1] <= upperlimit &&
-          pcoords[2] >= lowerlimit && pcoords[2] <= upperlimit)
-      {
-          // evaluation
-          float value = 0.f;
-          pyramidInterpolationFunctions(pcoords, weights);
-          for (int i = 0; i < 5; i++)
-          {
-              value += weights[i] * attrs[i];
-          }
-          return value;
-      }
-      //retrun false;
-      return NAN;
+      return intersectPyrEXT(sample, P, v0, v1, v2, v3, v4);
     }
 
     //======================================================================//
     inline __device__
-    float evalWed(vec3f P, bool dbg = false)
+    bool evalWed(vec3f P, float& sample, bool dbg = false)
     {
-      return NAN;
+      return intersectWedgeEXT(sample, P, v0, v1, v2, v3, v4, v5);
     }
 
     //======================================================================//
     inline __device__
-    float evalHex(vec3f P, bool dbg = false)
+    bool evalHex(vec3f P, float& sample, bool dbg = false)
     {
-      return NAN;
+      return intersectHexEXT(sample, P, v0, v1, v2, v3, v4, v5, v6, v7);
     }
 
     inline __device__
@@ -442,20 +315,22 @@ namespace barney {
       switch (element.type)
       {
       case Element::TET:
-        scalar_t0 = evalTet(ray.org+elementTRange.lower*ray.dir);
-        scalar_t1 = evalTet(ray.org+elementTRange.upper*ray.dir);
+        evalTet(ray.org+elementTRange.lower*ray.dir, scalar_t0);
+        evalTet(ray.org+elementTRange.upper*ray.dir, scalar_t1);
         break;
       case Element::PYR:
-        scalar_t0 = evalPyr(ray.org+elementTRange.lower*ray.dir);
-        scalar_t1 = evalPyr(ray.org+elementTRange.upper*ray.dir);
+        scalar_t0 = min(v0.w, min(v1.w, min(v2.w, min(v3.w, v4.w))));
+        scalar_t1 = max(v0.w, max(v1.w, max(v2.w, max(v3.w, v4.w))));
+        //scalar_t0 = evalPyr(ray.org+elementTRange.lower*ray.dir);
+        //scalar_t1 = evalPyr(ray.org+elementTRange.upper*ray.dir);
         break;
       case Element::WED:
-        scalar_t0 = evalWed(ray.org+elementTRange.lower*ray.dir);
-        scalar_t1 = evalWed(ray.org+elementTRange.upper*ray.dir);
+//        scalar_t0 = evalWed(ray.org+elementTRange.lower*ray.dir);
+//        scalar_t1 = evalWed(ray.org+elementTRange.upper*ray.dir);
         break;
       case Element::HEX:
-        scalar_t0 = evalHex(ray.org+elementTRange.lower*ray.dir);
-        scalar_t1 = evalHex(ray.org+elementTRange.upper*ray.dir);
+//        scalar_t0 = evalHex(ray.org+elementTRange.lower*ray.dir);
+//        scalar_t1 = evalHex(ray.org+elementTRange.upper*ray.dir);
         break;
       }
       return { min(scalar_t0,scalar_t1),max(scalar_t0,scalar_t1) };
@@ -477,11 +352,26 @@ namespace barney {
         clipRangeToPlane(v1,v3,v2,dbg);
         break;
       case Element::PYR:
-        //todo
+        clipRangeToPlane(v0, v4, v1);
+        clipRangeToPlane(v0, v3, v4);
+        clipRangeToPlane(v1, v4, v2);
+        clipRangeToPlane(v2, v4, v3);
+        //clipRangeToPatch(v0, v1, v2, v3);
+        if (!boxTest(ray.org, ray.dir, elementTRange.lower, elementTRange.upper,
+                box3f().extend(getPos(v0)).extend(getPos(v1)).extend(getPos(v2)).
+                     extend(getPos(v3)).extend(getPos(v4))))
+          return false;
+
         break;
       case Element::WED:
-        return false;
+        if (!boxTest(ray.org, ray.dir, elementTRange.lower, elementTRange.upper,
+                     box3f().extend(getPos(v0)).extend(getPos(v1)).extend(getPos(v2)).extend(getPos(v3)).
+                     extend(getPos(v4)).extend(getPos(v5))))
+          return false;
       case Element::HEX:
+            if (!boxTest(ray.org, ray.dir, elementTRange.lower, elementTRange.upper,
+                     box3f().extend(getPos(v0)).extend(getPos(v1)).extend(getPos(v2)).extend(getPos(v3)).
+                     extend(getPos(v4)).extend(getPos(v5)).extend(getPos(v6)).extend(getPos(v7))))
         return false;
       }
       return !elementTRange.empty();
@@ -513,54 +403,54 @@ namespace barney {
 
     const UMeshRTXObjectSpace::DD &dd;
   };
-
-  inline __device__
-  float doPlane(vec3f P, vec3f a, vec3f b, vec3f c)
-  {
-    vec3f n = cross(b-a,c-a);
-    return dot(P-a,n);
-  }
+//
+//  inline __device__
+//  float doPlane(vec3f P, vec3f a, vec3f b, vec3f c)
+//  {
+//    vec3f n = cross(b-a,c-a);
+//    return dot(P-a,n);
+//  }
   
   
-  inline __device__
-  bool evaluateTet(vec3f v0, float s0,
-                   vec3f v1, float s1,
-                   vec3f v2, float s2,
-                   vec3f v3, float s3,
-                   float &scalar,
-                   vec3f P)
-  {
-    float a = doPlane(v3,v0,v1,v2);
-#if 0
-    if (a == 0.f) return false;
-    if (a < 0.f) {
-      swap(v0,v1);
-      swap(s0,s1);
-      a = -a;
-    }
-#endif
-    // clipPlane(v0,v1,v2);
-    // // if (tRange.empty()) return;
-    // clipPlane(v0,v3,v1);
-    // // if (tRange.empty()) return;
-    // clipPlane(v0,v2,v3);
-    // // if (tRange.empty()) return;
-    // clipPlane(v1,v3,v2);
-
-    float w3 = doPlane(P, v0,v1,v2)/a; if (w3 < 0.f) return false;
-    float w2 = doPlane(v3,v0,v1,P )/a; if (w2 < 0.f) return false;
-    float w1 = doPlane(v3,v0,P ,v2)/a; if (w1 < 0.f) return false;
-    float w0 = doPlane(v3,P ,v1,v2)/a; if (w0 < 0.f) return false;
-
-    // float ww = w0+w1+w2+w3;
-    // if (ww < .98 || ww > 1.02)
-    //   printf("weird w %f\n",ww);
-    // float w2 = doPlane(P,v0,v3,v1)/a; if (w2 < 0.f) return false;
-    // float w1 = doPlane(P,v0,v2,v3)/a; if (w1 < 0.f) return false;
-    // float w0 = doPlane(P,v1,v3,v2)/a; if (w0 < 0.f) return false;
-    scalar = w0*s0 + w1*s1 + w2*s2 + w3*s3;
-    return true;
-  }
+//  inline __device__
+//  bool evaluateTet(vec3f v0, float s0,
+//                   vec3f v1, float s1,
+//                   vec3f v2, float s2,
+//                   vec3f v3, float s3,
+//                   float &scalar,
+//                   vec3f P)
+//  {
+//    float a = doPlane(v3,v0,v1,v2);
+//#if 0
+//    if (a == 0.f) return false;
+//    if (a < 0.f) {
+//      swap(v0,v1);
+//      swap(s0,s1);
+//      a = -a;
+//    }
+//#endif
+//    // clipPlane(v0,v1,v2);
+//    // // if (tRange.empty()) return;
+//    // clipPlane(v0,v3,v1);
+//    // // if (tRange.empty()) return;
+//    // clipPlane(v0,v2,v3);
+//    // // if (tRange.empty()) return;
+//    // clipPlane(v1,v3,v2);
+//
+//    float w3 = doPlane(P, v0,v1,v2)/a; if (w3 < 0.f) return false;
+//    float w2 = doPlane(v3,v0,v1,P )/a; if (w2 < 0.f) return false;
+//    float w1 = doPlane(v3,v0,P ,v2)/a; if (w1 < 0.f) return false;
+//    float w0 = doPlane(v3,P ,v1,v2)/a; if (w0 < 0.f) return false;
+//
+//    // float ww = w0+w1+w2+w3;
+//    // if (ww < .98 || ww > 1.02)
+//    //   printf("weird w %f\n",ww);
+//    // float w2 = doPlane(P,v0,v3,v1)/a; if (w2 < 0.f) return false;
+//    // float w1 = doPlane(P,v0,v2,v3)/a; if (w1 < 0.f) return false;
+//    // float w0 = doPlane(P,v1,v3,v2)/a; if (w0 < 0.f) return false;
+//    scalar = w0*s0 + w1*s1 + w2*s2 + w3*s3;
+//    return true;
+//  }
 
   // inline __device__
   // bool MeshSampler::sample() 
@@ -582,10 +472,12 @@ namespace barney {
   // }
   
   inline __device__
-  void ElementIntersector::sampleAndMap(vec3f P, bool dbg) 
+  void ElementIntersector::sampleAndMap(vec3f P, bool dbg)
   {
-    scalar = evalTet(P,dbg);
-    mapped = dd.xf.map(scalar,dbg);
+    if (!evalElement(P, scalar))
+      mapped = 0.f;
+    else
+      mapped = dd.xf.map(scalar,dbg);
     // if (dbg)
     //   printf("***** scalar %f mapped %f %f %f: %f\n",scalar,
     //          mapped.x,mapped.y,mapped.z,mapped.w);
@@ -726,6 +618,10 @@ namespace barney {
     //   printf("CENTRAL DIFF prim %i at %f %f %f\n",
     //          primID,
     //          P.x,P.y,P.z);
+
+    ray.hadHit = 1;
+    return;
+
     CentralDifference cd(self.mesh,self.xf,P,cluster.begin,cluster.end,ray.dbg);
     
     // eval(cd,self.mesh,self.clusters[primID].begin,self.clusters[primID].end);
@@ -757,7 +653,6 @@ namespace barney {
     bool dbg = 0;//ray.dbg;
     
     Cluster cluster = self.clusters[primID];
-    
     
     const vec3f org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
@@ -853,6 +748,8 @@ namespace barney {
         hit_t = t;
         hit_elt = isec.element;
         isec.leafRange.upper = hit_t;
+        ray.color = getPos(isec.mapped);
+
         // if (dbg) printf("**** ACCEPTED at t = %f, P = %f %f %f, tet ID %i\n",
         //                 t, P.x,P.y,P.z,isec.element.ID);
         break;
