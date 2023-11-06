@@ -23,6 +23,41 @@ namespace barney {
 
   using Cluster = UMeshRTXObjectSpace::Cluster;
 
+  struct ElementSampler{
+    inline __device__ ElementSampler(const UMeshField::DD &dd,
+                      const TransferFunction::DD &xf)
+      : dd(dd), xf(xf){}
+
+    inline __device__ bool evalElement(Element el, const vec3f& P, float& scalar){
+      return dd.eltScalar(scalar, el, P);
+    }
+
+    inline __device__ bool sampleAndMap(Element el, const vec3f& P, vec4f& mapped){
+      float scalar;
+      if (!evalElement(el, P, scalar)){
+        mapped.w = -INFINITY;
+        return false;
+      }
+
+      mapped = xf.map(scalar);
+      return true;
+    }
+
+    inline __device__ bool sampleAndMapDensity(Element el, const vec3f& P, float& mappedDensity){
+      float scalar;
+      if (!evalElement(el, P, scalar)){
+        mappedDensity = -INFINITY;
+        return false;
+      }
+
+      mappedDensity = xf.map(scalar).w;
+      return true;
+    }
+
+    const UMeshField::DD &dd;
+    const TransferFunction::DD &xf;
+  };
+
   struct CentralDifference {
     inline __device__
     CentralDifference(const UMeshField::DD &dd,
@@ -41,116 +76,141 @@ namespace barney {
 
 #pragma unroll
       for (int i=0;i<7;i++)
-        scalar[i] = -INFINITY;
+        density[i] = -INFINITY;
 
       eval(begin,end);
     }
 
-    struct Plane {
-      inline __device__
-      Plane(float4 a, float4 b, float4 c)
-      {
-        p = vec4f(a);
-        N = cross(getPos(vec4f(b))-getPos(a),
-                  getPos(vec4f(c))-getPos(a));
-      }
-      
-      vec3f N;
-      vec4f p;
-    };
-    
     inline __device__
-    void eval(int begin, int end)
-    {
+        void eval(int begin, int end){
+      ElementSampler elsa(dd, xf);
       for (int ei=begin;ei<end;ei++) {
-        // if (dbg) printf("evaluating element %i [%i %i]\n",
-        //                 ei,begin,end);
-        Element elt = dd.elements[ei];
-        if (elt.type != Element::TET)
-          continue;
+        const Element elt = dd.elements[ei];
+        vec4f color;
+        if (elsa.sampleAndMap(elt, P[6], color)){
+          mappedColor.x = color.x;
+          mappedColor.y = color.y;
+          mappedColor.z = color.z;
+          density[6] = color.w;
+        }
 
-        if (evalTet(elt.ID))
-          break;
-      }
-      float mapped_scalar[6];
-      // if (scalar[6] < 0.f)
-      //   if (dbg)
-      //     printf("NO HIT IN CENTER!?!?!?!\n");
-#pragma unroll
-      for (int i=0;i<6;i++) {
-        if (scalar[i] < 0.f)
-          { scalar[i] = scalar[6]; P[i] = P[6]; }
-        mapped_scalar[i] = xf.map(scalar[i]).w;
-      }
-#if 0
-      N.x = safeDiv(scalar[1]-scalar[0], P[1].x-P[0].x);
-      N.y = safeDiv(scalar[3]-scalar[2], P[3].y-P[2].y);
-      N.z = safeDiv(scalar[5]-scalar[4], P[5].z-P[4].z);
-#else
-      N.x = safeDiv(mapped_scalar[1]-mapped_scalar[0], P[1].x-P[0].x);
-      N.y = safeDiv(mapped_scalar[3]-mapped_scalar[2], P[3].y-P[2].y);
-      N.z = safeDiv(mapped_scalar[5]-mapped_scalar[4], P[5].z-P[4].z);
-#endif
-      mappedColor = getPos(xf.map(scalar[6]));
-      // N.x = safeDiv(dx1.mapped.w-dx0.mapped.w,dx1.P.x - dx0.P.x);
-      // N.y = safeDiv(dy1.mapped.w-dy0.mapped.w,dy1.P.y - dy0.P.y);
-      // N.z = safeDiv(dz1.mapped.w-dz0.mapped.w,dz1.P.z - dz0.P.z);
-    }
-    
-    inline __device__
-    void evalPlane(Plane plane, float v)
-    {
-#pragma unroll
-      for (int i=0;i<7;i++) {
-        float f = dot(P[i] - getPos(plane.p),plane.N);
-        if (f < 0.f) {
-          sw[i] = -INFINITY;
-        } else {
-          sw[i] += f;
-          sv[i] += v * f;
+        for (int i = 0; i < 6; ++i){
+          float d;
+          if (elsa.sampleAndMapDensity(elt, P[i], d)){
+            density[i] = d;
+          }
         }
       }
+
+      if (density[6] < 0)
+      {
+        printf("NO HIT IN THE CENTERRRR?????????\n");
+      }
+
+      for (int i = 0; i < 6; ++i) {
+        if (density[i] < 0) {
+          density[i] = density[6];
+          P[i] = P[6];
+        }
+      }
+
+      N.x = safeDiv(density[1]-density[0], P[1].x-P[0].x);
+      N.y = safeDiv(density[3]-density[2], P[3].y-P[2].y);
+      N.z = safeDiv(density[5]-density[4], P[5].z-P[4].z);
     }
-    
-    inline __device__
-    bool evalTet(int tetID)
-    {
-      // if (dbg) printf("cd: evaluating tet %i\n",tetID);
-      
-      int4 indices = dd.tetIndices[tetID];
-      v0 = dd.vertices[indices.x];
-      v1 = dd.vertices[indices.y];
-      v2 = dd.vertices[indices.z];
-      v3 = dd.vertices[indices.w];
-      
-#pragma unroll
-      for (int i=0;i<7;i++)
-        sw[i] = sv[i] = 0.f;
-      
-      evalPlane(Plane(v0,v1,v2),v3.w);
-      evalPlane(Plane(v0,v3,v1),v2.w);
-      evalPlane(Plane(v0,v2,v3),v1.w);
-      evalPlane(Plane(v1,v3,v2),v0.w);
-      
-#pragma unroll
-      for (int i=0;i<7;i++)
-        if (sw[i] >= 0.f)
-          scalar[i] = sv[i] / sw[i];
-      
-      bool done = true;
-#pragma unroll
-      for (int i=0;i<7;i++)
-        if (scalar[i] < 0.f)
-          done = false;
-      
-      return done;
-    }
-    
+
+//    inline __device__
+//    void eval(int begin, int end)
+//    {
+//      for (int ei=begin;ei<end;ei++) {
+//        // if (dbg) printf("evaluating element %i [%i %i]\n",
+//        //                 ei,begin,end);
+//        Element elt = dd.elements[ei];
+//        if (elt.type != Element::TET)
+//          continue;
+//
+//        if (evalTet(elt.ID))
+//          break;
+//      }
+//      float mapped_scalar[6];
+//      // if (scalar[6] < 0.f)
+//      //   if (dbg)
+//      //     printf("NO HIT IN CENTER!?!?!?!\n");
+//#pragma unroll
+//      for (int i=0;i<6;i++) {
+//        if (scalar[i] < 0.f)
+//          { scalar[i] = scalar[6]; P[i] = P[6]; }
+//        mapped_scalar[i] = xf.map(scalar[i]).w;
+//      }
+//#if 0
+//      N.x = safeDiv(scalar[1]-scalar[0], P[1].x-P[0].x);
+//      N.y = safeDiv(scalar[3]-scalar[2], P[3].y-P[2].y);
+//      N.z = safeDiv(scalar[5]-scalar[4], P[5].z-P[4].z);
+//#else
+//      N.x = safeDiv(mapped_scalar[1]-mapped_scalar[0], P[1].x-P[0].x);
+//      N.y = safeDiv(mapped_scalar[3]-mapped_scalar[2], P[3].y-P[2].y);
+//      N.z = safeDiv(mapped_scalar[5]-mapped_scalar[4], P[5].z-P[4].z);
+//#endif
+//      mappedColor = getPos(xf.map(scalar[6]));
+//      // N.x = safeDiv(dx1.mapped.w-dx0.mapped.w,dx1.P.x - dx0.P.x);
+//      // N.y = safeDiv(dy1.mapped.w-dy0.mapped.w,dy1.P.y - dy0.P.y);
+//      // N.z = safeDiv(dz1.mapped.w-dz0.mapped.w,dz1.P.z - dz0.P.z);
+//    }
+//
+//    inline __device__
+//    void evalPlane(Plane plane, float v)
+//    {
+//#pragma unroll
+//      for (int i=0;i<7;i++) {
+//        float f = dot(P[i] - getPos(plane.p),plane.N);
+//        if (f < 0.f) {
+//          sw[i] = -INFINITY;
+//        } else {
+//          sw[i] += f;
+//          sv[i] += v * f;
+//        }
+//      }
+//    }
+//
+//    inline __device__
+//    bool evalTet(int tetID)
+//    {
+//      // if (dbg) printf("cd: evaluating tet %i\n",tetID);
+//
+//      int4 indices = dd.tetIndices[tetID];
+//      v0 = dd.vertices[indices.x];
+//      v1 = dd.vertices[indices.y];
+//      v2 = dd.vertices[indices.z];
+//      v3 = dd.vertices[indices.w];
+//
+//#pragma unroll
+//      for (int i=0;i<7;i++)
+//        sw[i] = sv[i] = 0.f;
+//
+//      evalPlane(Plane(v0,v1,v2),v3.w);
+//      evalPlane(Plane(v0,v3,v1),v2.w);
+//      evalPlane(Plane(v0,v2,v3),v1.w);
+//      evalPlane(Plane(v1,v3,v2),v0.w);
+//
+//#pragma unroll
+//      for (int i=0;i<7;i++)
+//        if (sw[i] >= 0.f)
+//          scalar[i] = sv[i] / sw[i];
+//
+//      bool done = true;
+//#pragma unroll
+//      for (int i=0;i<7;i++)
+//        if (scalar[i] < 0.f)
+//          done = false;
+//
+//      return done;
+//    }
+
     vec3f P[7];
-    float scalar[7];
-    float sw[7], sv[7];
+    float density[7];
+    //float sw[7], sv[7];
     vec3f N;
-    float4 v0, v1, v2, v3;
+    //float4 v0, v1, v2, v3;
     const bool dbg;
     vec3f mappedColor;
     const UMeshField::DD &dd;
@@ -177,43 +237,43 @@ namespace barney {
       switch (elt.type)
       {
       case Element::TET: {
-        int4 indices = dd.mesh.tetIndices[elt.ID];
-        v0 = dd.mesh.vertices[indices.x];
-        v1 = dd.mesh.vertices[indices.y];
-        v2 = dd.mesh.vertices[indices.z];
-        v3 = dd.mesh.vertices[indices.w];
-      }
+          int4 indices = dd.mesh.tetIndices[elt.ID];
+          v0 = dd.mesh.vertices[indices.x];
+          v1 = dd.mesh.vertices[indices.y];
+          v2 = dd.mesh.vertices[indices.z];
+          v3 = dd.mesh.vertices[indices.w];
+        }
         break;
       case Element::PYR: {
-        auto pyrIndices = dd.mesh.pyrIndices[elt.ID];
-        v0 = dd.mesh.vertices[pyrIndices[0]];
-        v1 = dd.mesh.vertices[pyrIndices[1]];
-        v2 = dd.mesh.vertices[pyrIndices[2]];
-        v3 = dd.mesh.vertices[pyrIndices[3]];
-        v4 = dd.mesh.vertices[pyrIndices[4]];
-      }
+          auto pyrIndices = dd.mesh.pyrIndices[elt.ID];
+          v0 = dd.mesh.vertices[pyrIndices[0]];
+          v1 = dd.mesh.vertices[pyrIndices[1]];
+          v2 = dd.mesh.vertices[pyrIndices[2]];
+          v3 = dd.mesh.vertices[pyrIndices[3]];
+          v4 = dd.mesh.vertices[pyrIndices[4]];
+        }
         break;
       case Element::WED: {
-        auto wedIndices = dd.mesh.wedIndices[elt.ID];
-        v0 = dd.mesh.vertices[wedIndices[0]];
-        v1 = dd.mesh.vertices[wedIndices[1]];
-        v2 = dd.mesh.vertices[wedIndices[2]];
-        v3 = dd.mesh.vertices[wedIndices[3]];
-        v4 = dd.mesh.vertices[wedIndices[4]];
-        v5 = dd.mesh.vertices[wedIndices[5]];
-      }
+          auto wedIndices = dd.mesh.wedIndices[elt.ID];
+          v0 = dd.mesh.vertices[wedIndices[0]];
+          v1 = dd.mesh.vertices[wedIndices[1]];
+          v2 = dd.mesh.vertices[wedIndices[2]];
+          v3 = dd.mesh.vertices[wedIndices[3]];
+          v4 = dd.mesh.vertices[wedIndices[4]];
+          v5 = dd.mesh.vertices[wedIndices[5]];
+        }
         break;
       case Element::HEX: {
-        auto hexIndices = dd.mesh.hexIndices[elt.ID];
-        v0 = dd.mesh.vertices[hexIndices[0]];
-        v1 = dd.mesh.vertices[hexIndices[1]];
-        v2 = dd.mesh.vertices[hexIndices[2]];
-        v3 = dd.mesh.vertices[hexIndices[3]];
-        v4 = dd.mesh.vertices[hexIndices[4]];
-        v5 = dd.mesh.vertices[hexIndices[5]];
-        v6 = dd.mesh.vertices[hexIndices[6]];
-        v7 = dd.mesh.vertices[hexIndices[7]];
-      }
+          auto hexIndices = dd.mesh.hexIndices[elt.ID];
+          v0 = dd.mesh.vertices[hexIndices[0]];
+          v1 = dd.mesh.vertices[hexIndices[1]];
+          v2 = dd.mesh.vertices[hexIndices[2]];
+          v3 = dd.mesh.vertices[hexIndices[3]];
+          v4 = dd.mesh.vertices[hexIndices[4]];
+          v5 = dd.mesh.vertices[hexIndices[5]];
+          v6 = dd.mesh.vertices[hexIndices[6]];
+          v7 = dd.mesh.vertices[hexIndices[7]];
+        }
         break;
       }
     }
@@ -248,7 +308,6 @@ namespace barney {
       //          plane_t, elementTRange.lower, elementTRange.upper);
     }
 
-    // TODO: optimize
     inline __device__
         void clipRangeToPatch(vec4f a, vec4f b, vec4f c, vec4f d, bool dbg = false)
     {
@@ -284,15 +343,16 @@ namespace barney {
     inline __device__
     bool evalTet(vec3f P, float& sample, bool dbg = false)
     {
-      float t3 = evalToPlane(P,v0,v1,v2);
-      float t2 = evalToPlane(P,v0,v3,v1);
-      float t1 = evalToPlane(P,v0,v2,v3);
-      float t0 = evalToPlane(P,v1,v3,v2);
+      float t3 = evalToImplicitPlane(P,v0,v1,v2);
+      if (t3 < 0.f) return false;
+      float t2 = evalToImplicitPlane(P,v0,v3,v1);
+      if (t2 < 0.f) return false;
+      float t1 = evalToImplicitPlane(P,v0,v2,v3);
+      if (t1 < 0.f) return false;
+      float t0 = evalToImplicitPlane(P,v1,v3,v2);
+      if (t0 < 0.f) return false;
 
       float scale = 1.f/(t0+t1+t2+t3);
-      // if (dbg) printf("eval %f %f %f %f check %f -> scale %f, vtx.w %f %f %f %f\n",
-      //                 t0,t1,t2,t3,evalToPlane(getPos(v3),v0,v1,v2),scale,
-      //                 v0.w,v1.w,v2.w,v3.w);
       sample = scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
       return true;
     }
@@ -328,23 +388,30 @@ namespace barney {
       case Element::TET:
         evalTet(ray.org+elementTRange.lower*ray.dir, scalar_t0);
         evalTet(ray.org+elementTRange.upper*ray.dir, scalar_t1);
-        break;
+        return { min(scalar_t0,scalar_t1),max(scalar_t0,scalar_t1) };
       case Element::PYR:
         scalar_t0 = min(v0.w, min(v1.w, min(v2.w, min(v3.w, v4.w))));
         scalar_t1 = max(v0.w, max(v1.w, max(v2.w, max(v3.w, v4.w))));
         //scalar_t0 = evalPyr(ray.org+elementTRange.lower*ray.dir);
         //scalar_t1 = evalPyr(ray.org+elementTRange.upper*ray.dir);
-        break;
+        return {scalar_t0, scalar_t1};
       case Element::WED:
+        scalar_t0 = min(v0.w, min(v1.w, min(v2.w, min(v3.w, min(v4.w, v5.w)))));
+        scalar_t1 = max(v0.w, max(v1.w, max(v2.w, max(v3.w, max(v4.w, v5.w)))));
 //        scalar_t0 = evalWed(ray.org+elementTRange.lower*ray.dir);
 //        scalar_t1 = evalWed(ray.org+elementTRange.upper*ray.dir);
-        break;
+        return {scalar_t0, scalar_t1};
       case Element::HEX:
+        scalar_t0 = min(v0.w, min(v1.w, min(v2.w, min(v3.w,
+                    min(v4.w, min(v5.w, min(v6.w, v7.w)))))));
+
+        scalar_t1 = max(v0.w, max(v1.w, max(v2.w, max(v3.w,
+                    max(v4.w, max(v5.w, max(v6.w, v7.w)))))));
 //        scalar_t0 = evalHex(ray.org+elementTRange.lower*ray.dir);
 //        scalar_t1 = evalHex(ray.org+elementTRange.upper*ray.dir);
-        break;
+        return {scalar_t0, scalar_t1};
       }
-      return { min(scalar_t0,scalar_t1),max(scalar_t0,scalar_t1) };
+      return {NAN, NAN};
     }
     
     inline __device__
@@ -630,12 +697,7 @@ namespace barney {
     //          primID,
     //          P.x,P.y,P.z);
 
-    ray.hadHit = 1;
-    return;
-
     CentralDifference cd(self.mesh,self.xf,P,cluster.begin,cluster.end,ray.dbg);
-    
-    // eval(cd,self.mesh,self.clusters[primID].begin,self.clusters[primID].end);
 
     vec3f N = normalize
       ((cd.N == vec3f(0.f)) ? ray.dir : cd.N);
@@ -759,7 +821,6 @@ namespace barney {
         hit_t = t;
         hit_elt = isec.element;
         isec.leafRange.upper = hit_t;
-        ray.color = getPos(isec.mapped);
 
         // if (dbg) printf("**** ACCEPTED at t = %f, P = %f %f %f, tet ID %i\n",
         //                 t, P.x,P.y,P.z,isec.element.ID);
