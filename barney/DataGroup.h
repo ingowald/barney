@@ -61,7 +61,11 @@ namespace barney {
                              std::vector<TetIndices> &tetIndices,
                              std::vector<PyrIndices> &pyrIndices,
                              std::vector<WedIndices> &wedIndices,
-                             std::vector<HexIndices> &hexIndices);
+                             std::vector<HexIndices> &hexIndices,
+                             std::vector<int> &gridOffsets,
+                             std::vector<vec3i> &gridDims,
+                             std::vector<box4f> &gridDomains,
+                             std::vector<float> &gridScalars);
     
     void setInstances(std::vector<Group::SP> &groups,
                       const affine3f *xfms);

@@ -213,10 +213,25 @@ namespace barney {
                               const int *_wedIndices, int numWeds,
                               // general (non-guaranteed cube/voxel) hexes, 8
                               // ints in vtk-style each
-                              const int *_hexIndices, int numHexes)
+                              const int *_hexIndices, int numHexes,
+                              //
+                              int numGrids,
+                              // offsets into gridScalars array
+                              const int *_gridOffsets,
+                              // grid dims (3 floats each)
+                              const int *_gridDims,
+                              // grid domains, 6 floats each (3 floats min corner,
+                              // 3 floats max corner)
+                              const float *_gridDomains,
+                              // grid scalars
+                              const float *_gridScalars, int numGridScalars)
   {
     std::cout << "#bn: copying umesh from app ..." << std::endl;
     std::vector<vec4f>      vertices(numVertices);
+    std::vector<int>        gridOffsets(numGrids);
+    std::vector<vec3i>      gridDims(numGrids);
+    std::vector<box4f>      gridDomains(numGrids);
+    std::vector<float>      gridScalars(numGridScalars);
     std::vector<TetIndices> tetIndices(numTets);
     std::vector<PyrIndices> pyrIndices(numPyrs);
     std::vector<WedIndices> wedIndices(numWeds);
@@ -226,11 +241,19 @@ namespace barney {
     memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
     memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
     memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
+    memcpy(gridOffsets.data(),_gridOffsets,gridOffsets.size()*sizeof(gridOffsets[0]));
+    memcpy(gridDims.data(),_gridDims,gridDims.size()*sizeof(gridDims[0]));
+    memcpy(gridDomains.data(),_gridDomains,gridDomains.size()*sizeof(gridDomains[0]));
+    memcpy(gridScalars.data(),_gridScalars,gridScalars.size()*sizeof(gridScalars[0]));
     ScalarField *sf = checkGet(dataGroup)->createUMesh(vertices,
                                                        tetIndices,
                                                        pyrIndices,
                                                        wedIndices,
-                                                       hexIndices);
+                                                       hexIndices,
+                                                       gridOffsets,
+                                                       gridDims,
+                                                       gridDomains,
+                                                       gridScalars);
     return (BNScalarField)sf;
   }
   

@@ -297,7 +297,18 @@ BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
                             const int *wedges,     int numWedges,
                             // general (non-guaranteed cube/voxel) hexes, 8
                             // ints in vtk-style each
-                            const int *hexes,      int numHexes);
+                            const int *hexes,      int numHexes,
+                            //
+                            int numGrids,
+                            // offsets into gridIndices array
+                            const int *_gridOffsets,
+                            // grid dims (3 floats each)
+                            const int *_gridDims,
+                            // grid domains, 6 floats each (3 floats min corner,
+                            // 3 floats max corner)
+                            const float *gridDomains,
+                            // grid scalars
+                            const float *gridScalars, int numGridScalars);
 
 
 BN_API

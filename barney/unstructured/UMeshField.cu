@@ -178,22 +178,34 @@ namespace barney {
                          std::vector<TetIndices> &_tetIndices,
                          std::vector<PyrIndices> &_pyrIndices,
                          std::vector<WedIndices> &_wedIndices,
-                         std::vector<HexIndices> &_hexIndices)
+                         std::vector<HexIndices> &_hexIndices,
+                         std::vector<int> &_gridOffsets,
+                         std::vector<vec3i> &_gridDims,
+                         std::vector<box4f> &_gridDomains,
+                         std::vector<float> &_gridScalars)
     : ScalarField(devGroup),
       vertices(std::move(_vertices)),
       tetIndices(std::move(_tetIndices)),
       pyrIndices(std::move(_pyrIndices)),
       wedIndices(std::move(_wedIndices)),
-      hexIndices(std::move(_hexIndices))
+      hexIndices(std::move(_hexIndices)),
+      gridOffsets(std::move(_gridOffsets)),
+      gridDims(std::move(_gridDims)),
+      gridDomains(std::move(_gridDomains)),
+      gridScalars(std::move(_gridScalars))
   {
     for (auto vtx : vertices) worldBounds.extend(vtx);
+    for (auto dom : gridDomains) worldBounds.extend(dom);
     for (int i=0;i<tetIndices.size();i++)
       elements.push_back(Element(i,Element::TET));
 
-    assert(!elements.empty());
-    
     for (int i=0;i<hexIndices.size();i++)
       elements.push_back(Element(i,Element::HEX));
+    
+    for (int i=0;i<gridOffsets.size();i++)
+      elements.push_back(Element(i,Element::GRID));
+    
+    assert(!elements.empty());
     
     verticesBuffer
       = owlDeviceBufferCreate(getOWL(),
@@ -219,6 +231,28 @@ namespace barney {
                               OWL_INT,
                               elements.size(),
                               elements.data());
+
+    gridOffsetsBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_INT,
+                              gridOffsets.size(),
+                              gridOffsets.data());
+    gridDimsBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_INT3,
+                              gridDims.size(),
+                              gridDims.data());
+    gridDomainsBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_USER_TYPE(box4f),
+                              gridDomains.size(),
+                              gridDomains.data());
+
+    gridScalarsBuffer
+      = owlDeviceBufferCreate(getOWL(),
+                              OWL_FLOAT,
+                              gridScalars.size(),
+                              gridScalars.data());
   }
 
   UMeshField::DD UMeshField::getDD(int devID)
@@ -229,6 +263,11 @@ namespace barney {
     dd.tetIndices  = (const int4    *)owlBufferGetPointer(tetIndicesBuffer,devID);
     dd.hexIndices  = (const ints<8> *)owlBufferGetPointer(hexIndicesBuffer,devID);
     dd.elements    = (const Element *)owlBufferGetPointer(elementsBuffer,devID);
+    dd.gridOffsets = (const int     *)owlBufferGetPointer(gridOffsetsBuffer,devID);
+    dd.gridDims    = (const vec3i   *)owlBufferGetPointer(gridDimsBuffer,devID);
+    dd.gridScalars = (const float   *)owlBufferGetPointer(gridScalarsBuffer,devID);
+    dd.gridDomains = (const box4f   *)owlBufferGetPointer(gridDomainsBuffer,devID);
+    dd.gridScalars = (const float   *)owlBufferGetPointer(gridScalarsBuffer,devID);
     dd.numElements = elements.size();
     dd.worldBounds = worldBounds;
 
@@ -240,7 +279,11 @@ namespace barney {
                                       std::vector<TetIndices> &tetIndices,
                                       std::vector<PyrIndices> &pyrIndices,
                                       std::vector<WedIndices> &wedIndices,
-                                      std::vector<HexIndices> &hexIndices)
+                                      std::vector<HexIndices> &hexIndices,
+                                      std::vector<int> &gridOffsets,
+                                      std::vector<vec3i> &gridDims,
+                                      std::vector<box4f> &gridDomains,
+                                      std::vector<float> &gridScalars)
   {
     ScalarField::SP sf
       = std::make_shared<UMeshField>(devGroup.get(),
@@ -248,13 +291,17 @@ namespace barney {
                                      tetIndices,
                                      pyrIndices,
                                      wedIndices,
-                                     hexIndices);
+                                     hexIndices,
+                                     gridOffsets,
+                                     gridDims,
+                                     gridDomains,
+                                     gridScalars);
     return getContext()->initReference(sf);
   }
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if 0
+#if 1
     return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
     // return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
 #else

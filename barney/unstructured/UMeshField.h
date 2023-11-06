@@ -34,6 +34,9 @@ namespace barney {
   inline __both__ range1f getRange(box4f bb)
   { return range1f{bb.lower.w,bb.upper.w}; }
 
+  inline __both__ float lerp(float v0, float v1, float f)
+  { return (1.f-f)*v0 + f*v1; }
+
   inline __both__ vec3f lerp(vec3f f, vec3f v0, vec3f v1)
   { return (vec3f(1.f)-f)*v0 + f*v1; }
 
@@ -45,7 +48,7 @@ namespace barney {
   
 
   struct Element {
-    typedef enum { TET=0, HEX } Type;
+    typedef enum { TET=0, HEX, GRID } Type;
     
     inline __both__ Element() {}
     inline __both__ Element(int ID, int type)
@@ -68,14 +71,20 @@ namespace barney {
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
       inline __both__ box4f hexBounds(int primID) const;
+      inline __both__ box4f gridBounds(int primID) const;
 
       inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P) const;
       inline __both__ bool tetScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool gridScalar(float &retVal, int primID, vec3f P) const;
       
       const float4     *vertices;
       const int4       *tetIndices;
       const ints<8>    *hexIndices;
       const Element    *elements;
+      const int        *gridOffsets;
+      const vec3i      *gridDims;
+      const box4f      *gridDomains;
+      const float      *gridScalars;
       int               numElements;
       box4f             worldBounds;
     };
@@ -89,7 +98,11 @@ namespace barney {
                std::vector<TetIndices> &tetIndices,
                std::vector<PyrIndices> &pyrIndices,
                std::vector<WedIndices> &wedIndices,
-               std::vector<HexIndices> &hexIndices);
+               std::vector<HexIndices> &hexIndices,
+               std::vector<int> &gridOffsets,
+               std::vector<vec3i> &gridDims,
+               std::vector<box4f> &gridDomains,
+               std::vector<float> &gridScalars);
 
     DD getDD(int devID);
     
@@ -103,11 +116,19 @@ namespace barney {
     std::vector<WedIndices> wedIndices;
     std::vector<HexIndices> hexIndices;
     std::vector<Element>    elements;
+    std::vector<int>        gridOffsets;
+    std::vector<vec3i>      gridDims;
+    std::vector<box4f>      gridDomains;
+    std::vector<float>      gridScalars;
     
     OWLBuffer verticesBuffer   = 0;
     OWLBuffer tetIndicesBuffer = 0;
     OWLBuffer hexIndicesBuffer = 0;
     OWLBuffer elementsBuffer   = 0;
+    OWLBuffer gridOffsetsBuffer = 0;
+    OWLBuffer gridDimsBuffer = 0;
+    OWLBuffer gridDomainsBuffer = 0;
+    OWLBuffer gridScalarsBuffer = 0;
 
     box4f worldBounds;
   };
@@ -147,6 +168,12 @@ namespace barney {
       .including(vertices[indices[6]])
       .including(vertices[indices[7]]);
   }
+
+  inline __both__
+  box4f UMeshField::DD::gridBounds(int gridID) const
+  {
+    return gridDomains[gridID];
+  }
   
   inline __both__
   box4f UMeshField::DD::eltBounds(Element element) const
@@ -156,6 +183,8 @@ namespace barney {
       return tetBounds(element.ID);
     case Element::HEX: 
       return hexBounds(element.ID);
+    case Element::GRID:
+      return gridBounds(element.ID);
     }
     // ugh: could not recognize this element type!?
     return box4f(); 
@@ -175,6 +204,8 @@ namespace barney {
     switch (elt.type) {
     case Element::TET: 
       return tetScalar(retVal,elt.ID,P);
+    case Element::GRID:
+      return gridScalar(retVal,elt.ID,P);
     }
     return false;
   }
@@ -199,6 +230,56 @@ namespace barney {
     
     float scale = 1.f/(t0+t1+t2+t3);
     retVal = scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
+    return true;
+  }
+
+  inline __both__
+  bool UMeshField::DD::gridScalar(float &retVal, int primID, vec3f P) const
+  {
+    const box3f bounds = box3f((const vec3f &)gridDomains[primID].lower,
+                               (const vec3f &)gridDomains[primID].upper);
+    
+    if (!bounds.contains(P))
+      return false;
+
+    vec3i numScalars = gridDims[primID]+1;
+    vec3f objPos = P-bounds.lower;
+    vec3i imin(objPos);
+    vec3i imax = min(imin+1,numScalars-1);
+
+    auto linearIndex = [numScalars](const int x, const int y, const int z) {
+      return z*numScalars.y*numScalars.x + y*numScalars.x + x;
+    };
+
+    const float *scalars = gridScalars + gridOffsets[primID];
+
+    float f1 = scalars[linearIndex(imin.x,imin.y,imin.z)];
+    float f2 = scalars[linearIndex(imax.x,imin.y,imin.z)];
+    float f3 = scalars[linearIndex(imin.x,imax.y,imin.z)];
+    float f4 = scalars[linearIndex(imax.x,imax.y,imin.z)];
+
+    float f5 = scalars[linearIndex(imin.x,imin.y,imax.z)];
+    float f6 = scalars[linearIndex(imax.x,imin.y,imax.z)];
+    float f7 = scalars[linearIndex(imin.x,imax.y,imax.z)];
+    float f8 = scalars[linearIndex(imax.x,imax.y,imax.z)];
+
+    #define EMPTY(x) x==NAN
+    if (EMPTY(f1) || EMPTY(f2) || EMPTY(f3) || EMPTY(f4) ||
+        EMPTY(f5) || EMPTY(f6) || EMPTY(f7) || EMPTY(f8))
+      return false;
+
+    vec3f frac = objPos-vec3f(imin);
+
+    float f12 = lerp(f1,f2,frac.x);
+    float f56 = lerp(f5,f6,frac.x);
+    float f34 = lerp(f3,f4,frac.x);
+    float f78 = lerp(f7,f8,frac.x);
+
+    float f1234 = lerp(f12,f34,frac.y);
+    float f5678 = lerp(f56,f78,frac.y);
+
+    retVal = lerp(f1234,f5678,frac.z);
+
     return true;
   }
 

@@ -48,6 +48,10 @@ namespace barney {
          { "mesh.tetIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.tetIndices) },
          { "mesh.hexIndices",  OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.hexIndices) },
          { "mesh.elements",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.elements) },
+         { "mesh.gridOffsets",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.gridOffsets) },
+         { "mesh.gridDims",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.gridDims) },
+         { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.gridDomains) },
+         { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.gridScalars) },
          { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.lower) },
          { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.upper) },
          { "numElements", OWL_INT, OWL_OFFSETOF(DD,sampler.mesh.numElements) },
@@ -113,6 +117,10 @@ namespace barney {
       owlGeomSetBuffer(geom,"mesh.tetIndices",mesh->tetIndicesBuffer);
       owlGeomSetBuffer(geom,"mesh.hexIndices",mesh->hexIndicesBuffer);
       owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
+      owlGeomSetBuffer(geom,"mesh.gridOffsets",mesh->gridOffsetsBuffer);
+      owlGeomSetBuffer(geom,"mesh.gridDims",mesh->gridDimsBuffer);
+      owlGeomSetBuffer(geom,"mesh.gridDomains",mesh->gridDomainsBuffer);
+      owlGeomSetBuffer(geom,"mesh.gridScalars",mesh->gridScalarsBuffer);
       
       // ------------------------------------------------------------------      
       owlGeomSetBuffer(geom,"bvhNodes",this->sampler.bvhNodesBuffer);
