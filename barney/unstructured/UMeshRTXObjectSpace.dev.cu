@@ -252,7 +252,18 @@ namespace barney {
     inline __device__
         void clipRangeToPatch(vec4f a, vec4f b, vec4f c, vec4f d, bool dbg = false)
     {
-      return;
+      vec3f NRef = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
+      vec3f ad = getPos(d) - getPos(a);
+
+      if (dot(NRef, ad) >= 0){
+        // abc - acd
+        clipRangeToPlane(a, b, c, dbg);
+        clipRangeToPlane(a, c, d, dbg);
+      } else {
+        // abd - bcd
+        clipRangeToPlane(a, b, d, dbg);
+        clipRangeToPlane(b, c, d, dbg);
+      }
     }
 
     inline __device__ bool evalElement(const vec3f& P, float& sample) {
@@ -356,23 +367,23 @@ namespace barney {
         clipRangeToPlane(v0, v3, v4);
         clipRangeToPlane(v1, v4, v2);
         clipRangeToPlane(v2, v4, v3);
-        //clipRangeToPatch(v0, v1, v2, v3);
-        if (!boxTest(ray.org, ray.dir, elementTRange.lower, elementTRange.upper,
-                box3f().extend(getPos(v0)).extend(getPos(v1)).extend(getPos(v2)).
-                     extend(getPos(v3)).extend(getPos(v4))))
-          return false;
-
+        clipRangeToPatch(v0, v1, v2, v3);
         break;
       case Element::WED:
-        if (!boxTest(ray.org, ray.dir, elementTRange.lower, elementTRange.upper,
-                     box3f().extend(getPos(v0)).extend(getPos(v1)).extend(getPos(v2)).extend(getPos(v3)).
-                     extend(getPos(v4)).extend(getPos(v5))))
-          return false;
+        clipRangeToPlane(v0,v2,v1,dbg);
+        clipRangeToPlane(v3,v4,v5,dbg);
+        clipRangeToPatch(v0, v3, v5, v2);
+        clipRangeToPatch(v0, v1, v4, v3);
+        clipRangeToPatch(v1, v2, v5, v4);
+        break;
       case Element::HEX:
-            if (!boxTest(ray.org, ray.dir, elementTRange.lower, elementTRange.upper,
-                     box3f().extend(getPos(v0)).extend(getPos(v1)).extend(getPos(v2)).extend(getPos(v3)).
-                     extend(getPos(v4)).extend(getPos(v5)).extend(getPos(v6)).extend(getPos(v7))))
-        return false;
+        clipRangeToPatch(v0, v1, v2, v3);
+        clipRangeToPatch(v0, v3, v7, v4);
+        clipRangeToPatch(v0, v4, v5, v1);
+        clipRangeToPatch(v6, v2, v1, v5);
+        clipRangeToPatch(v6, v5, v4, v7);
+        clipRangeToPatch(v6, v7, v3, v2);
+        break;
       }
       return !elementTRange.empty();
     }
