@@ -199,8 +199,6 @@ namespace barney {
     for (int i=0;i<tetIndices.size();i++)
       elements.push_back(Element(i,Element::TET));
 
-    assert(!elements.empty());
-
     for (int i=0;i<pyrIndices.size();i++)
       elements.push_back(Element(i,Element::PYR));
 
