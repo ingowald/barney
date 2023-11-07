@@ -37,7 +37,7 @@ namespace barney {
     
     DeviceContext(Device::SP device);
 
-    void shadeRays_launch(TiledFB *fb);
+    void shadeRays_launch(TiledFB *fb, int generation);
     void shadeRays_sync();
     void traceRays_launch(Model *model);
     

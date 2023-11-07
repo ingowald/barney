@@ -60,12 +60,12 @@ namespace barney {
     return numActive;
   }
 
-  void Context::shadeRaysLocally(FrameBuffer *fb)
+  void Context::shadeRaysLocally(FrameBuffer *fb, int generation)
   {
     BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
-      dev->shadeRays_launch(fb->perDev[localID].get());
+      dev->shadeRays_launch(fb->perDev[localID].get(),generation);
     }
     BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
@@ -128,10 +128,10 @@ namespace barney {
     
     for (auto dev : devices) dev->launch_sync();
 
-    while (true) {
+    for (int generation=0;true;generation++) {
       traceRaysGlobally(model);
 
-      shadeRaysLocally(fb);
+      shadeRaysLocally(fb, generation);
       for (auto dev : devices) dev->launch_sync();
       
       const int numActiveGlobally = numRaysActiveGlobally();

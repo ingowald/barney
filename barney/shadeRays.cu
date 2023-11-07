@@ -18,6 +18,19 @@
 #include "barney/Ray.h"
 
 namespace barney {
+
+  inline __device__
+  vec3f randomDirection(Random &rng)
+  {
+    vec3f v;
+    while (true) {
+      v.x = 1.f-2.f*rng();
+      v.y = 1.f-2.f*rng();
+      v.z = 1.f-2.f*rng();
+      if (dot(v,v) <= 1.f)
+        return normalize(v);
+    }
+  }
   
   __global__
   void g_shadeRays(AccumTile *accumTiles,
@@ -25,28 +38,65 @@ namespace barney {
                    Ray *readQueue,
                    int numRays,
                    Ray *writeQueue,
-                   int *d_nextWritePos)
+                   int *d_nextWritePos,
+                   int generation)
   {
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
     if (tid >= numRays) return;
 
     Ray ray = readQueue[tid];
-    vec3f color = ray.color;
+    
+    vec3f albedo = (vec3f)ray.hit.baseColor;
+    vec3f fragment;
+    
+    if (!ray.hadHit) {
+      if (generation == 0) {
+        // for primary rays we have pre-initialized basecolor to a
+        // background color in generateRays(); let's just use this, so
+        // generaterays can pre--set whatever color it wasnts for
+        // non-hitting rays
+        fragment = (vec3f)ray.hit.baseColor;
+      } else {
+        vec3f ambientIllum = vec3f(1.f);
+        fragment = ray.throughput * ambientIllum;
+      }
+    } else {
+      vec3f dir = ray.dir;
+      vec3f Ng = ray.hit.N;
+      float NdotD = dot(Ng,dir);
+      if (NdotD > 0.f) Ng = - Ng;
+      
+      float scale = .3f + .7f*fabsf(NdotD);
+      scale *= .3f;
+      fragment
+        = albedo
+        * scale
+        * ray.throughput;
 
-    // color *= randomColor(ray.primID);
-
-    // if (ray.hadHit) {
-    //   color = ray.color;
-    // } else {
-    //   const float t = 0.5f*(ray.direction.y + 1.0f);
-    //   color = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-    // }
+#if 1
+      LCG<4> &rng = (LCG<4> &)ray.rngSeed;
+      if (ray.hadHit && generation == 0) {
+        Ray bounce;
+        bounce.org = ray.hit.P + 1e-3f*Ng;
+        bounce.dir = normalize(ray.hit.N + randomDirection(rng));
+        bounce.tMax = INFINITY;
+        bounce.dbg = ray.dbg;
+        bounce.hadHit = false;
+        bounce.pixelID = ray.pixelID;
+        rng();
+        bounce.rngSeed = ray.rngSeed;
+        rng();
+        bounce.throughput = ray.throughput * albedo;
+        writeQueue[atomicAdd(d_nextWritePos,1)] = bounce;
+      }
+#endif
+    }
     int tileID  = ray.pixelID / pixelsPerTile;
     int tileOfs = ray.pixelID % pixelsPerTile;
     
     float4 &valueToAccumInto
       = accumTiles[tileID].accum[tileOfs];
-    vec4f valueToAccum = make_float4(color.x,color.y,color.z,0.f);
+    vec4f valueToAccum = make_float4(fragment.x,fragment.y,fragment.z,0.f);
     if (accumID > 0)
       valueToAccum = valueToAccum + (vec4f)valueToAccumInto;
     valueToAccumInto = valueToAccum;

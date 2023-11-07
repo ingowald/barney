@@ -24,7 +24,7 @@ namespace barney {
   struct DataGroup;
   
   struct Material {
-    vec3f diffuseColor;
+    vec3f baseColor;
   };
 
   struct Geometry : public Object {

@@ -291,7 +291,7 @@ namespace barney {
     void clipRangeToPlane(vec4f a, vec4f b, vec4f c, bool dbg = false)
     {
       vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
-      float NdotD = dot(ray.dir, N);
+      float NdotD = dot((vec3f)ray.dir, N);
       // if (dbg)
       //   printf(" clipping: N is %f %f %f, NdotD %f\n",
       //          N.x,N.y,N.z,NdotD);
@@ -710,10 +710,11 @@ namespace barney {
     //          fabsf(dot(normalize(ray.dir),normalize(N))));
 
     ray.hadHit = 1;
-    ray.color
-      = //randomColor(primID)
-      cd.mappedColor
-      * (.3f+.7f*fabsf(dot(normalize(ray.dir),normalize(N))));
+    ray.hit.N = N;
+    ray.hit.P = P;
+    ray.hit.baseColor = cd.mappedColor;
+      // = vec3f(cd.mappedColor
+      //         * (.3f+.7f*fabsf(dot(normalize(ray.dir),N))));
   }
 
   OPTIX_INTERSECT_PROGRAM(UMeshRTXObjectSpaceIsec)()

@@ -75,11 +75,21 @@ namespace barney {
     ray.tMax = 1e30f;
     ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
     Random rand(rngSeed,ray.pixelID);
+    rand();
+    rand();
+    rand();
     ray.rngSeed = rand.state;
     ray.hadHit = false;
 
     const float t = (iy+.5f)/float(fbSize.y);
-    ray.color = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
+    // for *primary* rays we pre-initialize basecolor to a background
+    // color; this way the shaderays function doesn't have to reverse
+    // engineer pixel pos etc
+    ray.hit.baseColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
+    ray.hit.N = vec3f(0.f);
+    ray.throughput = vec3f(1.f);
+    
+    // ray.color = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
     
     int pos = -1;
     if (ix < fbSize.x && iy < fbSize.y) 

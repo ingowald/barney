@@ -27,14 +27,28 @@ namespace barney {
     ray.tMax = optixGetRayTmax();
     int primID = optixGetPrimitiveIndex();
     vec3i triangle = self.indices[primID];
-    vec3f a = self.vertices[triangle.x];
-    vec3f b = self.vertices[triangle.y];
-    vec3f c = self.vertices[triangle.z];
-    vec3f n = normalize(cross(b-a,c-a));
+    vec3f v0 = self.vertices[triangle.x];
+    vec3f v1 = self.vertices[triangle.y];
+    vec3f v2 = self.vertices[triangle.z];
+    vec3f n = cross(v1-v0,v2-v0);
+    n = optixTransformNormalFromObjectToWorldSpace(n);
+    n = normalize(n);
+    
     vec3f dir = optixGetWorldRayDirection();
+#if VISUALIZE_PRIMS
     vec3f baseColor = owl::randomColor(primID);
-    ray.color = .3f + .7f*baseColor*abs(dot(dir,n));
-    // printf("Marking ray %i as hit\n",ray.pixelID);
+#else
+    vec3f baseColor = self.material.baseColor;
+#endif
+    const float u = optixGetTriangleBarycentrics().x;
+    const float v = optixGetTriangleBarycentrics().y;
+    
+    const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
+    vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
+    
+    ray.hit.baseColor = baseColor;
+    ray.hit.N         = n;
+    ray.hit.P         = P;
   }
   
 }

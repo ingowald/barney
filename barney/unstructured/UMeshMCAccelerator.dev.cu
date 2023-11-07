@@ -128,11 +128,15 @@ namespace barney {
     if (N == vec3f(0.f)) {
       N = ray.dir;
     }
+    N = normalize(N);
 
-    ray.color
+    ray.hadHit = true;
+    ray.hit.baseColor
       = getPos(mapped[6])
-      * (.3f+.7f*fabsf(dot(normalize(ray.dir),normalize(N))));
-    
+      // * (.3f+.7f*fabsf(dot(normalize(ray.dir),N)))
+      ;
+    ray.hit.N = N;
+    ray.hit.P = P[6];
   }
 
   OPTIX_INTERSECT_PROGRAM(UMesh_MC_CUBQL_Isec)()
@@ -166,7 +170,7 @@ namespace barney {
                                ray.dbg))
       return;
 
-    ray.color = vec3f(sample);
+    // ray.hit.baseColor = vec3f(sample);
     ray.tMax = tRange.upper;
     optixReportIntersection(tRange.upper, 0);
   }

@@ -68,9 +68,10 @@ namespace barney {
                    Ray *readQueue,
                    int numRays,
                    Ray *writeQueue,
-                   int *d_nextWritePos);
+                   int *d_nextWritePos,
+                   int generation);
   
-  void DeviceContext::shadeRays_launch(TiledFB *fb)
+  void DeviceContext::shadeRays_launch(TiledFB *fb,int generation)
   {
     SetActiveGPU forDuration(device);
     int numRays = rays.numActive;
@@ -80,7 +81,7 @@ namespace barney {
     if (nb)
       g_shadeRays<<<nb,bs,0,device->launchStream>>>
         (fb->accumTiles,fb->owner->accumID,
-         rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos);
+         rays.readQueue,numRays,rays.writeQueue,rays.d_nextWritePos,generation);
   }
 
   void DeviceContext::shadeRays_sync()

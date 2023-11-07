@@ -40,7 +40,7 @@ namespace barney {
   {
     assert(material);
     Material result;
-    result.diffuseColor = (const vec3f&)material->baseColor;
+    result.baseColor = (const vec3f&)material->baseColor;
     return result;
   }
   
