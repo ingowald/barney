@@ -19,6 +19,7 @@
 #include "barney/LocalContext.h"
 #include "barney/FrameBuffer.h"
 #include "barney/Model.h"
+#include "barney/Triangles.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
@@ -176,6 +177,28 @@ namespace barney {
        (const vec2f*)texcoords);
     return (BNGeom)triangles;
   }
+
+  BN_API
+  void bnTriangleMeshUpdate(BNGeom geom,
+                            const BNMaterial *material,
+                            const int3 *indices,
+                            int numIndices,
+                            const float3 *vertices,
+                            int numVertices,
+                            const float3 *normals,
+                            const float2 *texcoords)
+  {
+    Triangles *triangles = (Triangles *)checkGet(geom);
+    triangles->update(checkGet(material),
+                      numIndices,
+                      (const vec3i*)indices,
+                      numVertices,
+                      (const vec3f*)vertices,
+                      (const vec3f*)normals,
+                      (const vec2f*)texcoords);
+  }
+
+  
 
   BN_API
   void bnVolumeSetXF(BNVolume volume,

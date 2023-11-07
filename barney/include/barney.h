@@ -192,6 +192,15 @@ BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
                             int numVertices,
                             const float3 *normals,
                             const float2 *texcoords);
+BN_API
+void bnTriangleMeshUpdate(BNGeom geom,
+                          const BNMaterial *material,
+                          const int3 *indices,
+                          int numIndices,
+                          const float3 *vertices,
+                          int numVertices,
+                          const float3 *normals,
+                          const float2 *texcoords);
 
 BN_API
 BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
