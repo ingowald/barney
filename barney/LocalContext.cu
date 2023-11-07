@@ -102,6 +102,7 @@ namespace barney {
       auto &devFB = *fb->perDev[localID];
       TiledFB::writeFinalPixels(nullptr,//devFB.device.get(),
                                 fb->finalFB,
+                                fb->finalDepth,
                                 fb->numPixels,
                                 devFB.finalTiles,
                                 devFB.tileDescs,
@@ -122,6 +123,10 @@ namespace barney {
     if (fb->hostFB != fb->finalFB)
       BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
                             fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
+                            cudaMemcpyDefault));
+    if (fb->hostDepth != fb->finalDepth)
+      BARNEY_CUDA_CALL(Memcpy(fb->hostDepth,fb->finalDepth,
+                            fb->numPixels.x*fb->numPixels.y*sizeof(float),
                             cudaMemcpyDefault));
     for (auto dev : devices) dev->sync();
   }

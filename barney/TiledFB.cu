@@ -93,6 +93,7 @@ namespace barney {
       = owl::make_rgba(vec4f(accumTiles[tileID].accum[pixelID])*accumScale);
     
     finalTiles[tileID].rgba[pixelID] = rgba32;
+    finalTiles[tileID].depth[pixelID] = accumTiles[tileID].depth[pixelID];
   }
 
   /*! write this tiledFB's tiles into given "final" frame buffer
@@ -110,6 +111,7 @@ namespace barney {
   // ==================================================================
 
   __global__ void g_writeFinalPixels(uint32_t  *finalFB,
+                                     float     *finalDepth,
                                      vec2i      numPixels,
                                      FinalTile *finalTiles,
                                      TileDesc  *tileDescs)
@@ -126,10 +128,13 @@ namespace barney {
 
     uint32_t ofs = ix + numPixels.x*iy;
     finalFB[ofs] = pixelValue;
+    if (finalDepth)
+      finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
   }
                                  
   void TiledFB::writeFinalPixels(Device    *device,
                                  uint32_t  *finalFB,
+                                 float     *finalDepth,
                                  vec2i      numPixels,
                                  FinalTile *finalTiles,
                                  TileDesc  *tileDescs,
@@ -146,7 +151,7 @@ namespace barney {
       g_writeFinalPixels
         <<<numTiles,vec2i(tileSize),0,
       device?device->launchStream:0>>>
-        (finalFB,numPixels,
+        (finalFB,finalDepth,numPixels,
          finalTiles,tileDescs);
   }
   

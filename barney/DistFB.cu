@@ -37,11 +37,11 @@ namespace barney {
     }
   }
 
-  void DistFB::resize(vec2i size, uint32_t *hostFB)
+  void DistFB::resize(vec2i size, uint32_t *hostFB, float *hostDepth)
   {
     double t0 = getCurrentTime();
     
-    FrameBuffer::resize(size, hostFB);
+    FrameBuffer::resize(size, hostFB, hostDepth);
     std::vector<int> tilesOnGPU(perDev.size());
     for (int localID = 0;localID < perDev.size(); localID++) {
       tilesOnGPU[localID] = perDev[localID]->numActiveTiles;
@@ -58,40 +58,20 @@ namespace barney {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
 
-        // {
-        //   std::stringstream ss;
-        //   ss << "#bn." << context->world.rank
-        //      << " requesting 1 int from rank "
-        //      << context->worldRankOfWorker[rankOfGPU] << " w/ tag " << localID << std::endl;
-        //   std::cout << ss.str() << std::flush;
-        // }
         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
                             &ownerGather.numTilesOnGPU[ggID],1,
                             recv_requests[ggID]);
       }
     }
 
-    // printf("#bn.%i: bb %ss\n",context->world.rank,
-    //        prettyDouble(getCurrentTime()-t0).c_str());
-
     if (context->isActiveWorker) {
       for (int localID=0;localID<tilesOnGPU.size();localID++) {
-        // {
-        //   std::stringstream ss;
-        //   ss << "#bn." << context->world.rank
-        //      << " sending 1 int to rank "
-        //      << owningRank << " w/ tag " << localID << std::endl;
-        //   std::cout << ss.str() << std::flush;
-        // }
         context->world.send(owningRank,localID,
                             &tilesOnGPU[localID],1,
                             send_requests[localID]);
       }
     }    
 
-    // printf("#bn.%i: cc %ss\n",context->world.rank,
-    //        prettyDouble(getCurrentTime()-t0).c_str());
-    
     // ------------------------------------------------------------------
     // and wait for those to complete
     // ------------------------------------------------------------------
@@ -99,16 +79,10 @@ namespace barney {
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
         context->world.wait(recv_requests[ggID]);
     
-    // printf("#bn.%i: dd %ss\n",context->world.rank,
-    //        prettyDouble(getCurrentTime()-t0).c_str());
-
     if (context->isActiveWorker)
       for (int localID=0;localID<tilesOnGPU.size();localID++)
         context->world.wait(send_requests[localID]);    
 
-    // printf("#bn.%i: ee %ss\n",context->world.rank,
-    //        prettyDouble(getCurrentTime()-t0).c_str());
-    
     // ------------------------------------------------------------------
     // ------------------------------------------------------------------
 
@@ -119,7 +93,6 @@ namespace barney {
         ownerGather.firstTileOnGPU[ggID] = sumTiles;
         sumTiles += ownerGather.numTilesOnGPU[ggID];
       }
-      PING; PRINT(sumTiles);
       ownerGather.numActiveTiles = sumTiles;
 
       if (ownerGather.finalTiles)
@@ -133,9 +106,6 @@ namespace barney {
       BARNEY_CUDA_SYNC_CHECK();
     }
     
-    // printf("#bn.%i: ff %ss\n",context->world.rank,
-    //        prettyDouble(getCurrentTime()-t0).c_str());
-
     // ------------------------------------------------------------------
     // trigger all sends and receives - for gpu descs
     // ------------------------------------------------------------------
@@ -147,10 +117,6 @@ namespace barney {
                             ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
-        
-        // if (isOwner)
-        //   std::cout << "#bn: getting " << ownerGather.numTilesOnGPU[ggID] << " tile descs from worker gpu " << rankOfGPU << "." << localID << std::endl;
-        
       }
 
     if (context->isActiveWorker)
@@ -158,9 +124,6 @@ namespace barney {
         context->world.send(owningRank,localID,
                             perDev[localID]->tileDescs,tilesOnGPU[localID],
                             send_requests[localID]);
-
-    // printf("#bn.%i: gg %ss\n",context->world.rank,
-    //        prettyDouble(getCurrentTime()-t0).c_str());
 
     // ------------------------------------------------------------------
     // and wait for those to complete
@@ -172,11 +135,6 @@ namespace barney {
     if (context->isActiveWorker)
       for (int localID=0;localID<tilesOnGPU.size();localID++)
         context->world.wait(send_requests[localID]);
-
-    
-    // if (isOwner)
-    //   std::cout << "#bn: resize done, have "
-    //             << ownerGather.numActiveTiles << " tiles total." << std::endl;
   }
 
   void DistFB::ownerGatherFinalTiles()

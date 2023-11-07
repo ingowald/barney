@@ -240,6 +240,7 @@ namespace barney {
       fb->finalFB[fb->numPixels.x*fb->numPixels.y-1] = -1;
       barney::TiledFB::writeFinalPixels(nullptr,
                                         fb->finalFB,
+                                        fb->finalDepth,
                                         fb->numPixels,
                                         fb->ownerGather.finalTiles,
                                         fb->ownerGather.tileDescs,

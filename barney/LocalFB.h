@@ -35,7 +35,7 @@ namespace barney {
     static SP create(Context *context)
     { return std::make_shared<LocalFB>(context); }
     
-    void resize(vec2i size, uint32_t *hostFB) override;
+    void resize(vec2i size, uint32_t *hostFB, float *hostDepth) override;
   };
 
 }

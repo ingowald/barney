@@ -20,6 +20,7 @@
 
 namespace barney {
 
+#define FB_HAVE_DEPTH 1
   struct FrameBuffer;
   
   enum { tileSize = 32 };
@@ -27,15 +28,14 @@ namespace barney {
   
   struct AccumTile {
     float4 accum[pixelsPerTile];
+    float  depth[pixelsPerTile];
   };
   struct FinalTile {
     uint32_t rgba[pixelsPerTile];
+    float    depth[pixelsPerTile];
   };
   struct TileDesc {
-    // union {
-    //   int4 forAlign;
     vec2i lower;
-    // };
   };
   
   struct TiledFB {
@@ -52,6 +52,7 @@ namespace barney {
     static
     void writeFinalPixels(Device    *device,
                           uint32_t  *finalFB,
+                          float     *finalDepth,
                           vec2i      numPixels,
                           FinalTile *finalTiles,
                           TileDesc  *tileDescs,

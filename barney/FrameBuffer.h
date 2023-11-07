@@ -29,14 +29,28 @@ namespace barney {
     std::string toString() const override
     { return "<FrameBuffer(base)>"; }
     
-    virtual void resize(vec2i size, uint32_t *hostFB);
+    virtual void resize(vec2i size,
+                        uint32_t *hostFB,
+                        float    *hostDepth);
     virtual void resetAccumulation() { accumID = 0; }
     
     std::vector<TiledFB::SP> perDev;
     
     vec2i       numPixels   = { 0,0 };
+    // the final frame buffer RGBA8 that we can definitely write into
+    // - might be our own staged copy if we can't write into host
+    // supplied one
     uint32_t   *finalFB     = 0;
     uint32_t   *hostFB      = 0;
+
+    // depth buffer: same as for color buffer we have two differnt
+    // poitners here - one that we can defintiely use in device code
+    // (finalDepth), and one that the app wants to eventually have the
+    // values in (might be on host). these _can_ be the same, but may
+    // not be
+    float      *finalDepth  = 0;
+    float      *hostDepth   = 0;
+
     uint32_t    accumID     = 0;
     Context    *const context;
     const bool  isOwner;

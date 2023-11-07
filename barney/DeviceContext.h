@@ -59,11 +59,6 @@ namespace barney {
       BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
     }
 
-    // OWLLaunchParams    const lp;
-    // /*! this is the stream (from the *launch params*) for all *launch*
-    //     related operations */
-    // cudaStream_t       const launchStream;
-    
     barney::RayQueue rays;
     /*! each barneycontext gets its own LP: even though that lp's
         context is (possibly) shared across multiple device contextes

@@ -339,10 +339,11 @@ namespace barney {
   BN_API
   void bnFrameBufferResize(BNFrameBuffer fb,
                            int sizeX, int sizeY,
-                           uint32_t *hostRGBA)
+                           uint32_t *hostRGBA,
+                           float *hostDepth)
   {
     LOG_API_ENTRY;
-    checkGet(fb)->resize(vec2i{sizeX,sizeY},hostRGBA);
+    checkGet(fb)->resize(vec2i{sizeX,sizeY},hostRGBA,hostDepth);
   }
 
 

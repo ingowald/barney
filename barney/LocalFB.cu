@@ -18,9 +18,9 @@
 
 namespace barney {
 
-  void LocalFB::resize(vec2i newSize, uint32_t *hostFB) 
+  void LocalFB::resize(vec2i newSize, uint32_t *hostFB, float *hostDepth) 
   {
-    FrameBuffer::resize(newSize, hostFB);
+    FrameBuffer::resize(newSize, hostFB, hostDepth);
   }
 
 }

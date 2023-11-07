@@ -30,16 +30,26 @@ namespace barney {
     }
   }
 
-  void FrameBuffer::resize(vec2i size, uint32_t *hostFB)
+  void FrameBuffer::resize(vec2i size,
+                           uint32_t *hostFB,
+                           float    *hostDepth)
   {
-    PING;
     for (auto &pd: perDev)
       pd->resize(size);
     
     numPixels = size;
-    // numTiles  = divRoundUp(size,vec2i(barney::tileSize));
 
     if (isOwner) {
+      // allocate/resize a owner-only, device-side depth buffer that
+      // we can write into in device kernels
+      if (finalDepth) {
+        BARNEY_CUDA_CALL(Free(finalDepth));
+        BARNEY_CUDA_CALL(MallocManaged(&finalDepth,
+                                       numPixels.x*numPixels.y * sizeof(float)));
+      }
+      // save the host depth buffer, which may be host-accesible only
+      this->hostDepth = hostDepth;
+      
       if (finalFB && finalFB != this->hostFB) {
         BARNEY_CUDA_CALL(Free(finalFB));
         finalFB = nullptr;
@@ -50,14 +60,10 @@ namespace barney {
       BARNEY_CUDA_CALL(PointerGetAttributes(&attr,hostFB));
       if (attr.type == cudaMemoryTypeHost) {
         BARNEY_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
-        std::cout << "#### OWNER ALLOCED FINAL FB " << finalFB << " of size << " << numPixels << std::endl;
       } else {
-        std::cout << "### simply using host-supplied frame buffer " << hostFB << std::endl;
         finalFB = hostFB;
       }
-      fflush(0);
     }
-    PING;
   }
   
 }

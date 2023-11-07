@@ -48,7 +48,7 @@ namespace barney {
     
     vec3f albedo = (vec3f)ray.hit.baseColor;
     vec3f fragment;
-    
+    float z = INFINITY;
     if (!ray.hadHit) {
       if (generation == 0) {
         // for primary rays we have pre-initialized basecolor to a
@@ -61,6 +61,7 @@ namespace barney {
         fragment = ray.throughput * ambientIllum;
       }
     } else {
+      z = ray.tMax;
       vec3f dir = ray.dir;
       vec3f Ng = ray.hit.N;
       float NdotD = dot(Ng,dir);
@@ -96,9 +97,19 @@ namespace barney {
     
     float4 &valueToAccumInto
       = accumTiles[tileID].accum[tileOfs];
+    float  &tile_z
+      = accumTiles[tileID].depth[tileOfs];
     vec4f valueToAccum = make_float4(fragment.x,fragment.y,fragment.z,0.f);
     if (accumID > 0)
       valueToAccum = valueToAccum + (vec4f)valueToAccumInto;
+    
+    if (generation == 0) {
+      if (accumID == 0)
+        tile_z = z;
+      else
+        tile_z = min(tile_z,z);
+    }
+        
     valueToAccumInto = valueToAccum;
   }
   
