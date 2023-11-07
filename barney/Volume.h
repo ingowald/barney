@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "barney/Object.h"
 // todo: move to barney/volume/TransferFunction :
 #include "barney/unstructured/TransferFunction.h"

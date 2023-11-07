@@ -20,6 +20,8 @@
 #include "barney/DataGroup.h"
 #include "barney/unstructured/MCGrid.h"
 
+#include "barney/unstructured/UElems.h"
+
 namespace barney {
 
   /*! helper functoin to extrace 3f spatial component from 4f point-plus-scalar */
@@ -48,7 +50,7 @@ namespace barney {
   
 
   struct Element {
-    typedef enum { TET=0, HEX, GRID } Type;
+    typedef enum { TET=0, PYR, WED, HEX, GRID } Type;
     
     inline __both__ Element() {}
     inline __both__ Element(int ID, int type)
@@ -70,15 +72,22 @@ namespace barney {
     struct DD {
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
+      inline __both__ box4f pyrBounds(int primID) const;
+      inline __both__ box4f wedBounds(int primID) const;
       inline __both__ box4f hexBounds(int primID) const;
       inline __both__ box4f gridBounds(int primID) const;
 
       inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P) const;
       inline __both__ bool tetScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool pyrScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool wedScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool hexScalar(float &retVal, int primID, vec3f P) const;
       inline __both__ bool gridScalar(float &retVal, int primID, vec3f P) const;
       
       const float4     *vertices;
       const int4       *tetIndices;
+      const ints<5>    *pyrIndices;
+      const ints<6>    *wedIndices;
       const ints<8>    *hexIndices;
       const Element    *elements;
       const int        *gridOffsets;
@@ -123,6 +132,8 @@ namespace barney {
     
     OWLBuffer verticesBuffer   = 0;
     OWLBuffer tetIndicesBuffer = 0;
+    OWLBuffer pyrIndicesBuffer = 0;//todo wire in
+    OWLBuffer wedIndicesBuffer = 0;//todo wire in
     OWLBuffer hexIndicesBuffer = 0;
     OWLBuffer elementsBuffer   = 0;
     OWLBuffer gridOffsetsBuffer = 0;
@@ -153,6 +164,31 @@ namespace barney {
       .including(vertices[indices.z])
       .including(vertices[indices.w]);
   }
+
+  inline __both__
+  box4f UMeshField::DD::pyrBounds(int pyrID) const
+  {
+    UMeshField::ints<5> indices = pyrIndices[pyrID];
+    return box4f()
+      .including(vertices[indices[0]])
+      .including(vertices[indices[1]])
+      .including(vertices[indices[2]])
+      .including(vertices[indices[3]])
+      .including(vertices[indices[4]]);
+  }
+
+  inline __both__
+  box4f UMeshField::DD::wedBounds(int wedID) const
+  {
+    UMeshField::ints<6> indices = wedIndices[wedID];
+    return box4f()
+      .including(vertices[indices[0]])
+      .including(vertices[indices[1]])
+      .including(vertices[indices[2]])
+      .including(vertices[indices[3]])
+      .including(vertices[indices[4]])
+      .including(vertices[indices[5]]);
+  }
   
   inline __both__
   box4f UMeshField::DD::hexBounds(int hexID) const
@@ -181,13 +217,17 @@ namespace barney {
     switch (element.type) {
     case Element::TET: 
       return tetBounds(element.ID);
+    case Element::PYR:
+      return pyrBounds(element.ID);
+    case Element::WED:
+      return wedBounds(element.ID);
     case Element::HEX: 
       return hexBounds(element.ID);
     case Element::GRID:
       return gridBounds(element.ID);
+    default:
+      return box4f(); 
     }
-    // ugh: could not recognize this element type!?
-    return box4f(); 
   }
 
   // using inward-facing planes here, like vtk
@@ -204,6 +244,12 @@ namespace barney {
     switch (elt.type) {
     case Element::TET: 
       return tetScalar(retVal,elt.ID,P);
+    case Element::PYR:
+      return pyrScalar(retVal,elt.ID,P);
+    case Element::WED:
+      return wedScalar(retVal,elt.ID,P);
+    case Element::HEX:
+      return hexScalar(retVal,elt.ID,P);
     case Element::GRID:
       return gridScalar(retVal,elt.ID,P);
     }
@@ -231,6 +277,46 @@ namespace barney {
     float scale = 1.f/(t0+t1+t2+t3);
     retVal = scale * (t0*v0.w + t1*v1.w + t2*v2.w + t3*v3.w);
     return true;
+  }
+
+  inline __both__
+  bool UMeshField::DD::pyrScalar(float &retVal, int primID, vec3f P) const
+  {
+    const auto& indices = pyrIndices[primID];
+    return intersectPyrEXT(retVal, P,
+                           vertices[indices[0]],
+                           vertices[indices[1]],
+                           vertices[indices[2]],
+                           vertices[indices[3]],
+                           vertices[indices[4]]);
+  }
+
+  inline __both__
+  bool UMeshField::DD::wedScalar(float &retVal, int primID, vec3f P) const
+  {
+    const auto& indices = wedIndices[primID];
+    return intersectWedgeEXT(retVal, P,
+                           vertices[indices[0]],
+                           vertices[indices[1]],
+                           vertices[indices[2]],
+                           vertices[indices[3]],
+                           vertices[indices[4]],
+                           vertices[indices[5]]);
+  }
+
+  inline __both__
+  bool UMeshField::DD::hexScalar(float &retVal, int primID, vec3f P) const
+  {
+    auto indices = hexIndices[primID];
+    return intersectHexEXT(retVal, P,
+                               vertices[indices[0]],
+                               vertices[indices[1]],
+                               vertices[indices[2]],
+                               vertices[indices[3]],
+                               vertices[indices[4]],
+                               vertices[indices[5]],
+                               vertices[indices[6]],
+                               vertices[indices[7]]);
   }
 
   inline __both__
@@ -282,7 +368,5 @@ namespace barney {
 
     return true;
   }
-
-
   
 }
