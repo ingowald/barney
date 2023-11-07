@@ -142,30 +142,8 @@ BNFrameBuffer bnFrameBufferCreate(BNContext context,
 BN_API
 void bnFrameBufferResize(BNFrameBuffer fb,
                          int sizeX, int sizeY,
-                         uint32_t *hostRGBA);
-
-// void bnFBResize(BNFrameBuffer fb, int sizeX, int sizeY);
-
-// struct BNRenderJob {
-//   struct {
-//     float3 center;
-//     float3 uAxis;
-//     float3 vAxis;
-//   } focalPlane;
-//   struct {
-//     float3 at;
-//     float3 du;
-//     float3 dv;
-//   } lens;
-//   struct {
-//     struct {
-//       float2 lower = { 0.f, 0.f };
-//       float2 upper = { 1.f, 1.f };
-//     } region;
-//     int  spp   = 1;
-//     int  seed  = 0;
-//   } frame;
-// };
+                         uint32_t *hostRGBA,
+                         float    *hostDepth = 0);
 
 BN_API
 BNDataGroup bnGetDataGroup(BNModel model,
@@ -196,11 +174,6 @@ void bnModelSetInstances(BNDataGroup dataGroup,
 
 BN_API
 BNModel bnModelCreate(BNContext ctx);
-
-// BN_API
-// void bnRender(BNModel model,
-//               BNRenderRequest *rr,
-//               BNFrameBuffer fb);
 
 // ==================================================================
 // scene content
