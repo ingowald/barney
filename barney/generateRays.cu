@@ -65,8 +65,8 @@ namespace barney {
     ray.org  = camera.lens_00;
     ray.dir
       = camera.dir_00
-      + (ix+.5f)*camera.dir_du
-      + (iy+.5f)*camera.dir_dv;
+      + ((ix+.5f)/float(fbSize.x))*camera.dir_du
+      + ((iy+.5f)/float(fbSize.y))*camera.dir_dv;
     ray.dir = normalize(ray.dir);
 
     bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
