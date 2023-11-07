@@ -323,8 +323,6 @@ namespace barney {
     camera->dir_dv = (float3&)dir_dv;
     camera->lens_00 = (float3&)from;
     camera->lensRadius = 0.f;
-    camera->dbg_vi = _at;
-    camera->dbg_vp = _from;
   }
   
   BN_API
@@ -356,21 +354,14 @@ namespace barney {
   BN_API
   void bnRender(BNModel model,
                 const BNCamera *_camera,
-                BNFrameBuffer fb,
-                BNRenderRequest *req)
+                BNFrameBuffer fb)
   {
-    // std::cout << "------------------------------------------------------------------ " << std::endl;
-    
     static int count = 0;
     if (count++ < 3)
       LOG_API_ENTRY;
 
-    // if (count > 2) exit(0);
-
     assert(_camera);
     Camera camera;
-    camera.dbg_vi = (const vec3f&)_camera->dbg_vi;
-    camera.dbg_vp = (const vec3f&)_camera->dbg_vp;
     camera.lens_00 = (const vec3f&)_camera->lens_00;
     camera.dir_00 = (const vec3f&)_camera->dir_00;
     camera.dir_du = (const vec3f&)_camera->dir_du;

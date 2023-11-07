@@ -28,9 +28,7 @@ typedef struct _BNScalarField   *BNScalarField;
 typedef struct _BNGeom          *BNGeom;
 typedef struct _BNVolume        *BNVolume;
 typedef struct _BNGroup         *BNGroup;
-// typedef struct _BNTransferFunction         *BNTransferFunction;
 typedef struct _BNModel         *BNModel;
-typedef struct _BNRenderRequest *BNRenderRequest;
 typedef struct _BNFrameBuffer   *BNFrameBuffer;
 typedef struct _BNDataGroup     *BNDataGroup;
 
@@ -54,9 +52,6 @@ struct BNCamera {
   float3 lens_00;
   /* vector along v direction, for ONE pixel */
   float  lensRadius;
-
-  float3 dbg_vp;
-  float3 dbg_vi;
 };
 
 #define BN_DEFAULT_MATERIAL  { { .5f,.5f,.5f }, 0.f, 1.f, -1, -1 }
@@ -126,8 +121,6 @@ void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 
 BN_API
 void  bnModelBuild(BNDataGroup dataGroup);
-// BN_API
-// void  bnModelBuild(BNModel model);
 
 // ==================================================================
 // render interface
@@ -152,8 +145,7 @@ BNDataGroup bnGetDataGroup(BNModel model,
 BN_API
 void bnRender(BNModel model,
               const BNCamera *camera,
-              BNFrameBuffer fb,
-              BNRenderRequest *req);
+              BNFrameBuffer fb);
 
 struct BNTransform {
   struct {
@@ -216,47 +208,6 @@ void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
 // volume stuff
 // ------------------------------------------------------------------
 
-// /*! phase function for volumetric stuff - should at some point define
-//     scattering/absorption(/emission?) parameters */
-// struct BNPhaseFunction {
-//   /* iw - should density be part of this rather than of xf? */
-//   float3 baseColor;
-//   /*! blend function describes how much we blend the basecolor with
-//       the value from the transfer function. xfBlend = 0.f means 'use
-//       only transfer function value', xfBlend=1 means 'use only
-//       baseColor' */
-//   float  xfBlend;
-// };
-
-// #define BN_DEFAULT_PHASE_FUNCTION { { .5f,.5f,.5f }, 0.f }
-
-
-// BN_API
-// BNTransferFunction bnTransferFunctionCreate(BNDataGroup dataGroup,
-//                                             float domain_lower,
-//                                             float domain_upper,
-//                                             const float4 *colorMap,
-//                                             int numColorMapValues,
-//                                             float densityAt1);
-
-// BN_API
-// void bnTransferFunctionSet(BNTransferFunction xf,
-//                            float2 domain,
-//                            const float4 *colorMap,
-//                            int numColorMapValues,
-//                            float densityAt1);
-// BN_API
-// void bnTransferFunctionSet(float domain_lower,
-//                            float domain_upper,
-//                            const float4 *values,
-//                            float densityAt1);
-
-
-/*! iw - TODO:
-  - is this a 'geom' ? or should we have a volume?
-  - should this have a transfer function/ mapper? 
-  - should this have a phase function instead of a material?
-*/
 BN_API
 BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
                             // vertices, 4 floats each (3 floats position,
@@ -294,27 +245,4 @@ void bnVolumeSetXF(BNVolume volume,
                    const float4 *colorMap,
                    int numColorMapValues,
                    float densityAt1);
-
-// BN_API
-// void bnUMeshSetScalars(BNVolume umesh,
-//                        const float *scalars);
-
-// BN_API
-// void bnUMeshSetTets(BNVolume umesh,
-//                     const int *indices,
-//                     int numTets);
-
-// BN_API
-// void bnUMeshSetHexes(BNVolume umesh,
-//                      const int *indices,
-//                      int numHexes);
-
-// BN_API
-// void bnUMeshSetGridlets(BNVolume umesh,
-//                         const int *indices,
-//                         int numIndices,
-//                         const BNGridlet *gridlets,
-//                         int numGridlets);
-
-                         
 
