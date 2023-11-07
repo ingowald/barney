@@ -322,7 +322,7 @@ namespace barney {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if 1
+#if 0
     return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
     // return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
 #else
