@@ -349,7 +349,7 @@ namespace barney {
     float f7 = scalars[linearIndex(imin.x,imax.y,imax.z)];
     float f8 = scalars[linearIndex(imax.x,imax.y,imax.z)];
 
-    #define EMPTY(x) x==NAN
+    #define EMPTY(x) isnan(x)
     if (EMPTY(f1) || EMPTY(f2) || EMPTY(f3) || EMPTY(f4) ||
         EMPTY(f5) || EMPTY(f6) || EMPTY(f7) || EMPTY(f8))
       return false;
