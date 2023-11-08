@@ -3,6 +3,7 @@
 
 #include "Frame.h"
 // std
+#include <algorithm>
 #include <chrono>
 
 namespace barney_device {
@@ -66,11 +67,8 @@ void Frame::commit()
   m_depthBuffer.resize(m_depthType == ANARI_FLOAT32 ? numPixels : 0, 0.f);
 
   m_bnHostBuffer.resize(numPixels);
-  bnFrameBufferResize(m_bnFrameBuffer,
-      size.x,
-      size.y,
-      m_bnHostBuffer.data(),
-      nullptr);
+  bnFrameBufferResize(
+      m_bnFrameBuffer, size.x, size.y, m_bnHostBuffer.data(), nullptr);
   m_frameData.size = size;
 }
 
@@ -127,9 +125,9 @@ void *Frame::map(std::string_view channel,
   *height = m_frameData.size.y;
 
   if (channel == "channel.color") {
+    convertPixelsToFinalFormat();
     *pixelType = m_colorType;
-    return m_colorType == ANARI_UFIXED8_RGBA_SRGB ? (void *)m_bnHostBuffer.data()
-                                             : (void *)m_pixelBuffer.data();
+    return m_pixelBuffer.data();
   } else if (channel == "channel.depth" && !m_depthBuffer.empty()) {
     *pixelType = ANARI_FLOAT32;
     return m_depthBuffer.data();
@@ -169,6 +167,33 @@ bool Frame::ready() const
 void Frame::wait() const
 {
   deviceState()->currentFrame = nullptr;
+}
+
+void Frame::convertPixelsToFinalFormat()
+{
+  if (m_colorType == ANARI_UFIXED8_VEC4) {
+    std::memcpy(
+        m_pixelBuffer.data(), m_bnHostBuffer.data(), m_pixelBuffer.size());
+  } else if (m_colorType == ANARI_UFIXED8_RGBA_SRGB) {
+    printf("CONVERTING PIXELS\n");
+    auto numPixels = m_frameData.size.x * m_frameData.size.y;
+    auto *src = (uchar4 *)m_bnHostBuffer.data();
+    auto *dst = (uchar4 *)m_pixelBuffer.data();
+    std::transform(src, src + numPixels, dst, [](uchar4 p) {
+      auto f = make_float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
+      f.x = helium::toneMap(f.x);
+      f.y = helium::toneMap(f.y);
+      f.z = helium::toneMap(f.z);
+      return make_uchar4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
+    });
+  } else if (m_colorType == ANARI_FLOAT32_VEC4) {
+    auto numPixels = m_frameData.size.x * m_frameData.size.y;
+    auto *src = (uchar4 *)m_bnHostBuffer.data();
+    auto *dst = (float4 *)m_pixelBuffer.data();
+    std::transform(src, src + numPixels, dst, [](uchar4 p) {
+      return make_float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
+    });
+  }
 }
 
 } // namespace barney_device
