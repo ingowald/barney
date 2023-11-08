@@ -128,7 +128,7 @@ void *Frame::map(std::string_view channel,
 
   if (channel == "channel.color") {
     *pixelType = m_colorType;
-    return m_colorType == ANARI_UFIXED8_VEC4 ? (void *)m_bnHostBuffer.data()
+    return m_colorType == ANARI_UFIXED8_RGBA_SRGB ? (void *)m_bnHostBuffer.data()
                                              : (void *)m_pixelBuffer.data();
   } else if (channel == "channel.depth" && !m_depthBuffer.empty()) {
     *pixelType = ANARI_FLOAT32;

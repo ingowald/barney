@@ -125,11 +125,11 @@ namespace barney {
       pd.devGroup->update();
 
     generateRays(camera,fb);
-    
     for (auto dev : devices) dev->launch_sync();
 
     for (int generation=0;true;generation++) {
       traceRaysGlobally(model);
+      for (auto dev : devices) dev->launch_sync();
 
       shadeRaysLocally(fb, generation);
       for (auto dev : devices) dev->launch_sync();

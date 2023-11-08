@@ -128,6 +128,7 @@ namespace barney {
 
     uint32_t ofs = ix + numPixels.x*iy;
     finalFB[ofs] = pixelValue;
+    
     if (finalDepth)
       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
   }
