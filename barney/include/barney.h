@@ -120,7 +120,7 @@ void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 #endif
 
 BN_API
-void  bnModelBuild(BNDataGroup dataGroup);
+void  bnBuild(BNDataGroup dataGroup);
 
 // ==================================================================
 // render interface
@@ -159,10 +159,10 @@ struct BNTransform {
 };
 
 BN_API
-void bnModelSetInstances(BNDataGroup dataGroup,
-                         BNGroup *groupsToInstantiate,
-                         BNTransform *instanceTransforms,
-                         int numInstances);
+void bnSetInstances(BNDataGroup dataGroup,
+                    BNGroup *groupsToInstantiate,
+                    BNTransform *instanceTransforms,
+                    int numInstances);
 
 BN_API
 BNModel bnModelCreate(BNContext ctx);
