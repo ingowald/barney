@@ -329,7 +329,8 @@ namespace barney {
       return false;
 
     vec3i numScalars = gridDims[primID]+1;
-    vec3f objPos = P-bounds.lower;
+    vec3f cellSize = bounds.size()/vec3f(gridDims[primID]);
+    vec3f objPos = (P-bounds.lower)/cellSize;
     vec3i imin(objPos);
     vec3i imax = min(imin+1,numScalars-1);
 
