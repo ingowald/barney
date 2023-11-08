@@ -44,9 +44,9 @@ struct BNCamera {
   /*! vector from camera center to to lower-left pixel (i.e., pixel
     (0,0)) on the focal plane */
   float3 dir_00;
-  /* vector along u direction, for ONE pixel */
+  /* vector along edge of image plane, in u direction */
   float3 dir_du;
-  /* vector along v direction, for ONE pixel */
+  /* vector along edge of image plane, in v direction */
   float3 dir_dv;
   /*! lens center ... */
   float3 lens_00;
@@ -70,7 +70,7 @@ void bnPinholeCamera(BNCamera *camera,
                      float3 at,
                      float3 up,
                      float  fovy,
-                     int2   fbSize);
+                     float  aspect);
 
 BN_API
 BNContext bnContextCreate(/*! which data group(s) this rank will
@@ -120,7 +120,7 @@ void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 #endif
 
 BN_API
-void  bnModelBuild(BNDataGroup dataGroup);
+void  bnBuild(BNDataGroup dataGroup);
 
 // ==================================================================
 // render interface
@@ -159,10 +159,10 @@ struct BNTransform {
 };
 
 BN_API
-void bnModelSetInstances(BNDataGroup dataGroup,
-                         BNGroup *groupsToInstantiate,
-                         BNTransform *instanceTransforms,
-                         int numInstances);
+void bnSetInstances(BNDataGroup dataGroup,
+                    BNGroup *groupsToInstantiate,
+                    BNTransform *instanceTransforms,
+                    int numInstances);
 
 BN_API
 BNModel bnModelCreate(BNContext ctx);

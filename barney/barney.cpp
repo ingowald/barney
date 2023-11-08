@@ -120,7 +120,7 @@ namespace barney {
   }
   
   BN_API
-  void bnModelSetInstances(BNDataGroup dataGroup,
+  void bnSetInstances(BNDataGroup dataGroup,
                            BNGroup *_groups,
                            BNTransform *xfms,
                            int numInstances)
@@ -305,26 +305,20 @@ namespace barney {
   }
   
   BN_API
-  void  bnModelBuild(BNDataGroup dataGroup)
+  void  bnBuild(BNDataGroup dataGroup)
   {
     LOG_API_ENTRY;
     checkGet(dataGroup)->build();
   }
-  // BN_API
-  // void  bnModelBuild(BNModel model)
-  // {
-  //   checkGet(model)->build();
-  // }
-
+  
   BN_API
   void bnPinholeCamera(BNCamera *camera,
                        float3 _from,
                        float3 _at,
                        float3 _up,
                        float  fov,
-                       int2   fbSize)
+                       float  aspect)
   {
-    // LOG_API_ENTRY;
     assert(camera);
     vec3f from = (const vec3f&)_from;
     vec3f at   = (const vec3f&)_at;
@@ -332,14 +326,12 @@ namespace barney {
     
     vec3f dir_00  = normalize(at-from);
     
-    vec3f dir_du = normalize(cross(dir_00, up));
+    vec3f dir_du = aspect * normalize(cross(dir_00, up));
     vec3f dir_dv = normalize(cross(dir_du, dir_00));
 
-    float min_xy = (float)std::min(fbSize.x, fbSize.y);
-
-    dir_00 *= (float)((float)min_xy / (2.0f * tanf((0.5f * fov) * M_PI / 180.0f)));
-    dir_00 -= 0.5f * (float)fbSize.x * dir_du;
-    dir_00 -= 0.5f * (float)fbSize.y * dir_dv;
+    dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fov) * M_PI / 180.0f)));
+    dir_00 -= 0.5f * dir_du;
+    dir_00 -= 0.5f * dir_dv;
 
     camera->dir_00 = (float3&)dir_00;
     camera->dir_du = (float3&)dir_du;

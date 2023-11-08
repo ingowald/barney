@@ -231,7 +231,7 @@ namespace barney {
     void sampleAndMap(vec3f P, bool dbg);
 
     inline __device__
-    void setElement(Element elt)
+    bool setElement(Element elt)
     {
       element = elt;
       switch (elt.type)
@@ -275,7 +275,10 @@ namespace barney {
           v7 = dd.mesh.vertices[hexIndices[7]];
         }
         break;
+      default:
+        return false;
       }
+      return true;
     }
 
     // using inward-facing planes here, like vtk
@@ -774,7 +777,9 @@ namespace barney {
       // find next prim:
       int next = it++;
       // if (dbg) printf("------ new prim\n");
-      isec.setElement(self.mesh.elements[next]);
+      
+      if (!isec.setElement(self.mesh.elements[next]))
+        continue;
                       
       // if (dbg) printf("element %i\n",isec.element.ID);
       
