@@ -371,9 +371,7 @@ namespace barney {
                 const BNCamera *_camera,
                 BNFrameBuffer fb)
   {
-    static int count = 0;
-    if (count++ < 3)
-      LOG_API_ENTRY;
+    LOG_API_ENTRY;
 
     assert(_camera);
     Camera camera;
