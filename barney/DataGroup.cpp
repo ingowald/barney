@@ -48,6 +48,8 @@ namespace barney {
     instances.groups = std::move(groups);
     instances.xfms.resize(numUserInstances);
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());
+    devGroup->sbtDirty = true;
+    devGroup->programsDirty = true;
     if (instances.group) {
       owlGroupRelease(instances.group);
       instances.group = 0;      
@@ -118,8 +120,7 @@ namespace barney {
           owlTransforms.push_back(instances.xfms[i]);
         }
     }
-    
-    
+
     if (owlGroups.size() == 0)
       std::cout << OWL_TERMINAL_RED
                 << "warning: data group is empty..."
@@ -131,6 +132,7 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
+    owlBuildPrograms(devGroup->owl);
     owlBuildSBT(devGroup->owl);
   }
 
