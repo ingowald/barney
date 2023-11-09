@@ -48,6 +48,7 @@ namespace barney {
     instances.groups = std::move(groups);
     instances.xfms.resize(numUserInstances);
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());
+    devGroup->sbtDirty = true;
     if (instances.group) {
       owlGroupRelease(instances.group);
       instances.group = 0;      
@@ -131,7 +132,7 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
-    owlBuildSBT(devGroup->owl);
+    // owlBuildSBT(devGroup->owl);
   }
 
 }
