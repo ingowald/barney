@@ -89,8 +89,15 @@ namespace barney {
     int pixelID = threadIdx.x;
     int tileID  = blockIdx.x;
 
+    vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
+
+    // int ix = pixelID%tileSize;
+    // int iy = pixelID/tileSize;
+    // color.x = (ix % 256)/255.f;
+    // color.y = (iy % 256)/255.f;
+    // color.z = 1.f;
     uint32_t rgba32
-      = owl::make_rgba(vec4f(accumTiles[tileID].accum[pixelID])*accumScale);
+      = owl::make_rgba(color);
     
     finalTiles[tileID].rgba[pixelID] = rgba32;
     finalTiles[tileID].depth[pixelID] = accumTiles[tileID].depth[pixelID];
@@ -128,6 +135,7 @@ namespace barney {
 
     uint32_t ofs = ix + numPixels.x*iy;
     finalFB[ofs] = pixelValue;
+    
     if (finalDepth)
       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
   }

@@ -67,7 +67,6 @@ namespace barney {
 
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
-      PING; fflush(0);
       thisDev->launch_sync();
       thisDev->rays.swap();
       thisDev->rays.numActive = numCopied[devID];
@@ -109,7 +108,6 @@ namespace barney {
                                 devFB.numActiveTiles);
     }
     for (auto dev : devices) dev->sync();
-    
     // ------------------------------------------------------------------
     // wait for all GPUs to complete, so pixels are all written before
     // we return and/or copy to app
@@ -120,14 +118,15 @@ namespace barney {
     // ------------------------------------------------------------------
     // copy final frame buffer to app's frame buffer memory
     // ------------------------------------------------------------------
-    if (fb->hostFB != fb->finalFB)
+    if (fb->hostFB && fb->finalFB)
       BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
                             fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                             cudaMemcpyDefault));
-    if (fb->hostDepth != fb->finalDepth)
+    if (fb->hostDepth && fb->finalDepth)
       BARNEY_CUDA_CALL(Memcpy(fb->hostDepth,fb->finalDepth,
                             fb->numPixels.x*fb->numPixels.y*sizeof(float),
                             cudaMemcpyDefault));
+
     for (auto dev : devices) dev->sync();
   }
   

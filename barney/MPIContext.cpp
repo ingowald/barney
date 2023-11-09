@@ -253,6 +253,11 @@ namespace barney {
                                 fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                                 cudaMemcpyDefault));
       }
+      if (fb->hostDepth && fb->finalDepth != fb->hostDepth) {
+        BARNEY_CUDA_CALL(Memcpy(fb->hostDepth,fb->finalDepth,
+                                fb->numPixels.x*fb->numPixels.y*sizeof(float),
+                                cudaMemcpyDefault));
+      }
     }
     BARNEY_CUDA_SYNC_CHECK();
   }

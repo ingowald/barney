@@ -22,6 +22,7 @@ namespace barney {
 
   struct Model;
   struct Spheres;
+  struct Cylinders;
   struct Triangles;
   struct Context;
   
@@ -46,6 +47,14 @@ namespace barney {
                   const float *radii,
                   float defaultRadius);
 
+    Cylinders *createCylinders(const Material   &material,
+                               const vec3f      *points,
+                               int               numPoints,
+                               const vec2i      *indices,
+                               int               numIndices,
+                               const float      *radii,
+                               float             defaultRadius);
+    
     Volume *createVolume(ScalarField::SP sf);
     
     Triangles *

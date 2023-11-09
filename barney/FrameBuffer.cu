@@ -42,27 +42,35 @@ namespace barney {
     if (isOwner) {
       // allocate/resize a owner-only, device-side depth buffer that
       // we can write into in device kernels
-      if (finalDepth) {
-        BARNEY_CUDA_CALL(Free(finalDepth));
+      if (hostDepth) {
+        if (finalDepth) 
+          BARNEY_CUDA_CALL(Free(finalDepth));
         BARNEY_CUDA_CALL(MallocManaged(&finalDepth,
                                        numPixels.x*numPixels.y * sizeof(float)));
       }
+      
       // save the host depth buffer, which may be host-accesible only
       this->hostDepth = hostDepth;
-      
-      if (finalFB && finalFB != this->hostFB) {
-        BARNEY_CUDA_CALL(Free(finalFB));
-        finalFB = nullptr;
-      }
+
       
       this->hostFB = hostFB;
-      cudaPointerAttributes attr;
-      BARNEY_CUDA_CALL(PointerGetAttributes(&attr,hostFB));
-      if (attr.type == cudaMemoryTypeHost) {
-        BARNEY_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
-      } else {
-        finalFB = hostFB;
-      }
+      PING; PRINT(numPixels);
+      BARNEY_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
+      PRINT((int*)finalFB);
+
+      // if (finalFB && finalFB != this->hostFB) {
+      //   BARNEY_CUDA_CALL(Free(finalFB));
+      //   finalFB = nullptr;
+      // }
+      
+      // this->hostFB = hostFB;
+      // cudaPointerAttributes attr;
+      // BARNEY_CUDA_CALL(PointerGetAttributes(&attr,hostFB));
+      // if (attr.type == cudaMemoryTypeHost) {
+      //   BARNEY_CUDA_CALL(MallocManaged(&finalFB, numPixels.x*numPixels.y * sizeof(uint32_t)));
+      // } else {
+      //   finalFB = hostFB;
+      // }
     }
   }
   

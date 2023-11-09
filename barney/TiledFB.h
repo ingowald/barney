@@ -20,7 +20,6 @@
 
 namespace barney {
 
-#define FB_HAVE_DEPTH 1
   struct FrameBuffer;
   
   enum { tileSize = 32 };

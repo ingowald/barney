@@ -38,6 +38,7 @@ if(CUDA_TOOLKIT_ROOT_DIR)
 endif()
 
 set(CMAKE_BUILD_TYPE_INIT "Release")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # project command is required to come after cmake_minimum_required command.
 project(Barney VERSION 1.1.5 LANGUAGES C CXX CUDA)
@@ -77,4 +78,9 @@ add_subdirectory(barney)
 # sample distributed viewer/renderer
 # ------------------------------------------------------------------
 #add_subdirectory(hayMaker)
+
+# ------------------------------------------------------------------
+# ANARI device
+# ------------------------------------------------------------------
+add_subdirectory(anari)
 

@@ -49,6 +49,12 @@ embed_ptx(
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            Triangles.dev.cu
   )
+# ray cylinders geom intersection
+embed_ptx(
+  OUTPUT_TARGET      barney-cylinders-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            Cylinders.dev.cu
+  )
 
 # ------------------------------------------------------------------
 # unstucture mesh variants:
@@ -99,6 +105,8 @@ add_library(barney STATIC
   Spheres.cu
   Triangles.h
   Triangles.cu
+  Cylinders.h
+  Cylinders.cu
   # actual volume types
   Volume.h
   Volume.cpp
@@ -130,6 +138,7 @@ target_link_libraries(barney
   cuBQL_impl
   barney-config
   barney-spheres-ptx
+  barney-cylinders-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
   barney-UMeshRTXObjectSpace-ptx  

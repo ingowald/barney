@@ -157,6 +157,26 @@ namespace barney {
   }
 
   BN_API
+  BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
+                           const BNMaterial *material,
+                           const float3     *points,
+                           int               numPoints,
+                           const int2       *indices,
+                           int               numIndices,
+                           const float      *radii,
+                           float             defaultRadius)
+  {
+    LOG_API_ENTRY;
+    Cylinders *cylinders = checkGet(dataGroup)->createCylinders
+      (checkGet(material),
+       (const vec3f*)points,numPoints,
+       (const vec2i*)indices,numIndices,
+       radii,defaultRadius);
+    return (BNGeom)cylinders;
+  }
+  
+
+  BN_API
   BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
                               const BNMaterial *material,
                               const int3 *indices,
@@ -371,9 +391,7 @@ namespace barney {
                 const BNCamera *_camera,
                 BNFrameBuffer fb)
   {
-    static int count = 0;
-    if (count++ < 3)
-      LOG_API_ENTRY;
+    LOG_API_ENTRY;
 
     assert(_camera);
     Camera camera;

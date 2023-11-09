@@ -17,6 +17,7 @@
 #include "barney/DataGroup.h"
 #include "barney/Model.h"
 #include "barney/Spheres.h"
+#include "barney/Cylinders.h"
 #include "barney/Triangles.h"
 
 namespace barney {
@@ -69,6 +70,21 @@ namespace barney {
   }
 
 
+  Cylinders *DataGroup::createCylinders(const Material   &material,
+                                        const vec3f      *points,
+                                        int               numPoints,
+                                        const vec2i      *indices,
+                                        int               numIndices,
+                                        const float      *radii,
+                                        float             defaultRadius)
+  {
+    return getContext()->initReference
+      (std::make_shared<Cylinders>(this,material,
+                                   points,numPoints,
+                                   indices,numIndices,
+                                   radii,defaultRadius));
+  }
+    
   Spheres *DataGroup::createSpheres(const Material &material,
                                     const vec3f *origins,
                                     int numOrigins,
@@ -119,8 +135,7 @@ namespace barney {
           owlTransforms.push_back(instances.xfms[i]);
         }
     }
-    
-    
+
     if (owlGroups.size() == 0)
       std::cout << OWL_TERMINAL_RED
                 << "warning: data group is empty..."
@@ -132,6 +147,7 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
+    // owlBuildPrograms(devGroup->owl);
     // owlBuildSBT(devGroup->owl);
   }
 
