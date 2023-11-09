@@ -59,7 +59,7 @@ void Perspective::commit()
       make_float3(m_pos.x + m_dir.x, m_pos.y + m_dir.y, m_pos.z + m_dir.z);
 
   bnPinholeCamera(
-      &m_barneyCamera, m_pos, at, m_up, fovy, anari::degrees(aspect));
+      &m_barneyCamera, m_pos, at, m_up, anari::degrees(fovy), aspect);
 }
 
 } // namespace barney_device
