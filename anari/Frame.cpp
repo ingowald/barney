@@ -175,7 +175,6 @@ void Frame::convertPixelsToFinalFormat()
     std::memcpy(
         m_pixelBuffer.data(), m_bnHostBuffer.data(), m_pixelBuffer.size());
   } else if (m_colorType == ANARI_UFIXED8_RGBA_SRGB) {
-    printf("CONVERTING PIXELS\n");
     auto numPixels = m_frameData.size.x * m_frameData.size.y;
     auto *src = (uchar4 *)m_bnHostBuffer.data();
     auto *dst = (uchar4 *)m_pixelBuffer.data();

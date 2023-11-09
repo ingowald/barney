@@ -136,8 +136,6 @@ void World::buildBarneyModel()
     return;
   }
 
-  printf("BARNEY GROUPS: %zu\n", barneyGroups.size());
-
   bnSetInstances(m_barneyDataGroup,
       barneyGroups.data(),
       barneyTransforms.data(),
