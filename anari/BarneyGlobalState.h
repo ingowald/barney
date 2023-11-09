@@ -34,9 +34,7 @@ struct BarneyGlobalState : public helium::BaseGlobalDeviceState
 
   struct ObjectUpdates
   {
-    helium::TimeStamp lastBLSReconstructSceneRequest{0};
-    helium::TimeStamp lastBLSCommitSceneRequest{0};
-    helium::TimeStamp lastTLSReconstructSceneRequest{0};
+    helium::TimeStamp lastSceneChange{0};
   } objectUpdates;
 
   Frame *currentFrame{nullptr};
@@ -50,6 +48,7 @@ struct BarneyGlobalState : public helium::BaseGlobalDeviceState
 
   BarneyGlobalState(ANARIDevice d);
   void waitOnCurrentFrame() const;
+  void markSceneChanged();
 };
 
 // Helper functions/macros ////////////////////////////////////////////////////

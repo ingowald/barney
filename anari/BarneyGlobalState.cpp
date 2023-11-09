@@ -18,4 +18,9 @@ void BarneyGlobalState::waitOnCurrentFrame() const
     currentFrame->wait();
 }
 
+void BarneyGlobalState::markSceneChanged()
+{
+  objectUpdates.lastSceneChange = helium::newTimeStamp();
+}
+
 } // namespace barney_device

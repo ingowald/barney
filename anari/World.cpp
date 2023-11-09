@@ -100,7 +100,9 @@ BNModel World::barneyModel() const
 
 void World::barneyModelUpdate()
 {
-  buildBarneyModel();
+  const auto &state = *deviceState();
+  if (state.objectUpdates.lastSceneChange > m_lastBarneyModelBuild)
+    buildBarneyModel();
 }
 
 void World::buildBarneyModel()
@@ -141,6 +143,8 @@ void World::buildBarneyModel()
       barneyTransforms.data(),
       barneyGroups.size());
   bnBuild(m_barneyDataGroup);
+
+  m_lastBarneyModelBuild = helium::newTimeStamp();
 }
 
 void World::cleanup()

@@ -16,6 +16,8 @@ struct Geometry : public Object
   static Geometry *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
+  void markCommitted() override;
+
   virtual BNGeom makeBarneyGeometry(
       BNDataGroup dg, const BNMaterial *material) const = 0;
 };

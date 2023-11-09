@@ -31,6 +31,12 @@ void Instance::commit()
     reportMessage(ANARI_SEVERITY_WARNING, "missing 'group' on ANARIInstance");
 }
 
+void Instance::markCommitted()
+{
+  deviceState()->markSceneChanged();
+  Object::markCommitted();
+}
+
 bool Instance::isValid() const
 {
   return m_group;

@@ -40,6 +40,8 @@ struct World : public Object
 
   BNModel m_barneyModel{nullptr};
   BNDataGroup m_barneyDataGroup{nullptr};
+
+  helium::TimeStamp m_lastBarneyModelBuild{0};
 };
 
 } // namespace barney_device

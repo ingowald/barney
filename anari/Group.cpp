@@ -26,6 +26,12 @@ void Group::commit()
     m_surfaceData->addCommitObserver(this);
 }
 
+void Group::markCommitted()
+{
+  deviceState()->markSceneChanged();
+  Object::markCommitted();
+}
+
 BNGroup Group::makeBarneyGroup(BNDataGroup dg) const
 {
   std::vector<BNGeom> barneyGeometries;

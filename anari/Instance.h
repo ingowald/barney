@@ -13,6 +13,7 @@ struct Instance : public Object
   ~Instance() override;
 
   void commit() override;
+  void markCommitted() override;
 
   bool isValid() const override;
 
