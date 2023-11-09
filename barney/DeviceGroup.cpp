@@ -20,7 +20,7 @@
 namespace barney {
 
   extern "C" char traceRays_ptx[];
-  
+
   Device::Device(DevGroup *devGroup,
                  int cudaID,
                  int owlID,
@@ -43,7 +43,7 @@ namespace barney {
     OWLGeomType gt = geomTypes[geomTypeString];
     if (gt)
       return gt;
-    
+
     gt = geomTypes[geomTypeString] = createOnce(this);
     programsDirty = true;
     return gt;
@@ -63,7 +63,7 @@ namespace barney {
       sbtDirty = false;
     }
   }
-  
+
   DevGroup::DevGroup(int ldgID,
                      const std::vector<int> &gpuIDs,
                      int globalIndex,
@@ -78,6 +78,8 @@ namespace barney {
     };
     OWLModule module = owlModuleCreate(owl,traceRays_ptx);
     rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
+
+    owlBuildPrograms(owl);
 
     for (int localID=0;localID<gpuIDs.size();localID++)
       devices.push_back
@@ -98,5 +100,5 @@ namespace barney {
                          params,
                          -1);
   }
-  
+
 }

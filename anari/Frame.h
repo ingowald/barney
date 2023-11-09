@@ -43,6 +43,8 @@ struct Frame : public helium::BaseFrame
   void wait() const;
 
  private:
+  void convertPixelsToFinalFormat();
+
   bool m_valid{false};
 
   struct FrameData

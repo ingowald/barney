@@ -211,6 +211,16 @@ BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
                        float             defaultRadius);
 
 BN_API
+BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
+                         const BNMaterial *material,
+                         const float3     *points,
+                         int               numPoints,
+                         const int2       *indices,
+                         int               numIndices,
+                         const float      *radii,
+                         float             defaultRadius);
+
+BN_API
 void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
 
 // ------------------------------------------------------------------
