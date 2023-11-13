@@ -47,11 +47,16 @@ namespace barney {
       }
       TransferFunction::DD xf;
     };
+
+#if VOPAT
+    void buildShards();
+    ShardsGeom shardsGeom;
+#endif
     
     VolumeAccel(ScalarField *field, Volume *volume);
     
     virtual void build() = 0;
-    
+
     ScalarField *const field;
     Volume      *const volume;
     DevGroup    *const devGroup;
@@ -69,8 +74,11 @@ namespace barney {
     {}
 
     OWLContext getOWL() const;
-    
+
     virtual VolumeAccel::SP createAccel(Volume *volume) = 0;
+#if VOPAT
+    virtual void createShards(std::vector<Shard> &shards) = 0;
+#endif
     
     DevGroup    *const devGroup;
   };

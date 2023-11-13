@@ -16,41 +16,40 @@
 
 #pragma once
 
-#include "barney/Vopat.h"
 #include "barney/Object.h"
-#include "barney/Ray.h"
 
 namespace barney {
 
-  struct DataGroup;
+#if VOPAT
   
-  struct Material {
-    vec3f baseColor;
+  struct Proxy {
+    box3f bounds;
+    int   rank;
+    int   localDG;
   };
 
-  struct Geometry : public Object {
-    typedef std::shared_ptr<Geometry> SP;
-
-    Geometry(DataGroup *owner,
-             const Material &material)
-      : owner(owner),
-        material(material)
-    {}
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Geometry{}"; }
-
-    virtual void build() {}
-    
-    Material    material;
-    DataGroup  *owner;
-
-    OWLContext getOWL() const;
-    
-    std::vector<OWLGeom>  triangleGeoms;
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGroup> secondPassGroups;
+  struct Shard : public Proxy {
+    range1f valueRange;
   };
 
+  struct ProxyGeom {
+    struct DD {
+      Proxy *proxies;
+    };
+    OWLGeom            geom = 0;
+    OWLBuffer          buffer = 0;
+    std::vector<Shard> shards;
+  };
+  
+  struct ShardsGeom {
+    struct DD {
+      Shard *shards;
+    };
+    OWLGeom            geom = 0;
+    OWLBuffer          buffer = 0;
+    std::vector<Shard> shards;
+  };
+  
+  
+#endif
 }
