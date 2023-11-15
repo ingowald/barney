@@ -30,6 +30,8 @@
 #include <memory>
 #include <sstream>
 
+#define __barney_align(a) OWL_ALIGN(a)
+
 namespace barney {
   using namespace owl;
   using namespace owl::common;

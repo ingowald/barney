@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "UMeshRTXObjectSpace.h"
-#include "cuBQL/bvh.h"
 
 namespace barney {
 
@@ -42,7 +41,12 @@ namespace barney {
          { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
          { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
          { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
+#if AWT
+         { "nodes", OWL_BUFPTR, OWL_OFFSETOF(DD,nodes) },
+         { "roots", OWL_BUFPTR, OWL_OFFSETOF(DD,roots) },
+#else
          { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
+#endif
          { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
          { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
          { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
@@ -61,7 +65,130 @@ namespace barney {
     
     return gt;
   }
+
+#if AWT
+  inline box3f make_box(cuBQL::box3f b)
+  {
+    return (const box3f&)b;
+  }
+  inline box4f make_box4f(box3f b)
+  {
+    box4f b4;
+    (vec3f&)b4.lower = (const vec3f&)b.lower;
+    (vec3f&)b4.upper = (const vec3f&)b.upper;
+    return b4;
+  }
   
+  struct BuildState : public AWTNode {
+    int numUsed = 0;
+  };
+  
+  void UMeshRTXObjectSpace::buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh)
+  {
+    // PING;
+    // PRINT(qbvh.numNodes);
+    nodes.resize(qbvh.numNodes);
+    for (int nodeID=0;nodeID<qbvh.numNodes;nodeID++)
+      for (int childID=0;childID<4;childID++) {
+        box3f bounds = make_box(qbvh.nodes[nodeID].children[childID].bounds);
+        if (!qbvh.nodes[nodeID].children[childID].valid)
+          bounds = box3f();
+        
+        nodes[nodeID].bounds[childID] = make_box4f(bounds);
+        if (bounds.empty()) {
+          nodes[nodeID].child[childID].offset = 0;
+          nodes[nodeID].child[childID].count  = 0;
+        } else {
+          nodes[nodeID].child[childID].offset = qbvh.nodes[nodeID].children[childID].offset;
+          nodes[nodeID].child[childID].count = qbvh.nodes[nodeID].children[childID].count;
+        }
+      }
+  }
+
+  int UMeshRTXObjectSpace::extractRoots(cuBQL::WideBVH<float,3, 4> &qbvh,
+                                        int nodeID)
+  {
+    // PING; PRINT(nodeID);
+    auto &node = nodes[nodeID];
+    int maxDepth = 0;
+    for (int i=0;i<4;i++) {
+      // PRINT(i);
+      // PRINT(node.bounds[i]);
+      // PRINT(node.child[i].count);
+      if (getBox(node.bounds[i]).empty()) {
+        node.depth[i] = -1;
+      } else if (node.child[i].count > 0) {
+        node.depth[i] = 0;
+      } else {
+        node.depth[i] = extractRoots(qbvh,node.child[i].offset);
+      }
+      maxDepth = std::max(maxDepth,node.depth[i]);
+    }
+    if (maxDepth < AWT_MAX_DEPTH && nodeID != 0)
+      // can still merge on parent
+      return maxDepth+1;
+    
+    for (int i=0;i<4;i++) {
+      if (node.depth[i] == -1)
+        // certainly not a root....
+        continue;
+
+      roots.push_back((nodeID<<2)|i);
+    }
+    return maxDepth+1;
+  }
+  
+  void UMeshRTXObjectSpace::buildAWT()
+  {
+    assert(clusters.empty());
+    assert(!clustersBuffer);
+    
+    SetActiveGPU forDuration(devGroup->devices[0]);
+    // ==================================================================
+    
+    // buildHierarchy(nodes,roots,clusters,bvh);
+    cuBQL::WideBVH<float,3,4> bvh;
+    box3f *d_primBounds = 0;
+    PING;
+    BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,mesh->elements.size()*sizeof(box3f)));
+    
+    auto d_mesh = mesh->getDD(0);
+    computeElementBoundingBoxes
+      <<<divRoundUp((int)mesh->elements.size(),1024),1024>>>
+      (d_primBounds,d_mesh);
+    
+    cuBQL::BuildConfig buildConfig;
+    buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
+    buildConfig.enableSAH();
+    static cuBQL::ManagedMemMemoryResource managedMem;
+    cuBQL::gpuBuilder(bvh,
+                      (const cuBQL::box_t<float,3>*)d_primBounds,
+                      (uint32_t)mesh->elements.size(),
+                      buildConfig,
+                      (cudaStream_t)0,
+                      managedMem);
+    std::vector<Element> reorderedElements(mesh->elements.size());
+    for (int i=0;i<mesh->elements.size();i++) {
+      reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
+    }
+    mesh->elements = reorderedElements;
+    owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
+    BARNEY_CUDA_CALL(Free(d_primBounds));
+
+    buildNodes(bvh);
+    extractRoots(bvh,0);
+    
+    cuBQL::free(bvh,0,managedMem);
+    
+    // ==================================================================
+
+    assert(sizeof(roots[0]) == sizeof(int));
+    rootsBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
+                                           roots.size(),roots.data());
+    nodesBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(AWTNode),
+                                        nodes.size(),nodes.data());
+  }
+#else
   void UMeshRTXObjectSpace::createClusters()
   {
     assert(clusters.empty());
@@ -113,20 +240,48 @@ namespace barney {
     clustersBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(Cluster),
                                            clusters.size(),clusters.data());
   }
-  
+#endif
+
+
+  __global__
+  void recomputeMajorants(AWTNode *nodes,
+                          int numNodes,
+                          TransferFunction::DD xf)
+  {
+    int tid = threadIdx.x+blockIdx.x*blockDim.x;
+    int nodeID = tid / 4;
+    int cID = tid % 4;
+    if (nodeID >= numNodes)
+      return;
+    auto &node = nodes[nodeID];
+    if (node.depth[cID] < 0) 
+      node.majorant[cID] = 0.f;
+    else
+      node.majorant[cID] = xf.majorant(getRange(node.bounds[cID]));
+  }
+
   void UMeshRTXObjectSpace::build()
   {
     BARNEY_CUDA_SYNC_CHECK();
     
     if (!group) {
+#if AWT
+      buildAWT();
+#else
       createClusters();
+#endif
       
       std::string gtTypeName = "UMeshRTXObjectSpace";
       OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
         (gtTypeName,createGeomType);
       geom
         = owlGeomCreate(devGroup->owl,gt);
-      owlGeomSetPrimCount(geom,(int)clusters.size());
+#if AWT
+      int numPrims = (int)roots.size();
+#else
+      int numPrims = (int)clusters.size();
+#endif
+      owlGeomSetPrimCount(geom,numPrims);
 
       // ------------------------------------------------------------------
       assert(mesh->tetIndicesBuffer);
@@ -143,9 +298,13 @@ namespace barney {
       owlGeomSetBuffer(geom,"mesh.gridDims",mesh->gridDimsBuffer);
       owlGeomSetBuffer(geom,"mesh.gridDomains",mesh->gridDomainsBuffer);
       owlGeomSetBuffer(geom,"mesh.gridScalars",mesh->gridScalarsBuffer);
-      
       // ------------------------------------------------------------------      
+#if AWT
+      owlGeomSetBuffer(geom,"roots",rootsBuffer);
+      owlGeomSetBuffer(geom,"nodes",nodesBuffer);
+#else
       owlGeomSetBuffer(geom,"clusters",clustersBuffer);
+#endif      
       
       // ------------------------------------------------------------------      
       
@@ -175,7 +334,20 @@ namespace barney {
     owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
     owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
 
-    std::cout << "refitting ... umesh mc geom" << std::endl;
+#if AWT
+    std::cout << "RECOMPUTING AWT MAJORANTS!\n" << std::endl;
+    PRINT(nodes.size());
+    PRINT(roots.size());
+    for (int devID = 0;devID<devGroup->devices.size(); devID++) {
+      auto dev = devGroup->devices[devID];
+      SetActiveGPU forDuration(dev);
+      recomputeMajorants<<<divRoundUp(int(4*nodes.size()),1024),1024>>>
+        ((AWTNode*)owlBufferGetPointer(nodesBuffer,devID),
+         nodes.size(),
+         volume->xf.getDD(devID));
+    }
+#endif
+    std::cout << "refitting ... umesh awt/object space geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);
   }
 

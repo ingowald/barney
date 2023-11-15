@@ -105,6 +105,8 @@ namespace barney {
       if (density[6] < 0)
       {
         printf("NO HIT IN THE CENTERRRR?????????\n");
+        N = vec3f(1.f);
+        return;
       }
 
       for (int i = 0; i < 6; ++i) {
@@ -657,10 +659,25 @@ namespace barney {
   }
   
   OPTIX_BOUNDS_PROGRAM(UMeshRTXObjectSpaceBounds)(const void *geomData,                
-                                                  owl::common::box3f &bounds,  
+                                                  owl::common::box3f &primBounds,  
                                                   const int32_t primID)
   {
     const auto &self = *(const UMeshRTXObjectSpace::DD *)geomData;
+    box4f bounds;
+#if AWT
+    int root = self.roots[primID];
+    int rootChild = root & 0x3;
+    int rootNode  = root >> 2;
+    // int begin = self.nodes[rootNode].child[rootChild].offset;
+    bounds = self.nodes[rootNode].bounds[rootChild];
+    // if (self.xf.values == 0) {
+    //   for (int i=begin;i<end;i++)
+    //     bounds.extend(self.mesh.eltBounds(self.mesh.elements[i]));
+    //   self.nodes[rootNode].bounds[rootChild] = bounds;
+    // }
+    // else 
+    //   bounds = self.nodes[rootNode].bounds[rootChild];
+#else
     Cluster &cluster = self.clusters[primID];
     int begin = self.clusters[primID].begin;
     int end   = self.clusters[primID].end;
@@ -671,14 +688,29 @@ namespace barney {
       cluster.bounds = box4f();
       for (int i=begin;i<end;i++)
         cluster.bounds.extend(self.mesh.eltBounds(self.mesh.elements[i]));
-    }
-
-    bounds = getBox(cluster.bounds);
-
+    } else
+      bounds = cluster.bounds;
+#endif
+    primBounds = getBox(bounds);
+    // printf("bounds prog %i root %i:%i\n",primID,rootNode,rootChild);
+    range1f range = getRange(bounds);
     if (self.xf.values) {
-      cluster.majorant = self.xf.majorant(getRange(cluster.bounds));
-      if (cluster.majorant == 0.f)
-        bounds = box3f(bounds.center());
+      float majorant = self.xf.majorant(range);
+#if AWT
+      self.nodes[rootNode].majorant[rootChild] = majorant;
+#else
+      cluster.majorant = majorant;
+#endif
+      if (majorant == 0.f)
+        primBounds = box3f();
+      // else
+      //   printf("active node (%f %f %f)(%f %f %f)\n",
+      //          primBounds.lower.x,
+      //          primBounds.lower.y,
+      //          primBounds.lower.z,
+      //          primBounds.upper.x,
+      //          primBounds.upper.y,
+      //          primBounds.upper.z);
     }
   }
 
@@ -687,7 +719,19 @@ namespace barney {
     auto &ray = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<UMeshRTXObjectSpace::DD>();
     int primID = optixGetPrimitiveIndex();
+#if AWT
+    int root = self.roots[primID];
+    int rootChild = root & 0x3;
+    int rootNode  = root >> 2;
+    // int begin = self.nodes[rootNode].child[rootChild].offset;
+    // int end = begin + self.nodes[rootNode].child[rootChild].count;
+    // float majorant = self.nodes[rootNode].majorant[rootChild];
+#else
     Cluster &cluster = self.clusters[primID];
+    int begin = cluster.begin;
+    int end = cluster.end;
+    // float majorant = cluster.majorant;
+#endif
     
     // ray.hadHit = true;
     // ray.color = .8f;//owl::randomColor(primID);
@@ -700,11 +744,22 @@ namespace barney {
     //          primID,
     //          P.x,P.y,P.z);
 
-    CentralDifference cd(self.mesh,self.xf,P,cluster.begin,cluster.end,ray.dbg);
+#if AWT
+    vec3f N = normalize(vec3f(1.f));
+    ray.hadHit = 1;
+    ray.hit.N = N;
+    ray.hit.P = P;
+    ray.hit.baseColor = randomColor(primID);
+#else
+    CentralDifference cd(self.mesh,self.xf,P,begin,end,ray.dbg);
 
     vec3f N = normalize
       ((cd.N == vec3f(0.f)) ? ray.dir : cd.N);
-
+    ray.hadHit = 1;
+    ray.hit.N = N;
+    ray.hit.P = P;
+    ray.hit.baseColor = cd.mappedColor;
+#endif
     // if (ray.dbg)
     //   printf("cd.N %f %f %f, dot %f\n",
     //          cd.N.x,
@@ -712,61 +767,20 @@ namespace barney {
     //          cd.N.z,
     //          fabsf(dot(normalize(ray.dir),normalize(N))));
 
-    ray.hadHit = 1;
-    ray.hit.N = N;
-    ray.hit.P = P;
-    ray.hit.baseColor = cd.mappedColor;
       // = vec3f(cd.mappedColor
       //         * (.3f+.7f*fabsf(dot(normalize(ray.dir),N))));
   }
 
-  OPTIX_INTERSECT_PROGRAM(UMeshRTXObjectSpaceIsec)()
+  inline __device__ float doLeaf(Ray &ray,
+                                 range1f &inputLeafRange,
+                                 const UMeshRTXObjectSpace::DD &self,
+                                 int begin,
+                                 int end)
   {
-    const int primID = optixGetPrimitiveIndex();
-    const auto &self
-      = owl::getProgramData<typename UMeshRTXObjectSpace::DD>();
-    auto &ray
-      = owl::getPRD<Ray>();
-    bool dbg = 0;//ray.dbg;
-    
-    Cluster cluster = self.clusters[primID];
-    
-    const vec3f org  = optixGetObjectRayOrigin();
-    const vec3f dir  = optixGetObjectRayDirection();
-    float t0 = optixGetRayTmin();
-    float t1 = optixGetRayTmax();
-    bool isHittingTheBox
-      = boxTest(t0,t1,cluster.bounds,org,dir);
-    // if (dbg)
-    //   printf("======== intersect primID %i range %f %f box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
-    //          t0,t1,
-    //          cluster.bounds.lower.x,
-    //          cluster.bounds.lower.y,
-    //          cluster.bounds.lower.z,
-    //          cluster.bounds.upper.x,
-    //          cluster.bounds.upper.y,
-    //          cluster.bounds.upper.z,
-    //          org.x+t0*dir.x,
-    //          org.y+t0*dir.y,
-    //          org.z+t0*dir.z
-    //          );
-    if (!isHittingTheBox) {
-      // if (dbg) printf(" -> miss bounds\n");
-      return;
-    }
-
-#if CLUSTERS_FROM_QC
-    int begin = primID * UMeshRTXObjectSpace::clusterSize;
-    int end   = min(begin+UMeshRTXObjectSpace::clusterSize,self.mesh.numElements);
-#else
-    int begin = cluster.begin;
-    int end   = cluster.end;
-#endif
-    
-    // Random rand(ray.rngSeed++,primID);
+    bool dbg = ray.dbg;
     LCG<4> &rand = (LCG<4> &)ray.rngSeed;
     int numStepsTaken = 0, numSamplesTaken = 0, numRangesComputed = 0, numSamplesRejected = 0;
-    ElementIntersector isec(self,ray,range1f(t0,t1));
+    ElementIntersector isec(self,ray,inputLeafRange);
     // use prim box only to find candidates (similar to ray tracing
     // for triangles), but each ray then intersects each prim
     // individually.
@@ -838,7 +852,208 @@ namespace barney {
     //   printf("num ranges computed %i steps taken %i samples taken %i rejected %i\n",
     //          numRangesComputed, numStepsTaken, numSamplesTaken,
     //          numSamplesRejected);
+    return hit_t;
+  }
 
+  struct __barney_align(16) AWTSegment {
+    AWTNode::NodeRef node;
+    float  majorant;
+    range1f range;
+  };
+    
+  inline __device__ void orderSegments(AWTSegment &a,
+                                       AWTSegment &b)
+  {
+    if (a.range.lower < b.range.lower) {
+      AWTSegment c = a;
+      a = b;
+      b = c;
+    }
+  }
+  
+
+  OPTIX_INTERSECT_PROGRAM(UMeshRTXObjectSpaceIsec)()
+  {
+    const int primID = optixGetPrimitiveIndex();
+    const auto &self
+      = owl::getProgramData<typename UMeshRTXObjectSpace::DD>();
+    auto &ray
+      = owl::getPRD<Ray>();
+    bool dbg = ray.dbg;
+    
+#if AWT
+    // if (!ray.dbg) return;
+    // if (ray.dbg) printf("====================== ISEC %i\n",primID);
+    AWTSegment segment;
+    int root = self.roots[primID];
+    int rootChild = root & 0x3;
+    int rootNode  = root >> 2;
+    // int begin = self.nodes[rootNode].child[rootChild].offset;
+    // int end = begin + self.nodes[rootNode].child[rootChild].count;
+    box3f bounds = getBox(self.nodes[rootNode].bounds[rootChild]);
+    // float majorant = self.nodes[rootNode].majorant[rootChild];
+
+    segment.range.lower = optixGetRayTmin();
+    segment.range.upper = optixGetRayTmax();
+    float hit_t = segment.range.upper;
+    vec3f org = ray.org;
+    vec3f dir = ray.dir;
+    bool isHittingTheBox
+      = boxTest(segment.range.lower,segment.range.upper,bounds,org,dir);
+    if (!isHittingTheBox) {
+      // if (dbg) printf(" -> miss bounds\n");
+      return;
+    }
+    segment.node = self.nodes[rootNode].child[rootChild];
+    segment.majorant = self.nodes[rootNode].majorant[rootChild];
+    
+    AWTSegment stackBase[32];
+    AWTSegment *stackPtr = stackBase;
+    AWTSegment *stackHi = stackBase+32;
+    while (true) {
+      // if (dbg) printf("---------------------- starting trav ofs %i cnt %i range %f %f\n",
+      //                 segment.node.offset,segment.node.count,
+      //                 segment.range.lower,segment.range.upper);
+      while (segment.node.count == 0) {
+        // if (dbg) printf("* --------- inner %i range %f %f\n",
+        //                 segment.node.offset,
+        //                 segment.range.lower,segment.range.upper);
+        auto node = self.nodes[segment.node.offset];
+
+        AWTSegment childSeg[4];
+#pragma unroll(4)
+        for (int c=0;c<4;c++) {
+          float tt0 = segment.range.lower;
+          float tt1 = segment.range.upper;
+          childSeg[c] = { node.child[c], 
+                          node.majorant[c],
+                          range1f{ INFINITY, INFINITY } };
+          if (node.depth[c] == -1) {
+            // if (dbg) printf("** child %i INVALID\n",c);
+          } else if (node.majorant[c] == 0.f) {
+            // if (dbg) printf("** child %i zero majorant...\n",c);
+          } else if (!boxTest(tt0,tt1,node.bounds[c],org,dir)) {
+            auto box = node.bounds[c];
+            // if (dbg) printf("** child %i miss... box was (%f %f %f)(%f %f %f)\n",c,
+            //                 box.lower.x,
+            //                 box.lower.y,
+            //                 box.lower.z,
+            //                 box.upper.x,
+            //                 box.upper.y,
+            //                 box.upper.z
+            //                 );
+          } else {
+            childSeg[c].range = range1f{ tt0, tt1 };
+            // if (dbg) printf("** child %i range %f %f\n",
+            //                 c,
+            //                 tt0,tt1);
+          }
+        }
+
+        orderSegments(childSeg[0],childSeg[1]);
+        orderSegments(childSeg[1],childSeg[2]);
+        orderSegments(childSeg[2],childSeg[3]);
+
+        orderSegments(childSeg[0],childSeg[1]);
+        orderSegments(childSeg[1],childSeg[2]);
+
+        orderSegments(childSeg[0],childSeg[1]);
+
+        // if (dbg) {
+        //   for (int c=0;c<4;c++)
+        //     printf("seg %i range %f %f\n",c,
+        //            childSeg[c].range.lower,
+        //            childSeg[c].range.upper);
+        // }
+
+        if (childSeg[0].range.lower < hit_t) *stackPtr++ = childSeg[0];
+        // if (stackPtr >= stackHi) { printf("stack overflow\n"); return; }
+        if (childSeg[1].range.lower < hit_t) *stackPtr++ = childSeg[1];
+        // if (stackPtr >= stackHi) { printf("stack overflow\n"); return; }
+        if (childSeg[2].range.lower < hit_t) *stackPtr++ = childSeg[2];
+        // if (stackPtr >= stackHi) { printf("stack overflow\n"); return; }
+        if (childSeg[3].range.lower >= hit_t)
+          break;
+        segment = childSeg[3];
+      }
+      // check if valid leaf, and if so, intersect
+      if (segment.node.count) {
+        // if (dbg)
+        //   printf("LEAF %i cnt %i\n",segment.node.offset,segment.node.count);
+        float leaf_t = doLeaf(ray,segment.range,self,
+                              segment.node.offset,
+                              segment.node.offset+segment.node.count);
+        hit_t = min(hit_t,leaf_t);
+        // if (dbg) printf("new t %f leaf %f\n",hit_t,leaf_t);
+      }
+      
+      //pop:
+      bool foundOneToPop = false;
+      while (stackPtr > stackBase) {
+        segment = *--stackPtr;
+        if (segment.range.lower >= hit_t)
+          continue;
+        segment.range.upper = min(segment.range.upper,hit_t);
+        foundOneToPop = true;
+        break;
+      }
+
+      if (!foundOneToPop)
+        break;
+    }
+#else
+    Cluster cluster = self.clusters[primID];
+    int begin = cluster.begin;
+    int end = cluster.end;
+    // float majorant = cluster.majorant;
+    box3f bounds = cluster.bounds;
+
+    const vec3f org  = optixGetObjectRayOrigin();
+    const vec3f dir  = optixGetObjectRayDirection();
+    float t0 = optixGetRayTmin();
+    float t1 = optixGetRayTmax();
+    bool isHittingTheBox
+      = boxTest(t0,t1,bounds,org,dir);
+    if (!isHittingTheBox) {
+      // if (dbg) printf(" -> miss bounds\n");
+      return;
+    }
+    range1f leafRange(t0,t1)
+    float hit_t = doLeaf(ray,leafRange,self,being,end);
+#endif
+
+
+    //
+    //
+    // TODO: if expected num steps is small enough, just sample
+    // isntead of doing per-element intersection
+    //
+
+
+    //
+    // if (dbg)
+    //   printf("======== intersect primID %i range %f %f box (%.3f %.3f %.3f)(%.3f %.3f %.3f) enter (%.3f %.3f %.3f)\n",primID,
+    //          t0,t1,
+    //          cluster.bounds.lower.x,
+    //          cluster.bounds.lower.y,
+    //          cluster.bounds.lower.z,
+    //          cluster.bounds.upper.x,
+    //          cluster.bounds.upper.y,
+    //          cluster.bounds.upper.z,
+    //          org.x+t0*dir.x,
+    //          org.y+t0*dir.y,
+    //          org.z+t0*dir.z
+    //          );
+
+// #if CLUSTERS_FROM_QC
+//     int begin = primID * UMeshRTXObjectSpace::clusterSize;
+//     int end   = min(begin+UMeshRTXObjectSpace::clusterSize,self.mesh.numElements);
+// #else
+//     int begin = cluster.begin;
+//     int end   = cluster.end;
+// #endif
+    
+    // Random rand(ray.rngSeed++,primID);
 
     if (hit_t < optixGetRayTmax())  {
       // if (ray.dbg)

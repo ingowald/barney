@@ -18,8 +18,27 @@
 
 #include "barney/Volume.h"
 #include "barney/unstructured/UMeshField.h"
+#include "cuBQL/bvh.h"
+
+#define AWT 1
+#define AWT_MAX_DEPTH 8
+  
 
 namespace barney {
+
+#if AWT
+  struct __barney_align(16) AWTNode {
+    enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = (1<<count_bits-1) };
+    box4f   bounds[4];
+    float   majorant[4];
+    int     depth[4];
+    struct NodeRef {
+      uint32_t offset:offset_bits;
+      uint32_t count :count_bits;
+    };
+    NodeRef child[4];
+  };
+#endif
 
   /*! object-space accelerator that clusters elements into, well,
     clusters of similar/nearly elements, then builds an RTX BVH and
@@ -38,7 +57,12 @@ namespace barney {
     struct DD {
       TransferFunction::DD xf;
       UMeshField::DD       mesh;
+#if AWT
+      AWTNode             *nodes;
+      int                 *roots;
+#else
       Cluster             *clusters;
+#endif
     };
     
     UMeshRTXObjectSpace(UMeshField *mesh, Volume *volume)
@@ -48,13 +72,26 @@ namespace barney {
     static OWLGeomType createGeomType(DevGroup *devGroup);
     
     void build() override;
-    void createClusters();
+
+#if AWT
+    void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
+    int extractRoots(cuBQL::WideBVH<float,3, 4> &qbvh,
+                      int nodeID);
+    void buildAWT();
     
+    std::vector<int>     roots;
+    std::vector<AWTNode> nodes;
+    OWLBuffer nodesBuffer;
+    OWLBuffer rootsBuffer;
+#else
     std::vector<Cluster> clusters;
     OWLBuffer clustersBuffer = 0;
+    void createClusters();
+#endif
     OWLGeom  geom  = 0;
     OWLGroup group = 0;
     UMeshField *const mesh;
   };
+  
 
 }
