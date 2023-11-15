@@ -162,14 +162,35 @@ namespace barney {
   }
     
   
+  /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds, and
+      writes those into givne pre-allocated device mem location */
   __global__
-  void computeElementBoundingBoxes(box3f *d_primBounds, UMeshField::DD mesh)
+  void computeElementBoundingBoxes(box3f *d_primBounds,
+                                   UMeshField::DD mesh)
   {
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
     if (tid >= mesh.numElements) return;
 
     auto elt = mesh.elements[tid];
     d_primBounds[tid] = getBox(mesh.eltBounds(elt));
+  }
+
+
+  /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds and
+      per-prim scalar ranges, and writes those into givne
+      pre-allocated device mem location */
+  __global__
+  void computeElementBoundingBoxes(box3f *d_primBounds,
+                                   range1f *d_primRanges,
+                                   UMeshField::DD mesh)
+  {
+    int tid = threadIdx.x + blockIdx.x*blockDim.x;
+    if (tid >= mesh.numElements) return;
+
+    auto elt = mesh.elements[tid];
+    box4f eb = mesh.eltBounds(elt);
+    d_primBounds[tid] = getBox(eb);
+    d_primRanges[tid] = getRange(eb);
   }
 
 

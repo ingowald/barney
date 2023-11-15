@@ -21,14 +21,14 @@
 #include "cuBQL/bvh.h"
 
 #define AWT 1
-#define AWT_MAX_DEPTH 8
+#define AWT_MAX_DEPTH 6
   
 
 namespace barney {
 
 #if AWT
   struct __barney_align(16) AWTNode {
-    enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = (1<<count_bits-1) };
+    enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
     box4f   bounds[4];
     float   majorant[4];
     int     depth[4];

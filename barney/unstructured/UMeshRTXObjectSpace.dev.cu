@@ -701,8 +701,13 @@ namespace barney {
 #else
       cluster.majorant = majorant;
 #endif
-      if (majorant == 0.f)
+      if (majorant == 0.f) {
+        // swap(primBounds.lower,primBounds.upper);
         primBounds = box3f();
+        // printf("leaf CULLED\n");
+      }
+      
+      
       // else
       //   printf("active node (%f %f %f)(%f %f %f)\n",
       //          primBounds.lower.x,
@@ -720,9 +725,9 @@ namespace barney {
     auto &self = owl::getProgramData<UMeshRTXObjectSpace::DD>();
     int primID = optixGetPrimitiveIndex();
 #if AWT
-    int root = self.roots[primID];
-    int rootChild = root & 0x3;
-    int rootNode  = root >> 2;
+    // int root = self.roots[primID];
+    // int rootChild = root & 0x3;
+    // int rootNode  = root >> 2;
     // int begin = self.nodes[rootNode].child[rootChild].offset;
     // int end = begin + self.nodes[rootNode].child[rootChild].count;
     // float majorant = self.nodes[rootNode].majorant[rootChild];
@@ -883,7 +888,6 @@ namespace barney {
     
 #if AWT
     // if (!ray.dbg) return;
-    // if (ray.dbg) printf("====================== ISEC %i\n",primID);
     AWTSegment segment;
     int root = self.roots[primID];
     int rootChild = root & 0x3;
@@ -895,17 +899,53 @@ namespace barney {
 
     segment.range.lower = optixGetRayTmin();
     segment.range.upper = optixGetRayTmax();
+    segment.node = self.nodes[rootNode].child[rootChild];
+    segment.majorant = self.nodes[rootNode].majorant[rootChild];
     float hit_t = segment.range.upper;
     vec3f org = ray.org;
     vec3f dir = ray.dir;
     bool isHittingTheBox
       = boxTest(segment.range.lower,segment.range.upper,bounds,org,dir);
+
+    if (dbg) printf("====================== ISEC %i t-range %f %f majorant %f\n",primID,
+                    segment.range.lower,segment.range.upper,
+                    segment.majorant);
+
+
+
+    if (0 && dbg) {
+      int3 stack[32];
+      int3 *stackPtr = stack;
+      *stackPtr++ = make_int3(rootNode,rootChild,1);
+      while (stackPtr > stack) {
+        int3 cur = *--stackPtr;
+        for (int i=0;i<cur.z;i++) printf(" ");
+        printf("node %i:%i depth %i ofs %i cnt %i rng %f %f maj %f",
+               cur.x,cur.y,
+               self.nodes[cur.x].depth[cur.y],
+               self.nodes[cur.x].child[cur.y].offset,
+               self.nodes[cur.x].child[cur.y].count,
+               self.nodes[cur.x].bounds[cur.y].lower.w,
+               self.nodes[cur.x].bounds[cur.y].upper.w,
+               self.nodes[cur.x].majorant[cur.y]);
+        for (int i=0;i<cur.z;i++) printf(" ");
+        if (self.nodes[cur.x].depth[cur.y] < 0) {
+          printf("  -> INVALID\n");
+        } else if (self.nodes[cur.x].child[cur.y].count) {
+          printf("  -> leaf\n");
+        } else {
+          printf("  -> inner\n");
+          for (int i=0;i<4;i++) {
+            *stackPtr++ = make_int3(self.nodes[cur.x].child[cur.y].offset,3-i,cur.z+1);
+          }
+        }
+      }
+    }
+    
     if (!isHittingTheBox) {
-      // if (dbg) printf(" -> miss bounds\n");
+      if (dbg) printf(" -> miss bounds\n");
       return;
     }
-    segment.node = self.nodes[rootNode].child[rootChild];
-    segment.majorant = self.nodes[rootNode].majorant[rootChild];
     
     AWTSegment stackBase[32];
     AWTSegment *stackPtr = stackBase;

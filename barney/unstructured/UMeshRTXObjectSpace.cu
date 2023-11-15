@@ -71,11 +71,13 @@ namespace barney {
   {
     return (const box3f&)b;
   }
-  inline box4f make_box4f(box3f b)
+  inline box4f make_box4f(box3f b, range1f r=range1f())
   {
     box4f b4;
     (vec3f&)b4.lower = (const vec3f&)b.lower;
     (vec3f&)b4.upper = (const vec3f&)b.upper;
+    b4.lower.w = r.lower;
+    b4.upper.w = r.upper;
     return b4;
   }
   
@@ -133,9 +135,42 @@ namespace barney {
         // certainly not a root....
         continue;
 
-      roots.push_back((nodeID<<2)|i);
+      if (node.depth[i] <= AWT_MAX_DEPTH)
+        roots.push_back((nodeID<<2)|i);
     }
     return maxDepth+1;
+  }
+
+  box4f refitRanges(std::vector<AWTNode> &nodes,
+                    uint32_t *primIDs,
+                    box3f *d_primBounds,
+                    range1f *d_primRanges,
+                    int nodeID=0)
+  {
+    box4f nb;
+    AWTNode &node = nodes[nodeID];
+    for (int i=0;i<4;i++) {
+      if (node.depth[i] < 0)
+        continue;
+      
+      int ofs = node.child[i].offset;
+      int cnt = node.child[i].count;
+      if (cnt == 0) {
+        node.bounds[i]
+          = refitRanges(nodes,primIDs,d_primBounds,d_primRanges,
+                        ofs);
+      } else {
+        box4f leafBounds;
+        for (int j=0;j<cnt;j++) {
+          int pid = primIDs[ofs+j];
+          leafBounds.extend(make_box4f(d_primBounds[pid],
+                                       d_primRanges[pid]));
+        }
+        node.bounds[i] = leafBounds;
+      }
+      nb.extend(node.bounds[i]);
+    }
+    return nb;
   }
   
   void UMeshRTXObjectSpace::buildAWT()
@@ -149,17 +184,19 @@ namespace barney {
     // buildHierarchy(nodes,roots,clusters,bvh);
     cuBQL::WideBVH<float,3,4> bvh;
     box3f *d_primBounds = 0;
+    range1f *d_primRanges = 0;
     PING;
     BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,mesh->elements.size()*sizeof(box3f)));
+    BARNEY_CUDA_CALL(MallocManaged(&d_primRanges,mesh->elements.size()*sizeof(range1f)));
     
     auto d_mesh = mesh->getDD(0);
     computeElementBoundingBoxes
       <<<divRoundUp((int)mesh->elements.size(),1024),1024>>>
-      (d_primBounds,d_mesh);
+      (d_primBounds,d_primRanges,d_mesh);
     
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
-    buildConfig.enableSAH();
+    // buildConfig.enableSAH();
     static cuBQL::ManagedMemMemoryResource managedMem;
     cuBQL::gpuBuilder(bvh,
                       (const cuBQL::box_t<float,3>*)d_primBounds,
@@ -167,6 +204,11 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
+
+    buildNodes(bvh);
+    extractRoots(bvh,0);
+    refitRanges(nodes,bvh.primIDs,d_primBounds,d_primRanges);
+
     std::vector<Element> reorderedElements(mesh->elements.size());
     for (int i=0;i<mesh->elements.size();i++) {
       reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
@@ -174,9 +216,8 @@ namespace barney {
     mesh->elements = reorderedElements;
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
+    BARNEY_CUDA_CALL(Free(d_primRanges));
 
-    buildNodes(bvh);
-    extractRoots(bvh,0);
     
     cuBQL::free(bvh,0,managedMem);
     
