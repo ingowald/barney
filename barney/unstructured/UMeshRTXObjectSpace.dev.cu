@@ -1012,9 +1012,29 @@ namespace barney {
         // if (stackPtr >= stackHi) { printf("stack overflow\n"); return; }
         if (childSeg[2].range.lower < hit_t) *stackPtr++ = childSeg[2];
         // if (stackPtr >= stackHi) { printf("stack overflow\n"); return; }
+#if 1
+        if (childSeg[3].range.lower >= hit_t) {
+          bool foundOneToPop = false;
+          while (stackPtr > stackBase) {
+            segment = *--stackPtr;
+            if (segment.range.lower >= hit_t)
+              continue;
+            segment.range.upper = min(segment.range.upper,hit_t);
+            foundOneToPop = true;
+            break;
+          }
+          if (!foundOneToPop) {
+            segment.node.count = 0;
+            break;
+          }
+        } else
+          segment = childSeg[3];
+          
+#else
         if (childSeg[3].range.lower >= hit_t)
           break;
         segment = childSeg[3];
+#endif
       }
       // check if valid leaf, and if so, intersect
       if (segment.node.count) {
