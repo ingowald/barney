@@ -23,33 +23,26 @@ namespace barney {
 #if VOPAT
   
   struct Proxy {
-    box3f bounds;
-    int   rank;
-    int   localDG;
-  };
-
-  struct Shard : public Proxy {
+    box3f   bounds;
     range1f valueRange;
+    int     rank;
+    int     localDG;
   };
-
   struct ProxyGeom {
     struct DD {
       Proxy *proxies;
     };
     OWLGeom            geom = 0;
     OWLBuffer          buffer = 0;
-    std::vector<Shard> shards;
+    std::vector<Proxy> proxies;
   };
-  
-  struct ShardsGeom {
-    struct DD {
-      Shard *shards;
+
+  struct WorldProxies {
+    struct Group {
+      std::vector<Proxy>    proxies;
+      std::vector<affine3f> instances;
     };
-    OWLGeom            geom = 0;
-    OWLBuffer          buffer = 0;
-    std::vector<Shard> shards;
   };
-  
   
 #endif
 }
