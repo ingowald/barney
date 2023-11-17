@@ -54,11 +54,11 @@ namespace barney {
     auto self = *(const UMeshAccel_MC_CUBQL::DD*)geomData;
     vec3i dims = self.mcGrid.dims;
     const auto &mesh = self.sampler.mesh;
-#if UMESH_MC_USE_DDA
-    if (primID > 0)
-      return;
-    bounds = getBox(mesh.worldBounds);
-#else
+// #if UMESH_MC_USE_DDA
+//     if (primID > 0)
+//       return;
+//     bounds = getBox(mesh.worldBounds);
+// #else
     if (primID >= dims.x*dims.y*dims.z)
       return;
     vec3i cellID(primID % dims.x,
@@ -87,7 +87,7 @@ namespace barney {
         self.mcGrid.majorants[primID] == 0.f)
       bounds = box3f();
 # endif
-#endif
+// #endif
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(UMesh_MC_CUBQL_CH)()
@@ -150,7 +150,7 @@ namespace barney {
     vec3i cellID(primID % dims.x,
                  (primID / dims.x) % dims.y,
                  primID / (dims.x*dims.y));
-
+    
     // compute world-space bounds of macro cells
     box3f bounds;
     bounds.lower
@@ -160,6 +160,7 @@ namespace barney {
       = lerp(getBox(mesh.worldBounds),
              vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
+    
     if (!boxTest(ray,tRange,bounds))
       return;
 
@@ -170,7 +171,6 @@ namespace barney {
                                ray.dbg))
       return;
 
-    // ray.hit.baseColor = vec3f(sample);
     ray.tMax = tRange.upper;
     optixReportIntersection(tRange.upper, 0);
   }

@@ -391,7 +391,7 @@ namespace barney {
                 const BNCamera *_camera,
                 BNFrameBuffer fb)
   {
-    LOG_API_ENTRY;
+    // LOG_API_ENTRY;
 
     assert(_camera);
     Camera camera;

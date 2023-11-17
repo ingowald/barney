@@ -20,13 +20,12 @@
 #include "barney/unstructured/UMeshField.h"
 #include "cuBQL/bvh.h"
 
-#define AWT 1
+// #define AWT 1
 #define AWT_MAX_DEPTH 6
   
 
 namespace barney {
 
-#if AWT
   struct __barney_align(16) AWTNode {
     enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
     box4f   bounds[4];
@@ -38,8 +37,14 @@ namespace barney {
     };
     NodeRef child[4];
   };
-#endif
 
+  struct UMeshObjectSpace {
+    struct DD {
+      TransferFunction::DD xf;
+      UMeshField::DD       mesh;
+    };
+  };
+  
   /*! object-space accelerator that clusters elements into, well,
     clusters of similar/nearly elements, then builds an RTX BVH and
     majorants over those clusters, disables majorant-zero clusters
@@ -54,15 +59,8 @@ namespace barney {
       float majorant;
     };
     
-    struct DD {
-      TransferFunction::DD xf;
-      UMeshField::DD       mesh;
-#if AWT
-      AWTNode             *nodes;
-      int                 *roots;
-#else
+    struct DD : public UMeshObjectSpace::DD {
       Cluster             *clusters;
-#endif
     };
     
     UMeshRTXObjectSpace(UMeshField *mesh, Volume *volume)
@@ -73,7 +71,37 @@ namespace barney {
     
     void build() override;
 
-#if AWT
+    std::vector<Cluster> clusters;
+    OWLBuffer clustersBuffer = 0;
+    void createClusters();
+
+    OWLGeom  geom  = 0;
+    OWLGroup group = 0;
+    UMeshField *const mesh;
+  };
+
+
+  /*! object-space accelerator that clusters elements into, well,
+    clusters of similar/nearly elements, then builds an RTX BVH and
+    majorants over those clusters, disables majorant-zero clusters
+    during refit and in the isec program for a cluster perfomrs
+    ray-element intersection followed by (per-element) woodock
+    sampling along the ray-element overlap range */
+  struct UMeshAWT : public VolumeAccel
+  {
+    struct DD : public UMeshObjectSpace::DD {
+      AWTNode             *nodes;
+      int                 *roots;
+    };
+    
+    UMeshAWT(UMeshField *mesh, Volume *volume)
+      : VolumeAccel(mesh,volume),
+        mesh(mesh)
+    {}
+    static OWLGeomType createGeomType(DevGroup *devGroup);
+    
+    void build() override;
+
     void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
     int extractRoots(cuBQL::WideBVH<float,3, 4> &qbvh,
                       int nodeID);
@@ -83,11 +111,6 @@ namespace barney {
     std::vector<AWTNode> nodes;
     OWLBuffer nodesBuffer;
     OWLBuffer rootsBuffer;
-#else
-    std::vector<Cluster> clusters;
-    OWLBuffer clustersBuffer = 0;
-    void createClusters();
-#endif
     OWLGeom  geom  = 0;
     OWLGroup group = 0;
     UMeshField *const mesh;

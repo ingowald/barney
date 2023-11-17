@@ -341,12 +341,21 @@ namespace barney {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if 0
-    return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
-    // return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
-#else
-    return std::make_shared<UMeshRTXObjectSpace>(this,volume);
-#endif
+    const char *methodFromEnv = getenv("BARNEY_METHOD");
+    std::string method = (methodFromEnv ? methodFromEnv : "");
+    if (method == "" || method == "macro-cells" || method == "spatial")
+      return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
+    else if (method == "AWT" || method == "awt")
+      return std::make_shared<UMeshAWT>(this,volume);
+    else if (method == "object-space")
+      return std::make_shared<UMeshRTXObjectSpace>(this,volume);
+    else throw std::runtime_error("found BARNEY_METHOD env-var, but didn't recognize its value. allowed values are 'awt', 'object-space', and 'macro-cells'");
+// #if 1
+//     return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
+//     // return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
+// #else
+//     return std::make_shared<UMeshRTXObjectSpace>(this,volume);
+// #endif
   }
 
 }

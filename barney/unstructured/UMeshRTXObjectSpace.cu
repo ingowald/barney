@@ -41,12 +41,7 @@ namespace barney {
          { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
          { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
          { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
-#if AWT
-         { "nodes", OWL_BUFPTR, OWL_OFFSETOF(DD,nodes) },
-         { "roots", OWL_BUFPTR, OWL_OFFSETOF(DD,roots) },
-#else
          { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
-#endif
          { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
          { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
          { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
@@ -66,7 +61,48 @@ namespace barney {
     return gt;
   }
 
-#if AWT
+  OWLGeomType UMeshAWT::createGeomType(DevGroup *devGroup)
+  {
+    std::cout << OWL_TERMINAL_GREEN
+              << "creating 'UMeshAWT' geometry type"
+              << OWL_TERMINAL_DEFAULT << std::endl;
+    
+    static OWLVarDecl params[]
+      = {
+         { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
+         { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
+         { "mesh.vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
+         { "mesh.tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
+         { "mesh.pyrIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.pyrIndices) },
+         { "mesh.wedIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.wedIndices) },
+         { "mesh.hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
+         { "mesh.elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
+         { "mesh.gridOffsets",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridOffsets) },
+         { "mesh.gridDims",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDims) },
+         { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
+         { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
+         { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
+         { "nodes", OWL_BUFPTR, OWL_OFFSETOF(DD,nodes) },
+         { "roots", OWL_BUFPTR, OWL_OFFSETOF(DD,roots) },
+         { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
+         { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
+         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
+         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
+         { nullptr }
+    };
+    OWLModule module = owlModuleCreate
+      (devGroup->owl,UMeshRTXObjectSpace_ptx);
+    OWLGeomType gt = owlGeomTypeCreate
+      (devGroup->owl,OWL_GEOM_USER,sizeof(UMeshAWT::DD),
+       params,-1);
+    owlGeomTypeSetBoundsProg(gt,module,"UMeshAWTBounds");
+    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"UMeshAWTIsec");
+    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"UMeshAWTCH");
+    owlBuildPrograms(devGroup->owl);
+    
+    return gt;
+  }
+
   inline box3f make_box(cuBQL::box3f b)
   {
     return (const box3f&)b;
@@ -85,7 +121,7 @@ namespace barney {
     int numUsed = 0;
   };
   
-  void UMeshRTXObjectSpace::buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh)
+  void UMeshAWT::buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh)
   {
     // PING;
     // PRINT(qbvh.numNodes);
@@ -107,7 +143,7 @@ namespace barney {
       }
   }
 
-  int UMeshRTXObjectSpace::extractRoots(cuBQL::WideBVH<float,3, 4> &qbvh,
+  int UMeshAWT::extractRoots(cuBQL::WideBVH<float,3, 4> &qbvh,
                                         int nodeID)
   {
     // PING; PRINT(nodeID);
@@ -173,7 +209,7 @@ namespace barney {
     return nb;
   }
   
-  void UMeshRTXObjectSpace::buildAWT()
+  void UMeshAWT::buildAWT()
   {
     assert(clusters.empty());
     assert(!clustersBuffer);
@@ -229,7 +265,7 @@ namespace barney {
     nodesBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(AWTNode),
                                         nodes.size(),nodes.data());
   }
-#else
+
   void UMeshRTXObjectSpace::createClusters()
   {
     assert(clusters.empty());
@@ -281,7 +317,6 @@ namespace barney {
     clustersBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(Cluster),
                                            clusters.size(),clusters.data());
   }
-#endif
 
 
   __global__
@@ -301,27 +336,19 @@ namespace barney {
       node.majorant[cID] = xf.majorant(getRange(node.bounds[cID]));
   }
 
-  void UMeshRTXObjectSpace::build()
+  void UMeshAWT::build()
   {
     BARNEY_CUDA_SYNC_CHECK();
     
     if (!group) {
-#if AWT
       buildAWT();
-#else
-      createClusters();
-#endif
       
-      std::string gtTypeName = "UMeshRTXObjectSpace";
+      std::string gtTypeName = "UMeshAWT";
       OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
         (gtTypeName,createGeomType);
       geom
         = owlGeomCreate(devGroup->owl,gt);
-#if AWT
       int numPrims = (int)roots.size();
-#else
-      int numPrims = (int)clusters.size();
-#endif
       owlGeomSetPrimCount(geom,numPrims);
 
       // ------------------------------------------------------------------
@@ -340,12 +367,8 @@ namespace barney {
       owlGeomSetBuffer(geom,"mesh.gridDomains",mesh->gridDomainsBuffer);
       owlGeomSetBuffer(geom,"mesh.gridScalars",mesh->gridScalarsBuffer);
       // ------------------------------------------------------------------      
-#if AWT
       owlGeomSetBuffer(geom,"roots",rootsBuffer);
       owlGeomSetBuffer(geom,"nodes",nodesBuffer);
-#else
-      owlGeomSetBuffer(geom,"clusters",clustersBuffer);
-#endif      
       
       // ------------------------------------------------------------------      
       
@@ -375,7 +398,6 @@ namespace barney {
     owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
     owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
 
-#if AWT
     std::cout << "RECOMPUTING AWT MAJORANTS!\n" << std::endl;
     PRINT(nodes.size());
     PRINT(roots.size());
@@ -387,11 +409,82 @@ namespace barney {
          nodes.size(),
          volume->xf.getDD(devID));
     }
-#endif
     std::cout << "refitting ... umesh awt/object space geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);
   }
 
 
+
+
+
+  void UMeshRTXObjectSpace::build()
+  {
+    BARNEY_CUDA_SYNC_CHECK();
+    
+    PING; PRINT(group);
+    if (!group) {
+      createClusters();
+      
+      std::string gtTypeName = "UMeshRTXObjectSpace";
+      OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
+        (gtTypeName,createGeomType);
+      geom
+        = owlGeomCreate(devGroup->owl,gt);
+      int numPrims = (int)clusters.size();
+      PRINT(numPrims);
+      owlGeomSetPrimCount(geom,numPrims);
+
+      // ------------------------------------------------------------------
+      assert(mesh->tetIndicesBuffer);
+      owlGeomSet4fv(geom,"mesh.worldBounds.lower",&mesh->worldBounds.lower.x);
+      owlGeomSet4fv(geom,"mesh.worldBounds.upper",&mesh->worldBounds.upper.x);
+      owlGeomSetBuffer(geom,"mesh.vertices",mesh->verticesBuffer);
+      
+      owlGeomSetBuffer(geom,"mesh.tetIndices",mesh->tetIndicesBuffer);
+      owlGeomSetBuffer(geom,"mesh.pyrIndices",mesh->pyrIndicesBuffer);
+      owlGeomSetBuffer(geom,"mesh.wedIndices",mesh->wedIndicesBuffer);
+      owlGeomSetBuffer(geom,"mesh.hexIndices",mesh->hexIndicesBuffer);
+      owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
+      owlGeomSetBuffer(geom,"mesh.gridOffsets",mesh->gridOffsetsBuffer);
+      owlGeomSetBuffer(geom,"mesh.gridDims",mesh->gridDimsBuffer);
+      owlGeomSetBuffer(geom,"mesh.gridDomains",mesh->gridDomainsBuffer);
+      owlGeomSetBuffer(geom,"mesh.gridScalars",mesh->gridScalarsBuffer);
+      // ------------------------------------------------------------------      
+      owlGeomSetBuffer(geom,"clusters",clustersBuffer);
+      
+      // ------------------------------------------------------------------      
+      
+      if (volume->xf.domain.lower < volume->xf.domain.upper) {
+        owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+      } else {
+        owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
+      }
+      owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+      owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
+      // intentionally set to null for first-time build
+      owlGeomSetBuffer(geom,"xf.values",0/*volume->xf.valuesBuffer*/);
+      
+      // ------------------------------------------------------------------      
+      group
+        = owlUserGeomGroupCreate(devGroup->owl,1,&geom,OPTIX_BUILD_FLAG_ALLOW_UPDATE);
+      owlGroupBuildAccel(group);
+      volume->generatedGroups.push_back(group);
+    }
+    
+    if (volume->xf.domain.lower < volume->xf.domain.upper) {
+      owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+    } else {
+      owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
+    }
+    owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+    owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
+    owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
+
+    std::cout << "refitting ... umesh object space geom" << std::endl;
+    // owlGroupBuildAccel(group);
+    owlGroupRefitAccel(group);
+  }
+
+      
 }
 

@@ -96,14 +96,10 @@ namespace barney {
         (gtTypeName,createGeomType);
       geom
         = owlGeomCreate(devGroup->owl,gt);
-#if UMESH_MC_USE_DDA
-      owlGeomSetPrimCount(geom,1);
-#else
       vec3i dims = mcGrid.dims;
       int primCount = dims.x*dims.y*dims.z;
       PING; PRINT(dims); PRINT(primCount);
       owlGeomSetPrimCount(geom,primCount);
-#endif
 
       // ------------------------------------------------------------------      
       owlGeomSet3iv(geom,"mcGrid.dims",&mcGrid.dims.x);
