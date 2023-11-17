@@ -32,6 +32,12 @@ void Surface::commit()
   }
 }
 
+void Surface::markCommitted()
+{
+  deviceState()->markSceneChanged();
+  Object::markCommitted();
+}
+
 const Geometry *Surface::geometry() const
 {
   return m_geometry.ptr;

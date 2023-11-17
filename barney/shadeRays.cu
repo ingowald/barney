@@ -67,7 +67,7 @@ namespace barney {
       float NdotD = dot(Ng,dir);
       if (NdotD > 0.f) Ng = - Ng;
       
-      float scale = .3f + .7f*fabsf(NdotD);
+      float scale = .2f + .4f*fabsf(NdotD);
       scale *= .3f;
       fragment
         = albedo
@@ -87,7 +87,7 @@ namespace barney {
         rng();
         bounce.rngSeed = ray.rngSeed;
         rng();
-        bounce.throughput = ray.throughput * albedo;
+        bounce.throughput = .6f * ray.throughput * albedo;
         writeQueue[atomicAdd(d_nextWritePos,1)] = bounce;
       }
 #endif

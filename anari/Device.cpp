@@ -316,7 +316,7 @@ void BarneyDevice::deviceCommitParameters()
       getParam<float4>("invalidMaterialColor", make_float4(1.f, 0.f, 1.f, 1.f));
 
   if (allowInvalidSurfaceMaterials != state.allowInvalidSurfaceMaterials)
-    state.objectUpdates.lastBLSReconstructSceneRequest = helium::newTimeStamp();
+    state.objectUpdates.lastSceneChange = helium::newTimeStamp();
 
   helium::BaseDevice::deviceCommitParameters();
 }

@@ -28,6 +28,12 @@ Material *Material::createInstance(
     return (Material *)new UnknownObject(ANARI_MATERIAL, s);
 }
 
+void Material::markCommitted()
+{
+  deviceState()->markSceneChanged();
+  Object::markCommitted();
+}
+
 const BNMaterial *Material::barneyMaterial() const
 {
   return &m_bnMaterial;

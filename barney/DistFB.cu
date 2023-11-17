@@ -101,8 +101,8 @@ namespace barney {
                               sumTiles*sizeof(*ownerGather.finalTiles)));
       if (ownerGather.tileDescs)
         BARNEY_CUDA_CALL(Free(ownerGather.tileDescs));
-      BARNEY_CUDA_CALL(MallocManaged(&ownerGather.tileDescs,
-                                     sumTiles*sizeof(*ownerGather.tileDescs)));
+      BARNEY_CUDA_CALL(Malloc(&ownerGather.tileDescs,
+                              sumTiles*sizeof(*ownerGather.tileDescs)));
       BARNEY_CUDA_SYNC_CHECK();
     }
     

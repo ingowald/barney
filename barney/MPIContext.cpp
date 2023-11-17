@@ -236,8 +236,6 @@ namespace barney {
       // SetActiveGPU forDuration(devices[0]->device);
 
       // use default gpu for this:
-      fb->finalFB[0] = -1;
-      fb->finalFB[fb->numPixels.x*fb->numPixels.y-1] = -1;
       barney::TiledFB::writeFinalPixels(nullptr,
                                         fb->finalFB,
                                         fb->finalDepth,

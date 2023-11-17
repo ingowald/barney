@@ -15,6 +15,7 @@ struct Group : public Object
   ~Group() override;
 
   void commit() override;
+  void markCommitted() override;
 
   BNGroup makeBarneyGroup(BNDataGroup dg) const;
 

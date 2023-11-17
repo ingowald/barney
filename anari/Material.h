@@ -15,6 +15,8 @@ struct Material : public Object
   static Material *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
+  void markCommitted() override;
+
   const BNMaterial *barneyMaterial() const;
 
  protected:

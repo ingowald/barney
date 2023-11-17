@@ -26,6 +26,12 @@ Geometry *Geometry::createInstance(
     return (Geometry *)new UnknownObject(ANARI_GEOMETRY, s);
 }
 
+void Geometry::markCommitted()
+{
+  deviceState()->markSceneChanged();
+  Object::markCommitted();
+}
+
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 Triangle::Triangle(BarneyGlobalState *s) : Geometry(s) {}
