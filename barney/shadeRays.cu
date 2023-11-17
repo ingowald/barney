@@ -74,7 +74,7 @@ namespace barney {
         * scale
         * ray.throughput;
 
-#if 1
+#if 0
       LCG<4> &rng = (LCG<4> &)ray.rngSeed;
       if (ray.hadHit && generation == 0) {
         Ray bounce;

@@ -16,38 +16,45 @@
 
 #pragma once
 
-#include "owl/common/math/box.h"
-#include "owl/common/math/random.h"
-#include "owl/common/parallel/parallel_for.h"
-#include "owl/owl.h"
-#include "barney.h"
-#include "barney/cuda-helper.h"
-#include <cuda_runtime.h>
-#include <string.h>
-#include <mutex>
-#include <vector>
-#include <map>
-#include <memory>
-#include <sstream>
-
-#define __barney_align(a) OWL_ALIGN(a)
+#include "barney/Volume.h"
+#include "barney/unstructured/UMeshField.h"
 
 namespace barney {
-  using namespace owl;
-  using namespace owl::common;
 
-  using range1f = interval<float>;
+  /*! object-space accelerator that clusters elements into, well,
+    clusters of similar/nearly elements, then builds an RTX BVH and
+    majorants over those clusters, disables majorant-zero clusters
+    during refit and in the isec program for a cluster perfomrs
+    ray-element intersection followed by (per-element) woodock
+    sampling along the ray-element overlap range */
+  struct UMeshRTXObjectSpace : public VolumeAccel
+  {
+    struct Cluster {
+      box4f bounds;
+      int begin, end;
+      float majorant;
+    };
+    
+    struct DD {
+      TransferFunction::DD xf;
+      UMeshField::DD       mesh;
+      Cluster             *clusters;
+    };
+    
+    UMeshRTXObjectSpace(UMeshField *mesh, Volume *volume)
+      : VolumeAccel(mesh,volume),
+        mesh(mesh)
+    {}
+    static OWLGeomType createGeomType(DevGroup *devGroup);
+    
+    void build() override;
+    void createClusters();
+    
+    std::vector<Cluster> clusters;
+    OWLBuffer clustersBuffer = 0;
+    OWLGeom  geom  = 0;
+    OWLGroup group = 0;
+    UMeshField *const mesh;
+  };
 
-  using Random = LCG<4>;
-
-
-  template<typename T>
-  inline __device__
-  void swap(T &a, T &b) { T c = a; a = b; b = c; }
-
-  inline __device__
-  float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
-  
 }
-
-
