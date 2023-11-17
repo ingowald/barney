@@ -211,6 +211,7 @@ namespace barney {
   
   void UMeshAWT::buildAWT()
   {
+    double t0 = getCurrentTime();
     assert(clusters.empty());
     assert(!clustersBuffer);
     
@@ -221,7 +222,7 @@ namespace barney {
     cuBQL::WideBVH<float,3,4> bvh;
     box3f *d_primBounds = 0;
     range1f *d_primRanges = 0;
-    PING;
+    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,mesh->elements.size()*sizeof(box3f)));
     BARNEY_CUDA_CALL(MallocManaged(&d_primRanges,mesh->elements.size()*sizeof(range1f)));
     
@@ -230,6 +231,7 @@ namespace barney {
       <<<divRoundUp((int)mesh->elements.size(),1024),1024>>>
       (d_primBounds,d_primRanges,d_mesh);
     
+    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
     // buildConfig.enableSAH();
@@ -241,14 +243,19 @@ namespace barney {
                       (cudaStream_t)0,
                       managedMem);
 
+    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     buildNodes(bvh);
+    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     extractRoots(bvh,0);
+    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     refitRanges(nodes,bvh.primIDs,d_primBounds,d_primRanges);
+    PING; PRINT(prettyDouble(getCurrentTime()-t0));
 
     std::vector<Element> reorderedElements(mesh->elements.size());
     for (int i=0;i<mesh->elements.size();i++) {
       reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
     }
+    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     mesh->elements = reorderedElements;
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
@@ -264,6 +271,7 @@ namespace barney {
                                            roots.size(),roots.data());
     nodesBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(AWTNode),
                                         nodes.size(),nodes.data());
+    PING; PRINT(prettyDouble(getCurrentTime()-t0));
   }
 
   void UMeshRTXObjectSpace::createClusters()
