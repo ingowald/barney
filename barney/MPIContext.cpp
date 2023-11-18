@@ -185,9 +185,12 @@ namespace barney {
 
       dataGroupCount.clear();
       std::vector<int> islandOfGlobal(devices.size());
-      for (int i=0;i<numDevicesGlobally;i++)
+      for (int i=0;i<numDevicesGlobally;i++) {
+        if (i >= islandOfGlobal.size())
+          throw std::runtime_error("invalid islandofglobal access....");
         islandOfGlobal[i]
           = dataGroupCount[dataOnGlobal[i]]++;
+      }
         
       for (int localID=0;localID<devices.size();localID++) {
         auto dev = devices[localID]->device;
