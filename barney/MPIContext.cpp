@@ -184,7 +184,7 @@ namespace barney {
       }
 
       dataGroupCount.clear();
-      std::vector<int> islandOfGlobal(devices.size());
+      std::vector<int> islandOfGlobal(numDevicesGlobally);
       for (int i=0;i<numDevicesGlobally;i++) {
         if (i >= islandOfGlobal.size())
           throw std::runtime_error("invalid islandofglobal access....");
@@ -307,7 +307,7 @@ namespace barney {
     // ------------------------------------------------------------------
     // exchange how many we're going to send/recv
     // ------------------------------------------------------------------
-    std::vector<MPI_Status> allStatuses;
+    // std::vector<MPI_Status> allStatuses;
     std::vector<int> numIncoming(numDevices);
     std::vector<int> numOutgoing(numDevices);
     for (auto &ni : numIncoming) ni = -1;
@@ -326,17 +326,17 @@ namespace barney {
       allRequests.push_back(recvReq);
     }
 
-    allStatuses.resize(allRequests.size());
-    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
-    // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
-    barrier(false);
-    for (int i=0;i<allStatuses.size();i++) {
-      auto &status = allStatuses[i];
-      if (status.MPI_ERROR != MPI_SUCCESS)
-        throw std::runtime_error("error in mpi send/recv status!?");
-    }
+    // allStatuses.resize(allRequests.size());
+    // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
+     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    // barrier(false);
+    // for (int i=0;i<allStatuses.size();i++) {
+    //   auto &status = allStatuses[i];
+    //   if (status.MPI_ERROR != MPI_SUCCESS)
+    //     throw std::runtime_error("error in mpi send/recv status!?");
+    // }
     allRequests.clear();
-    allStatuses.clear();
+    // allStatuses.clear();
     
     // ------------------------------------------------------------------
     // exchange actual rays
@@ -354,16 +354,17 @@ namespace barney {
       allRequests.push_back(sendReq);
       allRequests.push_back(recvReq);
     }
-    allStatuses.resize(allRequests.size());
-    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
-    barrier(false);
-    for (int i=0;i<allStatuses.size();i++) {
-      auto &status = allStatuses[i];
-      if (status.MPI_ERROR != MPI_SUCCESS)
-        throw std::runtime_error("error in mpi send/recv status!?");
-    }
+    // allStatuses.resize(allRequests.size());
+    // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
+    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    // barrier(false);
+    // for (int i=0;i<allStatuses.size();i++) {
+    //   auto &status = allStatuses[i];
+    //   if (status.MPI_ERROR != MPI_SUCCESS)
+    //     throw std::runtime_error("error in mpi send/recv status!?");
+    // }
     allRequests.clear();
-    allStatuses.clear();
+    // allStatuses.clear();
               
     // ------------------------------------------------------------------
     // now all rays should be exchanged -- swap queues
