@@ -198,25 +198,12 @@ int BarneyDevice::getProperty(ANARIObject object,
     uint64_t size,
     uint32_t mask)
 {
-  if (handleIsDevice(object)) {
-    std::string_view prop = name;
-    if (prop == "extension" && type == ANARI_STRING_LIST) {
-      helium::writeToVoidP(mem, query_extensions());
-      return 1;
-    } else if (prop == "barney" && type == ANARI_BOOL) {
-      helium::writeToVoidP(mem, true);
-      return 1;
-    }
-  } else {
-    if (mask == ANARI_WAIT) {
-      deviceState()->waitOnCurrentFrame();
-      flushCommitBuffer();
-    }
-    return helium::referenceFromHandle(object).getProperty(
-        name, type, mem, mask);
+  if (mask == ANARI_WAIT) {
+    auto lock = scopeLockObject();
+    deviceState()->waitOnCurrentFrame();
   }
 
-  return 0;
+  return helium::BaseDevice::getProperty(object, name, type, mem, size, mask);
 }
 
 // Frame Manipulation /////////////////////////////////////////////////////////
@@ -247,7 +234,7 @@ BarneyDevice::~BarneyDevice()
 {
   auto &state = *deviceState();
 
-  state.commitBuffer.clear();
+  state.commitBufferClear();
 
   reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
 
@@ -319,6 +306,20 @@ void BarneyDevice::deviceCommitParameters()
     state.objectUpdates.lastSceneChange = helium::newTimeStamp();
 
   helium::BaseDevice::deviceCommitParameters();
+}
+
+int BarneyDevice::deviceGetProperty(
+    const char *name, ANARIDataType type, void *mem, uint64_t size)
+{
+  std::string_view prop = name;
+  if (prop == "extension" && type == ANARI_STRING_LIST) {
+    helium::writeToVoidP(mem, query_extensions());
+    return 1;
+  } else if (prop == "barney" && type == ANARI_BOOL) {
+    helium::writeToVoidP(mem, true);
+    return 1;
+  }
+  return 0;
 }
 
 BarneyGlobalState *BarneyDevice::deviceState() const
