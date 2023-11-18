@@ -429,7 +429,6 @@ namespace barney {
   {
     BARNEY_CUDA_SYNC_CHECK();
     
-    PING; PRINT(group);
     if (!group) {
       createClusters();
       

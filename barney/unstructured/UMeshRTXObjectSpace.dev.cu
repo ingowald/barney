@@ -137,15 +137,18 @@ namespace barney {
                        Ray &ray,
                        range1f leafRange
                        )
-      : dd(dd), ray(ray), leafRange(leafRange)
+      : dd(dd), ray(ray), leafRange(leafRange), dbg(ray.dbg)
     {}
 
+    const bool dbg;
+    
     inline __device__
     void sampleAndMap(vec3f P, bool dbg);
 
     inline __device__
     bool setElement(Element elt)
     {
+      // if (dbg) printf("setting elemnet tpe %i\n",elt.type);
       element = elt;
       switch (elt.type)
       {
@@ -557,11 +560,11 @@ namespace barney {
     //          primID,
     //          P.x,P.y,P.z);
 
-    vec3f N = normalize(vec3f(1.f));
+    vec3f N = normalize(ray.dir);
     ray.hadHit = 1;
     ray.hit.N = N;
     ray.hit.P = P;
-    ray.hit.baseColor = randomColor(primID);
+    // ray.hit.baseColor = randomColor(primID);
   }
   
   inline __device__
@@ -610,6 +613,8 @@ namespace barney {
         float dt = - logf(1-rand())/(majorant);
         t += dt;
         numStepsTaken++;
+        // if (ray.dbg) printf("step taken %f, new t %f / %f\n",
+        //                     dt,t,isec.elementTRange.upper);
         if (t >= isec.elementTRange.upper)
           break;
 
@@ -636,6 +641,9 @@ namespace barney {
         hit_elt = isec.element;
         isec.leafRange.upper = hit_t;
 
+        ray.hit.baseColor = getPos(isec.mapped);
+        
+        
         // if (dbg) printf("**** ACCEPTED at t = %f, P = %f %f %f, tet ID %i\n",
         //                 t, P.x,P.y,P.z,isec.element.ID);
         break;
@@ -685,17 +693,20 @@ namespace barney {
     const vec3f dir  = optixGetObjectRayDirection();
     float t0 = optixGetRayTmin();
     float t1 = optixGetRayTmax();
-    if (ray.dbg) printf("ray range %f %f\n",t0,t1);
+    // if (ray.dbg) printf("ray range %f %f\n",t0,t1);
     bool isHittingTheBox
       = boxTest(t0,t1,bounds,org,dir);
     if (!isHittingTheBox) 
       return;
 
     range1f leafRange(t0,t1);
-    if (ray.dbg) printf("leaf range %f %f\n",
-                        leafRange.lower,leafRange.upper);
+    // if (ray.dbg) printf("leaf range %f %f\n",
+    //                     leafRange.lower,leafRange.upper);
                         
     float hit_t = intersectLeaf(ray,leafRange,self,begin,end);
+    // if (ray.dbg) printf("hit_t %f / max %f\n",
+    //                     hit_t,optixGetRayTmax());
+
     //
     //
     // TODO: if expected num steps is small enough, just sample
@@ -740,43 +751,7 @@ namespace barney {
     bool isHittingTheBox
       = boxTest(segment.range.lower,segment.range.upper,bounds,org,dir);
 
-    if (dbg) printf("====================== ISEC %i t-range %f %f majorant %f\n",primID,
-                    segment.range.lower,segment.range.upper,
-                    segment.majorant);
-
-
-
-    if (0 && dbg) {
-      int3 stack[32];
-      int3 *stackPtr = stack;
-      *stackPtr++ = make_int3(rootNode,rootChild,1);
-      while (stackPtr > stack) {
-        int3 cur = *--stackPtr;
-        for (int i=0;i<cur.z;i++) printf(" ");
-        printf("node %i:%i depth %i ofs %i cnt %i rng %f %f maj %f",
-               cur.x,cur.y,
-               self.nodes[cur.x].depth[cur.y],
-               self.nodes[cur.x].child[cur.y].offset,
-               self.nodes[cur.x].child[cur.y].count,
-               self.nodes[cur.x].bounds[cur.y].lower.w,
-               self.nodes[cur.x].bounds[cur.y].upper.w,
-               self.nodes[cur.x].majorant[cur.y]);
-        for (int i=0;i<cur.z;i++) printf(" ");
-        if (self.nodes[cur.x].depth[cur.y] < 0) {
-          printf("  -> INVALID\n");
-        } else if (self.nodes[cur.x].child[cur.y].count) {
-          printf("  -> leaf\n");
-        } else {
-          printf("  -> inner\n");
-          for (int i=0;i<4;i++) {
-            *stackPtr++ = make_int3(self.nodes[cur.x].child[cur.y].offset,3-i,cur.z+1);
-          }
-        }
-      }
-    }
-    
     if (!isHittingTheBox) {
-      if (dbg) printf(" -> miss bounds\n");
       return;
     }
     
