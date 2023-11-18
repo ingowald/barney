@@ -106,6 +106,8 @@ struct BarneyDevice : public helium::BaseDevice
  private:
   void initDevice();
   void deviceCommitParameters() override;
+  int deviceGetProperty(
+      const char *name, ANARIDataType type, void *mem, uint64_t size) override;
   BarneyGlobalState *deviceState() const;
 
   bool m_initialized{false};
