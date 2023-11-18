@@ -35,6 +35,7 @@ namespace barney {
   {
     assert(accel);
     accel->build();
+    devGroup->sbtDirty = true;
   }
 
 }
