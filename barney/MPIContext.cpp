@@ -215,9 +215,9 @@ namespace barney {
             dev->rqs.sendWorkerRank << "." << dev->rqs.recvWorkerLocal << std::endl;
       }
     }
-    barrier();
+    barrier(false);
     PING;
-    barrier();
+    barrier(false);
   }
 
   /*! create a frame buffer object suitable to this context */
@@ -326,7 +326,7 @@ namespace barney {
     allStatuses.resize(allRequests.size());
     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
     // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
-    barrier();
+    barrier(false);
     for (int i=0;i<allStatuses.size();i++) {
       auto &status = allStatuses[i];
       if (status.MPI_ERROR != MPI_SUCCESS)
@@ -353,7 +353,7 @@ namespace barney {
     }
     allStatuses.resize(allRequests.size());
     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
-    barrier();
+    barrier(false);
     for (int i=0;i<allStatuses.size();i++) {
       auto &status = allStatuses[i];
       if (status.MPI_ERROR != MPI_SUCCESS)
