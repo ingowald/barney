@@ -52,6 +52,8 @@ namespace barney {
     numWorkers = 0;
     for (int i=0;i<workerRankOfWorldRank.size();i++)
       if (workerRankOfWorldRank[i] != -1) {
+        if (workerRankOfWorldRank[i] >= workers.size)
+          throw std::runtime_error("Invalid worker rank!?");
         worldRankOfWorker[workerRankOfWorldRank[i]] = i;
         numWorkers++;
       }
@@ -59,17 +61,32 @@ namespace barney {
 
     gpusPerWorker = world.allReduceMax(int(gpuIDs.size()));
     numWorkers = world.allReduceAdd(isActiveWorker?1:0);
+
+    if (dbg) {
+      std::stringstream ss;
+      ss << "bn." << workers.rank << ": ";
+      ss << "num workers " << numWorkers << "/" << workers.size << std::endl;
+    }
     
     if (isActiveWorker) {
       int numDGsPerWorker = (int)perDG.size();
       int numDevicesPerWorker = (int)devices.size();
       int numWorkers = workers.size;
       
+      if (dbg) {
+        std::stringstream ss;
+        ss << "bn." << workers.rank << ": ";
+        ss << "num devices " << numDevicesPerWorker << " DGs " << numDGsPerWorker << std::endl << std::flush;
+      }
+      
       // ------------------------------------------------------------------
       // sanity check - make sure all workers have same num data groups
       // ------------------------------------------------------------------
-      std::vector<int> numDataGroupsOnWorker(workers.size);
+      std::vector<int> numDataGroupsOnWorker(workers.size+1);
+      numDataGroupsOnWorker[workers.size] = 0x290374;
       workers.allGather(numDataGroupsOnWorker.data(),numDGsPerWorker);
+      if (numDataGroupsOnWorker[workers.size] != 0x290374)
+        throw std::runtime_error("mpi buffer overwrite!");
       for (int i=0;i<numWorkers;i++)
         if (numDataGroupsOnWorker[i] != numDGsPerWorker)
           throw std::runtime_error
@@ -82,8 +99,11 @@ namespace barney {
       // ------------------------------------------------------------------
       // sanity check - make sure all workers have same num devices
       // ------------------------------------------------------------------
-      std::vector<int> numDevicesOnWorker(workers.size);
+      std::vector<int> numDevicesOnWorker(workers.size+1);
+      numDevicesOnWorker[workers.size] = 0x290375;
       workers.allGather(numDevicesOnWorker.data(),(int)devices.size());
+      if (numDevicesOnWorker[workers.size] != 0x290375)
+        throw std::runtime_error("mpi buffer overwrite!");
       for (int i=0;i<numWorkers;i++)
         if (numDevicesOnWorker[i] != devices.size())
           throw std::runtime_error
@@ -97,10 +117,14 @@ namespace barney {
       // ------------------------------------------------------------------
       // gather who has which data(groups)
       // ------------------------------------------------------------------
-      std::vector<int> allDataGroups(workers.size*numDGsPerWorker);
+      std::vector<int> allDataGroups(workers.size*numDGsPerWorker+1);
+      allDataGroups[workers.size*numDGsPerWorker] = 0x8628;
       workers.allGather(allDataGroups.data(),
                         dataGroupIDs.data(),
                         dataGroupIDs.size());
+      if (allDataGroups[workers.size*numDGsPerWorker] != 0x8628)
+        throw std::runtime_error("mpi buffer overwrite!");
+      allDataGroups.resize(workers.size*numDGsPerWorker);
 
       // ------------------------------------------------------------------
       // sanity check: data groups are numbered 0,1,2 .... and each
@@ -143,11 +167,14 @@ namespace barney {
         std::cout << ss.str() << std::endl;
       }
       int numDevicesGlobally = numDevicesPerWorker*workers.size;
-      std::vector<int> dataOnGlobal(numDevicesGlobally);
+      std::vector<int> dataOnGlobal(numDevicesGlobally+1);
+      dataOnGlobal[numDevicesGlobally] = 0x3723;
       workers.allGather(dataOnGlobal.data(),
                         myDataOnLocal.data(),
                         myDataOnLocal.size());
-
+      if (dataOnGlobal[numDevicesGlobally] != 0x3723)
+        throw std::runtime_error("mpi gather overrun");
+      dataOnGlobal.resize(numDevicesGlobally);
       if (dbg) {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
@@ -188,6 +215,9 @@ namespace barney {
             dev->rqs.sendWorkerRank << "." << dev->rqs.recvWorkerLocal << std::endl;
       }
     }
+    barrier();
+    PING;
+    barrier();
   }
 
   /*! create a frame buffer object suitable to this context */
@@ -274,6 +304,7 @@ namespace barney {
     // ------------------------------------------------------------------
     // exchange how many we're going to send/recv
     // ------------------------------------------------------------------
+    std::vector<MPI_Status> allStatuses;
     std::vector<int> numIncoming(numDevices);
     std::vector<int> numOutgoing(numDevices);
     for (auto &ni : numIncoming) ni = -1;
@@ -292,8 +323,17 @@ namespace barney {
       allRequests.push_back(recvReq);
     }
 
-    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    allStatuses.resize(allRequests.size());
+    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
+    // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    barrier();
+    for (int i=0;i<allStatuses.size();i++) {
+      auto &status = allStatuses[i];
+      if (status.MPI_ERROR != MPI_SUCCESS)
+        throw std::runtime_error("error in mpi send/recv status!?");
+    }
     allRequests.clear();
+    allStatuses.clear();
     
     // ------------------------------------------------------------------
     // exchange actual rays
@@ -311,8 +351,16 @@ namespace barney {
       allRequests.push_back(sendReq);
       allRequests.push_back(recvReq);
     }
-    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    allStatuses.resize(allRequests.size());
+    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
+    barrier();
+    for (int i=0;i<allStatuses.size();i++) {
+      auto &status = allStatuses[i];
+      if (status.MPI_ERROR != MPI_SUCCESS)
+        throw std::runtime_error("error in mpi send/recv status!?");
+    }
     allRequests.clear();
+    allStatuses.clear();
               
     // ------------------------------------------------------------------
     // now all rays should be exchanged -- swap queues
