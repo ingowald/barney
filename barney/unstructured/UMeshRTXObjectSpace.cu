@@ -212,8 +212,6 @@ namespace barney {
   void UMeshAWT::buildAWT()
   {
     double t0 = getCurrentTime();
-    assert(clusters.empty());
-    assert(!clustersBuffer);
     
     SetActiveGPU forDuration(devGroup->devices[0]);
     // ==================================================================
