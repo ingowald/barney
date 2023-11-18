@@ -74,7 +74,7 @@ namespace barney {
     void syncCheckAll(const char *where);
     
     // for debugging ...
-    virtual void barrier() {}
+    virtual void barrier(bool warn=true) {}
     
     /*! generate a new wave-front of rays */
     void generateRays(const barney::Camera &camera,
