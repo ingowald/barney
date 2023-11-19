@@ -343,13 +343,45 @@ namespace barney {
     else if (method == "object-space")
       return std::make_shared<RTXObjectSpace>(this,volume);
     else throw std::runtime_error("found BARNEY_METHOD env-var, but didn't recognize its value. allowed values are 'awt', 'object-space', and 'macro-cells'");
-// #if 1
-//     return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
-//     // return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
-// #else
-//     return std::make_shared<RTXObjectSpace>(this,volume);
-// #endif
   }
 
+  void UMeshField::setVariables(OWLGeom geom, bool firstTime)
+  {
+    ScalarField::setVariables(geom,firstTime);
+    
+    // ------------------------------------------------------------------
+    assert(mesh->tetIndicesBuffer);
+    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
+      
+    owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
+    owlGeomSetBuffer(geom,"pyrIndices",pyrIndicesBuffer);
+    owlGeomSetBuffer(geom,"wedIndices",wedIndicesBuffer);
+    owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
+    owlGeomSetBuffer(geom,"elements",elementsBuffer);
+    owlGeomSetBuffer(geom,"gridOffsets",gridOffsetsBuffer);
+    owlGeomSetBuffer(geom,"gridDims",gridDimsBuffer);
+    owlGeomSetBuffer(geom,"gridDomains",gridDomainsBuffer);
+    owlGeomSetBuffer(geom,"gridScalars",gridScalarsBuffer);
+  }
+  
+  std::vector<OWLVarDecl> UMeshField::getVarDecls(uint32_t myOfs)
+  {
+    std::vector<OWLVarDecl> mine = 
+      {
+       { "mesh.vertices",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,vertices) },
+       { "mesh.tetIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,tetIndices) },
+       { "mesh.pyrIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,pyrIndices) },
+       { "mesh.wedIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,wedIndices) },
+       { "mesh.hexIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,hexIndices) },
+       { "mesh.elements",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,elements) },
+       { "mesh.gridOffsets", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridOffsets) },
+       { "mesh.gridDims",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDims) },
+       { "mesh.gridDomains", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDomains) },
+       { "mesh.gridScalars", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridScalars) },
+      };
+    for (auto var : ScalarField::getVarDecls(myOfs))
+      mine.push_back(var);
+    return mine;
+  };
 }
   

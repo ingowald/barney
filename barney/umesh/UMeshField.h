@@ -76,7 +76,7 @@ namespace barney {
       inline __both__ int &operator[](int i)      { return v[i]; }
       inline __both__ int operator[](int i) const { return v[i]; }
     };
-    struct DD {
+    struct DD : public ScalarField::DD {
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
       inline __both__ box4f pyrBounds(int primID) const;
@@ -102,9 +102,11 @@ namespace barney {
       const box4f      *gridDomains;
       const float      *gridScalars;
       int               numElements;
-      box4f             worldBounds;
     };
 
+    std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
+    void setVariables(OWLGeom geom, bool firstTime) override;
+    
     /*! build *initial* macro-cell grid (ie, the scalar field min/max
         ranges, but not yet the majorants) over a umesh */
     void buildInitialMacroCells(MCGrid &grid);
@@ -131,8 +133,6 @@ namespace barney {
     DD getDD(int devID);
     
     VolumeAccel::SP createAccel(Volume *volume) override;
-    // void buildParams(std::vector<OWLVarDecl> &params, size_t offset);
-    // void setParams(OWLLaunchParams lp);
 
     std::vector<vec4f>      vertices;
     std::vector<TetIndices> tetIndices;
@@ -155,27 +155,7 @@ namespace barney {
     OWLBuffer gridDimsBuffer = 0;
     OWLBuffer gridDomainsBuffer = 0;
     OWLBuffer gridScalarsBuffer = 0;
-
-    box4f worldBounds;
   };
-
-
-  // /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds, and
-  //     writes those into givne pre-allocated device mem location */
-  // __global__
-  // void computeElementBoundingBoxes(box3f *d_primBounds,
-  //                                  UMeshField::DD mesh);
-  
-  // /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds and
-  //     per-prim scalar ranges, and writes those into givne
-  //     pre-allocated device mem location */
-  // __global__
-  // void computeElementBoundingBoxes(box3f *d_primBounds,
-  //                                  range1f *d_primRanges,
-  //                                  UMeshField::DD mesh);
-
-                                   
-                                           
   
   // ==================================================================
   // IMPLEMENTATION

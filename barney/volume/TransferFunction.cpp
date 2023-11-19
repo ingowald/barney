@@ -55,5 +55,28 @@ namespace barney {
     return dd;
   }
     
+  std::vector<OWLVarDecl> TransferFunction::getVarDecls(uint32_t myOffset)
+  {
+    return
+      {
+       { "xf.values",      OWL_BUFPTR, myOffset+OWL_OFFSETOF(DD,values) },
+       { "xf.domain",      OWL_FLOAT2, myOffset+OWL_OFFSETOF(DD,domain) },
+       { "xf.baseDensity", OWL_FLOAT,  myOffset+OWL_OFFSETOF(DD,baseDensity) },
+       { "xf.numValues",   OWL_INT,    myOffset+OWL_OFFSETOF(DD,numValues) },
+      };
+  }
+  
+  void TransferFunction::setVariables(OWLGeom geom, bool firstTime)
+  {
+    if (!(domain.lower < domain.upper)) 
+      throw std::runtime_error("in-valid domain for transfer function");
+    
+    owlGeomSet2f(geom,"xf.domain",domain.lower,domain.upper);
+    owlGeomSet1f(geom,"xf.baseDensity",baseDensity);
+    owlGeomSet1i(geom,"xf.numValues",(int)values.size());
+    // intentionally set to null for first-time build
+    owlGeomSetBuffer(geom,"xf.values",valuesBuffer);
+  }
+  
   
 }

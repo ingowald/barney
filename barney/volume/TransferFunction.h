@@ -52,8 +52,8 @@ namespace barney {
     void set(const range1f &domain,
              const std::vector<vec4f> &values,
              float baseDensity);
-    void buildParams(std::vector<OWLVarDecl> &params, size_t offset);
-    void setParams(OWLLaunchParams lp);
+    std::vector<OWLVarDecl> getVarDecls(uint32_t myOffset);
+    void setVariables(OWLGeom geom, bool firstTime);
     
     OWLBuffer           valuesBuffer = 0;
     range1f             domain;

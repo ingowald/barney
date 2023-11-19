@@ -679,7 +679,7 @@ namespace barney {
       = owl::getProgramData<typename RTXObjectSpace::DD>();
     auto &ray
       = owl::getPRD<Ray>();
-    bool dbg = ray.dbg;
+    // bool dbg = ray.dbg;
     
     Cluster cluster = self.clusters[primID];
     int begin = cluster.begin;

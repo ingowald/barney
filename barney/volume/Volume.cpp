@@ -29,8 +29,9 @@ namespace barney {
     accel = sf->createAccel(this);
   }
 
-    /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
+  
+  /*! (re-)build the accel structure for this volume, probably after
+    changes to transfer functoin (or later, scalar field) */
   void Volume::build()
   {
     assert(accel);
@@ -38,4 +39,30 @@ namespace barney {
     devGroup->sbtDirty = true;
   }
 
+  std::vector<OWLVarDecl> VolumeAccel::getVarDecls(uint32_t baseOfs)
+  {
+    return volume->xf.getVarDecls(baseOfs);
+  }
+  
+  void VolumeAccel::setVariables(OWLGeom geom, bool firstTime)
+  {
+    volume->xf.setVariables(geom,firstTime);
+    field->setVariables(geom,firstTime);
+  }
+    
+  
+  std::vector<OWLVarDecl> ScalarField::getVarDecls(uint32_t baseOfs)
+  {
+    return
+      {
+       { "worldBounds.lower", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.lower) },
+       { "worldBounds.upper", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.upper) }
+      };
+  }
+  
+  void ScalarField::setVariables(OWLGeom geom, bool firstTime)
+  {
+    owlGeomSet4fv(geom,"worldBounds.lower",&worldBounds.lower.x);
+    owlGeomSet4fv(geom,"worldBounds.upper",&worldBounds.upper.x);
+  }
 }
