@@ -17,65 +17,12 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
-#include "barney/TiledFB.h"
-#include "cuda_fp16.h"
-
-// #define VISUALIZE_PRIMS 1
-
-namespace owl {
-  namespace common  {
-    struct vec3h {
-      inline __both__ operator vec3f () const;
-      inline __both__ vec3h &operator=(vec3f v);
-    
-      half x, y, z;
-    };
-
-    inline __both__ float from_half(half h) { return (float)h; }
-
-    inline __both__ vec3f from_half(vec3h v)
-    {
-      return { from_half(v.x),from_half(v.y),from_half(v.z) };
-    }
-
-    inline __both__ half to_half(float f)
-    {
-      half h = f;
-      return h;
-    }
-
-    inline __both__ vec3h to_half(vec3f v)
-    {
-      return { to_half(v.x),to_half(v.y),to_half(v.z) };
-    }
-  
-    inline __both__ vec3h::operator vec3f () const
-    {
-      return from_half(*this);
-    }
-  
-    inline __both__ vec3h &vec3h::operator=(vec3f v)
-    {
-      *this = to_half(v);
-      return *this;
-    }
-
-    inline __both__ vec3f operator*(float f, vec3h v)  { return f * (vec3f)v; }
-    inline __both__ vec3f operator*(vec3f a, vec3h b)  { return a * (vec3f)b; }
-    inline __both__ vec3f operator*(vec3h a, vec3f b)  { return (vec3f)a * b; }
-
-    inline __both__ vec3f operator+(float f, vec3h v)  { return f + (vec3f)v; }
-    inline __both__ vec3f operator+(vec3f a, vec3h b)  { return a + (vec3f)b; }
-    inline __both__ vec3f operator+(vec3h a, vec3f b)  { return (vec3f)a + b; }
-
-    inline __both__ vec3f normalize(vec3h v)    { return normalize((vec3f)v); }
-
-    inline __both__ float dot(vec3h a, vec3h b)    { return dot((vec3f)a,(vec3f)b); }
-    inline __both__ float dot(vec3h a, vec3f b)    { return dot((vec3f)a,(vec3f)b); }
-    inline __both__ float dot(vec3f a, vec3h b)    { return dot((vec3f)a,(vec3f)b); }
-    
-  }
-}
+/*! iw - TODO: this shouldn't be included here; we currently do
+    because we ant to call 'ensureRayQueuesAReLargeEnoughFor(fb), but
+    that should be handled somewhere else, not in the case ray class
+    ... */
+#include "barney/fb/TiledFB.h"
+#include "barney/common/half.h"
 
 namespace barney {
 
@@ -84,15 +31,6 @@ namespace barney {
     vec3h    throughput;
     vec3h    dir;
     float    tMax;
-    // these are only for debugging right now - eventually with ray
-    // queue cycling there's no reaon why a ray should track those,
-    // because they're not valid during shding, anyway, when the ray
-    // gets shaded on another gpu than the one that found the
-    // intersection:
-    // int      instID, geomID, primID;
-    // only for debugging right now; should eventualy become
-    // 'throughput' for a path tracer
-    // float    u,v;
     uint32_t rngSeed;
     struct {
       vec3h    N;

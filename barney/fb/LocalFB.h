@@ -16,41 +16,35 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "barney/Context.h"
+#include "barney/fb/FrameBuffer.h"
 
 namespace barney {
 
-  /*! the base class for _any_ other type of object/actor in the
-      barney class hierarchy */
-  struct Object : public std::enable_shared_from_this<Object> {
-    typedef std::shared_ptr<Object> SP;
+  struct LocalFB : public FrameBuffer {
+    typedef std::shared_ptr<LocalFB> SP;
 
-    /*! dynamically cast to another (typically derived) class, e.g. to
-        check whether a given 'Geomery'-type object is actually a
-        Triangles-type geometry, etc */
-    template<typename T>
-    inline std::shared_ptr<T> as();
-    template<typename T>
-    inline std::shared_ptr<const T> as() const;
+    LocalFB(Context *context)
+      : FrameBuffer(context, true)
+    {}
     
     /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const;
+    std::string toString() const override
+    { return "LocalFB{}"; }
+    
+    static SP create(Context *context)
+    { return std::make_shared<LocalFB>(context); }
+    
+    // void resize(vec2i size, uint32_t *hostFB, float *hostDepth) override;
   };
-
 
   // ==================================================================
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
   
-  /*! pretty-printer for printf-debugging */
-  inline std::string Object::toString() const
-  { return "<Object>"; }
-
-  /*! dynamically cast to another (typically derived) class, e.g. to
-    check whether a given 'Geomery'-type object is actually a
-    Triangles-type geometry, etc */
-  template<typename T>
-  inline std::shared_ptr<T> Object::as() 
-  { return std::dynamic_pointer_cast<T>(shared_from_this()); }
+  // inline void LocalFB::resize(vec2i newSize, uint32_t *hostFB, float *hostDepth) 
+  // {
+  //   FrameBuffer::resize(newSize, hostFB, hostDepth);
+  // }
   
 }

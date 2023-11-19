@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/Context.h"
-#include "barney/MPIWrappers.h"
+#include "barney/common/MPIWrappers.h"
 
 namespace barney {
 

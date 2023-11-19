@@ -26,6 +26,10 @@ namespace barney {
   {
   }
   
+  /*! pretty-printer for printf-debugging */
+  std::string Group::toString() const 
+  { return "Group{}"; }
+  
   void Group::build()
   {
     userGeoms.clear();
@@ -45,10 +49,6 @@ namespace barney {
     }
     for (auto volume : volumes) {
       volume->build();
-      // for (auto g : volume->triangleGeoms)
-      //   triangleGeoms.push_back(g);
-      // for (auto g : volume->userGeoms)
-      //   userGeoms.push_back(g);
     }
     if (!userGeoms.empty())
       userGeomGroup = owlUserGeomGroupCreate

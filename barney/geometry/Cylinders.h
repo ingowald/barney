@@ -16,41 +16,45 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "barney/geometry/Geometry.h"
 
 namespace barney {
 
-  /*! the base class for _any_ other type of object/actor in the
-      barney class hierarchy */
-  struct Object : public std::enable_shared_from_this<Object> {
-    typedef std::shared_ptr<Object> SP;
+  struct DataGroup;
 
-    /*! dynamically cast to another (typically derived) class, e.g. to
-        check whether a given 'Geomery'-type object is actually a
-        Triangles-type geometry, etc */
-    template<typename T>
-    inline std::shared_ptr<T> as();
-    template<typename T>
-    inline std::shared_ptr<const T> as() const;
+  /*! cylinders with caps, specified through an array of vertices, and
+      one array of int2 where each of the two its specified begin and
+      end vertex of a cylinder. radii can either come from a separate
+      array (if provided), or, i not, use a common radius specified in
+      this geometry */
+  struct Cylinders : public Geometry {
+    typedef std::shared_ptr<Cylinders> SP;
+
+    struct DD {
+      const vec3f *points;
+      const vec2i *indices;
+      const float *radii;
+      Material     material;
+    };
+    
+    Cylinders(DataGroup *owner,
+              const Material &material,
+              const vec3f *points,
+              int          numPoints,
+              const vec2i *indices,
+              int          numIndices,
+              const float *radii,
+              float        defaultRadius);
+    
+    static OWLGeomType createGeomType(DevGroup *devGroup);
+
+    OWLBuffer indicesBuffer  = 0;
+    OWLBuffer pointsBuffer  = 0;
+    OWLBuffer radiiBuffer  = 0;
     
     /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const;
+    std::string toString() const override
+    { return "Cylinders{}"; }
   };
 
-
-  // ==================================================================
-  // INLINE IMPLEMENTATION SECTION
-  // ==================================================================
-  
-  /*! pretty-printer for printf-debugging */
-  inline std::string Object::toString() const
-  { return "<Object>"; }
-
-  /*! dynamically cast to another (typically derived) class, e.g. to
-    check whether a given 'Geomery'-type object is actually a
-    Triangles-type geometry, etc */
-  template<typename T>
-  inline std::shared_ptr<T> Object::as() 
-  { return std::dynamic_pointer_cast<T>(shared_from_this()); }
-  
 }

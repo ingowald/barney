@@ -16,35 +16,54 @@
 
 #pragma once
 
-#include "barney/Context.h"
-#include "barney/DataGroup.h"
+#include "barney/geometry/Geometry.h"
 
 namespace barney {
 
   struct DataGroup;
-  
-  struct Model : public Object {
-    typedef std::shared_ptr<Model> SP;
 
-    static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
+  /*! geometry in the form of a regular triangle mesh - vertex
+      positoins array, vertex indices array, verex normals, and
+      texcoords */
+  struct Triangles : public Geometry {
+    typedef std::shared_ptr<Triangles> SP;
+
+    struct DD {
+      int          numIndices;
+      int          numVertices;
+      const vec3i *indices;
+      const vec3f *vertices;
+      const vec3f *normals;
+      const vec2f *texcoords;
+      Material     material;
+    };
     
-    Model(Context *context);
+    Triangles(DataGroup *owner,
+              const Material &material,
+              int numIndices,
+              const vec3i *indices,
+              int numVertices,
+              const vec3f *vertices,
+              const vec3f *normals,
+              const vec2f *texcoords);
+    void update(const Material &material,
+                int numIndices,
+                const vec3i *indices,
+                int numVertices,
+                const vec3f *vertices,
+                const vec3f *normals,
+                const vec2f *texcoords);
     
+    static OWLGeomType createGeomType(DevGroup *devGroup);
+
+    int       numIndices;
+    int       numVertices;
+    OWLBuffer indicesBuffer  = 0;
+    OWLBuffer verticesBuffer = 0;
+
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
-    { return "Model{}"; }
-
-    void render(const Camera &camera,
-                FrameBuffer *fb);
-
-    DataGroup *getDG(int localID)
-    {
-      assert(localID >= 0);
-      assert(localID < dataGroups.size());
-      return dataGroups[localID].get();
-    }
-    std::vector<DataGroup::SP> dataGroups;
-    Context *const context;
+    { return "Triangles{}"; }
   };
 
 }

@@ -32,7 +32,7 @@ target_include_directories(barney-config INTERFACE
 embed_ptx(
   OUTPUT_TARGET      barney-traceRays-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            traceRays.cu
+  SOURCES            kernels/traceRays.cu
   )
 # ------------------------------------------------------------------
 # surface geometry:
@@ -41,19 +41,19 @@ embed_ptx(
 embed_ptx(
   OUTPUT_TARGET      barney-spheres-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            Spheres.dev.cu
+  SOURCES            geometry/Spheres.dev.cu
   )
 # ray triangles geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-triangles-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            Triangles.dev.cu
+  SOURCES            geometry/Triangles.dev.cu
   )
 # ray cylinders geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-cylinders-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            Cylinders.dev.cu
+  SOURCES            geometry/Cylinders.dev.cu
   )
 
 # ------------------------------------------------------------------
@@ -62,73 +62,70 @@ embed_ptx(
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            unstructured/UMeshRTXObjectSpace.dev.cu
+  SOURCES            umesh/RTXObjectSpace.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshMCAccelerator-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            unstructured/UMeshMCAccelerator.dev.cu
+  SOURCES            umesh/UMeshMCAccelerator.dev.cu
 )
 
 add_library(barney STATIC
-
+  common/barney-common.h
+  
   # actual device kernels for CUDA ray gen and shading
-  generateRays.cu
-  shadeRays.cu
+  kernels/generateRays.cu
+  kernels/shadeRays.cu
   # all the barney "plumbing" stuff on the host
   DeviceContext.h
-  DeviceContext.cu
+  DeviceContext.cpp
   Context.h
-  Context.cu
+  Context.cpp
   DeviceGroup.h
   DeviceGroup.cpp
   LocalContext.h
-  LocalContext.cu
+  LocalContext.cpp
   # all frame buffer related stuff (DistFB in barney_mpi)
-  FrameBuffer.h
-  FrameBuffer.cu
-  LocalFB.h
-  LocalFB.cu
-  TiledFB.h
-  TiledFB.cu
+  fb/FrameBuffer.h
+  fb/FrameBuffer.cpp
+  fb/LocalFB.h
+  fb/TiledFB.h
+  fb/TiledFB.cu
   # model/group/data group handling
   Model.h
-  Model.cu
+  Model.cpp
   Group.h
   Group.cpp
   DataGroup.h
   DataGroup.cpp
   # actual geometry types
-  Geometry.h
-  Geometry.cpp
-  Spheres.h
-  Spheres.cu
-  Triangles.h
-  Triangles.cu
-  Cylinders.h
-  Cylinders.cu
-  # actual volume types
-  Volume.h
-  Volume.cpp
-  unstructured/MCAccelerator.h
-  unstructured/MCAccelerator.cu
-  unstructured/UMeshField.h
-  unstructured/UMeshField.cu
-  unstructured/TransferFunction.h
-  unstructured/TransferFunction.cu
-  unstructured/MCGrid.h
-  unstructured/MCGrid.cu
-  unstructured/MCAccelerator.h
-  unstructured/UMeshMCAccelerator.cu
-  unstructured/UMeshCUBQLSampler.cu
-  unstructured/UMeshRTXObjectSpace.h
-  unstructured/UMeshRTXObjectSpace.cu
+  geometry/Geometry.h
+  geometry/Geometry.cpp
+  geometry/Spheres.h
+  geometry/Spheres.cpp
+  geometry/Triangles.h
+  geometry/Triangles.cpp
+  geometry/Cylinders.h
+  geometry/Cylinders.cpp
+  # volume data 
+  volume/Volume.h
+  volume/Volume.cpp
+  volume/MCAccelerator.h
+  volume/TransferFunction.h
+  volume/TransferFunction.cpp
+  volume/MCGrid.h
+  volume/MCGrid.cu
+  volume/MCAccelerator.h
+  # *unstructured* volumes
+  umesh/UMeshField.h
+  umesh/UMeshField.cu
+  umesh/CUBQLFieldSampler.h
+  umesh/CUBQLFieldSampler.cpp
+  umesh/RTXObjectSpace.h
+  umesh/RTXObjectSpace.cu
+  umesh/UMeshMCAccelerator.h
+  umesh/UMeshMCAccelerator.cu
   
-#  unstructured/QuickClusters.cu
-#  unstructured/SpatialAccelWithRTXSampling.h
-#  unstructured/SpatialAccelWithRTXSampling.cu
-#  unstructured/qbvh.h
-#  unstructured/qbvh.cpp
   # implements the c99 barney api calls
   barney.cpp
   )
@@ -160,13 +157,12 @@ set_target_properties(barney
 find_package(MPI REQUIRED)
 
 add_library(barney_mpi STATIC
-  mpiAPI.cpp
-  MPIWrappers.h
-  MPIWrappers.cpp
+  common/MPIWrappers.h
+  common/MPIWrappers.cpp
   MPIContext.h
   MPIContext.cpp
-  DistFB.h
-  DistFB.cu
+  fb/DistFB.h
+  fb/DistFB.cpp
   )
 set_target_properties(barney_mpi
   PROPERTIES

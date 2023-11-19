@@ -14,26 +14,41 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/common/barney-common.h"
+#include "barney/geometry/Triangles.h"
+#include <owl/owl_device.h>
 
 namespace barney {
-
-  /*! the camera model we use in barney */
-  struct Camera {
-    /*! vector from camera center to to lower-left pixel (i.e., pixel
-      (0,0)) on the focal plane */
-    vec3f dir_00;
-    /* vector along u direction, for ONE pixel */
-    vec3f dir_du;
-    /* vector along v direction, for ONE pixel */
-    vec3f dir_dv;
-    /*! lens center ... */
-    vec3f lens_00;
-    /* vector along v direction, for ONE pixel */
-    float  lensRadius;
-  };
+  
+  OPTIX_CLOSEST_HIT_PROGRAM(TrianglesCH)()
+  {
+    auto &ray = owl::getPRD<Ray>();
+    auto &self = owl::getProgramData<Triangles::DD>();
+    ray.hadHit = true;
+    ray.tMax = optixGetRayTmax();
+    int primID = optixGetPrimitiveIndex();
+    vec3i triangle = self.indices[primID];
+    vec3f v0 = self.vertices[triangle.x];
+    vec3f v1 = self.vertices[triangle.y];
+    vec3f v2 = self.vertices[triangle.z];
+    vec3f n = cross(v1-v0,v2-v0);
+    n = optixTransformNormalFromObjectToWorldSpace(n);
+    n = normalize(n);
     
+    vec3f dir = optixGetWorldRayDirection();
+#if VISUALIZE_PRIMS
+    vec3f baseColor = owl::randomColor(primID);
+#else
+    vec3f baseColor = self.material.baseColor;
+#endif
+    const float u = optixGetTriangleBarycentrics().x;
+    const float v = optixGetTriangleBarycentrics().y;
+    
+    const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
+    vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
+    
+    ray.hit.baseColor = baseColor;
+    ray.hit.N         = n;
+    ray.hit.P         = P;
+  }
+  
 }
-

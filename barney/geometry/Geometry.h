@@ -16,24 +16,41 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "barney/Object.h"
+#include "barney/Ray.h"
 
 namespace barney {
 
-  /*! the camera model we use in barney */
-  struct Camera {
-    /*! vector from camera center to to lower-left pixel (i.e., pixel
-      (0,0)) on the focal plane */
-    vec3f dir_00;
-    /* vector along u direction, for ONE pixel */
-    vec3f dir_du;
-    /* vector along v direction, for ONE pixel */
-    vec3f dir_dv;
-    /*! lens center ... */
-    vec3f lens_00;
-    /* vector along v direction, for ONE pixel */
-    float  lensRadius;
+  struct DataGroup;
+  
+  struct Material {
+    vec3f baseColor;
   };
-    
-}
 
+  struct Geometry : public Object {
+    typedef std::shared_ptr<Geometry> SP;
+
+    Geometry(DataGroup *owner,
+             const Material &material)
+      : owner(owner),
+        material(material)
+    {}
+
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override
+    { return "Geometry{}"; }
+
+    virtual void build() {}
+    
+    Material    material;
+    DataGroup  *owner;
+
+    /*! get the own context that was used to create this geometry */
+    OWLContext getOWL() const;
+    
+    std::vector<OWLGeom>  triangleGeoms;
+    std::vector<OWLGeom>  userGeoms;
+    std::vector<OWLGroup> secondPassGroups;
+  };
+
+}

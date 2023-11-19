@@ -17,9 +17,9 @@
 #include "barney.h"
 #include "barney/Context.h"
 #include "barney/LocalContext.h"
-#include "barney/FrameBuffer.h"
+#include "barney/fb/FrameBuffer.h"
 #include "barney/Model.h"
-#include "barney/Triangles.h"
+#include "barney/geometry/Triangles.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
@@ -97,10 +97,6 @@ namespace barney {
   {
     return checkGet(sf)->shared_from_this()->as<ScalarField>();
   }
-  // inline TransferFunction::SP checkGetSP(BNTransferFunction xf)
-  // {
-  //   return checkGet(xf)->shared_from_this()->as<TransferFunction>();
-  // }
 
   // ------------------------------------------------------------------
   
@@ -457,4 +453,6 @@ namespace barney {
     return (BNContext)new LocalContext(dataGroupIDs,
                                        gpuIDs);
   }
+
+  
 }

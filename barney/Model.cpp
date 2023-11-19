@@ -14,26 +14,25 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/common/barney-common.h"
+#include "barney/Model.h"
 
 namespace barney {
 
-  /*! the camera model we use in barney */
-  struct Camera {
-    /*! vector from camera center to to lower-left pixel (i.e., pixel
-      (0,0)) on the focal plane */
-    vec3f dir_00;
-    /* vector along u direction, for ONE pixel */
-    vec3f dir_du;
-    /* vector along v direction, for ONE pixel */
-    vec3f dir_dv;
-    /*! lens center ... */
-    vec3f lens_00;
-    /* vector along v direction, for ONE pixel */
-    float  lensRadius;
-  };
-    
-}
+  Model::Model(Context *context)
+    : context(context)
+  {
+    for (int localID=0;localID<context->perDG.size();localID++) {
+      dataGroups.push_back(DataGroup::create(this,localID));
+    }
+  }
 
+  void Model::render(const Camera &camera,
+                     FrameBuffer *fb)
+  {
+    assert(context);
+    assert(fb);
+    context->ensureRayQueuesLargeEnoughFor(fb);
+    context->render(this,camera,fb);
+  }
+
+}

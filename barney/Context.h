@@ -17,11 +17,11 @@
 #pragma once
 
 #include "barney/Ray.h"
-#include "barney/Geometry.h"
+#include "barney/geometry/Geometry.h"
 #include "barney/Camera.h"
 #include "barney/DeviceContext.h"
-#include "barney/cuda-helper.h"
-#include "barney/TiledFB.h"
+#include "barney/common/cuda-helper.h"
+#include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
 
 namespace barney {
@@ -144,7 +144,7 @@ namespace barney {
   
 
   // ==================================================================
-  // IMPLEMENTATION
+  // INLINE IMPLEMENTATION SECTION
   // ==================================================================
 
 

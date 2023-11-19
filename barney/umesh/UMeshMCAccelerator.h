@@ -16,24 +16,38 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "barney/volume/MCAccelerator.h"
+#include "barney/umesh/CUBQLFieldSampler.h"
 
 namespace barney {
 
-  /*! the camera model we use in barney */
-  struct Camera {
-    /*! vector from camera center to to lower-left pixel (i.e., pixel
-      (0,0)) on the focal plane */
-    vec3f dir_00;
-    /* vector along u direction, for ONE pixel */
-    vec3f dir_du;
-    /* vector along v direction, for ONE pixel */
-    vec3f dir_dv;
-    /*! lens center ... */
-    vec3f lens_00;
-    /* vector along v direction, for ONE pixel */
-    float  lensRadius;
-  };
-    
-}
+  /*! a macrocell accelerator built over umeshes */
+  template<typename FieldSampler>
+  struct UMeshMCAccelerator : public MCAccelerator<FieldSampler>
+  {
+    using MCAccelerator<FieldSampler>::mcGrid;
+    using MCAccelerator<FieldSampler>::volume;
 
+    struct DD : public MCAccelerator<FieldSampler>::DD {
+      using MCAccelerator<FieldSampler>::DD::sampleAndMap;
+      // UMeshField::DD mesh;
+    };
+    
+    UMeshMCAccelerator(UMeshField *mesh, Volume *volume)
+      : MCAccelerator<FieldSampler>(mesh,volume),
+        mesh(mesh)
+    {}
+    static OWLGeomType createGeomType(DevGroup *devGroup);
+    
+    
+    // void buildMCs() override;
+    void build() override;
+
+    OWLGeom geom = 0;
+      
+    UMeshField *const mesh;
+  };
+
+  typedef UMeshMCAccelerator<CUBQLFieldSampler> UMeshAccel_MC_CUBQL;
+  
+}

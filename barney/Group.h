@@ -16,11 +16,14 @@
 
 #pragma once
 
-#include "barney/Geometry.h"
-#include "barney/Volume.h"
+#include "barney/geometry/Geometry.h"
+#include "barney/volume/Volume.h"
 
 namespace barney {
 
+  /*! a logical "group" of objects in a data group -- i.e., geometries
+      and volumes (and maybe, eventual, lights?) -- that can be
+      instantiated */
   struct Group : public Object {
     typedef std::shared_ptr<Group> SP;
 
@@ -31,8 +34,7 @@ namespace barney {
     void build();
 
     /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Group{}"; }
+    std::string toString() const override;
 
     DataGroup *const owner;
     const std::vector<Volume::SP>   volumes;

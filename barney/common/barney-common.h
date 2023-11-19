@@ -16,41 +16,38 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include <owl/common/math/box.h>
+#include <owl/common/math/random.h>
+#include <owl/common/parallel/parallel_for.h>
+#include <owl/owl.h>
+// #include "barney.h"
+#include "barney/common/cuda-helper.h"
+#include <cuda_runtime.h>
+#include <string.h>
+#include <mutex>
+#include <vector>
+#include <map>
+#include <memory>
+#include <sstream>
+
+#define __barney_align(a) OWL_ALIGN(a)
 
 namespace barney {
+  using namespace owl;
+  using namespace owl::common;
 
-  /*! the base class for _any_ other type of object/actor in the
-      barney class hierarchy */
-  struct Object : public std::enable_shared_from_this<Object> {
-    typedef std::shared_ptr<Object> SP;
+  using range1f = interval<float>;
 
-    /*! dynamically cast to another (typically derived) class, e.g. to
-        check whether a given 'Geomery'-type object is actually a
-        Triangles-type geometry, etc */
-    template<typename T>
-    inline std::shared_ptr<T> as();
-    template<typename T>
-    inline std::shared_ptr<const T> as() const;
-    
-    /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const;
-  };
+  using Random = LCG<4>;
 
 
-  // ==================================================================
-  // INLINE IMPLEMENTATION SECTION
-  // ==================================================================
-  
-  /*! pretty-printer for printf-debugging */
-  inline std::string Object::toString() const
-  { return "<Object>"; }
-
-  /*! dynamically cast to another (typically derived) class, e.g. to
-    check whether a given 'Geomery'-type object is actually a
-    Triangles-type geometry, etc */
   template<typename T>
-  inline std::shared_ptr<T> Object::as() 
-  { return std::dynamic_pointer_cast<T>(shared_from_this()); }
+  inline __device__
+  void swap(T &a, T &b) { T c = a; a = b; b = c; }
+
+  inline __device__
+  float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
   
 }
+
+

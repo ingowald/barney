@@ -16,41 +16,43 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "barney/Context.h"
+#include "barney/fb/TiledFB.h"
 
 namespace barney {
 
-  /*! the base class for _any_ other type of object/actor in the
-      barney class hierarchy */
-  struct Object : public std::enable_shared_from_this<Object> {
-    typedef std::shared_ptr<Object> SP;
+  struct FrameBuffer : public Object {
 
-    /*! dynamically cast to another (typically derived) class, e.g. to
-        check whether a given 'Geomery'-type object is actually a
-        Triangles-type geometry, etc */
-    template<typename T>
-    inline std::shared_ptr<T> as();
-    template<typename T>
-    inline std::shared_ptr<const T> as() const;
+    FrameBuffer(Context *context, const bool isOwner);
     
     /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const;
+    std::string toString() const override
+    { return "<FrameBuffer(base)>"; }
+    
+    virtual void resize(vec2i size,
+                        uint32_t *hostFB,
+                        float    *hostDepth);
+    virtual void resetAccumulation() { accumID = 0; }
+    
+    std::vector<TiledFB::SP> perDev;
+    
+    vec2i       numPixels   = { 0,0 };
+    // the final frame buffer RGBA8 that we can definitely write into
+    // - might be our own staged copy if we can't write into host
+    // supplied one
+    uint32_t   *finalFB     = 0;
+    uint32_t   *hostFB      = 0;
+
+    // depth buffer: same as for color buffer we have two differnt
+    // poitners here - one that we can defintiely use in device code
+    // (finalDepth), and one that the app wants to eventually have the
+    // values in (might be on host). these _can_ be the same, but may
+    // not be
+    float      *finalDepth  = 0;
+    float      *hostDepth   = 0;
+
+    uint32_t    accumID     = 0;
+    Context    *const context;
+    const bool  isOwner;
   };
-
-
-  // ==================================================================
-  // INLINE IMPLEMENTATION SECTION
-  // ==================================================================
-  
-  /*! pretty-printer for printf-debugging */
-  inline std::string Object::toString() const
-  { return "<Object>"; }
-
-  /*! dynamically cast to another (typically derived) class, e.g. to
-    check whether a given 'Geomery'-type object is actually a
-    Triangles-type geometry, etc */
-  template<typename T>
-  inline std::shared_ptr<T> Object::as() 
-  { return std::dynamic_pointer_cast<T>(shared_from_this()); }
-  
 }
