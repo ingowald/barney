@@ -111,6 +111,8 @@ namespace barney {
         ranges, but not yet the majorants) over a umesh */
     void buildInitialMacroCells(MCGrid &grid);
 
+    void buildMCs(MCGrid &macroCells) override;
+    
     /*! computes, on specified device, the bounding boxes and - if
       d_primRanges is non-null - the primitmives ranges. d_primBounds
       and d_primRanges (if non-null) must be pre-allocated and

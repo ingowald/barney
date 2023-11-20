@@ -109,6 +109,11 @@ namespace barney {
     rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
   }
 
+  void UMeshField::buildMCs(MCGrid &grid)
+  {
+    buildInitialMacroCells(grid);
+  }
+  
   /*! build *initial* macro-cell grid (ie, the scalar field min/max
     ranges, but not yet the majorants) over a umesh */
   void UMeshField::buildInitialMacroCells(MCGrid &grid)
@@ -332,19 +337,6 @@ namespace barney {
     return getContext()->initReference(sf);
   }
   
-  VolumeAccel::SP UMeshField::createAccel(Volume *volume)
-  {
-    const char *methodFromEnv = getenv("BARNEY_METHOD");
-    std::string method = (methodFromEnv ? methodFromEnv : "");
-    if (method == "" || method == "macro-cells" || method == "spatial")
-      return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
-    else if (method == "AWT" || method == "awt")
-      return std::make_shared<UMeshAWT>(this,volume);
-    else if (method == "object-space")
-      return std::make_shared<RTXObjectSpace>(this,volume);
-    else throw std::runtime_error("found BARNEY_METHOD env-var, but didn't recognize its value. allowed values are 'awt', 'object-space', and 'macro-cells'");
-  }
-
   void UMeshField::setVariables(OWLGeom geom, bool firstTime)
   {
     ScalarField::setVariables(geom,firstTime);
@@ -382,6 +374,21 @@ namespace barney {
     for (auto var : ScalarField::getVarDecls(myOfs))
       mine.push_back(var);
     return mine;
-  };
+  }
+
+  VolumeAccel::SP UMeshField::createAccel(Volume *volume)
+  {
+    const char *methodFromEnv = getenv("BARNEY_METHOD");
+    std::string method = (methodFromEnv ? methodFromEnv : "awt");
+    if (method == "macro-cells" || method == "spatial")
+      return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
+    else if (method == "AWT" || method == "awt")
+      return std::make_shared<UMeshAWT>(this,volume);
+    else if (method == "object-space")
+      return std::make_shared<RTXObjectSpace>(this,volume);
+    else throw std::runtime_error("found BARNEY_METHOD env-var, but didn't recognize its value. allowed values are 'awt', 'object-space', and 'macro-cells'");
+  }
+
+
 }
   

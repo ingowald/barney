@@ -122,7 +122,7 @@ namespace barney {
       }
       owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
       owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
-      PING; PRINT(volume->xf.values.size());
+      PING; PRINT(volume->xf.values.size()); PRINT(mesh->worldBounds);
       owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
       
       // ------------------------------------------------------------------      
