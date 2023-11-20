@@ -16,34 +16,10 @@
 
 #pragma once
 
-#include "barney/umesh/UMeshField.h"
-#include <cuBQL/bvh.h>
-
-// #define AWT 1
-#define AWT_MAX_DEPTH 6
-  
+#include "barney/umesh/ObjectSpace-common.h"
 
 namespace barney {
 
-  struct __barney_align(16) AWTNode {
-    enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
-    box4f   bounds[4];
-    float   majorant[4];
-    int     depth[4];
-    struct NodeRef {
-      uint32_t offset:offset_bits;
-      uint32_t count :count_bits;
-    };
-    NodeRef child[4];
-  };
-
-  struct UMeshObjectSpace {
-    struct DD {
-      TransferFunction::DD xf;
-      UMeshField::DD       mesh;
-    };
-  };
-  
   /*! object-space accelerator that clusters elements into, well,
     clusters of similar/nearly elements, then builds an RTX BVH and
     majorants over those clusters, disables majorant-zero clusters
@@ -79,41 +55,5 @@ namespace barney {
     UMeshField *const mesh;
   };
 
-
-  /*! object-space accelerator that clusters elements into, well,
-    clusters of similar/nearly elements, then builds an RTX BVH and
-    majorants over those clusters, disables majorant-zero clusters
-    during refit and in the isec program for a cluster perfomrs
-    ray-element intersection followed by (per-element) woodock
-    sampling along the ray-element overlap range */
-  struct UMeshAWT : public VolumeAccel
-  {
-    struct DD : public UMeshObjectSpace::DD {
-      AWTNode             *nodes;
-      int                 *roots;
-    };
-    
-    UMeshAWT(UMeshField *mesh, Volume *volume)
-      : VolumeAccel(mesh,volume),
-        mesh(mesh)
-    {}
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-    
-    void build() override;
-
-    void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
-    int extractRoots(cuBQL::WideBVH<float,3, 4> &qbvh,
-                      int nodeID);
-    void buildAWT();
-    
-    std::vector<int>     roots;
-    std::vector<AWTNode> nodes;
-    OWLBuffer nodesBuffer;
-    OWLBuffer rootsBuffer;
-    OWLGeom  geom  = 0;
-    OWLGroup group = 0;
-    UMeshField *const mesh;
-  };
-  
-
 }
+
