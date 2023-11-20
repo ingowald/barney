@@ -19,6 +19,7 @@
 // just to be able to create these accelerators:
 #include "barney/umesh/UMeshMCAccelerator.h"
 #include "barney/umesh/RTXObjectSpace.h"
+#include "barney/umesh/AWT.h"
 
 namespace barney {
 

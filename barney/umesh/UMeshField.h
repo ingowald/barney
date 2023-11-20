@@ -108,7 +108,7 @@ namespace barney {
     void setVariables(OWLGeom geom, bool firstTime) override;
     
     /*! build *initial* macro-cell grid (ie, the scalar field min/max
-        ranges, but not yet the majorants) over a umesh */
+      ranges, but not yet the majorants) over a umesh */
     void buildInitialMacroCells(MCGrid &grid);
 
     void buildMCs(MCGrid &macroCells) override;
@@ -312,12 +312,12 @@ namespace barney {
   {
     const auto& indices = wedIndices[primID];
     return intersectWedgeEXT(retVal, P,
-                           vertices[indices[0]],
-                           vertices[indices[1]],
-                           vertices[indices[2]],
-                           vertices[indices[3]],
-                           vertices[indices[4]],
-                           vertices[indices[5]]);
+                             vertices[indices[0]],
+                             vertices[indices[1]],
+                             vertices[indices[2]],
+                             vertices[indices[3]],
+                             vertices[indices[4]],
+                             vertices[indices[5]]);
   }
 
   inline __both__
@@ -325,14 +325,14 @@ namespace barney {
   {
     auto indices = hexIndices[primID];
     return intersectHexEXT(retVal, P,
-                               vertices[indices[0]],
-                               vertices[indices[1]],
-                               vertices[indices[2]],
-                               vertices[indices[3]],
-                               vertices[indices[4]],
-                               vertices[indices[5]],
-                               vertices[indices[6]],
-                               vertices[indices[7]]);
+                           vertices[indices[0]],
+                           vertices[indices[1]],
+                           vertices[indices[2]],
+                           vertices[indices[3]],
+                           vertices[indices[4]],
+                           vertices[indices[5]],
+                           vertices[indices[6]],
+                           vertices[indices[7]]);
   }
 
   inline __both__
@@ -351,8 +351,8 @@ namespace barney {
     vec3i imax = min(imin+1,numScalars-1);
 
     auto linearIndex = [numScalars](const int x, const int y, const int z) {
-      return z*numScalars.y*numScalars.x + y*numScalars.x + x;
-    };
+                         return z*numScalars.y*numScalars.x + y*numScalars.x + x;
+                       };
 
     const float *scalars = gridScalars + gridOffsets[primID];
 
@@ -366,7 +366,7 @@ namespace barney {
     float f7 = scalars[linearIndex(imin.x,imax.y,imax.z)];
     float f8 = scalars[linearIndex(imax.x,imax.y,imax.z)];
 
-    #define EMPTY(x) isnan(x)
+#define EMPTY(x) isnan(x)
     if (EMPTY(f1) || EMPTY(f2) || EMPTY(f3) || EMPTY(f4) ||
         EMPTY(f5) || EMPTY(f6) || EMPTY(f7) || EMPTY(f8))
       return false;
