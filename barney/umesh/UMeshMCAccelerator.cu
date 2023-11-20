@@ -74,6 +74,8 @@ namespace barney {
 
     BARNEY_CUDA_SYNC_CHECK();
     this->mesh->buildMCs(mcGrid);
+    mcGrid.computeMajorants(&volume->xf);
+    
     BARNEY_CUDA_SYNC_CHECK();
     this->sampler.build();
     BARNEY_CUDA_SYNC_CHECK();
