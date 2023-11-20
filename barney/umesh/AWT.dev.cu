@@ -134,28 +134,34 @@ namespace barney {
     bool isHittingTheBox
       = boxTest(segment.range.lower,segment.range.upper,bounds,org,dir);
 
-    if (!isHittingTheBox) {
+    if (!isHittingTheBox) 
       return;
-    }
-    
+
     AWTSegment stackBase[32];
     AWTSegment *stackPtr = stackBase;
-    // AWTSegment *stackHi = stackBase+32;
+    bool haveValidSegment = true;
     while (true) {
-      // if (dbg) printf("---------------------- starting trav ofs %i cnt %i range %f %f\n",
-      //                 segment.node.offset,segment.node.count,
-      //                 segment.range.lower,segment.range.upper);
-      // while (segment.node.count == 0) {
-      bool validSegment = true;
       while (true) {
-        if (segment.node.count == 0) /* leaf! */ break;
-        if (shortEnoughForSampling(segment))     break;
+        if (!haveValidSegment) {
+          while (stackPtr > stackBase) {
+            segment = *--stackPtr;
+            if (segment.range.lower >= hit_t) 
+              continue;
+            // we FOUND something to pop!
+            segment.range.upper = min(segment.range.upper,hit_t);
+            haveValidSegment = true;
+            break;
+          }
+        }
+        // we'd STILL need to pop from stack, but stack is empty .... we're done.
+        if (!haveValidSegment) 
+          break;
         
-        // if (dbg) printf("* --------- inner %i range %f %f\n",
-        //                 segment.node.offset,
-        //                 segment.range.lower,segment.range.upper);
+        if (segment.node.count != 0) /* leaf! */ break;
+        // if (shortEnoughForSampling(segment))     break;
+        
         auto node = self.nodes[segment.node.offset];
-
+        
         AWTSegment childSeg[4];
 #pragma unroll(4)
         for (int c=0;c<4;c++) {
@@ -195,43 +201,17 @@ namespace barney {
 
         orderSegments(childSeg[0],childSeg[1]);
 
-        // if (dbg) {
-        //   for (int c=0;c<4;c++)
-        //     printf("seg %i range %f %f\n",c,
-        //            childSeg[c].range.lower,
-        //            childSeg[c].range.upper);
-        // }
-
         if (childSeg[0].range.lower < hit_t) *stackPtr++ = childSeg[0];
-        // if (stackPtr >= stackHi) { printf("stack overflow\n"); return; }
         if (childSeg[1].range.lower < hit_t) *stackPtr++ = childSeg[1];
-        // if (stackPtr >= stackHi) { printf("stack overflow\n"); return; }
         if (childSeg[2].range.lower < hit_t) *stackPtr++ = childSeg[2];
-        // if (stackPtr >= stackHi) { printf("stack overflow\n"); return; }
-#if 1
+        
         if (childSeg[3].range.lower >= hit_t) {
-          bool foundOneToPop = false;
-          while (stackPtr > stackBase) {
-            segment = *--stackPtr;
-            if (segment.range.lower >= hit_t)
-              continue;
-            segment.range.upper = min(segment.range.upper,hit_t);
-            foundOneToPop = true;
-            break;
-          }
-          if (!foundOneToPop) {
-            validSegment = false;
-            break;
-          }
-        } else
+          haveValidSegment = false;
+        } else {
           segment = childSeg[3];
-          
-#else
-        if (childSeg[3].range.lower >= hit_t)
-          break;
-        segment = childSeg[3];
-#endif
+        }
       }
+
       // if we reached here we either couldn't go any further down the
       // tree, or decided not to. in ttotal there's three optoins how
       // this could have come about:
@@ -246,9 +226,11 @@ namespace barney {
       // where we decided that it's small enough to just sample the
       // entire range
       //
-      if (!validSegment) {
+      
+      if (!haveValidSegment) {
         // optoin 'a' - we know the ray doesn't ahve a valid segment,
         // so nothing to do here.
+        break;
       } else if (segment.node.count) {
         // optoin 'b' - do intersection on the leaf
         // if (dbg)
@@ -257,24 +239,12 @@ namespace barney {
                                      segment.node.offset,
                                      segment.node.offset+segment.node.count);
         hit_t = min(hit_t,leaf_t);
+        haveValidSegment = false;
         // if (dbg) printf("new t %f leaf %f\n",hit_t,leaf_t);
       } else {
-        // option 'c' - we're sampling
+        // option 'c' - we're sampling .... not yet implemented
+        printf("sampling!?\n");
       }
-      
-      //pop:
-      bool foundOneToPop = false;
-      while (stackPtr > stackBase) {
-        segment = *--stackPtr;
-        if (segment.range.lower >= hit_t)
-          continue;
-        segment.range.upper = min(segment.range.upper,hit_t);
-        foundOneToPop = true;
-        break;
-      }
-
-      if (!foundOneToPop)
-        break;
     }
 
     //
