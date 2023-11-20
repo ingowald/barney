@@ -101,7 +101,10 @@ namespace barney {
       b = c;
     }
   }
-  
+  inline __device__
+  bool shortEnoughForSampling(AWTSegment segment)
+  { return false; }
+
   OPTIX_INTERSECT_PROGRAM(UMeshAWTIsec)()
   {
     const int primID = optixGetPrimitiveIndex();
@@ -142,7 +145,12 @@ namespace barney {
       // if (dbg) printf("---------------------- starting trav ofs %i cnt %i range %f %f\n",
       //                 segment.node.offset,segment.node.count,
       //                 segment.range.lower,segment.range.upper);
-      while (segment.node.count == 0) {
+      // while (segment.node.count == 0) {
+      bool validSegment = true;
+      while (true) {
+        if (segment.node.count == 0) /* leaf! */ break;
+        if (shortEnoughForSampling(segment))     break;
+        
         // if (dbg) printf("* --------- inner %i range %f %f\n",
         //                 segment.node.offset,
         //                 segment.range.lower,segment.range.upper);
@@ -212,7 +220,7 @@ namespace barney {
             break;
           }
           if (!foundOneToPop) {
-            segment.node.count = 0;
+            validSegment = false;
             break;
           }
         } else
@@ -224,8 +232,25 @@ namespace barney {
         segment = childSeg[3];
 #endif
       }
-      // check if valid leaf, and if so, intersect
-      if (segment.node.count) {
+      // if we reached here we either couldn't go any further down the
+      // tree, or decided not to. in ttotal there's three optoins how
+      // this could have come about:
+      //
+      // a) traversal reached a node where none of the children are
+      // valid; we can't go down and ned to pop.
+      //
+      // b) we've reached a valid leaf, and need to do (object-space)
+      // leaf interseciton with the primitmives there.
+      //
+      // c) we've reached an inner node that _may_ have children, but
+      // where we decided that it's small enough to just sample the
+      // entire range
+      //
+      if (!validSegment) {
+        // optoin 'a' - we know the ray doesn't ahve a valid segment,
+        // so nothing to do here.
+      } else if (segment.node.count) {
+        // optoin 'b' - do intersection on the leaf
         // if (dbg)
         //   printf("LEAF %i cnt %i\n",segment.node.offset,segment.node.count);
         float leaf_t = intersectLeaf(ray,segment.range,self,
@@ -233,6 +258,8 @@ namespace barney {
                                      segment.node.offset+segment.node.count);
         hit_t = min(hit_t,leaf_t);
         // if (dbg) printf("new t %f leaf %f\n",hit_t,leaf_t);
+      } else {
+        // option 'c' - we're sampling
       }
       
       //pop:
