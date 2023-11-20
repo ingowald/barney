@@ -48,7 +48,7 @@ namespace barney {
     Ray ray = readQueue[tid];
     
     vec3f albedo = (vec3f)ray.hit.baseColor;
-    vec3f fragment;
+    vec3f fragment = 0.f;
     float z = INFINITY;
     if (!ray.hadHit) {
       if (generation == 0) {
@@ -67,7 +67,8 @@ namespace barney {
       vec3f Ng = ray.hit.N;
       float NdotD = dot(Ng,dir);
       if (NdotD > 0.f) Ng = - Ng;
-      
+
+      // let's do some ambient eyelight-style shading, anyway:
       float scale = .2f + .4f*fabsf(NdotD);
       scale *= .3f;
       fragment
@@ -75,12 +76,13 @@ namespace barney {
         * scale
         * ray.throughput;
 
-#if 0
+      // and then add a single diffuse bounce (ae, ambient occlusion)
+#if 1
       LCG<4> &rng = (LCG<4> &)ray.rngSeed;
       if (ray.hadHit && generation == 0) {
         Ray bounce;
         bounce.org = ray.hit.P + 1e-3f*Ng;
-        bounce.dir = normalize(ray.hit.N + randomDirection(rng));
+        bounce.dir = normalize(Ng + randomDirection(rng));
         bounce.tMax = INFINITY;
         bounce.dbg = ray.dbg;
         bounce.hadHit = false;

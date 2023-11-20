@@ -16,6 +16,7 @@
 
 #include "barney/DeviceContext.h"
 #include "barney/Ray.h"
+#include "barney/fb/FrameBuffer.h"
 
 namespace barney {
 
@@ -30,6 +31,7 @@ namespace barney {
                       /*! a unique random number seed value for pixel
                           and lens jitter; probably just accumID */
                       int rngSeed,
+                      int accumID,
                       /*! full frame buffer size, to check if a given
                           tile's pixel ID is still valid */
                       vec2i fbSize,
@@ -60,24 +62,24 @@ namespace barney {
     int iy = (threadIdx.x / tileSize) + tileOffset.y;
 
     // bool dbg = ((ix == 0) || (ix == fbSize.x-1)) && ((iy==0) || (iy == fbSize.y-1));
-    
     Ray ray;
+    ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
+    Random rand(rngSeed,ray.pixelID);
+    rand();
+    rand();
+    rand();
+    
     ray.org  = camera.lens_00;
     ray.dir
       = camera.dir_00
-      + ((ix+.5f)/float(fbSize.x))*camera.dir_du
-      + ((iy+.5f)/float(fbSize.y))*camera.dir_dv;
+      + ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x))*camera.dir_du
+      + ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y))*camera.dir_dv;
     ray.dir = normalize(ray.dir);
 
     bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
     ray.dbg = centerPixel;
     
     ray.tMax = 1e30f;
-    ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
-    Random rand(rngSeed,ray.pixelID);
-    rand();
-    rand();
-    rand();
     ray.rngSeed = rand.state;
     ray.hadHit = false;
 
@@ -117,6 +119,7 @@ namespace barney {
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,
        rngSeed,
+       fb->owner->accumID,
        fb->numPixels,
        rays.d_nextWritePos,
        rays.writeQueue,
