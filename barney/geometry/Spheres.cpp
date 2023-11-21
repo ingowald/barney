@@ -59,7 +59,7 @@ namespace barney {
     OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
       ("Spheres",Spheres::createGeomType);
     OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
-    originsBuffer = owlDeviceBufferCreate
+    originsBuffer = owlManagedMemoryBufferCreate
       (owner->devGroup->owl,OWL_FLOAT3,numOrigins,origins);
     
     owlGeomSetRaw(geom,"material",&material);
