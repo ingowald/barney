@@ -343,7 +343,6 @@ namespace barney {
     ScalarField::setVariables(geom,firstTime);
     
     // ------------------------------------------------------------------
-    assert(mesh->tetIndicesBuffer);
     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
       
     owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
