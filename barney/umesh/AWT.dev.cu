@@ -66,11 +66,7 @@ namespace barney {
     auto &ray = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<UMeshAWT::DD>();
     int primID = optixGetPrimitiveIndex();
-    // float majorant = cluster.majorant;
     
-    // ray.hadHit = true;
-    // ray.color = .8f;//owl::randomColor(primID);
-    // ray.primID = primID;
     ray.tMax = optixGetRayTmax();
 
     vec3f P = ray.org + ray.tMax * ray.dir;
@@ -83,7 +79,6 @@ namespace barney {
     ray.hadHit = 1;
     ray.hit.N = N;
     ray.hit.P = P;
-    // ray.hit.baseColor = randomColor(primID);
   }
   
   struct __barney_align(16) AWTSegment {

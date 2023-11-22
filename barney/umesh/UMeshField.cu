@@ -21,6 +21,9 @@
 #include "barney/umesh/RTXObjectSpace.h"
 #include "barney/umesh/AWT.h"
 
+#define BUFFER_CREATE owlDeviceBufferCreate
+// #define BUFFER_CREATE owlManagedMemoryBufferCreate
+
 namespace barney {
 
   enum { MC_GRID_SIZE = 128 };
@@ -232,61 +235,61 @@ namespace barney {
       elements.push_back(Element(i,Element::GRID));
     
     assert(!elements.empty());
-    
+
     verticesBuffer
-      = owlDeviceBufferCreate(getOWL(),
+      = BUFFER_CREATE(getOWL(),
                               OWL_FLOAT4,
                               vertices.size(),
                               vertices.data());
     tetIndicesBuffer
-      = owlDeviceBufferCreate(getOWL(),
+      = BUFFER_CREATE(getOWL(),
                               OWL_INT,
                               4*tetIndices.size(),
                               tetIndices.data());
 
     pyrIndicesBuffer
-        = owlDeviceBufferCreate(getOWL(),
+        = BUFFER_CREATE(getOWL(),
                                 OWL_INT,
                                 5*pyrIndices.size(),
                                 pyrIndices.data());
     wedIndicesBuffer
-        = owlDeviceBufferCreate(getOWL(),
+        = BUFFER_CREATE(getOWL(),
                                 OWL_INT,
                                 6*wedIndices.size(),
                                 wedIndices.data());
     
     assert(sizeof(ints<8>) == 8*sizeof(int));
     hexIndicesBuffer
-      = owlDeviceBufferCreate(getOWL(),
+      = BUFFER_CREATE(getOWL(),
                               OWL_INT,
                               8*hexIndices.size(),
                               hexIndices.data());
 
     assert(sizeof(Element) == sizeof(int));
     elementsBuffer
-      = owlDeviceBufferCreate(getOWL(),
+      = BUFFER_CREATE(getOWL(),
                               OWL_INT,
                               elements.size(),
                               elements.data());
 
     gridOffsetsBuffer
-      = owlDeviceBufferCreate(getOWL(),
+      = BUFFER_CREATE(getOWL(),
                               OWL_INT,
                               gridOffsets.size(),
                               gridOffsets.data());
     gridDimsBuffer
-      = owlDeviceBufferCreate(getOWL(),
+      = BUFFER_CREATE(getOWL(),
                               OWL_INT3,
                               gridDims.size(),
                               gridDims.data());
     gridDomainsBuffer
-      = owlDeviceBufferCreate(getOWL(),
+      = BUFFER_CREATE(getOWL(),
                               OWL_USER_TYPE(box4f),
                               gridDomains.size(),
                               gridDomains.data());
 
     gridScalarsBuffer
-      = owlDeviceBufferCreate(getOWL(),
+      = BUFFER_CREATE(getOWL(),
                               OWL_FLOAT,
                               gridScalars.size(),
                               gridScalars.data());

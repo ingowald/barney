@@ -16,6 +16,9 @@
 
 #include "barney/umesh/AWT.h"
 
+#define BUFFER_CREATE owlDeviceBufferCreate
+// #define BUFFER_CREATE owlManagedMemoryBufferCreate
+
 namespace barney {
 
   extern "C" char AWT_ptx[];
@@ -68,8 +71,6 @@ namespace barney {
   
   void UMeshAWT::buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh)
   {
-    // PING;
-    // PRINT(qbvh.numNodes);
     nodes.resize(qbvh.numNodes);
     for (int nodeID=0;nodeID<qbvh.numNodes;nodeID++)
       for (int childID=0;childID<4;childID++) {
@@ -88,14 +89,17 @@ namespace barney {
       }
   }
 
-  int UMeshAWT::extractRoots(//cuBQL::WideBVH<float,3, 4> &qbvh,
-                             int nodeID)
+  void UMeshAWT::extractRoots()
   {
-#if 1
+    int desiredRootDepth = AWT_DEFAULT_MAX_DEPTH;
+    char *fromEnv = getenv("AWT_MAX_DEPTH");
+    if (fromEnv)
+      desiredRootDepth = std::stoi(fromEnv);
+    PRINT(desiredRootDepth);
+    
+    
     std::vector<int> depthOf(nodes.size());
     std::fill(depthOf.begin(),depthOf.end(),-1);
-    // std::vector<std::pair<int,int>> parentOf(nodes.size());
-    // parentOf[0] = { -1, -1 };
     while (true) {
       volatile int changedOne = false;
       owl::parallel_for_blocked
@@ -121,7 +125,6 @@ namespace barney {
     }
     // now have proper depth for each node
 
-    
     for (int nodeID=0;nodeID<nodes.size();nodeID++) {
       auto &node = nodes[nodeID];
       for (int childID=0;childID<4;childID++) {
@@ -130,46 +133,12 @@ namespace barney {
           // cetainly not a leaf ...
           continue;
 
-        if ((child.isLeaf() || (depthOf[child.offset] < AWT_MAX_DEPTH))
+        if ((child.isLeaf() || (depthOf[child.offset] < desiredRootDepth))
             &&
-            ((nodeID == 0) || (depthOf[nodeID] >= AWT_MAX_DEPTH)))
+            ((nodeID == 0) || (depthOf[nodeID] >= desiredRootDepth)))
           roots.push_back((nodeID<<2) | childID);
       }
     }
-    return 0;
-    
-#else
-    // PING; PRINT(nodeID);
-    auto &node = nodes[nodeID];
-    int maxDepth = 0;
-    for (int i=0;i<4;i++) {
-      // PRINT(i);
-      // PRINT(node.bounds[i]);
-      // PRINT(node.child[i].count);
-      if (getBox(node.bounds[i]).empty()) {
-        node.depth[i] = -1;
-      } else if (node.child[i].count > 0) {
-        node.depth[i] = 0;
-      } else {
-        node.depth[i] = extractRoots(//qbvh,
-                                     node.child[i].offset);
-      }
-      maxDepth = std::max(maxDepth,node.depth[i]);
-    }
-    if (maxDepth < AWT_MAX_DEPTH && nodeID != 0)
-      // can still merge on parent
-      return maxDepth+1;
-    
-    for (int i=0;i<4;i++) {
-      if (node.depth[i] == -1)
-        // certainly not a root....
-        continue;
-
-      if (node.depth[i] <= AWT_MAX_DEPTH)
-        roots.push_back((nodeID<<2)|i);
-    }
-    return maxDepth+1;
-#endif
   }
 
   box4f refitRanges(std::vector<AWTNode> &nodes,
@@ -211,20 +180,15 @@ namespace barney {
     SetActiveGPU forDuration(devGroup->devices[0]);
     // ==================================================================
     
-    // buildHierarchy(nodes,roots,clusters,bvh);
     cuBQL::WideBVH<float,3,4> bvh;
     box3f *d_primBounds = 0;
     range1f *d_primRanges = 0;
-    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,mesh->elements.size()*sizeof(box3f)));
     BARNEY_CUDA_CALL(MallocManaged(&d_primRanges,mesh->elements.size()*sizeof(range1f)));
     
     auto d_mesh = mesh->getDD(0);
     mesh->computeElementBBs(0,d_primBounds,d_primRanges);
-      // <<<divRoundUp((int)mesh->elements.size(),1024),1024>>>
-      // (d_primBounds,d_primRanges,d_mesh);
     
-    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
     // buildConfig.enableSAH();
@@ -238,21 +202,17 @@ namespace barney {
                       (cudaStream_t)0,
                       managedMem);
 
-    PING; PRINT(prettyDouble(getCurrentTime()-t0));
-    std::cout << "building (host-)AWT nodes from cubql bvh" << std::endl;
+    std::cout << "building (host-)AWT nodes from cubql bvh (on the host rn :/)" << std::endl;
     buildNodes(bvh);
-    PING; PRINT(prettyDouble(getCurrentTime()-t0));
-    extractRoots(//bvh,
-                 0);
-    PING; PRINT(prettyDouble(getCurrentTime()-t0));
+    std::cout << "extracting awt roots (on the host rn :/)" << std::endl;
+    extractRoots();
+    std::cout << "refitting awt ranges (on the host rn :-/)" << std::endl;
     refitRanges(nodes,bvh.primIDs,d_primBounds,d_primRanges);
-    PING; PRINT(prettyDouble(getCurrentTime()-t0));
 
     std::vector<Element> reorderedElements(mesh->elements.size());
     for (int i=0;i<mesh->elements.size();i++) {
       reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
     }
-    PING; PRINT(prettyDouble(getCurrentTime()-t0));
     mesh->elements = reorderedElements;
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
@@ -266,9 +226,8 @@ namespace barney {
     assert(sizeof(roots[0]) == sizeof(int));
     rootsBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
                                         roots.size(),roots.data());
-    nodesBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(AWTNode),
-                                        nodes.size(),nodes.data());
-    PING; PRINT(prettyDouble(getCurrentTime()-t0));
+    nodesBuffer = BUFFER_CREATE(devGroup->owl,OWL_USER_TYPE(AWTNode),
+                                nodes.size(),nodes.data());
   }
 
   __global__
@@ -340,7 +299,9 @@ namespace barney {
       owlGroupBuildAccel(group);
       volume->generatedGroups.push_back(group);
     }
-    
+    else std::cout << "original awt build alredy done - just need refit" << std::endl;
+
+
     if (volume->xf.domain.lower < volume->xf.domain.upper) {
       owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
     } else {
@@ -350,9 +311,6 @@ namespace barney {
     owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
     owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
 
-    std::cout << "RECOMPUTING AWT MAJORANTS!\n" << std::endl;
-    PRINT(nodes.size());
-    PRINT(roots.size());
     for (int devID = 0;devID<devGroup->devices.size(); devID++) {
       auto dev = devGroup->devices[devID];
       SetActiveGPU forDuration(dev);
@@ -364,11 +322,5 @@ namespace barney {
     std::cout << "refitting ... umesh awt/object space geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);
   }
-
-
-
-
-
-
 
 }

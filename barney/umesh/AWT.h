@@ -18,7 +18,7 @@
 
 #include "barney/umesh/ObjectSpace-common.h"
 
-#define AWT_MAX_DEPTH 6
+#define AWT_DEFAULT_MAX_DEPTH 7
 
 namespace barney {
 
@@ -58,8 +58,7 @@ namespace barney {
     void build() override;
 
     void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
-    int extractRoots(//cuBQL::WideBVH<float,3, 4> &qbvh,
-                     int nodeID);
+    void extractRoots();
     void buildAWT();
     
     std::vector<int>     roots;
