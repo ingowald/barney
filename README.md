@@ -32,6 +32,21 @@ when building haystack it should automatically find and build barney.
 look at interval subdivision methods? recursive element subdivsion
 methods? subdivide (only) until num woodcock steps < const.
 
+## look into "separate pass" for unstructured
+
+problem right now is that unstructured meshes are "primitmives" in the
+optix scene graph like any other - bu theyr'e much bigger (spatially)
+and muuuuch more costly than others; and will suffer far more from
+divergence issues; can also not do hardware-accelerated queries
+because these would have to be done from in isec program which does't
+work.
+
+idea: use current optix world only for triangles, spheres, etc; and
+have all umeshes be done in a separate pass. this pas could then do
+restart-based marching from leaf to leaf; and do the rest either in
+cuda (with full blocsk and compaction etcpp), or in its own raygen
+program where we can trace rays for queries.
+
 # UNSORTED
 
 saved cmd-lines:
