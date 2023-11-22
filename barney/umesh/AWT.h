@@ -26,8 +26,10 @@ namespace barney {
     enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
     box4f   bounds[4];
     float   majorant[4];
-    int     depth[4];
+    // int     depth[4];
     struct NodeRef {
+      inline __both__ bool valid() const { return count != 0 || offset != 0; }
+      inline __both__ bool isLeaf() const { return count != 0; }
       uint32_t offset:offset_bits;
       uint32_t count :count_bits;
     };
@@ -56,7 +58,7 @@ namespace barney {
     void build() override;
 
     void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
-    int extractRoots(cuBQL::WideBVH<float,3, 4> &qbvh,
+    int extractRoots(//cuBQL::WideBVH<float,3, 4> &qbvh,
                      int nodeID);
     void buildAWT();
     

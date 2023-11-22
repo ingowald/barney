@@ -170,9 +170,10 @@ namespace barney {
           childSeg[c] = { node.child[c], 
                           node.majorant[c],
                           range1f{ INFINITY, INFINITY } };
-          if (node.depth[c] == -1) {
-            // if (dbg) printf("** child %i INVALID\n",c);
-          } else if (node.majorant[c] == 0.f) {
+          // if (node.depth[c] == -1) {
+          //   // if (dbg) printf("** child %i INVALID\n",c);
+          // } else
+            if (node.majorant[c] == 0.f) {
             // if (dbg) printf("** child %i zero majorant...\n",c);
           } else if (!boxTest(tt0,tt1,node.bounds[c],org,dir)) {
             auto box = node.bounds[c];

@@ -88,9 +88,57 @@ namespace barney {
       }
   }
 
-  int UMeshAWT::extractRoots(cuBQL::WideBVH<float,3, 4> &qbvh,
-                                        int nodeID)
+  int UMeshAWT::extractRoots(//cuBQL::WideBVH<float,3, 4> &qbvh,
+                             int nodeID)
   {
+#if 1
+    std::vector<int> depthOf(nodes.size());
+    std::fill(depthOf.begin(),depthOf.end(),-1);
+    // std::vector<std::pair<int,int>> parentOf(nodes.size());
+    // parentOf[0] = { -1, -1 };
+    while (true) {
+      volatile int changedOne = false;
+      owl::parallel_for_blocked
+        (0,int(nodes.size()),1024,
+         [&](int begin, int end) {
+           for (int nodeID=begin;nodeID<end;nodeID++) {
+             auto &node = nodes[nodeID];
+             int depth = 0;
+             for (int childID=0;childID<4;childID++) {
+               auto &child = node.child[childID];
+               if (!child.valid()) continue;
+               if (child.isLeaf()) continue;
+               assert(child.offset < depthOf.size());
+               depth = std::max(depth,1+depthOf[child.offset]);
+             }
+             if (depth != depthOf[nodeID]) {
+               depthOf[nodeID] = depth;
+               if (!changedOne) changedOne = true;
+             }
+           }
+         });
+      if (!changedOne) break;
+    }
+    // now have proper depth for each node
+
+    
+    for (int nodeID=0;nodeID<nodes.size();nodeID++) {
+      auto &node = nodes[nodeID];
+      for (int childID=0;childID<4;childID++) {
+        auto &child = node.child[childID];
+        if (!child.valid())
+          // cetainly not a leaf ...
+          continue;
+
+        if ((child.isLeaf() || (depthOf[child.offset] < AWT_MAX_DEPTH))
+            &&
+            ((nodeID == 0) || (depthOf[nodeID] >= AWT_MAX_DEPTH)))
+          roots.push_back((nodeID<<2) | childID);
+      }
+    }
+    return 0;
+    
+#else
     // PING; PRINT(nodeID);
     auto &node = nodes[nodeID];
     int maxDepth = 0;
@@ -103,7 +151,8 @@ namespace barney {
       } else if (node.child[i].count > 0) {
         node.depth[i] = 0;
       } else {
-        node.depth[i] = extractRoots(qbvh,node.child[i].offset);
+        node.depth[i] = extractRoots(//qbvh,
+                                     node.child[i].offset);
       }
       maxDepth = std::max(maxDepth,node.depth[i]);
     }
@@ -120,6 +169,7 @@ namespace barney {
         roots.push_back((nodeID<<2)|i);
     }
     return maxDepth+1;
+#endif
   }
 
   box4f refitRanges(std::vector<AWTNode> &nodes,
@@ -131,7 +181,7 @@ namespace barney {
     box4f nb;
     AWTNode &node = nodes[nodeID];
     for (int i=0;i<4;i++) {
-      if (node.depth[i] < 0)
+      if (!node.child[i].valid())//node.depth[i] < 0)
         continue;
       
       int ofs = node.child[i].offset;
@@ -179,6 +229,8 @@ namespace barney {
     buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
     // buildConfig.enableSAH();
     static cuBQL::ManagedMemMemoryResource managedMem;
+    std::cout << "going to build BVH over "
+              << prettyNumber(mesh->elements.size()) << " elements" << std::endl;
     cuBQL::gpuBuilder(bvh,
                       (const cuBQL::box_t<float,3>*)d_primBounds,
                       (uint32_t)mesh->elements.size(),
@@ -187,9 +239,11 @@ namespace barney {
                       managedMem);
 
     PING; PRINT(prettyDouble(getCurrentTime()-t0));
+    std::cout << "building (host-)AWT nodes from cubql bvh" << std::endl;
     buildNodes(bvh);
     PING; PRINT(prettyDouble(getCurrentTime()-t0));
-    extractRoots(bvh,0);
+    extractRoots(//bvh,
+                 0);
     PING; PRINT(prettyDouble(getCurrentTime()-t0));
     refitRanges(nodes,bvh.primIDs,d_primBounds,d_primRanges);
     PING; PRINT(prettyDouble(getCurrentTime()-t0));
@@ -211,7 +265,7 @@ namespace barney {
 
     assert(sizeof(roots[0]) == sizeof(int));
     rootsBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
-                                           roots.size(),roots.data());
+                                        roots.size(),roots.data());
     nodesBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(AWTNode),
                                         nodes.size(),nodes.data());
     PING; PRINT(prettyDouble(getCurrentTime()-t0));
@@ -228,7 +282,7 @@ namespace barney {
     if (nodeID >= numNodes)
       return;
     auto &node = nodes[nodeID];
-    if (node.depth[cID] < 0) 
+    if (!node.child[cID].valid())//depth[cID] < 0) 
       node.majorant[cID] = 0.f;
     else
       node.majorant[cID] = xf.majorant(getRange(node.bounds[cID]));

@@ -47,6 +47,8 @@ restart-based marching from leaf to leaf; and do the rest either in
 cuda (with full blocsk and compaction etcpp), or in its own raygen
 program where we can trace rays for queries.
 
+## Add direct openvdb rendering?
+
 # UNSORTED
 
 saved cmd-lines:

@@ -378,7 +378,7 @@ namespace barney {
 
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-    const char *methodFromEnv = getenv("BARNEY_METHOD");
+    const char *methodFromEnv = getenv("BARNEY_UMESH");
     std::string method = (methodFromEnv ? methodFromEnv : "object-space");
     if (method == "macro-cells" || method == "spatial")
       return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
