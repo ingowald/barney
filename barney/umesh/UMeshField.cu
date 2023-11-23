@@ -109,8 +109,55 @@ namespace barney {
     if (eltIdx >= mesh.numElements) return;    
 
     auto elt = mesh.elements[eltIdx];
-    const box4f eltBounds = mesh.eltBounds(elt);
-    rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
+    if (elt.type == Element::GRID) {
+      int primID = elt.ID;
+
+      const box3f bounds = box3f((const vec3f &)mesh.gridDomains[primID].lower,
+                                 (const vec3f &)mesh.gridDomains[primID].upper);
+
+      vec3i numScalars = mesh.gridDims[primID]+1;
+      vec3f cellSize = bounds.size()/vec3f(mesh.gridDims[primID]);
+
+      const float *scalars = mesh.gridScalars + mesh.gridOffsets[primID];
+
+      auto linearIndex = [numScalars](const int x, const int y, const int z) {
+                           return z*numScalars.y*numScalars.x + y*numScalars.x + x;
+                         };
+
+      for (int z=0;z<mesh.gridDims[primID].z;z++) {
+        for (int y=0;y<mesh.gridDims[primID].y;y++) {
+          for (int x=0;x<mesh.gridDims[primID].x;x++) {
+            vec3i imin(x,y,z);
+            vec3i imax(x+1,y+1,z+1);
+
+            float f1 = scalars[linearIndex(imin.x,imin.y,imin.z)];
+            float f2 = scalars[linearIndex(imax.x,imin.y,imin.z)];
+            float f3 = scalars[linearIndex(imin.x,imax.y,imin.z)];
+            float f4 = scalars[linearIndex(imax.x,imax.y,imin.z)];
+
+            float f5 = scalars[linearIndex(imin.x,imin.y,imax.z)];
+            float f6 = scalars[linearIndex(imax.x,imin.y,imax.z)];
+            float f7 = scalars[linearIndex(imin.x,imax.y,imax.z)];
+            float f8 = scalars[linearIndex(imax.x,imax.y,imax.z)];
+
+#define EMPTY(x) isnan(x)
+            if (EMPTY(f1) || EMPTY(f2) || EMPTY(f3) || EMPTY(f4) ||
+                EMPTY(f5) || EMPTY(f6) || EMPTY(f7) || EMPTY(f8))
+              continue;
+
+            float fmin = min(f1,min(f2,min(f3,min(f4,min(f5,min(f6,min(f7,f8)))))));
+            float fmax = max(f1,max(f2,max(f3,max(f4,max(f5,max(f6,max(f7,f8)))))));
+
+            const box4f cellBounds(vec4f(bounds.lower+vec3f(imin),fmin),
+                                   vec4f(bounds.lower+vec3f(imax),fmax));
+            rasterBox(grid,getBox(mesh.worldBounds),cellBounds);
+          }
+        }
+      }
+    } else {
+      const box4f eltBounds = mesh.eltBounds(elt);
+      rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
+    }
   }
 
   void UMeshField::buildMCs(MCGrid &grid)
