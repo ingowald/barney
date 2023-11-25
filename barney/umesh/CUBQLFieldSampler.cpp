@@ -41,20 +41,15 @@ namespace barney {
     // this initially builds ONLY on first GPU!
     box3f *d_primBounds = 0;
     BARNEY_CUDA_SYNC_CHECK();
-    BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,mesh->elements.size()*sizeof(box3f)));
-    
+    BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,
+                                   mesh->elements.size()*sizeof(box3f)));
     BARNEY_CUDA_SYNC_CHECK();
 
     mesh->computeElementBBs(/*deviceID:*/0,d_primBounds);
-    // auto d_mesh = mesh->getDD(0);
-    // computeElementBoundingBoxes
-    //   <<<divRoundUp((int)mesh->elements.size(),1024),1024>>>
-    //   (d_primBounds,d_mesh);
     BARNEY_CUDA_SYNC_CHECK();
     
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = 7;
-    buildConfig.enableSAH();
     static cuBQL::ManagedMemMemoryResource managedMem;
     cuBQL::gpuBuilder(bvh,
                       (const cuBQL::box_t<float,3>*)d_primBounds,
@@ -73,9 +68,6 @@ namespace barney {
     bvhNodesBuffer
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
-    // primIDsBuffer
-    //   = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
-    //                           bvh.numPrims,bvh.primIDs);
     cuBQL::free(bvh,0,managedMem);
   }
   
