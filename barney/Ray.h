@@ -24,6 +24,8 @@
 #include "barney/fb/TiledFB.h"
 #include "barney/common/half.h"
 
+// #define PRINT_BALLOT 1
+
 namespace barney {
 
   struct Ray {
@@ -32,6 +34,11 @@ namespace barney {
     vec3h    dir;
     float    tMax;
     uint32_t rngSeed;
+#if PRINT_BALLOT
+    int numIsecsThisRay;
+    int numLeavesThisRay;
+    int numPrimsThisRay;
+#endif
     struct {
       vec3h    N;
       vec3h    baseColor;

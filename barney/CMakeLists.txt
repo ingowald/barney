@@ -14,11 +14,15 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
+set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
+
 add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
   INTERFACE
   cuBQL_interface
   )
+target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
+  
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/barney/include

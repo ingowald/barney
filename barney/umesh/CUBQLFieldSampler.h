@@ -52,7 +52,7 @@ namespace barney {
   {
     float retVal = NAN;
     // return .5f;
-    int nodeStack[30];
+    int nodeStack[60];
     int *stackPtr = nodeStack;
     *stackPtr++ = 0;
     // if (dbg) printf("sample %f %f %f\n",P.x,P.y,P.z);

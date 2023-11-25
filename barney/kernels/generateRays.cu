@@ -78,6 +78,14 @@ namespace barney {
 
     bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
     ray.dbg = centerPixel;
+
+#if PRINT_BALLOT
+    int ball = __ballot(1);
+    if (ray.dbg) printf("=================================\n**** NEW PRIMARY RAY (ballot %x)\n",ball);
+    ray.numPrimsThisRay = 0;
+    ray.numIsecsThisRay = 0;
+    ray.numLeavesThisRay = 0;
+#endif
     
     ray.tMax = 1e30f;
     ray.rngSeed = rand.state;

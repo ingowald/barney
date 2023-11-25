@@ -53,7 +53,7 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
     
     cuBQL::BuildConfig buildConfig;
-    buildConfig.makeLeafThreshold = 8;
+    buildConfig.makeLeafThreshold = 7;
     buildConfig.enableSAH();
     static cuBQL::ManagedMemMemoryResource managedMem;
     cuBQL::gpuBuilder(bvh,

@@ -91,6 +91,15 @@ namespace barney {
         bounce.rngSeed = ray.rngSeed;
         rng();
         bounce.throughput = .6f * ray.throughput * albedo;
+
+#if PRINT_BALLOT
+        int numActive = __popc(__ballot(1));
+        
+        if (ray.dbg) printf("=================================\n**** NEW *SECONDARY* RAY, numActive = %i\n", numActive);
+        bounce.numPrimsThisRay = 0;
+        bounce.numIsecsThisRay = 0;
+        bounce.numLeavesThisRay = 0;
+#endif
         writeQueue[atomicAdd(d_nextWritePos,1)] = bounce;
       }
 #endif

@@ -93,6 +93,12 @@ namespace barney {
     auto &ray
       = owl::getPRD<Ray>();
     // bool dbg = ray.dbg;
+
+#if PRINT_BALLOT
+    int numActive = __popc(__ballot(1));
+    if (ray.dbg)
+      printf("### isec on geom %lx, leaf %i, numActive = %i\n",(void *)&self,primID,numActive);
+#endif
     
     Cluster cluster = self.clusters[primID];
     int begin = cluster.begin;

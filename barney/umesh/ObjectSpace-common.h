@@ -469,14 +469,30 @@ namespace barney {
     // use prim box only to find candidates (similar to ray tracing
     // for triangles), but each ray then intersects each prim
     // individually.
+
+#if PRINT_BALLOT
+    int numActive = __popc(__ballot(1));
+    if (ray.dbg)
+      printf("### leaf isec #%i on geom %lx, range %f %f, numActive = %i\n",
+             ray.numLeavesThisRay++,
+             (void *)&self,inputLeafRange.lower,inputLeafRange.upper,
+             numActive);
+#endif
+    
+    
+    
     int it = begin;
     Element hit_elt;
     float hit_t = INFINITY;
     while (it < end) {
       // find next prim:
       int next = it++;
-      // if (dbg) printf("------ new prim\n");
-      
+#if PRINT_BALLOT
+      int numActive = __popc(__ballot(1));
+      if (dbg) printf(" prim %i (#%i on ray) (numActive=%i)\n",next,
+                      ray.numPrimsThisRay++,
+                      numActive);
+#endif      
       if (!isec.setElement(self.mesh.elements[next]))
         continue;
                       
@@ -489,10 +505,12 @@ namespace barney {
 
       // compute majorant for given overlap range
       float majorant = isec.computeRangeMajorant();
-      // if (dbg) printf("element range %f %f majorant is %f\n",
-      //                 isec.elementTRange.lower,
-      //                 isec.elementTRange.upper,
-      //                 majorant);
+#if PRINT_BALLOT
+      if (dbg) printf("   > ray intersects *geometry* of prim; element range %f %f majorant is %f\n",
+                      isec.elementTRange.lower,
+                      isec.elementTRange.upper,
+                      majorant);
+#endif
       if (majorant == 0.f)
         continue;
       
@@ -501,14 +519,19 @@ namespace barney {
         float dt = - logf(1-rand())/(majorant);
         t += dt;
         numStepsTaken++;
-        // if (ray.dbg) printf("step taken %f, new t %f / %f\n",
-        //                     dt,t,isec.elementTRange.upper);
+#if PRINT_BALLOT
+        if (ray.dbg) printf("  > step taken %f, new t %f / %f\n",
+                            dt,t,isec.elementTRange.upper);
+#endif
         if (t >= isec.elementTRange.upper)
           break;
 
         vec3f P = ray.org + t * ray.dir;
         numSamplesTaken++;
         isec.sampleAndMap(P,dbg);
+#if PRINT_BALLOT
+        if (ray.dbg) printf("  >> ACTUAL sample\n");
+#endif
         // if (!isec.sampleAndMap()) {
         //   if (dbg) printf("COULD NOT SAMPLE TET t %f range %f %f!?!?!?!\n",t,
         //                   isec.elementTRange.lower,
@@ -532,8 +555,10 @@ namespace barney {
         ray.hit.baseColor = getPos(isec.mapped);
         
         
-        // if (dbg) printf("**** ACCEPTED at t = %f, P = %f %f %f, tet ID %i\n",
-        //                 t, P.x,P.y,P.z,isec.element.ID);
+#if PRINT_BALLOT
+        if (dbg) printf("**** ACCEPTED at t = %f, P = %f %f %f, tet ID %i\n",
+                        t, P.x,P.y,P.z,isec.element.ID);
+#endif
         break;
       }
       
