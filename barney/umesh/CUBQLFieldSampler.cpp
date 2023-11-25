@@ -53,8 +53,8 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
     
     cuBQL::BuildConfig buildConfig;
-    buildConfig.makeLeafThreshold = 8;
-    buildConfig.enableSAH();
+    buildConfig.makeLeafThreshold = 7;
+    // buildConfig.enableSAH();
     static cuBQL::ManagedMemMemoryResource managedMem;
     cuBQL::gpuBuilder(bvh,
                       (const cuBQL::box_t<float,3>*)d_primBounds,
@@ -70,12 +70,10 @@ namespace barney {
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
 
+    PRINT(bvh.numNodes);
     bvhNodesBuffer
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
-    // primIDsBuffer
-    //   = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
-    //                           bvh.numPrims,bvh.primIDs);
     cuBQL::free(bvh,0,managedMem);
   }
   
