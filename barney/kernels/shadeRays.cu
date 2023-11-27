@@ -65,11 +65,16 @@ namespace barney {
       z = ray.tMax;
       vec3f dir = ray.dir;
       vec3f Ng = ray.hit.N;
+      const bool isVolumeHit = (Ng == vec3f(0.f));
       float NdotD = dot(Ng,dir);
       if (NdotD > 0.f) Ng = - Ng;
-
+      if (!isVolumeHit) Ng = normalize(Ng);
+      
       // let's do some ambient eyelight-style shading, anyway:
-      float scale = .2f + .4f*fabsf(NdotD);
+      float scale
+        = isVolumeHit
+        ? .4f
+        : (.2f + .4f*fabsf(NdotD));
       scale *= .3f;
       fragment
         = albedo

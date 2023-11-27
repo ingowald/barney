@@ -99,7 +99,7 @@ namespace barney {
     f_lo *= (numValues-1);
     f_hi *= (numValues-1);
     int idx0_lo = clamp(int(f_lo),0,numValues-2);
-    int idx0_hi = clamp(int(f_hi)+1,0,numValues-2);
+    int idx0_hi = clamp(int(f_hi),0,numValues-2);
     f_lo -= idx0_lo;
     f_hi -= idx0_hi;
 

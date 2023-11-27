@@ -254,6 +254,31 @@ namespace barney {
     return dot(P-getPos(a),N);
   }
 
+  // using inward-facing planes here, like vtk
+  inline __both__
+  float evalToImplicitPlane(vec3f P, vec3f a, vec3f b, vec3f c, vec3f d)
+  {
+    vec3f N = cross(b-a,c-a);
+    float vol_abcd = dot(d-a,N);
+    float vol_abcp = dot(P-a,N);
+    if (vol_abcd < 0.f) printf("invalid negativevoluem tet!?\n");
+    // if (vol_abcp < 0.f) printf("P outside tet (neg)!?\n");
+    // if (vol_abcp > 1.f) printf("P outside tet (out)!?\n");
+    
+    return vol_abcp / vol_abcd;
+  }
+  inline __both__
+  float evalToImplicitPlane(vec3f P, vec4f a, vec4f b, vec4f c, vec4f d)
+  {
+    return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c),getPos(d));
+  }
+
+  inline __both__
+  float evalToImplicitPlane(vec3f P, float4 a, float4 b, float4 c, float4 d)
+  {
+    return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c),getPos(d));
+  }
+
   inline __both__
   bool UMeshField::DD::eltScalar(float &retVal, Element elt, vec3f P) const
   {

@@ -430,11 +430,11 @@ namespace barney {
   {
     const char *methodFromEnv = getenv("BARNEY_UMESH");
     std::string method = (methodFromEnv ? methodFromEnv : "object-space");
-    if (method == "macro-cells" || method == "spatial")
+    if (method == "macro-cells" || method == "spatial" || method == "mc")
       return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
     else if (method == "AWT" || method == "awt")
       return std::make_shared<UMeshAWT>(this,volume);
-    else if (method == "object-space")
+    else if (method == "object-space" || method == "os")
       return std::make_shared<RTXObjectSpace>(this,volume);
     else
       throw std::runtime_error("found BARNEY_METHOD env-var, but didn't recognize its value. allowed values are 'awt', 'object-space', and 'macro-cells'");

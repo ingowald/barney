@@ -65,22 +65,22 @@ namespace barney {
     auto &self = owl::getProgramData<RTXObjectSpace::DD>();
     int primID = optixGetPrimitiveIndex();
     Cluster &cluster = self.clusters[primID];
-    int begin = cluster.begin;
-    int end = cluster.end;
+    // int begin = cluster.begin;
+    // int end = cluster.end;
     // float majorant = cluster.majorant;
     
     ray.tMax = optixGetRayTmax();
 
     vec3f P = ray.org + ray.tMax * ray.dir;
 
-    CentralDifference cd(self.mesh,self.xf,P,begin,end,ray.dbg);
+    // CentralDifference cd(self.mesh,self.xf,P,begin,end,ray.dbg);
 
-    vec3f N = normalize
-      ((cd.N == vec3f(0.f)) ? ray.dir : cd.N);
+    // vec3f N = normalize
+    //   ((cd.N == vec3f(0.f)) ? ray.dir : cd.N);
     ray.hadHit = 1;
-    ray.hit.N = N;
+    ray.hit.N = vec3f(0.f);
     ray.hit.P = P;
-    ray.hit.baseColor = cd.mappedColor;
+    // ray.hit.baseColor = cd.mappedColor;
   }
 
 

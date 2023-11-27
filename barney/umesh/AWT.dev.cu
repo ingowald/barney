@@ -84,9 +84,9 @@ namespace barney {
     //          primID,
     //          P.x,P.y,P.z);
 
-    vec3f N = normalize(ray.dir);
+    // vec3f N = normalize(ray.dir);
     ray.hadHit = 1;
-    ray.hit.N = N;
+    ray.hit.N = vec3f(0.f);
     ray.hit.P = P;
   }
 

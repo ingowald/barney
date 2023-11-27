@@ -121,21 +121,21 @@ namespace barney {
         P[i] = P[6];
       }
     }
-    vec3f N;
-    N.x = safeDiv(mapped[1].w-mapped[0].w, P[1].x-P[0].x);
-    N.y = safeDiv(mapped[3].w-mapped[2].w, P[3].y-P[2].y);
-    N.z = safeDiv(mapped[5].w-mapped[4].w, P[5].z-P[4].z);
-    if (N == vec3f(0.f)) {
-      N = ray.dir;
-    }
-    N = normalize(N);
+    // vec3f N;a
+    // N.x = safeDiv(mapped[1].w-mapped[0].w, P[1].x-P[0].x);
+    // N.y = safeDiv(mapped[3].w-mapped[2].w, P[3].y-P[2].y);
+    // N.z = safeDiv(mapped[5].w-mapped[4].w, P[5].z-P[4].z);
+    // if (N == vec3f(0.f)) {
+    //   N = ray.dir;
+    // }
+    // N = normalize(N);
 
     ray.hadHit = true;
     ray.hit.baseColor
       = getPos(mapped[6])
       // * (.3f+.7f*fabsf(dot(normalize(ray.dir),N)))
       ;
-    ray.hit.N = N;
+    ray.hit.N = vec3f(0.f);
     ray.hit.P = P[6];
   }
 
