@@ -153,4 +153,32 @@ namespace barney {
     return boxTest(org,dir,tRange.lower,tRange.upper,box);
   }
 
+  inline __device__
+  bool boxTest(float &t0, float &t1,
+               box3f box,
+               const vec3f org,
+               const vec3f dir)
+  {
+    vec3f t_lo = (box.lower - org) * rcp(dir);
+    vec3f t_hi = (box.upper - org) * rcp(dir);
+    vec3f t_nr = min(t_lo,t_hi);
+    vec3f t_fr = max(t_lo,t_hi);
+    t0 = max(t0,reduce_max(t_nr));
+    t1 = min(t1,reduce_min(t_fr));
+    return t0 < t1;
+  }
+
+
+  inline __device__
+  bool boxTest(float &t0, float &t1,
+               box4f box,
+               const vec3f org,
+               const vec3f dir)
+  {
+    return boxTest(t0,t1,box3f({box.lower.x,box.lower.y,box.lower.z},
+                               {box.upper.x,box.upper.y,box.upper.z}),
+                   org,dir);
+  }
+
+  
 }

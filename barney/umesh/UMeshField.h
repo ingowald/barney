@@ -66,16 +66,21 @@ namespace barney {
     uint32_t ID:29;
     uint32_t type:3;
   };
-  
-  struct UMeshField : public ScalarField {
-    
+
+  struct UMeshField : public ScalarField
+  {
     typedef std::shared_ptr<UMeshField> SP;
 
+    /*! helper class for representing an N-long integer tuple, to
+       represent wedge, pyramid, hex, etc elemnet indices */
     template<int N>
     struct ints { int v[N];
       inline __both__ int &operator[](int i)      { return v[i]; }
       inline __both__ int operator[](int i) const { return v[i]; }
     };
+    /*! device-data for a unstructured-mesh scalar field, containing
+        all device-side pointers and function to access this field and
+        sample/evaluate its elemnets */
     struct DD : public ScalarField::DD {
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
@@ -84,11 +89,35 @@ namespace barney {
       inline __both__ box4f hexBounds(int primID) const;
       inline __both__ box4f gridBounds(int primID) const;
 
+      /* compute scalar of given umesh element at point P, and return
+         that in 'retVal'. returns true if P is inside the elemnt,
+         false if outside (in which case retVal is not defined) */
       inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P) const;
+      
+      /* compute scalar of given tet in umesh, at point P, and return
+         that in 'retVal'. returns true if P is inside the elemnt,
+         false if outside (in which case retVal is not defined) */
       inline __both__ bool tetScalar(float &retVal, int primID, vec3f P) const;
+      
+      /* compute scalar of given pyramid in umesh, at point P, and
+         return that in 'retVal'. returns true if P is inside the
+         elemnt, false if outside (in which case retVal is not
+         defined) */
       inline __both__ bool pyrScalar(float &retVal, int primID, vec3f P) const;
+      
+      /* compute scalar of given wedge in umesh, at point P, and return
+         that in 'retVal'. returns true if P is inside the elemnt,
+         false if outside (in which case retVal is not defined) */
       inline __both__ bool wedScalar(float &retVal, int primID, vec3f P) const;
+      
+      /* compute scalar of given hex in umesh, at point P, and return
+         that in 'retVal'. returns true if P is inside the elemnt,
+         false if outside (in which case retVal is not defined) */
       inline __both__ bool hexScalar(float &retVal, int primID, vec3f P) const;
+      
+      /* compute scalar of given grid in umesh, at point P, and return
+         that in 'retVal'. returns true if P is inside the elemnt,
+         false if outside (in which case retVal is not defined) */
       inline __both__ bool gridScalar(float &retVal, int primID, vec3f P) const;
       
       const float4     *vertices;
@@ -239,46 +268,30 @@ namespace barney {
     }
   }
 
-  // using inward-facing planes here, like vtk
+  /*! evaluate (relative) distance of point P to the implicit plane
+      defined by points A,B,C. distance is not normalized */
   inline __both__
-  float evalToImplicitPlane(vec3f P, vec4f a, vec4f b, vec4f c)
-  {
-    vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
-    return dot(P-getPos(a),N);
-  }
-
-  inline __both__
-  float evalToImplicitPlane(vec3f P, float4 a, float4 b, float4 c)
-  {
-    vec3f N = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
-    return dot(P-getPos(a),N);
-  }
-
-  // using inward-facing planes here, like vtk
-  inline __both__
-  float evalToImplicitPlane(vec3f P, vec3f a, vec3f b, vec3f c, vec3f d)
+  float evalToImplicitPlane(vec3f P, vec3f a, vec3f b, vec3f c)
   {
     vec3f N = cross(b-a,c-a);
-    float vol_abcd = dot(d-a,N);
-    float vol_abcp = dot(P-a,N);
-    if (vol_abcd < 0.f) printf("invalid negativevoluem tet!?\n");
-    // if (vol_abcp < 0.f) printf("P outside tet (neg)!?\n");
-    // if (vol_abcp > 1.f) printf("P outside tet (out)!?\n");
-    
-    return vol_abcp / vol_abcd;
-  }
-  inline __both__
-  float evalToImplicitPlane(vec3f P, vec4f a, vec4f b, vec4f c, vec4f d)
-  {
-    return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c),getPos(d));
+    return dot(P-a,N);
   }
 
+  /*! evaluate (relative) distance of point P to the implicit plane
+      defined by points A,B,C. distance is not normalized */
   inline __both__
-  float evalToImplicitPlane(vec3f P, float4 a, float4 b, float4 c, float4 d)
-  {
-    return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c),getPos(d));
-  }
+  float evalToImplicitPlane(vec3f P, vec4f a, vec4f b, vec4f c)
+  { return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c)); }
 
+  /*! evaluate (relative) distance of point P to the implicit plane
+      defined by points A,B,C. distance is not normalized */
+  inline __both__
+  float evalToImplicitPlane(vec3f P, float4 a, float4 b, float4 c)
+  { return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c)); }
+
+  /* compute scalar of given umesh element at point P, and return that
+     in 'retVal'. returns true if P is inside the elemnt, false if
+     outside (in which case retVal is not defined) */
   inline __both__
   bool UMeshField::DD::eltScalar(float &retVal, Element elt, vec3f P) const
   {
