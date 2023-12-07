@@ -15,7 +15,14 @@
 // ======================================================================== //
 
 #include "barney/MPIContext.h"
-#include "barney/DistFB.h"
+#include "barney/fb/DistFB.h"
+#include "barney.h"
+
+#if 1
+# define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
+#else
+# define LOG_API_ENTRY /**/
+#endif
 
 namespace barney {
 
@@ -52,6 +59,8 @@ namespace barney {
     numWorkers = 0;
     for (int i=0;i<workerRankOfWorldRank.size();i++)
       if (workerRankOfWorldRank[i] != -1) {
+        if (workerRankOfWorldRank[i] >= workers.size)
+          throw std::runtime_error("Invalid worker rank!?");
         worldRankOfWorker[workerRankOfWorldRank[i]] = i;
         numWorkers++;
       }
@@ -59,17 +68,32 @@ namespace barney {
 
     gpusPerWorker = world.allReduceMax(int(gpuIDs.size()));
     numWorkers = world.allReduceAdd(isActiveWorker?1:0);
+
+    if (dbg) {
+      std::stringstream ss;
+      ss << "bn." << workers.rank << ": ";
+      ss << "num workers " << numWorkers << "/" << workers.size << std::endl;
+    }
     
     if (isActiveWorker) {
       int numDGsPerWorker = (int)perDG.size();
       int numDevicesPerWorker = (int)devices.size();
       int numWorkers = workers.size;
       
+      if (dbg) {
+        std::stringstream ss;
+        ss << "bn." << workers.rank << ": ";
+        ss << "num devices " << numDevicesPerWorker << " DGs " << numDGsPerWorker << std::endl << std::flush;
+      }
+      
       // ------------------------------------------------------------------
       // sanity check - make sure all workers have same num data groups
       // ------------------------------------------------------------------
-      std::vector<int> numDataGroupsOnWorker(workers.size);
+      std::vector<int> numDataGroupsOnWorker(workers.size+1);
+      numDataGroupsOnWorker[workers.size] = 0x290374;
       workers.allGather(numDataGroupsOnWorker.data(),numDGsPerWorker);
+      if (numDataGroupsOnWorker[workers.size] != 0x290374)
+        throw std::runtime_error("mpi buffer overwrite!");
       for (int i=0;i<numWorkers;i++)
         if (numDataGroupsOnWorker[i] != numDGsPerWorker)
           throw std::runtime_error
@@ -82,8 +106,11 @@ namespace barney {
       // ------------------------------------------------------------------
       // sanity check - make sure all workers have same num devices
       // ------------------------------------------------------------------
-      std::vector<int> numDevicesOnWorker(workers.size);
+      std::vector<int> numDevicesOnWorker(workers.size+1);
+      numDevicesOnWorker[workers.size] = 0x290375;
       workers.allGather(numDevicesOnWorker.data(),(int)devices.size());
+      if (numDevicesOnWorker[workers.size] != 0x290375)
+        throw std::runtime_error("mpi buffer overwrite!");
       for (int i=0;i<numWorkers;i++)
         if (numDevicesOnWorker[i] != devices.size())
           throw std::runtime_error
@@ -97,10 +124,14 @@ namespace barney {
       // ------------------------------------------------------------------
       // gather who has which data(groups)
       // ------------------------------------------------------------------
-      std::vector<int> allDataGroups(workers.size*numDGsPerWorker);
+      std::vector<int> allDataGroups(workers.size*numDGsPerWorker+1);
+      allDataGroups[workers.size*numDGsPerWorker] = 0x8628;
       workers.allGather(allDataGroups.data(),
                         dataGroupIDs.data(),
                         dataGroupIDs.size());
+      if (allDataGroups[workers.size*numDGsPerWorker] != 0x8628)
+        throw std::runtime_error("mpi buffer overwrite!");
+      allDataGroups.resize(workers.size*numDGsPerWorker);
 
       // ------------------------------------------------------------------
       // sanity check: data groups are numbered 0,1,2 .... and each
@@ -143,11 +174,14 @@ namespace barney {
         std::cout << ss.str() << std::endl;
       }
       int numDevicesGlobally = numDevicesPerWorker*workers.size;
-      std::vector<int> dataOnGlobal(numDevicesGlobally);
+      std::vector<int> dataOnGlobal(numDevicesGlobally+1);
+      dataOnGlobal[numDevicesGlobally] = 0x3723;
       workers.allGather(dataOnGlobal.data(),
                         myDataOnLocal.data(),
                         myDataOnLocal.size());
-
+      if (dataOnGlobal[numDevicesGlobally] != 0x3723)
+        throw std::runtime_error("mpi gather overrun");
+      dataOnGlobal.resize(numDevicesGlobally);
       if (dbg) {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
@@ -157,10 +191,13 @@ namespace barney {
       }
 
       dataGroupCount.clear();
-      std::vector<int> islandOfGlobal(devices.size());
-      for (int i=0;i<numDevicesGlobally;i++)
+      std::vector<int> islandOfGlobal(numDevicesGlobally);
+      for (int i=0;i<numDevicesGlobally;i++) {
+        if (i >= islandOfGlobal.size())
+          throw std::runtime_error("invalid islandofglobal access....");
         islandOfGlobal[i]
           = dataGroupCount[dataOnGlobal[i]]++;
+      }
         
       for (int localID=0;localID<devices.size();localID++) {
         auto dev = devices[localID]->device;
@@ -188,6 +225,9 @@ namespace barney {
             dev->rqs.sendWorkerRank << "." << dev->rqs.recvWorkerLocal << std::endl;
       }
     }
+    barrier(false);
+    PING;
+    barrier(false);
   }
 
   /*! create a frame buffer object suitable to this context */
@@ -274,6 +314,7 @@ namespace barney {
     // ------------------------------------------------------------------
     // exchange how many we're going to send/recv
     // ------------------------------------------------------------------
+    // std::vector<MPI_Status> allStatuses;
     std::vector<int> numIncoming(numDevices);
     std::vector<int> numOutgoing(numDevices);
     for (auto &ni : numIncoming) ni = -1;
@@ -292,8 +333,17 @@ namespace barney {
       allRequests.push_back(recvReq);
     }
 
-    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    // allStatuses.resize(allRequests.size());
+    // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
+     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    // barrier(false);
+    // for (int i=0;i<allStatuses.size();i++) {
+    //   auto &status = allStatuses[i];
+    //   if (status.MPI_ERROR != MPI_SUCCESS)
+    //     throw std::runtime_error("error in mpi send/recv status!?");
+    // }
     allRequests.clear();
+    // allStatuses.clear();
     
     // ------------------------------------------------------------------
     // exchange actual rays
@@ -311,8 +361,17 @@ namespace barney {
       allRequests.push_back(sendReq);
       allRequests.push_back(recvReq);
     }
+    // allStatuses.resize(allRequests.size());
+    // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    // barrier(false);
+    // for (int i=0;i<allStatuses.size();i++) {
+    //   auto &status = allStatuses[i];
+    //   if (status.MPI_ERROR != MPI_SUCCESS)
+    //     throw std::runtime_error("error in mpi send/recv status!?");
+    // }
     allRequests.clear();
+    // allStatuses.clear();
               
     // ------------------------------------------------------------------
     // now all rays should be exchanged -- swap queues
@@ -327,4 +386,163 @@ namespace barney {
     return (numTimesForwarded % numDifferentDataGroups) != 0;
   }
 
+  BN_API
+  void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
+  {
+    LOG_API_ENTRY;
+    
+    assert(_hardware);
+    BNHardwareInfo &hardware = *_hardware;
+
+    assert(_comm != MPI_COMM_NULL);
+    mpi::Comm comm(_comm);
+
+    hardware.numRanks = comm.size;
+    char hostName[MPI_MAX_PROCESSOR_NAME];
+    memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
+    int hostNameLen = 0;
+    BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen));
+    
+    std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
+    memset(recvBuf.data(),0,recvBuf.size());
+
+    // ------------------------------------------------------------------
+    // determine which (world) rank lived on which host, and assign
+    // GPUSs
+    // ------------------------------------------------------------------
+    BN_MPI_CALL(Allgather(hostName,
+                          MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
+                          recvBuf.data(),
+                          /* PER rank size */MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
+                          comm.comm));
+    std::vector<std::string>  hostNames;
+    std::map<std::string,int> ranksOnHost;
+    for (int i=0;i<comm.size;i++)  {
+      std::string host_i = recvBuf.data()+i*MPI_MAX_PROCESSOR_NAME;
+      hostNames.push_back(host_i);
+      ranksOnHost[host_i] ++;
+    }
+    
+    hardware.numRanksThisHost = ranksOnHost[hostName];
+    hardware.numHosts         = ranksOnHost.size();
+    
+    // ------------------------------------------------------------------
+    // count how many other ranks are already on this same node
+    // ------------------------------------------------------------------
+    BN_MPI_CALL(Barrier(comm.comm));
+    int localRank = 0;
+    for (int i=0;i<comm.rank;i++) 
+      if (hostNames[i] == hostName)
+        localRank++;
+    BN_MPI_CALL(Barrier(comm.comm));
+    hardware.localRank = localRank;
+    hardware.numRanksThisHost = ranksOnHost[hostName];
+
+    // ------------------------------------------------------------------
+    // assign a GPU to this rank
+    // ------------------------------------------------------------------
+    int numGPUsOnThisHost;
+    cudaGetDeviceCount(&numGPUsOnThisHost);
+    if (numGPUsOnThisHost == 0)
+      throw std::runtime_error("no GPU on this rank!");
+    hardware.numGPUsThisHost = numGPUsOnThisHost;
+    hardware.numGPUsThisRank
+      = comm.allReduceMin(std::max(hardware.numGPUsThisHost/
+                                   hardware.numRanksThisHost,
+                                   1));
+    assert(hardware.numGPUsThisRank > 0);
+  }
+
+  BN_API
+  BNContext bnMPIContextCreate(MPI_Comm _comm,
+                               /*! which data group(s) this rank will
+                                 owl - default is 1 group, with data
+                                 group equal to mpi rank */
+                               const int *dataGroupsOnThisRank,
+                               int  numDataGroupsOnThisRank,
+                               /*! which gpu(s) to use for this
+                                 process. default is to distribute
+                                 node's GPUs equally over all ranks on
+                                 that given node */
+                               const int *_gpuIDs,
+                               int  numGPUs
+                               )
+  {
+    LOG_API_ENTRY;
+
+    mpi::Comm world(_comm);
+
+    if (world.size == 1) {
+      std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
+      return bnContextCreate(dataGroupsOnThisRank,
+                             numDataGroupsOnThisRank == 0
+                             ? 1 : numDataGroupsOnThisRank,
+                               /*! which gpu(s) to use for this
+                                 process. default is to distribute
+                                 node's GPUs equally over all ranks on
+                                 that given node */
+                             _gpuIDs,
+                             numGPUs);
+      // return (BNContext)new LocalContext(dataGroupIDs,
+      //                                    gpuIDs);
+    } 
+
+    // ------------------------------------------------------------------
+    // create vector of data groups; if actual specified by user we
+    // use those; otherwise we use IDs
+    // [0,1,...numDataGroupsOnThisHost)
+    // ------------------------------------------------------------------
+    assert(/* data groups == 0 is allowed for passive nodes*/
+           numDataGroupsOnThisRank >= 0);
+    std::vector<int> dataGroupIDs;
+    for (int i=0;i<numDataGroupsOnThisRank;i++)
+      dataGroupIDs.push_back
+        (dataGroupsOnThisRank
+         ? dataGroupsOnThisRank[i]
+         : i);
+
+    // ------------------------------------------------------------------
+    // create list of GPUs to use for this rank. if specified by user
+    // we use this; otherwise we use GPUs in order, split into groups
+    // according to how many ranks there are on this host. Ie, if host
+    // has four GPUs the first rank will take 0 and 1; and the second
+    // one will take 2 and 3.
+    // ------------------------------------------------------------------
+    BNHardwareInfo hardware;
+    bnMPIQueryHardware(&hardware,_comm);
+    
+    std::vector<int> gpuIDs;
+    if (_gpuIDs) {
+      for (int i=0;i<numGPUs;i++)
+        gpuIDs.push_back(_gpuIDs[i]);
+    } else {
+      if (numGPUs < 1)
+        numGPUs = hardware.numGPUsThisRank;
+      for (int i=0;i<numGPUs;i++)
+        gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
+                          + i) % hardware.numGPUsThisHost);
+    }
+
+    // if (1) {
+    //   std::stringstream ss;
+    //   ss << "#bn." << world.rank << ": gpuIDs ";
+    //   for (auto i : gpuIDs) ss << i << " ";
+    //   ss << std::endl;
+    //   ss << "localRank " << hardware.localRank << std::endl;
+    //   ss << "numGPUsThisRank " << hardware.numGPUsThisRank << std::endl;
+    //   ss << "numGPUsThisHost " << hardware.numGPUsThisHost << std::endl;
+    //   std::cout << ss.str() << std::flush;
+    //   world.barrier();
+    //   exit(0);
+    // }
+    
+    bool isActiveWorker = !dataGroupIDs.empty();
+    mpi::Comm workers = world.split(isActiveWorker);
+
+    return (BNContext)new MPIContext(world,
+                                     workers,
+                                     isActiveWorker,
+                                     dataGroupIDs,
+                                     gpuIDs);
+  }
 }

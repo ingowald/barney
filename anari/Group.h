@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Surface.h"
+#include "Volume.h"
 // std
 #include <vector>
 
@@ -23,6 +24,7 @@ private:
   void cleanup();
 
   helium::IntrusivePtr<ObjectArray> m_surfaceData;
+  helium::IntrusivePtr<ObjectArray> m_volumeData;
 };
 
 } // namespace barney_device

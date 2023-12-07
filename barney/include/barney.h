@@ -54,7 +54,7 @@ struct BNCamera {
   float  lensRadius;
 };
 
-#define BN_DEFAULT_MATERIAL  { { .5f,.5f,.5f }, 0.f, 1.f, -1, -1 }
+#define BN_DEFAULT_MATERIAL  { { .7f,.7f,.7f }, 0.f, 1.f, -1, -1 }
 
 struct BNGridlet {
   float3 lower;

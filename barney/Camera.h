@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "barney/Ray.h"
-#include "barney/TiledFB.h"
+#include "barney/common/barney-common.h"
 
 namespace barney {
 
+  /*! the camera model we use in barney */
   struct Camera {
     /*! vector from camera center to to lower-left pixel (i.e., pixel
       (0,0)) on the focal plane */
@@ -33,9 +33,6 @@ namespace barney {
     vec3f lens_00;
     /* vector along v direction, for ONE pixel */
     float  lensRadius;
-
-    vec3f dbg_vi;
-    vec3f dbg_vp;
   };
     
 }

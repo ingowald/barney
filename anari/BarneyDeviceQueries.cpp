@@ -80,6 +80,7 @@ const char ** query_extensions() {
    static const char *extensions[] = {
       "ANARI_KHR_INSTANCE_TRANSFORM",
       "ANARI_KHR_CAMERA_PERSPECTIVE",
+      "ANARI_KHR_DEVICE_SYNCHRONIZATION",
       "ANARI_KHR_GEOMETRY_TRIANGLE",
       "ANARI_KHR_MATERIAL_MATTE",
       "ANARI_KHR_SPATIAL_FIELD_STRUCTURED_REGULAR",
@@ -1217,7 +1218,7 @@ static const void * ANARI_GEOMETRY_triangle_name_info(ANARIDataType paramType, i
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1249,7 +1250,7 @@ static const void * ANARI_GEOMETRY_triangle_primitive_color_info(ANARIDataType p
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1281,7 +1282,7 @@ static const void * ANARI_GEOMETRY_triangle_primitive_attribute0_info(ANARIDataT
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1313,7 +1314,7 @@ static const void * ANARI_GEOMETRY_triangle_primitive_attribute1_info(ANARIDataT
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1345,7 +1346,7 @@ static const void * ANARI_GEOMETRY_triangle_primitive_attribute2_info(ANARIDataT
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1377,7 +1378,7 @@ static const void * ANARI_GEOMETRY_triangle_primitive_attribute3_info(ANARIDataT
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1409,7 +1410,7 @@ static const void * ANARI_GEOMETRY_triangle_primitive_id_info(ANARIDataType para
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1441,7 +1442,7 @@ static const void * ANARI_GEOMETRY_triangle_vertex_position_info(ANARIDataType p
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1473,7 +1474,7 @@ static const void * ANARI_GEOMETRY_triangle_vertex_normal_info(ANARIDataType par
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1505,7 +1506,7 @@ static const void * ANARI_GEOMETRY_triangle_vertex_tangent_info(ANARIDataType pa
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1537,7 +1538,7 @@ static const void * ANARI_GEOMETRY_triangle_vertex_color_info(ANARIDataType para
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1569,7 +1570,7 @@ static const void * ANARI_GEOMETRY_triangle_vertex_attribute0_info(ANARIDataType
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1601,7 +1602,7 @@ static const void * ANARI_GEOMETRY_triangle_vertex_attribute1_info(ANARIDataType
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1633,7 +1634,7 @@ static const void * ANARI_GEOMETRY_triangle_vertex_attribute2_info(ANARIDataType
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1665,7 +1666,7 @@ static const void * ANARI_GEOMETRY_triangle_vertex_attribute3_info(ANARIDataType
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1697,7 +1698,7 @@ static const void * ANARI_GEOMETRY_triangle_primitive_index_info(ANARIDataType p
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 2;
+            static const int32_t value = 3;
             return &value;
          }
       default: return nullptr;
@@ -1760,7 +1761,7 @@ static const void * ANARI_MATERIAL_matte_name_info(ANARIDataType paramType, int 
             static const char *extension = "KHR_MATERIAL_MATTE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 3;
+            static const int32_t value = 4;
             return &value;
          }
       default: return nullptr;
@@ -1805,7 +1806,7 @@ static const void * ANARI_MATERIAL_matte_color_info(ANARIDataType paramType, int
             static const char *extension = "KHR_MATERIAL_MATTE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 3;
+            static const int32_t value = 4;
             return &value;
          }
       default: return nullptr;
@@ -1844,7 +1845,7 @@ static const void * ANARI_MATERIAL_matte_opacity_info(ANARIDataType paramType, i
             static const char *extension = "KHR_MATERIAL_MATTE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 3;
+            static const int32_t value = 4;
             return &value;
          }
       default: return nullptr;
@@ -1883,7 +1884,7 @@ static const void * ANARI_MATERIAL_matte_alphaMode_info(ANARIDataType paramType,
             static const char *extension = "KHR_MATERIAL_MATTE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 3;
+            static const int32_t value = 4;
             return &value;
          }
       default: return nullptr;
@@ -1915,7 +1916,7 @@ static const void * ANARI_MATERIAL_matte_alphaCutoff_info(ANARIDataType paramTyp
             static const char *extension = "KHR_MATERIAL_MATTE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 3;
+            static const int32_t value = 4;
             return &value;
          }
       default: return nullptr;
@@ -1956,7 +1957,7 @@ static const void * ANARI_SPATIAL_FIELD_structuredRegular_name_info(ANARIDataTyp
             static const char *extension = "KHR_SPATIAL_FIELD_STRUCTURED_REGULAR";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 4;
+            static const int32_t value = 5;
             return &value;
          }
       default: return nullptr;
@@ -1988,7 +1989,7 @@ static const void * ANARI_SPATIAL_FIELD_structuredRegular_data_info(ANARIDataTyp
             static const char *extension = "KHR_SPATIAL_FIELD_STRUCTURED_REGULAR";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 4;
+            static const int32_t value = 5;
             return &value;
          }
       default: return nullptr;
@@ -2020,7 +2021,7 @@ static const void * ANARI_SPATIAL_FIELD_structuredRegular_origin_info(ANARIDataT
             static const char *extension = "KHR_SPATIAL_FIELD_STRUCTURED_REGULAR";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 4;
+            static const int32_t value = 5;
             return &value;
          }
       default: return nullptr;
@@ -2052,7 +2053,7 @@ static const void * ANARI_SPATIAL_FIELD_structuredRegular_spacing_info(ANARIData
             static const char *extension = "KHR_SPATIAL_FIELD_STRUCTURED_REGULAR";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 4;
+            static const int32_t value = 5;
             return &value;
          }
       default: return nullptr;
@@ -2091,7 +2092,7 @@ static const void * ANARI_SPATIAL_FIELD_structuredRegular_filter_info(ANARIDataT
             static const char *extension = "KHR_SPATIAL_FIELD_STRUCTURED_REGULAR";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 4;
+            static const int32_t value = 5;
             return &value;
          }
       default: return nullptr;
@@ -2132,7 +2133,7 @@ static const void * ANARI_VOLUME_transferFunction1D_name_info(ANARIDataType para
             static const char *extension = "KHR_VOLUME_TRANSFER_FUNCTION1D";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 5;
+            static const int32_t value = 6;
             return &value;
          }
       default: return nullptr;
@@ -2157,7 +2158,7 @@ static const void * ANARI_VOLUME_transferFunction1D_value_info(ANARIDataType par
             static const char *extension = "KHR_VOLUME_TRANSFER_FUNCTION1D";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 5;
+            static const int32_t value = 6;
             return &value;
          }
       default: return nullptr;
@@ -2189,7 +2190,7 @@ static const void * ANARI_VOLUME_transferFunction1D_valueRange_info(ANARIDataTyp
             static const char *extension = "KHR_VOLUME_TRANSFER_FUNCTION1D";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 5;
+            static const int32_t value = 6;
             return &value;
          }
       default: return nullptr;
@@ -2221,7 +2222,7 @@ static const void * ANARI_VOLUME_transferFunction1D_color_info(ANARIDataType par
             static const char *extension = "KHR_VOLUME_TRANSFER_FUNCTION1D";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 5;
+            static const int32_t value = 6;
             return &value;
          }
       default: return nullptr;
@@ -2253,7 +2254,7 @@ static const void * ANARI_VOLUME_transferFunction1D_opacity_info(ANARIDataType p
             static const char *extension = "KHR_VOLUME_TRANSFER_FUNCTION1D";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 5;
+            static const int32_t value = 6;
             return &value;
          }
       default: return nullptr;
@@ -2285,7 +2286,7 @@ static const void * ANARI_VOLUME_transferFunction1D_unitDistance_info(ANARIDataT
             static const char *extension = "KHR_VOLUME_TRANSFER_FUNCTION1D";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int32_t value = 5;
+            static const int32_t value = 6;
             return &value;
          }
       default: return nullptr;
@@ -2429,6 +2430,7 @@ static const void * ANARI_RENDERER_default_info(int infoName, ANARIDataType info
             static const char *extensions[] = {
                "ANARI_KHR_INSTANCE_TRANSFORM",
                "ANARI_KHR_CAMERA_PERSPECTIVE",
+               "ANARI_KHR_DEVICE_SYNCHRONIZATION",
                "ANARI_KHR_GEOMETRY_TRIANGLE",
                "ANARI_KHR_MATERIAL_MATTE",
                "ANARI_KHR_SPATIAL_FIELD_STRUCTURED_REGULAR",
@@ -2466,6 +2468,7 @@ static const void * ANARI_DEVICE_info(int infoName, ANARIDataType infoType) {
             static const char *extensions[] = {
                "ANARI_KHR_INSTANCE_TRANSFORM",
                "ANARI_KHR_CAMERA_PERSPECTIVE",
+               "ANARI_KHR_DEVICE_SYNCHRONIZATION",
                "ANARI_KHR_GEOMETRY_TRIANGLE",
                "ANARI_KHR_MATERIAL_MATTE",
                "ANARI_KHR_SPATIAL_FIELD_STRUCTURED_REGULAR",
@@ -2752,7 +2755,7 @@ static const void * ANARI_GEOMETRY_triangle_info(int infoName, ANARIDataType inf
             static const char *extension = "KHR_GEOMETRY_TRIANGLE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int value = 2;
+            static const int value = 3;
             return &value;
          } else {
             return nullptr;
@@ -2790,7 +2793,7 @@ static const void * ANARI_MATERIAL_matte_info(int infoName, ANARIDataType infoTy
             static const char *extension = "KHR_MATERIAL_MATTE";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int value = 3;
+            static const int value = 4;
             return &value;
          } else {
             return nullptr;
@@ -2824,7 +2827,7 @@ static const void * ANARI_SPATIAL_FIELD_structuredRegular_info(int infoName, ANA
             static const char *extension = "KHR_SPATIAL_FIELD_STRUCTURED_REGULAR";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int value = 4;
+            static const int value = 5;
             return &value;
          } else {
             return nullptr;
@@ -2863,7 +2866,7 @@ static const void * ANARI_VOLUME_transferFunction1D_info(int infoName, ANARIData
             static const char *extension = "KHR_VOLUME_TRANSFER_FUNCTION1D";
             return extension;
          } else if(infoType == ANARI_INT32) {
-            static const int value = 5;
+            static const int value = 6;
             return &value;
          } else {
             return nullptr;

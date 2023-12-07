@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/Context.h"
-#include "barney/MPIWrappers.h"
+#include "barney/common/MPIWrappers.h"
 
 namespace barney {
 
@@ -48,7 +48,7 @@ namespace barney {
     bool forwardRays() override;
 
     // for debugging ...
-    void barrier() override { PING; workers.barrier(); usleep(100); }
+    void barrier(bool warn=true) override { if (warn) PING; workers.barrier(); usleep(100); }
     
 
     /*! returns how many rays are active in all ray queues, across all

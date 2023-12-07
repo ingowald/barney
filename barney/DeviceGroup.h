@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/common.h"
+#include "barney/common/barney-common.h"
 
 namespace barney {
 

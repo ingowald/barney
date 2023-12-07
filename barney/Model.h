@@ -17,7 +17,6 @@
 #pragma once
 
 #include "barney/Context.h"
-#include "barney/Geometry.h"
 #include "barney/DataGroup.h"
 
 namespace barney {
@@ -35,12 +34,6 @@ namespace barney {
     std::string toString() const override
     { return "Model{}"; }
 
-    // void build()
-    // {
-    //   // todo: parallel
-    //   for (auto &dg : dataGroups)
-    //     dg->build();
-    // }
     void render(const Camera &camera,
                 FrameBuffer *fb);
 

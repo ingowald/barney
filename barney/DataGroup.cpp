@@ -16,9 +16,9 @@
 
 #include "barney/DataGroup.h"
 #include "barney/Model.h"
-#include "barney/Spheres.h"
-#include "barney/Cylinders.h"
-#include "barney/Triangles.h"
+#include "barney/geometry/Spheres.h"
+#include "barney/geometry/Cylinders.h"
+#include "barney/geometry/Triangles.h"
 
 namespace barney {
   
