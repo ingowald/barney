@@ -130,45 +130,47 @@ void UnstructuredField::commit()
     }
   }
 
-  m_generatedGridOffsets.clear();
-  m_generatedGridDims.clear();
-  m_generatedGridDomains.clear();
-  m_generatedGridScalars.clear();
+  if (m_params.gridData && m_params.gridDomains) {
+    m_generatedGridOffsets.clear();
+    m_generatedGridDims.clear();
+    m_generatedGridDomains.clear();
+    m_generatedGridScalars.clear();
 
-  size_t numGrids = m_params.gridData->totalSize();
-  auto *gridData = (helium::Array3D **)m_params.gridData->handlesBegin();
-  auto *gridDomains = m_params.gridDomains->beginAs<anari::box3>();
+    size_t numGrids = m_params.gridData->totalSize();
+    auto *gridData = (helium::Array3D **)m_params.gridData->handlesBegin();
+    auto *gridDomains = m_params.gridDomains->beginAs<anari::box3>();
 
-  for (size_t i = 0; i < numGrids; ++i) {
-    const helium::Array3D *gd = *(gridData + i);
-    const anari::box3 domain = *(gridDomains + i);
+    for (size_t i = 0; i < numGrids; ++i) {
+      const helium::Array3D *gd = *(gridData + i);
+      const anari::box3 domain = *(gridDomains + i);
 
-    m_generatedGridOffsets.push_back(m_generatedGridScalars.size());
+      m_generatedGridOffsets.push_back(m_generatedGridScalars.size());
 
-    // from anari's array3d we get the number of vertices, not cells!
-    m_generatedGridDims.push_back(gd->size().x - 1);
-    m_generatedGridDims.push_back(gd->size().y - 1);
-    m_generatedGridDims.push_back(gd->size().z - 1);
+      // from anari's array3d we get the number of vertices, not cells!
+      m_generatedGridDims.push_back(gd->size().x - 1);
+      m_generatedGridDims.push_back(gd->size().y - 1);
+      m_generatedGridDims.push_back(gd->size().z - 1);
 
-    anari::box1 valueRange{FLT_MAX, -FLT_MAX};
-    for (unsigned z = 0; z < gd->size().z; ++z)
-      for (unsigned y = 0; y < gd->size().y; ++y)
-        for (unsigned x = 0; x < gd->size().x; ++x) {
-          size_t index =
-              z * size_t(gd->size().x) * gd->size().y + y * gd->size().x + x;
-          float f = gd->dataAs<float>()[index];
-          m_generatedGridScalars.push_back(f);
-          valueRange.insert(f);
-        }
+      anari::box1 valueRange{FLT_MAX, -FLT_MAX};
+      for (unsigned z = 0; z < gd->size().z; ++z)
+        for (unsigned y = 0; y < gd->size().y; ++y)
+          for (unsigned x = 0; x < gd->size().x; ++x) {
+            size_t index =
+                z * size_t(gd->size().x) * gd->size().y + y * gd->size().x + x;
+            float f = gd->dataAs<float>()[index];
+            m_generatedGridScalars.push_back(f);
+            valueRange.insert(f);
+          }
 
-    m_generatedGridDomains.push_back(domain.lower.x);
-    m_generatedGridDomains.push_back(domain.lower.y);
-    m_generatedGridDomains.push_back(domain.lower.z);
-    m_generatedGridDomains.push_back(valueRange.lower);
-    m_generatedGridDomains.push_back(domain.upper.x);
-    m_generatedGridDomains.push_back(domain.upper.y);
-    m_generatedGridDomains.push_back(domain.upper.z);
-    m_generatedGridDomains.push_back(valueRange.upper);
+      m_generatedGridDomains.push_back(domain.lower.x);
+      m_generatedGridDomains.push_back(domain.lower.y);
+      m_generatedGridDomains.push_back(domain.lower.z);
+      m_generatedGridDomains.push_back(valueRange.lower);
+      m_generatedGridDomains.push_back(domain.upper.x);
+      m_generatedGridDomains.push_back(domain.upper.y);
+      m_generatedGridDomains.push_back(domain.upper.z);
+      m_generatedGridDomains.push_back(valueRange.upper);
+    }
   }
 }
 
