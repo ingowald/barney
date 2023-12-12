@@ -296,6 +296,37 @@ namespace barney {
     return (BNScalarField)sf;
   }
   
+  BN_API
+  BNScalarField bnBlockStructuredAMRCreate(BNDataGroup dataGroup,
+                                           /*TODO:const float *cellWidths,*/
+                                           // block bounds, 6 ints each (3 for min,
+                                           // 3 for max corner)
+                                           const int *_blockBounds, int numBlocks,
+                                           // refinement level, per block,
+                                           // finest is level 0,
+                                           const int *_blockLevels,
+                                           // offsets into blockData array
+                                           const int *_blockOffsets,
+                                           // block scalars
+                                           const float *_blockScalars,
+                                           int numBlockScalars)
+  {
+    std::cout << "#bn: copying 'amr' from app ..." << std::endl;
+    std::vector<box3i> blockBounds(numBlocks);
+    std::vector<int>   blockLevels(numBlocks);
+    std::vector<int>   blockOffsets(numBlocks);
+    std::vector<float> blockScalars(numBlockScalars);
+    memcpy(blockBounds.data(),_blockBounds,blockBounds.size()*sizeof(blockBounds[0]));
+    memcpy(blockLevels.data(),_blockLevels,blockLevels.size()*sizeof(blockLevels[0]));
+    memcpy(blockOffsets.data(),_blockOffsets,blockOffsets.size()*sizeof(blockOffsets[0]));
+    memcpy(blockScalars.data(),_blockScalars,blockScalars.size()*sizeof(blockScalars[0]));
+    ScalarField *sf = checkGet(dataGroup)->createBlockStructuredAMR(blockBounds,
+                                                                    blockLevels,
+                                                                    blockOffsets,
+                                                                    blockScalars);
+    return (BNScalarField)sf;
+  }
+
 
   BN_API
   BNGroup bnGroupCreate(BNDataGroup dataGroup,

@@ -48,6 +48,35 @@ namespace barney {
   inline __device__
   float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
   
+  inline __both__ vec4f make_vec4f(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
+  
+  /*! helper functoin to extrace 3f spatial component from 4f point-plus-scalar */
+  inline __both__ vec3f getPos(vec4f v)
+  {return vec3f{v.x,v.y,v.z}; }
+
+  /*! helper functoin to extrace 3f spatial component from 4f point-plus-scalar */
+  inline __both__ vec3f getPos(float4 v)
+  {return vec3f{v.x,v.y,v.z}; }
+
+  /*! helper functoin to extrace 3f spatial component from 4f point-plus-scalar */
+  inline __both__ box3f getBox(box4f bb)
+  { return box3f{getPos(bb.lower),getPos(bb.upper)}; }
+
+  /*! helper functoin to extract 1f scalar range from 4f point-plus-scalar */
+  inline __both__ range1f getRange(box4f bb)
+  { return range1f{bb.lower.w,bb.upper.w}; }
+
+  inline __both__ float lerp(float v0, float v1, float f)
+  { return (1.f-f)*v0 + f*v1; }
+
+  inline __both__ vec3f lerp(vec3f f, vec3f v0, vec3f v1)
+  { return (vec3f(1.f)-f)*v0 + f*v1; }
+
+  inline __both__ vec3f lerp(box3f box, vec3f f)
+  { return lerp(f,box.lower,box.upper); }
+  
+  inline __both__ vec3f lerp(vec3f f, box3f box)
+  { return lerp(f,box.lower,box.upper); }
 }
 
 

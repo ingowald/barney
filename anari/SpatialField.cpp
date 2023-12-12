@@ -26,6 +26,8 @@ SpatialField *SpatialField::createInstance(
 {
   if (subtype == "unstructured")
     return new UnstructuredField(s);
+  else if (subtype == "amr")
+    return new BlockStructuredField(s);
   else
     return (SpatialField *)new UnknownObject(ANARI_SPATIAL_FIELD, s);
 }
@@ -37,6 +39,8 @@ void SpatialField::markCommitted()
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
+
+// UnstructuredField //
 
 UnstructuredField::UnstructuredField(BarneyGlobalState *s) : SpatialField(s) {}
 
@@ -197,6 +201,90 @@ BNScalarField UnstructuredField::makeBarneyScalarField(BNDataGroup dg) const
 }
 
 anari::box3 UnstructuredField::bounds() const
+{
+  return m_bounds;
+}
+
+// BlockStructuredField //
+
+BlockStructuredField::BlockStructuredField(BarneyGlobalState *s) : SpatialField(s) {}
+
+void BlockStructuredField::commit()
+{
+  Object::commit();
+
+  m_params.cellWidth = getParamObject<helium::Array1D>("cellWidth");
+  m_params.blockBounds = getParamObject<helium::Array1D>("block.bounds");
+  m_params.blockLevel = getParamObject<helium::Array1D>("block.level");
+  m_params.blockData = getParamObject<helium::ObjectArray>("block.data");
+
+  if (!m_params.blockBounds) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'block.bounds' on amr spatial field");
+    return;
+  }
+
+  if (!m_params.blockLevel) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'block.level' on amr spatial field");
+    return;
+  }
+
+  if (!m_params.blockData) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'block.data' on amr spatial field");
+    return;
+  }
+
+  size_t numBlocks = m_params.blockData->totalSize();
+  auto *blockBounds = m_params.blockBounds->beginAs<anari::box3i>();
+  auto *blockLevels = m_params.blockLevel->beginAs<int>();
+  auto *blockData = (helium::Array3D **)m_params.blockData->handlesBegin();
+
+  m_generatedBlockBounds.clear();
+  m_generatedBlockLevels.clear();
+  m_generatedBlockOffsets.clear();
+  m_generatedBlockScalars.clear();
+
+  for (size_t i = 0; i < numBlocks; ++i) {
+    const anari::box3i bounds = *(blockBounds + i);
+    const int level = *(blockLevels + i);
+    const helium::Array3D *bd = *(blockData + i);
+
+    m_generatedBlockBounds.push_back(bounds.lower.x);
+    m_generatedBlockBounds.push_back(bounds.lower.y);
+    m_generatedBlockBounds.push_back(bounds.lower.z);
+    m_generatedBlockBounds.push_back(bounds.upper.x);
+    m_generatedBlockBounds.push_back(bounds.upper.y);
+    m_generatedBlockBounds.push_back(bounds.upper.z);
+    m_generatedBlockLevels.push_back(level);
+    m_generatedBlockOffsets.push_back(m_generatedBlockScalars.size());
+
+    for (unsigned z = 0; z < bd->size().z; ++z)
+      for (unsigned y = 0; y < bd->size().y; ++y)
+        for (unsigned x = 0; x < bd->size().x; ++x) {
+          size_t index =
+              z * size_t(bd->size().x) * bd->size().y + y * bd->size().x + x;
+          float f = bd->dataAs<float>()[index];
+          m_generatedBlockScalars.push_back(f);
+        }
+  }
+}
+
+BNScalarField BlockStructuredField::makeBarneyScalarField(BNDataGroup dg) const
+{
+  auto ctx = deviceState()->context;
+  return bnBlockStructuredAMRCreate(dg,
+      //m_generatedCellWidths.data(),
+      m_generatedBlockBounds.data(),
+      m_generatedBlockBounds.size()/6,
+      m_generatedBlockLevels.data(),
+      m_generatedBlockOffsets.data(),
+      m_generatedBlockScalars.data(),
+      m_generatedBlockScalars.size());
+}
+
+anari::box3 BlockStructuredField::bounds() const
 {
   return m_bounds;
 }

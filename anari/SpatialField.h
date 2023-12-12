@@ -62,6 +62,32 @@ struct UnstructuredField : public SpatialField
   anari::box3 m_bounds;
 };
 
+struct BlockStructuredField : public SpatialField
+{
+  BlockStructuredField(BarneyGlobalState *s);
+  void commit() override;
+
+  BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+
+  anari::box3 bounds() const override;
+
+  struct Parameters
+  {
+    helium::IntrusivePtr<helium::Array1D> cellWidth;
+    helium::IntrusivePtr<helium::Array1D> blockBounds;
+    helium::IntrusivePtr<helium::Array1D> blockLevel;
+    helium::IntrusivePtr<helium::ObjectArray> blockData;
+  } m_params;
+
+  std::vector<float> m_generatedCellWidths;
+  std::vector<int> m_generatedBlockBounds;
+  std::vector<int> m_generatedBlockLevels;
+  std::vector<int> m_generatedBlockOffsets;
+  std::vector<float> m_generatedBlockScalars;
+
+  anari::box3 m_bounds;
+};
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_SPECIALIZATION(
