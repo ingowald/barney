@@ -29,14 +29,28 @@ struct box1
 struct box3
 {
   float3 lower, upper;
+
+  void invalidate()
+  {
+    lower = make_float3(INFINITY, INFINITY, INFINITY);
+    upper = make_float3(-INFINITY, -INFINITY, -INFINITY);
+  }
+
   box3 &insert(float3 v)
   {
     lower.x = fminf(lower.x, v.x);
     lower.y = fminf(lower.y, v.y);
     lower.z = fminf(lower.z, v.z);
-    upper.x = fmaxf(lower.x, v.x);
-    upper.y = fmaxf(lower.y, v.y);
-    upper.z = fmaxf(lower.z, v.z);
+    upper.x = fmaxf(upper.x, v.x);
+    upper.y = fmaxf(upper.y, v.y);
+    upper.z = fmaxf(upper.z, v.z);
+    return *this;
+  }
+
+  box3 &insert(const box3 b)
+  {
+    insert(b.lower);
+    insert(b.upper);
     return *this;
   }
 };

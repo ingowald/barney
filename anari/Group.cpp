@@ -73,6 +73,32 @@ BNGroup Group::makeBarneyGroup(BNDataGroup dg) const
       barneyVolumes.data(), barneyVolumes.size());
 }
 
+anari::box3 Group::bounds() const
+{
+  anari::box3 result;
+  result.invalidate();
+  if (m_surfaceData) {
+    std::for_each(m_surfaceData->handlesBegin(),
+        m_surfaceData->handlesEnd(),
+        [&](auto *o) {
+          auto *s = (Surface *)o;
+          if (s && s->isValid())
+            result.insert(s->geometry()->bounds());
+        });
+  }
+
+  if (m_volumeData) {
+    std::for_each(m_volumeData->handlesBegin(),
+        m_volumeData->handlesEnd(),
+        [&](auto *o) {
+          auto *v = (Volume *)o;
+          if (v && v->isValid())
+            result.insert(v->bounds());
+        });
+  }
+  return result;
+}
+
 void Group::cleanup()
 {
   if (m_surfaceData)

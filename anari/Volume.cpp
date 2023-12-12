@@ -115,6 +115,11 @@ BNVolume TransferFunction1D::makeBarneyVolume(BNDataGroup dg) const
   return bnVol;
 }
 
+anari::box3 TransferFunction1D::bounds() const
+{
+  return m_bounds;
+}
+
 void TransferFunction1D::cleanup() {}
 
 } // namespace barney_device

@@ -77,6 +77,31 @@ BNGeom Triangle::makeBarneyGeometry(
       nullptr);
 }
 
+anari::box3 Triangle::bounds() const
+{
+  anari::box3 result;
+  result.invalidate();
+  if (m_index) {
+    std::for_each(m_index->beginAs<uint3>(),
+        m_index->beginAs<uint3>() + m_index->totalSize(),
+        [&](uint3 index) {
+          float3 v1 = *(m_vertexPosition->beginAs<float3>() + index.x);
+          float3 v2 = *(m_vertexPosition->beginAs<float3>() + index.y);
+          float3 v3 = *(m_vertexPosition->beginAs<float3>() + index.z);
+          result.insert(v1);
+          result.insert(v2);
+          result.insert(v3);
+        });
+  } else {
+    std::for_each(m_vertexPosition->beginAs<float3>(),
+        m_vertexPosition->beginAs<float3>() + m_vertexPosition->totalSize(),
+        [&](float3 v) {
+          result.insert(v);
+        });
+  }
+  return result;
+}
+
 void Triangle::cleanup()
 {
   if (m_index)

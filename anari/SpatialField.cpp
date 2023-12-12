@@ -95,8 +95,7 @@ void UnstructuredField::commit()
   m_generatedWedges.clear();
   m_generatedHexes.clear();
 
-  m_bounds = {
-      float3{FLT_MAX, FLT_MAX, FLT_MAX}, float3{-FLT_MAX, -FLT_MAX, -FLT_MAX}};
+  m_bounds.invalidate();
 
   for (size_t i = 0; i < numIndices; ++i) {
     m_bounds.insert(vertexPosition[index[i]]);
@@ -246,6 +245,8 @@ void BlockStructuredField::commit()
   m_generatedBlockOffsets.clear();
   m_generatedBlockScalars.clear();
 
+  m_bounds.invalidate();
+
   for (size_t i = 0; i < numBlocks; ++i) {
     const anari::box3i bounds = *(blockBounds + i);
     const int level = *(blockLevels + i);
@@ -268,6 +269,17 @@ void BlockStructuredField::commit()
           float f = bd->dataAs<float>()[index];
           m_generatedBlockScalars.push_back(f);
         }
+
+    anari::box3 worldBounds;
+    worldBounds.lower = make_float3(
+            bounds.lower.x * (1<<level),
+            bounds.lower.y * (1<<level),
+            bounds.lower.z * (1<<level));
+    worldBounds.upper = make_float3(
+            (bounds.upper.x + 1) * (1<<level),
+            (bounds.upper.y + 1) * (1<<level),
+            (bounds.upper.z + 1) * (1<<level));
+    m_bounds.insert(worldBounds);
   }
 }
 

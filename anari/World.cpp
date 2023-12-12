@@ -41,20 +41,15 @@ bool World::getProperty(
       deviceState()->commitBufferFlush();
       barneyModelUpdate();
     }
-    if (1) {
-      printf("bounds\n");
-      //anari::box3 bounds{{-0.024542f,-0.014486f,-0.009090f}, {15.752211f,54.057343f,84.031631f}};
-      //anari::box3 bounds{{0.f,0.f,0.f},{512.f,512.f,512.f}};
-      //anari::box3 bounds{{-0.274000f,-0.274000f,-0.003000f},{0.006110f,0.141290f,0.029183f}};
-      anari::box3 bounds{{0.f,0.f,0.f},{927.f,367.f,10319.f}};
-      std::memcpy(ptr, &bounds, sizeof(bounds));
-      return true;
-    }
-    //if (vscene && vscene->m_TLS.num_nodes()) {
-    //  auto bounds = vscene->m_TLS.node(0).get_bounds();
-    //  std::memcpy(ptr, &bounds, sizeof(bounds));
-    //  return true;
-    //}
+    anari::box3 bounds;
+    bounds.invalidate();
+    std::for_each(m_instances.begin(),
+        m_instances.end(),
+        [&](auto *inst) {
+          bounds.insert(inst->bounds());
+        });
+    std::memcpy(ptr, &bounds, sizeof(bounds));
+    return true;
   }
 
   return Object::getProperty(name, type, ptr, flags);

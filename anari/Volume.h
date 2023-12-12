@@ -19,6 +19,8 @@ struct Volume : public Object
   void markCommitted() override;
 
   virtual BNVolume makeBarneyVolume(BNDataGroup dg) const = 0;
+
+  virtual anari::box3 bounds() const = 0;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -29,6 +31,8 @@ struct TransferFunction1D : public Volume
   void commit() override;
 
   BNVolume makeBarneyVolume(BNDataGroup dg) const override;
+
+  anari::box3 bounds() const override;
 
  private:
   void cleanup();
