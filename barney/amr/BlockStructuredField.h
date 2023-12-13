@@ -85,7 +85,7 @@ namespace barney {
 
       /* compute basis function contribution of given block at point P, and add
          that to 'sumWeightedValues' and 'sumWeights'. returns true if P is
-         inside the block filter domain, false if outside (in which case the
+         inside the block *filter domain*, false if outside (in which case the
          out params are not defined) */
       inline __both__ bool addBasisFunctions(float &sumWeightedValues,
                                              float &sumWeights,
@@ -144,7 +144,7 @@ namespace barney {
 
   /* compute basis function contribution of given block at point P, and add
      that to 'sumWeightedValues' and 'sumWeights'. returns true if P is inside
-     the block filter domain, false if outside (in which case the out params
+     the block *filter domain*, false if outside (in which case the out params
      are not defined) */
   inline __both__
   bool BlockStructuredField::DD::addBasisFunctions(float &sumWeightedValues,
@@ -154,9 +154,10 @@ namespace barney {
   {
     const auto &block = getBlock(bid);
     const box3f brickBounds = getBox(block.worldBounds());
+    const box3f brickDomain = getBox(block.filterDomain());
     const vec3i blockSize = block.numCells();
 
-    if (brickBounds.contains(P)) {
+    if (brickDomain.contains(P)) {
       const vec3f localPos = (P-brickBounds.lower) / vec3f(block.cellSize()) - 0.5f;
       vec3i idx_lo   = vec3i(floorf(localPos.x),floorf(localPos.y),floorf(localPos.z));
       idx_lo = max(vec3i(-1), idx_lo);
