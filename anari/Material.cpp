@@ -7,12 +7,12 @@ namespace barney_device {
 
 Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s)
 {
-  s->objectCounts.groups++;
+  s->objectCounts.materials++;
 }
 
 Material::~Material()
 {
-  deviceState()->objectCounts.groups--;
+  deviceState()->objectCounts.materials--;
 }
 
 Material *Material::createInstance(

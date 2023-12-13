@@ -9,12 +9,12 @@ namespace barney_device {
 
 Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s)
 {
-  s->objectCounts.groups++;
+  s->objectCounts.geometries++;
 }
 
 Geometry::~Geometry()
 {
-  deviceState()->objectCounts.groups--;
+  deviceState()->objectCounts.geometries--;
 }
 
 Geometry *Geometry::createInstance(
