@@ -64,7 +64,7 @@ namespace barney {
     auto &ray = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<RTXObjectSpace::DD>();
     int primID = optixGetPrimitiveIndex();
-    Cluster &cluster = self.clusters[primID];
+    // Cluster &cluster = self.clusters[primID];
     // int begin = cluster.begin;
     // int end = cluster.end;
     // float majorant = cluster.majorant;

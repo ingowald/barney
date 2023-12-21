@@ -93,10 +93,12 @@ namespace barney {
     void build();
 
     Context *getContext() const;
-    
-    DevGroup::SP const devGroup;
-    Model       *const model;
-    int          const localID;
+
+
+    MultiPass::Instances multiPassInstances;
+    DevGroup::SP   const devGroup;
+    Model         *const model;
+    int            const localID;
   };
   
 }

@@ -14,38 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/geometry/Geometry.h"
-#include "barney/volume/Volume.h"
 #include "barney/MultiPass.h"
+#include "barney/Group.h"
 
 namespace barney {
 
-  /*! a logical "group" of objects in a data group -- i.e., geometries
-      and volumes (and maybe, eventual, lights?) -- that can be
-      instantiated */
-  struct Group : public Object {
-    typedef std::shared_ptr<Group> SP;
-
-    Group(DataGroup *owner,
-          const std::vector<Geometry::SP> &geoms,
-          const std::vector<Volume::SP> &volumes);
-    
-    void build();
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override;
-
-    DataGroup *const owner;
-    const std::vector<Volume::SP>   volumes;
-    const std::vector<Geometry::SP> geoms;
-
-    std::vector<OWLGeom> triangleGeoms;
-    std::vector<OWLGeom> userGeoms;
-    OWLGroup userGeomGroup = 0;
-    OWLGroup triangleGeomGroup = 0;
-    std::vector<MultiPass::Object::SP> multiPassObjects;
-  };
-  
+  void MultiPass::Instances::instantiate(Group *group, const affine3f &xfm)
+  { for (const auto &obj : group->multiPassObjects) this->push_back({obj,xfm}); }
 }

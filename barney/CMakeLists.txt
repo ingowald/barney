@@ -99,6 +99,8 @@ add_library(barney STATIC
   DeviceContext.cpp
   Context.h
   Context.cpp
+  MultiPass.h
+  MultiPass.cpp
   DeviceGroup.h
   DeviceGroup.cpp
   LocalContext.h
