@@ -23,9 +23,7 @@
    these were mostly imported from oepnvkl */
 #include "barney/umesh/ElementIntersection.h"
 
-namespace barney {
-
-  
+namespace barney {  
 
   struct Element {
     typedef enum { TET=0, PYR, WED, HEX, GRID } Type;
