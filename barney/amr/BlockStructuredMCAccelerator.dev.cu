@@ -53,21 +53,22 @@ namespace barney {
   {
     auto self = *(const BlockStructuredAccel_MC_CUBQL::DD*)geomData;
     vec3i dims = self.mcGrid.dims;
-    const auto &field = self.sampler.field;
+    const auto &field = self.getField();
     if (primID >= dims.x*dims.y*dims.z)
       return;
 
-    vec3i cellID(primID % dims.x,
-                 (primID / dims.x) % dims.y,
-                 primID / (dims.x*dims.y));
+    bounds = self.getCellBounds(primID);
+    // vec3i cellID(primID % dims.x,
+    //              (primID / dims.x) % dims.y,
+    //              primID / (dims.x*dims.y));
 
-    // compute world-space bounds of macro cells
-    bounds.lower
-      = lerp(getBox(field.worldBounds),
-             vec3f(cellID)*rcp(vec3f(dims)));
-    bounds.upper
-      = lerp(getBox(field.worldBounds),
-             vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
+    // // compute world-space bounds of macro cells
+    // bounds.lower
+    //   = lerp(getBox(field.worldBounds),
+    //          vec3f(cellID)*rcp(vec3f(dims)));
+    // bounds.upper
+    //   = lerp(getBox(field.worldBounds),
+    //          vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
 
     // printf("bounds (%f %f %f)(%f %f %f)\n",
     //        bounds.lower.x,
@@ -111,20 +112,21 @@ namespace barney {
     
     auto &ray = owl::getPRD<Ray>();
     const auto &self = getProgramData<BlockStructuredAccel_MC_CUBQL::DD>();
-    const auto &field = self.sampler.field;
-    vec3i dims = self.mcGrid.dims;
-    vec3i cellID(primID % dims.x,
-                 (primID / dims.x) % dims.y,
-                 primID / (dims.x*dims.y));
+    const auto &field = self.getField();//sampler.field;
+    // vec3i dims = self.mcGrid.dims;
+    // vec3i cellID(primID % dims.x,
+    //              (primID / dims.x) % dims.y,
+    //              primID / (dims.x*dims.y));
     
-    // compute world-space bounds of macro cells
-    box3f bounds;
-    bounds.lower
-      = lerp(getBox(field.worldBounds),
-             vec3f(cellID)*rcp(vec3f(dims)));
-    bounds.upper
-      = lerp(getBox(field.worldBounds),
-             vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
+    // // compute world-space bounds of macro cells
+    // box3f bounds;
+    // bounds.lower
+    //   = lerp(getBox(field.worldBounds),
+    //          vec3f(cellID)*rcp(vec3f(dims)));
+    // bounds.upper
+    //   = lerp(getBox(field.worldBounds),
+    //          vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
+    box3f bounds = self.getCellBounds(primID);
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
     
     if (!boxTest(ray,tRange,bounds))

@@ -69,6 +69,11 @@ embed_ptx(
   SOURCES            umesh/RTXObjectSpace.dev.cu
 )
 embed_ptx(
+  OUTPUT_TARGET      barney-RTXFieldSampler-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            umesh/RTXFieldSampler.dev.cu
+)
+embed_ptx(
   OUTPUT_TARGET      barney-AWT-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            umesh/AWT.dev.cu
@@ -141,6 +146,8 @@ add_library(barney STATIC
   umesh/CUBQLFieldSampler.cpp
   umesh/RTXObjectSpace.h
   umesh/RTXObjectSpace.cu
+  umesh/RTXFieldSampler.h
+  umesh/RTXFieldSampler.cu
   umesh/AWT.h
   umesh/AWT.cu
   umesh/UMeshMCAccelerator.h
@@ -166,6 +173,7 @@ target_link_libraries(barney
   barney-triangles-ptx
   barney-traceRays-ptx  
   barney-UMeshRTXObjectSpace-ptx  
+  barney-RTXFieldSampler-ptx  
   barney-AWT-ptx  
   barney-UMeshMCAccelerator-ptx  
   barney-BlockStructuredMCAccelerator-ptx

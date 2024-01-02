@@ -26,30 +26,36 @@ namespace barney {
        samples a *field* and thus doesn't know anything about transfer
        functions or acceleration */
   struct CUBQLFieldSampler {
-    enum { BVH_WIDTH = 4 };
-    using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
-    using node_t = typename bvh_t::Node;
     
-    struct DD {
+    // using Element = UMeshField::Element;
+    
+    enum { BVH_WIDTH = 4 };
+    using bvh_t   = cuBQL::WideBVH<float,3,BVH_WIDTH>;
+    using node_t  = typename bvh_t::Node;
+    
+    template<typename Field>
+    struct DD : public Field::DD {
       /*! sample the umesh field; can return NaN if sample did not hit
         any unstructured element at all */
       inline __device__ float sample(vec3f P, bool dbg=false) const;
 
       node_t         *bvhNodes;
-      UMeshField::DD  mesh;
+      // typename Field::DD field;//UMeshField::DD  mesh;
     };
     
     CUBQLFieldSampler(ScalarField *field);
     void build();
 
-    UMeshField *const mesh;
-    OWLBuffer   bvhNodesBuffer = 0;
+    // UMeshField *const mesh;
+    ScalarField    *const field;
+    OWLBuffer bvhNodesBuffer = 0;
   };
 
   /*! sample the umesh field; can return NaN if sample did not hit
     any unstructured element at all */
+  template<typename Field>
   inline __device__
-  float CUBQLFieldSampler::DD::sample(vec3f P, bool dbg) const
+  float CUBQLFieldSampler::DD<Field>::sample(vec3f P, bool dbg) const
   {
     float retVal = NAN;
     struct NodeRef {
@@ -97,8 +103,10 @@ namespace barney {
       }
       // leaf ...
       for (int i=0;i<nodeRef.count;i++) {
-        auto elt = mesh.elements[nodeRef.offset+i];
-        if (mesh.eltScalar(retVal,elt,P))
+        if (this->eval(nodeRef.offset+i,retVal,P))
+          // if (!isnan(retVal))
+          // auto elt = this->elements[nodeRef.offset+i];
+          // if (mesh.eltScalar(retVal,elt,P))
           return retVal;
       }
       if (stackPtr == stackBase)

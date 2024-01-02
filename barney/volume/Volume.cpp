@@ -23,10 +23,10 @@ namespace barney {
   { return devGroup->owl; }//owner->getOWL(); }
   
   Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
+                 ScalarField::SP field)
+    : devGroup(devGroup), field(field), xf(devGroup)
   {
-    accel = sf->createAccel(this);
+    accel = field->createAccel(this);
   }
 
   
@@ -39,11 +39,6 @@ namespace barney {
     devGroup->sbtDirty = true;
   }
 
-  std::vector<OWLVarDecl> VolumeAccel::getVarDecls(uint32_t baseOfs)
-  {
-    return volume->xf.getVarDecls(baseOfs);
-  }
-  
   void VolumeAccel::setVariables(OWLGeom geom, bool firstTime)
   {
     volume->xf.setVariables(geom,firstTime);
@@ -51,13 +46,15 @@ namespace barney {
   }
     
   
-  std::vector<OWLVarDecl> ScalarField::getVarDecls(uint32_t baseOfs)
+  void ScalarField::DD::addVarDecls(std::vector<OWLVarDecl> &vars,uint32_t base)
   {
-    return
+    std::vector<OWLVarDecl> mine =
       {
-       { "worldBounds.lower", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.lower) },
-       { "worldBounds.upper", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.upper) }
+        { "worldBounds.lower", OWL_FLOAT4, base+OWL_OFFSETOF(DD,worldBounds.lower) },
+        { "worldBounds.upper", OWL_FLOAT4, base+OWL_OFFSETOF(DD,worldBounds.upper) }
       };
+    for (auto var : mine)
+      vars.push_back(var);
   }
   
   void ScalarField::setVariables(OWLGeom geom, bool firstTime)

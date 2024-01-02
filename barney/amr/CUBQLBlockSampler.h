@@ -29,13 +29,13 @@ namespace barney {
     using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
     using node_t = typename bvh_t::Node;
 
-    struct DD {
+    struct DD : public BlockStructuredField::DD {
       /*! sample the amr blocks using basis function method; can return NaN
         if no block was hit */
       inline __device__ float sample(vec3f P, bool dbg=false) const;
 
       node_t                   *bvhNodes;
-      BlockStructuredField::DD  field;
+      // BlockStructuredField::DD  field;
     };
 
     CUBQLBlockSampler(ScalarField *field);
@@ -98,8 +98,10 @@ namespace barney {
       }
       // leaf ...
       for (int i=0;i<nodeRef.count;i++) {
-        auto blockID = field.blockIDs[nodeRef.offset+i];
-        field.addBasisFunctions(sumWeightedValues,sumWeights,blockID,P);
+        auto blockID = // field.
+          blockIDs[nodeRef.offset+i];
+        // field.
+          addBasisFunctions(sumWeightedValues,sumWeights,blockID,P);
       }
       if (stackPtr == stackBase)
         goto theEnd;

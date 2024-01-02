@@ -27,32 +27,24 @@ namespace barney {
       must be able to compute the macro-cells and majorants, and to
       sample; this class will then do the traversal, and provide the
       'glue' to act as a actual barney volume accelerator */
-  template<typename FieldSampler>
   struct MCAccelerator : public VolumeAccel
   {
-    struct DD {
-      inline __device__
-      vec4f sampleAndMap(vec3f P, bool dbg=false) const
-      { return volume.sampleAndMap(sampler,P,dbg); }
+    template<typename SampleableField>
+    struct DD : public SampleableVolumeAccel::DD<SampleableField> {
+      using SampleableVolumeAccel::DD<SampleableField>::field;
+      
+      static void addVarDecls(std::vector<OWLVarDecl> &vars,size_t base);
 
+      inline __device__ box3f getCellBounds(vec3i cellID) const;
+      inline __device__ box3f getCellBounds(int linearID) const;
+      
       /*! our own macro-cell grid to be traversed */
       MCGrid::DD                mcGrid;
-      
-      /*! whatever the field sampler brings in to be able to sample
-          the underlying field */
-      typename FieldSampler::DD sampler;
-      
-      /*! the volume's device data that maps field samples to rgba
-          values */
-      VolumeAccel::DD           volume;
     };
 
-    MCAccelerator(ScalarField *field, Volume *volume);
-    // void build() override;
+    MCAccelerator(Volume *volume);
     
-    OWLGeom      geom = 0;
     MCGrid       mcGrid;
-    FieldSampler sampler;
   };
 
 
@@ -60,13 +52,38 @@ namespace barney {
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
   
-  template<typename FieldSampler>
-  MCAccelerator<FieldSampler>::MCAccelerator(ScalarField *field,
-                                              Volume *volume)
-    : VolumeAccel(field, volume),
-      sampler(field),
+  // template<typename SampleableField>
+  MCAccelerator// <SampleableField>
+  ::MCAccelerator(Volume *volume)
+    : VolumeAccel(volume),
+      // sampler(field),
       mcGrid(devGroup)
   {}
 
+  template<typename SampleableField>
+  inline __device__
+  box3f MCAccelerator::DD<SampleableField>::getCellBounds(vec3i cellID) const 
+  {
+    box3f bounds;
+    bounds.lower
+      = lerp(getBox(this->field.worldBounds),
+             vec3f(cellID)*rcp(vec3f(mcGrid.dims)));
+    bounds.upper
+      = lerp(getBox(this->field.worldBounds),
+             vec3f(cellID+vec3i(1))*rcp(vec3f(mcGrid.dims)));
+    return bounds;
+  }
+      
+  template<typename SampleableField>
+  inline __device__
+  box3f MCAccelerator::DD<SampleableField>::getCellBounds(int linearID) const 
+  {
+    vec3i dims = mcGrid.dims;
+    vec3i cellID(linearID % dims.x,
+                 (linearID / dims.x) % dims.y,
+                 linearID / (dims.x*dims.y));
+    return getCellBounds(cellID);
+  }
+      
 }
 

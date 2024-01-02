@@ -25,24 +25,22 @@
 
 namespace barney {
 
-  
-
-  struct Element {
-    typedef enum { TET=0, PYR, WED, HEX, GRID } Type;
-    
-    inline __both__ Element() {}
-    inline __both__ Element(int ID, int type)
-      : ID(ID), type(type)
-    {}
-    uint32_t ID:29;
-    uint32_t type:3;
-  };
-
   struct UMeshField : public ScalarField
   {
     typedef std::shared_ptr<UMeshField> SP;
+ 
+    struct Element {
+      typedef enum { TET=0, PYR, WED, HEX, GRID } Type;
+    
+      inline __both__ Element() {}
+      inline __both__ Element(int ID, int type)
+        : ID(ID), type(type)
+      {}
+      uint32_t ID:29;
+      uint32_t type:3;
+    };
 
-    /*! helper class for representing an N-long integer tuple, to
+   /*! helper class for representing an N-long integer tuple, to
        represent wedge, pyramid, hex, etc elemnet indices */
     template<int N>
     struct ints { int v[N];
@@ -53,6 +51,7 @@ namespace barney {
         all device-side pointers and function to access this field and
         sample/evaluate its elemnets */
     struct DD : public ScalarField::DD {
+      
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
       inline __both__ box4f pyrBounds(int primID) const;
@@ -60,6 +59,9 @@ namespace barney {
       inline __both__ box4f hexBounds(int primID) const;
       inline __both__ box4f gridBounds(int primID) const;
 
+      inline __device__ bool eval(int eltID, float &retVal, vec3f P) const
+      { return eltScalar(retVal,elements[eltID],P); }
+      
       /* compute scalar of given umesh element at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
@@ -104,7 +106,8 @@ namespace barney {
       int               numElements;
     };
 
-    std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
+    static void addVarDecls(std::vector<OWLVarDecl> &vars, uint32_t base);
+    
     void setVariables(OWLGeom geom, bool firstTime) override;
     
     /*! build *initial* macro-cell grid (ie, the scalar field min/max

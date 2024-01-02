@@ -55,15 +55,17 @@ namespace barney {
     return dd;
   }
     
-  std::vector<OWLVarDecl> TransferFunction::getVarDecls(uint32_t myOffset)
+  void TransferFunction::DD::addVarDecls(std::vector<OWLVarDecl> &vars, uint32_t base)
   {
-    return
+    std::vector<OWLVarDecl> mine =
       {
-       { "xf.values",      OWL_BUFPTR, myOffset+OWL_OFFSETOF(DD,values) },
-       { "xf.domain",      OWL_FLOAT2, myOffset+OWL_OFFSETOF(DD,domain) },
-       { "xf.baseDensity", OWL_FLOAT,  myOffset+OWL_OFFSETOF(DD,baseDensity) },
-       { "xf.numValues",   OWL_INT,    myOffset+OWL_OFFSETOF(DD,numValues) },
+       { "xf.values",      OWL_BUFPTR, base+OWL_OFFSETOF(DD,values) },
+       { "xf.domain",      OWL_FLOAT2, base+OWL_OFFSETOF(DD,domain) },
+       { "xf.baseDensity", OWL_FLOAT,  base+OWL_OFFSETOF(DD,baseDensity) },
+       { "xf.numValues",   OWL_INT,    base+OWL_OFFSETOF(DD,numValues) },
       };
+    for (auto var : mine)
+      vars.push_back(var);
   }
   
   void TransferFunction::setVariables(OWLGeom geom, bool firstTime)

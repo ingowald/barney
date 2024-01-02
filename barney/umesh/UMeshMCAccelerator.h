@@ -22,19 +22,20 @@
 namespace barney {
 
   /*! a macrocell accelerator built over umeshes */
-  template<typename FieldSampler>
-  struct UMeshMCAccelerator : public MCAccelerator<FieldSampler>
+  template<typename DDType>
+  struct UMeshMCAccelerator : public MCAccelerator
   {
-    using MCAccelerator<FieldSampler>::mcGrid;
-    using MCAccelerator<FieldSampler>::volume;
+    // using MCAccelerator<SampleableField>::mcGrid;
+    // using MCAccelerator<SampleableField>::volume;
 
-    struct DD : public MCAccelerator<FieldSampler>::DD {
-      using MCAccelerator<FieldSampler>::DD::sampleAndMap;
-      // UMeshField::DD mesh;
-    };
+    using DD = MCAccelerator::DD<DDType>;
+    // struct DD : public MCAccelerator<SampleableField>::DD {
+    //   using MCAccelerator<SampleableField>::DD::sampleAndMap;
+    //   // UMeshField::DD mesh;
+    // };
     
     UMeshMCAccelerator(UMeshField *mesh, Volume *volume)
-      : MCAccelerator<FieldSampler>(mesh,volume),
+      : MCAccelerator(mesh,volume),
         mesh(mesh)
     {}
     static OWLGeomType createGeomType(DevGroup *devGroup);
@@ -48,6 +49,6 @@ namespace barney {
     UMeshField *const mesh;
   };
 
-  typedef UMeshMCAccelerator<CUBQLFieldSampler> UMeshAccel_MC_CUBQL;
+  typedef UMeshMCAccelerator<CUBQLFieldSampler::DD<UMeshField>> UMeshAccel_MC_CUBQL;
   
 }

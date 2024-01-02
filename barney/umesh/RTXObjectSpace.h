@@ -28,6 +28,8 @@ namespace barney {
     sampling along the ray-element overlap range */
   struct RTXObjectSpace : public VolumeAccel
   {
+    using Element = UMeshField::Element;
+    
     struct Cluster {
       box4f bounds;
       int begin, end;
@@ -39,10 +41,11 @@ namespace barney {
     };
     
     RTXObjectSpace(UMeshField *mesh, Volume *volume)
-      : VolumeAccel(mesh,volume),
+      : VolumeAccel(volume),
         mesh(mesh)
     {}
     static OWLGeomType createGeomType(DevGroup *devGroup);
+    static void addVarDecls(std::vector<OWLVarDecl> &vars,size_t base);
     
     void build() override;
 

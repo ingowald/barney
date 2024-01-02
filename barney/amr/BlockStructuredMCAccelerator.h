@@ -22,18 +22,19 @@
 namespace barney {
 
   /*! a macrocell accelerator built over AMR blocks */
-  template<typename FieldSampler>
-  struct BlockStructuredMCAccelerator : public MCAccelerator<FieldSampler>
+  //  template<typename FieldSampler>
+  struct BlockStructuredMCAccelerator : public MCAccelerator //<FieldSampler>
   {
-    using MCAccelerator<FieldSampler>::mcGrid;
-    using MCAccelerator<FieldSampler>::volume;
+    using MCAccelerator::mcGrid;
+    using MCAccelerator::volume;
 
-    struct DD : public MCAccelerator<FieldSampler>::DD {
-      using MCAccelerator<FieldSampler>::DD::sampleAndMap;
+    template<typename FieldSampler>
+    struct DD : public MCAccelerator::DD<FieldSampler> {
+      using MCAccelerator::DD<FieldSampler>::sampleAndMap;
     };
 
     BlockStructuredMCAccelerator(BlockStructuredField *field, Volume *volume)
-      : MCAccelerator<FieldSampler>(field,volume),
+      : MCAccelerator(volume),
         field(field)
     {}
     static OWLGeomType createGeomType(DevGroup *devGroup);

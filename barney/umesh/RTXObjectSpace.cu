@@ -19,45 +19,67 @@
 namespace barney {
 
   extern "C" char RTXObjectSpace_ptx[];
+
+  void  RTXObjectSpace::addVarDecls(std::vector<OWLVarDecl> &vars,size_t base)
+  {
+    UMeshObjectSpace::addVarDecls(vars,base);
+    vars.push_back(OWLVarDecl{ "clusters", OWL_BUFPTR, base+OWL_OFFSETOF(DD,clusters) });
+  }
   
   OWLGeomType RTXObjectSpace::createGeomType(DevGroup *devGroup)
   {
+    static std::mutex mutex;
+    static std::map<DevGroup*,OWLGeomType> alreadyCreatedGTs;
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      auto it = alreadyCreatedGTs.find(devGroup);
+      if (it != alreadyCreatedGTs.end()) return it->second;
+    }
+    
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'RTXObjectSpace' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
     
-    static OWLVarDecl params[]
-      = {
-         { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
-         { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
-         { "mesh.vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
-         { "mesh.tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
-         { "mesh.pyrIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.pyrIndices) },
-         { "mesh.wedIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.wedIndices) },
-         { "mesh.hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
-         { "mesh.elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
-         { "mesh.gridOffsets",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridOffsets) },
-         { "mesh.gridDims",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDims) },
-         { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
-         { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
-         { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
-         { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
-         { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
-         { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
-         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
-         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
-         { nullptr }
-    };
+    std::vector<OWLVarDecl> vars;
+    UMeshObjectSpace::addVarDecls(vars,0);
+    addVarDecls(vars,0);
+    
+    // static OWLVarDecl params[]
+    //   = {
+    //      { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
+    //      { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
+    //      { "mesh.vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
+    //      { "mesh.tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
+    //      { "mesh.pyrIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.pyrIndices) },
+    //      { "mesh.wedIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.wedIndices) },
+    //      { "mesh.hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
+    //      { "mesh.elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
+    //      { "mesh.gridOffsets",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridOffsets) },
+    //      { "mesh.gridDims",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDims) },
+    //      { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
+    //      { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
+    //      { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
+    //      { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
+    //      { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
+    //      { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
+    //      { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
+    //      { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
+    //      { nullptr }
+    // };
     OWLModule module = owlModuleCreate
       (devGroup->owl,RTXObjectSpace_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(RTXObjectSpace::DD),
-       params,-1);
+       vars.data(),vars.size());
     owlGeomTypeSetBoundsProg(gt,module,"RTXObjectSpaceBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"RTXObjectSpaceIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"RTXObjectSpaceCH");
     owlBuildPrograms(devGroup->owl);
-    
+     
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      alreadyCreatedGTs[devGroup] = gt;
+    }
     return gt;
   }
 

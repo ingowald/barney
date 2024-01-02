@@ -332,25 +332,26 @@ namespace barney {
     owlGeomSetBuffer(geom,"gridDomains",gridDomainsBuffer);
     owlGeomSetBuffer(geom,"gridScalars",gridScalarsBuffer);
   }
+
   
-  std::vector<OWLVarDecl> UMeshField::getVarDecls(uint32_t myOfs)
+  void UMeshField::addVarDecls(std::vector<OWLVarDecl> &vars, uint32_t base)
   {
+    ScalarField::DD::addVarDecls(vars,base);
     std::vector<OWLVarDecl> mine = 
       {
-       { "mesh.vertices",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,vertices) },
-       { "mesh.tetIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,tetIndices) },
-       { "mesh.pyrIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,pyrIndices) },
-       { "mesh.wedIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,wedIndices) },
-       { "mesh.hexIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,hexIndices) },
-       { "mesh.elements",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,elements) },
-       { "mesh.gridOffsets", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridOffsets) },
-       { "mesh.gridDims",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDims) },
-       { "mesh.gridDomains", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDomains) },
-       { "mesh.gridScalars", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridScalars) },
+       { "mesh.vertices",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,vertices) },
+       { "mesh.tetIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,tetIndices) },
+       { "mesh.pyrIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,pyrIndices) },
+       { "mesh.wedIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,wedIndices) },
+       { "mesh.hexIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,hexIndices) },
+       { "mesh.elements",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,elements) },
+       { "mesh.gridOffsets", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridOffsets) },
+       { "mesh.gridDims",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridDims) },
+       { "mesh.gridDomains", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridDomains) },
+       { "mesh.gridScalars", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridScalars) },
       };
-    for (auto var : ScalarField::getVarDecls(myOfs))
-      mine.push_back(var);
-    return mine;
+    for (auto var : mine)
+      vars.push_back(var);
   }
 
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)

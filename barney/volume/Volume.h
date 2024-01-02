@@ -27,39 +27,70 @@ namespace barney {
   struct Volume;
   struct ScalarField;
   struct MCGrid;
-  
+
   typedef std::array<int,4> TetIndices;
   typedef std::array<int,5> PyrIndices;
   typedef std::array<int,6> WedIndices;
   typedef std::array<int,8> HexIndices;
 
+  
   struct VolumeAccel {
     typedef std::shared_ptr<VolumeAccel> SP;
 
+    template<typename _Field>
     struct DD {
-      template<typename FieldSampler>
+      typedef _Field Field;
+      static void addVarDecls(std::vector<OWLVarDecl> &vars,size_t base);
+      
       inline __device__
-      vec4f sampleAndMap(const FieldSampler &field,
-                         vec3f point, bool dbg=false) const
-      {
-        float f = field.sample(point,dbg);
-        if (isnan(f)) return vec4f(0.f);
-        return xf.map(f,dbg);
-      }
+      vec4f map(float f, bool dbg=false) const
+      { return xf.map(f,dbg); }
+
+      inline __device__
+      const typename Field::DD &getField() const { return field; }
       TransferFunction::DD xf;
+      typename Field::DD   field;
     };
     
-    VolumeAccel(ScalarField *field, Volume *volume);
+    VolumeAccel(Volume *volume);
     
     virtual void build() = 0;
     
-    virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs);
+    
     virtual void setVariables(OWLGeom geom, bool firstTime);
     
     ScalarField *const field;
     Volume      *const volume;
     DevGroup    *const devGroup;
   };
+
+  template<typename Field>
+  void VolumeAccel::DD<Field>::addVarDecls(std::vector<OWLVarDecl> &vars,size_t base)
+  {
+    Field::DD::addVarDecls(vars,base+OWL_OFFSETOF(DD,field));
+    TransferFunction::DD::addVarDecls(vars,base+OWL_OFFSETOF(DD,xf));
+  }
+  
+  
+  struct SampleableVolumeAccel {
+    template<typename Field>
+    struct DD : public VolumeAccel::DD<Field> {
+      
+      inline __device__
+      vec4f sampleAndMap(vec3f point, bool dbg=false) const
+      {
+        float f = this->field.sample(point,dbg);
+        if (isnan(f)) return vec4f(0.f);
+        return this->map(f,dbg);
+      }
+    };
+  };
+    
+  
+  // template<typename FieldSampler>
+  // struct SampleableVolumeAccel : public VolumeAccel {
+  //   // template<typename SampleableField>
+  // };
 
   /*! abstracts any sort of scalar field (unstructured, amr,
     structured, rbfs....) _before_ any transfer function(s) get
@@ -69,7 +100,9 @@ namespace barney {
     typedef std::shared_ptr<ScalarField> SP;
 
     struct DD {
-      box4f             worldBounds;
+      static void addVarDecls(std::vector<OWLVarDecl> &vars, uint32_t base);
+      
+      box4f  worldBounds;
     };
     
     ScalarField(DevGroup *devGroup)
@@ -77,36 +110,43 @@ namespace barney {
     {}
 
     OWLContext getOWL() const;
-    virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) = 0;
+    // virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) = 0;
+
     virtual void setVariables(OWLGeom geom, bool firstTime) = 0;
     
     virtual VolumeAccel::SP createAccel(Volume *volume) = 0;
     virtual void buildMCs(MCGrid &macroCells)
     { throw std::runtime_error("this calar field type does not know how to build macro-cells"); }
-    
+      
     DevGroup *const devGroup;
     box4f     worldBounds;
   };
 
+
+  // struct SampleableScalarField : public ScalarField {
+  //   struct DD : public ScalarField::DD {
+  //   };
+  // };
+  
   /*! a *volume* is a scalar field with a transfer function applied to
-      it; it's main job is to create something that can intersect a
-      ray with that scalars-plus-transferfct thingy, for which it will
-      use some kind of volume accelerator that implements the
-      scalar-field type specific stuff (eg, traverse a bvh over
-      elements, or look up a 3d texture, etc) */
+    it; it's main job is to create something that can intersect a
+    ray with that scalars-plus-transferfct thingy, for which it will
+    use some kind of volume accelerator that implements the
+    scalar-field type specific stuff (eg, traverse a bvh over
+    elements, or look up a 3d texture, etc) */
   struct Volume : public Object
   {
     typedef std::shared_ptr<Volume> SP;
     
     Volume(DevGroup *devGroup,
-           ScalarField::SP sf);
+           ScalarField::SP field);
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Volume{}"; }
 
     /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
+      changes to transfer functoin (or later, scalar field) */
     virtual void build();
     
     void setXF(const range1f &domain,
@@ -114,7 +154,7 @@ namespace barney {
                float baseDensity)
     { xf.set(domain,values,baseDensity); }
                
-    ScalarField::SP  sf;
+    ScalarField::SP  field;
     VolumeAccel::SP  accel;
     TransferFunction xf;
 
@@ -123,8 +163,8 @@ namespace barney {
   };
 
 
-  inline VolumeAccel::VolumeAccel(ScalarField *field, Volume *volume)
-    : field(field), volume(volume), devGroup(field->devGroup)
+  inline VolumeAccel::VolumeAccel(Volume *volume)
+    : field(volume->field.get()), volume(volume), devGroup(volume->field->devGroup)
   {
     assert(field);
     assert(volume);

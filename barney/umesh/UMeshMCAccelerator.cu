@@ -44,13 +44,13 @@ namespace barney {
          { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.mesh.gridScalars) },
          { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.lower) },
          { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,sampler.mesh.worldBounds.upper) },
-         { "numElements", OWL_INT, OWL_OFFSETOF(DD,sampler.mesh.numElements) },
-         { "xf.values",   OWL_BUFPTR, OWL_OFFSETOF(DD,volume.xf.values) },
-         { "xf.domain",   OWL_FLOAT2, OWL_OFFSETOF(DD,volume.xf.domain) },
+         { "numElements",  OWL_INT, OWL_OFFSETOF(DD,sampler.mesh.numElements) },
+         { "xf.values",    OWL_BUFPTR, OWL_OFFSETOF(DD,volume.xf.values) },
+         { "xf.domain",    OWL_FLOAT2, OWL_OFFSETOF(DD,volume.xf.domain) },
          { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,volume.xf.baseDensity) },
          { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,volume.xf.numValues) },
-         { "bvhNodes",    OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.bvhNodes) },
-         { "mcGrid.dims", OWL_INT3, OWL_OFFSETOF(DD,mcGrid.dims) },
+         { "bvhNodes",     OWL_BUFPTR, OWL_OFFSETOF(DD,sampler.bvhNodes) },
+         { "mcGrid.dims",  OWL_INT3, OWL_OFFSETOF(DD,mcGrid.dims) },
          { "mcGrid.majorants", OWL_BUFPTR, OWL_OFFSETOF(DD,mcGrid.majorants) },
          { nullptr }
     };

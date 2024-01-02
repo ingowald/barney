@@ -22,6 +22,8 @@
 
 namespace barney {
 
+  using Element = UMeshField::Element;
+
   struct __barney_align(16) AWTNode {
     enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
     box4f   bounds[4];
@@ -50,7 +52,7 @@ namespace barney {
     };
     
     UMeshAWT(UMeshField *mesh, Volume *volume)
-      : VolumeAccel(mesh,volume),
+      : VolumeAccel(volume),
         mesh(mesh)
     {}
     static OWLGeomType createGeomType(DevGroup *devGroup);

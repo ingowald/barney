@@ -52,8 +52,9 @@ namespace barney {
                                               const int32_t primID)
   {
     auto self = *(const UMeshAccel_MC_CUBQL::DD*)geomData;
-    vec3i dims = self.mcGrid.dims;
-    const auto &mesh = self.sampler.mesh;
+    // const auto &mesh = self.sampler.mesh;
+    const auto &grid = self.mcGrid;
+    vec3i dims = grid.dims;
 // #if UMESH_MC_USE_DDA
 //     if (primID > 0)
 //       return;
@@ -61,17 +62,20 @@ namespace barney {
 // #else
     if (primID >= dims.x*dims.y*dims.z)
       return;
-    vec3i cellID(primID % dims.x,
-                 (primID / dims.x) % dims.y,
-                 primID / (dims.x*dims.y));
 
-    // compute world-space bounds of macro cells
-    bounds.lower
-      = lerp(getBox(mesh.worldBounds),
-             vec3f(cellID)*rcp(vec3f(dims)));
-    bounds.upper
-      = lerp(getBox(mesh.worldBounds),
-             vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
+    bounds = self.getCellBounds(primID);
+    
+    // vec3i cellID(primID % dims.x,
+    //              (primID / dims.x) % dims.y,
+    //              primID / (dims.x*dims.y));
+
+    // // compute world-space bounds of macro cells
+    // bounds.lower
+    //   = lerp(getBox(self.field.worldBounds),
+    //          vec3f(cellID)*rcp(vec3f(dims)));
+    // bounds.upper
+    //   = lerp(getBox(self.field.worldBounds),
+    //          vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
 
     // printf("bounds (%f %f %f)(%f %f %f)\n",
     //        bounds.lower.x,
@@ -98,45 +102,14 @@ namespace barney {
 
     ray.tMax = optixGetRayTmax();
 
-    float delta = .1f;
-    vec3f P[7];
-    P[6] = ray.org + ray.tMax * ray.dir;
-    P[0] = P[6] - delta * vec3f(1.f,0.f,0.f);
-    P[1] = P[6] + delta * vec3f(1.f,0.f,0.f);
-    P[2] = P[6] - delta * vec3f(0.f,1.f,0.f);
-    P[3] = P[6] + delta * vec3f(0.f,1.f,0.f);
-    P[4] = P[6] - delta * vec3f(0.f,0.f,1.f);
-    P[5] = P[6] + delta * vec3f(0.f,0.f,1.f);
-
-    vec4f mapped[7];
-#pragma unroll
-    for (int i=0;i<7;i++) {
-      mapped[i] = self.sampleAndMap(P[i]);
-    }
-
-#pragma unroll
-    for (int i=0;i<6;i++) {
-      if (mapped[i] == vec4f(0.f)) {
-        mapped[i] = mapped[6];
-        P[i] = P[6];
-      }
-    }
-    // vec3f N;a
-    // N.x = safeDiv(mapped[1].w-mapped[0].w, P[1].x-P[0].x);
-    // N.y = safeDiv(mapped[3].w-mapped[2].w, P[3].y-P[2].y);
-    // N.z = safeDiv(mapped[5].w-mapped[4].w, P[5].z-P[4].z);
-    // if (N == vec3f(0.f)) {
-    //   N = ray.dir;
-    // }
-    // N = normalize(N);
+    vec3f P = ray.org + ray.tMax * ray.dir;
+    vec4f mapped = self.sampleAndMap(P);
 
     ray.hadHit = true;
     ray.hit.baseColor
-      = getPos(mapped[6])
-      // * (.3f+.7f*fabsf(dot(normalize(ray.dir),N)))
-      ;
+      = getPos(mapped);
     ray.hit.N = vec3f(0.f);
-    ray.hit.P = P[6];
+    ray.hit.P = P;
   }
 
   OPTIX_INTERSECT_PROGRAM(UMesh_MC_CUBQL_Isec)()
@@ -145,22 +118,21 @@ namespace barney {
     
     auto &ray = owl::getPRD<Ray>();
     const auto &self = getProgramData<UMeshAccel_MC_CUBQL::DD>();
-    const auto &mesh = self.sampler.mesh;
-    vec3i dims = self.mcGrid.dims;
-    vec3i cellID(primID % dims.x,
-                 (primID / dims.x) % dims.y,
-                 primID / (dims.x*dims.y));
+    box3f bounds = self.getCellBounds(primID);
+    // vec3i dims = self.mcGrid.dims;
+    // vec3i cellID(primID % dims.x,
+    //              (primID / dims.x) % dims.y,
+    //              primID / (dims.x*dims.y));
     
-    // compute world-space bounds of macro cells
-    box3f bounds;
-    bounds.lower
-      = lerp(getBox(mesh.worldBounds),
-             vec3f(cellID)*rcp(vec3f(dims)));
-    bounds.upper
-      = lerp(getBox(mesh.worldBounds),
-             vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
+    // // compute world-space bounds of macro cells
+    // box3f bounds = self.getCellBounds(primID);
+    // bounds.lower
+    //   = lerp(getBox(self.field.worldBounds),
+    //          vec3f(cellID)*rcp(vec3f(dims)));
+    // bounds.upper
+    //   = lerp(getBox(self.field.worldBounds),
+    //          vec3f(cellID+vec3i(1))*rcp(vec3f(dims)));
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
-    
     if (!boxTest(ray,tRange,bounds))
       return;
 
