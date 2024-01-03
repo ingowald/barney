@@ -26,6 +26,27 @@ struct Geometry : public Object
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
+struct Sphere : public Geometry
+{
+  Sphere(BarneyGlobalState *s);
+  void commit() override;
+
+  BNGeom makeBarneyGeometry(
+      BNDataGroup dg, const BNMaterial *material) const override;
+
+  anari::box3 bounds() const override;
+ 
+ private:
+  void cleanup();
+
+  helium::IntrusivePtr<Array1D> m_index;
+  helium::IntrusivePtr<Array1D> m_vertexPosition;
+  helium::IntrusivePtr<Array1D> m_vertexRadius;
+  float m_globalRadius{0.f};
+
+  std::vector<int> m_generatedIndices;
+};
+
 struct Triangle : public Geometry
 {
   Triangle(BarneyGlobalState *s);

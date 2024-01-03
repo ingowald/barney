@@ -3,6 +3,7 @@
 
 #include "Geometry.h"
 // std
+#include <cassert>
 #include <numeric>
 
 namespace barney_device {
@@ -20,7 +21,9 @@ Geometry::~Geometry()
 Geometry *Geometry::createInstance(
     std::string_view subtype, BarneyGlobalState *s)
 {
-  if (subtype == "triangle")
+  if (subtype == "sphere")
+    return new Sphere(s);
+  else if (subtype == "triangle")
     return new Triangle(s);
   else
     return (Geometry *)new UnknownObject(ANARI_GEOMETRY, s);
@@ -33,6 +36,93 @@ void Geometry::markCommitted()
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
+
+Sphere::Sphere(BarneyGlobalState *s) : Geometry(s) {}
+
+void Sphere::commit()
+{
+  Geometry::commit();
+
+  cleanup();
+
+  m_index = getParamObject<Array1D>("primitive.index");
+  m_vertexPosition = getParamObject<Array1D>("vertex.position");
+  m_vertexRadius = getParamObject<Array1D>("vertex.radius");
+
+  m_globalRadius = getParam<float>("radius", 0.01f);
+
+  if (!m_vertexPosition) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'vertex.position' on sphere geometry");
+    return;
+  }
+
+  if (!m_vertexPosition) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'vertex.radius' on sphere geometry");
+    return;
+  }
+
+  m_generatedIndices.clear();
+
+  m_vertexPosition->addCommitObserver(this);
+  m_vertexRadius->addCommitObserver(this);
+  if (m_index) {
+    m_index->addCommitObserver(this);
+  } else {
+    m_generatedIndices.resize(m_vertexPosition->totalSize());
+    std::iota(m_generatedIndices.begin(), m_generatedIndices.end(), 0);
+  }
+}
+
+BNGeom Sphere::makeBarneyGeometry(
+    BNDataGroup dg, const BNMaterial *material) const
+{
+  auto ctx = deviceState()->context;
+  assert(!m_index); // NOT implemented yet!
+  return bnSpheresCreate(dg,
+      material,
+      m_vertexPosition->dataAs<float3>(),
+      m_vertexPosition->totalSize(),
+      m_vertexRadius->dataAs<float>(),
+      m_globalRadius);
+}
+
+anari::box3 Sphere::bounds() const
+{
+  anari::box3 result;
+  result.invalidate();
+  if (m_index) {
+    std::for_each(m_index->beginAs<uint32_t>(),
+        m_index->beginAs<uint32_t>() + m_index->totalSize(),
+        [&](uint32_t index) {
+          float3 v = *(m_vertexPosition->beginAs<float3>() + index);
+          float r = *(m_vertexRadius->beginAs<float>() + index);
+          result.insert(float3{v.x-r,v.y-r,v.z-r});
+          result.insert(float3{v.x+r,v.y+r,v.z+r});
+        });
+  } else {
+    for (size_t i = 0; i < m_vertexPosition->totalSize(); ++i) {
+      float3 v = *(m_vertexPosition->beginAs<float3>() + i);
+      float r = *(m_vertexRadius->beginAs<float>() + i);
+      result.insert(float3{v.x-r,v.y-r,v.z-r});
+      result.insert(float3{v.x+r,v.y+r,v.z+r});
+    }
+  }
+  return result;
+}
+
+void Sphere::cleanup()
+{
+  if (m_index)
+    m_index->removeCommitObserver(this);
+  if (m_vertexPosition)
+    m_vertexPosition->removeCommitObserver(this);
+  if (m_vertexRadius)
+    m_vertexRadius->removeCommitObserver(this);
+}
+
+
 
 Triangle::Triangle(BarneyGlobalState *s) : Geometry(s) {}
 
