@@ -495,11 +495,13 @@ namespace barney {
     assert(/* data groups == 0 is allowed for passive nodes*/
            numDataGroupsOnThisRank >= 0);
     std::vector<int> dataGroupIDs;
+    int rank;
+    MPI_Comm_rank(world, &rank);
     for (int i=0;i<numDataGroupsOnThisRank;i++)
       dataGroupIDs.push_back
         (dataGroupsOnThisRank
          ? dataGroupsOnThisRank[i]
-         : i);
+         : rank*numDataGroupsOnThisRank+i);
 
     // ------------------------------------------------------------------
     // create list of GPUs to use for this rank. if specified by user
