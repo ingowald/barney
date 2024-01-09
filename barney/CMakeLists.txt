@@ -141,6 +141,9 @@ add_library(barney STATIC
   volume/MCGrid.h
   volume/MCGrid.cu
   volume/MCAccelerator.h
+  # *structured* volumes
+  volume/StructuredData.h
+  volume/StructuredData.cpp
   # *unstructured* volumes
   umesh/UMeshField.h
   umesh/UMeshField.cu

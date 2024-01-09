@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/Group.h"
+#include "barney.h"
 //#include "barney/umesh/UMeshFeld.h"
 
 namespace barney {
@@ -67,6 +68,12 @@ namespace barney {
                     const vec3f *normals,
                     const vec2f *texcoords);
 
+    ScalarField *createStructuredData(BNScalarType scalarType,
+                                      const vec3i &dims,
+                                      const void *data,
+                                      const vec3f &gridOrigin,
+                                      const vec3f &gridSpacing);
+    
     ScalarField *createUMesh(std::vector<vec4f> &vertices,
                              std::vector<TetIndices> &tetIndices,
                              std::vector<PyrIndices> &pyrIndices,
@@ -76,7 +83,7 @@ namespace barney {
                              std::vector<vec3i> &gridDims,
                              std::vector<box4f> &gridDomains,
                              std::vector<float> &gridScalars);
-   
+    
     ScalarField *createBlockStructuredAMR(std::vector<box3i> &blockBounds,
                                           std::vector<int> &blockLevels,
                                           std::vector<int> &blockOffsets,

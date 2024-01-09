@@ -26,20 +26,23 @@ namespace barney {
       with a transfer function), but this name still sounds more
       reasonable thatn `Structured3DScalarField`, which would be a
       more accurate name */
-  struct StructuredVolume : public ScalarField
+  struct StructuredData : public ScalarField
   {
     struct DD {
       cudaTextureObject_t texture;
     };
     
-    StructuredVolume(const affine3f &unitCellToWorldTransform,
-                     BNScalarType scalarType,
-                     const void *scalars,
-                     size_t sizeScalars);
+    StructuredData(const vec3i &dims,
+                   BNScalarType scalarType,
+                   const void *scalars,
+                   const vec3f &gridOrigin,
+                   const vec3f &gridSpacing);
 
     const BNScalarType   scalarType;
-    const affine3f       unitCellToWorldTransform;
-    std::vector<uint8_t> rawScalarData;
+    const vec3i dims;
+    const vec3f gridOrigin;
+    const vec3f gridSpacing;
+    const void *rawScalarData;
   };
 }
 

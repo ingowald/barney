@@ -230,11 +230,12 @@ void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
 // ------------------------------------------------------------------
 
 BN_API
-BNScalarField bnStructuredVolumeCreate(BNDataGroup dataGroup,
-                                       BNScalarType type,
-                                       int3 dims,
-                                       const void *scalars,
-                                       const BNTransform *unitCellToWorldTransform);
+BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
+                                     BNScalarType type,
+                                     int3 dims,
+                                     const void *scalars,
+                                     float3 gridOrigin,
+                                     float3 gridSpacing);
 
 BN_API
 BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
