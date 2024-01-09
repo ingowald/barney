@@ -22,11 +22,158 @@
 
 namespace barney {
 
+
+  struct MCGridAccel {
+    MCGridAccel(VolumeAccel *volume,
+                OWLGeom (*createGeom)(MCGridAccel *, const char *),
+                const char *ptxCode)
+      : volume(volume),
+        ptxCode(ptxCode),
+        mcGrid(volume->field->devGroup)
+    {}
+
+    void prepareInitialBuild()
+    {
+      // gt = createGT(ptxCode);
+
+      volume->field->buildMCs(mcGrid);
+      geom = createGeom(this,ptxCode);
+      // geom = owlGeomCreate(getOWL(),createGT(ptxCode));
+      setVariables(geom);
+      // owlGeomSetPrimCount(geom,1);
+    }
+  
+    void build()
+    {
+      mcGrid.computeMajorants(volume->getXF());
+      setVariables(geom);
+    }
+
+    void setVariables(OWLGeom geom)
+    {
+      mcGrid.setVariables(geom);
+      volume->setVariables(geom);
+    }
+  
+    MCGrid mcGrid;
+    VolumeAccel *volume;
+    // OWLGeomType gt = 0;
+    OWLGeom geom = 0;
+    OWLGeom (*createGeom)(MCGridAccel *, const char *);
+    const char *ptxCode;
+  };
+  
+
+  /*! class that creates a optix user geometry with one prim per
+    (non-empty) macro cell, and whose intersection code looks up the
+    repsecigve cell, then performs woodcock trackign in said cell;
+    calling the respective SampleVolume::sampleAndMap() function for
+    each woodcock step */
+  template<typename SampleableVolume>
+  struct RTXMCTraverserGeom {
+    typedef typename SampleableVolume::HostSide SamplerHost;
+    using TravHost = MCGridAccel;
+  
+    struct DD : public VolumeOver<SampleableVolume>::DD {
+      MCGrid::DD mcGrid;
+    
+      inline __device__ void intersect(int primID) const
+      {
+        vec3i cell(primID,1,2);
+        for (float t=0.f;t<1.f;t+= .1f) {
+          vec4f sample = this->sampleAndMap(vec3f(cell.x+t));
+          if (sample.w > 0.f) return;
+        }
+      }
+    };
+
+    static OWLGeom createGeom(MCGridAccel *mcGridAccel, const char *ptxCode);
+    // {
+    //   yyy();
+    // }
+    static void addVars(std::vector<OWLVarDecl> &vars, int ofs)
+    {
+      VolumeOver<SampleableVolume>::addVars(vars,ofs);
+      MCGrid::addVars(vars,ofs+OWL_OFFSETOF(DD,mcGrid));
+    }
+    static OWLGeomType createGT(const char *ptxCode);
+  
+    static std::string getProgName()
+    { return "RTXMCTraverserGeom_"+SampleableVolume::getProgName(); }
+  
+    void build();
+  };
+
+
+  template<typename SampleableVolume>
+  struct DDATraverserGeom {
+    typedef typename SampleableVolume::HostSide SamplerHost;
+    using TravHost = MCGridAccel;
+
+    struct DD : public VolumeOver<SampleableVolume>::DD {
+      MCGrid::DD mcGrid;
+      
+      inline __device__ void intersect(int /*ignoreForThisClass*/) const
+      {
+        dda3(this->mcGrid,[&](vec3i cell) {
+            for (float t=0.f;t<1.f;t+= .1f) {
+              vec4f sample = this->sampleAndMap(vec3f(cell.x+t));
+              if (sample.w > 0.f) return;
+            }
+          });
+      }
+      
+    };
+
+    DDATraverserGeom(DevGroup *devGroup) : devGroup(devGroup) {}
+    inline OWLContext getOWL() const { return devGroup->owl; }
+    
+    static OWLGeom createGeom(MCGridAccel *mcGridAccel, const char *ptxCode);
+    // {
+    //   xxx();
+    // }
+    static void addVars(std::vector<OWLVarDecl> &vars, int ofs)
+    {
+      VolumeOver<SampleableVolume>::addVars(vars,ofs);
+      MCGrid::addVars(vars,ofs+OWL_OFFSETOF(DD,mcGrid));
+    }
+    static OWLGeomType createGT(DevGroup *devGroup,
+                                const char *ptxCode);
+  
+    static std::string getProgName()
+    { return "DDATraverserGeom_"+SampleableVolume::getProgName(); }
+  
+    void build();
+
+    DevGroup    *const devGroup;
+  };
+
+    
+    
+  template<typename SampleableVolumeWithMCGrid>
+  OWLGeomType DDATraverserGeom<SampleableVolumeWithMCGrid>::createGT(DevGroup *devGroup,
+                                                                     const char *ptxCode)
+  {
+    OWLContext owl = devGroup->owl;//getOWL();
+    std::vector<OWLVarDecl> vars;
+    addVars(vars,0);
+      
+    OWLModule module = owlModuleCreate(owl,ptxCode);
+    OWLGeomType gt = owlGeomTypeCreate
+      (owl,OWL_GEOM_USER,
+       sizeof(typename SampleableVolumeWithMCGrid::DD),vars.data(),vars.size());
+    std::string progName = getProgName();
+    owlGeomTypeSetIntersectProg(gt,0,module,progName.c_str());
+    return gt;
+  }
+    
+
+#if 0
   /*! a macro-cell accelerator, built over some
-      (template-parameter'ed) type of underlying volume. The volume
-      must be able to compute the macro-cells and majorants, and to
-      sample; this class will then do the traversal, and provide the
-      'glue' to act as a actual barney volume accelerator */
+    (template-parameter'ed) type of underlying volume. The volume
+    must be able to compute the macro-cells and majorants, and to
+    sample; this class will then do the traversal, and provide the
+    'glue' to act as a actual barney volume accelerator */
   struct MCAccelerator : public VolumeAccel
   {
     template<typename SampleableField>
@@ -84,6 +231,7 @@ namespace barney {
                  linearID / (dims.x*dims.y));
     return getCellBounds(cellID);
   }
-      
+#endif
+  
 }
 

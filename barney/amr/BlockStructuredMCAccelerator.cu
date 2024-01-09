@@ -18,6 +18,7 @@
 
 namespace barney {
 
+#if 0
   extern "C" char BlockStructuredMCAccelerator_ptx[];
 
   template<typename VolumeSampler>
@@ -142,4 +143,5 @@ namespace barney {
   }
 
   template struct BlockStructuredMCAccelerator<CUBQLBlockSampler>;
+#endif
 }

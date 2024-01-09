@@ -26,7 +26,8 @@
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate
 
 namespace barney {
-
+  extern "C" char BlockStructuredMCAccelerator_ptx[];
+#if 0
   enum { MC_GRID_SIZE = 128 };
 
   __global__ void rasterBlocks(MCGrid::DD grid,
@@ -135,6 +136,67 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
 
+  BlockStructuredField::DD BlockStructuredField::getDD(int devID)
+  {
+    BlockStructuredField::DD dd;
+
+    dd.blockBounds  = (const box3i    *)owlBufferGetPointer(blockBoundsBuffer,devID);
+    dd.blockLevels  = (const int      *)owlBufferGetPointer(blockLevelsBuffer,devID);
+    dd.blockOffsets = (const int      *)owlBufferGetPointer(blockOffsetsBuffer,devID);
+    dd.blockScalars = (const float    *)owlBufferGetPointer(blockScalarsBuffer,devID);
+    dd.blockIDs     = (const uint32_t *)owlBufferGetPointer(blockIDsBuffer,devID);
+    dd.valueRanges  = (const range1f  *)owlBufferGetPointer(valueRangesBuffer,devID);
+    dd.numBlocks    = blockIDs.size();
+    dd.worldBounds  = worldBounds;
+
+    return dd;
+  }
+
+  void BlockStructuredField::setVariables(OWLGeom geom)
+  {
+    ScalarField::setVariables(geom);
+    
+    // ------------------------------------------------------------------
+    owlGeomSetBuffer(geom,"blockBounds",blockBoundsBuffer);
+    owlGeomSetBuffer(geom,"blockLevels",blockLevelsBuffer);
+    owlGeomSetBuffer(geom,"blockOffsets",blockOffsetsBuffer);
+    owlGeomSetBuffer(geom,"blockScalars",blockScalarsBuffer);
+    owlGeomSetBuffer(geom,"blockIDs",blockIDsBuffer);
+    owlGeomSetBuffer(geom,"valueRanges",valueRangesBuffer);
+  }
+  
+  std::vector<OWLVarDecl> BlockStructuredField::getVarDecls(uint32_t myOfs)
+  {
+    std::vector<OWLVarDecl> mine = 
+      {
+       { "field.blockBounds",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockBounds) },
+       { "field.blockLevels",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockLevels) },
+       { "field.blockOffsets",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockOffsets) },
+       { "field.blockScalars",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockScalars) },
+       { "field.blockIDs",       OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockIDs) },
+       { "field.valueRanges",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,valueRanges) },
+      };
+    for (auto var : ScalarField::getVarDecls(myOfs))
+      mine.push_back(var);
+    return mine;
+  }
+
+#endif
+  
+  ScalarField *DataGroup::createBlockStructuredAMR(std::vector<box3i> &blockBounds,
+                                                   std::vector<int> &blockLevels,
+                                                   std::vector<int> &blockOffsets,
+                                                   std::vector<float> &blockScalars)
+  {
+    ScalarField::SP sf
+      = std::make_shared<BlockStructuredField>(devGroup.get(),
+                                               blockBounds,
+                                               blockLevels,
+                                               blockOffsets,
+                                               blockScalars);
+    return getContext()->initReference(sf);
+  }
+
   BlockStructuredField::BlockStructuredField(DevGroup *devGroup,
                                              std::vector<box3i> &_blockBounds,
                                              std::vector<int> &_blockLevels,
@@ -208,67 +270,15 @@ namespace barney {
                               valueRanges.data());
   }
 
-  BlockStructuredField::DD BlockStructuredField::getDD(int devID)
-  {
-    BlockStructuredField::DD dd;
-
-    dd.blockBounds  = (const box3i    *)owlBufferGetPointer(blockBoundsBuffer,devID);
-    dd.blockLevels  = (const int      *)owlBufferGetPointer(blockLevelsBuffer,devID);
-    dd.blockOffsets = (const int      *)owlBufferGetPointer(blockOffsetsBuffer,devID);
-    dd.blockScalars = (const float    *)owlBufferGetPointer(blockScalarsBuffer,devID);
-    dd.blockIDs     = (const uint32_t *)owlBufferGetPointer(blockIDsBuffer,devID);
-    dd.valueRanges  = (const range1f  *)owlBufferGetPointer(valueRangesBuffer,devID);
-    dd.numBlocks    = blockIDs.size();
-    dd.worldBounds  = worldBounds;
-
-    return dd;
-  }
-
-  ScalarField *DataGroup::createBlockStructuredAMR(std::vector<box3i> &blockBounds,
-                                                   std::vector<int> &blockLevels,
-                                                   std::vector<int> &blockOffsets,
-                                                   std::vector<float> &blockScalars)
-  {
-    ScalarField::SP sf
-      = std::make_shared<BlockStructuredField>(devGroup.get(),
-                                               blockBounds,
-                                               blockLevels,
-                                               blockOffsets,
-                                               blockScalars);
-    return getContext()->initReference(sf);
-  }
-
-  void BlockStructuredField::setVariables(OWLGeom geom, bool firstTime)
-  {
-    ScalarField::setVariables(geom,firstTime);
-    
-    // ------------------------------------------------------------------
-    owlGeomSetBuffer(geom,"blockBounds",blockBoundsBuffer);
-    owlGeomSetBuffer(geom,"blockLevels",blockLevelsBuffer);
-    owlGeomSetBuffer(geom,"blockOffsets",blockOffsetsBuffer);
-    owlGeomSetBuffer(geom,"blockScalars",blockScalarsBuffer);
-    owlGeomSetBuffer(geom,"blockIDs",blockIDsBuffer);
-    owlGeomSetBuffer(geom,"valueRanges",valueRangesBuffer);
-  }
+  void BlockStructuredField::setVariables(OWLGeom geom)
+  { BARNEY_NYI(); }
   
-  std::vector<OWLVarDecl> BlockStructuredField::getVarDecls(uint32_t myOfs)
-  {
-    std::vector<OWLVarDecl> mine = 
-      {
-       { "field.blockBounds",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockBounds) },
-       { "field.blockLevels",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockLevels) },
-       { "field.blockOffsets",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockOffsets) },
-       { "field.blockScalars",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockScalars) },
-       { "field.blockIDs",       OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockIDs) },
-       { "field.valueRanges",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,valueRanges) },
-      };
-    for (auto var : ScalarField::getVarDecls(myOfs))
-      mine.push_back(var);
-    return mine;
-  }
+  void BlockStructuredField::buildMCs(MCGrid &macroCells) 
+  { BARNEY_NYI(); }
 
   VolumeAccel::SP BlockStructuredField::createAccel(Volume *volume)
   {
-    return std::make_shared<BlockStructuredAccel_MC_CUBQL>(this,volume);
+    return std::make_shared<BlockStructuredAccel_MC_CUBQL>
+      (this,&volume->xf,BlockStructuredMCAccelerator_ptx);
   }
 }

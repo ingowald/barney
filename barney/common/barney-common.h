@@ -32,6 +32,8 @@
 
 #define __barney_align(a) OWL_ALIGN(a)
 
+#define BARNEY_NYI() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not yet implemented")
+
 namespace barney {
   using namespace owl;
   using namespace owl::common;
@@ -64,7 +66,7 @@ namespace barney {
 
   /*! helper functoin to extract 1f scalar range from 4f point-plus-scalar */
   inline __both__ range1f getRange(box4f bb)
-  { return range1f{bb.lower.w,bb.upper.w}; }
+  { return range1f{bb.lower.w,bb.upper.w}; } 
 
   inline __both__ float lerp(float v0, float v1, float f)
   { return (1.f-f)*v0 + f*v1; }

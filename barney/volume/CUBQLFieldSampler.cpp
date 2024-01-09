@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,44 +14,22 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/volume/MCAccelerator.h"
-#include "barney/amr/CUBQLBlockSampler.h"
+#include "barney/volume/CUBQLFieldSampler.h"
 
 namespace barney {
 
-
-
-#if 0
-  /*! a macrocell accelerator built over AMR blocks */
-  //  template<typename FieldSampler>
-  struct BlockStructuredMCAccelerator : public MCAccelerator //<FieldSampler>
-  {
-    using MCAccelerator::mcGrid;
-    using MCAccelerator::volume;
-
-    template<typename FieldSampler>
-    struct DD : public MCAccelerator::DD<FieldSampler> {
-      using MCAccelerator::DD<FieldSampler>::sampleAndMap;
-    };
-
-    BlockStructuredMCAccelerator(BlockStructuredField *field, Volume *volume)
-      : MCAccelerator(volume),
-        field(field)
-    {}
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
-    void build() override;
-
-    OWLGeom geom = 0;
-
-    BlockStructuredField *const field;
-  };
-#endif
-  // typedef BlockStructuredMCAccelerator<CUBQLBlockSampler> BlockStructuredAccel_MC_CUBQL;
+  CUBQLSamplerHost::CUBQLSamplerHost(ScalarField *field)
+    : field(field)
+  {}
   
-  typedef VolumeAccelGeomFor<DDATraverserGeom<CUBQLSampler<ChomboField>>>
-  BlockStructuredAccel_MC_CUBQL;
-
+  void CUBQLSamplerHost::build()
+  {
+    BARNEY_NYI();
+  }
+  
+  void CUBQLSamplerHost::setVariables(OWLGeom geom)
+  {
+    BARNEY_NYI();
+  }
+  
 }

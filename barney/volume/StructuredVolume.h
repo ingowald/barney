@@ -16,42 +16,30 @@
 
 #pragma once
 
+#include "barney/DataGroup.h"
 #include "barney/volume/MCAccelerator.h"
-#include "barney/amr/CUBQLBlockSampler.h"
 
 namespace barney {
 
-
-
-#if 0
-  /*! a macrocell accelerator built over AMR blocks */
-  //  template<typename FieldSampler>
-  struct BlockStructuredMCAccelerator : public MCAccelerator //<FieldSampler>
+  /*! a structured 3D scalar field; strictly speaking in barney this
+      isn't actually a "volume" (it only becomes a volume after paired
+      with a transfer function), but this name still sounds more
+      reasonable thatn `Structured3DScalarField`, which would be a
+      more accurate name */
+  struct StructuredVolume : public ScalarField
   {
-    using MCAccelerator::mcGrid;
-    using MCAccelerator::volume;
-
-    template<typename FieldSampler>
-    struct DD : public MCAccelerator::DD<FieldSampler> {
-      using MCAccelerator::DD<FieldSampler>::sampleAndMap;
+    struct DD {
+      cudaTextureObject_t texture;
     };
+    
+    StructuredVolume(const affine3f &unitCellToWorldTransform,
+                     BNScalarType scalarType,
+                     const void *scalars,
+                     size_t sizeScalars);
 
-    BlockStructuredMCAccelerator(BlockStructuredField *field, Volume *volume)
-      : MCAccelerator(volume),
-        field(field)
-    {}
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
-    void build() override;
-
-    OWLGeom geom = 0;
-
-    BlockStructuredField *const field;
+    const BNScalarType   scalarType;
+    const affine3f       unitCellToWorldTransform;
+    std::vector<uint8_t> rawScalarData;
   };
-#endif
-  // typedef BlockStructuredMCAccelerator<CUBQLBlockSampler> BlockStructuredAccel_MC_CUBQL;
-  
-  typedef VolumeAccelGeomFor<DDATraverserGeom<CUBQLSampler<ChomboField>>>
-  BlockStructuredAccel_MC_CUBQL;
-
 }
+

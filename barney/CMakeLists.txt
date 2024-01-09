@@ -131,6 +131,8 @@ add_library(barney STATIC
   geometry/Cylinders.h
   geometry/Cylinders.cpp
   # volume data 
+  volume/CUBQLFieldSampler.h
+  volume/CUBQLFieldSampler.cpp
   volume/Volume.h
   volume/Volume.cpp
   volume/MCAccelerator.h
@@ -142,8 +144,6 @@ add_library(barney STATIC
   # *unstructured* volumes
   umesh/UMeshField.h
   umesh/UMeshField.cu
-  umesh/CUBQLFieldSampler.h
-  umesh/CUBQLFieldSampler.cpp
   umesh/RTXObjectSpace.h
   umesh/RTXObjectSpace.cu
   umesh/RTXFieldSampler.h

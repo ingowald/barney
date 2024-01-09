@@ -75,7 +75,7 @@ namespace barney {
   
   /*! recompute all macro cells' majorant value by remap each such
     cell's value range through the given transfer function */
-  void MCGrid::computeMajorants(TransferFunction *xf)
+  void MCGrid::computeMajorants(const TransferFunction *xf)
   {
     assert(xf);
     assert(dims.x > 0);

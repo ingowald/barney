@@ -29,9 +29,13 @@ namespace barney {
 
   enum { MC_GRID_SIZE = 128 };
   
+  extern "C" char UMeshMCAccelerator_ptx[];
+
   __global__ void rasterElements(MCGrid::DD grid,
                                  UMeshField::DD mesh)
   {
+    using Element = UMeshField::Element;
+    
     const int eltIdx = blockIdx.x*blockDim.x + threadIdx.x;
     if (eltIdx >= mesh.numElements) return;    
 
@@ -315,9 +319,9 @@ namespace barney {
     return getContext()->initReference(sf);
   }
   
-  void UMeshField::setVariables(OWLGeom geom, bool firstTime)
+  void UMeshField::setVariables(OWLGeom geom)
   {
-    ScalarField::setVariables(geom,firstTime);
+    ScalarField::setVariables(geom);
     
     // ------------------------------------------------------------------
     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
@@ -359,11 +363,14 @@ namespace barney {
     const char *methodFromEnv = getenv("BARNEY_UMESH");
     std::string method = (methodFromEnv ? methodFromEnv : "object-space");
     if (method == "macro-cells" || method == "spatial" || method == "mc")
-      return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
+      return std::make_shared<UMeshAccel_MC_CUBQL>(this,&volume->xf,UMeshMCAccelerator_ptx);
+      // return std::make_shared<UMeshAccel_MC_CUBQL>(this,volume);
+#if 0
     else if (method == "AWT" || method == "awt")
       return std::make_shared<UMeshAWT>(this,volume);
     else if (method == "object-space" || method == "os")
       return std::make_shared<RTXObjectSpace>(this,volume);
+#endif
     else
       throw std::runtime_error("found BARNEY_METHOD env-var, but didn't recognize its value. allowed values are 'awt', 'object-space', and 'macro-cells'");
   }

@@ -14,10 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/umesh/CUBQLFieldSampler.h"
+// #include "barney/umesh/CUBQLFieldSampler.h"
 
 namespace barney {
 
+#if 0
   CUBQLFieldSampler::CUBQLFieldSampler(ScalarField *field)
     : mesh((UMeshField *)field)
   {}
@@ -70,5 +71,5 @@ namespace barney {
                               bvh.numNodes,bvh.nodes);
     cuBQL::free(bvh,0,managedMem);
   }
-  
+#endif  
 }

@@ -32,6 +32,8 @@ typedef struct _BNModel         *BNModel;
 typedef struct _BNFrameBuffer   *BNFrameBuffer;
 typedef struct _BNDataGroup     *BNDataGroup;
 
+typedef enum { BN_FLOAT, BN_UINT8 } BNScalarType;
+
 struct BNMaterial {
   float3 baseColor;
   float  transparency;
@@ -226,6 +228,13 @@ void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
 // ------------------------------------------------------------------
 // volume stuff
 // ------------------------------------------------------------------
+
+BN_API
+BNScalarField bnStructuredVolumeCreate(BNDataGroup dataGroup,
+                                       BNScalarType type,
+                                       int3 dims,
+                                       const void *scalars,
+                                       const BNTransform *unitCellToWorldTransform);
 
 BN_API
 BNScalarField bnUMeshCreate(BNDataGroup dataGroup,

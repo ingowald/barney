@@ -108,7 +108,7 @@ namespace barney {
 
     static void addVarDecls(std::vector<OWLVarDecl> &vars, uint32_t base);
     
-    void setVariables(OWLGeom geom, bool firstTime) override;
+    void setVariables(OWLGeom geom) override;
     
     /*! build *initial* macro-cell grid (ie, the scalar field min/max
       ranges, but not yet the majorants) over a umesh */

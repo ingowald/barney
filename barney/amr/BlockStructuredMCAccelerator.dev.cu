@@ -19,6 +19,8 @@
 
 namespace barney {
 
+#if 0
+  
   struct Woodcock {
     template<typename VolumeSampler>
     static inline __device__
@@ -142,4 +144,6 @@ namespace barney {
     ray.tMax = tRange.upper;
     optixReportIntersection(tRange.upper, 0);
   }
+
+#endif
 }

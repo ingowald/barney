@@ -57,7 +57,14 @@ namespace barney {
     
     /*! given the current per-cell scalar ranges, map each such cell's
         range through the transfer functoin to compute a majorant */
-    void computeMajorants(TransferFunction *xf);
+    void computeMajorants(const TransferFunction *xf);
+
+    static void addVars(std::vector<OWLVarDecl> &vars, int ofs)
+    {
+      vars.push_back(OWLVarDecl{"mcGrid.dims",OWL_INT3,ofs+OWL_OFFSETOF(DD,dims)});
+    }
+    void setVariables(OWLGeom geom)
+    { owlGeomSet3i(geom,"mcGrid.dims",3,3,3); }
 
     /*! checks if this macro-cell grid has already been
         allocated/built - mostly for sanity checking nd debugging */

@@ -21,10 +21,61 @@
 #include <cuBQL/bvh.h>
 
 namespace barney {
+  // namespace cuBQL {
+  using bvh_t = ::cuBQL::BinaryBVH<float,3>;
+  
+  template<typename Lambda>
+  inline __device__ void traverse(bvh_t bvh,
+                                  const Lambda &lamdba);
+  
+  /*! HOST SIDE ONLY */
+  struct CUBQLSamplerHost {
+    CUBQLSamplerHost(ScalarField *);
+  
+    void build();
+    void setVariables(OWLGeom geom);
+  
+    ScalarField *field;
+    bvh_t        bvh;
+  };
+  /*! DEVICE SIDE */
+  template<typename Field>
+  struct CUBQLSampler {
+    using HostSide = CUBQLSamplerHost;
+  
+    struct DD : public Field::DD {
+      bvh_t bvh;
 
-   /*! can sample umeshes using cuda-point location of cuBQL-bvh. this
-       samples a *field* and thus doesn't know anything about transfer
-       functions or acceleration */
+      inline __device__
+      float sample(vec3f P) const
+      {
+        typename Field::SamplerTravState prd;
+        // float retVal = NAN;
+        traverse(bvh,[&](int primID){
+          prd.testPrim(*this,primID,P);
+        });
+        return prd.returnValue();
+      }
+    };
+
+    static void addVars(std::vector<OWLVarDecl> &vars, int ofs)
+    {
+      Field::addVars(vars,ofs);
+      printf("todo");
+    }
+  
+    static std::string getProgName()
+    { return "CUBQLSampler_"+Field::getProgName(); }
+  
+    /* does NOT have a createGT() because it will never be its own owl
+       geom - it'll only ever contribute (templated) routines TO ANOTHER
+       geom created by the VolumeGeom */
+  };
+
+#if 0  
+  /*! can sample umeshes using cuda-point location of cuBQL-bvh. this
+    samples a *field* and thus doesn't know anything about transfer
+    functions or acceleration */
   struct CUBQLFieldSampler {
     
     // using Element = UMeshField::Element;
@@ -115,5 +166,6 @@ namespace barney {
     }
     return retVal;
   }
+#endif
   
 }

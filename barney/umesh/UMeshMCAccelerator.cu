@@ -20,6 +20,7 @@ namespace barney {
   
   extern "C" char UMeshMCAccelerator_ptx[];
 
+#if 0
   template<typename VolumeSampler>
   OWLGeomType UMeshMCAccelerator<VolumeSampler>::createGeomType(DevGroup *devGroup)
   {
@@ -153,5 +154,6 @@ namespace barney {
 
   // template struct UMeshMCAccelerator<UMeshQCSampler>;
   template struct UMeshMCAccelerator<CUBQLFieldSampler>;
+#endif
 }
 

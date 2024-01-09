@@ -21,7 +21,7 @@
 #define AWT_DEFAULT_MAX_DEPTH 7
 
 namespace barney {
-
+#if 0
   using Element = UMeshField::Element;
 
   struct __barney_align(16) AWTNode {
@@ -71,5 +71,5 @@ namespace barney {
     OWLGroup group = 0;
     UMeshField *const mesh;
   };
-  
+#endif  
 }

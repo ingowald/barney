@@ -17,7 +17,7 @@
 #include "barney/umesh/RTXObjectSpace.h"
 
 namespace barney {
-
+#if 0
   extern "C" char RTXObjectSpace_ptx[];
 
   void  RTXObjectSpace::addVarDecls(std::vector<OWLVarDecl> &vars,size_t base)
@@ -204,6 +204,6 @@ namespace barney {
     owlGroupRefitAccel(group);
   }
 
-      
+#endif      
 }
 

@@ -14,44 +14,28 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/volume/MCAccelerator.h"
-#include "barney/amr/CUBQLBlockSampler.h"
+#include "barney/umesh/RTXFieldSampler.h"
+#include <owl/owl_device.h>
 
 namespace barney {
 
+  OPTIX_CLOSEST_HIT_PROGRAM(RTXFieldSampler_CH)()
+  {}
 
-
-#if 0
-  /*! a macrocell accelerator built over AMR blocks */
-  //  template<typename FieldSampler>
-  struct BlockStructuredMCAccelerator : public MCAccelerator //<FieldSampler>
+  OPTIX_INTERSECT_PROGRAM(RTXFieldSampler_IS)()
   {
-    using MCAccelerator::mcGrid;
-    using MCAccelerator::volume;
+    const int primID = optixGetPrimitiveIndex();
+    const auto &self
+      = owl::getProgramData<typename UMeshField::DD>();
+    auto &retVal
+      = owl::getPRD<float>();
 
-    template<typename FieldSampler>
-    struct DD : public MCAccelerator::DD<FieldSampler> {
-      using MCAccelerator::DD<FieldSampler>::sampleAndMap;
-    };
-
-    BlockStructuredMCAccelerator(BlockStructuredField *field, Volume *volume)
-      : MCAccelerator(volume),
-        field(field)
-    {}
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
-    void build() override;
-
-    OWLGeom geom = 0;
-
-    BlockStructuredField *const field;
-  };
-#endif
-  // typedef BlockStructuredMCAccelerator<CUBQLBlockSampler> BlockStructuredAccel_MC_CUBQL;
-  
-  typedef VolumeAccelGeomFor<DDATraverserGeom<CUBQLSampler<ChomboField>>>
-  BlockStructuredAccel_MC_CUBQL;
-
+    UMeshField::Element elt = self.elements[primID];
+    const vec3f P = optixGetObjectRayOrigin();
+    if (self.eltScalar(retVal,elt,P)) {
+      optixReportIntersection(0.f, 0);
+      optixTerminateRay();
+    }
+  }
+   
 }

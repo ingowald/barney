@@ -20,6 +20,7 @@
 
 namespace barney {
 
+#if 0
   /*! object-space accelerator that clusters elements into, well,
     clusters of similar/nearly elements, then builds an RTX BVH and
     majorants over those clusters, disables majorant-zero clusters
@@ -57,6 +58,6 @@ namespace barney {
     OWLGroup group = 0;
     UMeshField *const mesh;
   };
-
+#endif
 }
 

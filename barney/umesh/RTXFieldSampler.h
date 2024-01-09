@@ -16,42 +16,43 @@
 
 #pragma once
 
-#include "barney/volume/MCAccelerator.h"
-#include "barney/amr/CUBQLBlockSampler.h"
+#include "barney/volume/Volume.h"
+#include "barney/umesh/UMeshField.h"
+#include <cuBQL/bvh.h>
 
 namespace barney {
 
+   /*! can sample umeshes using cuda-point location of cuBQL-bvh. this
+       samples a *field* and thus doesn't know anything about transfer
+       functions or acceleration */
+  struct RTXFieldSampler {
+    
+    struct DD {
+      /*! sample the umesh field; can return NaN if sample did not hit
+        any unstructured element at all */
+      inline __device__ float sample(vec3f P, bool dbg=false) const;
 
-
-#if 0
-  /*! a macrocell accelerator built over AMR blocks */
-  //  template<typename FieldSampler>
-  struct BlockStructuredMCAccelerator : public MCAccelerator //<FieldSampler>
-  {
-    using MCAccelerator::mcGrid;
-    using MCAccelerator::volume;
-
-    template<typename FieldSampler>
-    struct DD : public MCAccelerator::DD<FieldSampler> {
-      using MCAccelerator::DD<FieldSampler>::sampleAndMap;
+      UMeshField::DD         mesh;
+      OptixTraversableHandle bvh;
     };
-
-    BlockStructuredMCAccelerator(BlockStructuredField *field, Volume *volume)
-      : MCAccelerator(volume),
-        field(field)
-    {}
     static OWLGeomType createGeomType(DevGroup *devGroup);
+    
+    RTXFieldSampler(UMeshField *const mesh);
+    void build();
 
-    void build() override;
-
-    OWLGeom geom = 0;
-
-    BlockStructuredField *const field;
+    UMeshField *const mesh;
+    OWLGroup bvh;
   };
-#endif
-  // typedef BlockStructuredMCAccelerator<CUBQLBlockSampler> BlockStructuredAccel_MC_CUBQL;
-  
-  typedef VolumeAccelGeomFor<DDATraverserGeom<CUBQLSampler<ChomboField>>>
-  BlockStructuredAccel_MC_CUBQL;
 
+  /*! sample the umesh field; can return NaN if sample did not hit
+    any unstructured element at all */
+  inline __device__
+  float RTXFieldSampler::DD::sample(vec3f P, bool dbg) const
+  {
+    float retVal = NAN;
+    owl::Ray epsilonRay(P,vec3f(1.f),0.f,1e-20f);
+    owl::traceRay(bvh,epsilonRay,retVal);
+    return retVal;
+  }
+  
 }

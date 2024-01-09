@@ -105,7 +105,7 @@ namespace barney {
     };
 
     // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    void setVariables(OWLGeom geom, bool firstTime) override;
+    void setVariables(OWLGeom geom) override;
 
     void buildMCs(MCGrid &macroCells) override;
     
@@ -246,4 +246,6 @@ namespace barney {
 
     return block;
   }
+
+  using ChomboField = BlockStructuredField;
 }

@@ -20,7 +20,7 @@
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate
 
 namespace barney {
-
+#if 0
   extern "C" char AWT_ptx[];
   
   OWLGeomType UMeshAWT::createGeomType(DevGroup *devGroup)
@@ -322,5 +322,5 @@ namespace barney {
     std::cout << "refitting ... umesh awt/object space geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);
   }
-
+#endif
 }

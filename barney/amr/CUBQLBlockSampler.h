@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/volume/Volume.h"
+#include "barney/volume/CUBQLFieldSampler.h"
 #include "barney/amr/BlockStructuredField.h"
 #include <cuBQL/bvh.h>
 
@@ -26,7 +27,7 @@ namespace barney {
        hat-shaped basis functions to sample the density */
   struct CUBQLBlockSampler {
     enum { BVH_WIDTH = 4 };
-    using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
+    using bvh_t  = ::cuBQL::WideBVH<float,3,BVH_WIDTH>;
     using node_t = typename bvh_t::Node;
 
     struct DD : public BlockStructuredField::DD {

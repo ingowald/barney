@@ -17,10 +17,10 @@
 #pragma once
 
 #include "barney/volume/MCAccelerator.h"
-#include "barney/umesh/CUBQLFieldSampler.h"
+#include "barney/volume/CUBQLFieldSampler.h"
 
 namespace barney {
-
+#if 0
   /*! a macrocell accelerator built over umeshes */
   template<typename DDType>
   struct UMeshMCAccelerator : public MCAccelerator
@@ -48,7 +48,14 @@ namespace barney {
       
     UMeshField *const mesh;
   };
-
-  typedef UMeshMCAccelerator<CUBQLFieldSampler::DD<UMeshField>> UMeshAccel_MC_CUBQL;
+#endif
+  
+#if 1
+  typedef VolumeAccelGeomFor<RTXMCTraverserGeom<CUBQLSampler<UMeshField>>> UMeshAccel_MC_CUBQL;
+#else
+  typedef VolumeAccelGeomFor<DDATraverserGeom<CUBQLSampler<UMeshField>>> UMeshAccel_MC_CUBQL;
+#endif
+  
+  // typedef UMeshMCAccelerator<CUBQLFieldSampler::DD<UMeshField>> UMeshAccel_MC_CUBQL;
   
 }

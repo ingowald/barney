@@ -55,20 +55,20 @@ namespace barney {
     return dd;
   }
     
-  void TransferFunction::DD::addVarDecls(std::vector<OWLVarDecl> &vars, uint32_t base)
-  {
-    std::vector<OWLVarDecl> mine =
-      {
-       { "xf.values",      OWL_BUFPTR, base+OWL_OFFSETOF(DD,values) },
-       { "xf.domain",      OWL_FLOAT2, base+OWL_OFFSETOF(DD,domain) },
-       { "xf.baseDensity", OWL_FLOAT,  base+OWL_OFFSETOF(DD,baseDensity) },
-       { "xf.numValues",   OWL_INT,    base+OWL_OFFSETOF(DD,numValues) },
-      };
-    for (auto var : mine)
-      vars.push_back(var);
-  }
+  // void TransferFunction::DD::addVarDecls(std::vector<OWLVarDecl> &vars, uint32_t base)
+  // {
+  //   std::vector<OWLVarDecl> mine =
+  //     {
+  //      { "xf.values",      OWL_BUFPTR, base+OWL_OFFSETOF(DD,values) },
+  //      { "xf.domain",      OWL_FLOAT2, base+OWL_OFFSETOF(DD,domain) },
+  //      { "xf.baseDensity", OWL_FLOAT,  base+OWL_OFFSETOF(DD,baseDensity) },
+  //      { "xf.numValues",   OWL_INT,    base+OWL_OFFSETOF(DD,numValues) },
+  //     };
+  //   for (auto var : mine)
+  //     vars.push_back(var);
+  // }
   
-  void TransferFunction::setVariables(OWLGeom geom, bool firstTime)
+  void TransferFunction::setVariables(OWLGeom geom) const
   {
     if (!(domain.lower < domain.upper)) 
       throw std::runtime_error("in-valid domain for transfer function");

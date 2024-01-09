@@ -40,7 +40,7 @@ namespace barney {
     template<typename _Field>
     struct DD {
       typedef _Field Field;
-      static void addVarDecls(std::vector<OWLVarDecl> &vars,size_t base);
+      static void addVars(std::vector<OWLVarDecl> &vars,size_t base);
       
       inline __device__
       vec4f map(float f, bool dbg=false) const
@@ -52,24 +52,30 @@ namespace barney {
       typename Field::DD   field;
     };
     
-    VolumeAccel(Volume *volume);
+    VolumeAccel(ScalarField *field, //Volume *volume,
+                TransferFunction *xf);
     
     virtual void build() = 0;
     
     
-    virtual void setVariables(OWLGeom geom, bool firstTime);
+    // virtual void setVariables(OWLGeom geom, bool firstTime);
+
+    void setVariables(OWLGeom geom);
+  
+    const TransferFunction *getXF() const;
     
-    ScalarField *const field;
-    Volume      *const volume;
+    ScalarField      *const field;
+    TransferFunction *const xf;
+    // Volume      *const volume;
     DevGroup    *const devGroup;
   };
 
-  template<typename Field>
-  void VolumeAccel::DD<Field>::addVarDecls(std::vector<OWLVarDecl> &vars,size_t base)
-  {
-    Field::DD::addVarDecls(vars,base+OWL_OFFSETOF(DD,field));
-    TransferFunction::DD::addVarDecls(vars,base+OWL_OFFSETOF(DD,xf));
-  }
+  // template<typename Field>
+  // void VolumeAccel::DD<Field>::addVarDecls(std::vector<OWLVarDecl> &vars,size_t base)
+  // {
+  //   Field::DD::addVarDecls(vars,base+OWL_OFFSETOF(DD,field));
+  //   TransferFunction::DD::addVarDecls(vars,base+OWL_OFFSETOF(DD,xf));
+  // }
   
   
   struct SampleableVolumeAccel {
@@ -112,7 +118,7 @@ namespace barney {
     OWLContext getOWL() const;
     // virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) = 0;
 
-    virtual void setVariables(OWLGeom geom, bool firstTime) = 0;
+    virtual void setVariables(OWLGeom geom) = 0;
     
     virtual VolumeAccel::SP createAccel(Volume *volume) = 0;
     virtual void buildMCs(MCGrid &macroCells)
@@ -163,12 +169,64 @@ namespace barney {
   };
 
 
-  inline VolumeAccel::VolumeAccel(Volume *volume)
-    : field(volume->field.get()), volume(volume), devGroup(volume->field->devGroup)
+/*! DEVICE part of somethign that forms a specific volume implementation */
+template<typename SampleableField>
+struct VolumeOver {
+  struct DD {
+    typename SampleableField::DD field;
+    TransferFunction::DD xf;
+
+    inline __device__ vec4f sampleAndMap(vec3f P) const
+    {
+      float f = field.sample(P);
+      return xf.map(f);
+    }
+  };
+  static void addVars(std::vector<OWLVarDecl> &vars, int ofs)
+  {
+    SampleableField::addVars(vars,ofs+OWL_OFFSETOF(DD,field));
+    TransferFunction::addVars(vars,ofs+OWL_OFFSETOF(DD,xf));
+  }
+  
+};
+
+
+
+  
+  template<typename DDType>
+  struct VolumeAccelGeomFor : public VolumeAccel
+  {
+    VolumeAccelGeomFor(ScalarField *field,
+                       TransferFunction *xf,
+                       const char *ptxCode)
+      : VolumeAccel(field,xf),
+        traverser(this,DDType::createGeom,ptxCode),
+        ptxCode(ptxCode),
+        sampler(field)
+    { build(); }
+
+    void build()
+    {
+      sampler.build();
+      traverser.build();
+    }
+
+    const char *ptxCode;
+    typename DDType::TravHost    traverser;
+    typename DDType::SamplerHost sampler;
+  };
+
+
+  
+  inline VolumeAccel::VolumeAccel(ScalarField *field, TransferFunction *xf)
+    : field(field), xf(xf), devGroup(field->devGroup)
   {
     assert(field);
-    assert(volume);
     assert(field->devGroup);
     assert(field->devGroup == volume->devGroup);
   }
+
+
+  inline const TransferFunction *VolumeAccel::getXF() const { return xf; }
+  
 }
