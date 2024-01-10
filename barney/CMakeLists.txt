@@ -168,6 +168,11 @@ set_target_properties(barney
 # ------------------------------------------------------------------
 find_package(MPI REQUIRED)
 
+if(USE_NCCL)
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+  find_package(NCCL REQUIRED)
+endif() 
+
 add_library(barney_mpi STATIC
   common/MPIWrappers.h
   common/MPIWrappers.cpp
@@ -189,5 +194,11 @@ target_link_libraries(barney_mpi PUBLIC
   MPI::MPI_CXX
   )
 target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
+
+if(NCCL_FOUND)
+  target_compile_definitions(barney_mpi PUBLIC -DUSE_NCCL=1)
+  target_include_directories(barney_mpi PUBLIC ${NCCL_INCLUDE_DIRS})
+  target_link_libraries(barney_mpi PUBLIC ${NCCL_LIBRARIES})
+endif()
 
 
