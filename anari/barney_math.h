@@ -15,6 +15,51 @@
 
 namespace anari {
 
+struct box1
+{
+  float lower, upper;
+  box1 &insert(float v)
+  {
+    lower = fminf(lower, v);
+    upper = fmaxf(upper, v);
+    return *this;
+  }
+};
+
+struct box3
+{
+  float3 lower, upper;
+
+  void invalidate()
+  {
+    lower = make_float3(INFINITY, INFINITY, INFINITY);
+    upper = make_float3(-INFINITY, -INFINITY, -INFINITY);
+  }
+
+  box3 &insert(float3 v)
+  {
+    lower.x = fminf(lower.x, v.x);
+    lower.y = fminf(lower.y, v.y);
+    lower.z = fminf(lower.z, v.z);
+    upper.x = fmaxf(upper.x, v.x);
+    upper.y = fmaxf(upper.y, v.y);
+    upper.z = fmaxf(upper.z, v.z);
+    return *this;
+  }
+
+  box3 &insert(const box3 b)
+  {
+    insert(b.lower);
+    insert(b.upper);
+    return *this;
+  }
+};
+
+struct box3i
+{
+  int3 lower, upper;
+};
+
 ANARI_TYPEFOR_SPECIALIZATION(uchar2, ANARI_UINT8_VEC2);
 ANARI_TYPEFOR_SPECIALIZATION(uchar3, ANARI_UINT8_VEC3);
 ANARI_TYPEFOR_SPECIALIZATION(uchar4, ANARI_UINT8_VEC4);
@@ -27,6 +72,9 @@ ANARI_TYPEFOR_SPECIALIZATION(uint4, ANARI_UINT32_VEC4);
 ANARI_TYPEFOR_SPECIALIZATION(float2, ANARI_FLOAT32_VEC2);
 ANARI_TYPEFOR_SPECIALIZATION(float3, ANARI_FLOAT32_VEC3);
 ANARI_TYPEFOR_SPECIALIZATION(float4, ANARI_FLOAT32_VEC4);
+ANARI_TYPEFOR_SPECIALIZATION(box1, ANARI_FLOAT32_BOX1);
+ANARI_TYPEFOR_SPECIALIZATION(box3, ANARI_FLOAT32_BOX3);
+ANARI_TYPEFOR_SPECIALIZATION(box3i, ANARI_INT32_BOX3);
 
 #ifdef ANARI_BARNEY_MATH_DEFINITIONS
 ANARI_TYPEFOR_DEFINITION(uchar2);
@@ -41,6 +89,9 @@ ANARI_TYPEFOR_DEFINITION(uint4);
 ANARI_TYPEFOR_DEFINITION(float2);
 ANARI_TYPEFOR_DEFINITION(float3);
 ANARI_TYPEFOR_DEFINITION(float4);
+ANARI_TYPEFOR_DEFINITION(box1);
+ANARI_TYPEFOR_DEFINITION(box3);
+ANARI_TYPEFOR_DEFINITION(box3i);
 #endif
 
 } // namespace anari

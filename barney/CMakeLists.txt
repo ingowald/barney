@@ -79,6 +79,15 @@ embed_ptx(
   SOURCES            umesh/UMeshMCAccelerator.dev.cu
 )
 
+# ------------------------------------------------------------------
+# amr variants:
+# ------------------------------------------------------------------
+embed_ptx(
+  OUTPUT_TARGET      barney-BlockStructuredMCAccelerator-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            amr/BlockStructuredMCAccelerator.dev.cu
+)
+
 add_library(barney STATIC
   common/barney-common.h
   
@@ -90,6 +99,8 @@ add_library(barney STATIC
   DeviceContext.cpp
   Context.h
   Context.cpp
+  MultiPass.h
+  MultiPass.cpp
   DeviceGroup.h
   DeviceGroup.cpp
   LocalContext.h
@@ -136,6 +147,13 @@ add_library(barney STATIC
   umesh/AWT.cu
   umesh/UMeshMCAccelerator.h
   umesh/UMeshMCAccelerator.cu
+  # *amr* volumes
+  amr/BlockStructuredField.h
+  amr/BlockStructuredField.cu
+  amr/CUBQLBlockSampler.h
+  amr/CUBQLBlockSampler.cpp
+  amr/BlockStructuredMCAccelerator.h
+  amr/BlockStructuredMCAccelerator.cu
   
   # implements the c99 barney api calls
   barney.cpp
@@ -152,6 +170,7 @@ target_link_libraries(barney
   barney-UMeshRTXObjectSpace-ptx  
   barney-AWT-ptx  
   barney-UMeshMCAccelerator-ptx  
+  barney-BlockStructuredMCAccelerator-ptx
   )
 #target_include_directories(barney PUBLIC
 #  )

@@ -52,6 +52,13 @@ const BNTransform *Instance::barneyTransform() const
   return &m_xfm;
 }
 
+anari::box3 Instance::bounds() const
+{
+  anari::box3 result = group()->bounds();
+  // TODO: xfm
+  return result;
+}
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Instance *);

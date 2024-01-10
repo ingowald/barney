@@ -16,36 +16,34 @@
 
 #pragma once
 
-#include "barney/geometry/Geometry.h"
-#include "barney/volume/Volume.h"
-#include "barney/MultiPass.h"
+#include "barney/volume/MCAccelerator.h"
+#include "barney/amr/CUBQLBlockSampler.h"
 
 namespace barney {
 
-  /*! a logical "group" of objects in a data group -- i.e., geometries
-      and volumes (and maybe, eventual, lights?) -- that can be
-      instantiated */
-  struct Group : public Object {
-    typedef std::shared_ptr<Group> SP;
+  /*! a macrocell accelerator built over AMR blocks */
+  template<typename FieldSampler>
+  struct BlockStructuredMCAccelerator : public MCAccelerator<FieldSampler>
+  {
+    using MCAccelerator<FieldSampler>::mcGrid;
+    using MCAccelerator<FieldSampler>::volume;
 
-    Group(DataGroup *owner,
-          const std::vector<Geometry::SP> &geoms,
-          const std::vector<Volume::SP> &volumes);
-    
-    void build();
+    struct DD : public MCAccelerator<FieldSampler>::DD {
+      using MCAccelerator<FieldSampler>::DD::sampleAndMap;
+    };
 
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override;
+    BlockStructuredMCAccelerator(BlockStructuredField *field, Volume *volume)
+      : MCAccelerator<FieldSampler>(field,volume),
+        field(field)
+    {}
+    static OWLGeomType createGeomType(DevGroup *devGroup);
 
-    DataGroup *const owner;
-    const std::vector<Volume::SP>   volumes;
-    const std::vector<Geometry::SP> geoms;
+    void build() override;
 
-    std::vector<OWLGeom> triangleGeoms;
-    std::vector<OWLGeom> userGeoms;
-    OWLGroup userGeomGroup = 0;
-    OWLGroup triangleGeomGroup = 0;
-    std::vector<MultiPass::Object::SP> multiPassObjects;
+    OWLGeom geom = 0;
+
+    BlockStructuredField *const field;
   };
-  
+
+  typedef BlockStructuredMCAccelerator<CUBQLBlockSampler> BlockStructuredAccel_MC_CUBQL;
 }

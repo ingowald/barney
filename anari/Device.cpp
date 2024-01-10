@@ -103,11 +103,10 @@ ANARIGeometry BarneyDevice::newGeometry(const char *subtype)
   return (ANARIGeometry)Geometry::createInstance(subtype, deviceState());
 }
 
-ANARISpatialField BarneyDevice::newSpatialField(const char *)
+ANARISpatialField BarneyDevice::newSpatialField(const char *subtype)
 {
   initDevice();
-  return (ANARISpatialField) new UnknownObject(
-      ANARI_SPATIAL_FIELD, deviceState());
+  return (ANARISpatialField)SpatialField::createInstance(subtype, deviceState());
 }
 
 ANARISurface BarneyDevice::newSurface()
@@ -116,10 +115,10 @@ ANARISurface BarneyDevice::newSurface()
   return (ANARISurface) new Surface(deviceState());
 }
 
-ANARIVolume BarneyDevice::newVolume(const char *)
+ANARIVolume BarneyDevice::newVolume(const char *subtype)
 {
   initDevice();
-  return (ANARIVolume) new UnknownObject(ANARI_VOLUME, deviceState());
+  return (ANARIVolume)Volume::createInstance(subtype, deviceState());
 }
 
 // Model Meta-Data ////////////////////////////////////////////////////////////

@@ -40,7 +40,9 @@ project_add_library(SHARED
   Material.cpp
   Object.cpp
   Renderer.cpp
+  SpatialField.cpp
   Surface.cpp
+  Volume.cpp
   World.cpp
 )
 

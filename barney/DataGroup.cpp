@@ -112,10 +112,11 @@ namespace barney {
                                    normals,
                                    texcoords));
   }
-  
-  
+
   void DataGroup::build()
-  {
+  { 
+    multiPassInstances.clear();
+   
     std::vector<affine3f> owlTransforms;
     std::vector<OWLGroup> owlGroups;
     for (int i=0;i<instances.groups.size();i++) {
@@ -134,6 +135,7 @@ namespace barney {
           owlGroups.push_back(gg);
           owlTransforms.push_back(instances.xfms[i]);
         }
+      multiPassInstances.instantiate(group,instances.xfms[i]);
     }
 
     if (owlGroups.size() == 0)
@@ -147,8 +149,6 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
-    // owlBuildPrograms(devGroup->owl);
-    // owlBuildSBT(devGroup->owl);
   }
 
 }

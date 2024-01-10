@@ -16,6 +16,7 @@
 
 #include "barney/umesh/UMeshField.h"
 #include "barney/Context.h"
+#include "barney/volume/MCGrid.cuh"
 // just to be able to create these accelerators:
 #include "barney/umesh/UMeshMCAccelerator.h"
 #include "barney/umesh/RTXObjectSpace.h"
@@ -27,80 +28,6 @@
 namespace barney {
 
   enum { MC_GRID_SIZE = 128 };
-  
-  inline __device__
-  float fatomicMin(float *addr, float value)
-  {
-    float old = *addr, assumed;
-    if(old <= value) return old;
-    do {
-      assumed = old;
-      old = atomicCAS((unsigned int*)addr,
-                      __float_as_int(assumed),
-                      __float_as_int(value));
-    } while(old!=assumed);
-    return old;
-  }
-
-  inline __device__
-  float fatomicMax(float *addr, float value)
-  {
-    float old = *addr, assumed;
-    if(old >= value) return old;
-    do {
-      assumed = old;
-      old = atomicCAS((unsigned int*)addr,
-                      __float_as_int(assumed),
-                      __float_as_int(value));
-    } while(old!=assumed);
-    return old;
-  }
-  
-  inline __device__
-  int project(float f,
-              const interval<float> range,
-              int dim)
-  {
-    return max(0,min(dim-1,int(dim*(f-range.lower)/(range.upper-range.lower))));
-  }
-
-  inline __device__
-  vec3i project(const vec3f &pos,
-                const box3f &bounds,
-                const vec3i &dims)
-  {
-    return vec3i(project(pos.x,{bounds.lower.x,bounds.upper.x},dims.x),
-                 project(pos.y,{bounds.lower.y,bounds.upper.y},dims.y),
-                 project(pos.z,{bounds.lower.z,bounds.upper.z},dims.z));
-  }
-
-  inline __device__
-  void rasterBox(MCGrid::DD grid,
-                 const box3f worldBounds,
-                 const box4f primBounds4,
-                 bool dbg=false)
-  {
-    box3f pb = box3f(vec3f(primBounds4.lower),
-                     vec3f(primBounds4.upper));
-    if (pb.lower.x >= pb.upper.x) return;
-    if (pb.lower.y >= pb.upper.y) return;
-    if (pb.lower.z >= pb.upper.z) return;
-
-    vec3i lo = project(pb.lower,worldBounds,grid.dims);
-    vec3i hi = project(pb.upper,worldBounds,grid.dims);
-
-    for (int iz=lo.z;iz<=hi.z;iz++)
-      for (int iy=lo.y;iy<=hi.y;iy++)
-        for (int ix=lo.x;ix<=hi.x;ix++) {
-          const int cellID
-            = ix
-            + iy * grid.dims.x
-            + iz * grid.dims.x * grid.dims.y;
-          auto &cell = grid.scalarRanges[cellID];
-          fatomicMin(&cell.lower,primBounds4.lower.w);
-          fatomicMax(&cell.upper,primBounds4.upper.w);
-        }
-  }
   
   __global__ void rasterElements(MCGrid::DD grid,
                                  UMeshField::DD mesh)

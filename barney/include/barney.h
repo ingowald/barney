@@ -255,6 +255,21 @@ BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
 
 
 BN_API
+BNScalarField bnBlockStructuredAMRCreate(BNDataGroup dataGroup,
+                                         /*TODO:const float *cellWidths,*/
+                                         // block bounds, 6 ints each (3 for min,
+                                         // 3 for max corner)
+                                         const int *blockBounds, int numBlocks,
+                                         // refinement level, per block,
+                                         // finest is level 0,
+                                         const int *blockLevels,
+                                         // offsets into blockData array
+                                         const int *blockOffsets,
+                                         // block scalars
+                                         const float *blockScalars, int numBlockScalars);
+
+
+BN_API
 BNVolume bnVolumeCreate(BNDataGroup dataGroup,
                         BNScalarField sf);
 

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Surface.h"
+#include "Volume.h"
 // std
 #include <vector>
 
@@ -19,10 +20,13 @@ struct Group : public Object
 
   BNGroup makeBarneyGroup(BNDataGroup dg) const;
 
+  anari::box3 bounds() const;
+
 private:
   void cleanup();
 
   helium::IntrusivePtr<ObjectArray> m_surfaceData;
+  helium::IntrusivePtr<ObjectArray> m_volumeData;
 };
 
 } // namespace barney_device

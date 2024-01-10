@@ -23,8 +23,7 @@ namespace barney {
     : owner(owner),
       geoms(geoms),
       volumes(volumes)
-  {
-  }
+  {}
   
   /*! pretty-printer for printf-debugging */
   std::string Group::toString() const 

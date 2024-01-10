@@ -35,7 +35,22 @@ World::~World()
 bool World::getProperty(
     const std::string_view &name, ANARIDataType type, void *ptr, uint32_t flags)
 {
-  // TODO: check for bounds query
+  if (name == "bounds" && type == ANARI_FLOAT32_BOX3) {
+    if (flags & ANARI_WAIT) {
+      deviceState()->waitOnCurrentFrame();
+      deviceState()->commitBufferFlush();
+      barneyModelUpdate();
+    }
+    anari::box3 bounds;
+    bounds.invalidate();
+    std::for_each(m_instances.begin(),
+        m_instances.end(),
+        [&](auto *inst) {
+          bounds.insert(inst->bounds());
+        });
+    std::memcpy(ptr, &bounds, sizeof(bounds));
+    return true;
+  }
 
   return Object::getProperty(name, type, ptr, flags);
 }
