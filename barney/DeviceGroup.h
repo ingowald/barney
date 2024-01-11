@@ -94,6 +94,9 @@ namespace barney {
     int size() const { return devices.size(); }
     
     OWLGeomType getOrCreateGeomTypeFor(const std::string &geomTypeString,
+                                       OWLGeomType (*createOnce)(DevGroup *, const char *),
+                                       const char *);
+    OWLGeomType getOrCreateGeomTypeFor(const std::string &geomTypeString,
                                        OWLGeomType (*createOnce)(DevGroup *));
     void update();
     

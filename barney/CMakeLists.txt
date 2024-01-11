@@ -64,6 +64,11 @@ embed_ptx(
 # unstucture mesh variants:
 # ------------------------------------------------------------------
 embed_ptx(
+  OUTPUT_TARGET      barney-StructuredData-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            volume/StructuredData.dev.cu
+)
+embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            umesh/RTXObjectSpace.dev.cu
@@ -143,7 +148,7 @@ add_library(barney STATIC
   volume/MCAccelerator.h
   # *structured* volumes
   volume/StructuredData.h
-  volume/StructuredData.cpp
+  volume/StructuredData.cu
   # *unstructured* volumes
   umesh/UMeshField.h
   umesh/UMeshField.cu
@@ -174,7 +179,8 @@ target_link_libraries(barney
   barney-spheres-ptx
   barney-cylinders-ptx
   barney-triangles-ptx
-  barney-traceRays-ptx  
+  barney-traceRays-ptx
+  barney-StructuredData-ptx
   barney-UMeshRTXObjectSpace-ptx  
   barney-RTXFieldSampler-ptx  
   barney-AWT-ptx  
@@ -218,4 +224,15 @@ target_link_libraries(barney_mpi PUBLIC
   )
 target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 
+
+add_executable(concept concept.cu)
+target_link_libraries(concept PUBLIC barney)
+set_target_properties(concept
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_ARCHITECTURES OFF
+)
 

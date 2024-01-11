@@ -37,7 +37,22 @@ namespace barney {
 
   OWLGeomType
   DevGroup::getOrCreateGeomTypeFor(const std::string &geomTypeString,
-                                 OWLGeomType (*createOnce)(DevGroup *))
+                                   OWLGeomType (*createOnce)(DevGroup *, const char *),
+                                   const char *ptxCode)
+  {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    OWLGeomType gt = geomTypes[geomTypeString];
+    if (gt)
+      return gt;
+
+    gt = geomTypes[geomTypeString] = createOnce(this,ptxCode);
+    programsDirty = true;
+    return gt;
+  }
+
+  OWLGeomType
+  DevGroup::getOrCreateGeomTypeFor(const std::string &geomTypeString,
+                                   OWLGeomType (*createOnce)(DevGroup *))
   {
     std::lock_guard<std::mutex> lock(this->mutex);
     OWLGeomType gt = geomTypes[geomTypeString];

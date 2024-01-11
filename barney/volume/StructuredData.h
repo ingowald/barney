@@ -32,13 +32,28 @@ namespace barney {
       cudaTextureObject_t texture;
     };
     
-    StructuredData(const vec3i &dims,
+    struct Tex3D {
+      cudaArray_t           voxelArray = 0;
+      cudaTextureObject_t   texObj;
+      cudaTextureObject_t   texObjNN;
+    };
+    /*! one tex3d per device */
+    std::vector<Tex3D> tex3Ds;
+    
+    StructuredData(DevGroup *devGroup,
                    BNScalarType scalarType,
+                   const vec3i &dims,
                    const void *scalars,
                    const vec3f &gridOrigin,
                    const vec3f &gridSpacing);
 
-    const BNScalarType   scalarType;
+    void setVariables(OWLGeom geom) override;
+    VolumeAccel::SP createAccel(Volume *volume) override;
+    void buildMCs(MCGrid &macroCells) override;
+
+    void createCUDATextures();
+    
+    const BNScalarType scalarType;
     const vec3i dims;
     const vec3f gridOrigin;
     const vec3f gridSpacing;

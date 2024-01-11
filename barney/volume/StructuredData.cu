@@ -1,0 +1,183 @@
+// ======================================================================== //
+// Copyright 2023-2024 Ingo Wald                                            //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#include "barney/volume/StructuredData.h"
+#include "barney/Context.h"
+
+namespace barney {
+
+  extern "C" char StructuredData_ptx[];
+
+  enum { cellsPerMC = 8 };
+
+  __global__
+  void computeMCs(MCGrid::DD mcGrid,vec3i dims,cudaTextureObject_t texNN)
+  {
+    vec3i mcID = vec3i(threadIdx) + vec3i(blockIdx) * vec3i(blockDim);
+    if (mcID.x >= mcGrid.dims.x) return;
+    if (mcID.y >= mcGrid.dims.y) return;
+    if (mcID.z >= mcGrid.dims.z) return;
+
+    range1f scalarRange;
+    for (int iiz=0;iiz<=cellsPerMC;iiz++)
+      for (int iiy=0;iiy<=cellsPerMC;iiy++)
+        for (int iix=0;iix<=cellsPerMC;iix++) {
+          vec3i scalarID = mcID*int(cellsPerMC) + vec3i(iix,iiy,iiz);
+          if (scalarID.x >= dims.x) continue;
+          if (scalarID.y >= dims.y) continue;
+          if (scalarID.z >= dims.z) continue;
+          scalarRange.extend(tex3D<float>(texNN,scalarID.x,scalarID.y,scalarID.z));
+        }
+    int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
+    mcGrid.scalarRanges[mcIdx] = scalarRange;
+  }
+  
+  struct StructuredVolumeSampler {
+    struct DD : public ScalarField::DD {
+      cudaTextureObject_t texture;
+    };
+    struct HostSide {
+      HostSide(ScalarField *field)
+        : field((StructuredData *)field)
+      {}
+      
+      void build()
+      {
+        /* nothing to do, field computes its own 3d textures */
+      }
+      StructuredData *const field;
+    };
+  };
+  
+  
+  typedef VolumeAccelGeomFor<RTXMCTraverserGeom<StructuredVolumeSampler>> Structured_MCRTX;
+  typedef VolumeAccelGeomFor<DDATraverserGeom<StructuredVolumeSampler>> Structured_MCDDA;
+  
+  
+  StructuredData::StructuredData(DevGroup *devGroup,
+                                 BNScalarType scalarType,
+                                 const vec3i &dims,
+                                 const void *scalars,
+                                 const vec3f &gridOrigin,
+                                 const vec3f &gridSpacing)
+    : ScalarField(devGroup),
+      dims(dims),
+      scalarType(scalarType),
+      rawScalarData(scalars),
+      gridOrigin(gridOrigin),
+      gridSpacing(gridSpacing)
+  {}
+
+  void StructuredData::createCUDATextures()
+  {
+    if (!tex3Ds.empty()) return;
+
+    PING;
+    tex3Ds.resize(devGroup->size());
+        
+    PING;
+    if (scalarType != BN_FLOAT)
+      throw std::runtime_error("can only do float 3d texs..");
+
+    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+      auto dev = devGroup->devices[lDevID];
+      auto &tex = tex3Ds[lDevID];
+      PING;
+      PRINT(lDevID);
+      SetActiveGPU forDuration(dev);
+      // Copy voxels to cuda array
+      cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
+      cudaExtent extent{
+        (unsigned)dims.x,
+        (unsigned)dims.y,
+        (unsigned)dims.z};
+      BARNEY_CUDA_CALL(Malloc3DArray(&tex.voxelArray,&desc,extent,0));
+      cudaMemcpy3DParms copyParms;
+      memset(&copyParms,0,sizeof(copyParms));
+      PRINT(rawScalarData);
+      copyParms.srcPtr = make_cudaPitchedPtr((void *)rawScalarData,
+                                             (size_t)dims.x*sizeof(float),
+                                             (size_t)dims.x,
+                                             (size_t)dims.y);
+      copyParms.dstArray = tex.voxelArray;
+      copyParms.extent   = extent;
+      copyParms.kind     = cudaMemcpyHostToDevice;
+      BARNEY_CUDA_CALL(Memcpy3D(&copyParms));
+          
+      // Create a texture object
+      cudaResourceDesc resourceDesc;
+      memset(&resourceDesc,0,sizeof(resourceDesc));
+      resourceDesc.resType         = cudaResourceTypeArray;
+      resourceDesc.res.array.array = tex.voxelArray;
+          
+      cudaTextureDesc textureDesc;
+      memset(&textureDesc,0,sizeof(textureDesc));
+      textureDesc.addressMode[0]   = cudaAddressModeClamp;
+      textureDesc.addressMode[1]   = cudaAddressModeClamp;
+      textureDesc.addressMode[2]   = cudaAddressModeClamp;
+      textureDesc.filterMode       = cudaFilterModeLinear;
+      textureDesc.readMode         = cudaReadModeElementType;
+      textureDesc.normalizedCoords = false;
+          
+      BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObj,&resourceDesc,&textureDesc,0));
+          
+      // 2nd texture object for nearest filtering
+      textureDesc.filterMode       = cudaFilterModePoint;
+      BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,&resourceDesc,&textureDesc,0));
+    }
+    PING;
+  }
+  
+  void StructuredData::setVariables(OWLGeom geom)
+  { BARNEY_NYI(); }
+  
+  VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
+  {
+    PING;
+    PRINT(volume);
+    if (!getenv("BARNEY_STRUCTURED_DDA"))
+      return std::make_shared<Structured_MCRTX>(this,&volume->xf,StructuredData_ptx);
+    else
+      return std::make_shared<Structured_MCDDA>(this,&volume->xf,StructuredData_ptx);
+  }
+
+  void StructuredData::buildMCs(MCGrid &mcGrid) 
+  {
+    vec3i mcDims = divRoundUp(dims,vec3i(cellsPerMC));
+    mcGrid.resize(mcDims);
+    vec3i blockSize(4);
+    vec3i numBlocks = divRoundUp(mcDims,blockSize);
+    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+      computeMCs<<<(const dim3&)numBlocks,(const dim3&)blockSize>>>
+        (mcGrid.getDD(lDevID),dims,tex3Ds[lDevID].texObjNN);
+    }
+  }
+  
+  ScalarField *DataGroup::createStructuredData(BNScalarType scalarType,
+                                               const vec3i &dims,
+                                               const void *data,
+                                               const vec3f &gridOrigin,
+                                               const vec3f &gridSpacing)
+  {
+    StructuredData::SP sf
+      = std::make_shared<StructuredData>(devGroup.get(),
+                                         scalarType,dims,data,
+                                         gridOrigin,gridSpacing);
+    return getContext()->initReference(sf);
+  }
+  
+}
+

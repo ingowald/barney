@@ -35,9 +35,12 @@ namespace barney {
     void prepareInitialBuild()
     {
       // gt = createGT(ptxCode);
-
+      PING;
       volume->field->buildMCs(mcGrid);
+      PING;
       geom = createGeom(this,ptxCode);
+      PING;
+      assert(geom);
       // geom = owlGeomCreate(getOWL(),createGT(ptxCode));
       setVariables(geom);
       // owlGeomSetPrimCount(geom,1);
@@ -45,6 +48,11 @@ namespace barney {
   
     void build()
     {
+      PING;
+      if (firstTimeBuild) {
+        prepareInitialBuild();
+        firstTimeBuild = false;
+      }
       mcGrid.computeMajorants(volume->getXF());
       setVariables(geom);
     }
@@ -54,7 +62,8 @@ namespace barney {
       mcGrid.setVariables(geom);
       volume->setVariables(geom);
     }
-  
+
+    bool firstTimeBuild = true;
     MCGrid mcGrid;
     VolumeAccel *volume;
     // OWLGeomType gt = 0;
@@ -87,7 +96,10 @@ namespace barney {
       }
     };
 
-    static OWLGeom createGeom(MCGridAccel *mcGridAccel, const char *ptxCode);
+    static OWLGeom createGeom(MCGridAccel *mcGridAccel, const char *ptxCode)
+    {
+      BARNEY_NYI();
+    }
     // {
     //   yyy();
     // }
@@ -96,7 +108,32 @@ namespace barney {
       VolumeOver<SampleableVolume>::addVars(vars,ofs);
       MCGrid::addVars(vars,ofs+OWL_OFFSETOF(DD,mcGrid));
     }
-    static OWLGeomType createGT(const char *ptxCode);
+    static OWLGeomType createGT(DevGroup *devGroup,
+                                const char *ptxCode)
+    {
+      std::string gtTypeName = getProgName();
+      std::cout << OWL_TERMINAL_GREEN
+                << "creating '" << gtTypeName << "' geometry type"
+                << OWL_TERMINAL_DEFAULT << std::endl;
+
+      std::vector<OWLVarDecl> params;
+      addVars(params,0);
+      
+      OWLModule module = owlModuleCreate
+        (devGroup->owl,ptxCode);
+      OWLGeomType gt = owlGeomTypeCreate
+        (devGroup->owl,OWL_GEOM_USER,sizeof(DD),
+         params.data(),params.size());
+      owlGeomTypeSetBoundsProg(gt,module,
+                               (gtTypeName+"_Bounds").c_str());
+      owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,
+                                  (gtTypeName+"_Isec").c_str());
+      owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
+                               (gtTypeName+"_CH").c_str());
+      owlBuildPrograms(devGroup->owl);
+    
+      return gt;
+    }
   
     static std::string getProgName()
     { return "RTXMCTraverserGeom_"+SampleableVolume::getProgName(); }
@@ -128,7 +165,8 @@ namespace barney {
     DDATraverserGeom(DevGroup *devGroup) : devGroup(devGroup) {}
     inline OWLContext getOWL() const { return devGroup->owl; }
     
-    static OWLGeom createGeom(MCGridAccel *mcGridAccel, const char *ptxCode);
+    static OWLGeom createGeom(MCGridAccel *mcGridAccel, const char *ptxCode)
+    { BARNEY_NYI(); }
     // {
     //   xxx();
     // }

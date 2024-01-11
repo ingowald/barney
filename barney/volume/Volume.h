@@ -201,7 +201,6 @@ struct VolumeOver {
                        const char *ptxCode)
       : VolumeAccel(field,xf),
         traverser(this,DDType::createGeom,ptxCode),
-        ptxCode(ptxCode),
         sampler(field)
     { build(); }
 
@@ -211,7 +210,6 @@ struct VolumeOver {
       traverser.build();
     }
 
-    const char *ptxCode;
     typename DDType::TravHost    traverser;
     typename DDType::SamplerHost sampler;
   };
@@ -223,7 +221,6 @@ struct VolumeOver {
   {
     assert(field);
     assert(field->devGroup);
-    assert(field->devGroup == volume->devGroup);
   }
 
 
