@@ -79,4 +79,5 @@ namespace barney {
   { return lerp(f,box.lower,box.upper); }
 }
 
+#define BARNEY_NYI() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not yet implemented")
 

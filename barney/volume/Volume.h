@@ -20,6 +20,7 @@
 
 #include "barney/Object.h"
 #include "barney/volume/TransferFunction.h"
+#include "barney/volume/ScalarField.h"
 
 namespace barney {
 
@@ -59,33 +60,6 @@ namespace barney {
     ScalarField *const field;
     Volume      *const volume;
     DevGroup    *const devGroup;
-  };
-
-  /*! abstracts any sort of scalar field (unstructured, amr,
-    structured, rbfs....) _before_ any transfer function(s) get
-    applied to it */
-  struct ScalarField : public Object
-  {
-    typedef std::shared_ptr<ScalarField> SP;
-
-    struct DD {
-      box4f             worldBounds;
-    };
-    
-    ScalarField(DevGroup *devGroup)
-      : devGroup(devGroup)
-    {}
-
-    OWLContext getOWL() const;
-    virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) = 0;
-    virtual void setVariables(OWLGeom geom, bool firstTime) = 0;
-    
-    virtual VolumeAccel::SP createAccel(Volume *volume) = 0;
-    virtual void buildMCs(MCGrid &macroCells)
-    { throw std::runtime_error("this calar field type does not know how to build macro-cells"); }
-    
-    DevGroup *const devGroup;
-    box4f     worldBounds;
   };
 
   /*! a *volume* is a scalar field with a transfer function applied to

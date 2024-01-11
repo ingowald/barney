@@ -240,6 +240,20 @@ namespace barney {
   }
 
   BN_API
+  BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
+                                       int3 dims,
+                                       BNScalarType type,
+                                       const void *scalars,
+                                       float3 gridOrigin,
+                                       float3 gridSpacing)
+  {
+    ScalarField *sf = checkGet(dataGroup)->createStructuredData
+      ((const vec3i&)dims,type,scalars,
+       (const vec3f&)gridOrigin,(const vec3f&)gridSpacing);
+    return (BNScalarField)sf;
+  }
+  
+  BN_API
   BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
                               // vertices, 4 floats each (3 floats position,
                               // 4th float scalar value)

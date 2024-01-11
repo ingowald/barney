@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/Group.h"
+#include "barney.h"
 
 namespace barney {
 
@@ -66,6 +67,12 @@ namespace barney {
                     const vec3f *normals,
                     const vec2f *texcoords);
 
+    ScalarField *createStructuredData(const vec3i &dims,
+                                      BNScalarType scalarType,
+                                      const void *data,
+                                      const vec3f &gridOrigin,
+                                      const vec3f &gridSpacing);
+    
     ScalarField *createUMesh(std::vector<vec4f> &vertices,
                              std::vector<TetIndices> &tetIndices,
                              std::vector<PyrIndices> &pyrIndices,

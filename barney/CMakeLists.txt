@@ -61,8 +61,13 @@ embed_ptx(
   )
 
 # ------------------------------------------------------------------
-# unstucture mesh variants:
+# volume variants:
 # ------------------------------------------------------------------
+embed_ptx(
+  OUTPUT_TARGET      barney-StructuredData-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            volume/StructuredData.dev.cu
+)
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
@@ -136,6 +141,9 @@ add_library(barney STATIC
   volume/MCGrid.h
   volume/MCGrid.cu
   volume/MCAccelerator.h
+  # *structured* volumes
+  volume/StructuredData.h
+  volume/StructuredData.cu
   # *unstructured* volumes
   umesh/UMeshField.h
   umesh/UMeshField.cu
@@ -163,6 +171,7 @@ target_link_libraries(barney
   owl::owl
   cuBQL_impl
   barney-config
+  barney-StructuredData-ptx
   barney-spheres-ptx
   barney-cylinders-ptx
   barney-triangles-ptx
