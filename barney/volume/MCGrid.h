@@ -57,7 +57,11 @@ namespace barney {
         mcID.z = linearID / (dims.x*dims.y);
         return mcID;
       }
-
+      
+      inline __device__
+      float majorant(vec3i cellID) const
+      { return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)]; }
+      
       /*! returns the bounding box of the given cell */
       inline __device__ box3f cellBounds(vec3i cellID,
                                          const box3f &worldBounds) const
@@ -70,7 +74,7 @@ namespace barney {
       
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
-
+    
     MCGrid(DevGroup *devGroup);
     
     /*! get cuda-usable device-data for given device ID (relative to

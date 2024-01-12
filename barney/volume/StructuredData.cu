@@ -175,6 +175,20 @@ namespace barney {
       cudaTextureObject_t tex = tex3Ds[lDevID].texObj;
       owlGeomSetRaw(geom,"tex3D",&tex,lDevID);
     }
+    PRINT(gridOrigin);
+    PRINT(gridSpacing);
+    owlGeomSet3f(geom,"cellGridOrigin",
+                 gridOrigin.x,
+                 gridOrigin.y,
+                 gridOrigin.z);
+    owlGeomSet3f(geom,"cellGridSpacing",
+                 gridSpacing.x,
+                 gridSpacing.y,
+                 gridSpacing.z);
+    owlGeomSet3i(geom,"numCells",
+                 numCells.x,
+                 numCells.y,
+                 numCells.z);
   }
   
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
@@ -190,6 +204,12 @@ namespace barney {
     ScalarField::DD::addVars(vars,base);
     vars.push_back
       ({"tex3D",OWL_USER_TYPE(cudaTextureObject_t),base+OWL_OFFSETOF(DD,texObj)});
+    vars.push_back
+      ({"cellGridOrigin",OWL_FLOAT3,base+OWL_OFFSETOF(DD,cellGridOrigin)});
+    vars.push_back
+      ({"cellGridSpacing",OWL_FLOAT3,base+OWL_OFFSETOF(DD,cellGridSpacing)});
+    vars.push_back
+      ({"numCells",OWL_INT3,base+OWL_OFFSETOF(DD,numCells)});
   }
 }
 

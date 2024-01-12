@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "barney/volume/StructuredData.h"
+#include "barney/volume/DDA.h"
 #include <owl/owl_device.h>
 
 namespace barney {
@@ -39,12 +40,6 @@ namespace barney {
     } else {
       const vec3i mcID = self.mcGrid.cellID(primID);
       bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
-      // vec3f rel_lo = vec3f(mcID) * rcp(vec3f(self.mcGrid.dims));
-      // vec3f rel_hi = vec3f(mcID+vec3i(1)) * rcp(vec3f(self.mcGrid.dims));
-      // bounds.lower = lerp(self.worldBounds,rel_lo);
-      // bounds.upper = lerp(self.worldBounds,rel_hi);
-      // printf("active cell %f %f %f\n",
-      //        bounds.lower.x,bounds.lower.y,bounds.lower.z);
     }
   }
 
@@ -53,14 +48,13 @@ namespace barney {
     using Geom = typename MCRTXVolumeAccel<StructuredData>::DD;
     const Geom &self = owl::getProgramData<Geom>();
     Ray &ray = owl::getPRD<Ray>();
+    vec3f org = optixGetObjectRayOrigin();
+    vec3f dir = optixGetObjectRayDirection();
     const int primID = optixGetPrimitiveIndex();
 
-    bool dbg = ray.dbg;
-    
     const vec3i mcID = self.mcGrid.cellID(primID);
     
     const float majorant = self.mcGrid.majorants[primID];
-    if (dbg) printf("isec mc ID %i %i %i maj %f\n",mcID.x,mcID.y,mcID.z,majorant);
     if (majorant == 0.f) return;
     
     box3f bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
@@ -68,22 +62,108 @@ namespace barney {
 
     if (!boxTest(ray,tRange,bounds))
       return;
-    if (dbg) printf("range %f %f\n",tRange.lower,tRange.upper);
     
     vec4f sample = 0.f;
     if (!Woodcock::sampleRange(sample,self,
-                               ray.org,ray.dir,tRange,majorant,ray.rngSeed,
-                               ray.dbg))
+                               org,dir,tRange,majorant,ray.rngSeed
+                               //,ray.dbg
+                               ))
       return;
 
-    ray.tMax = tRange.upper;
+    // and: store the hit, right here in isec prog.
+    ray.tMax          = tRange.upper;
     ray.hit.baseColor = getPos(sample);
-    ray.hit.N = vec3f(0.f);
-    ray.hit.P = ray.org + tRange.upper*ray.dir;
+    ray.hit.N         = vec3f(0.f);
+    ray.hit.P         = ray.org + tRange.upper*ray.dir;
     optixReportIntersection(tRange.upper, 0);
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCRTX_CH)()
+  {
+    /* nothing - already all set in isec */
+  }
+  
+
+
+
+
+
+  OPTIX_BOUNDS_PROGRAM(Structured_MCDDA_Bounds)(const void *geomData,
+                                                owl::common::box3f &bounds,
+                                                const int32_t primID)
+  {
+    // "DDA": we have a single prim for entire volume, iteration over
+    // cells happens in DDA-traversal in IS prog.
+
+    using Geom = typename MCDDAVolumeAccel<StructuredData>::DD;
+    const Geom &self = *(Geom*)geomData;
+    bounds = self.worldBounds;
+  }
+
+  OPTIX_INTERSECT_PROGRAM(Structured_MCDDA_Isec)()
+  {
+    using Geom = typename MCDDAVolumeAccel<StructuredData>::DD;
+    const Geom &self = owl::getProgramData<Geom>();
+    Ray &ray = owl::getPRD<Ray>();
+    const int primID = optixGetPrimitiveIndex();
+
+    const vec3i mcID = self.mcGrid.cellID(primID);
+    
+    const float majorant = self.mcGrid.majorants[primID];
+    if (majorant == 0.f) return;
+    
+    box3f bounds = self.worldBounds;
+    range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
+    
+    if (!boxTest(ray,tRange,bounds))
+      return;
+
+    vec3f obj_org = optixGetObjectRayOrigin();
+    vec3f obj_dir = optixGetObjectRayDirection();
+
+    // ------------------------------------------------------------------
+    // compute ray in macro cell grid space 
+    // ------------------------------------------------------------------
+    vec3f mcGridOrigin = self.mcGrid.gridOrigin;
+    vec3f mcGridSpacing = self.mcGrid.gridSpacing;
+    vec3f cellGridOrigin = self.cellGridOrigin;
+    vec3f cellGridSpacing = self.cellGridSpacing;
+
+    vec3f dda_org = obj_org;
+    vec3f dda_dir = obj_dir;
+    
+    dda_org = (dda_org - cellGridOrigin) * rcp(cellGridSpacing);
+    dda_dir = dda_dir * rcp(cellGridSpacing);
+
+    dda_org = dda_org * mcGridSpacing + mcGridOrigin;
+    dda_dir = dda_dir * mcGridSpacing;
+
+    const bool dbg = false;
+    
+    dda::dda3(dda_org+tRange.lower*dda_dir,dda_dir,tRange.upper-tRange.lower,
+              vec3ui(self.mcGrid.dims),
+              [&](const vec3i &cellIdx, float t0, float t1) -> bool
+              {
+                float majorant = self.mcGrid.majorant(cellIdx);
+                if (majorant == 0.f) return true;
+                
+                vec4f sample = 0.f;
+                range1f tRange = {t0,t1};
+                if (!Woodcock::sampleRange(sample,self,
+                                           obj_org,obj_dir,tRange,majorant,ray.rngSeed))
+                  return true;
+                
+                ray.tMax          = tRange.upper;
+                ray.hit.baseColor = getPos(sample);
+                ray.hit.N         = vec3f(0.f);
+                ray.hit.P         = ray.org + tRange.upper*ray.dir;
+                optixReportIntersection(tRange.upper, 0);
+                return false;
+              },
+              dbg);
+  }
+  
+  OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCDDA_CH)()
   {
     /* nothing - already all set in isec */
   }

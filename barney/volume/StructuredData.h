@@ -31,26 +31,28 @@ namespace barney {
     struct DD : public ScalarField::DD {
       inline __device__ float sample(const vec3f P, bool dbg) const
       {
-        vec3f rel = (P-worldBounds.lower) / worldBounds.size();
+        vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
 
-        if (dbg) printf("sample %f %f %f rel %f %f %f\n",
-                        P.x,P.y,P.z,
-                        rel.x,rel.y,rel.z
-                        );
+        // if (dbg) printf("sample %f %f %f rel %f %f %f\n",
+        //                 P.x,P.y,P.z,
+        //                 rel.x,rel.y,rel.z
+        //                 );
         
         if (rel.x < 0.f) return NAN;
         if (rel.y < 0.f) return NAN;
         if (rel.z < 0.f) return NAN;
-        if (rel.x > 1.f) return NAN;
-        if (rel.y > 1.f) return NAN;
-        if (rel.z > 1.f) return NAN;
-        rel *= vec3f(511);
+        if (rel.x >= numCells.x) return NAN;
+        if (rel.y >= numCells.y) return NAN;
+        if (rel.z >= numCells.z) return NAN;
         float f = tex3D<float>(texObj,rel.x,rel.y,rel.z);
-        if (dbg) printf("result %f\n",f);
+        // if (dbg) printf("result %f\n",f);
         return f;
       }
 
       cudaTextureObject_t texObj;
+      vec3f cellGridOrigin;
+      vec3f cellGridSpacing;
+      vec3i numCells;
       
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
