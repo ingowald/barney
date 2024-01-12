@@ -47,9 +47,19 @@ namespace barney {
                    const vec3f &gridOrigin,
                    const vec3f &gridSpacing);
 
-    void setVariables(OWLGeom geom, bool firstTime) { BARNEY_NYI(); }
-    std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) { BARNEY_NYI(); };
-    VolumeAccel::SP createAccel(Volume *volume) override { BARNEY_NYI(); };
+    /*! returns (part of) a string that should allow an OWL geometry
+        type to properly create all the names of all the optix device
+        functions that operate on this type. Eg, if all device
+        functions for a "StucturedVolume" are named
+        "Structured_<SomeAccel>_{Bounds,Isec,CV}()", then the
+        StructuredField should reutrn "Structured", and somebody else
+        can/has to then make sure to add the respective
+        "_<SomeAccel>_" part. */
+    std::string getTypeString() const override { return "Structured"; }
+    
+    void setVariables(OWLGeom geom);
+    // std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) { BARNEY_NYI(); };
+    VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 
     void createCUDATextures();
@@ -60,5 +70,6 @@ namespace barney {
     const vec3f gridSpacing;
     const void *rawScalarData;
   };
+
 }
 

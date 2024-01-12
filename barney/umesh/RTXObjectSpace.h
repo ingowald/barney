@@ -44,7 +44,7 @@ namespace barney {
     {}
     static OWLGeomType createGeomType(DevGroup *devGroup);
     
-    void build() override;
+    void build(bool full_rebuild) override;
 
     std::vector<Cluster> clusters;
     OWLBuffer clustersBuffer = 0;

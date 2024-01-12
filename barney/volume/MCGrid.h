@@ -41,6 +41,7 @@ namespace barney {
       float   *majorants;
       range1f *scalarRanges;
       vec3i    dims;
+      
     };
 
     MCGrid(DevGroup *devGroup);
@@ -49,6 +50,20 @@ namespace barney {
         devices in the devgroup that this gris is in */
     DD getDD(int devID) const;
 
+    static void addVars(std::vector<OWLVarDecl> &vars, int base)
+    {
+      vars.push_back
+        ({"majorants",OWL_BUFPTR,base+OWL_OFFSETOF(DD,majorants)});
+      vars.push_back
+        ({"scalarRanges",OWL_BUFPTR,base+OWL_OFFSETOF(DD,scalarRanges)});
+      vars.push_back
+        ({"dims",OWL_INT3,base+OWL_OFFSETOF(DD,dims)});
+    }
+    void setVariables(OWLGeom geom)
+    {
+      BARNEY_NYI();
+    }
+    
     /*! allocate memory for the given grid */
     void resize(vec3i dims);
 

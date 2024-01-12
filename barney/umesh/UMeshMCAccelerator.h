@@ -41,7 +41,7 @@ namespace barney {
     
     
     // void buildMCs() override;
-    void build() override;
+    void build(bool full_rebuild) override;
 
     OWLGeom geom = 0;
       

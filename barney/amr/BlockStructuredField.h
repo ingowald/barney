@@ -104,8 +104,8 @@ namespace barney {
       int             numBlocks;
     };
 
-    std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    void setVariables(OWLGeom geom, bool firstTime) override;
+    // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
+    void setVariables(OWLGeom geom) override;
 
     void buildMCs(MCGrid &macroCells) override;
     

@@ -64,8 +64,10 @@ namespace barney {
   }
 
   template<typename VolumeSampler>
-  void BlockStructuredMCAccelerator<VolumeSampler>::build()
+  void BlockStructuredMCAccelerator<VolumeSampler>::build(bool full_rebuild)
   {
+    if (!full_rebuild) return;
+    
     auto devGroup = field->devGroup;
 
     BARNEY_CUDA_SYNC_CHECK();

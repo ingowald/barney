@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2023 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,27 +14,18 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/volume/StructuredData.h"
-#include <owl/owl_device.h>
+#include "barney/volume/Volume.h"
+#include "barney/volume/ScalarField.h"
 
 namespace barney {
 
-  OPTIX_BOUNDS_PROGRAM(Structured_MCRTX_Bounds)(const void *geomData,
-                                                owl::common::box3f &bounds,
-                                                const int32_t primID)
+  void ScalarField::setVariables(OWLGeom geom)
   {
-    printf("todo...\n");
+    owlGeomSet4fv(geom,"worldBounds.lower",&worldBounds.lower.x);
+    owlGeomSet4fv(geom,"worldBounds.upper",&worldBounds.upper.x);
   }
 
-  OPTIX_INTERSECT_PROGRAM(Structured_MCRTX_Isec)()
-  {
-    printf("todo...\n");
-  }
-  
-  OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCRTX_CH)()
-  {
-    printf("todo...\n");
-  }
+  OWLContext ScalarField::getOWL() const
+  { return devGroup->owl; }
   
 }
-

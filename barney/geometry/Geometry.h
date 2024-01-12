@@ -40,6 +40,7 @@ namespace barney {
     std::string toString() const override
     { return "Geometry{}"; }
 
+    /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
     
     Material    material;

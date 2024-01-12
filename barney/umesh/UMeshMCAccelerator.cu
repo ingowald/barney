@@ -68,8 +68,10 @@ namespace barney {
   }
   
   template<typename VolumeSampler>
-  void UMeshMCAccelerator<VolumeSampler>::build()
+  void UMeshMCAccelerator<VolumeSampler>::build(bool full_rebuild)
   {
+    if (!full_rebuild) return;
+    
     auto devGroup = mesh->devGroup;
 
     BARNEY_CUDA_SYNC_CHECK();

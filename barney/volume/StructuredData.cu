@@ -19,10 +19,14 @@
 
 namespace barney {
 
+  extern "C" char StructuredData_ptx[];
+
   enum { cellsPerMC = 8 };
 
   __global__
-  void computeMCs(MCGrid::DD mcGrid,vec3i dims,cudaTextureObject_t texNN)
+  void computeMCs(MCGrid::DD mcGrid,
+                  vec3i dims,
+                  cudaTextureObject_t texNN)
   {
     vec3i mcID = vec3i(threadIdx) + vec3i(blockIdx) * vec3i(blockDim);
     if (mcID.x >= mcGrid.dims.x) return;
@@ -41,6 +45,9 @@ namespace barney {
         }
     int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
     mcGrid.scalarRanges[mcIdx] = scalarRange;
+    if (mcIdx == 3)
+      printf("sanity: macro cell #3 has range %f %f\n",
+             scalarRange.lower,scalarRange.upper);
   }
   
   StructuredData::StructuredData(DevGroup *devGroup,
@@ -55,7 +62,72 @@ namespace barney {
       rawScalarData(scalars),
       gridOrigin(gridOrigin),
       gridSpacing(gridSpacing)
-  {}
+  {
+    createCUDATextures();
+  }
+
+
+  void StructuredData::createCUDATextures()
+  {
+    if (!tex3Ds.empty()) return;
+
+    tex3Ds.resize(devGroup->size());
+        
+    if (scalarType != BN_FLOAT)
+      throw std::runtime_error("can only do float 3d texs..");
+
+    std::cout << "#bn.struct: creating CUDA 3D textures" << std::endl;
+    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+      auto dev = devGroup->devices[lDevID];
+      auto &tex = tex3Ds[lDevID];
+      PING;
+      PRINT(lDevID);
+      SetActiveGPU forDuration(dev);
+      // Copy voxels to cuda array
+      cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
+      cudaExtent extent{
+        (unsigned)dims.x,
+        (unsigned)dims.y,
+        (unsigned)dims.z};
+      BARNEY_CUDA_CALL(Malloc3DArray(&tex.voxelArray,&desc,extent,0));
+      cudaMemcpy3DParms copyParms;
+      memset(&copyParms,0,sizeof(copyParms));
+      copyParms.srcPtr = make_cudaPitchedPtr((void *)rawScalarData,
+                                             (size_t)dims.x*sizeof(float),
+                                             (size_t)dims.x,
+                                             (size_t)dims.y);
+      copyParms.dstArray = tex.voxelArray;
+      copyParms.extent   = extent;
+      copyParms.kind     = cudaMemcpyHostToDevice;
+      BARNEY_CUDA_CALL(Memcpy3D(&copyParms));
+          
+      // Create a texture object
+      cudaResourceDesc resourceDesc;
+      memset(&resourceDesc,0,sizeof(resourceDesc));
+      resourceDesc.resType         = cudaResourceTypeArray;
+      resourceDesc.res.array.array = tex.voxelArray;
+          
+      cudaTextureDesc textureDesc;
+      memset(&textureDesc,0,sizeof(textureDesc));
+      textureDesc.addressMode[0]   = cudaAddressModeClamp;
+      textureDesc.addressMode[1]   = cudaAddressModeClamp;
+      textureDesc.addressMode[2]   = cudaAddressModeClamp;
+      textureDesc.filterMode       = cudaFilterModeLinear;
+      textureDesc.readMode         = cudaReadModeElementType;
+      textureDesc.normalizedCoords = false;
+          
+      BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObj,&resourceDesc,&textureDesc,0));
+          
+      // 2nd texture object for nearest filtering
+      textureDesc.filterMode       = cudaFilterModePoint;
+      BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,&resourceDesc,&textureDesc,0));
+      PRINT(tex.texObj);
+      PRINT(tex.texObjNN);
+    }
+    PING;
+  }
+  
+  
 
   void StructuredData::buildMCs(MCGrid &mcGrid) 
   {
@@ -63,10 +135,23 @@ namespace barney {
     mcGrid.resize(mcDims);
     vec3i blockSize(4);
     vec3i numBlocks = divRoundUp(mcDims,blockSize);
+    std::cout << "building macro cells for grid of " << mcDims << " macro cells" << std::endl;
     for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+      auto dev = devGroup->devices[lDevID];
+      SetActiveGPU forDuration(dev);
       computeMCs<<<(const dim3&)numBlocks,(const dim3&)blockSize>>>
         (mcGrid.getDD(lDevID),dims,tex3Ds[lDevID].texObjNN);
     }
+    BARNEY_CUDA_SYNC_CHECK();
+  }
+  
+  VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
+  {
+    using AccelType = MCRTXVolumeAccel<StructuredData>;
+    // using AccelType = MCDDAVolumeAccel<StructuredData>;
+    return std::make_shared<typename AccelType::Host>
+      (this,volume,StructuredData_ptx);
+    // BARNEY_NYI();
   }
   
   ScalarField *DataGroup::createStructuredData(const vec3i &dims,
@@ -82,5 +167,16 @@ namespace barney {
     return getContext()->initReference(sf);
   }
 
+  void StructuredData::setVariables(OWLGeom geom)
+  {
+    if (devGroup->devices.size() > 1)
+      throw std::runtime_error("Structured data current can't set per-device 3d textures");
+    for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
+      cudaTextureObject_t tex = tex3Ds[lDevID].texObj;
+      owlGeomSetRaw(geom,"texObj",&tex,lDevID);
+    }
+    BARNEY_NYI();
+  }
+  
 }
 

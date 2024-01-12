@@ -238,9 +238,9 @@ namespace barney {
     return getContext()->initReference(sf);
   }
 
-  void BlockStructuredField::setVariables(OWLGeom geom, bool firstTime)
+  void BlockStructuredField::setVariables(OWLGeom geom)
   {
-    ScalarField::setVariables(geom,firstTime);
+    ScalarField::setVariables(geom);
     
     // ------------------------------------------------------------------
     owlGeomSetBuffer(geom,"blockBounds",blockBoundsBuffer);
@@ -251,21 +251,21 @@ namespace barney {
     owlGeomSetBuffer(geom,"valueRanges",valueRangesBuffer);
   }
   
-  std::vector<OWLVarDecl> BlockStructuredField::getVarDecls(uint32_t myOfs)
-  {
-    std::vector<OWLVarDecl> mine = 
-      {
-       { "field.blockBounds",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockBounds) },
-       { "field.blockLevels",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockLevels) },
-       { "field.blockOffsets",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockOffsets) },
-       { "field.blockScalars",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockScalars) },
-       { "field.blockIDs",       OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockIDs) },
-       { "field.valueRanges",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,valueRanges) },
-      };
-    for (auto var : ScalarField::getVarDecls(myOfs))
-      mine.push_back(var);
-    return mine;
-  }
+  // std::vector<OWLVarDecl> BlockStructuredField::getVarDecls(uint32_t myOfs)
+  // {
+  //   std::vector<OWLVarDecl> mine = 
+  //     {
+  //      { "field.blockBounds",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockBounds) },
+  //      { "field.blockLevels",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockLevels) },
+  //      { "field.blockOffsets",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockOffsets) },
+  //      { "field.blockScalars",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockScalars) },
+  //      { "field.blockIDs",       OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockIDs) },
+  //      { "field.valueRanges",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,valueRanges) },
+  //     };
+  //   for (auto var : ScalarField::getVarDecls(myOfs))
+  //     mine.push_back(var);
+  //   return mine;
+  // }
 
   VolumeAccel::SP BlockStructuredField::createAccel(Volume *volume)
   {

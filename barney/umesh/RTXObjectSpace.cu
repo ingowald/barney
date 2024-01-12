@@ -115,8 +115,10 @@ namespace barney {
   }
 
 
-  void RTXObjectSpace::build()
+  void RTXObjectSpace::build(bool full_rebuild)
   {
+    if (!full_rebuild) return;
+    
     BARNEY_CUDA_SYNC_CHECK();
     
     if (!group) {

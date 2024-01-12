@@ -104,8 +104,8 @@ namespace barney {
       int               numElements;
     };
 
-    std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    void setVariables(OWLGeom geom, bool firstTime) override;
+    // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
+    void setVariables(OWLGeom geom) override;
     
     /*! build *initial* macro-cell grid (ie, the scalar field min/max
       ranges, but not yet the majorants) over a umesh */

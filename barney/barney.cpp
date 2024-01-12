@@ -487,6 +487,8 @@ namespace barney {
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(i);
     }
+    if (gpuIDs.empty())
+      throw std::runtime_error("no GPUs!?");
 
     if (gpuIDs.size() < numDataGroupsOnThisRank) {
       std::vector<int> replicatedIDs;

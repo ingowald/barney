@@ -55,7 +55,7 @@ namespace barney {
     {}
     static OWLGeomType createGeomType(DevGroup *devGroup);
     
-    void build() override;
+    void build(bool full_rebuild) override;
 
     void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
     void extractRoots();

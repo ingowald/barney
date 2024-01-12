@@ -247,8 +247,10 @@ namespace barney {
       node.majorant[cID] = xf.majorant(getRange(node.bounds[cID]));
   }
 
-  void UMeshAWT::build()
+  void UMeshAWT::build(bool full_rebuild)
   {
+    if (!full_rebuild) return;
+    
     BARNEY_CUDA_SYNC_CHECK();
     
     if (!group) {

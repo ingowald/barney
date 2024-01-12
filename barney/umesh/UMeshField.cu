@@ -315,9 +315,9 @@ namespace barney {
     return getContext()->initReference(sf);
   }
   
-  void UMeshField::setVariables(OWLGeom geom, bool firstTime)
+  void UMeshField::setVariables(OWLGeom geom)
   {
-    ScalarField::setVariables(geom,firstTime);
+    ScalarField::setVariables(geom);
     
     // ------------------------------------------------------------------
     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
@@ -333,25 +333,25 @@ namespace barney {
     owlGeomSetBuffer(geom,"gridScalars",gridScalarsBuffer);
   }
   
-  std::vector<OWLVarDecl> UMeshField::getVarDecls(uint32_t myOfs)
-  {
-    std::vector<OWLVarDecl> mine = 
-      {
-       { "mesh.vertices",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,vertices) },
-       { "mesh.tetIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,tetIndices) },
-       { "mesh.pyrIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,pyrIndices) },
-       { "mesh.wedIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,wedIndices) },
-       { "mesh.hexIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,hexIndices) },
-       { "mesh.elements",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,elements) },
-       { "mesh.gridOffsets", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridOffsets) },
-       { "mesh.gridDims",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDims) },
-       { "mesh.gridDomains", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDomains) },
-       { "mesh.gridScalars", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridScalars) },
-      };
-    for (auto var : ScalarField::getVarDecls(myOfs))
-      mine.push_back(var);
-    return mine;
-  }
+  // std::vector<OWLVarDecl> UMeshField::getVarDecls(uint32_t myOfs)
+  // {
+  //   std::vector<OWLVarDecl> mine = 
+  //     {
+  //      { "mesh.vertices",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,vertices) },
+  //      { "mesh.tetIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,tetIndices) },
+  //      { "mesh.pyrIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,pyrIndices) },
+  //      { "mesh.wedIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,wedIndices) },
+  //      { "mesh.hexIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,hexIndices) },
+  //      { "mesh.elements",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,elements) },
+  //      { "mesh.gridOffsets", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridOffsets) },
+  //      { "mesh.gridDims",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDims) },
+  //      { "mesh.gridDomains", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDomains) },
+  //      { "mesh.gridScalars", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridScalars) },
+  //     };
+  //   for (auto var : ScalarField::getVarDecls(myOfs))
+  //     mine.push_back(var);
+  //   return mine;
+  // }
 
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {

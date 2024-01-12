@@ -15,12 +15,13 @@
 // ======================================================================== //
 
 #include "barney/volume/Volume.h"
+#include "barney/volume/ScalarField.h"
 #include "barney/DataGroup.h"
 
 namespace barney {
 
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }//owner->getOWL(); }
+  OWLContext VolumeAccel::getOWL() const
+  { return sf->getOWL(); }
   
   Volume::Volume(DevGroup *devGroup,
                  ScalarField::SP sf)
@@ -32,10 +33,12 @@ namespace barney {
   
   /*! (re-)build the accel structure for this volume, probably after
     changes to transfer functoin (or later, scalar field) */
-  void Volume::build()
+  void Volume::build(bool full_rebuild)
   {
+    PING;
     assert(accel);
-    accel->build();
+    PING;
+    accel->build(full_rebuild);
     devGroup->sbtDirty = true;
   }
 
@@ -44,25 +47,20 @@ namespace barney {
     return volume->xf.getVarDecls(baseOfs);
   }
   
-  void VolumeAccel::setVariables(OWLGeom geom, bool firstTime)
-  {
-    volume->xf.setVariables(geom,firstTime);
-    field->setVariables(geom,firstTime);
-  }
+  // void VolumeAccel::setVariables(OWLGeom geom, bool firstTime)
+  // {
+  //   volume->xf.setVariables(geom,firstTime);
+  //   sf->setVariables(geom,firstTime);
+  // }
     
   
-  std::vector<OWLVarDecl> ScalarField::getVarDecls(uint32_t baseOfs)
-  {
-    return
-      {
-       { "worldBounds.lower", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.lower) },
-       { "worldBounds.upper", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.upper) }
-      };
-  }
+  // std::vector<OWLVarDecl> ScalarField::getVarDecls(uint32_t baseOfs)
+  // {
+  //   return
+  //     {
+  //      { "worldBounds.lower", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.lower) },
+  //      { "worldBounds.upper", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.upper) }
+  //     };
+  // }
   
-  void ScalarField::setVariables(OWLGeom geom, bool firstTime)
-  {
-    owlGeomSet4fv(geom,"worldBounds.lower",&worldBounds.lower.x);
-    owlGeomSet4fv(geom,"worldBounds.upper",&worldBounds.upper.x);
-  }
 }

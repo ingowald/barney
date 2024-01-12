@@ -38,7 +38,7 @@ namespace barney {
     {}
     static OWLGeomType createGeomType(DevGroup *devGroup);
 
-    void build() override;
+    void build(bool full_rebuild) override;
 
     OWLGeom geom = 0;
 

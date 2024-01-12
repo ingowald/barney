@@ -135,6 +135,8 @@ add_library(barney STATIC
   # volume data 
   volume/Volume.h
   volume/Volume.cpp
+  volume/ScalarField.h
+  volume/ScalarField.cpp
   volume/MCAccelerator.h
   volume/TransferFunction.h
   volume/TransferFunction.cpp
