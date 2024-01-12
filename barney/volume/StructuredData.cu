@@ -193,8 +193,11 @@ namespace barney {
   
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
   {
+#if 0
     using AccelType = MCRTXVolumeAccel<StructuredData>;
-    // using AccelType = MCDDAVolumeAccel<StructuredData>;
+#else
+    using AccelType = MCDDAVolumeAccel<StructuredData>;
+#endif
     return std::make_shared<typename AccelType::Host>
       (this,volume,StructuredData_ptx);
   }

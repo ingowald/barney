@@ -125,9 +125,16 @@ namespace barney {
       }
       MCGrid::DD mcGrid;
     };
+    
     struct Host : public OWLVolumeAccel<SF>::Host
     {
       using Inherited = typename OWLVolumeAccel<SF>::Host;
+      
+      using Inherited::sf;
+      using Inherited::getXF;
+      using Inherited::ptxCode;
+      using Inherited::geom;
+      using Inherited::getTypeString;
       
       Host(ScalarField *sf, Volume *volume, const char *ptxCode)
         : Inherited(sf,volume,ptxCode),
@@ -168,37 +175,23 @@ namespace barney {
           });
         
         geom = owlGeomCreate(devGroup->owl,gt);
-        std::cout << "owl geom created, but not yet set" << std::endl;
+        // this CREATES the geom, but doesn't yet set prim count (prim
+        // count depends on how the mc grid is traersed), so has to be
+        // set in the derived function
       }
       
       void build(bool full_rebuild) override
       {
-        PING; 
         if (mcGrid.dims.x == 0) {
-          std::cout << "first building macro cell grid ..." << std::endl;
+          // macro cell grid hasn't even built ranges, yet -> let it do that.
           sf->buildMCs(mcGrid);
         }
+        // update majorants on latest transfer function
         mcGrid.computeMajorants(getXF());
         Inherited::build(full_rebuild);
-          
-        // PING; PRINT(full_rebuild);
-        // if (!full_rebuild) return;
-        
-        // if (!geom) {
-        //   std::cout << "first building macro cell grid ..." << std::endl;
-        //   sf->buildMCs(mcGrid);
-        //   std::cout << "now creating the owl geom" << std::endl;
-        //   this->createGeom();
-        // };
-        // std::cout << "#bn.mc: geometry created" << std::endl;
       };
-      MCGrid       mcGrid;
       
-      using Inherited::sf;
-      using Inherited::getXF;
-      using Inherited::ptxCode;
-      using Inherited::geom;
-      using Inherited::getTypeString;
+      MCGrid       mcGrid;
     };
   };
     
@@ -220,6 +213,7 @@ namespace barney {
       Host(ScalarField *sf, Volume *volume, const char *ptxCode)
         : Inherited(sf,volume,ptxCode)
       {}
+      
       /*! builds the string that allows for properly matching optix
           device progs for this type */
       std::string getTypeString() const override
@@ -234,7 +228,6 @@ namespace barney {
         // this is a *RTXTraverser* for the mcgrid, we have one prim
         // per cell:
         const int primCount = mcGrid.dims.x*mcGrid.dims.y*mcGrid.dims.z;
-        PRINT(primCount);
         owlGeomSetPrimCount(geom,primCount);
       }
     };
@@ -246,11 +239,30 @@ namespace barney {
   template<typename SF>
   struct MCDDAVolumeAccel : public MCVolumeAccel<SF> {
     struct Host : public MCVolumeAccel<SF>::Host {
+      using Inherited = typename MCVolumeAccel<SF>::Host;
+      using Inherited::sf;
+      using Inherited::geom;
+      
       Host(ScalarField *sf, Volume *volume, const char *ptxCode)
-        : MCVolumeAccel<SF>::Host(sf,volume,ptxCode)
+        : Inherited(sf,volume,ptxCode)
       {}
+      
+      /*! builds the string that allows for properly matching optix
+          device progs for this type */
+      std::string getTypeString() const override
+      { return sf->getTypeString()+"_MCDDA"; }
+      
       void createGeom() override
-      { BARNEY_NYI(); }
+      {
+        // let parent class create the geometry itself, _we_ then only
+        // set the numprims
+        Inherited::createGeom();
+        
+        // this is a *DDATraverser* for the mcgrid, we have one prim
+        // over the whole grid
+        const int primCount = 1;
+        owlGeomSetPrimCount(geom,primCount);
+      }
     };
   };
   

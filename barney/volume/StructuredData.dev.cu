@@ -45,6 +45,8 @@ namespace barney {
 
   OPTIX_INTERSECT_PROGRAM(Structured_MCRTX_Isec)()
   {
+    /* ALL of this code should be exactly the same in any
+       instantiation of the MCRTXVolumeAccel<> tempalte! */
     using Geom = typename MCRTXVolumeAccel<StructuredData>::DD;
     const Geom &self = owl::getProgramData<Geom>();
     Ray &ray = owl::getPRD<Ray>();
@@ -102,22 +104,18 @@ namespace barney {
 
   OPTIX_INTERSECT_PROGRAM(Structured_MCDDA_Isec)()
   {
+    /* ALL of this code should be exactly the same in any
+       instantiation of the MCDDAVolumeAccel<> tempalte! */
     using Geom = typename MCDDAVolumeAccel<StructuredData>::DD;
     const Geom &self = owl::getProgramData<Geom>();
     Ray &ray = owl::getPRD<Ray>();
-    const int primID = optixGetPrimitiveIndex();
 
-    const vec3i mcID = self.mcGrid.cellID(primID);
-    
-    const float majorant = self.mcGrid.majorants[primID];
-    if (majorant == 0.f) return;
-    
     box3f bounds = self.worldBounds;
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
     
     if (!boxTest(ray,tRange,bounds))
       return;
-
+    
     vec3f obj_org = optixGetObjectRayOrigin();
     vec3f obj_dir = optixGetObjectRayDirection();
 
@@ -126,21 +124,16 @@ namespace barney {
     // ------------------------------------------------------------------
     vec3f mcGridOrigin = self.mcGrid.gridOrigin;
     vec3f mcGridSpacing = self.mcGrid.gridSpacing;
-    vec3f cellGridOrigin = self.cellGridOrigin;
-    vec3f cellGridSpacing = self.cellGridSpacing;
 
     vec3f dda_org = obj_org;
     vec3f dda_dir = obj_dir;
     
-    dda_org = (dda_org - cellGridOrigin) * rcp(cellGridSpacing);
-    dda_dir = dda_dir * rcp(cellGridSpacing);
-
-    dda_org = dda_org * mcGridSpacing + mcGridOrigin;
-    dda_dir = dda_dir * mcGridSpacing;
-
-    const bool dbg = false;
+    dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
+    dda_dir = dda_dir * rcp(mcGridSpacing);
     
-    dda::dda3(dda_org+tRange.lower*dda_dir,dda_dir,tRange.upper-tRange.lower,
+    const bool dbg = ray.dbg;
+
+    dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
               {
@@ -150,7 +143,8 @@ namespace barney {
                 vec4f sample = 0.f;
                 range1f tRange = {t0,t1};
                 if (!Woodcock::sampleRange(sample,self,
-                                           obj_org,obj_dir,tRange,majorant,ray.rngSeed))
+                                           obj_org,obj_dir,
+                                           tRange,majorant,ray.rngSeed))
                   return true;
                 
                 ray.tMax          = tRange.upper;
@@ -160,7 +154,7 @@ namespace barney {
                 optixReportIntersection(tRange.upper, 0);
                 return false;
               },
-              dbg);
+              /*NO debug*/false);
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCDDA_CH)()
