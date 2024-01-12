@@ -166,7 +166,7 @@ namespace barney {
 
       blockIDs[blockID] = block.ID;
       valueRanges[blockID] = block.valueRange;
-      worldBounds.extend(block.worldBounds());
+      worldBounds.extend(getBox(block.worldBounds()));
     }
     PRINT(worldBounds);
     assert(!valueRanges.empty());

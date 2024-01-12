@@ -19,34 +19,6 @@
 
 namespace barney {
 
-  struct Woodcock {
-    template<typename VolumeSampler>
-    static inline __device__
-    bool sampleRange(vec4f &sample,
-                     const VolumeSampler &volume,
-                     vec3f org, vec3f dir,
-                     range1f &tRange,
-                     float majorant,
-                     uint32_t &rngSeed,
-                     bool dbg=false)
-    {
-      LCG<4> &rand = (LCG<4> &)rngSeed;
-      float t = tRange.lower;
-      while (true) {
-        float dt = - logf(1.f-rand())/majorant;
-        t += dt;
-        if (t >= tRange.upper)
-          return false;
-      
-        sample = volume.sampleAndMap(org+t*dir,dbg);
-        if (sample.w >= rand()*majorant) {
-          tRange.upper = t;
-          return true;
-        }
-      }
-    }
-  };
-  
   OPTIX_BOUNDS_PROGRAM(BlockStructured_MC_CUBQL_Bounds)(const void *geomData,
                                                         owl::common::box3f &bounds,
                                                         const int32_t primID)

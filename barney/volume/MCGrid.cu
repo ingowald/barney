@@ -75,7 +75,7 @@ namespace barney {
   
   /*! recompute all macro cells' majorant value by remap each such
     cell's value range through the given transfer function */
-  void MCGrid::computeMajorants(TransferFunction *xf)
+  void MCGrid::computeMajorants(const TransferFunction *xf)
   {
     assert(xf);
     assert(dims.x > 0);
@@ -134,5 +134,27 @@ namespace barney {
     
     return dd;
   }
-    
+
+  void MCGrid::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    vars.push_back
+      ({"majorants",OWL_BUFPTR,base+OWL_OFFSETOF(DD,majorants)});
+    vars.push_back
+      ({"scalarRanges",OWL_BUFPTR,base+OWL_OFFSETOF(DD,scalarRanges)});
+    vars.push_back
+      ({"dims",OWL_INT3,base+OWL_OFFSETOF(DD,dims)});
+    vars.push_back
+      ({"gridOrigin",OWL_FLOAT3,base+OWL_OFFSETOF(DD,gridOrigin)});
+    vars.push_back
+      ({"gridSpacing",OWL_FLOAT3,base+OWL_OFFSETOF(DD,gridSpacing)});
+  }
+  
+  void MCGrid::setVariables(OWLGeom geom)
+  {
+    owlGeomSetBuffer(geom,"majorants",majorantsBuffer);
+    owlGeomSet3i(geom,"dims",dims.x,dims.y,dims.z);
+    owlGeomSet3f(geom,"gridOrigin",gridOrigin.x,gridOrigin.y,gridOrigin.z);
+    owlGeomSet3f(geom,"gridSpacing",gridSpacing.x,gridSpacing.y,gridSpacing.z);
+  }
+  
 } // ::vopat

@@ -28,20 +28,44 @@ namespace barney {
       more accurate name */
   struct StructuredData : public ScalarField
   {
-    struct DD {
-      cudaTextureObject_t texture;
+    struct DD : public ScalarField::DD {
+      inline __device__ float sample(const vec3f P, bool dbg) const
+      {
+        vec3f rel = (P-worldBounds.lower) / worldBounds.size();
+
+        if (dbg) printf("sample %f %f %f rel %f %f %f\n",
+                        P.x,P.y,P.z,
+                        rel.x,rel.y,rel.z
+                        );
+        
+        if (rel.x < 0.f) return NAN;
+        if (rel.y < 0.f) return NAN;
+        if (rel.z < 0.f) return NAN;
+        if (rel.x > 1.f) return NAN;
+        if (rel.y > 1.f) return NAN;
+        if (rel.z > 1.f) return NAN;
+        rel *= vec3f(511);
+        float f = tex3D<float>(texObj,rel.x,rel.y,rel.z);
+        if (dbg) printf("result %f\n",f);
+        return f;
+      }
+
+      cudaTextureObject_t texObj;
+      
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
     struct Tex3D {
+      
       cudaArray_t           voxelArray = 0;
       cudaTextureObject_t   texObj;
       cudaTextureObject_t   texObjNN;
     };
     /*! one tex3d per device */
     std::vector<Tex3D> tex3Ds;
-    
+
     StructuredData(DevGroup *devGroup,
-                   const vec3i &dims,
+                   const vec3i &numScalars,
                    BNScalarType scalarType,
                    const void *scalars,
                    const vec3f &gridOrigin,
@@ -65,7 +89,8 @@ namespace barney {
     void createCUDATextures();
     
     const BNScalarType   scalarType;
-    const vec3i dims;
+    const vec3i numScalars;
+    const vec3i numCells;
     const vec3f gridOrigin;
     const vec3f gridSpacing;
     const void *rawScalarData;

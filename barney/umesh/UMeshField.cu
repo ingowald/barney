@@ -191,8 +191,8 @@ namespace barney {
       gridDomains(std::move(_gridDomains)),
       gridScalars(std::move(_gridScalars))
   {
-    for (auto vtx : vertices) worldBounds.extend(vtx);
-    for (auto dom : gridDomains) worldBounds.extend(dom);
+    for (auto vtx : vertices) worldBounds.extend(getPos(vtx));
+    for (auto dom : gridDomains) worldBounds.extend(getBox(dom));
     for (int i=0;i<tetIndices.size();i++)
       elements.push_back(Element(i,Element::TET));
 

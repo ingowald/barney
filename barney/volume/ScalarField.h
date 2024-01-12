@@ -34,7 +34,9 @@ namespace barney {
     typedef std::shared_ptr<ScalarField> SP;
 
     struct DD {
-      box4f             worldBounds;
+      box3f                worldBounds;
+      
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
     ScalarField(DevGroup *devGroup)
@@ -60,7 +62,7 @@ namespace barney {
     virtual std::string getTypeString() const { BARNEY_NYI(); }
         
     DevGroup *const devGroup;
-    box4f     worldBounds;
+    box3f     worldBounds;
   };
   
 }

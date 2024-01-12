@@ -65,17 +65,27 @@ namespace barney {
     
     typedef std::shared_ptr<VolumeAccel> SP;
 
-    struct DD {
-      template<typename FieldSampler>
+    /*! device data for a volume accel - takes the device data for the
+        underlying scalar field, and 'adds' a transfer function (and
+        then gets the ability to sample field and map with xf */
+    template<typename ScalarField>
+    struct DD : public ScalarField::DD {
+      using Inherited = typename ScalarField::DD;
+      
       inline __device__
-      vec4f sampleAndMap(const FieldSampler &sf,
-                         vec3f point, bool dbg=false) const
+      vec4f sampleAndMap(vec3f point, bool dbg=false) const
       {
-        float f = sf.sample(point,dbg);
+        float f = this->sample(point,dbg);
         if (isnan(f)) return vec4f(0.f);
         return xf.map(f,dbg);
       }
       TransferFunction::DD xf;
+
+      static void addVars(std::vector<OWLVarDecl> &vars, int base)
+      {
+        Inherited::addVars(vars,base);
+        TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
+      }
     };
     
     VolumeAccel(ScalarField *sf, Volume *volume);
@@ -86,6 +96,7 @@ namespace barney {
     virtual void build(bool full_rebuild) = 0;
 
     OWLContext getOWL() const;
+    const TransferFunction *getXF() const;
     
     virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs);
     // virtual void setVariables(OWLGeom geom, bool firstTime);

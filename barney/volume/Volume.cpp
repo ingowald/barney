@@ -30,6 +30,7 @@ namespace barney {
     accel = sf->createAccel(this);
   }
 
+  const TransferFunction *VolumeAccel::getXF() const { return &volume->xf; }
   
   /*! (re-)build the accel structure for this volume, probably after
     changes to transfer functoin (or later, scalar field) */

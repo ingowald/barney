@@ -22,12 +22,42 @@
 
 namespace barney {
 
+  struct Woodcock {
+    template<typename VolumeSampler>
+    static inline __device__
+    bool sampleRange(vec4f &sample,
+                     const VolumeSampler &volume,
+                     vec3f org, vec3f dir,
+                     range1f &tRange,
+                     float majorant,
+                     uint32_t &rngSeed,
+                     bool dbg=false)
+    {
+      LCG<4> &rand = (LCG<4> &)rngSeed;
+      float t = tRange.lower;
+      while (true) {
+        float dt = - logf(1.f-rand())/majorant;
+        t += dt;
+        if (t >= tRange.upper)
+          return false;
+      
+        sample = volume.sampleAndMap(org+t*dir,dbg);
+        if (sample.w >= rand()*majorant) {
+          tRange.upper = t;
+          return true;
+        }
+      }
+    }
+  };
+  
   template<typename SF>
   struct OWLVolumeAccel {
-    struct DD : public SF::DD {
+    struct DD : public VolumeAccel::DD<SF> {
       static void addVars(std::vector<OWLVarDecl> &vars, int base)
       {
-        SF::DD::addVars(vars,base);
+        PING;
+        VolumeAccel::DD<SF>::addVars(vars,base);
+        // SF::DD::addVars(vars,base);
       }
     };
     struct Host : public VolumeAccel {
@@ -40,7 +70,10 @@ namespace barney {
       { return HAS_ITS_OWN_GROUP; }
 
       virtual void setVariables(OWLGeom geom) 
-      { sf->setVariables(geom); }
+      {
+        sf->setVariables(geom);
+        getXF()->setVariables(geom);
+      }
       
       void build(bool full_rebuild) override
       {
@@ -83,9 +116,12 @@ namespace barney {
   struct MCVolumeAccel : public OWLVolumeAccel<SF>
   {
     struct DD : public OWLVolumeAccel<SF>::DD {
+      using Inherited = typename OWLVolumeAccel<SF>::DD;
+      
       static void addVars(std::vector<OWLVarDecl> &vars, int base)
       {
-        // MCGrid::addVars(vars,base+OWL_OFFSETOF(OWLVolumeAccel<SF>::DD,mcGrid)); 
+        Inherited::addVars(vars,base);
+        MCGrid::DD::addVars(vars,base+OWL_OFFSETOF(DD,mcGrid));
       }
       MCGrid::DD mcGrid;
     };
@@ -142,6 +178,7 @@ namespace barney {
           std::cout << "first building macro cell grid ..." << std::endl;
           sf->buildMCs(mcGrid);
         }
+        mcGrid.computeMajorants(getXF());
         Inherited::build(full_rebuild);
           
         // PING; PRINT(full_rebuild);
@@ -158,6 +195,7 @@ namespace barney {
       MCGrid       mcGrid;
       
       using Inherited::sf;
+      using Inherited::getXF;
       using Inherited::ptxCode;
       using Inherited::geom;
       using Inherited::getTypeString;
@@ -228,7 +266,11 @@ namespace barney {
     struct DD {
       inline __device__
       vec4f sampleAndMap(vec3f P, bool dbg=false) const
-      { return volume.sampleAndMap(sampler,P,dbg); }
+      {
+        // DEPRECATED!
+        return vec4f(0.f);
+        // return volume.sampleAndMap(sampler,P,dbg);
+      }
 
       /*! our own macro-cell grid to be traversed */
       MCGrid::DD                mcGrid;
@@ -239,7 +281,7 @@ namespace barney {
       
       /*! the volume's device data that maps field samples to rgba
           values */
-      VolumeAccel::DD           volume;
+      VolumeAccel::DD<FieldSampler>           volume;
     };
 
     MCAccelerator(ScalarField *field, Volume *volume);

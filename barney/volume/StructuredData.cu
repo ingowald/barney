@@ -25,7 +25,7 @@ namespace barney {
 
   __global__
   void computeMCs(MCGrid::DD mcGrid,
-                  vec3i dims,
+                  vec3i numScalars,
                   cudaTextureObject_t texNN)
   {
     vec3i mcID = vec3i(threadIdx) + vec3i(blockIdx) * vec3i(blockDim);
@@ -38,9 +38,9 @@ namespace barney {
       for (int iiy=0;iiy<=cellsPerMC;iiy++)
         for (int iix=0;iix<=cellsPerMC;iix++) {
           vec3i scalarID = mcID*int(cellsPerMC) + vec3i(iix,iiy,iiz);
-          if (scalarID.x >= dims.x) continue;
-          if (scalarID.y >= dims.y) continue;
-          if (scalarID.z >= dims.z) continue;
+          if (scalarID.x >= numScalars.x) continue;
+          if (scalarID.y >= numScalars.y) continue;
+          if (scalarID.z >= numScalars.z) continue;
           scalarRange.extend(tex3D<float>(texNN,scalarID.x,scalarID.y,scalarID.z));
         }
     int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
@@ -51,19 +51,23 @@ namespace barney {
   }
   
   StructuredData::StructuredData(DevGroup *devGroup,
-                                 const vec3i &dims,
+                                 const vec3i &numScalars,
                                  BNScalarType scalarType,
                                  const void *scalars,
                                  const vec3f &gridOrigin,
                                  const vec3f &gridSpacing)
     : ScalarField(devGroup),
-      dims(dims),
+      numScalars(numScalars),
+      numCells(numScalars - 1),
       scalarType(scalarType),
       rawScalarData(scalars),
       gridOrigin(gridOrigin),
       gridSpacing(gridSpacing)
   {
+    worldBounds.lower = gridOrigin;
+    worldBounds.upper = gridOrigin + gridSpacing * vec3f(numScalars);
     createCUDATextures();
+    PING; PRINT(numScalars);
   }
 
 
@@ -86,16 +90,16 @@ namespace barney {
       // Copy voxels to cuda array
       cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
       cudaExtent extent{
-        (unsigned)dims.x,
-        (unsigned)dims.y,
-        (unsigned)dims.z};
+        (unsigned)numScalars.x,
+        (unsigned)numScalars.y,
+        (unsigned)numScalars.z};
       BARNEY_CUDA_CALL(Malloc3DArray(&tex.voxelArray,&desc,extent,0));
       cudaMemcpy3DParms copyParms;
       memset(&copyParms,0,sizeof(copyParms));
       copyParms.srcPtr = make_cudaPitchedPtr((void *)rawScalarData,
-                                             (size_t)dims.x*sizeof(float),
-                                             (size_t)dims.x,
-                                             (size_t)dims.y);
+                                             (size_t)numScalars.x*sizeof(float),
+                                             (size_t)numScalars.x,
+                                             (size_t)numScalars.y);
       copyParms.dstArray = tex.voxelArray;
       copyParms.extent   = extent;
       copyParms.kind     = cudaMemcpyHostToDevice;
@@ -131,18 +135,46 @@ namespace barney {
 
   void StructuredData::buildMCs(MCGrid &mcGrid) 
   {
-    vec3i mcDims = divRoundUp(dims,vec3i(cellsPerMC));
+    vec3i mcDims = divRoundUp(numCells,vec3i(cellsPerMC));
     mcGrid.resize(mcDims);
     vec3i blockSize(4);
     vec3i numBlocks = divRoundUp(mcDims,blockSize);
+    mcGrid.gridOrigin = worldBounds.lower;
+    mcGrid.gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
     std::cout << "building macro cells for grid of " << mcDims << " macro cells" << std::endl;
     for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
       auto dev = devGroup->devices[lDevID];
       SetActiveGPU forDuration(dev);
       computeMCs<<<(const dim3&)numBlocks,(const dim3&)blockSize>>>
-        (mcGrid.getDD(lDevID),dims,tex3Ds[lDevID].texObjNN);
+        (mcGrid.getDD(lDevID),numScalars,tex3Ds[lDevID].texObjNN);
     }
     BARNEY_CUDA_SYNC_CHECK();
+  }
+  
+  ScalarField *DataGroup::createStructuredData(const vec3i &numScalars,
+                                               BNScalarType scalarType,
+                                               const void *data,
+                                               const vec3f &gridOrigin,
+                                               const vec3f &gridSpacing)
+  {
+    PING; PRINT(numScalars);
+    StructuredData::SP sf
+      = std::make_shared<StructuredData>(devGroup.get(),
+                                         numScalars,scalarType,data,
+                                         gridOrigin,gridSpacing);
+    return getContext()->initReference(sf);
+  }
+
+  void StructuredData::setVariables(OWLGeom geom)
+  {
+    ScalarField::setVariables(geom);
+    
+    if (devGroup->devices.size() > 1)
+      throw std::runtime_error("Structured data current can't set per-device 3d textures");
+    for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
+      cudaTextureObject_t tex = tex3Ds[lDevID].texObj;
+      owlGeomSetRaw(geom,"tex3D",&tex,lDevID);
+    }
   }
   
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
@@ -151,32 +183,13 @@ namespace barney {
     // using AccelType = MCDDAVolumeAccel<StructuredData>;
     return std::make_shared<typename AccelType::Host>
       (this,volume,StructuredData_ptx);
-    // BARNEY_NYI();
   }
   
-  ScalarField *DataGroup::createStructuredData(const vec3i &dims,
-                                               BNScalarType scalarType,
-                                               const void *data,
-                                               const vec3f &gridOrigin,
-                                               const vec3f &gridSpacing)
+  void StructuredData::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
-    StructuredData::SP sf
-      = std::make_shared<StructuredData>(devGroup.get(),
-                                         dims,scalarType,data,
-                                         gridOrigin,gridSpacing);
-    return getContext()->initReference(sf);
+    ScalarField::DD::addVars(vars,base);
+    vars.push_back
+      ({"tex3D",OWL_USER_TYPE(cudaTextureObject_t),base+OWL_OFFSETOF(DD,texObj)});
   }
-
-  void StructuredData::setVariables(OWLGeom geom)
-  {
-    if (devGroup->devices.size() > 1)
-      throw std::runtime_error("Structured data current can't set per-device 3d textures");
-    for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
-      cudaTextureObject_t tex = tex3Ds[lDevID].texObj;
-      owlGeomSetRaw(geom,"texObj",&tex,lDevID);
-    }
-    BARNEY_NYI();
-  }
-  
 }
 

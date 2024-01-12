@@ -21,11 +21,22 @@ namespace barney {
 
   void ScalarField::setVariables(OWLGeom geom)
   {
-    owlGeomSet4fv(geom,"worldBounds.lower",&worldBounds.lower.x);
-    owlGeomSet4fv(geom,"worldBounds.upper",&worldBounds.upper.x);
+    PING; PRINT(worldBounds);
+    vec3f lo = worldBounds.lower.x;
+    vec3f hi = worldBounds.upper.y;
+    owlGeomSet3f(geom,"worldBounds.lower",lo.x,lo.y,lo.z);
+    owlGeomSet3f(geom,"worldBounds.upper",hi.x,hi.y,hi.z);
   }
 
   OWLContext ScalarField::getOWL() const
   { return devGroup->owl; }
   
+  void ScalarField::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    PING; PRINT(base);
+    vars.push_back
+      ({"worldBounds.lower",OWL_FLOAT3,base+OWL_OFFSETOF(DD,worldBounds.lower)});
+    vars.push_back
+      ({"worldBounds.upper",OWL_FLOAT3,base+OWL_OFFSETOF(DD,worldBounds.upper)});
+  }
 }
