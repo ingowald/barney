@@ -34,6 +34,38 @@ namespace barney {
   typedef std::array<int,6> WedIndices;
   typedef std::array<int,8> HexIndices;
 
+  /*! helper class that performs woodcock sampling over a given
+      parameter range, for a given sample'able volume type */
+  struct Woodcock {
+    template<typename VolumeSampler>
+    static inline __device__
+    bool sampleRange(vec4f &sample,
+                     const VolumeSampler &volume,
+                     vec3f org, vec3f dir,
+                     range1f &tRange,
+                     float majorant,
+                     uint32_t &rngSeed,
+                     bool dbg=false)
+    {
+      LCG<4> &rand = (LCG<4> &)rngSeed;
+      float t = tRange.lower;
+      // if (dbg) printf("range %f %f\n",tRange.lower,tRange.upper);
+      while (true) {
+        float dt = - logf(1.f-rand())/majorant;
+        t += dt;
+        if (t >= tRange.upper)
+          return false;
+      
+        sample = volume.sampleAndMap(org+t*dir,dbg);
+        if (sample.w >= rand()*majorant) {
+          // if (dbg) printf("woodock hit %f\n",t);
+          tRange.upper = t;
+          return true;
+        }
+      }
+    }
+  };
+  
   struct VolumeAccel {
     /*! one particular problem of _volume_ accels is that due to
         changes to the transfer function the number of 'valid'

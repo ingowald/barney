@@ -24,6 +24,10 @@ namespace barney {
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
+#if 1
+    MCRTXVolumeAccel<StructuredDataSampler>::boundsProg
+      (geomData,bounds,primID);
+#else
     // "RTX": we need to create one prim per macro cell
     
     // for now, do not use refitting, simple do rebuild every
@@ -41,10 +45,14 @@ namespace barney {
       const vec3i mcID = self.mcGrid.cellID(primID);
       bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
     }
+#endif
   }
 
   OPTIX_INTERSECT_PROGRAM(Structured_MCRTX_Isec)()
   {
+#if 1
+    MCRTXVolumeAccel<StructuredDataSampler>::isProg();
+#else
     /* ALL of this code should be exactly the same in any
        instantiation of the MCRTXVolumeAccel<> tempalte! */
     using Geom = typename MCRTXVolumeAccel<StructuredDataSampler>::DD;
@@ -78,11 +86,13 @@ namespace barney {
     ray.hit.N         = vec3f(0.f);
     ray.hit.P         = ray.org + tRange.upper*ray.dir;
     optixReportIntersection(tRange.upper, 0);
+#endif
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCRTX_CH)()
   {
     /* nothing - already all set in isec */
+    MCRTXVolumeAccel<StructuredDataSampler>::chProg();
   }
   
 
@@ -94,16 +104,23 @@ namespace barney {
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
+#if 1
+    MCDDAVolumeAccel<StructuredDataSampler>::boundsProg(geomData,bounds,primID);
+#else
     // "DDA": we have a single prim for entire volume, iteration over
     // cells happens in DDA-traversal in IS prog.
 
     using Geom = typename MCDDAVolumeAccel<StructuredDataSampler>::DD;
     const Geom &self = *(Geom*)geomData;
     bounds = self.worldBounds;
+#endif
   }
 
   OPTIX_INTERSECT_PROGRAM(Structured_MCDDA_Isec)()
   {
+#if 1
+    MCDDAVolumeAccel<StructuredDataSampler>::isProg();
+#else
     /* ALL of this code should be exactly the same in any
        instantiation of the MCDDAVolumeAccel<> tempalte! */
     using Geom = typename MCDDAVolumeAccel<StructuredDataSampler>::DD;
@@ -153,10 +170,12 @@ namespace barney {
                 return false;
               },
               /*NO debug*/false);
+#endif
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCDDA_CH)()
   {
+    MCDDAVolumeAccel<StructuredDataSampler>::chProg();
     /* nothing - already all set in isec */
   }
   

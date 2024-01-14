@@ -77,6 +77,9 @@ namespace barney {
     cell's value range through the given transfer function */
   void MCGrid::computeMajorants(const TransferFunction *xf)
   {
+    std::cout << "------------------------------------------------------------------" << std::endl;
+    std::cout << "RECOMPUTING MAJORANTS" << std::endl;
+    std::cout << "------------------------------------------------------------------" << std::endl;
     assert(xf);
     assert(dims.x > 0);
     assert(dims.y > 0);

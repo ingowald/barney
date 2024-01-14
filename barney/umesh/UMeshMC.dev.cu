@@ -27,6 +27,10 @@ namespace barney {
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
+#if 1
+    MCRTXVolumeAccel<UMeshCUBQLSampler>::boundsProg
+      (geomData,bounds,primID);
+#else
     // "RTX": we need to create one prim per macro cell
     
     // for now, do not use refitting, simple do rebuild every
@@ -44,10 +48,14 @@ namespace barney {
       const vec3i mcID = self.mcGrid.cellID(primID);
       bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
     }
+#endif
   }
 
   OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCRTX_Isec)()
   {
+#if 1
+    MCRTXVolumeAccel<UMeshCUBQLSampler>::isProg();
+#else
     /* ALL of this code should be exactly the same in any
        instantiation of the MCRTXVolumeAccel<> tempalte! */
     using Geom = typename MCRTXVolumeAccel<UMeshCUBQLSampler>::DD;
@@ -81,11 +89,12 @@ namespace barney {
     ray.hit.N         = vec3f(0.f);
     ray.hit.P         = ray.org + tRange.upper*ray.dir;
     optixReportIntersection(tRange.upper, 0);
+#endif
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(UMesh_CUBQL_MCRTX_CH)()
   {
-    /* nothing - already all set in isec */
+    MCRTXVolumeAccel<UMeshCUBQLSampler>::chProg();
   }
   
 
@@ -97,20 +106,23 @@ namespace barney {
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
+#if 1
+    MCDDAVolumeAccel<UMeshCUBQLSampler>::boundsProg(geomData,bounds,primID);
+#else
     // "DDA": we have a single prim for entire volume, iteration over
     // cells happens in DDA-traversal in IS prog.
 
     using Geom = typename MCDDAVolumeAccel<UMeshCUBQLSampler>::DD;
     const Geom &self = *(Geom*)geomData;
     bounds = self.worldBounds;
-    printf("BOUNDS PROG DDA world bounds  %f %f %f -  %f %f %f\n",
-           bounds.lower.x,bounds.lower.y,bounds.lower.z,
-           bounds.upper.x,bounds.upper.y,bounds.upper.z
-           );
+#endif
   }
 
   OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCDDA_Isec)()
   {
+#if 1
+    MCDDAVolumeAccel<UMeshCUBQLSampler>::isProg();
+#else
     /* ALL of this code should be exactly the same in any
        instantiation of the MCDDAVolumeAccel<> tempalte! */
     using Geom = typename MCDDAVolumeAccel<UMeshCUBQLSampler>::DD;
@@ -139,21 +151,21 @@ namespace barney {
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
     bool dbg = ray.dbg;
-    if (dbg) printf("CALLING DDA\n");
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
               {
-                float majorant = self.mcGrid.majorant(cellIdx);
+                const float majorant = self.mcGrid.majorant(cellIdx);
                 if (majorant == 0.f) return true;
                 
-                vec4f sample = 0.f;
+                vec4f   sample = 0.f;
                 range1f tRange = {t0,t1};
                 if (!Woodcock::sampleRange(sample,self,
                                            obj_org,obj_dir,
-                                           tRange,majorant,ray.rngSeed))
+                                           tRange,majorant,ray.rngSeed,
+                                           ray.dbg))
                   return true;
-                
+
                 ray.tMax          = tRange.upper;
                 ray.hit.baseColor = getPos(sample);
                 ray.hit.N         = vec3f(0.f);
@@ -162,10 +174,12 @@ namespace barney {
                 return false;
               },
               /*NO debug*/dbg);
+#endif
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(UMesh_CUBQL_MCDDA_CH)()
   {
+    MCDDAVolumeAccel<UMeshCUBQLSampler>::chProg();
     /* nothing - already all set in isec */
   }
   

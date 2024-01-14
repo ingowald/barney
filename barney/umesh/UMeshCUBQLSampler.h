@@ -68,7 +68,6 @@ namespace barney {
   float traverseCUQBL(typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node *bvhNodes,
                       TravState &ptd, vec3f P, bool dbg) 
   {
-    printf("traversecuql\n");
     using node_t = typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node;
     struct NodeRef {
       union {
@@ -133,7 +132,6 @@ namespace barney {
     {}
     inline __device__ bool leaf(vec3f P, int offset, int count)
     {
-      printf("leaf ofs %i cnt %i\n",offset,count);
       for (int i=0;i<count;i++) {
         auto elt = mesh->elements[offset+i];
         if (mesh->eltScalar(retVal,elt,P))
@@ -149,14 +147,10 @@ namespace barney {
   inline __device__
   float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
-    if (!dbg) return NAN;
-    
     UMeshSamplerPTD ptd(this);
     
     traverseCUQBL<UMeshSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.retVal;
-    // // printf("bvh nodes %lx\n",bvhNodes);
-    // return 0.f;
   }
   
 }
