@@ -27,13 +27,13 @@
 namespace barney {
 
   /*! a volume accel that creates an OWL geometry in the barney render
-      graph; this is the base class that just defines the very concept
-      of having a OWL geom, variables, etc; the actual sampler, accel
-      struct, and traverser have to be added in derived classes */
+    graph; this is the base class that just defines the very concept
+    of having a OWL geom, variables, etc; the actual sampler, accel
+    struct, and traverser have to be added in derived classes */
   template<typename SFSampler>
   struct OWLVolumeAccel {
     /*! device-side data for this geom (this is what goes into the
-        SBT); derived classes may add additional fields */
+      SBT); derived classes may add additional fields */
     struct DD : public VolumeAccel::DD<SFSampler> {
       /*! declares this class' optix/owl device variables */
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
@@ -47,28 +47,28 @@ namespace barney {
       { return HAS_ITS_OWN_GROUP; }
 
       /*! set owl variables for this accelerator - this is virutal so
-          derived classes can add their own */
+        derived classes can add their own */
       virtual void setVariables(OWLGeom geom);
       
       void build(bool full_rebuild) override;
       
       /*! creates the actual OWL geometry object that contains the
-          prims that realize this volume accel. */
+        prims that realize this volume accel. */
       virtual void createGeom() = 0;
 
-      /*! returns (part of) a string that allows to identify the
-          device-side optix intersect/ch/bounds/etc functions that
-          realize this geometry. Eg, if this accel uses macrocells,
-          and all the device-functions are named after a scheme
-          "<MyScalarType>_MC_<Bounds/Isec/CH/...>()" then this
-          function should ask the scalar field type to create
-          "<MyScalarType>", and append "_MC" to it */
+      // /*! returns (part of) a string that allows to identify the
+      //     device-side optix intersect/ch/bounds/etc functions that
+      //     realize this geometry. Eg, if this accel uses macrocells,
+      //     and all the device-functions are named after a scheme
+      //     "<MyScalarType>_MC_<Bounds/Isec/CH/...>()" then this
+      //     function should ask the scalar field type to create
+      //     "<MyScalarType>", and append "_MC" to it */
       virtual std::string getTypeString() const
       { return sampler.getTypeString(); }
 
       typename SFSampler::Host sampler;
       OWLGeom      geom = 0;
-      OWLGroup     group = 0;
+      OWLGroup     group = 0; 
       const char  *const ptxCode;
     };
   };
@@ -77,13 +77,9 @@ namespace barney {
   struct MCVolumeAccel : public OWLVolumeAccel<SFSampler>
   {
     struct DD : public OWLVolumeAccel<SFSampler>::DD {
-      using Inherited = typename OWLVolumeAccel<SFSampler>::DD;
+      /*! declares this class' optix/owl device variables */
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
       
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        Inherited::addVars(vars,base);
-        MCGrid::DD::addVars(vars,base+OWL_OFFSETOF(DD,mcGrid));
-      }
       MCGrid::DD mcGrid;
     };
     
@@ -159,76 +155,23 @@ namespace barney {
   };
     
   /*! a OWL geometry that creates one optix geom for each macrocell,
-      uses refitting to 'hide' in-active ones, and leaves traversal of
-      these macrocells to optix's traversal of the individual per-mc
-      prims */
+    uses refitting to 'hide' in-active ones, and leaves traversal of
+    these macrocells to optix's traversal of the individual per-mc
+    prims */
   template<typename SFSampler>
   struct MCRTXVolumeAccel : public MCVolumeAccel<SFSampler> {
     struct DD : public MCVolumeAccel<SFSampler>::DD {};
 
 #ifdef __CUDA_ARCH__
+    /*! optix bounds prog for this class of accels */
     static inline __device__
     void boundsProg(const void *geomData,
                     owl::common::box3f &bounds,
-                    const int32_t primID)
-    {
-      // "RTX": we need to create one prim per macro cell
-    
-      // for now, do not use refitting, simple do rebuild every
-      // frame... in this case we can simply return empty box for every
-      // inactive cell.
-
-      const DD &self = *(DD*)geomData;
-      if (primID >= self.mcGrid.numCells()) return;
-    
-      const float maj = self.mcGrid.majorants[primID];
-      if (maj == 0.f) {
-        bounds = box3f();
-      } else {
-        const vec3i mcID = self.mcGrid.cellID(primID);
-        bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
-      }
-    }
-
-    static inline __device__
-    void isProg()
-    {
-      /* ALL of this code should be exactly the same in any
-         instantiation of the MCRTXVolumeAccel<> tempalte! */
-      const DD &self = owl::getProgramData<DD>();
-      Ray &ray = owl::getPRD<Ray>();
-      vec3f org = optixGetObjectRayOrigin();
-      vec3f dir = optixGetObjectRayDirection();
-      const int primID = optixGetPrimitiveIndex();
-
-      const vec3i mcID = self.mcGrid.cellID(primID);
-    
-      const float majorant = self.mcGrid.majorants[primID];
-      if (majorant == 0.f) return;
-    
-      box3f bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
-      range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
-
-      if (!boxTest(ray,tRange,bounds))
-        return;
-    
-      vec4f sample = 0.f;
-      if (!Woodcock::sampleRange(sample,self,
-                                 org,dir,tRange,majorant,ray.rngSeed
-                                 //,ray.dbg
-                                 ))
-        return;
-
-      // and: store the hit, right here in isec prog.
-      ray.tMax          = tRange.upper;
-      ray.hit.baseColor = getPos(sample);
-      ray.hit.N         = vec3f(0.f);
-      ray.hit.P         = ray.org + tRange.upper*ray.dir;
-      optixReportIntersection(tRange.upper, 0);
-    }
-    
-    static inline __device__ void chProg()
-    {/* nothing - already all set in isec */}
+                    const int32_t primID);
+    /*! optix isec prog for this class of accels */
+    static inline __device__ void isProg();
+    /*! optix closest-hit prog for this class of accels */
+    static inline __device__ void chProg();
 #endif
 
     struct Host : public MCVolumeAccel<SFSampler>::Host {
@@ -243,7 +186,7 @@ namespace barney {
       {}
       
       /*! builds the string that allows for properly matching optix
-          device progs for this type */
+        device progs for this type */
       std::string getTypeString() const override
       { return sampler.getTypeString()+"_MCRTX"; }
       
@@ -262,79 +205,22 @@ namespace barney {
   };
 
   /*! a OWL geometry that creates a *SINGLE* optix primitive for the
-      entire macro cell grid, then performs DDA traversal within that
-      grid */
+    entire macro cell grid, then performs DDA traversal within that
+    grid */
   template<typename SFSampler>
   struct MCDDAVolumeAccel : public MCVolumeAccel<SFSampler> {
     using DD = typename MCVolumeAccel<SFSampler>::DD;
     
 #ifdef __CUDA_ARCH__
+    /*! optix bounds prog for this class of accels */
     static inline __device__
     void boundsProg(const void *geomData,
                     owl::common::box3f &bounds,
-                    const int32_t primID)
-    {
-      const DD &self = *(DD*)geomData;
-      bounds = self.worldBounds;
-    }
-
-    static inline __device__
-    void isProg()
-    {
-    /* ALL of this code should be exactly the same in any
-       instantiation of the MCDDAVolumeAccel<> tempalte! */
-    const DD &self = owl::getProgramData<DD>();
-    Ray &ray = owl::getPRD<Ray>();
-
-    box3f bounds = self.worldBounds;
-    range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
-    
-    if (!boxTest(ray,tRange,bounds))
-      return;
-    
-    vec3f obj_org = optixGetObjectRayOrigin();
-    vec3f obj_dir = optixGetObjectRayDirection();
-
-    // ------------------------------------------------------------------
-    // compute ray in macro cell grid space 
-    // ------------------------------------------------------------------
-    vec3f mcGridOrigin = self.mcGrid.gridOrigin;
-    vec3f mcGridSpacing = self.mcGrid.gridSpacing;
-
-    vec3f dda_org = obj_org;
-    vec3f dda_dir = obj_dir;
-    
-    dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
-    dda_dir = dda_dir * rcp(mcGridSpacing);
-
-    bool dbg = ray.dbg;
-    dda::dda3(dda_org,dda_dir,tRange.upper,
-              vec3ui(self.mcGrid.dims),
-              [&](const vec3i &cellIdx, float t0, float t1) -> bool
-              {
-                const float majorant = self.mcGrid.majorant(cellIdx);
-                if (majorant == 0.f) return true;
-                
-                vec4f   sample = 0.f;
-                range1f tRange = {t0,t1};
-                if (!Woodcock::sampleRange(sample,self,
-                                           obj_org,obj_dir,
-                                           tRange,majorant,ray.rngSeed,
-                                           ray.dbg))
-                  return true;
-
-                ray.tMax          = tRange.upper;
-                ray.hit.baseColor = getPos(sample);
-                ray.hit.N         = vec3f(0.f);
-                ray.hit.P         = ray.org + tRange.upper*ray.dir;
-                optixReportIntersection(tRange.upper, 0);
-                return false;
-              },
-              /*NO debug*/dbg);
-    }
-    
-    static inline __device__ void chProg()
-    {/* nothing - already all set in isec */}
+                    const int32_t primID);
+    /*! optix isec prog for this class of accels */
+    static inline __device__ void isProg();
+    /*! optix closest-hit prog for this class of accels */
+    static inline __device__ void chProg();
 #endif
 
     struct Host : public MCVolumeAccel<SFSampler>::Host {
@@ -347,7 +233,7 @@ namespace barney {
       {}
       
       /*! builds the string that allows for properly matching optix
-          device progs for this type */
+        device progs for this type */
       std::string getTypeString() const override
       { return sampler.getTypeString()+"_MCDDA"; }
       
@@ -367,10 +253,10 @@ namespace barney {
   
   
   /*! a macro-cell accelerator, built over some
-      (template-parameter'ed) type of underlying volume. The volume
-      must be able to compute the macro-cells and majorants, and to
-      sample; this class will then do the traversal, and provide the
-      'glue' to act as a actual barney volume accelerator */
+    (template-parameter'ed) type of underlying volume. The volume
+    must be able to compute the macro-cells and majorants, and to
+    sample; this class will then do the traversal, and provide the
+    'glue' to act as a actual barney volume accelerator */
   template<typename FieldSampler>
   struct MCAccelerator : public VolumeAccel
   {
@@ -387,11 +273,11 @@ namespace barney {
       MCGrid::DD                mcGrid;
       
       /*! whatever the field sampler brings in to be able to sample
-          the underlying field */
+        the underlying field */
       typename FieldSampler::DD sampler;
       
       /*! the volume's device data that maps field samples to rgba
-          values */
+        values */
       VolumeAccel::DD<FieldSampler>           volume;
     };
 
@@ -410,7 +296,7 @@ namespace barney {
   
   template<typename FieldSampler>
   MCAccelerator<FieldSampler>::MCAccelerator(ScalarField *field,
-                                              Volume *volume)
+                                             Volume *volume)
     : VolumeAccel(field, volume),
       sampler(field),
       mcGrid(devGroup)
@@ -441,8 +327,8 @@ namespace barney {
   {
     if (!geom) {
       /*! first time build needs to create the actual OWL geom object;
-          this is done in virtual function because only derived
-          classes will know full geometry type */
+        this is done in virtual function because only derived
+        classes will know full geometry type */
       createGeom();
       group = owlUserGeomGroupCreate(this->getOWL(),1,&geom);
       volume->generatedGroups = { group }; 
@@ -460,5 +346,174 @@ namespace barney {
   {
     VolumeAccel::DD<SFSampler>::addVars(vars,base);
   }
-}
 
+
+
+  /*! declares this class' optix/owl device variables */
+  template<typename SFSampler>
+  void MCVolumeAccel<SFSampler>::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    using Inherited = typename OWLVolumeAccel<SFSampler>::DD;
+    Inherited::addVars(vars,base);
+    MCGrid::DD::addVars(vars,base+OWL_OFFSETOF(DD,mcGrid));
+  }
+
+
+
+
+
+
+
+
+  // ------------------------------------------------------------------
+  // device progs: macro-cell accel with RTX traversal
+  // ------------------------------------------------------------------
+
+#ifdef __CUDA_ARCH__
+  template<typename SFSampler>
+  inline __device__
+  void MCRTXVolumeAccel<SFSampler>::boundsProg(const void *geomData,
+                                               owl::common::box3f &bounds,
+                                               const int32_t primID)
+  {
+    // "RTX": we need to create one prim per macro cell
+    
+    // for now, do not use refitting, simple do rebuild every
+    // frame... in this case we can simply return empty box for every
+    // inactive cell.
+
+    const DD &self = *(DD*)geomData;
+    if (primID >= self.mcGrid.numCells()) return;
+    
+    const float maj = self.mcGrid.majorants[primID];
+    if (maj == 0.f) {
+      bounds = box3f();
+    } else {
+      const vec3i mcID = self.mcGrid.cellID(primID);
+      bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
+    }
+  }
+
+  template<typename SFSampler>
+  inline __device__
+  void MCRTXVolumeAccel<SFSampler>::isProg()
+  {
+    /* ALL of this code should be exactly the same in any
+       instantiation of the MCRTXVolumeAccel<> tempalte! */
+    const DD &self = owl::getProgramData<DD>();
+    Ray &ray = owl::getPRD<Ray>();
+    vec3f org = optixGetObjectRayOrigin();
+    vec3f dir = optixGetObjectRayDirection();
+    const int primID = optixGetPrimitiveIndex();
+
+    const vec3i mcID = self.mcGrid.cellID(primID);
+    
+    const float majorant = self.mcGrid.majorants[primID];
+    if (majorant == 0.f) return;
+    
+    box3f bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
+    range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
+
+    if (!boxTest(ray,tRange,bounds))
+      return;
+    
+    vec4f sample = 0.f;
+    if (!Woodcock::sampleRange(sample,self,
+                               org,dir,tRange,majorant,ray.rngSeed
+                               //,ray.dbg
+                               ))
+      return;
+
+    // and: store the hit, right here in isec prog.
+    ray.tMax          = tRange.upper;
+    ray.hit.baseColor = getPos(sample);
+    ray.hit.N         = vec3f(0.f);
+    ray.hit.P         = ray.org + tRange.upper*ray.dir;
+    optixReportIntersection(tRange.upper, 0);
+  }
+
+  template<typename SFSampler>
+  inline __device__
+  void MCRTXVolumeAccel<SFSampler>::chProg()
+  {/* nothing - already all set in isec */}
+#endif
+
+
+  // ------------------------------------------------------------------
+  // device progs: macro-cell accel with DDA traversal
+  // ------------------------------------------------------------------
+
+
+#ifdef __CUDA_ARCH__
+  template<typename SFSampler>
+  inline __device__
+  void MCDDAVolumeAccel<SFSampler>::boundsProg(const void *geomData,
+                                               owl::common::box3f &bounds,
+                                               const int32_t primID)
+  {
+    const DD &self = *(DD*)geomData;
+    bounds = self.worldBounds;
+  }
+
+  template<typename SFSampler>
+  inline __device__
+  void MCDDAVolumeAccel<SFSampler>::isProg()
+  {
+    /* ALL of this code should be exactly the same in any
+       instantiation of the MCDDAVolumeAccel<> tempalte! */
+    const DD &self = owl::getProgramData<DD>();
+    Ray &ray = owl::getPRD<Ray>();
+
+    box3f bounds = self.worldBounds;
+    range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
+    
+    if (!boxTest(ray,tRange,bounds))
+      return;
+    
+    vec3f obj_org = optixGetObjectRayOrigin();
+    vec3f obj_dir = optixGetObjectRayDirection();
+
+    // ------------------------------------------------------------------
+    // compute ray in macro cell grid space 
+    // ------------------------------------------------------------------
+    vec3f mcGridOrigin = self.mcGrid.gridOrigin;
+    vec3f mcGridSpacing = self.mcGrid.gridSpacing;
+
+    vec3f dda_org = obj_org;
+    vec3f dda_dir = obj_dir;
+    
+    dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
+    dda_dir = dda_dir * rcp(mcGridSpacing);
+
+    dda::dda3(dda_org,dda_dir,tRange.upper,
+              vec3ui(self.mcGrid.dims),
+              [&](const vec3i &cellIdx, float t0, float t1) -> bool
+              {
+                const float majorant = self.mcGrid.majorant(cellIdx);
+                if (majorant == 0.f) return true;
+                
+                vec4f   sample = 0.f;
+                range1f tRange = {t0,t1};
+                if (!Woodcock::sampleRange(sample,self,
+                                           obj_org,obj_dir,
+                                           tRange,majorant,ray.rngSeed,
+                                           ray.dbg))
+                  return true;
+
+                ray.tMax          = tRange.upper;
+                ray.hit.baseColor = getPos(sample);
+                ray.hit.N         = vec3f(0.f);
+                ray.hit.P         = ray.org + tRange.upper*ray.dir;
+                optixReportIntersection(tRange.upper, 0);
+                return false;
+              },
+              /*NO debug*/false);
+  }
+    
+  template<typename SFSampler>
+  inline __device__
+  void MCDDAVolumeAccel<SFSampler>::chProg()
+  {/* nothing - already all set in isec */}
+#endif
+
+}

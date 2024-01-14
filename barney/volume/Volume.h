@@ -130,14 +130,11 @@ namespace barney {
     OWLContext getOWL() const;
     const TransferFunction *getXF() const;
     
-    virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs);
-    // virtual void setVariables(OWLGeom geom, bool firstTime);
-    
     ScalarField *const sf;
     Volume      *const volume;
     DevGroup    *const devGroup;
   };
-
+  
   /*! a *volume* is a scalar field with a transfer function applied to
       it; it's main job is to create something that can intersect a
       ray with that scalars-plus-transferfct thingy, for which it will

@@ -77,9 +77,9 @@ namespace barney {
     cell's value range through the given transfer function */
   void MCGrid::computeMajorants(const TransferFunction *xf)
   {
-    std::cout << "------------------------------------------------------------------" << std::endl;
-    std::cout << "RECOMPUTING MAJORANTS" << std::endl;
-    std::cout << "------------------------------------------------------------------" << std::endl;
+    // std::cout << "------------------------------------------------------------------" << std::endl;
+    // std::cout << "RECOMPUTING MAJORANTS" << std::endl;
+    // std::cout << "------------------------------------------------------------------" << std::endl;
     assert(xf);
     assert(dims.x > 0);
     assert(dims.y > 0);
@@ -88,15 +88,11 @@ namespace barney {
     // cuda num blocks
     const vec3i nb = divRoundUp(dims,bs);
 
-    PRINT(dims);
-    
     for (auto dev : xf->devGroup->devices) {
       BARNEY_CUDA_SYNC_CHECK();
       // for (int devID=0;devID<xf->devGroup->size();devID++) {
       SetActiveGPU forDuration(dev);
       auto d_xf = xf->getDD(dev->owlID);
-      PRINT(d_xf.values);
-      PRINT(d_xf.domain);
       mapMacroCells
         <<<(dim3)nb,(dim3)bs>>>
         (getDD(dev->owlID),d_xf);
@@ -110,10 +106,8 @@ namespace barney {
     assert(dims.x > 0);
     assert(dims.y > 0);
     assert(dims.z > 0);
-    std::cout << "resizing grid to " << dims << std::endl;
     this->dims = dims;
     int numCells = owl::common::volume(dims);
-    PRINT(numCells);
     owlBufferResize(majorantsBuffer,numCells);
     owlBufferResize(scalarRangesBuffer,numCells);
   }

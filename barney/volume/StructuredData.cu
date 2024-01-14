@@ -67,7 +67,6 @@ namespace barney {
     worldBounds.lower = gridOrigin;
     worldBounds.upper = gridOrigin + gridSpacing * vec3f(numScalars);
     createCUDATextures();
-    PING; PRINT(numScalars);
   }
 
 
@@ -84,8 +83,6 @@ namespace barney {
     for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
       auto dev = devGroup->devices[lDevID];
       auto &tex = tex3Ds[lDevID];
-      PING;
-      PRINT(lDevID);
       SetActiveGPU forDuration(dev);
       // Copy voxels to cuda array
       cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
@@ -125,8 +122,6 @@ namespace barney {
       // 2nd texture object for nearest filtering
       textureDesc.filterMode       = cudaFilterModePoint;
       BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,&resourceDesc,&textureDesc,0));
-      PRINT(tex.texObj);
-      PRINT(tex.texObjNN);
     }
     PING;
   }
@@ -157,7 +152,6 @@ namespace barney {
                                                const vec3f &gridOrigin,
                                                const vec3f &gridSpacing)
   {
-    PING; PRINT(numScalars);
     StructuredData::SP sf
       = std::make_shared<StructuredData>(devGroup.get(),
                                          numScalars,scalarType,data,
@@ -175,8 +169,6 @@ namespace barney {
       cudaTextureObject_t tex = tex3Ds[lDevID].texObj;
       owlGeomSetRaw(geom,"tex3D",&tex,lDevID);
     }
-    PRINT(gridOrigin);
-    PRINT(gridSpacing);
     owlGeomSet3f(geom,"cellGridOrigin",
                  gridOrigin.x,
                  gridOrigin.y,

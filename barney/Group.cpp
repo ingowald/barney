@@ -100,7 +100,6 @@ namespace barney {
         volumeGeoms.clear();
         for (auto volume : volumes) 
           volume->build(true);
-        PRINT(volumeGeoms.size());
         volumeGeomsGroup = owlUserGeomGroupCreate
           (owner->devGroup->owl,volumeGeoms.size(),volumeGeoms.data());
         owlGroupBuildAccel(volumeGeomsGroup);
@@ -116,9 +115,7 @@ namespace barney {
         owlGroupRefitAccel(volumeGeomsGroup);
       }
 
-      PRINT(ownGroupVolumes.size());
       for (auto volume : ownGroupVolumes) {
-        PING;
         volume->build(true);
       }
     }

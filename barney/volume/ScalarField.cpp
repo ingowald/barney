@@ -19,12 +19,13 @@
 
 namespace barney {
 
+  void ScalarField::buildMCs(MCGrid &macroCells)
+  { throw std::runtime_error("this calar field type does not know how to build macro-cells"); }
+  
   void ScalarField::setVariables(OWLGeom geom)
   {
-    PING; PRINT(worldBounds);
     vec3f lo = worldBounds.lower;
     vec3f hi = worldBounds.upper;
-    PING; PRINT(lo); PRINT(hi);
     owlGeomSet3f(geom,"worldBounds.lower",lo.x,lo.y,lo.z);
     owlGeomSet3f(geom,"worldBounds.upper",hi.x,hi.y,hi.z);
   }
@@ -34,7 +35,6 @@ namespace barney {
   
   void ScalarField::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
-    PING; PRINT(base);
     vars.push_back
       ({"worldBounds.lower",OWL_FLOAT3,base+OWL_OFFSETOF(DD,worldBounds.lower)});
     vars.push_back

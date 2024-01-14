@@ -76,7 +76,6 @@ namespace barney {
   vec4f TransferFunction::DD::map(float s, bool dbg) const
   {
     float f = (s-domain.lower)/domain.span();
-    if (dbg) printf("mapping %f into domain %f %f -> %f\n",s,domain.lower,domain.upper,f);
     f = clamp(f,0.f,1.f);
     f *= (numValues-1);
     int idx = clamp(int(f),0,numValues-2);
@@ -86,8 +85,6 @@ namespace barney {
     float4 v1 = values[idx+1];
     vec4f r = (1.f-f)*(const vec4f&)v0 + f*(const vec4f&)v1;
     r.w *= baseDensity;
-    if (dbg) printf("final %f %f %f: %f\n",
-                    r.x,r.y,r.z,r.w);
     return r;
   }
 

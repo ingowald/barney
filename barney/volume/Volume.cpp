@@ -36,32 +36,9 @@ namespace barney {
     changes to transfer functoin (or later, scalar field) */
   void Volume::build(bool full_rebuild)
   {
-    PING;
     assert(accel);
-    PING;
     accel->build(full_rebuild);
     devGroup->sbtDirty = true;
   }
 
-  std::vector<OWLVarDecl> VolumeAccel::getVarDecls(uint32_t baseOfs)
-  {
-    return volume->xf.getVarDecls(baseOfs);
-  }
-  
-  // void VolumeAccel::setVariables(OWLGeom geom, bool firstTime)
-  // {
-  //   volume->xf.setVariables(geom,firstTime);
-  //   sf->setVariables(geom,firstTime);
-  // }
-    
-  
-  // std::vector<OWLVarDecl> ScalarField::getVarDecls(uint32_t baseOfs)
-  // {
-  //   return
-  //     {
-  //      { "worldBounds.lower", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.lower) },
-  //      { "worldBounds.upper", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.upper) }
-  //     };
-  // }
-  
 }

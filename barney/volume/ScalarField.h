@@ -33,6 +33,7 @@ namespace barney {
   {
     typedef std::shared_ptr<ScalarField> SP;
 
+    /*! Device-side data common to all ScalarFields that live on the device */
     struct DD {
       box3f                worldBounds;
       
@@ -44,23 +45,13 @@ namespace barney {
     {}
 
     OWLContext getOWL() const;
-    // virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) = 0;
+    
     virtual void setVariables(OWLGeom geom);
     
     virtual std::shared_ptr<VolumeAccel> createAccel(Volume *volume) = 0;
-    virtual void buildMCs(MCGrid &macroCells)
-    { throw std::runtime_error("this calar field type does not know how to build macro-cells"); }
+    
+    virtual void buildMCs(MCGrid &macroCells);
 
-    // /*! returns (part of) a string that should allow an OWL geometry
-    //     type to properly create all the names of all the optix device
-    //     functions that operate on this type. Eg, if all device
-    //     functions for a "StucturedVolume" are named
-    //     "Structured_<SomeAccel>_{Bounds,Isec,CV}()", then the
-    //     StructuredField should reutrn "Structured", and somebody else
-    //     can/has to then make sure to add the respective
-    //     "_<SomeAccel>_" part. */
-    // virtual std::string getTypeString() const = 0;
-        
     DevGroup *const devGroup;
     box3f     worldBounds;
   };
