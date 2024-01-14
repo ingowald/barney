@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 #include "barney/volume/StructuredData.h"
-#include "barney/volume/DDA.h"
-#include <owl/owl_device.h>
+// #include "barney/volume/DDA.h"
+// #include <owl/owl_device.h>
 
 namespace barney {
 

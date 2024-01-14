@@ -16,24 +16,24 @@
 
 #pragma once
 
-#include "barney/umesh/UMeshField.h"
+#include "barney/amr/BlockStructuredField.h"
 #include "barney/volume/MCAccelerator.h"
 #include "barney/common/CUBQL.h"
 
 namespace barney {
 
   /*! a umesh scalar field, with a CUBQL bvh sampler */
-  struct UMeshCUBQLSampler {
+  struct BlockStructuredCUBQLSampler {
     enum { BVH_WIDTH = 4 };
     using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
     using node_t = typename bvh_t::Node;
     
-    struct DD : public UMeshField::DD {
+    struct DD : public BlockStructuredField::DD {
       inline __device__ float sample(vec3f P, bool dbg = false) const;
 
       static void addVars(std::vector<OWLVarDecl> &vars, int base)
       {
-        UMeshField::DD::addVars(vars,base);
+        BlockStructuredField::DD::addVars(vars,base);
         vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
       }
   
@@ -41,11 +41,11 @@ namespace barney {
     };
 
     struct Host {
-      Host(ScalarField *sf) : mesh((UMeshField *)sf) {}
+      Host(ScalarField *sf) : field((BlockStructuredField *)sf) {}
 
       /*! builds the string that allows for properly matching optix
           device progs for this type */
-      inline std::string getTypeString() const { return "UMesh_CUBQL"; }
+      inline std::string getTypeString() const { return "BlockStructured"; }
 
       void build(bool full_rebuild);
 
@@ -55,37 +55,35 @@ namespace barney {
       }
       
       OWLBuffer   bvhNodesBuffer = 0;
-      UMeshField *const mesh;
+      BlockStructuredField *const field;
     };
   };
 
-
-  /*! per-traversal data for the cuBQLTrave callback */
-  struct UMeshSamplerPTD {
-    inline __device__ UMeshSamplerPTD(const UMeshCUBQLSampler::DD *mesh)
-      : mesh(mesh)
+  struct BlockStructuredSamplerPTD {
+    inline __device__ BlockStructuredSamplerPTD(const BlockStructuredCUBQLSampler::DD *field)
+      : field(field)
     {}
     inline __device__ bool leaf(vec3f P, int offset, int count)
     {
       for (int i=0;i<count;i++) {
-        auto elt = mesh->elements[offset+i];
-        if (mesh->eltScalar(retVal,elt,P))
-          return false;
+        auto blockID = field->blockIDs[offset+i];
+        field->addBasisFunctions(sumWeightedValues,sumWeights,blockID,P);
       }
       return true;
     }
 
-    const UMeshCUBQLSampler::DD *const mesh;
-    float retVal = NAN;
+    const BlockStructuredCUBQLSampler::DD *const field;
+    float sumWeights = 0.f;
+    float sumWeightedValues = 0.f;
   };
   
   inline __device__
-  float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
+  float BlockStructuredCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
-    UMeshSamplerPTD ptd(this);
+    BlockStructuredSamplerPTD ptd(this);
     
-    traverseCUQBL<UMeshSamplerPTD>(bvhNodes,ptd,P,dbg);
-    return ptd.retVal;
+    traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
+    return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
   }
   
 }

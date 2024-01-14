@@ -46,66 +46,66 @@ namespace barney {
     OWLBuffer   bvhNodesBuffer = 0;
   };
 
-  /*! sample the umesh field; can return NaN if sample did not hit
-    any unstructured element at all */
-  inline __device__
-  float CUBQLFieldSampler::DD::sample(vec3f P, bool dbg) const
-  {
-    float retVal = NAN;
-    struct NodeRef {
-      union {
-        struct {
-          uint32_t offset:29;
-          uint32_t count : 3;
-        };
-        uint32_t bits;
-      };
-    };
-    NodeRef nodeRef;
-    nodeRef.offset = 0;
-    nodeRef.count  = 0;
-    NodeRef stackBase[30];
-    NodeRef *stackPtr = stackBase;
-    while (true) {
-      while (nodeRef.count == 0) {
-        NodeRef childRef[BVH_WIDTH];
-        node_t node = bvhNodes[nodeRef.offset];
-#pragma unroll
-        for (int i=0;i<BVH_WIDTH;i++) {
-          const box3f &bounds = (const box3f&)node.children[i].bounds;
-          if (node.children[i].valid && bounds.contains(P)) {
-            childRef[i].offset = (int)node.children[i].offset;
-            childRef[i].count  = (int)node.children[i].count;
-          } else
-            childRef[i].bits = 0;
-        }
-        nodeRef.bits = 0;
-#pragma unroll
-        for (int i=0;i<BVH_WIDTH;i++) {
-          if (childRef[i].bits == 0)
-            continue;
-          if (nodeRef.bits == 0)
-            nodeRef = childRef[i];
-          else 
-            *stackPtr++ = childRef[i];
-        }
-        if (nodeRef.bits == 0) {
-          if (stackPtr == stackBase)
-            return retVal;
-          nodeRef = *--stackPtr;
-        }
-      }
-      // leaf ...
-      for (int i=0;i<nodeRef.count;i++) {
-        auto elt = mesh.elements[nodeRef.offset+i];
-        if (mesh.eltScalar(retVal,elt,P))
-          return retVal;
-      }
-      if (stackPtr == stackBase)
-        return retVal;
-      nodeRef = *--stackPtr;
-    }
-    return retVal;
-  }
+//   /*! sample the umesh field; can return NaN if sample did not hit
+//     any unstructured element at all */
+//   inline __device__
+//   float CUBQLFieldSampler::DD::sample(vec3f P, bool dbg) const
+//   {
+//     float retVal = NAN;
+//     struct NodeRef {
+//       union {
+//         struct {
+//           uint32_t offset:29;
+//           uint32_t count : 3;
+//         };
+//         uint32_t bits;
+//       };
+//     };
+//     NodeRef nodeRef;
+//     nodeRef.offset = 0;
+//     nodeRef.count  = 0;
+//     NodeRef stackBase[30];
+//     NodeRef *stackPtr = stackBase;
+//     while (true) {
+//       while (nodeRef.count == 0) {
+//         NodeRef childRef[BVH_WIDTH];
+//         node_t node = bvhNodes[nodeRef.offset];
+// #pragma unroll
+//         for (int i=0;i<BVH_WIDTH;i++) {
+//           const box3f &bounds = (const box3f&)node.children[i].bounds;
+//           if (node.children[i].valid && bounds.contains(P)) {
+//             childRef[i].offset = (int)node.children[i].offset;
+//             childRef[i].count  = (int)node.children[i].count;
+//           } else
+//             childRef[i].bits = 0;
+//         }
+//         nodeRef.bits = 0;
+// #pragma unroll
+//         for (int i=0;i<BVH_WIDTH;i++) {
+//           if (childRef[i].bits == 0)
+//             continue;
+//           if (nodeRef.bits == 0)
+//             nodeRef = childRef[i];
+//           else 
+//             *stackPtr++ = childRef[i];
+//         }
+//         if (nodeRef.bits == 0) {
+//           if (stackPtr == stackBase)
+//             return retVal;
+//           nodeRef = *--stackPtr;
+//         }
+//       }
+//       // leaf ...
+//       for (int i=0;i<nodeRef.count;i++) {
+//         auto elt = mesh.elements[nodeRef.offset+i];
+//         if (mesh.eltScalar(retVal,elt,P))
+//           return retVal;
+//       }
+//       if (stackPtr == stackBase)
+//         return retVal;
+//       nodeRef = *--stackPtr;
+//     }
+//     return retVal;
+//   }
   
 }

@@ -363,8 +363,18 @@ namespace barney {
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
 #if 1
-    return std::make_shared<MCDDAVolumeAccel<UMeshCUBQLSampler>::Host>
-      (this,volume,UMeshMC_ptx);
+    const char *methodFromEnv = getenv("BARNEY_UMESH");
+    std::string method = (methodFromEnv ? methodFromEnv : "DDA");
+
+    if (method == "DDA" || method == "MCDDA")
+      return std::make_shared<MCDDAVolumeAccel<UMeshCUBQLSampler>::Host>
+        (this,volume,UMeshMC_ptx);
+
+    if (method == "MCRTX")
+      return std::make_shared<MCRTXVolumeAccel<UMeshCUBQLSampler>::Host>
+        (this,volume,UMeshMC_ptx);
+    
+    throw std::runtime_error("unknown BARNEY_UMESH accelerator method");
 #else
     const char *methodFromEnv = getenv("BARNEY_UMESH");
     std::string method = (methodFromEnv ? methodFromEnv : "object-space");

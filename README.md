@@ -49,6 +49,31 @@ program where we can trace rays for queries.
 
 ## Add direct openvdb rendering?
 
+
+# ANARI / BARNARI
+
+## building
+- need to get, build, and "make install" ANARI-SDK: `git@github.com:KhronosGroup/ANARI-SDK`
+
+- need to enable ANARI_DEVICE in barney ccmake config
+
+- build barney/anari device in BARNEY build dir (not in haystack)
+
+- add barney/bin dir to LD_LIBRARY_PATH, or link libanari_library_baryney.so to current dir
+
+- `export ANARI_LIBRARY=barney`
+
+
+## running amr data set:
+
+- get and build `git@github.com:vtvamr/anari-volume-viewer.git`
+
+- enable USE_HDF in build!
+
+- get `envy:/space/zellmann/DR1/SILCC_hdf5_plt_cnt_0100`
+
+- run `./anariVolumeViewer -l barney ~/models/SILCC_hdf5_plt_cnt_0100`
+
 # UNSORTED
 
 saved cmd-lines:
