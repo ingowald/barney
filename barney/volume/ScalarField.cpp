@@ -22,8 +22,9 @@ namespace barney {
   void ScalarField::setVariables(OWLGeom geom)
   {
     PING; PRINT(worldBounds);
-    vec3f lo = worldBounds.lower.x;
-    vec3f hi = worldBounds.upper.y;
+    vec3f lo = worldBounds.lower;
+    vec3f hi = worldBounds.upper;
+    PING; PRINT(lo); PRINT(hi);
     owlGeomSet3f(geom,"worldBounds.lower",lo.x,lo.y,lo.z);
     owlGeomSet3f(geom,"worldBounds.upper",hi.x,hi.y,hi.z);
   }

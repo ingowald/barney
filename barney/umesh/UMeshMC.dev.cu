@@ -103,6 +103,10 @@ namespace barney {
     using Geom = typename MCDDAVolumeAccel<UMeshCUBQLSampler>::DD;
     const Geom &self = *(Geom*)geomData;
     bounds = self.worldBounds;
+    printf("BOUNDS PROG DDA world bounds  %f %f %f -  %f %f %f\n",
+           bounds.lower.x,bounds.lower.y,bounds.lower.z,
+           bounds.upper.x,bounds.upper.y,bounds.upper.z
+           );
   }
 
   OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCDDA_Isec)()
