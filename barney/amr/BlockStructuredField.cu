@@ -18,14 +18,13 @@
 #include "barney/Context.h"
 #include "barney/volume/MCGrid.cuh"
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
-// #include "barney/amr/BlockStructuredMCAccelerator.h"
 
 #define BUFFER_CREATE owlDeviceBufferCreate
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate
 
 namespace barney {
 
-  extern "C" char BlockStructuredMCAccelerator_ptx[];
+  extern "C" char BlockStructuredMC_ptx[];
 
   enum { MC_GRID_SIZE = 128 };
 
@@ -269,13 +268,12 @@ namespace barney {
 
     if (method == "DDA" || method == "MCDDA")
       return std::make_shared<MCDDAVolumeAccel<BlockStructuredCUBQLSampler>::Host>
-        (this,volume,BlockStructuredMCAccelerator_ptx);
+        (this,volume,BlockStructuredMC_ptx);
 
     if (method == "MCRTX")
       return std::make_shared<MCRTXVolumeAccel<BlockStructuredCUBQLSampler>::Host>
-        (this,volume,BlockStructuredMCAccelerator_ptx);
+        (this,volume,BlockStructuredMC_ptx);
     
     throw std::runtime_error("unknown BARNEY_AMR accelerator method");
-    // return std::make_shared<BlockStructuredAccel_MC_CUBQL>(this,volume);
   }
 }
