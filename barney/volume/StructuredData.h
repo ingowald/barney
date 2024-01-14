@@ -114,7 +114,7 @@ namespace barney {
 
       /*! builds the string that allows for properly matching optix
         device progs for this type */
-      inline std::string getTypeString() const { return "StructuredData"; }
+      inline std::string getTypeString() const { return "Structured"; }
 
       /*! doesn'ta ctualy do anything for this class, but required to
           make the template instantiating it happy */
