@@ -26,50 +26,32 @@
 
 namespace barney {
 
+  /*! a volume accel that creates an OWL geometry in the barney render
+      graph; this is the base class that just defines the very concept
+      of having a OWL geom, variables, etc; the actual sampler, accel
+      struct, and traverser have to be added in derived classes */
   template<typename SFSampler>
   struct OWLVolumeAccel {
+    /*! device-side data for this geom (this is what goes into the
+        SBT); derived classes may add additional fields */
     struct DD : public VolumeAccel::DD<SFSampler> {
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        PING;
-        VolumeAccel::DD<SFSampler>::addVars(vars,base);
-        // SF::DD::addVars(vars,base);
-      }
+      /*! declares this class' optix/owl device variables */
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
+    /*! host-side code that implements the actual VolumeAccel */
     struct Host : public VolumeAccel {
-      Host(ScalarField *sf, Volume *volume, const char *ptxCode)
-        : VolumeAccel(sf,volume),
-          sampler(sf),
-          ptxCode(ptxCode)
-      {}
+      /* constuctor of host-side data */
+      Host(ScalarField *sf, Volume *volume, const char *ptxCode);
 
       UpdateMode updateMode() override
       { return HAS_ITS_OWN_GROUP; }
 
-      virtual void setVariables(OWLGeom geom) 
-      {
-        sf->setVariables(geom);
-        getXF()->setVariables(geom);
-      }
+      /*! set owl variables for this accelerator - this is virutal so
+          derived classes can add their own */
+      virtual void setVariables(OWLGeom geom);
       
-      void build(bool full_rebuild) override
-      {
-        PING; PRINT(full_rebuild);
-        if (!geom) {
-          createGeom();
-          std::cout << "#bn.mc: geometry created" << std::endl;
-          PRINT(geom);
-          group = owlUserGeomGroupCreate(this->getOWL(),1,&geom);
-          PING;
-          volume->generatedGroups = { group }; 
-          PRINT(volume->generatedGroups.size());
-        }
-        sampler.build(full_rebuild);
-
-        setVariables(geom);
-        owlGroupBuildAccel(group);
-      };
-
+      void build(bool full_rebuild) override;
+      
       /*! creates the actual OWL geometry object that contains the
           prims that realize this volume accel. */
       virtual void createGeom() = 0;
@@ -434,5 +416,49 @@ namespace barney {
       mcGrid(devGroup)
   {}
 
+
+
+
+  /* constuctor of host-side data */
+  template<typename SFSampler>
+  OWLVolumeAccel<SFSampler>::Host::Host(ScalarField *sf, Volume *volume, const char *ptxCode)
+    : VolumeAccel(sf,volume),
+      sampler(sf),
+      ptxCode(ptxCode)
+  {}
+
+  /*! set owl variables for this accelerator - this is virutal so
+    derived classes can add their own */
+  template<typename SFSampler>
+  void OWLVolumeAccel<SFSampler>::Host::setVariables(OWLGeom geom) 
+  {
+    sf->setVariables(geom);
+    getXF()->setVariables(geom);
+  }
+      
+  template<typename SFSampler>
+  void OWLVolumeAccel<SFSampler>::Host::build(bool full_rebuild) 
+  {
+    if (!geom) {
+      /*! first time build needs to create the actual OWL geom object;
+          this is done in virtual function because only derived
+          classes will know full geometry type */
+      createGeom();
+      group = owlUserGeomGroupCreate(this->getOWL(),1,&geom);
+      volume->generatedGroups = { group }; 
+    }
+    sampler.build(full_rebuild);
+    
+    setVariables(geom);
+    owlGroupBuildAccel(group);
+  };
+  
+
+  /*! declares this class' optix/owl device variables */
+  template<typename SFSampler>
+  void OWLVolumeAccel<SFSampler>::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    VolumeAccel::DD<SFSampler>::addVars(vars,base);
+  }
 }
 
