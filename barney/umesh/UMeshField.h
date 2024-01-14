@@ -34,8 +34,8 @@ namespace barney {
     inline __both__ Element(int ID, int type)
       : ID(ID), type(type)
     {}
-    uint32_t ID:29;
-    uint32_t type:3;
+    uint32_t ID  :29;
+    uint32_t type: 3;
   };
 
   struct UMeshField : public ScalarField
@@ -53,6 +53,8 @@ namespace barney {
         all device-side pointers and function to access this field and
         sample/evaluate its elemnets */
     struct DD : public ScalarField::DD {
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
       inline __both__ box4f pyrBounds(int primID) const;
@@ -136,6 +138,10 @@ namespace barney {
     
     VolumeAccel::SP createAccel(Volume *volume) override;
 
+    /*! returns part of the string used to find the optix device
+        programs that operate on this type */
+    std::string getTypeString() const { return "UMesh"; };
+    
     std::vector<vec4f>      vertices;
     std::vector<TetIndices> tetIndices;
     std::vector<PyrIndices> pyrIndices;

@@ -51,15 +51,15 @@ namespace barney {
     virtual void buildMCs(MCGrid &macroCells)
     { throw std::runtime_error("this calar field type does not know how to build macro-cells"); }
 
-    /*! returns (part of) a string that should allow an OWL geometry
-        type to properly create all the names of all the optix device
-        functions that operate on this type. Eg, if all device
-        functions for a "StucturedVolume" are named
-        "Structured_<SomeAccel>_{Bounds,Isec,CV}()", then the
-        StructuredField should reutrn "Structured", and somebody else
-        can/has to then make sure to add the respective
-        "_<SomeAccel>_" part. */
-    virtual std::string getTypeString() const { BARNEY_NYI(); }
+    // /*! returns (part of) a string that should allow an OWL geometry
+    //     type to properly create all the names of all the optix device
+    //     functions that operate on this type. Eg, if all device
+    //     functions for a "StucturedVolume" are named
+    //     "Structured_<SomeAccel>_{Bounds,Isec,CV}()", then the
+    //     StructuredField should reutrn "Structured", and somebody else
+    //     can/has to then make sure to add the respective
+    //     "_<SomeAccel>_" part. */
+    // virtual std::string getTypeString() const = 0;
         
     DevGroup *const devGroup;
     box3f     worldBounds;

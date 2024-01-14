@@ -21,12 +21,16 @@
 #include "barney/umesh/UMeshMCAccelerator.h"
 #include "barney/umesh/RTXObjectSpace.h"
 #include "barney/umesh/AWT.h"
+#include "barney/volume/MCAccelerator.h"
+#include "barney/umesh/UMeshCUBQLSampler.h"
 
 #define BUFFER_CREATE owlDeviceBufferCreate
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate
 
 namespace barney {
 
+  extern "C" char UMeshMC_ptx[];
+  
   enum { MC_GRID_SIZE = 128 };
   
   __global__ void rasterElements(MCGrid::DD grid,
@@ -115,6 +119,9 @@ namespace barney {
     std::cout << "allcating macro cells" << std::endl;
     grid.resize(dims);
 
+    grid.gridOrigin = worldBounds.lower;
+    grid.gridSpacing = worldBounds.size() * rcp(vec3f(dims));
+    
     std::cout << "clearing macro cells" << std::endl;
     grid.clearCells();
     
@@ -320,41 +327,45 @@ namespace barney {
     ScalarField::setVariables(geom);
     
     // ------------------------------------------------------------------
-    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
+    owlGeomSetBuffer(geom,"umesh.vertices",verticesBuffer);
       
-    owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
-    owlGeomSetBuffer(geom,"pyrIndices",pyrIndicesBuffer);
-    owlGeomSetBuffer(geom,"wedIndices",wedIndicesBuffer);
-    owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
-    owlGeomSetBuffer(geom,"elements",elementsBuffer);
-    owlGeomSetBuffer(geom,"gridOffsets",gridOffsetsBuffer);
-    owlGeomSetBuffer(geom,"gridDims",gridDimsBuffer);
-    owlGeomSetBuffer(geom,"gridDomains",gridDomainsBuffer);
-    owlGeomSetBuffer(geom,"gridScalars",gridScalarsBuffer);
+    owlGeomSetBuffer(geom,"umesh.tetIndices",tetIndicesBuffer);
+    owlGeomSetBuffer(geom,"umesh.pyrIndices",pyrIndicesBuffer);
+    owlGeomSetBuffer(geom,"umesh.wedIndices",wedIndicesBuffer);
+    owlGeomSetBuffer(geom,"umesh.hexIndices",hexIndicesBuffer);
+    owlGeomSetBuffer(geom,"umesh.elements",elementsBuffer);
+    owlGeomSetBuffer(geom,"umesh.gridOffsets",gridOffsetsBuffer);
+    owlGeomSetBuffer(geom,"umesh.gridDims",gridDimsBuffer);
+    owlGeomSetBuffer(geom,"umesh.gridDomains",gridDomainsBuffer);
+    owlGeomSetBuffer(geom,"umesh.gridScalars",gridScalarsBuffer);
   }
   
-  // std::vector<OWLVarDecl> UMeshField::getVarDecls(uint32_t myOfs)
-  // {
-  //   std::vector<OWLVarDecl> mine = 
-  //     {
-  //      { "mesh.vertices",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,vertices) },
-  //      { "mesh.tetIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,tetIndices) },
-  //      { "mesh.pyrIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,pyrIndices) },
-  //      { "mesh.wedIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,wedIndices) },
-  //      { "mesh.hexIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,hexIndices) },
-  //      { "mesh.elements",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,elements) },
-  //      { "mesh.gridOffsets", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridOffsets) },
-  //      { "mesh.gridDims",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDims) },
-  //      { "mesh.gridDomains", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDomains) },
-  //      { "mesh.gridScalars", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridScalars) },
-  //     };
-  //   for (auto var : ScalarField::getVarDecls(myOfs))
-  //     mine.push_back(var);
-  //   return mine;
-  // }
+  void UMeshField::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    ScalarField::DD::addVars(vars,base);
+    std::vector<OWLVarDecl> mine = 
+      {
+       { "umesh.vertices",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,vertices) },
+       { "umesh.tetIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,tetIndices) },
+       { "umesh.pyrIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,pyrIndices) },
+       { "umesh.wedIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,wedIndices) },
+       { "umesh.hexIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,hexIndices) },
+       { "umesh.elements",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,elements) },
+       { "umesh.gridOffsets", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridOffsets) },
+       { "umesh.gridDims",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridDims) },
+       { "umesh.gridDomains", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridDomains) },
+       { "umesh.gridScalars", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridScalars) },
+      };
+    for (auto var : mine)
+      vars.push_back(var);
+  }
 
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
+#if 1
+    return std::make_shared<MCDDAVolumeAccel<UMeshCUBQLSampler>::Host>
+      (this,volume,UMeshMC_ptx);
+#else
     const char *methodFromEnv = getenv("BARNEY_UMESH");
     std::string method = (methodFromEnv ? methodFromEnv : "object-space");
     if (method == "macro-cells" || method == "spatial" || method == "mc")
@@ -365,6 +376,7 @@ namespace barney {
       return std::make_shared<RTXObjectSpace>(this,volume);
     else
       throw std::runtime_error("found BARNEY_METHOD env-var, but didn't recognize its value. allowed values are 'awt', 'object-space', and 'macro-cells'");
+#endif
   }
 
 

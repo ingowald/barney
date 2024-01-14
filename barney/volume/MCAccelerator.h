@@ -50,19 +50,20 @@ namespace barney {
     }
   };
   
-  template<typename SF>
+  template<typename SFSampler>
   struct OWLVolumeAccel {
-    struct DD : public VolumeAccel::DD<SF> {
+    struct DD : public VolumeAccel::DD<SFSampler> {
       static void addVars(std::vector<OWLVarDecl> &vars, int base)
       {
         PING;
-        VolumeAccel::DD<SF>::addVars(vars,base);
+        VolumeAccel::DD<SFSampler>::addVars(vars,base);
         // SF::DD::addVars(vars,base);
       }
     };
     struct Host : public VolumeAccel {
       Host(ScalarField *sf, Volume *volume, const char *ptxCode)
         : VolumeAccel(sf,volume),
+          sampler(sf),
           ptxCode(ptxCode)
       {}
 
@@ -87,6 +88,7 @@ namespace barney {
           volume->generatedGroups = { group }; 
           PRINT(volume->generatedGroups.size());
         }
+        sampler.build(full_rebuild);
 
         setVariables(geom);
         owlGroupBuildAccel(group);
@@ -104,19 +106,20 @@ namespace barney {
           function should ask the scalar field type to create
           "<MyScalarType>", and append "_MC" to it */
       virtual std::string getTypeString() const
-      { return sf->getTypeString(); }
-      
+      { return sampler.getTypeString(); }
+
+      typename SFSampler::Host sampler;
       OWLGeom      geom = 0;
       OWLGroup     group = 0;
       const char  *const ptxCode;
     };
   };
   
-  template<typename SF>
-  struct MCVolumeAccel : public OWLVolumeAccel<SF>
+  template<typename SFSampler>
+  struct MCVolumeAccel : public OWLVolumeAccel<SFSampler>
   {
-    struct DD : public OWLVolumeAccel<SF>::DD {
-      using Inherited = typename OWLVolumeAccel<SF>::DD;
+    struct DD : public OWLVolumeAccel<SFSampler>::DD {
+      using Inherited = typename OWLVolumeAccel<SFSampler>::DD;
       
       static void addVars(std::vector<OWLVarDecl> &vars, int base)
       {
@@ -126,11 +129,12 @@ namespace barney {
       MCGrid::DD mcGrid;
     };
     
-    struct Host : public OWLVolumeAccel<SF>::Host
+    struct Host : public OWLVolumeAccel<SFSampler>::Host
     {
-      using Inherited = typename OWLVolumeAccel<SF>::Host;
+      using Inherited = typename OWLVolumeAccel<SFSampler>::Host;
       
       using Inherited::sf;
+      using Inherited::sampler;
       using Inherited::getXF;
       using Inherited::ptxCode;
       using Inherited::geom;
@@ -145,6 +149,7 @@ namespace barney {
       {
         Inherited::setVariables(geom);
         mcGrid.setVariables(geom);
+        sampler.setVariables(geom);
       }
       
       void createGeom() override
@@ -199,14 +204,14 @@ namespace barney {
       uses refitting to 'hide' in-active ones, and leaves traversal of
       these macrocells to optix's traversal of the individual per-mc
       prims */
-  template<typename SF>
-  struct MCRTXVolumeAccel : public MCVolumeAccel<SF> {
-    struct DD : public MCVolumeAccel<SF>::DD {};
+  template<typename SFSampler>
+  struct MCRTXVolumeAccel : public MCVolumeAccel<SFSampler> {
+    struct DD : public MCVolumeAccel<SFSampler>::DD {};
     
-    struct Host : public MCVolumeAccel<SF>::Host {
-      using Inherited = typename MCVolumeAccel<SF>::Host;
+    struct Host : public MCVolumeAccel<SFSampler>::Host {
+      using Inherited = typename MCVolumeAccel<SFSampler>::Host;
       
-      using Inherited::sf;
+      using Inherited::sampler;
       using Inherited::geom;
       using Inherited::mcGrid;
       
@@ -217,7 +222,7 @@ namespace barney {
       /*! builds the string that allows for properly matching optix
           device progs for this type */
       std::string getTypeString() const override
-      { return sf->getTypeString()+"_MCRTX"; }
+      { return sampler.getTypeString()+"_MCRTX"; }
       
       void createGeom() override
       {
@@ -236,11 +241,11 @@ namespace barney {
   /*! a OWL geometry that creates a *SINGLE* optix primitive for the
       entire macro cell grid, then performs DDA traversal within that
       grid */
-  template<typename SF>
-  struct MCDDAVolumeAccel : public MCVolumeAccel<SF> {
-    struct Host : public MCVolumeAccel<SF>::Host {
-      using Inherited = typename MCVolumeAccel<SF>::Host;
-      using Inherited::sf;
+  template<typename SFSampler>
+  struct MCDDAVolumeAccel : public MCVolumeAccel<SFSampler> {
+    struct Host : public MCVolumeAccel<SFSampler>::Host {
+      using Inherited = typename MCVolumeAccel<SFSampler>::Host;
+      using Inherited::sampler;
       using Inherited::geom;
       
       Host(ScalarField *sf, Volume *volume, const char *ptxCode)
@@ -250,7 +255,7 @@ namespace barney {
       /*! builds the string that allows for properly matching optix
           device progs for this type */
       std::string getTypeString() const override
-      { return sf->getTypeString()+"_MCDDA"; }
+      { return sampler.getTypeString()+"_MCDDA"; }
       
       void createGeom() override
       {

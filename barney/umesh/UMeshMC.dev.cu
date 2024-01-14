@@ -14,13 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/volume/StructuredData.h"
+/*! \file UMeshCUBQLMC.dev.cu implements the DDA and RTX traversers for a umesh
+    scalar field with cubql sampler and macro cell accel */
+
+#include "barney/umesh/UMeshCUBQLSampler.h"
 #include "barney/volume/DDA.h"
 #include <owl/owl_device.h>
 
 namespace barney {
 
-  OPTIX_BOUNDS_PROGRAM(Structured_MCRTX_Bounds)(const void *geomData,
+  OPTIX_BOUNDS_PROGRAM(UMesh_CUBQL_MCRTX_Bounds)(const void *geomData,
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
@@ -30,7 +33,7 @@ namespace barney {
     // frame... in this case we can simply return empty box for every
     // inactive cell.
 
-    using Geom = typename MCRTXVolumeAccel<StructuredDataSampler>::DD;
+    using Geom = typename MCRTXVolumeAccel<UMeshCUBQLSampler>::DD;
     const Geom &self = *(Geom*)geomData;
     if (primID >= self.mcGrid.numCells()) return;
     
@@ -43,11 +46,11 @@ namespace barney {
     }
   }
 
-  OPTIX_INTERSECT_PROGRAM(Structured_MCRTX_Isec)()
+  OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCRTX_Isec)()
   {
     /* ALL of this code should be exactly the same in any
        instantiation of the MCRTXVolumeAccel<> tempalte! */
-    using Geom = typename MCRTXVolumeAccel<StructuredDataSampler>::DD;
+    using Geom = typename MCRTXVolumeAccel<UMeshCUBQLSampler>::DD;
     const Geom &self = owl::getProgramData<Geom>();
     Ray &ray = owl::getPRD<Ray>();
     vec3f org = optixGetObjectRayOrigin();
@@ -80,7 +83,7 @@ namespace barney {
     optixReportIntersection(tRange.upper, 0);
   }
   
-  OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCRTX_CH)()
+  OPTIX_CLOSEST_HIT_PROGRAM(UMesh_CUBQL_MCRTX_CH)()
   {
     /* nothing - already all set in isec */
   }
@@ -90,23 +93,23 @@ namespace barney {
 
 
 
-  OPTIX_BOUNDS_PROGRAM(Structured_MCDDA_Bounds)(const void *geomData,
+  OPTIX_BOUNDS_PROGRAM(UMesh_CUBQL_MCDDA_Bounds)(const void *geomData,
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
     // "DDA": we have a single prim for entire volume, iteration over
     // cells happens in DDA-traversal in IS prog.
 
-    using Geom = typename MCDDAVolumeAccel<StructuredDataSampler>::DD;
+    using Geom = typename MCDDAVolumeAccel<UMeshCUBQLSampler>::DD;
     const Geom &self = *(Geom*)geomData;
     bounds = self.worldBounds;
   }
 
-  OPTIX_INTERSECT_PROGRAM(Structured_MCDDA_Isec)()
+  OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCDDA_Isec)()
   {
     /* ALL of this code should be exactly the same in any
        instantiation of the MCDDAVolumeAccel<> tempalte! */
-    using Geom = typename MCDDAVolumeAccel<StructuredDataSampler>::DD;
+    using Geom = typename MCDDAVolumeAccel<UMeshCUBQLSampler>::DD;
     const Geom &self = owl::getProgramData<Geom>();
     Ray &ray = owl::getPRD<Ray>();
 
@@ -130,7 +133,9 @@ namespace barney {
     
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
-    
+
+    bool dbg = ray.dbg;
+    if (dbg) printf("CALLING DDA\n");
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
@@ -152,10 +157,10 @@ namespace barney {
                 optixReportIntersection(tRange.upper, 0);
                 return false;
               },
-              /*NO debug*/false);
+              /*NO debug*/dbg);
   }
   
-  OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCDDA_CH)()
+  OPTIX_CLOSEST_HIT_PROGRAM(UMesh_CUBQL_MCDDA_CH)()
   {
     /* nothing - already all set in isec */
   }

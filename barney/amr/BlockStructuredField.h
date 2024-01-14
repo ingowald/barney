@@ -24,6 +24,10 @@ namespace barney {
   {
     typedef std::shared_ptr<BlockStructuredField> SP;
 
+    /*! returns part of the string used to find the optix device
+        programs that operate on this type */
+    std::string getTypeString() const { return "BSAMR"; };
+    
     struct Block
     {
       uint32_t ID{UINT_MAX};

@@ -68,9 +68,9 @@ namespace barney {
     /*! device data for a volume accel - takes the device data for the
         underlying scalar field, and 'adds' a transfer function (and
         then gets the ability to sample field and map with xf */
-    template<typename ScalarField>
-    struct DD : public ScalarField::DD {
-      using Inherited = typename ScalarField::DD;
+    template<typename ScalarFieldSampler>
+    struct DD : public ScalarFieldSampler::DD {
+      using Inherited = typename ScalarFieldSampler::DD;
       
       inline __device__
       vec4f sampleAndMap(vec3f point, bool dbg=false) const
