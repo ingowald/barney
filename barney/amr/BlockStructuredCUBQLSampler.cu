@@ -29,8 +29,6 @@ namespace barney {
     SetActiveGPU forDuration(field->devGroup->devices[0]);
     
     BARNEY_CUDA_SYNC_CHECK();
-    assert(mesh);
-    assert(!mesh->elements.empty());
     
     if (bvhNodesBuffer != 0) {
       std::cout << "cubql bvh already built..." << std::endl;
