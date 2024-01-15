@@ -128,7 +128,8 @@ namespace barney {
       = (range1f*)owlBufferGetPointer(scalarRangesBuffer,devID);
     
     dd.dims = dims;
-    
+    dd.gridOrigin = gridOrigin;
+    dd.gridSpacing = gridSpacing;
     return dd;
   }
 

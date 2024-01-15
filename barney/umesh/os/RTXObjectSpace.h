@@ -37,7 +37,10 @@ namespace barney {
     struct DD : public UMeshObjectSpace::DD {
       using Inherited = UMeshObjectSpace::DD;
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      
       Cluster             *clusters;
+      /*! true (only) if this is the first time this is being built */
+      int                  firstTimeBuild;
     };
     
     struct Host : public UMeshObjectSpace::Host {
@@ -52,11 +55,15 @@ namespace barney {
       static OWLGeomType createGeomType(DevGroup *devGroup);
     
       void build(bool full_rebuild) override;
-
-      std::vector<Cluster> clusters;
-      OWLBuffer clustersBuffer = 0;
       void createClusters();
 
+      /*! set owl variables for this accelerator - this is virutal so
+        derived classes can add their own */
+      void setVariables(OWLGeom geom) override;
+      
+      std::vector<Cluster> clusters;
+      OWLBuffer clustersBuffer = 0;
+      bool firstTimeBuild = true;
       // OWLGeom  geom  = 0;
       // OWLGroup group = 0;
       // UMeshField *const mesh;

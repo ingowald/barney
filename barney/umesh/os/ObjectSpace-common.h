@@ -42,6 +42,18 @@ namespace barney {
         : VolumeAccel(mesh,volume),
           mesh(mesh)
       {}
+
+      UpdateMode updateMode() override
+      { return HAS_ITS_OWN_GROUP; }
+      
+      /*! set owl variables for this accelerator - this is virutal so
+        derived classes can add their own */
+      virtual void setVariables(OWLGeom geom)
+      {
+        mesh->setVariables(geom);
+        getXF()->setVariables(geom);
+      }
+      
       UMeshField *const mesh;
       OWLGeom   geom  = 0;
       OWLGroup  group = 0;
@@ -801,6 +813,10 @@ namespace barney {
         // ray.tMax = t;
         inputLeafRange.upper = min(inputLeafRange.upper,hit_t);
         ray.hit.baseColor = getPos(mapped);
+        ray.hit.N         = vec3f(0.f);
+        ray.hadHit = true;
+        ray.tMax   = t;
+        ray.hit.P  = ray.org + t * ray.dir;
         break;
       }
     }

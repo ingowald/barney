@@ -23,7 +23,10 @@ namespace barney {
   void RTXObjectSpace::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
     Inherited::addVars(vars,base);
-    vars.push_back({ "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) });
+    vars.push_back
+      ({ "clusters",       OWL_BUFPTR, base+OWL_OFFSETOF(DD,clusters) });
+    vars.push_back
+      ({ "firstTimeBuild", OWL_INT,    base+OWL_OFFSETOF(DD,firstTimeBuild) });
   }
 
   OWLGeomType RTXObjectSpace::Host::createGeomType(DevGroup *devGroup)
@@ -119,8 +122,16 @@ namespace barney {
 
     clustersBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(Cluster),
                                            clusters.size(),clusters.data());
+    PING; PRINT(clustersBuffer);
   }
 
+  void RTXObjectSpace::Host::setVariables(OWLGeom geom)
+  {
+    Inherited::setVariables(geom);
+    owlGeomSetBuffer(geom,"clusters",clustersBuffer);
+    owlGeomSet1i(geom,"firstTimeBuild",(int)firstTimeBuild);
+  }
+  
 
   void RTXObjectSpace::Host::build(bool full_rebuild)
   {
@@ -139,52 +150,59 @@ namespace barney {
       int numPrims = (int)clusters.size();
       PRINT(numPrims);
       owlGeomSetPrimCount(geom,numPrims);
+      
+      firstTimeBuild = true;
+      setVariables(geom);
 
-      // ------------------------------------------------------------------
-      assert(mesh->tetIndicesBuffer);
-      owlGeomSet4fv(geom,"mesh.worldBounds.lower",&mesh->worldBounds.lower.x);
-      owlGeomSet4fv(geom,"mesh.worldBounds.upper",&mesh->worldBounds.upper.x);
-      owlGeomSetBuffer(geom,"mesh.vertices",mesh->verticesBuffer);
+      // // ------------------------------------------------------------------
+      // assert(mesh->tetIndicesBuffer);
+      // owlGeomSet4fv(geom,"mesh.worldBounds.lower",&mesh->worldBounds.lower.x);
+      // owlGeomSet4fv(geom,"mesh.worldBounds.upper",&mesh->worldBounds.upper.x);
+      // owlGeomSetBuffer(geom,"mesh.vertices",mesh->verticesBuffer);
       
-      owlGeomSetBuffer(geom,"mesh.tetIndices",mesh->tetIndicesBuffer);
-      owlGeomSetBuffer(geom,"mesh.pyrIndices",mesh->pyrIndicesBuffer);
-      owlGeomSetBuffer(geom,"mesh.wedIndices",mesh->wedIndicesBuffer);
-      owlGeomSetBuffer(geom,"mesh.hexIndices",mesh->hexIndicesBuffer);
-      owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
-      owlGeomSetBuffer(geom,"mesh.gridOffsets",mesh->gridOffsetsBuffer);
-      owlGeomSetBuffer(geom,"mesh.gridDims",mesh->gridDimsBuffer);
-      owlGeomSetBuffer(geom,"mesh.gridDomains",mesh->gridDomainsBuffer);
-      owlGeomSetBuffer(geom,"mesh.gridScalars",mesh->gridScalarsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.tetIndices",mesh->tetIndicesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.pyrIndices",mesh->pyrIndicesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.wedIndices",mesh->wedIndicesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.hexIndices",mesh->hexIndicesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.gridOffsets",mesh->gridOffsetsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.gridDims",mesh->gridDimsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.gridDomains",mesh->gridDomainsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.gridScalars",mesh->gridScalarsBuffer);
+      // // ------------------------------------------------------------------      
+      // owlGeomSetBuffer(geom,"clusters",clustersBuffer);
+      
       // ------------------------------------------------------------------      
-      owlGeomSetBuffer(geom,"clusters",clustersBuffer);
       
-      // ------------------------------------------------------------------      
-      
-      if (volume->xf.domain.lower < volume->xf.domain.upper) {
-        owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
-      } else {
-        owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
-      }
-      owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
-      owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
-      // intentionally set to null for first-time build
-      owlGeomSetBuffer(geom,"xf.values",0/*volume->xf.valuesBuffer*/);
+      // if (volume->xf.domain.lower < volume->xf.domain.upper) {
+      //   owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+      // } else {
+      //   owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
+      // }
+      // owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+      // owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
+      // // intentionally set to null for first-time build
+      // owlGeomSetBuffer(geom,"xf.values",0/*volume->xf.valuesBuffer*/);
       
       // ------------------------------------------------------------------      
       group
         = owlUserGeomGroupCreate(devGroup->owl,1,&geom,OPTIX_BUILD_FLAG_ALLOW_UPDATE);
       owlGroupBuildAccel(group);
-      volume->generatedGroups.push_back(group);
+
+      firstTimeBuild = false;
     }
+
+    volume->generatedGroups = { group };
+    setVariables(geom);
     
-    if (volume->xf.domain.lower < volume->xf.domain.upper) {
-      owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
-    } else {
-      owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
-    }
-    owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
-    owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
-    owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
+    // if (volume->xf.domain.lower < volume->xf.domain.upper) {
+    //   owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+    // } else {
+    //   owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
+    // }
+    // owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+    // owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
+    // owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
 
     std::cout << "refitting ... umesh object space geom" << std::endl;
     // owlGroupBuildAccel(group);

@@ -49,16 +49,14 @@ namespace barney {
     {
       LCG<4> &rand = (LCG<4> &)rngSeed;
       float t = tRange.lower;
-      // if (dbg) printf("range %f %f\n",tRange.lower,tRange.upper);
       while (true) {
         float dt = - logf(1.f-rand())/majorant;
         t += dt;
         if (t >= tRange.upper)
           return false;
-      
+
         sample = volume.sampleAndMap(org+t*dir,dbg);
         if (sample.w >= rand()*majorant) {
-          // if (dbg) printf("woodock hit %f\n",t);
           tRange.upper = t;
           return true;
         }

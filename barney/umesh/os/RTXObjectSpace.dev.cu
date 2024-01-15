@@ -30,15 +30,22 @@ namespace barney {
     int begin = self.clusters[primID].begin;
     int end   = self.clusters[primID].end;
 
-    if (self.xf.values == 0) {
-      // first time build - all prims are active, xf and cluster
-      // bounds not yet set
+    if (self.firstTimeBuild) {
+      // cluster bounds not yet set - this must be a first-time build
+      // - let's set them.
       cluster.bounds = box4f();
       for (int i=begin;i<end;i++)
         cluster.bounds.extend(self.eltBounds(self.elements[i]));
       primBounds = getBox(cluster.bounds);
     } else {
       box4f bounds  = cluster.bounds;
+         // printf("cluster.bounds  (%f %f %f)(%f %f %f)\n",
+         //        bounds.lower.x,
+         //        bounds.lower.y,
+         //        bounds.lower.z,
+         //        bounds.upper.x,
+         //        bounds.upper.y,
+         //        bounds.upper.z);
       range1f range = getRange(bounds);
       float majorant = self.xf.majorant(range);
       cluster.majorant = majorant;
@@ -48,39 +55,39 @@ namespace barney {
         // printf("bounds prog %i -> CULLED\n",primID);
       } else {
         primBounds = getBox(bounds);
-        // printf("bounds prog %i -> ALIVE (%f %f %f)(%f %f %f)\n",primID,
-        //        primBounds.lower.x,
-        //        primBounds.lower.y,
-        //        primBounds.lower.z,
-        //        primBounds.upper.x,
-        //        primBounds.upper.y,
-        //        primBounds.upper.z);
+         // printf("bounds prog %i -> ALIVE (%f %f %f)(%f %f %f)\n",primID,
+         //        primBounds.lower.x,
+         //        primBounds.lower.y,
+         //        primBounds.lower.z,
+         //        primBounds.upper.x,
+         //        primBounds.upper.y,
+         //        primBounds.upper.z);
       }
     }
   }
 
   OPTIX_CLOSEST_HIT_PROGRAM(RTXObjectSpaceCH)()
   {
-    auto &ray = owl::getPRD<Ray>();
-    auto &self = owl::getProgramData<RTXObjectSpace::DD>();
-    int primID = optixGetPrimitiveIndex();
-    // Cluster &cluster = self.clusters[primID];
-    // int begin = cluster.begin;
-    // int end = cluster.end;
-    // float majorant = cluster.majorant;
+    // auto &ray = owl::getPRD<Ray>();
+    // auto &self = owl::getProgramData<RTXObjectSpace::DD>();
+    // int primID = optixGetPrimitiveIndex();
+    // // Cluster &cluster = self.clusters[primID];
+    // // int begin = cluster.begin;
+    // // int end = cluster.end;
+    // // float majorant = cluster.majorant;
     
-    ray.tMax = optixGetRayTmax();
+    // ray.tMax = optixGetRayTmax();
 
-    vec3f P = ray.org + ray.tMax * ray.dir;
+    // vec3f P = ray.org + ray.tMax * ray.dir;
 
-    // CentralDifference cd(self,self.xf,P,begin,end,ray.dbg);
+    // // CentralDifference cd(self,self.xf,P,begin,end,ray.dbg);
 
-    // vec3f N = normalize
-    //   ((cd.N == vec3f(0.f)) ? ray.dir : cd.N);
-    ray.hadHit = 1;
-    ray.hit.N = vec3f(0.f);
-    ray.hit.P = P;
-    // ray.hit.baseColor = cd.mappedColor;
+    // // vec3f N = normalize
+    // //   ((cd.N == vec3f(0.f)) ? ray.dir : cd.N);
+    // ray.hadHit = 1;
+    // ray.hit.N = vec3f(0.f);
+    // ray.hit.P = P;
+    // // ray.hit.baseColor = cd.mappedColor;
   }
 
 
@@ -119,20 +126,11 @@ namespace barney {
     range1f leafRange(t0,t1);
     // if (ray.dbg) printf("leaf range %f %f\n",
     //                     leafRange.lower,leafRange.upper);
-                        
+
+    vec3f sample;
     float hit_t = intersectLeaf(ray,leafRange,self,begin,end);
-    // if (ray.dbg) printf("hit_t %f / max %f\n",
-    //                     hit_t,optixGetRayTmax());
-
-    //
-    //
-    // TODO: if expected num steps is small enough, just sample
-    // isntead of doing per-element intersection
-    //
-
-    if (hit_t < optixGetRayTmax())  {
+    if (hit_t < optixGetRayTmax())
       optixReportIntersection(hit_t, 0);
-    }
   }
 
 }

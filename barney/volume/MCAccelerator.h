@@ -305,6 +305,7 @@ namespace barney {
         const std::string boundsProg = typeString+"_Bounds";
         const std::string isProg = typeString+"_Isec";
         const std::string chProg = typeString+"_CH";
+        PRINT(isProg);
         owlGeomTypeSetBoundsProg(gt,module,boundsProg.c_str());
         owlGeomTypeSetIntersectProg(gt,0,module,isProg.c_str());
         owlGeomTypeSetClosestHit(gt,0,module,chProg.c_str());
@@ -376,15 +377,14 @@ namespace barney {
 
     if (!boxTest(ray,tRange,bounds))
       return;
-    
+
     vec4f sample = 0.f;
     if (!Woodcock::sampleRange(sample,self,
-                               org,dir,tRange,majorant,ray.rngSeed
-                               //,ray.dbg
-                               ))
+                               org,dir,tRange,majorant,ray.rngSeed))
       return;
 
     // and: store the hit, right here in isec prog.
+    ray.hadHit        = true;
     ray.tMax          = tRange.upper;
     ray.hit.baseColor = getPos(sample);
     ray.hit.N         = vec3f(0.f);
@@ -460,6 +460,7 @@ namespace barney {
                                            ray.dbg))
                   return true;
 
+                ray.hadHit        = true;
                 ray.tMax          = tRange.upper;
                 ray.hit.baseColor = getPos(sample);
                 ray.hit.N         = vec3f(0.f);

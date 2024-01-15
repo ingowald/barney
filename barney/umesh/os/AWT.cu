@@ -26,8 +26,8 @@ namespace barney {
   void UMeshAWT::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
     Inherited::addVars(vars,base);
-    vars.push_back({ "nodes", OWL_BUFPTR, OWL_OFFSETOF(DD,nodes) });
-    vars.push_back({ "roots", OWL_BUFPTR, OWL_OFFSETOF(DD,roots) });
+    vars.push_back({ "nodes", OWL_BUFPTR, base+OWL_OFFSETOF(DD,nodes) });
+    vars.push_back({ "roots", OWL_BUFPTR, base+OWL_OFFSETOF(DD,roots) });
   }
 
   OWLGeomType UMeshAWT::Host::createGeomType(DevGroup *devGroup)
@@ -257,6 +257,13 @@ namespace barney {
       node.majorant[cID] = xf.majorant(getRange(node.bounds[cID]));
   }
 
+  void UMeshAWT::Host::setVariables(OWLGeom geom)
+  {
+    Inherited::setVariables(geom);
+    owlGeomSetBuffer(geom,"roots",rootsBuffer);
+    owlGeomSetBuffer(geom,"nodes",nodesBuffer);
+  }
+  
   void UMeshAWT::Host::build(bool full_rebuild)
   {
     if (!full_rebuild) return;
@@ -273,55 +280,56 @@ namespace barney {
         = owlGeomCreate(devGroup->owl,gt);
       int numPrims = (int)roots.size();
       owlGeomSetPrimCount(geom,numPrims);
+      setVariables(geom);
 
-      // ------------------------------------------------------------------
-      assert(mesh->tetIndicesBuffer);
-      owlGeomSet4fv(geom,"mesh.worldBounds.lower",&mesh->worldBounds.lower.x);
-      owlGeomSet4fv(geom,"mesh.worldBounds.upper",&mesh->worldBounds.upper.x);
-      owlGeomSetBuffer(geom,"mesh.vertices",mesh->verticesBuffer);
+      // // ------------------------------------------------------------------
+      // assert(mesh->tetIndicesBuffer);
+      // owlGeomSet4fv(geom,"mesh.worldBounds.lower",&mesh->worldBounds.lower.x);
+      // owlGeomSet4fv(geom,"mesh.worldBounds.upper",&mesh->worldBounds.upper.x);
+      // owlGeomSetBuffer(geom,"mesh.vertices",mesh->verticesBuffer);
       
-      owlGeomSetBuffer(geom,"mesh.tetIndices",mesh->tetIndicesBuffer);
-      owlGeomSetBuffer(geom,"mesh.pyrIndices",mesh->pyrIndicesBuffer);
-      owlGeomSetBuffer(geom,"mesh.wedIndices",mesh->wedIndicesBuffer);
-      owlGeomSetBuffer(geom,"mesh.hexIndices",mesh->hexIndicesBuffer);
-      owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
-      owlGeomSetBuffer(geom,"mesh.gridOffsets",mesh->gridOffsetsBuffer);
-      owlGeomSetBuffer(geom,"mesh.gridDims",mesh->gridDimsBuffer);
-      owlGeomSetBuffer(geom,"mesh.gridDomains",mesh->gridDomainsBuffer);
-      owlGeomSetBuffer(geom,"mesh.gridScalars",mesh->gridScalarsBuffer);
-      // ------------------------------------------------------------------      
-      owlGeomSetBuffer(geom,"roots",rootsBuffer);
-      owlGeomSetBuffer(geom,"nodes",nodesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.tetIndices",mesh->tetIndicesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.pyrIndices",mesh->pyrIndicesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.wedIndices",mesh->wedIndicesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.hexIndices",mesh->hexIndicesBuffer);
+      // owlGeomSetBuffer(geom,"mesh.elements",mesh->elementsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.gridOffsets",mesh->gridOffsetsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.gridDims",mesh->gridDimsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.gridDomains",mesh->gridDomainsBuffer);
+      // owlGeomSetBuffer(geom,"mesh.gridScalars",mesh->gridScalarsBuffer);
+      // // ------------------------------------------------------------------      
       
       // ------------------------------------------------------------------      
       
-      if (volume->xf.domain.lower < volume->xf.domain.upper) {
-        owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
-      } else {
-        owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
-      }
-      owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
-      owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
-      // intentionally set to null for first-time build
-      owlGeomSetBuffer(geom,"xf.values",0/*volume->xf.valuesBuffer*/);
+      // if (volume->xf.domain.lower < volume->xf.domain.upper) {
+      //   owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+      // } else {
+      //   owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
+      // }
+      // owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+      // owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
+      // // intentionally set to null for first-time build
+      // owlGeomSetBuffer(geom,"xf.values",0/*volume->xf.valuesBuffer*/);
       
       // ------------------------------------------------------------------      
       group
         = owlUserGeomGroupCreate(devGroup->owl,1,&geom,OPTIX_BUILD_FLAG_ALLOW_UPDATE);
       owlGroupBuildAccel(group);
-      volume->generatedGroups.push_back(group);
+      volume->generatedGroups = { group }; 
     }
-    else std::cout << "original awt build alredy done - just need refit" << std::endl;
+    else
+      std::cout << "original awt build already done - just need refit" << std::endl;
 
+    setVariables(geom);
 
-    if (volume->xf.domain.lower < volume->xf.domain.upper) {
-      owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
-    } else {
-      owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
-    }
-    owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
-    owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
-    owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
+    // if (volume->xf.domain.lower < volume->xf.domain.upper) {
+    //   owlGeomSet2f(geom,"xf.domain",volume->xf.domain.lower,volume->xf.domain.upper);
+    // } else {
+    //   owlGeomSet2f(geom,"xf.domain",mesh->worldBounds.lower.w,mesh->worldBounds.upper.w);
+    // }
+    // owlGeomSet1f(geom,"xf.baseDensity",volume->xf.baseDensity);
+    // owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
+    // owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
 
     for (int devID = 0;devID<devGroup->devices.size(); devID++) {
       auto dev = devGroup->devices[devID];

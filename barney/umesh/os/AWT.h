@@ -60,6 +60,11 @@ namespace barney {
       static OWLGeomType createGeomType(DevGroup *devGroup);
       
       void build(bool full_rebuild) override;
+
+      /*! set owl variables for this accelerator - this is virutal so
+        derived classes can add their own */
+      void setVariables(OWLGeom geom) override;
+      
       
       void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
       void extractRoots();

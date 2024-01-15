@@ -20,7 +20,6 @@ namespace barney {
 
   void UMeshCUBQLSampler::Host::build(bool full_rebuild)
   {
-    PING;
     if (bvhNodesBuffer) {
       std::cout <<" bvh already built" << std::endl;
       return;
@@ -47,9 +46,10 @@ namespace barney {
                                    mesh->elements.size()*sizeof(box3f)));
     BARNEY_CUDA_SYNC_CHECK();
 
+    std::cout << OWL_TERMINAL_BLUE
+              << "#bn.umesh: cubql bvh built ..."
+              << OWL_TERMINAL_DEFAULT << std::endl;
     mesh->computeElementBBs(/*deviceID:*/0,d_primBounds);
-    PRINT(d_primBounds);
-    PRINT(mesh->elements.size());
     BARNEY_CUDA_SYNC_CHECK();
     
     cuBQL::BuildConfig buildConfig;
@@ -73,7 +73,9 @@ namespace barney {
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
     cuBQL::free(bvh,0,managedMem);
-    std::cout << "cubql bvh built ..." << std::endl;
+    std::cout << OWL_TERMINAL_LIGHT_GREEN
+              << "#bn.umesh: cubql bvh built ..."
+              << OWL_TERMINAL_DEFAULT << std::endl;
   }
   
 }

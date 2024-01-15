@@ -30,7 +30,125 @@ namespace barney {
 
   extern "C" char UMeshMC_ptx[];
   
-  enum { MC_GRID_SIZE = 128 };
+  // this is probably waaaay overkill for smallish voluems, but those
+  // are fast, anyway. and this helps for large ones...
+  enum { MC_GRID_SIZE = 512 };
+
+  inline __device__ float length3(vec4f v)
+  { return length(getPos(v)); }
+  
+  template<int D> inline __device__
+  void rasterTet(MCGrid::DD grid,
+                 vec4f a,
+                 vec4f b,
+                 vec4f c,
+                 vec4f d)
+  {
+    float lab = length3(b-a);
+    float lac = length3(c-a);
+    float lad = length3(d-a);
+    float lbc = length3(c-b);
+    float lbd = length3(d-b);
+    float lcd = length3(d-c);
+    float maxLen = max(max(max(max(max(lab,lac),lad),lbc),lbd),lcd);
+
+    vec4f ab = 0.5f*(a+b);
+    vec4f ac = 0.5f*(a+c);
+    vec4f ad = 0.5f*(a+d);
+    vec4f bc = 0.5f*(b+c);
+    vec4f bd = 0.5f*(b+d);
+    vec4f cd = 0.5f*(c+d);
+
+#if 1
+    vec4f oa,ob,oc,od0,od1;
+    if (lab >= maxLen) {
+      oa = ab;
+      ob = c;
+      oc = d;
+      od0 = a;
+      od1 = a;
+      // rasterTet<D-1>(grid,ab,c,d,a);
+      // rasterTet<D-1>(grid,ab,c,d,b);
+    } else if (lac >= maxLen) {
+      oa = ac;
+      ob = b;
+      oc = d;
+      od0 = a;
+      od1 = c;
+      // rasterTet<D-1>(grid,ac,b,d,a);
+      // rasterTet<D-1>(grid,ac,b,d,c);
+    } else if (lad >= maxLen) {
+      oa = ad;
+      ob = b;
+      oc = c;
+      od0 = a;
+      od1 = d;
+      // rasterTet<D-1>(grid,ad,b,c,a);
+      // rasterTet<D-1>(grid,ad,b,c,d);
+    } else if (lbc >= maxLen) {
+      oa = bc;
+      ob = a;
+      oc = d;
+      od0 = b;
+      od1 = c;
+      // rasterTet<D-1>(grid,bc,a,d,b);
+      // rasterTet<D-1>(grid,bc,a,d,c);
+    } else if (lbd >= maxLen) {
+      oa = bd;
+      ob = a;
+      oc = c;
+      od0 = b;
+      od1 = d;
+      // rasterTet<D-1>(grid,bd,a,c,b);
+      // rasterTet<D-1>(grid,bd,a,c,d);
+    } else {
+      oa = cd;
+      ob = a;
+      oc = b;
+      od0 = c;
+      od1 = d;
+      // rasterTet<D-1>(grid,cd,a,b,c);
+      // rasterTet<D-1>(grid,cd,a,b,d);
+    }
+    rasterTet<D-1>(grid,oa,ob,oc,od0);
+    rasterTet<D-1>(grid,oa,ob,oc,od1);
+#else
+    if (lab >= maxLen) {
+      rasterTet<D-1>(grid,ab,c,d,a);
+      rasterTet<D-1>(grid,ab,c,d,b);
+    } else if (lac >= maxLen) {
+      rasterTet<D-1>(grid,ac,b,d,a);
+      rasterTet<D-1>(grid,ac,b,d,c);
+    } else if (lad >= maxLen) {
+      rasterTet<D-1>(grid,ad,b,c,a);
+      rasterTet<D-1>(grid,ad,b,c,d);
+    } else if (lbc >= maxLen) {
+      rasterTet<D-1>(grid,bc,a,d,b);
+      rasterTet<D-1>(grid,bc,a,d,c);
+    } else if (lbd >= maxLen) {
+      rasterTet<D-1>(grid,bd,a,c,b);
+      rasterTet<D-1>(grid,bd,a,c,d);
+    } else {
+      rasterTet<D-1>(grid,cd,a,b,c);
+      rasterTet<D-1>(grid,cd,a,b,d);
+    }
+#endif
+  }
+  
+  template<> inline __device__
+  void rasterTet<0>(MCGrid::DD grid,
+                 vec4f a,
+                 vec4f b,
+                 vec4f c,
+                 vec4f d)
+  {
+    box4f bb;
+    bb.extend(a);
+    bb.extend(b);
+    bb.extend(c);
+    bb.extend(d);
+    rasterBox(grid,bb);
+  }
   
   __global__ void rasterElements(MCGrid::DD grid,
                                  UMeshField::DD mesh)
@@ -39,6 +157,16 @@ namespace barney {
     if (eltIdx >= mesh.numElements) return;    
 
     auto elt = mesh.elements[eltIdx];
+    if (elt.type == Element::TET) {
+      int tetID = elt.ID;
+      const int4 indices = mesh.tetIndices[tetID];
+      vec4f a = make_vec4f(mesh.vertices[indices.x]);
+      vec4f b = make_vec4f(mesh.vertices[indices.y]);
+      vec4f c = make_vec4f(mesh.vertices[indices.z]);
+      vec4f d = make_vec4f(mesh.vertices[indices.w]);
+      rasterTet<5>(grid,a,b,c,d);
+      return;
+    }
     if (elt.type == Element::GRID) {
       int primID = elt.ID;
 
@@ -132,7 +260,7 @@ namespace barney {
       auto d_mesh = getDD(dev->owlID);
       auto d_grid = grid.getDD(dev->owlID);
       rasterElements
-        <<<divRoundUp(int(elements.size()),1024),1024>>>
+        <<<divRoundUp(int(elements.size()),128),128>>>
         (d_grid,d_mesh);
       BARNEY_CUDA_SYNC_CHECK();
     }
@@ -365,9 +493,12 @@ namespace barney {
     const char *methodFromEnv = getenv("BARNEY_UMESH");
     std::string method = (methodFromEnv ? methodFromEnv : "DDA");
 
-    if (method == "DDA" || method == "MCDDA" || method == "dda")
+    PRINT(method);
+    if (method == "DDA" || method == "MCDDA" || method == "dda") {
+      std::cout << "using umesh-macrocells-dda traversal" << std::endl;
       return std::make_shared<MCDDAVolumeAccel<UMeshCUBQLSampler>::Host>
         (this,volume,UMeshMC_ptx);
+    }
 
     if (method == "MCRTX")
       return std::make_shared<MCRTXVolumeAccel<UMeshCUBQLSampler>::Host>
