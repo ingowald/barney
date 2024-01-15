@@ -17,15 +17,13 @@
 #pragma once
 
 #include "barney/DataGroup.h"
-#include "barney/volume/MCAccelerator.h"
+// #include "barney/volume/MCAccelerator.h"
 /* all routines for point-element sampling/intersection - shold
    logically be part of this file, but kept in separate file because
    these were mostly imported from oepnvkl */
-#include "barney/umesh/ElementIntersection.h"
+#include "barney/umesh/common/ElementIntersection.h"
 
 namespace barney {
-
-  
 
   struct Element {
     typedef enum { TET=0, PYR, WED, HEX, GRID } Type;

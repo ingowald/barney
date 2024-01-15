@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/umesh/UMeshField.h"
+#include "barney/umesh/common/UMeshField.h"
 #include "barney/volume/MCAccelerator.h"
 #include "barney/common/CUBQL.h"
 

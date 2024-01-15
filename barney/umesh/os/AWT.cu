@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/umesh/AWT.h"
+#include "barney/umesh/os/AWT.h"
 
 #define BUFFER_CREATE owlDeviceBufferCreate
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate

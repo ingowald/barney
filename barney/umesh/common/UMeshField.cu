@@ -14,15 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/umesh/UMeshField.h"
+#include "barney/umesh/common/UMeshField.h"
 #include "barney/Context.h"
 #include "barney/volume/MCGrid.cuh"
 // just to be able to create these accelerators:
-#include "barney/umesh/UMeshMCAccelerator.h"
-#include "barney/umesh/RTXObjectSpace.h"
-#include "barney/umesh/AWT.h"
-#include "barney/volume/MCAccelerator.h"
-#include "barney/umesh/UMeshCUBQLSampler.h"
+// #include "barney/umesh/mc/UMeshMCAccelerator.h"
+#include "barney/umesh/mc/UMeshCUBQLSampler.h"
+#include "barney/umesh/os/RTXObjectSpace.h"
+#include "barney/umesh/os/AWT.h"
 
 #define BUFFER_CREATE owlDeviceBufferCreate
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate

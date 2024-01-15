@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/umesh/RTXObjectSpace.h"
+#include "barney/umesh/os/RTXObjectSpace.h"
 
 namespace barney {
 

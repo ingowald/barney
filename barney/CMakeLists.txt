@@ -71,17 +71,17 @@ embed_ptx(
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            umesh/RTXObjectSpace.dev.cu
+  SOURCES            umesh/os/RTXObjectSpace.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshMC-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            umesh/UMeshMC.dev.cu
+  SOURCES            umesh/mc/UMeshMC.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-AWT-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            umesh/AWT.dev.cu
+  SOURCES            umesh/os/AWT.dev.cu
 )
 
 # ------------------------------------------------------------------
@@ -147,16 +147,16 @@ add_library(barney STATIC
   volume/StructuredData.h
   volume/StructuredData.cu
   # *unstructured* volumes
-  umesh/UMeshField.h
-  umesh/UMeshField.cu
-  umesh/UMeshCUBQLSampler.h
-  umesh/UMeshCUBQLSampler.cu
-  umesh/CUBQLFieldSampler.h
-  umesh/CUBQLFieldSampler.cpp
-  umesh/RTXObjectSpace.h
-  umesh/RTXObjectSpace.cu
-  umesh/AWT.h
-  umesh/AWT.cu
+  umesh/common/UMeshField.h
+  umesh/common/UMeshField.cu
+  # ... macro-cell based methods
+  umesh/mc/UMeshCUBQLSampler.h
+  umesh/mc/UMeshCUBQLSampler.cu
+  # ... object-space methods
+  umesh/os/RTXObjectSpace.h
+  umesh/os/RTXObjectSpace.cu
+  umesh/os/AWT.h
+  umesh/os/AWT.cu
   # *amr* volumes
   amr/BlockStructuredField.h
   amr/BlockStructuredField.cu

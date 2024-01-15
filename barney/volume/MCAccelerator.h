@@ -94,51 +94,10 @@ namespace barney {
       using Inherited::geom;
       using Inherited::getTypeString;
       
-      Host(ScalarField *sf, Volume *volume, const char *ptxCode)
-        : Inherited(sf,volume,ptxCode),
-          mcGrid(sf->devGroup)
-      {}
+      Host(ScalarField *sf, Volume *volume, const char *ptxCode);
+      void setVariables(OWLGeom geom) override;
+      void createGeom() override;
 
-      void setVariables(OWLGeom geom) override
-      {
-        Inherited::setVariables(geom);
-        mcGrid.setVariables(geom);
-        sampler.setVariables(geom);
-      }
-      
-      void createGeom() override
-      {
-        auto devGroup = sf->devGroup;
-        const std::string typeString
-          = getTypeString();
-        std::cout << "creating owl geom type for barney type '"
-                  << typeString << "'" << std::endl;
-        OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
-          (ptxCode, [&](DevGroup *dg)
-          {
-            printf("creating geom type ....");
-            std::vector<OWLVarDecl> params;
-            DD::addVars(params,0);
-            OWLGeomType gt = owlGeomTypeCreate
-              (dg->owl,OWL_GEOM_USER,
-               sizeof(DD),params.data(),params.size());
-            OWLModule module = owlModuleCreate(dg->owl,ptxCode);
-            const std::string boundsProg = typeString+"_Bounds";
-            const std::string isProg = typeString+"_Isec";
-            const std::string chProg = typeString+"_CH";
-            owlGeomTypeSetBoundsProg(gt,module,boundsProg.c_str());
-            owlGeomTypeSetIntersectProg(gt,0,module,isProg.c_str());
-            owlGeomTypeSetClosestHit(gt,0,module,chProg.c_str());
-            owlBuildPrograms(dg->owl);
-            return gt;
-          });
-        
-        geom = owlGeomCreate(devGroup->owl,gt);
-        // this CREATES the geom, but doesn't yet set prim count (prim
-        // count depends on how the mc grid is traersed), so has to be
-        // set in the derived function
-      }
-      
       void build(bool full_rebuild) override
       {
         if (mcGrid.dims.x == 0) {
@@ -251,58 +210,9 @@ namespace barney {
     };
   };
   
-  
-  /*! a macro-cell accelerator, built over some
-    (template-parameter'ed) type of underlying volume. The volume
-    must be able to compute the macro-cells and majorants, and to
-    sample; this class will then do the traversal, and provide the
-    'glue' to act as a actual barney volume accelerator */
-  template<typename FieldSampler>
-  struct MCAccelerator : public VolumeAccel
-  {
-    struct DD {
-      inline __device__
-      vec4f sampleAndMap(vec3f P, bool dbg=false) const
-      {
-        // DEPRECATED!
-        return vec4f(0.f);
-        // return volume.sampleAndMap(sampler,P,dbg);
-      }
-
-      /*! our own macro-cell grid to be traversed */
-      MCGrid::DD                mcGrid;
-      
-      /*! whatever the field sampler brings in to be able to sample
-        the underlying field */
-      typename FieldSampler::DD sampler;
-      
-      /*! the volume's device data that maps field samples to rgba
-        values */
-      VolumeAccel::DD<FieldSampler>           volume;
-    };
-
-    MCAccelerator(ScalarField *field, Volume *volume);
-    // void build() override;
-    
-    OWLGeom      geom = 0;
-    MCGrid       mcGrid;
-    FieldSampler sampler;
-  };
-
-
   // ==================================================================
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
-  
-  template<typename FieldSampler>
-  MCAccelerator<FieldSampler>::MCAccelerator(ScalarField *field,
-                                             Volume *volume)
-    : VolumeAccel(field, volume),
-      sampler(field),
-      mcGrid(devGroup)
-  {}
-
-
 
 
   /* constuctor of host-side data */
@@ -359,6 +269,56 @@ namespace barney {
   }
 
 
+
+  template<typename SFSampler>
+  MCVolumeAccel<SFSampler>::Host::Host(ScalarField *sf, Volume *volume, const char *ptxCode)
+    : Inherited(sf,volume,ptxCode),
+      mcGrid(sf->devGroup)
+  {}
+
+  template<typename SFSampler>
+  void MCVolumeAccel<SFSampler>::Host::setVariables(OWLGeom geom) 
+  {
+    Inherited::setVariables(geom);
+    mcGrid.setVariables(geom);
+    sampler.setVariables(geom);
+  }
+
+  template<typename SFSampler>
+  void MCVolumeAccel<SFSampler>::Host::createGeom() 
+  {
+    auto devGroup = sf->devGroup;
+    const std::string typeString
+      = getTypeString();
+    std::cout << "creating owl geom type for barney type '"
+              << typeString << "'" << std::endl;
+    OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
+      (ptxCode, [&](DevGroup *dg)
+      {
+        printf("creating geom type ....");
+        std::vector<OWLVarDecl> params;
+        DD::addVars(params,0);
+        OWLGeomType gt = owlGeomTypeCreate
+          (dg->owl,OWL_GEOM_USER,
+           sizeof(DD),params.data(),params.size());
+        OWLModule module = owlModuleCreate(dg->owl,ptxCode);
+        const std::string boundsProg = typeString+"_Bounds";
+        const std::string isProg = typeString+"_Isec";
+        const std::string chProg = typeString+"_CH";
+        owlGeomTypeSetBoundsProg(gt,module,boundsProg.c_str());
+        owlGeomTypeSetIntersectProg(gt,0,module,isProg.c_str());
+        owlGeomTypeSetClosestHit(gt,0,module,chProg.c_str());
+        owlBuildPrograms(dg->owl);
+        return gt;
+      });
+        
+    geom = owlGeomCreate(devGroup->owl,gt);
+    // this CREATES the geom, but doesn't yet set prim count (prim
+    // count depends on how the mc grid is traersed), so has to be
+    // set in the derived function
+  }
+      
+  
 
 
 

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/umesh/ObjectSpace-common.h"
+#include "barney/umesh/os/ObjectSpace-common.h"
 
 namespace barney {
 

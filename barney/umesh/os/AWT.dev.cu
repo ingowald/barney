@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include <owl/owl_device.h>
-#include "barney/umesh/AWT.h"
+#include "barney/umesh/os/AWT.h"
 
 #define AWT_SAMPLE_MODE 1
 

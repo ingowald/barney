@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "barney/umesh/UMeshField.h"
-#include <cuBQL/bvh.h>
+#include "barney/umesh/common/UMeshField.h"
+#include "barney/common/CUBQL.h"
 
 namespace barney {
 

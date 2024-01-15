@@ -53,6 +53,9 @@ program where we can trace rays for queries.
 # ANARI / BARNARI
 
 ## building
+
+- dependencies: `libgtk-3-dev`
+
 - need to get, build, and "make install" ANARI-SDK: `git@github.com:KhronosGroup/ANARI-SDK`
 
 - need to enable ANARI_DEVICE in barney ccmake config

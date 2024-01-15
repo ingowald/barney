@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/umesh/UMeshCUBQLSampler.h"
+#include "barney/umesh/mc/UMeshCUBQLSampler.h"
 
 namespace barney {
 
