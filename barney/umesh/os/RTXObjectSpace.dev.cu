@@ -124,11 +124,11 @@ namespace barney {
       return;
 
     range1f leafRange(t0,t1);
-    // if (ray.dbg) printf("leaf range %f %f\n",
-    //                     leafRange.lower,leafRange.upper);
+    if (ray.dbg) printf("---------------------- leaf range %f %f\n",
+                        leafRange.lower,leafRange.upper);
 
     vec3f sample;
-    float hit_t = intersectLeaf(ray,leafRange,self,begin,end);
+    float hit_t = intersectLeaf(ray,leafRange,self,begin,end,ray.dbg);
     if (hit_t < optixGetRayTmax())
       optixReportIntersection(hit_t, 0);
   }

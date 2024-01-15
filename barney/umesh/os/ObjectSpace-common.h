@@ -67,7 +67,7 @@ namespace barney {
                       range1f &inputLeafRange,
                       const UMeshObjectSpace::DD &self,
                       int begin,
-                      int end);
+                      int end, bool dbg = false);
 
   // ------------------------------------------------------------------
   /*! helper class that represents a ray segment (from begin.t to
@@ -255,12 +255,14 @@ namespace barney {
   struct NewIntersector {
     enum { maxSegments = 4 };
 
+    const bool dbg;
     inline __device__
     NewIntersector(Ray &ray,
                    range1f &inputLeafRange,
                    const UMeshObjectSpace::DD &self,
                    int begin,
-                   int end);
+                   int end,
+                   bool dbg=false);
 
     /*! intesect all test in currelt leaf, by gathering segments and
       intersecting those when required */
@@ -372,8 +374,10 @@ namespace barney {
   inline __device__
   bool clipSegment(LinearSegment &clipped,
                    const LinearSegment &original,
-                   float t)
+                   float t,
+                   bool dbg=false)
   {
+    if (dbg) printf("clipping segment %f %f to %f\n",original.begin.t,original.end.t,t);
     if (t < original.begin.t) return false;
     
     clipped = original;
@@ -382,8 +386,11 @@ namespace barney {
     } else {
       clipped.end.scalar = original.lerp(t);
       clipped.end.t = t;
+      if (dbg)
+        printf("clipped new end %f scalar %f\n",
+               clipped.end.t,clipped.end.scalar);
     }
-    return clipped.end.t > clipped.begin.t;
+    return clipped.end.t >= clipped.begin.t;
   }
 
     /*! returns the interpolated scalar value along this segment; this
@@ -759,11 +766,14 @@ namespace barney {
                                  range1f &inputLeafRange,
                                  const UMeshObjectSpace::DD &self,
                                  int begin,
-                                 int end)
+                                 int end,
+                                 bool dbg)
     : ray(ray), self(self), inputLeafRange(inputLeafRange),
-      begin(begin), end(end), rand((LCG<4> &)ray.rngSeed)
+      begin(begin), end(end), rand((LCG<4> &)ray.rngSeed),
+      dbg(dbg)
 
   {
+    hit_t = ray.tMax;
     doTets();
     if (hadAnyGrids)
       doGrids();
@@ -774,40 +784,72 @@ namespace barney {
   inline __device__
   void NewIntersector::doSegments()
   {
+    if (dbg)
+      printf("---- segments %i\n",numSegments);
     for (int segID = 0; segID < numSegments; segID++) {
       LinearSegment segment;
       bool segmentStillValid
-        = clipSegment(segment,segments[segID],hit_t);
+        = clipSegment(segment,segments[segID],hit_t,dbg);
+
       if (!segmentStillValid)
         continue;
 
+      if (segment.end.t > ray.tMax)
+        if (dbg)
+          printf("INVALID SEGMENT segend %f hit_t %f ray.tmax %f\n",
+                 segment.end.t,hit_t,ray.tMax);
+      if (dbg)
+        printf(" seg %i clipped w/ scalar (%f %f)(%f %f)\n",
+               segID,
+               segment.begin.t,
+               segment.begin.scalar,
+               segment.end.t,
+               segment.end.scalar);
+      
       // compute a majorant for this segment
+      range1f scalarRange = segment.scalarRange(); 
       float majorant
-        = self.xf.majorant(segment.scalarRange());
+        = self.xf.majorant(scalarRange);
+      if (dbg)
+        printf(" seg scalar range %f %f majorant %f\n",
+               scalarRange.lower,
+               scalarRange.upper,
+               majorant);
       if (majorant == 0.f)
         continue;
 
       // we have a valid segment, with actual, non-zero
       // majorant... -> woodcock
       float t = segment.begin.t;
+      if (dbg)
+        printf("## woodcock on segment ....\n");
       while (true) {
         // take a step...
         float dt = - logf(1.f-rand())/majorant;
         t += dt;
-        if (t >= segment.end.t)
+        if (dbg) printf(" dt %f new t %f\n",dt,t);
+        if (t >= min(hit_t,segment.end.t))
           // if (t >= min(segment.end.t,ray.tMax))
           break;
             
         // compute scalar by linearly interpolating along segment
         const float scalar = segment.lerp(t);
         vec4f mapped = self.xf.map(scalar);
-            
+
+        if (dbg)
+          printf(" -> at %f: scalar %f mapped (%f %f %f : %f)\n",
+                 t,scalar,mapped.x,mapped.y,mapped.z,mapped.w);
         // now got a scalar: compare to majorant
         float r = rand();
+        if (dbg)
+          printf("   sampling change %f mapped %f majorant %f\n",
+                 r,mapped.w,majorant);
         bool accept = (mapped.w >= r*majorant);
         if (!accept) 
           continue;
 
+        if (dbg) printf("$$$$ HIT at %f\n",t);
+        
         // we DID have a hit here!
         hit_t = t;
         // ray.tMax = t;
@@ -854,10 +896,10 @@ namespace barney {
         vec3f P = ray.org + t * ray.dir;
         isec.sampleAndMap(P,ray.dbg);
         float r = rand();
-        bool accept = (isec.mapped.w > r*majorant);
+        bool accept = (isec.mapped.w >= r*majorant);
         if (!accept) 
           continue;
-          
+
         hit_t = t;
         isec.leafRange.upper = hit_t;
         ray.hit.baseColor = getPos(isec.mapped);
@@ -990,6 +1032,7 @@ namespace barney {
   {
     TetIntersector isec;
     int it = begin;
+    if (dbg) printf("doing tets %i...%i\n",begin,end);
     while (it < end) {
       // ------------------------------------------------------------------
       // make list of segments that do have a geometric overlap
@@ -1007,10 +1050,17 @@ namespace barney {
           continue;
         }
 
+        
+
         // it is a tet - compute geometric overlap segment
         LinearSegment segment;
         const bool hadGeometricOverlap
           = isec.computeSegment(segment,ray,inputLeafRange);
+
+        if (dbg)
+          printf("geom overlap (%f %f)\n",
+                 segment.begin.t,segment.end.t);
+        
         if (!hadGeometricOverlap)
           continue;
 
@@ -1034,8 +1084,9 @@ namespace barney {
                       range1f &inputLeafRange,
                       const UMeshObjectSpace::DD &self,
                       int begin,
-                      int end)
+                      int end,
+                      bool dbg)
   {
-    return NewIntersector(ray,inputLeafRange,self,begin,end).hit_t;
+    return NewIntersector(ray,inputLeafRange,self,begin,end,dbg).hit_t;
   }
 }

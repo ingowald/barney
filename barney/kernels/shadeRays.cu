@@ -51,7 +51,7 @@ namespace barney {
     vec3f fragment = 0.f;
     float z = INFINITY;
     if (0 && ray.dbg) {
-      printf("ray: hadHit %i, t %f P %f %f %f base %f %f %f N %f %f %f\n",
+      printf("============================================ ray: hadHit %i, t %f P %f %f %f base %f %f %f N %f %f %f\n",
              ray.hadHit,
              ray.tMax,
              (float)ray.hit.P.x,

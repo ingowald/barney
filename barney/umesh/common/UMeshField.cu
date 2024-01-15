@@ -32,7 +32,7 @@ namespace barney {
   
   // this is probably waaaay overkill for smallish voluems, but those
   // are fast, anyway. and this helps for large ones...
-  enum { MC_GRID_SIZE = 512 };
+  enum { MC_GRID_SIZE = 256 };
 
   inline __device__ float length3(vec4f v)
   { return length(getPos(v)); }
