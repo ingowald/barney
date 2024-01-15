@@ -25,9 +25,26 @@ namespace barney {
   /*! base class for object-space volume accelerator for an
     unstructured mesh field */
   struct UMeshObjectSpace {
-    struct DD {
+    struct DD : public UMeshField::DD {
+      using Inherited = UMeshField::DD;
+      
+      static void addVars(std::vector<OWLVarDecl> &vars, int base)
+      {
+        Inherited::addVars(vars,base);
+        TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
+      }
+
       TransferFunction::DD xf;
-      UMeshField::DD       mesh;
+    };
+
+    struct Host : public VolumeAccel {
+      Host(UMeshField *mesh, Volume *volume)
+        : VolumeAccel(mesh,volume),
+          mesh(mesh)
+      {}
+      UMeshField *const mesh;
+      OWLGeom   geom  = 0;
+      OWLGroup  group = 0;
     };
   };
   
@@ -425,11 +442,11 @@ namespace barney {
   {
     if (elt.type != Element::TET) return false;
 
-    int4 indices = dd.mesh.tetIndices[elt.ID];
-    set(dd.mesh.vertices[indices.x],
-        dd.mesh.vertices[indices.y],
-        dd.mesh.vertices[indices.z],
-        dd.mesh.vertices[indices.w]);
+    int4 indices = dd.tetIndices[elt.ID];
+    set(dd.vertices[indices.x],
+        dd.vertices[indices.y],
+        dd.vertices[indices.z],
+        dd.vertices[indices.w]);
 
     return true;
   }
@@ -484,42 +501,42 @@ namespace barney {
     switch (elt.type)
       {
       case Element::TET: {
-        int4 indices = dd.mesh.tetIndices[elt.ID];
-        v0 = dd.mesh.vertices[indices.x];
-        v1 = dd.mesh.vertices[indices.y];
-        v2 = dd.mesh.vertices[indices.z];
-        v3 = dd.mesh.vertices[indices.w];
+        int4 indices = dd.tetIndices[elt.ID];
+        v0 = dd.vertices[indices.x];
+        v1 = dd.vertices[indices.y];
+        v2 = dd.vertices[indices.z];
+        v3 = dd.vertices[indices.w];
       }
         break;
       case Element::PYR: {
-        auto pyrIndices = dd.mesh.pyrIndices[elt.ID];
-        v0 = dd.mesh.vertices[pyrIndices[0]];
-        v1 = dd.mesh.vertices[pyrIndices[1]];
-        v2 = dd.mesh.vertices[pyrIndices[2]];
-        v3 = dd.mesh.vertices[pyrIndices[3]];
-        v4 = dd.mesh.vertices[pyrIndices[4]];
+        auto pyrIndices = dd.pyrIndices[elt.ID];
+        v0 = dd.vertices[pyrIndices[0]];
+        v1 = dd.vertices[pyrIndices[1]];
+        v2 = dd.vertices[pyrIndices[2]];
+        v3 = dd.vertices[pyrIndices[3]];
+        v4 = dd.vertices[pyrIndices[4]];
       }
         break;
       case Element::WED: {
-        auto wedIndices = dd.mesh.wedIndices[elt.ID];
-        v0 = dd.mesh.vertices[wedIndices[0]];
-        v1 = dd.mesh.vertices[wedIndices[1]];
-        v2 = dd.mesh.vertices[wedIndices[2]];
-        v3 = dd.mesh.vertices[wedIndices[3]];
-        v4 = dd.mesh.vertices[wedIndices[4]];
-        v5 = dd.mesh.vertices[wedIndices[5]];
+        auto wedIndices = dd.wedIndices[elt.ID];
+        v0 = dd.vertices[wedIndices[0]];
+        v1 = dd.vertices[wedIndices[1]];
+        v2 = dd.vertices[wedIndices[2]];
+        v3 = dd.vertices[wedIndices[3]];
+        v4 = dd.vertices[wedIndices[4]];
+        v5 = dd.vertices[wedIndices[5]];
       }
         break;
       case Element::HEX: {
-        auto hexIndices = dd.mesh.hexIndices[elt.ID];
-        v0 = dd.mesh.vertices[hexIndices[0]];
-        v1 = dd.mesh.vertices[hexIndices[1]];
-        v2 = dd.mesh.vertices[hexIndices[2]];
-        v3 = dd.mesh.vertices[hexIndices[3]];
-        v4 = dd.mesh.vertices[hexIndices[4]];
-        v5 = dd.mesh.vertices[hexIndices[5]];
-        v6 = dd.mesh.vertices[hexIndices[6]];
-        v7 = dd.mesh.vertices[hexIndices[7]];
+        auto hexIndices = dd.hexIndices[elt.ID];
+        v0 = dd.vertices[hexIndices[0]];
+        v1 = dd.vertices[hexIndices[1]];
+        v2 = dd.vertices[hexIndices[2]];
+        v3 = dd.vertices[hexIndices[3]];
+        v4 = dd.vertices[hexIndices[4]];
+        v5 = dd.vertices[hexIndices[5]];
+        v6 = dd.vertices[hexIndices[6]];
+        v7 = dd.vertices[hexIndices[7]];
       }
         break;
       default:
@@ -799,7 +816,7 @@ namespace barney {
     while (it < end) {
       // find next prim:
       int next = it++;
-      Element elt = self.mesh.elements[next];
+      Element elt = self.elements[next];
       if (elt.type == Element::GRID || elt.type == Element::TET)
         continue;
       isec.setElement(elt);
@@ -893,8 +910,8 @@ namespace barney {
   inline __device__
   void NewIntersector::doGrid(int gridID)
   {
-    box4f domain = self.mesh.gridDomains[gridID];
-    vec3i dims = self.mesh.gridDims[gridID];
+    box4f domain = self.gridDomains[gridID];
+    vec3i dims = self.gridDims[gridID];
     range1f gridRange = inputLeafRange;
     if (!boxTest(gridRange.lower,gridRange.upper,
                  domain,ray.org,ray.dir))
@@ -906,8 +923,8 @@ namespace barney {
 
     // TODO: compute expected num steps, and if too high, do DDA
     // across cells
-    const float *scalars = self.mesh.gridScalars +
-      self.mesh.gridOffsets[gridID];
+    const float *scalars = self.gridScalars +
+      self.gridOffsets[gridID];
 
     float t = gridRange.lower;
     while (true) {
@@ -944,7 +961,7 @@ namespace barney {
   inline __device__ void NewIntersector::doGrids()
   {
     for (int it=begin;it<end;it++) {
-      const Element elt = self.mesh.elements[it];
+      const Element elt = self.elements[it];
       if (elt.type != Element::GRID)
         continue;
       doGrid(elt.ID);
@@ -963,7 +980,7 @@ namespace barney {
       // ------------------------------------------------------------------
       while (it < end) {
         // go to next element, and check if it's a tet.
-        const Element elt = self.mesh.elements[it++];
+        const Element elt = self.elements[it++];
         const bool hadATet 
           = isec.set(self,elt);
         if (!hadATet) {

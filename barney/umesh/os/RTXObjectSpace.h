@@ -26,7 +26,7 @@ namespace barney {
     during refit and in the isec program for a cluster perfomrs
     ray-element intersection followed by (per-element) woodock
     sampling along the ray-element overlap range */
-  struct RTXObjectSpace : public VolumeAccel
+  struct RTXObjectSpace
   {
     struct Cluster {
       box4f bounds;
@@ -35,25 +35,33 @@ namespace barney {
     };
     
     struct DD : public UMeshObjectSpace::DD {
+      using Inherited = UMeshObjectSpace::DD;
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
       Cluster             *clusters;
     };
     
-    RTXObjectSpace(UMeshField *mesh, Volume *volume)
-      : VolumeAccel(mesh,volume),
-        mesh(mesh)
-    {}
-    static OWLGeomType createGeomType(DevGroup *devGroup);
+    struct Host : public UMeshObjectSpace::Host {
+      using Inherited = UMeshObjectSpace::Host;
+      Host(UMeshField *mesh, Volume *volume)
+        : Inherited(mesh,volume)
+      {}
+    // RTXObjectSpace(UMeshField *mesh, Volume *volume)
+    //   : VolumeAccel(mesh,volume),
+    //     mesh(mesh)
+    // {}
+      static OWLGeomType createGeomType(DevGroup *devGroup);
     
-    void build(bool full_rebuild) override;
+      void build(bool full_rebuild) override;
 
-    std::vector<Cluster> clusters;
-    OWLBuffer clustersBuffer = 0;
-    void createClusters();
+      std::vector<Cluster> clusters;
+      OWLBuffer clustersBuffer = 0;
+      void createClusters();
 
-    OWLGeom  geom  = 0;
-    OWLGroup group = 0;
-    UMeshField *const mesh;
+      // OWLGeom  geom  = 0;
+      // OWLGroup group = 0;
+      // UMeshField *const mesh;
+    };
   };
-
+  
 }
 

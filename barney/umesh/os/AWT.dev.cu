@@ -40,7 +40,7 @@ namespace barney {
     bounds = self.nodes[rootNode].bounds[rootChild];
     // if (self.xf.values == 0) {
     //   for (int i=begin;i<end;i++)
-    //     bounds.extend(self.mesh.eltBounds(self.mesh.elements[i]));
+    //     bounds.extend(self.eltBounds(self.elements[i]));
     //   self.nodes[rootNode].bounds[rootChild] = bounds;
     // }
     // else 
@@ -122,7 +122,7 @@ namespace barney {
     while (it < end) {
       // find next prim:
       int next = it++;
-      if (!isec.setElement(self.mesh.elements[next]))
+      if (!isec.setElement(self.elements[next]))
         continue;
 
       if (inSampleMode) {

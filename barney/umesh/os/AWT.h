@@ -42,32 +42,34 @@ namespace barney {
     during refit and in the isec program for a cluster perfomrs
     ray-element intersection followed by (per-element) woodock
     sampling along the ray-element overlap range */
-  struct UMeshAWT : public VolumeAccel
+  struct UMeshAWT
   {
     struct DD : public UMeshObjectSpace::DD {
+      using Inherited = UMeshObjectSpace::DD;
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      
       AWTNode             *nodes;
       int                 *roots;
     };
-    
-    UMeshAWT(UMeshField *mesh, Volume *volume)
-      : VolumeAccel(mesh,volume),
-        mesh(mesh)
-    {}
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-    
-    void build(bool full_rebuild) override;
 
-    void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
-    void extractRoots();
-    void buildAWT();
-    
-    std::vector<int>     roots;
-    std::vector<AWTNode> nodes;
-    OWLBuffer nodesBuffer;
-    OWLBuffer rootsBuffer;
-    OWLGeom  geom  = 0;
-    OWLGroup group = 0;
-    UMeshField *const mesh;
+    struct Host : public UMeshObjectSpace::Host {
+      using Inherited = UMeshObjectSpace::Host;
+      Host(UMeshField *mesh, Volume *volume)
+        : Inherited(mesh,volume)
+      {}
+      static OWLGeomType createGeomType(DevGroup *devGroup);
+      
+      void build(bool full_rebuild) override;
+      
+      void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
+      void extractRoots();
+      void buildAWT();
+      
+      std::vector<int>     roots;
+      std::vector<AWTNode> nodes;
+      OWLBuffer nodesBuffer;
+      OWLBuffer rootsBuffer;
+    };
   };
   
 }

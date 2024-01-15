@@ -20,39 +20,46 @@ namespace barney {
 
   extern "C" char RTXObjectSpace_ptx[];
   
-  OWLGeomType RTXObjectSpace::createGeomType(DevGroup *devGroup)
+  void RTXObjectSpace::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    Inherited::addVars(vars,base);
+    vars.push_back({ "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) });
+  }
+
+  OWLGeomType RTXObjectSpace::Host::createGeomType(DevGroup *devGroup)
   {
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'RTXObjectSpace' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
-    
-    static OWLVarDecl params[]
-      = {
-         { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
-         { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
-         { "mesh.vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
-         { "mesh.tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
-         { "mesh.pyrIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.pyrIndices) },
-         { "mesh.wedIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.wedIndices) },
-         { "mesh.hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
-         { "mesh.elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
-         { "mesh.gridOffsets",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridOffsets) },
-         { "mesh.gridDims",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDims) },
-         { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
-         { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
-         { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
-         { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
-         { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
-         { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
-         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
-         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
-         { nullptr }
-    };
+
+    std::vector<OWLVarDecl> params;
+    RTXObjectSpace::DD::addVars(params,0);
+    //   = {
+    //      { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
+    //      { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
+    //      { "mesh.vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
+    //      { "mesh.tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
+    //      { "mesh.pyrIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.pyrIndices) },
+    //      { "mesh.wedIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.wedIndices) },
+    //      { "mesh.hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
+    //      { "mesh.elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
+    //      { "mesh.gridOffsets",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridOffsets) },
+    //      { "mesh.gridDims",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDims) },
+    //      { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
+    //      { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
+    //      { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
+    //      { "clusters", OWL_BUFPTR, OWL_OFFSETOF(DD,clusters) },
+    //      { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
+    //      { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
+    //      { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
+    //      { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
+    //      { nullptr }
+    // };
     OWLModule module = owlModuleCreate
       (devGroup->owl,RTXObjectSpace_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(RTXObjectSpace::DD),
-       params,-1);
+       params.data(),params.size());
     owlGeomTypeSetBoundsProg(gt,module,"RTXObjectSpaceBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"RTXObjectSpaceIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"RTXObjectSpaceCH");
@@ -61,7 +68,7 @@ namespace barney {
     return gt;
   }
 
-  void RTXObjectSpace::createClusters()
+  void RTXObjectSpace::Host::createClusters()
   {
     assert(clusters.empty());
     assert(!clustersBuffer);
@@ -115,7 +122,7 @@ namespace barney {
   }
 
 
-  void RTXObjectSpace::build(bool full_rebuild)
+  void RTXObjectSpace::Host::build(bool full_rebuild)
   {
     if (!full_rebuild) return;
     

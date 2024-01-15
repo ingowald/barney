@@ -365,13 +365,21 @@ namespace barney {
     const char *methodFromEnv = getenv("BARNEY_UMESH");
     std::string method = (methodFromEnv ? methodFromEnv : "DDA");
 
-    if (method == "DDA" || method == "MCDDA")
+    if (method == "DDA" || method == "MCDDA" || method == "dda")
       return std::make_shared<MCDDAVolumeAccel<UMeshCUBQLSampler>::Host>
         (this,volume,UMeshMC_ptx);
 
     if (method == "MCRTX")
       return std::make_shared<MCRTXVolumeAccel<UMeshCUBQLSampler>::Host>
         (this,volume,UMeshMC_ptx);
+    
+    if (method == "OS" || method == "os")
+      return std::make_shared<RTXObjectSpace::Host>
+        (this,volume);
+    
+    if (method == "AWT" || method == "awt")
+      return std::make_shared<UMeshAWT::Host>
+        (this,volume);
     
     throw std::runtime_error("unknown BARNEY_UMESH accelerator method");
 #else

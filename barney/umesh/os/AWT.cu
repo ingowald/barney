@@ -22,41 +22,51 @@
 namespace barney {
 
   extern "C" char AWT_ptx[];
-  
-  OWLGeomType UMeshAWT::createGeomType(DevGroup *devGroup)
+
+  void UMeshAWT::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    Inherited::addVars(vars,base);
+    vars.push_back({ "nodes", OWL_BUFPTR, OWL_OFFSETOF(DD,nodes) });
+    vars.push_back({ "roots", OWL_BUFPTR, OWL_OFFSETOF(DD,roots) });
+  }
+
+  OWLGeomType UMeshAWT::Host::createGeomType(DevGroup *devGroup)
   {
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'UMeshAWT' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
     
-    static OWLVarDecl params[]
-      = {
-         { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
-         { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
-         { "mesh.vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
-         { "mesh.tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
-         { "mesh.pyrIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.pyrIndices) },
-         { "mesh.wedIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.wedIndices) },
-         { "mesh.hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
-         { "mesh.elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
-         { "mesh.gridOffsets",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridOffsets) },
-         { "mesh.gridDims",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDims) },
-         { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
-         { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
-         { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
-         { "nodes", OWL_BUFPTR, OWL_OFFSETOF(DD,nodes) },
-         { "roots", OWL_BUFPTR, OWL_OFFSETOF(DD,roots) },
-         { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
-         { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
-         { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
-         { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
-         { nullptr }
-    };
+    // static OWLVarDecl params[]
+    //   = {
+    //      { "mesh.worldBounds.lower", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.lower) },
+    //      { "mesh.worldBounds.upper", OWL_FLOAT4, OWL_OFFSETOF(DD,mesh.worldBounds.upper) },
+    //      { "mesh.vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.vertices) },
+    //      { "mesh.tetIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.tetIndices) },
+    //      { "mesh.pyrIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.pyrIndices) },
+    //      { "mesh.wedIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.wedIndices) },
+    //      { "mesh.hexIndices", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.hexIndices) },
+    //      { "mesh.elements", OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.elements) },
+    //      { "mesh.gridOffsets",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridOffsets) },
+    //      { "mesh.gridDims",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDims) },
+    //      { "mesh.gridDomains",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridDomains) },
+    //      { "mesh.gridScalars",    OWL_BUFPTR, OWL_OFFSETOF(DD,mesh.gridScalars) },
+    //      { "mesh.numElements", OWL_INT, OWL_OFFSETOF(DD,mesh.numElements) },
+    //      { "nodes", OWL_BUFPTR, OWL_OFFSETOF(DD,nodes) },
+    //      { "roots", OWL_BUFPTR, OWL_OFFSETOF(DD,roots) },
+    //      { "xf.values", OWL_BUFPTR, OWL_OFFSETOF(DD,xf.values) },
+    //      { "xf.domain", OWL_FLOAT2, OWL_OFFSETOF(DD,xf.domain) },
+    //      { "xf.baseDensity", OWL_FLOAT, OWL_OFFSETOF(DD,xf.baseDensity) },
+    //      { "xf.numValues", OWL_INT, OWL_OFFSETOF(DD,xf.numValues) },
+    //      { nullptr }
+    // };
+    std::vector<OWLVarDecl> params;
+    UMeshAWT::DD::addVars(params,0);
+    
     OWLModule module = owlModuleCreate
       (devGroup->owl,AWT_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(UMeshAWT::DD),
-       params,-1);
+       params.data(),params.size());
     owlGeomTypeSetBoundsProg(gt,module,"UMeshAWTBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"UMeshAWTIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"UMeshAWTCH");
@@ -69,7 +79,7 @@ namespace barney {
     int numUsed = 0;
   };
   
-  void UMeshAWT::buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh)
+  void UMeshAWT::Host::buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh)
   {
     nodes.resize(qbvh.numNodes);
     for (int nodeID=0;nodeID<qbvh.numNodes;nodeID++)
@@ -89,7 +99,7 @@ namespace barney {
       }
   }
 
-  void UMeshAWT::extractRoots()
+  void UMeshAWT::Host::extractRoots()
   {
     int desiredRootDepth = AWT_DEFAULT_MAX_DEPTH;
     char *fromEnv = getenv("AWT_MAX_DEPTH");
@@ -173,7 +183,7 @@ namespace barney {
     return nb;
   }
   
-  void UMeshAWT::buildAWT()
+  void UMeshAWT::Host::buildAWT()
   {
     double t0 = getCurrentTime();
     
@@ -247,7 +257,7 @@ namespace barney {
       node.majorant[cID] = xf.majorant(getRange(node.bounds[cID]));
   }
 
-  void UMeshAWT::build(bool full_rebuild)
+  void UMeshAWT::Host::build(bool full_rebuild)
   {
     if (!full_rebuild) return;
     

@@ -35,7 +35,7 @@ namespace barney {
       // bounds not yet set
       cluster.bounds = box4f();
       for (int i=begin;i<end;i++)
-        cluster.bounds.extend(self.mesh.eltBounds(self.mesh.elements[i]));
+        cluster.bounds.extend(self.eltBounds(self.elements[i]));
       primBounds = getBox(cluster.bounds);
     } else {
       box4f bounds  = cluster.bounds;
@@ -73,7 +73,7 @@ namespace barney {
 
     vec3f P = ray.org + ray.tMax * ray.dir;
 
-    // CentralDifference cd(self.mesh,self.xf,P,begin,end,ray.dbg);
+    // CentralDifference cd(self,self.xf,P,begin,end,ray.dbg);
 
     // vec3f N = normalize
     //   ((cd.N == vec3f(0.f)) ? ray.dir : cd.N);

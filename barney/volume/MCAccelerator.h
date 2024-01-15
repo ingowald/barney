@@ -67,7 +67,7 @@ namespace barney {
       { return sampler.getTypeString(); }
 
       typename SFSampler::Host sampler;
-      OWLGeom      geom = 0;
+      OWLGeom      geom  = 0;
       OWLGroup     group = 0; 
       const char  *const ptxCode;
     };
