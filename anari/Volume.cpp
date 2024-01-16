@@ -4,6 +4,7 @@
 #include "Volume.h"
 // std
 #include <numeric>
+#include <iostream>
 
 namespace barney_device {
 
@@ -37,10 +38,13 @@ TransferFunction1D::TransferFunction1D(BarneyGlobalState *s) : Volume(s) {}
 
 void TransferFunction1D::commit()
 {
+  std::cout << "banari: committing transfer function" << std::endl;
   Volume::commit();
 
+  std::cout << "cleanup" << std::endl;
   cleanup();
 
+  std::cout << "getfield" << std::endl;
   m_field = getParamObject<SpatialField>("field");
   if (!m_field) {
     reportMessage(ANARI_SEVERITY_WARNING,
@@ -48,12 +52,16 @@ void TransferFunction1D::commit()
     return;
   }
 
+  std::cout << "getbounds" << std::endl;
   m_bounds = m_field->bounds();
 
   m_valueRange = getParam<anari::box1>("valueRange", anari::box1{0.f, 1.f});
 
+  std::cout << "getting colordata" << std::endl;
   m_colorData = getParamObject<helium::Array1D>("color");
+  std::cout << "getting opacitydata" << std::endl;
   m_opacityData = getParamObject<helium::Array1D>("opacity");
+  std::cout << "getting desnityscale" << std::endl;
   m_densityScale = getParam<float>("densityScale", 1.f);
 
   if (!m_colorData) {
@@ -68,6 +76,8 @@ void TransferFunction1D::commit()
     return;
   }
 
+  std::cout << "banari: getting color and opacity data" << std::endl;
+  
   // extract combined RGB+A map from color and opacity arrays (whose
   // sizes are allowed to differ..)
   auto *colorData = m_colorData->beginAs<float3>();
@@ -105,13 +115,16 @@ BNVolume TransferFunction1D::makeBarneyVolume(BNDataGroup dg) const
 {
   auto ctx = deviceState()->context;
   static BNVolume bnVol{nullptr}; // TODO: really find out if volume has changed!
+  std::cout << "creating barney volume" << std::endl;
   if (!bnVol)
     bnVol = bnVolumeCreate(dg, m_field->makeBarneyScalarField(dg));
+  std::cout << "setting xf" << std::endl;
   bnVolumeSetXF(bnVol,
       (float2 &)m_valueRange,
       m_rgbaMap.data(),
       m_rgbaMap.size(),
       m_densityScale);
+  std::cout << "volume done" << std::endl;
   return bnVol;
 }
 

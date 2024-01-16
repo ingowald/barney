@@ -14,20 +14,141 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/umesh/UMeshField.h"
+#include "barney/umesh/common/UMeshField.h"
 #include "barney/Context.h"
 #include "barney/volume/MCGrid.cuh"
 // just to be able to create these accelerators:
-#include "barney/umesh/UMeshMCAccelerator.h"
-#include "barney/umesh/RTXObjectSpace.h"
-#include "barney/umesh/AWT.h"
+// #include "barney/umesh/mc/UMeshMCAccelerator.h"
+#include "barney/umesh/mc/UMeshCUBQLSampler.h"
+#include "barney/umesh/os/RTXObjectSpace.h"
+#include "barney/umesh/os/AWT.h"
 
 #define BUFFER_CREATE owlDeviceBufferCreate
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate
 
 namespace barney {
 
-  enum { MC_GRID_SIZE = 128 };
+  extern "C" char UMeshMC_ptx[];
+  
+  // this is probably waaaay overkill for smallish voluems, but those
+  // are fast, anyway. and this helps for large ones...
+  enum { MC_GRID_SIZE = 256 };
+
+  inline __device__ float length3(vec4f v)
+  { return length(getPos(v)); }
+  
+  template<int D> inline __device__
+  void rasterTet(MCGrid::DD grid,
+                 vec4f a,
+                 vec4f b,
+                 vec4f c,
+                 vec4f d)
+  {
+    float lab = length3(b-a);
+    float lac = length3(c-a);
+    float lad = length3(d-a);
+    float lbc = length3(c-b);
+    float lbd = length3(d-b);
+    float lcd = length3(d-c);
+    float maxLen = max(max(max(max(max(lab,lac),lad),lbc),lbd),lcd);
+
+    vec4f ab = 0.5f*(a+b);
+    vec4f ac = 0.5f*(a+c);
+    vec4f ad = 0.5f*(a+d);
+    vec4f bc = 0.5f*(b+c);
+    vec4f bd = 0.5f*(b+d);
+    vec4f cd = 0.5f*(c+d);
+
+#if 1
+    vec4f oa,ob,oc,od0,od1;
+    if (lab >= maxLen) {
+      oa = ab;
+      ob = c;
+      oc = d;
+      od0 = a;
+      od1 = a;
+      // rasterTet<D-1>(grid,ab,c,d,a);
+      // rasterTet<D-1>(grid,ab,c,d,b);
+    } else if (lac >= maxLen) {
+      oa = ac;
+      ob = b;
+      oc = d;
+      od0 = a;
+      od1 = c;
+      // rasterTet<D-1>(grid,ac,b,d,a);
+      // rasterTet<D-1>(grid,ac,b,d,c);
+    } else if (lad >= maxLen) {
+      oa = ad;
+      ob = b;
+      oc = c;
+      od0 = a;
+      od1 = d;
+      // rasterTet<D-1>(grid,ad,b,c,a);
+      // rasterTet<D-1>(grid,ad,b,c,d);
+    } else if (lbc >= maxLen) {
+      oa = bc;
+      ob = a;
+      oc = d;
+      od0 = b;
+      od1 = c;
+      // rasterTet<D-1>(grid,bc,a,d,b);
+      // rasterTet<D-1>(grid,bc,a,d,c);
+    } else if (lbd >= maxLen) {
+      oa = bd;
+      ob = a;
+      oc = c;
+      od0 = b;
+      od1 = d;
+      // rasterTet<D-1>(grid,bd,a,c,b);
+      // rasterTet<D-1>(grid,bd,a,c,d);
+    } else {
+      oa = cd;
+      ob = a;
+      oc = b;
+      od0 = c;
+      od1 = d;
+      // rasterTet<D-1>(grid,cd,a,b,c);
+      // rasterTet<D-1>(grid,cd,a,b,d);
+    }
+    rasterTet<D-1>(grid,oa,ob,oc,od0);
+    rasterTet<D-1>(grid,oa,ob,oc,od1);
+#else
+    if (lab >= maxLen) {
+      rasterTet<D-1>(grid,ab,c,d,a);
+      rasterTet<D-1>(grid,ab,c,d,b);
+    } else if (lac >= maxLen) {
+      rasterTet<D-1>(grid,ac,b,d,a);
+      rasterTet<D-1>(grid,ac,b,d,c);
+    } else if (lad >= maxLen) {
+      rasterTet<D-1>(grid,ad,b,c,a);
+      rasterTet<D-1>(grid,ad,b,c,d);
+    } else if (lbc >= maxLen) {
+      rasterTet<D-1>(grid,bc,a,d,b);
+      rasterTet<D-1>(grid,bc,a,d,c);
+    } else if (lbd >= maxLen) {
+      rasterTet<D-1>(grid,bd,a,c,b);
+      rasterTet<D-1>(grid,bd,a,c,d);
+    } else {
+      rasterTet<D-1>(grid,cd,a,b,c);
+      rasterTet<D-1>(grid,cd,a,b,d);
+    }
+#endif
+  }
+  
+  template<> inline __device__
+  void rasterTet<0>(MCGrid::DD grid,
+                 vec4f a,
+                 vec4f b,
+                 vec4f c,
+                 vec4f d)
+  {
+    box4f bb;
+    bb.extend(a);
+    bb.extend(b);
+    bb.extend(c);
+    bb.extend(d);
+    rasterBox(grid,bb);
+  }
   
   __global__ void rasterElements(MCGrid::DD grid,
                                  UMeshField::DD mesh)
@@ -36,6 +157,16 @@ namespace barney {
     if (eltIdx >= mesh.numElements) return;    
 
     auto elt = mesh.elements[eltIdx];
+    if (elt.type == Element::TET) {
+      int tetID = elt.ID;
+      const int4 indices = mesh.tetIndices[tetID];
+      vec4f a = make_vec4f(mesh.vertices[indices.x]);
+      vec4f b = make_vec4f(mesh.vertices[indices.y]);
+      vec4f c = make_vec4f(mesh.vertices[indices.z]);
+      vec4f d = make_vec4f(mesh.vertices[indices.w]);
+      rasterTet<5>(grid,a,b,c,d);
+      return;
+    }
     if (elt.type == Element::GRID) {
       int primID = elt.ID;
 
@@ -115,6 +246,9 @@ namespace barney {
     std::cout << "allcating macro cells" << std::endl;
     grid.resize(dims);
 
+    grid.gridOrigin = worldBounds.lower;
+    grid.gridSpacing = worldBounds.size() * rcp(vec3f(dims));
+    
     std::cout << "clearing macro cells" << std::endl;
     grid.clearCells();
     
@@ -126,7 +260,7 @@ namespace barney {
       auto d_mesh = getDD(dev->owlID);
       auto d_grid = grid.getDD(dev->owlID);
       rasterElements
-        <<<divRoundUp(int(elements.size()),1024),1024>>>
+        <<<divRoundUp(int(elements.size()),128),128>>>
         (d_grid,d_mesh);
       BARNEY_CUDA_SYNC_CHECK();
     }
@@ -191,8 +325,8 @@ namespace barney {
       gridDomains(std::move(_gridDomains)),
       gridScalars(std::move(_gridScalars))
   {
-    for (auto vtx : vertices) worldBounds.extend(vtx);
-    for (auto dom : gridDomains) worldBounds.extend(dom);
+    for (auto vtx : vertices) worldBounds.extend(getPos(vtx));
+    for (auto dom : gridDomains) worldBounds.extend(getBox(dom));
     for (int i=0;i<tetIndices.size();i++)
       elements.push_back(Element(i,Element::TET));
 
@@ -315,46 +449,71 @@ namespace barney {
     return getContext()->initReference(sf);
   }
   
-  void UMeshField::setVariables(OWLGeom geom, bool firstTime)
+  void UMeshField::setVariables(OWLGeom geom)
   {
-    ScalarField::setVariables(geom,firstTime);
+    ScalarField::setVariables(geom);
     
     // ------------------------------------------------------------------
-    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
+    owlGeomSetBuffer(geom,"umesh.vertices",verticesBuffer);
       
-    owlGeomSetBuffer(geom,"tetIndices",tetIndicesBuffer);
-    owlGeomSetBuffer(geom,"pyrIndices",pyrIndicesBuffer);
-    owlGeomSetBuffer(geom,"wedIndices",wedIndicesBuffer);
-    owlGeomSetBuffer(geom,"hexIndices",hexIndicesBuffer);
-    owlGeomSetBuffer(geom,"elements",elementsBuffer);
-    owlGeomSetBuffer(geom,"gridOffsets",gridOffsetsBuffer);
-    owlGeomSetBuffer(geom,"gridDims",gridDimsBuffer);
-    owlGeomSetBuffer(geom,"gridDomains",gridDomainsBuffer);
-    owlGeomSetBuffer(geom,"gridScalars",gridScalarsBuffer);
+    owlGeomSetBuffer(geom,"umesh.tetIndices",tetIndicesBuffer);
+    owlGeomSetBuffer(geom,"umesh.pyrIndices",pyrIndicesBuffer);
+    owlGeomSetBuffer(geom,"umesh.wedIndices",wedIndicesBuffer);
+    owlGeomSetBuffer(geom,"umesh.hexIndices",hexIndicesBuffer);
+    owlGeomSetBuffer(geom,"umesh.elements",elementsBuffer);
+    owlGeomSetBuffer(geom,"umesh.gridOffsets",gridOffsetsBuffer);
+    owlGeomSetBuffer(geom,"umesh.gridDims",gridDimsBuffer);
+    owlGeomSetBuffer(geom,"umesh.gridDomains",gridDomainsBuffer);
+    owlGeomSetBuffer(geom,"umesh.gridScalars",gridScalarsBuffer);
   }
   
-  std::vector<OWLVarDecl> UMeshField::getVarDecls(uint32_t myOfs)
+  void UMeshField::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
+    ScalarField::DD::addVars(vars,base);
     std::vector<OWLVarDecl> mine = 
       {
-       { "mesh.vertices",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,vertices) },
-       { "mesh.tetIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,tetIndices) },
-       { "mesh.pyrIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,pyrIndices) },
-       { "mesh.wedIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,wedIndices) },
-       { "mesh.hexIndices",  OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,hexIndices) },
-       { "mesh.elements",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,elements) },
-       { "mesh.gridOffsets", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridOffsets) },
-       { "mesh.gridDims",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDims) },
-       { "mesh.gridDomains", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridDomains) },
-       { "mesh.gridScalars", OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,gridScalars) },
+       { "umesh.vertices",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,vertices) },
+       { "umesh.tetIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,tetIndices) },
+       { "umesh.pyrIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,pyrIndices) },
+       { "umesh.wedIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,wedIndices) },
+       { "umesh.hexIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,hexIndices) },
+       { "umesh.elements",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,elements) },
+       { "umesh.gridOffsets", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridOffsets) },
+       { "umesh.gridDims",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridDims) },
+       { "umesh.gridDomains", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridDomains) },
+       { "umesh.gridScalars", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridScalars) },
       };
-    for (auto var : ScalarField::getVarDecls(myOfs))
-      mine.push_back(var);
-    return mine;
+    for (auto var : mine)
+      vars.push_back(var);
   }
 
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
+#if 1
+    const char *methodFromEnv = getenv("BARNEY_UMESH");
+    std::string method = (methodFromEnv ? methodFromEnv : "DDA");
+
+    PRINT(method);
+    if (method == "DDA" || method == "MCDDA" || method == "dda") {
+      std::cout << "using umesh-macrocells-dda traversal" << std::endl;
+      return std::make_shared<MCDDAVolumeAccel<UMeshCUBQLSampler>::Host>
+        (this,volume,UMeshMC_ptx);
+    }
+
+    if (method == "MCRTX")
+      return std::make_shared<MCRTXVolumeAccel<UMeshCUBQLSampler>::Host>
+        (this,volume,UMeshMC_ptx);
+    
+    if (method == "OS" || method == "os")
+      return std::make_shared<RTXObjectSpace::Host>
+        (this,volume);
+    
+    if (method == "AWT" || method == "awt")
+      return std::make_shared<UMeshAWT::Host>
+        (this,volume);
+    
+    throw std::runtime_error("unknown BARNEY_UMESH accelerator method");
+#else
     const char *methodFromEnv = getenv("BARNEY_UMESH");
     std::string method = (methodFromEnv ? methodFromEnv : "object-space");
     if (method == "macro-cells" || method == "spatial" || method == "mc")
@@ -365,6 +524,7 @@ namespace barney {
       return std::make_shared<RTXObjectSpace>(this,volume);
     else
       throw std::runtime_error("found BARNEY_METHOD env-var, but didn't recognize its value. allowed values are 'awt', 'object-space', and 'macro-cells'");
+#endif
   }
 
 

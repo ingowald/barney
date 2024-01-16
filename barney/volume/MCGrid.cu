@@ -75,8 +75,11 @@ namespace barney {
   
   /*! recompute all macro cells' majorant value by remap each such
     cell's value range through the given transfer function */
-  void MCGrid::computeMajorants(TransferFunction *xf)
+  void MCGrid::computeMajorants(const TransferFunction *xf)
   {
+    // std::cout << "------------------------------------------------------------------" << std::endl;
+    // std::cout << "RECOMPUTING MAJORANTS" << std::endl;
+    // std::cout << "------------------------------------------------------------------" << std::endl;
     assert(xf);
     assert(dims.x > 0);
     assert(dims.y > 0);
@@ -85,15 +88,11 @@ namespace barney {
     // cuda num blocks
     const vec3i nb = divRoundUp(dims,bs);
 
-    PRINT(dims);
-    
     for (auto dev : xf->devGroup->devices) {
       BARNEY_CUDA_SYNC_CHECK();
       // for (int devID=0;devID<xf->devGroup->size();devID++) {
       SetActiveGPU forDuration(dev);
       auto d_xf = xf->getDD(dev->owlID);
-      PRINT(d_xf.values);
-      PRINT(d_xf.domain);
       mapMacroCells
         <<<(dim3)nb,(dim3)bs>>>
         (getDD(dev->owlID),d_xf);
@@ -107,10 +106,8 @@ namespace barney {
     assert(dims.x > 0);
     assert(dims.y > 0);
     assert(dims.z > 0);
-    std::cout << "resizing grid to " << dims << std::endl;
     this->dims = dims;
     int numCells = owl::common::volume(dims);
-    PRINT(numCells);
     owlBufferResize(majorantsBuffer,numCells);
     owlBufferResize(scalarRangesBuffer,numCells);
   }
@@ -131,8 +128,31 @@ namespace barney {
       = (range1f*)owlBufferGetPointer(scalarRangesBuffer,devID);
     
     dd.dims = dims;
-    
+    dd.gridOrigin = gridOrigin;
+    dd.gridSpacing = gridSpacing;
     return dd;
   }
-    
+
+  void MCGrid::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    vars.push_back
+      ({"majorants",OWL_BUFPTR,base+OWL_OFFSETOF(DD,majorants)});
+    vars.push_back
+      ({"scalarRanges",OWL_BUFPTR,base+OWL_OFFSETOF(DD,scalarRanges)});
+    vars.push_back
+      ({"dims",OWL_INT3,base+OWL_OFFSETOF(DD,dims)});
+    vars.push_back
+      ({"gridOrigin",OWL_FLOAT3,base+OWL_OFFSETOF(DD,gridOrigin)});
+    vars.push_back
+      ({"gridSpacing",OWL_FLOAT3,base+OWL_OFFSETOF(DD,gridSpacing)});
+  }
+  
+  void MCGrid::setVariables(OWLGeom geom)
+  {
+    owlGeomSetBuffer(geom,"majorants",majorantsBuffer);
+    owlGeomSet3i(geom,"dims",dims.x,dims.y,dims.z);
+    owlGeomSet3f(geom,"gridOrigin",gridOrigin.x,gridOrigin.y,gridOrigin.z);
+    owlGeomSet3f(geom,"gridSpacing",gridSpacing.x,gridSpacing.y,gridSpacing.z);
+  }
+  
 } // ::vopat

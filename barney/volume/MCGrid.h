@@ -39,16 +39,50 @@ namespace barney {
       majorants, and dimensionality of grid */
     struct DD {
       float   *majorants;
+      // not actually exported to optix programs, only used by cuda
+      // kernels
       range1f *scalarRanges;
       vec3i    dims;
-    };
+      vec3f    gridOrigin;
+      vec3f    gridSpacing;
 
+      inline __device__ int numCells() const
+      { return dims.x*dims.y*dims.z; }
+      
+      inline __device__ vec3i cellID(int linearID) const
+      {
+        vec3i mcID;
+        mcID.x = linearID % dims.x;
+        mcID.y = (linearID / dims.x) % dims.y;
+        mcID.z = linearID / (dims.x*dims.y);
+        return mcID;
+      }
+      
+      inline __device__
+      float majorant(vec3i cellID) const
+      { return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)]; }
+      
+      /*! returns the bounding box of the given cell */
+      inline __device__ box3f cellBounds(vec3i cellID,
+                                         const box3f &worldBounds) const
+      {
+        box3f bounds;
+        bounds.lower = gridOrigin + vec3f(cellID)*gridSpacing;
+        bounds.upper = min(bounds.lower+gridSpacing,worldBounds.upper);
+        return bounds;
+      }
+      
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+    };
+    
     MCGrid(DevGroup *devGroup);
     
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
     DD getDD(int devID) const;
 
+    void setVariables(OWLGeom geom);
+    
     /*! allocate memory for the given grid */
     void resize(vec3i dims);
 
@@ -57,7 +91,7 @@ namespace barney {
     
     /*! given the current per-cell scalar ranges, map each such cell's
         range through the transfer functoin to compute a majorant */
-    void computeMajorants(TransferFunction *xf);
+    void computeMajorants(const TransferFunction *xf);
 
     /*! checks if this macro-cell grid has already been
         allocated/built - mostly for sanity checking nd debugging */
@@ -68,6 +102,8 @@ namespace barney {
     /* buffer of floats, the actual per-cell majorants */
     OWLBuffer majorantsBuffer = 0;
     vec3i     dims { 0,0,0 };
+    vec3f     gridOrigin;
+    vec3f     gridSpacing;
     DevGroup *const devGroup;
   };
   

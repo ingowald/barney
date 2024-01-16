@@ -14,36 +14,30 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/volume/MCAccelerator.h"
-#include "barney/amr/CUBQLBlockSampler.h"
+#include "barney/volume/Volume.h"
+#include "barney/volume/ScalarField.h"
 
 namespace barney {
 
-  /*! a macrocell accelerator built over AMR blocks */
-  template<typename FieldSampler>
-  struct BlockStructuredMCAccelerator : public MCAccelerator<FieldSampler>
+  void ScalarField::buildMCs(MCGrid &macroCells)
+  { throw std::runtime_error("this calar field type does not know how to build macro-cells"); }
+  
+  void ScalarField::setVariables(OWLGeom geom)
   {
-    using MCAccelerator<FieldSampler>::mcGrid;
-    using MCAccelerator<FieldSampler>::volume;
+    vec3f lo = worldBounds.lower;
+    vec3f hi = worldBounds.upper;
+    owlGeomSet3f(geom,"worldBounds.lower",lo.x,lo.y,lo.z);
+    owlGeomSet3f(geom,"worldBounds.upper",hi.x,hi.y,hi.z);
+  }
 
-    struct DD : public MCAccelerator<FieldSampler>::DD {
-      using MCAccelerator<FieldSampler>::DD::sampleAndMap;
-    };
-
-    BlockStructuredMCAccelerator(BlockStructuredField *field, Volume *volume)
-      : MCAccelerator<FieldSampler>(field,volume),
-        field(field)
-    {}
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
-    void build() override;
-
-    OWLGeom geom = 0;
-
-    BlockStructuredField *const field;
-  };
-
-  typedef BlockStructuredMCAccelerator<CUBQLBlockSampler> BlockStructuredAccel_MC_CUBQL;
+  OWLContext ScalarField::getOWL() const
+  { return devGroup->owl; }
+  
+  void ScalarField::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    vars.push_back
+      ({"worldBounds.lower",OWL_FLOAT3,base+OWL_OFFSETOF(DD,worldBounds.lower)});
+    vars.push_back
+      ({"worldBounds.upper",OWL_FLOAT3,base+OWL_OFFSETOF(DD,worldBounds.upper)});
+  }
 }

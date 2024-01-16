@@ -50,6 +50,20 @@ namespace barney {
     vec3f albedo = (vec3f)ray.hit.baseColor;
     vec3f fragment = 0.f;
     float z = INFINITY;
+    if (0 && ray.dbg) {
+      printf("============================================ ray: hadHit %i, t %f P %f %f %f base %f %f %f N %f %f %f\n",
+             ray.hadHit,
+             ray.tMax,
+             (float)ray.hit.P.x,
+             (float)ray.hit.P.y,
+             (float)ray.hit.P.z,
+             (float)ray.hit.baseColor.x,
+             (float)ray.hit.baseColor.y,
+             (float)ray.hit.baseColor.z,
+             (float)ray.hit.N.x,
+             (float)ray.hit.N.y,
+             (float)ray.hit.N.z);
+        }
     if (!ray.hadHit) {
       if (generation == 0) {
         // for primary rays we have pre-initialized basecolor to a

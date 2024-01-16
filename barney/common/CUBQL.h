@@ -16,42 +16,19 @@
 
 #pragma once
 
-#include "barney/volume/Volume.h"
-#include "barney/umesh/UMeshField.h"
-#include <cuBQL/bvh.h>
+#include "barney/common/barney-common.h"
+#include "cuBQL/bvh.h"
 
 namespace barney {
 
-   /*! can sample umeshes using cuda-point location of cuBQL-bvh. this
-       samples a *field* and thus doesn't know anything about transfer
-       functions or acceleration */
-  struct CUBQLFieldSampler {
-    enum { BVH_WIDTH = 4 };
-    using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
-    using node_t = typename bvh_t::Node;
-    
-    struct DD {
-      /*! sample the umesh field; can return NaN if sample did not hit
-        any unstructured element at all */
-      inline __device__ float sample(vec3f P, bool dbg=false) const;
-
-      node_t         *bvhNodes;
-      UMeshField::DD  mesh;
-    };
-    
-    CUBQLFieldSampler(ScalarField *field);
-    void build();
-
-    UMeshField *const mesh;
-    OWLBuffer   bvhNodesBuffer = 0;
-  };
-
+  template<typename TravState, int BVH_WIDTH=4>
   /*! sample the umesh field; can return NaN if sample did not hit
     any unstructured element at all */
   inline __device__
-  float CUBQLFieldSampler::DD::sample(vec3f P, bool dbg) const
+  float traverseCUQBL(typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node *bvhNodes,
+                      TravState &ptd, vec3f P, bool dbg) 
   {
-    float retVal = NAN;
+    using node_t = typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node;
     struct NodeRef {
       union {
         struct {
@@ -91,21 +68,17 @@ namespace barney {
         }
         if (nodeRef.bits == 0) {
           if (stackPtr == stackBase)
-            return retVal;
+            return;
           nodeRef = *--stackPtr;
         }
       }
       // leaf ...
-      for (int i=0;i<nodeRef.count;i++) {
-        auto elt = mesh.elements[nodeRef.offset+i];
-        if (mesh.eltScalar(retVal,elt,P))
-          return retVal;
-      }
+      if (ptd.leaf(P,nodeRef.offset,nodeRef.count) == false)
+        return;
       if (stackPtr == stackBase)
-        return retVal;
+        return;
       nodeRef = *--stackPtr;
     }
-    return retVal;
   }
   
-}
+} // ::barney

@@ -61,6 +61,8 @@ namespace barney {
   /*! helper functoin to extrace 3f spatial component from 4f point-plus-scalar */
   inline __both__ box3f getBox(box4f bb)
   { return box3f{getPos(bb.lower),getPos(bb.upper)}; }
+  inline __both__ box3f getBox(box3f bb)
+  { return bb; }
 
   /*! helper functoin to extract 1f scalar range from 4f point-plus-scalar */
   inline __both__ range1f getRange(box4f bb)

@@ -126,6 +126,10 @@ namespace barney {
         owlGroups.push_back(group->userGeomGroup);
         owlTransforms.push_back(instances.xfms[i]);
       }
+      if (group->volumeGeomsGroup) {
+        owlGroups.push_back(group->volumeGeomsGroup);
+        owlTransforms.push_back(instances.xfms[i]);
+      }
       if (group->triangleGeomGroup) {
         owlGroups.push_back(group->triangleGeomGroup);
         owlTransforms.push_back(instances.xfms[i]);

@@ -23,6 +23,8 @@ namespace barney {
   struct TransferFunction {
     struct DD {
 
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      
       /*! maps given scalar through this trnasfer function, and
         returns /opacity-times-density value for that scalar. scalars
         outside the specified domain get mapped to the boundary
@@ -53,10 +55,10 @@ namespace barney {
              const std::vector<vec4f> &values,
              float baseDensity);
     std::vector<OWLVarDecl> getVarDecls(uint32_t myOffset);
-    void setVariables(OWLGeom geom, bool firstTime);
+    void setVariables(OWLGeom geom) const;
     
     OWLBuffer           valuesBuffer = 0;
-    range1f             domain;
+    range1f             domain = { 0.f, 1.f };
     std::vector<vec4f>  values;
     float               baseDensity;
     DevGroup     *const devGroup;

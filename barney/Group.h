@@ -43,8 +43,11 @@ namespace barney {
 
     std::vector<OWLGeom> triangleGeoms;
     std::vector<OWLGeom> userGeoms;
-    OWLGroup userGeomGroup = 0;
+    std::vector<OWLGeom> volumeGeoms;
+    OWLGroup userGeomGroup     = 0;
     OWLGroup triangleGeomGroup = 0;
+    OWLGroup volumeGeomsGroup  = 0;
+    
     std::vector<MultiPass::Object::SP> multiPassObjects;
   };
   

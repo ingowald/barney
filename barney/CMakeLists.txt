@@ -71,26 +71,26 @@ embed_ptx(
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            umesh/RTXObjectSpace.dev.cu
+  SOURCES            umesh/os/RTXObjectSpace.dev.cu
+)
+embed_ptx(
+  OUTPUT_TARGET      barney-UMeshMC-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            umesh/mc/UMeshMC.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-AWT-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            umesh/AWT.dev.cu
-)
-embed_ptx(
-  OUTPUT_TARGET      barney-UMeshMCAccelerator-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            umesh/UMeshMCAccelerator.dev.cu
+  SOURCES            umesh/os/AWT.dev.cu
 )
 
 # ------------------------------------------------------------------
 # amr variants:
 # ------------------------------------------------------------------
 embed_ptx(
-  OUTPUT_TARGET      barney-BlockStructuredMCAccelerator-ptx
+  OUTPUT_TARGET      barney-BlockStructuredMC-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            amr/BlockStructuredMCAccelerator.dev.cu
+  SOURCES            amr/BlockStructuredMC.dev.cu
 )
 
 add_library(barney STATIC
@@ -135,6 +135,8 @@ add_library(barney STATIC
   # volume data 
   volume/Volume.h
   volume/Volume.cpp
+  volume/ScalarField.h
+  volume/ScalarField.cpp
   volume/MCAccelerator.h
   volume/TransferFunction.h
   volume/TransferFunction.cpp
@@ -145,23 +147,23 @@ add_library(barney STATIC
   volume/StructuredData.h
   volume/StructuredData.cu
   # *unstructured* volumes
-  umesh/UMeshField.h
-  umesh/UMeshField.cu
-  umesh/CUBQLFieldSampler.h
-  umesh/CUBQLFieldSampler.cpp
-  umesh/RTXObjectSpace.h
-  umesh/RTXObjectSpace.cu
-  umesh/AWT.h
-  umesh/AWT.cu
-  umesh/UMeshMCAccelerator.h
-  umesh/UMeshMCAccelerator.cu
+  umesh/common/UMeshField.h
+  umesh/common/UMeshField.cu
+  # ... macro-cell based methods
+  umesh/mc/UMeshCUBQLSampler.h
+  umesh/mc/UMeshCUBQLSampler.cu
+  # ... object-space methods
+  umesh/os/RTXObjectSpace.h
+  umesh/os/RTXObjectSpace.cu
+  umesh/os/AWT.h
+  umesh/os/AWT.cu
   # *amr* volumes
   amr/BlockStructuredField.h
   amr/BlockStructuredField.cu
-  amr/CUBQLBlockSampler.h
-  amr/CUBQLBlockSampler.cpp
-  amr/BlockStructuredMCAccelerator.h
-  amr/BlockStructuredMCAccelerator.cu
+  amr/BlockStructuredCUBQLSampler.h
+  amr/BlockStructuredCUBQLSampler.cu
+#  amr/BlockStructuredMCAccelerator.h
+#  amr/BlockStructuredMCAccelerator.cu
   
   # implements the c99 barney api calls
   barney.cpp
@@ -176,10 +178,10 @@ target_link_libraries(barney
   barney-cylinders-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
-  barney-UMeshRTXObjectSpace-ptx  
+  barney-UMeshRTXObjectSpace-ptx
+  barney-UMeshMC-ptx
   barney-AWT-ptx  
-  barney-UMeshMCAccelerator-ptx  
-  barney-BlockStructuredMCAccelerator-ptx
+  barney-BlockStructuredMC-ptx
   )
 #target_include_directories(barney PUBLIC
 #  )
