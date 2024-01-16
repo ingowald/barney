@@ -5,6 +5,7 @@
 
 // anari
 #include "helium/array/Array1D.h"
+#include "helium/array/Array3D.h"
 #include "helium/array/ObjectArray.h"
 // ours
 #include "Object.h"
@@ -87,6 +88,39 @@ struct BlockStructuredField : public SpatialField
 
   anari::box3 m_bounds;
 };
+
+  struct StructuredRegularField : public SpatialField
+  {
+    StructuredRegularField(BarneyGlobalState *s);
+    void commit() override;
+    
+    BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+    
+    anari::box3 bounds() const override;
+    bool isValid() const override;
+    
+    helium::uint3 m_dims{0u};
+    helium::float3 m_origin;
+    helium::float3 m_spacing;
+    helium::float3 m_invSpacing;
+    helium::float3 m_coordUpperBound;
+    
+    std::vector<float> m_generatedCellWidths;
+    std::vector<int> m_generatedBlockBounds;
+    std::vector<int> m_generatedBlockLevels;
+    std::vector<int> m_generatedBlockOffsets;
+    std::vector<float> m_generatedBlockScalars;
+    
+    helium::IntrusivePtr<helium::Array3D> m_dataArray;
+
+    
+    /*! iw - i'm _fairly_ sure that this should be something more
+        specific ... some intrusive-pointer something .... */
+    const void *m_data{nullptr};
+    anari::DataType m_type{ANARI_UNKNOWN};
+    
+    // anari::box3 m_bounds;
+  };
 
 } // namespace barney_device
 

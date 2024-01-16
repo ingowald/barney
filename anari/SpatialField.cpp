@@ -28,6 +28,8 @@ SpatialField *SpatialField::createInstance(
     return new UnstructuredField(s);
   else if (subtype == "amr")
     return new BlockStructuredField(s);
+  else if (subtype == "structuredRegular")
+    return new StructuredRegularField(s);
   else
     return (SpatialField *)new UnknownObject(ANARI_SPATIAL_FIELD, s);
 }
@@ -39,6 +41,83 @@ void SpatialField::markCommitted()
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
+
+
+// StructuredRegularField //
+StructuredRegularField::StructuredRegularField(BarneyGlobalState *s)
+  : SpatialField(s)
+{}
+
+void StructuredRegularField::commit() 
+{
+  Object::commit();
+  m_dataArray = getParamObject<helium::Array3D>("data");
+  
+  if (!m_dataArray) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'data' on 'structuredRegular' field");
+    return;
+  }
+
+  m_data = m_dataArray->data();
+  m_type = m_dataArray->elementType();
+  m_dims = m_dataArray->size();
+  
+  m_origin = getParam<helium::float3>("origin", helium::float3(0.f));
+  m_spacing = getParam<helium::float3>("spacing", helium::float3(1.f));
+  
+  m_invSpacing = 1.f / m_spacing;
+  m_coordUpperBound = helium::float3(std::nextafter(m_dims.x - 1, 0),
+                                     std::nextafter(m_dims.y - 1, 0),
+                                     std::nextafter(m_dims.z - 1, 0));
+}
+
+bool StructuredRegularField::isValid() const
+{
+  return m_dataArray;
+}
+    
+BNScalarField StructuredRegularField::makeBarneyScalarField(BNDataGroup dg) const
+{
+  auto ctx = deviceState()->context;
+  // BN_API
+  // BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
+  //                                      uint3 dims,
+  //                                      BNScalarType type,
+  //                                      const void *scalars,
+  //                                      float3 gridOrigin,
+  //                                      float3 gridSpacing);
+  BNScalarType barneyType;
+  switch (m_type) {
+  case ANARI_FLOAT32:
+    barneyType = BN_FLOAT;
+    break;
+  // case ANARI_FLOAT64:
+  //   return ((double *)m_data)[i];
+  // case ANARI_UFIXED8:
+  //   return ((uint8_t *)m_data)[i] / float(std::numeric_limits<uint8_t>::max());
+  // case ANARI_UFIXED16:
+  //   return ((uint16_t *)m_data)[i]
+  //       / float(std::numeric_limits<uint16_t>::max());
+  // case ANARI_FIXED16:
+  //   return ((int16_t *)m_data)[i] / float(std::numeric_limits<int16_t>::max());
+  default:
+    throw std::runtime_error("scalar type not implemented ...");
+  }
+  return bnStructuredDataCreate(dg,
+                                (const int3 &)m_dims,barneyType,m_data,
+                                (const float3&)m_origin,
+                                (const float3&)m_spacing);
+}
+
+anari::box3 StructuredRegularField::bounds() const 
+{
+  helium::box3 bb = isValid()
+    ? helium::box3(m_origin, m_origin + ((helium::float3(m_dims) - 1.f) * m_spacing))
+    : helium::box3{};
+  return (const anari::box3&)bb;
+}
+
 
 // UnstructuredField //
 
