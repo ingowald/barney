@@ -8,15 +8,9 @@
 
 namespace barney_device {
 
-Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s)
-{
-  s->objectCounts.geometries++;
-}
+Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
 
-Geometry::~Geometry()
-{
-  deviceState()->objectCounts.geometries--;
-}
+Geometry::~Geometry() = default;
 
 Geometry *Geometry::createInstance(
     std::string_view subtype, BarneyGlobalState *s)
@@ -82,34 +76,41 @@ BNGeom Sphere::makeBarneyGeometry(
   assert(!m_index); // NOT implemented yet!
   return bnSpheresCreate(dg,
       material,
-      m_vertexPosition->dataAs<float3>(),
+      (const float3 *)m_vertexPosition->dataAs<math::float3>(),
       m_vertexPosition->totalSize(),
       m_vertexRadius->dataAs<float>(),
       m_globalRadius);
 }
 
-anari::box3 Sphere::bounds() const
+box3 Sphere::bounds() const
 {
-  anari::box3 result;
-  result.invalidate();
+  if (!isValid())
+    return {};
+
+  box3 result;
   if (m_index) {
     std::for_each(m_index->beginAs<uint32_t>(),
         m_index->beginAs<uint32_t>() + m_index->totalSize(),
         [&](uint32_t index) {
-          float3 v = *(m_vertexPosition->beginAs<float3>() + index);
+          math::float3 v = *(m_vertexPosition->beginAs<math::float3>() + index);
           float r = *(m_vertexRadius->beginAs<float>() + index);
-          result.insert(float3{v.x-r,v.y-r,v.z-r});
-          result.insert(float3{v.x+r,v.y+r,v.z+r});
+          result.insert(math::float3{v.x - r, v.y - r, v.z - r});
+          result.insert(math::float3{v.x + r, v.y + r, v.z + r});
         });
   } else {
     for (size_t i = 0; i < m_vertexPosition->totalSize(); ++i) {
-      float3 v = *(m_vertexPosition->beginAs<float3>() + i);
+      math::float3 v = *(m_vertexPosition->beginAs<math::float3>() + i);
       float r = *(m_vertexRadius->beginAs<float>() + i);
-      result.insert(float3{v.x-r,v.y-r,v.z-r});
-      result.insert(float3{v.x+r,v.y+r,v.z+r});
+      result.insert(math::float3{v.x - r, v.y - r, v.z - r});
+      result.insert(math::float3{v.x + r, v.y + r, v.z + r});
     }
   }
   return result;
+}
+
+bool Sphere::isValid() const
+{
+  return m_vertexPosition;
 }
 
 void Sphere::cleanup()
@@ -121,8 +122,6 @@ void Sphere::cleanup()
   if (m_vertexRadius)
     m_vertexRadius->removeCommitObserver(this);
 }
-
-
 
 Triangle::Triangle(BarneyGlobalState *s) : Geometry(s) {}
 
@@ -161,35 +160,44 @@ BNGeom Triangle::makeBarneyGeometry(
       m_index ? (const int3 *)m_index->data()
               : (const int3 *)m_generatedIndices.data(),
       m_index ? m_index->size() : (m_generatedIndices.size() / 3),
-      m_vertexPosition->dataAs<float3>(),
+      (const float3 *)m_vertexPosition->data(),
       m_vertexPosition->totalSize(),
       nullptr,
       nullptr);
 }
 
-anari::box3 Triangle::bounds() const
+box3 Triangle::bounds() const
 {
-  anari::box3 result;
-  result.invalidate();
+  if (!isValid())
+    return {};
+
+  box3 result;
   if (m_index) {
-    std::for_each(m_index->beginAs<uint3>(),
-        m_index->beginAs<uint3>() + m_index->totalSize(),
-        [&](uint3 index) {
-          float3 v1 = *(m_vertexPosition->beginAs<float3>() + index.x);
-          float3 v2 = *(m_vertexPosition->beginAs<float3>() + index.y);
-          float3 v3 = *(m_vertexPosition->beginAs<float3>() + index.z);
+    std::for_each(m_index->beginAs<math::uint3>(),
+        m_index->beginAs<math::uint3>() + m_index->totalSize(),
+        [&](math::uint3 index) {
+          math::float3 v1 =
+              *(m_vertexPosition->beginAs<math::float3>() + index.x);
+          math::float3 v2 =
+              *(m_vertexPosition->beginAs<math::float3>() + index.y);
+          math::float3 v3 =
+              *(m_vertexPosition->beginAs<math::float3>() + index.z);
           result.insert(v1);
           result.insert(v2);
           result.insert(v3);
         });
   } else {
-    std::for_each(m_vertexPosition->beginAs<float3>(),
-        m_vertexPosition->beginAs<float3>() + m_vertexPosition->totalSize(),
-        [&](float3 v) {
-          result.insert(v);
-        });
+    std::for_each(m_vertexPosition->beginAs<math::float3>(),
+        m_vertexPosition->beginAs<math::float3>()
+            + m_vertexPosition->totalSize(),
+        [&](math::float3 v) { result.insert(v); });
   }
   return result;
+}
+
+bool Triangle::isValid() const
+{
+  return m_vertexPosition;
 }
 
 void Triangle::cleanup()

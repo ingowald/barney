@@ -21,7 +21,7 @@ struct Geometry : public Object
   virtual BNGeom makeBarneyGeometry(
       BNDataGroup dg, const BNMaterial *material) const = 0;
 
-  virtual anari::box3 bounds() const = 0;
+  virtual box3 bounds() const = 0;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -34,8 +34,10 @@ struct Sphere : public Geometry
   BNGeom makeBarneyGeometry(
       BNDataGroup dg, const BNMaterial *material) const override;
 
-  anari::box3 bounds() const override;
- 
+  box3 bounds() const override;
+
+  bool isValid() const override;
+
  private:
   void cleanup();
 
@@ -55,7 +57,9 @@ struct Triangle : public Geometry
   BNGeom makeBarneyGeometry(
       BNDataGroup dg, const BNMaterial *material) const override;
 
-  anari::box3 bounds() const override;
+  box3 bounds() const override;
+
+  bool isValid() const override;
 
  private:
   void cleanup();

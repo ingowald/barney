@@ -5,15 +5,11 @@
 
 namespace barney_device {
 
-Group::Group(BarneyGlobalState *s) : Object(ANARI_GROUP, s)
-{
-  s->objectCounts.groups++;
-}
+Group::Group(BarneyGlobalState *s) : Object(ANARI_GROUP, s) {}
 
 Group::~Group()
 {
   cleanup();
-  deviceState()->objectCounts.groups--;
 }
 
 void Group::commit()
@@ -56,9 +52,8 @@ BNGroup Group::makeBarneyGroup(BNDataGroup dg) const
     barneyGeometries.push_back(s->makeBarneyGeom(dg));
 
   if (m_volumeData) {
-    std::for_each(m_volumeData->handlesBegin(),
-        m_volumeData->handlesEnd(),
-        [&](auto *o) {
+    std::for_each(
+        m_volumeData->handlesBegin(), m_volumeData->handlesEnd(), [&](auto *o) {
           auto *v = (Volume *)o;
           if (v && v->isValid())
             volumes.push_back(v);
@@ -68,14 +63,16 @@ BNGroup Group::makeBarneyGroup(BNDataGroup dg) const
   for (auto v : volumes)
     barneyVolumes.push_back(v->makeBarneyVolume(dg));
 
-  return bnGroupCreate(
-      dg, barneyGeometries.data(), barneyGeometries.size(),
-      barneyVolumes.data(), barneyVolumes.size());
+  return bnGroupCreate(dg,
+      barneyGeometries.data(),
+      barneyGeometries.size(),
+      barneyVolumes.data(),
+      barneyVolumes.size());
 }
 
-anari::box3 Group::bounds() const
+box3 Group::bounds() const
 {
-  anari::box3 result;
+  box3 result;
   result.invalidate();
   if (m_surfaceData) {
     std::for_each(m_surfaceData->handlesBegin(),
@@ -88,9 +85,8 @@ anari::box3 Group::bounds() const
   }
 
   if (m_volumeData) {
-    std::for_each(m_volumeData->handlesBegin(),
-        m_volumeData->handlesEnd(),
-        [&](auto *o) {
+    std::for_each(
+        m_volumeData->handlesBegin(), m_volumeData->handlesEnd(), [&](auto *o) {
           auto *v = (Volume *)o;
           if (v && v->isValid())
             result.insert(v->bounds());

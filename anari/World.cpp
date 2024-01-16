@@ -9,8 +9,6 @@ namespace barney_device {
 
 World::World(BarneyGlobalState *s) : Object(ANARI_WORLD, s)
 {
-  s->objectCounts.worlds++;
-
   m_zeroGroup = new Group(s);
   m_zeroInstance = new Instance(s);
   m_zeroInstance->setParamDirect("group", m_zeroGroup.ptr);
@@ -28,8 +26,6 @@ World::~World()
   cleanup();
 
   // TODO: destroy barney model + data group
-
-  deviceState()->objectCounts.worlds--;
 }
 
 bool World::getProperty(
@@ -41,13 +37,11 @@ bool World::getProperty(
       deviceState()->commitBufferFlush();
       barneyModelUpdate();
     }
-    anari::box3 bounds;
+    box3 bounds;
     bounds.invalidate();
-    std::for_each(m_instances.begin(),
-        m_instances.end(),
-        [&](auto *inst) {
-          bounds.insert(inst->bounds());
-        });
+    std::for_each(m_instances.begin(), m_instances.end(), [&](auto *inst) {
+      bounds.insert(inst->bounds());
+    });
     std::memcpy(ptr, &bounds, sizeof(bounds));
     return true;
   }

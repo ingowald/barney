@@ -20,7 +20,7 @@ struct Group : public Object
 
   BNGroup makeBarneyGroup(BNDataGroup dg) const;
 
-  anari::box3 bounds() const;
+  box3 bounds() const;
 
 private:
   void cleanup();

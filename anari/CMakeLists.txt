@@ -27,7 +27,6 @@ anari_generate_queries(
 project(anari_library_barney LANGUAGES CXX)
 
 project_add_library(SHARED
-  Array.cpp
   BarneyDeviceQueries.cpp
   BarneyGlobalState.cpp
   Camera.cpp
