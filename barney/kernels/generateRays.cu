@@ -97,9 +97,11 @@ namespace barney {
     // engineer pixel pos etc
     ray.hit.baseColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
 
+#if 0
     bool crossHair = ((ix == fbSize.x/2) || (iy == fbSize.y/2));
     if (crossHair)
       ray.hit.baseColor = vec3f(1,0,0);
+#endif
     
     ray.hit.N = vec3f(0.f);
     ray.throughput = vec3f(1.f);
