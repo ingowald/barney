@@ -60,7 +60,9 @@ void Sphere::commit()
   m_generatedIndices.clear();
 
   m_vertexPosition->addCommitObserver(this);
-  m_vertexRadius->addCommitObserver(this);
+  if (m_vertexRadius)
+    m_vertexRadius->addCommitObserver(this);
+
   if (m_index) {
     m_index->addCommitObserver(this);
   } else {
@@ -78,7 +80,7 @@ BNGeom Sphere::makeBarneyGeometry(
       material,
       (const float3 *)m_vertexPosition->dataAs<math::float3>(),
       m_vertexPosition->totalSize(),
-      m_vertexRadius->dataAs<float>(),
+      m_vertexRadius ? m_vertexRadius->dataAs<float>() : nullptr,
       m_globalRadius);
 }
 
