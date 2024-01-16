@@ -45,7 +45,8 @@ project_add_library(SHARED
   World.cpp
 )
 
-project_link_libraries(PRIVATE anari::helium barney)
+project_link_libraries(PRIVATE anari::helium barney_mpi)
+#project_link_libraries(PRIVATE anari::helium barney)
 
 project_include_directories(
 PUBLIC

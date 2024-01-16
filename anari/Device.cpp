@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Device.h"
+#if BARNEY_MPI
+#include <mpi.h>
+#endif
 
 #include "Array.h"
 #include "Frame.h"
@@ -246,7 +249,15 @@ void BarneyDevice::initDevice()
 
   auto &state = *deviceState();
 
+#if BARNEY_MPI
+  // MPI_Init(&ac,&av);
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  
+  state.context = bnMPIContextCreate(MPI_COMM_WORLD,&rank,1,nullptr,0);
+#else
   state.context = bnContextCreate();
+#endif
   reportMessage(
       ANARI_SEVERITY_DEBUG, "created barney context (%p)", state.context);
 
