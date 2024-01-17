@@ -250,10 +250,13 @@ void BarneyDevice::initDevice()
   auto &state = *deviceState();
 
 #if BARNEY_MPI
-  // MPI_Init(&ac,&av);
+  int mpiInitialized = 0;
+  MPI_Initialized(&mpiInitialized);
+  if (!mpiInitialized)
+    MPI_Init(nullptr, nullptr);
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  
+
   state.context = bnMPIContextCreate(MPI_COMM_WORLD,&rank,1,nullptr,0);
 #else
   state.context = bnContextCreate();
