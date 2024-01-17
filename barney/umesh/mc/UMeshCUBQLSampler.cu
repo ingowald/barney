@@ -14,16 +14,17 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/umesh/CUBQLFieldSampler.h"
+#include "barney/umesh/mc/UMeshCUBQLSampler.h"
 
 namespace barney {
 
-  CUBQLFieldSampler::CUBQLFieldSampler(ScalarField *field)
-    : mesh((UMeshField *)field)
-  {}
-  
-  void CUBQLFieldSampler::build()
+  void UMeshCUBQLSampler::Host::build(bool full_rebuild)
   {
+    if (bvhNodesBuffer) {
+      std::cout <<" bvh already built" << std::endl;
+      return;
+    }
+    
     SetActiveGPU forDuration(mesh->devGroup->devices[0]);
     
     BARNEY_CUDA_SYNC_CHECK();
@@ -45,6 +46,9 @@ namespace barney {
                                    mesh->elements.size()*sizeof(box3f)));
     BARNEY_CUDA_SYNC_CHECK();
 
+    std::cout << OWL_TERMINAL_BLUE
+              << "#bn.umesh: cubql bvh built ..."
+              << OWL_TERMINAL_DEFAULT << std::endl;
     mesh->computeElementBBs(/*deviceID:*/0,d_primBounds);
     BARNEY_CUDA_SYNC_CHECK();
     
@@ -69,6 +73,9 @@ namespace barney {
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
     cuBQL::free(bvh,0,managedMem);
+    std::cout << OWL_TERMINAL_LIGHT_GREEN
+              << "#bn.umesh: cubql bvh built ..."
+              << OWL_TERMINAL_DEFAULT << std::endl;
   }
   
 }

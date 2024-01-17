@@ -21,13 +21,21 @@ namespace barney {
   TransferFunction::TransferFunction(DevGroup *devGroup)
     : devGroup(devGroup)
   {
-    domain = { 0.f,0.f };
+    domain = { 0.f,1.f };
     values = { vec4f(1.f), vec4f(1.f) };
     baseDensity  = 1.f;
     valuesBuffer = owlDeviceBufferCreate(devGroup->owl,
                                          OWL_FLOAT4,
                                          values.size(),
                                          values.data());
+  }
+
+  void TransferFunction::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    vars.push_back({"xf.values",OWL_BUFPTR,base+OWL_OFFSETOF(DD,values)});
+    vars.push_back({"xf.numValues",OWL_INT,base+OWL_OFFSETOF(DD,numValues)});
+    vars.push_back({"xf.baseDensity",OWL_FLOAT,base+OWL_OFFSETOF(DD,baseDensity)});
+    vars.push_back({"xf.domain",OWL_FLOAT2,base+OWL_OFFSETOF(DD,domain)});
   }
   
   void TransferFunction::set(const range1f &domain,
@@ -66,10 +74,10 @@ namespace barney {
       };
   }
   
-  void TransferFunction::setVariables(OWLGeom geom, bool firstTime)
+  void TransferFunction::setVariables(OWLGeom geom) const
   {
-    if (!(domain.lower < domain.upper)) 
-      throw std::runtime_error("in-valid domain for transfer function");
+    // if (!(domain.lower < domain.upper)) 
+    //   throw std::runtime_error("in-valid domain for transfer function");
     
     owlGeomSet2f(geom,"xf.domain",domain.lower,domain.upper);
     owlGeomSet1f(geom,"xf.baseDensity",baseDensity);

@@ -31,38 +31,93 @@ namespace barney {
   
   void Group::build()
   {
-    userGeoms.clear();
-    triangleGeoms.clear();
-    
-    if (triangleGeomGroup)
-      owlGroupRelease(triangleGeomGroup);
-    if (userGeomGroup)
-      owlGroupRelease(userGeomGroup);
-    
-    for (auto geom : geoms) {
-      geom->build();
-      for (auto g : geom->triangleGeoms)
-        triangleGeoms.push_back(g);
-      for (auto g : geom->userGeoms)
-        userGeoms.push_back(g);
-    }
-    for (auto volume : volumes) {
-      volume->build();
-    }
-    if (!userGeoms.empty())
-      userGeomGroup = owlUserGeomGroupCreate
-        (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
-    if (userGeomGroup) {
-      std::cout << "building USER group" << std::endl;
-      owlGroupBuildAccel(userGeomGroup);
+    // triangles and user geoms - for now always rebuild
+    {
+      userGeoms.clear();
+      triangleGeoms.clear();
+      if (triangleGeomGroup)
+        owlGroupRelease(triangleGeomGroup);
+      if (userGeomGroup)
+        owlGroupRelease(userGeomGroup);
+      for (auto geom : geoms) {
+        geom->build();
+        for (auto g : geom->triangleGeoms)
+          triangleGeoms.push_back(g);
+        for (auto g : geom->userGeoms)
+          userGeoms.push_back(g);
+      }
+      if (!userGeoms.empty())
+        userGeomGroup = owlUserGeomGroupCreate
+          (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
+      if (userGeomGroup) {
+        std::cout << "building USER GEOM group" << std::endl;
+        owlGroupBuildAccel(userGeomGroup);
+      }
+      
+      if (!triangleGeoms.empty())
+        triangleGeomGroup = owlTrianglesGeomGroupCreate
+          (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
+      if (triangleGeomGroup) {
+        std::cout << "building TRIANGLES GEOM group" << std::endl;
+        owlGroupBuildAccel(triangleGeomGroup);
+      }
     }
 
-    if (!triangleGeoms.empty())
-      triangleGeomGroup = owlTrianglesGeomGroupCreate
-        (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
-    if (triangleGeomGroup) {
-      std::cout << "building TRIANGLES group" << std::endl;
-      owlGroupBuildAccel(triangleGeomGroup);
+    // volumes - these may need two passes
+    {
+      bool needRefit = false;
+      bool needRebuild = false;
+      std::vector<Volume *> ownGroupVolumes;
+      std::vector<Volume *> mergedGroupVolumes;
+      for (auto &volume : volumes) {
+        switch (volume->updateMode()) {
+        case VolumeAccel::FULL_REBUILD:
+          mergedGroupVolumes.push_back(volume.get());
+          needRebuild = true;
+          break;
+        case VolumeAccel::REFIT:
+          mergedGroupVolumes.push_back(volume.get());
+          needRefit = true;
+          break;
+        case VolumeAccel::BUILD_THEN_REFIT:
+          mergedGroupVolumes.push_back(volume.get());
+          needRebuild = true;
+          needRefit = true;
+          break;
+        case VolumeAccel::HAS_ITS_OWN_GROUP:
+          ownGroupVolumes.push_back(volume.get());
+          break;
+        default:
+          BARNEY_NYI();
+        }
+      }
+      if (needRebuild) {
+        std::cout << "#bn: running volume _build_ pass" << std::endl;
+        if (volumeGeomsGroup) {
+          owlGroupRelease(volumeGeomsGroup);
+          volumeGeomsGroup = 0;
+        }
+        volumeGeoms.clear();
+        for (auto volume : volumes) 
+          volume->build(true);
+        volumeGeomsGroup = owlUserGeomGroupCreate
+          (owner->devGroup->owl,volumeGeoms.size(),volumeGeoms.data());
+        owlGroupBuildAccel(volumeGeomsGroup);
+      }
+      
+      if (needRefit) {
+        std::cout << "#bn: running volume _refit_ pass" << std::endl;
+        if (volumeGeomsGroup == 0)
+          throw std::runtime_error
+            ("somebody asked for refit, but there's no group yet!?");
+        for (auto volume : volumes) 
+          volume->build(false);
+        owlGroupRefitAccel(volumeGeomsGroup);
+      }
+
+      for (auto volume : ownGroupVolumes) {
+        volume->build(true);
+      }
     }
   }
   

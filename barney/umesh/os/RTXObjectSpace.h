@@ -16,25 +16,9 @@
 
 #pragma once
 
-#include "barney/umesh/ObjectSpace-common.h"
-
-#define AWT_DEFAULT_MAX_DEPTH 7
+#include "barney/umesh/os/ObjectSpace-common.h"
 
 namespace barney {
-
-  struct __barney_align(16) AWTNode {
-    enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
-    box4f   bounds[4];
-    float   majorant[4];
-    // int     depth[4];
-    struct NodeRef {
-      inline __both__ bool valid() const { return count != 0 || offset != 0; }
-      inline __both__ bool isLeaf() const { return count != 0; }
-      uint32_t offset:offset_bits;
-      uint32_t count :count_bits;
-    };
-    NodeRef child[4];
-  };
 
   /*! object-space accelerator that clusters elements into, well,
     clusters of similar/nearly elements, then builds an RTX BVH and
@@ -42,32 +26,49 @@ namespace barney {
     during refit and in the isec program for a cluster perfomrs
     ray-element intersection followed by (per-element) woodock
     sampling along the ray-element overlap range */
-  struct UMeshAWT : public VolumeAccel
+  struct RTXObjectSpace
   {
-    struct DD : public UMeshObjectSpace::DD {
-      AWTNode             *nodes;
-      int                 *roots;
+    struct Cluster {
+      box4f bounds;
+      int begin, end;
+      float majorant;
     };
     
-    UMeshAWT(UMeshField *mesh, Volume *volume)
-      : VolumeAccel(mesh,volume),
-        mesh(mesh)
-    {}
-    static OWLGeomType createGeomType(DevGroup *devGroup);
+    struct DD : public UMeshObjectSpace::DD {
+      using Inherited = UMeshObjectSpace::DD;
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      
+      Cluster             *clusters;
+      /*! true (only) if this is the first time this is being built */
+      int                  firstTimeBuild;
+    };
     
-    void build() override;
+    struct Host : public UMeshObjectSpace::Host {
+      using Inherited = UMeshObjectSpace::Host;
+      Host(UMeshField *mesh, Volume *volume)
+        : Inherited(mesh,volume)
+      {}
+    // RTXObjectSpace(UMeshField *mesh, Volume *volume)
+    //   : VolumeAccel(mesh,volume),
+    //     mesh(mesh)
+    // {}
+      static OWLGeomType createGeomType(DevGroup *devGroup);
+    
+      void build(bool full_rebuild) override;
+      void createClusters();
 
-    void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
-    void extractRoots();
-    void buildAWT();
-    
-    std::vector<int>     roots;
-    std::vector<AWTNode> nodes;
-    OWLBuffer nodesBuffer;
-    OWLBuffer rootsBuffer;
-    OWLGeom  geom  = 0;
-    OWLGroup group = 0;
-    UMeshField *const mesh;
+      /*! set owl variables for this accelerator - this is virutal so
+        derived classes can add their own */
+      void setVariables(OWLGeom geom) override;
+      
+      std::vector<Cluster> clusters;
+      OWLBuffer clustersBuffer = 0;
+      bool firstTimeBuild = true;
+      // OWLGeom  geom  = 0;
+      // OWLGroup group = 0;
+      // UMeshField *const mesh;
+    };
   };
   
 }
+

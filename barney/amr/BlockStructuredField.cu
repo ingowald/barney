@@ -17,15 +17,14 @@
 #include "barney/amr/BlockStructuredField.h"
 #include "barney/Context.h"
 #include "barney/volume/MCGrid.cuh"
-// just to be able to create these accelerators:
-#include "barney/amr/BlockStructuredMCAccelerator.h"
-//#include "barney/umesh/RTXObjectSpace.h"
-//#include "barney/umesh/AWT.h"
+#include "barney/amr/BlockStructuredCUBQLSampler.h"
 
 #define BUFFER_CREATE owlDeviceBufferCreate
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate
 
 namespace barney {
+
+  extern "C" char BlockStructuredMC_ptx[];
 
   enum { MC_GRID_SIZE = 128 };
 
@@ -47,13 +46,6 @@ namespace barney {
       for (int y=0;y<numCells.y;y++) {
         for (int x=0;x<numCells.x;x++) {
           const box3f cb3 = blk.cellBounds(vec3i(x,y,z));
-          //printf("%f,%f,%f -- %f,%f,%f\n",
-          //       cb3.lower.x,
-          //       cb3.lower.y,
-          //       cb3.lower.z,
-          //       cb3.upper.x,
-          //       cb3.upper.y,
-          //       cb3.upper.z);
           const float scalar = field.blockScalars[blk.scalarOffset + linearIndex(x,y,z)];
           const box4f cellBounds(vec4f(cb3.lower,scalar),
                                  vec4f(cb3.upper,scalar));
@@ -83,7 +75,9 @@ namespace barney {
            dims.z);
     std::cout << "allcating macro cells" << std::endl;
     grid.resize(dims);
-
+    grid.gridOrigin = worldBounds.lower;
+    grid.gridSpacing = worldBounds.size() * rcp(vec3f(dims));
+    
     std::cout << "clearing macro cells" << std::endl;
     grid.clearCells();
     
@@ -166,7 +160,7 @@ namespace barney {
 
       blockIDs[blockID] = block.ID;
       valueRanges[blockID] = block.valueRange;
-      worldBounds.extend(block.worldBounds());
+      worldBounds.extend(getBox(block.worldBounds()));
     }
     PRINT(worldBounds);
     assert(!valueRanges.empty());
@@ -238,21 +232,22 @@ namespace barney {
     return getContext()->initReference(sf);
   }
 
-  void BlockStructuredField::setVariables(OWLGeom geom, bool firstTime)
+  void BlockStructuredField::setVariables(OWLGeom geom)
   {
-    ScalarField::setVariables(geom,firstTime);
+    ScalarField::setVariables(geom);
     
     // ------------------------------------------------------------------
-    owlGeomSetBuffer(geom,"blockBounds",blockBoundsBuffer);
-    owlGeomSetBuffer(geom,"blockLevels",blockLevelsBuffer);
-    owlGeomSetBuffer(geom,"blockOffsets",blockOffsetsBuffer);
-    owlGeomSetBuffer(geom,"blockScalars",blockScalarsBuffer);
-    owlGeomSetBuffer(geom,"blockIDs",blockIDsBuffer);
-    owlGeomSetBuffer(geom,"valueRanges",valueRangesBuffer);
+    owlGeomSetBuffer(geom,"field.blockBounds",blockBoundsBuffer);
+    owlGeomSetBuffer(geom,"field.blockLevels",blockLevelsBuffer);
+    owlGeomSetBuffer(geom,"field.blockOffsets",blockOffsetsBuffer);
+    owlGeomSetBuffer(geom,"field.blockScalars",blockScalarsBuffer);
+    owlGeomSetBuffer(geom,"field.blockIDs",blockIDsBuffer);
+    owlGeomSetBuffer(geom,"field.valueRanges",valueRangesBuffer);
   }
   
-  std::vector<OWLVarDecl> BlockStructuredField::getVarDecls(uint32_t myOfs)
+  void BlockStructuredField::DD::addVars(std::vector<OWLVarDecl> &vars, int myOfs)
   {
+    ScalarField::DD::addVars(vars,myOfs);
     std::vector<OWLVarDecl> mine = 
       {
        { "field.blockBounds",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockBounds) },
@@ -262,13 +257,23 @@ namespace barney {
        { "field.blockIDs",       OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockIDs) },
        { "field.valueRanges",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,valueRanges) },
       };
-    for (auto var : ScalarField::getVarDecls(myOfs))
-      mine.push_back(var);
-    return mine;
+    for (auto var : mine)
+      vars.push_back(var);
   }
 
   VolumeAccel::SP BlockStructuredField::createAccel(Volume *volume)
   {
-    return std::make_shared<BlockStructuredAccel_MC_CUBQL>(this,volume);
+    const char *methodFromEnv = getenv("BARNEY_AMR");
+    std::string method = (methodFromEnv ? methodFromEnv : "DDA");
+
+    if (method == "DDA" || method == "MCDDA")
+      return std::make_shared<MCDDAVolumeAccel<BlockStructuredCUBQLSampler>::Host>
+        (this,volume,BlockStructuredMC_ptx);
+
+    if (method == "MCRTX")
+      return std::make_shared<MCRTXVolumeAccel<BlockStructuredCUBQLSampler>::Host>
+        (this,volume,BlockStructuredMC_ptx);
+    
+    throw std::runtime_error("unknown BARNEY_AMR accelerator method");
   }
 }

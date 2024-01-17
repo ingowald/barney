@@ -5,15 +5,16 @@
 
 // barney
 #include "barney.h"
-// cuda
-#include <vector_functions.hpp>
 // anari
+#include <helium/helium_math.h>
 #include <anari/anari_cpp.hpp>
 // std
 #include <cmath>
 #include <cstring> // for std::memcpy()
 
-namespace anari {
+namespace barney_device {
+
+namespace math = anari::math;
 
 struct box1
 {
@@ -28,15 +29,18 @@ struct box1
 
 struct box3
 {
-  float3 lower, upper;
+  math::float3 lower, upper;
+
+  box3() { invalidate(); }
+  box3(const math::float3 &l, const math::float3 &u) : lower(l), upper(u) {}
 
   void invalidate()
   {
-    lower = make_float3(INFINITY, INFINITY, INFINITY);
-    upper = make_float3(-INFINITY, -INFINITY, -INFINITY);
+    lower = math::float3(INFINITY, INFINITY, INFINITY);
+    upper = math::float3(-INFINITY, -INFINITY, -INFINITY);
   }
 
-  box3 &insert(float3 v)
+  box3 &insert(math::float3 v)
   {
     lower.x = fminf(lower.x, v.x);
     lower.y = fminf(lower.y, v.y);
@@ -57,66 +61,25 @@ struct box3
 
 struct box3i
 {
-  int3 lower, upper;
+  math::int3 lower, upper;
 };
 
-ANARI_TYPEFOR_SPECIALIZATION(uchar2, ANARI_UINT8_VEC2);
-ANARI_TYPEFOR_SPECIALIZATION(uchar3, ANARI_UINT8_VEC3);
-ANARI_TYPEFOR_SPECIALIZATION(uchar4, ANARI_UINT8_VEC4);
-ANARI_TYPEFOR_SPECIALIZATION(int2, ANARI_INT32_VEC2);
-ANARI_TYPEFOR_SPECIALIZATION(int3, ANARI_INT32_VEC3);
-ANARI_TYPEFOR_SPECIALIZATION(int4, ANARI_INT32_VEC4);
-ANARI_TYPEFOR_SPECIALIZATION(uint2, ANARI_UINT32_VEC2);
-ANARI_TYPEFOR_SPECIALIZATION(uint3, ANARI_UINT32_VEC3);
-ANARI_TYPEFOR_SPECIALIZATION(uint4, ANARI_UINT32_VEC4);
-ANARI_TYPEFOR_SPECIALIZATION(float2, ANARI_FLOAT32_VEC2);
-ANARI_TYPEFOR_SPECIALIZATION(float3, ANARI_FLOAT32_VEC3);
-ANARI_TYPEFOR_SPECIALIZATION(float4, ANARI_FLOAT32_VEC4);
-ANARI_TYPEFOR_SPECIALIZATION(box1, ANARI_FLOAT32_BOX1);
-ANARI_TYPEFOR_SPECIALIZATION(box3, ANARI_FLOAT32_BOX3);
-ANARI_TYPEFOR_SPECIALIZATION(box3i, ANARI_INT32_BOX3);
+} // namespace barney_device
+
+///////////////////////////////////////////////////////////////////////////////
+// ANARITypeFor type trait mappings ///////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+namespace anari {
+
+ANARI_TYPEFOR_SPECIALIZATION(barney_device::box1, ANARI_FLOAT32_BOX1);
+ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3, ANARI_FLOAT32_BOX3);
+ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3i, ANARI_INT32_BOX3);
 
 #ifdef ANARI_BARNEY_MATH_DEFINITIONS
-ANARI_TYPEFOR_DEFINITION(uchar2);
-ANARI_TYPEFOR_DEFINITION(uchar3);
-ANARI_TYPEFOR_DEFINITION(uchar4);
-ANARI_TYPEFOR_DEFINITION(int2);
-ANARI_TYPEFOR_DEFINITION(int3);
-ANARI_TYPEFOR_DEFINITION(int4);
-ANARI_TYPEFOR_DEFINITION(uint2);
-ANARI_TYPEFOR_DEFINITION(uint3);
-ANARI_TYPEFOR_DEFINITION(uint4);
-ANARI_TYPEFOR_DEFINITION(float2);
-ANARI_TYPEFOR_DEFINITION(float3);
-ANARI_TYPEFOR_DEFINITION(float4);
-ANARI_TYPEFOR_DEFINITION(box1);
-ANARI_TYPEFOR_DEFINITION(box3);
-ANARI_TYPEFOR_DEFINITION(box3i);
+ANARI_TYPEFOR_DEFINITION(barney_device::box1);
+ANARI_TYPEFOR_DEFINITION(barney_device::box3);
+ANARI_TYPEFOR_DEFINITION(barney_device::box3i);
 #endif
 
 } // namespace anari
-
-namespace barney_device {
-
-inline float dot(float3 a, float3 b)
-{
-  return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-inline float length2(float3 a)
-{
-  return dot(a, a);
-}
-
-inline float length(float3 a)
-{
-  return std::sqrt(length2(a));
-}
-
-inline float3 normalize(float3 a)
-{
-  auto l = length(a);
-  return make_float3(a.x / l, a.y / l, a.z / l);
-}
-
-} // namespace barney_device

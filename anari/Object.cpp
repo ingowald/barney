@@ -44,14 +44,9 @@ BarneyGlobalState *Object::deviceState() const
 
 UnknownObject::UnknownObject(ANARIDataType type, BarneyGlobalState *s)
     : Object(type, s)
-{
-  s->objectCounts.unknown++;
-}
+{}
 
-UnknownObject::~UnknownObject()
-{
-  deviceState()->objectCounts.unknown--;
-}
+UnknownObject::~UnknownObject() = default;
 
 bool UnknownObject::isValid() const
 {

@@ -5,15 +5,9 @@
 
 namespace barney_device {
 
-Renderer::Renderer(BarneyGlobalState *s) : Object(ANARI_RENDERER, s)
-{
-  s->objectCounts.renderers++;
-}
+Renderer::Renderer(BarneyGlobalState *s) : Object(ANARI_RENDERER, s) {}
 
-Renderer::~Renderer()
-{
-  deviceState()->objectCounts.renderers--;
-}
+Renderer::~Renderer() = default;
 
 } // namespace barney_device
 

@@ -24,6 +24,10 @@ namespace barney {
   {
     typedef std::shared_ptr<BlockStructuredField> SP;
 
+    // /*! returns part of the string used to find the optix device
+    //     programs that operate on this type */
+    // std::string getTypeString() const { return "BSAMR"; };
+    
     struct Block
     {
       uint32_t ID{UINT_MAX};
@@ -83,6 +87,8 @@ namespace barney {
 
     struct DD : public ScalarField::DD {
 
+      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      
       /* compute basis function contribution of given block at point P, and add
          that to 'sumWeightedValues' and 'sumWeights'. returns true if P is
          inside the block *filter domain*, false if outside (in which case the
@@ -104,8 +110,8 @@ namespace barney {
       int             numBlocks;
     };
 
-    std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    void setVariables(OWLGeom geom, bool firstTime) override;
+    // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
+    void setVariables(OWLGeom geom) override;
 
     void buildMCs(MCGrid &macroCells) override;
     

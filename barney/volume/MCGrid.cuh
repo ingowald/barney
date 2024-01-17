@@ -79,8 +79,44 @@ namespace barney {
     if (pb.lower.y >= pb.upper.y) return;
     if (pb.lower.z >= pb.upper.z) return;
 
-    vec3i lo = project(pb.lower,worldBounds,grid.dims);
-    vec3i hi = project(pb.upper,worldBounds,grid.dims);
+    vec3i lo = vec3i((pb.lower-grid.gridOrigin)*rcp(grid.gridSpacing));
+  //project(pb.lower,worldBounds,grid.dims);
+    // vec3i hi = project(pb.upper,worldBounds,grid.dims);
+    vec3i hi = vec3i((pb.upper-grid.gridOrigin)*rcp(grid.gridSpacing));
+
+    lo = min(max(lo,vec3i(0)),grid.dims-vec3i(1));
+    hi = min(max(hi,vec3i(0)),grid.dims-vec3i(1));
+
+    for (int iz=lo.z;iz<=hi.z;iz++)
+      for (int iy=lo.y;iy<=hi.y;iy++)
+        for (int ix=lo.x;ix<=hi.x;ix++) {
+          const int cellID
+            = ix
+            + iy * grid.dims.x
+            + iz * grid.dims.x * grid.dims.y;
+          auto &cell = grid.scalarRanges[cellID];
+          fatomicMin(&cell.lower,primBounds4.lower.w);
+          fatomicMax(&cell.upper,primBounds4.upper.w);
+        }
+  }
+
+  inline __device__
+  void rasterBox(MCGrid::DD grid,
+                 const box4f primBounds4)
+  {
+    box3f pb = box3f(vec3f(primBounds4.lower),
+                     vec3f(primBounds4.upper));
+    if (pb.lower.x >= pb.upper.x) return;
+    if (pb.lower.y >= pb.upper.y) return;
+    if (pb.lower.z >= pb.upper.z) return;
+
+    vec3i lo = vec3i((pb.lower-grid.gridOrigin)*rcp(grid.gridSpacing));
+  //project(pb.lower,worldBounds,grid.dims);
+    // vec3i hi = project(pb.upper,worldBounds,grid.dims);
+    vec3i hi = vec3i((pb.upper-grid.gridOrigin)*rcp(grid.gridSpacing));
+
+    lo = min(max(lo,vec3i(0)),grid.dims-vec3i(1));
+    hi = min(max(hi,vec3i(0)),grid.dims-vec3i(1));
 
     for (int iz=lo.z;iz<=hi.z;iz++)
       for (int iy=lo.y;iy<=hi.y;iy++)

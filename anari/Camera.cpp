@@ -5,15 +5,9 @@
 
 namespace barney_device {
 
-Camera::Camera(BarneyGlobalState *s) : Object(ANARI_CAMERA, s)
-{
-  s->objectCounts.cameras++;
-}
+Camera::Camera(BarneyGlobalState *s) : Object(ANARI_CAMERA, s) {}
 
-Camera::~Camera()
-{
-  deviceState()->objectCounts.cameras--;
-}
+Camera::~Camera() = default;
 
 Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
 {
@@ -29,10 +23,12 @@ Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
 
 void Camera::commit()
 {
-  m_pos = getParam<float3>("position", make_float3(0.f, 0.f, 0.f));
-  m_dir = normalize(getParam<float3>("direction", make_float3(0.f, 0.f, 1.f)));
-  m_up = normalize(getParam<float3>("up", make_float3(0.f, 1.f, 0.f)));
-  m_imageRegion = make_float4(0.f, 0.f, 1.f, 1.f);
+  m_pos = getParam<math::float3>("position", math::float3(0.f, 0.f, 0.f));
+  m_dir = math::normalize(
+      getParam<math::float3>("direction", math::float3(0.f, 0.f, 1.f)));
+  m_up = math::normalize(
+      getParam<math::float3>("up", math::float3(0.f, 1.f, 0.f)));
+  m_imageRegion = math::float4(0.f, 0.f, 1.f, 1.f);
   getParam("imageRegion", ANARI_FLOAT32_BOX2, &m_imageRegion);
   markUpdated();
 }
@@ -55,11 +51,15 @@ void Perspective::commit()
     fovy = anari::radians(60.f);
   float aspect = getParam<float>("aspect", 1.f);
 
-  float3 at =
-      make_float3(m_pos.x + m_dir.x, m_pos.y + m_dir.y, m_pos.z + m_dir.z);
+  math::float3 at =
+      math::float3(m_pos.x + m_dir.x, m_pos.y + m_dir.y, m_pos.z + m_dir.z);
 
-  bnPinholeCamera(
-      &m_barneyCamera, m_pos, at, m_up, anari::degrees(fovy), aspect);
+  bnPinholeCamera(&m_barneyCamera,
+      (const float3 &)m_pos,
+      (const float3 &)at,
+      (const float3 &)m_up,
+      anari::degrees(fovy),
+      aspect);
 }
 
 } // namespace barney_device

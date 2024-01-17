@@ -21,7 +21,7 @@ struct Instance : public Object
 
   const BNTransform *barneyTransform() const;
 
-  anari::box3 bounds() const;
+  box3 bounds() const;
 
  private:
   BNTransform m_xfm;

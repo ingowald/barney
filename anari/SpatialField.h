@@ -5,6 +5,7 @@
 
 // anari
 #include "helium/array/Array1D.h"
+#include "helium/array/Array3D.h"
 #include "helium/array/ObjectArray.h"
 // ours
 #include "Object.h"
@@ -23,7 +24,7 @@ struct SpatialField : public Object
 
   virtual BNScalarField makeBarneyScalarField(BNDataGroup dg) const = 0;
 
-  virtual anari::box3 bounds() const = 0;
+  virtual box3 bounds() const = 0;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -35,7 +36,7 @@ struct UnstructuredField : public SpatialField
 
   BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
 
-  anari::box3 bounds() const override;
+  box3 bounds() const override;
 
   struct Parameters
   {
@@ -59,7 +60,7 @@ struct UnstructuredField : public SpatialField
   std::vector<float> m_generatedGridDomains;
   std::vector<float> m_generatedGridScalars;
 
-  anari::box3 m_bounds;
+  box3 m_bounds;
 };
 
 struct BlockStructuredField : public SpatialField
@@ -69,7 +70,7 @@ struct BlockStructuredField : public SpatialField
 
   BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
 
-  anari::box3 bounds() const override;
+  box3 bounds() const override;
 
   struct Parameters
   {
@@ -85,7 +86,39 @@ struct BlockStructuredField : public SpatialField
   std::vector<int> m_generatedBlockOffsets;
   std::vector<float> m_generatedBlockScalars;
 
-  anari::box3 m_bounds;
+  box3 m_bounds;
+};
+
+struct StructuredRegularField : public SpatialField
+{
+  StructuredRegularField(BarneyGlobalState *s);
+  void commit() override;
+
+  BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+
+  box3 bounds() const override;
+  bool isValid() const override;
+
+  math::uint3 m_dims{0u};
+  math::float3 m_origin;
+  math::float3 m_spacing;
+  math::float3 m_invSpacing;
+  math::float3 m_coordUpperBound;
+
+  std::vector<float> m_generatedCellWidths;
+  std::vector<int> m_generatedBlockBounds;
+  std::vector<int> m_generatedBlockLevels;
+  std::vector<int> m_generatedBlockOffsets;
+  std::vector<float> m_generatedBlockScalars;
+
+  helium::IntrusivePtr<helium::Array3D> m_dataArray;
+
+  /*! iw - i'm _fairly_ sure that this should be something more
+      specific ... some intrusive-pointer something .... */
+  const void *m_data{nullptr};
+  anari::DataType m_type{ANARI_UNKNOWN};
+
+  // box3 m_bounds;
 };
 
 } // namespace barney_device

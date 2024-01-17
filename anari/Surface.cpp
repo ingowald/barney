@@ -7,13 +7,9 @@ namespace barney_device {
 
 Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s)
 {
-  s->objectCounts.surfaces++;
 }
 
-Surface::~Surface()
-{
-  deviceState()->objectCounts.surfaces--;
-}
+Surface::~Surface() = default;
 
 void Surface::commit()
 {

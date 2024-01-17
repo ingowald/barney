@@ -49,7 +49,7 @@ namespace barney {
     owlGeomSetRaw(geom,"material",&material);
     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
     owlGeomSetBuffer(geom,"indices",indicesBuffer);
-    
+
     triangleGeoms.push_back(geom);
   }
 
@@ -97,7 +97,6 @@ namespace barney {
        params,-1);
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"TrianglesCH");
     owlBuildPrograms(devGroup->owl);
-    
     return gt;
   }
   

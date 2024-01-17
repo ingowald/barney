@@ -16,7 +16,7 @@ namespace barney_device {
 struct Frame : public helium::BaseFrame
 {
   Frame(BarneyGlobalState *s);
-  ~Frame();
+  ~Frame() override;
 
   bool isValid() const override;
 
@@ -50,7 +50,7 @@ struct Frame : public helium::BaseFrame
   struct FrameData
   {
     int frameID{0};
-    uint2 size;
+    math::uint2 size;
   } m_frameData;
 
   anari::DataType m_colorType{ANARI_UNKNOWN};

@@ -93,8 +93,26 @@ namespace barney {
     
     int size() const { return devices.size(); }
     
-    OWLGeomType getOrCreateGeomTypeFor(const std::string &geomTypeString,
-                                       OWLGeomType (*createOnce)(DevGroup *));
+    // OWLGeomType getOrCreateGeomTypeFor
+    // (const std::string &geomTypeString,
+    //  OWLGeomType (*createOnce)(DevGroup *,const std::string &typeString));
+
+    template<typename CreateGTLambda>
+    OWLGeomType
+    getOrCreateGeomTypeFor(const std::string &geomTypeString,
+                           const CreateGTLambda &createGT)
+    {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      OWLGeomType gt = geomTypes[geomTypeString];
+      if (gt)
+        return gt;
+      
+      gt = geomTypes[geomTypeString] = createGT(this);
+      programsDirty = true;
+      return gt;
+    }
+
+    
     void update();
     
     std::map<std::string,OWLGeomType> geomTypes;

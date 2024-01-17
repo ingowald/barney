@@ -10,15 +10,12 @@ namespace barney_device {
 
 Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s)
 {
-  s->objectCounts.frames++;
-
   m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
 }
 
 Frame::~Frame()
 {
   wait();
-  deviceState()->objectCounts.frames--;
 }
 
 bool Frame::isValid() const
@@ -57,7 +54,7 @@ void Frame::commit()
   m_colorType = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
   m_depthType = getParam<anari::DataType>("channel.depth", ANARI_UNKNOWN);
 
-  auto size = getParam<uint2>("size", make_uint2(10, 10));
+  auto size = getParam<math::uint2>("size", math::uint2(10, 10));
 
   const auto numPixels = size.x * size.y;
 
@@ -176,21 +173,21 @@ void Frame::convertPixelsToFinalFormat()
         m_pixelBuffer.data(), m_bnHostBuffer.data(), m_pixelBuffer.size());
   } else if (m_colorType == ANARI_UFIXED8_RGBA_SRGB) {
     auto numPixels = m_frameData.size.x * m_frameData.size.y;
-    auto *src = (uchar4 *)m_bnHostBuffer.data();
-    auto *dst = (uchar4 *)m_pixelBuffer.data();
-    std::transform(src, src + numPixels, dst, [](uchar4 p) {
-      auto f = make_float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
+    auto *src = (math::byte4 *)m_bnHostBuffer.data();
+    auto *dst = (math::byte4 *)m_pixelBuffer.data();
+    std::transform(src, src + numPixels, dst, [](math::byte4 p) {
+      auto f = math::float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
       f.x = helium::toneMap(f.x);
       f.y = helium::toneMap(f.y);
       f.z = helium::toneMap(f.z);
-      return make_uchar4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
+      return math::byte4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
     });
   } else if (m_colorType == ANARI_FLOAT32_VEC4) {
     auto numPixels = m_frameData.size.x * m_frameData.size.y;
-    auto *src = (uchar4 *)m_bnHostBuffer.data();
-    auto *dst = (float4 *)m_pixelBuffer.data();
-    std::transform(src, src + numPixels, dst, [](uchar4 p) {
-      return make_float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
+    auto *src = (math::byte4 *)m_bnHostBuffer.data();
+    auto *dst = (math::float4 *)m_pixelBuffer.data();
+    std::transform(src, src + numPixels, dst, [](math::byte4 p) {
+      return math::float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
     });
   }
 }

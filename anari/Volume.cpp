@@ -3,19 +3,14 @@
 
 #include "Volume.h"
 // std
+#include <iostream>
 #include <numeric>
 
 namespace barney_device {
 
-Volume::Volume(BarneyGlobalState *s) : Object(ANARI_VOLUME, s)
-{
-  s->objectCounts.volumes++;
-}
+Volume::Volume(BarneyGlobalState *s) : Object(ANARI_VOLUME, s) {}
 
-Volume::~Volume()
-{
-  deviceState()->objectCounts.volumes--;
-}
+Volume::~Volume() = default;
 
 Volume *Volume::createInstance(std::string_view subtype, BarneyGlobalState *s)
 {
@@ -37,10 +32,13 @@ TransferFunction1D::TransferFunction1D(BarneyGlobalState *s) : Volume(s) {}
 
 void TransferFunction1D::commit()
 {
+  std::cout << "banari: committing transfer function" << std::endl;
   Volume::commit();
 
+  std::cout << "cleanup" << std::endl;
   cleanup();
 
+  std::cout << "getfield" << std::endl;
   m_field = getParamObject<SpatialField>("field");
   if (!m_field) {
     reportMessage(ANARI_SEVERITY_WARNING,
@@ -48,12 +46,16 @@ void TransferFunction1D::commit()
     return;
   }
 
+  std::cout << "getbounds" << std::endl;
   m_bounds = m_field->bounds();
 
-  m_valueRange = getParam<anari::box1>("valueRange", anari::box1{0.f, 1.f});
+  m_valueRange = getParam<box1>("valueRange", box1{0.f, 1.f});
 
+  std::cout << "getting colordata" << std::endl;
   m_colorData = getParamObject<helium::Array1D>("color");
+  std::cout << "getting opacitydata" << std::endl;
   m_opacityData = getParamObject<helium::Array1D>("opacity");
+  std::cout << "getting desnityscale" << std::endl;
   m_densityScale = getParam<float>("densityScale", 1.f);
 
   if (!m_colorData) {
@@ -68,9 +70,11 @@ void TransferFunction1D::commit()
     return;
   }
 
+  std::cout << "banari: getting color and opacity data" << std::endl;
+
   // extract combined RGB+A map from color and opacity arrays (whose
   // sizes are allowed to differ..)
-  auto *colorData = m_colorData->beginAs<float3>();
+  auto *colorData = m_colorData->beginAs<math::float3>();
   auto *opacityData = m_opacityData->beginAs<float>();
 
   size_t tfSize = std::max(m_colorData->size(), m_opacityData->size());
@@ -82,11 +86,11 @@ void TransferFunction1D::commit()
         : 0.f;
     float colorFrac = colorPos - floorf(colorPos);
 
-    float3 color0 = colorData[int(floorf(colorPos))];
-    float3 color1 = colorData[int(ceilf(colorPos))];
-    float3 color = make_float3(linalg::lerp(color0.x, color1.x, colorFrac),
-        linalg::lerp(color0.y, color1.y, colorFrac),
-        linalg::lerp(color0.z, color1.z, colorFrac));
+    math::float3 color0 = colorData[int(floorf(colorPos))];
+    math::float3 color1 = colorData[int(ceilf(colorPos))];
+    math::float3 color = math::float3(math::lerp(color0.x, color1.x, colorFrac),
+        math::lerp(color0.y, color1.y, colorFrac),
+        math::lerp(color0.z, color1.z, colorFrac));
 
     float alphaPos = tfSize > 1
         ? (float(i) / (tfSize - 1)) * (m_opacityData->size() - 1)
@@ -95,27 +99,31 @@ void TransferFunction1D::commit()
 
     float alpha0 = opacityData[int(floorf(alphaPos))];
     float alpha1 = opacityData[int(ceilf(alphaPos))];
-    float alpha = linalg::lerp(alpha0, alpha1, alphaFrac);
+    float alpha = math::lerp(alpha0, alpha1, alphaFrac);
 
-    m_rgbaMap[i] = make_float4(color.x, color.y, color.z, alpha);
+    m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
   }
 }
 
 BNVolume TransferFunction1D::makeBarneyVolume(BNDataGroup dg) const
 {
   auto ctx = deviceState()->context;
-  static BNVolume bnVol{nullptr}; // TODO: really find out if volume has changed!
+  static BNVolume bnVol{
+      nullptr}; // TODO: really find out if volume has changed!
+  std::cout << "creating barney volume" << std::endl;
   if (!bnVol)
     bnVol = bnVolumeCreate(dg, m_field->makeBarneyScalarField(dg));
+  std::cout << "setting xf" << std::endl;
   bnVolumeSetXF(bnVol,
       (float2 &)m_valueRange,
-      m_rgbaMap.data(),
+      (const float4 *)m_rgbaMap.data(),
       m_rgbaMap.size(),
       m_densityScale);
+  std::cout << "volume done" << std::endl;
   return bnVol;
 }
 
-anari::box3 TransferFunction1D::bounds() const
+box3 TransferFunction1D::bounds() const
 {
   return m_bounds;
 }

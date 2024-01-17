@@ -14,21 +14,21 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/amr/CUBQLBlockSampler.h"
+#include "barney/amr/BlockStructuredCUBQLSampler.h"
 
 namespace barney {
 
-  CUBQLBlockSampler::CUBQLBlockSampler(ScalarField *field)
-    : field((BlockStructuredField *)field)
-  {}
-
-  void CUBQLBlockSampler::build()
+  void BlockStructuredCUBQLSampler::Host::build(bool full_rebuild)
   {
+    PING;
+    if (bvhNodesBuffer) {
+      std::cout <<" bvh already built" << std::endl;
+      return;
+    }
+    
     SetActiveGPU forDuration(field->devGroup->devices[0]);
     
     BARNEY_CUDA_SYNC_CHECK();
-    assert(field);
-    assert(!field->blockIDs.empty());
     
     if (bvhNodesBuffer != 0) {
       std::cout << "cubql bvh already built..." << std::endl;
@@ -57,17 +57,19 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
-    std::vector<uint32_t> reorderedBlockIDs(field->blockIDs.size());
+    std::vector<uint32_t> reorderedElements(field->blockIDs.size());
     for (int i=0;i<field->blockIDs.size();i++) {
-      reorderedBlockIDs[i] = field->blockIDs[bvh.primIDs[i]];
+      reorderedElements[i] = field->blockIDs[bvh.primIDs[i]];
     }
-    field->blockIDs = reorderedBlockIDs;
-    owlBufferUpload(field->blockIDsBuffer,reorderedBlockIDs.data());
+    field->blockIDs = reorderedElements;
+    owlBufferUpload(field->blockIDsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
 
     bvhNodesBuffer
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
     cuBQL::free(bvh,0,managedMem);
+    std::cout << "cubql bvh built ..." << std::endl;
   }
+  
 }

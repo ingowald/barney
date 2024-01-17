@@ -4,22 +4,18 @@
 #include "Instance.h"
 // anari
 #include <anari/anari_cpp/ext/linalg.h>
+// CUDA
+#include <vector_functions.h>
 
 namespace barney_device {
 
-Instance::Instance(BarneyGlobalState *s) : Object(ANARI_INSTANCE, s)
-{
-  s->objectCounts.instances++;
-}
+Instance::Instance(BarneyGlobalState *s) : Object(ANARI_INSTANCE, s) {}
 
-Instance::~Instance()
-{
-  deviceState()->objectCounts.instances--;
-}
+Instance::~Instance() = default;
 
 void Instance::commit()
 {
-  anari::math::mat4 xfm = anari::math::identity;
+  math::mat4 xfm = anari::math::identity;
   getParam("transform", ANARI_FLOAT32_MAT4, &xfm);
   m_xfm.xfm.l.vx = make_float3(xfm[0].x, xfm[0].y, xfm[0].z);
   m_xfm.xfm.l.vy = make_float3(xfm[1].x, xfm[1].y, xfm[1].z);
@@ -52,9 +48,9 @@ const BNTransform *Instance::barneyTransform() const
   return &m_xfm;
 }
 
-anari::box3 Instance::bounds() const
+box3 Instance::bounds() const
 {
-  anari::box3 result = group()->bounds();
+  box3 result = group()->bounds();
   // TODO: xfm
   return result;
 }
