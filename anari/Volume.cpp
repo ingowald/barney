@@ -56,7 +56,8 @@ void TransferFunction1D::commit()
   std::cout << "getting opacitydata" << std::endl;
   m_opacityData = getParamObject<helium::Array1D>("opacity");
   std::cout << "getting desnityscale" << std::endl;
-  m_densityScale = getParam<float>("densityScale", 1.f);
+  m_densityScale = getParam<float>("unitDistance", 1.f);
+  // m_densityScale = getParam<float>("densityScale", 1.f);
 
   if (!m_colorData) {
     reportMessage(ANARI_SEVERITY_WARNING,
@@ -110,9 +111,10 @@ BNVolume TransferFunction1D::makeBarneyVolume(BNDataGroup dg) const
   auto ctx = deviceState()->context;
   static BNVolume bnVol{
       nullptr}; // TODO: really find out if volume has changed!
-  std::cout << "creating barney volume" << std::endl;
-  if (!bnVol)
+  if (!bnVol) {
+    std::cout << "creating barney volume" << std::endl;
     bnVol = bnVolumeCreate(dg, m_field->makeBarneyScalarField(dg));
+  }
   std::cout << "setting xf" << std::endl;
   bnVolumeSetXF(bnVol,
       (float2 &)m_valueRange,
