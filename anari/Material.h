@@ -31,6 +31,12 @@ struct Matte : public Material
   void commit() override;
 };
 
+struct PhysicallyBased : public Material
+{
+  PhysicallyBased(BarneyGlobalState *s);
+  void commit() override;
+};
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Material *, ANARI_MATERIAL);
