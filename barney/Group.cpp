@@ -92,7 +92,7 @@ namespace barney {
         }
       }
       if (needRebuild) {
-        std::cout << "#bn: running volume _build_ pass" << std::endl;
+        // std::cout << "#bn: running volume _build_ pass" << std::endl;
         if (volumeGeomsGroup) {
           owlGroupRelease(volumeGeomsGroup);
           volumeGeomsGroup = 0;
@@ -100,13 +100,14 @@ namespace barney {
         volumeGeoms.clear();
         for (auto volume : volumes) 
           volume->build(true);
+        
         volumeGeomsGroup = owlUserGeomGroupCreate
           (owner->devGroup->owl,volumeGeoms.size(),volumeGeoms.data());
         owlGroupBuildAccel(volumeGeomsGroup);
       }
       
       if (needRefit) {
-        std::cout << "#bn: running volume _refit_ pass" << std::endl;
+        // std::cout << "#bn: running volume _refit_ pass" << std::endl;
         if (volumeGeomsGroup == 0)
           throw std::runtime_error
             ("somebody asked for refit, but there's no group yet!?");
