@@ -25,6 +25,7 @@ namespace barney {
                                                 const int32_t primID)
   {
     // #if 1
+    if (primID == 0) printf("bounds prog...\n");
     MCRTXVolumeAccel<StructuredDataSampler>::boundsProg
       (geomData,bounds,primID);
     // #else
@@ -104,6 +105,7 @@ namespace barney {
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
+    if (primID == 0) printf("dda - bounds prog...\n");
     // #if 1
     MCDDAVolumeAccel<StructuredDataSampler>::boundsProg(geomData,bounds,primID);
     // #else

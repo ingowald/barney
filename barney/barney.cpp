@@ -432,6 +432,7 @@ namespace barney {
                 const BNCamera *_camera,
                 BNFrameBuffer fb)
   {
+    PING;
     static int numPrinted = 0;
     if (++numPrinted < 3)
       LOG_API_ENTRY;

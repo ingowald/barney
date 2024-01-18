@@ -424,6 +424,8 @@ namespace barney {
     const DD &self = owl::getProgramData<DD>();
     Ray &ray = owl::getPRD<Ray>();
 
+    if (ray.dbg) printf("isec\n");
+    
     box3f bounds = self.worldBounds;
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
     
