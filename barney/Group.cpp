@@ -91,6 +91,7 @@ namespace barney {
           BARNEY_NYI();
         }
       }
+      PRINT(ownGroupVolumes.size());
       if (needRebuild) {
         std::cout << "#bn: running volume _build_ pass" << std::endl;
         if (volumeGeomsGroup) {
