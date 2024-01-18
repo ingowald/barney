@@ -75,9 +75,23 @@ namespace barney {
     if (!tex3Ds.empty()) return;
 
     tex3Ds.resize(devGroup->size());
-        
-    if (scalarType != BN_FLOAT)
-      throw std::runtime_error("can only do float 3d texs..");
+
+    cudaChannelFormatDesc desc;
+    size_t sizeOfScalar;
+    switch (scalarType) {
+    case BN_FLOAT:
+      desc = cudaCreateChannelDesc<float>();
+      sizeOfScalar = 4;
+      break;
+    case BN_UINT8:
+      desc = cudaCreateChannelDesc<uint8_t>();
+      sizeOfScalar = 1;
+      break;
+    default:
+      throw std::runtime_error("structured data with non-implemented scalar type ...");
+    }
+    // if (scalarType != BN_FLOAT)
+    //   throw std::runtime_error("can only do float 3d texs..");
 
     std::cout << "#bn.struct: creating CUDA 3D textures" << std::endl;
     for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
@@ -85,7 +99,6 @@ namespace barney {
       auto &tex = tex3Ds[lDevID];
       SetActiveGPU forDuration(dev);
       // Copy voxels to cuda array
-      cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
       cudaExtent extent{
         (unsigned)numScalars.x,
         (unsigned)numScalars.y,
@@ -94,7 +107,7 @@ namespace barney {
       cudaMemcpy3DParms copyParms;
       memset(&copyParms,0,sizeof(copyParms));
       copyParms.srcPtr = make_cudaPitchedPtr((void *)rawScalarData,
-                                             (size_t)numScalars.x*sizeof(float),
+                                             (size_t)numScalars.x*sizeOfScalar,
                                              (size_t)numScalars.x,
                                              (size_t)numScalars.y);
       copyParms.dstArray = tex.voxelArray;
@@ -114,7 +127,11 @@ namespace barney {
       textureDesc.addressMode[1]   = cudaAddressModeClamp;
       textureDesc.addressMode[2]   = cudaAddressModeClamp;
       textureDesc.filterMode       = cudaFilterModeLinear;
-      textureDesc.readMode         = cudaReadModeElementType;
+      textureDesc.readMode
+        = scalarType == BN_UINT8
+        ? cudaReadModeNormalizedFloat
+        : cudaReadModeElementType;
+      // textureDesc.readMode         = cudaReadModeElementType;
       textureDesc.normalizedCoords = false;
           
       BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObj,&resourceDesc,&textureDesc,0));
