@@ -66,22 +66,18 @@ namespace barney {
               << "#bn.amr: building initial macro cell grid"
               << OWL_TERMINAL_DEFAULT << std::endl;
 
-    PRINT(worldBounds);
     float maxWidth = reduce_max(getBox(worldBounds).size());
     vec3i dims = 1+vec3i(getBox(worldBounds).size() * ((MC_GRID_SIZE-1) / maxWidth));
     printf("#bn.amr: chosen macro-cell dims of (%i %i %i)\n",
            dims.x,
            dims.y,
            dims.z);
-    std::cout << "allcating macro cells" << std::endl;
     grid.resize(dims);
     grid.gridOrigin = worldBounds.lower;
     grid.gridSpacing = worldBounds.size() * rcp(vec3f(dims));
     
-    std::cout << "clearing macro cells" << std::endl;
     grid.clearCells();
     
-    std::cout << "building macro cells" << std::endl;
     const vec3i bs = 4;
     const vec3i nb = divRoundUp(dims,bs);
     for (auto dev : devGroup->devices) {

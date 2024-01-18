@@ -75,13 +75,6 @@ BNScalarField StructuredRegularField::makeBarneyScalarField(
     BNDataGroup dg) const
 {
   auto ctx = deviceState()->context;
-  // BN_API
-  // BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
-  //                                      uint3 dims,
-  //                                      BNScalarType type,
-  //                                      const void *scalars,
-  //                                      float3 gridOrigin,
-  //                                      float3 gridSpacing);
   BNScalarType barneyType;
   switch (m_type) {
   case ANARI_FLOAT32:

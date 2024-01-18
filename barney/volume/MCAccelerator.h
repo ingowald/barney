@@ -305,7 +305,6 @@ namespace barney {
         const std::string boundsProg = typeString+"_Bounds";
         const std::string isProg = typeString+"_Isec";
         const std::string chProg = typeString+"_CH";
-        PRINT(isProg);
         owlGeomTypeSetBoundsProg(gt,module,boundsProg.c_str());
         owlGeomTypeSetIntersectProg(gt,0,module,isProg.c_str());
         owlGeomTypeSetClosestHit(gt,0,module,chProg.c_str());

@@ -54,7 +54,7 @@ void World::commit()
   cleanup();
 
   m_zeroSurfaceData = getParamObject<ObjectArray>("surface");
-  m_zeroVolumeData = getParamObject<ObjectArray>("volume");
+  m_zeroVolumeData  = getParamObject<ObjectArray>("volume");
 
   m_addZeroInstance = m_zeroSurfaceData || m_zeroVolumeData;
   if (m_addZeroInstance)
@@ -88,11 +88,11 @@ void World::commit()
     if (m_addZeroInstance)
       m_instanceData->appendHandle(m_zeroInstance.ptr);
     std::for_each(m_instanceData->handlesBegin(),
-        m_instanceData->handlesEnd(),
-        [&](auto *o) {
-          if (o && o->isValid())
-            m_instances.push_back((Instance *)o);
-        });
+                  m_instanceData->handlesEnd(),
+                  [&](auto *o) {
+                    if (o && o->isValid())
+                      m_instances.push_back((Instance *)o);
+                  });
   } else if (m_addZeroInstance)
     m_instances.push_back(m_zeroInstance.ptr);
 
@@ -162,6 +162,7 @@ void World::cleanup()
     m_instanceData->removeCommitObserver(this);
   if (m_zeroSurfaceData)
     m_zeroSurfaceData->removeCommitObserver(this);
+  m_instances.clear();
 }
 
 } // namespace barney_device
