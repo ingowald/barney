@@ -24,11 +24,17 @@ namespace barney {
   
   void ScalarField::setVariables(OWLGeom geom)
   {
-    vec3f lo = worldBounds.lower;
-    vec3f hi = worldBounds.upper;
-    owlGeomSet3f(geom,"worldBounds.lower",lo.x,lo.y,lo.z);
-    owlGeomSet3f(geom,"worldBounds.upper",hi.x,hi.y,hi.z);
+    box3f bb = worldBounds;
+    // if (!domain.empty())
+    //   bb = intersection(bb,domain);
+    owlGeomSet3fv(geom,"worldBounds.lower",&bb.lower.x);
+    owlGeomSet3fv(geom,"worldBounds.upper",&bb.upper.x);
   }
+
+  ScalarField::ScalarField(DevGroup *devGroup, const box3f &domain)
+    : devGroup(devGroup),
+      domain(domain)
+  {}
 
   OWLContext ScalarField::getOWL() const
   { return devGroup->owl; }

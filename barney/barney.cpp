@@ -236,7 +236,8 @@ namespace barney {
                           BNScalarField _sf)
   {
     ScalarField::SP sf = checkGetSP(_sf);
-    return (BNVolume)checkGet(dataGroup)->createVolume(sf);
+    return (BNVolume)checkGet(dataGroup)->createVolume
+      (sf);
   }
 
   BN_API
@@ -277,7 +278,10 @@ namespace barney {
                               // 3 floats max corner)
                               const float *_gridDomains,
                               // grid scalars
-                              const float *_gridScalars, int numGridScalars)
+                              const float *_gridScalars,
+                              int numGridScalars,
+                              const float3 *domainOrNull    
+                              )
   {
     std::cout << "#bn: copying umesh from app ..." << std::endl;
     std::vector<vec4f>      vertices(numVertices);
@@ -298,6 +302,12 @@ namespace barney {
     memcpy(gridDims.data(),_gridDims,gridDims.size()*sizeof(gridDims[0]));
     memcpy(gridDomains.data(),_gridDomains,gridDomains.size()*sizeof(gridDomains[0]));
     memcpy(gridScalars.data(),_gridScalars,gridScalars.size()*sizeof(gridScalars[0]));
+
+    box3f domain
+      = domainOrNull
+      ? *(const box3f*)domainOrNull
+      : box3f();
+    
     ScalarField *sf = checkGet(dataGroup)->createUMesh(vertices,
                                                        tetIndices,
                                                        pyrIndices,
@@ -306,7 +316,8 @@ namespace barney {
                                                        gridOffsets,
                                                        gridDims,
                                                        gridDomains,
-                                                       gridScalars);
+                                                       gridScalars,
+                                                       domain);
     return (BNScalarField)sf;
   }
   

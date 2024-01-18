@@ -40,6 +40,8 @@ namespace barney {
     };
     /*! host-side code that implements the actual VolumeAccel */
     struct Host : public VolumeAccel {
+      using Inherited = VolumeAccel;
+      
       /* constuctor of host-side data */
       Host(ScalarField *sf, Volume *volume, const char *ptxCode);
 
@@ -48,7 +50,7 @@ namespace barney {
 
       /*! set owl variables for this accelerator - this is virutal so
         derived classes can add their own */
-      virtual void setVariables(OWLGeom geom);
+      void setVariables(OWLGeom geom) override;
       
       void build(bool full_rebuild) override;
       
@@ -228,8 +230,9 @@ namespace barney {
   template<typename SFSampler>
   void OWLVolumeAccel<SFSampler>::Host::setVariables(OWLGeom geom) 
   {
+    Inherited::setVariables(geom);
     sf->setVariables(geom);
-    getXF()->setVariables(geom);
+    // getXF()->setVariables(geom);
   }
       
   template<typename SFSampler>

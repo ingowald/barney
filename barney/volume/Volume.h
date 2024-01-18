@@ -109,17 +109,20 @@ namespace barney {
         if (isnan(f)) return vec4f(0.f);
         return xf.map(f,dbg);
       }
-      TransferFunction::DD xf;
 
       static void addVars(std::vector<OWLVarDecl> &vars, int base)
       {
         Inherited::addVars(vars,base);
         TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
       }
+      
+      TransferFunction::DD xf;
     };
     
     VolumeAccel(ScalarField *sf, Volume *volume);
 
+    virtual void setVariables(OWLGeom geom);
+    
     virtual UpdateMode updateMode()
     { return FULL_REBUILD; }
 

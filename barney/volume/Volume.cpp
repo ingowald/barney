@@ -22,10 +22,19 @@ namespace barney {
 
   OWLContext VolumeAccel::getOWL() const
   { return sf->getOWL(); }
+
+  void VolumeAccel::setVariables(OWLGeom geom)
+  {
+    // owlGeomSet3fv(geom,"domain,lower",&volume->domain.lower.x);
+    // owlGeomSet3fv(geom,"domain,upper",&volume->domain.upper.x);
+    getXF()->setVariables(geom);
+  }
   
   Volume::Volume(DevGroup *devGroup,
                  ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
+    : devGroup(devGroup),
+      sf(sf),
+      xf(devGroup)
   {
     accel = sf->createAccel(this);
   }

@@ -21,7 +21,6 @@ namespace barney {
   void UMeshCUBQLSampler::Host::build(bool full_rebuild)
   {
     if (bvhNodesBuffer) {
-      std::cout <<" bvh already built" << std::endl;
       return;
     }
     
@@ -32,7 +31,6 @@ namespace barney {
     assert(!mesh->elements.empty());
     
     if (bvhNodesBuffer != 0) {
-      std::cout << "cubql bvh already built..." << std::endl;
       return;
     }
     auto devGroup = mesh->devGroup;
