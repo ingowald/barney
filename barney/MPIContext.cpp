@@ -18,7 +18,7 @@
 #include "barney/fb/DistFB.h"
 #include "barney.h"
 
-#if 1
+#if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/
