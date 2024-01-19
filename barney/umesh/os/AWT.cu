@@ -149,6 +149,7 @@ namespace barney {
           roots.push_back((nodeID<<2) | childID);
       }
     }
+    std::cout << "#bn.awt: number of roots found " << roots.size() << std::endl;
   }
 
   box4f refitRanges(std::vector<AWTNode> &nodes,
@@ -331,6 +332,7 @@ namespace barney {
     // owlGeomSet1i(geom,"xf.numValues",(int)volume->xf.values.size());
     // owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
 
+    
     for (int devID = 0;devID<devGroup->devices.size(); devID++) {
       auto dev = devGroup->devices[devID];
       SetActiveGPU forDuration(dev);

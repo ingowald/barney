@@ -32,7 +32,7 @@ namespace barney {
   
   // this is probably waaaay overkill for smallish voluems, but those
   // are fast, anyway. and this helps for large ones...
-  enum { MC_GRID_SIZE = 256 };
+  // enum { MC_GRID_SIZE = 256 };
 
   inline __device__ float length3(vec4f v)
   { return length(getPos(v)); }
@@ -237,6 +237,9 @@ namespace barney {
     //           << OWL_TERMINAL_DEFAULT << std::endl;
 
     float maxWidth = reduce_max(getBox(worldBounds).size());
+    int MC_GRID_SIZE
+      = 256 + int(sqrtf(elements.size())/30);
+    
     vec3i dims = 1+vec3i(getBox(worldBounds).size() * ((MC_GRID_SIZE-1) / maxWidth));
     printf("#bn.um: chosen macro-cell dims of (%i %i %i)\n",
            dims.x,

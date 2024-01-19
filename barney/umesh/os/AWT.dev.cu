@@ -303,9 +303,9 @@ namespace barney {
   {
     AWTNode::NodeRef stackBase[32];
     AWTNode::NodeRef *stackPtr = stackBase;
-    if (dbg) printf("findsample %f %f %f\n",P.x,P.y,P.z);
+    // if (dbg) printf("findsample %f %f %f\n",P.x,P.y,P.z);
     while (true) {
-      if (dbg) printf("noderef %i %i\n",nodeRef.offset,nodeRef.count);
+      // if (dbg) printf("noderef %i %i\n",nodeRef.offset,nodeRef.count);
       while (nodeRef.count == 0) {
         auto node = nodes[nodeRef.offset];
         AWTNode::NodeRef next; next.offset = 0;
@@ -318,7 +318,7 @@ namespace barney {
           if (next.offset == 0)
             next = node.child[c];
           else {
-            if (dbg) printf("pushing to %i\n",int(stackPtr-stackBase));
+            // if (dbg) printf("pushing to %i\n",int(stackPtr-stackBase));
             *stackPtr++ = node.child[c];
           }
         }
@@ -331,20 +331,20 @@ namespace barney {
       // do leaf
       for (int i=0;i<nodeRef.count;i++) {
         auto elt = mesh->elements[nodeRef.offset+i];
-        if (dbg) printf("sampling element %i tet %i\n",nodeRef.offset+i,elt.ID);
+        // if (dbg) printf("sampling element %i tet %i\n",nodeRef.offset+i,elt.ID);
         float retVal = NAN;
         if (mesh->eltScalar(retVal,elt,P)) {
-          if (dbg) printf("sample found %f\n",retVal);
+          // if (dbg) printf("sample found %f\n",retVal);
           return retVal;
         }
       }
 
       if (stackPtr == stackBase) {
-        if (dbg) printf("no sample found\n");
+        // if (dbg) printf("no sample found\n");
         return NAN;
       }
 
-      if (dbg) printf("popping from %i\n",int(stackPtr-stackBase));
+      // if (dbg) printf("popping from %i\n",int(stackPtr-stackBase));
       nodeRef = *--stackPtr;
     }
   }
@@ -359,7 +359,7 @@ namespace barney {
       = owl::getPRD<Ray>();
     // if (ray.dbg == false) return;
 
-    bool dbg = false;//ray.dbg;
+    // bool dbg = false;//ray.dbg;
 
 // #if PRINT_BALLOT
 //     int numActive = __popc(__ballot(1));
@@ -403,8 +403,8 @@ namespace barney {
     AWTSegment stackBase[32];
     AWTSegment *stackPtr = stackBase;
     bool haveValidSegment = true;
-    if (dbg)
-      printf("====================================\n");
+    // if (dbg)
+    //   printf("====================================\n");
     while (true) {
       bool inSamplingMode = false;
       while (true) {
@@ -511,12 +511,12 @@ namespace barney {
         // so nothing to do here.
         break;
 
-      if (dbg)
-        printf("----------- reached segment %f %f node %i %i, samplemode = %i\n",
-               segment.range.lower,segment.range.upper,
-               segment.node.offset,
-               segment.node.count,
-               int(inSamplingMode));
+      // if (dbg)
+      //   printf("----------- reached segment %f %f node %i %i, samplemode = %i\n",
+      //          segment.range.lower,segment.range.upper,
+      //          segment.node.offset,
+      //          segment.node.count,
+      //          int(inSamplingMode));
       if (inSamplingMode) {
         // woodcock:
         float t        = segment.range.lower;
@@ -536,9 +536,9 @@ namespace barney {
           continue;
           
           vec4f sample = self.xf.map(f);
-          if (dbg)
-            printf("DID find sample %f at %f, mapped %f %f %f: %f\n",
-                   f,t,sample.x,sample.y,sample.z,sample.w);
+          // if (dbg)
+          //   printf("DID find sample %f at %f, mapped %f %f %f: %f\n",
+          //          f,t,sample.x,sample.y,sample.z,sample.w);
           if (sample.w >= rand()*majorant) {
             hit_t = t;
             ray.hit.baseColor = getPos(sample);
@@ -553,8 +553,9 @@ namespace barney {
         // segment.range.upper = min(segment.range.upper,hit_t);
         hit_t = intersectLeaf(ray,range,self,
                               segment.node.offset,
-                              segment.node.offset+segment.node.count,
-                              dbg);
+                              segment.node.offset+segment.node.count
+                              // ,dbg
+                              );
       }
       haveValidSegment = false;
     }

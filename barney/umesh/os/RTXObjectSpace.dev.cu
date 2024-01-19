@@ -101,11 +101,11 @@ namespace barney {
       = owl::getPRD<Ray>();
     // bool dbg = ray.dbg;
 
-#if PRINT_BALLOT
-    int numActive = __popc(__ballot(1));
-    if (ray.dbg)
-      printf("### isec on geom %lx, leaf %i, numActive = %i\n",(void *)&self,primID,numActive);
-#endif
+// #if PRINT_BALLOT
+//     int numActive = __popc(__ballot(1));
+//     if (ray.dbg)
+//       printf("### isec on geom %lx, leaf %i, numActive = %i\n",(void *)&self,primID,numActive);
+// #endif
     
     Cluster cluster = self.clusters[primID];
     int begin = cluster.begin;
@@ -124,11 +124,11 @@ namespace barney {
       return;
 
     range1f leafRange(t0,t1);
-    if (ray.dbg) printf("---------------------- leaf range %f %f\n",
-                        leafRange.lower,leafRange.upper);
+    // if (ray.dbg) printf("---------------------- leaf range %f %f\n",
+    //                     leafRange.lower,leafRange.upper);
 
     vec3f sample;
-    float hit_t = intersectLeaf(ray,leafRange,self,begin,end,ray.dbg);
+    float hit_t = intersectLeaf(ray,leafRange,self,begin,end,0);//,ray.dbg);
     if (hit_t < optixGetRayTmax())
       optixReportIntersection(hit_t, 0);
   }

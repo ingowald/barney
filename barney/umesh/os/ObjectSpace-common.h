@@ -377,7 +377,7 @@ namespace barney {
                    float t,
                    bool dbg=false)
   {
-    if (dbg) printf("clipping segment %f %f to %f\n",original.begin.t,original.end.t,t);
+    // if (dbg) printf("clipping segment %f %f to %f\n",original.begin.t,original.end.t,t);
     if (t < original.begin.t) return false;
     
     clipped = original;
@@ -386,9 +386,9 @@ namespace barney {
     } else {
       clipped.end.scalar = original.lerp(t);
       clipped.end.t = t;
-      if (dbg)
-        printf("clipped new end %f scalar %f\n",
-               clipped.end.t,clipped.end.scalar);
+      // if (dbg)
+      //   printf("clipped new end %f scalar %f\n",
+      //          clipped.end.t,clipped.end.scalar);
     }
     return clipped.end.t >= clipped.begin.t;
   }
@@ -784,8 +784,8 @@ namespace barney {
   inline __device__
   void NewIntersector::doSegments()
   {
-    if (dbg)
-      printf("---- segments %i\n",numSegments);
+    // if (dbg)
+    //   printf("---- segments %i\n",numSegments);
     for (int segID = 0; segID < numSegments; segID++) {
       LinearSegment segment;
       bool segmentStillValid
@@ -794,40 +794,41 @@ namespace barney {
       if (!segmentStillValid)
         continue;
 
-      if (segment.end.t > ray.tMax)
-        if (dbg)
-          printf("INVALID SEGMENT segend %f hit_t %f ray.tmax %f\n",
-                 segment.end.t,hit_t,ray.tMax);
-      if (dbg)
-        printf(" seg %i clipped w/ scalar (%f %f)(%f %f)\n",
-               segID,
-               segment.begin.t,
-               segment.begin.scalar,
-               segment.end.t,
-               segment.end.scalar);
+      if (segment.end.t > ray.tMax) {
+        // if (dbg)
+        //   printf("INVALID SEGMENT segend %f hit_t %f ray.tmax %f\n",
+        //          segment.end.t,hit_t,ray.tMax);
+      }
+      // if (dbg)
+      //   printf(" seg %i clipped w/ scalar (%f %f)(%f %f)\n",
+      //          segID,
+      //          segment.begin.t,
+      //          segment.begin.scalar,
+      //          segment.end.t,
+      //          segment.end.scalar);
       
       // compute a majorant for this segment
       range1f scalarRange = segment.scalarRange(); 
       float majorant
         = self.xf.majorant(scalarRange);
-      if (dbg)
-        printf(" seg scalar range %f %f majorant %f\n",
-               scalarRange.lower,
-               scalarRange.upper,
-               majorant);
+      // if (dbg)
+      //   printf(" seg scalar range %f %f majorant %f\n",
+      //          scalarRange.lower,
+      //          scalarRange.upper,
+      //          majorant);
       if (majorant == 0.f)
         continue;
 
       // we have a valid segment, with actual, non-zero
       // majorant... -> woodcock
       float t = segment.begin.t;
-      if (dbg)
-        printf("## woodcock on segment ....\n");
+      // if (dbg)
+      //   printf("## woodcock on segment ....\n");
       while (true) {
         // take a step...
         float dt = - logf(1.f-rand())/majorant;
         t += dt;
-        if (dbg) printf(" dt %f new t %f\n",dt,t);
+        // if (dbg) printf(" dt %f new t %f\n",dt,t);
         if (t >= min(hit_t,segment.end.t))
           // if (t >= min(segment.end.t,ray.tMax))
           break;
@@ -836,19 +837,19 @@ namespace barney {
         const float scalar = segment.lerp(t);
         vec4f mapped = self.xf.map(scalar);
 
-        if (dbg)
-          printf(" -> at %f: scalar %f mapped (%f %f %f : %f)\n",
-                 t,scalar,mapped.x,mapped.y,mapped.z,mapped.w);
+        // if (dbg)
+        //   printf(" -> at %f: scalar %f mapped (%f %f %f : %f)\n",
+        //          t,scalar,mapped.x,mapped.y,mapped.z,mapped.w);
         // now got a scalar: compare to majorant
         float r = rand();
-        if (dbg)
-          printf("   sampling change %f mapped %f majorant %f\n",
-                 r,mapped.w,majorant);
+        // if (dbg)
+        //   printf("   sampling change %f mapped %f majorant %f\n",
+        //          r,mapped.w,majorant);
         bool accept = (mapped.w >= r*majorant);
         if (!accept) 
           continue;
 
-        if (dbg) printf("$$$$ HIT at %f\n",t);
+        // if (dbg) printf("$$$$ HIT at %f\n",t);
         
         // we DID have a hit here!
         hit_t = t;
@@ -1032,7 +1033,7 @@ namespace barney {
   {
     TetIntersector isec;
     int it = begin;
-    if (dbg) printf("doing tets %i...%i\n",begin,end);
+    // if (dbg) printf("doing tets %i...%i\n",begin,end);
     while (it < end) {
       // ------------------------------------------------------------------
       // make list of segments that do have a geometric overlap
@@ -1057,9 +1058,9 @@ namespace barney {
         const bool hadGeometricOverlap
           = isec.computeSegment(segment,ray,inputLeafRange);
 
-        if (dbg)
-          printf("geom overlap (%f %f)\n",
-                 segment.begin.t,segment.end.t);
+        // if (dbg)
+        //   printf("geom overlap (%f %f)\n",
+        //          segment.begin.t,segment.end.t);
         
         if (!hadGeometricOverlap)
           continue;
