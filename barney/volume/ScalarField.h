@@ -35,14 +35,13 @@ namespace barney {
 
     /*! Device-side data common to all ScalarFields that live on the device */
     struct DD {
+      /*! world bounds, CLIPPED TO DOMAIN (if non-empty domain is present!) */
       box3f                worldBounds;
       
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    ScalarField(DevGroup *devGroup)
-      : devGroup(devGroup)
-    {}
+    ScalarField(DevGroup *devGroup, const box3f &domain=box3f());
 
     OWLContext getOWL() const;
     
@@ -54,6 +53,12 @@ namespace barney {
 
     DevGroup *const devGroup;
     box3f     worldBounds;
+    
+    /*! a clipping box used to restrict whatever primitives the volume
+        may be made up to down to a specific 3d box. e.g., if there's
+        ghost cells, or if this is a spatial partitioning of a umesh,
+        etc */
+    const box3f domain;
   };
   
 }

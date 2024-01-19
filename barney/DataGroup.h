@@ -81,7 +81,8 @@ namespace barney {
                              std::vector<int> &gridOffsets,
                              std::vector<vec3i> &gridDims,
                              std::vector<box4f> &gridDomains,
-                             std::vector<float> &gridScalars);
+                             std::vector<float> &gridScalars,
+                             const box3f &domain);
    
     ScalarField *createBlockStructuredAMR(std::vector<box3i> &blockBounds,
                                           std::vector<int> &blockLevels,

@@ -261,7 +261,9 @@ BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
                             // 3 floats max corner)
                             const float *gridDomains,
                             // grid scalars
-                            const float *gridScalars, int numGridScalars);
+                            const float *gridScalars,
+                            int numGridScalars,
+                            const float3 *domainOrNull=0);
 
 
 BN_API

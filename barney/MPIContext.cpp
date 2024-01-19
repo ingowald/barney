@@ -226,8 +226,6 @@ namespace barney {
       }
     }
     barrier(false);
-    PING;
-    barrier(false);
   }
 
   /*! create a frame buffer object suitable to this context */
