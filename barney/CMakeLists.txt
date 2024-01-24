@@ -110,6 +110,8 @@ add_library(barney STATIC
   DeviceGroup.cpp
   LocalContext.h
   LocalContext.cpp
+  Logging.h
+  Logging.cpp
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
   fb/FrameBuffer.cpp

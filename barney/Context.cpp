@@ -30,13 +30,21 @@ namespace barney {
     // ------------------------------------------------------------------
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
+#ifdef PROFILING
+    std::vector<logging::Event> events(devices.size());
+#endif
     for (int localID=0; localID<devices.size(); localID++) {
       barney::TiledFB *mfb = fb->perDev[localID].get();
       assert(mfb);
       
       auto dev = devices[localID];
       assert(dev);
-      
+     
+#ifdef PROFILING
+      events[localID] = logging::newEvent(logging::EventType::GPU,
+                                          mfb->device->launchStream,
+                                          mfb->device->cudaID);
+#endif
       dev->rays.resetWriteQueue();
       dev->generateRays_launch(mfb,camera,accumID);
     }
@@ -46,6 +54,9 @@ namespace barney {
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
       dev->generateRays_sync();
+#ifdef PROFILING
+      profiler.push_back({events[localID],"generateRays"});
+#endif
     }
   }
   
@@ -62,14 +73,25 @@ namespace barney {
   void Context::shadeRaysLocally(FrameBuffer *fb, int generation)
   {
     BARNEY_CUDA_SYNC_CHECK();
+#ifdef PROFILING
+    std::vector<logging::Event> events(devices.size());
+#endif
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
+#ifdef PROFILING
+      events[localID] = logging::newEvent(logging::EventType::GPU,
+                                          dev->device->launchStream,
+                                          dev->device->cudaID);
+#endif
       dev->shadeRays_launch(fb->perDev[localID].get(),generation);
     }
     BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
       dev->shadeRays_sync();
+#ifdef PROFILING
+      profiler.push_back({events[localID],"shadeRays"});
+#endif
     }
     BARNEY_CUDA_SYNC_CHECK();
   }
@@ -79,14 +101,28 @@ namespace barney {
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
+#ifdef PROFILING
+    std::vector<logging::Event> events(devices.size());
+#endif
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
+#ifdef PROFILING
+      events[localID] = logging::newEvent(logging::EventType::GPU,
+                                          dev->device->launchStream,
+                                          dev->device->cudaID);
+#endif
       dev->traceRays_launch(model);
     }
     // ------------------------------------------------------------------
     // ... and sync 'til all are done
     // ------------------------------------------------------------------
-    for (auto dev : devices) dev->sync();
+    for (int localID=0; localID<devices.size(); localID++) {
+      auto dev = devices[localID];
+      dev->sync();
+#ifdef PROFILING
+      profiler.push_back({events[localID],"traceRays"});
+#endif
+    }
   }
 
   void Context::traceRaysGlobally(Model *model)
@@ -105,12 +141,25 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell each device to finalize its rendered accum tiles
     // ------------------------------------------------------------------
-    for (int localID = 0; localID < devices.size(); localID++)
+#ifdef PROFILING
+    std::vector<logging::Event> events(devices.size());
+#endif
+    for (int localID = 0; localID < devices.size(); localID++) {
+#ifdef PROFILING
+      events[localID] = logging::newEvent(logging::EventType::GPU,
+                                          devices[localID]->device->launchStream,
+                                          devices[localID]->device->cudaID);
+#endif
       // (will set active GPU internally)
       fb->perDev[localID]->finalizeTiles();
+    }
 
-    for (int localID = 0; localID < devices.size(); localID++)
+    for (int localID = 0; localID < devices.size(); localID++) {
       devices[localID]->launch_sync();
+#ifdef PROFILING
+      profiler.push_back({events[localID],"finalizeTiles"});
+#endif
+    }
   }
   
   void Context::renderTiles(Model *model,
@@ -150,6 +199,29 @@ namespace barney {
                    int globalIndexStep)
     : isActiveWorker(!dataGroupIDs.empty())
   {
+#ifdef PROFILING
+    profiler.thread = std::thread([this]() {
+      int cnt=0;
+      for (;;) {
+        std::unique_lock<std::mutex> lck(profiler.mtx);
+        std::vector<std::pair<logging::Event,std::string>> cpy(profiler.Q);
+        lck.unlock();
+
+        for (size_t i=0; i<cpy.size(); ++i) {
+          auto entry = cpy[i];
+          if (logging::pollEvent(entry.first)) {
+            logging::logEvent(entry.first,entry.second.c_str());
+            cnt++;
+          }
+        }
+
+        if (cnt>0&&cnt%2==0) {
+        //if (cnt>0&&cnt%20==0) {
+          logging::printEventLog();
+        }
+      }
+    });
+#endif
     if (gpuIDs.empty())
       throw std::runtime_error("error - no GPUs...");
     

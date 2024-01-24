@@ -23,6 +23,9 @@
 #include "barney/common/cuda-helper.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
+#include "barney/Logging.h"
+
+#define PROFILING 1
 
 namespace barney {
   using namespace owl::common;
@@ -34,6 +37,19 @@ namespace barney {
   
   struct Context : public Object {
     
+#ifdef PROFILING
+    struct LOG {
+      std::vector<std::pair<logging::Event,std::string>> Q;
+      std::thread thread;
+      std::mutex mtx;
+      void push_back(const std::pair<logging::Event,std::string> &ev) {
+        std::lock_guard<std::mutex> lck(mtx);
+        logging::enqueueEvent(ev.first);
+        Q.push_back(ev);
+      }
+    } profiler;
+#endif
+
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs,
             int globalIndex,

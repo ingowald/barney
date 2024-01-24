@@ -46,6 +46,9 @@ namespace barney {
     const int numDevices = devices.size();
     const int dgSize = numDevices / numDataGroups;
     int numCopied[numDevices];
+#ifdef PROFILING
+    std::vector<logging::Event> events(numDevices);
+#endif
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
       SetActiveGPU forDuration(thisDev->device);
@@ -58,6 +61,11 @@ namespace barney {
       numCopied[devID] = count;
       Ray *src = nextDev->rays.readQueue;
       Ray *dst = thisDev->rays.writeQueue;
+#ifdef PROFILING
+      events[devID] = logging::newEvent(logging::EventType::GPU,
+                                        thisDev->device->launchStream,
+                                        thisDev->device->cudaID);
+#endif
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
                                    cudaMemcpyDefault,
                                    thisDev->device->launchStream));
@@ -70,6 +78,9 @@ namespace barney {
       thisDev->launch_sync();
       thisDev->rays.swap();
       thisDev->rays.numActive = numCopied[devID];
+#ifdef PROFILING
+      profiler.push_back({events[devID],"forwardRays"});
+#endif
     }
 
     for (auto dev : devices) dev->sync();
@@ -97,8 +108,16 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell all GPUs to write their final pixels
     // ------------------------------------------------------------------
+#ifdef PROFILING
+    std::vector<logging::Event> events(devices.size());
+#endif
     for (int localID = 0; localID < devices.size(); localID++) {
       auto &devFB = *fb->perDev[localID];
+#ifdef PROFILING
+      events[localID] = logging::newEvent(logging::EventType::GPU,
+                                         devFB.device->launchStream,
+                                         devFB.device->cudaID);
+#endif
       TiledFB::writeFinalPixels(nullptr,//devFB.device.get(),
                                 fb->finalFB,
                                 fb->finalDepth,
@@ -112,8 +131,12 @@ namespace barney {
     // wait for all GPUs to complete, so pixels are all written before
     // we return and/or copy to app
     // ------------------------------------------------------------------
-    for (int localID = 0; localID < devices.size(); localID++)
+    for (int localID = 0; localID < devices.size(); localID++) {
       devices[localID]->launch_sync();
+#ifdef PROFILING
+      profiler.push_back({events[localID],"writeFinalPixels"});
+#endif
+    }
 
     // ------------------------------------------------------------------
     // copy final frame buffer to app's frame buffer memory
