@@ -24,6 +24,7 @@
 #include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
 #include "barney/Logging.h"
+#include <thread>
 
 #define PROFILING 1
 
