@@ -17,7 +17,35 @@
 #include "barney/common/MPIWrappers.h"
 
 namespace barney {
+
+  #if USE_NCCL
+    bool is_device_pointer(const void *ptr)
+    {
+      cudaPointerAttributes attributes;
+      cudaError_t err = cudaPointerGetAttributes(&attributes, ptr);
+
+      if (err == cudaSuccess) {
+          if (attributes.type == cudaMemoryTypeDevice) {
+              // Pointer is for device memory
+              printf("barney::is_device_pointer: cudaMemoryTypeDevice\n");
+              return false;
+          } else if (attributes.type == cudaMemoryTypeManaged) {
+              // Pointer is for managed memory
+              printf("barney::is_device_pointer: cudaMemoryTypeManaged\n");
+              return false;
+          }          
+      } 
+      
+      printf("barney::is_device_pointer: hostPointer\n");
+      return false;
+    }
+#endif  
+
   namespace mpi {
+
+#if USE_NCCL
+      nccl::Comm *nccl_comm = NULL;
+#endif
 
     void init(int &ac, char **av)
     {
@@ -39,6 +67,30 @@ namespace barney {
       if (comm != MPI_COMM_NULL) {
         BN_MPI_CALL(Comm_rank(comm,&rank));
         BN_MPI_CALL(Comm_size(comm,&size));
+
+#if USE_NCCL
+        if (nccl_comm == NULL)
+        {
+            ncclUniqueId ncclId;
+            ncclComm_t comm_data;
+
+            if (rank == 0) {
+              BN_NCCL_CALL(GetUniqueId(&ncclId));
+            }
+
+            BN_MPI_CALL(Bcast((void *)&ncclId,sizeof(ncclUniqueId),MPI_BYTE,0,comm));
+            BN_MPI_CALL(Barrier(comm));
+
+            int gpuArray = 0;
+            // res = ncclCommInitAll(&comm_data, 1, &gpuArray);
+            ncclGroupStart();
+            BN_NCCL_CUDA_CHECK(cudaSetDevice(0));
+            BN_NCCL_CALL(CommInitRank(&comm_data, size, ncclId, rank));
+            ncclGroupEnd();
+
+            nccl_comm = new nccl::Comm(comm_data);
+        }
+#endif           
       }
     }
 
@@ -46,6 +98,14 @@ namespace barney {
       and matched by bc_recv on all workers */
     void Comm::bc_send(const void *data, size_t numBytes)
     {
+#if USE_NCCL
+      if(nccl_comm != NULL && is_device_pointer(data)) 
+      {
+        nccl_comm->bc_send(data, numBytes);
+        return;
+      }
+#endif
+      
       BN_MPI_CALL(Bcast((void *)data,numBytes,MPI_BYTE,0,comm));
     }
     
@@ -53,6 +113,14 @@ namespace barney {
       0, and match a bc_send on rank 0 */
     void Comm::bc_recv(void *data, size_t numBytes)
     {
+      #if USE_NCCL
+      if(nccl_comm != NULL && is_device_pointer(data)) 
+      {
+        nccl_comm->bc_recv(data, numBytes);
+        return;
+      }
+#endif
+
       BN_MPI_CALL(Bcast(data,numBytes,MPI_BYTE,0,comm));
     }
     
@@ -65,6 +133,11 @@ namespace barney {
     
     int Comm::allReduceAdd(int value) const
     {
+#if 0 //USE_NCCL
+      if(nccl_comm != NULL) 
+        return nccl_comm->allReduceAdd(value);
+#endif
+
       int result;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_SUM,comm));
       return result;
@@ -72,6 +145,11 @@ namespace barney {
 
     float Comm::allReduceAdd(float value) const
     {
+#if 0 //USE_NCCL
+      if(nccl_comm != NULL) 
+        return nccl_comm->allReduceAdd(value);
+#endif
+
       float result;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_FLOAT,MPI_SUM,comm));
       return result;
@@ -79,6 +157,11 @@ namespace barney {
 
     int Comm::allReduceMin(int value) const
     {
+#if 0 //USE_NCCL
+      if(nccl_comm != NULL) 
+        return nccl_comm->allReduceMin(value);
+#endif
+
       int result;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MIN,comm));
       return result;
@@ -86,6 +169,11 @@ namespace barney {
 
     int Comm::allReduceMax(int value) const
     {
+#if 0 //USE_NCCL
+      if(nccl_comm != NULL) 
+        return nccl_comm->allReduceMax(value);
+#endif
+
       int result;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_INT,MPI_MAX,comm));
       return result;
@@ -93,6 +181,11 @@ namespace barney {
     
     float Comm::allReduceMax(float value) const
     {
+#if 0 //USE_NCCL
+      if(nccl_comm != NULL) 
+        return nccl_comm->allReduceMax(value);
+#endif
+
       float result;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_FLOAT,MPI_MAX,comm));
       return result;
@@ -100,6 +193,11 @@ namespace barney {
     
     float Comm::allReduceMin(float value) const
     {
+#if 0 //USE_NCCL
+      if(nccl_comm != NULL) 
+        return nccl_comm->allReduceMin(value);
+#endif
+
       float result;
       BN_MPI_CALL(Allreduce(&value,&result,1,MPI_FLOAT,MPI_MIN,comm));
       return result;
@@ -117,11 +215,21 @@ namespace barney {
     
     void Comm::allGather(int *allValues, int myValue)
     {
+      #if USE_NCCL
+      if(nccl_comm != NULL && is_device_pointer(allValues)) 
+        return nccl_comm->allGather(allValues, myValue);
+#endif
+
       BN_MPI_CALL(Allgather(&myValue,1,MPI_INT,allValues,1,MPI_INT,comm));
     }
     
     void Comm::allGather(int *allValues, const int *myValues, int numMyValues)
     {
+      #if USE_NCCL
+      if(nccl_comm != NULL && is_device_pointer(allValues) && is_device_pointer(myValues)) 
+        return nccl_comm->allGather(allValues, myValues, numMyValues);
+#endif
+
       BN_MPI_CALL(Allgather(myValues,numMyValues,MPI_INT,allValues,numMyValues,MPI_INT,comm));
     }
     
@@ -129,6 +237,15 @@ namespace barney {
     void Comm::free()
     {
       BN_MPI_CALL(Comm_free(&comm));
+
+// #if USE_NCCL
+//       if(nccl_comm != NULL)
+//       {
+//         nccl_comm->free();
+//         delete nccl_comm;
+//         nccl_comm = NULL;
+//       }
+// #endif
     }
       
     /*! equivalent of MPI_Comm_split - splits this comm into
@@ -151,4 +268,142 @@ namespace barney {
       BN_MPI_CALL(Barrier(comm));
     }
   }
+
+#if USE_NCCL
+  namespace nccl {   
+    void init(int &ac, char **av)
+    {
+      // int required = MPI_THREAD_MULTIPLE;
+      // int provided = 0;
+      // BN_NCCL_CALL(Init_thread(&ac,&av,required,&provided));
+      // if (provided != required)
+      //   throw std::runtime_error("MPI runtime does not provide threading support");
+    }
+
+    void finalize()
+    {
+      //BN_NCCL_CALL(Finalize());
+    }
+
+    Comm::Comm(ncclComm_t comm)
+      : comm(comm)
+    {
+      // if (comm != MPI_COMM_NULL) {
+      //   BN_NCCL_CALL(Comm_rank(comm,&rank));
+      //   BN_NCCL_CALL(Comm_size(comm,&size));
+      // }
+    }
+
+    /*! master's send side of broadcast - must be done on rank 0,
+      and matched by bc_recv on all workers */
+    void Comm::bc_send(const void *data, size_t numBytes)
+    {
+      BN_NCCL_CALL(Bcast((void *)data,numBytes,ncclUint8,0,comm,0));
+    }
+    
+    /*! receive side of a broadcast - must be called on all ranks >
+      0, and match a bc_send on rank 0 */
+    void Comm::bc_recv(void *data, size_t numBytes)
+    {
+      BN_NCCL_CALL(Bcast(data,numBytes,ncclUint8,0,comm,0));
+    }
+    
+    void Comm::assertValid() const
+    {
+      if (comm == NULL)
+        throw std::runtime_error(std::string(__PRETTY_FUNCTION__)
+                                 +" : not a valid nccl communicator"); 
+    }
+    
+    int Comm::allReduceAdd(int value) const
+    {
+      int result;
+      BN_NCCL_CALL(AllReduce(&value,&result,1,ncclInt,ncclSum,comm,0));
+      return result;
+    }
+
+    float Comm::allReduceAdd(float value) const
+    {
+      float result;
+      BN_NCCL_CALL(AllReduce(&value,&result,1,ncclFloat,ncclSum,comm,0));
+      return result;
+    }
+
+    int Comm::allReduceMin(int value) const
+    {
+      int result;
+      BN_NCCL_CALL(AllReduce(&value,&result,1,ncclInt,ncclMin,comm,0));
+      return result;
+    }
+
+    int Comm::allReduceMax(int value) const
+    {
+      int result;
+      BN_NCCL_CALL(AllReduce(&value,&result,1,ncclInt,ncclMax,comm,0));
+      return result;
+    }
+    
+    float Comm::allReduceMax(float value) const
+    {
+      float result;
+      BN_NCCL_CALL(AllReduce(&value,&result,1,ncclFloat,ncclMax,comm,0));
+      return result;
+    }
+    
+    float Comm::allReduceMin(float value) const
+    {
+      float result;
+      BN_NCCL_CALL(AllReduce(&value,&result,1,ncclFloat,ncclMin,comm,0));
+      return result;
+    }
+
+    vec3f Comm::allReduceMin(vec3f v) const
+    {
+      return vec3f(allReduceMin(v.x),allReduceMin(v.y),allReduceMin(v.z));
+    }
+    
+    vec3f Comm::allReduceMax(vec3f v) const
+    {
+      return vec3f(allReduceMax(v.x),allReduceMax(v.y),allReduceMax(v.z));
+    }
+    
+    void Comm::allGather(int *allValues, int myValue)
+    {
+      BN_NCCL_CALL(AllGather(&myValue,allValues,1,ncclInt,comm,0));
+    }
+    
+    void Comm::allGather(int *allValues, const int *myValues, int numMyValues)
+    {
+      BN_NCCL_CALL(AllGather(myValues,allValues,numMyValues,ncclInt,comm,0));
+    }
+    
+    /*! free/close this communicator */
+    void Comm::free()
+    {
+      BN_NCCL_CALL(CommDestroy(comm));
+      comm = NULL;
+    }
+      
+    // /*! equivalent of Comm_split - splits this comm into
+    //   possibly multiple comms, each one containing exactly those
+    //   former ranks of the same color. E.g. split(old.rank > 0)
+    //   would have rank 0 get a communicator that contains only
+    //   itself, and all others get a communicator that contains all
+    //   other former ranks */
+    // Comm Comm::split(int color)
+    // {
+    //   ncclComm_t newComm;
+    //   BN_NCCL_CALL(Comm_split(comm,color,rank,&newComm));
+    //   return Comm(newComm);
+    // }
+      
+
+    
+    // void Comm::barrier() const
+    // {
+    //   BN_NCCL_CALL(Barrier(comm));
+    // }    
+  }
+#endif
+
 }
