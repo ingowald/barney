@@ -157,6 +157,8 @@ add_library(barney STATIC
   umesh/os/RTXObjectSpace.cu
   umesh/os/AWT.h
   umesh/os/AWT.cu
+  umesh/AdaptiveMC.h
+  umesh/AdaptiveMC.cu
   # *amr* volumes
   amr/BlockStructuredField.h
   amr/BlockStructuredField.cu
