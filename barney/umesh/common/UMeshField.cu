@@ -22,6 +22,7 @@
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/umesh/os/RTXObjectSpace.h"
 #include "barney/umesh/os/AWT.h"
+#include "barney/umesh/AdaptiveMC.h"
 
 #define BUFFER_CREATE owlDeviceBufferCreate
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate
@@ -231,6 +232,12 @@ namespace barney {
       // initial grid already built
       return;
     }
+
+
+#if 1
+    std::cout << "ADAPTIVE MC RASTER" << std::endl;
+    AdaptiveMC::build(this);
+#endif
     
     // std::cout << OWL_TERMINAL_BLUE
     //           << "#bn.um: building initial macro cell grid"

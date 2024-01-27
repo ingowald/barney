@@ -58,10 +58,10 @@ namespace barney {
       /*! pinto tinto leaf list, or into nodes list */
       uint32_t offset  :31;
     };
-    struct NextSplitCell {
+    struct NextSplitJob {
       union {
         struct {
-          uint32_t cell;
+          uint32_t nodeID;
           float    priority;
         };
         uint64_t bits;
@@ -70,6 +70,7 @@ namespace barney {
     struct Forest {
       Forest() {};
       box3f     worldBounds;
+      vec3f     rootCellWidth;
       vec3i     rootDims;
       // Cell     *roots = 0;
       Node     *nodes = 0;
@@ -79,7 +80,7 @@ namespace barney {
       uint32_t numLeaves = 0;
     };
 
-    static void build(UMeshField::SP mesh);
+    static void build(UMeshField *mesh);
              
   };
   

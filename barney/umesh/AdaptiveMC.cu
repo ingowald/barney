@@ -30,7 +30,7 @@ namespace barney {
     if (forest->nodes)
       BARNEY_CUDA_CALL(Free(forest->nodes));
     forest->nodes = newNodes;
-    forest->numNodes = newSize;
+    // forest->numNodes = newSize;
   }
 
   void reallocLeaves(AdaptiveMC::Forest *forest, int newSize)
@@ -38,7 +38,7 @@ namespace barney {
     if (forest->leaves)
       BARNEY_CUDA_CALL(Free(forest->leaves));
     BARNEY_CUDA_CALL(Malloc((void**)&forest->leaves,newSize*sizeof(*forest->leaves)));
-    forest->numLeaves = newSize;
+    // forest->numLeaves = newSize;
   }
 
   __global__ void d_clearLeaves(AdaptiveMC::Forest *forest)
@@ -143,7 +143,8 @@ namespace barney {
     cellBounds.lower = vec3f(intCoords) * cellWidth;
     cellBounds.upper = cellBounds.lower + cellWidth;
 
-    vec3f blockWidth = forest->worldBounds.size()*rcp(vec3f(forest->rootDims));
+    vec3f blockWidth = forest->rootCellWidth;
+    // vec3f blockWidth = forest->worldBounds.size()*rcp(vec3f(forest->rootDims));
     cellBounds.lower = forest->worldBounds.lower + blockWidth * cellBounds.lower;
     cellBounds.upper = forest->worldBounds.lower + blockWidth * cellBounds.upper;
 
@@ -183,7 +184,14 @@ namespace barney {
       if (node.isLeaf) {
         auto &leaf = forest->leaves[node.offset];
         atomicAdd(&leaf.duringBuild.numElements,1);
-        atomicAdd(&leaf.duringBuild.sumEdgeLengths,sqrtf(length(bb.size()))*(1<<leaf.level));
+
+        float thisElementLength = length(bb.size());
+        thisElementLength = min(thisElementLength,
+                                3.f*length(forest->
+                                           rootCellWidth)/(1<<leaf.level));
+        float thisElementWeight = sqrtf(thisElementLength)*(1<<leaf.level);
+        
+        atomicAdd(&leaf.duringBuild.sumEdgeLengths,thisElementWeight);
       } else {
         *stackPtr++ = { (int)node.offset, 2*2*2 - 1 };
       }
@@ -219,43 +227,120 @@ namespace barney {
     
   }
 
-  void rasterMesh(AdaptiveMC::Forest *forest, UMeshField::SP mesh)
+  void rasterMesh(AdaptiveMC::Forest *forest, UMeshField *mesh)
   {
     d_rasterMesh<<<divRoundUp((int)mesh->elements.size(),128),128>>>
       (forest,mesh->getDD(0));
   }
 
-  void sortOrder(AdaptiveMC::NextSplitCell *splitOrder, int num)
+  void sortOrder(AdaptiveMC::NextSplitJob *splitOrder, int num)
   {
     std::sort(&splitOrder->bits,&splitOrder->bits+num);
   }
   
   __global__
   void d_buildOrder(AdaptiveMC::Forest *forest,
-                    AdaptiveMC::NextSplitCell *splitOrder,
+                    AdaptiveMC::NextSplitJob *splitOrder,
                     int numLeaves)
   {
     int tid = threadIdx.x+blockIdx.x*blockDim.x;
     if (tid >= numLeaves) return;
 
-    auto &order = splitOrder[tid];
-    auto &leaf = forest->leaves[tid].duringBuild;
-    order.cell = tid;
+    int nodeID = tid;
+    auto &node = forest->nodes[nodeID];
+    if (!node.isLeaf)
+      // can only split leaves...
+      return;
+
+    int leafID = node.offset;
+    auto &order = splitOrder[leafID];
+    auto &leaf = forest->leaves[leafID].duringBuild;
+    order.nodeID = nodeID;
     order.priority
       = leaf.numElements == 0
       ? 1e20f
       : float(leaf.sumEdgeLengths / leaf.numElements);
   }
-  
+
   void buildOrder(AdaptiveMC::Forest *forest,
-                  AdaptiveMC::NextSplitCell *splitOrder)
+                  AdaptiveMC::NextSplitJob *splitOrder)
   {
-    int num = forest->numLeaves;
+    int num = forest->numNodes;
     d_buildOrder<<<divRoundUp(num,128),128>>>
       (forest, splitOrder, num);
   }
+
+  __global__
+  void d_splitLeaves(AdaptiveMC::Forest *forest,
+                     AdaptiveMC::NextSplitJob *splitOrder,
+                     int numToSplit)
+  {
+    int tid = threadIdx.x+blockIdx.x*blockDim.x;
+    if (tid >= numToSplit) return;
+
+    int newLeavesPos = atomicAdd(&forest->numLeaves,7);
+    int newNodesPos = atomicAdd(&forest->numNodes,8);
+
+    AdaptiveMC::Node nodeToSplit = forest->nodes[tid];
+
+    int childID = 0;
+    vec3i oldCellID = nodeToSplit.cellID;
+    int   oldLevel  = nodeToSplit.level;
+    for (int iz=0;iz<2;iz++)
+      for (int iy=0;iy<2;iy++)
+        for (int ix=0;ix<2;ix++, childID++) {
+          vec3i newCellID = 2*oldCellID + vec3i(ix,iy,iz);
+          int   newLevel  = oldLevel+1;
+
+          int newLeafIndex
+            = (childID==0)
+            ? tid
+            : (newLeavesPos+childID-1);
+          AdaptiveMC::Node &newNode = forest->nodes[newNodesPos+childID];
+          AdaptiveMC::Leaf &newLeaf = forest->leaves[newLeafIndex];
+          newLeaf.cellID = newCellID;
+          newLeaf.level  = newLevel;
+          newLeaf.duringBuild.clear();
+
+          newNode.cellID = newCellID;
+          newNode.level  = newLevel;
+          newNode.offset = newLeafIndex;
+          newNode.isLeaf = true;
+        }
+    nodeToSplit.isLeaf = 0;
+    nodeToSplit.offset = newNodesPos;
+  }
   
-  void AdaptiveMC::build(UMeshField::SP mesh)
+  void splitLeaves(AdaptiveMC::Forest *forest,
+                  AdaptiveMC::NextSplitJob *splitOrder)
+  {
+    int oldNumLeaves = forest->numLeaves;
+    int oldNumNodes  = forest->numNodes;
+
+    int numLeavesToSplit = 100+oldNumLeaves/8;
+    
+    // cannot split more cells than we have:
+    numLeavesToSplit = min(numLeavesToSplit,oldNumLeaves);
+
+    // each leaf getting split produced 8 leaves, but that leaf goes
+    // away, so the total num *new* leaves produces per split leaf is
+    // *7*:
+    int newNumLeaves = oldNumLeaves + numLeavesToSplit*(8-1);
+
+    // each newly created leaf also needs a cell to poitn to it; but
+    // unlike for leaves the original leaf's cell will not go away
+    // (it'll only change type). thus, total num new cells is 8 per
+    // leaf being split
+    int newNumNodes = oldNumNodes + numLeavesToSplit*8;
+
+    reallocNodes(forest,newNumNodes);
+    reallocLeaves(forest,newNumLeaves);
+    
+    d_splitLeaves<<<divRoundUp(numLeavesToSplit,128),128>>>
+      (forest,splitOrder,numLeavesToSplit);
+  }
+  
+  void AdaptiveMC::build(UMeshField *mesh)
   {
     Forest *forest = 0;
     BARNEY_CUDA_CALL(MallocManaged((void**)&forest,sizeof(*forest)));
@@ -270,24 +355,49 @@ namespace barney {
     *forest = Forest();
     forest->rootDims = rootDims;
 
+    forest->rootCellWidth = forest->worldBounds.size()*rcp(vec3f(forest->rootDims));
+    
     int numRoots = rootDims.x*rootDims.y*rootDims.z;
     reallocNodes(forest,numRoots);
     reallocLeaves(forest,numRoots);
+
+    forest->numLeaves = numRoots;
+    forest->numNodes  = numRoots;
 
     d_initRoots<<<divRoundUp(numRoots,128),128>>>
       (forest,numRoots);
     // BARNEY_CUDA_CALL((void**)&forest->nodes,
     //                  forest->numNodes*sizeof(int));
 
+    int targetNumLeaves = 100 * numRoots;
     PING;
-    while (true) {
+    while (forest->numLeaves < targetNumLeaves) {
+      PRINT(forest->numLeaves);
+      PRINT(forest->numNodes);
+      std::cout << "clearing leaves" << std::endl << std::flush;
       clearLeaves(forest);
+      BARNEY_CUDA_SYNC_CHECK();
+
+      std::cout << "raster" << std::endl << std::flush;
       rasterMesh(forest,mesh);
-      NextSplitCell *splitOrder = 0;
+      BARNEY_CUDA_SYNC_CHECK();
+
+      NextSplitJob *splitOrder = 0;
       BARNEY_CUDA_CALL(MallocManaged((void**)&splitOrder,forest->numLeaves*sizeof(*splitOrder)));
+      BARNEY_CUDA_SYNC_CHECK();
+
+      std::cout << "building order" << std::endl << std::flush;
       buildOrder(forest,splitOrder);
+      BARNEY_CUDA_SYNC_CHECK();
+
+      std::cout << "sorting order" << std::endl << std::flush;
       sortOrder(splitOrder,forest->numLeaves);
+      BARNEY_CUDA_SYNC_CHECK();
+
+      std::cout << "splitting cells" << std::endl << std::flush;
+      splitLeaves(forest,splitOrder);
       BARNEY_CUDA_CALL(Free(splitOrder));
+      BARNEY_CUDA_SYNC_CHECK();
       // split nodes
       // resize
     }
