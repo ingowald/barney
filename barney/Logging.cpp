@@ -7,6 +7,7 @@
 #include <vector>
 #include <cuda_runtime.h>
 #include "Logging.h"
+#include <mpi.h>
 
 #ifndef NDEBUG
 #define CUDA_SAFE_CALL(FUNC) { cuda_safe_call((FUNC), __FILE__, __LINE__); }
@@ -177,8 +178,14 @@ namespace barney {
         std::chrono::milliseconds tstart = ev.time - std::chrono::milliseconds((int64_t)ev.duration);
         std::stringstream stream;
         stream << ev.event << ';' << tstart.count() << ';' << ev.time.count() << ";\"" << ev.str << "\";" << ev.duration;
-        if (ev.gpuID >= 0)
-          stream << ";GPU " << ev.gpuID;
+        if (ev.gpuID >= 0) {
+          int world_rank = 0;
+          MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+          int device_count = 0;
+          cudaGetDeviceCount(&device_count);          
+
+          stream << ";GPU " << (ev.gpuID + device_count * world_rank);
+        }
         stream << '\n';
         std::cout << stream.str();
       }
