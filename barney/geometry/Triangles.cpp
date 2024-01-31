@@ -112,6 +112,7 @@ namespace barney {
       (devGroup->owl,OWL_GEOM_TRIANGLES,sizeof(Triangles::DD),
        params.data(),params.size());
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"TrianglesCH");
+    owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,"TrianglesAH");
     owlBuildPrograms(devGroup->owl);
     return gt;
   }

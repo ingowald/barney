@@ -73,5 +73,48 @@ namespace barney {
     ray.hit.N         = n;
     ray.hit.P         = P;
   }
+
+
+
+  /*! triangles geom AH program; mostly check on transparency */
+  OPTIX_ANY_HIT_PROGRAM(TrianglesAH)()
+  {
+    auto &ray  = owl::getPRD<Ray>();
+    auto &self = owl::getProgramData<Triangles::DD>();
+    if (!(self.material.colorTexture | self.material.alphaTexture))
+      // doesnt' have _have_ textures to check
+      return;
+    
+    int primID = optixGetPrimitiveIndex();
+    vec3i triangle = self.indices[primID];
+    
+    const float u = optixGetTriangleBarycentrics().x;
+    const float v = optixGetTriangleBarycentrics().y;
+
+    // ------------------------------------------------------------------
+    // get texture coordinates
+    // ------------------------------------------------------------------
+    vec2f tc(u,v);
+    if (self.texcoords) {
+      const vec2f Ta = self.texcoords[triangle.x];
+      const vec2f Tb = self.texcoords[triangle.y];
+      const vec2f Tc = self.texcoords[triangle.z];
+      tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
+    }
+    float alpha = 1.f;
+    if (self.material.alphaTexture) {
+      float4 fromTex = tex2D<float4>(self.material.alphaTexture,tc.x,tc.y);
+      alpha *= fromTex.w;
+    }
+    if (self.material.colorTexture) {
+      float4 fromTex = tex2D<float4>(self.material.colorTexture,tc.x,tc.y);
+      alpha *= fromTex.w;
+    }
+
+    if (alpha <= .05f) {
+      optixIgnoreIntersection();
+      return;
+    }
+  }
   
 }
