@@ -23,11 +23,10 @@ namespace barney {
   struct Spheres : public Geometry {
     typedef std::shared_ptr<Spheres> SP;
 
-    struct DD {
+    struct DD : public Geometry::DD {
       vec3f   *origins;
       float   *radii;
       float    defaultRadius;
-      Material material;
     };
 
     Spheres(DataGroup *owner,

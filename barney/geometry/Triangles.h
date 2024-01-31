@@ -28,14 +28,13 @@ namespace barney {
   struct Triangles : public Geometry {
     typedef std::shared_ptr<Triangles> SP;
 
-    struct DD {
-      int          numIndices;
-      int          numVertices;
+    struct DD : public Geometry::DD {
+      // int          numIndices;
+      // int          numVertices;
       const vec3i *indices;
       const vec3f *vertices;
       const vec3f *normals;
       const vec2f *texcoords;
-      Material     material;
     };
     
     Triangles(DataGroup *owner,
@@ -58,8 +57,10 @@ namespace barney {
 
     int       numIndices;
     int       numVertices;
-    OWLBuffer indicesBuffer  = 0;
-    OWLBuffer verticesBuffer = 0;
+    OWLBuffer indicesBuffer   = 0;
+    OWLBuffer verticesBuffer  = 0;
+    OWLBuffer texcoordsBuffer = 0;
+    OWLBuffer normalsBuffer   = 0;
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override

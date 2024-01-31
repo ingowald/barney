@@ -35,13 +35,36 @@ namespace barney {
     n = normalize(n);
     
     vec3f dir = optixGetWorldRayDirection();
+    // printf("mat %f %f %f : %i %i\n",
+    //        self.material.baseColor.x,
+    //        self.material.baseColor.y,
+    //        self.material.baseColor.z,
+    //        (int)self.material.colorTexture,
+    //        (int)self.material.alphaTexture);
 #if VISUALIZE_PRIMS
     vec3f baseColor = owl::randomColor(primID);
 #else
     vec3f baseColor = self.material.baseColor;
 #endif
+
     const float u = optixGetTriangleBarycentrics().x;
     const float v = optixGetTriangleBarycentrics().y;
+
+
+    // ------------------------------------------------------------------
+    // get texture coordinates
+    // ------------------------------------------------------------------
+    vec2f tc(u,v);
+    if (self.texcoords) {
+      const vec2f Ta = self.texcoords[triangle.x];
+      const vec2f Tb = self.texcoords[triangle.y];
+      const vec2f Tc = self.texcoords[triangle.z];
+      tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
+    }
+    if (self.material.colorTexture) {
+      float4 fromTex = tex2D<float4>(self.material.colorTexture,tc.x,tc.y);
+      baseColor *= (const vec3f &)fromTex;
+    }
     
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);

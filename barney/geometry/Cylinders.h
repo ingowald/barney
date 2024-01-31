@@ -30,11 +30,10 @@ namespace barney {
   struct Cylinders : public Geometry {
     typedef std::shared_ptr<Cylinders> SP;
 
-    struct DD {
+    struct DD : public Geometry::DD {
       const vec3f *points;
       const vec2i *indices;
       const float *radii;
-      Material     material;
     };
     
     Cylinders(DataGroup *owner,

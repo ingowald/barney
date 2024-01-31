@@ -25,6 +25,11 @@ namespace barney {
   struct DataGroup;
   
   struct Material {
+    struct DD {
+      vec3f baseColor;
+      cudaTextureObject_t colorTexture;
+      cudaTextureObject_t alphaTexture;
+    };
     vec3f baseColor;
     Texture::SP colorTexture;
     Texture::SP alphaTexture;
@@ -33,12 +38,18 @@ namespace barney {
   struct Geometry : public Object {
     typedef std::shared_ptr<Geometry> SP;
 
+    struct DD {
+      Material::DD     material;
+    };
+    
     Geometry(DataGroup *owner,
              const Material &material)
       : owner(owner),
         material(material)
     {}
 
+    static void addVars(std::vector<OWLVarDecl> &vars, int base);
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Geometry{}"; }
@@ -46,15 +57,17 @@ namespace barney {
     /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
     
-    Material    material;
-    DataGroup  *owner;
-
+    void setMaterial(OWLGeom geom);
+    
     /*! get the own context that was used to create this geometry */
     OWLContext getOWL() const;
     
     std::vector<OWLGeom>  triangleGeoms;
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGroup> secondPassGroups;
+    
+    Material    material;
+    DataGroup  *owner;
   };
 
 }

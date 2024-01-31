@@ -22,5 +22,30 @@ namespace barney {
   OWLContext Geometry::getOWL() const
   { return owner->getOWL(); }
 
+  void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
+  {
+    vars.push_back({"material.baseColor", OWL_FLOAT3, base+OWL_OFFSETOF(DD,material.baseColor)});
+    vars.push_back({"material.alphaTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,material.alphaTexture)});
+    vars.push_back({"material.colorTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,material.colorTexture)});
+  }
+  
+  void Geometry::setMaterial(OWLGeom geom)
+  {
+    owlGeomSet3f(geom,"material.baseColor",
+                 material.baseColor.x,
+                 material.baseColor.y,
+                 material.baseColor.z);
+    owlGeomSetTexture(geom,"material.alphaTexture",
+                      material.alphaTexture
+                      ? material.alphaTexture->owlTex
+                      : (OWLTexture)0
+                      );
+    owlGeomSetTexture(geom,"material.colorTexture",
+                      material.colorTexture
+                      ? material.colorTexture->owlTex
+                      : (OWLTexture)0
+                      );
+  }
+  
 }
 

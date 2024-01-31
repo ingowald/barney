@@ -32,6 +32,7 @@ typedef struct _BNModel         *BNModel;
 typedef struct _BNFrameBuffer   *BNFrameBuffer;
 typedef struct _BNDataGroup     *BNDataGroup;
 typedef struct _BNTexture2D     *BNTexture2D;
+typedef BNTexture2D BNTexture;
 
 typedef enum { BN_FLOAT, BN_UINT8 } BNScalarType;
 
@@ -220,15 +221,15 @@ void bnGroupBuild(BNGroup group);
 
 BN_API
 BNTexture2D bnTexture2DCreate(BNDataGroup dataGroup,
-                          BNTexelFormat texelFormat,
-                          /*! number of texels in x dimension */
-                          uint32_t size_x,
-                          /*! number of texels in y dimension */
-                          uint32_t size_y,
-                          const void *texels,
-                          BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR,
-                          BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP,
-                          BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
+                              BNTexelFormat texelFormat,
+                              /*! number of texels in x dimension */
+                              uint32_t size_x,
+                              /*! number of texels in y dimension */
+                              uint32_t size_y,
+                              const void *texels,
+                              BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR,
+                              BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP,
+                              BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
 
 // ------------------------------------------------------------------
 // geometry stuff

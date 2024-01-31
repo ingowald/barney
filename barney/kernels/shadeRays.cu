@@ -72,7 +72,7 @@ namespace barney {
         // non-hitting rays
         fragment = (vec3f)ray.hit.baseColor;
       } else {
-        vec3f ambientIllum = vec3f(1.f);
+        vec3f ambientIllum = vec3f(3.f);
         fragment = ray.throughput * ambientIllum;
       }
     } else {
@@ -109,7 +109,9 @@ namespace barney {
         rng();
         bounce.rngSeed = ray.rngSeed;
         rng();
-        bounce.throughput = .6f * ray.throughput * albedo;
+        bounce.throughput = 
+          // .6f *
+          ray.throughput * albedo;
 
 #if PRINT_BALLOT
         int numActive = __popc(__ballot(1));

@@ -41,14 +41,27 @@ namespace barney {
     indicesBuffer = owlDeviceBufferCreate
       (owner->devGroup->owl,
        OWL_INT3,numIndices,indices);
-
+    if (texcoords)
+      texcoordsBuffer
+        = owlDeviceBufferCreate
+        (owner->devGroup->owl,
+         OWL_FLOAT2,numVertices,texcoords);
+    if (normals)
+      normalsBuffer
+        = owlDeviceBufferCreate
+        (owner->devGroup->owl,
+         OWL_FLOAT3,numVertices,normals);
+    
     owlTrianglesSetVertices(geom,verticesBuffer,
                             numVertices,sizeof(float3),0);
     owlTrianglesSetIndices(geom,indicesBuffer,
                            numIndices,sizeof(int3),0);
-    owlGeomSetRaw(geom,"material",&material);
+    Geometry::setMaterial(geom);
+    // owlGeomSetRaw(geom,"material",&material);
     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
     owlGeomSetBuffer(geom,"indices",indicesBuffer);
+    owlGeomSetBuffer(geom,"normals",normalsBuffer);
+    owlGeomSetBuffer(geom,"texcoords",texcoordsBuffer);
 
     triangleGeoms.push_back(geom);
   }
@@ -82,19 +95,22 @@ namespace barney {
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'Triangles' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
-    
-    static OWLVarDecl params[]
+
+    std::vector<OWLVarDecl> params
       = {
-         { "material", OWL_USER_TYPE(Material), OWL_OFFSETOF(DD,material) },
-         { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-         { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-         { nullptr }
+      // { "material", OWL_USER_TYPE(Material), OWL_OFFSETOF(DD,material) },
+      { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
+      { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
+      { "texcoords", OWL_BUFPTR, OWL_OFFSETOF(DD,texcoords) },
+      { "normals", OWL_BUFPTR, OWL_OFFSETOF(DD,normals) },
     };
+    Geometry::addVars(params,0);
+    
     OWLModule module = owlModuleCreate
       (devGroup->owl,Triangles_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_TRIANGLES,sizeof(Triangles::DD),
-       params,-1);
+       params.data(),params.size());
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"TrianglesCH");
     owlBuildPrograms(devGroup->owl);
     return gt;
