@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,44 +17,35 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/Ray.h"
-#include "barney/Texture.h"
+#include <barney.h>
 
 namespace barney {
 
   struct DataGroup;
-  
-  struct Material {
-    vec3f baseColor;
-    Texture::SP colorTexture;
-    Texture::SP alphaTexture;
-  };
 
-  struct Geometry : public Object {
-    typedef std::shared_ptr<Geometry> SP;
+  /*! geometry in the form of a regular triangle mesh - vertex
+      positoins array, vertex indices array, verex normals, and
+      texcoords */
+  struct Texture : public Object {
+    typedef std::shared_ptr<Texture> SP;
 
-    Geometry(DataGroup *owner,
-             const Material &material)
-      : owner(owner),
-        material(material)
-    {}
+    // struct DD {
+    //   cudaTextureObject_t tex;
+    // };
+    
+    Texture(DataGroup *owner,
+            BNTexelFormat texelFormat,
+            vec2i size,
+            const void *texels,
+            BNTextureFilterMode  filterMode,
+            BNTextureAddressMode addressMode,
+            BNTextureColorSpace  colorSpace);
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
-    { return "Geometry{}"; }
+    { return "Texture{}"; }
 
-    /*! ask this geometry to build whatever owl geoms it needs to build */
-    virtual void build() {}
-    
-    Material    material;
-    DataGroup  *owner;
-
-    /*! get the own context that was used to create this geometry */
-    OWLContext getOWL() const;
-    
-    std::vector<OWLGeom>  triangleGeoms;
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGroup> secondPassGroups;
+    OWLTexture owlTex = 0;
   };
 
 }

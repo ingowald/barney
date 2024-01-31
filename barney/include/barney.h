@@ -31,6 +31,7 @@ typedef struct _BNGroup         *BNGroup;
 typedef struct _BNModel         *BNModel;
 typedef struct _BNFrameBuffer   *BNFrameBuffer;
 typedef struct _BNDataGroup     *BNDataGroup;
+typedef struct _BNTexture2D     *BNTexture2D;
 
 typedef enum { BN_FLOAT, BN_UINT8 } BNScalarType;
 
@@ -38,9 +39,42 @@ struct BNMaterial {
   float3 baseColor;
   float  transparency;
   float  ior;
-  int    alphaTextureID;
-  int    colorTextureID;
+  BNTexture2D alphaTexture = 0;
+  BNTexture2D colorTexture = 0;
 };
+
+/*! supported formats for texels in textures */
+typedef enum {
+  BN_TEXEL_FORMAT_RGBA8,
+  BN_TEXEL_FORMAT_RGBA32F,
+  BN_TEXEL_FORMAT_R8,
+  BN_TEXEL_FORMAT_R32F
+}
+BNTexelFormat;
+
+/*! currently supported texture filter modes */
+typedef enum {
+  BN_TEXTURE_NEAREST,
+  BN_TEXTURE_LINEAR
+}
+BNTextureFilterMode;
+
+/*! currently supported texture filter modes */
+typedef enum {
+  BN_TEXTURE_WRAP,
+  BN_TEXTURE_CLAMP,
+  BN_TEXTURE_BORDER,
+  BN_TEXTURE_MIRROR
+}
+BNTextureAddressMode;
+
+/*! Indicates if a texture is linear or SRGB */
+typedef enum {
+  BN_COLOR_SPACE_LINEAR,
+  BN_COLOR_SPACE_SRGB
+}
+BNTextureColorSpace;
+
 
 struct BNCamera {
   /*! vector from camera center to to lower-left pixel (i.e., pixel
@@ -56,7 +90,11 @@ struct BNCamera {
   float  lensRadius;
 };
 
-#define BN_DEFAULT_MATERIAL  { { .7f,.7f,.7f }, 0.f, 1.f, -1, -1 }
+#define BN_DEFAULT_MATERIAL  { \
+    { .7f,.7f,.7f }, 0.f, 1.f, \
+      /*no color tex*/0,       \
+      /*no alpha tex*/0        \
+      }
 
 struct BNGridlet {
   float3 lower;
@@ -180,6 +218,17 @@ BNGroup bnGroupCreate(BNDataGroup dataGroup,
 BN_API
 void bnGroupBuild(BNGroup group);
 
+BN_API
+BNTexture2D bnTexture2DCreate(BNDataGroup dataGroup,
+                          BNTexelFormat texelFormat,
+                          /*! number of texels in x dimension */
+                          uint32_t size_x,
+                          /*! number of texels in y dimension */
+                          uint32_t size_y,
+                          const void *texels,
+                          BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR,
+                          BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP,
+                          BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
 
 // ------------------------------------------------------------------
 // geometry stuff

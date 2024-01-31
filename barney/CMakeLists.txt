@@ -123,6 +123,8 @@ add_library(barney STATIC
   Group.cpp
   DataGroup.h
   DataGroup.cpp
+  Texture.h
+  Texture.cpp
   # actual geometry types
   geometry/Geometry.h
   geometry/Geometry.cpp

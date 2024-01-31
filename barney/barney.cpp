@@ -42,6 +42,10 @@ namespace barney {
     assert(material);
     Material result;
     result.baseColor = (const vec3f&)material->baseColor;
+    result.colorTexture
+      = material->colorTexture
+      ? ((Texture*)material->colorTexture)->shared_from_this()->as<Texture>()
+      : 0;
     return result;
   }
   
@@ -98,6 +102,27 @@ namespace barney {
     return checkGet(sf)->shared_from_this()->as<ScalarField>();
   }
 
+  // ------------------------------------------------------------------
+
+  BN_API
+  BNTexture2D bnTexture2DCreate(BNDataGroup dataGroup,
+                                BNTexelFormat texelFormat,
+                                /*! number of texels in x dimension */
+                                uint32_t size_x,
+                                /*! number of texels in y dimension */
+                                uint32_t size_y,
+                                const void *texels,
+                                BNTextureFilterMode  filterMode,
+                                BNTextureAddressMode addressMode,
+                                BNTextureColorSpace  colorSpace)
+  {
+    LOG_API_ENTRY;
+    Texture *texture = checkGet(dataGroup)->createTexture
+      (texelFormat,vec2i(size_x,size_y),texels,
+       filterMode,addressMode,colorSpace);
+    return (BNTexture2D)texture;
+  }
+  
   // ------------------------------------------------------------------
   
   BN_API
@@ -171,7 +196,7 @@ namespace barney {
     return (BNGeom)cylinders;
   }
   
-
+  
   BN_API
   BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
                               const BNMaterial *material,
@@ -182,7 +207,7 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
-    // LOG_API_ENTRY;
+    LOG_API_ENTRY;
     Triangles *triangles = checkGet(dataGroup)->createTriangles
       (checkGet(material),
        numIndices,

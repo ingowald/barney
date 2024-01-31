@@ -26,6 +26,7 @@ namespace barney {
   struct Cylinders;
   struct Triangles;
   struct Context;
+  struct Texture;
   
   struct DataGroup : public Object {
     typedef std::shared_ptr<DataGroup> SP;
@@ -67,6 +68,14 @@ namespace barney {
                     const vec3f *normals,
                     const vec2f *texcoords);
 
+    Texture *
+    createTexture(BNTexelFormat texelFormat,
+                  vec2i size,
+                  const void *texels,
+                  BNTextureFilterMode  filterMode,
+                  BNTextureAddressMode addressMode,
+                  BNTextureColorSpace  colorSpace);
+    
     ScalarField *createStructuredData(const vec3i &dims,
                                       BNScalarType scalarType,
                                       const void *data,

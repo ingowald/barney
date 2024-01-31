@@ -16,6 +16,7 @@
 
 #include "barney/DataGroup.h"
 #include "barney/Model.h"
+#include "barney/Texture.h"
 #include "barney/geometry/Spheres.h"
 #include "barney/geometry/Cylinders.h"
 #include "barney/geometry/Triangles.h"
@@ -95,6 +96,18 @@ namespace barney {
       (std::make_shared<Spheres>(this,material,origins,numOrigins,radii,defaultRadius));
   }
 
+  Texture *DataGroup::createTexture(BNTexelFormat texelFormat,
+                                    vec2i size,
+                                    const void *texels,
+                                    BNTextureFilterMode  filterMode,
+                                    BNTextureAddressMode addressMode,
+                                    BNTextureColorSpace  colorSpace)
+  {
+    return getContext()->initReference
+      (std::make_shared<Texture>(this,texelFormat,size,texels,
+                                 filterMode,addressMode,colorSpace));
+  }
+    
   Triangles *DataGroup::createTriangles(const barney::Material &material,
                                         int numIndices,
                                         const vec3i *indices,
