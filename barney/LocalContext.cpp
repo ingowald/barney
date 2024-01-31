@@ -87,7 +87,9 @@ namespace barney {
     assert(fb);
 
     // render all tiles, in tile format and writing into accum buffer
+    printf("start render\n"); fflush(0);
     renderTiles(model,camera,fb);
+    printf("done render\n"); fflush(0);
     for (auto dev : devices) dev->sync();
     
     // convert all tiles from accum to RGBA

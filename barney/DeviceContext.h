@@ -49,10 +49,11 @@ namespace barney {
     static OWLParams createLP(Device *device);
 
 
-    void sync() const {
+    void sync() // const
+    {
       SetActiveGPU forDuration(device);
       BARNEY_CUDA_SYNC_CHECK();
-    }
+    } 
     
     void launch_sync() const
     {
