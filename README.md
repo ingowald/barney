@@ -67,7 +67,7 @@ The `barney_mpi` dependency will automatically pull in the cmake `MPI::MPI_CXX` 
 
 # Examples of Supported Geometry and Volume Types 
 
-### Triangle Meshes (including Instances and Color- and Opacity Textures)
+## Triangle Meshes (including Instances and Color- and Opacity Textures)
 
 Example: PBRT landscape in `miniScene` (http://github.com/ingowald/miniScene) format:
 
@@ -86,7 +86,18 @@ Missing/incomplete:
 
 - Material model is still very basic; reflection, refraction etc are not yet supported.
 
-# Structured Volume Data
+## Non-Triangular Surface Types for Sci-Vis
+
+- prototypical support for ANARI-style `spheres` geometry (x,y,z,radius per sphere)
+
+(README need updating)
+
+- prototypical support for ANARI-style `cylinders` geometry (xyzradius for each endpoint)
+
+(README need updating)
+
+
+## Structured Volume Data
 
 Structured Volume Data (`float`, `uint8` and `uint16` are supported,
 and any volume can be distributed across different ranks by each rank
@@ -96,10 +107,24 @@ sci-vis, every volume can have its own transfer function.
 ## Engine (`256x256x128_uint8`)
 ![](jpg/engine.jpg)
 
-## 256GB Rot-strat (`4096x4096x4096_float`), data-parallel on 8x `RTX8000`
+## Large Structured Data: `rot-strat` (`4096x4096x4096_float`) data-parallel on 8x `RTX8000` (4 nodes, 2 GPUs each)
 
+Once with a "fuzzy" transfer function (low density):
 ![](jpg/rotstrat-fuzzy.jpg)
+
+... and same, with a very dense transfer function:
 ![](jpg/rotstrat-dense.jpg)
+
+
+## Unstructured-Mesh Data
+
+- some first light exists, README needs updating.
+
+
+## Block-Structed AMR Data
+
+- some first light exists, README needs updating.
+
 
 
 
