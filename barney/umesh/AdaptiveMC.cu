@@ -16,28 +16,39 @@
 
 #include "barney/umesh/AdaptiveMC.h"
 #include "barney/umesh/os/ObjectSpace-common.h"
+#include <fstream>
 
 namespace barney {
 
   void reallocNodes(AdaptiveMC::Forest *forest, int newSize)
   {
     AdaptiveMC::Node *newNodes = 0;
-    BARNEY_CUDA_CALL(Malloc((void**)&newNodes,newSize*sizeof(*newNodes)));
+    BARNEY_CUDA_CALL(MallocManaged((void**)&newNodes,newSize*sizeof(*newNodes)));
     BARNEY_CUDA_CALL(Memcpy(newNodes,forest->nodes,
                             forest->numNodes*sizeof(*newNodes),
                             cudaMemcpyDefault));
-
+    
     if (forest->nodes)
       BARNEY_CUDA_CALL(Free(forest->nodes));
     forest->nodes = newNodes;
     // forest->numNodes = newSize;
   }
-
+  
   void reallocLeaves(AdaptiveMC::Forest *forest, int newSize)
   {
+    AdaptiveMC::Leaf *newLeaves = 0;
+    BARNEY_CUDA_CALL(MallocManaged((void**)&newLeaves,newSize*sizeof(*forest->leaves)));
+    BARNEY_CUDA_CALL(Memcpy(newLeaves,forest->leaves,
+                            forest->numLeaves*sizeof(*newLeaves),
+                            cudaMemcpyDefault));
+    // BARNEY_CUDA_CALL(MallocManaged((void**)&forest->leaves,
+    //                                newSize*sizeof(*forest->leaves)));
+    // BARNEY_CUDA_CALL(Memcpy(newLeaves,forest->leaves,
+    //                         forest->numLeaves*sizeof(*forest->leaves),
+    //                         cudaMemcpyDefault));
     if (forest->leaves)
       BARNEY_CUDA_CALL(Free(forest->leaves));
-    BARNEY_CUDA_CALL(Malloc((void**)&forest->leaves,newSize*sizeof(*forest->leaves)));
+    forest->leaves = newLeaves;
     // forest->numLeaves = newSize;
   }
 
@@ -75,9 +86,6 @@ namespace barney {
     d_clearLeaves<<<divRoundUp((int)forest->numNodes,128),128>>>
       (forest);
   }
-
-  inline __both__ vec3i operator<<(vec3i v, int s)
-  { return { v.x<<s, v.y<<s, v.z<<s }; }
 
   inline __device__
   bool allOutside(Plane p, box3f bb)
@@ -136,17 +144,17 @@ namespace barney {
                 Element elt,
                 box3f eltBounds)
   {
-    vec3i intCoords = node.cellID << node.level;
-    box3f cellBounds;
-    vec3f cellWidth = 1.f/(1<<node.level);
-    // RELATIVE
-    cellBounds.lower = vec3f(intCoords) * cellWidth;
-    cellBounds.upper = cellBounds.lower + cellWidth;
+    box3f cellBounds = forest->getCellBounds(node.cellID,node.level);;
+    // vec3i intCoords = node.cellID << node.level;
+    // vec3f cellWidth = 1.f/(1<<node.level);
+    // // RELATIVE
+    // cellBounds.lower = vec3f(intCoords) * cellWidth;
+    // cellBounds.upper = cellBounds.lower + cellWidth;
 
-    vec3f blockWidth = forest->rootCellWidth;
-    // vec3f blockWidth = forest->worldBounds.size()*rcp(vec3f(forest->rootDims));
-    cellBounds.lower = forest->worldBounds.lower + blockWidth * cellBounds.lower;
-    cellBounds.upper = forest->worldBounds.lower + blockWidth * cellBounds.upper;
+    // vec3f blockWidth = forest->rootCellWidth;
+    // // vec3f blockWidth = forest->worldBounds.size()*rcp(vec3f(forest->rootDims));
+    // cellBounds.lower = forest->worldBounds.lower + blockWidth * cellBounds.lower;
+    // cellBounds.upper = forest->worldBounds.lower + blockWidth * cellBounds.upper;
 
     if (!overlaps(cellBounds,eltBounds))
       return false;
@@ -167,9 +175,17 @@ namespace barney {
                      Element elt,
                      // box4f cellsBB,
                      StackEntry *stackBase,
-                     StackEntry *stackPtr)
+                     StackEntry *stackPtr,
+                     bool dbg = false)
   {
     box3f bb = getBox(mesh.eltBounds(elt));
+    if (dbg) printf("---------------- rastering element (%f %f %f)(%f %f %f)\n",
+                    bb.lower.x,
+                    bb.lower.y,
+                    bb.lower.z,
+                    bb.upper.x,
+                    bb.upper.y,
+                    bb.upper.z);
     while (true) {
       if (stackPtr == stackBase) return;
 
@@ -178,18 +194,38 @@ namespace barney {
         *stackPtr++ = { job.nodeID+1,job.numMore-1 };
 
       AdaptiveMC::Node node = forest->nodes[job.nodeID];
+      box3f nodeBounds = forest->getCellBounds(node.cellID,node.level);
+      if (dbg)
+        printf("  testing (%i %i %i; %i), (%f %f %f)(%f %f %f)\n",
+             node.cellID.x,
+             node.cellID.y,
+             node.cellID.z,
+             node.level,
+             nodeBounds.lower.x,
+             nodeBounds.lower.y,
+             nodeBounds.lower.z,
+             nodeBounds.upper.x,
+             nodeBounds.upper.y,
+             nodeBounds.upper.z);
+             
       if (!potentiallyOverlaps(forest,node,mesh,elt,bb))
         continue;
 
       if (node.isLeaf) {
         auto &leaf = forest->leaves[node.offset];
+        if (dbg)
+          printf("  - reached leaf %i %i %i; %i\n",
+                 leaf.cellID.x,
+                 leaf.cellID.y,
+                 leaf.cellID.z,
+                 leaf.level);
         atomicAdd(&leaf.duringBuild.numElements,1);
 
         float thisElementLength = length(bb.size());
         thisElementLength = min(thisElementLength,
                                 3.f*length(forest->
                                            rootCellWidth)/(1<<leaf.level));
-        float thisElementWeight = sqrtf(thisElementLength)*(1<<leaf.level);
+        float thisElementWeight = sqrtf(thisElementLength);//*(1<<leaf.level);
         
         atomicAdd(&leaf.duringBuild.sumEdgeLengths,thisElementWeight);
       } else {
@@ -214,15 +250,19 @@ namespace barney {
     vec3i lo = vec3i((vec3f&)bb.lower);
     vec3i hi = min(vec3i((vec3f&)bb.upper),forest->rootDims-1);
 
+    bool dbg = (tid == 34333);
     for (int iz=lo.z;iz<=hi.z;iz++)
       for (int iy=lo.y;iy<=hi.y;iy++)
         for (int ix=lo.x;ix<=hi.x;ix++) {
           int rootID = ix + forest->rootDims.x*(iy + forest->rootDims.y*(iz));
+          if (dbg)
+            printf("rastering element into root tree %i\n",rootID);
           StackEntry *stackPtr = stackBase;
           *stackPtr++ = { rootID, 0 };
 
           rasterElement(forest,mesh,elt// ,bb
-                        ,stackBase,stackPtr);
+                        ,stackBase,stackPtr,
+                        dbg);
         }
     
   }
@@ -233,18 +273,26 @@ namespace barney {
       (forest,mesh->getDD(0));
   }
 
-  void sortOrder(AdaptiveMC::NextSplitJob *splitOrder, int num)
+  void sortOrder(AdaptiveMC::Forest *forest,
+                 AdaptiveMC::NextSplitJob *splitOrder, int num)
   {
-    std::sort(&splitOrder->bits,&splitOrder->bits+num);
+    uint64_t *sortData = (uint64_t *)splitOrder;
+    std::sort(sortData,sortData+num);
+    for (int i=0;i<min(20,num);i++) {
+      auto node = forest->nodes[splitOrder[i].nodeID];
+      std::cout << " sort prio " << i << " : " << splitOrder[i].nodeID << "@"
+                << node.cellID
+                << ";" << node.level << "  prio "
+                << splitOrder[i].priority << std::endl;
+    }
   }
   
   __global__
   void d_buildOrder(AdaptiveMC::Forest *forest,
-                    AdaptiveMC::NextSplitJob *splitOrder,
-                    int numLeaves)
+                    AdaptiveMC::NextSplitJob *splitOrder)
   {
     int tid = threadIdx.x+blockIdx.x*blockDim.x;
-    if (tid >= numLeaves) return;
+    if (tid >= forest->numNodes) return;
 
     int nodeID = tid;
     auto &node = forest->nodes[nodeID];
@@ -254,12 +302,16 @@ namespace barney {
 
     int leafID = node.offset;
     auto &order = splitOrder[leafID];
-    auto &leaf = forest->leaves[leafID].duringBuild;
+    auto &leaf = forest->leaves[leafID];
     order.nodeID = nodeID;
     order.priority
-      = leaf.numElements == 0
+      = (leaf.duringBuild.numElements == 0)
       ? 1e20f
-      : float(leaf.sumEdgeLengths / leaf.numElements);
+      : (1.f/leaf.duringBuild.numElements);
+      //        1e20f
+      // : (float(leaf.duringBuild.sumEdgeLengths)
+      //    / float(leaf.duringBuild.numElements)
+      //    / (1<<leaf.level));
   }
 
   void buildOrder(AdaptiveMC::Forest *forest,
@@ -267,7 +319,7 @@ namespace barney {
   {
     int num = forest->numNodes;
     d_buildOrder<<<divRoundUp(num,128),128>>>
-      (forest, splitOrder, num);
+      (forest, splitOrder);
   }
 
   __global__
@@ -281,7 +333,7 @@ namespace barney {
     int newLeavesPos = atomicAdd(&forest->numLeaves,7);
     int newNodesPos = atomicAdd(&forest->numNodes,8);
 
-    AdaptiveMC::Node nodeToSplit = forest->nodes[tid];
+    AdaptiveMC::Node &nodeToSplit = forest->nodes[tid];
 
     int childID = 0;
     vec3i oldCellID = nodeToSplit.cellID;
@@ -344,18 +396,23 @@ namespace barney {
   {
     Forest *forest = 0;
     BARNEY_CUDA_CALL(MallocManaged((void**)&forest,sizeof(*forest)));
+    *forest = Forest();
 
     forest->worldBounds = mesh->worldBounds;
-
+    PRINT(forest->worldBounds);
     float maxWidth = reduce_max(getBox(mesh->worldBounds).size());
-    int ROOT_GRID_SIZE
-      = 16 + int(sqrtf(mesh->elements.size())/100);
+#if 0
+    vec3i rootDims = 1;
+#else
+    int ROOT_GRID_SIZE = 16 + int(powf(mesh->elements.size(),1.f/3.f)/100);
     
     vec3i rootDims = 1+vec3i(getBox(mesh->worldBounds).size() * ((ROOT_GRID_SIZE-1) / maxWidth));
-    *forest = Forest();
+#endif
     forest->rootDims = rootDims;
 
+    PRINT(forest->rootDims);
     forest->rootCellWidth = forest->worldBounds.size()*rcp(vec3f(forest->rootDims));
+    PRINT(forest->rootCellWidth);
     
     int numRoots = rootDims.x*rootDims.y*rootDims.z;
     reallocNodes(forest,numRoots);
@@ -366,6 +423,15 @@ namespace barney {
 
     d_initRoots<<<divRoundUp(numRoots,128),128>>>
       (forest,numRoots);
+    BARNEY_CUDA_SYNC_CHECK();
+    // std::cout << "roots:" << std::endl;
+    // for (int i=0;i<forest->numLeaves;i++) {
+    //   auto leaf = forest->leaves[i];
+    //   std::cout << "leaf " << i << " cell " << leaf.cellID
+    //             << ";" << leaf.level << "  " << forest->getLeafBounds(leaf)
+    //             << std::endl;
+    // }
+      
     // BARNEY_CUDA_CALL((void**)&forest->nodes,
     //                  forest->numNodes*sizeof(int));
 
@@ -391,7 +457,7 @@ namespace barney {
       BARNEY_CUDA_SYNC_CHECK();
 
       std::cout << "sorting order" << std::endl << std::flush;
-      sortOrder(splitOrder,forest->numLeaves);
+      sortOrder(forest,splitOrder,forest->numLeaves);
       BARNEY_CUDA_SYNC_CHECK();
 
       std::cout << "splitting cells" << std::endl << std::flush;
@@ -400,7 +466,57 @@ namespace barney {
       BARNEY_CUDA_SYNC_CHECK();
       // split nodes
       // resize
+      // break;
     }
+
+    std::cout << "final raster to fill all leaves..." << std::endl;
+    clearLeaves(forest);
+    BARNEY_CUDA_SYNC_CHECK();
+    
+    rasterMesh(forest,mesh);
+    BARNEY_CUDA_SYNC_CHECK();
+    
+    std::cout << "dumping levels as boxes..." << std::endl;
+    int maxLevel = 0;
+    int minLevel = 1<<20;
+    for (int i=0;i<forest->numLeaves;i++) {
+      maxLevel = std::max(maxLevel,forest->leaves[i].level);
+      minLevel = std::min(minLevel,forest->leaves[i].level);
+    }
+#if 0
+    std::ofstream out("test_boxes",std::ios::binary);
+    for (int iz=0;iz<4;iz++)
+      for (int iy=0;iy<4;iy++)
+        for (int ix=0;ix<4;ix++) {
+          // PRINT(vec3f(ix,iy,iz));
+          box3f box;
+          box.lower = 2.f*vec3f(ix,iy,iz);
+          box.upper = box.lower+vec3f(1.f);
+          // PRINT(box);
+          out.write((const char *)&box,sizeof(box));
+        }
+    out.close();
+    exit(0);
+#endif
+    PRINT(forest->numLeaves);
+    for (int level=minLevel;level<=maxLevel;level++) {
+      std::cout << "dumping level " << level << std::endl;
+      std::string outFileName = "adaptiveCells_level"+std::to_string(level);
+      std::ofstream out(outFileName.c_str(),std::ios::binary);
+      for (int i=0;i<forest->numLeaves;i++) {
+        auto leaf = forest->leaves[i];
+        box3f box = forest->getLeafBounds(leaf);
+        // std::cout << "  " << leaf.cellID << ";" << leaf.level << "  " << box << std::endl;
+        // if (leaf.duringBuild.numElements == 0) continue;
+
+        // PRINT(leaf.cellID);
+        if (leaf.level != level) continue;
+        out.write((const char *)&box,sizeof(box));
+      }
+      out.close();
+    }
+    std::cout << "dumped all levels... exiting" << std::endl;
+    exit(0);
   }
   
 }

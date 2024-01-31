@@ -25,6 +25,9 @@
 
 namespace barney {
 
+  inline __both__ vec3i operator<<(vec3i v, int s)
+  { return { v.x<<s, v.y<<s, v.z<<s }; }
+
   struct DataGroup;
   struct Volume;
   struct ScalarField;
@@ -59,13 +62,8 @@ namespace barney {
       uint32_t offset  :31;
     };
     struct NextSplitJob {
-      union {
-        struct {
-          uint32_t nodeID;
-          float    priority;
-        };
-        uint64_t bits;
-      };
+      uint32_t nodeID;
+      float    priority;
     };
     struct Forest {
       Forest() {};
@@ -78,6 +76,28 @@ namespace barney {
       float    *majorants = 0;
       uint32_t numNodes  = 0;
       uint32_t numLeaves = 0;
+
+      inline __both__ box3f getCellBounds(vec3i cellID, int level) const
+      {
+        vec3i intCoords = cellID;// << leaf.level;
+        box3f cellBounds;
+        vec3f cellWidth = 1.f/(1<<level);
+        // RELATIVE
+        cellBounds.lower = vec3f(intCoords) * cellWidth;
+        cellBounds.upper = cellBounds.lower + cellWidth;
+
+        vec3f blockWidth = rootCellWidth;
+        // vec3f blockWidth = forest->worldBounds.size()*rcp(vec3f(forest->rootDims));
+        cellBounds.lower = worldBounds.lower + blockWidth * cellBounds.lower;
+        cellBounds.upper = worldBounds.lower + blockWidth * cellBounds.upper;
+        return cellBounds;
+      }
+      
+      
+      inline __both__ box3f getLeafBounds(Leaf leaf) const
+      {
+        return getCellBounds(leaf.cellID,leaf.level);
+      }
     };
 
     static void build(UMeshField *mesh);
