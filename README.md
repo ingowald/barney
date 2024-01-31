@@ -12,105 +12,133 @@ reports about errors, broken documentation, etc, and will fix what I
 can and who quickly I can - but do not expect this to be a finished
 product in any way, shape, or form.
 
-# How to build and run
+# Building and Running
 
-Unless you want to use the anari device (and know what you're doing):
-build and run this through haystack; git clone as sibling project to
-haystack (eg, `~/Projects/hayStack` and `~/Projects/barney`), then
-when building haystack it should automatically find and build barney.
+Barney is not a stand-alone "renderer" or "vis-tool"; it is a library
+with an API, and needs other applications to build towards it. As
+such, it is never "run" on its own; it also needs to be run from another
+application (e.g., `hayStack`, at http://github.org/ingowald/hayStack).
 
-# TODOs
+## Dependencies for building Barney
 
-## add dedicated structured volume type
+Barney requires the following additional tools and/or packages to build:
 
-- barney: structured volume type (floats and uint8_t, maybe only
-  floats for starters); re-use volume/MCAccelerator for macro cell
-  infrastructure (build/computeranges/mapranges/...), but need to add
-  DDA for traversal. only woodock, no blending.
-  
-- haystack: need 'loadablecontent' for structured volume that allows
-  for splitting on the fly. for splitting use on-the-fly kd-tree
-  (cheap for only N=numRanks parts); replicate boundary cells - maybe
-  add full ghost cell at some later point.
+- `cmake`, for building
 
-## look into gridlets performance
+- `CUDA`, version 12 and up.
 
-- currently gridlets are handled 
+- `OWL` (https://github.com/owl-project/owl). Note OWL gets pulled in as a git
+   submodule, no need to externally get and install.
 
-## fix: object-space method(s) show artifacts for lander
+- `OptiX`, as part of OWL. See documentation in OWL (https://github.com/owl-project/owl) for 
+   where to get, and how to best install for OWL to easily find it)
+   
+- For data parallel multi-*node* rendering: MPI. *Running* barney
+  requires a CUDA-aware MPI, for *building* this should not matter. We 
+  typically develop under and test with OpenMPI 4.1.6.
 
-## better/faster object-space prim intersection
+## Building Barney
 
-look at interval subdivision methods? recursive element subdivsion
-methods? subdivide (only) until num woodcock steps < const.
+Barney is built via CMake. Eventually this is going to result in some
+"installable" set of shadred library and header files; however, for
+now (where it is still chaging very rapidly) the only truly
+recommended way of building barney is as a git submodule, within the
+application using it.
 
-## look into "separate pass" for unstructured
+In that case, all the application should do is include in the parent app's `CMakeList.txt` as follows:
 
-problem right now is that unstructured meshes are "primitmives" in the
-optix scene graph like any other - bu theyr'e much bigger (spatially)
-and muuuuch more costly than others; and will suffer far more from
-divergence issues; can also not do hardware-accelerated queries
-because these would have to be done from in isec program which does't
-work.
+    add_subdirectory(<path to barney> EXCLUDE_FROM_ALL)
+	
+Barney's CMake scripts the use "modern cmake", so all include paths,
+compile definitions, etc, will be pulled by 'linking' to the
+respective 'barney` and `barney_mpi` targets:
 
-idea: use current optix world only for triangles, spheres, etc; and
-have all umeshes be done in a separate pass. this pas could then do
-restart-based marching from leaf to leaf; and do the rest either in
-cuda (with full blocsk and compaction etcpp), or in its own raygen
-program where we can trace rays for queries.
+- for single-node/multi-gpu (but possibly still multi-gpu
+  data-parallel!) rendering, use:
 
-## Add direct openvdb rendering?
+        target_link_libraries(endUserApp PUBLIC barney)
+	
+- for MPI-parallel, multi-node (and possibly *also* multi-gpu) rendering, use: 
+  data-parallel!) rendering, use:
+
+        target_link_libraries(endUserApp PUBLIC barney_mpi)
+
+The `barney_mpi` dependency will automatically pull in the cmake `MPI::MPI_CXX` dependency.
+
+# Examples of Supported Geometry and Volume Types 
+
+### Triangle Meshes (including Instances and Color- and Opacity Textures)
+
+Example: PBRT landscape in `miniScene` (http://github.com/ingowald/miniScene) format:
+
+![](jpg/ls.jpg)
+
+Working:
+
+- Image textures and texture coordinates are supported
+
+- Alpha texturing for fully-transparent textures is supported (alpha
+  channel, or dedicated alpha texture)
+
+- Instancing is fully supported
+
+Missing/incomplete:
+
+- Material model is still very basic; reflection, refraction etc are not yet supported.
+
+# Structured Volume Data
+
+Structured Volume Data (`float`, `uint8` and `uint16` are supported,
+and any volume can be distributed across different ranks by each rank
+having different porions of that volume. `Barney` being intended for
+sci-vis, every volume can have its own transfer function.
+
+## Engine (`256x256x128_uint8`)
+![](jpg/engine.jpg)
+
+## 256GB Rot-strat (`4096x4096x4096_float`), data-parallel on 8x `RTX8000`
+
+![](jpg/rotstrat-fuzzy.jpg)
+![](jpg/rotstrat-dense.jpg)
+
 
 
 # ANARI / BARNARI
 
-## building
+Though `barney` is not *limited to* ANARI (it is its own library, with
+its own API), it can also be configured to build a (still every much
+experimental!) `ANARI` "device" that exposes some of barney's
+functionality. Once enabled in the cmake build, this builds a
+`libanari_library_barney.so` that implemnets an ANARI device, and that
+any ANARI-capable renderer can then load as the `"barney`" device.
+
+Note: To distinguish between the (general) ANARI *API* and the
+specific barney-based implementation of this API we typically refer to
+this implementation as the `(B)ANARI` device, or simply as `banari`.
+
+Disclaimer: if barney is still experimental, `banari` is even more so!
+Not all `barney` functionality is exposed in `banari`, nor is every ANARI 
+feature supported by `banari` - and even for the features that *are* supported, 
+there may be some significant memory- or compute-overhead when going through this
+device.
+
+## Building BANARI:
 
 - dependencies: `libgtk-3-dev`
 
-- need to get, build, and "make install" ANARI-SDK: `git@github.com:KhronosGroup/ANARI-SDK`
+- need to get, build, *and install* the ANARI-SDK:
+  `git@github.com:KhronosGroup/ANARI-SDK`. Note the SDK *must*
+  be installed for barney to properly find it.
 
-- need to enable ANARI_DEVICE in barney ccmake config
+- need to enable the `BARNEY_BUILD_ANARI` flag in barney's cmake
+  config
 
-- build barney/anari device in BARNEY build dir (not in haystack)
+- build `barney/anari` device in BARNEY build dir (not in haystack)
 
-- add barney/bin dir to LD_LIBRARY_PATH, or link libanari_library_baryney.so to current dir
+- add `barney/bin` dir (or whatever your build dir is called) to
+  `LD_LIBRARY_PATH`, or link `libanari_library_baryney.so` into current dir
 
 - `export ANARI_LIBRARY=barney`
 
 
-## running amr data set:
 
-- get and build `git@github.com:vtvamr/anari-volume-viewer.git`
-
-- enable USE_HDF in build!
-
-- get `envy:/space/zellmann/DR1/SILCC_hdf5_plt_cnt_0100`
-
-- run `./anariVolumeViewer -l barney ~/models/SILCC_hdf5_plt_cnt_0100`
-
-# UNSORTED
-
-saved cmd-lines:
-
-    mm -C ~/Projects/barney/bin install && mm && gdb ./anariViewer -l barney
-
-
-    mm && cp ./hayThereQT ./hayThereOffline ~/ && scp ./hayThereQT ./hayThereOffline wally: && /home/wald/opt/bin/mpirun -n 1 -host hasky /home/wald/hayThereQT /home/wald/barney/jets-2*.umesh : -n 1 -host wally /home/wald/hayThereOffline /home/wald/barney/jets-2*umesh 
-
-
-lander, per-rank split:
-    mm && BARNEY_METHOD=object-space ./hayThereQT ~/per-rank/lander-small-vort_mag-9000.1*umesh  ~/per-rank/lander-small-vort_mag-9000.2*umesh -xf hayThere.xf  ~/per-rank/lander-small-vort_mag-9000.3*umesh  --camera -41.3633 18.2164 22.2561 -41.3629 18.2159 22.2554 0 1 0 -fovy 60
-
-
-
-
-
-
-dependencies on new machine (for building and/or mpirun)
-	cmake-curses-gui freeglut3-dev libglfw3-dev libhwloc-dev libibverbs-dev net-tools openssh-server
-
-
-
-ander-perrank buggy view:
---camera 13.5086 12.7009 17.1061 16.0696 -0.166082 -0.711897 0 1 0 -fovy 60
