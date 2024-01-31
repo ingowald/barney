@@ -50,7 +50,6 @@ namespace barney {
         userGeomGroup = owlUserGeomGroupCreate
           (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
       if (userGeomGroup) {
-        std::cout << "building USER GEOM group" << std::endl;
         owlGroupBuildAccel(userGeomGroup);
       }
       
@@ -58,7 +57,6 @@ namespace barney {
         triangleGeomGroup = owlTrianglesGeomGroupCreate
           (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
       if (triangleGeomGroup) {
-        std::cout << "building TRIANGLES GEOM group" << std::endl;
         owlGroupBuildAccel(triangleGeomGroup);
       }
     }
