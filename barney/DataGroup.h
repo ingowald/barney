@@ -46,6 +46,7 @@ namespace barney {
     createSpheres(const barney::Material &material,
                   const vec3f *origins,
                   int numOrigins,
+                  const vec3f *colors,
                   const float *radii,
                   float defaultRadius);
 

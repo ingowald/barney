@@ -89,11 +89,12 @@ namespace barney {
   Spheres *DataGroup::createSpheres(const Material &material,
                                     const vec3f *origins,
                                     int numOrigins,
+                                    const vec3f *colors,
                                     const float *radii,
                                     float defaultRadius)
   {
     return getContext()->initReference
-      (std::make_shared<Spheres>(this,material,origins,numOrigins,radii,defaultRadius));
+      (std::make_shared<Spheres>(this,material,origins,numOrigins,colors,radii,defaultRadius));
   }
 
   Texture *DataGroup::createTexture(BNTexelFormat texelFormat,

@@ -167,13 +167,14 @@ namespace barney {
   BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
                          const BNMaterial *material,
                          const float3     *origins,
-                         int               nubarneygins,
+                         int               numSpheres,
+                         const float3     *colors,
                          const float      *radii,
                          float             defaultRadius)
   {
     LOG_API_ENTRY;
     Spheres *spheres = checkGet(dataGroup)->createSpheres
-      (checkGet(material),(const vec3f*)origins,nubarneygins,radii,defaultRadius);
+      (checkGet(material),(const vec3f*)origins,numSpheres,(const vec3f*)colors,radii,defaultRadius);
     return (BNGeom)spheres;
   }
 

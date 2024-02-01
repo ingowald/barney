@@ -32,6 +32,7 @@ namespace barney {
          { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
          { "defaultRadius", OWL_FLOAT, OWL_OFFSETOF(DD,defaultRadius) },
          { "origins", OWL_BUFPTR, OWL_OFFSETOF(DD,origins) },
+         { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
     };
     Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
@@ -51,6 +52,7 @@ namespace barney {
                    const Material &material,
                    const vec3f *origins,
                    int numOrigins,
+                   const vec3f *colors,
                    const float *radii,
                    float defaultRadius)
     : Geometry(owner,material)
@@ -60,10 +62,14 @@ namespace barney {
     OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
     originsBuffer = owlManagedMemoryBufferCreate
       (owner->devGroup->owl,OWL_FLOAT3,numOrigins,origins);
+    if (colors)
+      colorsBuffer = owlManagedMemoryBufferCreate
+        (owner->devGroup->owl,OWL_FLOAT3,numOrigins,colors);
     
     Geometry::setMaterial(geom);
     owlGeomSet1f(geom,"defaultRadius",defaultRadius);
     owlGeomSetBuffer(geom,"origins",originsBuffer);
+    owlGeomSetBuffer(geom,"colors",colorsBuffer);
     owlGeomSetPrimCount(geom,numOrigins);
     
     userGeoms.push_back(geom);

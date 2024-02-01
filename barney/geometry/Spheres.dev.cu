@@ -46,14 +46,11 @@ namespace barney {
 
     vec3f n = normalize(hitPos - center);
     vec3f baseColor = self.material.baseColor;//owl::randomColor(primID);
+    if (self.colors)
+      baseColor = self.colors[primID];
+    
     ray.hit.baseColor = baseColor;//.3f + baseColor*abs(dot(dir,n));
     ray.hit.N = n;
-
-    if (ray.dbg)
-      printf("basecolor %f %f %f\n",
-             baseColor.x,
-             baseColor.y,
-             baseColor.z);
 
 #if 1
     vec3f P = org + ray.tMax * dir;

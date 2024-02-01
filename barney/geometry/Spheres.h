@@ -26,6 +26,7 @@ namespace barney {
     struct DD : public Geometry::DD {
       vec3f   *origins;
       float   *radii;
+      vec3f   *colors;
       float    defaultRadius;
     };
 
@@ -33,6 +34,7 @@ namespace barney {
             const Material &material,
             const vec3f *origins,
             int numOrigins,
+            const vec3f *colors,
             const float *radii,
             float defaultRadius);
     
@@ -44,6 +46,7 @@ namespace barney {
 
     OWLBuffer originsBuffer = 0;
     OWLBuffer radiiBuffer   = 0;
+    OWLBuffer colorsBuffer  = 0;
     float     defaultRadius = .1f;
   };
   

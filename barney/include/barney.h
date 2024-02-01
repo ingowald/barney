@@ -258,7 +258,11 @@ BN_API
 BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
                        const BNMaterial *material,
                        const float3     *origins,
-                       int               numOrigins,
+                       int               numSpheres,
+                       /*! a per-sphere color that - if specified -
+                           overwrites the material.baseColor; can be
+                           null */
+                       const float3     *colors,
                        const float      *radii,
                        float             defaultRadius);
 

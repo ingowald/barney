@@ -76,12 +76,14 @@ BNGeom Sphere::makeBarneyGeometry(
 {
   auto ctx = deviceState()->context;
   assert(!m_index); // NOT implemented yet!
-  return bnSpheresCreate(dg,
-      material,
-      (const float3 *)m_vertexPosition->dataAs<math::float3>(),
-      m_vertexPosition->totalSize(),
-      m_vertexRadius ? m_vertexRadius->dataAs<float>() : nullptr,
-      m_globalRadius);
+  return bnSpheresCreate
+    (dg,
+     material,
+     (const float3 *)m_vertexPosition->dataAs<math::float3>(),
+     m_vertexPosition->totalSize(),
+     /* colors */nullptr,
+     m_vertexRadius ? m_vertexRadius->dataAs<float>() : nullptr,
+     m_globalRadius);
 }
 
 box3 Sphere::bounds() const

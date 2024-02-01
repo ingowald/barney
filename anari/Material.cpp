@@ -44,8 +44,8 @@ void Matte::commit()
   Object::commit();
 
   m_bnMaterial.ior = 1.5f;
-  m_bnMaterial.alphaTextureID = -1;
-  m_bnMaterial.colorTextureID = -1;
+  m_bnMaterial.alphaTexture = 0;
+  m_bnMaterial.colorTexture = 0;
 
   math::float4 color(0.8f, 0.8f, 0.8f, 1.f);
   getParam("color", ANARI_FLOAT32_VEC3, &color);
@@ -64,8 +64,8 @@ void PhysicallyBased::commit()
   Object::commit();
 
   m_bnMaterial.ior = 1.5f;
-  m_bnMaterial.alphaTextureID = -1;
-  m_bnMaterial.colorTextureID = -1;
+  m_bnMaterial.alphaTexture = 0;
+  m_bnMaterial.colorTexture = 0;
 
   math::float4 color(0.8f, 0.8f, 0.8f, 1.f);
   getParam("baseColor", ANARI_FLOAT32_VEC3, &color);
