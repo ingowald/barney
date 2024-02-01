@@ -27,19 +27,18 @@ namespace barney {
               << "creating 'Spheres' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
     
-    static OWLVarDecl params[]
+    std::vector<OWLVarDecl> params
       = {
-         { "material", OWL_USER_TYPE(Material), OWL_OFFSETOF(DD,material) },
          { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
          { "defaultRadius", OWL_FLOAT, OWL_OFFSETOF(DD,defaultRadius) },
          { "origins", OWL_BUFPTR, OWL_OFFSETOF(DD,origins) },
-         { nullptr }
     };
+    Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
       (devGroup->owl,Spheres_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(Spheres::DD),
-       params,-1);
+       params.data(),params.size());
     owlGeomTypeSetBoundsProg(gt,module,"SpheresBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"SpheresIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"SpheresCH");
@@ -62,7 +61,7 @@ namespace barney {
     originsBuffer = owlManagedMemoryBufferCreate
       (owner->devGroup->owl,OWL_FLOAT3,numOrigins,origins);
     
-    owlGeomSetRaw(geom,"material",&material);
+    Geometry::setMaterial(geom);
     owlGeomSet1f(geom,"defaultRadius",defaultRadius);
     owlGeomSetBuffer(geom,"origins",originsBuffer);
     owlGeomSetPrimCount(geom,numOrigins);

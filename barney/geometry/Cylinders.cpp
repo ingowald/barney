@@ -62,7 +62,7 @@ namespace barney {
     OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
     
     owlGeomSetPrimCount(geom,numIndices);
-    owlGeomSetRaw(geom,"material",&material);
+    Geometry::setMaterial(geom);
     owlGeomSetBuffer(geom,"points",pointsBuffer);
     owlGeomSetBuffer(geom,"indices",indicesBuffer);
     owlGeomSetBuffer(geom,"radii",radiiBuffer);
@@ -76,19 +76,18 @@ namespace barney {
               << "creating 'Cylinders' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
     
-    static OWLVarDecl params[]
+    std::vector<OWLVarDecl> params
       = {
-         { "material", OWL_USER_TYPE(Material), OWL_OFFSETOF(DD,material) },
          { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
          { "points", OWL_BUFPTR, OWL_OFFSETOF(DD,points) },
          { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-         { nullptr }
     };
+    Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
       (devGroup->owl,Cylinders_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(Cylinders::DD),
-       params,-1);
+       params.data(),params.size());
     owlGeomTypeSetBoundsProg(gt,module,"CylindersBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CylindersIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CylindersCH");

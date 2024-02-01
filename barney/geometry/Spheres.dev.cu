@@ -42,11 +42,25 @@ namespace barney {
     vec3f dir = optixGetWorldRayDirection();
     vec3f hitPos = org + ray.tMax * dir;
     vec3f center = self.origins[primID];
+    float radius = self.defaultRadius;
+
     vec3f n = normalize(hitPos - center);
     vec3f baseColor = self.material.baseColor;//owl::randomColor(primID);
     ray.hit.baseColor = baseColor;//.3f + baseColor*abs(dot(dir,n));
     ray.hit.N = n;
-    ray.hit.P = org + ray.tMax * dir;
+
+    if (ray.dbg)
+      printf("basecolor %f %f %f\n",
+             baseColor.x,
+             baseColor.y,
+             baseColor.z);
+
+#if 1
+    vec3f P = org + ray.tMax * dir;
+    ray.hit.P = center + (radius * 1.0001f) * normalize(P-center);
+#else
+    ray.hit.P = hitPos;
+#endif
   }
   
   OPTIX_INTERSECT_PROGRAM(SpheresIsec)()
