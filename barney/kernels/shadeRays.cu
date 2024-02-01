@@ -72,7 +72,7 @@ namespace barney {
         // non-hitting rays
         fragment = (vec3f)ray.hit.baseColor;
       } else {
-        vec3f ambientIllum = vec3f(3.f);
+        vec3f ambientIllum = vec3f(1.f);
         fragment = ray.throughput * ambientIllum;
       }
     } else {
@@ -80,16 +80,16 @@ namespace barney {
       vec3f dir = ray.dir;
       vec3f Ng = ray.hit.N;
       const bool isVolumeHit = (Ng == vec3f(0.f));
-      float NdotD = dot(Ng,dir);
+      float NdotD = dot(Ng,normalize(dir));
       if (NdotD > 0.f) Ng = - Ng;
       if (!isVolumeHit) Ng = normalize(Ng);
       
       // let's do some ambient eyelight-style shading, anyway:
       float scale
         = isVolumeHit
-        ? .4f
+        ? .5f
         : (.2f + .4f*fabsf(NdotD));
-      scale *= .3f;
+      scale *= .01f;
       fragment
         = albedo
         * scale
@@ -111,16 +111,8 @@ namespace barney {
         rng();
         bounce.throughput = 
           // .6f *
+          .8f *
           ray.throughput * albedo;
-
-#if PRINT_BALLOT
-        int numActive = __popc(__ballot(1));
-        
-        if (ray.dbg) printf("=================================\n**** NEW *SECONDARY* RAY, numActive = %i\n", numActive);
-        bounce.numPrimsThisRay = 0;
-        bounce.numIsecsThisRay = 0;
-        bounce.numLeavesThisRay = 0;
-#endif
         writeQueue[atomicAdd(d_nextWritePos,1)] = bounce;
       }
 #endif

@@ -90,7 +90,9 @@ namespace barney {
     int tileID  = blockIdx.x;
 
     vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
-
+    color.x = sqrtf(color.x);
+    color.y = sqrtf(color.y);
+    color.z = sqrtf(color.z);
     // int ix = pixelID%tileSize;
     // int iy = pixelID/tileSize;
     // color.x = (ix % 256)/255.f;
