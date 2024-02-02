@@ -28,16 +28,16 @@ namespace barney {
                    BNTextureAddressMode addressMode,
                    BNTextureColorSpace  colorSpace)
   {
-    assert(OWL_TEXEL_FORMAT_RGBA8   == BN_TEXEL_FORMAST_RGBA8);
-    assert(OWL_TEXEL_FORMAT_RGBA32F == BN_TEXEL_FORMAST_RGBA32F);
+    assert(OWL_TEXEL_FORMAT_RGBA8   == (int)BN_TEXEL_FORMAT_RGBA8);
+    assert(OWL_TEXEL_FORMAT_RGBA32F == (int)BN_TEXEL_FORMAT_RGBA32F);
     
-    assert(OWL_TEXTURE_NEAREST == BN_TEXTURE_NEAREST);
-    assert(OWL_TEXTURE_LINEAR  == BN_TEXTURE_LINEAR);
+    assert(OWL_TEXTURE_NEAREST == (int)BN_TEXTURE_NEAREST);
+    assert(OWL_TEXTURE_LINEAR  == (int)BN_TEXTURE_LINEAR);
     
-    assert(OWL_TEXTURE_WRAP   == BN_TEXTURE_WRAP);
-    assert(OWL_TEXTURE_CLAMP  == BN_TEXTURE_CLAMP);
-    assert(OWL_TEXTURE_BORDER == BN_TEXTURE_BORDER);
-    assert(OWL_TEXTURE_MIRROR == BN_TEXTURE_MIRROR);
+    assert(OWL_TEXTURE_WRAP   == (int)BN_TEXTURE_WRAP);
+    assert(OWL_TEXTURE_CLAMP  == (int)BN_TEXTURE_CLAMP);
+    assert(OWL_TEXTURE_BORDER == (int)BN_TEXTURE_BORDER);
+    assert(OWL_TEXTURE_MIRROR == (int)BN_TEXTURE_MIRROR);
     
     owlTex = owlTexture2DCreate(owner->getOWL(),
                                 (OWLTexelFormat)texelFormat,
