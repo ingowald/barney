@@ -65,7 +65,8 @@ void Frame::commit()
 
   m_bnHostBuffer.resize(numPixels);
   bnFrameBufferResize(
-      m_bnFrameBuffer, size.x, size.y, m_bnHostBuffer.data(), nullptr);
+      m_bnFrameBuffer, size.x, size.y, m_bnHostBuffer.data(),
+      m_depthBuffer.data());
   m_frameData.size = size;
 }
 
