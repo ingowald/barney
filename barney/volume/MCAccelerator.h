@@ -466,6 +466,11 @@ namespace barney {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
+    if (ray.dbg)
+      printf("=== traverse in grid %i %i %i\n",
+             self.mcGrid.dims.x,
+             self.mcGrid.dims.y,
+             self.mcGrid.dims.z);
     // if (ray.dbg)
     //   printf("dda ray (%f %f %f)(%f %f %f)\n",
     //        dda_org.x,
@@ -482,47 +487,15 @@ namespace barney {
                 const float majorant = self.mcGrid.majorant(cellIdx);
                 if (majorant == 0.f) return true;
 
-                // if (ray.dbg)  {
-                //   vec3f dda_Pin = dda_org + t0 * dda_dir;
-                //   vec3f backXfmd_dda_Pin = dda_Pin * mcGridSpacing + mcGridOrigin;
-
-                //   vec3f world_Pin = obj_org + t0 * obj_dir;
-                //   printf(" world_Pin %f %f %f\n",
-                //          world_Pin.x,
-                //          world_Pin.y,
-                //          world_Pin.z);
-                //   printf(" check_Pin %f %f %f\n",
-                //          backXfmd_dda_Pin.x,
-                //          backXfmd_dda_Pin.y,
-                //          backXfmd_dda_Pin.z);
-                // }
                 vec4f   sample = 0.f;
-                range1f tRange = {t0,t1};
+                range1f tRange = {t0,min(t1,ray.tMax)};
                 if (!Woodcock::sampleRange(sample,self,
                                            obj_org,obj_dir,
                                            tRange,majorant,ray.rngSeed,
                                            ray.dbg)) 
                   return true;
 
-                // if (ray.dbg)
-                //   printf("cell %i %i %i/%i %i %ihit %f range %f %f sample %f %f %f:%f\n",
-                //          cellIdx.x,cellIdx.y,cellIdx.z,
-                //          self.mcGrid.dims.x,
-                //          self.mcGrid.dims.y,
-                //          self.mcGrid.dims.z,
-                //          // mcGridOrigin.x,
-                //          // mcGridOrigin.y,
-                //          // mcGridOrigin.z,
-                //          // mcGridSpacing.x,
-                //          // mcGridSpacing.y,
-                //          // mcGridSpacing.z,
-                //          tRange.upper,
-                //          t0,t1,
-                //          sample.x,sample.y,sample.z,sample.w);
-
                 vec3f P = ray.org + tRange.upper*ray.dir;
-                if (ray.dbg)
-                  printf("HIT at %f, pos %f %f %f\n",tRange.upper,P.x,P.y,P.z);
                 ray.setVolumeHit(P,
                                  tRange.upper,
                                  getPos(sample));

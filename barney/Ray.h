@@ -67,14 +67,14 @@ namespace barney {
     
     struct {
       vec3h    N;
-      vec3f    P;
       vec3h    baseColor;
+      vec3f    P;
       half     ior, transmission;
     } hit;
     struct {
       uint32_t  pixelID:30;
       uint32_t  hadHit:1;
-      uint32_t dbg:1;
+      uint32_t  dbg:1;
     };
   };
 
