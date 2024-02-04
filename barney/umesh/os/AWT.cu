@@ -204,7 +204,7 @@ namespace barney {
     buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
     // buildConfig.enableSAH();
     static cuBQL::ManagedMemMemoryResource managedMem;
-    std::cout << "going to build BVH over "
+    std::cout << "#bn.awt: going to build cuBQL BVH over "
               << prettyNumber(mesh->elements.size()) << " elements" << std::endl;
     cuBQL::gpuBuilder(bvh,
                       (const cuBQL::box_t<float,3>*)d_primBounds,
@@ -212,19 +212,21 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
-
-    std::cout << "building (host-)AWT nodes from cubql bvh (on the host rn :/)" << std::endl;
+    
+    std::cout << "#bn.awt: building (host-)AWT nodes from cubql bvh (on the host rn :/)" << std::endl;
     buildNodes(bvh);
-    std::cout << "extracting awt roots (on the host rn :/)" << std::endl;
+    std::cout << "#bn.awt: extracting awt roots (on the host rn :/)" << std::endl;
     extractRoots();
-    std::cout << "refitting awt ranges (on the host rn :-/)" << std::endl;
+    std::cout << "#bn.awt: refitting awt ranges (on the host rn :-/)" << std::endl;
     refitRanges(nodes,bvh.primIDs,d_primBounds,d_primRanges);
 
+    std::cout << "#bn.awt: re-ordering elements" << std::endl;
     std::vector<Element> reorderedElements(mesh->elements.size());
     for (int i=0;i<mesh->elements.size();i++) {
       reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
     }
     mesh->elements = reorderedElements;
+    std::cout << "#bn.awt: uploading reordered element refs to OWL" << std::endl;
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
     BARNEY_CUDA_CALL(Free(d_primRanges));
@@ -237,6 +239,7 @@ namespace barney {
     assert(sizeof(roots[0]) == sizeof(int));
     rootsBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
                                         roots.size(),roots.data());
+    std::cout << "#bn.awt: uploading AWT nodes buffer to OWL" << std::endl;
     nodesBuffer = BUFFER_CREATE(devGroup->owl,OWL_USER_TYPE(AWTNode),
                                 nodes.size(),nodes.data());
   }

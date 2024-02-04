@@ -23,7 +23,7 @@
 namespace barney {
 
   struct __barney_align(16) AWTNode {
-    enum { count_bits = 3, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
+    enum { count_bits = 4, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
     box4f   bounds[4];
     float   majorant[4];
     // int     depth[4];
