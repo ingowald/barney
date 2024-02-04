@@ -100,10 +100,10 @@ namespace barney {
                        )
   {
 
-    #define PYRAMID_DIVERGED               1e6
+    #define PYRAMID_DIVERGED               1e6f
     #define PYRAMID_MAX_ITERATION          10
-    #define PYRAMID_CONVERGED              1e-4
-    #define PYRAMID_OUTSIDE_CELL_TOLERANCE 1e-6
+    #define PYRAMID_CONVERGED              1e-4f
+    #define PYRAMID_OUTSIDE_CELL_TOLERANCE 1e-6f
 
     const bool assumeInside = false;
     const float determinantTolerance = 1e-6f;
@@ -467,10 +467,6 @@ namespace barney {
     return false;
   }
 
-
-
-
 } // ::exa
 
-// vim: sw=2:expandtab:softtabstop=2:ts=2:cino=\:0g0t0
 

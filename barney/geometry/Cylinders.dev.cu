@@ -34,18 +34,19 @@ namespace barney {
 
   OPTIX_CLOSEST_HIT_PROGRAM(CylindersCH)()
   {
-    auto &ray = owl::getPRD<Ray>();
-    auto &self = owl::getProgramData<Cylinders::DD>();
-    int primID = optixGetPrimitiveIndex();
+    /* nothing - already set in isec */
+    // auto &ray = owl::getPRD<Ray>();
+    // auto &self = owl::getProgramData<Cylinders::DD>();
+    // int primID = optixGetPrimitiveIndex();
     
-    ray.hadHit = true;
-    ray.tMax = optixGetRayTmax();
+    // ray.hadHit = true;
+    // ray.tMax = optixGetRayTmax();
 
-    vec3f org = optixGetWorldRayOrigin();
-    vec3f dir = optixGetWorldRayDirection();
-    vec3f hitPos = org + ray.tMax * dir;
-    vec3f baseColor = owl::randomColor(primID);
-    ray.hit.baseColor = baseColor;
+    // vec3f org = optixGetWorldRayOrigin();
+    // vec3f dir = optixGetWorldRayDirection();
+    // vec3f hitPos = org + ray.tMax * dir;
+    // vec3f baseColor = owl::randomColor(primID);
+    // ray.setMatte(hitPos,N,N,t,baseColor);
     // ray.hit.N = n;
   }
   
@@ -135,7 +136,8 @@ namespace barney {
     } else
       return;
 
-    ray.hit.P = ray_org + ray.tMax * ray_dir;
+    vec3f P = ray_org + ray.tMax * ray_dir;
+    ray.setHit(P,ray.hit.N,ray.tMax,self.material);
     optixReportIntersection(ray.tMax, 0);
     // const int primID = optixGetPrimitiveIndex();
     // const auto &self

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -61,7 +61,6 @@ namespace barney {
     int ix = (threadIdx.x % tileSize) + tileOffset.x;
     int iy = (threadIdx.x / tileSize) + tileOffset.y;
 
-    // bool dbg = ((ix == 0) || (ix == fbSize.x-1)) && ((iy==0) || (iy == fbSize.y-1));
     Ray ray;
     ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
     Random rand(rngSeed,ray.pixelID);
@@ -79,14 +78,6 @@ namespace barney {
     bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
     ray.dbg = centerPixel;
 
-#if PRINT_BALLOT
-    int ball = __ballot(1);
-    if (ray.dbg) printf("=================================\n**** NEW PRIMARY RAY (ballot %x)\n",ball);
-    ray.numPrimsThisRay = 0;
-    ray.numIsecsThisRay = 0;
-    ray.numLeavesThisRay = 0;
-#endif
-    
     ray.tMax = 1e30f;
     ray.rngSeed = rand.state;
     ray.hadHit = false;
@@ -103,8 +94,6 @@ namespace barney {
     
     ray.hit.N = vec3f(0.f);
     ray.throughput = vec3f(1.f);
-    
-    // ray.color = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
     
     int pos = -1;
     if (ix < fbSize.x && iy < fbSize.y) 

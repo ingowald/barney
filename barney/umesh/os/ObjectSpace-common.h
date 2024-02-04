@@ -393,7 +393,7 @@ namespace barney {
     return clipped.end.t >= clipped.begin.t;
   }
 
-    /*! returns the interpolated scalar value along this segment; this
+  /*! returns the interpolated scalar value along this segment; this
     code assumes that t is INSIDE that segment! */
   inline __device__
   float LinearSegment::lerp(float t) const
@@ -855,11 +855,8 @@ namespace barney {
         hit_t = t;
         // ray.tMax = t;
         inputLeafRange.upper = min(inputLeafRange.upper,hit_t);
-        ray.hit.baseColor = getPos(mapped);
-        ray.hit.N         = vec3f(0.f);
-        ray.hadHit = true;
-        ray.tMax   = t;
-        ray.hit.P  = ray.org + t * ray.dir;
+        vec3f P = ray.org + t * ray.dir;
+        ray.setVolumeHit(P,t,getPos(mapped));
         break;
       }
     }
@@ -901,9 +898,9 @@ namespace barney {
         if (!accept) 
           continue;
 
-        hit_t = t;
         isec.leafRange.upper = hit_t;
-        ray.hit.baseColor = getPos(isec.mapped);
+        hit_t = t;
+        ray.setVolumeHit(P,t,getPos(isec.mapped));
         break;
       }
     } 
@@ -1011,7 +1008,7 @@ namespace barney {
       hit_t = t;
       // ray.tMax = t;
       inputLeafRange.upper = min(inputLeafRange.upper,hit_t);
-      ray.hit.baseColor = getPos(mapped);
+      ray.setVolumeHit(P,t,getPos(mapped));
       break;
     }
   }

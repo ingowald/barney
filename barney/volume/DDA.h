@@ -21,7 +21,7 @@
 #include "owl/common/math/vec.h"
 #include "owl/common/math/AffineSpace.h"
 
-#define DDA_FAST 1
+// #define DDA_FAST 1
 
 namespace barney {
   namespace dda {
@@ -119,13 +119,6 @@ namespace barney {
     
       // compute first cell that ray is in:
       vec3f org_in_volume = org + ray_t0 * dir;
-      // if (dbg) printf("org in vol %f %f %f size %i %i %i\n",
-      //                 org_in_volume.x,
-      //                 org_in_volume.y,
-      //                 org_in_volume.z,
-      //                 gridSize.x,
-      //                 gridSize.y,
-      //                 gridSize.z);
       vec3f f_cell = max(vec3f(0.f),min(f_size-1.f,floor(org_in_volume)));
       vec3f f_cell_end = {
         dir.x > 0.f ? f_cell.x+1.f : f_cell.x,

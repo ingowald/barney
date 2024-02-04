@@ -19,7 +19,9 @@
 
 // #define AWT_SAMPLE_MODE 1
 
+#ifndef AWT_THRESHOLD
 #  define AWT_THRESHOLD 8
+#endif
 
 // #if AWT_SAMPLE_MODE
 // # ifndef AWT_THRESHOLD
@@ -527,9 +529,10 @@ namespace barney {
           t += dt;
           if (t >= segment.range.upper)
           break;
-          
+
+          vec3f P = org+t*dir;
           float f = findSample(&self,
-                               self.nodes,segment.node,org+t*dir
+                               self.nodes,segment.node,P
                                // ,ray.dbg
                                );
           if (isnan(f))
@@ -541,7 +544,7 @@ namespace barney {
           //          f,t,sample.x,sample.y,sample.z,sample.w);
           if (sample.w >= rand()*majorant) {
             hit_t = t;
-            ray.hit.baseColor = getPos(sample);
+            ray.setVolumeHit(P,t,getPos(sample));
             break;
           }
         }
@@ -604,10 +607,11 @@ namespace barney {
     //
   
     if (hit_t < optixGetRayTmax())  {
-      ray.hadHit = true;
-      ray.tMax = hit_t;
-      ray.hit.P = ray.org + hit_t * ray.dir;
-      ray.hit.N = vec3f(0.f);
+      // ray.hadHit = true;
+      // ray.tMax = hit_t;
+      // ray.hit.P = ray.org + hit_t * ray.dir;
+      // ray.hit.N = vec3f(0.f);
+      // ray.setVolumeHit(ray.org + hit_t * ray.dir,hit_t,
       optixReportIntersection(hit_t, 0);
     }
   }
