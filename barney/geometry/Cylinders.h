@@ -32,24 +32,32 @@ namespace barney {
 
     struct DD : public Geometry::DD {
       const vec3f *points;
+      const vec3f *colors;
       const vec2i *indices;
       const float *radii;
+      int colorPerVertex, radiusPerVertex;
     };
     
     Cylinders(DataGroup *owner,
               const Material &material,
               const vec3f *points,
               int          numPoints,
+              const vec3f *colors,
+              bool         colorPerVertex,
               const vec2i *indices,
               int          numIndices,
               const float *radii,
+              bool         radiusPerVertex,
               float        defaultRadius);
     
     static OWLGeomType createGeomType(DevGroup *devGroup);
 
     OWLBuffer indicesBuffer  = 0;
     OWLBuffer pointsBuffer  = 0;
+    OWLBuffer colorsBuffer  = 0;
     OWLBuffer radiiBuffer  = 0;
+    bool colorPerVertex;
+    bool radiusPerVertex;
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override

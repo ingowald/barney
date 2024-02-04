@@ -25,11 +25,16 @@ namespace barney {
                        const Material &material,
                        const vec3f *points,
                        int          numPoints,
+                       const vec3f *colors,
+                       bool         colorPerVertex,
                        const vec2i *indices,
                        int          numIndices,
                        const float *radii,
+                       bool         radiusPerVertex,
                        float        defaultRadius)
-  : Geometry(owner,material)
+  : Geometry(owner,material),
+    colorPerVertex(colorPerVertex),
+    radiusPerVertex(radiusPerVertex)
   {
     pointsBuffer = owlDeviceBufferCreate
       (owner->devGroup->owl,
@@ -53,6 +58,11 @@ namespace barney {
     pointsBuffer = owlDeviceBufferCreate
       (owner->devGroup->owl,
        OWL_FLOAT3,numPoints,points);
+    if (colors)
+      colorsBuffer = owlDeviceBufferCreate
+        (owner->devGroup->owl,
+         OWL_FLOAT3,colorPerVertex?numPoints:numIndices,
+         colors);
     radiiBuffer = owlDeviceBufferCreate
       (owner->devGroup->owl,
        OWL_FLOAT,numIndices,radii);
@@ -63,9 +73,12 @@ namespace barney {
     
     owlGeomSetPrimCount(geom,numIndices);
     Geometry::setMaterial(geom);
+    owlGeomSetBuffer(geom,"colors",colorsBuffer);
     owlGeomSetBuffer(geom,"points",pointsBuffer);
     owlGeomSetBuffer(geom,"indices",indicesBuffer);
     owlGeomSetBuffer(geom,"radii",radiiBuffer);
+    owlGeomSet1i(geom,"colorPerVertex",(int)colorPerVertex);
+    owlGeomSet1i(geom,"radiusPerVertex",(int)radiusPerVertex);
     
     userGeoms.push_back(geom);
   }
@@ -80,7 +93,10 @@ namespace barney {
       = {
          { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
          { "points", OWL_BUFPTR, OWL_OFFSETOF(DD,points) },
+         { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
          { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
+         { "colorPerVertex", OWL_INT, OWL_OFFSETOF(DD,colorPerVertex) },
+         { "radiusPerVertex", OWL_INT, OWL_OFFSETOF(DD,radiusPerVertex) },
     };
     Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
