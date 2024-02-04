@@ -361,10 +361,12 @@ namespace barney {
   inline __device__
   void MCRTXVolumeAccel<SFSampler>::isProg()
   {
+    
     /* ALL of this code should be exactly the same in any
        instantiation of the MCRTXVolumeAccel<> tempalte! */
     const DD &self = owl::getProgramData<DD>();
     Ray &ray = owl::getPRD<Ray>();
+
     vec3f org = optixGetObjectRayOrigin();
     vec3f dir = optixGetObjectRayDirection();
     const int primID = optixGetPrimitiveIndex();
@@ -386,11 +388,9 @@ namespace barney {
       return;
 
     // and: store the hit, right here in isec prog.
-    ray.hadHit        = true;
-    ray.tMax          = tRange.upper;
-    ray.hit.baseColor = getPos(sample);
-    ray.hit.N         = vec3f(0.f);
-    ray.hit.P         = ray.org + tRange.upper*ray.dir;
+    ray.setVolumeHit(ray.org + tRange.upper*ray.dir,
+                     tRange.upper,
+                     getPos(sample));
     optixReportIntersection(tRange.upper, 0);
   }
 
@@ -431,7 +431,8 @@ namespace barney {
     
     if (!boxTest(ray,tRange,bounds))
       return;
-    
+
+    // ray in world space
     vec3f obj_org = optixGetObjectRayOrigin();
     vec3f obj_dir = optixGetObjectRayDirection();
 
@@ -443,7 +444,7 @@ namespace barney {
 
     vec3f dda_org = obj_org;
     vec3f dda_dir = obj_dir;
-    
+
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
@@ -453,24 +454,24 @@ namespace barney {
               {
                 const float majorant = self.mcGrid.majorant(cellIdx);
                 if (majorant == 0.f) return true;
-                
+
                 vec4f   sample = 0.f;
-                range1f tRange = {t0,t1};
+                range1f tRange = {t0,min(t1,ray.tMax)};
                 if (!Woodcock::sampleRange(sample,self,
                                            obj_org,obj_dir,
                                            tRange,majorant,ray.rngSeed,
-                                           ray.dbg))
+                                           ray.dbg)) 
                   return true;
 
-                ray.hadHit        = true;
-                ray.tMax          = tRange.upper;
-                ray.hit.baseColor = getPos(sample);
-                ray.hit.N         = vec3f(0.f);
-                ray.hit.P         = ray.org + tRange.upper*ray.dir;
+                vec3f P = ray.org + tRange.upper*ray.dir;
+                ray.setVolumeHit(P,
+                                 tRange.upper,
+                                 getPos(sample));
                 optixReportIntersection(tRange.upper, 0);
                 return false;
               },
-              /*NO debug*/false);
+              /*NO debug*/false
+              );
   }
     
   template<typename SFSampler>

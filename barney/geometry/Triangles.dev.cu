@@ -23,8 +23,8 @@ namespace barney {
   {
     auto &ray = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<Triangles::DD>();
-    ray.hadHit = true;
-    ray.tMax = optixGetRayTmax();
+    // ray.hadHit = true;
+    // ray.tMax = optixGetRayTmax();
     int primID = optixGetPrimitiveIndex();
     vec3i triangle = self.indices[primID];
     vec3f v0 = self.vertices[triangle.x];
@@ -41,11 +41,7 @@ namespace barney {
     //        self.material.baseColor.z,
     //        (int)self.material.colorTexture,
     //        (int)self.material.alphaTexture);
-#if VISUALIZE_PRIMS
-    vec3f baseColor = owl::randomColor(primID);
-#else
-    vec3f baseColor = self.material.baseColor;
-#endif
+    auto mat = self.material;
 
     const float u = optixGetTriangleBarycentrics().x;
     const float v = optixGetTriangleBarycentrics().y;
@@ -63,15 +59,18 @@ namespace barney {
     }
     if (self.material.colorTexture) {
       float4 fromTex = tex2D<float4>(self.material.colorTexture,tc.x,tc.y);
-      baseColor *= (const vec3f &)fromTex;
+      mat.baseColor *= (const vec3f &)fromTex;
     }
+#if VISUALIZE_PRIMS
+    mat.baseColor = owl::randomColor(primID);
+#endif
     
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
     
-    ray.hit.baseColor = baseColor;
-    ray.hit.N         = n;
-    ray.hit.P         = P;
+    ray.setHit(P,n,optixGetRayTmax(),mat);
+    // ray.hit.N         = n;
+    // ray.hit.P         = P;
   }
 
 
