@@ -113,21 +113,12 @@ namespace barney {
     
       float ray_t0 = max(0.f,reduce_max(t_nr));
       float ray_t1 = min(tMax,reduce_min(t_fr));
-      if (dbg) printf("  ###ray t0 %f t1 %f\n",
-                      ray_t0,ray_t1);
       // if (dbg) printf("t range for volume %f %f\n",ray_t0,ray_t1);
       if (ray_t0 > ray_t1) return; // no overlap with volume
 
     
       // compute first cell that ray is in:
       vec3f org_in_volume = org + ray_t0 * dir;
-      // if (dbg) printf("org in vol %f %f %f size %i %i %i\n",
-      //                 org_in_volume.x,
-      //                 org_in_volume.y,
-      //                 org_in_volume.z,
-      //                 gridSize.x,
-      //                 gridSize.y,
-      //                 gridSize.z);
       vec3f f_cell = max(vec3f(0.f),min(f_size-1.f,floor(org_in_volume)));
       vec3f f_cell_end = {
         dir.x > 0.f ? f_cell.x+1.f : f_cell.x,

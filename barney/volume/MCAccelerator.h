@@ -388,12 +388,9 @@ namespace barney {
       return;
 
     // and: store the hit, right here in isec prog.
-    // ray.hadHit        = true;
-    // ray.tMax          = tRange.upper;
     ray.setVolumeHit(ray.org + tRange.upper*ray.dir,
                      tRange.upper,
                      getPos(sample));
-    // ray.hit.P         = ray.org + tRange.upper*ray.dir;
     optixReportIntersection(tRange.upper, 0);
   }
 
@@ -435,24 +432,9 @@ namespace barney {
     if (!boxTest(ray,tRange,bounds))
       return;
 
-           
+    // ray in world space
     vec3f obj_org = optixGetObjectRayOrigin();
     vec3f obj_dir = optixGetObjectRayDirection();
-
-    // if (ray.dbg)
-    // printf("obj ray (%f %f %f)(%f %f %f) \nin world (%f %f %f)(%f %f %f)\n",
-    //        obj_org.x,
-    //        obj_org.y,
-    //        obj_org.z,
-    //        obj_dir.x,
-    //        obj_dir.y,
-    //        obj_dir.z,
-    //        bounds.lower.x,
-    //        bounds.lower.y,
-    //        bounds.lower.z,
-    //        bounds.upper.x,
-    //        bounds.upper.y,
-    //        bounds.upper.z);
 
     // ------------------------------------------------------------------
     // compute ray in macro cell grid space 
@@ -465,20 +447,6 @@ namespace barney {
 
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
-
-    if (ray.dbg)
-      printf("=== traverse in grid %i %i %i\n",
-             self.mcGrid.dims.x,
-             self.mcGrid.dims.y,
-             self.mcGrid.dims.z);
-    // if (ray.dbg)
-    //   printf("dda ray (%f %f %f)(%f %f %f)\n",
-    //        dda_org.x,
-    //        dda_org.y,
-    //        dda_org.z,
-    //        dda_dir.x,
-    //        dda_dir.y,
-    //        dda_dir.z);
 
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
@@ -502,9 +470,7 @@ namespace barney {
                 optixReportIntersection(tRange.upper, 0);
                 return false;
               },
-              ///*NO debug*/
-              // false
-               ray.dbg
+              /*NO debug*/false
               );
   }
     

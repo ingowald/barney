@@ -127,7 +127,6 @@ namespace barney {
     for (auto dev : devices) dev->launch_sync();
 
     for (int generation=0;true;generation++) {
-      std::cout << "============= GEN " << generation << std::endl;
       traceRaysGlobally(model);
       for (auto dev : devices) dev->launch_sync();
 
