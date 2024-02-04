@@ -361,10 +361,12 @@ namespace barney {
   inline __device__
   void MCRTXVolumeAccel<SFSampler>::isProg()
   {
+    
     /* ALL of this code should be exactly the same in any
        instantiation of the MCRTXVolumeAccel<> tempalte! */
     const DD &self = owl::getProgramData<DD>();
     Ray &ray = owl::getPRD<Ray>();
+
     vec3f org = optixGetObjectRayOrigin();
     vec3f dir = optixGetObjectRayDirection();
     const int primID = optixGetPrimitiveIndex();
@@ -386,11 +388,12 @@ namespace barney {
       return;
 
     // and: store the hit, right here in isec prog.
-    ray.hadHit        = true;
-    ray.tMax          = tRange.upper;
-    ray.hit.baseColor = getPos(sample);
-    ray.hit.N         = vec3f(0.f);
-    ray.hit.P         = ray.org + tRange.upper*ray.dir;
+    // ray.hadHit        = true;
+    // ray.tMax          = tRange.upper;
+    ray.setVolumeHit(ray.org + tRange.upper*ray.dir,
+                     tRange.upper,
+                     getPos(sample));
+    // ray.hit.P         = ray.org + tRange.upper*ray.dir;
     optixReportIntersection(tRange.upper, 0);
   }
 
@@ -431,9 +434,25 @@ namespace barney {
     
     if (!boxTest(ray,tRange,bounds))
       return;
-    
+
+           
     vec3f obj_org = optixGetObjectRayOrigin();
     vec3f obj_dir = optixGetObjectRayDirection();
+
+    // if (ray.dbg)
+    // printf("obj ray (%f %f %f)(%f %f %f) \nin world (%f %f %f)(%f %f %f)\n",
+    //        obj_org.x,
+    //        obj_org.y,
+    //        obj_org.z,
+    //        obj_dir.x,
+    //        obj_dir.y,
+    //        obj_dir.z,
+    //        bounds.lower.x,
+    //        bounds.lower.y,
+    //        bounds.lower.z,
+    //        bounds.upper.x,
+    //        bounds.upper.y,
+    //        bounds.upper.z);
 
     // ------------------------------------------------------------------
     // compute ray in macro cell grid space 
@@ -443,9 +462,18 @@ namespace barney {
 
     vec3f dda_org = obj_org;
     vec3f dda_dir = obj_dir;
-    
+
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
+
+    // if (ray.dbg)
+    //   printf("dda ray (%f %f %f)(%f %f %f)\n",
+    //        dda_org.x,
+    //        dda_org.y,
+    //        dda_org.z,
+    //        dda_dir.x,
+    //        dda_dir.y,
+    //        dda_dir.z);
 
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
@@ -453,24 +481,58 @@ namespace barney {
               {
                 const float majorant = self.mcGrid.majorant(cellIdx);
                 if (majorant == 0.f) return true;
-                
+
+                // if (ray.dbg)  {
+                //   vec3f dda_Pin = dda_org + t0 * dda_dir;
+                //   vec3f backXfmd_dda_Pin = dda_Pin * mcGridSpacing + mcGridOrigin;
+
+                //   vec3f world_Pin = obj_org + t0 * obj_dir;
+                //   printf(" world_Pin %f %f %f\n",
+                //          world_Pin.x,
+                //          world_Pin.y,
+                //          world_Pin.z);
+                //   printf(" check_Pin %f %f %f\n",
+                //          backXfmd_dda_Pin.x,
+                //          backXfmd_dda_Pin.y,
+                //          backXfmd_dda_Pin.z);
+                // }
                 vec4f   sample = 0.f;
                 range1f tRange = {t0,t1};
                 if (!Woodcock::sampleRange(sample,self,
                                            obj_org,obj_dir,
                                            tRange,majorant,ray.rngSeed,
-                                           ray.dbg))
+                                           ray.dbg)) 
                   return true;
 
-                ray.hadHit        = true;
-                ray.tMax          = tRange.upper;
-                ray.hit.baseColor = getPos(sample);
-                ray.hit.N         = vec3f(0.f);
-                ray.hit.P         = ray.org + tRange.upper*ray.dir;
+                // if (ray.dbg)
+                //   printf("cell %i %i %i/%i %i %ihit %f range %f %f sample %f %f %f:%f\n",
+                //          cellIdx.x,cellIdx.y,cellIdx.z,
+                //          self.mcGrid.dims.x,
+                //          self.mcGrid.dims.y,
+                //          self.mcGrid.dims.z,
+                //          // mcGridOrigin.x,
+                //          // mcGridOrigin.y,
+                //          // mcGridOrigin.z,
+                //          // mcGridSpacing.x,
+                //          // mcGridSpacing.y,
+                //          // mcGridSpacing.z,
+                //          tRange.upper,
+                //          t0,t1,
+                //          sample.x,sample.y,sample.z,sample.w);
+
+                vec3f P = ray.org + tRange.upper*ray.dir;
+                if (ray.dbg)
+                  printf("HIT at %f, pos %f %f %f\n",tRange.upper,P.x,P.y,P.z);
+                ray.setVolumeHit(P,
+                                 tRange.upper,
+                                 getPos(sample));
                 optixReportIntersection(tRange.upper, 0);
                 return false;
               },
-              /*NO debug*/false);
+              ///*NO debug*/
+              // false
+               ray.dbg
+              );
   }
     
   template<typename SFSampler>

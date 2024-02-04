@@ -21,7 +21,7 @@
 #include "owl/common/math/vec.h"
 #include "owl/common/math/AffineSpace.h"
 
-#define DDA_FAST 1
+// #define DDA_FAST 1
 
 namespace barney {
   namespace dda {
@@ -113,6 +113,8 @@ namespace barney {
     
       float ray_t0 = max(0.f,reduce_max(t_nr));
       float ray_t1 = min(tMax,reduce_min(t_fr));
+      if (dbg) printf("  ###ray t0 %f t1 %f\n",
+                      ray_t0,ray_t1);
       // if (dbg) printf("t range for volume %f %f\n",ray_t0,ray_t1);
       if (ray_t0 > ray_t1) return; // no overlap with volume
 

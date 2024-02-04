@@ -23,6 +23,7 @@
     ... */
 #include "barney/fb/TiledFB.h"
 #include "barney/common/half.h"
+#include "barney/common/Material.h"
 
 // #define PRINT_BALLOT 1
 
@@ -39,10 +40,36 @@ namespace barney {
     int numLeavesThisRay;
     int numPrimsThisRay;
 #endif
+
+    inline __device__ void setHit(vec3f P, vec3f N, float t,
+                                  const Material::DD &material)
+    {
+      hit.P = P;
+      hit.N = N;
+      tMax = t;
+      hadHit = true;
+      hit.baseColor = material.baseColor;
+      hit.ior = 1.f;
+      hit.transmission = 0.f;
+    }
+    inline __device__ void setVolumeHit(vec3f P,
+                                        float t,
+                                        vec3f albedo)
+    {
+      hit.P = P;
+      tMax = t;
+      hadHit = true;
+      hit.N = vec3f(0.f);
+      hit.baseColor = albedo;
+      hit.ior = 1.f;
+      hit.transmission = 0.f;
+    }
+    
     struct {
       vec3h    N;
-      vec3h    baseColor;
       vec3f    P;
+      vec3h    baseColor;
+      half     ior, transmission;
     } hit;
     struct {
       uint32_t  pixelID:30;

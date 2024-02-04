@@ -48,6 +48,10 @@ namespace barney {
                           should only get generated for these tiles */
                       TileDesc *tileDescs)
   {
+#if 1
+    accumID = 0;
+    rngSeed = 0x123456;
+#endif
     __shared__ int l_count;
     if (threadIdx.x == 0)
       l_count = 0;

@@ -35,8 +35,8 @@ namespace barney {
     auto &self = owl::getProgramData<Spheres::DD>();
     int primID = optixGetPrimitiveIndex();
 
-    ray.hadHit = true;
-    ray.tMax = optixGetRayTmax();
+    // ray.hadHit = true;
+    // ray.tMax = optixGetRayTmax();
 
     vec3f org = optixGetWorldRayOrigin();
     vec3f dir = optixGetWorldRayDirection();
@@ -45,19 +45,14 @@ namespace barney {
     float radius = self.defaultRadius;
 
     vec3f n = normalize(hitPos - center);
-    vec3f baseColor = self.material.baseColor;//owl::randomColor(primID);
+    Material::DD mat = self.material;
     if (self.colors)
-      baseColor = self.colors[primID];
+      mat.baseColor = self.colors[primID];
     
-    ray.hit.baseColor = baseColor;//.3f + baseColor*abs(dot(dir,n));
-    ray.hit.N = n;
-
-#if 1
     vec3f P = org + ray.tMax * dir;
-    ray.hit.P = center + (radius * 1.0001f) * normalize(P-center);
-#else
-    ray.hit.P = hitPos;
-#endif
+    P = center + (radius * 1.0001f) * normalize(P-center);
+
+    ray.setHit(P,n,optixGetRayTmax(),mat);
   }
   
   OPTIX_INTERSECT_PROGRAM(SpheresIsec)()
