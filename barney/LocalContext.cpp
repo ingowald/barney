@@ -81,13 +81,14 @@ namespace barney {
 
   void LocalContext::render(Model *model,
                             const Camera &camera,
-                            FrameBuffer *fb)
+                            FrameBuffer *fb,
+                            int pathsPerPixel)
   {
     assert(model);
     assert(fb);
 
     // render all tiles, in tile format and writing into accum buffer
-    renderTiles(model,camera,fb);
+    renderTiles(model,camera,fb,pathsPerPixel);
     for (auto dev : devices) dev->sync();
     
     // convert all tiles from accum to RGBA

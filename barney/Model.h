@@ -35,7 +35,8 @@ namespace barney {
     { return "Model{}"; }
 
     void render(const Camera &camera,
-                FrameBuffer *fb);
+                FrameBuffer *fb,
+                int pathsPerPixel);
 
     DataGroup *getDG(int localID)
     {

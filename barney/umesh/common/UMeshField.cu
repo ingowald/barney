@@ -238,7 +238,7 @@ namespace barney {
 
     float maxWidth = reduce_max(getBox(worldBounds).size());
     int MC_GRID_SIZE
-      = 128 + int(sqrtf(elements.size())/60);
+      = 128 + int(sqrtf(elements.size())/30);
     
     vec3i dims = 1+vec3i(getBox(worldBounds).size() * ((MC_GRID_SIZE-1) / maxWidth));
     printf("#bn.um: chosen macro-cell dims of (%i %i %i)\n",

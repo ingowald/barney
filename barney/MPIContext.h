@@ -35,7 +35,8 @@ namespace barney {
 
     void render(Model *model,
                 const Camera &camera,
-                FrameBuffer *fb) override;
+                FrameBuffer *fb,
+                int pathsPerPixel) override;
 
     /*! gives, for a given worker rank, the rank that this same rank
         has in the parent 'world' communicator */

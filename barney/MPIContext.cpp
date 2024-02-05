@@ -245,11 +245,12 @@ namespace barney {
   
   void MPIContext::render(Model *model,
                           const Camera &camera,
-                          FrameBuffer *_fb)
+                          FrameBuffer *_fb,
+                          int pathsPerPixel)
   {
     DistFB *fb = (DistFB *)_fb;
     if (isActiveWorker) {
-      renderTiles(model,camera,fb);
+      renderTiles(model,camera,fb,pathsPerPixel);
       finalizeTiles(fb);
     }
     // ------------------------------------------------------------------

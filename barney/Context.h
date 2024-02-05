@@ -106,11 +106,13 @@ namespace barney {
     
     void renderTiles(Model *model,
                      const barney::Camera &camera,
-                     FrameBuffer *fb);
+                     FrameBuffer *fb,
+                     int pathsPerPixel);
     
     virtual void render(Model *model,
                         const barney::Camera &camera,
-                        FrameBuffer *fb) = 0;
+                        FrameBuffer *fb,
+                        int pathsPerPixel) = 0;
     
     // const std::vector<int> dataGroupIDs;
     // const std::vector<int> gpuIDs;

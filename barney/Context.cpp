@@ -115,7 +115,8 @@ namespace barney {
   
   void Context::renderTiles(Model *model,
                             const Camera &camera,
-                            FrameBuffer *fb)
+                            FrameBuffer *fb,
+                            int pathsPerPixel)
   {
     if (!isActiveWorker)
       return;
@@ -123,24 +124,26 @@ namespace barney {
     for (auto &pd : perDG) 
       pd.devGroup->update();
 
-    generateRays(camera,fb);
-    for (auto dev : devices) dev->launch_sync();
-
-    for (int generation=0;true;generation++) {
-      traceRaysGlobally(model);
+    // iw - todo: add wave-front-merging here.
+    for (int p=0;p<pathsPerPixel;p++) {
+      generateRays(camera,fb);
       for (auto dev : devices) dev->launch_sync();
 
-      shadeRaysLocally(fb, generation);
-      for (auto dev : devices) dev->launch_sync();
+      for (int generation=0;true;generation++) {
+        traceRaysGlobally(model);
+        for (auto dev : devices) dev->launch_sync();
+
+        shadeRaysLocally(fb, generation);
+        for (auto dev : devices) dev->launch_sync();
       
-      const int numActiveGlobally = numRaysActiveGlobally();
-      if (numActiveGlobally > 0)
-        continue;
+        const int numActiveGlobally = numRaysActiveGlobally();
+        if (numActiveGlobally > 0)
+          continue;
     
-      break;
+        break;
+      }
+      ++ fb->accumID;
     }
-    
-    ++ fb->accumID;
   }
 
   

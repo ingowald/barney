@@ -27,12 +27,13 @@ namespace barney {
   }
 
   void Model::render(const Camera &camera,
-                     FrameBuffer *fb)
+                     FrameBuffer *fb,
+                     int pathsPerPixel)
   {
     assert(context);
     assert(fb);
     context->ensureRayQueuesLargeEnoughFor(fb);
-    context->render(this,camera,fb);
+    context->render(this,camera,fb,pathsPerPixel);
   }
 
 }

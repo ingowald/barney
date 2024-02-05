@@ -186,7 +186,10 @@ BNDataGroup bnGetDataGroup(BNModel model,
 BN_API
 void bnRender(BNModel model,
               const BNCamera *camera,
-              BNFrameBuffer fb);
+              BNFrameBuffer fb,
+              /*! iw - this "probably" shouldn't be here, but set as
+                  some kind of paramter to the frame, model, or camera */
+              int pathsPerPixel=1);
 
 struct BNTransform {
   struct {

@@ -477,7 +477,8 @@ namespace barney {
   BN_API
   void bnRender(BNModel model,
                 const BNCamera *_camera,
-                BNFrameBuffer fb)
+                BNFrameBuffer fb,
+                int pathsPerPixel)
   {
     static int numPrinted = 0;
     if (++numPrinted < 3)
@@ -490,7 +491,7 @@ namespace barney {
     camera.dir_du = (const vec3f&)_camera->dir_du;
     camera.dir_dv = (const vec3f&)_camera->dir_dv;
     camera.lensRadius = _camera->lensRadius;
-    checkGet(model)->render(camera,checkGet(fb));
+    checkGet(model)->render(camera,checkGet(fb),pathsPerPixel);
   }
 
   BN_API

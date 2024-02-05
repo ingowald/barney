@@ -34,7 +34,8 @@ namespace barney {
 
     void render(Model *model,
                 const Camera &camera,
-                FrameBuffer *fb) override;
+                FrameBuffer *fb,
+                int pathsPerPixel) override;
 
     /*! forward rays (during global trace); returns if _after_ that
         forward the rays need more tracing (true) or whether they're
