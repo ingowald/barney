@@ -95,6 +95,7 @@ embed_ptx(
 
 add_library(barney STATIC
   common/barney-common.h
+  common/cuda-helper.cpp
   
   # actual device kernels for CUDA ray gen and shading
   kernels/generateRays.cu

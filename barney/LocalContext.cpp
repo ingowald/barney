@@ -45,7 +45,7 @@ namespace barney {
     
     const int numDevices = devices.size();
     const int dgSize = numDevices / numDataGroups;
-    int numCopied[numDevices];
+    std::vector<int> numCopied(numDevices);
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
       SetActiveGPU forDuration(thisDev->device);
