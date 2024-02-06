@@ -300,10 +300,10 @@ namespace barney {
       {
         printf("creating geom type ....");
         std::vector<OWLVarDecl> params;
-        DD::addVars(params,0);
+        MCVolumeAccel<SFSampler>::DD::addVars(params,0);
         OWLGeomType gt = owlGeomTypeCreate
           (dg->owl,OWL_GEOM_USER,
-           sizeof(DD),params.data(),params.size());
+           sizeof(MCVolumeAccel<SFSampler>::DD),params.data(),params.size());
         OWLModule module = owlModuleCreate(dg->owl,ptxCode);
         const std::string boundsProg = typeString+"_Bounds";
         const std::string isProg = typeString+"_Isec";
