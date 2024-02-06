@@ -76,11 +76,12 @@ namespace barney {
     ray.dir = normalize(ray.dir);
 
     bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
-    ray.dbg = centerPixel;
-
-    ray.tMax = 1e30f;
-    ray.rngSeed = rand.state;
-    ray.hadHit = false;
+    ray.dbg         = centerPixel;
+    ray.hadHit      = false;
+    ray.isShadowRay = false;
+    ray.inMedium    = false;
+    ray.rngSeed     = rand.state;
+    ray.tMax        = 1e30f;
 
     const float t = (iy+.5f)/float(fbSize.y);
     // for *primary* rays we pre-initialize basecolor to a background

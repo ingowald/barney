@@ -25,8 +25,6 @@
 #include "barney/common/half.h"
 #include "barney/common/Material.h"
 
-// #define PRINT_BALLOT 1
-
 namespace barney {
 
   struct Ray {
@@ -35,11 +33,6 @@ namespace barney {
     vec3h    dir;
     float    tMax;
     uint32_t rngSeed;
-#if PRINT_BALLOT
-    int numIsecsThisRay;
-    int numLeavesThisRay;
-    int numPrimsThisRay;
-#endif
 
     inline __device__ void setHit(vec3f P, vec3f N, float t,
                                   const Material::DD &material)
@@ -48,9 +41,9 @@ namespace barney {
       hit.N = N;
       tMax = t;
       hadHit = true;
-      hit.baseColor = material.baseColor;
-      hit.ior = 1.f;
-      hit.transmission = 0.f;
+      hit.baseColor      = material.baseColor;
+      hit.ior            = material.ior;
+      hit.transmission   = material.transmission;
     }
     inline __device__ void setVolumeHit(vec3f P,
                                         float t,
@@ -60,9 +53,9 @@ namespace barney {
       tMax = t;
       hadHit = true;
       hit.N = vec3f(0.f);
-      hit.baseColor = albedo;
-      hit.ior = 1.f;
-      hit.transmission = 0.f;
+      hit.baseColor      = albedo;
+      hit.ior            = 1.f;
+      hit.transmission   = 0.f;
     }
     
     struct {
@@ -72,8 +65,12 @@ namespace barney {
       half     ior, transmission;
     } hit;
     struct {
-      uint32_t  pixelID:30;
+      uint32_t  pixelID:28;
       uint32_t  hadHit:1;
+      /*! for path tracer: tracks whether we are, or aren't, in a
+          refractable medium */
+      uint32_t  inMedium:1;
+      uint32_t  isShadowRay:1;
       uint32_t  dbg:1;
     };
   };

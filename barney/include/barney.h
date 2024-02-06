@@ -44,6 +44,14 @@ struct BNMaterial {
   BNTexture2D colorTexture = 0;
 };
 
+#define BN_DEFAULT_MATERIAL  {                  \
+    /* baseColor*/{ .7f,.7f,.7f },              \
+      /* transparency*/0.f,                     \
+      /* ior */1.f,                             \
+      /* color tex*/0,                          \
+      /* alpha tex*/0                           \
+      }
+
 /*! supported formats for texels in textures */
 typedef enum {
   BN_TEXEL_FORMAT_RGBA8,
@@ -90,12 +98,6 @@ struct BNCamera {
   /* vector along v direction, for ONE pixel */
   float  lensRadius;
 };
-
-#define BN_DEFAULT_MATERIAL  { \
-    { .7f,.7f,.7f }, 0.f, 1.f, \
-      /*no color tex*/0,       \
-      /*no alpha tex*/0        \
-      }
 
 struct BNGridlet {
   float3 lower;

@@ -14,23 +14,36 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/geometry/Geometry.h"
+#include "barney/common/Material.h"
 #include "barney/DataGroup.h"
 
 namespace barney {
   
-  OWLContext Geometry::getOWL() const
-  { return owner->getOWL(); }
-
-  void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
+  void Material::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
-    Material::addVars(vars,base+OWL_OFFSETOF(DD,material));
+    vars.push_back({"material.baseColor", OWL_FLOAT3, base+OWL_OFFSETOF(DD,baseColor)});
+    vars.push_back({"material.alphaTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,alphaTexture)});
+    vars.push_back({"material.colorTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,colorTexture)});
   }
 
-  void Geometry::setMaterial(OWLGeom geom)
+  void Material::set(OWLGeom geom) const
   {
-    material.set(geom);
+    owlGeomSet3f(geom,"material.baseColor",
+                 baseColor.x,
+                 baseColor.y,
+                 baseColor.z);
+    owlGeomSet1f(geom,"transmission",transmission);
+    owlGeomSet1f(geom,"ior",ior);
+    owlGeomSetTexture(geom,"alphaTexture",
+                      alphaTexture
+                      ? alphaTexture->owlTex
+                      : (OWLTexture)0
+                      );
+    owlGeomSetTexture(geom,"colorTexture",
+                      colorTexture
+                      ? colorTexture->owlTex
+                      : (OWLTexture)0
+                      );
   }
-  
+
 }
-

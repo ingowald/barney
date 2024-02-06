@@ -126,6 +126,8 @@ add_library(barney STATIC
   Texture.h
   Texture.cpp
   # actual geometry types
+  common/Material.h
+  common/Material.cpp
   geometry/Geometry.h
   geometry/Geometry.cpp
   geometry/Spheres.h

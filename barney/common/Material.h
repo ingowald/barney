@@ -23,12 +23,19 @@ namespace barney {
     
     struct DD {
       vec3f baseColor;
+      float ior;
+      float transmission;
       cudaTextureObject_t colorTexture;
       cudaTextureObject_t alphaTexture;
     };
     vec3f baseColor;
+    float transmission;
+    float ior;
     Texture::SP colorTexture;
     Texture::SP alphaTexture;
+    
+    static void addVars(std::vector<OWLVarDecl> &vars, int base);
+    void set(OWLGeom geom) const;
   };
 
 }
