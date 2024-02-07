@@ -24,6 +24,8 @@ namespace barney {
     vars.push_back({"material.baseColor", OWL_FLOAT3, base+OWL_OFFSETOF(DD,baseColor)});
     vars.push_back({"material.alphaTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,alphaTexture)});
     vars.push_back({"material.colorTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,colorTexture)});
+    vars.push_back({"material.transmission", OWL_FLOAT, base+OWL_OFFSETOF(DD,transmission)});
+    vars.push_back({"material.ior", OWL_FLOAT, base+OWL_OFFSETOF(DD,ior)});
   }
 
   void Material::set(OWLGeom geom) const
@@ -32,14 +34,14 @@ namespace barney {
                  baseColor.x,
                  baseColor.y,
                  baseColor.z);
-    owlGeomSet1f(geom,"transmission",transmission);
-    owlGeomSet1f(geom,"ior",ior);
-    owlGeomSetTexture(geom,"alphaTexture",
+    owlGeomSet1f(geom,"material.transmission",transmission);
+    owlGeomSet1f(geom,"material.ior",ior);
+    owlGeomSetTexture(geom,"material.alphaTexture",
                       alphaTexture
                       ? alphaTexture->owlTex
                       : (OWLTexture)0
                       );
-    owlGeomSetTexture(geom,"colorTexture",
+    owlGeomSetTexture(geom,"material.colorTexture",
                       colorTexture
                       ? colorTexture->owlTex
                       : (OWLTexture)0
