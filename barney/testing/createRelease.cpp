@@ -33,7 +33,7 @@ int main(int, char **)
     //               BNGeom *geoms, int numGeoms,
     //               BNVolume *volumes, int numVolumes);
 
-    bnBuild(dg);
+    // bnBuild(dg);
     bnRelease(model);
   }
 

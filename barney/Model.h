@@ -29,6 +29,7 @@ namespace barney {
     static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
     
     Model(Context *context);
+    virtual ~Model();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override

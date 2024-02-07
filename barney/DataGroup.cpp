@@ -23,12 +23,15 @@
 
 namespace barney {
   
-  Context *DataGroup::getContext() const
-  {
-    assert(model);
-    assert(model->context);
-    return model->context;
-  }
+  DataGroup::DataGroup(Model *model, int localID)
+    : Object(model->context),
+      model(model),
+      localID(localID),
+      devGroup(model->context->perDG[localID].devGroup)
+  {}
+
+  DataGroup::~DataGroup()
+  {}
 
   OWLContext DataGroup::getOWL() const
   {
@@ -36,13 +39,6 @@ namespace barney {
     assert(devGroup->owl);
     return devGroup->owl;
   }
-
-  DataGroup::DataGroup(Model *model, int localID)
-    : Object(model->context),
-      model(model),
-      localID(localID),
-      devGroup(model->context->perDG[localID].devGroup)
-  {}
 
   void DataGroup::setInstances(std::vector<Group::SP> &groups,
                                const affine3f *xfms)
@@ -161,10 +157,10 @@ namespace barney {
       multiPassInstances.instantiate(group,instances.xfms[i]);
     }
 
-    if (owlGroups.size() == 0)
-      std::cout << OWL_TERMINAL_RED
-                << "warning: data group is empty..."
-                << OWL_TERMINAL_DEFAULT << std::endl;
+    // if (owlGroups.size() == 0)
+    //   std::cout << OWL_TERMINAL_RED
+    //             << "warning: data group is empty..."
+    //             << OWL_TERMINAL_DEFAULT << std::endl;
     instances.group
       = owlInstanceGroupCreate(devGroup->owl,
                                owlGroups.size(),

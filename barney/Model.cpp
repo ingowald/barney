@@ -26,6 +26,9 @@ namespace barney {
     }
   }
 
+  Model::~Model()
+  {}
+
   void Model::render(const Camera &camera,
                      FrameBuffer *fb,
                      int pathsPerPixel)

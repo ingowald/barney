@@ -32,6 +32,7 @@ namespace barney {
     typedef std::shared_ptr<DataGroup> SP;
 
     DataGroup(Model *model, int localID);
+    virtual ~DataGroup();
     
     OWLContext getOWL() const;
     
@@ -112,9 +113,6 @@ namespace barney {
     } instances;
 
     void build();
-
-    Context *getContext() const;
-
 
     MultiPass::Instances multiPassInstances;
     DevGroup::SP   const devGroup;
