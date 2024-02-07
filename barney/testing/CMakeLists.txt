@@ -31,3 +31,10 @@ add_executable(bnTest_createRelease createRelease.cpp)
 target_link_libraries(bnTest_createRelease PUBLIC barney)
 add_test(NAME bnTest_createRelease COMMAND bnTest_createRelease)
 
+
+# in a loop, this creates a model, builds that (empty) model, and
+# releases it. can be used to check for memory leaks in bnBuild()
+add_executable(bnTest_createBuildAndRelease createBuildAndRelease.cpp)
+target_link_libraries(bnTest_createBuildAndRelease PUBLIC barney)
+add_test(NAME bnTest_createBuildAndRelease COMMAND bnTest_createBuildAndRelease)
+

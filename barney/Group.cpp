@@ -36,10 +36,14 @@ namespace barney {
     {
       userGeoms.clear();
       triangleGeoms.clear();
-      if (triangleGeomGroup)
+      if (triangleGeomGroup) {
         owlGroupRelease(triangleGeomGroup);
-      if (userGeomGroup)
+        triangleGeomGroup = 0;
+      }
+      if (userGeomGroup) {
         owlGroupRelease(userGeomGroup);
+        userGeomGroup = 0;
+      }
       for (auto geom : geoms) {
         geom->build();
         for (auto g : geom->triangleGeoms)
