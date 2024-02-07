@@ -228,3 +228,5 @@ target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
 
 
+add_subdirectory(testing)
+

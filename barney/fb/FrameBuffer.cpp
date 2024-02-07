@@ -30,15 +30,51 @@ namespace barney {
     }
   }
 
+  FrameBuffer::~FrameBuffer()
+  {
+    freeResources();
+  }
+
+  void FrameBuffer::freeResources()
+  {
+    if (finalDepth) {
+      BARNEY_CUDA_CALL(Free(finalDepth));
+      finalDepth = 0;
+    }
+    if (finalFB) {
+      BARNEY_CUDA_CALL(Free(finalFB));
+      finalFB = 0;
+    }
+  }
+  
   void FrameBuffer::resize(vec2i size,
                            uint32_t *hostFB,
                            float    *hostDepth)
   {
     for (auto &pd: perDev)
       pd->resize(size);
-    
+
+    freeResources();
     numPixels = size;
 
+#if 1
+    if (isOwner) {
+      // save the host pointers, which may be host-accesible only
+      this->hostDepth = hostDepth;
+      this->hostFB = hostFB;
+
+      // allocate/resize a owner-only, device-side depth buffer that
+      // we can write into in device kernels
+      if (hostDepth) 
+        // host wants a depth buffer, so we need to allocate one on
+        // the device side for staging
+        BARNEY_CUDA_CALL(Malloc(&finalDepth,
+                                numPixels.x*numPixels.y*sizeof(float)));
+      
+      BARNEY_CUDA_CALL(Malloc(&finalFB, numPixels.x*numPixels.y*sizeof(uint32_t)));
+    }
+#else
+    // original version before explicit 'freeResrouces()':
     if (isOwner) {
       // save the host pointers, which may be host-accesible only
       this->hostDepth = hostDepth;
@@ -63,6 +99,7 @@ namespace barney {
       }
       BARNEY_CUDA_CALL(Malloc(&finalFB, numPixels.x*numPixels.y*sizeof(uint32_t)));
     }
+#endif
   }
   
 }

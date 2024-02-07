@@ -90,6 +90,7 @@ namespace barney {
              const std::vector<int> &gpuIDs,
              int globalIndex,
              int globalIndexStep);
+    ~DevGroup();
     
     int size() const { return devices.size(); }
     

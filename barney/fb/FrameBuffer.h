@@ -24,6 +24,7 @@ namespace barney {
   struct FrameBuffer : public Object {
 
     FrameBuffer(Context *context, const bool isOwner);
+    ~FrameBuffer();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -33,6 +34,7 @@ namespace barney {
                         uint32_t *hostFB,
                         float    *hostDepth);
     virtual void resetAccumulation() { accumID = 0; }
+    void freeResources();
     
     std::vector<TiledFB::SP> perDev;
     

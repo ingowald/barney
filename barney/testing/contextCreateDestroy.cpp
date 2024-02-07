@@ -14,30 +14,31 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "barney.h"
+#include "owl/common/math/vec.h"
 
-#include "barney/Context.h"
-#include "barney/fb/FrameBuffer.h"
+using namespace owl::common;
 
-namespace barney {
-
-  struct LocalFB : public FrameBuffer {
-    typedef std::shared_ptr<LocalFB> SP;
-
-    LocalFB(Context *context)
-      : FrameBuffer(context, true)
-    {}
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "LocalFB{}"; }
-    
-    static SP create(Context *context)
-    { return std::make_shared<LocalFB>(context); }
-  };
-
-  // ==================================================================
-  // INLINE IMPLEMENTATION SECTION
-  // ==================================================================
+int main(int, char **)
+{
+  int numSeconds = 20;
   
+  std::cout << "creating first context" << std::endl;
+  BNContext barney = bnContextCreate();
+  std::cout << "destroying first context" << std::endl;
+  bnContextDestroy(barney);
+
+  std::cout << "creating/destroying contexts for " << numSeconds << " seconds" << std::endl;
+  double t0 = getCurrentTime();
+  int numTimesContextCreatedAndDestroyed = 1;
+  while (getCurrentTime() - t0 < numSeconds) {
+    barney = bnContextCreate();
+    bnContextDestroy(barney);
+    numTimesContextCreatedAndDestroyed++;
+  }
+  std::cout << "all good!" << std::endl;
+  std::cout << "(note: done a total of " << prettyNumber(numTimesContextCreatedAndDestroyed)
+            << " bnContextCreate()/bnContextDestry()'s)" << std::endl;
+  return 0;
 }
+

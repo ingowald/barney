@@ -25,6 +25,8 @@ namespace barney {
   struct Object : public std::enable_shared_from_this<Object> {
     typedef std::shared_ptr<Object> SP;
 
+    virtual ~Object() {}
+
     /*! dynamically cast to another (typically derived) class, e.g. to
         check whether a given 'Geomery'-type object is actually a
         Triangles-type geometry, etc */

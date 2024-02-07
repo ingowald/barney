@@ -73,7 +73,6 @@ namespace barney {
                                   globalIndex*gpuIDs.size()+localID,
                                   globalIndexStep*gpuIDs.size()));
 
-    // using DD = DeviceContext::DD;
     OWLVarDecl params[]
       = {
          { "world", OWL_GROUP, OWL_OFFSETOF(DeviceContext::DD, world) },
@@ -87,4 +86,10 @@ namespace barney {
                          -1);
   }
 
+  DevGroup::~DevGroup()
+  {
+    owlContextDestroy(owl);
+    owl = 0;
+  }
+  
 }

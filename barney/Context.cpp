@@ -21,6 +21,16 @@
 
 namespace barney {
   
+  Context::~Context()
+  {
+    hostOwnedHandles.clear();
+    std::map<Object::SP,int> hostOwnedHandles;
+
+    perDG.clear();
+
+    owlContextDestroy(globalContextAcrossAllGPUs);
+  }
+  
   void Context::generateRays(const barney::Camera &camera,
                              FrameBuffer *fb)
   {
@@ -155,7 +165,7 @@ namespace barney {
   {
     if (gpuIDs.empty())
       throw std::runtime_error("error - no GPUs...");
-    
+
     globalContextAcrossAllGPUs
       = owlContextCreate((int32_t*)gpuIDs.data(),gpuIDs.size());
 

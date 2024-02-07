@@ -38,8 +38,7 @@ namespace barney {
             const std::vector<int> &gpuIDs,
             int globalIndex,
             int globalIndexStep);
-    ~Context()
-    {}
+    virtual ~Context();
     
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB(int owningRank) = 0;

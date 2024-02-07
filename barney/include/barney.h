@@ -23,15 +23,16 @@
 
 #define BN_API extern "C"
 
-typedef struct _BNContext       *BNContext;
-typedef struct _BNScalarField   *BNScalarField;
-typedef struct _BNGeom          *BNGeom;
-typedef struct _BNVolume        *BNVolume;
-typedef struct _BNGroup         *BNGroup;
-typedef struct _BNModel         *BNModel;
-typedef struct _BNFrameBuffer   *BNFrameBuffer;
-typedef struct _BNDataGroup     *BNDataGroup;
-typedef struct _BNTexture2D     *BNTexture2D;
+typedef struct _BNObject                         {} *BNObject;
+typedef struct _BNContext      : public _BNObject{} *BNContext;
+typedef struct _BNScalarField  : public _BNObject{} *BNScalarField;
+typedef struct _BNGeom         : public _BNObject{} *BNGeom;
+typedef struct _BNVolume       : public _BNObject{} *BNVolume;
+typedef struct _BNGroup        : public _BNObject{} *BNGroup;
+typedef struct _BNModel        : public _BNObject{} *BNModel;
+typedef struct _BNFrameBuffer  : public _BNObject{} *BNFrameBuffer;
+typedef struct _BNDataGroup    : public _BNObject{} *BNDataGroup;
+typedef struct _BNTexture2D    : public _BNObject{} *BNTexture2D;
 typedef BNTexture2D BNTexture;
 
 typedef enum { BN_FLOAT, BN_UINT8 } BNScalarType;
@@ -161,6 +162,10 @@ BN_API
 void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 
 #endif
+
+
+BN_API
+void  bnRelease(BNObject object);
 
 BN_API
 void  bnBuild(BNDataGroup dataGroup);

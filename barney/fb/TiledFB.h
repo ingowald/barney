@@ -42,9 +42,11 @@ namespace barney {
     static SP create(Device::SP device, FrameBuffer *owner);
 
     TiledFB(Device::SP device, FrameBuffer *owner);
+    ~TiledFB();
     
     void resize(vec2i newSize);
-
+    void free();
+    
     /*! write this tiledFB's tiles into given "final" frame buffer
         (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
         pixels) */

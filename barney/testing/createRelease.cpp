@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2023 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,30 +14,18 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "barney/barney.h"
 
-#include "barney/Context.h"
-#include "barney/fb/FrameBuffer.h"
+int main(int, char **)
+{
+  BNContext barney = bnContextCreate();
+  double t0 - getCurrentTime();
 
-namespace barney {
-
-  struct LocalFB : public FrameBuffer {
-    typedef std::shared_ptr<LocalFB> SP;
-
-    LocalFB(Context *context)
-      : FrameBuffer(context, true)
-    {}
+  bnRelease
+  while (getCurrentTime() - t0 < 10.f) {
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "LocalFB{}"; }
-    
-    static SP create(Context *context)
-    { return std::make_shared<LocalFB>(context); }
-  };
+  }
 
-  // ==================================================================
-  // INLINE IMPLEMENTATION SECTION
-  // ==================================================================
-  
+  bnContextDestroy(barney);
 }
+

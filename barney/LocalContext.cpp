@@ -23,7 +23,11 @@ namespace barney {
                              const std::vector<int> &gpuIDs)
     : Context(dataGroupIDs,gpuIDs,0,1)
   {}
-  
+
+  LocalContext::~LocalContext()
+  { /* not doing anything, but leave this in to ensure that derived
+       classes' destrcutors get called !*/}
+
   FrameBuffer *LocalContext::createFB(int owningRank) 
   {
     assert(owningRank == 0);
