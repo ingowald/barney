@@ -19,6 +19,7 @@
 
 using namespace owl::common;
 
+
 int main(int, char **)
 {
   BNContext ctx = bnContextCreate();

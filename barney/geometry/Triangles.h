@@ -45,6 +45,8 @@ namespace barney {
               const vec3f *vertices,
               const vec3f *normals,
               const vec2f *texcoords);
+    virtual ~Triangles();
+    
     void update(const Material &material,
                 int numIndices,
                 const vec3i *indices,

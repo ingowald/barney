@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,7 +25,8 @@ namespace barney {
   } 
   
   TiledFB::TiledFB(Device::SP device, FrameBuffer *owner)
-    : device(device), owner(owner)
+    : device(device),
+      owner(owner)
   {}
 
   TiledFB::~TiledFB()
@@ -69,7 +70,7 @@ namespace barney {
   {
     free();
     SetActiveGPU forDuration(device);
-    
+
     numPixels = newSize;
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles

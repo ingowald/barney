@@ -26,6 +26,16 @@ namespace barney {
       material(material)
   {}
 
+  Geometry::~Geometry()
+  {
+    for (auto &geom : triangleGeoms)
+      if (geom) { owlGeomRelease(geom); geom = 0; }
+    for (auto &geom : userGeoms)
+      if (geom) { owlGeomRelease(geom); geom = 0; }
+    for (auto &group : secondPassGroups)
+      if (group) { owlGroupRelease(group); group = 0; }
+  }
+
   OWLContext Geometry::getOWL() const
   { return owner->getOWL(); }
 

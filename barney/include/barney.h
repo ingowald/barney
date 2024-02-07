@@ -38,20 +38,14 @@ typedef BNTexture2D BNTexture;
 typedef enum { BN_FLOAT, BN_UINT8 } BNScalarType;
 
 struct BNMaterial {
-  float3 baseColor;
-  float  transparency;
-  float  ior;
-  BNTexture2D alphaTexture = 0;
-  BNTexture2D colorTexture = 0;
+  float3 baseColor          { .7f,.7f,.7f };
+  float  transparency       { 0.f };
+  float  ior                { 1.f };
+  BNTexture2D alphaTexture  { 0 };
+  BNTexture2D colorTexture  { 0 };
 };
 
-#define BN_DEFAULT_MATERIAL  {                  \
-    /* baseColor*/{ .7f,.7f,.7f },              \
-      /* transparency*/0.f,                     \
-      /* ior */1.f,                             \
-      /* color tex*/0,                          \
-      /* alpha tex*/0                           \
-      }
+#define BN_DEFAULT_MATERIAL  BNMaterial{}
 
 /*! supported formats for texels in textures */
 typedef enum {

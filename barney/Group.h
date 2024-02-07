@@ -31,9 +31,13 @@ namespace barney {
     Group(DataGroup *owner,
           const std::vector<Geometry::SP> &geoms,
           const std::vector<Volume::SP> &volumes);
+    virtual ~Group();
     
     void build();
 
+    void freeAllGeoms();
+    void freeAllVolumes();
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override;
 

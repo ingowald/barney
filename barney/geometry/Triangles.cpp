@@ -66,6 +66,29 @@ namespace barney {
     triangleGeoms.push_back(geom);
   }
 
+  Triangles::~Triangles()
+  {
+    /* no need to relase geom itself, that's stored in
+       Geometry::triangleGeoms, and that will get released by
+       parent */
+    if (verticesBuffer) {
+      owlBufferRelease(verticesBuffer);
+      verticesBuffer = 0;
+    }
+    if (indicesBuffer) {
+      owlBufferRelease(indicesBuffer);
+      indicesBuffer = 0;
+    }
+    if (normalsBuffer) {
+      owlBufferRelease(normalsBuffer);
+      normalsBuffer = 0;
+    }
+    if (texcoordsBuffer) {
+      owlBufferRelease(texcoordsBuffer);
+      texcoordsBuffer = 0;
+    }
+  }
+
   void Triangles::update(const Material &material,
                          int numIndices,
                          const vec3i *indices,
@@ -114,6 +137,7 @@ namespace barney {
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"TrianglesCH");
     owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,"TrianglesAH");
     owlBuildPrograms(devGroup->owl);
+    owlModuleRelease(module);
     return gt;
   }
   

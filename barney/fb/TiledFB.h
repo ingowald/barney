@@ -42,7 +42,7 @@ namespace barney {
     static SP create(Device::SP device, FrameBuffer *owner);
 
     TiledFB(Device::SP device, FrameBuffer *owner);
-    ~TiledFB();
+    virtual ~TiledFB();
     
     void resize(vec2i newSize);
     void free();

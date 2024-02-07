@@ -38,3 +38,22 @@ add_executable(bnTest_createBuildAndRelease createBuildAndRelease.cpp)
 target_link_libraries(bnTest_createBuildAndRelease PUBLIC barney)
 add_test(NAME bnTest_createBuildAndRelease COMMAND bnTest_createBuildAndRelease)
 
+
+# in a loop, this creates a frame buffer (of random size and randomly
+# with or without depth buffer), then releases it
+add_executable(bnTest_createReleaseFB createReleaseFB.cpp)
+target_link_libraries(bnTest_createReleaseFB PUBLIC barney)
+add_test(NAME bnTest_createReleaseFB COMMAND bnTest_createReleaseFB)
+
+
+# in a loop, this creates a mesh of trianlges, and frees it
+add_executable(bnTest_createReleaseTriangles createReleaseTriangles.cpp)
+target_link_libraries(bnTest_createReleaseTriangles PUBLIC barney)
+add_test(NAME bnTest_createReleaseTriangles COMMAND bnTest_createReleaseTriangles)
+
+
+# in a loop, this creates a mesh of trianlges, and frees it
+add_executable(bnTest_createReleaseAndBuildTrianglesGroup createReleaseAndBuildTrianglesGroup.cpp)
+target_link_libraries(bnTest_createReleaseAndBuildTrianglesGroup PUBLIC barney)
+add_test(NAME bnTest_createReleaseAndBuildTrianglesGroup COMMAND bnTest_createReleaseAndBuildTrianglesGroup)
+

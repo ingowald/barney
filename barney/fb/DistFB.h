@@ -28,6 +28,7 @@ namespace barney {
 
     DistFB(MPIContext *context,
            int owningRank);
+    virtual ~DistFB() = default;
     
     static SP create(MPIContext *context, int owningRank)
     { return std::make_shared<DistFB>(context,owningRank); }

@@ -24,7 +24,7 @@ namespace barney {
   struct FrameBuffer : public Object {
 
     FrameBuffer(Context *context, const bool isOwner);
-    ~FrameBuffer();
+    virtual ~FrameBuffer();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override

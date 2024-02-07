@@ -26,24 +26,48 @@ namespace barney {
       volumes(volumes)
   {}
   
+  Group::~Group()
+  {
+    freeAllGeoms();
+  }
+  
   /*! pretty-printer for printf-debugging */
   std::string Group::toString() const 
   { return "Group{}"; }
+
+  void Group::freeAllGeoms()
+  {
+    // we should NOT call owlGeomRelease on these here: they do belong
+    // to the Geometry's!
+    userGeoms.clear();
+    triangleGeoms.clear();
+    
+    if (triangleGeomGroup) {
+      owlGroupRelease(triangleGeomGroup);
+      triangleGeomGroup = 0;
+    }
+    if (userGeomGroup) {
+      owlGroupRelease(userGeomGroup);
+      userGeomGroup = 0;
+    }
+  }
   
   void Group::build()
   {
+    freeAllGeoms();
+    
     // triangles and user geoms - for now always rebuild
     {
-      userGeoms.clear();
-      triangleGeoms.clear();
-      if (triangleGeomGroup) {
-        owlGroupRelease(triangleGeomGroup);
-        triangleGeomGroup = 0;
-      }
-      if (userGeomGroup) {
-        owlGroupRelease(userGeomGroup);
-        userGeomGroup = 0;
-      }
+      // userGeoms.clear();
+      // triangleGeoms.clear();
+      // if (triangleGeomGroup) {
+      //   owlGroupRelease(triangleGeomGroup);
+      //   triangleGeomGroup = 0;
+      // }
+      // if (userGeomGroup) {
+      //   owlGroupRelease(userGeomGroup);
+      //   userGeomGroup = 0;
+      // }
       for (auto geom : geoms) {
         geom->build();
         for (auto g : geom->triangleGeoms)
@@ -54,16 +78,14 @@ namespace barney {
       if (!userGeoms.empty())
         userGeomGroup = owlUserGeomGroupCreate
           (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
-      if (userGeomGroup) {
+      if (userGeomGroup) 
         owlGroupBuildAccel(userGeomGroup);
-      }
       
       if (!triangleGeoms.empty())
         triangleGeomGroup = owlTrianglesGeomGroupCreate
           (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
-      if (triangleGeomGroup) {
+      if (triangleGeomGroup) 
         owlGroupBuildAccel(triangleGeomGroup);
-      }
     }
 
     // volumes - these may need two passes

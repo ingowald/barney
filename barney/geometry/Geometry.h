@@ -33,7 +33,8 @@ namespace barney {
     
     Geometry(DataGroup *owner,
              const Material &material);
-
+    virtual ~Geometry();
+    
     static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
     /*! pretty-printer for printf-debugging */

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,24 +14,18 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney.h"
+#pragma once
+
 #include "owl/common/math/vec.h"
 
 using namespace owl::common;
 
-int main(int, char **)
-{
-  BNContext ctx = bnContextCreate();
-  double t0 = getCurrentTime();
+inline int randomInt() { return random(); }
+inline int randomInt(int maxValue) { return (randomInt() % (maxValue+1)); }
+inline int randomInt(int min, int max) { return min + randomInt(max-min); }
 
-  int numSecondsToRun = 30;
-  
-  while (getCurrentTime() - t0 < numSecondsToRun) {
-    BNModel model = bnModelCreate(ctx);
-    BNDataGroup dg = bnGetDataGroup(model,0);
-    bnRelease(model);
-  }
-
-  bnContextDestroy(ctx);
-}
+inline float randomFloat() { return drand48(); }
+inline vec3f random3f() { return vec3f(randomFloat(),randomFloat(),randomFloat()); }
+inline vec2f random2f() { return vec2f(randomFloat(),randomFloat()); }
+inline float random1f() { return randomFloat(); }
 

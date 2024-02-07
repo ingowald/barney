@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -56,7 +56,6 @@ namespace barney {
     freeResources();
     numPixels = size;
 
-#if 1
     if (isOwner) {
       // save the host pointers, which may be host-accesible only
       this->hostDepth = hostDepth;
@@ -72,33 +71,6 @@ namespace barney {
       
       BARNEY_CUDA_CALL(Malloc(&finalFB, numPixels.x*numPixels.y*sizeof(uint32_t)));
     }
-#else
-    // original version before explicit 'freeResrouces()':
-    if (isOwner) {
-      // save the host pointers, which may be host-accesible only
-      this->hostDepth = hostDepth;
-      this->hostFB = hostFB;
-
-      // allocate/resize a owner-only, device-side depth buffer that
-      // we can write into in device kernels
-      if (hostDepth) {
-        // host wants a depth buffer, so we need to allocate one on
-        // the device side for staging
-        if (finalDepth) {
-          BARNEY_CUDA_CALL(Free(finalDepth));
-          finalDepth = 0;
-        }
-        BARNEY_CUDA_CALL(Malloc(&finalDepth,
-                                numPixels.x*numPixels.y*sizeof(float)));
-      }
-      
-      if (finalFB) {
-        BARNEY_CUDA_CALL(Free(finalFB));
-        finalFB = 0;
-      }
-      BARNEY_CUDA_CALL(Malloc(&finalFB, numPixels.x*numPixels.y*sizeof(uint32_t)));
-    }
-#endif
   }
   
 }
