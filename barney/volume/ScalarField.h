@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,7 +25,8 @@ namespace barney {
   struct Volume;
   struct VolumeAccel;
   struct MCGrid;
-
+  struct DataGroup;
+  
   /*! abstracts any sort of scalar field (unstructured, amr,
     structured, rbfs....) _before_ any transfer function(s) get
     applied to it */
@@ -41,7 +42,9 @@ namespace barney {
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    ScalarField(DevGroup *devGroup, const box3f &domain=box3f());
+    ScalarField(DataGroup *owner,
+                DevGroup *devGroup,
+                const box3f &domain=box3f());
 
     OWLContext getOWL() const;
     

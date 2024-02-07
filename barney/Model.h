@@ -45,7 +45,6 @@ namespace barney {
       return dataGroups[localID].get();
     }
     std::vector<DataGroup::SP> dataGroups;
-    Context *const context;
   };
 
 }

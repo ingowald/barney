@@ -31,6 +31,36 @@ namespace barney {
     owlContextDestroy(globalContextAcrossAllGPUs);
   }
   
+  void Context::releaseHostReference(Object::SP object)
+  {
+    auto it = hostOwnedHandles.find(object);
+    if (it == hostOwnedHandles.end())
+      throw std::runtime_error
+        ("trying to bnRelease() a handle that either does not "
+         "exist, or that the app (no lnoger) has any valid references on");
+
+    const int remainingReferences = --it->second;
+
+    if (remainingReferences == 0) {
+      // remove the std::shared-ptr handle:
+      it->second = {};
+      // and make barney forget that it ever had this object 
+      hostOwnedHandles.erase(it);
+    }
+  }
+  
+  void Context::addHostReference(Object::SP object)
+  {
+    auto it = hostOwnedHandles.find(object);
+    if (it == hostOwnedHandles.end())
+      throw std::runtime_error
+        ("trying to bnAddReference() to a handle that either does not "
+         "exist, or that the app (no lnoger) has any valid primary references on");
+    
+    // add one ref count:
+    it->second++;
+  }
+  
   void Context::generateRays(const barney::Camera &camera,
                              FrameBuffer *fb)
   {

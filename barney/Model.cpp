@@ -19,7 +19,7 @@
 namespace barney {
 
   Model::Model(Context *context)
-    : context(context)
+    : Object(context)
   {
     for (int localID=0;localID<context->perDG.size();localID++) {
       dataGroups.push_back(DataGroup::create(this,localID));

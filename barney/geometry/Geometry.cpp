@@ -19,6 +19,13 @@
 
 namespace barney {
   
+  Geometry::Geometry(DataGroup *owner,
+                     const Material &material)
+    : Object(owner->context),
+      owner(owner),
+      material(material)
+  {}
+
   OWLContext Geometry::getOWL() const
   { return owner->getOWL(); }
 

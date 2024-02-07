@@ -20,11 +20,14 @@
 
 namespace barney {
 
+  struct Context;
+  
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
   struct Object : public std::enable_shared_from_this<Object> {
     typedef std::shared_ptr<Object> SP;
 
+    Object(Context *context) : context(context) {}
     virtual ~Object() {}
 
     /*! dynamically cast to another (typically derived) class, e.g. to
@@ -37,6 +40,12 @@ namespace barney {
     
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const;
+
+    /*! returns the context that this object was created in */
+    Context *getContext() const { return context; }
+    
+    // NOT a shared pointer to avoid cyclical dependencies.
+    Context *const context;
   };
 
 

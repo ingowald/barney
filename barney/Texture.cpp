@@ -27,6 +27,7 @@ namespace barney {
                    BNTextureFilterMode  filterMode,
                    BNTextureAddressMode addressMode,
                    BNTextureColorSpace  colorSpace)
+    : Object(owner->context)
   {
     assert(OWL_TEXEL_FORMAT_RGBA8   == (int)BN_TEXEL_FORMAT_RGBA8);
     assert(OWL_TEXEL_FORMAT_RGBA32F == (int)BN_TEXEL_FORMAT_RGBA32F);

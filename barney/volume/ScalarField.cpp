@@ -16,6 +16,7 @@
 
 #include "barney/volume/Volume.h"
 #include "barney/volume/ScalarField.h"
+#include "barney/DataGroup.h"
 
 namespace barney {
 
@@ -31,8 +32,11 @@ namespace barney {
     owlGeomSet3fv(geom,"worldBounds.upper",&bb.upper.x);
   }
 
-  ScalarField::ScalarField(DevGroup *devGroup, const box3f &domain)
-    : devGroup(devGroup),
+  ScalarField::ScalarField(DataGroup *owner,
+                           DevGroup *devGroup,
+                           const box3f &domain)
+    : Object(owner->context),
+      devGroup(devGroup),
       domain(domain)
   {}
 

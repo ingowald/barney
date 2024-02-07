@@ -32,10 +32,7 @@ namespace barney {
     };
     
     Geometry(DataGroup *owner,
-             const Material &material)
-      : owner(owner),
-        material(material)
-    {}
+             const Material &material);
 
     static void addVars(std::vector<OWLVarDecl> &vars, int base);
     

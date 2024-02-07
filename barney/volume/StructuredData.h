@@ -21,6 +21,8 @@
 
 namespace barney {
 
+  struct DataGroup;
+  
   /*! a structured 3D scalar field; strictly speaking in barney this
       isn't actually a "volume" (it only becomes a volume after paired
       with a transfer function), but this name still sounds more
@@ -46,7 +48,8 @@ namespace barney {
     /*! one tex3d per device */
     std::vector<Tex3D> tex3Ds;
 
-    StructuredData(DevGroup *devGroup,
+    StructuredData(DataGroup *owner,
+                   DevGroup *devGroup,
                    const vec3i &numScalars,
                    BNScalarType scalarType,
                    const void *scalars,

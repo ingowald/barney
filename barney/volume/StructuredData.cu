@@ -50,13 +50,14 @@ namespace barney {
              scalarRange.lower,scalarRange.upper);
   }
   
-  StructuredData::StructuredData(DevGroup *devGroup,
+  StructuredData::StructuredData(DataGroup *owner,
+                                 DevGroup *devGroup,
                                  const vec3i &numScalars,
                                  BNScalarType scalarType,
                                  const void *scalars,
                                  const vec3f &gridOrigin,
                                  const vec3f &gridSpacing)
-    : ScalarField(devGroup),
+    : ScalarField(owner,devGroup),
       numScalars(numScalars),
       numCells(numScalars - 1),
       scalarType(scalarType),
@@ -170,7 +171,7 @@ namespace barney {
                                                const vec3f &gridSpacing)
   {
     StructuredData::SP sf
-      = std::make_shared<StructuredData>(devGroup.get(),
+      = std::make_shared<StructuredData>(this,devGroup.get(),
                                          numScalars,scalarType,data,
                                          gridOrigin,gridSpacing);
     return getContext()->initReference(sf);

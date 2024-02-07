@@ -19,10 +19,9 @@
 namespace barney {
 
   FrameBuffer::FrameBuffer(Context *context, const bool isOwner)
-    : context(context),
+    : Object(context),
       isOwner(isOwner)
   {
-    assert(context);
     perDev.resize(context->devices.size());
     for (int localID=0;localID<context->devices.size();localID++) {
       perDev[localID]

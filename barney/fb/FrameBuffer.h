@@ -54,7 +54,6 @@ namespace barney {
     float      *hostDepth   = 0;
 
     uint32_t    accumID     = 0;
-    Context    *const context;
     const bool  isOwner;
   };
 }

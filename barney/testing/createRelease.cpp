@@ -14,18 +14,29 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/barney.h"
+#include "barney.h"
+#include "owl/common/math/vec.h"
+
+using namespace owl::common;
 
 int main(int, char **)
 {
-  BNContext barney = bnContextCreate();
-  double t0 - getCurrentTime();
+  BNContext ctx = bnContextCreate();
+  double t0 = getCurrentTime();
 
-  bnRelease
-  while (getCurrentTime() - t0 < 10.f) {
-    
+  int numSecondsToRun = 30;
+  
+  while (getCurrentTime() - t0 < numSecondsToRun) {
+    BNModel model = bnModelCreate(ctx);
+    BNDataGroup dg = bnGetDataGroup(model,0);
+    // bnGroupCreate(BNDataGroup dataGroup,
+    //               BNGeom *geoms, int numGeoms,
+    //               BNVolume *volumes, int numVolumes);
+
+    bnBuild(dg);
+    bnRelease(model);
   }
 
-  bnContextDestroy(barney);
+  bnContextDestroy(ctx);
 }
 

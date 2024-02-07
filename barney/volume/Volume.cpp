@@ -32,7 +32,8 @@ namespace barney {
   
   Volume::Volume(DevGroup *devGroup,
                  ScalarField::SP sf)
-    : devGroup(devGroup),
+    : Object(sf->context),
+      devGroup(devGroup),
       sf(sf),
       xf(devGroup)
   {

@@ -20,7 +20,8 @@ namespace barney {
   Group::Group(DataGroup *owner,
                const std::vector<Geometry::SP> &geoms,
                const std::vector<Volume::SP> &volumes)
-    : owner(owner),
+    : Object(owner->context),
+      owner(owner),
       geoms(geoms),
       volumes(volumes)
   {}

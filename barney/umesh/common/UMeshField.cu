@@ -306,7 +306,8 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
 
-  UMeshField::UMeshField(DevGroup *devGroup,
+  UMeshField::UMeshField(DataGroup *owner,
+                         DevGroup *devGroup,
                          std::vector<vec4f> &_vertices,
                          std::vector<TetIndices> &_tetIndices,
                          std::vector<PyrIndices> &_pyrIndices,
@@ -317,7 +318,7 @@ namespace barney {
                          std::vector<box4f> &_gridDomains,
                          std::vector<float> &_gridScalars,
                          const box3f &domain)
-  : ScalarField(devGroup,domain),
+  : ScalarField(owner,devGroup,domain),
     vertices(std::move(_vertices)),
     tetIndices(std::move(_tetIndices)),
     pyrIndices(std::move(_pyrIndices)),
@@ -443,7 +444,8 @@ namespace barney {
                                       const box3f &domain)
   {
     ScalarField::SP sf
-      = std::make_shared<UMeshField>(devGroup.get(),
+      = std::make_shared<UMeshField>(this,
+                                     devGroup.get(),
                                      vertices,
                                      tetIndices,
                                      pyrIndices,

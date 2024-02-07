@@ -38,7 +38,8 @@ namespace barney {
   }
 
   DataGroup::DataGroup(Model *model, int localID)
-    : model(model),
+    : Object(model->context),
+      model(model),
       localID(localID),
       devGroup(model->context->perDG[localID].devGroup)
   {}

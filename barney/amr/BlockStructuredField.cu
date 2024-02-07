@@ -125,12 +125,13 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
 
-  BlockStructuredField::BlockStructuredField(DevGroup *devGroup,
+  BlockStructuredField::BlockStructuredField(DataGroup *owner,
+                                             DevGroup *devGroup,
                                              std::vector<box3i> &_blockBounds,
                                              std::vector<int> &_blockLevels,
                                              std::vector<int> &_blockOffsets,
                                              std::vector<float> &_blockScalars)
-    : ScalarField(devGroup),
+    : ScalarField(owner,devGroup),
       blockBounds(std::move(_blockBounds)),
       blockLevels(std::move(_blockLevels)),
       blockOffsets(std::move(_blockOffsets)),
@@ -220,7 +221,8 @@ namespace barney {
                                                    std::vector<float> &blockScalars)
   {
     ScalarField::SP sf
-      = std::make_shared<BlockStructuredField>(devGroup.get(),
+      = std::make_shared<BlockStructuredField>(this,
+                                               devGroup.get(),
                                                blockBounds,
                                                blockLevels,
                                                blockOffsets,

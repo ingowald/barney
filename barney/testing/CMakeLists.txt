@@ -16,6 +16,18 @@
 
 enable_testing()
 
-add_executable(bnContextCreateDestroy contextCreateDestroy.cpp)
-target_link_libraries(bnContextCreateDestroy PUBLIC barney)
-add_test(NAME bnContextCreateDestroy COMMAND bnContextCreateDestroy)
+# simple test that just - in a loop - keeps on creating and destroying
+# barney contexts, to check for ramp-up/ramp-down errors or context
+# memory leaks
+add_executable(bnTest_contextCreateDestroy contextCreateDestroy.cpp)
+target_link_libraries(bnTest_contextCreateDestroy PUBLIC barney)
+add_test(NAME bnTest_contextCreateDestroy COMMAND bnTest_contextCreateDestroy)
+
+
+
+# checks that we can create and release 'some stuff' without crashing
+# or leaking
+add_executable(bnTest_createRelease createRelease.cpp)
+target_link_libraries(bnTest_createRelease PUBLIC barney)
+add_test(NAME bnTest_createRelease COMMAND bnTest_createRelease)
+

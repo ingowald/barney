@@ -32,7 +32,8 @@ namespace barney {
 
   struct Context;
   
-  struct Context : public Object {
+  struct Context// : public Object
+  {
     
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs,
@@ -45,7 +46,7 @@ namespace barney {
     Model *createModel();
 
     /*! pretty-printer for printf-debugging */
-    std::string toString() const override
+    virtual std::string toString() const 
     { return "<Context(abstract)>"; }
 
     template<typename T>
@@ -55,7 +56,21 @@ namespace barney {
       hostOwnedHandles[sp]++;
       return sp.get();
     }
-
+    
+    /*! decreases (the app's) reference count of said object by
+      one. if said refernce count falls to 0 the object handle gets
+      destroyed and may no longer be used by the app, and the object
+      referenced to by this handle may be removed (from the app's
+      point of view). Note the object referenced by this handle may
+      not get destroyed immediagtely if it had other indirect
+      references, such as, for example, a group still holding a
+      refernce to a geometry */
+    void releaseHostReference(Object::SP object);
+    
+    /*! increases (the app's) reference count of said object byb
+        one */
+    void addHostReference(Object::SP object);
+    
     Device::SP getDevice(int localID)
     {
       assert(localID >= 0);

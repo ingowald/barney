@@ -37,6 +37,12 @@ namespace barney {
     return (Context *)context;
   }
   
+  inline Object *checkGet(BNObject object)
+  {
+    assert(object);
+    return (Object *)object;
+  }
+  
   inline Material checkGet(const BNMaterial *material)
   {
     assert(material);
@@ -142,9 +148,9 @@ namespace barney {
   
   BN_API
   void bnSetInstances(BNDataGroup dataGroup,
-                           BNGroup *_groups,
-                           BNTransform *xfms,
-                           int numInstances)
+                      BNGroup *_groups,
+                      BNTransform *xfms,
+                      int numInstances)
   {
     LOG_API_ENTRY;
     
@@ -155,7 +161,23 @@ namespace barney {
     checkGet(dataGroup)->setInstances(groups,(const affine3f *)xfms);
   }
   
-
+  BN_API
+  void  bnRelease(BNObject _object)
+  {
+    Object *object = checkGet(_object);
+    Context *context = object->getContext();
+    context->releaseHostReference(object->shared_from_this());
+  }
+  
+  BN_API
+  void  bnAddReference(BNObject _object)
+  {
+    Object *object = checkGet(_object);
+    Context *context = object->getContext();
+    context->addHostReference(object->shared_from_this());
+  }
+  
+  
   BN_API
   void bnContextDestroy(BNContext context)
   {

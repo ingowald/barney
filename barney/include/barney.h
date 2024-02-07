@@ -24,7 +24,7 @@
 #define BN_API extern "C"
 
 typedef struct _BNObject                         {} *BNObject;
-typedef struct _BNContext      : public _BNObject{} *BNContext;
+typedef struct _BNContext      *BNContext;
 typedef struct _BNScalarField  : public _BNObject{} *BNScalarField;
 typedef struct _BNGeom         : public _BNObject{} *BNGeom;
 typedef struct _BNVolume       : public _BNObject{} *BNVolume;
@@ -164,8 +164,19 @@ void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 #endif
 
 
+/*! decreases (the app's) reference count of said object by one. if
+    said refernce count falls to 0 the object handle gets destroyed
+    and may no longer be used by the app, and the object referenced to
+    by this handle may be removed (from the app's point of view). Note
+    the object referenced by this handle may not get destroyed
+    immediagtely if it had other indirect references, such as, for
+    example, a group still holding a refernce to a geometry */
 BN_API
 void  bnRelease(BNObject object);
+
+/*! increases (the app's) reference count of said object byb one */
+BN_API
+void  bnAddReference(BNObject object);
 
 BN_API
 void  bnBuild(BNDataGroup dataGroup);
