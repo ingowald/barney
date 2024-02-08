@@ -100,9 +100,9 @@ namespace barney {
     int tileID  = blockIdx.x;
 
     vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
-    color.x = sqrtf(color.x);
-    color.y = sqrtf(color.y);
-    color.z = sqrtf(color.z);
+    // color.x = sqrtf(color.x);
+    // color.y = sqrtf(color.y);
+    // color.z = sqrtf(color.z);
     uint32_t rgba32
       = owl::make_rgba(color);
     

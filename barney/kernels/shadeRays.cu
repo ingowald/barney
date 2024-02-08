@@ -56,7 +56,7 @@ namespace barney {
     if (tid >= numRays) return;
 
     Ray ray = readQueue[tid];
-    if (ray.dbg) printf("SHADE\n");
+    // if (ray.dbg) printf("SHADE\n");
     
     vec3f albedo = (vec3f)ray.hit.baseColor;
     vec3f fragment = 0.f;
@@ -68,9 +68,9 @@ namespace barney {
       vec3f dir = ray.dir;
       vec3f Ng = ray.hit.N;
       const bool isVolumeHit = (Ng == vec3f(0.f));
+      if (!isVolumeHit) Ng = normalize(Ng);
       float NdotD = dot(Ng,normalize(dir));
       if (NdotD > 0.f) Ng = - Ng;
-      if (!isVolumeHit) Ng = normalize(Ng);
       
       // let's do some ambient eyelight-style shading, anyway:
       float scale
@@ -154,26 +154,42 @@ namespace barney {
       vec3f dir = ray.dir;
       vec3f Ng = ray.hit.N;
       const bool isVolumeHit = (Ng == vec3f(0.f));
+      if (!isVolumeHit) Ng = normalize(Ng);
       float NdotD = dot(Ng,normalize(dir));
       if (NdotD > 0.f) Ng = - Ng;
-      if (!isVolumeHit) Ng = normalize(Ng);
       
       // let's do some ambient eyelight-style shading, anyway:
-      float scale
+      
+      const float eyeLightWeight
         = isVolumeHit
         ? .5f
         : (.2f + .4f*fabsf(NdotD));
-      scale *= .01f;
+      const float ao_ambient_component = .1f;
+
+      const float scale = ao_ambient_component * eyeLightWeight;
+      // scale *= 0.001f;
+      vec3f tp = ray.throughput;
       fragment
         = albedo
         * scale
         * ray.throughput;
-
+      // if (ray.dbg) {
+      //   printf("gen %i fragment %f %f %f\n",generation,fragment.x,fragment.y,fragment.z);
+      //   printf("gen %i Ng %f %f %f\n",generation,Ng.x,Ng.y,Ng.z);
+      //   printf("gen %i albedo %f %f %f\n",generation,albedo.x,albedo.y,albedo.z);
+      //   printf("gen %i tp %f %f %f\n",generation,tp.x,tp.y,tp.z);
+      // }
+      
       // and then add a single diffuse bounce (ae, ambient occlusion)
       LCG<4> &rng = (LCG<4> &)ray.rngSeed;
       if (ray.hadHit && generation == 0) {
         Ray bounce;
-        bounce.org = ray.hit.P + 1e-3f*Ng;
+        bounce.org = ray.hit.P + 1e-5f*Ng;
+        // if (ray.dbg)
+          // printf("bounce org %f %f %f\n",
+          //        bounce.org.x,
+          //        bounce.org.y,
+          //        bounce.org.z);
         bounce.dir = normalize(Ng + randomDirection(rng));
         bounce.tMax = INFINITY;
         bounce.dbg = ray.dbg;
@@ -197,6 +213,15 @@ namespace barney {
     float  &tile_z
       = accumTiles[tileID].depth[tileOfs];
     vec4f valueToAccum = make_float4(fragment.x,fragment.y,fragment.z,0.f);
+
+    // if (ray.dbg)
+    //   printf("gen %i accumulating %f %f %f %f\n",
+    //          generation,
+    //          valueToAccum.x,
+    //          valueToAccum.y,
+    //          valueToAccum.z,
+    //          valueToAccum.w);
+    
     if (accumID > 0)
       valueToAccum = valueToAccum + (vec4f)valueToAccumInto;
     
@@ -259,9 +284,9 @@ namespace barney {
       vec3f dir = ray.dir;
       vec3f Ng = ray.hit.N;
       const bool isVolumeHit = (Ng == vec3f(0.f));
+      if (!isVolumeHit) Ng = normalize(Ng);
       float NdotD = dot(Ng,normalize(dir));
       if (NdotD > 0.f) Ng = - Ng;
-      if (!isVolumeHit) Ng = normalize(Ng);
       
       // let's do some ambient eyelight-style shading, anyway:
       float scale
