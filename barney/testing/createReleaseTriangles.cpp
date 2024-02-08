@@ -32,15 +32,15 @@ int main(int, char **)
   while (getCurrentTime() - t0 < numSecondsToRun) {
     BNModel model = bnModelCreate(ctx);
 
-    int numTris = 16 + random() % 1024;
+    int numTris = randomInt(16, 2000);
 
     std::vector<vec3f> vertices;
     std::vector<vec3i> indices;
     std::vector<vec3f> normals;
     std::vector<vec2f> texcoords;
 
-    bool haveTex = random() % 2;
-    bool haveNor = random() % 2;
+    bool haveTex = randomInt(1);
+    bool haveNor = randomInt(1);
 
     for (int i=0;i<numTris;i++) {
       vec3f pos = 100.f*random3f();
@@ -68,8 +68,8 @@ int main(int, char **)
     BNDataGroup dg = bnGetDataGroup(model,0);
     BNGeom mesh = bnTriangleMeshCreate
       (dg,&mat,
-       (int3*)indices.data(),indices.size(),
-       (float3*)vertices.data(),vertices.size(),
+       (int3*)indices.data(),(int)indices.size(),
+       (float3*)vertices.data(),(int)vertices.size(),
        haveNor?(float3*)normals.data():nullptr,
        haveTex?(float2*)texcoords.data():nullptr);
     

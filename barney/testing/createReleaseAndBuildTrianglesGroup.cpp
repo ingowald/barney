@@ -39,15 +39,15 @@ int main(int, char **)
     std::vector<BNGeom> geoms;
     for (int j=0;j<numMeshes;j++) {
 
-      int numTris = 16 + random() % 1024;
+      int numTris = randomInt(16,2000);
 
       std::vector<vec3f> vertices;
       std::vector<vec3i> indices;
       std::vector<vec3f> normals;
       std::vector<vec2f> texcoords;
 
-      bool haveTex = randomInt() % 2;
-      bool haveNor = randomInt() % 2;
+      bool haveTex = randomInt(1);
+      bool haveNor = randomInt(1);
     
       for (int i=0;i<numTris;i++) {
         vec3f pos = 100.f*random3f();
@@ -74,17 +74,17 @@ int main(int, char **)
 
       BNGeom mesh = bnTriangleMeshCreate
         (dg,&mat,
-         (int3*)indices.data(),indices.size(),
-         (float3*)vertices.data(),vertices.size(),
+         (int3*)indices.data(),(int)indices.size(),
+         (float3*)vertices.data(),(int)vertices.size(),
          haveNor?(float3*)normals.data():nullptr,
          haveTex?(float2*)texcoords.data():nullptr);
       numMeshesCreated++;
-      numTrianglesCreated += indices.size();
+      numTrianglesCreated += (int)indices.size();
       geoms.push_back(mesh);
     }
 
     BNGroup group
-      = bnGroupCreate(dg,geoms.data(),geoms.size(),0,0);
+      = bnGroupCreate(dg,geoms.data(),(int)geoms.size(),0,0);
     for (auto mesh : geoms) 
       bnRelease(mesh);
     

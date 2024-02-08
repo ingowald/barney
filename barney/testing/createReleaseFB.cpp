@@ -15,10 +15,8 @@
 // ======================================================================== //
 
 #include "barney.h"
-#include "owl/common/math/vec.h"
 #include <vector>
-
-using namespace owl::common;
+#include "unitTests.h"
 
 int main(int, char **)
 {
@@ -31,10 +29,10 @@ int main(int, char **)
   while (getCurrentTime() - t0 < numSecondsToRun) {
     BNFrameBuffer fb = bnFrameBufferCreate(ctx,0);
 
-    int sx = 16 + (random() % 1024);
-    int sy = 16 + (random() % 1024);\
+    int sx = randomInt(16, 1200);
+    int sy = randomInt(16, 1200);
 
-    if (random() % 2) {
+    if (randomInt(1)) {
       std::vector<uint32_t> hostFB(sx*sy);
       std::vector<float>    hostDepth(sx*sy);
       bnFrameBufferResize(fb,sx,sy,hostFB.data(),hostDepth.data());

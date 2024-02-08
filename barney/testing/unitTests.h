@@ -17,14 +17,25 @@
 #pragma once
 
 #include "owl/common/math/vec.h"
+#include <cstdlib>
+#include <random>
 
 using namespace owl::common;
 
-inline int randomInt() { return random(); }
+
+inline int randomInt() { 
+    return rand();
+}
 inline int randomInt(int maxValue) { return (randomInt() % (maxValue+1)); }
 inline int randomInt(int min, int max) { return min + randomInt(max-min); }
 
-inline float randomFloat() { return drand48(); }
+inline float randomFloat() { 
+    static std::random_device rd;  // a seed source for the random number engine
+    static std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
+    static std::uniform_real_distribution<float> distrib(0.f,1.f);
+	return distrib(gen); 
+}
+
 inline vec3f random3f() { return vec3f(randomFloat(),randomFloat(),randomFloat()); }
 inline vec2f random2f() { return vec2f(randomFloat(),randomFloat()); }
 inline float random1f() { return randomFloat(); }
