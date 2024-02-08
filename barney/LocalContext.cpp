@@ -43,11 +43,11 @@ namespace barney {
 
   bool LocalContext::forwardRays()
   {
-    const int numDataGroups = perDG.size();
+    const int numDataGroups = (int)perDG.size();
     if (numDataGroups == 1)
       return false;
     
-    const int numDevices = devices.size();
+    const int numDevices = (int)devices.size();
     const int dgSize = numDevices / numDataGroups;
     std::vector<int> numCopied(numDevices);
     for (int devID=0;devID<numDevices;devID++) {

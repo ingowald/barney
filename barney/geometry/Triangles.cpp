@@ -133,7 +133,7 @@ namespace barney {
       (devGroup->owl,Triangles_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_TRIANGLES,sizeof(Triangles::DD),
-       params.data(),params.size());
+       params.data(),(int)params.size());
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"TrianglesCH");
     owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,"TrianglesAH");
     owlBuildPrograms(devGroup->owl);

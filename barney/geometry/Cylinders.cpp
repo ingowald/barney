@@ -44,7 +44,7 @@ namespace barney {
       for (int i=0;i<numPoints/2;i++)
         explicitIndices.push_back(2*i+vec2i(0,1));
       indices = explicitIndices.data();
-      numIndices = explicitIndices.size();
+      numIndices = (int)explicitIndices.size();
     }
     std::vector<float> explicitRadii;
     if (!radii) {
@@ -103,7 +103,7 @@ namespace barney {
       (devGroup->owl,Cylinders_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(Cylinders::DD),
-       params.data(),params.size());
+       params.data(), (int)params.size());
     owlGeomTypeSetBoundsProg(gt,module,"CylindersBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CylindersIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CylindersCH");

@@ -459,7 +459,7 @@ namespace barney {
     vec3f dir_du = aspect * normalize(cross(dir_00, up));
     vec3f dir_dv = normalize(cross(dir_du, dir_00));
 
-    dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fov) * M_PI / 180.0f)));
+    dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fov) * (float)M_PI / 180.0f)));
     dir_00 -= 0.5f * dir_du;
     dir_00 -= 0.5f * dir_dv;
 
@@ -503,8 +503,7 @@ namespace barney {
                 int pathsPerPixel)
   {
     static int numPrinted = 0;
-    if (++numPrinted < 3)
-      LOG_API_ENTRY;
+    if (++numPrinted < 3) { LOG_API_ENTRY; }
 
     assert(_camera);
     Camera camera;

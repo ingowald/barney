@@ -39,7 +39,7 @@ namespace barney {
       (devGroup->owl,Spheres_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(Spheres::DD),
-       params.data(),params.size());
+       params.data(),(int)params.size());
     owlGeomTypeSetBoundsProg(gt,module,"SpheresBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"SpheresIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"SpheresCH");
