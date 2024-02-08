@@ -143,7 +143,7 @@ namespace barney {
 
     for (size_t blockID=0;blockID<numBlocks;++blockID) {
       Block block;
-      block.ID = blockID;
+      block.ID = (int)blockID;
       block.bounds = blockBounds[blockID];
       block.level = blockLevels[blockID];
       block.scalarOffset = blockOffsets[blockID];
@@ -209,7 +209,7 @@ namespace barney {
     dd.blockScalars = (const float    *)owlBufferGetPointer(blockScalarsBuffer,devID);
     dd.blockIDs     = (const uint32_t *)owlBufferGetPointer(blockIDsBuffer,devID);
     dd.valueRanges  = (const range1f  *)owlBufferGetPointer(valueRangesBuffer,devID);
-    dd.numBlocks    = blockIDs.size();
+    dd.numBlocks    = (int)blockIDs.size();
     dd.worldBounds  = worldBounds;
 
     return dd;

@@ -107,7 +107,7 @@ namespace barney {
     assert(dims.y > 0);
     assert(dims.z > 0);
     this->dims = dims;
-    int numCells = owl::common::volume(dims);
+    int numCells = (int)owl::common::volume(dims);
     owlBufferResize(majorantsBuffer,numCells);
     owlBufferResize(scalarRangesBuffer,numCells);
   }

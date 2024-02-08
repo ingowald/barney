@@ -197,7 +197,7 @@ namespace barney {
       throw std::runtime_error("error - no GPUs...");
 
     globalContextAcrossAllGPUs
-      = owlContextCreate((int32_t*)gpuIDs.data(),gpuIDs.size());
+      = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
 
     if (!isActiveWorker) 
       // not an active worker: no device groups etc, just create a
@@ -215,7 +215,7 @@ namespace barney {
       throw std::runtime_error("requested num GPUs is not a multiple of "
                                "requested num data groups");
     int numDGs = dataGroupIDs.size();
-    int gpusPerDG = gpuIDs.size() / numDGs;
+    int gpusPerDG = (int)gpuIDs.size() / numDGs;
     std::vector<std::vector<int>> gpuInDG(numDGs);
     perDG.resize(numDGs);
     for (int ldgID=0;ldgID<numDGs;ldgID++) {

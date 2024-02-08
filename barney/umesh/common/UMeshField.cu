@@ -238,7 +238,7 @@ namespace barney {
 
     float maxWidth = reduce_max(getBox(worldBounds).size());
     int MC_GRID_SIZE
-      = 128 + int(sqrtf(elements.size())/30);
+      = 128 + int(sqrtf((float)elements.size())/30);
     
     vec3i dims = 1+vec3i(getBox(worldBounds).size() * ((MC_GRID_SIZE-1) / maxWidth));
     printf("#bn.um: chosen macro-cell dims of (%i %i %i)\n",
@@ -425,7 +425,7 @@ namespace barney {
     dd.gridScalars = (const float   *)owlBufferGetPointer(gridScalarsBuffer,devID);
     dd.gridDomains = (const box4f   *)owlBufferGetPointer(gridDomainsBuffer,devID);
     dd.gridScalars = (const float   *)owlBufferGetPointer(gridScalarsBuffer,devID);
-    dd.numElements = elements.size();
+    dd.numElements = (int)elements.size();
     dd.worldBounds = worldBounds;
 
     return dd;

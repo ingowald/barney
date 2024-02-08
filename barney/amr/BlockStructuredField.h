@@ -165,8 +165,8 @@ namespace barney {
     const vec3i blockSize = block.numCells();
 
     if (brickDomain.contains(P)) {
-      const vec3f localPos = (P-brickBounds.lower) / vec3f(block.cellSize()) - 0.5f;
-      vec3i idx_lo   = vec3i(floorf(localPos.x),floorf(localPos.y),floorf(localPos.z));
+      const vec3f localPos = (P-brickBounds.lower) / vec3f((float)block.cellSize()) - 0.5f;
+      vec3i idx_lo   = vec3i((int)floorf(localPos.x), (int)floorf(localPos.y), (int)floorf(localPos.z));
       idx_lo = max(vec3i(-1), idx_lo);
       const vec3i idx_hi   = idx_lo + vec3i(1);
       const vec3f frac     = localPos - vec3f(idx_lo);

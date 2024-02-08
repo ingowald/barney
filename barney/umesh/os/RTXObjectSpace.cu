@@ -62,7 +62,7 @@ namespace barney {
       (devGroup->owl,RTXObjectSpace_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(RTXObjectSpace::DD),
-       params.data(),params.size());
+       params.data(),(int)params.size());
     owlGeomTypeSetBoundsProg(gt,module,"RTXObjectSpaceBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"RTXObjectSpaceIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"RTXObjectSpaceCH");
@@ -108,12 +108,12 @@ namespace barney {
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
 
-    for (int i=0;i<bvh.numNodes;i++) {
+    for (int i=0;i<(int)bvh.numNodes;i++) {
       auto node = bvh.nodes[i];
       if (node.count == 0) continue;
       Cluster c;
-      c.begin = node.offset;
-      c.end = node.offset + node.count;
+      c.begin = int(node.offset);
+      c.end = int(node.offset + node.count);
       clusters.push_back(c);
     }
     cuBQL::free(bvh,0,managedMem);

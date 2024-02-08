@@ -66,7 +66,7 @@ namespace barney {
       (devGroup->owl,AWT_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(UMeshAWT::DD),
-       params.data(),params.size());
+       params.data(),(int)params.size());
     owlGeomTypeSetBoundsProg(gt,module,"UMeshAWTBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"UMeshAWTIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"UMeshAWTCH");
@@ -82,7 +82,7 @@ namespace barney {
   void UMeshAWT::Host::buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh)
   {
     nodes.resize(qbvh.numNodes);
-    for (int nodeID=0;nodeID<qbvh.numNodes;nodeID++)
+    for (int nodeID=0;nodeID<(int)qbvh.numNodes;nodeID++)
       for (int childID=0;childID<4;childID++) {
         box3f bounds = make_box(qbvh.nodes[nodeID].children[childID].bounds);
         if (!qbvh.nodes[nodeID].children[childID].valid)
@@ -341,7 +341,7 @@ namespace barney {
       SetActiveGPU forDuration(dev);
       recomputeMajorants<<<divRoundUp(int(4*nodes.size()),1024),1024>>>
         ((AWTNode*)owlBufferGetPointer(nodesBuffer,devID),
-         nodes.size(),
+         (int)nodes.size(),
          volume->xf.getDD(devID));
     }
     std::cout << "refitting ... umesh awt/object space geom" << std::endl;

@@ -385,10 +385,10 @@ namespace barney {
                        const float4 v6,
                        const float4 v7)
   {
-    #define HEX_DIVERGED               1e6
+    #define HEX_DIVERGED               1e6f
     #define HEX_MAX_ITERATION          10
-    #define HEX_CONVERGED              1e-4
-    #define HEX_OUTSIDE_CELL_TOLERANCE 1e-6
+    #define HEX_CONVERGED              1e-4f
+    #define HEX_OUTSIDE_CELL_TOLERANCE 1e-6f
 
     const bool assumeInside = false;
     const float determinantTolerance = 1e-6f;

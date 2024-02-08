@@ -43,7 +43,7 @@ namespace barney {
   void DataGroup::setInstances(std::vector<Group::SP> &groups,
                                const affine3f *xfms)
   {
-    int numUserInstances = groups.size();
+    int numUserInstances = (int)groups.size();
     instances.groups = std::move(groups);
     instances.xfms.resize(numUserInstances);
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());

@@ -56,7 +56,7 @@ namespace barney {
                      int globalIndexStep)
     : ldgID(ldgID)
   {
-    owl = owlContextCreate((int*)gpuIDs.data(),gpuIDs.size());
+    owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
 
     OWLVarDecl args[]
       = {
