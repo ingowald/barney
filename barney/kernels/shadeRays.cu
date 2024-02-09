@@ -594,9 +594,12 @@ namespace barney {
     }
 
     vec3f Ng = path.hit.N;
-    const vec3f notFaceForwardedNg = Ng;
-    // const bool  hitWasOnFront      = dot(from_half(path.dir),Ng) < 0.f;
     const bool  isVolumeHit        = (Ng == vec3f(0.f));
+    if (!isVolumeHit) Ng = normalize(Ng);
+    const vec3f notFaceForwardedNg = Ng;
+    const bool  hitWasOnFront      = dot((vec3f)path.dir,Ng) < 0.f;
+    if (!hitWasOnFront)
+      Ng = - Ng;
 
     if (hadNoIntersection) {
       // ==================================================================
@@ -652,7 +655,7 @@ namespace barney {
                     path.dir,notFaceForwardedNg,
                     path.hit.ior);
       path.dir = dir;
-      if (dot(dir,Ng) > 0.f) {
+      if (dot(dir,notFaceForwardedNg) > 0.f) {
         path.org = path.hit.P + EPS*Ng;
       } else {
         path.org = path.hit.P - EPS*Ng;

@@ -67,8 +67,6 @@ namespace barney {
       numCopied[devID] = count;
       Ray *src = nextDev->rays.traceAndShadeReadQueue;
       Ray *dst = thisDev->rays.receiveAndShadeWriteQueue;
-      printf("  # forwarding FROM %lx TO %lx\n",
-             (size_t)src,(size_t)dst);
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
                                    cudaMemcpyDefault,
                                    thisDev->device->launchStream));
