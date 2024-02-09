@@ -65,7 +65,7 @@ namespace barney {
     if (colors)
       colorsBuffer = owlManagedMemoryBufferCreate
         (owner->devGroup->owl,OWL_FLOAT3,numOrigins,colors);
-    
+
     Geometry::setMaterial(geom);
     owlGeomSet1f(geom,"defaultRadius",defaultRadius);
     owlGeomSetBuffer(geom,"origins",originsBuffer);
