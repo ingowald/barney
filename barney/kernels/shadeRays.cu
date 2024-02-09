@@ -20,7 +20,7 @@
 
 namespace barney {
 
-#define DEFAULT_RADIANCE_FROM_ENV 2.f
+#define DEFAULT_RADIANCE_FROM_ENV 1.5f
   
   enum { MAX_PATH_DEPTH = 10 };
   
@@ -603,7 +603,8 @@ namespace barney {
 
     vec3f Ng = path.hit.N;
     const bool  isVolumeHit        = (Ng == vec3f(0.f));
-    if (!isVolumeHit) Ng = normalize(Ng);
+    if (!isVolumeHit)
+      Ng = normalize(Ng);
     const vec3f notFaceForwardedNg = Ng;
     const bool  hitWasOnFront      = dot((vec3f)path.dir,Ng) < 0.f;
     if (!hitWasOnFront)
@@ -692,13 +693,17 @@ namespace barney {
     // roulette to either ake it 'stronger', or kill it.
     // ------------------------------------------------------------------
     if (pathDepth < MAX_PATH_DEPTH) {
+      path.dir = normalize(path.dir);
+      path.tMax   = INFINITY;
+      path.hadHit = false;
+
       float maxWeight = reduce_max((vec3f)path.throughput);
-      if (random() < maxWeight) {
-        path.throughput = path.throughput * (1.f/maxWeight);
-        path.tMax   = INFINITY;
-        path.hadHit = false;
-      } else {
-        path.tMax = -1.f;
+      if (maxWeight < .3f) {
+        if (random() < maxWeight) {
+          path.throughput = path.throughput * (1.f/maxWeight);
+        } else {
+          path.tMax = -1.f;
+        }
       }
     } else
       path.tMax = -1.f;

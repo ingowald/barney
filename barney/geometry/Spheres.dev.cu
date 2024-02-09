@@ -68,6 +68,7 @@ namespace barney {
     float radius = self.defaultRadius;
 
 #if 1
+    // with "move the origin" trick; see Ray Tracing Gems 2
     const vec3f old_org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
     vec3f org = old_org;
