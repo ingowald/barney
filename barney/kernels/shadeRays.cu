@@ -550,7 +550,7 @@ namespace barney {
   
   inline __device__
   vec3f radianceFromEnv(Ray &ray)
-  { return 2.f; }
+  { return 1.f; }
 
   /*! return dedicated background, if specifeid; otherwise return envmap color */
   inline __device__
