@@ -20,6 +20,8 @@
 
 namespace barney {
 
+#define DEFAULT_RADIANCE_FROM_ENV 2.f
+  
   enum { MAX_PATH_DEPTH = 10 };
   
   typedef enum {
@@ -550,13 +552,19 @@ namespace barney {
   
   inline __device__
   vec3f radianceFromEnv(Ray &ray)
-  { return 1.f; }
+  { return DEFAULT_RADIANCE_FROM_ENV; }
 
   /*! return dedicated background, if specifeid; otherwise return envmap color */
   inline __device__
   vec3f backgroundOrEnv(Ray &ray)
   {
     return ray.hit.baseColor;
+  }
+
+  inline __device__
+  float safe_eps(float f, vec3f v)
+  {
+    return max(f,1e-5f*reduce_max(abs(v)));
   }
   
   inline __device__
@@ -644,7 +652,7 @@ namespace barney {
     //          (float)path.hit.transmission,
     //          (float)path.hit.ior,
     //          int(doTransmission));
-    
+
     if (/* for non-glass this SHOULD be done by isec program! */doTransmission) {
       // ------------------------------------------------------------------
       // transmission, refleciton, or refraction
@@ -656,9 +664,9 @@ namespace barney {
                     path.hit.ior);
       path.dir = dir;
       if (dot(dir,notFaceForwardedNg) > 0.f) {
-        path.org = path.hit.P + EPS*Ng;
+        path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
       } else {
-        path.org = path.hit.P - EPS*Ng;
+        path.org = path.hit.P - safe_eps(EPS,path.hit.P)*Ng;
         path.isInMedium = 1;
       }
       /* ************* TODO - MISSING SOME METALLIC/REFLECTANCE HERE *********** */
@@ -668,7 +676,7 @@ namespace barney {
       // ------------------------------------------------------------------
       
       // save local path weight for the shadow ray:
-      path.org = path.hit.P + EPS*Ng;
+      path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
       if (isVolumeHit) {
         path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
         path.throughput = .8f * path.throughput * path.hit.baseColor;

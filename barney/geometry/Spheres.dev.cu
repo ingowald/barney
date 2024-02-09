@@ -66,7 +66,44 @@ namespace barney {
 
     vec3f center = self.origins[primID];
     float radius = self.defaultRadius;
+
+#if 1
+    const vec3f old_org  = optixGetObjectRayOrigin();
+    const vec3f dir  = optixGetObjectRayDirection();
+    vec3f org = old_org;
+    float t_move = max(0.f,length(center - old_org)-10.f*radius);
+    org = org + t_move * dir;
+    float t_max = optixGetRayTmax() - t_move;
+    if (t_max < 0.f) return;
     
+    float hit_t = t_max;
+
+    float tmin = max(0.f,optixGetRayTmin()-t_move);
+    const vec3f oc = org - center;
+    const float a = dot(dir,dir);
+    const float b = dot(oc, dir);
+    const float c = dot(oc, oc) - radius * radius;
+    const float discriminant = b * b - a * c;
+    
+    if (discriminant < 0.f) return;
+
+    {
+      float temp = (-b - sqrtf(discriminant)) / a;
+      if (temp < hit_t && temp > tmin) 
+        hit_t = temp;
+    }
+      
+    {
+      float temp = (-b + sqrtf(discriminant)) / a;
+      if (temp < hit_t && temp > tmin) 
+        hit_t = temp;
+    }
+    hit_t += t_move;
+    if (hit_t < t_max) {
+      optixReportIntersection(hit_t+t_move, 0);
+    }
+    
+#else
     const vec3f org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
     const float tmin = optixGetRayTmin();
@@ -91,6 +128,7 @@ namespace barney {
       if (temp < hit_t && temp > tmin) 
         hit_t = temp;
     }
+#endif
     if (hit_t < optixGetRayTmax()) {
       optixReportIntersection(hit_t, 0);
     }
