@@ -39,8 +39,10 @@ typedef enum { BN_FLOAT, BN_UINT8 } BNScalarType;
 
 struct BNMaterial {
   float3 baseColor          { .7f,.7f,.7f };
-  float  transparency       { 0.f };
-  float  ior                { 1.f };
+  float  transmission       { 0.f };
+  float  ior                { 1.45f };
+  float  metallic           { 1.f };
+  float  roughness          { 0.f };
   BNTexture2D alphaTexture  { 0 };
   BNTexture2D colorTexture  { 0 };
 };

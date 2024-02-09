@@ -101,17 +101,17 @@ namespace barney {
 
   void Context::shadeRaysLocally(FrameBuffer *fb, int generation)
   {
-    BARNEY_CUDA_SYNC_CHECK();
+    // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
       dev->shadeRays_launch(fb->perDev[localID].get(),generation);
     }
-    BARNEY_CUDA_SYNC_CHECK();
+    // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
       dev->shadeRays_sync();
     }
-    BARNEY_CUDA_SYNC_CHECK();
+    // BARNEY_CUDA_SYNC_CHECK();
   }
   
   void Context::traceRaysLocally(Model *model)

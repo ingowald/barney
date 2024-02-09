@@ -43,6 +43,8 @@ namespace barney {
       hadHit = true;
       hit.baseColor      = material.baseColor;
       hit.ior            = material.ior;
+      hit.roughness      = material.roughness;
+      hit.metallic       = material.metallic;
       hit.transmission   = material.transmission;
     }
     inline __device__ void setVolumeHit(vec3f P,
@@ -57,19 +59,28 @@ namespace barney {
       hit.ior            = 1.f;
       hit.transmission   = 0.f;
     }
+    inline __device__ void makeShadowRay(vec3f tp, vec3f org, vec3f dir, float len)
+    {
+      this->hadHit = false;
+      this->isShadowRay = true;
+      this->dir = dir;
+      this->org = org;
+      this->throughput = tp;
+      this->tMax = len;
+    }
     
     struct {
       vec3h    N;
       vec3h    baseColor;
       vec3f    P;
-      half     ior, transmission;
+      half     ior, transmission, metallic, roughness;
     } hit;
     struct {
       uint32_t  pixelID:28;
       uint32_t  hadHit:1;
       /*! for path tracer: tracks whether we are, or aren't, in a
           refractable medium */
-      uint32_t  inMedium:1;
+      uint32_t  isInMedium:1;
       uint32_t  isShadowRay:1;
       uint32_t  dbg:1;
     };
@@ -77,11 +88,11 @@ namespace barney {
 
   struct RayQueue {
     struct DD {
-      Ray *readQueue  = nullptr;
+      Ray *traceAndShadeReadQueue  = nullptr;
       
       /*! the queue where local kernels that write *new* rays
         (ie, ray gen and shading) will write their rays into */
-      Ray *writeQueue = nullptr;
+      Ray *receiveAndShadeWriteQueue = nullptr;
       
       /*! current write position in the write queue (during shading and
         ray generation) */
@@ -97,11 +108,11 @@ namespace barney {
       becasue both shade and trace can actually modify trays (and
       thus, strictly speaking, are 'writing' to those rays), but
       haven't yet found a better name */
-    Ray *readQueue  = nullptr;
+    Ray *traceAndShadeReadQueue  = nullptr;
 
     /*! the queue where local kernels that write *new* rays
       (ie, ray gen and shading) will write their rays into */
-    Ray *writeQueue = nullptr;
+    Ray *receiveAndShadeWriteQueue = nullptr;
 
     /*! current write position in the write queue (during shading and
       ray generation) */
@@ -124,7 +135,7 @@ namespace barney {
     
     void swap()
     {
-      std::swap(readQueue, writeQueue);
+      std::swap(receiveAndShadeWriteQueue, traceAndShadeReadQueue);
     }
 
     void ensureRayQueuesLargeEnoughFor(TiledFB *fb)
@@ -139,14 +150,14 @@ namespace barney {
       assert(device);
       SetActiveGPU forDuration(device);
       
-      if (readQueue)  BARNEY_CUDA_CALL(Free(readQueue));
-      if (writeQueue) BARNEY_CUDA_CALL(Free(writeQueue));
+      if (traceAndShadeReadQueue)  BARNEY_CUDA_CALL(Free(traceAndShadeReadQueue));
+      if (receiveAndShadeWriteQueue) BARNEY_CUDA_CALL(Free(receiveAndShadeWriteQueue));
 
       if (!d_nextWritePos)
         BARNEY_CUDA_CALL(MallocManaged(&d_nextWritePos,sizeof(int)));
         
-      BARNEY_CUDA_CALL(Malloc(&readQueue, newSize*sizeof(Ray)));
-      BARNEY_CUDA_CALL(Malloc(&writeQueue,newSize*sizeof(Ray)));
+      BARNEY_CUDA_CALL(Malloc(&traceAndShadeReadQueue, newSize*sizeof(Ray)));
+      BARNEY_CUDA_CALL(Malloc(&receiveAndShadeWriteQueue,newSize*sizeof(Ray)));
 
       size = newSize;
     }

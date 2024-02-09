@@ -52,7 +52,10 @@ void Matte::commit()
   getParam("color", ANARI_FLOAT32_VEC4, &color);
   std::memcpy(&m_bnMaterial.baseColor, &color, sizeof(float3));
 
-  m_bnMaterial.transparency = getParam<float>("opacity", color.w);
+  m_bnMaterial.transmission = getParam<float>("opacity", color.w);
+  m_bnMaterial.ior = 1.f;
+  m_bnMaterial.metallic = 0.f;
+  m_bnMaterial.roughness = 0.f;
 }
 
 // PhysicallyBased //
@@ -72,7 +75,10 @@ void PhysicallyBased::commit()
   getParam("baseColor", ANARI_FLOAT32_VEC4, &color);
   std::memcpy(&m_bnMaterial.baseColor, &color, sizeof(float3));
 
-  m_bnMaterial.transparency = getParam<float>("opacity", color.w);
+  m_bnMaterial.transmission = getParam<float>("opacity", color.w);
+  m_bnMaterial.ior = 1.f;
+  m_bnMaterial.metallic = 0.f;
+  m_bnMaterial.roughness = 0.f;
 }
 
 } // namespace barney_device

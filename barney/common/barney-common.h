@@ -38,7 +38,7 @@ namespace barney {
 
   using range1f = interval<float>;
 
-  using Random = LCG<4>;
+  using Random = LCG<6>;
 
 
   template<typename T>

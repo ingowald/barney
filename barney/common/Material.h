@@ -25,11 +25,15 @@ namespace barney {
       vec3f baseColor;
       float ior;
       float transmission;
+      float roughness;
+      float metallic;
       cudaTextureObject_t colorTexture;
       cudaTextureObject_t alphaTexture;
     };
     vec3f baseColor;
     float transmission;
+    float roughness;
+    float metallic;
     float ior;
     Texture::SP colorTexture;
     Texture::SP alphaTexture;

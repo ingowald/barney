@@ -25,6 +25,8 @@ namespace barney {
     vars.push_back({"material.alphaTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,alphaTexture)});
     vars.push_back({"material.colorTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,colorTexture)});
     vars.push_back({"material.transmission", OWL_FLOAT, base+OWL_OFFSETOF(DD,transmission)});
+    vars.push_back({"material.roughness", OWL_FLOAT, base+OWL_OFFSETOF(DD,roughness)});
+    vars.push_back({"material.metallic", OWL_FLOAT, base+OWL_OFFSETOF(DD,metallic)});
     vars.push_back({"material.ior", OWL_FLOAT, base+OWL_OFFSETOF(DD,ior)});
   }
 
@@ -35,6 +37,8 @@ namespace barney {
                  baseColor.y,
                  baseColor.z);
     owlGeomSet1f(geom,"material.transmission",transmission);
+    owlGeomSet1f(geom,"material.roughness",roughness);
+    owlGeomSet1f(geom,"material.metallic",metallic);
     owlGeomSet1f(geom,"material.ior",ior);
     owlGeomSetTexture(geom,"material.alphaTexture",
                       alphaTexture

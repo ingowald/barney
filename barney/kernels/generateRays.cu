@@ -63,10 +63,12 @@ namespace barney {
 
     Ray ray;
     ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
-    Random rand(rngSeed,ray.pixelID);
-    rand();
-    rand();
-    rand();
+    Random rand(ix+fbSize.x*accumID,
+                iy+fbSize.y*accumID);
+    // Random rand(rngSeed,ray.pixelID);
+    // rand();
+    // rand();
+    // rand();
     
     ray.org  = camera.lens_00;
     ray.dir
@@ -79,9 +81,23 @@ namespace barney {
     ray.dbg         = centerPixel;
     ray.hadHit      = false;
     ray.isShadowRay = false;
-    ray.inMedium    = false;
+    ray.isInMedium  = false;
     ray.rngSeed     = rand.state;
     ray.tMax        = 1e30f;
+
+    // if (ray.dbg)
+    //   printf("-------------------------------------------------------\n");
+    // if (ray.dbg)
+    //   printf("  # generating INTO %lx\n",rayQueue);
+             
+    // if (ray.dbg)
+    //   printf("spawned %f %f %f dir %f %f %f\n",
+    //          ray.org.x,
+    //          ray.org.y,
+    //          ray.org.z,
+    //          (float)ray.dir.x,
+    //          (float)ray.dir.y,
+    //          (float)ray.dir.z);
 
     const float t = (iy+.5f)/float(fbSize.y);
     // for *primary* rays we pre-initialize basecolor to a background
@@ -125,7 +141,7 @@ namespace barney {
        fb->owner->accumID,
        fb->numPixels,
        rays.d_nextWritePos,
-       rays.writeQueue,
+       rays.receiveAndShadeWriteQueue,
        fb->tileDescs);
   }
 }

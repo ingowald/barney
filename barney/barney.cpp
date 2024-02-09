@@ -48,9 +48,16 @@ namespace barney {
     assert(material);
     Material result;
     result.baseColor = (const vec3f&)material->baseColor;
+    result.roughness = material->roughness;
+    result.transmission = material->transmission;
+    result.ior = material->ior;
     result.colorTexture
       = material->colorTexture
       ? ((Texture*)material->colorTexture)->shared_from_this()->as<Texture>()
+      : 0;
+    result.alphaTexture
+      = material->alphaTexture
+      ? ((Texture*)material->alphaTexture)->shared_from_this()->as<Texture>()
       : 0;
     return result;
   }

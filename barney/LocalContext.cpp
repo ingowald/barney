@@ -44,8 +44,13 @@ namespace barney {
   bool LocalContext::forwardRays()
   {
     const int numDataGroups = (int)perDG.size();
-    if (numDataGroups == 1)
+    if (numDataGroups == 1) {
+      // do NOT copy or swap. rays are in trace queue, which is also
+      // the shade read queue, so nothing to do.
+      //
+      // no more trace rounds required: return false
       return false;
+    }
     
     const int numDevices = (int)devices.size();
     const int dgSize = numDevices / numDataGroups;
@@ -60,8 +65,10 @@ namespace barney {
       int count = nextDev->rays.numActive;
       // std::cout << "forwarding " << count << " rays between " << devID << " and " << nextID << std::endl;
       numCopied[devID] = count;
-      Ray *src = nextDev->rays.readQueue;
-      Ray *dst = thisDev->rays.writeQueue;
+      Ray *src = nextDev->rays.traceAndShadeReadQueue;
+      Ray *dst = thisDev->rays.receiveAndShadeWriteQueue;
+      printf("  # forwarding FROM %lx TO %lx\n",
+             (size_t)src,(size_t)dst);
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
                                    cudaMemcpyDefault,
                                    thisDev->device->launchStream));
