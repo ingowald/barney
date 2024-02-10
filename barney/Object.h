@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "barney/Data.h"
 
 namespace barney {
 
@@ -41,6 +41,24 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const;
 
+
+    virtual bool set(const std::string &arg, const std::shared_ptr<Object> &value)
+    { return false; }
+    virtual bool set(const std::string &arg, const Data::SP &value)
+    { return false; }
+    virtual bool set(const std::string &arg, const int    value) { return false; }
+    virtual bool set(const std::string &arg, const float &value) { return false; }
+    virtual bool set(const std::string &arg, const vec2f &value) { return false; }
+    virtual bool set(const std::string &arg, const vec3f &value) { return false; }
+    virtual bool set(const std::string &arg, const vec4f &value) { return false; }
+    virtual bool set(const std::string &arg, const int    value) { return false; }
+    virtual bool set(const std::string &arg, const vec2i &value) { return false; }
+    virtual bool set(const std::string &arg, const vec3i &value) { return false; }
+    virtual bool set(const std::string &arg, const vec4i &value) { return false; }
+    
+    virtual void commit() {}
+
+    
     /*! returns the context that this object was created in */
     Context *getContext() const { return context; }
     

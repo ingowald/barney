@@ -37,6 +37,28 @@ typedef BNTexture2D BNTexture;
 
 typedef enum { BN_FLOAT, BN_UINT8 } BNScalarType;
 
+typedef enum {
+  /*! a undefined data type */
+  BN_DATA_UNDEFINED,
+  /*! BNData */
+  BN_DATA,
+  /*! BNObject */
+  BN_OBJECT,
+  /*! BNTexture */
+  BN_TEXTURE,
+  /*! int32_t */
+  BN_INT,
+  /*! int2 */
+  BN_INT2,
+  BN_INT3,
+  BN_INT4,
+  BN_FLOAT,
+  BN_FLOAT2,
+  BN_FLOAT3,
+  BN_FLOAT4,
+  BN_RAW_DATA_BASE
+} BNDataType;
+
 struct BNMaterial {
   float3 baseColor          { .7f,.7f,.7f };
   float  transmission       { 0.f };
@@ -187,6 +209,7 @@ void bnAccumReset(BNFrameBuffer fb);
 BN_API
 BNFrameBuffer bnFrameBufferCreate(BNContext context,
                                   int owningRank);
+
 BN_API
 void bnFrameBufferResize(BNFrameBuffer fb,
                          int sizeX, int sizeY,
@@ -229,6 +252,13 @@ BNModel bnModelCreate(BNContext ctx);
 // scene content
 // ==================================================================
 
+/*! same as owlNewData, basically */
+BN_API
+BNData bnDataCreate(BNDataGroup dataGroup,
+                    BNDataType dataType,
+                    size_t numItems,
+                    const void *items);
+                    
 BN_API
 BNGroup bnGroupCreate(BNDataGroup dataGroup,
                       BNGeom *geoms, int numGeoms,
