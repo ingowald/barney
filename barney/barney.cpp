@@ -519,25 +519,28 @@ namespace barney {
   BN_API
   void bnSetData(BNObject target, const char *param, BNData value)
   {
-    checkGet(target)->set(checkGet(param),checkGet(value)->shared_from_this());
+    if (!checkGet(target)->setObject(checkGet(param),checkGet(value)->shared_from_this()))
+      checkGet(target)->warn_unsupported_member(param,"BNData");
   }
 
   BN_API
   void bnSetObject(BNObject target, const char *param, BNObject value)
   {
-    checkGet(target)->set(checkGet(param),checkGet(value)->shared_from_this());
+    if (!checkGet(target)->setObject(checkGet(param),checkGet(value)->shared_from_this()))
+      checkGet(target)->warn_unsupported_member(param,"BNObject");
   }
 
   BN_API
   void bnSet2i(BNObject target, const char *param, int x, int y)
   {
-    checkGet(target)->set(checkGet(param),vec2i(x,y));
+    if (!checkGet(target)->set2i(checkGet(param),vec2i(x,y)))
+      checkGet(target)->warn_unsupported_member(param,"vec2i");
   }
 
   BN_API
   void bnSet3fc(BNObject target, const char *param, float3 value)
   {
-    if (!checkGet(target)->set(checkGet(param),(const vec3f&)value))
+    if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
       checkGet(target)->warn_unsupported_member(param,"vec3f");
   }
 
@@ -545,7 +548,8 @@ namespace barney {
   void bnSet4x3fv(BNObject target, const char *param, const float *transform)
   {
     assert(transform);
-    checkGet(target)->set(checkGet(param),*(const affine3f*)transform);
+    if (!checkGet(target)->set4x3f(checkGet(param),*(const affine3f*)transform))
+      checkGet(target)->warn_unsupported_member(param,"affine3f");
   }
   
 
@@ -604,8 +608,8 @@ namespace barney {
                             int  numDataGroupsOnThisRank,
                             /*! which gpu(s) to use for this
                               process. default is to distribute
-                                 node's GPUs equally over all ranks on
-                                 that given node */
+                              node's GPUs equally over all ranks on
+                              that given node */
                             const int *_gpuIDs,
                             int  numGPUs)
   {

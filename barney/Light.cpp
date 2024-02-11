@@ -30,7 +30,7 @@ namespace barney {
     return {};
   }
 
-  bool DirectionalLight::set(const std::string &member, const vec3f &value) 
+  bool DirectionalLight::set3f(const std::string &member, const vec3f &value) 
   {
     if (member == "direction") {
       direction = value;

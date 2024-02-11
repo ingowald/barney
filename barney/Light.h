@@ -42,7 +42,7 @@ namespace barney {
     
     std::string toString() const override { return "DirectionalLight"; }
     
-    bool set(const std::string &member, const vec3f &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
     
     vec3f direction;
     vec3f radiance;

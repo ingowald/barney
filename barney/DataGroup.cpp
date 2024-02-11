@@ -25,6 +25,7 @@
 
 namespace barney {
   
+
   DataGroup::DataGroup(Model *model, int localID)
     : Object(model->context),
       model(model),
@@ -32,6 +33,19 @@ namespace barney {
       devGroup(model->context->perDG[localID].devGroup)
   {}
 
+  /*! implements the parameter set/commit paradigm */
+  void DataGroup::commit()
+  {
+    PING;
+  }
+  
+  /*! implements the parameter set/commit paradigm */
+  bool DataGroup::setObject(const std::string &member, const Object::SP &value)
+  {
+    PING;
+    return false;
+  }
+  
   DataGroup::~DataGroup()
   {}
 
