@@ -22,6 +22,7 @@ namespace barney {
 
   struct Context;
   struct DataGroup;
+  struct Data;
   
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
@@ -48,6 +49,12 @@ namespace barney {
 
     virtual bool setObject(const std::string &member,
                            const Object::SP &value)
+    { return false; }
+    /*! a data is, strictly speaking, also a object, but it's
+        clearer/more obvious to handle it separately, so this
+        explicitly sets data array types members */
+    virtual bool setData(const std::string &member,
+                         const std::shared_ptr<Data> &value)
     { return false; }
     virtual bool setString(const std::string &member,
                            const std::string &value)

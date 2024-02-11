@@ -19,6 +19,7 @@
 #include "barney/geometry/Geometry.h"
 #include "barney/volume/Volume.h"
 #include "barney/MultiPass.h"
+#include "barney/Data.h"
 
 namespace barney {
 
@@ -32,6 +33,14 @@ namespace barney {
           const std::vector<Geometry::SP> &geoms,
           const std::vector<Volume::SP> &volumes);
     virtual ~Group();
+
+    // ------------------------------------------------------------------
+    /*! implements the parameter set/commit paradigm */
+    void commit() override;
+    
+    /*! implements the parameter set/commit paradigm */
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    // ------------------------------------------------------------------
     
     void build();
 
@@ -45,6 +54,9 @@ namespace barney {
     const std::vector<Volume::SP>   volumes;
     const std::vector<Geometry::SP> geoms;
 
+    /*! lights assigned to this group */
+    Data::SP lights;
+    
     std::vector<OWLGeom> triangleGeoms;
     std::vector<OWLGeom> userGeoms;
     std::vector<OWLGeom> volumeGeoms;

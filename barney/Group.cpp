@@ -31,9 +31,22 @@ namespace barney {
     freeAllGeoms();
   }
   
+  /*! implements the parameter set/commit paradigm */
+  void Group::commit()
+  {
+    PING;
+  }
+  
+  /*! implements the parameter set/commit paradigm */
+  bool Group::setObject(const std::string &member, const Object::SP &value)
+  {
+    PING;
+    return false;
+  }
+  
   /*! pretty-printer for printf-debugging */
   std::string Group::toString() const 
-  { return "Group{}"; }
+  { return "Group"; }
 
   void Group::freeAllGeoms()
   {

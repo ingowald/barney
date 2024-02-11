@@ -37,14 +37,6 @@ namespace barney {
     DataGroup(Model *model, int localID);
     virtual ~DataGroup();
 
-    // ------------------------------------------------------------------
-    /*! implements the parameter set/commit paradigm */
-    void commit() override;
-    
-    /*! implements the parameter set/commit paradigm */
-    bool setObject(const std::string &member, const Object::SP &value) override;
-    // ------------------------------------------------------------------
-
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::DataGroup"; }
     

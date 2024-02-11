@@ -519,7 +519,8 @@ namespace barney {
   BN_API
   void bnSetData(BNObject target, const char *param, BNData value)
   {
-    if (!checkGet(target)->setObject(checkGet(param),checkGet(value)->shared_from_this()))
+    if (!checkGet(target)->setData(checkGet(param),
+                                   checkGet(value)->shared_from_this()->as<Data>()))
       checkGet(target)->warn_unsupported_member(param,"BNData");
   }
 
