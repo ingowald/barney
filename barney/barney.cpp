@@ -20,6 +20,7 @@
 #include "barney/fb/FrameBuffer.h"
 #include "barney/Model.h"
 #include "barney/geometry/Triangles.h"
+#include "barney/Data.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
@@ -37,12 +38,24 @@ namespace barney {
     return (Context *)context;
   }
   
+  inline std::string checkGet(const char *s)
+  {
+    assert(s != nullptr);
+    return s;
+  }
+  
   inline Object *checkGet(BNObject object)
   {
     assert(object);
     return (Object *)object;
   }
-  
+
+  inline Data *checkGet(BNData data)
+  {
+    assert(data);
+    return (Data *)data;
+  }
+
   inline Material checkGet(const BNMaterial *material)
   {
     assert(material);
@@ -183,8 +196,8 @@ namespace barney {
     Context *context = object->getContext();
     context->addHostReference(object->shared_from_this());
   }
-  
-  
+
+
   BN_API
   void bnContextDestroy(BNContext context)
   {
@@ -304,6 +317,24 @@ namespace barney {
     return (BNVolume)checkGet(dataGroup)->createVolume
       (sf);
   }
+
+
+  BN_API
+  BNLight bnLightCreate(BNDataGroup dataGroup,
+                        const char *type)
+  {
+    return (BNLight)checkGet(dataGroup)->createLight(checkGet(type));
+  }
+
+  BN_API
+  BNData bnDataCreate(BNDataGroup dataGroup,
+                      BNDataType dataType,
+                      size_t numItems,
+                      const void *items)
+  {
+    return (BNData)checkGet(dataGroup)->createData(dataType,numItems,items);
+  }
+
 
   BN_API
   BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
@@ -476,6 +507,52 @@ namespace barney {
     camera->lens_00 = (float3&)from;
     camera->lensRadius = 0.f;
   }
+
+
+
+  BN_API
+  void bnCommit(BNObject target)
+  {
+    checkGet(target)->commit();
+  }
+  
+  BN_API
+  void bnSetData(BNObject target, const char *param, BNData value)
+  {
+    checkGet(target)->set(checkGet(param),checkGet(value)->shared_from_this());
+  }
+
+  BN_API
+  void bnSetObject(BNObject target, const char *param, BNObject value)
+  {
+    checkGet(target)->set(checkGet(param),checkGet(value)->shared_from_this());
+  }
+
+  BN_API
+  void bnSet2i(BNObject target, const char *param, int x, int y)
+  {
+    checkGet(target)->set(checkGet(param),vec2i(x,y));
+  }
+
+  BN_API
+  void bnSet3fc(BNObject target, const char *param, float3 value)
+  {
+    if (!checkGet(target)->set(checkGet(param),(const vec3f&)value))
+      checkGet(target)->warn_unsupported_member(param,"vec3f");
+  }
+
+  BN_API
+  void bnSet4x3fv(BNObject target, const char *param, const float *transform)
+  {
+    assert(transform);
+    checkGet(target)->set(checkGet(param),*(const affine3f*)transform);
+  }
+  
+
+
+
+  
+
   
   BN_API
   BNFrameBuffer bnFrameBufferCreate(BNContext context,

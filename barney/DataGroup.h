@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,6 +18,7 @@
 
 #include "barney/Group.h"
 #include "barney.h"
+#include <set>
 
 namespace barney {
 
@@ -27,6 +28,8 @@ namespace barney {
   struct Triangles;
   struct Context;
   struct Texture;
+  struct Data;
+  struct Light;
   
   struct DataGroup : public Object {
     typedef std::shared_ptr<DataGroup> SP;
@@ -35,7 +38,7 @@ namespace barney {
     virtual ~DataGroup();
     
     OWLContext getOWL() const;
-    
+
     static SP create(Model *model, int localID)
     { return std::make_shared<DataGroup>(model,localID); }
 
@@ -102,7 +105,11 @@ namespace barney {
                                           std::vector<int> &blockLevels,
                                           std::vector<int> &blockOffsets,
                                           std::vector<float> &blockScalars);
-    
+
+    Data *createData(BNDataType dataType,
+                     size_t numItems,
+                     const void *items);
+    Light *createLight(const std::string &type);
     void setInstances(std::vector<Group::SP> &groups,
                       const affine3f *xfms);
     

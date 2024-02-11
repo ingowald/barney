@@ -15,7 +15,89 @@
 // ======================================================================== //
 
 #include "barney/Data.h"
+#include "barney/DataGroup.h"
 
 namespace barney {
 
+  const std::string to_string(BNDataType type)
+  {
+    switch (type) {
+    case BN_DATA_UNDEFINED:
+      return "BN_DATA_UNDEFINED";
+    case BN_DATA:
+      return "BN_DATA";
+    case BN_OBJECT:
+      return "BN_OBJECT";
+    case BN_TEXTURE:
+      return "BN_TEXTURE";
+    case BN_INT:
+      return "BN_INT";
+    case BN_INT2:
+      return "BN_INT2";
+    case BN_INT3:
+      return "BN_INT3";
+    case BN_INT4:
+      return "BN_INT4";
+    case BN_FLOAT:
+      return "BN_FLOAT";
+    case BN_FLOAT2:
+      return "BN_FLOAT2";
+    case BN_FLOAT3:
+      return "BN_FLOAT3";
+    case BN_FLOAT4:
+      return "BN_FLOAT4";
+    default:
+      throw std::runtime_error("#bn internal error: to_string not implemented for "
+                               "numerical BNDataType #"+std::to_string(int(type)));
+    };
+  };
+  
+  PODData::~PODData()
+  {
+    if (owl) owlBufferRelease(owl);
+  }
+
+  Data::SP Data::create(DataGroup *owner,
+                        BNDataType type,
+                        size_t numItems,
+                        const void *items)
+  {
+    switch(type) {
+    case BN_OBJECT:
+      return std::make_shared<ObjectRefsData>(owner,type,numItems,items);
+    default:
+      throw std::runtime_error("un-implemented data type '"+to_string(type)
+                               +" in Data::create()");
+    }
+  }
+  
+  Data::Data(DataGroup *owner,
+             BNDataType type,
+             size_t numItems)
+    : Object(owner->context),
+      type(type),
+      count(numItems)
+  {}
+  
+  PODData::PODData(DataGroup *owner,
+                   BNDataType type,
+                   size_t numItems,
+                   const void *_items)
+    : Data(owner,type,numItems)
+  {
+    throw std::runtime_error
+      ("un-implemented data type '"+to_string(type)+" in PODData::PODData()");
+  }
+
+  ObjectRefsData::ObjectRefsData(DataGroup *owner,
+                                 BNDataType type,
+                                 size_t numItems,
+                                 const void *_items)
+    : Data(owner,type,numItems)
+  {
+    items.resize(numItems);
+    for (int i=0;i<numItems;i++)
+      items[i] = (((Object **)_items)[i])->shared_from_this();
+  }
+  
 };

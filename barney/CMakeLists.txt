@@ -111,6 +111,8 @@ add_library(barney STATIC
   DeviceGroup.cpp
   LocalContext.h
   LocalContext.cpp
+  Object.h
+  Object.cpp
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
   fb/FrameBuffer.cpp
@@ -124,6 +126,10 @@ add_library(barney STATIC
   Group.cpp
   DataGroup.h
   DataGroup.cpp
+  Data.h
+  Data.cpp
+  Light.h
+  Light.cpp
   Texture.h
   Texture.cpp
   # actual geometry types

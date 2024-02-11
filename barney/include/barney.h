@@ -23,8 +23,9 @@
 
 #define BN_API extern "C"
 
+typedef struct _BNContext                           *BNContext;
 typedef struct _BNObject                         {} *BNObject;
-typedef struct _BNContext      *BNContext;
+typedef struct _BNData         : public _BNObject{} *BNData;
 typedef struct _BNScalarField  : public _BNObject{} *BNScalarField;
 typedef struct _BNGeom         : public _BNObject{} *BNGeom;
 typedef struct _BNVolume       : public _BNObject{} *BNVolume;
@@ -33,9 +34,8 @@ typedef struct _BNModel        : public _BNObject{} *BNModel;
 typedef struct _BNFrameBuffer  : public _BNObject{} *BNFrameBuffer;
 typedef struct _BNDataGroup    : public _BNObject{} *BNDataGroup;
 typedef struct _BNTexture2D    : public _BNObject{} *BNTexture2D;
+typedef struct _BNLight        : public _BNObject{} *BNLight;
 typedef BNTexture2D BNTexture;
-
-typedef enum { BN_FLOAT, BN_UINT8 } BNScalarType;
 
 typedef enum {
   /*! a undefined data type */
@@ -56,8 +56,12 @@ typedef enum {
   BN_FLOAT2,
   BN_FLOAT3,
   BN_FLOAT4,
+  
   BN_RAW_DATA_BASE
 } BNDataType;
+
+typedef  enum { BN_SCALAR_UINT8, BN_SCALAR_FLOAT=(int)BN_FLOAT  } BNScalarType;
+
 
 struct BNMaterial {
   float3 baseColor          { .7f,.7f,.7f };
@@ -126,6 +130,73 @@ struct BNGridlet {
 
 #define BN_FOVY_DEGREES(degrees) ((float)(degrees*M_PI/180.f))
 
+// ==================================================================
+// general set/commit semantics
+// ==================================================================
+
+BN_API
+void bnCommit(BNObject target);
+              
+BN_API
+void bnSetString(BNObject target, const char *arg, const char *value);
+
+BN_API
+void bnSetData(BNObject target, const char *arg, const BNData value);
+
+BN_API
+void bnSetObject(BNObject target, const char *arg, const BNObject value);
+
+BN_API
+void bnSetLight(BNObject target, const char *arg, const BNLight value);
+
+BN_API
+void bnSet1i(BNObject target, const char *arg, int value);
+
+BN_API
+void bnSet2i(BNObject target, const char *arg, int x, int y);
+
+BN_API
+void bnSet2ic(BNObject target, const char *arg, int2 v);
+
+BN_API
+void bnSet3i(BNObject target, const char *arg, int x, int y, int z);
+
+BN_API
+void bnSet3ic(BNObject target, const char *arg, int3 v);
+
+BN_API
+void bnSet4i(BNObject target, const char *arg, int x, int y, int z, int w);
+
+BN_API
+void bnSet4ic(BNObject target, const char *arg, int4 v);
+
+BN_API
+void bnSet1f(BNObject target, const char *arg, float value);
+
+BN_API
+void bnSet2f(BNObject target, const char *arg, float x, float y);
+
+BN_API
+void bnSet2fc(BNObject target, const char *arg, float2 v);
+
+BN_API
+void bnSet3f(BNObject target, const char *arg, float x, float y, float z);
+
+BN_API
+void bnSet3fc(BNObject target, const char *arg, float3 v);
+
+BN_API
+void bnSet4f(BNObject target, const char *arg, float x, float y, float z, float w);
+
+BN_API
+void bnSet4fc(BNObject target, const char *arg, float4 v);
+
+BN_API
+void bnSet4x3fv(BNObject target, const char *arg, const float *affineMatrix);
+
+
+/*! helper function to fill in a BNCamera structure from a more
+    user-friendly from/at/up/fovy specification */
 BN_API
 void bnPinholeCamera(BNCamera *camera,
                      float3 from,
@@ -258,6 +329,8 @@ BNData bnDataCreate(BNDataGroup dataGroup,
                     BNDataType dataType,
                     size_t numItems,
                     const void *items);
+BN_API
+BNLight bnLightCreate(BNDataGroup dataGroup, const char *type);
                     
 BN_API
 BNGroup bnGroupCreate(BNDataGroup dataGroup,

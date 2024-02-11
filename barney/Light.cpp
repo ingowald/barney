@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2019-2020 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,26 +14,33 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "cuda-helper.h"
+#include "barney/Light.h"
+#include "barney/DataGroup.h"
+#include "barney/Context.h"
 
-#ifdef _WIN32
+namespace barney {
 
-// Custom usleep function for Windows
-void usleep(__int64 usec)
-{
-    // Convert microseconds to milliseconds (1 millisecond = 1000 microseconds)
-    // Minimum sleep time is 1 millisecond
-    __int64 msec = (usec / 1000 > 0) ? (usec / 1000) : 1;
+  Light::SP Light::create(DataGroup *owner,
+                          const std::string &type)
+  {
+    if (type == "directional")
+      return std::make_shared<DirectionalLight>(owner);
+    
+    owner->context->warn_unsupported_object("Light",type);
+    return {};
+  }
 
-    // Use the Sleep function from Windows API
-    Sleep(static_cast<DWORD>(msec));
-}
+  bool DirectionalLight::set(const std::string &member, const vec3f &value) 
+  {
+    if (member == "direction") {
+      direction = value;
+      return true;
+    }
+    if (member == "radiance") {
+      radiance = value;
+      return true;
+    }
+    return 0;
+  }
 
-// Custom sleep function for Windows, emulating Unix sleep
-void sleep(unsigned int seconds)
-{
-    // Convert seconds to milliseconds and call Sleep
-    Sleep(seconds * 1000);
-}
-
-#endif
+};

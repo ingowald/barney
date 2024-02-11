@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2019-2020 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,26 +14,35 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "cuda-helper.h"
+#include "barney/Object.h"
+#include "barney/Context.h"
+#include "barney/DataGroup.h"
 
-#ifdef _WIN32
+namespace barney {
 
-// Custom usleep function for Windows
-void usleep(__int64 usec)
-{
-    // Convert microseconds to milliseconds (1 millisecond = 1000 microseconds)
-    // Minimum sleep time is 1 millisecond
-    __int64 msec = (usec / 1000 > 0) ? (usec / 1000) : 1;
+  Object::Object(Context *context)
+    : context(context)
+  {}
+  
+  DataGroupObject::DataGroupObject(DataGroup *owner)
+    : Object(owner->context),
+      owner(owner)
+  {}
 
-    // Use the Sleep function from Windows API
-    Sleep(static_cast<DWORD>(msec));
+  void Object::warn_unsupported_member(const std::string &type,
+                                       const std::string &member)
+  {
+    std::string key = toString()+"_"+type+"_"+member;
+    if (context->alreadyWarned.find(key) != context->alreadyWarned.end())
+      return;
+    std::cout << OWL_TERMINAL_RED
+              << "#bn: warning - invalid member access. "
+              << "Object '" << toString() << "' does not have a member '"<<member<<"'"
+              << " of type '"<< type << "'"
+              << OWL_TERMINAL_DEFAULT << std::endl;
+    context->alreadyWarned.insert(key);
+  }
+  
+
 }
 
-// Custom sleep function for Windows, emulating Unix sleep
-void sleep(unsigned int seconds)
-{
-    // Convert seconds to milliseconds and call Sleep
-    Sleep(seconds * 1000);
-}
-
-#endif

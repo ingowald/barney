@@ -80,11 +80,11 @@ namespace barney {
     cudaChannelFormatDesc desc;
     size_t sizeOfScalar;
     switch (scalarType) {
-    case BN_FLOAT:
+    case BN_SCALAR_FLOAT:
       desc = cudaCreateChannelDesc<float>();
       sizeOfScalar = 4;
       break;
-    case BN_UINT8:
+    case BN_SCALAR_UINT8:
       desc = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 1;
       break;
@@ -129,7 +129,7 @@ namespace barney {
       textureDesc.addressMode[2]   = cudaAddressModeClamp;
       textureDesc.filterMode       = cudaFilterModeLinear;
       textureDesc.readMode
-        = scalarType == BN_UINT8
+        = scalarType == BN_SCALAR_UINT8
         ? cudaReadModeNormalizedFloat
         : cudaReadModeElementType;
       // textureDesc.readMode         = cudaReadModeElementType;

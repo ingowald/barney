@@ -29,6 +29,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include "barney.h"
 
 #define __barney_align(a) OWL_ALIGN(a)
 

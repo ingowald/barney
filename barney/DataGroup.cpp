@@ -16,6 +16,8 @@
 
 #include "barney/DataGroup.h"
 #include "barney/Model.h"
+#include "barney/Data.h"
+#include "barney/Light.h"
 #include "barney/Texture.h"
 #include "barney/geometry/Spheres.h"
 #include "barney/geometry/Cylinders.h"
@@ -98,6 +100,18 @@ namespace barney {
       (std::make_shared<Spheres>(this,material,origins,numOrigins,colors,radii,defaultRadius));
   }
 
+  Data *DataGroup::createData(BNDataType dataType,
+                              size_t numItems,
+                              const void *items)
+  {
+    return getContext()->initReference(Data::create(this,dataType,numItems,items));
+  }
+  
+  Light *DataGroup::createLight(const std::string &type)
+  {
+    return getContext()->initReference(Light::create(this,type));
+  }
+  
   Texture *DataGroup::createTexture(BNTexelFormat texelFormat,
                                     vec2i size,
                                     const void *texels,

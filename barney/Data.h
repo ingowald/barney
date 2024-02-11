@@ -16,16 +16,48 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "barney/Object.h"
 
 namespace barney {
 
-  struct Data {
+  const std::string to_string(BNDataType type);
+  
+  struct Data : public Object {
     typedef std::shared_ptr<Data> SP;
 
+    Data(DataGroup *owner,
+         BNDataType type,
+         size_t numItems);
+    virtual ~Data() = default;
+    
+    static Data::SP create(DataGroup *owner,
+                           BNDataType type,
+                           size_t numItems,
+                           const void *items);
+    
     BNDataType type  = BN_DATA_UNDEFINED;
-    OWLBuffer  owl   = 0;
     size_t     count = 0;
+  };
+
+  struct PODData : public Data {
+    PODData(DataGroup *owner,
+                           BNDataType type,
+                           size_t numItems,
+            const void *items);
+    virtual ~PODData();
+    
+    OWLBuffer  owl   = 0;
+  };
+
+  /*! data array over reference-counted barney object handles (e.g.,
+      BNTexture's, BNlight's, etc. this has to make sure that objects
+      put into this data array will remain properly refcoutned. */
+  struct ObjectRefsData : public Data {
+    ObjectRefsData(DataGroup *owner,
+                   BNDataType type,
+                   size_t numItems,
+                   const void *items);
+    std::vector<Object::SP> items;
   };
   
 };

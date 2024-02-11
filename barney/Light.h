@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2019-2020 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,26 +14,37 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "cuda-helper.h"
+#pragma once
 
-#ifdef _WIN32
+#include "barney/Object.h"
 
-// Custom usleep function for Windows
-void usleep(__int64 usec)
-{
-    // Convert microseconds to milliseconds (1 millisecond = 1000 microseconds)
-    // Minimum sleep time is 1 millisecond
-    __int64 msec = (usec / 1000 > 0) ? (usec / 1000) : 1;
+namespace barney {
 
-    // Use the Sleep function from Windows API
-    Sleep(static_cast<DWORD>(msec));
-}
+  struct DataGroup;
+  
+  struct Light : public DataGroupObject {
+    typedef std::shared_ptr<Light> SP;
 
-// Custom sleep function for Windows, emulating Unix sleep
-void sleep(unsigned int seconds)
-{
-    // Convert seconds to milliseconds and call Sleep
-    Sleep(seconds * 1000);
-}
+    Light(DataGroup *owner) : DataGroupObject(owner) {}
 
-#endif
+    std::string toString() const override { return "Light<>"; }
+    
+    static Light::SP create(DataGroup *owner, const std::string &name);
+  };
+
+
+  struct DirectionalLight : public Light {
+    DirectionalLight(DataGroup *owner) : Light(owner) {}
+    struct DD {
+      vec3f direction;
+      vec3f radiance;
+    };
+    
+    std::string toString() const override { return "DirectionalLight"; }
+    
+    bool set(const std::string &member, const vec3f &value) override;
+    
+    vec3f direction;
+    vec3f radiance;
+  };
+};

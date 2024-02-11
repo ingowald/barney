@@ -16,18 +16,20 @@
 
 #pragma once
 
-#include "barney/Data.h"
+#include "barney/common/barney-common.h"
 
 namespace barney {
 
   struct Context;
+  struct DataGroup;
   
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
   struct Object : public std::enable_shared_from_this<Object> {
     typedef std::shared_ptr<Object> SP;
 
-    Object(Context *context) : context(context) {}
+    Object(Context *context);
+    Object(DataGroup *owner);
     virtual ~Object() {}
 
     /*! dynamically cast to another (typically derived) class, e.g. to
@@ -41,20 +43,24 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const;
 
+    void warn_unsupported_member(const std::string &type,
+                                 const std::string &member);
 
-    virtual bool set(const std::string &arg, const std::shared_ptr<Object> &value)
+    virtual bool set(const std::string &member,
+                     const Object::SP &value)
     { return false; }
-    virtual bool set(const std::string &arg, const Data::SP &value)
+    virtual bool set(const std::string &member,
+                     const std::string &value)
     { return false; }
-    virtual bool set(const std::string &arg, const int    value) { return false; }
-    virtual bool set(const std::string &arg, const float &value) { return false; }
-    virtual bool set(const std::string &arg, const vec2f &value) { return false; }
-    virtual bool set(const std::string &arg, const vec3f &value) { return false; }
-    virtual bool set(const std::string &arg, const vec4f &value) { return false; }
-    virtual bool set(const std::string &arg, const int    value) { return false; }
-    virtual bool set(const std::string &arg, const vec2i &value) { return false; }
-    virtual bool set(const std::string &arg, const vec3i &value) { return false; }
-    virtual bool set(const std::string &arg, const vec4i &value) { return false; }
+    virtual bool set(const std::string &member, const float &value) { return false; }
+    virtual bool set(const std::string &member, const vec2f &value) { return false; }
+    virtual bool set(const std::string &member, const vec3f &value) { return false; }
+    virtual bool set(const std::string &member, const vec4f &value) { return false; }
+    virtual bool set(const std::string &member, const int    value) { return false; }
+    virtual bool set(const std::string &member, const vec2i &value) { return false; }
+    virtual bool set(const std::string &member, const vec3i &value) { return false; }
+    virtual bool set(const std::string &member, const vec4i &value) { return false; }
+    virtual bool set(const std::string &member, const affine3f &value) { return false; }
     
     virtual void commit() {}
 
@@ -66,6 +72,12 @@ namespace barney {
     Context *const context;
   };
 
+  /*! a object owned (only) in a particular data group */
+  struct DataGroupObject : public Object {
+    DataGroupObject(DataGroup *owner);
+    virtual ~DataGroupObject() = default;
+    DataGroup *const owner;
+  };
 
   // ==================================================================
   // INLINE IMPLEMENTATION SECTION

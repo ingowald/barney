@@ -249,5 +249,20 @@ namespace barney {
     }
   }
   
+  /*! helper function to print a warning when app tries to create an
+    object of certain kind and type that barney does not support */
+  void Context::warn_unsupported_object(const std::string &kind,
+                                        const std::string &type)
+  {
+    if (alreadyWarned.find(kind+"::"+type) != alreadyWarned.end())
+      return;
+    std::cout << OWL_TERMINAL_RED
+              << "#bn: asked to create object of unknown/unsupported type '"
+              <<  kind << "::" << type << "'"
+              << " that I know nothing about"
+              << OWL_TERMINAL_DEFAULT << std::endl;
+    alreadyWarned.insert(kind+"::"+type);
+  }
+  
 }
 

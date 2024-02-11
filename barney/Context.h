@@ -34,7 +34,6 @@ namespace barney {
   
   struct Context// : public Object
   {
-    
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs,
             int globalIndex,
@@ -52,6 +51,7 @@ namespace barney {
     template<typename T>
     T *initReference(std::shared_ptr<T> sp)
     {
+      if (!sp) return 0;
       std::lock_guard<std::mutex> lock(mutex);
       hostOwnedHandles[sp]++;
       return sp.get();
@@ -124,12 +124,9 @@ namespace barney {
                      int pathsPerPixel);
     
     virtual void render(Model *model,
-                        const barney::Camera &camera,
+                        const barney::Camera &camera, 
                         FrameBuffer *fb,
                         int pathsPerPixel) = 0;
-    
-    // const std::vector<int> dataGroupIDs;
-    // const std::vector<int> gpuIDs;
 
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;
@@ -137,8 +134,14 @@ namespace barney {
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
 
-    /*! list of all device(s) in this context */
-    // std::vector<DeviceContext *> devices;
+
+    
+    /*! helper function to print a warning when app tries to create an
+        object of certain kind and type that barney does not
+        support */
+    void warn_unsupported_object(const std::string &kind,
+                                 const std::string &type);
+    std::set<std::string> alreadyWarned;
 
     struct PerDG {
       int dataGroupID;
