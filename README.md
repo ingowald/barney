@@ -19,6 +19,7 @@ with an API, and needs other applications to build towards it. As
 such, it is never "run" on its own; it also needs to be run from another
 application (e.g., `hayStack`, at http://github.org/ingowald/hayStack).
 
+
 ## Dependencies for building Barney
 
 Barney requires the following additional tools and/or packages to build:
