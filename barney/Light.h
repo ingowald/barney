@@ -41,15 +41,18 @@ namespace barney {
     
     std::string toString() const override { return "EnvMapLight"; }
     
+    void commit() override;
+    
     bool set2i(const std::string &member, const vec2i &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
     bool set4x3f(const std::string &member, const affine3f &value) override;
     bool setData(const std::string &member, const Data::SP &value) override;
 
     struct {
-      vec2i    dims;
-      affine3f transform;
-      Data::SP texels;
+      vec2i       dims { 0, 0 };
+      affine3f    transform;
+      PODData::SP texels;
+      OWLBuffer   texelsBuffer = 0;
     } envMap;
   };
 
@@ -67,7 +70,7 @@ namespace barney {
   struct QuadLight : public Light {
     typedef std::shared_ptr<QuadLight> SP;
     QuadLight(DataGroup *owner) : Light(owner) {}
-    
+
     std::string toString() const override { return "DirectionalLight"; }
     
     bool set3f(const std::string &member, const vec3f &value) override;

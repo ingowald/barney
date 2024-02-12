@@ -21,6 +21,7 @@
 namespace barney {
 
   const std::string to_string(BNDataType type);
+  OWLDataType owlTypeFor(BNDataType type);
   
   struct Data : public Object {
     typedef std::shared_ptr<Data> SP;
@@ -40,6 +41,7 @@ namespace barney {
   };
 
   struct PODData : public Data {
+    typedef std::shared_ptr<PODData> SP;
     PODData(DataGroup *owner,
             BNDataType type,
             size_t numItems,

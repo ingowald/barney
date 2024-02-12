@@ -71,7 +71,7 @@ The `barney_mpi` dependency will automatically pull in the cmake `MPI::MPI_CXX` 
 
 Example: PBRT landscape in `miniScene` (http://github.com/ingowald/miniScene) format:
 
-![](jpg/ls.jpg)
+![](jpg/ls-collage.jpg)
 
 Working:
 
