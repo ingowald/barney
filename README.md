@@ -104,17 +104,13 @@ and any volume can be distributed across different ranks by each rank
 having different porions of that volume. `Barney` being intended for
 sci-vis, every volume can have its own transfer function.
 
-## Engine (`256x256x128_uint8`)
-![](jpg/engine.jpg)
+![](jpg/structured-collage.jpg)
 
-## Large Structured Data: `rot-strat` (`4096x4096x4096_float`) data-parallel on 8x `RTX8000` (4 nodes, 2 GPUs each)
+a) `Engine` (`256x256x128_uint8`), Dell XPS Laptop
 
-Once with a "fuzzy" transfer function (low density):
-![](jpg/rotstrat-fuzzy.jpg)
+b) `rot-strat` (`4096x4096x4096_float`) data-parallel on 8x `RTX8000` (4 nodes, 2 GPUs each)
 
-... and same, with a very dense transfer function:
-![](jpg/rotstrat-dense.jpg)
-
+c) same, with a very dense transfer function:
 
 ## Unstructured-Mesh Data
 
