@@ -41,8 +41,10 @@ namespace barney {
 
     this->launch_sync();
     rays.swap();
-    rays.numActive = *rays.d_nextWritePos;
-    *rays.d_nextWritePos = 0;
+    // rays.numActive = *rays.d_nextWritePos;
+    // *rays.d_nextWritePos = 0;
+    rays.numActive = rays.readNumActive();
+    rays.resetWriteQueue();
   }
   
   void DeviceContext::shadeRays_sync()
@@ -50,8 +52,11 @@ namespace barney {
     SetActiveGPU forDuration(device);
     launch_sync();
     rays.swap();
-    rays.numActive = *rays.d_nextWritePos;
-    *rays.d_nextWritePos = 0;
+    rays.numActive = rays.readNumActive();
+    rays.resetWriteQueue();
+    // rays.numActive = *rays.d_nextWritePos;
+
+    // *rays.d_nextWritePos = 0;
   }
 
   void DeviceContext::traceRays_launch(Model *model)

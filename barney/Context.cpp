@@ -166,16 +166,18 @@ namespace barney {
 
     // iw - todo: add wave-front-merging here.
     for (int p=0;p<pathsPerPixel;p++) {
+      double _t0 = getCurrentTime();
       generateRays(camera,fb);
       for (auto dev : devices) dev->launch_sync();
 
       for (int generation=0;true;generation++) {
         traceRaysGlobally(model);
+        // do we need this here?
         for (auto dev : devices) dev->launch_sync();
 
         shadeRaysLocally(model, fb, generation);
-        for (auto dev : devices) dev->launch_sync();
-      
+        // no sync required here, shadeRays syncs itself.
+        
         const int numActiveGlobally = numRaysActiveGlobally();
         if (numActiveGlobally > 0)
           continue;

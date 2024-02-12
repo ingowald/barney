@@ -104,7 +104,7 @@ namespace barney {
         else
           tile_z = min(tile_z,z);
       }
-        
+
       valueToAccumInto = valueToAccum;
     }
 
@@ -617,6 +617,13 @@ namespace barney {
           // PRIMARY ray that didn't hit anything -> background
           // ----------------------------------------------------------------
           fragment = path.throughput * backgroundOrEnv(world,path);
+
+          const vec3f fromEnv = 1.5f*backgroundOrEnv(world,path);
+          const vec3f tp = path.throughput;
+          const vec3f addtl = tp
+            * fromEnv;
+          fragment = addtl;
+          
         } else {
           // ----------------------------------------------------------------
           // SECONDARY ray that didn't hit anything -> env-light
@@ -826,20 +833,20 @@ namespace barney {
         g_shadeRays_local<<<nb,bs,0,device->launchStream>>>
           (fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
-           rays.receiveAndShadeWriteQueue,rays.d_nextWritePos,generation);
+           rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
       case RENDER_MODE_AO:
         g_shadeRays_ao<<<nb,bs,0,device->launchStream>>>
           (fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
-           rays.receiveAndShadeWriteQueue,rays.d_nextWritePos,generation);
+           rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
       case RENDER_MODE_PT:
         g_shadeRays_pt<<<nb,bs,0,device->launchStream>>>
           (world->getDD(device),
            fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
-           rays.receiveAndShadeWriteQueue,rays.d_nextWritePos,generation);
+           rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
       }
     }

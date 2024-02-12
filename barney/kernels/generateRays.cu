@@ -140,7 +140,7 @@ namespace barney {
        rngSeed,
        fb->owner->accumID,
        fb->numPixels,
-       rays.d_nextWritePos,
+       rays._d_nextWritePos,
        rays.receiveAndShadeWriteQueue,
        fb->tileDescs);
   }
