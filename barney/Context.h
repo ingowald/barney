@@ -115,7 +115,7 @@ namespace barney {
       devices and, where applicable, across all ranks */
     virtual int numRaysActiveGlobally() = 0;
 
-    void shadeRaysLocally(FrameBuffer *fb, int generation);
+    void shadeRaysLocally(Model *model, FrameBuffer *fb, int generation);
     void finalizeTiles(FrameBuffer *fb);
     
     void renderTiles(Model *model,

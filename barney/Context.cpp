@@ -99,12 +99,12 @@ namespace barney {
     return numActive;
   }
 
-  void Context::shadeRaysLocally(FrameBuffer *fb, int generation)
+  void Context::shadeRaysLocally(Model *model, FrameBuffer *fb, int generation)
   {
     // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
-      dev->shadeRays_launch(fb->perDev[localID].get(),generation);
+      dev->shadeRays_launch(model,fb->perDev[localID].get(),generation);
     }
     // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
@@ -173,7 +173,7 @@ namespace barney {
         traceRaysGlobally(model);
         for (auto dev : devices) dev->launch_sync();
 
-        shadeRaysLocally(fb, generation);
+        shadeRaysLocally(model, fb, generation);
         for (auto dev : devices) dev->launch_sync();
       
         const int numActiveGlobally = numRaysActiveGlobally();
@@ -257,8 +257,8 @@ namespace barney {
     if (alreadyWarned.find(kind+"::"+type) != alreadyWarned.end())
       return;
     std::cout << OWL_TERMINAL_RED
-              << "#bn: asked to create object of unknown/unsupported type '"
-              <<  kind << "::" << type << "'"
+              << "#bn: asked to create object of unknown/unsupported "
+              <<  kind << " of type '" << type << "'"
               << " that I know nothing about"
               << OWL_TERMINAL_DEFAULT << std::endl;
     alreadyWarned.insert(kind+"::"+type);

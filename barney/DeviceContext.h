@@ -23,6 +23,9 @@ namespace barney {
 
   struct TiledFB;
   struct Model;
+  namespace render {
+    struct World;
+  };
   
   struct DeviceContext
   {
@@ -37,7 +40,7 @@ namespace barney {
     
     DeviceContext(Device::SP device);
 
-    void shadeRays_launch(TiledFB *fb, int generation);
+    void shadeRays_launch(Model *model, TiledFB *fb, int generation);
     void shadeRays_sync();
     void traceRays_launch(Model *model);
     

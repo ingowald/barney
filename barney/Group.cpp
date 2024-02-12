@@ -40,7 +40,16 @@ namespace barney {
   /*! implements the parameter set/commit paradigm */
   bool Group::setObject(const std::string &member, const Object::SP &value)
   {
-    PING;
+    return false;
+  }
+  
+  /*! implements the parameter set/commit paradigm */
+  bool Group::setData(const std::string &member, const Data::SP &value)
+  {
+    if (member == "lights") {
+      this->lights = value->as<ObjectRefsData>();
+      return true;
+    }
     return false;
   }
   

@@ -40,6 +40,8 @@ namespace barney {
     
     /*! implements the parameter set/commit paradigm */
     bool setObject(const std::string &member, const Object::SP &value) override;
+    /*! implements the parameter set/commit paradigm */
+    bool setData(const std::string &member, const Data::SP &value) override;
     // ------------------------------------------------------------------
     
     void build();
@@ -55,7 +57,7 @@ namespace barney {
     const std::vector<Geometry::SP> geoms;
 
     /*! lights assigned to this group */
-    Data::SP lights;
+    ObjectRefsData::SP lights;
     
     std::vector<OWLGeom> triangleGeoms;
     std::vector<OWLGeom> userGeoms;

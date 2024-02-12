@@ -94,10 +94,6 @@ namespace barney {
     
     int size() const { return (int)devices.size(); }
     
-    // OWLGeomType getOrCreateGeomTypeFor
-    // (const std::string &geomTypeString,
-    //  OWLGeomType (*createOnce)(DevGroup *,const std::string &typeString));
-
     template<typename CreateGTLambda>
     OWLGeomType
     getOrCreateGeomTypeFor(const std::string &geomTypeString,

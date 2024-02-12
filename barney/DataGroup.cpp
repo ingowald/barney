@@ -30,7 +30,8 @@ namespace barney {
     : Object(model->context),
       model(model),
       localID(localID),
-      devGroup(model->context->perDG[localID].devGroup)
+      devGroup(model->context->perDG[localID].devGroup),
+      world(model->context->perDG[localID].devGroup.get())
   {}
 
   DataGroup::~DataGroup()
@@ -146,12 +147,28 @@ namespace barney {
   void DataGroup::build()
   { 
     multiPassInstances.clear();
-   
+
+    std::vector<render::QuadLight> quadLights;
+    std::vector<render::DirLight>  dirLights;
+
     std::vector<affine3f> owlTransforms;
     std::vector<OWLGroup> owlGroups;
     for (int i=0;i<instances.groups.size();i++) {
       Group *group = instances.groups[i].get();
-        
+      if (group->lights)
+        for (auto &light : group->lights->items) {
+          if (!light) continue;
+          if (QuadLight::SP quadLight = light->as<QuadLight>()) {
+            quadLights.push_back(quadLight->content);
+            continue;
+          } 
+          if (DirLight::SP dirLight = light->as<DirLight>()) {
+            dirLights.push_back(dirLight->content);
+            continue;
+          }
+        }
+      
+      
       if (group->userGeomGroup) {
         owlGroups.push_back(group->userGeomGroup);
         owlTransforms.push_back(instances.xfms[i]);
@@ -183,6 +200,9 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
+    
+    world.set(quadLights);
+    world.set(dirLights);
   }
 
 }

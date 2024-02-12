@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/Group.h"
+#include "barney/render/World.h"
 #include "barney.h"
 #include <set>
 
@@ -30,6 +31,9 @@ namespace barney {
   struct Texture;
   struct Data;
   struct Light;
+  namespace render {
+    struct World;
+  }
   
   struct DataGroup : public Object {
     typedef std::shared_ptr<DataGroup> SP;
@@ -124,6 +128,7 @@ namespace barney {
 
     void build();
 
+    render::World world;
     MultiPass::Instances multiPassInstances;
     DevGroup::SP   const devGroup;
     Model         *const model;

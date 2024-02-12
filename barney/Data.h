@@ -53,6 +53,7 @@ namespace barney {
       BNTexture's, BNlight's, etc. this has to make sure that objects
       put into this data array will remain properly refcoutned. */
   struct ObjectRefsData : public Data {
+    typedef std::shared_ptr<ObjectRefsData> SP;
     ObjectRefsData(DataGroup *owner,
                    BNDataType type,
                    size_t numItems,

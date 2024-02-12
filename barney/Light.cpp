@@ -24,22 +24,27 @@ namespace barney {
                           const std::string &type)
   {
     if (type == "directional")
-      return std::make_shared<DirectionalLight>(owner);
+      return std::make_shared<DirLight>(owner);
     
     owner->context->warn_unsupported_object("Light",type);
     return {};
   }
 
-  bool DirectionalLight::set3f(const std::string &member, const vec3f &value) 
+  bool DirLight::set3f(const std::string &member, const vec3f &value) 
   {
     if (member == "direction") {
-      direction = value;
+      content.direction = value;
       return true;
     }
     if (member == "radiance") {
-      radiance = value;
+      content.radiance = value;
       return true;
     }
+    return 0;
+  }
+
+  bool QuadLight::set3f(const std::string &member, const vec3f &value) 
+  {
     return 0;
   }
 
