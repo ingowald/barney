@@ -38,23 +38,28 @@ namespace barney {
       vec3f direction;
       vec3f radiance;
     };
+
+    struct EnvMapLight {
+      struct DD {
+        affine3f   transform;
+        cudaTextureObject_t texture;
+      };
+      affine3f   transform;
+      OWLTexture texture;
+    };
   
     /*! the rendering/path racing related part of a model that describes
       global render settings like light sources, background, envmap,
       etc */
     struct World {
       struct DD {
-        int        numQuadLights = 0;
-        QuadLight *quadLights    = nullptr;
-        int        numDirLights  = 0;
-        DirLight  *dirLights     = nullptr;
-        struct {
-          const uint8_t *texels = 0;
-          // const float   *cdf;
-          vec2i    size { 0,0 };
-          affine3f transform;
-        } envMapLight;
+        int         numQuadLights = 0;
+        QuadLight  *quadLights    = nullptr;
+        int         numDirLights  = 0;
+        DirLight   *dirLights     = nullptr;
+        EnvMapLight::DD envMapLight;
       };
+      EnvMapLight envMapLight;
 
       World(DevGroup *devGroup)
         : devGroup(devGroup)
@@ -86,12 +91,18 @@ namespace barney {
         }
         numDirLights = dirLights.size();
       }
+      void set(EnvMapLight envMapLight) {
+        this->envMapLight = envMapLight;
+      };
       DD getDD(const Device::SP &device) const {
         DD dd;
         dd.quadLights = (QuadLight *)owlBufferGetPointer(quadLightsBuffer,device->owlID);
         dd.numQuadLights = numQuadLights;
         dd.dirLights = (DirLight *)owlBufferGetPointer(dirLightsBuffer,device->owlID);
         dd.numDirLights = numDirLights;
+        dd.envMapLight.texture
+          = owlTextureGetObject(envMapLight.texture,device->owlID);
+        dd.envMapLight.transform = envMapLight.transform;
         return dd;
       }
 

@@ -46,7 +46,9 @@ namespace barney {
                                 texels,
                                 (OWLTextureFilterMode)filterMode,
                                 (OWLTextureAddressMode)addressMode,
-                                (OWLTextureColorSpace)colorSpace);
+                                // (OWLTextureColorSpace)colorSpace
+  OWL_COLOR_SPACE_LINEAR
+                                );
   }
 
 }

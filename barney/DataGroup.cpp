@@ -153,6 +153,8 @@ namespace barney {
 
     std::vector<affine3f> owlTransforms;
     std::vector<OWLGroup> owlGroups;
+    EnvMapLight::SP envMapLight;
+    
     for (int i=0;i<instances.groups.size();i++) {
       Group *group = instances.groups[i].get();
       if (group->lights)
@@ -166,8 +168,10 @@ namespace barney {
             dirLights.push_back(dirLight->content);
             continue;
           }
+          if (EnvMapLight::SP el = light->as<EnvMapLight>()) {
+            envMapLight = el;
+          }
         }
-      
       
       if (group->userGeomGroup) {
         owlGroups.push_back(group->userGeomGroup);
@@ -188,7 +192,7 @@ namespace barney {
         }
       multiPassInstances.instantiate(group,instances.xfms[i]);
     }
-
+      
     // if (owlGroups.size() == 0)
     //   std::cout << OWL_TERMINAL_RED
     //             << "warning: data group is empty..."
@@ -200,11 +204,11 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
-    
+    world.set(envMapLight?envMapLight->content:render::EnvMapLight{});
     world.set(quadLights);
     world.set(dirLights);
   }
-
+    
 }
 
   

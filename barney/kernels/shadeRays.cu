@@ -513,15 +513,48 @@ namespace barney {
       }
     }
   
+  inline __device__ float pbrt_clampf(float f, float lo, float hi)
+  { return max(lo,min(hi,f)); }
+  
+  inline __device__ float pbrtSphericalTheta(const vec3f &v)
+  {
+    return acosf(pbrt_clampf(v.z, -1.f, 1.f));
+  }
+  
+  inline __device__ float pbrtSphericalPhi(const vec3f &v)
+  {
+    float p = atan2f(v.y, v.x);
+    return (p < 0.f) ? (p + float(2.f * M_PI)) : p;
+  }
+
   
     inline __device__
-    vec3f radianceFromEnv(Ray &ray)
-    { return DEFAULT_RADIANCE_FROM_ENV; }
+    vec3f radianceFromEnv(const World::DD &world,
+                          Ray &ray)
+    { auto &env = world.envMapLight;
+      if (env.texture) {
+        vec3f d = xfmVector(env.transform,normalize(ray.dir));
+        // vec3f d = xfmVector(env.transform,-dir);
+        float theta = pbrtSphericalTheta(d);
+        float phi   = pbrtSphericalPhi(d);
+        const float invPi  = 1.f/M_PI;
+        const float inv2Pi = 1.f/(2.f*M_PI);
+        vec2f uv(phi * inv2Pi, theta * invPi);
+
+        float4 color = tex2D<float4>(env.texture,uv.x,uv.y);
+        float envLightPower = 1.f;//M_PI;;//1.5f;//2.f;
+        return envLightPower*vec3f(color.x,color.y,color.z);
+      } else
+        return DEFAULT_RADIANCE_FROM_ENV;
+    }
 
     /*! return dedicated background, if specifeid; otherwise return envmap color */
     inline __device__
-    vec3f backgroundOrEnv(Ray &ray)
+    vec3f backgroundOrEnv(const World::DD &world,
+                          Ray &ray)
     {
+      if (world.envMapLight.texture)
+        return radianceFromEnv(world,ray);
       return ray.hit.baseColor;
     }
 
@@ -532,14 +565,14 @@ namespace barney {
     }
   
     inline __device__
-    void bounce(World::DD &world,
+    void bounce(const World::DD &world,
                 vec3f &fragment,
                 Ray &path,
                 Ray &shadowRay,
                 int pathDepth)
     {
       const float EPS = 1e-4f;
-    
+
       const bool  hadNoIntersection  = !path.hadHit;
       const vec3f incomingThroughput = path.throughput;
       shadowRay.tMax = -1;
@@ -583,7 +616,7 @@ namespace barney {
           // ----------------------------------------------------------------
           // PRIMARY ray that didn't hit anything -> background
           // ----------------------------------------------------------------
-          fragment = path.throughput * backgroundOrEnv(path);
+          fragment = path.throughput * backgroundOrEnv(world,path);
         } else {
           // ----------------------------------------------------------------
           // SECONDARY ray that didn't hit anything -> env-light
@@ -591,7 +624,7 @@ namespace barney {
           // this path had at least one bounce, but now bounced into
           // nothingness - compute env-light contribution, and weigh it
           // with the path's carried throughput.
-          fragment = path.throughput * radianceFromEnv(path);
+          fragment = path.throughput * radianceFromEnv(world,path);
         }
         // no outgoing rays; this path is done.
         path.tMax = -1.f;

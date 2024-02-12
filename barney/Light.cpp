@@ -60,32 +60,32 @@ namespace barney {
   
   void EnvMapLight::commit()
   {
-    if (envMap.texels) {
-      envMap.texelsBuffer = envMap.texels->owl;
-      std::vector<vec4f> texels(envMap.texels->count);
-      SetActiveGPU forDuration(owner->devGroup->devices[0]);
-      BARNEY_CUDA_CALL(Memcpy(texels.data(),owlBufferGetPointer(envMap.texels->owl,0),
-                              envMap.texels->count*sizeof(vec4f),cudaMemcpyDefault));
-      BARNEY_CUDA_SYNC_CHECK();
-      float sum = 0.f;
-      for (int i=0;i<envMap.texels->count;i++) {
-        sum += reduce_max((const vec3f&)texels[i]);
-        texels[i].w = sum;
-      }
-      float rcp_sum = 1.f/sum;
-      for (int i=0;i<envMap.texels->count;i++) 
-        texels[i].w *= rcp_sum;
-      std::cout << "done computing CDF of envmap..." << std::endl;
-      owlBufferUpload(envMap.texels->owl,texels.data());
-    }
+    // if (envMap.texels) {
+    //   envMap.texelsBuffer = envMap.texels->owl;
+    //   std::vector<vec4f> texels(envMap.texels->count);
+    //   SetActiveGPU forDuration(owner->devGroup->devices[0]);
+    //   BARNEY_CUDA_CALL(Memcpy(texels.data(),owlBufferGetPointer(envMap.texels->owl,0),
+    //                           envMap.texels->count*sizeof(vec4f),cudaMemcpyDefault));
+    //   BARNEY_CUDA_SYNC_CHECK();
+    //   float sum = 0.f;
+    //   for (int i=0;i<envMap.texels->count;i++) {
+    //     sum += reduce_max((const vec3f&)texels[i]);
+    //     texels[i].w = sum;
+    //   }
+    //   float rcp_sum = 1.f/sum;
+    //   for (int i=0;i<envMap.texels->count;i++) 
+    //     texels[i].w *= rcp_sum;
+    //   std::cout << "done computing CDF of envmap..." << std::endl;
+    //   owlBufferUpload(envMap.texels->owl,texels.data());
+    // }
   }
   
   bool EnvMapLight::set2i(const std::string &member, const vec2i &value) 
   {
-    if (member == "envMap.dims") {
-      envMap.dims = value;
-      return true;
-    }
+    // if (member == "envMap.dims") {
+    //   envMap.dims = value;
+    //   return true;
+    // }
     return 0;
   }
 
@@ -97,16 +97,17 @@ namespace barney {
   bool EnvMapLight::set4x3f(const std::string &member, const affine3f &value) 
   {
     if (member == "envMap.transform") {
-      envMap.transform = value;
+      content.transform = value;
       return true;
     }
     return 0;
   }
 
-  bool EnvMapLight::setData(const std::string &member, const Data::SP &value) 
+  bool EnvMapLight::setObject(const std::string &member, const Object::SP &value) 
   {
-    if (member == "envMap.texels") {
-      envMap.texels = value->as<PODData>();
+    if (member == "envMap.texture") {
+      this->texture = value->as<Texture>();
+      content.texture = texture->owlTex;
       return true;
     }
     return 0;
