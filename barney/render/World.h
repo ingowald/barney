@@ -100,8 +100,12 @@ namespace barney {
         dd.numQuadLights = numQuadLights;
         dd.dirLights = (DirLight *)owlBufferGetPointer(dirLightsBuffer,device->owlID);
         dd.numDirLights = numDirLights;
-        dd.envMapLight.texture
-          = owlTextureGetObject(envMapLight.texture,device->owlID);
+        if (envMapLight.texture)
+          dd.envMapLight.texture 
+            = owlTextureGetObject(envMapLight.texture,device->owlID);
+        else 
+          dd.envMapLight.texture
+            = 0;
         dd.envMapLight.transform = envMapLight.transform;
         return dd;
       }
