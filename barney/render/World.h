@@ -39,10 +39,6 @@ namespace barney {
       vec3f radiance;
     };
   
-    struct EnvMapLight {
-      std::string toString();
-    };
-  
     /*! the rendering/path racing related part of a model that describes
       global render settings like light sources, background, envmap,
       etc */

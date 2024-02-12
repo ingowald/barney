@@ -58,6 +58,15 @@ namespace barney {
 
   // ==================================================================
   
+  bool EnvMapLight::set2i(const std::string &member, const vec2i &value) 
+  {
+    if (member == "envMap.dims") {
+      envMap.dims = value;
+      return true;
+    }
+    return 0;
+  }
+
   bool EnvMapLight::set3f(const std::string &member, const vec3f &value) 
   {
     return 0;
@@ -65,11 +74,19 @@ namespace barney {
 
   bool EnvMapLight::set4x3f(const std::string &member, const affine3f &value) 
   {
+    if (member == "envMap.transform") {
+      envMap.transform = value;
+      return true;
+    }
     return 0;
   }
 
   bool EnvMapLight::setData(const std::string &member, const Data::SP &value) 
   {
+    if (member == "envMap.texels") {
+      envMap.texels = value;
+      return true;
+    }
     return 0;
   }
 
