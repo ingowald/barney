@@ -25,11 +25,17 @@ namespace barney {
   {
     if (type == "directional")
       return std::make_shared<DirLight>(owner);
+    if (type == "quad")
+      return std::make_shared<QuadLight>(owner);
+    if (type == "environment")
+      return std::make_shared<EnvMapLight>(owner);
     
     owner->context->warn_unsupported_object("Light",type);
     return {};
   }
 
+  // ==================================================================
+  
   bool DirLight::set3f(const std::string &member, const vec3f &value) 
   {
     if (member == "direction") {
@@ -43,7 +49,26 @@ namespace barney {
     return 0;
   }
 
+  // ==================================================================
+  
   bool QuadLight::set3f(const std::string &member, const vec3f &value) 
+  {
+    return 0;
+  }
+
+  // ==================================================================
+  
+  bool EnvMapLight::set3f(const std::string &member, const vec3f &value) 
+  {
+    return 0;
+  }
+
+  bool EnvMapLight::set4x3f(const std::string &member, const affine3f &value) 
+  {
+    return 0;
+  }
+
+  bool EnvMapLight::setData(const std::string &member, const Data::SP &value) 
   {
     return 0;
   }

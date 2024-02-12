@@ -52,6 +52,27 @@ namespace barney {
     };
   };
   
+  OWLDataType owlTypeFor(BNDataType type)
+  {
+    switch (type) {
+    case BN_FLOAT4:
+      return OWL_FLOAT4;
+    default:
+      throw std::runtime_error("#bn internal error: owlTypeFor() not implemented for "
+                               "numerical BNDataType #"+std::to_string(int(type)));
+    };
+  };
+  
+  PODData::PODData(DataGroup *owner,
+                   BNDataType type,
+                   size_t numItems,
+                   const void *_items)
+    : Data(owner,type,numItems)
+  {
+    owl = owlDeviceBufferCreate(owner->getOWL(),owlTypeFor(type),
+                                numItems,_items);
+  }
+
   PODData::~PODData()
   {
     if (owl) owlBufferRelease(owl);
@@ -63,6 +84,8 @@ namespace barney {
                         const void *items)
   {
     switch(type) {
+    case BN_FLOAT4:
+      return std::make_shared<PODData>(owner,type,numItems,items);
     case BN_OBJECT:
       return std::make_shared<ObjectRefsData>(owner,type,numItems,items);
     default:
@@ -79,16 +102,6 @@ namespace barney {
       count(numItems)
   {}
   
-  PODData::PODData(DataGroup *owner,
-                   BNDataType type,
-                   size_t numItems,
-                   const void *_items)
-    : Data(owner,type,numItems)
-  {
-    throw std::runtime_error
-      ("un-implemented data type '"+to_string(type)+" in PODData::PODData()");
-  }
-
   ObjectRefsData::ObjectRefsData(DataGroup *owner,
                                  BNDataType type,
                                  size_t numItems,

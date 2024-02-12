@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/Object.h"
+#include "barney/Data.h"
 #include "barney/render/World.h"
 
 namespace barney {
@@ -33,6 +34,19 @@ namespace barney {
     static Light::SP create(DataGroup *owner, const std::string &name);
   };
 
+
+  struct EnvMapLight : public Light {
+    typedef std::shared_ptr<EnvMapLight> SP;
+    EnvMapLight(DataGroup *owner) : Light(owner) {}
+    
+    std::string toString() const override { return "EnvMapLight"; }
+    
+    bool set3f(const std::string &member, const vec3f &value) override;
+    bool set4x3f(const std::string &member, const affine3f &value) override;
+    bool setData(const std::string &member, const Data::SP &value) override;
+
+    render::EnvMapLight content;
+  };
 
   struct DirLight : public Light {
     typedef std::shared_ptr<DirLight> SP;

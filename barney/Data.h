@@ -41,8 +41,8 @@ namespace barney {
 
   struct PODData : public Data {
     PODData(DataGroup *owner,
-                           BNDataType type,
-                           size_t numItems,
+            BNDataType type,
+            size_t numItems,
             const void *items);
     virtual ~PODData();
     
