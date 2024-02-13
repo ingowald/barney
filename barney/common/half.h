@@ -63,7 +63,7 @@ namespace owl {
     inline __both__ vec3f operator*(float f, vec3h v)  { return f * (vec3f)v; }
     inline __both__ vec3f operator*(vec3f a, vec3h b)  { return a * (vec3f)b; }
     inline __both__ vec3f operator*(vec3h a, vec3f b)  { return (vec3f)a * b; }
-    inline __both__ vec3h operator*(vec3h a, vec3h b)  { return vec3h{a.x*b.x,a.y*b.y,a.z*b.z}; }
+    inline __both__ vec3h operator*(vec3h a, vec3h b)  { return vec3h{ (float)a.x*(float)b.x,(float)a.y*(float)b.y,(float)a.z*(float)b.z}; }
 
     inline __both__ vec3f operator+(float f, vec3h v)  { return f + (vec3f)v; }
     inline __both__ vec3f operator+(vec3f a, vec3h b)  { return a + (vec3f)b; }
