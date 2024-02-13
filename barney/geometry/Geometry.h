@@ -49,6 +49,11 @@ namespace barney {
     
     /*! get the own context that was used to create this geometry */
     OWLContext getOWL() const;
+
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
     
     std::vector<OWLGeom>  triangleGeoms;
     std::vector<OWLGeom>  userGeoms;

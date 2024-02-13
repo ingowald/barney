@@ -33,13 +33,6 @@ namespace barney {
       cudaTextureObject_t colorTexture;
       cudaTextureObject_t alphaTexture;
     };
-    vec3f baseColor;
-    float transmission;
-    float roughness;
-    float metallic;
-    float ior;
-    Texture::SP colorTexture;
-    Texture::SP alphaTexture;
 
     Material(DataGroup *owner) : DataGroupObject(owner) {}
     virtual ~Material() = default;
@@ -51,6 +44,14 @@ namespace barney {
     
     static void addVars(std::vector<OWLVarDecl> &vars, int base);
     void set(OWLGeom geom) const;
+    
+    vec3f baseColor { .5f, .5f, .5f };
+    float transmission { 0.f };
+    float roughness    { 0.f };
+    float metallic     { 0.f };
+    float ior          { 1.f };
+    Texture::SP colorTexture;
+    Texture::SP alphaTexture;
   };
 
 }

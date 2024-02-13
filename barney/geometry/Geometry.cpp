@@ -59,10 +59,49 @@ namespace barney {
     Material::addVars(vars,base+OWL_OFFSETOF(DD,material));
   }
 
-  // void Geometry::setMaterial(OWLGeom geom)
-  // {
-  //   material.set(geom);
-  // }
+  bool Geometry::set1f(const std::string &member, const float &value)
+  {
+    if (member == "material.transmission") {
+      material->set1f("transmission",value);
+      return true;
+    }
+    if (member == "material.ior") {
+      material->set1f("ior",value);
+      return true;
+    }
+    if (member == "material.metallic") {
+      material->set1f("metallic",value);
+      return true;
+    }
+    return false;
+  }
   
+  bool Geometry::set3f(const std::string &member, const vec3f &value)
+  {
+    if (member == "material.baseColor") {
+      material->set3f("baseColor",value);
+      return true;
+    }
+    return false;
+  }
+  
+  bool Geometry::setData(const std::string &member, const Data::SP &value)
+  {
+    return false;
+  }
+
+  bool Geometry::setObject(const std::string &member, const Object::SP &value)
+  {
+    if (member == "material.colorTexture") {
+      material->setObject("colorTexture",value);
+      return true;
+    }
+    if (member == "material.alphaTexture") {
+      material->setObject("alphaTexture",value);
+      return true;
+    }
+    return false;
+  }
+
 }
 

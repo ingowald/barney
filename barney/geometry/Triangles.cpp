@@ -61,7 +61,7 @@ namespace barney {
     owlGeomSetBuffer(geom,"indices",indicesBuffer);
     owlGeomSetBuffer(geom,"normals",normalsBuffer);
     owlGeomSetBuffer(geom,"texcoords",texcoordsBuffer);
-
+    
     triangleGeoms.push_back(geom);
   }
 
@@ -88,29 +88,30 @@ namespace barney {
     }
   }
 
-  void Triangles::update(const Material &material,
-                         int numIndices,
-                         const vec3i *indices,
-                         int numVertices,
-                         const vec3f *vertices,
-                         const vec3f *normals,
-                         const vec2f *texcoords)
-  {
-    OWLGeom geom = triangleGeoms[0];
+  // void Triangles::update(const Material &material,
+  //                        int numIndices,
+  //                        const vec3i *indices,
+  //                        int numVertices,
+  //                        const vec3f *vertices,
+  //                        const vec3f *normals,
+  //                        const vec2f *texcoords)
+  // {
+  //   OWLGeom geom = triangleGeoms[0];
     
-    owlBufferResize(verticesBuffer,numVertices);
-    owlBufferResize(indicesBuffer,numIndices);
-    owlBufferUpload(verticesBuffer,vertices);
-    owlBufferUpload(indicesBuffer,indices);
+  //   owlBufferResize(verticesBuffer,numVertices);
+  //   owlBufferResize(indicesBuffer,numIndices);
+  //   owlBufferUpload(verticesBuffer,vertices);
+  //   owlBufferUpload(indicesBuffer,indices);
 
-    owlTrianglesSetVertices(geom,verticesBuffer,
-                            numVertices,sizeof(float3),0);
-    owlTrianglesSetIndices(geom,indicesBuffer,
-                           numIndices,sizeof(int3),0);
-    owlGeomSetRaw(geom,"material",&material);
-    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
-    owlGeomSetBuffer(geom,"indices",indicesBuffer);
-  }
+  //   owlTrianglesSetVertices(geom,verticesBuffer,
+  //                           numVertices,sizeof(float3),0);
+  //   owlTrianglesSetIndices(geom,indicesBuffer,
+  //                          numIndices,sizeof(int3),0);
+  //   owlGeomSetRaw(geom,"material",&material);
+  //   owlGeomSetBuffer(geom,"vertices",verticesBuffer);
+  //   owlGeomSetBuffer(geom,"indices",indicesBuffer);
+  //   material->set(geom);
+  // }
   
   OWLGeomType Triangles::createGeomType(DevGroup *devGroup)
   {
@@ -139,6 +140,13 @@ namespace barney {
     owlModuleRelease(module);
     return gt;
   }
+
+  void Triangles::commit() 
+  {
+    OWLGeom geom = triangleGeoms[0];
+    material->set(geom);
+  }
+
   
 }
 

@@ -71,20 +71,41 @@ namespace barney {
     
     Geometry::commit();
     owlGeomSet1f(geom,"defaultRadius",defaultRadius);
-    owlGeomSetBuffer(geom,"origins",origins->owl);
+    owlGeomSetBuffer(geom,"origins",origins?origins->owl:0);
     owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
     int numOrigins = origins->count;
     owlGeomSetPrimCount(geom,numOrigins);
+    material->set(geom);
   } 
 
   bool Spheres::set1f(const std::string &member, const float &value)
   {
-    return 0;
+    if (Geometry::set1f(member,value))
+      return true;
+    if (member == "radius") {
+      defaultRadius = value;
+      return true;
+    }
+    return false;
   }
   
   bool Spheres::setData(const std::string &member, const Data::SP &value)
   {
-    return 0;
+    if (Geometry::setData(member,value))
+      return true;
+    if (member == "colors") {
+      colors = value->as<PODData>();
+      return true;
+    }
+    if (member == "origins") {
+      origins = value->as<PODData>();
+      return true;
+    }
+    if (member == "radii") {
+      radii = value->as<PODData>();
+      return true;
+    }
+    return false;
   }
 
   bool Spheres::setObject(const std::string &member, const Object::SP &value)

@@ -192,6 +192,7 @@ namespace barney {
   BN_API
   void  bnAddReference(BNObject _object)
   {
+    if (_object == 0) return;
     Object *object = checkGet(_object);
     Context *context = object->getContext();
     context->addHostReference(object->shared_from_this());
@@ -269,7 +270,15 @@ namespace barney {
        (const vec2f*)texcoords);
     BNGeom geom = (BNGeom)triangles;
 
-    return geom;
+    bnSet3fc(geom,"material.baseColor",material->baseColor);
+    bnSet1f(geom,"material.transmission",material->transmission);
+    bnSet1f(geom,"material.ior",material->ior);
+    if (material->colorTexture)
+      bnSetObject(geom,"material.colorTexture",material->colorTexture);
+    if (material->alphaTexture)
+      bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
+    bnCommit(geom);
+   return geom;
   }
 
   // BN_API
@@ -298,8 +307,8 @@ namespace barney {
                           const char *type)
   {
     Geometry::SP geom = Geometry::create(checkGet(dataGroup),type);
-    checkGet(dataGroup)->context->addHostReference(geom);
-    return (BNGeom)geom.get();
+    if (!geom) return 0;
+    return (BNGeom)checkGet(dataGroup)->context->initReference(geom);
   }
 
 
@@ -545,6 +554,13 @@ namespace barney {
   {
     if (!checkGet(target)->set2i(checkGet(param),vec2i(x,y)))
       checkGet(target)->warn_unsupported_member(param,"vec2i");
+  }
+
+  BN_API
+  void bnSet1f(BNObject target, const char *param, float value)
+  {
+    if (!checkGet(target)->set1f(checkGet(param),value))
+      checkGet(target)->warn_unsupported_member(param,"float");
   }
 
   BN_API
