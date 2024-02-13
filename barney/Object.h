@@ -30,7 +30,6 @@ namespace barney {
     typedef std::shared_ptr<Object> SP;
 
     Object(Context *context);
-    Object(DataGroup *owner);
     virtual ~Object() {}
 
     /*! dynamically cast to another (typically derived) class, e.g. to

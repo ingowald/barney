@@ -22,14 +22,13 @@ namespace barney {
   extern "C" char Triangles_ptx[];
 
   Triangles::Triangles(DataGroup *owner,
-                       const Material &material,
                        int numIndices,
                        const vec3i *indices,
                        int numVertices,
                        const vec3f *vertices,
                        const vec3f *normals,
                        const vec2f *texcoords)
-    : Geometry(owner,material)
+    : Geometry(owner)
   {
     OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
       ("Triangles",Triangles::createGeomType);
@@ -56,7 +55,7 @@ namespace barney {
                             numVertices,sizeof(float3),0);
     owlTrianglesSetIndices(geom,indicesBuffer,
                            numIndices,sizeof(int3),0);
-    Geometry::setMaterial(geom);
+    // Geometry::setMaterial(geom);
     // owlGeomSetRaw(geom,"material",&material);
     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
     owlGeomSetBuffer(geom,"indices",indicesBuffer);

@@ -52,4 +52,22 @@ namespace barney {
                       );
   }
 
+  void Material::commit()
+  {
+  }
+  
+  bool Material::setObject(const std::string &member, const Object::SP &value) 
+  {
+    return false;
+  }
+
+  bool Material::set1f(const std::string &member, const float &value)
+  {
+    return false;
+  }
+      
+  bool Material::set3f(const std::string &member, const vec3f &value)
+  {
+    return false;
+  }
 }

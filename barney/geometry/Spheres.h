@@ -30,13 +30,7 @@ namespace barney {
       float    defaultRadius;
     };
 
-    Spheres(DataGroup *owner,
-            const Material &material,
-            const vec3f *origins,
-            int numOrigins,
-            const vec3f *colors,
-            const float *radii,
-            float defaultRadius);
+    Spheres(DataGroup *owner);
     
     static OWLGeomType createGeomType(DevGroup *device);
     
@@ -44,9 +38,18 @@ namespace barney {
     std::string toString() const override
     { return "Spheres{}"; }
 
-    OWLBuffer originsBuffer = 0;
-    OWLBuffer radiiBuffer   = 0;
-    OWLBuffer colorsBuffer  = 0;
+    void commit() override;
+    
+    bool set1f(const std::string &member, const float &value) override;
+    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+
+    PODData::SP  origins = 0;
+    PODData::SP  colors = 0;
+    PODData::SP  radii = 0;
+    // OWLBuffer originsBuffer = 0;
+    // OWLBuffer radiiBuffer   = 0;
+    // OWLBuffer colorsBuffer  = 0;
     float     defaultRadius = .1f;
   };
   

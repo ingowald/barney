@@ -76,7 +76,7 @@ BNGeom Sphere::makeBarneyGeometry(
 {
   auto ctx = deviceState()->context;
   assert(!m_index); // NOT implemented yet!
-  return bnSpheresCreate
+  return bnSpheresCreatesh
     (dg,
      material,
      (const float3 *)m_vertexPosition->dataAs<math::float3>(),

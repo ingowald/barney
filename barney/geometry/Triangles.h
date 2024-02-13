@@ -38,7 +38,6 @@ namespace barney {
     };
     
     Triangles(DataGroup *owner,
-              const Material &material,
               int numIndices,
               const vec3i *indices,
               int numVertices,

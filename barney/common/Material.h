@@ -17,9 +17,12 @@
 #pragma once
 
 #include "barney/Texture.h"
+#include "barney/Data.h"
 
 namespace barney {
-  struct Material {
+  
+  struct Material : public DataGroupObject {
+    typedef std::shared_ptr<Material> SP;
     
     struct DD {
       vec3f baseColor;
@@ -37,6 +40,14 @@ namespace barney {
     float ior;
     Texture::SP colorTexture;
     Texture::SP alphaTexture;
+
+    Material(DataGroup *owner) : DataGroupObject(owner) {}
+    virtual ~Material() = default;
+    
+    void commit() override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
     
     static void addVars(std::vector<OWLVarDecl> &vars, int base);
     void set(OWLGeom geom) const;

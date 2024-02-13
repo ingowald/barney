@@ -38,17 +38,7 @@ namespace barney {
       int colorPerVertex, radiusPerVertex;
     };
     
-    Cylinders(DataGroup *owner,
-              const Material &material,
-              const vec3f *points,
-              int          numPoints,
-              const vec3f *colors,
-              bool         colorPerVertex,
-              const vec2i *indices,
-              int          numIndices,
-              const float *radii,
-              bool         radiusPerVertex,
-              float        defaultRadius);
+    Cylinders(DataGroup *owner);
     
     static OWLGeomType createGeomType(DevGroup *devGroup);
 

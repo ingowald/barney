@@ -16,14 +16,28 @@
 
 #include "barney/geometry/Geometry.h"
 #include "barney/DataGroup.h"
+#include "barney/Context.h"
+
+#include "barney/geometry/Spheres.h"
+#include "barney/geometry/Cylinders.h"
 
 namespace barney {
   
-  Geometry::Geometry(DataGroup *owner,
-                     const Material &material)
+  Geometry::SP Geometry::create(DataGroup *owner, const std::string &type)
+  {
+    if (type == "spheres")
+      return std::make_shared<Spheres>(owner);
+    if (type == "cylinders")
+      return std::make_shared<Cylinders>(owner);
+    
+    owner->context->warn_unsupported_object("Geometry",type);
+    return {};
+  }
+
+  Geometry::Geometry(DataGroup *owner)
     : Object(owner->context),
       owner(owner),
-      material(material)
+      material(std::make_shared<Material>(owner))
   {}
 
   Geometry::~Geometry()
@@ -36,6 +50,7 @@ namespace barney {
       if (group) { owlGroupRelease(group); group = 0; }
   }
 
+  
   OWLContext Geometry::getOWL() const
   { return owner->getOWL(); }
 
@@ -44,10 +59,10 @@ namespace barney {
     Material::addVars(vars,base+OWL_OFFSETOF(DD,material));
   }
 
-  void Geometry::setMaterial(OWLGeom geom)
-  {
-    material.set(geom);
-  }
+  // void Geometry::setMaterial(OWLGeom geom)
+  // {
+  //   material.set(geom);
+  // }
   
 }
 

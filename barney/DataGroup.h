@@ -53,16 +53,15 @@ namespace barney {
     createGroup(const std::vector<Geometry::SP> &geoms,
                 const std::vector<Volume::SP> &volumes);
     
-    Spheres *
-    createSpheres(const barney::Material &material,
-                  const vec3f *origins,
-                  int numOrigins,
-                  const vec3f *colors,
-                  const float *radii,
-                  float defaultRadius);
+    // Spheres *
+    // createSpheres(const barney::Material &material,
+    //               const vec3f *origins,
+    //               int numOrigins,
+    //               const vec3f *colors,
+    //               const float *radii,
+    //               float defaultRadius);
 
-    Cylinders *createCylinders(const Material   &material,
-                               const vec3f      *points,
+    Cylinders *createCylinders(const vec3f      *points,
                                int               numPoints,
                                const vec3f      *colors,
                                bool              colorPerVertex,
@@ -75,8 +74,7 @@ namespace barney {
     Volume *createVolume(ScalarField::SP sf);
     
     Triangles *
-    createTriangles(const barney::Material &material,
-                    int numIndices,
+    createTriangles(int numIndices,
                     const vec3i *indices,
                     int numVertices,
                     const vec3f *vertices,
