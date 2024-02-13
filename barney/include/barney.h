@@ -128,6 +128,8 @@ struct BNGridlet {
   int3   dims;
 };
 
+
+
 #define BN_FOVY_DEGREES(degrees) ((float)(degrees*M_PI/180.f))
 
 // ==================================================================
@@ -480,4 +482,21 @@ void bnVolumeSetXF(BNVolume volume,
                    const float4 *colorMap,
                    int numColorMapValues,
                    float densityAt1);
+
+
+
+
+/*! helper function for assinging leftover BNMaterial definition from old API */
+inline void bnAssignMaterial(BNGeom geom,const BNMaterial *material)
+{
+  bnSet3fc(geom,"material.baseColor",material->baseColor);
+  bnSet1f(geom,"material.transmission",material->transmission);
+  bnSet1f(geom,"material.ior",material->ior);
+  if (material->colorTexture)
+    bnSetObject(geom,"material.colorTexture",material->colorTexture);
+  if (material->alphaTexture)
+    bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
+  bnCommit(geom);
+}
+
 

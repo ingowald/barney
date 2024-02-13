@@ -278,7 +278,7 @@ namespace barney {
     if (material->alphaTexture)
       bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
     bnCommit(geom);
-   return geom;
+    return geom;
   }
 
   // BN_API
@@ -550,10 +550,31 @@ namespace barney {
   }
 
   BN_API
+  void bnSet1i(BNObject target, const char *param, int x)
+  {
+    if (!checkGet(target)->set1i(checkGet(param),x))
+      checkGet(target)->warn_unsupported_member(param,"int");
+  }
+
+  BN_API
   void bnSet2i(BNObject target, const char *param, int x, int y)
   {
     if (!checkGet(target)->set2i(checkGet(param),vec2i(x,y)))
       checkGet(target)->warn_unsupported_member(param,"vec2i");
+  }
+
+  BN_API
+  void bnSet3i(BNObject target, const char *param, int x, int y, int z)
+  {
+    if (!checkGet(target)->set3i(checkGet(param),vec3i(x,y,z)))
+      checkGet(target)->warn_unsupported_member(param,"vec3i");
+  }
+
+  BN_API
+  void bnSet4i(BNObject target, const char *param, int x, int y, int z, int w)
+  {
+    if (!checkGet(target)->set4i(checkGet(param),vec4i(x,y,z,w)))
+      checkGet(target)->warn_unsupported_member(param,"vec4i");
   }
 
   BN_API

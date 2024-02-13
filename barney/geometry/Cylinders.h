@@ -31,7 +31,7 @@ namespace barney {
     typedef std::shared_ptr<Cylinders> SP;
 
     struct DD : public Geometry::DD {
-      const vec3f *points;
+      const vec3f *vertices;
       const vec3f *colors;
       const vec2i *indices;
       const float *radii;
@@ -39,19 +39,31 @@ namespace barney {
     };
     
     Cylinders(DataGroup *owner);
-    
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
-    OWLBuffer indicesBuffer  = 0;
-    OWLBuffer pointsBuffer  = 0;
-    OWLBuffer colorsBuffer  = 0;
-    OWLBuffer radiiBuffer  = 0;
-    bool colorPerVertex;
-    bool radiusPerVertex;
+    virtual ~Cylinders() = default;
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Cylinders{}"; }
+    
+    void commit() override;
+    
+    static OWLGeomType createGeomType(DevGroup *devGroup);
+
+    bool set1i(const std::string &member, const int &value) override;
+    bool set1f(const std::string &member, const float &value) override;
+    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    // OWLBuffer indicesBuffer  = 0;
+    // OWLBuffer verticesBuffer  = 0;
+    // OWLBuffer colorsBuffer  = 0;
+    // OWLBuffer radiiBuffer  = 0;
+    PODData::SP colors;
+    PODData::SP vertices;
+    PODData::SP indices;
+    PODData::SP radii;
+    bool colorPerVertex  = 0;
+    bool radiusPerVertex = 0;
+    
   };
 
 }

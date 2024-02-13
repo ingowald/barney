@@ -110,7 +110,9 @@ namespace barney {
 
   bool Spheres::setObject(const std::string &member, const Object::SP &value)
   {
-    return 0;
+    if (Geometry::setObject(member,value))
+      return true;
+    return false;
   }
 
 }
