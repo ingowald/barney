@@ -17,6 +17,9 @@
 #include "barney/geometry/Spheres.h"
 #include "barney/Model.h"
 
+#define BUFFER_CREATE owlDeviceBufferCreate
+// #define BUFFER_CREATE owlManagedMemoryBufferCreate
+
 namespace barney {
   
   extern "C" char Spheres_ptx[];
@@ -60,10 +63,10 @@ namespace barney {
     OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
       ("Spheres",Spheres::createGeomType);
     OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
-    originsBuffer = owlManagedMemoryBufferCreate
+    originsBuffer = BUFFER_CREATE
       (owner->devGroup->owl,OWL_FLOAT3,numOrigins,origins);
     if (colors)
-      colorsBuffer = owlManagedMemoryBufferCreate
+      colorsBuffer = BUFFER_CREATE
         (owner->devGroup->owl,OWL_FLOAT3,numOrigins,colors);
 
     Geometry::setMaterial(geom);
