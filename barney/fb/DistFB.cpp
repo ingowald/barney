@@ -98,10 +98,10 @@ namespace barney {
       if (ownerGather.finalTiles)
         BARNEY_CUDA_CALL(Free(ownerGather.finalTiles));
 #if 1        
-      BARNEY_CUDA_CALL(Malloc(&ownerGather.finalTiles,
+      BARNEY_CUDA_CALL(MallocManaged(&ownerGather.finalTiles,
                               sumTiles*sizeof(*ownerGather.finalTiles)));
 #else
-      BARNEY_CUDA_CALL(MallocManaged(&ownerGather.finalTiles,
+      BARNEY_CUDA_CALL(Malloc(&ownerGather.finalTiles,
                               sumTiles*sizeof(*ownerGather.finalTiles)));
 #endif                              
       if (ownerGather.tileDescs)
