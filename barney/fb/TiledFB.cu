@@ -184,6 +184,7 @@ namespace barney {
       device?device->launchStream:0>>>
         (finalFB,finalDepth,numPixels,
          finalTiles,tileDescs);
+    BARNEY_CUDA_SYNC_CHECK();
   }
   
 }
