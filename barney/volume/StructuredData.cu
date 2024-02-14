@@ -181,8 +181,6 @@ namespace barney {
   {
     ScalarField::setVariables(geom);
     
-    if (devGroup->devices.size() > 1)
-      throw std::runtime_error("Structured data current can't set per-device 3d textures");
     for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
       cudaTextureObject_t tex = tex3Ds[lDevID].texObj;
       owlGeomSetRaw(geom,"tex3D",&tex,lDevID);
