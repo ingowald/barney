@@ -109,7 +109,7 @@ namespace barney {
     // ------------------------------------------------------------------
     for (int localID = 0; localID < devices.size(); localID++) {
       auto &devFB = *fb->perDev[localID];
-      TiledFB::writeFinalPixels(nullptr,//devFB.device.get(),
+      TiledFB::writeFinalPixels(devFB.device.get(),
                                 fb->finalFB,
                                 fb->finalDepth,
                                 fb->numPixels,

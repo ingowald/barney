@@ -27,7 +27,9 @@ namespace barney {
   TiledFB::TiledFB(Device::SP device, FrameBuffer *owner)
     : device(device),
       owner(owner)
-  {}
+  {
+    PING; PRINT(device);
+  }
 
   TiledFB::~TiledFB()
   { free(); }
@@ -60,10 +62,14 @@ namespace barney {
       return;
     
     int tileID = tid * globalIndexStep + globalIndex;
-
     int tile_x = tileID % numTiles.x;
     int tile_y = tileID / numTiles.x;
     tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
+    if (tid == 0) printf("setting tile coords tid %i tile %i tiledesc %lx, lower %i %i\n",
+                        tid,tileID,
+                        &tileDescs[tid],
+                        tileDescs[tid].lower.x,
+                        tileDescs[tid].lower.y);
   }
   
   void TiledFB::resize(vec2i newSize)
@@ -170,7 +176,7 @@ namespace barney {
     /*! do NOT set active GPU: app might run on a different GPU than
         what we think of as GPU 0, and taht may or may not be
         writeable by what we might think of a "first" gpu */
-    // SetActiveGPU forDuration(device);
+    SetActiveGPU forDuration(device);
 
     if (numTiles > 0)
       g_writeFinalPixels
