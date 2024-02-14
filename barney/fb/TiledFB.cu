@@ -150,8 +150,8 @@ namespace barney {
     uint32_t pixelValue
       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
 
-    if (ix == 5 && iy == 5)
-      printf("writeFinal %i %i tileID %i, pixelvalue %x\n",ix,iy,tileID,pixelValue);
+    if ((ix == 5 || ix == (5+32)) && iy == 5)
+      printf("writeFinal %i %i tileID %i, pixelvalue %x, dest, myTiles %lx, finalFB %lx\n",ix,iy,tileID,pixelValue, finalTiles,finalFB);
     
     pixelValue |= 0xff000000;
 
