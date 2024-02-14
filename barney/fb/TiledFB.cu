@@ -105,6 +105,9 @@ namespace barney {
     color.z = sqrtf(color.z);
     uint32_t rgba32
       = owl::make_rgba(color);
+
+    if (pixelID == 0 && tileID == 0)
+      printf("finalize pixel 0:0 %f %f %f\n",color.x,color.y,color.z);
     
     finalTiles[tileID].rgba[pixelID] = rgba32;
     finalTiles[tileID].depth[pixelID] = accumTiles[tileID].depth[pixelID];
@@ -133,13 +136,20 @@ namespace barney {
     int tileID = blockIdx.x;
     int ix = threadIdx.x + tileDescs[tileID].lower.x;
     int iy = threadIdx.y + tileDescs[tileID].lower.y;
+
+    
     if (ix < 0 || ix >= numPixels.x) return;
     if (iy < 0 || iy >= numPixels.y) return;
 
     uint32_t pixelValue
       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
+
+    if (ix == 5 && iy == 5)
+      printf("writeFinal %i %i tileID %i, pixelvalue %x\n",ix,iy,tileID,pixelValue);
+    
     pixelValue |= 0xff000000;
 
+    
     uint32_t ofs = ix + numPixels.x*iy;
     finalFB[ofs] = pixelValue;
     
