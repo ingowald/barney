@@ -20,6 +20,7 @@
 #include "barney/fb/FrameBuffer.h"
 #include "barney/Model.h"
 #include "barney/geometry/Triangles.h"
+#include "barney/volume/ScalarField.h"
 #include "barney/Data.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
@@ -147,6 +148,26 @@ namespace barney {
       (texelFormat,vec2i(size_x,size_y),texels,
        filterMode,addressMode,colorSpace);
     return (BNTexture2D)texture;
+  }
+
+  BN_API
+  BNTexture3D bnTexture3DCreate(BNDataGroup dataGroup,
+                                BNTexelFormat texelFormat,
+                                uint32_t size_x,
+                                uint32_t size_y,
+                                uint32_t size_z,
+                                const void *texels,
+                                BNTextureFilterMode  filterMode,
+                                BNTextureAddressMode addressMode)
+  {
+    LOG_API_ENTRY;
+    Texture3D::SP tex
+      = std::make_shared<Texture3D>
+      (checkGet(dataGroup),
+       texelFormat,vec3i(size_x,size_y,size_z),texels,
+       filterMode,addressMode);
+    checkGet(dataGroup)->context->initReference(tex);
+    return (BNTexture3D)tex.get();
   }
   
   // ------------------------------------------------------------------
@@ -281,6 +302,8 @@ namespace barney {
     return geom;
   }
 
+
+
   // BN_API
   // void bnTriangleMeshUpdate(BNGeom geom,
   //                           const BNMaterial *material,
@@ -301,6 +324,16 @@ namespace barney {
   //                     (const vec2f*)texcoords);
   // }
 
+
+  BN_API
+  BNScalarField bnScalarFieldCreate(BNDataGroup dataGroup,
+                                    const char *type)
+  {
+    ScalarField::SP sf = ScalarField::create(checkGet(dataGroup),type);
+    if (!sf) return 0;
+    return (BNScalarField)checkGet(dataGroup)->context->initReference(sf);
+  }
+  
   
   BN_API
   BNGeom bnGeometryCreate(BNDataGroup dataGroup,
@@ -362,10 +395,33 @@ namespace barney {
                                        float3 gridOrigin,
                                        float3 gridSpacing)
   {
-    ScalarField *sf = checkGet(dataGroup)->createStructuredData
-      ((const vec3i&)dims,type,scalars,
-       (const vec3f&)gridOrigin,(const vec3f&)gridSpacing);
-    return (BNScalarField)sf;
+    BNTexelFormat texelFormat;
+    switch (type) {
+    case BN_SCALAR_FLOAT:
+      texelFormat = BN_TEXEL_FORMAT_R32F;
+      break;
+    case BN_SCALAR_UINT8:
+      texelFormat = BN_TEXEL_FORMAT_R8;
+      break;
+    default:
+      throw std::runtime_error("unsupported structured data format #"+std::to_string((int)type));
+    }
+    
+    BNScalarField sf
+      = bnScalarFieldCreate(dataGroup,"structured");
+    BNTexture3D texture
+      = bnTexture3DCreate(dataGroup,texelFormat,dims.x,dims.y,dims.z,scalars);
+    bnSetObject(sf,"texture",texture);
+    bnRelease(texture);
+    bnSet3ic(sf,"dims",dims);
+    bnSet3fc(sf,"gridOrigin",gridOrigin);
+    bnSet3fc(sf,"gridSpacing",gridSpacing);
+    bnCommit(sf);
+    return sf;
+    // ScalarField *sf = checkGet(dataGroup)->createStructuredData
+    //   ((const vec3i&)dims,type,scalars,
+    //    (const vec3f&)gridOrigin,(const vec3f&)gridSpacing);
+    // return (BNScalarField)sf;
   }
   
   BN_API
@@ -567,6 +623,13 @@ namespace barney {
   void bnSet3i(BNObject target, const char *param, int x, int y, int z)
   {
     if (!checkGet(target)->set3i(checkGet(param),vec3i(x,y,z)))
+      checkGet(target)->warn_unsupported_member(param,"vec3i");
+  }
+
+  BN_API
+  void bnSet3ic(BNObject target, const char *param, int3 value)
+  {
+    if (!checkGet(target)->set3i(checkGet(param),(const vec3i&)value))
       checkGet(target)->warn_unsupported_member(param,"vec3i");
   }
 

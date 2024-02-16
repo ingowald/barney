@@ -89,11 +89,11 @@ namespace barney {
                   BNTextureAddressMode addressMode,
                   BNTextureColorSpace  colorSpace);
     
-    ScalarField *createStructuredData(const vec3i &dims,
-                                      BNScalarType scalarType,
-                                      const void *data,
-                                      const vec3f &gridOrigin,
-                                      const vec3f &gridSpacing);
+    // ScalarField *createStructuredData(const vec3i &dims,
+    //                                   BNScalarType scalarType,
+    //                                   const void *data,
+    //                                   const vec3f &gridOrigin,
+    //                                   const vec3f &gridSpacing);
     
     ScalarField *createUMesh(std::vector<vec4f> &vertices,
                              std::vector<TetIndices> &tetIndices,

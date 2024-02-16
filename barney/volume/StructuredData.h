@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/DataGroup.h"
+#include "barney/Texture.h"
 #include "barney/volume/MCAccelerator.h"
 
 namespace barney {
@@ -39,23 +40,29 @@ namespace barney {
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    struct Tex3D {
-      
-      cudaArray_t           voxelArray = 0;
-      cudaTextureObject_t   texObj;
-      cudaTextureObject_t   texObjNN;
-    };
-    /*! one tex3d per device */
-    std::vector<Tex3D> tex3Ds;
+    // struct Tex3D {
+    //   cudaArray_t           voxelArray = 0;
+    //   cudaTextureObject_t   texObj;
+    //   cudaTextureObject_t   texObjNN;
+    // };
+    // /*! one tex3d per device */
+    // std::vector<Tex3D> tex3Ds;
 
-    StructuredData(DataGroup *owner,
-                   DevGroup *devGroup,
-                   const vec3i &numScalars,
-                   BNScalarType scalarType,
-                   const void *scalars,
-                   const vec3f &gridOrigin,
-                   const vec3f &gridSpacing);
+    // StructuredData(DataGroup *owner,
+    //                const vec3i &numScalars,
+    //                BNScalarType scalarType,
+    //                const void *scalars,
+    //                const vec3f &gridOrigin,
+    //                const vec3f &gridSpacing);
 
+    StructuredData(DataGroup *owner);
+    virtual ~StructuredData() = default;
+
+    bool set3i(const std::string &member, const vec3i &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    void commit() override;
+    
     // /*! returns (part of) a string that should allow an OWL geometry
     //     type to properly create all the names of all the optix device
     //     functions that operate on this type. Eg, if all device
@@ -71,14 +78,15 @@ namespace barney {
     VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 
-    void createCUDATextures();
-    
-    const BNScalarType   scalarType;
-    const vec3i numScalars;
-    const vec3i numCells;
-    const vec3f gridOrigin;
-    const vec3f gridSpacing;
-    const void *rawScalarData;
+    // void createCUDATextures();
+
+    Texture3D::SP  texture;
+    BNScalarType   scalarType = BN_SCALAR_UNDEFINED;
+    vec3i numScalars  { 0,0,0 };
+    vec3i numCells    { 0,0,0 }; 
+    vec3f gridOrigin  { 0,0,0 };
+    vec3f gridSpacing { 1,1,1 };
+    // const void *rawScalarData;
   };
 
   /*! for structured data, the sampler doesn't have to do much but
@@ -88,25 +96,7 @@ namespace barney {
       compute the macro cells, so we'll leave it as such for now */
   struct StructuredDataSampler {
     struct DD : public StructuredData::DD {
-      inline __device__ float sample(const vec3f P, bool dbg) const
-      {
-        vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
-
-        // if (dbg) printf("sample %f %f %f rel %f %f %f\n",
-        //                 P.x,P.y,P.z,
-        //                 rel.x,rel.y,rel.z
-        //                 );
-        
-        if (rel.x < 0.f) return NAN;
-        if (rel.y < 0.f) return NAN;
-        if (rel.z < 0.f) return NAN;
-        if (rel.x >= numCells.x) return NAN;
-        if (rel.y >= numCells.y) return NAN;
-        if (rel.z >= numCells.z) return NAN;
-        float f = tex3D<float>(texObj,rel.x,rel.y,rel.z);
-        // if (dbg) printf("result %f\n",f);
-        return f;
-      }
+      inline __device__ float sample(const vec3f P, bool dbg) const;
     };
 
     struct Host
@@ -129,8 +119,29 @@ namespace barney {
       
       StructuredData *const field;
     };
-    
   };
+  
+#ifdef __CUDA_ARCH__
+  inline __device__ float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
+  {
+    vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
 
+    // if (dbg) printf("sample %f %f %f rel %f %f %f\n",
+    //                 P.x,P.y,P.z,
+    //                 rel.x,rel.y,rel.z
+    //                 );
+        
+    if (rel.x < 0.f) return NAN;
+    if (rel.y < 0.f) return NAN;
+    if (rel.z < 0.f) return NAN;
+    if (rel.x >= numCells.x) return NAN;
+    if (rel.y >= numCells.y) return NAN;
+    if (rel.z >= numCells.z) return NAN;
+    float f = tex3D<float>(texObj,rel.x,rel.y,rel.z);
+    // if (dbg) printf("result %f\n",f);
+    return f;
+  }
+#endif
 }
+
 

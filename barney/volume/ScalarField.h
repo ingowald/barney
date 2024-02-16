@@ -43,9 +43,10 @@ namespace barney {
     };
     
     ScalarField(DataGroup *owner,
-                DevGroup *devGroup,
                 const box3f &domain=box3f());
 
+    static ScalarField::SP create(DataGroup *dg, const std::string &type);
+    
     OWLContext getOWL() const;
     
     virtual void setVariables(OWLGeom geom);

@@ -126,12 +126,11 @@ namespace barney {
   }
 
   BlockStructuredField::BlockStructuredField(DataGroup *owner,
-                                             DevGroup *devGroup,
                                              std::vector<box3i> &_blockBounds,
                                              std::vector<int> &_blockLevels,
                                              std::vector<int> &_blockOffsets,
                                              std::vector<float> &_blockScalars)
-    : ScalarField(owner,devGroup),
+    : ScalarField(owner),
       blockBounds(std::move(_blockBounds)),
       blockLevels(std::move(_blockLevels)),
       blockOffsets(std::move(_blockOffsets)),
@@ -222,7 +221,6 @@ namespace barney {
   {
     ScalarField::SP sf
       = std::make_shared<BlockStructuredField>(this,
-                                               devGroup.get(),
                                                blockBounds,
                                                blockLevels,
                                                blockOffsets,

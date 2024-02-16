@@ -307,7 +307,6 @@ namespace barney {
   }
 
   UMeshField::UMeshField(DataGroup *owner,
-                         DevGroup *devGroup,
                          std::vector<vec4f> &_vertices,
                          std::vector<TetIndices> &_tetIndices,
                          std::vector<PyrIndices> &_pyrIndices,
@@ -318,7 +317,7 @@ namespace barney {
                          std::vector<box4f> &_gridDomains,
                          std::vector<float> &_gridScalars,
                          const box3f &domain)
-  : ScalarField(owner,devGroup,domain),
+  : ScalarField(owner,domain),
     vertices(std::move(_vertices)),
     tetIndices(std::move(_tetIndices)),
     pyrIndices(std::move(_pyrIndices)),
@@ -445,7 +444,6 @@ namespace barney {
   {
     ScalarField::SP sf
       = std::make_shared<UMeshField>(this,
-                                     devGroup.get(),
                                      vertices,
                                      tetIndices,
                                      pyrIndices,

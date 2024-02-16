@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -34,6 +34,7 @@ typedef struct _BNModel        : public _BNObject{} *BNModel;
 typedef struct _BNFrameBuffer  : public _BNObject{} *BNFrameBuffer;
 typedef struct _BNDataGroup    : public _BNObject{} *BNDataGroup;
 typedef struct _BNTexture2D    : public _BNObject{} *BNTexture2D;
+typedef struct _BNTexture3D    : public _BNObject{} *BNTexture3D;
 typedef struct _BNLight        : public _BNObject{} *BNLight;
 typedef BNTexture2D BNTexture;
 
@@ -46,6 +47,7 @@ typedef enum {
   BN_OBJECT,
   /*! BNTexture */
   BN_TEXTURE,
+  BN_TEXTURE_3D,
   /*! int32_t */
   BN_INT,
   /*! int2 */
@@ -60,7 +62,7 @@ typedef enum {
   BN_RAW_DATA_BASE
 } BNDataType;
 
-typedef  enum { BN_SCALAR_UINT8, BN_SCALAR_FLOAT=(int)BN_FLOAT  } BNScalarType;
+typedef  enum { BN_SCALAR_UNDEFINED=0, BN_SCALAR_UINT8, BN_SCALAR_FLOAT=(int)BN_FLOAT  } BNScalarType;
 
 
 struct BNMaterial {
@@ -77,9 +79,15 @@ struct BNMaterial {
 
 /*! supported formats for texels in textures */
 typedef enum {
+  /*! uint8_t[4] */
   BN_TEXEL_FORMAT_RGBA8,
+  /*! float4 */
   BN_TEXEL_FORMAT_RGBA32F,
+  /*! uint8_t */
   BN_TEXEL_FORMAT_R8,
+  /*! uint16_t */
+  BN_TEXEL_FORMAT_R16,
+  /*! float */
   BN_TEXEL_FORMAT_R32F
 }
 BNTexelFormat;
@@ -353,6 +361,19 @@ BNTexture2D bnTexture2DCreate(BNDataGroup dataGroup,
                               BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP,
                               BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
 
+BN_API
+BNTexture3D bnTexture3DCreate(BNDataGroup dataGroup,
+                              BNTexelFormat texelFormat,
+                              /*! number of texels in x dimension */
+                              uint32_t size_x,
+                              /*! number of texels in y dimension */
+                              uint32_t size_y, 
+                              /*! number of texels in z dimension */
+                              uint32_t size_z,
+                              const void *texels,
+                              BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR,
+                              BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP);
+
 // ------------------------------------------------------------------
 // geometry stuff
 // ------------------------------------------------------------------
@@ -427,6 +448,12 @@ BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
                                      const void *scalars,
                                      float3 gridOrigin,
                                      float3 gridSpacing);
+
+/*! create a new scalar field of given type. supported types: "structured" */
+BN_API
+BNScalarField bnScalarFieldCreate(BNDataGroup dataGroup,
+                                  const char *type);
+                                     
 
 BN_API
 BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
