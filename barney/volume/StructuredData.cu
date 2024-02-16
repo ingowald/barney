@@ -45,112 +45,12 @@ namespace barney {
         }
     int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
     mcGrid.scalarRanges[mcIdx] = scalarRange;
-    if (mcIdx == 3)
-      printf("sanity: macro cell #3 has range %f %f\n",
-             scalarRange.lower,scalarRange.upper);
   }
   
-  // StructuredData::StructuredData(DataGroup *owner,
-  //                                const vec3i &numScalars,
-  //                                BNScalarType scalarType,
-  //                                const void *scalars,
-  //                                const vec3f &gridOrigin,
-  //                                const vec3f &gridSpacing)
-  //   : ScalarField(owner),
-  //     numScalars(numScalars),
-  //     numCells(numScalars - 1),
-  //     scalarType(scalarType),
-  //     // rawScalarData(scalars),
-  //     gridOrigin(gridOrigin),
-  //     gridSpacing(gridSpacing)
-  // {
-  //   worldBounds.lower = gridOrigin;
-  //   worldBounds.upper = gridOrigin + gridSpacing * vec3f(numScalars);
-  //   createCUDATextures();
-  // }
-
-
   StructuredData::StructuredData(DataGroup *owner)
     : ScalarField(owner)
   {}
 
-
-
-  
-  // void StructuredData::createCUDATextures()
-  // {
-  //   if (!tex3Ds.empty()) return;
-
-  //   tex3Ds.resize(devGroup->size());
-
-  //   cudaChannelFormatDesc desc;
-  //   size_t sizeOfScalar;
-  //   switch (scalarType) {
-  //   case BN_SCALAR_FLOAT:
-  //     desc = cudaCreateChannelDesc<float>();
-  //     sizeOfScalar = 4;
-  //     break;
-  //   case BN_SCALAR_UINT8:
-  //     desc = cudaCreateChannelDesc<uint8_t>();
-  //     sizeOfScalar = 1;
-  //     break;
-  //   default:
-  //     throw std::runtime_error("structured data with non-implemented scalar type ...");
-  //   }
-  //   // if (scalarType != BN_FLOAT)
-  //   //   throw std::runtime_error("can only do float 3d texs..");
-
-  //   std::cout << "#bn.struct: creating CUDA 3D textures" << std::endl;
-  //   for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
-  //     auto dev = devGroup->devices[lDevID];
-  //     auto &tex = tex3Ds[lDevID];
-  //     SetActiveGPU forDuration(dev);
-  //     // Copy voxels to cuda array
-  //     cudaExtent extent{
-  //       (unsigned)numScalars.x,
-  //       (unsigned)numScalars.y,
-  //       (unsigned)numScalars.z};
-  //     BARNEY_CUDA_CALL(Malloc3DArray(&tex.voxelArray,&desc,extent,0));
-  //     cudaMemcpy3DParms copyParms;
-  //     memset(&copyParms,0,sizeof(copyParms));
-  //     copyParms.srcPtr = make_cudaPitchedPtr((void *)rawScalarData,
-  //                                            (size_t)numScalars.x*sizeOfScalar,
-  //                                            (size_t)numScalars.x,
-  //                                            (size_t)numScalars.y);
-  //     copyParms.dstArray = tex.voxelArray;
-  //     copyParms.extent   = extent;
-  //     copyParms.kind     = cudaMemcpyHostToDevice;
-  //     BARNEY_CUDA_CALL(Memcpy3D(&copyParms));
-          
-  //     // Create a texture object
-  //     cudaResourceDesc resourceDesc;
-  //     memset(&resourceDesc,0,sizeof(resourceDesc));
-  //     resourceDesc.resType         = cudaResourceTypeArray;
-  //     resourceDesc.res.array.array = tex.voxelArray;
-          
-  //     cudaTextureDesc textureDesc;
-  //     memset(&textureDesc,0,sizeof(textureDesc));
-  //     textureDesc.addressMode[0]   = cudaAddressModeClamp;
-  //     textureDesc.addressMode[1]   = cudaAddressModeClamp;
-  //     textureDesc.addressMode[2]   = cudaAddressModeClamp;
-  //     textureDesc.filterMode       = cudaFilterModeLinear;
-  //     textureDesc.readMode
-  //       = scalarType == BN_SCALAR_UINT8
-  //       ? cudaReadModeNormalizedFloat
-  //       : cudaReadModeElementType;
-  //     // textureDesc.readMode         = cudaReadModeElementType;
-  //     textureDesc.normalizedCoords = false;
-          
-  //     BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObj,&resourceDesc,&textureDesc,0));
-          
-  //     // 2nd texture object for nearest filtering
-  //     textureDesc.filterMode       = cudaFilterModePoint;
-  //     BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,&resourceDesc,&textureDesc,0));
-  //   }
-  //   PING;
-  // }
-  
-  
 
   void StructuredData::buildMCs(MCGrid &mcGrid) 
   {
@@ -171,19 +71,6 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
   
-  // ScalarField *DataGroup::createStructuredData(const vec3i &numScalars,
-  //                                              BNScalarType scalarType,
-  //                                              const void *data,
-  //                                              const vec3f &gridOrigin,
-  //                                              const vec3f &gridSpacing)
-  // {
-  //   StructuredData::SP sf
-  //     = std::make_shared<StructuredData>(this,
-  //                                        numScalars,scalarType,data,
-  //                                        gridOrigin,gridSpacing);
-  //   return getContext()->initReference(sf);
-  // }
-
   void StructuredData::setVariables(OWLGeom geom)
   {
     ScalarField::setVariables(geom);
@@ -272,8 +159,6 @@ namespace barney {
     worldBounds.lower = gridOrigin;
     worldBounds.upper = gridOrigin + gridSpacing * vec3f(numScalars);
   }
-
-  
   
 }
 
