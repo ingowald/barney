@@ -30,7 +30,7 @@ struct Sphere : public Geometry
 {
   Sphere(BarneyGlobalState *s);
   void commit() override;
-
+    
   BNGeom makeBarneyGeometry(
       BNDataGroup dg, const BNMaterial *material) const override;
 

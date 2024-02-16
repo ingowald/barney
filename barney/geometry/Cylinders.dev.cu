@@ -26,8 +26,8 @@ namespace barney {
     const Cylinders::DD &geom = *(const Cylinders::DD *)geomData;
     vec2i idx = geom.indices[primID];
     float r   = geom.radii[primID];
-    vec3f a = geom.points[idx.x];
-    vec3f b = geom.points[idx.y];
+    vec3f a = geom.vertices[idx.x];
+    vec3f b = geom.vertices[idx.y];
     bounds.lower = min(a,b)-r;
     bounds.upper = max(a,b)+r;
   }
@@ -59,8 +59,8 @@ namespace barney {
       = owl::getProgramData<Cylinders::DD>();
 
     const vec2i idx = self.indices[primID];
-    const vec3f v0  = self.points[idx.x];
-    const vec3f v1  = self.points[idx.y];
+    const vec3f v0  = self.vertices[idx.x];
+    const vec3f v1  = self.vertices[idx.y];
     const float radius
       = self.radiusPerVertex
       ? min(self.radii[idx.x],self.radii[idx.y])

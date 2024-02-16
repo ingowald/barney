@@ -76,14 +76,30 @@ BNGeom Sphere::makeBarneyGeometry(
 {
   auto ctx = deviceState()->context;
   assert(!m_index); // NOT implemented yet!
-  return bnSpheresCreate
-    (dg,
-     material,
-     (const float3 *)m_vertexPosition->dataAs<math::float3>(),
-     m_vertexPosition->totalSize(),
-     /* colors */nullptr,
-     m_vertexRadius ? m_vertexRadius->dataAs<float>() : nullptr,
-     m_globalRadius);
+  BNGeom geom = bnGeometryCreate(dg,"spheres");
+  BNData origins = bnDataCreate(dg,BN_FLOAT3,
+                                m_vertexPosition->totalSize(),
+                                (const float3 *)m_vertexPosition->dataAs<math::float3>());
+  bnSetData(geom,"origins",origins);
+  if (m_vertexRadius) {
+    BNData radii = bnDataCreate(dg,BN_FLOAT,
+                                m_vertexPosition->totalSize(),
+                                m_vertexRadius->dataAs<float>());
+    bnSetData(geom,"radii",radii);
+  } else
+    bnSet1f(geom,"defaultRadius",1.f);
+    // ? m_vertexRadius->dataAs<float>() : nullptr,
+  bnAssignMaterial(geom,material);
+  bnCommit(geom);
+  return geom;
+  // return bnSpheresCreate
+  //   (dg,
+  //    material,
+  //    (const float3 *)m_vertexPosition->dataAs<math::float3>(),
+  //    m_vertexPosition->totalSize(),
+  //    /* colors */nullptr,
+  //    m_vertexRadius ? m_vertexRadius->dataAs<float>() : nullptr,
+  //    m_globalRadius);
 }
 
 box3 Sphere::bounds() const

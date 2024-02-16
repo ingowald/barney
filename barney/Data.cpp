@@ -55,8 +55,22 @@ namespace barney {
   OWLDataType owlTypeFor(BNDataType type)
   {
     switch (type) {
+    case BN_FLOAT:
+      return OWL_FLOAT;
+    case BN_FLOAT2:
+      return OWL_FLOAT2;
+    case BN_FLOAT3:
+      return OWL_FLOAT3;
     case BN_FLOAT4:
       return OWL_FLOAT4;
+    case BN_INT:
+      return OWL_INT;
+    case BN_INT2:
+      return OWL_INT2;
+    case BN_INT3:
+      return OWL_INT3;
+    case BN_INT4:
+      return OWL_INT4;
     default:
       throw std::runtime_error("#bn internal error: owlTypeFor() not implemented for "
                                "numerical BNDataType #"+std::to_string(int(type)));
@@ -84,6 +98,13 @@ namespace barney {
                         const void *items)
   {
     switch(type) {
+    case BN_INT:
+    case BN_INT2:
+    case BN_INT3:
+    case BN_INT4:
+    case BN_FLOAT:
+    case BN_FLOAT2:
+    case BN_FLOAT3:
     case BN_FLOAT4:
       return std::make_shared<PODData>(owner,type,numItems,items);
     case BN_OBJECT:

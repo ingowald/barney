@@ -31,9 +31,10 @@ namespace barney {
       Material::DD     material;
     };
     
-    Geometry(DataGroup *owner,
-             const Material &material);
+    Geometry(DataGroup *owner);
     virtual ~Geometry();
+
+    static Geometry::SP create(DataGroup *dg, const std::string &type);
     
     static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
@@ -44,16 +45,22 @@ namespace barney {
     /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
     
-    void setMaterial(OWLGeom geom);
+    // void setMaterial(OWLGeom geom);
     
     /*! get the own context that was used to create this geometry */
     OWLContext getOWL() const;
+
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
     
     std::vector<OWLGeom>  triangleGeoms;
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGroup> secondPassGroups;
     
-    Material    material;
+    // Material    material;
+    Material::SP material;
     DataGroup  *owner;
   };
 

@@ -56,24 +56,24 @@ namespace barney {
     return (Data *)data;
   }
 
-  inline Material checkGet(const BNMaterial *material)
-  {
-    assert(material);
-    Material result;
-    result.baseColor = (const vec3f&)material->baseColor;
-    result.roughness = material->roughness;
-    result.transmission = material->transmission;
-    result.ior = material->ior;
-    result.colorTexture
-      = material->colorTexture
-      ? ((Texture*)material->colorTexture)->shared_from_this()->as<Texture>()
-      : 0;
-    result.alphaTexture
-      = material->alphaTexture
-      ? ((Texture*)material->alphaTexture)->shared_from_this()->as<Texture>()
-      : 0;
-    return result;
-  }
+  // inline Material checkGet(const BNMaterial *material)
+  // {
+  //   assert(material);
+  //   Material result;
+  //   result.baseColor = (const vec3f&)material->baseColor;
+  //   result.roughness = material->roughness;
+  //   result.transmission = material->transmission;
+  //   result.ior = material->ior;
+  //   result.colorTexture
+  //     = material->colorTexture
+  //     ? ((Texture*)material->colorTexture)->shared_from_this()->as<Texture>()
+  //     : 0;
+  //   result.alphaTexture
+  //     = material->alphaTexture
+  //     ? ((Texture*)material->alphaTexture)->shared_from_this()->as<Texture>()
+  //     : 0;
+  //   return result;
+  // }
   
   inline DataGroup *checkGet(BNDataGroup dg)
   {
@@ -192,6 +192,7 @@ namespace barney {
   BN_API
   void  bnAddReference(BNObject _object)
   {
+    if (_object == 0) return;
     Object *object = checkGet(_object);
     Context *context = object->getContext();
     context->addHostReference(object->shared_from_this());
@@ -205,49 +206,48 @@ namespace barney {
     delete (Context *)context;
   }
 
-  BN_API
-  BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
-                         const BNMaterial *material,
-                         const float3     *origins,
-                         int               numSpheres,
-                         const float3     *colors,
-                         const float      *radii,
-                         float             defaultRadius)
-  {
-    LOG_API_ENTRY;
-    Spheres *spheres = checkGet(dataGroup)->createSpheres
-      (checkGet(material),(const vec3f*)origins,numSpheres,(const vec3f*)colors,radii,defaultRadius);
-    return (BNGeom)spheres;
-  }
+  // BN_API
+  // BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
+  //                        const BNMaterial *material,
+  //                        const float3     *origins,
+  //                        int               numSpheres,
+  //                        const float3     *colors,
+  //                        const float      *radii,
+  //                        float             defaultRadius)
+  // {
+  //   LOG_API_ENTRY;
+  //   Spheres *spheres = checkGet(dataGroup)->createSpheres
+  //     (checkGet(material),(const vec3f*)origins,numSpheres,(const vec3f*)colors,radii,defaultRadius);
+  //   return (BNGeom)spheres;
+  // }
 
-  BN_API
-  BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
-                           const BNMaterial *material,
-                           const float3     *points,
-                           int               numPoints,
-                           const float3     *colors,
-                           /*! if true - and colors is non null - then
-                             the colors array specifies per-vertex
-                             colors */
-                           bool              colorPerVertex,
-                           const int2       *indices,
-                           int               numIndices,
-                           const float      *radii,
-                           /*! if true - and radii is non null -then the
-                             radii specify per-vertex radii and
-                             segments will be rounded cones */
-                           bool              radiusPerVertex,
-                           float             defaultRadius)
-  {
-    LOG_API_ENTRY;
-    Cylinders *cylinders = checkGet(dataGroup)->createCylinders
-      (checkGet(material),
-       (const vec3f*)points,numPoints,
-       (const vec3f*)colors,colorPerVertex,
-       (const vec2i*)indices,numIndices,
-       radii,radiusPerVertex,defaultRadius);
-    return (BNGeom)cylinders;
-  }
+  // BN_API
+  // BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
+  //                          const BNMaterial *material,
+  //                          const float3     *points,
+  //                          int               numPoints,
+  //                          const float3     *colors,
+  //                          /*! if true - and colors is non null - then
+  //                            the colors array specifies per-vertex
+  //                            colors */
+  //                          bool              colorPerVertex,
+  //                          const int2       *indices,
+  //                          int               numIndices,
+  //                          const float      *radii,
+  //                          /*! if true - and radii is non null -then the
+  //                            radii specify per-vertex radii and
+  //                            segments will be rounded cones */
+  //                          bool              radiusPerVertex,
+  //                          float             defaultRadius)
+  // {
+  //   LOG_API_ENTRY;
+  //   Cylinders *cylinders = checkGet(dataGroup)->createCylinders
+  //     ((const vec3f*)points,numPoints,
+  //      (const vec3f*)colors,colorPerVertex,
+  //      (const vec2i*)indices,numIndices,
+  //      radii,radiusPerVertex,defaultRadius);
+  //   return (BNGeom)cylinders;
+  // }
   
   
   BN_API
@@ -262,37 +262,55 @@ namespace barney {
   {
     LOG_API_ENTRY;
     Triangles *triangles = checkGet(dataGroup)->createTriangles
-      (checkGet(material),
-       numIndices,
+      (numIndices,
        (const vec3i*)indices,
        numVertices,
        (const vec3f*)vertices,
        (const vec3f*)normals,
        (const vec2f*)texcoords);
-    return (BNGeom)triangles;
+    BNGeom geom = (BNGeom)triangles;
+
+    bnSet3fc(geom,"material.baseColor",material->baseColor);
+    bnSet1f(geom,"material.transmission",material->transmission);
+    bnSet1f(geom,"material.ior",material->ior);
+    if (material->colorTexture)
+      bnSetObject(geom,"material.colorTexture",material->colorTexture);
+    if (material->alphaTexture)
+      bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
+    bnCommit(geom);
+    return geom;
   }
 
-  BN_API
-  void bnTriangleMeshUpdate(BNGeom geom,
-                            const BNMaterial *material,
-                            const int3 *indices,
-                            int numIndices,
-                            const float3 *vertices,
-                            int numVertices,
-                            const float3 *normals,
-                            const float2 *texcoords)
-  {
-    Triangles *triangles = (Triangles *)checkGet(geom);
-    triangles->update(checkGet(material),
-                      numIndices,
-                      (const vec3i*)indices,
-                      numVertices,
-                      (const vec3f*)vertices,
-                      (const vec3f*)normals,
-                      (const vec2f*)texcoords);
-  }
+  // BN_API
+  // void bnTriangleMeshUpdate(BNGeom geom,
+  //                           const BNMaterial *material,
+  //                           const int3 *indices,
+  //                           int numIndices,
+  //                           const float3 *vertices,
+  //                           int numVertices,
+  //                           const float3 *normals,
+  //                           const float2 *texcoords)
+  // {
+  //   Triangles *triangles = (Triangles *)checkGet(geom);
+  //   triangles->update(checkGet(material),
+  //                     numIndices,
+  //                     (const vec3i*)indices,
+  //                     numVertices,
+  //                     (const vec3f*)vertices,
+  //                     (const vec3f*)normals,
+  //                     (const vec2f*)texcoords);
+  // }
 
   
+  BN_API
+  BNGeom bnGeometryCreate(BNDataGroup dataGroup,
+                          const char *type)
+  {
+    Geometry::SP geom = Geometry::create(checkGet(dataGroup),type);
+    if (!geom) return 0;
+    return (BNGeom)checkGet(dataGroup)->context->initReference(geom);
+  }
+
 
   BN_API
   void bnVolumeSetXF(BNVolume volume,
@@ -532,10 +550,38 @@ namespace barney {
   }
 
   BN_API
+  void bnSet1i(BNObject target, const char *param, int x)
+  {
+    if (!checkGet(target)->set1i(checkGet(param),x))
+      checkGet(target)->warn_unsupported_member(param,"int");
+  }
+
+  BN_API
   void bnSet2i(BNObject target, const char *param, int x, int y)
   {
     if (!checkGet(target)->set2i(checkGet(param),vec2i(x,y)))
       checkGet(target)->warn_unsupported_member(param,"vec2i");
+  }
+
+  BN_API
+  void bnSet3i(BNObject target, const char *param, int x, int y, int z)
+  {
+    if (!checkGet(target)->set3i(checkGet(param),vec3i(x,y,z)))
+      checkGet(target)->warn_unsupported_member(param,"vec3i");
+  }
+
+  BN_API
+  void bnSet4i(BNObject target, const char *param, int x, int y, int z, int w)
+  {
+    if (!checkGet(target)->set4i(checkGet(param),vec4i(x,y,z,w)))
+      checkGet(target)->warn_unsupported_member(param,"vec4i");
+  }
+
+  BN_API
+  void bnSet1f(BNObject target, const char *param, float value)
+  {
+    if (!checkGet(target)->set1f(checkGet(param),value))
+      checkGet(target)->warn_unsupported_member(param,"float");
   }
 
   BN_API

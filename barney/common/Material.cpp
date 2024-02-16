@@ -45,6 +45,8 @@ namespace barney {
                       ? alphaTexture->owlTex
                       : (OWLTexture)0
                       );
+    PRINT(colorTexture);
+    if (colorTexture) PRINT(colorTexture->owlTex);
     owlGeomSetTexture(geom,"material.colorTexture",
                       colorTexture
                       ? colorTexture->owlTex
@@ -52,4 +54,46 @@ namespace barney {
                       );
   }
 
+  void Material::commit()
+  {
+  }
+  
+  bool Material::set1f(const std::string &member, const float &value)
+  {
+    if (member == "transmission") {
+      this->transmission = value;
+      return true;
+    }
+    if (member == "ior") {
+      this->ior = value;
+      return true;
+    }
+    if (member == "metallic") {
+      this->metallic = value;
+      return true;
+    }
+    return false;
+  }
+  
+  bool Material::set3f(const std::string &member, const vec3f &value)
+  {
+    if (member == "baseColor") {
+      this->baseColor = value;
+      return true;
+    }
+    return false;
+  }
+  
+  bool Material::setObject(const std::string &member, const Object::SP &value)
+  {
+    if (member == "colorTexture") {
+      this->colorTexture = value?value->as<Texture>():0;
+      return true;
+    }
+    if (member == "alphaTexture") {
+      this->alphaTexture = value?value->as<Texture>():0;
+      return true;
+    }
+    return false;
+  }
 }

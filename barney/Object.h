@@ -30,7 +30,6 @@ namespace barney {
     typedef std::shared_ptr<Object> SP;
 
     Object(Context *context);
-    Object(DataGroup *owner);
     virtual ~Object() {}
 
     /*! dynamically cast to another (typically derived) class, e.g. to
@@ -63,7 +62,7 @@ namespace barney {
     virtual bool set2f(const std::string &member, const vec2f &value) { return false; }
     virtual bool set3f(const std::string &member, const vec3f &value) { return false; }
     virtual bool set4f(const std::string &member, const vec4f &value) { return false; }
-    virtual bool set1i(const std::string &member, const int    value) { return false; }
+    virtual bool set1i(const std::string &member, const int   &value) { return false; }
     virtual bool set2i(const std::string &member, const vec2i &value) { return false; }
     virtual bool set3i(const std::string &member, const vec3i &value) { return false; }
     virtual bool set4i(const std::string &member, const vec4i &value) { return false; }

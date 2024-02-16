@@ -128,6 +128,8 @@ struct BNGridlet {
   int3   dims;
 };
 
+
+
 #define BN_FOVY_DEGREES(degrees) ((float)(degrees*M_PI/180.f))
 
 // ==================================================================
@@ -356,6 +358,10 @@ BNTexture2D bnTexture2DCreate(BNDataGroup dataGroup,
 // ------------------------------------------------------------------
 
 BN_API
+BNGeom bnGeometryCreate(BNDataGroup dataGroup,
+                        const char *type);
+
+BN_API
 BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
                             const BNMaterial *material,
                             const int3 *indices,
@@ -364,51 +370,51 @@ BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
                             int numVertices,
                             const float3 *normals,
                             const float2 *texcoords);
-BN_API
-void bnTriangleMeshUpdate(BNGeom geom,
-                          const BNMaterial *material,
-                          const int3 *indices,
-                          int numIndices,
-                          const float3 *vertices,
-                          int numVertices,
-                          const float3 *normals,
-                          const float2 *texcoords);
+// BN_API
+// void bnTriangleMeshUpdate(BNGeom geom,
+//                           const BNMaterial *material,
+//                           const int3 *indices,
+//                           int numIndices,
+//                           const float3 *vertices,
+//                           int numVertices,
+//                           const float3 *normals,
+//                           const float2 *texcoords);
 
-BN_API
-BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
-                       const BNMaterial *material,
-                       const float3     *origins,
-                       int               numSpheres,
-                       /*! a per-sphere color that - if specified -
-                           overwrites the material.baseColor; can be
-                           null */
-                       const float3     *colors,
-                       const float      *radii,
-                       float             defaultRadius);
+// BN_API
+// BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
+//                        const BNMaterial *material,
+//                        const float3     *origins,
+//                        int               numSpheres,
+//                        /*! a per-sphere color that - if specified -
+//                            overwrites the material.baseColor; can be
+//                            null */
+//                        const float3     *colors,
+//                        const float      *radii,
+//                        float             defaultRadius);
 
 /*! iw todo: split this into two different geometries: one for
     'cylinders', and one for 'rounded cones' */
-BN_API
-BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
-                         const BNMaterial *material,
-                         const float3     *points,
-                         int               numPoints,
-                         const float3     *colors,
-                         /*! if true - and colors is non null - then
-                             the colors array specifies per-vertex
-                             colors */
-                         bool              colorPerVertex,
-                         const int2       *indices,
-                         int               numIndices,
-                         const float      *radii,
-                         /*! if true - and radii is non null -then the
-                             radii specify per-vertex radii and
-                             segments will be rounded cones */
-                         bool              radiusPerVertex,
-                         float             defaultRadius);
+// BN_API
+// BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
+//                          const BNMaterial *material,
+//                          const float3     *points,
+//                          int               numPoints,
+//                          const float3     *colors,
+//                          /*! if true - and colors is non null - then
+//                              the colors array specifies per-vertex
+//                              colors */
+//                          bool              colorPerVertex,
+//                          const int2       *indices,
+//                          int               numIndices,
+//                          const float      *radii,
+//                          /*! if true - and radii is non null -then the
+//                              radii specify per-vertex radii and
+//                              segments will be rounded cones */
+//                          bool              radiusPerVertex,
+//                          float             defaultRadius);
 
-BN_API
-void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
+// BN_API
+// void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
 
 // ------------------------------------------------------------------
 // volume stuff
@@ -476,4 +482,21 @@ void bnVolumeSetXF(BNVolume volume,
                    const float4 *colorMap,
                    int numColorMapValues,
                    float densityAt1);
+
+
+
+
+/*! helper function for assinging leftover BNMaterial definition from old API */
+inline void bnAssignMaterial(BNGeom geom,const BNMaterial *material)
+{
+  bnSet3fc(geom,"material.baseColor",material->baseColor);
+  bnSet1f(geom,"material.transmission",material->transmission);
+  bnSet1f(geom,"material.ior",material->ior);
+  if (material->colorTexture)
+    bnSetObject(geom,"material.colorTexture",material->colorTexture);
+  if (material->alphaTexture)
+    bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
+  bnCommit(geom);
+}
+
 

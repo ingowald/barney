@@ -72,35 +72,35 @@ namespace barney {
   }
 
 
-  Cylinders *DataGroup::createCylinders(const Material   &material,
-                                        const vec3f      *points,
-                                        int               numPoints,
-                                        const vec3f      *colors,
-                                        bool              colorPerVertex,
-                                        const vec2i      *indices,
-                                        int               numIndices,
-                                        const float      *radii,
-                                        bool              radiusPerVertex,
-                                        float             defaultRadius)
-  {
-    return getContext()->initReference
-      (std::make_shared<Cylinders>(this,material,
-                                   points,numPoints,
-                                   colors,colorPerVertex,
-                                   indices,numIndices,
-                                   radii,radiusPerVertex,defaultRadius));
-  }
+  // Cylinders *DataGroup::createCylinders(const vec3f      *points,
+  //                                       int               numPoints,
+  //                                       const vec3f      *colors,
+  //                                       bool              colorPerVertex,
+  //                                       const vec2i      *indices,
+  //                                       int               numIndices,
+  //                                       const float      *radii,
+  //                                       bool              radiusPerVertex,
+  //                                       float             defaultRadius)
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Cylinders>(this,
+  //                                  points,numPoints,
+  //                                  colors,colorPerVertex,
+  //                                  indices,numIndices,
+  //                                  radii,radiusPerVertex,defaultRadius));
+  // }
     
-  Spheres *DataGroup::createSpheres(const Material &material,
-                                    const vec3f *origins,
-                                    int numOrigins,
-                                    const vec3f *colors,
-                                    const float *radii,
-                                    float defaultRadius)
-  {
-    return getContext()->initReference
-      (std::make_shared<Spheres>(this,material,origins,numOrigins,colors,radii,defaultRadius));
-  }
+  // Spheres *DataGroup::createSpheres(// const Material &material,
+  //                                   // const vec3f *origins,
+  //                                   // int numOrigins,
+  //                                   // const vec3f *colors,
+  //                                   // const float *radii,
+  //                                   // float defaultRadius
+  //                                   )
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Spheres>(this));
+  // }
 
   Data *DataGroup::createData(BNDataType dataType,
                               size_t numItems,
@@ -126,8 +126,7 @@ namespace barney {
                                  filterMode,addressMode,colorSpace));
   }
     
-  Triangles *DataGroup::createTriangles(const barney::Material &material,
-                                        int numIndices,
+  Triangles *DataGroup::createTriangles(int numIndices,
                                         const vec3i *indices,
                                         int numVertices,
                                         const vec3f *vertices,
@@ -135,7 +134,7 @@ namespace barney {
                                         const vec2f *texcoords)
   {
     return getContext()->initReference
-      (std::make_shared<Triangles>(this,material,
+      (std::make_shared<Triangles>(this,
                                    numIndices,
                                    indices,
                                    numVertices,

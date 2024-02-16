@@ -38,7 +38,6 @@ namespace barney {
     };
     
     Triangles(DataGroup *owner,
-              const Material &material,
               int numIndices,
               const vec3i *indices,
               int numVertices,
@@ -47,16 +46,18 @@ namespace barney {
               const vec2f *texcoords);
     virtual ~Triangles();
     
-    void update(const Material &material,
-                int numIndices,
-                const vec3i *indices,
-                int numVertices,
-                const vec3f *vertices,
-                const vec3f *normals,
-                const vec2f *texcoords);
+    // void update(const Material &material,
+    //             int numIndices,
+    //             const vec3i *indices,
+    //             int numVertices,
+    //             const vec3f *vertices,
+    //             const vec3f *normals,
+    //             const vec2f *texcoords);
     
     static OWLGeomType createGeomType(DevGroup *devGroup);
 
+    void commit() override;
+    
     int       numIndices;
     int       numVertices;
     OWLBuffer indicesBuffer   = 0;

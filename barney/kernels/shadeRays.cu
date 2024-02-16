@@ -22,7 +22,7 @@
 
 namespace barney {
   namespace render {
-#define DEFAULT_RADIANCE_FROM_ENV 1.5f
+#define DEFAULT_RADIANCE_FROM_ENV .8f
   
     enum { MAX_PATH_DEPTH = 10 };
   
@@ -534,7 +534,6 @@ namespace barney {
     { auto &env = world.envMapLight;
       if (env.texture) {
         vec3f d = xfmVector(env.transform,normalize(ray.dir));
-        // vec3f d = xfmVector(env.transform,-dir);
         float theta = pbrtSphericalTheta(d);
         float phi   = pbrtSphericalPhi(d);
         const float invPi  = 1.f/M_PI;
@@ -542,7 +541,7 @@ namespace barney {
         vec2f uv(phi * inv2Pi, theta * invPi);
 
         float4 color = tex2D<float4>(env.texture,uv.x,uv.y);
-        float envLightPower = 1.f;//M_PI;;//1.5f;//2.f;
+        float envLightPower = 1.f;
         return envLightPower*vec3f(color.x,color.y,color.z);
       } else
         return DEFAULT_RADIANCE_FROM_ENV;
