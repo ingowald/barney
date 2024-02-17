@@ -90,7 +90,7 @@ namespace barney {
       triangleGeoms = { geom };
     }
 
-    OWLGeom geom = triangleGeoms[0];
+    OWLGeom   geom = triangleGeoms[0];
     OWLBuffer verticesBuffer = vertices->owl;
     OWLBuffer indicesBuffer = indices->owl;
     OWLBuffer texcoordsBuffer
@@ -104,19 +104,17 @@ namespace barney {
 
     int numVertices = vertices->count;
     int numIndices  = indices->count;
-    PRINT(numVertices);
-    PRINT(numIndices);
     owlTrianglesSetVertices(geom,verticesBuffer,
                             numVertices,sizeof(float3),0);
     owlTrianglesSetIndices(geom,indicesBuffer,
                            numIndices,sizeof(int3),0);
-    // Geometry::setMaterial(geom);
     // owlGeomSetRaw(geom,"material",&material);
     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
     owlGeomSetBuffer(geom,"indices",indicesBuffer);
     owlGeomSetBuffer(geom,"normals",normalsBuffer);
     owlGeomSetBuffer(geom,"texcoords",texcoordsBuffer);
     
+    // Geometry::setMaterial(geom);
     material->set(geom);
   }
 

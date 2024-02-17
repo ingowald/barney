@@ -54,7 +54,7 @@ namespace barney {
                       ? alphaTexture->owlTex
                       : (OWLTexture)0
                       );
-    PRINT(colorTexture);
+    PING; PRINT(colorTexture);
     if (colorTexture) PRINT(colorTexture->owlTex);
     owlGeomSetTexture(geom,"material.colorTexture",
                       colorTexture
@@ -95,8 +95,10 @@ namespace barney {
   
   bool Material::setObject(const std::string &member, const Object::SP &value)
   {
+    PING; PRINT(member);
     if (member == "colorTexture") {
       this->colorTexture = value?value->as<Texture>():0;
+      PRINT(this->colorTexture);
       return true;
     }
     if (member == "alphaTexture") {

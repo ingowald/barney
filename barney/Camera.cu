@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "barney/Camera.h"
+#include "barney/Context.h"
 
 namespace barney {
 
@@ -25,7 +26,9 @@ namespace barney {
   // ##################################################################
 
   struct PerspectiveCamera : public Camera {
-    PerspectiveCamera(Context *owner) : Camera(owner) {}
+    PerspectiveCamera(Context *owner)
+      : Camera(owner)
+    {}
     virtual ~PerspectiveCamera() = default;
 
     // ------------------------------------------------------------------
@@ -45,6 +48,8 @@ namespace barney {
   
   bool PerspectiveCamera::set1f(const std::string &member, const float &value)
   {
+    if (Camera::set1f(member,value))
+      return true;
     if (member == "aspect") {
       aspect = value;
       return true;
@@ -58,6 +63,8 @@ namespace barney {
   
   bool PerspectiveCamera::set3f(const std::string &member, const vec3f &value)
   {
+    if (Camera::set3f(member,value))
+      return true;
     if (member == "position") {
       position = value;
       return true;
@@ -75,11 +82,8 @@ namespace barney {
     
   void PerspectiveCamera::commit()
   {
-    vec3f from = (const vec3f&)position;
-    // vec3f at   = (const vec3f&)_at;
-    // vec3f up   = (const vec3f&)up;
-    
-    vec3f dir_00  = direction;//normalize(at-from);
+    vec3f from   = (const vec3f&)position;
+    vec3f dir_00 = normalize(direction);
     
     vec3f dir_du = aspect * normalize(cross(dir_00, up));
     vec3f dir_dv = normalize(cross(dir_du, dir_00));
@@ -100,11 +104,11 @@ namespace barney {
   Camera::SP Camera::create(Context *owner,
                             const char *type)
   {
-    // iw - "eventually" we should have different cameras like
-    // 'perspective' etc here, but for now, let's just
-    // ignore the type and create a single one thta contains all
-    // fields....
-    return std::make_shared<Camera>(owner);
+    if (type == "perspective")
+      return std::make_shared<PerspectiveCamera>(owner);
+    
+    owner->warn_unsupported_object("Camera",type);
+    return {};
   }
 
 }

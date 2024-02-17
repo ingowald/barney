@@ -292,8 +292,6 @@ namespace barney {
   {
     BNGeom mesh = bnGeometryCreate(dg,"triangles");
     BNData _vertices = bnDataCreate(dg,BN_FLOAT3,numVertices,vertices);
-    PRINT(*(vec3f*)vertices);
-    PRINT(*(vec3i*)indices);
     bnSetAndRelease(mesh,"vertices",_vertices);
     BNData _indices  = bnDataCreate(dg,BN_INT3,numIndices,indices);
     bnSetAndRelease(mesh,"indices",_indices);
@@ -305,6 +303,7 @@ namespace barney {
       BNData _texcoords  = bnDataCreate(dg,BN_FLOAT2,texcoords?numVertices:0,texcoords);
       bnSetAndRelease(mesh,"texcoords",_texcoords);
     }
+    bnAssignMaterial(mesh,material);
     bnCommit(mesh);
     return mesh;
   }  
@@ -609,37 +608,6 @@ namespace barney {
     checkGet(dataGroup)->build();
   }
   
-  // BN_API
-  // void bnPinholeCamera(BNCamera *camera,
-  //                      float3 _from,
-  //                      float3 _at,
-  //                      float3 _up,
-  //                      float  fov,
-  //                      float  aspect)
-  // {
-  //   assert(camera);
-  //   vec3f from = (const vec3f&)_from;
-  //   vec3f at   = (const vec3f&)_at;
-  //   vec3f up   = (const vec3f&)_up;
-    
-  //   vec3f dir_00  = normalize(at-from);
-    
-  //   vec3f dir_du = aspect * normalize(cross(dir_00, up));
-  //   vec3f dir_dv = normalize(cross(dir_du, dir_00));
-
-  //   dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fov) * (float)M_PI / 180.0f)));
-  //   dir_00 -= 0.5f * dir_du;
-  //   dir_00 -= 0.5f * dir_dv;
-
-  //   camera->dir_00 = (float3&)dir_00;
-  //   camera->dir_du = (float3&)dir_du;
-  //   camera->dir_dv = (float3&)dir_dv;
-  //   camera->lens_00 = (float3&)from;
-  //   camera->lensRadius = 0.f;
-  // }
-
-
-
   BN_API
   void bnCommit(BNObject target)
   {
