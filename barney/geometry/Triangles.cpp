@@ -108,13 +108,11 @@ namespace barney {
                             numVertices,sizeof(float3),0);
     owlTrianglesSetIndices(geom,indicesBuffer,
                            numIndices,sizeof(int3),0);
-    // owlGeomSetRaw(geom,"material",&material);
     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
     owlGeomSetBuffer(geom,"indices",indicesBuffer);
     owlGeomSetBuffer(geom,"normals",normalsBuffer);
     owlGeomSetBuffer(geom,"texcoords",texcoordsBuffer);
     
-    // Geometry::setMaterial(geom);
     material->set(geom);
   }
 

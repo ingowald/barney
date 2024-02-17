@@ -235,51 +235,6 @@ namespace barney {
     delete (Context *)context;
   }
 
-  // BN_API
-  // BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
-  //                        const BNMaterial *material,
-  //                        const float3     *origins,
-  //                        int               numSpheres,
-  //                        const float3     *colors,
-  //                        const float      *radii,
-  //                        float             defaultRadius)
-  // {
-  //   LOG_API_ENTRY;
-  //   Spheres *spheres = checkGet(dataGroup)->createSpheres
-  //     (checkGet(material),(const vec3f*)origins,numSpheres,(const vec3f*)colors,radii,defaultRadius);
-  //   return (BNGeom)spheres;
-  // }
-
-  // BN_API
-  // BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
-  //                          const BNMaterial *material,
-  //                          const float3     *points,
-  //                          int               numPoints,
-  //                          const float3     *colors,
-  //                          /*! if true - and colors is non null - then
-  //                            the colors array specifies per-vertex
-  //                            colors */
-  //                          bool              colorPerVertex,
-  //                          const int2       *indices,
-  //                          int               numIndices,
-  //                          const float      *radii,
-  //                          /*! if true - and radii is non null -then the
-  //                            radii specify per-vertex radii and
-  //                            segments will be rounded cones */
-  //                          bool              radiusPerVertex,
-  //                          float             defaultRadius)
-  // {
-  //   LOG_API_ENTRY;
-  //   Cylinders *cylinders = checkGet(dataGroup)->createCylinders
-  //     ((const vec3f*)points,numPoints,
-  //      (const vec3f*)colors,colorPerVertex,
-  //      (const vec2i*)indices,numIndices,
-  //      radii,radiusPerVertex,defaultRadius);
-  //   return (BNGeom)cylinders;
-  // }
-
-
-
   BN_API
   BNGeom bnTriangleMeshCreate(BNDataGroup dg,
                               const BNMaterialHelper *material,
@@ -308,60 +263,6 @@ namespace barney {
     return mesh;
   }  
   
-  // BN_API
-  // BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
-  //                             const BNMaterial *material,
-  //                             const int3 *indices,
-  //                             int numIndices,
-  //                             const float3 *vertices,
-  //                             int numVertices,
-  //                             const float3 *normals,
-  //                             const float2 *texcoords)
-  // {
-  //   LOG_API_ENTRY;
-  //   Triangles *triangles = checkGet(dataGroup)->createTriangles
-  //     (numIndices,
-  //      (const vec3i*)indices,
-  //      numVertices,
-  //      (const vec3f*)vertices,
-  //      (const vec3f*)normals,
-  //      (const vec2f*)texcoords);
-  //   BNGeom geom = (BNGeom)triangles;
-
-  //   bnSet3fc(geom,"material.baseColor",material->baseColor);
-  //   bnSet1f(geom,"material.transmission",material->transmission);
-  //   bnSet1f(geom,"material.ior",material->ior);
-  //   if (material->colorTexture)
-  //     bnSetObject(geom,"material.colorTexture",material->colorTexture);
-  //   if (material->alphaTexture)
-  //     bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
-  //   bnCommit(geom);
-  //   return geom;
-  // }
-
-
-
-  // BN_API
-  // void bnTriangleMeshUpdate(BNGeom geom,
-  //                           const BNMaterial *material,
-  //                           const int3 *indices,
-  //                           int numIndices,
-  //                           const float3 *vertices,
-  //                           int numVertices,
-  //                           const float3 *normals,
-  //                           const float2 *texcoords)
-  // {
-  //   Triangles *triangles = (Triangles *)checkGet(geom);
-  //   triangles->update(checkGet(material),
-  //                     numIndices,
-  //                     (const vec3i*)indices,
-  //                     numVertices,
-  //                     (const vec3f*)vertices,
-  //                     (const vec3f*)normals,
-  //                     (const vec2f*)texcoords);
-  // }
-
-
   BN_API
   BNScalarField bnScalarFieldCreate(BNDataGroup dataGroup,
                                     const char *type)
@@ -473,10 +374,6 @@ namespace barney {
     bnSet3fc(sf,"gridSpacing",gridSpacing);
     bnCommit(sf);
     return sf;
-    // ScalarField *sf = checkGet(dataGroup)->createStructuredData
-    //   ((const vec3i&)dims,type,scalars,
-    //    (const vec3f&)gridOrigin,(const vec3f&)gridSpacing);
-    // return (BNScalarField)sf;
   }
   
   BN_API
@@ -782,5 +679,4 @@ namespace barney {
                                        gpuIDs);
   }
 
-  
 }
