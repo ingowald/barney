@@ -63,15 +63,23 @@ int main(int, char **)
         normals.push_back(random3f());
       }
     }
-    BNMaterial mat = BN_DEFAULT_MATERIAL;
-
     BNDataGroup dg = bnGetDataGroup(model,0);
+
+    BNMaterialHelper mat = BN_DEFAULT_MATERIAL;
     BNGeom mesh = bnTriangleMeshCreate
       (dg,&mat,
        (int3*)indices.data(),(int)indices.size(),
        (float3*)vertices.data(),(int)vertices.size(),
        haveNor?(float3*)normals.data():nullptr,
        haveTex?(float2*)texcoords.data():nullptr);
+
+
+    // BNGeom mesh = bnTriangleMeshCreate
+    //   (dg,&mat,
+    //    (int3*)indices.data(),(int)indices.size(),
+    //    (float3*)vertices.data(),(int)vertices.size(),
+    //    haveNor?(float3*)normals.data():nullptr,
+    //    haveTex?(float2*)texcoords.data():nullptr);
     
     bnRelease(mesh);
     bnRelease(model);

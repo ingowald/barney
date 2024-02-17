@@ -14,10 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/Camera.h"
+#include "barney/Camera.h"
 
-namespace mori {
+namespace barney {
 
- 
+  Camera::Camera(Context *owner)
+    : Object(owner)
+  {}
+  
+  Camera::SP Camera::create(Context *owner,
+                            const char *type)
+  {
+    // iw - "eventually" we should have different cameras like
+    // 'perspective' etc here, but for now, let's just
+    // ignore the type and create a single one thta contains all
+    // fields....
+    return std::make_shared<Camera>(owner);
+  }
+
 }
 

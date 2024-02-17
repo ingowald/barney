@@ -34,7 +34,7 @@ namespace barney {
     FrameBuffer *createFB(int owningRank) override;
 
     void render(Model *model,
-                const Camera &camera,
+                const Camera::DD &camera,
                 FrameBuffer *fb,
                 int pathsPerPixel) override;
 

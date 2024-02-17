@@ -27,7 +27,7 @@ namespace barney {
       there will be one cuda block per tile */
   __global__
   void g_generateRays(/*! the camera used for generating the rays */
-                      Camera camera,
+                      Camera::DD camera,
                       /*! a unique random number seed value for pixel
                           and lens jitter; probably just accumID */
                       int rngSeed,
@@ -128,7 +128,7 @@ namespace barney {
   }
   
   void DeviceContext::generateRays_launch(TiledFB *fb,
-                                          const Camera &camera,
+                                          const Camera::DD &camera,
                                           int rngSeed)
   {
     auto device = fb->device;

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -36,6 +36,8 @@ namespace barney {
 
     Material(DataGroup *owner) : DataGroupObject(owner) {}
     virtual ~Material() = default;
+
+    static Material::SP create(DataGroup *dg, const char *type);
     
     void commit() override;
     bool setObject(const std::string &member, const Object::SP &value) override;

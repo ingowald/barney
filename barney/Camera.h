@@ -17,22 +17,35 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#include "barney/Object.h"
 
 namespace barney {
 
   /*! the camera model we use in barney */
-  struct Camera {
-    /*! vector from camera center to to lower-left pixel (i.e., pixel
-      (0,0)) on the focal plane */
-    vec3f dir_00;
-    /* vector along u direction, for ONE pixel */
-    vec3f dir_du;
-    /* vector along v direction, for ONE pixel */
-    vec3f dir_dv;
-    /*! lens center ... */
-    vec3f lens_00;
-    /* vector along v direction, for ONE pixel */
-    float  lensRadius;
+  struct Camera : public Object {
+    typedef std::shared_ptr<Camera> SP;
+    struct DD {
+      /*! vector from camera center to to lower-left pixel (i.e., pixel
+        (0,0)) on the focal plane */
+      vec3f dir_00;
+      /* vector along u direction, for ONE pixel */
+      vec3f dir_du;
+      /* vector along v direction, for ONE pixel */
+      vec3f dir_dv;
+      /*! lens center ... */
+      vec3f lens_00;
+      /* vector along v direction, for ONE pixel */
+      float  lensRadius;
+    };
+    
+    Camera(Context *owner);
+    virtual ~Camera() = default;
+    
+    static Camera::SP create(Context *owner, const char *type);
+
+    DD getDD() { return content; }
+
+    DD content;
   };
     
 }

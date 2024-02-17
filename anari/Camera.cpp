@@ -5,7 +5,8 @@
 
 namespace barney_device {
 
-Camera::Camera(BarneyGlobalState *s) : Object(ANARI_CAMERA, s) {}
+Camera::Camera(BarneyGlobalState *s) : Object(ANARI_CAMERA, s)
+{}
 
 Camera::~Camera() = default;
 
@@ -23,6 +24,8 @@ Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
 
 void Camera::commit()
 {
+  if (!m_barneyCamera)
+    m_barneyCamera = bnCameraCreate(deviceState()->context,"perspective");
   m_pos = getParam<math::float3>("position", math::float3(0.f, 0.f, 0.f));
   m_dir = math::normalize(
       getParam<math::float3>("direction", math::float3(0.f, 0.f, 1.f)));
@@ -33,9 +36,9 @@ void Camera::commit()
   markUpdated();
 }
 
-const BNCamera *Camera::barneyCamera() const
+const BNCamera Camera::barneyCamera() const
 {
-  return &m_barneyCamera;
+  return m_barneyCamera;
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -54,12 +57,18 @@ void Perspective::commit()
   math::float3 at =
       math::float3(m_pos.x + m_dir.x, m_pos.y + m_dir.y, m_pos.z + m_dir.z);
 
-  bnPinholeCamera(&m_barneyCamera,
-      (const float3 &)m_pos,
-      (const float3 &)at,
-      (const float3 &)m_up,
-      anari::degrees(fovy),
-      aspect);
+  // bnPinholeCamera(&m_barneyCamera,
+  //     (const float3 &)m_pos,
+  //     (const float3 &)at,
+  //     (const float3 &)m_up,
+  //     anari::degrees(fovy),
+  //     aspect);
+  bnSet3fc(m_barneyCamera,"up",(const float3&)m_up);
+  bnSet3fc(m_barneyCamera,"from", (const float3&)m_pos);
+  bnSet3fc(m_barneyCamera,"at",(const float3&)at);
+  bnSet1f(m_barneyCamera,"aspect",aspect);
+  bnSet1f(m_barneyCamera,"fovy",fovy);
+  bnCommit(m_barneyCamera);
 }
 
 } // namespace barney_device

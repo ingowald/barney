@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -22,6 +22,8 @@
 #include "barney/geometry/Triangles.h"
 #include "barney/volume/ScalarField.h"
 #include "barney/Data.h"
+#include "barney/common/Material.h"
+#include "barney/Camera.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
@@ -57,6 +59,12 @@ namespace barney {
     return (Data *)data;
   }
 
+  inline Camera *checkGet(BNCamera camera)
+  {
+    assert(camera);
+    return (Camera *)camera;
+  }
+  
   // inline Material checkGet(const BNMaterial *material)
   // {
   //   assert(material);
@@ -269,11 +277,12 @@ namespace barney {
   //      radii,radiusPerVertex,defaultRadius);
   //   return (BNGeom)cylinders;
   // }
-  
-  
+
+
+
   BN_API
-  BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
-                              const BNMaterial *material,
+  BNGeom bnTriangleMeshCreate(BNDataGroup dg,
+                              const BNMaterialHelper *material,
                               const int3 *indices,
                               int numIndices,
                               const float3 *vertices,
@@ -281,26 +290,53 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
-    LOG_API_ENTRY;
-    Triangles *triangles = checkGet(dataGroup)->createTriangles
-      (numIndices,
-       (const vec3i*)indices,
-       numVertices,
-       (const vec3f*)vertices,
-       (const vec3f*)normals,
-       (const vec2f*)texcoords);
-    BNGeom geom = (BNGeom)triangles;
+    BNGeom mesh = bnGeometryCreate(dg,"triangles");
+    BNData _vertices = bnDataCreate(dg,BN_FLOAT3,numVertices,vertices);
+    bnSetAndRelease(mesh,"vertices",_vertices);
+    BNData _indices  = bnDataCreate(dg,BN_INT3,numIndices,indices);
+    bnSetAndRelease(mesh,"indices",_indices);
+    if (normals) {
+      BNData _normals  = bnDataCreate(dg,BN_FLOAT3,normals?numVertices:0,normals);
+      bnSetAndRelease(mesh,"normals",_normals);
+    }
+    if (texcoords) {
+      BNData _texcoords  = bnDataCreate(dg,BN_FLOAT2,texcoords?numVertices:0,texcoords);
+      bnSetAndRelease(mesh,"texcoords",_texcoords);
+    }
+    bnCommit(mesh);
+    return mesh;
+  }  
+  
+  // BN_API
+  // BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
+  //                             const BNMaterial *material,
+  //                             const int3 *indices,
+  //                             int numIndices,
+  //                             const float3 *vertices,
+  //                             int numVertices,
+  //                             const float3 *normals,
+  //                             const float2 *texcoords)
+  // {
+  //   LOG_API_ENTRY;
+  //   Triangles *triangles = checkGet(dataGroup)->createTriangles
+  //     (numIndices,
+  //      (const vec3i*)indices,
+  //      numVertices,
+  //      (const vec3f*)vertices,
+  //      (const vec3f*)normals,
+  //      (const vec2f*)texcoords);
+  //   BNGeom geom = (BNGeom)triangles;
 
-    bnSet3fc(geom,"material.baseColor",material->baseColor);
-    bnSet1f(geom,"material.transmission",material->transmission);
-    bnSet1f(geom,"material.ior",material->ior);
-    if (material->colorTexture)
-      bnSetObject(geom,"material.colorTexture",material->colorTexture);
-    if (material->alphaTexture)
-      bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
-    bnCommit(geom);
-    return geom;
-  }
+  //   bnSet3fc(geom,"material.baseColor",material->baseColor);
+  //   bnSet1f(geom,"material.transmission",material->transmission);
+  //   bnSet1f(geom,"material.ior",material->ior);
+  //   if (material->colorTexture)
+  //     bnSetObject(geom,"material.colorTexture",material->colorTexture);
+  //   if (material->alphaTexture)
+  //     bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
+  //   bnCommit(geom);
+  //   return geom;
+  // }
 
 
 
@@ -342,6 +378,24 @@ namespace barney {
     Geometry::SP geom = Geometry::create(checkGet(dataGroup),type);
     if (!geom) return 0;
     return (BNGeom)checkGet(dataGroup)->context->initReference(geom);
+  }
+
+  BN_API
+  BNMaterial bnMaterialCreate(BNDataGroup dataGroup,
+                              const char *type)
+  {
+    Material::SP material = Material::create(checkGet(dataGroup),type);
+    if (!material) return 0;
+    return (BNMaterial)checkGet(dataGroup)->context->initReference(material);
+  }
+
+  BN_API
+  BNCamera bnCameraCreate(BNContext context,
+                          const char *type)
+  {
+    Camera::SP camera = Camera::create(checkGet(context),type);
+    if (!camera) return 0;
+    return (BNCamera)checkGet(context)->initReference(camera);
   }
 
 
@@ -553,34 +607,34 @@ namespace barney {
     checkGet(dataGroup)->build();
   }
   
-  BN_API
-  void bnPinholeCamera(BNCamera *camera,
-                       float3 _from,
-                       float3 _at,
-                       float3 _up,
-                       float  fov,
-                       float  aspect)
-  {
-    assert(camera);
-    vec3f from = (const vec3f&)_from;
-    vec3f at   = (const vec3f&)_at;
-    vec3f up   = (const vec3f&)_up;
+  // BN_API
+  // void bnPinholeCamera(BNCamera *camera,
+  //                      float3 _from,
+  //                      float3 _at,
+  //                      float3 _up,
+  //                      float  fov,
+  //                      float  aspect)
+  // {
+  //   assert(camera);
+  //   vec3f from = (const vec3f&)_from;
+  //   vec3f at   = (const vec3f&)_at;
+  //   vec3f up   = (const vec3f&)_up;
     
-    vec3f dir_00  = normalize(at-from);
+  //   vec3f dir_00  = normalize(at-from);
     
-    vec3f dir_du = aspect * normalize(cross(dir_00, up));
-    vec3f dir_dv = normalize(cross(dir_du, dir_00));
+  //   vec3f dir_du = aspect * normalize(cross(dir_00, up));
+  //   vec3f dir_dv = normalize(cross(dir_du, dir_00));
 
-    dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fov) * (float)M_PI / 180.0f)));
-    dir_00 -= 0.5f * dir_du;
-    dir_00 -= 0.5f * dir_dv;
+  //   dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fov) * (float)M_PI / 180.0f)));
+  //   dir_00 -= 0.5f * dir_du;
+  //   dir_00 -= 0.5f * dir_dv;
 
-    camera->dir_00 = (float3&)dir_00;
-    camera->dir_du = (float3&)dir_du;
-    camera->dir_dv = (float3&)dir_dv;
-    camera->lens_00 = (float3&)from;
-    camera->lensRadius = 0.f;
-  }
+  //   camera->dir_00 = (float3&)dir_00;
+  //   camera->dir_du = (float3&)dir_du;
+  //   camera->dir_dv = (float3&)dir_dv;
+  //   camera->lens_00 = (float3&)from;
+  //   camera->lensRadius = 0.f;
+  // }
 
 
 
@@ -696,21 +750,11 @@ namespace barney {
   
   BN_API
   void bnRender(BNModel model,
-                const BNCamera *_camera,
+                BNCamera camera,
                 BNFrameBuffer fb,
                 int pathsPerPixel)
   {
-    static int numPrinted = 0;
-    if (++numPrinted < 3) { LOG_API_ENTRY; }
-
-    assert(_camera);
-    Camera camera;
-    camera.lens_00 = (const vec3f&)_camera->lens_00;
-    camera.dir_00 = (const vec3f&)_camera->dir_00;
-    camera.dir_du = (const vec3f&)_camera->dir_du;
-    camera.dir_dv = (const vec3f&)_camera->dir_dv;
-    camera.lensRadius = _camera->lensRadius;
-    checkGet(model)->render(camera,checkGet(fb),pathsPerPixel);
+    checkGet(model)->render(checkGet(camera),checkGet(fb),pathsPerPixel);
   }
 
   BN_API

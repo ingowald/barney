@@ -18,7 +18,16 @@
 #include "barney/DataGroup.h"
 
 namespace barney {
-  
+
+  Material::SP Material::create(DataGroup *dg, const char *type)
+  {
+    // iw - "eventually" we should have different materials like
+    // 'matte' and 'glass', 'metal' etc here, but for now, let's just
+    // ignore the type and create a single one thta contains all
+    // fields....
+    return std::make_shared<Material>(dg);
+  }
+
   void Material::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
     vars.push_back({"material.baseColor", OWL_FLOAT3, base+OWL_OFFSETOF(DD,baseColor)});

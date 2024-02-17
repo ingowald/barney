@@ -28,9 +28,9 @@ void Material::markCommitted()
   Object::markCommitted();
 }
 
-const BNMaterial *Material::barneyMaterial() const
+const BNMaterialHelper *Material::barneyMaterial() const
 {
-  return &m_bnMaterial;
+  return &m_bnMaterialData;
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -43,19 +43,20 @@ void Matte::commit()
 {
   Object::commit();
 
-  m_bnMaterial.ior = 1.5f;
-  m_bnMaterial.alphaTexture = 0;
-  m_bnMaterial.colorTexture = 0;
+  m_bnMaterialData.ior = 1.5f;
+  m_bnMaterialData.alphaTexture = 0;
+  m_bnMaterialData.colorTexture = 0;
 
   math::float4 color(0.8f, 0.8f, 0.8f, 1.f);
   getParam("color", ANARI_FLOAT32_VEC3, &color);
   getParam("color", ANARI_FLOAT32_VEC4, &color);
-  std::memcpy(&m_bnMaterial.baseColor, &color, sizeof(float3));
+  std::memcpy(&m_bnMaterialData.baseColor, &color, sizeof(float3));
 
-  m_bnMaterial.transmission = getParam<float>("opacity", color.w);
-  m_bnMaterial.ior = 1.f;
-  m_bnMaterial.metallic = 0.f;
-  m_bnMaterial.roughness = 0.f;
+  m_bnMaterialData.transmission = getParam<float>("opacity", color.w);
+  m_bnMaterialData.ior = 1.f;
+  m_bnMaterialData.metallic = 0.f;
+  m_bnMaterialData.roughness = 0.f;
+  printf("TODO: set material data....\n");
 }
 
 // PhysicallyBased //
@@ -66,19 +67,21 @@ void PhysicallyBased::commit()
 {
   Object::commit();
 
-  m_bnMaterial.ior = 1.5f;
-  m_bnMaterial.alphaTexture = 0;
-  m_bnMaterial.colorTexture = 0;
+  m_bnMaterialData.ior = 1.5f;
+  m_bnMaterialData.alphaTexture = 0;
+  m_bnMaterialData.colorTexture = 0;
 
   math::float4 color(0.8f, 0.8f, 0.8f, 1.f);
   getParam("baseColor", ANARI_FLOAT32_VEC3, &color);
   getParam("baseColor", ANARI_FLOAT32_VEC4, &color);
-  std::memcpy(&m_bnMaterial.baseColor, &color, sizeof(float3));
+  std::memcpy(&m_bnMaterialData.baseColor, &color, sizeof(float3));
 
-  m_bnMaterial.transmission = getParam<float>("opacity", color.w);
-  m_bnMaterial.ior = 1.f;
-  m_bnMaterial.metallic = 0.f;
-  m_bnMaterial.roughness = 0.f;
+  m_bnMaterialData.transmission = getParam<float>("opacity", color.w);
+  m_bnMaterialData.ior = 1.f;
+  m_bnMaterialData.metallic = 0.f;
+  m_bnMaterialData.roughness = 0.f;
+
+  printf("TODO: set material data....\n");
 }
 
 } // namespace barney_device

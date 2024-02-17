@@ -244,7 +244,7 @@ namespace barney {
     
   
   void MPIContext::render(Model *model,
-                          const Camera &camera,
+                          const Camera::DD &camera,
                           FrameBuffer *_fb,
                           int pathsPerPixel)
   {
