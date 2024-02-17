@@ -292,6 +292,8 @@ namespace barney {
   {
     BNGeom mesh = bnGeometryCreate(dg,"triangles");
     BNData _vertices = bnDataCreate(dg,BN_FLOAT3,numVertices,vertices);
+    PRINT(*(vec3f*)vertices);
+    PRINT(*(vec3i*)indices);
     bnSetAndRelease(mesh,"vertices",_vertices);
     BNData _indices  = bnDataCreate(dg,BN_INT3,numIndices,indices);
     bnSetAndRelease(mesh,"indices",_indices);

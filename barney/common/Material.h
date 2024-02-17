@@ -39,13 +39,18 @@ namespace barney {
 
     static Material::SP create(DataGroup *dg, const char *type);
     
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
     void commit() override;
     bool setObject(const std::string &member, const Object::SP &value) override;
     bool set1f(const std::string &member, const float &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
-    
-    static void addVars(std::vector<OWLVarDecl> &vars, int base);
     void set(OWLGeom geom) const;
+    /*! @} */
+    // ------------------------------------------------------------------
+
+    /*! declares the device-data's variables to an owl geom */
+    static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
     vec3f baseColor { .5f, .5f, .5f };
     float transmission { 0.f };

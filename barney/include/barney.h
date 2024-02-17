@@ -68,18 +68,6 @@ typedef enum {
 typedef  enum { BN_SCALAR_UNDEFINED=0, BN_SCALAR_UINT8, BN_SCALAR_FLOAT=(int)BN_FLOAT  } BNScalarType;
 
 
-struct BNMaterialHelper {
-  float3 baseColor          { .7f,.7f,.7f };
-  float  transmission       { 0.f };
-  float  ior                { 1.45f };
-  float  metallic           { 1.f };
-  float  roughness          { 0.f };
-  BNTexture2D alphaTexture  { 0 };
-  BNTexture2D colorTexture  { 0 };
-};
-
-#define BN_DEFAULT_MATERIAL  BNMaterialHelper{}
-
 /*! supported formats for texels in textures */
 typedef enum {
   /*! uint8_t[4] */
@@ -417,30 +405,6 @@ BNMaterial bnMaterialCreate(BNDataGroup dataGroup,
 
 
 // ------------------------------------------------------------------
-// DEPRECATED
-// ------------------------------------------------------------------
-BN_API
-BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
-                            const BNMaterialHelper *material,
-                            const int3 *indices,
-                            int numIndices,
-                            const float3 *vertices,
-                            int numVertices,
-                            const float3 *normals,
-                            const float2 *texcoords);
-
-// ------------------------------------------------------------------
-// DEPRECATED
-// ------------------------------------------------------------------
-BN_API
-BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
-                                     int3 dims,
-                                     BNScalarType type,
-                                     const void *scalars,
-                                     float3 gridOrigin,
-                                     float3 gridSpacing);
-
-// ------------------------------------------------------------------
 // soon to be deprecated, but still the only way to create those
 // ------------------------------------------------------------------
 BN_API
@@ -506,6 +470,16 @@ void bnVolumeSetXF(BNVolume volume,
 // HELPER FUNCTION(S) - may not survivie into final API
 // ==================================================================
 
+struct BNMaterialHelper {
+  float3 baseColor          { .7f,.7f,.7f };
+  float  transmission       { 0.f };
+  float  ior                { 1.45f };
+  float  metallic           { 1.f };
+  float  roughness          { 0.f };
+  BNTexture2D alphaTexture  { 0 };
+  BNTexture2D colorTexture  { 0 };
+};
+
 /*! c++ helper function */
 inline void bnSetAndRelease(BNObject target, const char *paramName,
                             BNObject value)
@@ -531,4 +505,28 @@ inline void bnAssignMaterial(BNGeom geom,const BNMaterialHelper *material)
 
 
 
+
+// ------------------------------------------------------------------
+// DEPRECATED
+// ------------------------------------------------------------------
+BN_API
+BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
+                            const BNMaterialHelper *material,
+                            const int3 *indices,
+                            int numIndices,
+                            const float3 *vertices,
+                            int numVertices,
+                            const float3 *normals,
+                            const float2 *texcoords);
+
+// ------------------------------------------------------------------
+// DEPRECATED
+// ------------------------------------------------------------------
+BN_API
+BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
+                                     int3 dims,
+                                     BNScalarType type,
+                                     const void *scalars,
+                                     float3 gridOrigin,
+                                     float3 gridSpacing);
 

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -21,7 +21,82 @@ namespace barney {
   Camera::Camera(Context *owner)
     : Object(owner)
   {}
+
+  // ##################################################################
+
+  struct PerspectiveCamera : public Camera {
+    PerspectiveCamera(Context *owner) : Camera(owner) {}
+    virtual ~PerspectiveCamera() = default;
+
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+    
+    vec3f position  { 0, 0, 0 };
+    vec3f direction { 0, 0, 1 };
+    vec3f up        { 0, 1, 0 };
+    float aspect    = 1.f;
+    float fovy      = 60.f;
+  };
   
+  bool PerspectiveCamera::set1f(const std::string &member, const float &value)
+  {
+    if (member == "aspect") {
+      aspect = value;
+      return true;
+    }
+    if (member == "fovy") {
+      fovy = value;
+      return true;
+    }
+    return false;
+  }
+  
+  bool PerspectiveCamera::set3f(const std::string &member, const vec3f &value)
+  {
+    if (member == "position") {
+      position = value;
+      return true;
+    }
+    if (member == "direction") {
+      direction = value;
+      return true;
+    }
+    if (member == "up") {
+      up = value;
+      return true;
+    }
+    return false;
+  }
+    
+  void PerspectiveCamera::commit()
+  {
+    vec3f from = (const vec3f&)position;
+    // vec3f at   = (const vec3f&)_at;
+    // vec3f up   = (const vec3f&)up;
+    
+    vec3f dir_00  = direction;//normalize(at-from);
+    
+    vec3f dir_du = aspect * normalize(cross(dir_00, up));
+    vec3f dir_dv = normalize(cross(dir_du, dir_00));
+
+    dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fovy) * (float)M_PI / 180.0f)));
+    dir_00 -= 0.5f * dir_du;
+    dir_00 -= 0.5f * dir_dv;
+
+    dd.dir_00 = (float3&)dir_00;
+    dd.dir_du = (float3&)dir_du;
+    dd.dir_dv = (float3&)dir_dv;
+    dd.lens_00 = (float3&)from;
+    dd.lensRadius = 0.f;
+  }
+    
+
+  // ##################################################################
   Camera::SP Camera::create(Context *owner,
                             const char *type)
   {

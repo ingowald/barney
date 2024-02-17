@@ -18,6 +18,7 @@
 #include "barney/DataGroup.h"
 #include "barney/Context.h"
 
+#include "barney/geometry/Triangles.h"
 #include "barney/geometry/Spheres.h"
 #include "barney/geometry/Cylinders.h"
 
@@ -29,6 +30,8 @@ namespace barney {
       return std::make_shared<Spheres>(owner);
     if (type == "cylinders")
       return std::make_shared<Cylinders>(owner);
+    if (type == "triangles")
+      return std::make_shared<Triangles>(owner);
     
     owner->context->warn_unsupported_object("Geometry",type);
     return {};
@@ -89,7 +92,7 @@ namespace barney {
   {
     return false;
   }
-
+  
   bool Geometry::setObject(const std::string &member, const Object::SP &value)
   {
     if (member == "material.colorTexture") {

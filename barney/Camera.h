@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -24,7 +24,15 @@ namespace barney {
   /*! the camera model we use in barney */
   struct Camera : public Object {
     typedef std::shared_ptr<Camera> SP;
+    typedef enum { UNDEFINED=0, PERSPECTIVE } Type;
+    /*! device-data for the camera object; to avoid virtual functions
+        this currently uses a 'type'-switch, so the camera code on the
+        device will have to 'interpret' what the actual fields
+        mean. on the host side, all derived cameras will have to fill
+        in this one shared struct */
     struct DD {
+      Type  type = UNDEFINED;
+      
       /*! vector from camera center to to lower-left pixel (i.e., pixel
         (0,0)) on the focal plane */
       vec3f dir_00;
@@ -35,17 +43,16 @@ namespace barney {
       /*! lens center ... */
       vec3f lens_00;
       /* vector along v direction, for ONE pixel */
-      float  lensRadius;
+      float lensRadius;
     };
+    DD dd;
     
     Camera(Context *owner);
     virtual ~Camera() = default;
     
     static Camera::SP create(Context *owner, const char *type);
-
-    DD getDD() { return content; }
-
-    DD content;
+    
+    DD getDD() { return dd; }
   };
     
 }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -22,52 +22,48 @@ namespace barney {
 
   struct DataGroup;
 
-  /*! geometry in the form of a regular triangle mesh - vertex
-      positoins array, vertex indices array, verex normals, and
-      texcoords */
+
+  // ==================================================================
+  /*! Scalar field made of 3D structured data, constting of Nx*Ny*Nz
+      scalars.
+
+      Supported settable fields:
+
+      - "vertices"  (BNData<float3>)
+      - "indices"   (BNData<int3>)
+      - "normals"   (BNData<float3>)
+      - "texcoords" (BNData<float2>)
+  */
   struct Triangles : public Geometry {
     typedef std::shared_ptr<Triangles> SP;
 
     struct DD : public Geometry::DD {
-      // int          numIndices;
-      // int          numVertices;
       const vec3i *indices;
       const vec3f *vertices;
       const vec3f *normals;
       const vec2f *texcoords;
     };
     
-    Triangles(DataGroup *owner,
-              int numIndices,
-              const vec3i *indices,
-              int numVertices,
-              const vec3f *vertices,
-              const vec3f *normals,
-              const vec2f *texcoords);
+    Triangles(DataGroup *owner);
     virtual ~Triangles();
     
-    // void update(const Material &material,
-    //             int numIndices,
-    //             const vec3i *indices,
-    //             int numVertices,
-    //             const vec3f *vertices,
-    //             const vec3f *normals,
-    //             const vec2f *texcoords);
-    
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
-    void commit() override;
-    
-    int       numIndices;
-    int       numVertices;
-    OWLBuffer indicesBuffer   = 0;
-    OWLBuffer verticesBuffer  = 0;
-    OWLBuffer texcoordsBuffer = 0;
-    OWLBuffer normalsBuffer   = 0;
-
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Triangles{}"; }
+    
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool setData(const std::string &member, const Data::SP &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+
+    static OWLGeomType createGeomType(DevGroup *devGroup);
+
+    PODData::SP vertices;
+    PODData::SP indices;
+    PODData::SP normals;
+    PODData::SP texcoords;
   };
 
 }

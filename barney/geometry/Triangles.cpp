@@ -21,97 +21,13 @@ namespace barney {
 
   extern "C" char Triangles_ptx[];
 
-  Triangles::Triangles(DataGroup *owner,
-                       int numIndices,
-                       const vec3i *indices,
-                       int numVertices,
-                       const vec3f *vertices,
-                       const vec3f *normals,
-                       const vec2f *texcoords)
+  Triangles::Triangles(DataGroup *owner)
     : Geometry(owner)
-  {
-    OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
-      ("Triangles",Triangles::createGeomType);
-    OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
-
-    verticesBuffer = owlDeviceBufferCreate
-      (owner->devGroup->owl,
-       OWL_FLOAT3,numVertices,vertices);
-    indicesBuffer = owlDeviceBufferCreate
-      (owner->devGroup->owl,
-       OWL_INT3,numIndices,indices);
-    if (texcoords)
-      texcoordsBuffer
-        = owlDeviceBufferCreate
-        (owner->devGroup->owl,
-         OWL_FLOAT2,numVertices,texcoords);
-    if (normals)
-      normalsBuffer
-        = owlDeviceBufferCreate
-        (owner->devGroup->owl,
-         OWL_FLOAT3,numVertices,normals);
-    
-    owlTrianglesSetVertices(geom,verticesBuffer,
-                            numVertices,sizeof(float3),0);
-    owlTrianglesSetIndices(geom,indicesBuffer,
-                           numIndices,sizeof(int3),0);
-    // Geometry::setMaterial(geom);
-    // owlGeomSetRaw(geom,"material",&material);
-    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
-    owlGeomSetBuffer(geom,"indices",indicesBuffer);
-    owlGeomSetBuffer(geom,"normals",normalsBuffer);
-    owlGeomSetBuffer(geom,"texcoords",texcoordsBuffer);
-    
-    triangleGeoms.push_back(geom);
-  }
+  {}
+  
 
   Triangles::~Triangles()
-  {
-    /* no need to relase geom itself, that's stored in
-       Geometry::triangleGeoms, and that will get released by
-       parent */
-    if (verticesBuffer) {
-      owlBufferRelease(verticesBuffer);
-      verticesBuffer = 0;
-    }
-    if (indicesBuffer) {
-      owlBufferRelease(indicesBuffer);
-      indicesBuffer = 0;
-    }
-    if (normalsBuffer) {
-      owlBufferRelease(normalsBuffer);
-      normalsBuffer = 0;
-    }
-    if (texcoordsBuffer) {
-      owlBufferRelease(texcoordsBuffer);
-      texcoordsBuffer = 0;
-    }
-  }
-
-  // void Triangles::update(const Material &material,
-  //                        int numIndices,
-  //                        const vec3i *indices,
-  //                        int numVertices,
-  //                        const vec3f *vertices,
-  //                        const vec3f *normals,
-  //                        const vec2f *texcoords)
-  // {
-  //   OWLGeom geom = triangleGeoms[0];
-    
-  //   owlBufferResize(verticesBuffer,numVertices);
-  //   owlBufferResize(indicesBuffer,numIndices);
-  //   owlBufferUpload(verticesBuffer,vertices);
-  //   owlBufferUpload(indicesBuffer,indices);
-
-  //   owlTrianglesSetVertices(geom,verticesBuffer,
-  //                           numVertices,sizeof(float3),0);
-  //   owlTrianglesSetIndices(geom,indicesBuffer,
-  //                          numIndices,sizeof(int3),0);
-  //   owlGeomSetRaw(geom,"material",&material);
-  //   owlGeomSetBuffer(geom,"vertices",verticesBuffer);
-  //   owlGeomSetBuffer(geom,"indices",indicesBuffer);
-  //   material->set(geom);
-  // }
+  {}
   
   OWLGeomType Triangles::createGeomType(DevGroup *devGroup)
   {
@@ -141,9 +57,66 @@ namespace barney {
     return gt;
   }
 
+
+  bool Triangles::setData(const std::string &member, const Data::SP &value)
+  {
+    if (Geometry::setData(member,value))
+      return true;
+    if (member == "vertices") {
+      vertices = value->as<PODData>();
+      return true;
+    }
+    if (member == "indices") {
+      indices = value->as<PODData>();
+      return true;
+    }
+    if (member == "normals") {
+      normals = value->as<PODData>();
+      return true;
+    }
+    if (member == "texcoords") {
+      texcoords = value->as<PODData>();
+      return true;
+    }
+    return false;
+  }
+  
   void Triangles::commit() 
   {
+    if (triangleGeoms.empty()) {
+      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+        ("Triangles",Triangles::createGeomType);
+      OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
+      triangleGeoms = { geom };
+    }
+
     OWLGeom geom = triangleGeoms[0];
+    OWLBuffer verticesBuffer = vertices->owl;
+    OWLBuffer indicesBuffer = indices->owl;
+    OWLBuffer texcoordsBuffer
+      = texcoords
+      ? texcoords->owl
+      : 0;
+    OWLBuffer normalsBuffer
+      = normals
+      ? normals->owl
+      : 0;
+
+    int numVertices = vertices->count;
+    int numIndices  = indices->count;
+    PRINT(numVertices);
+    PRINT(numIndices);
+    owlTrianglesSetVertices(geom,verticesBuffer,
+                            numVertices,sizeof(float3),0);
+    owlTrianglesSetIndices(geom,indicesBuffer,
+                           numIndices,sizeof(int3),0);
+    // Geometry::setMaterial(geom);
+    // owlGeomSetRaw(geom,"material",&material);
+    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
+    owlGeomSetBuffer(geom,"indices",indicesBuffer);
+    owlGeomSetBuffer(geom,"normals",normalsBuffer);
+    owlGeomSetBuffer(geom,"texcoords",texcoordsBuffer);
+    
     material->set(geom);
   }
 
