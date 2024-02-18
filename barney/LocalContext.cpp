@@ -107,9 +107,20 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell all GPUs to write their final pixels
     // ------------------------------------------------------------------
+#if FB_NO_PEER_ACCESS
+    // ***NO*** active device here
+    LocalFB *localFB = (LocalFB*)fb;
+    localFB->ownerGatherFinalTiles();
+    TiledFB::writeFinalPixels(localFB->finalFB,
+                              localFB->finalDepth,
+                              localFB->numPixels,
+                              localFB->rank0gather.finalTiles,
+                              localFB->rank0gather.tileDescs,
+                              localFB->rank0gather.numActiveTiles);
+#else
     for (int localID = 0; localID < devices.size(); localID++) {
       auto &devFB = *fb->perDev[localID];
-      TiledFB::writeFinalPixels(nullptr,//devFB.device.get(),
+      TiledFB::writeFinalPixels(//nullptr,//devFB.device.get(),
                                 fb->finalFB,
                                 fb->finalDepth,
                                 fb->numPixels,
@@ -118,6 +129,7 @@ namespace barney {
                                 devFB.numActiveTiles);
     }
     for (auto dev : devices) dev->sync();
+#endif
     // ------------------------------------------------------------------
     // wait for all GPUs to complete, so pixels are all written before
     // we return and/or copy to app

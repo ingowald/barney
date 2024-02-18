@@ -35,6 +35,10 @@ namespace barney {
                         float    *hostDepth);
     virtual void resetAccumulation() { accumID = 0; }
     void freeResources();
+
+#if FB_NO_PEER_ACCESS
+    virtual void ownerGatherFinalTiles() = 0;
+#endif
     
     std::vector<TiledFB::SP> perDev;
     

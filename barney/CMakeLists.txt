@@ -119,6 +119,7 @@ add_library(barney STATIC
   fb/FrameBuffer.h
   fb/FrameBuffer.cpp
   fb/LocalFB.h
+  fb/LocalFB.cpp
   fb/TiledFB.h
   fb/TiledFB.cu
   # model/group/data group handling
