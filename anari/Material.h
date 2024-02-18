@@ -17,10 +17,11 @@ struct Material : public Object
 
   void markCommitted() override;
 
-  const BNMaterial *barneyMaterial() const;
+  const BNMaterialHelper *barneyMaterial() const;
 
  protected:
   BNMaterial m_bnMaterial;
+  BNMaterialHelper m_bnMaterialData;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////

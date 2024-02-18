@@ -244,7 +244,7 @@ namespace barney {
     
   
   void MPIContext::render(Model *model,
-                          const Camera &camera,
+                          const Camera::DD &camera,
                           FrameBuffer *_fb,
                           int pathsPerPixel)
   {
@@ -275,7 +275,7 @@ namespace barney {
       // SetActiveGPU forDuration(devices[0]->device);
 
       // use default gpu for this:
-      barney::TiledFB::writeFinalPixels(nullptr,
+      barney::TiledFB::writeFinalPixels(// nullptr,
                                         fb->finalFB,
                                         fb->finalDepth,
                                         fb->numPixels,

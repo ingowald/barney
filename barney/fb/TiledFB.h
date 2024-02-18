@@ -18,6 +18,8 @@
 
 #include "barney/DeviceGroup.h"
 
+#define FB_NO_PEER_ACCESS 1
+
 namespace barney {
 
   struct FrameBuffer;
@@ -46,13 +48,12 @@ namespace barney {
     
     void resize(vec2i newSize);
     void free();
-    
+
     /*! write this tiledFB's tiles into given "final" frame buffer
         (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
         pixels) */
     static
-    void writeFinalPixels(Device    *device,
-                          uint32_t  *finalFB,
+    void writeFinalPixels(uint32_t  *finalFB,
                           float     *finalDepth,
                           vec2i      numPixels,
                           FinalTile *finalTiles,

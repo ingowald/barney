@@ -18,7 +18,16 @@
 #include "barney/DataGroup.h"
 
 namespace barney {
-  
+
+  Material::SP Material::create(DataGroup *dg, const char *type)
+  {
+    // iw - "eventually" we should have different materials like
+    // 'matte' and 'glass', 'metal' etc here, but for now, let's just
+    // ignore the type and create a single one thta contains all
+    // fields....
+    return std::make_shared<Material>(dg);
+  }
+
   void Material::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
     vars.push_back({"material.baseColor", OWL_FLOAT3, base+OWL_OFFSETOF(DD,baseColor)});
@@ -45,8 +54,6 @@ namespace barney {
                       ? alphaTexture->owlTex
                       : (OWLTexture)0
                       );
-    PRINT(colorTexture);
-    if (colorTexture) PRINT(colorTexture->owlTex);
     owlGeomSetTexture(geom,"material.colorTexture",
                       colorTexture
                       ? colorTexture->owlTex
@@ -56,10 +63,13 @@ namespace barney {
 
   void Material::commit()
   {
+    DataGroupObject::commit();
   }
   
   bool Material::set1f(const std::string &member, const float &value)
   {
+    if (DataGroupObject::set1f(member,value))
+      return true;
     if (member == "transmission") {
       this->transmission = value;
       return true;
@@ -77,6 +87,8 @@ namespace barney {
   
   bool Material::set3f(const std::string &member, const vec3f &value)
   {
+    if (DataGroupObject::set3f(member,value))
+      return true;
     if (member == "baseColor") {
       this->baseColor = value;
       return true;
@@ -86,6 +98,8 @@ namespace barney {
   
   bool Material::setObject(const std::string &member, const Object::SP &value)
   {
+    if (DataGroupObject::setObject(member,value))
+      return true;
     if (member == "colorTexture") {
       this->colorTexture = value?value->as<Texture>():0;
       return true;

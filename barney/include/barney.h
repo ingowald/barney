@@ -36,6 +36,9 @@ typedef struct _BNDataGroup    : public _BNObject{} *BNDataGroup;
 typedef struct _BNTexture2D    : public _BNObject{} *BNTexture2D;
 typedef struct _BNTexture3D    : public _BNObject{} *BNTexture3D;
 typedef struct _BNLight        : public _BNObject{} *BNLight;
+typedef struct _BNCamera       : public _BNObject{} *BNCamera;
+typedef struct _BNMaterial     : public _BNObject{} *BNMaterial;
+
 typedef BNTexture2D BNTexture;
 
 typedef enum {
@@ -64,18 +67,6 @@ typedef enum {
 
 typedef  enum { BN_SCALAR_UNDEFINED=0, BN_SCALAR_UINT8, BN_SCALAR_FLOAT=(int)BN_FLOAT  } BNScalarType;
 
-
-struct BNMaterial {
-  float3 baseColor          { .7f,.7f,.7f };
-  float  transmission       { 0.f };
-  float  ior                { 1.45f };
-  float  metallic           { 1.f };
-  float  roughness          { 0.f };
-  BNTexture2D alphaTexture  { 0 };
-  BNTexture2D colorTexture  { 0 };
-};
-
-#define BN_DEFAULT_MATERIAL  BNMaterial{}
 
 /*! supported formats for texels in textures */
 typedef enum {
@@ -116,19 +107,19 @@ typedef enum {
 BNTextureColorSpace;
 
 
-struct BNCamera {
-  /*! vector from camera center to to lower-left pixel (i.e., pixel
-    (0,0)) on the focal plane */
-  float3 dir_00;
-  /* vector along edge of image plane, in u direction */
-  float3 dir_du;
-  /* vector along edge of image plane, in v direction */
-  float3 dir_dv;
-  /*! lens center ... */
-  float3 lens_00;
-  /* vector along v direction, for ONE pixel */
-  float  lensRadius;
-};
+// struct BNCamera {
+//   /*! vector from camera center to to lower-left pixel (i.e., pixel
+//     (0,0)) on the focal plane */
+//   float3 dir_00;
+//   /* vector along edge of image plane, in u direction */
+//   float3 dir_du;
+//   /* vector along edge of image plane, in v direction */
+//   float3 dir_dv;
+//   /*! lens center ... */
+//   float3 lens_00;
+//   /* vector along v direction, for ONE pixel */
+//   float  lensRadius;
+// };
 
 struct BNGridlet {
   float3 lower;
@@ -148,67 +139,68 @@ BN_API
 void bnCommit(BNObject target);
               
 BN_API
-void bnSetString(BNObject target, const char *arg, const char *value);
+void bnSetString(BNObject target, const char *paramName, const char *value);
 
 BN_API
-void bnSetData(BNObject target, const char *arg, const BNData value);
+void bnSetData(BNObject target, const char *paramName, BNData value);
 
 BN_API
-void bnSetObject(BNObject target, const char *arg, const BNObject value);
+void bnSetObject(BNObject target, const char *paramName, const BNObject value);
 
 BN_API
-void bnSetLight(BNObject target, const char *arg, const BNLight value);
+void bnSetLight(BNObject target, const char *paramName, BNLight value);
 
 BN_API
-void bnSet1i(BNObject target, const char *arg, int value);
+void bnSet1i(BNObject target, const char *paramName, int value);
 
 BN_API
-void bnSet2i(BNObject target, const char *arg, int x, int y);
+void bnSet2i(BNObject target, const char *paramName, int x, int y);
 
 BN_API
-void bnSet2ic(BNObject target, const char *arg, int2 v);
+void bnSet2ic(BNObject target, const char *paramName, int2 v);
 
 BN_API
-void bnSet3i(BNObject target, const char *arg, int x, int y, int z);
+void bnSet3i(BNObject target, const char *paramName, int x, int y, int z);
 
 BN_API
-void bnSet3ic(BNObject target, const char *arg, int3 v);
+void bnSet3ic(BNObject target, const char *paramName, int3 v);
 
 BN_API
-void bnSet4i(BNObject target, const char *arg, int x, int y, int z, int w);
+void bnSet4i(BNObject target, const char *paramName, int x, int y, int z, int w);
 
 BN_API
-void bnSet4ic(BNObject target, const char *arg, int4 v);
+void bnSet4ic(BNObject target, const char *paramName, int4 v);
 
 BN_API
-void bnSet1f(BNObject target, const char *arg, float value);
+void bnSet1f(BNObject target, const char *paramName, float value);
 
 BN_API
-void bnSet2f(BNObject target, const char *arg, float x, float y);
+void bnSet2f(BNObject target, const char *paramName, float x, float y);
 
 BN_API
-void bnSet2fc(BNObject target, const char *arg, float2 v);
+void bnSet2fc(BNObject target, const char *paramName, float2 v);
 
 BN_API
-void bnSet3f(BNObject target, const char *arg, float x, float y, float z);
+void bnSet3f(BNObject target, const char *paramName, float x, float y, float z);
 
 BN_API
-void bnSet3fc(BNObject target, const char *arg, float3 v);
+void bnSet3fc(BNObject target, const char *paramName, float3 v);
 
 BN_API
-void bnSet4f(BNObject target, const char *arg, float x, float y, float z, float w);
+void bnSet4f(BNObject target, const char *paramName, float x, float y, float z, float w);
 
 BN_API
-void bnSet4fc(BNObject target, const char *arg, float4 v);
+void bnSet4fc(BNObject target, const char *paramName, float4 v);
 
 BN_API
-void bnSet4x3fv(BNObject target, const char *arg, const float *affineMatrix);
+void bnSet4x3fv(BNObject target, const char *paramName, const float *affineMatrix);
+
 
 
 /*! helper function to fill in a BNCamera structure from a more
     user-friendly from/at/up/fovy specification */
 BN_API
-void bnPinholeCamera(BNCamera *camera,
+void bnPinholeCamera(BNCamera camera,
                      float3 from,
                      float3 at,
                      float3 up,
@@ -302,8 +294,8 @@ BNDataGroup bnGetDataGroup(BNModel model,
                            int dataGroupID);
 
 BN_API
-void bnRender(BNModel model,
-              const BNCamera *camera,
+void bnRender(BNModel       model,
+              BNCamera      camera,
               BNFrameBuffer fb,
               /*! iw - this "probably" shouldn't be here, but set as
                   some kind of paramter to the frame, model, or camera */
@@ -375,86 +367,46 @@ BNTexture3D bnTexture3DCreate(BNDataGroup dataGroup,
                               BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP);
 
 // ------------------------------------------------------------------
-// geometry stuff
+// object-"create" interface
 // ------------------------------------------------------------------
 
+/*! create a new geometry of given type. currently supported types:
+    "triangles", "spheres", "cylinders" */
 BN_API
 BNGeom bnGeometryCreate(BNDataGroup dataGroup,
                         const char *type);
 
-BN_API
-BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
-                            const BNMaterial *material,
-                            const int3 *indices,
-                            int numIndices,
-                            const float3 *vertices,
-                            int numVertices,
-                            const float3 *normals,
-                            const float2 *texcoords);
-// BN_API
-// void bnTriangleMeshUpdate(BNGeom geom,
-//                           const BNMaterial *material,
-//                           const int3 *indices,
-//                           int numIndices,
-//                           const float3 *vertices,
-//                           int numVertices,
-//                           const float3 *normals,
-//                           const float2 *texcoords);
 
-// BN_API
-// BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
-//                        const BNMaterial *material,
-//                        const float3     *origins,
-//                        int               numSpheres,
-//                        /*! a per-sphere color that - if specified -
-//                            overwrites the material.baseColor; can be
-//                            null */
-//                        const float3     *colors,
-//                        const float      *radii,
-//                        float             defaultRadius);
-
-/*! iw todo: split this into two different geometries: one for
-    'cylinders', and one for 'rounded cones' */
-// BN_API
-// BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
-//                          const BNMaterial *material,
-//                          const float3     *points,
-//                          int               numPoints,
-//                          const float3     *colors,
-//                          /*! if true - and colors is non null - then
-//                              the colors array specifies per-vertex
-//                              colors */
-//                          bool              colorPerVertex,
-//                          const int2       *indices,
-//                          int               numIndices,
-//                          const float      *radii,
-//                          /*! if true - and radii is non null -then the
-//                              radii specify per-vertex radii and
-//                              segments will be rounded cones */
-//                          bool              radiusPerVertex,
-//                          float             defaultRadius);
-
-// BN_API
-// void bnGeomSetMaterial(BNGeom geom, BNMaterial *material);
-
-// ------------------------------------------------------------------
-// volume stuff
-// ------------------------------------------------------------------
-
-BN_API
-BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
-                                     int3 dims,
-                                     BNScalarType type,
-                                     const void *scalars,
-                                     float3 gridOrigin,
-                                     float3 gridSpacing);
-
-/*! create a new scalar field of given type. supported types: "structured" */
+/*! create a new scalar field of given type. currently supported
+    types: "structured" */
 BN_API
 BNScalarField bnScalarFieldCreate(BNDataGroup dataGroup,
                                   const char *type);
                                      
+/*! create a new camera of given type. currently supported types:
+    "pinhole" */
+BN_API
+BNCamera bnCameraCreate(BNContext context,
+                        const char *type);
 
+/*! create a new material of given type. currently supported types:
+  "matte", "glass" */
+BN_API
+BNMaterial bnMaterialCreate(BNDataGroup dataGroup,
+                            const char *type);
+
+
+
+
+
+
+
+
+
+
+// ------------------------------------------------------------------
+// soon to be deprecated, but still the only way to create those
+// ------------------------------------------------------------------
 BN_API
 BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
                             // vertices, 4 floats each (3 floats position,
@@ -513,8 +465,33 @@ void bnVolumeSetXF(BNVolume volume,
 
 
 
+
+// ==================================================================
+// HELPER FUNCTION(S) - may not survivie into final API
+// ==================================================================
+
+struct BNMaterialHelper {
+  float3 baseColor          { .7f,.7f,.7f };
+  float  transmission       { 0.f };
+  float  ior                { 1.45f };
+  float  metallic           { 1.f };
+  float  roughness          { 0.f };
+  BNTexture2D alphaTexture  { 0 };
+  BNTexture2D colorTexture  { 0 };
+};
+
+/*! c++ helper function */
+inline void bnSetAndRelease(BNObject target, const char *paramName,
+                            BNObject value)
+{ bnSetObject(target,paramName,value); bnRelease(value); }
+
+/*! c++ helper function */
+inline void bnSetAndRelease(BNObject target, const char *paramName,
+                            BNData value)
+{ bnSetData(target,paramName,value); bnRelease(value); }
+  
 /*! helper function for assinging leftover BNMaterial definition from old API */
-inline void bnAssignMaterial(BNGeom geom,const BNMaterial *material)
+inline void bnAssignMaterial(BNGeom geom,const BNMaterialHelper *material)
 {
   bnSet3fc(geom,"material.baseColor",material->baseColor);
   bnSet1f(geom,"material.transmission",material->transmission);
@@ -526,4 +503,30 @@ inline void bnAssignMaterial(BNGeom geom,const BNMaterial *material)
   bnCommit(geom);
 }
 
+
+
+
+// ------------------------------------------------------------------
+// DEPRECATED
+// ------------------------------------------------------------------
+BN_API
+BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
+                            const BNMaterialHelper *material,
+                            const int3 *indices,
+                            int numIndices,
+                            const float3 *vertices,
+                            int numVertices,
+                            const float3 *normals,
+                            const float2 *texcoords);
+
+// ------------------------------------------------------------------
+// DEPRECATED
+// ------------------------------------------------------------------
+BN_API
+BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
+                                     int3 dims,
+                                     BNScalarType type,
+                                     const void *scalars,
+                                     float3 gridOrigin,
+                                     float3 gridSpacing);
 

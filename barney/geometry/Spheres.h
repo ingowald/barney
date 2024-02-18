@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -40,17 +40,18 @@ namespace barney {
 
     void commit() override;
     
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
     bool set1f(const std::string &member, const float &value) override;
     bool setData(const std::string &member, const Data::SP &value) override;
     bool setObject(const std::string &member, const Object::SP &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
 
-    PODData::SP  origins = 0;
-    PODData::SP  colors = 0;
-    PODData::SP  radii = 0;
-    // OWLBuffer originsBuffer = 0;
-    // OWLBuffer radiiBuffer   = 0;
-    // OWLBuffer colorsBuffer  = 0;
-    float     defaultRadius = .1f;
+    PODData::SP origins = 0;
+    PODData::SP colors  = 0;
+    PODData::SP radii   = 0;
+    float       defaultRadius = .1f;
   };
   
 }

@@ -113,10 +113,13 @@ add_library(barney STATIC
   LocalContext.cpp
   Object.h
   Object.cpp
+  Camera.h
+  Camera.cu
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
   fb/FrameBuffer.cpp
   fb/LocalFB.h
+  fb/LocalFB.cpp
   fb/TiledFB.h
   fb/TiledFB.cu
   # model/group/data group handling

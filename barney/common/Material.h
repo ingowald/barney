@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -36,14 +36,21 @@ namespace barney {
 
     Material(DataGroup *owner) : DataGroupObject(owner) {}
     virtual ~Material() = default;
+
+    static Material::SP create(DataGroup *dg, const char *type);
     
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
     void commit() override;
     bool setObject(const std::string &member, const Object::SP &value) override;
     bool set1f(const std::string &member, const float &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
-    
-    static void addVars(std::vector<OWLVarDecl> &vars, int base);
     void set(OWLGeom geom) const;
+    /*! @} */
+    // ------------------------------------------------------------------
+
+    /*! declares the device-data's variables to an owl geom */
+    static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
     vec3f baseColor { .5f, .5f, .5f };
     float transmission { 0.f };

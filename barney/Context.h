@@ -91,7 +91,7 @@ namespace barney {
     virtual void barrier(bool warn=true) {}
     
     /*! generate a new wave-front of rays */
-    void generateRays(const barney::Camera &camera,
+    void generateRays(const barney::Camera::DD &camera,
                       FrameBuffer *fb);
     
     /*! have each *local* GPU trace its current wave-front of rays */
@@ -119,12 +119,12 @@ namespace barney {
     void finalizeTiles(FrameBuffer *fb);
     
     void renderTiles(Model *model,
-                     const barney::Camera &camera,
+                     const barney::Camera::DD &camera,
                      FrameBuffer *fb,
                      int pathsPerPixel);
     
     virtual void render(Model *model,
-                        const barney::Camera &camera, 
+                        const barney::Camera::DD &camera, 
                         FrameBuffer *fb,
                         int pathsPerPixel) = 0;
 
