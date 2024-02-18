@@ -175,6 +175,10 @@ BNGeom Triangle::makeBarneyGeometry(BNDataGroup dg,
                                     const BNMaterialHelper *materialData) const
 {
   auto ctx = deviceState()->context;
+  printf("mat %f %f %f\n",
+         materialData->baseColor.x,
+         materialData->baseColor.y,
+         materialData->baseColor.z);
   return bnTriangleMeshCreate
     (dg,
      materialData,

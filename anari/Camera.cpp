@@ -51,11 +51,11 @@ void Perspective::commit()
 
   float fovy = 0.f;
   if (!getParam("fovy", ANARI_FLOAT32, &fovy))
-    fovy = anari::radians(60.f);
+    fovy = 60.f;//anari::radians(60.f);
   float aspect = getParam<float>("aspect", 1.f);
 
-  math::float3 at =
-      math::float3(m_pos.x + m_dir.x, m_pos.y + m_dir.y, m_pos.z + m_dir.z);
+  // math::float3 at =
+  //     math::float3(m_pos.x + m_dir.x, m_pos.y + m_dir.y, m_pos.z + m_dir.z);
 
   // bnPinholeCamera(&m_barneyCamera,
   //     (const float3 &)m_pos,
@@ -63,9 +63,11 @@ void Perspective::commit()
   //     (const float3 &)m_up,
   //     anari::degrees(fovy),
   //     aspect);
+  printf("committing barney camera\n");
   bnSet3fc(m_barneyCamera,"up",(const float3&)m_up);
-  bnSet3fc(m_barneyCamera,"from", (const float3&)m_pos);
-  bnSet3fc(m_barneyCamera,"at",(const float3&)at);
+  bnSet3fc(m_barneyCamera,"position", (const float3&)m_pos);
+  
+  bnSet3fc(m_barneyCamera,"direction",(const float3&)m_dir);
   bnSet1f(m_barneyCamera,"aspect",aspect);
   bnSet1f(m_barneyCamera,"fovy",fovy);
   bnCommit(m_barneyCamera);

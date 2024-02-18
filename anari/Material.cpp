@@ -67,7 +67,6 @@ void PhysicallyBased::commit()
 {
   Object::commit();
 
-  m_bnMaterialData.ior = 1.5f;
   m_bnMaterialData.alphaTexture = 0;
   m_bnMaterialData.colorTexture = 0;
 
@@ -80,7 +79,6 @@ void PhysicallyBased::commit()
   m_bnMaterialData.ior = 1.f;
   m_bnMaterialData.metallic = 0.f;
   m_bnMaterialData.roughness = 0.f;
-
   printf("TODO: set material data....\n");
 }
 

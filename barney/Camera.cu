@@ -70,7 +70,7 @@ namespace barney {
       return true;
     }
     if (member == "direction") {
-      direction = value;
+      direction = normalize(value);
       return true;
     }
     if (member == "up") {
