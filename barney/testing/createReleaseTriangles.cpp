@@ -65,7 +65,7 @@ int main(int, char **)
     }
     BNDataGroup dg = bnGetDataGroup(model,0);
 
-    BNMaterialHelper mat = BN_DEFAULT_MATERIAL;
+    BNMaterialHelper mat;
     BNGeom mesh = bnTriangleMeshCreate
       (dg,&mat,
        (int3*)indices.data(),(int)indices.size(),

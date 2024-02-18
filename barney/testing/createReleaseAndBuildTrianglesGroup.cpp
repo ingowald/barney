@@ -70,7 +70,7 @@ int main(int, char **)
           normals.push_back(random3f());
         }
       }
-      BNMaterialHelper mat = BN_DEFAULT_MATERIAL;
+      BNMaterialHelper mat;
       BNGeom mesh = bnTriangleMeshCreate
         (dg,&mat,
          (int3*)indices.data(),(int)indices.size(),
