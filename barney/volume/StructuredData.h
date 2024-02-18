@@ -39,6 +39,11 @@ namespace barney {
 
       - "gridSpacing" (float3) : world-space spacing of the scalar
       grid positions
+
+      - (experimental) "colorMapTexture" : _additional_ 3D RGB texture
+        that "overwrites" the RGB component of the transfer function -
+        ie, for the final RGBA sample 'a' comes from the transfer
+        functoin, while RGB comes from that 3D texture
   */
   struct StructuredData : public ScalarField
   {
@@ -50,6 +55,27 @@ namespace barney {
       vec3f cellGridOrigin;
       vec3f cellGridSpacing;
       vec3i numCells;
+      cudaTextureObject_t colorMappingTexObj;
+
+#ifdef __CUDA_ARCH__
+      /*! "template-virtual" function that a sampler calls on an
+          _already_ transfer-function mapped RGBA value, allowing the
+          scalar field to do some additional color mapping on top of
+          whatever came out of the transfer function. the default
+          implementation (provided here int his base class coommon to
+          all scalar fields) is to just return the xf-color mapped
+          RBGA value */
+      inline __device__ vec4f mapColor(vec4f xfColorMapped,
+                                       vec3f P, float scalar) const
+      {
+        if (!colorMappingTexObj) return xfColorMapped;
+        vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
+        float4 fromColorMap = tex3D<float4>(colorMappingTexObj,rel.x,rel.y,rel.z);
+        fromColorMap.w = xfColorMapped.w;
+        return fromColorMap;
+      }
+#endif
+
       
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
@@ -74,6 +100,7 @@ namespace barney {
     void buildMCs(MCGrid &macroCells) override;
 
     Texture3D::SP  texture;
+    Texture3D::SP  colorMapTexture;
     BNScalarType   scalarType = BN_SCALAR_UNDEFINED;
     vec3i numScalars  { 0,0,0 };
     vec3i numCells    { 0,0,0 }; 
@@ -89,6 +116,9 @@ namespace barney {
   struct StructuredDataSampler {
     struct DD : public StructuredData::DD {
       inline __device__ float sample(const vec3f P, bool dbg) const;
+      // inline __device__ vec4f mapColor(vec4f xfColorMapped,
+      //                                  vec3f point, float scalar) const
+      // { return xfColorMapped; }
     };
 
     struct Host
