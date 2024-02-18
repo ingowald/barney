@@ -36,10 +36,13 @@ namespace barney {
 
 #if FB_NO_PEER_ACCESS
     void ownerGatherFinalTiles() override;
+    void resize(vec2i size,
+                uint32_t *hostFB,
+                float    *hostDepth) override;
     
     struct {
       /*! list of *all* ranks' tileOffset, gathered (only at master) */
-      int numActiveTiles;
+      int numActiveTiles = 0;
       FinalTile       *finalTiles = 0;
       TileDesc        *tileDescs = 0;
     } rank0gather;

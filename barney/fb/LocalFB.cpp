@@ -20,13 +20,26 @@ namespace barney {
   LocalFB::LocalFB(Context *context)
     : FrameBuffer(context, true)
   {
+  }
+
+  
 #if FB_NO_PEER_ACCESS
+  void LocalFB::resize(vec2i size,
+                       uint32_t *hostFB,
+                       float    *hostDepth)
+  {
+    FrameBuffer::resize(size,hostFB,hostDepth);
+    if (rank0gather.finalTiles)
+      BARNEY_CUDA_CALL(Free(rank0gather.finalTiles));
+    if (rank0gather.tileDescs)
+      BARNEY_CUDA_CALL(Free(rank0gather.tileDescs));
+
     // do NOT set active device - it's whatever the app used!
     // SetActiveDevice forDuration(perDev[0]->device);
     int sumTiles = 0;
     for (auto dev : perDev)
       sumTiles += dev->numActiveTiles;
-    
+
     rank0gather.numActiveTiles = sumTiles;
     BARNEY_CUDA_CALL(Malloc(&rank0gather.finalTiles,
                             sumTiles*sizeof(*rank0gather.finalTiles)));
@@ -40,10 +53,8 @@ namespace barney {
                               cudaMemcpyDefault));
       sumTiles += dev->numActiveTiles;
     }
-#endif
   }
-
-#if FB_NO_PEER_ACCESS
+  
   void LocalFB::ownerGatherFinalTiles()
   {
     // do NOT set active device - it's whatever the app used!
