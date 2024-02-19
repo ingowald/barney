@@ -78,7 +78,7 @@ namespace barney {
       ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
                    device->globalIndexStep)
       : 0;
-#if 1
+#if 0
     BARNEY_CUDA_CALL(MallocManaged(&accumTiles, numActiveTiles * sizeof(AccumTile)));
     BARNEY_CUDA_CALL(MallocManaged(&finalTiles, numActiveTiles * sizeof(FinalTile)));
     BARNEY_CUDA_CALL(MallocManaged(&tileDescs,  numActiveTiles * sizeof(TileDesc)));
