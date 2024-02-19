@@ -37,7 +37,7 @@ namespace barney {
     Material(DataGroup *owner) : DataGroupObject(owner) {}
     virtual ~Material() = default;
 
-    static Material::SP create(DataGroup *dg, const char *type);
+    static Material::SP create(DataGroup *dg, const std::string &type);
     
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

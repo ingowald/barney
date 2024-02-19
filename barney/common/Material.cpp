@@ -19,7 +19,7 @@
 
 namespace barney {
 
-  Material::SP Material::create(DataGroup *dg, const char *type)
+  Material::SP Material::create(DataGroup *dg, std::string &type)
   {
     // iw - "eventually" we should have different materials like
     // 'matte' and 'glass', 'metal' etc here, but for now, let's just
