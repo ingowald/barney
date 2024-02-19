@@ -366,7 +366,7 @@ namespace barney {
     BNScalarField sf
       = bnScalarFieldCreate(dataGroup,"structured");
     BNTexture3D texture
-      = bnTexture3DCreate(dataGroup,texelFormat,dims.x,dims.y,dims.z,scalars);
+      = bnTexture3DCreate(dataGroup,texelFormat,dims.x,dims.y,dims.z,scalars,BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
     bnSetObject(sf,"texture",texture);
     bnRelease(texture);
     bnSet3ic(sf,"dims",dims);
