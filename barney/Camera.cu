@@ -104,7 +104,7 @@ namespace barney {
   Camera::SP Camera::create(Context *owner,
                             const char *type)
   {
-    if (type == "perspective")
+    if (!strcmp(type, "perspective"))
       return std::make_shared<PerspectiveCamera>(owner);
     
     owner->warn_unsupported_object("Camera",type);
