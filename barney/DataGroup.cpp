@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -19,12 +19,9 @@
 #include "barney/Data.h"
 #include "barney/Light.h"
 #include "barney/Texture.h"
-#include "barney/geometry/Spheres.h"
-#include "barney/geometry/Cylinders.h"
-#include "barney/geometry/Triangles.h"
+#include "barney/geometry/Geometry.h"
 
 namespace barney {
-  
 
   DataGroup::DataGroup(Model *model, int localID)
     : Object(model->context),
@@ -72,35 +69,35 @@ namespace barney {
   }
 
 
-  Cylinders *DataGroup::createCylinders(const Material   &material,
-                                        const vec3f      *points,
-                                        int               numPoints,
-                                        const vec3f      *colors,
-                                        bool              colorPerVertex,
-                                        const vec2i      *indices,
-                                        int               numIndices,
-                                        const float      *radii,
-                                        bool              radiusPerVertex,
-                                        float             defaultRadius)
-  {
-    return getContext()->initReference
-      (std::make_shared<Cylinders>(this,material,
-                                   points,numPoints,
-                                   colors,colorPerVertex,
-                                   indices,numIndices,
-                                   radii,radiusPerVertex,defaultRadius));
-  }
+  // Cylinders *DataGroup::createCylinders(const vec3f      *points,
+  //                                       int               numPoints,
+  //                                       const vec3f      *colors,
+  //                                       bool              colorPerVertex,
+  //                                       const vec2i      *indices,
+  //                                       int               numIndices,
+  //                                       const float      *radii,
+  //                                       bool              radiusPerVertex,
+  //                                       float             defaultRadius)
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Cylinders>(this,
+  //                                  points,numPoints,
+  //                                  colors,colorPerVertex,
+  //                                  indices,numIndices,
+  //                                  radii,radiusPerVertex,defaultRadius));
+  // }
     
-  Spheres *DataGroup::createSpheres(const Material &material,
-                                    const vec3f *origins,
-                                    int numOrigins,
-                                    const vec3f *colors,
-                                    const float *radii,
-                                    float defaultRadius)
-  {
-    return getContext()->initReference
-      (std::make_shared<Spheres>(this,material,origins,numOrigins,colors,radii,defaultRadius));
-  }
+  // Spheres *DataGroup::createSpheres(// const Material &material,
+  //                                   // const vec3f *origins,
+  //                                   // int numOrigins,
+  //                                   // const vec3f *colors,
+  //                                   // const float *radii,
+  //                                   // float defaultRadius
+  //                                   )
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Spheres>(this));
+  // }
 
   Data *DataGroup::createData(BNDataType dataType,
                               size_t numItems,
@@ -126,23 +123,22 @@ namespace barney {
                                  filterMode,addressMode,colorSpace));
   }
     
-  Triangles *DataGroup::createTriangles(const barney::Material &material,
-                                        int numIndices,
-                                        const vec3i *indices,
-                                        int numVertices,
-                                        const vec3f *vertices,
-                                        const vec3f *normals,
-                                        const vec2f *texcoords)
-  {
-    return getContext()->initReference
-      (std::make_shared<Triangles>(this,material,
-                                   numIndices,
-                                   indices,
-                                   numVertices,
-                                   vertices,
-                                   normals,
-                                   texcoords));
-  }
+  // Triangles *DataGroup::createTriangles(int numIndices,
+  //                                       const vec3i *indices,
+  //                                       int numVertices,
+  //                                       const vec3f *vertices,
+  //                                       const vec3f *normals,
+  //                                       const vec2f *texcoords)
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Triangles>(this,
+  //                                  numIndices,
+  //                                  indices,
+  //                                  numVertices,
+  //                                  vertices,
+  //                                  normals,
+  //                                  texcoords));
+  // }
 
   void DataGroup::build()
   { 

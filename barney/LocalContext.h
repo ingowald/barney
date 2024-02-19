@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,7 +33,7 @@ namespace barney {
     { return "LocalFB{}"; }
 
     void render(Model *model,
-                const Camera &camera,
+                const Camera::DD &camera,
                 FrameBuffer *fb,
                 int pathsPerPixel) override;
 

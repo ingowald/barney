@@ -17,9 +17,6 @@
 #include "barney/geometry/Spheres.h"
 #include "barney/Model.h"
 
-#define BUFFER_CREATE owlDeviceBufferCreate
-// #define BUFFER_CREATE owlManagedMemoryBufferCreate
-
 namespace barney {
   
   extern "C" char Spheres_ptx[];
@@ -51,31 +48,71 @@ namespace barney {
     return gt;
   }
   
-  Spheres::Spheres(DataGroup *owner,
-                   const Material &material,
-                   const vec3f *origins,
-                   int numOrigins,
-                   const vec3f *colors,
-                   const float *radii,
-                   float defaultRadius)
-    : Geometry(owner,material)
+  Spheres::Spheres(DataGroup *owner)
+    : Geometry(owner)
   {
-    OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
-      ("Spheres",Spheres::createGeomType);
-    OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
-    originsBuffer = BUFFER_CREATE
-      (owner->devGroup->owl,OWL_FLOAT3,numOrigins,origins);
-    if (colors)
-      colorsBuffer = BUFFER_CREATE
-        (owner->devGroup->owl,OWL_FLOAT3,numOrigins,colors);
+    // originsBuffer = owlManagedMemoryBufferCreate
+    //   (owner->devGroup->owl,OWL_FLOAT3,numOrigins,origins);
+    // if (colors)
+    //   colorsBuffer = owlManagedMemoryBufferCreate
+    //     (owner->devGroup->owl,OWL_FLOAT3,numOrigins,colors);
 
-    Geometry::setMaterial(geom);
-    owlGeomSet1f(geom,"defaultRadius",defaultRadius);
-    owlGeomSetBuffer(geom,"origins",originsBuffer);
-    owlGeomSetBuffer(geom,"colors",colorsBuffer);
-    owlGeomSetPrimCount(geom,numOrigins);
+  }
+
+  void Spheres::commit()
+  {
+    if (userGeoms.empty()) {
+      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+        ("Spheres",Spheres::createGeomType);
+      OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
+      userGeoms.push_back(geom);
+    }
+    OWLGeom geom = userGeoms[0];
     
-    userGeoms.push_back(geom);
+    Geometry::commit();
+    owlGeomSet1f(geom,"defaultRadius",defaultRadius);
+    owlGeomSetBuffer(geom,"origins",origins?origins->owl:0);
+    owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
+    int numOrigins = origins->count;
+    owlGeomSetPrimCount(geom,numOrigins);
+    material->set(geom);
+  } 
+
+  bool Spheres::set1f(const std::string &member, const float &value)
+  {
+    if (Geometry::set1f(member,value))
+      return true;
+    if (member == "radius") {
+      defaultRadius = value;
+      return true;
+    }
+    return false;
+  }
+  
+  bool Spheres::setData(const std::string &member, const Data::SP &value)
+  {
+    if (Geometry::setData(member,value))
+      return true;
+    if (member == "colors") {
+      colors = value->as<PODData>();
+      return true;
+    }
+    if (member == "origins") {
+      origins = value->as<PODData>();
+      return true;
+    }
+    if (member == "radii") {
+      radii = value->as<PODData>();
+      return true;
+    }
+    return false;
+  }
+
+  bool Spheres::setObject(const std::string &member, const Object::SP &value)
+  {
+    if (Geometry::setObject(member,value))
+      return true;
+    return false;
   }
 
 }

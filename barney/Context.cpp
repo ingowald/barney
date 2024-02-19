@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -61,7 +61,7 @@ namespace barney {
     it->second++;
   }
   
-  void Context::generateRays(const barney::Camera &camera,
+  void Context::generateRays(const barney::Camera::DD &camera,
                              FrameBuffer *fb)
   {
     assert(fb);
@@ -154,7 +154,7 @@ namespace barney {
   }
   
   void Context::renderTiles(Model *model,
-                            const Camera &camera,
+                            const Camera::DD &camera,
                             FrameBuffer *fb,
                             int pathsPerPixel)
   {

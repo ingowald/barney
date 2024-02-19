@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,6 +17,8 @@
 #include "barney/volume/Volume.h"
 #include "barney/volume/ScalarField.h"
 #include "barney/DataGroup.h"
+#include "barney/Context.h"
+#include "barney/volume/StructuredData.h"
 
 namespace barney {
 
@@ -33,10 +35,9 @@ namespace barney {
   }
 
   ScalarField::ScalarField(DataGroup *owner,
-                           DevGroup *devGroup,
                            const box3f &domain)
     : Object(owner->context),
-      devGroup(devGroup),
+      devGroup(owner->devGroup.get()),
       domain(domain)
   {}
 
@@ -50,4 +51,14 @@ namespace barney {
     vars.push_back
       ({"worldBounds.upper",OWL_FLOAT3,base+OWL_OFFSETOF(DD,worldBounds.upper)});
   }
+
+  ScalarField::SP ScalarField::create(DataGroup *owner, const std::string &type)
+  {
+    if (type == "structured")
+      return std::make_shared<StructuredData>(owner);
+    
+    owner->context->warn_unsupported_object("ScalarField",type);
+    return {};
+  }
+
 }

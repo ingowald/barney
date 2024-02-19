@@ -124,7 +124,6 @@ namespace barney {
                                    range1f *d_primRanges=0);
 
     BlockStructuredField(DataGroup *owner,
-                         DevGroup *devGroup,
                          std::vector<box3i> &blockBounds,
                          std::vector<int> &blockLevels,
                          std::vector<int> &blockOffsets,

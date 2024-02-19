@@ -27,7 +27,7 @@ namespace barney {
       there will be one cuda block per tile */
   __global__
   void g_generateRays(/*! the camera used for generating the rays */
-                      Camera camera,
+                      Camera::DD camera,
                       /*! a unique random number seed value for pixel
                           and lens jitter; probably just accumID */
                       int rngSeed,
@@ -104,9 +104,9 @@ namespace barney {
     // color; this way the shaderays function doesn't have to reverse
     // engineer pixel pos etc
     ray.hit.baseColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-
+    ray.hit.baseColor = .5f*ray.hit.baseColor*ray.hit.baseColor;
     bool crossHair = ((ix == fbSize.x/2) || (iy == fbSize.y/2));
-    if (crossHair)
+    if (crossHair && !ray.dbg)
       ray.hit.baseColor = vec3f(1,0,0);
     
     ray.hit.N = vec3f(0.f);
@@ -128,7 +128,7 @@ namespace barney {
   }
   
   void DeviceContext::generateRays_launch(TiledFB *fb,
-                                          const Camera &camera,
+                                          const Camera::DD &camera,
                                           int rngSeed)
   {
     auto device = fb->device;

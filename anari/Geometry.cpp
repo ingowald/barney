@@ -72,18 +72,34 @@ void Sphere::commit()
 }
 
 BNGeom Sphere::makeBarneyGeometry(
-    BNDataGroup dg, const BNMaterial *material) const
+    BNDataGroup dg, const BNMaterialHelper *material) const
 {
   auto ctx = deviceState()->context;
   assert(!m_index); // NOT implemented yet!
-  return bnSpheresCreate
-    (dg,
-     material,
-     (const float3 *)m_vertexPosition->dataAs<math::float3>(),
-     m_vertexPosition->totalSize(),
-     /* colors */nullptr,
-     m_vertexRadius ? m_vertexRadius->dataAs<float>() : nullptr,
-     m_globalRadius);
+  BNGeom geom = bnGeometryCreate(dg,"spheres");
+  BNData origins = bnDataCreate(dg,BN_FLOAT3,
+                                m_vertexPosition->totalSize(),
+                                (const float3 *)m_vertexPosition->dataAs<math::float3>());
+  bnSetData(geom,"origins",origins);
+  if (m_vertexRadius) {
+    BNData radii = bnDataCreate(dg,BN_FLOAT,
+                                m_vertexPosition->totalSize(),
+                                m_vertexRadius->dataAs<float>());
+    bnSetData(geom,"radii",radii);
+  } else
+    bnSet1f(geom,"defaultRadius",1.f);
+    // ? m_vertexRadius->dataAs<float>() : nullptr,
+  bnAssignMaterial(geom,material);
+  bnCommit(geom);
+  return geom;
+  // return bnSpheresCreate
+  //   (dg,
+  //    material,
+  //    (const float3 *)m_vertexPosition->dataAs<math::float3>(),
+  //    m_vertexPosition->totalSize(),
+  //    /* colors */nullptr,
+  //    m_vertexRadius ? m_vertexRadius->dataAs<float>() : nullptr,
+  //    m_globalRadius);
 }
 
 box3 Sphere::bounds() const
@@ -155,19 +171,24 @@ void Triangle::commit()
   }
 }
 
-BNGeom Triangle::makeBarneyGeometry(
-    BNDataGroup dg, const BNMaterial *material) const
+BNGeom Triangle::makeBarneyGeometry(BNDataGroup dg,
+                                    const BNMaterialHelper *materialData) const
 {
   auto ctx = deviceState()->context;
-  return bnTriangleMeshCreate(dg,
-      material,
-      m_index ? (const int3 *)m_index->data()
-              : (const int3 *)m_generatedIndices.data(),
-      m_index ? m_index->size() : (m_generatedIndices.size() / 3),
-      (const float3 *)m_vertexPosition->data(),
-      m_vertexPosition->totalSize(),
-      nullptr,
-      nullptr);
+  printf("mat %f %f %f\n",
+         materialData->baseColor.x,
+         materialData->baseColor.y,
+         materialData->baseColor.z);
+  return bnTriangleMeshCreate
+    (dg,
+     materialData,
+     m_index ? (const int3 *)m_index->data()
+     : (const int3 *)m_generatedIndices.data(),
+     m_index ? m_index->size() : (m_generatedIndices.size() / 3),
+     (const float3 *)m_vertexPosition->data(),
+     m_vertexPosition->totalSize(),
+     nullptr,
+     nullptr);
 }
 
 box3 Triangle::bounds() const

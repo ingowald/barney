@@ -153,8 +153,7 @@ namespace barney {
       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
   }
                                  
-  void TiledFB::writeFinalPixels(Device    *device,
-                                 uint32_t  *finalFB,
+  void TiledFB::writeFinalPixels(uint32_t  *finalFB,
                                  float     *finalDepth,
                                  vec2i      numPixels,
                                  FinalTile *finalTiles,
@@ -170,8 +169,9 @@ namespace barney {
 
     if (numTiles > 0)
       g_writeFinalPixels
-        <<<numTiles,vec2i(tileSize),0,
-      device?device->launchStream:0>>>
+        <<<numTiles,vec2i(tileSize)>>>
+      //   ,0,
+      // device?device->launchStream:0>>>
         (finalFB,finalDepth,numPixels,
          finalTiles,tileDescs);
   }

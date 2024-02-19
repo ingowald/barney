@@ -46,14 +46,14 @@ namespace barney {
       content.radiance = value;
       return true;
     }
-    return 0;
+    return false;
   }
 
   // ==================================================================
   
   bool QuadLight::set3f(const std::string &member, const vec3f &value) 
   {
-    return 0;
+    return false;
   }
 
   // ==================================================================
@@ -86,12 +86,12 @@ namespace barney {
     //   envMap.dims = value;
     //   return true;
     // }
-    return 0;
+    return false;
   }
 
   bool EnvMapLight::set3f(const std::string &member, const vec3f &value) 
   {
-    return 0;
+    return false;
   }
 
   bool EnvMapLight::set4x3f(const std::string &member, const affine3f &value) 
@@ -100,7 +100,7 @@ namespace barney {
       content.transform = value;
       return true;
     }
-    return 0;
+    return false;
   }
 
   bool EnvMapLight::setObject(const std::string &member, const Object::SP &value) 
@@ -110,7 +110,7 @@ namespace barney {
       content.texture = texture->owlTex;
       return true;
     }
-    return 0;
+    return false;
   }
 
 };
