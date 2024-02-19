@@ -50,7 +50,7 @@ namespace barney {
     Camera(Context *owner);
     virtual ~Camera() = default;
     
-    static Camera::SP create(Context *owner, const char *type);
+    static Camera::SP create(Context *owner, const std::string &type);
     
     DD getDD() { return dd; }
   };

@@ -79,6 +79,12 @@ namespace barney {
       cudaTextureObject_t tex = texture->tex3Ds[lDevID].texObj;
       owlGeomSetRaw(geom,"tex3D",&tex,lDevID);
     }
+    if (colorMapTexture)
+      for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
+        cudaTextureObject_t tex = colorMapTexture->tex3Ds[lDevID].texObj;
+        PING; PRINT(tex);
+        owlGeomSetRaw(geom,"colorMapTex3D",&tex,lDevID);
+      }
     owlGeomSet3f(geom,"cellGridOrigin",
                  gridOrigin.x,
                  gridOrigin.y,
@@ -116,6 +122,9 @@ namespace barney {
       ({"cellGridSpacing",OWL_FLOAT3,base+OWL_OFFSETOF(DD,cellGridSpacing)});
     vars.push_back
       ({"numCells",OWL_INT3,base+OWL_OFFSETOF(DD,numCells)});
+    vars.push_back
+      ({"colorMapTex3D",OWL_USER_TYPE(cudaTextureObject_t),
+         base+OWL_OFFSETOF(DD,colorMappingTexObj)});
   }
 
   // ==================================================================
@@ -148,6 +157,10 @@ namespace barney {
   {
     if (member == "texture") {
       texture = value->as<Texture3D>();
+      return true;
+    }
+    if (member == "textureColorMap") {
+      colorMapTexture = value->as<Texture3D>();
       return true;
     }
     return false;

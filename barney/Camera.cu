@@ -102,7 +102,7 @@ namespace barney {
 
   // ##################################################################
   Camera::SP Camera::create(Context *owner,
-                            const char *type)
+                            const std::string &type)
   {
     if (type == "perspective")
       return std::make_shared<PerspectiveCamera>(owner);

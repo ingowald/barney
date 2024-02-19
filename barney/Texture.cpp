@@ -68,24 +68,34 @@ namespace barney {
     cudaChannelFormatDesc desc;
     cudaTextureReadMode   readMode;
     size_t sizeOfScalar;
+    int numScalarsPerTexel;
     switch (texelFormat) {
     case BN_TEXEL_FORMAT_R32F:
       desc         = cudaCreateChannelDesc<float>();
       sizeOfScalar = 4;
       readMode     = cudaReadModeElementType;
+      numScalarsPerTexel = 1;
       break;
     case BN_TEXEL_FORMAT_R8:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 1;
       readMode     = cudaReadModeNormalizedFloat;
+      numScalarsPerTexel = 1;
+      break;
+    case BN_TEXEL_FORMAT_RGBA8:
+      desc         = cudaCreateChannelDesc<uchar4>();
+      sizeOfScalar = 1;
+      readMode     = cudaReadModeNormalizedFloat;
+      numScalarsPerTexel = 4;
       break;
     case BN_TEXEL_FORMAT_R16:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 2;
       readMode     = cudaReadModeNormalizedFloat;
+      numScalarsPerTexel = 1;
       break;
     default:
-      throw std::runtime_error("structured data with non-implemented scalar type ...");
+      throw std::runtime_error("Texture3D with non-implemented scalar type ...");
     }
     // if (scalarType != BN_FLOAT)
     //   throw std::runtime_error("can only do float 3d texs..");
@@ -104,7 +114,7 @@ namespace barney {
       cudaMemcpy3DParms copyParms;
       memset(&copyParms,0,sizeof(copyParms));
       copyParms.srcPtr = make_cudaPitchedPtr((void *)texels,
-                                             (size_t)size.x*sizeOfScalar,
+                                             (size_t)size.x*sizeOfScalar*numScalarsPerTexel,
                                              (size_t)size.x,
                                              (size_t)size.y);
       copyParms.dstArray = tex.voxelArray;
@@ -137,7 +147,6 @@ namespace barney {
       textureDesc.filterMode       = cudaFilterModePoint;
       BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,&resourceDesc,&textureDesc,0));
     }
-    PING;
   }
   
 }
