@@ -82,6 +82,7 @@ namespace barney {
     if (colorMapTexture)
       for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
         cudaTextureObject_t tex = colorMapTexture->tex3Ds[lDevID].texObj;
+        PING; PRINT(tex);
         owlGeomSetRaw(geom,"colorMapTex3D",&tex,lDevID);
       }
     owlGeomSet3f(geom,"cellGridOrigin",
@@ -158,7 +159,7 @@ namespace barney {
       texture = value->as<Texture3D>();
       return true;
     }
-    if (member == "colorMapTexture") {
+    if (member == "textureColorMap") {
       colorMapTexture = value->as<Texture3D>();
       return true;
     }
