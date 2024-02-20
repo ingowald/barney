@@ -35,6 +35,7 @@ typedef struct _BNFrameBuffer  : public _BNObject{} *BNFrameBuffer;
 typedef struct _BNDataGroup    : public _BNObject{} *BNDataGroup;
 typedef struct _BNTexture2D    : public _BNObject{} *BNTexture2D;
 typedef struct _BNTexture3D    : public _BNObject{} *BNTexture3D;
+typedef struct _BNTextureNanoVDB: public _BNObject{} *BNTextureNanoVDB;
 typedef struct _BNLight        : public _BNObject{} *BNLight;
 typedef struct _BNCamera       : public _BNObject{} *BNCamera;
 typedef struct _BNMaterial     : public _BNObject{} *BNMaterial;
@@ -79,7 +80,9 @@ typedef enum {
   /*! uint16_t */
   BN_TEXEL_FORMAT_R16,
   /*! float */
-  BN_TEXEL_FORMAT_R32F
+  BN_TEXEL_FORMAT_R32F,
+  /*! nanovdb */
+  BN_TEXEL_FORMAT_NANOVDB_FLOAT,
 }
 BNTexelFormat;
 
@@ -366,6 +369,13 @@ BNTexture3D bnTexture3DCreate(BNDataGroup dataGroup,
                               BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR,
                               BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP);
 
+BN_API
+BNTextureNanoVDB bnTextureNanoVDBCreate(BNDataGroup dataGroup,
+                              BNTexelFormat texelFormat,
+                              size_t size,
+                              const void *nanogrid,
+                              BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR);                              
+
 // ------------------------------------------------------------------
 // object-"create" interface
 // ------------------------------------------------------------------
@@ -378,7 +388,7 @@ BNGeom bnGeometryCreate(BNDataGroup dataGroup,
 
 
 /*! create a new scalar field of given type. currently supported
-    types: "structured" */
+    types: "structured", "nanovdb" */
 BN_API
 BNScalarField bnScalarFieldCreate(BNDataGroup dataGroup,
                                   const char *type);
@@ -529,4 +539,14 @@ BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
                                      const void *scalars,
                                      float3 gridOrigin,
                                      float3 gridSpacing);
+
+// ------------------------------------------------------------------
+// DEPRECATED
+// ------------------------------------------------------------------
+BN_API
+BNScalarField bnNanoVDBDataCreate(BNDataGroup dataGroup,
+                                     int3 dims,
+                                     const void *scalars,
+                                     float3 gridOrigin,
+                                     float3 gridSpacing);                                     
 

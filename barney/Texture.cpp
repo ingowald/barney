@@ -148,5 +148,52 @@ namespace barney {
       BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,&resourceDesc,&textureDesc,0));
     }
   }
+
+
+  TextureNanoVDB::TextureNanoVDB(DataGroup *owner,
+                       BNTexelFormat texelFormat,
+                       size_t size,
+                       const void *nanogrid,
+                       BNTextureFilterMode  filterMode)
+    : DataGroupObject(owner)
+  {
+    if (!texNVDBs.empty()) return;
+
+    auto devGroup = owner->devGroup.get();
+    texNVDBs.resize(devGroup->size());
+
+    std::cout << "#bn.struct: creating CUDA 3D textures (NanoVDB)" << std::endl;
+                                    
+    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {      
+      auto dev = devGroup->devices[lDevID];
+      auto &tex = texNVDBs[lDevID];
+      SetActiveGPU forDuration(dev);
+
+      BARNEY_CUDA_CALL(Malloc(&tex.nanogrid, size));
+      BARNEY_CUDA_CALL(Memcpy(tex.nanogrid, nanogrid, size, cudaMemcpyHostToDevice));
+    }
+
+    switch (filterMode) {
+    case BN_TEXTURE_NEAREST:
+        interpolation = 0;
+        break;
+    case BN_TEXTURE_LINEAR:
+        interpolation = 1;
+        break;
+    }
+  }
+
+  TextureNanoVDB::~TextureNanoVDB()
+  {
+      auto devGroup = owner->devGroup.get();
+      for (int lDevID = 0; lDevID < devGroup->size(); lDevID++) {
+          auto dev = devGroup->devices[lDevID];
+          auto& tex = texNVDBs[lDevID];
+          SetActiveGPU forDuration(dev);
+
+          if (tex.nanogrid != 0)
+              BARNEY_CUDA_CALL(Free(tex.nanogrid));
+      }
+  }
   
 }

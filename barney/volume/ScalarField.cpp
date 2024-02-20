@@ -19,6 +19,7 @@
 #include "barney/DataGroup.h"
 #include "barney/Context.h"
 #include "barney/volume/StructuredData.h"
+#include "barney/volume/NanoVDBData.h"
 
 namespace barney {
 
@@ -56,6 +57,9 @@ namespace barney {
   {
     if (type == "structured")
       return std::make_shared<StructuredData>(owner);
+
+    if (type == "nanovdb")
+      return std::make_shared<NanoVDBData>(owner);
     
     owner->context->warn_unsupported_object("ScalarField",type);
     return {};

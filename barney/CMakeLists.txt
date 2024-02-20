@@ -27,6 +27,7 @@ target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/barney/include
   ${CMAKE_CURRENT_LIST_DIR}/..
+  ${PROJECT_SOURCE_DIR}/submodules/openvdb/nanovdb
   )
 
 
@@ -67,6 +68,11 @@ embed_ptx(
   OUTPUT_TARGET      barney-StructuredData-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            volume/StructuredData.dev.cu
+)
+embed_ptx(
+  OUTPUT_TARGET      barney-NanoVDBData-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            volume/NanoVDBData.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
@@ -160,6 +166,9 @@ add_library(barney STATIC
   # *structured* volumes
   volume/StructuredData.h
   volume/StructuredData.cu
+  # *NanoVDB* volumes
+  volume/NanoVDBData.h
+  volume/NanoVDBData.cu
   # *unstructured* volumes
   umesh/common/UMeshField.h
   umesh/common/UMeshField.cu
@@ -188,6 +197,7 @@ target_link_libraries(barney
   cuBQL_impl
   barney-config
   barney-StructuredData-ptx
+  barney-NanoVDBData-ptx
   barney-spheres-ptx
   barney-cylinders-ptx
   barney-triangles-ptx
