@@ -162,7 +162,7 @@ namespace barney {
     auto devGroup = owner->devGroup.get();
     texNVDBs.resize(devGroup->size());
 
-    std::cout << "#bn.struct: creating CUDA 3D textures (NanoVDB)" << std::endl;
+    std::cout << "#bn.struct: copying NanoVDB to devices" << std::endl;
                                     
     for (int lDevID=0;lDevID<devGroup->size();lDevID++) {      
       auto dev = devGroup->devices[lDevID];

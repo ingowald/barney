@@ -140,26 +140,7 @@ namespace barney {
     typedef typename nanovdb::NanoGrid<float>::AccessorType AccessorType;
     AccessorType acc = _grid->getAccessor();
 
-    float f = 0;
-
-    switch (interpolation) 
-    {
-        case NanoVDBData::INTERPOLATION_NONE:
-        f = acc.getValue(nanovdb::Coord(rel.x, rel.y, rel.z));
-        break;
-        case NanoVDBData::INTERPOLATION_CLOSEST:
-        f = nanovdb::SampleFromVoxels<AccessorType, 0, false>(acc)(nanovdb::Vec3f(rel.x, rel.y, rel.z));
-        break;
-        case NanoVDBData::INTERPOLATION_LINEAR:
-        f = nanovdb::SampleFromVoxels<AccessorType, 1, false>(acc)(nanovdb::Vec3f(rel.x, rel.y, rel.z));
-        break;
-        case NanoVDBData::INTERPOLATION_QUADRATIC:
-        f = nanovdb::SampleFromVoxels<AccessorType, 2, false>(acc)(nanovdb::Vec3f(rel.x, rel.y, rel.z));
-        break;
-        case NanoVDBData::INTERPOLATION_CUBIC:
-        f = nanovdb::SampleFromVoxels<AccessorType, 3, false>(acc)(nanovdb::Vec3f(rel.x, rel.y, rel.z));
-        break;
-    }
+    float f = nanovdb::SampleFromVoxels<AccessorType, 1, false>(acc)(nanovdb::Vec3f(rel.x, rel.y, rel.z));
 
     return f;
   }

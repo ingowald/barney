@@ -49,7 +49,8 @@ namespace barney {
 
           nanovdb::Coord coord = nanovdb::Coord(scalarID.x, scalarID.y, scalarID.z);
 
-          if (acc.isActive(coord)) {
+          //if (acc.isActive(coord)) very slow
+          {
               scalarRange.extend(acc.getValue(coord));
           }
         }
