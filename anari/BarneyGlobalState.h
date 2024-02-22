@@ -25,6 +25,8 @@ struct BarneyGlobalState : public helium::BaseGlobalDeviceState
   bool allowInvalidSurfaceMaterials{true};
   math::float4 invalidMaterialColor{1.f, 0.f, 1.f, 1.f};
 
+  BNHardwareInfo bnInfo;
+
   // Helper methods //
 
   BarneyGlobalState(ANARIDevice d);

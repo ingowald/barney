@@ -49,6 +49,11 @@ BNGeom Surface::makeBarneyGeom(BNModel model, int slot) const
   return geometry()->makeBarneyGeometry(model,slot, material()->barneyMaterial());
 }
 
+size_t Surface::numRequiredGPUBytes() const
+{
+  return m_geometry ? m_geometry->numRequiredGPUBytes() : size_t(0);
+}
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Surface *);

@@ -116,6 +116,11 @@ box3 TransferFunction1D::bounds() const
   return m_bounds;
 }
 
+size_t TransferFunction1D::numRequiredGPUBytes() const
+{
+  return m_field ? m_field->numRequiredGPUBytes() : size_t(0);
+}
+
 void TransferFunction1D::cleanup() {}
 
 } // namespace barney_device
