@@ -18,7 +18,7 @@ struct Volume : public Object
 
   void markCommitted() override;
 
-  virtual BNVolume makeBarneyVolume(BNDataGroup dg) const = 0;
+  virtual BNVolume makeBarneyVolume(BNModel model, int slot) const = 0;
 
   virtual box3 bounds() const = 0;
 };
@@ -30,7 +30,7 @@ struct TransferFunction1D : public Volume
   TransferFunction1D(BarneyGlobalState *s);
   void commit() override;
 
-  BNVolume makeBarneyVolume(BNDataGroup dg) const override;
+  BNVolume makeBarneyVolume(BNModel model, int slot) const override;
 
   box3 bounds() const override;
 

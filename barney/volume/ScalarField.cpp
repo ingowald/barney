@@ -16,7 +16,7 @@
 
 #include "barney/volume/Volume.h"
 #include "barney/volume/ScalarField.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 #include "barney/Context.h"
 #include "barney/volume/StructuredData.h"
 
@@ -28,15 +28,13 @@ namespace barney {
   void ScalarField::setVariables(OWLGeom geom)
   {
     box3f bb = worldBounds;
-    // if (!domain.empty())
-    //   bb = intersection(bb,domain);
     owlGeomSet3fv(geom,"worldBounds.lower",&bb.lower.x);
     owlGeomSet3fv(geom,"worldBounds.upper",&bb.upper.x);
   }
 
-  ScalarField::ScalarField(DataGroup *owner,
+  ScalarField::ScalarField(ModelSlot *owner,
                            const box3f &domain)
-    : Object(owner->context),
+    : SlottedObject(owner),
       devGroup(owner->devGroup.get()),
       domain(domain)
   {}
@@ -52,7 +50,7 @@ namespace barney {
       ({"worldBounds.upper",OWL_FLOAT3,base+OWL_OFFSETOF(DD,worldBounds.upper)});
   }
 
-  ScalarField::SP ScalarField::create(DataGroup *owner, const std::string &type)
+  ScalarField::SP ScalarField::create(ModelSlot *owner, const std::string &type)
   {
     if (type == "structured")
       return std::make_shared<StructuredData>(owner);

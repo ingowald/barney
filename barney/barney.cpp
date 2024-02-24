@@ -18,10 +18,10 @@
 #include "barney/Context.h"
 #include "barney/LocalContext.h"
 #include "barney/fb/FrameBuffer.h"
-#include "barney/Model.h"
+#include "barney/GlobalModel.h"
 #include "barney/geometry/Triangles.h"
 #include "barney/volume/ScalarField.h"
-#include "barney/Data.h"
+#include "barney/common/Data.h"
 #include "barney/common/Material.h"
 #include "barney/Camera.h"
 
@@ -65,35 +65,15 @@ namespace barney {
     return (Camera *)camera;
   }
   
-  // inline Material checkGet(const BNMaterial *material)
-  // {
-  //   assert(material);
-  //   Material result;
-  //   result.baseColor = (const vec3f&)material->baseColor;
-  //   result.roughness = material->roughness;
-  //   result.transmission = material->transmission;
-  //   result.ior = material->ior;
-  //   result.colorTexture
-  //     = material->colorTexture
-  //     ? ((Texture*)material->colorTexture)->shared_from_this()->as<Texture>()
-  //     : 0;
-  //   result.alphaTexture
-  //     = material->alphaTexture
-  //     ? ((Texture*)material->alphaTexture)->shared_from_this()->as<Texture>()
-  //     : 0;
-  //   return result;
-  // }
-  
-  inline DataGroup *checkGet(BNDataGroup dg)
-  {
-    assert(dg);
-    return (DataGroup *)dg;
-  }
-  
-  inline Model *checkGet(BNModel model)
+  inline GlobalModel *checkGet(BNModel model)
   {
     assert(model);
-    return (Model *)model;
+    return (GlobalModel *)model;
+  }
+  
+  inline ModelSlot *checkGet(BNModel model, int whichSlot)
+  {
+    return checkGet(model)->getSlot(whichSlot);
   }
   
   inline Geometry *checkGet(BNGeom geom)
@@ -140,7 +120,8 @@ namespace barney {
   // ------------------------------------------------------------------
 
   BN_API
-  BNTexture2D bnTexture2DCreate(BNDataGroup dataGroup,
+  BNTexture2D bnTexture2DCreate(BNModel model,
+                                int whichSlot,
                                 BNTexelFormat texelFormat,
                                 /*! number of texels in x dimension */
                                 uint32_t size_x,
@@ -152,14 +133,15 @@ namespace barney {
                                 BNTextureColorSpace  colorSpace)
   {
     LOG_API_ENTRY;
-    Texture *texture = checkGet(dataGroup)->createTexture
+    Texture *texture = checkGet(model,whichSlot)->createTexture
       (texelFormat,vec2i(size_x,size_y),texels,
        filterMode,addressMode,colorSpace);
     return (BNTexture2D)texture;
   }
 
   BN_API
-  BNTexture3D bnTexture3DCreate(BNDataGroup dataGroup,
+  BNTexture3D bnTexture3DCreate(BNModel model,
+                                int whichSlot,
                                 BNTexelFormat texelFormat,
                                 uint32_t size_x,
                                 uint32_t size_y,
@@ -171,10 +153,10 @@ namespace barney {
     LOG_API_ENTRY;
     Texture3D::SP tex
       = std::make_shared<Texture3D>
-      (checkGet(dataGroup),
+      (checkGet(model,whichSlot),
        texelFormat,vec3i(size_x,size_y,size_z),texels,
        filterMode,addressMode);
-    checkGet(dataGroup)->context->initReference(tex);
+    checkGet(model,whichSlot)->context->initReference(tex);
     return (BNTexture3D)tex.get();
   }
   
@@ -188,15 +170,8 @@ namespace barney {
   }
 
   BN_API
-  BNDataGroup bnGetDataGroup(BNModel model,
-                             int dataGroupID)
-  {
-    LOG_API_ENTRY;
-    return (BNDataGroup)checkGet(model)->getDG(dataGroupID);
-  }
-  
-  BN_API
-  void bnSetInstances(BNDataGroup dataGroup,
+  void bnSetInstances(BNModel model,
+                      int whichSlot,
                       BNGroup *_groups,
                       BNTransform *xfms,
                       int numInstances)
@@ -207,7 +182,7 @@ namespace barney {
     for (int i=0;i<numInstances;i++) {
       groups.push_back(checkGetSP(_groups[i]));
     }
-    checkGet(dataGroup)->setInstances(groups,(const affine3f *)xfms);
+    checkGet(model,whichSlot)->setInstances(groups,(const affine3f *)xfms);
   }
   
   BN_API
@@ -236,7 +211,8 @@ namespace barney {
   }
 
   BN_API
-  BNGeom bnTriangleMeshCreate(BNDataGroup dg,
+  BNGeom bnTriangleMeshCreate(BNModel model,
+                              int whichSlot,
                               const BNMaterialHelper *material,
                               const int3 *indices,
                               int numIndices,
@@ -245,17 +221,17 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
-    BNGeom mesh = bnGeometryCreate(dg,"triangles");
-    BNData _vertices = bnDataCreate(dg,BN_FLOAT3,numVertices,vertices);
+    BNGeom mesh = bnGeometryCreate(model,whichSlot,"triangles");
+    BNData _vertices = bnDataCreate(model,whichSlot,BN_FLOAT3,numVertices,vertices);
     bnSetAndRelease(mesh,"vertices",_vertices);
-    BNData _indices  = bnDataCreate(dg,BN_INT3,numIndices,indices);
+    BNData _indices  = bnDataCreate(model,whichSlot,BN_INT3,numIndices,indices);
     bnSetAndRelease(mesh,"indices",_indices);
     if (normals) {
-      BNData _normals  = bnDataCreate(dg,BN_FLOAT3,normals?numVertices:0,normals);
+      BNData _normals  = bnDataCreate(model,whichSlot,BN_FLOAT3,normals?numVertices:0,normals);
       bnSetAndRelease(mesh,"normals",_normals);
     }
     if (texcoords) {
-      BNData _texcoords  = bnDataCreate(dg,BN_FLOAT2,texcoords?numVertices:0,texcoords);
+      BNData _texcoords  = bnDataCreate(model,whichSlot,BN_FLOAT2,texcoords?numVertices:0,texcoords);
       bnSetAndRelease(mesh,"texcoords",_texcoords);
     }
     bnAssignMaterial(mesh,material);
@@ -264,31 +240,34 @@ namespace barney {
   }  
   
   BN_API
-  BNScalarField bnScalarFieldCreate(BNDataGroup dataGroup,
+  BNScalarField bnScalarFieldCreate(BNModel model,
+                                    int whichSlot,
                                     const char *type)
   {
-    ScalarField::SP sf = ScalarField::create(checkGet(dataGroup),type);
+    ScalarField::SP sf = ScalarField::create(checkGet(model,whichSlot),type);
     if (!sf) return 0;
-    return (BNScalarField)checkGet(dataGroup)->context->initReference(sf);
+    return (BNScalarField)checkGet(model,whichSlot)->context->initReference(sf);
   }
   
   
   BN_API
-  BNGeom bnGeometryCreate(BNDataGroup dataGroup,
+  BNGeom bnGeometryCreate(BNModel model,
+                          int whichSlot,
                           const char *type)
   {
-    Geometry::SP geom = Geometry::create(checkGet(dataGroup),type);
+    Geometry::SP geom = Geometry::create(checkGet(model,whichSlot),type);
     if (!geom) return 0;
-    return (BNGeom)checkGet(dataGroup)->context->initReference(geom);
+    return (BNGeom)checkGet(model,whichSlot)->context->initReference(geom);
   }
 
   BN_API
-  BNMaterial bnMaterialCreate(BNDataGroup dataGroup,
+  BNMaterial bnMaterialCreate(BNModel model,
+                              int whichSlot,
                               const char *type)
   {
-    Material::SP material = Material::create(checkGet(dataGroup),type);
+    Material::SP material = Material::create(checkGet(model,whichSlot),type);
     if (!material) return 0;
-    return (BNMaterial)checkGet(dataGroup)->context->initReference(material);
+    return (BNMaterial)checkGet(model,whichSlot)->context->initReference(material);
   }
 
   BN_API
@@ -317,34 +296,38 @@ namespace barney {
   }
   
   BN_API
-  BNVolume bnVolumeCreate(BNDataGroup dataGroup,
+  BNVolume bnVolumeCreate(BNModel model,
+                          int whichSlot,
                           BNScalarField _sf)
   {
     ScalarField::SP sf = checkGetSP(_sf);
-    return (BNVolume)checkGet(dataGroup)->createVolume
+    return (BNVolume)checkGet(model,whichSlot)->createVolume
       (sf);
   }
 
 
   BN_API
-  BNLight bnLightCreate(BNDataGroup dataGroup,
+  BNLight bnLightCreate(BNModel model,
+                        int whichSlot,
                         const char *type)
   {
-    return (BNLight)checkGet(dataGroup)->createLight(checkGet(type));
+    return (BNLight)checkGet(model,whichSlot)->createLight(checkGet(type));
   }
 
   BN_API
-  BNData bnDataCreate(BNDataGroup dataGroup,
+  BNData bnDataCreate(BNModel model,
+                      int whichSlot,
                       BNDataType dataType,
                       size_t numItems,
                       const void *items)
   {
-    return (BNData)checkGet(dataGroup)->createData(dataType,numItems,items);
+    return (BNData)checkGet(model,whichSlot)->createData(dataType,numItems,items);
   }
 
 
   BN_API
-  BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
+  BNScalarField bnStructuredDataCreate(BNModel model,
+                                       int whichSlot,
                                        int3 dims,
                                        BNScalarType type,
                                        const void *scalars,
@@ -364,9 +347,10 @@ namespace barney {
     }
     
     BNScalarField sf
-      = bnScalarFieldCreate(dataGroup,"structured");
+      = bnScalarFieldCreate(model,whichSlot,"structured");
     BNTexture3D texture
-      = bnTexture3DCreate(dataGroup,texelFormat,dims.x,dims.y,dims.z,scalars,BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
+      = bnTexture3DCreate(model,whichSlot,texelFormat,
+                          dims.x,dims.y,dims.z,scalars,BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
     bnSetObject(sf,"texture",texture);
     bnRelease(texture);
     bnSet3ic(sf,"dims",dims);
@@ -377,7 +361,8 @@ namespace barney {
   }
   
   BN_API
-  BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
+  BNScalarField bnUMeshCreate(BNModel model,
+                              int whichSlot,
                               // vertices, 4 floats each (3 floats position,
                               // 4th float scalar value)
                               const float *_vertices, int numVertices,
@@ -430,21 +415,23 @@ namespace barney {
       ? *(const box3f*)domainOrNull
       : box3f();
     
-    ScalarField *sf = checkGet(dataGroup)->createUMesh(vertices,
-                                                       tetIndices,
-                                                       pyrIndices,
-                                                       wedIndices,
-                                                       hexIndices,
-                                                       gridOffsets,
-                                                       gridDims,
-                                                       gridDomains,
-                                                       gridScalars,
-                                                       domain);
+    ScalarField *sf = checkGet(model,whichSlot)
+      ->createUMesh(vertices,
+                    tetIndices,
+                    pyrIndices,
+                    wedIndices,
+                    hexIndices,
+                    gridOffsets,
+                    gridDims,
+                    gridDomains,
+                    gridScalars,
+                    domain);
     return (BNScalarField)sf;
   }
   
   BN_API
-  BNScalarField bnBlockStructuredAMRCreate(BNDataGroup dataGroup,
+  BNScalarField bnBlockStructuredAMRCreate(BNModel model,
+                                           int whichSlot,
                                            /*TODO:const float *cellWidths,*/
                                            // block bounds, 6 ints each (3 for min,
                                            // 3 for max corner)
@@ -467,16 +454,18 @@ namespace barney {
     memcpy(blockLevels.data(),_blockLevels,blockLevels.size()*sizeof(blockLevels[0]));
     memcpy(blockOffsets.data(),_blockOffsets,blockOffsets.size()*sizeof(blockOffsets[0]));
     memcpy(blockScalars.data(),_blockScalars,blockScalars.size()*sizeof(blockScalars[0]));
-    ScalarField *sf = checkGet(dataGroup)->createBlockStructuredAMR(blockBounds,
-                                                                    blockLevels,
-                                                                    blockOffsets,
-                                                                    blockScalars);
+    ScalarField *sf = checkGet(model,whichSlot)
+      ->createBlockStructuredAMR(blockBounds,
+                                 blockLevels,
+                                 blockOffsets,
+                                 blockScalars);
     return (BNScalarField)sf;
   }
 
 
   BN_API
-  BNGroup bnGroupCreate(BNDataGroup dataGroup,
+  BNGroup bnGroupCreate(BNModel model,
+                        int whichSlot,
                         BNGeom *geoms, int numGeoms,
                         BNVolume *volumes, int numVolumes)
   {
@@ -487,7 +476,7 @@ namespace barney {
     std::vector<Volume::SP> _volumes;
     for (int i=0;i<numVolumes;i++)
       _volumes.push_back(checkGet(volumes[i])->as<Volume>());
-    Group *group = checkGet(dataGroup)->createGroup(_geoms,_volumes);
+    Group *group = checkGet(model,whichSlot)->createGroup(_geoms,_volumes);
     return (BNGroup)group;
   }
 
@@ -499,10 +488,11 @@ namespace barney {
   }
   
   BN_API
-  void  bnBuild(BNDataGroup dataGroup)
+  void  bnBuild(BNModel model,
+                int whichSlot)
   {
     LOG_API_ENTRY;
-    checkGet(dataGroup)->build();
+    checkGet(model,whichSlot)->build();
   }
   
   BN_API
@@ -625,8 +615,12 @@ namespace barney {
   }
 
   BN_API
-  BNContext bnContextCreate(const int *dataGroupsOnThisRank,
-                            int  numDataGroupsOnThisRank,
+  BNContext bnContextCreate(/*! how many data slots this context is to
+                              offer, and which part(s) of the
+                              distributed model data these slot(s)
+                              will hold */
+                            const int *dataRanksOnThisContext,
+                            int        numDataRanksOnThisContext,
                             /*! which gpu(s) to use for this
                               process. default is to distribute
                               node's GPUs equally over all ranks on
@@ -638,14 +632,14 @@ namespace barney {
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
     // use those; otherwise we use IDs
-    // [0,1,...numDataGroupsOnThisHost)
+    // [0,1,...numModelSlotsOnThisHost)
     // ------------------------------------------------------------------
-    assert(numDataGroupsOnThisRank > 0);
+    assert(numDataRanksOnThisContext > 0);
     std::vector<int> dataGroupIDs;
-    for (int i=0;i<numDataGroupsOnThisRank;i++)
+    for (int i=0;i<numDataRanksOnThisContext;i++)
       dataGroupIDs.push_back
-        (dataGroupsOnThisRank
-         ? dataGroupsOnThisRank[i]
+        (dataRanksOnThisContext
+         ? dataRanksOnThisContext[i]
          : i);
 
     // ------------------------------------------------------------------
@@ -668,9 +662,9 @@ namespace barney {
     if (gpuIDs.empty())
       throw std::runtime_error("no GPUs!?");
 
-    if (gpuIDs.size() < numDataGroupsOnThisRank) {
+    if (gpuIDs.size() < numDataRanksOnThisContext) {
       std::vector<int> replicatedIDs;
-      for (int i=0;i<numDataGroupsOnThisRank;i++)
+      for (int i=0;i<numDataRanksOnThisContext;i++)
         replicatedIDs.push_back(gpuIDs[i % gpuIDs.size()]);
       gpuIDs = replicatedIDs;
     }

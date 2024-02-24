@@ -20,7 +20,7 @@
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
 
   /*! cylinders with caps, specified through an array of vertices, and
       one array of int2 where each of the two its specified begin and
@@ -38,7 +38,7 @@ namespace barney {
       int colorPerVertex, radiusPerVertex;
     };
     
-    Cylinders(DataGroup *owner);
+    Cylinders(ModelSlot *owner);
     virtual ~Cylinders() = default;
     
     /*! pretty-printer for printf-debugging */

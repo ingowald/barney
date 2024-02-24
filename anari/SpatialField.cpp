@@ -72,7 +72,7 @@ bool StructuredRegularField::isValid() const
 }
 
 BNScalarField StructuredRegularField::makeBarneyScalarField(
-    BNDataGroup dg) const
+    BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
   BNScalarType barneyType;
@@ -97,7 +97,7 @@ BNScalarField StructuredRegularField::makeBarneyScalarField(
   default:
     throw std::runtime_error("scalar type not implemented ...");
   }
-  return bnStructuredDataCreate(dg,
+  return bnStructuredDataCreate(model,slot,
       (const int3 &)m_dims,
       barneyType,
       m_data,
@@ -249,10 +249,10 @@ void UnstructuredField::commit()
   }
 }
 
-BNScalarField UnstructuredField::makeBarneyScalarField(BNDataGroup dg) const
+BNScalarField UnstructuredField::makeBarneyScalarField(BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
-  return bnUMeshCreate(dg,
+  return bnUMeshCreate(model,slot,
       m_generatedVertices.data(),
       m_generatedVertices.size() / 4,
       m_generatedTets.data(),
@@ -355,10 +355,10 @@ void BlockStructuredField::commit()
   }
 }
 
-BNScalarField BlockStructuredField::makeBarneyScalarField(BNDataGroup dg) const
+BNScalarField BlockStructuredField::makeBarneyScalarField(BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
-  return bnBlockStructuredAMRCreate(dg,
+  return bnBlockStructuredAMRCreate(model,slot,
       // m_generatedCellWidths.data(),
       m_generatedBlockBounds.data(),
       m_generatedBlockBounds.size() / 6,

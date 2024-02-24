@@ -15,11 +15,11 @@
 // ======================================================================== //
 
 #include "barney/common/Material.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
 
-  Material::SP Material::create(DataGroup *dg, const std::string &type)
+  Material::SP Material::create(ModelSlot *dg, const std::string &type)
   {
     // iw - "eventually" we should have different materials like
     // 'matte' and 'glass', 'metal' etc here, but for now, let's just
@@ -63,12 +63,12 @@ namespace barney {
 
   void Material::commit()
   {
-    DataGroupObject::commit();
+    SlottedObject::commit();
   }
   
   bool Material::set1f(const std::string &member, const float &value)
   {
-    if (DataGroupObject::set1f(member,value))
+    if (SlottedObject::set1f(member,value))
       return true;
     if (member == "transmission") {
       this->transmission = value;
@@ -87,7 +87,7 @@ namespace barney {
   
   bool Material::set3f(const std::string &member, const vec3f &value)
   {
-    if (DataGroupObject::set3f(member,value))
+    if (SlottedObject::set3f(member,value))
       return true;
     if (member == "baseColor") {
       this->baseColor = value;
@@ -98,7 +98,7 @@ namespace barney {
   
   bool Material::setObject(const std::string &member, const Object::SP &value)
   {
-    if (DataGroupObject::setObject(member,value))
+    if (SlottedObject::setObject(member,value))
       return true;
     if (member == "colorTexture") {
       this->colorTexture = value?value->as<Texture>():0;

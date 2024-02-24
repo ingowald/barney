@@ -32,7 +32,7 @@ namespace barney {
     std::string toString() const override
     { return "LocalFB{}"; }
 
-    void render(Model *model,
+    void render(GlobalModel *model,
                 const Camera::DD &camera,
                 FrameBuffer *fb,
                 int pathsPerPixel) override;

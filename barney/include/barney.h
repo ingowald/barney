@@ -32,7 +32,7 @@ typedef struct _BNVolume       : public _BNObject{} *BNVolume;
 typedef struct _BNGroup        : public _BNObject{} *BNGroup;
 typedef struct _BNModel        : public _BNObject{} *BNModel;
 typedef struct _BNFrameBuffer  : public _BNObject{} *BNFrameBuffer;
-typedef struct _BNDataGroup    : public _BNObject{} *BNDataGroup;
+// typedef struct _BNDataGroup    : public _BNObject{} *BNDataGroup;
 typedef struct _BNTexture2D    : public _BNObject{} *BNTexture2D;
 typedef struct _BNTexture3D    : public _BNObject{} *BNTexture3D;
 typedef struct _BNLight        : public _BNObject{} *BNLight;
@@ -106,30 +106,36 @@ typedef enum {
 }
 BNTextureColorSpace;
 
-
-// struct BNCamera {
-//   /*! vector from camera center to to lower-left pixel (i.e., pixel
-//     (0,0)) on the focal plane */
-//   float3 dir_00;
-//   /* vector along edge of image plane, in u direction */
-//   float3 dir_du;
-//   /* vector along edge of image plane, in v direction */
-//   float3 dir_dv;
-//   /*! lens center ... */
-//   float3 lens_00;
-//   /* vector along v direction, for ONE pixel */
-//   float  lensRadius;
-// };
-
 struct BNGridlet {
   float3 lower;
   float3 upper;
   int3   dims;
 };
 
-
-
 #define BN_FOVY_DEGREES(degrees) ((float)(degrees*M_PI/180.f))
+
+
+
+
+// ==================================================================
+// creators for CONTEXT-owned objects
+// ==================================================================
+
+/*! create a new camera of given type. currently supported types:
+    "pinhole" */
+BN_API
+BNCamera bnCameraCreate(BNContext context,
+                        const char *type);
+
+BN_API
+BNFrameBuffer bnFrameBufferCreate(BNContext context,
+                                  int owningRank);
+
+BN_API
+BNModel bnModelCreate(BNContext ctx);
+
+
+
 
 // ==================================================================
 // general set/commit semantics
@@ -208,11 +214,12 @@ void bnPinholeCamera(BNCamera camera,
                      float  aspect);
 
 BN_API
-BNContext bnContextCreate(/*! which data group(s) this rank will
-                            owl - default is 1 group, with data
-                            group equal to mpi rank */
-                          const int *dataGroupsOnThisRank=0,
-                          int  numDataGroupsOnThisRank=1,
+BNContext bnContextCreate(/*! how many data slots this context is to
+                              offer, and which part(s) of the
+                              distributed model data these slot(s)
+                              will hold */
+                          const int *dataRanksOnThisContext=0,
+                          int        numDataRanksOnThisContext=1,
                           /*! which gpu(s) to use for this
                             process. default is to distribute
                             node's GPUs equally over all ranks on
@@ -236,15 +243,16 @@ struct BNHardwareInfo {
 #if BARNEY_MPI
 BN_API
 BNContext bnMPIContextCreate(MPI_Comm comm,
-                             /*! which data group(s) this rank will
-                               own - default is 1 group, with data
-                                 group equal to mpi rank */
-                             const int *dataGroupsOnThisRank=0,
-                             int  numDataGroupsOnThisRank=1,
+                             /*! how many data slots this context is to
+                               offer, and which part(s) of the
+                               distributed model data these slot(s)
+                               will hold */
+                             const int *dataRanksOnThisContext=0,
+                             int        numDataRanksOnThisContext=1,
                              /*! which gpu(s) to use for this
-                                 process. default is to distribute
-                                 node's GPUs equally over all ranks on
-                                 that given node */
+                               process. default is to distribute
+                               node's GPUs equally over all ranks on
+                               that given node */
                              const int *gpuIDs=nullptr,
                              int  numGPUs=-1
                              );
@@ -270,7 +278,7 @@ BN_API
 void  bnAddReference(BNObject object);
 
 BN_API
-void  bnBuild(BNDataGroup dataGroup);
+void  bnBuild(BNModel model, int whichDataSlot);
 
 // ==================================================================
 // render interface
@@ -280,18 +288,10 @@ BN_API
 void bnAccumReset(BNFrameBuffer fb);
 
 BN_API
-BNFrameBuffer bnFrameBufferCreate(BNContext context,
-                                  int owningRank);
-
-BN_API
 void bnFrameBufferResize(BNFrameBuffer fb,
                          int sizeX, int sizeY,
                          uint32_t *hostRGBA,
                          float    *hostDepth = 0);
-
-BN_API
-BNDataGroup bnGetDataGroup(BNModel model,
-                           int dataGroupID);
 
 BN_API
 void bnRender(BNModel       model,
@@ -313,13 +313,11 @@ struct BNTransform {
 };
 
 BN_API
-void bnSetInstances(BNDataGroup dataGroup,
+void bnSetInstances(BNModel model,
+                    int whichSlot,
                     BNGroup *groupsToInstantiate,
                     BNTransform *instanceTransforms,
                     int numInstances);
-
-BN_API
-BNModel bnModelCreate(BNContext ctx);
 
 // ==================================================================
 // scene content
@@ -327,22 +325,27 @@ BNModel bnModelCreate(BNContext ctx);
 
 /*! same as owlNewData, basically */
 BN_API
-BNData bnDataCreate(BNDataGroup dataGroup,
+BNData bnDataCreate(BNModel model,
+                    int whichSlot,
                     BNDataType dataType,
                     size_t numItems,
                     const void *items);
 BN_API
-BNLight bnLightCreate(BNDataGroup dataGroup, const char *type);
+BNLight bnLightCreate(BNModel model,
+                      int whichSlot,
+                      const char *type);
                     
 BN_API
-BNGroup bnGroupCreate(BNDataGroup dataGroup,
+BNGroup bnGroupCreate(BNModel model,
+                      int whichSlot,
                       BNGeom *geoms, int numGeoms,
                       BNVolume *volumes, int numVolumes);
 BN_API
 void bnGroupBuild(BNGroup group);
 
 BN_API
-BNTexture2D bnTexture2DCreate(BNDataGroup dataGroup,
+BNTexture2D bnTexture2DCreate(BNModel model,
+                              int whichSlot,
                               BNTexelFormat texelFormat,
                               /*! number of texels in x dimension */
                               uint32_t size_x,
@@ -354,7 +357,8 @@ BNTexture2D bnTexture2DCreate(BNDataGroup dataGroup,
                               BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
 
 BN_API
-BNTexture3D bnTexture3DCreate(BNDataGroup dataGroup,
+BNTexture3D bnTexture3DCreate(BNModel model,
+                              int whichSlot,
                               BNTexelFormat texelFormat,
                               /*! number of texels in x dimension */
                               uint32_t size_x,
@@ -373,26 +377,23 @@ BNTexture3D bnTexture3DCreate(BNDataGroup dataGroup,
 /*! create a new geometry of given type. currently supported types:
     "triangles", "spheres", "cylinders" */
 BN_API
-BNGeom bnGeometryCreate(BNDataGroup dataGroup,
+BNGeom bnGeometryCreate(BNModel model,
+                        int whichSlot,
                         const char *type);
 
 
 /*! create a new scalar field of given type. currently supported
     types: "structured" */
 BN_API
-BNScalarField bnScalarFieldCreate(BNDataGroup dataGroup,
+BNScalarField bnScalarFieldCreate(BNModel model,
+                                  int whichSlot,
                                   const char *type);
                                      
-/*! create a new camera of given type. currently supported types:
-    "pinhole" */
-BN_API
-BNCamera bnCameraCreate(BNContext context,
-                        const char *type);
-
 /*! create a new material of given type. currently supported types:
   "matte", "glass" */
 BN_API
-BNMaterial bnMaterialCreate(BNDataGroup dataGroup,
+BNMaterial bnMaterialCreate(BNModel model,
+                            int whichSlot,
                             const char *type);
 
 
@@ -408,7 +409,8 @@ BNMaterial bnMaterialCreate(BNDataGroup dataGroup,
 // soon to be deprecated, but still the only way to create those
 // ------------------------------------------------------------------
 BN_API
-BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
+BNScalarField bnUMeshCreate(BNModel model,
+                            int whichSlot,
                             // vertices, 4 floats each (3 floats position,
                             // 4th float scalar value)
                             const float *vertices, int numVertices,
@@ -437,7 +439,8 @@ BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
 
 
 BN_API
-BNScalarField bnBlockStructuredAMRCreate(BNDataGroup dataGroup,
+BNScalarField bnBlockStructuredAMRCreate(BNModel model,
+                                         int whichSlot,
                                          /*TODO:const float *cellWidths,*/
                                          // block bounds, 6 ints each (3 for min,
                                          // 3 for max corner)
@@ -452,7 +455,8 @@ BNScalarField bnBlockStructuredAMRCreate(BNDataGroup dataGroup,
 
 
 BN_API
-BNVolume bnVolumeCreate(BNDataGroup dataGroup,
+BNVolume bnVolumeCreate(BNModel model,
+                        int whichSlot,
                         BNScalarField sf);
 
 BN_API
@@ -510,7 +514,8 @@ inline void bnAssignMaterial(BNGeom geom,const BNMaterialHelper *material)
 // DEPRECATED
 // ------------------------------------------------------------------
 BN_API
-BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
+BNGeom bnTriangleMeshCreate(BNModel model,
+                            int whichSlot,
                             const BNMaterialHelper *material,
                             const int3 *indices,
                             int numIndices,
@@ -523,7 +528,8 @@ BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
 // DEPRECATED
 // ------------------------------------------------------------------
 BN_API
-BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
+BNScalarField bnStructuredDataCreate(BNModel model,
+                                     int whichSlot,
                                      int3 dims,
                                      BNScalarType type,
                                      const void *scalars,

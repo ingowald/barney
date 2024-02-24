@@ -17,28 +17,28 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/Data.h"
-#include "barney/Texture.h"
+#include "barney/common/Data.h"
+#include "barney/common/Texture.h"
 #include "barney/render/World.h"
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
   
-  struct Light : public DataGroupObject {
+  struct Light : public SlottedObject {
     typedef std::shared_ptr<Light> SP;
 
-    Light(DataGroup *owner) : DataGroupObject(owner) {}
+    Light(ModelSlot *owner) : SlottedObject(owner) {}
 
     std::string toString() const override { return "Light<>"; }
     
-    static Light::SP create(DataGroup *owner, const std::string &name);
+    static Light::SP create(ModelSlot *owner, const std::string &name);
   };
 
 
   struct EnvMapLight : public Light {
     typedef std::shared_ptr<EnvMapLight> SP;
-    EnvMapLight(DataGroup *owner) : Light(owner) {}
+    EnvMapLight(ModelSlot *owner) : Light(owner) {}
     
     std::string toString() const override { return "EnvMapLight"; }
     
@@ -59,7 +59,7 @@ namespace barney {
   /*! TODO: this currently sets variables directly, without commit ... */
   struct DirLight : public Light {
     typedef std::shared_ptr<DirLight> SP;
-    DirLight(DataGroup *owner) : Light(owner) {}
+    DirLight(ModelSlot *owner) : Light(owner) {}
     
     std::string toString() const override { return "DirLight"; }
     
@@ -75,7 +75,7 @@ namespace barney {
   /*! TODO: this currently sets variables directly, without commit ... */
   struct QuadLight : public Light {
     typedef std::shared_ptr<QuadLight> SP;
-    QuadLight(DataGroup *owner) : Light(owner) {}
+    QuadLight(ModelSlot *owner) : Light(owner) {}
 
     std::string toString() const override { return "DirectionalLight"; }
     

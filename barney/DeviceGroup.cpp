@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -50,11 +50,11 @@ namespace barney {
     }
   }
 
-  DevGroup::DevGroup(int ldgID,
+  DevGroup::DevGroup(int lmsIdx,
                      const std::vector<int> &gpuIDs,
                      int globalIndex,
                      int globalIndexStep)
-    : ldgID(ldgID)
+    : lmsIdx(lmsIdx)
   {
     owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
 

@@ -44,9 +44,9 @@ const Material *Surface::material() const
   return m_material.ptr;
 }
 
-BNGeom Surface::makeBarneyGeom(BNDataGroup dg) const
+BNGeom Surface::makeBarneyGeom(BNModel model, int slot) const
 {
-  return geometry()->makeBarneyGeometry(dg, material()->barneyMaterial());
+  return geometry()->makeBarneyGeometry(model,slot, material()->barneyMaterial());
 }
 
 } // namespace barney_device

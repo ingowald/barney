@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,7 +16,7 @@
 
 #include "barney/DeviceContext.h"
 #include "barney/Ray.h"
-#include "barney/Model.h"
+#include "barney/GlobalModel.h"
 #include "barney/fb/FrameBuffer.h"
 
 namespace barney {
@@ -54,17 +54,14 @@ namespace barney {
     rays.swap();
     rays.numActive = rays.readNumActive();
     rays.resetWriteQueue();
-    // rays.numActive = *rays.d_nextWritePos;
-
-    // *rays.d_nextWritePos = 0;
   }
 
-  void DeviceContext::traceRays_launch(Model *model)
+  void DeviceContext::traceRays_launch(GlobalModel *model)
   {
     DevGroup *dg = device->devGroup;
     owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);
     owlParamsSet1i(dg->lp,"numRays",rays.numActive);
-    OWLGroup world = model->getDG(dg->ldgID)->instances.group;
+    OWLGroup world = model->getSlot(dg->lmsIdx)->instances.group;
     owlParamsSetGroup(dg->lp,"world",world);
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);

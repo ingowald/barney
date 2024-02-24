@@ -28,7 +28,7 @@ namespace barney {
   using namespace owl::common;
 
   struct FrameBuffer;
-  struct Model;
+  struct GlobalModel;
 
   struct Context;
   
@@ -42,7 +42,7 @@ namespace barney {
     
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB(int owningRank) = 0;
-    Model *createModel();
+    GlobalModel *createModel();
 
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const 
@@ -95,12 +95,12 @@ namespace barney {
                       FrameBuffer *fb);
     
     /*! have each *local* GPU trace its current wave-front of rays */
-    void traceRaysLocally(Model *model);
+    void traceRaysLocally(GlobalModel *model);
     
     /*! trace all rays currently in a ray queue, including forwarding
       if and where applicable, untile every ray in the ray queue as
       found its intersection */
-    void traceRaysGlobally(Model *model);
+    void traceRaysGlobally(GlobalModel *model);
 
     /*! forward rays (during global trace); returns if _after_ that
       forward the rays need more tracing (true) or whether they're
@@ -115,15 +115,15 @@ namespace barney {
       devices and, where applicable, across all ranks */
     virtual int numRaysActiveGlobally() = 0;
 
-    void shadeRaysLocally(Model *model, FrameBuffer *fb, int generation);
+    void shadeRaysLocally(GlobalModel *model, FrameBuffer *fb, int generation);
     void finalizeTiles(FrameBuffer *fb);
     
-    void renderTiles(Model *model,
+    void renderTiles(GlobalModel *model,
                      const barney::Camera::DD &camera,
                      FrameBuffer *fb,
                      int pathsPerPixel);
     
-    virtual void render(Model *model,
+    virtual void render(GlobalModel *model,
                         const barney::Camera::DD &camera, 
                         FrameBuffer *fb,
                         int pathsPerPixel) = 0;
@@ -143,14 +143,14 @@ namespace barney {
                                  const std::string &type);
     std::set<std::string> alreadyWarned;
 
-    struct PerDG {
-      int dataGroupID;
+    struct PerSlot {
+      int modelRankInThisSlot;//dataGroupID;
       /*! device(s) inside this data group; will be a subset of
         Context::devices */
       std::vector<int>     gpuIDs;
       barney::DevGroup::SP devGroup;
     };
-    std::vector<PerDG> perDG;
+    std::vector<PerSlot> perSlot;
     
     const bool isActiveWorker;
 
