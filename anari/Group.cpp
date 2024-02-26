@@ -63,11 +63,13 @@ void Group::markCommitted()
   for (auto v : volumes)
     barneyVolumes.push_back(v->makeBarneyVolume(model,slot));
 
-  return bnGroupCreate(model,slot,
+  BNGroup bg = bnGroupCreate(model,slot,
       barneyGeometries.data(),
       barneyGeometries.size(),
       barneyVolumes.data(),
       barneyVolumes.size());
+  bnGroupBuild(bg);
+  return bg;  
 }
 
 box3 Group::bounds() const

@@ -56,7 +56,6 @@ void Matte::commit()
   m_bnMaterialData.ior = 1.f;
   m_bnMaterialData.metallic = 0.f;
   m_bnMaterialData.roughness = 0.f;
-  printf("TODO: set material data....\n");
 }
 
 // PhysicallyBased //
@@ -79,7 +78,6 @@ void PhysicallyBased::commit()
   m_bnMaterialData.ior = 1.f;
   m_bnMaterialData.metallic = 0.f;
   m_bnMaterialData.roughness = 0.f;
-  printf("TODO: set material data....\n");
 }
 
 } // namespace barney_device

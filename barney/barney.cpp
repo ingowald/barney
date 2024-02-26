@@ -177,6 +177,7 @@ namespace barney {
                       int numInstances)
   {
     LOG_API_ENTRY;
+    PRINT(numInstances);
     
     std::vector<Group::SP> groups;
     for (int i=0;i<numInstances;i++) {
@@ -222,14 +223,18 @@ namespace barney {
                               const float2 *texcoords)
   {
     BNGeom mesh = bnGeometryCreate(model,whichSlot,"triangles");
+    
     BNData _vertices = bnDataCreate(model,whichSlot,BN_FLOAT3,numVertices,vertices);
     bnSetAndRelease(mesh,"vertices",_vertices);
+    
     BNData _indices  = bnDataCreate(model,whichSlot,BN_INT3,numIndices,indices);
     bnSetAndRelease(mesh,"indices",_indices);
+    
     if (normals) {
       BNData _normals  = bnDataCreate(model,whichSlot,BN_FLOAT3,normals?numVertices:0,normals);
       bnSetAndRelease(mesh,"normals",_normals);
     }
+    
     if (texcoords) {
       BNData _texcoords  = bnDataCreate(model,whichSlot,BN_FLOAT2,texcoords?numVertices:0,texcoords);
       bnSetAndRelease(mesh,"texcoords",_texcoords);
