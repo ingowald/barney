@@ -19,7 +19,7 @@
 #include "barney/geometry/Geometry.h"
 #include "barney/volume/Volume.h"
 #include "barney/MultiPass.h"
-#include "barney/Data.h"
+#include "barney/common/Data.h"
 
 namespace barney {
 
@@ -29,7 +29,7 @@ namespace barney {
   struct Group : public Object {
     typedef std::shared_ptr<Group> SP;
 
-    Group(DataGroup *owner,
+    Group(ModelSlot *owner,
           const std::vector<Geometry::SP> &geoms,
           const std::vector<Volume::SP> &volumes);
     virtual ~Group();
@@ -50,7 +50,7 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override;
 
-    DataGroup *const owner;
+    ModelSlot *const owner;
     const std::vector<Volume::SP>   volumes;
     const std::vector<Geometry::SP> geoms;
 

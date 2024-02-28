@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Data.h"
-#include "barney/DataGroup.h"
+#include "barney/common/Data.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
 
@@ -77,7 +77,7 @@ namespace barney {
     };
   };
   
-  PODData::PODData(DataGroup *owner,
+  PODData::PODData(ModelSlot *owner,
                    BNDataType type,
                    size_t numItems,
                    const void *_items)
@@ -92,7 +92,7 @@ namespace barney {
     if (owl) owlBufferRelease(owl);
   }
 
-  Data::SP Data::create(DataGroup *owner,
+  Data::SP Data::create(ModelSlot *owner,
                         BNDataType type,
                         size_t numItems,
                         const void *items)
@@ -115,7 +115,7 @@ namespace barney {
     }
   }
   
-  Data::Data(DataGroup *owner,
+  Data::Data(ModelSlot *owner,
              BNDataType type,
              size_t numItems)
     : Object(owner->context),
@@ -123,7 +123,7 @@ namespace barney {
       count(numItems)
   {}
   
-  ObjectRefsData::ObjectRefsData(DataGroup *owner,
+  ObjectRefsData::ObjectRefsData(ModelSlot *owner,
                                  BNDataType type,
                                  size_t numItems,
                                  const void *_items)

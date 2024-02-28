@@ -18,7 +18,7 @@
 #include "barney/fb/FrameBuffer.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/render/World.h"
-#include "barney/Model.h"
+#include "barney/GlobalModel.h"
 
 namespace barney {
   namespace render {
@@ -797,7 +797,7 @@ namespace barney {
 
   using namespace render;
   
-  void DeviceContext::shadeRays_launch(Model *model,
+  void DeviceContext::shadeRays_launch(GlobalModel *model,
                                        TiledFB *fb,
                                        int generation)
   {
@@ -823,7 +823,7 @@ namespace barney {
     }
 
     DevGroup *dg = device->devGroup;
-    World *world = &model->getDG(dg->ldgID)->world;
+    World *world = &model->getSlot(dg->lmsIdx)->world;
     
     
     if (nb) {

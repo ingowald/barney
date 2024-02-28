@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,24 +14,24 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Model.h"
+#include "barney/GlobalModel.h"
 
 namespace barney {
 
-  Model::Model(Context *context)
+  GlobalModel::GlobalModel(Context *context)
     : Object(context)
   {
-    for (int localID=0;localID<context->perDG.size();localID++) {
-      dataGroups.push_back(DataGroup::create(this,localID));
+    for (int slot=0;slot<context->perSlot.size();slot++) {
+      modelSlots.push_back(ModelSlot::create(this,slot));
     }
   }
 
-  Model::~Model()
+  GlobalModel::~GlobalModel()
   {}
-
-  void Model::render(Camera      *camera,
-                     FrameBuffer *fb,
-                     int pathsPerPixel)
+  
+  void GlobalModel::render(Camera      *camera,
+                           FrameBuffer *fb,
+                           int pathsPerPixel)
   {
     assert(context);
     assert(fb);

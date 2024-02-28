@@ -15,13 +15,13 @@
 // ======================================================================== //
 
 #include "barney/geometry/Triangles.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
 
   extern "C" char Triangles_ptx[];
 
-  Triangles::Triangles(DataGroup *owner)
+  Triangles::Triangles(ModelSlot *owner)
     : Geometry(owner)
   {}
   
@@ -37,7 +37,6 @@ namespace barney {
 
     std::vector<OWLVarDecl> params
       = {
-      // { "material", OWL_USER_TYPE(Material), OWL_OFFSETOF(DD,material) },
       { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
       { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
       { "texcoords", OWL_BUFPTR, OWL_OFFSETOF(DD,texcoords) },

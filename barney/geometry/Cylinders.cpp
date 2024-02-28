@@ -15,70 +15,15 @@
 // ======================================================================== //
 
 #include "barney/geometry/Cylinders.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
 
   extern "C" char Cylinders_ptx[];
 
-  Cylinders::Cylinders(DataGroup *owner)
-  : Geometry(owner)
-  {
-// ,
-//                        const vec3f *vertices,
-//                        int          numVertices,
-//                        const vec3f *colors,
-//                        bool         colorPerVertex,
-//                        const vec2i *indices,
-//                        int          numIndices,
-//                        const float *radii,
-//                        bool         radiusPerVertex,
-//                        float        defaultRadius    
-//     verticesBuffer = owlDeviceBufferCreate
-//       (owner->devGroup->owl,
-//        OWL_FLOAT3,numVertices,vertices);
-//     std::vector<vec2i> explicitIndices;
-//     if (!indices) {
-//       for (int i=0;i<numVertices/2;i++)
-//         explicitIndices.push_back(2*i+vec2i(0,1));
-//       indices = explicitIndices.data();
-//       numIndices = (int)explicitIndices.size();
-//     }
-//     std::vector<float> explicitRadii;
-//     if (!radii) {
-//       for (int i=0;i<numIndices;i++)
-//         explicitRadii.push_back(defaultRadius);
-//       radii = explicitRadii.data();
-//     }
-//     indicesBuffer = owlDeviceBufferCreate
-//       (owner->devGroup->owl,
-//        OWL_INT2,numIndices,indices);
-//     verticesBuffer = owlDeviceBufferCreate
-//       (owner->devGroup->owl,
-//        OWL_FLOAT3,numVertices,vertices);
-//     if (colors)
-//       colorsBuffer = owlDeviceBufferCreate
-//         (owner->devGroup->owl,
-//          OWL_FLOAT3,colorPerVertex?numVertices:numIndices,
-//          colors);
-//     radiiBuffer = owlDeviceBufferCreate
-//       (owner->devGroup->owl,
-//        OWL_FLOAT,numIndices,radii);
-
-//     OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
-//       ("Cylinders",Cylinders::createGeomType);
-//     OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
-    
-//     owlGeomSetPrimCount(geom,numIndices);
-//     owlGeomSetBuffer(geom,"colors",colorsBuffer);
-//     owlGeomSetBuffer(geom,"vertices",verticesBuffer);
-//     owlGeomSetBuffer(geom,"indices",indicesBuffer);
-//     owlGeomSetBuffer(geom,"radii",radiiBuffer);
-//     owlGeomSet1i(geom,"colorPerVertex",(int)colorPerVertex);
-//     owlGeomSet1i(geom,"radiusPerVertex",(int)radiusPerVertex);
-    
-//     userGeoms.push_back(geom);
-  }
+  Cylinders::Cylinders(ModelSlot *owner)
+    : Geometry(owner)
+  {}
 
   OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
   {

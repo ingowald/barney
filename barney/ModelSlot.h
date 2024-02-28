@@ -23,64 +23,39 @@
 
 namespace barney {
 
-  struct Model;
-  struct Spheres;
-  struct Cylinders;
-  struct Triangles;
+  struct GlobalModel;
   struct Context;
   struct Texture;
   struct Data;
   struct Light;
+  
   namespace render {
     struct World;
   }
   
-  struct DataGroup : public Object {
-    typedef std::shared_ptr<DataGroup> SP;
+  struct ModelSlot : public Object {
+    typedef std::shared_ptr<ModelSlot> SP;
 
-    DataGroup(Model *model, int localID);
-    virtual ~DataGroup();
+    ModelSlot(GlobalModel *model,
+              /*! index with which the given rank's context will refer
+                  to this _locally_; not the data rank in it */
+              int slotIndex);
+    virtual ~ModelSlot();
 
     /*! pretty-printer for printf-debugging */
-    std::string toString() const override { return "barney::DataGroup"; }
+    std::string toString() const override { return "barney::ModelSlot"; }
     
     OWLContext getOWL() const;
 
-    static SP create(Model *model, int localID)
-    { return std::make_shared<DataGroup>(model,localID); }
+    static SP create(GlobalModel *model, int localID)
+    { return std::make_shared<ModelSlot>(model,localID); }
 
     Group   *
     createGroup(const std::vector<Geometry::SP> &geoms,
                 const std::vector<Volume::SP> &volumes);
     
-    // Spheres *
-    // createSpheres(const barney::Material &material,
-    //               const vec3f *origins,
-    //               int numOrigins,
-    //               const vec3f *colors,
-    //               const float *radii,
-    //               float defaultRadius);
-
-    Cylinders *createCylinders(const vec3f      *points,
-                               int               numPoints,
-                               const vec3f      *colors,
-                               bool              colorPerVertex,
-                               const vec2i      *indices,
-                               int               numIndices,
-                               const float      *radii,
-                               bool              radiusPerVertex,
-                               float             defaultRadius);
-    
     Volume *createVolume(ScalarField::SP sf);
     
-    Triangles *
-    createTriangles(int numIndices,
-                    const vec3i *indices,
-                    int numVertices,
-                    const vec3f *vertices,
-                    const vec3f *normals,
-                    const vec2f *texcoords);
-
     Texture *
     createTexture(BNTexelFormat texelFormat,
                   vec2i size,
@@ -88,12 +63,6 @@ namespace barney {
                   BNTextureFilterMode  filterMode,
                   BNTextureAddressMode addressMode,
                   BNTextureColorSpace  colorSpace);
-    
-    // ScalarField *createStructuredData(const vec3i &dims,
-    //                                   BNScalarType scalarType,
-    //                                   const void *data,
-    //                                   const vec3f &gridOrigin,
-    //                                   const vec3f &gridSpacing);
     
     ScalarField *createUMesh(std::vector<vec4f> &vertices,
                              std::vector<TetIndices> &tetIndices,
@@ -129,7 +98,7 @@ namespace barney {
     render::World world;
     MultiPass::Instances multiPassInstances;
     DevGroup::SP   const devGroup;
-    Model         *const model;
+    GlobalModel   *const model;
     int            const localID;
   };
   

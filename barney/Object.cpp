@@ -16,7 +16,7 @@
 
 #include "barney/Object.h"
 #include "barney/Context.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
 
@@ -24,7 +24,7 @@ namespace barney {
     : context(context)
   {}
   
-  DataGroupObject::DataGroupObject(DataGroup *owner)
+  SlottedObject::SlottedObject(ModelSlot *owner)
     : Object(owner->context),
       owner(owner)
   {}
@@ -43,6 +43,5 @@ namespace barney {
     context->alreadyWarned.insert(key);
   }
   
-
 }
 

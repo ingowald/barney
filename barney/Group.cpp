@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,10 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
-  Group::Group(DataGroup *owner,
+  Group::Group(ModelSlot *owner,
                const std::vector<Geometry::SP> &geoms,
                const std::vector<Volume::SP> &volumes)
     : Object(owner->context),

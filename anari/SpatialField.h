@@ -22,7 +22,7 @@ struct SpatialField : public Object
 
   void markCommitted() override;
 
-  virtual BNScalarField makeBarneyScalarField(BNDataGroup dg) const = 0;
+  virtual BNScalarField makeBarneyScalarField(BNModel model, int slot) const = 0;
 
   virtual box3 bounds() const = 0;
 };
@@ -34,7 +34,7 @@ struct UnstructuredField : public SpatialField
   UnstructuredField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
 
@@ -68,7 +68,7 @@ struct BlockStructuredField : public SpatialField
   BlockStructuredField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
 
@@ -94,7 +94,7 @@ struct StructuredRegularField : public SpatialField
   StructuredRegularField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
   bool isValid() const override;

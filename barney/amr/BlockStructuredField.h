@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
 
@@ -123,7 +123,7 @@ namespace barney {
                                    box3f *d_primBounds,
                                    range1f *d_primRanges=0);
 
-    BlockStructuredField(DataGroup *owner,
+    BlockStructuredField(ModelSlot *owner,
                          std::vector<box3i> &blockBounds,
                          std::vector<int> &blockLevels,
                          std::vector<int> &blockOffsets,

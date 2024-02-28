@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -28,7 +28,6 @@ int main(int, char **)
   
   while (getCurrentTime() - t0 < numSecondsToRun) {
     BNModel model = bnModelCreate(ctx);
-    BNDataGroup dg = bnGetDataGroup(model,0);
     bnRelease(model);
   }
 

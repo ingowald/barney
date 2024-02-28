@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -43,8 +43,8 @@ namespace barney {
 
   bool LocalContext::forwardRays()
   {
-    const int numDataGroups = (int)perDG.size();
-    if (numDataGroups == 1) {
+    const int numSlots = (int)perSlot.size();
+    if (numSlots == 1) {
       // do NOT copy or swap. rays are in trace queue, which is also
       // the shade read queue, so nothing to do.
       //
@@ -53,7 +53,7 @@ namespace barney {
     }
     
     const int numDevices = (int)devices.size();
-    const int dgSize = numDevices / numDataGroups;
+    const int dgSize = numDevices / numSlots;
     std::vector<int> numCopied(numDevices);
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
@@ -63,7 +63,6 @@ namespace barney {
       auto nextDev = devices[nextID];
       
       int count = nextDev->rays.numActive;
-      // std::cout << "forwarding " << count << " rays between " << devID << " and " << nextID << std::endl;
       numCopied[devID] = count;
       Ray *src = nextDev->rays.traceAndShadeReadQueue;
       Ray *dst = thisDev->rays.receiveAndShadeWriteQueue;
@@ -84,11 +83,10 @@ namespace barney {
     for (auto dev : devices) dev->sync();
 
     ++numTimesForwarded;
-    return (numTimesForwarded % numDataGroups) != 0;
-    // return false;
+    return (numTimesForwarded % numSlots) != 0;
   }
 
-  void LocalContext::render(Model *model,
+  void LocalContext::render(GlobalModel *model,
                             const Camera::DD &camera,
                             FrameBuffer *fb,
                             int pathsPerPixel)

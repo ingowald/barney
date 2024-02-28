@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -125,7 +125,7 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
 
-  BlockStructuredField::BlockStructuredField(DataGroup *owner,
+  BlockStructuredField::BlockStructuredField(ModelSlot *owner,
                                              std::vector<box3i> &_blockBounds,
                                              std::vector<int> &_blockLevels,
                                              std::vector<int> &_blockOffsets,
@@ -214,7 +214,7 @@ namespace barney {
     return dd;
   }
 
-  ScalarField *DataGroup::createBlockStructuredAMR(std::vector<box3i> &blockBounds,
+  ScalarField *ModelSlot::createBlockStructuredAMR(std::vector<box3i> &blockBounds,
                                                    std::vector<int> &blockLevels,
                                                    std::vector<int> &blockOffsets,
                                                    std::vector<float> &blockScalars)

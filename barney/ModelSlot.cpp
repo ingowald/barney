@@ -14,34 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DataGroup.h"
-#include "barney/Model.h"
-#include "barney/Data.h"
-#include "barney/Light.h"
-#include "barney/Texture.h"
+#include "barney/ModelSlot.h"
+#include "barney/GlobalModel.h"
+#include "barney/common/Data.h"
+#include "barney/common/Texture.h"
+#include "barney/light/Light.h"
 #include "barney/geometry/Geometry.h"
 
 namespace barney {
 
-  DataGroup::DataGroup(Model *model, int localID)
+  ModelSlot::ModelSlot(GlobalModel *model, int slot)
     : Object(model->context),
       model(model),
       localID(localID),
-      devGroup(model->context->perDG[localID].devGroup),
-      world(model->context->perDG[localID].devGroup.get())
+      devGroup(model->context->perSlot[slot].devGroup),
+      world(model->context->perSlot[slot].devGroup.get())
   {}
 
-  DataGroup::~DataGroup()
+  ModelSlot::~ModelSlot()
   {}
 
-  OWLContext DataGroup::getOWL() const
+  OWLContext ModelSlot::getOWL() const
   {
     assert(devGroup);
     assert(devGroup->owl);
     return devGroup->owl;
   }
 
-  void DataGroup::setInstances(std::vector<Group::SP> &groups,
+  void ModelSlot::setInstances(std::vector<Group::SP> &groups,
                                const affine3f *xfms)
   {
     int numUserInstances = (int)groups.size();
@@ -55,21 +55,21 @@ namespace barney {
     }
   }
   
-  Group *DataGroup::createGroup(const std::vector<Geometry::SP> &geoms,
+  Group *ModelSlot::createGroup(const std::vector<Geometry::SP> &geoms,
                                 const std::vector<Volume::SP> &volumes)
   {
     return getContext()->initReference
       (std::make_shared<Group>(this,geoms,volumes));
   }
 
-  Volume *DataGroup::createVolume(ScalarField::SP sf)
+  Volume *ModelSlot::createVolume(ScalarField::SP sf)
   {
     return getContext()->initReference
       (std::make_shared<Volume>(devGroup.get(),sf));
   }
 
 
-  // Cylinders *DataGroup::createCylinders(const vec3f      *points,
+  // Cylinders *ModelSlot::createCylinders(const vec3f      *points,
   //                                       int               numPoints,
   //                                       const vec3f      *colors,
   //                                       bool              colorPerVertex,
@@ -87,7 +87,7 @@ namespace barney {
   //                                  radii,radiusPerVertex,defaultRadius));
   // }
     
-  // Spheres *DataGroup::createSpheres(// const Material &material,
+  // Spheres *ModelSlot::createSpheres(// const Material &material,
   //                                   // const vec3f *origins,
   //                                   // int numOrigins,
   //                                   // const vec3f *colors,
@@ -99,19 +99,19 @@ namespace barney {
   //     (std::make_shared<Spheres>(this));
   // }
 
-  Data *DataGroup::createData(BNDataType dataType,
+  Data *ModelSlot::createData(BNDataType dataType,
                               size_t numItems,
                               const void *items)
   {
     return getContext()->initReference(Data::create(this,dataType,numItems,items));
   }
   
-  Light *DataGroup::createLight(const std::string &type)
+  Light *ModelSlot::createLight(const std::string &type)
   {
     return getContext()->initReference(Light::create(this,type));
   }
   
-  Texture *DataGroup::createTexture(BNTexelFormat texelFormat,
+  Texture *ModelSlot::createTexture(BNTexelFormat texelFormat,
                                     vec2i size,
                                     const void *texels,
                                     BNTextureFilterMode  filterMode,
@@ -122,25 +122,8 @@ namespace barney {
       (std::make_shared<Texture>(this,texelFormat,size,texels,
                                  filterMode,addressMode,colorSpace));
   }
-    
-  // Triangles *DataGroup::createTriangles(int numIndices,
-  //                                       const vec3i *indices,
-  //                                       int numVertices,
-  //                                       const vec3f *vertices,
-  //                                       const vec3f *normals,
-  //                                       const vec2f *texcoords)
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Triangles>(this,
-  //                                  numIndices,
-  //                                  indices,
-  //                                  numVertices,
-  //                                  vertices,
-  //                                  normals,
-  //                                  texcoords));
-  // }
 
-  void DataGroup::build()
+  void ModelSlot::build()
   { 
     multiPassInstances.clear();
 

@@ -20,7 +20,7 @@
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
 
 
   // ==================================================================
@@ -44,7 +44,7 @@ namespace barney {
       const vec2f *texcoords;
     };
     
-    Triangles(DataGroup *owner);
+    Triangles(ModelSlot *owner);
     virtual ~Triangles();
     
     /*! pretty-printer for printf-debugging */

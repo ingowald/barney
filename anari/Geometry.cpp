@@ -71,18 +71,18 @@ void Sphere::commit()
   }
 }
 
-BNGeom Sphere::makeBarneyGeometry(
-    BNDataGroup dg, const BNMaterialHelper *material) const
+  BNGeom Sphere::makeBarneyGeometry(BNModel model, int slot,
+                                    const BNMaterialHelper *material) const
 {
   auto ctx = deviceState()->context;
   assert(!m_index); // NOT implemented yet!
-  BNGeom geom = bnGeometryCreate(dg,"spheres");
-  BNData origins = bnDataCreate(dg,BN_FLOAT3,
+  BNGeom geom = bnGeometryCreate(model,slot,"spheres");
+  BNData origins = bnDataCreate(model,slot,BN_FLOAT3,
                                 m_vertexPosition->totalSize(),
                                 (const float3 *)m_vertexPosition->dataAs<math::float3>());
   bnSetData(geom,"origins",origins);
   if (m_vertexRadius) {
-    BNData radii = bnDataCreate(dg,BN_FLOAT,
+    BNData radii = bnDataCreate(model,slot,BN_FLOAT,
                                 m_vertexPosition->totalSize(),
                                 m_vertexRadius->dataAs<float>());
     bnSetData(geom,"radii",radii);
@@ -92,14 +92,6 @@ BNGeom Sphere::makeBarneyGeometry(
   bnAssignMaterial(geom,material);
   bnCommit(geom);
   return geom;
-  // return bnSpheresCreate
-  //   (dg,
-  //    material,
-  //    (const float3 *)m_vertexPosition->dataAs<math::float3>(),
-  //    m_vertexPosition->totalSize(),
-  //    /* colors */nullptr,
-  //    m_vertexRadius ? m_vertexRadius->dataAs<float>() : nullptr,
-  //    m_globalRadius);
 }
 
 box3 Sphere::bounds() const
@@ -171,7 +163,7 @@ void Triangle::commit()
   }
 }
 
-BNGeom Triangle::makeBarneyGeometry(BNDataGroup dg,
+BNGeom Triangle::makeBarneyGeometry(BNModel model, int slot,
                                     const BNMaterialHelper *materialData) const
 {
   auto ctx = deviceState()->context;
@@ -180,7 +172,7 @@ BNGeom Triangle::makeBarneyGeometry(BNDataGroup dg,
          materialData->baseColor.y,
          materialData->baseColor.z);
   return bnTriangleMeshCreate
-    (dg,
+    (model,slot,
      materialData,
      m_index ? (const int3 *)m_index->data()
      : (const int3 *)m_generatedIndices.data(),

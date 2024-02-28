@@ -25,12 +25,12 @@ namespace barney {
   struct Volume;
   struct VolumeAccel;
   struct MCGrid;
-  struct DataGroup;
+  struct ModelSlot;
   
   /*! abstracts any sort of scalar field (unstructured, amr,
     structured, rbfs....) _before_ any transfer function(s) get
     applied to it */
-  struct ScalarField : public Object
+  struct ScalarField : public SlottedObject
   {
     typedef std::shared_ptr<ScalarField> SP;
 
@@ -53,10 +53,10 @@ namespace barney {
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    ScalarField(DataGroup *owner,
+    ScalarField(ModelSlot *owner,
                 const box3f &domain=box3f());
 
-    static ScalarField::SP create(DataGroup *dg, const std::string &type);
+    static ScalarField::SP create(ModelSlot *dg, const std::string &type);
     
     OWLContext getOWL() const;
     

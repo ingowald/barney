@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include "barney/Texture.h"
-#include "barney/Data.h"
+#include "barney/common/Texture.h"
+#include "barney/common/Data.h"
 
 namespace barney {
   
-  struct Material : public DataGroupObject {
+  struct Material : public SlottedObject {
     typedef std::shared_ptr<Material> SP;
     
     struct DD {
@@ -34,10 +34,10 @@ namespace barney {
       cudaTextureObject_t alphaTexture;
     };
 
-    Material(DataGroup *owner) : DataGroupObject(owner) {}
+    Material(ModelSlot *owner) : SlottedObject(owner) {}
     virtual ~Material() = default;
 
-    static Material::SP create(DataGroup *dg, const std::string &type);
+    static Material::SP create(ModelSlot *dg, const std::string &type);
     
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

@@ -47,7 +47,7 @@ namespace barney {
     mcGrid.scalarRanges[mcIdx] = scalarRange;
   }
   
-  StructuredData::StructuredData(DataGroup *owner)
+  StructuredData::StructuredData(ModelSlot *owner)
     : ScalarField(owner)
   {}
 

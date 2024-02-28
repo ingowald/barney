@@ -18,7 +18,7 @@ World::World(BarneyGlobalState *s) : Object(ANARI_WORLD, s)
   m_zeroInstance->refDec(helium::RefType::PUBLIC);
 
   m_barneyModel = bnModelCreate(s->context);
-  m_barneyDataGroup = bnGetDataGroup(m_barneyModel, 0);
+  m_barneySlot  = 0;
 }
 
 World::~World()
@@ -133,8 +133,7 @@ void World::buildBarneyModel()
     if (barneyGroups[i] != nullptr)
       continue;
     auto *g = groups[i];
-    BNGroup bg = g->makeBarneyGroup(m_barneyDataGroup);
-    bnGroupBuild(bg);
+    BNGroup bg = g->makeBarneyGroup(m_barneyModel,m_barneySlot);
     for (size_t j = i; j < groups.size(); j++) {
       if (groups[j] == g)
         barneyGroups[j] = bg;
@@ -147,11 +146,11 @@ void World::buildBarneyModel()
     return;
   }
 
-  bnSetInstances(m_barneyDataGroup,
+  bnSetInstances(m_barneyModel,m_barneySlot,
       barneyGroups.data(),
       barneyTransforms.data(),
       barneyGroups.size());
-  bnBuild(m_barneyDataGroup);
+  bnBuild(m_barneyModel,m_barneySlot);
 
   m_lastBarneyModelBuild = helium::newTimeStamp();
 }

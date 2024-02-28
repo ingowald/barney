@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "barney/DataGroup.h"
-#include "barney/Texture.h"
+#include "barney/ModelSlot.h"
+#include "barney/common/Texture.h"
 #include "barney/volume/MCAccelerator.h"
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
 
   // ==================================================================
   /*! Scalar field made of 3D structured data, constting of Nx*Ny*Nz
@@ -83,7 +83,7 @@ namespace barney {
     /*! construct a new structured data scalar field; will not do
         anything - or have any data - untile 'set' and 'commit'ed
     */
-    StructuredData(DataGroup *owner);
+    StructuredData(ModelSlot *owner);
     virtual ~StructuredData() = default;
 
     // ------------------------------------------------------------------

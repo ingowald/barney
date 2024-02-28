@@ -18,7 +18,7 @@ struct Group : public Object
   void commit() override;
   void markCommitted() override;
 
-  BNGroup makeBarneyGroup(BNDataGroup dg) const;
+  BNGroup makeBarneyGroup(BNModel model, int slot) const;
 
   box3 bounds() const;
 

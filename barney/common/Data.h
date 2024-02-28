@@ -26,12 +26,12 @@ namespace barney {
   struct Data : public Object {
     typedef std::shared_ptr<Data> SP;
 
-    Data(DataGroup *owner,
+    Data(ModelSlot *owner,
          BNDataType type,
          size_t numItems);
     virtual ~Data() = default;
     
-    static Data::SP create(DataGroup *owner,
+    static Data::SP create(ModelSlot *owner,
                            BNDataType type,
                            size_t numItems,
                            const void *items);
@@ -42,7 +42,7 @@ namespace barney {
 
   struct PODData : public Data {
     typedef std::shared_ptr<PODData> SP;
-    PODData(DataGroup *owner,
+    PODData(ModelSlot *owner,
             BNDataType type,
             size_t numItems,
             const void *items);
@@ -56,7 +56,7 @@ namespace barney {
       put into this data array will remain properly refcoutned. */
   struct ObjectRefsData : public Data {
     typedef std::shared_ptr<ObjectRefsData> SP;
-    ObjectRefsData(DataGroup *owner,
+    ObjectRefsData(ModelSlot *owner,
                    BNDataType type,
                    size_t numItems,
                    const void *items);

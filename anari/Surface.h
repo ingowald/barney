@@ -20,7 +20,7 @@ struct Surface : public Object
   const Geometry *geometry() const;
   const Material *material() const;
 
-  BNGeom makeBarneyGeom(BNDataGroup dg) const;
+  BNGeom makeBarneyGeom(BNModel model, int slot) const;
 
  private:
   uint32_t m_id{~0u};

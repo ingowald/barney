@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,7 +33,7 @@ namespace barney {
     /*! create a frame buffer object suitable to this context */
     FrameBuffer *createFB(int owningRank) override;
 
-    void render(Model *model,
+    void render(GlobalModel *model,
                 const Camera::DD &camera,
                 FrameBuffer *fb,
                 int pathsPerPixel) override;
@@ -57,7 +57,7 @@ namespace barney {
     int numRaysActiveGlobally() override;
     
     int gpusPerWorker;
-    int numDifferentDataGroups = -1;
+    int numDifferentModelSlots = -1;
     int numTimesForwarded = 0;
     
     mpi::Comm world;
