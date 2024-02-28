@@ -58,7 +58,7 @@ namespace barney {
     mcGrid.scalarRanges[mcIdx] = scalarRange;
   } 
   
-  NanoVDBData::NanoVDBData(DataGroup *owner)
+  NanoVDBData::NanoVDBData(ModelSlot *owner)
     : ScalarField(owner)
   {}
 

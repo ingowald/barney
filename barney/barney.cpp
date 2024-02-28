@@ -161,7 +161,8 @@ namespace barney {
   }
 
   BN_API
-  BNTextureNanoVDB bnTextureNanoVDBCreate(BNDataGroup dataGroup,
+  BNTextureNanoVDB bnTextureNanoVDBCreate(BNModel model,
+                                int whichSlot,
                                 BNTexelFormat texelFormat,
                                 size_t size,
                                 const void *nanogrid,
@@ -170,10 +171,10 @@ namespace barney {
     LOG_API_ENTRY;
     TextureNanoVDB::SP tex
       = std::make_shared<TextureNanoVDB>
-      (checkGet(dataGroup),
+      (checkGet(model,whichSlot),
        texelFormat,size,nanogrid,
        filterMode);
-    checkGet(dataGroup)->context->initReference(tex);
+    checkGet(model,whichSlot)->context->initReference(tex);
     return (BNTextureNanoVDB)tex.get();
   }  
   
@@ -378,17 +379,18 @@ namespace barney {
   }
 
   BN_API
-  BNScalarField bnNanoVDBDataCreate(BNDataGroup dataGroup,
-                                       int3 dims,
-                                       size_t size,
-                                       const void *nanogrid,
-                                       float3 gridOrigin,
-                                       float3 gridSpacing)
+  BNScalarField bnNanoVDBDataCreate(BNModel model,
+                                    int whichSlot,
+                                    int3 dims,
+                                    size_t size,
+                                    const void *nanogrid,
+                                    float3 gridOrigin,
+                                    float3 gridSpacing)
   {   
     BNScalarField sf
-      = bnScalarFieldCreate(dataGroup,"nanovdb");
+      = bnScalarFieldCreate(model,whichSlot,"nanovdb");
     BNTextureNanoVDB texture
-      = bnTextureNanoVDBCreate(dataGroup,BN_TEXEL_FORMAT_NANOVDB_FLOAT,size,nanogrid,BN_TEXTURE_LINEAR);
+      = bnTextureNanoVDBCreate(model,whichSlot,BN_TEXEL_FORMAT_NANOVDB_FLOAT,size,nanogrid,BN_TEXTURE_LINEAR);
     bnSetObject(sf,"texture",texture);
     bnRelease(texture);
     bnSet3ic(sf,"dims",dims);

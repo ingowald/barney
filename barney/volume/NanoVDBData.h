@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "barney/DataGroup.h"
-#include "barney/Texture.h"
+#include "barney/ModelSlot.h"
+#include "barney/common/Texture.h"
 #include "barney/volume/MCAccelerator.h"
 
 #define NANOVDB_USE_INTRINSICS
@@ -26,7 +26,7 @@
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
 
   // ==================================================================
   /*! NanoVDB data.
@@ -68,7 +68,7 @@ namespace barney {
     /*! construct a new NanoVDB data scalar field; will not do
         anything - or have any data - untile 'set' and 'commit'ed
     */
-    NanoVDBData(DataGroup *owner);
+    NanoVDBData(ModelSlot *owner);
     virtual ~NanoVDBData() = default;
 
     // ------------------------------------------------------------------
