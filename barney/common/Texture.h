@@ -68,7 +68,7 @@ namespace barney {
     
   };
 
-  struct TextureNanoVDB : public DataGroupObject {
+  struct TextureNanoVDB : public SlottedObject {
     typedef std::shared_ptr<TextureNanoVDB> SP;
 
     struct DD {
@@ -80,7 +80,7 @@ namespace barney {
     // interpolation
     int interpolation;
     
-    TextureNanoVDB(DataGroup *owner,
+    TextureNanoVDB(ModelSlot *owner,
               BNTexelFormat texelFormat,
               size_t size,
               const void *nanogrid,

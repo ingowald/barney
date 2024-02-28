@@ -374,11 +374,12 @@ BNTexture3D bnTexture3DCreate(BNModel model,
                               BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP);
 
 BN_API
-BNTextureNanoVDB bnTextureNanoVDBCreate(BNDataGroup dataGroup,
+BNTextureNanoVDB bnTextureNanoVDBCreate(BNModel model,
+                              int whichSlot,
                               BNTexelFormat texelFormat,
                               size_t size,
                               const void *nanogrid,
-                              BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR);                              
+                              BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR);
 
 // ------------------------------------------------------------------
 // object-"create" interface
@@ -550,9 +551,10 @@ BNScalarField bnStructuredDataCreate(BNModel model,
 // DEPRECATED
 // ------------------------------------------------------------------
 BN_API
-BNScalarField bnNanoVDBDataCreate(BNDataGroup dataGroup,
-                                     int3 dims,
-                                     const void *scalars,
-                                     float3 gridOrigin,
-                                     float3 gridSpacing);                                     
+BNScalarField bnNanoVDBDataCreate(BNModel model,
+                                  int whichSlot,
+                                  int3 dims,
+                                  const void *scalars,
+                                  float3 gridOrigin,
+                                  float3 gridSpacing);
 

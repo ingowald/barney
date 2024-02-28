@@ -150,12 +150,12 @@ namespace barney {
   }
 
 
-  TextureNanoVDB::TextureNanoVDB(DataGroup *owner,
+  TextureNanoVDB::TextureNanoVDB(ModelSlot *owner,
                        BNTexelFormat texelFormat,
                        size_t size,
                        const void *nanogrid,
                        BNTextureFilterMode  filterMode)
-    : DataGroupObject(owner)
+    : SlottedObject(owner)
   {
     if (!texNVDBs.empty()) return;
 
