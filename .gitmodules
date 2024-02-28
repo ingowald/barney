@@ -4,3 +4,6 @@
 [submodule "submodules/cuBQL"]
 	path = submodules/cuBQL
 	url = https://github.com/ingowald/cuBQL
+[submodule "submodules/openvdb"]
+	path = submodules/openvdb
+	url = https://github.com/AcademySoftwareFoundation/openvdb.git

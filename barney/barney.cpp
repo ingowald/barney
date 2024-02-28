@@ -159,6 +159,23 @@ namespace barney {
     checkGet(model,whichSlot)->context->initReference(tex);
     return (BNTexture3D)tex.get();
   }
+
+  BN_API
+  BNTextureNanoVDB bnTextureNanoVDBCreate(BNDataGroup dataGroup,
+                                BNTexelFormat texelFormat,
+                                size_t size,
+                                const void *nanogrid,
+                                BNTextureFilterMode  filterMode)
+  {
+    LOG_API_ENTRY;
+    TextureNanoVDB::SP tex
+      = std::make_shared<TextureNanoVDB>
+      (checkGet(dataGroup),
+       texelFormat,size,nanogrid,
+       filterMode);
+    checkGet(dataGroup)->context->initReference(tex);
+    return (BNTextureNanoVDB)tex.get();
+  }  
   
   // ------------------------------------------------------------------
   
@@ -351,6 +368,27 @@ namespace barney {
     BNTexture3D texture
       = bnTexture3DCreate(model,whichSlot,texelFormat,
                           dims.x,dims.y,dims.z,scalars,BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
+    bnSetObject(sf,"texture",texture);
+    bnRelease(texture);
+    bnSet3ic(sf,"dims",dims);
+    bnSet3fc(sf,"gridOrigin",gridOrigin);
+    bnSet3fc(sf,"gridSpacing",gridSpacing);
+    bnCommit(sf);
+    return sf;
+  }
+
+  BN_API
+  BNScalarField bnNanoVDBDataCreate(BNDataGroup dataGroup,
+                                       int3 dims,
+                                       size_t size,
+                                       const void *nanogrid,
+                                       float3 gridOrigin,
+                                       float3 gridSpacing)
+  {   
+    BNScalarField sf
+      = bnScalarFieldCreate(dataGroup,"nanovdb");
+    BNTextureNanoVDB texture
+      = bnTextureNanoVDBCreate(dataGroup,BN_TEXEL_FORMAT_NANOVDB_FLOAT,size,nanogrid,BN_TEXTURE_LINEAR);
     bnSetObject(sf,"texture",texture);
     bnRelease(texture);
     bnSet3ic(sf,"dims",dims);

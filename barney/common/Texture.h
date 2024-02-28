@@ -68,4 +68,30 @@ namespace barney {
     
   };
 
+  struct TextureNanoVDB : public DataGroupObject {
+    typedef std::shared_ptr<TextureNanoVDB> SP;
+
+    struct DD {
+      void* nanogrid = 0;      
+    };
+    /*! one tex3d per device */
+    std::vector<DD> texNVDBs;
+
+    // interpolation
+    int interpolation;
+    
+    TextureNanoVDB(DataGroup *owner,
+              BNTexelFormat texelFormat,
+              size_t size,
+              const void *nanogrid,
+              BNTextureFilterMode  filterMode);
+    virtual ~TextureNanoVDB();
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override
+    { return "TextureNanoVDB{}"; }
+
+    
+  };  
+
 }
