@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,8 +23,6 @@ namespace barney {
   {
     auto &ray = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<Triangles::DD>();
-    // ray.hadHit = true;
-    // ray.tMax = optixGetRayTmax();
     int primID = optixGetPrimitiveIndex();
     vec3i triangle = self.indices[primID];
     vec3f v0 = self.vertices[triangle.x];
@@ -35,12 +33,6 @@ namespace barney {
     n = normalize(n);
     
     vec3f dir = optixGetWorldRayDirection();
-    // printf("mat %f %f %f : %i %i\n",
-    //        self.material.baseColor.x,
-    //        self.material.baseColor.y,
-    //        self.material.baseColor.z,
-    //        (int)self.material.colorTexture,
-    //        (int)self.material.alphaTexture);
     auto mat = self.material;
 
     const float u = optixGetTriangleBarycentrics().x;
@@ -69,8 +61,6 @@ namespace barney {
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
     
     ray.setHit(P,n,optixGetRayTmax(),mat);
-    // ray.hit.N         = n;
-    // ray.hit.P         = P;
   }
 
 
