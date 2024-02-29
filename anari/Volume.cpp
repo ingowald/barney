@@ -35,7 +35,7 @@ void TransferFunction1D::commit()
 
   cleanup();
 
-  m_field = getParamObject<SpatialField>("field");
+  m_field = getParamObject<SpatialField>("value");
   if (!m_field) {
     reportMessage(ANARI_SEVERITY_WARNING,
         "no spatial field provided to transferFunction1D volume");
