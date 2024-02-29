@@ -63,7 +63,6 @@ void Perspective::commit()
   //     (const float3 &)m_up,
   //     anari::degrees(fovy),
   //     aspect);
-  printf("committing barney camera\n");
   bnSet3fc(m_barneyCamera,"up",(const float3&)m_up);
   bnSet3fc(m_barneyCamera,"position", (const float3&)m_pos);
   
