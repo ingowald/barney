@@ -18,7 +18,7 @@ Volume *Volume::createInstance(std::string_view subtype, BarneyGlobalState *s)
   else
     return (Volume *)new UnknownObject(ANARI_VOLUME, s);
 }
-  
+
 void Volume::markCommitted()
 {
   deviceState()->markSceneChanged();
@@ -101,7 +101,8 @@ BNVolume TransferFunction1D::makeBarneyVolume(BNModel model, int slot) const
   static BNVolume bnVol{
       nullptr}; // TODO: really find out if volume has changed!
   if (!bnVol) {
-    bnVol = bnVolumeCreate(model,slot, m_field->makeBarneyScalarField(model,slot));
+    bnVol = bnVolumeCreate(
+        model, slot, m_field->makeBarneyScalarField(model, slot));
   }
   bnVolumeSetXF(bnVol,
       (float2 &)m_valueRange,

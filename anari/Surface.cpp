@@ -5,9 +5,7 @@
 
 namespace barney_device {
 
-Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s)
-{
-}
+Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s) {}
 
 Surface::~Surface() = default;
 
@@ -46,7 +44,8 @@ const Material *Surface::material() const
 
 BNGeom Surface::makeBarneyGeom(BNModel model, int slot) const
 {
-  return geometry()->makeBarneyGeometry(model,slot, material()->barneyMaterial());
+  return geometry()->makeBarneyGeometry(
+      model, slot, material()->barneyMaterial());
 }
 
 size_t Surface::numRequiredGPUBytes() const
