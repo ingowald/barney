@@ -69,7 +69,14 @@ void Group::markCommitted()
       barneyVolumes.data(),
       barneyVolumes.size());
   bnGroupBuild(bg);
-  return bg;  
+
+  for (auto bng : barneyGeometries)
+    bnRelease(bng);
+
+  for (auto bnv : barneyVolumes)
+    bnRelease(bnv);
+
+  return bg;
 }
 
 box3 Group::bounds() const

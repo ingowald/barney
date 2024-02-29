@@ -18,14 +18,15 @@ World::World(BarneyGlobalState *s) : Object(ANARI_WORLD, s)
   m_zeroInstance->refDec(helium::RefType::PUBLIC);
 
   m_barneyModel = bnModelCreate(s->context);
-  m_barneySlot  = 0;
+  m_barneySlot = 0;
 }
 
 World::~World()
 {
   cleanup();
 
-  // TODO: destroy barney model + data group
+  if (m_barneyModel)
+    bnRelease(m_barneyModel);
 }
 
 bool World::getProperty(
@@ -54,7 +55,7 @@ void World::commit()
   cleanup();
 
   m_zeroSurfaceData = getParamObject<ObjectArray>("surface");
-  m_zeroVolumeData  = getParamObject<ObjectArray>("volume");
+  m_zeroVolumeData = getParamObject<ObjectArray>("volume");
 
   m_addZeroInstance = m_zeroSurfaceData || m_zeroVolumeData;
   if (m_addZeroInstance)
@@ -88,11 +89,11 @@ void World::commit()
     if (m_addZeroInstance)
       m_instanceData->appendHandle(m_zeroInstance.ptr);
     std::for_each(m_instanceData->handlesBegin(),
-                  m_instanceData->handlesEnd(),
-                  [&](auto *o) {
-                    if (o && o->isValid())
-                      m_instances.push_back((Instance *)o);
-                  });
+        m_instanceData->handlesEnd(),
+        [&](auto *o) {
+          if (o && o->isValid())
+            m_instances.push_back((Instance *)o);
+        });
   } else if (m_addZeroInstance)
     m_instances.push_back(m_zeroInstance.ptr);
 
@@ -133,7 +134,7 @@ void World::buildBarneyModel()
     if (barneyGroups[i] != nullptr)
       continue;
     auto *g = groups[i];
-    BNGroup bg = g->makeBarneyGroup(m_barneyModel,m_barneySlot);
+    BNGroup bg = g->makeBarneyGroup(m_barneyModel, m_barneySlot);
     for (size_t j = i; j < groups.size(); j++) {
       if (groups[j] == g)
         barneyGroups[j] = bg;
@@ -146,11 +147,15 @@ void World::buildBarneyModel()
     return;
   }
 
-  bnSetInstances(m_barneyModel,m_barneySlot,
+  bnSetInstances(m_barneyModel,
+      m_barneySlot,
       barneyGroups.data(),
       barneyTransforms.data(),
       barneyGroups.size());
-  bnBuild(m_barneyModel,m_barneySlot);
+  bnBuild(m_barneyModel, m_barneySlot);
+
+  for (auto bng : barneyGroups)
+    bnRelease(bng);
 
   m_lastBarneyModelBuild = helium::newTimeStamp();
 }

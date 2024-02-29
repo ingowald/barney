@@ -20,7 +20,6 @@ struct Material : public Object
   const BNMaterialHelper *barneyMaterial() const;
 
  protected:
-  BNMaterial m_bnMaterial;
   BNMaterialHelper m_bnMaterialData;
 };
 
