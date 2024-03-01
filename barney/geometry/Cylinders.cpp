@@ -74,7 +74,7 @@ namespace barney {
     int numIndices = indices->count;
     PRINT(numIndices);
     owlGeomSetPrimCount(geom,numIndices);
-    material->set(geom);
+    material->setDeviceDataOn(geom);
   } 
 
   bool Cylinders::set1i(const std::string &member, const int &value)

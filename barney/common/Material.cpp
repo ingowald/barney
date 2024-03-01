@@ -19,54 +19,77 @@
 
 namespace barney {
 
+  void MiniMaterial::commit()
+  { /* we dont' yet stage/double-buffer params ... */}
+  
+  void MiniMaterial::createDD(DD &dd, int deviceID) const
+  {
+    dd.mini.ior = ior;
+    dd.mini.transmission = transmission;
+    dd.mini.baseColor = baseColor;
+    dd.mini.colorTexture
+      = colorTexture
+      ? owlTextureGetObject(colorTexture->owlTex,deviceID)
+      : 0;
+    dd.mini.alphaTexture
+      = alphaTexture
+      ? owlTextureGetObject(alphaTexture->owlTex,deviceID)
+      : 0;
+  }
+
   Material::SP Material::create(ModelSlot *dg, const std::string &type)
   {
     // iw - "eventually" we should have different materials like
     // 'matte' and 'glass', 'metal' etc here, but for now, let's just
     // ignore the type and create a single one thta contains all
     // fields....
-    return std::make_shared<Material>(dg);
+    return std::make_shared<MiniMaterial>(dg);
   }
 
   void Material::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
-    vars.push_back({"material.baseColor", OWL_FLOAT3, base+OWL_OFFSETOF(DD,baseColor)});
-    vars.push_back({"material.alphaTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,alphaTexture)});
-    vars.push_back({"material.colorTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,colorTexture)});
-    vars.push_back({"material.transmission", OWL_FLOAT, base+OWL_OFFSETOF(DD,transmission)});
-    vars.push_back({"material.roughness", OWL_FLOAT, base+OWL_OFFSETOF(DD,roughness)});
-    vars.push_back({"material.metallic", OWL_FLOAT, base+OWL_OFFSETOF(DD,metallic)});
-    vars.push_back({"material.ior", OWL_FLOAT, base+OWL_OFFSETOF(DD,ior)});
+    vars.push_back({"material", OWL_USER_TYPE(Material::DD), base+0u});
+    // vars.push_back({"material.baseColor", OWL_FLOAT3, base+OWL_OFFSETOF(DD,baseColor)});
+    // vars.push_back({"material.alphaTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,alphaTexture)});
+    // vars.push_back({"material.colorTexture", OWL_TEXTURE, base+OWL_OFFSETOF(DD,colorTexture)});
+    // vars.push_back({"material.transmission", OWL_FLOAT, base+OWL_OFFSETOF(DD,transmission)});
+    // vars.push_back({"material.roughness", OWL_FLOAT, base+OWL_OFFSETOF(DD,roughness)});
+    // vars.push_back({"material.metallic", OWL_FLOAT, base+OWL_OFFSETOF(DD,metallic)});
+    // vars.push_back({"material.ior", OWL_FLOAT, base+OWL_OFFSETOF(DD,ior)});
   }
 
-  void Material::set(OWLGeom geom) const
+  void Material::setDeviceDataOn(OWLGeom geom) const
   {
-    owlGeomSet3f(geom,"material.baseColor",
-                 baseColor.x,
-                 baseColor.y,
-                 baseColor.z);
-    owlGeomSet1f(geom,"material.transmission",transmission);
-    owlGeomSet1f(geom,"material.roughness",roughness);
-    owlGeomSet1f(geom,"material.metallic",metallic);
-    owlGeomSet1f(geom,"material.ior",ior);
-    owlGeomSetTexture(geom,"material.alphaTexture",
-                      alphaTexture
-                      ? alphaTexture->owlTex
-                      : (OWLTexture)0
-                      );
-    owlGeomSetTexture(geom,"material.colorTexture",
-                      colorTexture
-                      ? colorTexture->owlTex
-                      : (OWLTexture)0
-                      );
+    for (int deviceID=0;deviceID=owner->devGroup->size();deviceID++) {
+      Material::DD dd;
+      createDD(dd,deviceID);
+      owlGeomSetRaw(geom,"material",&dd,deviceID);
+    // owlGeomSet3f(geom,"material.baseColor",
+    //              baseColor.x,
+    //              baseColor.y,
+    //              baseColor.z);
+    // owlGeomSet1f(geom,"material.transmission",transmission);
+    // owlGeomSet1f(geom,"material.roughness",roughness);
+    // owlGeomSet1f(geom,"material.metallic",metallic);
+    // owlGeomSet1f(geom,"material.ior",ior);
+    // owlGeomSetTexture(geom,"material.alphaTexture",
+    //                   alphaTexture
+    //                   ? alphaTexture->owlTex
+    //                   : (OWLTexture)0
+    //                   );
+    // owlGeomSetTexture(geom,"material.colorTexture",
+    //                   colorTexture
+    //                   ? colorTexture->owlTex
+    //                   : (OWLTexture)0
+    }
   }
 
   void Material::commit()
   {
     SlottedObject::commit();
   }
-  
-  bool Material::set1f(const std::string &member, const float &value)
+
+  bool MiniMaterial::set1f(const std::string &member, const float &value)
   {
     if (SlottedObject::set1f(member,value))
       return true;
@@ -85,7 +108,7 @@ namespace barney {
     return false;
   }
   
-  bool Material::set3f(const std::string &member, const vec3f &value)
+  bool MiniMaterial::set3f(const std::string &member, const vec3f &value)
   {
     if (SlottedObject::set3f(member,value))
       return true;
@@ -96,7 +119,7 @@ namespace barney {
     return false;
   }
   
-  bool Material::setObject(const std::string &member, const Object::SP &value)
+  bool MiniMaterial::setObject(const std::string &member, const Object::SP &value)
   {
     if (SlottedObject::setObject(member,value))
       return true;

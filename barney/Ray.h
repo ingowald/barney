@@ -33,7 +33,7 @@ namespace barney {
     vec3h    dir;
     float    tMax;
     uint32_t rngSeed;
-    
+
     inline __device__ void setHit(vec3f P, vec3f N, float t,
                                   const Material::DD &material,
                                   vec2f texCoords=vec2f(0.f),
@@ -79,7 +79,6 @@ namespace barney {
       this->throughput = tp;
       this->tMax = len;
     }
-    
     // struct {
     //   vec3h    N;
     //   vec3h    baseColor;

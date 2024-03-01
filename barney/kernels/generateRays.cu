@@ -103,9 +103,13 @@ namespace barney {
     // for *primary* rays we pre-initialize basecolor to a background
     // color; this way the shaderays function doesn't have to reverse
     // engineer pixel pos etc
-    // ray.hit.baseColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-    // ray.hit.baseColor = .5f*ray.hit.baseColor*ray.hit.baseColor;
+    vec3f bgColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
     bool crossHair = ((ix == fbSize.x/2) || (iy == fbSize.y/2));
+    ray.hit.missColor
+      = crossHair
+      ? vec3f(1.f)
+      : bgColor*bgColor;
+    // ray.hit.baseColor = .5f*ray.hit.baseColor*ray.hit.baseColor;
     // if (crossHair && !ray.dbg)
     //   ray.hit.baseColor = vec3f(1,0,0);
     

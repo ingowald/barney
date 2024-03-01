@@ -74,7 +74,7 @@ namespace barney {
     auto &ray  = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<Triangles::DD>();
 
-    if (!self.material.hasAlpha())
+    if (!self.material.hasAlpha(ray.isShadowRay))
       return;
     
     // if (ray.isShadowRay && self.material.transmission > 0.f
@@ -105,7 +105,7 @@ namespace barney {
       tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
     }
 
-    float alpha = self.material.getAlpha(tc);
+    float alpha = self.material.getAlpha(tc,ray.isShadowRay);
     if (alpha < 1.f && ((Random &)ray.rngSeed)() < 1.f-alpha) {
       optixIgnoreIntersection();
       return;

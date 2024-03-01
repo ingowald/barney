@@ -129,27 +129,32 @@ namespace barney {
       vec3f albedo = ray.hit.getAlbedo();//(vec3f)ray.hit.baseColor;
       vec3f fragment = 0.f;
       float z = INFINITY;
-      if (0 && ray.dbg) {
-        printf("============================================ ray: hadHit %i, t %f P %f %f %f base %f %f %f N %f %f %f\n",
-               ray.hadHit,
-               ray.tMax,
-               (float)ray.hit.P.x,
-               (float)ray.hit.P.y,
-               (float)ray.hit.P.z,
-               (float)ray.hit.baseColor.x,
-               (float)ray.hit.baseColor.y,
-               (float)ray.hit.baseColor.z,
-               (float)ray.hit.N.x,
-               (float)ray.hit.N.y,
-               (float)ray.hit.N.z);
-      }
+      // if (0 && ray.dbg) {
+      //   printf("============================================ ray: hadHit %i, t %f P %f %f %f base %f %f %f N %f %f %f\n",
+      //          ray.hadHit,
+      //          ray.tMax,
+      //          (float)ray.hit.P.x,
+      //          (float)ray.hit.P.y,
+      //          (float)ray.hit.P.z,
+      //          (float)ray.hit.baseColor.x,
+      //          (float)ray.hit.baseColor.y,
+      //          (float)ray.hit.baseColor.z,
+      //          (float)ray.hit.N.x,
+      //          (float)ray.hit.N.y,
+      //          (float)ray.hit.N.z);
+      // }
       if (!ray.hadHit) {
         if (generation == 0) {
           // for primary rays we have pre-initialized basecolor to a
           // background color in generateRays(); let's just use this, so
           // generaterays can pre--set whatever color it wasnts for
           // non-hitting rays
-          fragment = (vec3f)ray.hit.baseColor;
+          fragment
+            = ray.hit.missColor;
+          // .crossHair
+          //   ? vec3f(1.f,0.f,0.f)
+          //   : (vec3f)ray.hit.miss.color;
+
         } else {
           vec3f ambientIllum = vec3f(1.f);
           fragment = ray.throughput * ambientIllum;
@@ -157,7 +162,7 @@ namespace barney {
       } else {
         z = ray.tMax;
         vec3f dir = ray.dir;
-        vec3f Ng = ray.hit.N;
+        vec3f Ng = ray.hit.getN();
         const bool isVolumeHit = (Ng == vec3f(0.f));
         if (!isVolumeHit) Ng = normalize(Ng);
         float NdotD = dot(Ng,normalize(dir));
@@ -554,7 +559,11 @@ namespace barney {
     {
       if (world.envMapLight.texture)
         return radianceFromEnv(world,ray);
-      return ray.hit.baseColor;
+      return
+        ray.hit.missColor;
+      // .crossHair
+      //   ? vec3f(1.f)
+      //   : ray.hit.missolor;
     }
 
     inline __device__
@@ -562,7 +571,8 @@ namespace barney {
     {
       return max(f,1e-5f*reduce_max(abs(v)));
     }
-  
+
+    /*! ugh - that should all go into material::AnariPhysical .... */
     inline __device__
     void bounce(const World::DD &world,
                 vec3f &fragment,
@@ -598,7 +608,7 @@ namespace barney {
         return;
       }
 
-      vec3f Ng = path.hit.N;
+      vec3f Ng = path.hit.getN();
       const bool  isVolumeHit        = (Ng == vec3f(0.f));
       if (!isVolumeHit)
         Ng = normalize(Ng);
@@ -648,9 +658,11 @@ namespace barney {
       Random &random = (Random &)path.rngSeed;
     
       const bool doTransmission
-        =  ((float)path.hit.transmission > 0.f)
-        && (random() < (float)path.hit.transmission);
-      vec3f Ns = Ng;
+        =  ((float)path.hit.mini.transmission > 0.f)
+        && (random() < (float)path.hit.mini.transmission);
+      render::DG dg;
+      dg.N = Ng;
+      dg.w_o = -(vec3f)path.dir;
       // if (path.dbg)
       //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
       //          pathDepth,
@@ -666,7 +678,7 @@ namespace barney {
         scatter_glass(dir,
                       random,
                       path.dir,notFaceForwardedNg,
-                      path.hit.ior);
+                      path.hit.mini.ior);
         path.dir = dir;
         if (dot(dir,notFaceForwardedNg) > 0.f) {
           path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
@@ -684,10 +696,10 @@ namespace barney {
         path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
         if (isVolumeHit) {
           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
-          path.throughput = .8f * path.throughput * path.path.hit.eval(Ns,path.dir);//hit.baseColor;
+          path.throughput = .8f * path.throughput * path.hit.eval(dg,path.dir);//hit.baseColor;
         } else { 
-          path.dir = sampleCosineWeightedHemisphere(Ns,random);
-          path.throughput = path.throughput * path.path.hit.eval(Ns,path.dir);//baseColor;
+          path.dir = sampleCosineWeightedHemisphere(dg.N,random);
+          path.throughput = path.throughput * path.hit.eval(dg,path.dir);//baseColor;
         }
       }
 
@@ -728,7 +740,8 @@ namespace barney {
       // ==================================================================
       LightSample ls;
       if (!doTransmission && sampleLights(ls,world,path.hit.P,Ng,random,path.dbg)) {
-        shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)*(1.f/ls.pdf)*path.hit.baseColor,
+        shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)*(1.f/ls.pdf)
+                                * path.hit.eval(dg,ls.dir),
                                 /* surface: */path.hit.P + EPS*Ng,
                                 /* to light */ls.dir,
                                 /* length   */ls.dist * (1.f-2.f*EPS));

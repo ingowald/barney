@@ -112,7 +112,7 @@ namespace barney {
     owlGeomSetBuffer(geom,"normals",normalsBuffer);
     owlGeomSetBuffer(geom,"texcoords",texcoordsBuffer);
     
-    material->set(geom);
+    material->setDeviceDataOn(geom);
   }
 
   
