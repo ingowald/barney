@@ -23,7 +23,11 @@ namespace barney {
                              const std::vector<int> &gpuIDs)
     : Context(dataGroupIDs,gpuIDs,0,1)
   {}
-  
+
+  LocalContext::~LocalContext()
+  { /* not doing anything, but leave this in to ensure that derived
+       classes' destrcutors get called !*/}
+
   FrameBuffer *LocalContext::createFB(int owningRank) 
   {
     assert(owningRank == 0);
@@ -39,13 +43,18 @@ namespace barney {
 
   bool LocalContext::forwardRays()
   {
-    const int numDataGroups = perDG.size();
-    if (numDataGroups == 1)
+    const int numDataGroups = (int)perDG.size();
+    if (numDataGroups == 1) {
+      // do NOT copy or swap. rays are in trace queue, which is also
+      // the shade read queue, so nothing to do.
+      //
+      // no more trace rounds required: return false
       return false;
+    }
     
-    const int numDevices = devices.size();
+    const int numDevices = (int)devices.size();
     const int dgSize = numDevices / numDataGroups;
-    int numCopied[numDevices];
+    std::vector<int> numCopied(numDevices);
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
       SetActiveGPU forDuration(thisDev->device);
@@ -56,8 +65,8 @@ namespace barney {
       int count = nextDev->rays.numActive;
       // std::cout << "forwarding " << count << " rays between " << devID << " and " << nextID << std::endl;
       numCopied[devID] = count;
-      Ray *src = nextDev->rays.readQueue;
-      Ray *dst = thisDev->rays.writeQueue;
+      Ray *src = nextDev->rays.traceAndShadeReadQueue;
+      Ray *dst = thisDev->rays.receiveAndShadeWriteQueue;
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
                                    cudaMemcpyDefault,
                                    thisDev->device->launchStream));
@@ -80,14 +89,15 @@ namespace barney {
   }
 
   void LocalContext::render(Model *model,
-                            const Camera &camera,
-                            FrameBuffer *fb)
+                            const Camera::DD &camera,
+                            FrameBuffer *fb,
+                            int pathsPerPixel)
   {
     assert(model);
     assert(fb);
 
     // render all tiles, in tile format and writing into accum buffer
-    renderTiles(model,camera,fb);
+    renderTiles(model,camera,fb,pathsPerPixel);
     for (auto dev : devices) dev->sync();
     
     // convert all tiles from accum to RGBA
@@ -97,9 +107,20 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell all GPUs to write their final pixels
     // ------------------------------------------------------------------
+#if FB_NO_PEER_ACCESS
+    // ***NO*** active device here
+    LocalFB *localFB = (LocalFB*)fb;
+    localFB->ownerGatherFinalTiles();
+    TiledFB::writeFinalPixels(localFB->finalFB,
+                              localFB->finalDepth,
+                              localFB->numPixels,
+                              localFB->rank0gather.finalTiles,
+                              localFB->rank0gather.tileDescs,
+                              localFB->rank0gather.numActiveTiles);
+#else
     for (int localID = 0; localID < devices.size(); localID++) {
       auto &devFB = *fb->perDev[localID];
-      TiledFB::writeFinalPixels(nullptr,//devFB.device.get(),
+      TiledFB::writeFinalPixels(//nullptr,//devFB.device.get(),
                                 fb->finalFB,
                                 fb->finalDepth,
                                 fb->numPixels,
@@ -108,6 +129,7 @@ namespace barney {
                                 devFB.numActiveTiles);
     }
     for (auto dev : devices) dev->sync();
+#endif
     // ------------------------------------------------------------------
     // wait for all GPUs to complete, so pixels are all written before
     // we return and/or copy to app

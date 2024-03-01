@@ -28,13 +28,18 @@ namespace barney {
 
     DistFB(MPIContext *context,
            int owningRank);
+    virtual ~DistFB() = default;
     
     static SP create(MPIContext *context, int owningRank)
     { return std::make_shared<DistFB>(context,owningRank); }
     
     void resize(vec2i size, uint32_t *hostFB, float *hostDepth) override;
 
-    void ownerGatherFinalTiles();
+    void ownerGatherFinalTiles()
+#if FB_NO_PEER_ACCESS
+      override
+#endif
+      ;
     
     struct {
       /*! list of *all* ranks' tileOffset, gathered (only at master) */

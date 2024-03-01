@@ -27,7 +27,7 @@ namespace barney {
       there will be one cuda block per tile */
   __global__
   void g_generateRays(/*! the camera used for generating the rays */
-                      Camera camera,
+                      Camera::DD camera,
                       /*! a unique random number seed value for pixel
                           and lens jitter; probably just accumID */
                       int rngSeed,
@@ -63,10 +63,12 @@ namespace barney {
 
     Ray ray;
     ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
-    Random rand(rngSeed,ray.pixelID);
-    rand();
-    rand();
-    rand();
+    Random rand(ix+fbSize.x*accumID,
+                iy+fbSize.y*accumID);
+    // Random rand(rngSeed,ray.pixelID);
+    // rand();
+    // rand();
+    // rand();
     
     ray.org  = camera.lens_00;
     ray.dir
@@ -76,20 +78,35 @@ namespace barney {
     ray.dir = normalize(ray.dir);
 
     bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
-    ray.dbg = centerPixel;
+    ray.dbg         = centerPixel;
+    ray.hadHit      = false;
+    ray.isShadowRay = false;
+    ray.isInMedium  = false;
+    ray.rngSeed     = rand.state;
+    ray.tMax        = 1e30f;
 
-    ray.tMax = 1e30f;
-    ray.rngSeed = rand.state;
-    ray.hadHit = false;
+    // if (ray.dbg)
+    //   printf("-------------------------------------------------------\n");
+    // if (ray.dbg)
+    //   printf("  # generating INTO %lx\n",rayQueue);
+             
+    // if (ray.dbg)
+    //   printf("spawned %f %f %f dir %f %f %f\n",
+    //          ray.org.x,
+    //          ray.org.y,
+    //          ray.org.z,
+    //          (float)ray.dir.x,
+    //          (float)ray.dir.y,
+    //          (float)ray.dir.z);
 
     const float t = (iy+.5f)/float(fbSize.y);
     // for *primary* rays we pre-initialize basecolor to a background
     // color; this way the shaderays function doesn't have to reverse
     // engineer pixel pos etc
     ray.hit.baseColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-
+    ray.hit.baseColor = .5f*ray.hit.baseColor*ray.hit.baseColor;
     bool crossHair = ((ix == fbSize.x/2) || (iy == fbSize.y/2));
-    if (crossHair)
+    if (crossHair && !ray.dbg)
       ray.hit.baseColor = vec3f(1,0,0);
     
     ray.hit.N = vec3f(0.f);
@@ -111,7 +128,7 @@ namespace barney {
   }
   
   void DeviceContext::generateRays_launch(TiledFB *fb,
-                                          const Camera &camera,
+                                          const Camera::DD &camera,
                                           int rngSeed)
   {
     auto device = fb->device;
@@ -123,8 +140,8 @@ namespace barney {
        rngSeed,
        fb->owner->accumID,
        fb->numPixels,
-       rays.d_nextWritePos,
-       rays.writeQueue,
+       rays._d_nextWritePos,
+       rays.receiveAndShadeWriteQueue,
        fb->tileDescs);
   }
 }

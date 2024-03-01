@@ -95,6 +95,7 @@ embed_ptx(
 
 add_library(barney STATIC
   common/barney-common.h
+  common/cuda-helper.cpp
   
   # actual device kernels for CUDA ray gen and shading
   kernels/generateRays.cu
@@ -110,10 +111,15 @@ add_library(barney STATIC
   DeviceGroup.cpp
   LocalContext.h
   LocalContext.cpp
+  Object.h
+  Object.cpp
+  Camera.h
+  Camera.cu
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
   fb/FrameBuffer.cpp
   fb/LocalFB.h
+  fb/LocalFB.cpp
   fb/TiledFB.h
   fb/TiledFB.cu
   # model/group/data group handling
@@ -123,9 +129,15 @@ add_library(barney STATIC
   Group.cpp
   DataGroup.h
   DataGroup.cpp
+  Data.h
+  Data.cpp
+  Light.h
+  Light.cpp
   Texture.h
   Texture.cpp
   # actual geometry types
+  common/Material.h
+  common/Material.cpp
   geometry/Geometry.h
   geometry/Geometry.cpp
   geometry/Spheres.h
@@ -224,4 +236,6 @@ target_link_libraries(barney_mpi PUBLIC
 target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
 
+
+add_subdirectory(testing)
 

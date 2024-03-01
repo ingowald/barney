@@ -40,24 +40,29 @@ namespace barney {
     SetActiveGPU forDuration(device);
 
     this->launch_sync();
-    std::swap(rays.readQueue, rays.writeQueue);
-    rays.numActive = *rays.d_nextWritePos;
-    *rays.d_nextWritePos = 0;
+    rays.swap();
+    // rays.numActive = *rays.d_nextWritePos;
+    // *rays.d_nextWritePos = 0;
+    rays.numActive = rays.readNumActive();
+    rays.resetWriteQueue();
   }
   
   void DeviceContext::shadeRays_sync()
   {
     SetActiveGPU forDuration(device);
     launch_sync();
-    std::swap(rays.readQueue, rays.writeQueue);
-    rays.numActive = *rays.d_nextWritePos;
-    *rays.d_nextWritePos = 0;
+    rays.swap();
+    rays.numActive = rays.readNumActive();
+    rays.resetWriteQueue();
+    // rays.numActive = *rays.d_nextWritePos;
+
+    // *rays.d_nextWritePos = 0;
   }
 
   void DeviceContext::traceRays_launch(Model *model)
   {
     DevGroup *dg = device->devGroup;
-    owlParamsSetPointer(dg->lp,"rays",rays.readQueue);
+    owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);
     owlParamsSet1i(dg->lp,"numRays",rays.numActive);
     OWLGroup world = model->getDG(dg->ldgID)->instances.group;
     owlParamsSetGroup(dg->lp,"world",world);

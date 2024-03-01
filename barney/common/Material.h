@@ -17,8 +17,10 @@
 #pragma once
 
 #include "barney/Texture.h"
+#include "barney/Data.h"
 
 namespace barney {
+#if 0
   namespace materials {
     // ==================================================================
     struct Disney {
@@ -71,33 +73,57 @@ namespace barney {
     MaterialType type;
     union {
       render::Matte matte;
-      render::Disney
+      render::Disney disney;
     };
   };
-  
-  /*! a (virtual) "barney material" as one interacts with throgh the
-      API. this will eventually get specialized in derived classes,
-      that then have to create device-materials to be put into actual
-      SBTs of the geometries they are living in */
-  struct Material : public SlottedObject {
-  };
+  // /*! a (virtual) "barney material" as one interacts with throgh the
+  //     API. this will eventually get specialized in derived classes,
+  //     that then have to create device-materials to be put into actual
+  //     SBTs of the geometries they are living in */
+  // struct Material : public SlottedObject {
+  // };
 
-  struct DisneyMaterial : public Material {
+  // struct DisneyMaterial : public Material {
+#endif
+  
+  struct Material : public DataGroupObject {
+    typedef std::shared_ptr<Material> SP;
+    
     struct DD {
       vec3f baseColor;
+      float ior;
+      float transmission;
+      float roughness;
+      float metallic;
       cudaTextureObject_t colorTexture;
       cudaTextureObject_t alphaTexture;
     };
-    vec3f baseColor;
+
+    Material(DataGroup *owner) : DataGroupObject(owner) {}
+    virtual ~Material() = default;
+
+    static Material::SP create(DataGroup *dg, const std::string &type);
+    
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    void set(OWLGeom geom) const;
+    /*! @} */
+    // ------------------------------------------------------------------
+
+    /*! declares the device-data's variables to an owl geom */
+    static void addVars(std::vector<OWLVarDecl> &vars, int base);
+    
+    vec3f baseColor { .5f, .5f, .5f };
+    float transmission { 0.f };
+    float roughness    { 0.f };
+    float metallic     { 0.f };
+    float ior          { 1.f };
     Texture::SP colorTexture;
     Texture::SP alphaTexture;
-    struct RayData {
-    };
-    struct DD {
-      vec3h baseColor;
-      half  ior;
-      half  transmission;
-    };
   };
   struct MatteMaterial : public Material{
     struct RayData {

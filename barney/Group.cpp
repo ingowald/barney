@@ -20,25 +20,76 @@ namespace barney {
   Group::Group(DataGroup *owner,
                const std::vector<Geometry::SP> &geoms,
                const std::vector<Volume::SP> &volumes)
-    : owner(owner),
+    : Object(owner->context),
+      owner(owner),
       geoms(geoms),
       volumes(volumes)
   {}
   
+  Group::~Group()
+  {
+    freeAllGeoms();
+  }
+  
+  /*! implements the parameter set/commit paradigm */
+  void Group::commit()
+  {
+    PING;
+  }
+  
+  /*! implements the parameter set/commit paradigm */
+  bool Group::setObject(const std::string &member, const Object::SP &value)
+  {
+    return false;
+  }
+  
+  /*! implements the parameter set/commit paradigm */
+  bool Group::setData(const std::string &member, const Data::SP &value)
+  {
+    if (member == "lights") {
+      this->lights = value->as<ObjectRefsData>();
+      return true;
+    }
+    return false;
+  }
+  
   /*! pretty-printer for printf-debugging */
   std::string Group::toString() const 
-  { return "Group{}"; }
+  { return "Group"; }
+
+  void Group::freeAllGeoms()
+  {
+    // we should NOT call owlGeomRelease on these here: they do belong
+    // to the Geometry's!
+    userGeoms.clear();
+    triangleGeoms.clear();
+    
+    if (triangleGeomGroup) {
+      owlGroupRelease(triangleGeomGroup);
+      triangleGeomGroup = 0;
+    }
+    if (userGeomGroup) {
+      owlGroupRelease(userGeomGroup);
+      userGeomGroup = 0;
+    }
+  }
   
   void Group::build()
   {
+    freeAllGeoms();
+    
     // triangles and user geoms - for now always rebuild
     {
-      userGeoms.clear();
-      triangleGeoms.clear();
-      if (triangleGeomGroup)
-        owlGroupRelease(triangleGeomGroup);
-      if (userGeomGroup)
-        owlGroupRelease(userGeomGroup);
+      // userGeoms.clear();
+      // triangleGeoms.clear();
+      // if (triangleGeomGroup) {
+      //   owlGroupRelease(triangleGeomGroup);
+      //   triangleGeomGroup = 0;
+      // }
+      // if (userGeomGroup) {
+      //   owlGroupRelease(userGeomGroup);
+      //   userGeomGroup = 0;
+      // }
       for (auto geom : geoms) {
         geom->build();
         for (auto g : geom->triangleGeoms)
@@ -49,16 +100,14 @@ namespace barney {
       if (!userGeoms.empty())
         userGeomGroup = owlUserGeomGroupCreate
           (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
-      if (userGeomGroup) {
+      if (userGeomGroup) 
         owlGroupBuildAccel(userGeomGroup);
-      }
       
       if (!triangleGeoms.empty())
         triangleGeomGroup = owlTrianglesGeomGroupCreate
           (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
-      if (triangleGeomGroup) {
+      if (triangleGeomGroup) 
         owlGroupBuildAccel(triangleGeomGroup);
-      }
     }
 
     // volumes - these may need two passes

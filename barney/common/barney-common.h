@@ -29,6 +29,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include "barney.h"
 
 #define __barney_align(a) OWL_ALIGN(a)
 
@@ -38,7 +39,7 @@ namespace barney {
 
   using range1f = interval<float>;
 
-  using Random = LCG<4>;
+  using Random = LCG<6>;
 
 
   template<typename T>

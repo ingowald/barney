@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -19,10 +19,9 @@
 namespace barney {
 
   FrameBuffer::FrameBuffer(Context *context, const bool isOwner)
-    : context(context),
+    : Object(context),
       isOwner(isOwner)
   {
-    assert(context);
     perDev.resize(context->devices.size());
     for (int localID=0;localID<context->devices.size();localID++) {
       perDev[localID]
@@ -30,13 +29,31 @@ namespace barney {
     }
   }
 
+  FrameBuffer::~FrameBuffer()
+  {
+    freeResources();
+  }
+
+  void FrameBuffer::freeResources()
+  {
+    if (finalDepth) {
+      BARNEY_CUDA_CALL(Free(finalDepth));
+      finalDepth = 0;
+    }
+    if (finalFB) {
+      BARNEY_CUDA_CALL(Free(finalFB));
+      finalFB = 0;
+    }
+  }
+  
   void FrameBuffer::resize(vec2i size,
                            uint32_t *hostFB,
                            float    *hostDepth)
   {
     for (auto &pd: perDev)
       pd->resize(size);
-    
+
+    freeResources();
     numPixels = size;
 
     if (isOwner) {
@@ -46,21 +63,12 @@ namespace barney {
 
       // allocate/resize a owner-only, device-side depth buffer that
       // we can write into in device kernels
-      if (hostDepth) {
+      if (hostDepth) 
         // host wants a depth buffer, so we need to allocate one on
         // the device side for staging
-        if (finalDepth) {
-          BARNEY_CUDA_CALL(Free(finalDepth));
-          finalDepth = 0;
-        }
         BARNEY_CUDA_CALL(Malloc(&finalDepth,
                                 numPixels.x*numPixels.y*sizeof(float)));
-      }
       
-      if (finalFB) {
-        BARNEY_CUDA_CALL(Free(finalFB));
-        finalFB = 0;
-      }
       BARNEY_CUDA_CALL(Malloc(&finalFB, numPixels.x*numPixels.y*sizeof(uint32_t)));
     }
   }

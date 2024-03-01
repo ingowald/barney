@@ -107,7 +107,8 @@ namespace barney {
       {
         float f = this->sample(point,dbg);
         if (isnan(f)) return vec4f(0.f);
-        return xf.map(f,dbg);
+        vec4f mapped = xf.map(f,dbg);
+        return Inherited::mapColor(mapped,point,f);
       }
 
       static void addVars(std::vector<OWLVarDecl> &vars, int base)

@@ -18,8 +18,9 @@
 
 #include "owl/common.h"
 #include <cuda_runtime.h>
-#include <unistd.h>
-
+#ifdef _GNUC_
+#   include <unistd.h>
+#endif
 // inline void barneyRaise_impl(std::string str)
 // {
 //   fprintf(stderr,"%s\n",str.c_str());
@@ -36,6 +37,17 @@
 //   raise(SIGINT);
 // #endif
 // }
+
+#ifdef _WIN32
+#include <windows.h>
+
+// Custom usleep function for Windows
+void usleep(__int64 usec);
+
+// Custom sleep function for Windows, emulating Unix sleep
+void sleep(unsigned int seconds);
+#endif
+
 
 #define BARNEY_RAISE(MSG) throw std::runtime_error("fatal barney cuda error ... ")
 // #define BARNEY_RAISE(MSG) ::barneyRaise_impl(MSG);

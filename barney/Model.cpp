@@ -19,20 +19,24 @@
 namespace barney {
 
   Model::Model(Context *context)
-    : context(context)
+    : Object(context)
   {
     for (int localID=0;localID<context->perDG.size();localID++) {
       dataGroups.push_back(DataGroup::create(this,localID));
     }
   }
 
-  void Model::render(const Camera &camera,
-                     FrameBuffer *fb)
+  Model::~Model()
+  {}
+
+  void Model::render(Camera      *camera,
+                     FrameBuffer *fb,
+                     int pathsPerPixel)
   {
     assert(context);
     assert(fb);
     context->ensureRayQueuesLargeEnoughFor(fb);
-    context->render(this,camera,fb);
+    context->render(this,camera->getDD(),fb,pathsPerPixel);
   }
 
 }

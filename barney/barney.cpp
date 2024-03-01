@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -20,6 +20,10 @@
 #include "barney/fb/FrameBuffer.h"
 #include "barney/Model.h"
 #include "barney/geometry/Triangles.h"
+#include "barney/volume/ScalarField.h"
+#include "barney/Data.h"
+#include "barney/common/Material.h"
+#include "barney/Camera.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
@@ -37,17 +41,48 @@ namespace barney {
     return (Context *)context;
   }
   
-  inline Material checkGet(const BNMaterial *material)
+  inline std::string checkGet(const char *s)
   {
-    assert(material);
-    Material result;
-    result.baseColor = (const vec3f&)material->baseColor;
-    result.colorTexture
-      = material->colorTexture
-      ? ((Texture*)material->colorTexture)->shared_from_this()->as<Texture>()
-      : 0;
-    return result;
+    assert(s != nullptr);
+    return s;
   }
+  
+  inline Object *checkGet(BNObject object)
+  {
+    assert(object);
+    return (Object *)object;
+  }
+
+  inline Data *checkGet(BNData data)
+  {
+    assert(data);
+    return (Data *)data;
+  }
+
+  inline Camera *checkGet(BNCamera camera)
+  {
+    assert(camera);
+    return (Camera *)camera;
+  }
+  
+  // inline Material checkGet(const BNMaterial *material)
+  // {
+  //   assert(material);
+  //   Material result;
+  //   result.baseColor = (const vec3f&)material->baseColor;
+  //   result.roughness = material->roughness;
+  //   result.transmission = material->transmission;
+  //   result.ior = material->ior;
+  //   result.colorTexture
+  //     = material->colorTexture
+  //     ? ((Texture*)material->colorTexture)->shared_from_this()->as<Texture>()
+  //     : 0;
+  //   result.alphaTexture
+  //     = material->alphaTexture
+  //     ? ((Texture*)material->alphaTexture)->shared_from_this()->as<Texture>()
+  //     : 0;
+  //   return result;
+  // }
   
   inline DataGroup *checkGet(BNDataGroup dg)
   {
@@ -122,6 +157,26 @@ namespace barney {
        filterMode,addressMode,colorSpace);
     return (BNTexture2D)texture;
   }
+
+  BN_API
+  BNTexture3D bnTexture3DCreate(BNDataGroup dataGroup,
+                                BNTexelFormat texelFormat,
+                                uint32_t size_x,
+                                uint32_t size_y,
+                                uint32_t size_z,
+                                const void *texels,
+                                BNTextureFilterMode  filterMode,
+                                BNTextureAddressMode addressMode)
+  {
+    LOG_API_ENTRY;
+    Texture3D::SP tex
+      = std::make_shared<Texture3D>
+      (checkGet(dataGroup),
+       texelFormat,vec3i(size_x,size_y,size_z),texels,
+       filterMode,addressMode);
+    checkGet(dataGroup)->context->initReference(tex);
+    return (BNTexture3D)tex.get();
+  }
   
   // ------------------------------------------------------------------
   
@@ -142,9 +197,9 @@ namespace barney {
   
   BN_API
   void bnSetInstances(BNDataGroup dataGroup,
-                           BNGroup *_groups,
-                           BNTransform *xfms,
-                           int numInstances)
+                      BNGroup *_groups,
+                      BNTransform *xfms,
+                      int numInstances)
   {
     LOG_API_ENTRY;
     
@@ -155,6 +210,23 @@ namespace barney {
     checkGet(dataGroup)->setInstances(groups,(const affine3f *)xfms);
   }
   
+  BN_API
+  void  bnRelease(BNObject _object)
+  {
+    Object *object = checkGet(_object);
+    Context *context = object->getContext();
+    context->releaseHostReference(object->shared_from_this());
+  }
+  
+  BN_API
+  void  bnAddReference(BNObject _object)
+  {
+    if (_object == 0) return;
+    Object *object = checkGet(_object);
+    Context *context = object->getContext();
+    context->addHostReference(object->shared_from_this());
+  }
+
 
   BN_API
   void bnContextDestroy(BNContext context)
@@ -164,53 +236,8 @@ namespace barney {
   }
 
   BN_API
-  BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
-                         const BNMaterial *material,
-                         const float3     *origins,
-                         int               numSpheres,
-                         const float3     *colors,
-                         const float      *radii,
-                         float             defaultRadius)
-  {
-    LOG_API_ENTRY;
-    Spheres *spheres = checkGet(dataGroup)->createSpheres
-      (checkGet(material),(const vec3f*)origins,numSpheres,(const vec3f*)colors,radii,defaultRadius);
-    return (BNGeom)spheres;
-  }
-
-  BN_API
-  BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
-                           const BNMaterial *material,
-                           const float3     *points,
-                           int               numPoints,
-                           const float3     *colors,
-                           /*! if true - and colors is non null - then
-                             the colors array specifies per-vertex
-                             colors */
-                           bool              colorPerVertex,
-                           const int2       *indices,
-                           int               numIndices,
-                           const float      *radii,
-                           /*! if true - and radii is non null -then the
-                             radii specify per-vertex radii and
-                             segments will be rounded cones */
-                           bool              radiusPerVertex,
-                           float             defaultRadius)
-  {
-    LOG_API_ENTRY;
-    Cylinders *cylinders = checkGet(dataGroup)->createCylinders
-      (checkGet(material),
-       (const vec3f*)points,numPoints,
-       (const vec3f*)colors,colorPerVertex,
-       (const vec2i*)indices,numIndices,
-       radii,radiusPerVertex,defaultRadius);
-    return (BNGeom)cylinders;
-  }
-  
-  
-  BN_API
-  BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
-                              const BNMaterial *material,
+  BNGeom bnTriangleMeshCreate(BNDataGroup dg,
+                              const BNMaterialHelper *material,
                               const int3 *indices,
                               int numIndices,
                               const float3 *vertices,
@@ -218,39 +245,61 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
-    LOG_API_ENTRY;
-    Triangles *triangles = checkGet(dataGroup)->createTriangles
-      (checkGet(material),
-       numIndices,
-       (const vec3i*)indices,
-       numVertices,
-       (const vec3f*)vertices,
-       (const vec3f*)normals,
-       (const vec2f*)texcoords);
-    return (BNGeom)triangles;
+    BNGeom mesh = bnGeometryCreate(dg,"triangles");
+    BNData _vertices = bnDataCreate(dg,BN_FLOAT3,numVertices,vertices);
+    bnSetAndRelease(mesh,"vertices",_vertices);
+    BNData _indices  = bnDataCreate(dg,BN_INT3,numIndices,indices);
+    bnSetAndRelease(mesh,"indices",_indices);
+    if (normals) {
+      BNData _normals  = bnDataCreate(dg,BN_FLOAT3,normals?numVertices:0,normals);
+      bnSetAndRelease(mesh,"normals",_normals);
+    }
+    if (texcoords) {
+      BNData _texcoords  = bnDataCreate(dg,BN_FLOAT2,texcoords?numVertices:0,texcoords);
+      bnSetAndRelease(mesh,"texcoords",_texcoords);
+    }
+    bnAssignMaterial(mesh,material);
+    bnCommit(mesh);
+    return mesh;
+  }  
+  
+  BN_API
+  BNScalarField bnScalarFieldCreate(BNDataGroup dataGroup,
+                                    const char *type)
+  {
+    ScalarField::SP sf = ScalarField::create(checkGet(dataGroup),type);
+    if (!sf) return 0;
+    return (BNScalarField)checkGet(dataGroup)->context->initReference(sf);
+  }
+  
+  
+  BN_API
+  BNGeom bnGeometryCreate(BNDataGroup dataGroup,
+                          const char *type)
+  {
+    Geometry::SP geom = Geometry::create(checkGet(dataGroup),type);
+    if (!geom) return 0;
+    return (BNGeom)checkGet(dataGroup)->context->initReference(geom);
   }
 
   BN_API
-  void bnTriangleMeshUpdate(BNGeom geom,
-                            const BNMaterial *material,
-                            const int3 *indices,
-                            int numIndices,
-                            const float3 *vertices,
-                            int numVertices,
-                            const float3 *normals,
-                            const float2 *texcoords)
+  BNMaterial bnMaterialCreate(BNDataGroup dataGroup,
+                              const char *type)
   {
-    Triangles *triangles = (Triangles *)checkGet(geom);
-    triangles->update(checkGet(material),
-                      numIndices,
-                      (const vec3i*)indices,
-                      numVertices,
-                      (const vec3f*)vertices,
-                      (const vec3f*)normals,
-                      (const vec2f*)texcoords);
+    Material::SP material = Material::create(checkGet(dataGroup),type);
+    if (!material) return 0;
+    return (BNMaterial)checkGet(dataGroup)->context->initReference(material);
   }
 
-  
+  BN_API
+  BNCamera bnCameraCreate(BNContext context,
+                          const char *type)
+  {
+    Camera::SP camera = Camera::create(checkGet(context),type);
+    if (!camera) return 0;
+    return (BNCamera)checkGet(context)->initReference(camera);
+  }
+
 
   BN_API
   void bnVolumeSetXF(BNVolume volume,
@@ -276,6 +325,24 @@ namespace barney {
       (sf);
   }
 
+
+  BN_API
+  BNLight bnLightCreate(BNDataGroup dataGroup,
+                        const char *type)
+  {
+    return (BNLight)checkGet(dataGroup)->createLight(checkGet(type));
+  }
+
+  BN_API
+  BNData bnDataCreate(BNDataGroup dataGroup,
+                      BNDataType dataType,
+                      size_t numItems,
+                      const void *items)
+  {
+    return (BNData)checkGet(dataGroup)->createData(dataType,numItems,items);
+  }
+
+
   BN_API
   BNScalarField bnStructuredDataCreate(BNDataGroup dataGroup,
                                        int3 dims,
@@ -284,10 +351,29 @@ namespace barney {
                                        float3 gridOrigin,
                                        float3 gridSpacing)
   {
-    ScalarField *sf = checkGet(dataGroup)->createStructuredData
-      ((const vec3i&)dims,type,scalars,
-       (const vec3f&)gridOrigin,(const vec3f&)gridSpacing);
-    return (BNScalarField)sf;
+    BNTexelFormat texelFormat;
+    switch (type) {
+    case BN_SCALAR_FLOAT:
+      texelFormat = BN_TEXEL_FORMAT_R32F;
+      break;
+    case BN_SCALAR_UINT8:
+      texelFormat = BN_TEXEL_FORMAT_R8;
+      break;
+    default:
+      throw std::runtime_error("unsupported structured data format #"+std::to_string((int)type));
+    }
+    
+    BNScalarField sf
+      = bnScalarFieldCreate(dataGroup,"structured");
+    BNTexture3D texture
+      = bnTexture3DCreate(dataGroup,texelFormat,dims.x,dims.y,dims.z,scalars);
+    bnSetObject(sf,"texture",texture);
+    bnRelease(texture);
+    bnSet3ic(sf,"dims",dims);
+    bnSet3fc(sf,"gridOrigin",gridOrigin);
+    bnSet3fc(sf,"gridSpacing",gridSpacing);
+    bnCommit(sf);
+    return sf;
   }
   
   BN_API
@@ -420,33 +506,88 @@ namespace barney {
   }
   
   BN_API
-  void bnPinholeCamera(BNCamera *camera,
-                       float3 _from,
-                       float3 _at,
-                       float3 _up,
-                       float  fov,
-                       float  aspect)
+  void bnCommit(BNObject target)
   {
-    assert(camera);
-    vec3f from = (const vec3f&)_from;
-    vec3f at   = (const vec3f&)_at;
-    vec3f up   = (const vec3f&)_up;
-    
-    vec3f dir_00  = normalize(at-from);
-    
-    vec3f dir_du = aspect * normalize(cross(dir_00, up));
-    vec3f dir_dv = normalize(cross(dir_du, dir_00));
-
-    dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fov) * M_PI / 180.0f)));
-    dir_00 -= 0.5f * dir_du;
-    dir_00 -= 0.5f * dir_dv;
-
-    camera->dir_00 = (float3&)dir_00;
-    camera->dir_du = (float3&)dir_du;
-    camera->dir_dv = (float3&)dir_dv;
-    camera->lens_00 = (float3&)from;
-    camera->lensRadius = 0.f;
+    checkGet(target)->commit();
   }
+  
+  BN_API
+  void bnSetData(BNObject target, const char *param, BNData value)
+  {
+    if (!checkGet(target)->setData(checkGet(param),
+                                   checkGet(value)->shared_from_this()->as<Data>()))
+      checkGet(target)->warn_unsupported_member(param,"BNData");
+  }
+
+  BN_API
+  void bnSetObject(BNObject target, const char *param, BNObject value)
+  {
+    if (!checkGet(target)->setObject(checkGet(param),checkGet(value)->shared_from_this()))
+      checkGet(target)->warn_unsupported_member(param,"BNObject");
+  }
+
+  BN_API
+  void bnSet1i(BNObject target, const char *param, int x)
+  {
+    if (!checkGet(target)->set1i(checkGet(param),x))
+      checkGet(target)->warn_unsupported_member(param,"int");
+  }
+
+  BN_API
+  void bnSet2i(BNObject target, const char *param, int x, int y)
+  {
+    if (!checkGet(target)->set2i(checkGet(param),vec2i(x,y)))
+      checkGet(target)->warn_unsupported_member(param,"vec2i");
+  }
+
+  BN_API
+  void bnSet3i(BNObject target, const char *param, int x, int y, int z)
+  {
+    if (!checkGet(target)->set3i(checkGet(param),vec3i(x,y,z)))
+      checkGet(target)->warn_unsupported_member(param,"vec3i");
+  }
+
+  BN_API
+  void bnSet3ic(BNObject target, const char *param, int3 value)
+  {
+    if (!checkGet(target)->set3i(checkGet(param),(const vec3i&)value))
+      checkGet(target)->warn_unsupported_member(param,"vec3i");
+  }
+
+  BN_API
+  void bnSet4i(BNObject target, const char *param, int x, int y, int z, int w)
+  {
+    if (!checkGet(target)->set4i(checkGet(param),vec4i(x,y,z,w)))
+      checkGet(target)->warn_unsupported_member(param,"vec4i");
+  }
+
+  BN_API
+  void bnSet1f(BNObject target, const char *param, float value)
+  {
+    if (!checkGet(target)->set1f(checkGet(param),value))
+      checkGet(target)->warn_unsupported_member(param,"float");
+  }
+
+  BN_API
+  void bnSet3fc(BNObject target, const char *param, float3 value)
+  {
+    if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
+      checkGet(target)->warn_unsupported_member(param,"vec3f");
+  }
+
+  BN_API
+  void bnSet4x3fv(BNObject target, const char *param, const float *transform)
+  {
+    assert(transform);
+    if (!checkGet(target)->set4x3f(checkGet(param),*(const affine3f*)transform))
+      checkGet(target)->warn_unsupported_member(param,"affine3f");
+  }
+  
+
+
+
+  
+
   
   BN_API
   BNFrameBuffer bnFrameBufferCreate(BNContext context,
@@ -476,21 +617,11 @@ namespace barney {
   
   BN_API
   void bnRender(BNModel model,
-                const BNCamera *_camera,
-                BNFrameBuffer fb)
+                BNCamera camera,
+                BNFrameBuffer fb,
+                int pathsPerPixel)
   {
-    static int numPrinted = 0;
-    if (++numPrinted < 3)
-      LOG_API_ENTRY;
-
-    assert(_camera);
-    Camera camera;
-    camera.lens_00 = (const vec3f&)_camera->lens_00;
-    camera.dir_00 = (const vec3f&)_camera->dir_00;
-    camera.dir_du = (const vec3f&)_camera->dir_du;
-    camera.dir_dv = (const vec3f&)_camera->dir_dv;
-    camera.lensRadius = _camera->lensRadius;
-    checkGet(model)->render(camera,checkGet(fb));
+    checkGet(model)->render(checkGet(camera),checkGet(fb),pathsPerPixel);
   }
 
   BN_API
@@ -498,8 +629,8 @@ namespace barney {
                             int  numDataGroupsOnThisRank,
                             /*! which gpu(s) to use for this
                               process. default is to distribute
-                                 node's GPUs equally over all ranks on
-                                 that given node */
+                              node's GPUs equally over all ranks on
+                              that given node */
                             const int *_gpuIDs,
                             int  numGPUs)
   {
@@ -548,5 +679,4 @@ namespace barney {
                                        gpuIDs);
   }
 
-  
 }

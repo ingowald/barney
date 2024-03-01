@@ -29,13 +29,15 @@ namespace barney {
     static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
     
     Model(Context *context);
+    virtual ~Model();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Model{}"; }
 
-    void render(const Camera &camera,
-                FrameBuffer *fb);
+    void render(Camera *camera,
+                FrameBuffer *fb,
+                int pathsPerPixel);
 
     DataGroup *getDG(int localID)
     {
@@ -44,7 +46,6 @@ namespace barney {
       return dataGroups[localID].get();
     }
     std::vector<DataGroup::SP> dataGroups;
-    Context *const context;
   };
 
 }

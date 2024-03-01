@@ -58,7 +58,7 @@ namespace barney {
     dd.values = (float4*)owlBufferGetPointer(valuesBuffer,devID);
     dd.domain = domain;
     dd.baseDensity = baseDensity;
-    dd.numValues = values.size();
+    dd.numValues = (int)values.size();
 
     return dd;
   }

@@ -244,12 +244,13 @@ namespace barney {
     
   
   void MPIContext::render(Model *model,
-                          const Camera &camera,
-                          FrameBuffer *_fb)
+                          const Camera::DD &camera,
+                          FrameBuffer *_fb,
+                          int pathsPerPixel)
   {
     DistFB *fb = (DistFB *)_fb;
     if (isActiveWorker) {
-      renderTiles(model,camera,fb);
+      renderTiles(model,camera,fb,pathsPerPixel);
       finalizeTiles(fb);
     }
     // ------------------------------------------------------------------
@@ -274,7 +275,7 @@ namespace barney {
       // SetActiveGPU forDuration(devices[0]->device);
 
       // use default gpu for this:
-      barney::TiledFB::writeFinalPixels(nullptr,
+      barney::TiledFB::writeFinalPixels(// nullptr,
                                         fb->finalFB,
                                         fb->finalDepth,
                                         fb->numPixels,
@@ -353,9 +354,13 @@ namespace barney {
       numOutgoing[devID] = rays.numActive;
       MPI_Request sendReq, recvReq;
       workers.recv(dev->rqs.recvWorkerRank,dev->rqs.recvWorkerLocal,
-                   rays.writeQueue,numIncoming[devID],recvReq);
+                   rays.receiveAndShadeWriteQueue,numIncoming[devID],recvReq);
       workers.send(dev->rqs.sendWorkerRank,devID,//dev->rqs.sendWorkerLocal,
-                   rays.readQueue,numOutgoing[devID],sendReq);
+                   rays.traceAndShadeReadQueue,numOutgoing[devID],sendReq);
+      // workers.recv(dev->rqs.recvWorkerRank,dev->rqs.recvWorkerLocal,
+      //              rays.writeQueue,numIncoming[devID],recvReq);
+      // workers.send(dev->rqs.sendWorkerRank,devID,//dev->rqs.sendWorkerLocal,
+      //              rays.readQueue,numOutgoing[devID],sendReq);
       allRequests.push_back(sendReq);
       allRequests.push_back(recvReq);
     }

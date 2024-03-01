@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,65 +17,95 @@
 #pragma once
 
 #include "barney/DataGroup.h"
+#include "barney/Texture.h"
 #include "barney/volume/MCAccelerator.h"
 
 namespace barney {
 
-  /*! a structured 3D scalar field; strictly speaking in barney this
-      isn't actually a "volume" (it only becomes a volume after paired
-      with a transfer function), but this name still sounds more
-      reasonable thatn `Structured3DScalarField`, which would be a
-      more accurate name */
+  struct DataGroup;
+
+  // ==================================================================
+  /*! Scalar field made of 3D structured data, constting of Nx*Ny*Nz
+      scalars.
+
+      Supported settable fields:
+
+      - "texture" (BNTexture) : a Texture3D with the actual scalars
+         
+      - "dims" (int3) : 3D array dimensions of the scalars
+
+      - "gridOrigin" (float3) : world-space origin of the scalar
+      grid positions
+
+      - "gridSpacing" (float3) : world-space spacing of the scalar
+      grid positions
+
+      - (experimental) "colorMapTexture" : _additional_ 3D RGB texture
+        that "overwrites" the RGB component of the transfer function -
+        ie, for the final RGBA sample 'a' comes from the transfer
+        functoin, while RGB comes from that 3D texture
+  */
   struct StructuredData : public ScalarField
   {
+    /*! device data for this class; note we specify both the 'usual'
+        texture object (which does trilinerar interpolation) as well
+        as a "NN" (nearest) sampling for the macro-cell generation */
     struct DD : public ScalarField::DD {
       cudaTextureObject_t texObj;
       vec3f cellGridOrigin;
       vec3f cellGridSpacing;
       vec3i numCells;
+      cudaTextureObject_t colorMappingTexObj;
+
+#ifdef __CUDA_ARCH__
+      /*! "template-virtual" function that a sampler calls on an
+          _already_ transfer-function mapped RGBA value, allowing the
+          scalar field to do some additional color mapping on top of
+          whatever came out of the transfer function. the default
+          implementation (provided here int his base class coommon to
+          all scalar fields) is to just return the xf-color mapped
+          RBGA value */
+      inline __device__ vec4f mapColor(vec4f xfColorMapped,
+                                       vec3f P, float scalar) const
+      {
+        if (!colorMappingTexObj) return xfColorMapped;
+        vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
+        float4 fromColorMap = tex3D<float4>(colorMappingTexObj,rel.x,rel.y,rel.z);
+        fromColorMap.w = xfColorMapped.w;
+        return fromColorMap;
+      }
+#endif
+
       
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
-    
-    struct Tex3D {
-      
-      cudaArray_t           voxelArray = 0;
-      cudaTextureObject_t   texObj;
-      cudaTextureObject_t   texObjNN;
-    };
-    /*! one tex3d per device */
-    std::vector<Tex3D> tex3Ds;
 
-    StructuredData(DevGroup *devGroup,
-                   const vec3i &numScalars,
-                   BNScalarType scalarType,
-                   const void *scalars,
-                   const vec3f &gridOrigin,
-                   const vec3f &gridSpacing);
+    /*! construct a new structured data scalar field; will not do
+        anything - or have any data - untile 'set' and 'commit'ed
+    */
+    StructuredData(DataGroup *owner);
+    virtual ~StructuredData() = default;
 
-    // /*! returns (part of) a string that should allow an OWL geometry
-    //     type to properly create all the names of all the optix device
-    //     functions that operate on this type. Eg, if all device
-    //     functions for a "StucturedVolume" are named
-    //     "Structured_<SomeAccel>_{Bounds,Isec,CV}()", then the
-    //     StructuredField should reutrn "Structured", and somebody else
-    //     can/has to then make sure to add the respective
-    //     "_<SomeAccel>_" part. */
-    // std::string getTypeString() const override { return "Structured"; }
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    bool set3i(const std::string &member, const vec3i &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    void commit() override;
+    /*! @} */
+    // ------------------------------------------------------------------
     
     void setVariables(OWLGeom geom);
-    // std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) { BARNEY_NYI(); };
     VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 
-    void createCUDATextures();
-    
-    const BNScalarType   scalarType;
-    const vec3i numScalars;
-    const vec3i numCells;
-    const vec3f gridOrigin;
-    const vec3f gridSpacing;
-    const void *rawScalarData;
+    Texture3D::SP  texture;
+    Texture3D::SP  colorMapTexture;
+    BNScalarType   scalarType = BN_SCALAR_UNDEFINED;
+    vec3i numScalars  { 0,0,0 };
+    vec3i numCells    { 0,0,0 }; 
+    vec3f gridOrigin  { 0,0,0 };
+    vec3f gridSpacing { 1,1,1 };
   };
 
   /*! for structured data, the sampler doesn't have to do much but
@@ -85,25 +115,10 @@ namespace barney {
       compute the macro cells, so we'll leave it as such for now */
   struct StructuredDataSampler {
     struct DD : public StructuredData::DD {
-      inline __device__ float sample(const vec3f P, bool dbg) const
-      {
-        vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
-
-        // if (dbg) printf("sample %f %f %f rel %f %f %f\n",
-        //                 P.x,P.y,P.z,
-        //                 rel.x,rel.y,rel.z
-        //                 );
-        
-        if (rel.x < 0.f) return NAN;
-        if (rel.y < 0.f) return NAN;
-        if (rel.z < 0.f) return NAN;
-        if (rel.x >= numCells.x) return NAN;
-        if (rel.y >= numCells.y) return NAN;
-        if (rel.z >= numCells.z) return NAN;
-        float f = tex3D<float>(texObj,rel.x,rel.y,rel.z);
-        // if (dbg) printf("result %f\n",f);
-        return f;
-      }
+      inline __device__ float sample(const vec3f P, bool dbg) const;
+      // inline __device__ vec4f mapColor(vec4f xfColorMapped,
+      //                                  vec3f point, float scalar) const
+      // { return xfColorMapped; }
     };
 
     struct Host
@@ -126,8 +141,23 @@ namespace barney {
       
       StructuredData *const field;
     };
-    
   };
-
+  
+#ifdef __CUDA_ARCH__
+  inline __device__ float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
+  {
+    vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
+        
+    if (rel.x < 0.f) return NAN;
+    if (rel.y < 0.f) return NAN;
+    if (rel.z < 0.f) return NAN;
+    if (rel.x >= numCells.x) return NAN;
+    if (rel.y >= numCells.y) return NAN;
+    if (rel.z >= numCells.z) return NAN;
+    float f = tex3D<float>(texObj,rel.x,rel.y,rel.z);
+    return f;
+  }
+#endif
 }
+
 

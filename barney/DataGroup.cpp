@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,19 +16,23 @@
 
 #include "barney/DataGroup.h"
 #include "barney/Model.h"
+#include "barney/Data.h"
+#include "barney/Light.h"
 #include "barney/Texture.h"
-#include "barney/geometry/Spheres.h"
-#include "barney/geometry/Cylinders.h"
-#include "barney/geometry/Triangles.h"
+#include "barney/geometry/Geometry.h"
 
 namespace barney {
-  
-  Context *DataGroup::getContext() const
-  {
-    assert(model);
-    assert(model->context);
-    return model->context;
-  }
+
+  DataGroup::DataGroup(Model *model, int localID)
+    : Object(model->context),
+      model(model),
+      localID(localID),
+      devGroup(model->context->perDG[localID].devGroup),
+      world(model->context->perDG[localID].devGroup.get())
+  {}
+
+  DataGroup::~DataGroup()
+  {}
 
   OWLContext DataGroup::getOWL() const
   {
@@ -37,16 +41,10 @@ namespace barney {
     return devGroup->owl;
   }
 
-  DataGroup::DataGroup(Model *model, int localID)
-    : model(model),
-      localID(localID),
-      devGroup(model->context->perDG[localID].devGroup)
-  {}
-
   void DataGroup::setInstances(std::vector<Group::SP> &groups,
                                const affine3f *xfms)
   {
-    int numUserInstances = groups.size();
+    int numUserInstances = (int)groups.size();
     instances.groups = std::move(groups);
     instances.xfms.resize(numUserInstances);
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());
@@ -71,36 +69,48 @@ namespace barney {
   }
 
 
-  Cylinders *DataGroup::createCylinders(const Material   &material,
-                                        const vec3f      *points,
-                                        int               numPoints,
-                                        const vec3f      *colors,
-                                        bool              colorPerVertex,
-                                        const vec2i      *indices,
-                                        int               numIndices,
-                                        const float      *radii,
-                                        bool              radiusPerVertex,
-                                        float             defaultRadius)
-  {
-    return getContext()->initReference
-      (std::make_shared<Cylinders>(this,material,
-                                   points,numPoints,
-                                   colors,colorPerVertex,
-                                   indices,numIndices,
-                                   radii,radiusPerVertex,defaultRadius));
-  }
+  // Cylinders *DataGroup::createCylinders(const vec3f      *points,
+  //                                       int               numPoints,
+  //                                       const vec3f      *colors,
+  //                                       bool              colorPerVertex,
+  //                                       const vec2i      *indices,
+  //                                       int               numIndices,
+  //                                       const float      *radii,
+  //                                       bool              radiusPerVertex,
+  //                                       float             defaultRadius)
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Cylinders>(this,
+  //                                  points,numPoints,
+  //                                  colors,colorPerVertex,
+  //                                  indices,numIndices,
+  //                                  radii,radiusPerVertex,defaultRadius));
+  // }
     
-  Spheres *DataGroup::createSpheres(const Material &material,
-                                    const vec3f *origins,
-                                    int numOrigins,
-                                    const vec3f *colors,
-                                    const float *radii,
-                                    float defaultRadius)
-  {
-    return getContext()->initReference
-      (std::make_shared<Spheres>(this,material,origins,numOrigins,colors,radii,defaultRadius));
-  }
+  // Spheres *DataGroup::createSpheres(// const Material &material,
+  //                                   // const vec3f *origins,
+  //                                   // int numOrigins,
+  //                                   // const vec3f *colors,
+  //                                   // const float *radii,
+  //                                   // float defaultRadius
+  //                                   )
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Spheres>(this));
+  // }
 
+  Data *DataGroup::createData(BNDataType dataType,
+                              size_t numItems,
+                              const void *items)
+  {
+    return getContext()->initReference(Data::create(this,dataType,numItems,items));
+  }
+  
+  Light *DataGroup::createLight(const std::string &type)
+  {
+    return getContext()->initReference(Light::create(this,type));
+  }
+  
   Texture *DataGroup::createTexture(BNTexelFormat texelFormat,
                                     vec2i size,
                                     const void *texels,
@@ -113,33 +123,52 @@ namespace barney {
                                  filterMode,addressMode,colorSpace));
   }
     
-  Triangles *DataGroup::createTriangles(const barney::Material &material,
-                                        int numIndices,
-                                        const vec3i *indices,
-                                        int numVertices,
-                                        const vec3f *vertices,
-                                        const vec3f *normals,
-                                        const vec2f *texcoords)
-  {
-    return getContext()->initReference
-      (std::make_shared<Triangles>(this,material,
-                                   numIndices,
-                                   indices,
-                                   numVertices,
-                                   vertices,
-                                   normals,
-                                   texcoords));
-  }
+  // Triangles *DataGroup::createTriangles(int numIndices,
+  //                                       const vec3i *indices,
+  //                                       int numVertices,
+  //                                       const vec3f *vertices,
+  //                                       const vec3f *normals,
+  //                                       const vec2f *texcoords)
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Triangles>(this,
+  //                                  numIndices,
+  //                                  indices,
+  //                                  numVertices,
+  //                                  vertices,
+  //                                  normals,
+  //                                  texcoords));
+  // }
 
   void DataGroup::build()
   { 
     multiPassInstances.clear();
-   
+
+    std::vector<render::QuadLight> quadLights;
+    std::vector<render::DirLight>  dirLights;
+
     std::vector<affine3f> owlTransforms;
     std::vector<OWLGroup> owlGroups;
+    EnvMapLight::SP envMapLight;
+    
     for (int i=0;i<instances.groups.size();i++) {
       Group *group = instances.groups[i].get();
-        
+      if (group->lights)
+        for (auto &light : group->lights->items) {
+          if (!light) continue;
+          if (QuadLight::SP quadLight = light->as<QuadLight>()) {
+            quadLights.push_back(quadLight->content);
+            continue;
+          } 
+          if (DirLight::SP dirLight = light->as<DirLight>()) {
+            dirLights.push_back(dirLight->content);
+            continue;
+          }
+          if (EnvMapLight::SP el = light->as<EnvMapLight>()) {
+            envMapLight = el;
+          }
+        }
+      
       if (group->userGeomGroup) {
         owlGroups.push_back(group->userGeomGroup);
         owlTransforms.push_back(instances.xfms[i]);
@@ -159,11 +188,11 @@ namespace barney {
         }
       multiPassInstances.instantiate(group,instances.xfms[i]);
     }
-
-    if (owlGroups.size() == 0)
-      std::cout << OWL_TERMINAL_RED
-                << "warning: data group is empty..."
-                << OWL_TERMINAL_DEFAULT << std::endl;
+      
+    // if (owlGroups.size() == 0)
+    //   std::cout << OWL_TERMINAL_RED
+    //             << "warning: data group is empty..."
+    //             << OWL_TERMINAL_DEFAULT << std::endl;
     instances.group
       = owlInstanceGroupCreate(devGroup->owl,
                                owlGroups.size(),
@@ -171,8 +200,11 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
+    world.set(envMapLight?envMapLight->content:render::EnvMapLight{});
+    world.set(quadLights);
+    world.set(dirLights);
   }
-
+    
 }
 
   

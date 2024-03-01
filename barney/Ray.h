@@ -25,8 +25,6 @@
 #include "barney/common/half.h"
 #include "barney/common/Material.h"
 
-// #define PRINT_BALLOT 1
-
 namespace barney {
 
   struct Ray {
@@ -35,11 +33,6 @@ namespace barney {
     vec3h    dir;
     float    tMax;
     uint32_t rngSeed;
-#if PRINT_BALLOT
-    int numIsecsThisRay;
-    int numLeavesThisRay;
-    int numPrimsThisRay;
-#endif
 
     inline __device__ void setHit(vec3f P, vec3f N, float t,
                                   const Material::DD &material)
@@ -48,9 +41,11 @@ namespace barney {
       hit.N = N;
       tMax = t;
       hadHit = true;
-      hit.baseColor = material.baseColor;
-      hit.ior = 1.f;
-      hit.transmission = 0.f;
+      hit.baseColor      = material.baseColor;
+      hit.ior            = material.ior;
+      hit.roughness      = material.roughness;
+      hit.metallic       = material.metallic;
+      hit.transmission   = material.transmission;
     }
     inline __device__ void setVolumeHit(vec3f P,
                                         float t,
@@ -60,31 +55,44 @@ namespace barney {
       tMax = t;
       hadHit = true;
       hit.N = vec3f(0.f);
-      hit.baseColor = albedo;
-      hit.ior = 1.f;
-      hit.transmission = 0.f;
+      hit.baseColor      = albedo;
+      hit.ior            = 1.f;
+      hit.transmission   = 0.f;
+    }
+    inline __device__ void makeShadowRay(vec3f tp, vec3f org, vec3f dir, float len)
+    {
+      this->hadHit = false;
+      this->isShadowRay = true;
+      this->dir = dir;
+      this->org = org;
+      this->throughput = tp;
+      this->tMax = len;
     }
     
     struct {
       vec3h    N;
       vec3h    baseColor;
       vec3f    P;
-      half     ior, transmission;
+      half     ior, transmission, metallic, roughness;
     } hit;
     struct {
-      uint32_t  pixelID:30;
+      uint32_t  pixelID:28;
       uint32_t  hadHit:1;
+      /*! for path tracer: tracks whether we are, or aren't, in a
+          refractable medium */
+      uint32_t  isInMedium:1;
+      uint32_t  isShadowRay:1;
       uint32_t  dbg:1;
     };
   };
 
   struct RayQueue {
     struct DD {
-      Ray *readQueue  = nullptr;
+      Ray *traceAndShadeReadQueue  = nullptr;
       
       /*! the queue where local kernels that write *new* rays
         (ie, ray gen and shading) will write their rays into */
-      Ray *writeQueue = nullptr;
+      Ray *receiveAndShadeWriteQueue = nullptr;
       
       /*! current write position in the write queue (during shading and
         ray generation) */
@@ -93,22 +101,38 @@ namespace barney {
       int  size     = 0;
     };
     
-    RayQueue(Device *device) : device(device) {}
+    RayQueue(Device *device)
+      : device(device)
+    {
+      BARNEY_CUDA_CALL(MallocHost((void **)&h_numActive,sizeof(int)));
+    }
+    ~RayQueue()
+    {
+      // BARNEY_CUDA_CALL(FreeHost(h_numActive));
+    }
+    int *h_numActive;
 
     /*! the read queue, where local kernels operating on rays (trace
       and shade) can read rays from. this is actually a misnomer
       becasue both shade and trace can actually modify trays (and
       thus, strictly speaking, are 'writing' to those rays), but
       haven't yet found a better name */
-    Ray *readQueue  = nullptr;
+    Ray *traceAndShadeReadQueue  = nullptr;
 
     /*! the queue where local kernels that write *new* rays
       (ie, ray gen and shading) will write their rays into */
-    Ray *writeQueue = nullptr;
+    Ray *receiveAndShadeWriteQueue = nullptr;
 
+    int readNumActive() {
+      BARNEY_CUDA_CALL(MemcpyAsync(h_numActive,_d_nextWritePos,sizeof(int),
+                                   cudaMemcpyDeviceToHost,
+                                   device->launchStream));
+      BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
+      return *h_numActive;
+    }
     /*! current write position in the write queue (during shading and
       ray generation) */
-    int *d_nextWritePos  = 0;
+    int *_d_nextWritePos  = 0;
     
     /*! how many rays are active in the *READ* queue */
     int numActiveRays() const { return numActive; }
@@ -121,13 +145,14 @@ namespace barney {
 
     void resetWriteQueue()
     {
-      if (d_nextWritePos)
-        *d_nextWritePos = 0;
+      // if (d_nextWritePos)
+      //   *d_nextWritePos = 0;
+      BARNEY_CUDA_CALL(MemsetAsync(_d_nextWritePos,0,sizeof(int),device->launchStream));
     }
     
     void swap()
     {
-      std::swap(readQueue, writeQueue);
+      std::swap(receiveAndShadeWriteQueue, traceAndShadeReadQueue);
     }
 
     void ensureRayQueuesLargeEnoughFor(TiledFB *fb)
@@ -142,14 +167,14 @@ namespace barney {
       assert(device);
       SetActiveGPU forDuration(device);
       
-      if (readQueue)  BARNEY_CUDA_CALL(Free(readQueue));
-      if (writeQueue) BARNEY_CUDA_CALL(Free(writeQueue));
+      if (traceAndShadeReadQueue)  BARNEY_CUDA_CALL(Free(traceAndShadeReadQueue));
+      if (receiveAndShadeWriteQueue) BARNEY_CUDA_CALL(Free(receiveAndShadeWriteQueue));
 
-      if (!d_nextWritePos)
-        BARNEY_CUDA_CALL(MallocManaged(&d_nextWritePos,sizeof(int)));
+      if (!_d_nextWritePos)
+        BARNEY_CUDA_CALL(Malloc(&_d_nextWritePos,sizeof(int)));
         
-      BARNEY_CUDA_CALL(Malloc(&readQueue, newSize*sizeof(Ray)));
-      BARNEY_CUDA_CALL(Malloc(&writeQueue,newSize*sizeof(Ray)));
+      BARNEY_CUDA_CALL(Malloc(&traceAndShadeReadQueue, newSize*sizeof(Ray)));
+      BARNEY_CUDA_CALL(Malloc(&receiveAndShadeWriteQueue,newSize*sizeof(Ray)));
 
       size = newSize;
     }

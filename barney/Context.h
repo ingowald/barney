@@ -32,31 +32,45 @@ namespace barney {
 
   struct Context;
   
-  struct Context : public Object {
-    
+  struct Context// : public Object
+  {
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs,
             int globalIndex,
             int globalIndexStep);
-    ~Context()
-    {}
+    virtual ~Context();
     
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB(int owningRank) = 0;
     Model *createModel();
 
     /*! pretty-printer for printf-debugging */
-    std::string toString() const override
+    virtual std::string toString() const 
     { return "<Context(abstract)>"; }
 
     template<typename T>
     T *initReference(std::shared_ptr<T> sp)
     {
+      if (!sp) return 0;
       std::lock_guard<std::mutex> lock(mutex);
       hostOwnedHandles[sp]++;
       return sp.get();
     }
-
+    
+    /*! decreases (the app's) reference count of said object by
+      one. if said refernce count falls to 0 the object handle gets
+      destroyed and may no longer be used by the app, and the object
+      referenced to by this handle may be removed (from the app's
+      point of view). Note the object referenced by this handle may
+      not get destroyed immediagtely if it had other indirect
+      references, such as, for example, a group still holding a
+      refernce to a geometry */
+    void releaseHostReference(Object::SP object);
+    
+    /*! increases (the app's) reference count of said object byb
+        one */
+    void addHostReference(Object::SP object);
+    
     Device::SP getDevice(int localID)
     {
       assert(localID >= 0);
@@ -77,7 +91,7 @@ namespace barney {
     virtual void barrier(bool warn=true) {}
     
     /*! generate a new wave-front of rays */
-    void generateRays(const barney::Camera &camera,
+    void generateRays(const barney::Camera::DD &camera,
                       FrameBuffer *fb);
     
     /*! have each *local* GPU trace its current wave-front of rays */
@@ -101,19 +115,18 @@ namespace barney {
       devices and, where applicable, across all ranks */
     virtual int numRaysActiveGlobally() = 0;
 
-    void shadeRaysLocally(FrameBuffer *fb, int generation);
+    void shadeRaysLocally(Model *model, FrameBuffer *fb, int generation);
     void finalizeTiles(FrameBuffer *fb);
     
     void renderTiles(Model *model,
-                     const barney::Camera &camera,
-                     FrameBuffer *fb);
+                     const barney::Camera::DD &camera,
+                     FrameBuffer *fb,
+                     int pathsPerPixel);
     
     virtual void render(Model *model,
-                        const barney::Camera &camera,
-                        FrameBuffer *fb) = 0;
-    
-    // const std::vector<int> dataGroupIDs;
-    // const std::vector<int> gpuIDs;
+                        const barney::Camera::DD &camera, 
+                        FrameBuffer *fb,
+                        int pathsPerPixel) = 0;
 
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;
@@ -121,8 +134,14 @@ namespace barney {
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
 
-    /*! list of all device(s) in this context */
-    // std::vector<DeviceContext *> devices;
+
+    
+    /*! helper function to print a warning when app tries to create an
+        object of certain kind and type that barney does not
+        support */
+    void warn_unsupported_object(const std::string &kind,
+                                 const std::string &type);
+    std::set<std::string> alreadyWarned;
 
     struct PerDG {
       int dataGroupID;

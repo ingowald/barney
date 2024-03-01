@@ -23,16 +23,9 @@ namespace barney {
 
   struct DataGroup;
 
-  /*! geometry in the form of a regular triangle mesh - vertex
-      positoins array, vertex indices array, verex normals, and
-      texcoords */
   struct Texture : public Object {
     typedef std::shared_ptr<Texture> SP;
 
-    // struct DD {
-    //   cudaTextureObject_t tex;
-    // };
-    
     Texture(DataGroup *owner,
             BNTexelFormat texelFormat,
             vec2i size,
@@ -40,12 +33,39 @@ namespace barney {
             BNTextureFilterMode  filterMode,
             BNTextureAddressMode addressMode,
             BNTextureColorSpace  colorSpace);
+    virtual ~Texture() = default;
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Texture{}"; }
 
     OWLTexture owlTex = 0;
+  };
+
+  struct Texture3D : public DataGroupObject {
+    typedef std::shared_ptr<Texture3D> SP;
+
+    struct DD {
+      cudaArray_t           voxelArray = 0;
+      cudaTextureObject_t   texObj;
+      cudaTextureObject_t   texObjNN;
+    };
+    /*! one tex3d per device */
+    std::vector<DD> tex3Ds;
+    
+    Texture3D(DataGroup *owner,
+              BNTexelFormat texelFormat,
+              vec3i size,
+              const void *texels,
+              BNTextureFilterMode  filterMode,
+              BNTextureAddressMode addressMode);
+    virtual ~Texture3D() = default;
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override
+    { return "Texture3D{}"; }
+
+    
   };
 
 }

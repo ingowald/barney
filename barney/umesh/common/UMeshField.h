@@ -121,7 +121,7 @@ namespace barney {
                            box3f *d_primBounds,
                            range1f *d_primRanges=0);
     
-    UMeshField(DevGroup *devGroup,
+    UMeshField(DataGroup *owner,
                std::vector<vec4f> &vertices,
                std::vector<TetIndices> &tetIndices,
                std::vector<PyrIndices> &pyrIndices,

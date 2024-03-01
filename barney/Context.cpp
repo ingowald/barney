@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -21,7 +21,47 @@
 
 namespace barney {
   
-  void Context::generateRays(const barney::Camera &camera,
+  Context::~Context()
+  {
+    hostOwnedHandles.clear();
+    std::map<Object::SP,int> hostOwnedHandles;
+
+    perDG.clear();
+
+    owlContextDestroy(globalContextAcrossAllGPUs);
+  }
+  
+  void Context::releaseHostReference(Object::SP object)
+  {
+    auto it = hostOwnedHandles.find(object);
+    if (it == hostOwnedHandles.end())
+      throw std::runtime_error
+        ("trying to bnRelease() a handle that either does not "
+         "exist, or that the app (no lnoger) has any valid references on");
+
+    const int remainingReferences = --it->second;
+
+    if (remainingReferences == 0) {
+      // remove the std::shared-ptr handle:
+      it->second = {};
+      // and make barney forget that it ever had this object 
+      hostOwnedHandles.erase(it);
+    }
+  }
+  
+  void Context::addHostReference(Object::SP object)
+  {
+    auto it = hostOwnedHandles.find(object);
+    if (it == hostOwnedHandles.end())
+      throw std::runtime_error
+        ("trying to bnAddReference() to a handle that either does not "
+         "exist, or that the app (no lnoger) has any valid primary references on");
+    
+    // add one ref count:
+    it->second++;
+  }
+  
+  void Context::generateRays(const barney::Camera::DD &camera,
                              FrameBuffer *fb)
   {
     assert(fb);
@@ -59,19 +99,19 @@ namespace barney {
     return numActive;
   }
 
-  void Context::shadeRaysLocally(FrameBuffer *fb, int generation)
+  void Context::shadeRaysLocally(Model *model, FrameBuffer *fb, int generation)
   {
-    BARNEY_CUDA_SYNC_CHECK();
+    // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
-      dev->shadeRays_launch(fb->perDev[localID].get(),generation);
+      dev->shadeRays_launch(model,fb->perDev[localID].get(),generation);
     }
-    BARNEY_CUDA_SYNC_CHECK();
+    // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
       dev->shadeRays_sync();
     }
-    BARNEY_CUDA_SYNC_CHECK();
+    // BARNEY_CUDA_SYNC_CHECK();
   }
   
   void Context::traceRaysLocally(Model *model)
@@ -114,8 +154,9 @@ namespace barney {
   }
   
   void Context::renderTiles(Model *model,
-                            const Camera &camera,
-                            FrameBuffer *fb)
+                            const Camera::DD &camera,
+                            FrameBuffer *fb,
+                            int pathsPerPixel)
   {
     if (!isActiveWorker)
       return;
@@ -123,24 +164,28 @@ namespace barney {
     for (auto &pd : perDG) 
       pd.devGroup->update();
 
-    generateRays(camera,fb);
-    for (auto dev : devices) dev->launch_sync();
-
-    for (int generation=0;true;generation++) {
-      traceRaysGlobally(model);
+    // iw - todo: add wave-front-merging here.
+    for (int p=0;p<pathsPerPixel;p++) {
+      double _t0 = getCurrentTime();
+      generateRays(camera,fb);
       for (auto dev : devices) dev->launch_sync();
 
-      shadeRaysLocally(fb, generation);
-      for (auto dev : devices) dev->launch_sync();
-      
-      const int numActiveGlobally = numRaysActiveGlobally();
-      if (numActiveGlobally > 0)
-        continue;
+      for (int generation=0;true;generation++) {
+        traceRaysGlobally(model);
+        // do we need this here?
+        for (auto dev : devices) dev->launch_sync();
+
+        shadeRaysLocally(model, fb, generation);
+        // no sync required here, shadeRays syncs itself.
+        
+        const int numActiveGlobally = numRaysActiveGlobally();
+        if (numActiveGlobally > 0)
+          continue;
     
-      break;
+        break;
+      }
+      ++ fb->accumID;
     }
-    
-    ++ fb->accumID;
   }
 
   
@@ -152,9 +197,9 @@ namespace barney {
   {
     if (gpuIDs.empty())
       throw std::runtime_error("error - no GPUs...");
-    
+
     globalContextAcrossAllGPUs
-      = owlContextCreate((int32_t*)gpuIDs.data(),gpuIDs.size());
+      = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
 
     if (!isActiveWorker) 
       // not an active worker: no device groups etc, just create a
@@ -172,7 +217,7 @@ namespace barney {
       throw std::runtime_error("requested num GPUs is not a multiple of "
                                "requested num data groups");
     int numDGs = dataGroupIDs.size();
-    int gpusPerDG = gpuIDs.size() / numDGs;
+    int gpusPerDG = (int)gpuIDs.size() / numDGs;
     std::vector<std::vector<int>> gpuInDG(numDGs);
     perDG.resize(numDGs);
     for (int ldgID=0;ldgID<numDGs;ldgID++) {
@@ -204,6 +249,21 @@ namespace barney {
       auto dev = devices[localID];
       dev->rays.ensureRayQueuesLargeEnoughFor(fb->perDev[localID].get());
     }
+  }
+  
+  /*! helper function to print a warning when app tries to create an
+    object of certain kind and type that barney does not support */
+  void Context::warn_unsupported_object(const std::string &kind,
+                                        const std::string &type)
+  {
+    if (alreadyWarned.find(kind+"::"+type) != alreadyWarned.end())
+      return;
+    std::cout << OWL_TERMINAL_RED
+              << "#bn: asked to create object of unknown/unsupported "
+              <<  kind << " of type '" << type << "'"
+              << " that I know nothing about"
+              << OWL_TERMINAL_DEFAULT << std::endl;
+    alreadyWarned.insert(kind+"::"+type);
   }
   
 }

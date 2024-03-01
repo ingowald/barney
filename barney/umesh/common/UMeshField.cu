@@ -238,7 +238,7 @@ namespace barney {
 
     float maxWidth = reduce_max(getBox(worldBounds).size());
     int MC_GRID_SIZE
-      = 256 + int(sqrtf(elements.size())/30);
+      = 128 + int(sqrtf((float)elements.size())/30);
     
     vec3i dims = 1+vec3i(getBox(worldBounds).size() * ((MC_GRID_SIZE-1) / maxWidth));
     printf("#bn.um: chosen macro-cell dims of (%i %i %i)\n",
@@ -306,7 +306,7 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
 
-  UMeshField::UMeshField(DevGroup *devGroup,
+  UMeshField::UMeshField(DataGroup *owner,
                          std::vector<vec4f> &_vertices,
                          std::vector<TetIndices> &_tetIndices,
                          std::vector<PyrIndices> &_pyrIndices,
@@ -317,7 +317,7 @@ namespace barney {
                          std::vector<box4f> &_gridDomains,
                          std::vector<float> &_gridScalars,
                          const box3f &domain)
-  : ScalarField(devGroup,domain),
+  : ScalarField(owner,domain),
     vertices(std::move(_vertices)),
     tetIndices(std::move(_tetIndices)),
     pyrIndices(std::move(_pyrIndices)),
@@ -424,7 +424,7 @@ namespace barney {
     dd.gridScalars = (const float   *)owlBufferGetPointer(gridScalarsBuffer,devID);
     dd.gridDomains = (const box4f   *)owlBufferGetPointer(gridDomainsBuffer,devID);
     dd.gridScalars = (const float   *)owlBufferGetPointer(gridScalarsBuffer,devID);
-    dd.numElements = elements.size();
+    dd.numElements = (int)elements.size();
     dd.worldBounds = worldBounds;
 
     return dd;
@@ -443,7 +443,7 @@ namespace barney {
                                       const box3f &domain)
   {
     ScalarField::SP sf
-      = std::make_shared<UMeshField>(devGroup.get(),
+      = std::make_shared<UMeshField>(this,
                                      vertices,
                                      tetIndices,
                                      pyrIndices,

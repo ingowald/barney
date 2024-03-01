@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -26,15 +26,16 @@ namespace barney {
     LocalContext(const std::vector<int> &dataGroupIDs,
                  const std::vector<int> &gpuIDs);
 
-    ~LocalContext() { PING; PING; fflush(0); }
+    virtual ~LocalContext();
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "LocalFB{}"; }
 
     void render(Model *model,
-                const Camera &camera,
-                FrameBuffer *fb) override;
+                const Camera::DD &camera,
+                FrameBuffer *fb,
+                int pathsPerPixel) override;
 
     /*! forward rays (during global trace); returns if _after_ that
         forward the rays need more tracing (true) or whether they're

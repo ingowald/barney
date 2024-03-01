@@ -125,12 +125,12 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
 
-  BlockStructuredField::BlockStructuredField(DevGroup *devGroup,
+  BlockStructuredField::BlockStructuredField(DataGroup *owner,
                                              std::vector<box3i> &_blockBounds,
                                              std::vector<int> &_blockLevels,
                                              std::vector<int> &_blockOffsets,
                                              std::vector<float> &_blockScalars)
-    : ScalarField(devGroup),
+    : ScalarField(owner),
       blockBounds(std::move(_blockBounds)),
       blockLevels(std::move(_blockLevels)),
       blockOffsets(std::move(_blockOffsets)),
@@ -142,7 +142,7 @@ namespace barney {
 
     for (size_t blockID=0;blockID<numBlocks;++blockID) {
       Block block;
-      block.ID = blockID;
+      block.ID = (int)blockID;
       block.bounds = blockBounds[blockID];
       block.level = blockLevels[blockID];
       block.scalarOffset = blockOffsets[blockID];
@@ -208,7 +208,7 @@ namespace barney {
     dd.blockScalars = (const float    *)owlBufferGetPointer(blockScalarsBuffer,devID);
     dd.blockIDs     = (const uint32_t *)owlBufferGetPointer(blockIDsBuffer,devID);
     dd.valueRanges  = (const range1f  *)owlBufferGetPointer(valueRangesBuffer,devID);
-    dd.numBlocks    = blockIDs.size();
+    dd.numBlocks    = (int)blockIDs.size();
     dd.worldBounds  = worldBounds;
 
     return dd;
@@ -220,7 +220,7 @@ namespace barney {
                                                    std::vector<float> &blockScalars)
   {
     ScalarField::SP sf
-      = std::make_shared<BlockStructuredField>(devGroup.get(),
+      = std::make_shared<BlockStructuredField>(this,
                                                blockBounds,
                                                blockLevels,
                                                blockOffsets,

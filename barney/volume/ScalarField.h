@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,7 +25,8 @@ namespace barney {
   struct Volume;
   struct VolumeAccel;
   struct MCGrid;
-
+  struct DataGroup;
+  
   /*! abstracts any sort of scalar field (unstructured, amr,
     structured, rbfs....) _before_ any transfer function(s) get
     applied to it */
@@ -37,12 +38,26 @@ namespace barney {
     struct DD {
       /*! world bounds, CLIPPED TO DOMAIN (if non-empty domain is present!) */
       box3f                worldBounds;
-      
+
+      /*! "template-virtual" function that a sampler calls on an
+          _already_ transfer-function mapped RGBA value, allowing the
+          scalar field to do some additional color mapping on top of
+          whatever came out of the transfer function. the default
+          implementation (provided here int his base class coommon to
+          all scalar fields) is to just return the xf-color mapped
+          RBGA value */
+      inline __device__ vec4f mapColor(vec4f xfColorMapped,
+                                       vec3f point, float scalar) const
+      { return xfColorMapped; }
+
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    ScalarField(DevGroup *devGroup, const box3f &domain=box3f());
+    ScalarField(DataGroup *owner,
+                const box3f &domain=box3f());
 
+    static ScalarField::SP create(DataGroup *dg, const std::string &type);
+    
     OWLContext getOWL() const;
     
     virtual void setVariables(OWLGeom geom);

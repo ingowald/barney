@@ -66,7 +66,7 @@ namespace barney {
       (devGroup->owl,AWT_ptx);
     OWLGeomType gt = owlGeomTypeCreate
       (devGroup->owl,OWL_GEOM_USER,sizeof(UMeshAWT::DD),
-       params.data(),params.size());
+       params.data(),(int)params.size());
     owlGeomTypeSetBoundsProg(gt,module,"UMeshAWTBounds");
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"UMeshAWTIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"UMeshAWTCH");
@@ -82,7 +82,7 @@ namespace barney {
   void UMeshAWT::Host::buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh)
   {
     nodes.resize(qbvh.numNodes);
-    for (int nodeID=0;nodeID<qbvh.numNodes;nodeID++)
+    for (int nodeID=0;nodeID<(int)qbvh.numNodes;nodeID++)
       for (int childID=0;childID<4;childID++) {
         box3f bounds = make_box(qbvh.nodes[nodeID].children[childID].bounds);
         if (!qbvh.nodes[nodeID].children[childID].valid)
@@ -204,7 +204,7 @@ namespace barney {
     buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
     // buildConfig.enableSAH();
     static cuBQL::ManagedMemMemoryResource managedMem;
-    std::cout << "going to build BVH over "
+    std::cout << "#bn.awt: going to build cuBQL BVH over "
               << prettyNumber(mesh->elements.size()) << " elements" << std::endl;
     cuBQL::gpuBuilder(bvh,
                       (const cuBQL::box_t<float,3>*)d_primBounds,
@@ -212,19 +212,21 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
-
-    std::cout << "building (host-)AWT nodes from cubql bvh (on the host rn :/)" << std::endl;
+    
+    std::cout << "#bn.awt: building (host-)AWT nodes from cubql bvh (on the host rn :/)" << std::endl;
     buildNodes(bvh);
-    std::cout << "extracting awt roots (on the host rn :/)" << std::endl;
+    std::cout << "#bn.awt: extracting awt roots (on the host rn :/)" << std::endl;
     extractRoots();
-    std::cout << "refitting awt ranges (on the host rn :-/)" << std::endl;
+    std::cout << "#bn.awt: refitting awt ranges (on the host rn :-/)" << std::endl;
     refitRanges(nodes,bvh.primIDs,d_primBounds,d_primRanges);
 
+    std::cout << "#bn.awt: re-ordering elements" << std::endl;
     std::vector<Element> reorderedElements(mesh->elements.size());
     for (int i=0;i<mesh->elements.size();i++) {
       reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
     }
     mesh->elements = reorderedElements;
+    std::cout << "#bn.awt: uploading reordered element refs to OWL" << std::endl;
     owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
     BARNEY_CUDA_CALL(Free(d_primBounds));
     BARNEY_CUDA_CALL(Free(d_primRanges));
@@ -237,6 +239,7 @@ namespace barney {
     assert(sizeof(roots[0]) == sizeof(int));
     rootsBuffer = owlDeviceBufferCreate(devGroup->owl,OWL_INT,
                                         roots.size(),roots.data());
+    std::cout << "#bn.awt: uploading AWT nodes buffer to OWL" << std::endl;
     nodesBuffer = BUFFER_CREATE(devGroup->owl,OWL_USER_TYPE(AWTNode),
                                 nodes.size(),nodes.data());
   }
@@ -338,7 +341,7 @@ namespace barney {
       SetActiveGPU forDuration(dev);
       recomputeMajorants<<<divRoundUp(int(4*nodes.size()),1024),1024>>>
         ((AWTNode*)owlBufferGetPointer(nodesBuffer,devID),
-         nodes.size(),
+         (int)nodes.size(),
          volume->xf.getDD(devID));
     }
     std::cout << "refitting ... umesh awt/object space geom" << std::endl;

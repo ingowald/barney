@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,6 +23,9 @@ namespace barney {
 
   struct TiledFB;
   struct Model;
+  namespace render {
+    struct World;
+  };
   
   struct DeviceContext
   {
@@ -37,12 +40,12 @@ namespace barney {
     
     DeviceContext(Device::SP device);
 
-    void shadeRays_launch(TiledFB *fb, int generation);
+    void shadeRays_launch(Model *model, TiledFB *fb, int generation);
     void shadeRays_sync();
     void traceRays_launch(Model *model);
     
     void generateRays_launch(TiledFB *fb,
-                             const Camera &camera,
+                             const Camera::DD &camera,
                              int rngSeed);
     void generateRays_sync();
 

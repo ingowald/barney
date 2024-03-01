@@ -80,6 +80,14 @@ namespace barney {
   {
     auto &ray  = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<Triangles::DD>();
+
+    if (ray.isShadowRay && self.material.transmission > 0.f
+        && ((Random &)ray.rngSeed)() < self.material.transmission) {
+      optixIgnoreIntersection();
+      return;
+    }
+        
+    
     if (!(self.material.colorTexture | self.material.alphaTexture))
       // doesnt' have _have_ textures to check
       return;
