@@ -53,9 +53,12 @@ namespace barney {
     Cylinders *createCylinders(const Material   &material,
                                const vec3f      *points,
                                int               numPoints,
+                               const vec3f      *colors,
+                               bool              colorPerVertex,
                                const vec2i      *indices,
                                int               numIndices,
                                const float      *radii,
+                               bool              radiusPerVertex,
                                float             defaultRadius);
     
     Volume *createVolume(ScalarField::SP sf);

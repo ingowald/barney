@@ -61,7 +61,10 @@ namespace barney {
     const vec2i idx = self.indices[primID];
     const vec3f v0  = self.points[idx.x];
     const vec3f v1  = self.points[idx.y];
-    const float radius = self.radii[primID];
+    const float radius
+      = self.radiusPerVertex
+      ? min(self.radii[idx.x],self.radii[idx.y])
+      : self.radii[primID];
 
     const vec3f ray_org  = optixGetObjectRayOrigin();
     const vec3f ray_dir  = optixGetObjectRayDirection();

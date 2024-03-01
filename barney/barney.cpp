@@ -183,17 +183,27 @@ namespace barney {
                            const BNMaterial *material,
                            const float3     *points,
                            int               numPoints,
+                           const float3     *colors,
+                           /*! if true - and colors is non null - then
+                             the colors array specifies per-vertex
+                             colors */
+                           bool              colorPerVertex,
                            const int2       *indices,
                            int               numIndices,
                            const float      *radii,
+                           /*! if true - and radii is non null -then the
+                             radii specify per-vertex radii and
+                             segments will be rounded cones */
+                           bool              radiusPerVertex,
                            float             defaultRadius)
   {
     LOG_API_ENTRY;
     Cylinders *cylinders = checkGet(dataGroup)->createCylinders
       (checkGet(material),
        (const vec3f*)points,numPoints,
+       (const vec3f*)colors,colorPerVertex,
        (const vec2i*)indices,numIndices,
-       radii,defaultRadius);
+       radii,radiusPerVertex,defaultRadius);
     return (BNGeom)cylinders;
   }
   

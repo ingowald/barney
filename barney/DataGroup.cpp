@@ -74,16 +74,20 @@ namespace barney {
   Cylinders *DataGroup::createCylinders(const Material   &material,
                                         const vec3f      *points,
                                         int               numPoints,
+                                        const vec3f      *colors,
+                                        bool              colorPerVertex,
                                         const vec2i      *indices,
                                         int               numIndices,
                                         const float      *radii,
+                                        bool              radiusPerVertex,
                                         float             defaultRadius)
   {
     return getContext()->initReference
       (std::make_shared<Cylinders>(this,material,
                                    points,numPoints,
+                                   colors,colorPerVertex,
                                    indices,numIndices,
-                                   radii,defaultRadius));
+                                   radii,radiusPerVertex,defaultRadius));
   }
     
   Spheres *DataGroup::createSpheres(const Material &material,
