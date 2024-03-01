@@ -21,7 +21,7 @@
 namespace barney {
 
   struct Context;
-  struct DataGroup;
+  struct ModelSlot;
   struct Data;
   
   /*! the base class for _any_ other type of object/actor in the
@@ -79,10 +79,10 @@ namespace barney {
   };
 
   /*! a object owned (only) in a particular data group */
-  struct DataGroupObject : public Object {
-    DataGroupObject(DataGroup *owner);
-    virtual ~DataGroupObject() = default;
-    DataGroup *const owner;
+  struct SlottedObject : public Object {
+    SlottedObject(ModelSlot *owner);
+    virtual ~SlottedObject() = default;
+    ModelSlot *const owner;
   };
 
   // ==================================================================

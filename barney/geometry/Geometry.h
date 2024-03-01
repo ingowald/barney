@@ -18,23 +18,23 @@
 
 #include "barney/Object.h"
 #include "barney/Ray.h"
-#include "barney/Texture.h"
+#include "barney/common/Texture.h"
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
   
-  struct Geometry : public Object {
+  struct Geometry : public SlottedObject {
     typedef std::shared_ptr<Geometry> SP;
 
     struct DD {
       Material::DD     material;
     };
     
-    Geometry(DataGroup *owner);
+    Geometry(ModelSlot *owner);
     virtual ~Geometry();
 
-    static Geometry::SP create(DataGroup *dg, const std::string &type);
+    static Geometry::SP create(ModelSlot *dg, const std::string &type);
     
     static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
@@ -44,8 +44,6 @@ namespace barney {
 
     /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
-    
-    // void setMaterial(OWLGeom geom);
     
     /*! get the own context that was used to create this geometry */
     OWLContext getOWL() const;
@@ -59,9 +57,7 @@ namespace barney {
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGroup> secondPassGroups;
     
-    // Material    material;
     Material::SP material;
-    DataGroup  *owner;
   };
 
 }

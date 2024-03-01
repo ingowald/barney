@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 // #include "barney/volume/MCAccelerator.h"
 /* all routines for point-element sampling/intersection - shold
    logically be part of this file, but kept in separate file because
@@ -121,7 +121,7 @@ namespace barney {
                            box3f *d_primBounds,
                            range1f *d_primRanges=0);
     
-    UMeshField(DataGroup *owner,
+    UMeshField(ModelSlot *owner,
                std::vector<vec4f> &vertices,
                std::vector<TetIndices> &tetIndices,
                std::vector<PyrIndices> &pyrIndices,

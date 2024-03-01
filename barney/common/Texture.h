@@ -21,12 +21,12 @@
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
 
   struct Texture : public Object {
     typedef std::shared_ptr<Texture> SP;
 
-    Texture(DataGroup *owner,
+    Texture(ModelSlot *owner,
             BNTexelFormat texelFormat,
             vec2i size,
             const void *texels,
@@ -42,7 +42,7 @@ namespace barney {
     OWLTexture owlTex = 0;
   };
 
-  struct Texture3D : public DataGroupObject {
+  struct Texture3D : public SlottedObject {
     typedef std::shared_ptr<Texture3D> SP;
 
     struct DD {
@@ -53,7 +53,7 @@ namespace barney {
     /*! one tex3d per device */
     std::vector<DD> tex3Ds;
     
-    Texture3D(DataGroup *owner,
+    Texture3D(ModelSlot *owner,
               BNTexelFormat texelFormat,
               vec3i size,
               const void *texels,

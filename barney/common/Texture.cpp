@@ -14,14 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Texture.h"
+#include "barney/common/Texture.h"
 #include "barney/Context.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 #include "barney/DeviceGroup.h"
 
 namespace barney {
 
-  Texture::Texture(DataGroup *owner,
+  Texture::Texture(ModelSlot *owner,
                    BNTexelFormat texelFormat,
                    vec2i size,
                    const void *texels,
@@ -52,13 +52,13 @@ namespace barney {
                                 );
   }
 
-  Texture3D::Texture3D(DataGroup *owner,
+  Texture3D::Texture3D(ModelSlot *owner,
                        BNTexelFormat texelFormat,
                        vec3i size,
                        const void *texels,
                        BNTextureFilterMode  filterMode,
                        BNTextureAddressMode addressMode)
-    : DataGroupObject(owner)
+    : SlottedObject(owner)
   {
     if (!tex3Ds.empty()) return;
 

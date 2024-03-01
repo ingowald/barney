@@ -92,6 +92,11 @@ namespace barney {
     dir_00 -= 0.5f * dir_du;
     dir_00 -= 0.5f * dir_dv;
 
+    // PRINT(from);
+    // PRINT(direction);
+    // PRINT(fovy);
+    // PRINT(aspect);
+    
     dd.dir_00 = (float3&)dir_00;
     dd.dir_du = (float3&)dir_du;
     dd.dir_dv = (float3&)dir_dv;

@@ -16,6 +16,7 @@ Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s)
 Frame::~Frame()
 {
   wait();
+  bnRelease(m_bnFrameBuffer);
 }
 
 bool Frame::isValid() const

@@ -17,7 +17,7 @@
 #include "barney/Context.h"
 #include "barney/DeviceGroup.h"
 #include "barney/fb/FrameBuffer.h"
-#include "barney/Model.h"
+#include "barney/GlobalModel.h"
 
 namespace barney {
   
@@ -26,7 +26,7 @@ namespace barney {
     hostOwnedHandles.clear();
     std::map<Object::SP,int> hostOwnedHandles;
 
-    perDG.clear();
+    perSlot.clear();
 
     owlContextDestroy(globalContextAcrossAllGPUs);
   }
@@ -99,7 +99,7 @@ namespace barney {
     return numActive;
   }
 
-  void Context::shadeRaysLocally(Model *model, FrameBuffer *fb, int generation)
+  void Context::shadeRaysLocally(GlobalModel *model, FrameBuffer *fb, int generation)
   {
     // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
@@ -114,7 +114,7 @@ namespace barney {
     // BARNEY_CUDA_SYNC_CHECK();
   }
   
-  void Context::traceRaysLocally(Model *model)
+  void Context::traceRaysLocally(GlobalModel *model)
   {
     // ------------------------------------------------------------------
     // launch all in parallel ...
@@ -129,7 +129,7 @@ namespace barney {
     for (auto dev : devices) dev->sync();
   }
 
-  void Context::traceRaysGlobally(Model *model)
+  void Context::traceRaysGlobally(GlobalModel *model)
   {
     while (true) {
       traceRaysLocally(model);
@@ -153,7 +153,7 @@ namespace barney {
       devices[localID]->launch_sync();
   }
   
-  void Context::renderTiles(Model *model,
+  void Context::renderTiles(GlobalModel *model,
                             const Camera::DD &camera,
                             FrameBuffer *fb,
                             int pathsPerPixel)
@@ -161,7 +161,7 @@ namespace barney {
     if (!isActiveWorker)
       return;
 
-    for (auto &pd : perDG) 
+    for (auto &pd : perSlot) 
       pd.devGroup->update();
 
     // iw - todo: add wave-front-merging here.
@@ -216,28 +216,28 @@ namespace barney {
     if (gpuIDs.size() % dataGroupIDs.size())
       throw std::runtime_error("requested num GPUs is not a multiple of "
                                "requested num data groups");
-    int numDGs = dataGroupIDs.size();
-    int gpusPerDG = (int)gpuIDs.size() / numDGs;
-    std::vector<std::vector<int>> gpuInDG(numDGs);
-    perDG.resize(numDGs);
-    for (int ldgID=0;ldgID<numDGs;ldgID++) {
-      auto &dg = perDG[ldgID];
-      dg.dataGroupID = dataGroupIDs[ldgID];
-      for (int j=0;j<gpusPerDG;j++)
-        dg.gpuIDs.push_back(gpuIDs[ldgID*gpusPerDG+j]);
+    int numSlots = dataGroupIDs.size();
+    int gpusPerSlot = (int)gpuIDs.size() / numSlots;
+    std::vector<std::vector<int>> gpuInSlot(numSlots);
+    perSlot.resize(numSlots);
+    for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
+      auto &dg = perSlot[lmsIdx];
+      dg.modelRankInThisSlot = dataGroupIDs[lmsIdx];
+      for (int j=0;j<gpusPerSlot;j++)
+        dg.gpuIDs.push_back(gpuIDs[lmsIdx*gpusPerSlot+j]);
       dg.devGroup = std::make_shared
-        <DevGroup>(ldgID,
+        <DevGroup>(lmsIdx,
                    dg.gpuIDs,
-                   globalIndex*numDGs+ldgID,
-                   globalIndexStep*numDGs);
+                   globalIndex*numSlots+lmsIdx,
+                   globalIndexStep*numSlots);
       for (auto dev : dg.devGroup->devices)
         devices.push_back(std::make_shared<DeviceContext>(dev));
     }
   }
 
-  Model *Context::createModel()
+  GlobalModel *Context::createModel()
   {
-    return initReference(Model::create(this));
+    return initReference(GlobalModel::create(this));
   }
 
   void Context::ensureRayQueuesLargeEnoughFor(FrameBuffer *fb)

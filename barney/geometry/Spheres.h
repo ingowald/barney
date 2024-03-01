@@ -30,7 +30,7 @@ namespace barney {
       float    defaultRadius;
     };
 
-    Spheres(DataGroup *owner);
+    Spheres(ModelSlot *owner);
     
     static OWLGeomType createGeomType(DevGroup *device);
     

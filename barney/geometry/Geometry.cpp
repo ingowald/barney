@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/geometry/Geometry.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
 #include "barney/geometry/Triangles.h"
@@ -24,7 +24,8 @@
 
 namespace barney {
   
-  Geometry::SP Geometry::create(DataGroup *owner, const std::string &type)
+  Geometry::SP Geometry::create(ModelSlot *owner,
+                                const std::string &type)
   {
     if (type == "spheres")
       return std::make_shared<Spheres>(owner);
@@ -37,9 +38,8 @@ namespace barney {
     return {};
   }
 
-  Geometry::Geometry(DataGroup *owner)
-    : Object(owner->context),
-      owner(owner),
+  Geometry::Geometry(ModelSlot *owner)
+    : SlottedObject(owner),
       material(std::make_shared<Material>(owner))
   {}
 

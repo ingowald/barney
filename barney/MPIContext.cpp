@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -76,32 +76,32 @@ namespace barney {
     }
     
     if (isActiveWorker) {
-      int numDGsPerWorker = (int)perDG.size();
+      int numSlotsPerWorker = (int)perSlot.size();
       int numDevicesPerWorker = (int)devices.size();
       int numWorkers = workers.size;
       
       if (dbg) {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
-        ss << "num devices " << numDevicesPerWorker << " DGs " << numDGsPerWorker << std::endl << std::flush;
+        ss << "num devices " << numDevicesPerWorker << " DGs " << numSlotsPerWorker << std::endl << std::flush;
       }
       
       // ------------------------------------------------------------------
       // sanity check - make sure all workers have same num data groups
       // ------------------------------------------------------------------
-      std::vector<int> numDataGroupsOnWorker(workers.size+1);
-      numDataGroupsOnWorker[workers.size] = 0x290374;
-      workers.allGather(numDataGroupsOnWorker.data(),numDGsPerWorker);
-      if (numDataGroupsOnWorker[workers.size] != 0x290374)
+      std::vector<int> numModelSlotsOnWorker(workers.size+1);
+      numModelSlotsOnWorker[workers.size] = 0x290374;
+      workers.allGather(numModelSlotsOnWorker.data(),numSlotsPerWorker);
+      if (numModelSlotsOnWorker[workers.size] != 0x290374)
         throw std::runtime_error("mpi buffer overwrite!");
       for (int i=0;i<numWorkers;i++)
-        if (numDataGroupsOnWorker[i] != numDGsPerWorker)
+        if (numModelSlotsOnWorker[i] != numSlotsPerWorker)
           throw std::runtime_error
             ("worker rank "+std::to_string(i)+
              " has different number of data groups ("+
-             std::to_string(numDataGroupsOnWorker[i])+
+             std::to_string(numModelSlotsOnWorker[i])+
              " than worker rank "+std::to_string(workers.rank)+
-             " ("+std::to_string(numDGsPerWorker)+")");
+             " ("+std::to_string(numSlotsPerWorker)+")");
       
       // ------------------------------------------------------------------
       // sanity check - make sure all workers have same num devices
@@ -124,31 +124,31 @@ namespace barney {
       // ------------------------------------------------------------------
       // gather who has which data(groups)
       // ------------------------------------------------------------------
-      std::vector<int> allDataGroups(workers.size*numDGsPerWorker+1);
-      allDataGroups[workers.size*numDGsPerWorker] = 0x8628;
-      workers.allGather(allDataGroups.data(),
+      std::vector<int> allModelSlots(workers.size*numSlotsPerWorker+1);
+      allModelSlots[workers.size*numSlotsPerWorker] = 0x8628;
+      workers.allGather(allModelSlots.data(),
                         dataGroupIDs.data(),
                         dataGroupIDs.size());
-      if (allDataGroups[workers.size*numDGsPerWorker] != 0x8628)
+      if (allModelSlots[workers.size*numSlotsPerWorker] != 0x8628)
         throw std::runtime_error("mpi buffer overwrite!");
-      allDataGroups.resize(workers.size*numDGsPerWorker);
+      allModelSlots.resize(workers.size*numSlotsPerWorker);
 
       // ------------------------------------------------------------------
       // sanity check: data groups are numbered 0,1,2 .... and each
       // data group appears same number of times.
       // ------------------------------------------------------------------
       std::map<int,int> dataGroupCount;
-      int maxDataGroupID = -1;
-      for (int i=0;i<allDataGroups.size();i++) {
-        int dgID_i = allDataGroups[i];
+      int maxModelSlotID = -1;
+      for (int i=0;i<allModelSlots.size();i++) {
+        int dgID_i = allModelSlots[i];
         if (dgID_i < 0)
           throw std::runtime_error
             ("invalid data group ID ("+std::to_string(dgID_i)+")");
-        maxDataGroupID = std::max(maxDataGroupID,dgID_i);
+        maxModelSlotID = std::max(maxModelSlotID,dgID_i);
         dataGroupCount[dgID_i]++;
       }
-      numDifferentDataGroups = dataGroupCount.size();
-      if (maxDataGroupID >= numDifferentDataGroups)
+      numDifferentModelSlots = dataGroupCount.size();
+      if (maxModelSlotID >= numDifferentModelSlots)
         throw std::runtime_error("data group IDs not numbered sequentially");
 
       int numIslands = dataGroupCount[0];
@@ -165,11 +165,11 @@ namespace barney {
       std::vector<int> myDataOnLocal(devices.size());
       for (int i=0;i<devices.size();i++)
         myDataOnLocal[i]
-          = perDG[devices[i]->device->devGroup->ldgID].dataGroupID;
+          = perSlot[devices[i]->device->devGroup->lmsIdx].modelRankInThisSlot;
       if (dbg) {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
-        ss << "*my* data locally (myDataOnLocal): ";
+        ss << "*my* data ranks locally (myDataOnLocal): ";
         for (auto d : myDataOnLocal) ss << d << " ";
         std::cout << ss.str() << std::endl;
       }
@@ -185,7 +185,7 @@ namespace barney {
       if (dbg) {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
-        ss << "*all* data globally  (dataOnGlobal): ";
+        ss << "*all* data ranks globally  (dataOnGlobal): ";
         for (auto d : dataOnGlobal) ss << d << " ";
         std::cout << ss.str() << std::endl;
       }
@@ -204,8 +204,8 @@ namespace barney {
         int myGlobal = dev->globalIndex;
         int myDG     = dataOnGlobal[myGlobal];
         int myIsland = islandOfGlobal[myGlobal];
-        int nextDG   = (myDG+1) % numDifferentDataGroups;
-        int prevDG   = (myDG+numDifferentDataGroups-1) % numDifferentDataGroups;
+        int nextDG   = (myDG+1) % numDifferentModelSlots;
+        int prevDG   = (myDG+numDifferentModelSlots-1) % numDifferentModelSlots;
         for (int peerGlobal=0;peerGlobal<numDevicesGlobally;peerGlobal++) {
           if (islandOfGlobal[peerGlobal] != myIsland)
             continue;
@@ -243,7 +243,7 @@ namespace barney {
   }
     
   
-  void MPIContext::render(Model *model,
+  void MPIContext::render(GlobalModel *model,
                           const Camera::DD &camera,
                           FrameBuffer *_fb,
                           int pathsPerPixel)
@@ -304,7 +304,7 @@ namespace barney {
     done (false) */
   bool MPIContext::forwardRays() 
   {
-    if (numDifferentDataGroups == 1)
+    if (numDifferentModelSlots == 1)
       return false;
     
     int numDevices = devices.size();
@@ -386,7 +386,7 @@ namespace barney {
     }
 
     ++numTimesForwarded;
-    return (numTimesForwarded % numDifferentDataGroups) != 0;
+    return (numTimesForwarded % numDifferentModelSlots) != 0;
   }
 
   BN_API
@@ -458,11 +458,12 @@ namespace barney {
 
   BN_API
   BNContext bnMPIContextCreate(MPI_Comm _comm,
-                               /*! which data group(s) this rank will
-                                 owl - default is 1 group, with data
-                                 group equal to mpi rank */
-                               const int *dataGroupsOnThisRank,
-                               int  numDataGroupsOnThisRank,
+                               /*! how many data slots this context is to
+                                 offer, and which part(s) of the
+                                 distributed model data these slot(s)
+                                 will hold */
+                               const int *dataRanksOnThisContext,
+                               int        numDataRanksOnThisContext,
                                /*! which gpu(s) to use for this
                                  process. default is to distribute
                                  node's GPUs equally over all ranks on
@@ -477,9 +478,9 @@ namespace barney {
 
     if (world.size == 1) {
       std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
-      return bnContextCreate(dataGroupsOnThisRank,
-                             numDataGroupsOnThisRank == 0
-                             ? 1 : numDataGroupsOnThisRank,
+      return bnContextCreate(dataRanksOnThisContext,
+                             numDataRanksOnThisContext == 0
+                             ? 1 : numDataRanksOnThisContext,
                                /*! which gpu(s) to use for this
                                  process. default is to distribute
                                  node's GPUs equally over all ranks on
@@ -493,18 +494,18 @@ namespace barney {
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
     // use those; otherwise we use IDs
-    // [0,1,...numDataGroupsOnThisHost)
+    // [0,1,...numModelSlotsOnThisHost)
     // ------------------------------------------------------------------
     assert(/* data groups == 0 is allowed for passive nodes*/
-           numDataGroupsOnThisRank >= 0);
+           numDataRanksOnThisContext >= 0);
     std::vector<int> dataGroupIDs;
     int rank;
     MPI_Comm_rank(world, &rank);
-    for (int i=0;i<numDataGroupsOnThisRank;i++)
+    for (int i=0;i<numDataRanksOnThisContext;i++)
       dataGroupIDs.push_back
-        (dataGroupsOnThisRank
-         ? dataGroupsOnThisRank[i]
-         : rank*numDataGroupsOnThisRank+i);
+        (dataRanksOnThisContext
+         ? dataRanksOnThisContext[i]
+         : rank*numDataRanksOnThisContext+i);
 
     // ------------------------------------------------------------------
     // create list of GPUs to use for this rank. if specified by user
