@@ -51,11 +51,13 @@ namespace barney {
       P = center + (radius * 1.00001f) * N;
     }
 
-    Material::DD mat = self.material;
+    vec3f geometryColor = 1.f;
     if (self.colors)
-      mat.baseColor = self.colors[primID];
+      geometryColor = self.colors[primID];
+    ray.setHit(P,N,t_hit,self.material,vec2f(NAN),geometryColor);
     
-    ray.setHit(P,N,t_hit,mat);
+    
+    // ray.setHit(P,N,t_hit,mat);
   }
   
   OPTIX_INTERSECT_PROGRAM(SpheresIsec)()
@@ -101,7 +103,7 @@ namespace barney {
     }
     hit_t += t_move;
     if (hit_t < t_max) {
-      optixReportIntersection(hit_t+t_move, 0);
+      optixReportIntersection(hit_t, 0);
     }
     
 #else
@@ -129,10 +131,10 @@ namespace barney {
       if (temp < hit_t && temp > tmin) 
         hit_t = temp;
     }
-#endif
     if (hit_t < optixGetRayTmax()) {
       optixReportIntersection(hit_t, 0);
     }
+#endif
   }
   
 }

@@ -33,7 +33,7 @@ namespace barney {
     n = normalize(n);
     
     vec3f dir = optixGetWorldRayDirection();
-    auto mat = self.material;
+    // auto mat = self.material;
 
     const float u = optixGetTriangleBarycentrics().x;
     const float v = optixGetTriangleBarycentrics().y;
@@ -49,18 +49,21 @@ namespace barney {
       const vec2f Tc = self.texcoords[triangle.z];
       tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
     }
-    if (self.material.colorTexture) {
-      float4 fromTex = tex2D<float4>(self.material.colorTexture,tc.x,tc.y);
-      mat.baseColor *= (const vec3f &)fromTex;
-    }
+    // vec3f colorFromTexture = 1.f;
+    // if (self.material.colorTexture) {
+    //   float4 fromTex = tex2D<float4>(self.material.colorTexture,tc.x,tc.y);
+    //   colorFromTexture = (const vec3f&)fromTex;
+    //   // mat.baseColor *= (const vec3f &)fromTex;
+    // }
 #if VISUALIZE_PRIMS
-    mat.baseColor = owl::randomColor(primID);
+    colorFromTexture /*mat.baseColor*/ *= owl::randomColor(primID);
 #endif
     
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
     
-    ray.setHit(P,n,optixGetRayTmax(),mat);
+    ray.setHit(P,n,optixGetRayTmax(),
+               self.material,tc);
   }
 
 
@@ -71,16 +74,19 @@ namespace barney {
     auto &ray  = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<Triangles::DD>();
 
-    if (ray.isShadowRay && self.material.transmission > 0.f
-        && ((Random &)ray.rngSeed)() < self.material.transmission) {
-      optixIgnoreIntersection();
+    if (!self.material.hasAlpha())
       return;
-    }
+    
+    // if (ray.isShadowRay && self.material.transmission > 0.f
+    //     && ((Random &)ray.rngSeed)() < self.material.transmission) {
+    //   optixIgnoreIntersection();
+    //   return;
+    // }
         
     
-    if (!(self.material.colorTexture | self.material.alphaTexture))
-      // doesnt' have _have_ textures to check
-      return;
+    // if (!(self.material.colorTexture | self.material.alphaTexture))
+    //   // doesnt' have _have_ textures to check
+    //   return;
     
     int primID = optixGetPrimitiveIndex();
     vec3i triangle = self.indices[primID];
@@ -98,20 +104,27 @@ namespace barney {
       const vec2f Tc = self.texcoords[triangle.z];
       tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
     }
-    float alpha = 1.f;
-    if (self.material.alphaTexture) {
-      float4 fromTex = tex2D<float4>(self.material.alphaTexture,tc.x,tc.y);
-      alpha *= fromTex.w;
-    }
-    if (self.material.colorTexture) {
-      float4 fromTex = tex2D<float4>(self.material.colorTexture,tc.x,tc.y);
-      alpha *= fromTex.w;
-    }
 
-    if (alpha <= .05f) {
+    float alpha = self.material.getAlpha(tc);
+    if (alpha < 1.f && ((Random &)ray.rngSeed)() < 1.f-alpha) {
       optixIgnoreIntersection();
       return;
     }
+        
+    // float alpha = 1.f;
+    // if (self.material.alphaTexture) {
+    //   float4 fromTex = tex2D<float4>(self.material.alphaTexture,tc.x,tc.y);
+    //   alpha *= fromTex.w;
+    // }
+    // if (self.material.colorTexture) {
+    //   float4 fromTex = tex2D<float4>(self.material.colorTexture,tc.x,tc.y);
+    //   alpha *= fromTex.w;
+    // }
+
+    // if (alpha <= .05f) {
+    //   optixIgnoreIntersection();
+    //   return;
+    // }
   }
   
 }

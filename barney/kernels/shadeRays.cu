@@ -28,7 +28,7 @@ namespace barney {
   
     typedef enum {
       RENDER_MODE_UNDEFINED,
-      RENDER_MODE_LOCAL,
+      // RENDER_MODE_LOCAL,
       RENDER_MODE_AO,
       RENDER_MODE_PT
     } RenderMode;
@@ -46,7 +46,7 @@ namespace barney {
       }
     }
 
-
+#if 0
     __global__
     void g_shadeRays_local(AccumTile *accumTiles,
                            int accumID,
@@ -107,7 +107,7 @@ namespace barney {
 
       valueToAccumInto = valueToAccum;
     }
-
+#endif
 
 
 
@@ -126,7 +126,7 @@ namespace barney {
 
       Ray ray = readQueue[tid];
     
-      vec3f albedo = (vec3f)ray.hit.baseColor;
+      vec3f albedo = ray.hit.getAlbedo();//(vec3f)ray.hit.baseColor;
       vec3f fragment = 0.f;
       float z = INFINITY;
       if (0 && ray.dbg) {
@@ -684,10 +684,10 @@ namespace barney {
         path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
         if (isVolumeHit) {
           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
-          path.throughput = .8f * path.throughput * path.hit.baseColor;
+          path.throughput = .8f * path.throughput * path.path.hit.eval(Ns,path.dir);//hit.baseColor;
         } else { 
           path.dir = sampleCosineWeightedHemisphere(Ns,random);
-          path.throughput = path.throughput * path.hit.baseColor;
+          path.throughput = path.throughput * path.path.hit.eval(Ns,path.dir);//baseColor;
         }
       }
 
@@ -816,8 +816,8 @@ namespace barney {
         renderMode = RENDER_MODE_AO;
       else if (mode == "PT" || mode == "pt")
         renderMode = RENDER_MODE_PT;
-      else if (mode == "local")
-        renderMode = RENDER_MODE_LOCAL;
+      // else if (mode == "local")
+      //   renderMode = RENDER_MODE_LOCAL;
       else
         throw std::runtime_error("unknown barney render mode '"+mode+"'");
     }
@@ -828,12 +828,12 @@ namespace barney {
     
     if (nb) {
       switch(renderMode) {
-      case RENDER_MODE_LOCAL:
-        g_shadeRays_local<<<nb,bs,0,device->launchStream>>>
-          (fb->accumTiles,fb->owner->accumID,
-           rays.traceAndShadeReadQueue,numRays,
-           rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
-        break;
+      // case RENDER_MODE_LOCAL:
+      //   g_shadeRays_local<<<nb,bs,0,device->launchStream>>>
+      //     (fb->accumTiles,fb->owner->accumID,
+      //      rays.traceAndShadeReadQueue,numRays,
+      //      rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
+      //   break;
       case RENDER_MODE_AO:
         g_shadeRays_ao<<<nb,bs,0,device->launchStream>>>
           (fb->accumTiles,fb->owner->accumID,

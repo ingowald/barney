@@ -119,12 +119,13 @@ namespace barney {
     if (t0 > t1) return;
 
     Ray &ray    = getPRD<Ray>();
+    vec3f N = 0.f;
     if (ray_tmin <= t0 && t0 <= ray_tmax) {
       // front side hit:
       ray.tMax = t0;
       td *= -1.f;
       float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-      ray.hit.N
+      N
         = (t0 == cap_t0)
         ? s
         : (td * d - fp - hit_surf_u * s);
@@ -132,7 +133,7 @@ namespace barney {
     } else if (ray_tmin <= t1 && t1 <= ray_tmax) {
       ray.tMax = t1;
       float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-      ray.hit.N
+      N
         = (t1 == cap_t1)
         ? -s
         : (td * d - fp - hit_surf_u * s);
@@ -140,7 +141,7 @@ namespace barney {
       return;
 
     vec3f P = ray_org + ray.tMax * ray_dir;
-    ray.setHit(P,ray.hit.N,ray.tMax,self.material);
+    ray.setHit(P,N,ray.tMax,self.material);
     optixReportIntersection(ray.tMax, 0);
     // const int primID = optixGetPrimitiveIndex();
     // const auto &self

@@ -33,31 +33,42 @@ namespace barney {
     vec3h    dir;
     float    tMax;
     uint32_t rngSeed;
-
+    
     inline __device__ void setHit(vec3f P, vec3f N, float t,
-                                  const Material::DD &material)
+                                  const Material::DD &material,
+                                  vec2f texCoords=vec2f(0.f),
+                                  vec3f geometryColor=vec3f(NAN))
     {
-      hit.P = P;
-      hit.N = N;
+      material.make(hit,P,N,texCoords,geometryColor);
       tMax = t;
       hadHit = true;
-      hit.baseColor      = material.baseColor;
-      hit.ior            = material.ior;
-      hit.roughness      = material.roughness;
-      hit.metallic       = material.metallic;
-      hit.transmission   = material.transmission;
+      //   hit.P = P;
+    //   hit.N = N;
+    //   tMax = t;
+    //   hadHit = true;
+    //   hit.baseColor      = material.baseColor;
+    //   hit.ior            = material.ior;
+    //   hit.roughness      = material.roughness;
+    //   hit.metallic       = material.metallic;
+    //   hit.transmission   = material.transmission;
     }
     inline __device__ void setVolumeHit(vec3f P,
                                         float t,
                                         vec3f albedo)
     {
-      hit.P = P;
+      hit.setMatte(albedo,P,/* 0 normal, to indicate volume hit */vec3f(0.f));
+      // Material::DD dummyMat;
+      // dummyMat.type = barney::render::PHYSICAL;
+      // dummyMat.baseColor = albedo;
+      // dummyMat.ior = 1.f;
+      // dummyMat.transmission = 0.f;
+      // hit.P = P;
       tMax = t;
       hadHit = true;
-      hit.N = vec3f(0.f);
-      hit.baseColor      = albedo;
-      hit.ior            = 1.f;
-      hit.transmission   = 0.f;
+      // hit.N = vec3f(0.f);
+      // hit.baseColor      = albedo;
+      // hit.ior            = 1.f;
+      // hit.transmission   = 0.f;
     }
     inline __device__ void makeShadowRay(vec3f tp, vec3f org, vec3f dir, float len)
     {
@@ -69,12 +80,13 @@ namespace barney {
       this->tMax = len;
     }
     
-    struct {
-      vec3h    N;
-      vec3h    baseColor;
-      vec3f    P;
-      half     ior, transmission, metallic, roughness;
-    } hit;
+    // struct {
+    //   vec3h    N;
+    //   vec3h    baseColor;
+    //   vec3f    P;
+    //   half     ior, transmission, metallic, roughness;
+    // } hit;
+    Material::HitBRDF hit;
     struct {
       uint32_t  pixelID:28;
       uint32_t  hadHit:1;
