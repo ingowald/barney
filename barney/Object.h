@@ -82,6 +82,10 @@ namespace barney {
   struct SlottedObject : public Object {
     SlottedObject(ModelSlot *owner);
     virtual ~SlottedObject() = default;
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "<SlottedObject>"; }
+
     ModelSlot *const owner;
   };
 

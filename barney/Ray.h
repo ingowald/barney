@@ -85,7 +85,7 @@ namespace barney {
     //   vec3f    P;
     //   half     ior, transmission, metallic, roughness;
     // } hit;
-    Material::HitBRDF hit;
+    render::HitBRDF hit;
     struct {
       uint32_t  pixelID:28;
       uint32_t  hadHit:1;

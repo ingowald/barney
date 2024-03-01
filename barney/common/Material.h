@@ -62,13 +62,6 @@ namespace barney {
         cudaTextureObject_t alphaTexture;
       };
     };
-  } // ::barney::render
-
-  /*! barney 'virtual' material implementation that takes anari-like
-      material paramters, and then builder barney::render:: style
-      device materials to be put into the device geometries */
-  struct Material : public SlottedObject {
-    typedef std::shared_ptr<Material> SP;
 
     struct HitBRDF {
       /*! helper function to set this to a matte material, primarily
@@ -98,6 +91,17 @@ namespace barney {
       };
     };
     
+  } // ::barney::render
+
+  /*! barney 'virtual' material implementation that takes anari-like
+      material paramters, and then builder barney::render:: style
+      device materials to be put into the device geometries */
+  struct Material : public SlottedObject {
+    typedef std::shared_ptr<Material> SP;
+
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "<Material>"; }
+
     /*! device-data, as a union of _all_ possible device-side
         materials; we have to use a union here because no matter what
         virtual barney::Material gets created on the host, we have to
@@ -110,7 +114,7 @@ namespace barney {
       inline DD() {}
       inline __device__ bool  hasAlpha(bool isShadowRay) const;
       inline __device__ float getAlpha(vec2f tc, bool isShadowRay) const;
-      inline __device__ void  make(HitBRDF &hit, vec3f P, vec3f N,
+      inline __device__ void  make(render::HitBRDF &hit, vec3f P, vec3f N,
                                    vec2f texCoords,
                                    vec3f geometryColor) const;
       int type;
@@ -143,6 +147,9 @@ namespace barney {
     AnariPhysicalMaterial(ModelSlot *owner) : Material(owner) {}
     virtual ~AnariPhysicalMaterial() = default;
     
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "<AnariPhysicalMaterial>"; }
+
     void createDD(DD &dd, int deviceID) const override;
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
@@ -159,6 +166,10 @@ namespace barney {
   struct MiniMaterial : public barney::Material {
     MiniMaterial(ModelSlot *owner) : Material(owner) {}
     virtual ~MiniMaterial() = default;
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "<MiniMaterial>"; }
+
     void createDD(DD &dd, int deviceID) const override;
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
@@ -179,17 +190,17 @@ namespace barney {
 
   
   // ==================================================================
-  // Material::HitBRDF
+  // render::HitBRDF
   // ==================================================================
   
   inline __device__
-  vec3f Material::HitBRDF::eval(render::DG dg, vec3f w_i) const
+  vec3f render::HitBRDF::eval(render::DG dg, vec3f w_i) const
   {
     return mini.baseColor;
   }
   
   inline __device__
-  vec3f Material::HitBRDF::getN() const
+  vec3f render::HitBRDF::getN() const
   {
     vec3f n;
     float scale = 1.f/127.f;
@@ -203,7 +214,7 @@ namespace barney {
   }
 
   inline __device__
-  void Material::HitBRDF::setDG(vec3f P, vec3f N)
+  void render::HitBRDF::setDG(vec3f P, vec3f N)
   {
 #ifdef __CUDACC__
     P = P;
@@ -232,7 +243,7 @@ namespace barney {
   }
 
   inline __device__
-  void Material::HitBRDF::setMatte(vec3f albedo, vec3f P, vec3f N)
+  void render::HitBRDF::setMatte(vec3f albedo, vec3f P, vec3f N)
   {
     setDG(P,N);
     materialType = render::MINI;
@@ -243,7 +254,7 @@ namespace barney {
   }
 
   inline __device__
-  vec3f Material::HitBRDF::getAlbedo() const
+  vec3f render::HitBRDF::getAlbedo() const
   {
     /* TODO: switch-statement over materialtype */
     return mini.baseColor;
@@ -279,7 +290,7 @@ namespace barney {
   }
   
   inline __device__
-  void Material::DD::make(HitBRDF &hit, vec3f P, vec3f N,
+  void Material::DD::make(render::HitBRDF &hit, vec3f P, vec3f N,
                           vec2f tc,
                           vec3f geometryColor) const
   {
