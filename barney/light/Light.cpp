@@ -14,13 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/Light.h"
-#include "barney/DataGroup.h"
+#include "barney/light/Light.h"
+#include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
 namespace barney {
 
-  Light::SP Light::create(DataGroup *owner,
+  Light::SP Light::create(ModelSlot *owner,
                           const std::string &type)
   {
     if (type == "directional")
@@ -60,32 +60,10 @@ namespace barney {
   
   void EnvMapLight::commit()
   {
-    // if (envMap.texels) {
-    //   envMap.texelsBuffer = envMap.texels->owl;
-    //   std::vector<vec4f> texels(envMap.texels->count);
-    //   SetActiveGPU forDuration(owner->devGroup->devices[0]);
-    //   BARNEY_CUDA_CALL(Memcpy(texels.data(),owlBufferGetPointer(envMap.texels->owl,0),
-    //                           envMap.texels->count*sizeof(vec4f),cudaMemcpyDefault));
-    //   BARNEY_CUDA_SYNC_CHECK();
-    //   float sum = 0.f;
-    //   for (int i=0;i<envMap.texels->count;i++) {
-    //     sum += reduce_max((const vec3f&)texels[i]);
-    //     texels[i].w = sum;
-    //   }
-    //   float rcp_sum = 1.f/sum;
-    //   for (int i=0;i<envMap.texels->count;i++) 
-    //     texels[i].w *= rcp_sum;
-    //   std::cout << "done computing CDF of envmap..." << std::endl;
-    //   owlBufferUpload(envMap.texels->owl,texels.data());
-    // }
   }
   
   bool EnvMapLight::set2i(const std::string &member, const vec2i &value) 
   {
-    // if (member == "envMap.dims") {
-    //   envMap.dims = value;
-    //   return true;
-    // }
     return false;
   }
 

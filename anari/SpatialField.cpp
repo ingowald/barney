@@ -3,9 +3,8 @@
 
 // std
 #include <cfloat>
-/// anari
-#include "helium/array/Array3D.h"
 // ours
+#include "Array.h"
 #include "SpatialField.h"
 
 namespace barney_device {
@@ -38,6 +37,7 @@ void SpatialField::markCommitted()
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 // StructuredRegularField //
+
 StructuredRegularField::StructuredRegularField(BarneyGlobalState *s)
     : SpatialField(s)
 {}
@@ -45,38 +45,34 @@ StructuredRegularField::StructuredRegularField(BarneyGlobalState *s)
 void StructuredRegularField::commit()
 {
   Object::commit();
-  m_dataArray = getParamObject<helium::Array3D>("data");
+  m_data = getParamObject<helium::Array3D>("data");
 
-  if (!m_dataArray) {
+  if (!m_data) {
     reportMessage(ANARI_SEVERITY_WARNING,
         "missing required parameter 'data' on 'structuredRegular' field");
     return;
   }
 
-  m_data = m_dataArray->data();
-  m_type = m_dataArray->elementType();
-  m_dims = m_dataArray->size();
-
   m_origin = getParam<helium::float3>("origin", helium::float3(0.f));
   m_spacing = getParam<helium::float3>("spacing", helium::float3(1.f));
 
-  m_invSpacing = 1.f / m_spacing;
-  m_coordUpperBound = helium::float3(std::nextafter(m_dims.x - 1, 0),
-      std::nextafter(m_dims.y - 1, 0),
-      std::nextafter(m_dims.z - 1, 0));
+  const auto dims = m_data->size();
+  m_coordUpperBound = helium::float3(std::nextafter(dims.x - 1, 0),
+      std::nextafter(dims.y - 1, 0),
+      std::nextafter(dims.z - 1, 0));
 }
 
 bool StructuredRegularField::isValid() const
 {
-  return m_dataArray;
+  return m_data;
 }
 
 BNScalarField StructuredRegularField::makeBarneyScalarField(
-    BNDataGroup dg) const
+    BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
   BNScalarType barneyType;
-  switch (m_type) {
+  switch (m_data->elementType()) {
   case ANARI_FLOAT32:
     barneyType = BN_SCALAR_FLOAT;
     break;
@@ -97,10 +93,12 @@ BNScalarField StructuredRegularField::makeBarneyScalarField(
   default:
     throw std::runtime_error("scalar type not implemented ...");
   }
-  return bnStructuredDataCreate(dg,
-      (const int3 &)m_dims,
+  auto dims = m_data->size();
+  return bnStructuredDataCreate(model,
+      slot,
+      (const int3 &)dims,
       barneyType,
-      m_data,
+      m_data->data(),
       (const float3 &)m_origin,
       (const float3 &)m_spacing);
 }
@@ -110,6 +108,15 @@ box3 StructuredRegularField::bounds() const
   return isValid()
       ? box3(m_origin, m_origin + ((helium::float3(m_dims) - 1.f) * m_spacing))
       : box3{};
+}
+
+size_t StructuredRegularField::numRequiredGPUBytes() const
+{
+  return getNumBytes(m_generatedCellWidths)
+      + getNumBytes(m_generatedBlockBounds)
+      + getNumBytes(m_generatedBlockLevels)
+      + getNumBytes(m_generatedBlockOffsets)
+      + getNumBytes(m_generatedBlockScalars);
 }
 
 // UnstructuredField //
@@ -249,10 +256,12 @@ void UnstructuredField::commit()
   }
 }
 
-BNScalarField UnstructuredField::makeBarneyScalarField(BNDataGroup dg) const
+BNScalarField UnstructuredField::makeBarneyScalarField(
+    BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
-  return bnUMeshCreate(dg,
+  return bnUMeshCreate(model,
+      slot,
       m_generatedVertices.data(),
       m_generatedVertices.size() / 4,
       m_generatedTets.data(),
@@ -274,6 +283,15 @@ BNScalarField UnstructuredField::makeBarneyScalarField(BNDataGroup dg) const
 box3 UnstructuredField::bounds() const
 {
   return m_bounds;
+}
+
+size_t UnstructuredField::numRequiredGPUBytes() const
+{
+  return getNumBytes(m_generatedVertices) + getNumBytes(m_generatedTets)
+      + getNumBytes(m_generatedPyrs) + getNumBytes(m_generatedWedges)
+      + getNumBytes(m_generatedHexes) + getNumBytes(m_generatedGridOffsets)
+      + getNumBytes(m_generatedGridDims) + getNumBytes(m_generatedGridDomains)
+      + getNumBytes(m_generatedGridScalars);
 }
 
 // BlockStructuredField //
@@ -355,11 +373,11 @@ void BlockStructuredField::commit()
   }
 }
 
-BNScalarField BlockStructuredField::makeBarneyScalarField(BNDataGroup dg) const
+BNScalarField BlockStructuredField::makeBarneyScalarField(
+    BNModel model, int slot) const
 {
-  auto ctx = deviceState()->context;
-  return bnBlockStructuredAMRCreate(dg,
-      // m_generatedCellWidths.data(),
+  return bnBlockStructuredAMRCreate(model,
+      slot,
       m_generatedBlockBounds.data(),
       m_generatedBlockBounds.size() / 6,
       m_generatedBlockLevels.data(),
@@ -371,6 +389,14 @@ BNScalarField BlockStructuredField::makeBarneyScalarField(BNDataGroup dg) const
 box3 BlockStructuredField::bounds() const
 {
   return m_bounds;
+}
+
+size_t BlockStructuredField::numRequiredGPUBytes() const
+{
+  return getNumBytes(m_generatedBlockBounds)
+      + getNumBytes(m_generatedBlockLevels)
+      + getNumBytes(m_generatedBlockOffsets)
+      + getNumBytes(m_generatedBlockScalars);
 }
 
 } // namespace barney_device

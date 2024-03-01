@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,19 +17,19 @@
 #pragma once
 
 #include "barney/Context.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
   
-  struct Model : public Object {
-    typedef std::shared_ptr<Model> SP;
+  struct GlobalModel : public Object {
+    typedef std::shared_ptr<GlobalModel> SP;
 
-    static SP create(Context *ctx) { return std::make_shared<Model>(ctx); }
+    static SP create(Context *ctx) { return std::make_shared<GlobalModel>(ctx); }
     
-    Model(Context *context);
-    virtual ~Model();
+    GlobalModel(Context *context);
+    virtual ~GlobalModel();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -39,13 +39,13 @@ namespace barney {
                 FrameBuffer *fb,
                 int pathsPerPixel);
 
-    DataGroup *getDG(int localID)
+    ModelSlot *getSlot(int whichSlot)
     {
-      assert(localID >= 0);
-      assert(localID < dataGroups.size());
-      return dataGroups[localID].get();
+      assert(whichSlot >= 0);
+      assert(whichSlot < modelSlots.size());
+      return modelSlots[whichSlot].get();
     }
-    std::vector<DataGroup::SP> dataGroups;
+    std::vector<ModelSlot::SP> modelSlots;
   };
 
 }

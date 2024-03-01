@@ -35,7 +35,7 @@ void TransferFunction1D::commit()
 
   cleanup();
 
-  m_field = getParamObject<SpatialField>("field");
+  m_field = getParamObject<SpatialField>("value");
   if (!m_field) {
     reportMessage(ANARI_SEVERITY_WARNING,
         "no spatial field provided to transferFunction1D volume");
@@ -95,13 +95,14 @@ void TransferFunction1D::commit()
   }
 }
 
-BNVolume TransferFunction1D::makeBarneyVolume(BNDataGroup dg) const
+BNVolume TransferFunction1D::makeBarneyVolume(BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
   static BNVolume bnVol{
       nullptr}; // TODO: really find out if volume has changed!
   if (!bnVol) {
-    bnVol = bnVolumeCreate(dg, m_field->makeBarneyScalarField(dg));
+    bnVol = bnVolumeCreate(
+        model, slot, m_field->makeBarneyScalarField(model, slot));
   }
   bnVolumeSetXF(bnVol,
       (float2 &)m_valueRange,
@@ -114,6 +115,11 @@ BNVolume TransferFunction1D::makeBarneyVolume(BNDataGroup dg) const
 box3 TransferFunction1D::bounds() const
 {
   return m_bounds;
+}
+
+size_t TransferFunction1D::numRequiredGPUBytes() const
+{
+  return m_field ? m_field->numRequiredGPUBytes() : size_t(0);
 }
 
 void TransferFunction1D::cleanup() {}

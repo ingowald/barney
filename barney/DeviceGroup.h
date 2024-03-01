@@ -86,7 +86,7 @@ namespace barney {
   struct DevGroup {
     typedef std::shared_ptr<DevGroup> SP;
 
-    DevGroup(int ldgID,
+    DevGroup(int lmsIdx,
              const std::vector<int> &gpuIDs,
              int globalIndex,
              int globalIndexStep);
@@ -120,8 +120,11 @@ namespace barney {
     std::vector<Device::SP>  devices;
     bool programsDirty = true;
     bool sbtDirty = true;
-    /*! local device group ID */
-    int const ldgID;
+    /*! local model slot index. this this is the *local index* of the
+        slot, not the global rank of the the model part that is loaded
+        into it; i.e., this always starts with '0' on each rank, no
+        matter what data the app loads into it */
+    int const lmsIdx;
 
   };
   

@@ -22,7 +22,7 @@ struct SpatialField : public Object
 
   void markCommitted() override;
 
-  virtual BNScalarField makeBarneyScalarField(BNDataGroup dg) const = 0;
+  virtual BNScalarField makeBarneyScalarField(BNModel model, int slot) const = 0;
 
   virtual box3 bounds() const = 0;
 };
@@ -34,10 +34,13 @@ struct UnstructuredField : public SpatialField
   UnstructuredField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
 
+  size_t numRequiredGPUBytes() const override;
+
+ private:
   struct Parameters
   {
     helium::IntrusivePtr<helium::Array1D> vertexPosition;
@@ -68,9 +71,11 @@ struct BlockStructuredField : public SpatialField
   BlockStructuredField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
+
+  size_t numRequiredGPUBytes() const override;
 
   struct Parameters
   {
@@ -80,7 +85,6 @@ struct BlockStructuredField : public SpatialField
     helium::IntrusivePtr<helium::ObjectArray> blockData;
   } m_params;
 
-  std::vector<float> m_generatedCellWidths;
   std::vector<int> m_generatedBlockBounds;
   std::vector<int> m_generatedBlockLevels;
   std::vector<int> m_generatedBlockOffsets;
@@ -94,15 +98,16 @@ struct StructuredRegularField : public SpatialField
   StructuredRegularField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNDataGroup dg) const;
+  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
   bool isValid() const override;
 
+  size_t numRequiredGPUBytes() const override;
+
   math::uint3 m_dims{0u};
   math::float3 m_origin;
   math::float3 m_spacing;
-  math::float3 m_invSpacing;
   math::float3 m_coordUpperBound;
 
   std::vector<float> m_generatedCellWidths;
@@ -111,14 +116,7 @@ struct StructuredRegularField : public SpatialField
   std::vector<int> m_generatedBlockOffsets;
   std::vector<float> m_generatedBlockScalars;
 
-  helium::IntrusivePtr<helium::Array3D> m_dataArray;
-
-  /*! iw - i'm _fairly_ sure that this should be something more
-      specific ... some intrusive-pointer something .... */
-  const void *m_data{nullptr};
-  anari::DataType m_type{ANARI_UNKNOWN};
-
-  // box3 m_bounds;
+  helium::IntrusivePtr<helium::Array3D> m_data;
 };
 
 } // namespace barney_device

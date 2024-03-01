@@ -31,7 +31,7 @@ void Group::markCommitted()
   Object::markCommitted();
 }
 
-BNGroup Group::makeBarneyGroup(BNDataGroup dg) const
+  BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
 {
   std::vector<BNGeom> barneyGeometries;
   std::vector<Surface *> surfaces;
@@ -49,7 +49,7 @@ BNGroup Group::makeBarneyGroup(BNDataGroup dg) const
   }
 
   for (auto s : surfaces)
-    barneyGeometries.push_back(s->makeBarneyGeom(dg));
+    barneyGeometries.push_back(s->makeBarneyGeom(model,slot));
 
   if (m_volumeData) {
     std::for_each(
@@ -61,13 +61,22 @@ BNGroup Group::makeBarneyGroup(BNDataGroup dg) const
   }
 
   for (auto v : volumes)
-    barneyVolumes.push_back(v->makeBarneyVolume(dg));
+    barneyVolumes.push_back(v->makeBarneyVolume(model,slot));
 
-  return bnGroupCreate(dg,
+  BNGroup bg = bnGroupCreate(model,slot,
       barneyGeometries.data(),
       barneyGeometries.size(),
       barneyVolumes.data(),
       barneyVolumes.size());
+  bnGroupBuild(bg);
+
+  for (auto bng : barneyGeometries)
+    bnRelease(bng);
+
+  for (auto bnv : barneyVolumes)
+    bnRelease(bnv);
+
+  return bg;
 }
 
 box3 Group::bounds() const

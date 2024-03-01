@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -24,7 +24,7 @@
 
 namespace barney {
 
-  struct DataGroup;
+  struct ModelSlot;
   struct Volume;
   struct ScalarField;
   struct MCGrid;
@@ -68,7 +68,7 @@ namespace barney {
     /*! one particular problem of _volume_ accels is that due to
         changes to the transfer function the number of 'valid'
         (owl-)prims in a given group can change over successive
-        builds. one optoin to handle that is to always rebuild
+        builds. one option to handle that is to always rebuild
         everything form scratch, but that is expensive. Instead, we
         have this function to allow a given volume to specify whether
         it wants a full rebuild (either because it doesn't have nay

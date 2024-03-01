@@ -123,18 +123,20 @@ add_library(barney STATIC
   fb/TiledFB.h
   fb/TiledFB.cu
   # model/group/data group handling
-  Model.h
-  Model.cpp
+  GlobalModel.h
+  GlobalModel.cpp
   Group.h
   Group.cpp
-  DataGroup.h
-  DataGroup.cpp
-  Data.h
-  Data.cpp
-  Light.h
-  Light.cpp
-  Texture.h
-  Texture.cpp
+  ModelSlot.h
+  ModelSlot.cpp
+  # general common/data-related stuff
+  common/Texture.h
+  common/Texture.cpp
+  common/Data.h
+  common/Data.cpp
+  # lights
+  light/Light.h
+  light/Light.cpp
   # actual geometry types
   common/Material.h
   common/Material.cpp

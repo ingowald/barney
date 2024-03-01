@@ -34,7 +34,6 @@ int main(int, char **)
   
   while (getCurrentTime() - t0 < numSecondsToRun) {
     BNModel model = bnModelCreate(ctx);
-    BNDataGroup dg = bnGetDataGroup(model,0);
     int numMeshes = randomInt(1,5);
     std::vector<BNGeom> geoms;
     for (int j=0;j<numMeshes;j++) {
@@ -72,7 +71,7 @@ int main(int, char **)
       }
       BNMaterialHelper mat;
       BNGeom mesh = bnTriangleMeshCreate
-        (dg,&mat,
+        (model,0,&mat,
          (int3*)indices.data(),(int)indices.size(),
          (float3*)vertices.data(),(int)vertices.size(),
          haveNor?(float3*)normals.data():nullptr,
@@ -83,7 +82,7 @@ int main(int, char **)
     }
 
     BNGroup group
-      = bnGroupCreate(dg,geoms.data(),(int)geoms.size(),0,0);
+      = bnGroupCreate(model,0,geoms.data(),(int)geoms.size(),0,0);
     for (auto mesh : geoms) 
       bnRelease(mesh);
     

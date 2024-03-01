@@ -255,11 +255,25 @@ void BarneyDevice::initDevice()
   if (!mpiInitialized)
     MPI_Init(nullptr, nullptr);
   int rank, size;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  state.context = bnMPIContextCreate(MPI_COMM_WORLD,&rank,1,nullptr,0);
+  state.context = bnMPIContextCreate(MPI_COMM_WORLD, &rank, 1, nullptr, 0);
+
+  auto &info = state.bnInfo;
+  bnMPIQueryHardware(&info, MPI_COMM_WORLD);
+  reportMessage(ANARI_SEVERITY_DEBUG, "BNHardwareInfo:");
+  reportMessage(ANARI_SEVERITY_DEBUG, "    numRanks: %i", info.numRanks);
+  reportMessage(ANARI_SEVERITY_DEBUG, "    numHosts: %i", info.numHosts);
+  reportMessage(
+      ANARI_SEVERITY_DEBUG, "    numGPUsThisRank: %i", info.numGPUsThisRank);
+  reportMessage(
+      ANARI_SEVERITY_DEBUG, "    numGPUsThisHost: %i", info.numGPUsThisHost);
+  reportMessage(
+      ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
+  reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
 #else
   state.context = bnContextCreate();
+  std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
 #endif
   reportMessage(
       ANARI_SEVERITY_DEBUG, "created barney context (%p)", state.context);
