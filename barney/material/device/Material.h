@@ -224,7 +224,6 @@ namespace barney {
         mini.make(hit.mini,tc,geometryColor,dbg);
         break;
       case VELVET:
-        if (dbg) printf("making velvet N %f %f %f\n",N.x,N.y,N.z);
         velvet.make(hit.velvet,dbg);
         break;
       default:

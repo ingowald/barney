@@ -698,16 +698,11 @@ namespace barney {
           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
           path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
         } else {
-          if (path.dbg) {
-            vec3f dir = path.dir;
-            printf("dir %f %f %f dotN %f w_oDOTn %f\n",
-                   dir.x,
-                   dir.y,
-                   dir.z,dot(dir,dg.N),dot(dg.N,dg.wo));
-          }
           path.dir = sampleCosineWeightedHemisphere(dg.N,random);
           EvalRes f_r = path.hit.eval(dg,path.dir,path.dbg);
-          path.throughput = path.throughput * f_r.value/f_r.pdf;//baseColor;
+          path.throughput = path.throughput * f_r.value
+            // /f_r.pdf
+            ;//baseColor;
         }
       }
 
@@ -732,24 +727,11 @@ namespace barney {
       } else
         path.tMax = -1.f;
     
-      // if (path.dbg)
-      //   printf(" -> outgoing %f %f %f dir %f %f %f %f\n",
-      //          path.org.x,
-      //          path.org.y,
-      //          path.org.z,
-      //          (float)path.dir.x,
-      //          (float)path.dir.y,
-      //          (float)path.dir.z,
-      //          path.tMax);
-    
-    
       // ==================================================================
       // now, check for shadow ray
       // ==================================================================
       LightSample ls;
       if (!doTransmission && sampleLights(ls,world,path.hit.P,Ng,random,path.dbg)) {
-        if (path.dbg)
-          printf("SHADOW RAY:\n");
         EvalRes f_r = path.hit.eval(dg,ls.dir,path.dbg);
         shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)*(1.f/ls.pdf)
                                 * f_r.value / f_r.pdf,
