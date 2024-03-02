@@ -55,6 +55,7 @@ void StructuredRegularField::commit()
 
   m_origin = getParam<helium::float3>("origin", helium::float3(0.f));
   m_spacing = getParam<helium::float3>("spacing", helium::float3(1.f));
+  m_dims = m_data->size();
 
   const auto dims = m_data->size();
   m_coordUpperBound = helium::float3(std::nextafter(dims.x - 1, 0),
