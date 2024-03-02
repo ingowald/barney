@@ -691,12 +691,12 @@ namespace barney {
         // ------------------------------------------------------------------
         // not perfectly specular - do diffuse bounce for now...
         // ------------------------------------------------------------------
-      
+
         // save local path weight for the shadow ray:
         path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
         if (isVolumeHit) {
           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
-          path.throughput = .8f * path.throughput * path.hit.eval(dg,path.dir);//hit.baseColor;
+          path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
         } else { 
           path.dir = sampleCosineWeightedHemisphere(dg.N,random);
           path.throughput = path.throughput * path.hit.eval(dg,path.dir);//baseColor;
@@ -774,6 +774,8 @@ namespace barney {
       // create a (potential) shadow ray, and init to 'invalid'
       Ray shadowRay;
 
+        // printf("sammpling dir for N %f %f %f\n",dg.N.x,dg.N.y,dg.N.z);
+
       // bounce that ray on the scene, possibly generating a) a fragment
       // to add to frame buffer; b) a outgoing ray (in-place
       // modification of 'path'); and/or c) a shadow ray
@@ -837,8 +839,7 @@ namespace barney {
 
     DevGroup *dg = device->devGroup;
     World *world = &model->getSlot(dg->lmsIdx)->world;
-    
-    
+
     if (nb) {
       switch(renderMode) {
       // case RENDER_MODE_LOCAL:

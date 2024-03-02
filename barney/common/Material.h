@@ -116,7 +116,7 @@ namespace barney {
       inline __device__ float getAlpha(vec2f tc, bool isShadowRay) const;
       inline __device__ void  make(render::HitBRDF &hit, vec3f P, vec3f N,
                                    vec2f texCoords,
-                                   vec3f geometryColor) const;
+                                   vec3f geometryColor, bool dbg=false) const;
       int type;
       union {
         render::AnariPhysical::DD anari;
@@ -293,8 +293,10 @@ namespace barney {
   inline __device__
   void Material::DD::make(render::HitBRDF &hit, vec3f P, vec3f N,
                           vec2f tc,
-                          vec3f geometryColor) const
+                          vec3f geometryColor,
+                          bool dbg) const
   {
+    hit.setDG(P,N);
 #ifdef __CUDACC__
     /* TODO: switch-statement over materialtype */
     hit.materialType = render::MINI;

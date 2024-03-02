@@ -39,7 +39,7 @@ namespace barney {
                                   vec2f texCoords=vec2f(0.f),
                                   vec3f geometryColor=vec3f(NAN))
     {
-      material.make(hit,P,N,texCoords,geometryColor);
+      material.make(hit,P,N,texCoords,geometryColor,this->dbg);
       tMax = t;
       hadHit = true;
       //   hit.P = P;

@@ -69,6 +69,9 @@ namespace barney {
     // rand();
     // rand();
     // rand();
+
+    if (ray.dbg)
+      printf("debug on!?\n");
     
     ray.org  = camera.lens_00;
     ray.dir
