@@ -114,7 +114,6 @@ namespace barney {
     
     material->setDeviceDataOn(geom);
   }
-
   
 }
 

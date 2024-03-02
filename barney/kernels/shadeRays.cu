@@ -823,7 +823,7 @@ namespace barney {
     if (renderMode == RENDER_MODE_UNDEFINED) {
       const char *_fromEnv = getenv("BARNEY_RENDER");
       if (!_fromEnv)
-        _fromEnv = "AO";
+        _fromEnv = "pt";
       const std::string mode = _fromEnv;
       if (mode == "AO" || mode == "ao")
         renderMode = RENDER_MODE_AO;

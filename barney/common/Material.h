@@ -226,6 +226,7 @@ namespace barney {
       quantized_ny_sign = 0;
       quantized_nz_sign = 0;
     } else {
+      // N = normalize(N);
       auto quantize = [](float f) {
         return min(127,int(fabsf(f*128)));
       };

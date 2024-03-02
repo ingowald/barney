@@ -60,27 +60,10 @@ namespace barney {
 
   void Material::setDeviceDataOn(OWLGeom geom) const
   {
-    for (int deviceID=0;deviceID=owner->devGroup->size();deviceID++) {
+    for (int deviceID=0;deviceID<owner->devGroup->size();deviceID++) {
       Material::DD dd;
       createDD(dd,deviceID);
       owlGeomSetRaw(geom,"material",&dd,deviceID);
-    // owlGeomSet3f(geom,"material.baseColor",
-    //              baseColor.x,
-    //              baseColor.y,
-    //              baseColor.z);
-    // owlGeomSet1f(geom,"material.transmission",transmission);
-    // owlGeomSet1f(geom,"material.roughness",roughness);
-    // owlGeomSet1f(geom,"material.metallic",metallic);
-    // owlGeomSet1f(geom,"material.ior",ior);
-    // owlGeomSetTexture(geom,"material.alphaTexture",
-    //                   alphaTexture
-    //                   ? alphaTexture->owlTex
-    //                   : (OWLTexture)0
-    //                   );
-    // owlGeomSetTexture(geom,"material.colorTexture",
-    //                   colorTexture
-    //                   ? colorTexture->owlTex
-    //                   : (OWLTexture)0
     }
   }
 

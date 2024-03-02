@@ -95,14 +95,21 @@ namespace barney {
   
   bool Geometry::setObject(const std::string &member, const Object::SP &value)
   {
-    if (member == "material.colorTexture") {
-      material->setObject("colorTexture",value);
+    if (member == "material") {
+      // material->setObject("colorTexture",value);
+      material = value->as<Material>();
+      if (!material)
+        throw std::runtime_error("invalid material in geometry::set(\"material\"");
       return true;
     }
-    if (member == "material.alphaTexture") {
-      material->setObject("alphaTexture",value);
-      return true;
-    }
+    // if (member == "material.colorTexture") {
+    //   material->setObject("colorTexture",value);
+    //   return true;
+    // }
+    // if (member == "material.alphaTexture") {
+    //   material->setObject("alphaTexture",value);
+    //   return true;
+    // }
     return false;
   }
 

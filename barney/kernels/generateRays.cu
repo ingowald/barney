@@ -107,7 +107,7 @@ namespace barney {
     bool crossHair = ((ix == fbSize.x/2) || (iy == fbSize.y/2));
     ray.hit.missColor
       = crossHair
-      ? vec3f(1.f)
+      ? vec3f(1.f,0.f,0.f)
       : bgColor*bgColor;
     // ray.hit.baseColor = .5f*ray.hit.baseColor*ray.hit.baseColor;
     // if (crossHair && !ray.dbg)
