@@ -17,10 +17,8 @@ struct Material : public Object
 
   void markCommitted() override;
 
-  const BNMaterialHelper *barneyMaterial() const;
+  virtual BNMaterial makeBarneyMaterial(BNModel model, int slot) const = 0;
 
- protected:
-  BNMaterialHelper m_bnMaterialData;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -29,12 +27,37 @@ struct Matte : public Material
 {
   Matte(BarneyGlobalState *s);
   void commit() override;
+
+  BNMaterial makeBarneyMaterial(BNModel model, int slot) const override;
+
+ private:
+  math::float4 m_color{1.f, 1.f, 1.f, 1.f};
 };
 
 struct PhysicallyBased : public Material
 {
   PhysicallyBased(BarneyGlobalState *s);
   void commit() override;
+
+  BNMaterial makeBarneyMaterial(BNModel model, int slot) const override;
+
+ private:
+  struct {
+    math::float4 value{1.f, 1.f, 1.f, 1.f};
+    /*TODO: samplers, attributes, etc.*/
+  } m_baseColor;
+
+  struct {
+    math::float3 value{1.f, 1.f, 1.f};
+    /*TODO: samplers, attributes, etc.*/
+  } m_emissive, m_specularColor;
+
+  struct {
+    float value{1.f};
+    /*TODO: samplers, attributes, etc.*/
+  } m_opacity, m_metallic, m_roughness, m_specular, m_transmission;
+
+  float m_ior{1.5f};
 };
 
 } // namespace barney_device

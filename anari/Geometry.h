@@ -19,7 +19,7 @@ struct Geometry : public Object
   void markCommitted() override;
 
   virtual BNGeom makeBarneyGeometry(
-      BNModel model, int slot, const BNMaterialHelper *material) const = 0;
+      BNModel model, int slot, const BNMaterial material) const = 0;
 
   virtual box3 bounds() const = 0;
 };
@@ -32,7 +32,7 @@ struct Sphere : public Geometry
   void commit() override;
 
   BNGeom makeBarneyGeometry(
-      BNModel model, int slot, const BNMaterialHelper *material) const override;
+      BNModel model, int slot, const BNMaterial material) const override;
 
   box3 bounds() const override;
 
@@ -57,7 +57,7 @@ struct Triangle : public Geometry
   void commit() override;
 
   BNGeom makeBarneyGeometry(
-      BNModel model, int slot, const BNMaterialHelper *material) const override;
+      BNModel model, int slot, const BNMaterial material) const override;
 
   box3 bounds() const override;
 

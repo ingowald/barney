@@ -564,6 +564,13 @@ namespace barney {
   }
 
   BN_API
+  void bnSet3f(BNObject target, const char *param, float x, float y, float z)
+  {
+    if (!checkGet(target)->set3f(checkGet(param),vec3f(x,y,z)))
+      checkGet(target)->warn_unsupported_member(param,"vec3f");
+  }
+
+  BN_API
   void bnSet3fc(BNObject target, const char *param, float3 value)
   {
     if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))

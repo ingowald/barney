@@ -45,12 +45,18 @@ const Material *Surface::material() const
 BNGeom Surface::makeBarneyGeom(BNModel model, int slot) const
 {
   return geometry()->makeBarneyGeometry(
-      model, slot, material()->barneyMaterial());
+      model, slot, material()->makeBarneyMaterial(model, slot));
 }
 
 size_t Surface::numRequiredGPUBytes() const
 {
   return m_geometry ? m_geometry->numRequiredGPUBytes() : size_t(0);
+}
+
+bool Surface::isValid() const
+{
+  return m_geometry && m_material && m_geometry->isValid()
+      && m_material->isValid();
 }
 
 } // namespace barney_device

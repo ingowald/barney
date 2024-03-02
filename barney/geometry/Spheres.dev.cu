@@ -25,8 +25,9 @@ namespace barney {
   {
     const Spheres::DD &geom = *(const Spheres::DD *)geomData;
     vec3f origin = geom.origins[primID];
-    bounds.lower = origin - geom.defaultRadius;
-    bounds.upper = origin + geom.defaultRadius;
+    float radius = geom.radii?geom.radii[primID]:geom.defaultRadius;
+    bounds.lower = origin - radius;
+    bounds.upper = origin + radius;
   }
 
   OPTIX_CLOSEST_HIT_PROGRAM(SpheresCH)()
@@ -42,7 +43,7 @@ namespace barney {
     vec3f dir = optixGetWorldRayDirection();
     vec3f P   = org + t_hit * dir;
     vec3f center = self.origins[primID];
-    float radius = self.defaultRadius;
+    float radius = self.radii?self.radii[primID]:self.defaultRadius;
     vec3f N;
     if (P == center) {
       N = -normalize(dir);
@@ -67,7 +68,7 @@ namespace barney {
       = owl::getProgramData<Spheres::DD>();
 
     vec3f center = self.origins[primID];
-    float radius = self.defaultRadius;
+    float radius = self.radii?self.radii[primID]:self.defaultRadius;
 
 #if 1
     // with "move the origin" trick; see Ray Tracing Gems 2

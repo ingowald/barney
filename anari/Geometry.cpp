@@ -51,12 +51,6 @@ void Sphere::commit()
     return;
   }
 
-  if (!m_vertexPosition) {
-    reportMessage(ANARI_SEVERITY_WARNING,
-        "missing required parameter 'vertex.radius' on sphere geometry");
-    return;
-  }
-
   if (m_index) {
     reportMessage(ANARI_SEVERITY_WARNING,
         "primitive.index parameter on sphere geometry not yet supported");
@@ -70,7 +64,7 @@ void Sphere::commit()
 }
 
 BNGeom Sphere::makeBarneyGeometry(
-    BNModel model, int slot, const BNMaterialHelper *material) const
+    BNModel model, int slot, const BNMaterial material) const
 {
   BNGeom geom = bnGeometryCreate(model, slot, "spheres");
   BNData origins = bnDataCreate(model,
@@ -88,7 +82,7 @@ BNGeom Sphere::makeBarneyGeometry(
     bnSetData(geom, "radii", radii);
   } else
     bnSet1f(geom, "radius", m_globalRadius);
-  bnAssignMaterial(geom, material);
+  bnSetObject(geom, "material", material);
   bnCommit(geom);
   return geom;
 }
@@ -104,14 +98,16 @@ box3 Sphere::bounds() const
         m_index->beginAs<uint32_t>() + m_index->totalSize(),
         [&](uint32_t index) {
           math::float3 v = *(m_vertexPosition->beginAs<math::float3>() + index);
-          float r = *(m_vertexRadius->beginAs<float>() + index);
+          float r = m_vertexRadius ?
+              *(m_vertexRadius->beginAs<float>() + index) : m_globalRadius;
           result.insert(math::float3{v.x - r, v.y - r, v.z - r});
           result.insert(math::float3{v.x + r, v.y + r, v.z + r});
         });
   } else {
     for (size_t i = 0; i < m_vertexPosition->totalSize(); ++i) {
       math::float3 v = *(m_vertexPosition->beginAs<math::float3>() + i);
-      float r = *(m_vertexRadius->beginAs<float>() + i);
+      float r = m_vertexRadius ?
+          *(m_vertexRadius->beginAs<float>() + i) : m_globalRadius;
       result.insert(math::float3{v.x - r, v.y - r, v.z - r});
       result.insert(math::float3{v.x + r, v.y + r, v.z + r});
     }
@@ -168,18 +164,26 @@ void Triangle::commit()
 }
 
 BNGeom Triangle::makeBarneyGeometry(
-    BNModel model, int slot, const BNMaterialHelper *materialData) const
+    BNModel model, int slot, const BNMaterial material) const
 {
-  return bnTriangleMeshCreate(model,
-      slot,
-      materialData,
-      m_index ? (const int3 *)m_index->data()
-              : (const int3 *)m_generatedIndices.data(),
-      m_index ? m_index->size() : (m_generatedIndices.size() / 3),
-      (const float3 *)m_vertexPosition->data(),
-      m_vertexPosition->totalSize(),
-      nullptr,
-      nullptr);
+  BNGeom geom = bnGeometryCreate(model, slot, "triangles");
+
+  int numVertices = m_vertexPosition->totalSize();
+  int numIndices = m_index ? m_index->size() : (m_generatedIndices.size() / 3);
+  const float3 *vertices = (const float3 *)m_vertexPosition->data();
+  const int3 *indices = m_index ? (const int3 *)m_index->data()
+                                : (const int3 *)m_generatedIndices.data();
+
+  BNData _vertices = bnDataCreate(model, slot, BN_FLOAT3, numVertices, vertices);
+  bnSetAndRelease(geom, "vertices" ,_vertices);
+  
+  BNData _indices  = bnDataCreate(model, slot, BN_INT3, numIndices, indices);
+  bnSetAndRelease(geom, "indices", _indices);
+
+  bnSetObject(geom, "material", material);
+  bnCommit(geom);
+
+  return geom;
 }
 
 box3 Triangle::bounds() const
