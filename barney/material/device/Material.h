@@ -229,8 +229,9 @@ namespace barney {
         break;
       default:
 #ifndef NDEBUG
-        printf("invalid material type in DeviceMaterial::make...\n");
+        printf("invalid material type in DeviceMaterial::make...\n")
 #endif
+        ;
       };
     }
 }
