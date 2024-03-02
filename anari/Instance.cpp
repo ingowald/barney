@@ -50,8 +50,23 @@ const BNTransform *Instance::barneyTransform() const
 
 box3 Instance::bounds() const
 {
+  math::mat4 xfm;
+  xfm[0] = math::float4(m_xfm.xfm.l.vx.x, m_xfm.xfm.l.vx.y, m_xfm.xfm.l.vx.z, 0.f);
+  xfm[1] = math::float4(m_xfm.xfm.l.vy.x, m_xfm.xfm.l.vy.y, m_xfm.xfm.l.vy.z, 0.f);
+  xfm[2] = math::float4(m_xfm.xfm.l.vz.x, m_xfm.xfm.l.vz.y, m_xfm.xfm.l.vz.z, 0.f);
+  xfm[3] = math::float4(m_xfm.xfm.p.x, m_xfm.xfm.p.y, m_xfm.xfm.p.z, 1.f);
+
   box3 result = group()->bounds();
-  // TODO: xfm
+
+  math::float4 lower(result.lower, 1.f);
+  math::float4 upper(result.upper, 1.f);
+
+  lower = mul(xfm, lower);
+  upper = mul(xfm, upper);
+
+  result.lower = math::float3(lower.x, lower.y, lower.z);
+  result.upper = math::float3(upper.x, upper.y, upper.z);
+
   return result;
 }
 
