@@ -17,65 +17,16 @@
 #pragma once
 
 #include "barney/material/device/DG.h"
+#include "barney/material/device/BSDF.h"
 
 namespace barney {
   namespace render {
 
     typedef uint32_t BSDFType;
 
-#define BSDF_SPECULAR_REFLECTION   (1<<0)  /*!< perfect specular light reflection   */
-#define BSDF_GLOSSY_REFLECTION     (1<<1)  /*!< glossy light reflection             */
-#define BSDF_DIFFUSE_REFLECTION    (1<<2)  /*!< diffuse light reflection            */
-#define BSDF_SPECULAR_TRANSMISSION (1<<3)  /*!< perfect specular light transmission */
-#define BSDF_GLOSSY_TRANSMISSION   (1<<4)  /*!< glossy light transmission           */
-#define BSDF_DIFFUSE_TRANSMISSION  (1<<5)  /*!< diffuse light transmission          */
-
-/*! diffuse reflections and transmissions */
-#define BSDF_DIFFUSE      (BSDF_DIFFUSE_REFLECTION   | BSDF_DIFFUSE_TRANSMISSION)
-
-/*! glossy reflections and transmissions */
-#define BSDF_GLOSSY       (BSDF_GLOSSY_REFLECTION    | BSDF_GLOSSY_TRANSMISSION)
-
-/*! perfect specular reflections and transmissions */
-#define BSDF_SPECULAR     (BSDF_SPECULAR_REFLECTION  | BSDF_SPECULAR_TRANSMISSION)
-
-/*! all possible reflections */
-#define BSDF_REFLECTION   (BSDF_DIFFUSE_REFLECTION   | BSDF_GLOSSY_REFLECTION   | BSDF_SPECULAR_REFLECTION)
-
-/*! all possible transmissions */
-#define BSDF_TRANSMISSION (BSDF_DIFFUSE_TRANSMISSION | BSDF_GLOSSY_TRANSMISSION | BSDF_SPECULAR_TRANSMISSION)
-
-/*! all non-dirac types */
-#define BSDF_SMOOTH       (BSDF_DIFFUSE | BSDF_GLOSSY)
-
-/*! no component set */
-#define BSDF_NONE         0
-
-/*! all components set */
-#define BSDF_ALL          (BSDF_REFLECTION | BSDF_TRANSMISSION)
-
-    inline __device__
-    float luminance(vec3f c)
-    { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
-
-    struct BSDF {
-      inline __device__ float importance() const { return luminance(albedo); }
-      inline __device__ void init(vec3f albedo, bool dbg=false)
-      {
-        this->albedo = albedo; //this->importance = importance;
-      }
-      vec3h albedo;
-      // half  importance;
-    };
     struct Minneart : public BSDF {
-      inline __device__ void init(vec3f R, float b, bool dbg = false) {
-        BSDF::init(R); this->b = b;
-        if (dbg) printf("Minneart %f %f %f f %f\n",
-                        float(albedo.x),
-                        float(albedo.y),
-                        float(albedo.z),
-                        float(this->b));
-      }
+      inline __device__ void init(vec3f R, float b, bool dbg = false)
+      { BSDF::init(R); this->b = b; }
       inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
       {
         EvalRes res;
@@ -91,15 +42,10 @@ namespace barney {
        *  diffuse, and inf means maximum backscattering. */
       half b;
     };
+    
     struct Velvety : public BSDF {
       inline __device__ void init(vec3f R, float f, bool dbg = false)
-      { BSDF::init(R); this->f = f;
-        if (dbg) printf("Velvety %f %f %f f %f\n",
-                        float(albedo.x),
-                        float(albedo.y),
-                        float(albedo.z),
-                        float(this->f));
-      }
+      { BSDF::init(R); this->f = f; }
       inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
       {
         EvalRes res;
@@ -116,27 +62,16 @@ namespace barney {
        *  and inf means maximum falloff. */
       half f;
     };
+
+    
     struct Velvet {
       struct HitBSDF {
         inline __device__
         vec3f getAlbedo(bool dbg=false) const { return (vec3f)minneart.albedo+(vec3f)velvety.albedo; }
-        // inline __device__ vec3f albedo() const { return minneart.albedo + velvety.albedo; }
-        // inline __device__ int type() const { return minneart.type() | velvety.type(); }
         
         inline __device__
         EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
         {
-          if (dbg)
-            printf("----- Velvet wo %f %f %f N %f %f %f wi %f %f %f\n",
-                   dg.wo.x,
-                   dg.wo.y,
-                   dg.wo.z,
-                   dg.N.x,
-                   dg.N.y,
-                   dg.N.z,
-                   wi.x,
-                   wi.y,
-                   wi.z);
           EvalRes minneart_eval = minneart.eval(dg,wi,dbg);
           float   minneart_imp  = minneart.importance();
           EvalRes velvety_eval  = velvety.eval(dg,wi,dbg);
@@ -146,11 +81,6 @@ namespace barney {
           our_eval.pdf
             = (minneart_imp*minneart_eval.pdf+velvety_imp*velvety_eval.pdf)
             / max(1e-20f,minneart_imp+velvety_imp);
-          if (dbg) printf(" --> value %f %f %f pdf %f\n",
-                          our_eval.value.x,
-                          our_eval.value.y,
-                          our_eval.value.z,
-                          our_eval.pdf);
           return our_eval;
         }
         

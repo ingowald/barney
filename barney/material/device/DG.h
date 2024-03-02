@@ -66,6 +66,10 @@ namespace barney {
     inline __device__ float sin2cos(const float f) { return cos2sin(f); }
     
 
+    inline __device__
+    float luminance(vec3f c)
+    { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
+
 
 
     inline __device__ 
