@@ -64,7 +64,7 @@ void Sphere::commit()
 }
 
 BNGeom Sphere::makeBarneyGeometry(
-    BNModel model, int slot, const BNMaterialHelper *material) const
+    BNModel model, int slot, const BNMaterial material) const
 {
   BNGeom geom = bnGeometryCreate(model, slot, "spheres");
   BNData origins = bnDataCreate(model,
@@ -82,7 +82,7 @@ BNGeom Sphere::makeBarneyGeometry(
     bnSetData(geom, "radii", radii);
   } else
     bnSet1f(geom, "radius", m_globalRadius);
-  bnAssignMaterial(geom, material);
+  bnSetObject(geom, "material", material);
   bnCommit(geom);
   return geom;
 }
@@ -164,18 +164,26 @@ void Triangle::commit()
 }
 
 BNGeom Triangle::makeBarneyGeometry(
-    BNModel model, int slot, const BNMaterialHelper *materialData) const
+    BNModel model, int slot, const BNMaterial material) const
 {
-  return bnTriangleMeshCreate(model,
-      slot,
-      materialData,
-      m_index ? (const int3 *)m_index->data()
-              : (const int3 *)m_generatedIndices.data(),
-      m_index ? m_index->size() : (m_generatedIndices.size() / 3),
-      (const float3 *)m_vertexPosition->data(),
-      m_vertexPosition->totalSize(),
-      nullptr,
-      nullptr);
+  BNGeom geom = bnGeometryCreate(model, slot, "triangles");
+
+  int numVertices = m_vertexPosition->totalSize();
+  int numIndices = m_index ? m_index->size() : (m_generatedIndices.size() / 3);
+  const float3 *vertices = (const float3 *)m_vertexPosition->data();
+  const int3 *indices = m_index ? (const int3 *)m_index->data()
+                                : (const int3 *)m_generatedIndices.data();
+
+  BNData _vertices = bnDataCreate(model, slot, BN_FLOAT3, numVertices, vertices);
+  bnSetAndRelease(geom, "vertices" ,_vertices);
+  
+  BNData _indices  = bnDataCreate(model, slot, BN_INT3, numIndices, indices);
+  bnSetAndRelease(geom, "indices", _indices);
+
+  bnSetObject(geom, "material", material);
+  bnCommit(geom);
+
+  return geom;
 }
 
 box3 Triangle::bounds() const

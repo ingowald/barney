@@ -45,7 +45,7 @@ const Material *Surface::material() const
 BNGeom Surface::makeBarneyGeom(BNModel model, int slot) const
 {
   return geometry()->makeBarneyGeometry(
-      model, slot, material()->barneyMaterial());
+      model, slot, material()->makeBarneyMaterial(model, slot));
 }
 
 size_t Surface::numRequiredGPUBytes() const

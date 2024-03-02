@@ -28,11 +28,6 @@ void Material::markCommitted()
   Object::markCommitted();
 }
 
-const BNMaterialHelper *Material::barneyMaterial() const
-{
-  return &m_bnMaterialData;
-}
-
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 // Matte //
@@ -43,19 +38,16 @@ void Matte::commit()
 {
   Object::commit();
 
-  m_bnMaterialData.ior = 1.5f;
-  m_bnMaterialData.alphaTexture = 0;
-  m_bnMaterialData.colorTexture = 0;
+  m_color = math::float4(1.f, 1.f, 1.f, 1.f);
+  getParam("color", ANARI_FLOAT32_VEC3, &m_color);
+  getParam("color", ANARI_FLOAT32_VEC4, &m_color);
+}
 
-  math::float4 color(0.8f, 0.8f, 0.8f, 1.f);
-  getParam("color", ANARI_FLOAT32_VEC3, &color);
-  getParam("color", ANARI_FLOAT32_VEC4, &color);
-  std::memcpy(&m_bnMaterialData.baseColor, &color, sizeof(float3));
-
-  m_bnMaterialData.transmission = getParam<float>("opacity", color.w);
-  m_bnMaterialData.ior = 1.f;
-  m_bnMaterialData.metallic = 0.f;
-  m_bnMaterialData.roughness = 0.f;
+BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
+{
+  BNMaterial mat = bnMaterialCreate(model, slot, "velvet");
+  bnSet3f(mat, "reflectance", m_color.x, m_color.y, m_color.z);
+  return mat;
 }
 
 // PhysicallyBased //
@@ -66,18 +58,29 @@ void PhysicallyBased::commit()
 {
   Object::commit();
 
-  m_bnMaterialData.alphaTexture = 0;
-  m_bnMaterialData.colorTexture = 0;
+  m_baseColor.value = math::float4(1.f, 1.f, 1.f, 1.f);
+  getParam("baseColor", ANARI_FLOAT32_VEC3, &m_baseColor.value);
+  getParam("baseColor", ANARI_FLOAT32_VEC4, &m_baseColor.value);
 
-  math::float4 color(0.8f, 0.8f, 0.8f, 1.f);
-  getParam("baseColor", ANARI_FLOAT32_VEC3, &color);
-  getParam("baseColor", ANARI_FLOAT32_VEC4, &color);
-  std::memcpy(&m_bnMaterialData.baseColor, &color, sizeof(float3));
+  m_opacity.value = 1.f;
+  getParam("opacity", ANARI_FLOAT32, &m_opacity.value);
 
-  m_bnMaterialData.transmission = getParam<float>("opacity", color.w);
-  m_bnMaterialData.ior = 1.f;
-  m_bnMaterialData.metallic = 0.f;
-  m_bnMaterialData.roughness = 0.f;
+  m_metallic.value = 1.f;
+  getParam("metallic", ANARI_FLOAT32, &m_metallic.value);
+
+  m_roughness.value = 1.f;
+  getParam("roughness", ANARI_FLOAT32, &m_roughness.value);
+
+  m_ior = 1.5f;
+  getParam("ior", ANARI_FLOAT32, &m_ior);
+}
+
+BNMaterial PhysicallyBased::makeBarneyMaterial(BNModel model, int slot) const
+{
+  BNMaterial mat = bnMaterialCreate(model, slot, "velvet");
+  bnSet3f(mat, "reflectance",
+      m_baseColor.value.x, m_baseColor.value.y, m_baseColor.value.z);
+  return mat;
 }
 
 } // namespace barney_device
