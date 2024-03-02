@@ -40,7 +40,7 @@ namespace barney {
 
   Geometry::Geometry(ModelSlot *owner)
     : SlottedObject(owner),
-      material(std::make_shared<MiniMaterial>(owner))
+      material(Material::create(owner,"mini"))
   {}
 
   Geometry::~Geometry()

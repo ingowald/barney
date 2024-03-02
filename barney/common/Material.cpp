@@ -19,11 +19,107 @@
 
 namespace barney {
 
+  struct AnariPhysicalMaterial : public barney::Material {
+    AnariPhysicalMaterial(ModelSlot *owner) : Material(owner) {}
+    virtual ~AnariPhysicalMaterial() = default;
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "<AnariPhysicalMaterial>"; }
+
+    void createDD(DD &dd, int deviceID) const override;
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+    /* iw - i have NO CLUE what goes in here .... */
+    vec3f baseColor { .5f, .5f, .5f };
+  };
+
+  /*! material according to "miniScene" default specification. will
+      internally build a AnariPhyisical device data */
+  struct MiniMaterial : public barney::Material {
+    MiniMaterial(ModelSlot *owner) : Material(owner) {}
+    virtual ~MiniMaterial() = default;
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "MiniMaterial"; }
+
+    void createDD(DD &dd, int deviceID) const override;
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+    vec3f baseColor { .5f, .5f, .5f };
+    vec3f emission  { 0.f };
+    float transmission { 0.f };
+    float roughness    { 0.f };
+    float metallic     { 0.f };
+    float ior          { 1.f };
+    Texture::SP colorTexture;
+    Texture::SP alphaTexture;
+  };
+
+  /*! embree/ospray "Velvet" material */
+  struct Velvet : public barney::Material {
+    Velvet(ModelSlot *owner) : Material(owner) {}
+    virtual ~Velvet() = default;
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "Velvet"; }
+
+    void createDD(DD &dd, int deviceID) const override
+    {
+      dd.materialType = render::MINI;
+      dd.mini.ior = 1.f;
+      dd.mini.transmission = 0.f;
+      dd.mini.baseColor = reflectance;
+      dd.mini.colorTexture = 0;
+      dd.mini.alphaTexture = 0;
+    }
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override {};
+    // bool setObject(const std::string &member, const Object::SP &value) override;
+    bool set1f(const std::string &member, const float &value) override
+    {
+      if (Material::set1f(member,value)) return true;
+      if (member == "backScattering") 
+        { backScattering = value; return true; }
+      if (member == "horizonScatteringFallOff") 
+        { horizonScatteringFallOff = value; return true; }
+      return false;
+    }
+    bool set3f(const std::string &member, const vec3f &value) override
+    {
+      if (Material::set3f(member,value)) return true;
+      if (member == "reflectance") 
+        { reflectance = value; return true; }
+      if (member == "horizonScatteringColor") 
+        { horizonScatteringColor = value; return true; }
+      return false;
+    }
+    /*! @} */
+    // ------------------------------------------------------------------
+    vec3f reflectance { 0.55f, 0.0f, 0.0f };
+    vec3f horizonScatteringColor { 0.75f, 0.2f, 0.2f };
+    float horizonScatteringFallOff = 7.f;
+    float backScattering = .5f;
+  };
+
+  
+  
   void MiniMaterial::commit()
   { /* we dont' yet stage/double-buffer params ... */}
   
   void MiniMaterial::createDD(DD &dd, int deviceID) const
   {
+    dd.materialType = render::MINI;
     dd.mini.ior = ior;
     dd.mini.transmission = transmission;
     dd.mini.baseColor = baseColor;
@@ -39,6 +135,8 @@ namespace barney {
 
   Material::SP Material::create(ModelSlot *dg, const std::string &type)
   {
+    if (type == "velvet")
+      return std::make_shared<Velvet>(dg);
     // iw - "eventually" we should have different materials like
     // 'matte' and 'glass', 'metal' etc here, but for now, let's just
     // ignore the type and create a single one thta contains all
