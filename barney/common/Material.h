@@ -69,7 +69,7 @@ namespace barney {
       inline __device__ void setMatte(vec3f albedo, vec3f P, vec3f N);
       /*! modulate given BRDF with a color form texture, or colors[] array, etc */
       // inline __device__ void modulateBaseColor(vec3f rbga);
-      inline __device__ void setDG(vec3f P, vec3f N);
+      inline __device__ void setDG(vec3f P, vec3f N, bool dbg=false);
       inline __device__ vec3f getAlbedo() const;
       inline __device__ vec3f getN() const;
       inline __device__ vec3f eval(render::DG dg, vec3f w_i) const;
@@ -214,10 +214,10 @@ namespace barney {
   }
 
   inline __device__
-  void render::HitBRDF::setDG(vec3f P, vec3f N)
+  void render::HitBRDF::setDG(vec3f P, vec3f N, bool dbg)
   {
 #ifdef __CUDACC__
-    P = P;
+    this->P = P;
     if (N == vec3f(0.f)) {
       quantized_nx_bits = 0;
       quantized_ny_bits = 0;
@@ -296,7 +296,7 @@ namespace barney {
                           vec3f geometryColor,
                           bool dbg) const
   {
-    hit.setDG(P,N);
+    hit.setDG(P,N,dbg);
 #ifdef __CUDACC__
     /* TODO: switch-statement over materialtype */
     hit.materialType = render::MINI;
