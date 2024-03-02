@@ -26,15 +26,56 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "<AnariPhysicalMaterial>"; }
 
-    void createDD(DD &dd, int deviceID) const override;
+    void createDD(DD &dd, int deviceID) const override
+    {
+      std::cout << "baseColor: " << baseColor << '\n';
+      std::cout << "emissive: " << emissive << '\n';
+      std::cout << "specularColor: " << specularColor << '\n';
+      std::cout << "opacity: " << metallic << '\n';
+      std::cout << "metallic: " << metallic << '\n';
+      std::cout << "roughness: " << roughness << '\n';
+      std::cout << "transmission: " << transmission << '\n';
+      std::cout << "ior: " << ior << '\n';
+    }
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
-    void commit() override;
-    bool set3f(const std::string &member, const vec3f &value) override;
+    void commit() override {};
+    bool set1f(const std::string &member, const float &value) override
+    {
+      if (Material::set1f(member,value)) return true;
+      if (member == "opacity")
+        { opacity = value; return true; }
+      if (member == "metallic")
+        { metallic = value; return true; }
+      if (member == "roughness")
+        { roughness = value; return true; }
+      if (member == "specular")
+        { specular = value; return true; }
+      if (member == "transmmission")
+        { transmission = value; return true; }
+      if (member == "ior")
+        { ior = value; return true; }
+      return false;
+    }
+    bool set3f(const std::string &member, const vec3f &value) override
+    {
+      if (Material::set3f(member,value)) return true;
+      if (member == "baseColor")
+        { baseColor = value; return true; }
+      return false;
+    }
     /*! @} */
     // ------------------------------------------------------------------
     /* iw - i have NO CLUE what goes in here .... */
-    vec3f baseColor { .5f, .5f, .5f };
+    vec3f baseColor { 1.f, 1.f, 1.f };
+    vec3f emissive { 0.f, 0.f, 0.f };
+    vec3f specularColor { 1.f, 1.f, 1.f };
+    float opacity = 1.f;
+    float metallic = 1.f;
+    float roughness = 1.f;
+    float specular = 0.f;
+    float transmission = 0.f;
+    float ior = 0.f;
   };
 
   /*! material according to "miniScene" default specification. will
@@ -137,6 +178,8 @@ namespace barney {
   {
     if (type == "velvet")
       return std::make_shared<Velvet>(dg);
+    else if (type == "physicallyBased")
+      return std::make_shared<AnariPhysicalMaterial>(dg);
     // iw - "eventually" we should have different materials like
     // 'matte' and 'glass', 'metal' etc here, but for now, let's just
     // ignore the type and create a single one thta contains all

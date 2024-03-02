@@ -62,6 +62,12 @@ void PhysicallyBased::commit()
   getParam("baseColor", ANARI_FLOAT32_VEC3, &m_baseColor.value);
   getParam("baseColor", ANARI_FLOAT32_VEC4, &m_baseColor.value);
 
+  m_emissive.value = math::float3(0.f, 0.f, 0.f);
+  getParam("emissive", ANARI_FLOAT32_VEC3, &m_emissive.value);
+
+  m_specularColor.value = math::float3(1.f, 1.f, 1.f);
+  getParam("specularColor", ANARI_FLOAT32_VEC3, &m_specularColor.value);
+
   m_opacity.value = 1.f;
   getParam("opacity", ANARI_FLOAT32, &m_opacity.value);
 
@@ -71,15 +77,36 @@ void PhysicallyBased::commit()
   m_roughness.value = 1.f;
   getParam("roughness", ANARI_FLOAT32, &m_roughness.value);
 
+  m_specular.value = 0.f;
+  getParam("specular", ANARI_FLOAT32, &m_specular.value);
+
+  m_transmission.value = 0.f;
+  getParam("transmission", ANARI_FLOAT32, &m_transmission.value);
+
   m_ior = 1.5f;
   getParam("ior", ANARI_FLOAT32, &m_ior);
 }
 
 BNMaterial PhysicallyBased::makeBarneyMaterial(BNModel model, int slot) const
 {
-  BNMaterial mat = bnMaterialCreate(model, slot, "velvet");
-  bnSet3f(mat, "reflectance",
+  BNMaterial mat = bnMaterialCreate(model, slot, "physicallyBased");
+
+  bnSet3f(mat, "baseColor",
       m_baseColor.value.x, m_baseColor.value.y, m_baseColor.value.z);
+
+  bnSet3f(mat, "emissive",
+      m_emissive.value.x, m_emissive.value.y, m_emissive.value.z);
+
+  bnSet3f(mat, "specularColor",
+      m_specularColor.value.x, m_specularColor.value.y, m_specularColor.value.z);
+
+  bnSet1f(mat, "opacity", m_opacity.value);
+  bnSet1f(mat, "metallic", m_metallic.value);
+  bnSet1f(mat, "roughness", m_roughness.value);
+  bnSet1f(mat, "specular", m_specular.value);
+  bnSet1f(mat, "transmission", m_transmission.value);
+  bnSet1f(mat, "ior", m_ior);
+
   return mat;
 }
 

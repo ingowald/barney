@@ -48,9 +48,14 @@ struct PhysicallyBased : public Material
   } m_baseColor;
 
   struct {
+    math::float3 value{1.f, 1.f, 1.f};
+    /*TODO: samplers, attributes, etc.*/
+  } m_emissive, m_specularColor;
+
+  struct {
     float value{1.f};
     /*TODO: samplers, attributes, etc.*/
-  } m_opacity, m_metallic, m_roughness;
+  } m_opacity, m_metallic, m_roughness, m_specular, m_transmission;
 
   float m_ior{1.5f};
 };
