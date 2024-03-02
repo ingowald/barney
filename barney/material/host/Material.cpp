@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/common/Material.h"
+#include "barney/material/host/Velvet.h"
 #include "barney/ModelSlot.h"
 
 namespace barney {
@@ -106,55 +106,6 @@ namespace barney {
     Texture::SP alphaTexture;
   };
 
-  /*! embree/ospray "Velvet" material */
-  struct Velvet : public barney::Material {
-    Velvet(ModelSlot *owner) : Material(owner) {}
-    virtual ~Velvet() = default;
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override { return "Velvet"; }
-
-    void createDD(DD &dd, int deviceID) const override
-    {
-      dd.materialType = render::MINI;
-      dd.mini.ior = 1.f;
-      dd.mini.transmission = 0.f;
-      dd.mini.baseColor = reflectance;
-      dd.mini.colorTexture = 0;
-      dd.mini.alphaTexture = 0;
-    }
-    // ------------------------------------------------------------------
-    /*! @{ parameter set/commit interface */
-    void commit() override {};
-    // bool setObject(const std::string &member, const Object::SP &value) override;
-    bool set1f(const std::string &member, const float &value) override
-    {
-      if (Material::set1f(member,value)) return true;
-      if (member == "backScattering") 
-        { backScattering = value; return true; }
-      if (member == "horizonScatteringFallOff") 
-        { horizonScatteringFallOff = value; return true; }
-      return false;
-    }
-    bool set3f(const std::string &member, const vec3f &value) override
-    {
-      if (Material::set3f(member,value)) return true;
-      if (member == "reflectance") 
-        { reflectance = value; return true; }
-      if (member == "horizonScatteringColor") 
-        { horizonScatteringColor = value; return true; }
-      return false;
-    }
-    /*! @} */
-    // ------------------------------------------------------------------
-    vec3f reflectance { 0.55f, 0.0f, 0.0f };
-    vec3f horizonScatteringColor { 0.75f, 0.2f, 0.2f };
-    float horizonScatteringFallOff = 7.f;
-    float backScattering = .5f;
-  };
-
-  
-  
   void MiniMaterial::commit()
   { /* we dont' yet stage/double-buffer params ... */}
   
@@ -177,7 +128,7 @@ namespace barney {
   Material::SP Material::create(ModelSlot *dg, const std::string &type)
   {
     if (type == "velvet")
-      return std::make_shared<Velvet>(dg);
+      return std::make_shared<VelvetMaterial>(dg);
     else if (type == "physicallyBased")
       return std::make_shared<AnariPhysicalMaterial>(dg);
     // iw - "eventually" we should have different materials like

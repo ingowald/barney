@@ -16,83 +16,10 @@
 
 #pragma once
 
-#include "barney/common/Texture.h"
-#include "barney/common/Data.h"
-#include "barney/common/half.h"
+#include "barney/Object.h"
+#include "barney/material/device/Material.h"
 
 namespace barney {
-  namespace render {
-    
-    typedef enum { MISS=0, MINI, ANARI_PHYSICAL } MaterialType;
-  
-    struct DG {
-      vec3f N;
-      vec3f w_o;
-    };
-
-    /*! device-side implementation of anari "physical" material */
-    struct AnariPhysical {
-      struct BRDF {
-        /*! "BRDFs" are the thing that goes onto a ray, and is used for
-          sampling, eval, etc */
-        // vec3h reflectance;
-      };
-      /*! "DDs" are the device-data that gets stored in the associated
-        geometry's SBT entry */
-      struct DD {
-        vec3f baseColor;
-      };
-    }; // ::barney::render::AnariPhysical    
-    
-    struct MiniMaterial {
-      struct BRDF {
-        inline __device__ vec3f eval(DG dg, vec3f w_i, bool dbg) const;
-        vec3h baseColor;
-        half  ior;
-        half  metallic;
-        half  transmission;
-      };
-      struct DD {
-        vec3f baseColor;
-        float ior;
-        float transmission;
-        // float roughness;
-        float metallic;
-        cudaTextureObject_t colorTexture;
-        cudaTextureObject_t alphaTexture;
-      };
-    };
-
-    struct HitBRDF {
-      /*! helper function to set this to a matte material, primarily
-          for volume data */
-      inline __device__ void setMatte(vec3f albedo, vec3f P, vec3f N);
-      /*! modulate given BRDF with a color form texture, or colors[] array, etc */
-      // inline __device__ void modulateBaseColor(vec3f rbga);
-      inline __device__ void setDG(vec3f P, vec3f N, bool dbg=false);
-      inline __device__ vec3f getAlbedo(bool dbg=false) const;
-      inline __device__ vec3f getN() const;
-      inline __device__ vec3f eval(render::DG dg, vec3f w_i, bool dbg=false) const;
-      union {
-        float3 missColor;
-        render::AnariPhysical::BRDF anari;
-        render::MiniMaterial::BRDF  mini;
-      };
-      vec3f P;
-      
-      struct {
-        uint32_t quantized_nx_bits:7;
-        uint32_t quantized_nx_sign:1;
-        uint32_t quantized_ny_bits:7;
-        uint32_t quantized_ny_sign:1;
-        uint32_t quantized_nz_bits:7;
-        uint32_t quantized_nz_sign:1;
-        uint32_t materialType:8;
-      };
-    };
-    
-  } // ::barney::render
-
   /*! barney 'virtual' material implementation that takes anari-like
       material paramters, and then builder barney::render:: style
       device materials to be put into the device geometries */
@@ -110,19 +37,7 @@ namespace barney {
         materials .... and possibly even change the actual OWLGeom
         (and even worse, its type) if the assigned material's type
         changes */
-    struct DD {
-      inline DD() {}
-      inline __device__ bool  hasAlpha(bool isShadowRay) const;
-      inline __device__ float getAlpha(vec2f tc, bool isShadowRay) const;
-      inline __device__ void  make(render::HitBRDF &hit, vec3f P, vec3f N,
-                                   vec2f texCoords,
-                                   vec3f geometryColor, bool dbg=false) const;
-      int materialType;
-      union {
-        render::AnariPhysical::DD anari;
-        render::MiniMaterial::DD  mini;
-      };
-    };
+    using DD = barney::render::DeviceMaterial;
 
     Material(ModelSlot *owner) : SlottedObject(owner) {}
     virtual ~Material() = default;

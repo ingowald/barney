@@ -22,7 +22,7 @@
 #include "barney/geometry/Triangles.h"
 #include "barney/volume/ScalarField.h"
 #include "barney/common/Data.h"
-#include "barney/common/Material.h"
+#include "barney/material/host/Material.h"
 #include "barney/Camera.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;

@@ -137,9 +137,15 @@ add_library(barney STATIC
   # lights
   light/Light.h
   light/Light.cpp
+  # device-level materials
+  material/device/Material.h
+  material/device/Velvet.h
+  # barney-level material types
+  material/host/Material.h
+  material/host/Material.cpp
+  material/host/Velvet.h
+  material/host/Velvet.cpp
   # actual geometry types
-  common/Material.h
-  common/Material.cpp
   geometry/Geometry.h
   geometry/Geometry.cpp
   geometry/Spheres.h

@@ -23,7 +23,7 @@
     ... */
 #include "barney/fb/TiledFB.h"
 #include "barney/common/half.h"
-#include "barney/common/Material.h"
+#include "barney/material/device/Material.h"
 
 namespace barney {
 
@@ -35,7 +35,7 @@ namespace barney {
     uint32_t rngSeed;
 
     inline __device__ void setHit(vec3f P, vec3f N, float t,
-                                  const Material::DD &material,
+                                  const render::DeviceMaterial &material,
                                   vec2f texCoords=vec2f(0.f),
                                   vec3f geometryColor=vec3f(NAN))
     {
@@ -57,7 +57,7 @@ namespace barney {
                                         vec3f albedo)
     {
       hit.setMatte(albedo,P,/* 0 normal, to indicate volume hit */vec3f(0.f));
-      // Material::DD dummyMat;
+      // DeviceMaterial dummyMat;
       // dummyMat.type = barney::render::PHYSICAL;
       // dummyMat.baseColor = albedo;
       // dummyMat.ior = 1.f;

@@ -16,49 +16,17 @@
 
 #pragma once
 
-#include "barney/Object.h"
-#include "barney/Ray.h"
 #include "barney/common/Texture.h"
-#include "barney/material/host/Material.h"
+#include "barney/common/Data.h"
+#include "barney/common/half.h"
 
 namespace barney {
+  namespace render {
 
-  struct ModelSlot;
-  
-  struct Geometry : public SlottedObject {
-    typedef std::shared_ptr<Geometry> SP;
-
-    struct DD {
-      Material::DD     material;
+    struct DG {
+      vec3f N;
+      vec3f w_o;
     };
-    
-    Geometry(ModelSlot *owner);
-    virtual ~Geometry();
 
-    static Geometry::SP create(ModelSlot *dg, const std::string &type);
-    
-    static void addVars(std::vector<OWLVarDecl> &vars, int base);
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Geometry{}"; }
-
-    /*! ask this geometry to build whatever owl geoms it needs to build */
-    virtual void build() {}
-    
-    /*! get the own context that was used to create this geometry */
-    OWLContext getOWL() const;
-
-    bool set1f(const std::string &member, const float &value) override;
-    bool set3f(const std::string &member, const vec3f &value) override;
-    bool setData(const std::string &member, const Data::SP &value) override;
-    bool setObject(const std::string &member, const Object::SP &value) override;
-    
-    std::vector<OWLGeom>  triangleGeoms;
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGroup> secondPassGroups;
-    
-    Material::SP material;
-  };
-
+  }
 }
