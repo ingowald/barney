@@ -4,6 +4,7 @@
 #include "World.h"
 // std
 #include <algorithm>
+#include <set>
 
 namespace barney_device {
 
@@ -154,7 +155,10 @@ void World::buildBarneyModel()
       barneyGroups.size());
   bnBuild(m_barneyModel, m_barneySlot);
 
+  std::set<BNGroup> uniqueBarneyGroups;
   for (auto bng : barneyGroups)
+    uniqueBarneyGroups.insert(bng);
+  for (auto bng : uniqueBarneyGroups)
     bnRelease(bng);
 
   m_lastBarneyModelBuild = helium::newTimeStamp();
