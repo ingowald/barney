@@ -31,7 +31,7 @@ void Group::markCommitted()
   Object::markCommitted();
 }
 
-  BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
+BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
 {
   std::vector<BNGeom> barneyGeometries;
   std::vector<Surface *> surfaces;
@@ -49,7 +49,7 @@ void Group::markCommitted()
   }
 
   for (auto s : surfaces)
-    barneyGeometries.push_back(s->makeBarneyGeom(model,slot));
+    barneyGeometries.push_back(s->makeBarneyGeom(model, slot));
 
   if (m_volumeData) {
     std::for_each(
@@ -61,9 +61,10 @@ void Group::markCommitted()
   }
 
   for (auto v : volumes)
-    barneyVolumes.push_back(v->makeBarneyVolume(model,slot));
+    barneyVolumes.push_back(v->makeBarneyVolume(model, slot));
 
-  BNGroup bg = bnGroupCreate(model,slot,
+  BNGroup bg = bnGroupCreate(model,
+      slot,
       barneyGeometries.data(),
       barneyGeometries.size(),
       barneyVolumes.data(),

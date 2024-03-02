@@ -53,6 +53,12 @@ size_t Surface::numRequiredGPUBytes() const
   return m_geometry ? m_geometry->numRequiredGPUBytes() : size_t(0);
 }
 
+bool Surface::isValid() const
+{
+  return m_geometry && m_material && m_geometry->isValid()
+      && m_material->isValid();
+}
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Surface *);
