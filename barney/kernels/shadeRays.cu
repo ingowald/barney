@@ -657,12 +657,12 @@ namespace barney {
       // ==================================================================    
       Random &random = (Random &)path.rngSeed;
     
-      const bool doTransmission
-        =  ((float)path.hit.mini.transmission > 0.f)
-        && (random() < (float)path.hit.mini.transmission);
+      const bool doTransmission = false;
+        // =  ((float)path.hit.mini.transmission > 0.f)
+        // && (random() < (float)path.hit.mini.transmission);
       render::DG dg;
       dg.N = Ng;
-      dg.w_o = -(vec3f)path.dir;
+      dg.wo = -(vec3f)path.dir;
       // if (path.dbg)
       //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
       //          pathDepth,
@@ -697,9 +697,17 @@ namespace barney {
         if (isVolumeHit) {
           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
           path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
-        } else { 
+        } else {
+          if (path.dbg) {
+            vec3f dir = path.dir;
+            printf("dir %f %f %f dotN %f w_oDOTn %f\n",
+                   dir.x,
+                   dir.y,
+                   dir.z,dot(dir,dg.N),dot(dg.N,dg.wo));
+          }
           path.dir = sampleCosineWeightedHemisphere(dg.N,random);
-          path.throughput = path.throughput * path.hit.eval(dg,path.dir);//baseColor;
+          EvalRes f_r = path.hit.eval(dg,path.dir,path.dbg);
+          path.throughput = path.throughput * f_r.value/f_r.pdf;//baseColor;
         }
       }
 
@@ -740,8 +748,11 @@ namespace barney {
       // ==================================================================
       LightSample ls;
       if (!doTransmission && sampleLights(ls,world,path.hit.P,Ng,random,path.dbg)) {
+        if (path.dbg)
+          printf("SHADOW RAY:\n");
+        EvalRes f_r = path.hit.eval(dg,ls.dir,path.dbg);
         shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)*(1.f/ls.pdf)
-                                * path.hit.eval(dg,ls.dir),
+                                * f_r.value / f_r.pdf,
                                 /* surface: */path.hit.P + EPS*Ng,
                                 /* to light */ls.dir,
                                 /* length   */ls.dist * (1.f-2.f*EPS));

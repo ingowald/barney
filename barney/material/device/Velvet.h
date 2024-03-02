@@ -58,11 +58,9 @@ namespace barney {
     float luminance(vec3f c)
     { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
 
-
     struct BSDF {
       inline __device__ float importance() const { return luminance(albedo); }
-      inline __device__ void init(vec3f albedo// , float importance
-                                  )
+      inline __device__ void init(vec3f albedo, bool dbg=false)
       {
         this->albedo = albedo; //this->importance = importance;
       }
@@ -70,24 +68,92 @@ namespace barney {
       // half  importance;
     };
     struct Minneart : public BSDF {
-      inline __device__ void init(vec3f R, float b) { BSDF::init(R); this->b = b; }
+      inline __device__ void init(vec3f R, float b, bool dbg = false) {
+        BSDF::init(R); this->b = b;
+        if (dbg) printf("Minneart %f %f %f f %f\n",
+                        float(albedo.x),
+                        float(albedo.y),
+                        float(albedo.z),
+                        float(this->b));
+      }
+      inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
+      {
+        EvalRes res;
+        const float cosThetaI = clamp(dot(wi,dg.N));
+        const float backScatter = powf(clamp(dot(dg.wo,wi)), (float)b);
+        res.pdf = cosineSampleHemispherePDF(cosThetaI);
+        res.value = (backScatter * cosThetaI * one_over_pi) * (vec3f)albedo;
+        return res;
+      }
+      
       enum { bsdfType = BSDF_DIFFUSE_REFLECTION };
       /*! The amount of backscattering. A value of 0 means lambertian
        *  diffuse, and inf means maximum backscattering. */
       half b;
     };
     struct Velvety : public BSDF {
-      inline __device__ void init(vec3f R, float f) { BSDF::init(R); this->f = f; }
+      inline __device__ void init(vec3f R, float f, bool dbg = false)
+      { BSDF::init(R); this->f = f;
+        if (dbg) printf("Velvety %f %f %f f %f\n",
+                        float(albedo.x),
+                        float(albedo.y),
+                        float(albedo.z),
+                        float(this->f));
+      }
+      inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
+      {
+        EvalRes res;
+        const float cosThetaO = clamp(dot(dg.wo,dg.N));
+        const float cosThetaI = clamp(dot(wi,dg.N));
+        const float sinThetaO = sqrt(1.0f - cosThetaO * cosThetaO);
+        const float horizonScatter = pow(sinThetaO, (float)f);
+        res.pdf = cosineSampleHemispherePDF(cosThetaI);
+        res.value =  (horizonScatter * cosThetaI * one_over_pi) * (vec3f)albedo;
+        return res;
+      }
       enum { bsdfType = BSDF_DIFFUSE_REFLECTION };
       /*! The falloff of horizon scattering. 0 no falloff,
        *  and inf means maximum falloff. */
       half f;
     };
     struct Velvet {
-      struct MultiBSDF {
-        inline __device__ vec3f albedo() const { return (vec3f)minneart.albedo+(vec3f)velvety.albedo; }
+      struct HitBSDF {
+        inline __device__
+        vec3f getAlbedo(bool dbg=false) const { return (vec3f)minneart.albedo+(vec3f)velvety.albedo; }
         // inline __device__ vec3f albedo() const { return minneart.albedo + velvety.albedo; }
         // inline __device__ int type() const { return minneart.type() | velvety.type(); }
+        
+        inline __device__
+        EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
+        {
+          if (dbg)
+            printf("----- Velvet wo %f %f %f N %f %f %f wi %f %f %f\n",
+                   dg.wo.x,
+                   dg.wo.y,
+                   dg.wo.z,
+                   dg.N.x,
+                   dg.N.y,
+                   dg.N.z,
+                   wi.x,
+                   wi.y,
+                   wi.z);
+          EvalRes minneart_eval = minneart.eval(dg,wi,dbg);
+          float   minneart_imp  = minneart.importance();
+          EvalRes velvety_eval  = velvety.eval(dg,wi,dbg);
+          float   velvety_imp   = minneart.importance();
+          EvalRes our_eval;
+          our_eval.value = minneart_eval.value + velvety_eval.value;
+          our_eval.pdf
+            = (minneart_imp*minneart_eval.pdf+velvety_imp*velvety_eval.pdf)
+            / max(1e-20f,minneart_imp+velvety_imp);
+          if (dbg) printf(" --> value %f %f %f pdf %f\n",
+                          our_eval.value.x,
+                          our_eval.value.y,
+                          our_eval.value.z,
+                          our_eval.pdf);
+          return our_eval;
+        }
+        
         Minneart minneart;
         Velvety velvety;
 
@@ -95,10 +161,10 @@ namespace barney {
       };
       struct DD {
         inline __device__
-        void make(MultiBSDF &multi)
+        void make(HitBSDF &multi, bool dbg) const
         {
-          multi.minneart.init(reflectance,backScattering);
-          multi.velvety.init(horizonScatteringColor,horizonScatteringFallOff);
+          multi.minneart.init(reflectance,backScattering,dbg);
+          multi.velvety.init(horizonScatteringColor,horizonScatteringFallOff,dbg);
         }
         vec3f reflectance;
         vec3f horizonScatteringColor;

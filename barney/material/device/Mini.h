@@ -22,14 +22,62 @@ namespace barney {
   namespace render {
     
     struct MiniMaterial {
-      struct BRDF {
+      struct HitBSDF {
         inline __device__ vec3f eval(DG dg, vec3f w_i, bool dbg) const;
+        inline __device__
+        vec3f getAlbedo(bool dbg) const
+        {
+          return vec3f(baseColor);
+        }
+
         vec3h baseColor;
         half  ior;
         half  metallic;
         half  transmission;
       };
       struct DD {
+  
+        inline __device__
+        float getAlpha(vec2f tc, bool isShadowRay) const
+        {
+#ifdef __CUDACC__
+          if (alphaTexture)
+            return tex2D<float4>(alphaTexture,tc.x,tc.y).w;
+          if (colorTexture)
+            return tex2D<float4>(colorTexture,tc.x,tc.y).w;
+#endif
+          if (isShadowRay)
+            return 1.f - transmission;
+          return 1.f;
+        }
+        inline __device__
+        bool hasAlpha(bool isShadowRay) const
+        {
+          return colorTexture || alphaTexture
+            || (isShadowRay && transmission > 0.f);
+        }
+  
+        inline __device__
+        void make(HitBSDF &hit, 
+                  vec2f tc,
+                  vec3f geometryColor,
+                  bool dbg) const
+        {
+#ifdef __CUDACC__
+          hit.baseColor = this->baseColor;
+          hit.ior = this->ior;
+          hit.transmission = this->transmission;
+          if (!isnan(geometryColor.x)) {
+            hit.baseColor = geometryColor;
+          } else if (this->colorTexture) {
+            float4 fromTex = tex2D<float4>(this->colorTexture,tc.x,tc.y);
+            hit.baseColor = (vec3f&)fromTex;
+          } else {
+            hit.baseColor = this->baseColor;
+          }
+#endif
+        }
+        
         vec3f baseColor;
         float ior;
         float transmission;
