@@ -46,7 +46,7 @@ namespace barney {
     
     struct MiniMaterial {
       struct BRDF {
-        inline __device__ vec3f eval(DG dg, vec3f w_i) const;
+        inline __device__ vec3f eval(DG dg, vec3f w_i, bool dbg) const;
         vec3h baseColor;
         half  ior;
         half  metallic;
@@ -70,9 +70,9 @@ namespace barney {
       /*! modulate given BRDF with a color form texture, or colors[] array, etc */
       // inline __device__ void modulateBaseColor(vec3f rbga);
       inline __device__ void setDG(vec3f P, vec3f N, bool dbg=false);
-      inline __device__ vec3f getAlbedo() const;
+      inline __device__ vec3f getAlbedo(bool dbg=false) const;
       inline __device__ vec3f getN() const;
-      inline __device__ vec3f eval(render::DG dg, vec3f w_i) const;
+      inline __device__ vec3f eval(render::DG dg, vec3f w_i, bool dbg=false) const;
       union {
         float3 missColor;
         render::AnariPhysical::BRDF anari;
@@ -180,6 +180,7 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
     vec3f baseColor { .5f, .5f, .5f };
+    vec3f emission  { 0.f };
     float transmission { 0.f };
     float roughness    { 0.f };
     float metallic     { 0.f };
@@ -194,7 +195,7 @@ namespace barney {
   // ==================================================================
   
   inline __device__
-  vec3f render::HitBRDF::eval(render::DG dg, vec3f w_i) const
+  vec3f render::HitBRDF::eval(render::DG dg, vec3f w_i, bool dbg) const
   {
     return mini.baseColor;
   }
@@ -255,7 +256,7 @@ namespace barney {
   }
 
   inline __device__
-  vec3f render::HitBRDF::getAlbedo() const
+  vec3f render::HitBRDF::getAlbedo(bool dbg) const
   {
     /* TODO: switch-statement over materialtype */
     return mini.baseColor;
@@ -306,7 +307,8 @@ namespace barney {
     if (!isnan(geometryColor.x)) {
       hit.mini.baseColor = geometryColor;
     } else if (this->mini.colorTexture) {
-      tex2D<float4>(this->mini.colorTexture,tc.x,tc.y);
+      float4 fromTex = tex2D<float4>(this->mini.colorTexture,tc.x,tc.y);
+      hit.mini.baseColor = (vec3f&)fromTex;
     } else {
       hit.mini.baseColor = this->mini.baseColor;
     }

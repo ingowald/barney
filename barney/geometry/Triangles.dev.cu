@@ -62,7 +62,6 @@ namespace barney {
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
 
-    if (ray.dbg) printf("setting hit ...\n");
     ray.setHit(P,n,optixGetRayTmax(),
                self.material,tc);
   }

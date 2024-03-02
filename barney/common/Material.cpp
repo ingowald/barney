@@ -88,6 +88,10 @@ namespace barney {
       this->metallic = value;
       return true;
     }
+    if (member == "roughness") {
+      this->roughness = value;
+      return true;
+    }
     return false;
   }
   
@@ -97,6 +101,10 @@ namespace barney {
       return true;
     if (member == "baseColor") {
       this->baseColor = value;
+      return true;
+    }
+    if (member == "emission") {
+      this->emission = value;
       return true;
     }
     return false;
