@@ -65,6 +65,7 @@ namespace barney {
     Geometry::commit();
     owlGeomSet1f(geom,"defaultRadius",defaultRadius);
     owlGeomSetBuffer(geom,"origins",origins?origins->owl:0);
+    owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
     owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
     int numOrigins = origins->count;
     owlGeomSetPrimCount(geom,numOrigins);

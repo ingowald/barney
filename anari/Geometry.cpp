@@ -51,7 +51,7 @@ void Sphere::commit()
     return;
   }
 
-  if (!m_vertexPosition) {
+  if (!m_vertexRadius) {
     reportMessage(ANARI_SEVERITY_WARNING,
         "missing required parameter 'vertex.radius' on sphere geometry");
     return;
