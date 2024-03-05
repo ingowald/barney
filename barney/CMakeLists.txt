@@ -145,6 +145,10 @@ add_library(barney STATIC
   material/host/Material.cpp
   material/host/Velvet.h
   material/host/Velvet.cpp
+  material/host/Matte.h
+  material/host/Matte.cpp
+  material/host/MetallicPaint.h
+  material/host/MetallicPaint.cpp
   # actual geometry types
   geometry/Geometry.h
   geometry/Geometry.cpp

@@ -31,11 +31,22 @@ namespace owl {
       half x, y, z;
     };
 
+    struct vec2h {
+      inline __both__ operator vec2f () const;
+      inline __both__ vec2h &operator=(vec2f v);
+    
+      half x, y;
+    };
+
     inline __both__ float from_half(half h) { return (float)h; }
 
     inline __both__ vec3f from_half(vec3h v)
     {
       return { from_half(v.x),from_half(v.y),from_half(v.z) };
+    }
+    inline __both__ vec2f from_half(vec2h v)
+    {
+      return { from_half(v.x),from_half(v.y) };
     }
 
     inline __both__ half to_half(float f)
@@ -47,6 +58,10 @@ namespace owl {
     inline __both__ vec3h to_half(vec3f v)
     {
       return { to_half(v.x),to_half(v.y),to_half(v.z) };
+    }
+    inline __both__ vec2h to_half(vec2f v)
+    {
+      return { to_half(v.x),to_half(v.y) };
     }
   
     inline __both__ vec3h::operator vec3f () const

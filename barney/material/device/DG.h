@@ -40,6 +40,7 @@
 namespace barney {
   namespace render {
 
+#define pi (float(M_PI))
 #define one_over_pi (float(1.f/M_PI))
 #define two_pi (float(2.f*M_PI))
 
@@ -57,6 +58,10 @@ namespace barney {
     };
     
     
+    inline __device__ float lerp(float factor, float a, float b) { return (1.f-factor)*a+factor*b; }
+    inline __device__ vec3f lerp(vec3f factor, vec3f a, vec3f b) { return (1.f-factor)*a+factor*b; }
+
+    inline __device__ float rcp(float f) { return 1.f/f; }
 
     inline __device__ float clamp(float f) { return min(1.f,max(0.f,f)); }
     inline __device__ float pow(float a, float b) { return powf(a,b); }

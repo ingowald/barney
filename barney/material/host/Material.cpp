@@ -15,6 +15,8 @@
 // ======================================================================== //
 
 #include "barney/material/host/Velvet.h"
+#include "barney/material/host/Matte.h"
+#include "barney/material/host/MetallicPaint.h"
 #include "barney/ModelSlot.h"
 
 namespace barney {
@@ -127,6 +129,12 @@ namespace barney {
 
   Material::SP Material::create(ModelSlot *dg, const std::string &type)
   {
+    if (type == "velvet")
+      return std::make_shared<VelvetMaterial>(dg);
+    if (type == "matte")
+      return std::make_shared<MatteMaterial>(dg);
+    if (type == "metallic_paint")
+      return std::make_shared<MetallicPaintMaterial>(dg);
     if (type == "velvet")
       return std::make_shared<VelvetMaterial>(dg);
     else if (type == "physicallyBased")

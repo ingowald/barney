@@ -18,12 +18,14 @@
 
 #include "barney/material/device/DG.h"
 #include "barney/material/device/Velvet.h"
+#include "barney/material/device/Matte.h"
 #include "barney/material/device/Mini.h"
+#include "barney/material/device/MetallicPaint.h"
 
 namespace barney {
   namespace render {
     
-    typedef enum { MISS=0, MINI, VELVET, ANARI_PHYSICAL } MaterialType;
+    typedef enum { MISS=0, MINI, MATTE, VELVET, METALLIC_PAINT, ANARI_PHYSICAL } MaterialType;
   
     /*! device-side implementation of anari "physical" material */
     struct AnariPhysical {
@@ -53,7 +55,9 @@ namespace barney {
         float3 missColor;
         render::AnariPhysical::BRDF anari;
         render::MiniMaterial::HitBSDF  mini;
+        render::Matte::HitBSDF   matte;
         render::Velvet::HitBSDF  velvet;
+        render::MetallicPaint::HitBSDF  metallicPaint;
       };
       vec3f P;
       
@@ -71,6 +75,8 @@ namespace barney {
     struct DeviceMaterial {
       inline DeviceMaterial() {}
       inline void operator=(const Velvet::DD &dd) { this->velvet = dd; materialType = VELVET; }
+      inline void operator=(const MetallicPaint::DD &dd) { this->metallicPaint = dd; materialType = METALLIC_PAINT; }
+      inline void operator=(const Matte::DD &dd) { this->matte = dd; materialType = MATTE; }
       inline __device__ bool  hasAlpha(bool isShadowRay) const;
       inline __device__ float getAlpha(vec2f tc, bool isShadowRay) const;
       inline __device__ void  make(render::HitBRDF &hit, vec3f P, vec3f N,
@@ -80,6 +86,8 @@ namespace barney {
       union {
         AnariPhysical::DD anari;
         MiniMaterial::DD  mini;
+        MetallicPaint::DD metallicPaint;
+        Matte::DD         matte;
         Velvet::DD        velvet;
       };
     };
@@ -95,6 +103,10 @@ namespace barney {
     switch (materialType) {
     case VELVET:
       return velvet.eval(dg,w_i,dbg);
+    case MATTE:
+      return matte.eval(dg,w_i,dbg);
+    case METALLIC_PAINT:
+      return metallicPaint.eval(dg,w_i,dbg);
     default:
       return EvalRes(vec3f(1.f,0.f,1.f),1.f);
     }
@@ -148,11 +160,8 @@ namespace barney {
     void render::HitBRDF::setMatte(vec3f albedo, vec3f P, vec3f N)
     {
       setDG(P,N);
-      materialType = render::MINI;
-      mini.baseColor = albedo;
-      mini.ior = 1.f;
-      mini.metallic = 0.f;
-      // mini.reflectance = 0.f;    
+      materialType = render::MATTE;
+      matte.lambert.albedo = albedo;
     }
 
     inline __device__
@@ -161,6 +170,10 @@ namespace barney {
       switch (materialType) {
       case MINI:
         return mini.getAlbedo(dbg);
+      case MATTE:
+        return matte.getAlbedo(dbg);
+      case METALLIC_PAINT:
+        return metallicPaint.getAlbedo(dbg);
       case VELVET:
         return velvet.getAlbedo(dbg);
       default:
@@ -170,7 +183,6 @@ namespace barney {
         return vec3f(0.f);
       }
       /* TODO: switch-statement over materialtype */
-      return mini.baseColor;
     }
 
 
@@ -185,6 +197,8 @@ namespace barney {
       switch (materialType) {
       case MINI:
         return mini.hasAlpha(isShadowRay);
+      case MATTE:
+      case METALLIC_PAINT:
       case VELVET:
         return false;
       default:
@@ -201,6 +215,8 @@ namespace barney {
       switch (materialType) {
       case MINI:
         return mini.getAlpha(tc,isShadowRay);
+      case MATTE:
+      case METALLIC_PAINT:
       case VELVET:
         return 1.f;
       default:
@@ -222,6 +238,12 @@ namespace barney {
       switch (materialType) {
       case MINI:
         mini.make(hit.mini,tc,geometryColor,dbg);
+        break;
+      case METALLIC_PAINT:
+        metallicPaint.make(hit.metallicPaint,dbg);
+        break;
+      case MATTE:
+        matte.make(hit.matte,geometryColor,dbg);
         break;
       case VELVET:
         velvet.make(hit.velvet,dbg);
