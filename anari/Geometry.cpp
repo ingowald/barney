@@ -51,10 +51,9 @@ void Sphere::commit()
     return;
   }
 
-  if (!m_vertexPosition) {
+  if (m_index) {
     reportMessage(ANARI_SEVERITY_WARNING,
-        "missing required parameter 'vertex.radius' on sphere geometry");
-    return;
+        "primitive.index parameter on sphere geometry not yet supported");
   }
 
   m_generatedIndices.clear();
@@ -62,34 +61,28 @@ void Sphere::commit()
   m_vertexPosition->addCommitObserver(this);
   if (m_vertexRadius)
     m_vertexRadius->addCommitObserver(this);
-
-  if (m_index) {
-    m_index->addCommitObserver(this);
-  } else {
-    m_generatedIndices.resize(m_vertexPosition->totalSize());
-    std::iota(m_generatedIndices.begin(), m_generatedIndices.end(), 0);
-  }
 }
 
-  BNGeom Sphere::makeBarneyGeometry(BNModel model, int slot,
-                                    const BNMaterialHelper *material) const
+BNGeom Sphere::makeBarneyGeometry(
+    BNModel model, int slot, const BNMaterialHelper *material) const
 {
-  auto ctx = deviceState()->context;
-  assert(!m_index); // NOT implemented yet!
-  BNGeom geom = bnGeometryCreate(model,slot,"spheres");
-  BNData origins = bnDataCreate(model,slot,BN_FLOAT3,
-                                m_vertexPosition->totalSize(),
-                                (const float3 *)m_vertexPosition->dataAs<math::float3>());
-  bnSetData(geom,"origins",origins);
+  BNGeom geom = bnGeometryCreate(model, slot, "spheres");
+  BNData origins = bnDataCreate(model,
+      slot,
+      BN_FLOAT3,
+      m_vertexPosition->totalSize(),
+      (const float3 *)m_vertexPosition->data());
+  bnSetData(geom, "origins", origins);
   if (m_vertexRadius) {
-    BNData radii = bnDataCreate(model,slot,BN_FLOAT,
-                                m_vertexPosition->totalSize(),
-                                m_vertexRadius->dataAs<float>());
-    bnSetData(geom,"radii",radii);
+    BNData radii = bnDataCreate(model,
+        slot,
+        BN_FLOAT,
+        m_vertexRadius->totalSize(),
+        m_vertexRadius->dataAs<float>());
+    bnSetData(geom, "radii", radii);
   } else
-    bnSet1f(geom,"defaultRadius",1.f);
-    // ? m_vertexRadius->dataAs<float>() : nullptr,
-  bnAssignMaterial(geom,material);
+    bnSet1f(geom, "radius", m_globalRadius);
+  bnAssignMaterial(geom, material);
   bnCommit(geom);
   return geom;
 }
@@ -105,19 +98,26 @@ box3 Sphere::bounds() const
         m_index->beginAs<uint32_t>() + m_index->totalSize(),
         [&](uint32_t index) {
           math::float3 v = *(m_vertexPosition->beginAs<math::float3>() + index);
-          float r = *(m_vertexRadius->beginAs<float>() + index);
+          float r = m_vertexRadius ?
+              *(m_vertexRadius->beginAs<float>() + index) : m_globalRadius;
           result.insert(math::float3{v.x - r, v.y - r, v.z - r});
           result.insert(math::float3{v.x + r, v.y + r, v.z + r});
         });
   } else {
     for (size_t i = 0; i < m_vertexPosition->totalSize(); ++i) {
       math::float3 v = *(m_vertexPosition->beginAs<math::float3>() + i);
-      float r = *(m_vertexRadius->beginAs<float>() + i);
+      float r = m_vertexRadius ?
+          *(m_vertexRadius->beginAs<float>() + i) : m_globalRadius;
       result.insert(math::float3{v.x - r, v.y - r, v.z - r});
       result.insert(math::float3{v.x + r, v.y + r, v.z + r});
     }
   }
   return result;
+}
+
+size_t Sphere::numRequiredGPUBytes() const
+{
+  return getNumBytes(m_vertexPosition) + getNumBytes(m_vertexRadius);
 }
 
 bool Sphere::isValid() const
@@ -163,20 +163,19 @@ void Triangle::commit()
   }
 }
 
-BNGeom Triangle::makeBarneyGeometry(BNModel model, int slot,
-                                    const BNMaterialHelper *materialData) const
+BNGeom Triangle::makeBarneyGeometry(
+    BNModel model, int slot, const BNMaterialHelper *materialData) const
 {
-  auto ctx = deviceState()->context;
-  return bnTriangleMeshCreate
-    (model,slot,
-     materialData,
-     m_index ? (const int3 *)m_index->data()
-     : (const int3 *)m_generatedIndices.data(),
-     m_index ? m_index->size() : (m_generatedIndices.size() / 3),
-     (const float3 *)m_vertexPosition->data(),
-     m_vertexPosition->totalSize(),
-     nullptr,
-     nullptr);
+  return bnTriangleMeshCreate(model,
+      slot,
+      materialData,
+      m_index ? (const int3 *)m_index->data()
+              : (const int3 *)m_generatedIndices.data(),
+      m_index ? m_index->size() : (m_generatedIndices.size() / 3),
+      (const float3 *)m_vertexPosition->data(),
+      m_vertexPosition->totalSize(),
+      nullptr,
+      nullptr);
 }
 
 box3 Triangle::bounds() const
@@ -206,6 +205,11 @@ box3 Triangle::bounds() const
         [&](math::float3 v) { result.insert(v); });
   }
   return result;
+}
+
+size_t Triangle::numRequiredGPUBytes() const
+{
+  return getNumBytes(m_vertexPosition) + getNumBytes(m_index);
 }
 
 bool Triangle::isValid() const

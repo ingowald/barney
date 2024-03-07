@@ -23,6 +23,8 @@ struct Object : public helium::BaseObject
 
   virtual void commit();
 
+  virtual size_t numRequiredGPUBytes() const;
+
   bool isValid() const override;
 
   BarneyGlobalState *deviceState() const;

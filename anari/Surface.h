@@ -22,6 +22,10 @@ struct Surface : public Object
 
   BNGeom makeBarneyGeom(BNModel model, int slot) const;
 
+  size_t numRequiredGPUBytes() const override;
+
+  bool isValid() const override;
+
  private:
   uint32_t m_id{~0u};
   helium::IntrusivePtr<Geometry> m_geometry;
