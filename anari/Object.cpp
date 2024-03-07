@@ -30,6 +30,11 @@ bool Object::getProperty(
   return false;
 }
 
+size_t Object::numRequiredGPUBytes() const
+{
+  return 0;
+}
+
 bool Object::isValid() const
 {
   return true;
