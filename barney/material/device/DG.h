@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-// some functions tkaen from OSPRay, under this lincense:
+// some functions taken from OSPRay, under this lincense:
 // ======================================================================== //
 // Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
@@ -53,6 +53,7 @@ namespace barney {
     struct EvalRes {
       inline __device__ EvalRes() {}
       inline __device__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
+      static inline __device__ EvalRes zero() { return { vec3f(0.f),0.f }; }
       vec3f value;
       float pdf;
     };

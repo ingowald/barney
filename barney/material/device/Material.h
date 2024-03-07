@@ -100,7 +100,10 @@ namespace barney {
   inline __device__
   render::EvalRes render::HitBRDF::eval(render::DG dg, vec3f w_i, bool dbg) const
   {
+    // if (dbg) printf("mattype %i\n",int(materialType));
     switch (materialType) {
+    case MINI:
+      return mini.eval(dg,w_i,dbg);
     case VELVET:
       return velvet.eval(dg,w_i,dbg);
     case MATTE:

@@ -23,7 +23,14 @@ namespace barney {
     
     struct MiniMaterial {
       struct HitBSDF {
-        inline __device__ vec3f eval(DG dg, vec3f w_i, bool dbg) const;
+        inline __device__ EvalRes eval(DG dg, vec3f w_i, bool dbg) const
+        {
+          EvalRes er;
+          er.value = baseColor;
+          er.pdf = 1.f;
+          return er;
+        }
+        
         inline __device__
         vec3f getAlbedo(bool dbg) const
         {

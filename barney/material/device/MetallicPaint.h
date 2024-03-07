@@ -14,6 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+// some functions taken from OSPRay, under this lincense:
+// ======================================================================== //
+// Copyright 2009-2019 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
 #pragma once
 
 #include "barney/material/device/DG.h"
@@ -23,9 +40,122 @@
 namespace barney {
   namespace render {
 
+    // helper function which computes cosT^2 from cosI and eta
+    inline __device__ float sqrCosT(const float cosI, const float eta)
+    {
+      return 1.0f - sqr(eta)*(1.0f - sqr(cosI));
+    }
+
+    //! \brief Computes fresnel coefficient for dielectric medium
+    /*! \detailed Computes fresnel coefficient for media interface with
+     *  relative refraction index eta. Eta is the outside refraction index
+     *  divided by the inside refraction index. Both cosines have to be
+     *  positive. */
+    inline __device__ float fresnelDielectric(float cosI, float cosT, float eta)
+    {
+      const float Rper = (eta*cosI -     cosT) * rcp(eta*cosI +     cosT);
+      const float Rpar = (    cosI - eta*cosT) * rcp(    cosI + eta*cosT);
+      return 0.5f*(sqr(Rpar) + sqr(Rper));
+    }
+
+    /*! Computes fresnel coefficient for media interface with relative
+     *  refraction index eta. Eta is the outside refraction index
+     *  divided by the inside refraction index. The cosine has to be
+     *  positive. */
+    inline __device__ float fresnelDielectric(float cosI, float eta)
+    {
+      const float sqrCosT = render::sqrCosT(cosI, eta);
+      if (sqrCosT < 0.0f) return 1.0f;
+      return fresnelDielectric(cosI, sqrt(sqrCosT), eta);
+    }
+
+    inline __device__ float fresnelDielectricEx(float cosI, float &cosT, float eta)
+    {
+      const float sqrCosT = render::sqrCosT(cosI, eta);
+      if (sqrCosT < 0.0f)
+        {
+          cosT = 0.0f;
+          return 1.0f;
+        }
+      cosT = sqrt(sqrCosT);
+      return fresnelDielectric(cosI, cosT, eta);
+    }
+
     /*! dielectirclayer, but for metallicpaint, where transmittance, thickness, and wight are 1 */
     template<typename Substrate>
     struct DielectricLayer1 : public BSDF {
+      inline __device__
+      void init(float eta) { this->eta = eta; }
+
+      inline __device__       
+      vec3f getAlbedo(bool dbg=false) const
+      { return vec3f(.5f); }
+      
+      inline __device__
+      EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
+      { 
+        // inline BSDF_EvalRes DielectricLayer_eval(const varying BSDF* uniform super,
+        //                                          const vec3f& wo, const vec3f& wi)
+        // {
+        // const varying DielectricLayer* uniform self = (const varying DielectricLayer* uniform)super;
+
+        // float cosThetaO = dot(wo, getN(super));
+        const vec3f N = dg.N;
+        const vec3f wo = dg.wo;
+        float cosThetaO = dot(wo, N);
+        // if (cosThetaO <= 0.f)
+        //   return make_BSDF_EvalRes_zero();
+        if (cosThetaO <= 0.f)
+          return EvalRes::zero();
+        // float cosThetaI = dot(wi, getN(super));
+        float cosThetaI = dot(wi, N);
+
+        // Fresnel term
+        float cosThetaO1; // positive
+        // float Fo = fresnelDielectricEx(cosThetaO, cosThetaO1, self->eta) * self->weight;
+        const float self_weight = 1.f;
+        float Fo = fresnelDielectricEx(cosThetaO, cosThetaO1, (float)this->eta) * self_weight;
+
+        // Evaluate the substrate
+        // Ignore refraction
+        // BSDF_EvalRes substrate;
+        // foreach_unique (f in self->substrate)
+        //   substrate = f->eval(f, wo, wi);
+        EvalRes substrate = this->substrate.eval(dg,wi,dbg);
+
+        float cosThetaI1; // positive
+        // float Fi = fresnelDielectricEx(abs(cosThetaI), cosThetaI1, self->eta) * self->weight;
+        float Fi = fresnelDielectricEx(fabsf(cosThetaI), cosThetaI1, this->eta) * self_weight;
+        
+        // Apply the coating medium absorption
+        // Use refracted angles for computing the absorption path length
+        float lengthO1 = rcp(cosThetaO1);
+        float lengthI1 = rcp(cosThetaI1);
+        float length = lengthO1 + lengthI1;
+        if (cosThetaI <= 0.f) length *= 0.5f; // for transmission, use the average length
+        // substrate.value
+        //   = lerp(self->weight, substrate.value,
+        //          substrate.value * pow(self->transmittance, self->thickness * length));
+        // substrate.value
+        //   = lerp(vec3f(self_weight), substrate.value,
+        //          substrate.value * pow(this->transmittance, (float)this->thickness * length));
+        // iw : self.weight is 1.f, and so is transmittance .. !?
+
+#if 0
+        // Energy conservation
+        float T;
+        if (self->substrate->type & ~BSDF_DIFFUSE)
+          T = min(1.f - Fo, 1.f - Fi); // for generic (non-diffuse) substrates [Kulla and Conty, 2017]
+        else
+          T = (1.f - Fo) * (1.f - Fi) * rcp(1.f - self->Favg); // for diffuse substrates [Kelemen and Szirmay-Kalos, 2001]
+        substrate.value = substrate.value * T;
+#endif
+        
+        substrate.pdf *= (1.f - Fo);
+        return substrate;
+      }
+
+      
       half eta;
       Substrate substrate;
       // vec3h transmittance;
@@ -218,8 +348,9 @@ namespace barney {
 
 
     
+
     struct MetallicPaint {
-      struct HitBSDF {
+      struct Substrate {
         inline __device__
         vec3f getAlbedo(bool dbg=false) const
         { return (vec3f)lambert.albedo; }
@@ -253,19 +384,30 @@ namespace barney {
             / max(1e-20f,lambert_imp+facets_imp);
           return our_eval;
         }
-
+        
         Lambert lambert;
         MicrofacetConductor<FresnelSchlick1> facets;
-        DielectricLayer1 dielectricLayer;
-
         enum { bsdfType = Lambert::bsdfType };
+      };
+      
+      struct HitBSDF {
+        inline __device__
+        EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
+        { return dielectricLayer.eval(dg,wi,dbg); }
+        
+        inline __device__       
+        vec3f getAlbedo(bool dbg=false) const
+        { return dielectricLayer.getAlbedo(dbg); }
+        
+        DielectricLayer1<Substrate> dielectricLayer;
+        enum { bsdfType = BSDF_SPECULAR_REFLECTION | Substrate::bsdfType };
       };
       struct DD {
         inline __device__
         void make(HitBSDF &multi, bool dbg) const
         {
-          multi.lambert.init(baseColor,dbg);
-          // if (self->flakeAmount > 0.f) {
+          
+           // if (self->flakeAmount > 0.f) {
           //   const vec3f r = self->flakeColor;
           //   const vec3f g = make_vec3f(self->flakeAmount);
           //   Fresnel *uniform fresnel = FresnelSchlick_create(ctx, r, g);
@@ -276,9 +418,9 @@ namespace barney {
           vec3f r = flakeColor;
           float g = flakeAmount;
           FresnelSchlick1 fresnel; fresnel.init(r,g);
-          multi.facets.init(fresnel,flakeSpread);
-
-          multi.dielectricLayer.init(self->eta);
+          multi.dielectricLayer.substrate.facets.init(fresnel,flakeSpread);
+          multi.dielectricLayer.substrate.lambert.init(baseColor,dbg);
+          multi.dielectricLayer.init(this->eta);
         }
         vec3f baseColor;
         float flakeAmount;
