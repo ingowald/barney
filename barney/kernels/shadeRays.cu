@@ -25,7 +25,14 @@ namespace barney {
 #define DEFAULT_RADIANCE_FROM_ENV .8f
   
     enum { MAX_PATH_DEPTH = 10 };
-  
+
+    inline __device__
+    float safe_eps(float f, vec3f v)
+    {
+      return max(f,1e-5f*reduce_max(abs(v)));
+    }
+
+    
     typedef enum {
       RENDER_MODE_UNDEFINED,
       // RENDER_MODE_LOCAL,
@@ -121,6 +128,7 @@ namespace barney {
                         int *d_nextWritePos,
                         int generation)
     {
+      const float EPS = 1e-4f;
       int tid = threadIdx.x + blockIdx.x*blockDim.x;
       if (tid >= numRays) return;
 
@@ -194,7 +202,7 @@ namespace barney {
         Random &rng = (Random &)ray.rngSeed;
         if (ray.hadHit && generation == 0) {
           Ray bounce;
-          bounce.org = ray.hit.P + 1e-5f*Ng;
+          bounce.org = ray.hit.P + safe_eps(EPS,ray.hit.P)*Ng;
           // if (ray.dbg)
           // printf("bounce org %f %f %f\n",
           //        bounce.org.x,
@@ -564,12 +572,6 @@ namespace barney {
       // .crossHair
       //   ? vec3f(1.f)
       //   : ray.hit.missolor;
-    }
-
-    inline __device__
-    float safe_eps(float f, vec3f v)
-    {
-      return max(f,1e-5f*reduce_max(abs(v)));
     }
 
     /*! ugh - that should all go into material::AnariPhysical .... */
