@@ -552,9 +552,10 @@ BNScalarField bnStructuredDataCreate(BNModel model,
 // ------------------------------------------------------------------
 BN_API
 BNScalarField bnNanoVDBDataCreate(BNModel model,
-                                  int whichSlot,
-                                  int3 dims,
-                                  const void *scalars,
-                                  float3 gridOrigin,
-                                  float3 gridSpacing);
+                                    int whichSlot,
+                                    int3 dims,                                    
+                                    const void *nanogrid,
+                                    size_t nanogridSize,
+                                    float3 gridOrigin,
+                                    float3 gridSpacing);
 

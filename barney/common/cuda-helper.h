@@ -39,13 +39,15 @@
 // }
 
 #ifdef _WIN32
-#include <windows.h>
+  #include <windows.h>
 
-// Custom usleep function for Windows
-void usleep(__int64 usec);
+  // Custom usleep function for Windows
+  void usleep(__int64 usec);
 
-// Custom sleep function for Windows, emulating Unix sleep
-void sleep(unsigned int seconds);
+  // Custom sleep function for Windows, emulating Unix sleep
+  void sleep(unsigned int seconds);
+#else
+  #include <unistd.h>  
 #endif
 
 
