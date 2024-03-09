@@ -33,73 +33,52 @@
 
 #pragma once
 
-#include "barney/common/Texture.h"
-#include "barney/common/Data.h"
-#include "barney/common/half.h"
-#include "barney/material/math.h"
-
 namespace barney {
   namespace render {
-
-    struct DG {
-      vec3f N;
-      vec3f wo;
-    };
-
-    struct EvalRes {
-      inline __device__ EvalRes() {}
-      inline __device__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
-      static inline __device__ EvalRes zero() { return { vec3f(0.f),0.f }; }
-      vec3f value;
-      float pdf;
-    };
-    
-    
-    inline __device__
-    float luminance(vec3f c)
-    { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
-
-
-
-    inline __device__ 
-    vec3f cartesian(float phi, float sinTheta, float cosTheta)
+    // helper function which computes cosT^2 from cosI and eta
+    inline __both__ float sqrCosT(const float cosI, const float eta)
     {
-      float sinPhi, cosPhi;
-      sincosf(phi, &sinPhi, &cosPhi);
-      return vec3f(cosPhi * sinTheta,
-                   sinPhi * sinTheta,
-                   cosTheta);
-    }
-    
-    inline __device__ 
-    vec3f cartesian(const float phi, const float cosTheta)
-    {
-      return cartesian(phi, cos2sin(cosTheta), cosTheta);
-    }
-    
-
-
-    
-    inline __device__ 
-    vec3f cosineSampleHemisphere(const vec2f s)
-    {
-      const float phi = two_pi * s.x;
-      const float cosTheta = sqrt(s.y);
-      const float sinTheta = sqrt(1.0f - s.y);
-      return cartesian(phi, sinTheta, cosTheta);
-    }
-    
-    inline __device__ 
-    float cosineSampleHemispherePDF(const vec3f &dir)
-    {
-      return dir.z * one_over_pi;
+      return 1.0f - sqr(eta)*(1.0f - sqr(cosI));
     }
 
-    inline __device__ 
-    float cosineSampleHemispherePDF(float cosTheta)
+    /*! Reflects a viewing vector I at a normal N. Cosine between I
+     *  and N is given as input. */
+    inline __both__ vec3f reflect(const vec3f& I, const vec3f& N, float cosI)
     {
-      return cosTheta * one_over_pi;
+      return (2.0f*cosI) * N - I;
+    }
+
+    /*! Reflects a viewing vector I at a normal N. */
+    inline __both__  vec3f reflect(const vec3f& I, const vec3f& N)
+    {
+      return reflect(I, N, dot(I, N));
     }
     
+    //! \brief Refracts a viewing vector I at a normal N
+    /*! \detailed Refracts a viewing vector I at a normal N using the
+     *  relative refraction index eta. Eta is refraction index of outside
+     *  medium (where N points into) divided by refraction index of the
+     *  inside medium. The vectors I and N have to point towards the same
+     *  side of the surface. The cosine between I and N, and the cosine of -N and
+     *  the refracted ray is given as input */
+    inline  __both__ vec3f refract(const vec3f& I, const vec3f& N, float cosI, float cosT, float eta)
+    {
+      return eta*(cosI*N - I) - cosT*N;
+    }
+
+    inline  __both__ vec3f refract(const vec3f& I, const vec3f& N, float cosI, float eta)
+    {
+      const float sqrCosT = render::sqrCosT(cosI, eta);
+      if (sqrCosT < 0.0f) return vec3f(0.f);
+      return refract(I, N, cosI, sqrt(sqrCosT), eta);
+    }
+
+    inline  __both__ float refract(float cosI, float eta)
+    {
+      const float sqrCosT = render::sqrCosT(cosI, eta);
+      return sqrtf(max(sqrCosT, 0.0f));
+    }
+
   }
 }
+

@@ -36,50 +36,12 @@
 #include "barney/material/device/DG.h"
 #include "barney/material/device/BSDF.h"
 #include "barney/material/bsdfs/Lambert.h"
+#include "barney/material/bsdfs/optics.h"
+#include "barney/material/bsdfs/GGXDistribution.h"
 
 namespace barney {
   namespace render {
 
-    // helper function which computes cosT^2 from cosI and eta
-    inline __device__ float sqrCosT(const float cosI, const float eta)
-    {
-      return 1.0f - sqr(eta)*(1.0f - sqr(cosI));
-    }
-
-    //! \brief Computes fresnel coefficient for dielectric medium
-    /*! \detailed Computes fresnel coefficient for media interface with
-     *  relative refraction index eta. Eta is the outside refraction index
-     *  divided by the inside refraction index. Both cosines have to be
-     *  positive. */
-    inline __device__ float fresnelDielectric(float cosI, float cosT, float eta)
-    {
-      const float Rper = (eta*cosI -     cosT) * rcp(eta*cosI +     cosT);
-      const float Rpar = (    cosI - eta*cosT) * rcp(    cosI + eta*cosT);
-      return 0.5f*(sqr(Rpar) + sqr(Rper));
-    }
-
-    /*! Computes fresnel coefficient for media interface with relative
-     *  refraction index eta. Eta is the outside refraction index
-     *  divided by the inside refraction index. The cosine has to be
-     *  positive. */
-    inline __device__ float fresnelDielectric(float cosI, float eta)
-    {
-      const float sqrCosT = render::sqrCosT(cosI, eta);
-      if (sqrCosT < 0.0f) return 1.0f;
-      return fresnelDielectric(cosI, sqrt(sqrCosT), eta);
-    }
-
-    inline __device__ float fresnelDielectricEx(float cosI, float &cosT, float eta)
-    {
-      const float sqrCosT = render::sqrCosT(cosI, eta);
-      if (sqrCosT < 0.0f)
-        {
-          cosT = 0.0f;
-          return 1.0f;
-        }
-      cosT = sqrt(sqrCosT);
-      return fresnelDielectric(cosI, cosT, eta);
-    }
 
     /*! dielectirclayer, but for metallicpaint, where transmittance, thickness, and wight are 1 */
     template<typename Substrate>
@@ -165,79 +127,6 @@ namespace barney {
     };
 
 
-    inline __device__ float roughnessToAlpha(float roughness)
-    {
-      // Roughness is squared for perceptual reasons
-      return max(sqr(roughness), 0.001f);
-    }
-
-    // [Burley, 2012, "Physically Based Shading at Disney", Course Notes, v3]
-    inline __device__ vec2f roughnessToAlpha(float roughness, float anisotropy)
-    {
-      float aspect = sqrt(1.f - 0.9f * anisotropy);
-      return vec2f(max(sqr(roughness) / aspect, 0.001f),
-                        max(sqr(roughness) * aspect, 0.001f));
-    }
-
-
-    
-    struct GGXDistribution {
-      inline __device__ void init(vec2f alpha) { this->alpha = to_half(alpha); }
-      vec2h alpha;
-    };
-    struct GGXDistribution1 {
-      inline __device__ void init(float alpha) { this->alpha = alpha; }
-      inline __device__
-      float evalLambda(const vec3f& wo) const
-      {
-        float cosThetaO = wo.z;
-        float cosThetaO2 = sqr(cosThetaO);
-        float invA2 = (sqr(wo.x * (float)alpha) + sqr(wo.y * (float)alpha)) / cosThetaO2;
-        return 0.5f * (-1.f + sqrt(1.f+invA2));
-      }
-      inline __device__
-      float evalVisible(const vec3f& wh, const vec3f& wo,
-                                          float cosThetaOH, float& pdf) const
-      {
-        float cosThetaO = wo.z;
-        float D = eval(wh);
-        pdf = evalG1(wo, cosThetaOH) * abs(cosThetaOH) * D / abs(cosThetaO);
-        return D;
-      }
-      inline __device__
-      float evalG1(const vec3f& wo, float cosThetaOH) const
-      {
-        float cosThetaO = wo.z;
-        if (cosThetaO * cosThetaOH <= 0.f)
-          return 0.f;
-        
-        return rcp(1.f + evalLambda(wo));
-      }
-      inline __device__
-      float evalG2(const vec3f& wo, const vec3f& wi, float cosThetaOH, float cosThetaIH) const
-      {
-        float cosThetaO = wo.z;
-        float cosThetaI = wi.z;
-        if (cosThetaO * cosThetaOH <= 0.f || cosThetaI * cosThetaIH <= 0.f)
-          return 0.f;
-        
-        return rcp(1.f + evalLambda(wo) + evalLambda(wi));
-      }
-      inline __device__
-      float eval(const vec3f& wh) const
-      {
-        float cosTheta = wh.z;
-        float cosTheta2 = sqr(cosTheta);
-        
-        // float e = (sqr(wh.x / self.alpha.x) + sqr(wh.y / self.alpha.y)) / cosTheta2;
-        float e = (sqr(wh.x / (float)alpha) + sqr(wh.y / (float)alpha)) / cosTheta2;
-        // return rcp(pi * self.alpha.x * self.alpha.y * sqr(cosTheta2 * (1.f + e)));
-        return rcp(pi * (float)alpha * (float)alpha * sqr(cosTheta2 * (1.f + e)));
-      }
-      
-      half alpha;
-    };
-    
     struct FresnelSchlick1 {
       // inline __device__ FresnelSchlick1() {}
       inline __device__ void init(vec3f r, float g) { this->r = to_half(r); this->g = g; }

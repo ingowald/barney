@@ -19,13 +19,23 @@
 #include "barney/material/device/DG.h"
 #include "barney/material/device/Velvet.h"
 #include "barney/material/device/Matte.h"
+#include "barney/material/device/Plastic.h"
 #include "barney/material/device/Mini.h"
 #include "barney/material/device/MetallicPaint.h"
+#include "barney/material/Globals.h"
 
 namespace barney {
   namespace render {
     
-    typedef enum { MISS=0, MINI, MATTE, VELVET, METALLIC_PAINT, ANARI_PHYSICAL } MaterialType;
+    typedef enum {
+      MISS=0,
+      MINI,
+      MATTE,
+      PLASTIC,
+      VELVET,
+      METALLIC_PAINT,
+      ANARI_PHYSICAL
+    } MaterialType;
   
     /*! device-side implementation of anari "physical" material */
     struct AnariPhysical {
@@ -42,6 +52,8 @@ namespace barney {
     }; // ::barney::render::AnariPhysical    
     
     struct HitBRDF {
+      inline __device__ HitBRDF() {}
+      
       /*! helper function to set this to a matte material, primarily
           for volume data */
       inline __device__ void setMatte(vec3f albedo, vec3f P, vec3f N);
@@ -50,12 +62,14 @@ namespace barney {
       inline __device__ void setDG(vec3f P, vec3f N, bool dbg=false);
       inline __device__ vec3f getAlbedo(bool dbg=false) const;
       inline __device__ vec3f getN() const;
-      inline __device__ EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
+      inline __device__ EvalRes eval(const Globals::DD &globals,
+                                     render::DG dg, vec3f w_i, bool dbg=false) const;
       union {
         float3 missColor;
         render::AnariPhysical::BRDF anari;
         render::MiniMaterial::HitBSDF  mini;
         render::Matte::HitBSDF   matte;
+        render::Plastic::HitBSDF   plastic;
         render::Velvet::HitBSDF  velvet;
         render::MetallicPaint::HitBSDF  metallicPaint;
       };
@@ -77,6 +91,7 @@ namespace barney {
       inline void operator=(const Velvet::DD &dd) { this->velvet = dd; materialType = VELVET; }
       inline void operator=(const MetallicPaint::DD &dd) { this->metallicPaint = dd; materialType = METALLIC_PAINT; }
       inline void operator=(const Matte::DD &dd) { this->matte = dd; materialType = MATTE; }
+      inline void operator=(const Plastic::DD &dd) { this->plastic = dd; materialType = PLASTIC; }
       inline __device__ bool  hasAlpha(bool isShadowRay) const;
       inline __device__ float getAlpha(vec2f tc, bool isShadowRay) const;
       inline __device__ void  make(render::HitBRDF &hit, vec3f P, vec3f N,
@@ -88,6 +103,7 @@ namespace barney {
         MiniMaterial::DD  mini;
         MetallicPaint::DD metallicPaint;
         Matte::DD         matte;
+        Plastic::DD         plastic;
         Velvet::DD        velvet;
       };
     };
@@ -98,7 +114,8 @@ namespace barney {
   // ==================================================================
   
   inline __device__
-  render::EvalRes render::HitBRDF::eval(render::DG dg, vec3f w_i, bool dbg) const
+  render::EvalRes render::HitBRDF::eval(const Globals::DD &globals,
+                                        render::DG dg, vec3f w_i, bool dbg) const
   {
     // if (dbg) printf("mattype %i\n",int(materialType));
     switch (materialType) {
@@ -108,6 +125,8 @@ namespace barney {
       return velvet.eval(dg,w_i,dbg);
     case MATTE:
       return matte.eval(dg,w_i,dbg);
+    case PLASTIC:
+      return plastic.eval(globals,dg,w_i,dbg);
     case METALLIC_PAINT:
       return metallicPaint.eval(dg,w_i,dbg);
     default:
@@ -175,6 +194,8 @@ namespace barney {
         return mini.getAlbedo(dbg);
       case MATTE:
         return matte.getAlbedo(dbg);
+      case PLASTIC:
+        return plastic.getAlbedo(dbg);
       case METALLIC_PAINT:
         return metallicPaint.getAlbedo(dbg);
       case VELVET:
@@ -201,6 +222,7 @@ namespace barney {
       case MINI:
         return mini.hasAlpha(isShadowRay);
       case MATTE:
+      case PLASTIC:
       case METALLIC_PAINT:
       case VELVET:
         return false;
@@ -219,6 +241,7 @@ namespace barney {
       case MINI:
         return mini.getAlpha(tc,isShadowRay);
       case MATTE:
+      case PLASTIC:
       case METALLIC_PAINT:
       case VELVET:
         return 1.f;
@@ -247,6 +270,9 @@ namespace barney {
         break;
       case MATTE:
         matte.make(hit.matte,geometryColor,dbg);
+        break;
+      case PLASTIC:
+        plastic.make(hit.plastic,dbg);
         break;
       case VELVET:
         velvet.make(hit.velvet,dbg);

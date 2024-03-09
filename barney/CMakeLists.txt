@@ -127,6 +127,8 @@ add_library(barney STATIC
   GlobalModel.cpp
   Group.h
   Group.cpp
+  material/Globals.h
+  material/Globals.cu
   ModelSlot.h
   ModelSlot.cpp
   # general common/data-related stuff
@@ -140,11 +142,14 @@ add_library(barney STATIC
   # device-level materials
   material/device/Material.h
   material/device/Velvet.h
+  material/device/Plastic.h
   # barney-level material types
   material/host/Material.h
   material/host/Material.cpp
   material/host/Velvet.h
   material/host/Velvet.cpp
+  material/host/Plastic.h
+  material/host/Plastic.cpp
   material/host/Matte.h
   material/host/Matte.cpp
   material/host/MetallicPaint.h

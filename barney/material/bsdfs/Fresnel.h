@@ -33,73 +33,47 @@
 
 #pragma once
 
-#include "barney/common/Texture.h"
-#include "barney/common/Data.h"
-#include "barney/common/half.h"
-#include "barney/material/math.h"
+#include "../math.h"
+#include "optics.h"
+#include "GGXDistribution.h"
 
 namespace barney {
   namespace render {
-
-    struct DG {
-      vec3f N;
-      vec3f wo;
-    };
-
-    struct EvalRes {
-      inline __device__ EvalRes() {}
-      inline __device__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
-      static inline __device__ EvalRes zero() { return { vec3f(0.f),0.f }; }
-      vec3f value;
-      float pdf;
-    };
     
-    
-    inline __device__
-    float luminance(vec3f c)
-    { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
-
-
-
-    inline __device__ 
-    vec3f cartesian(float phi, float sinTheta, float cosTheta)
+    //! \brief Computes fresnel coefficient for dielectric medium
+    /*! \detailed Computes fresnel coefficient for media interface with
+     *  relative refraction index eta. Eta is the outside refraction index
+     *  divided by the inside refraction index. Both cosines have to be
+     *  positive. */
+    inline __both__ float fresnelDielectric(float cosI, float cosT, float eta)
     {
-      float sinPhi, cosPhi;
-      sincosf(phi, &sinPhi, &cosPhi);
-      return vec3f(cosPhi * sinTheta,
-                   sinPhi * sinTheta,
-                   cosTheta);
-    }
-    
-    inline __device__ 
-    vec3f cartesian(const float phi, const float cosTheta)
-    {
-      return cartesian(phi, cos2sin(cosTheta), cosTheta);
-    }
-    
-
-
-    
-    inline __device__ 
-    vec3f cosineSampleHemisphere(const vec2f s)
-    {
-      const float phi = two_pi * s.x;
-      const float cosTheta = sqrt(s.y);
-      const float sinTheta = sqrt(1.0f - s.y);
-      return cartesian(phi, sinTheta, cosTheta);
-    }
-    
-    inline __device__ 
-    float cosineSampleHemispherePDF(const vec3f &dir)
-    {
-      return dir.z * one_over_pi;
+      const float Rper = (eta*cosI -     cosT) * rcp(eta*cosI +     cosT);
+      const float Rpar = (    cosI - eta*cosT) * rcp(    cosI + eta*cosT);
+      return 0.5f*(sqr(Rpar) + sqr(Rper));
     }
 
-    inline __device__ 
-    float cosineSampleHemispherePDF(float cosTheta)
+    /*! Computes fresnel coefficient for media interface with relative
+     *  refraction index eta. Eta is the outside refraction index
+     *  divided by the inside refraction index. The cosine has to be
+     *  positive. */
+    inline __both__ float fresnelDielectric(float cosI, float eta)
     {
-      return cosTheta * one_over_pi;
+      const float sqrCosT = render::sqrCosT(cosI, eta);
+      if (sqrCosT < 0.0f) return 1.0f;
+      return fresnelDielectric(cosI, sqrt(sqrCosT), eta);
     }
-    
+
+    inline __both__ float fresnelDielectricEx(float cosI, float &cosT, float eta)
+    {
+      const float sqrCosT = render::sqrCosT(cosI, eta);
+      if (sqrCosT < 0.0f)
+        {
+          cosT = 0.0f;
+          return 1.0f;
+        }
+      cosT = sqrt(sqrCosT);
+      return fresnelDielectric(cosI, cosT, eta);
+    }
+
   }
 }

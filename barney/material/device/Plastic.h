@@ -31,75 +31,73 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+
 #pragma once
 
-#include "barney/common/Texture.h"
-#include "barney/common/Data.h"
-#include "barney/common/half.h"
-#include "barney/material/math.h"
+#include "barney/material/device/DG.h"
+#include "barney/material/device/BSDF.h"
+#include "barney/material/bsdfs/Lambert.h"
+#include "barney/material/bsdfs/MicrofacetDielectricLayer.h"
 
 namespace barney {
   namespace render {
 
-    struct DG {
-      vec3f N;
-      vec3f wo;
+    typedef uint32_t BSDFType;
+
+    template<typename Substrate>
+    struct DielectricLayerT {
+      inline __device__
+      DielectricLayerT(float eta, Substrate substrate) : eta(eta), substrate(substrate) {}
+      
+      inline __device__
+      EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
+      { return EvalRes::zero(); }
+        
+      Substrate substrate;
+      float eta;
     };
 
-    struct EvalRes {
-      inline __device__ EvalRes() {}
-      inline __device__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
-      static inline __device__ EvalRes zero() { return { vec3f(0.f),0.f }; }
-      vec3f value;
-      float pdf;
+    struct Plastic {
+      struct HitBSDF {
+        inline __device__
+        vec3f getAlbedo(bool dbg=false) const { return vec3f(0.f); }
+        
+        inline __device__
+        EvalRes eval(const Globals::DD &globals,
+                     render::DG dg, vec3f wi, bool dbg=false) const
+        {
+          if ((float)roughness == 0.f) {
+            return
+              DielectricLayerT<Lambert>((float)eta,
+                                        Lambert::create((vec3f)pigmentColor))
+              .eval(dg,wi,dbg);
+          } else {
+            return
+              MicrofacetDielectricLayer<Lambert>((float)eta,(float)roughness,
+                                                 Lambert::create((vec3f)pigmentColor))
+              .eval(globals,dg,wi,dbg);
+          }
+        }
+        
+        vec3h pigmentColor;
+        half eta;
+        half roughness;
+        
+        enum { bsdfType = BSDF_DIFFUSE_REFLECTION };
+      };
+      struct DD {
+        inline __device__
+        void make(HitBSDF &multi, bool dbg) const
+        {
+          multi.eta = eta;
+          multi.roughness = roughness;
+          multi.pigmentColor = pigmentColor;
+        }
+        vec3f pigmentColor;
+        float eta;
+        float roughness;
+      };
     };
-    
-    
-    inline __device__
-    float luminance(vec3f c)
-    { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
-
-
-
-    inline __device__ 
-    vec3f cartesian(float phi, float sinTheta, float cosTheta)
-    {
-      float sinPhi, cosPhi;
-      sincosf(phi, &sinPhi, &cosPhi);
-      return vec3f(cosPhi * sinTheta,
-                   sinPhi * sinTheta,
-                   cosTheta);
-    }
-    
-    inline __device__ 
-    vec3f cartesian(const float phi, const float cosTheta)
-    {
-      return cartesian(phi, cos2sin(cosTheta), cosTheta);
-    }
-    
-
-
-    
-    inline __device__ 
-    vec3f cosineSampleHemisphere(const vec2f s)
-    {
-      const float phi = two_pi * s.x;
-      const float cosTheta = sqrt(s.y);
-      const float sinTheta = sqrt(1.0f - s.y);
-      return cartesian(phi, sinTheta, cosTheta);
-    }
-    
-    inline __device__ 
-    float cosineSampleHemispherePDF(const vec3f &dir)
-    {
-      return dir.z * one_over_pi;
-    }
-
-    inline __device__ 
-    float cosineSampleHemispherePDF(float cosTheta)
-    {
-      return cosTheta * one_over_pi;
-    }
     
   }
 }

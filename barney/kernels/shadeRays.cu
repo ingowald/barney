@@ -453,12 +453,12 @@ namespace barney {
         return false;
     }
   
-    inline __device__
-    vec3f reflect(const vec3f &v,
-                  const vec3f &n)
-    {
-      return v - 2.0f*dot(v, n)*n;
-    }
+    // inline __device__
+    // vec3f reflect(const vec3f &v,
+    //               const vec3f &n)
+    // {
+    //   return v - 2.0f*dot(v, n)*n;
+    // }
   
 
 
@@ -671,7 +671,6 @@ namespace barney {
       //          (float)path.hit.transmission,
       //          (float)path.hit.ior,
       //          int(doTransmission));
-
       if (/* for non-glass this SHOULD be done by isec program! */doTransmission) {
         // ------------------------------------------------------------------
         // transmission, refleciton, or refraction
@@ -701,10 +700,14 @@ namespace barney {
           path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
         } else {
           path.dir = sampleCosineWeightedHemisphere(dg.N,random);
-          EvalRes f_r = path.hit.eval(dg,path.dir,path.dbg);
-          path.throughput = path.throughput * f_r.value
-            // /f_r.pdf
-            ;//baseColor;
+          EvalRes f_r = path.hit.eval(world.globals,dg,path.dir,path.dbg);
+          if (f_r.pdf <= 1e-6f) {
+            path.tMax = -1.f;
+          } else {
+            path.throughput = path.throughput * f_r.value
+              /f_r.pdf
+              ;//baseColor;
+          }
         }
       }
 
@@ -734,7 +737,7 @@ namespace barney {
       // ==================================================================
       LightSample ls;
       if (!doTransmission && sampleLights(ls,world,path.hit.P,Ng,random,path.dbg)) {
-        EvalRes f_r = path.hit.eval(dg,ls.dir,path.dbg);
+        EvalRes f_r = path.hit.eval(world.globals,dg,ls.dir,path.dbg);
         shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)*(1.f/ls.pdf)
                                 * f_r.value / f_r.pdf,
                                 /* surface: */path.hit.P + EPS*Ng,
