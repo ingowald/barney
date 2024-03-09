@@ -142,6 +142,8 @@ add_library(barney STATIC
   # device-level materials
   material/device/Material.h
   material/device/Velvet.h
+  material/device/Matte.h
+  material/device/Metal.h
   material/device/Plastic.h
   # barney-level material types
   material/host/Material.h
@@ -152,6 +154,8 @@ add_library(barney STATIC
   material/host/Plastic.cpp
   material/host/Matte.h
   material/host/Matte.cpp
+  material/host/Metal.h
+  material/host/Metal.cpp
   material/host/MetallicPaint.h
   material/host/MetallicPaint.cpp
   # actual geometry types

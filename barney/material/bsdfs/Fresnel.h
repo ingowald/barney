@@ -75,5 +75,58 @@ namespace barney {
       return fresnelDielectric(cosI, cosT, eta);
     }
 
+
+
+    struct FresnelSchlick1 {
+      // inline __device__ FresnelSchlick1() {}
+      inline __device__
+      FresnelSchlick1(vec3f r, float g) : r(r), g(g) {}
+      
+      inline __device__ vec3f eval(float cosI, bool dbg = false) const
+      {
+        const float c = 1.f - cosI;
+        // if (dbg)
+        //   printf("c %f r %f %f %f g %f\n",
+        //          c,float(r.x),float(r.y),float(r.z), float(g));
+        return lerp(sqr(sqr(c))*c, r, vec3f(g));
+      }
+
+      vec3f r; // reflectivity at normal incidence (0 deg)
+      float g;// reflectivity at grazing angle (90 deg)
+    };
+
+
+    inline __device__
+    float fresnelConductor(float cosI, float eta, float k)
+    {
+      const float tmp = sqr(eta) + sqr(k);
+      const float Rpar
+        = (tmp * sqr(cosI) - eta*(2.0f*cosI) + 1.f)
+        * rcp(tmp * sqr(cosI) + eta*(2.0f*cosI) + 1.f);
+      const float Rper
+        = (tmp - 2.0f*eta*cosI + sqr(cosI))
+        * rcp(tmp + 2.0f*eta*cosI + sqr(cosI));
+      return 0.5f * (Rpar + Rper);
+    }
+    
+    struct FresnelConductorRGBUniform
+    {
+      inline __device__
+      FresnelConductorRGBUniform(vec3f eta, vec3f k)
+        : eta(eta), k(k)
+      {}
+
+      inline __device__ vec3f eval(float cosI, bool dbg = false) const
+      {
+        return vec3f(fresnelConductor(cosI, this->eta.x, this->k.x),
+                     fresnelConductor(cosI, this->eta.y, this->k.y),
+                     fresnelConductor(cosI, this->eta.z, this->k.z));
+      }
+      
+      vec3f eta;
+      vec3f k;
+    };
+
+    
   }
 }

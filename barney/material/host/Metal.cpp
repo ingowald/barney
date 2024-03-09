@@ -14,45 +14,36 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/material/device/DG.h"
-#include "barney/material/device/BSDF.h"
-#include "barney/material/bsdfs/Lambert.h"
+#include "barney/material/host/Metal.h"
+#include "barney/material/device/Metal.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
-  namespace render {
 
-    struct Matte {
-      struct HitBSDF {
-        inline __device__
-        vec3f getAlbedo(bool dbg=false) const
-        { return Lambert(reflectance).getAlbedo(dbg); }
-        
-        inline __device__
-        EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
-        {
-          return Lambert(reflectance).eval(dg,wi,dbg);
-        }
-        
-        // Lambert lambert;
-        vec3h reflectance;
-
-        enum { bsdfType = Lambert::bsdfType };
-        // enum { bsdfType = Minneart::bsdfType | Lambert::bsdfType };
-      };
-      struct DD {
-        inline __device__
-        void make(HitBSDF &multi, vec3f geometryColor, bool dbg) const
-        {
-          multi.reflectance
-            = !isnan(geometryColor.x)
-            ? geometryColor
-            : reflectance;
-        }
-        vec3f reflectance;
-      };
-    };
-    
+  void MetalMaterial::createDD(DD &dd, int deviceID) const 
+  {
+    render::Metal::DD self;
+    self.k = k;
+    self.eta = eta;
+    self.roughness = roughness;
+    dd = self;
+  }
+  
+  bool MetalMaterial::set1f(const std::string &member, const float &value) 
+  {
+    if (Material::set1f(member,value)) return true;
+    if (member == "roughness") 
+      { roughness = value; return true; }
+    return false;
+  }
+  
+  bool MetalMaterial::set3f(const std::string &member, const vec3f &value) 
+  {
+    if (Material::set3f(member,value)) return true;
+    if (member == "eta") 
+      { eta = value; return true; }
+    if (member == "k") 
+      { k = value; return true; }
+    return false;
   }
 }

@@ -16,43 +16,29 @@
 
 #pragma once
 
-#include "barney/material/device/DG.h"
-#include "barney/material/device/BSDF.h"
-#include "barney/material/bsdfs/Lambert.h"
+#include "barney/material/host/Material.h"
 
 namespace barney {
-  namespace render {
-
-    struct Matte {
-      struct HitBSDF {
-        inline __device__
-        vec3f getAlbedo(bool dbg=false) const
-        { return Lambert(reflectance).getAlbedo(dbg); }
-        
-        inline __device__
-        EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
-        {
-          return Lambert(reflectance).eval(dg,wi,dbg);
-        }
-        
-        // Lambert lambert;
-        vec3h reflectance;
-
-        enum { bsdfType = Lambert::bsdfType };
-        // enum { bsdfType = Minneart::bsdfType | Lambert::bsdfType };
-      };
-      struct DD {
-        inline __device__
-        void make(HitBSDF &multi, vec3f geometryColor, bool dbg) const
-        {
-          multi.reflectance
-            = !isnan(geometryColor.x)
-            ? geometryColor
-            : reflectance;
-        }
-        vec3f reflectance;
-      };
-    };
+  
+  /*! embree/ospray "Metal" material */
+  struct MetalMaterial : public barney::Material {
+    MetalMaterial(ModelSlot *owner) : Material(owner) {}
+    virtual ~MetalMaterial() = default;
     
-  }
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "MetalMaterial"; }
+
+    void createDD(DD &dd, int deviceID) const override;
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override {};
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+    vec3f eta {1.47f, 0.984f, 0.602f}; // index of refraction
+    vec3f k {7.64f, 6.55f, 5.36f}; // index of refraction, imaginary part
+    float roughness { .1f }; // in [0, 1]; 0==ideally smooth (mirror)
+  };
+  
 }

@@ -49,7 +49,7 @@ namespace barney {
     inline __both__
     float MicrofacetDielectricReflectionAlbedo_sample(float cosThetaO,
                                                       float eta,
-                                                      const GGXDistribution1 &microfacet,
+                                                      const GGXDistribution &microfacet,
                                                       const vec2f &s)
     {
       // Handle edge cases
@@ -86,7 +86,7 @@ namespace barney {
                                                          float roughness,
                                                          int numSamples = 1024)
     {
-      GGXDistribution1 microfacet(roughness);
+      GGXDistribution microfacet(roughness);
       
       int n = sqrt((float)numSamples);
       float sum = 0.f;
@@ -104,7 +104,7 @@ namespace barney {
     inline __both__
     float MicrofacetDielectricAlbedo_sample(float cosThetaO,
                                             float eta,
-                                            const GGXDistribution1 &microfacet,
+                                            const GGXDistribution &microfacet,
                                             const vec2f& s)
     {
       // Handle edge cases
@@ -155,7 +155,7 @@ namespace barney {
                                                int numSamples = 1024)
     {
       // GGXDistribution microfacet(roughness, 0.f);
-      GGXDistribution1 microfacet(roughness);
+      GGXDistribution microfacet(roughness);
       
       int n = sqrtf((float)numSamples);
       float sum = 0.f;

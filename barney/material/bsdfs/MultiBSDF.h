@@ -31,73 +31,45 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-
 #pragma once
 
 #include "barney/material/device/DG.h"
 #include "barney/material/device/BSDF.h"
-#include "barney/material/bsdfs/Lambert.h"
-#include "barney/material/bsdfs/MicrofacetDielectricLayer.h"
 
 namespace barney {
   namespace render {
 
-    typedef uint32_t BSDFType;
+    template<typename A, typename B>
+    struct MultiBSDF2 {
+      inline __both__ MultiBSDF2(A a, B b)
+        : a(a), b(b)
+      {}
 
-    template<typename Substrate>
-    struct DielectricLayerT {
       inline __device__
-      DielectricLayerT(float eta, Substrate substrate) : eta(eta), substrate(substrate) {}
-      
+      vec3f getAlbedo(bool dbg=false) const {
+        return a.getAlbedo(dbg)+b.getAlbedo(dbg);
+      }
+
       inline __device__
       EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
-      { return EvalRes::zero(); }
-        
-      Substrate substrate;
-      float eta;
-    };
+      {
+        EvalRes a_eval = a.eval(dg,wi,dbg);
+        float   a_imp  = a.importance();
+        EvalRes b_eval  = b.eval(dg,wi,dbg);
+        float   b_imp   = b.importance();
+        EvalRes our_eval;
+        our_eval.value = a_eval.value + b_eval.value;
+        our_eval.pdf
+          = (a_imp*a_eval.pdf+b_imp*b_eval.pdf)
+          / max(1e-20f,a_imp+b_imp);
+        return our_eval;
+      }
 
-    struct Plastic {
-      struct HitBSDF {
-        inline __device__
-        vec3f getAlbedo(bool dbg=false) const { return vec3f(0.f); }
-        
-        inline __device__
-        EvalRes eval(const Globals::DD &globals,
-                     render::DG dg, vec3f wi, bool dbg=false) const
-        {
-          if ((float)roughness == 0.f) {
-            return
-              DielectricLayerT<Lambert>((float)eta,
-                                        Lambert((vec3f)pigmentColor))
-              .eval(dg,wi,dbg);
-          } else {
-            return
-              MicrofacetDielectricLayer<Lambert>((float)eta,(float)roughness,
-                                                 Lambert((vec3f)pigmentColor))
-              .eval(globals,dg,wi,dbg);
-          }
-        }
-        
-        vec3h pigmentColor;
-        half eta;
-        half roughness;
-        
-        enum { bsdfType = BSDF_DIFFUSE_REFLECTION };
-      };
-      struct DD {
-        inline __device__
-        void make(HitBSDF &multi, bool dbg) const
-        {
-          multi.eta = eta;
-          multi.roughness = roughness;
-          multi.pigmentColor = pigmentColor;
-        }
-        vec3f pigmentColor;
-        float eta;
-        float roughness;
-      };
+      enum { bsdfType = A::bsdfType | B::bsdfType };
+      
+      A a;
+      B b;
     };
-    
+      
   }
 }

@@ -173,7 +173,7 @@ namespace barney {
       inline __device__ vec3f transmittance() const { return vec3f(1.f); }
       inline __device__ float thickness() const { return 1.f; }
       // float thickness;
-      GGXDistribution1 microfacet;
+      GGXDistribution microfacet;
       float roughness;
       float eta;
       Substrate substrate;

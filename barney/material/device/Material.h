@@ -19,6 +19,7 @@
 #include "barney/material/device/DG.h"
 #include "barney/material/device/Velvet.h"
 #include "barney/material/device/Matte.h"
+#include "barney/material/device/Metal.h"
 #include "barney/material/device/Plastic.h"
 #include "barney/material/device/Mini.h"
 #include "barney/material/device/MetallicPaint.h"
@@ -31,6 +32,7 @@ namespace barney {
       MISS=0,
       MINI,
       MATTE,
+      METAL,
       PLASTIC,
       VELVET,
       METALLIC_PAINT,
@@ -69,6 +71,7 @@ namespace barney {
         render::AnariPhysical::BRDF anari;
         render::MiniMaterial::HitBSDF  mini;
         render::Matte::HitBSDF   matte;
+        render::Metal::HitBSDF   metal;
         render::Plastic::HitBSDF   plastic;
         render::Velvet::HitBSDF  velvet;
         render::MetallicPaint::HitBSDF  metallicPaint;
@@ -91,6 +94,9 @@ namespace barney {
       inline void operator=(const Velvet::DD &dd) { this->velvet = dd; materialType = VELVET; }
       inline void operator=(const MetallicPaint::DD &dd) { this->metallicPaint = dd; materialType = METALLIC_PAINT; }
       inline void operator=(const Matte::DD &dd) { this->matte = dd; materialType = MATTE; }
+      inline void operator=(const Metal::DD &dd) { this->metal = dd; materialType = METAL;
+        printf("METAL\n");
+      }
       inline void operator=(const Plastic::DD &dd) { this->plastic = dd; materialType = PLASTIC; }
       inline __device__ bool  hasAlpha(bool isShadowRay) const;
       inline __device__ float getAlpha(vec2f tc, bool isShadowRay) const;
@@ -103,6 +109,7 @@ namespace barney {
         MiniMaterial::DD  mini;
         MetallicPaint::DD metallicPaint;
         Matte::DD         matte;
+        Metal::DD         metal;
         Plastic::DD         plastic;
         Velvet::DD        velvet;
       };
@@ -117,7 +124,7 @@ namespace barney {
   render::EvalRes render::HitBRDF::eval(const Globals::DD &globals,
                                         render::DG dg, vec3f w_i, bool dbg) const
   {
-    // if (dbg) printf("mattype %i\n",int(materialType));
+    if (dbg) printf("mattype %i\n",int(materialType));
     switch (materialType) {
     case MINI:
       return mini.eval(dg,w_i,dbg);
@@ -125,6 +132,8 @@ namespace barney {
       return velvet.eval(dg,w_i,dbg);
     case MATTE:
       return matte.eval(dg,w_i,dbg);
+    case METAL:
+      return metal.eval(dg,w_i,dbg);
     case PLASTIC:
       return plastic.eval(globals,dg,w_i,dbg);
     case METALLIC_PAINT:
@@ -183,7 +192,7 @@ namespace barney {
     {
       setDG(P,N);
       materialType = render::MATTE;
-      matte.lambert.albedo = albedo;
+      matte.reflectance = albedo;
     }
 
     inline __device__
@@ -194,6 +203,8 @@ namespace barney {
         return mini.getAlbedo(dbg);
       case MATTE:
         return matte.getAlbedo(dbg);
+      case METAL:
+        return metal.getAlbedo(dbg);
       case PLASTIC:
         return plastic.getAlbedo(dbg);
       case METALLIC_PAINT:
@@ -222,6 +233,7 @@ namespace barney {
       case MINI:
         return mini.hasAlpha(isShadowRay);
       case MATTE:
+      case METAL:
       case PLASTIC:
       case METALLIC_PAINT:
       case VELVET:
@@ -241,6 +253,7 @@ namespace barney {
       case MINI:
         return mini.getAlpha(tc,isShadowRay);
       case MATTE:
+      case METAL:
       case PLASTIC:
       case METALLIC_PAINT:
       case VELVET:
@@ -270,6 +283,9 @@ namespace barney {
         break;
       case MATTE:
         matte.make(hit.matte,geometryColor,dbg);
+        break;
+      case METAL:
+        metal.make(hit.metal,dbg);
         break;
       case PLASTIC:
         plastic.make(hit.plastic,dbg);

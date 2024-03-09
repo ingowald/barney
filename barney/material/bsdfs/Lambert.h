@@ -42,13 +42,19 @@ namespace barney {
     typedef uint32_t BSDFType;
 
     struct Lambert : public BSDF {
-      
-      static inline __device__
-      Lambert create(vec3f R, bool dbg = false)
-      { Lambert l; l.init(R); return l; }
+
+      inline __device__
+      Lambert(vec3f R, bool dbg = false)
+        : BSDF(R)
+      {}
+      // { Lambert l; l.init(R); return l; }
+
+      // static inline __device__
+      // Lambert create(vec3f R, bool dbg = false)
+      // { Lambert l; l.init(R); return l; }
                      
-      inline __device__ void init(vec3f R, bool dbg = false)
-      { BSDF::init(R); }
+      // inline __device__ void init(vec3f R, bool dbg = false)
+      // { BSDF::init(R); }
         
       inline __device__
       EvalRes eval(DG dg, vec3f wi, bool dbg = false) const

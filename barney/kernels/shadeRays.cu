@@ -701,6 +701,13 @@ namespace barney {
         } else {
           path.dir = sampleCosineWeightedHemisphere(dg.N,random);
           EvalRes f_r = path.hit.eval(world.globals,dg,path.dir,path.dbg);
+          // if (path.dbg)
+          //   printf("f_r %f %f %f:%f\n",
+          //          f_r.value.x,
+          //          f_r.value.y,
+          //          f_r.value.z,
+          //          f_r.pdf);
+
           if (f_r.pdf <= 1e-6f) {
             path.tMax = -1.f;
           } else {
@@ -716,7 +723,7 @@ namespace barney {
       // very low throughput/weak impact on the image - use russian
       // roulette to either ake it 'stronger', or kill it.
       // ------------------------------------------------------------------
-      if (pathDepth < MAX_PATH_DEPTH) {
+      if (pathDepth < MAX_PATH_DEPTH && path.tMax > 0.f) {
         path.dir = normalize(path.dir);
         path.tMax   = INFINITY;
         path.hadHit = false;
@@ -738,14 +745,18 @@ namespace barney {
       LightSample ls;
       if (!doTransmission && sampleLights(ls,world,path.hit.P,Ng,random,path.dbg)) {
         EvalRes f_r = path.hit.eval(world.globals,dg,ls.dir,path.dbg);
-        shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)*(1.f/ls.pdf)
-                                * f_r.value / f_r.pdf,
-                                /* surface: */path.hit.P + EPS*Ng,
-                                /* to light */ls.dir,
-                                /* length   */ls.dist * (1.f-2.f*EPS));
-        shadowRay.rngSeed = path.rngSeed + 1;
-        shadowRay.dbg = path.dbg;
-        shadowRay.pixelID = path.pixelID;
+        if (f_r.pdf <= 1e-6f) {
+          shadowRay.tMax = -1.f;
+        } else {
+          shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)*(1.f/ls.pdf)
+                                  * f_r.value / f_r.pdf,
+                                  /* surface: */path.hit.P + EPS*Ng,
+                                  /* to light */ls.dir,
+                                  /* length   */ls.dist * (1.f-2.f*EPS));
+          shadowRay.rngSeed = path.rngSeed + 1;
+          shadowRay.dbg = path.dbg;
+          shadowRay.pixelID = path.pixelID;
+        }
       }
     }
   
@@ -782,10 +793,16 @@ namespace barney {
              generation);
     
       // write shadow and bounce ray(s), if any were generated
-      if (path.tMax > 0.f)
+      // if (path.dbg)
+      //   printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
+      //          path.tMax,shadowRay.tMax,
+      //          fragment.x,fragment.y,fragment.z);
+      if (path.tMax > 0.f) {
         writeQueue[atomicAdd(d_nextWritePos,1)] = path;
-      if (shadowRay.tMax > 0.f) 
+      }
+      if (shadowRay.tMax > 0.f) {
         writeQueue[atomicAdd(d_nextWritePos,1)] = shadowRay;
+      }
 
       // and write the shade fragment, if generated
       int tileID  = path.pixelID / pixelsPerTile;

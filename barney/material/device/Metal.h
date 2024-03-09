@@ -18,39 +18,45 @@
 
 #include "barney/material/device/DG.h"
 #include "barney/material/device/BSDF.h"
-#include "barney/material/bsdfs/Lambert.h"
+#include "barney/material/bsdfs/MicrofacetConductor.h"
+#include "barney/material/bsdfs/Fresnel.h"
 
 namespace barney {
   namespace render {
 
-    struct Matte {
+    struct Metal {
       struct HitBSDF {
         inline __device__
-        vec3f getAlbedo(bool dbg=false) const
-        { return Lambert(reflectance).getAlbedo(dbg); }
+        vec3f getAlbedo(bool dbg=false) const {
+          // return (vec3f)lambert.albedo;
+          return vec3f(0.f);
+        }
         
         inline __device__
         EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
         {
-          return Lambert(reflectance).eval(dg,wi,dbg);
+          FresnelConductorRGBUniform fresnel((vec3f)eta,(vec3f)k);
+          MicrofacetConductor<FresnelConductorRGBUniform> facets(fresnel,roughness);
+          return facets.eval(dg,wi,dbg);
         }
         
-        // Lambert lambert;
-        vec3h reflectance;
+        vec3h eta;
+        vec3h k;
+        half roughness;
 
-        enum { bsdfType = Lambert::bsdfType };
-        // enum { bsdfType = Minneart::bsdfType | Lambert::bsdfType };
+        enum { bsdfType = Minneart::bsdfType | Lambert::bsdfType };
       };
       struct DD {
         inline __device__
-        void make(HitBSDF &multi, vec3f geometryColor, bool dbg) const
+        void make(HitBSDF &multi, bool dbg) const
         {
-          multi.reflectance
-            = !isnan(geometryColor.x)
-            ? geometryColor
-            : reflectance;
+          multi.eta = eta;
+          multi.k = k;
+          multi.roughness = roughness;
         }
-        vec3f reflectance;
+        vec3f eta;
+        vec3f k;
+        float roughness;
       };
     };
     
