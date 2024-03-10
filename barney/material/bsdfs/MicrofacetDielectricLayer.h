@@ -58,7 +58,7 @@ namespace barney {
       EvalRes eval(const Globals::DD &globals, render::DG dg, vec3f wi, bool dbg=false) const
       {
         vec3f wo = dg.wo;
-        vec3f N = dg.N;
+        vec3f N = dg.Ns;
         // float cosThetaO = dot(wo, getN(super));
         float cosThetaO = dot(wo, N);
         if (cosThetaO <= 0.f)
@@ -133,7 +133,7 @@ namespace barney {
             float cosThetaIH = dot(wi, wh);
 
             // linear3f toLocal = transposed(getFrame(super));
-            linear3f localFrame = owl::common::frame(dg.N);
+            linear3f localFrame = owl::common::frame(dg.Ns);
             linear3f toLocal = localFrame.transposed();
             vec3f wo0 = toLocal * wo;
             vec3f wi0 = toLocal * wi;

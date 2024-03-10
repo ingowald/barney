@@ -46,16 +46,20 @@ namespace barney {
     inline __both__ float rcp(float f) { return 1.f/f; }
     inline __both__ float rcpf(float f) { return 1.f/f; }
     inline __both__ float abs(float f) { return fabsf(f); }
+    inline __both__ float exp(float f) { return expf(f); }
 
     inline __both__ float floor(float f) { return floorf(f); }
     inline __both__ float clamp(float f) { return min(1.f,max(0.f,f)); }
     inline __both__ float clamp(float f, float lo, float hi) { return min(hi,max(lo,f)); }
     inline __both__ float pow(float a, float b) { return powf(a,b); }
+    // inline __both__ vec3f pow(vec3f a, vec3f b) { return vec3f(pow(a.x,b.x),pow(a.y,b.y),pow(a.z,b.z)); }
+    inline __both__ vec3f exp(vec3f a) { return vec3f(exp(a.x),exp(a.y),exp(a.z)); }
     inline __both__ float sqrt(float f) { return sqrtf(f); }
     inline __both__ float sqr(float f) { return f*f; }
     inline __both__ float cos2sin(const float f) { return sqrt(max(0.f, 1.f - sqr(f))); }
     inline __both__ float sin2cos(const float f) { return cos2sin(f); }
 
+    inline __both__ vec3f neg(vec3f v) { return vec3f(-v.x,-v.y,-v.z); }
     
     inline __both__ float rcp_safe(float f) { return rcpf((fabsf(f) < 1e-8f) ? 1e-8f : f); }
 

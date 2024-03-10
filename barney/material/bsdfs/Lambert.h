@@ -47,6 +47,7 @@ namespace barney {
       Lambert(vec3f R, bool dbg = false)
         : BSDF(R)
       {}
+      inline __device__ Lambert(const Lambert &) = default;
       // { Lambert l; l.init(R); return l; }
 
       // static inline __device__
@@ -60,7 +61,7 @@ namespace barney {
       EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
       {
         EvalRes res;
-        float cosThetaI = max(dot(wi, dg.N), 0.f);
+        float cosThetaI = max(dot(wi, dg.Ns), 0.f);
         res.pdf = cosineSampleHemispherePDF(cosThetaI);
         res.value = (vec3f)albedo * one_over_pi * cosThetaI;
         return res;

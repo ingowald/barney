@@ -51,11 +51,11 @@ namespace barney {
       inline __device__
       EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
       {
-        linear3f localFrame = owl::common::frame(dg.N);
+        linear3f localFrame = owl::common::frame(dg.Ns);
         
         vec3f wo = dg.wo;
-        float cosThetaO = dot(wo, dg.N);
-        float cosThetaI = dot(wi, dg.N);
+        float cosThetaO = dot(wo, dg.Ns);
+        float cosThetaI = dot(wi, dg.Ns);
         if (cosThetaO <= 0.f || cosThetaI <= 0.f) {
           return EvalRes(vec3f(0.f),0.f);
         }
@@ -63,7 +63,7 @@ namespace barney {
         EvalRes res;
         // Compute the microfacet normal
         vec3f wh = normalize(wi + wo);
-        float cosThetaH = dot(wh, dg.N);
+        float cosThetaH = dot(wh, dg.Ns);
         float cosThetaOH = dot(wo, wh);
         float cosThetaIH = dot(wi, wh);
         

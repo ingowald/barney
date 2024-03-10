@@ -91,6 +91,14 @@ namespace barney {
         inline __device__
         EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
         {
+          // return EvalRes::zero();
+#if 0
+          const Lambert substrate(vec3f(baseColor),dbg);
+          DielectricLayer1<Lambert>
+            bsdf(substrate,(float)eta);
+            // bsdf(Lambert(vec3f(baseColor)),(float)eta);
+          return bsdf.eval(dg,wi,dbg);
+#else
           const vec3f r = this->flakeColor;
           const float g = this->flakeAmount;
           FresnelSchlick1 fresnel(r,g);
@@ -100,6 +108,7 @@ namespace barney {
           DielectricLayer1<MultiBSDF2<Lambert, MicrofacetConductor<FresnelSchlick1>>>
             bsdf(substrate,eta);
           return bsdf.eval(dg,wi,dbg);
+#endif
           // return dielectricLayer.eval(dg,wi,dbg);
         }
         

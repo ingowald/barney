@@ -100,6 +100,7 @@ namespace barney {
       = normals
       ? normals->owl
       : 0;
+    // PING; PRINT(normals);
 
     int numVertices = vertices->count;
     int numIndices  = indices->count;
