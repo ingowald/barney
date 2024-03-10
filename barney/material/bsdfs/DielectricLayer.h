@@ -112,7 +112,8 @@ namespace barney {
 #if 1
         float T = min(1.f - Fo, 1.f - Fi);
         substrate.value = substrate.value * T;
-#else
+#endif
+#if 0
         // Energy conservation
         float T;
         if (self->substrate->type & ~BSDF_DIFFUSE)

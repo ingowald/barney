@@ -37,6 +37,7 @@
 #include "barney/material/device/DG.h"
 #include "barney/material/device/BSDF.h"
 #include "barney/material/bsdfs/Lambert.h"
+#include "barney/material/bsdfs/DielectricLayer.h"
 #include "barney/material/bsdfs/MicrofacetDielectricLayer.h"
 
 namespace barney {
@@ -44,18 +45,18 @@ namespace barney {
 
     typedef uint32_t BSDFType;
 
-    template<typename Substrate>
-    struct DielectricLayerT {
-      inline __device__
-      DielectricLayerT(float eta, Substrate substrate) : eta(eta), substrate(substrate) {}
+    // template<typename Substrate>
+    // struct DielectricLayerT {
+    //   inline __device__
+    //   DielectricLayerT(float eta, Substrate substrate) : eta(eta), substrate(substrate) {}
       
-      inline __device__
-      EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
-      { return EvalRes::zero(); }
+    //   inline __device__
+    //   EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
+    //   { return EvalRes::zero(); }
         
-      Substrate substrate;
-      float eta;
-    };
+    //   Substrate substrate;
+    //   float eta;
+    // };
 
     struct Plastic {
       struct HitBSDF {
@@ -66,10 +67,17 @@ namespace barney {
         EvalRes eval(const Globals::DD &globals,
                      render::DG dg, vec3f wi, bool dbg=false) const
         {
+          // if (dbg) printf("rough %f pig %f % f %f eta %f\n",
+          //                 (float)roughness,
+          //                 (float)pigmentColor.x,
+          //                 (float)pigmentColor.y,
+          //                 (float)pigmentColor.z,
+          //                 (float)eta);
+          // float roughness = max((float)this->roughness,0.001f);
           if ((float)roughness == 0.f) {
             return
-              DielectricLayerT<Lambert>((float)eta,
-                                        Lambert((vec3f)pigmentColor))
+              DielectricLayer1<Lambert>(Lambert((vec3f)pigmentColor),
+                                        (float)eta)
               .eval(dg,wi,dbg);
           } else {
             return

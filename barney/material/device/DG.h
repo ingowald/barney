@@ -59,7 +59,7 @@ namespace barney {
     struct SampleRes {
       // inline __device__ SampleRes() {}
       // inline __device__ SampleRes(vec3f v, float p) : value(v),pdf(p) {}
-      // static inline __device__ SampleRes zero() { return { vec3f(0.f),0.f }; }
+      static inline __device__ SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
       vec3f weight;
       vec3f wi;
       int   type;

@@ -674,10 +674,19 @@ namespace barney {
       //          (float)path.hit.ior,
       //          int(doTransmission));
 #if 1
-      if (path.hit.materialType == GLASS) {
+      // if (path.dbg) printf("mattype %i\n",path.hit.materialType);
+      if (path.hit.materialType == GLASS
+          ||
+          path.hit.materialType == METAL
+          ) {
         dg.wo = neg(path.dir);
-        SampleRes sampleRes
-          = path.hit.glass.sample(dg,random,path.dbg);
+        SampleRes sampleRes;
+        if (path.hit.materialType == GLASS)
+          sampleRes
+            = path.hit.glass.sample(dg,random,path.dbg);
+        else
+          sampleRes
+            = path.hit.metal.sample(dg,random,path.dbg);
         // if (path.dbg)
         //   printf("sampleres w %f %f %f dir %f %f %f pdf %f\n",
         //          sampleRes.weight.x,
@@ -733,7 +742,7 @@ namespace barney {
           //          f_r.value.z,
           //          f_r.pdf);
 
-#if 1
+// #if 1
           if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
             path.tMax = -1.f;
           } else {
@@ -741,15 +750,15 @@ namespace barney {
               / (f_r.pdf + 1e-10f)
               ;//baseColor;
           }
-#else
-          if (f_r.pdf <= 1e-10f) {
-            path.tMax = -1.f;
-          } else {
-            path.throughput = path.throughput * f_r.value
-              /f_r.pdf
-              ;//baseColor;
-          }
-#endif
+// #else
+//           if (f_r.pdf <= 1e-10f) {
+//             path.tMax = -1.f;
+//           } else {
+//             path.throughput = path.throughput * f_r.value
+//               /f_r.pdf
+//               ;//baseColor;
+//           }
+// #endif
         }
       }
 #else

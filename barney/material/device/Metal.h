@@ -33,6 +33,16 @@ namespace barney {
         }
         
         inline __device__
+        SampleRes sample(const DG &dg,
+                         Random &randomF,
+                         bool dbg = false)
+        {
+          FresnelConductorRGBUniform fresnel((vec3f)eta,(vec3f)k);
+          MicrofacetConductor<FresnelConductorRGBUniform> facets(fresnel,roughness);
+          return facets.sample(dg,randomF,dbg);
+        }
+        
+        inline __device__
         EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
         {
           FresnelConductorRGBUniform fresnel((vec3f)eta,(vec3f)k);

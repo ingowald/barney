@@ -93,6 +93,57 @@ namespace barney {
       }
       
       inline __device__
+      SampleRes sample(const DG &dg,
+                       Random &randomF,
+                       bool dbg = false)
+      {
+        // const varying MicrofacetConductor* uniform self = (const varying MicrofacetConductor* uniform)super;
+        // BSDF_SampleRes res;
+        SampleRes res;
+
+        float s = randomF();
+        linear3f localFrame = owl::common::frame(dg.Ns);
+        vec3f N = dg.Ns;
+        vec3f wo = dg.wo;
+        float cosThetaO = dot(wo, N);//getN(super));
+        if (cosThetaO <= 0.f)
+          return SampleRes::zero();//make_BSDF_SampleRes_zero();
+
+        linear3f toGlobal = localFrame;//getFrame(super);
+        linear3f toLocal = toGlobal.transposed();
+        vec3f wo0 = toLocal * wo;
+
+        // Sample the microfacet normal
+        float whPdf;
+        vec3f wh = toGlobal * microfacet.sampleVisible(wo0, whPdf, s);
+
+        res.wi = reflect(wo, wh);
+        float cosThetaI = dot(res.wi, N);
+        if (cosThetaI <= 0.f)
+          return SampleRes::zero();//make_BSDF_SampleRes_zero();
+        float cosThetaOH = dot(wo, wh);
+        float cosThetaIH = dot(res.wi, wh);
+        vec3f wi0 = toLocal * res.wi;
+
+        vec3f F = fresnel.eval(cosThetaOH);
+        float G = microfacet.evalG2(wo0, wi0, cosThetaOH, cosThetaIH);
+        
+        // Energy compensation
+        // float Eo = MicrofacetAlbedoTable_eval(cosThetaO, self->roughness);
+        // float Ei = MicrofacetAlbedoTable_eval(cosThetaI, self->roughness);
+  
+        // vec3f fms = self->fmsScale * ((1.f - Eo) * (1.f - Ei) * rcp(pi * (1.f - self->Eavg)) * cosThetaI);
+
+        res.type = BSDF_GLOSSY_REFLECTION;
+        res.pdf = whPdf * rcp(4.f*abs(cosThetaOH));
+        res.weight = F * (G * rcp_safe(microfacet.evalG1(wo0, cosThetaOH)))
+          // + (fms * rcp(res.pdf))
+          ;
+
+        return res;
+      }
+      
+      inline __device__
       MicrofacetConductor(Fresnel fresnel, float roughness)
         : fresnel(fresnel),
           roughness(roughness),
