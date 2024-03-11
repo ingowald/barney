@@ -11,6 +11,13 @@ struct Renderer : public Object
 {
   Renderer(BarneyGlobalState *s);
   ~Renderer() override;
+
+  void commit() override;
+
+  int pixelSamples() const;
+
+ private:
+  int m_pixelSamples{1};
 };
 
 } // namespace barney_device
