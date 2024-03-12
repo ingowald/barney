@@ -143,6 +143,7 @@ add_library(barney STATIC
   material/device/Material.h
   material/device/Velvet.h
   material/device/Matte.h
+  material/device/Blender.h
   material/device/Glass.h
   material/device/Metal.h
   material/device/Plastic.h
@@ -155,6 +156,8 @@ add_library(barney STATIC
   material/host/Plastic.cpp
   material/host/Matte.h
   material/host/Matte.cpp
+  material/host/Blender.h
+  material/host/Blender.cpp
   material/host/Glass.h
   material/host/Glass.cpp
   material/host/Metal.h

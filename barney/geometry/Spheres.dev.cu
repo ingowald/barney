@@ -36,26 +36,28 @@ namespace barney {
     auto &self = owl::getProgramData<Spheres::DD>();
     int primID = optixGetPrimitiveIndex();
     
-    // ray.hadHit = true;
-    float t_hit = optixGetRayTmax();
+    // // ray.hadHit = true;
+    // float t_hit = optixGetRayTmax();
 
-    vec3f org = optixGetWorldRayOrigin();
-    vec3f dir = optixGetWorldRayDirection();
-    vec3f P   = org + t_hit * dir;
-    vec3f center = self.origins[primID];
-    float radius = self.radii?self.radii[primID]:self.defaultRadius;
-    vec3f N;
-    if (P == center) {
-      N = -normalize(dir);
-    } else {
-      N = normalize(P-center);
-      P = center + (radius * 1.00001f) * N;
-    }
-
-    vec3f geometryColor = 1.f;
-    if (self.colors)
-      geometryColor = self.colors[primID];
-    ray.setHit(P,N,t_hit,self.material,vec2f(NAN),geometryColor);
+    // vec3f org = optixGetWorldRayOrigin();
+    // vec3f dir = optixGetWorldRayDirection();
+    // vec3f P   = org + t_hit * dir;
+    // vec3f center = optixTransformPointFromObjectToWorldSpace(self.origins[primID]);
+    // float radius = self.radii?self.radii[primID]:self.defaultRadius;
+    // vec3f N;
+    // if (P == center) {
+    //   N = -normalize(dir);
+    // } else {
+    //   N = normalize(P-center);
+    //   P = center + (radius * 1.00001f) * N;
+    // }
+    // N = optixTransformNormalFromObjectToWorldSpace(N);
+    // N = normalize(N);
+      
+    // vec3f geometryColor = NAN;
+    // if (self.colors)
+    //   geometryColor = self.colors[primID];
+    // ray.setHit(P,N,t_hit,self.material,vec2f(NAN),geometryColor);
     
     
     // ray.setHit(P,N,t_hit,mat);
@@ -66,6 +68,7 @@ namespace barney {
     const int primID = optixGetPrimitiveIndex();
     const auto &self
       = owl::getProgramData<Spheres::DD>();
+    auto &ray = owl::getPRD<Ray>();
 
     vec3f center = self.origins[primID];
     float radius = self.radii?self.radii[primID]:self.defaultRadius;
@@ -75,7 +78,7 @@ namespace barney {
     const vec3f old_org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
     vec3f org = old_org;
-    float t_move = max(0.f,length(center - old_org)-10.f*radius);
+    float t_move = max(0.f,length(center - old_org)-3.f*radius);
     org = org + t_move * dir;
     float t_max = optixGetRayTmax() - t_move;
     if (t_max < 0.f) return;
@@ -104,6 +107,16 @@ namespace barney {
     }
     hit_t += t_move;
     if (hit_t < t_max) {
+
+      vec3f P = old_org + hit_t * dir;
+      vec3f N = normalize(P-center);
+      P = optixTransformPointFromObjectToWorldSpace(center + radius * N);
+      N = optixTransformNormalFromObjectToWorldSpace(N);
+      vec3f geometryColor = NAN;
+      if (self.colors)
+        geometryColor = self.colors[primID];
+      
+      ray.setHit(P,N,hit_t,self.material,vec2f(NAN),geometryColor);
       optixReportIntersection(hit_t, 0);
     }
     
