@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "Object.h"
+#include "Sampler.h"
 
 namespace barney_device {
 

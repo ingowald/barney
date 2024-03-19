@@ -133,10 +133,10 @@ ANARIMaterial BarneyDevice::newMaterial(const char *subtype)
   return (ANARIMaterial)Material::createInstance(subtype, deviceState());
 }
 
-ANARISampler BarneyDevice::newSampler(const char *)
+ANARISampler BarneyDevice::newSampler(const char *subtype)
 {
   initDevice();
-  return (ANARISampler) new UnknownObject(ANARI_SAMPLER, deviceState());
+  return (ANARISampler)Sampler::createInstance(subtype, deviceState());
 }
 
 // Instancing /////////////////////////////////////////////////////////////////

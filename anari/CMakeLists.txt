@@ -39,6 +39,7 @@ project_add_library(SHARED
   Material.cpp
   Object.cpp
   Renderer.cpp
+  Sampler.cpp
   SpatialField.cpp
   Surface.cpp
   Volume.cpp
@@ -50,7 +51,6 @@ if (TARGET barney_mpi)
 else()
   project_link_libraries(PRIVATE anari::helium barney)
 endif()
-#project_link_libraries(PRIVATE anari::helium barney)
 
 project_include_directories(
 PUBLIC
