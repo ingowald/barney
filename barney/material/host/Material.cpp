@@ -53,7 +53,7 @@ namespace barney {
         { roughness = value; return true; }
       if (member == "specular")
         { specular = value; return true; }
-      if (member == "transmmission")
+      if (member == "transmission")
         { transmission = value; return true; }
       if (member == "ior")
         { ior = value; return true; }

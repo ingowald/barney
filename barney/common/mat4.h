@@ -16,34 +16,26 @@
 
 #pragma once
 
-#include "barney/material/host/Material.h"
+#include "barney-common.h"
 
 namespace barney {
-  
-  /*! embree/ospray "Matte" material */
-  struct MatteMaterial : public barney::Material {
-    MatteMaterial(ModelSlot *owner) : Material(owner) {}
-    virtual ~MatteMaterial() = default;
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override { return "MatteMaterial"; }
 
-    void createDD(DD &dd, int deviceID) const override;
-    // ------------------------------------------------------------------
-    /*! @{ parameter set/commit interface */
-    void commit() override {};
-    bool set1i(const std::string &member, const int &value) override;
-    bool set3f(const std::string &member, const vec3f &value) override;
-    bool set4f(const std::string &member, const vec4f &value) override;
-    bool set4x4f(const std::string &member, const mat4f &value) override;
-    /*! @} */
-    // ------------------------------------------------------------------
-    vec3f reflectance { 0.55f, 0.0f, 0.0f };
-    struct {
-      int inAttribute { -1 };
-      mat4f outTransform;
-      vec4f outOffset { 0.f, 0.f, 0.f, 0.f };
-    } transformSampler;
+  struct mat4f {
+    float e[16];
   };
-  
-}
+
+  __both__
+  inline vec4f operator*(const mat4f &m, const vec4f &v)
+  {
+    auto dot = [](vec4f a, vec4f b) {
+      return a.x*b.x+a.y*b.y+a.z*b.z+a.w*b.w;
+    };
+    return {
+      dot(vec4f(m.e[ 0],m.e[ 1],m.e[ 2],m.e[ 3]),v),
+      dot(vec4f(m.e[ 4],m.e[ 5],m.e[ 6],m.e[ 7]),v),
+      dot(vec4f(m.e[ 8],m.e[ 9],m.e[10],m.e[11]),v),
+      dot(vec4f(m.e[12],m.e[13],m.e[14],m.e[15]),v)
+    };
+  }
+} // barney
+

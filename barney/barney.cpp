@@ -22,6 +22,7 @@
 #include "barney/geometry/Triangles.h"
 #include "barney/volume/ScalarField.h"
 #include "barney/common/Data.h"
+#include "barney/common/mat4.h"
 #include "barney/material/host/Material.h"
 #include "barney/Camera.h"
 
@@ -571,6 +572,13 @@ namespace barney {
   }
 
   BN_API
+  void bnSet4f(BNObject target, const char *param, float x, float y, float z, float w)
+  {
+    if (!checkGet(target)->set4f(checkGet(param),vec4f(x,y,z,w)))
+      checkGet(target)->warn_unsupported_member(param,"vec4f");
+  }
+
+  BN_API
   void bnSet3fc(BNObject target, const char *param, float3 value)
   {
     if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
@@ -583,6 +591,14 @@ namespace barney {
     assert(transform);
     if (!checkGet(target)->set4x3f(checkGet(param),*(const affine3f*)transform))
       checkGet(target)->warn_unsupported_member(param,"affine3f");
+  }
+
+  BN_API
+  void bnSet4x4fv(BNObject target, const char *param, const float *transform)
+  {
+    assert(transform);
+    if (!checkGet(target)->set4x4f(checkGet(param),*(const mat4f*)transform))
+      checkGet(target)->warn_unsupported_member(param,"mat4f");
   }
   
 

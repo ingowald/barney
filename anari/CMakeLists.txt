@@ -5,7 +5,6 @@ option(BARNEY_BUILD_ANARI "Build ANARI device" OFF)
 if (NOT BARNEY_BUILD_ANARI)
   return()
 endif()
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
@@ -39,6 +38,7 @@ project_add_library(SHARED
   Material.cpp
   Object.cpp
   Renderer.cpp
+  Sampler.cpp
   SpatialField.cpp
   Surface.cpp
   Volume.cpp

@@ -18,6 +18,7 @@
 
 #include "barney/Object.h"
 #include "barney/material/device/Material.h"
+#include "barney/common/mat4.h"
 
 namespace barney {
   /*! barney 'virtual' material implementation that takes anari-like

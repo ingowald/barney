@@ -52,11 +52,42 @@ namespace barney {
 #if VISUALIZE_PRIMS
     colorFromTexture /*mat.baseColor*/ *= owl::randomColor(primID);
 #endif
+
+#if 1
+    vec3f geometryColor(NAN);
+    if (self.material.materialType == render::MATTE &&
+        self.material.matte.transformSampler.inAttribute >= 0) {
+        int attr = self.material.matte.transformSampler.inAttribute;
+        mat4f outTransform = self.material.matte.transformSampler.outTransform;
+        vec4f outOffset = self.material.matte.transformSampler.outOffset;
+        //printf("%f,%f,%f,%f\n",outOffset.x,outOffset.y,outOffset.z,outOffset.w);
+
+        const vec4f *colors{nullptr};
+        //if (self.vertexAttribute[attr]) { // TODO: primitive attributes
+        //  colors = self.vertexAttribute[attr];
+        //}
+        if (self.vertexAttribute[attr]) {
+          colors = self.vertexAttribute[attr];
+        }
+
+        if (colors) {
+          vec4f source1 = colors[triangle.x];
+          vec4f source2 = colors[triangle.y];
+          vec4f source3 = colors[triangle.z];
+          // barycentric lerp:
+          vec4f s1 = source3 * v;
+          vec4f s2 = source2 * u;
+          vec4f s3 = source1 * (1.f-u-v);
+          vec4f inAttr(s1+s2+s3);
+          geometryColor = vec3f(outTransform * inAttr + outOffset);
+        }
+    }
+#endif
     
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
     ray.setHit(P,n,optixGetRayTmax(),
-               self.material,tc);
+               self.material,tc,geometryColor);
   }
 
 

@@ -34,6 +34,22 @@ void Material::markCommitted()
 
 Matte::Matte(BarneyGlobalState *s) : Material(s) {}
 
+inline int toAttribute(std::string str) {
+  if (str == "attribute0")
+    return 0;
+  else if (str == "attribute1")
+    return 1;
+  else if (str == "attribute2")
+    return 2;
+  else if (str == "attribute3")
+    return 3;
+  else if (str == "color")
+    return 4;
+  else if (str == "none")
+    return -1;
+  return -1;
+}
+
 void Matte::commit()
 {
   Object::commit();
@@ -41,12 +57,27 @@ void Matte::commit()
   m_color = math::float4(1.f, 1.f, 1.f, 1.f);
   getParam("color", ANARI_FLOAT32_VEC3, &m_color);
   getParam("color", ANARI_FLOAT32_VEC4, &m_color);
+  m_colorSampler = getParamObject<Sampler>("color");
 }
 
 BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
 {
-  BNMaterial mat = bnMaterialCreate(model, slot, "velvet");
+  BNMaterial mat = bnMaterialCreate(model, slot, "matte");
   bnSet3f(mat, "reflectance", m_color.x, m_color.y, m_color.z);
+#if 1
+  // Hack to get transform samplers working on Matte material
+  if (m_colorSampler) {
+    if (auto xfmSampler = dynamic_cast<const TransformSampler *>(m_colorSampler.ptr)) {
+      bnSet1i(mat, "sampler.inAttribute", xfmSampler->m_inAttribute);
+      bnSet4x4fv(mat, "sampler.outTransform", (const float *)&xfmSampler->m_outTransform.x);
+      bnSet4f(mat, "sampler.outOffset",
+              xfmSampler->m_outOffset.x,
+              xfmSampler->m_outOffset.y,
+              xfmSampler->m_outOffset.z,
+              xfmSampler->m_outOffset.w);
+    }
+  }
+#endif
   return mat;
 }
 

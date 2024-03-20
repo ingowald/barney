@@ -12,6 +12,29 @@ Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
 
 Geometry::~Geometry() = default;
 
+void Geometry::commit()
+{
+  m_attributes[0] = getParamObject<Array1D>("primitive.attribute0");
+  m_attributes[1] = getParamObject<Array1D>("primitive.attribute1");
+  m_attributes[2] = getParamObject<Array1D>("primitive.attribute2");
+  m_attributes[3] = getParamObject<Array1D>("primitive.attribute3");
+  m_attributes[4] = getParamObject<Array1D>("primitive.color");
+
+  for (int i = 0; i < 5; ++i) {
+    if (m_attributes[i]) {
+      size_t sizeInBytes
+          = m_attributes[i]->size() * anari::sizeOf(m_attributes[i]->elementType());
+
+      //vattributes[i].resize(sizeInBytes);
+      //vattributes[i].reset(m_attributes[i]->begin());
+
+      //vgeom.primitiveAttributes[i].data = vattributes[i].devicePtr();
+      //vgeom.primitiveAttributes[i].len = m_attributes[i]->size();
+      //vgeom.primitiveAttributes[i].typeInfo = getInfo(m_attributes[i]->elementType());
+    }
+  }
+}
+
 Geometry *Geometry::createInstance(
     std::string_view subtype, BarneyGlobalState *s)
 {
@@ -152,6 +175,12 @@ void Triangle::commit()
     return;
   }
 
+  m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+  m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+  m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+  m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+  m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+
   m_generatedIndices.clear();
 
   m_vertexPosition->addCommitObserver(this);
@@ -160,6 +189,55 @@ void Triangle::commit()
   } else {
     m_generatedIndices.resize(m_vertexPosition->totalSize());
     std::iota(m_generatedIndices.begin(), m_generatedIndices.end(), 0);
+  }
+}
+
+static void addAttribute(BNGeom geom, BNModel model, int slot,
+                         const helium::IntrusivePtr<Array1D> &attribute,
+                         std::string name)
+{
+  if (attribute) {
+    BNData attr{0};
+    if (attribute->elementType() == ANARI_FLOAT32) {
+      std::vector<math::float4> data(attribute->size(), math::float4(0.f, 0.f, 0.f, 1.f));
+      for (size_t i = 0; i < data.size(); ++i) {
+        data[i].x = attribute->beginAs<float>()[i];
+      }
+      attr = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
+    }
+    else if (attribute->elementType() == ANARI_FLOAT32_VEC2) {
+      std::vector<math::float4> data(attribute->size(), math::float4(0.f, 0.f, 0.f, 1.f));
+      for (size_t i = 0; i < data.size(); ++i) {
+        data[i].x = attribute->beginAs<math::float2>()[i].x;
+        data[i].y = attribute->beginAs<math::float2>()[i].y;
+      }
+      attr = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
+    }
+    else if (attribute->elementType() == ANARI_FLOAT32_VEC3) {
+      std::vector<math::float4> data(attribute->size(), math::float4(0.f, 0.f, 0.f, 1.f));
+      for (size_t i = 0; i < data.size(); ++i) {
+        data[i].x = attribute->beginAs<math::float3>()[i].x;
+        data[i].y = attribute->beginAs<math::float3>()[i].y;
+        data[i].z = attribute->beginAs<math::float3>()[i].z;
+      }
+      attr = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
+    }
+    else if (attribute->elementType() == ANARI_FLOAT32_VEC4) {
+      attr = bnDataCreate(
+          model, slot, BN_FLOAT4, attribute->size(), attribute->begin());
+    }
+    else {
+      std::stringstream ss;
+      ss << "unsupported element type on "
+          << name << ": " << anari::toString(attribute->elementType());
+      std::string str = ss.str();
+      fprintf(stderr, "%s\n", str.c_str());
+          
+    }
+    
+    if (attr) {
+      bnSetData(geom, name.c_str(), attr);
+    }
   }
 }
 
@@ -181,6 +259,19 @@ BNGeom Triangle::makeBarneyGeometry(
   bnSetAndRelease(geom, "indices", _indices);
 
   bnSetObject(geom, "material", material);
+
+  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, model, slot, m_attributes[4], "primitive.attribute4");
+
+  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.attribute4");
+
   bnCommit(geom);
 
   return geom;

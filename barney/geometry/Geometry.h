@@ -59,6 +59,12 @@ namespace barney {
     std::vector<OWLGroup> secondPassGroups;
     
     Material::SP material;
+
+    PODData::SP attribute0;
+    PODData::SP attribute1;
+    PODData::SP attribute2;
+    PODData::SP attribute3;
+    PODData::SP attribute4;
   };
 
 }

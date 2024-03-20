@@ -24,14 +24,38 @@ namespace barney {
   {
     render::Matte::DD matte;
     matte.reflectance = reflectance;
+    matte.transformSampler.inAttribute = transformSampler.inAttribute;
+    matte.transformSampler.outTransform = transformSampler.outTransform;
+    matte.transformSampler.outOffset = transformSampler.outOffset;
     dd = matte;
   }
   
+  bool MatteMaterial::set1i(const std::string &member, const int &value) 
+  {
+    if (Material::set1i(member,value)) return true;
+    if (member == "sampler.inAttribute") 
+      { transformSampler.inAttribute = value; return true; }
+    return false;
+  }
   bool MatteMaterial::set3f(const std::string &member, const vec3f &value) 
   {
     if (Material::set3f(member,value)) return true;
     if (member == "reflectance") 
       { reflectance = value; return true; }
+    return false;
+  }
+  bool MatteMaterial::set4f(const std::string &member, const vec4f &value) 
+  {
+    if (Material::set4f(member,value)) return true;
+    if (member == "sampler.outOffset") 
+      { transformSampler.outOffset = value; return true; }
+    return false;
+  }
+  bool MatteMaterial::set4x4f(const std::string &member, const mat4f &value) 
+  {
+    if (Material::set4x4f(member,value)) return true;
+    if (member == "sampler.outTransform") 
+      { transformSampler.outTransform = value; return true; }
     return false;
   }
 }

@@ -48,6 +48,11 @@ namespace barney {
                              dbg);
         }
         vec3f reflectance;
+        struct {
+          int inAttribute;
+          mat4f outTransform;
+          vec4f outOffset;
+        } transformSampler;
       };
     };
     

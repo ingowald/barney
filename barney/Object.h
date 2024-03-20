@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#include "barney/common/mat4.h"
 
 namespace barney {
 
@@ -67,6 +68,7 @@ namespace barney {
     virtual bool set3i(const std::string &member, const vec3i &value) { return false; }
     virtual bool set4i(const std::string &member, const vec4i &value) { return false; }
     virtual bool set4x3f(const std::string &member, const affine3f &value) { return false; }
+    virtual bool set4x4f(const std::string &member, const mat4f &value) { return false; }
     /*! @} */
     // ------------------------------------------------------------------
 

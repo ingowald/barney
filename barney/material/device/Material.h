@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "barney/common/mat4.h"
 #include "barney/material/device/DG.h"
 #include "barney/material/device/Velvet.h"
 #include "barney/material/device/Matte.h"
@@ -90,6 +91,11 @@ namespace barney {
         Matte::DD         matte;
         Velvet::DD        velvet;
       };
+      //struct {
+      //  int inAttribute;
+      //  mat4f outTranform;
+      //  vec4f outOffset;
+      //} transformSampler;
     };
     
   } // ::barney::render

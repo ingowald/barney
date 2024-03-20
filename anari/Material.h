@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Object.h"
+#include "Sampler.h"
 
 namespace barney_device {
 
@@ -32,6 +33,7 @@ struct Matte : public Material
 
  private:
   math::float4 m_color{1.f, 1.f, 1.f, 1.f};
+  helium::IntrusivePtr<Sampler> m_colorSampler;
 };
 
 struct PhysicallyBased : public Material

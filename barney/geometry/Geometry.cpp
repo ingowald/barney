@@ -90,6 +90,26 @@ namespace barney {
   
   bool Geometry::setData(const std::string &member, const Data::SP &value)
   {
+    if (member == "primitive.attribute0") {
+      attribute0 = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.attribute1") {
+      attribute1 = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.attribute2") {
+      attribute2 = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.attribute3") {
+      attribute3 = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.attribute4") {
+      attribute4 = value->as<PODData>();
+      return true;
+    }
     return false;
   }
   
