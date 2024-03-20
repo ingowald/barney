@@ -33,7 +33,7 @@ struct Matte : public Material
 
  private:
   math::float4 m_color{1.f, 1.f, 1.f, 1.f};
-  helium::IntrusivePtr<Sampler> m_colorSampler;
+  helium::IntrusivePtr<Sampler> m_colorSampler{nullptr};
 };
 
 struct PhysicallyBased : public Material

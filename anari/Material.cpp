@@ -39,10 +39,16 @@ void Matte::commit()
 {
   Object::commit();
 
+  if (m_colorSampler)
+    m_colorSampler->removeCommitObserver(this);
+
   m_color = math::float4(1.f, 1.f, 1.f, 1.f);
   getParam("color", ANARI_FLOAT32_VEC3, &m_color);
   getParam("color", ANARI_FLOAT32_VEC4, &m_color);
   m_colorSampler = getParamObject<Sampler>("color");
+
+  if (m_colorSampler)
+    m_colorSampler->addCommitObserver(this);
 }
 
 BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
