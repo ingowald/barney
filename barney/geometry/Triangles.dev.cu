@@ -91,8 +91,8 @@ namespace barney {
         vec4f inOffset = self.material.matte.sampler.image1D.inOffset;
         mat4f outTransform = self.material.matte.sampler.image1D.outTransform;
         vec4f outOffset = self.material.matte.sampler.image1D.outOffset;
-        const vec4f *image = self.material.matte.sampler.image1D.image;
-        int imageSize = self.material.matte.sampler.image1D.imageSize;
+        const vec4f *image = self.material.matte.sampler.image1D.image.data;
+        int imageWidth = self.material.matte.sampler.image1D.image.width;
 
         vec4f inAttr = getAttribute(self,triangle,attr,u,v);
 
@@ -100,9 +100,35 @@ namespace barney {
 
         float f = clamp(inAttr.x,0.f,1.f); // TODO: other wrap modes!
 
-        int i = min(int(f*imageSize),imageSize-1);
+        int i = min(int(f*imageWidth),imageWidth-1);
 
         vec4f sample = image[i]; // TODO: linear/nearest interpolation (textures?!)
+
+        sample = outTransform * sample + outOffset;
+
+        geometryColor = vec3f(sample);
+      }
+      if (self.material.matte.samplerType == render::IMAGE2D) {
+        int attr = self.material.matte.sampler.image2D.inAttribute;
+        mat4f inTransform = self.material.matte.sampler.image2D.inTransform;
+        vec4f inOffset = self.material.matte.sampler.image2D.inOffset;
+        mat4f outTransform = self.material.matte.sampler.image2D.outTransform;
+        vec4f outOffset = self.material.matte.sampler.image2D.outOffset;
+        const vec4f *image = self.material.matte.sampler.image2D.image.data;
+        int imageWidth = self.material.matte.sampler.image2D.image.width;
+        int imageHeight = self.material.matte.sampler.image2D.image.height;
+
+        vec4f inAttr = getAttribute(self,triangle,attr,u,v);
+
+        inAttr = inTransform * inAttr + inOffset;
+
+        float f1 = clamp(inAttr.x,0.f,1.f); // TODO: other wrap modes!
+        float f2 = clamp(inAttr.y,0.f,1.f); // TODO: other wrap modes!
+
+        int x = min(int(f1*imageWidth),imageWidth-1);
+        int y = min(int(f2*imageHeight),imageHeight-1);
+
+        vec4f sample = image[x+imageWidth*y]; // TODO: linear/nearest interpolation (textures?!)
 
         sample = outTransform * sample + outOffset;
 

@@ -23,7 +23,7 @@
 namespace barney {
   namespace render {
 
-    typedef enum { IMAGE1D=0, TRANSFORM, NO_SAMPLER } SamplerType;
+    typedef enum { IMAGE1D=0, IMAGE2D, TRANSFORM, NO_SAMPLER } SamplerType;
 
     struct Matte {
       struct HitBSDF {
@@ -59,9 +59,23 @@ namespace barney {
             vec4f inOffset;
             mat4f outTransform;
             vec4f outOffset;
-            const vec4f *image;
-            int imageSize;
+            struct {
+              const vec4f *data;
+              int width;
+            } image;
           } image1D;
+          struct {
+            int inAttribute;
+            mat4f inTransform;
+            vec4f inOffset;
+            mat4f outTransform;
+            vec4f outOffset;
+            struct {
+              const vec4f *data;
+              int width;
+              int height;
+            } image;
+          } image2D;
           struct {
             int inAttribute;
             mat4f outTransform;

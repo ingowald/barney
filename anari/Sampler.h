@@ -6,6 +6,7 @@
 #include "Object.h"
 #include "common.h"
 #include "helium/array/Array1D.h"
+#include "helium/array/Array2D.h"
 
 namespace barney_device {
 
@@ -28,6 +29,22 @@ struct Image1D : public Sampler
   helium::IntrusivePtr<helium::Array1D> m_image;
   int m_inAttribute{-1};
   WrapMode m_wrapMode{Clamp};
+  bool m_linearFilter{true};
+  math::mat4 m_inTransform{math::identity};
+  math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
+  math::mat4 m_outTransform{math::identity};
+  math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
+};
+
+struct Image2D : public Sampler
+{
+  Image2D(BarneyGlobalState *s);
+  void commit() override;
+
+  helium::IntrusivePtr<helium::Array2D> m_image;
+  int m_inAttribute{-1};
+  WrapMode m_wrapMode1{Clamp};
+  WrapMode m_wrapMode2{Clamp};
   bool m_linearFilter{true};
   math::mat4 m_inTransform{math::identity};
   math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};

@@ -49,8 +49,23 @@ namespace barney {
         vec4f inOffset;
         mat4f outTransform;
         vec4f outOffset;
-        PODData::SP image;
+        struct {
+          PODData::SP data;
+          int width;
+        } image;
       } image1D;
+      struct {
+        int inAttribute;
+        mat4f inTransform;
+        vec4f inOffset;
+        mat4f outTransform;
+        vec4f outOffset;
+        struct {
+          PODData::SP data;
+          int width;
+          int height;
+        } image;
+      } image2D;
       struct {
         int inAttribute;
         mat4f outTransform;
