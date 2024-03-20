@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Material.h"
+#include "common.h"
 // CUDA
 #include <vector_functions.h>
 
@@ -34,22 +35,6 @@ void Material::markCommitted()
 
 Matte::Matte(BarneyGlobalState *s) : Material(s) {}
 
-inline int toAttribute(std::string str) {
-  if (str == "attribute0")
-    return 0;
-  else if (str == "attribute1")
-    return 1;
-  else if (str == "attribute2")
-    return 2;
-  else if (str == "attribute3")
-    return 3;
-  else if (str == "color")
-    return 4;
-  else if (str == "none")
-    return -1;
-  return -1;
-}
-
 void Matte::commit()
 {
   Object::commit();
@@ -64,13 +49,37 @@ BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
 {
   BNMaterial mat = bnMaterialCreate(model, slot, "matte");
   bnSet3f(mat, "reflectance", m_color.x, m_color.y, m_color.z);
-#if 1
-  // Hack to get transform samplers working on Matte material
+#if 1 // Hack to get samplers working on Matte material
   if (m_colorSampler) {
-    if (auto xfmSampler = dynamic_cast<const TransformSampler *>(m_colorSampler.ptr)) {
-      bnSet1i(mat, "sampler.inAttribute", xfmSampler->m_inAttribute);
-      bnSet4x4fv(mat, "sampler.outTransform", (const float *)&xfmSampler->m_outTransform.x);
-      bnSet4f(mat, "sampler.outOffset",
+    if (auto imgSampler = dynamic_cast<const Image1D *>(m_colorSampler.ptr)) {
+      BNData imageData = makeBarneyData(model, slot, imgSampler->m_image);
+
+      if (imageData) {
+        bnSetString(mat, "sampler.type", "image1D");
+        bnSet1i(mat, "sampler.image1D.inAttribute", imgSampler->m_inAttribute);
+        bnSet4x4fv(mat, "sampler.image1D.inTransform", (const float *)&imgSampler->m_inTransform.x);
+        bnSet4f(mat, "sampler.image1D.inOffset",
+                imgSampler->m_inOffset.x,
+                imgSampler->m_inOffset.y,
+                imgSampler->m_inOffset.z,
+                imgSampler->m_inOffset.w);
+        bnSet4x4fv(mat, "sampler.image1D.outTransform", (const float *)&imgSampler->m_outTransform.x);
+        bnSet4f(mat, "sampler.image1D.outOffset",
+                imgSampler->m_outOffset.x,
+                imgSampler->m_outOffset.y,
+                imgSampler->m_outOffset.z,
+                imgSampler->m_outOffset.w);
+
+        bnSetData(mat, "sampler.image1D.image", imageData);
+        // TODO: wrapMode, filterMode!!
+      }
+    }
+    else if (auto xfmSampler = dynamic_cast<const TransformSampler *>(m_colorSampler.ptr)) {
+      bnSetString(mat, "sampler.type", "transform");
+      bnSet1i(mat, "sampler.transform.inAttribute", xfmSampler->m_inAttribute);
+      bnSet4x4fv(mat, "sampler.transform.outTransform",
+                 (const float *)&xfmSampler->m_outTransform.x);
+      bnSet4f(mat, "sampler.transform.outOffset",
               xfmSampler->m_outOffset.x,
               xfmSampler->m_outOffset.y,
               xfmSampler->m_outOffset.z,

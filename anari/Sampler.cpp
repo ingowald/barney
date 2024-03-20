@@ -11,7 +11,9 @@ Sampler::~Sampler() = default;
 
 Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
 {
-  if (subtype == "transform")
+  if (subtype == "image1D")
+    return new Image1D(s);
+  else if (subtype == "transform")
     return new TransformSampler(s);
   else
     return (Sampler *)new UnknownObject(ANARI_SAMPLER, s);
@@ -19,33 +21,35 @@ Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
+// Image1D //
+
+Image1D::Image1D(BarneyGlobalState *s) : Sampler(s) {}
+
+void Image1D::commit()
+{
+  Sampler::commit();
+
+  m_image = getParamObject<helium::Array1D>("image");
+  m_inAttribute =
+      toAttribute(getParamString("inAttribute", "attribute0"));
+  m_linearFilter = getParamString("filter", "linear") != "nearest";
+  m_wrapMode = toWrapMode(getParamString("wrapMode1", "clampToEdge"));
+  getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
+  m_inOffset = getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+  getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
+  m_outOffset = getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+}
+
 // TransformSampler //
 
 TransformSampler::TransformSampler(BarneyGlobalState *s) : Sampler(s) {}
 
-inline int toAttribute(std::string str) {
-  if (str == "attribute0")
-    return 0;
-  else if (str == "attribute1")
-    return 1;
-  else if (str == "attribute2")
-    return 2;
-  else if (str == "attribute3")
-    return 3;
-  else if (str == "color")
-    return 4;
-  else if (str == "none")
-    return -1;
-  return -1;
-}
-
 void TransformSampler::commit()
 {
-  Object::commit();
+  Sampler::commit();
 
   m_inAttribute =
       toAttribute(getParamString("inAttribute", "attribute0"));
-  //m_outTransform = getParam<math::mat4>("outTransform", math::identity);
   m_outTransform = math::identity;
   getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
   getParam("transform", ANARI_FLOAT32_MAT4, &m_outTransform);

@@ -18,7 +18,36 @@
 #include <owl/owl_device.h>
 
 namespace barney {
-  
+ 
+  __device__
+  inline vec4f getAttribute(const Triangles::DD &self,
+                            const vec3i triangle,
+                            int attr, float u, float v)
+  {
+    vec4f result{0.f, 0.f, 0.f, 1.f};
+
+    const vec4f *colors{nullptr};
+    //if (self.vertexAttribute[attr]) { // TODO: primitive attributes
+    //  colors = self.vertexAttribute[attr];
+    //}
+    if (self.vertexAttribute[attr]) {
+      colors = self.vertexAttribute[attr];
+    }
+
+    if (colors) {
+      vec4f source1 = colors[triangle.x];
+      vec4f source2 = colors[triangle.y];
+      vec4f source3 = colors[triangle.z];
+      // barycentric lerp:
+      vec4f s1 = source3 * v;
+      vec4f s2 = source2 * u;
+      vec4f s3 = source1 * (1.f-u-v);
+      result = s1+s2+s3;
+    }
+
+    return result;
+  }
+
   OPTIX_CLOSEST_HIT_PROGRAM(TrianglesCH)()
   {
     auto &ray = owl::getPRD<Ray>();
@@ -55,32 +84,39 @@ namespace barney {
 
 #if 1
     vec3f geometryColor(NAN);
-    if (self.material.materialType == render::MATTE &&
-        self.material.matte.transformSampler.inAttribute >= 0) {
-        int attr = self.material.matte.transformSampler.inAttribute;
-        mat4f outTransform = self.material.matte.transformSampler.outTransform;
-        vec4f outOffset = self.material.matte.transformSampler.outOffset;
+    if (self.material.materialType == render::MATTE) {
+      if (self.material.matte.samplerType == render::IMAGE1D) {
+        int attr = self.material.matte.sampler.image1D.inAttribute;
+        mat4f inTransform = self.material.matte.sampler.image1D.inTransform;
+        vec4f inOffset = self.material.matte.sampler.image1D.inOffset;
+        mat4f outTransform = self.material.matte.sampler.image1D.outTransform;
+        vec4f outOffset = self.material.matte.sampler.image1D.outOffset;
+        const vec4f *image = self.material.matte.sampler.image1D.image;
+        int imageSize = self.material.matte.sampler.image1D.imageSize;
+
+        vec4f inAttr = getAttribute(self,triangle,attr,u,v);
+
+        inAttr = inTransform * inAttr + inOffset;
+
+        float f = clamp(inAttr.x,0.f,1.f); // TODO: other wrap modes!
+
+        int i = min(int(f*imageSize),imageSize-1);
+
+        vec4f sample = image[i]; // TODO: linear/nearest interpolation (textures?!)
+
+        sample = outTransform * sample + outOffset;
+
+        geometryColor = vec3f(sample);
+      }
+      else if (self.material.matte.samplerType == render::TRANSFORM) {
+        int attr = self.material.matte.sampler.transform.inAttribute;
+        mat4f outTransform = self.material.matte.sampler.transform.outTransform;
+        vec4f outOffset = self.material.matte.sampler.transform.outOffset;
         //printf("%f,%f,%f,%f\n",outOffset.x,outOffset.y,outOffset.z,outOffset.w);
 
-        const vec4f *colors{nullptr};
-        //if (self.vertexAttribute[attr]) { // TODO: primitive attributes
-        //  colors = self.vertexAttribute[attr];
-        //}
-        if (self.vertexAttribute[attr]) {
-          colors = self.vertexAttribute[attr];
-        }
-
-        if (colors) {
-          vec4f source1 = colors[triangle.x];
-          vec4f source2 = colors[triangle.y];
-          vec4f source3 = colors[triangle.z];
-          // barycentric lerp:
-          vec4f s1 = source3 * v;
-          vec4f s2 = source2 * u;
-          vec4f s3 = source1 * (1.f-u-v);
-          vec4f inAttr(s1+s2+s3);
-          geometryColor = vec3f(outTransform * inAttr + outOffset);
-        }
+        vec4f inAttr = getAttribute(self,triangle,attr,u,v);
+        geometryColor = vec3f(outTransform * inAttr + outOffset);
+      }
     }
 #endif
     

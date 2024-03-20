@@ -507,6 +507,14 @@ namespace barney {
     checkGet(target)->commit();
   }
   
+              
+  BN_API
+  void bnSetString(BNObject target, const char *param, const char *value)
+  {
+    if (!checkGet(target)->setString(checkGet(param),value))
+      checkGet(target)->warn_unsupported_member(param,"std::string");
+  }
+
   BN_API
   void bnSetData(BNObject target, const char *param, BNData value)
   {

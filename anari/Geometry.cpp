@@ -1,6 +1,7 @@
 // Copyright 2023 Ingo Wald
 // SPDX-License-Identifier: Apache-2.0
 
+#include "common.h"
 #include "Geometry.h"
 // std
 #include <cassert>
@@ -24,13 +25,6 @@ void Geometry::commit()
     if (m_attributes[i]) {
       size_t sizeInBytes
           = m_attributes[i]->size() * anari::sizeOf(m_attributes[i]->elementType());
-
-      //vattributes[i].resize(sizeInBytes);
-      //vattributes[i].reset(m_attributes[i]->begin());
-
-      //vgeom.primitiveAttributes[i].data = vattributes[i].devicePtr();
-      //vgeom.primitiveAttributes[i].len = m_attributes[i]->size();
-      //vgeom.primitiveAttributes[i].typeInfo = getInfo(m_attributes[i]->elementType());
     }
   }
 }
@@ -197,43 +191,7 @@ static void addAttribute(BNGeom geom, BNModel model, int slot,
                          std::string name)
 {
   if (attribute) {
-    BNData attr{0};
-    if (attribute->elementType() == ANARI_FLOAT32) {
-      std::vector<math::float4> data(attribute->size(), math::float4(0.f, 0.f, 0.f, 1.f));
-      for (size_t i = 0; i < data.size(); ++i) {
-        data[i].x = attribute->beginAs<float>()[i];
-      }
-      attr = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (attribute->elementType() == ANARI_FLOAT32_VEC2) {
-      std::vector<math::float4> data(attribute->size(), math::float4(0.f, 0.f, 0.f, 1.f));
-      for (size_t i = 0; i < data.size(); ++i) {
-        data[i].x = attribute->beginAs<math::float2>()[i].x;
-        data[i].y = attribute->beginAs<math::float2>()[i].y;
-      }
-      attr = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (attribute->elementType() == ANARI_FLOAT32_VEC3) {
-      std::vector<math::float4> data(attribute->size(), math::float4(0.f, 0.f, 0.f, 1.f));
-      for (size_t i = 0; i < data.size(); ++i) {
-        data[i].x = attribute->beginAs<math::float3>()[i].x;
-        data[i].y = attribute->beginAs<math::float3>()[i].y;
-        data[i].z = attribute->beginAs<math::float3>()[i].z;
-      }
-      attr = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (attribute->elementType() == ANARI_FLOAT32_VEC4) {
-      attr = bnDataCreate(
-          model, slot, BN_FLOAT4, attribute->size(), attribute->begin());
-    }
-    else {
-      std::stringstream ss;
-      ss << "unsupported element type on "
-          << name << ": " << anari::toString(attribute->elementType());
-      std::string str = ss.str();
-      fprintf(stderr, "%s\n", str.c_str());
-          
-    }
+    BNData attr = makeBarneyData(model, slot, attribute);
     
     if (attr) {
       bnSetData(geom, name.c_str(), attr);

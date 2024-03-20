@@ -32,6 +32,8 @@ namespace barney {
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     void commit() override {};
+    bool setString(const std::string &member, const std::string &value) override;
+    bool setData(const std::string &member, const Data::SP &value) override;
     bool set1i(const std::string &member, const int &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
     bool set4f(const std::string &member, const vec4f &value) override;
@@ -39,11 +41,22 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
     vec3f reflectance { 0.55f, 0.0f, 0.0f };
+    render::SamplerType samplerType{render::NO_SAMPLER};
     struct {
-      int inAttribute { -1 };
-      mat4f outTransform;
-      vec4f outOffset { 0.f, 0.f, 0.f, 0.f };
-    } transformSampler;
+      struct {
+        int inAttribute;
+        mat4f inTransform;
+        vec4f inOffset;
+        mat4f outTransform;
+        vec4f outOffset;
+        PODData::SP image;
+      } image1D;
+      struct {
+        int inAttribute;
+        mat4f outTransform;
+        vec4f outOffset;
+      } transform;
+    } sampler;
   };
   
 }

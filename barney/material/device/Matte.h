@@ -23,6 +23,8 @@
 namespace barney {
   namespace render {
 
+    typedef enum { IMAGE1D=0, TRANSFORM, NO_SAMPLER } SamplerType;
+
     struct Matte {
       struct HitBSDF {
         inline __device__
@@ -48,11 +50,24 @@ namespace barney {
                              dbg);
         }
         vec3f reflectance;
+        SamplerType samplerType;
+        //union { // not POD :( (TODO?!)
         struct {
-          int inAttribute;
-          mat4f outTransform;
-          vec4f outOffset;
-        } transformSampler;
+          struct {
+            int inAttribute;
+            mat4f inTransform;
+            vec4f inOffset;
+            mat4f outTransform;
+            vec4f outOffset;
+            const vec4f *image;
+            int imageSize;
+          } image1D;
+          struct {
+            int inAttribute;
+            mat4f outTransform;
+            vec4f outOffset;
+          } transform;
+        } sampler;
       };
     };
     
