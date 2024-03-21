@@ -14,6 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Spheres.h"
 #include "owl/owl_device.h"
 
@@ -52,7 +53,7 @@ namespace barney {
       P = center + (radius * 1.00001f) * N;
     }
 
-    vec3f geometryColor = 1.f;
+    vec3f geometryColor(getColor(self,primID,0,NAN,NAN/*no uv!*/));
     if (self.colors)
       geometryColor = self.colors[primID];
     ray.setHit(P,N,t_hit,self.material,vec2f(NAN),geometryColor);

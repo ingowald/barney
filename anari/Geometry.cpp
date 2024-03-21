@@ -9,6 +9,19 @@
 
 namespace barney_device {
 
+static void addAttribute(BNGeom geom, BNModel model, int slot,
+                         const helium::IntrusivePtr<Array1D> &attribute,
+                         std::string name)
+{
+  if (attribute) {
+    BNData attr = makeBarneyData(model, slot, attribute);
+    
+    if (attr) {
+      bnSetData(geom, name.c_str(), attr);
+    }
+  }
+}
+
 Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
 
 Geometry::~Geometry() = default;
@@ -100,6 +113,11 @@ BNGeom Sphere::makeBarneyGeometry(
   } else
     bnSet1f(geom, "radius", m_globalRadius);
   bnSetObject(geom, "material", material);
+  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, model, slot, m_attributes[4], "primitive.attribute4");
   bnCommit(geom);
   return geom;
 }
@@ -183,19 +201,6 @@ void Triangle::commit()
   } else {
     m_generatedIndices.resize(m_vertexPosition->totalSize());
     std::iota(m_generatedIndices.begin(), m_generatedIndices.end(), 0);
-  }
-}
-
-static void addAttribute(BNGeom geom, BNModel model, int slot,
-                         const helium::IntrusivePtr<Array1D> &attribute,
-                         std::string name)
-{
-  if (attribute) {
-    BNData attr = makeBarneyData(model, slot, attribute);
-    
-    if (attr) {
-      bnSetData(geom, name.c_str(), attr);
-    }
   }
 }
 

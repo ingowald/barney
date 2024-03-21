@@ -33,6 +33,11 @@ namespace barney {
          { "defaultRadius", OWL_FLOAT, OWL_OFFSETOF(DD,defaultRadius) },
          { "origins", OWL_BUFPTR, OWL_OFFSETOF(DD,origins) },
          { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
+         { "primitive.attribute0", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[0]) },
+         { "primitive.attribute1", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[1]) },
+         { "primitive.attribute2", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[2]) },
+         { "primitive.attribute3", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[3]) },
+         { "primitive.attribute4", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[4]) },
     };
     Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
@@ -62,11 +67,37 @@ namespace barney {
     }
     OWLGeom geom = userGeoms[0];
     
+    OWLBuffer primitiveAttribute0Buffer
+      = attribute0
+      ? attribute0->owl
+      : 0;
+    OWLBuffer primitiveAttribute1Buffer
+      = attribute1
+      ? attribute1->owl
+      : 0;
+    OWLBuffer primitiveAttribute2Buffer
+      = attribute2
+      ? attribute2->owl
+      : 0;
+    OWLBuffer primitiveAttribute3Buffer
+      = attribute3
+      ? attribute3->owl
+      : 0;
+    OWLBuffer primitiveAttribute4Buffer
+      = attribute4
+      ? attribute4->owl
+      : 0;
+
     Geometry::commit();
     owlGeomSet1f(geom,"defaultRadius",defaultRadius);
     owlGeomSetBuffer(geom,"origins",origins?origins->owl:0);
     owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
     owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
+    owlGeomSetBuffer(geom,"primitive.attribute0",primitiveAttribute0Buffer);
+    owlGeomSetBuffer(geom,"primitive.attribute1",primitiveAttribute1Buffer);
+    owlGeomSetBuffer(geom,"primitive.attribute2",primitiveAttribute2Buffer);
+    owlGeomSetBuffer(geom,"primitive.attribute3",primitiveAttribute3Buffer);
+    owlGeomSetBuffer(geom,"primitive.attribute4",primitiveAttribute4Buffer);
     int numOrigins = origins->count;
     owlGeomSetPrimCount(geom,numOrigins);
     material->setDeviceDataOn(geom);

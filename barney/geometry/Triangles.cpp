@@ -41,6 +41,11 @@ namespace barney {
       { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
       { "texcoords", OWL_BUFPTR, OWL_OFFSETOF(DD,texcoords) },
       { "normals", OWL_BUFPTR, OWL_OFFSETOF(DD,normals) },
+      { "primitive.attribute0", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[0]) },
+      { "primitive.attribute1", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[1]) },
+      { "primitive.attribute2", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[2]) },
+      { "primitive.attribute3", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[3]) },
+      { "primitive.attribute4", OWL_BUFPTR, OWL_OFFSETOF(DD,primitiveAttribute[4]) },
       { "vertex.attribute0", OWL_BUFPTR, OWL_OFFSETOF(DD,vertexAttribute[0]) },
       { "vertex.attribute1", OWL_BUFPTR, OWL_OFFSETOF(DD,vertexAttribute[1]) },
       { "vertex.attribute2", OWL_BUFPTR, OWL_OFFSETOF(DD,vertexAttribute[2]) },
@@ -126,6 +131,27 @@ namespace barney {
       ? normals->owl
       : 0;
 
+    OWLBuffer primitiveAttribute0Buffer
+      = attribute0
+      ? attribute0->owl
+      : 0;
+    OWLBuffer primitiveAttribute1Buffer
+      = attribute1
+      ? attribute1->owl
+      : 0;
+    OWLBuffer primitiveAttribute2Buffer
+      = attribute2
+      ? attribute2->owl
+      : 0;
+    OWLBuffer primitiveAttribute3Buffer
+      = attribute3
+      ? attribute3->owl
+      : 0;
+    OWLBuffer primitiveAttribute4Buffer
+      = attribute4
+      ? attribute4->owl
+      : 0;
+
     OWLBuffer vertexAttribute0Buffer
       = vertexAttribute0
       ? vertexAttribute0->owl
@@ -157,6 +183,11 @@ namespace barney {
     owlGeomSetBuffer(geom,"indices",indicesBuffer);
     owlGeomSetBuffer(geom,"normals",normalsBuffer);
     owlGeomSetBuffer(geom,"texcoords",texcoordsBuffer);
+    owlGeomSetBuffer(geom,"primitive.attribute0",primitiveAttribute0Buffer);
+    owlGeomSetBuffer(geom,"primitive.attribute1",primitiveAttribute1Buffer);
+    owlGeomSetBuffer(geom,"primitive.attribute2",primitiveAttribute2Buffer);
+    owlGeomSetBuffer(geom,"primitive.attribute3",primitiveAttribute3Buffer);
+    owlGeomSetBuffer(geom,"primitive.attribute4",primitiveAttribute4Buffer);
     owlGeomSetBuffer(geom,"vertex.attribute0",vertexAttribute0Buffer);
     owlGeomSetBuffer(geom,"vertex.attribute1",vertexAttribute1Buffer);
     owlGeomSetBuffer(geom,"vertex.attribute2",vertexAttribute2Buffer);

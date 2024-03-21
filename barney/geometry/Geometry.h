@@ -30,6 +30,7 @@ namespace barney {
 
     struct DD {
       Material::DD     material;
+      const vec4f     *primitiveAttribute[5];
     };
     
     Geometry(ModelSlot *owner);
