@@ -24,6 +24,32 @@ namespace barney {
 
   struct mat4f {
     float e[16];
+
+    __both__
+    static mat4f identity()
+    {
+      mat4f res;
+      res.e[ 0] = 1.f;
+      res.e[ 1] = 0.f;
+      res.e[ 2] = 0.f;
+      res.e[ 3] = 0.f;
+
+      res.e[ 4] = 0.f;
+      res.e[ 5] = 1.f;
+      res.e[ 6] = 0.f;
+      res.e[ 7] = 0.f;
+
+      res.e[ 8] = 0.f;
+      res.e[ 9] = 0.f;
+      res.e[10] = 1.f;
+      res.e[11] = 0.f;
+
+      res.e[12] = 0.f;
+      res.e[13] = 0.f;
+      res.e[14] = 0.f;
+      res.e[15] = 1.f;
+      return res;
+    }
   };
 
   __both__

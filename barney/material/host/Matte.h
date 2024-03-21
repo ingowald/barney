@@ -44,35 +44,35 @@ namespace barney {
     render::SamplerType samplerType{render::NO_SAMPLER};
     struct {
       struct {
-        int inAttribute;
-        mat4f inTransform;
-        vec4f inOffset;
-        mat4f outTransform;
-        vec4f outOffset;
+        int inAttribute { 0 };
+        mat4f inTransform { mat4f::identity() };
+        vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
+        mat4f outTransform { mat4f::identity() };
+        vec4f outOffset { 0.f, 0.f, 0.f, 0.f };
         struct {
           PODData::SP data;
-          int width;
-          render::WrapMode wrapMode;
+          int width { 0 };
+          render::WrapMode wrapMode{render::CLAMP};
         } image;
       } image1D;
       struct {
-        int inAttribute;
-        mat4f inTransform;
-        vec4f inOffset;
-        mat4f outTransform;
-        vec4f outOffset;
+        int inAttribute { 0 };
+        mat4f inTransform { mat4f::identity() };
+        vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
+        mat4f outTransform { mat4f::identity() };
+        vec4f outOffset { 0.f, 0.f, 0.f, 0.f };
         struct {
           PODData::SP data;
-          int width;
-          int height;
-          render::WrapMode wrapMode1;
-          render::WrapMode wrapMode2;
+          int width { 0 };
+          int height { 0 };
+          render::WrapMode wrapMode1{render::CLAMP};
+          render::WrapMode wrapMode2{render::CLAMP};
         } image;
       } image2D;
       struct {
-        int inAttribute;
+        int inAttribute { 0 };
         mat4f outTransform;
-        vec4f outOffset;
+        vec4f outOffset { 0 };
       } transform;
     } sampler;
   };
