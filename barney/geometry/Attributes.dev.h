@@ -23,22 +23,21 @@
 
 namespace barney {
 
-  // For any primitives:
+  // For spheres:
   template<typename DD>
   inline __device__
   vec4f getAttribute(const DD &self,
-                     const int primID, const int /*ignore*/,
+                     const int primID, const int sphere,
                      int attr, float u, float v)
   {
     vec4f result{0.f, 0.f, 0.f, 1.f};
 
-    const vec4f *colors{nullptr};
     if (self.primitiveAttribute[attr]) {
-      colors = self.primitiveAttribute[attr];
+      return self.primitiveAttribute[attr][primID];
     }
 
-    if (colors) {
-      return colors[primID];
+    if (self.vertexAttribute[attr]) {
+      return self.vertexAttribute[attr][sphere];
     }
 
     return result;

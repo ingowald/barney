@@ -86,6 +86,12 @@ void Sphere::commit()
         "primitive.index parameter on sphere geometry not yet supported");
   }
 
+  m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+  m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+  m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+  m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+  m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+
   m_generatedIndices.clear();
 
   m_vertexPosition->addCommitObserver(this);
@@ -113,11 +119,19 @@ BNGeom Sphere::makeBarneyGeometry(
   } else
     bnSet1f(geom, "radius", m_globalRadius);
   bnSetObject(geom, "material", material);
+
   addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
   addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
   addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
   addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
   addAttribute(geom, model, slot, m_attributes[4], "primitive.attribute4");
+
+  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.attribute4");
+
   bnCommit(geom);
   return geom;
 }
