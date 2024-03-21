@@ -33,6 +33,7 @@ namespace barney {
       matte.sampler.image1D.image.data
           = (const vec4f *)owlBufferGetPointer(imageBuffer,deviceID);
       matte.sampler.image1D.image.width = sampler.image1D.image.width;
+      matte.sampler.image1D.image.wrapMode = sampler.image1D.image.wrapMode;
 
       matte.sampler.image1D.inAttribute = sampler.image1D.inAttribute;
       matte.sampler.image1D.inTransform = sampler.image1D.inTransform;
@@ -49,6 +50,8 @@ namespace barney {
           = (const vec4f *)owlBufferGetPointer(imageBuffer,deviceID);
       matte.sampler.image2D.image.width = sampler.image2D.image.width;
       matte.sampler.image2D.image.height = sampler.image2D.image.height;
+      matte.sampler.image2D.image.wrapMode1 = sampler.image2D.image.wrapMode1;
+      matte.sampler.image2D.image.wrapMode2 = sampler.image2D.image.wrapMode2;
 
       matte.sampler.image2D.inAttribute = sampler.image2D.inAttribute;
       matte.sampler.image2D.inTransform = sampler.image2D.inTransform;
@@ -94,12 +97,18 @@ namespace barney {
     if (Material::set1i(member,value)) return true;
     if (member == "sampler.image1D.image.width") 
       { sampler.image1D.image.width = value; return true; }
+    if (member == "sampler.image1D.image.wrapMode") 
+      { sampler.image1D.image.wrapMode = (render::WrapMode)value; return true; }
     if (member == "sampler.image1D.inAttribute") 
       { sampler.image1D.inAttribute = value; return true; }
     if (member == "sampler.image2D.image.width") 
       { sampler.image2D.image.width = value; return true; }
     if (member == "sampler.image2D.image.height") 
       { sampler.image2D.image.height = value; return true; }
+    if (member == "sampler.image2D.image.wrapMode1") 
+      { sampler.image2D.image.wrapMode1 = (render::WrapMode)value; return true; }
+    if (member == "sampler.image2D.image.wrapMode2") 
+      { sampler.image2D.image.wrapMode2 = (render::WrapMode)value; return true; }
     if (member == "sampler.image2D.inAttribute") 
       { sampler.image2D.inAttribute = value; return true; }
     if (member == "sampler.transform.inAttribute") 

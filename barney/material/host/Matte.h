@@ -52,6 +52,7 @@ namespace barney {
         struct {
           PODData::SP data;
           int width;
+          render::WrapMode wrapMode;
         } image;
       } image1D;
       struct {
@@ -64,6 +65,8 @@ namespace barney {
           PODData::SP data;
           int width;
           int height;
+          render::WrapMode wrapMode1;
+          render::WrapMode wrapMode2;
         } image;
       } image2D;
       struct {

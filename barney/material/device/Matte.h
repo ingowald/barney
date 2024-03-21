@@ -24,6 +24,7 @@ namespace barney {
   namespace render {
 
     typedef enum { IMAGE1D=0, IMAGE2D, TRANSFORM, NO_SAMPLER } SamplerType;
+    typedef enum { CLAMP=0, WRAP, MIRROR } WrapMode;
 
     struct Matte {
       struct HitBSDF {
@@ -62,6 +63,7 @@ namespace barney {
             struct {
               const vec4f *data;
               int width;
+              WrapMode wrapMode;
             } image;
           } image1D;
           struct {
@@ -74,6 +76,8 @@ namespace barney {
               const vec4f *data;
               int width;
               int height;
+              WrapMode wrapMode1;
+              WrapMode wrapMode2;
             } image;
           } image2D;
           struct {

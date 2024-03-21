@@ -78,7 +78,8 @@ BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
 
         bnSetData(mat, "sampler.image1D.image.data", imageData);
         bnSet1i(mat, "sampler.image1D.image.width", imgSampler->m_image->size());
-        // TODO: wrapMode, filterMode!!
+        bnSet1i(mat, "sampler.image1D.image.wrapMode", (int)imgSampler->m_wrapMode);
+        // TODO: filterMode!!
       }
     }
     if (auto imgSampler = dynamic_cast<const Image2D *>(m_colorSampler.ptr)) {
@@ -103,7 +104,9 @@ BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
         bnSetData(mat, "sampler.image2D.image.data", imageData);
         bnSet1i(mat, "sampler.image2D.image.width", imgSampler->m_image->size().x);
         bnSet1i(mat, "sampler.image2D.image.height", imgSampler->m_image->size().y);
-        // TODO: wrapMode, filterMode!!
+        bnSet1i(mat, "sampler.image2D.image.wrapMode1", (int)imgSampler->m_wrapMode1);
+        bnSet1i(mat, "sampler.image2D.image.wrapMode2", (int)imgSampler->m_wrapMode1);
+        // TODO: filterMode!!
       }
     }
     else if (auto xfmSampler = dynamic_cast<const TransformSampler *>(m_colorSampler.ptr)) {
