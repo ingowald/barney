@@ -36,7 +36,7 @@ namespace barney {
   {
     if (mode == render::MIRROR) {
       if ((int(floorf(f)) & 1) == 1) // if is odd!
-        return float(N-1)/N - f - floorf(f);
+        return float(N-1)/N - (f - floorf(f));
       else
         return f - floorf(f);
     } else if (mode == render::WRAP) {
