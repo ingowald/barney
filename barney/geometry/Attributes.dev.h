@@ -23,6 +23,34 @@
 
 namespace barney {
 
+  // TODO: _really_ use CUDA textures here...!!!
+  struct SWSampler
+  {
+    const vec4f *data;
+    int W, H;
+  };
+
+  inline __device__
+  float wrap(float f, int N)
+  {
+    return clamp(f,0.f,1.f-1.f/N);
+  }
+
+  inline __device__
+  vec4f sample1D(const SWSampler &sampler, float f)
+  {
+    int i = min(int(wrap(f,sampler.W)*sampler.W),sampler.W-1);
+    return sampler.data[i];
+  }
+
+  inline __device__
+  vec4f sample2D(const SWSampler &sampler, float f1, float f2)
+  {
+    int x = min(int(wrap(f1,sampler.W)*sampler.W),sampler.W-1);
+    int y = min(int(wrap(f2,sampler.H)*sampler.H),sampler.H-1);
+    return sampler.data[x+sampler.W*y];
+  }
+
   // For spheres:
   template<typename DD>
   inline __device__
@@ -93,11 +121,8 @@ namespace barney {
 
         inAttr = inTransform * inAttr + inOffset;
 
-        float f = clamp(inAttr.x,0.f,1.f); // TODO: other wrap modes!
-
-        int i = min(int(f*imageWidth),imageWidth-1);
-
-        vec4f sample = image[i]; // TODO: linear/nearest interpolation (textures?!)
+        SWSampler sampler{image,imageWidth,0};
+        vec4f sample = sample1D(sampler,inAttr.x);
 
         sample = outTransform * sample + outOffset;
 
@@ -117,13 +142,8 @@ namespace barney {
 
         inAttr = inTransform * inAttr + inOffset;
 
-        float f1 = clamp(inAttr.x,0.f,1.f); // TODO: other wrap modes!
-        float f2 = clamp(inAttr.y,0.f,1.f); // TODO: other wrap modes!
-
-        int x = min(int(f1*imageWidth),imageWidth-1);
-        int y = min(int(f2*imageHeight),imageHeight-1);
-
-        vec4f sample = image[x+imageWidth*y]; // TODO: linear/nearest interpolation (textures?!)
+        SWSampler sampler{image,imageWidth,imageHeight};
+        vec4f sample = sample2D(sampler,inAttr.x,inAttr.y);
 
         sample = outTransform * sample + outOffset;
 
