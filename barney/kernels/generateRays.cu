@@ -107,7 +107,7 @@ namespace barney {
     // color; this way the shaderays function doesn't have to reverse
     // engineer pixel pos etc
     vec3f bgColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-    bool crossHair = ((ix == fbSize.x/2) || (iy == fbSize.y/2));
+    bool crossHair = false; //((ix == fbSize.x/2) || (iy == fbSize.y/2));
     ray.hit.missColor
       = crossHair
       ? vec3f(1.f,0.f,0.f)
