@@ -386,16 +386,16 @@ namespace barney {
   BN_API
   BNScalarField bnNanoVDBDataCreate(BNModel model,
                                     int whichSlot,
-                                    int3 dims,
-                                    size_t size,
+                                    int3 dims,                                    
                                     const void *nanogrid,
+                                    size_t nanogridSize,
                                     float3 gridOrigin,
                                     float3 gridSpacing)
   {   
     BNScalarField sf
       = bnScalarFieldCreate(model,whichSlot,"nanovdb");
     BNTextureNanoVDB texture
-      = bnTextureNanoVDBCreate(model,whichSlot,BN_TEXEL_FORMAT_NANOVDB_FLOAT,size,nanogrid,BN_TEXTURE_LINEAR);
+      = bnTextureNanoVDBCreate(model,whichSlot,BN_TEXEL_FORMAT_NANOVDB_FLOAT,nanogridSize,nanogrid,BN_TEXTURE_LINEAR);
     bnSetObject(sf,"texture",texture);
     bnRelease(texture);
     bnSet3ic(sf,"dims",dims);
