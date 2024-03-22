@@ -65,8 +65,10 @@ void Frame::commit()
   m_depthBuffer.resize(m_depthType == ANARI_FLOAT32 ? numPixels : 0, 0.f);
 
   m_bnHostBuffer.resize(numPixels);
-  bnFrameBufferResize(
-      m_bnFrameBuffer, size.x, size.y, m_bnHostBuffer.data(),
+  bnFrameBufferResize(m_bnFrameBuffer,
+      size.x,
+      size.y,
+      m_bnHostBuffer.data(),
       m_depthBuffer.data());
   m_frameData.size = size;
 }
@@ -107,7 +109,10 @@ void Frame::renderFrame()
   m_frameLastRendered = helium::newTimeStamp();
   state->currentFrame = this;
 
-  bnRender(m_world->barneyModel(), m_camera->barneyCamera(), m_bnFrameBuffer);
+  const int pixelSamples = std::max(m_renderer->pixelSamples(), 1);
+
+  for (int i = 0; i < pixelSamples; i++)
+    bnRender(m_world->barneyModel(), m_camera->barneyCamera(), m_bnFrameBuffer);
 
   auto end = std::chrono::steady_clock::now();
   m_duration = std::chrono::duration<float>(end - start).count();
