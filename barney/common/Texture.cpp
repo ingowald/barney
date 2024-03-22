@@ -76,6 +76,12 @@ namespace barney {
       readMode     = cudaReadModeElementType;
       numScalarsPerTexel = 1;
       break;
+    case BN_TEXEL_FORMAT_R64F:
+      desc         = cudaCreateChannelDesc<float>(); //__hiloint2double(p.y, p.x);
+      sizeOfScalar = 8;
+      readMode     = cudaReadModeElementType;
+      numScalarsPerTexel = 1;
+      break;      
     case BN_TEXEL_FORMAT_R8:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 1;
@@ -133,7 +139,11 @@ namespace barney {
       textureDesc.addressMode[0]   = cudaAddressModeClamp;
       textureDesc.addressMode[1]   = cudaAddressModeClamp;
       textureDesc.addressMode[2]   = cudaAddressModeClamp;
-      textureDesc.filterMode       = cudaFilterModeLinear;
+      if(texelFormat == BN_TEXEL_FORMAT_R64F)
+        textureDesc.filterMode = cudaFilterModePoint;
+      else
+        textureDesc.filterMode = cudaFilterModeLinear;
+
       textureDesc.readMode         = readMode;
         // = (texelFormat == BN_TEXEL_FORMAT_R8)
         // ? cudaReadModeNormalizedFloat

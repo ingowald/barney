@@ -77,6 +77,9 @@ BNScalarField StructuredRegularField::makeBarneyScalarField(
   case ANARI_FLOAT32:
     barneyType = BN_SCALAR_FLOAT;
     break;
+  case ANARI_FLOAT64:
+    barneyType = BN_SCALAR_DOUBLE;
+    break;    
   case ANARI_UINT8:
     barneyType = BN_SCALAR_UINT8;
     break;

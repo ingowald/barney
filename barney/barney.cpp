@@ -362,6 +362,9 @@ namespace barney {
     case BN_SCALAR_FLOAT:
       texelFormat = BN_TEXEL_FORMAT_R32F;
       break;
+    case BN_SCALAR_DOUBLE:
+      texelFormat = BN_TEXEL_FORMAT_R64F;
+      break;      
     case BN_SCALAR_UINT8:
       texelFormat = BN_TEXEL_FORMAT_R8;
       break;

@@ -62,11 +62,12 @@ typedef enum {
   BN_FLOAT2,
   BN_FLOAT3,
   BN_FLOAT4,
+  BN_DOUBLE,
   
   BN_RAW_DATA_BASE
 } BNDataType;
 
-typedef  enum { BN_SCALAR_UNDEFINED=0, BN_SCALAR_UINT8, BN_SCALAR_FLOAT=(int)BN_FLOAT  } BNScalarType;
+typedef  enum { BN_SCALAR_UNDEFINED=0, BN_SCALAR_UINT8, BN_SCALAR_FLOAT=(int)BN_FLOAT, BN_SCALAR_DOUBLE=(int)BN_DOUBLE  } BNScalarType;
 
 
 /*! supported formats for texels in textures */
@@ -81,6 +82,8 @@ typedef enum {
   BN_TEXEL_FORMAT_R16,
   /*! float */
   BN_TEXEL_FORMAT_R32F,
+  /*! double */
+  BN_TEXEL_FORMAT_R64F,  
   /*! nanovdb */
   BN_TEXEL_FORMAT_NANOVDB_FLOAT,
 }
