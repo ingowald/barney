@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <sstream>
 #include <vector>
 #include "helium/array/Array.h"
 #include "barney_math.h"
