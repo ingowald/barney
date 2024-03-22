@@ -1,7 +1,7 @@
 // Copyright 2023 Ingo Wald
 // SPDX-License-Identifier: Apache-2.0
 
-#pragma once 
+#pragma once
 
 #include "Object.h"
 #include "common.h"
@@ -26,6 +26,8 @@ struct Image1D : public Sampler
   Image1D(BarneyGlobalState *s);
   void commit() override;
 
+  bool isValid() const override;
+
   helium::IntrusivePtr<helium::Array1D> m_image;
   int m_inAttribute{-1};
   WrapMode m_wrapMode{Clamp};
@@ -40,6 +42,8 @@ struct Image2D : public Sampler
 {
   Image2D(BarneyGlobalState *s);
   void commit() override;
+
+  bool isValid() const override;
 
   helium::IntrusivePtr<helium::Array2D> m_image;
   int m_inAttribute{-1};

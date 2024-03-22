@@ -44,6 +44,11 @@ void Image1D::commit()
   m_outOffset = getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
 }
 
+bool Image1D::isValid() const
+{
+  return m_image;
+}
+
 // Image2D //
 
 Image2D::Image2D(BarneyGlobalState *s) : Sampler(s) {}
@@ -64,6 +69,11 @@ void Image2D::commit()
   m_outTransform = math::identity;
   getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
   m_outOffset = getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+}
+
+bool Image2D::isValid() const
+{
+  return m_image;
 }
 
 // TransformSampler //

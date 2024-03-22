@@ -125,6 +125,11 @@ BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
   return mat;
 }
 
+bool Matte::isValid() const
+{
+  return !m_colorSampler || m_colorSampler->isValid();
+}
+
 // PhysicallyBased //
 
 PhysicallyBased::PhysicallyBased(BarneyGlobalState *s) : Material(s) {}
