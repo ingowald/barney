@@ -21,6 +21,7 @@ struct Volume : public Object
   virtual BNVolume makeBarneyVolume(BNModel model, int slot) const = 0;
 
   virtual box3 bounds() const = 0;
+
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -33,6 +34,8 @@ struct TransferFunction1D : public Volume
   BNVolume makeBarneyVolume(BNModel model, int slot) const override;
 
   box3 bounds() const override;
+
+  size_t numRequiredGPUBytes() const override;
 
  private:
   void cleanup();
