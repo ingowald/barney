@@ -130,7 +130,7 @@ inline void convert_float1_to_float4(const float *in, math::float4 *out, size_t 
     out[i].x = in[i];
     out[i].y = 0.f;
     out[i].z = 0.f;
-    out[i].w = 0.f;
+    out[i].w = 1.f;
   }
 }
 
@@ -140,7 +140,7 @@ inline void convert_float2_to_float4(const math::float2 *in, math::float4 *out, 
     out[i].x = in[i].x;
     out[i].y = in[i].y;
     out[i].z = 0.f;
-    out[i].w = 0.f;
+    out[i].w = 1.f;
   }
 }
 
@@ -150,7 +150,7 @@ inline void convert_float3_to_float4(const math::float3 *in, math::float4 *out, 
     out[i].x = in[i].x;
     out[i].y = in[i].y;
     out[i].z = in[i].z;
-    out[i].w = 0.f;
+    out[i].w = 1.f;
   }
 }
 
