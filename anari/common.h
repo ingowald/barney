@@ -207,7 +207,7 @@ inline bool convert_to_float4(
     memcpy(data.data(), input->data(), input->totalSize() * sizeof(math::float4));
   }
   else {
-    return false;    
+    return false;
   }
   return true;
 }
@@ -223,7 +223,7 @@ inline uint32_t make_rgba8(const math::float4 color)
     (make_8bit(color.x) << 0) +
     (make_8bit(color.y) << 8) +
     (make_8bit(color.z) << 16) +
-    (make_8bit(color.w) << 16);
+    (make_8bit(color.w) << 24);
 }
 
 inline bool convert_to_rgba8(
@@ -260,7 +260,7 @@ static BNData makeBarneyData(
          << anari::toString(input->elementType());
       std::string str = ss.str();
       fprintf(stderr, "%s\n", str.c_str());
-          
+
     }
   }
 
