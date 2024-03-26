@@ -35,7 +35,7 @@ void Image1D::commit()
   m_inAttribute =
       toAttribute(getParamString("inAttribute", "attribute0"));
   m_linearFilter = getParamString("filter", "linear") != "nearest";
-  m_wrapMode = toWrapMode(getParamString("wrapMode1", "clampToEdge"));
+  m_wrapMode = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
   m_inTransform = math::identity;
   getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
   m_inOffset = getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
@@ -61,8 +61,8 @@ void Image2D::commit()
   m_inAttribute =
       toAttribute(getParamString("inAttribute", "attribute0"));
   m_linearFilter = getParamString("filter", "linear") != "nearest";
-  m_wrapMode1 = toWrapMode(getParamString("wrapMode1", "clampToEdge"));
-  m_wrapMode2 = toWrapMode(getParamString("wrapMode2", "clampToEdge"));
+  m_wrapMode1 = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
+  m_wrapMode2 = toBarneyAddressMode(getParamString("wrapMode2", "clampToEdge"));
   m_inTransform = math::identity;
   getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
   m_inOffset = getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));

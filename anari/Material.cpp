@@ -5,6 +5,8 @@
 #include "common.h"
 // CUDA
 #include <vector_functions.h>
+// std
+#include <cassert>
 
 namespace barney_device {
 
@@ -58,28 +60,30 @@ BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
 #if 1 // Hack to get samplers working on Matte material
   if (m_colorSampler) {
     if (auto imgSampler = dynamic_cast<const Image1D *>(m_colorSampler.ptr)) {
-      BNData imageData = makeBarneyData(model, slot, imgSampler->m_image);
-
-      if (imageData) {
+      if (imgSampler->m_image->totalSize()) {
         bnSetString(mat, "sampler.type", "image1D");
-        bnSet1i(mat, "sampler.image1D.inAttribute", imgSampler->m_inAttribute);
-        bnSet4x4fv(mat, "sampler.image1D.inTransform", (const float *)&imgSampler->m_inTransform.x);
-        bnSet4f(mat, "sampler.image1D.inOffset",
+        bnSet1i(mat, "sampler.image.inAttribute", imgSampler->m_inAttribute);
+        bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&imgSampler->m_inTransform.x);
+        bnSet4f(mat, "sampler.image.inOffset",
                 imgSampler->m_inOffset.x,
                 imgSampler->m_inOffset.y,
                 imgSampler->m_inOffset.z,
                 imgSampler->m_inOffset.w);
-        bnSet4x4fv(mat, "sampler.image1D.outTransform", (const float *)&imgSampler->m_outTransform.x);
-        bnSet4f(mat, "sampler.image1D.outOffset",
+        bnSet4x4fv(mat, "sampler.image.outTransform", (const float *)&imgSampler->m_outTransform.x);
+        bnSet4f(mat, "sampler.image.outOffset",
                 imgSampler->m_outOffset.x,
                 imgSampler->m_outOffset.y,
                 imgSampler->m_outOffset.z,
                 imgSampler->m_outOffset.w);
 
-        bnSetData(mat, "sampler.image1D.image.data", imageData);
-        bnSet1i(mat, "sampler.image1D.image.width", imgSampler->m_image->size());
-        bnSet1i(mat, "sampler.image1D.image.wrapMode", (int)imgSampler->m_wrapMode);
-        // TODO: filterMode!!
+        BNTexture2D image
+            = makeBarneyTexture2D(model, slot, imgSampler->m_image,
+                                  imgSampler->m_image->size(), 1,
+                                  imgSampler->m_linearFilter ? BN_TEXTURE_LINEAR
+                                                             : BN_TEXTURE_NEAREST,
+                                  imgSampler->m_wrapMode);
+        bnSetObject(mat, "sampler.image.image", image);
+        bnRelease(image);
       }
     }
     if (auto imgSampler = dynamic_cast<const Image2D *>(m_colorSampler.ptr)) {
@@ -87,26 +91,29 @@ BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
 
       if (imageData) {
         bnSetString(mat, "sampler.type", "image2D");
-        bnSet1i(mat, "sampler.image2D.inAttribute", imgSampler->m_inAttribute);
-        bnSet4x4fv(mat, "sampler.image2D.inTransform", (const float *)&imgSampler->m_inTransform.x);
-        bnSet4f(mat, "sampler.image2D.inOffset",
+        bnSet1i(mat, "sampler.image.inAttribute", imgSampler->m_inAttribute);
+        bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&imgSampler->m_inTransform.x);
+        bnSet4f(mat, "sampler.image.inOffset",
                 imgSampler->m_inOffset.x,
                 imgSampler->m_inOffset.y,
                 imgSampler->m_inOffset.z,
                 imgSampler->m_inOffset.w);
-        bnSet4x4fv(mat, "sampler.image2D.outTransform", (const float *)&imgSampler->m_outTransform.x);
-        bnSet4f(mat, "sampler.image2D.outOffset",
+        bnSet4x4fv(mat, "sampler.image.outTransform", (const float *)&imgSampler->m_outTransform.x);
+        bnSet4f(mat, "sampler.image.outOffset",
                 imgSampler->m_outOffset.x,
                 imgSampler->m_outOffset.y,
                 imgSampler->m_outOffset.z,
                 imgSampler->m_outOffset.w);
 
-        bnSetData(mat, "sampler.image2D.image.data", imageData);
-        bnSet1i(mat, "sampler.image2D.image.width", imgSampler->m_image->size().x);
-        bnSet1i(mat, "sampler.image2D.image.height", imgSampler->m_image->size().y);
-        bnSet1i(mat, "sampler.image2D.image.wrapMode1", (int)imgSampler->m_wrapMode1);
-        bnSet1i(mat, "sampler.image2D.image.wrapMode2", (int)imgSampler->m_wrapMode1);
-        // TODO: filterMode!!
+        assert(imgSampler->m_wrapMode1 == imgSampler->m_wrapMode2);
+        BNTexture2D image
+            = makeBarneyTexture2D(model, slot, imgSampler->m_image,
+                                  imgSampler->m_image->size().x, imgSampler->m_image->size().y,
+                                  imgSampler->m_linearFilter ? BN_TEXTURE_LINEAR
+                                                             : BN_TEXTURE_NEAREST,
+                                  imgSampler->m_wrapMode1);
+        bnSetObject(mat, "sampler.image.image", image);
+        bnRelease(image);
       }
     }
     else if (auto xfmSampler = dynamic_cast<const TransformSampler *>(m_colorSampler.ptr)) {

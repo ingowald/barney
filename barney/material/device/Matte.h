@@ -60,26 +60,8 @@ namespace barney {
             vec4f inOffset;
             mat4f outTransform;
             vec4f outOffset;
-            struct {
-              const vec4f *data;
-              int width;
-              WrapMode wrapMode;
-            } image;
-          } image1D;
-          struct {
-            int inAttribute;
-            mat4f inTransform;
-            vec4f inOffset;
-            mat4f outTransform;
-            vec4f outOffset;
-            struct {
-              const vec4f *data;
-              int width;
-              int height;
-              WrapMode wrapMode1;
-              WrapMode wrapMode2;
-            } image;
-          } image2D;
+            cudaTextureObject_t image;
+          } image;
           struct {
             int inAttribute;
             mat4f outTransform;

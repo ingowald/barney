@@ -30,7 +30,7 @@ struct Image1D : public Sampler
 
   helium::IntrusivePtr<helium::Array1D> m_image;
   int m_inAttribute{-1};
-  WrapMode m_wrapMode{Clamp};
+  BNTextureAddressMode m_wrapMode{BN_TEXTURE_CLAMP};
   bool m_linearFilter{true};
   math::mat4 m_inTransform{math::identity};
   math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
@@ -47,8 +47,8 @@ struct Image2D : public Sampler
 
   helium::IntrusivePtr<helium::Array2D> m_image;
   int m_inAttribute{-1};
-  WrapMode m_wrapMode1{Clamp};
-  WrapMode m_wrapMode2{Clamp};
+  BNTextureAddressMode m_wrapMode1{BN_TEXTURE_CLAMP};
+  BNTextureAddressMode m_wrapMode2{BN_TEXTURE_CLAMP};
   bool m_linearFilter{true};
   math::mat4 m_inTransform{math::identity};
   math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};

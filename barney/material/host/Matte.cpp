@@ -25,39 +25,14 @@ namespace barney {
     render::Matte::DD matte;
     matte.reflectance = reflectance;
     matte.samplerType = samplerType;
-    if (samplerType == render::IMAGE1D) {
-      OWLBuffer imageBuffer
-        = sampler.image1D.image.data
-        ? sampler.image1D.image.data->owl
-        : 0;
-      matte.sampler.image1D.image.data
-          = (const vec4f *)owlBufferGetPointer(imageBuffer,deviceID);
-      matte.sampler.image1D.image.width = sampler.image1D.image.width;
-      matte.sampler.image1D.image.wrapMode = sampler.image1D.image.wrapMode;
-
-      matte.sampler.image1D.inAttribute = sampler.image1D.inAttribute;
-      matte.sampler.image1D.inTransform = sampler.image1D.inTransform;
-      matte.sampler.image1D.inOffset = sampler.image1D.inOffset;
-      matte.sampler.image1D.outTransform = sampler.image1D.outTransform;
-      matte.sampler.image1D.outOffset = sampler.image1D.outOffset;
-    }
-    if (samplerType == render::IMAGE2D) {
-      OWLBuffer imageBuffer
-        = sampler.image2D.image.data
-        ? sampler.image2D.image.data->owl
-        : 0;
-      matte.sampler.image2D.image.data
-          = (const vec4f *)owlBufferGetPointer(imageBuffer,deviceID);
-      matte.sampler.image2D.image.width = sampler.image2D.image.width;
-      matte.sampler.image2D.image.height = sampler.image2D.image.height;
-      matte.sampler.image2D.image.wrapMode1 = sampler.image2D.image.wrapMode1;
-      matte.sampler.image2D.image.wrapMode2 = sampler.image2D.image.wrapMode2;
-
-      matte.sampler.image2D.inAttribute = sampler.image2D.inAttribute;
-      matte.sampler.image2D.inTransform = sampler.image2D.inTransform;
-      matte.sampler.image2D.inOffset = sampler.image2D.inOffset;
-      matte.sampler.image2D.outTransform = sampler.image2D.outTransform;
-      matte.sampler.image2D.outOffset = sampler.image2D.outOffset;
+    if (samplerType == render::IMAGE1D || samplerType == render::IMAGE2D) {
+      matte.sampler.image.image
+        = owlTextureGetObject(sampler.image.image->owlTex,deviceID);
+      matte.sampler.image.inAttribute = sampler.image.inAttribute;
+      matte.sampler.image.inTransform = sampler.image.inTransform;
+      matte.sampler.image.inOffset = sampler.image.inOffset;
+      matte.sampler.image.outTransform = sampler.image.outTransform;
+      matte.sampler.image.outOffset = sampler.image.outOffset;
     }
     else if (samplerType == render::TRANSFORM) {
       matte.sampler.transform.inAttribute = sampler.transform.inAttribute;
@@ -82,35 +57,19 @@ namespace barney {
     return false;
   }
 
-  bool MatteMaterial::setData(const std::string &member, const Data::SP &value)
+  bool MatteMaterial::setObject(const std::string &member, const Object::SP &value)
   {
-    if (Material::setData(member,value)) return true;
-    if (member == "sampler.image1D.image.data")
-      { sampler.image1D.image.data = value->as<PODData>(); return true; }
-    if (member == "sampler.image2D.image.data")
-      { sampler.image2D.image.data = value->as<PODData>(); return true; }
+    if (Material::setObject(member,value)) return true;
+    if (member == "sampler.image.image")
+      { sampler.image.image = value->as<Texture>(); return true; }
     return false;
   }
 
   bool MatteMaterial::set1i(const std::string &member, const int &value) 
   {
     if (Material::set1i(member,value)) return true;
-    if (member == "sampler.image1D.image.width") 
-      { sampler.image1D.image.width = value; return true; }
-    if (member == "sampler.image1D.image.wrapMode") 
-      { sampler.image1D.image.wrapMode = (render::WrapMode)value; return true; }
-    if (member == "sampler.image1D.inAttribute") 
-      { sampler.image1D.inAttribute = value; return true; }
-    if (member == "sampler.image2D.image.width") 
-      { sampler.image2D.image.width = value; return true; }
-    if (member == "sampler.image2D.image.height") 
-      { sampler.image2D.image.height = value; return true; }
-    if (member == "sampler.image2D.image.wrapMode1") 
-      { sampler.image2D.image.wrapMode1 = (render::WrapMode)value; return true; }
-    if (member == "sampler.image2D.image.wrapMode2") 
-      { sampler.image2D.image.wrapMode2 = (render::WrapMode)value; return true; }
-    if (member == "sampler.image2D.inAttribute") 
-      { sampler.image2D.inAttribute = value; return true; }
+    if (member == "sampler.image.inAttribute") 
+      { sampler.image.inAttribute = value; return true; }
     if (member == "sampler.transform.inAttribute") 
       { sampler.transform.inAttribute = value; return true; }
     return false;
@@ -125,14 +84,10 @@ namespace barney {
   bool MatteMaterial::set4f(const std::string &member, const vec4f &value) 
   {
     if (Material::set4f(member,value)) return true;
-    if (member == "sampler.image1D.inOffset") 
-      { sampler.image1D.inOffset = value; return true; }
-    if (member == "sampler.image1D.outOffset") 
-      { sampler.image1D.outOffset = value; return true; }
-    if (member == "sampler.image2D.inOffset") 
-      { sampler.image2D.inOffset = value; return true; }
-    if (member == "sampler.image2D.outOffset") 
-      { sampler.image2D.outOffset = value; return true; }
+    if (member == "sampler.image.inOffset") 
+      { sampler.image.inOffset = value; return true; }
+    if (member == "sampler.image.outOffset") 
+      { sampler.image.outOffset = value; return true; }
     if (member == "sampler.transform.outOffset") 
       { sampler.transform.outOffset = value; return true; }
     return false;
@@ -140,14 +95,10 @@ namespace barney {
   bool MatteMaterial::set4x4f(const std::string &member, const mat4f &value) 
   {
     if (Material::set4x4f(member,value)) return true;
-    if (member == "sampler.image1D.inTransform") 
-      { sampler.image1D.inTransform = value; return true; }
-    if (member == "sampler.image1D.outTransform") 
-      { sampler.image1D.outTransform = value; return true; }
-    if (member == "sampler.image2D.inTransform") 
-      { sampler.image2D.inTransform = value; return true; }
-    if (member == "sampler.image2D.outTransform") 
-      { sampler.image2D.outTransform = value; return true; }
+    if (member == "sampler.image.inTransform") 
+      { sampler.image.inTransform = value; return true; }
+    if (member == "sampler.image.outTransform") 
+      { sampler.image.outTransform = value; return true; }
     if (member == "sampler.transform.outTransform") 
       { sampler.transform.outTransform = value; return true; }
     return false;

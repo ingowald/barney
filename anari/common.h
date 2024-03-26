@@ -45,6 +45,17 @@ inline WrapMode toWrapMode(std::string str) {
   return Clamp;
 }
 
+inline BNTextureAddressMode toBarneyAddressMode(std::string str) {
+  if (str == "clampToEdge")
+    return BN_TEXTURE_CLAMP;
+  else if (str == "repeat")
+    return BN_TEXTURE_WRAP;
+  else if (str == "mirrorRepeat")
+    return BN_TEXTURE_MIRROR;
+
+  return BN_TEXTURE_CLAMP;
+}
+
 inline void convert_fixed8_to_float4(const void *in, math::float4 *out, size_t size)
 {
   for (size_t i = 0; i < size; ++i) {
@@ -155,69 +166,65 @@ inline void convert_float3_to_float4(const math::float3 *in, math::float4 *out, 
   }
 }
 
+inline bool convert_to_float4(
+    const helium::IntrusivePtr<helium::Array> &input, std::vector<math::float4> &data)
+{
+  data.resize(input->totalSize());
+  if (input->elementType() == ANARI_UFIXED8) {
+    convert_fixed8_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_UFIXED8_VEC2) {
+    convert_fixed8x2_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_UFIXED8_VEC3) {
+    convert_fixed8x3_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_UFIXED8_VEC4) {
+    convert_fixed8x4_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_UFIXED16) {
+    convert_fixed16_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_UFIXED16_VEC2) {
+    convert_fixed16x2_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_UFIXED16_VEC3) {
+    convert_fixed16x3_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_UFIXED16_VEC4) {
+    convert_fixed16x4_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_FLOAT32) {
+    convert_float1_to_float4(input->dataAs<float>(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_FLOAT32_VEC2) {
+    convert_float2_to_float4(input->dataAs<math::float2>(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_FLOAT32_VEC3) {
+    convert_float3_to_float4(input->dataAs<math::float3>(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_FLOAT32_VEC4) {
+    memcpy(data.data(), input->data(), input->totalSize() * sizeof(math::float4));
+  }
+  else {
+    return false;    
+  }
+  return true;
+}
+
 static BNData makeBarneyData(
     BNModel model, int slot, const helium::IntrusivePtr<helium::Array> &input)
 {
   BNData res{0};
 
+  std::vector<math::float4> data;
+
   if (input) {
-    if (input->elementType() == ANARI_UFIXED8) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_fixed8_to_float4(input->data(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_UFIXED8_VEC2) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_fixed8x2_to_float4(input->data(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_UFIXED8_VEC3) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_fixed8x3_to_float4(input->data(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_UFIXED8_VEC4) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_fixed8x4_to_float4(input->data(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_UFIXED16) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_fixed16_to_float4(input->data(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_UFIXED16_VEC2) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_fixed16x2_to_float4(input->data(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_UFIXED16_VEC3) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_fixed16x3_to_float4(input->data(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_UFIXED16_VEC4) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_fixed16x4_to_float4(input->data(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_FLOAT32) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_float1_to_float4(input->dataAs<float>(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_FLOAT32_VEC2) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_float2_to_float4(input->dataAs<math::float2>(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_FLOAT32_VEC3) {
-      std::vector<math::float4> data(input->totalSize());
-      convert_float3_to_float4(input->dataAs<math::float3>(), data.data(), data.size());
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
-    }
-    else if (input->elementType() == ANARI_FLOAT32_VEC4) {
+    if (input->elementType() == ANARI_FLOAT32_VEC4) {
       res = bnDataCreate(model, slot, BN_FLOAT4, input->totalSize(), input->data());
+    }
+    else if (convert_to_float4(input, data) && !data.empty()) {
+      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
     }
     else {
       std::stringstream ss;
@@ -226,6 +233,34 @@ static BNData makeBarneyData(
       std::string str = ss.str();
       fprintf(stderr, "%s\n", str.c_str());
           
+    }
+  }
+
+  return res;
+}
+
+static BNTexture2D makeBarneyTexture2D(
+    BNModel model, int slot, const helium::IntrusivePtr<helium::Array> &input,
+    int width, int height,
+    BNTextureFilterMode filterMode = BN_TEXTURE_LINEAR,
+    BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP)
+{
+  BNTexture2D res{0};
+
+  std::vector<math::float4> texels;
+
+  if (input) {
+    if (convert_to_float4(input, texels)) {
+      res = bnTexture2DCreate(model, slot, BN_TEXEL_FORMAT_RGBA32F,
+                              width, height, texels.data(),
+                              filterMode, addressMode);
+    }
+    else {
+      std::stringstream ss;
+      ss << "unsupported texel type: "
+         << anari::toString(input->elementType());
+      std::string str = ss.str();
+      fprintf(stderr, "%s\n", str.c_str());
     }
   }
 
