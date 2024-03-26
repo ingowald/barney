@@ -5,8 +5,6 @@
 #include "common.h"
 // CUDA
 #include <vector_functions.h>
-// std
-#include <cassert>
 
 namespace barney_device {
 
@@ -57,78 +55,8 @@ BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
 {
   BNMaterial mat = bnMaterialCreate(model, slot, "matte");
   bnSet3f(mat, "reflectance", m_color.x, m_color.y, m_color.z);
-#if 1 // Hack to get samplers working on Matte material
-  if (m_colorSampler) {
-    if (auto imgSampler = dynamic_cast<const Image1D *>(m_colorSampler.ptr)) {
-      if (imgSampler->m_image->totalSize()) {
-        bnSetString(mat, "sampler.type", "image1D");
-        bnSet1i(mat, "sampler.image.inAttribute", imgSampler->m_inAttribute);
-        bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&imgSampler->m_inTransform.x);
-        bnSet4f(mat, "sampler.image.inOffset",
-                imgSampler->m_inOffset.x,
-                imgSampler->m_inOffset.y,
-                imgSampler->m_inOffset.z,
-                imgSampler->m_inOffset.w);
-        bnSet4x4fv(mat, "sampler.image.outTransform", (const float *)&imgSampler->m_outTransform.x);
-        bnSet4f(mat, "sampler.image.outOffset",
-                imgSampler->m_outOffset.x,
-                imgSampler->m_outOffset.y,
-                imgSampler->m_outOffset.z,
-                imgSampler->m_outOffset.w);
-
-        BNTexture2D image
-            = makeBarneyTexture2D(model, slot, imgSampler->m_image,
-                                  imgSampler->m_image->size(), 1,
-                                  imgSampler->m_linearFilter ? BN_TEXTURE_LINEAR
-                                                             : BN_TEXTURE_NEAREST,
-                                  imgSampler->m_wrapMode);
-        bnSetObject(mat, "sampler.image.image", image);
-        bnRelease(image);
-      }
-    }
-    if (auto imgSampler = dynamic_cast<const Image2D *>(m_colorSampler.ptr)) {
-      BNData imageData = makeBarneyData(model, slot, imgSampler->m_image);
-
-      if (imageData) {
-        bnSetString(mat, "sampler.type", "image2D");
-        bnSet1i(mat, "sampler.image.inAttribute", imgSampler->m_inAttribute);
-        bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&imgSampler->m_inTransform.x);
-        bnSet4f(mat, "sampler.image.inOffset",
-                imgSampler->m_inOffset.x,
-                imgSampler->m_inOffset.y,
-                imgSampler->m_inOffset.z,
-                imgSampler->m_inOffset.w);
-        bnSet4x4fv(mat, "sampler.image.outTransform", (const float *)&imgSampler->m_outTransform.x);
-        bnSet4f(mat, "sampler.image.outOffset",
-                imgSampler->m_outOffset.x,
-                imgSampler->m_outOffset.y,
-                imgSampler->m_outOffset.z,
-                imgSampler->m_outOffset.w);
-
-        assert(imgSampler->m_wrapMode1 == imgSampler->m_wrapMode2);
-        BNTexture2D image
-            = makeBarneyTexture2D(model, slot, imgSampler->m_image,
-                                  imgSampler->m_image->size().x, imgSampler->m_image->size().y,
-                                  imgSampler->m_linearFilter ? BN_TEXTURE_LINEAR
-                                                             : BN_TEXTURE_NEAREST,
-                                  imgSampler->m_wrapMode1);
-        bnSetObject(mat, "sampler.image.image", image);
-        bnRelease(image);
-      }
-    }
-    else if (auto xfmSampler = dynamic_cast<const TransformSampler *>(m_colorSampler.ptr)) {
-      bnSetString(mat, "sampler.type", "transform");
-      bnSet1i(mat, "sampler.transform.inAttribute", xfmSampler->m_inAttribute);
-      bnSet4x4fv(mat, "sampler.transform.outTransform",
-                 (const float *)&xfmSampler->m_outTransform.x);
-      bnSet4f(mat, "sampler.transform.outOffset",
-              xfmSampler->m_outOffset.x,
-              xfmSampler->m_outOffset.y,
-              xfmSampler->m_outOffset.z,
-              xfmSampler->m_outOffset.w);
-    }
-  }
-#endif
+  if (m_colorSampler)
+    m_colorSampler->setBarneyParameters(model, mat, slot);
   return mat;
 }
 
@@ -178,14 +106,23 @@ BNMaterial PhysicallyBased::makeBarneyMaterial(BNModel model, int slot) const
 {
   BNMaterial mat = bnMaterialCreate(model, slot, "physicallyBased");
 
-  bnSet3f(mat, "baseColor",
-      m_baseColor.value.x, m_baseColor.value.y, m_baseColor.value.z);
+  bnSet3f(mat,
+      "baseColor",
+      m_baseColor.value.x,
+      m_baseColor.value.y,
+      m_baseColor.value.z);
 
-  bnSet3f(mat, "emissive",
-      m_emissive.value.x, m_emissive.value.y, m_emissive.value.z);
+  bnSet3f(mat,
+      "emissive",
+      m_emissive.value.x,
+      m_emissive.value.y,
+      m_emissive.value.z);
 
-  bnSet3f(mat, "specularColor",
-      m_specularColor.value.x, m_specularColor.value.y, m_specularColor.value.z);
+  bnSet3f(mat,
+      "specularColor",
+      m_specularColor.value.x,
+      m_specularColor.value.y,
+      m_specularColor.value.z);
 
   bnSet1f(mat, "opacity", m_opacity.value);
   bnSet1f(mat, "metallic", m_metallic.value);
