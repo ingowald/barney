@@ -212,6 +212,34 @@ inline bool convert_to_float4(
   return true;
 }
 
+inline uint32_t make_8bit(const float f)
+{
+  return fminf(255,fmaxf(0,int(f*256.f)));
+}
+
+inline uint32_t make_rgba8(const math::float4 color)
+{
+  return
+    (make_8bit(color.x) << 0) +
+    (make_8bit(color.y) << 8) +
+    (make_8bit(color.z) << 16) +
+    (make_8bit(color.w) << 16);
+}
+
+inline bool convert_to_rgba8(
+    const helium::IntrusivePtr<helium::Array> &input, std::vector<uint32_t> &data)
+{
+  std::vector<math::float4> rgba32f;
+  if (convert_to_float4(input, rgba32f)) {
+    data.resize(rgba32f.size());
+    for (size_t i = 0; i < rgba32f.size(); ++i) {
+      data[i] = make_rgba8(rgba32f[i]);
+    }
+    return true;
+  }
+  return false;
+}
+
 static BNData makeBarneyData(
     BNModel model, int slot, const helium::IntrusivePtr<helium::Array> &input)
 {
@@ -247,11 +275,11 @@ static BNTexture2D makeBarneyTexture2D(
 {
   BNTexture2D res{0};
 
-  std::vector<math::float4> texels;
+  std::vector<uint32_t> texels;
 
   if (input) {
-    if (convert_to_float4(input, texels)) {
-      res = bnTexture2DCreate(model, slot, BN_TEXEL_FORMAT_RGBA32F,
+    if (convert_to_rgba8(input, texels)) {
+      res = bnTexture2DCreate(model, slot, BN_TEXEL_FORMAT_RGBA8,
                               width, height, texels.data(),
                               filterMode, addressMode);
     }
