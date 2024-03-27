@@ -29,8 +29,15 @@ Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
 
 Image1D::Image1D(BarneyGlobalState *s) : Sampler(s) {}
 
+Image1D::~Image1D()
+{
+  cleanup();
+}
+
 void Image1D::commit()
 {
+  cleanup();
+
   Sampler::commit();
 
   m_image = getParamObject<helium::Array1D>("image");
@@ -54,6 +61,9 @@ bool Image1D::isValid() const
 
 void Image1D::setBarneyParameters(BNModel model, BNMaterial mat, int slot) const
 {
+  if (!m_image)
+    return;
+
   bnSetString(mat, "sampler.type", "image1D");
   bnSet1i(mat, "sampler.image.inAttribute", m_inAttribute);
   bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&m_inTransform.x);
@@ -72,23 +82,39 @@ void Image1D::setBarneyParameters(BNModel model, BNMaterial mat, int slot) const
       m_outOffset.z,
       m_outOffset.w);
 
-  BNTexture2D image = makeBarneyTexture2D(model,
-      slot,
-      m_image,
-      m_image->size(),
-      1,
-      m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST,
-      m_wrapMode);
-  bnSetObject(mat, "sampler.image.image", image);
-  bnRelease(image);
+  if (!m_texture) {
+    m_texture = makeBarneyTexture2D(model,
+        slot,
+        m_image,
+        m_image->size(),
+        1,
+        m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST,
+        m_wrapMode);
+  }
+
+  bnSetObject(mat, "sampler.image.image", m_texture);
+}
+
+void Image1D::cleanup()
+{
+  if (m_texture)
+    bnRelease(m_texture);
+  m_texture = nullptr;
 }
 
 // Image2D //
 
 Image2D::Image2D(BarneyGlobalState *s) : Sampler(s) {}
 
+Image2D::~Image2D()
+{
+  cleanup();
+}
+
 void Image2D::commit()
 {
+  cleanup();
+
   Sampler::commit();
 
   m_image = getParamObject<helium::Array2D>("image");
@@ -113,6 +139,9 @@ bool Image2D::isValid() const
 
 void Image2D::setBarneyParameters(BNModel model, BNMaterial mat, int slot) const
 {
+  if (!m_image)
+    return;
+
   bnSetString(mat, "sampler.type", "image2D");
   bnSet1i(mat, "sampler.image.inAttribute", m_inAttribute);
   bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&m_inTransform.x);
@@ -131,16 +160,25 @@ void Image2D::setBarneyParameters(BNModel model, BNMaterial mat, int slot) const
       m_outOffset.z,
       m_outOffset.w);
 
-  assert(m_wrapMode1 == m_wrapMode2);
-  BNTexture2D image = makeBarneyTexture2D(model,
-      slot,
-      m_image,
-      m_image->size().x,
-      m_image->size().y,
-      m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST,
-      m_wrapMode1);
-  bnSetObject(mat, "sampler.image.image", image);
-  bnRelease(image);
+  if (!m_texture) {
+    assert(m_wrapMode1 == m_wrapMode2);
+    m_texture = makeBarneyTexture2D(model,
+        slot,
+        m_image,
+        m_image->size().x,
+        m_image->size().y,
+        m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST,
+        m_wrapMode1);
+  }
+
+  bnSetObject(mat, "sampler.image.image", m_texture);
+}
+
+void Image2D::cleanup()
+{
+  if (m_texture)
+    bnRelease(m_texture);
+  m_texture = nullptr;
 }
 
 // TransformSampler //

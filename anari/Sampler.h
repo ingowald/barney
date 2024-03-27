@@ -27,6 +27,7 @@ struct Sampler : public Object
 struct Image1D : public Sampler
 {
   Image1D(BarneyGlobalState *s);
+  ~Image1D();
   void commit() override;
 
   bool isValid() const override;
@@ -35,6 +36,8 @@ struct Image1D : public Sampler
       BNModel model, BNMaterial mat, int slot) const override;
 
  private:
+  void cleanup();
+
   helium::IntrusivePtr<helium::Array1D> m_image;
   int m_inAttribute{-1};
   BNTextureAddressMode m_wrapMode{BN_TEXTURE_CLAMP};
@@ -43,11 +46,14 @@ struct Image1D : public Sampler
   math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
   math::mat4 m_outTransform{math::identity};
   math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
+
+  mutable BNTexture2D m_texture{nullptr};
 };
 
 struct Image2D : public Sampler
 {
   Image2D(BarneyGlobalState *s);
+  ~Image2D();
   void commit() override;
 
   bool isValid() const override;
@@ -56,6 +62,8 @@ struct Image2D : public Sampler
       BNModel model, BNMaterial mat, int slot) const override;
 
  private:
+  void cleanup();
+
   helium::IntrusivePtr<helium::Array2D> m_image;
   int m_inAttribute{-1};
   BNTextureAddressMode m_wrapMode1{BN_TEXTURE_CLAMP};
@@ -65,6 +73,8 @@ struct Image2D : public Sampler
   math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
   math::mat4 m_outTransform{math::identity};
   math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
+
+  mutable BNTexture2D m_texture{nullptr};
 };
 
 struct TransformSampler : public Sampler
