@@ -14,38 +14,33 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/material/host/Plastic.h"
-#include "barney/material/device/Plastic.h"
-#include "barney/ModelSlot.h"
+#pragma once
+
+#include "barney/material/host/Material.h"
 
 namespace barney {
+  
+  /*! embree/ospray "Glass" material */
+  struct GlassMaterial : public barney::Material {
+    GlassMaterial(ModelSlot *owner) : Material(owner) {}
+    virtual ~GlassMaterial() = default;
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override { return "GlassMaterial"; }
 
-  void PlasticMaterial::createDD(DD &dd, int deviceID) const 
-  {
-    render::Plastic::DD plastic;
-    plastic.eta = eta;
-    plastic.roughness = roughness;
-    plastic.pigmentColor = pigmentColor;
-    dd = plastic;
-  }
+    void createDD(DD &dd, int deviceID) const override;
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override {};
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+    float etaInside = 1.5f;
+    float etaOutside = 1.f;
+    vec3f attenuationColorInside = vec3f(1.f);
+    vec3f attenuationColorOutside = vec3f(1.f);
+    float attenuationDistance = 1.f;
+  };
   
-  bool PlasticMaterial::set1f(const std::string &member, const float &value) 
-  {
-    if (Material::set1f(member,value)) return true;
-    if (member == "eta") 
-      { eta = value; return true; }
-    if (member == "roughness") 
-      { roughness = value; return true; }
-    return false;
-  }
-  
-  bool PlasticMaterial::set3f(const std::string &member, const vec3f &value) 
-  {
-    if (Material::set3f(member,value)) return true;
-    if (member == "pigmentColor") 
-      { pigmentColor = value; return true; }
-    if (member == "Ks") 
-      { Ks = value; return true; }
-    return false;
-  }
 }

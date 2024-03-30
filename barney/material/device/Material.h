@@ -18,8 +18,10 @@
 
 #include "barney/material/device/DG.h"
 #include "barney/material/device/Velvet.h"
+#include "barney/material/device/Blender.h"
 #include "barney/material/device/Matte.h"
 #include "barney/material/device/Metal.h"
+#include "barney/material/device/Glass.h"
 #include "barney/material/device/Plastic.h"
 #include "barney/material/device/Mini.h"
 #include "barney/material/device/MetallicPaint.h"
@@ -32,7 +34,9 @@ namespace barney {
       MISS=0,
       MINI,
       MATTE,
+      BLENDER,
       METAL,
+      GLASS,
       PLASTIC,
       VELVET,
       METALLIC_PAINT,
@@ -71,6 +75,8 @@ namespace barney {
         render::AnariPhysical::BRDF anari;
         render::MiniMaterial::HitBSDF  mini;
         render::Matte::HitBSDF   matte;
+        render::Blender::HitBSDF   blender;
+        render::Glass::HitBSDF   glass;
         render::Metal::HitBSDF   metal;
         render::Plastic::HitBSDF   plastic;
         render::Velvet::HitBSDF  velvet;
@@ -79,13 +85,13 @@ namespace barney {
       vec3f P;
       
       struct {
-        uint32_t quantized_nx_bits:7;
-        uint32_t quantized_nx_sign:1;
-        uint32_t quantized_ny_bits:7;
-        uint32_t quantized_ny_sign:1;
-        uint32_t quantized_nz_bits:7;
-        uint32_t quantized_nz_sign:1;
-        uint32_t materialType:8;
+        uint64_t quantized_nx_bits:18;
+        uint64_t quantized_nx_sign:1;
+        uint64_t quantized_ny_bits:18;
+        uint64_t quantized_ny_sign:1;
+        uint64_t quantized_nz_bits:18;
+        uint64_t quantized_nz_sign:1;
+        uint64_t materialType:6;
       };
     };
     
@@ -94,9 +100,9 @@ namespace barney {
       inline void operator=(const Velvet::DD &dd) { this->velvet = dd; materialType = VELVET; }
       inline void operator=(const MetallicPaint::DD &dd) { this->metallicPaint = dd; materialType = METALLIC_PAINT; }
       inline void operator=(const Matte::DD &dd) { this->matte = dd; materialType = MATTE; }
-      inline void operator=(const Metal::DD &dd) { this->metal = dd; materialType = METAL;
-        printf("METAL\n");
-      }
+      inline void operator=(const Blender::DD &dd) { this->blender = dd; materialType = BLENDER; }
+      inline void operator=(const Glass::DD &dd) { this->glass = dd; materialType = GLASS; }
+      inline void operator=(const Metal::DD &dd) { this->metal = dd; materialType = METAL; }
       inline void operator=(const Plastic::DD &dd) { this->plastic = dd; materialType = PLASTIC; }
       inline __device__ bool  hasAlpha(bool isShadowRay) const;
       inline __device__ float getAlpha(vec2f tc, bool isShadowRay) const;
@@ -109,6 +115,8 @@ namespace barney {
         MiniMaterial::DD  mini;
         MetallicPaint::DD metallicPaint;
         Matte::DD         matte;
+        Blender::DD         blender;
+        Glass::DD         glass;
         Metal::DD         metal;
         Plastic::DD         plastic;
         Velvet::DD        velvet;
@@ -124,7 +132,7 @@ namespace barney {
   render::EvalRes render::HitBRDF::eval(const Globals::DD &globals,
                                         render::DG dg, vec3f w_i, bool dbg) const
   {
-    if (dbg) printf("mattype %i\n",int(materialType));
+    // if (dbg) printf("mattype %i\n",int(materialType));
     switch (materialType) {
     case MINI:
       return mini.eval(dg,w_i,dbg);
@@ -132,6 +140,10 @@ namespace barney {
       return velvet.eval(dg,w_i,dbg);
     case MATTE:
       return matte.eval(dg,w_i,dbg);
+    case BLENDER:
+      return blender.eval(dg,w_i,dbg);
+    case GLASS:
+      return glass.eval(dg,w_i,dbg);
     case METAL:
       return metal.eval(dg,w_i,dbg);
     case PLASTIC:
@@ -147,14 +159,14 @@ namespace barney {
   vec3f render::HitBRDF::getN() const
   {
     vec3f n;
-    float scale = 1.f/127.f;
-    n.x = quantized_nx_bits * scale;
-    n.y = quantized_ny_bits * scale;
-    n.z = quantized_nz_bits * scale;
+    // float scale = 1.f/255.f;
+    n.x = quantized_nx_bits;
+    n.y = quantized_ny_bits;
+    n.z = quantized_nz_bits;
     if (quantized_nx_sign) n.x = -n.x;
     if (quantized_ny_sign) n.y = -n.y;
     if (quantized_nz_sign) n.z = -n.z;
-    return n;
+    return normalize(n);
   }
 
   inline __device__
@@ -172,7 +184,7 @@ namespace barney {
     } else {
       // N = normalize(N);
       auto quantize = [](float f) {
-        return min(127,int(fabsf(f*128)));
+        return min((1<<18)-1,int(fabsf(.5f+f*(1<<18))));
       };
       auto sign = [](float f) {
         return f < 0.f ? 1 : 0;
@@ -203,6 +215,10 @@ namespace barney {
         return mini.getAlbedo(dbg);
       case MATTE:
         return matte.getAlbedo(dbg);
+      case BLENDER:
+        return blender.getAlbedo(dbg);
+      case GLASS:
+        return glass.getAlbedo(dbg);
       case METAL:
         return metal.getAlbedo(dbg);
       case PLASTIC:
@@ -233,11 +249,14 @@ namespace barney {
       case MINI:
         return mini.hasAlpha(isShadowRay);
       case MATTE:
+      case BLENDER:
       case METAL:
       case PLASTIC:
       case METALLIC_PAINT:
       case VELVET:
         return false;
+      case GLASS:
+        return isShadowRay?true:false;
       default:
 #ifndef NDEBUG
         printf("invalid material type in DeviceMaterial::hasAlpha...\n");
@@ -250,9 +269,12 @@ namespace barney {
     float render::DeviceMaterial::getAlpha(vec2f tc, bool isShadowRay) const
     {
       switch (materialType) {
+      case GLASS:
+        return isShadowRay?0.f:1.f;
       case MINI:
         return mini.getAlpha(tc,isShadowRay);
       case MATTE:
+      case BLENDER:
       case METAL:
       case PLASTIC:
       case METALLIC_PAINT:
@@ -283,6 +305,12 @@ namespace barney {
         break;
       case MATTE:
         matte.make(hit.matte,geometryColor,dbg);
+        break;
+      case BLENDER:
+        blender.make(hit.blender,geometryColor,dbg);
+        break;
+      case GLASS:
+        glass.make(hit.glass,dbg);
         break;
       case METAL:
         metal.make(hit.metal,dbg);

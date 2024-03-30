@@ -42,8 +42,9 @@ namespace barney {
   namespace render {
 
     struct DG {
-      vec3f N;
+      vec3f Ng, Ns;
       vec3f wo;
+      bool  insideMedium;
     };
 
     struct EvalRes {
@@ -51,6 +52,17 @@ namespace barney {
       inline __device__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
       static inline __device__ EvalRes zero() { return { vec3f(0.f),0.f }; }
       vec3f value;
+      float pdf;
+    };
+    
+    
+    struct SampleRes {
+      // inline __device__ SampleRes() {}
+      // inline __device__ SampleRes(vec3f v, float p) : value(v),pdf(p) {}
+      static inline __device__ SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
+      vec3f weight;
+      vec3f wi;
+      int   type;
       float pdf;
     };
     

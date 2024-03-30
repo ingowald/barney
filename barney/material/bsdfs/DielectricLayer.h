@@ -45,7 +45,7 @@ namespace barney {
     template<typename Substrate>
     struct DielectricLayer1 : public BSDF {
       inline __device__
-      DielectricLayer1(Substrate substrate, float _eta)
+      DielectricLayer1(const Substrate &substrate, float _eta)
         : BSDF(.5f),
           substrate(substrate),
           eta((_eta <= 1.f) ? _eta : rcp(_eta))
@@ -68,7 +68,7 @@ namespace barney {
         // const varying DielectricLayer* uniform self = (const varying DielectricLayer* uniform)super;
 
         // float cosThetaO = dot(wo, getN(super));
-        const vec3f N = dg.N;
+        const vec3f N = dg.Ns;
         const vec3f wo = dg.wo;
         float cosThetaO = dot(wo, N);
         // if (cosThetaO <= 0.f)
@@ -109,6 +109,10 @@ namespace barney {
         //          substrate.value * pow(this->transmittance, (float)this->thickness * length));
         // iw : self.weight is 1.f, and so is transmittance .. !?
 
+#if 1
+        float T = min(1.f - Fo, 1.f - Fi);
+        substrate.value = substrate.value * T;
+#endif
 #if 0
         // Energy conservation
         float T;

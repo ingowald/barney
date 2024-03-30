@@ -22,7 +22,7 @@
 
 namespace barney {
   namespace render {
-#define DEFAULT_RADIANCE_FROM_ENV .8f
+#define DEFAULT_RADIANCE_FROM_ENV 1.5f
   
     enum { MAX_PATH_DEPTH = 10 };
 
@@ -604,7 +604,8 @@ namespace barney {
         // reached the light, and discards
         // ==================================================================
         if (hadNoIntersection) 
-          fragment = path.throughput;
+          // fragment = clamp((vec3f)path.throughput,vec3f(0.f),vec3f(1.f));
+          fragment = (vec3f)path.throughput;
         // this path is done.
         path.tMax = 0.f;
         return;
@@ -614,7 +615,7 @@ namespace barney {
       const bool  isVolumeHit        = (Ng == vec3f(0.f));
       if (!isVolumeHit)
         Ng = normalize(Ng);
-      const vec3f notFaceForwardedNg = Ng;
+      // const vec3f notFaceForwardedNg = Ng;
       const bool  hitWasOnFront      = dot((vec3f)path.dir,Ng) < 0.f;
       if (!hitWasOnFront)
         Ng = - Ng;
@@ -629,12 +630,13 @@ namespace barney {
           // ----------------------------------------------------------------
           fragment = path.throughput * backgroundOrEnv(world,path);
 
-          const vec3f fromEnv = 1.5f*backgroundOrEnv(world,path);
+          const vec3f fromEnv
+            = // 1.5f*
+            backgroundOrEnv(world,path);
           const vec3f tp = path.throughput;
           const vec3f addtl = tp
             * fromEnv;
           fragment = addtl;
-          
         } else {
           // ----------------------------------------------------------------
           // SECONDARY ray that didn't hit anything -> env-light
@@ -659,35 +661,72 @@ namespace barney {
       // ==================================================================    
       Random &random = (Random &)path.rngSeed;
     
-      const bool doTransmission = false;
+      // bool doTransmission = false;
         // =  ((float)path.hit.mini.transmission > 0.f)
         // && (random() < (float)path.hit.mini.transmission);
       render::DG dg;
-      dg.N = Ng;
-      dg.wo = -(vec3f)path.dir;
+      dg.Ng = Ng;
+      dg.Ns = Ng;
+      dg.wo = -normalize((vec3f)path.dir);
+      dg.insideMedium = path.isInMedium;
       // if (path.dbg)
       //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
       //          pathDepth,
       //          (float)path.hit.transmission,
       //          (float)path.hit.ior,
       //          int(doTransmission));
-      if (/* for non-glass this SHOULD be done by isec program! */doTransmission) {
-        // ------------------------------------------------------------------
-        // transmission, refleciton, or refraction
-        // ------------------------------------------------------------------
-        vec3f dir = from_half(path.dir);
-        scatter_glass(dir,
-                      random,
-                      path.dir,notFaceForwardedNg,
-                      path.hit.mini.ior);
-        path.dir = dir;
-        if (dot(dir,notFaceForwardedNg) > 0.f) {
-          path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
+// #if 1
+      // if (path.dbg) printf("mattype %i\n",path.hit.materialType);
+      if ((path.hit.materialType == GLASS)
+          ||
+          (path.hit.materialType == BLENDER)
+          ) {
+        // dg.wo = normalize(neg(path.dir));
+        SampleRes sampleRes;
+        sampleRes.pdf = 0.f;
+        if (path.hit.materialType == GLASS)
+          sampleRes
+            = path.hit.glass.sample(dg,random,path.dbg);
+        else if (path.hit.materialType == BLENDER)
+          sampleRes
+            = path.hit.blender.sample(dg,random,path.dbg);
+        // if (path.dbg)
+        //   printf("sampleres w %f %f %f dir %f %f %f pdf %f\n",
+        //          sampleRes.weight.x,
+        //          sampleRes.weight.y,
+        //          sampleRes.weight.z,
+        //          sampleRes.wi.x,
+        //          sampleRes.wi.y,
+        //          sampleRes.wi.z,
+        //          sampleRes.pdf);
+
+        if (sampleRes.pdf < 1e-6f) {
+          path.tMax = -1.f;
         } else {
-          path.org = path.hit.P - safe_eps(EPS,path.hit.P)*Ng;
-          path.isInMedium = 1;
+          path.dir = normalize(sampleRes.wi);
+          if (sampleRes.type & BSDF_SPECULAR_TRANSMISSION) {
+            // doTransmission = true;
+            path.isInMedium = !path.isInMedium;
+            path.org = path.hit.P - safe_eps(EPS,path.hit.P)*Ng;
+          } else {
+            path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
+          }
+          path.throughput = path.throughput * sampleRes.weight
+            /* pdf is inf for glass ....  /sampleRes.pdf */
+            /(isinf(sampleRes.pdf) ? 1.f : sampleRes.pdf)
+            ;
+
+          bool wasLeavingMedium
+            =  (sampleRes.type & BSDF_SPECULAR_TRANSMISSION)
+            && !path.isInMedium;
+          if (wasLeavingMedium) {
+            vec3f attenuation
+              = path.hit.glass.mediumInside.attenuation;
+            attenuation = exp(attenuation*path.tMax);
+            path.throughput = path.throughput * attenuation;
+          }
+          path.tMax = INFINITY;
         }
-        /* ************* TODO - MISSING SOME METALLIC/REFLECTANCE HERE *********** */
       } else {
         // ------------------------------------------------------------------
         // not perfectly specular - do diffuse bounce for now...
@@ -699,7 +738,7 @@ namespace barney {
           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
           path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
         } else {
-          path.dir = sampleCosineWeightedHemisphere(dg.N,random);
+          path.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
           EvalRes f_r = path.hit.eval(world.globals,dg,path.dir,path.dbg);
           // if (path.dbg)
           //   printf("f_r %f %f %f:%f\n",
@@ -708,16 +747,73 @@ namespace barney {
           //          f_r.value.z,
           //          f_r.pdf);
 
-          if (f_r.pdf <= 1e-6f) {
+// #if 1
+          if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
             path.tMax = -1.f;
           } else {
             path.throughput = path.throughput * f_r.value
-              /f_r.pdf
+              / (f_r.pdf + 1e-10f)
               ;//baseColor;
           }
+// #else
+//           if (f_r.pdf <= 1e-10f) {
+//             path.tMax = -1.f;
+//           } else {
+//             path.throughput = path.throughput * f_r.value
+//               /f_r.pdf
+//               ;//baseColor;
+//           }
+// #endif
         }
       }
+// #else
+//       if (/* for non-glass this SHOULD be done by isec program! */doTransmission) {
+//         // ------------------------------------------------------------------
+//         // transmission, refleciton, or refraction
+//         // ------------------------------------------------------------------
+//         vec3f dir = from_half(path.dir);
+//         scatter_glass(dir,
+//                       random,
+//                       path.dir,notFaceForwardedNg,
+//                       path.hit.mini.ior);
+//         path.dir = dir;
+//         if (dot(dir,notFaceForwardedNg) > 0.f) {
+//           path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
+//         } else {
+//           path.org = path.hit.P - safe_eps(EPS,path.hit.P)*Ng;
+//           path.isInMedium = 1;
+//         }
+//         /* ************* TODO - MISSING SOME METALLIC/REFLECTANCE HERE *********** */
+//       } else {
+//         // ------------------------------------------------------------------
+//         // not perfectly specular - do diffuse bounce for now...
+//         // ------------------------------------------------------------------
 
+//         // save local path weight for the shadow ray:
+//         path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
+//         if (isVolumeHit) {
+//           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
+//           path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
+//         } else {
+//           path.dir = sampleCosineWeightedHemisphere(dg.N,random);
+//           EvalRes f_r = path.hit.eval(world.globals,dg,path.dir,path.dbg);
+//           // if (path.dbg)
+//           //   printf("f_r %f %f %f:%f\n",
+//           //          f_r.value.x,
+//           //          f_r.value.y,
+//           //          f_r.value.z,
+//           //          f_r.pdf);
+
+//           if (f_r.pdf <= 1e-6f) {
+//             path.tMax = -1.f;
+//           } else {
+//             path.throughput = path.throughput * f_r.value
+//               /f_r.pdf
+//               ;//baseColor;
+//           }
+//         }
+//       }
+// #endif
       // ------------------------------------------------------------------
       // so far we HAVE generated an outgoing path, but it have haev
       // very low throughput/weak impact on the image - use russian
@@ -743,13 +839,19 @@ namespace barney {
       // now, check for shadow ray
       // ==================================================================
       LightSample ls;
-      if (!doTransmission && sampleLights(ls,world,path.hit.P,Ng,random,path.dbg)) {
+      if (sampleLights(ls,world,path.hit.P,Ng,random,path.dbg)
+          && 
+          (path.hit.materialType != GLASS)
+          ) {
         EvalRes f_r = path.hit.eval(world.globals,dg,ls.dir,path.dbg);
         if (f_r.pdf <= 1e-6f) {
           shadowRay.tMax = -1.f;
         } else {
-          shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)*(1.f/ls.pdf)
-                                  * f_r.value / f_r.pdf,
+          shadowRay.makeShadowRay(/* thrghhpt */(incomingThroughput*ls.L)
+                                  *(1.f/ls.pdf)
+                                  * f_r.value
+                                  // / f_r.pdf
+                                  ,
                                   /* surface: */path.hit.P + EPS*Ng,
                                   /* to light */ls.dir,
                                   /* length   */ls.dist * (1.f-2.f*EPS));

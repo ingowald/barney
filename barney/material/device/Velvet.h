@@ -32,7 +32,7 @@ namespace barney {
       inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
       {
         EvalRes res;
-        const float cosThetaI = clamp(dot(wi,dg.N));
+        const float cosThetaI = clamp(dot(wi,dg.Ns));
         const float backScatter = powf(clamp(dot(dg.wo,wi)), (float)b);
         res.pdf = cosineSampleHemispherePDF(cosThetaI);
         res.value = (backScatter * cosThetaI * one_over_pi) * (vec3f)albedo;
@@ -52,8 +52,8 @@ namespace barney {
       inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
       {
         EvalRes res;
-        const float cosThetaO = clamp(dot(dg.wo,dg.N));
-        const float cosThetaI = clamp(dot(wi,dg.N));
+        const float cosThetaO = clamp(dot(dg.wo,dg.Ns));
+        const float cosThetaI = clamp(dot(wi,dg.Ns));
         const float sinThetaO = sqrt(1.0f - cosThetaO * cosThetaO);
         const float horizonScatter = pow(sinThetaO, (float)f);
         res.pdf = cosineSampleHemispherePDF(cosThetaI);

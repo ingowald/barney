@@ -14,38 +14,49 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/material/host/Plastic.h"
-#include "barney/material/device/Plastic.h"
+#include "barney/material/host/Glass.h"
+#include "barney/material/device/Glass.h"
 #include "barney/ModelSlot.h"
 
 namespace barney {
 
-  void PlasticMaterial::createDD(DD &dd, int deviceID) const 
+  inline vec3f log(vec3f v)
   {
-    render::Plastic::DD plastic;
-    plastic.eta = eta;
-    plastic.roughness = roughness;
-    plastic.pigmentColor = pigmentColor;
-    dd = plastic;
+    return vec3f(logf(v.x),
+                 logf(v.y),
+                 logf(v.z));
   }
   
-  bool PlasticMaterial::set1f(const std::string &member, const float &value) 
+  void GlassMaterial::createDD(DD &dd, int deviceID) const 
+  {
+    render::Glass::DD self;
+    self.mediumInside.ior = etaInside;
+    self.mediumInside.attenuation = log(attenuationColorInside)/attenuationDistance;
+    self.mediumOutside.ior = etaOutside;
+    self.mediumOutside.attenuation = log(attenuationColorOutside)/attenuationDistance;
+    // printf("eta %f %f\n",etaInside,etaOutside);
+    dd = self;
+  }
+  
+  bool GlassMaterial::set1f(const std::string &member, const float &value) 
   {
     if (Material::set1f(member,value)) return true;
-    if (member == "eta") 
-      { eta = value; return true; }
-    if (member == "roughness") 
-      { roughness = value; return true; }
+    if (member == "etaInside") 
+      { etaInside = value; return true; }
+    if (member == "etaOutside") 
+      { etaOutside = value; return true; }
+    if (member == "attenuationDistance") 
+      { attenuationDistance = value; return true; }
     return false;
   }
   
-  bool PlasticMaterial::set3f(const std::string &member, const vec3f &value) 
+  bool GlassMaterial::set3f(const std::string &member, const vec3f &value) 
   {
     if (Material::set3f(member,value)) return true;
-    if (member == "pigmentColor") 
-      { pigmentColor = value; return true; }
-    if (member == "Ks") 
-      { Ks = value; return true; }
+    if (member == "attenuationColorInside") 
+      { attenuationColorInside = value; return true; }
+    if (member == "attenuationColorOutside") 
+      { attenuationColorOutside = value; return true; }
     return false;
   }
 }

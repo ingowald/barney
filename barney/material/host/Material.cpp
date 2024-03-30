@@ -16,7 +16,9 @@
 
 #include "barney/material/host/Velvet.h"
 #include "barney/material/host/Matte.h"
+#include "barney/material/host/Blender.h"
 #include "barney/material/host/Metal.h"
+#include "barney/material/host/Glass.h"
 #include "barney/material/host/Plastic.h"
 #include "barney/material/host/MetallicPaint.h"
 #include "barney/ModelSlot.h"
@@ -135,6 +137,10 @@ namespace barney {
       return std::make_shared<VelvetMaterial>(dg);
     if (type == "matte")
       return std::make_shared<MatteMaterial>(dg); 
+    if (type == "blender")
+      return std::make_shared<BlenderMaterial>(dg); 
+    if (type == "glass")
+      return std::make_shared<GlassMaterial>(dg); 
     if (type == "metal")
       return std::make_shared<MetalMaterial>(dg); 
     if (type == "plastic")
