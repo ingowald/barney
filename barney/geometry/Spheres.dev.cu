@@ -31,6 +31,18 @@ namespace barney {
     bounds.upper = origin + radius;
   }
 
+  inline __device__
+  float safe_eps(float f, vec3f v)
+  {
+    return max(f,1e-6f*reduce_max(abs(v)));
+  }
+
+  inline __device__
+  float safe_eps(float f, float v)
+  {
+    return max(f,1e-6f*fabsf(v));
+  }
+  
   OPTIX_CLOSEST_HIT_PROGRAM(SpheresCH)()
   {
     auto &ray = owl::getPRD<Ray>();
@@ -50,7 +62,12 @@ namespace barney {
       N = -normalize(dir);
     } else {
       N = normalize(P-center);
-      P = center + (radius * 1.00001f) * N;
+      float eps = 1e-6f;
+      eps = safe_eps(eps,radius);
+      eps = safe_eps(eps,P);
+      
+      float offset = radius*(1.f+eps);
+      P = center + offset * N;
     }
 
     vec3f geometryColor(getColor(self,primID,primID,NAN,NAN/*no uv!*/));
