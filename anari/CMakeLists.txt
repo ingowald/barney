@@ -35,6 +35,7 @@ project_add_library(SHARED
   Group.cpp
   Instance.cpp
   Library.cpp
+  Light.cpp
   Material.cpp
   Object.cpp
   Renderer.cpp

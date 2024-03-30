@@ -10,6 +10,7 @@
       "khr_device_synchronization",
       "khr_geometry_sphere",
       "khr_geometry_triangle",
+      "khr_light_directional",
       "khr_material_matte",
       "khr_sampler_image1d",
       "khr_sampler_image2d",

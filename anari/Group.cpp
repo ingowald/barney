@@ -18,11 +18,14 @@ void Group::commit()
 
   m_surfaceData = getParamObject<ObjectArray>("surface");
   m_volumeData = getParamObject<ObjectArray>("volume");
+  m_lightData = getParamObject<ObjectArray>("light");
 
   if (m_surfaceData)
     m_surfaceData->addCommitObserver(this);
   if (m_volumeData)
     m_volumeData->addCommitObserver(this);
+  if (m_lightData)
+    m_lightData->addCommitObserver(this);
 }
 
 void Group::markCommitted()
@@ -37,6 +40,10 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   std::vector<Surface *> surfaces;
   std::vector<BNVolume> barneyVolumes;
   std::vector<Volume *> volumes;
+  std::vector<BNLight> barneyLights;
+  std::vector<Light *> lights;
+
+  // Surfaces //
 
   if (m_surfaceData) {
     std::for_each(m_surfaceData->handlesBegin(),
@@ -51,6 +58,8 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   for (auto s : surfaces)
     barneyGeometries.push_back(s->makeBarneyGeom(model, slot));
 
+  // Volumes //
+
   if (m_volumeData) {
     std::for_each(
         m_volumeData->handlesBegin(), m_volumeData->handlesEnd(), [&](auto *o) {
@@ -63,6 +72,25 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   for (auto v : volumes)
     barneyVolumes.push_back(v->makeBarneyVolume(model, slot));
 
+  // Lights //
+
+  if (m_lightData) {
+    std::for_each(
+        m_lightData->handlesBegin(), m_lightData->handlesEnd(), [&](auto *o) {
+          auto *l = (Light *)o;
+          if (l && l->isValid())
+            lights.push_back(l);
+        });
+  }
+
+  for (auto l : lights) {
+    auto bnl = bnLightCreate(model, slot, "directional");
+    l->setBarneyParameters(bnl);
+    barneyLights.push_back(bnl);
+  }
+
+  // Make barney group //
+
   BNGroup bg = bnGroupCreate(model,
       slot,
       barneyGeometries.data(),
@@ -71,11 +99,16 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
       barneyVolumes.size());
   bnGroupBuild(bg);
 
+  // Cleanup //
+
   for (auto bng : barneyGeometries)
     bnRelease(bng);
 
   for (auto bnv : barneyVolumes)
     bnRelease(bnv);
+
+  for (auto bnl : barneyLights)
+    bnRelease(bnl);
 
   return bg;
 }
@@ -109,6 +142,10 @@ void Group::cleanup()
 {
   if (m_surfaceData)
     m_surfaceData->removeCommitObserver(this);
+  if (m_volumeData)
+    m_volumeData->removeCommitObserver(this);
+  if (m_lightData)
+    m_lightData->removeCommitObserver(this);
 }
 
 } // namespace barney_device

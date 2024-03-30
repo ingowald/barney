@@ -88,10 +88,10 @@ ANARIArray3D BarneyDevice::newArray3D(const void *appMemory,
 
 // Renderable Objects /////////////////////////////////////////////////////////
 
-ANARILight BarneyDevice::newLight(const char *)
+ANARILight BarneyDevice::newLight(const char *subtype)
 {
   initDevice();
-  return (ANARILight) new UnknownObject(ANARI_LIGHT, deviceState());
+  return (ANARILight)Light::createInstance(subtype, deviceState());
 }
 
 ANARICamera BarneyDevice::newCamera(const char *subtype)

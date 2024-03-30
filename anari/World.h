@@ -30,6 +30,7 @@ struct World : public Object
 
   helium::IntrusivePtr<ObjectArray> m_zeroSurfaceData;
   helium::IntrusivePtr<ObjectArray> m_zeroVolumeData;
+  helium::IntrusivePtr<ObjectArray> m_zeroLightData;
   helium::IntrusivePtr<ObjectArray> m_instanceData;
 
   bool m_addZeroInstance{false};
