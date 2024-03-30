@@ -42,10 +42,17 @@ namespace barney {
       vec3f dir_dv;
       /*! lens center ... */
       vec3f lens_00;
-      /* vector along v direction, for ONE pixel */
+      /* radius of lens, for DOF */
       float lensRadius;
+      /* distance to focal plane, for DOF */
+      float focalLength;
     };
     DD dd;
+
+    struct {
+      float focalLength = 0.f;
+      float lensRadius = 0.f;
+    } defaultValues;
     
     Camera(Context *owner);
     virtual ~Camera() = default;
