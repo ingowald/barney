@@ -75,9 +75,8 @@ namespace barney {
     // with "move the origin" trick; see Ray Tracing Gems 2
     const vec3f old_org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
-    vec3f org = old_org;
     float t_move = max(0.f,length(center - old_org)-10.f*radius);
-    org = org + t_move * dir;
+    vec3f org = old_org + t_move * dir;
     float t_max = optixGetRayTmax() - t_move;
     if (t_max < 0.f) return;
     
@@ -103,8 +102,8 @@ namespace barney {
       if (temp < hit_t && temp > tmin) 
         hit_t = temp;
     }
-    hit_t += t_move;
     if (hit_t < t_max) {
+      hit_t += t_move;
       optixReportIntersection(hit_t, 0);
     }
     
