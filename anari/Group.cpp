@@ -89,6 +89,12 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
     barneyLights.push_back(bnl);
   }
 
+  BNData lightsData = nullptr;
+  if (!barneyLights.empty()) {
+    lightsData = bnDataCreate(
+        model, slot, BN_OBJECT, barneyLights.size(), barneyLights.data());
+  }
+
   // Make barney group //
 
   BNGroup bg = bnGroupCreate(model,
@@ -97,6 +103,11 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
       barneyGeometries.size(),
       barneyVolumes.data(),
       barneyVolumes.size());
+  if (lightsData) {
+    bnSetData(bg, "lights", lightsData);
+    bnRelease(lightsData);
+    bnCommit(bg);
+  }
   bnGroupBuild(bg);
 
   // Cleanup //
