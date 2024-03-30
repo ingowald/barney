@@ -237,6 +237,8 @@ BarneyDevice::~BarneyDevice()
 {
   auto &state = *deviceState();
   state.commitBufferClear();
+  if (state.model)
+    bnRelease(state.model);
   reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
 }
 
@@ -277,6 +279,9 @@ void BarneyDevice::initDevice()
 #endif
   reportMessage(
       ANARI_SEVERITY_DEBUG, "created barney context (%p)", state.context);
+
+  state.model = bnModelCreate(state.context);
+  reportMessage(ANARI_SEVERITY_DEBUG, "created barney model (%p)", state.model);
 
   m_initialized = true;
 }

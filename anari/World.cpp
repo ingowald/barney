@@ -17,17 +17,11 @@ World::World(BarneyGlobalState *s) : Object(ANARI_WORLD, s)
   // never any public ref to these objects
   m_zeroGroup->refDec(helium::RefType::PUBLIC);
   m_zeroInstance->refDec(helium::RefType::PUBLIC);
-
-  m_barneyModel = bnModelCreate(s->context);
-  m_barneySlot = 0;
 }
 
 World::~World()
 {
   cleanup();
-
-  if (m_barneyModel)
-    bnRelease(m_barneyModel);
 }
 
 bool World::getProperty(
@@ -115,7 +109,7 @@ void World::commit()
 
 BNModel World::barneyModel() const
 {
-  return m_barneyModel;
+  return state.model;
 }
 
 void World::barneyModelUpdate()
@@ -127,6 +121,7 @@ void World::barneyModelUpdate()
 
 void World::buildBarneyModel()
 {
+  const auto &state = *deviceState();
   std::vector<const Group *> groups;
   std::vector<BNGroup> barneyGroups;
   std::vector<BNTransform> barneyTransforms;
@@ -144,7 +139,7 @@ void World::buildBarneyModel()
     if (barneyGroups[i] != nullptr)
       continue;
     auto *g = groups[i];
-    BNGroup bg = g->makeBarneyGroup(m_barneyModel, m_barneySlot);
+    BNGroup bg = g->makeBarneyGroup(state.model, state.slot);
     for (size_t j = i; j < groups.size(); j++) {
       if (groups[j] == g)
         barneyGroups[j] = bg;
@@ -157,12 +152,12 @@ void World::buildBarneyModel()
     return;
   }
 
-  bnSetInstances(m_barneyModel,
-      m_barneySlot,
+  bnSetInstances(state.model,
+      state.slot,
       barneyGroups.data(),
       barneyTransforms.data(),
       barneyGroups.size());
-  bnBuild(m_barneyModel, m_barneySlot);
+  bnBuild(state.model, state.slot);
 
   std::set<BNGroup> uniqueBarneyGroups;
   for (auto bng : barneyGroups)

@@ -21,6 +21,8 @@ struct BarneyGlobalState : public helium::BaseGlobalDeviceState
   Frame *currentFrame{nullptr};
 
   BNContext context{nullptr};
+  BNModel model{nullptr};
+  int slot{0};
 
   bool allowInvalidSurfaceMaterials{true};
   math::float4 invalidMaterialColor{1.f, 0.f, 1.f, 1.f};
