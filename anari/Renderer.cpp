@@ -12,11 +12,17 @@ Renderer::~Renderer() = default;
 void Renderer::commit()
 {
   m_pixelSamples = getParam<int>("pixelSamples", 1);
+  m_radiance = getParam<float>("ambientRadiance", 1.0f);
 }
 
 int Renderer::pixelSamples() const
 {
   return m_pixelSamples;
+}
+
+float Renderer::radiance() const
+{
+  return m_radiance;
 }
 
 } // namespace barney_device
