@@ -110,6 +110,11 @@ namespace barney {
   {
     return getContext()->initReference(Light::create(this,type));
   }
+
+  void ModelSlot::setRadiance(float radiance)
+  {
+    world.radiance = radiance;
+  }
   
   Texture *ModelSlot::createTexture(BNTexelFormat texelFormat,
                                     vec2i size,

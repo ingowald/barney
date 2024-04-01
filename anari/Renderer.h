@@ -15,9 +15,11 @@ struct Renderer : public Object
   void commit() override;
 
   int pixelSamples() const;
+  float radiance() const;
 
  private:
   int m_pixelSamples{1};
+  float m_radiance{0.8f};
 };
 
 } // namespace barney_device

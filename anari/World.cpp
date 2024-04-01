@@ -118,6 +118,11 @@ BNModel World::barneyModel() const
   return m_barneyModel;
 }
 
+int World::barneySlot() const
+{
+  return m_barneySlot;
+}
+
 void World::barneyModelUpdate()
 {
   const auto &state = *deviceState();

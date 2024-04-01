@@ -110,6 +110,8 @@ void Frame::renderFrame()
   state->currentFrame = this;
 
   const int pixelSamples = std::max(m_renderer->pixelSamples(), 1);
+  const float radiance = m_renderer->radiance();
+  bnSetRadiance(m_world->barneyModel(), m_world->barneySlot(), radiance);
 
   for (int i = 0; i < pixelSamples; i++)
     bnRender(m_world->barneyModel(), m_camera->barneyCamera(), m_bnFrameBuffer);

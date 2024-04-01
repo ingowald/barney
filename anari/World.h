@@ -21,6 +21,7 @@ struct World : public Object
   void commit() override;
 
   BNModel barneyModel() const;
+  int     barneySlot() const;
 
   void barneyModelUpdate();
 

@@ -311,6 +311,13 @@ namespace barney {
       (sf);
   }
 
+  BN_API
+  void bnSetRadiance(BNModel model,
+                          int whichSlot,
+                          float radiance)
+  {
+    checkGet(model,whichSlot)->setRadiance(radiance);
+  }
 
   BN_API
   BNLight bnLightCreate(BNModel model,

@@ -463,6 +463,11 @@ BNVolume bnVolumeCreate(BNModel model,
                         BNScalarField sf);
 
 BN_API
+void bnSetRadiance(BNModel model,
+                        int whichSlot,
+                        float radiance);
+
+BN_API
 void bnVolumeSetXF(BNVolume volume,
                    float2 domain,
                    const float4 *colorMap,
