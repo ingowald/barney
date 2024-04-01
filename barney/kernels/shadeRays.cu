@@ -24,7 +24,7 @@ namespace barney {
   namespace render {
 #define DEFAULT_RADIANCE_FROM_ENV .8f
   
-    enum { MAX_PATH_DEPTH = 10 };
+    // enum { MAX_PATH_DEPTH = 10 };
 
     inline __device__
     float safe_eps(float f, vec3f v)
@@ -35,7 +35,7 @@ namespace barney {
     
     typedef enum {
       RENDER_MODE_UNDEFINED,
-      // RENDER_MODE_LOCAL,
+      RENDER_MODE_LOCAL,
       RENDER_MODE_AO,
       RENDER_MODE_PT
     } RenderMode;
@@ -575,6 +575,7 @@ namespace barney {
     }
 
     /*! ugh - that should all go into material::AnariPhysical .... */
+    template<int MAX_PATH_DEPTH>
     inline __device__
     void bounce(const World::DD &world,
                 vec3f &fragment,
@@ -648,7 +649,7 @@ namespace barney {
         path.tMax = -1.f;
         return;
       }
-      if (pathDepth == 0.f)
+      if (pathDepth == 0)
         path.throughput = vec3f(1.f);
     
 
@@ -713,7 +714,10 @@ namespace barney {
       // very low throughput/weak impact on the image - use russian
       // roulette to either ake it 'stronger', or kill it.
       // ------------------------------------------------------------------
-      if (pathDepth < MAX_PATH_DEPTH) {
+      if ((pathDepth < MAX_PATH_DEPTH)
+          ||
+          (pathDepth == 0 && MAX_PATH_DEPTH == 0)
+          ) {
         path.dir = normalize(path.dir);
         path.tMax   = INFINITY;
         path.hadHit = false;
@@ -726,6 +730,8 @@ namespace barney {
             path.tMax = -1.f;
           }
         }
+        if (MAX_PATH_DEPTH == 0)
+          path.tMax = 1e-20f;
       } else
         path.tMax = -1.f;
     
@@ -747,6 +753,7 @@ namespace barney {
     }
   
 
+    template<int MAX_PATH_DEPTH>
     __global__
     void g_shadeRays_pt(World::DD world,
                         AccumTile *accumTiles,
@@ -774,7 +781,7 @@ namespace barney {
       // bounce that ray on the scene, possibly generating a) a fragment
       // to add to frame buffer; b) a outgoing ray (in-place
       // modification of 'path'); and/or c) a shadow ray
-      bounce(world,fragment,
+      bounce<MAX_PATH_DEPTH>(world,fragment,
              path,shadowRay,
              generation);
     
@@ -826,8 +833,8 @@ namespace barney {
         renderMode = RENDER_MODE_AO;
       else if (mode == "PT" || mode == "pt")
         renderMode = RENDER_MODE_PT;
-      // else if (mode == "local")
-      //   renderMode = RENDER_MODE_LOCAL;
+      else if (mode == "local" || mode == "LOCAL")
+        renderMode = RENDER_MODE_LOCAL;
       else
         throw std::runtime_error("unknown barney render mode '"+mode+"'");
     }
@@ -837,12 +844,14 @@ namespace barney {
 
     if (nb) {
       switch(renderMode) {
-      // case RENDER_MODE_LOCAL:
-      //   g_shadeRays_local<<<nb,bs,0,device->launchStream>>>
-      //     (fb->accumTiles,fb->owner->accumID,
-      //      rays.traceAndShadeReadQueue,numRays,
-      //      rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
-      //   break;
+      case RENDER_MODE_LOCAL:
+        g_shadeRays_pt<0>
+          <<<nb,bs,0,device->launchStream>>>
+          (world->getDD(device),
+           fb->accumTiles,fb->owner->accumID,
+           rays.traceAndShadeReadQueue,numRays,
+           rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
+        break;
       case RENDER_MODE_AO:
         g_shadeRays_ao<<<nb,bs,0,device->launchStream>>>
           (fb->accumTiles,fb->owner->accumID,
@@ -850,7 +859,7 @@ namespace barney {
            rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
       case RENDER_MODE_PT:
-        g_shadeRays_pt<<<nb,bs,0,device->launchStream>>>
+        g_shadeRays_pt<8><<<nb,bs,0,device->launchStream>>>
           (world->getDD(device),
            fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
