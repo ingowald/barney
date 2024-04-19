@@ -21,6 +21,7 @@ struct World : public Object
   void commit() override;
 
   BNModel barneyModel() const;
+  int     barneySlot() const;
 
   void barneyModelUpdate();
 
@@ -30,6 +31,7 @@ struct World : public Object
 
   helium::IntrusivePtr<ObjectArray> m_zeroSurfaceData;
   helium::IntrusivePtr<ObjectArray> m_zeroVolumeData;
+  helium::IntrusivePtr<ObjectArray> m_zeroLightData;
   helium::IntrusivePtr<ObjectArray> m_instanceData;
 
   bool m_addZeroInstance{false};

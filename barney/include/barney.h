@@ -201,6 +201,9 @@ void bnSet4fc(BNObject target, const char *paramName, float4 v);
 BN_API
 void bnSet4x3fv(BNObject target, const char *paramName, const float *affineMatrix);
 
+BN_API
+void bnSet4x4fv(BNObject target, const char *paramName, const float *xfm);
+
 
 
 /*! helper function to fill in a BNCamera structure from a more
@@ -458,6 +461,11 @@ BN_API
 BNVolume bnVolumeCreate(BNModel model,
                         int whichSlot,
                         BNScalarField sf);
+
+BN_API
+void bnSetRadiance(BNModel model,
+                        int whichSlot,
+                        float radiance);
 
 BN_API
 void bnVolumeSetXF(BNVolume volume,

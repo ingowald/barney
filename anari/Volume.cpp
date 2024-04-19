@@ -97,13 +97,8 @@ void TransferFunction1D::commit()
 
 BNVolume TransferFunction1D::makeBarneyVolume(BNModel model, int slot) const
 {
-  auto ctx = deviceState()->context;
-  static BNVolume bnVol{
-      nullptr}; // TODO: really find out if volume has changed!
-  if (!bnVol) {
-    bnVol = bnVolumeCreate(
-        model, slot, m_field->makeBarneyScalarField(model, slot));
-  }
+  BNVolume bnVol =
+      bnVolumeCreate(model, slot, m_field->makeBarneyScalarField(model, slot));
   bnVolumeSetXF(bnVol,
       (float2 &)m_valueRange,
       (const float4 *)m_rgbaMap.data(),

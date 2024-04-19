@@ -32,10 +32,31 @@ namespace barney {
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     void commit() override {};
+    bool setString(const std::string &member, const std::string &value) override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    bool set1i(const std::string &member, const int &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
+    bool set4f(const std::string &member, const vec4f &value) override;
+    bool set4x4f(const std::string &member, const mat4f &value) override;
     /*! @} */
     // ------------------------------------------------------------------
     vec3f reflectance { 0.55f, 0.0f, 0.0f };
+    render::SamplerType samplerType{render::NO_SAMPLER};
+    struct {
+      struct {
+        int inAttribute { 0 };
+        mat4f inTransform { mat4f::identity() };
+        vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
+        mat4f outTransform { mat4f::identity() };
+        vec4f outOffset { 0.f, 0.f, 0.f, 0.f };
+        Texture::SP image{ 0 };
+      } image;
+      struct {
+        int inAttribute { 0 };
+        mat4f outTransform;
+        vec4f outOffset { 0 };
+      } transform;
+    } sampler;
   };
   
 }

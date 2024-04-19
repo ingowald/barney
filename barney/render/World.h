@@ -22,6 +22,8 @@
 namespace barney {
   namespace render {
     
+#define DEFAULT_RADIANCE_FROM_ENV .8f
+
     struct QuadLight {
       vec3f corner, edge0, edge1, emission;
       /*! normal of this lights source; this could obviously be derived
@@ -58,6 +60,7 @@ namespace barney {
         QuadLight  *quadLights    = nullptr;
         int         numDirLights  = 0;
         DirLight   *dirLights     = nullptr;
+        float       radiance;
         EnvMapLight::DD envMapLight;
         Globals::DD     globals;
       };
@@ -112,6 +115,7 @@ namespace barney {
             = 0;
         dd.envMapLight.transform = envMapLight.transform;
         dd.globals = globals.getDD(device);
+        dd.radiance = radiance;
         return dd;
       }
 
@@ -121,6 +125,7 @@ namespace barney {
       OWLBuffer dirLightsBuffer = 0;
       int numDirLights = 0;
       DevGroup *const devGroup;
+      float radiance = DEFAULT_RADIANCE_FROM_ENV;
     };
 
   }

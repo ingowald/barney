@@ -78,7 +78,32 @@ namespace barney {
       = camera.dir_00
       + ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x))*camera.dir_du
       + ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y))*camera.dir_dv;
-    ray.dir = normalize(ray.dir);
+
+    if (camera.lensRadius > 0.f) {
+      vec3f lens_du = normalize(camera.dir_du);
+      vec3f lens_dv = normalize(camera.dir_dv);
+      vec3f lensNormal  = cross(lens_du,lens_dv);
+
+      vec3f D = normalize(ray.dir);
+      vec3f pointOnImagePlane = D * (camera.focalLength / fabsf(dot(D,lensNormal)));
+      float lu, lv;
+      while (true) {
+        lu = 2.f*rand()-1.f;
+        lv = 2.f*rand()-1.f;
+        float f = lu*lu+lv*lv;
+        if (f > 1.f) continue;
+        // lu *= 1.f/sqrtf(f);
+        // lv *= 1.f/sqrtf(f);
+        break;
+      }
+      vec3f lensOffset
+        = (camera.lensRadius * lu) * lens_du
+        + (camera.lensRadius * lv) * lens_dv;
+      ray.org += lensOffset;
+      ray.dir = normalize(pointOnImagePlane - lensOffset);
+    } else {
+      ray.dir = normalize(ray.dir);
+    }
 
     bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
     ray.dbg         = centerPixel;
@@ -107,7 +132,7 @@ namespace barney {
     // color; this way the shaderays function doesn't have to reverse
     // engineer pixel pos etc
     vec3f bgColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-    bool crossHair = ((ix == fbSize.x/2) || (iy == fbSize.y/2));
+    bool crossHair = false; //((ix == fbSize.x/2) || (iy == fbSize.y/2));
     ray.hit.missColor
       = crossHair
       ? vec3f(1.f,0.f,0.f)

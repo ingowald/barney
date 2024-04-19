@@ -57,8 +57,9 @@ void World::commit()
 
   m_zeroSurfaceData = getParamObject<ObjectArray>("surface");
   m_zeroVolumeData = getParamObject<ObjectArray>("volume");
+  m_zeroLightData = getParamObject<ObjectArray>("light");
 
-  m_addZeroInstance = m_zeroSurfaceData || m_zeroVolumeData;
+  m_addZeroInstance = m_zeroSurfaceData || m_zeroVolumeData || m_zeroLightData;
   if (m_addZeroInstance)
     reportMessage(ANARI_SEVERITY_DEBUG, "barney::World will add zero instance");
 
@@ -77,6 +78,14 @@ void World::commit()
     m_zeroGroup->setParamDirect("volume", getParamDirect("volume"));
   } else
     m_zeroGroup->removeParam("volume");
+
+  if (m_zeroLightData) {
+    reportMessage(ANARI_SEVERITY_DEBUG,
+        "barney::World found %zu lights in zero instance",
+        m_zeroLightData->size());
+    m_zeroGroup->setParamDirect("light", getParamDirect("light"));
+  } else
+    m_zeroGroup->removeParam("light");
 
   m_zeroInstance->setParam("id", getParam<uint32_t>("id", ~0u));
 
@@ -107,6 +116,11 @@ void World::commit()
 BNModel World::barneyModel() const
 {
   return m_barneyModel;
+}
+
+int World::barneySlot() const
+{
+  return m_barneySlot;
 }
 
 void World::barneyModelUpdate()
@@ -170,6 +184,10 @@ void World::cleanup()
     m_instanceData->removeCommitObserver(this);
   if (m_zeroSurfaceData)
     m_zeroSurfaceData->removeCommitObserver(this);
+  if (m_zeroVolumeData)
+    m_zeroVolumeData->removeCommitObserver(this);
+  if (m_zeroLightData)
+    m_zeroLightData->removeCommitObserver(this);
   m_instances.clear();
 }
 

@@ -14,6 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Spheres.h"
 #include "owl/owl_device.h"
 
@@ -30,6 +31,18 @@ namespace barney {
     bounds.upper = origin + radius;
   }
 
+  inline __device__
+  float safe_eps(float f, vec3f v)
+  {
+    return max(f,1e-6f*reduce_max(abs(v)));
+  }
+
+  inline __device__
+  float safe_eps(float f, float v)
+  {
+    return max(f,1e-6f*fabsf(v));
+  }
+  
   OPTIX_CLOSEST_HIT_PROGRAM(SpheresCH)()
   {
     auto &ray = owl::getPRD<Ray>();
@@ -37,6 +50,7 @@ namespace barney {
     int primID = optixGetPrimitiveIndex();
     
     // // ray.hadHit = true;
+<<<<<<< HEAD
     // float t_hit = optixGetRayTmax();
 
     // vec3f org = optixGetWorldRayOrigin();
@@ -61,6 +75,32 @@ namespace barney {
     
     
     // ray.setHit(P,N,t_hit,mat);
+=======
+    float t_hit = optixGetRayTmax();
+
+    vec3f org = optixGetWorldRayOrigin();
+    vec3f dir = optixGetWorldRayDirection();
+    vec3f P   = org + t_hit * dir;
+    vec3f center = self.origins[primID];
+    float radius = self.radii?self.radii[primID]:self.defaultRadius;
+    vec3f N;
+    if (P == center) {
+      N = -normalize(dir);
+    } else {
+      N = normalize(P-center);
+      float eps = 1e-6f;
+      eps = safe_eps(eps,radius);
+      eps = safe_eps(eps,P);
+      
+      float offset = radius*(1.f+eps);
+      P = center + offset * N;
+    }
+
+    vec3f geometryColor(getColor(self,primID,primID,NAN,NAN/*no uv!*/));
+    if (self.colors)
+      geometryColor = self.colors[primID];
+    ray.setHit(P,N,t_hit,self.material,vec2f(NAN),geometryColor);
+>>>>>>> iw/temp-merge-pt
   }
   
   OPTIX_INTERSECT_PROGRAM(SpheresIsec)()
@@ -105,8 +145,11 @@ namespace barney {
       if (temp < hit_t && temp > tmin) 
         hit_t = temp;
     }
-    hit_t += t_move;
     if (hit_t < t_max) {
+<<<<<<< HEAD
+=======
+      hit_t += t_move;
+>>>>>>> iw/temp-merge-pt
 
       vec3f P = old_org + hit_t * dir;
       vec3f N = normalize(P-center);

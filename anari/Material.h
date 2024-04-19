@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Object.h"
+#include "Sampler.h"
 
 namespace barney_device {
 
@@ -30,8 +31,11 @@ struct Matte : public Material
 
   BNMaterial makeBarneyMaterial(BNModel model, int slot) const override;
 
+  bool isValid() const override;
+
  private:
   math::float4 m_color{1.f, 1.f, 1.f, 1.f};
+  helium::IntrusivePtr<Sampler> m_colorSampler{nullptr};
 };
 
 struct PhysicallyBased : public Material

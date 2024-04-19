@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Material.h"
+#include "common.h"
 // CUDA
 #include <vector_functions.h>
 
@@ -38,16 +39,30 @@ void Matte::commit()
 {
   Object::commit();
 
+  if (m_colorSampler)
+    m_colorSampler->removeCommitObserver(this);
+
   m_color = math::float4(1.f, 1.f, 1.f, 1.f);
   getParam("color", ANARI_FLOAT32_VEC3, &m_color);
   getParam("color", ANARI_FLOAT32_VEC4, &m_color);
+  m_colorSampler = getParamObject<Sampler>("color");
+
+  if (m_colorSampler)
+    m_colorSampler->addCommitObserver(this);
 }
 
 BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
 {
-  BNMaterial mat = bnMaterialCreate(model, slot, "velvet");
+  BNMaterial mat = bnMaterialCreate(model, slot, "matte");
   bnSet3f(mat, "reflectance", m_color.x, m_color.y, m_color.z);
+  if (m_colorSampler)
+    m_colorSampler->setBarneyParameters(model, mat, slot);
   return mat;
+}
+
+bool Matte::isValid() const
+{
+  return !m_colorSampler || m_colorSampler->isValid();
 }
 
 // PhysicallyBased //
@@ -91,14 +106,23 @@ BNMaterial PhysicallyBased::makeBarneyMaterial(BNModel model, int slot) const
 {
   BNMaterial mat = bnMaterialCreate(model, slot, "physicallyBased");
 
-  bnSet3f(mat, "baseColor",
-      m_baseColor.value.x, m_baseColor.value.y, m_baseColor.value.z);
+  bnSet3f(mat,
+      "baseColor",
+      m_baseColor.value.x,
+      m_baseColor.value.y,
+      m_baseColor.value.z);
 
-  bnSet3f(mat, "emissive",
-      m_emissive.value.x, m_emissive.value.y, m_emissive.value.z);
+  bnSet3f(mat,
+      "emissive",
+      m_emissive.value.x,
+      m_emissive.value.y,
+      m_emissive.value.z);
 
-  bnSet3f(mat, "specularColor",
-      m_specularColor.value.x, m_specularColor.value.y, m_specularColor.value.z);
+  bnSet3f(mat,
+      "specularColor",
+      m_specularColor.value.x,
+      m_specularColor.value.y,
+      m_specularColor.value.z);
 
   bnSet1f(mat, "opacity", m_opacity.value);
   bnSet1f(mat, "metallic", m_metallic.value);

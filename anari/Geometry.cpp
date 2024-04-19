@@ -1,6 +1,7 @@
 // Copyright 2023 Ingo Wald
 // SPDX-License-Identifier: Apache-2.0
 
+#include "common.h"
 #include "Geometry.h"
 // std
 #include <cassert>
@@ -8,9 +9,38 @@
 
 namespace barney_device {
 
+static void addAttribute(BNGeom geom, BNModel model, int slot,
+                         const helium::IntrusivePtr<Array1D> &attribute,
+                         std::string name)
+{
+  if (attribute) {
+    BNData attr = makeBarneyData(model, slot, attribute);
+    
+    if (attr) {
+      bnSetData(geom, name.c_str(), attr);
+    }
+  }
+}
+
 Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
 
 Geometry::~Geometry() = default;
+
+void Geometry::commit()
+{
+  m_attributes[0] = getParamObject<Array1D>("primitive.attribute0");
+  m_attributes[1] = getParamObject<Array1D>("primitive.attribute1");
+  m_attributes[2] = getParamObject<Array1D>("primitive.attribute2");
+  m_attributes[3] = getParamObject<Array1D>("primitive.attribute3");
+  m_attributes[4] = getParamObject<Array1D>("primitive.color");
+
+  for (int i = 0; i < 5; ++i) {
+    if (m_attributes[i]) {
+      size_t sizeInBytes
+          = m_attributes[i]->size() * anari::sizeOf(m_attributes[i]->elementType());
+    }
+  }
+}
 
 Geometry *Geometry::createInstance(
     std::string_view subtype, BarneyGlobalState *s)
@@ -56,6 +86,12 @@ void Sphere::commit()
         "primitive.index parameter on sphere geometry not yet supported");
   }
 
+  m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+  m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+  m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+  m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+  m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+
   m_generatedIndices.clear();
 
   m_vertexPosition->addCommitObserver(this);
@@ -83,6 +119,19 @@ BNGeom Sphere::makeBarneyGeometry(
   } else
     bnSet1f(geom, "radius", m_globalRadius);
   bnSetObject(geom, "material", material);
+
+  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, model, slot, m_attributes[4], "primitive.attribute4");
+
+  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.attribute4");
+
   bnCommit(geom);
   return geom;
 }
@@ -152,6 +201,12 @@ void Triangle::commit()
     return;
   }
 
+  m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+  m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+  m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+  m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+  m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+
   m_generatedIndices.clear();
 
   m_vertexPosition->addCommitObserver(this);
@@ -181,6 +236,19 @@ BNGeom Triangle::makeBarneyGeometry(
   bnSetAndRelease(geom, "indices", _indices);
 
   bnSetObject(geom, "material", material);
+
+  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, model, slot, m_attributes[4], "primitive.attribute4");
+
+  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.attribute4");
+
   bnCommit(geom);
 
   return geom;

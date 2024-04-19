@@ -22,7 +22,10 @@
 
 namespace barney {
   namespace render {
+<<<<<<< HEAD
 #define DEFAULT_RADIANCE_FROM_ENV 1.5f
+=======
+>>>>>>> iw/temp-merge-pt
   
     enum { MAX_PATH_DEPTH = 10 };
 
@@ -557,7 +560,7 @@ namespace barney {
         float envLightPower = 1.f;
         return envLightPower*vec3f(color.x,color.y,color.z);
       } else
-        return DEFAULT_RADIANCE_FROM_ENV;
+        return world.radiance;
     }
 
     /*! return dedicated background, if specifeid; otherwise return envmap color */

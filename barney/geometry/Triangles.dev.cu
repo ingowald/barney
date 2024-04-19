@@ -14,11 +14,12 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Triangles.h"
 #include <owl/owl_device.h>
 
 namespace barney {
-  
+ 
   OPTIX_CLOSEST_HIT_PROGRAM(TrianglesCH)()
   {
     auto &ray = owl::getPRD<Ray>();
@@ -68,11 +69,15 @@ namespace barney {
 #if VISUALIZE_PRIMS
     colorFromTexture /*mat.baseColor*/ *= owl::randomColor(primID);
 #endif
+
+#if 1
+    vec3f geometryColor(getColor(self,primID,triangle,u,v));
+#endif
     
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
     ray.setHit(P,n,optixGetRayTmax(),
-               self.material,tc);
+               self.material,tc,geometryColor);
   }
 
 

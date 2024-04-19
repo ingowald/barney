@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "barney/common/mat4.h"
 #include "barney/material/device/DG.h"
 #include "barney/material/device/Velvet.h"
 #include "barney/material/device/Blender.h"
@@ -121,6 +122,11 @@ namespace barney {
         Plastic::DD         plastic;
         Velvet::DD        velvet;
       };
+      //struct {
+      //  int inAttribute;
+      //  mat4f outTranform;
+      //  vec4f outOffset;
+      //} transformSampler;
     };
     
   } // ::barney::render

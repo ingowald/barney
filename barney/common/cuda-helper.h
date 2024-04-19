@@ -18,7 +18,7 @@
 
 #include "owl/common.h"
 #include <cuda_runtime.h>
-#ifdef _GNUC_
+#ifdef __GNUC__
 #   include <unistd.h>
 #endif
 // inline void barneyRaise_impl(std::string str)

@@ -23,6 +23,9 @@
 namespace barney {
   namespace render {
 
+    typedef enum { IMAGE1D=0, IMAGE2D, TRANSFORM, NO_SAMPLER } SamplerType;
+    typedef enum { CLAMP=0, WRAP, MIRROR } WrapMode;
+
     struct Matte {
       struct HitBSDF {
         inline __device__
@@ -51,6 +54,23 @@ namespace barney {
             : reflectance;
         }
         vec3f reflectance;
+        SamplerType samplerType;
+        //union { // not POD :( (TODO?!)
+        struct {
+          struct {
+            int inAttribute;
+            mat4f inTransform;
+            vec4f inOffset;
+            mat4f outTransform;
+            vec4f outOffset;
+            cudaTextureObject_t image;
+          } image;
+          struct {
+            int inAttribute;
+            mat4f outTransform;
+            vec4f outOffset;
+          } transform;
+        } sampler;
       };
     };
     
