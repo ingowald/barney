@@ -76,6 +76,7 @@ namespace barney {
   {
     if (member == "envMap.transform") {
       content.transform = value;
+      PING; PRINT(content.transform);
       return true;
     }
     return false;

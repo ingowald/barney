@@ -31,43 +31,80 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+
 #pragma once
 
 #include "barney/material/device/DG.h"
 #include "barney/material/device/BSDF.h"
+#include "barney/material/bsdfs/Lambert.h"
+#include "barney/material/bsdfs/DielectricLayer.h"
+#include "barney/material/bsdfs/MicrofacetDielectricLayer.h"
 
 namespace barney {
   namespace render {
 
     typedef uint32_t BSDFType;
 
-    struct Lambert : public BSDF {
-
-      inline __device__
-      Lambert(vec3f R, bool dbg = false)
-        : BSDF(R)
-      {}
-      inline __device__ Lambert(const Lambert &) = default;
-      // { Lambert l; l.init(R); return l; }
-
-      // static inline __device__
-      // Lambert create(vec3f R, bool dbg = false)
-      // { Lambert l; l.init(R); return l; }
-                     
-      // inline __device__ void init(vec3f R, bool dbg = false)
-      // { BSDF::init(R); }
-        
-      inline __device__
-      EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
-      {
-        EvalRes res;
-        float cosThetaI = max(dot(wi, dg.Ns), 0.f);
-        res.pdf = cosineSampleHemispherePDF(cosThetaI);
-        res.value = (vec3f)albedo * one_over_pi * cosThetaI;
-        return res;
-      }
+    // template<typename Substrate>
+    // struct DielectricLayerT {
+    //   inline __device__
+    //   DielectricLayerT(float eta, Substrate substrate) : eta(eta), substrate(substrate) {}
       
-      enum { bsdfType = BSDF_DIFFUSE_REFLECTION };
+    //   inline __device__
+    //   EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
+    //   { return EvalRes::zero(); }
+        
+    //   Substrate substrate;
+    //   float eta;
+    // };
+
+    struct Plastic {
+      struct HitBSDF {
+        inline __device__
+        vec3f getAlbedo(bool dbg=false) const { return vec3f(0.f); }
+        
+        inline __device__
+        EvalRes eval(const Globals::DD &globals,
+                     render::DG dg, vec3f wi, bool dbg=false) const
+        {
+          // if (dbg) printf("rough %f pig %f % f %f eta %f\n",
+          //                 (float)roughness,
+          //                 (float)pigmentColor.x,
+          //                 (float)pigmentColor.y,
+          //                 (float)pigmentColor.z,
+          //                 (float)eta);
+          // float roughness = max((float)this->roughness,0.001f);
+          if ((float)roughness == 0.f) {
+            return
+              DielectricLayer1<Lambert>(Lambert((vec3f)pigmentColor),
+                                        (float)eta)
+              .eval(dg,wi,dbg);
+          } else {
+            return
+              MicrofacetDielectricLayer<Lambert>((float)eta,(float)roughness,
+                                                 Lambert((vec3f)pigmentColor))
+              .eval(globals,dg,wi,dbg);
+          }
+        }
+        
+        vec3h pigmentColor;
+        half eta;
+        half roughness;
+        
+        enum { bsdfType = BSDF_DIFFUSE_REFLECTION };
+      };
+      struct DD {
+        inline __device__
+        void make(HitBSDF &multi, bool dbg) const
+        {
+          multi.eta = eta;
+          multi.roughness = roughness;
+          multi.pigmentColor = pigmentColor;
+        }
+        vec3f pigmentColor;
+        float eta;
+        float roughness;
+      };
     };
     
   }

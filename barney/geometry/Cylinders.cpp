@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -109,18 +109,14 @@ namespace barney {
     }
     if (member == "vertices") {
       vertices = value->as<PODData>();
-      PRINT(vertices->count);
       return true;
     }
     if (member == "indices") {
       indices = value->as<PODData>();
-      PRINT(indices);
-      PRINT(indices->count);
       return true;
     }
     if (member == "radii") {
       radii = value->as<PODData>();
-      PRINT(radii->count);
       return true;
     }
     return false;

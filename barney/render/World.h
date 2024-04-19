@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
+#include "barney/material/Globals.h"
 
 namespace barney {
   namespace render {
@@ -59,13 +60,15 @@ namespace barney {
         QuadLight  *quadLights    = nullptr;
         int         numDirLights  = 0;
         DirLight   *dirLights     = nullptr;
+        float       radiance;
         EnvMapLight::DD envMapLight;
-        float radiance = DEFAULT_RADIANCE_FROM_ENV;
+        Globals::DD     globals;
       };
       EnvMapLight envMapLight;
 
       World(DevGroup *devGroup)
-        : devGroup(devGroup)
+        : devGroup(devGroup),
+          globals(devGroup)
       {
         quadLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
                                                  OWL_USER_TYPE(QuadLight),
@@ -73,6 +76,7 @@ namespace barney {
         dirLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
                                                 OWL_USER_TYPE(DirLight),
                                                 1,nullptr);
+        
       }
       void set(const std::vector<QuadLight> &quadLights)
       {
@@ -110,10 +114,12 @@ namespace barney {
           dd.envMapLight.texture
             = 0;
         dd.envMapLight.transform = envMapLight.transform;
+        dd.globals = globals.getDD(device);
         dd.radiance = radiance;
         return dd;
       }
 
+      Globals globals;
       OWLBuffer quadLightsBuffer = 0;
       int numQuadLights = 0;
       OWLBuffer dirLightsBuffer = 0;
