@@ -96,8 +96,8 @@ namespace barney {
     vec3f cosineSampleHemisphere(const vec2f s)
     {
       const float phi = two_pi * s.x;
-      const float cosTheta = sqrt(s.y);
-      const float sinTheta = sqrt(1.0f - s.y);
+      const float cosTheta = sqrtf(s.y);
+      const float sinTheta = sqrtf(1.0f - s.y);
       return cartesian(phi, sinTheta, cosTheta);
     }
     

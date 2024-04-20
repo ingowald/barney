@@ -38,29 +38,13 @@ namespace barney {
           return Lambert(reflectance).eval(dg,wi,dbg);
         }
         
-        // Lambert lambert;
         vec3h reflectance;
 
         enum { bsdfType = Lambert::bsdfType };
-        // enum { bsdfType = Minneart::bsdfType | Lambert::bsdfType };
       };
       struct DD {
         inline __device__
-        void make(HitBSDF &multi, vec3f geometryColor, bool dbg) const
-        {
-          multi.reflectance
-            = !isnan(geometryColor.x)
-            ? geometryColor
-            : reflectance;
-          if (dbg) {
-            vec3f ref = from_half(multi.reflectance);
-            printf("matte.hitbsdf.reflectance set to %f %f %f\n",
-                   ref.x,
-                   ref.y,
-                   ref.z);
-          }
-          
-        }
+        void make(HitBSDF &multi, vec3f geometryColor, bool dbg) const;
         vec3f reflectance;
         SamplerType samplerType;
         //union { // not POD :( (TODO?!)
@@ -81,6 +65,15 @@ namespace barney {
         } sampler;
       };
     };
+    
+    inline __device__
+    void Matte::DD::make(HitBSDF &multi, vec3f geometryColor, bool dbg) const
+    {
+      multi.reflectance
+        = !isnan(geometryColor.x)
+        ? geometryColor
+        : reflectance;
+    }
     
   }
 }
