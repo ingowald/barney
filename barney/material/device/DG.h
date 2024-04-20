@@ -36,18 +36,15 @@
 #include "barney/common/Texture.h"
 #include "barney/common/Data.h"
 #include "barney/common/half.h"
+#include "barney/material/math.h"
 
 namespace barney {
   namespace render {
 
-#define pi (float(M_PI))
-#define one_over_pi (float(1.f/M_PI))
-#define two_pi (float(2.f*M_PI))
-
-    
     struct DG {
-      vec3f N;
+      vec3f Ng, Ns;
       vec3f wo;
+      bool  insideMedium;
     };
 
     struct EvalRes {
@@ -59,19 +56,17 @@ namespace barney {
     };
     
     
-    inline __device__ float lerp(float factor, float a, float b) { return (1.f-factor)*a+factor*b; }
-    inline __device__ vec3f lerp(vec3f factor, vec3f a, vec3f b) { return (1.f-factor)*a+factor*b; }
-
-    inline __device__ float rcp(float f) { return 1.f/f; }
-
-    inline __device__ float clamp(float f) { return min(1.f,max(0.f,f)); }
-    inline __device__ float pow(float a, float b) { return powf(a,b); }
-    inline __device__ float sqrt(float f) { return sqrtf(f); }
-    inline __device__ float sqr(float f) { return f*f; }
-    inline __device__ float cos2sin(const float f) { return sqrt(max(0.f, 1.f - sqr(f))); }
-    inline __device__ float sin2cos(const float f) { return cos2sin(f); }
+    struct SampleRes {
+      // inline __device__ SampleRes() {}
+      // inline __device__ SampleRes(vec3f v, float p) : value(v),pdf(p) {}
+      static inline __device__ SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
+      vec3f weight;
+      vec3f wi;
+      int   type;
+      float pdf;
+    };
     
-
+    
     inline __device__
     float luminance(vec3f c)
     { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }

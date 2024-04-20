@@ -33,42 +33,52 @@
 
 #pragma once
 
-#include "barney/material/device/DG.h"
-#include "barney/material/device/BSDF.h"
-
 namespace barney {
   namespace render {
+    // helper function which computes cosT^2 from cosI and eta
+    inline __both__ float sqrCosT(const float cosI, const float eta)
+    {
+      return 1.0f - sqr(eta)*(1.0f - sqr(cosI));
+    }
 
-    typedef uint32_t BSDFType;
+    /*! Reflects a viewing vector I at a normal N. Cosine between I
+     *  and N is given as input. */
+    inline __both__ vec3f reflect(const vec3f& I, const vec3f& N, float cosI)
+    {
+      return (2.0f*cosI) * N - I;
+    }
 
-    struct Lambert : public BSDF {
-
-      inline __device__
-      Lambert(vec3f R, bool dbg = false)
-        : BSDF(R)
-      {}
-      inline __device__ Lambert(const Lambert &) = default;
-      // { Lambert l; l.init(R); return l; }
-
-      // static inline __device__
-      // Lambert create(vec3f R, bool dbg = false)
-      // { Lambert l; l.init(R); return l; }
-                     
-      // inline __device__ void init(vec3f R, bool dbg = false)
-      // { BSDF::init(R); }
-        
-      inline __device__
-      EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
-      {
-        EvalRes res;
-        float cosThetaI = max(dot(wi, dg.Ns), 0.f);
-        res.pdf = cosineSampleHemispherePDF(cosThetaI);
-        res.value = (vec3f)albedo * one_over_pi * cosThetaI;
-        return res;
-      }
-      
-      enum { bsdfType = BSDF_DIFFUSE_REFLECTION };
-    };
+    /*! Reflects a viewing vector I at a normal N. */
+    inline __both__  vec3f reflect(const vec3f& I, const vec3f& N)
+    {
+      return reflect(I, N, dot(I, N));
+    }
     
+    //! \brief Refracts a viewing vector I at a normal N
+    /*! \detailed Refracts a viewing vector I at a normal N using the
+     *  relative refraction index eta. Eta is refraction index of outside
+     *  medium (where N points into) divided by refraction index of the
+     *  inside medium. The vectors I and N have to point towards the same
+     *  side of the surface. The cosine between I and N, and the cosine of -N and
+     *  the refracted ray is given as input */
+    inline  __both__ vec3f refract(const vec3f& I, const vec3f& N, float cosI, float cosT, float eta)
+    {
+      return eta*(cosI*N - I) - cosT*N;
+    }
+
+    inline  __both__ vec3f refract(const vec3f& I, const vec3f& N, float cosI, float eta)
+    {
+      const float sqrCosT = render::sqrCosT(cosI, eta);
+      if (sqrCosT < 0.0f) return vec3f(0.f);
+      return refract(I, N, cosI, sqrt(sqrCosT), eta);
+    }
+
+    inline  __both__ float refract(float cosI, float eta)
+    {
+      const float sqrCosT = render::sqrCosT(cosI, eta);
+      return sqrtf(max(sqrCosT, 0.0f));
+    }
+
   }
 }
+
