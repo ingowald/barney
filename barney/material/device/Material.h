@@ -188,7 +188,7 @@ namespace barney {
       quantized_ny_sign = 0;
       quantized_nz_sign = 0;
     } else {
-      // N = normalize(N);
+      N = normalize(N);
       auto quantize = [](float f) {
         return min((1<<18)-1,int(fabsf(.5f+f*(1<<18))));
       };

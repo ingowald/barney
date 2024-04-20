@@ -133,6 +133,7 @@ namespace barney {
 
   Material::SP Material::create(ModelSlot *dg, const std::string &type)
   {
+    std::cout << "# creating material type '" << type << "'" << std::endl;
     if (type == "velvet")
       return std::make_shared<VelvetMaterial>(dg);
     if (type == "matte")

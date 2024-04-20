@@ -73,7 +73,12 @@ namespace barney {
 #if 1
     vec3f geometryColor(getColor(self,primID,triangle,u,v));
 #endif
-    
+
+    if (ray.dbg)
+      printf("setting hit geomcolor %f %f %f\n",
+             geometryColor.x,
+             geometryColor.y,
+             geometryColor.z);
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
     ray.setHit(P,n,optixGetRayTmax(),

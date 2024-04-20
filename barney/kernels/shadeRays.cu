@@ -555,8 +555,11 @@ namespace barney {
         float4 color = tex2D<float4>(env.texture,uv.x,uv.y);
         float envLightPower = 1.f;
         return envLightPower*vec3f(color.x,color.y,color.z);
-      } else
+      } else {
+        if (ray.dbg) printf("world radiance %f\n",
+                             world.radiance);
         return world.radiance;
+      }
     }
 
     /*! return dedicated background, if specifeid; otherwise return envmap color */
@@ -596,7 +599,7 @@ namespace barney {
       //          (float)path.dir.y,
       //          (float)path.dir.z,
       //          path.tMax);
-    
+
       if (path.isShadowRay) {
         // ==================================================================
         // shadow ray = all we have to do is add carried radiance if it
@@ -611,6 +614,14 @@ namespace barney {
       }
 
       vec3f Ng = path.hit.getN();
+
+      if (0 && path.dbg)
+        printf("===== path depth %i mat %i hit t %f N %f %f %f hadhit %i\n",
+               pathDepth,
+               (int)path.hit.materialType,
+               path.tMax,Ng.x,Ng.y,Ng.z,
+               int(path.hadHit));
+      
       const bool  isVolumeHit        = (Ng == vec3f(0.f));
       if (!isVolumeHit)
         Ng = normalize(Ng);
@@ -628,10 +639,11 @@ namespace barney {
           // PRIMARY ray that didn't hit anything -> background
           // ----------------------------------------------------------------
           fragment = path.throughput * backgroundOrEnv(world,path);
-
+          
           const vec3f fromEnv
             = // 1.5f*
             backgroundOrEnv(world,path);
+
           const vec3f tp = path.throughput;
           const vec3f addtl = tp
             * fromEnv;
@@ -643,7 +655,13 @@ namespace barney {
           // this path had at least one bounce, but now bounced into
           // nothingness - compute env-light contribution, and weigh it
           // with the path's carried throughput.
-          fragment = path.throughput * radianceFromEnv(world,path);
+          const vec3f fromEnv = radianceFromEnv(world,path);
+          if (0 && path.dbg)
+            printf("fromenv %f %f %f\n",
+                   fromEnv.x,
+                   fromEnv.y,
+                   fromEnv.z);
+          fragment = path.throughput * fromEnv;
         }
         // no outgoing rays; this path is done.
         path.tMax = -1.f;
@@ -668,6 +686,11 @@ namespace barney {
       dg.Ns = Ng;
       dg.wo = -normalize((vec3f)path.dir);
       dg.insideMedium = path.isInMedium;
+      if (0 && path.dbg)
+        printf("dg.N %f %f %f\n",
+               dg.Ns.x,
+               dg.Ns.y,
+               dg.Ns.z);
       // if (path.dbg)
       //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
       //          pathDepth,
@@ -738,81 +761,33 @@ namespace barney {
           path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
         } else {
           path.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
+      if (path.dbg)
+        printf("dg.N %f %f %f\n",
+               dg.Ns.x,
+               dg.Ns.y,
+               dg.Ns.z);
+      if (path.dbg)
+        printf("path.dir %f %f %f\n",
+               (float)path.dir.x,
+               (float)path.dir.y,
+               (float)path.dir.z);
           EvalRes f_r = path.hit.eval(world.globals,dg,path.dir,path.dbg);
-          // if (path.dbg)
-          //   printf("f_r %f %f %f:%f\n",
-          //          f_r.value.x,
-          //          f_r.value.y,
-          //          f_r.value.z,
-          //          f_r.pdf);
+          if (path.dbg)
+            printf("f_r %f %f %f:%f\n",
+                   f_r.value.x,
+                   f_r.value.y,
+                   f_r.value.z,
+                   f_r.pdf);
 
-// #if 1
           if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
             path.tMax = -1.f;
           } else {
             path.throughput = path.throughput * f_r.value
               / (f_r.pdf + 1e-10f)
-              ;//baseColor;
+              ;
           }
-// #else
-//           if (f_r.pdf <= 1e-10f) {
-//             path.tMax = -1.f;
-//           } else {
-//             path.throughput = path.throughput * f_r.value
-//               /f_r.pdf
-//               ;//baseColor;
-//           }
-// #endif
         }
       }
-// #else
-//       if (/* for non-glass this SHOULD be done by isec program! */doTransmission) {
-//         // ------------------------------------------------------------------
-//         // transmission, refleciton, or refraction
-//         // ------------------------------------------------------------------
-//         vec3f dir = from_half(path.dir);
-//         scatter_glass(dir,
-//                       random,
-//                       path.dir,notFaceForwardedNg,
-//                       path.hit.mini.ior);
-//         path.dir = dir;
-//         if (dot(dir,notFaceForwardedNg) > 0.f) {
-//           path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
-//         } else {
-//           path.org = path.hit.P - safe_eps(EPS,path.hit.P)*Ng;
-//           path.isInMedium = 1;
-//         }
-//         /* ************* TODO - MISSING SOME METALLIC/REFLECTANCE HERE *********** */
-//       } else {
-//         // ------------------------------------------------------------------
-//         // not perfectly specular - do diffuse bounce for now...
-//         // ------------------------------------------------------------------
-
-//         // save local path weight for the shadow ray:
-//         path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
-//         if (isVolumeHit) {
-//           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
-//           path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
-//         } else {
-//           path.dir = sampleCosineWeightedHemisphere(dg.N,random);
-//           EvalRes f_r = path.hit.eval(world.globals,dg,path.dir,path.dbg);
-//           // if (path.dbg)
-//           //   printf("f_r %f %f %f:%f\n",
-//           //          f_r.value.x,
-//           //          f_r.value.y,
-//           //          f_r.value.z,
-//           //          f_r.pdf);
-
-//           if (f_r.pdf <= 1e-6f) {
-//             path.tMax = -1.f;
-//           } else {
-//             path.throughput = path.throughput * f_r.value
-//               /f_r.pdf
-//               ;//baseColor;
-//           }
-//         }
-//       }
-// #endif
       // ------------------------------------------------------------------
       // so far we HAVE generated an outgoing path, but it have haev
       // very low throughput/weak impact on the image - use russian
@@ -833,7 +808,21 @@ namespace barney {
         }
       } else
         path.tMax = -1.f;
-    
+
+      if (path.dbg) {
+        vec3f tp = (vec3f)path.throughput;
+        printf("outgoing path org %f %f %f dir %f %f %f tmax %f tp %f %f %f\n",
+               path.org.x,
+               path.org.y,
+               path.org.z,
+               (float)path.dir.x,
+               (float)path.dir.y,
+               (float)path.dir.z,
+               path.tMax,
+               tp.x,
+               tp.y,
+               tp.z);
+      }
       // ==================================================================
       // now, check for shadow ray
       // ==================================================================
@@ -842,6 +831,7 @@ namespace barney {
           && 
           (path.hit.materialType != GLASS)
           ) {
+        
         EvalRes f_r = path.hit.eval(world.globals,dg,ls.dir,path.dbg);
         if (f_r.pdf <= 1e-6f) {
           shadowRay.tMax = -1.f;
@@ -854,7 +844,7 @@ namespace barney {
                                   /* surface: */path.hit.P + EPS*Ng,
                                   /* to light */ls.dir,
                                   /* length   */ls.dist * (1.f-2.f*EPS));
-          shadowRay.rngSeed = path.rngSeed + 1;
+          shadowRay.rngSeed = path.rngSeed + 1; random();
           shadowRay.dbg = path.dbg;
           shadowRay.pixelID = path.pixelID;
         }
@@ -910,6 +900,15 @@ namespace barney {
       int tileOfs = path.pixelID % pixelsPerTile;
       float4 &valueToAccumInto
         = accumTiles[tileID].accum[tileOfs];
+
+      if (path.dbg)
+        printf("accuming %f %f %f onto %f %f %f\n",
+               fragment.x,
+               fragment.y,
+               fragment.z,
+               valueToAccumInto.x,
+               valueToAccumInto.y,
+               valueToAccumInto.z);
       vec4f valueToAccum = make_float4(fragment.x,fragment.y,fragment.z,0.f);
       if (accumID > 0)
         valueToAccum = valueToAccum + (vec4f)valueToAccumInto;

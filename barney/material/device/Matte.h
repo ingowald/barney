@@ -52,6 +52,14 @@ namespace barney {
             = !isnan(geometryColor.x)
             ? geometryColor
             : reflectance;
+          if (dbg) {
+            vec3f ref = from_half(multi.reflectance);
+            printf("matte.hitbsdf.reflectance set to %f %f %f\n",
+                   ref.x,
+                   ref.y,
+                   ref.z);
+          }
+          
         }
         vec3f reflectance;
         SamplerType samplerType;
