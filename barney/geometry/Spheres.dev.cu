@@ -49,33 +49,6 @@ namespace barney {
     auto &self = owl::getProgramData<Spheres::DD>();
     int primID = optixGetPrimitiveIndex();
     
-    // // ray.hadHit = true;
-<<<<<<< HEAD
-    // float t_hit = optixGetRayTmax();
-
-    // vec3f org = optixGetWorldRayOrigin();
-    // vec3f dir = optixGetWorldRayDirection();
-    // vec3f P   = org + t_hit * dir;
-    // vec3f center = optixTransformPointFromObjectToWorldSpace(self.origins[primID]);
-    // float radius = self.radii?self.radii[primID]:self.defaultRadius;
-    // vec3f N;
-    // if (P == center) {
-    //   N = -normalize(dir);
-    // } else {
-    //   N = normalize(P-center);
-    //   P = center + (radius * 1.00001f) * N;
-    // }
-    // N = optixTransformNormalFromObjectToWorldSpace(N);
-    // N = normalize(N);
-      
-    // vec3f geometryColor = NAN;
-    // if (self.colors)
-    //   geometryColor = self.colors[primID];
-    // ray.setHit(P,N,t_hit,self.material,vec2f(NAN),geometryColor);
-    
-    
-    // ray.setHit(P,N,t_hit,mat);
-=======
     float t_hit = optixGetRayTmax();
 
     vec3f org = optixGetWorldRayOrigin();
@@ -100,7 +73,6 @@ namespace barney {
     if (self.colors)
       geometryColor = self.colors[primID];
     ray.setHit(P,N,t_hit,self.material,vec2f(NAN),geometryColor);
->>>>>>> iw/temp-merge-pt
   }
   
   OPTIX_INTERSECT_PROGRAM(SpheresIsec)()
@@ -146,10 +118,7 @@ namespace barney {
         hit_t = temp;
     }
     if (hit_t < t_max) {
-<<<<<<< HEAD
-=======
       hit_t += t_move;
->>>>>>> iw/temp-merge-pt
 
       vec3f P = old_org + hit_t * dir;
       vec3f N = normalize(P-center);

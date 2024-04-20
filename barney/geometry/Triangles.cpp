@@ -131,8 +131,6 @@ namespace barney {
       ? normals->owl
       : 0;
     // PING; PRINT(normals);
-<<<<<<< HEAD
-=======
 
     OWLBuffer primitiveAttribute0Buffer
       = attribute0
@@ -175,7 +173,6 @@ namespace barney {
       = vertexAttribute4
       ? vertexAttribute4->owl
       : 0;
->>>>>>> iw/temp-merge-pt
 
     int numVertices = vertices->count;
     int numIndices  = indices->count;

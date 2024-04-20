@@ -22,10 +22,6 @@
 
 namespace barney {
   namespace render {
-<<<<<<< HEAD
-#define DEFAULT_RADIANCE_FROM_ENV 1.5f
-=======
->>>>>>> iw/temp-merge-pt
   
     enum { MAX_PATH_DEPTH = 10 };
 
