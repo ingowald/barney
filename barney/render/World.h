@@ -48,7 +48,7 @@ namespace barney {
         cudaTextureObject_t texture;
       };
       affine3f   transform;
-      OWLTexture texture;
+      OWLTexture texture = 0;
     };
   
     /*! the rendering/path racing related part of a model that describes
