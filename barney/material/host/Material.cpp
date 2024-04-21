@@ -20,6 +20,7 @@
 #include "barney/material/host/Metal.h"
 #include "barney/material/host/Glass.h"
 #include "barney/material/host/Plastic.h"
+#include "barney/material/host/VisRTX.h"
 #include "barney/material/host/MetallicPaint.h"
 #include "barney/ModelSlot.h"
 
@@ -151,7 +152,8 @@ namespace barney {
     if (type == "velvet")
       return std::make_shared<VelvetMaterial>(dg);
     else if (type == "physicallyBased")
-      return std::make_shared<AnariPhysicalMaterial>(dg);
+      return std::make_shared<VisRTXMaterial>(dg);
+      // return std::make_shared<AnariPhysicalMaterial>(dg);
     // iw - "eventually" we should have different materials like
     // 'matte' and 'glass', 'metal' etc here, but for now, let's just
     // ignore the type and create a single one thta contains all
