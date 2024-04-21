@@ -20,6 +20,7 @@
 
 #include "barney/geometry/Triangles.h"
 #include "barney/geometry/Spheres.h"
+#include "barney/geometry/Cones.h"
 #include "barney/geometry/Cylinders.h"
 
 namespace barney {
@@ -29,6 +30,8 @@ namespace barney {
   {
     if (type == "spheres")
       return std::make_shared<Spheres>(owner);
+    if (type == "cones")
+      return std::make_shared<Cones>(owner);
     if (type == "cylinders")
       return std::make_shared<Cylinders>(owner);
     if (type == "triangles")

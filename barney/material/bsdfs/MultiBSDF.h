@@ -39,36 +39,37 @@
 namespace barney {
   namespace render {
 
-    typedef uint32_t BSDFType;
-
-    struct Lambert : public BSDF {
-
-      inline __device__
-      Lambert(vec3f R, bool dbg = false)
-        : BSDF(R)
+    template<typename A, typename B>
+    struct MultiBSDF2 {
+      inline __both__ MultiBSDF2(A a, B b)
+        : a(a), b(b)
       {}
-      inline __device__ Lambert(const Lambert &) = default;
-      // { Lambert l; l.init(R); return l; }
 
-      // static inline __device__
-      // Lambert create(vec3f R, bool dbg = false)
-      // { Lambert l; l.init(R); return l; }
-                     
-      // inline __device__ void init(vec3f R, bool dbg = false)
-      // { BSDF::init(R); }
-        
       inline __device__
-      EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
-      {
-        EvalRes res;
-        float cosThetaI = max(dot(wi, dg.Ns), 0.f);
-        res.pdf = cosineSampleHemispherePDF(cosThetaI);
-        res.value = (vec3f)albedo * one_over_pi * cosThetaI;
-        return res;
+      vec3f getAlbedo(bool dbg=false) const {
+        return a.getAlbedo(dbg)+b.getAlbedo(dbg);
       }
+
+      inline __device__
+      EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
+      {
+        EvalRes a_eval = a.eval(dg,wi,dbg);
+        float   a_imp  = a.importance();
+        EvalRes b_eval  = b.eval(dg,wi,dbg);
+        float   b_imp   = b.importance();
+        EvalRes our_eval;
+        our_eval.value = a_eval.value + b_eval.value;
+        our_eval.pdf
+          = (a_imp*a_eval.pdf+b_imp*b_eval.pdf)
+          / max(1e-20f,a_imp+b_imp);
+        return our_eval;
+      }
+
+      enum { bsdfType = A::bsdfType | B::bsdfType };
       
-      enum { bsdfType = BSDF_DIFFUSE_REFLECTION };
+      A a;
+      B b;
     };
-    
+      
   }
 }

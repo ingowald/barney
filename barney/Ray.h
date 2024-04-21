@@ -70,13 +70,14 @@ namespace barney {
       // hit.ior            = 1.f;
       // hit.transmission   = 0.f;
     }
-    inline __device__ void makeShadowRay(vec3f tp, vec3f org, vec3f dir, float len)
+    inline __device__
+    void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len)
     {
       this->hadHit = false;
       this->isShadowRay = true;
-      this->dir = dir;
-      this->org = org;
-      this->throughput = tp;
+      this->dir = _dir;
+      this->org = _org;
+      this->throughput = _tp;
       this->tMax = len;
     }
     // struct {

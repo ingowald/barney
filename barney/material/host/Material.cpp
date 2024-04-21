@@ -16,6 +16,10 @@
 
 #include "barney/material/host/Velvet.h"
 #include "barney/material/host/Matte.h"
+#include "barney/material/host/Blender.h"
+#include "barney/material/host/Metal.h"
+#include "barney/material/host/Glass.h"
+#include "barney/material/host/Plastic.h"
 #include "barney/material/host/MetallicPaint.h"
 #include "barney/ModelSlot.h"
 
@@ -81,7 +85,7 @@ namespace barney {
   };
 
   /*! material according to "miniScene" default specification. will
-      internally build a AnariPhyisical device data */
+    internally build a AnariPhyisical device data */
   struct MiniMaterial : public barney::Material {
     MiniMaterial(ModelSlot *owner) : Material(owner) {}
     virtual ~MiniMaterial() = default;
@@ -129,10 +133,19 @@ namespace barney {
 
   Material::SP Material::create(ModelSlot *dg, const std::string &type)
   {
+    std::cout << "# creating material type '" << type << "'" << std::endl;
     if (type == "velvet")
       return std::make_shared<VelvetMaterial>(dg);
     if (type == "matte")
-      return std::make_shared<MatteMaterial>(dg);
+      return std::make_shared<MatteMaterial>(dg); 
+    if (type == "blender")
+      return std::make_shared<BlenderMaterial>(dg); 
+    if (type == "glass")
+      return std::make_shared<GlassMaterial>(dg); 
+    if (type == "metal")
+      return std::make_shared<MetalMaterial>(dg); 
+    if (type == "plastic")
+      return std::make_shared<PlasticMaterial>(dg);
     if (type == "metallic_paint")
       return std::make_shared<MetallicPaintMaterial>(dg);
     if (type == "velvet")

@@ -59,6 +59,12 @@ embed_ptx(
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            geometry/Cylinders.dev.cu
   )
+# ray cones geom intersection
+embed_ptx(
+  OUTPUT_TARGET      barney-cones-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            geometry/Cones.dev.cu
+  )
 
 # ------------------------------------------------------------------
 # volume variants:
@@ -127,6 +133,8 @@ add_library(barney STATIC
   GlobalModel.cpp
   Group.h
   Group.cpp
+  material/Globals.h
+  material/Globals.cu
   ModelSlot.h
   ModelSlot.cpp
   # general common/data-related stuff
@@ -140,13 +148,26 @@ add_library(barney STATIC
   # device-level materials
   material/device/Material.h
   material/device/Velvet.h
+  material/device/Matte.h
+  material/device/Blender.h
+  material/device/Glass.h
+  material/device/Metal.h
+  material/device/Plastic.h
   # barney-level material types
   material/host/Material.h
   material/host/Material.cpp
   material/host/Velvet.h
   material/host/Velvet.cpp
+  material/host/Plastic.h
+  material/host/Plastic.cpp
   material/host/Matte.h
   material/host/Matte.cpp
+  material/host/Blender.h
+  material/host/Blender.cpp
+  material/host/Glass.h
+  material/host/Glass.cpp
+  material/host/Metal.h
+  material/host/Metal.cpp
   material/host/MetallicPaint.h
   material/host/MetallicPaint.cpp
   # actual geometry types
@@ -158,6 +179,8 @@ add_library(barney STATIC
   geometry/Triangles.cpp
   geometry/Cylinders.h
   geometry/Cylinders.cpp
+  geometry/Cones.h
+  geometry/Cones.cpp
   # volume data 
   volume/Volume.h
   volume/Volume.cpp
@@ -202,6 +225,7 @@ target_link_libraries(barney
   barney-StructuredData-ptx
   barney-spheres-ptx
   barney-cylinders-ptx
+  barney-cones-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
   barney-UMeshRTXObjectSpace-ptx

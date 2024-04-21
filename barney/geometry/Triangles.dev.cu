@@ -24,22 +24,25 @@ namespace barney {
   {
     auto &ray = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<Triangles::DD>();
+    const float u = optixGetTriangleBarycentrics().x;
+    const float v = optixGetTriangleBarycentrics().y;
     int primID = optixGetPrimitiveIndex();
     vec3i triangle = self.indices[primID];
     vec3f v0 = self.vertices[triangle.x];
     vec3f v1 = self.vertices[triangle.y];
     vec3f v2 = self.vertices[triangle.z];
-    vec3f n = cross(v1-v0,v2-v0);
+    vec3f n;
+    if (self.normals) {
+      n
+        = (1.f-u-v) * self.normals[triangle.x]
+        + (    u  ) * self.normals[triangle.y]
+        + (      v) * self.normals[triangle.z];
+    } else 
+      n = cross(v1-v0,v2-v0);
+    
     n = optixTransformNormalFromObjectToWorldSpace(n);
     n = normalize(n);
     
-    vec3f dir = optixGetWorldRayDirection();
-    // auto mat = self.material;
-
-    const float u = optixGetTriangleBarycentrics().x;
-    const float v = optixGetTriangleBarycentrics().y;
-
-
     // ------------------------------------------------------------------
     // get texture coordinates
     // ------------------------------------------------------------------
@@ -57,7 +60,6 @@ namespace barney {
 #if 1
     vec3f geometryColor(getColor(self,primID,triangle,u,v));
 #endif
-    
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
     ray.setHit(P,n,optixGetRayTmax(),

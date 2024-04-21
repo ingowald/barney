@@ -14,92 +14,63 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/geometry/Cylinders.h"
+#include "barney/geometry/Cones.h"
 #include "barney/ModelSlot.h"
 
 namespace barney {
 
-  extern "C" char Cylinders_ptx[];
+  extern "C" char Cones_ptx[];
 
-  Cylinders::Cylinders(ModelSlot *owner)
+  Cones::Cones(ModelSlot *owner)
     : Geometry(owner)
   {}
 
-  OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
+  OWLGeomType Cones::createGeomType(DevGroup *devGroup)
   {
     std::cout << OWL_TERMINAL_GREEN
-              << "creating 'Cylinders' geometry type"
+              << "creating 'Cones' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
     
     std::vector<OWLVarDecl> params
       = {
-         { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
-         { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-         { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
-         { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-         { "colorPerVertex", OWL_INT, OWL_OFFSETOF(DD,colorPerVertex) },
-         { "radiusPerVertex", OWL_INT, OWL_OFFSETOF(DD,radiusPerVertex) },
+      { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
+      { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
+      { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
     };
     Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
-      (devGroup->owl,Cylinders_ptx);
+      (devGroup->owl,Cones_ptx);
     OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_USER,sizeof(Cylinders::DD),
+      (devGroup->owl,OWL_GEOM_USER,sizeof(Cones::DD),
        params.data(), (int)params.size());
-    owlGeomTypeSetBoundsProg(gt,module,"CylindersBounds");
-    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CylindersIsec");
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CylindersCH");
+    owlGeomTypeSetBoundsProg(gt,module,"ConesBounds");
+    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"ConesIsec");
+    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"ConesCH");
     owlBuildPrograms(devGroup->owl);
     
     return gt;
   }
   
-  void Cylinders::commit()
+  void Cones::commit()
   {
     if (userGeoms.empty()) {
       OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
-        ("Cylinders",Cylinders::createGeomType);
+        ("Cones",Cones::createGeomType);
       OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
       userGeoms.push_back(geom);
     }
     OWLGeom geom = userGeoms[0];
     
     Geometry::commit();
-    owlGeomSet1i(geom,"colorPerVertex",colorPerVertex);
-    owlGeomSet1i(geom,"radiusPerVertex",radiusPerVertex);
     owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
     owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
-    owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
     owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
     int numIndices = indices->count;
-    PRINT(numIndices);
     owlGeomSetPrimCount(geom,numIndices);
     material->setDeviceDataOn(geom);
   } 
-
-  bool Cylinders::set1i(const std::string &member, const int &value)
-  {
-    if (Geometry::set1i(member,value))
-      return true;
-    if (member == "radiusPerVertex") {
-      radiusPerVertex = value;
-      return true;
-    }
-    if (member == "colorPerVertex") {
-      colorPerVertex = value;
-      return true;
-    }
-    return false;
-  }
   
-  bool Cylinders::set1f(const std::string &member, const float &value)
-  {
-    if (Geometry::set1f(member,value))
-      return true;
-    return false;
-  }
-  
-  bool Cylinders::setData(const std::string &member, const Data::SP &value)
+  bool Cones::setData(const std::string &member, const Data::SP &value)
   {
     if (Geometry::setData(member,value))
       return true;
@@ -109,25 +80,23 @@ namespace barney {
     }
     if (member == "vertices") {
       vertices = value->as<PODData>();
+      PRINT(vertices->count);
       return true;
     }
     if (member == "indices") {
       indices = value->as<PODData>();
+      PRINT(indices);
+      PRINT(indices->count);
       return true;
     }
     if (member == "radii") {
       radii = value->as<PODData>();
+      PRINT(radii->count);
       return true;
     }
     return false;
   }
 
-  bool Cylinders::setObject(const std::string &member, const Object::SP &value)
-  {
-    if (Geometry::setObject(member,value))
-      return true;
-    return false;
-  }
-
 }
+
 

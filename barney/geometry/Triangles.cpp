@@ -130,6 +130,7 @@ namespace barney {
       = normals
       ? normals->owl
       : 0;
+    // PING; PRINT(normals);
 
     OWLBuffer primitiveAttribute0Buffer
       = attribute0

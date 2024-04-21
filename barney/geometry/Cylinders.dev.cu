@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -35,19 +35,6 @@ namespace barney {
   OPTIX_CLOSEST_HIT_PROGRAM(CylindersCH)()
   {
     /* nothing - already set in isec */
-    // auto &ray = owl::getPRD<Ray>();
-    // auto &self = owl::getProgramData<Cylinders::DD>();
-    // int primID = optixGetPrimitiveIndex();
-    
-    // ray.hadHit = true;
-    // ray.tMax = optixGetRayTmax();
-
-    // vec3f org = optixGetWorldRayOrigin();
-    // vec3f dir = optixGetWorldRayDirection();
-    // vec3f hitPos = org + ray.tMax * dir;
-    // vec3f baseColor = owl::randomColor(primID);
-    // ray.setMatte(hitPos,N,N,t,baseColor);
-    // ray.hit.N = n;
   }
   
   OPTIX_INTERSECT_PROGRAM(CylindersIsec)()
@@ -143,40 +130,6 @@ namespace barney {
     vec3f P = ray_org + ray.tMax * ray_dir;
     ray.setHit(P,N,ray.tMax,self.material);
     optixReportIntersection(ray.tMax, 0);
-    // const int primID = optixGetPrimitiveIndex();
-    // const auto &self
-    //   = owl::getProgramData<Cylinders::DD>();
-
-    // vec3f center = self.origins[primID];
-    // float radius = self.defaultRadius;
-    
-    // const vec3f org  = optixGetObjectRayOrigin();
-    // const vec3f dir  = optixGetObjectRayDirection();
-    // const float tmin = optixGetRayTmin();
-    // float hit_t      = optixGetRayTmax();
-    
-    // const vec3f oc = org - center;
-    // const float a = dot(dir,dir);
-    // const float b = dot(oc, dir);
-    // const float c = dot(oc, oc) - radius * radius;
-    // const float discriminant = b * b - a * c;
-    
-    // if (discriminant < 0.f) return;
-
-    // {
-    //   float temp = (-b - sqrtf(discriminant)) / a;
-    //   if (temp < hit_t && temp > tmin) 
-    //     hit_t = temp;
-    // }
-      
-    // {
-    //   float temp = (-b + sqrtf(discriminant)) / a;
-    //   if (temp < hit_t && temp > tmin) 
-    //     hit_t = temp;
-    // }
-    // if (hit_t < optixGetRayTmax()) {
-    //   optixReportIntersection(hit_t, 0);
-    // }
   }
   
 }
