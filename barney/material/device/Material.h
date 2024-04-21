@@ -21,6 +21,7 @@
 #include "barney/material/device/Velvet.h"
 #include "barney/material/device/Blender.h"
 #include "barney/material/device/Matte.h"
+#include "barney/material/device/VisRTX.h"
 #include "barney/material/device/Metal.h"
 #include "barney/material/device/Glass.h"
 #include "barney/material/device/Plastic.h"
@@ -35,6 +36,7 @@ namespace barney {
       MISS=0,
       MINI,
       MATTE,
+      VIS_RTX,
       BLENDER,
       METAL,
       GLASS,
@@ -76,6 +78,7 @@ namespace barney {
         render::AnariPhysical::BRDF anari;
         render::MiniMaterial::HitBSDF  mini;
         render::Matte::HitBSDF   matte;
+        render::VisRTX::HitBSDF   visRTX;
         render::Blender::HitBSDF   blender;
         render::Glass::HitBSDF   glass;
         render::Metal::HitBSDF   metal;
@@ -101,6 +104,7 @@ namespace barney {
       inline void operator=(const Velvet::DD &dd) { this->velvet = dd; materialType = VELVET; }
       inline void operator=(const MetallicPaint::DD &dd) { this->metallicPaint = dd; materialType = METALLIC_PAINT; }
       inline void operator=(const Matte::DD &dd) { this->matte = dd; materialType = MATTE; }
+      inline void operator=(const VisRTX::DD &dd) { this->visRTX = dd; materialType = VIS_RTX; }
       inline void operator=(const Blender::DD &dd) { this->blender = dd; materialType = BLENDER; }
       inline void operator=(const Glass::DD &dd) { this->glass = dd; materialType = GLASS; }
       inline void operator=(const Metal::DD &dd) { this->metal = dd; materialType = METAL; }
@@ -116,6 +120,7 @@ namespace barney {
         MiniMaterial::DD  mini;
         MetallicPaint::DD metallicPaint;
         Matte::DD         matte;
+        VisRTX::DD         visRTX;
         Blender::DD         blender;
         Glass::DD         glass;
         Metal::DD         metal;
@@ -146,6 +151,8 @@ namespace barney {
       return velvet.eval(dg,w_i,dbg);
     case MATTE:
       return matte.eval(dg,w_i,dbg);
+    case VIS_RTX:
+      return visRTX.eval(dg,w_i,dbg);
     case BLENDER:
       return blender.eval(dg,w_i,dbg);
     case GLASS:
@@ -221,6 +228,8 @@ namespace barney {
         return mini.getAlbedo(dbg);
       case MATTE:
         return matte.getAlbedo(dbg);
+      case VIS_RTX:
+        return visRTX.getAlbedo(dbg);
       case BLENDER:
         return blender.getAlbedo(dbg);
       case GLASS:
@@ -254,6 +263,7 @@ namespace barney {
       switch (materialType) {
       case MINI:
         return mini.hasAlpha(isShadowRay);
+      case VIS_RTX:
       case MATTE:
       case BLENDER:
       case METAL:
@@ -280,6 +290,7 @@ namespace barney {
       case MINI:
         return mini.getAlpha(tc,isShadowRay);
       case MATTE:
+      case VIS_RTX:
       case BLENDER:
       case METAL:
       case PLASTIC:
@@ -311,6 +322,9 @@ namespace barney {
         break;
       case MATTE:
         matte.make(hit.matte,geometryColor,dbg);
+        break;
+      case VIS_RTX:
+        visRTX.make(hit.visRTX,geometryColor,dbg);
         break;
       case BLENDER:
         blender.make(hit.blender,geometryColor,dbg);

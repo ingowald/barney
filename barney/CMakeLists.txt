@@ -148,6 +148,7 @@ add_library(barney STATIC
   # device-level materials
   material/device/Material.h
   material/device/Velvet.h
+  material/device/VisRTX.h
   material/device/Matte.h
   material/device/Blender.h
   material/device/Glass.h
@@ -156,6 +157,8 @@ add_library(barney STATIC
   # barney-level material types
   material/host/Material.h
   material/host/Material.cpp
+  material/host/VisRTX.h
+  material/host/VisRTX.cpp
   material/host/Velvet.h
   material/host/Velvet.cpp
   material/host/Plastic.h
