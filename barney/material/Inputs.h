@@ -18,14 +18,39 @@
 
 namespace barney {
   namespace render {
+    enum { numAttributes = 4 };
 
+    struct DeviceMaterial;
+    
     struct Sampler {
-      struct Globals {
-        Sampler *samplers;
+      struct DD {
       };
     };
-    
+
+    struct GeometryAttribute {
+      
+      typedef enum { PER_VERTEX, PER_PRIM, CONSTANT, INVALID } Scope;
+      
+      struct DataArray {
+        BNDataType      type;
+        void           *ptr;
+        
+        inline __device__
+        float4 valueAt(int i) const;
+      };
+        
+      Scope           scope;
+      union {
+        DataArray fromArray;
+        float4    value;
+      };
+    };
+      
     struct HitAttributes {
+      struct Globals {
+        const Sampler::DD    *samplers;
+        const DeviceMaterial *deviceMaterials;
+      };
       typedef enum {
         ATTRIBUTE_0,
         ATTRIBUTE_1,
@@ -39,28 +64,33 @@ namespace barney {
         PRIMITIVE_ID
       } Which;
 
-      inline __device__ HitAttributes()
+      inline __device__ HitAttributes(const Globals &globals)
+        : globals(globals)
       {
         color = make_float4(0,0,0,1);
-        for (int i=0;i<4;i++)
+        for (int i=0;i<numAttributes;i++)
           attribute[i] = make_float4(0,0,0,1);
       }
+
+      inline __device__ float4 get(Which attribute) const;
       
       float4 color;
-      float4 attribute[4];
+      float4 attribute[numAttributes];
       vec3f  worldPosition;
       vec3f  objectPosition;
       vec3f  worldNormal;
       vec3f  objectNormal;
       int    primID;
+      float  t;
+
+      const Globals &globals;
     };
-    
+
     struct MaterialInput {
       typedef enum { VALUE, ATTRIBUTE, SAMPLER, UNDEFINED } Type;
-
+      
       inline __device__
-      float4 eval(const Sampler::Globals &samplers,
-                  const HitAttributes &hitData) const;
+      float4 eval(const HitAttributes &hitData) const;
       
       Type type;
       union {
@@ -69,6 +99,41 @@ namespace barney {
         int                  samplerID;
       };
     };
+
+    inline __device__
+    float4 HitAttributes::get(Which whichOne) const
+    {
+      if (whichOne == ATTRIBUTE_0)
+        return attribute[0];
+      
+      printf("un-handled hit-data attribute %i\n",int(whichOne));
+      return make_float4(0.f,0.f,0.f,1.f);
+    }
+    
+    inline __device__
+    float4 MaterialInput::eval(const HitAttributes &hitData) const
+    {
+      if (type == VALUE)
+        return value;
+      if (type == ATTRIBUTE)
+        return hitData.get(attribute);
+      printf("un-handled material input type\n");
+      return make_float4(0.f,0.f,0.f,1.f);
+    }
+      
+    inline __device__
+    float4 GeometryAttribute::DataArray::valueAt(int i) const
+    {
+      switch(type) {
+      case BN_FLOAT3: {
+        const float3 v = ((const float3 *)ptr)[i];
+        return make_float4(v.x,v.y,v.z,1.f);
+      }
+      default:
+        printf("un-handled material input type\n");
+        return make_float4(0.f,0.f,0.f,1.f);
+      }
+    }
     
   }
 }

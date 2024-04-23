@@ -73,16 +73,19 @@ namespace barney {
     // THIS IS WRONG: !!!!!!!!!
     if (ray.dbg) printf("storing wrong normals here!\n");
     
-    render::HitAttributes hitData;
+    render::HitAttributes hitData(OptixGlobals::get());
     hitData.worldPosition   = P;
     hitData.objectPosition  = P;
     hitData.worldNormal     = N;
     hitData.objectNormal    = N;
     hitData.primID          = primID;
+    hitData.t               = t_hit;
     if (self.colors)
       (vec3f&)hitData.color = self.colors[primID];
 
-    storeHit(ray,hitData);
+    auto interpolate = [&](const render::GeometryAttribute &)
+    { /* does not make sense for spheres */return make_float4(0,0,0,1); };
+    self.evalAttributesAndStoreHit(ray,hitData,interpolate);
     
     // vec3f geometryColor(getColor(self,primID,primID,NAN,NAN/*no uv!*/));
     // if (self.colors)

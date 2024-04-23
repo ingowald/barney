@@ -25,17 +25,15 @@ namespace barney {
       
       struct AnariMatte {
         inline __device__
-        PackedBSDF createBSDF(const Sampler::Globals &samplers,
-                              const HitAttributes &hitData) const;
+        PackedBSDF createBSDF(const HitAttributes &hitData) const;
         
         MaterialInput reflectance;
       };
       
       inline __device__
-      PackedBSDF AnariMatte::createBSDF(const Sampler::Globals &samplers,
-                                        const HitAttributes &hitData) const
+      PackedBSDF AnariMatte::createBSDF(const HitAttributes &hitData) const
       {
-        float4 r = reflectance.eval(samplers,hitData);
+        float4 r = reflectance.eval(hitData);
         
         return packedBSDF::VisRTX::make_matte((const vec3f&)r);
       }

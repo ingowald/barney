@@ -24,10 +24,6 @@ namespace barney {
   namespace render {
 
     struct DeviceMaterial {
-      struct Globals {
-        DeviceMaterial *deviceMaterials;
-      };
-      
       typedef enum {
         INVALID=0,
         TYPE_AnariMatte,
@@ -35,8 +31,7 @@ namespace barney {
       } Type;
       
       inline __device__
-      PackedBSDF createBSDF(const Sampler::Globals &samplers,
-                            const HitAttributes &hitData) const;
+      PackedBSDF createBSDF(const HitAttributes &hitData) const;
 
       Type type;
       union {
@@ -46,11 +41,10 @@ namespace barney {
     };
 
     inline __device__
-    PackedBSDF DeviceMaterial::createBSDF(const Sampler::Globals &samplers,
-                                          const HitAttributes &hitData) const
+    PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData) const
     {
       if (type == TYPE_AnariMatte)
-        return anariMatte.createBSDF(samplers,hitData);
+        return anariMatte.createBSDF(hitData);
       return packedBSDF::Invalid();
     }
     

@@ -44,14 +44,15 @@ namespace barney {
       Type type;
 
       inline __device__ PackedBSDF();
-      inline __device__ PackedBSDF(const packedBSDF::Invalid &invalid);
+      inline __device__ PackedBSDF(const packedBSDF::Invalid &invalid)
+      { type = INVALID; }
       inline __device__ PackedBSDF(const packedBSDF::Phase  &phase)
       { type = TYPE_Phase; data.phase = phase; }
       inline __device__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
       
       inline __device__
       EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
-
+      
       inline __device__
       float getOpacity(render::DG dg, bool dbg=false) const;
     };

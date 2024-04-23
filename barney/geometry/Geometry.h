@@ -25,20 +25,29 @@
 namespace barney {
 
   struct ModelSlot;
+
+  struct OptixGlobals : public render::HitAttributes::Globals {
+    static inline __device__ const OptixGlobals &get();
+  };
+  
+  __constant__ OptixGlobals optixLaunchParams;
+  
+  inline __device__ const OptixGlobals &OptixGlobals::get() { return optixLaunchParams; }
+  
   
   struct Geometry : public SlottedObject {
     typedef std::shared_ptr<Geometry> SP;
 
     struct DD {
 
-      inline __device__ void setHit(Ray &ray);
-      
-      int       materialID;//Material::DD     material;
-      struct {
-        BNDataType     type;
-        AttributeScope scope;
-        void          *ptr;
-      } attributes[4];
+      template<typename InterpolatePerVertex>
+      inline __device__
+      void evalAttributesAndStoreHit(Ray &ray,
+                                     render::HitAttributes &hit,
+                                     const InterpolatePerVertex &interpolate) const;
+
+      int                       materialID;
+      render::GeometryAttribute attributes[render::numAttributes];
     };
     
     Geometry(ModelSlot *owner);
@@ -76,4 +85,31 @@ namespace barney {
     PODData::SP attribute4;
   };
 
+  template<typename InterpolatePerVertex>
+  inline __device__
+  void Geometry::DD::evalAttributesAndStoreHit(Ray &ray,
+                                               render::HitAttributes &hit,
+                                               const InterpolatePerVertex &interpolate)
+    const
+  {
+    using namespace render;
+    const DeviceMaterial &material  = hit.globals.deviceMaterials[this->materialID];
+    const PackedBSDF      bsdf      = material.createBSDF(hit);
+    ray.setHit(hit.worldPosition,hit.worldNormal,hit.t,bsdf);
+    
+    {
+      for (int i=0;i<numAttributes;i++) {
+        const GeometryAttribute &attrib = this->attributes[i];
+        if (attrib.scope == GeometryAttribute::CONSTANT)
+          hit.attribute[i] = attrib.value;
+        else if (attrib.scope == GeometryAttribute::PER_PRIM)
+          hit.attribute[i] = attrib.fromArray.valueAt(hit.primID);
+        else if (attrib.scope == GeometryAttribute::PER_VERTEX)
+          hit.attribute[i] = interpolate(attrib);
+        else 
+          /* undefined attrib; nothing to do, leave on default */;
+      }
+    }
+  }
+  
 }

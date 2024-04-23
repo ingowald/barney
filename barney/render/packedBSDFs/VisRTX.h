@@ -111,6 +111,17 @@ namespace barney {
         return {(diffuseBRDF + specularBRDF) * lightIntensity, opacity};
       }
       
+      inline __device__ VisRTX VisRTX::make_matte(const vec3f albedo)
+      {
+        VisRTX v;
+        v.metallic  = 0.f;
+        v.roughness = 0.f;
+        v.opacity   = 1.f;
+        v.ior       = 1.f;
+        v.baseColor = albedo;
+        return v;
+      }
+      
     }    
   }
 }

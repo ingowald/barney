@@ -36,9 +36,7 @@ namespace barney {
     uint32_t rngSeed;
 
     inline __device__ void setHit(vec3f P, vec3f N, float t,
-                                  const render::PackedBSDF &packedBSDF,
-                                  vec2f texCoords=vec2f(0.f),
-                                  vec3f geometryColor=vec3f(NAN))
+                                  const render::PackedBSDF &packedBSDF)
     {
       // material.make(hit,P,N,texCoords,geometryColor,this->dbg);
       this->packNormal(N);

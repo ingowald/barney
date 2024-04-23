@@ -39,7 +39,8 @@ namespace barney {
         + (      v) * self.normals[triangle.z];
     } else 
       n = cross(v1-v0,v2-v0);
-    
+
+    const vec3f osN = n;
     n = optixTransformNormalFromObjectToWorldSpace(n);
     n = normalize(n);
     
@@ -53,17 +54,35 @@ namespace barney {
       const vec2f Tc = self.texcoords[triangle.z];
       tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
     }
-#if VISUALIZE_PRIMS
-    colorFromTexture /*mat.baseColor*/ *= owl::randomColor(primID);
-#endif
-
 #if 1
     vec3f geometryColor(getColor(self,primID,triangle,u,v));
 #endif
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
-    ray.setHit(P,n,optixGetRayTmax(),
-               self.material,tc,geometryColor);
+
+    render::HitAttributes hitData(OptixGlobals::get());
+    hitData.worldPosition   = P;
+    hitData.worldNormal     = n;
+    hitData.objectPosition  = osP;
+    hitData.objectNormal    = osN;
+    hitData.primID          = primID;
+    hitData.t               = optixGetRayTmax();
+    hitData.attribute[0]    = make_float4(tc.x,tc.y,0.f,1.f);
+    if (!isnan(geometryColor.x))
+      (vec3f&)hitData.color = geometryColor;
+
+    auto interpolateAttrib
+      = [&](const render::GeometryAttribute &attrib) -> float4
+      {
+        const vec4f value_a = attrib.fromArray.valueAt(triangle.x);
+        const vec4f value_b = attrib.fromArray.valueAt(triangle.y);
+        const vec4f value_c = attrib.fromArray.valueAt(triangle.z);
+        return (1.f-u-v)*value_a + u*value_b + v*value_c;
+      };
+    
+    self.evalAttributesAndStoreHit(ray,hitData,interpolateAttrib);
+    // ray.setHit(P,n,optixGetRayTmax(),
+    //            self.material,tc,geometryColor);
   }
 
 
@@ -71,6 +90,7 @@ namespace barney {
   /*! triangles geom AH program; mostly check on transparency */
   OPTIX_ANY_HIT_PROGRAM(TrianglesAH)()
   {
+#if 0
     auto &ray  = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<Triangles::DD>();
 
@@ -99,6 +119,7 @@ namespace barney {
       optixIgnoreIntersection();
       return;
     }
+#endif
   }
   
 }
