@@ -107,7 +107,7 @@ namespace barney {
 
     bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
     ray.dbg         = centerPixel;
-    ray.hadHit      = false;
+    ray.clearHit();
     ray.isShadowRay = false;
     ray.isInMedium  = false;
     ray.rngSeed     = rand.state;
@@ -133,7 +133,7 @@ namespace barney {
     // engineer pixel pos etc
     vec3f bgColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
     bool crossHair = false; //((ix == fbSize.x/2) || (iy == fbSize.y/2));
-    ray.hit.missColor
+    ray.missColor
       = crossHair
       ? vec3f(1.f,0.f,0.f)
       : bgColor*bgColor;

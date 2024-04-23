@@ -54,9 +54,9 @@ namespace barney {
       const vec2f Tc = self.texcoords[triangle.z];
       tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
     }
-#if 1
-    vec3f geometryColor(getColor(self,primID,triangle,u,v));
-#endif
+// #if 1
+//     vec3f geometryColor(getColor(self,primID,triangle,u,v));
+// #endif
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
 
@@ -68,11 +68,11 @@ namespace barney {
     hitData.primID          = primID;
     hitData.t               = optixGetRayTmax();
     hitData.attribute[0]    = make_float4(tc.x,tc.y,0.f,1.f);
-    if (!isnan(geometryColor.x))
-      (vec3f&)hitData.color = geometryColor;
+    // if (!isnan(geometryColor.x))
+    //   (vec3f&)hitData.color = geometryColor;
 
     auto interpolateAttrib
-      = [&](const render::GeometryAttribute &attrib) -> float4
+      = [&](const render::GeometryAttribute::DD &attrib) -> float4
       {
         const vec4f value_a = attrib.fromArray.valueAt(triangle.x);
         const vec4f value_b = attrib.fromArray.valueAt(triangle.y);

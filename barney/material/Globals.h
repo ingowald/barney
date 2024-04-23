@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
-#include "barney/material/device/Material.h"
+// #include "barney/material/device/Material.h"
 
 namespace barney {
   namespace render {

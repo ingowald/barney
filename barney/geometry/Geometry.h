@@ -47,7 +47,7 @@ namespace barney {
                                      const InterpolatePerVertex &interpolate) const;
 
       int                       materialID;
-      render::GeometryAttribute attributes[render::numAttributes];
+      render::GeometryAttribute::DD attributes[render::numAttributes];
     };
     
     Geometry(ModelSlot *owner);
@@ -78,11 +78,12 @@ namespace barney {
     
     Material::SP material;
 
-    PODData::SP attribute0;
-    PODData::SP attribute1;
-    PODData::SP attribute2;
-    PODData::SP attribute3;
-    PODData::SP attribute4;
+    render::GeometryAttribute::OnHost attribute[render::numAttributes];
+    // PODData::SP attribute0;
+    // PODData::SP attribute1;
+    // PODData::SP attribute2;
+    // PODData::SP attribute3;
+    // PODData::SP attribute4;
   };
 
   template<typename InterpolatePerVertex>
@@ -99,7 +100,7 @@ namespace barney {
     
     {
       for (int i=0;i<numAttributes;i++) {
-        const GeometryAttribute &attrib = this->attributes[i];
+        const GeometryAttribute::DD &attrib = this->attributes[i];
         if (attrib.scope == GeometryAttribute::CONSTANT)
           hit.attribute[i] = attrib.value;
         else if (attrib.scope == GeometryAttribute::PER_PRIM)

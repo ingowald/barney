@@ -65,6 +65,7 @@ namespace barney {
       this->tMax = len;
     }
     inline __device__ bool hadHit() const { return bsdfType == render::PackedBSDF::NONE; }
+    inline __device__ void clearHit() { bsdfType = render::PackedBSDF::NONE; }
 
     struct {
       uint32_t  pixelID : 28;

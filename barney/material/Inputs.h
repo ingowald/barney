@@ -38,11 +38,18 @@ namespace barney {
         inline __device__
         float4 valueAt(int i) const;
       };
-        
-      Scope           scope;
-      union {
-        DataArray fromArray;
-        float4    value;
+      
+      struct DD {
+        Scope           scope;
+        union {
+          DataArray fromArray;
+          float4    value;
+        };
+      };
+      struct OnHost {
+        Scope       scope;
+        vec4f       value { 0.f, 0.f, 0.f, 1.f };
+        PODData::SP data;
       };
     };
       

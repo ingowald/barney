@@ -83,7 +83,7 @@ namespace barney {
     if (self.colors)
       (vec3f&)hitData.color = self.colors[primID];
 
-    auto interpolate = [&](const render::GeometryAttribute &)
+    auto interpolate = [&](const render::GeometryAttribute::DD &)
     { /* does not make sense for spheres */return make_float4(0,0,0,1); };
     self.evalAttributesAndStoreHit(ray,hitData,interpolate);
     

@@ -128,7 +128,25 @@ namespace barney {
       return;
 
     vec3f P = ray_org + ray.tMax * ray_dir;
-    ray.setHit(P,N,ray.tMax,self.material);
+
+    // THIS IS WRONG: !!!!!!!!!
+    if (ray.dbg) printf("storing wrong normals here!\n");
+    render::HitAttributes hitData(OptixGlobals::get());
+    hitData.worldPosition   = P;
+    hitData.objectPosition  = P;
+    hitData.worldNormal     = N;
+    hitData.objectNormal    = N;
+    hitData.primID          = primID;
+    hitData.t               = ray.tMax;
+    // if (self.colors)
+    //   (vec3f&)hitData.color = self.colors[primID];
+    
+    auto interpolate = [&](const render::GeometryAttribute::DD &)
+    { /* does not make sense for spheres */return make_float4(0,0,0,1); };
+    self.evalAttributesAndStoreHit(ray,hitData,interpolate);
+
+    // ray.setHit(P,N,ray.tMax,self.material);
+    
     optixReportIntersection(ray.tMax, 0);
   }
   
