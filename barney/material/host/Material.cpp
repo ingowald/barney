@@ -175,11 +175,13 @@ namespace barney {
 
   void Material::setDeviceDataOn(OWLGeom geom) const
   {
-    for (int deviceID=0;deviceID<owner->devGroup->size();deviceID++) {
-      Material::DD dd;
-      createDD(dd,deviceID);
-      owlGeomSetRaw(geom,"material",&dd,deviceID);
-    }
+    owlGeomSet1i(geom,"material",materialID);
+    // for (int deviceID=0;deviceID<owner->devGroup->size();deviceID++) {
+    //   // Material::DD dd;
+    //   // createDD(dd,deviceID);
+    //   owlGeomSetRaw(geom,"material",&dd,deviceID);
+    //   // owlGeomSetRaw(geom,"material",&dd,deviceID);
+    // }
   }
 
   void Material::commit()

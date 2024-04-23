@@ -21,19 +21,21 @@
 #include "barney/common/Texture.h"
 #include "barney/material/DeviceMaterial.h"
 #include "barney/material/host/Material.h"
+#include "barney/render/OptixGlobals.h"
 
 namespace barney {
 
   struct ModelSlot;
 
-  struct OptixGlobals : public render::HitAttributes::Globals {
-    static inline __device__ const OptixGlobals &get();
+  // __constant__ OptixGlobals optixLaunchParams;
+  
+  // inline __device__ const OptixGlobals &OptixGlobals::get() { return optixLaunchParams; }
+  
+  struct GeometryAttributes {
+    inline __device__ render::GeometryAttribute::DD &operator[](int i) { return attribute[i]; }
+    inline __device__ const render::GeometryAttribute::DD &operator[](int i) const { return attribute[i]; }
+    render::GeometryAttribute::DD attribute[render::numAttributes];
   };
-  
-  __constant__ OptixGlobals optixLaunchParams;
-  
-  inline __device__ const OptixGlobals &OptixGlobals::get() { return optixLaunchParams; }
-  
   
   struct Geometry : public SlottedObject {
     typedef std::shared_ptr<Geometry> SP;
@@ -45,9 +47,8 @@ namespace barney {
       void evalAttributesAndStoreHit(Ray &ray,
                                      render::HitAttributes &hit,
                                      const InterpolatePerVertex &interpolate) const;
-
-      int                       materialID;
-      render::GeometryAttribute::DD attributes[render::numAttributes];
+      GeometryAttributes attributes;
+      int materialID;
     };
     
     Geometry(ModelSlot *owner);
@@ -63,6 +64,8 @@ namespace barney {
 
     /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
+
+    void setAttributesOn(OWLGeom geom);
     
     /*! get the own context that was used to create this geometry */
     OWLContext getOWL() const;
@@ -94,7 +97,7 @@ namespace barney {
     const
   {
     using namespace render;
-    const DeviceMaterial &material  = hit.globals.deviceMaterials[this->materialID];
+    const DeviceMaterial &material  = hit.globals.materials[this->materialID];
     const PackedBSDF      bsdf      = material.createBSDF(hit);
     ray.setHit(hit.worldPosition,hit.worldNormal,hit.t,bsdf);
     

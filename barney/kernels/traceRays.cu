@@ -16,19 +16,24 @@
 
 #include "barney/DeviceContext.h"
 #include "owl/owl_device.h"
+#include "barney/render/OptixGlobals.h"
+#include "owl/owl_device.h"
 
-__constant__ struct {
-  __forceinline__ __device__ const barney::DeviceContext::DD &get() const
-  { return *(const barney::DeviceContext::DD*)this; }
+// __constant__ struct {
+//   __forceinline__ __device__ const barney::DeviceContext::DD &get() const
+//   { return *(const barney::DeviceContext::DD*)this; }
   
-  float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
-} optixLaunchParams;
+//   float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
+// } optixLaunchParams;
+
+
+__constant__ barney::OptixGlobals optixLaunchParams;
 
 namespace barney {
   
   OPTIX_RAYGEN_PROGRAM(traceRays)()
   {
-    auto &lp = optixLaunchParams.get();
+    auto &lp = OptixGlobals::get().devContext;
     const int rayID
       = owl::getLaunchIndex().x
       + owl::getLaunchDims().x

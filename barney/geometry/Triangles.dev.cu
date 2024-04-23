@@ -60,7 +60,7 @@ namespace barney {
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
 
-    render::HitAttributes hitData(OptixGlobals::get());
+    render::HitAttributes hitData(OptixGlobals::get().materialData);
     hitData.worldPosition   = P;
     hitData.worldNormal     = n;
     hitData.objectPosition  = osP;

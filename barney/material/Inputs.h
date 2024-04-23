@@ -27,37 +27,38 @@ namespace barney {
       };
     };
 
+    struct MaterialGlobals {
+      render::DeviceMaterial *materials;
+      render::Sampler        *samplers;
+    };
+
     struct GeometryAttribute {
       
       typedef enum { PER_VERTEX, PER_PRIM, CONSTANT, INVALID } Scope;
       
       struct DataArray {
-        BNDataType      type;
-        void           *ptr;
+        const void      *ptr;
+        int/*BNDataType*/type;
         
         inline __device__
         float4 valueAt(int i) const;
       };
       
       struct DD {
-        Scope           scope;
         union {
-          DataArray fromArray;
           float4    value;
+          DataArray fromArray;
         };
+        int/*Scope*/     scope;
       };
       struct OnHost {
-        Scope       scope;
-        vec4f       value { 0.f, 0.f, 0.f, 1.f };
-        PODData::SP data;
+        vec4f       constant { 0.f,0.f,0.f,1.f };
+        PODData::SP perPrim   = 0;
+        PODData::SP perVertex = 0;
       };
     };
       
     struct HitAttributes {
-      struct Globals {
-        const Sampler::DD    *samplers;
-        const DeviceMaterial *deviceMaterials;
-      };
       typedef enum {
         ATTRIBUTE_0,
         ATTRIBUTE_1,
@@ -71,7 +72,7 @@ namespace barney {
         PRIMITIVE_ID
       } Which;
 
-      inline __device__ HitAttributes(const Globals &globals)
+      inline __device__ HitAttributes(const MaterialGlobals &globals)
         : globals(globals)
       {
         color = make_float4(0,0,0,1);
@@ -90,7 +91,7 @@ namespace barney {
       int    primID;
       float  t;
 
-      const Globals &globals;
+      const MaterialGlobals &globals;
     };
 
     struct MaterialInput {
@@ -132,14 +133,23 @@ namespace barney {
     float4 GeometryAttribute::DataArray::valueAt(int i) const
     {
       switch(type) {
+      case BN_FLOAT: {
+        const float v = ((const float *)ptr)[i];
+        return make_float4(v,0.f,0.f,1.f);
+      }
+      case BN_FLOAT2: {
+        const float2 v = ((const float2 *)ptr)[i];
+        return make_float4(v.x,v.y,0.f,1.f);
+      }
       case BN_FLOAT3: {
         const float3 v = ((const float3 *)ptr)[i];
         return make_float4(v.x,v.y,v.z,1.f);
       }
-      default:
-        printf("un-handled material input type\n");
-        return make_float4(0.f,0.f,0.f,1.f);
+      case BN_FLOAT4: {
+        const float4 v = ((const float4 *)ptr)[i];
+        return v;
       }
+      };
     }
     
   }

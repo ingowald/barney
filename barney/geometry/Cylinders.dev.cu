@@ -131,7 +131,7 @@ namespace barney {
 
     // THIS IS WRONG: !!!!!!!!!
     if (ray.dbg) printf("storing wrong normals here!\n");
-    render::HitAttributes hitData(OptixGlobals::get());
+    render::HitAttributes hitData(OptixGlobals::get().materialData);
     hitData.worldPosition   = P;
     hitData.objectPosition  = P;
     hitData.worldNormal     = N;

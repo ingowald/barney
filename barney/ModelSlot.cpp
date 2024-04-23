@@ -20,15 +20,54 @@
 #include "barney/common/Texture.h"
 #include "barney/light/Light.h"
 #include "barney/geometry/Geometry.h"
+#include "barney/material/DeviceMaterial.h"
 
 namespace barney {
 
+  MaterialLibrary::MaterialLibrary(DevGroup::SP devGroup)
+    : devGroup(devGroup)
+  {
+    numReserved = 1;
+    materialsBuffer = owlDeviceBufferCreate
+      (devGroup->owl,OWL_USER_TYPE(render::DeviceMaterial),1,nullptr);
+  }
+
+  void MaterialLibrary::grow()
+  {
+    numReserved *= 2;
+    owlBufferResize(materialsBuffer,numReserved);
+  }
+
+  int MaterialLibrary::allocate()
+  {
+    if (!reusableIDs.empty()) {
+      int ID = reusableIDs.top();
+      reusableIDs.pop();
+      return ID;
+    }
+    if (nextFree == numReserved) grow();
+
+    return nextFree++;
+  }
+   
+  void MaterialLibrary::release(int nowReusableID)
+  {
+    reusableIDs.push(nowReusableID);
+  }
+  
+  render::DeviceMaterial *MaterialLibrary::getPointer(int owlDeviceID)
+  {
+    return (render::DeviceMaterial *)owlBufferGetPointer(materialsBuffer,owlDeviceID);
+  }    
+
+  
   ModelSlot::ModelSlot(GlobalModel *model, int slot)
     : Object(model->context),
       model(model),
       localID(localID),
       devGroup(model->context->perSlot[slot].devGroup),
-      world(model->context->perSlot[slot].devGroup.get())
+      world(model->context->perSlot[slot].devGroup.get()),
+      materialLibrary(model->context->perSlot[slot].devGroup)
   {}
 
   ModelSlot::~ModelSlot()

@@ -22,6 +22,7 @@
 #include "barney/common/mat4.h"
 
 namespace barney {
+
   /*! barney 'virtual' material implementation that takes anari-like
       material paramters, and then builder barney::render:: style
       device materials to be put into the device geometries */
@@ -57,7 +58,8 @@ namespace barney {
 
     /*! declares the device-data's variables to an owl geom */
     static void addVars(std::vector<OWLVarDecl> &vars, int base);
-    
+
+    int materialID = -1;
   };
 
 }

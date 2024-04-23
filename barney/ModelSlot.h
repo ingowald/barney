@@ -31,7 +31,31 @@ namespace barney {
   
   namespace render {
     struct World;
+    struct DeviceMaterial;
   }
+
+  struct MaterialLibrary {
+    typedef std::shared_ptr<MaterialLibrary> SP;
+    
+    MaterialLibrary(DevGroup::SP devGroup);
+    
+    int allocate();
+    void release(int nowReusableID);
+    void grow();
+    
+    render::DeviceMaterial *getPointer(int owlDeviceID);
+    
+    int numReserved = 0;
+    int nextFree = 0;
+    
+    std::stack<int> reusableIDs;
+    OWLBuffer materialsBuffer = 0;
+    DevGroup::SP devGroup;
+  };
+  
+
+
+
   
   struct ModelSlot : public Object {
     typedef std::shared_ptr<ModelSlot> SP;
@@ -42,6 +66,13 @@ namespace barney {
               int slotIndex);
     virtual ~ModelSlot();
 
+    Material::SP getDefaultMaterial()
+    {
+      if (!defaultMaterial) defaultMaterial = Material::create(this,"AnariMatte");
+      return defaultMaterial;
+    }
+    Material::SP defaultMaterial = 0;
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
     
@@ -101,6 +132,7 @@ namespace barney {
     DevGroup::SP   const devGroup;
     GlobalModel   *const model;
     int            const localID;
+    MaterialLibrary      materialLibrary;
   };
   
 }
