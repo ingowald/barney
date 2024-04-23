@@ -16,28 +16,59 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
-#include "barney/material/device/Material.h"
-
 namespace barney {
   namespace render {
-    
-    struct Globals {
-      Globals(const DevGroup *devGroup);
-      struct DD {
-        float *MicrofacetDielectricAlbedoTable_dir;
-        float *MicrofacetDielectricReflectionAlbedoTable_dir;
-        float *MicrofacetDielectricAlbedoTable_avg;
-        float *MicrofacetDielectricReflectionAlbedoTable_avg;
+
+    struct Sampler {
+      struct Globals {
+        Sampler *samplers;
       };
-
-      DD getDD(const Device::SP &device) const;
-
-      OWLBuffer MicrofacetDielectricAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricAlbedoTable_avg_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_avg_buffer = 0;
     };
- 
+    
+    struct HitAttributes {
+      typedef enum {
+        ATTRIBUTE_0,
+        ATTRIBUTE_1,
+        ATTRIBUTE_2,
+        ATTRIBUTE_3,
+        COLOR,
+        WORLD_POSITION,
+        WORLD_NORMAL,
+        OBJECT_POSITION,
+        OBJECT_NORMAL,
+        PRIMITIVE_ID
+      } Which;
+
+      inline __device__ HitAttributes()
+      {
+        color = make_float4(0,0,0,1);
+        for (int i=0;i<4;i++)
+          attribute[i] = make_float4(0,0,0,1);
+      }
+      
+      float4 color;
+      float4 attribute[4];
+      vec3f  worldPosition;
+      vec3f  objectPosition;
+      vec3f  worldNormal;
+      vec3f  objectNormal;
+      int    primID;
+    };
+    
+    struct MaterialInput {
+      typedef enum { VALUE, ATTRIBUTE, SAMPLER, UNDEFINED } Type;
+
+      inline __device__
+      float4 eval(const Sampler::Globals &samplers,
+                  const HitAttributes &hitData) const;
+      
+      Type type;
+      union {
+        float4               value;
+        HitAttributes::Which attribute;
+        int                  samplerID;
+      };
+    };
+    
   }
 }

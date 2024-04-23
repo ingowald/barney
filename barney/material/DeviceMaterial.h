@@ -16,28 +16,43 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
-#include "barney/material/device/Material.h"
+#include "barney/render/PackedBSDF.h"
+#include "barney/material/device/AnariMatte.h"
+#include "barney/material/device/AnariPBR.h"
 
 namespace barney {
   namespace render {
-    
-    struct Globals {
-      Globals(const DevGroup *devGroup);
-      struct DD {
-        float *MicrofacetDielectricAlbedoTable_dir;
-        float *MicrofacetDielectricReflectionAlbedoTable_dir;
-        float *MicrofacetDielectricAlbedoTable_avg;
-        float *MicrofacetDielectricReflectionAlbedoTable_avg;
+
+    struct DeviceMaterial {
+      struct Globals {
+        DeviceMaterial *deviceMaterials;
       };
+      
+      typedef enum {
+        INVALID=0,
+        TYPE_AnariMatte,
+        TYPE_AnariPBF
+      } Type;
+      
+      inline __device__
+      PackedBSDF createBSDF(const Sampler::Globals &samplers,
+                            const HitAttributes &hitData) const;
 
-      DD getDD(const Device::SP &device) const;
-
-      OWLBuffer MicrofacetDielectricAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricAlbedoTable_avg_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_avg_buffer = 0;
+      Type type;
+      union {
+        device::AnariPBR   anariPBR;
+        device::AnariMatte anariMatte;
+      };
     };
- 
+
+    inline __device__
+    PackedBSDF DeviceMaterial::createBSDF(const Sampler::Globals &samplers,
+                                          const HitAttributes &hitData) const
+    {
+      if (type == TYPE_AnariMatte)
+        return anariMatte.createBSDF(samplers,hitData);
+      return packedBSDF::Invalid();
+    }
+    
   }
 }

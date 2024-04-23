@@ -146,33 +146,33 @@ add_library(barney STATIC
   light/Light.h
   light/Light.cpp
   # device-level materials
-  material/device/Material.h
-  material/device/Velvet.h
-  material/device/VisRTX.h
-  material/device/Matte.h
-  material/device/Blender.h
-  material/device/Glass.h
-  material/device/Metal.h
-  material/device/Plastic.h
+  #material/device/Material.h
+  #material/device/Velvet.h
+  #material/device/VisRTX.h
+  #material/device/Matte.h
+  #material/device/Blender.h
+  #material/device/Glass.h
+  #material/device/Metal.h
+  #material/device/Plastic.h
   # barney-level material types
-  material/host/Material.h
-  material/host/Material.cpp
-  material/host/VisRTX.h
-  material/host/VisRTX.cpp
-  material/host/Velvet.h
-  material/host/Velvet.cpp
-  material/host/Plastic.h
-  material/host/Plastic.cpp
-  material/host/Matte.h
-  material/host/Matte.cpp
-  material/host/Blender.h
-  material/host/Blender.cpp
-  material/host/Glass.h
-  material/host/Glass.cpp
-  material/host/Metal.h
-  material/host/Metal.cpp
-  material/host/MetallicPaint.h
-  material/host/MetallicPaint.cpp
+  #material/host/Material.h
+  #material/host/Material.cpp
+  #material/host/VisRTX.h
+  #material/host/VisRTX.cpp
+  #material/host/Velvet.h
+  #material/host/Velvet.cpp
+  #material/host/Plastic.h
+  #material/host/Plastic.cpp
+  #material/host/Matte.h
+  #material/host/Matte.cpp
+  #material/host/Blender.h
+  #material/host/Blender.cpp
+  #material/host/Glass.h
+  #material/host/Glass.cpp
+  #material/host/Metal.h
+  #material/host/Metal.cpp
+  #material/host/MetallicPaint.h
+  #material/host/MetallicPaint.cpp
   # actual geometry types
   geometry/Geometry.h
   geometry/Geometry.cpp

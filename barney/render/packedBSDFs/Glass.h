@@ -16,28 +16,22 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
-#include "barney/material/device/Material.h"
+#include "barney/render/DG.h"
 
 namespace barney {
   namespace render {
-    
-    struct Globals {
-      Globals(const DevGroup *devGroup);
-      struct DD {
-        float *MicrofacetDielectricAlbedoTable_dir;
-        float *MicrofacetDielectricReflectionAlbedoTable_dir;
-        float *MicrofacetDielectricAlbedoTable_avg;
-        float *MicrofacetDielectricReflectionAlbedoTable_avg;
+    namespace packedBSDF {
+      
+      struct Glass {
+        inline __device__ vec3f getAlbedo(bool dbg) const;
+        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+
+        float  ior;
+        float3 attenuation;
       };
-
-      DD getDD(const Device::SP &device) const;
-
-      OWLBuffer MicrofacetDielectricAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricAlbedoTable_avg_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_avg_buffer = 0;
-    };
- 
+      
+    }
   }
 }
+

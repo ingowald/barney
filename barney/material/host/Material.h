@@ -17,7 +17,8 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/material/device/Material.h"
+#include "barney/material/DeviceMaterial.h"
+// #include "barney/material/device/Material.h"
 #include "barney/common/mat4.h"
 
 namespace barney {

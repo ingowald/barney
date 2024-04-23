@@ -18,7 +18,7 @@
 
 #include "barney/common/barney-common.h"
 #include "barney/common/mat4.h"
-#include "barney/material/device/Material.h"
+// #include "barney/material/device/Material.h"
 #include "owl/common/math/vec.h"
 
 namespace barney {

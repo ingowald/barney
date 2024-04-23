@@ -18,6 +18,7 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/material/Globals.h"
+#include "barney/material/DeviceMaterial.h"
 
 namespace barney {
   namespace render {
@@ -61,6 +62,8 @@ namespace barney {
         int         numDirLights  = 0;
         DirLight   *dirLights     = nullptr;
         float       radiance;
+        DeviceMaterial *deviceMaterials;
+        
         EnvMapLight::DD envMapLight;
         Globals::DD     globals;
       };

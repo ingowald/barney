@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/common/mat4.h"
-#include "barney/material/device/DG.h"
+#include "barney/render/DG.h"
 #include "barney/material/device/Velvet.h"
 #include "barney/material/device/Blender.h"
 #include "barney/material/device/Matte.h"
@@ -31,7 +31,7 @@
 
 namespace barney {
   namespace render {
-    
+
     typedef enum {
       MISS=0,
       MINI,
@@ -45,7 +45,8 @@ namespace barney {
       METALLIC_PAINT,
       ANARI_PHYSICAL
     } MaterialType;
-  
+
+
     /*! device-side implementation of anari "physical" material */
     struct AnariPhysical {
       struct BRDF {

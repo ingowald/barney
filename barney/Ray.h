@@ -23,7 +23,8 @@
     ... */
 #include "barney/fb/TiledFB.h"
 #include "barney/common/half.h"
-#include "barney/material/device/Material.h"
+#include "barney/render/PackedBSDF.h"
+// #include "barney/material/device/Material.h"
 
 namespace barney {
 
@@ -35,69 +36,74 @@ namespace barney {
     uint32_t rngSeed;
 
     inline __device__ void setHit(vec3f P, vec3f N, float t,
-                                  const render::DeviceMaterial &material,
+                                  const render::PackedBSDF &packedBSDF,
                                   vec2f texCoords=vec2f(0.f),
                                   vec3f geometryColor=vec3f(NAN))
     {
-      material.make(hit,P,N,texCoords,geometryColor,this->dbg);
-      tMax = t;
-      hadHit = true;
-      //   hit.P = P;
-    //   hit.N = N;
-    //   tMax = t;
-    //   hadHit = true;
-    //   hit.baseColor      = material.baseColor;
-    //   hit.ior            = material.ior;
-    //   hit.roughness      = material.roughness;
-    //   hit.metallic       = material.metallic;
-    //   hit.transmission   = material.transmission;
+      // material.make(hit,P,N,texCoords,geometryColor,this->dbg);
+      this->packNormal(N);
+      this->hitBSDF   = packedBSDF.data;
+      this->bsdfType  = packedBSDF.type;
+      this->tMax      = t;
+      this->P         = P;
     }
     inline __device__ void setVolumeHit(vec3f P,
                                         float t,
                                         vec3f albedo)
     {
-      hit.setMatte(albedo,P,/* 0 normal, to indicate volume hit */vec3f(0.f));
-      // DeviceMaterial dummyMat;
-      // dummyMat.type = barney::render::PHYSICAL;
-      // dummyMat.baseColor = albedo;
-      // dummyMat.ior = 1.f;
-      // dummyMat.transmission = 0.f;
-      // hit.P = P;
-      tMax = t;
-      hadHit = true;
-      // hit.N = vec3f(0.f);
-      // hit.baseColor      = albedo;
-      // hit.ior            = 1.f;
-      // hit.transmission   = 0.f;
+      setHit(P,vec3f(0.f),t,
+             render::packedBSDF::Phase(albedo));
+      //   hit.setMatte(albedo,P,/* 0 normal, to indicate volume hit */vec3f(0.f));
+      // tMax = t;
     }
     inline __device__
     void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len)
     {
-      this->hadHit = false;
+      this->bsdfType = render::PackedBSDF::NONE;
       this->isShadowRay = true;
       this->dir = _dir;
       this->org = _org;
       this->throughput = _tp;
       this->tMax = len;
     }
-    // struct {
-    //   vec3h    N;
-    //   vec3h    baseColor;
-    //   vec3f    P;
-    //   half     ior, transmission, metallic, roughness;
-    // } hit;
-    render::HitBRDF hit;
+    inline __device__ bool hadHit() const { return bsdfType == render::PackedBSDF::NONE; }
+
     struct {
-      uint32_t  pixelID:28;
-      uint32_t  hadHit:1;
+      uint32_t  pixelID : 28;
+      /*! type of bsdf in the hitBSDF; if this is set to NONE the ray didn't have any hit yet */
+      uint32_t bsdfType     :3;
       /*! for path tracer: tracks whether we are, or aren't, in a
           refractable medium */
-      uint32_t  isInMedium:1;
+      uint32_t  isInMedium :1;
       uint32_t  isShadowRay:1;
       uint32_t  dbg:1;
     };
-  };
+    /*! the actual hit point, in 3D float coordinates (rather than
+        implicitly through org+tMax*dir), for numerical robustness
+        issues */
+    vec3f       P;
+    vec3h       Le;
+    vec3h       N;
+    union {
+      render::PackedBSDF::Data hitBSDF;
+      /*! the background color for primary rays that didn't have any intersection */
+      float3                   missColor;
+    };
 
+    inline __device__ void packNormal(vec3f N);
+    inline __device__ vec3f unpackNormal() const;
+  };
+  
+  inline __device__ void Ray::packNormal(vec3f N)
+  {
+    this->N = N;
+  }
+  
+  inline __device__ vec3f Ray::unpackNormal() const
+  {
+    return (vec3f)N;
+  }
+    
   struct RayQueue {
     struct DD {
       Ray *traceAndShadeReadQueue  = nullptr;
@@ -231,7 +237,6 @@ namespace barney {
     t1 = min(t1,reduce_min(t_fr));
     return t0 < t1;
   }
-
 
   inline __device__
   bool boxTest(float &t0, float &t1,

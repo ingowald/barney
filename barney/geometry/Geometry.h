@@ -19,6 +19,7 @@
 #include "barney/Object.h"
 #include "barney/Ray.h"
 #include "barney/common/Texture.h"
+#include "barney/material/DeviceMaterial.h"
 #include "barney/material/host/Material.h"
 
 namespace barney {
@@ -29,8 +30,15 @@ namespace barney {
     typedef std::shared_ptr<Geometry> SP;
 
     struct DD {
-      Material::DD     material;
-      const vec4f     *primitiveAttribute[5];
+
+      inline __device__ void setHit(Ray &ray);
+      
+      int       materialID;//Material::DD     material;
+      struct {
+        BNDataType     type;
+        AttributeScope scope;
+        void          *ptr;
+      } attributes[4];
     };
     
     Geometry(ModelSlot *owner);

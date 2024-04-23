@@ -16,28 +16,30 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
-#include "barney/material/device/Material.h"
+#include "barney/render/packedBSDFs/VisRTX.h"
+#include "barney/material/Inputs.h"
 
 namespace barney {
   namespace render {
-    
-    struct Globals {
-      Globals(const DevGroup *devGroup);
-      struct DD {
-        float *MicrofacetDielectricAlbedoTable_dir;
-        float *MicrofacetDielectricReflectionAlbedoTable_dir;
-        float *MicrofacetDielectricAlbedoTable_avg;
-        float *MicrofacetDielectricReflectionAlbedoTable_avg;
+    namespace device {
+      
+      struct AnariPBR {
+        inline __device__
+        PackedBSDF createBSDF(const Sampler::Globals &samplers,
+                              const HitAttributes &hitData) const;
+        
+        MaterialInput reflectance;
       };
-
-      DD getDD(const Device::SP &device) const;
-
-      OWLBuffer MicrofacetDielectricAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricAlbedoTable_avg_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_avg_buffer = 0;
-    };
- 
+      
+      inline __device__
+      PackedBSDF AnariPBR::createBSDF(const Sampler::Globals &samplers,
+                                      const HitAttributes &hitData) const
+      {
+        float4 r = reflectance.eval(samplers,hitData);
+        
+        return packedBSDF::VisRTX::make_matte((const vec3f&)r);
+      }
+      
+    }
   }
 }
