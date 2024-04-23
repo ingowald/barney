@@ -24,7 +24,7 @@ namespace barney {
       
       struct Phase {
         inline Phase() = default;
-        inline __device__ Phase(vec3f albedo) : albedo(albedo) {};
+        inline __device__ Phase(vec3f albedo) { this->albedo = (const float3&)albedo; }
         inline __device__ vec3f getAlbedo(bool dbg) const;
         inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
         inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;

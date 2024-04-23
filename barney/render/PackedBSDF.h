@@ -44,6 +44,8 @@ namespace barney {
       Type type;
 
       inline __device__ PackedBSDF();
+      inline __device__ PackedBSDF(Type type, Data data)
+        : type(type), data(data) {}
       inline __device__ PackedBSDF(const packedBSDF::Invalid &invalid)
       { type = INVALID; }
       inline __device__ PackedBSDF(const packedBSDF::Phase  &phase)

@@ -35,6 +35,10 @@ namespace barney {
     float    tMax;
     uint32_t rngSeed;
 
+    inline __device__ render::PackedBSDF getBSDF() const {
+      return render::PackedBSDF((render::PackedBSDF::Type)bsdfType,hitBSDF);
+    }
+    
     inline __device__ void setHit(vec3f P, vec3f N, float t,
                                   const render::PackedBSDF &packedBSDF)
     {
@@ -91,6 +95,7 @@ namespace barney {
 
     inline __device__ void packNormal(vec3f N);
     inline __device__ vec3f unpackNormal() const;
+    inline __device__ vec3f getN() const { return unpackNormal(); }
   };
   
   inline __device__ void Ray::packNormal(vec3f N)

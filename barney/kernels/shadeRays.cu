@@ -52,212 +52,6 @@ namespace barney {
       }
     }
 
-#if 0
-    __global__
-    void g_shadeRays_local(AccumTile *accumTiles,
-                           int accumID,
-                           Ray *readQueue,
-                           int numRays,
-                           Ray *writeQueue,
-                           int *d_nextWritePos,
-                           int generation)
-    {
-      if (generation != 0) return;
-    
-      int tid = threadIdx.x + blockIdx.x*blockDim.x;
-      if (tid >= numRays) return;
-
-      Ray ray = readQueue[tid];
-    
-      vec3f albedo = (vec3f)ray.hit.baseColor;
-      vec3f fragment = 0.f;
-      float z = INFINITY;
-      if (!ray.hadHit) {
-        fragment = (vec3f)ray.hit.baseColor;
-      } else {
-        z = ray.tMax;
-        vec3f dir = ray.dir;
-        vec3f Ng = ray.hit.N;
-        const bool isVolumeHit = (Ng == vec3f(0.f));
-        if (!isVolumeHit) Ng = normalize(Ng);
-        float NdotD = dot(Ng,normalize(dir));
-        if (NdotD > 0.f) Ng = - Ng;
-      
-        // let's do some ambient eyelight-style shading, anyway:
-        float scale
-          = isVolumeHit
-          ? .5f
-          : (.2f + .4f*fabsf(NdotD));
-        fragment
-          = albedo
-          * scale
-          * ray.throughput;
-      }
-      int tileID  = ray.pixelID / pixelsPerTile;
-      int tileOfs = ray.pixelID % pixelsPerTile;
-    
-      float4 &valueToAccumInto
-        = accumTiles[tileID].accum[tileOfs];
-      float  &tile_z
-        = accumTiles[tileID].depth[tileOfs];
-      vec4f valueToAccum = make_float4(fragment.x,fragment.y,fragment.z,0.f);
-      if (accumID > 0)
-        valueToAccum = valueToAccum + (vec4f)valueToAccumInto;
-    
-      if (generation == 0) {
-        if (accumID == 0)
-          tile_z = z;
-        else
-          tile_z = min(tile_z,z);
-      }
-
-      valueToAccumInto = valueToAccum;
-    }
-#endif
-
-
-
-
-    __global__
-    void g_shadeRays_ao(AccumTile *accumTiles,
-                        int accumID,
-                        Ray *readQueue,
-                        int numRays,
-                        Ray *writeQueue,
-                        int *d_nextWritePos,
-                        int generation)
-    {
-      const float EPS = 1e-4f;
-      int tid = threadIdx.x + blockIdx.x*blockDim.x;
-      if (tid >= numRays) return;
-
-      Ray ray = readQueue[tid];
-    
-      vec3f albedo = ray.hit.getAlbedo();//(vec3f)ray.hit.baseColor;
-      vec3f fragment = 0.f;
-      float z = INFINITY;
-      // if (0 && ray.dbg) {
-      //   printf("============================================ ray: hadHit %i, t %f P %f %f %f base %f %f %f N %f %f %f\n",
-      //          ray.hadHit,
-      //          ray.tMax,
-      //          (float)ray.hit.P.x,
-      //          (float)ray.hit.P.y,
-      //          (float)ray.hit.P.z,
-      //          (float)ray.hit.baseColor.x,
-      //          (float)ray.hit.baseColor.y,
-      //          (float)ray.hit.baseColor.z,
-      //          (float)ray.hit.N.x,
-      //          (float)ray.hit.N.y,
-      //          (float)ray.hit.N.z);
-      // }
-      if (!ray.hadHit) {
-        if (generation == 0) {
-          // for primary rays we have pre-initialized basecolor to a
-          // background color in generateRays(); let's just use this, so
-          // generaterays can pre--set whatever color it wasnts for
-          // non-hitting rays
-          fragment
-            = ray.hit.missColor;
-          // .crossHair
-          //   ? vec3f(1.f,0.f,0.f)
-          //   : (vec3f)ray.hit.miss.color;
-
-        } else {
-          vec3f ambientIllum = vec3f(1.f);
-          fragment = ray.throughput * ambientIllum;
-        }
-      } else {
-        z = ray.tMax;
-        vec3f dir = ray.dir;
-        vec3f Ng = ray.hit.getN();
-        const bool isVolumeHit = (Ng == vec3f(0.f));
-        if (!isVolumeHit) Ng = normalize(Ng);
-        float NdotD = dot(Ng,normalize(dir));
-        if (NdotD > 0.f) Ng = - Ng;
-      
-        // let's do some ambient eyelight-style shading, anyway:
-      
-        const float eyeLightWeight
-          = isVolumeHit
-          ? .5f
-          : (.2f + .4f*fabsf(NdotD));
-        const float ao_ambient_component = .1f;
-
-        const float scale = ao_ambient_component * eyeLightWeight;
-        // scale *= 0.001f;
-        vec3f tp = ray.throughput;
-        fragment
-          = albedo
-          * scale
-          * ray.throughput;
-        // if (ray.dbg) {
-        //   printf("gen %i fragment %f %f %f\n",generation,fragment.x,fragment.y,fragment.z);
-        //   printf("gen %i Ng %f %f %f\n",generation,Ng.x,Ng.y,Ng.z);
-        //   printf("gen %i albedo %f %f %f\n",generation,albedo.x,albedo.y,albedo.z);
-        //   printf("gen %i tp %f %f %f\n",generation,tp.x,tp.y,tp.z);
-        // }
-      
-        // and then add a single diffuse bounce (ae, ambient occlusion)
-        Random &rng = (Random &)ray.rngSeed;
-        if (ray.hadHit && generation == 0) {
-          Ray bounce;
-          bounce.org = ray.hit.P + safe_eps(EPS,ray.hit.P)*Ng;
-          // if (ray.dbg)
-          // printf("bounce org %f %f %f\n",
-          //        bounce.org.x,
-          //        bounce.org.y,
-          //        bounce.org.z);
-          bounce.dir = normalize(Ng + randomDirection(rng));
-          bounce.tMax = INFINITY;
-          bounce.dbg = ray.dbg;
-          bounce.hadHit = false;
-          bounce.pixelID = ray.pixelID;
-          rng();
-          bounce.rngSeed = ray.rngSeed;
-          rng();
-          bounce.throughput = 
-            // .6f *
-            .8f *
-            ray.throughput * albedo;
-          writeQueue[atomicAdd(d_nextWritePos,1)] = bounce;
-        }
-      }
-      int tileID  = ray.pixelID / pixelsPerTile;
-      int tileOfs = ray.pixelID % pixelsPerTile;
-    
-      float4 &valueToAccumInto
-        = accumTiles[tileID].accum[tileOfs];
-      float  &tile_z
-        = accumTiles[tileID].depth[tileOfs];
-      vec4f valueToAccum = make_float4(fragment.x,fragment.y,fragment.z,0.f);
-
-      // if (ray.dbg)
-      //   printf("gen %i accumulating %f %f %f %f\n",
-      //          generation,
-      //          valueToAccum.x,
-      //          valueToAccum.y,
-      //          valueToAccum.z,
-      //          valueToAccum.w);
-    
-      if (accumID > 0)
-        valueToAccum = valueToAccum + (vec4f)valueToAccumInto;
-    
-      if (generation == 0) {
-        if (accumID == 0)
-          tile_z = z;
-        else
-          tile_z = min(tile_z,z);
-      }
-        
-      valueToAccumInto = valueToAccum;
-    }
-
-
-
-
-
-
-
     struct LightSample {
       /* direction _to_ light */
       vec3f dir;
@@ -464,56 +258,56 @@ namespace barney {
   
 
 
-    inline __device__
-    bool scatter_glass(vec3f &scattered_direction,
-                       Random &random,
-                       // const vec3f &org,
-                       const vec3f &dir,
-                       // const vec3f &P,
-                       vec3f N,
-                       const float ior
-                       // ,
-                       // PerRayData &prd
-                       )
-    {
-      // const vec3f org   = optixGetWorldRayOrigin();
-      // const vec3f dir   = normalize((vec3f)optixGetWorldRayDirection());
+    // inline __device__
+    // bool scatter_glass(vec3f &scattered_direction,
+    //                    Random &random,
+    //                    // const vec3f &org,
+    //                    const vec3f &dir,
+    //                    // const vec3f &P,
+    //                    vec3f N,
+    //                    const float ior
+    //                    // ,
+    //                    // PerRayData &prd
+    //                    )
+    // {
+    //   // const vec3f org   = optixGetWorldRayOrigin();
+    //   // const vec3f dir   = normalize((vec3f)optixGetWorldRayDirection());
 
-      // N = normalize(N);
-      vec3f outward_normal;
-      vec3f reflected = reflect(dir,N);
-      float ni_over_nt;
-      // prd.out.attenuation = vec3f(1.f, 1.f, 1.f); 
-      vec3f refracted;
-      float reflect_prob;
-      float cosine;
+    //   // N = normalize(N);
+    //   vec3f outward_normal;
+    //   vec3f reflected = reflect(dir,N);
+    //   float ni_over_nt;
+    //   // prd.out.attenuation = vec3f(1.f, 1.f, 1.f); 
+    //   vec3f refracted;
+    //   float reflect_prob;
+    //   float cosine;
   
-      if (dot(dir,N) > 0.f) {
-        outward_normal = -N;
-        ni_over_nt = ior;
-        cosine = dot(dir, N);// / vec3f(dir).length();
-        cosine = sqrtf(1.f - ior*ior*(1.f-cosine*cosine));
-      }
-      else {
-        outward_normal = N;
-        ni_over_nt = 1.0 / ior;
-        cosine = -dot(dir, N);// / vec3f(dir).length();
-      }
-      if (refract(dir, outward_normal, ni_over_nt, refracted)) 
-        reflect_prob = schlick(cosine, ior);
-      else 
-        reflect_prob = 1.f;
+    //   if (dot(dir,N) > 0.f) {
+    //     outward_normal = -N;
+    //     ni_over_nt = ior;
+    //     cosine = dot(dir, N);// / vec3f(dir).length();
+    //     cosine = sqrtf(1.f - ior*ior*(1.f-cosine*cosine));
+    //   }
+    //   else {
+    //     outward_normal = N;
+    //     ni_over_nt = 1.0 / ior;
+    //     cosine = -dot(dir, N);// / vec3f(dir).length();
+    //   }
+    //   if (refract(dir, outward_normal, ni_over_nt, refracted)) 
+    //     reflect_prob = schlick(cosine, ior);
+    //   else 
+    //     reflect_prob = 1.f;
 
-      // prd.out.scattered_origin = P;
-      if (random() < reflect_prob) 
-        // prd.out.
-        scattered_direction = reflected;
-      else 
-        // prd.out.
-        scattered_direction = refracted;
+    //   // prd.out.scattered_origin = P;
+    //   if (random() < reflect_prob) 
+    //     // prd.out.
+    //     scattered_direction = reflected;
+    //   else 
+    //     // prd.out.
+    //     scattered_direction = refracted;
   
-      return true;
-    }
+    //   return true;
+    // }
 
 
     inline __device__
@@ -571,7 +365,7 @@ namespace barney {
       if (world.envMapLight.texture)
         return radianceFromEnv(world,ray);
       return
-        ray.hit.missColor;
+        ray.missColor;
     }
 
     /*! ugh - that should all go into material::AnariPhysical .... */
@@ -585,7 +379,7 @@ namespace barney {
     {
       const float EPS = 1e-4f;
 
-      const bool  hadNoIntersection  = !path.hadHit;
+      const bool  hadNoIntersection  = !path.hadHit();
       const vec3f incomingThroughput = path.throughput;
 
       // if (path.dbg)
@@ -614,7 +408,7 @@ namespace barney {
         return;
       }
 
-      vec3f Ng = path.hit.getN();
+      vec3f Ng = path.getN();
 
       const bool  isVolumeHit        = (Ng == vec3f(0.f));
       if (!isVolumeHit)
@@ -668,10 +462,10 @@ namespace barney {
       // ray and shadow ray (if applicable), with proper weights.
       // ==================================================================    
       Random &random = (Random &)path.rngSeed;
-    
+      const PackedBSDF bsdf = path.getBSDF();
       // bool doTransmission = false;
-        // =  ((float)path.hit.mini.transmission > 0.f)
-        // && (random() < (float)path.hit.mini.transmission);
+        // =  ((float)path.mini.transmission > 0.f)
+        // && (random() < (float)path.mini.transmission);
       render::DG dg;
       dg.Ng = Ng;
       dg.Ns = Ng;
@@ -684,17 +478,17 @@ namespace barney {
                dg.Ns.z);
 
       vec3f frontFacingSurfaceOffset
-        = safe_eps(EPS,path.hit.P)*Ng;
+        = safe_eps(EPS,path.P)*Ng;
       vec3f dg_P
-        = path.hit.P+frontFacingSurfaceOffset;
+        = path.P+frontFacingSurfaceOffset;
 // if (path.dbg)
       //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
       //          pathDepth,
-      //          (float)path.hit.transmission,
-      //          (float)path.hit.ior,
+      //          (float)path.transmission,
+      //          (float)path.ior,
       //          int(doTransmission));
 // #if 1
-      // if (path.dbg) printf("mattype %i\n",path.hit.materialType);
+      // if (path.dbg) printf("mattype %i\n",path.materialType);
 
 
 
@@ -706,10 +500,10 @@ namespace barney {
       // ==================================================================
       LightSample ls;
       if (sampleLights(ls,world,dg_P,Ng,random,0 && path.dbg)
-          && 
-          (path.hit.materialType != GLASS)
+          // && 
+          // (path.materialType != GLASS)
           ) {
-        EvalRes f_r = path.hit.eval(world.globals,dg,ls.dir,path.dbg);
+        EvalRes f_r = bsdf.eval(dg,ls.dir,path.dbg);
         
         if (f_r.pdf <= 1e-6f || isnan(f_r.pdf)) {
           shadowRay.tMax = -1.f;
@@ -734,20 +528,22 @@ namespace barney {
       // ==================================================================
       // now, let's decide what to do with the ray itself
       // ==================================================================
-      
-      if ((path.hit.materialType == GLASS)
+
+      path.tMax = -1.f;
+#if 0
+      if ((path.materialType == GLASS)
           ||
-          (path.hit.materialType == BLENDER)
+          (path.materialType == BLENDER)
           ) {
         // dg.wo = normalize(neg(path.dir));
         SampleRes sampleRes;
         sampleRes.pdf = 0.f;
-        if (path.hit.materialType == GLASS)
+        if (path.materialType == GLASS)
           sampleRes
-            = path.hit.glass.sample(dg,random,path.dbg);
-        else if (path.hit.materialType == BLENDER)
+            = path.glass.sample(dg,random,path.dbg);
+        else if (path.materialType == BLENDER)
           sampleRes
-            = path.hit.blender.sample(dg,random,path.dbg);
+            = path.blender.sample(dg,random,path.dbg);
 
         if (sampleRes.pdf < 1e-6f) {
           path.tMax = -1.f;
@@ -756,9 +552,9 @@ namespace barney {
           if (sampleRes.type & BSDF_SPECULAR_TRANSMISSION) {
             // doTransmission = true;
             path.isInMedium = !path.isInMedium;
-            path.org = path.hit.P - frontFacingSurfaceOffset;
+            path.org = path.P - frontFacingSurfaceOffset;
           } else {
-            path.org = path.hit.P + frontFacingSurfaceOffset;
+            path.org = path.P + frontFacingSurfaceOffset;
           }
           path.throughput = path.throughput * sampleRes.weight
             /* pdf is inf for glass ....  /sampleRes.pdf */
@@ -770,7 +566,7 @@ namespace barney {
             && !path.isInMedium;
           if (wasLeavingMedium) {
             vec3f attenuation
-              = path.hit.glass.mediumInside.attenuation;
+              = path.glass.mediumInside.attenuation;
             attenuation = exp(attenuation*path.tMax);
             path.throughput = path.throughput * attenuation;
           }
@@ -782,13 +578,13 @@ namespace barney {
         // ------------------------------------------------------------------
 
         // save local path weight for the shadow ray:
-        path.org = path.hit.P + safe_eps(EPS,path.hit.P)*Ng;
+        path.org = path.P + safe_eps(EPS,path.P)*Ng;
         if (isVolumeHit) {
           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
-          path.throughput = .8f * path.throughput * path.hit.getAlbedo();//hit.baseColor;
+          path.throughput = .8f * path.throughput * path.getAlbedo();//baseColor;
         } else {
           path.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
-          EvalRes f_r = path.hit.eval(world.globals,dg,path.dir,path.dbg);
+          EvalRes f_r = path.eval(world.globals,dg,path.dir,path.dbg);
 
           if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
             path.tMax = -1.f;
@@ -810,7 +606,7 @@ namespace barney {
           ) && path.tMax > 0.f) {
         path.dir = normalize(path.dir);
         path.tMax   = INFINITY;
-        path.hadHit = false;
+        path.clearHit();
 
         float maxWeight = reduce_max((vec3f)path.throughput);
         if (maxWeight < .3f) {
@@ -824,6 +620,7 @@ namespace barney {
           path.tMax = 1e-20f;
       } else
         path.tMax = -1.f;
+#endif
     }
   
 
@@ -953,8 +750,10 @@ namespace barney {
            rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
       case RENDER_MODE_AO:
-        g_shadeRays_ao<<<nb,bs,0,device->launchStream>>>
-          (fb->accumTiles,fb->owner->accumID,
+        g_shadeRays_pt<1>
+          <<<nb,bs,0,device->launchStream>>>
+          (world->getDD(device),
+           fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
            rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
