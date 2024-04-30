@@ -5,6 +5,7 @@
 #include "common.h"
 // CUDA
 #include <vector_functions.h>
+#include <iostream>
 
 namespace barney_device {
 
@@ -88,10 +89,15 @@ void PhysicallyBased::commit()
 
   m_metallic.value = 1.f;
   getParam("metallic", ANARI_FLOAT32, &m_metallic.value);
+  m_metallic.stringValue = getParamString("metallic","");
 
+    
+  // std::cout << "found metallic attribute " << metallicAttribute << std::endl;
+  
   m_roughness.value = 1.f;
   getParam("roughness", ANARI_FLOAT32, &m_roughness.value);
-
+  m_roughness.stringValue = getParamString("roughness","");
+  
   m_specular.value = 0.f;
   getParam("specular", ANARI_FLOAT32, &m_specular.value);
 
@@ -125,8 +131,14 @@ BNMaterial PhysicallyBased::makeBarneyMaterial(BNModel model, int slot) const
       m_specularColor.value.z);
 
   bnSet1f(mat, "opacity", m_opacity.value);
-  bnSet1f(mat, "metallic", m_metallic.value);
-  bnSet1f(mat, "roughness", m_roughness.value);
+  if (m_metallic.stringValue.empty())
+    bnSet1f(mat, "metallic", m_metallic.value);
+  else
+    bnSetString(mat, "metallic", m_metallic.stringValue.c_str());
+  if (m_roughness.stringValue.empty())
+    bnSet1f(mat, "roughness", m_roughness.value);
+  else
+    bnSetString(mat, "roughness", m_roughness.stringValue.c_str());
   bnSet1f(mat, "specular", m_specular.value);
   bnSet1f(mat, "transmission", m_transmission.value);
   bnSet1f(mat, "ior", m_ior);

@@ -47,7 +47,7 @@ struct Image1D : public Sampler
   math::mat4 m_outTransform{math::identity};
   math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
 
-  mutable BNTexture2D m_texture{nullptr};
+  mutable BNSampler m_sampler{nullptr};
 };
 
 struct Image2D : public Sampler
@@ -74,7 +74,8 @@ struct Image2D : public Sampler
   math::mat4 m_outTransform{math::identity};
   math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
 
-  mutable BNTexture2D m_texture{nullptr};
+  mutable BNSampler m_sampler{nullptr};
+  // mutable BNTexture2D m_texture{nullptr};
 };
 
 struct TransformSampler : public Sampler
@@ -89,6 +90,7 @@ struct TransformSampler : public Sampler
   int m_inAttribute{-1};
   math::mat4 m_outTransform{math::identity};
   math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
+  mutable BNSampler m_sampler{nullptr};
 };
 
 } // namespace barney_device

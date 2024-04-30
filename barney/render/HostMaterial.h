@@ -28,27 +28,37 @@ namespace barney {
     struct DeviceMaterial;
     
     struct PossiblyMappedParameter {
-      typedef enum { VALUE, ATTRIBUTE, SAMPLER, UNDEFINED } Type;
+      typedef enum { INVALID=0, VALUE, ATTRIBUTE, SAMPLER// , ARRAY
+      } Type;
       
       struct DD {
         inline __device__
-        float4 eval(const HitAttributes &hitData) const;
+        float4 eval(const HitAttributes &hitData, bool dbg=false) const;
         
         Type type;
         union {
           float4               value;
           HitAttributes::Which attribute;
           int                  samplerID;
+          // struct {
+          //   BNDataType  elementType;
+          //   const void *pointer;
+          // } array;
         };
       };
 
+      void set(const vec3f  &v);
       void set(const float4 &v);
       void set(Sampler::SP sampler);
+      // void set(PODData::SP array);
       void set(const std::string &attributeName);
+      void make(DD &dd, int deviceID) const;
       
+      Type type = VALUE;
       Sampler::SP          sampler;
+      // PODData::SP          array;
       HitAttributes::Which attribute;
-      float4               value;
+      float4               value { 0.f, 0.f, 0.f, 1.f };
     };
 
     /*! barney 'virtual' material implementation that takes anari-like
@@ -70,8 +80,8 @@ namespace barney {
         changes */
       // using DD = barney::render::DeviceMaterial;
 
-      HostMaterial(ModelSlot *owner) : SlottedObject(owner) {}
-      virtual ~HostMaterial() = default;
+      HostMaterial(ModelSlot *owner);
+      virtual ~HostMaterial();
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
@@ -87,17 +97,21 @@ namespace barney {
       /*! declares the device-data's variables to an owl geom */
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
 
-      int materialID = -1;
+      const int materialID;
     };
 
     inline __device__
-    float4 PossiblyMappedParameter::DD::eval(const HitAttributes &hitData) const
+    float4 PossiblyMappedParameter::DD::eval(const HitAttributes &hitData, bool dbg) const
     {
+      if (dbg)
+        printf("evaluating attrib, type %i\n",int(type));
       if (type == VALUE)
         return value;
-      if (type == ATTRIBUTE)
-        return hitData.get(attribute);
-      printf("un-handled material input type\n");
+      if (type == ATTRIBUTE) {
+        if (dbg) printf("asking hitattributes for attribute %i\n",(int)attribute);
+        return hitData.get(attribute,dbg);
+      }
+      printf("un-handled material input type %i\n",(int)type);
       return make_float4(0.f,0.f,0.f,1.f);
     }
 

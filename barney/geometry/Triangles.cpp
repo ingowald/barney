@@ -194,7 +194,7 @@ namespace barney {
     // owlGeomSetBuffer(geom,"vertex.attribute2",vertexAttribute2Buffer);
     // owlGeomSetBuffer(geom,"vertex.attribute3",vertexAttribute3Buffer);
     // owlGeomSetBuffer(geom,"vertex.attribute4",vertexAttribute4Buffer);
-    
+
     material->setDeviceDataOn(geom);
   }
   

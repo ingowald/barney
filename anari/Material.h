@@ -58,6 +58,7 @@ struct PhysicallyBased : public Material
 
   struct {
     float value{1.f};
+    std::string stringValue;
     /*TODO: samplers, attributes, etc.*/
   } m_opacity, m_metallic, m_roughness, m_specular, m_transmission;
 

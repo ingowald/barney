@@ -65,6 +65,11 @@ namespace barney {
                                       const DeviceMaterial &dd,
                                       int deviceID)
     {
+      PING;
+      PRINT(materialID);
+      PRINT(numReserved);
+      PRINT(deviceID);
+      PRINT(getPointer(deviceID));
       BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+materialID),
                               &dd,sizeof(dd),cudaMemcpyDefault));
     }

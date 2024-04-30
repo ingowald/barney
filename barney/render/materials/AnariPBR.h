@@ -26,26 +26,50 @@ namespace barney {
     struct AnariPBR : public HostMaterial {
       struct DD {
         inline __device__
-        PackedBSDF createBSDF(const HitAttributes &hitData) const;
-        PossiblyMappedParameter::DD color;
+        PackedBSDF createBSDF(const HitAttributes &hitData, bool dbg) const;
+        PossiblyMappedParameter::DD baseColor;
+        PossiblyMappedParameter::DD metallic;
+        PossiblyMappedParameter::DD roughness;
       };
       AnariPBR(ModelSlot *owner) : HostMaterial(owner) {}
       virtual ~AnariPBR() = default;
       
       std::string toString() const override { return "AnariPBR"; }
       
-      void createDD(DeviceMaterial &dd, int deviceID) const override
-      { throw std::runtime_error("not implemented..."); }
+      void createDD(DeviceMaterial &dd, int deviceID) const override;
+
+      bool setString(const std::string &member, const std::string &value) override;
+      bool set1f(const std::string &member, const float &value) override;
+      bool set3f(const std::string &member, const vec3f &value) override;
       
-      PossiblyMappedParameter color;
+      PossiblyMappedParameter baseColor;
+      PossiblyMappedParameter metallic;
+      PossiblyMappedParameter roughness;
     };
       
     inline __device__
-    PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData) const
+    PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData, bool dbg) const
     {
-      float4 r = color.eval(hitData);
-        
-      return packedBSDF::VisRTX::make_matte((const vec3f&)r);
+      packedBSDF::VisRTX bsdf;
+      
+      float4 baseColor = this->baseColor.eval(hitData);
+      bsdf.baseColor = (const vec3f&)baseColor;
+
+      float4 metallic = this->metallic.eval(hitData,dbg);
+      bsdf.metallic = metallic.x;
+
+      float4 roughness = this->roughness.eval(hitData,dbg);
+      if (dbg) printf("got roughness %f %f %f %f\n",
+                      roughness.x,
+                      roughness.y,
+                      roughness.z,
+                      roughness.w);
+      bsdf.roughness = roughness.x;
+      
+      bsdf.ior = 1.5f;
+      bsdf.opacity = 1.f;
+
+      return bsdf;
     }
 
   }

@@ -43,7 +43,8 @@ namespace barney {
       template<typename InterpolatePerVertex>
       inline __device__
       void setHitAttributes(render::HitAttributes &hit,
-                            const InterpolatePerVertex &interpolate) const;
+                            const InterpolatePerVertex &interpolate,
+                            bool dbg=false) const;
 
       render::GeometryAttributes::DD attributes;
       int materialID;
@@ -90,11 +91,10 @@ namespace barney {
   template<typename InterpolatePerVertex>
   inline __device__
   void Geometry::DD::setHitAttributes(render::HitAttributes &hit,
-                                      const InterpolatePerVertex &interpolate) const
+                                      const InterpolatePerVertex &interpolate,
+                                      bool dbg) const
   {
-    for (int i=0;i<attributes.count;i++) {
-      float4     &out = hit.attribute[i];
-      const auto &in  = this->attributes.attribute[i];
+    auto set = [&](float4 &out, const GeometryAttribute::DD &in) {
       switch(in.scope) {
       case GeometryAttribute::INVALID:
         /* nothing - leave default */
@@ -109,7 +109,32 @@ namespace barney {
         out = interpolate(in);
         break; 
       }
+    };
+    
+    for (int i=0;i<attributes.count;i++) {
+      float4     &out = hit.attribute[i];
+      const auto &in  = this->attributes.attribute[i];
+      set(out,in);
+      // if (dbg)
+      //   printf("sethitattributes attr %i scope %i\n",i,int(in.scope));
+      // switch(in.scope) {
+      // case GeometryAttribute::INVALID:
+      //   /* nothing - leave default */
+      //   break;
+      // case GeometryAttribute::CONSTANT:
+      //   out = in.value;
+      //   break;
+      // case GeometryAttribute::PER_PRIM:
+      //   out = in.fromArray.valueAt(hit.primID);
+      //   break;
+      // case GeometryAttribute::PER_VERTEX:
+      //   out = interpolate(in);
+      //   break; 
+      // }
+      // if (dbg) printf("attr %i set to %f %f %f %f\n",
+      //                 i,out.x,out.y,out.z,out.w);
     }
+    set(hit.color,this->attributes.colorAttribute);
   }
   
   // template<typename InterpolatePerVertex>

@@ -124,13 +124,13 @@ BNGeom Sphere::makeBarneyGeometry(
   addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
   addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
   addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
-  addAttribute(geom, model, slot, m_attributes[4], "primitive.attribute4");
+  addAttribute(geom, model, slot, m_attributes[4], "primitive.color");
 
   addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
   addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
   addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
   addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
-  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.attribute4");
+  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
 
   bnCommit(geom);
   return geom;
@@ -241,13 +241,13 @@ BNGeom Triangle::makeBarneyGeometry(
   addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
   addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
   addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
-  addAttribute(geom, model, slot, m_attributes[4], "primitive.attribute4");
+  addAttribute(geom, model, slot, m_attributes[4], "primitive.color");
 
   addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
   addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
   addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
   addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
-  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.attribute4");
+  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
 
   bnCommit(geom);
 

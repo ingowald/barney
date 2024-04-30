@@ -383,7 +383,7 @@ namespace barney {
       const vec3f incomingThroughput = path.throughput;
 
       if (path.dbg)
-        printf(" -> incoming %f %f %f dir %f %f %f t %f ismiss %i\n",
+        printf("------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f ismiss %i\n",
                path.org.x,
                path.org.y,
                path.org.z,
@@ -398,9 +398,14 @@ namespace barney {
         // reached the light, and discards
         // ==================================================================
                  
-        if (hadNoIntersection) 
+        if (hadNoIntersection) {
           // fragment = clamp((vec3f)path.throughput,vec3f(0.f),vec3f(1.f));
           fragment = (vec3f)path.throughput;
+          if (path.dbg) printf("shadow miss, frag %f %f %f\n",
+                               fragment.x,
+                               fragment.y,
+                               fragment.z);
+        }
 
         // this path is done.
         shadowRay.tMax = -1.f;
@@ -505,17 +510,26 @@ namespace barney {
       // place when we generate the outgoing ray.
       // ==================================================================
       LightSample ls;
-      if (sampleLights(ls,world,dg_P,Ng,random,0 && path.dbg)
+      if (sampleLights(ls,world,dg_P,Ng,random,path.dbg)
           // && 
           // (path.materialType != GLASS)
           ) {
+        if (path.dbg) printf("eval light %f %f %f\n",
+                             ls.dir.x,
+                             ls.dir.y,
+                             ls.dir.z);
         EvalRes f_r = bsdf.eval(dg,ls.dir,path.dbg);
+        if (path.dbg) printf("eval light res %f %f %f: %f\n",
+                             f_r.value.x,
+                             f_r.value.y,
+                             f_r.value.z,
+                             f_r.pdf);
         
         if (f_r.pdf <= 1e-6f || isnan(f_r.pdf)) {
           shadowRay.tMax = -1.f;
         } else {
           vec3f tp_sr
-            = (incomingThroughput*ls.L)
+            = (incomingThroughput)
             * (1.f/ls.pdf)
             *  f_r.value
             /// f_r.pdf
@@ -524,6 +538,7 @@ namespace barney {
                                   /* surface: */dg_P,
                                   /* to light */ls.dir,
                                   /* length   */ls.dist * (1.f-2.f*EPS));
+          if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
           shadowRay.rngSeed = path.rngSeed + 1; random();
           shadowRay.dbg = path.dbg;
           shadowRay.pixelID = path.pixelID;
@@ -747,6 +762,7 @@ namespace barney {
 
     if (nb) {
       switch(renderMode) {
+#if 0
       case RENDER_MODE_LOCAL:
         g_shadeRays_pt<0>
           <<<nb,bs,0,device->launchStream>>>
@@ -764,6 +780,9 @@ namespace barney {
            rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
       case RENDER_MODE_PT:
+#else
+      default:
+#endif
         g_shadeRays_pt<8><<<nb,bs,0,device->launchStream>>>
           (world->getDD(device),
            fb->accumTiles,fb->owner->accumID,

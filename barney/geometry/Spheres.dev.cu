@@ -71,7 +71,7 @@ namespace barney {
     }
 
     // THIS IS WRONG: !!!!!!!!!
-    if (ray.dbg) printf("storing wrong normals here!\n");
+    if (ray.dbg) printf("storing wrong object-space data here!\n");
     
     render::HitAttributes hitData;//(OptixGlobals::get());
     hitData.worldPosition   = P;
@@ -83,14 +83,21 @@ namespace barney {
     if (self.colors)
       (vec3f&)hitData.color = self.colors[primID];
     
-    auto interpolator = [&](const GeometryAttribute::DD &)
-    { /* does not make sense for spheres */return make_float4(0,0,0,1); };
-    self.setHitAttributes(hitData,interpolator);
+    auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
+    { /* does not make sense for spheres *///return make_float4(0,0,0,1);
 
-    if (ray.dbg) printf("HIT SPHERES\n");
+      // doesn't make sense, but anari sdk assumes for spheres per-vtx is same as per-prim
+      float4 v = attrib.fromArray.valueAt(hitData.primID,ray.dbg);
+      // if (ray.dbg)
+      //   printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
+      return v;
+    };
+    self.setHitAttributes(hitData,interpolator,ray.dbg);
+
+    // if (ray.dbg) printf("HIT SPHERES\n");
     
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
-    material.setHit(ray,hitData);
+    material.setHit(ray,hitData,ray.dbg);
     
     // auto interpolate = [&](const GeometryAttributes &)
     // { /* does not make sense for spheres */return make_float4(0,0,0,1); };

@@ -29,15 +29,16 @@ namespace barney {
       typedef enum {
         INVALID=0,
         TYPE_AnariMatte,
-        TYPE_AnariPBF
+        TYPE_AnariPBR
       } Type;
       
       inline __device__
-      PackedBSDF createBSDF(const HitAttributes &hitData) const;
+      PackedBSDF createBSDF(const HitAttributes &hitData, bool dbg=false) const;
 
       inline __device__
       void setHit(Ray &ray,
-                  const HitAttributes &hitData) const;
+                  const HitAttributes &hitData,
+                  bool dbg=false) const;
         
       Type type;
       union {
@@ -47,10 +48,12 @@ namespace barney {
     };
 
     inline __device__
-    PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData) const
+    PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData, bool dbg) const
     {
       if (type == TYPE_AnariMatte)
-        return anariMatte.createBSDF(hitData);
+        return anariMatte.createBSDF(hitData,dbg);
+      if (type == TYPE_AnariPBR)
+        return anariPBR.createBSDF(hitData,dbg);
       return packedBSDF::Invalid();
     }
 
@@ -68,10 +71,11 @@ namespace barney {
 
     inline __device__
     void DeviceMaterial::setHit(Ray &ray,
-                                const HitAttributes &hitData) const
+                                const HitAttributes &hitData,
+                                bool dbg) const
     {
       ray.setHit(hitData.worldPosition,hitData.worldNormal,
-                 hitData.t,createBSDF(hitData));
+                 hitData.t,createBSDF(hitData,dbg));
     }
       
   }

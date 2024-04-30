@@ -277,6 +277,17 @@ namespace barney {
   }
 
   BN_API
+  BNSampler bnSamplerCreate(BNModel model,
+                            int whichSlot,
+                            const char *type)
+  {
+    render::Sampler::SP sampler
+      = render::Sampler::create(checkGet(model,whichSlot),type);
+    if (!sampler) return 0;
+    return (BNSampler)checkGet(model,whichSlot)->context->initReference(sampler);
+  }
+
+  BN_API
   BNCamera bnCameraCreate(BNContext context,
                           const char *type)
   {

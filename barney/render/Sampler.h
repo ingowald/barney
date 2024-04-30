@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/render/HitAttributes.h"
+#include "barney/Object.h"
 #include <cuda.h>
 
 namespace barney {
@@ -64,23 +65,36 @@ namespace barney {
           } image;
         };
       };
+
+      static Sampler::SP create(ModelSlot *owner, const std::string &type);
+
+      Sampler(ModelSlot *owner);
+      virtual ~Sampler();
       
-      virtual void create(DD &dd, int devID) = 0;
+      virtual void createDD(DD &dd, int devID) = 0;
       
-      int   samplerID = -1;
-      int   inAttribute { render::ATTRIBUTE_0 };
+      const int   samplerID;
+      int   inAttribute  { render::ATTRIBUTE_0 };
       mat4f outTransform { mat4f::identity() };
-      vec4f outOffset { 0.f, 0.f, 0.f, 0.f };
+      vec4f outOffset    { 0.f, 0.f, 0.f, 0.f };
     };
 
     struct TransformSampler : public Sampler {
-      void create(DD &dd, int devID) override;
+      TransformSampler(ModelSlot *owner)
+        : Sampler(owner)
+      {}
+      void createDD(DD &dd, int devID) override;
     };
+
     struct ImageSampler : public Sampler {
-      void create(DD &dd, int devID) override;
+      ImageSampler(ModelSlot *owner, int numDims)
+        : Sampler(owner), numDims(numDims)
+      {}
+      void createDD(DD &dd, int devID) override;
     
       mat4f inTransform { mat4f::identity() };
       vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
+      int   numDims;
       Texture::SP image{ 0 };
     };
   

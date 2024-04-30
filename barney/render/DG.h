@@ -36,7 +36,7 @@
 #include "barney/common/Texture.h"
 #include "barney/common/Data.h"
 #include "barney/common/half.h"
-#include "barney/render/math.h"
+#include "barney/render/floatN.h"
 
 namespace barney {
   namespace render {

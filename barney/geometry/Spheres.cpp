@@ -132,6 +132,7 @@ namespace barney {
     int numOrigins = origins->count;
     owlGeomSetPrimCount(geom,numOrigins);
     material->setDeviceDataOn(geom);
+    setAttributesOn(geom);
   } 
 
   bool Spheres::set1f(const std::string &member, const float &value)

@@ -14,39 +14,45 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/render/packedBSDFs/VisRTX.h"
-#include "barney/render/HitAttributes.h"
-#include "barney/render/HostMaterial.h"
+#include "barney/render/Sampler.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
   namespace render {
-      
-    struct AnariMatte : public HostMaterial {      
-      struct DD {
-        inline __device__
-        PackedBSDF createBSDF(const HitAttributes &hitData, bool dbg) const;
-        PossiblyMappedParameter::DD color;
-      };
-      AnariMatte(ModelSlot *owner) : HostMaterial(owner) {}
-      virtual ~AnariMatte() = default;
 
-      std::string toString() const override { return "AnariMatte"; }
-      
-      void createDD(DeviceMaterial &dd, int deviceID) const override
-      { throw std::runtime_error("AnriMatte::createDD( not implemented..."); }
-      
-      PossiblyMappedParameter color;
-    };
-      
-    inline __device__
-    PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData, bool dbg) const
+    Sampler::Sampler(ModelSlot *owner)
+      : SlottedObject(owner),
+        samplerID(owner->world.samplerLibrary.allocate())
+    {}
+    
+    Sampler::~Sampler()
     {
-      float4 r = color.eval(hitData);
-        
-      return packedBSDF::VisRTX::make_matte((const vec3f&)r);
+      owner->world.samplerLibrary.release(samplerID);
     }
-      
+    
+    Sampler::SP Sampler::create(ModelSlot *owner, const std::string &type)
+    {
+      PING; PRINT(type);
+      if (type == "image1D")
+        return std::make_shared<ImageSampler>(owner,1);
+      if (type == "image2D")
+        return std::make_shared<ImageSampler>(owner,2);
+      if (type == "image3D")
+        return std::make_shared<ImageSampler>(owner,3);
+      if (type == "transform")
+        return std::make_shared<TransformSampler>(owner);
+      throw std::runtime_error("not implemented");
+    }
+
+    void ImageSampler::createDD(DD &dd, int devID)
+    {
+      PING; throw std::runtime_error("not implemneted");
+    }
+    
+    void TransformSampler::createDD(DD &dd, int devID)
+    {
+      PING; throw std::runtime_error("not implemneted");
+    }
+
   }
 }

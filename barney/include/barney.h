@@ -38,6 +38,7 @@ typedef struct _BNTexture3D    : public _BNObject{} *BNTexture3D;
 typedef struct _BNLight        : public _BNObject{} *BNLight;
 typedef struct _BNCamera       : public _BNObject{} *BNCamera;
 typedef struct _BNMaterial     : public _BNObject{} *BNMaterial;
+typedef struct _BNSampler     : public _BNObject{} *BNSampler;
 
 typedef BNTexture2D BNTexture;
 
@@ -398,6 +399,10 @@ BN_API
 BNMaterial bnMaterialCreate(BNModel model,
                             int whichSlot,
                             const char *type);
+
+BNSampler bnSamplerCreate(BNModel model,
+                          int whichSlot,
+                          const char *type);
 
 
 

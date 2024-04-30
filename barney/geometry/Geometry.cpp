@@ -66,27 +66,36 @@ namespace barney {
   {
     // Material::addVars(vars,base+OWL_OFFSETOF(DD,material));
     vars.push_back({"materialID",OWL_INT,OWL_OFFSETOF(DD,materialID)});
-    vars.push_back({"attributes",OWL_USER_TYPE(GeometryAttributes),
+    vars.push_back({"attributes",OWL_USER_TYPE(GeometryAttributes::DD),
         OWL_OFFSETOF(DD,attributes)});
   }
 
 
   void Geometry::setAttributesOn(OWLGeom geom)
   {
+    std::cout << "=======================================================" << std::endl;
+    PING;
     GeometryAttributes::DD dd;
     for (int devID=0;devID<owner->devGroup->size();devID++) {
+      PING; PRINT(devID);
       for (int i=0;i<attributes.count;i++) {
+        PRINT(i);
         const auto &in = attributes.attribute[i];
         auto &out = dd.attribute[i];
         if (in.perVertex) {
+          PING;
           out.scope = GeometryAttribute::PER_VERTEX;
           out.fromArray.type = in.perVertex->type;
           out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
+          PRINT((int*)out.fromArray.ptr)
         } else if (in.perPrim) {
+          PING;
           out.scope = GeometryAttribute::PER_PRIM;
           out.fromArray.type = in.perPrim->type;
           out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
+          PRINT((int*)out.fromArray.ptr)
         } else {
+          PING;
           out.scope = GeometryAttribute::CONSTANT;
           (vec4f&)out.value = in.constant;
         }
@@ -124,38 +133,45 @@ namespace barney {
   
   bool Geometry::setData(const std::string &member, const Data::SP &value)
   {
-    auto *attribute = attributes.attribute;
     if (member == "primitive.attribute0") {
-      attribute[0].perPrim = value->as<PODData>();
+      attributes.attribute[0].perPrim = value->as<PODData>();
       return true;
     }
     if (member == "primitive.attribute1") {
-      attribute[1].perPrim = value->as<PODData>();
+      attributes.attribute[1].perPrim = value->as<PODData>();
       return true;
     }
     if (member == "primitive.attribute2") {
-      attribute[2].perPrim = value->as<PODData>();
+      attributes.attribute[2].perPrim = value->as<PODData>();
       return true;
     }
     if (member == "primitive.attribute3") {
-      attribute[3].perPrim = value->as<PODData>();
+      attributes.attribute[3].perPrim = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.color") {
+      attributes.colorAttribute.perPrim = value->as<PODData>();
       return true;
     }
     
     if (member == "vertex.attribute0") {
-      attribute[0].perVertex = value->as<PODData>();
+      attributes.attribute[0].perVertex = value->as<PODData>();
       return true;
     }
     if (member == "vertex.attribute1") {
-      attribute[1].perVertex = value->as<PODData>();
+      attributes.attribute[1].perVertex = value->as<PODData>();
       return true;
     }
     if (member == "vertex.attribute2") {
-      attribute[2].perVertex = value->as<PODData>();
+      attributes.attribute[2].perVertex = value->as<PODData>();
       return true;
     }
     if (member == "vertex.attribute3") {
-      attribute[3].perVertex = value->as<PODData>();
+      attributes.attribute[3].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.color") {
+      attributes.colorAttribute.perVertex = value->as<PODData>();
       return true;
     }
     return false;

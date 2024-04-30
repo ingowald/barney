@@ -32,6 +32,84 @@
 namespace barney {
   namespace render {
     
+    void PossiblyMappedParameter::make(DD &dd, int deviceID) const
+    {
+      dd.type = type;
+      switch(type) {
+      case SAMPLER:
+        assert(sampler);
+        dd.samplerID = sampler->samplerID;
+        break;
+      // case ARRAY:
+      //   assert(array);
+      //   dd.array.elementType = array->type;
+      //   dd.array.pointer     = (const void *)owlBufferGetPointer(array->owl,deviceID);
+      //   break;
+      case ATTRIBUTE:
+        dd.attribute = attribute;
+        break;
+      case VALUE:
+        dd.value = value;
+        break;
+      }
+    }
+    
+    void PossiblyMappedParameter::set(const vec3f  &v)
+    {
+      set(make_float4(v.x,v.y,v.z,1.f));
+    }
+
+    void PossiblyMappedParameter::set(const float4 &v)
+    {
+      type    = VALUE;
+      sampler = {};
+      // array   = {};
+      value   = v;
+    }
+
+    void PossiblyMappedParameter::set(Sampler::SP s)
+    {
+      type = SAMPLER;
+      sampler   = s;
+      // array   = {};
+    }
+
+    // void PossiblyMappedParameter::set(PODData::SP a)
+    // {
+    //   type = ARRAY;
+    //   sampler = {};
+    //   array   = a;
+    // }
+    
+    void PossiblyMappedParameter::set(const std::string &attributeName)
+    {
+      sampler = {};
+      // array   = {};
+      type    = ATTRIBUTE;
+      if (attributeName == "attribute0")
+        { attribute = render::ATTRIBUTE_0; return; }
+      if (attributeName == "attribute1")
+        { attribute = render::ATTRIBUTE_1; return; }
+      if (attributeName == "attribute2")
+        { attribute = render::ATTRIBUTE_2; return; }
+      if (attributeName == "attribute3")
+        { attribute = render::ATTRIBUTE_3; return; }
+      
+      
+      PRINT(attributeName);
+      throw std::runtime_error("PossiblyMappedParameter::set not implemented");
+    }
+    
+    HostMaterial::HostMaterial(ModelSlot *owner)
+      : SlottedObject(owner),
+        materialID(owner->world.materialLibrary.allocate())
+    {}
+
+    HostMaterial::~HostMaterial()
+    {
+      owner->world.materialLibrary.release(materialID);
+    }
+    
     void HostMaterial::setDeviceDataOn(OWLGeom geom) const
     {
       owlGeomSet1i(geom,"materialID",materialID);

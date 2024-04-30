@@ -149,7 +149,13 @@ add_library(barney STATIC
   # lights
   light/Light.h
   light/Light.cpp
-  # device-level materials
+  # samplers
+  render/Sampler.h
+  render/Sampler.cpp
+  # materials
+  render/HostMaterial.cpp
+  render/materials/AnariPBR.h
+  render/materials/AnariPBR.cpp
   #material/device/Material.h
   #material/device/Velvet.h
   #material/device/VisRTX.h
@@ -159,8 +165,6 @@ add_library(barney STATIC
   #material/device/Metal.h
   #material/device/Plastic.h
   
-  # barney-level material types
-  render/HostMaterial.cpp
   #material/host/VisRTX.h
   #material/host/VisRTX.cpp
   #material/host/Velvet.h

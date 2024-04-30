@@ -38,14 +38,20 @@ namespace barney {
 
       inline __device__ float pow2(float f) { return f*f; }
       inline __device__ float pow5(float f) { return pow2(pow2(f))*f; }
-      inline __device__ float mix(float f, float a, float b) { return (1.f-f)*a + f*b; }
-      inline __device__ vec3f mix(vec3f f, vec3f a, vec3f b)
-      { return vec3f(mix(f.x,a.x,b.x),mix(f.y,a.y,b.y),mix(f.z,a.z,b.z)); }
+      inline __device__ float mix(float a, float b, float f) { return (1.f-f)*a + f*b; }
+      inline __device__ vec3f mix(vec3f a, vec3f b, vec3f f)
+      { return vec3f(mix(a.x,b.x,f.x),mix(a.y,b.y,f.y),mix(a.z,b.z,f.z)); }
       inline __device__ float heaviside(float f) { return (f<0.f)?0.f:1.f; }
 
     
       inline __device__ vec3f VisRTX::getAlbedo(bool dbg) const
-      { return baseColor; }
+      {
+        if (dbg) printf("visrtx::getalbedo %f %f %f\n",
+                        (float)baseColor.x,
+                        (float)baseColor.y,
+                        (float)baseColor.z); 
+        return baseColor;
+      }
     
       inline __device__ EvalRes VisRTX::eval(DG dg, vec3f wi, bool dbg) const
       {
@@ -57,6 +63,13 @@ namespace barney {
         const float metallic  = this->metallic;
         const vec3f baseColor = this->baseColor;
         const float ior       = this->ior;
+
+        if (dbg) printf("visrtx::baseColor %f %f %f metal %f rough %f\n",
+                        (float)baseColor.x,
+                        (float)baseColor.y,
+                        (float)baseColor.z,
+                        metallic,roughness); 
+        
         vec3f lightDir = wi;
         vec3f viewDir  = dg.wo;
         vec3f hit_Ns = dg.Ns;
@@ -74,7 +87,14 @@ namespace barney {
         const float NdotV = dot(hit_Ns, viewDir);
         const float VdotH = dot(viewDir, H);
         const float LdotH = dot(lightDir, H);
-      
+
+        if (dbg) {
+          printf(" lightDir %f %f %f\n",lightDir.x,lightDir.y,lightDir.z);
+          printf(" viewDir %f %f %f\n",viewDir.x,viewDir.y,viewDir.z);
+          printf(" H %f %f %f\n",H.x,H.y,H.z);
+          printf("NdotH %f HdotL %f NdotV %f VdotH %f LdotH %f\n",
+                 NdotH,NdotL,NdotV,VdotH,LdotH);
+        }
         // Alpha
         const float alpha = pow2(roughness) * opacity;
       
@@ -92,6 +112,10 @@ namespace barney {
         const vec3f diffuseBRDF =
           (vec3f(1.f) - F) * float(M_1_PI) * diffuseColor * fmaxf(0.f, NdotL);
 
+        
+        if (dbg) printf("diff %f %f %f\n",diffuseBRDF.x
+                        ,diffuseBRDF.y
+                        ,diffuseBRDF.z);
         // GGX microfacet distribution
         const float D = (alpha * alpha * heaviside(NdotH))
           / (float(M_PI) * pow2(NdotH * NdotH * (alpha * alpha - 1.f) + 1.f));
@@ -107,8 +131,21 @@ namespace barney {
 
         const float denom = 4.f * fabsf(NdotV) * fabsf(NdotL);
         const vec3f specularBRDF = denom != 0.f ? (F * D * G) / denom : vec3f(0.f);
+        if (dbg) printf("spec %f %f %f den %f\n",specularBRDF.x
+                        ,specularBRDF.y
+                        ,specularBRDF.z,denom);
 
-        return {(diffuseBRDF + specularBRDF) * lightIntensity, opacity};
+        if (dbg) printf("light %f %f %f\n",lightIntensity.x
+                        ,lightIntensity.y
+                        ,lightIntensity.z);
+         
+        EvalRes ret {(diffuseBRDF + specularBRDF) * lightIntensity, 1.f};//opacity};
+        if (dbg) printf("visrtx eval %f %f %f : %f\n",
+                        ret.value.x,
+                        ret.value.y,
+                        ret.value.z,
+                        ret.pdf);
+        return ret;
       }
       
       inline __device__ VisRTX VisRTX::make_matte(const vec3f albedo)

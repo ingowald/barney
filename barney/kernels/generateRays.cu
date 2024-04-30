@@ -105,7 +105,7 @@ namespace barney {
         ray.dir = normalize(ray.dir);
       }
 
-      bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
+      bool centerPixel = ((ix == fbSize.x/2-20) && (iy == fbSize.y/2-20));
       ray.dbg         = centerPixel;
       ray.clearHit();
       ray.isShadowRay = false;
