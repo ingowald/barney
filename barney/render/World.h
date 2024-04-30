@@ -17,11 +17,18 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
-#include "barney/material/Globals.h"
-#include "barney/material/DeviceMaterial.h"
+// #include "barney/material/Globals.h"
+#include "barney/render/device/Material.h"
+// #include "barney/material/DeviceMaterial.h"
 
 namespace barney {
   namespace render {
+
+    namespace device {
+      struct Material;
+      struct Sampler;
+    }
+
     
 #define DEFAULT_RADIANCE_FROM_ENV .8f
 
@@ -51,27 +58,71 @@ namespace barney {
       affine3f   transform;
       OWLTexture texture = 0;
     };
+
+
+    struct MaterialLibrary {
+      typedef std::shared_ptr<MaterialLibrary> SP;
+    
+      MaterialLibrary(DevGroup *devGroup);
+    
+      int allocate();
+      void release(int nowReusableID);
+      void grow();
+    
+      const render::device::Material *getPointer(int owlDeviceID) const;
+    
+      int numReserved = 0;
+      int nextFree = 0;
+    
+      std::stack<int> reusableIDs;
+      OWLBuffer       buffer = 0;
+      DevGroup       *devGroup;
+    };
+  
+    struct SamplerLibrary {
+      typedef std::shared_ptr<SamplerLibrary> SP;
+    
+      SamplerLibrary(DevGroup *devGroup);
+    
+      int allocate();
+      void release(int nowReusableID);
+      void grow();
+    
+      const render::device::Sampler *getPointer(int owlDeviceID) const;
+    
+      int numReserved = 0;
+      int nextFree = 0;
+    
+      std::stack<int> reusableIDs;
+      OWLBuffer       buffer = 0;
+      DevGroup       *devGroup;
+    };
+  
   
     /*! the rendering/path racing related part of a model that describes
       global render settings like light sources, background, envmap,
       etc */
     struct World {
       struct DD {
-        int         numQuadLights = 0;
-        QuadLight  *quadLights    = nullptr;
-        int         numDirLights  = 0;
-        DirLight   *dirLights     = nullptr;
-        float       radiance;
-        DeviceMaterial *deviceMaterials;
+        int               numQuadLights = 0;
+        const QuadLight  *quadLights    = nullptr;
+        int               numDirLights  = 0;
+        const DirLight   *dirLights     = nullptr;
+        float             radiance;
         
-        EnvMapLight::DD envMapLight;
-        Globals::DD     globals;
+        const device::Material *materials;
+        const device::Sampler  *samplers;
+        
+        EnvMapLight::DD   envMapLight;
+        // Globals::DD     globals;
       };
       EnvMapLight envMapLight;
 
       World(DevGroup *devGroup)
         : devGroup(devGroup),
-          globals(devGroup)
+          materialLibrary(devGroup),
+          samplerLibrary(devGroup)
+          // globals(devGroup)
       {
         quadLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
                                                  OWL_USER_TYPE(QuadLight),
@@ -117,12 +168,16 @@ namespace barney {
           dd.envMapLight.texture
             = 0;
         dd.envMapLight.transform = envMapLight.transform;
-        dd.globals = globals.getDD(device);
-        dd.radiance = radiance;
+        // dd.globals = globals.getDD(device);
+        dd.radiance  = radiance;
+        dd.samplers  = samplerLibrary.getPointer(device->owlID);
+        dd.materials = materialLibrary.getPointer(device->owlID);
         return dd;
       }
 
-      Globals globals;
+      // Globals globals;
+      MaterialLibrary materialLibrary;
+      SamplerLibrary  samplerLibrary;
       OWLBuffer quadLightsBuffer = 0;
       int numQuadLights = 0;
       OWLBuffer dirLightsBuffer = 0;

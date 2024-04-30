@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 #include "barney/volume/Volume.h"
-#include "barney/MultiPass.h"
+// #include "barney/MultiPass.h"
 #include "barney/common/Data.h"
 
 namespace barney {
@@ -64,7 +64,7 @@ namespace barney {
     OWLGroup triangleGeomGroup = 0;
     OWLGroup volumeGeomsGroup  = 0;
     
-    std::vector<MultiPass::Object::SP> multiPassObjects;
+    // std::vector<MultiPass::Object::SP> multiPassObjects;
   };
   
 }

@@ -14,44 +14,31 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DeviceContext.h"
-#include "owl/owl_device.h"
-#include "barney/render/device/OptixGlobals.h"
-#include "owl/owl_device.h"
+#pragma once
 
-// __constant__ struct {
-//   __forceinline__ __device__ const barney::DeviceContext::DD &get() const
-//   { return *(const barney::DeviceContext::DD*)this; }
-  
-//   float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
-// } optixLaunchParams;
-
-
-__constant__ barney::render::device::OptixGlobals optixLaunchParams;
+#include "barney/Object.h"
+#include "barney/material/DeviceSampler.h"
 
 namespace barney {
-  namespace render {
-    namespace device {
-      
-      OPTIX_RAYGEN_PROGRAM(traceRays)()
-      {
-        auto &lp = optixLaunchParams;
-        const int rayID
-          = owl::getLaunchIndex().x
-          + owl::getLaunchDims().x
-          * owl::getLaunchIndex().y;
+
+  struct Sampler {
+    typedef std::shared_ptr<Sampler> SP;
+    virtual void create(render::DeviceSampler &dd, int devID) = 0;
+    int   samplerID = -1;
+    int   inAttribute { render::ATTRIBUTE_0 };
+    mat4f outTransform { mat4f::identity() };
+    vec4f outOffset { 0.f, 0.f, 0.f, 0.f };
+  };
+  struct TransformSampler : public Sampler {
+    void create(render::DeviceSampler &dd, int devID) override;
+  };
+  struct ImageSampler : public Sampler {
+    void create(render::DeviceSampler &dd, int devID) override;
     
-        if (rayID >= lp.numRays)
-          return;
-
-        Ray &ray = lp.rays[rayID];
-        owl::traceRay(lp.world,
-                      owl::Ray(ray.org,
-                               ray.dir,
-                               0.f,ray.tMax),
-                      ray);
-      }
-
-    }
-  }
+    mat4f inTransform { mat4f::identity() };
+    vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
+    Texture::SP image{ 0 };
+  };
+  
 }
+

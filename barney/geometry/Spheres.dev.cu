@@ -16,11 +16,11 @@
 
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Spheres.h"
-#include "barney/material/Inputs.h"
 #include "owl/owl_device.h"
 
 namespace barney {
-  
+  namespace device {
+    
   OPTIX_BOUNDS_PROGRAM(SpheresBounds)(const void *geomData,                
                                      owl::common::box3f &bounds,  
                                      const int32_t primID)
@@ -73,7 +73,7 @@ namespace barney {
     // THIS IS WRONG: !!!!!!!!!
     if (ray.dbg) printf("storing wrong normals here!\n");
     
-    render::HitAttributes hitData(OptixGlobals::get().materialData);
+    render::device::HitAttributes hitData;//(OptixGlobals::get());
     hitData.worldPosition   = P;
     hitData.objectPosition  = P;
     hitData.worldNormal     = N;
@@ -83,9 +83,11 @@ namespace barney {
     if (self.colors)
       (vec3f&)hitData.color = self.colors[primID];
 
-    auto interpolate = [&](const render::GeometryAttribute::DD &)
-    { /* does not make sense for spheres */return make_float4(0,0,0,1); };
-    self.evalAttributesAndStoreHit(ray,hitData,interpolate);
+    // auto interpolate = [&](const GeometryAttributes &)
+    // { /* does not make sense for spheres */return make_float4(0,0,0,1); };
+    // self.evalAttributesAndStoreHit(ray,hitData,interpolate,
+    //                                OptixGlobals::get().materials,
+    //                                OptixGlobals::get().samplers);
     
     // vec3f geometryColor(getColor(self,primID,primID,NAN,NAN/*no uv!*/));
     // if (self.colors)
@@ -102,7 +104,7 @@ namespace barney {
 
     vec3f center = self.origins[primID];
     float radius = self.radii?self.radii[primID]:self.defaultRadius;
-
+    
     // with "move the origin" trick; see Ray Tracing Gems 2
     const vec3f old_org  = optixGetObjectRayOrigin();
     const vec3f dir  = optixGetObjectRayDirection();
@@ -149,5 +151,6 @@ namespace barney {
       optixReportIntersection(hit_t, 0);
     }
   }
-  
+
+  }
 }

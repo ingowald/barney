@@ -17,26 +17,26 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/Ray.h"
+#include "barney/render/device/Ray.h"
 #include "barney/common/Texture.h"
-#include "barney/material/DeviceMaterial.h"
-#include "barney/material/host/Material.h"
-#include "barney/render/OptixGlobals.h"
+#include "barney/render/device/Material.h"
+#include "barney/render/device/HitAttributes.h"
+#include "barney/render/device/GeometryAttributes.h"
+#include "barney/render/device/OptixGlobals.h"
+#include "barney/render/host/material/Material.h"
+#include "barney/render/host/GeometryAttributes.h"
 
 namespace barney {
+  namespace device {
+    using namespace render::device;
+  }
+  using device::Ray;
 
   struct ModelSlot;
 
   // __constant__ OptixGlobals optixLaunchParams;
   
   // inline __device__ const OptixGlobals &OptixGlobals::get() { return optixLaunchParams; }
-  
-  struct GeometryAttributes {
-    inline __device__ render::GeometryAttribute::DD &operator[](int i) { return attribute[i]; }
-    inline __device__ const render::GeometryAttribute::DD &operator[](int i) const { return attribute[i]; }
-    render::GeometryAttribute::DD attribute[render::numAttributes];
-  };
-  
   struct Geometry : public SlottedObject {
     typedef std::shared_ptr<Geometry> SP;
 
@@ -44,10 +44,10 @@ namespace barney {
 
       template<typename InterpolatePerVertex>
       inline __device__
-      void evalAttributesAndStoreHit(Ray &ray,
-                                     render::HitAttributes &hit,
-                                     const InterpolatePerVertex &interpolate) const;
-      GeometryAttributes attributes;
+      void setHitAttributes(render::device::HitAttributes &hit,
+                            const InterpolatePerVertex &interpolate) const;
+
+      render::device::GeometryAttributes attributes;
       int materialID;
     };
     
@@ -79,9 +79,9 @@ namespace barney {
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGroup> secondPassGroups;
     
-    Material::SP material;
+    render::host::Material::SP material;
 
-    render::GeometryAttribute::OnHost attribute[render::numAttributes];
+    render::host::GeometryAttributes attributes;
     // PODData::SP attribute0;
     // PODData::SP attribute1;
     // PODData::SP attribute2;
@@ -91,29 +91,57 @@ namespace barney {
 
   template<typename InterpolatePerVertex>
   inline __device__
-  void Geometry::DD::evalAttributesAndStoreHit(Ray &ray,
-                                               render::HitAttributes &hit,
-                                               const InterpolatePerVertex &interpolate)
-    const
+  void Geometry::DD::setHitAttributes(render::device::HitAttributes &hit,
+                                      const InterpolatePerVertex &interpolate) const
   {
-    using namespace render;
-    const DeviceMaterial &material  = hit.globals.materials[this->materialID];
-    const PackedBSDF      bsdf      = material.createBSDF(hit);
-    ray.setHit(hit.worldPosition,hit.worldNormal,hit.t,bsdf);
-    
-    {
-      for (int i=0;i<numAttributes;i++) {
-        const GeometryAttribute::DD &attrib = this->attributes[i];
-        if (attrib.scope == GeometryAttribute::CONSTANT)
-          hit.attribute[i] = attrib.value;
-        else if (attrib.scope == GeometryAttribute::PER_PRIM)
-          hit.attribute[i] = attrib.fromArray.valueAt(hit.primID);
-        else if (attrib.scope == GeometryAttribute::PER_VERTEX)
-          hit.attribute[i] = interpolate(attrib);
-        else 
-          /* undefined attrib; nothing to do, leave on default */;
+    using render::device::GeometryAttribute;
+    for (int i=0;i<attributes.count;i++) {
+      float4     &out = hit.attribute[i];
+      const auto &in  = this->attributes.attribute[i];
+      switch(in.scope) {
+      case GeometryAttribute::INVALID:
+        /* nothing - leave default */
+        break;
+      case GeometryAttribute::CONSTANT:
+        out = in.value;
+        break;
+      case GeometryAttribute::PER_PRIM:
+        out = in.fromArray.valueAt(hit.primID);
+        break;
+      case GeometryAttribute::PER_VERTEX:
+        out = interpolate(in);
+        break; 
       }
     }
   }
+  
+  // template<typename InterpolatePerVertex>
+  // inline __device__
+  // void Geometry::DD::evalAttributesAndStoreHit(Ray &ray,
+  //                                              render::device::HitAttributes &hit,
+  //                                              const InterpolatePerVertex &interpolate,
+  //                                              const render::device::Material *materials,
+  //                                              const render::device::Sampler *samplers)
+  //   const
+  // {
+  //   const render::device::Material   &material  = materials[this->materialID];
+    
+  //   {
+  //     for (int i=0;i<device::numAttributes;i++) {
+  //       const GeometryAttribute &attrib = this->attributes[i];
+  //       if (attrib.scope == GeometryAttribute::CONSTANT)
+  //         hit.attribute[i] = attrib.value;
+  //       else if (attrib.scope == GeometryAttribute::PER_PRIM)
+  //         hit.attribute[i] = attrib.fromArray.valueAt(hit.primID);
+  //       else if (attrib.scope == GeometryAttribute::PER_VERTEX)
+  //         hit.attribute[i] = interpolate(attrib);
+  //       else 
+  //         /* undefined attrib; nothing to do, leave on default */;
+  //     }
+  //   }
+    
+  //   const PackedBSDF  bsdf      = material.createBSDF(hit);
+  //   ray.setHit(hit.worldPosition,hit.worldNormal,hit.t,bsdf);
+  // }
   
 }

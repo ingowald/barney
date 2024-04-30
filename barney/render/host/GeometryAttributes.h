@@ -16,22 +16,25 @@
 
 #pragma once
 
-#include "barney/render/DG.h"
+#include "barney/Object.h"
 
 namespace barney {
   namespace render {
-    namespace packedBSDF {
+    namespace host {
+      enum { numAttributes = device::numAttributes };
       
-      struct Glass {
-        inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
-        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+      struct GeometryAttribute {
+        void make(device::GeometryAttribute &dd);
+        vec4f       constant { 0.f,0.f,0.f,1.f };
+        PODData::SP perPrim   = 0;
+        PODData::SP perVertex = 0;
+      };
 
-        float  ior;
-        float3 attenuation;
+      struct GeometryAttributes {
+        void make(device::GeometryAttributes &dd);
+        GeometryAttribute attribute[numAttributes];
       };
       
     }
   }
 }
-

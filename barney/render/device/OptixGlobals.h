@@ -14,30 +14,37 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/render/DG.h"
+#include "barney/DeviceContext.h"
+#include "barney/render/device/Material.h"
+#include "barney/render/device/Sampler.h"
+#include "barney/render/device/HitAttributes.h"
 
 namespace barney {
   namespace render {
-    namespace packedBSDF {
+    namespace device {
       
-      struct Phase {
-        inline Phase() = default;
-        inline __device__ Phase(vec3f albedo) { this->albedo = (const float3&)albedo; }
-        inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
-        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-
-        float3 albedo;
+      struct OptixGlobals {
+        static inline __device__ const OptixGlobals &get();
+        
+        Sampler               *samplers;
+        Material              *materials;
+        OptixTraversableHandle world;
+        Ray                   *rays;
+        int                    numRays;
       };
-
-      inline __device__ EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
-      {
-        return EvalRes::zero();
-      }
-
     }
   }
 }
 
+extern __constant__ barney::render::device::OptixGlobals optixLaunchParams;
+
+namespace barney {
+  namespace render {
+    namespace device {
+      
+      inline __device__ const OptixGlobals &OptixGlobals::get()
+      { return optixLaunchParams; }
+      
+    }
+  }
+}

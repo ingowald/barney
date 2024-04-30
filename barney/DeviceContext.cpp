@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/DeviceContext.h"
-#include "barney/Ray.h"
 #include "barney/GlobalModel.h"
 #include "barney/fb/FrameBuffer.h"
 
@@ -31,7 +30,7 @@ namespace barney {
   void g_generateRays(Camera camera,
                       int rngSeed,
                       vec2i fbSize,
-                      int *d_count,
+                      int *dR_count,
                       Ray *rayQueue,
                       TileDesc *tileDescs);
   

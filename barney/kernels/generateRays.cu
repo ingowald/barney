@@ -15,11 +15,11 @@
 // ======================================================================== //
 
 #include "barney/DeviceContext.h"
-#include "barney/Ray.h"
+#include "barney/render/device/Ray.h"
 #include "barney/fb/FrameBuffer.h"
 
 namespace barney {
-
+  
   /*! generates a new wave-front of rays, to be written to
       'rayQueue[]', at (atomically incrementable) positoin
       *d_count. This kernel operates on *tiles* (not complete frames);

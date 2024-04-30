@@ -969,8 +969,8 @@ namespace barney {
     box4f domain = self.gridDomains[gridID];
     vec3i dims = self.gridDims[gridID];
     range1f gridRange = inputLeafRange;
-    if (!boxTest(gridRange.lower,gridRange.upper,
-                 domain,ray.org,ray.dir))
+    if (!device::boxTest(gridRange.lower,gridRange.upper,
+                         domain,ray.org,ray.dir))
       return;
 
     float majorant = self.xf.majorant(getRange(domain));

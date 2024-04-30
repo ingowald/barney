@@ -14,18 +14,69 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/material/host/Velvet.h"
+#include "barney/material/host/Material.h"
+#include "barney/material/device/AnariPBR.h"
 #include "barney/material/host/Matte.h"
+#if 0
+#include "barney/material/host/Velvet.h"
 #include "barney/material/host/Blender.h"
 #include "barney/material/host/Metal.h"
 #include "barney/material/host/Glass.h"
 #include "barney/material/host/Plastic.h"
 #include "barney/material/host/VisRTX.h"
 #include "barney/material/host/MetallicPaint.h"
+#endif
 #include "barney/ModelSlot.h"
 
 namespace barney {
 
+  void Material::setDeviceDataOn(OWLGeom geom) const
+  {
+    owlGeomSet1i(geom,"material",materialID);
+    // for (int deviceID=0;deviceID<owner->devGroup->size();deviceID++) {
+    //   // Material::DD dd;
+    //   // createDD(dd,deviceID);
+    //   owlGeomSetRaw(geom,"material",&dd,deviceID);
+    //   // owlGeomSetRaw(geom,"material",&dd,deviceID);
+    // }
+  }
+
+  Material::SP Material::create(ModelSlot *dg, const std::string &type)
+  {
+    std::cout << "# creating material type '" << type << "'" << std::endl;
+    // if (type == "velvet")
+    //   return std::make_shared<VelvetMaterial>(dg);
+    if (type == "matte")
+      return std::make_shared<MatteMaterial>(dg); 
+    return std::make_shared<MatteMaterial>(dg); 
+    // if (type == "blender")
+    //   return std::make_shared<BlenderMaterial>(dg); 
+    // if (type == "glass")
+    //   return std::make_shared<GlassMaterial>(dg); 
+    // if (type == "metal")
+    //   return std::make_shared<MetalMaterial>(dg); 
+    // if (type == "plastic")
+    //   return std::make_shared<PlasticMaterial>(dg);
+    // if (type == "metallic_paint")
+    //   return std::make_shared<MetallicPaintMaterial>(dg);
+    // if (type == "velvet")
+    //   return std::make_shared<VelvetMaterial>(dg);
+    // else
+    // if (type == "physicallyBased")
+    //   return std::make_shared<AnariPhysicalMaterial>(dg);
+    // iw - "eventually" we should have different materials like
+    // 'matte' and 'glass', 'metal' etc here, but for now, let's just
+    // ignore the type and create a single one thta contains all
+    // fields....
+    // return std::make_shared<MiniMaterial>(dg);
+  }
+
+  void Material::commit()
+  {
+    SlottedObject::commit();
+  }
+
+#if 0
   struct AnariPhysicalMaterial : public barney::Material {
     AnariPhysicalMaterial(ModelSlot *owner) : Material(owner) {}
     virtual ~AnariPhysicalMaterial() = default;
@@ -132,35 +183,6 @@ namespace barney {
       : 0;
   }
 
-  Material::SP Material::create(ModelSlot *dg, const std::string &type)
-  {
-    std::cout << "# creating material type '" << type << "'" << std::endl;
-    if (type == "velvet")
-      return std::make_shared<VelvetMaterial>(dg);
-    if (type == "matte")
-      return std::make_shared<MatteMaterial>(dg); 
-    if (type == "blender")
-      return std::make_shared<BlenderMaterial>(dg); 
-    if (type == "glass")
-      return std::make_shared<GlassMaterial>(dg); 
-    if (type == "metal")
-      return std::make_shared<MetalMaterial>(dg); 
-    if (type == "plastic")
-      return std::make_shared<PlasticMaterial>(dg);
-    if (type == "metallic_paint")
-      return std::make_shared<MetallicPaintMaterial>(dg);
-    if (type == "velvet")
-      return std::make_shared<VelvetMaterial>(dg);
-    else if (type == "physicallyBased")
-      return std::make_shared<VisRTXMaterial>(dg);
-      // return std::make_shared<AnariPhysicalMaterial>(dg);
-    // iw - "eventually" we should have different materials like
-    // 'matte' and 'glass', 'metal' etc here, but for now, let's just
-    // ignore the type and create a single one thta contains all
-    // fields....
-    return std::make_shared<MiniMaterial>(dg);
-  }
-
   void Material::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
     vars.push_back({"material", OWL_USER_TYPE(Material::DD), base+0u});
@@ -172,23 +194,7 @@ namespace barney {
     // vars.push_back({"material.metallic", OWL_FLOAT, base+OWL_OFFSETOF(DD,metallic)});
     // vars.push_back({"material.ior", OWL_FLOAT, base+OWL_OFFSETOF(DD,ior)});
   }
-
-  void Material::setDeviceDataOn(OWLGeom geom) const
-  {
-    owlGeomSet1i(geom,"material",materialID);
-    // for (int deviceID=0;deviceID<owner->devGroup->size();deviceID++) {
-    //   // Material::DD dd;
-    //   // createDD(dd,deviceID);
-    //   owlGeomSetRaw(geom,"material",&dd,deviceID);
-    //   // owlGeomSetRaw(geom,"material",&dd,deviceID);
-    // }
-  }
-
-  void Material::commit()
-  {
-    SlottedObject::commit();
-  }
-
+ 
   bool MiniMaterial::set1f(const std::string &member, const float &value)
   {
     if (SlottedObject::set1f(member,value))
@@ -241,4 +247,6 @@ namespace barney {
     }
     return false;
   }
+#endif
+  
 }

@@ -14,44 +14,29 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DeviceContext.h"
-#include "owl/owl_device.h"
-#include "barney/render/device/OptixGlobals.h"
-#include "owl/owl_device.h"
+#pragma once
 
-// __constant__ struct {
-//   __forceinline__ __device__ const barney::DeviceContext::DD &get() const
-//   { return *(const barney::DeviceContext::DD*)this; }
-  
-//   float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
-// } optixLaunchParams;
-
-
-__constant__ barney::render::device::OptixGlobals optixLaunchParams;
+#include "barney/render/device/packedBSDFs/VisRTX.h"
+#include "barney/render/device/HitAttributes.h"
 
 namespace barney {
   namespace render {
     namespace device {
       
-      OPTIX_RAYGEN_PROGRAM(traceRays)()
+      struct AnariPBR {
+        inline __device__
+        PackedBSDF createBSDF(const HitAttributes &hitData) const;
+        
+        MaterialInput reflectance;
+      };
+      
+      inline __device__
+      PackedBSDF AnariPBR::createBSDF(const HitAttributes &hitData) const
       {
-        auto &lp = optixLaunchParams;
-        const int rayID
-          = owl::getLaunchIndex().x
-          + owl::getLaunchDims().x
-          * owl::getLaunchIndex().y;
-    
-        if (rayID >= lp.numRays)
-          return;
-
-        Ray &ray = lp.rays[rayID];
-        owl::traceRay(lp.world,
-                      owl::Ray(ray.org,
-                               ray.dir,
-                               0.f,ray.tMax),
-                      ray);
+        float4 r = reflectance.eval(hitData);
+        return packedBSDF::VisRTX::make_matte((const vec3f&)r);
       }
-
+      
     }
   }
 }

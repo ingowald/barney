@@ -247,7 +247,10 @@ namespace barney {
 
     for (int localID = 0; localID < devices.size(); localID++) {
       auto dev = devices[localID];
-      dev->rays.ensureRayQueuesLargeEnoughFor(fb->perDev[localID].get());
+      auto devFB = fb->perDev[localID].get();
+      int upperBoundOnNumRays
+        = 2 * devFB->numTiles * barney::pixelsPerTile;
+      dev->rays.reserve(upperBoundOnNumRays);
     }
   }
   

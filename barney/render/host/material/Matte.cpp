@@ -42,65 +42,67 @@ namespace barney {
     dd = matte;
   }
  
-  bool MatteMaterial::setString(const std::string &member, const std::string &value)
-  {
-    if (Material::setString(member,value)) return true;
-    if (member == "sampler.type")  {
-      if (value == "image1D")
-        { samplerType = render::IMAGE1D; return true; }
-      if (value == "image2D")
-        { samplerType = render::IMAGE2D; return true; }
-      if (value == "transform")
-        { samplerType = render::TRANSFORM; return true; }
-      return false;
-    }
-    return false;
-  }
+  // bool MatteMaterial::setString(const std::string &member, const std::string &value)
+  // {
+  //   if (Material::setString(member,value)) return true;
+  //   if (member == "sampler.type")  {
+  //     if (value == "image1D")
+  //       { samplerType = render::IMAGE1D; return true; }
+  //     if (value == "image2D")
+  //       { samplerType = render::IMAGE2D; return true; }
+  //     if (value == "transform")
+  //       { samplerType = render::TRANSFORM; return true; }
+  //     return false;
+  //   }
+  //   return false;
+  // }
 
   bool MatteMaterial::setObject(const std::string &member, const Object::SP &value)
   {
     if (Material::setObject(member,value)) return true;
-    if (member == "sampler.image.image")
-      { sampler.image.image = value->as<Texture>(); return true; }
+    if (member == "reflectance") {
+      reflectanceSampler = value->as<Sampler>();
+      return true;
+    }
     return false;
   }
 
-  bool MatteMaterial::set1i(const std::string &member, const int &value) 
-  {
-    if (Material::set1i(member,value)) return true;
-    if (member == "sampler.image.inAttribute") 
-      { sampler.image.inAttribute = value; return true; }
-    if (member == "sampler.transform.inAttribute") 
-      { sampler.transform.inAttribute = value; return true; }
-    return false;
-  }
+  // bool MatteMaterial::set1i(const std::string &member, const int &value) 
+  // {
+  //   if (Material::set1i(member,value)) return true;
+  //   if (member == "sampler.image.inAttribute") 
+  //     { sampler.image.inAttribute = value; return true; }
+  //   if (member == "sampler.transform.inAttribute") 
+  //     { sampler.transform.inAttribute = value; return true; }
+  //   return false;
+  // }
   bool MatteMaterial::set3f(const std::string &member, const vec3f &value) 
   {
     if (Material::set3f(member,value)) return true;
     if (member == "reflectance") 
-      { reflectance = value; return true; }
+      { reflectance = value; reflectanceSampler = 0; return true; }
     return false;
   }
-  bool MatteMaterial::set4f(const std::string &member, const vec4f &value) 
-  {
-    if (Material::set4f(member,value)) return true;
-    if (member == "sampler.image.inOffset") 
-      { sampler.image.inOffset = value; return true; }
-    if (member == "sampler.image.outOffset") 
-      { sampler.image.outOffset = value; return true; }
-    if (member == "sampler.transform.outOffset") 
-      { sampler.transform.outOffset = value; return true; }
-    return false;
-  }
-  bool MatteMaterial::set4x4f(const std::string &member, const mat4f &value) 
-  {
-    if (Material::set4x4f(member,value)) return true;
-    if (member == "sampler.image.inTransform") 
-      { sampler.image.inTransform = value; return true; }
-    if (member == "sampler.image.outTransform") 
-      { sampler.image.outTransform = value; return true; }
-    if (member == "sampler.transform.outTransform") 
-      { sampler.transform.outTransform = value; return true; }
-    return false;
-  }
+  // bool MatteMaterial::set4f(const std::string &member, const vec4f &value) 
+  // {
+  //   if (Material::set4f(member,value)) return true;
+  //   if (member == "sampler.image.inOffset") 
+  //     { sampler.image.inOffset = value; return true; }
+  //   if (member == "sampler.image.outOffset") 
+  //     { sampler.image.outOffset = value; return true; }
+  //   if (member == "sampler.transform.outOffset") 
+  //     { sampler.transform.outOffset = value; return true; }
+  //   return false;
+  // }
+  // bool MatteMaterial::set4x4f(const std::string &member, const mat4f &value) 
+  // {
+  //   if (Material::set4x4f(member,value)) return true;
+  //   if (member == "sampler.image.inTransform") 
+  //     { sampler.image.inTransform = value; return true; }
+  //   if (member == "sampler.image.outTransform") 
+  //     { sampler.image.outTransform = value; return true; }
+  //   if (member == "sampler.transform.outTransform") 
+  //     { sampler.transform.outTransform = value; return true; }
+  //   return false;
+  // }
 }

@@ -16,37 +16,28 @@
 
 #pragma once
 
-#include "barney/render/PackedBSDF.h"
-#include "barney/material/device/AnariMatte.h"
-#include "barney/material/device/AnariPBR.h"
+#include "barney/render/device/packedBSDFs/VisRTX.h"
+#include "barney/render/device/HitAttributes.h"
 
 namespace barney {
   namespace render {
-
-    struct DeviceMaterial {
-      typedef enum {
-        INVALID=0,
-        TYPE_AnariMatte,
-        TYPE_AnariPBF
-      } Type;
+    namespace device {
+      
+      struct AnariMatte {
+        inline __device__
+        PackedBSDF createBSDF(const HitAttributes &hitData) const;
+        
+        MaterialInput reflectance;
+      };
       
       inline __device__
-      PackedBSDF createBSDF(const HitAttributes &hitData) const;
-
-      Type type;
-      union {
-        device::AnariPBR   anariPBR;
-        device::AnariMatte anariMatte;
-      };
-    };
-
-    inline __device__
-    PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData) const
-    {
-      if (type == TYPE_AnariMatte)
-        return anariMatte.createBSDF(hitData);
-      return packedBSDF::Invalid();
+      PackedBSDF AnariMatte::createBSDF(const HitAttributes &hitData) const
+      {
+        float4 r = reflectance.eval(hitData);
+        
+        return packedBSDF::VisRTX::make_matte((const vec3f&)r);
+      }
+      
     }
-    
   }
 }

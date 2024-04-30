@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "barney/render/packedBSDFs/VisRTX.h"
-#include "barney/render/packedBSDFs/Glass.h"
-#include "barney/render/packedBSDFs/Phase.h"
+#include "packedBSDFs/VisRTX.h"
+#include "packedBSDFs/Glass.h"
+#include "packedBSDFs/Phase.h"
 
 namespace barney {
   namespace render {

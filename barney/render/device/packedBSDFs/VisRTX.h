@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/render/DG.h"
+#include "barney/render/device/DG.h"
 
 namespace barney {
   namespace render {

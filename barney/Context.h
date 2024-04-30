@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/Ray.h"
+#include "barney/render/device/Ray.h"
 #include "barney/geometry/Geometry.h"
 #include "barney/Camera.h"
 #include "barney/DeviceContext.h"

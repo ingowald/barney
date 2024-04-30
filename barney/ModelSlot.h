@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/Group.h"
+#include "barney/render/host/Material.h"
 #include "barney/render/World.h"
 #include "barney.h"
 #include <set>
@@ -29,32 +30,6 @@ namespace barney {
   struct Data;
   struct Light;
   
-  namespace render {
-    struct World;
-    struct DeviceMaterial;
-  }
-
-  struct MaterialLibrary {
-    typedef std::shared_ptr<MaterialLibrary> SP;
-    
-    MaterialLibrary(DevGroup::SP devGroup);
-    
-    int allocate();
-    void release(int nowReusableID);
-    void grow();
-    
-    render::DeviceMaterial *getPointer(int owlDeviceID);
-    
-    int numReserved = 0;
-    int nextFree = 0;
-    
-    std::stack<int> reusableIDs;
-    OWLBuffer materialsBuffer = 0;
-    DevGroup::SP devGroup;
-  };
-  
-
-
 
   
   struct ModelSlot : public Object {
@@ -66,12 +41,14 @@ namespace barney {
               int slotIndex);
     virtual ~ModelSlot();
 
-    Material::SP getDefaultMaterial()
+    render::host::Material::SP getDefaultMaterial()
     {
-      if (!defaultMaterial) defaultMaterial = Material::create(this,"AnariMatte");
+      if (!defaultMaterial)
+        defaultMaterial
+          = render::host::Material::create(this,"AnariMatte");
       return defaultMaterial;
     }
-    Material::SP defaultMaterial = 0;
+    render::host::Material::SP defaultMaterial = 0;
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
@@ -128,11 +105,10 @@ namespace barney {
     void build();
 
     render::World world;
-    MultiPass::Instances multiPassInstances;
+    // MultiPass::Instances multiPassInstances;
     DevGroup::SP   const devGroup;
     GlobalModel   *const model;
     int            const localID;
-    MaterialLibrary      materialLibrary;
   };
   
 }

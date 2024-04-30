@@ -16,28 +16,37 @@
 
 #pragma once
 
-#include "barney/render/packedBSDFs/VisRTX.h"
-#include "barney/material/Inputs.h"
+#include "barney/render/device/HitAttributes.h"
 
 namespace barney {
   namespace render {
     namespace device {
       
-      struct AnariMatte {
+      struct MaterialInput {
+        typedef enum { VALUE, ATTRIBUTE, SAMPLER, UNDEFINED } Type;
+      
         inline __device__
-        PackedBSDF createBSDF(const HitAttributes &hitData) const;
-        
-        MaterialInput reflectance;
+        float4 eval(const HitAttributes &hitData) const;
+      
+        Type type;
+        union {
+          float4               value;
+          HitAttributes::Which attribute;
+          int                  samplerID;
+        };
       };
-      
+
       inline __device__
-      PackedBSDF AnariMatte::createBSDF(const HitAttributes &hitData) const
+      float4 MaterialInput::eval(const HitAttributes &hitData) const
       {
-        float4 r = reflectance.eval(hitData);
-        
-        return packedBSDF::VisRTX::make_matte((const vec3f&)r);
+        if (type == VALUE)
+          return value;
+        if (type == ATTRIBUTE)
+          return hitData.get(attribute);
+        printf("un-handled material input type\n");
+        return make_float4(0.f,0.f,0.f,1.f);
       }
-      
+
     }
   }
 }

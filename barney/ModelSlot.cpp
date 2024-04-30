@@ -20,7 +20,8 @@
 #include "barney/common/Texture.h"
 #include "barney/light/Light.h"
 #include "barney/geometry/Geometry.h"
-#include "barney/material/DeviceMaterial.h"
+#include "barney/render/host/Material.h"
+#include "barney/render/device/Material.h"
 
 namespace barney {
 
@@ -55,7 +56,7 @@ namespace barney {
     reusableIDs.push(nowReusableID);
   }
   
-  render::DeviceMaterial *MaterialLibrary::getPointer(int owlDeviceID)
+  render::device::Material *MaterialLibrary::getPointer(int owlDeviceID)
   {
     return (render::DeviceMaterial *)owlBufferGetPointer(materialsBuffer,owlDeviceID);
   }    

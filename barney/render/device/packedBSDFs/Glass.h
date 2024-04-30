@@ -14,44 +14,24 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DeviceContext.h"
-#include "owl/owl_device.h"
-#include "barney/render/device/OptixGlobals.h"
-#include "owl/owl_device.h"
+#pragma once
 
-// __constant__ struct {
-//   __forceinline__ __device__ const barney::DeviceContext::DD &get() const
-//   { return *(const barney::DeviceContext::DD*)this; }
-  
-//   float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
-// } optixLaunchParams;
-
-
-__constant__ barney::render::device::OptixGlobals optixLaunchParams;
+#include "barney/render/device/DG.h"
 
 namespace barney {
   namespace render {
-    namespace device {
+    namespace packedBSDF {
       
-      OPTIX_RAYGEN_PROGRAM(traceRays)()
-      {
-        auto &lp = optixLaunchParams;
-        const int rayID
-          = owl::getLaunchIndex().x
-          + owl::getLaunchDims().x
-          * owl::getLaunchIndex().y;
-    
-        if (rayID >= lp.numRays)
-          return;
+      struct Glass {
+        inline __device__ vec3f getAlbedo(bool dbg) const;
+        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
 
-        Ray &ray = lp.rays[rayID];
-        owl::traceRay(lp.world,
-                      owl::Ray(ray.org,
-                               ray.dir,
-                               0.f,ray.tMax),
-                      ray);
-      }
-
+        float  ior;
+        float3 attenuation;
+      };
+      
     }
   }
 }
+
