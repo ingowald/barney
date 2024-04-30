@@ -14,24 +14,37 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/render/device/DG.h"
+#include "barney/DeviceContext.h"
+#include "barney/render/DeviceMaterial.h"
+#include "barney/render/Sampler.h"
+#include "barney/render/HitAttributes.h"
 
 namespace barney {
   namespace render {
-    namespace packedBSDF {
       
-      struct Glass {
-        inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
-        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-
-        float  ior;
-        float3 attenuation;
-      };
+    struct OptixGlobals {
+      static inline __device__ const OptixGlobals &get();
       
-    }
+      Sampler::DD           *samplers;
+      DeviceMaterial        *materials;
+      OptixTraversableHandle world;
+      Ray                   *rays;
+      int                    numRays;
+    };
+    
   }
 }
 
+#ifdef __CUDA_ARCH__
+extern __constant__ barney::render::OptixGlobals optixLaunchParams;
+#endif
+
+namespace barney {
+  namespace render {
+      
+#ifdef __CUDA_ARCH__
+    inline __device__ const OptixGlobals &OptixGlobals::get()
+    { return optixLaunchParams; }
+#endif      
+  }
+}

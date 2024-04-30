@@ -16,7 +16,7 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/DeviceContext.h"
-#include "barney/render/device/OptixGlobals.h"
+#include "barney/render/OptixGlobals.h"
 
 namespace barney {
 
@@ -76,13 +76,13 @@ namespace barney {
 
     OWLVarDecl params[]
       = {
-      { "world", OWL_GROUP, OWL_OFFSETOF(render::device::OptixGlobals, world) },
-         { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::device::OptixGlobals,rays) },
-         { "numRays",  OWL_INT, OWL_OFFSETOF(render::device::OptixGlobals,numRays) },
+      { "world", OWL_GROUP, OWL_OFFSETOF(render::OptixGlobals, world) },
+         { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::OptixGlobals,rays) },
+         { "numRays",  OWL_INT, OWL_OFFSETOF(render::OptixGlobals,numRays) },
          { nullptr }
     };
     lp = owlParamsCreate(owl,
-                         sizeof(render::device::OptixGlobals),
+                         sizeof(render::OptixGlobals),
                          params,
                          -1);
   }

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "barney/render/device/Ray.h"
-#include "barney/render/host/RayQueue.h"
+#include "barney/render/Ray.h"
+#include "barney/render/RayQueue.h"
 #include "barney/Camera.h"
 #include "barney/DeviceGroup.h"
 
@@ -64,7 +64,7 @@ namespace barney {
       BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
     }
 
-    host::RayQueue rays;
+    render::RayQueue rays;
     /*! each barneycontext gets its own LP: even though that lp's
         context is (possibly) shared across multiple device contextes
         (and thus, across multiple barney contexts) well still have one

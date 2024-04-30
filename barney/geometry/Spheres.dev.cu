@@ -19,8 +19,8 @@
 #include "owl/owl_device.h"
 
 namespace barney {
-  namespace device {
-    
+  using namespace barney::render;
+  
   OPTIX_BOUNDS_PROGRAM(SpheresBounds)(const void *geomData,                
                                      owl::common::box3f &bounds,  
                                      const int32_t primID)
@@ -73,7 +73,7 @@ namespace barney {
     // THIS IS WRONG: !!!!!!!!!
     if (ray.dbg) printf("storing wrong normals here!\n");
     
-    render::device::HitAttributes hitData;//(OptixGlobals::get());
+    render::HitAttributes hitData;//(OptixGlobals::get());
     hitData.worldPosition   = P;
     hitData.objectPosition  = P;
     hitData.worldNormal     = N;
@@ -152,5 +152,4 @@ namespace barney {
     }
   }
 
-  }
 }

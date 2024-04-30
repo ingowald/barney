@@ -18,6 +18,7 @@
 #include "owl/owl_device.h"
 
 namespace barney {
+  using namespace barney::render;
   
   OPTIX_BOUNDS_PROGRAM(CylindersBounds)(const void *geomData,
                                         owl::common::box3f &bounds,  

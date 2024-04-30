@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include "barney/material/host/Material.h"
+#include "barney/render/host/material/Material.h"
 #include "barney/Sampler.h"
+#include "barney/render/device/material/MaterialInput.h"
 
 namespace barney {
   
@@ -41,8 +42,11 @@ namespace barney {
     // bool set4x4f(const std::string &member, const mat4f &value) override;
     /*! @} */
     // ------------------------------------------------------------------
-    vec3f reflectance { 0.55f, 0.0f, 0.0f };
-    Sampler::SP reflectanceSampler;
+    // vec3f reflectance { 0.55f, 0.0f, 0.0f };
+    // Sampler::SP reflectanceSampler;
+    
+    PossiblyMappedParameter color(.8f,.8f,.8f,1.f);
+
     
     // render::SamplerType samplerType{render::NO_SAMPLER};
     // struct {

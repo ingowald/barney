@@ -16,28 +16,22 @@
 
 #pragma once
 
-#include "barney/render/device/packedBSDFs/VisRTX.h"
-#include "barney/render/device/HitAttributes.h"
+#include "barney/render/DG.h"
 
 namespace barney {
   namespace render {
-    namespace device {
+    namespace packedBSDF {
       
-      struct AnariMatte {
-        inline __device__
-        PackedBSDF createBSDF(const HitAttributes &hitData) const;
-        
-        MaterialInput reflectance;
+      struct Glass {
+        inline __device__ vec3f getAlbedo(bool dbg) const;
+        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+
+        float  ior;
+        float3 attenuation;
       };
-      
-      inline __device__
-      PackedBSDF AnariMatte::createBSDF(const HitAttributes &hitData) const
-      {
-        float4 r = reflectance.eval(hitData);
-        
-        return packedBSDF::VisRTX::make_matte((const vec3f&)r);
-      }
       
     }
   }
 }
+

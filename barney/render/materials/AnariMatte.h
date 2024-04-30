@@ -16,28 +16,35 @@
 
 #pragma once
 
-#include "barney/render/device/DG.h"
+#include "barney/render/packedBSDFs/VisRTX.h"
+#include "barney/render/HitAttributes.h"
+#include "barney/render/HostMaterial.h"
 
 namespace barney {
   namespace render {
-    namespace packedBSDF {
       
-      struct Phase {
-        inline Phase() = default;
-        inline __device__ Phase(vec3f albedo) { this->albedo = (const float3&)albedo; }
-        inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
-        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-
-        float3 albedo;
+    struct AnariMatte : public HostMaterial {      
+      struct DD {
+        inline __device__
+        PackedBSDF createBSDF(const HitAttributes &hitData) const;
+        PossiblyMappedParameter::DD color;
       };
-
-      inline __device__ EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
-      {
-        return EvalRes::zero();
-      }
-
+      AnariMatte(ModelSlot *owner) : HostMaterial(owner) {}
+      virtual ~AnariMatte() = default;
+      
+      void createDD(DeviceMaterial &dd, int deviceID) const override
+      { throw std::runtime_error("not implemented..."); }
+      
+      PossiblyMappedParameter color;
+    };
+      
+    inline __device__
+    PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData) const
+    {
+      float4 r = color.eval(hitData);
+        
+      return packedBSDF::VisRTX::make_matte((const vec3f&)r);
     }
+      
   }
 }
-

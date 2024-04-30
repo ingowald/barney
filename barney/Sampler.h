@@ -21,24 +21,5 @@
 
 namespace barney {
 
-  struct Sampler {
-    typedef std::shared_ptr<Sampler> SP;
-    virtual void create(render::DeviceSampler &dd, int devID) = 0;
-    int   samplerID = -1;
-    int   inAttribute { render::ATTRIBUTE_0 };
-    mat4f outTransform { mat4f::identity() };
-    vec4f outOffset { 0.f, 0.f, 0.f, 0.f };
-  };
-  struct TransformSampler : public Sampler {
-    void create(render::DeviceSampler &dd, int devID) override;
-  };
-  struct ImageSampler : public Sampler {
-    void create(render::DeviceSampler &dd, int devID) override;
-    
-    mat4f inTransform { mat4f::identity() };
-    vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
-    Texture::SP image{ 0 };
-  };
-  
 }
 

@@ -14,40 +14,30 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DeviceContext.h"
-#include "barney/render/device/Material.h"
-#include "barney/render/device/Sampler.h"
-#include "barney/render/device/HitAttributes.h"
+#pragma once
+
+#include "barney/render/DG.h"
 
 namespace barney {
   namespace render {
-    namespace device {
+    namespace packedBSDF {
       
-      struct OptixGlobals {
-        static inline __device__ const OptixGlobals &get();
-        
-        Sampler               *samplers;
-        Material              *materials;
-        OptixTraversableHandle world;
-        Ray                   *rays;
-        int                    numRays;
+      struct Phase {
+        inline Phase() = default;
+        inline __device__ Phase(vec3f albedo) { this->albedo = (const float3&)albedo; }
+        inline __device__ vec3f getAlbedo(bool dbg) const;
+        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+
+        float3 albedo;
       };
+
+      inline __device__ EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
+      {
+        return EvalRes::zero();
+      }
+
     }
   }
 }
 
-#ifdef __CUDA_ARCH__
-extern __constant__ barney::render::device::OptixGlobals optixLaunchParams;
-#endif
-
-namespace barney {
-  namespace render {
-    namespace device {
-      
-#ifdef __CUDA_ARCH__
-      inline __device__ const OptixGlobals &OptixGlobals::get()
-      { return optixLaunchParams; }
-#endif      
-    }
-  }
-}

@@ -16,18 +16,16 @@
 
 #pragma once
 
-#include "barney/render/device/PackedBSDF.h"
-#include "barney/render/device/HitAttributes.h"
-#include "barney/render/device/MaterialInputs.h"
+#include "barney/render/PackedBSDF.h"
+#include "barney/render/HitAttributes.h"
 // #include "barney/render/device/GeometryAttributes.h"
 #include "materials/AnariMatte.h"
 #include "materials/AnariPBR.h"
 
 namespace barney {
   namespace render {
-    namespace device {
       
-      struct Material {
+      struct DeviceMaterial {
         typedef enum {
           INVALID=0,
           TYPE_AnariMatte,
@@ -43,39 +41,38 @@ namespace barney {
         
         Type type;
         union {
-          device::AnariPBR   anariPBR;
-          device::AnariMatte anariMatte;
+          AnariPBR::DD   anariPBR;
+          AnariMatte::DD anariMatte;
         };
       };
 
-      inline __device__
-      PackedBSDF Material::createBSDF(const HitAttributes &hitData) const
-      {
-        if (type == TYPE_AnariMatte)
-          return anariMatte.createBSDF(hitData);
-        return packedBSDF::Invalid();
-      }
-
-      // template<typename InterpolateGeometryAttribute>
-      // inline __device__
-      // void Material::setHit(Ray &ray,
-      //                       HitAttributes      &hitAttribs,
-      //                       // const GeometryAttributes &geomAttribs,
-      //                       const InterpolateGeometryAttribute &interpolate)
-      // {
-      //   for (int i=0;i<numAttributes;i++)
-      //     hitAttribs[i] = geomAttribs[i].
-      //       printf("todo\n");
-      // }
-
-      inline __device__
-      void Material::setHit(Ray &ray,
-                            const HitAttributes &hitData) const
-      {
-        ray.setHit(hitData.worldPosition,hitData.worldNormal,
-                   hitData.t,createBSDF(hitData));
-      }
-      
+    inline __device__
+    PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData) const
+    {
+      if (type == TYPE_AnariMatte)
+        return anariMatte.createBSDF(hitData);
+      return packedBSDF::Invalid();
     }
+
+    // template<typename InterpolateGeometryAttribute>
+    // inline __device__
+    // void Material::setHit(Ray &ray,
+    //                       HitAttributes      &hitAttribs,
+    //                       // const GeometryAttributes &geomAttribs,
+    //                       const InterpolateGeometryAttribute &interpolate)
+    // {
+    //   for (int i=0;i<numAttributes;i++)
+    //     hitAttribs[i] = geomAttribs[i].
+    //       printf("todo\n");
+    // }
+
+    inline __device__
+    void DeviceMaterial::setHit(Ray &ray,
+                                const HitAttributes &hitData) const
+    {
+      ray.setHit(hitData.worldPosition,hitData.worldNormal,
+                 hitData.t,createBSDF(hitData));
+    }
+      
   }
 }

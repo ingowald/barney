@@ -16,8 +16,7 @@
 
 #include "barney/DeviceContext.h"
 #include "owl/owl_device.h"
-#include "barney/render/device/OptixGlobals.h"
-#include "owl/owl_device.h"
+#include "barney/render/OptixGlobals.h"
 
 // __constant__ struct {
 //   __forceinline__ __device__ const barney::DeviceContext::DD &get() const
@@ -27,31 +26,29 @@
 // } optixLaunchParams;
 
 
-__constant__ barney::render::device::OptixGlobals optixLaunchParams;
+__constant__ barney::render::OptixGlobals optixLaunchParams;
 
 namespace barney {
   namespace render {
-    namespace device {
       
-      OPTIX_RAYGEN_PROGRAM(traceRays)()
-      {
-        auto &lp = optixLaunchParams;
-        const int rayID
-          = owl::getLaunchIndex().x
-          + owl::getLaunchDims().x
-          * owl::getLaunchIndex().y;
+    OPTIX_RAYGEN_PROGRAM(traceRays)()
+    {
+      auto &lp = optixLaunchParams;
+      const int rayID
+        = owl::getLaunchIndex().x
+        + owl::getLaunchDims().x
+        * owl::getLaunchIndex().y;
     
-        if (rayID >= lp.numRays)
-          return;
+      if (rayID >= lp.numRays)
+        return;
 
-        Ray &ray = lp.rays[rayID];
-        owl::traceRay(lp.world,
-                      owl::Ray(ray.org,
-                               ray.dir,
-                               0.f,ray.tMax),
-                      ray);
-      }
-
+      Ray &ray = lp.rays[rayID];
+      owl::traceRay(lp.world,
+                    owl::Ray(ray.org,
+                             ray.dir,
+                             0.f,ray.tMax),
+                    ray);
     }
+
   }
 }

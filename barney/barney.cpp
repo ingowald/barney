@@ -270,8 +270,8 @@ namespace barney {
                               int whichSlot,
                               const char *type)
   {
-    render::host::Material::SP material
-      = render::host::Material::create(checkGet(model,whichSlot),type);
+    render::HostMaterial::SP material
+      = render::HostMaterial::create(checkGet(model,whichSlot),type);
     if (!material) return 0;
     return (BNMaterial)checkGet(model,whichSlot)->context->initReference(material);
   }

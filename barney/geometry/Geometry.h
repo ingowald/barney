@@ -17,25 +17,21 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/render/device/Ray.h"
-#include "barney/common/Texture.h"
-#include "barney/render/device/Material.h"
-#include "barney/render/device/HitAttributes.h"
-#include "barney/render/device/GeometryAttributes.h"
-#include "barney/render/device/OptixGlobals.h"
-#include "barney/render/host/material/Material.h"
-#include "barney/render/host/GeometryAttributes.h"
+#include "barney/render/Ray.h"
+// #include "barney/common/Texture.h"
+#include "barney/render/HostMaterial.h"
+#include "barney/render/HitAttributes.h"
+#include "barney/render/GeometryAttributes.h"
+#include "barney/render/OptixGlobals.h"
+#include "barney/render/HostMaterial.h"
 
 namespace barney {
-  namespace device {
-    using namespace render::device;
-  }
-  using device::Ray;
-
-  using GeometryAttributes = render::device::GeometryAttributes;
   
   struct ModelSlot;
-
+  using render::GeometryAttribute;
+  using render::GeometryAttributes;
+  using render::HostMaterial;
+  
   // __constant__ OptixGlobals optixLaunchParams;
   
   // inline __device__ const OptixGlobals &OptixGlobals::get() { return optixLaunchParams; }
@@ -46,10 +42,10 @@ namespace barney {
 
       template<typename InterpolatePerVertex>
       inline __device__
-      void setHitAttributes(render::device::HitAttributes &hit,
+      void setHitAttributes(render::HitAttributes &hit,
                             const InterpolatePerVertex &interpolate) const;
 
-      render::device::GeometryAttributes attributes;
+      render::GeometryAttributes::DD attributes;
       int materialID;
     };
     
@@ -81,9 +77,9 @@ namespace barney {
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGroup> secondPassGroups;
     
-    render::host::Material::SP material;
+    render::HostMaterial::SP material;
 
-    render::host::GeometryAttributes attributes;
+    render::GeometryAttributes attributes;
     // PODData::SP attribute0;
     // PODData::SP attribute1;
     // PODData::SP attribute2;
@@ -93,10 +89,9 @@ namespace barney {
 
   template<typename InterpolatePerVertex>
   inline __device__
-  void Geometry::DD::setHitAttributes(render::device::HitAttributes &hit,
+  void Geometry::DD::setHitAttributes(render::HitAttributes &hit,
                                       const InterpolatePerVertex &interpolate) const
   {
-    using render::device::GeometryAttribute;
     for (int i=0;i<attributes.count;i++) {
       float4     &out = hit.attribute[i];
       const auto &in  = this->attributes.attribute[i];

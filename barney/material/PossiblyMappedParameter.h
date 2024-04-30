@@ -1,3 +1,4 @@
+DEPRECATED
 // // ======================================================================== //
 // // Copyright 2023-2024 Ingo Wald                                            //
 // //                                                                          //
@@ -16,22 +17,10 @@
 
 // #pragma once
 
-// #include "barney/Object.h"
+// #include "barney/render/device/HitAttributes.h"
 
 // namespace barney {
-//   namespace render {
-//     namespace host {
+//   namespace material {
       
-//       struct Material : public Object {
-//         Material(ModelSlot *owner);
-//         virtual ~Material();
-        
-//         virtual std::string toString() const = 0;
-//         virtual void create(device::Material &dd) = 0;
-        
-//         int const materialID;
-//       };
-      
-//     }
 //   }
 // }

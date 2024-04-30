@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/render/device/Ray.h"
+#include "barney/render/Ray.h"
 #include "barney/geometry/Geometry.h"
 #include "barney/Camera.h"
 #include "barney/DeviceContext.h"
@@ -26,7 +26,8 @@
 
 namespace barney {
   using namespace owl::common;
-
+  using render::Ray;
+  
   struct FrameBuffer;
   struct GlobalModel;
 

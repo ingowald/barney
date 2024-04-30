@@ -24,15 +24,16 @@
 #include "barney/geometry/Cylinders.h"
 
 namespace barney {
-  using Material = render::host::Material;
   
   Geometry::SP Geometry::create(ModelSlot *owner,
                                 const std::string &type)
   {
     if (type == "spheres")
       return std::make_shared<Spheres>(owner);
+#if 0
     if (type == "cones")
       return std::make_shared<Cones>(owner);
+#endif
     if (type == "cylinders")
       return std::make_shared<Cylinders>(owner);
     if (type == "triangles")
@@ -72,8 +73,7 @@ namespace barney {
 
   void Geometry::setAttributesOn(OWLGeom geom)
   {
-    using GeometryAttribute = render::device::GeometryAttribute;
-    GeometryAttributes dd;
+    GeometryAttributes::DD dd;
     for (int devID=0;devID<owner->devGroup->size();devID++) {
       for (int i=0;i<attributes.count;i++) {
         const auto &in = attributes.attribute[i];
@@ -165,7 +165,7 @@ namespace barney {
   {
     if (member == "material") {
       // material->setObject("colorTexture",value);
-      material = value->as<Material>();
+      material = value->as<HostMaterial>();
       if (!material)
         throw std::runtime_error("invalid material in geometry::set(\"material\"");
       return true;

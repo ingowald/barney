@@ -16,27 +16,35 @@
 
 #pragma once
 
-#include "barney/render/device/packedBSDFs/VisRTX.h"
-#include "barney/render/device/HitAttributes.h"
+#include "barney/render/packedBSDFs/VisRTX.h"
+#include "barney/render/HitAttributes.h"
+#include "barney/render/HostMaterial.h"
 
 namespace barney {
   namespace render {
-    namespace device {
-      
-      struct AnariPBR {
+    
+    struct AnariPBR : public HostMaterial {
+      struct DD {
         inline __device__
         PackedBSDF createBSDF(const HitAttributes &hitData) const;
-        
-        MaterialInput reflectance;
+        PossiblyMappedParameter::DD color;
       };
+      AnariPBR(ModelSlot *owner) : HostMaterial(owner) {}
+      virtual ~AnariPBR() = default;
       
-      inline __device__
-      PackedBSDF AnariPBR::createBSDF(const HitAttributes &hitData) const
-      {
-        float4 r = reflectance.eval(hitData);
-        return packedBSDF::VisRTX::make_matte((const vec3f&)r);
-      }
+      void createDD(DeviceMaterial &dd, int deviceID) const override
+      { throw std::runtime_error("not implemented..."); }
       
+      PossiblyMappedParameter color;
+    };
+      
+    inline __device__
+    PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData) const
+    {
+      float4 r = color.eval(hitData);
+        
+      return packedBSDF::VisRTX::make_matte((const vec3f&)r);
     }
+
   }
 }

@@ -25,7 +25,8 @@
 #endif
 
 namespace barney {
-
+  using render::Ray;
+  
   /*! a volume accel that creates an OWL geometry in the barney render
     graph; this is the base class that just defines the very concept
     of having a OWL geom, variables, etc; the actual sampler, accel

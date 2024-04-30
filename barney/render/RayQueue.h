@@ -17,13 +17,12 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
-#include "barney/render/device/Ray.h"
+#include "barney/render/Ray.h"
 
 namespace barney {
-  namespace host {
+  namespace render {
     
     struct RayQueue {
-      using Ray = barney::render::device::Ray;
       
       RayQueue(Device *device)
         : device(device)

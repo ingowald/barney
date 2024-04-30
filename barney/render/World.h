@@ -18,8 +18,8 @@
 
 #include "barney/DeviceGroup.h"
 // #include "barney/material/Globals.h"
-#include "barney/render/device/Material.h"
-#include "barney/render/device/Sampler.h"
+#include "barney/render/DeviceMaterial.h"
+#include "barney/render/Sampler.h"
 // #include "barney/material/DeviceMaterial.h"
 
 namespace barney {

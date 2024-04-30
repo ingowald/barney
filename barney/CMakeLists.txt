@@ -137,8 +137,8 @@ add_library(barney STATIC
   render/World.h
   render/World.cpp
   
-#  material/Globals.h
-#  material/Globals.cu
+  #  material/Globals.h
+  #  material/Globals.cu
   ModelSlot.h
   ModelSlot.cpp
   # general common/data-related stuff
@@ -160,8 +160,7 @@ add_library(barney STATIC
   #material/device/Plastic.h
   
   # barney-level material types
- # material/host/Material.h
- # material/host/Material.cpp
+  render/HostMaterial.cpp
   #material/host/VisRTX.h
   #material/host/VisRTX.cpp
   #material/host/Velvet.h
@@ -187,8 +186,8 @@ add_library(barney STATIC
   geometry/Triangles.cpp
   geometry/Cylinders.h
   geometry/Cylinders.cpp
-#  geometry/Cones.h
-#  geometry/Cones.cpp
+  #  geometry/Cones.h
+  #  geometry/Cones.cpp
   # volume data 
   volume/Volume.h
   volume/Volume.cpp
@@ -219,12 +218,13 @@ add_library(barney STATIC
   amr/BlockStructuredField.cu
   amr/BlockStructuredCUBQLSampler.h
   amr/BlockStructuredCUBQLSampler.cu
-#  amr/BlockStructuredMCAccelerator.h
-#  amr/BlockStructuredMCAccelerator.cu
+  #  amr/BlockStructuredMCAccelerator.h
+  #  amr/BlockStructuredMCAccelerator.cu
   
   # implements the c99 barney api calls
   barney.cpp
   )
+
 target_link_libraries(barney
   PUBLIC
   owl::owl
@@ -251,33 +251,33 @@ set_target_properties(barney
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
   CUDA_ARCHITECTURES OFF
-)
+  )
 
 if (BARNEY_MPI)
-# ------------------------------------------------------------------
-find_package(MPI REQUIRED)
+  # ------------------------------------------------------------------
+  find_package(MPI REQUIRED)
 
-add_library(barney_mpi STATIC
-  common/MPIWrappers.h
-  common/MPIWrappers.cpp
-  MPIContext.h
-  MPIContext.cpp
-  fb/DistFB.h
-  fb/DistFB.cpp
-  )
-set_target_properties(barney_mpi
-  PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES OFF
-)
-target_link_libraries(barney_mpi PUBLIC
-  barney
-  MPI::MPI_CXX
-  )
-target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
+  add_library(barney_mpi STATIC
+    common/MPIWrappers.h
+    common/MPIWrappers.cpp
+    MPIContext.h
+    MPIContext.cpp
+    fb/DistFB.h
+    fb/DistFB.cpp
+    )
+  set_target_properties(barney_mpi
+    PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    POSITION_INDEPENDENT_CODE ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_ARCHITECTURES OFF
+    )
+  target_link_libraries(barney_mpi PUBLIC
+    barney
+    MPI::MPI_CXX
+    )
+  target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
 
 

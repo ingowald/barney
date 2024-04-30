@@ -18,9 +18,12 @@
 
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/common/CUBQL.h"
+#include "barney/render/Ray.h"
 
 namespace barney {
-
+  using render::Ray;
+  using render::boxTest;
+  
   // ------------------------------------------------------------------
   /*! base class for object-space volume accelerator for an
     unstructured mesh field */
@@ -969,7 +972,7 @@ namespace barney {
     box4f domain = self.gridDomains[gridID];
     vec3i dims = self.gridDims[gridID];
     range1f gridRange = inputLeafRange;
-    if (!device::boxTest(gridRange.lower,gridRange.upper,
+    if (!boxTest(gridRange.lower,gridRange.upper,
                          domain,ray.org,ray.dir))
       return;
 

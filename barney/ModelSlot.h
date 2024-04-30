@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/Group.h"
-#include "barney/render/host/Material.h"
+#include "barney/render/HostMaterial.h"
 #include "barney/render/World.h"
 #include "barney.h"
 #include <set>
@@ -41,14 +41,14 @@ namespace barney {
               int slotIndex);
     virtual ~ModelSlot();
 
-    render::host::Material::SP getDefaultMaterial()
+    render::HostMaterial::SP getDefaultMaterial()
     {
       if (!defaultMaterial)
         defaultMaterial
-          = render::host::Material::create(this,"AnariMatte");
+          = render::HostMaterial::create(this,"AnariMatte");
       return defaultMaterial;
     }
-    render::host::Material::SP defaultMaterial = 0;
+    render::HostMaterial::SP defaultMaterial = 0;
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
