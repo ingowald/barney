@@ -249,7 +249,7 @@ namespace barney {
       auto dev = devices[localID];
       auto devFB = fb->perDev[localID].get();
       int upperBoundOnNumRays
-        = 2 * devFB->numTiles * barney::pixelsPerTile;
+        = 2 * (devFB->numActiveTiles+1) * barney::pixelsPerTile;
       dev->rays.reserve(upperBoundOnNumRays);
     }
   }

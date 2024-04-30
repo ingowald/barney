@@ -32,6 +32,8 @@ namespace barney {
   }
   using device::Ray;
 
+  using GeometryAttributes = render::device::GeometryAttributes;
+  
   struct ModelSlot;
 
   // __constant__ OptixGlobals optixLaunchParams;

@@ -36,15 +36,18 @@ namespace barney {
   }
 }
 
+#ifdef __CUDA_ARCH__
 extern __constant__ barney::render::device::OptixGlobals optixLaunchParams;
+#endif
 
 namespace barney {
   namespace render {
     namespace device {
       
+#ifdef __CUDA_ARCH__
       inline __device__ const OptixGlobals &OptixGlobals::get()
       { return optixLaunchParams; }
-      
+#endif      
     }
   }
 }

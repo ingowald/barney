@@ -24,6 +24,7 @@
 #include "barney/geometry/Cylinders.h"
 
 namespace barney {
+  using Material = render::host::Material;
   
   Geometry::SP Geometry::create(ModelSlot *owner,
                                 const std::string &type)
@@ -71,21 +72,22 @@ namespace barney {
 
   void Geometry::setAttributesOn(OWLGeom geom)
   {
+    using GeometryAttribute = render::device::GeometryAttribute;
     GeometryAttributes dd;
     for (int devID=0;devID<owner->devGroup->size();devID++) {
-      for (int i=0;i<render::numAttributes;i++) {
-        const auto &in = attribute[i];
+      for (int i=0;i<attributes.count;i++) {
+        const auto &in = attributes.attribute[i];
         auto &out = dd.attribute[i];
         if (in.perVertex) {
-          out.scope = render::GeometryAttribute::PER_VERTEX;
+          out.scope = GeometryAttribute::PER_VERTEX;
           out.fromArray.type = in.perVertex->type;
           out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
         } else if (in.perPrim) {
-          out.scope = render::GeometryAttribute::PER_PRIM;
+          out.scope = GeometryAttribute::PER_PRIM;
           out.fromArray.type = in.perPrim->type;
           out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
         } else {
-          out.scope = render::GeometryAttribute::CONSTANT;
+          out.scope = GeometryAttribute::CONSTANT;
           (vec4f&)out.value = in.constant;
         }
       }
@@ -122,6 +124,7 @@ namespace barney {
   
   bool Geometry::setData(const std::string &member, const Data::SP &value)
   {
+    auto *attribute = attributes.attribute;
     if (member == "primitive.attribute0") {
       attribute[0].perPrim = value->as<PODData>();
       return true;

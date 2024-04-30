@@ -31,8 +31,10 @@ namespace barney {
       };
 
       struct GeometryAttributes {
+        enum { count = device::numAttributes };
+        
         void make(device::GeometryAttributes &dd);
-        GeometryAttribute attribute[numAttributes];
+        GeometryAttribute attribute[device::numAttributes];
       };
       
     }

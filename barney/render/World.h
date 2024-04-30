@@ -19,6 +19,7 @@
 #include "barney/DeviceGroup.h"
 // #include "barney/material/Globals.h"
 #include "barney/render/device/Material.h"
+#include "barney/render/device/Sampler.h"
 // #include "barney/material/DeviceMaterial.h"
 
 namespace barney {
@@ -64,7 +65,8 @@ namespace barney {
       typedef std::shared_ptr<MaterialLibrary> SP;
     
       MaterialLibrary(DevGroup *devGroup);
-    
+      virtual ~MaterialLibrary();
+      
       int allocate();
       void release(int nowReusableID);
       void grow();
@@ -83,7 +85,8 @@ namespace barney {
       typedef std::shared_ptr<SamplerLibrary> SP;
     
       SamplerLibrary(DevGroup *devGroup);
-    
+      virtual ~SamplerLibrary();
+      
       int allocate();
       void release(int nowReusableID);
       void grow();

@@ -25,50 +25,12 @@
 
 namespace barney {
 
-  MaterialLibrary::MaterialLibrary(DevGroup::SP devGroup)
-    : devGroup(devGroup)
-  {
-    numReserved = 1;
-    materialsBuffer = owlDeviceBufferCreate
-      (devGroup->owl,OWL_USER_TYPE(render::DeviceMaterial),1,nullptr);
-  }
-
-  void MaterialLibrary::grow()
-  {
-    numReserved *= 2;
-    owlBufferResize(materialsBuffer,numReserved);
-  }
-
-  int MaterialLibrary::allocate()
-  {
-    if (!reusableIDs.empty()) {
-      int ID = reusableIDs.top();
-      reusableIDs.pop();
-      return ID;
-    }
-    if (nextFree == numReserved) grow();
-
-    return nextFree++;
-  }
-   
-  void MaterialLibrary::release(int nowReusableID)
-  {
-    reusableIDs.push(nowReusableID);
-  }
-  
-  render::device::Material *MaterialLibrary::getPointer(int owlDeviceID)
-  {
-    return (render::DeviceMaterial *)owlBufferGetPointer(materialsBuffer,owlDeviceID);
-  }    
-
-  
   ModelSlot::ModelSlot(GlobalModel *model, int slot)
     : Object(model->context),
       model(model),
       localID(localID),
       devGroup(model->context->perSlot[slot].devGroup),
-      world(model->context->perSlot[slot].devGroup.get()),
-      materialLibrary(model->context->perSlot[slot].devGroup)
+      world(model->context->perSlot[slot].devGroup.get())
   {}
 
   ModelSlot::~ModelSlot()
@@ -170,8 +132,6 @@ namespace barney {
 
   void ModelSlot::build()
   { 
-    multiPassInstances.clear();
-
     std::vector<render::QuadLight> quadLights;
     std::vector<render::DirLight>  dirLights;
 
@@ -214,7 +174,6 @@ namespace barney {
           owlGroups.push_back(gg);
           owlTransforms.push_back(instances.xfms[i]);
         }
-      multiPassInstances.instantiate(group,instances.xfms[i]);
     }
       
     // if (owlGroups.size() == 0)

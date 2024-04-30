@@ -133,6 +133,10 @@ add_library(barney STATIC
   GlobalModel.cpp
   Group.h
   Group.cpp
+
+  render/World.h
+  render/World.cpp
+  
 #  material/Globals.h
 #  material/Globals.cu
   ModelSlot.h

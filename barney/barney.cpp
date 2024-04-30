@@ -23,7 +23,6 @@
 #include "barney/volume/ScalarField.h"
 #include "barney/common/Data.h"
 #include "barney/common/mat4.h"
-#include "barney/material/host/Material.h"
 #include "barney/Camera.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
@@ -271,7 +270,8 @@ namespace barney {
                               int whichSlot,
                               const char *type)
   {
-    Material::SP material = Material::create(checkGet(model,whichSlot),type);
+    render::host::Material::SP material
+      = render::host::Material::create(checkGet(model,whichSlot),type);
     if (!material) return 0;
     return (BNMaterial)checkGet(model,whichSlot)->context->initReference(material);
   }
