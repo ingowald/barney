@@ -31,6 +31,8 @@ namespace barney {
       };
       AnariMatte(ModelSlot *owner) : HostMaterial(owner) {}
       virtual ~AnariMatte() = default;
+
+      std::string toString() const override { return "AnariMatte"; }
       
       void createDD(DeviceMaterial &dd, int deviceID) const override
       { throw std::runtime_error("not implemented..."); }

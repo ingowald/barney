@@ -32,6 +32,8 @@ namespace barney {
       AnariPBR(ModelSlot *owner) : HostMaterial(owner) {}
       virtual ~AnariPBR() = default;
       
+      std::string toString() const override { return "AnariPBR"; }
+      
       void createDD(DeviceMaterial &dd, int deviceID) const override
       { throw std::runtime_error("not implemented..."); }
       

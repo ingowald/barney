@@ -382,15 +382,15 @@ namespace barney {
       const bool  hadNoIntersection  = !path.hadHit();
       const vec3f incomingThroughput = path.throughput;
 
-      // if (path.dbg)
-      //   printf(" -> incoming %f %f %f dir %f %f %f %f\n",
-      //          path.org.x,
-      //          path.org.y,
-      //          path.org.z,
-      //          (float)path.dir.x,
-      //          (float)path.dir.y,
-      //          (float)path.dir.z,
-      //          path.tMax);
+      if (path.dbg)
+        printf(" -> incoming %f %f %f dir %f %f %f t %f ismiss %i\n",
+               path.org.x,
+               path.org.y,
+               path.org.z,
+               (float)path.dir.x,
+               (float)path.dir.y,
+               (float)path.dir.z,
+               path.tMax,int(hadNoIntersection));
 
       if (path.isShadowRay) {
         // ==================================================================
@@ -425,16 +425,22 @@ namespace barney {
           // ----------------------------------------------------------------
           // PRIMARY ray that didn't hit anything -> background
           // ----------------------------------------------------------------
-          fragment = path.throughput * backgroundOrEnv(world,path);
+          if (path.dbg)
+            printf("miss primary %f %f %f\n",
+                   path.missColor.x,
+                   path.missColor.y,
+                   path.missColor.z);
+          fragment = path.missColor;
+          // fragment = path.throughput * backgroundOrEnv(world,path);
           
-          const vec3f fromEnv
-            = // 1.5f*
-            backgroundOrEnv(world,path);
+          // const vec3f fromEnv
+          //   = // 1.5f*
+          //   backgroundOrEnv(world,path);
 
-          const vec3f tp = path.throughput;
-          const vec3f addtl = tp
-            * fromEnv;
-          fragment = addtl;
+          // const vec3f tp = path.throughput;
+          // const vec3f addtl = tp
+          //   * fromEnv;
+          // fragment = addtl;
         } else {
           // ----------------------------------------------------------------
           // SECONDARY ray that didn't hit anything -> env-light
@@ -639,8 +645,8 @@ namespace barney {
       if (tid >= numRays) return;
 
       Ray path = readQueue[tid];
-      // if (path.dbg) printf("  # shading FROM %lx TO %lx\n",
-      //                      readQueue,writeQueue);
+      if (path.dbg) printf("  # shading FROM %lx TO %lx\n",
+                           readQueue,writeQueue);
       // what we'll add into the frame buffer
       vec3f fragment = 0.f;
       float z = path.tMax;
@@ -658,10 +664,10 @@ namespace barney {
              generation);
     
       // write shadow and bounce ray(s), if any were generated
-      // if (path.dbg)
-      //   printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
-      //          path.tMax,shadowRay.tMax,
-      //          fragment.x,fragment.y,fragment.z);
+      if (path.dbg)
+        printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
+               path.tMax,shadowRay.tMax,
+               fragment.x,fragment.y,fragment.z);
       if (shadowRay.tMax > 0.f) {
         writeQueue[atomicAdd(d_nextWritePos,1)] = shadowRay;
       }

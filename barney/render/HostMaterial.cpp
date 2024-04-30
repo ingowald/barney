@@ -34,7 +34,7 @@ namespace barney {
     
     void HostMaterial::setDeviceDataOn(OWLGeom geom) const
     {
-      owlGeomSet1i(geom,"material",materialID);
+      owlGeomSet1i(geom,"materialID",materialID);
       // for (int deviceID=0;deviceID<owner->devGroup->size();deviceID++) {
       //   // HostMaterial::DD dd;
       //   // createDD(dd,deviceID);
@@ -50,7 +50,7 @@ namespace barney {
       //   return std::make_shared<VelvetMaterial>(dg);
       if (type == "matte")
         return std::make_shared<AnariMatte>(owner); 
-      return std::make_shared<AnariMatte>(owner); 
+      return std::make_shared<AnariPBR>(owner); 
       // if (type == "blender")
       //   return std::make_shared<BlenderMaterial>(dg); 
       // if (type == "glass")
@@ -76,6 +76,11 @@ namespace barney {
     void HostMaterial::commit()
     {
       SlottedObject::commit();
+      DeviceMaterial dd;
+      for (int devID=0;devID<owner->devGroup->size();devID++) {
+        this->createDD(dd,devID);
+        owner->world.materialLibrary.setMaterial(materialID,dd,devID);
+      }
     }
 
 #if 0

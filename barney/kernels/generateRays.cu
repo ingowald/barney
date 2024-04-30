@@ -118,14 +118,14 @@ namespace barney {
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              
-      // if (ray.dbg)
-      //   printf("spawned %f %f %f dir %f %f %f\n",
-      //          ray.org.x,
-      //          ray.org.y,
-      //          ray.org.z,
-      //          (float)ray.dir.x,
-      //          (float)ray.dir.y,
-      //          (float)ray.dir.z);
+      if (ray.dbg)
+        printf("spawned %f %f %f dir %f %f %f\n",
+               ray.org.x,
+               ray.org.y,
+               ray.org.z,
+               (float)ray.dir.x,
+               (float)ray.dir.y,
+               (float)ray.dir.z);
 
       const float t = (iy+.5f)/float(fbSize.y);
       // for *primary* rays we pre-initialize basecolor to a background

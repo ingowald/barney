@@ -55,12 +55,19 @@ namespace barney {
       reusableIDs.push(nowReusableID);
     }
   
-    const render::device::Material *MaterialLibrary::getPointer(int owlDeviceID) const 
+    const DeviceMaterial *MaterialLibrary::getPointer(int owlDeviceID) const 
     {
-      return (render::device::Material *)owlBufferGetPointer(buffer,owlDeviceID);
+      return (DeviceMaterial *)owlBufferGetPointer(buffer,owlDeviceID);
     }    
 
 
+    void MaterialLibrary::setMaterial(int materialID,
+                                      const DeviceMaterial &dd,
+                                      int deviceID)
+    {
+      BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+materialID),
+                              &dd,sizeof(dd),cudaMemcpyDefault));
+    }
 
 
 
@@ -100,9 +107,9 @@ namespace barney {
       reusableIDs.push(nowReusableID);
     }
   
-    const render::device::Sampler *SamplerLibrary::getPointer(int owlDeviceID) const
+    const Sampler::DD *SamplerLibrary::getPointer(int owlDeviceID) const
     {
-      return (render::device::Sampler *)owlBufferGetPointer(buffer,owlDeviceID);
+      return (Sampler::DD *)owlBufferGetPointer(buffer,owlDeviceID);
     }    
 
     

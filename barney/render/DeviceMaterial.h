@@ -25,26 +25,26 @@
 namespace barney {
   namespace render {
       
-      struct DeviceMaterial {
-        typedef enum {
-          INVALID=0,
-          TYPE_AnariMatte,
-          TYPE_AnariPBF
-        } Type;
+    struct DeviceMaterial {
+      typedef enum {
+        INVALID=0,
+        TYPE_AnariMatte,
+        TYPE_AnariPBF
+      } Type;
       
-        inline __device__
-        PackedBSDF createBSDF(const HitAttributes &hitData) const;
+      inline __device__
+      PackedBSDF createBSDF(const HitAttributes &hitData) const;
 
-        inline __device__
-        void setHit(Ray &ray,
-                    const HitAttributes &hitData) const;
+      inline __device__
+      void setHit(Ray &ray,
+                  const HitAttributes &hitData) const;
         
-        Type type;
-        union {
-          AnariPBR::DD   anariPBR;
-          AnariMatte::DD anariMatte;
-        };
+      Type type;
+      union {
+        AnariPBR::DD   anariPBR;
+        AnariMatte::DD anariMatte;
       };
+    };
 
     inline __device__
     PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData) const

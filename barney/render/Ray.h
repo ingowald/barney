@@ -29,7 +29,7 @@ namespace barney {
                                     const PackedBSDF &packedBSDF);
       
       inline __device__ void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len);
-      inline __device__ bool hadHit() const { return bsdfType == PackedBSDF::NONE; }
+      inline __device__ bool hadHit() const { return bsdfType != PackedBSDF::NONE; }
       inline __device__ void clearHit()     { bsdfType = PackedBSDF::NONE; }
       
       inline __device__ void packNormal(vec3f N);

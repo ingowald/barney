@@ -25,12 +25,6 @@
 namespace barney {
   namespace render {
 
-    namespace device {
-      struct Material;
-      struct Sampler;
-    }
-
-    
 #define DEFAULT_RADIANCE_FROM_ENV .8f
 
     struct QuadLight {
@@ -70,8 +64,9 @@ namespace barney {
       int allocate();
       void release(int nowReusableID);
       void grow();
-    
-      const render::device::Material *getPointer(int owlDeviceID) const;
+
+      void setMaterial(int materialID, const DeviceMaterial &, int deviceID);
+      const DeviceMaterial *getPointer(int owlDeviceID) const;
     
       int numReserved = 0;
       int nextFree = 0;
@@ -91,7 +86,7 @@ namespace barney {
       void release(int nowReusableID);
       void grow();
     
-      const render::device::Sampler *getPointer(int owlDeviceID) const;
+      const Sampler::DD *getPointer(int owlDeviceID) const;
     
       int numReserved = 0;
       int nextFree = 0;
@@ -113,8 +108,8 @@ namespace barney {
         const DirLight   *dirLights     = nullptr;
         float             radiance;
         
-        const device::Material *materials;
-        const device::Sampler  *samplers;
+        const DeviceMaterial *materials;
+        const Sampler::DD    *samplers;
         
         EnvMapLight::DD   envMapLight;
         // Globals::DD     globals;

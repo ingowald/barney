@@ -82,7 +82,16 @@ namespace barney {
     hitData.t               = t_hit;
     if (self.colors)
       (vec3f&)hitData.color = self.colors[primID];
+    
+    auto interpolator = [&](const GeometryAttribute::DD &)
+    { /* does not make sense for spheres */return make_float4(0,0,0,1); };
+    self.setHitAttributes(hitData,interpolator);
 
+    if (ray.dbg) printf("HIT SPHERES\n");
+    
+    const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
+    material.setHit(ray,hitData);
+    
     // auto interpolate = [&](const GeometryAttributes &)
     // { /* does not make sense for spheres */return make_float4(0,0,0,1); };
     // self.evalAttributesAndStoreHit(ray,hitData,interpolate,

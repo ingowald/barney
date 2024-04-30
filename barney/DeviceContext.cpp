@@ -58,10 +58,21 @@ namespace barney {
   void DeviceContext::traceRays_launch(GlobalModel *model)
   {
     DevGroup *dg = device->devGroup;
+    ModelSlot *slot = model->getSlot(dg->lmsIdx);
+    
     owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);
     owlParamsSet1i(dg->lp,"numRays",rays.numActive);
-    OWLGroup world = model->getSlot(dg->lmsIdx)->instances.group;
-    owlParamsSetGroup(dg->lp,"world",world);
+    owlParamsSetGroup(dg->lp,"world",
+                      slot->instances.group);
+    owlParamsSetBuffer(dg->lp,"materials",
+                       slot->world.materialLibrary.buffer);
+    owlParamsSetBuffer(dg->lp,"samplers",
+                       slot->world.samplerLibrary.buffer);
+                        
+    // owlParamsSetPointer(dg->lp,"materials",
+    //                     slot->world.materialLibrary.getPointer(device->owlID));
+    // owlParamsSetPointer(dg->lp,"samplers",
+    //                     slot->world.samplerLibrary.getPointer(device->owlID));
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);
     if (nb)

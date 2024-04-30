@@ -61,7 +61,7 @@ namespace barney {
 
     OWLVarDecl args[]
       = {
-         { nullptr }
+      { nullptr }
     };
     OWLModule module = owlModuleCreate(owl,traceRays_ptx);
     rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
@@ -77,9 +77,11 @@ namespace barney {
     OWLVarDecl params[]
       = {
       { "world", OWL_GROUP, OWL_OFFSETOF(render::OptixGlobals, world) },
-         { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::OptixGlobals,rays) },
-         { "numRays",  OWL_INT, OWL_OFFSETOF(render::OptixGlobals,numRays) },
-         { nullptr }
+      { "materials", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, materials) },
+      { "samplers", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, samplers) },
+      { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::OptixGlobals,rays) },
+      { "numRays",  OWL_INT, OWL_OFFSETOF(render::OptixGlobals,numRays) },
+      { nullptr }
     };
     lp = owlParamsCreate(owl,
                          sizeof(render::OptixGlobals),
