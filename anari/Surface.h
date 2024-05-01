@@ -20,16 +20,20 @@ struct Surface : public Object
   const Geometry *geometry() const;
   const Material *material() const;
 
-  BNGeom makeBarneyGeom(BNModel model, int slot) const;
-
-  size_t numRequiredGPUBytes() const override;
+  BNGeom getBarneyGeom(BNModel model, int slot);
 
   bool isValid() const override;
 
  private:
+  void setBarneyParameters();
+  void cleanup();
+
   uint32_t m_id{~0u};
   helium::IntrusivePtr<Geometry> m_geometry;
   helium::IntrusivePtr<Material> m_material;
+
+  BNGeom m_bnGeom{nullptr};
+  BNMaterial m_bnMat{nullptr};
 };
 
 } // namespace barney_device

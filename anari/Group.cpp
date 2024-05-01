@@ -5,27 +5,20 @@
 
 namespace barney_device {
 
-Group::Group(BarneyGlobalState *s) : Object(ANARI_GROUP, s) {}
+Group::Group(BarneyGlobalState *s)
+    : Object(ANARI_GROUP, s),
+      m_surfaceData(this),
+      m_volumeData(this),
+      m_lightData(this)
+{}
 
-Group::~Group()
-{
-  cleanup();
-}
+Group::~Group() = default;
 
 void Group::commit()
 {
-  cleanup();
-
   m_surfaceData = getParamObject<ObjectArray>("surface");
   m_volumeData = getParamObject<ObjectArray>("volume");
   m_lightData = getParamObject<ObjectArray>("light");
-
-  if (m_surfaceData)
-    m_surfaceData->addCommitObserver(this);
-  if (m_volumeData)
-    m_volumeData->addCommitObserver(this);
-  if (m_lightData)
-    m_lightData->addCommitObserver(this);
 }
 
 void Group::markCommitted()
@@ -56,7 +49,7 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   for (auto s : surfaces)
-    barneyGeometries.push_back(s->makeBarneyGeom(model, slot));
+    barneyGeometries.push_back(s->getBarneyGeom(model, slot));
 
   // Volumes //
 
@@ -147,16 +140,6 @@ box3 Group::bounds() const
         });
   }
   return result;
-}
-
-void Group::cleanup()
-{
-  if (m_surfaceData)
-    m_surfaceData->removeCommitObserver(this);
-  if (m_volumeData)
-    m_volumeData->removeCommitObserver(this);
-  if (m_lightData)
-    m_lightData->removeCommitObserver(this);
 }
 
 } // namespace barney_device

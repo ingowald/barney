@@ -104,17 +104,17 @@ void Frame::renderFrame()
   if (state->commitBufferLastFlush() > m_frameLastRendered)
     bnAccumReset(m_bnFrameBuffer);
 
-  m_world->barneyModelUpdate();
+  auto model = m_world->makeCurrent();
 
   m_frameLastRendered = helium::newTimeStamp();
   state->currentFrame = this;
 
   const int pixelSamples = std::max(m_renderer->pixelSamples(), 1);
   const float radiance = m_renderer->radiance();
-  bnSetRadiance(m_world->barneyModel(), m_world->barneySlot(), radiance);
+  bnSetRadiance(model, 0, radiance);
 
   for (int i = 0; i < pixelSamples; i++)
-    bnRender(m_world->barneyModel(), m_camera->barneyCamera(), m_bnFrameBuffer);
+    bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer);
 
   auto end = std::chrono::steady_clock::now();
   m_duration = std::chrono::duration<float>(end - start).count();

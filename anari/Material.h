@@ -18,8 +18,14 @@ struct Material : public Object
 
   void markCommitted() override;
 
-  virtual BNMaterial makeBarneyMaterial(BNModel model, int slot) const = 0;
+  BNMaterial getBarneyMaterial(BNModel model, int slot);
 
+  virtual const char *bnSubtype() const = 0;
+  virtual void setBarneyParameters() = 0;
+
+ protected:
+  void cleanup();
+  BNMaterial m_bnMat{nullptr};
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -28,14 +34,14 @@ struct Matte : public Material
 {
   Matte(BarneyGlobalState *s);
   void commit() override;
-
-  BNMaterial makeBarneyMaterial(BNModel model, int slot) const override;
-
   bool isValid() const override;
+
+  const char *bnSubtype() const override;
+  void setBarneyParameters() override;
 
  private:
   math::float4 m_color{1.f, 1.f, 1.f, 1.f};
-  helium::IntrusivePtr<Sampler> m_colorSampler{nullptr};
+  helium::CommitObserverPtr<Sampler> m_colorSampler{nullptr};
 };
 
 struct PhysicallyBased : public Material
@@ -43,20 +49,24 @@ struct PhysicallyBased : public Material
   PhysicallyBased(BarneyGlobalState *s);
   void commit() override;
 
-  BNMaterial makeBarneyMaterial(BNModel model, int slot) const override;
+  const char *bnSubtype() const override;
+  void setBarneyParameters() override;
 
  private:
-  struct {
+  struct
+  {
     math::float4 value{1.f, 1.f, 1.f, 1.f};
     /*TODO: samplers, attributes, etc.*/
   } m_baseColor;
 
-  struct {
+  struct
+  {
     math::float3 value{1.f, 1.f, 1.f};
     /*TODO: samplers, attributes, etc.*/
   } m_emissive, m_specularColor;
 
-  struct {
+  struct
+  {
     float value{1.f};
     std::string stringValue;
     /*TODO: samplers, attributes, etc.*/

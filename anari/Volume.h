@@ -30,12 +30,11 @@ struct TransferFunction1D : public Volume
 {
   TransferFunction1D(BarneyGlobalState *s);
   void commit() override;
+  bool isValid() const override;
 
   BNVolume makeBarneyVolume(BNModel model, int slot) const override;
 
   box3 bounds() const override;
-
-  size_t numRequiredGPUBytes() const override;
 
  private:
   void cleanup();

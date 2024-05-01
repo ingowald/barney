@@ -13,18 +13,17 @@ struct Geometry : public Object
   Geometry(BarneyGlobalState *s);
   ~Geometry() override;
 
-  void commit() override;
-
   static Geometry *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
+  void commit() override;
   void markCommitted() override;
 
-  virtual BNGeom makeBarneyGeometry(
-      BNModel model, int slot, const BNMaterial material) const = 0;
-
+  virtual const char *bnSubtype() const = 0;
+  virtual void setBarneyParameters(BNGeom geom, BNModel model, int slot) = 0;
   virtual box3 bounds() const = 0;
 
+ protected:
   std::array<helium::IntrusivePtr<Array1D>, 5> m_attributes;
 };
 
@@ -34,49 +33,34 @@ struct Sphere : public Geometry
 {
   Sphere(BarneyGlobalState *s);
   void commit() override;
-
-  BNGeom makeBarneyGeometry(
-      BNModel model, int slot, const BNMaterial material) const override;
-
-  box3 bounds() const override;
-
-  size_t numRequiredGPUBytes() const override;
-
   bool isValid() const override;
 
- private:
-  void cleanup();
+  void setBarneyParameters(BNGeom geom, BNModel model, int slot) override;
+  const char *bnSubtype() const override;
+  box3 bounds() const override;
 
-  helium::IntrusivePtr<Array1D> m_index;
-  helium::IntrusivePtr<Array1D> m_vertexPosition;
-  helium::IntrusivePtr<Array1D> m_vertexRadius;
+ private:
+  helium::CommitObserverPtr<Array1D> m_index;
+  helium::CommitObserverPtr<Array1D> m_vertexPosition;
+  helium::CommitObserverPtr<Array1D> m_vertexRadius;
   std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
   float m_globalRadius{0.f};
-
-  std::vector<int> m_generatedIndices;
 };
 
 struct Triangle : public Geometry
 {
   Triangle(BarneyGlobalState *s);
   void commit() override;
-
-  BNGeom makeBarneyGeometry(
-      BNModel model, int slot, const BNMaterial material) const override;
-
-  box3 bounds() const override;
-
-  size_t numRequiredGPUBytes() const override;
-
   bool isValid() const override;
 
+  void setBarneyParameters(BNGeom geom, BNModel model, int slot) override;
+  const char *bnSubtype() const override;
+  box3 bounds() const override;
+
  private:
-  void cleanup();
-
-  helium::IntrusivePtr<Array1D> m_index;
-  helium::IntrusivePtr<Array1D> m_vertexPosition;
+  helium::CommitObserverPtr<Array1D> m_index;
+  helium::CommitObserverPtr<Array1D> m_vertexPosition;
   std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
-
   std::vector<int> m_generatedIndices;
 };
 

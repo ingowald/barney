@@ -24,6 +24,8 @@ void Surface::commit()
     reportMessage(ANARI_SEVERITY_WARNING, "missing 'geometry' on ANARISurface");
     return;
   }
+
+  setBarneyParameters();
 }
 
 void Surface::markCommitted()
@@ -42,21 +44,40 @@ const Material *Surface::material() const
   return m_material.ptr;
 }
 
-BNGeom Surface::makeBarneyGeom(BNModel model, int slot) const
+BNGeom Surface::getBarneyGeom(BNModel model, int slot)
 {
-  return geometry()->makeBarneyGeometry(
-      model, slot, material()->makeBarneyMaterial(model, slot));
-}
+  if (!isModelTracked(model, slot)) {
+    cleanup();
+    trackModel(model, slot);
+    m_bnGeom = bnGeometryCreate(model, slot, m_geometry->bnSubtype());
+    setBarneyParameters();
+  }
 
-size_t Surface::numRequiredGPUBytes() const
-{
-  return m_geometry ? m_geometry->numRequiredGPUBytes() : size_t(0);
+  return m_bnGeom;
 }
 
 bool Surface::isValid() const
 {
   return m_geometry && m_material && m_geometry->isValid()
       && m_material->isValid();
+}
+
+void Surface::setBarneyParameters()
+{
+  if (!isValid() || !m_bnGeom)
+    return;
+  BNModel model = trackedModel();
+  int slot = trackedSlot();
+  bnSetObject(m_bnGeom, "material", m_material->getBarneyMaterial(model, slot));
+  m_geometry->setBarneyParameters(m_bnGeom, model, slot);
+  bnCommit(m_bnGeom);
+}
+
+void Surface::cleanup()
+{
+  if (m_bnGeom)
+    bnRelease(m_bnGeom);
+  m_bnGeom = nullptr;
 }
 
 } // namespace barney_device

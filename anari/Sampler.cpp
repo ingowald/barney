@@ -67,8 +67,8 @@ void Image1D::setBarneyParameters(BNModel model, BNMaterial mat, int slot) const
 
   // bnSetString(mat, "sampler.type", "image1D");
   // bnSet1i(mat, "sampler.image.inAttribute", m_inAttribute);
-  // bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&m_inTransform.x);
-  // bnSet4f(mat,
+  // bnSet4x4fv(mat, "sampler.image.inTransform", (const float
+  // *)&m_inTransform.x); bnSet4f(mat,
   //     "sampler.image.inOffset",
   //     m_inOffset.x,
   //     m_inOffset.y,
@@ -129,14 +129,15 @@ void Image2D::commit()
   m_inTransform = math::identity;
   getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
   m_inOffset =
-    getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+      getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
   m_outTransform = math::identity;
   getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
   m_outOffset =
-    getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
 
   if (!m_image)
     return;
+#if 0
   if (!m_sampler)
     m_sampler = bnSamplerCreate(model,slot,"image2D");
   // bnSetString(mat, "sampler.type", "image2D");
@@ -162,6 +163,7 @@ void Image2D::commit()
           m_outOffset.z,
           m_outOffset.w);
   bnCommit(m_sampler);
+#endif
 }
 
 bool Image2D::isValid() const
@@ -171,47 +173,51 @@ bool Image2D::isValid() const
 
 void Image2D::setBarneyParameters(BNModel model, BNMaterial mat, int slot) const
 {
-  // if (!m_image)
-  //   return;
-  // if (!m_sampler)
-  //   m_sampler = bnSamplerCreate(model,slot,
-  // bnSetString(mat, "sampler.type", "image2D");
-  // bnSet1i(mat, "sampler.image.inAttribute", m_inAttribute);
-  // bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&m_inTransform.x);
-  // bnSet4f(mat,
-  //     "sampler.image.inOffset",
-  //     m_inOffset.x,
-  //     m_inOffset.y,
-  //     m_inOffset.z,
-  //     m_inOffset.w);
-  // bnSet4x4fv(
-  //     mat, "sampler.image.outTransform", (const float *)&m_outTransform.x);
-  // bnSet4f(mat,
-  //     "sampler.image.outOffset",
-  //     m_outOffset.x,
-  //     m_outOffset.y,
-  //     m_outOffset.z,
-  //     m_outOffset.w);
+  if (!m_image)
+    return;
+#if 0
+  if (!m_sampler)
+     m_sampler = bnSamplerCreate(model,slot,
+   bnSetString(mat, "sampler.type", "image2D");
+   bnSet1i(mat, "sampler.image.inAttribute", m_inAttribute);
+   bnSet4x4fv(mat, "sampler.image.inTransform", (const float
+   *)&m_inTransform.x); bnSet4f(mat,
+       "sampler.image.inOffset",
+       m_inOffset.x,
+       m_inOffset.y,
+       m_inOffset.z,
+       m_inOffset.w);
+   bnSet4x4fv(
+       mat, "sampler.image.outTransform", (const float *)&m_outTransform.x);
+   bnSet4f(mat,
+       "sampler.image.outOffset",
+       m_outOffset.x,
+       m_outOffset.y,
+       m_outOffset.z,
+       m_outOffset.w);
 
-  // if (!m_texture) {
-  //   // assert(m_wrapMode1 == m_wrapMode2);
-  //   m_texture = makeBarneyTexture2D(model,
-  //       slot,
-  //       m_image,
-  //       m_image->size().x,
-  //       m_image->size().y,
-  //       m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST,
-  //       m_wrapMode1);
-  // }
+   if (!m_texture) {
+      // assert(m_wrapMode1 == m_wrapMode2);
+      m_texture = makeBarneyTexture2D(model,
+          slot,
+          m_image,
+          m_image->size().x,
+          m_image->size().y,
+          m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST,
+          m_wrapMode1);
+   }
 
-  // bnSetObject(mat, "sampler.image.image", m_texture);
+   bnSetObject(mat, "sampler.image.image", m_texture);
+#endif
 }
 
 void Image2D::cleanup()
 {
+#if 0
   if (m_texture)
     bnRelease(m_texture);
   m_texture = nullptr;
+#endif
 }
 
 // TransformSampler //
@@ -233,6 +239,7 @@ void TransformSampler::commit()
 void TransformSampler::setBarneyParameters(
     BNModel model, BNMaterial mat, int slot) const
 {
+#if 0
   bnSetString(mat, "sampler.type", "transform");
   bnSet1i(mat, "sampler.transform.inAttribute", m_inAttribute);
   bnSet4x4fv(
@@ -243,6 +250,7 @@ void TransformSampler::setBarneyParameters(
       m_outOffset.y,
       m_outOffset.z,
       m_outOffset.w);
+#endif
 }
 
 } // namespace barney_device
