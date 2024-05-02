@@ -50,6 +50,7 @@ namespace barney {
     inline __device__
     PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData, bool dbg) const
     {
+      if (dbg) printf("createBSDF type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,dbg);
       if (type == TYPE_AnariPBR)
@@ -74,6 +75,7 @@ namespace barney {
                                 const HitAttributes &hitData,
                                 bool dbg) const
     {
+      if (dbg) printf("devmat sethit\n");
       ray.setHit(hitData.worldPosition,hitData.worldNormal,
                  hitData.t,createBSDF(hitData,dbg));
     }

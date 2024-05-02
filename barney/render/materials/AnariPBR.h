@@ -30,6 +30,9 @@ namespace barney {
         PossiblyMappedParameter::DD baseColor;
         PossiblyMappedParameter::DD metallic;
         PossiblyMappedParameter::DD roughness;
+        PossiblyMappedParameter::DD transmission;
+        PossiblyMappedParameter::DD ior;
+        PossiblyMappedParameter::DD emission;
       };
       AnariPBR(ModelSlot *owner) : HostMaterial(owner) {}
       virtual ~AnariPBR() = default;
@@ -45,6 +48,9 @@ namespace barney {
       PossiblyMappedParameter baseColor;
       PossiblyMappedParameter metallic;
       PossiblyMappedParameter roughness;
+      PossiblyMappedParameter transmission;
+      PossiblyMappedParameter ior;
+      PossiblyMappedParameter emission;
     };
       
     inline __device__
@@ -59,16 +65,19 @@ namespace barney {
       bsdf.metallic = metallic.x;
 
       float4 roughness = this->roughness.eval(hitData,dbg);
-      if (dbg) printf("got roughness %f %f %f %f\n",
-                      roughness.x,
-                      roughness.y,
-                      roughness.z,
-                      roughness.w);
       bsdf.roughness = roughness.x;
       
-      bsdf.ior = 1.5f;
-      bsdf.opacity = 1.f;
+      float4 transmission = this->transmission.eval(hitData,dbg);
+      bsdf.opacity = 1.f-transmission.x;
+      
+      float4 ior = this->ior.eval(hitData,dbg);
+      bsdf.ior = ior.x;
 
+      if (dbg)
+        printf("AnariPBR baseCOlor %f %f %f\n",
+               baseColor.x,
+               baseColor.y,
+               baseColor.z);
       return bsdf;
     }
 

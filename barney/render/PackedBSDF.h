@@ -26,7 +26,7 @@ namespace barney {
     namespace packedBSDF {
       struct Invalid { };
     }
-    
+
     struct PackedBSDF {
       typedef enum { INVALID=0, NONE=INVALID,
         /* phase function */
@@ -54,12 +54,22 @@ namespace barney {
       
       inline __device__
       EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
+
+      inline __device__
+      void scatter(ScatterResult &scatter,
+                   const render::DG &dg,
+                   Random &random,
+                   bool dbg=false) const;
       
       inline __device__
       float getOpacity(render::DG dg, bool dbg=false) const;
     };
 
 
+    inline __device__
+    PackedBSDF::PackedBSDF(const packedBSDF::VisRTX &visRTX)
+    { type = TYPE_VisRTX; data.visRTX = visRTX; }
+    
     inline __device__
     EvalRes PackedBSDF::eval(render::DG dg, vec3f w_i, bool dbg) const
     {
@@ -71,14 +81,22 @@ namespace barney {
     }
     
     inline __device__
-    PackedBSDF::PackedBSDF(const packedBSDF::VisRTX &visRTX)
-    { type = TYPE_VisRTX; data.visRTX = visRTX; }
-    
-    inline __device__
     float PackedBSDF::getOpacity(render::DG dg, bool dbg) const
     {
       return 0.f;
     }
+
+    inline __device__
+    void PackedBSDF::scatter(ScatterResult &scatter,
+                             const render::DG &dg,
+                             Random &random,
+                             bool dbg) const
+    {
+      scatter.pdf = 0.f;
+      if (type == TYPE_VisRTX)
+        return data.visRTX.scatter(scatter,dg,random,dbg);
+    }
+      
     
   }
 }

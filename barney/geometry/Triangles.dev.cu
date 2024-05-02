@@ -82,9 +82,10 @@ namespace barney {
         return (1.f-u-v)*value_a + u*value_b + v*value_c;
       };
     self.setHitAttributes(hitData,interpolator);
-      
+
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
-    material.setHit(ray,hitData);
+    if (ray.dbg) printf("=== HIT TRIS matID %i\n",self.materialID);
+    material.setHit(ray,hitData,ray.dbg);
     // self.evalAttributesAndStoreHit(ray,hitData,interpolateAttrib);
     // ray.setHit(P,n,optixGetRayTmax(),
     //            self.material,tc,geometryColor);

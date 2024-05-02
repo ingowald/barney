@@ -26,7 +26,11 @@ namespace barney {
         inline __device__ vec3f getAlbedo(bool dbg) const;
         inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
         inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-
+        inline __device__ void scatter(ScatterResult &scatter,
+                                       const render::DG &dg,
+                                       Random &random,
+                                       bool dbg) const;
+      
         static inline __device__ VisRTX make_matte(const vec3f v);
         
         vec3h baseColor;
@@ -52,7 +56,20 @@ namespace barney {
                         (float)baseColor.z); 
         return baseColor;
       }
-    
+
+      inline __device__ void VisRTX::scatter(ScatterResult &scatter,
+                                             const render::DG &dg,
+                                             Random &random,
+                                             bool dbg) const
+      {
+        // ugh ... visrtx doesn't have scattering;
+        scatter.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
+
+        EvalRes er = eval(dg,scatter.dir,dbg);
+        scatter.pdf = er.pdf;
+        scatter.f_r = er.value;
+      }
+
       inline __device__ EvalRes VisRTX::eval(DG dg, vec3f wi, bool dbg) const
       {
         // -----------------------------------------------------------------------------

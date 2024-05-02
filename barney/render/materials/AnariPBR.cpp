@@ -23,9 +23,12 @@ namespace barney {
     void AnariPBR::createDD(DeviceMaterial &dd, int deviceID) const 
     {
       dd.type = DeviceMaterial::TYPE_AnariPBR;
-      baseColor.make(dd.anariPBR.baseColor,deviceID);
-      metallic.make(dd.anariPBR.metallic,deviceID);
-      roughness.make(dd.anariPBR.roughness,deviceID);
+      baseColor   .make(dd.anariPBR.baseColor,   deviceID);
+      metallic    .make(dd.anariPBR.metallic,    deviceID);
+      roughness   .make(dd.anariPBR.roughness,   deviceID);
+      transmission.make(dd.anariPBR.transmission,deviceID);
+      ior         .make(dd.anariPBR.ior,         deviceID);
+      emission.make(dd.anariPBR.emission,        deviceID);
     }
     
     bool AnariPBR::setString(const std::string &member, const std::string &value) 
@@ -33,9 +36,13 @@ namespace barney {
       PRINT(member); PRINT(value);
       if (HostMaterial::setString(member,value)) return true;
       if (member == "metallic")
-        { metallic.set(value); commit(); return true; }
+        { metallic.set(value); return true; }
       if (member == "roughness")
-        { roughness.set(value); commit(); return true; }
+        { roughness.set(value); return true; }
+      if (member == "ior")
+        { ior.set(value); return true; }
+      if (member == "transmission")
+        { transmission.set(value); return true; }
       return false;
     }
     
@@ -44,9 +51,13 @@ namespace barney {
       PRINT(member); PRINT(value);
       if (HostMaterial::set1f(member,value)) return true;
       if (member == "metallic")
-        { metallic.set(value); commit(); return true; }
+        { metallic.set(value); return true; }
       if (member == "roughness")
-        { roughness.set(value); commit(); return true; }
+        { roughness.set(value); return true; }
+      if (member == "ior")
+        { ior.set(value); return true; }
+      if (member == "transmission")
+        { transmission.set(value); return true; }
       return false;
     }
     
@@ -56,7 +67,9 @@ namespace barney {
       
       if (HostMaterial::set3f(member,value)) return true;
       if (member == "baseColor")
-        { baseColor.set(value); commit(); return true; }
+        { baseColor.set(value); return true; }
+      if (member == "emission")
+        { emission.set(value); return true; }
         
       return false;
     }

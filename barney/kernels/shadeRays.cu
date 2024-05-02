@@ -310,32 +310,6 @@ namespace barney {
     // }
 
 
-    inline __device__
-    vec3f sampleCosineWeightedHemisphere(vec3f Ns, Random &random)
-    {
-      while (1) {
-        vec3f p = 2.f*vec3f(random(),random(),random()) - vec3f(1.f);
-        if (dot(p,p) > 1.f) continue;
-        return normalize(normalize(p)
-                         +Ns//vec3f(0.f,0.f,1.f)
-                         );
-      }
-    }
-  
-  inline __device__ float pbrt_clampf(float f, float lo, float hi)
-  { return max(lo,min(hi,f)); }
-  
-  inline __device__ float pbrtSphericalTheta(const vec3f &v)
-  {
-    return acosf(pbrt_clampf(v.z, -1.f, 1.f));
-  }
-  
-  inline __device__ float pbrtSphericalPhi(const vec3f &v)
-  {
-    float p = atan2f(v.y, v.x);
-    return (p < 0.f) ? (p + float(2.f * M_PI)) : p;
-  }
-
   
     inline __device__
     vec3f radianceFromEnv(const World::DD &world,
@@ -383,7 +357,8 @@ namespace barney {
       const vec3f incomingThroughput = path.throughput;
 
       if (path.dbg)
-        printf("------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f ismiss %i\n",
+        printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f ismiss %i\n",
+               pathDepth,
                path.org.x,
                path.org.y,
                path.org.z,
@@ -478,10 +453,16 @@ namespace barney {
         // =  ((float)path.mini.transmission > 0.f)
         // && (random() < (float)path.mini.transmission);
       render::DG dg;
+      dg.P  = path.P;
       dg.Ng = Ng;
       dg.Ns = Ng;
       dg.wo = -normalize((vec3f)path.dir);
       dg.insideMedium = path.isInMedium;
+
+      // for volumes:
+      // if (dg.Ng == vec3f(0.f))
+      //   dg.Ng = dg.Ns = -path.dir;
+      
       if (0 && path.dbg)
         printf("dg.N %f %f %f\n",
                dg.Ns.x,
@@ -489,9 +470,9 @@ namespace barney {
                dg.Ns.z);
 
       vec3f frontFacingSurfaceOffset
-        = safe_eps(EPS,path.P)*Ng;
-      vec3f dg_P
-        = path.P+frontFacingSurfaceOffset;
+        = safe_eps(EPS,dg.P)*Ng;
+      // vec3f dg_P
+      //   = path.P+frontFacingSurfaceOffset;
 // if (path.dbg)
       //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
       //          pathDepth,
@@ -510,7 +491,8 @@ namespace barney {
       // place when we generate the outgoing ray.
       // ==================================================================
       LightSample ls;
-      if (sampleLights(ls,world,dg_P,Ng,random,path.dbg)
+      // todo check if BSDF is perfectly specular
+      if (sampleLights(ls,world,dg.P,dg.Ng,random,path.dbg)
           // && 
           // (path.materialType != GLASS)
           ) {
@@ -525,7 +507,7 @@ namespace barney {
                              f_r.value.z,
                              f_r.pdf);
         
-        if (f_r.pdf <= 1e-6f || isnan(f_r.pdf)) {
+        if (!f_r.valid()) {
           shadowRay.tMax = -1.f;
         } else {
           vec3f tp_sr
@@ -535,7 +517,7 @@ namespace barney {
             /// f_r.pdf
             ;
           shadowRay.makeShadowRay(/* thrghhpt */tp_sr,
-                                  /* surface: */dg_P,
+                                  /* surface: */dg.P,
                                   /* to light */ls.dir,
                                   /* length   */ls.dist * (1.f-2.f*EPS));
           if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
@@ -544,13 +526,52 @@ namespace barney {
           shadowRay.pixelID = path.pixelID;
         }
       }
-
-
+      
       // ==================================================================
       // now, let's decide what to do with the ray itself
       // ==================================================================
-
       path.tMax = -1.f;
+      if (pathDepth >= MAX_PATH_DEPTH)
+        return;
+      // if (isVolumeHit) {
+      //   // iw - make this disappear; this can/shoudl be handled by a
+      //   // proper 'volume matrial' (ie, Phase function)
+      //   path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
+      //   path.throughput = .8f * path.throughput * bsdf.getAlbedo();//baseColor;
+      //   return;
+      // }
+      
+      ScatterResult scatterResult;
+      // if (path.dbg)
+        bsdf.scatter(scatterResult,dg,random,path.dbg);
+      if (!scatterResult.valid())
+        return;
+      path.org        = dg.P + scatterResult.offsetDirection * frontFacingSurfaceOffset;
+      path.dir        = normalize(scatterResult.dir);
+      path.throughput = path.throughput * scatterResult.f_r / (scatterResult.pdf + 1e-10f);
+      path.clearHit();
+      
+      if (path.dbg)
+        printf("scatter dir %f %f %f tp %f %f %f\n",
+               (float)path.dir.x,
+               (float)path.dir.y,
+               (float)path.dir.z,
+               (float)path.throughput.x,
+               (float)path.throughput.y,
+               (float)path.throughput.z);
+      // } else {
+      //   path.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
+      //   EvalRes f_r = path.eval(world.globals,dg,path.dir,path.dbg);
+        
+      //   if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
+      //     path.tMax = -1.f;
+      //   } else {
+      //     path.throughput = path.throughput * f_r.value
+      //       / (f_r.pdf + 1e-10f)
+      //       ;
+      //   }
+      // }
+      
 #if 0
       if ((path.materialType == GLASS)
           ||
@@ -708,9 +729,12 @@ namespace barney {
       // still have to make sure each pixel is written - not added -
       // exactly once in the first generation of the first frame.
       // ==================================================================
-      if (accumID == 0 && generation == 0)
+      if (accumID == 0 && generation == 0) {
+        if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,0.f);
-      else {
+      } else {
+        if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
+
         if (fragment.x > 0.f)
           atomicAdd(&valueToAccumInto.x,fragment.x);
         if (fragment.y > 0.f)
