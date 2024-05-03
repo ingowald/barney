@@ -119,7 +119,7 @@ namespace barney {
       //   printf("  # generating INTO %lx\n",rayQueue);
              
       if (ray.dbg)
-        printf("spawned %f %f %f dir %f %f %f\n",
+        printf("======================\nspawned %f %f %f dir %f %f %f\n",
                ray.org.x,
                ray.org.y,
                ray.org.z,
