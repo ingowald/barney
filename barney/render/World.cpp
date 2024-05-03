@@ -106,7 +106,7 @@ namespace barney {
     {
       numReserved = 1;
       buffer = owlDeviceBufferCreate
-        (devGroup->owl,OWL_USER_TYPE(render::Sampler::DD),1,nullptr);
+        (devGroup->owl,OWL_USER_TYPE(Sampler::DD),1,nullptr);
     }
 
     SamplerLibrary::~SamplerLibrary()
@@ -116,8 +116,33 @@ namespace barney {
     
     void SamplerLibrary::grow()
     {
+      // ------------------------------------------------------------------
+      // save old materials
+      // ------------------------------------------------------------------
+      size_t oldNumBytes = numReserved * sizeof(Sampler::DD);
+      OWLBuffer tmp = owlDeviceBufferCreate
+        (devGroup->owl,OWL_USER_TYPE(Sampler::DD),numReserved,nullptr);
+      for (int i=0;i<devGroup->size();i++) {
+        BARNEY_CUDA_CALL(Memcpy((void*)owlBufferGetPointer(tmp,i),
+                                (void*)owlBufferGetPointer(buffer,i),
+                                oldNumBytes,cudaMemcpyDefault));
+      }
+
+      // ------------------------------------------------------------------
+      // resize backing storage
+      // ------------------------------------------------------------------
       numReserved *= 2;
       owlBufferResize(buffer,numReserved);
+
+      // ------------------------------------------------------------------
+      // and restore old values into resized storage
+      // ------------------------------------------------------------------
+      for (int i=0;i<devGroup->size();i++) {
+        BARNEY_CUDA_CALL(Memcpy((void*)owlBufferGetPointer(buffer,i),
+                                (void*)owlBufferGetPointer(tmp,i),
+                                oldNumBytes,cudaMemcpyDefault));
+      }
+      owlBufferRelease(tmp);
     }
 
     int SamplerLibrary::allocate()
