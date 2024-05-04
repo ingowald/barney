@@ -41,6 +41,7 @@ struct Matte : public Material
 
  private:
   math::float4 m_color{1.f, 1.f, 1.f, 1.f};
+  std::string  m_colorAttribute;
   helium::CommitObserverPtr<Sampler> m_colorSampler{nullptr};
 };
 

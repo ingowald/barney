@@ -45,12 +45,12 @@ namespace barney {
       bool set1f(const std::string &member, const float &value) override;
       bool set3f(const std::string &member, const vec3f &value) override;
       
-      PossiblyMappedParameter baseColor;
-      PossiblyMappedParameter metallic;
-      PossiblyMappedParameter roughness;
-      PossiblyMappedParameter transmission;
-      PossiblyMappedParameter ior;
-      PossiblyMappedParameter emission;
+      PossiblyMappedParameter baseColor    = vec3f(1.f,1.f,1.f);
+      PossiblyMappedParameter metallic     = 1.f;
+      PossiblyMappedParameter roughness    = 1.f;
+      PossiblyMappedParameter transmission = 0.f;
+      PossiblyMappedParameter ior          = 1.45f;
+      PossiblyMappedParameter emission     = vec3f(0.f,0.f,0.f);
     };
       
     inline __device__
@@ -76,10 +76,13 @@ namespace barney {
       bsdf.ior = ior.x;
 
       if (dbg)
-        printf("AnariPBR baseCOlor %f %f %f\n",
+        printf("### AnariPBR created BSDF baseColor %f %f %f metallic %f roughness %f ior %f\n",
                baseColor.x,
                baseColor.y,
-               baseColor.z);
+               baseColor.z,
+               (float)bsdf.metallic,
+               (float)bsdf.roughness,
+               (float)bsdf.ior);
       return bsdf;
     }
 

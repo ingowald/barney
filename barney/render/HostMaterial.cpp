@@ -94,6 +94,8 @@ namespace barney {
         { attribute = render::ATTRIBUTE_2; return; }
       if (attributeName == "attribute3")
         { attribute = render::ATTRIBUTE_3; return; }
+      if (attributeName == "color")
+        { attribute = render::COLOR; return; }
       
       
       PRINT(attributeName);
@@ -124,11 +126,21 @@ namespace barney {
     HostMaterial::SP HostMaterial::create(ModelSlot *owner, const std::string &type)
     {
       std::cout << "# creating material type '" << type << "'" << std::endl;
+      if (type == "matte")
+        return std::make_shared<AnariMatte>(owner);
+      // ==================================================================
+      // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+      // specifically for anari layer:
+      if (type == "AnariMatte")
+        return std::make_shared<AnariMatte>(owner); 
+      if (type == "physicallyBased")
+        return std::make_shared<AnariPBR>(owner); 
+      // specifically for anari layer:
+      // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      // ==================================================================
+      return std::make_shared<AnariPBR>(owner); 
       // if (type == "velvet")
       //   return std::make_shared<VelvetMaterial>(dg);
-      if (type == "matte")
-        return std::make_shared<AnariMatte>(owner); 
-      return std::make_shared<AnariPBR>(owner); 
       // if (type == "blender")
       //   return std::make_shared<BlenderMaterial>(dg); 
       // if (type == "glass")

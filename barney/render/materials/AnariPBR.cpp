@@ -22,19 +22,21 @@ namespace barney {
     
     void AnariPBR::createDD(DeviceMaterial &dd, int deviceID) const 
     {
-      dd.type = DeviceMaterial::TYPE_AnariPBR;
-      baseColor   .make(dd.anariPBR.baseColor,   deviceID);
-      metallic    .make(dd.anariPBR.metallic,    deviceID);
-      roughness   .make(dd.anariPBR.roughness,   deviceID);
-      transmission.make(dd.anariPBR.transmission,deviceID);
-      ior         .make(dd.anariPBR.ior,         deviceID);
-      emission.make(dd.anariPBR.emission,        deviceID);
+      dd.type = DeviceMaterial::TYPE_AnariMatte;
+      baseColor .make(dd.anariPBR.baseColor, deviceID);
+      emission  .make(dd.anariPBR.emission,  deviceID);
+      metallic  .make(dd.anariPBR.metallic,  deviceID);
+      roughness .make(dd.anariPBR.roughness, deviceID);
+      ior       .make(dd.anariPBR.ior,       deviceID);
     }
     
     bool AnariPBR::setString(const std::string &member, const std::string &value) 
     {
       PRINT(member); PRINT(value);
       if (HostMaterial::setString(member,value)) return true;
+      
+      if (member == "baseColor")
+        { baseColor.set(value); return true; }
       if (member == "metallic")
         { metallic.set(value); return true; }
       if (member == "roughness")
@@ -43,6 +45,7 @@ namespace barney {
         { ior.set(value); return true; }
       if (member == "transmission")
         { transmission.set(value); return true; }
+      
       return false;
     }
     

@@ -81,11 +81,11 @@ namespace barney {
         const vec3f baseColor = this->baseColor;
         const float ior       = this->ior;
 
-        if (dbg) printf("visrtx::baseColor %f %f %f metal %f rough %f\n",
+        if (dbg) printf("visrtx::baseColor %f %f %f metal %f rough %f ior %f\n",
                         (float)baseColor.x,
                         (float)baseColor.y,
                         (float)baseColor.z,
-                        metallic,roughness); 
+                        metallic,roughness,ior); 
         
         vec3f lightDir = wi;
         vec3f viewDir  = dg.wo;
@@ -109,8 +109,8 @@ namespace barney {
           printf(" lightDir %f %f %f\n",lightDir.x,lightDir.y,lightDir.z);
           printf(" viewDir %f %f %f\n",viewDir.x,viewDir.y,viewDir.z);
           printf(" H %f %f %f\n",H.x,H.y,H.z);
-          printf("NdotH %f HdotL %f NdotV %f VdotH %f LdotH %f\n",
-                 NdotH,NdotL,NdotV,VdotH,LdotH);
+          printf(" NdotL %f NdotH %f NdotV %f VdotH %f LdotH %f\n",
+                 NdotL,NdotH,NdotV,VdotH,LdotH);
         }
         // Alpha
         const float alpha = pow2(roughness) * opacity;
@@ -130,9 +130,14 @@ namespace barney {
           (vec3f(1.f) - F) * float(M_1_PI) * diffuseColor * fmaxf(0.f, NdotL);
 
         
-        if (dbg) printf("diff %f %f %f\n",diffuseBRDF.x
+        if (dbg) printf("diff col %f %f %f brdf %f %f %f F %f %f %f\n"
+                        ,diffuseColor.x
+                        ,diffuseColor.y
+                        ,diffuseColor.z                        
+                        ,diffuseBRDF.x
                         ,diffuseBRDF.y
-                        ,diffuseBRDF.z);
+                        ,diffuseBRDF.z,
+                        F.x,F.y,F.z);
         // GGX microfacet distribution
         const float D = (alpha * alpha * heaviside(NdotH))
           / (float(M_PI) * pow2(NdotH * NdotH * (alpha * alpha - 1.f) + 1.f));

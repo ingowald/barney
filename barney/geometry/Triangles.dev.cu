@@ -73,6 +73,8 @@ namespace barney {
     // if (!isnan(geometryColor.x))
     //   (vec3f&)hitData.color = geometryColor;
 
+    
+    if (ray.dbg) printf("=== HIT TRIS setting hit attributes\n");
     auto interpolator
       = [&](const GeometryAttribute::DD &attrib) -> float4
       {
@@ -81,7 +83,7 @@ namespace barney {
         const vec4f value_c = attrib.fromArray.valueAt(triangle.z);
         return (1.f-u-v)*value_a + u*value_b + v*value_c;
       };
-    self.setHitAttributes(hitData,interpolator);
+    self.setHitAttributes(hitData,interpolator,ray.dbg);
 
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
     if (ray.dbg) printf("=== HIT TRIS matID %i\n",self.materialID);

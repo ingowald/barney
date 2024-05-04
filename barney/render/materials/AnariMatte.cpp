@@ -14,44 +14,37 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/render/packedBSDFs/VisRTX.h"
-#include "barney/render/HitAttributes.h"
-#include "barney/render/HostMaterial.h"
+#include "barney/render/materials/AnariMatte.h"
+#include "barney/render/DeviceMaterial.h"
 
 namespace barney {
   namespace render {
-      
-    struct AnariMatte : public HostMaterial {      
-      struct DD {
-        inline __device__
-        PackedBSDF createBSDF(const HitAttributes &hitData, bool dbg) const;
-        PossiblyMappedParameter::DD color;
-      };
-      AnariMatte(ModelSlot *owner) : HostMaterial(owner) {}
-      virtual ~AnariMatte() = default;
-
-      bool setString(const std::string &member, const std::string &value) override;
-      bool set3f(const std::string &member, const vec3f &value) override;
-      
-      std::string toString() const override { return "AnariMatte"; }
-      
-      void createDD(DeviceMaterial &dd, int deviceID) const override;
-      
-      PossiblyMappedParameter color = vec3f(.8f);
-    };
-      
-    inline __device__
-    PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData, bool dbg) const
+    
+    void AnariMatte::createDD(DeviceMaterial &dd, int deviceID) const 
     {
-      float4 r = color.eval(hitData);
-
-      if (dbg)
-        printf("anarimatte, color %f %f %f %f\n",
-               r.x,r.y,r.z,r.w);
-      return packedBSDF::VisRTX::make_matte((const vec3f&)r);
+      dd.type = DeviceMaterial::TYPE_AnariMatte;
+      color.make(dd.anariMatte.color,deviceID);
     }
+    
+    bool AnariMatte::setString(const std::string &member, const std::string &value) 
+    {
+      PRINT(member); PRINT(value);
+      if (HostMaterial::setString(member,value)) return true;
+
+      if (member == "color") 
+        { color.set(value); return true; }
       
+      return false;
+    }
+    
+    bool AnariMatte::set3f(const std::string &member, const vec3f &value) 
+    {
+      if (HostMaterial::set3f(member,value)) return true;
+      
+      if (member == "color")
+        { color.set(value); return true; }
+      
+      return false;
+    }
   }
 }

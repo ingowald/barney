@@ -156,6 +156,8 @@ add_library(barney STATIC
   render/HostMaterial.cpp
   render/materials/AnariPBR.h
   render/materials/AnariPBR.cpp
+  render/materials/AnariMatte.h
+  render/materials/AnariMatte.cpp
   #material/device/Material.h
   #material/device/Velvet.h
   #material/device/VisRTX.h

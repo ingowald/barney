@@ -463,7 +463,7 @@ namespace barney {
       // if (dg.Ng == vec3f(0.f))
       //   dg.Ng = dg.Ns = -path.dir;
       
-      if (0 && path.dbg)
+      if (path.dbg)
         printf("dg.N %f %f %f\n",
                dg.Ns.x,
                dg.Ns.y,
@@ -492,7 +492,7 @@ namespace barney {
       // ==================================================================
       LightSample ls;
       // todo check if BSDF is perfectly specular
-      if (sampleLights(ls,world,dg.P,dg.Ng,random,path.dbg)
+      if (sampleLights(ls,world,dg.P,dg.Ng,random,0 && path.dbg)
           // && 
           // (path.materialType != GLASS)
           ) {
@@ -517,7 +517,7 @@ namespace barney {
             /// f_r.pdf
             ;
           shadowRay.makeShadowRay(/* thrghhpt */tp_sr,
-                                  /* surface: */dg.P,
+                                  /* surface: */dg.P + frontFacingSurfaceOffset,
                                   /* to light */ls.dir,
                                   /* length   */ls.dist * (1.f-2.f*EPS));
           if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);

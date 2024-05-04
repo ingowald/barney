@@ -30,7 +30,13 @@ namespace barney {
     struct PossiblyMappedParameter {
       typedef enum { INVALID=0, VALUE, ATTRIBUTE, SAMPLER// , ARRAY
       } Type;
-      
+
+      PossiblyMappedParameter() = default;
+      PossiblyMappedParameter(const vec3f v)
+      { value = make_float4(v.x,v.y,v.z,1.f); }
+      PossiblyMappedParameter(float v)
+      { value = make_float4(v,0.f,0.f,1.f); }
+    
       struct DD {
         inline __device__
         float4 eval(const HitAttributes &hitData, bool dbg=false) const;

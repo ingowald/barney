@@ -68,6 +68,8 @@ void Matte::commit()
   m_color = math::float4(1.f, 1.f, 1.f, 1.f);
   getParam("color", ANARI_FLOAT32_VEC3, &m_color);
   getParam("color", ANARI_FLOAT32_VEC4, &m_color);
+
+  m_colorAttribute = getParamString("color","");
   m_colorSampler = getParamObject<Sampler>("color");
 
   setBarneyParameters();
@@ -94,6 +96,8 @@ void Matte::setBarneyParameters()
   bnSet3f(m_bnMat, "baseColor", m_color.x, m_color.y, m_color.z);
   if (m_colorSampler)
     m_colorSampler->setBarneyParameters(trackedModel(), m_bnMat, trackedSlot());
+  if (!m_colorAttribute.empty())
+    bnSetString(m_bnMat, "baseColor", m_colorAttribute.c_str());
   bnCommit(m_bnMat);
 }
 

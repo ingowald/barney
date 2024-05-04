@@ -76,30 +76,38 @@ namespace barney {
     std::cout << "=======================================================" << std::endl;
     PING;
     GeometryAttributes::DD dd;
+
+    auto set = [&](GeometryAttribute::DD &out, const GeometryAttribute &in,
+                   const int devID,
+                   const std::string &dbgName)
+    {
+      std::cout << "setting geometry attribute " << dbgName << std::endl;
+      if (in.perVertex) {
+        PING;
+        out.scope = GeometryAttribute::PER_VERTEX;
+        out.fromArray.type = in.perVertex->type;
+        out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
+        PRINT((int*)out.fromArray.ptr);
+      } else if (in.perPrim) {
+        PING;
+        out.scope = GeometryAttribute::PER_PRIM;
+        out.fromArray.type = in.perPrim->type;
+        out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
+        PRINT((int*)out.fromArray.ptr);
+      } else {
+        PING;
+        out.scope = GeometryAttribute::CONSTANT;
+        (vec4f&)out.value = in.constant;
+      }
+    };
+    
     for (int devID=0;devID<owner->devGroup->size();devID++) {
-      PING; PRINT(devID);
       for (int i=0;i<attributes.count;i++) {
-        PRINT(i);
         const auto &in = attributes.attribute[i];
         auto &out = dd.attribute[i];
-        if (in.perVertex) {
-          PING;
-          out.scope = GeometryAttribute::PER_VERTEX;
-          out.fromArray.type = in.perVertex->type;
-          out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
-          PRINT((int*)out.fromArray.ptr)
-        } else if (in.perPrim) {
-          PING;
-          out.scope = GeometryAttribute::PER_PRIM;
-          out.fromArray.type = in.perPrim->type;
-          out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
-          PRINT((int*)out.fromArray.ptr)
-        } else {
-          PING;
-          out.scope = GeometryAttribute::CONSTANT;
-          (vec4f&)out.value = in.constant;
-        }
+        set(out,in,devID,"attr"+std::to_string(i));
       }
+      set(dd.colorAttribute,attributes.colorAttribute,devID,"color");
       owlGeomSetRaw(geom,"attributes",&dd,devID);
     }
   }
@@ -133,6 +141,7 @@ namespace barney {
   
   bool Geometry::setData(const std::string &member, const Data::SP &value)
   {
+    PING; PRINT(member);
     if (member == "primitive.attribute0") {
       attributes.attribute[0].perPrim = value->as<PODData>();
       return true;
