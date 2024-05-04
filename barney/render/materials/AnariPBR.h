@@ -57,15 +57,17 @@ namespace barney {
     PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData, bool dbg) const
     {
       packedBSDF::VisRTX bsdf;
+
+      const float clampRange = .01f;
       
       float4 baseColor = this->baseColor.eval(hitData);
       bsdf.baseColor = (const vec3f&)baseColor;
 
       float4 metallic = this->metallic.eval(hitData,dbg);
-      bsdf.metallic = metallic.x;
+      bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
 
       float4 roughness = this->roughness.eval(hitData,dbg);
-      bsdf.roughness = roughness.x;
+      bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
       float4 transmission = this->transmission.eval(hitData,dbg);
       bsdf.opacity = 1.f-transmission.x;
