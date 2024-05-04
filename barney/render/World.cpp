@@ -26,38 +26,26 @@ namespace barney {
         samplerLibrary(std::make_shared<SamplerLibrary>(devGroup))
         // globals(devGroup)
     {
-      std::cout << "WORLD " << this << " CREATED" << std::endl;
-      PING;
       quadLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
                                                OWL_USER_TYPE(QuadLight),
                                                1,nullptr);
       dirLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
                                               OWL_USER_TYPE(DirLight),
                                               1,nullptr);
-      PING;
     }
     World::~World()
-    {
-      std::cout << "WORLD " << this << " IS DYING" << std::endl;
-    }
+    {}
     
     MaterialLibrary::MaterialLibrary(DevGroup::SP devGroup)
       : devGroup(devGroup)
     {
-      PING;
       numReserved = 1;
-      PRINT(devGroup);
-      PRINT(devGroup->owl);
       buffer = owlDeviceBufferCreate
         (devGroup->owl,OWL_USER_TYPE(DeviceMaterial),numReserved,nullptr);
-      PING;
-      std::cout << "WORLD matlib " << this << " CREATED" << std::endl;
     }
 
     MaterialLibrary::~MaterialLibrary()
     {
-      std::cout << "WORLD matlib " << this << " IS DYING" << std::endl;
-      PING;
       owlBufferRelease(buffer);
     }
     
@@ -106,7 +94,6 @@ namespace barney {
    
     void MaterialLibrary::release(int nowReusableID)
     {
-      std::cout << "WORLD matlib " << this << " release mat!?" << std::endl;
       reusableIDs.push(nowReusableID);
     }
   
@@ -120,11 +107,6 @@ namespace barney {
                                       const DeviceMaterial &dd,
                                       int deviceID)
     {
-      PING;
-      PRINT(materialID);
-      PRINT(numReserved);
-      PRINT(deviceID);
-      PRINT(getPointer(deviceID));
       BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+materialID),
                               &dd,sizeof(dd),cudaMemcpyDefault));
     }
@@ -134,7 +116,6 @@ namespace barney {
     SamplerLibrary::SamplerLibrary(DevGroup::SP devGroup)
       : devGroup(devGroup)
     {
-      PING;
       numReserved = 1;
       buffer = owlDeviceBufferCreate
         (devGroup->owl,OWL_USER_TYPE(Sampler::DD),1,nullptr);
@@ -142,7 +123,6 @@ namespace barney {
 
     SamplerLibrary::~SamplerLibrary()
     {
-      PING;
       owlBufferRelease(buffer);
     }
     

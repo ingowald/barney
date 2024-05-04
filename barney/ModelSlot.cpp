@@ -31,12 +31,7 @@ namespace barney {
       localID(localID),
       devGroup(_model->context->perSlot[slot].devGroup),
       world(_model->context->perSlot[slot].devGroup)
-  {
-    PING;
-  }
-
-  // ModelSlot::~ModelSlot()
-  // {}
+  {}
 
   OWLContext ModelSlot::getOWL() const
   {
@@ -49,8 +44,7 @@ namespace barney {
                                const affine3f *xfms)
   {
     int numUserInstances = (int)groups.size();
-    PING; PRINT(numUserInstances);
-    instances.groups = groups;//std::move(groups);
+    instances.groups = std::move(groups);
     instances.xfms.resize(numUserInstances);
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());
     devGroup->sbtDirty = true;
@@ -73,42 +67,9 @@ namespace barney {
       (std::make_shared<Volume>(devGroup.get(),sf));
   }
 
-
-  // Cylinders *ModelSlot::createCylinders(const vec3f      *points,
-  //                                       int               numPoints,
-  //                                       const vec3f      *colors,
-  //                                       bool              colorPerVertex,
-  //                                       const vec2i      *indices,
-  //                                       int               numIndices,
-  //                                       const float      *radii,
-  //                                       bool              radiusPerVertex,
-  //                                       float             defaultRadius)
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Cylinders>(this,
-  //                                  points,numPoints,
-  //                                  colors,colorPerVertex,
-  //                                  indices,numIndices,
-  //                                  radii,radiusPerVertex,defaultRadius));
-  // }
-    
-  // Spheres *ModelSlot::createSpheres(// const Material &material,
-  //                                   // const vec3f *origins,
-  //                                   // int numOrigins,
-  //                                   // const vec3f *colors,
-  //                                   // const float *radii,
-  //                                   // float defaultRadius
-  //                                   )
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Spheres>(this));
-  // }
-
   ModelSlot::SP ModelSlot::create(GlobalModel *model, int localID)
   {
-    PING;
     ModelSlot::SP slot = std::make_shared<ModelSlot>(model,localID);
-    PRINT(slot.get());
     return slot;
   }
 
@@ -187,21 +148,13 @@ namespace barney {
         }
     }
       
-    // if (owlGroups.size() == 0)
-    //   std::cout << OWL_TERMINAL_RED
-    //             << "warning: data group is empty..."
-    //             << OWL_TERMINAL_DEFAULT << std::endl;
-    PRINT(owlGroups.size());
-    PRINT(owlTransforms.size());
     instances.group
       = owlInstanceGroupCreate(devGroup->owl,
                                owlGroups.size(),
                                owlGroups.data(),
                                nullptr,
                                (const float *)owlTransforms.data());
-    PING;
     owlGroupBuildAccel(instances.group);
-    PING;
     world.set(envMapLight?envMapLight->content:render::EnvMapLight{});
     world.set(quadLights);
     world.set(dirLights);

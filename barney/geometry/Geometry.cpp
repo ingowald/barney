@@ -64,7 +64,6 @@ namespace barney {
 
   void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
-    // Material::addVars(vars,base+OWL_OFFSETOF(DD,material));
     vars.push_back({"materialID",OWL_INT,OWL_OFFSETOF(DD,materialID)});
     vars.push_back({"attributes",OWL_USER_TYPE(GeometryAttributes::DD),
         OWL_OFFSETOF(DD,attributes)});
@@ -73,39 +72,34 @@ namespace barney {
 
   void Geometry::setAttributesOn(OWLGeom geom)
   {
-    std::cout << "=======================================================" << std::endl;
-    PING;
-    for (int i=0;i<4;i++) {
-      PRINT(attributes.attribute[i].perVertex);
-      PRINT(attributes.attribute[i].perPrim);
-    }
+    // std::cout << "=======================================================" << std::endl;
+    // PING;
+    // for (int i=0;i<4;i++) {
+    //   PRINT(attributes.attribute[i].perVertex);
+    //   PRINT(attributes.attribute[i].perPrim);
+    // }
 
     auto set = [&](GeometryAttribute::DD &out, const GeometryAttribute &in,
                    const int devID,
                    const std::string &dbgName)
     {
-      std::cout << "setting geometry attribute " << dbgName << std::endl;
-      PRINT((bool)in.perVertex);
-      PRINT((bool)in.perPrim);
-      PRINT((vec3f&)in.constant);
+      // std::cout << "setting geometry attribute " << dbgName << std::endl;
+      // PRINT((bool)in.perVertex);
+      // PRINT((bool)in.perPrim);
+      // PRINT((vec3f&)in.constant);
       if (in.perVertex) {
-        PING;
         out.scope = GeometryAttribute::PER_VERTEX;
         out.fromArray.type = in.perVertex->type;
         out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
-        PRINT((int*)out.fromArray.ptr);
       } else if (in.perPrim) {
-        PING;
         out.scope = GeometryAttribute::PER_PRIM;
         out.fromArray.type = in.perPrim->type;
         out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
-        PRINT((int*)out.fromArray.ptr);
       } else {
-        PING;
         out.scope = GeometryAttribute::CONSTANT;
         (vec4f&)out.value = in.constant;
       }
-      PRINT(out.scope);
+      // PRINT(out.scope);
     };
     
     GeometryAttributes::DD dd;
@@ -116,11 +110,11 @@ namespace barney {
         set(out,in,devID,"attr"+std::to_string(i));
       }
       set(dd.colorAttribute,attributes.colorAttribute,devID,"color");
-      PRINT(dd.attribute[0].scope);
-      PRINT(dd.attribute[1].scope);
-      PRINT(dd.attribute[2].scope);
-      PRINT(dd.attribute[3].scope);
-      PRINT(dd.colorAttribute.scope);
+      // PRINT(dd.attribute[0].scope);
+      // PRINT(dd.attribute[1].scope);
+      // PRINT(dd.attribute[2].scope);
+      // PRINT(dd.attribute[3].scope);
+      // PRINT(dd.colorAttribute.scope);
       owlGeomSetRaw(geom,"attributes",&dd,devID);
     }
   }
@@ -128,33 +122,16 @@ namespace barney {
 
   bool Geometry::set1f(const std::string &member, const float &value)
   {
-    // if (member == "material.transmission") {
-    //   material->set1f("transmission",value);
-    //   return true;
-    // }
-    // if (member == "material.ior") {
-    //   material->set1f("ior",value);
-    //   return true;
-    // }
-    // if (member == "material.metallic") {
-    //   material->set1f("metallic",value);
-    //   return true;
-    // }
     return false;
   }
   
   bool Geometry::set3f(const std::string &member, const vec3f &value)
   {
-    // if (member == "material.baseColor") {
-    //   material->set3f("baseColor",value);
-    //   return true;
-    // }
     return false;
   }
   
   bool Geometry::setData(const std::string &member, const Data::SP &value)
   {
-    PING; PRINT(member);
     if (member == "primitive.attribute0") {
       attributes.attribute[0].perPrim = value->as<PODData>();
       return true;
@@ -202,20 +179,11 @@ namespace barney {
   bool Geometry::setObject(const std::string &member, const Object::SP &value)
   {
     if (member == "material") {
-      // material->setObject("colorTexture",value);
       material = value->as<HostMaterial>();
       if (!material)
         throw std::runtime_error("invalid material in geometry::set(\"material\"");
       return true;
     }
-    // if (member == "material.colorTexture") {
-    //   material->setObject("colorTexture",value);
-    //   return true;
-    // }
-    // if (member == "material.alphaTexture") {
-    //   material->setObject("alphaTexture",value);
-    //   return true;
-    // }
     return false;
   }
 

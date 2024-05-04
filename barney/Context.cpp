@@ -21,12 +21,8 @@
 
 namespace barney {
 
-  std::vector<Context *> killedContexts;
-  
   Context::~Context()
   {
-    killedContexts.push_back(this);
-    
     hostOwnedHandles.clear();
     std::map<Object::SP,int> hostOwnedHandles;
 
@@ -241,10 +237,6 @@ namespace barney {
 
   GlobalModel *Context::createModel()
   {
-    PING;
-    PRINT(this);
-    for (auto killed : killedContexts)
-      PRINT(killed);
     return initReference(GlobalModel::create(this));
   }
 

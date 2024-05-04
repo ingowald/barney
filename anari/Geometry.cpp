@@ -18,7 +18,6 @@ static void addAttribute(BNGeom geom,
     const helium::IntrusivePtr<Array1D> &attribute,
     std::string name)
 {
-  std::cout << "#BANARI setting attribute " << name << " isvalid " << int((bool)attribute) << std::endl;
   if (!attribute)
     return;
 

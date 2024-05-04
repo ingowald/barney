@@ -174,8 +174,6 @@ void PhysicallyBased::setBarneyParameters()
       m_specularColor.value.z);
 
   bnSet1f(m_bnMat, "opacity", m_opacity.value);
-  std::cout << "BANARI metallic " << m_metallic.stringValue << std::endl;
-  std::cout << "BANARI roughness " << m_roughness.stringValue << std::endl;
   if (m_metallic.stringValue.empty())
     bnSet1f(m_bnMat, "metallic", m_metallic.value);
   else
