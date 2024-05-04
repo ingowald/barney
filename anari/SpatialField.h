@@ -38,8 +38,6 @@ struct UnstructuredField : public SpatialField
 
   box3 bounds() const override;
 
-  size_t numRequiredGPUBytes() const override;
-
  private:
   struct Parameters
   {
@@ -75,8 +73,6 @@ struct BlockStructuredField : public SpatialField
 
   box3 bounds() const override;
 
-  size_t numRequiredGPUBytes() const override;
-
   struct Parameters
   {
     helium::IntrusivePtr<helium::Array1D> cellWidth;
@@ -102,8 +98,6 @@ struct StructuredRegularField : public SpatialField
 
   box3 bounds() const override;
   bool isValid() const override;
-
-  size_t numRequiredGPUBytes() const override;
 
   math::uint3 m_dims{0u};
   math::float3 m_origin;

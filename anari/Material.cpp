@@ -11,7 +11,10 @@ namespace barney_device {
 
 Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
 
-Material::~Material() = default;
+Material::~Material()
+{
+  cleanup();
+}
 
 Material *Material::createInstance(
     std::string_view subtype, BarneyGlobalState *s)
@@ -30,11 +33,30 @@ void Material::markCommitted()
   Object::markCommitted();
 }
 
+BNMaterial Material::getBarneyMaterial(BNModel model, int slot)
+{
+  if (!isModelTracked(model, slot)) {
+    cleanup();
+    trackModel(model, slot);
+    m_bnMat = bnMaterialCreate(model, slot, bnSubtype());
+    setBarneyParameters();
+  }
+
+  return m_bnMat;
+}
+
+void Material::cleanup()
+{
+  if (m_bnMat)
+    bnRelease(m_bnMat);
+  m_bnMat = nullptr;
+}
+
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 // Matte //
 
-Matte::Matte(BarneyGlobalState *s) : Material(s) {}
+Matte::Matte(BarneyGlobalState *s) : Material(s), m_colorSampler(this) {}
 
 void Matte::commit()
 {
@@ -48,22 +70,31 @@ void Matte::commit()
   getParam("color", ANARI_FLOAT32_VEC4, &m_color);
   m_colorSampler = getParamObject<Sampler>("color");
 
-  if (m_colorSampler)
-    m_colorSampler->addCommitObserver(this);
-}
-
-BNMaterial Matte::makeBarneyMaterial(BNModel model, int slot) const
-{
-  BNMaterial mat = bnMaterialCreate(model, slot, "matte");
-  bnSet3f(mat, "reflectance", m_color.x, m_color.y, m_color.z);
-  if (m_colorSampler)
-    m_colorSampler->setBarneyParameters(model, mat, slot);
-  return mat;
+  setBarneyParameters();
 }
 
 bool Matte::isValid() const
 {
   return !m_colorSampler || m_colorSampler->isValid();
+}
+
+const char *Matte::bnSubtype() const
+{
+#if 0 // barney 'matte' material is WIP
+  return "matte";
+#else
+  return "physicallyBased";
+#endif
+}
+
+void Matte::setBarneyParameters()
+{
+  if (!m_bnMat)
+    return;
+  bnSet3f(m_bnMat, "baseColor", m_color.x, m_color.y, m_color.z);
+  if (m_colorSampler)
+    m_colorSampler->setBarneyParameters(trackedModel(), m_bnMat, trackedSlot());
+  bnCommit(m_bnMat);
 }
 
 // PhysicallyBased //
@@ -89,15 +120,14 @@ void PhysicallyBased::commit()
 
   m_metallic.value = 1.f;
   getParam("metallic", ANARI_FLOAT32, &m_metallic.value);
-  m_metallic.stringValue = getParamString("metallic","");
+  m_metallic.stringValue = getParamString("metallic", "");
 
-    
   // std::cout << "found metallic attribute " << metallicAttribute << std::endl;
-  
+
   m_roughness.value = 1.f;
   getParam("roughness", ANARI_FLOAT32, &m_roughness.value);
-  m_roughness.stringValue = getParamString("roughness","");
-  
+  m_roughness.stringValue = getParamString("roughness", "");
+
   m_specular.value = 0.f;
   getParam("specular", ANARI_FLOAT32, &m_specular.value);
 
@@ -106,44 +136,52 @@ void PhysicallyBased::commit()
 
   m_ior = 1.5f;
   getParam("ior", ANARI_FLOAT32, &m_ior);
+
+  setBarneyParameters();
 }
 
-BNMaterial PhysicallyBased::makeBarneyMaterial(BNModel model, int slot) const
+const char *PhysicallyBased::bnSubtype() const
 {
-  BNMaterial mat = bnMaterialCreate(model, slot, "physicallyBased");
+  return "physicallyBased";
+}
 
-  bnSet3f(mat,
+void PhysicallyBased::setBarneyParameters()
+{
+  if (!m_bnMat)
+    return;
+
+  bnSet3f(m_bnMat,
       "baseColor",
       m_baseColor.value.x,
       m_baseColor.value.y,
       m_baseColor.value.z);
 
-  bnSet3f(mat,
+  bnSet3f(m_bnMat,
       "emissive",
       m_emissive.value.x,
       m_emissive.value.y,
       m_emissive.value.z);
 
-  bnSet3f(mat,
+  bnSet3f(m_bnMat,
       "specularColor",
       m_specularColor.value.x,
       m_specularColor.value.y,
       m_specularColor.value.z);
 
-  bnSet1f(mat, "opacity", m_opacity.value);
+  bnSet1f(m_bnMat, "opacity", m_opacity.value);
   if (m_metallic.stringValue.empty())
-    bnSet1f(mat, "metallic", m_metallic.value);
+    bnSet1f(m_bnMat, "metallic", m_metallic.value);
   else
-    bnSetString(mat, "metallic", m_metallic.stringValue.c_str());
+    bnSetString(m_bnMat, "metallic", m_metallic.stringValue.c_str());
   if (m_roughness.stringValue.empty())
-    bnSet1f(mat, "roughness", m_roughness.value);
+    bnSet1f(m_bnMat, "roughness", m_roughness.value);
   else
-    bnSetString(mat, "roughness", m_roughness.stringValue.c_str());
-  bnSet1f(mat, "specular", m_specular.value);
-  bnSet1f(mat, "transmission", m_transmission.value);
-  bnSet1f(mat, "ior", m_ior);
+    bnSetString(m_bnMat, "roughness", m_roughness.stringValue.c_str());
+  bnSet1f(m_bnMat, "specular", m_specular.value);
+  bnSet1f(m_bnMat, "transmission", m_transmission.value);
+  bnSet1f(m_bnMat, "ior", m_ior);
 
-  return mat;
+  bnCommit(m_bnMat);
 }
 
 } // namespace barney_device

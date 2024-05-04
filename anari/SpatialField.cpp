@@ -111,15 +111,6 @@ box3 StructuredRegularField::bounds() const
       : box3{};
 }
 
-size_t StructuredRegularField::numRequiredGPUBytes() const
-{
-  return getNumBytes(m_generatedCellWidths)
-      + getNumBytes(m_generatedBlockBounds)
-      + getNumBytes(m_generatedBlockLevels)
-      + getNumBytes(m_generatedBlockOffsets)
-      + getNumBytes(m_generatedBlockScalars);
-}
-
 // UnstructuredField //
 
 UnstructuredField::UnstructuredField(BarneyGlobalState *s) : SpatialField(s) {}
@@ -286,15 +277,6 @@ box3 UnstructuredField::bounds() const
   return m_bounds;
 }
 
-size_t UnstructuredField::numRequiredGPUBytes() const
-{
-  return getNumBytes(m_generatedVertices) + getNumBytes(m_generatedTets)
-      + getNumBytes(m_generatedPyrs) + getNumBytes(m_generatedWedges)
-      + getNumBytes(m_generatedHexes) + getNumBytes(m_generatedGridOffsets)
-      + getNumBytes(m_generatedGridDims) + getNumBytes(m_generatedGridDomains)
-      + getNumBytes(m_generatedGridScalars);
-}
-
 // BlockStructuredField //
 
 BlockStructuredField::BlockStructuredField(BarneyGlobalState *s)
@@ -390,14 +372,6 @@ BNScalarField BlockStructuredField::makeBarneyScalarField(
 box3 BlockStructuredField::bounds() const
 {
   return m_bounds;
-}
-
-size_t BlockStructuredField::numRequiredGPUBytes() const
-{
-  return getNumBytes(m_generatedBlockBounds)
-      + getNumBytes(m_generatedBlockLevels)
-      + getNumBytes(m_generatedBlockOffsets)
-      + getNumBytes(m_generatedBlockScalars);
 }
 
 } // namespace barney_device

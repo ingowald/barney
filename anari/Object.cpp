@@ -30,11 +30,6 @@ bool Object::getProperty(
   return false;
 }
 
-size_t Object::numRequiredGPUBytes() const
-{
-  return 0;
-}
-
 bool Object::isValid() const
 {
   return true;
@@ -43,6 +38,27 @@ bool Object::isValid() const
 BarneyGlobalState *Object::deviceState() const
 {
   return (BarneyGlobalState *)helium::BaseObject::m_state;
+}
+
+bool Object::isModelTracked(BNModel model, int slot) const
+{
+  return m_bnModel == model && m_slot == slot;
+}
+
+void Object::trackModel(BNModel model, int slot)
+{
+  m_bnModel = model;
+  m_slot = slot;
+}
+
+BNModel Object::trackedModel() const
+{
+  return m_bnModel;
+}
+
+int Object::trackedSlot() const
+{
+  return m_slot;
 }
 
 // UnknownObject definitions //////////////////////////////////////////////////

@@ -29,6 +29,11 @@ void Volume::markCommitted()
 
 TransferFunction1D::TransferFunction1D(BarneyGlobalState *s) : Volume(s) {}
 
+bool TransferFunction1D::isValid() const
+{
+  return m_field && m_field->isValid() && m_colorData && m_opacityData;
+}
+
 void TransferFunction1D::commit()
 {
   Volume::commit();
@@ -110,11 +115,6 @@ BNVolume TransferFunction1D::makeBarneyVolume(BNModel model, int slot) const
 box3 TransferFunction1D::bounds() const
 {
   return m_bounds;
-}
-
-size_t TransferFunction1D::numRequiredGPUBytes() const
-{
-  return m_field ? m_field->numRequiredGPUBytes() : size_t(0);
 }
 
 void TransferFunction1D::cleanup() {}

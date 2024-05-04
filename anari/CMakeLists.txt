@@ -8,7 +8,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-find_package(anari 0.8.0 COMPONENTS code_gen)
+find_package(anari 0.10.0 COMPONENTS code_gen)
 
 include(GNUInstallDirs)
 
