@@ -22,12 +22,13 @@ namespace barney {
     
     void AnariPBR::createDD(DeviceMaterial &dd, int deviceID) const 
     {
-      dd.type = DeviceMaterial::TYPE_AnariMatte;
+      dd.type = DeviceMaterial::TYPE_AnariPBR;
       baseColor .make(dd.anariPBR.baseColor, deviceID);
       emission  .make(dd.anariPBR.emission,  deviceID);
       metallic  .make(dd.anariPBR.metallic,  deviceID);
       roughness .make(dd.anariPBR.roughness, deviceID);
       ior       .make(dd.anariPBR.ior,       deviceID);
+      transmission.make(dd.anariPBR.transmission,deviceID);
     }
     
     bool AnariPBR::setString(const std::string &member, const std::string &value) 

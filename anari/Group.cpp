@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Group.h"
+#include <iostream>
 
 namespace barney_device {
 
@@ -48,8 +49,10 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
         });
   }
 
-  for (auto s : surfaces)
+  for (auto s : surfaces)  {
     barneyGeometries.push_back(s->getBarneyGeom(model, slot));
+    std::cout << "BANARI for surface " << (int*)s << " got geom " << (int*)barneyGeometries.back() << std::endl;
+  }
 
   // Volumes //
 
@@ -102,6 +105,7 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
     bnCommit(bg);
   }
   bnGroupBuild(bg);
+  std::cout << "BANARI created group " << (int*)bg << " over " << barneyGeometries.size() << " geoms" << std::endl;
 
   // Cleanup //
 

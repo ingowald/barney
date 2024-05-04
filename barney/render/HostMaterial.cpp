@@ -104,12 +104,13 @@ namespace barney {
     
     HostMaterial::HostMaterial(ModelSlot *owner)
       : SlottedObject(owner),
-        materialID(owner->world.materialLibrary.allocate())
+        materialLibrary(owner->world.materialLibrary),
+        materialID(owner->world.materialLibrary->allocate())
     {}
 
     HostMaterial::~HostMaterial()
     {
-      owner->world.materialLibrary.release(materialID);
+      owner->world.materialLibrary->release(materialID);
     }
     
     void HostMaterial::setDeviceDataOn(OWLGeom geom) const
@@ -169,7 +170,7 @@ namespace barney {
       DeviceMaterial dd;
       for (int devID=0;devID<owner->devGroup->size();devID++) {
         this->createDD(dd,devID);
-        owner->world.materialLibrary.setMaterial(materialID,dd,devID);
+        owner->world.materialLibrary->setMaterial(materialID,dd,devID);
       }
     }
 

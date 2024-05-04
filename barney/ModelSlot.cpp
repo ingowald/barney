@@ -25,16 +25,18 @@
 
 namespace barney {
 
-  ModelSlot::ModelSlot(GlobalModel *model, int slot)
-    : Object(model->context),
-      model(model),
+  ModelSlot::ModelSlot(GlobalModel *_model, int slot)
+    : Object(_model->context),
+      model(_model),
       localID(localID),
-      devGroup(model->context->perSlot[slot].devGroup),
-      world(model->context->perSlot[slot].devGroup.get())
-  {}
+      devGroup(_model->context->perSlot[slot].devGroup),
+      world(_model->context->perSlot[slot].devGroup)
+  {
+    PING;
+  }
 
-  ModelSlot::~ModelSlot()
-  {}
+  // ModelSlot::~ModelSlot()
+  // {}
 
   OWLContext ModelSlot::getOWL() const
   {
@@ -47,7 +49,8 @@ namespace barney {
                                const affine3f *xfms)
   {
     int numUserInstances = (int)groups.size();
-    instances.groups = std::move(groups);
+    PING; PRINT(numUserInstances);
+    instances.groups = groups;//std::move(groups);
     instances.xfms.resize(numUserInstances);
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());
     devGroup->sbtDirty = true;
@@ -100,6 +103,14 @@ namespace barney {
   //   return getContext()->initReference
   //     (std::make_shared<Spheres>(this));
   // }
+
+  ModelSlot::SP ModelSlot::create(GlobalModel *model, int localID)
+  {
+    PING;
+    ModelSlot::SP slot = std::make_shared<ModelSlot>(model,localID);
+    PRINT(slot.get());
+    return slot;
+  }
 
   Data *ModelSlot::createData(BNDataType dataType,
                               size_t numItems,
@@ -180,13 +191,17 @@ namespace barney {
     //   std::cout << OWL_TERMINAL_RED
     //             << "warning: data group is empty..."
     //             << OWL_TERMINAL_DEFAULT << std::endl;
+    PRINT(owlGroups.size());
+    PRINT(owlTransforms.size());
     instances.group
       = owlInstanceGroupCreate(devGroup->owl,
                                owlGroups.size(),
                                owlGroups.data(),
                                nullptr,
                                (const float *)owlTransforms.data());
+    PING;
     owlGroupBuildAccel(instances.group);
+    PING;
     world.set(envMapLight?envMapLight->content:render::EnvMapLight{});
     world.set(quadLights);
     world.set(dirLights);

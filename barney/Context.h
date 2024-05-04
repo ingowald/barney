@@ -149,7 +149,7 @@ namespace barney {
       /*! device(s) inside this data group; will be a subset of
         Context::devices */
       std::vector<int>     gpuIDs;
-      barney::DevGroup::SP devGroup;
+      barney::DevGroup::SP devGroup = 0;
     };
     std::vector<PerSlot> perSlot;
     

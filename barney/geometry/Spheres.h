@@ -28,7 +28,7 @@ namespace barney {
       float       *radii;
       vec3f       *colors;
       float        defaultRadius;
-      const vec4f *vertexAttribute[5];
+      // const vec4f *vertexAttribute[5];
     };
 
     Spheres(ModelSlot *owner);
@@ -52,11 +52,11 @@ namespace barney {
     PODData::SP origins = 0;
     PODData::SP colors  = 0;
     PODData::SP radii   = 0;
-    PODData::SP vertexAttribute0;
-    PODData::SP vertexAttribute1;
-    PODData::SP vertexAttribute2;
-    PODData::SP vertexAttribute3;
-    PODData::SP vertexAttribute4;
+    // PODData::SP vertexAttribute0;
+    // PODData::SP vertexAttribute1;
+    // PODData::SP vertexAttribute2;
+    // PODData::SP vertexAttribute3;
+    // PODData::SP vertexAttribute4;
     float       defaultRadius = .1f;
   };
   

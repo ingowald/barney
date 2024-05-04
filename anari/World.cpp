@@ -5,6 +5,7 @@
 // std
 #include <algorithm>
 #include <set>
+#include <iostream>
 
 namespace barney_device {
 
@@ -118,6 +119,7 @@ BNModel World::makeCurrent()
     m_barneyModel = nullptr;
     m_lastBarneyModelBuild = 0;
     m_barneyModel = bnModelCreate(state->context);
+    std::cout << "BANARI created model " << (int*)m_barneyModel << std::endl;
     state->currentWorld = this;
   }
 
@@ -152,6 +154,7 @@ void World::buildBarneyModel()
       continue;
     auto *g = groups[i];
     BNGroup bg = g->makeBarneyGroup(m_barneyModel, 0);
+    std::cout << "BANARI got group " << (int*)bg << std::endl;
     for (size_t j = i; j < groups.size(); j++) {
       if (groups[j] == g)
         barneyGroups[j] = bg;
@@ -164,6 +167,9 @@ void World::buildBarneyModel()
     return;
   }
 
+  std::cout << "BANARI num groups " << barneyGroups.size() << std::endl;
+  std::cout << "BANARI num xfms " << barneyTransforms.size() << std::endl;
+  std::cout << "BANARI setting " << barneyGroups.size() << " instances on model " << (int*)m_barneyModel << std::endl;
   bnSetInstances(m_barneyModel,
       0,
       barneyGroups.data(),

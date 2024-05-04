@@ -21,9 +21,15 @@ namespace barney {
   GlobalModel::GlobalModel(Context *context)
     : Object(context)
   {
+    PING;
     for (int slot=0;slot<context->perSlot.size();slot++) {
-      modelSlots.push_back(ModelSlot::create(this,slot));
+      PING; PRINT(this);
+      ModelSlot::SP modelSlot = ModelSlot::create(this,slot);
+      PRINT((int*)modelSlot.get());
+      modelSlots.push_back(modelSlot);
+      PING;
     }
+    PING;
   }
 
   GlobalModel::~GlobalModel()

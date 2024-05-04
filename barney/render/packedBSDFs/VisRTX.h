@@ -105,13 +105,13 @@ namespace barney {
         const float VdotH = dot(viewDir, H);
         const float LdotH = dot(lightDir, H);
 
-        if (dbg) {
-          printf(" lightDir %f %f %f\n",lightDir.x,lightDir.y,lightDir.z);
-          printf(" viewDir %f %f %f\n",viewDir.x,viewDir.y,viewDir.z);
-          printf(" H %f %f %f\n",H.x,H.y,H.z);
-          printf(" NdotL %f NdotH %f NdotV %f VdotH %f LdotH %f\n",
-                 NdotL,NdotH,NdotV,VdotH,LdotH);
-        }
+        // if (dbg) {
+        //   printf(" lightDir %f %f %f\n",lightDir.x,lightDir.y,lightDir.z);
+        //   printf(" viewDir %f %f %f\n",viewDir.x,viewDir.y,viewDir.z);
+        //   printf(" H %f %f %f\n",H.x,H.y,H.z);
+        //   printf(" NdotL %f NdotH %f NdotV %f VdotH %f LdotH %f\n",
+        //          NdotL,NdotH,NdotV,VdotH,LdotH);
+        // }
         // Alpha
         const float alpha = pow2(roughness) * opacity;
       
@@ -130,14 +130,14 @@ namespace barney {
           (vec3f(1.f) - F) * float(M_1_PI) * diffuseColor * fmaxf(0.f, NdotL);
 
         
-        if (dbg) printf("diff col %f %f %f brdf %f %f %f F %f %f %f\n"
-                        ,diffuseColor.x
-                        ,diffuseColor.y
-                        ,diffuseColor.z                        
-                        ,diffuseBRDF.x
-                        ,diffuseBRDF.y
-                        ,diffuseBRDF.z,
-                        F.x,F.y,F.z);
+        // if (dbg) printf("diff col %f %f %f brdf %f %f %f F %f %f %f\n"
+        //                 ,diffuseColor.x
+        //                 ,diffuseColor.y
+        //                 ,diffuseColor.z                        
+        //                 ,diffuseBRDF.x
+        //                 ,diffuseBRDF.y
+        //                 ,diffuseBRDF.z,
+        //                 F.x,F.y,F.z);
         // GGX microfacet distribution
         const float D = (alpha * alpha * heaviside(NdotH))
           / (float(M_PI) * pow2(NdotH * NdotH * (alpha * alpha - 1.f) + 1.f));

@@ -135,7 +135,7 @@ namespace barney {
       //                 i,out.x,out.y,out.z,out.w);
     }
     if (dbg)
-      printf("sethitatttributes.colro\n");
+      printf("sethitatttributes.color scope %i\n",(int)this->attributes.colorAttribute.scope);
     set(hit.color,this->attributes.colorAttribute);
     if (dbg)
       printf("gotten hit.color %f %f %f %f\n",

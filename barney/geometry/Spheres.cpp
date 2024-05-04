@@ -64,6 +64,11 @@ namespace barney {
 
   void Spheres::commit()
   {
+    PING;
+    for (int i=0;i<4;i++) {
+      PRINT(attributes.attribute[i].perPrim);
+      PRINT(attributes.attribute[i].perVertex);
+    }
     if (userGeoms.empty()) {
       OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
         ("Spheres",Spheres::createGeomType);
@@ -131,8 +136,9 @@ namespace barney {
     // owlGeomSetBuffer(geom,"vertex.attribute4",vertexAttribute4Buffer);
     int numOrigins = origins->count;
     owlGeomSetPrimCount(geom,numOrigins);
-    material->setDeviceDataOn(geom);
+    
     setAttributesOn(geom);
+    material->setDeviceDataOn(geom);
   } 
 
   bool Spheres::set1f(const std::string &member, const float &value)

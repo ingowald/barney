@@ -88,8 +88,8 @@ namespace barney {
 
       // doesn't make sense, but anari sdk assumes for spheres per-vtx is same as per-prim
       float4 v = attrib.fromArray.valueAt(hitData.primID,ray.dbg);
-      // if (ray.dbg)
-      //   printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
+      if (ray.dbg)
+        printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
       return v;
     };
     self.setHitAttributes(hitData,interpolator,ray.dbg);

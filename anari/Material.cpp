@@ -112,7 +112,8 @@ void PhysicallyBased::commit()
   m_baseColor.value = math::float4(1.f, 1.f, 1.f, 1.f);
   getParam("baseColor", ANARI_FLOAT32_VEC3, &m_baseColor.value);
   getParam("baseColor", ANARI_FLOAT32_VEC4, &m_baseColor.value);
-
+  m_baseColor.stringValue = getParamString("baseColor","");
+  
   m_emissive.value = math::float3(0.f, 0.f, 0.f);
   getParam("emissive", ANARI_FLOAT32_VEC3, &m_emissive.value);
 
@@ -173,6 +174,8 @@ void PhysicallyBased::setBarneyParameters()
       m_specularColor.value.z);
 
   bnSet1f(m_bnMat, "opacity", m_opacity.value);
+  std::cout << "BANARI metallic " << m_metallic.stringValue << std::endl;
+  std::cout << "BANARI roughness " << m_roughness.stringValue << std::endl;
   if (m_metallic.stringValue.empty())
     bnSet1f(m_bnMat, "metallic", m_metallic.value);
   else

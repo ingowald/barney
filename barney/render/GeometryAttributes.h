@@ -32,7 +32,7 @@ namespace barney {
     };
       
     struct GeometryAttribute {
-      typedef enum { PER_VERTEX, PER_PRIM, CONSTANT, INVALID } Scope;
+      typedef enum { INVALID, CONSTANT, PER_PRIM, PER_VERTEX  } Scope;
         
       struct DD {
         union {
@@ -42,7 +42,7 @@ namespace barney {
         int/*Scope*/         scope;
       };
         
-      void make(DD &dd, bool dbg=false);
+      // void make(DD &dd, bool dbg=false);
       vec4f       constant { 0.f,0.f,0.f,1.f };
       PODData::SP perPrim   = 0;
       PODData::SP perVertex = 0;
@@ -60,7 +60,7 @@ namespace barney {
         GeometryAttribute::DD attribute[numAttributes];
         GeometryAttribute::DD colorAttribute;
       };
-      void make(DD &dd, bool dbg);
+      // void make(DD &dd, bool dbg);
       GeometryAttribute attribute[numAttributes];
       GeometryAttribute colorAttribute;
     };

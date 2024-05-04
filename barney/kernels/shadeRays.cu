@@ -520,7 +520,7 @@ namespace barney {
                                   /* surface: */dg.P + frontFacingSurfaceOffset,
                                   /* to light */ls.dir,
                                   /* length   */ls.dist * (1.f-2.f*EPS));
-          if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
+          // if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
           shadowRay.rngSeed = path.rngSeed + 1; random();
           shadowRay.dbg = path.dbg;
           shadowRay.pixelID = path.pixelID;

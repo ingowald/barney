@@ -21,6 +21,7 @@
 #include "barney/render/HitAttributes.h"
 // #include "barney/material/device/Material.h"
 #include "barney/render/Sampler.h"
+#include "barney/render/World.h"
 
 namespace barney {
   namespace render {
@@ -33,9 +34,9 @@ namespace barney {
 
       PossiblyMappedParameter() = default;
       PossiblyMappedParameter(const vec3f v)
-      { value = make_float4(v.x,v.y,v.z,1.f); }
+      { type = VALUE; value = make_float4(v.x,v.y,v.z,1.f); }
       PossiblyMappedParameter(float v)
-      { value = make_float4(v,0.f,0.f,1.f); }
+      { type = VALUE; value = make_float4(v,0.f,0.f,1.f); }
     
       struct DD {
         inline __device__
@@ -104,6 +105,9 @@ namespace barney {
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
 
       const int materialID;
+      // keep reference to material library, so it cannot die before
+      // all materials are dead
+      MaterialLibrary::SP materialLibrary;
     };
 
     inline __device__

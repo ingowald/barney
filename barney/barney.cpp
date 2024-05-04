@@ -27,7 +27,7 @@
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
-#if 0
+#if 1
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/
@@ -189,6 +189,7 @@ namespace barney {
   BN_API
   void  bnRelease(BNObject _object)
   {
+    LOG_API_ENTRY;
     Object *object = checkGet(_object);
     Context *context = object->getContext();
     context->releaseHostReference(object->shared_from_this());
@@ -197,6 +198,7 @@ namespace barney {
   BN_API
   void  bnAddReference(BNObject _object)
   {
+    LOG_API_ENTRY;
     if (_object == 0) return;
     Object *object = checkGet(_object);
     Context *context = object->getContext();
@@ -222,6 +224,7 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
+    LOG_API_ENTRY;
     BNGeom mesh = bnGeometryCreate(model,whichSlot,"triangles");
     
     BNData _vertices = bnDataCreate(model,whichSlot,BN_FLOAT3,numVertices,vertices);
@@ -665,6 +668,7 @@ namespace barney {
                 BNFrameBuffer fb,
                 int pathsPerPixel)
   {
+    // LOG_API_ENTRY;
     checkGet(model)->render(checkGet(camera),checkGet(fb),pathsPerPixel);
   }
 

@@ -58,6 +58,7 @@ struct PhysicallyBased : public Material
   {
     math::float4 value{1.f, 1.f, 1.f, 1.f};
     /*TODO: samplers, attributes, etc.*/
+    std::string  stringValue;
   } m_baseColor;
 
   struct

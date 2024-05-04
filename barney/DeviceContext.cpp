@@ -65,9 +65,9 @@ namespace barney {
     owlParamsSetGroup(dg->lp,"world",
                       slot->instances.group);
     owlParamsSetBuffer(dg->lp,"materials",
-                       slot->world.materialLibrary.buffer);
+                       slot->world.materialLibrary->buffer);
     owlParamsSetBuffer(dg->lp,"samplers",
-                       slot->world.samplerLibrary.buffer);
+                       slot->world.samplerLibrary->buffer);
                         
     // owlParamsSetPointer(dg->lp,"materials",
     //                     slot->world.materialLibrary.getPointer(device->owlID));

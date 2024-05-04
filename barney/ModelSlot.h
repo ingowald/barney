@@ -39,7 +39,7 @@ namespace barney {
               /*! index with which the given rank's context will refer
                   to this _locally_; not the data rank in it */
               int slotIndex);
-    virtual ~ModelSlot();
+    virtual ~ModelSlot() = default;
 
     render::HostMaterial::SP getDefaultMaterial()
     {
@@ -55,8 +55,7 @@ namespace barney {
     
     OWLContext getOWL() const;
 
-    static SP create(GlobalModel *model, int localID)
-    { return std::make_shared<ModelSlot>(model,localID); }
+    static SP create(GlobalModel *model, int localID);
 
     Group   *
     createGroup(const std::vector<Geometry::SP> &geoms,

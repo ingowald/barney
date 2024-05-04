@@ -18,13 +18,14 @@
 
 #include "barney/DeviceGroup.h"
 // #include "barney/material/Globals.h"
-#include "barney/render/DeviceMaterial.h"
+// #include "barney/render/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 // #include "barney/material/DeviceMaterial.h"
 
 namespace barney {
   namespace render {
-
+    struct DeviceMaterial;
+    
 #define DEFAULT_RADIANCE_FROM_ENV .8f
 
     struct QuadLight {
@@ -58,7 +59,7 @@ namespace barney {
     struct MaterialLibrary {
       typedef std::shared_ptr<MaterialLibrary> SP;
     
-      MaterialLibrary(DevGroup *devGroup);
+      MaterialLibrary(DevGroup::SP devGroup);
       virtual ~MaterialLibrary();
       
       int allocate();
@@ -73,13 +74,13 @@ namespace barney {
     
       std::stack<int> reusableIDs;
       OWLBuffer       buffer = 0;
-      DevGroup       *devGroup;
+      DevGroup::SP    devGroup;
     };
   
     struct SamplerLibrary {
       typedef std::shared_ptr<SamplerLibrary> SP;
     
-      SamplerLibrary(DevGroup *devGroup);
+      SamplerLibrary(DevGroup::SP devGroup);
       virtual ~SamplerLibrary();
       
       int allocate();
@@ -93,7 +94,7 @@ namespace barney {
     
       std::stack<int> reusableIDs;
       OWLBuffer       buffer = 0;
-      DevGroup       *devGroup;
+      DevGroup::SP    devGroup;
     };
   
   
@@ -116,20 +117,9 @@ namespace barney {
       };
       EnvMapLight envMapLight;
 
-      World(DevGroup *devGroup)
-        : devGroup(devGroup),
-          materialLibrary(devGroup),
-          samplerLibrary(devGroup)
-          // globals(devGroup)
-      {
-        quadLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
-                                                 OWL_USER_TYPE(QuadLight),
-                                                 1,nullptr);
-        dirLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
-                                                OWL_USER_TYPE(DirLight),
-                                                1,nullptr);
-        
-      }
+      World(DevGroup::SP devGroup);
+      virtual ~World();
+      
       void set(const std::vector<QuadLight> &quadLights)
       {
         if (quadLights.empty()) 
@@ -168,19 +158,19 @@ namespace barney {
         dd.envMapLight.transform = envMapLight.transform;
         // dd.globals = globals.getDD(device);
         dd.radiance  = radiance;
-        dd.samplers  = samplerLibrary.getPointer(device->owlID);
-        dd.materials = materialLibrary.getPointer(device->owlID);
+        dd.samplers  = samplerLibrary->getPointer(device->owlID);
+        dd.materials = materialLibrary->getPointer(device->owlID);
         return dd;
       }
 
       // Globals globals;
-      MaterialLibrary materialLibrary;
-      SamplerLibrary  samplerLibrary;
+      MaterialLibrary::SP materialLibrary;
+      SamplerLibrary::SP  samplerLibrary;
       OWLBuffer quadLightsBuffer = 0;
       int numQuadLights = 0;
       OWLBuffer dirLightsBuffer = 0;
       int numDirLights = 0;
-      DevGroup *const devGroup;
+      DevGroup::SP devGroup;
       float radiance = DEFAULT_RADIANCE_FROM_ENV;
     };
 

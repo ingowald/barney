@@ -22,12 +22,12 @@ namespace barney {
 
     Sampler::Sampler(ModelSlot *owner)
       : SlottedObject(owner),
-        samplerID(owner->world.samplerLibrary.allocate())
+        samplerID(owner->world.samplerLibrary->allocate())
     {}
     
     Sampler::~Sampler()
     {
-      owner->world.samplerLibrary.release(samplerID);
+      owner->world.samplerLibrary->release(samplerID);
     }
     
     Sampler::SP Sampler::create(ModelSlot *owner, const std::string &type)
