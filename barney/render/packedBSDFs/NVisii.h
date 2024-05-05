@@ -19,8 +19,8 @@
 #include "barney/render/DG.h"
 #include "barney/render/floatN.h"
 
-#define SMALL_EPSILON 1e-5f
-#define MIN_ALPHA 1e-3f
+#define MIN_ALPHA .002f
+#define SMALL_EPSILON 2e-10f
 
 namespace barney {
   namespace render {
@@ -231,7 +231,7 @@ namespace barney {
         inline
         __device__ float gtr_2_transmission_pdf(const float3 &w_o, const float3 &w_i, const float3 &n, float transmission_roughness, float ior)
         {
-          float alpha = max(0.001f, transmission_roughness * transmission_roughness);
+          float alpha = max(MIN_ALPHA, transmission_roughness * transmission_roughness);
 
           if (same_hemisphere(w_o, w_i, n)) {
             return 0.f;
@@ -469,14 +469,20 @@ namespace barney {
         {
           float lum = luminance(mat.base_color);
           float3 tint = lum > 0.f ? mat.base_color / lum : make_float3(1.f);
-          float3 spec = lerp_r(mat.specular * 0.08f * lerp_r(make_float3(1.f), tint, mat.specular_tint), mat.base_color, mat.metallic);
+          float3 spec = lerp_r(mat.specular * 0.08f
+                               * lerp_r(make_float3(1.f), tint, mat.specular_tint), mat.base_color, mat.metallic);
 
           float alpha = max(MIN_ALPHA, mat.roughness * mat.roughness);
           float d = gtr_2(fabs(dot(n, w_h)), alpha);
           // Finding dot(w_o, n) to be less noisy, but doesn't look as good for crazy normal maps compared to dot(w_i, w_h)
           // Also finding fresnel to be introducing unwanted energy for smooth plastics, so I'm adding a correction term.
-          float3 f = lerp_r(spec, make_float3(1.f), schlick_weight(fabs(dot(w_i, w_h))) * lerp_r(.5f, 1.f, max(mat.metallic, alpha)));
-          float g = smith_shadowing_ggx(fabs(dot(n, w_i)), alpha) * smith_shadowing_ggx(fabs(dot(n, w_o)), alpha);
+          float3 f = lerp_r(spec, make_float3(1.f),
+                            schlick_weight(fabs(dot(w_i, w_h)))
+                            * lerp_r(.5f, 1.f, max(mat.metallic, alpha))
+                            );
+          float g
+            = smith_shadowing_ggx(fabs(dot(n, w_i)), alpha)
+            * smith_shadowing_ggx(fabs(dot(n, w_o)), alpha);
           return d * f * g;
         }
 
@@ -497,7 +503,7 @@ namespace barney {
           float eta_o, eta_i;
           bool entering = relative_ior(w_o, n, mat.ior, eta_o, eta_i);
 
-          float alpha = max(0.001f, mat.transmission_roughness * mat.transmission_roughness);
+          float alpha = max(MIN_ALPHA, mat.transmission_roughness * mat.transmission_roughness);
 	
           // From Eq 16 of Microfacet models for refraction
           float3 w_ht = -(w_o * eta_i + w_i * eta_o);
@@ -560,7 +566,7 @@ namespace barney {
           float3 spec = lerp_r(mat.specular * 0.08f * lerp_r(make_float3(1.f), tint, mat.specular_tint), mat.base_color, mat.metallic);
 
           float aspect = sqrt(1.f - mat.anisotropy * 0.9f);
-          float a = mat.roughness * mat.roughness;
+          float a = max(MIN_ALPHA,mat.roughness * mat.roughness);
           float2 alpha = make_float2(max(MIN_ALPHA, a / aspect), max(MIN_ALPHA, a * aspect));
           float d = gtr_2_aniso(fabs(dot(n, w_h)), fabs(dot(w_h, v_x)), fabs(dot(w_h, v_y)), alpha);
           // Finding dot(w_o, n) to be less noisy, but doesn't look as good for crazy normal maps compared to dot(w_i, w_h)
@@ -633,6 +639,7 @@ namespace barney {
           }
 
           float coat = disney_clear_coat(mat, b_n, w_o, w_i, w_h);
+          // if (dbg) printf("nvis coat %f\n",coat);
           float3 sheen = disney_sheen(mat, b_n, w_o, w_i, w_h);
           float3 diffuse_bsdf, diffuse_color;
           disney_diffuse(mat, b_n, w_o, w_i, w_h, diffuse_bsdf, diffuse_color);
@@ -648,6 +655,16 @@ namespace barney {
               // gloss = gloss + disney_multiscatter(mat, n, w_o, w_i, GGX_E_LOOKUP, GGX_E_AVG_LOOKUP);
             }
 	
+          // if (dbg) printf("nvis gloss %f %f %f\n",gloss.x,gloss.y,gloss.z);
+          // if (dbg) printf("nvis diffuse bsdf %f %f %f color %f %f %f, (1-metal)*(1-spec) %f\n",
+          //                 diffuse_bsdf.x,
+          //                 diffuse_bsdf.y,
+          //                 diffuse_bsdf.z,
+          //                 diffuse_color.x,
+          //                 diffuse_color.y,
+          //                 diffuse_color.z,
+          //                 (1.f - mat.metallic) * (1.f - mat.specular_transmission)
+          //                 );
           bsdf = (lerp_r(diffuse_bsdf * diffuse_color, 
                        subsurface_bsdf * subsurface_color, 
                        mat.flatness) 
@@ -679,17 +696,18 @@ namespace barney {
                                    const float3 &w_o, 
                                    const float3 &w_i, 
                                    const float3 &w_h, 
-                                   float &pdf
+                                   float &pdf,
+                                   bool dbg
                                    ) {
           pdf = 0.f;
 
           bool entering = dot(w_o, b_n) > 0.f;
           bool sameHemisphere = same_hemisphere(w_o, w_i, b_n);
 	
-          float alpha = max(0.002f, mat.roughness * mat.roughness);
-          float t_alpha = max(0.002f, mat.transmission_roughness * mat.transmission_roughness);
+          float alpha = max(MIN_ALPHA, mat.roughness * mat.roughness);
+          float t_alpha = max(MIN_ALPHA, mat.transmission_roughness * mat.transmission_roughness);
           float aspect = sqrt(1.f - mat.anisotropy * 0.9f);
-          float2 alpha_aniso = make_float2(max(0.002f, alpha / aspect), max(0.002f, alpha * aspect));
+          float2 alpha_aniso = make_float2(max(MIN_ALPHA, alpha / aspect), max(MIN_ALPHA, alpha * aspect));
 
           float clearcoat_alpha = lerp_r(0.1f, MIN_ALPHA, mat.clearcoat_gloss);
 
@@ -717,10 +735,14 @@ namespace barney {
           // model. 
           // For transmission, so long as we subtract 1 from the components, we seem to preserve energy
           // regardless if the transmission is rough or smooth.
-          float metallic_kludge = mat.metallic;
-          float transmission_kludge = mat.specular_transmission;
-          n_comp -= lerp_r(transmission_kludge, metallic_kludge, mat.metallic); 
+          
+          // float metallic_kludge = mat.metallic;
+          // float transmission_kludge = mat.specular_transmission;
+          // n_comp -= lerp_r(transmission_kludge, metallic_kludge, mat.metallic);
+          
           pdf = (diffuse + microfacet + microfacet_transmission + clear_coat) / n_comp;
+          // if (dbg) printf(" nvis pdf diffuse %f microfacet %f clarcoat %f -> pdf %f\n",
+          //                 diffuse,microfacet,clear_coat);
         }
 
         /* 
@@ -749,7 +771,8 @@ namespace barney {
                                            float3 &w_i, 
                                            float &pdf, 
                                            int &sampled_bsdf, 
-                                           float3 &bsdf
+                                           float3 &bsdf,
+                                           bool dbg
                                            ) {
           // Randomly pick a brdf to sample
           if (mat.specular_transmission == 0.f) {
@@ -818,8 +841,8 @@ namespace barney {
           }
 	
           float3 w_h = normalize(w_i + w_o);
-          disney_pdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, pdf);
-          disney_brdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, bsdf);
+          disney_pdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, pdf, dbg);
+          disney_brdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, bsdf, dbg);
         }
 #endif
       }
@@ -923,34 +946,111 @@ namespace barney {
       inline __device__ vec3f NVisii::getAlbedo(bool dbg) const
       {
         vec3f baseColor = this->baseColor;
-        if (dbg) printf("visrtx::getalbedo %f %f %f\n",
-                        (float)baseColor.x,
-                        (float)baseColor.y,
-                        (float)baseColor.z); 
+        // if (dbg) printf("visrtx::getalbedo %f %f %f\n",
+        //                 (float)baseColor.x,
+        //                 (float)baseColor.y,
+        //                 (float)baseColor.z); 
         return baseColor;
       }
 
       inline __device__ void NVisii::scatter(ScatterResult &scatter,
                                              const render::DG &dg,
-                                             Random &random,
+                                             Random &rng,
                                              bool dbg) const
-      {        
+      {
+#if 1
+        /* 
+         * Sample a component of the Disney BRDF
+         * @param mat The structure containing material information.
+         * @param rng The random number generator
+         * @param g_n The geometric normal (cross product of the two triangle edges)
+         * @param s_n The shading normal (per-vertex interpolated normal)
+         * @param b_n The bent normal (see A.3 here https://arxiv.org/abs/1705.01263)
+         * @param v_x The tangent vector
+         * @param v_y The binormal vector
+         * @param w_o The outgoing (aka view) vector
+         * @param w_i The returned incoming (aka light) vector
+         * @param pdf The probability of this sample, for importance sampling
+         * @param sampled_bsdf Enum for which bsdf was sampled. 
+         * 	Can be either DISNEY_DIFFUSE_BRDF, DISNEY_GLOSSY_BRDF, DISNEY_CLEARCOAT_BRDF, DISNEY_TRANSMISSION_BRDF
+         * @param bsdf The throughput of all brdfs in the sampled direction
+         */
+        // inline
+        // __device__ void sample_disney_brdf(
+        //                                    const DisneyMaterial &mat,
+        //                                    LCGRand &rng,
+        //                                    const float3 &g_n, const float3 &s_n, const float3 &b_n, 
+        //                                    const float3 &v_x, const float3 &v_y,
+        //                                    const float3 &w_o,
+        //                                    float3 &w_i, 
+        //                                    float &pdf, 
+        //                                    int &sampled_bsdf, 
+        //                                    float3 &bsdf
+        //                                    ) {
+        using namespace nvisii;
+        DisneyMaterial mat = unpack();
+        // * @param g_n The geometric normal (cross product of the two triangle edges)
+        float3 g_n = (float3)dg.Ng;
+         // * @param s_n The shading normal (per-vertex interpolated normal)
+        float3 s_n = (float3)dg.Ns;
+         // * @param b_n The bent normal (see A.3 here https://arxiv.org/abs/1705.01263)
+        float3 b_n = s_n;
+         // * @param w_i The sampled incoming (aka light) vector
+        // float3 w_i = (float3)wi;
+         // * @param w_o The outgoing (aka view) vector
+        float3 w_o = dg.wo;
+         // * @param w_h The halfway vector between the incoming and outgoing vectors
+        // float3 w_h = normalize(w_i+w_o);
+         // * @param v_y The binormal vector
+        float3 v_y = normalize(cross(g_n,w_o));
+         // * @param v_x The tangent vector
+        float3 v_x = normalize(cross(g_n,v_y));
+
+        // if (isnan(v_x) || isnan(v_y)) {
+        //   printf("============================ NAN ==============================\n");
+        //   printf("============================ NAN ==============================\n");
+        //   printf("============================ NAN ==============================\n");
+        //   printf("============================ NAN ==============================\n");
+        //   printf("============================ NAN ==============================\n");
+        // }
+        // out:
+        float3 w_i;
+        int    sampled_bsdf;
+        float  pdf;
+        float3 bsdf;
+        sample_disney_brdf(mat,rng,g_n,s_n,b_n,v_x,v_y,w_o,
+                           // out:
+                           w_i, pdf, sampled_bsdf, bsdf, dbg);
+        // if (dbg) printf(" -> nvis sampled type %i dir %f %f %f bsdf %f %f %f pdf %f\n",
+        //                 sampled_bsdf,
+        //                 w_i.x,
+        //                 w_i.y,
+        //                 w_i.z,
+        //                 bsdf.x,
+        //                 bsdf.y,
+        //                 bsdf.z,
+        //                 pdf);
+        scatter.pdf = pdf;
+        scatter.f_r = bsdf;
+        scatter.dir = normalize(w_i);
+#else
         // ugh ... visrtx doesn't have scattering;
-        scatter.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
+        scatter.dir = sampleCosineWeightedHemisphere(dg.Ns,rng);
 
         EvalRes er = eval(dg,scatter.dir,dbg);
-        scatter.pdf = er.pdf;
+        scatter.pdf = fabsf(dot(scatter.dir,dg.Ng))/M_PI;//1.f/M_PI;//er.pdf;
         scatter.f_r = er.value;
+#endif
       }
 
       inline __device__ EvalRes NVisii::eval(DG dg, vec3f wi, bool dbg) const
       {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
-        if (dbg) printf("disney base %f %f %f\n",
-                        mat.base_color.x,
-                        mat.base_color.y,
-                        mat.base_color.z);
+        // if (dbg) printf("disney base %f %f %f\n",
+        //                 mat.base_color.x,
+        //                 mat.base_color.y,
+        //                 mat.base_color.z);
         /* 
          * Compute the throughput of a given sampled direction
          * @param mat The structure containing material information.

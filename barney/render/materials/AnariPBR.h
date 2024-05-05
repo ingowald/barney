@@ -72,10 +72,14 @@ namespace barney {
       
       float4 ior = this->ior.eval(hitData,dbg);
       bsdf.ior = ior.x;
-      if (dbg) printf("created nvisii brdf, base %f %f %f\n",
-                      (float)bsdf.baseColor.x,
-                      (float)bsdf.baseColor.y,
-                      (float)bsdf.baseColor.z);
+      // if (dbg) printf("created nvisii brdf, base %f %f %f metallic %f roughness %f ior %f alpha %f\n",
+      //                 (float)bsdf.baseColor.x,
+      //                 (float)bsdf.baseColor.y,
+      //                 (float)bsdf.baseColor.z,
+      //                 (float)bsdf.metallic,
+      //                 (float)bsdf.roughness,
+      //                 (float)bsdf.ior,
+      //                 (float)bsdf.alpha);
 #else
       packedBSDF::VisRTX bsdf;
       
@@ -94,14 +98,14 @@ namespace barney {
       float4 ior = this->ior.eval(hitData,dbg);
       bsdf.ior = ior.x;
 
-      if (dbg)
-        printf("### AnariPBR created BSDF baseColor %f %f %f metallic %f roughness %f ior %f\n",
-               baseColor.x,
-               baseColor.y,
-               baseColor.z,
-               (float)bsdf.metallic,
-               (float)bsdf.roughness,
-               (float)bsdf.ior);
+      // if (dbg)
+      //   printf("### AnariPBR created BSDF baseColor %f %f %f metallic %f roughness %f ior %f\n",
+      //          baseColor.x,
+      //          baseColor.y,
+      //          baseColor.z,
+      //          (float)bsdf.metallic,
+      //          (float)bsdf.roughness,
+      //          (float)bsdf.ior);
 #endif
       return bsdf;
     }

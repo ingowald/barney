@@ -147,7 +147,15 @@ namespace barney {
     pixelValue |= 0xff000000;
 
     uint32_t ofs = ix + numPixels.x*iy;
-    finalFB[ofs] = pixelValue;
+
+    bool isCenter_x = ix == numPixels.x/2;
+    bool isCenter_y = iy == numPixels.y/2;
+    bool isCrossHair = (isCenter_x || isCenter_y) && !(isCenter_x && isCenter_y);
+    
+    finalFB[ofs]
+      = isCrossHair
+      ? 0xff0000ff
+      : pixelValue;
     
     if (finalDepth)
       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];

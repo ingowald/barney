@@ -500,7 +500,7 @@ namespace barney {
                              ls.dir.x,
                              ls.dir.y,
                              ls.dir.z);
-        EvalRes f_r = bsdf.eval(dg,ls.dir,path.dbg);
+        EvalRes f_r = bsdf.eval(dg,ls.dir,0 && path.dbg);
         if (path.dbg) printf("eval light res %f %f %f: %f\n",
                              f_r.value.x,
                              f_r.value.y,
@@ -513,7 +513,8 @@ namespace barney {
           vec3f tp_sr
             = (incomingThroughput)
             * (1.f/ls.pdf)
-            *  f_r.value
+            * f_r.value
+            // * fabsf(dot(dg.Ng,ls.dir))
             /// f_r.pdf
             ;
           shadowRay.makeShadowRay(/* thrghhpt */tp_sr,
@@ -544,11 +545,14 @@ namespace barney {
       ScatterResult scatterResult;
       // if (path.dbg)
         bsdf.scatter(scatterResult,dg,random,path.dbg);
-      if (!scatterResult.valid())
+      if (!scatterResult.valid() || scatterResult.pdf == 0.f)
         return;
       path.org        = dg.P + scatterResult.offsetDirection * frontFacingSurfaceOffset;
       path.dir        = normalize(scatterResult.dir);
-      path.throughput = path.throughput * scatterResult.f_r / (scatterResult.pdf + 1e-10f);
+      path.throughput
+        = path.throughput * scatterResult.f_r
+        // * fabsf(dot(dg.Ng,path.dir))
+        / (scatterResult.pdf + 1e-10f);
       path.clearHit();
       
       if (path.dbg)
@@ -572,97 +576,97 @@ namespace barney {
       //   }
       // }
       
-#if 0
-      if ((path.materialType == GLASS)
-          ||
-          (path.materialType == BLENDER)
-          ) {
-        // dg.wo = normalize(neg(path.dir));
-        SampleRes sampleRes;
-        sampleRes.pdf = 0.f;
-        if (path.materialType == GLASS)
-          sampleRes
-            = path.glass.sample(dg,random,path.dbg);
-        else if (path.materialType == BLENDER)
-          sampleRes
-            = path.blender.sample(dg,random,path.dbg);
+// #if 0
+//       if ((path.materialType == GLASS)
+//           ||
+//           (path.materialType == BLENDER)
+//           ) {
+//         // dg.wo = normalize(neg(path.dir));
+//         SampleRes sampleRes;
+//         sampleRes.pdf = 0.f;
+//         if (path.materialType == GLASS)
+//           sampleRes
+//             = path.glass.sample(dg,random,path.dbg);
+//         else if (path.materialType == BLENDER)
+//           sampleRes
+//             = path.blender.sample(dg,random,path.dbg);
 
-        if (sampleRes.pdf < 1e-6f) {
-          path.tMax = -1.f;
-        } else {
-          path.dir = normalize(sampleRes.wi);
-          if (sampleRes.type & BSDF_SPECULAR_TRANSMISSION) {
-            // doTransmission = true;
-            path.isInMedium = !path.isInMedium;
-            path.org = path.P - frontFacingSurfaceOffset;
-          } else {
-            path.org = path.P + frontFacingSurfaceOffset;
-          }
-          path.throughput = path.throughput * sampleRes.weight
-            /* pdf is inf for glass ....  /sampleRes.pdf */
-            /(isinf(sampleRes.pdf) ? 1.f : sampleRes.pdf)
-            ;
+//         if (sampleRes.pdf < 1e-6f) {
+//           path.tMax = -1.f;
+//         } else {
+//           path.dir = normalize(sampleRes.wi);
+//           if (sampleRes.type & BSDF_SPECULAR_TRANSMISSION) {
+//             // doTransmission = true;
+//             path.isInMedium = !path.isInMedium;
+//             path.org = path.P - frontFacingSurfaceOffset;
+//           } else {
+//             path.org = path.P + frontFacingSurfaceOffset;
+//           }
+//           path.throughput = path.throughput * sampleRes.weight
+//             /* pdf is inf for glass ....  /sampleRes.pdf */
+//             /(isinf(sampleRes.pdf) ? 1.f : sampleRes.pdf)
+//             ;
 
-          bool wasLeavingMedium
-            =  (sampleRes.type & BSDF_SPECULAR_TRANSMISSION)
-            && !path.isInMedium;
-          if (wasLeavingMedium) {
-            vec3f attenuation
-              = path.glass.mediumInside.attenuation;
-            attenuation = exp(attenuation*path.tMax);
-            path.throughput = path.throughput * attenuation;
-          }
-          path.tMax = INFINITY;
-        }
-      } else {
-        // ------------------------------------------------------------------
-        // not perfectly specular - do diffuse bounce for now...
-        // ------------------------------------------------------------------
+//           bool wasLeavingMedium
+//             =  (sampleRes.type & BSDF_SPECULAR_TRANSMISSION)
+//             && !path.isInMedium;
+//           if (wasLeavingMedium) {
+//             vec3f attenuation
+//               = path.glass.mediumInside.attenuation;
+//             attenuation = exp(attenuation*path.tMax);
+//             path.throughput = path.throughput * attenuation;
+//           }
+//           path.tMax = INFINITY;
+//         }
+//       } else {
+//         // ------------------------------------------------------------------
+//         // not perfectly specular - do diffuse bounce for now...
+//         // ------------------------------------------------------------------
 
-        // save local path weight for the shadow ray:
-        path.org = path.P + safe_eps(EPS,path.P)*Ng;
-        if (isVolumeHit) {
-          path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
-          path.throughput = .8f * path.throughput * path.getAlbedo();//baseColor;
-        } else {
-          path.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
-          EvalRes f_r = path.eval(world.globals,dg,path.dir,path.dbg);
+//         // save local path weight for the shadow ray:
+//         path.org = path.P + safe_eps(EPS,path.P)*Ng;
+//         if (isVolumeHit) {
+//           path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
+//           path.throughput = .8f * path.throughput * path.getAlbedo();//baseColor;
+//         } else {
+//           path.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
+//           EvalRes f_r = path.eval(world.globals,dg,path.dir,path.dbg);
 
-          if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
-            path.tMax = -1.f;
-          } else {
-            path.throughput = path.throughput * f_r.value
-              / (f_r.pdf + 1e-10f)
-              ;
-          }
-        }
-      }
-      // ------------------------------------------------------------------
-      // so far we HAVE generated an outgoing path, but it have haev
-      // very low throughput/weak impact on the image - use russian
-      // roulette to either ake it 'stronger', or kill it.
-      // ------------------------------------------------------------------
-      if (((pathDepth < MAX_PATH_DEPTH)
-          ||
-          (pathDepth == 0 && MAX_PATH_DEPTH == 0)
-          ) && path.tMax > 0.f) {
-        path.dir = normalize(path.dir);
-        path.tMax   = INFINITY;
-        path.clearHit();
+//           if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
+//             path.tMax = -1.f;
+//           } else {
+//             path.throughput = path.throughput * f_r.value
+//               / (f_r.pdf + 1e-10f)
+//               ;
+//           }
+//         }
+//       }
+//       // ------------------------------------------------------------------
+//       // so far we HAVE generated an outgoing path, but it have haev
+//       // very low throughput/weak impact on the image - use russian
+//       // roulette to either ake it 'stronger', or kill it.
+//       // ------------------------------------------------------------------
+//       if (((pathDepth < MAX_PATH_DEPTH)
+//           ||
+//           (pathDepth == 0 && MAX_PATH_DEPTH == 0)
+//           ) && path.tMax > 0.f) {
+//         path.dir = normalize(path.dir);
+//         path.tMax   = INFINITY;
+//         path.clearHit();
 
-        float maxWeight = reduce_max((vec3f)path.throughput);
-        if (maxWeight < .3f) {
-          if (random() < maxWeight) {
-            path.throughput = path.throughput * (1.f/maxWeight);
-          } else {
-            path.tMax = -1.f;
-          }
-        }
-        if (MAX_PATH_DEPTH == 0)
-          path.tMax = 1e-20f;
-      } else
-        path.tMax = -1.f;
-#endif
+//         float maxWeight = reduce_max((vec3f)path.throughput);
+//         if (maxWeight < .3f) {
+//           if (random() < maxWeight) {
+//             path.throughput = path.throughput * (1.f/maxWeight);
+//           } else {
+//             path.tMax = -1.f;
+//           }
+//         }
+//         if (MAX_PATH_DEPTH == 0)
+//           path.tMax = 1e-20f;
+//       } else
+//         path.tMax = -1.f;
+// #endif
     }
   
 

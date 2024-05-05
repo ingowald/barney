@@ -39,8 +39,12 @@
 
 namespace barney {
   namespace render {
-
+    using ::isnan;
+    
     inline __device__ float saturate(float f) { return max(0.f,min(f,1.f)); }
+
+    inline __device__ bool isnan(float3 v)
+    { return isnan(v.x) || isnan(v.y) || isnan(v.z); }
     
     using ::make_float2;
     inline __device__ float2 make_float2(float v) { return ::make_float2(v,v); }
@@ -68,7 +72,7 @@ namespace barney {
     FLOATN_OP(/)
     
     inline __device__ float3 operator-(float3 a)
-    { return make_float3(-a.x,-a.y,-a.x); }
+    { return make_float3(-a.x,-a.y,-a.z); }
     
     inline __both__ float lerp_r(float a, float b, float factor) { return (1.f-factor)*a+factor*b; }
     inline __both__ vec3f lerp_r(vec3f a, vec3f b, vec3f factor) { return (1.f-factor)*a+factor*b; }
@@ -84,6 +88,8 @@ namespace barney {
     inline __both__ float floor(float f) { return floorf(f); }
     inline __both__ float clamp(float f) { return min(1.f,max(0.f,f)); }
     inline __both__ float clamp(float f, float lo, float hi) { return min(hi,max(lo,f)); }
+    inline __both__ int clamp(int f) { return min(1,max(0,f)); }
+    inline __both__ int clamp(int f, int lo, int hi) { return min(hi,max(lo,f)); }
     inline __both__ float pow(float a, float b) { return powf(a,b); }
     // inline __both__ vec3f pow(vec3f a, vec3f b) { return vec3f(pow(a.x,b.x),pow(a.y,b.y),pow(a.z,b.z)); }
     inline __both__ vec3f exp(vec3f a) { return vec3f(exp(a.x),exp(a.y),exp(a.z)); }

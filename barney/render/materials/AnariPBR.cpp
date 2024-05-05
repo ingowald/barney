@@ -33,7 +33,6 @@ namespace barney {
     
     bool AnariPBR::setString(const std::string &member, const std::string &value) 
     {
-      PRINT(member); PRINT(value);
       if (HostMaterial::setString(member,value)) return true;
       
       if (member == "baseColor")
@@ -52,8 +51,8 @@ namespace barney {
     
     bool AnariPBR::set1f(const std::string &member, const float &value) 
     {
-      PRINT(member); PRINT(value);
       if (HostMaterial::set1f(member,value)) return true;
+      
       if (member == "metallic")
         { metallic.set(value); return true; }
       if (member == "roughness")
@@ -62,14 +61,14 @@ namespace barney {
         { ior.set(value); return true; }
       if (member == "transmission")
         { transmission.set(value); return true; }
+      
       return false;
     }
     
     bool AnariPBR::set3f(const std::string &member, const vec3f &value) 
     {
-      PRINT(member); PRINT(value);
-      
       if (HostMaterial::set3f(member,value)) return true;
+      
       if (member == "baseColor")
         { baseColor.set(value); return true; }
       if (member == "emission")

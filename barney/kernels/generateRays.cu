@@ -105,8 +105,10 @@ namespace barney {
         ray.dir = normalize(ray.dir);
       }
 
-      bool centerPixel = ((ix == fbSize.x/2-20) && (iy == fbSize.y/2-20));
-      ray.dbg         = 1 && centerPixel;
+      bool crossHair_x = (ix == fbSize.x/2);
+      bool crossHair_y = (iy == fbSize.y/2);
+ 
+      ray.dbg         = 0 && (crossHair_x && crossHair_y);
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
@@ -132,11 +134,8 @@ namespace barney {
       // color; this way the shaderays function doesn't have to reverse
       // engineer pixel pos etc
       vec3f bgColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-      bool crossHair = false; //((ix == fbSize.x/2) || (iy == fbSize.y/2));
-      ray.missColor
-        = crossHair
-        ? vec3f(1.f,0.f,0.f)
-        : bgColor*bgColor;
+      // bool crossHair = 1 && (crossHair_x || crossHair_y);
+      ray.missColor = bgColor*bgColor;
       // ray.hit.baseColor = .5f*ray.hit.baseColor*ray.hit.baseColor;
       // if (crossHair && !ray.dbg)
       //   ray.hit.baseColor = vec3f(1,0,0);

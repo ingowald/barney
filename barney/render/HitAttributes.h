@@ -74,8 +74,8 @@ namespace barney {
     inline __device__
     float4 HitAttributes::get(Which whichOne, bool dbg) const
     {
-      if (dbg)
-        printf("hit attribute which %i\n",int(whichOne));
+      // if (dbg)
+      //   printf("hit attribute which %i\n",int(whichOne));
       
       if (whichOne == ATTRIBUTE_0)
         return attribute[0];

@@ -114,8 +114,8 @@ namespace barney {
     for (int i=0;i<attributes.count;i++) {
       float4     &out = hit.attribute[i];
       const auto &in  = this->attributes.attribute[i];
-      if (dbg)
-        printf("sethitattributes attr %i scope %i\n",i,int(in.scope));
+      // if (dbg)
+      //   printf("sethitattributes attr %i scope %i\n",i,int(in.scope));
       set(out,in);
       // switch(in.scope) {
       // case GeometryAttribute::INVALID:
@@ -134,15 +134,15 @@ namespace barney {
       // if (dbg) printf("attr %i set to %f %f %f %f\n",
       //                 i,out.x,out.y,out.z,out.w);
     }
-    if (dbg)
-      printf("sethitatttributes.color scope %i\n",(int)this->attributes.colorAttribute.scope);
+    // if (dbg)
+    //   printf("sethitatttributes.color scope %i\n",(int)this->attributes.colorAttribute.scope);
     set(hit.color,this->attributes.colorAttribute);
-    if (dbg)
-      printf("gotten hit.color %f %f %f %f\n",
-             hit.color.x,
-             hit.color.y,
-             hit.color.z,
-             hit.color.w);
+    // if (dbg)
+    //   printf("gotten hit.color %f %f %f %f\n",
+    //          hit.color.x,
+    //          hit.color.y,
+    //          hit.color.z,
+    //          hit.color.w);
   }
   
   // template<typename InterpolatePerVertex>
