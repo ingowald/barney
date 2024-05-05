@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/render/packedBSDFs/VisRTX.h"
+#include "barney/render/packedBSDFs/NVisii.h"
 #include "barney/render/HitAttributes.h"
 #include "barney/render/HostMaterial.h"
 

@@ -56,9 +56,28 @@ namespace barney {
     inline __device__
     PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData, bool dbg) const
     {
-      packedBSDF::VisRTX bsdf;
-
       const float clampRange = .01f;
+#if 1
+      packedBSDF::NVisii bsdf;
+      bsdf.setDefaults();
+      float4 baseColor = this->baseColor.eval(hitData);
+      bsdf.baseColor = (const vec3f&)baseColor;
+      float4 metallic = this->metallic.eval(hitData,dbg);
+      bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
+      float4 roughness = this->roughness.eval(hitData,dbg);
+      bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
+      
+      float4 transmission = this->transmission.eval(hitData,dbg);
+      bsdf.alpha = 1.f-transmission.x;
+      
+      float4 ior = this->ior.eval(hitData,dbg);
+      bsdf.ior = ior.x;
+      if (dbg) printf("created nvisii brdf, base %f %f %f\n",
+                      (float)bsdf.baseColor.x,
+                      (float)bsdf.baseColor.y,
+                      (float)bsdf.baseColor.z);
+#else
+      packedBSDF::VisRTX bsdf;
       
       float4 baseColor = this->baseColor.eval(hitData);
       bsdf.baseColor = (const vec3f&)baseColor;
@@ -83,6 +102,7 @@ namespace barney {
                (float)bsdf.metallic,
                (float)bsdf.roughness,
                (float)bsdf.ior);
+#endif
       return bsdf;
     }
 

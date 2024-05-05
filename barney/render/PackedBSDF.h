@@ -17,6 +17,7 @@
 #pragma once
 
 #include "packedBSDFs/VisRTX.h"
+#include "packedBSDFs/NVisii.h"
 #include "packedBSDFs/Glass.h"
 #include "packedBSDFs/Phase.h"
 
@@ -31,13 +32,15 @@ namespace barney {
       typedef enum { INVALID=0, NONE=INVALID,
         /* phase function */
         TYPE_Phase,
-        TYPE_VisRTX
+        TYPE_VisRTX,
+        TYPE_NVisii
       } Type;
       struct Data {
         union {
           packedBSDF::Phase  phase;
           packedBSDF::VisRTX visRTX;
           packedBSDF::Glass  glass;
+          packedBSDF::NVisii nvisii;
         };
       } data;
 
@@ -50,6 +53,8 @@ namespace barney {
       { type = INVALID; }
       inline __device__ PackedBSDF(const packedBSDF::Phase  &phase)
       { type = TYPE_Phase; data.phase = phase; }
+      inline __device__ PackedBSDF(const packedBSDF::NVisii  &nvisii)
+      { type = TYPE_NVisii; data.nvisii = nvisii; }
       inline __device__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
       
       inline __device__
@@ -77,6 +82,8 @@ namespace barney {
         return data.phase.eval(dg,w_i,dbg);
       if (type == TYPE_VisRTX)
         return data.visRTX.eval(dg,w_i,dbg);
+      if (type == TYPE_NVisii)
+        return data.nvisii.eval(dg,w_i,dbg);
       return EvalRes();
     }
     
@@ -95,6 +102,8 @@ namespace barney {
       scatter.pdf = 0.f;
       if (type == TYPE_VisRTX)
         return data.visRTX.scatter(scatter,dg,random,dbg);
+      if (type == TYPE_NVisii)
+        return data.nvisii.scatter(scatter,dg,random,dbg);
     }
       
     

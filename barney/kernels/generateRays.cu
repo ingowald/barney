@@ -106,7 +106,7 @@ namespace barney {
       }
 
       bool centerPixel = ((ix == fbSize.x/2-20) && (iy == fbSize.y/2-20));
-      ray.dbg         = 0 && centerPixel;
+      ray.dbg         = 1 && centerPixel;
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
