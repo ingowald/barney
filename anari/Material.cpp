@@ -9,6 +9,74 @@
 
 namespace barney_device {
 
+// Helper functions ///////////////////////////////////////////////////////////
+
+template <typename T>
+inline MaterialParameter<T> getMaterialHelper(
+    Object *o, const char *p, T defaultValue)
+{
+  MaterialParameter<T> retval;
+  retval.value = o->getParam<T>(p, defaultValue);
+  retval.attribute = o->getParamString(p, "");
+  retval.sampler = o->getParamObject<Sampler>(p);
+  return retval;
+}
+
+template <>
+inline MaterialParameter<math::float4> getMaterialHelper(
+    Object *o, const char *p, math::float4 defaultValue)
+{
+  MaterialParameter<math::float4> retval;
+  retval.value = defaultValue;
+  o->getParam(p, ANARI_FLOAT32_VEC3, &retval.value);
+  o->getParam(p, ANARI_FLOAT32_VEC4, &retval.value);
+  retval.attribute = o->getParamString(p, "");
+  retval.sampler = o->getParamObject<Sampler>(p);
+  return retval;
+}
+
+template <typename T>
+inline void setBNMaterialUniform(BNMaterial m, const char *p, T v)
+{
+  throw std::runtime_error("unhandled setBNMaterialUniform type");
+}
+
+template <>
+inline void setBNMaterialUniform(BNMaterial m, const char *p, float v)
+{
+  bnSet1f(m, p, v);
+}
+
+template <>
+inline void setBNMaterialUniform(BNMaterial m, const char *p, math::float3 v)
+{
+  bnSet3f(m, p, v.x, v.y, v.z);
+}
+
+template <>
+inline void setBNMaterialUniform(BNMaterial m, const char *p, math::float4 v)
+{
+  bnSet4f(m, p, v.x, v.y, v.z, v.w);
+}
+
+template <typename T>
+inline void setBNMaterialHelper(BNMaterial m,
+    const char *p,
+    MaterialParameter<T> &mp,
+    BNModel model,
+    int slot)
+{
+  if (mp.sampler) {
+    BNSampler s = mp.sampler->getBarneySampler(model, slot);
+    // TODO: set sampler
+  } else if (!mp.attribute.empty())
+    bnSetString(m, "baseColor", mp.attribute.c_str());
+  else
+    setBNMaterialUniform(m, p, mp.value);
+}
+
+// Material definitions ///////////////////////////////////////////////////////
+
 Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
 
 Material::~Material()
@@ -56,28 +124,22 @@ void Material::cleanup()
 
 // Matte //
 
-Matte::Matte(BarneyGlobalState *s) : Material(s), m_colorSampler(this) {}
+Matte::Matte(BarneyGlobalState *s) : Material(s)
+{
+  this->commit(); // init with defaults for scalar values
+}
 
 void Matte::commit()
 {
   Object::commit();
-
-  if (m_colorSampler)
-    m_colorSampler->removeCommitObserver(this);
-
-  m_color = math::float4(1.f, 1.f, 1.f, 1.f);
-  getParam("color", ANARI_FLOAT32_VEC3, &m_color);
-  getParam("color", ANARI_FLOAT32_VEC4, &m_color);
-
-  m_colorAttribute = getParamString("color","");
-  m_colorSampler = getParamObject<Sampler>("color");
-
+  m_color = getMaterialHelper(this, "color", math::float4(0.8f, 0.8f, 0.8f, 1));
+  m_opacity = getMaterialHelper(this, "opacity", 1.f);
   setBarneyParameters();
 }
 
 bool Matte::isValid() const
 {
-  return !m_colorSampler || m_colorSampler->isValid();
+  return !m_color.sampler || m_color.sampler->isValid();
 }
 
 const char *Matte::bnSubtype() const
@@ -93,55 +155,40 @@ void Matte::setBarneyParameters()
 {
   if (!m_bnMat)
     return;
-  bnSet3f(m_bnMat, "baseColor", m_color.x, m_color.y, m_color.z);
-  if (m_colorSampler)
-    m_colorSampler->setBarneyParameters(trackedModel(), m_bnMat, trackedSlot());
-  if (!m_colorAttribute.empty())
-    bnSetString(m_bnMat, "baseColor", m_colorAttribute.c_str());
+
+  BNModel model = trackedModel();
+  int slot = trackedSlot();
+
+  // NOTE: using Barney PBR material because matte wasn't (isn't?) finished
+  setBNMaterialHelper(m_bnMat, "baseColor", m_color, model, slot);
+  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
+  bnSet1f(m_bnMat, "metallic", 0.f);
+  bnSet1f(m_bnMat, "roughness", 1.f);
+  bnSet1f(m_bnMat, "specular", 0.f);
+  bnSet1f(m_bnMat, "transmission", 0.f);
   bnCommit(m_bnMat);
 }
 
 // PhysicallyBased //
 
-PhysicallyBased::PhysicallyBased(BarneyGlobalState *s) : Material(s) {}
+PhysicallyBased::PhysicallyBased(BarneyGlobalState *s) : Material(s)
+{
+  this->commit(); // init with defaults for scalar values
+}
 
 void PhysicallyBased::commit()
 {
   Object::commit();
-
-  m_baseColor.value = math::float4(1.f, 1.f, 1.f, 1.f);
-  getParam("baseColor", ANARI_FLOAT32_VEC3, &m_baseColor.value);
-  getParam("baseColor", ANARI_FLOAT32_VEC4, &m_baseColor.value);
-  m_baseColor.stringValue = getParamString("baseColor","");
-  
-  m_emissive.value = math::float3(0.f, 0.f, 0.f);
-  getParam("emissive", ANARI_FLOAT32_VEC3, &m_emissive.value);
-
-  m_specularColor.value = math::float3(1.f, 1.f, 1.f);
-  getParam("specularColor", ANARI_FLOAT32_VEC3, &m_specularColor.value);
-
-  m_opacity.value = 1.f;
-  getParam("opacity", ANARI_FLOAT32, &m_opacity.value);
-
-  m_metallic.value = 1.f;
-  getParam("metallic", ANARI_FLOAT32, &m_metallic.value);
-  m_metallic.stringValue = getParamString("metallic", "");
-
-  // std::cout << "found metallic attribute " << metallicAttribute << std::endl;
-
-  m_roughness.value = 1.f;
-  getParam("roughness", ANARI_FLOAT32, &m_roughness.value);
-  m_roughness.stringValue = getParamString("roughness", "");
-
-  m_specular.value = 0.f;
-  getParam("specular", ANARI_FLOAT32, &m_specular.value);
-
-  m_transmission.value = 0.f;
-  getParam("transmission", ANARI_FLOAT32, &m_transmission.value);
-
-  m_ior = 1.5f;
-  getParam("ior", ANARI_FLOAT32, &m_ior);
-
+  m_baseColor = getMaterialHelper(this, "baseColor", math::float4(1, 1, 1, 1));
+  m_emissive = getMaterialHelper(this, "emissive", math::float3(0, 0, 0));
+  m_specularColor =
+      getMaterialHelper(this, "specularColor", math::float3(1, 1, 1));
+  m_opacity = getMaterialHelper(this, "opacity", 1.f);
+  m_metallic = getMaterialHelper(this, "metallic", 1.f);
+  m_roughness = getMaterialHelper(this, "roughness", 1.f);
+  m_specular = getMaterialHelper(this, "specular", 0.f);
+  m_transmission = getMaterialHelper(this, "transmission", 0.f);
+  m_ior = getParam<float>("ior", 1.5f);
   setBarneyParameters();
 }
 
@@ -155,35 +202,18 @@ void PhysicallyBased::setBarneyParameters()
   if (!m_bnMat)
     return;
 
-  bnSet3f(m_bnMat,
-      "baseColor",
-      m_baseColor.value.x,
-      m_baseColor.value.y,
-      m_baseColor.value.z);
+  BNModel model = trackedModel();
+  int slot = trackedSlot();
 
-  bnSet3f(m_bnMat,
-      "emissive",
-      m_emissive.value.x,
-      m_emissive.value.y,
-      m_emissive.value.z);
-
-  bnSet3f(m_bnMat,
-      "specularColor",
-      m_specularColor.value.x,
-      m_specularColor.value.y,
-      m_specularColor.value.z);
-
-  bnSet1f(m_bnMat, "opacity", m_opacity.value);
-  if (m_metallic.stringValue.empty())
-    bnSet1f(m_bnMat, "metallic", m_metallic.value);
-  else
-    bnSetString(m_bnMat, "metallic", m_metallic.stringValue.c_str());
-  if (m_roughness.stringValue.empty())
-    bnSet1f(m_bnMat, "roughness", m_roughness.value);
-  else
-    bnSetString(m_bnMat, "roughness", m_roughness.stringValue.c_str());
-  bnSet1f(m_bnMat, "specular", m_specular.value);
-  bnSet1f(m_bnMat, "transmission", m_transmission.value);
+  setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, model, slot);
+  setBNMaterialHelper(m_bnMat, "emissive", m_emissive, model, slot);
+  setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor, model, slot);
+  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
+  setBNMaterialHelper(m_bnMat, "metallic", m_metallic, model, slot);
+  setBNMaterialHelper(m_bnMat, "roughness", m_roughness, model, slot);
+  setBNMaterialHelper(m_bnMat, "specular", m_specular, model, slot);
+  setBNMaterialHelper(m_bnMat, "transmission", m_transmission, model, slot);
+  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
   bnSet1f(m_bnMat, "ior", m_ior);
 
   bnCommit(m_bnMat);

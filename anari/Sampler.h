@@ -18,8 +18,14 @@ struct Sampler : public Object
   static Sampler *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
-  virtual void setBarneyParameters(
-      BNModel model, BNMaterial mat, int slot) const = 0;
+  virtual BNSampler getBarneySampler(BNModel model, int slot) = 0;
+
+  protected:
+  virtual void setBarneyParameters() = 0;
+  void setBarneySampler(BNModel model, int slot, const char *subtype);
+  void cleanup();
+
+  BNSampler m_bnSampler{nullptr};
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -32,11 +38,10 @@ struct Image1D : public Sampler
 
   bool isValid() const override;
 
-  void setBarneyParameters(
-      BNModel model, BNMaterial mat, int slot) const override;
+  BNSampler getBarneySampler(BNModel model, int slot) override;
 
  private:
-  void cleanup();
+  void setBarneyParameters() override;
 
   helium::IntrusivePtr<helium::Array1D> m_image;
   int m_inAttribute{-1};
@@ -47,7 +52,7 @@ struct Image1D : public Sampler
   math::mat4 m_outTransform{math::identity};
   math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
 
-  mutable BNSampler m_sampler{nullptr};
+  BNSampler m_sampler{nullptr};
 };
 
 struct Image2D : public Sampler
@@ -58,11 +63,10 @@ struct Image2D : public Sampler
 
   bool isValid() const override;
 
-  void setBarneyParameters(
-      BNModel model, BNMaterial mat, int slot) const override;
+  BNSampler getBarneySampler(BNModel model, int slot) override;
 
  private:
-  void cleanup();
+  void setBarneyParameters() override;
 
   helium::IntrusivePtr<helium::Array2D> m_image;
   int m_inAttribute{-1};
@@ -83,10 +87,11 @@ struct TransformSampler : public Sampler
   TransformSampler(BarneyGlobalState *s);
   void commit() override;
 
-  void setBarneyParameters(
-      BNModel model, BNMaterial mat, int slot) const override;
+  BNSampler getBarneySampler(BNModel model, int slot) override;
 
  private:
+  void setBarneyParameters() override;
+
   int m_inAttribute{-1};
   math::mat4 m_outTransform{math::identity};
   math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
