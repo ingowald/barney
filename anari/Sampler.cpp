@@ -122,7 +122,40 @@ void Image2D::commit()
   getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
   m_outOffset =
       getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+<<<<<<< Updated upstream
   setBarneyParameters();
+=======
+
+  if (!m_image)
+    return;
+  #if 0
+  if (!m_sampler)
+    m_sampler = bnSamplerCreate(model,slot,"image2D");
+  // bnSetString(mat, "sampler.type", "image2D");
+  bnSet1i(m_sampler,
+          "inAttribute",
+          m_inAttribute);
+  bnSet4x4fv(m_sampler,
+             "inTransform",
+             (const float *)&m_inTransform.x);
+  bnSet4f(m_sampler,
+          "inOffset",
+          m_inOffset.x,
+          m_inOffset.y,
+          m_inOffset.z,
+          m_inOffset.w);
+  bnSet4x4fv(m_sampler,
+             "outTransform",
+             (const float *)&m_outTransform.x);
+  bnSet4f(m_sampler,
+          "outOffset",
+          m_outOffset.x,
+          m_outOffset.y,
+          m_outOffset.z,
+          m_outOffset.w);
+  bnCommit(m_sampler);
+#endif
+>>>>>>> Stashed changes
 }
 
 bool Image2D::isValid() const

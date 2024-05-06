@@ -60,10 +60,33 @@ struct PhysicallyBased : public Material
   void setBarneyParameters() override;
 
  private:
+<<<<<<< Updated upstream
   MaterialParameter<math::float4> m_baseColor;
   MaterialParameter<math::float3> m_emissive, m_specularColor;
   MaterialParameter<float> m_opacity, m_metallic, m_roughness, m_specular,
       m_transmission;
+=======
+  struct
+  {
+    math::float4 value{1.f, 1.f, 1.f, 1.f};
+    /*TODO: samplers, attributes, etc.*/
+    std::string  stringValue;
+    helium::CommitObserverPtr<Sampler> sampler{nullptr};
+  } m_baseColor;
+
+  struct
+  {
+    math::float3 value{1.f, 1.f, 1.f};
+    /*TODO: samplers, attributes, etc.*/
+  } m_emissive, m_specularColor;
+
+  struct
+  {
+    float value{1.f};
+    std::string stringValue;
+    /*TODO: samplers, attributes, etc.*/
+  } m_opacity, m_metallic, m_roughness, m_specular, m_transmission;
+>>>>>>> Stashed changes
 
   float m_ior{1.5f};
 };

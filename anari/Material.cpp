@@ -155,6 +155,7 @@ void Matte::setBarneyParameters()
 {
   if (!m_bnMat)
     return;
+<<<<<<< Updated upstream
 
   BNModel model = trackedModel();
   int slot = trackedSlot();
@@ -166,19 +167,36 @@ void Matte::setBarneyParameters()
   bnSet1f(m_bnMat, "roughness", 1.f);
   bnSet1f(m_bnMat, "specular", 0.f);
   bnSet1f(m_bnMat, "transmission", 0.f);
+=======
+  if (!m_colorAttribute.empty())
+    bnSetString(m_bnMat, "baseColor", m_colorAttribute.c_str());
+  else if (m_colorSampler)
+    bnSetObject(m_bnMat, "baseColor",
+                m_baseColor.sampler->getBarneySampler(trackedModel(), trackedSlot()));
+  else
+    bnSet3f(m_bnMat, "baseColor", m_color.x, m_color.y, m_color.z);
+>>>>>>> Stashed changes
   bnCommit(m_bnMat);
 }
 
 // PhysicallyBased //
 
+<<<<<<< Updated upstream
 PhysicallyBased::PhysicallyBased(BarneyGlobalState *s) : Material(s)
 {
   this->commit(); // init with defaults for scalar values
+=======
+PhysicallyBased::PhysicallyBased(BarneyGlobalState *s)
+  : Material(s)
+{
+  m_baseColor.sampler = helium::CommitObserverPtr<Sampler>(this);
+>>>>>>> Stashed changes
 }
 
 void PhysicallyBased::commit()
 {
   Object::commit();
+<<<<<<< Updated upstream
   m_baseColor = getMaterialHelper(this, "baseColor", math::float4(1, 1, 1, 1));
   m_emissive = getMaterialHelper(this, "emissive", math::float3(0, 0, 0));
   m_specularColor =
@@ -189,6 +207,43 @@ void PhysicallyBased::commit()
   m_specular = getMaterialHelper(this, "specular", 0.f);
   m_transmission = getMaterialHelper(this, "transmission", 0.f);
   m_ior = getParam<float>("ior", 1.5f);
+=======
+
+  m_baseColor.value = math::float4(1.f, 1.f, 1.f, 1.f);
+  getParam("baseColor", ANARI_FLOAT32_VEC3, &m_baseColor.value);
+  getParam("baseColor", ANARI_FLOAT32_VEC4, &m_baseColor.value);
+  m_baseColor.stringValue = getParamString("baseColor","");
+  m_baseColor.sampler     = getParamObject<Sampler>("baseColor");
+
+  m_emissive.value = math::float3(0.f, 0.f, 0.f);
+  getParam("emissive", ANARI_FLOAT32_VEC3, &m_emissive.value);
+
+  m_specularColor.value = math::float3(1.f, 1.f, 1.f);
+  getParam("specularColor", ANARI_FLOAT32_VEC3, &m_specularColor.value);
+
+  m_opacity.value = 1.f;
+  getParam("opacity", ANARI_FLOAT32, &m_opacity.value);
+
+  m_metallic.value = 1.f;
+  getParam("metallic", ANARI_FLOAT32, &m_metallic.value);
+  m_metallic.stringValue = getParamString("metallic", "");
+
+  // std::cout << "found metallic attribute " << metallicAttribute << std::endl;
+
+  m_roughness.value = 1.f;
+  getParam("roughness", ANARI_FLOAT32, &m_roughness.value);
+  m_roughness.stringValue = getParamString("roughness", "");
+
+  m_specular.value = 0.f;
+  getParam("specular", ANARI_FLOAT32, &m_specular.value);
+
+  m_transmission.value = 0.f;
+  getParam("transmission", ANARI_FLOAT32, &m_transmission.value);
+
+  m_ior = 1.5f;
+  getParam("ior", ANARI_FLOAT32, &m_ior);
+
+>>>>>>> Stashed changes
   setBarneyParameters();
 }
 
@@ -202,6 +257,7 @@ void PhysicallyBased::setBarneyParameters()
   if (!m_bnMat)
     return;
 
+<<<<<<< Updated upstream
   BNModel model = trackedModel();
   int slot = trackedSlot();
 
@@ -214,6 +270,43 @@ void PhysicallyBased::setBarneyParameters()
   setBNMaterialHelper(m_bnMat, "specular", m_specular, model, slot);
   setBNMaterialHelper(m_bnMat, "transmission", m_transmission, model, slot);
   setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
+=======
+  if (m_baseColor.sampler)
+    bnSetObject(m_bnMat, "baseColor",
+                m_baseColor.sampler->getBarneySampler(trackedModel(), trackedSlot()));
+  else if (!m_colorAttribute.empty())
+    bnSetString(m_bnMat, "baseColor", m_colorAttribute.c_str());
+  else
+    bnSet3f(m_bnMat,
+            "baseColor",
+            m_baseColor.value.x,
+            m_baseColor.value.y,
+            m_baseColor.value.z);
+  
+  bnSet3f(m_bnMat,
+      "emissive",
+      m_emissive.value.x,
+      m_emissive.value.y,
+      m_emissive.value.z);
+
+  bnSet3f(m_bnMat,
+      "specularColor",
+      m_specularColor.value.x,
+      m_specularColor.value.y,
+      m_specularColor.value.z);
+
+  bnSet1f(m_bnMat, "opacity", m_opacity.value);
+  if (m_metallic.stringValue.empty())
+    bnSet1f(m_bnMat, "metallic", m_metallic.value);
+  else
+    bnSetString(m_bnMat, "metallic", m_metallic.stringValue.c_str());
+  if (m_roughness.stringValue.empty())
+    bnSet1f(m_bnMat, "roughness", m_roughness.value);
+  else
+    bnSetString(m_bnMat, "roughness", m_roughness.stringValue.c_str());
+  bnSet1f(m_bnMat, "specular", m_specular.value);
+  bnSet1f(m_bnMat, "transmission", m_transmission.value);
+>>>>>>> Stashed changes
   bnSet1f(m_bnMat, "ior", m_ior);
 
   bnCommit(m_bnMat);
