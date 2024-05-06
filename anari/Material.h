@@ -20,12 +20,19 @@ struct Material : public Object
 
   BNMaterial getBarneyMaterial(BNModel model, int slot);
 
+ protected:
   virtual const char *bnSubtype() const = 0;
   virtual void setBarneyParameters() = 0;
-
- protected:
   void cleanup();
   BNMaterial m_bnMat{nullptr};
+};
+
+template <typename SCALAR_T>
+struct MaterialParameter
+{
+  SCALAR_T value;
+  std::string attribute;
+  helium::IntrusivePtr<Sampler> sampler;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -40,9 +47,8 @@ struct Matte : public Material
   void setBarneyParameters() override;
 
  private:
-  math::float4 m_color{1.f, 1.f, 1.f, 1.f};
-  std::string  m_colorAttribute;
-  helium::CommitObserverPtr<Sampler> m_colorSampler{nullptr};
+  MaterialParameter<math::float4> m_color;
+  MaterialParameter<float> m_opacity;
 };
 
 struct PhysicallyBased : public Material
@@ -54,25 +60,10 @@ struct PhysicallyBased : public Material
   void setBarneyParameters() override;
 
  private:
-  struct
-  {
-    math::float4 value{1.f, 1.f, 1.f, 1.f};
-    /*TODO: samplers, attributes, etc.*/
-    std::string  stringValue;
-  } m_baseColor;
-
-  struct
-  {
-    math::float3 value{1.f, 1.f, 1.f};
-    /*TODO: samplers, attributes, etc.*/
-  } m_emissive, m_specularColor;
-
-  struct
-  {
-    float value{1.f};
-    std::string stringValue;
-    /*TODO: samplers, attributes, etc.*/
-  } m_opacity, m_metallic, m_roughness, m_specular, m_transmission;
+  MaterialParameter<math::float4> m_baseColor;
+  MaterialParameter<math::float3> m_emissive, m_specularColor;
+  MaterialParameter<float> m_opacity, m_metallic, m_roughness, m_specular,
+      m_transmission;
 
   float m_ior{1.5f};
 };

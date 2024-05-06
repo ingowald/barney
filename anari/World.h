@@ -23,7 +23,6 @@ struct World : public Object
   BNModel makeCurrent();
 
  private:
-  bool isCurrent() const;
   void buildBarneyModel();
 
   helium::CommitObserverPtr<ObjectArray> m_zeroSurfaceData;

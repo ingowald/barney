@@ -113,7 +113,7 @@ BNModel World::makeCurrent()
 {
   auto *state = deviceState();
 
-  if (!isCurrent()) {
+  if (deviceState()->currentWorld != this) {
     if (m_barneyModel)
       bnRelease(m_barneyModel);
     m_barneyModel = nullptr;
@@ -126,11 +126,6 @@ BNModel World::makeCurrent()
     buildBarneyModel();
 
   return m_barneyModel;
-}
-
-bool World::isCurrent() const
-{
-  return deviceState()->currentWorld == this;
 }
 
 void World::buildBarneyModel()
