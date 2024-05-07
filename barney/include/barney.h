@@ -26,6 +26,7 @@
 typedef struct _BNContext                           *BNContext;
 typedef struct _BNObject                         {} *BNObject;
 typedef struct _BNData         : public _BNObject{} *BNData;
+typedef struct _BNTextureData  : public _BNObject{} *BNTextureData;
 typedef struct _BNScalarField  : public _BNObject{} *BNScalarField;
 typedef struct _BNGeom         : public _BNObject{} *BNGeom;
 typedef struct _BNVolume       : public _BNObject{} *BNVolume;
@@ -327,13 +328,28 @@ void bnSetInstances(BNModel model,
 // scene content
 // ==================================================================
 
-/*! same as owlNewData, basically */
+/*! a regular, one-dimensional array of numItems elements of given
+  type. On the device the respective elemtns will appear as a plain
+  CUDA array that lies in either device or managed memory.  Note data
+  arrays of this type can _not_ be assigned to samplers because these
+  need data to be put into cudaArray's (in order to create
+  cudaTextures) */
 BN_API
 BNData bnDataCreate(BNModel model,
                     int whichSlot,
                     BNDataType dataType,
                     size_t numItems,
                     const void *items);
+
+/*! creates a cudaArray2D of specified size and texels. Can be passed
+  to a sampler to create a matching cudaTexture2D */
+BN_API
+BNTextureData bnTextureData2DCreate(BNModel model,
+                                    int whichSlot,
+                                    BNTexelFormat texelFormat,
+                                    int width, int height,
+                                    const void *items);
+
 BN_API
 BNLight bnLightCreate(BNModel model,
                       int whichSlot,
@@ -400,10 +416,10 @@ BNMaterial bnMaterialCreate(BNModel model,
                             int whichSlot,
                             const char *type);
 
+BN_API
 BNSampler bnSamplerCreate(BNModel model,
                           int whichSlot,
                           const char *type);
-
 
 
 

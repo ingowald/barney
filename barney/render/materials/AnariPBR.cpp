@@ -31,6 +31,17 @@ namespace barney {
       transmission.make(dd.anariPBR.transmission,deviceID);
     }
     
+    bool AnariPBR::setObject(const std::string &member, const Object::SP &value) 
+    {
+      if (HostMaterial::setObject(member,value)) return true;
+
+      Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
+      if (member == "baseColor") 
+        { baseColor.set(sampler); return true; }
+      
+      return false;
+    }
+    
     bool AnariPBR::setString(const std::string &member, const std::string &value) 
     {
       if (HostMaterial::setString(member,value)) return true;
@@ -68,6 +79,18 @@ namespace barney {
     bool AnariPBR::set3f(const std::string &member, const vec3f &value) 
     {
       if (HostMaterial::set3f(member,value)) return true;
+      
+      if (member == "baseColor")
+        { baseColor.set(value); return true; }
+      if (member == "emission")
+        { emission.set(value); return true; }
+        
+      return false;
+    }
+
+    bool AnariPBR::set4f(const std::string &member, const vec4f &value) 
+    {
+      if (HostMaterial::set4f(member,value)) return true;
       
       if (member == "baseColor")
         { baseColor.set(value); return true; }

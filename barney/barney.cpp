@@ -278,6 +278,23 @@ namespace barney {
     return (BNMaterial)checkGet(model,whichSlot)->context->initReference(material);
   }
 
+  /*! creates a cudaArray2D of specified size and texels. Can be passed
+    to a sampler to create a matching cudaTexture2D */
+  BN_API
+  BNTextureData bnTextureData2DCreate(BNModel model,
+                                      int whichSlot,
+                                      BNTexelFormat texelFormat,
+                                      int width, int height,
+                                      const void *texels)
+  {
+    TextureData::SP data
+      = std::make_shared<TextureData>(checkGet(model,whichSlot),
+                                      texelFormat,vec3i(width,height,0),
+                                      texels);
+    if (!data) return 0;
+    return (BNTextureData)checkGet(model,whichSlot)->context->initReference(data);
+  }
+  
   BN_API
   BNSampler bnSamplerCreate(BNModel model,
                             int whichSlot,
@@ -546,7 +563,12 @@ namespace barney {
   BN_API
   void bnSetObject(BNObject target, const char *param, BNObject value)
   {
-    if (!checkGet(target)->setObject(checkGet(param),checkGet(value)->shared_from_this()))
+    Object::SP asObject
+      = value 
+      ? checkGet(value)->shared_from_this()
+      : Object::SP{};
+    bool accepted = checkGet(target)->setObject(checkGet(param),asObject);
+    if (!accepted)
       checkGet(target)->warn_unsupported_member(param,"BNObject");
   }
 
@@ -667,8 +689,16 @@ namespace barney {
                 BNFrameBuffer fb,
                 int pathsPerPixel)
   {
+    // static double t_first = getCurrentTime();
+    // static double t_sum = 0.;
+    
+    // double t0 = getCurrentTime();
     // LOG_API_ENTRY;
     checkGet(model)->render(checkGet(camera),checkGet(fb),pathsPerPixel);
+    // double t1 = getCurrentTime();
+
+    // t_sum += (t1-t0);
+    // printf("time in %f\n",float((t_sum / (t1 - t_first))));
   }
 
   BN_API

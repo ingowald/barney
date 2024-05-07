@@ -39,9 +39,12 @@ namespace barney {
       { type = VALUE; value = make_float4(v,0.f,0.f,1.f); }
     
       struct DD {
+#ifdef __CUDACC__
         inline __device__
-        float4 eval(const HitAttributes &hitData, bool dbg=false) const;
-        
+        float4 eval(const HitAttributes &hitData,
+                    const Sampler::DD *samplers,
+                    bool dbg=false) const;
+#endif        
         Type type;
         union {
           float4               value;
@@ -54,8 +57,10 @@ namespace barney {
         };
       };
 
-      void set(const vec3f  &v);
       void set(const float4 &v);
+      void set(const float &v);
+      void set(const vec3f &v);
+      void set(const vec4f &v);
       void set(Sampler::SP sampler);
       // void set(PODData::SP array);
       void set(const std::string &attributeName);
@@ -110,8 +115,11 @@ namespace barney {
       MaterialLibrary::SP materialLibrary;
     };
 
+#ifdef __CUDACC__
     inline __device__
-    float4 PossiblyMappedParameter::DD::eval(const HitAttributes &hitData, bool dbg) const
+    float4 PossiblyMappedParameter::DD::eval(const HitAttributes &hitData,
+                                             const Sampler::DD *samplers,
+                                             bool dbg) const
     {
       if (dbg)
         printf("evaluating attrib, type %i\n",int(type));
@@ -121,9 +129,15 @@ namespace barney {
         if (dbg) printf("asking hitattributes for attribute %i\n",(int)attribute);
         return hitData.get(attribute,dbg);
       }
-      printf("un-handled material input type %i\n",(int)type);
+      if (type == SAMPLER) {
+        if (dbg) printf("asking hitattributes for sampler %i\n",(int)samplerID);
+        if (samplerID < 0) return make_float4(0.f,0.f,0.f,1.f);
+        return samplers[samplerID].eval(hitData,dbg);
+      }
+      printf("(Possiblymapped) un-handled material input type %i\n",(int)type);
       return make_float4(0.f,0.f,0.f,1.f);
     }
+#endif
 
   }
 }

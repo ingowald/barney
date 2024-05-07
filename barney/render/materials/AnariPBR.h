@@ -25,8 +25,12 @@ namespace barney {
     
     struct AnariPBR : public HostMaterial {
       struct DD {
+#ifdef __CUDACC__
         inline __device__
-        PackedBSDF createBSDF(const HitAttributes &hitData, bool dbg) const;
+        PackedBSDF createBSDF(const HitAttributes &hitData,
+                              const Sampler::DD *samplers,
+                              bool dbg) const;
+#endif
         PossiblyMappedParameter::DD baseColor;
         PossiblyMappedParameter::DD metallic;
         PossiblyMappedParameter::DD roughness;
@@ -41,9 +45,11 @@ namespace barney {
       
       void createDD(DeviceMaterial &dd, int deviceID) const override;
 
+      bool setObject(const std::string &member, const Object::SP &value) override;
       bool setString(const std::string &member, const std::string &value) override;
       bool set1f(const std::string &member, const float &value) override;
       bool set3f(const std::string &member, const vec3f &value) override;
+      bool set4f(const std::string &member, const vec4f &value) override;
       
       PossiblyMappedParameter baseColor    = vec3f(1.f,1.f,1.f);
       PossiblyMappedParameter metallic     = 1.f;
@@ -53,24 +59,27 @@ namespace barney {
       PossiblyMappedParameter emission     = vec3f(0.f,0.f,0.f);
     };
       
+#ifdef __CUDACC__
     inline __device__
-    PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData, bool dbg) const
+    PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData,
+                                        const Sampler::DD *samplers,
+                                        bool dbg) const
     {
       const float clampRange = .01f;
 #if 1
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
-      float4 baseColor = this->baseColor.eval(hitData);
+      float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
       bsdf.baseColor = (const vec3f&)baseColor;
-      float4 metallic = this->metallic.eval(hitData,dbg);
+      float4 metallic = this->metallic.eval(hitData,samplers,dbg);
       bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
-      float4 roughness = this->roughness.eval(hitData,dbg);
+      float4 roughness = this->roughness.eval(hitData,samplers,dbg);
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
-      float4 transmission = this->transmission.eval(hitData,dbg);
+      float4 transmission = this->transmission.eval(hitData,samplers,dbg);
       bsdf.alpha = 1.f-transmission.x;
       
-      float4 ior = this->ior.eval(hitData,dbg);
+      float4 ior = this->ior.eval(hitData,samplers,dbg);
       bsdf.ior = ior.x;
       // if (dbg) printf("created nvisii brdf, base %f %f %f metallic %f roughness %f ior %f alpha %f\n",
       //                 (float)bsdf.baseColor.x,
@@ -83,19 +92,19 @@ namespace barney {
 #else
       packedBSDF::VisRTX bsdf;
       
-      float4 baseColor = this->baseColor.eval(hitData);
+      float4 baseColor = this->baseColor.eval,samplers(hitData);
       bsdf.baseColor = (const vec3f&)baseColor;
 
       float4 metallic = this->metallic.eval(hitData,dbg);
       bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
 
-      float4 roughness = this->roughness.eval(hitData,dbg);
+      float4 roughness = this->roughness.eval(hitData,samplers,dbg);
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
-      float4 transmission = this->transmission.eval(hitData,dbg);
+      float4 transmission = this->transmission.eval(hitData,samplers,dbg);
       bsdf.opacity = 1.f-transmission.x;
       
-      float4 ior = this->ior.eval(hitData,dbg);
+      float4 ior = this->ior.eval(hitData,samplers,dbg);
       bsdf.ior = ior.x;
 
       // if (dbg)
@@ -109,6 +118,7 @@ namespace barney {
 #endif
       return bsdf;
     }
-
+#endif
+    
   }
 }

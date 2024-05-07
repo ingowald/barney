@@ -26,8 +26,12 @@ namespace barney {
       
     struct AnariMatte : public HostMaterial {      
       struct DD {
+#ifdef __CUDA_ARCH__
         inline __device__
-        PackedBSDF createBSDF(const HitAttributes &hitData, bool dbg) const;
+        PackedBSDF createBSDF(const HitAttributes &hitData,
+                              const Sampler::DD *samplers,
+                              bool dbg) const;
+#endif
         PossiblyMappedParameter::DD color;
       };
       AnariMatte(ModelSlot *owner) : HostMaterial(owner) {}
@@ -43,16 +47,21 @@ namespace barney {
       PossiblyMappedParameter color = vec3f(.8f);
     };
       
+  
+#ifdef __CUDA_ARCH__
     inline __device__
-    PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData, bool dbg) const
+    PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData,
+                                          const Sampler::DD *samplers,
+                                          bool dbg) const
     {
-      float4 r = color.eval(hitData);
+      float4 r = color.eval(hitData,samplers);
 
       if (dbg)
         printf("anarimatte, color %f %f %f %f\n",
                r.x,r.y,r.z,r.w);
       return packedBSDF::VisRTX::make_matte((const vec3f&)r);
     }
-      
+#endif
+    
   }
 }

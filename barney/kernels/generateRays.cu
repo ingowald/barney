@@ -105,8 +105,8 @@ namespace barney {
         ray.dir = normalize(ray.dir);
       }
 
-      bool crossHair_x = (ix == fbSize.x/2);
-      bool crossHair_y = (iy == fbSize.y/2);
+      bool crossHair_x = (ix == fbSize.x/3);
+      bool crossHair_y = (iy == fbSize.y/3);
  
       ray.dbg         = 0 && (crossHair_x && crossHair_y);
       ray.clearHit();

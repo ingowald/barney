@@ -97,7 +97,7 @@ namespace barney {
     if (ray.dbg)
       printf("HIT SPHERES %i\n",self.materialID);
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
-    material.setHit(ray,hitData,ray.dbg);
+    material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
     
     // auto interpolate = [&](const GeometryAttributes &)
     // { /* does not make sense for spheres */return make_float4(0,0,0,1); };

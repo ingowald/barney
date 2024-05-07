@@ -87,7 +87,7 @@ namespace barney {
 
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
     if (ray.dbg) printf("=== HIT TRIS matID %i\n",self.materialID);
-    material.setHit(ray,hitData,ray.dbg);
+    material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
     // self.evalAttributesAndStoreHit(ray,hitData,interpolateAttrib);
     // ray.setHit(P,n,optixGetRayTmax(),
     //            self.material,tc,geometryColor);

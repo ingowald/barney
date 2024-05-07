@@ -148,10 +148,13 @@ namespace barney {
 
     uint32_t ofs = ix + numPixels.x*iy;
 
+#if BARNEY_SHOW_CROSSHAIRS
     bool isCenter_x = ix == numPixels.x/2;
     bool isCenter_y = iy == numPixels.y/2;
     bool isCrossHair = (isCenter_x || isCenter_y) && !(isCenter_x && isCenter_y);
-    
+#else
+    bool isCrossHair = 0;
+#endif
     finalFB[ofs]
       = isCrossHair
       ? 0xff0000ff

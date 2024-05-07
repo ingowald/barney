@@ -88,7 +88,8 @@ namespace barney {
       void grow();
     
       const Sampler::DD *getPointer(int owlDeviceID) const;
-    
+      void setDD(int samplerID, const Sampler::DD &, int deviceID);
+      
       int numReserved = 0;
       int nextFree = 0;
     

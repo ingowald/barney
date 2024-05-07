@@ -56,7 +56,7 @@ namespace barney {
           float alpha;
         };
 
-#ifdef __CUDA_ARCH__
+#ifdef __CUDACC__
         inline
         __device__ bool same_hemisphere(const float3 &w_o, const float3 &w_i, const float3 &n) {
           return dot(w_o, n) * dot(w_i, n) > 0.f;
@@ -848,7 +848,7 @@ namespace barney {
       }
       
       struct NVisii {
-#ifdef __CUDA_ARCH__
+#ifdef __CUDACC__
         inline __device__
         nvisii::DisneyMaterial unpack() const {
           nvisii::DisneyMaterial mat;
@@ -942,7 +942,7 @@ namespace barney {
 	half alpha;
       };
 
-#ifdef __CUDA_ARCH__
+#ifdef __CUDACC__
       inline __device__ vec3f NVisii::getAlbedo(bool dbg) const
       {
         vec3f baseColor = this->baseColor;

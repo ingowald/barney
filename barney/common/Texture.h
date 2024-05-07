@@ -64,8 +64,28 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Texture3D{}"; }
-
-    
   };
 
+  struct TextureData : public SlottedObject {
+    typedef std::shared_ptr<TextureData> SP;
+
+    struct DD {
+      cudaArray_t array = 0;
+    };
+    
+    /*! one cudaArray per device */
+    TextureData(ModelSlot *owner,
+                BNTexelFormat texelFormat,
+                vec3i size,
+                const void *texels);
+    virtual ~TextureData();
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override
+    { return "TextureData{}"; }
+    
+    std::vector<DD> onDev;
+    vec3i           dims;
+    BNTexelFormat   texelFormat;
+  };
 }

@@ -37,8 +37,7 @@ namespace barney {
       dd.type = type;
       switch(type) {
       case SAMPLER:
-        assert(sampler);
-        dd.samplerID = sampler->samplerID;
+        dd.samplerID = sampler ? sampler->samplerID : -1;
         break;
       // case ARRAY:
       //   assert(array);
@@ -59,11 +58,20 @@ namespace barney {
       set(make_float4(v.x,v.y,v.z,1.f));
     }
 
+    void PossiblyMappedParameter::set(const float &v)
+    {
+      set(make_float4(v,0.f,0.f,1.f));
+    }
+
+    void PossiblyMappedParameter::set(const vec4f  &v)
+    {
+      set(make_float4(v.x,v.y,v.z,v.w));
+    }
+
     void PossiblyMappedParameter::set(const float4 &v)
     {
       type    = VALUE;
       sampler = {};
-      // array   = {};
       value   = v;
     }
 
@@ -86,20 +94,7 @@ namespace barney {
       sampler = {};
       // array   = {};
       type    = ATTRIBUTE;
-      if (attributeName == "attribute0")
-        { attribute = render::ATTRIBUTE_0; return; }
-      if (attributeName == "attribute1")
-        { attribute = render::ATTRIBUTE_1; return; }
-      if (attributeName == "attribute2")
-        { attribute = render::ATTRIBUTE_2; return; }
-      if (attributeName == "attribute3")
-        { attribute = render::ATTRIBUTE_3; return; }
-      if (attributeName == "color")
-        { attribute = render::COLOR; return; }
-      
-      
-      PRINT(attributeName);
-      throw std::runtime_error("PossiblyMappedParameter::set not implemented");
+      attribute = parseAttribute(attributeName);
     }
     
     HostMaterial::HostMaterial(ModelSlot *owner)
@@ -126,7 +121,16 @@ namespace barney {
 
     HostMaterial::SP HostMaterial::create(ModelSlot *owner, const std::string &type)
     {
+#if 0
       std::cout << "# creating material type '" << type << "'" << std::endl;
+#endif
+#if 1
+      static std::set<std::string> alreadyCreated;
+      if (alreadyCreated.find(type) == alreadyCreated.end()) {
+        alreadyCreated.insert(type);
+        std::cout << "#bn creating (at least one of) material type '" << type << "'" << std::endl;
+      }
+#endif
       if (type == "matte")
         return std::make_shared<AnariMatte>(owner);
       // ==================================================================

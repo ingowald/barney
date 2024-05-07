@@ -23,9 +23,10 @@ namespace barney {
       
     enum { numAttributes = 4 };
 
-    struct Material;
-    struct Sampler;
-      
+    // struct Material;
+    // struct Sampler;
+    // struct DeviceSampler;
+    
     typedef enum {
       ATTRIBUTE_KIND_NONE=0,
       ATTRIBUTE_0,
@@ -39,6 +40,8 @@ namespace barney {
       OBJECT_NORMAL,
       PRIMITIVE_ID
     } AttributeKind;
+
+    AttributeKind parseAttribute(const std::string &attributeName);
     
     struct HitAttributes {
       // struct Globals {
@@ -48,9 +51,7 @@ namespace barney {
         
       typedef AttributeKind Which;
         
-      inline __device__ HitAttributes(// const Globals &globals
-                                        )
-      // : globals(globals)
+      inline __device__ HitAttributes()
       {
         color = make_float4(0,0,0,1);
         for (int i=0;i<numAttributes;i++)
@@ -67,8 +68,6 @@ namespace barney {
       vec3f  objectNormal;
       int    primID;
       float  t;
-
-      // const Globals &globals;
     };
 
     inline __device__

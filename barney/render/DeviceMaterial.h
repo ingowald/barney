@@ -31,15 +31,20 @@ namespace barney {
         TYPE_AnariMatte,
         TYPE_AnariPBR
       } Type;
-      
+
+#ifdef __CUDA_ARCH__
       inline __device__
-      PackedBSDF createBSDF(const HitAttributes &hitData, bool dbg=false) const;
+      PackedBSDF createBSDF(const HitAttributes &hitData,
+                            const Sampler::DD *samplers,
+                            bool dbg=false) const;
 
       inline __device__
       void setHit(Ray &ray,
                   const HitAttributes &hitData,
+                  const Sampler::DD *samplers,
                   bool dbg=false) const;
-        
+#endif
+      
       Type type;
       union {
         AnariPBR::DD   anariPBR;
@@ -47,14 +52,17 @@ namespace barney {
       };
     };
 
+#ifdef __CUDA_ARCH__
     inline __device__
-    PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData, bool dbg) const
+    PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData,
+                                          const Sampler::DD *samplers,
+                                          bool dbg) const
     {
       if (dbg) printf("createBSDF type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
-        return anariMatte.createBSDF(hitData,dbg);
+        return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)
-        return anariPBR.createBSDF(hitData,dbg);
+        return anariPBR.createBSDF(hitData,samplers,dbg);
       return packedBSDF::Invalid();
     }
 
@@ -73,12 +81,14 @@ namespace barney {
     inline __device__
     void DeviceMaterial::setHit(Ray &ray,
                                 const HitAttributes &hitData,
+                                const Sampler::DD *samplers,
                                 bool dbg) const
     {
       if (dbg) printf("devmat sethit\n");
       ray.setHit(hitData.worldPosition,hitData.worldNormal,
-                 hitData.t,createBSDF(hitData,dbg));
+                 hitData.t,createBSDF(hitData,samplers,dbg));
     }
-      
+#endif
+    
   }
 }

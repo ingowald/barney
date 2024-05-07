@@ -179,6 +179,13 @@ namespace barney {
       return (Sampler::DD *)owlBufferGetPointer(buffer,owlDeviceID);
     }    
 
+    void SamplerLibrary::setDD(int samplerID,
+                               const Sampler::DD &dd,
+                               int deviceID)
+    {
+      BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+samplerID),
+                              &dd,sizeof(dd),cudaMemcpyDefault));
+    }
     
   }
 }

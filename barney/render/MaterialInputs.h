@@ -37,12 +37,17 @@ namespace barney {
       };
 
       inline __device__
-      float4 MaterialInput::eval(const HitAttributes &hitData) const
+      float4 MaterialInput::eval(const HitAttributes &hitData,
+                                 Sampler::DD *samplers) const
       {
         if (type == VALUE)
           return value;
         if (type == ATTRIBUTE)
           return hitData.get(attribute);
+        if (type == SAMPLER) {
+          if (samplerID < 0) return make_float4(0.f,0.f,0.f,1.f);
+          return samplers[samplerID].eval(hitData);
+        }
         printf("un-handled material input type\n");
         return make_float4(0.f,0.f,0.f,1.f);
       }

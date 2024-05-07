@@ -46,6 +46,7 @@ namespace barney {
 
       Type type;
 
+#ifdef __CUDACC__
       inline __device__ PackedBSDF();
       inline __device__ PackedBSDF(Type type, Data data)
         : type(type), data(data) {}
@@ -68,9 +69,11 @@ namespace barney {
       
       inline __device__
       float getOpacity(render::DG dg, bool dbg=false) const;
+#endif
     };
 
 
+#ifdef __CUDACC__
     inline __device__
     PackedBSDF::PackedBSDF(const packedBSDF::VisRTX &visRTX)
     { type = TYPE_VisRTX; data.visRTX = visRTX; }
@@ -105,7 +108,7 @@ namespace barney {
       if (type == TYPE_NVisii)
         return data.nvisii.scatter(scatter,dg,random,dbg);
     }
-      
+#endif
     
   }
 }

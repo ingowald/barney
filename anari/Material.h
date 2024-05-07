@@ -37,6 +37,33 @@ struct MaterialParameter
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
+  // ==================================================================
+  /*! ANARI "matte" material
+
+    from anari spec:
+    <param>
+    name: "color"
+    type: FLOAT32_VEC3 / SAMPLER / STRING
+    default: (0.8, 0.8, 0.8) 
+    description: diffuse color
+
+    <param>
+    name: "opacity"
+    type: FLOAT32 / SAMPLER / STRING       
+    default: 1.0             opacity
+    
+    <param>
+    name: "alphaMode"
+    type:  STRING                           
+    default: "opaque"
+    description: control cut-out transparency, possible values: opaque, blend, mask
+    
+    <param>
+    name: "alphaCutoff"
+    type: FLOAT32
+    default: 0.5
+    description: threshold when alphaMode is mask
+  */
 struct Matte : public Material
 {
   Matte(BarneyGlobalState *s);
@@ -51,6 +78,128 @@ struct Matte : public Material
   MaterialParameter<float> m_opacity;
 };
 
+  // ==================================================================
+  /*! ANARI "matte" material
+
+    from anari spec:
+
+    <param>
+    baseColor
+    FLOAT32_VEC3 / SAMPLER / STRING
+    (1.0, 1.0, 1.0)
+
+    <param>
+    opacity
+    FLOAT32 / SAMPLER / STRING
+    1.0
+
+    <param>
+    metallic
+    FLOAT32 / SAMPLER / STRING
+    1.0
+
+    <param>
+    roughness
+    FLOAT32 / SAMPLER / STRING
+    1.0
+
+    <param>
+    normal
+    SAMPLER
+
+    <param>
+    emissive
+    FLOAT32_VEC3 / SAMPLER / STRING
+    (0.0, 0.0, 0.0)
+
+    <param>
+    occlusion
+    SAMPLER
+
+    <param>
+    alphaMode
+    STRING
+    opaque
+
+    <param>
+    alphaCutoff
+    FLOAT32
+    0.5
+
+    <param>
+    specular
+    FLOAT32 / SAMPLER / STRING
+    0.0
+
+    <param>
+    specularColor
+    FLOAT32_VEC3 / SAMPLER / STRING
+    (1.0, 1.0, 1.0)
+
+    <param>
+    clearcoat
+    FLOAT32 / SAMPLER / STRING
+    0.0
+
+    <param>
+    clearcoatRoughness
+    FLOAT32 / SAMPLER / STRING
+    0.0
+
+    <param>
+    clearcoatNormal
+    SAMPLER
+
+    <param>
+    transmission
+    FLOAT32 / SAMPLER / STRING
+    0.0
+
+    <param>
+    ior
+    FLOAT32
+    1.5
+
+    <param>
+    thickness
+    FLOAT32 / SAMPLER / STRING
+    0.0
+
+    <param>
+    attenuationDistance
+    FLOAT32
+    INF
+
+    <param>
+    attenuationColor
+    FLOAT32_VEC3
+    (1.0, 1.0, 1.0)
+
+    <param>
+    sheenColor
+    FLOAT32_VEC3 / SAMPLER / STRING
+    (0.0, 0.0, 0.0)
+
+    <param>
+    sheenRoughness
+    FLOAT32 / SAMPLER / STRING
+    0.0
+
+    <param>
+    iridescence
+    FLOAT32 / SAMPLER / STRING
+    0.0
+
+    <param>
+    iridescenceIor
+    FLOAT32
+    1.3
+
+    <param>
+    iridescenceThickness
+    FLOAT32 / SAMPLER / STRING
+    0.0
+  */
 struct PhysicallyBased : public Material
 {
   PhysicallyBased(BarneyGlobalState *s);
@@ -60,34 +209,15 @@ struct PhysicallyBased : public Material
   void setBarneyParameters() override;
 
  private:
-<<<<<<< Updated upstream
   MaterialParameter<math::float4> m_baseColor;
-  MaterialParameter<math::float3> m_emissive, m_specularColor;
-  MaterialParameter<float> m_opacity, m_metallic, m_roughness, m_specular,
-      m_transmission;
-=======
-  struct
-  {
-    math::float4 value{1.f, 1.f, 1.f, 1.f};
-    /*TODO: samplers, attributes, etc.*/
-    std::string  stringValue;
-    helium::CommitObserverPtr<Sampler> sampler{nullptr};
-  } m_baseColor;
-
-  struct
-  {
-    math::float3 value{1.f, 1.f, 1.f};
-    /*TODO: samplers, attributes, etc.*/
-  } m_emissive, m_specularColor;
-
-  struct
-  {
-    float value{1.f};
-    std::string stringValue;
-    /*TODO: samplers, attributes, etc.*/
-  } m_opacity, m_metallic, m_roughness, m_specular, m_transmission;
->>>>>>> Stashed changes
-
+  MaterialParameter<math::float3> m_emissive;
+  MaterialParameter<math::float3> m_specularColor;
+  MaterialParameter<float> m_opacity;
+  MaterialParameter<float> m_metallic;
+  MaterialParameter<float> m_roughness;
+  MaterialParameter<float> m_specular;
+  MaterialParameter<float> m_transmission;
+  
   float m_ior{1.5f};
 };
 

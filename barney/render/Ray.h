@@ -23,6 +23,7 @@ namespace barney {
   namespace render {
     
     struct Ray {
+#ifdef __CUDACC__
       inline __device__ void setVolumeHit(vec3f P, float t, vec3f albedo);
       inline __device__ PackedBSDF getBSDF() const;
       inline __device__ void setHit(vec3f P, vec3f N, float t,
@@ -35,7 +36,8 @@ namespace barney {
       inline __device__ void packNormal(vec3f N);
       inline __device__ vec3f unpackNormal() const;
       inline __device__ vec3f getN() const  { return unpackNormal(); }
-
+#endif
+      
       vec3f    org;
       vec3h    throughput;
       vec3h    dir;
@@ -80,7 +82,7 @@ namespace barney {
     //   int  size     = 0;
     // };
 
-
+#ifdef __CUDACC__
     inline __device__ PackedBSDF Ray::getBSDF() const
     {
       return PackedBSDF((PackedBSDF::Type)bsdfType,hitBSDF);
@@ -175,6 +177,6 @@ namespace barney {
                                  {box.upper.x,box.upper.y,box.upper.z}),
                      org,dir);
     }
-
+#endif
   }  
 }
