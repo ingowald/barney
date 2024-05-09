@@ -107,9 +107,6 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
 
   // Cleanup //
 
-  for (auto bng : barneyGeometries)
-    bnRelease(bng);
-
   for (auto bnv : barneyVolumes)
     bnRelease(bnv);
 
