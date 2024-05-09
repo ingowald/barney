@@ -72,7 +72,6 @@ void Directional::setBarneyParameters() const
 {
   if (!m_bnLight)
     return;
-  printf("SETTING BARNEY PARAMS\n");
   bnSet3fc(m_bnLight, "direction", (const float3 &)m_dir);
   bnSet3fc(m_bnLight, "radiance", (const float3 &)m_radiance);
   bnCommit(m_bnLight);
