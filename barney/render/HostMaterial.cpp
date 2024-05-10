@@ -138,7 +138,7 @@ namespace barney {
       // specifically for anari layer:
       if (type == "AnariMatte")
         return std::make_shared<AnariMatte>(owner); 
-      if (type == "physicallyBased")
+      if (type == "physicallyBased" || type == "AnariPBR")
         return std::make_shared<AnariPBR>(owner); 
       // specifically for anari layer:
       // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -147,7 +147,7 @@ namespace barney {
       // if (type == "velvet")
       //   return std::make_shared<VelvetMaterial>(dg);
       // if (type == "blender")
-      //   return std::make_shared<BlenderMaterial>(dg); 
+      //   return std::make_shared<BlenderMaterial1>(dg); 
       // if (type == "glass")
       //   return std::make_shared<GlassMaterial>(dg); 
       // if (type == "metal")

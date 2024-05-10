@@ -148,7 +148,7 @@ namespace barney {
                                            bool dbg)
     {
       if (dbg) printf("num dirlights %i\n",world.numDirLights);
-    
+
       if (world.numDirLights == 0) return false;
       static const int RESERVOIR_SIZE = 8;
       int   lID[RESERVOIR_SIZE];
@@ -327,7 +327,7 @@ namespace barney {
         float envLightPower = 1.f;
         return envLightPower*vec3f(color.x,color.y,color.z);
       } else {
-        return world.radiance;
+        return .01f * world.radiance;
       }
     }
 
@@ -497,28 +497,29 @@ namespace barney {
           // (path.materialType != GLASS)
           ) {
         if (path.dbg) printf("eval light %f %f %f\n",
-                             ls.dir.x,
-                             ls.dir.y,
-                             ls.dir.z);
+                                         ls.dir.x,
+                                         ls.dir.y,
+                                         ls.dir.z);
         EvalRes f_r = bsdf.eval(dg,ls.dir,0 && path.dbg);
         if (path.dbg) printf("eval light res %f %f %f: %f\n",
-                             f_r.value.x,
-                             f_r.value.y,
-                             f_r.value.z,
-                             f_r.pdf);
+                                         f_r.value.x,
+                                         f_r.value.y,
+                                         f_r.value.z,
+                                         f_r.pdf);
         
         if (!f_r.valid()) {
           shadowRay.tMax = -1.f;
         } else {
           vec3f tp_sr
             = (incomingThroughput)
-            * (1.f/ls.pdf)
+            //            * (1.f/ls.pdf)
             * f_r.value
-            // * fabsf(dot(dg.Ng,ls.dir))
+            * ls.L
+            * fabsf(dot(dg.Ng,ls.dir))
             /// f_r.pdf
             ;
           shadowRay.makeShadowRay(/* thrghhpt */tp_sr,
-                                  /* surface: */dg.P + frontFacingSurfaceOffset,
+                                  /* surface: */dg.P + 10*frontFacingSurfaceOffset,
                                   /* to light */ls.dir,
                                   /* length   */ls.dist * (1.f-2.f*EPS));
           // if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);

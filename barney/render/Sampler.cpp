@@ -64,7 +64,7 @@ namespace barney {
     {
       if (type == "texture1D")
         return std::make_shared<TextureSampler>(owner,1);
-      if (type == "texture2D")
+      if (type == "texture2D" || type == "image2D")
         return std::make_shared<TextureSampler>(owner,2);
       if (type == "texture3D")
         return std::make_shared<TextureSampler>(owner,3);
@@ -246,7 +246,7 @@ namespace barney {
       tex_desc.borderColor[1]      = 0.0f;
       tex_desc.borderColor[2]      = 0.0f;
       tex_desc.borderColor[3]      = 1.0f;
-      tex_desc.sRGB                = 1;//(colorSpace == OWL_COLOR_SPACE_SRGB);
+      tex_desc.sRGB                = 0;//1;//(colorSpace == OWL_COLOR_SPACE_SRGB);
 
       switch (textureData->texelFormat) {
       case BN_TEXEL_FORMAT_R32F:

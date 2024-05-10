@@ -48,13 +48,13 @@ namespace barney {
     // ------------------------------------------------------------------
     // get texture coordinates
     // ------------------------------------------------------------------
-    vec2f tc(u,v);
-    if (self.texcoords) {
-      const vec2f Ta = self.texcoords[triangle.x];
-      const vec2f Tb = self.texcoords[triangle.y];
-      const vec2f Tc = self.texcoords[triangle.z];
-      tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
-    }
+    // vec2f tc(u,v);
+    // if (self.texcoords) {
+    //   const vec2f Ta = self.texcoords[triangle.x];
+    //   const vec2f Tb = self.texcoords[triangle.y];
+    //   const vec2f Tc = self.texcoords[triangle.z];
+    //   tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
+    // }
     // #if 1
     //     vec3f geometryColor(getColor(self,primID,triangle,u,v));
     // #endif
@@ -68,7 +68,7 @@ namespace barney {
     hitData.objectNormal    = osN;
     hitData.primID          = primID;
     hitData.t               = optixGetRayTmax();
-    hitData.attribute[0]    = make_float4(tc.x,tc.y,0.f,1.f);
+    // hitData.attribute[0]    = make_float4(u,v,0.f,1.f);
 
     // if (!isnan(geometryColor.x))
     //   (vec3f&)hitData.color = geometryColor;
@@ -81,7 +81,11 @@ namespace barney {
         const vec4f value_a = attrib.fromArray.valueAt(triangle.x);
         const vec4f value_b = attrib.fromArray.valueAt(triangle.y);
         const vec4f value_c = attrib.fromArray.valueAt(triangle.z);
-        return (1.f-u-v)*value_a + u*value_b + v*value_c;
+        const vec4f ret = (1.f-u-v)*value_a + u*value_b + v*value_c;
+        if (ray.dbg)
+          printf("evaluated pervtx.attribute to %f %f %f %f\n",
+                 ret.x,ret.y,ret.z,ret.w);
+          return ret;
       };
     self.setHitAttributes(hitData,interpolator,ray.dbg);
 

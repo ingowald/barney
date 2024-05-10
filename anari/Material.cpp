@@ -144,11 +144,10 @@ bool Matte::isValid() const
 
 const char *Matte::bnSubtype() const
 {
-#if 0 // barney 'matte' material is WIP
-  return "matte";
-#else
-  return "physicallyBased";
-#endif
+  return "AnariMatte";
+// #else
+//   return "physicallyBased";
+// #endif
 }
 
 void Matte::setBarneyParameters()
