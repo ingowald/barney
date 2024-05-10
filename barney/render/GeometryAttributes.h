@@ -28,6 +28,7 @@ namespace barney {
           
         const void      *ptr;
         int/*BNDataType*/type;
+        int              size;
       };
     };
       
@@ -83,6 +84,7 @@ namespace barney {
         return make_float4(v.x,v.y,v.z,1.f);
       }
       case BN_FLOAT4: {
+        // const float4 v = ((const vec4f *)ptr)[i];
         const float4 v = ((const float4 *)ptr)[i];
         return v;
       }

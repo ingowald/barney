@@ -45,13 +45,19 @@ namespace barney {
 
       Ray &ray = lp.rays[rayID];
 
-      if (ray.dbg)
+      if (0 && ray.dbg)
         printf("tracing ray dbg %i miss %f %f %f\n",rayID,
+
                ray.missColor.x,ray.missColor.y,ray.missColor.z);
-      
+
+      vec3f dir = ray.dir;
+      if (dir.x == 0.f) dir.x = 1e-6f;
+      if (dir.y == 0.f) dir.y = 1e-6f;
+      if (dir.z == 0.f) dir.z = 1e-6f;
+
       owl::traceRay(lp.world,
                     owl::Ray(ray.org,
-                             ray.dir,
+                             dir,
                              0.f,ray.tMax),
                     ray);
     }

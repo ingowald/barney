@@ -74,23 +74,52 @@ namespace barney {
     //   (vec3f&)hitData.color = geometryColor;
 
     
-    if (ray.dbg) printf("=== HIT TRIS setting hit attributes\n");
+    if (0 && ray.dbg) printf("=== HIT TRIS setting hit attributes\n");
     auto interpolator
       = [&](const GeometryAttribute::DD &attrib) -> float4
       {
+        // if (triangle.x < 0 ||
+        //     triangle.y < 0 ||
+        //     triangle.z < 0 ||
+        //     triangle.x >= attrib.fromArray.size ||
+        //     triangle.y >= attrib.fromArray.size ||
+        //     triangle.z >= attrib.fromArray.size) {
+        //   if (ray.dbg) {
+        //   printf("INVALID ATTRIB ARRAY: triangle %i %i %i attrib array len %i\n",
+        //          triangle.x,triangle.y,triangle.z,attrib.fromArray.size);
+
+        //   if (self.attributes.attribute[0].scope == 3)
+        //   printf("attrib array 0 scope %i len %i\n",
+        //          (int)self.attributes.attribute[0].scope,(int)self.attributes.attribute[0].fromArray.size);
+        //   if (self.attributes.attribute[1].scope == 3)
+        //   printf("attrib array 1 scope %i len %i\n",
+        //          (int)self.attributes.attribute[1].scope,(int)self.attributes.attribute[1].fromArray.size);
+        //   if (self.attributes.attribute[2].scope == 3)
+        //   printf("attrib array 2 scope %i len %i\n",
+        //          (int)self.attributes.attribute[2].scope,(int)self.attributes.attribute[2].fromArray.size);
+        //   if (self.attributes.attribute[3].scope == 3)
+        //   printf("attrib array 3 scope %i len %i\n",
+        //          (int)self.attributes.attribute[3].scope,(int)self.attributes.attribute[3].fromArray.size);
+        //   if (self.attributes.colorAttribute.scope == 3)
+        //   printf("attrib array col scope %i len %i\n",
+        //          (int)self.attributes.colorAttribute.scope,(int)self.attributes.colorAttribute.fromArray.size);
+        //   }
+        //   return vec4f(1,0,0,1);
+        // }
+            
         const vec4f value_a = attrib.fromArray.valueAt(triangle.x);
         const vec4f value_b = attrib.fromArray.valueAt(triangle.y);
         const vec4f value_c = attrib.fromArray.valueAt(triangle.z);
         const vec4f ret = (1.f-u-v)*value_a + u*value_b + v*value_c;
-        if (ray.dbg)
-          printf("evaluated pervtx.attribute to %f %f %f %f\n",
-                 ret.x,ret.y,ret.z,ret.w);
-          return ret;
+        // if (0 && ray.dbg)
+        //   printf("evaluated pervtx.attribute to %f %f %f %f\n",
+        //          ret.x,ret.y,ret.z,ret.w);
+        return ret;
       };
     self.setHitAttributes(hitData,interpolator,ray.dbg);
 
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
-    if (ray.dbg) printf("=== HIT TRIS matID %i\n",self.materialID);
+    // if (ray.dbg) printf("=== HIT TRIS matID %i\n",self.materialID);
     material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
     // self.evalAttributesAndStoreHit(ray,hitData,interpolateAttrib);
     // ray.setHit(P,n,optixGetRayTmax(),
@@ -102,7 +131,6 @@ namespace barney {
   /*! triangles geom AH program; mostly check on transparency */
   OPTIX_ANY_HIT_PROGRAM(TrianglesAH)()
   {
-#if 1
     auto &ray = owl::getPRD<Ray>();
     auto &self = owl::getProgramData<Triangles::DD>();
     const float u = optixGetTriangleBarycentrics().x;
@@ -128,16 +156,6 @@ namespace barney {
     // ------------------------------------------------------------------
     // get texture coordinates
     // ------------------------------------------------------------------
-    // vec2f tc(u,v);
-    // if (self.texcoords) {
-    //   const vec2f Ta = self.texcoords[triangle.x];
-    //   const vec2f Tb = self.texcoords[triangle.y];
-    //   const vec2f Tc = self.texcoords[triangle.z];
-    //   tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
-    // }
-    // #if 1
-    //     vec3f geometryColor(getColor(self,primID,triangle,u,v));
-    // #endif
     const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
     vec3f P  = optixTransformPointFromObjectToWorldSpace(osP);
 
@@ -149,13 +167,7 @@ namespace barney {
     hitData.primID          = primID;
     hitData.t               = optixGetRayTmax();
     hitData.isShadowRay     = ray.isShadowRay;
-    // hitData.attribute[0]    = make_float4(u,v,0.f,1.f);
-
-    // if (!isnan(geometryColor.x))
-    //   (vec3f&)hitData.color = geometryColor;
-
     
-    if (ray.dbg) printf("=== HIT TRIS setting hit attributes\n");
     auto interpolator
       = [&](const GeometryAttribute::DD &attrib) -> float4
       {
@@ -163,52 +175,17 @@ namespace barney {
         const vec4f value_b = attrib.fromArray.valueAt(triangle.y);
         const vec4f value_c = attrib.fromArray.valueAt(triangle.z);
         const vec4f ret = (1.f-u-v)*value_a + u*value_b + v*value_c;
-        if (ray.dbg)
-          printf("evaluated pervtx.attribute to %f %f %f %f\n",
-                 ret.x,ret.y,ret.z,ret.w);
-          return ret;
+        return ret;
       };
     self.setHitAttributes(hitData,interpolator,ray.dbg);
 
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
-    if (ray.dbg) printf("=== HIT TRIS matID %i\n",self.materialID);
     float opacity =
       material.getOpacity(hitData,OptixGlobals::get().samplers,ray.dbg);
     if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
       optixIgnoreIntersection();
       return;
     }
-#else
-    
-    auto &ray  = owl::getPRD<Ray>();
-    auto &self = owl::getProgramData<Triangles::DD>();
-
-    if (!self.material.hasAlpha(ray.isShadowRay))
-      return;
-    
-    int primID = optixGetPrimitiveIndex();
-    vec3i triangle = self.indices[primID];
-    
-    const float u = optixGetTriangleBarycentrics().x;
-    const float v = optixGetTriangleBarycentrics().y;
-
-    // ------------------------------------------------------------------
-    // get texture coordinates
-    // ------------------------------------------------------------------
-    vec2f tc(u,v);
-    if (self.texcoords) {
-      const vec2f Ta = self.texcoords[triangle.x];
-      const vec2f Tb = self.texcoords[triangle.y];
-      const vec2f Tc = self.texcoords[triangle.z];
-      tc = ((1.f-u-v)*Ta + u*Tb + v*Tc);
-    }
-
-    float alpha = self.material.getAlpha(tc,ray.isShadowRay);
-    if (alpha < 1.f && ((Random &)ray.rngSeed)() < 1.f-alpha) {
-      optixIgnoreIntersection();
-      return;
-    }
-#endif
   }
   
 }

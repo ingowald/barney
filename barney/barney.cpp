@@ -275,7 +275,13 @@ namespace barney {
     render::HostMaterial::SP material
       = render::HostMaterial::create(checkGet(model,whichSlot),type);
     if (!material) return 0;
+#if 0
+    auto mat = checkGet(model,whichSlot)->context->initReference(material);
+    material->commit();
+    return (BNMaterial)mat;
+#else
     return (BNMaterial)checkGet(model,whichSlot)->context->initReference(material);
+#endif
   }
 
   /*! creates a cudaArray2D of specified size and texels. Can be passed
@@ -303,6 +309,7 @@ namespace barney {
     render::Sampler::SP sampler
       = render::Sampler::create(checkGet(model,whichSlot),type);
     if (!sampler) return 0;
+    // sampler->commit();
     return (BNSampler)checkGet(model,whichSlot)->context->initReference(sampler);
   }
 

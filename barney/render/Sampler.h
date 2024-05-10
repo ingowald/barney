@@ -53,10 +53,10 @@ namespace barney {
       out = out + in.y * load(mat[1]);
       out = out + in.z * load(mat[2]);
       out = out + in.w * load(mat[3]);
-      if (dbg) {
-        print("applying this to ",in);
-        print("      -> gets us ",out);
-      }
+      // if (dbg) {
+      //   print("applying this to ",in);
+      //   print("      -> gets us ",out);
+      // }
       return (const float4&)out;
     }
 #endif
@@ -163,6 +163,7 @@ namespace barney {
 #ifdef __CUDACC__
     inline __device__ float4 Sampler::DD::eval(const HitAttributes &inputs, bool dbg) const
     {
+      dbg = false;
       if (dbg) printf("evaluting sampler %p texture %li\n",this,image.texture);
       float4 in  = inputs.get(inAttribute);
       if (dbg) printf("in is %f %f %f %f\n",in.x,in.y,in.z,in.w);

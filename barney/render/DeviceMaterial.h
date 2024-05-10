@@ -62,7 +62,7 @@ namespace barney {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      if (dbg) printf("createBSDF type %i\n",(int)type);
+      // if (dbg) printf("createBSDF type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)
@@ -75,7 +75,7 @@ namespace barney {
                                      const Sampler::DD *samplers,
                                      bool dbg) const
     {
-      if (dbg) printf("getopacity type %i\n",(int)type);
+      // if (dbg) printf("getopacity type %i\n",(int)type);
       if (type == TYPE_AnariPBR)
         return anariPBR.getOpacity(hitData,samplers,dbg);
       return 1.f;
@@ -99,7 +99,7 @@ namespace barney {
                                 const Sampler::DD *samplers,
                                 bool dbg) const
     {
-      if (dbg) printf("devmat sethit\n");
+      // if (dbg) printf("devmat sethit\n");
       ray.setHit(hitData.worldPosition,hitData.worldNormal,
                  hitData.t,createBSDF(hitData,samplers,dbg));
     }

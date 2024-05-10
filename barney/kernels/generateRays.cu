@@ -79,7 +79,7 @@ namespace barney {
         = camera.dir_00
         + ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x))*camera.dir_du
         + ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y))*camera.dir_dv;
-
+      
       if (camera.lensRadius > 0.f) {
         vec3f lens_du = normalize(camera.dir_du);
         vec3f lens_dv = normalize(camera.dir_dv);
@@ -105,7 +105,7 @@ namespace barney {
       } else {
         ray.dir = normalize(ray.dir);
       }
-
+      
       bool crossHair_x = (ix == fbSize.x/3);
       bool crossHair_y = (iy == fbSize.y/3);
  
@@ -121,7 +121,7 @@ namespace barney {
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              
-      if (ray.dbg)
+      if (0 && ray.dbg)
         printf("======================\nspawned %f %f %f dir %f %f %f\n",
                ray.org.x,
                ray.org.y,
@@ -173,7 +173,7 @@ namespace barney {
       return fromEnv && std::stoi(fromEnv);
     };
     static bool enablePerRayDebug = getPerRayDebug();
-    
+
     render::g_generateRays
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,

@@ -356,7 +356,7 @@ namespace barney {
       const bool  hadNoIntersection  = !path.hadHit();
       const vec3f incomingThroughput = path.throughput;
 
-      if (path.dbg)
+      if (0 && path.dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f ismiss %i\n",
                pathDepth,
                path.org.x,
@@ -376,7 +376,7 @@ namespace barney {
         if (hadNoIntersection) {
           // fragment = clamp((vec3f)path.throughput,vec3f(0.f),vec3f(1.f));
           fragment = (vec3f)path.throughput;
-          if (path.dbg) printf("shadow miss, frag %f %f %f\n",
+          if (0 && path.dbg) printf("shadow miss, frag %f %f %f\n",
                                fragment.x,
                                fragment.y,
                                fragment.z);
@@ -463,7 +463,7 @@ namespace barney {
       // if (dg.Ng == vec3f(0.f))
       //   dg.Ng = dg.Ns = -path.dir;
       
-      if (path.dbg)
+      if (0 && path.dbg)
         printf("dg.N %f %f %f\n",
                dg.Ns.x,
                dg.Ns.y,
@@ -496,12 +496,12 @@ namespace barney {
           // && 
           // (path.materialType != GLASS)
           ) {
-        if (path.dbg) printf("eval light %f %f %f\n",
+        if (0 && path.dbg) printf("eval light %f %f %f\n",
                                          ls.dir.x,
                                          ls.dir.y,
                                          ls.dir.z);
         EvalRes f_r = bsdf.eval(dg,ls.dir,0 && path.dbg);
-        if (path.dbg) printf("eval light res %f %f %f: %f\n",
+        if (0 && path.dbg) printf("eval light res %f %f %f: %f\n",
                                          f_r.value.x,
                                          f_r.value.y,
                                          f_r.value.z,
@@ -556,7 +556,7 @@ namespace barney {
         / (scatterResult.pdf + 1e-10f);
       path.clearHit();
       
-      if (path.dbg)
+      if (0 && path.dbg)
         printf("scatter dir %f %f %f tp %f %f %f\n",
                (float)path.dir.x,
                (float)path.dir.y,
@@ -686,15 +686,13 @@ namespace barney {
       if (tid >= numRays) return;
 
       Ray path = readQueue[tid];
-      if (path.dbg) printf("  # shading FROM %lx TO %lx\n",
-                           readQueue,writeQueue);
       // what we'll add into the frame buffer
       vec3f fragment = 0.f;
       float z = path.tMax;
       // create a (potential) shadow ray, and init to 'invalid'
       Ray shadowRay;
       shadowRay.tMax = -1.f;
-
+      
         // printf("sammpling dir for N %f %f %f\n",dg.N.x,dg.N.y,dg.N.z);
 
       // bounce that ray on the scene, possibly generating a) a fragment
@@ -705,10 +703,10 @@ namespace barney {
              generation);
     
       // write shadow and bounce ray(s), if any were generated
-      if (path.dbg)
-        printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
-               path.tMax,shadowRay.tMax,
-               fragment.x,fragment.y,fragment.z);
+      // if (path.dbg)
+      //   printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
+      //          path.tMax,shadowRay.tMax,
+      //          fragment.x,fragment.y,fragment.z);
       if (shadowRay.tMax > 0.f) {
         writeQueue[atomicAdd(d_nextWritePos,1)] = shadowRay;
       }
@@ -735,10 +733,10 @@ namespace barney {
       // exactly once in the first generation of the first frame.
       // ==================================================================
       if (accumID == 0 && generation == 0) {
-        if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
+        // if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,0.f);
       } else {
-        if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
+        // if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
 
         if (fragment.x > 0.f)
           atomicAdd(&valueToAccumInto.x,fragment.x);
@@ -812,12 +810,14 @@ namespace barney {
 #else
       default:
 #endif
+
         g_shadeRays_pt<8><<<nb,bs,0,device->launchStream>>>
           (world->getDD(device),
            fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
            rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
+
       }
     }
   }

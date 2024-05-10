@@ -121,16 +121,16 @@ namespace barney {
                                              const Sampler::DD *samplers,
                                              bool dbg) const
     {
-      if (dbg)
+      if (0 && dbg)
         printf("evaluating attrib, type %i\n",int(type));
       if (type == VALUE)
         return value;
       if (type == ATTRIBUTE) {
-        if (dbg) printf("asking hitattributes for attribute %i\n",(int)attribute);
+        if (0 && dbg) printf("asking hitattributes for attribute %i\n",(int)attribute);
         return hitData.get(attribute,dbg);
       }
       if (type == SAMPLER) {
-        if (dbg) printf("asking hitattributes for sampler %i\n",(int)samplerID);
+        if (0 && dbg) printf("asking hitattributes for sampler %i\n",(int)samplerID);
         if (samplerID < 0) return make_float4(0.f,0.f,0.f,1.f);
         return samplers[samplerID].eval(hitData,dbg);
       }

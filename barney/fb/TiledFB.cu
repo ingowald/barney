@@ -148,6 +148,7 @@ namespace barney {
 
     uint32_t ofs = ix + numPixels.x*iy;
 
+    #define BARNEY_SHOW_CROSSHAIRS 1
 #if BARNEY_SHOW_CROSSHAIRS
     bool isCenter_x = ix == numPixels.x/2;
     bool isCenter_y = iy == numPixels.y/2;

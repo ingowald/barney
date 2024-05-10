@@ -44,7 +44,7 @@ namespace barney {
           return value;
         if (type == ATTRIBUTE)
           return hitData.get(attribute);
-        if (type == SAMPLER) {
+        if (type == SAMPLER) { 
           if (samplerID < 0) return make_float4(0.f,0.f,0.f,1.f);
           return samplers[samplerID].eval(hitData);
         }

@@ -91,10 +91,12 @@ namespace barney {
         out.scope = GeometryAttribute::PER_VERTEX;
         out.fromArray.type = in.perVertex->type;
         out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
+        out.fromArray.size = in.perVertex->count;
       } else if (in.perPrim) {
         out.scope = GeometryAttribute::PER_PRIM;
         out.fromArray.type = in.perPrim->type;
         out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
+        out.fromArray.size = in.perPrim->count;
       } else {
         out.scope = GeometryAttribute::CONSTANT;
         (vec4f&)out.value = in.constant;
