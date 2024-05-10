@@ -95,12 +95,6 @@ Material *Material::createInstance(
     return (Material *)new UnknownObject(ANARI_MATERIAL, s);
 }
 
-void Material::markCommitted()
-{
-  deviceState()->markSceneChanged();
-  Object::markCommitted();
-}
-
 BNMaterial Material::getBarneyMaterial(BNModel model, int slot)
 {
   if (!isModelTracked(model, slot)) {

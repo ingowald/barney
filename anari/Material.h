@@ -16,8 +16,6 @@ struct Material : public Object
   static Material *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
-  void markCommitted() override;
-
   BNMaterial getBarneyMaterial(BNModel model, int slot);
 
  protected:
@@ -44,20 +42,20 @@ struct MaterialParameter
     <param>
     name: "color"
     type: FLOAT32_VEC3 / SAMPLER / STRING
-    default: (0.8, 0.8, 0.8) 
+    default: (0.8, 0.8, 0.8)
     description: diffuse color
 
     <param>
     name: "opacity"
-    type: FLOAT32 / SAMPLER / STRING       
+    type: FLOAT32 / SAMPLER / STRING
     default: 1.0             opacity
-    
+
     <param>
     name: "alphaMode"
-    type:  STRING                           
+    type:  STRING
     default: "opaque"
     description: control cut-out transparency, possible values: opaque, blend, mask
-    
+
     <param>
     name: "alphaCutoff"
     type: FLOAT32
@@ -217,7 +215,7 @@ struct PhysicallyBased : public Material
   MaterialParameter<float> m_roughness;
   MaterialParameter<float> m_specular;
   MaterialParameter<float> m_transmission;
-  
+
   float m_ior{1.5f};
 };
 

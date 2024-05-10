@@ -130,6 +130,8 @@ BNModel World::makeCurrent()
 
 void World::buildBarneyModel()
 {
+  reportMessage(ANARI_SEVERITY_DEBUG, "barney::World rebuilding model");
+
   std::vector<const Group *> groups;
   std::vector<BNGroup> barneyGroups;
   std::vector<BNTransform> barneyTransforms;

@@ -49,9 +49,8 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
         });
   }
 
-  for (auto s : surfaces)  {
+  for (auto s : surfaces)
     barneyGeometries.push_back(s->getBarneyGeom(model, slot));
-  }
 
   // Volumes //
 
@@ -78,11 +77,8 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
         });
   }
 
-  for (auto l : lights) {
-    auto bnl = bnLightCreate(model, slot, "directional");
-    l->setBarneyParameters(bnl);
-    barneyLights.push_back(bnl);
-  }
+  for (auto l : lights)
+    barneyLights.push_back(l->getBarneyLight(model, slot));
 
   BNData lightsData = nullptr;
   if (!barneyLights.empty()) {
@@ -107,14 +103,8 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
 
   // Cleanup //
 
-  for (auto bng : barneyGeometries)
-    bnRelease(bng);
-
   for (auto bnv : barneyVolumes)
     bnRelease(bnv);
-
-  for (auto bnl : barneyLights)
-    bnRelease(bnl);
 
   return bg;
 }
