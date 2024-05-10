@@ -46,7 +46,8 @@ namespace barney {
                         /*! tile descriptors for the tiles that the
                           frame buffer owns on this device; rays
                           should only get generated for these tiles */
-                        TileDesc *tileDescs)
+                        TileDesc *tileDescs,
+                        bool enablePerRayDebug)
     {
       __shared__ int l_count;
       if (threadIdx.x == 0)
@@ -108,7 +109,7 @@ namespace barney {
       bool crossHair_x = (ix == fbSize.x/3);
       bool crossHair_y = (iy == fbSize.y/3);
  
-      ray.dbg         = 0 && (crossHair_x && crossHair_y);
+      ray.dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
@@ -165,7 +166,14 @@ namespace barney {
   {
     auto device = fb->device;
     SetActiveGPU forDuration(device);
-      
+
+    auto getPerRayDebug = [&]()
+    {
+      const char *fromEnv = getenv("BARNEY_DBG_RENDER");
+      return fromEnv && std::stoi(fromEnv);
+    };
+    static bool enablePerRayDebug = getPerRayDebug();
+    
     render::g_generateRays
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,
@@ -174,6 +182,7 @@ namespace barney {
        fb->numPixels,
        rays._d_nextWritePos,
        rays.receiveAndShadeWriteQueue,
-       fb->tileDescs);
+       fb->tileDescs,
+       enablePerRayDebug);
   }
 }

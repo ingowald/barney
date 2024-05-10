@@ -37,6 +37,10 @@ namespace barney {
       PackedBSDF createBSDF(const HitAttributes &hitData,
                             const Sampler::DD *samplers,
                             bool dbg=false) const;
+      inline __device__
+      float getOpacity(const HitAttributes &hitData,
+                       const Sampler::DD *samplers,
+                       bool dbg=false) const;
 
       inline __device__
       void setHit(Ray &ray,
@@ -66,6 +70,17 @@ namespace barney {
       return packedBSDF::Invalid();
     }
 
+    inline __device__
+    float DeviceMaterial::getOpacity(const HitAttributes &hitData,
+                                     const Sampler::DD *samplers,
+                                     bool dbg) const
+    {
+      if (dbg) printf("getopacity type %i\n",(int)type);
+      if (type == TYPE_AnariPBR)
+        return anariPBR.getOpacity(hitData,samplers,dbg);
+      return 1.f;
+    }
+    
     // template<typename InterpolateGeometryAttribute>
     // inline __device__
     // void Material::setHit(Ray &ray,

@@ -68,6 +68,7 @@ namespace barney {
       vec3f  objectNormal;
       int    primID;
       float  t;
+      bool   isShadowRay = false;
     };
 
     inline __device__

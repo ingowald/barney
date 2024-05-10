@@ -327,7 +327,7 @@ namespace barney {
         float envLightPower = 1.f;
         return envLightPower*vec3f(color.x,color.y,color.z);
       } else {
-        return .01f * world.radiance;
+        return world.radiance;
       }
     }
 

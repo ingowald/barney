@@ -30,6 +30,10 @@ namespace barney {
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
+        inline __device__
+        float getOpacity(const HitAttributes &hitData,
+                         const Sampler::DD *samplers,
+                         bool dbg) const;
 #endif
         PossiblyMappedParameter::DD baseColor;
         PossiblyMappedParameter::DD metallic;
@@ -117,6 +121,17 @@ namespace barney {
       //          (float)bsdf.ior);
 #endif
       return bsdf;
+    }
+
+
+
+    inline __device__
+    float AnariPBR::DD::getOpacity(const HitAttributes &hitData,
+                                   const Sampler::DD *samplers,
+                                   bool dbg) const
+    {
+      float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
+      return baseColor.w;
     }
 #endif
     

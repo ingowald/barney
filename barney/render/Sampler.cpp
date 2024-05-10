@@ -199,8 +199,6 @@ namespace barney {
       (vec4f&)dd.image.inTransform.offset = inOffset;
       memcpy(&dd.image.inTransform.mat,&inTransform,sizeof(inTransform));
       
-      dd.image.numChannels = numDims;
-      
       if (!textureData) {
         std::cout << "WARN: NO TEXTURE DATA ON IMAGE SAMPLER!" << std::endl;
         dd.image.texture = 0;
@@ -232,6 +230,7 @@ namespace barney {
         default:
           throw std::runtime_error("invalid texture mode!?");
         }
+      
       tex_desc.filterMode       =
         (filterMode == BN_TEXTURE_LINEAR)
         ? cudaFilterModeLinear
@@ -251,15 +250,19 @@ namespace barney {
       switch (textureData->texelFormat) {
       case BN_TEXEL_FORMAT_R32F:
         tex_desc.readMode     = cudaReadModeElementType;
+        dd.image.numChannels = 1;
         break;
       case BN_TEXEL_FORMAT_R8:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
+        dd.image.numChannels = 1;
         break;
       case BN_TEXEL_FORMAT_RGBA8:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
+        dd.image.numChannels = 4;
         break;
       case BN_TEXEL_FORMAT_R16:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
+        dd.image.numChannels = 1;
         break;
       default:
         throw std::runtime_error("unsupported texel format in image sampler");

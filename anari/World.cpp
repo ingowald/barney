@@ -7,6 +7,15 @@
 #include <set>
 #include <iostream>
 
+#ifndef PRINT
+# define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
+#else
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+#endif
+#endif
+
 namespace barney_device {
 
 World::World(BarneyGlobalState *s)
@@ -57,7 +66,9 @@ void World::commit()
   m_zeroSurfaceData = getParamObject<ObjectArray>("surface");
   m_zeroVolumeData = getParamObject<ObjectArray>("volume");
   m_zeroLightData = getParamObject<ObjectArray>("light");
-
+  PING;
+  PRINT(m_zeroLightData);
+  
   const bool addZeroInstance =
       m_zeroSurfaceData || m_zeroVolumeData || m_zeroLightData;
   if (addZeroInstance)
@@ -80,6 +91,7 @@ void World::commit()
     m_zeroGroup->removeParam("volume");
 
   if (m_zeroLightData) {
+    PRINT(m_zeroLightData->size());
     reportMessage(ANARI_SEVERITY_DEBUG,
         "barney::World found %zu lights in zero instance",
         m_zeroLightData->size());

@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Light.h"
+#include <iostream>
+
+#ifndef PRINT
+# define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
+#else
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+#endif
+#endif
 
 namespace barney_device {
 
@@ -14,6 +24,7 @@ Light::~Light()
 
 Light *Light::createInstance(std::string_view type, BarneyGlobalState *s)
 {
+  PING; PRINT(type);
   if (type == "directional")
     return new Directional(s);
   else
