@@ -4,6 +4,7 @@
 #pragma once
 
 #include "BarneyGlobalState.h"
+#include "common.h"
 // helium
 #include "helium/BaseObject.h"
 #include "helium/utility/CommitObserverPtr.h"

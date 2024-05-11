@@ -190,7 +190,9 @@ namespace barney {
   {
     LOG_API_ENTRY;
     Object *object = checkGet(_object);
+    assert(object);
     Context *context = object->getContext();
+    assert(context);
     context->releaseHostReference(object->shared_from_this());
   }
   

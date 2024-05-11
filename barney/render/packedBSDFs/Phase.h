@@ -24,19 +24,47 @@ namespace barney {
       
       struct Phase {
         inline Phase() = default;
-        inline __device__ Phase(vec3f albedo) { this->albedo = (const float3&)albedo; }
-        inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__ Phase(vec3f color, float avg_reflectance=.7f)
+        {
+          (vec3f&)this->albedo = avg_reflectance * color;
+        }
+        // inline __device__ vec3f getAlbedo(bool dbg) const;
+        // inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
         inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-
+        inline __device__ void scatter(ScatterResult &scatter,
+                                       const render::DG &dg,
+                                       Random &random,
+                                       bool dbg) const;
         float3 albedo;
       };
 
       inline __device__ EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
       {
-        return EvalRes::zero();
+        return EvalRes((const vec3f&)albedo,1.f);
+        // return EvalRes::zero();
       }
 
+      /*! simple omnidirectional phase function - scatter into any
+          random direction */
+      inline __device__ void Phase::scatter(ScatterResult &scatter,
+                                            const render::DG &dg,
+                                            Random &random,
+                                            bool dbg) const
+      {
+        // see global illumination compendium, page 19
+        float r1 = random();
+        float r2 = random();
+        // float phi = two_pi*r1;
+        // float theta = acosf(1.f-2.f*r2);
+        float x = cosf(two_pi*r1)*sqrtf(r2*(1.f-r2));
+        float y = sinf(two_pi*r1)*sqrtf(r2*(1.f-r2));
+        float z = (1.f-2.f*r2);
+        float density = 1.f/(4.f*M_PI);
+        scatter.pdf = density;
+        scatter.f_r = (const vec3f&)albedo * density;
+        scatter.dir = vec3f(x,y,z);
+      }
+      
     }
   }
 }

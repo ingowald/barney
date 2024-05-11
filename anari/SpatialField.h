@@ -22,9 +22,32 @@ struct SpatialField : public Object
 
   void markCommitted() override;
 
-  virtual BNScalarField makeBarneyScalarField(BNModel model, int slot) const = 0;
+  virtual BNScalarField createBarneyScalarField(BNModel model, int slot) const = 0;
 
+  void cleanup()
+  {
+    if (m_bnField) {
+      bnRelease(m_bnField);
+      m_bnField = nullptr;
+    }
+  }
+  
+  BNScalarField getBarneyScalarField(BNModel model, int slot)
+  {
+    if (!isValid())
+      return {};
+    if (!isModelTracked(model, slot)) {
+      cleanup();
+      trackModel(model, slot);
+    }
+    if (!m_bnField) 
+      m_bnField = createBarneyScalarField(model,slot);
+    return m_bnField;
+  }
+  
   virtual box3 bounds() const = 0;
+
+  BNScalarField m_bnField = 0;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -34,7 +57,7 @@ struct UnstructuredField : public SpatialField
   UnstructuredField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
+  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
 
@@ -69,7 +92,7 @@ struct BlockStructuredField : public SpatialField
   BlockStructuredField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
+  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
 
@@ -94,7 +117,7 @@ struct StructuredRegularField : public SpatialField
   StructuredRegularField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField makeBarneyScalarField(BNModel model, int slot) const;
+  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
 
   box3 bounds() const override;
   bool isValid() const override;

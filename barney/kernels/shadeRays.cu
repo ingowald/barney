@@ -458,7 +458,6 @@ namespace barney {
       dg.Ns = Ng;
       dg.wo = -normalize((vec3f)path.dir);
       dg.insideMedium = path.isInMedium;
-
       // for volumes:
       // if (dg.Ng == vec3f(0.f))
       //   dg.Ng = dg.Ns = -path.dir;
@@ -515,7 +514,7 @@ namespace barney {
             //            * (1.f/ls.pdf)
             * f_r.value
             * ls.L
-            * fabsf(dot(dg.Ng,ls.dir))
+            * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.dir)))
             /// f_r.pdf
             ;
           shadowRay.makeShadowRay(/* thrghhpt */tp_sr,

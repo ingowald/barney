@@ -103,6 +103,8 @@ namespace barney {
                              bool dbg) const
     {
       scatter.pdf = 0.f;
+      if (type == TYPE_Phase)
+        return data.phase.scatter(scatter,dg,random,dbg);
       if (type == TYPE_VisRTX)
         return data.visRTX.scatter(scatter,dg,random,dbg);
       if (type == TYPE_NVisii)

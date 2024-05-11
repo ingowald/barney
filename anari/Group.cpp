@@ -64,7 +64,7 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   for (auto v : volumes)
-    barneyVolumes.push_back(v->makeBarneyVolume(model, slot));
+    barneyVolumes.push_back(v->getBarneyVolume(model, slot));
 
   // Lights //
 
@@ -87,7 +87,7 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   // Make barney group //
-
+  
   BNGroup bg = bnGroupCreate(model,
       slot,
       barneyGeometries.data(),
@@ -103,8 +103,10 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
 
   // Cleanup //
 
-  for (auto bnv : barneyVolumes)
-    bnRelease(bnv);
+  // iw - do not release - the anari volumes do track their own handles, don't they!?
+ 
+  // for (auto bnv : barneyVolumes)
+  //   bnRelease(bnv);
 
   return bg;
 }
