@@ -153,12 +153,12 @@ void Matte::setBarneyParameters()
   int slot = trackedSlot();
 
   // NOTE: using Barney PBR material because matte wasn't (isn't?) finished
-  setBNMaterialHelper(m_bnMat, "baseColor", m_color, model, slot);
-  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
-  bnSet1f(m_bnMat, "metallic", 0.f);
-  bnSet1f(m_bnMat, "roughness", 1.f);
-  bnSet1f(m_bnMat, "specular", 0.f);
-  bnSet1f(m_bnMat, "transmission", 0.f);
+  setBNMaterialHelper(m_bnMat, "color", m_color, model, slot);
+  // setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
+  // bnSet1f(m_bnMat, "metallic", 0.f);
+  // bnSet1f(m_bnMat, "roughness", 1.f);
+  // bnSet1f(m_bnMat, "specular", 0.f);
+  // bnSet1f(m_bnMat, "transmission", 0.f);
   bnCommit(m_bnMat);
 }
 
