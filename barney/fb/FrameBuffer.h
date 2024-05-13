@@ -25,11 +25,13 @@ namespace barney {
 
     FrameBuffer(Context *context, const bool isOwner);
     virtual ~FrameBuffer();
-    
+
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "<FrameBuffer(base)>"; }
-    
+
+    bool set1i(const std::string &member, const int &value);
+
     virtual void resize(vec2i size,
                         uint32_t *hostFB,
                         float    *hostDepth);
@@ -39,9 +41,9 @@ namespace barney {
 #if FB_NO_PEER_ACCESS
     virtual void ownerGatherFinalTiles() = 0;
 #endif
-    
+
     std::vector<TiledFB::SP> perDev;
-    
+
     vec2i       numPixels   = { 0,0 };
     // the final frame buffer RGBA8 that we can definitely write into
     // - might be our own staged copy if we can't write into host
@@ -59,5 +61,6 @@ namespace barney {
 
     uint32_t    accumID     = 0;
     const bool  isOwner;
+          bool  showCrosshairs;
   };
 }

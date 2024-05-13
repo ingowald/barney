@@ -13,6 +13,7 @@ void Renderer::commit()
 {
   m_pixelSamples = getParam<int>("pixelSamples", 1);
   m_radiance = getParam<float>("ambientRadiance", 1.0f);
+  m_crosshairs = getParam<bool>("crosshairs", false);
 }
 
 int Renderer::pixelSamples() const
@@ -23,6 +24,11 @@ int Renderer::pixelSamples() const
 float Renderer::radiance() const
 {
   return m_radiance;
+}
+
+bool Renderer::crosshairs() const
+{
+  return m_crosshairs;
 }
 
 } // namespace barney_device

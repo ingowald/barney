@@ -8,17 +8,21 @@
 #include <iostream>
 
 #ifndef PRINT
-# define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#define PRINT(var) std::cout << #var << "=" << var << std::endl;
 #ifdef __WIN32__
-# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
+#define PING                                                                   \
+  std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__            \
+            << std::endl;
 #else
-# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+#define PING                                                                   \
+  std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__     \
+            << std::endl;
 #endif
 #endif
 
 namespace barney_device {
 
-Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s)
+Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
 {
   m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
 }
@@ -80,6 +84,10 @@ void Frame::commit()
       size.y,
       m_bnHostBuffer.data(),
       m_depthBuffer.data());
+  bnSet1i(m_bnFrameBuffer,
+      "showCrosshairs",
+      m_renderer ? int(m_renderer->crosshairs()) : false);
+  bnCommit(m_bnFrameBuffer);
   m_frameData.size = size;
 }
 
