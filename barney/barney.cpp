@@ -21,6 +21,7 @@
 #include "barney/GlobalModel.h"
 #include "barney/geometry/Triangles.h"
 #include "barney/volume/ScalarField.h"
+#include "barney/umesh/common/UMeshField.h"
 #include "barney/common/Data.h"
 #include "barney/common/mat4.h"
 #include "barney/Camera.h"
@@ -417,68 +418,78 @@ namespace barney {
                               int whichSlot,
                               // vertices, 4 floats each (3 floats position,
                               // 4th float scalar value)
-                              const float *_vertices, int numVertices,
-                              // tets, 4 ints in vtk-style each
-                              const int *_tetIndices, int numTets,
-                              // pyramids, 5 ints in vtk-style each
-                              const int *_pyrIndices, int numPyrs,
-                              // wedges/tents, 6 ints in vtk-style each
-                              const int *_wedIndices, int numWeds,
-                              // general (non-guaranteed cube/voxel) hexes, 8
-                              // ints in vtk-style each
-                              const int *_hexIndices, int numHexes,
-                              //
-                              int numGrids,
-                              // offsets into gridScalars array
-                              const int *_gridOffsets,
-                              // grid dims (3 floats each)
-                              const int *_gridDims,
-                              // grid domains, 6 floats each (3 floats min corner,
-                              // 3 floats max corner)
-                              const float *_gridDomains,
-                              // grid scalars
-                              const float *_gridScalars,
-                              int numGridScalars,
+                              const float4  *vertices,
+                              int            numVertices,
+                              const int     *indices,
+                              int            numIndices,
+                              const int     *elementOffsets,
+                              int            numElements,
+                              // // tets, 4 ints in vtk-style each
+                              // const int *_tetIndices, int numTets,
+                              // // pyramids, 5 ints in vtk-style each
+                              // const int *_pyrIndices, int numPyrs,
+                              // // wedges/tents, 6 ints in vtk-style each
+                              // const int *_wedIndices, int numWeds,
+                              // // general (non-guaranteed cube/voxel) hexes, 8
+                              // // ints in vtk-style each
+                              // const int *_hexIndices, int numHexes,
+                              // //
+                              // int numGrids,
+                              // // offsets into gridScalars array
+                              // const int *_gridOffsets,
+                              // // grid dims (3 floats each)
+                              // const int *_gridDims,
+                              // // grid domains, 6 floats each (3 floats min corner,
+                              // // 3 floats max corner)
+                              // const float *_gridDomains,
+                              // // grid scalars
+                              // const float *_gridScalars,
+                              // int numGridScalars,
                               const float3 *domainOrNull    
                               )
   {
     std::cout << "#bn: copying umesh from app ..." << std::endl;
-    std::vector<vec4f>      vertices(numVertices);
-    std::vector<int>        gridOffsets(numGrids);
-    std::vector<vec3i>      gridDims(numGrids);
-    std::vector<box4f>      gridDomains(numGrids);
-    std::vector<float>      gridScalars(numGridScalars);
-    std::vector<TetIndices> tetIndices(numTets);
-    std::vector<PyrIndices> pyrIndices(numPyrs);
-    std::vector<WedIndices> wedIndices(numWeds);
-    std::vector<HexIndices> hexIndices(numHexes);
-    memcpy(tetIndices.data(),_tetIndices,tetIndices.size()*sizeof(tetIndices[0]));
-    memcpy(pyrIndices.data(),_pyrIndices,pyrIndices.size()*sizeof(pyrIndices[0]));
-    memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
-    memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
-    memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
-    memcpy(gridOffsets.data(),_gridOffsets,gridOffsets.size()*sizeof(gridOffsets[0]));
-    memcpy(gridDims.data(),_gridDims,gridDims.size()*sizeof(gridDims[0]));
-    memcpy(gridDomains.data(),_gridDomains,gridDomains.size()*sizeof(gridDomains[0]));
-    memcpy(gridScalars.data(),_gridScalars,gridScalars.size()*sizeof(gridScalars[0]));
+    // std::vector<vec4f>      vertices(numVertices);
+    // std::vector<vec4f>      vertices(numVertices);
+    // std::vector<int>        gridOffsets(numGrids);
+    // std::vector<vec3i>      gridDims(numGrids);
+    // std::vector<box4f>      gridDomains(numGrids);
+    // std::vector<float>      gridScalars(numGridScalars);
+    // std::vector<TetIndices> tetIndices(numTets);
+    // std::vector<PyrIndices> pyrIndices(numPyrs);
+    // std::vector<WedIndices> wedIndices(numWeds);
+    // std::vector<HexIndices> hexIndices(numHexes);
+    // memcpy(tetIndices.data(),_tetIndices,tetIndices.size()*sizeof(tetIndices[0]));
+    // memcpy(pyrIndices.data(),_pyrIndices,pyrIndices.size()*sizeof(pyrIndices[0]));
+    // memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
+    // memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
+    // memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
+    // memcpy(gridOffsets.data(),_gridOffsets,gridOffsets.size()*sizeof(gridOffsets[0]));
+    // memcpy(gridDims.data(),_gridDims,gridDims.size()*sizeof(gridDims[0]));
+    // memcpy(gridDomains.data(),_gridDomains,gridDomains.size()*sizeof(gridDomains[0]));
+    // memcpy(gridScalars.data(),_gridScalars,gridScalars.size()*sizeof(gridScalars[0]));
 
     box3f domain
       = domainOrNull
       ? *(const box3f*)domainOrNull
       : box3f();
     
-    ScalarField *sf = checkGet(model,whichSlot)
-      ->createUMesh(vertices,
-                    tetIndices,
-                    pyrIndices,
-                    wedIndices,
-                    hexIndices,
-                    gridOffsets,
-                    gridDims,
-                    gridDomains,
-                    gridScalars,
-                    domain);
-    return (BNScalarField)sf;
+    ScalarField::SP sf = 
+      UMeshField::create(checkGet(model,whichSlot),
+                         (const vec4f*)vertices,numVertices,
+                         indices,numIndices,
+                         elementOffsets,
+                         numElements,
+                         // tetIndices,
+                         // pyrIndices,
+                         // wedIndices,
+                         // hexIndices,
+                         // gridOffsets,
+                         // gridDims,
+                         // gridDomains,
+                         // gridScalars,
+                         domain);
+    return (BNScalarField)checkGet(model,whichSlot)->context->initReference(sf);
   }
   
   BN_API

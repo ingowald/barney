@@ -71,17 +71,6 @@ namespace barney {
                   BNTextureAddressMode addressMode,
                   BNTextureColorSpace  colorSpace);
     
-    ScalarField *createUMesh(std::vector<vec4f> &vertices,
-                             std::vector<TetIndices> &tetIndices,
-                             std::vector<PyrIndices> &pyrIndices,
-                             std::vector<WedIndices> &wedIndices,
-                             std::vector<HexIndices> &hexIndices,
-                             std::vector<int> &gridOffsets,
-                             std::vector<vec3i> &gridDims,
-                             std::vector<box4f> &gridDomains,
-                             std::vector<float> &gridScalars,
-                             const box3f &domain);
-   
     ScalarField *createBlockStructuredAMR(std::vector<box3i> &blockBounds,
                                           std::vector<int> &blockLevels,
                                           std::vector<int> &blockOffsets,
