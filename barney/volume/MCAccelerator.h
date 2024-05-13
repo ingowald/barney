@@ -432,7 +432,7 @@ namespace barney {
     
     if (!boxTest(ray,tRange,bounds))
       return;
-
+    
     // ray in world space
     vec3f obj_org = optixGetObjectRayOrigin();
     vec3f obj_dir = optixGetObjectRayDirection();
@@ -454,6 +454,7 @@ namespace barney {
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
               {
                 const float majorant = self.mcGrid.majorant(cellIdx);
+
                 if (majorant == 0.f) return true;
 
                 vec4f   sample = 0.f;

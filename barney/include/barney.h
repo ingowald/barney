@@ -437,28 +437,42 @@ BNScalarField bnUMeshCreate(BNModel model,
                             int whichSlot,
                             // vertices, 4 floats each (3 floats position,
                             // 4th float scalar value)
-                            const float *vertices, int numVertices,
-                            // tets, 4 ints in vtk-style each
-                            const int *tets,       int numTets,
-                            // pyramids, 5 ints in vtk-style each
-                            const int *pyrs,       int numPyrs,
-                            // wedges/tents, 6 ints in vtk-style each
-                            const int *wedges,     int numWedges,
-                            // general (non-guaranteed cube/voxel) hexes, 8
-                            // ints in vtk-style each
-                            const int *hexes,      int numHexes,
-                            //
-                            int numGrids,
-                            // offsets into gridIndices array
-                            const int *_gridOffsets,
-                            // grid dims (3 floats each)
-                            const int *_gridDims,
-                            // grid domains, 6 floats each (3 floats min corner,
-                            // 3 floats max corner)
-                            const float *gridDomains,
-                            // grid scalars
-                            const float *gridScalars,
-                            int numGridScalars,
+                            const float4 *vertices, int numVertices,
+                            /*! array of all the vertex indices of all
+                                elements, one after another;
+                                ie. elements with different vertex
+                                counts can come in any order, so a
+                                mesh with one tet and one hex would
+                                have an index array of size 12, with
+                                four for the tet and eight for the
+                                hex */
+                            const int *_indices, int numIndices,
+                            /*! one int per logical element, stating
+                                where in the indices array it's N
+                                differnt vertices will be located */
+                            const int *_elementOffsets,
+                            int numElements,
+                            // // tets, 4 ints in vtk-style each
+                            // const int *tets,       int numTets,
+                            // // pyramids, 5 ints in vtk-style each
+                            // const int *pyrs,       int numPyrs,
+                            // // wedges/tents, 6 ints in vtk-style each
+                            // const int *wedges,     int numWedges,
+                            // // general (non-guaranteed cube/voxel) hexes, 8
+                            // // ints in vtk-style each
+                            // const int *hexes,      int numHexes,
+                            // //
+                            // int numGrids,
+                            // // offsets into gridIndices array
+                            // const int *_gridOffsets,
+                            // // grid dims (3 floats each)
+                            // const int *_gridDims,
+                            // // grid domains, 6 floats each (3 floats min corner,
+                            // // 3 floats max corner)
+                            // const float *gridDomains,
+                            // // grid scalars
+                            // const float *gridScalars,
+                            // int numGridScalars,
                             const float3 *domainOrNull=0);
 
 

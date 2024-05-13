@@ -26,13 +26,14 @@
 namespace barney {
 
   struct Element {
-    typedef enum { TET=0, PYR, WED, HEX, GRID } Type;
+    typedef enum { TET=0, PYR, WED, HEX// , GRID
+    } Type;
     
     inline __both__ Element() {}
-    inline __both__ Element(int ID, int type)
-      : ID(ID), type(type)
+    inline __both__ Element(int ofs0, Type type)
+      : type(type), ofs0(ofs0)
     {}
-    uint32_t ID  :29;
+    uint32_t ofs0:29;
     uint32_t type: 3;
   };
 
@@ -58,17 +59,17 @@ namespace barney {
       inline __both__ box4f pyrBounds(int primID) const;
       inline __both__ box4f wedBounds(int primID) const;
       inline __both__ box4f hexBounds(int primID) const;
-      inline __both__ box4f gridBounds(int primID) const;
+      // inline __both__ box4f gridBounds(int primID) const;
 
       /* compute scalar of given umesh element at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P) const;
+      inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P, bool dbg = false) const;
       
       /* compute scalar of given tet in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool tetScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool tetScalar(float &retVal, int primID, vec3f P, bool dbg = false) const;
       
       /* compute scalar of given pyramid in umesh, at point P, and
          return that in 'retVal'. returns true if P is inside the
@@ -89,18 +90,15 @@ namespace barney {
       /* compute scalar of given grid in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool gridScalar(float &retVal, int primID, vec3f P) const;
+      // inline __both__ bool gridScalar(float &retVal, int primID, vec3f P) const;
       
       const float4     *vertices;
-      const int4       *tetIndices;
-      const ints<5>    *pyrIndices;
-      const ints<6>    *wedIndices;
-      const ints<8>    *hexIndices;
+      const int        *indices;
       const Element    *elements;
-      const int        *gridOffsets;
-      const vec3i      *gridDims;
-      const box4f      *gridDomains;
-      const float      *gridScalars;
+      // const int        *gridOffsets;
+      // const vec3i      *gridDims;
+      // const box4f      *gridDomains;
+      // const float      *gridScalars;
       int               numElements;
     };
 
@@ -122,18 +120,39 @@ namespace barney {
                            range1f *d_primRanges=0);
     
     UMeshField(ModelSlot *owner,
-               std::vector<vec4f> &vertices,
-               std::vector<TetIndices> &tetIndices,
-               std::vector<PyrIndices> &pyrIndices,
-               std::vector<WedIndices> &wedIndices,
-               std::vector<HexIndices> &hexIndices,
-               std::vector<int> &gridOffsets,
-               std::vector<vec3i> &gridDims,
-               std::vector<box4f> &gridDomains,
-               std::vector<float> &gridScalars,
+               std::vector<vec4f>   &vertices,
+               std::vector<int>     &indices,
+               std::vector<Element> &elements,
+               // std::vector<TetIndices> &tetIndices,
+               // std::vector<PyrIndices> &pyrIndices,
+               // std::vector<WedIndices> &wedIndices,
+               // std::vector<HexIndices> &hexIndices,
+               // std::vector<int> &gridOffsets,
+               // std::vector<vec3i> &gridDims,
+               // std::vector<box4f> &gridDomains,
+               // std::vector<float> &gridScalars,
                const box3f &domain);
 
     DD getDD(int devID);
+
+    static ScalarField::SP create(ModelSlot *owner,
+                                  const vec4f   *vertices, int numVertices,
+                                  const int     *indices,  int numIndices,
+                                  const int     *elementOffsets,
+                                  int      numElements,
+                                  //    std::vector<vec4f>   &vertices,
+                                  //    std::vector<int>     &indices,
+                                  //    std::vector<int>     &elementOffsets,
+                                  // std::vector<uint8_t> &elementTypes,
+                                  // std::vector<TetIndices> &tetIndices,
+                                  // std::vector<PyrIndices> &pyrIndices,
+                                  // std::vector<WedIndices> &wedIndices,
+                                  // std::vector<HexIndices> &hexIndices,
+                                  // std::vector<int> &gridOffsets,
+                                  // std::vector<vec3i> &gridDims,
+                                  // std::vector<box4f> &gridDomains,
+                                  // std::vector<float> &gridScalars,
+                                  const box3f &domain);
     
     VolumeAccel::SP createAccel(Volume *volume) override;
 
@@ -142,26 +161,28 @@ namespace barney {
     std::string getTypeString() const { return "UMesh"; };
     
     std::vector<vec4f>      vertices;
-    std::vector<TetIndices> tetIndices;
-    std::vector<PyrIndices> pyrIndices;
-    std::vector<WedIndices> wedIndices;
-    std::vector<HexIndices> hexIndices;
+    std::vector<int>        indices;
+    // std::vector<TetIndices> tetIndices;
+    // std::vector<PyrIndices> pyrIndices;
+    // std::vector<WedIndices> wedIndices;
+    // std::vector<HexIndices> hexIndices;
     std::vector<Element>    elements;
-    std::vector<int>        gridOffsets;
-    std::vector<vec3i>      gridDims;
-    std::vector<box4f>      gridDomains;
-    std::vector<float>      gridScalars;
+    // std::vector<int>        gridOffsets;
+    // std::vector<vec3i>      gridDims;
+    // std::vector<box4f>      gridDomains;
+    // std::vector<float>      gridScalars;
     
     OWLBuffer verticesBuffer   = 0;
-    OWLBuffer tetIndicesBuffer = 0;
-    OWLBuffer pyrIndicesBuffer = 0;//todo wire in
-    OWLBuffer wedIndicesBuffer = 0;//todo wire in
-    OWLBuffer hexIndicesBuffer = 0;
+    OWLBuffer indicesBuffer    = 0;
+    // OWLBuffer tetIndicesBuffer = 0;
+    // OWLBuffer pyrIndicesBuffer = 0;//todo wire in
+    // OWLBuffer wedIndicesBuffer = 0;//todo wire in
+    // OWLBuffer hexIndicesBuffer = 0;
     OWLBuffer elementsBuffer   = 0;
-    OWLBuffer gridOffsetsBuffer = 0;
-    OWLBuffer gridDimsBuffer = 0;
-    OWLBuffer gridDomainsBuffer = 0;
-    OWLBuffer gridScalarsBuffer = 0;
+    // OWLBuffer gridOffsetsBuffer = 0;
+    // OWLBuffer gridDimsBuffer = 0;
+    // OWLBuffer gridDomainsBuffer = 0;
+    // OWLBuffer gridScalarsBuffer = 0;
   };
   
   // ==================================================================
@@ -169,9 +190,9 @@ namespace barney {
   // ==================================================================
   
   inline __both__
-  box4f UMeshField::DD::tetBounds(int tetID) const
+  box4f UMeshField::DD::tetBounds(int ofs0) const
   {
-    const int4 indices = tetIndices[tetID];
+    const vec4i indices = *(const vec4i*)&this->indices[ofs0];
     return box4f()
       .including(make_vec4f(vertices[indices.x]))
       .including(make_vec4f(vertices[indices.y]))
@@ -180,9 +201,9 @@ namespace barney {
   }
 
   inline __both__
-  box4f UMeshField::DD::pyrBounds(int pyrID) const
+  box4f UMeshField::DD::pyrBounds(int ofs0) const
   {
-    UMeshField::ints<5> indices = pyrIndices[pyrID];
+    UMeshField::ints<5> indices = *(const UMeshField::ints<5> *)&this->indices[ofs0];
     return box4f()
       .including(make_vec4f(vertices[indices[0]]))
       .including(make_vec4f(vertices[indices[1]]))
@@ -192,9 +213,9 @@ namespace barney {
   }
 
   inline __both__
-  box4f UMeshField::DD::wedBounds(int wedID) const
+  box4f UMeshField::DD::wedBounds(int ofs0) const
   {
-    UMeshField::ints<6> indices = wedIndices[wedID];
+    UMeshField::ints<6> indices = *(const UMeshField::ints<6> *)&this->indices[ofs0];
     return box4f()
       .including(make_vec4f(vertices[indices[0]]))
       .including(make_vec4f(vertices[indices[1]]))
@@ -205,9 +226,9 @@ namespace barney {
   }
   
   inline __both__
-  box4f UMeshField::DD::hexBounds(int hexID) const
+  box4f UMeshField::DD::hexBounds(int ofs0) const
   {
-    UMeshField::ints<8> indices = hexIndices[hexID];
+    UMeshField::ints<8> indices = *(const UMeshField::ints<8> *)&this->indices[ofs0];
     return box4f()
       .including(make_vec4f(vertices[indices[0]]))
       .including(make_vec4f(vertices[indices[1]]))
@@ -219,26 +240,26 @@ namespace barney {
       .including(make_vec4f(vertices[indices[7]]));
   }
 
-  inline __both__
-  box4f UMeshField::DD::gridBounds(int gridID) const
-  {
-    return gridDomains[gridID];
-  }
+  // inline __both__
+  // box4f UMeshField::DD::gridBounds(int gridID) const
+  // {
+  //   return gridDomains[gridID];
+  // }
   
   inline __both__
   box4f UMeshField::DD::eltBounds(Element element) const
   {
     switch (element.type) {
     case Element::TET: 
-      return tetBounds(element.ID);
+      return tetBounds(element.ofs0);
     case Element::PYR:
-      return pyrBounds(element.ID);
+      return pyrBounds(element.ofs0);
     case Element::WED:
-      return wedBounds(element.ID);
+      return wedBounds(element.ofs0);
     case Element::HEX: 
-      return hexBounds(element.ID);
-    case Element::GRID:
-      return gridBounds(element.ID);
+      return hexBounds(element.ofs0);
+    // case Element::GRID0:
+    //   return gridBounds(element.ofs0);
     default:
       return box4f(); 
     }
@@ -269,32 +290,49 @@ namespace barney {
      in 'retVal'. returns true if P is inside the elemnt, false if
      outside (in which case retVal is not defined) */
   inline __both__
-  bool UMeshField::DD::eltScalar(float &retVal, Element elt, vec3f P) const
+  bool UMeshField::DD::eltScalar(float &retVal, Element elt, vec3f P, bool dbg) const
   {
     switch (elt.type) {
     case Element::TET: 
-      return tetScalar(retVal,elt.ID,P);
+      return tetScalar(retVal,elt.ofs0,P,dbg);
     case Element::PYR:
-      return pyrScalar(retVal,elt.ID,P);
+      return pyrScalar(retVal,elt.ofs0,P);
     case Element::WED:
-      return wedScalar(retVal,elt.ID,P);
+      return wedScalar(retVal,elt.ofs0,P);
     case Element::HEX:
-      return hexScalar(retVal,elt.ID,P);
-    case Element::GRID:
-      return gridScalar(retVal,elt.ID,P);
+      return hexScalar(retVal,elt.ofs0,P);
+    // case Element::GRID:
+    //   return gridScalar(retVal,elt.ID,P);
     }
     return false;
   }
   
   inline __both__
-  bool UMeshField::DD::tetScalar(float &retVal, int primID, vec3f P) const
+  bool UMeshField::DD::tetScalar(float &retVal, int ofs0, vec3f P, bool dbg) const
   {
-    int4 indices = tetIndices[primID];
+    vec4i indices = *(const vec4i *)&this->indices[ofs0];
+    // if (dbg) printf("tetscalar ofs %i idx %i %i %i %i ref  %i %i %i %i\n",
+    //                 ofs0,indices.x,indices.y,indices.z,indices.w,
+    //                 this->indices[ofs0+0],
+    //                 this->indices[ofs0+1],
+    //                 this->indices[ofs0+1],
+    //                 this->indices[ofs0+2]);
+    
     float4 v0 = vertices[indices.x];
     float4 v1 = vertices[indices.y];
     float4 v2 = vertices[indices.z];
     float4 v3 = vertices[indices.w];
-    
+
+    // if (dbg) {
+    //   printf("v0 %f %f %f : %f\n",
+    //          v0.x,v0.y,v0.z,v0.w);
+    //   printf("v1 %f %f %f : %f\n",
+    //          v1.x,v1.y,v1.z,v1.w);
+    //   printf("v2 %f %f %f : %f\n",
+    //          v2.x,v2.y,v2.z,v2.w);
+    //   printf("v3 %f %f %f : %f\n",
+    //          v3.x,v3.y,v3.z,v3.w);
+    // }
     float t3 = evalToImplicitPlane(P,v0,v1,v2);
     if (t3 < 0.f) return false;
     float t2 = evalToImplicitPlane(P,v0,v3,v1);
@@ -310,9 +348,9 @@ namespace barney {
   }
 
   inline __both__
-  bool UMeshField::DD::pyrScalar(float &retVal, int primID, vec3f P) const
+  bool UMeshField::DD::pyrScalar(float &retVal, int ofs0, vec3f P) const
   {
-    const auto& indices = pyrIndices[primID];
+    UMeshField::ints<5> indices = *(const UMeshField::ints<5> *)&this->indices[ofs0];
     return intersectPyrEXT(retVal, P,
                            vertices[indices[0]],
                            vertices[indices[1]],
@@ -322,9 +360,9 @@ namespace barney {
   }
 
   inline __both__
-  bool UMeshField::DD::wedScalar(float &retVal, int primID, vec3f P) const
+  bool UMeshField::DD::wedScalar(float &retVal, int ofs0, vec3f P) const
   {
-    const auto& indices = wedIndices[primID];
+    UMeshField::ints<6> indices = *(const UMeshField::ints<6> *)&this->indices[ofs0];
     return intersectWedgeEXT(retVal, P,
                              vertices[indices[0]],
                              vertices[indices[1]],
@@ -335,9 +373,9 @@ namespace barney {
   }
 
   inline __both__
-  bool UMeshField::DD::hexScalar(float &retVal, int primID, vec3f P) const
+  bool UMeshField::DD::hexScalar(float &retVal, int ofs0, vec3f P) const
   {
-    auto indices = hexIndices[primID];
+    UMeshField::ints<8> indices = *(const UMeshField::ints<8> *)&this->indices[ofs0];
     return intersectHexEXT(retVal, P,
                            vertices[indices[0]],
                            vertices[indices[1]],
@@ -349,55 +387,55 @@ namespace barney {
                            vertices[indices[7]]);
   }
 
-  inline __both__
-  bool UMeshField::DD::gridScalar(float &retVal, int primID, vec3f P) const
-  {
-    const box3f bounds = box3f((const vec3f &)gridDomains[primID].lower,
-                               (const vec3f &)gridDomains[primID].upper);
+//   inline __both__
+//   bool UMeshField::DD::gridScalar(float &retVal, int primID, vec3f P) const
+//   {
+//     const box3f bounds = box3f((const vec3f &)gridDomains[primID].lower,
+//                                (const vec3f &)gridDomains[primID].upper);
     
-    if (!bounds.contains(P))
-      return false;
+//     if (!bounds.contains(P))
+//       return false;
 
-    vec3i numScalars = gridDims[primID]+1;
-    vec3f cellSize = bounds.size()/vec3f(gridDims[primID]);
-    vec3f objPos = (P-bounds.lower)/cellSize;
-    vec3i imin(objPos);
-    vec3i imax = min(imin+1,numScalars-1);
+//     vec3i numScalars = gridDims[primID]+1;
+//     vec3f cellSize = bounds.size()/vec3f(gridDims[primID]);
+//     vec3f objPos = (P-bounds.lower)/cellSize;
+//     vec3i imin(objPos);
+//     vec3i imax = min(imin+1,numScalars-1);
 
-    auto linearIndex = [numScalars](const int x, const int y, const int z) {
-                         return z*numScalars.y*numScalars.x + y*numScalars.x + x;
-                       };
+//     auto linearIndex = [numScalars](const int x, const int y, const int z) {
+//                          return z*numScalars.y*numScalars.x + y*numScalars.x + x;
+//                        };
 
-    const float *scalars = gridScalars + gridOffsets[primID];
+//     const float *scalars = gridScalars + gridOffsets[primID];
 
-    float f1 = scalars[linearIndex(imin.x,imin.y,imin.z)];
-    float f2 = scalars[linearIndex(imax.x,imin.y,imin.z)];
-    float f3 = scalars[linearIndex(imin.x,imax.y,imin.z)];
-    float f4 = scalars[linearIndex(imax.x,imax.y,imin.z)];
+//     float f1 = scalars[linearIndex(imin.x,imin.y,imin.z)];
+//     float f2 = scalars[linearIndex(imax.x,imin.y,imin.z)];
+//     float f3 = scalars[linearIndex(imin.x,imax.y,imin.z)];
+//     float f4 = scalars[linearIndex(imax.x,imax.y,imin.z)];
 
-    float f5 = scalars[linearIndex(imin.x,imin.y,imax.z)];
-    float f6 = scalars[linearIndex(imax.x,imin.y,imax.z)];
-    float f7 = scalars[linearIndex(imin.x,imax.y,imax.z)];
-    float f8 = scalars[linearIndex(imax.x,imax.y,imax.z)];
+//     float f5 = scalars[linearIndex(imin.x,imin.y,imax.z)];
+//     float f6 = scalars[linearIndex(imax.x,imin.y,imax.z)];
+//     float f7 = scalars[linearIndex(imin.x,imax.y,imax.z)];
+//     float f8 = scalars[linearIndex(imax.x,imax.y,imax.z)];
 
-#define EMPTY(x) isnan(x)
-    if (EMPTY(f1) || EMPTY(f2) || EMPTY(f3) || EMPTY(f4) ||
-        EMPTY(f5) || EMPTY(f6) || EMPTY(f7) || EMPTY(f8))
-      return false;
+// #define EMPTY(x) isnan(x)
+//     if (EMPTY(f1) || EMPTY(f2) || EMPTY(f3) || EMPTY(f4) ||
+//         EMPTY(f5) || EMPTY(f6) || EMPTY(f7) || EMPTY(f8))
+//       return false;
 
-    vec3f frac = objPos-vec3f(imin);
+//     vec3f frac = objPos-vec3f(imin);
 
-    float f12 = lerp(f1,f2,frac.x);
-    float f56 = lerp(f5,f6,frac.x);
-    float f34 = lerp(f3,f4,frac.x);
-    float f78 = lerp(f7,f8,frac.x);
+//     float f12 = lerp(f1,f2,frac.x);
+//     float f56 = lerp(f5,f6,frac.x);
+//     float f34 = lerp(f3,f4,frac.x);
+//     float f78 = lerp(f7,f8,frac.x);
 
-    float f1234 = lerp(f12,f34,frac.y);
-    float f5678 = lerp(f56,f78,frac.y);
+//     float f1234 = lerp(f12,f34,frac.y);
+//     float f5678 = lerp(f56,f78,frac.y);
 
-    retVal = lerp(f1234,f5678,frac.z);
+//     retVal = lerp(f1234,f5678,frac.z);
 
-    return true;
-  }
+//     return true;
+//   }
   
 }

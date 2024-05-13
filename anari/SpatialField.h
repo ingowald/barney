@@ -69,20 +69,23 @@ struct UnstructuredField : public SpatialField
     helium::IntrusivePtr<helium::Array1D> index;
     helium::IntrusivePtr<helium::Array1D> cellIndex;
     // "stitcher" extensions
-    helium::IntrusivePtr<helium::ObjectArray> gridData;
-    helium::IntrusivePtr<helium::Array1D> gridDomains;
+    // helium::IntrusivePtr<helium::ObjectArray> gridData;
+    // helium::IntrusivePtr<helium::Array1D> gridDomains;
   } m_params;
 
-  std::vector<float> m_generatedVertices;
-  std::vector<int> m_generatedTets;
-  std::vector<int> m_generatedPyrs;
-  std::vector<int> m_generatedWedges;
-  std::vector<int> m_generatedHexes;
-  // for stitcher
-  std::vector<int> m_generatedGridOffsets;
-  std::vector<int> m_generatedGridDims;
-  std::vector<float> m_generatedGridDomains;
-  std::vector<float> m_generatedGridScalars;
+  std::vector<math::float4> m_vertices;
+  std::vector<int>          m_indices;
+  std::vector<int>          m_elementOffsets;
+  // std::vector<float> m_generatedVertices;
+  // std::vector<int> m_generatedTets;
+  // std::vector<int> m_generatedPyrs;
+  // std::vector<int> m_generatedWedges;
+  // std::vector<int> m_generatedHexes;
+  // // for stitcher
+  // std::vector<int> m_generatedGridOffsets;
+  // std::vector<int> m_generatedGridDims;
+  // std::vector<float> m_generatedGridDomains;
+  // std::vector<float> m_generatedGridScalars;
 
   box3 m_bounds;
 };
