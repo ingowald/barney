@@ -60,6 +60,7 @@ struct Triangle : public Geometry
  private:
   helium::CommitObserverPtr<Array1D> m_index;
   helium::CommitObserverPtr<Array1D> m_vertexPosition;
+  helium::CommitObserverPtr<Array1D> m_vertexNormal;
   std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
   std::vector<int> m_generatedIndices;
 };

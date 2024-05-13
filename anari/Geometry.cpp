@@ -168,7 +168,10 @@ box3 Sphere::bounds() const
 // Triangle //
 
 Triangle::Triangle(BarneyGlobalState *s)
-    : Geometry(s), m_index(this), m_vertexPosition(this)
+  : Geometry(s),
+    m_index(this),
+    m_vertexPosition(this),
+    m_vertexNormal(this)
 {}
 
 void Triangle::commit()
@@ -177,6 +180,7 @@ void Triangle::commit()
 
   m_index = getParamObject<Array1D>("primitive.index");
   m_vertexPosition = getParamObject<Array1D>("vertex.position");
+  m_vertexNormal = getParamObject<Array1D>("vertex.normal");
 
   if (!m_vertexPosition) {
     reportMessage(ANARI_SEVERITY_WARNING,
@@ -216,6 +220,12 @@ void Triangle::setBarneyParameters(BNGeom geom, BNModel model, int slot)
 
   BNData _indices = bnDataCreate(model, slot, BN_INT3, numIndices, indices);
   bnSetAndRelease(geom, "indices", _indices);
+
+  if (m_vertexNormal) {
+    const float3 *normals = (const float3 *)m_vertexNormal->data();
+    BNData _normals = bnDataCreate(model, slot, BN_FLOAT3, numVertices, normals);
+    bnSetAndRelease(geom, "normals", _normals);
+  }
 
   addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
   addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
