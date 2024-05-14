@@ -28,7 +28,7 @@ namespace barney {
   { /* not doing anything, but leave this in to ensure that derived
        classes' destrcutors get called !*/}
 
-  FrameBuffer *LocalContext::createFB(int owningRank) 
+  FrameBuffer *LocalContext::createFB(int owningRank)
   {
     assert(owningRank == 0);
     return initReference(LocalFB::create(this));
@@ -51,17 +51,17 @@ namespace barney {
       // no more trace rounds required: return false
       return false;
     }
-    
+
     const int numDevices = (int)devices.size();
     const int dgSize = numDevices / numSlots;
     std::vector<int> numCopied(numDevices);
     for (int devID=0;devID<numDevices;devID++) {
       auto thisDev = devices[devID];
       SetActiveGPU forDuration(thisDev->device);
-      
+
       int nextID = (devID + dgSize) % numDevices;
       auto nextDev = devices[nextID];
-      
+
       int count = nextDev->rays.numActive;
       numCopied[devID] = count;
       Ray *src = nextDev->rays.traceAndShadeReadQueue;
@@ -97,7 +97,7 @@ namespace barney {
     // render all tiles, in tile format and writing into accum buffer
     renderTiles(model,camera,fb,pathsPerPixel);
     for (auto dev : devices) dev->sync();
-    
+
     // convert all tiles from accum to RGBA
     finalizeTiles(fb);
     for (auto dev : devices) dev->sync();
@@ -114,7 +114,8 @@ namespace barney {
                               localFB->numPixels,
                               localFB->rank0gather.finalTiles,
                               localFB->rank0gather.tileDescs,
-                              localFB->rank0gather.numActiveTiles);
+                              localFB->rank0gather.numActiveTiles,
+                              fb->showCrosshairs);
 #else
     for (int localID = 0; localID < devices.size(); localID++) {
       auto &devFB = *fb->perDev[localID];
@@ -124,7 +125,8 @@ namespace barney {
                                 fb->numPixels,
                                 devFB.finalTiles,
                                 devFB.tileDescs,
-                                devFB.numActiveTiles);
+                                devFB.numActiveTiles,
+                                fb->showCrosshairs);
     }
     for (auto dev : devices) dev->sync();
 #endif
@@ -149,5 +151,5 @@ namespace barney {
 
     for (auto dev : devices) dev->sync();
   }
-  
+
 }

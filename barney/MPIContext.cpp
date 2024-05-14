@@ -51,7 +51,7 @@ namespace barney {
     workers.assertValid();
 
 
-    
+
     workerRankOfWorldRank.resize(world.size);
     world.allGather(workerRankOfWorldRank.data(),
                     isActiveWorker?workers.rank:-1);
@@ -74,18 +74,18 @@ namespace barney {
       ss << "bn." << workers.rank << ": ";
       ss << "num workers " << numWorkers << "/" << workers.size << std::endl;
     }
-    
+
     if (isActiveWorker) {
       int numSlotsPerWorker = (int)perSlot.size();
       int numDevicesPerWorker = (int)devices.size();
       int numWorkers = workers.size;
-      
+
       if (dbg) {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
         ss << "num devices " << numDevicesPerWorker << " DGs " << numSlotsPerWorker << std::endl << std::flush;
       }
-      
+
       // ------------------------------------------------------------------
       // sanity check - make sure all workers have same num data groups
       // ------------------------------------------------------------------
@@ -102,7 +102,7 @@ namespace barney {
              std::to_string(numModelSlotsOnWorker[i])+
              " than worker rank "+std::to_string(workers.rank)+
              " ("+std::to_string(numSlotsPerWorker)+")");
-      
+
       // ------------------------------------------------------------------
       // sanity check - make sure all workers have same num devices
       // ------------------------------------------------------------------
@@ -120,7 +120,7 @@ namespace barney {
              " than worker rank "+std::to_string(workers.rank)+
              " ("+std::to_string(devices.size())+")");
       int numDevicesTotal = numDevicesOnWorker[0] * workers.size;
-      
+
       // ------------------------------------------------------------------
       // gather who has which data(groups)
       // ------------------------------------------------------------------
@@ -198,7 +198,7 @@ namespace barney {
         islandOfGlobal[i]
           = dataGroupCount[dataOnGlobal[i]]++;
       }
-        
+
       for (int localID=0;localID<devices.size();localID++) {
         auto dev = devices[localID]->device;
         int myGlobal = dev->globalIndex;
@@ -220,7 +220,7 @@ namespace barney {
             dev->rqs.sendWorkerLocal = peerGlobal % numDevicesPerWorker;
           }
         }
-        if (dbg) 
+        if (dbg)
           std::cout << "local device " << localID << " recvs from device " << dev->rqs.recvWorkerRank << "." << dev->rqs.recvWorkerLocal << ", and sends to " <<
             dev->rqs.sendWorkerRank << "." << dev->rqs.recvWorkerLocal << std::endl;
       }
@@ -229,20 +229,20 @@ namespace barney {
   }
 
   /*! create a frame buffer object suitable to this context */
-  FrameBuffer *MPIContext::createFB(int owningRank) 
+  FrameBuffer *MPIContext::createFB(int owningRank)
   {
     return initReference(DistFB::create(this,owningRank));
   }
 
   /*! returns how many rays are active in all ray queues, across all
     devices and, where applicable, across all ranks */
-  int MPIContext::numRaysActiveGlobally() 
+  int MPIContext::numRaysActiveGlobally()
   {
     assert(isActiveWorker);
     return workers.allReduceAdd(numRaysActiveLocally());
   }
-    
-  
+
+
   void MPIContext::render(GlobalModel *model,
                           const Camera::DD &camera,
                           FrameBuffer *_fb,
@@ -254,7 +254,7 @@ namespace barney {
       finalizeTiles(fb);
     }
     // ------------------------------------------------------------------
-    // done rendering, now gather all final tiles at master 
+    // done rendering, now gather all final tiles at master
     // ------------------------------------------------------------------
     fb->ownerGatherFinalTiles();
 
@@ -281,7 +281,8 @@ namespace barney {
                                         fb->numPixels,
                                         fb->ownerGather.finalTiles,
                                         fb->ownerGather.tileDescs,
-                                        fb->ownerGather.numActiveTiles);
+                                        fb->ownerGather.numActiveTiles,
+                                        fb->showCrosshairs);
       // copy to app framebuffer - only if we're the one having that
       // frame buffer of course
       BARNEY_CUDA_SYNC_CHECK();
@@ -298,15 +299,15 @@ namespace barney {
     }
     BARNEY_CUDA_SYNC_CHECK();
   }
-  
+
   /*! forward rays (during global trace); returns if _after_ that
     forward the rays need more tracing (true) or whether they're
     done (false) */
-  bool MPIContext::forwardRays() 
+  bool MPIContext::forwardRays()
   {
     if (numDifferentModelSlots == 1)
       return false;
-    
+
     int numDevices = devices.size();
     std::vector<MPI_Request> allRequests;
 
@@ -343,7 +344,7 @@ namespace barney {
     // }
     allRequests.clear();
     // allStatuses.clear();
-    
+
     // ------------------------------------------------------------------
     // exchange actual rays
     // ------------------------------------------------------------------
@@ -375,7 +376,7 @@ namespace barney {
     // }
     allRequests.clear();
     // allStatuses.clear();
-              
+
     // ------------------------------------------------------------------
     // now all rays should be exchanged -- swap queues
     // ------------------------------------------------------------------
@@ -393,7 +394,7 @@ namespace barney {
   void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
   {
     LOG_API_ENTRY;
-    
+
     assert(_hardware);
     BNHardwareInfo &hardware = *_hardware;
 
@@ -405,7 +406,7 @@ namespace barney {
     memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
     int hostNameLen = 0;
     BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen));
-    
+
     std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
     memset(recvBuf.data(),0,recvBuf.size());
 
@@ -425,16 +426,16 @@ namespace barney {
       hostNames.push_back(host_i);
       ranksOnHost[host_i] ++;
     }
-    
+
     hardware.numRanksThisHost = ranksOnHost[hostName];
     hardware.numHosts         = ranksOnHost.size();
-    
+
     // ------------------------------------------------------------------
     // count how many other ranks are already on this same node
     // ------------------------------------------------------------------
     BN_MPI_CALL(Barrier(comm.comm));
     int localRank = 0;
-    for (int i=0;i<comm.rank;i++) 
+    for (int i=0;i<comm.rank;i++)
       if (hostNames[i] == hostName)
         localRank++;
     BN_MPI_CALL(Barrier(comm.comm));
@@ -489,7 +490,7 @@ namespace barney {
                              numGPUs);
       // return (BNContext)new LocalContext(dataGroupIDs,
       //                                    gpuIDs);
-    } 
+    }
 
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
@@ -516,7 +517,7 @@ namespace barney {
     // ------------------------------------------------------------------
     BNHardwareInfo hardware;
     bnMPIQueryHardware(&hardware,_comm);
-    
+
     std::vector<int> gpuIDs;
     if (_gpuIDs) {
       for (int i=0;i<numGPUs;i++)
@@ -541,7 +542,7 @@ namespace barney {
     //   world.barrier();
     //   exit(0);
     // }
-    
+
     bool isActiveWorker = !dataGroupIDs.empty();
     mpi::Comm workers = world.split(isActiveWorker);
 

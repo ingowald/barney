@@ -22,8 +22,8 @@ namespace barney {
   TiledFB::SP TiledFB::create(Device::SP device, FrameBuffer *owner)
   {
     return std::make_shared<TiledFB>(device, owner);
-  } 
-  
+  }
+
   TiledFB::TiledFB(Device::SP device, FrameBuffer *owner)
     : device(device),
       owner(owner)
@@ -48,7 +48,7 @@ namespace barney {
       tileDescs = nullptr;
     }
   }
-  
+
   __global__ void setTileCoords(TileDesc *tileDescs,
                                 int numActiveTiles,
                                 vec2i numTiles,
@@ -58,14 +58,14 @@ namespace barney {
     int tid = threadIdx.x + blockIdx.x*blockDim.x;
     if (tid >= numActiveTiles)
       return;
-    
+
     int tileID = tid * globalIndexStep + globalIndex;
 
     int tile_x = tileID % numTiles.x;
     int tile_y = tileID / numTiles.x;
     tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
   }
-  
+
   void TiledFB::resize(vec2i newSize)
   {
     free();
@@ -111,7 +111,7 @@ namespace barney {
     color.z = sqrtf(color.z);
     uint32_t rgba32
       = owl::make_rgba(color);
-    
+
     finalTiles[tileID].rgba[pixelID] = rgba32;
     finalTiles[tileID].depth[pixelID] = accumTiles[tileID].depth[pixelID];
   }
@@ -134,7 +134,8 @@ namespace barney {
                                      float     *finalDepth,
                                      vec2i      numPixels,
                                      FinalTile *finalTiles,
-                                     TileDesc  *tileDescs)
+                                     TileDesc  *tileDescs,
+                                     bool       showCrosshairs)
   {
     int tileID = blockIdx.x;
     int ix = threadIdx.x + tileDescs[tileID].lower.x;
@@ -148,29 +149,26 @@ namespace barney {
 
     uint32_t ofs = ix + numPixels.x*iy;
 
-    #define BARNEY_SHOW_CROSSHAIRS 1
-#if BARNEY_SHOW_CROSSHAIRS
     bool isCenter_x = ix == numPixels.x/2;
     bool isCenter_y = iy == numPixels.y/2;
     bool isCrossHair = (isCenter_x || isCenter_y) && !(isCenter_x && isCenter_y);
-#else
-    bool isCrossHair = 0;
-#endif
+
     finalFB[ofs]
-      = isCrossHair
+      = showCrosshairs && isCrossHair
       ? 0xff0000ff
       : pixelValue;
-    
+
     if (finalDepth)
       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
   }
-                                 
+
   void TiledFB::writeFinalPixels(uint32_t  *finalFB,
                                  float     *finalDepth,
                                  vec2i      numPixels,
                                  FinalTile *finalTiles,
                                  TileDesc  *tileDescs,
-                                 int        numTiles)
+                                 int        numTiles,
+                                 bool       showCrosshairs)
   {
     if (finalFB == 0) throw std::runtime_error("invalid finalfb of null!");
 
@@ -185,7 +183,7 @@ namespace barney {
       //   ,0,
       // device?device->launchStream:0>>>
         (finalFB,finalDepth,numPixels,
-         finalTiles,tileDescs);
+         finalTiles,tileDescs, showCrosshairs);
   }
-  
+
 }

@@ -57,6 +57,15 @@
           "tags": [],
           "default": 1.0,
           "description": "ambient light intensity"
+        },
+        {
+          "name": "crosshairs",
+          "types": [
+            "ANARI_BOOL"
+          ],
+          "tags": [],
+          "default": false,
+          "description": "enable crosshairs"
         }
       ]
     }
