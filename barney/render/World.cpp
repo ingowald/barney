@@ -22,8 +22,8 @@ namespace barney {
 
     World::World(DevGroup::SP devGroup)
       : devGroup(devGroup),
-        materialLibrary(std::make_shared<MaterialLibrary>(devGroup)),
-        samplerLibrary(std::make_shared<SamplerLibrary>(devGroup))
+        materialRegistry(std::make_shared<MaterialRegistry>(devGroup)),
+        samplerRegistry(std::make_shared<SamplerRegistry>(devGroup))
         // globals(devGroup)
     {
       quadLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
@@ -36,7 +36,7 @@ namespace barney {
     World::~World()
     {}
     
-    MaterialLibrary::MaterialLibrary(DevGroup::SP devGroup)
+    MaterialRegistry::MaterialRegistry(DevGroup::SP devGroup)
       : devGroup(devGroup)
     {
       numReserved = 1;
@@ -44,12 +44,12 @@ namespace barney {
         (devGroup->owl,OWL_USER_TYPE(DeviceMaterial),numReserved,nullptr);
     }
 
-    MaterialLibrary::~MaterialLibrary()
+    MaterialRegistry::~MaterialRegistry()
     {
       owlBufferRelease(buffer);
     }
     
-    void MaterialLibrary::grow()
+    void MaterialRegistry::grow()
     {
       // ------------------------------------------------------------------
       // save old materials
@@ -80,7 +80,7 @@ namespace barney {
       owlBufferRelease(tmp);
     }
 
-    int MaterialLibrary::allocate()
+    int MaterialRegistry::allocate()
     {
       if (!reusableIDs.empty()) {
         int ID = reusableIDs.top();
@@ -92,18 +92,18 @@ namespace barney {
       return nextFree++;
     }
    
-    void MaterialLibrary::release(int nowReusableID)
+    void MaterialRegistry::release(int nowReusableID)
     {
       reusableIDs.push(nowReusableID);
     }
   
-    const DeviceMaterial *MaterialLibrary::getPointer(int owlDeviceID) const 
+    const DeviceMaterial *MaterialRegistry::getPointer(int owlDeviceID) const 
     {
       return (DeviceMaterial *)owlBufferGetPointer(buffer,owlDeviceID);
     }    
 
 
-    void MaterialLibrary::setMaterial(int materialID,
+    void MaterialRegistry::setMaterial(int materialID,
                                       const DeviceMaterial &dd,
                                       int deviceID)
     {
@@ -113,7 +113,7 @@ namespace barney {
 
 
 
-    SamplerLibrary::SamplerLibrary(DevGroup::SP devGroup)
+    SamplerRegistry::SamplerRegistry(DevGroup::SP devGroup)
       : devGroup(devGroup)
     {
       numReserved = 1;
@@ -121,12 +121,12 @@ namespace barney {
         (devGroup->owl,OWL_USER_TYPE(Sampler::DD),1,nullptr);
     }
 
-    SamplerLibrary::~SamplerLibrary()
+    SamplerRegistry::~SamplerRegistry()
     {
       owlBufferRelease(buffer);
     }
     
-    void SamplerLibrary::grow()
+    void SamplerRegistry::grow()
     {
       // ------------------------------------------------------------------
       // save old materials
@@ -157,7 +157,7 @@ namespace barney {
       owlBufferRelease(tmp);
     }
 
-    int SamplerLibrary::allocate()
+    int SamplerRegistry::allocate()
     {
       if (!reusableIDs.empty()) {
         int ID = reusableIDs.top();
@@ -169,17 +169,17 @@ namespace barney {
       return nextFree++;
     }
    
-    void SamplerLibrary::release(int nowReusableID)
+    void SamplerRegistry::release(int nowReusableID)
     {
       reusableIDs.push(nowReusableID);
     }
   
-    const Sampler::DD *SamplerLibrary::getPointer(int owlDeviceID) const
+    const Sampler::DD *SamplerRegistry::getPointer(int owlDeviceID) const
     {
       return (Sampler::DD *)owlBufferGetPointer(buffer,owlDeviceID);
     }    
 
-    void SamplerLibrary::setDD(int samplerID,
+    void SamplerRegistry::setDD(int samplerID,
                                const Sampler::DD &dd,
                                int deviceID)
     {

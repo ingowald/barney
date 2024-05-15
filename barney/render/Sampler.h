@@ -24,7 +24,8 @@ namespace barney {
   struct TextureData;
   
   namespace render {
-
+    struct SamplerRegistry;
+    
     struct AttributeTransform {
 #ifdef __CUDACC__
       inline __device__ float4 applyTo(float4 in, bool dbg) const;
@@ -111,6 +112,12 @@ namespace barney {
 
       std::vector<DD> perDev;
       
+      /*! the registry from whom we got our 'samplerID' - this mainly
+          exists for lifetime reasons, to make sure the registry
+          doesn't die before we do, because we have to release our
+          samplerID when we die */
+      std::shared_ptr<SamplerRegistry> samplerRegistry;
+      
       const int   samplerID;
       int   inAttribute  { render::ATTRIBUTE_0 };
       mat4f outTransform { mat4f::identity() };
@@ -130,7 +137,7 @@ namespace barney {
         : Sampler(owner), numDims(numDims)
       { }
       
-      virtual ~TextureSampler() = default;
+      virtual ~TextureSampler();
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */

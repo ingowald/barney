@@ -6,16 +6,6 @@
 #include <cassert>
 #include <iostream>
 
-#ifndef PRINT
-# define PRINT(var) std::cout << #var << "=" << var << std::endl;
-#ifdef __WIN32__
-# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
-#else
-# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
-#endif
-#endif
-
-
 namespace barney_device {
 
   Sampler::Sampler(BarneyGlobalState *s) : Object(ANARI_SAMPLER, s) {}
@@ -27,6 +17,7 @@ namespace barney_device {
 
   Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
   {
+    PING; PRINT(subtype);
     if (subtype == "image1D")
       return new Image1D(s);
     else if (subtype == "image2D")
@@ -37,21 +28,13 @@ namespace barney_device {
       return (Sampler *)new UnknownObject(ANARI_SAMPLER, s);
   }
 
-  // void Sampler::setBarneySampler(BNModel model, int slot, const char *subtype)
-  // {
-  //   if (!isModelTracked(model, slot)) {
-  //     cleanup();
-  //     trackModel(model, slot);
-  //     m_bnSampler = bnSamplerCreate(model, slot, subtype);
-  //     setBarneyParameters();
-  //   }
-  // }
-
   void Sampler::cleanup()
   {
     if (m_bnSampler) {
       bnRelease(m_bnSampler);
       m_bnSampler = nullptr;
+    }
+    if (m_bnTextureData) {
       bnRelease(m_bnTextureData);
       m_bnTextureData = nullptr;
     }
@@ -93,19 +76,7 @@ namespace barney_device {
 
   void Image1D::createBarneySampler(BNModel model, int slot)
   {
-    // if (!isValid())
-    //   return {};
-    // setBarneySampler(model, slot, "image1D");
-    // return m_bnSampler;
   }
-
-  //   void Image1D::setBarneyParameters()
-  // {
-  //   if (!m_bnSampler)
-  //     return;
-
-  //   // TODO: set and commit parameters on barney sampler
-  // }
 
   // Image2D //
 
@@ -133,9 +104,6 @@ namespace barney_device {
     getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
     m_outOffset =
       getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
-    
-    //    setBarneyParameters();
-    cleanup();
   }
 
   bool Image2D::isValid() const

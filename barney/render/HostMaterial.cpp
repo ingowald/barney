@@ -79,51 +79,33 @@ namespace barney {
     {
       type = SAMPLER;
       sampler   = s;
-      // array   = {};
     }
 
-    // void PossiblyMappedParameter::set(PODData::SP a)
-    // {
-    //   type = ARRAY;
-    //   sampler = {};
-    //   array   = a;
-    // }
-    
     void PossiblyMappedParameter::set(const std::string &attributeName)
     {
       sampler = {};
-      // array   = {};
       type    = ATTRIBUTE;
       attribute = parseAttribute(attributeName);
     }
     
     HostMaterial::HostMaterial(ModelSlot *owner)
       : SlottedObject(owner),
-        materialLibrary(owner->world.materialLibrary),
-        materialID(owner->world.materialLibrary->allocate())
+        materialRegistry(owner->world->materialRegistry),
+        materialID(owner->world->materialRegistry->allocate())
     {}
 
     HostMaterial::~HostMaterial()
     {
-      owner->world.materialLibrary->release(materialID);
+      materialRegistry->release(materialID);
     }
     
     void HostMaterial::setDeviceDataOn(OWLGeom geom) const
     {
       owlGeomSet1i(geom,"materialID",materialID);
-      // for (int deviceID=0;deviceID<owner->devGroup->size();deviceID++) {
-      //   // HostMaterial::DD dd;
-      //   // createDD(dd,deviceID);
-      //   owlGeomSetRaw(geom,"material",&dd,deviceID);
-      //   // owlGeomSetRaw(geom,"material",&dd,deviceID);
-      // }
     }
 
     HostMaterial::SP HostMaterial::create(ModelSlot *owner, const std::string &type)
     {
-#if 0
-      std::cout << "# creating material type '" << type << "'" << std::endl;
-#endif
 #if 1
       static std::set<std::string> alreadyCreated;
       if (alreadyCreated.find(type) == alreadyCreated.end()) {
@@ -174,7 +156,7 @@ namespace barney {
       DeviceMaterial dd;
       for (int devID=0;devID<owner->devGroup->size();devID++) {
         this->createDD(dd,devID);
-        owner->world.materialLibrary->setMaterial(materialID,dd,devID);
+        materialRegistry->setMaterial(materialID,dd,devID);
       }
     }
 

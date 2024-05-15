@@ -196,7 +196,6 @@ namespace barney {
       throw std::runtime_error("TextureData with non-implemented scalar type ...");
     }
 
-    // std::cout << "#bn.struct: creating CUDAArray2D" << std::endl;
     for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
       auto dev = devGroup->devices[lDevID];
       auto &dd = onDev[lDevID];
@@ -218,7 +217,8 @@ namespace barney {
       auto dev = devGroup->devices[lDevID];
       auto &dd = onDev[lDevID];
       SetActiveGPU forDuration(dev);
-      BARNEY_CUDA_CALL_NOTHROW(FreeArray(dd.array));
+      if (dd.array)
+        BARNEY_CUDA_CALL_NOTHROW(FreeArray(dd.array));
       dd.array = 0;
     }
   }

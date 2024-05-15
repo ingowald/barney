@@ -30,9 +30,12 @@ namespace barney {
       model(_model),
       localID(localID),
       devGroup(_model->context->perSlot[slot].devGroup),
-      world(_model->context->perSlot[slot].devGroup)
+      world(std::make_shared<render::World>(_model->context->perSlot[slot].devGroup))
   {}
 
+  ModelSlot::~ModelSlot()
+  {}
+  
   OWLContext ModelSlot::getOWL() const
   {
     assert(devGroup);
@@ -87,7 +90,7 @@ namespace barney {
 
   void ModelSlot::setRadiance(float radiance)
   {
-    world.radiance = radiance;
+    world->radiance = radiance;
   }
   
   Texture *ModelSlot::createTexture(BNTexelFormat texelFormat,
@@ -156,9 +159,9 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
-    world.set(envMapLight?envMapLight->content:render::EnvMapLight{});
-    world.set(quadLights);
-    world.set(dirLights);
+    world->set(envMapLight?envMapLight->content:render::EnvMapLight{});
+    world->set(quadLights);
+    world->set(dirLights);
   }
     
 }

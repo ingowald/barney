@@ -65,14 +65,10 @@ namespace barney {
     owlParamsSetGroup(dg->lp,"world",
                       slot->instances.group);
     owlParamsSetBuffer(dg->lp,"materials",
-                       slot->world.materialLibrary->buffer);
+                       slot->world->materialRegistry->buffer);
     owlParamsSetBuffer(dg->lp,"samplers",
-                       slot->world.samplerLibrary->buffer);
+                       slot->world->samplerRegistry->buffer);
                         
-    // owlParamsSetPointer(dg->lp,"materials",
-    //                     slot->world.materialLibrary.getPointer(device->owlID));
-    // owlParamsSetPointer(dg->lp,"samplers",
-    //                     slot->world.samplerLibrary.getPointer(device->owlID));
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);
     if (nb)

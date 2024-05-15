@@ -565,7 +565,7 @@ namespace barney {
                (float)path.throughput.z);
       // } else {
       //   path.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
-      //   EvalRes f_r = path.eval(world.globals,dg,path.dir,path.dbg);
+      //   EvalRes f_r = path.eval(world->globals,dg,path.dir,path.dbg);
         
       //   if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
       //     path.tMax = -1.f;
@@ -630,7 +630,7 @@ namespace barney {
 //           path.throughput = .8f * path.throughput * path.getAlbedo();//baseColor;
 //         } else {
 //           path.dir = sampleCosineWeightedHemisphere(dg.Ns,random);
-//           EvalRes f_r = path.eval(world.globals,dg,path.dir,path.dbg);
+//           EvalRes f_r = path.eval(world->globals,dg,path.dir,path.dbg);
 
 //           if (f_r.pdf == 0.f || isinf(f_r.pdf) || isnan(f_r.pdf)) {
 //             path.tMax = -1.f;
@@ -784,7 +784,7 @@ namespace barney {
     }
 
     DevGroup *dg = device->devGroup;
-    World *world = &model->getSlot(dg->lmsIdx)->world;
+    World *world = model->getSlot(dg->lmsIdx)->world.get();
 
     if (nb) {
       switch(renderMode) {

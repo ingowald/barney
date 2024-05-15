@@ -25,10 +25,25 @@ namespace barney {
       dd.type = DeviceMaterial::TYPE_AnariMatte;
       color.make(dd.anariMatte.color,deviceID);
     }
+
+    /*! need wants to accept: 
+
+      "color" = <Sampler>
+     */
+    bool AnariMatte::setObject(const std::string &member, const Object::SP &value) 
+    {
+      if (HostMaterial::setObject(member,value)) return true;
+
+      Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
+      if (member == "color") 
+        { color.set(sampler); return true; }
+      
+      return false;
+    }
+    
     
     bool AnariMatte::setString(const std::string &member, const std::string &value) 
     {
-      PRINT(member); PRINT(value);
       if (HostMaterial::setString(member,value)) return true;
 
       if (member == "color") 

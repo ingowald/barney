@@ -56,11 +56,11 @@ namespace barney {
     };
 
 
-    struct MaterialLibrary {
-      typedef std::shared_ptr<MaterialLibrary> SP;
+    struct MaterialRegistry {
+      typedef std::shared_ptr<MaterialRegistry> SP;
     
-      MaterialLibrary(DevGroup::SP devGroup);
-      virtual ~MaterialLibrary();
+      MaterialRegistry(DevGroup::SP devGroup);
+      virtual ~MaterialRegistry();
       
       int allocate();
       void release(int nowReusableID);
@@ -77,11 +77,11 @@ namespace barney {
       DevGroup::SP    devGroup;
     };
   
-    struct SamplerLibrary {
-      typedef std::shared_ptr<SamplerLibrary> SP;
+    struct SamplerRegistry {
+      typedef std::shared_ptr<SamplerRegistry> SP;
     
-      SamplerLibrary(DevGroup::SP devGroup);
-      virtual ~SamplerLibrary();
+      SamplerRegistry(DevGroup::SP devGroup);
+      virtual ~SamplerRegistry();
       
       int allocate();
       void release(int nowReusableID);
@@ -103,6 +103,8 @@ namespace barney {
       global render settings like light sources, background, envmap,
       etc */
     struct World {
+      typedef std::shared_ptr<World> SP;
+      
       struct DD {
         int               numQuadLights = 0;
         const QuadLight  *quadLights    = nullptr;
@@ -159,14 +161,14 @@ namespace barney {
         dd.envMapLight.transform = envMapLight.transform;
         // dd.globals = globals.getDD(device);
         dd.radiance  = radiance;
-        dd.samplers  = samplerLibrary->getPointer(device->owlID);
-        dd.materials = materialLibrary->getPointer(device->owlID);
+        dd.samplers  = samplerRegistry->getPointer(device->owlID);
+        dd.materials = materialRegistry->getPointer(device->owlID);
         return dd;
       }
 
       // Globals globals;
-      MaterialLibrary::SP materialLibrary;
-      SamplerLibrary::SP  samplerLibrary;
+      MaterialRegistry::SP materialRegistry;
+      SamplerRegistry::SP  samplerRegistry;
       OWLBuffer quadLightsBuffer = 0;
       int numQuadLights = 0;
       OWLBuffer dirLightsBuffer = 0;

@@ -112,7 +112,7 @@ namespace barney {
       const int materialID;
       // keep reference to material library, so it cannot die before
       // all materials are dead
-      MaterialLibrary::SP materialLibrary;
+      MaterialRegistry::SP materialRegistry;
     };
 
 #ifdef __CUDACC__

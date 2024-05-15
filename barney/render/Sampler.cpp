@@ -39,14 +39,15 @@ namespace barney {
 
     Sampler::Sampler(ModelSlot *owner)
       : SlottedObject(owner),
-        samplerID(owner->world.samplerLibrary->allocate())
+        samplerRegistry(owner->world->samplerRegistry),
+        samplerID(owner->world->samplerRegistry->allocate())
     {
       perDev.resize(owner->devGroup->size());
     }
     
     Sampler::~Sampler()
     {
-      owner->world.samplerLibrary->release(samplerID);
+      samplerRegistry->release(samplerID);
       for (int devID=0;devID<owner->devGroup->size();devID++) {
         auto dev = owner->devGroup->devices[devID];
         SetActiveGPU forDuration(dev);
@@ -124,11 +125,13 @@ namespace barney {
         Sampler::DD &dd = perDev[devID];
         freeDD(dd,devID);
         createDD(dd,devID);
-        owner->world.samplerLibrary->setDD(samplerID,dd,devID);
+        samplerRegistry->setDD(samplerID,dd,devID);
       }
     }
 
-
+    TextureSampler::~TextureSampler()
+    {}
+    
     bool TextureSampler::setObject(const std::string &member,
                                  const std::shared_ptr<Object> &value)
     {

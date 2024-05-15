@@ -39,7 +39,7 @@ namespace barney {
               /*! index with which the given rank's context will refer
                   to this _locally_; not the data rank in it */
               int slotIndex);
-    virtual ~ModelSlot() = default;
+    virtual ~ModelSlot();
 
     render::HostMaterial::SP getDefaultMaterial()
     {
@@ -92,7 +92,7 @@ namespace barney {
 
     void build();
 
-    render::World world;
+    render::World::SP world;
     // MultiPass::Instances multiPassInstances;
     DevGroup::SP   const devGroup;
     GlobalModel   *const model;
