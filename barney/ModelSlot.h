@@ -43,9 +43,11 @@ namespace barney {
 
     render::HostMaterial::SP getDefaultMaterial()
     {
-      if (!defaultMaterial)
+      if (!defaultMaterial) {
         defaultMaterial
           = render::HostMaterial::create(this,"AnariMatte");
+        defaultMaterial->commit();
+      }
       return defaultMaterial;
     }
     render::HostMaterial::SP defaultMaterial = 0;

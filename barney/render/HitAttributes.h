@@ -23,10 +23,6 @@ namespace barney {
       
     enum { numAttributes = 4 };
 
-    // struct Material;
-    // struct Sampler;
-    // struct DeviceSampler;
-    
     typedef enum {
       ATTRIBUTE_KIND_NONE=0,
       ATTRIBUTE_0,
@@ -44,18 +40,17 @@ namespace barney {
     AttributeKind parseAttribute(const std::string &attributeName);
     
     struct HitAttributes {
-      // struct Globals {
-      //   const Material *materials;
-      //   const Sampler  *samplers;
-      // };
-        
       typedef AttributeKind Which;
         
       inline __device__ HitAttributes()
       {
-        color = make_float4(0,0,0,1);
+        color
+          = make_float4(NAN,NAN,NAN,NAN);
+        // = make_float4(0,0,0,1);
         for (int i=0;i<numAttributes;i++)
-          attribute[i] = make_float4(0,0,0,1);
+          attribute[i]
+            = make_float4(NAN,NAN,NAN,NAN);
+            // = make_float4(0,0,0,1);
       }
 
       inline __device__ float4 get(Which attribute, bool dbg=false) const;
@@ -74,9 +69,6 @@ namespace barney {
     inline __device__
     float4 HitAttributes::get(Which whichOne, bool dbg) const
     {
-      // if (dbg)
-      //    printf("hit attribute which %i\n",int(whichOne));
-      
       if (whichOne == ATTRIBUTE_0)
         return attribute[0];
       if (whichOne == ATTRIBUTE_1)
@@ -87,8 +79,10 @@ namespace barney {
         return attribute[3];
       if (whichOne == COLOR)
         return color;
-      
+
+#ifndef NDEBUG
       printf("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% un-handled hit-data attribute %i\n",int(whichOne));
+#endif
       return make_float4(0.f,0.f,0.f,1.f);
     }
 

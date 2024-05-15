@@ -54,12 +54,23 @@ namespace barney {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      float4 r = color.eval(hitData,samplers);
+      packedBSDF::NVisii bsdf;
+      bsdf.setDefaults();
+      
+      float4 baseColor = this->color.eval(hitData,samplers,dbg);
+      
+      // not anari-conformant, but useful: if geometry _has_ a color
+      // attribute, use it, no matter whether our input is point to it
+      // or not:
+      if (!isnan(hitData.color.x)) 
+        baseColor = hitData.color;
+      
+      bsdf.baseColor = (const vec3f&)baseColor;
 
-      if (dbg)
-        printf("anarimatte, color %f %f %f %f\n",
-               r.x,r.y,r.z,r.w);
-      return packedBSDF::VisRTX::make_matte((const vec3f&)r);
+      bsdf.specular = 0.f;
+      bsdf.metallic = 0.f;
+      bsdf.roughness = 0.f;
+      return bsdf;
     }
 #endif
     

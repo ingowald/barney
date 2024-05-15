@@ -98,17 +98,6 @@ namespace barney {
       printf("HIT SPHERES %i\n",self.materialID);
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
     material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
-    
-    // auto interpolate = [&](const GeometryAttributes &)
-    // { /* does not make sense for spheres */return make_float4(0,0,0,1); };
-    // self.evalAttributesAndStoreHit(ray,hitData,interpolate,
-    //                                OptixGlobals::get().materials,
-    //                                OptixGlobals::get().samplers);
-    
-    // vec3f geometryColor(getColor(self,primID,primID,NAN,NAN/*no uv!*/));
-    // if (self.colors)
-    //   geometryColor = self.colors[primID];
-    // ray.setHit(P,N,t_hit,self.material,vec2f(NAN),geometryColor);
   }
   
   OPTIX_INTERSECT_PROGRAM(SpheresIsec)()

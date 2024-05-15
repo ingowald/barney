@@ -43,7 +43,6 @@ namespace barney {
         int/*Scope*/         scope;
       };
         
-      // void make(DD &dd, bool dbg=false);
       vec4f       constant { 0.f,0.f,0.f,1.f };
       PODData::SP perPrim   = 0;
       PODData::SP perVertex = 0;
@@ -61,7 +60,6 @@ namespace barney {
         GeometryAttribute::DD attribute[numAttributes];
         GeometryAttribute::DD colorAttribute;
       };
-      // void make(DD &dd, bool dbg);
       GeometryAttribute attribute[numAttributes];
       GeometryAttribute colorAttribute;
     };
@@ -84,7 +82,6 @@ namespace barney {
         return make_float4(v.x,v.y,v.z,1.f);
       }
       case BN_FLOAT4: {
-        // const float4 v = ((const vec4f *)ptr)[i];
         const float4 v = ((const float4 *)ptr)[i];
         return v;
       }

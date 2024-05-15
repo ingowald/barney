@@ -32,10 +32,11 @@ namespace barney {
 
     struct DD : public Geometry::DD {
       const vec3f *vertices;
-      const vec3f *colors;
+      // const vec3f *colors;
       const vec2i *indices;
       const float *radii;
-      int colorPerVertex, radiusPerVertex;
+      int //colorPerVertex,
+        radiusPerVertex;
     };
     
     Cylinders(ModelSlot *owner);
@@ -58,11 +59,11 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
 
-    PODData::SP colors;
+    // PODData::SP colors;
     PODData::SP vertices;
     PODData::SP indices;
     PODData::SP radii;
-    bool colorPerVertex  = 0;
+    // bool colorPerVertex  = 0;
     bool radiusPerVertex = 0;
     
   };
