@@ -287,15 +287,6 @@ namespace barney {
     auto elt = mesh.elements[tid];
     box4f eb = mesh.eltBounds(elt);
     d_primBounds[tid] = getBox(eb);
-    if (tid < 10)
-      printf("boudns[%i] (%f %f %f)(%f %f %f)\n",
-             tid,
-             d_primBounds[tid].lower.x,
-             d_primBounds[tid].lower.y,
-             d_primBounds[tid].lower.z,
-             d_primBounds[tid].upper.x,
-             d_primBounds[tid].upper.y,
-             d_primBounds[tid].upper.z);
     if (d_primRanges) d_primRanges[tid] = getRange(eb);
   }
 

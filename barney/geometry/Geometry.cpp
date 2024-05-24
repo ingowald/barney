@@ -72,21 +72,10 @@ namespace barney {
 
   void Geometry::setAttributesOn(OWLGeom geom)
   {
-    // std::cout << "=======================================================" << std::endl;
-    // PING;
-    // for (int i=0;i<4;i++) {
-    //   PRINT(attributes.attribute[i].perVertex);
-    //   PRINT(attributes.attribute[i].perPrim);
-    // }
-
     auto set = [&](GeometryAttribute::DD &out, const GeometryAttribute &in,
                    const int devID,
                    const std::string &dbgName)
     {
-      // std::cout << "setting geometry attribute " << dbgName << std::endl;
-      // PRINT((bool)in.perVertex);
-      // PRINT((bool)in.perPrim);
-      // PRINT((vec3f&)in.constant);
       if (in.perVertex) {
         out.scope = GeometryAttribute::PER_VERTEX;
         out.fromArray.type = in.perVertex->type;
@@ -112,11 +101,6 @@ namespace barney {
         set(out,in,devID,"attr"+std::to_string(i));
       }
       set(dd.colorAttribute,attributes.colorAttribute,devID,"color");
-      // PRINT(dd.attribute[0].scope);
-      // PRINT(dd.attribute[1].scope);
-      // PRINT(dd.attribute[2].scope);
-      // PRINT(dd.attribute[3].scope);
-      // PRINT(dd.colorAttribute.scope);
       owlGeomSetRaw(geom,"attributes",&dd,devID);
     }
   }

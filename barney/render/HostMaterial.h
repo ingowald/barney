@@ -70,6 +70,7 @@ namespace barney {
       Sampler::SP          sampler;
       // PODData::SP          array;
       HitAttributes::Which attribute;
+      //float4               value { NAN,NAN,NAN,NAN };
       float4               value { 0.f, 0.f, 0.f, 1.f };
     };
 
@@ -121,10 +122,11 @@ namespace barney {
                                              const Sampler::DD *samplers,
                                              bool dbg) const
     {
-      if (0 && dbg)
-        printf("evaluating attrib, type %i\n",int(type));
-      if (type == VALUE)
-        return value;
+      if (1 && dbg)
+        printf("evaluating attrib, type %i, val.x %f\n",int(type),value.x);
+      if (type == VALUE) {
+        return isnan(value.x) ? make_float4(0.f,0.f,0.f,1.f) : value;
+      }
       if (type == ATTRIBUTE) {
         if (0 && dbg) printf("asking hitattributes for attribute %i\n",(int)attribute);
         return hitData.get(attribute,dbg);

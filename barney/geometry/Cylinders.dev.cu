@@ -107,13 +107,13 @@ namespace barney {
     if (t0 > t1) return;
 
     Ray &ray    = getPRD<Ray>();
-    vec3f N = 0.f;
+    vec3f objectN = 0.f;
     if (ray_tmin <= t0 && t0 <= ray_tmax) {
       // front side hit:
       ray.tMax = t0;
       td *= -1.f;
       float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-      N
+      objectN
         = (t0 == cap_t0)
         ? s
         : (td * d - fp - hit_surf_u * s);
@@ -121,32 +121,43 @@ namespace barney {
     } else if (ray_tmin <= t1 && t1 <= ray_tmax) {
       ray.tMax = t1;
       float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-      N
+      objectN
         = (t1 == cap_t1)
         ? -s
         : (td * d - fp - hit_surf_u * s);
     } else
       return;
 
-    vec3f P = ray_org + ray.tMax * ray_dir;
+    vec3f objectP = ray_org + ray.tMax * ray_dir;
+    float t_hit = ray.tMax;
 
-    // THIS IS WRONG: !!!!!!!!!
-    if (ray.dbg) printf("storing wrong normals here!\n");
-    // render::HitAttributes hitData(OptixGlobals::get().materialData);
-    // hitData.worldPosition   = P;
-    // hitData.objectPosition  = P;
-    // hitData.worldNormal     = N;
-    // hitData.objectNormal    = N;
-    // hitData.primID          = primID;
-    // hitData.t               = ray.tMax;
-    // // if (self.colors)
-    // //   (vec3f&)hitData.color = self.colors[primID];
+
+    auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
+    { /* does not make sense for spheres *///return make_float4(0,0,0,1);
+
+      // doesn't make sense, but anari sdk assumes for spheres per-vtx is same as per-prim
+      float4 v = make_float4(0,0,0,1);//attrib.fromArray.valueAt(hitData.primID,ray.dbg);
+      // if (ray.dbg)
+      //   printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
+      return v;
+    };
+
+    render::HitAttributes hitData;//(OptixGlobals::get());
+    hitData.worldPosition   = optixTransformPointFromObjectToWorldSpace(objectP);
+    hitData.objectPosition  = objectP;
+    hitData.worldNormal     = objectN;
+    hitData.objectNormal    = optixTransformNormalFromObjectToWorldSpace(objectN);
+    hitData.primID          = primID;
+    hitData.t               = t_hit;;
+    // if (self.colors)
+    //   (vec3f&)hitData.color = self.colors[primID];
     
-    // auto interpolate = [&](const render::GeometryAttribute::DD &)
-    // { /* does not make sense for spheres */return make_float4(0,0,0,1); };
-    // self.evalAttributesAndStoreHit(ray,hitData,interpolate);
-    printf("TODO\n");
-    // ray.setHit(P,N,ray.tMax,self.material);
+    self.setHitAttributes(hitData,interpolator,ray.dbg);
+
+    if (ray.dbg)
+      printf("HIT CYLINDERS mat %i prim %i\n",self.materialID,hitData.primID);
+    const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
+    material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
     
     optixReportIntersection(ray.tMax, 0);
   }

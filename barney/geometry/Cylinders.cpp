@@ -35,9 +35,9 @@ namespace barney {
       = {
          { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
          { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-         { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
+         // { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
          { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-         { "colorPerVertex", OWL_INT, OWL_OFFSETOF(DD,colorPerVertex) },
+         // { "colorPerVertex", OWL_INT, OWL_OFFSETOF(DD,colorPerVertex) },
          { "radiusPerVertex", OWL_INT, OWL_OFFSETOF(DD,radiusPerVertex) },
     };
     Geometry::addVars(params,0);
@@ -63,18 +63,27 @@ namespace barney {
       userGeoms.push_back(geom);
     }
     OWLGeom geom = userGeoms[0];
+
+    PING;
     
     Geometry::commit();
-    owlGeomSet1i(geom,"colorPerVertex",colorPerVertex);
+    // owlGeomSet1i(geom,"colorPerVertex",colorPerVertex);
     owlGeomSet1i(geom,"radiusPerVertex",radiusPerVertex);
     owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
     owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
-    owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
+    // owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
     owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
     int numIndices = indices->count;
-    PRINT(numIndices);
+    if (numIndices == 0)
+      std::cout << OWL_TERMINAL_RED
+                << "#bn.cylinders: warning - empty indices array"
+                << OWL_TERMINAL_DEFAULT
+                << std::endl;
     owlGeomSetPrimCount(geom,numIndices);
+    
+    setAttributesOn(geom);
     material->setDeviceDataOn(geom);
+    PING;
   } 
 
   bool Cylinders::set1i(const std::string &member, const int &value)
@@ -85,10 +94,10 @@ namespace barney {
       radiusPerVertex = value;
       return true;
     }
-    if (member == "colorPerVertex") {
-      colorPerVertex = value;
-      return true;
-    }
+    // if (member == "colorPerVertex") {
+    //   colorPerVertex = value;
+    //   return true;
+    // }
     return false;
   }
   
@@ -103,10 +112,10 @@ namespace barney {
   {
     if (Geometry::setData(member,value))
       return true;
-    if (member == "colors") {
-      colors = value->as<PODData>();
-      return true;
-    }
+    // if (member == "colors") {
+    //   colors = value->as<PODData>();
+    //   return true;
+    // }
     if (member == "vertices") {
       vertices = value->as<PODData>();
       return true;
