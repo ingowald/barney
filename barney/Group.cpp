@@ -33,9 +33,7 @@ namespace barney {
   
   /*! implements the parameter set/commit paradigm */
   void Group::commit()
-  {
-    PING;
-  }
+  {}
   
   /*! implements the parameter set/commit paradigm */
   bool Group::setObject(const std::string &member, const Object::SP &value)

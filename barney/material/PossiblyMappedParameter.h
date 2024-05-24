@@ -1,5 +1,6 @@
+DEPRECATED
 // // ======================================================================== //
-// // Copyright 2023-2023 Ingo Wald                                            //
+// // Copyright 2023-2024 Ingo Wald                                            //
 // //                                                                          //
 // // Licensed under the Apache License, Version 2.0 (the "License");          //
 // // you may not use this file except in compliance with the License.         //
@@ -16,10 +17,10 @@
 
 // #pragma once
 
+// #include "barney/render/device/HitAttributes.h"
 
-// namespace mori {
-
-//   using namespace owl;
-//   using namespace owl::common;
-  
+// namespace barney {
+//   namespace material {
+      
+//   }
 // }

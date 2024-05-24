@@ -5,10 +5,24 @@
 // std
 #include <algorithm>
 #include <chrono>
+#include <iostream>
+
+#ifndef PRINT
+#define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+#define PING                                                                   \
+  std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__            \
+            << std::endl;
+#else
+#define PING                                                                   \
+  std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__     \
+            << std::endl;
+#endif
+#endif
 
 namespace barney_device {
 
-Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s)
+Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
 {
   m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
 }
@@ -70,6 +84,10 @@ void Frame::commit()
       size.y,
       m_bnHostBuffer.data(),
       m_depthBuffer.data());
+  bnSet1i(m_bnFrameBuffer,
+      "showCrosshairs",
+      m_renderer ? int(m_renderer->crosshairs()) : false);
+  bnCommit(m_bnFrameBuffer);
   m_frameData.size = size;
 }
 
@@ -104,17 +122,17 @@ void Frame::renderFrame()
   if (state->commitBufferLastFlush() > m_frameLastRendered)
     bnAccumReset(m_bnFrameBuffer);
 
-  m_world->barneyModelUpdate();
+  auto model = m_world->makeCurrent();
 
   m_frameLastRendered = helium::newTimeStamp();
   state->currentFrame = this;
 
   const int pixelSamples = std::max(m_renderer->pixelSamples(), 1);
   const float radiance = m_renderer->radiance();
-  bnSetRadiance(m_world->barneyModel(), m_world->barneySlot(), radiance);
+  bnSetRadiance(model, 0, radiance / 10.f);
 
   for (int i = 0; i < pixelSamples; i++)
-    bnRender(m_world->barneyModel(), m_camera->barneyCamera(), m_bnFrameBuffer);
+    bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer, pixelSamples);
 
   auto end = std::chrono::steady_clock::now();
   m_duration = std::chrono::duration<float>(end - start).count();

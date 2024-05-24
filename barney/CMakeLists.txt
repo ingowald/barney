@@ -60,11 +60,11 @@ embed_ptx(
   SOURCES            geometry/Cylinders.dev.cu
   )
 # ray cones geom intersection
-embed_ptx(
-  OUTPUT_TARGET      barney-cones-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
-  SOURCES            geometry/Cones.dev.cu
-  )
+#embed_ptx(
+#  OUTPUT_TARGET      barney-cones-ptx
+#  PTX_LINK_LIBRARIES owl::owl barney-config
+#  SOURCES            geometry/Cones.dev.cu
+#  )
 
 # ------------------------------------------------------------------
 # volume variants:
@@ -133,8 +133,12 @@ add_library(barney STATIC
   GlobalModel.cpp
   Group.h
   Group.cpp
-  material/Globals.h
-  material/Globals.cu
+
+  render/World.h
+  render/World.cpp
+  
+  #  material/Globals.h
+  #  material/Globals.cu
   ModelSlot.h
   ModelSlot.cpp
   # general common/data-related stuff
@@ -145,34 +149,40 @@ add_library(barney STATIC
   # lights
   light/Light.h
   light/Light.cpp
-  # device-level materials
-  material/device/Material.h
-  material/device/Velvet.h
-  material/device/VisRTX.h
-  material/device/Matte.h
-  material/device/Blender.h
-  material/device/Glass.h
-  material/device/Metal.h
-  material/device/Plastic.h
-  # barney-level material types
-  material/host/Material.h
-  material/host/Material.cpp
-  material/host/VisRTX.h
-  material/host/VisRTX.cpp
-  material/host/Velvet.h
-  material/host/Velvet.cpp
-  material/host/Plastic.h
-  material/host/Plastic.cpp
-  material/host/Matte.h
-  material/host/Matte.cpp
-  material/host/Blender.h
-  material/host/Blender.cpp
-  material/host/Glass.h
-  material/host/Glass.cpp
-  material/host/Metal.h
-  material/host/Metal.cpp
-  material/host/MetallicPaint.h
-  material/host/MetallicPaint.cpp
+  # samplers
+  render/Sampler.h
+  render/Sampler.cpp
+  # materials
+  render/HostMaterial.cpp
+  render/materials/AnariPBR.h
+  render/materials/AnariPBR.cpp
+  render/materials/AnariMatte.h
+  render/materials/AnariMatte.cpp
+  #material/device/Material.h
+  #material/device/Velvet.h
+  #material/device/VisRTX.h
+  #material/device/Matte.h
+  #material/device/Blender.h
+  #material/device/Glass.h
+  #material/device/Metal.h
+  #material/device/Plastic.h
+  
+  #material/host/VisRTX.h
+  #material/host/VisRTX.cpp
+  #material/host/Velvet.h
+  #material/host/Velvet.cpp
+  #material/host/Plastic.h
+  #material/host/Plastic.cpp
+  #material/host/Matte.h
+  #material/host/Matte.cpp
+  #material/host/Blender.h
+  #material/host/Blender.cpp
+  #material/host/Glass.h
+  #material/host/Glass.cpp
+  #material/host/Metal.h
+  #material/host/Metal.cpp
+  #material/host/MetallicPaint.h
+  #material/host/MetallicPaint.cpp
   # actual geometry types
   geometry/Geometry.h
   geometry/Geometry.cpp
@@ -182,8 +192,8 @@ add_library(barney STATIC
   geometry/Triangles.cpp
   geometry/Cylinders.h
   geometry/Cylinders.cpp
-  geometry/Cones.h
-  geometry/Cones.cpp
+  #  geometry/Cones.h
+  #  geometry/Cones.cpp
   # volume data 
   volume/Volume.h
   volume/Volume.cpp
@@ -214,12 +224,13 @@ add_library(barney STATIC
   amr/BlockStructuredField.cu
   amr/BlockStructuredCUBQLSampler.h
   amr/BlockStructuredCUBQLSampler.cu
-#  amr/BlockStructuredMCAccelerator.h
-#  amr/BlockStructuredMCAccelerator.cu
+  #  amr/BlockStructuredMCAccelerator.h
+  #  amr/BlockStructuredMCAccelerator.cu
   
   # implements the c99 barney api calls
   barney.cpp
   )
+
 target_link_libraries(barney
   PUBLIC
   owl::owl
@@ -228,7 +239,7 @@ target_link_libraries(barney
   barney-StructuredData-ptx
   barney-spheres-ptx
   barney-cylinders-ptx
-  barney-cones-ptx
+#  barney-cones-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
   barney-UMeshRTXObjectSpace-ptx
@@ -246,33 +257,33 @@ set_target_properties(barney
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
   CUDA_ARCHITECTURES OFF
-)
+  )
 
 if (BARNEY_MPI)
-# ------------------------------------------------------------------
-find_package(MPI REQUIRED)
+  # ------------------------------------------------------------------
+  find_package(MPI REQUIRED)
 
-add_library(barney_mpi STATIC
-  common/MPIWrappers.h
-  common/MPIWrappers.cpp
-  MPIContext.h
-  MPIContext.cpp
-  fb/DistFB.h
-  fb/DistFB.cpp
-  )
-set_target_properties(barney_mpi
-  PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES OFF
-)
-target_link_libraries(barney_mpi PUBLIC
-  barney
-  MPI::MPI_CXX
-  )
-target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
+  add_library(barney_mpi STATIC
+    common/MPIWrappers.h
+    common/MPIWrappers.cpp
+    MPIContext.h
+    MPIContext.cpp
+    fb/DistFB.h
+    fb/DistFB.cpp
+    )
+  set_target_properties(barney_mpi
+    PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    POSITION_INDEPENDENT_CODE ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_ARCHITECTURES OFF
+    )
+  target_link_libraries(barney_mpi PUBLIC
+    barney
+    MPI::MPI_CXX
+    )
+  target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
 
 

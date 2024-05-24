@@ -30,8 +30,10 @@ namespace barney {
   {
     if (type == "spheres")
       return std::make_shared<Spheres>(owner);
+#if 0
     if (type == "cones")
       return std::make_shared<Cones>(owner);
+#endif
     if (type == "cylinders")
       return std::make_shared<Cylinders>(owner);
     if (type == "triangles")
@@ -43,7 +45,7 @@ namespace barney {
 
   Geometry::Geometry(ModelSlot *owner)
     : SlottedObject(owner),
-      material(Material::create(owner,"mini"))
+      material(owner->getDefaultMaterial())
   {}
 
   Geometry::~Geometry()
@@ -62,55 +64,99 @@ namespace barney {
 
   void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
-    Material::addVars(vars,base+OWL_OFFSETOF(DD,material));
+    vars.push_back({"materialID",OWL_INT,OWL_OFFSETOF(DD,materialID)});
+    vars.push_back({"attributes",OWL_USER_TYPE(GeometryAttributes::DD),
+        OWL_OFFSETOF(DD,attributes)});
   }
+
+
+  void Geometry::setAttributesOn(OWLGeom geom)
+  {
+    auto set = [&](GeometryAttribute::DD &out, const GeometryAttribute &in,
+                   const int devID,
+                   const std::string &dbgName)
+    {
+      if (in.perVertex) {
+        out.scope = GeometryAttribute::PER_VERTEX;
+        out.fromArray.type = in.perVertex->type;
+        out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
+        out.fromArray.size = in.perVertex->count;
+      } else if (in.perPrim) {
+        out.scope = GeometryAttribute::PER_PRIM;
+        out.fromArray.type = in.perPrim->type;
+        out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
+        out.fromArray.size = in.perPrim->count;
+      } else {
+        out.scope = GeometryAttribute::CONSTANT;
+        (vec4f&)out.value = in.constant;
+      }
+      // PRINT(out.scope);
+    };
+    
+    GeometryAttributes::DD dd;
+    for (int devID=0;devID<owner->devGroup->size();devID++) {
+      for (int i=0;i<attributes.count;i++) {
+        const auto &in = attributes.attribute[i];
+        auto &out = dd.attribute[i];
+        set(out,in,devID,"attr"+std::to_string(i));
+      }
+      set(dd.colorAttribute,attributes.colorAttribute,devID,"color");
+      owlGeomSetRaw(geom,"attributes",&dd,devID);
+    }
+  }
+  
 
   bool Geometry::set1f(const std::string &member, const float &value)
   {
-    if (member == "material.transmission") {
-      material->set1f("transmission",value);
-      return true;
-    }
-    if (member == "material.ior") {
-      material->set1f("ior",value);
-      return true;
-    }
-    if (member == "material.metallic") {
-      material->set1f("metallic",value);
-      return true;
-    }
     return false;
   }
   
   bool Geometry::set3f(const std::string &member, const vec3f &value)
   {
-    if (member == "material.baseColor") {
-      material->set3f("baseColor",value);
-      return true;
-    }
     return false;
   }
   
   bool Geometry::setData(const std::string &member, const Data::SP &value)
   {
     if (member == "primitive.attribute0") {
-      attribute0 = value->as<PODData>();
+      attributes.attribute[0].perPrim = value->as<PODData>();
       return true;
     }
     if (member == "primitive.attribute1") {
-      attribute1 = value->as<PODData>();
+      attributes.attribute[1].perPrim = value->as<PODData>();
       return true;
     }
     if (member == "primitive.attribute2") {
-      attribute2 = value->as<PODData>();
+      attributes.attribute[2].perPrim = value->as<PODData>();
       return true;
     }
     if (member == "primitive.attribute3") {
-      attribute3 = value->as<PODData>();
+      attributes.attribute[3].perPrim = value->as<PODData>();
       return true;
     }
-    if (member == "primitive.attribute4") {
-      attribute4 = value->as<PODData>();
+    if (member == "primitive.color") {
+      attributes.colorAttribute.perPrim = value->as<PODData>();
+      return true;
+    }
+    
+    if (member == "vertex.attribute0") {
+      attributes.attribute[0].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.attribute1") {
+      attributes.attribute[1].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.attribute2") {
+      attributes.attribute[2].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.attribute3") {
+      attributes.attribute[3].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.color") {
+      attributes.colorAttribute.perVertex = value->as<PODData>();
       return true;
     }
     return false;
@@ -119,20 +165,11 @@ namespace barney {
   bool Geometry::setObject(const std::string &member, const Object::SP &value)
   {
     if (member == "material") {
-      // material->setObject("colorTexture",value);
-      material = value->as<Material>();
+      material = value->as<HostMaterial>();
       if (!material)
         throw std::runtime_error("invalid material in geometry::set(\"material\"");
       return true;
     }
-    // if (member == "material.colorTexture") {
-    //   material->setObject("colorTexture",value);
-    //   return true;
-    // }
-    // if (member == "material.alphaTexture") {
-    //   material->setObject("alphaTexture",value);
-    //   return true;
-    // }
     return false;
   }
 

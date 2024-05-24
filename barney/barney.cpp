@@ -21,9 +21,9 @@
 #include "barney/GlobalModel.h"
 #include "barney/geometry/Triangles.h"
 #include "barney/volume/ScalarField.h"
+#include "barney/umesh/common/UMeshField.h"
 #include "barney/common/Data.h"
 #include "barney/common/mat4.h"
-#include "barney/material/host/Material.h"
 #include "barney/Camera.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
@@ -178,7 +178,6 @@ namespace barney {
                       int numInstances)
   {
     LOG_API_ENTRY;
-    PRINT(numInstances);
     
     std::vector<Group::SP> groups;
     for (int i=0;i<numInstances;i++) {
@@ -190,14 +189,18 @@ namespace barney {
   BN_API
   void  bnRelease(BNObject _object)
   {
+    LOG_API_ENTRY;
     Object *object = checkGet(_object);
+    assert(object);
     Context *context = object->getContext();
+    assert(context);
     context->releaseHostReference(object->shared_from_this());
   }
   
   BN_API
   void  bnAddReference(BNObject _object)
   {
+    LOG_API_ENTRY;
     if (_object == 0) return;
     Object *object = checkGet(_object);
     Context *context = object->getContext();
@@ -223,6 +226,7 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
+    LOG_API_ENTRY;
     BNGeom mesh = bnGeometryCreate(model,whichSlot,"triangles");
     
     BNData _vertices = bnDataCreate(model,whichSlot,BN_FLOAT3,numVertices,vertices);
@@ -271,9 +275,45 @@ namespace barney {
                               int whichSlot,
                               const char *type)
   {
-    Material::SP material = Material::create(checkGet(model,whichSlot),type);
+    render::HostMaterial::SP material
+      = render::HostMaterial::create(checkGet(model,whichSlot),type);
     if (!material) return 0;
+#if 0
+    auto mat = checkGet(model,whichSlot)->context->initReference(material);
+    material->commit();
+    return (BNMaterial)mat;
+#else
     return (BNMaterial)checkGet(model,whichSlot)->context->initReference(material);
+#endif
+  }
+
+  /*! creates a cudaArray2D of specified size and texels. Can be passed
+    to a sampler to create a matching cudaTexture2D */
+  BN_API
+  BNTextureData bnTextureData2DCreate(BNModel model,
+                                      int whichSlot,
+                                      BNTexelFormat texelFormat,
+                                      int width, int height,
+                                      const void *texels)
+  {
+    TextureData::SP data
+      = std::make_shared<TextureData>(checkGet(model,whichSlot),
+                                      texelFormat,vec3i(width,height,0),
+                                      texels);
+    if (!data) return 0;
+    return (BNTextureData)checkGet(model,whichSlot)->context->initReference(data);
+  }
+  
+  BN_API
+  BNSampler bnSamplerCreate(BNModel model,
+                            int whichSlot,
+                            const char *type)
+  {
+    render::Sampler::SP sampler
+      = render::Sampler::create(checkGet(model,whichSlot),type);
+    if (!sampler) return 0;
+    // sampler->commit();
+    return (BNSampler)checkGet(model,whichSlot)->context->initReference(sampler);
   }
 
   BN_API
@@ -378,68 +418,78 @@ namespace barney {
                               int whichSlot,
                               // vertices, 4 floats each (3 floats position,
                               // 4th float scalar value)
-                              const float *_vertices, int numVertices,
-                              // tets, 4 ints in vtk-style each
-                              const int *_tetIndices, int numTets,
-                              // pyramids, 5 ints in vtk-style each
-                              const int *_pyrIndices, int numPyrs,
-                              // wedges/tents, 6 ints in vtk-style each
-                              const int *_wedIndices, int numWeds,
-                              // general (non-guaranteed cube/voxel) hexes, 8
-                              // ints in vtk-style each
-                              const int *_hexIndices, int numHexes,
-                              //
-                              int numGrids,
-                              // offsets into gridScalars array
-                              const int *_gridOffsets,
-                              // grid dims (3 floats each)
-                              const int *_gridDims,
-                              // grid domains, 6 floats each (3 floats min corner,
-                              // 3 floats max corner)
-                              const float *_gridDomains,
-                              // grid scalars
-                              const float *_gridScalars,
-                              int numGridScalars,
+                              const float4  *vertices,
+                              int            numVertices,
+                              const int     *indices,
+                              int            numIndices,
+                              const int     *elementOffsets,
+                              int            numElements,
+                              // // tets, 4 ints in vtk-style each
+                              // const int *_tetIndices, int numTets,
+                              // // pyramids, 5 ints in vtk-style each
+                              // const int *_pyrIndices, int numPyrs,
+                              // // wedges/tents, 6 ints in vtk-style each
+                              // const int *_wedIndices, int numWeds,
+                              // // general (non-guaranteed cube/voxel) hexes, 8
+                              // // ints in vtk-style each
+                              // const int *_hexIndices, int numHexes,
+                              // //
+                              // int numGrids,
+                              // // offsets into gridScalars array
+                              // const int *_gridOffsets,
+                              // // grid dims (3 floats each)
+                              // const int *_gridDims,
+                              // // grid domains, 6 floats each (3 floats min corner,
+                              // // 3 floats max corner)
+                              // const float *_gridDomains,
+                              // // grid scalars
+                              // const float *_gridScalars,
+                              // int numGridScalars,
                               const float3 *domainOrNull    
                               )
   {
     std::cout << "#bn: copying umesh from app ..." << std::endl;
-    std::vector<vec4f>      vertices(numVertices);
-    std::vector<int>        gridOffsets(numGrids);
-    std::vector<vec3i>      gridDims(numGrids);
-    std::vector<box4f>      gridDomains(numGrids);
-    std::vector<float>      gridScalars(numGridScalars);
-    std::vector<TetIndices> tetIndices(numTets);
-    std::vector<PyrIndices> pyrIndices(numPyrs);
-    std::vector<WedIndices> wedIndices(numWeds);
-    std::vector<HexIndices> hexIndices(numHexes);
-    memcpy(tetIndices.data(),_tetIndices,tetIndices.size()*sizeof(tetIndices[0]));
-    memcpy(pyrIndices.data(),_pyrIndices,pyrIndices.size()*sizeof(pyrIndices[0]));
-    memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
-    memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
-    memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
-    memcpy(gridOffsets.data(),_gridOffsets,gridOffsets.size()*sizeof(gridOffsets[0]));
-    memcpy(gridDims.data(),_gridDims,gridDims.size()*sizeof(gridDims[0]));
-    memcpy(gridDomains.data(),_gridDomains,gridDomains.size()*sizeof(gridDomains[0]));
-    memcpy(gridScalars.data(),_gridScalars,gridScalars.size()*sizeof(gridScalars[0]));
+    // std::vector<vec4f>      vertices(numVertices);
+    // std::vector<vec4f>      vertices(numVertices);
+    // std::vector<int>        gridOffsets(numGrids);
+    // std::vector<vec3i>      gridDims(numGrids);
+    // std::vector<box4f>      gridDomains(numGrids);
+    // std::vector<float>      gridScalars(numGridScalars);
+    // std::vector<TetIndices> tetIndices(numTets);
+    // std::vector<PyrIndices> pyrIndices(numPyrs);
+    // std::vector<WedIndices> wedIndices(numWeds);
+    // std::vector<HexIndices> hexIndices(numHexes);
+    // memcpy(tetIndices.data(),_tetIndices,tetIndices.size()*sizeof(tetIndices[0]));
+    // memcpy(pyrIndices.data(),_pyrIndices,pyrIndices.size()*sizeof(pyrIndices[0]));
+    // memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
+    // memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
+    // memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
+    // memcpy(gridOffsets.data(),_gridOffsets,gridOffsets.size()*sizeof(gridOffsets[0]));
+    // memcpy(gridDims.data(),_gridDims,gridDims.size()*sizeof(gridDims[0]));
+    // memcpy(gridDomains.data(),_gridDomains,gridDomains.size()*sizeof(gridDomains[0]));
+    // memcpy(gridScalars.data(),_gridScalars,gridScalars.size()*sizeof(gridScalars[0]));
 
     box3f domain
       = domainOrNull
       ? *(const box3f*)domainOrNull
       : box3f();
     
-    ScalarField *sf = checkGet(model,whichSlot)
-      ->createUMesh(vertices,
-                    tetIndices,
-                    pyrIndices,
-                    wedIndices,
-                    hexIndices,
-                    gridOffsets,
-                    gridDims,
-                    gridDomains,
-                    gridScalars,
-                    domain);
-    return (BNScalarField)sf;
+    ScalarField::SP sf = 
+      UMeshField::create(checkGet(model,whichSlot),
+                         (const vec4f*)vertices,numVertices,
+                         indices,numIndices,
+                         elementOffsets,
+                         numElements,
+                         // tetIndices,
+                         // pyrIndices,
+                         // wedIndices,
+                         // hexIndices,
+                         // gridOffsets,
+                         // gridDims,
+                         // gridDomains,
+                         // gridScalars,
+                         domain);
+    return (BNScalarField)checkGet(model,whichSlot)->context->initReference(sf);
   }
   
   BN_API
@@ -533,7 +583,12 @@ namespace barney {
   BN_API
   void bnSetObject(BNObject target, const char *param, BNObject value)
   {
-    if (!checkGet(target)->setObject(checkGet(param),checkGet(value)->shared_from_this()))
+    Object::SP asObject
+      = value 
+      ? checkGet(value)->shared_from_this()
+      : Object::SP{};
+    bool accepted = checkGet(target)->setObject(checkGet(param),asObject);
+    if (!accepted)
       checkGet(target)->warn_unsupported_member(param,"BNObject");
   }
 
@@ -654,7 +709,16 @@ namespace barney {
                 BNFrameBuffer fb,
                 int pathsPerPixel)
   {
+    // static double t_first = getCurrentTime();
+    // static double t_sum = 0.;
+    
+    // double t0 = getCurrentTime();
+    // LOG_API_ENTRY;
     checkGet(model)->render(checkGet(camera),checkGet(fb),pathsPerPixel);
+    // double t1 = getCurrentTime();
+
+    // t_sum += (t1-t0);
+    // printf("time in %f\n",float((t_sum / (t1 - t_first))));
   }
 
   BN_API

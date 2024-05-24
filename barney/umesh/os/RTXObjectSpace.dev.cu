@@ -18,6 +18,7 @@
 #include <owl/owl_device.h>
 
 namespace barney {
+  namespace device {
 
   using Cluster = RTXObjectSpace::Cluster;
 
@@ -133,4 +134,5 @@ namespace barney {
       optixReportIntersection(hit_t, 0);
   }
 
+}
 }

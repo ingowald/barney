@@ -68,9 +68,11 @@ bool StructuredRegularField::isValid() const
   return m_data;
 }
 
-BNScalarField StructuredRegularField::makeBarneyScalarField(
+BNScalarField StructuredRegularField::createBarneyScalarField(
     BNModel model, int slot) const
 {
+  if (!isValid())
+    return {};
   auto ctx = deviceState()->context;
   BNScalarType barneyType;
   switch (m_data->elementType()) {
@@ -95,13 +97,14 @@ BNScalarField StructuredRegularField::makeBarneyScalarField(
     throw std::runtime_error("scalar type not implemented ...");
   }
   auto dims = m_data->size();
-  return bnStructuredDataCreate(model,
+  auto field = bnStructuredDataCreate(model,
       slot,
       (const int3 &)dims,
       barneyType,
       m_data->data(),
       (const float3 &)m_origin,
       (const float3 &)m_spacing);
+  return field;
 }
 
 box3 StructuredRegularField::bounds() const
@@ -109,15 +112,6 @@ box3 StructuredRegularField::bounds() const
   return isValid()
       ? box3(m_origin, m_origin + ((helium::float3(m_dims) - 1.f) * m_spacing))
       : box3{};
-}
-
-size_t StructuredRegularField::numRequiredGPUBytes() const
-{
-  return getNumBytes(m_generatedCellWidths)
-      + getNumBytes(m_generatedBlockBounds)
-      + getNumBytes(m_generatedBlockLevels)
-      + getNumBytes(m_generatedBlockOffsets)
-      + getNumBytes(m_generatedBlockScalars);
 }
 
 // UnstructuredField //
@@ -157,142 +151,161 @@ void UnstructuredField::commit()
     return;
   }
 
-  m_params.gridData = getParamObject<helium::ObjectArray>("grid.data");
-  m_params.gridDomains = getParamObject<helium::Array1D>("grid.domains");
-
-  auto *vertexPosition = m_params.vertexPosition->beginAs<math::float3>();
-  auto *vertexData = m_params.vertexData->beginAs<float>();
-  auto *index = m_params.index->beginAs<uint64_t>();
-  auto *cellIndex = m_params.cellIndex->beginAs<uint64_t>();
-
-  size_t numVerts = m_params.vertexPosition->size();
-  size_t numCells = m_params.cellIndex->size();
-  size_t numIndices = m_params.index->endAs<uint64_t>() - index;
-
-  m_generatedVertices.clear();
-  m_generatedTets.clear();
-  m_generatedPyrs.clear();
-  m_generatedWedges.clear();
-  m_generatedHexes.clear();
+  // m_params.gridData = getParamObject<helium::ObjectArray>("grid.data");
+  // m_params.gridDomains = getParamObject<helium::Array1D>("grid.domains");
 
   m_bounds.invalidate();
-
-  for (size_t i = 0; i < numIndices; ++i) {
-    m_bounds.insert(vertexPosition[index[i]]);
+  auto *vertexPosition = m_params.vertexPosition->beginAs<math::float3>();
+  int numVertices      = m_params.vertexPosition->endAs<math::float3>()-vertexPosition;
+  auto *vertexData = m_params.vertexData->beginAs<float>();
+  m_vertices.resize(numVertices);
+  for (int i=0;i<numVertices;i++) {
+    (math::float3&)m_vertices[i] = vertexPosition[i];
+    m_bounds.insert(vertexPosition[i]);
+    m_vertices[i].w              = vertexData[i];
   }
+  auto *index = m_params.index->beginAs<uint64_t>();
 
-  for (size_t i = 0; i < numVerts; ++i) {
-    math::float3 pos = vertexPosition[i];
-    float value = vertexData[i];
-    m_generatedVertices.push_back(pos.x);
-    m_generatedVertices.push_back(pos.y);
-    m_generatedVertices.push_back(pos.z);
-    m_generatedVertices.push_back(value);
-  }
+  // size_t numVerts = m_params.vertexPosition->size();
+  size_t numIndices = m_params.index->endAs<uint64_t>() - index;
 
-  for (size_t i = 0; i < numCells; ++i) {
-    uint64_t firstIndex = cellIndex[i];
-    uint64_t lastIndex = i < numCells - 1 ? cellIndex[i + 1] : numIndices;
+  m_indices.resize(numIndices);
+  for (int i=0;i<numIndices;i++)
+    m_indices[i] = index[i];
 
-    if (lastIndex - firstIndex == 4) {
-      for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-        m_generatedTets.push_back(index[j]);
-      }
-    } else if (lastIndex - firstIndex == 5) {
-      for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-        m_generatedPyrs.push_back(index[j]);
-      }
-    } else if (lastIndex - firstIndex == 6) {
-      for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-        m_generatedWedges.push_back(index[j]);
-      }
-    } else if (lastIndex - firstIndex == 8) {
-      for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-        m_generatedHexes.push_back(index[j]);
-      }
-    }
-  }
+  auto *cellIndex = m_params.cellIndex->beginAs<uint64_t>();
+  size_t numCells = m_params.cellIndex->endAs<uint64_t>() - cellIndex;
+  m_elementOffsets.resize(numCells);
+  for (int i=0;i<numCells;i++)
+    m_elementOffsets[i] = cellIndex[i];
+  // m_generatedVertices.clear();
+  // m_generatedTets.clear();
+  // m_generatedPyrs.clear();
+  // m_generatedWedges.clear();
+  // m_generatedHexes.clear();
 
-  if (m_params.gridData && m_params.gridDomains) {
-    m_generatedGridOffsets.clear();
-    m_generatedGridDims.clear();
-    m_generatedGridDomains.clear();
-    m_generatedGridScalars.clear();
 
-    size_t numGrids = m_params.gridData->totalSize();
-    auto *gridData = (helium::Array3D **)m_params.gridData->handlesBegin();
-    auto *gridDomains = m_params.gridDomains->beginAs<box3>();
+  // for (size_t i = 0; i < numIndices; ++i) {
+  //   m_bounds.insert(vertexPosition[index[i]]);
+  // }
 
-    for (size_t i = 0; i < numGrids; ++i) {
-      const helium::Array3D *gd = *(gridData + i);
-      const box3 domain = *(gridDomains + i);
+  // for (size_t i = 0; i < numVerts; ++i) {
+  //   math::float3 pos = vertexPosition[i];
+  //   float value = vertexData[i];
+  //   m_generatedVertices.push_back(pos.x);
+  //   m_generatedVertices.push_back(pos.y);
+  //   m_generatedVertices.push_back(pos.z);
+  //   m_generatedVertices.push_back(value);
+  // }
 
-      m_generatedGridOffsets.push_back(m_generatedGridScalars.size());
+  // enum { VTK_TETRA=10, VTK_HEXAHEDRON=12, VTK_WEDGE=13, VTK_PYRAMID=14 };
+  // for (size_t i = 0; i < numCells; ++i) {
+  //   uint64_t firstIndex = cellIndex[i];
+  //   uint64_t lastIndex = (i < (numCells - 1)) ? cellIndex[i + 1] : numIndices;
 
-      // from anari's array3d we get the number of vertices, not cells!
-      m_generatedGridDims.push_back(gd->size().x - 1);
-      m_generatedGridDims.push_back(gd->size().y - 1);
-      m_generatedGridDims.push_back(gd->size().z - 1);
+  //   m_elementOffsets.push_back(firstIndex);
+  //     if (lastIndex - firstIndex == 4) {
+  //     // for (uint64_t j = firstIndex; j < lastIndex; ++j) {
+  //     //   m_generatedTets.push_back(index[j]);
+  //     // }
+  //     m_elementTypes.push_back(VTK_TETRA);
+  //   } else if (lastIndex - firstIndex == 5) {
+  //     // for (uint64_t j = firstIndex; j < lastIndex; ++j) {
+  //     //   m_generatedPyrs.push_back(index[j]);
+  //     // }
+  //     m_elementTypes.push_back(VTK_PYRAMID);
+  //   } else if (lastIndex - firstIndex == 6) {
+  //     // for (uint64_t j = firstIndex; j < lastIndex; ++j) {
+  //     //   m_generatedWedges.push_back(index[j]);
+  //     // }
+  //     m_elementTypes.push_back(VTK_WEDGE);
+  //   } else if (lastIndex - firstIndex == 8) {
+  //     // for (uint64_t j = firstIndex; j < lastIndex; ++j) {
+  //     //   m_generatedHexes.push_back(index[j]);
+  //     // }
+  //     m_elementTypes.push_back(VTK_HEXAHEDRON);
+  //   }
+  // }
 
-      box1 valueRange{FLT_MAX, -FLT_MAX};
-      for (unsigned z = 0; z < gd->size().z; ++z)
-        for (unsigned y = 0; y < gd->size().y; ++y)
-          for (unsigned x = 0; x < gd->size().x; ++x) {
-            size_t index =
-                z * size_t(gd->size().x) * gd->size().y + y * gd->size().x + x;
-            float f = gd->dataAs<float>()[index];
-            m_generatedGridScalars.push_back(f);
-            valueRange.insert(f);
-          }
+  // if (m_params.gridData && m_params.gridDomains) {
+  //   m_generatedGridOffsets.clear();
+  //   m_generatedGridDims.clear();
+  //   m_generatedGridDomains.clear();
+  //   m_generatedGridScalars.clear();
 
-      m_generatedGridDomains.push_back(domain.lower.x);
-      m_generatedGridDomains.push_back(domain.lower.y);
-      m_generatedGridDomains.push_back(domain.lower.z);
-      m_generatedGridDomains.push_back(valueRange.lower);
-      m_generatedGridDomains.push_back(domain.upper.x);
-      m_generatedGridDomains.push_back(domain.upper.y);
-      m_generatedGridDomains.push_back(domain.upper.z);
-      m_generatedGridDomains.push_back(valueRange.upper);
-    }
-  }
+  //   size_t numGrids = m_params.gridData->totalSize();
+  //   auto *gridData = (helium::Array3D **)m_params.gridData->handlesBegin();
+  //   auto *gridDomains = m_params.gridDomains->beginAs<box3>();
+
+  //   for (size_t i = 0; i < numGrids; ++i) {
+  //     const helium::Array3D *gd = *(gridData + i);
+  //     const box3 domain = *(gridDomains + i);
+
+  //     m_generatedGridOffsets.push_back(m_generatedGridScalars.size());
+
+  //     // from anari's array3d we get the number of vertices, not cells!
+  //     m_generatedGridDims.push_back(gd->size().x - 1);
+  //     m_generatedGridDims.push_back(gd->size().y - 1);
+  //     m_generatedGridDims.push_back(gd->size().z - 1);
+
+  //     box1 valueRange{FLT_MAX, -FLT_MAX};
+  //     for (unsigned z = 0; z < gd->size().z; ++z)
+  //       for (unsigned y = 0; y < gd->size().y; ++y)
+  //         for (unsigned x = 0; x < gd->size().x; ++x) {
+  //           size_t index =
+  //               z * size_t(gd->size().x) * gd->size().y + y * gd->size().x + x;
+  //           float f = gd->dataAs<float>()[index];
+  //           m_generatedGridScalars.push_back(f);
+  //           valueRange.insert(f);
+  //         }
+
+  //     m_generatedGridDomains.push_back(domain.lower.x);
+  //     m_generatedGridDomains.push_back(domain.lower.y);
+  //     m_generatedGridDomains.push_back(domain.lower.z);
+  //     m_generatedGridDomains.push_back(valueRange.lower);
+  //     m_generatedGridDomains.push_back(domain.upper.x);
+  //     m_generatedGridDomains.push_back(domain.upper.y);
+  //     m_generatedGridDomains.push_back(domain.upper.z);
+  //     m_generatedGridDomains.push_back(valueRange.upper);
+  //   }
+  // }
 }
 
-BNScalarField UnstructuredField::makeBarneyScalarField(
+BNScalarField UnstructuredField::createBarneyScalarField(
     BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
   return bnUMeshCreate(model,
-      slot,
-      m_generatedVertices.data(),
-      m_generatedVertices.size() / 4,
-      m_generatedTets.data(),
-      m_generatedTets.size() / 4,
-      m_generatedPyrs.data(),
-      m_generatedPyrs.size() / 5,
-      m_generatedWedges.data(),
-      m_generatedWedges.size() / 6,
-      m_generatedHexes.data(),
-      m_generatedHexes.size() / 8,
-      m_generatedGridOffsets.size(),
-      m_generatedGridOffsets.data(),
-      m_generatedGridDims.data(),
-      m_generatedGridDomains.data(),
-      m_generatedGridScalars.data(),
-      m_generatedGridScalars.size());
+                       slot,
+                       (const ::float4 *)m_vertices.data(),
+                       m_vertices.size(),
+                       m_indices.data(),
+                       m_indices.size(),
+                       m_elementOffsets.data(),
+                       m_elementOffsets.size(),
+                       // m_generatedVertices.data(),
+                       // m_generatedVertices.size() / 4,
+                       // m_generatedTets.data(),
+                       // m_generatedTets.size() / 4,
+                       // m_generatedPyrs.data(),
+                       // m_generatedPyrs.size() / 5,
+                       // m_generatedWedges.data(),
+                       // m_generatedWedges.size() / 6,
+                       // m_generatedHexes.data(),
+                       // m_generatedHexes.size() / 8,
+                       // m_generatedGridOffsets.size(),
+                       // m_generatedGridOffsets.data(),
+                       // m_generatedGridDims.data(),
+                       // m_generatedGridDomains.data(),
+                       // m_generatedGridScalars.data(),
+                       // m_generatedGridScalars.size()
+                       nullptr
+                       );
 }
 
 box3 UnstructuredField::bounds() const
 {
   return m_bounds;
-}
-
-size_t UnstructuredField::numRequiredGPUBytes() const
-{
-  return getNumBytes(m_generatedVertices) + getNumBytes(m_generatedTets)
-      + getNumBytes(m_generatedPyrs) + getNumBytes(m_generatedWedges)
-      + getNumBytes(m_generatedHexes) + getNumBytes(m_generatedGridOffsets)
-      + getNumBytes(m_generatedGridDims) + getNumBytes(m_generatedGridDomains)
-      + getNumBytes(m_generatedGridScalars);
 }
 
 // BlockStructuredField //
@@ -374,7 +387,7 @@ void BlockStructuredField::commit()
   }
 }
 
-BNScalarField BlockStructuredField::makeBarneyScalarField(
+BNScalarField BlockStructuredField::createBarneyScalarField(
     BNModel model, int slot) const
 {
   return bnBlockStructuredAMRCreate(model,
@@ -390,14 +403,6 @@ BNScalarField BlockStructuredField::makeBarneyScalarField(
 box3 BlockStructuredField::bounds() const
 {
   return m_bounds;
-}
-
-size_t BlockStructuredField::numRequiredGPUBytes() const
-{
-  return getNumBytes(m_generatedBlockBounds)
-      + getNumBytes(m_generatedBlockLevels)
-      + getNumBytes(m_generatedBlockOffsets)
-      + getNumBytes(m_generatedBlockScalars);
 }
 
 } // namespace barney_device

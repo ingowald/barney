@@ -20,20 +20,22 @@
 #include "barney/common/Texture.h"
 #include "barney/light/Light.h"
 #include "barney/geometry/Geometry.h"
+#include "barney/render/HostMaterial.h"
+// #include "barney/render/DeviceMaterial.h"
 
 namespace barney {
 
-  ModelSlot::ModelSlot(GlobalModel *model, int slot)
-    : Object(model->context),
-      model(model),
+  ModelSlot::ModelSlot(GlobalModel *_model, int slot)
+    : Object(_model->context),
+      model(_model),
       localID(localID),
-      devGroup(model->context->perSlot[slot].devGroup),
-      world(model->context->perSlot[slot].devGroup.get())
+      devGroup(_model->context->perSlot[slot].devGroup),
+      world(std::make_shared<render::World>(_model->context->perSlot[slot].devGroup))
   {}
 
   ModelSlot::~ModelSlot()
   {}
-
+  
   OWLContext ModelSlot::getOWL() const
   {
     assert(devGroup);
@@ -68,36 +70,11 @@ namespace barney {
       (std::make_shared<Volume>(devGroup.get(),sf));
   }
 
-
-  // Cylinders *ModelSlot::createCylinders(const vec3f      *points,
-  //                                       int               numPoints,
-  //                                       const vec3f      *colors,
-  //                                       bool              colorPerVertex,
-  //                                       const vec2i      *indices,
-  //                                       int               numIndices,
-  //                                       const float      *radii,
-  //                                       bool              radiusPerVertex,
-  //                                       float             defaultRadius)
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Cylinders>(this,
-  //                                  points,numPoints,
-  //                                  colors,colorPerVertex,
-  //                                  indices,numIndices,
-  //                                  radii,radiusPerVertex,defaultRadius));
-  // }
-    
-  // Spheres *ModelSlot::createSpheres(// const Material &material,
-  //                                   // const vec3f *origins,
-  //                                   // int numOrigins,
-  //                                   // const vec3f *colors,
-  //                                   // const float *radii,
-  //                                   // float defaultRadius
-  //                                   )
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Spheres>(this));
-  // }
+  ModelSlot::SP ModelSlot::create(GlobalModel *model, int localID)
+  {
+    ModelSlot::SP slot = std::make_shared<ModelSlot>(model,localID);
+    return slot;
+  }
 
   Data *ModelSlot::createData(BNDataType dataType,
                               size_t numItems,
@@ -113,7 +90,7 @@ namespace barney {
 
   void ModelSlot::setRadiance(float radiance)
   {
-    world.radiance = radiance;
+    world->radiance = radiance;
   }
   
   Texture *ModelSlot::createTexture(BNTexelFormat texelFormat,
@@ -130,8 +107,6 @@ namespace barney {
 
   void ModelSlot::build()
   { 
-    multiPassInstances.clear();
-
     std::vector<render::QuadLight> quadLights;
     std::vector<render::DirLight>  dirLights;
 
@@ -169,18 +144,14 @@ namespace barney {
         owlGroups.push_back(group->triangleGeomGroup);
         owlTransforms.push_back(instances.xfms[i]);
       }
-      for (auto volume : group->volumes)
+      for (auto volume : group->volumes) {
         for (auto gg : volume->generatedGroups) {
           owlGroups.push_back(gg);
           owlTransforms.push_back(instances.xfms[i]);
         }
-      multiPassInstances.instantiate(group,instances.xfms[i]);
+      }
     }
       
-    // if (owlGroups.size() == 0)
-    //   std::cout << OWL_TERMINAL_RED
-    //             << "warning: data group is empty..."
-    //             << OWL_TERMINAL_DEFAULT << std::endl;
     instances.group
       = owlInstanceGroupCreate(devGroup->owl,
                                owlGroups.size(),
@@ -188,9 +159,9 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
-    world.set(envMapLight?envMapLight->content:render::EnvMapLight{});
-    world.set(quadLights);
-    world.set(dirLights);
+    world->set(envMapLight?envMapLight->content:render::EnvMapLight{});
+    world->set(quadLights);
+    world->set(dirLights);
   }
     
 }

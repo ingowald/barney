@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,8 +14,30 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mori/Spheres.h"
+#pragma once
 
-namespace mori {
-  
+#include "barney/DeviceGroup.h"
+// #include "barney/material/device/Material.h"
+
+namespace barney {
+  namespace render {
+    
+    struct Globals {
+      Globals(const DevGroup *devGroup);
+      struct DD {
+        float *MicrofacetDielectricAlbedoTable_dir;
+        float *MicrofacetDielectricReflectionAlbedoTable_dir;
+        float *MicrofacetDielectricAlbedoTable_avg;
+        float *MicrofacetDielectricReflectionAlbedoTable_avg;
+      };
+
+      DD getDD(const Device::SP &device) const;
+
+      OWLBuffer MicrofacetDielectricAlbedoTable_dir_buffer = 0;
+      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_dir_buffer = 0;
+      OWLBuffer MicrofacetDielectricAlbedoTable_avg_buffer = 0;
+      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_avg_buffer = 0;
+    };
+ 
+  }
 }

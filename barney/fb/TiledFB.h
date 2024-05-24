@@ -23,10 +23,10 @@
 namespace barney {
 
   struct FrameBuffer;
-  
+
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
-  
+
   struct AccumTile {
     float4 accum[pixelsPerTile];
     float  depth[pixelsPerTile];
@@ -38,14 +38,14 @@ namespace barney {
   struct TileDesc {
     vec2i lower;
   };
-  
+
   struct TiledFB {
     typedef std::shared_ptr<TiledFB> SP;
     static SP create(Device::SP device, FrameBuffer *owner);
 
     TiledFB(Device::SP device, FrameBuffer *owner);
     virtual ~TiledFB();
-    
+
     void resize(vec2i newSize);
     void free();
 
@@ -58,13 +58,14 @@ namespace barney {
                           vec2i      numPixels,
                           FinalTile *finalTiles,
                           TileDesc  *tileDescs,
-                          int        numTiles);
-    
+                          int        numTiles,
+                          bool       showCrosshairs);
+
     void finalizeTiles();
 
     /*! number of (valid) pixels */
     vec2i numPixels       = { 0,0 };
-    
+
     /*! number of tiles to cover the entire frame buffer; some on the
       right/bottom may be partly filled */
     vec2i numTiles        = { 0, 0 };
@@ -76,5 +77,5 @@ namespace barney {
     FrameBuffer *const owner;
     Device::SP const device;
   };
-  
+
 }

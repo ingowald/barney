@@ -4,213 +4,202 @@
 #include "Sampler.h"
 // std
 #include <cassert>
+#include <iostream>
 
 namespace barney_device {
 
-Sampler::Sampler(BarneyGlobalState *s) : Object(ANARI_SAMPLER, s) {}
+  Sampler::Sampler(BarneyGlobalState *s) : Object(ANARI_SAMPLER, s) {}
 
-Sampler::~Sampler() = default;
-
-Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
-{
-  if (subtype == "image1D")
-    return new Image1D(s);
-  else if (subtype == "image2D")
-    return new Image2D(s);
-  else if (subtype == "transform")
-    return new TransformSampler(s);
-  else
-    return (Sampler *)new UnknownObject(ANARI_SAMPLER, s);
-}
-
-// Subtypes ///////////////////////////////////////////////////////////////////
-
-// Image1D //
-
-Image1D::Image1D(BarneyGlobalState *s) : Sampler(s) {}
-
-Image1D::~Image1D()
-{
-  cleanup();
-}
-
-void Image1D::commit()
-{
-  cleanup();
-
-  Sampler::commit();
-
-  m_image = getParamObject<helium::Array1D>("image");
-  m_inAttribute = toAttribute(getParamString("inAttribute", "attribute0"));
-  m_linearFilter = getParamString("filter", "linear") != "nearest";
-  m_wrapMode = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
-  m_inTransform = math::identity;
-  getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
-  m_inOffset =
-      getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
-  m_outTransform = math::identity;
-  getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
-  m_outOffset =
-      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
-}
-
-bool Image1D::isValid() const
-{
-  return m_image;
-}
-
-void Image1D::setBarneyParameters(BNModel model, BNMaterial mat, int slot) const
-{
-  if (!m_image)
-    return;
-
-  bnSetString(mat, "sampler.type", "image1D");
-  bnSet1i(mat, "sampler.image.inAttribute", m_inAttribute);
-  bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&m_inTransform.x);
-  bnSet4f(mat,
-      "sampler.image.inOffset",
-      m_inOffset.x,
-      m_inOffset.y,
-      m_inOffset.z,
-      m_inOffset.w);
-  bnSet4x4fv(
-      mat, "sampler.image.outTransform", (const float *)&m_outTransform.x);
-  bnSet4f(mat,
-      "sampler.image.outOffset",
-      m_outOffset.x,
-      m_outOffset.y,
-      m_outOffset.z,
-      m_outOffset.w);
-
-  if (!m_texture) {
-    m_texture = makeBarneyTexture2D(model,
-        slot,
-        m_image,
-        m_image->size(),
-        1,
-        m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST,
-        m_wrapMode);
+  Sampler::~Sampler()
+  {
+    cleanup();
   }
 
-  bnSetObject(mat, "sampler.image.image", m_texture);
-}
-
-void Image1D::cleanup()
-{
-  if (m_texture)
-    bnRelease(m_texture);
-  m_texture = nullptr;
-}
-
-// Image2D //
-
-Image2D::Image2D(BarneyGlobalState *s) : Sampler(s) {}
-
-Image2D::~Image2D()
-{
-  cleanup();
-}
-
-void Image2D::commit()
-{
-  cleanup();
-
-  Sampler::commit();
-
-  m_image = getParamObject<helium::Array2D>("image");
-  m_inAttribute = toAttribute(getParamString("inAttribute", "attribute0"));
-  m_linearFilter = getParamString("filter", "linear") != "nearest";
-  m_wrapMode1 = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
-  m_wrapMode2 = toBarneyAddressMode(getParamString("wrapMode2", "clampToEdge"));
-  m_inTransform = math::identity;
-  getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
-  m_inOffset =
-      getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
-  m_outTransform = math::identity;
-  getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
-  m_outOffset =
-      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
-}
-
-bool Image2D::isValid() const
-{
-  return m_image;
-}
-
-void Image2D::setBarneyParameters(BNModel model, BNMaterial mat, int slot) const
-{
-  if (!m_image)
-    return;
-
-  bnSetString(mat, "sampler.type", "image2D");
-  bnSet1i(mat, "sampler.image.inAttribute", m_inAttribute);
-  bnSet4x4fv(mat, "sampler.image.inTransform", (const float *)&m_inTransform.x);
-  bnSet4f(mat,
-      "sampler.image.inOffset",
-      m_inOffset.x,
-      m_inOffset.y,
-      m_inOffset.z,
-      m_inOffset.w);
-  bnSet4x4fv(
-      mat, "sampler.image.outTransform", (const float *)&m_outTransform.x);
-  bnSet4f(mat,
-      "sampler.image.outOffset",
-      m_outOffset.x,
-      m_outOffset.y,
-      m_outOffset.z,
-      m_outOffset.w);
-
-  if (!m_texture) {
-    assert(m_wrapMode1 == m_wrapMode2);
-    m_texture = makeBarneyTexture2D(model,
-        slot,
-        m_image,
-        m_image->size().x,
-        m_image->size().y,
-        m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST,
-        m_wrapMode1);
+  Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
+  {
+    PING; PRINT(subtype);
+    if (subtype == "image1D")
+      return new Image1D(s);
+    else if (subtype == "image2D")
+      return new Image2D(s);
+    else if (subtype == "transform")
+      return new TransformSampler(s);
+    else
+      return (Sampler *)new UnknownObject(ANARI_SAMPLER, s);
   }
 
-  bnSetObject(mat, "sampler.image.image", m_texture);
-}
+  void Sampler::cleanup()
+  {
+    if (m_bnSampler) {
+      bnRelease(m_bnSampler);
+      m_bnSampler = nullptr;
+    }
+    if (m_bnTextureData) {
+      bnRelease(m_bnTextureData);
+      m_bnTextureData = nullptr;
+    }
+  }
 
-void Image2D::cleanup()
-{
-  if (m_texture)
-    bnRelease(m_texture);
-  m_texture = nullptr;
-}
+  // Subtypes ///////////////////////////////////////////////////////////////////
 
-// TransformSampler //
+  // Image1D //
 
-TransformSampler::TransformSampler(BarneyGlobalState *s) : Sampler(s) {}
+  Image1D::Image1D(BarneyGlobalState *s) : Sampler(s) {}
 
-void TransformSampler::commit()
-{
-  Sampler::commit();
+  Image1D::~Image1D() = default;
 
-  m_inAttribute = toAttribute(getParamString("inAttribute", "attribute0"));
-  m_outTransform = math::identity;
-  getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
-  getParam("transform", ANARI_FLOAT32_MAT4, &m_outTransform);
-  m_outOffset =
+  void Image1D::commit()
+  {
+    cleanup();
+
+    Sampler::commit();
+
+    // m_image = getParamObject<helium::Array1D>("image");
+    // m_inAttribute = getParamString("inAttribute", "attribute0");
+    // m_linearFilter = getParamString("filter", "linear") != "nearest";
+    // m_wrapMode = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
+    // m_inTransform = math::identity;
+    // getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
+    // m_inOffset =
+    //     getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    // m_outTransform = math::identity;
+    // getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
+    // m_outOffset =
+    //     getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    // setBarneyParameters();
+  }
+
+  bool Image1D::isValid() const
+  {
+    return m_image;
+  }
+
+  void Image1D::createBarneySampler(BNModel model, int slot)
+  {
+  }
+
+  // Image2D //
+
+  Image2D::Image2D(BarneyGlobalState *s) : Sampler(s) {}
+
+  Image2D::~Image2D()
+  {
+    cleanup();
+  }
+
+  void Image2D::commit()
+  {
+    Sampler::commit();
+
+    m_image = getParamObject<helium::Array2D>("image");
+    m_inAttribute = getParamString("inAttribute", "attribute0");
+    m_linearFilter = getParamString("filter", "linear") != "nearest";
+    m_wrapMode1 = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
+    m_wrapMode2 = toBarneyAddressMode(getParamString("wrapMode2", "clampToEdge"));
+    m_inTransform = math::identity;
+    getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
+    m_inOffset =
+      getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    m_outTransform = math::identity;
+    getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
+    m_outOffset =
       getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
-}
+  }
 
-void TransformSampler::setBarneyParameters(
-    BNModel model, BNMaterial mat, int slot) const
-{
-  bnSetString(mat, "sampler.type", "transform");
-  bnSet1i(mat, "sampler.transform.inAttribute", m_inAttribute);
-  bnSet4x4fv(
-      mat, "sampler.transform.outTransform", (const float *)&m_outTransform.x);
-  bnSet4f(mat,
-      "sampler.transform.outOffset",
-      m_outOffset.x,
-      m_outOffset.y,
-      m_outOffset.z,
-      m_outOffset.w);
-}
+  bool Image2D::isValid() const
+  {
+    return m_image;
+  }
+
+  BNSampler Sampler::getBarneySampler(BNModel model, int slot)
+  {
+    if (!isValid())
+      return {};
+    if (!isModelTracked(model, slot)) {
+      cleanup();
+      trackModel(model, slot);
+    }
+    if (!m_bnSampler) 
+      createBarneySampler(model,slot);
+    return m_bnSampler;
+  }
+
+  void Image2D::createBarneySampler(BNModel model, int slot) 
+  {
+    // ------------------------------------------------------------------
+    // first, create 2D cuda array of texels. these barney objects
+    // SHOULD actually live with their respective image array...
+    // ------------------------------------------------------------------
+    int width  = m_image->size().x;
+    int height = m_image->size().y;
+    std::vector<uint32_t> texels;
+    if (!convert_to_rgba8(m_image, texels)) {
+      std::stringstream ss;
+      ss << "unsupported texel type: "
+         << anari::toString(m_image->elementType());
+      std::string str = ss.str();
+      fprintf(stderr, "%s\n", str.c_str());
+      texels.resize(width*height);
+    }
+
+    if (m_bnTextureData)
+      bnRelease(m_bnTextureData);
+    m_bnTextureData
+      = bnTextureData2DCreate(model,slot,BN_TEXEL_FORMAT_RGBA8,
+                              width,height,texels.data());
+  
+    // ------------------------------------------------------------------
+    // now, create sampler over those texels
+    // ------------------------------------------------------------------
+  
+    m_bnSampler = bnSamplerCreate(model,slot,"texture2D");
+    bnSetObject(m_bnSampler,"textureData",m_bnTextureData);
+  
+    BNTextureFilterMode filterMode
+      = m_linearFilter
+      ? BN_TEXTURE_LINEAR
+      : BN_TEXTURE_NEAREST;
+  
+    bnSet1i(m_bnSampler,"filterMode", (int)filterMode);
+    bnSet1i(m_bnSampler,"wrapMode0", (int)m_wrapMode1);
+    bnSet1i(m_bnSampler,"wrapMode1", (int)m_wrapMode2);
+    bnSet4x4fv(m_bnSampler,"inTransform", (const float *)&m_inTransform);
+    bnSet4x4fv(m_bnSampler,"outTransform",(const float *)&m_outTransform);
+    bnSet4f(m_bnSampler,"inOffset", m_inOffset.x,m_inOffset.y,m_inOffset.z,m_inOffset.w);
+    bnSet4f(m_bnSampler,"outOffset",m_outOffset.x,m_outOffset.y,m_outOffset.z,m_outOffset.w);
+    bnSetString(m_bnSampler,"inAttribute",m_inAttribute.c_str());
+    bnCommit(m_bnSampler);
+  }
+
+  // TransformSampler //
+
+  TransformSampler::TransformSampler(BarneyGlobalState *s) : Sampler(s) {}
+
+  void TransformSampler::commit()
+  {
+    Sampler::commit();
+
+    m_inAttribute = getParamString("inAttribute", "attribute0");
+    m_outTransform = math::identity;
+    getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
+    getParam("transform", ANARI_FLOAT32_MAT4, &m_outTransform);
+    m_outOffset =
+      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+  }
+
+  void TransformSampler::createBarneySampler(BNModel model, int slot)
+  {
+    // setBarneySampler(model, slot, "transform");
+    // return m_bnSampler;
+  }
+
+  // void TransformSampler::setBarneyParameters()
+  // {
+  //   if (!m_bnSampler)
+  //     return;
+
+  //   // TODO: set and commit parameters on barney sampler
+  // }
 
 } // namespace barney_device
 

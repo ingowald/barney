@@ -30,7 +30,7 @@
 // #endif
 
 namespace barney {
-
+  namespace device {
   OPTIX_BOUNDS_PROGRAM(UMeshAWTBounds)(const void *geomData,                
                                        owl::common::box3f &primBounds,  
                                        const int32_t primID)
@@ -616,4 +616,5 @@ namespace barney {
       optixReportIntersection(hit_t, 0);
     }
   }
+}
 }

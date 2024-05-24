@@ -26,6 +26,7 @@
 typedef struct _BNContext                           *BNContext;
 typedef struct _BNObject                         {} *BNObject;
 typedef struct _BNData         : public _BNObject{} *BNData;
+typedef struct _BNTextureData  : public _BNObject{} *BNTextureData;
 typedef struct _BNScalarField  : public _BNObject{} *BNScalarField;
 typedef struct _BNGeom         : public _BNObject{} *BNGeom;
 typedef struct _BNVolume       : public _BNObject{} *BNVolume;
@@ -38,6 +39,7 @@ typedef struct _BNTexture3D    : public _BNObject{} *BNTexture3D;
 typedef struct _BNLight        : public _BNObject{} *BNLight;
 typedef struct _BNCamera       : public _BNObject{} *BNCamera;
 typedef struct _BNMaterial     : public _BNObject{} *BNMaterial;
+typedef struct _BNSampler     : public _BNObject{} *BNSampler;
 
 typedef BNTexture2D BNTexture;
 
@@ -326,13 +328,28 @@ void bnSetInstances(BNModel model,
 // scene content
 // ==================================================================
 
-/*! same as owlNewData, basically */
+/*! a regular, one-dimensional array of numItems elements of given
+  type. On the device the respective elemtns will appear as a plain
+  CUDA array that lies in either device or managed memory.  Note data
+  arrays of this type can _not_ be assigned to samplers because these
+  need data to be put into cudaArray's (in order to create
+  cudaTextures) */
 BN_API
 BNData bnDataCreate(BNModel model,
                     int whichSlot,
                     BNDataType dataType,
                     size_t numItems,
                     const void *items);
+
+/*! creates a cudaArray2D of specified size and texels. Can be passed
+  to a sampler to create a matching cudaTexture2D */
+BN_API
+BNTextureData bnTextureData2DCreate(BNModel model,
+                                    int whichSlot,
+                                    BNTexelFormat texelFormat,
+                                    int width, int height,
+                                    const void *items);
+
 BN_API
 BNLight bnLightCreate(BNModel model,
                       int whichSlot,
@@ -399,6 +416,10 @@ BNMaterial bnMaterialCreate(BNModel model,
                             int whichSlot,
                             const char *type);
 
+BN_API
+BNSampler bnSamplerCreate(BNModel model,
+                          int whichSlot,
+                          const char *type);
 
 
 
@@ -416,28 +437,42 @@ BNScalarField bnUMeshCreate(BNModel model,
                             int whichSlot,
                             // vertices, 4 floats each (3 floats position,
                             // 4th float scalar value)
-                            const float *vertices, int numVertices,
-                            // tets, 4 ints in vtk-style each
-                            const int *tets,       int numTets,
-                            // pyramids, 5 ints in vtk-style each
-                            const int *pyrs,       int numPyrs,
-                            // wedges/tents, 6 ints in vtk-style each
-                            const int *wedges,     int numWedges,
-                            // general (non-guaranteed cube/voxel) hexes, 8
-                            // ints in vtk-style each
-                            const int *hexes,      int numHexes,
-                            //
-                            int numGrids,
-                            // offsets into gridIndices array
-                            const int *_gridOffsets,
-                            // grid dims (3 floats each)
-                            const int *_gridDims,
-                            // grid domains, 6 floats each (3 floats min corner,
-                            // 3 floats max corner)
-                            const float *gridDomains,
-                            // grid scalars
-                            const float *gridScalars,
-                            int numGridScalars,
+                            const float4 *vertices, int numVertices,
+                            /*! array of all the vertex indices of all
+                                elements, one after another;
+                                ie. elements with different vertex
+                                counts can come in any order, so a
+                                mesh with one tet and one hex would
+                                have an index array of size 12, with
+                                four for the tet and eight for the
+                                hex */
+                            const int *_indices, int numIndices,
+                            /*! one int per logical element, stating
+                                where in the indices array it's N
+                                differnt vertices will be located */
+                            const int *_elementOffsets,
+                            int numElements,
+                            // // tets, 4 ints in vtk-style each
+                            // const int *tets,       int numTets,
+                            // // pyramids, 5 ints in vtk-style each
+                            // const int *pyrs,       int numPyrs,
+                            // // wedges/tents, 6 ints in vtk-style each
+                            // const int *wedges,     int numWedges,
+                            // // general (non-guaranteed cube/voxel) hexes, 8
+                            // // ints in vtk-style each
+                            // const int *hexes,      int numHexes,
+                            // //
+                            // int numGrids,
+                            // // offsets into gridIndices array
+                            // const int *_gridOffsets,
+                            // // grid dims (3 floats each)
+                            // const int *_gridDims,
+                            // // grid domains, 6 floats each (3 floats min corner,
+                            // // 3 floats max corner)
+                            // const float *gridDomains,
+                            // // grid scalars
+                            // const float *gridScalars,
+                            // int numGridScalars,
                             const float3 *domainOrNull=0);
 
 

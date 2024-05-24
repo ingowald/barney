@@ -18,9 +18,15 @@
 
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/common/CUBQL.h"
+#include "barney/render/Ray.h"
 
 namespace barney {
-
+  using render::Ray;
+  using render::boxTest;
+  using ints5 = UMeshField::ints<5>;
+  using ints6 = UMeshField::ints<6>;
+  using ints8 = UMeshField::ints<8>;
+  
   // ------------------------------------------------------------------
   /*! base class for object-space volume accelerator for an
     unstructured mesh field */
@@ -271,7 +277,7 @@ namespace barney {
       specialized ElementIntersector helper class */
     inline __device__ void doOthers();
     /*! intesect all gridlets in currelt leaf */
-    inline __device__ void doGrids();
+    // inline __device__ void doGrids();
     
     /*! intersect all currently gathered segments - this is a helper
       function for doTets() */
@@ -283,8 +289,8 @@ namespace barney {
        gridlet's majorant. TODO: at some point compute how many
        samples to expect for full gridlet, and if too high, swtich to
        DDA and per-cell intersection */
-    inline __device__
-    void doGrid(int gridID);
+    // inline __device__
+    // void doGrid(int gridID);
 
     /*! sample a gridlet on given position */
     inline __device__
@@ -461,7 +467,7 @@ namespace barney {
   {
     if (elt.type != Element::TET) return false;
 
-    int4 indices = dd.tetIndices[elt.ID];
+    int4 indices = (const vec4i &)dd.indices[elt.ofs0];
     set(dd.vertices[indices.x],
         dd.vertices[indices.y],
         dd.vertices[indices.z],
@@ -520,7 +526,7 @@ namespace barney {
     switch (elt.type)
       {
       case Element::TET: {
-        int4 indices = dd.tetIndices[elt.ID];
+        vec4i indices = (const vec4i&)dd.indices[elt.ofs0];
         v0 = dd.vertices[indices.x];
         v1 = dd.vertices[indices.y];
         v2 = dd.vertices[indices.z];
@@ -528,34 +534,34 @@ namespace barney {
       }
         break;
       case Element::PYR: {
-        auto pyrIndices = dd.pyrIndices[elt.ID];
-        v0 = dd.vertices[pyrIndices[0]];
-        v1 = dd.vertices[pyrIndices[1]];
-        v2 = dd.vertices[pyrIndices[2]];
-        v3 = dd.vertices[pyrIndices[3]];
-        v4 = dd.vertices[pyrIndices[4]];
+        ints5 indices = (const ints5&)dd.indices[elt.ofs0];
+        v0 = dd.vertices[indices[0]];
+        v1 = dd.vertices[indices[1]];
+        v2 = dd.vertices[indices[2]];
+        v3 = dd.vertices[indices[3]];
+        v4 = dd.vertices[indices[4]];
       }
         break;
       case Element::WED: {
-        auto wedIndices = dd.wedIndices[elt.ID];
-        v0 = dd.vertices[wedIndices[0]];
-        v1 = dd.vertices[wedIndices[1]];
-        v2 = dd.vertices[wedIndices[2]];
-        v3 = dd.vertices[wedIndices[3]];
-        v4 = dd.vertices[wedIndices[4]];
-        v5 = dd.vertices[wedIndices[5]];
+        ints6 indices = (const ints6&)dd.indices[elt.ofs0];
+        v0 = dd.vertices[indices[0]];
+        v1 = dd.vertices[indices[1]];
+        v2 = dd.vertices[indices[2]];
+        v3 = dd.vertices[indices[3]];
+        v4 = dd.vertices[indices[4]];
+        v5 = dd.vertices[indices[5]];
       }
         break;
       case Element::HEX: {
-        auto hexIndices = dd.hexIndices[elt.ID];
-        v0 = dd.vertices[hexIndices[0]];
-        v1 = dd.vertices[hexIndices[1]];
-        v2 = dd.vertices[hexIndices[2]];
-        v3 = dd.vertices[hexIndices[3]];
-        v4 = dd.vertices[hexIndices[4]];
-        v5 = dd.vertices[hexIndices[5]];
-        v6 = dd.vertices[hexIndices[6]];
-        v7 = dd.vertices[hexIndices[7]];
+        ints8 indices = (const ints8&)dd.indices[elt.ofs0];
+        v0 = dd.vertices[indices[0]];
+        v1 = dd.vertices[indices[1]];
+        v2 = dd.vertices[indices[2]];
+        v3 = dd.vertices[indices[3]];
+        v4 = dd.vertices[indices[4]];
+        v5 = dd.vertices[indices[5]];
+        v6 = dd.vertices[indices[6]];
+        v7 = dd.vertices[indices[7]];
       }
         break;
       default:
@@ -775,8 +781,8 @@ namespace barney {
   {
     hit_t = ray.tMax;
     doTets();
-    if (hadAnyGrids)
-      doGrids();
+    // if (hadAnyGrids)
+    //   doGrids();
     if (hadAnyOthers)
       doOthers();
   }
@@ -873,7 +879,8 @@ namespace barney {
       // find next prim:
       int next = it++;
       Element elt = self.elements[next];
-      if (elt.type == Element::GRID || elt.type == Element::TET)
+      if (// elt.type == Element::GRID ||
+          elt.type == Element::TET)
         continue;
       isec.setElement(elt);
       if (!isec.computeElementRange())
@@ -963,66 +970,66 @@ namespace barney {
      gridlet's majorant. TODO: at some point compute how many
      samples to expect for full gridlet, and if too high, swtich to
      DDA and per-cell intersection */
-  inline __device__
-  void NewIntersector::doGrid(int gridID)
-  {
-    box4f domain = self.gridDomains[gridID];
-    vec3i dims = self.gridDims[gridID];
-    range1f gridRange = inputLeafRange;
-    if (!boxTest(gridRange.lower,gridRange.upper,
-                 domain,ray.org,ray.dir))
-      return;
+  // inline __device__
+  // void NewIntersector::doGrid(int gridID)
+  // {
+  //   box4f domain = self.gridDomains[gridID];
+  //   vec3i dims = self.gridDims[gridID];
+  //   range1f gridRange = inputLeafRange;
+  //   if (!boxTest(gridRange.lower,gridRange.upper,
+  //                        domain,ray.org,ray.dir))
+  //     return;
 
-    float majorant = self.xf.majorant(getRange(domain));
-    if (majorant == 0.f)
-      return;
+  //   float majorant = self.xf.majorant(getRange(domain));
+  //   if (majorant == 0.f)
+  //     return;
 
-    // TODO: compute expected num steps, and if too high, do DDA
-    // across cells
-    const float *scalars = self.gridScalars +
-      self.gridOffsets[gridID];
+  //   // TODO: compute expected num steps, and if too high, do DDA
+  //   // across cells
+  //   const float *scalars = self.gridScalars +
+  //     self.gridOffsets[gridID];
 
-    float t = gridRange.lower;
-    while (true) {
-      // take a step...
-      float dt = - logf(1.f-rand())/majorant;
-      t += dt;
-      if (t >= gridRange.upper)
-        break;
+  //   float t = gridRange.lower;
+  //   while (true) {
+  //     // take a step...
+  //     float dt = - logf(1.f-rand())/majorant;
+  //     t += dt;
+  //     if (t >= gridRange.upper)
+  //       break;
         
-      // compute scalar by linearly interpolating along segment
-      vec3f P = ray.org + t*ray.dir;
-      const float scalar = sampleGrid(domain,dims,scalars,P);
-      if (isnan(scalar)) 
-        continue;
+  //     // compute scalar by linearly interpolating along segment
+  //     vec3f P = ray.org + t*ray.dir;
+  //     const float scalar = sampleGrid(domain,dims,scalars,P);
+  //     if (isnan(scalar)) 
+  //       continue;
         
-      vec4f mapped = self.xf.map(scalar);
+  //     vec4f mapped = self.xf.map(scalar);
             
-      // now got a scalar: compare to majorant
-      float r = rand();
-      bool accept = (mapped.w >= r*majorant);
-      if (!accept) 
-        continue;
+  //     // now got a scalar: compare to majorant
+  //     float r = rand();
+  //     bool accept = (mapped.w >= r*majorant);
+  //     if (!accept) 
+  //       continue;
         
-      // we DID have a hit here!
-      hit_t = t;
-      // ray.tMax = t;
-      inputLeafRange.upper = min(inputLeafRange.upper,hit_t);
-      ray.setVolumeHit(P,t,getPos(mapped));
-      break;
-    }
-  }
+  //     // we DID have a hit here!
+  //     hit_t = t;
+  //     // ray.tMax = t;
+  //     inputLeafRange.upper = min(inputLeafRange.upper,hit_t);
+  //     ray.setVolumeHit(P,t,getPos(mapped));
+  //     break;
+  //   }
+  // }
     
-  /*! intesect all gridlets in currelt leaf */
-  inline __device__ void NewIntersector::doGrids()
-  {
-    for (int it=begin;it<end;it++) {
-      const Element elt = self.elements[it];
-      if (elt.type != Element::GRID)
-        continue;
-      doGrid(elt.ID);
-    }
-  }
+  // /*! intesect all gridlets in currelt leaf */
+  // inline __device__ void NewIntersector::doGrids()
+  // {
+  //   for (int it=begin;it<end;it++) {
+  //     const Element elt = self.elements[it];
+  //     if (elt.type != Element::GRID)
+  //       continue;
+  //     doGrid(elt.ID);
+  //   }
+  // }
     
   /*! intesect all test in currelt leaf, by gathering segments and
     intersecting those when required */
@@ -1041,10 +1048,8 @@ namespace barney {
         const bool hadATet 
           = isec.set(self,elt);
         if (!hadATet) {
-          if (elt.type == Element::GRID)
-            hadAnyGrids = true;
-          else
-            hadAnyOthers = true;
+          // if (elt.type == Element::GRID)
+          //   hadAnyGrids = true;
           continue;
         }
 

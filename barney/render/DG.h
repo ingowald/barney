@@ -36,7 +36,7 @@
 #include "barney/common/Texture.h"
 #include "barney/common/Data.h"
 #include "barney/common/half.h"
-#include "barney/material/math.h"
+#include "barney/render/floatN.h"
 
 namespace barney {
   namespace render {
@@ -44,6 +44,7 @@ namespace barney {
     struct DG {
       vec3f Ng, Ns;
       vec3f wo;
+      vec3f P;
       bool  insideMedium;
     };
 
@@ -51,6 +52,7 @@ namespace barney {
       inline __device__ EvalRes() {}
       inline __device__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
       static inline __device__ EvalRes zero() { return { vec3f(0.f),0.f }; }
+      inline __device__ bool valid() const    { return pdf > 0.f && !isinf(pdf); }
       vec3f value;
       float pdf;
     };
@@ -60,12 +62,62 @@ namespace barney {
       // inline __device__ SampleRes() {}
       // inline __device__ SampleRes(vec3f v, float p) : value(v),pdf(p) {}
       static inline __device__ SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
+      inline __device__ bool valid() const    { return pdf > 0.f && !isinf(pdf); }
       vec3f weight;
       vec3f wi;
       int   type;
       float pdf;
     };
+
+    /*! result of scattering a ray on a differential surface,
+        according to a BSDF */
+    struct ScatterResult {
+      // typedef enum {
+      //   NONE=0,
+      //   DIFFUSE  = (1<<0),
+      //   SPECULAR = (1<<1),
+      //   GLOSSY   = (1<<2),
+      //   DIFFUSE_TRANS  = (1<<3),
+      //   SPECULAR_TRANS = (1<<4),
+      //   GLOSSY_TRANS   = (1<<5),
+      // } Type;
+      inline __device__ bool valid() const    { return pdf > 0.f && !isinf(pdf); }
+      
+      vec3f f_r;
+      vec3f dir;
+      float pdf  = 0.f;
+      // Type  type = NONE;
+      bool  changedMedium = false;
+      float offsetDirection = +1.f;
+    };
     
+    
+    inline __device__
+    vec3f sampleCosineWeightedHemisphere(vec3f Ns, Random &random)
+    {
+      while (1) {
+        vec3f p = 2.f*vec3f(random(),random(),random()) - vec3f(1.f);
+        if (dot(p,p) > 1.f) continue;
+        return normalize(normalize(p)
+                         +Ns//vec3f(0.f,0.f,1.f)
+                         );
+      }
+    }
+  
+  inline __device__ float pbrt_clampf(float f, float lo, float hi)
+  { return max(lo,min(hi,f)); }
+  
+  inline __device__ float pbrtSphericalTheta(const vec3f &v)
+  {
+    return acosf(pbrt_clampf(v.z, -1.f, 1.f));
+  }
+  
+  inline __device__ float pbrtSphericalPhi(const vec3f &v)
+  {
+    float p = atan2f(v.y, v.x);
+    return (p < 0.f) ? (p + float(2.f * M_PI)) : p;
+  }
+
     
     inline __device__
     float luminance(vec3f c)

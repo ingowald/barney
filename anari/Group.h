@@ -24,11 +24,9 @@ struct Group : public Object
   box3 bounds() const;
 
  private:
-  void cleanup();
-
-  helium::IntrusivePtr<ObjectArray> m_surfaceData;
-  helium::IntrusivePtr<ObjectArray> m_volumeData;
-  helium::IntrusivePtr<ObjectArray> m_lightData;
+  helium::CommitObserverPtr<ObjectArray> m_surfaceData;
+  helium::CommitObserverPtr<ObjectArray> m_volumeData;
+  helium::CommitObserverPtr<ObjectArray> m_lightData;
 };
 
 } // namespace barney_device

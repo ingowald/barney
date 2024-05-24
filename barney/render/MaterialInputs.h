@@ -16,27 +16,42 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
+#include "barney/render/device/HitAttributes.h"
 
 namespace barney {
   namespace render {
-    
-    struct Globals {
-      Globals(const DevGroup *devGroup);
-      struct DD {
-        float *MicrofacetDielectricAlbedoTable_dir;
-        float *MicrofacetDielectricReflectionAlbedoTable_dir;
-        float *MicrofacetDielectricAlbedoTable_avg;
-        float *MicrofacetDielectricReflectionAlbedoTable_avg;
+    namespace device {
+      
+      struct MaterialInput {
+        typedef enum { VALUE, ATTRIBUTE, SAMPLER, UNDEFINED } Type;
+      
+        inline __device__
+        float4 eval(const HitAttributes &hitData) const;
+      
+        Type type;
+        union {
+          float4               value;
+          HitAttributes::Which attribute;
+          int                  samplerID;
+        };
       };
 
-      DD getDD(const Device::SP &device) const;
+      inline __device__
+      float4 MaterialInput::eval(const HitAttributes &hitData,
+                                 Sampler::DD *samplers) const
+      {
+        if (type == VALUE)
+          return value;
+        if (type == ATTRIBUTE)
+          return hitData.get(attribute);
+        if (type == SAMPLER) { 
+          if (samplerID < 0) return make_float4(0.f,0.f,0.f,1.f);
+          return samplers[samplerID].eval(hitData);
+        }
+        printf("un-handled material input type\n");
+        return make_float4(0.f,0.f,0.f,1.f);
+      }
 
-      OWLBuffer MicrofacetDielectricAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricAlbedoTable_avg_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_avg_buffer = 0;
-    };
- 
+    }
   }
 }

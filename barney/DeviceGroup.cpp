@@ -16,6 +16,7 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/DeviceContext.h"
+#include "barney/render/OptixGlobals.h"
 
 namespace barney {
 
@@ -57,10 +58,10 @@ namespace barney {
     : lmsIdx(lmsIdx)
   {
     owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
-
+    std::cout << "DEVGROUP created owl " << (int*)owl << std::endl;
     OWLVarDecl args[]
       = {
-         { nullptr }
+      { nullptr }
     };
     OWLModule module = owlModuleCreate(owl,traceRays_ptx);
     rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
@@ -75,19 +76,22 @@ namespace barney {
 
     OWLVarDecl params[]
       = {
-         { "world", OWL_GROUP, OWL_OFFSETOF(DeviceContext::DD, world) },
-         { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(DeviceContext::DD,rays) },
-         { "numRays",  OWL_INT, OWL_OFFSETOF(DeviceContext::DD,numRays) },
-         { nullptr }
+      { "world", OWL_GROUP, OWL_OFFSETOF(render::OptixGlobals, world) },
+      { "materials", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, materials) },
+      { "samplers", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, samplers) },
+      { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::OptixGlobals,rays) },
+      { "numRays",  OWL_INT, OWL_OFFSETOF(render::OptixGlobals,numRays) },
+      { nullptr }
     };
     lp = owlParamsCreate(owl,
-                         sizeof(DeviceContext::DD),
+                         sizeof(render::OptixGlobals),
                          params,
                          -1);
   }
 
   DevGroup::~DevGroup()
   {
+    std::cout << "DEVGROUP DESTROYING context " << (int*)owl << std::endl;
     owlContextDestroy(owl);
     owl = 0;
   }

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/Group.h"
+#include "barney/render/HostMaterial.h"
 #include "barney/render/World.h"
 #include "barney.h"
 #include <set>
@@ -29,9 +30,7 @@ namespace barney {
   struct Data;
   struct Light;
   
-  namespace render {
-    struct World;
-  }
+
   
   struct ModelSlot : public Object {
     typedef std::shared_ptr<ModelSlot> SP;
@@ -42,13 +41,23 @@ namespace barney {
               int slotIndex);
     virtual ~ModelSlot();
 
+    render::HostMaterial::SP getDefaultMaterial()
+    {
+      if (!defaultMaterial) {
+        defaultMaterial
+          = render::HostMaterial::create(this,"AnariMatte");
+        defaultMaterial->commit();
+      }
+      return defaultMaterial;
+    }
+    render::HostMaterial::SP defaultMaterial = 0;
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
     
     OWLContext getOWL() const;
 
-    static SP create(GlobalModel *model, int localID)
-    { return std::make_shared<ModelSlot>(model,localID); }
+    static SP create(GlobalModel *model, int localID);
 
     Group   *
     createGroup(const std::vector<Geometry::SP> &geoms,
@@ -64,17 +73,6 @@ namespace barney {
                   BNTextureAddressMode addressMode,
                   BNTextureColorSpace  colorSpace);
     
-    ScalarField *createUMesh(std::vector<vec4f> &vertices,
-                             std::vector<TetIndices> &tetIndices,
-                             std::vector<PyrIndices> &pyrIndices,
-                             std::vector<WedIndices> &wedIndices,
-                             std::vector<HexIndices> &hexIndices,
-                             std::vector<int> &gridOffsets,
-                             std::vector<vec3i> &gridDims,
-                             std::vector<box4f> &gridDomains,
-                             std::vector<float> &gridScalars,
-                             const box3f &domain);
-   
     ScalarField *createBlockStructuredAMR(std::vector<box3i> &blockBounds,
                                           std::vector<int> &blockLevels,
                                           std::vector<int> &blockOffsets,
@@ -96,8 +94,8 @@ namespace barney {
 
     void build();
 
-    render::World world;
-    MultiPass::Instances multiPassInstances;
+    render::World::SP world;
+    // MultiPass::Instances multiPassInstances;
     DevGroup::SP   const devGroup;
     GlobalModel   *const model;
     int            const localID;

@@ -29,10 +29,15 @@ namespace barney {
     // owlGeomSet3fv(geom,"domain,upper",&volume->domain.upper.x);
     getXF()->setVariables(geom);
   }
+
+  inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
+  { assert(s); return s; }
+  inline ScalarField *assertNotNull(ScalarField *s)
+  { assert(s); return s; }
   
   Volume::Volume(DevGroup *devGroup,
                  ScalarField::SP sf)
-    : Object(sf->context),
+    : Object(assertNotNull(sf)->context),
       devGroup(devGroup),
       sf(sf),
       xf(devGroup)

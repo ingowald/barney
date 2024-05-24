@@ -29,11 +29,16 @@ void Volume::markCommitted()
 
 TransferFunction1D::TransferFunction1D(BarneyGlobalState *s) : Volume(s) {}
 
+bool TransferFunction1D::isValid() const
+{
+  return m_field && m_field->isValid() && m_colorData && m_opacityData;
+}
+
 void TransferFunction1D::commit()
 {
   Volume::commit();
 
-  cleanup();
+  // cleanup();
 
   m_field = getParamObject<SpatialField>("value");
   if (!m_field) {
@@ -93,18 +98,30 @@ void TransferFunction1D::commit()
 
     m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
   }
+  
+  BNModel model = trackedModel();
+  if (!model) return;
+  int slot = trackedSlot();
+  
+  BNVolume vol = getBarneyVolume(model,slot);
+  bnVolumeSetXF(vol,
+                (float2 &)m_valueRange,
+                (const float4 *)m_rgbaMap.data(),
+                m_rgbaMap.size(),
+                m_densityScale);
+  bnCommit(vol);
 }
-
-BNVolume TransferFunction1D::makeBarneyVolume(BNModel model, int slot) const
+  
+BNVolume TransferFunction1D::createBarneyVolume(BNModel model, int slot) 
 {
-  BNVolume bnVol =
-      bnVolumeCreate(model, slot, m_field->makeBarneyScalarField(model, slot));
-  bnVolumeSetXF(bnVol,
-      (float2 &)m_valueRange,
-      (const float4 *)m_rgbaMap.data(),
-      m_rgbaMap.size(),
-      m_densityScale);
-  return bnVol;
+  BNVolume vol =
+    bnVolumeCreate(model, slot, m_field->getBarneyScalarField(model, slot));
+  // bnVolumeSetXF(vol,
+  //               (float2 &)m_valueRange,
+  //               (const float4 *)m_rgbaMap.data(),
+  //               m_rgbaMap.size(),
+  //               m_densityScale);
+  return vol;
 }
 
 box3 TransferFunction1D::bounds() const
@@ -112,12 +129,7 @@ box3 TransferFunction1D::bounds() const
   return m_bounds;
 }
 
-size_t TransferFunction1D::numRequiredGPUBytes() const
-{
-  return m_field ? m_field->numRequiredGPUBytes() : size_t(0);
-}
-
-void TransferFunction1D::cleanup() {}
+// void TransferFunction1D::cleanup() {}
 
 } // namespace barney_device
 

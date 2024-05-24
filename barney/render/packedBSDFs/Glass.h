@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,18 +14,24 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney.h"
-#include "barney/mpi/MPIWrappers.h"
+#pragma once
+
+#include "barney/render/DG.h"
 
 namespace barney {
-  namespace core {
+  namespace render {
+    namespace packedBSDF {
+      
+      struct Glass {
+        inline __device__ vec3f getAlbedo(bool dbg) const;
+        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
 
-    struct Geometry {
-      struct DD {
+        float  ior;
+        float3 attenuation;
       };
-    };
-
-    struct OptixGeometry : public Geometry {};
-    
+      
+    }
   }
 }
+

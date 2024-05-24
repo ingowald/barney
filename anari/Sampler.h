@@ -10,86 +10,98 @@
 
 namespace barney_device {
 
-struct Sampler : public Object
-{
-  Sampler(BarneyGlobalState *s);
-  ~Sampler() override;
+  struct Sampler : public Object
+  {
+    Sampler(BarneyGlobalState *s);
+    ~Sampler() override;
 
-  static Sampler *createInstance(
-      std::string_view subtype, BarneyGlobalState *s);
+    static Sampler *createInstance(
+                                   std::string_view subtype, BarneyGlobalState *s);
 
-  virtual void setBarneyParameters(
-      BNModel model, BNMaterial mat, int slot) const = 0;
-};
+    BNSampler getBarneySampler(BNModel model, int slot);
+    // virtual BNSampler getBarneySampler(BNModel model, int slot) = 0;
 
-// Subtypes ///////////////////////////////////////////////////////////////////
+  protected:
+    virtual void createBarneySampler(BNModel model, int slot) = 0;
+    // void setBarneySampler(BNModel model, int slot, const char *subtype);
+    void cleanup();
 
-struct Image1D : public Sampler
-{
-  Image1D(BarneyGlobalState *s);
-  ~Image1D();
-  void commit() override;
+    mutable BNSampler m_bnSampler{nullptr};
+  
+    // this should atually live with the data array that the image
+    // sampler(s) are referencing:
+    mutable BNTextureData m_bnTextureData{nullptr};
+  };
 
-  bool isValid() const override;
+  // Subtypes ///////////////////////////////////////////////////////////////////
 
-  void setBarneyParameters(
-      BNModel model, BNMaterial mat, int slot) const override;
+  struct Image1D : public Sampler
+  {
+    Image1D(BarneyGlobalState *s);
+    ~Image1D();
+    void commit() override;
 
- private:
-  void cleanup();
+    bool isValid() const override;
 
-  helium::IntrusivePtr<helium::Array1D> m_image;
-  int m_inAttribute{-1};
-  BNTextureAddressMode m_wrapMode{BN_TEXTURE_CLAMP};
-  bool m_linearFilter{true};
-  math::mat4 m_inTransform{math::identity};
-  math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
-  math::mat4 m_outTransform{math::identity};
-  math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
+    // BNSampler getBarneySampler(BNModel model, int slot) override;
 
-  mutable BNTexture2D m_texture{nullptr};
-};
+  private:
+    void createBarneySampler(BNModel model, int slot) override;
 
-struct Image2D : public Sampler
-{
-  Image2D(BarneyGlobalState *s);
-  ~Image2D();
-  void commit() override;
+    helium::IntrusivePtr<helium::Array1D> m_image;
+    std::string m_inAttribute;
+    BNTextureAddressMode m_wrapMode{BN_TEXTURE_CLAMP};
+    bool m_linearFilter{true};
+    math::mat4 m_inTransform{math::identity};
+    math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
+    math::mat4 m_outTransform{math::identity};
+    math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
 
-  bool isValid() const override;
+    // BNSampler m_bnSampler{nullptr};
+  };
 
-  void setBarneyParameters(
-      BNModel model, BNMaterial mat, int slot) const override;
+  struct Image2D : public Sampler
+  {
+    Image2D(BarneyGlobalState *s);
+    ~Image2D();
+    void commit() override;
 
- private:
-  void cleanup();
+    bool isValid() const override;
 
-  helium::IntrusivePtr<helium::Array2D> m_image;
-  int m_inAttribute{-1};
-  BNTextureAddressMode m_wrapMode1{BN_TEXTURE_CLAMP};
-  BNTextureAddressMode m_wrapMode2{BN_TEXTURE_CLAMP};
-  bool m_linearFilter{true};
-  math::mat4 m_inTransform{math::identity};
-  math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
-  math::mat4 m_outTransform{math::identity};
-  math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
+    // BNSampler getBarneySampler(BNModel model, int slot) override;
 
-  mutable BNTexture2D m_texture{nullptr};
-};
+  private:
+    void createBarneySampler(BNModel model, int slot) override;
 
-struct TransformSampler : public Sampler
-{
-  TransformSampler(BarneyGlobalState *s);
-  void commit() override;
+    helium::IntrusivePtr<helium::Array2D> m_image;
+    std::string          m_inAttribute;
+    BNTextureAddressMode m_wrapMode1{BN_TEXTURE_CLAMP};
+    BNTextureAddressMode m_wrapMode2{BN_TEXTURE_CLAMP};
+    bool m_linearFilter{true};
+    math::mat4 m_inTransform{math::identity};
+    math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
+    math::mat4 m_outTransform{math::identity};
+    math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
 
-  void setBarneyParameters(
-      BNModel model, BNMaterial mat, int slot) const override;
+    // mutable BNSampler m_bnSampler{nullptr};
+    // mutable BNTexture2D m_texture{nullptr};
+  };
 
- private:
-  int m_inAttribute{-1};
-  math::mat4 m_outTransform{math::identity};
-  math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
-};
+  struct TransformSampler : public Sampler
+  {
+    TransformSampler(BarneyGlobalState *s);
+    void commit() override;
+
+    // BNSampler getBarneySampler(BNModel model, int slot) override;
+
+  private:
+    void createBarneySampler(BNModel model, int slot) override;
+
+    std::string  m_inAttribute;
+    math::mat4   m_outTransform{math::identity};
+    math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
+    // mutable BNSampler m_bnSampler{nullptr};
+  };
 
 } // namespace barney_device
 
