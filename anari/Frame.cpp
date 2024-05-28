@@ -27,19 +27,6 @@
 
 namespace barney_device {
 
-// Helper GPU functions ///////////////////////////////////////////////////////
-
-template <bool SRGB = true>
-__device__ float toneMap(float v)
-{
-  if constexpr (SRGB)
-    return std::pow(v, 1.f / 2.2f);
-  else
-    return v;
-}
-
-// Frame definitions //////////////////////////////////////////////////////////
-
 Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
 {
   m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
@@ -230,9 +217,9 @@ void Frame::convertPixelsToFinalFormat()
         [] __device__(math::byte4 p) {
           auto f =
               math::float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
-          f.x = toneMap(f.x);
-          f.y = toneMap(f.y);
-          f.z = toneMap(f.z);
+          f.x = std::pow(f.x, 1.f / 2.2f);
+          f.y = std::pow(f.y, 1.f / 2.2f);
+          f.z = std::pow(f.z, 1.f / 2.2f);
           return math::byte4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
         });
   } else if (m_colorType == ANARI_FLOAT32_VEC4) {
