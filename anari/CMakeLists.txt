@@ -8,6 +8,8 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
+enable_language(CUDA)
+
 find_package(anari 0.10.0 COMPONENTS code_gen)
 
 include(GNUInstallDirs)
@@ -46,12 +48,18 @@ project_add_library(SHARED
   World.cpp
 )
 
+set_source_files_properties(
+  Frame.cpp
+  PROPERTIES
+    COMPILE_FLAGS "--extended-lambda --expt-relaxed-constexpr"
+    LANGUAGE CUDA
+)
+
 if (TARGET barney_mpi)
   project_link_libraries(PRIVATE anari::helium barney_mpi)
 else()
   project_link_libraries(PRIVATE anari::helium barney)
 endif()
-#project_link_libraries(PRIVATE anari::helium barney)
 
 project_include_directories(
 PUBLIC

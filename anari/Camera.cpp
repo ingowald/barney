@@ -32,7 +32,7 @@ void Camera::commit()
   markUpdated();
 }
 
-const BNCamera Camera::barneyCamera() const
+BNCamera Camera::barneyCamera() const
 {
   return m_barneyCamera;
 }

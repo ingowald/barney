@@ -6,6 +6,11 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+// cuda
+#include <cuda_runtime_api.h>
+// thrust
+#include <thrust/execution_policy.h>
+#include <thrust/transform.h>
 
 #ifndef PRINT
 #define PRINT(var) std::cout << #var << "=" << var << std::endl;
@@ -22,6 +27,19 @@
 
 namespace barney_device {
 
+// Helper GPU functions ///////////////////////////////////////////////////////
+
+template <bool SRGB = true>
+__device__ float toneMap(float v)
+{
+  if constexpr (SRGB)
+    return std::pow(v, 1.f / 2.2f);
+  else
+    return v;
+}
+
+// Frame definitions //////////////////////////////////////////////////////////
+
 Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
 {
   m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
@@ -30,6 +48,7 @@ Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
 Frame::~Frame()
 {
   wait();
+  cleanup();
   bnRelease(m_bnFrameBuffer);
 }
 
@@ -45,6 +64,8 @@ BarneyGlobalState *Frame::deviceState() const
 
 void Frame::commit()
 {
+  cleanup();
+
   m_renderer = getParamObject<Renderer>("renderer");
   if (!m_renderer) {
     reportMessage(ANARI_SEVERITY_WARNING,
@@ -74,21 +95,19 @@ void Frame::commit()
   const auto numPixels = size.x * size.y;
 
   auto perPixelBytes = 4 * (m_colorType == ANARI_FLOAT32_VEC4 ? 4 : 1);
-  m_pixelBuffer.resize(numPixels * perPixelBytes);
+  cudaMallocManaged((void **)&m_colorBuffer, numPixels * perPixelBytes);
+  cudaMallocManaged((void **)&m_bnPixelBuffer, numPixels * sizeof(uint32_t));
+  if (m_depthType == ANARI_FLOAT32)
+    cudaMallocManaged((void **)&m_depthBuffer, numPixels * sizeof(float));
 
-  m_depthBuffer.resize(m_depthType == ANARI_FLOAT32 ? numPixels : 0, 0.f);
-
-  m_bnHostBuffer.resize(numPixels);
-  bnFrameBufferResize(m_bnFrameBuffer,
-      size.x,
-      size.y,
-      m_bnHostBuffer.data(),
-      m_depthBuffer.data());
+  bnFrameBufferResize(
+      m_bnFrameBuffer, size.x, size.y, m_bnPixelBuffer, m_depthBuffer);
   bnSet1i(m_bnFrameBuffer,
       "showCrosshairs",
       m_renderer ? int(m_renderer->crosshairs()) : false);
   bnCommit(m_bnFrameBuffer);
   m_frameData.size = size;
+  m_frameData.totalPixels = numPixels;
 }
 
 bool Frame::getProperty(
@@ -151,10 +170,10 @@ void *Frame::map(std::string_view channel,
   if (channel == "channel.color") {
     convertPixelsToFinalFormat();
     *pixelType = m_colorType;
-    return m_pixelBuffer.data();
-  } else if (channel == "channel.depth" && !m_depthBuffer.empty()) {
+    return m_colorBuffer;
+  } else if (channel == "channel.depth" && m_depthBuffer) {
     *pixelType = ANARI_FLOAT32;
-    return m_depthBuffer.data();
+    return m_depthBuffer;
   }
 
   *width = 0;
@@ -196,27 +215,49 @@ void Frame::wait() const
 void Frame::convertPixelsToFinalFormat()
 {
   if (m_colorType == ANARI_UFIXED8_VEC4) {
-    std::memcpy(
-        m_pixelBuffer.data(), m_bnHostBuffer.data(), m_pixelBuffer.size());
+    cudaMemcpy(m_bnPixelBuffer,
+        m_colorBuffer,
+        m_frameData.totalPixels * sizeof(uint32_t),
+        cudaMemcpyDefault);
   } else if (m_colorType == ANARI_UFIXED8_RGBA_SRGB) {
-    auto numPixels = m_frameData.size.x * m_frameData.size.y;
-    auto *src = (math::byte4 *)m_bnHostBuffer.data();
-    auto *dst = (math::byte4 *)m_pixelBuffer.data();
-    std::transform(src, src + numPixels, dst, [](math::byte4 p) {
-      auto f = math::float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
-      f.x = helium::toneMap(f.x);
-      f.y = helium::toneMap(f.y);
-      f.z = helium::toneMap(f.z);
-      return math::byte4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
-    });
+    auto numPixels = m_frameData.totalPixels;
+    auto *src = (math::byte4 *)m_bnPixelBuffer;
+    auto *dst = (math::byte4 *)m_colorBuffer;
+    thrust::transform(thrust::device,
+        src,
+        src + numPixels,
+        dst,
+        [] __device__(math::byte4 p) {
+          auto f =
+              math::float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
+          f.x = toneMap(f.x);
+          f.y = toneMap(f.y);
+          f.z = toneMap(f.z);
+          return math::byte4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
+        });
   } else if (m_colorType == ANARI_FLOAT32_VEC4) {
-    auto numPixels = m_frameData.size.x * m_frameData.size.y;
-    auto *src = (math::byte4 *)m_bnHostBuffer.data();
-    auto *dst = (math::float4 *)m_pixelBuffer.data();
-    std::transform(src, src + numPixels, dst, [](math::byte4 p) {
-      return math::float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
-    });
+    auto numPixels = m_frameData.totalPixels;
+    auto *src = (math::byte4 *)m_bnPixelBuffer;
+    auto *dst = (math::float4 *)m_colorBuffer;
+    thrust::transform(thrust::device,
+        src,
+        src + numPixels,
+        dst,
+        [] __device__(math::byte4 p) {
+          return math::float4(
+              p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
+        });
   }
+}
+
+void Frame::cleanup()
+{
+  cudaFree(m_bnPixelBuffer);
+  cudaFree(m_colorBuffer);
+  cudaFree(m_depthBuffer);
+  m_bnPixelBuffer = nullptr;
+  m_colorBuffer = nullptr;
+  m_depthBuffer = nullptr;
 }
 
 } // namespace barney_device

@@ -19,7 +19,7 @@ struct Camera : public Object
 
   math::float4 imageRegion() const;
 
-  const BNCamera barneyCamera() const;
+  BNCamera barneyCamera() const;
 
  protected:
   math::float3 m_pos;
