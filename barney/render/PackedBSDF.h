@@ -20,6 +20,7 @@
 #include "packedBSDFs/NVisii.h"
 #include "packedBSDFs/Glass.h"
 #include "packedBSDFs/Phase.h"
+#include "packedBSDFs/Principled.h"
 
 namespace barney {
   namespace render {
@@ -33,7 +34,8 @@ namespace barney {
         /* phase function */
         TYPE_Phase,
         TYPE_VisRTX,
-        TYPE_NVisii
+        TYPE_NVisii,
+        TYPE_Principled
       } Type;
       struct Data {
         union {
@@ -41,6 +43,7 @@ namespace barney {
           packedBSDF::VisRTX visRTX;
           packedBSDF::Glass  glass;
           packedBSDF::NVisii nvisii;
+          packedBSDF::Principled principled;
         };
       } data;
 
@@ -57,6 +60,9 @@ namespace barney {
       inline __device__ PackedBSDF(const packedBSDF::NVisii  &nvisii)
       { type = TYPE_NVisii; data.nvisii = nvisii; }
       inline __device__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
+
+      inline __device__ PackedBSDF(const packedBSDF::Principled  &principled)
+      { type = TYPE_Principled; data.principled = principled; }
       
       inline __device__
       EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
@@ -81,6 +87,8 @@ namespace barney {
     inline __device__
     EvalRes PackedBSDF::eval(render::DG dg, vec3f w_i, bool dbg) const
     {
+      if (type == TYPE_Principled)
+        return data.principled.eval(dg,w_i,dbg);
       if (type == TYPE_Phase)
         return data.phase.eval(dg,w_i,dbg);
       if (type == TYPE_VisRTX)
