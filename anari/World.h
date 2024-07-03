@@ -25,10 +25,10 @@ struct World : public Object
  private:
   void buildBarneyModel();
 
-  helium::CommitObserverPtr<ObjectArray> m_zeroSurfaceData;
-  helium::CommitObserverPtr<ObjectArray> m_zeroVolumeData;
-  helium::CommitObserverPtr<ObjectArray> m_zeroLightData;
-  helium::CommitObserverPtr<ObjectArray> m_instanceData;
+  helium::ChangeObserverPtr<ObjectArray> m_zeroSurfaceData;
+  helium::ChangeObserverPtr<ObjectArray> m_zeroVolumeData;
+  helium::ChangeObserverPtr<ObjectArray> m_zeroLightData;
+  helium::ChangeObserverPtr<ObjectArray> m_instanceData;
 
   helium::IntrusivePtr<Group> m_zeroGroup;
   helium::IntrusivePtr<Instance> m_zeroInstance;

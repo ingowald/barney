@@ -24,9 +24,9 @@ struct Group : public Object
   box3 bounds() const;
 
  private:
-  helium::CommitObserverPtr<ObjectArray> m_surfaceData;
-  helium::CommitObserverPtr<ObjectArray> m_volumeData;
-  helium::CommitObserverPtr<ObjectArray> m_lightData;
+  helium::ChangeObserverPtr<ObjectArray> m_surfaceData;
+  helium::ChangeObserverPtr<ObjectArray> m_volumeData;
+  helium::ChangeObserverPtr<ObjectArray> m_lightData;
 };
 
 } // namespace barney_device

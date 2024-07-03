@@ -40,9 +40,9 @@ struct Sphere : public Geometry
   box3 bounds() const override;
 
  private:
-  helium::CommitObserverPtr<Array1D> m_index;
-  helium::CommitObserverPtr<Array1D> m_vertexPosition;
-  helium::CommitObserverPtr<Array1D> m_vertexRadius;
+  helium::ChangeObserverPtr<Array1D> m_index;
+  helium::ChangeObserverPtr<Array1D> m_vertexPosition;
+  helium::ChangeObserverPtr<Array1D> m_vertexRadius;
   std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
   float m_globalRadius{0.f};
 };
@@ -58,9 +58,9 @@ struct Triangle : public Geometry
   box3 bounds() const override;
 
  private:
-  helium::CommitObserverPtr<Array1D> m_index;
-  helium::CommitObserverPtr<Array1D> m_vertexPosition;
-  helium::CommitObserverPtr<Array1D> m_vertexNormal;
+  helium::ChangeObserverPtr<Array1D> m_index;
+  helium::ChangeObserverPtr<Array1D> m_vertexPosition;
+  helium::ChangeObserverPtr<Array1D> m_vertexNormal;
   std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
   std::vector<int> m_generatedIndices;
 };

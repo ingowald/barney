@@ -63,7 +63,7 @@ struct Frame : public helium::BaseFrame
   uint8_t *m_colorBuffer{nullptr};
   float *m_depthBuffer{nullptr};
 
-  helium::CommitObserverPtr<Renderer> m_renderer;
+  helium::ChangeObserverPtr<Renderer> m_renderer;
   helium::IntrusivePtr<Camera> m_camera;
   helium::IntrusivePtr<World> m_world;
 

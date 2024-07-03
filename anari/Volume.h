@@ -18,32 +18,16 @@ struct Volume : public Object
 
   void markCommitted() override;
 
-  virtual BNVolume createBarneyVolume(BNModel model, int slot) = 0;
-  BNVolume getBarneyVolume(BNModel model, int slot)
-  {
-    if (!isValid())
-      return {};
-    if (!isModelTracked(model, slot)) {
-      cleanup();
-      trackModel(model, slot);
-    }
-    if (!m_bnVolume) 
-      m_bnVolume = createBarneyVolume(model,slot);
-    return m_bnVolume;
-  }
-    
-  void cleanup()
-  {
-    if (m_bnVolume) {
-      bnRelease(m_bnVolume);
-      m_bnVolume = nullptr;
-    }
-  }
-  
+  BNVolume getBarneyVolume(BNModel model, int slot);
 
   virtual box3 bounds() const = 0;
 
-  BNVolume m_bnVolume = 0;
+ protected:
+  virtual BNVolume createBarneyVolume(BNModel model, int slot) = 0;
+  virtual void setBarneyParameters() = 0;
+  void cleanup();
+
+  BNVolume m_bnVolume{nullptr};
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -59,6 +43,8 @@ struct TransferFunction1D : public Volume
   box3 bounds() const override;
 
  private:
+  void setBarneyParameters() override;
+
   helium::IntrusivePtr<SpatialField> m_field;
 
   box3 m_bounds;
@@ -70,7 +56,6 @@ struct TransferFunction1D : public Volume
   helium::IntrusivePtr<helium::Array1D> m_opacityData;
 
   std::vector<math::float4> m_rgbaMap;
-
 };
 
 } // namespace barney_device

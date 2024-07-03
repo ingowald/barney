@@ -25,6 +25,27 @@ void Volume::markCommitted()
   Object::markCommitted();
 }
 
+BNVolume Volume::getBarneyVolume(BNModel model, int slot)
+{
+  if (!isValid())
+    return {};
+  if (!isModelTracked(model, slot)) {
+    cleanup();
+    trackModel(model, slot);
+    m_bnVolume = createBarneyVolume(model, slot);
+    setBarneyParameters();
+  }
+  return m_bnVolume;
+}
+
+void Volume::cleanup()
+{
+  if (m_bnVolume) {
+    bnRelease(m_bnVolume);
+    m_bnVolume = nullptr;
+  }
+}
+
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 TransferFunction1D::TransferFunction1D(BarneyGlobalState *s) : Volume(s) {}
@@ -98,30 +119,15 @@ void TransferFunction1D::commit()
 
     m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
   }
-  
-  BNModel model = trackedModel();
-  if (!model) return;
-  int slot = trackedSlot();
-  
-  BNVolume vol = getBarneyVolume(model,slot);
-  bnVolumeSetXF(vol,
-                (float2 &)m_valueRange,
-                (const float4 *)m_rgbaMap.data(),
-                m_rgbaMap.size(),
-                m_densityScale);
-  bnCommit(vol);
+
+  setBarneyParameters();
 }
-  
-BNVolume TransferFunction1D::createBarneyVolume(BNModel model, int slot) 
+
+BNVolume TransferFunction1D::createBarneyVolume(BNModel model, int slot)
 {
-  BNVolume vol =
-    bnVolumeCreate(model, slot, m_field->getBarneyScalarField(model, slot));
-  // bnVolumeSetXF(vol,
-  //               (float2 &)m_valueRange,
-  //               (const float4 *)m_rgbaMap.data(),
-  //               m_rgbaMap.size(),
-  //               m_densityScale);
-  return vol;
+  return m_field
+      ? bnVolumeCreate(model, slot, m_field->getBarneyScalarField(model, slot))
+      : BNVolume{};
 }
 
 box3 TransferFunction1D::bounds() const
@@ -129,7 +135,21 @@ box3 TransferFunction1D::bounds() const
   return m_bounds;
 }
 
-// void TransferFunction1D::cleanup() {}
+void TransferFunction1D::setBarneyParameters()
+{
+  BNModel model = trackedModel();
+  if (!isValid() || !model || !m_bnVolume)
+    return;
+  int slot = trackedSlot();
+
+  BNVolume vol = getBarneyVolume(model, slot);
+  bnVolumeSetXF(vol,
+      (float2 &)m_valueRange,
+      (const float4 *)m_rgbaMap.data(),
+      m_rgbaMap.size(),
+      m_densityScale);
+  bnCommit(vol);
+}
 
 } // namespace barney_device
 
