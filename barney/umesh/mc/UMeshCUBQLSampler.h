@@ -62,14 +62,16 @@ namespace barney {
 
   /*! per-traversal data for the cuBQLTrave callback */
   struct UMeshSamplerPTD {
-    inline __device__ UMeshSamplerPTD(const UMeshCUBQLSampler::DD *mesh)
-      : mesh(mesh)
+    inline __device__ UMeshSamplerPTD(const UMeshCUBQLSampler::DD *mesh, bool dbg)
+      : mesh(mesh), dbg(dbg)
     {}
     inline __device__ bool leaf(vec3f P, int offset, int count)
     {
+      // if (dbg) printf("cubql leaf P %f %f %f ofs %i cnt %i\n",
+      //                 P.x,P.y,P.z,offset,count);
       for (int i=0;i<count;i++) {
         auto elt = mesh->elements[offset+i];
-        if (mesh->eltScalar(retVal,elt,P))
+        if (mesh->eltScalar(retVal,elt,P,dbg))
           return false;
       }
       return true;
@@ -77,13 +79,14 @@ namespace barney {
 
     const UMeshCUBQLSampler::DD *const mesh;
     float retVal = NAN;
+    bool const dbg;
   };
   
   inline __device__
   float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
-    UMeshSamplerPTD ptd(this);
-    
+    UMeshSamplerPTD ptd(this,dbg);
+    // if (dbg) printf("start cuqbl traversal \n");
     traverseCUQBL<UMeshSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.retVal;
   }

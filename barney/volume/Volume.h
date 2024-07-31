@@ -56,6 +56,11 @@ namespace barney {
           return false;
 
         sample = volume.sampleAndMap(org+t*dir,dbg);
+        // if (dbg) printf("sample at t %f -> %f %f %f : %f\n",
+        //                 t,sample.x,
+        //                 sample.y,
+        //                 sample.z,
+        //                 sample.w);
         if (sample.w >= rand()*majorant) {
           tRange.upper = t;
           return true;

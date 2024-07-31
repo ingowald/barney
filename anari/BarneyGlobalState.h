@@ -10,6 +10,7 @@
 namespace barney_device {
 
 struct Frame;
+struct World;
 
 struct BarneyGlobalState : public helium::BaseGlobalDeviceState
 {
@@ -19,6 +20,7 @@ struct BarneyGlobalState : public helium::BaseGlobalDeviceState
   } objectUpdates;
 
   Frame *currentFrame{nullptr};
+  World *currentWorld{nullptr};
 
   BNContext context{nullptr};
 

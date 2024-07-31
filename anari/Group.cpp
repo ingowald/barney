@@ -2,27 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Group.h"
+#include <iostream>
 
 namespace barney_device {
 
-Group::Group(BarneyGlobalState *s) : Object(ANARI_GROUP, s) {}
+Group::Group(BarneyGlobalState *s)
+    : Object(ANARI_GROUP, s),
+      m_surfaceData(this),
+      m_volumeData(this),
+      m_lightData(this)
+{}
 
-Group::~Group()
-{
-  cleanup();
-}
+Group::~Group() = default;
 
 void Group::commit()
 {
-  cleanup();
-
   m_surfaceData = getParamObject<ObjectArray>("surface");
   m_volumeData = getParamObject<ObjectArray>("volume");
-
-  if (m_surfaceData)
-    m_surfaceData->addCommitObserver(this);
-  if (m_volumeData)
-    m_volumeData->addCommitObserver(this);
+  m_lightData = getParamObject<ObjectArray>("light");
 }
 
 void Group::markCommitted()
@@ -31,12 +28,16 @@ void Group::markCommitted()
   Object::markCommitted();
 }
 
-  BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
+BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
 {
   std::vector<BNGeom> barneyGeometries;
   std::vector<Surface *> surfaces;
   std::vector<BNVolume> barneyVolumes;
   std::vector<Volume *> volumes;
+  std::vector<BNLight> barneyLights;
+  std::vector<Light *> lights;
+
+  // Surfaces //
 
   if (m_surfaceData) {
     std::for_each(m_surfaceData->handlesBegin(),
@@ -49,7 +50,9 @@ void Group::markCommitted()
   }
 
   for (auto s : surfaces)
-    barneyGeometries.push_back(s->makeBarneyGeom(model,slot));
+    barneyGeometries.push_back(s->getBarneyGeom(model, slot));
+
+  // Volumes //
 
   if (m_volumeData) {
     std::for_each(
@@ -61,20 +64,49 @@ void Group::markCommitted()
   }
 
   for (auto v : volumes)
-    barneyVolumes.push_back(v->makeBarneyVolume(model,slot));
+    barneyVolumes.push_back(v->getBarneyVolume(model, slot));
 
-  BNGroup bg = bnGroupCreate(model,slot,
+  // Lights //
+
+  if (m_lightData) {
+    std::for_each(
+        m_lightData->handlesBegin(), m_lightData->handlesEnd(), [&](auto *o) {
+          auto *l = (Light *)o;
+          if (l && l->isValid())
+            lights.push_back(l);
+        });
+  }
+
+  for (auto l : lights)
+    barneyLights.push_back(l->getBarneyLight(model, slot));
+
+  BNData lightsData = nullptr;
+  if (!barneyLights.empty()) {
+    lightsData = bnDataCreate(
+        model, slot, BN_OBJECT, barneyLights.size(), barneyLights.data());
+  }
+
+  // Make barney group //
+  
+  BNGroup bg = bnGroupCreate(model,
+      slot,
       barneyGeometries.data(),
       barneyGeometries.size(),
       barneyVolumes.data(),
       barneyVolumes.size());
+  if (lightsData) {
+    bnSetData(bg, "lights", lightsData);
+    bnRelease(lightsData);
+    bnCommit(bg);
+  }
   bnGroupBuild(bg);
 
-  for (auto bng : barneyGeometries)
-    bnRelease(bng);
+  // Cleanup //
 
-  for (auto bnv : barneyVolumes)
-    bnRelease(bnv);
+  // iw - do not release - the anari volumes do track their own handles, don't they!?
+ 
+  // for (auto bnv : barneyVolumes)
+  //   bnRelease(bnv);
 
   return bg;
 }
@@ -102,12 +134,6 @@ box3 Group::bounds() const
         });
   }
   return result;
-}
-
-void Group::cleanup()
-{
-  if (m_surfaceData)
-    m_surfaceData->removeCommitObserver(this);
 }
 
 } // namespace barney_device

@@ -30,7 +30,7 @@
 // #endif
 
 namespace barney {
-
+  namespace device {
   OPTIX_BOUNDS_PROGRAM(UMeshAWTBounds)(const void *geomData,                
                                        owl::common::box3f &primBounds,  
                                        const int32_t primID)
@@ -80,18 +80,19 @@ namespace barney {
     auto &self = owl::getProgramData<UMeshAWT::DD>();
     int primID = optixGetPrimitiveIndex();
     
-    ray.tMax = optixGetRayTmax();
+    float t = optixGetRayTmax();
 
-    vec3f P = ray.org + ray.tMax * ray.dir;
+    vec3f P = ray.org + t * ray.dir;
     // if (ray.dbg)
     //   printf("CENTRAL DIFF prim %i at %f %f %f\n",
     //          primID,
     //          P.x,P.y,P.z);
 
     // vec3f N = normalize(ray.dir);
-    ray.hadHit = 1;
-    ray.hit.N = vec3f(0.f);
-    ray.hit.P = P;
+    ray.setVolumeHit(P,t,vec3f(1.f));
+    // ray.hadHit = 1;
+    // ray.hit.N = vec3f(0.f);
+    // ray.hit.P = P;
   }
 
 // #if AWT_SAMPLE_MODE
@@ -615,4 +616,5 @@ namespace barney {
       optixReportIntersection(hit_t, 0);
     }
   }
+}
 }

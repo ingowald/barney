@@ -22,7 +22,8 @@ namespace barney {
     : Object(context)
   {
     for (int slot=0;slot<context->perSlot.size();slot++) {
-      modelSlots.push_back(ModelSlot::create(this,slot));
+      ModelSlot::SP modelSlot = ModelSlot::create(this,slot);
+      modelSlots.push_back(modelSlot);
     }
   }
 

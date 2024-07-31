@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,6 +18,7 @@
 #include "owl/owl_device.h"
 
 namespace barney {
+  using namespace barney::render;
   
   OPTIX_BOUNDS_PROGRAM(CylindersBounds)(const void *geomData,
                                         owl::common::box3f &bounds,  
@@ -35,19 +36,6 @@ namespace barney {
   OPTIX_CLOSEST_HIT_PROGRAM(CylindersCH)()
   {
     /* nothing - already set in isec */
-    // auto &ray = owl::getPRD<Ray>();
-    // auto &self = owl::getProgramData<Cylinders::DD>();
-    // int primID = optixGetPrimitiveIndex();
-    
-    // ray.hadHit = true;
-    // ray.tMax = optixGetRayTmax();
-
-    // vec3f org = optixGetWorldRayOrigin();
-    // vec3f dir = optixGetWorldRayDirection();
-    // vec3f hitPos = org + ray.tMax * dir;
-    // vec3f baseColor = owl::randomColor(primID);
-    // ray.setMatte(hitPos,N,N,t,baseColor);
-    // ray.hit.N = n;
   }
   
   OPTIX_INTERSECT_PROGRAM(CylindersIsec)()
@@ -119,12 +107,13 @@ namespace barney {
     if (t0 > t1) return;
 
     Ray &ray    = getPRD<Ray>();
+    vec3f objectN = 0.f;
     if (ray_tmin <= t0 && t0 <= ray_tmax) {
       // front side hit:
       ray.tMax = t0;
       td *= -1.f;
       float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-      ray.hit.N
+      objectN
         = (t0 == cap_t0)
         ? s
         : (td * d - fp - hit_surf_u * s);
@@ -132,50 +121,45 @@ namespace barney {
     } else if (ray_tmin <= t1 && t1 <= ray_tmax) {
       ray.tMax = t1;
       float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-      ray.hit.N
+      objectN
         = (t1 == cap_t1)
         ? -s
         : (td * d - fp - hit_surf_u * s);
     } else
       return;
 
-    vec3f P = ray_org + ray.tMax * ray_dir;
-    ray.setHit(P,ray.hit.N,ray.tMax,self.material);
+    vec3f objectP = ray_org + ray.tMax * ray_dir;
+    float t_hit = ray.tMax;
+
+
+    auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
+    { /* does not make sense for spheres *///return make_float4(0,0,0,1);
+
+      // doesn't make sense, but anari sdk assumes for spheres per-vtx is same as per-prim
+      float4 v = make_float4(0,0,0,1);//attrib.fromArray.valueAt(hitData.primID,ray.dbg);
+      // if (ray.dbg)
+      //   printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
+      return v;
+    };
+
+    render::HitAttributes hitData;//(OptixGlobals::get());
+    hitData.worldPosition   = optixTransformPointFromObjectToWorldSpace(objectP);
+    hitData.objectPosition  = objectP;
+    hitData.worldNormal     = objectN;
+    hitData.objectNormal    = optixTransformNormalFromObjectToWorldSpace(objectN);
+    hitData.primID          = primID;
+    hitData.t               = t_hit;;
+    // if (self.colors)
+    //   (vec3f&)hitData.color = self.colors[primID];
+    
+    self.setHitAttributes(hitData,interpolator,ray.dbg);
+
+    if (ray.dbg)
+      printf("HIT CYLINDERS mat %i prim %i\n",self.materialID,hitData.primID);
+    const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
+    material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
+    
     optixReportIntersection(ray.tMax, 0);
-    // const int primID = optixGetPrimitiveIndex();
-    // const auto &self
-    //   = owl::getProgramData<Cylinders::DD>();
-
-    // vec3f center = self.origins[primID];
-    // float radius = self.defaultRadius;
-    
-    // const vec3f org  = optixGetObjectRayOrigin();
-    // const vec3f dir  = optixGetObjectRayDirection();
-    // const float tmin = optixGetRayTmin();
-    // float hit_t      = optixGetRayTmax();
-    
-    // const vec3f oc = org - center;
-    // const float a = dot(dir,dir);
-    // const float b = dot(oc, dir);
-    // const float c = dot(oc, oc) - radius * radius;
-    // const float discriminant = b * b - a * c;
-    
-    // if (discriminant < 0.f) return;
-
-    // {
-    //   float temp = (-b - sqrtf(discriminant)) / a;
-    //   if (temp < hit_t && temp > tmin) 
-    //     hit_t = temp;
-    // }
-      
-    // {
-    //   float temp = (-b + sqrtf(discriminant)) / a;
-    //   if (temp < hit_t && temp > tmin) 
-    //     hit_t = temp;
-    // }
-    // if (hit_t < optixGetRayTmax()) {
-    //   optixReportIntersection(hit_t, 0);
-    // }
   }
   
 }

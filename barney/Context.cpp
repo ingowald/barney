@@ -20,7 +20,7 @@
 #include "barney/GlobalModel.h"
 
 namespace barney {
-  
+
   Context::~Context()
   {
     hostOwnedHandles.clear();
@@ -247,7 +247,10 @@ namespace barney {
 
     for (int localID = 0; localID < devices.size(); localID++) {
       auto dev = devices[localID];
-      dev->rays.ensureRayQueuesLargeEnoughFor(fb->perDev[localID].get());
+      auto devFB = fb->perDev[localID].get();
+      int upperBoundOnNumRays
+        = 2 * (devFB->numActiveTiles+1) * barney::pixelsPerTile;
+      dev->rays.reserve(upperBoundOnNumRays);
     }
   }
   

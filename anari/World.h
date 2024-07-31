@@ -20,28 +20,22 @@ struct World : public Object
 
   void commit() override;
 
-  BNModel barneyModel() const;
-
-  void barneyModelUpdate();
+  BNModel makeCurrent();
 
  private:
   void buildBarneyModel();
-  void cleanup();
 
-  helium::IntrusivePtr<ObjectArray> m_zeroSurfaceData;
-  helium::IntrusivePtr<ObjectArray> m_zeroVolumeData;
-  helium::IntrusivePtr<ObjectArray> m_instanceData;
+  helium::ChangeObserverPtr<ObjectArray> m_zeroSurfaceData;
+  helium::ChangeObserverPtr<ObjectArray> m_zeroVolumeData;
+  helium::ChangeObserverPtr<ObjectArray> m_zeroLightData;
+  helium::ChangeObserverPtr<ObjectArray> m_instanceData;
 
-  bool m_addZeroInstance{false};
   helium::IntrusivePtr<Group> m_zeroGroup;
   helium::IntrusivePtr<Instance> m_zeroInstance;
 
   std::vector<Instance *> m_instances;
 
   BNModel m_barneyModel{nullptr};
-  int     m_barneySlot {-1};
-  // int m_barneyDataGroup{nullptr};
-
   helium::TimeStamp m_lastBarneyModelBuild{0};
 };
 

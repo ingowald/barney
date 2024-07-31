@@ -17,10 +17,17 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
+// #include "barney/material/Globals.h"
+// #include "barney/render/DeviceMaterial.h"
+#include "barney/render/Sampler.h"
+// #include "barney/material/DeviceMaterial.h"
 
 namespace barney {
   namespace render {
+    struct DeviceMaterial;
     
+#define DEFAULT_RADIANCE_FROM_ENV .8f
+
     struct QuadLight {
       vec3f corner, edge0, edge1, emission;
       /*! normal of this lights source; this could obviously be derived
@@ -45,32 +52,77 @@ namespace barney {
         cudaTextureObject_t texture;
       };
       affine3f   transform;
-      OWLTexture texture;
+      OWLTexture texture = 0;
     };
+
+
+    struct MaterialRegistry {
+      typedef std::shared_ptr<MaterialRegistry> SP;
+    
+      MaterialRegistry(DevGroup::SP devGroup);
+      virtual ~MaterialRegistry();
+      
+      int allocate();
+      void release(int nowReusableID);
+      void grow();
+
+      void setMaterial(int materialID, const DeviceMaterial &, int deviceID);
+      const DeviceMaterial *getPointer(int owlDeviceID) const;
+    
+      int numReserved = 0;
+      int nextFree = 0;
+    
+      std::stack<int> reusableIDs;
+      OWLBuffer       buffer = 0;
+      DevGroup::SP    devGroup;
+    };
+  
+    struct SamplerRegistry {
+      typedef std::shared_ptr<SamplerRegistry> SP;
+    
+      SamplerRegistry(DevGroup::SP devGroup);
+      virtual ~SamplerRegistry();
+      
+      int allocate();
+      void release(int nowReusableID);
+      void grow();
+    
+      const Sampler::DD *getPointer(int owlDeviceID) const;
+      void setDD(int samplerID, const Sampler::DD &, int deviceID);
+      
+      int numReserved = 0;
+      int nextFree = 0;
+    
+      std::stack<int> reusableIDs;
+      OWLBuffer       buffer = 0;
+      DevGroup::SP    devGroup;
+    };
+  
   
     /*! the rendering/path racing related part of a model that describes
       global render settings like light sources, background, envmap,
       etc */
     struct World {
+      typedef std::shared_ptr<World> SP;
+      
       struct DD {
-        int         numQuadLights = 0;
-        QuadLight  *quadLights    = nullptr;
-        int         numDirLights  = 0;
-        DirLight   *dirLights     = nullptr;
-        EnvMapLight::DD envMapLight;
+        int               numQuadLights = 0;
+        const QuadLight  *quadLights    = nullptr;
+        int               numDirLights  = 0;
+        const DirLight   *dirLights     = nullptr;
+        float             radiance;
+        
+        const DeviceMaterial *materials;
+        const Sampler::DD    *samplers;
+        
+        EnvMapLight::DD   envMapLight;
+        // Globals::DD     globals;
       };
       EnvMapLight envMapLight;
 
-      World(DevGroup *devGroup)
-        : devGroup(devGroup)
-      {
-        quadLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
-                                                 OWL_USER_TYPE(QuadLight),
-                                                 1,nullptr);
-        dirLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
-                                                OWL_USER_TYPE(DirLight),
-                                                1,nullptr);
-      }
+      World(DevGroup::SP devGroup);
+      virtual ~World();
+      
       void set(const std::vector<QuadLight> &quadLights)
       {
         if (quadLights.empty()) 
@@ -107,14 +159,22 @@ namespace barney {
           dd.envMapLight.texture
             = 0;
         dd.envMapLight.transform = envMapLight.transform;
+        // dd.globals = globals.getDD(device);
+        dd.radiance  = radiance;
+        dd.samplers  = samplerRegistry->getPointer(device->owlID);
+        dd.materials = materialRegistry->getPointer(device->owlID);
         return dd;
       }
 
+      // Globals globals;
+      MaterialRegistry::SP materialRegistry;
+      SamplerRegistry::SP  samplerRegistry;
       OWLBuffer quadLightsBuffer = 0;
       int numQuadLights = 0;
       OWLBuffer dirLightsBuffer = 0;
       int numDirLights = 0;
-      DevGroup *const devGroup;
+      DevGroup::SP devGroup;
+      float radiance = DEFAULT_RADIANCE_FROM_ENV;
     };
 
   }

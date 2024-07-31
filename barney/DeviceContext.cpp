@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/DeviceContext.h"
-#include "barney/Ray.h"
 #include "barney/GlobalModel.h"
 #include "barney/fb/FrameBuffer.h"
 
@@ -31,7 +30,7 @@ namespace barney {
   void g_generateRays(Camera camera,
                       int rngSeed,
                       vec2i fbSize,
-                      int *d_count,
+                      int *dR_count,
                       Ray *rayQueue,
                       TileDesc *tileDescs);
   
@@ -59,10 +58,17 @@ namespace barney {
   void DeviceContext::traceRays_launch(GlobalModel *model)
   {
     DevGroup *dg = device->devGroup;
+    ModelSlot *slot = model->getSlot(dg->lmsIdx);
+    
     owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);
     owlParamsSet1i(dg->lp,"numRays",rays.numActive);
-    OWLGroup world = model->getSlot(dg->lmsIdx)->instances.group;
-    owlParamsSetGroup(dg->lp,"world",world);
+    owlParamsSetGroup(dg->lp,"world",
+                      slot->instances.group);
+    owlParamsSetBuffer(dg->lp,"materials",
+                       slot->world->materialRegistry->buffer);
+    owlParamsSetBuffer(dg->lp,"samplers",
+                       slot->world->samplerRegistry->buffer);
+                        
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);
     if (nb)

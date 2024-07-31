@@ -42,6 +42,7 @@ namespace barney {
       const vec3f *vertices;
       const vec3f *normals;
       const vec2f *texcoords;
+      // const vec4f *vertexAttribute[5];
     };
     
     Triangles(ModelSlot *owner);
@@ -64,6 +65,11 @@ namespace barney {
     PODData::SP indices;
     PODData::SP normals;
     PODData::SP texcoords;
+    // PODData::SP vertexAttribute0;
+    // PODData::SP vertexAttribute1;
+    // PODData::SP vertexAttribute2;
+    // PODData::SP vertexAttribute3;
+    // PODData::SP vertexAttribute4;
   };
 
 }

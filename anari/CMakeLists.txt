@@ -5,11 +5,12 @@ option(BARNEY_BUILD_ANARI "Build ANARI device" OFF)
 if (NOT BARNEY_BUILD_ANARI)
   return()
 endif()
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-find_package(anari 0.8.0 COMPONENTS code_gen)
+enable_language(CUDA)
+
+find_package(anari 0.10.0 COMPONENTS code_gen)
 
 include(GNUInstallDirs)
 
@@ -36,13 +37,22 @@ project_add_library(SHARED
   Group.cpp
   Instance.cpp
   Library.cpp
+  Light.cpp
   Material.cpp
   Object.cpp
   Renderer.cpp
+  Sampler.cpp
   SpatialField.cpp
   Surface.cpp
   Volume.cpp
   World.cpp
+)
+
+set_source_files_properties(
+  Frame.cpp
+  PROPERTIES
+    COMPILE_FLAGS "--extended-lambda --expt-relaxed-constexpr"
+    LANGUAGE CUDA
 )
 
 if (TARGET barney_mpi)
@@ -50,7 +60,6 @@ if (TARGET barney_mpi)
 else()
   project_link_libraries(PRIVATE anari::helium barney)
 endif()
-#project_link_libraries(PRIVATE anari::helium barney)
 
 project_include_directories(
 PUBLIC

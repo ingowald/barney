@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "Light.h"
 #include "Surface.h"
 #include "Volume.h"
 // std
@@ -22,11 +23,10 @@ struct Group : public Object
 
   box3 bounds() const;
 
-private:
-  void cleanup();
-
-  helium::IntrusivePtr<ObjectArray> m_surfaceData;
-  helium::IntrusivePtr<ObjectArray> m_volumeData;
+ private:
+  helium::ChangeObserverPtr<ObjectArray> m_surfaceData;
+  helium::ChangeObserverPtr<ObjectArray> m_volumeData;
+  helium::ChangeObserverPtr<ObjectArray> m_lightData;
 };
 
 } // namespace barney_device

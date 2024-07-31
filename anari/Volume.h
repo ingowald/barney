@@ -18,10 +18,16 @@ struct Volume : public Object
 
   void markCommitted() override;
 
-  virtual BNVolume makeBarneyVolume(BNModel model, int slot) const = 0;
+  BNVolume getBarneyVolume(BNModel model, int slot);
 
   virtual box3 bounds() const = 0;
 
+ protected:
+  virtual BNVolume createBarneyVolume(BNModel model, int slot) = 0;
+  virtual void setBarneyParameters() = 0;
+  void cleanup();
+
+  BNVolume m_bnVolume{nullptr};
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -30,15 +36,14 @@ struct TransferFunction1D : public Volume
 {
   TransferFunction1D(BarneyGlobalState *s);
   void commit() override;
+  bool isValid() const override;
 
-  BNVolume makeBarneyVolume(BNModel model, int slot) const override;
+  BNVolume createBarneyVolume(BNModel model, int slot) override;
 
   box3 bounds() const override;
 
-  size_t numRequiredGPUBytes() const override;
-
  private:
-  void cleanup();
+  void setBarneyParameters() override;
 
   helium::IntrusivePtr<SpatialField> m_field;
 

@@ -61,14 +61,17 @@ namespace barney {
       userGeoms.push_back(geom);
     }
     OWLGeom geom = userGeoms[0];
-    
+
     Geometry::commit();
     owlGeomSet1f(geom,"defaultRadius",defaultRadius);
     owlGeomSetBuffer(geom,"origins",origins?origins->owl:0);
+    owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
     owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
     int numOrigins = origins->count;
     owlGeomSetPrimCount(geom,numOrigins);
-    material->set(geom);
+    
+    setAttributesOn(geom);
+    material->setDeviceDataOn(geom);
   } 
 
   bool Spheres::set1f(const std::string &member, const float &value)
@@ -98,6 +101,26 @@ namespace barney {
       radii = value->as<PODData>();
       return true;
     }
+    // if (member == "vertex.attribute0") {
+    //   vertexAttribute0 = value->as<PODData>();
+    //   return true;
+    // }
+    // if (member == "vertex.attribute1") {
+    //   vertexAttribute1 = value->as<PODData>();
+    //   return true;
+    // }
+    // if (member == "vertex.attribute2") {
+    //   vertexAttribute2 = value->as<PODData>();
+    //   return true;
+    // }
+    // if (member == "vertex.attribute3") {
+    //   vertexAttribute3 = value->as<PODData>();
+    //   return true;
+    // }
+    // if (member == "vertex.attribute4") {
+    //   vertexAttribute4 = value->as<PODData>();
+    //   return true;
+    // }
     return false;
   }
 

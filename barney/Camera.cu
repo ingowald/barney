@@ -28,7 +28,12 @@ namespace barney {
   struct PerspectiveCamera : public Camera {
     PerspectiveCamera(Context *owner)
       : Camera(owner)
-    {}
+    {
+      char *fl = getenv("BARNEY_FOCAL_LENGTH");
+      if (fl) defaultValues.focalLength = std::stof(fl);
+      char *lr = getenv("BARNEY_LENS_RADIUS");
+      if (lr) defaultValues.lensRadius = std::stof(lr);
+    }
     virtual ~PerspectiveCamera() = default;
 
     // ------------------------------------------------------------------
@@ -101,7 +106,9 @@ namespace barney {
     dd.dir_du = (float3&)dir_du;
     dd.dir_dv = (float3&)dir_dv;
     dd.lens_00 = (float3&)from;
-    dd.lensRadius = 0.f;
+
+    dd.lensRadius  = defaultValues.lensRadius;
+    dd.focalLength = defaultValues.focalLength;
   }
     
 

@@ -34,6 +34,15 @@ namespace barney {
     freeResources();
   }
 
+  bool FrameBuffer::set1i(const std::string &member, const int &value)
+  {
+    if (member == "showCrosshairs") {
+      showCrosshairs = value;
+      return true;
+    }
+    return false;
+  }
+
   void FrameBuffer::freeResources()
   {
     if (finalDepth) {
@@ -45,7 +54,7 @@ namespace barney {
       finalFB = 0;
     }
   }
-  
+
   void FrameBuffer::resize(vec2i size,
                            uint32_t *hostFB,
                            float    *hostDepth)
@@ -63,14 +72,14 @@ namespace barney {
 
       // allocate/resize a owner-only, device-side depth buffer that
       // we can write into in device kernels
-      if (hostDepth) 
+      if (hostDepth)
         // host wants a depth buffer, so we need to allocate one on
         // the device side for staging
         BARNEY_CUDA_CALL(Malloc(&finalDepth,
                                 numPixels.x*numPixels.y*sizeof(float)));
-      
+
       BARNEY_CUDA_CALL(Malloc(&finalFB, numPixels.x*numPixels.y*sizeof(uint32_t)));
     }
   }
-  
+
 }

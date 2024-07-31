@@ -25,15 +25,41 @@ void Volume::markCommitted()
   Object::markCommitted();
 }
 
+BNVolume Volume::getBarneyVolume(BNModel model, int slot)
+{
+  if (!isValid())
+    return {};
+  if (!isModelTracked(model, slot)) {
+    cleanup();
+    trackModel(model, slot);
+    m_bnVolume = createBarneyVolume(model, slot);
+    setBarneyParameters();
+  }
+  return m_bnVolume;
+}
+
+void Volume::cleanup()
+{
+  if (m_bnVolume) {
+    bnRelease(m_bnVolume);
+    m_bnVolume = nullptr;
+  }
+}
+
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 TransferFunction1D::TransferFunction1D(BarneyGlobalState *s) : Volume(s) {}
+
+bool TransferFunction1D::isValid() const
+{
+  return m_field && m_field->isValid() && m_colorData && m_opacityData;
+}
 
 void TransferFunction1D::commit()
 {
   Volume::commit();
 
-  cleanup();
+  // cleanup();
 
   m_field = getParamObject<SpatialField>("value");
   if (!m_field) {
@@ -93,23 +119,15 @@ void TransferFunction1D::commit()
 
     m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
   }
+
+  setBarneyParameters();
 }
 
-BNVolume TransferFunction1D::makeBarneyVolume(BNModel model, int slot) const
+BNVolume TransferFunction1D::createBarneyVolume(BNModel model, int slot)
 {
-  auto ctx = deviceState()->context;
-  static BNVolume bnVol{
-      nullptr}; // TODO: really find out if volume has changed!
-  if (!bnVol) {
-    bnVol = bnVolumeCreate(
-        model, slot, m_field->makeBarneyScalarField(model, slot));
-  }
-  bnVolumeSetXF(bnVol,
-      (float2 &)m_valueRange,
-      (const float4 *)m_rgbaMap.data(),
-      m_rgbaMap.size(),
-      m_densityScale);
-  return bnVol;
+  return m_field
+      ? bnVolumeCreate(model, slot, m_field->getBarneyScalarField(model, slot))
+      : BNVolume{};
 }
 
 box3 TransferFunction1D::bounds() const
@@ -117,12 +135,21 @@ box3 TransferFunction1D::bounds() const
   return m_bounds;
 }
 
-size_t TransferFunction1D::numRequiredGPUBytes() const
+void TransferFunction1D::setBarneyParameters()
 {
-  return m_field ? m_field->numRequiredGPUBytes() : size_t(0);
-}
+  BNModel model = trackedModel();
+  if (!isValid() || !model || !m_bnVolume)
+    return;
+  int slot = trackedSlot();
 
-void TransferFunction1D::cleanup() {}
+  BNVolume vol = getBarneyVolume(model, slot);
+  bnVolumeSetXF(vol,
+      (float2 &)m_valueRange,
+      (const float4 *)m_rgbaMap.data(),
+      m_rgbaMap.size(),
+      m_densityScale);
+  bnCommit(vol);
+}
 
 } // namespace barney_device
 

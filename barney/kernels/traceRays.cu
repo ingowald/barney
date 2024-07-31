@@ -16,33 +16,51 @@
 
 #include "barney/DeviceContext.h"
 #include "owl/owl_device.h"
+#include "barney/render/OptixGlobals.h"
 
-__constant__ struct {
-  __forceinline__ __device__ const barney::DeviceContext::DD &get() const
-  { return *(const barney::DeviceContext::DD*)this; }
+// __constant__ struct {
+//   __forceinline__ __device__ const barney::DeviceContext::DD &get() const
+//   { return *(const barney::DeviceContext::DD*)this; }
   
-  float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
-} optixLaunchParams;
+//   float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
+// } optixLaunchParams;
+
+
+__constant__ barney::render::OptixGlobals optixLaunchParams;
 
 namespace barney {
-  
-  OPTIX_RAYGEN_PROGRAM(traceRays)()
-  {
-    auto &lp = optixLaunchParams.get();
-    const int rayID
-      = owl::getLaunchIndex().x
-      + owl::getLaunchDims().x
-      * owl::getLaunchIndex().y;
+  namespace render {
+      
+    OPTIX_RAYGEN_PROGRAM(traceRays)()
+    {
+      auto &lp = optixLaunchParams;
+      // printf("tracerays %p %i %p\n",lp.rays,lp.numRays,lp.world);
+      const int rayID
+        = owl::getLaunchIndex().x
+        + owl::getLaunchDims().x
+        * owl::getLaunchIndex().y;
     
-    if (rayID >= lp.numRays)
-      return;
+      if (rayID >= lp.numRays)
+        return;
 
-    Ray &ray = lp.rays[rayID];
-    owl::traceRay(lp.world,
-                  owl::Ray(ray.org,
-                           ray.dir,
-                           0.f,ray.tMax),
-                  ray);
+      Ray &ray = lp.rays[rayID];
+
+      if (0 && ray.dbg)
+        printf("tracing ray dbg %i miss %f %f %f\n",rayID,
+
+               ray.missColor.x,ray.missColor.y,ray.missColor.z);
+
+      vec3f dir = ray.dir;
+      if (dir.x == 0.f) dir.x = 1e-6f;
+      if (dir.y == 0.f) dir.y = 1e-6f;
+      if (dir.z == 0.f) dir.z = 1e-6f;
+
+      owl::traceRay(lp.world,
+                    owl::Ray(ray.org,
+                             dir,
+                             0.f,ray.tMax),
+                    ray);
+    }
+
   }
-
 }

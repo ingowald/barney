@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/Ray.h"
+#include "barney/render/Ray.h"
 #include "barney/geometry/Geometry.h"
 #include "barney/Camera.h"
 #include "barney/DeviceContext.h"
@@ -26,7 +26,8 @@
 
 namespace barney {
   using namespace owl::common;
-
+  using render::Ray;
+  
   struct FrameBuffer;
   struct GlobalModel;
 
@@ -148,7 +149,7 @@ namespace barney {
       /*! device(s) inside this data group; will be a subset of
         Context::devices */
       std::vector<int>     gpuIDs;
-      barney::DevGroup::SP devGroup;
+      barney::DevGroup::SP devGroup = 0;
     };
     std::vector<PerSlot> perSlot;
     

@@ -17,7 +17,7 @@
 #include "barney/umesh/os/RTXObjectSpace.h"
 
 namespace barney {
-
+    
   extern "C" char RTXObjectSpace_ptx[];
   
   void RTXObjectSpace::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
@@ -110,10 +110,10 @@ namespace barney {
 
     for (int i=0;i<(int)bvh.numNodes;i++) {
       auto node = bvh.nodes[i];
-      if (node.count == 0) continue;
+      if (node.admin.count == 0) continue;
       Cluster c;
-      c.begin = int(node.offset);
-      c.end = int(node.offset + node.count);
+      c.begin = int(node.admin.offset);
+      c.end = int(node.admin.offset + node.admin.count);
       clusters.push_back(c);
     }
     cuBQL::free(bvh,0,managedMem);
@@ -209,6 +209,5 @@ namespace barney {
     owlGroupRefitAccel(group);
   }
 
-      
 }
 

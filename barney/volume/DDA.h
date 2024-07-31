@@ -24,6 +24,7 @@
 // #define DDA_FAST 1
 
 namespace barney {
+
   namespace dda {
     using namespace owl::common;
 

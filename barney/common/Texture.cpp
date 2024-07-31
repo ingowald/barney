@@ -148,5 +148,79 @@ namespace barney {
       BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,&resourceDesc,&textureDesc,0));
     }
   }
+
+
+  TextureData::TextureData(ModelSlot *owner,
+                           BNTexelFormat texelFormat,
+                           vec3i size,
+                           const void *texels)
+    : SlottedObject(owner),
+      dims(size),
+      texelFormat(texelFormat)
+  {
+    if (!onDev.empty()) return;
+
+    auto devGroup = owner->devGroup.get();
+    onDev.resize(devGroup->size());
+
+    cudaChannelFormatDesc desc;
+    // cudaTextureReadMode   readMode;
+    size_t sizeOfScalar;
+    int    numScalarsPerTexel;
+    switch (texelFormat) {
+    case BN_TEXEL_FORMAT_R32F:
+      desc         = cudaCreateChannelDesc<float>();
+      sizeOfScalar = 4;
+      // readMode     = cudaReadModeElementType;
+      numScalarsPerTexel = 1;
+      break;
+    case BN_TEXEL_FORMAT_R8:
+      desc         = cudaCreateChannelDesc<uint8_t>();
+      sizeOfScalar = 1;
+      // readMode     = cudaReadModeNormalizedFloat;
+      numScalarsPerTexel = 1;
+      break;
+    case BN_TEXEL_FORMAT_RGBA8:
+      desc         = cudaCreateChannelDesc<uchar4>();
+      sizeOfScalar = 1;
+      // readMode     = cudaReadModeNormalizedFloat;
+      numScalarsPerTexel = 4;
+      break;
+    case BN_TEXEL_FORMAT_R16:
+      desc         = cudaCreateChannelDesc<uint16_t>();
+      sizeOfScalar = 2;
+      // readMode     = cudaReadModeNormalizedFloat;
+      numScalarsPerTexel = 1;
+      break;
+    default:
+      throw std::runtime_error("TextureData with non-implemented scalar type ...");
+    }
+
+    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+      auto dev = devGroup->devices[lDevID];
+      auto &dd = onDev[lDevID];
+      SetActiveGPU forDuration(dev);
+      BARNEY_CUDA_CALL(MallocArray(&dd.array,&desc,size.x,size.y,0));
+      BARNEY_CUDA_CALL(Memcpy2DToArray(dd.array,0,0,
+                                       (void *)texels,
+                                       (size_t)size.x*sizeOfScalar*numScalarsPerTexel,
+                                       (size_t)size.x*sizeOfScalar*numScalarsPerTexel,
+                                       (size_t)size.y,
+                                       cudaMemcpyHostToDevice));
+    }
+  }
+
+  TextureData::~TextureData()
+  {
+    auto devGroup = owner->devGroup.get();
+    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+      auto dev = devGroup->devices[lDevID];
+      auto &dd = onDev[lDevID];
+      SetActiveGPU forDuration(dev);
+      if (dd.array)
+        BARNEY_CUDA_CALL_NOTHROW(FreeArray(dd.array));
+      dd.array = 0;
+    }
+  }
   
 }

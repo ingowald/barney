@@ -17,18 +17,33 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/Ray.h"
-#include "barney/common/Texture.h"
+#include "barney/render/Ray.h"
+#include "barney/render/HostMaterial.h"
+#include "barney/render/HitAttributes.h"
+#include "barney/render/GeometryAttributes.h"
+#include "barney/render/OptixGlobals.h"
+#include "barney/render/HostMaterial.h"
 
 namespace barney {
-
+  
   struct ModelSlot;
+  using render::GeometryAttribute;
+  using render::GeometryAttributes;
+  using render::HostMaterial;
   
   struct Geometry : public SlottedObject {
     typedef std::shared_ptr<Geometry> SP;
 
     struct DD {
-      Material::DD     material;
+
+      template<typename InterpolatePerVertex>
+      inline __device__
+      void setHitAttributes(render::HitAttributes &hit,
+                            const InterpolatePerVertex &interpolate,
+                            bool dbg=false) const;
+
+      render::GeometryAttributes::DD attributes;
+      int materialID;
     };
     
     Geometry(ModelSlot *owner);
@@ -44,6 +59,8 @@ namespace barney {
 
     /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
+
+    void setAttributesOn(OWLGeom geom);
     
     /*! get the own context that was used to create this geometry */
     OWLContext getOWL() const;
@@ -57,7 +74,40 @@ namespace barney {
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGroup> secondPassGroups;
     
-    Material::SP material;
+    render::HostMaterial::SP material;
+
+    render::GeometryAttributes attributes;
   };
 
+  template<typename InterpolatePerVertex>
+  inline __device__
+  void Geometry::DD::setHitAttributes(render::HitAttributes &hit,
+                                      const InterpolatePerVertex &interpolate,
+                                      bool dbg) const
+  {
+    auto set = [&](float4 &out, const GeometryAttribute::DD &in) {
+      switch(in.scope) {
+      case GeometryAttribute::INVALID:
+        /* nothing - leave default */
+        break;
+      case GeometryAttribute::CONSTANT:
+        out = in.value;
+        break;
+      case GeometryAttribute::PER_PRIM:
+        out = in.fromArray.valueAt(hit.primID);
+        break;
+      case GeometryAttribute::PER_VERTEX:
+        out = interpolate(in);
+        break; 
+      }
+    };
+    
+    for (int i=0;i<attributes.count;i++) {
+      float4     &out = hit.attribute[i];
+      const auto &in  = this->attributes.attribute[i];
+      set(out,in);
+    }
+    set(hit.color,this->attributes.colorAttribute);
+  }
+  
 }

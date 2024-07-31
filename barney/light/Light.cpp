@@ -39,7 +39,7 @@ namespace barney {
   bool DirLight::set3f(const std::string &member, const vec3f &value) 
   {
     if (member == "direction") {
-      content.direction = value;
+      content.direction = normalize(value);
       return true;
     }
     if (member == "radiance") {
@@ -76,6 +76,7 @@ namespace barney {
   {
     if (member == "envMap.transform") {
       content.transform = value;
+      PING; PRINT(content.transform);
       return true;
     }
     return false;
