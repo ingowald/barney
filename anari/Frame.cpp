@@ -202,8 +202,9 @@ void Frame::wait() const
 void Frame::convertPixelsToFinalFormat()
 {
   if (m_colorType == ANARI_UFIXED8_VEC4) {
-    cudaMemcpy(m_bnPixelBuffer,
+    cudaMemcpy(
         m_colorBuffer,
+        m_bnPixelBuffer,
         m_frameData.totalPixels * sizeof(uint32_t),
         cudaMemcpyDefault);
   } else if (m_colorType == ANARI_UFIXED8_RGBA_SRGB) {
