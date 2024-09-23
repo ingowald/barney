@@ -14,6 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#ifdef __CUDACC__
+# define OWL_DISABLE_TBB
+#endif
 #include "barney/DeviceContext.h"
 #include "barney/render/Ray.h"
 #include "barney/fb/FrameBuffer.h"

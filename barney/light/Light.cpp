@@ -35,6 +35,15 @@ namespace barney {
   }
 
   // ==================================================================
+  EnvMapLight::EnvMapLight(ModelSlot *owner)
+    : Light(owner)
+  {
+    std::cout << OWL_TERMINAL_YELLOW
+              << "#bn: created env-map light"
+              << OWL_TERMINAL_DEFAULT << std::endl;
+  }
+  
+  // ==================================================================
   
   bool DirLight::set3f(const std::string &member, const vec3f &value) 
   {

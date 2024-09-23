@@ -4,45 +4,64 @@
 #pragma once
 
 #include "Object.h"
+#include "common.h"
+#include "helium/array/Array1D.h"
+#include "helium/array/Array2D.h"
 
 namespace barney_device {
 
-struct Light : public Object
-{
-  Light(BarneyGlobalState *s);
-  ~Light() override;
+  struct Light : public Object
+  {
+    Light(BarneyGlobalState *s);
+    ~Light() override;
 
-  static Light *createInstance(std::string_view type, BarneyGlobalState *state);
+    static Light *createInstance(std::string_view type, BarneyGlobalState *state);
 
-  void markCommitted() override;
-  virtual void commit() override;
+    void markCommitted() override;
+    virtual void commit() override;
 
-  BNLight getBarneyLight(BNModel model, int slot);
+    BNLight getBarneyLight(BNModel model, int slot);
 
- protected:
-  virtual const char *bnSubtype() const = 0;
-  virtual void setBarneyParameters() const = 0;
-  void cleanup();
+  protected:
+    virtual const char *bnSubtype() const = 0;
+    virtual void setBarneyParameters() const = 0;
+    void cleanup();
 
-  math::float3 m_radiance{1.f, 1.f, 1.f};
+    float3 m_radiance{1.f, 1.f, 1.f};
 
-  BNLight m_bnLight{nullptr};
-};
+    BNLight m_bnLight{nullptr};
+  };
 
-// Subtypes ///////////////////////////////////////////////////////////////////
+  // Subtypes ///////////////////////////////////////////////////////////////////
 
-struct Directional : public Light
-{
-  Directional(BarneyGlobalState *s);
+  struct Directional : public Light
+  {
+    Directional(BarneyGlobalState *s);
 
-  void commit() override;
+    void commit() override;
 
- private:
-  const char *bnSubtype() const;
-  void setBarneyParameters() const override;
+  private:
+    const char *bnSubtype() const;
+    void setBarneyParameters() const override;
 
-  math::float3 m_dir{0.f, 0.f, -1.f};
-};
+    float3 m_dir{0.f, 0.f, -1.f};
+  };
+
+  struct HDRILight : public Light
+  {
+    HDRILight(BarneyGlobalState *s);
+
+    void commit() override;
+
+  private:
+    const char *bnSubtype() const;
+    void setBarneyParameters() const override;
+
+    helium::IntrusivePtr<helium::Array1D> 
+    anari::math::float3 m_up{0.f, 0.f, 1.f};
+    float3 m_direction{1.f, 0.f, 0.f};
+    helium::IntrusivePtr<helium::Array2D> m_radiance;
+  };
 
 } // namespace barney_device
 

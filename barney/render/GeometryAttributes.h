@@ -85,6 +85,8 @@ namespace barney {
         const float4 v = ((const float4 *)ptr)[i];
         return v;
       }
+      default:
+        return make_float4(0.f,0.f,0.f,0.f);
       };
     }
     

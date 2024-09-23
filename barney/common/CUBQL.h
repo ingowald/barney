@@ -25,7 +25,7 @@ namespace barney {
   /*! sample the umesh field; can return NaN if sample did not hit
     any unstructured element at all */
   inline __device__
-  float traverseCUQBL(typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node *bvhNodes,
+  void traverseCUQBL(typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node *bvhNodes,
                       TravState &ptd, vec3f P, bool dbg) 
   {
     using node_t = typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node;
@@ -80,5 +80,4 @@ namespace barney {
       nodeRef = *--stackPtr;
     }
   }
-  
 } // ::barney

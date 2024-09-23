@@ -38,7 +38,7 @@ namespace barney {
 
   struct EnvMapLight : public Light {
     typedef std::shared_ptr<EnvMapLight> SP;
-    EnvMapLight(ModelSlot *owner) : Light(owner) {}
+    EnvMapLight(ModelSlot *owner);
     
     std::string toString() const override { return "EnvMapLight"; }
     
