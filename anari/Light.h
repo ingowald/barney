@@ -7,6 +7,10 @@
 #include "common.h"
 #include "helium/array/Array1D.h"
 #include "helium/array/Array2D.h"
+#include "common.h"
+// CUDA
+// #include <vector_functions.h>
+// #include <iostream>
 
 namespace barney_device {
 
@@ -24,10 +28,11 @@ namespace barney_device {
 
   protected:
     virtual const char *bnSubtype() const = 0;
-    virtual void setBarneyParameters() const = 0;
+    virtual void setBarneyParameters() = 0;
+
     void cleanup();
 
-    float3 m_radiance{1.f, 1.f, 1.f};
+    math::float3 m_radiance{1.f, 1.f, 1.f};
 
     BNLight m_bnLight{nullptr};
   };
@@ -42,9 +47,9 @@ namespace barney_device {
 
   private:
     const char *bnSubtype() const;
-    void setBarneyParameters() const override;
+    void setBarneyParameters() override;
 
-    float3 m_dir{0.f, 0.f, -1.f};
+    math::float3 m_dir{0.f, 0.f, -1.f};
   };
 
   struct HDRILight : public Light
@@ -55,14 +60,13 @@ namespace barney_device {
 
   private:
     const char *bnSubtype() const;
-    void setBarneyParameters() const override;
+    void setBarneyParameters() override;
 
-    helium::IntrusivePtr<helium::Array1D> 
-    anari::math::float3 m_up{0.f, 0.f, 1.f};
-    float3 m_direction{1.f, 0.f, 0.f};
+    math::float3 m_up{0.f, 0.f, 1.f};
+    math::float3 m_direction{1.f, 0.f, 0.f};
     helium::IntrusivePtr<helium::Array2D> m_radiance;
   };
-
+  
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Light *, ANARI_LIGHT);
