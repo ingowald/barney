@@ -36,6 +36,27 @@ namespace barney {
     World::~World()
     {}
     
+    World::DD World::getDD(const Device::SP &device) const
+    {
+      DD dd;
+      dd.quadLights = (QuadLight *)owlBufferGetPointer(quadLightsBuffer,device->owlID);
+      dd.numQuadLights = numQuadLights;
+      dd.dirLights = (DirLight *)owlBufferGetPointer(dirLightsBuffer,device->owlID);
+      dd.numDirLights = numDirLights;
+      if (envMapLight.texture) {
+        dd.envMapLight.texture 
+          = owlTextureGetObject(envMapLight.texture,device->owlID);
+      } else 
+        dd.envMapLight.texture = 0;
+      dd.envMapLight.toWorld = envMapLight.toWorld;
+      dd.envMapLight.toLocal = envMapLight.toLocal;
+      // dd.globals = globals.getDD(device);
+      dd.radiance  = radiance;
+      dd.samplers  = samplerRegistry->getPointer(device->owlID);
+      dd.materials = materialRegistry->getPointer(device->owlID);
+      return dd;
+    }
+
     MaterialRegistry::MaterialRegistry(DevGroup::SP devGroup)
       : devGroup(devGroup)
     {

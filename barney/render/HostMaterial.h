@@ -122,8 +122,8 @@ namespace barney {
                                              const Sampler::DD *samplers,
                                              bool dbg) const
     {
-      if (1 && dbg)
-        printf("evaluating attrib, type %i, val.x %f\n",int(type),value.x);
+      // if (1 && dbg)
+      //   printf("evaluating attrib, type %i, val.x %f\n",int(type),value.x);
       if (type == VALUE) {
         return isnan(value.x) ? make_float4(0.f,0.f,0.f,1.f) : value;
       }

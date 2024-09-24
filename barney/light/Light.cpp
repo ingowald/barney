@@ -27,22 +27,13 @@ namespace barney {
       return std::make_shared<DirLight>(owner);
     if (type == "quad")
       return std::make_shared<QuadLight>(owner);
-    if (type == "environment")
+    if (type == "envmap")
       return std::make_shared<EnvMapLight>(owner);
     
     owner->context->warn_unsupported_object("Light",type);
     return {};
   }
 
-  // ==================================================================
-  EnvMapLight::EnvMapLight(ModelSlot *owner)
-    : Light(owner)
-  {
-    std::cout << OWL_TERMINAL_YELLOW
-              << "#bn: created env-map light"
-              << OWL_TERMINAL_DEFAULT << std::endl;
-  }
-  
   // ==================================================================
   
   bool DirLight::set3f(const std::string &member, const vec3f &value) 
@@ -67,8 +58,24 @@ namespace barney {
 
   // ==================================================================
   
+  EnvMapLight::EnvMapLight(ModelSlot *owner)
+    : Light(owner)
+  {
+    std::cout << OWL_TERMINAL_YELLOW
+              << "#bn: created env-map light"
+              << OWL_TERMINAL_DEFAULT << std::endl;
+  }
+  
   void EnvMapLight::commit()
   {
+    content.toWorld.vz = normalize(up);
+    content.toWorld.vy = normalize(cross(content.toWorld.vz,direction));
+    content.toWorld.vx = normalize(cross(content.toWorld.vy,content.toWorld.vz));
+    content.toLocal    = rcp(content.toWorld);
+    PING;
+    PRINT(up);
+    PRINT(direction);
+    PRINT(content.toWorld);
   }
   
   bool EnvMapLight::set2i(const std::string &member, const vec2i &value) 
@@ -78,14 +85,12 @@ namespace barney {
 
   bool EnvMapLight::set3f(const std::string &member, const vec3f &value) 
   {
-    return false;
-  }
-
-  bool EnvMapLight::set4x3f(const std::string &member, const affine3f &value) 
-  {
-    if (member == "envMap.transform") {
-      content.transform = value;
-      PING; PRINT(content.transform);
+    if (member == "direction") {
+      direction = value;
+      return true;
+    }
+    if (member == "up") {
+      up = value;
       return true;
     }
     return false;
@@ -93,7 +98,7 @@ namespace barney {
 
   bool EnvMapLight::setObject(const std::string &member, const Object::SP &value) 
   {
-    if (member == "envMap.texture") {
+    if (member == "texture") {
       this->texture = value->as<Texture>();
       content.texture = texture->owlTex;
       return true;

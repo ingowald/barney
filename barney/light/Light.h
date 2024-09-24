@@ -47,12 +47,14 @@ namespace barney {
     void commit() override;
     bool set2i(const std::string &member, const vec2i &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
-    bool set4x3f(const std::string &member, const affine3f &value) override;
+    // bool set4x3f(const std::string &member, const affine3f &value) override;
     bool setObject(const std::string &member, const Object::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
     render::EnvMapLight content;
+    vec3f direction { 1.f, 0.f, 0.f };
+    vec3f up        { 0.f, 0.f, 1.f };
     Texture::SP texture;
   };
 

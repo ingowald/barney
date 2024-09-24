@@ -106,7 +106,8 @@ namespace barney {
   }
 
   void ModelSlot::build()
-  { 
+  {
+    PING;
     std::vector<render::QuadLight> quadLights;
     std::vector<render::DirLight>  dirLights;
 

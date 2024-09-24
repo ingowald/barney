@@ -137,7 +137,7 @@ namespace barney_device {
 
   const char *HDRILight::bnSubtype() const
   {
-    return "directional";
+    return "envmap";
   }
 
   void HDRILight::setBarneyParameters() 
@@ -152,11 +152,12 @@ namespace barney_device {
     const math::float3 *radianceValues = (const math::float3 *)m_radiance->data();
     int width  = m_radiance->size().x;
     int height = m_radiance->size().y;
+    throw std::runtime_error("envmap must be set as a texture");
     BNData radianceData
       = bnDataCreate(model,slot,BN_FLOAT3,
                      width*height,radianceData);
-    bnSetData(m_bnLight, "texture.values", radianceData);
-    bnSet2i(m_bnLight,"texture.dims",width,height);
+    bnSetData(m_bnLight, "envmap.texels", radianceData);
+    bnSet2i(m_bnLight,"envmap.dims",width,height);
     bnCommit(m_bnLight);
     bnRelease(radianceData);
   }

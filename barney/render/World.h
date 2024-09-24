@@ -48,10 +48,12 @@ namespace barney {
 
     struct EnvMapLight {
       struct DD {
-        affine3f   transform;
+        linear3f   toWorld;
+        linear3f   toLocal;
         cudaTextureObject_t texture;
       };
-      affine3f   transform;
+      linear3f   toWorld;
+      linear3f   toLocal;
       OWLTexture texture = 0;
     };
 
@@ -146,25 +148,7 @@ namespace barney {
       void set(EnvMapLight envMapLight) {
         this->envMapLight = envMapLight;
       };
-      DD getDD(const Device::SP &device) const {
-        DD dd;
-        dd.quadLights = (QuadLight *)owlBufferGetPointer(quadLightsBuffer,device->owlID);
-        dd.numQuadLights = numQuadLights;
-        dd.dirLights = (DirLight *)owlBufferGetPointer(dirLightsBuffer,device->owlID);
-        dd.numDirLights = numDirLights;
-        if (envMapLight.texture)
-          dd.envMapLight.texture 
-            = owlTextureGetObject(envMapLight.texture,device->owlID);
-        else 
-          dd.envMapLight.texture
-            = 0;
-        dd.envMapLight.transform = envMapLight.transform;
-        // dd.globals = globals.getDD(device);
-        dd.radiance  = radiance;
-        dd.samplers  = samplerRegistry->getPointer(device->owlID);
-        dd.materials = materialRegistry->getPointer(device->owlID);
-        return dd;
-      }
+      DD getDD(const Device::SP &device) const;
 
       // Globals globals;
       MaterialRegistry::SP materialRegistry;

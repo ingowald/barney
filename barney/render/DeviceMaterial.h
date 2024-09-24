@@ -62,7 +62,6 @@ namespace barney {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      if (dbg) printf("createBSDF type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)
@@ -75,31 +74,17 @@ namespace barney {
                                      const Sampler::DD *samplers,
                                      bool dbg) const
     {
-      // if (dbg) printf("getopacity type %i\n",(int)type);
       if (type == TYPE_AnariPBR)
         return anariPBR.getOpacity(hitData,samplers,dbg);
       return 1.f;
     }
     
-    // template<typename InterpolateGeometryAttribute>
-    // inline __device__
-    // void Material::setHit(Ray &ray,
-    //                       HitAttributes      &hitAttribs,
-    //                       // const GeometryAttributes &geomAttribs,
-    //                       const InterpolateGeometryAttribute &interpolate)
-    // {
-    //   for (int i=0;i<numAttributes;i++)
-    //     hitAttribs[i] = geomAttribs[i].
-    //       printf("todo\n");
-    // }
-
     inline __device__
     void DeviceMaterial::setHit(Ray &ray,
                                 const HitAttributes &hitData,
                                 const Sampler::DD *samplers,
                                 bool dbg) const
     {
-      if (dbg) printf("devmat sethit\n");
       ray.setHit(hitData.worldPosition,hitData.worldNormal,
                  hitData.t,createBSDF(hitData,samplers,dbg));
     }

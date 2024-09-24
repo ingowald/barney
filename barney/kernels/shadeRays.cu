@@ -314,9 +314,10 @@ namespace barney {
     inline __device__
     vec3f radianceFromEnv(const World::DD &world,
                           Ray &ray)
-    { auto &env = world.envMapLight;
+    {
+      auto &env = world.envMapLight;
       if (env.texture) {
-        vec3f d = xfmVector(env.transform,normalize(ray.dir));
+        vec3f d = xfmVector(env.toLocal,normalize(ray.dir));
         float theta = pbrtSphericalTheta(d);
         float phi   = pbrtSphericalPhi(d);
         const float invPi  = 1.f/M_PI;
@@ -331,7 +332,10 @@ namespace barney {
       }
     }
 
-    /*! return dedicated background, if specifeid; otherwise return envmap color */
+    /*! if there _is_ a dedicated env-map light specified, this looks
+        up the background color from that map; otherwise, it returns
+        the 'ray.misscolor' that the primary ray generation has set as
+        default color for this ray */
     inline __device__
     vec3f backgroundOrEnv(const World::DD &world,
                           Ray &ray)
@@ -339,6 +343,8 @@ namespace barney {
       if (world.envMapLight.texture)
         return radianceFromEnv(world,ray);
       return
+        // primary rays do store a default misscolor in the ray itself
+        // - we simply return this if there's no env-map.
         ray.missColor;
     }
 
@@ -410,7 +416,8 @@ namespace barney {
                    path.missColor.x,
                    path.missColor.y,
                    path.missColor.z);
-          fragment = path.missColor;
+          // fragment = path.missColor;
+          fragment = backgroundOrEnv(world,path);
           // fragment = path.throughput * backgroundOrEnv(world,path);
           
           // const vec3f fromEnv
@@ -787,6 +794,8 @@ namespace barney {
     World *world = model->getSlot(dg->lmsIdx)->world.get();
 
     if (nb) {
+      World::DD devWorld = world->getDD(device);
+           
       switch(renderMode) {
 #if 0
       case RENDER_MODE_LOCAL:
@@ -811,8 +820,8 @@ namespace barney {
 #endif
 
         g_shadeRays_pt<8><<<nb,bs,0,device->launchStream>>>
-          (world->getDD(device),
-           fb->accumTiles,fb->owner->accumID,
+        (devWorld,
+         fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
            rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
         break;
