@@ -47,16 +47,32 @@ namespace barney {
     };
 
     struct EnvMapLight {
-      struct DD {
-        linear3f   toWorld;
-        linear3f   toLocal;
-        cudaTextureObject_t texture;
+      struct Sample {
+        vec3f rad;
+        vec3f dir;
+        float pdf;
       };
+      struct DD {
+        inline __device__ Sample sample(Random &r, bool dbg=false) const;
+        inline __device__ vec3f eval(vec3f dir, bool dbg=false) const;
+        
+        linear3f            toWorld;
+        linear3f            toLocal;
+        cudaTextureObject_t texture;
+        vec2i               dims;
+        const float        *cdf_y;
+        const float        *allCDFs_x;
+      };
+
+      DD getDD(const Device::SP &device) const;
+
       linear3f   toWorld;
       linear3f   toLocal;
       OWLTexture texture = 0;
+      OWLBuffer  cdf_y;
+      OWLBuffer  allCDFs_x;
+      vec2i      dims;
     };
-
 
     struct MaterialRegistry {
       typedef std::shared_ptr<MaterialRegistry> SP;

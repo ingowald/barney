@@ -35,7 +35,24 @@ namespace barney {
     }
     World::~World()
     {}
-    
+
+    EnvMapLight::DD EnvMapLight::getDD(const Device::SP &device) const
+    {
+      DD dd;
+      dd.dims = dims;
+      if (texture) {
+        dd.texture 
+          = owlTextureGetObject(texture,device->owlID);
+      } else 
+        dd.texture = 0;
+      
+      dd.toWorld = toWorld;
+      dd.toLocal = toLocal;
+      dd.cdf_y = (const float *)owlBufferGetPointer(cdf_y,device->owlID);
+      dd.allCDFs_x = (const float *)owlBufferGetPointer(allCDFs_x,device->owlID);
+      return dd;
+    }
+
     World::DD World::getDD(const Device::SP &device) const
     {
       DD dd;
@@ -43,17 +60,13 @@ namespace barney {
       dd.numQuadLights = numQuadLights;
       dd.dirLights = (DirLight *)owlBufferGetPointer(dirLightsBuffer,device->owlID);
       dd.numDirLights = numDirLights;
-      if (envMapLight.texture) {
-        dd.envMapLight.texture 
-          = owlTextureGetObject(envMapLight.texture,device->owlID);
-      } else 
-        dd.envMapLight.texture = 0;
-      dd.envMapLight.toWorld = envMapLight.toWorld;
-      dd.envMapLight.toLocal = envMapLight.toLocal;
+
+      dd.envMapLight = envMapLight.getDD(device);
       // dd.globals = globals.getDD(device);
       dd.radiance  = radiance;
       dd.samplers  = samplerRegistry->getPointer(device->owlID);
       dd.materials = materialRegistry->getPointer(device->owlID);
+
       return dd;
     }
 
