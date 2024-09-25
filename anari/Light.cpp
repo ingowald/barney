@@ -123,9 +123,12 @@ namespace barney_device {
   {
     std::cout << "#banari: creating hdri light " << std::endl;
     Light::commit();
-    m_up = getParam<math::float3>("up", math::float3(0.f,0.f,1.f));
-    m_direction = getParam<math::float3>("direction", math::float3(1.f,0.f,0.f));
-    m_radiance = getParamObject<helium::Array2D>("radiance");
+    m_up
+      = getParam<math::float3>("up", math::float3(0.f,0.f,1.f));
+    m_direction
+      = getParam<math::float3>("direction", math::float3(1.f,0.f,0.f));
+    m_radiance
+      = getParamObject<helium::Array2D>("radiance");
 
     if (!m_radiance)
       throw std::runtime_error("banari - created hdri light without any radiance values!?");
@@ -149,17 +152,25 @@ namespace barney_device {
 
     bnSet3fc(m_bnLight, "direction", (const float3 &)m_direction);
     bnSet3fc(m_bnLight, "up", (const float3 &)m_up);
-    const math::float3 *radianceValues = (const math::float3 *)m_radiance->data();
+
+    assert(m_radiance);
     int width  = m_radiance->size().x;
     int height = m_radiance->size().y;
-    throw std::runtime_error("envmap must be set as a texture");
-    BNData radianceData
-      = bnDataCreate(model,slot,BN_FLOAT3,
-                     width*height,radianceData);
-    bnSetData(m_bnLight, "envmap.texels", radianceData);
-    bnSet2i(m_bnLight,"envmap.dims",width,height);
+    const math::float3 *radianceValues
+      // = (const math::float3 *)m_radiance->data();
+      = m_radiance->dataAs<math::float3>();
+    std::vector<math::float4> asFloat4(width*height);
+    for (int i=0;i<width*height;i++) 
+      (math::float3&)asFloat4[i] = radianceValues[i];
+
+    BNTexture texture
+      = bnTexture2DCreate(model,slot,BN_TEXEL_FORMAT_RGBA32F,
+                          width,height,asFloat4.data());
+                                          
+    bnSetObject(m_bnLight, "texture", texture);
+    bnRelease(texture);
+
     bnCommit(m_bnLight);
-    bnRelease(radianceData);
   }
   
 } // namespace barney_device
