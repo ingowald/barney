@@ -120,8 +120,8 @@ namespace barney {
       ray.rngSeed     = rand.state;
       ray.tMax        = 1e30f;
 
-      // if (ray.dbg)
-      //   printf("-------------------------------------------------------\n");
+      if (0 && ray.dbg)
+        printf("-------------------------------------------------------\n");
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              

@@ -81,7 +81,10 @@ namespace barney {
       //   SPECULAR_TRANS = (1<<4),
       //   GLOSSY_TRANS   = (1<<5),
       // } Type;
-      inline __device__ bool valid() const    { return pdf > 0.f && !isinf(pdf); }
+      inline __device__ bool valid() const    { return pdf > 0.f
+          // && !isinf(pdf)
+          ;
+      }
 
       vec3f f_r;
       vec3f dir;

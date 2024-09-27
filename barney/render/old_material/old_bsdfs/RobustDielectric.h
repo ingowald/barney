@@ -33,10 +33,10 @@
 
 #pragma once
 
-#include "barney/material/device/DG.h"
-#include "barney/material/device/BSDF.h"
-#include "barney/material/bsdfs/Lambert.h"
-#include "barney/material/bsdfs/optics.h"
+// #include "barney/material/device/DG.h"
+#include "barney/render/old_material/old/BSDF.h"
+#include "barney/render/old_material/old_bsdfs/Lambert.h"
+#include "barney/render/old_material/old_bsdfs/optics.h"
 
 namespace barney {
   namespace render {

@@ -784,6 +784,7 @@ namespace barney {
                                            bool dbg
                                            ) {
           // Randomly pick a brdf to sample
+          // if (dbg) printf("mat.specular_transmission %f\n",mat.specular_transmission);
           if (mat.specular_transmission == 0.f) {
             sampled_bsdf = lcg_randomf(rng) * 3.f;
             sampled_bsdf = clamp(sampled_bsdf, 0, 2);
@@ -792,6 +793,7 @@ namespace barney {
             if (dot(w_o, b_n) > 0.f) {
               sampled_bsdf = lcg_randomf(rng) * 4.f;
               sampled_bsdf = clamp(sampled_bsdf, 0, 3);
+              // if (dbg) printf("-> sampled %i\n",sampled_bsdf);
             }
             else sampled_bsdf = DISNEY_TRANSMISSION_BRDF; 
           }
@@ -1031,15 +1033,15 @@ namespace barney {
         sample_disney_brdf(mat,rng,g_n,s_n,b_n,v_x,v_y,w_o,
                            // out:
                            w_i, pdf, sampled_bsdf, bsdf, dbg);
-        // if (dbg) printf(" -> nvis sampled type %i dir %f %f %f bsdf %f %f %f pdf %f\n",
-        //                 sampled_bsdf,
-        //                 w_i.x,
-        //                 w_i.y,
-        //                 w_i.z,
-        //                 bsdf.x,
-        //                 bsdf.y,
-        //                 bsdf.z,
-        //                 pdf);
+        if (0 && dbg) printf(" -> nvis sampled type %i dir %f %f %f bsdf %f %f %f pdf %f\n",
+                        sampled_bsdf,
+                        w_i.x,
+                        w_i.y,
+                        w_i.z,
+                        bsdf.x,
+                        bsdf.y,
+                        bsdf.z,
+                        pdf);
         scatter.pdf = pdf;
         scatter.f_r = bsdf;
         scatter.dir = normalize(w_i);

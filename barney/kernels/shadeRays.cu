@@ -643,18 +643,33 @@ namespace barney {
       
       ScatterResult scatterResult;
       // if (path.dbg)
-        bsdf.scatter(scatterResult,dg,random,path.dbg);
+      bsdf.scatter(scatterResult,dg,random,path.dbg);
+      // if (path.dbg) printf("scatter result.valid ? %i\n",
+      //                      int(scatterResult.valid()));
       if (!scatterResult.valid() || scatterResult.pdf == 0.f)
         return;
       path.org        = dg.P + scatterResult.offsetDirection * frontFacingSurfaceOffset;
+      if (0 && path.dbg)
+        printf("path scattered from %f %f %f to %f %f %f, dot %f\n",
+               (float)path.dir.x, 
+               (float)path.dir.y, 
+               (float)path.dir.z, 
+               (float)scatterResult.dir.x, 
+               (float)scatterResult.dir.y, 
+               (float)scatterResult.dir.z,
+               dot(path.dir,scatterResult.dir));
       path.dir        = normalize(scatterResult.dir);
+
+      
       vec3f scatterFactor
         = scatterResult.f_r
         // * fabsf(dot(dg.Ng,path.dir))
-        / (scatterResult.pdf + 1e-10f);
+        / (isinf(scatterResult.pdf)? 1.f : (scatterResult.pdf + 1e-10f));
       path.throughput
         = path.throughput * scatterFactor;
       path.clearHit();
+      if (scatterResult.changedMedium)
+        path.isInMedium = !path.isInMedium;
       
       if (0 && path.dbg)
         printf("scatter dir %f %f %f tp %f %f %f\n",
@@ -666,7 +681,7 @@ namespace barney {
                (float)path.throughput.z);
 
 #if USE_MIS
-      if (lightNeedsMIS) {
+      if (lightNeedsMIS && !isinf(scatterResult.pdf)) {
         float pdf_scatterRay_scatterDir = scatterResult.pdf;
         float pdf_lightRay_lightDir     = ls.pdf;
         float pdf_lightRay_scatterDir   = world.envMapLight.pdf(path.dir);
@@ -678,7 +693,8 @@ namespace barney {
         shadowRay.misWeight
           = pdf_lightRay_lightDir
           / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir);
-      }
+      } else
+        path.misWeight = 1.f;
 #endif
     }
   

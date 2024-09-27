@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/render/DG.h"
+#include "../old_material/old_bsdfs/RobustDielectric.h"
 
 namespace barney {
   namespace render {
@@ -25,11 +26,53 @@ namespace barney {
       struct Glass {
         inline __device__ vec3f getAlbedo(bool dbg) const;
         inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__ float pdf(DG dg, vec3f wi, bool dbg) const;
         inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+        inline __device__ void scatter(ScatterResult &scatter,
+                                       const render::DG &dg,
+                                       Random &random,
+                                       bool dbg) const;
 
         float  ior;
         float3 attenuation;
       };
+
+      inline __device__ EvalRes Glass::eval(DG dg, vec3f wi, bool dbg) const
+      {
+        return EvalRes::zero();
+      }
+
+      
+      inline __device__ void Glass::scatter(ScatterResult &scatter,
+                                     const render::DG &dg,
+                                     Random &random,
+                                     bool dbg) const
+      {
+        float eta 
+          = (!dg.insideMedium)
+          ? 1.f/ior
+          : ior;
+          // ? mediumOutside.ior / mediumInside.ior
+          // : mediumInside.ior / mediumOutside.ior;
+        // if (dbg) printf("eta is %f\n",eta);
+        SampleRes sampleRes = RobustDielectric(eta).sample(dg,random,dbg);
+        scatter.f_r = sampleRes.weight;
+        scatter.dir = sampleRes.wi;
+        scatter.pdf = sampleRes.pdf;
+        scatter.offsetDirection = -1.f;
+        scatter.changedMedium = (sampleRes.type == BSDF_SPECULAR_TRANSMISSION);
+        // if (dbg) printf("glass f_r %f %f %f pdf %f\n",
+        //                 scatter.f_r.x,
+        //                 scatter.f_r.y,
+        //                 scatter.f_r.z,
+        //                 scatter.pdf);
+      }
+      
+      
+      inline __device__ float Glass::pdf(DG dg, vec3f wi, bool dbg) const
+      {
+        return 0.f;
+      }
       
     }
   }

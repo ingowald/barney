@@ -67,21 +67,35 @@ namespace barney {
                                         const Sampler::DD *samplers,
                                         bool dbg) const
     {
-      const float clampRange = .05f;
-      
+      float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
+      float4 metallic = this->metallic.eval(hitData,samplers,dbg);
+      float4 roughness = this->roughness.eval(hitData,samplers,dbg);
+      float4 transmission = this->transmission.eval(hitData,samplers,dbg);
+      float4 ior = this->ior.eval(hitData,samplers,dbg);
+#if 1
+      if (ior.x != 1.f && transmission.x >= 1e-3f) {
+        packedBSDF::Glass bsdf;
+        bsdf.ior = ior.x;
+        bsdf.attenuation = vec3f(1.f);
+        // bsdf.ior = 1.45f;
+        // bsdf.specularTransmission = 1.f;
+        // bsdf.baseColor = vec3f(1.f);
+        // bsdf.metallic = 0.f;
+        // bsdf.roughness = 0.f;
+        // bsdf.specular = 0.f;
+        return bsdf;
+      }
+#endif
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
-      float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
+      const float clampRange = .05f;
+      
       bsdf.baseColor = (const vec3f&)baseColor;
-      float4 metallic = this->metallic.eval(hitData,samplers,dbg);
       bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
-      float4 roughness = this->roughness.eval(hitData,samplers,dbg);
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
-      float4 transmission = this->transmission.eval(hitData,samplers,dbg);
       bsdf.alpha = 1.f-transmission.x;
       
-      float4 ior = this->ior.eval(hitData,samplers,dbg);
       bsdf.ior = ior.x;
       // if (dbg)
       //   printf("created nvisii brdf, base %f %f %f metallic %f roughness %f ior %f alpha %f\n",

@@ -33,7 +33,7 @@ namespace barney {
       typedef enum { INVALID=0, NONE=INVALID,
         /* phase function */
         TYPE_Phase,
-        TYPE_VisRTX,
+        TYPE_Glass,
         TYPE_NVisii
       } Type;
       struct Data {
@@ -57,6 +57,8 @@ namespace barney {
       { type = TYPE_Phase; data.phase = phase; }
       inline __device__ PackedBSDF(const packedBSDF::NVisii  &nvisii)
       { type = TYPE_NVisii; data.nvisii = nvisii; }
+      inline __device__ PackedBSDF(const packedBSDF::Glass  &glass)
+      { type = TYPE_Glass; data.glass = glass; }
       // inline __device__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
       
       inline __device__
@@ -91,6 +93,8 @@ namespace barney {
       //   return data.visRTX.eval(dg,w_i,dbg);
       if (type == TYPE_NVisii)
         return data.nvisii.eval(dg,w_i,dbg);
+      if (type == TYPE_Glass)
+        return data.glass.eval(dg,w_i,dbg);
       return EvalRes();
     }
     
@@ -99,6 +103,8 @@ namespace barney {
     {
       if (type == TYPE_NVisii)
         return data.nvisii.pdf(dg,w_i,dbg);
+      if (type == TYPE_Glass)
+        return data.glass.pdf(dg,w_i,dbg);
       return 0.f;
     }
     
@@ -117,10 +123,10 @@ namespace barney {
       scatter.pdf = 0.f;
       if (type == TYPE_Phase)
         return data.phase.scatter(scatter,dg,random,dbg);
-      // if (type == TYPE_VisRTX)
-      //   return data.visRTX.scatter(scatter,dg,random,dbg);
       if (type == TYPE_NVisii)
         return data.nvisii.scatter(scatter,dg,random,dbg);
+      if (type == TYPE_Glass)
+        return data.glass.scatter(scatter,dg,random,dbg);
     }
 #endif
     
