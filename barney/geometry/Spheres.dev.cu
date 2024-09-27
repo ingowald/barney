@@ -54,30 +54,45 @@ namespace barney {
 
     vec3f org = optixGetWorldRayOrigin();
     vec3f dir = optixGetWorldRayDirection();
-    vec3f P   = org + t_hit * dir;
-    vec3f center = self.origins[primID];
-    float radius = self.radii?self.radii[primID]:self.defaultRadius;
-    vec3f N;
-    if (P == center) {
-      N = -normalize(dir);
-    } else {
-      N = normalize(P-center);
-      float eps = 1e-6f;
-      eps = safe_eps(eps,radius);
-      eps = safe_eps(eps,P);
+    /*! isec code has temporarily stored object-space hit position in
+        ray.P, see below! */
+    vec3f objectP = ray.P;
+    vec3f worldP = optixTransformPointFromObjectToWorldSpace(objectP);
       
-      float offset = radius*(1.f+eps);
-      P = center + offset * N;
-    }
+    // vec3f P   = org + t_hit * dir;
+    vec3f objectCenter
+      = self.origins[primID];
+    vec3f objectN
+      = (objectP == objectCenter)
+      ? vec3f(1.f,0.f,0.f)
+      : (objectP - objectCenter);
+    float objectRadius = self.radii?self.radii[primID]:self.defaultRadius;
 
-    // THIS IS WRONG: !!!!!!!!!
-    if (ray.dbg) printf("storing wrong object-space data here!\n");
+    /* shift object-space hit a bit away from the sphere */
+    float eps = 1e-6f;
+    eps = safe_eps(eps,objectRadius);
+    eps = safe_eps(eps,objectP);
+    objectP = objectCenter + (objectRadius+eps)*objectN;
     
+    vec3f worldN
+      = optixTransformVectorFromObjectToWorldSpace(objectN);
+
+    // } else {
+    //   N = normalize(P-center);
+    //   float eps = 1e-6f;
+    //   eps = safe_eps(eps,radius);
+    //   eps = safe_eps(eps,P);
+      
+    //   float offset = radius*(1.f+eps);
+    //   P = center + offset * N;
+    // }
+
     render::HitAttributes hitData;//(OptixGlobals::get());
-    hitData.worldPosition   = P;
-    hitData.objectPosition  = P;
-    hitData.worldNormal     = N;
-    hitData.objectNormal    = N;
+    hitData.worldPosition   = worldP;
+
+    hitData.objectPosition  = objectP;
+    hitData.worldNormal     = normalize(worldN);
+    hitData.objectNormal    = normalize(objectN);
     hitData.primID          = primID;
     hitData.t               = t_hit;
     if (self.colors)
@@ -94,8 +109,8 @@ namespace barney {
     };
     self.setHitAttributes(hitData,interpolator,ray.dbg);
 
-    if (ray.dbg)
-      printf("HIT SPHERES %i\n",self.materialID);
+    // if (ray.dbg)
+    //   printf("HIT SPHERES %i\n",self.materialID);
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
     material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
   }
@@ -142,6 +157,10 @@ namespace barney {
         hit_t = temp;
     }
     if (hit_t < t_max) {
+      // "abuse" ray.P to store local sphere coordinate
+      vec3f osPositionOfHit = /*shifted!*/org + /*shifted!*/hit_t*dir;
+      ray.P = osPositionOfHit;
+      
       hit_t += t_move;
 
       // vec3f P = old_org + hit_t * dir;
@@ -153,6 +172,7 @@ namespace barney {
       //   geometryColor = self.colors[primID];
       
       // ray.setHit(P,N,hit_t,self.material,vec2f(NAN),geometryColor);
+
       optixReportIntersection(hit_t, 0);
     }
   }

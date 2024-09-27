@@ -18,6 +18,10 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
+#include "barney/light/QuadLight.h"
+#include "barney/light/DirLight.h"
+#include "barney/light/EnvMap.h"
+
 namespace barney {
 
   Light::SP Light::create(ModelSlot *owner,
@@ -36,26 +40,8 @@ namespace barney {
 
   // ==================================================================
   
-  bool DirLight::set3f(const std::string &member, const vec3f &value) 
-  {
-    if (member == "direction") {
-      content.direction = normalize(value);
-      return true;
-    }
-    if (member == "radiance") {
-      content.radiance = value;
-      return true;
-    }
-    return false;
-  }
-
   // ==================================================================
   
-  bool QuadLight::set3f(const std::string &member, const vec3f &value) 
-  {
-    return false;
-  }
-
   // ==================================================================
   
 }

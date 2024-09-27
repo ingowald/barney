@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include "packedBSDFs/VisRTX.h"
+#include "barney/render/DG.h"
+// #include "packedBSDFs/VisRTX.h"
 #include "packedBSDFs/NVisii.h"
 #include "packedBSDFs/Glass.h"
 #include "packedBSDFs/Phase.h"
@@ -38,7 +39,7 @@ namespace barney {
       struct Data {
         union {
           packedBSDF::Phase  phase;
-          packedBSDF::VisRTX visRTX;
+          // packedBSDF::VisRTX visRTX;
           packedBSDF::Glass  glass;
           packedBSDF::NVisii nvisii;
         };
@@ -56,11 +57,14 @@ namespace barney {
       { type = TYPE_Phase; data.phase = phase; }
       inline __device__ PackedBSDF(const packedBSDF::NVisii  &nvisii)
       { type = TYPE_NVisii; data.nvisii = nvisii; }
-      inline __device__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
+      // inline __device__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
       
       inline __device__
       EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
 
+      inline __device__
+      float pdf(render::DG dg, vec3f w_i, bool dbg=false) const;
+      
       inline __device__
       void scatter(ScatterResult &scatter,
                    const render::DG &dg,
@@ -74,20 +78,28 @@ namespace barney {
 
 
 #ifdef __CUDACC__
-    inline __device__
-    PackedBSDF::PackedBSDF(const packedBSDF::VisRTX &visRTX)
-    { type = TYPE_VisRTX; data.visRTX = visRTX; }
+    // inline __device__
+    // PackedBSDF::PackedBSDF(const packedBSDF::VisRTX &visRTX)
+    // { type = TYPE_VisRTX; data.visRTX = visRTX; }
     
     inline __device__
     EvalRes PackedBSDF::eval(render::DG dg, vec3f w_i, bool dbg) const
     {
       if (type == TYPE_Phase)
         return data.phase.eval(dg,w_i,dbg);
-      if (type == TYPE_VisRTX)
-        return data.visRTX.eval(dg,w_i,dbg);
+      // if (type == TYPE_VisRTX)
+      //   return data.visRTX.eval(dg,w_i,dbg);
       if (type == TYPE_NVisii)
         return data.nvisii.eval(dg,w_i,dbg);
       return EvalRes();
+    }
+    
+    inline __device__
+    float PackedBSDF::pdf(render::DG dg, vec3f w_i, bool dbg) const
+    {
+      if (type == TYPE_NVisii)
+        return data.nvisii.pdf(dg,w_i,dbg);
+      return 0.f;
     }
     
     inline __device__
@@ -105,8 +117,8 @@ namespace barney {
       scatter.pdf = 0.f;
       if (type == TYPE_Phase)
         return data.phase.scatter(scatter,dg,random,dbg);
-      if (type == TYPE_VisRTX)
-        return data.visRTX.scatter(scatter,dg,random,dbg);
+      // if (type == TYPE_VisRTX)
+      //   return data.visRTX.scatter(scatter,dg,random,dbg);
       if (type == TYPE_NVisii)
         return data.nvisii.scatter(scatter,dg,random,dbg);
     }

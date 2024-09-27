@@ -16,36 +16,37 @@
 
 #pragma once
 
-#include "barney/Object.h"
-#include "barney/common/Data.h"
-#include "barney/common/Texture.h"
+#include "barney/light/Light.h"
 
 namespace barney {
 
-  struct ModelSlot;
-  
-  struct Light : public SlottedObject {
-    typedef std::shared_ptr<Light> SP;
-
-    /*! what we return, during rendering, when we sample a light
-        source */
-    struct Sample {
-      /* direction _to_ light */
-      vec3f direction;
-      /*! radiance coming _from_ dir */
-      vec3f radiance;
-      /*! distance to this light sample */
-      float distance;
-      /*! pdf of sample that was chosen */
-      float pdf = 0.f;
+  struct QuadLight : public Light {
+    struct DD {
+      vec3f corner, edge0, edge1, emission;
+      /*! normal of this lights source; this could obviously be derived
+        from cross(edge0,edge1), but is handle to have in a
+        renderer */
+      vec3f normal;
+      /*! area of this lights source; this could obviously be derived
+        from cross(edge0,edge1), but is handle to have in a
+        renderer */
+      float area;
     };
-  
-    
-    Light(ModelSlot *owner) : SlottedObject(owner) {}
 
-    std::string toString() const override { return "Light<>"; }
+    typedef std::shared_ptr<QuadLight> SP;
+    QuadLight(ModelSlot *owner) : Light(owner) {}
+
+    DD getDD(const affine3f &instanceXfm) const;
     
-    static Light::SP create(ModelSlot *owner, const std::string &name);
+    std::string toString() const override { return "DirectionalLight"; }
+    
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+
+    DD params;
   };
-
-};
+  
+}

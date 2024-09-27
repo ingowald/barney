@@ -24,6 +24,15 @@
 
 namespace barney {
   namespace render {
+
+      inline __device__ float pow2(float f) { return f*f; }
+      inline __device__ float pow5(float f) { return pow2(pow2(f))*f; }
+      inline __device__ float mix(float a, float b, float f) { return (1.f-f)*a + f*b; }
+      inline __device__ vec3f mix(vec3f a, vec3f b, vec3f f)
+      { return vec3f(mix(a.x,b.x,f.x),mix(a.y,b.y,f.y),mix(a.z,b.z,f.z)); }
+      inline __device__ float heaviside(float f) { return (f<0.f)?0.f:1.f; }
+
+    
     namespace packedBSDF {
       namespace nvisii {
         using LCGRand = Random;
@@ -874,6 +883,7 @@ namespace barney {
         inline __device__ vec3f getAlbedo(bool dbg) const;
         inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
         inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+        inline __device__ float pdf(DG dg, vec3f wi, bool dbg) const;
         inline __device__ void scatter(ScatterResult &scatter,
                                        const render::DG &dg,
                                        Random &random,
@@ -1097,8 +1107,33 @@ namespace barney {
         disney_brdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, bsdf,dbg);
         EvalRes ret;
         ret.value = vec3f(bsdf);
-        ret.pdf = /* THIS IS WRONG */1.f;
+        disney_pdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, ret.pdf,dbg);
         return ret;
+      }
+
+      inline __device__ float NVisii::pdf(DG dg, vec3f wi, bool dbg) const
+      {
+        using namespace nvisii;
+        DisneyMaterial mat = unpack();
+        float3 g_n = (float3)dg.Ng;
+         // * @param s_n The shading normal (per-vertex interpolated normal)
+        float3 s_n = (float3)dg.Ns;
+         // * @param b_n The bent normal (see A.3 here https://arxiv.org/abs/1705.01263)
+        float3 b_n = s_n;
+         // * @param w_i The sampled incoming (aka light) vector
+        float3 w_i = (float3)wi;
+         // * @param w_o The outgoing (aka view) vector
+        float3 w_o = dg.wo;
+         // * @param w_h The halfway vector between the incoming and outgoing vectors
+        float3 w_h = normalize(w_i+w_o);
+         // * @param v_y The binormal vector
+        float3 v_y = normalize(cross(w_o,g_n));
+         // * @param v_x The tangent vector
+        float3 v_x = normalize(cross(g_n,v_y));
+
+        float pdf;
+        disney_pdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, pdf,dbg);
+        return pdf;
       }
 #endif
     }    

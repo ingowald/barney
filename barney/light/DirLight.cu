@@ -14,38 +14,31 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/Object.h"
-#include "barney/common/Data.h"
-#include "barney/common/Texture.h"
+#include "DirLight.h"
 
 namespace barney {
-
-  struct ModelSlot;
   
-  struct Light : public SlottedObject {
-    typedef std::shared_ptr<Light> SP;
+  DirLight::DD DirLight::getDD(const affine3f &instanceXfm) const
+  {
+    DD dd;
+    dd.direction = xfmVector(instanceXfm,params.direction);
+    dd.radiance = params.radiance;
+    return dd;
+  }
 
-    /*! what we return, during rendering, when we sample a light
-        source */
-    struct Sample {
-      /* direction _to_ light */
-      vec3f direction;
-      /*! radiance coming _from_ dir */
-      vec3f radiance;
-      /*! distance to this light sample */
-      float distance;
-      /*! pdf of sample that was chosen */
-      float pdf = 0.f;
-    };
+  bool DirLight::set3f(const std::string &member, const vec3f &value) 
+  {
+    if (member == "direction") {
+      params.direction = normalize(value);
+      return true;
+    }
+    if (member == "radiance") {
+      params.radiance = value;
+      return true;
+    }
+    return false;
+  }
+
   
-    
-    Light(ModelSlot *owner) : SlottedObject(owner) {}
+}
 
-    std::string toString() const override { return "Light<>"; }
-    
-    static Light::SP create(ModelSlot *owner, const std::string &name);
-  };
-
-};

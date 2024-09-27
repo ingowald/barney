@@ -44,6 +44,12 @@ namespace barney {
 
   using Random = LCG<8>;
 
+#define ONE_PI ((float)M_PI)
+#define TWO_PI (2.f*M_PI)
+#define FOUR_PI (4.f*M_PI)
+#define ONE_OVER_PI (1.f/ONE_PI)
+#define ONE_OVER_TWO_PI (1.f/TWO_PI)
+#define ONE_OVER_FOUR_PI (1.f/FOUR_PI)
 
   template<typename T>
   inline __device__

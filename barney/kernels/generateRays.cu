@@ -66,6 +66,7 @@ namespace barney {
       int iy = (threadIdx.x / tileSize) + tileOffset.y;
 
       Ray ray;
+      ray.misWeight = 0.f;
       ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
       Random rand(ix+fbSize.x*accumID,
                   iy+fbSize.y*accumID);

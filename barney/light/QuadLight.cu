@@ -14,38 +14,24 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/Object.h"
-#include "barney/common/Data.h"
-#include "barney/common/Texture.h"
+#include "QuadLight.h"
 
 namespace barney {
-
-  struct ModelSlot;
   
-  struct Light : public SlottedObject {
-    typedef std::shared_ptr<Light> SP;
-
-    /*! what we return, during rendering, when we sample a light
-        source */
-    struct Sample {
-      /* direction _to_ light */
-      vec3f direction;
-      /*! radiance coming _from_ dir */
-      vec3f radiance;
-      /*! distance to this light sample */
-      float distance;
-      /*! pdf of sample that was chosen */
-      float pdf = 0.f;
-    };
+  QuadLight::DD QuadLight::getDD(const affine3f &instanceXfm) const
+  {
+    DD dd;
+    dd.corner = xfmPoint(instanceXfm,params.corner);
+    dd.edge0 = xfmVector(instanceXfm,params.edge0);
+    dd.edge1 = xfmVector(instanceXfm,params.edge1);
+    dd.emission = params.emission;
+    dd.area = length(cross(dd.edge0,dd.edge1));
+    return dd;
+  }
   
-    
-    Light(ModelSlot *owner) : SlottedObject(owner) {}
+  bool QuadLight::set3f(const std::string &member, const vec3f &value) 
+  {
+    return false;
+  }
 
-    std::string toString() const override { return "Light<>"; }
-    
-    static Light::SP create(ModelSlot *owner, const std::string &name);
-  };
-
-};
+}

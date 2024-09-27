@@ -59,13 +59,14 @@ namespace barney {
         implicitly through org+tMax*dir), for numerical robustness
         issues */
       vec3f       P;
-      vec3h       Le;
+      // vec3h       Le;
       vec3h       N;
       union {
         PackedBSDF::Data hitBSDF;
         /*! the background color for primary rays that didn't have any intersection */
         float3           missColor;
       };
+      half     misWeight;
     };
   
     // struct RayQueue {

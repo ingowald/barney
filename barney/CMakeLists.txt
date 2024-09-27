@@ -31,7 +31,6 @@ target_include_directories(barney-config INTERFACE
 
 
 
-
 # ray gen program that launches kernel to trace rays
 embed_ptx(
   OUTPUT_TARGET      barney-traceRays-ptx
@@ -149,6 +148,12 @@ add_library(barney STATIC
   # lights
   light/Light.h
   light/Light.cpp
+  light/DirLight.h
+  light/DirLight.cu
+  light/QuadLight.h
+  light/QuadLight.cu
+  light/EnvMap.h
+  light/EnvMap.cu
   # samplers
   render/Sampler.h
   render/Sampler.cpp
