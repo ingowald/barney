@@ -197,7 +197,7 @@ namespace barney {
 
     // PING; PRINT(material->materialID);
     setAttributesOn(geom);
-    material->setDeviceDataOn(geom);
+    getMaterial()->setDeviceDataOn(geom);
   }
   
 }

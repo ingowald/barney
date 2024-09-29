@@ -883,7 +883,9 @@ namespace barney {
         }
 #endif
         inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__ float getOpacity(render::DG dg,
+                                           bool isShadowRay,
+                                           bool dbg=false) const;
         inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
         inline __device__ float pdf(DG dg, vec3f wi, bool dbg) const;
         inline __device__ void scatter(ScatterResult &scatter,

@@ -59,18 +59,18 @@ namespace barney {
       bsdf.setDefaults();
       
       float4 baseColor = this->color.eval(hitData,samplers,dbg);
-      
+
       // not anari-conformant, but useful: if geometry _has_ a color
       // attribute, use it, no matter whether our input is point to it
       // or not:
-      if (!isnan(hitData.color.x)) 
-        baseColor = hitData.color;
-      
+      // if (!isnan(hitData.color.x)) 
+      //   baseColor = hitData.color;
+
       bsdf.baseColor = (const vec3f&)baseColor;
 
       bsdf.specular = 0.f;
       bsdf.metallic = 0.f;
-      bsdf.roughness = 0.f;
+      bsdf.roughness = .5f;
       return bsdf;
     }
 #endif

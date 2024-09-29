@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "barney/DeviceContext.h"
+#include "barney/common/barney-common.h"
 
 namespace barney {
   namespace render {
@@ -42,17 +42,7 @@ namespace barney {
     struct HitAttributes {
       typedef AttributeKind Which;
         
-      inline __device__ HitAttributes()
-      {
-        color
-          = make_float4(NAN,NAN,NAN,NAN);
-        // = make_float4(0,0,0,1);
-        for (int i=0;i<numAttributes;i++)
-          attribute[i]
-            = make_float4(NAN,NAN,NAN,NAN);
-            // = make_float4(0,0,0,1);
-      }
-
+      inline __device__ HitAttributes();
       inline __device__ float4 get(Which attribute, bool dbg=false) const;
       
       float4 color;
@@ -65,6 +55,17 @@ namespace barney {
       float  t;
       bool   isShadowRay = false;
     };
+
+    inline __device__ HitAttributes::HitAttributes()
+    {
+      color
+        = make_float4(NAN,NAN,NAN,NAN);
+      // = make_float4(0,0,0,1);
+      for (int i=0;i<numAttributes;i++)
+        attribute[i]
+            = make_float4(NAN,NAN,NAN,NAN);
+      // = make_float4(0,0,0,1);
+    }
 
     inline __device__
     float4 HitAttributes::get(Which whichOne, bool dbg) const

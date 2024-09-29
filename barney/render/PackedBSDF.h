@@ -74,7 +74,11 @@ namespace barney {
                    bool dbg=false) const;
       
       inline __device__
-      float getOpacity(render::DG dg, bool dbg=false) const;
+      float getOpacity(bool isShadowRay,
+                       bool isInMedium,
+                       vec3f rayDir,
+                       vec3f Ng,
+                       bool dbg=false) const;
 #endif
     };
 
@@ -109,9 +113,15 @@ namespace barney {
     }
     
     inline __device__
-    float PackedBSDF::getOpacity(render::DG dg, bool dbg) const
+    float PackedBSDF::getOpacity(bool isShadowRay,
+                                 bool isInMedium,
+                                 vec3f rayDir,
+                                 vec3f Ng,
+                                 bool dbg) const
     {
-      return 0.f;
+      if (type == TYPE_Glass)
+        return data.glass.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
+      return 1.f;
     }
 
     inline __device__

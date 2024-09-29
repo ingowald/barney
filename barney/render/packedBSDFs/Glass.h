@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/render/DG.h"
+#include "barney/render/HitAttributes.h"
 #include "../old_material/old_bsdfs/RobustDielectric.h"
 
 namespace barney {
@@ -24,8 +25,15 @@ namespace barney {
     namespace packedBSDF {
       
       struct Glass {
-        inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
+        inline __device__
+        vec3f getAlbedo(bool dbg) const;
+        
+        inline __device__
+        float getOpacity(bool isShadowRay,
+                              bool isInMedium,
+                              vec3f rayDir,
+                              vec3f Ng,
+                              bool dbg=false) const;
         inline __device__ float pdf(DG dg, vec3f wi, bool dbg) const;
         inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
         inline __device__ void scatter(ScatterResult &scatter,
@@ -43,24 +51,64 @@ namespace barney {
       }
 
       
-      inline __device__ void Glass::scatter(ScatterResult &scatter,
-                                     const render::DG &dg,
-                                     Random &random,
-                                     bool dbg) const
+      inline __device__
+      float Glass::getOpacity(bool isShadowRay,
+                              bool isInMedium,
+                              vec3f rayDir,
+                              vec3f Ng,
+                              bool dbg) const
       {
-        float eta 
+        if (isShadowRay) {
+          // if (dbg) printf(" glass on shadow ray -> opacity := 0\n");
+          return 0.f;
+        }
+
+#if 0
+        bool isEntering = dot(rayDir,Ng) < 0.f;
+        if (dbg) {
+          printf("Glass::getOpacity: dir %f %f %f Ng %f %f %f, inMedium %i, entering %i\n",
+                 rayDir.x,
+                 rayDir.y,
+                 rayDir.z,
+                 Ng.x,
+                 Ng.y,
+                 Ng.z,
+                 (int)isInMedium,
+                 (int)isEntering);
+        }
+        if (isEntering && isInMedium ||
+            !isEntering && !isInMedium)
+          return 0.f;
+#endif   
+        return 1.f;
+      }
+      
+      inline __device__
+      void Glass::scatter(ScatterResult &scatter,
+                          const render::DG &dg,
+                          Random &random,
+                          bool dbg) const
+      {
+        float eta
           = (!dg.insideMedium)
           ? 1.f/ior
           : ior;
-          // ? mediumOutside.ior / mediumInside.ior
-          // : mediumInside.ior / mediumOutside.ior;
+        // ? mediumOutside.ior / mediumInside.ior
+        //     : mediumInside.ior / mediumOutside.ior;
         // if (dbg) printf("eta is %f\n",eta);
         SampleRes sampleRes = RobustDielectric(eta).sample(dg,random,dbg);
-        scatter.f_r = sampleRes.weight;
-        scatter.dir = sampleRes.wi;
-        scatter.pdf = sampleRes.pdf;
-        scatter.offsetDirection = -1.f;
-        scatter.changedMedium = (sampleRes.type == BSDF_SPECULAR_TRANSMISSION);
+        scatter.f_r
+          = sampleRes.weight;
+        scatter.dir
+          = sampleRes.wi;
+        scatter.pdf
+          = sampleRes.pdf;
+        scatter.offsetDirection
+          = (sampleRes.type == BSDF_SPECULAR_TRANSMISSION)
+          ? -1.f
+          : +1.f;
+        scatter.changedMedium
+          = (sampleRes.type == BSDF_SPECULAR_TRANSMISSION);
         // if (dbg) printf("glass f_r %f %f %f pdf %f\n",
         //                 scatter.f_r.x,
         //                 scatter.f_r.y,

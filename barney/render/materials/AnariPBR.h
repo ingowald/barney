@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "barney/render/packedBSDFs/VisRTX.h"
-#include "barney/render/HitAttributes.h"
+#include "barney/render/PackedBSDF.h"
 #include "barney/render/HostMaterial.h"
 
 namespace barney {

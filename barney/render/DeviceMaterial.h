@@ -40,7 +40,7 @@ namespace barney {
       inline __device__
       float getOpacity(const HitAttributes &hitData,
                        const Sampler::DD *samplers,
-                       bool dbg=false) const;
+                       bool dbg) const;
 
       inline __device__
       void setHit(Ray &ray,
@@ -62,22 +62,31 @@ namespace barney {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
+      if (0 && dbg) printf("devicematerial type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)
         return anariPBR.createBSDF(hitData,samplers,dbg);
+#ifndef NDEBUG
+      printf("#bn: DeviceMaterial::createBSDF encountered an invalid "
+             "device material type (%i); most likely this is the app"
+             " not having properly committed its material\n",(int)type);
+#endif
       return packedBSDF::Invalid();
     }
 
-    inline __device__
-    float DeviceMaterial::getOpacity(const HitAttributes &hitData,
-                                     const Sampler::DD *samplers,
-                                     bool dbg) const
-    {
-      if (type == TYPE_AnariPBR)
-        return anariPBR.getOpacity(hitData,samplers,dbg);
-      return 1.f;
-    }
+    // inline __device__
+    // float DeviceMaterial::getOpacity(const HitAttributes &hitData,
+    //                                  const Sampler::DD *samplers,
+    //                                  bool dbg) const
+    // {
+    //   PackedBSDF bsdf = createBSDF(hitData,samplers,dbg);
+    //   return bsdf.getOpacity(hitData);
+    //   // if (type == TYPE_AnariPBR)
+    //   //   return anariPBR.getOpacity(isShadowRay,
+    //   //                              hitData,samplers,dbg);
+    //   // return 1.f;
+    // }
     
     inline __device__
     void DeviceMaterial::setHit(Ray &ray,

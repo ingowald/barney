@@ -110,7 +110,11 @@ namespace barney {
       /*! declares the device-data's variables to an owl geom */
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
 
+      /*! this material's index in the device list of all DeviceMaterials */
       const int materialID;
+
+      bool hasBeenCommittedAtLeastOnce = false;
+      
       // keep reference to material library, so it cannot die before
       // all materials are dead
       MaterialRegistry::SP materialRegistry;

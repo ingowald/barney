@@ -57,7 +57,7 @@ namespace barney {
       if (HostMaterial::set3f(member,value)) return true;
       
       if (member == "color")
-        { color.set(value); return true; }
+        { PING; PRINT(value); color.set(value); return true; }
       
       return false;
     }

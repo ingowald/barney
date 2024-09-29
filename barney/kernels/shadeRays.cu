@@ -428,7 +428,7 @@ namespace barney {
       const vec3f incomingThroughput = path.throughput;
 
       if (0 && path.dbg)
-        printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f ismiss %i\n",
+        printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f ismiss %i, bsdf %i\n",
                pathDepth,
                path.org.x,
                path.org.y,
@@ -436,7 +436,7 @@ namespace barney {
                (float)path.dir.x,
                (float)path.dir.y,
                (float)path.dir.z,
-               path.tMax,int(hadNoIntersection));
+               path.tMax,int(hadNoIntersection),(int)path.bsdfType);
 
       if (path.isShadowRay) {
         // ==================================================================
@@ -464,13 +464,13 @@ namespace barney {
       }
 
       vec3f Ng = path.getN();
-
       const bool  isVolumeHit        = (Ng == vec3f(0.f));
       if (!isVolumeHit)
         Ng = normalize(Ng);
       const bool  hitWasOnFront      = dot((vec3f)path.dir,Ng) < 0.f;
+      vec3f Ngff = Ng;
       if (!hitWasOnFront)
-        Ng = - Ng;
+        Ngff = - Ng;
 
       if (hadNoIntersection) {
         // ==================================================================
@@ -547,14 +547,14 @@ namespace barney {
       // if (dg.Ng == vec3f(0.f))
       //   dg.Ng = dg.Ns = -path.dir;
       
-      if (0 && path.dbg)
-        printf("dg.N %f %f %f\n",
-               dg.Ns.x,
-               dg.Ns.y,
-               dg.Ns.z);
+      // if (1 && path.dbg)
+      //   printf("dg.N %f %f %f\n",
+      //          dg.Ns.x,
+      //          dg.Ns.y,
+      //          dg.Ns.z);
 
       vec3f frontFacingSurfaceOffset
-        = safe_eps(EPS,dg.P)*Ng;
+        = safe_eps(EPS,dg.P)*Ngff;
       // vec3f dg_P
       //   = path.P+frontFacingSurfaceOffset;
 // if (path.dbg)
@@ -579,7 +579,7 @@ namespace barney {
 #if USE_MIS
       bool lightNeedsMIS = false;
 #endif
-      if (sampleLights(ls,world,dg.P,dg.Ng,random,
+      if (sampleLights(ls,world,dg.P,Ngff,random,
 #if USE_MIS
                        lightNeedsMIS,
 #endif
@@ -614,7 +614,7 @@ namespace barney {
             ;
           shadowRay.makeShadowRay
             (/* thrghhpt */tp_sr,
-             /* surface: */dg.P + 10*frontFacingSurfaceOffset,
+             /* surface: */dg.P + frontFacingSurfaceOffset,
              /* to light */ls.direction,
              /* length   */ls.distance * (1.f-2.f*EPS));
           // if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
@@ -648,7 +648,15 @@ namespace barney {
       //                      int(scatterResult.valid()));
       if (!scatterResult.valid() || scatterResult.pdf == 0.f)
         return;
-      path.org        = dg.P + scatterResult.offsetDirection * frontFacingSurfaceOffset;
+
+      if (0 && path.dbg)
+        printf("offsetting into sign %f, direction %f %f %f\n",
+               scatterResult.offsetDirection,
+               frontFacingSurfaceOffset.x,
+               frontFacingSurfaceOffset.y,
+               frontFacingSurfaceOffset.z);
+      path.org
+        = dg.P + scatterResult.offsetDirection * frontFacingSurfaceOffset;
       if (0 && path.dbg)
         printf("path scattered from %f %f %f to %f %f %f, dot %f\n",
                (float)path.dir.x, 
@@ -693,6 +701,9 @@ namespace barney {
         shadowRay.misWeight
           = pdf_lightRay_lightDir
           / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir);
+        
+        if ((float)shadowRay.misWeight < 1e-5f)
+          shadowRay.tMax  = -1.f;
       } else
         path.misWeight = 1.f;
 #endif
