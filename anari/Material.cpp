@@ -206,6 +206,7 @@ void PhysicallyBased::setBarneyParameters()
   BNModel model = trackedModel();
   int slot = trackedSlot();
 
+  PING; 
   setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, model, slot);
   setBNMaterialHelper(m_bnMat, "emissive", m_emissive, model, slot);
   setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor, model, slot);
