@@ -34,9 +34,9 @@
 #pragma once
 
 // #include "barney/material/device/DG.h"
-#include "barney/render/old_material/old/BSDF.h"
-#include "barney/render/old_material/old_bsdfs/Lambert.h"
-#include "barney/render/old_material/old_bsdfs/optics.h"
+#include "barney/packedBSDF/fromOSPRay/BSDF.h"
+#include "barney/packedBSDF/fromOSPRay/Lambert.h"
+#include "barney/packedBSDF/fromOSPRay/optics.h"
 
 namespace barney {
   namespace render {

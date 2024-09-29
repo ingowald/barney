@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "barney/render/PackedBSDF.h"
+#include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/render/HitAttributes.h"
 // #include "barney/render/device/GeometryAttributes.h"
-#include "materials/AnariMatte.h"
-#include "materials/AnariPBR.h"
+#include "barney/material/AnariMatte.h"
+#include "barney/material/AnariPBR.h"
 
 namespace barney {
   namespace render {

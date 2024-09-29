@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/render/World.h"
-#include "barney/render/DeviceMaterial.h"
+#include "barney/material/DeviceMaterial.h"
 
 namespace barney {
   namespace render {

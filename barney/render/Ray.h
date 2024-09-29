@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/common/half.h"
-#include "barney/render/PackedBSDF.h"
+#include "barney/packedBSDF/PackedBSDF.h"
 
 namespace barney {
   namespace render {

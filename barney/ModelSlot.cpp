@@ -20,8 +20,6 @@
 #include "barney/common/Texture.h"
 #include "barney/light/Light.h"
 #include "barney/geometry/Geometry.h"
-#include "barney/render/HostMaterial.h"
-// #include "barney/render/DeviceMaterial.h"
 
 namespace barney {
 

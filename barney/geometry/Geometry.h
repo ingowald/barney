@@ -18,11 +18,10 @@
 
 #include "barney/Object.h"
 #include "barney/render/Ray.h"
-#include "barney/render/HostMaterial.h"
 #include "barney/render/HitAttributes.h"
 #include "barney/render/GeometryAttributes.h"
 #include "barney/render/OptixGlobals.h"
-#include "barney/render/HostMaterial.h"
+#include "barney/material/Material.h"
 
 namespace barney {
   

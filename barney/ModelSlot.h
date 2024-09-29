@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/Group.h"
-#include "barney/render/HostMaterial.h"
+#include "barney/material/Material.h"
 #include "barney/render/World.h"
 #include "barney.h"
 #include <set>

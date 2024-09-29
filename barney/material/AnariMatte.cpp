@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/render/materials/AnariMatte.h"
-#include "barney/render/DeviceMaterial.h"
+#include "barney/material/AnariMatte.h"
+#include "barney/material/DeviceMaterial.h"
 
 namespace barney {
   namespace render {

@@ -14,9 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/render/HostMaterial.h"
-#include "barney/render/materials/AnariPBR.h"
-#include "barney/render/materials/AnariMatte.h"
+#include "barney/material/AnariPBR.h"
+#include "barney/material/AnariMatte.h"
 #if 0
 #include "barney/render/host/material/Matte.h"
 #include "barney/material/host/Velvet.h"

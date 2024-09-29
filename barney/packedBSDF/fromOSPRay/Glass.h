@@ -18,7 +18,7 @@
 
 #include "barney/render/DG.h"
 #include "barney/render/HitAttributes.h"
-#include "../old_material/old_bsdfs/RobustDielectric.h"
+#include "barney/packedBSDF/fromOSPRay/RobustDielectric.h"
 
 namespace barney {
   namespace render {

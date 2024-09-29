@@ -18,9 +18,9 @@
 
 #include "barney/render/DG.h"
 // #include "packedBSDFs/VisRTX.h"
-#include "packedBSDFs/NVisii.h"
-#include "packedBSDFs/Glass.h"
-#include "packedBSDFs/Phase.h"
+#include "barney/packedBSDF/NVisii.h"
+#include "barney/packedBSDF/fromOSPRay/Glass.h"
+#include "barney/packedBSDF/Phase.h"
 
 namespace barney {
   namespace render {

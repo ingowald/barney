@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "barney/render/PackedBSDF.h"
-#include "barney/render/HostMaterial.h"
+#include "barney/packedBSDF/PackedBSDF.h"
+#include "barney/material/Material.h"
 
 namespace barney {
   namespace render {
