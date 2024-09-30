@@ -105,11 +105,11 @@ namespace barney {
 
     HostMaterial::SP HostMaterial::create(ModelSlot *owner, const std::string &type)
     {
-#if 1
+#ifndef NDEBUG
       static std::set<std::string> alreadyCreated;
       if (alreadyCreated.find(type) == alreadyCreated.end()) {
         alreadyCreated.insert(type);
-        std::cout << "#bn creating (at least one of) material type '" << type << "'" << std::endl;
+        std::cout << "#bn: creating (at least one of) material type '" << type << "'" << std::endl;
       }
 #endif
       // if (type == "matte")

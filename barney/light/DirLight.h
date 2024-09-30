@@ -22,8 +22,8 @@ namespace barney {
 
   struct DirLight : public Light {
     struct DD {
-      vec3f direction;
-      vec3f radiance;
+      vec3f direction = vec3f(0.f,0.f,-1.f);
+      vec3f radiance  = vec3f(1.f);
     };
     
     typedef std::shared_ptr<DirLight> SP;

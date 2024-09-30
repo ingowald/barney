@@ -19,7 +19,7 @@ struct Renderer : public Object
   bool crosshairs() const;
 
  private:
-  int m_pixelSamples{1};
+  int m_pixelSamples{8*16};
   float m_radiance{0.8f};
   bool m_crosshairs{false};
 };

@@ -24,7 +24,6 @@ namespace barney_device {
 
   Light *Light::createInstance(std::string_view type, BarneyGlobalState *s)
   {
-    PING; PRINT(type);
     if (type == "directional")
       return new Directional(s);
     else if (type == "hdri")
@@ -63,30 +62,6 @@ namespace barney_device {
       bnRelease(m_bnLight);
     m_bnLight = nullptr;
   }
-
-  // // Subtypes ///////////////////////////////////////////////////////////////////
-
-  // Directional::Directional(BarneyGlobalState *s) : Light(s) {}
-
-  // void Directional::commit()
-  // {
-  //   Light::commit();
-  //   m_radiance *= getParam<float>("irradiance", 1.f);
-  //   m_dir = getParam<math::float3>("direction", math::float3(0.f, 0.f, -1.f));
-  //   setBarneyParameters();
-  // }
-
-  // const char *Directional::bnSubtype() const
-  // {
-  //   return "directional";
-  // }
-
-  // void Light::cleanup()
-  // {
-  //   if (m_bnLight)
-  //     bnRelease(m_bnLight);
-  //   m_bnLight = nullptr;
-  // }
 
   // Subtypes ///////////////////////////////////////////////////////////////////
 

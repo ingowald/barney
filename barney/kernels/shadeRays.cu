@@ -583,7 +583,7 @@ namespace barney {
 #if USE_MIS
                        lightNeedsMIS,
 #endif
-                       0 && path.dbg)
+                       1 && path.dbg)
           // && 
           // (path.materialType != GLASS)
           ) {

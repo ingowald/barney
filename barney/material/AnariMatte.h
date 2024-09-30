@@ -38,6 +38,7 @@ namespace barney {
 
       bool setString(const std::string &member, const std::string &value) override;
       bool set3f(const std::string &member, const vec3f &value) override;
+      bool set4f(const std::string &member, const vec4f &value) override;
       bool setObject(const std::string &member, const Object::SP &value) override;
       
       std::string toString() const override { return "AnariMatte"; }

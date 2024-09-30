@@ -225,6 +225,18 @@ void Frame::convertPixelsToFinalFormat()
         });
   } else if (m_colorType == ANARI_FLOAT32_VEC4) {
     auto numPixels = m_frameData.totalPixels;
+#if 1
+    const uint32_t *src = (const uint32_t *)m_bnPixelBuffer;
+    math::float4 *dst  = (math::float4   *)m_colorBuffer;
+    for (int i=0;i<numPixels;i++) {
+      uint32_t src_i = src[i];
+      const uint8_t *bytes = (const uint8_t *)&src_i;
+      dst[i].x = bytes[0]/255.f;
+      dst[i].y = bytes[1]/255.f;
+      dst[i].z = bytes[2]/255.f;
+      dst[i].w = bytes[3]/255.f;
+    }
+#else
     auto *src = (math::byte4 *)m_bnPixelBuffer;
     auto *dst = (math::float4 *)m_colorBuffer;
     thrust::transform(thrust::device,
@@ -235,6 +247,8 @@ void Frame::convertPixelsToFinalFormat()
           return math::float4(
               p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
         });
+    printf("src %i %i %i %i\n",src->x,src->y,src->z,src->w);
+#endif
   }
 }
 

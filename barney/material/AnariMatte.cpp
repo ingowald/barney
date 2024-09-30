@@ -57,7 +57,17 @@ namespace barney {
       if (HostMaterial::set3f(member,value)) return true;
       
       if (member == "color")
-        { PING; PRINT(value); color.set(value); return true; }
+        { color.set(value); return true; }
+      
+      return false;
+    }
+    
+    bool AnariMatte::set4f(const std::string &member, const vec4f &value) 
+    {
+      if (HostMaterial::set4f(member,value)) return true;
+      
+      if (member == "color")
+        { color.set(value); return true; }
       
       return false;
     }
