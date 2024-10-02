@@ -101,6 +101,7 @@ namespace barney {
   
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
   {
+    PING;
     const char *methodFromEnv = getenv("BARNEY_STRUCTURED");
     const std::string method = methodFromEnv ? methodFromEnv : "";
     if (method != "DDA")
@@ -170,7 +171,7 @@ namespace barney {
   void StructuredData::commit() 
   {
     worldBounds.lower = gridOrigin;
-    worldBounds.upper = gridOrigin + gridSpacing * vec3f(numScalars);
+    worldBounds.upper = gridOrigin + gridSpacing * vec3f(numCells);
   }
   
 }

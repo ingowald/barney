@@ -54,6 +54,7 @@ struct TransferFunction1D : public Volume
 
   helium::IntrusivePtr<helium::Array1D> m_colorData;
   helium::IntrusivePtr<helium::Array1D> m_opacityData;
+  bool needsOpacityData;
 
   std::vector<math::float4> m_rgbaMap;
 };
