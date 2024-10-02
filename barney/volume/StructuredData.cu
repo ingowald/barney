@@ -82,7 +82,6 @@ namespace barney {
     if (colorMapTexture)
       for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
         cudaTextureObject_t tex = colorMapTexture->tex3Ds[lDevID].texObj;
-        PING; PRINT(tex);
         owlGeomSetRaw(geom,"colorMapTex3D",&tex,lDevID);
       }
     owlGeomSet3f(geom,"cellGridOrigin",
@@ -101,7 +100,6 @@ namespace barney {
   
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
   {
-    PING;
     const char *methodFromEnv = getenv("BARNEY_STRUCTURED");
     const std::string method = methodFromEnv ? methodFromEnv : "";
     if (method != "DDA")
