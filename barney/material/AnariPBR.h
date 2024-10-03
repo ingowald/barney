@@ -16,17 +16,15 @@
 
 #pragma once
 
-#include "barney/render/packedBSDFs/VisRTX.h"
-#include "barney/render/HitAttributes.h"
-#include "barney/render/HostMaterial.h"
+#include "barney/packedBSDF/PackedBSDF.h"
+#include "barney/material/Material.h"
 
 namespace barney {
   namespace render {
     
     struct AnariPBR : public HostMaterial {
       struct DD {
-#ifdef __CUDACC__
-        inline __device__
+       inline __device__
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
@@ -34,7 +32,6 @@ namespace barney {
         float getOpacity(const HitAttributes &hitData,
                          const Sampler::DD *samplers,
                          bool dbg) const;
-#endif
         PossiblyMappedParameter::DD baseColor;
         PossiblyMappedParameter::DD metallic;
         PossiblyMappedParameter::DD roughness;
@@ -69,57 +66,45 @@ namespace barney {
                                         const Sampler::DD *samplers,
                                         bool dbg) const
     {
-      const float clampRange = .01f;
+      float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
+      float4 metallic = this->metallic.eval(hitData,samplers,dbg);
+      float4 roughness = this->roughness.eval(hitData,samplers,dbg);
+      float4 transmission = this->transmission.eval(hitData,samplers,dbg);
+      float4 ior = this->ior.eval(hitData,samplers,dbg);
 #if 1
+      if (ior.x != 1.f && transmission.x >= 1e-3f) {
+        packedBSDF::Glass bsdf;
+        bsdf.ior = ior.x;
+        bsdf.attenuation = vec3f(1.f);
+        // bsdf.ior = 1.45f;
+        // bsdf.specularTransmission = 1.f;
+        // bsdf.baseColor = vec3f(1.f);
+        // bsdf.metallic = 0.f;
+        // bsdf.roughness = 0.f;
+        // bsdf.specular = 0.f;
+        return bsdf;
+      }
+#endif
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
-      float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
+      const float clampRange = .05f;
+      
       bsdf.baseColor = (const vec3f&)baseColor;
-      float4 metallic = this->metallic.eval(hitData,samplers,dbg);
       bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
-      float4 roughness = this->roughness.eval(hitData,samplers,dbg);
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
-      float4 transmission = this->transmission.eval(hitData,samplers,dbg);
       bsdf.alpha = 1.f-transmission.x;
       
-      float4 ior = this->ior.eval(hitData,samplers,dbg);
       bsdf.ior = ior.x;
-      // if (dbg) printf("created nvisii brdf, base %f %f %f metallic %f roughness %f ior %f alpha %f\n",
-      //                 (float)bsdf.baseColor.x,
-      //                 (float)bsdf.baseColor.y,
-      //                 (float)bsdf.baseColor.z,
-      //                 (float)bsdf.metallic,
-      //                 (float)bsdf.roughness,
-      //                 (float)bsdf.ior,
-      //                 (float)bsdf.alpha);
-#else
-      packedBSDF::VisRTX bsdf;
-      
-      float4 baseColor = this->baseColor.eval,samplers(hitData);
-      bsdf.baseColor = (const vec3f&)baseColor;
-
-      float4 metallic = this->metallic.eval(hitData,dbg);
-      bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
-
-      float4 roughness = this->roughness.eval(hitData,samplers,dbg);
-      bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
-      
-      float4 transmission = this->transmission.eval(hitData,samplers,dbg);
-      bsdf.opacity = 1.f-transmission.x;
-      
-      float4 ior = this->ior.eval(hitData,samplers,dbg);
-      bsdf.ior = ior.x;
-
       // if (dbg)
-      //   printf("### AnariPBR created BSDF baseColor %f %f %f metallic %f roughness %f ior %f\n",
-      //          baseColor.x,
-      //          baseColor.y,
-      //          baseColor.z,
+      //   printf("created nvisii brdf, base %f %f %f metallic %f roughness %f ior %f alpha %f\n",
+      //          (float)bsdf.baseColor.x,
+      //          (float)bsdf.baseColor.y,
+      //          (float)bsdf.baseColor.z,
       //          (float)bsdf.metallic,
       //          (float)bsdf.roughness,
-      //          (float)bsdf.ior);
-#endif
+      //          (float)bsdf.ior,
+      //                 (float)bsdf.alpha);
       return bsdf;
     }
 

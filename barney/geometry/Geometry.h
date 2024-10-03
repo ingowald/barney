@@ -18,11 +18,10 @@
 
 #include "barney/Object.h"
 #include "barney/render/Ray.h"
-#include "barney/render/HostMaterial.h"
 #include "barney/render/HitAttributes.h"
 #include "barney/render/GeometryAttributes.h"
 #include "barney/render/OptixGlobals.h"
-#include "barney/render/HostMaterial.h"
+#include "barney/material/Material.h"
 
 namespace barney {
   
@@ -70,10 +69,14 @@ namespace barney {
     bool setData(const std::string &member, const Data::SP &value) override;
     bool setObject(const std::string &member, const Object::SP &value) override;
     
+    HostMaterial::SP getMaterial() const;
+    void setMaterial(HostMaterial::SP);
+    
     std::vector<OWLGeom>  triangleGeoms;
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGroup> secondPassGroups;
-    
+
+  private:
     render::HostMaterial::SP material;
 
     render::GeometryAttributes attributes;

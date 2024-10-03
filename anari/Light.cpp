@@ -15,79 +15,139 @@
 
 namespace barney_device {
 
-Light::Light(BarneyGlobalState *s) : Object(ANARI_LIGHT, s) {}
+  Light::Light(BarneyGlobalState *s) : Object(ANARI_LIGHT, s) {}
 
-Light::~Light()
-{
-  cleanup();
-}
-
-Light *Light::createInstance(std::string_view type, BarneyGlobalState *s)
-{
-  PING; PRINT(type);
-  if (type == "directional")
-    return new Directional(s);
-  else
-    return (Light *)new UnknownObject(ANARI_LIGHT, s);
-}
-
-void Light::markCommitted()
-{
-  // NOTE: shouldn't need to override this to cause a BNModel rebuild...
-  deviceState()->markSceneChanged();
-  Object::markCommitted();
-}
-
-void Light::commit()
-{
-  m_radiance = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
-}
-
-BNLight Light::getBarneyLight(BNModel model, int slot)
-{
-  if (!isModelTracked(model, slot)) {
+  Light::~Light()
+  {
     cleanup();
-    trackModel(model, slot);
-    m_bnLight = bnLightCreate(model, slot, bnSubtype());
+  }
+
+  Light *Light::createInstance(std::string_view type, BarneyGlobalState *s)
+  {
+    if (type == "directional")
+      return new Directional(s);
+    else if (type == "hdri")
+      return new HDRILight(s);
+    else
+      return (Light *)new UnknownObject(ANARI_LIGHT, s);
+  }
+
+  void Light::markCommitted()
+  {
+    // NOTE: shouldn't need to override this to cause a BNModel rebuild...
+    deviceState()->markSceneChanged();
+    Object::markCommitted();
+  }
+
+  void Light::commit()
+  {
+    m_radiance = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
+  }
+
+  BNLight Light::getBarneyLight(BNModel model, int slot)
+  {
+    if (!isModelTracked(model, slot)) {
+      cleanup();
+      trackModel(model, slot);
+      m_bnLight = bnLightCreate(model, slot, bnSubtype());
+      setBarneyParameters();
+    }
+
+    return m_bnLight;
+  }
+
+  void Light::cleanup()
+  {
+    if (m_bnLight)
+      bnRelease(m_bnLight);
+    m_bnLight = nullptr;
+  }
+
+  // Subtypes ///////////////////////////////////////////////////////////////////
+
+  Directional::Directional(BarneyGlobalState *s) : Light(s) {}
+
+  void Directional::commit()
+  {
+    Light::commit();
+    m_radiance *= getParam<float>("irradiance", 1.f);
+    m_dir = getParam<math::float3>("direction", math::float3(0.f, 0.f, -1.f));
     setBarneyParameters();
   }
 
-  return m_bnLight;
-}
+  const char *Directional::bnSubtype() const
+  {
+    return "directional";
+  }
 
-void Light::cleanup()
-{
-  if (m_bnLight)
-    bnRelease(m_bnLight);
-  m_bnLight = nullptr;
-}
+  void Directional::setBarneyParameters() 
+  {
+    if (!m_bnLight)
+      return;
+    bnSet3fc(m_bnLight, "direction", (const float3 &)m_dir);
+    bnSet3fc(m_bnLight, "radiance", (const float3 &)m_radiance);
+    bnCommit(m_bnLight);
+  }
 
-// Subtypes ///////////////////////////////////////////////////////////////////
 
-Directional::Directional(BarneyGlobalState *s) : Light(s) {}
+  // Subtypes ///////////////////////////////////////////////////////////////////
 
-void Directional::commit()
-{
-  Light::commit();
-  m_radiance *= getParam<float>("irradiance", 1.f);
-  m_dir = getParam<math::float3>("direction", math::float3(0.f, 0.f, -1.f));
-  setBarneyParameters();
-}
+  HDRILight::HDRILight(BarneyGlobalState *s) : Light(s) {}
+  
+  void HDRILight::commit()
+  {
+    std::cout << "#banari: creating hdri light " << std::endl;
+    Light::commit();
+    m_up
+      = getParam<math::float3>("up", math::float3(0.f,0.f,1.f));
+    m_direction
+      = getParam<math::float3>("direction", math::float3(1.f,0.f,0.f));
+    m_radiance
+      = getParamObject<helium::Array2D>("radiance");
 
-const char *Directional::bnSubtype() const
-{
-  return "directional";
-}
+    if (!m_radiance)
+      throw std::runtime_error("banari - created hdri light without any radiance values!?");
+  // int numVertices = m_vertexPosition->totalSize();
+  // int numIndices = m_index ? m_index->size() : (m_generatedIndices.size() / 3);
+    
+    setBarneyParameters();
+  }
 
-void Directional::setBarneyParameters() const
-{
-  if (!m_bnLight)
-    return;
-  bnSet3fc(m_bnLight, "direction", (const float3 &)m_dir);
-  bnSet3fc(m_bnLight, "radiance", (const float3 &)m_radiance);
-  bnCommit(m_bnLight);
-}
+  const char *HDRILight::bnSubtype() const
+  {
+    return "envmap";
+  }
 
+  void HDRILight::setBarneyParameters() 
+  {
+    if (!m_bnLight)
+      return;
+    BNModel model = trackedModel();
+    int slot = trackedSlot();
+
+    bnSet3fc(m_bnLight, "direction", (const float3 &)m_direction);
+    bnSet3fc(m_bnLight, "up", (const float3 &)m_up);
+
+    assert(m_radiance);
+    int width  = m_radiance->size().x;
+    int height = m_radiance->size().y;
+    const math::float3 *radianceValues
+      // = (const math::float3 *)m_radiance->data();
+      = m_radiance->dataAs<math::float3>();
+    std::vector<math::float4> asFloat4(width*height);
+    for (int i=0;i<width*height;i++) 
+      (math::float3&)asFloat4[i] = radianceValues[i];
+
+    BNTexture texture
+      = bnTexture2DCreate(model,slot,BN_TEXEL_FORMAT_RGBA32F,
+                          width,height,asFloat4.data());
+                                          
+    bnSetObject(m_bnLight, "texture", texture);
+    bnRelease(texture);
+
+    bnCommit(m_bnLight);
+  }
+  
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Light *);

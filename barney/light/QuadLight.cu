@@ -14,24 +14,24 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/render/DG.h"
+#include "QuadLight.h"
 
 namespace barney {
-  namespace render {
-    namespace packedBSDF {
-      
-      struct Glass {
-        inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg, bool dbg=false) const;
-        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-
-        float  ior;
-        float3 attenuation;
-      };
-      
-    }
+  
+  QuadLight::DD QuadLight::getDD(const affine3f &instanceXfm) const
+  {
+    DD dd;
+    dd.corner = xfmPoint(instanceXfm,params.corner);
+    dd.edge0 = xfmVector(instanceXfm,params.edge0);
+    dd.edge1 = xfmVector(instanceXfm,params.edge1);
+    dd.emission = params.emission;
+    dd.area = length(cross(dd.edge0,dd.edge1));
+    return dd;
   }
-}
+  
+  bool QuadLight::set3f(const std::string &member, const vec3f &value) 
+  {
+    return false;
+  }
 
+}

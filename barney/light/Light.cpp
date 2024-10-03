@@ -18,6 +18,10 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
+#include "barney/light/QuadLight.h"
+#include "barney/light/DirLight.h"
+#include "barney/light/EnvMap.h"
+
 namespace barney {
 
   Light::SP Light::create(ModelSlot *owner,
@@ -27,7 +31,7 @@ namespace barney {
       return std::make_shared<DirLight>(owner);
     if (type == "quad")
       return std::make_shared<QuadLight>(owner);
-    if (type == "environment")
+    if (type == "envmap")
       return std::make_shared<EnvMapLight>(owner);
     
     owner->context->warn_unsupported_object("Light",type);
@@ -36,60 +40,8 @@ namespace barney {
 
   // ==================================================================
   
-  bool DirLight::set3f(const std::string &member, const vec3f &value) 
-  {
-    if (member == "direction") {
-      content.direction = normalize(value);
-      return true;
-    }
-    if (member == "radiance") {
-      content.radiance = value;
-      return true;
-    }
-    return false;
-  }
-
   // ==================================================================
   
-  bool QuadLight::set3f(const std::string &member, const vec3f &value) 
-  {
-    return false;
-  }
-
   // ==================================================================
   
-  void EnvMapLight::commit()
-  {
-  }
-  
-  bool EnvMapLight::set2i(const std::string &member, const vec2i &value) 
-  {
-    return false;
-  }
-
-  bool EnvMapLight::set3f(const std::string &member, const vec3f &value) 
-  {
-    return false;
-  }
-
-  bool EnvMapLight::set4x3f(const std::string &member, const affine3f &value) 
-  {
-    if (member == "envMap.transform") {
-      content.transform = value;
-      PING; PRINT(content.transform);
-      return true;
-    }
-    return false;
-  }
-
-  bool EnvMapLight::setObject(const std::string &member, const Object::SP &value) 
-  {
-    if (member == "envMap.texture") {
-      this->texture = value->as<Texture>();
-      content.texture = texture->owlTex;
-      return true;
-    }
-    return false;
-  }
-
-};
+}

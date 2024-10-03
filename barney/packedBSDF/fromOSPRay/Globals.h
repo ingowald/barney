@@ -1,4 +1,3 @@
-DEPRECATED
 // // ======================================================================== //
 // // Copyright 2023-2024 Ingo Wald                                            //
 // //                                                                          //
@@ -17,10 +16,28 @@ DEPRECATED
 
 // #pragma once
 
-// #include "barney/render/device/HitAttributes.h"
+// #include "barney/DeviceGroup.h"
+// // #include "barney/material/device/Material.h"
 
 // namespace barney {
-//   namespace material {
-      
+//   namespace render {
+    
+//     struct Globals {
+//       Globals(const DevGroup *devGroup);
+//       struct DD {
+//         float *MicrofacetDielectricAlbedoTable_dir;
+//         float *MicrofacetDielectricReflectionAlbedoTable_dir;
+//         float *MicrofacetDielectricAlbedoTable_avg;
+//         float *MicrofacetDielectricReflectionAlbedoTable_avg;
+//       };
+
+//       DD getDD(const Device::SP &device) const;
+
+//       OWLBuffer MicrofacetDielectricAlbedoTable_dir_buffer = 0;
+//       OWLBuffer MicrofacetDielectricReflectionAlbedoTable_dir_buffer = 0;
+//       OWLBuffer MicrofacetDielectricAlbedoTable_avg_buffer = 0;
+//       OWLBuffer MicrofacetDielectricReflectionAlbedoTable_avg_buffer = 0;
+//     };
+ 
 //   }
 // }

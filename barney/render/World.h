@@ -21,6 +21,9 @@
 // #include "barney/render/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 // #include "barney/material/DeviceMaterial.h"
+#include "barney/light/EnvMap.h"
+#include "barney/light/DirLight.h"
+#include "barney/light/QuadLight.h"
 
 namespace barney {
   namespace render {
@@ -28,33 +31,23 @@ namespace barney {
     
 #define DEFAULT_RADIANCE_FROM_ENV .8f
 
-    struct QuadLight {
-      vec3f corner, edge0, edge1, emission;
-      /*! normal of this lights source; this could obviously be derived
-        from cross(edge0,edge1), but is handle to have in a
-        renderer */
-      vec3f normal;
-      /*! area of this lights source; this could obviously be derived
-        from cross(edge0,edge1), but is handle to have in a
-        renderer */
-      float area;
-    };
+    // struct QuadLight {
+    //   vec3f corner, edge0, edge1, emission;
+    //   /*! normal of this lights source; this could obviously be derived
+    //     from cross(edge0,edge1), but is handle to have in a
+    //     renderer */
+    //   vec3f normal;
+    //   /*! area of this lights source; this could obviously be derived
+    //     from cross(edge0,edge1), but is handle to have in a
+    //     renderer */
+    //   float area;
+    // };
 
-    struct DirLight {
-      std::string toString();
-      vec3f direction;
-      vec3f radiance;
-    };
-
-    struct EnvMapLight {
-      struct DD {
-        affine3f   transform;
-        cudaTextureObject_t texture;
-      };
-      affine3f   transform;
-      OWLTexture texture = 0;
-    };
-
+    // struct DirLight {
+    //   std::string toString();
+    //   vec3f direction;
+    //   vec3f radiance;
+    // };
 
     struct MaterialRegistry {
       typedef std::shared_ptr<MaterialRegistry> SP;
@@ -106,11 +99,11 @@ namespace barney {
       typedef std::shared_ptr<World> SP;
       
       struct DD {
-        int               numQuadLights = 0;
-        const QuadLight  *quadLights    = nullptr;
-        int               numDirLights  = 0;
-        const DirLight   *dirLights     = nullptr;
-        float             radiance;
+        int                  numQuadLights = 0;
+        const QuadLight::DD *quadLights    = nullptr;
+        int                  numDirLights  = 0;
+        const DirLight::DD  *dirLights     = nullptr;
+        float                radiance;
         
         const DeviceMaterial *materials;
         const Sampler::DD    *samplers;
@@ -118,12 +111,12 @@ namespace barney {
         EnvMapLight::DD   envMapLight;
         // Globals::DD     globals;
       };
-      EnvMapLight envMapLight;
+      EnvMapLight::SP envMapLight;
 
       World(DevGroup::SP devGroup);
       virtual ~World();
-      
-      void set(const std::vector<QuadLight> &quadLights)
+
+      void set(const std::vector<QuadLight::DD> &quadLights)
       {
         if (quadLights.empty()) 
           owlBufferResize(quadLightsBuffer,1);
@@ -133,7 +126,7 @@ namespace barney {
         }
         numQuadLights = quadLights.size();
       }
-      void set(const std::vector<DirLight> &dirLights)
+      void set(const std::vector<DirLight::DD> &dirLights)
       {
         if (dirLights.empty()) 
           owlBufferResize(dirLightsBuffer,1);
@@ -143,28 +136,12 @@ namespace barney {
         }
         numDirLights = dirLights.size();
       }
-      void set(EnvMapLight envMapLight) {
+
+      void set(EnvMapLight::SP envMapLight) {
         this->envMapLight = envMapLight;
-      };
-      DD getDD(const Device::SP &device) const {
-        DD dd;
-        dd.quadLights = (QuadLight *)owlBufferGetPointer(quadLightsBuffer,device->owlID);
-        dd.numQuadLights = numQuadLights;
-        dd.dirLights = (DirLight *)owlBufferGetPointer(dirLightsBuffer,device->owlID);
-        dd.numDirLights = numDirLights;
-        if (envMapLight.texture)
-          dd.envMapLight.texture 
-            = owlTextureGetObject(envMapLight.texture,device->owlID);
-        else 
-          dd.envMapLight.texture
-            = 0;
-        dd.envMapLight.transform = envMapLight.transform;
-        // dd.globals = globals.getDD(device);
-        dd.radiance  = radiance;
-        dd.samplers  = samplerRegistry->getPointer(device->owlID);
-        dd.materials = materialRegistry->getPointer(device->owlID);
-        return dd;
       }
+      
+      DD getDD(const Device::SP &device) const;
 
       // Globals globals;
       MaterialRegistry::SP materialRegistry;

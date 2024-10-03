@@ -82,7 +82,6 @@ namespace barney {
     if (colorMapTexture)
       for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
         cudaTextureObject_t tex = colorMapTexture->tex3Ds[lDevID].texObj;
-        PING; PRINT(tex);
         owlGeomSetRaw(geom,"colorMapTex3D",&tex,lDevID);
       }
     owlGeomSet3f(geom,"cellGridOrigin",
@@ -170,7 +169,7 @@ namespace barney {
   void StructuredData::commit() 
   {
     worldBounds.lower = gridOrigin;
-    worldBounds.upper = gridOrigin + gridSpacing * vec3f(numScalars);
+    worldBounds.upper = gridOrigin + gridSpacing * vec3f(numCells);
   }
   
 }

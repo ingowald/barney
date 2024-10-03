@@ -47,7 +47,8 @@ void Perspective::commit()
   bnSet3fc(m_barneyCamera,"up",(const float3&)m_up);
   bnSet3fc(m_barneyCamera,"position", (const float3&)m_pos);
   bnSet3fc(m_barneyCamera,"direction",(const float3&)m_dir);
-  bnSet1f(m_barneyCamera,"aspect",getParam<float>("aspect", 1.f));
+  float aspect = getParam<float>("aspect", 1.f);
+  bnSet1f(m_barneyCamera,"aspect",aspect);
   float fovy = getParam<float>("fovy", anari::radians(60.f));
   bnSet1f(m_barneyCamera,"fovy",anari::degrees(fovy));
   bnCommit(m_barneyCamera);

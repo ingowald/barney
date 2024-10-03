@@ -40,16 +40,17 @@ namespace barney {
     assert(OWL_TEXTURE_CLAMP  == (int)BN_TEXTURE_CLAMP);
     assert(OWL_TEXTURE_BORDER == (int)BN_TEXTURE_BORDER);
     assert(OWL_TEXTURE_MIRROR == (int)BN_TEXTURE_MIRROR);
-    
-    owlTex = owlTexture2DCreate(owner->getOWL(),
-                                (OWLTexelFormat)texelFormat,
-                                size.x,size.y,
-                                texels,
-                                (OWLTextureFilterMode)filterMode,
-                                (OWLTextureAddressMode)addressMode,
-                                // (OWLTextureColorSpace)colorSpace
-                                OWL_COLOR_SPACE_LINEAR
-                                );
+
+    owlTexture 
+      = owlTexture2DCreate(owner->getOWL(),
+                           (OWLTexelFormat)texelFormat,
+                           size.x,size.y,
+                           texels,
+                           (OWLTextureFilterMode)filterMode,
+                           (OWLTextureAddressMode)addressMode,
+                           // (OWLTextureColorSpace)colorSpace
+                           OWL_COLOR_SPACE_LINEAR
+                           );
   }
 
   Texture3D::Texture3D(ModelSlot *owner,

@@ -82,7 +82,7 @@ namespace barney {
     owlGeomSetPrimCount(geom,numIndices);
     
     setAttributesOn(geom);
-    material->setDeviceDataOn(geom);
+    getMaterial()->setDeviceDataOn(geom);
     PING;
   } 
 

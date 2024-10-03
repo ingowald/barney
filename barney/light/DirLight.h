@@ -16,36 +16,30 @@
 
 #pragma once
 
-#include "barney/Object.h"
-#include "barney/common/Data.h"
-#include "barney/common/Texture.h"
+#include "barney/light/Light.h"
 
 namespace barney {
 
-  struct ModelSlot;
-  
-  struct Light : public SlottedObject {
-    typedef std::shared_ptr<Light> SP;
-
-    /*! what we return, during rendering, when we sample a light
-        source */
-    struct Sample {
-      /* direction _to_ light */
-      vec3f direction;
-      /*! radiance coming _from_ dir */
-      vec3f radiance;
-      /*! distance to this light sample */
-      float distance;
-      /*! pdf of sample that was chosen */
-      float pdf = 0.f;
+  struct DirLight : public Light {
+    struct DD {
+      vec3f direction = vec3f(0.f,0.f,-1.f);
+      vec3f radiance  = vec3f(1.f);
     };
-  
     
-    Light(ModelSlot *owner) : SlottedObject(owner) {}
+    typedef std::shared_ptr<DirLight> SP;
+    DirLight(ModelSlot *owner) : Light(owner) {}
+    
+    DD getDD(const affine3f &instanceXfm) const;
+    
+    std::string toString() const override { return "DirLight"; }
+    
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
 
-    std::string toString() const override { return "Light<>"; }
-    
-    static Light::SP create(ModelSlot *owner, const std::string &name);
+    DD params;
   };
 
-};
+}

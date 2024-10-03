@@ -20,8 +20,6 @@
 #include "barney/common/Texture.h"
 #include "barney/light/Light.h"
 #include "barney/geometry/Geometry.h"
-#include "barney/render/HostMaterial.h"
-// #include "barney/render/DeviceMaterial.h"
 
 namespace barney {
 
@@ -106,9 +104,9 @@ namespace barney {
   }
 
   void ModelSlot::build()
-  { 
-    std::vector<render::QuadLight> quadLights;
-    std::vector<render::DirLight>  dirLights;
+  {
+    std::vector<QuadLight::DD> quadLights;
+    std::vector<DirLight::DD>  dirLights;
 
     std::vector<affine3f> owlTransforms;
     std::vector<OWLGroup> owlGroups;
@@ -120,11 +118,11 @@ namespace barney {
         for (auto &light : group->lights->items) {
           if (!light) continue;
           if (QuadLight::SP quadLight = light->as<QuadLight>()) {
-            quadLights.push_back(quadLight->content);
+            quadLights.push_back(quadLight->getDD(instances.xfms[i]));
             continue;
           } 
           if (DirLight::SP dirLight = light->as<DirLight>()) {
-            dirLights.push_back(dirLight->content);
+            dirLights.push_back(dirLight->getDD(instances.xfms[i]));
             continue;
           }
           if (EnvMapLight::SP el = light->as<EnvMapLight>()) {
@@ -159,7 +157,7 @@ namespace barney {
                                nullptr,
                                (const float *)owlTransforms.data());
     owlGroupBuildAccel(instances.group);
-    world->set(envMapLight?envMapLight->content:render::EnvMapLight{});
+    world->set(envMapLight);
     world->set(quadLights);
     world->set(dirLights);
   }

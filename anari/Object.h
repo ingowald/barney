@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "BarneyGlobalState.h"
 #include "common.h"
+#include "BarneyGlobalState.h"
 // helium
 #include "helium/BaseObject.h"
 #include "helium/utility/ChangeObserverPtr.h"

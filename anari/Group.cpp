@@ -49,8 +49,10 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
         });
   }
 
-  for (auto s : surfaces)
-    barneyGeometries.push_back(s->getBarneyGeom(model, slot));
+  for (auto s : surfaces) {
+    BNGeom geom = s->getBarneyGeom(model, slot);
+    barneyGeometries.push_back(geom);
+  }
 
   // Volumes //
 

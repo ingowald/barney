@@ -14,30 +14,31 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/DeviceGroup.h"
-// #include "barney/material/device/Material.h"
+#include "DirLight.h"
 
 namespace barney {
-  namespace render {
-    
-    struct Globals {
-      Globals(const DevGroup *devGroup);
-      struct DD {
-        float *MicrofacetDielectricAlbedoTable_dir;
-        float *MicrofacetDielectricReflectionAlbedoTable_dir;
-        float *MicrofacetDielectricAlbedoTable_avg;
-        float *MicrofacetDielectricReflectionAlbedoTable_avg;
-      };
-
-      DD getDD(const Device::SP &device) const;
-
-      OWLBuffer MicrofacetDielectricAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_dir_buffer = 0;
-      OWLBuffer MicrofacetDielectricAlbedoTable_avg_buffer = 0;
-      OWLBuffer MicrofacetDielectricReflectionAlbedoTable_avg_buffer = 0;
-    };
- 
+  
+  DirLight::DD DirLight::getDD(const affine3f &instanceXfm) const
+  {
+    DD dd;
+    dd.direction = xfmVector(instanceXfm,params.direction);
+    dd.radiance = params.radiance;
+    return dd;
   }
+
+  bool DirLight::set3f(const std::string &member, const vec3f &value) 
+  {
+    if (member == "direction") {
+      params.direction = normalize(value);
+      return true;
+    }
+    if (member == "radiance") {
+      params.radiance = value;
+      return true;
+    }
+    return false;
+  }
+
+  
 }
+

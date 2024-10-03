@@ -33,8 +33,7 @@
 
 #pragma once
 
-#include "barney/material/device/DG.h"
-#include "barney/material/device/BSDF.h"
+#include "barney/packedBSDF/fromOSPRay/BSDF.h"
 
 namespace barney {
   namespace render {

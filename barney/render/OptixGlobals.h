@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/DeviceContext.h"
-#include "barney/render/DeviceMaterial.h"
+#include "barney/material/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/HitAttributes.h"
 

@@ -66,6 +66,25 @@ if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
 
+
+set(BARNEY_CUDA_ARCHITECTURES "auto" CACHE STRING "which CUDA arch to use for building cuBQL" )
+
+if (BARNEY_CUDA_ARCHITECTURES STREQUAL "auto")
+  # leave CMAKE_CUDA_ARCHITECTURES to whatever the may may or may not have set
+else()
+  set(CMAKE_CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES})
+endif()
+
+if (NOT (DEFINED CMAKE_CUDA_ARCHITECTURES))
+
+  # new cmake policy: make sure that CMAKE_CUDA_ARCHITECTURES is set
+  # to _something_, even if it's only "OFF". iw - seems to not apply on ubuntu 20.04!?
+  if (NOT CMAKE_VERSION VERSION_LESS "3.17")
+    set(CMAKE_CUDA_ARCHITECTURES OFF)
+  endif()
+endif()
+
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

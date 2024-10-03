@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include "barney/render/packedBSDFs/VisRTX.h"
-#include "barney/render/packedBSDFs/NVisii.h"
+#include "barney/packedBSDF/NVisii.h"
 #include "barney/render/HitAttributes.h"
-#include "barney/render/HostMaterial.h"
+#include "barney/material/Material.h"
 
 namespace barney {
   namespace render {
@@ -39,6 +38,7 @@ namespace barney {
 
       bool setString(const std::string &member, const std::string &value) override;
       bool set3f(const std::string &member, const vec3f &value) override;
+      bool set4f(const std::string &member, const vec4f &value) override;
       bool setObject(const std::string &member, const Object::SP &value) override;
       
       std::string toString() const override { return "AnariMatte"; }
@@ -59,18 +59,18 @@ namespace barney {
       bsdf.setDefaults();
       
       float4 baseColor = this->color.eval(hitData,samplers,dbg);
-      
+
       // not anari-conformant, but useful: if geometry _has_ a color
       // attribute, use it, no matter whether our input is point to it
       // or not:
-      if (!isnan(hitData.color.x)) 
-        baseColor = hitData.color;
-      
+      // if (!isnan(hitData.color.x)) 
+      //   baseColor = hitData.color;
+
       bsdf.baseColor = (const vec3f&)baseColor;
 
       bsdf.specular = 0.f;
       bsdf.metallic = 0.f;
-      bsdf.roughness = 0.f;
+      bsdf.roughness = .5f;
       return bsdf;
     }
 #endif

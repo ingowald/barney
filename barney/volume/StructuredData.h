@@ -154,7 +154,7 @@ namespace barney {
     if (rel.x >= numCells.x) return NAN;
     if (rel.y >= numCells.y) return NAN;
     if (rel.z >= numCells.z) return NAN;
-    float f = tex3D<float>(texObj,rel.x,rel.y,rel.z);
+    float f = tex3D<float>(texObj,rel.x+.5f,rel.y+.5f,rel.z+.5f);
     return f;
   }
 #endif

@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/render/materials/AnariMatte.h"
-#include "barney/render/DeviceMaterial.h"
+#include "barney/material/AnariMatte.h"
+#include "barney/material/DeviceMaterial.h"
 
 namespace barney {
   namespace render {
@@ -55,6 +55,16 @@ namespace barney {
     bool AnariMatte::set3f(const std::string &member, const vec3f &value) 
     {
       if (HostMaterial::set3f(member,value)) return true;
+      
+      if (member == "color")
+        { color.set(value); return true; }
+      
+      return false;
+    }
+    
+    bool AnariMatte::set4f(const std::string &member, const vec4f &value) 
+    {
+      if (HostMaterial::set4f(member,value)) return true;
       
       if (member == "color")
         { color.set(value); return true; }

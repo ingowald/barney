@@ -64,7 +64,7 @@ void World::commit()
 
   if (m_zeroSurfaceData) {
     reportMessage(ANARI_SEVERITY_DEBUG,
-        "barney::World found %zu surfaces in zero instance",
+                  "barney::World found %zu surfaces in zero instance",
         m_zeroSurfaceData->size());
     m_zeroGroup->setParamDirect("surface", getParamDirect("surface"));
   } else

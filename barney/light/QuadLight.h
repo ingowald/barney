@@ -16,27 +16,37 @@
 
 #pragma once
 
-#include "barney/Object.h"
+#include "barney/light/Light.h"
 
 namespace barney {
-  namespace render {
-    namespace host {
-      enum { numAttributes = device::numAttributes };
-      
-      struct GeometryAttribute {
-        void make(device::GeometryAttribute &dd);
-        vec4f       constant { 0.f,0.f,0.f,1.f };
-        PODData::SP perPrim   = 0;
-        PODData::SP perVertex = 0;
-      };
 
-      struct GeometryAttributes {
-        enum { count = device::numAttributes };
-        
-        void make(device::GeometryAttributes &dd);
-        GeometryAttribute attribute[device::numAttributes];
-      };
-      
-    }
-  }
+  struct QuadLight : public Light {
+    struct DD {
+      vec3f corner, edge0, edge1, emission;
+      /*! normal of this lights source; this could obviously be derived
+        from cross(edge0,edge1), but is handle to have in a
+        renderer */
+      vec3f normal;
+      /*! area of this lights source; this could obviously be derived
+        from cross(edge0,edge1), but is handle to have in a
+        renderer */
+      float area;
+    };
+
+    typedef std::shared_ptr<QuadLight> SP;
+    QuadLight(ModelSlot *owner) : Light(owner) {}
+
+    DD getDD(const affine3f &instanceXfm) const;
+    
+    std::string toString() const override { return "DirectionalLight"; }
+    
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+
+    DD params;
+  };
+  
 }

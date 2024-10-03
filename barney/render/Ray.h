@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/common/half.h"
-#include "barney/render/PackedBSDF.h"
+#include "barney/packedBSDF/PackedBSDF.h"
 
 namespace barney {
   namespace render {
@@ -59,13 +59,14 @@ namespace barney {
         implicitly through org+tMax*dir), for numerical robustness
         issues */
       vec3f       P;
-      vec3h       Le;
+      // vec3h       Le;
       vec3h       N;
       union {
         PackedBSDF::Data hitBSDF;
         /*! the background color for primary rays that didn't have any intersection */
         float3           missColor;
       };
+      half     misWeight;
     };
   
     // struct RayQueue {

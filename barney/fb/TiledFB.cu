@@ -147,6 +147,7 @@ namespace barney {
       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
     pixelValue |= 0xff000000;
 
+    
     uint32_t ofs = ix + numPixels.x*iy;
 
     bool isCenter_x = ix == numPixels.x/2;

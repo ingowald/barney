@@ -39,7 +39,7 @@ namespace barney {
     std::string toString() const override
     { return "Texture{}"; }
 
-    OWLTexture owlTex = 0;
+    OWLTexture owlTexture = 0;
   };
 
   struct Texture3D : public SlottedObject {

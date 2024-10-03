@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/render/World.h"
-#include "barney/render/DeviceMaterial.h"
+#include "barney/material/DeviceMaterial.h"
 
 namespace barney {
   namespace render {
@@ -35,7 +35,30 @@ namespace barney {
     }
     World::~World()
     {}
-    
+
+    World::DD World::getDD(const Device::SP &device) const
+    {
+      DD dd;
+      dd.quadLights
+        = (QuadLight::DD *)owlBufferGetPointer(quadLightsBuffer,device->owlID);
+      dd.numQuadLights = numQuadLights;
+      dd.dirLights
+        = (DirLight::DD *)owlBufferGetPointer(dirLightsBuffer,device->owlID);
+      dd.numDirLights = numDirLights;
+
+      dd.envMapLight
+        = envMapLight
+        ? envMapLight->getDD(device)
+        : EnvMapLight::DD{};
+      
+      // dd.globals = globals.getDD(device);
+      dd.radiance  = radiance;
+      dd.samplers  = samplerRegistry->getPointer(device->owlID);
+      dd.materials = materialRegistry->getPointer(device->owlID);
+
+      return dd;
+    }
+
     MaterialRegistry::MaterialRegistry(DevGroup::SP devGroup)
       : devGroup(devGroup)
     {

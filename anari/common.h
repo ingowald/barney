@@ -8,6 +8,7 @@
 #include "helium/array/Array.h"
 #include "barney_math.h"
 #include <iostream>
+#include <cassert>
 
 #ifndef PRINT
 # define PRINT(var) std::cout << #var << "=" << var << std::endl;

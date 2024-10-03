@@ -52,7 +52,7 @@ TransferFunction1D::TransferFunction1D(BarneyGlobalState *s) : Volume(s) {}
 
 bool TransferFunction1D::isValid() const
 {
-  return m_field && m_field->isValid() && m_colorData && m_opacityData;
+  return m_field && m_field->isValid() && m_colorData && (m_opacityData || !needsOpacityData);
 }
 
 void TransferFunction1D::commit()
@@ -82,44 +82,53 @@ void TransferFunction1D::commit()
     return;
   }
 
-  if (!m_opacityData) {
-    reportMessage(ANARI_SEVERITY_WARNING,
-        "no opacity data provided to transfer function");
-    return;
-  }
+  if (m_opacityData) {
+  //   reportMessage(ANARI_SEVERITY_WARNING,
+  //       "no opacity data provided to transfer function");
+  //   return;
+  // }
+    needsOpacityData = true;
+  
+    auto *opacityData = m_opacityData->beginAs<float>();
+    /* if we do have an opacity channel we assume it's float3 color[]
+       plus float opacity [] */
+    
+    // extract combined RGB+A map from color and opacity arrays (whose
+    // sizes are allowed to differ..)
+    auto *colorData = m_colorData->beginAs<math::float3>();
 
-  // extract combined RGB+A map from color and opacity arrays (whose
-  // sizes are allowed to differ..)
-  auto *colorData = m_colorData->beginAs<math::float3>();
-  auto *opacityData = m_opacityData->beginAs<float>();
-
-  size_t tfSize = std::max(m_colorData->size(), m_opacityData->size());
-
-  m_rgbaMap.resize(tfSize);
-  for (size_t i = 0; i < tfSize; ++i) {
-    float colorPos = tfSize > 1
+    size_t tfSize = std::max(m_colorData->size(), m_opacityData->size());
+    m_rgbaMap.resize(tfSize);
+    for (size_t i = 0; i < tfSize; ++i) {
+      float colorPos = tfSize > 1
         ? (float(i) / (tfSize - 1)) * (m_colorData->size() - 1)
         : 0.f;
-    float colorFrac = colorPos - floorf(colorPos);
+      float colorFrac = colorPos - floorf(colorPos);
 
-    math::float3 color0 = colorData[int(floorf(colorPos))];
-    math::float3 color1 = colorData[int(ceilf(colorPos))];
-    math::float3 color = math::float3(math::lerp(color0.x, color1.x, colorFrac),
-        math::lerp(color0.y, color1.y, colorFrac),
-        math::lerp(color0.z, color1.z, colorFrac));
+      math::float3 color0 = colorData[int(floorf(colorPos))];
+      math::float3 color1 = colorData[int(ceilf(colorPos))];
+      math::float3 color = math::float3(math::lerp(color0.x, color1.x, colorFrac),
+                                        math::lerp(color0.y, color1.y, colorFrac),
+                                        math::lerp(color0.z, color1.z, colorFrac));
 
-    float alphaPos = tfSize > 1
+      float alphaPos = tfSize > 1
         ? (float(i) / (tfSize - 1)) * (m_opacityData->size() - 1)
         : 0.f;
-    float alphaFrac = alphaPos - floorf(alphaPos);
+      float alphaFrac = alphaPos - floorf(alphaPos);
 
-    float alpha0 = opacityData[int(floorf(alphaPos))];
-    float alpha1 = opacityData[int(ceilf(alphaPos))];
-    float alpha = math::lerp(alpha0, alpha1, alphaFrac);
+      float alpha0 = opacityData[int(floorf(alphaPos))];
+      float alpha1 = opacityData[int(ceilf(alphaPos))];
+      float alpha = math::lerp(alpha0, alpha1, alphaFrac);
 
-    m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
+      m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
+    }
+  } else {
+    needsOpacityData = false;
+    auto *colorData = m_colorData->beginAs<math::float4>();
+    size_t tfSize = m_colorData->size();
+    m_rgbaMap.resize(tfSize);
+    std::copy(colorData,colorData+tfSize,m_rgbaMap.begin());
   }
-
   setBarneyParameters();
 }
 

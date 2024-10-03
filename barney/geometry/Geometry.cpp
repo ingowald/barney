@@ -24,7 +24,7 @@
 #include "barney/geometry/Cylinders.h"
 
 namespace barney {
-  
+
   Geometry::SP Geometry::create(ModelSlot *owner,
                                 const std::string &type)
   {
@@ -58,6 +58,21 @@ namespace barney {
       if (group) { owlGroupRelease(group); group = 0; }
   }
 
+  HostMaterial::SP Geometry::getMaterial() const
+  {
+    assert(this->material);
+    return this->material;
+  }
+  
+  void Geometry::setMaterial(HostMaterial::SP mat)
+  {
+    if (mat) {
+      assert(mat->hasBeenCommittedAtLeastOnce);
+    }
+    this->material = mat;
+  }
+    
+  
   
   OWLContext Geometry::getOWL() const
   { return owner->getOWL(); }
@@ -165,9 +180,11 @@ namespace barney {
   bool Geometry::setObject(const std::string &member, const Object::SP &value)
   {
     if (member == "material") {
-      material = value->as<HostMaterial>();
-      if (!material)
+      HostMaterial::SP newMaterial = value->as<HostMaterial>();
+      if (value && !newMaterial) {
         throw std::runtime_error("invalid material in geometry::set(\"material\"");
+      }
+      setMaterial(newMaterial);
       return true;
     }
     return false;

@@ -14,6 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#ifdef __CUDACC__
+# define OWL_DISABLE_TBB
+#endif
 #include "barney/DeviceContext.h"
 #include "barney/render/Ray.h"
 #include "barney/fb/FrameBuffer.h"
@@ -63,6 +66,7 @@ namespace barney {
       int iy = (threadIdx.x / tileSize) + tileOffset.y;
 
       Ray ray;
+      ray.misWeight = 0.f;
       ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
       Random rand(ix+fbSize.x*accumID,
                   iy+fbSize.y*accumID);
@@ -116,8 +120,8 @@ namespace barney {
       ray.rngSeed     = rand.state;
       ray.tMax        = 1e30f;
 
-      // if (ray.dbg)
-      //   printf("-------------------------------------------------------\n");
+      if (0 && ray.dbg)
+        printf("-------------------------------------------------------\n");
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              

@@ -58,7 +58,6 @@ namespace barney {
     : lmsIdx(lmsIdx)
   {
     owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
-    std::cout << "DEVGROUP created owl " << (int*)owl << std::endl;
     OWLVarDecl args[]
       = {
       { nullptr }
