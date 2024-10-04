@@ -3,6 +3,7 @@
 
 #include "Group.h"
 #include <iostream>
+#include "common.h"
 
 namespace barney_device {
 
