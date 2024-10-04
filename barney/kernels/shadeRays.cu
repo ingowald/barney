@@ -152,8 +152,6 @@ namespace barney {
                          Random &random,
                          bool dbg)
     {
-      if (dbg) printf("num dirlights %i\n",world.numDirLights);
-
       if (world.numDirLights == 0) return false;
       static const int RESERVOIR_SIZE = 8;
       int   lID[RESERVOIR_SIZE];
@@ -583,7 +581,7 @@ namespace barney {
 #if USE_MIS
                        lightNeedsMIS,
 #endif
-                       1 && path.dbg)
+                       0 && path.dbg)
           // && 
           // (path.materialType != GLASS)
           ) {

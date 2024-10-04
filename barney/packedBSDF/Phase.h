@@ -40,7 +40,8 @@ namespace barney {
 
       inline __device__ EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
       {
-        return EvalRes((const vec3f&)albedo,1.f);
+        float density = 1.f/(4.f*M_PI);
+        return EvalRes(density*(const vec3f&)albedo,1.f);
         // return EvalRes::zero();
       }
 

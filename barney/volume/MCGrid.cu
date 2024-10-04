@@ -70,16 +70,14 @@ namespace barney {
     
     int mcIdx = mcID.x + grid.dims.x*(mcID.y + grid.dims.y*mcID.z);
     range1f scalarRange = grid.scalarRanges[mcIdx];
-    grid.majorants[mcIdx] = xf.majorant(scalarRange);
+    const float maj = xf.majorant(scalarRange);
+    grid.majorants[mcIdx] = maj;
   }
   
   /*! recompute all macro cells' majorant value by remap each such
     cell's value range through the given transfer function */
   void MCGrid::computeMajorants(const TransferFunction *xf)
   {
-    // std::cout << "------------------------------------------------------------------" << std::endl;
-    // std::cout << "RECOMPUTING MAJORANTS" << std::endl;
-    // std::cout << "------------------------------------------------------------------" << std::endl;
     assert(xf);
     assert(dims.x > 0);
     assert(dims.y > 0);
@@ -90,12 +88,12 @@ namespace barney {
 
     for (auto dev : xf->devGroup->devices) {
       BARNEY_CUDA_SYNC_CHECK();
-      // for (int devID=0;devID<xf->devGroup->size();devID++) {
       SetActiveGPU forDuration(dev);
       auto d_xf = xf->getDD(dev->owlID);
+      auto dd = getDD(dev->owlID);
       mapMacroCells
         <<<(dim3)nb,(dim3)bs>>>
-        (getDD(dev->owlID),d_xf);
+        (dd,d_xf);
       BARNEY_CUDA_SYNC_CHECK();
     }
   }

@@ -294,12 +294,9 @@ namespace barney {
     auto devGroup = sf->devGroup;
     const std::string typeString
       = getTypeString();
-    std::cout << "creating owl geom type for barney type '"
-              << typeString << "'" << std::endl;
     OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
       (ptxCode, [&](DevGroup *dg)
       {
-        printf("creating geom type ....");
         std::vector<OWLVarDecl> params;
         MCVolumeAccel<SFSampler>::DD::addVars(params,0);
         OWLGeomType gt = owlGeomTypeCreate
@@ -362,7 +359,6 @@ namespace barney {
   inline __device__
   void MCRTXVolumeAccel<SFSampler>::isProg()
   {
-    
     /* ALL of this code should be exactly the same in any
        instantiation of the MCRTXVolumeAccel<> tempalte! */
     const DD &self = owl::getProgramData<DD>();
@@ -429,7 +425,7 @@ namespace barney {
 
     box3f bounds = self.worldBounds;
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
-    
+
     if (!boxTest(ray,tRange,bounds))
       return;
     

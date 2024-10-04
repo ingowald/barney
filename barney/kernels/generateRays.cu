@@ -75,9 +75,6 @@ namespace barney {
       // rand();
       // rand();
 
-      if (ray.dbg)
-        printf("debug on!?\n");
-    
       ray.org  = camera.lens_00;
       ray.dir
         = camera.dir_00
@@ -177,7 +174,7 @@ namespace barney {
       return fromEnv && std::stoi(fromEnv);
     };
     static bool enablePerRayDebug = getPerRayDebug();
-
+    
     render::g_generateRays
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,

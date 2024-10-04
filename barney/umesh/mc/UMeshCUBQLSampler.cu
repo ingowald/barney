@@ -23,13 +23,13 @@ namespace barney {
     if (bvhNodesBuffer) {
       return;
     }
-    
+
     SetActiveGPU forDuration(mesh->devGroup->devices[0]);
-    
+
     BARNEY_CUDA_SYNC_CHECK();
     assert(mesh);
     assert(!mesh->elements.empty());
-    
+
     if (bvhNodesBuffer != 0) {
       return;
     }
