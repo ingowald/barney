@@ -65,12 +65,7 @@ namespace barney {
     }
     OWLGeom geom = userGeoms[0];
 
-    PING;
-    
     Geometry::commit();
-    PRINT(vertices);
-    PRINT(indices);
-    PRINT(radii);
       
     // owlGeomSet1i(geom,"colorPerVertex",colorPerVertex);
     owlGeomSet1i(geom,"radiusPerVertex",radiusPerVertex);
@@ -87,13 +82,10 @@ namespace barney {
                 << "#bn.cylinders: warning - empty indices array"
                 << OWL_TERMINAL_DEFAULT
                 << std::endl;
-    PRINT(numIndices);
     owlGeomSetPrimCount(geom,numIndices);
     
-    PING;
     setAttributesOn(geom);
     getMaterial()->setDeviceDataOn(geom);
-    PING;
   } 
 
   bool Cylinders::set1i(const std::string &member, const int &value)
@@ -142,10 +134,13 @@ namespace barney {
       radii = value->as<PODData>();
       return true;
     }
-    if (member == "colors") {
-      colors = value->as<PODData>();
-      return true;
-    }
+    // gets inherited:
+    // if (member == "primitive.color") {
+    //   // colors = value->as<PODData>();
+    //   attributes.colorAttribute.perPrim = value->as<PODData>();
+    //   attributes.colorAttribute.perVertex = 0;
+    //   return true;
+    // }
     return false;
   }
 

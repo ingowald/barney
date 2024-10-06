@@ -88,7 +88,7 @@ namespace barney {
                                       const InterpolatePerVertex &interpolate,
                                       bool dbg) const
   {
-    auto set = [&](float4 &out, const GeometryAttribute::DD &in) {
+    auto set = [&](float4 &out, const GeometryAttribute::DD &in,bool dbg=false) {
       switch(in.scope) {
       case GeometryAttribute::INVALID:
         /* nothing - leave default */
@@ -110,7 +110,7 @@ namespace barney {
       const auto &in  = this->attributes.attribute[i];
       set(out,in);
     }
-    set(hit.color,this->attributes.colorAttribute);
+    set(hit.color,this->attributes.colorAttribute,dbg);
   }
   
 }

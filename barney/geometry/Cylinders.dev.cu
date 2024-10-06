@@ -47,15 +47,17 @@ namespace barney {
     float d2 = m0 - rr * rr;
 
     float k2 = d2 - m2 * m2;
+    if (k2 == 0.f) return false;
+    
     float k1 = d2 * m3 - m1 * m2 + m2 * rr * ra;
     float k0 = d2 * m5 - m1 * m1 + m1 * rr * ra * 2.0 - m0 * ra * ra;
 
     float h = k1 * k1 - k0 * k2;
-    if (h < 0.0) return false;
+    if (h < 0.f) return false;
     float t = (-sqrtf(h) - k1) / k2;
 
     float y = m1 - ra * rr + t * m2;
-    if (y > 0.0 && y < d2)
+    if (y > 0.f && y < d2)
       {
         hit_t = t;
         isec_normal = normalize(d2 * (oa + t * rd) - ba * y);
@@ -115,11 +117,19 @@ namespace barney {
   {
     const Cylinders::DD &geom = *(const Cylinders::DD *)geomData;
     vec2i idx = geom.indices[primID];
-    float r   = geom.radii[primID];
     vec3f a = geom.vertices[idx.x];
     vec3f b = geom.vertices[idx.y];
-    bounds.lower = min(a,b)-r;
-    bounds.upper = max(a,b)+r;
+    float ra, rb;
+    if (geom.radiusPerVertex) {
+      ra = geom.radii[idx.x];
+      rb = geom.radii[idx.y];
+    } else {
+      ra = rb = geom.radii[primID];
+    }
+    box3f box_a = {a-ra,a+ra};
+    box3f box_b = {b-rb,b+rb};
+    bounds.lower = min(box_a.lower,box_b.lower);
+    bounds.upper = max(box_a.upper,box_b.upper);
   }
 
   OPTIX_CLOSEST_HIT_PROGRAM(CylindersCH)()
@@ -153,62 +163,89 @@ namespace barney {
     vec3f ray_org  = optixGetObjectRayOrigin();
     vec3f ray_dir  = optixGetObjectRayDirection();
     float len_dir = length(ray_dir);
-    float tMax      = optixGetRayTmax();
     vec3f objectN;
 
-    float d01 = length(v1-v0);
-    if (d01 < fabsf(r0-r1))
-      if (ray.dbg) printf("points are too close dist %f r0 %f r1 %f\n",
-                          d01,r0,r1);
+    float t0 = 0.f, t1 = ray.tMax;
+    box3f bb;
+    bb.extend(v0+r0);
+    bb.extend(v0-r0);
+    bb.extend(v1+r1);
+    bb.extend(v1-r1);
+    if (!boxTest(ray_org,ray_dir,
+                 t0,t1,
+                 bb)) return;
+    float t_move = .99*t0;
     
-    if (ray.dbg) printf("DEBUG\n");
+    // float d01 = length(v1-v0);
     
-    float d_v0 = length(v0-ray_org);
-    float d_v1 = length(v1-ray_org);
-    float t_move = 0.5f*max(d_v0+d_v1,r0+r1);
+    // float d_v0 = length(v0-ray_org);
+    // float d_v1 = length(v1-ray_org);
+    // float t_move = max(0.5f*(d_v0+d_v1),max(r0,r1));
     
-    t_move = t_move * 1.f/len_dir;
-    t_move = max(0.f,min(t_move,tMax));
+    // t_move = t_move * 1.f/len_dir;
+    // t_move = max(0.f,min(t_move,tMax*.95f));
 
-    if (ray.dbg) printf("t_move %f\n",t_move);
+    // if (ray.dbg) printf("t_move %f\n",t_move);
     ray_org = ray_org + t_move * ray_dir;
-    float hit_t = tMax - t_move;
+    float hit_t = ray.tMax - t_move;
+    
     if (!intersectRoundedCone(v0,v1,r0,r1,
                               ray_org,ray_dir,
                               hit_t,objectN))
       return;
+    if (hit_t < 0.f || hit_t > ray.tMax-t_move) return;
+    
     vec3f objectP = ray_org + hit_t * ray_dir;
     hit_t += t_move;
 
+    float lerp_t = dot(objectP-v0,v1-v0)/(length(objectP-v0)*length(v1-v0));
+    lerp_t = max(0.f,min(1.f,lerp_t));
+    
 
     auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
     { /* does not make sense for spheres *///return make_float4(0,0,0,1);
-
-      // doesn't make sense, but anari sdk assumes for spheres per-vtx is same as per-prim
-      float4 v = make_float4(0,0,0,1);//attrib.fromArray.valueAt(hitData.primID,ray.dbg);
-      // if (ray.dbg)
-      //   printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
-      return v;
+      const vec4f value_a = attrib.fromArray.valueAt(idx.x);
+      const vec4f value_b = attrib.fromArray.valueAt(idx.y);
+      const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
+      // if (ray.dbg) printf("======================================================= lerp %f -> %f %f %f\n",lerp_t,ret.x,ret.y,ret.z);
+      return ret;
     };
 
     render::HitAttributes hitData;//(OptixGlobals::get());
-    hitData.worldPosition   = optixTransformPointFromObjectToWorldSpace(objectP);
     hitData.objectPosition  = objectP;
-    hitData.worldNormal     = objectN;
-    hitData.objectNormal    = optixTransformNormalFromObjectToWorldSpace(objectN);
+    hitData.objectNormal    = normalize(objectN);
+    hitData.worldPosition   = optixTransformPointFromObjectToWorldSpace(objectP);
+    hitData.worldNormal     = normalize(optixTransformNormalFromObjectToWorldSpace(objectN));
     hitData.primID          = primID;
     hitData.t               = hit_t;
+
+    float surfOfs_eps = 1.f;
+    surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.x));
+    surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.y));
+    surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.z));
+    surfOfs_eps *= 1e-5f;
+
+    hitData.worldPosition += surfOfs_eps * hitData.worldNormal;
+      
     // if (self.colors)
-    //   (vec3f&)hitData.color = self.colors[primID];
-    
+    //   if (self.colorPerVertex)
+    //     //   (vec3f&)hitData.color = self.colors[primID];
+
+    // if (ray.dbg)
+    //   printf("capsule hit t %f pos %f %f %f nor %f %f %f\n",
+    //          hit_t,
+    //          hitData.objectPosition.x,
+    //          hitData.objectPosition.y,
+    //          hitData.objectPosition.z,
+    //          hitData.objectNormal.x,
+    //          hitData.objectNormal.y,
+    //          hitData.objectNormal.z);
     self.setHitAttributes(hitData,interpolator,ray.dbg);
 
-    if (ray.dbg)
-      printf("HIT CYLINDERS mat %i prim %i\n",self.materialID,hitData.primID);
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
     material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
     
-    optixReportIntersection(ray.tMax, 0);
+    optixReportIntersection(hit_t, 0);
     
 #else
     const float radius

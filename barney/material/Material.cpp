@@ -38,11 +38,6 @@ namespace barney {
       case SAMPLER:
         dd.samplerID = sampler ? sampler->samplerID : -1;
         break;
-      // case ARRAY:
-      //   assert(array);
-      //   dd.array.elementType = array->type;
-      //   dd.array.pointer     = (const void *)owlBufferGetPointer(array->owl,deviceID);
-      //   break;
       case ATTRIBUTE:
         dd.attribute = attribute;
         break;
@@ -85,6 +80,8 @@ namespace barney {
       sampler = {};
       type    = ATTRIBUTE;
       attribute = parseAttribute(attributeName);
+      PING;
+      std::cout << "parameter set to ATTRIBUTE, attr " << (int)attribute << std::endl;
     }
     
     HostMaterial::HostMaterial(ModelSlot *owner)
