@@ -34,10 +34,11 @@ namespace barney {
     std::vector<OWLVarDecl> params
       = {
          { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
+         { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
          { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
          // { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
          { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-         // { "colorPerVertex", OWL_INT, OWL_OFFSETOF(DD,colorPerVertex) },
+         { "colorPerVertex", OWL_INT, OWL_OFFSETOF(DD,colorPerVertex) },
          { "radiusPerVertex", OWL_INT, OWL_OFFSETOF(DD,radiusPerVertex) },
     };
     Geometry::addVars(params,0);
@@ -67,20 +68,29 @@ namespace barney {
     PING;
     
     Geometry::commit();
+    PRINT(vertices);
+    PRINT(indices);
+    PRINT(radii);
+      
     // owlGeomSet1i(geom,"colorPerVertex",colorPerVertex);
     owlGeomSet1i(geom,"radiusPerVertex",radiusPerVertex);
+    owlGeomSet1i(geom,"colorPerVertex",colorPerVertex);
     owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
     owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
     // owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
     owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
+    owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
+    assert(indices);
     int numIndices = indices->count;
     if (numIndices == 0)
       std::cout << OWL_TERMINAL_RED
                 << "#bn.cylinders: warning - empty indices array"
                 << OWL_TERMINAL_DEFAULT
                 << std::endl;
+    PRINT(numIndices);
     owlGeomSetPrimCount(geom,numIndices);
     
+    PING;
     setAttributesOn(geom);
     getMaterial()->setDeviceDataOn(geom);
     PING;
@@ -92,6 +102,10 @@ namespace barney {
       return true;
     if (member == "radiusPerVertex") {
       radiusPerVertex = value;
+      return true;
+    }
+    if (member == "colorPerVertex") {
+      colorPerVertex = value;
       return true;
     }
     // if (member == "colorPerVertex") {
@@ -126,6 +140,10 @@ namespace barney {
     }
     if (member == "radii") {
       radii = value->as<PODData>();
+      return true;
+    }
+    if (member == "colors") {
+      colors = value->as<PODData>();
       return true;
     }
     return false;

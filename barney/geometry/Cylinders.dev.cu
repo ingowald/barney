@@ -19,6 +19,95 @@
 
 namespace barney {
   using namespace barney::render;
+
+  /* ray - rounded cone intersection. */
+  inline __device__
+  bool intersectRoundedCone(const vec3f  pa, const vec3f  pb,
+                            const float  ra, const float  rb,
+                            const vec3f ray_org,
+                            const vec3f ray_dir,
+                            float& hit_t,
+                            vec3f& isec_normal)
+  {
+    const vec3f& ro = ray_org;//ray.origin;
+    const vec3f& rd = ray_dir;//ray.direction;
+
+    vec3f  ba = pb - pa;
+    vec3f  oa = ro - pa;
+    vec3f  ob = ro - pb;
+    float  rr = ra - rb;
+    float  m0 = dot(ba, ba);
+    float  m1 = dot(ba, oa);
+    float  m2 = dot(ba, rd);
+    float  m3 = dot(rd, oa);
+    float  m5 = dot(oa, oa);
+    float  m6 = dot(ob, rd);
+    float  m7 = dot(ob, ob);
+
+    float d2 = m0 - rr * rr;
+
+    float k2 = d2 - m2 * m2;
+    float k1 = d2 * m3 - m1 * m2 + m2 * rr * ra;
+    float k0 = d2 * m5 - m1 * m1 + m1 * rr * ra * 2.0 - m0 * ra * ra;
+
+    float h = k1 * k1 - k0 * k2;
+    if (h < 0.0) return false;
+    float t = (-sqrtf(h) - k1) / k2;
+
+    float y = m1 - ra * rr + t * m2;
+    if (y > 0.0 && y < d2)
+      {
+        hit_t = t;
+        isec_normal = normalize(d2 * (oa + t * rd) - ba * y);
+        return true;
+      }
+
+    // Caps. 
+    float h1 = m3 * m3 - m5 + ra * ra;
+    if (h1 > 0.0)
+      {
+        t = -m3 - sqrtf(h1);
+        hit_t = t;
+        isec_normal = normalize((oa + t * rd) / ra);
+        return true;
+      }
+    return false;
+  }
+  
+  // OPTIX_INTERSECT_PROGRAM(basicTubes_intersect)()
+  // {
+  //   const int primID = optixGetPrimitiveIndex();
+  //   const auto& self
+  //     = owl::getProgramData<TubesGeom>();
+
+  //   owl::Ray ray(optixGetWorldRayOrigin(),
+  //                optixGetWorldRayDirection(),
+  //                optixGetRayTmin(),
+  //                optixGetRayTmax());
+  //   const Link link = self.links[primID];
+  //   if (link.prev < 0) return;
+
+  //   float tmp_hit_t = ray.tmax;
+
+  //   vec3f pb, pa; float ra, rb;
+  //   pa = link.pos;
+  //   ra = link.rad;
+  //   if (link.prev >= 0) {
+  //     rb = self.links[link.prev].rad;
+  //     pb = self.links[link.prev].pos;
+  //     vec3f normal;
+
+  //     if (intersectRoundedCone(pa, pb, ra,rb, ray, tmp_hit_t, normal))
+  //       {
+  //         if (optixReportIntersection(tmp_hit_t, primID)) {
+  //           PerRayData& prd = owl::getPRD<PerRayData>();
+  //           prd.linkID = primID;
+  //           prd.t = tmp_hit_t;
+  //           prd.isec_normal = normal;
+  //         }
+  //       }
+  //   }
+  // }
   
   OPTIX_BOUNDS_PROGRAM(CylindersBounds)(const void *geomData,
                                         owl::common::box3f &bounds,  
@@ -45,10 +134,83 @@ namespace barney {
       = optixGetPrimitiveIndex();
     const auto &self
       = owl::getProgramData<Cylinders::DD>();
+    Ray &ray    = getPRD<Ray>();
 
     const vec2i idx = self.indices[primID];
     const vec3f v0  = self.vertices[idx.x];
     const vec3f v1  = self.vertices[idx.y];
+
+
+#if 1
+    const float r0 
+      = self.radiusPerVertex
+      ? self.radii[idx.x]
+      : self.radii[primID];
+    const float r1 
+      = self.radiusPerVertex
+      ? self.radii[idx.y]
+      : self.radii[primID];
+    vec3f ray_org  = optixGetObjectRayOrigin();
+    vec3f ray_dir  = optixGetObjectRayDirection();
+    float len_dir = length(ray_dir);
+    float tMax      = optixGetRayTmax();
+    vec3f objectN;
+
+    float d01 = length(v1-v0);
+    if (d01 < fabsf(r0-r1))
+      if (ray.dbg) printf("points are too close dist %f r0 %f r1 %f\n",
+                          d01,r0,r1);
+    
+    if (ray.dbg) printf("DEBUG\n");
+    
+    float d_v0 = length(v0-ray_org);
+    float d_v1 = length(v1-ray_org);
+    float t_move = 0.5f*max(d_v0+d_v1,r0+r1);
+    
+    t_move = t_move * 1.f/len_dir;
+    t_move = max(0.f,min(t_move,tMax));
+
+    if (ray.dbg) printf("t_move %f\n",t_move);
+    ray_org = ray_org + t_move * ray_dir;
+    float hit_t = tMax - t_move;
+    if (!intersectRoundedCone(v0,v1,r0,r1,
+                              ray_org,ray_dir,
+                              hit_t,objectN))
+      return;
+    vec3f objectP = ray_org + hit_t * ray_dir;
+    hit_t += t_move;
+
+
+    auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
+    { /* does not make sense for spheres *///return make_float4(0,0,0,1);
+
+      // doesn't make sense, but anari sdk assumes for spheres per-vtx is same as per-prim
+      float4 v = make_float4(0,0,0,1);//attrib.fromArray.valueAt(hitData.primID,ray.dbg);
+      // if (ray.dbg)
+      //   printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
+      return v;
+    };
+
+    render::HitAttributes hitData;//(OptixGlobals::get());
+    hitData.worldPosition   = optixTransformPointFromObjectToWorldSpace(objectP);
+    hitData.objectPosition  = objectP;
+    hitData.worldNormal     = objectN;
+    hitData.objectNormal    = optixTransformNormalFromObjectToWorldSpace(objectN);
+    hitData.primID          = primID;
+    hitData.t               = hit_t;
+    // if (self.colors)
+    //   (vec3f&)hitData.color = self.colors[primID];
+    
+    self.setHitAttributes(hitData,interpolator,ray.dbg);
+
+    if (ray.dbg)
+      printf("HIT CYLINDERS mat %i prim %i\n",self.materialID,hitData.primID);
+    const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
+    material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
+    
+    optixReportIntersection(ray.tMax, 0);
+    
+#else
     const float radius
       = self.radiusPerVertex
       ? min(self.radii[idx.x],self.radii[idx.y])
@@ -70,7 +232,7 @@ namespace barney {
     const vec3f f = v0 - ray_org;
     const vec3f sxf = cross(s, f);
     const float ra = 1.0f/a;
-    const float ts = dot(sxd, sxf) * ra; // (s x d)(s x f) / (s x d)^2, in ray-space
+    const float ts = dot(sxd, sxf) * ra; // (sd)(s x f) / (s x d)^2, in ray-space
     const vec3f fp = f - ts * d; // f' = v0 - closest point to axis
 
     const float s2 = dot(s, s); // s^2
@@ -160,6 +322,7 @@ namespace barney {
     material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
     
     optixReportIntersection(ray.tMax, 0);
+#endif
   }
   
 }
