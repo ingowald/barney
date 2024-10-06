@@ -232,14 +232,15 @@ namespace barney {
       return;
     }
     
-    // std::cout << OWL_TERMINAL_BLUE
-    //           << "#bn.um: building initial macro cell grid"
-    //           << OWL_TERMINAL_DEFAULT << std::endl;
 
+    PING; PRINT(elements.size());
     float maxWidth = reduce_max(getBox(worldBounds).size());
     int MC_GRID_SIZE
       = 128 + int(sqrtf((float)elements.size())/30);
     vec3i dims = 1+vec3i(getBox(worldBounds).size() * ((MC_GRID_SIZE-1) / maxWidth));
+    std::cout << OWL_TERMINAL_BLUE
+              << "#bn.um: building initial macro cell grid of " << dims << " MCs"
+              << OWL_TERMINAL_DEFAULT << std::endl;
     // printf("#bn.um: chosen macro-cell dims of (%i %i %i)\n",
     //        dims.x,
     //        dims.y,

@@ -125,10 +125,11 @@ void UnstructuredField::commit()
   m_params.vertexPosition = getParamObject<helium::Array1D>("vertex.position");
   m_params.vertexData = getParamObject<helium::Array1D>("vertex.data");
   m_params.index = getParamObject<helium::Array1D>("index");
-  m_params.cellIndex = getParamObject<helium::Array1D>("cell.index");
+  m_params.cellType = getParamObject<helium::Array1D>("cell.type");
+  m_params.cellBegin = getParamObject<helium::Array1D>("cell.begin");
 
   if (!m_params.vertexPosition) {
-    reportMessage(ANARI_SEVERITY_WARNING,
+    reportMessage(ANARI_SEVERITY_WARNING, 
         "missing required parameter 'vertex.position' on unstructured spatial field");
     return;
   }
@@ -145,9 +146,15 @@ void UnstructuredField::commit()
     return;
   }
 
-  if (!m_params.cellIndex) {
+  if (!m_params.cellType) {
     reportMessage(ANARI_SEVERITY_WARNING,
-        "missing required parameter 'cell.index' on unstructured spatial field");
+        "missing required parameter 'cell.type' on unstructured spatial field");
+    return;
+  }
+
+  if (!m_params.cellBegin) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'cell.begin' on unstructured spatial field");
     return;
   }
 
@@ -155,6 +162,10 @@ void UnstructuredField::commit()
   // m_params.gridDomains = getParamObject<helium::Array1D>("grid.domains");
 
   m_bounds.invalidate();
+  m_indices.clear();
+  m_vertices.clear();
+  m_elementOffsets.clear();
+  
   auto *vertexPosition = m_params.vertexPosition->beginAs<math::float3>();
   int numVertices      = m_params.vertexPosition->endAs<math::float3>()-vertexPosition;
   auto *vertexData = m_params.vertexData->beginAs<float>();
@@ -162,119 +173,48 @@ void UnstructuredField::commit()
   for (int i=0;i<numVertices;i++) {
     (math::float3&)m_vertices[i] = vertexPosition[i];
     m_bounds.insert(vertexPosition[i]);
-    m_vertices[i].w              = vertexData[i];
+    m_vertices[i].w = vertexData[i];
   }
-  auto *index = m_params.index->beginAs<uint64_t>();
+  auto *index = m_params.index->beginAs<uint32_t>();
+  auto *cellBegin = m_params.cellBegin->beginAs<uint32_t>();
+  auto *cellType = m_params.cellType->beginAs<uint8_t>();
 
   // size_t numVerts = m_params.vertexPosition->size();
-  size_t numIndices = m_params.index->endAs<uint64_t>() - index;
-
-  m_indices.resize(numIndices);
-  for (int i=0;i<numIndices;i++)
-    m_indices[i] = index[i];
-
-  auto *cellIndex = m_params.cellIndex->beginAs<uint64_t>();
-  size_t numCells = m_params.cellIndex->endAs<uint64_t>() - cellIndex;
-  m_elementOffsets.resize(numCells);
-  for (int i=0;i<numCells;i++)
-    m_elementOffsets[i] = cellIndex[i];
-  // m_generatedVertices.clear();
-  // m_generatedTets.clear();
-  // m_generatedPyrs.clear();
-  // m_generatedWedges.clear();
-  // m_generatedHexes.clear();
-
-
-  // for (size_t i = 0; i < numIndices; ++i) {
-  //   m_bounds.insert(vertexPosition[index[i]]);
-  // }
-
-  // for (size_t i = 0; i < numVerts; ++i) {
-  //   math::float3 pos = vertexPosition[i];
-  //   float value = vertexData[i];
-  //   m_generatedVertices.push_back(pos.x);
-  //   m_generatedVertices.push_back(pos.y);
-  //   m_generatedVertices.push_back(pos.z);
-  //   m_generatedVertices.push_back(value);
-  // }
-
-  // enum { VTK_TETRA=10, VTK_HEXAHEDRON=12, VTK_WEDGE=13, VTK_PYRAMID=14 };
-  // for (size_t i = 0; i < numCells; ++i) {
-  //   uint64_t firstIndex = cellIndex[i];
-  //   uint64_t lastIndex = (i < (numCells - 1)) ? cellIndex[i + 1] : numIndices;
-
-  //   m_elementOffsets.push_back(firstIndex);
-  //     if (lastIndex - firstIndex == 4) {
-  //     // for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-  //     //   m_generatedTets.push_back(index[j]);
-  //     // }
-  //     m_elementTypes.push_back(VTK_TETRA);
-  //   } else if (lastIndex - firstIndex == 5) {
-  //     // for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-  //     //   m_generatedPyrs.push_back(index[j]);
-  //     // }
-  //     m_elementTypes.push_back(VTK_PYRAMID);
-  //   } else if (lastIndex - firstIndex == 6) {
-  //     // for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-  //     //   m_generatedWedges.push_back(index[j]);
-  //     // }
-  //     m_elementTypes.push_back(VTK_WEDGE);
-  //   } else if (lastIndex - firstIndex == 8) {
-  //     // for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-  //     //   m_generatedHexes.push_back(index[j]);
-  //     // }
-  //     m_elementTypes.push_back(VTK_HEXAHEDRON);
-  //   }
-  // }
-
-  // if (m_params.gridData && m_params.gridDomains) {
-  //   m_generatedGridOffsets.clear();
-  //   m_generatedGridDims.clear();
-  //   m_generatedGridDomains.clear();
-  //   m_generatedGridScalars.clear();
-
-  //   size_t numGrids = m_params.gridData->totalSize();
-  //   auto *gridData = (helium::Array3D **)m_params.gridData->handlesBegin();
-  //   auto *gridDomains = m_params.gridDomains->beginAs<box3>();
-
-  //   for (size_t i = 0; i < numGrids; ++i) {
-  //     const helium::Array3D *gd = *(gridData + i);
-  //     const box3 domain = *(gridDomains + i);
-
-  //     m_generatedGridOffsets.push_back(m_generatedGridScalars.size());
-
-  //     // from anari's array3d we get the number of vertices, not cells!
-  //     m_generatedGridDims.push_back(gd->size().x - 1);
-  //     m_generatedGridDims.push_back(gd->size().y - 1);
-  //     m_generatedGridDims.push_back(gd->size().z - 1);
-
-  //     box1 valueRange{FLT_MAX, -FLT_MAX};
-  //     for (unsigned z = 0; z < gd->size().z; ++z)
-  //       for (unsigned y = 0; y < gd->size().y; ++y)
-  //         for (unsigned x = 0; x < gd->size().x; ++x) {
-  //           size_t index =
-  //               z * size_t(gd->size().x) * gd->size().y + y * gd->size().x + x;
-  //           float f = gd->dataAs<float>()[index];
-  //           m_generatedGridScalars.push_back(f);
-  //           valueRange.insert(f);
-  //         }
-
-  //     m_generatedGridDomains.push_back(domain.lower.x);
-  //     m_generatedGridDomains.push_back(domain.lower.y);
-  //     m_generatedGridDomains.push_back(domain.lower.z);
-  //     m_generatedGridDomains.push_back(valueRange.lower);
-  //     m_generatedGridDomains.push_back(domain.upper.x);
-  //     m_generatedGridDomains.push_back(domain.upper.y);
-  //     m_generatedGridDomains.push_back(domain.upper.z);
-  //     m_generatedGridDomains.push_back(valueRange.upper);
-  //   }
-  // }
+  size_t numCells = m_params.cellType->size(); //endAs<uint64_t>() - index;
+  // this isn't fully spec'ed yet
+  enum { _ANARI_TET = 0, _ANARI_HEX=1, _ANARI_WEDGE=2, _ANARI_PYR=3 };
+  for (int cellIdx=0;cellIdx<(int)numCells;cellIdx++) {
+    int thisOffset = m_indices.size();
+    m_elementOffsets.push_back(thisOffset);
+    uint8_t type = cellType[cellIdx];
+    int numToCopy = -1;
+    switch(type) {
+    case _ANARI_TET:
+      numToCopy = 4; break;
+    case _ANARI_HEX:
+      numToCopy = 8; break;
+    case _ANARI_WEDGE:
+      numToCopy = 6; break;
+    case _ANARI_PYR:
+      numToCopy = 5; break;
+    default:
+      throw std::runtime_error("buggy/invalid unstructured elemnet type!?");
+    };
+    int inputBegin = cellBegin[cellIdx];
+    for (int i=0;i<numToCopy;i++) {
+      m_indices.push_back(index[inputBegin+i]);
+    }
+  }
 }
 
 BNScalarField UnstructuredField::createBarneyScalarField(
     BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
+  PING;
+  std::cout << "==================================================================" << std::endl;
+  std::cout << "BANARI: CREATING UMESH OF " << m_elementOffsets.size() << " elements" << std::endl;
+  std::cout << "==================================================================" << std::endl;
   return bnUMeshCreate(model,
                        slot,
                        (const ::float4 *)m_vertices.data(),

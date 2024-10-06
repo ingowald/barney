@@ -137,8 +137,8 @@ void Frame::renderFrame()
   const float radiance = m_renderer->radiance();
   bnSetRadiance(model, 0, radiance / 10.f);
 
-  for (int i = 0; i < pixelSamples; i++)
-    bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer, pixelSamples);
+  // for (int i = 0; i < pixelSamples; i++)
+  bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer, pixelSamples);
 
   auto end = std::chrono::steady_clock::now();
   m_duration = std::chrono::duration<float>(end - start).count();

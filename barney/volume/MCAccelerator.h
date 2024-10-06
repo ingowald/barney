@@ -450,6 +450,11 @@ namespace barney {
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
               {
                 const float majorant = self.mcGrid.majorant(cellIdx);
+                // if (ray.dbg) printf("dda %i %i %i maj %f\n",
+                //                     cellIdx.x,
+                //                     cellIdx.y,
+                //                     cellIdx.z,
+                //                     majorant);
 
                 if (majorant == 0.f) return true;
 

@@ -178,7 +178,7 @@ namespace barney {
                       int numInstances)
   {
     LOG_API_ENTRY;
-    
+
     std::vector<Group::SP> groups;
     for (int i=0;i<numInstances;i++) {
       groups.push_back(checkGetSP(_groups[i]));
