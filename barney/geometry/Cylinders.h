@@ -35,7 +35,7 @@ namespace barney {
       const vec3f *colors;
       const vec2i *indices;
       const float *radii;
-      int colorPerVertex, radiusPerVertex;
+      int colorPerVertex;
     };
     
     Cylinders(ModelSlot *owner);
@@ -58,14 +58,9 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
 
-    // PODData::SP colors;
     PODData::SP vertices;
     PODData::SP indices;
     PODData::SP radii;
-    PODData::SP colors;
-    bool colorPerVertex  = 0;
-    bool radiusPerVertex = 0;
-    
   };
 
 }

@@ -34,12 +34,8 @@ namespace barney {
     std::vector<OWLVarDecl> params
       = {
          { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
-         { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
          { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-         // { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
          { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-         { "colorPerVertex", OWL_INT, OWL_OFFSETOF(DD,colorPerVertex) },
-         { "radiusPerVertex", OWL_INT, OWL_OFFSETOF(DD,radiusPerVertex) },
     };
     Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
@@ -67,14 +63,9 @@ namespace barney {
 
     Geometry::commit();
       
-    // owlGeomSet1i(geom,"colorPerVertex",colorPerVertex);
-    owlGeomSet1i(geom,"radiusPerVertex",radiusPerVertex);
-    owlGeomSet1i(geom,"colorPerVertex",colorPerVertex);
     owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
     owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
-    // owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
     owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
-    owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
     assert(indices);
     int numIndices = indices->count;
     if (numIndices == 0)
@@ -92,18 +83,6 @@ namespace barney {
   {
     if (Geometry::set1i(member,value))
       return true;
-    if (member == "radiusPerVertex") {
-      radiusPerVertex = value;
-      return true;
-    }
-    if (member == "colorPerVertex") {
-      colorPerVertex = value;
-      return true;
-    }
-    // if (member == "colorPerVertex") {
-    //   colorPerVertex = value;
-    //   return true;
-    // }
     return false;
   }
   
@@ -118,10 +97,6 @@ namespace barney {
   {
     if (Geometry::setData(member,value))
       return true;
-    // if (member == "colors") {
-    //   colors = value->as<PODData>();
-    //   return true;
-    // }
     if (member == "vertices") {
       vertices = value->as<PODData>();
       return true;
@@ -134,13 +109,6 @@ namespace barney {
       radii = value->as<PODData>();
       return true;
     }
-    // gets inherited:
-    // if (member == "primitive.color") {
-    //   // colors = value->as<PODData>();
-    //   attributes.colorAttribute.perPrim = value->as<PODData>();
-    //   attributes.colorAttribute.perVertex = 0;
-    //   return true;
-    // }
     return false;
   }
 
