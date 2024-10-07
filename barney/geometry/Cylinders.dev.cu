@@ -353,8 +353,6 @@ namespace barney {
     
     self.setHitAttributes(hitData,interpolator,ray.dbg);
 
-    if (ray.dbg)
-      printf("HIT CYLINDERS mat %i prim %i\n",self.materialID,hitData.primID);
     const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
     material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
     

@@ -58,6 +58,12 @@ embed_ptx(
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            geometry/Cylinders.dev.cu
   )
+# ray capsules geom intersection
+embed_ptx(
+  OUTPUT_TARGET      barney-capsules-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            geometry/Capsules.dev.cu
+  )
 # ray cones geom intersection
 #embed_ptx(
 #  OUTPUT_TARGET      barney-cones-ptx
@@ -198,6 +204,8 @@ add_library(barney STATIC
   geometry/Triangles.cpp
   geometry/Cylinders.h
   geometry/Cylinders.cpp
+  geometry/Capsules.h
+  geometry/Capsules.cpp
   #  geometry/Cones.h
   #  geometry/Cones.cpp
   # volume data 
@@ -245,7 +253,7 @@ target_link_libraries(barney
   barney-StructuredData-ptx
   barney-spheres-ptx
   barney-cylinders-ptx
-#  barney-cones-ptx
+  barney-capsules-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
   barney-UMeshRTXObjectSpace-ptx
