@@ -17,13 +17,20 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
+#include "barney/common/half.h"
 
 #define FB_NO_PEER_ACCESS 1
 
 namespace barney {
 
   struct FrameBuffer;
-
+  
+#if DENOISE
+  void float4ToBGBA8(uint32_t  *finalFB,
+                     float4    *float4s,
+                     vec2i      numPixels);
+#endif
+  
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
 
@@ -33,6 +40,9 @@ namespace barney {
   };
   struct FinalTile {
     uint32_t rgba[pixelsPerTile];
+#if DENOISE
+    half     scale[pixelsPerTile];
+#endif
     float    depth[pixelsPerTile];
   };
   struct TileDesc {
@@ -53,14 +63,19 @@ namespace barney {
         (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
         pixels) */
     static
-    void writeFinalPixels(uint32_t  *finalFB,
+    void writeFinalPixels(
+#if DENOISE
+                          float4    *finalFB,
+#else
+                          uint32_t  *finalFB,
+#endif
                           float     *finalDepth,
                           vec2i      numPixels,
                           FinalTile *finalTiles,
                           TileDesc  *tileDescs,
                           int        numTiles,
                           bool       showCrosshairs);
-
+    
     void finalizeTiles();
 
     /*! number of (valid) pixels */
@@ -75,7 +90,7 @@ namespace barney {
     AccumTile *accumTiles = 0;
     FinalTile *finalTiles = 0;
     FrameBuffer *const owner;
-    Device::SP const device;
+    Device::SP  const device;
   };
 
 }

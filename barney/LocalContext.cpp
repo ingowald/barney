@@ -109,7 +109,20 @@ namespace barney {
     // ***NO*** active device here
     LocalFB *localFB = (LocalFB*)fb;
     localFB->ownerGatherFinalTiles();
-    TiledFB::writeFinalPixels(localFB->finalFB,
+    // TiledFB::writeFinalPixels(//nullptr,//devFB.device.get(),
+    //                           fb->denoiserInput,
+    //                           localFB->finalDepth,
+    //                           localFB->numPixels,
+    //                           localFB->rank0gather.finalTiles,
+    //                           localFB->rank0gather.tileDescs,
+    //                           localFB->rank0gather.numActiveTiles,
+    //                           fb->showCrosshairs);
+    TiledFB::writeFinalPixels(
+# if DENOISE
+                              fb->denoiserInput,
+# else
+                              localFB->finalFB,
+# endif
                               localFB->finalDepth,
                               localFB->numPixels,
                               localFB->rank0gather.finalTiles,
@@ -150,6 +163,12 @@ namespace barney {
                             cudaMemcpyDefault));
 
     for (auto dev : devices) dev->sync();
+
+
+# if DENOISE
+    fb->denoise();
+    // float4ToBGBA8(fb->finalFB,fb->denoiserInput,fb->numPixels);
+#endif
   }
 
 }

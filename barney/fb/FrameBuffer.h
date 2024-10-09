@@ -18,6 +18,8 @@
 
 #include "barney/Context.h"
 #include "barney/fb/TiledFB.h"
+#include <optix.h>
+#include <optix_stubs.h>
 
 namespace barney {
 
@@ -59,6 +61,19 @@ namespace barney {
     float      *finalDepth  = 0;
     float      *hostDepth   = 0;
 
+
+#if DENOISE
+    bool                 denoiserCreated = false;
+    OptixDenoiser        denoiser = {};
+    float4              *denoiserInput   = 0;
+    float4              *denoiserOutput  = 0;
+    OptixDenoiserOptions denoiserOptions;
+    void                *denoiserScratch = 0;
+    void                *denoiserState   = 0;
+    OptixDenoiserSizes denoiserSizes;
+    void denoise();
+#endif
+    
     uint32_t    accumID     = 0;
     const bool  isOwner;
           bool  showCrosshairs;
