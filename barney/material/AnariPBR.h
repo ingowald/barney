@@ -93,7 +93,9 @@ namespace barney {
       bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
-      bsdf.alpha = 1.f-transmission.x;
+      bsdf.alpha = (1.f-transmission.x)
+        * baseColor.w
+        ;
       
       bsdf.ior = ior.x;
       // if (dbg)

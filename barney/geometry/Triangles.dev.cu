@@ -209,9 +209,14 @@ namespace barney {
       = OptixGlobals::get().materials[self.materialID];
     PackedBSDF bsdf
       = material.createBSDF(hitData,OptixGlobals::get().samplers,ray.dbg);
+#if 0
+    float opacity
+      = material.getOpacity(hitData,OptixGlobals::get().samplers,ray.dbg);
+#else
     float opacity
       = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                                    ray.dir,hitData.worldNormal,ray.dbg);
+                        ray.dir,hitData.worldNormal,ray.dbg);
+#endif
 
     if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
       optixIgnoreIntersection();

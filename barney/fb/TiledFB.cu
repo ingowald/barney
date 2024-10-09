@@ -146,16 +146,24 @@ namespace barney {
 
 #if DENOISE
   __global__ void g_float4ToBGBA8(uint32_t  *finalFB,
+                                  float4    *inputBeforeDenoising,
                                   float4    *float4s,
+                                  float      denoisedWeight,
                                   vec2i      numPixels)
   {
     int ix = threadIdx.x+blockIdx.x*blockDim.x;
     int iy = threadIdx.y+blockIdx.y*blockDim.y;
     if (ix >= numPixels.x) return;
     if (iy >= numPixels.y) return;
-
+    
     int pid = ix+numPixels.x*iy;
     float4 v = float4s[pid];
+#if 1
+    float4 v2 = inputBeforeDenoising[pid];
+    v
+      = denoisedWeight*(const vec4f&)v
+      + (1.f-denoisedWeight)*(const vec4f&)v2;
+#endif
     v.x = sqrtf(v.x);
     v.y = sqrtf(v.y);
     v.z = sqrtf(v.z);
@@ -163,13 +171,15 @@ namespace barney {
   }
   
   void float4ToBGBA8(uint32_t  *finalFB,
+                     float4    *inputBeforeDenoising,
                      float4    *float4s,
+                     float      denoisedWeight,
                      vec2i      numPixels)  
   {
     vec2i tileSize = 32;
     g_float4ToBGBA8
       <<<divRoundUp(numPixels,tileSize),tileSize>>>
-      (finalFB,float4s,
+      (finalFB,inputBeforeDenoising,float4s,denoisedWeight,
        numPixels);
   }    
   __global__ void g_writeFinalPixels(float4    *finalFB,

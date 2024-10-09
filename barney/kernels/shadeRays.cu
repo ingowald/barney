@@ -166,11 +166,11 @@ namespace barney {
         light = world.dirLights[lID[i]];
         vec3f lightDir = -light.direction;
         float weight = dot(lightDir,N);
-        if (dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
+        if (0 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
         if (weight <= 1e-3f) continue;
         weight *= reduce_max(light.radiance);
         if (weight <= 1e-3f) continue;
-        if (dbg) printf("radiance %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
+        if (0 && dbg) printf("radiance %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
         weights[i] = weight;
         sumWeights += weight;
       }
@@ -249,7 +249,6 @@ namespace barney {
 #else
       float elsWeight = 0.f;
 #endif
-      
       float sumWeights
         = alsWeight+dlsWeight+elsWeight;
       if (sumWeights == 0.f) return false;
@@ -259,6 +258,7 @@ namespace barney {
       dlsWeight *= 1.f/sumWeights;
       
       float r = random();
+      // if (dbg) printf("r %f els %f dls %f\n",r, elsWeight,dlsWeight);
       if (r <= alsWeight) {
         ls = als;
         ls.pdf *= alsWeight;
@@ -266,11 +266,13 @@ namespace barney {
       } else if (r <= alsWeight+elsWeight) {
         ls = els;
         ls.pdf *= elsWeight;
+        if (dbg) printf(" ->  picked env light sample\n");
 # if USE_MIS
-      lightNeedsMIS = true;
+        lightNeedsMIS = true;
 # endif
 #endif
       } else {
+        if (dbg) printf(" ->  picked DIR light sample\n");
         ls = dls;
         ls.pdf *= dlsWeight;
       }
@@ -772,7 +774,7 @@ namespace barney {
 
 #if 1
       // clamping ...
-      float clampMax = 100.f*(1+accumID);
+      float clampMax = 20.f*(1+accumID);
       fragment = min(fragment,vec3f(clampMax));
 #endif
       if (accumID == 0 && generation == 0) {

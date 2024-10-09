@@ -201,7 +201,11 @@ namespace barney {
        //          size_t                          scratchSizeInBytes );
        denoiserSizes.withoutOverlapScratchSizeInBytes
        );
-    float4ToBGBA8(this->finalFB,this->denoiserOutput,this->numPixels);
+    float4ToBGBA8(this->finalFB,
+                  this->denoiserInput,
+                  this->denoiserOutput,
+                  1.f,//10.f/(accumID+11),
+                  this->numPixels);
   }
 #endif
 

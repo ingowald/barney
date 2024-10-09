@@ -883,9 +883,15 @@ namespace barney {
         }
 #endif
         inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__ float getOpacity(render::DG dg,
-                                           bool isShadowRay,
-                                           bool dbg=false) const;
+        inline __device__
+        float getOpacity(bool isShadowRay,
+                         bool isInMedium,
+                         vec3f rayDir,
+                         vec3f Ng,
+                         bool dbg=false) const
+        {
+          return (float)alpha;
+        }
         inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
         inline __device__ float pdf(DG dg, vec3f wi, bool dbg) const;
         inline __device__ void scatter(ScatterResult &scatter,
@@ -934,6 +940,7 @@ namespace barney {
           this->flatness = 0.f;
           this->alpha = 1.f;
         }
+        
         
 	vec3h baseColor;
 	vec3h subsurfaceColor;
@@ -1003,6 +1010,8 @@ namespace barney {
         //                                    ) {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
+        mat.alpha = 1.f;
+
         // * @param g_n The geometric normal (cross product of the two triangle edges)
         float3 g_n = (float3)dg.Ng;
          // * @param s_n The shading normal (per-vertex interpolated normal)
@@ -1061,6 +1070,10 @@ namespace barney {
       {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
+
+        mat.alpha = 1.f;
+
+        
         // if (dbg) printf("disney base %f %f %f\n",
         //                 mat.base_color.x,
         //                 mat.base_color.y,
@@ -1119,6 +1132,8 @@ namespace barney {
       {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
+        mat.alpha = 1.f;
+        
         float3 g_n = (float3)dg.Ng;
          // * @param s_n The shading normal (per-vertex interpolated normal)
         float3 s_n = (float3)dg.Ns;

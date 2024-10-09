@@ -27,7 +27,9 @@ namespace barney {
   
 #if DENOISE
   void float4ToBGBA8(uint32_t  *finalFB,
+                     float4    *inputBeforeDenoising,
                      float4    *float4s,
+                     float      denoisedWeight,
                      vec2i      numPixels);
 #endif
   

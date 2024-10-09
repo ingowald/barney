@@ -96,16 +96,16 @@ namespace barney {
   int sampleCDF(const float *cdf, int N, float v,
                 float &pdf, bool dbg = false)
   {
-    if (dbg) printf("****** sampling sdf with %i items, v = %f\n",N,v);
+    // if (dbg) printf("****** sampling sdf with %i items, v = %f\n",N,v);
     int begin = 0;
     int end   = N;
     while (end - begin > 1) {
       int mid = (begin+end)/2;
       float f_mid = cdf[mid];
 
-      if (dbg)
-        printf("[%i %i] -> %i -> %f\n",
-               begin,end,mid,f_mid);
+      // if (dbg)
+      //   printf("[%i %i] -> %i -> %f\n",
+      //          begin,end,mid,f_mid);
       if (v <= f_mid)
         end = mid;
       else
@@ -119,9 +119,9 @@ namespace barney {
       : 0.f;
     
     pdf = (f_at_position-f_before_position);
-    if (dbg)
-      printf("done, found idx %i, with query %f between %f and %f, pdf = %f\n",
-             position,v,f_before_position,f_at_position,pdf);
+    // if (dbg)
+    //   printf("done, found idx %i, with query %f between %f and %f, pdf = %f\n",
+    //          position,v,f_before_position,f_at_position,pdf);
     return position;
   }
   
@@ -196,11 +196,11 @@ namespace barney {
     if (!texture) return {};
     
     float pdf_y;
-    if (dbg) printf(" *** sampling cdf in y\n");
+    // if (dbg) printf(" *** sampling cdf in y\n");
     int iy = sampleCDF(cdf_y,dims.y,r(),pdf_y,dbg);
 
     float pdf_x;
-    if (dbg) printf(" *** sampling cdf in x for y=%i\n",iy);
+    // if (dbg) printf(" *** sampling cdf in x for y=%i\n",iy);
     int ix = sampleCDF(allCDFs_x+dims.x*iy,dims.x,r(),pdf_x,dbg);
 
     float sx = (ix+.5f)/dims.x;
@@ -209,11 +209,11 @@ namespace barney {
     Light::Sample sample;
     sample.radiance = (vec3f&)fromTex;
     sample.direction = pixelToWorld({ix,iy});
-    if (dbg) printf("found pixel %i %i -> world %f %f %f\n",
-                    ix,iy,
-                    sample.direction.x,
-                    sample.direction.y,
-                    sample.direction.z);
+    // if (dbg) printf("found pixel %i %i -> world %f %f %f\n",
+    //                 ix,iy,
+    //                 sample.direction.x,
+    //                 sample.direction.y,
+    //                 sample.direction.z);
     sample.pdf = pdf_x*pdf_y
       *(dims.x*dims.y)
       *ONE_OVER_FOUR_PI
