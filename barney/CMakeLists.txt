@@ -15,6 +15,7 @@
 # ======================================================================== #
 
 set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
+option(BARNEY_DENOISE "Enable Denoiser?" ON)
 
 add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
@@ -22,7 +23,11 @@ target_link_libraries(barney-config
   cuBQL_interface
   )
 target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
-  
+if (BARNEY_DENOISE)
+  target_compile_definitions(barney-config INTERFACE -DDENOISE=1)
+endif()
+
+
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/barney/include
@@ -248,6 +253,7 @@ add_library(barney STATIC
 target_link_libraries(barney
   PUBLIC
   owl::owl
+ # OptiX::OptiX
   cuBQL_impl
   barney-config
   barney-StructuredData-ptx
@@ -261,8 +267,6 @@ target_link_libraries(barney
   barney-AWT-ptx  
   barney-BlockStructuredMC-ptx
   )
-#target_include_directories(barney PUBLIC
-#  )
 
 set_target_properties(barney
   PROPERTIES
