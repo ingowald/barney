@@ -58,6 +58,7 @@ BNModel Object::trackedModel() const
 
 int Object::trackedSlot() const
 {
+printf("%i\n",m_slot);
   return m_slot;
 }
 

@@ -3,8 +3,10 @@
 
 #include "Geometry.h"
 #include "common.h"
+#include "chopSuey/chopSuey.h"
 // std
 #include <cassert>
+#include <iostream>
 #include <numeric>
 #include <iostream>
 
@@ -24,6 +26,17 @@ static void addAttribute(BNGeom geom,
   BNData attr = makeBarneyData(model, slot, attribute);
   if (attr)
     bnSetData(geom, name.c_str(), attr);
+}
+
+static float4 randomColor(unsigned idx)
+{
+  unsigned int r = (unsigned int)(idx*13*17 + 0x234235);
+  unsigned int g = (unsigned int)(idx*7*3*5 + 0x773477);
+  unsigned int b = (unsigned int)(idx*11*19 + 0x223766);
+  return float4{(r&255)/255.f,
+                (g&255)/255.f,
+                (b&255)/255.f,
+                1.f};
 }
 
 // Base Geometry definitions //////////////////////////////////////////////////
@@ -214,30 +227,81 @@ void Triangle::setBarneyParameters(BNGeom geom, BNModel model, int slot)
   const int3 *indices = m_index ? (const int3 *)m_index->data()
                                 : (const int3 *)m_generatedIndices.data();
 
-  BNData _vertices =
-      bnDataCreate(model, slot, BN_FLOAT3, numVertices, vertices);
-  bnSetAndRelease(geom, "vertices", _vertices);
+  chop::Mesh::SP splitterMesh = std::make_shared<chop::Mesh>();
+  chop::Geometry::SP splitterGeom = std::make_shared<chop::Geometry>();
+  splitterGeom->vertex.resize(numVertices);
+  splitterGeom->index.resize(numIndices);
+  memcpy(splitterGeom->vertex.data(), vertices, sizeof(float3)*numVertices);
+  memcpy(splitterGeom->index.data(), indices, sizeof(int3)*numIndices);
+  splitterMesh->geoms.push_back(splitterGeom);
 
-  BNData _indices = bnDataCreate(model, slot, BN_INT3, numIndices, indices);
-  bnSetAndRelease(geom, "indices", _indices);
-
-  if (m_vertexNormal) {
-    const float3 *normals = (const float3 *)m_vertexNormal->data();
-    BNData _normals = bnDataCreate(model, slot, BN_FLOAT3, numVertices, normals);
-    bnSetAndRelease(geom, "normals", _normals);
+  // compute bounds:
+  splitterMesh->bounds.invalidate();
+  for (auto &g : splitterMesh->geoms) {
+    for (auto index : g->index) {
+      splitterMesh->bounds.extend(g->vertex[index.x]);
+      splitterMesh->bounds.extend(g->vertex[index.y]);
+      splitterMesh->bounds.extend(g->vertex[index.z]);
+    }
   }
 
-  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
-  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
-  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
-  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
-  addAttribute(geom, model, slot, m_attributes[4], "primitive.color");
+  int numGPUs = 4;
+  chop::MeshSplitter splitter(numGPUs, splitterMesh, splitterMesh->bounds);
+  splitter.doSplit();
 
-  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
-  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
-  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
-  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
-  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
+  //for (int gpuID=0;gpuID<numGPUs;gpuID++) {
+  for (int gpuID=numGPUs-1;gpuID>=0;gpuID--) {
+    int numVerticesLocal = numVertices;
+    int numIndicesLocal = splitter.clusters[gpuID].last - splitter.clusters[gpuID].first;
+    const float3 *verticesLocal = vertices;
+    const int3 *indicesLocal
+      = (const int3 *)splitterMesh->geoms[0]->index.data() + splitter.clusters[gpuID].first;
+
+    BNData _vertices =
+        bnDataCreate(model, gpuID, BN_FLOAT3, numVerticesLocal, verticesLocal);
+    bnSetAndRelease(geom, "vertices", _vertices);
+
+    BNData _indices = bnDataCreate(model, gpuID, BN_INT3, numIndicesLocal, indicesLocal);
+    bnSetAndRelease(geom, "indices", _indices);
+
+    //if (m_vertexNormal) {
+    //  const float3 *normals = (const float3 *)m_vertexNormal->data();
+    //  BNData _normals = bnDataCreate(model, slot, BN_FLOAT3, numVertices, normals);
+    //  bnSetAndRelease(geom, "normals", _normals);
+    //}
+  }
+
+#if 0
+  unsigned gpuID = 0;
+  helium::Array1DMemoryDescriptor desc;
+  desc.numItems = numIndices;
+  desc.elementType = ANARI_FLOAT32_VEC4;
+  helium::IntrusivePtr<helium::Array1D> primColorArray = new helium::Array1D(deviceState(), desc);
+  float4 *primColors = (float4 *)primColorArray->map();
+  for (int i=0; i<numIndices; ++i) {
+    float4 gpuColor;
+    for (int gpuID=0;gpuID<numGPUs;++gpuID) {
+      if (i>=splitter.clusters[gpuID].first && i<splitter.clusters[gpuID].last) {
+        gpuColor = randomColor(gpuID);
+        break;
+      }
+    }
+    primColors[i] = gpuColor;
+  }
+  primColorArray->unmap();
+#endif
+  //addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
+  //addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
+  //addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
+  //addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
+  //addAttribute(geom, model, slot, m_attributes[4], "primitive.color");
+//addAttribute(geom, model, slot, primColorArray, "primitive.color");
+
+  //addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
+  //addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
+  //addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
+  //addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
+  //addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
 }
 
 const char *Triangle::bnSubtype() const

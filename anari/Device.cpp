@@ -272,7 +272,11 @@ void BarneyDevice::initDevice()
       ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
   reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
 #else
-  state.context = bnContextCreate();
+  int slots[] = {0,1,2,3};
+  int gpus[] = {0,0,0,0};
+  state.context = bnContextCreate(slots, sizeof(slots)/sizeof(slots[0]),
+                                  gpus, sizeof(gpus)/sizeof(gpus[0]));
+  //state.context = bnContextCreate();
   std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
 #endif
   reportMessage(

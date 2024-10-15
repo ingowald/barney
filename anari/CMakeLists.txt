@@ -28,6 +28,9 @@ anari_generate_queries(
 project(anari_library_barney LANGUAGES CXX)
 
 project_add_library(SHARED
+  chopSuey/FileMapping.cpp
+  chopSuey/chopSuey.cpp
+  chopSuey/mesh.cpp
   BarneyDeviceQueries.cpp
   BarneyGlobalState.cpp
   Camera.cpp
@@ -63,6 +66,7 @@ endif()
 
 project_include_directories(
 PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/chopSuey
   ${CMAKE_CURRENT_LIST_DIR}/include
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}

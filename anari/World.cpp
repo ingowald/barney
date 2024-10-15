@@ -135,38 +135,46 @@ void World::buildBarneyModel()
   std::vector<BNGroup> barneyGroups;
   std::vector<BNTransform> barneyTransforms;
 
-  groups.reserve(m_instances.size());
-  barneyGroups.resize(m_instances.size(), nullptr);
-  barneyTransforms.reserve(m_instances.size());
+  int numGPUs = 4;
+  size_t numGroupsLocal = m_instances.size();
+  size_t numGroupsTotal = m_instances.size() * numGPUs;
+
+  groups.reserve(numGroupsTotal);
+  barneyGroups.resize(numGroupsTotal, nullptr);
+  barneyTransforms.reserve(numGroupsTotal);
 
   for (auto inst : m_instances) {
     barneyTransforms.push_back(*inst->barneyTransform());
     groups.push_back(inst->group());
   }
 
-  for (size_t i = 0; i < groups.size(); i++) {
-    if (barneyGroups[i] != nullptr)
-      continue;
-    auto *g = groups[i];
-    BNGroup bg = g->makeBarneyGroup(m_barneyModel, 0);
-    for (size_t j = i; j < groups.size(); j++) {
-      if (groups[j] == g)
-        barneyGroups[j] = bg;
-    }
-  }
-
-  if (barneyTransforms.size() != barneyGroups.size()) {
+  if (barneyTransforms.size() != numGroupsLocal) {
     reportMessage(ANARI_SEVERITY_FATAL_ERROR,
         "Barney transforms and groups are different sizes!");
     return;
   }
 
-  bnSetInstances(m_barneyModel,
-      0,
-      barneyGroups.data(),
-      barneyTransforms.data(),
-      barneyGroups.size());
-  bnBuild(m_barneyModel, 0);
+  for (int gpuID=0;gpuID<numGPUs;gpuID++) {
+    for (size_t i = 0; i < numGroupsLocal; i++) {
+      int index = numGroupsLocal * numGPUs + i;
+      if (barneyGroups[index] != nullptr)
+        continue;
+      auto *g = groups[i];
+      BNGroup bg = g->makeBarneyGroup(m_barneyModel, gpuID);
+      for (size_t j = i; j < numGroupsLocal; j++) {
+        int jndex = numGroupsLocal * numGPUs + j;
+        if (groups[j] == g)
+          barneyGroups[jndex] = bg;
+      }
+    }
+
+    bnSetInstances(m_barneyModel,
+        gpuID,
+        barneyGroups.data() + gpuID * numGroupsLocal,
+        barneyTransforms.data() + gpuID * numGroupsLocal,
+        numGroupsLocal);
+    bnBuild(m_barneyModel, gpuID);
+  }
 
   std::set<BNGroup> uniqueBarneyGroups;
   for (auto bng : barneyGroups)

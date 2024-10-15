@@ -17,7 +17,7 @@ inline MaterialParameter<T> getMaterialHelper(
 {
   MaterialParameter<T> retval;
   retval.value = o->getParam<T>(p, defaultValue);
-  retval.attribute = o->getParamString(p, "");
+  retval.attribute = "color";//o->getParamString(p, "");
   retval.sampler = o->getParamObject<Sampler>(p);
   return retval;
 }
@@ -30,7 +30,7 @@ inline MaterialParameter<math::float4> getMaterialHelper(
   retval.value = defaultValue;
   o->getParam(p, ANARI_FLOAT32_VEC3, &retval.value);
   o->getParam(p, ANARI_FLOAT32_VEC4, &retval.value);
-  retval.attribute = o->getParamString(p, "");
+  retval.attribute = "color";//o->getParamString(p, "");
   retval.sampler = o->getParamObject<Sampler>(p);
   return retval;
 }

@@ -49,7 +49,8 @@ BNGeom Surface::getBarneyGeom(BNModel model, int slot)
   if (!isModelTracked(model, slot)) {
     cleanup();
     trackModel(model, slot);
-    m_bnGeom = bnGeometryCreate(model, slot, m_geometry->bnSubtype());
+    for (int gpuID=0;gpuID<4;gpuID++)
+      m_bnGeom = bnGeometryCreate(model, gpuID, m_geometry->bnSubtype());
     setBarneyParameters();
   }
 
