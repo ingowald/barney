@@ -232,8 +232,6 @@ namespace barney {
       return;
     }
     
-
-    PING; PRINT(elements.size());
     float maxWidth = reduce_max(getBox(worldBounds).size());
     int MC_GRID_SIZE
       = 128 + int(sqrtf((float)elements.size())/30);
@@ -241,20 +239,15 @@ namespace barney {
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.um: building initial macro cell grid of " << dims << " MCs"
               << OWL_TERMINAL_DEFAULT << std::endl;
-    // printf("#bn.um: chosen macro-cell dims of (%i %i %i)\n",
-    //        dims.x,
-    //        dims.y,
-    //        dims.z);
-    // std::cout << "allcating macro cells" << std::endl;
     grid.resize(dims);
 
-    grid.gridOrigin = worldBounds.lower;
-    grid.gridSpacing = worldBounds.size() * rcp(vec3f(dims));
+    grid.gridOrigin
+      = worldBounds.lower;
+    grid.gridSpacing
+      = worldBounds.size() * rcp(vec3f(dims));
     
-    // std::cout << "clearing macro cells" << std::endl;
     grid.clearCells();
     
-    // std::cout << "building macro cells" << std::endl;
     const vec3i bs = 4;
     const vec3i nb = divRoundUp(dims,bs);
     for (auto dev : devGroup->devices) {
@@ -269,10 +262,6 @@ namespace barney {
   }
     
   
-  /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds, and
-    writes those into givne pre-allocated device mem location */
-  __global__
-
   /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds and
     per-prim scalar ranges, and writes those into givne
     pre-allocated device mem location */
@@ -310,50 +299,17 @@ namespace barney {
                          std::vector<vec4f>   &_vertices,
                          std::vector<int>     &_indices,
                          std::vector<Element> &_elements,
-                         // std::vector<TetIndices> &_tetIndices,
-                         // std::vector<PyrIndices> &_pyrIndices,
-                         // std::vector<WedIndices> &_wedIndices,
-                         // std::vector<HexIndices> &_hexIndices,
-                         // std::vector<int> &_gridOffsets,
-                         // std::vector<vec3i> &_gridDims,
-                         // std::vector<box4f> &_gridDomains,
-                         // std::vector<float> &_gridScalars,
                          const box3f &domain)
   : ScalarField(owner,domain),
     vertices(std::move(_vertices)),
     indices(std::move(_indices)),
     elements(std::move(_elements))
-    //,
-    // tetIndices(std::move(_tetIndices)),
-    // pyrIndices(std::move(_pyrIndices)),
-    // wedIndices(std::move(_wedIndices)),
-    // hexIndices(std::move(_hexIndices)),
-    // gridOffsets(std::move(_gridOffsets)),
-    // gridDims(std::move(_gridDims)),
-    // gridDomains(std::move(_gridDomains)),
-    // gridScalars(std::move(_gridScalars))
   {
     for (auto vtx : vertices) worldBounds.extend(getPos(vtx));
 
     if (!domain.empty())
       worldBounds = intersection(worldBounds,domain);
 
-    // for (auto dom : gridDomains) worldBounds.extend(getBox(dom));
-    // for (int i=0;i<tetIndices.size();i++)
-    //   elements.push_back(Element(i,Element::TET));
-
-    // for (int i=0;i<pyrIndices.size();i++)
-    //   elements.push_back(Element(i,Element::PYR));
-
-    // for (int i=0;i<wedIndices.size();i++)
-    //   elements.push_back(Element(i,Element::WED));
-
-    // for (int i=0;i<hexIndices.size();i++)
-    //   elements.push_back(Element(i,Element::HEX));
-    
-    // for (int i=0;i<gridOffsets.size();i++)
-    //   elements.push_back(Element(i,Element::GRID));
-    
     assert(!elements.empty());
 
     verticesBuffer
@@ -367,58 +323,11 @@ namespace barney {
                       indices.size(),
                       indices.data());
 
-    // tetIndicesBuffer
-    //   = BUFFER_CREATE(getOWL(),
-    //                   OWL_INT,
-    //                   4*tetIndices.size(),
-    //                   tetIndices.data());
-
-    // pyrIndicesBuffer
-    //   = BUFFER_CREATE(getOWL(),
-    //                   OWL_INT,
-    //                   5*pyrIndices.size(),
-    //                   pyrIndices.data());
-    // wedIndicesBuffer
-    //   = BUFFER_CREATE(getOWL(),
-    //                   OWL_INT,
-    //                   6*wedIndices.size(),
-    //                   wedIndices.data());
-    
-    // assert(sizeof(ints<8>) == 8*sizeof(int));
-    // hexIndicesBuffer
-    //   = BUFFER_CREATE(getOWL(),
-    //                   OWL_INT,
-    //                   8*hexIndices.size(),
-    //                   hexIndices.data());
-
-    // assert(sizeof(Element) == sizeof(int));
     elementsBuffer
       = BUFFER_CREATE(getOWL(),
-                      OWL_INT,//OWL_USER_TYPE(Element),
+                      OWL_INT,
                       elements.size(),
                       elements.data());
-
-    // gridOffsetsBuffer
-    //   = BUFFER_CREATE(getOWL(),
-    //                   OWL_INT,
-    //                   gridOffsets.size(),
-    //                   gridOffsets.data());
-    // gridDimsBuffer
-    //   = BUFFER_CREATE(getOWL(),
-    //                   OWL_INT3,
-    //                   gridDims.size(),
-    //                   gridDims.data());
-    // gridDomainsBuffer
-    //   = BUFFER_CREATE(getOWL(),
-    //                   OWL_USER_TYPE(box4f),
-    //                   gridDomains.size(),
-    //                   gridDomains.data());
-
-    // gridScalarsBuffer
-    //   = BUFFER_CREATE(getOWL(),
-    //                   OWL_FLOAT,
-    //                   gridScalars.size(),
-    //                   gridScalars.data());
   }
 
   UMeshField::DD UMeshField::getDD(int devID)
@@ -427,17 +336,7 @@ namespace barney {
 
     dd.vertices    = (const float4  *)owlBufferGetPointer(verticesBuffer,devID);
     dd.indices     = (const int     *)owlBufferGetPointer(indicesBuffer,devID);
-    // dd.tetIndices  = (const int4    *)owlBufferGetPointer(tetIndicesBuffer,devID);
-    // dd.pyrIndices  = (const ints<5> *)owlBufferGetPointer(pyrIndicesBuffer,devID);
-    // dd.wedIndices  = (const ints<6> *)owlBufferGetPointer(wedIndicesBuffer,devID);
-    // dd.hexIndices  = (const ints<8> *)owlBufferGetPointer(hexIndicesBuffer,devID);
-    dd.elements    = (const Element *)owlBufferGetPointer(elementsBuffer,devID);
-    // dd.gridOffsets = (const int     *)owlBufferGetPointer(gridOffsetsBuffer,devID);
-    // dd.gridDims    = (const vec3i   *)owlBufferGetPointer(gridDimsBuffer,devID);
-    // dd.gridScalars = (const float   *)owlBufferGetPointer(gridScalarsBuffer,devID);
-    // dd.gridDomains = (const box4f   *)owlBufferGetPointer(gridDomainsBuffer,devID);
-    // dd.gridScalars = (const float   *)owlBufferGetPointer(gridScalarsBuffer,devID);
-    dd.numElements = (int)elements.size();
+    dd.elements    = (const Element *)owlBufferGetPointer(elementsBuffer,devID)    dd.numElements = (int)elements.size();
     dd.worldBounds = worldBounds;
     
     return dd;
@@ -449,14 +348,6 @@ namespace barney {
                                      const int     *_indices,  int numIndices,
                                      const int     *elementOffsets,
                                      int      numElements,
-                                     // std::vector<TetIndices> &tetIndices,
-                                     // std::vector<PyrIndices> &pyrIndices,
-                                     // std::vector<WedIndices> &wedIndices,
-                                     // std::vector<HexIndices> &hexIndices,
-                                     // std::vector<int> &gridOffsets,
-                                     // std::vector<vec3i> &gridDims,
-                                     // std::vector<box4f> &gridDomains,
-                                     // std::vector<float> &gridScalars,
                                      const box3f &domain)
   {
     std::vector<Element> elements;
@@ -500,36 +391,17 @@ namespace barney {
                                      vertices,
                                      indices,
                                      elements,
-                                     // tetIndices,
-                                     // pyrIndices,
-                                     // wedIndices,
-                                     // hexIndices,
-                                     // gridOffsets,
-                                     // gridDims,
-                                     // gridDomains,
-                                     // gridScalars,
                                      domain);
     return sf;
-    // return getContext()->initReference(sf);
   }
   
   void UMeshField::setVariables(OWLGeom geom)
   {
     ScalarField::setVariables(geom);
     
-    // ------------------------------------------------------------------
     owlGeomSetBuffer(geom,"umesh.vertices",verticesBuffer);
-      
     owlGeomSetBuffer(geom,"umesh.indices",indicesBuffer);
-    // owlGeomSetBuffer(geom,"umesh.tetIndices",tetIndicesBuffer);
-    // owlGeomSetBuffer(geom,"umesh.pyrIndices",pyrIndicesBuffer);
-    // owlGeomSetBuffer(geom,"umesh.wedIndices",wedIndicesBuffer);
-    // owlGeomSetBuffer(geom,"umesh.hexIndices",hexIndicesBuffer);
     owlGeomSetBuffer(geom,"umesh.elements",elementsBuffer);
-    // owlGeomSetBuffer(geom,"umesh.gridOffsets",gridOffsetsBuffer);
-    // owlGeomSetBuffer(geom,"umesh.gridDims",gridDimsBuffer);
-    // owlGeomSetBuffer(geom,"umesh.gridDomains",gridDomainsBuffer);
-    // owlGeomSetBuffer(geom,"umesh.gridScalars",gridScalarsBuffer);
   }
   
   void UMeshField::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
@@ -539,15 +411,7 @@ namespace barney {
       {
         { "umesh.vertices",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,vertices) },
         { "umesh.indices" ,    OWL_BUFPTR, base+OWL_OFFSETOF(DD,indices) },
-        // { "umesh.tetIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,tetIndices) },
-        // { "umesh.pyrIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,pyrIndices) },
-        // { "umesh.wedIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,wedIndices) },
-        // { "umesh.hexIndices",  OWL_BUFPTR, base+OWL_OFFSETOF(DD,hexIndices) },
         { "umesh.elements",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,elements) },
-        // { "umesh.gridOffsets", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridOffsets) },
-        // { "umesh.gridDims",    OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridDims) },
-        // { "umesh.gridDomains", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridDomains) },
-        // { "umesh.gridScalars", OWL_BUFPTR, base+OWL_OFFSETOF(DD,gridScalars) },
       };
     for (auto var : mine)
       vars.push_back(var);
@@ -560,7 +424,6 @@ namespace barney {
     std::string method = (methodFromEnv ? methodFromEnv : "DDA");
 
     if (method == "DDA" || method == "MCDDA" || method == "dda") {
-      // std::cout << "using umesh-macrocells-dda traversal" << std::endl;
       return std::make_shared<MCDDAVolumeAccel<UMeshCUBQLSampler>::Host>
         (this,volume,UMeshMC_ptx);
     }
