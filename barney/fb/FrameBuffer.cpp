@@ -89,7 +89,11 @@ namespace barney {
 
         // // if nonzero, normal image must be given in OptixDenoiserGuideLayer
         // unsigned int guideNormal;
+#if DENOISE_NORMAL
+        denoiserOptions.guideNormal = 1;
+#else
         denoiserOptions.guideNormal = 0;
+#endif
 
         // /// alpha denoise mode
         // OptixDenoiserAlphaMode denoiseAlpha;
@@ -153,6 +157,13 @@ namespace barney {
         BARNEY_CUDA_CALL(Free(denoiserOutput));
       BARNEY_CUDA_CALL(Malloc((void **)&denoiserOutput,
                               numPixels.x*numPixels.y*sizeof(*denoiserOutput)));
+
+# if DENOISE_NORMAL
+      if (denoiserNormal)
+        BARNEY_CUDA_CALL(Free(denoiserNormal));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
+                              numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
+# endif
 #endif
     }
   }
@@ -168,7 +179,11 @@ namespace barney {
     layer.input.width = numPixels.x;
     layer.input.height = numPixels.y;
     layer.input.data = (CUdeviceptr)denoiserInput;
-      
+
+#if DENOISE_NORMAL
+    guideLayer.normal = layer.input;
+    guideLayer.normal.data = (CUdeviceptr)denoiserNormal;
+#endif
     layer.output = layer.input;
     layer.output.data = (CUdeviceptr)denoiserOutput;
 
@@ -201,10 +216,11 @@ namespace barney {
        //          size_t                          scratchSizeInBytes );
        denoiserSizes.withoutOverlapScratchSizeInBytes
        );
+    float denoiseWeight = powf(.95f,accumID-1);
     float4ToBGBA8(this->finalFB,
                   this->denoiserInput,
                   this->denoiserOutput,
-                  1.f,//10.f/(accumID+11),
+                  denoiseWeight,
                   this->numPixels);
   }
 #endif

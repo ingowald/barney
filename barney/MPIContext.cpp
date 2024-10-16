@@ -283,6 +283,9 @@ namespace barney {
 #endif
                                         // fb->finalFB,
                                         fb->finalDepth,
+# if DENOISE_NORMAL
+                              fb->denoiserNormal,
+# endif
                                         fb->numPixels,
                                         fb->ownerGather.finalTiles,
                                         fb->ownerGather.tileDescs,

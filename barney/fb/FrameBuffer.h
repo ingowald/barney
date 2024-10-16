@@ -67,6 +67,9 @@ namespace barney {
     OptixDenoiser        denoiser = {};
     float4              *denoiserInput   = 0;
     float4              *denoiserOutput  = 0;
+#if DENOISE_NORMAL
+    float4              *denoiserNormal  = 0;
+#endif
     OptixDenoiserOptions denoiserOptions;
     void                *denoiserScratch = 0;
     void                *denoiserState   = 0;

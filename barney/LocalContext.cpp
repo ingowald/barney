@@ -105,7 +105,7 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell all GPUs to write their final pixels
     // ------------------------------------------------------------------
-#if FB_NO_PEER_ACCESS
+// #if FB_NO_PEER_ACCESS
     // ***NO*** active device here
     LocalFB *localFB = (LocalFB*)fb;
     localFB->ownerGatherFinalTiles();
@@ -124,31 +124,40 @@ namespace barney {
                               localFB->finalFB,
 # endif
                               localFB->finalDepth,
+# if DENOISE_NORMAL
+                              fb->denoiserNormal,
+# endif
                               localFB->numPixels,
                               localFB->rank0gather.finalTiles,
                               localFB->rank0gather.tileDescs,
                               localFB->rank0gather.numActiveTiles,
                               fb->showCrosshairs);
-#else
-    for (int localID = 0; localID < devices.size(); localID++) {
-      auto &devFB = *fb->perDev[localID];
-      TiledFB::writeFinalPixels(//nullptr,//devFB.device.get(),
-                                fb->finalFB,
-                                fb->finalDepth,
-                                fb->numPixels,
-                                devFB.finalTiles,
-                                devFB.tileDescs,
-                                devFB.numActiveTiles,
-                                fb->showCrosshairs);
-    }
-    for (auto dev : devices) dev->sync();
-#endif
+// #else
+//     for (int localID = 0; localID < devices.size(); localID++) {
+//       auto &devFB = *fb->perDev[localID];
+//       TiledFB::writeFinalPixels(//nullptr,//devFB.device.get(),
+//                                 fb->finalFB,
+//                                 fb->finalDepth,
+//                                 fb->numPixels,
+//                                 devFB.finalTiles,
+//                                 devFB.tileDescs,
+//                                 devFB.numActiveTiles,
+//                                 fb->showCrosshairs);
+//     }
+//     for (auto dev : devices) dev->sync();
+// #endif
     // ------------------------------------------------------------------
     // wait for all GPUs to complete, so pixels are all written before
     // we return and/or copy to app
     // ------------------------------------------------------------------
     for (int localID = 0; localID < devices.size(); localID++)
       devices[localID]->launch_sync();
+
+
+# if DENOISE
+    fb->denoise();
+    // float4ToBGBA8(fb->finalFB,fb->denoiserInput,fb->numPixels);
+#endif
 
     // ------------------------------------------------------------------
     // copy final frame buffer to app's frame buffer memory
@@ -164,11 +173,6 @@ namespace barney {
 
     for (auto dev : devices) dev->sync();
 
-
-# if DENOISE
-    fb->denoise();
-    // float4ToBGBA8(fb->finalFB,fb->denoiserInput,fb->numPixels);
-#endif
   }
 
 }

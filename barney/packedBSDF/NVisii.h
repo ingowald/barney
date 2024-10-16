@@ -721,7 +721,9 @@ namespace barney {
           float clearcoat_alpha = lerp_r(0.1f, MIN_ALPHA, mat.clearcoat_gloss);
 
           float diffuse = lambertian_pdf(w_i, b_n);
-          float clear_coat = gtr_1_pdf(w_o, w_i, w_h, b_n, clearcoat_alpha);
+          float clear_coat
+            = mat.clearcoat *
+            gtr_1_pdf(w_o, w_i, w_h, b_n, clearcoat_alpha);
 
           float n_comp = 3.f;
           float microfacet = 0.f;
@@ -783,9 +785,68 @@ namespace barney {
                                            float3 &bsdf,
                                            bool dbg
                                            ) {
-          // Randomly pick a brdf to sample
-          // if (dbg) printf("mat.specular_transmission %f\n",mat.specular_transmission);
+#if 1
+          // float3 base_color;
+          // float3 subsurface_color;
+          // float metallic;
+
+          // float specular;
+          // float roughness;
+          // float specular_tint;
+          // float anisotropy;
+
+          // float sheen;
+          // float sheen_tint;
+          // float clearcoat;
+          // float clearcoat_gloss;
+
+          // float ior;
+          // float specular_transmission;
+          // float transmission_roughness;
+          // float flatness;
+          // float alpha;
+          // iw - use importance sampling
+          float diffuse_weight
+            = .01f + (1.f - mat.metallic) * (1.f - mat.specular_transmission);
+          float glossy_weight
+            = mat.metallic + mat.sheen + mat.specular + mat.roughness;
+          
+          // = mat.metallic + mat.specular_transmission + mat.clearcoat;
+          // * (1.f - mat.metallic) * (1.f - mat.specular_transmission) 
+          //           + sheen + coat + gloss) * fabs(dot(w_i, b_n));
+          float clearcoat_weight// = (1.f-mat.metallic)*mat.clearcoat;
+            = mat.clearcoat;
+          float transmission_weight
+            = (1.f-mat.metallic)*mat.specular_transmission
+            * (dot(w_o, b_n) > 0.f);
+          float scale_weights
+            = 1.f/(diffuse_weight+glossy_weight
+                   +clearcoat_weight+transmission_weight);
+          diffuse_weight      *= scale_weights;
+          glossy_weight       *= scale_weights;
+          clearcoat_weight    *= scale_weights;
+          transmission_weight *= scale_weights;
+          float type_rng = lcg_randomf(rng);
+          float type_pdf = 0.f;
+          if (type_rng < diffuse_weight) {
+            type_pdf = diffuse_weight;
+            sampled_bsdf = DISNEY_DIFFUSE_BRDF;
+          } else if ((type_rng-diffuse_weight) < glossy_weight) {
+            type_pdf = glossy_weight;
+            sampled_bsdf = DISNEY_GLOSSY_BRDF;
+          } else if ((type_rng-diffuse_weight-glossy_weight) < clearcoat_weight) {
+            type_pdf = clearcoat_weight;
+            sampled_bsdf = DISNEY_CLEARCOAT_BRDF;
+          } else {
+            type_pdf = transmission_weight;
+            sampled_bsdf = DISNEY_TRANSMISSION_BRDF;
+          }
+          type_pdf *= 3.f;
+#else
+          const float type_pdf = 1.f;
+            // Randomly pick a brdf to sample
           if (mat.specular_transmission == 0.f) {
+            if (dbg) printf(" => scatter(1)\n");
             sampled_bsdf = lcg_randomf(rng) * 3.f;
             sampled_bsdf = clamp(sampled_bsdf, 0, 2);
           } else {
@@ -797,6 +858,8 @@ namespace barney {
             }
             else sampled_bsdf = DISNEY_TRANSMISSION_BRDF; 
           }
+#endif
+          if (dbg) printf(" => scatter type %i\n",sampled_bsdf);
 
           float2 samples = make_float2(lcg_randomf(rng), lcg_randomf(rng));
           if (sampled_bsdf == DISNEY_DIFFUSE_BRDF) {
@@ -853,7 +916,15 @@ namespace barney {
 	
           float3 w_h = normalize(w_i + w_o);
           disney_pdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, pdf, dbg);
+
+// #if 1
+//           pdf *= type_pdf / 4.f;
+          pdf *= type_pdf;
+// #endif
+          
+          if (dbg) printf("-> got pdf %f\n",pdf);
           disney_brdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, bsdf, dbg);
+          if (dbg) printf("-> got bsdf %f %f %f\n",bsdf.x,bsdf.y,bsdf.z);
         }
 #endif
       }
@@ -930,9 +1001,9 @@ namespace barney {
           this->sheen = 0.f;
           this->sheenTint = .5f;
           this->clearcoat = 0.f;
+          // nate
           float clearcoat_roughness = .03f;
           this->clearcoatGloss = 1.f - clearcoat_roughness*clearcoat_roughness;
-
           this->ior = 1.45f;
           this->specularTransmission = 0.f;
           const float MIN_ROUGHNESS = .04f;
@@ -1056,6 +1127,13 @@ namespace barney {
         scatter.pdf = pdf;
         scatter.f_r = bsdf;
         scatter.dir = normalize(w_i);
+        if (dbg) printf(" => done scatter, f_r %f %f %f pdf %f\n",
+                        scatter.f_r.x,
+                        scatter.f_r.y,
+                        scatter.f_r.z,
+                        scatter.pdf
+                        );
+
 #else
         // ugh ... visrtx doesn't have scattering;
         scatter.dir = sampleCosineWeightedHemisphere(dg.Ns,rng);

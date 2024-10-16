@@ -116,13 +116,13 @@ namespace barney {
       ray.isInMedium  = false;
       ray.rngSeed     = rand.state;
       ray.tMax        = 1e30f;
-
-      if (0 && ray.dbg)
+      ray.numDiffuseBounces = 0;
+      if (1 && ray.dbg)
         printf("-------------------------------------------------------\n");
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              
-      if (0 && ray.dbg)
+      if (1 && ray.dbg)
         printf("======================\nspawned %f %f %f dir %f %f %f\n",
                ray.org.x,
                ray.org.y,

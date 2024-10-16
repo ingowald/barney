@@ -166,6 +166,10 @@ namespace barney {
 
     // iw - todo: add wave-front-merging here.
     for (int p=0;p<pathsPerPixel;p++) {
+#if 0
+      std::cout << "====================== resetting accumid" << std::endl;
+      fb->accumID = 0;
+#endif
       double _t0 = getCurrentTime();
       generateRays(camera,fb);
       for (auto dev : devices) dev->launch_sync();
@@ -185,6 +189,7 @@ namespace barney {
         break;
       }
       ++ fb->accumID;
+
     }
   }
 

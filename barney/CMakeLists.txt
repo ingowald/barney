@@ -1,5 +1,5 @@
 # ======================================================================== #
-# Copyright 2023-2023 Ingo Wald                                            #
+# Copyright 2023-2024 Ingo Wald                                            #
 #                                                                          #
 # Licensed under the Apache License, Version 2.0 (the "License");          #
 # you may not use this file except in compliance with the License.         #
@@ -15,7 +15,7 @@
 # ======================================================================== #
 
 set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
-option(BARNEY_DENOISE "Enable Denoiser?" ON)
+option(BARNEY_DENOISE "Enable Denoiser?" OFF)
 
 add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
@@ -45,7 +45,7 @@ embed_ptx(
 # ------------------------------------------------------------------
 # surface geometry:
 # ------------------------------------------------------------------
-# ray-sphere geom intersectoin
+# ray-sphere geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-spheres-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config

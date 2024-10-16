@@ -117,6 +117,7 @@ namespace barney {
     float scale = reduce_max(color);
     color *= 1./scale;
     finalTiles[tileID].scale[pixelID] = scale;
+    finalTiles[tileID].normal[pixelID] = accumTiles[tileID].normal[pixelID];
 #else
     color.x = sqrtf(color.x);
     color.y = sqrtf(color.y);
@@ -184,6 +185,9 @@ namespace barney {
   }    
   __global__ void g_writeFinalPixels(float4    *finalFB,
                                      float     *finalDepth,
+#if DENOISE_NORMAL
+                                     float4    *finalNormal,
+#endif
                                      vec2i      numPixels,
                                      FinalTile *finalTiles,
                                      TileDesc  *tileDescs,
@@ -201,7 +205,6 @@ namespace barney {
       = finalTiles[tileID].scale[threadIdx.x + tileSize*threadIdx.y];
     pixelValue |= 0xff000000;
 
-    
     uint32_t ofs = ix + numPixels.x*iy;
 
     bool isCenter_x = ix == numPixels.x/2;
@@ -221,6 +224,10 @@ namespace barney {
 
     if (finalDepth)
       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
+# if DENOISE_NORMAL
+    finalNormal[ofs]
+      = finalTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get4f();
+# endif
   }
 #else
   __global__ void g_writeFinalPixels(uint32_t  *finalFB,
@@ -259,11 +266,14 @@ namespace barney {
   
   void TiledFB::writeFinalPixels(
 #if DENOISE
-                          float4    *finalFB,
+                                 float4    *finalFB,
 #else
-                          uint32_t  *finalFB,
+                                 uint32_t  *finalFB,
 #endif
                                  float     *finalDepth,
+#if DENOISE_NORMAL
+                                 float4    *finalNormal,
+#endif
                                  vec2i      numPixels,
                                  FinalTile *finalTiles,
                                  TileDesc  *tileDescs,
@@ -284,7 +294,11 @@ namespace barney {
       //   ,0,
       // device?device->launchStream:0>>>
         (finalFB,
-         finalDepth,numPixels,
+         finalDepth,
+#if DENOISE_NORMAL
+         finalNormal,
+#endif
+         numPixels,
          finalTiles,tileDescs, showCrosshairs);
   }
   

@@ -24,8 +24,21 @@
 namespace barney {
 
   struct FrameBuffer;
-  
 #if DENOISE
+# define DENOISE_NORMAL 1
+#endif
+  
+#if DENOISE_NORMAL
+  /*! for now, do a 48 bit half3 representation; shoul eventually go
+      to 32 or 16, but lets at least try how much this really helps in
+      the denoiser */
+  struct CompressedNormal {
+    inline __device__ void set(vec3f v) { x = v.x; y = v.y; z = v.z; }
+    inline __device__ vec3f get() const { return vec3f(x,y,z); }
+    inline __device__ float4 get4f() const { return make_float4(x,y,z,0.f); }
+    half x,y,z;
+  };
+  
   void float4ToBGBA8(uint32_t  *finalFB,
                      float4    *inputBeforeDenoising,
                      float4    *float4s,
@@ -39,11 +52,15 @@ namespace barney {
   struct AccumTile {
     float4 accum[pixelsPerTile];
     float  depth[pixelsPerTile];
+#if DENOISE_NORMAL
+    CompressedNormal normal[pixelsPerTile];
+#endif
   };
   struct FinalTile {
     uint32_t rgba[pixelsPerTile];
-#if DENOISE
+#if DENOISE_NORMAL
     half     scale[pixelsPerTile];
+    CompressedNormal normal[pixelsPerTile];
 #endif
     float    depth[pixelsPerTile];
   };
@@ -72,6 +89,9 @@ namespace barney {
                           uint32_t  *finalFB,
 #endif
                           float     *finalDepth,
+#if DENOISE_NORMAL
+                          float4    *finalNormal,
+#endif
                           vec2i      numPixels,
                           FinalTile *finalTiles,
                           TileDesc  *tileDescs,
