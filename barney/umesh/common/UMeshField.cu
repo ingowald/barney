@@ -334,10 +334,16 @@ namespace barney {
   {
     UMeshField::DD dd;
 
-    dd.vertices    = (const float4  *)owlBufferGetPointer(verticesBuffer,devID);
-    dd.indices     = (const int     *)owlBufferGetPointer(indicesBuffer,devID);
-    dd.elements    = (const Element *)owlBufferGetPointer(elementsBuffer,devID)    dd.numElements = (int)elements.size();
-    dd.worldBounds = worldBounds;
+    dd.vertices
+      = (const float4  *)owlBufferGetPointer(verticesBuffer,devID);
+    dd.indices
+      = (const int     *)owlBufferGetPointer(indicesBuffer,devID);
+    dd.elements
+      = (const Element *)owlBufferGetPointer(elementsBuffer,devID);
+    dd.numElements
+      = (int)elements.size();
+    dd.worldBounds
+      = worldBounds;
     
     return dd;
   }
