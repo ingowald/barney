@@ -336,8 +336,10 @@ namespace barney {
     LOG_API_ENTRY;
     std::vector<vec4f> values;
     assert(_values);
+
     for (int i=0;i<numValues;i++)
       values.push_back((const vec4f &)_values[i]);
+
     checkGet(volume)->setXF(range1f(domain.x,domain.y),values,densityAt1);
   }
   

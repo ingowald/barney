@@ -224,18 +224,22 @@ namespace barney {
                       Random &random,
 #if USE_MIS
                       bool &lightNeedsMIS,
+                      bool &lightIsDirLight,
 #endif
                       bool dbg)
     {
 #if USE_MIS
+# if 1
       // huh ... not sure this is correct; setting this to true means
       // we'll always compute MIS weights for shadow and bounce ray as
       // if there was only an env-map light; even though we may
       // acutally have sampled a dir-light. that _may_ be true because
       // even if we did sample a dirlight there still _is_ a pdf for
       // the env-map light... but it's a bit iffy.
-      lightNeedsMIS = true;
-      // lightNeedsMIS = false;
+       lightNeedsMIS = true;
+# else
+      lightNeedsMIS = false;
+# endif
 #endif
 
 #if ENV_LIGHT_SAMPLING
@@ -286,6 +290,9 @@ namespace barney {
         if (dbg) printf(" ->  picked DIR light sample\n");
         ls = dls;
         ls.pdf *= dlsWeight;
+# if USE_MIS
+        lightIsDirLight = true;
+# endif
       }
       // if (dbg)
       //   printf(" light weights %f %f\n",
@@ -616,10 +623,12 @@ namespace barney {
       // todo check if BSDF is perfectly specular
 #if USE_MIS
       bool lightNeedsMIS = false;
+      bool lightIsDirLight = false;
 #endif
       if (sampleLights(ls,world,dg.P,Ngff,random,
 #if USE_MIS
                        lightNeedsMIS,
+                       lightIsDirLight,
 #endif
                        fire || 0 && path.dbg)
           // && 
@@ -794,9 +803,18 @@ namespace barney {
         path.misWeight
           = pdf_scatterRay_scatterDir
           / (pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir);
-        shadowRay.misWeight
-          = pdf_lightRay_lightDir
-          / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir);
+        // if (isinf(pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir)
+        //     || isnan(pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir))
+        //   printf("weird pdfs for scatter dir\n");
+        if (lightIsDirLight) 
+          shadowRay.misWeight = 1.f;
+        } else {
+          shadowRay.misWeight
+            = pdf_lightRay_lightDir
+            / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir);
+        }
+        
+            
         if ((float)shadowRay.misWeight < 1e-5f)
           shadowRay.tMax  = -1.f;
 

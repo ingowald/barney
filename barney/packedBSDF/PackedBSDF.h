@@ -110,6 +110,8 @@ namespace barney {
         return data.nvisii.pdf(dg,w_i,dbg);
       if (type == TYPE_Glass)
         return data.glass.pdf(dg,w_i,dbg);
+      if (type == TYPE_Phase)
+        return data.phase.pdf(dg,w_i,dbg);
       return 0.f;
     }
     
