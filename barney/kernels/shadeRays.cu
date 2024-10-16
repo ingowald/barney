@@ -806,7 +806,7 @@ namespace barney {
         // if (isinf(pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir)
         //     || isnan(pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir))
         //   printf("weird pdfs for scatter dir\n");
-        if (lightIsDirLight) 
+        if (lightIsDirLight) {
           shadowRay.misWeight = 1.f;
         } else {
           shadowRay.misWeight
