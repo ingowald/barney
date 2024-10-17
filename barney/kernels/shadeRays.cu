@@ -598,8 +598,13 @@ namespace barney {
       //          dg.Ns.y,
       //          dg.Ns.z);
 
+      // if the ray is a volume hit we want it offset it into the
+      // direction the ray came from (otherwise we have a chance of
+      // the shadow ray or boucne ray to terminate right where the
+      // original ray ended; for others we want to offset based on
+      // normal */
       vec3f frontFacingSurfaceOffset
-        = safe_eps(EPS,dg.P)*Ngff;
+        = safe_eps(EPS,dg.P)*(isVolumeHit?dg.wo:Ngff);
       // vec3f dg_P
       //   = path.P+frontFacingSurfaceOffset;
 // if (path.dbg)

@@ -58,7 +58,7 @@ namespace barney {
       EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
       {
         float density = ONE_OVER_FOUR_PI;
-        return EvalRes((const vec3f&)albedo,density);
+        return EvalRes(density*(const vec3f&)albedo,density);
       }
 
       /*! simple omnidirectional phase function - scatter into any
