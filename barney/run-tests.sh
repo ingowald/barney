@@ -27,7 +27,7 @@ $hs -os 1024 1024 -o $out/jets.png -spp 16 ~/models/umesh/jets.umesh -xf ~/model
 # ==================================================================
 cam="--camera -0.428645 0.518853 2.19155 0 -0.00871944 0.00860357 0 1 0 -fovy 60"
 for f in quarry-cloudy symm-garden empty-room; do
-    $hs -o $out/suzy-$f".png" $mini/$f".mini" $cam -spp 16 -os 1600 1200
+    $hs -o $out/suzy-$f".png" $mini/suzy-$f".mini" $cam -spp 16 -os 1024 1024
 done
 
 

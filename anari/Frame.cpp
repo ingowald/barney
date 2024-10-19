@@ -134,11 +134,9 @@ void Frame::renderFrame()
   state->currentFrame = this;
 
   const int pixelSamples = std::max(m_renderer->pixelSamples(), 1);
-  PRINT(pixelSamples);
   const float radiance = m_renderer->radiance();
   bnSetRadiance(model, 0, radiance / 10.f);
 
-  // for (int i = 0; i < pixelSamples; i++)
   bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer, pixelSamples);
 
   auto end = std::chrono::steady_clock::now();

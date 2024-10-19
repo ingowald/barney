@@ -15,9 +15,9 @@ namespace barney_device {
     cleanup();
   }
 
-  Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
+  Sampler *Sampler::createInstance(std::string_view subtype,
+                                   BarneyGlobalState *s)
   {
-    PING; PRINT(subtype);
     if (subtype == "image1D")
       return new Image1D(s);
     else if (subtype == "image2D")
