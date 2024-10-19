@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# THIS SCRIPT ASSUMES VARIOUS PRE-BUILT APPLICATIONS AND LIBRARIES
+# THAT USE BARNEY; IF YOU DON'T HAVE THOSE (OR NOT IN THE PROPER
+# DIRECTORIES) THIS SCRIPT WON'T DO YOU MUCH GOOD. USE AT YOUR
+# OWN RISK
+
 out=/tmp/barney-test
 hs=$HOME/Projects/hayStack/bin/hsOffline
 mini=$HOME/mini/
@@ -8,6 +13,11 @@ python=/usr/bin/python3
 pynari=$HOME/Projects/pynari
 
 mkdir $out
+
+
+make -j 8 -C ~/Projects/hayStack/bin/ 
+make -j 8 -C ~/Projects/barney/bin/ install
+make -j 8 -C ~/Projects/pynari/bin
 
 # landscape, path view
 $hs $mini/ls.mini -os 2460 1080 -spp 16 -o $out/ls-path.png --camera -2976.901123 309.4327087 -3735.08252 1474.776611 1074.60376 4633.866699 0 1 0 -fovy 70
@@ -25,7 +35,7 @@ $hs -os 1024 1024 -o $out/jets.png -spp 16 ~/models/umesh/jets.umesh -xf ~/model
 # ==================================================================
 # different env-lighting tests on suzy model
 # ==================================================================
-cam="--camera -0.428645 0.518853 2.19155 0 -0.00871944 0.00860357 0 1 0 -fovy 60"
+cam="--camera -0.528471 0.478023 2.93096 0 -0.00871944 0.00860333 0 1 0 -fovy 60"
 for f in quarry-cloudy symm-garden empty-room; do
     $hs -o $out/suzy-$f".png" $mini/suzy-$f".mini" $cam -spp 16 -os 1024 1024
 done

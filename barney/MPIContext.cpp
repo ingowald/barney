@@ -490,7 +490,7 @@ namespace barney {
     mpi::Comm world(_comm);
 
     if (world.size == 1) {
-      std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
+      // std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
       return bnContextCreate(dataRanksOnThisContext,
                              numDataRanksOnThisContext == 0
                              ? 1 : numDataRanksOnThisContext,

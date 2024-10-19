@@ -108,7 +108,6 @@ namespace barney {
         out.scope = GeometryAttribute::CONSTANT;
         (vec4f&)out.value = in.constant;
       }
-      // PRINT(out.scope);
     };
     
     GeometryAttributes::DD dd;
