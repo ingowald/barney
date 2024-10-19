@@ -89,10 +89,10 @@ namespace barney {
 #endif
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
-      const float clampRange = .05f;
+      const float clampRange = .1f;
       
       bsdf.baseColor = (const vec3f&)baseColor;
-      bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
+      bsdf.metallic = metallic.x;//clamp(metallic.x,clampRange,1.f-clampRange);
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
       bsdf.alpha = (1.f-transmission.x)

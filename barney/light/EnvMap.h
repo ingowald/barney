@@ -129,7 +129,7 @@ namespace barney {
   EnvMapLight::DD::pdf(vec3f dir, bool dbg) const
   {
     if (!texture)
-      return 0.f;
+      return ONE_OVER_FOUR_PI;//0.f;
     
     vec2i pixel = worldToPixel(dir);
     float pdf_y = cdfGetPDF(pixel.y,cdf_y,dims.y);

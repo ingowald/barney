@@ -70,7 +70,7 @@ namespace barney {
 
       bsdf.specular = 0.f;
       bsdf.metallic = 0.f;
-      bsdf.roughness = .5f;
+      bsdf.roughness = 1.f;
       return bsdf;
     }
 #endif

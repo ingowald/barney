@@ -446,8 +446,9 @@ namespace barney {
       const bool  hadNoIntersection  = !path.hadHit();
       const vec3f incomingThroughput = path.throughput;
       
-      bool fire = path.dbg;//0 && (path.pixelID == 969722);
-      // bool fire = 0 && (path.pixelID == 307992);
+      // bool fire = path.dbg;//0 && (path.pixelID == 969722);
+      bool fire = 0 && (path.pixelID == 963212);
+      // bool fire = 1 && (path.pixelID == 428428);
 
       if (fire || 0 && path.dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
@@ -603,8 +604,9 @@ namespace barney {
       // the shadow ray or boucne ray to terminate right where the
       // original ray ended; for others we want to offset based on
       // normal */
+      const float offsetEpsilon = safe_eps(EPS,dg.P);
       vec3f frontFacingSurfaceOffset
-        = safe_eps(EPS,dg.P)*(isVolumeHit?dg.wo:Ngff);
+        = offsetEpsilon*(isVolumeHit?dg.wo:Ngff);
       // vec3f dg_P
       //   = path.P+frontFacingSurfaceOffset;
 // if (path.dbg)
@@ -653,14 +655,14 @@ namespace barney {
           = bsdf.eval(dg,ls.direction,0 && path.dbg)
           // * fabsf(dot(dg.Ng,ls.direction))
           ;
-        if (1 && path.dbg) printf("eval light res %f %f %f: %f\n",
+        if (fire || 0 && path.dbg) printf("eval light res %f %f %f: %f\n",
                                   f_r.value.x,
                                   f_r.value.y,
                                   f_r.value.z,
                                   f_r.pdf);
         
         if (!f_r.valid() || reduce_max(f_r.value) < 1e-4f) {
-          if (path.dbg) printf(" no f_r, killing shadow ray\n");
+          if (fire || 0 && path.dbg) printf(" no f_r, killing shadow ray\n");
           shadowRay.tMax = -1.f;
         } else {
           vec3f tp_sr
@@ -668,9 +670,7 @@ namespace barney {
             * (1.f/ls.pdf)
             * f_r.value
             * ls.radiance
-            * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)))
-            /// f_r.pdf
-            ;
+            * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)));
           if (fire) {
             printf(" -> inc tp %f %f %f, dot %f\n",
                    incomingThroughput.x,
@@ -694,48 +694,56 @@ namespace barney {
             (/* thrghhpt */tp_sr,
              /* surface: */dg.P + frontFacingSurfaceOffset,
              /* to light */ls.direction,
-             /* length   */ls.distance * (1.f-2.f*EPS));
+             /* length   */ls.distance * (1.f-2.f*offsetEpsilon));
           // if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
           shadowRay.rngSeed = path.rngSeed + 1; random();
           shadowRay.dbg = path.dbg;
           shadowRay.pixelID = path.pixelID;
-#if USE_MIS
-          // initialize that to weigth 1 in case we don't even create
-          // a buonce ray
+
           shadowRay.misWeight = 1.f;
+#if USE_MIS
+          if (!lightIsDirLight && lightNeedsMIS) {
+            float pdf_lightRay_lightDir
+              = world.envMapLight.pdf(ls.direction);
+            float pdf_scatterRay_lightDir
+              = bsdf.pdf(dg,ls.direction);
+            // compute MIS weight weight that shadow direction
+            shadowRay.misWeight
+              = pdf_lightRay_lightDir
+              / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir + 1e-10f);
+            // and if it's too small for any reason, kill the shadow
+            // ray
+            if ((float)shadowRay.misWeight < 1e-5f)
+              shadowRay.tMax  = -1.f;
+          }
 #endif
         }
       }
-      
+
+
+
+
       // ==================================================================
       // now, let's decide what to do with the ray itself
       // ==================================================================
       path.tMax = -1.f;
       if (pathDepth >= MAX_PATH_DEPTH)
         return;
-      // if (isVolumeHit) {
-      //   // iw - make this disappear; this can/shoudl be handled by a
-      //   // proper 'volume matrial' (ie, Phase function)
-      //   path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
-      //   path.throughput = .8f * path.throughput * bsdf.getAlbedo();//baseColor;
-      //   return;
-      // }
       
       ScatterResult scatterResult;
-      // if (path.dbg)
-      bsdf.scatter(scatterResult,dg,random,fire || path.dbg);
-      if (path.dbg) printf("scatter result.valid ? %i\n",
-                           int(scatterResult.valid()));
-      if (!scatterResult.valid() || scatterResult.pdf == 0.f)
+      bsdf.scatter(scatterResult,dg,random,fire || 0 && path.dbg);
+      if (fire || 0 && path.dbg)
+        printf("scatter result.valid ? %i\n",
+               int(scatterResult.valid()));
+      if (!scatterResult.valid() || scatterResult.pdf <= 1e-6f)
         return;
-
-      bool isDiffuseBounce = isinf(scatterResult.pdf);
-      if (isDiffuseBounce && (path.numDiffuseBounces+1)>MAX_DIFFUSE_BOUNCES) {
+      
+      bool isDiffuseBounce = !isinf(scatterResult.pdf);
+      if (isDiffuseBounce && (path.numDiffuseBounces+1)>MAX_DIFFUSE_BOUNCES) 
         return;
-      } else {
-        path.numDiffuseBounces = path.numDiffuseBounces + 1;
-      }
-          
+      
+      path.numDiffuseBounces = path.numDiffuseBounces + 1;
+      
       if (fire || 0 && path.dbg)
         printf("offsetting into sign %f, direction %f %f %f\n",
                scatterResult.offsetDirection,
@@ -750,29 +758,18 @@ namespace barney {
                (float)scatterResult.f_r.y, 
                (float)scatterResult.f_r.z,
                scatterResult.pdf);
-        // printf("path scattered from %f %f %f to %f %f %f, dot %f, pdf %f\n",
-        //        (float)path.dir.x, 
-        //        (float)path.dir.y, 
-        //        (float)path.dir.z, 
-        //        (float)scatterResult.dir.x, 
-        //        (float)scatterResult.dir.y, 
-        //        (float)scatterResult.dir.z,
-        //        dot(path.dir,scatterResult.dir),
-        //        scatterResult.pdf);
-      path.dir        = normalize(scatterResult.dir);
-
-      if (scatterResult.pdf < 1e-8f)
-        return;
+      path.dir
+        = normalize(scatterResult.dir);
       
       vec3f scatterFactor
         = scatterResult.f_r
         // ONE_PI *
-        // * fabsf(dot(dg.Ng,path.dir))
+        * (isVolumeHit?1.f:fabsf(dot(dg.Ng,path.dir)))
         / (isinf(scatterResult.pdf)? 1.f : (scatterResult.pdf + 1e-10f));
       path.throughput
         = path.throughput * scatterFactor;
       path.clearHit();
-      if (path.dbg && scatterResult.changedMedium)
+      if ((fire || 0 && path.dbg) && scatterResult.changedMedium)
         printf("path DID change medium\n");
       if (scatterResult.changedMedium)
         path.isInMedium = !path.isInMedium;
@@ -785,54 +782,23 @@ namespace barney {
                (float)path.throughput.x,
                (float)path.throughput.y,
                (float)path.throughput.z);
-
+      
+      
 #if USE_MIS
       if (lightNeedsMIS && !isinf(scatterResult.pdf)) {
-#if 1
         float pdf_scatterRay_scatterDir = bsdf.pdf(dg,path.dir);
-        float pdf_lightRay_lightDir     = world.envMapLight.pdf(shadowRay.dir);
-#else
-        float pdf_scatterRay_scatterDir = scatterResult.pdf;
-        float pdf_lightRay_lightDir     = ls.pdf;
-#endif
         float pdf_lightRay_scatterDir   = world.envMapLight.pdf(path.dir);
-        float pdf_scatterRay_lightDir   = bsdf.pdf(dg,ls.direction);
-
-        // if (isinf(pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir +
-        //           pdf_lightRay_lightDir + pdf_scatterRay_lightDir) ||
-        //     isnan(pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir +
-        //           pdf_lightRay_lightDir + pdf_scatterRay_lightDir)) {
-        //   path.misWeight = 1.f;
-        //   shadowRay.misWeight = 1.f;
-        // } else {
+        
         path.misWeight
           = pdf_scatterRay_scatterDir
           / (pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir);
-        // if (isinf(pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir)
-        //     || isnan(pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir))
-        //   printf("weird pdfs for scatter dir\n");
-        if (lightIsDirLight) {
-          shadowRay.misWeight = 1.f;
-        } else {
-          shadowRay.misWeight
-            = pdf_lightRay_lightDir
-            / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir);
-        }
-        
-            
-        if ((float)shadowRay.misWeight < 1e-5f)
-          shadowRay.tMax  = -1.f;
-
-        if (path.dbg)
-          printf("path mis %f shadow mis %f\n",
-                 (float)path.misWeight,
-                 (float)shadowRay.misWeight);
+        // if (fire || 0 && path.dbg)
+        //   printf("path mis %f shadow mis %f (tmax %f)\n",
+        //          (float)path.misWeight,
+        //          (float)shadowRay.misWeight,shadowRay.tMax);
         // }
       } else {
         path.misWeight = 1.f;
-        if (path.dbg)
-          printf("path mis %f NO SHADOW\n",
-               (float)path.misWeight);
       }
 #endif
     }
@@ -920,7 +886,7 @@ namespace barney {
 
 #if 1
       // float intensity = reduce_max(fragment);
-      // if (intensity > 10)
+      // if (intensity > 20.f)
       //   printf("pixel %i frag %f %f %f\n",
       //          path.pixelID,
       //          fragment.x,

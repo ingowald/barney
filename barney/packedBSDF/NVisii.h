@@ -21,6 +21,7 @@
 
 #define MIN_ALPHA .002f
 #define SMALL_EPSILON 2e-10f
+#define IMPORTANCE_SAMPLE_BRDF 1
 
 namespace barney {
   namespace render {
@@ -458,9 +459,13 @@ namespace barney {
         // 	return f;
         // }
 
-        inline
-        __device__ float3 disney_microfacet_reflection_color(const DisneyMaterial &mat, const float3 &n,
-                                                             const float3 &w_o, const float3 &w_i, const float3 &w_h)
+        inline __device__
+        float3 disney_microfacet_reflection_color(const DisneyMaterial &mat,
+                                                  const float3 &n,
+                                                  
+                                                  const float3 &w_o,
+                                                  const float3 &w_i,
+                                                  const float3 &w_h)
         {
           float lum = luminance(mat.base_color);
           float3 tint = lum > 0.f ? mat.base_color / lum : make_float3(1.f);
@@ -473,8 +478,13 @@ namespace barney {
         }
 
         inline
-        __device__ float3 disney_microfacet_isotropic(const DisneyMaterial &mat, const float3 &n,
-                                                      const float3 &w_o, const float3 &w_i, const float3 &w_h)
+        __device__ float3
+        disney_microfacet_isotropic(const DisneyMaterial &mat,
+                                    const float3 &n,
+                                    const float3 &w_o,
+                                    const float3 &w_i,
+                                    const float3 &w_h,
+                                    bool dbg = false)
         {
           float lum = luminance(mat.base_color);
           float3 tint = lum > 0.f ? mat.base_color / lum : make_float3(1.f);
@@ -489,9 +499,13 @@ namespace barney {
                             schlick_weight(fabs(dot(w_i, w_h)))
                             * lerp_r(.5f, 1.f, max(mat.metallic, alpha))
                             );
-          float g
-            = smith_shadowing_ggx(fabs(dot(n, w_i)), alpha)
-            * smith_shadowing_ggx(fabs(dot(n, w_o)), alpha);
+          float g_i = smith_shadowing_ggx(fabs(dot(n, w_i)), alpha);
+          float g_o = smith_shadowing_ggx(fabs(dot(n, w_o)), alpha);
+          float g   = g_i * g_o;
+          if (dbg)
+            printf("microfacet_iso spec %f %f %f d %f f %f %f %f g %f (%f %f)\n",
+                   spec.x,spec.y,spec.z,
+                   d,f.x,f.y,f.z,g,g_i,g_o);
           return d * f * g;
         }
 
@@ -505,8 +519,14 @@ namespace barney {
         }
 
         inline
-        __device__ void disney_microfacet_transmission_isotropic(const DisneyMaterial &mat, const float3 &n,
-                                                                 const float3 &w_o, const float3 &w_i, float &bsdf, float3 &color)
+        __device__ void
+        disney_microfacet_transmission_isotropic(const DisneyMaterial &mat,
+                                                 const float3 &n,
+
+                                                 const float3 &w_o,
+                                                 const float3 &w_i,
+                                                 float &bsdf,
+                                                 float3 &color)
         {	
 
           float eta_o, eta_i;
@@ -656,7 +676,7 @@ namespace barney {
           disney_subsurface(mat, b_n, w_o, w_i, w_h, subsurface_bsdf, subsurface_color);
           float3 gloss;
           if (mat.anisotropy == 0.f) {
-            gloss = disney_microfacet_isotropic(mat, b_n, w_o, w_i, w_h);
+            gloss = disney_microfacet_isotropic(mat, b_n, w_o, w_i, w_h, dbg);
             // gloss = gloss + disney_multiscatter(mat, n, w_o, w_i, GGX_E_LOOKUP, GGX_E_AVG_LOOKUP);
           } else 
             {
@@ -674,11 +694,21 @@ namespace barney {
           //                 diffuse_color.z,
           //                 (1.f - mat.metallic) * (1.f - mat.specular_transmission)
           //                 );
-          bsdf = (lerp_r(diffuse_bsdf * diffuse_color, 
-                       subsurface_bsdf * subsurface_color, 
-                       mat.flatness) 
-                  * (1.f - mat.metallic) * (1.f - mat.specular_transmission) 
-                  + sheen + coat + gloss) * fabs(dot(w_i, b_n));
+
+          float3 flat = lerp_r(diffuse_bsdf * diffuse_color, 
+                               subsurface_bsdf * subsurface_color, 
+                               mat.flatness);
+          if (dbg) printf("BRDF: flat %f %f %f\n",flat.x,flat.y,flat.z);
+          if (dbg) printf("BRDF: 1-met %f 1-spec %f sheen %f %f %f coat %f gloss %f %f %f aniso %f\n",1.f-mat.metallic,1.f-mat.specular_transmission,
+                          sheen.x,sheen.y,sheen.z,
+                          coat,
+                          gloss.x,gloss.y,gloss.z,
+                          mat.anisotropy);
+          
+          
+          bsdf = (flat
+                  * (1.f - mat.metallic) * (1.f - mat.specular_transmission)
+                  + sheen + coat + gloss);// * fabs(dot(w_i, b_n));
         }
 
         /* 
@@ -706,8 +736,39 @@ namespace barney {
                                    const float3 &w_i, 
                                    const float3 &w_h, 
                                    float &pdf,
-                                   bool dbg
-                                   ) {
+                                   bool dbg)
+        {
+#if IMPORTANCE_SAMPLE_BRDF
+          float diffuse_weight
+            = //.01f +
+            (1.f - mat.metallic) * (1.f - mat.specular_transmission);
+          float glossy_weight
+            = 1.f+mat.metallic + mat.sheen + mat.specular + mat.roughness;
+          
+          // = mat.metallic + mat.specular_transmission + mat.clearcoat;
+          // * (1.f - mat.metallic) * (1.f - mat.specular_transmission) 
+          //           + sheen + coat + gloss) * fabs(dot(w_i, b_n));
+          float clearcoat_weight// = (1.f-mat.metallic)*mat.clearcoat;
+            = mat.clearcoat;
+          float transmission_weight
+            = 0.f;
+            // = (1.f-mat.metallic)*mat.specular_transmission
+            // * (dot(w_o, b_n) > 0.f);
+          float sum_weights = diffuse_weight+glossy_weight
+            +clearcoat_weight+transmission_weight;
+          if (sum_weights == 0.f) {
+            printf("no importance sampling weights...\n");
+            pdf = 0.f;
+            return;
+          }
+                   
+          float scale_weights
+            = 1.f/sum_weights;
+          diffuse_weight      *= scale_weights;
+          glossy_weight       *= scale_weights;
+          clearcoat_weight    *= scale_weights;
+          transmission_weight *= scale_weights;
+#endif
           pdf = 0.f;
 
           bool entering = dot(w_o, b_n) > 0.f;
@@ -715,17 +776,20 @@ namespace barney {
 	
           float alpha = max(MIN_ALPHA, mat.roughness * mat.roughness);
           float t_alpha = max(MIN_ALPHA, mat.transmission_roughness * mat.transmission_roughness);
-          float aspect = sqrt(1.f - mat.anisotropy * 0.9f);
+          float aspect = sqrtf(1.f - mat.anisotropy * 0.9f);
           float2 alpha_aniso = make_float2(max(MIN_ALPHA, alpha / aspect), max(MIN_ALPHA, alpha * aspect));
 
           float clearcoat_alpha = lerp_r(0.1f, MIN_ALPHA, mat.clearcoat_gloss);
 
           float diffuse = lambertian_pdf(w_i, b_n);
           float clear_coat
-            = mat.clearcoat *
+            = //mat.clearcoat *
             gtr_1_pdf(w_o, w_i, w_h, b_n, clearcoat_alpha);
 
+#if IMPORTANCE_SAMPLE_BRDF
+#else
           float n_comp = 3.f;
+#endif
           float microfacet = 0.f;
           float microfacet_transmission = 0.f;
           if (mat.anisotropy == 0.f) {
@@ -734,8 +798,10 @@ namespace barney {
             microfacet = gtr_2_aniso_pdf(w_o, w_i, w_h, b_n, v_x, v_y, alpha_aniso);
           }
 
-          if ((mat.specular_transmission > 0.f) && (!same_hemisphere(w_o, w_i, b_n))) {
-            microfacet_transmission = gtr_2_transmission_pdf(w_o, w_i, b_n, mat.transmission_roughness, mat.ior);
+          if ((mat.specular_transmission > 0.f) &&
+              (!same_hemisphere(w_o, w_i, b_n))) {
+            microfacet_transmission
+              = gtr_2_transmission_pdf(w_o, w_i, b_n, mat.transmission_roughness, mat.ior);
           } 
 
           // not sure why, but energy seems to be added from smooth metallic. By subtracting mat.metallic from n_comps,
@@ -750,8 +816,17 @@ namespace barney {
           // float metallic_kludge = mat.metallic;
           // float transmission_kludge = mat.specular_transmission;
           // n_comp -= lerp_r(transmission_kludge, metallic_kludge, mat.metallic);
-          
+
+#if IMPORTANCE_SAMPLE_BRDF
+          if (dbg) printf("PDF diff %f micro %f trans %f coat %f\n",
+                          diffuse,microfacet,microfacet_transmission,clear_coat);
+          pdf = (diffuse_weight*diffuse
+                 + glossy_weight*microfacet
+                 + clearcoat_weight*clear_coat
+                 + transmission_weight*microfacet_transmission);
+#else
           pdf = (diffuse + microfacet + microfacet_transmission + clear_coat) / n_comp;
+#endif
           // if (dbg) printf(" nvis pdf diffuse %f microfacet %f clarcoat %f -> pdf %f\n",
           //                 diffuse,microfacet,clear_coat);
         }
@@ -785,7 +860,7 @@ namespace barney {
                                            float3 &bsdf,
                                            bool dbg
                                            ) {
-#if 1
+#if IMPORTANCE_SAMPLE_BRDF
           // float3 base_color;
           // float3 subsurface_color;
           // float metallic;
@@ -807,25 +882,35 @@ namespace barney {
           // float alpha;
           // iw - use importance sampling
           float diffuse_weight
-            = .01f + (1.f - mat.metallic) * (1.f - mat.specular_transmission);
+            = //.01f +
+            (1.f - mat.metallic) * (1.f - mat.specular_transmission);
           float glossy_weight
-            = mat.metallic + mat.sheen + mat.specular + mat.roughness;
+            = 1.f+mat.metallic + mat.sheen + mat.specular + mat.roughness;
           
           // = mat.metallic + mat.specular_transmission + mat.clearcoat;
           // * (1.f - mat.metallic) * (1.f - mat.specular_transmission) 
           //           + sheen + coat + gloss) * fabs(dot(w_i, b_n));
           float clearcoat_weight// = (1.f-mat.metallic)*mat.clearcoat;
             = mat.clearcoat;
-          float transmission_weight
-            = (1.f-mat.metallic)*mat.specular_transmission
-            * (dot(w_o, b_n) > 0.f);
+          float transmission_weight = 0.f;
+            // = (1.f-mat.metallic)*mat.specular_transmission
+            // * (dot(w_o, b_n) > 0.f);
+          float sum_weights = diffuse_weight+glossy_weight
+            +clearcoat_weight+transmission_weight;
+          if (sum_weights == 0.f) {
+            printf("no importance sampling weights...\n");
+            pdf = 0.f;
+            return;
+          }
+                   
           float scale_weights
-            = 1.f/(diffuse_weight+glossy_weight
-                   +clearcoat_weight+transmission_weight);
+            = 1.f/sum_weights;
           diffuse_weight      *= scale_weights;
           glossy_weight       *= scale_weights;
           clearcoat_weight    *= scale_weights;
           transmission_weight *= scale_weights;
+          if (dbg) printf("scatter type weights %f %f %f %f\n",
+                          diffuse_weight,glossy_weight,clearcoat_weight,transmission_weight);
           float type_rng = lcg_randomf(rng);
           float type_pdf = 0.f;
           if (type_rng < diffuse_weight) {
@@ -916,13 +1001,14 @@ namespace barney {
 	
           float3 w_h = normalize(w_i + w_o);
           disney_pdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, pdf, dbg);
+          if (dbg) printf("-> got pdf %f\n",pdf);
 
 // #if 1
 //           pdf *= type_pdf / 4.f;
-          pdf *= type_pdf;
+          // pdf *= type_pdf;
 // #endif
           
-          if (dbg) printf("-> got pdf %f\n",pdf);
+          if (dbg) printf("-> is-adjusted pdf %f\n",pdf);
           disney_brdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, bsdf, dbg);
           if (dbg) printf("-> got bsdf %f %f %f\n",bsdf.x,bsdf.y,bsdf.z);
         }

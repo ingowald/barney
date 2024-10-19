@@ -103,11 +103,10 @@ namespace barney {
         auto device = context->getDevice(0);
 
         OptixDeviceContext optixContext
-          = owlContextGetOptixContext(context->globalContextAcrossAllGPUs,0);//device->devGroup->owl,device->owlID);
+          = owlContextGetOptixContext(context->globalContextAcrossAllGPUs,0);
         optixDenoiserCreate(/*OptixDeviceContext */
                             optixContext,
                             /*OptixDenoiserModelKind*/
-                            // OPTIX_DENOISER_MODEL_KIND_LDR,
                             OPTIX_DENOISER_MODEL_KIND_HDR,
                             /*const OptixDenoiserOptions*/
                             &denoiserOptions,
@@ -216,7 +215,7 @@ namespace barney {
        //          size_t                          scratchSizeInBytes );
        denoiserSizes.withoutOverlapScratchSizeInBytes
        );
-    float denoiseWeight = powf(.95f,accumID-1);
+    float denoiseWeight = powf(.95f,std::max(0,(int)accumID-2));
     float4ToBGBA8(this->finalFB,
                   this->denoiserInput,
                   this->denoiserOutput,
