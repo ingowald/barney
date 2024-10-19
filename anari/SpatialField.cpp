@@ -211,7 +211,6 @@ BNScalarField UnstructuredField::createBarneyScalarField(
     BNModel model, int slot) const
 {
   auto ctx = deviceState()->context;
-  PING;
   std::cout << "==================================================================" << std::endl;
   std::cout << "BANARI: CREATING UMESH OF " << m_elementOffsets.size() << " elements" << std::endl;
   std::cout << "==================================================================" << std::endl;

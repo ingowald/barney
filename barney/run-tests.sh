@@ -30,6 +30,7 @@ $hs -os 1600 1200 -o $out/magnetic.png -spp 16 raw:///home/wald/models/structure
 
 # jets
 $hs -os 1024 1024 -o $out/jets.png -spp 16 ~/models/umesh/jets.umesh -xf ~/models/umesh/jets.xf --camera 94.0945 39.217 -0.826244 44.6431 58.8093 54.9847 1 0 0 -fovy 60
+$hs -os 1024 1024 -o $out/anari-jets.png -spp 16 ~/models/umesh/jets.umesh -xf ~/models/umesh/jets.xf --camera 94.0945 39.217 -0.826244 44.6431 58.8093 54.9847 1 0 0 -fovy 60 -anari
 
 
 # ==================================================================

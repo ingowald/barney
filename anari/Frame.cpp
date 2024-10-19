@@ -125,8 +125,9 @@ void Frame::renderFrame()
     return;
   }
 
-  if (state->commitBufferLastFlush() > m_frameLastRendered)
+  if (state->commitBufferLastFlush() > m_frameLastRendered) {
     bnAccumReset(m_bnFrameBuffer);
+  }
 
   auto model = m_world->makeCurrent();
 
