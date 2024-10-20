@@ -32,16 +32,17 @@ Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
 
 Geometry::~Geometry() = default;
 
-Geometry *Geometry::createInstance(
-    std::string_view subtype, BarneyGlobalState *s)
-{
-  if (subtype == "sphere")
-    return new Sphere(s);
-  else if (subtype == "triangle")
-    return new Triangle(s);
-  else
+  Geometry *Geometry::createInstance(std::string_view subtype,
+                                     BarneyGlobalState *s)
+  {
+    if (subtype == "sphere")
+      return new Sphere(s);
+    if (subtype == "curve")
+      return new Curve(s);
+    if (subtype == "triangle")
+      return new Triangle(s);
     return (Geometry *)new UnknownObject(ANARI_GEOMETRY, s);
-}
+  }
 
 void Geometry::commit()
 {
@@ -50,6 +51,12 @@ void Geometry::commit()
   m_attributes[2] = getParamObject<Array1D>("primitive.attribute2");
   m_attributes[3] = getParamObject<Array1D>("primitive.attribute3");
   m_attributes[4] = getParamObject<Array1D>("primitive.color");
+
+  m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+  m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+  m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+  m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+  m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
 }
 
 void Geometry::markCommitted()
@@ -63,7 +70,17 @@ void Geometry::markCommitted()
 // Sphere //
 
 Sphere::Sphere(BarneyGlobalState *s)
-    : Geometry(s), m_index(this), m_vertexPosition(this), m_vertexRadius(this)
+    : Geometry(s),
+      m_index(this),
+      m_vertexPosition(this),
+      m_vertexRadius(this)
+{}
+
+Curve::Curve(BarneyGlobalState *s)
+    : Geometry(s),
+      m_index(this),
+      m_vertexPosition(this),
+      m_vertexRadius(this)
 {}
 
 void Sphere::commit()
@@ -87,11 +104,33 @@ void Sphere::commit()
         "primitive.index parameter on sphere geometry not yet supported");
   }
 
-  m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
-  m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
-  m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
-  m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
-  m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+  // m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+  // m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+  // m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+  // m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+  // m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+}
+
+void Curve::commit()
+{
+  Geometry::commit();
+
+  m_index = getParamObject<Array1D>("primitive.index");
+  m_vertexPosition = getParamObject<Array1D>("vertex.position");
+  m_vertexRadius = getParamObject<Array1D>("vertex.radius");
+
+  // m_globalRadius = getParam<float>("radius", 0.01f);
+
+  if (!m_vertexPosition) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'vertex.position' on curve geometry");
+    return;
+  }
+
+  if (m_index) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "primitive.index parameter on curve geometry not yet supported");
+  }
 }
 
 void Sphere::setBarneyParameters(BNGeom geom, BNModel model, int slot)
@@ -127,6 +166,54 @@ void Sphere::setBarneyParameters(BNGeom geom, BNModel model, int slot)
   addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
 }
 
+
+void Curve::setBarneyParameters(BNGeom geom, BNModel model, int slot)
+{
+  assert(m_vertexRadius->totalSize() == m_vertexPosition->totalSize());
+  int numVertices = std::min(m_vertexRadius->totalSize(),
+                             m_vertexPosition->totalSize());
+  const float3 *in_vertex = (const float3 *)m_vertexPosition->data();
+  const float  *in_radius = (const float *)m_vertexRadius->data();
+  std::vector<math::float4> vertex(numVertices);
+  for (int i=0;i<numVertices;i++)
+    vertex[i] = math::float4(in_vertex[i].x,
+                            in_vertex[i].y,
+                            in_vertex[i].z,
+                            in_radius[i]);
+         
+  BNData vertices = bnDataCreate(model,slot,BN_FLOAT4,
+                                 numVertices,vertex.data());
+  bnSetData(geom, "vertices", vertices);
+
+  int numIndices = m_index->totalSize();
+  std::vector<math::int2> index(numIndices);
+  const int  *in_index = (const int *)m_index->data();
+  for (int i=0;i<numIndices;i++) {
+    index[i] = math::int2(in_index[i],in_index[i]+1);
+  }
+  BNData indices
+    = bnDataCreate(model,
+                   slot,
+                   BN_INT2,
+                   index.size(),
+                   (const int *)index.data());
+  bnSetData(geom, "indices", indices);
+  
+#if 0
+  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, model, slot, m_attributes[4], "primitive.color");
+#endif
+  
+  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
+}
+
 bool Sphere::isValid() const
 {
   return m_vertexPosition;
@@ -135,6 +222,16 @@ bool Sphere::isValid() const
 const char *Sphere::bnSubtype() const
 {
   return "spheres";
+}
+
+bool Curve::isValid() const
+{
+  return m_vertexPosition;
+}
+
+const char *Curve::bnSubtype() const
+{
+  return "capsules";
 }
 
 box3 Sphere::bounds() const
@@ -161,6 +258,21 @@ box3 Sphere::bounds() const
       result.insert(math::float3{v.x - r, v.y - r, v.z - r});
       result.insert(math::float3{v.x + r, v.y + r, v.z + r});
     }
+  }
+  return result;
+}
+
+box3 Curve::bounds() const
+{
+  if (!isValid())
+    return {};
+
+  box3 result;
+  for (size_t i = 0; i < m_vertexPosition->totalSize(); ++i) {
+    math::float3 v = *(m_vertexPosition->beginAs<math::float3>() + i);
+    float r = *(m_vertexRadius->beginAs<float>() + i);
+    result.insert(math::float3{v.x - r, v.y - r, v.z - r});
+    result.insert(math::float3{v.x + r, v.y + r, v.z + r});
   }
   return result;
 }

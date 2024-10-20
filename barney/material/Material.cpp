@@ -80,8 +80,6 @@ namespace barney {
       sampler = {};
       type    = ATTRIBUTE;
       attribute = parseAttribute(attributeName);
-      PING;
-      std::cout << "parameter set to ATTRIBUTE, attr " << (int)attribute << std::endl;
     }
     
     HostMaterial::HostMaterial(ModelSlot *owner)

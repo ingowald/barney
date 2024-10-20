@@ -61,7 +61,7 @@ namespace barney {
     OWLGeom geom = userGeoms[0];
 
     Geometry::commit();
-      
+
     owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
     owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
     assert(indices);
@@ -71,6 +71,7 @@ namespace barney {
                 << "#bn.capsules: warning - empty indices array"
                 << OWL_TERMINAL_DEFAULT
                 << std::endl;
+
     owlGeomSetPrimCount(geom,numIndices);
     
     setAttributesOn(geom);

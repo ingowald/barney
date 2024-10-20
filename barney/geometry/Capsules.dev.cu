@@ -41,11 +41,19 @@ namespace barney {
     const float rb  = b.w;
     const vec3f pa  = getPos(a);
     const vec3f pb  = getPos(b);
+
+#if 1
+    float dist_ab = length(pa-pb);
+    if (dist_ab+ra <= rb)
+      return false;
+    if (dist_ab+rb <= ra)
+      return false;
+#endif
     
     vec3f  ba = pb - pa;
     vec3f  oa = ro - pa;
     vec3f  ob = ro - pb;
-    float  rr = ra - rb;
+    float  rr = ra - rb; 
     float  m0 = dot(ba, ba);
     float  m1 = dot(ba, oa);
     float  m2 = dot(ba, rd);
@@ -62,26 +70,51 @@ namespace barney {
     float k1 = d2 * m3 - m1 * m2 + m2 * rr * ra;
     float k0 = d2 * m5 - m1 * m1 + m1 * rr * ra * 2.0 - m0 * ra * ra;
 
+    bool hadHit = false;
+    
     float h = k1 * k1 - k0 * k2;
     if (h < 0.f) return false;
     float t = (-sqrtf(h) - k1) / k2;
-
     float y = m1 - ra * rr + t * m2;
-    if (y > 0.f && y < d2) {
+
+    if (y > 0.f && y < d2 && t > 1e-6f && t < hit_t) {
       hit_t = t;
       isec_normal = normalize(d2 * (oa + t * rd) - ba * y);
-      return true;
+      hadHit = true;
     }
+
+    // // backside:
+    // t = (+sqrtf(h) - k1) / k2;
+    // y = m1 - ra * rr + t * m2;
+    // if (y > 0.f && y < d2 && t < hit_t) {
+    //   hit_t = t;
+    //   isec_normal = normalize(d2 * (oa + t * rd) - ba * y);
+    //   hadHit = true;
+    // }
 
     // Caps. 
     float h1 = m3 * m3 - m5 + ra * ra;
     if (h1 > 0.f) {
       t = -m3 - sqrtf(h1);
-      hit_t = t;
-      isec_normal = normalize((oa + t * rd) / ra);
-      return true;
+      if (t > 1e-6f && t < hit_t) {
+        hit_t = t;
+        isec_normal = normalize((ro + t * rd - pa) / ra);
+        hadHit = true;
+        // isec_normal = normalize((oa + t * rd) / ra);
+      }
     }
-    return false;
+#if 1
+    float h2 = m6 * m6 - m7 + rb * rb;
+    if (h2 > 0.f) {
+      t = -m6 - sqrtf(h2);
+      if (t > 1e-6f && t < hit_t) {
+        hit_t = t;
+        isec_normal = normalize((ro + t * rd - pb) / rb);
+        hadHit = true;
+      }
+    }
+#endif
+    return hadHit;
   }
 
   inline __device__ box3f getBounds(vec4f va, vec4f vb)
@@ -176,12 +209,19 @@ namespace barney {
     // interpolation
     const vec3f _v0 = getPos(v0);
     const vec3f _v1 = getPos(v1);
-    float lerp_t
-      = dot(objectP-_v0,_v1-_v0)
-      / (length(objectP-_v0)*length(_v1-_v0));
-    lerp_t = max(0.f,min(1.f,lerp_t));
+    float l01 = length(_v1-_v0);
+    float lp0 = length(objectP-_v0);
+    float lerp_t = 0.f;
+    if (l01 < 1e-8f || lp0 < 1e-8f)
+      lerp_t = 0.f;
+    else {
+      lerp_t
+        = dot(objectP-_v0,_v1-_v0)
+        / (lp0*l01);
+      lerp_t = max(0.f,min(1.f,lerp_t));
+    }
 
-    // interpolator for anari-style color/attribute interpolatoin
+    // interpolator for anari-style color/attribute interpolation
     auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
     { 
       const vec4f value_a = attrib.fromArray.valueAt(idx.x);
