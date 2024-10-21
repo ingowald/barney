@@ -446,8 +446,8 @@ namespace barney {
       const bool  hadNoIntersection  = !path.hadHit();
       const vec3f incomingThroughput = path.throughput;
       
-      // bool fire = path.dbg;//0 && (path.pixelID == 969722);
-      bool fire = 0 && (path.pixelID == 963212);
+      bool fire = path.dbg;//0 && (path.pixelID == 969722);
+      // bool fire = 0 && (path.pixelID == 963212);
       // bool fire = 1 && (path.pixelID == 428428);
 
       if (fire || 0 && path.dbg)
@@ -642,7 +642,7 @@ namespace barney {
           // (path.materialType != GLASS)
           ) {
         if (fire || 0 && path.dbg)
-          printf("eval light %f %f %f pos %f %f %f pdf %f spike %f\n",
+          printf("sample light dir %f %f %f rad %f %f %f pdf %f spike %f\n",
                  ls.direction.x,
                  ls.direction.y,
                  ls.direction.z,
@@ -652,7 +652,7 @@ namespace barney {
                  ls.pdf,
                  reduce_max(ls.radiance)/ls.pdf);
         EvalRes f_r
-          = bsdf.eval(dg,ls.direction,0 && path.dbg)
+          = bsdf.eval(dg,ls.direction,fire)
           // * fabsf(dot(dg.Ng,ls.direction))
           ;
         if (fire || 0 && path.dbg) printf("eval light res %f %f %f: %f\n",
@@ -738,7 +738,9 @@ namespace barney {
       if (!scatterResult.valid() || scatterResult.pdf <= 1e-6f)
         return;
       
-      bool isDiffuseBounce = !isinf(scatterResult.pdf);
+      bool isDiffuseBounce
+        = scatterResult.wasDiffuse;
+        //        = !isinf(scatterResult.pdf);
       if (isDiffuseBounce && (path.numDiffuseBounces+1)>MAX_DIFFUSE_BOUNCES) 
         return;
       

@@ -92,6 +92,7 @@ namespace barney {
       // Type  type = NONE;
       bool  changedMedium = false;
       float offsetDirection = +1.f;
+      bool  wasDiffuse;
     };
 
 

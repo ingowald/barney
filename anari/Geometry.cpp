@@ -191,6 +191,19 @@ void Curve::setBarneyParameters(BNGeom geom, BNModel model, int slot)
   for (int i=0;i<numIndices;i++) {
     index[i] = math::int2(in_index[i],in_index[i]+1);
   }
+
+#if 0
+  // dump geometry to create test cases:
+  std::cout << "std::vector<vec4f> vertices = {" << std::endl;
+  for (auto v : vertex)
+    std::cout << "{"<<v.x<<","<<v.y<<","<<v.z<<","<<v.w<<"}," << std::endl;
+  std::cout << "};" << std::endl;
+  std::cout << "std::vector<vec2i> index = {" << std::endl;
+  for (auto v : index)
+    std::cout << "{"<<v.x<<","<<v.y<<"}," << std::endl;
+  std::cout << "};" << std::endl;
+#endif
+  
   BNData indices
     = bnDataCreate(model,
                    slot,

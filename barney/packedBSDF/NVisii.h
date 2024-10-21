@@ -1136,7 +1136,7 @@ namespace barney {
                                              Random &rng,
                                              bool dbg) const
       {
-#if 1
+// #if 1
         /* 
          * Sample a component of the Disney BRDF
          * @param mat The structure containing material information.
@@ -1213,6 +1213,8 @@ namespace barney {
         scatter.pdf = pdf;
         scatter.f_r = bsdf;
         scatter.dir = normalize(w_i);
+        scatter.wasDiffuse = (sampled_bsdf == DISNEY_DIFFUSE_BRDF);
+
         if (dbg) printf(" => done scatter, f_r %f %f %f pdf %f\n",
                         scatter.f_r.x,
                         scatter.f_r.y,
@@ -1220,14 +1222,14 @@ namespace barney {
                         scatter.pdf
                         );
 
-#else
-        // ugh ... visrtx doesn't have scattering;
-        scatter.dir = sampleCosineWeightedHemisphere(dg.Ns,rng);
+// #else
+//         // ugh ... visrtx doesn't have scattering;
+//         scatter.dir = sampleCosineWeightedHemisphere(dg.Ns,rng);
 
-        EvalRes er = eval(dg,scatter.dir,dbg);
-        scatter.pdf = fabsf(dot(scatter.dir,dg.Ng))/M_PI;//1.f/M_PI;//er.pdf;
-        scatter.f_r = er.value;
-#endif
+//         EvalRes er = eval(dg,scatter.dir,dbg);
+//         scatter.pdf = fabsf(dot(scatter.dir,dg.Ng))/M_PI;//1.f/M_PI;//er.pdf;
+//         scatter.f_r = er.value;
+// #endif
       }
 
       inline __device__ EvalRes NVisii::eval(DG dg, vec3f wi, bool dbg) const
