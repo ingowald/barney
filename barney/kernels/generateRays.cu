@@ -75,9 +75,6 @@ namespace barney {
       // rand();
       // rand();
 
-      if (ray.dbg)
-        printf("debug on!?\n");
-    
       ray.org  = camera.lens_00;
       ray.dir
         = camera.dir_00
@@ -119,13 +116,13 @@ namespace barney {
       ray.isInMedium  = false;
       ray.rngSeed     = rand.state;
       ray.tMax        = 1e30f;
-
-      if (0 && ray.dbg)
+      ray.numDiffuseBounces = 0;
+      if (1 && ray.dbg)
         printf("-------------------------------------------------------\n");
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              
-      if (0 && ray.dbg)
+      if (1 && ray.dbg)
         printf("======================\nspawned %f %f %f dir %f %f %f\n",
                ray.org.x,
                ray.org.y,
@@ -177,7 +174,7 @@ namespace barney {
       return fromEnv && std::stoi(fromEnv);
     };
     static bool enablePerRayDebug = getPerRayDebug();
-
+    
     render::g_generateRays
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,

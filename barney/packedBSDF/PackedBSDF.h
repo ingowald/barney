@@ -30,7 +30,8 @@ namespace barney {
     }
 
     struct PackedBSDF {
-      typedef enum { INVALID=0, NONE=INVALID,
+      typedef enum {
+        INVALID=0, NONE=INVALID,
         /* phase function */
         TYPE_Phase,
         TYPE_Glass,
@@ -109,6 +110,8 @@ namespace barney {
         return data.nvisii.pdf(dg,w_i,dbg);
       if (type == TYPE_Glass)
         return data.glass.pdf(dg,w_i,dbg);
+      if (type == TYPE_Phase)
+        return data.phase.pdf(dg,w_i,dbg);
       return 0.f;
     }
     
@@ -121,6 +124,8 @@ namespace barney {
     {
       if (type == TYPE_Glass)
         return data.glass.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
+      if (type == TYPE_NVisii)
+        return data.nvisii.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
       return 1.f;
     }
 
@@ -130,6 +135,7 @@ namespace barney {
                              Random &random,
                              bool dbg) const
     {
+      if (dbg) printf(" => scatter ...\n");
       scatter.pdf = 0.f;
       if (type == TYPE_Phase)
         return data.phase.scatter(scatter,dg,random,dbg);

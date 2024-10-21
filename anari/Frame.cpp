@@ -125,8 +125,9 @@ void Frame::renderFrame()
     return;
   }
 
-  if (state->commitBufferLastFlush() > m_frameLastRendered)
+  if (state->commitBufferLastFlush() > m_frameLastRendered) {
     bnAccumReset(m_bnFrameBuffer);
+  }
 
   auto model = m_world->makeCurrent();
 
@@ -135,10 +136,15 @@ void Frame::renderFrame()
 
   const int pixelSamples = std::max(m_renderer->pixelSamples(), 1);
   const float radiance = m_renderer->radiance();
-  bnSetRadiance(model, 0, radiance / 10.f);
+  bnSetRadiance(model, 0, radiance
+#if 0
+                /* iw- no idea where this factor came from, but it
+                   probably shouldn't be here */
+                / 10.f
+#endif
+                );
 
-  for (int i = 0; i < pixelSamples; i++)
-    bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer, pixelSamples);
+  bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer, pixelSamples);
 
   auto end = std::chrono::steady_clock::now();
   m_duration = std::chrono::duration<float>(end - start).count();

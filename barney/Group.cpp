@@ -75,7 +75,7 @@ namespace barney {
   void Group::build()
   {
     freeAllGeoms();
-    
+
     // triangles and user geoms - for now always rebuild
     {
       // userGeoms.clear();
@@ -95,17 +95,21 @@ namespace barney {
         for (auto g : geom->userGeoms)
           userGeoms.push_back(g);
       }
-      if (!userGeoms.empty())
+      if (!userGeoms.empty()) {
         userGeomGroup = owlUserGeomGroupCreate
           (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
-      if (userGeomGroup) 
+      }
+      if (userGeomGroup) {
         owlGroupBuildAccel(userGeomGroup);
+      }
       
-      if (!triangleGeoms.empty())
+      if (!triangleGeoms.empty()) {
         triangleGeomGroup = owlTrianglesGeomGroupCreate
           (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
-      if (triangleGeomGroup) 
+      }
+      if (triangleGeomGroup) {
         owlGroupBuildAccel(triangleGeomGroup);
+      }
     }
 
     // volumes - these may need two passes

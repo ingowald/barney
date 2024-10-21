@@ -38,11 +38,6 @@ namespace barney {
       case SAMPLER:
         dd.samplerID = sampler ? sampler->samplerID : -1;
         break;
-      // case ARRAY:
-      //   assert(array);
-      //   dd.array.elementType = array->type;
-      //   dd.array.pointer     = (const void *)owlBufferGetPointer(array->owl,deviceID);
-      //   break;
       case ATTRIBUTE:
         dd.attribute = attribute;
         break;

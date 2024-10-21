@@ -76,9 +76,6 @@ namespace barney {
   
   void TransferFunction::setVariables(OWLGeom geom) const
   {
-    // if (!(domain.lower < domain.upper)) 
-    //   throw std::runtime_error("in-valid domain for transfer function");
-    
     owlGeomSet2f(geom,"xf.domain",domain.lower,domain.upper);
     owlGeomSet1f(geom,"xf.baseDensity",baseDensity);
     owlGeomSet1i(geom,"xf.numValues",(int)values.size());

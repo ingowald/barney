@@ -34,7 +34,6 @@ namespace barney {
     OPTIX_RAYGEN_PROGRAM(traceRays)()
     {
       auto &lp = optixLaunchParams;
-      // printf("tracerays %p %i %p\n",lp.rays,lp.numRays,lp.world);
       const int rayID
         = owl::getLaunchIndex().x
         + owl::getLaunchDims().x
@@ -44,11 +43,6 @@ namespace barney {
         return;
 
       Ray &ray = lp.rays[rayID];
-
-      if (0 && ray.dbg)
-        printf("tracing ray dbg %i miss %f %f %f\n",rayID,
-
-               ray.missColor.x,ray.missColor.y,ray.missColor.z);
 
       vec3f dir = ray.dir;
       if (dir.x == 0.f) dir.x = 1e-6f;

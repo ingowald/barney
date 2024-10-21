@@ -276,13 +276,25 @@ namespace barney {
 
       // use default gpu for this:
       barney::TiledFB::writeFinalPixels(// nullptr,
+#if DENOISE
+                                        fb->denoiserInput,
+#else
                                         fb->finalFB,
+#endif
+                                        // fb->finalFB,
                                         fb->finalDepth,
+# if DENOISE_NORMAL
+                              fb->denoiserNormal,
+# endif
                                         fb->numPixels,
                                         fb->ownerGather.finalTiles,
                                         fb->ownerGather.tileDescs,
                                         fb->ownerGather.numActiveTiles,
                                         fb->showCrosshairs);
+#if DENOISE
+      fb->denoise();
+    // float4ToBGBA8(fb->finalFB,fb->denoiserInput,fb->numPixels);
+#endif
       // copy to app framebuffer - only if we're the one having that
       // frame buffer of course
       BARNEY_CUDA_SYNC_CHECK();
@@ -478,7 +490,7 @@ namespace barney {
     mpi::Comm world(_comm);
 
     if (world.size == 1) {
-      std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
+      // std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
       return bnContextCreate(dataRanksOnThisContext,
                              numDataRanksOnThisContext == 0
                              ? 1 : numDataRanksOnThisContext,

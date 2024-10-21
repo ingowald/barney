@@ -67,7 +67,7 @@ namespace barney {
       if (member == "metallic")
         { metallic.set(value); return true; }
       if (member == "roughness")
-        { roughness.set(value); return true; }
+        { roughness.set(clamp(value,.2f,1.f)); return true; }
       if (member == "ior")
         { ior.set(value); return true; }
       if (member == "transmission")

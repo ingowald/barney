@@ -32,6 +32,7 @@ namespace barney {
 
   inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
   { assert(s); return s; }
+  
   inline ScalarField *assertNotNull(ScalarField *s)
   { assert(s); return s; }
   

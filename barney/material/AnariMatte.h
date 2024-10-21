@@ -57,7 +57,7 @@ namespace barney {
     {
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
-      
+
       float4 baseColor = this->color.eval(hitData,samplers,dbg);
 
       // not anari-conformant, but useful: if geometry _has_ a color
@@ -70,7 +70,7 @@ namespace barney {
 
       bsdf.specular = 0.f;
       bsdf.metallic = 0.f;
-      bsdf.roughness = .5f;
+      bsdf.roughness = 1.f;
       return bsdf;
     }
 #endif

@@ -45,7 +45,7 @@ namespace barney {
       programsDirty = false;
     }
     if (sbtDirty) {
-      std::cout << "rebuilding owl sbt..." << std::endl;
+      // std::cout << "rebuilding owl sbt..." << std::endl;
       owlBuildSBT(owl);
       sbtDirty = false;
     }

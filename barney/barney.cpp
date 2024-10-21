@@ -34,6 +34,19 @@
 # define LOG_API_ENTRY /**/
 #endif
 
+#ifdef NDEBUG
+# define BARNEY_ENTER(fct) /* nothing */
+# define BARNEY_LEAVE(fct,retValue) /* nothing */
+#else
+# define BARNEY_ENTER(fct) try {
+# define BARNEY_LEAVE(fct,retValue)                                     \
+  } catch (std::exception e) {                                           \
+    std::cerr << OWL_TERMINAL_RED << "@" << fct << ": "              \
+              << e.what() << OWL_TERMINAL_DEFAULT << std::endl;      \
+    return retValue ;                                                   \
+  }
+#endif
+
 namespace barney {
 
   inline Context *checkGet(BNContext context)
@@ -50,6 +63,8 @@ namespace barney {
   
   inline Object *checkGet(BNObject object)
   {
+    if (!object) throw std::runtime_error
+                   ("@barney: trying to use/access null object");
     assert(object);
     return (Object *)object;
   }
@@ -79,12 +94,14 @@ namespace barney {
   
   inline Geometry *checkGet(BNGeom geom)
   {
+    if (!geom) throw std::runtime_error("@barney: trying to use/access null geometry");
     assert(geom);
     return (Geometry *)geom;
   }
   
   inline Volume *checkGet(BNVolume volume)
   {
+    if (!volume) throw std::runtime_error("@barney: trying to use/access null volume");
     assert(volume);
     return (Volume *)volume;
   }
@@ -96,6 +113,8 @@ namespace barney {
   
   inline Group *checkGet(BNGroup group)
   {
+    if (!group) throw std::runtime_error
+                   ("@barney: trying to use/access null group");
     assert(group);
     return (Group *)group;
   }
@@ -178,7 +197,7 @@ namespace barney {
                       int numInstances)
   {
     LOG_API_ENTRY;
-    
+
     std::vector<Group::SP> groups;
     for (int i=0;i<numInstances;i++) {
       groups.push_back(checkGetSP(_groups[i]));
@@ -336,8 +355,10 @@ namespace barney {
     LOG_API_ENTRY;
     std::vector<vec4f> values;
     assert(_values);
+
     for (int i=0;i<numValues;i++)
       values.push_back((const vec4f &)_values[i]);
+
     checkGet(volume)->setXF(range1f(domain.x,domain.y),values,densityAt1);
   }
   
@@ -533,6 +554,8 @@ namespace barney {
                         BNVolume *volumes, int numVolumes)
   {
     LOG_API_ENTRY;
+    BARNEY_ENTER(__PRETTY_FUNCTION__);
+    // try {
     std::vector<Geometry::SP> _geoms;
     for (int i=0;i<numGeoms;i++)
       _geoms.push_back(checkGet(geoms[i])->as<Geometry>());
@@ -541,21 +564,35 @@ namespace barney {
       _volumes.push_back(checkGet(volumes[i])->as<Volume>());
     Group *group = checkGet(model,whichSlot)->createGroup(_geoms,_volumes);
     return (BNGroup)group;
+    // } catch (std::runtime_error error) {
+    //   std::cerr << "@barney: Error in creating group: " << error.what()
+    //             << "... going to return null group." << std::endl;
+    //   return BNGroup{0};
+    // }
+    BARNEY_LEAVE(__PRETTY_FUNCTION__,0);
   }
 
   BN_API
   void  bnGroupBuild(BNGroup group)
   {
     LOG_API_ENTRY;
+    BARNEY_ENTER(__PRETTY_FUNCTION__);
+    if (!group) {
+      std::cerr << "@barney(WARNING): bnGroupBuild with null group - ignoring this, but this is is an app error that should be fixed, and is only likely to cause issues later on" << std::endl;
+      return;
+    }
     checkGet(group)->build();
+    BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
   BN_API
   void  bnBuild(BNModel model,
                 int whichSlot)
   {
+    BARNEY_ENTER(__PRETTY_FUNCTION__);
     LOG_API_ENTRY;
     checkGet(model,whichSlot)->build();
+    BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
   BN_API

@@ -25,6 +25,7 @@ struct Geometry : public Object
 
  protected:
   std::array<helium::IntrusivePtr<Array1D>, 5> m_attributes;
+  std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -43,7 +44,23 @@ struct Sphere : public Geometry
   helium::ChangeObserverPtr<Array1D> m_index;
   helium::ChangeObserverPtr<Array1D> m_vertexPosition;
   helium::ChangeObserverPtr<Array1D> m_vertexRadius;
-  std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
+  float m_globalRadius{0.f};
+};
+
+struct Curve : public Geometry
+{
+  Curve(BarneyGlobalState *s);
+  void commit() override;
+  bool isValid() const override;
+  
+  void setBarneyParameters(BNGeom geom, BNModel model, int slot) override;
+  const char *bnSubtype() const override;
+  box3 bounds() const override;
+  
+private:
+  helium::ChangeObserverPtr<Array1D> m_index;
+  helium::ChangeObserverPtr<Array1D> m_vertexPosition;
+  helium::ChangeObserverPtr<Array1D> m_vertexRadius;
   float m_globalRadius{0.f};
 };
 

@@ -52,7 +52,7 @@ namespace barney {
       inline __device__ EvalRes() {}
       inline __device__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
       static inline __device__ EvalRes zero() { return { vec3f(0.f),0.f }; }
-      inline __device__ bool valid() const    { return pdf > 0.f && !isinf(pdf); }
+      inline __device__ bool valid() const    { return pdf > 0.f; };// && !isinf(pdf) }
       vec3f value;
       float pdf;
     };
@@ -62,7 +62,7 @@ namespace barney {
       // inline __device__ SampleRes() {}
       // inline __device__ SampleRes(vec3f v, float p) : value(v),pdf(p) {}
       static inline __device__ SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
-      inline __device__ bool valid() const    { return pdf > 0.f && !isinf(pdf); }
+      inline __device__ bool valid() const    { return pdf > 0.f; };// && !isinf(pdf); }
       vec3f weight;
       vec3f wi;
       int   type;
@@ -92,6 +92,7 @@ namespace barney {
       // Type  type = NONE;
       bool  changedMedium = false;
       float offsetDirection = +1.f;
+      bool  wasDiffuse;
     };
 
 

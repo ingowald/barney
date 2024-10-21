@@ -105,31 +105,24 @@ namespace barney {
     // ------------------------------------------------------------------
     // tell all GPUs to write their final pixels
     // ------------------------------------------------------------------
-#if FB_NO_PEER_ACCESS
     // ***NO*** active device here
     LocalFB *localFB = (LocalFB*)fb;
     localFB->ownerGatherFinalTiles();
-    TiledFB::writeFinalPixels(localFB->finalFB,
+    TiledFB::writeFinalPixels(
+# if DENOISE
+                              fb->denoiserInput,
+# else
+                              localFB->finalFB,
+# endif
                               localFB->finalDepth,
+# if DENOISE_NORMAL
+                              fb->denoiserNormal,
+# endif
                               localFB->numPixels,
                               localFB->rank0gather.finalTiles,
                               localFB->rank0gather.tileDescs,
                               localFB->rank0gather.numActiveTiles,
                               fb->showCrosshairs);
-#else
-    for (int localID = 0; localID < devices.size(); localID++) {
-      auto &devFB = *fb->perDev[localID];
-      TiledFB::writeFinalPixels(//nullptr,//devFB.device.get(),
-                                fb->finalFB,
-                                fb->finalDepth,
-                                fb->numPixels,
-                                devFB.finalTiles,
-                                devFB.tileDescs,
-                                devFB.numActiveTiles,
-                                fb->showCrosshairs);
-    }
-    for (auto dev : devices) dev->sync();
-#endif
     // ------------------------------------------------------------------
     // wait for all GPUs to complete, so pixels are all written before
     // we return and/or copy to app
@@ -137,10 +130,15 @@ namespace barney {
     for (int localID = 0; localID < devices.size(); localID++)
       devices[localID]->launch_sync();
 
+
+# if DENOISE
+    fb->denoise();
+#endif
+
     // ------------------------------------------------------------------
     // copy final frame buffer to app's frame buffer memory
     // ------------------------------------------------------------------
-    if (fb->hostFB && fb->finalFB)
+    if (fb->hostFB && fb->finalFB) 
       BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
                             fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
                             cudaMemcpyDefault));
@@ -150,6 +148,7 @@ namespace barney {
                             cudaMemcpyDefault));
 
     for (auto dev : devices) dev->sync();
+
   }
 
 }

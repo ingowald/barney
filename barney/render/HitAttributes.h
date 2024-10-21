@@ -80,10 +80,6 @@ namespace barney {
         return attribute[3];
       if (whichOne == COLOR)
         return color;
-
-#ifndef NDEBUG
-      printf("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% un-handled hit-data attribute %i\n",int(whichOne));
-#endif
       return make_float4(0.f,0.f,0.f,1.f);
     }
 

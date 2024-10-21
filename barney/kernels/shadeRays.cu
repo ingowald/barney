@@ -23,6 +23,8 @@
 namespace barney {
   namespace render {
 
+#define MAX_DIFFUSE_BOUNCES 1
+    
 #define ENV_LIGHT_SAMPLING 1
 
 #define USE_MIS 1
@@ -152,8 +154,6 @@ namespace barney {
                          Random &random,
                          bool dbg)
     {
-      if (dbg) printf("num dirlights %i\n",world.numDirLights);
-
       if (world.numDirLights == 0) return false;
       static const int RESERVOIR_SIZE = 8;
       int   lID[RESERVOIR_SIZE];
@@ -168,11 +168,11 @@ namespace barney {
         light = world.dirLights[lID[i]];
         vec3f lightDir = -light.direction;
         float weight = dot(lightDir,N);
-        if (dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
+        if (0 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
         if (weight <= 1e-3f) continue;
         weight *= reduce_max(light.radiance);
         if (weight <= 1e-3f) continue;
-        if (dbg) printf("radiance %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
+        if (0 && dbg) printf("radiance %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
         weights[i] = weight;
         sumWeights += weight;
       }
@@ -224,12 +224,35 @@ namespace barney {
                       Random &random,
 #if USE_MIS
                       bool &lightNeedsMIS,
+                      bool &lightIsDirLight,
 #endif
                       bool dbg)
     {
 #if USE_MIS
+# if 1
+      // huh ... not sure this is correct; setting this to true means
+      // we'll always compute MIS weights for shadow and bounce ray as
+      // if there was only an env-map light; even though we may
+      // acutally have sampled a dir-light. that _may_ be true because
+      // even if we did sample a dirlight there still _is_ a pdf for
+      // the env-map light... but it's a bit iffy.
+       lightNeedsMIS = true;
+# else
       lightNeedsMIS = false;
+# endif
 #endif
+
+#if ENV_LIGHT_SAMPLING
+      Light::Sample els;
+      float elsWeight
+        = (sampleEnvLight(els,world,P,Ng,random,dbg)
+           ? (reduce_max(els.radiance)/els.pdf)
+           : 0.f);
+        // = world.envMapLight.sample(random,dbg);
+#else
+      float elsWeight = 0.f;
+#endif
+
       Light::Sample als;
       float alsWeight
         = (sampleAreaLights(als,world,P,Ng,random,dbg)
@@ -241,17 +264,6 @@ namespace barney {
            ? (reduce_max(dls.radiance)/dls.pdf)
            : 0.f);
       
-#if ENV_LIGHT_SAMPLING
-      Light::Sample els;
-      float elsWeight
-        = (sampleEnvLight(els,world,P,Ng,random,dbg)
-           ? (reduce_max(els.radiance)/els.pdf)
-           : 0.f);
-        // = world.envMapLight.sample(random,dbg);
-#else
-      float elsWeight = 0.f;
-#endif
-      
       float sumWeights
         = alsWeight+dlsWeight+elsWeight;
       if (sumWeights == 0.f) return false;
@@ -261,6 +273,7 @@ namespace barney {
       dlsWeight *= 1.f/sumWeights;
       
       float r = random();
+      // if (dbg) printf("r %f els %f dls %f\n",r, elsWeight,dlsWeight);
       if (r <= alsWeight) {
         ls = als;
         ls.pdf *= alsWeight;
@@ -268,18 +281,24 @@ namespace barney {
       } else if (r <= alsWeight+elsWeight) {
         ls = els;
         ls.pdf *= elsWeight;
+        if (dbg) printf(" ->  picked env light sample\n");
 # if USE_MIS
-      lightNeedsMIS = true;
+        lightNeedsMIS = true;
 # endif
 #endif
       } else {
+        if (dbg) printf(" ->  picked DIR light sample\n");
         ls = dls;
         ls.pdf *= dlsWeight;
+# if USE_MIS
+        lightIsDirLight = true;
+# endif
       }
       // if (dbg)
       //   printf(" light weights %f %f\n",
       //          alsWeight,dlsWeight);
       if (isnan(ls.pdf) || (ls.pdf <= 0.f)) return false;
+      
       return true;
     }
 
@@ -426,9 +445,13 @@ namespace barney {
 
       const bool  hadNoIntersection  = !path.hadHit();
       const vec3f incomingThroughput = path.throughput;
+      
+      bool fire = path.dbg;//0 && (path.pixelID == 969722);
+      // bool fire = 0 && (path.pixelID == 963212);
+      // bool fire = 1 && (path.pixelID == 428428);
 
-      if (0 && path.dbg)
-        printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f ismiss %i, bsdf %i\n",
+      if (fire || 0 && path.dbg)
+        printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
                pathDepth,
                path.org.x,
                path.org.y,
@@ -436,8 +459,12 @@ namespace barney {
                (float)path.dir.x,
                (float)path.dir.y,
                (float)path.dir.z,
-               path.tMax,int(hadNoIntersection),(int)path.bsdfType);
-
+               path.tMax,
+               (float)path.throughput.x,
+               (float)path.throughput.y,
+               (float)path.throughput.z,
+               int(hadNoIntersection),(int)path.bsdfType);
+      
       if (path.isShadowRay) {
         // ==================================================================
         // shadow ray = all we have to do is add carried radiance if it
@@ -451,6 +478,15 @@ namespace barney {
             path.misWeight *
 #endif
             (vec3f)path.throughput;
+          if (fire)
+            printf("_shadow_ ray reaches light: tp %f %f %f misweight %f frag %f %f %f\n",
+                   (float)path.throughput.x,
+                   (float)path.throughput.y,
+                   (float)path.throughput.z,
+                   (float)path.misWeight,
+                   fragment.x,
+                   fragment.y,
+                   fragment.z);
           if (0 && path.dbg) printf("shadow miss, frag %f %f %f\n",
                                fragment.x,
                                fragment.y,
@@ -508,6 +544,16 @@ namespace barney {
 # if USE_MIS
           const vec3f fromEnv = radianceFromEnv(world,path);
           fragment = path.throughput * fromEnv * path.misWeight;
+
+          if (fire)
+            printf("bounce ray hits env light: tp %f %f %f misweight %f fromEnv %f %f %f\n",
+                   (float)path.throughput.x,
+                   (float)path.throughput.y,
+                   (float)path.throughput.z,
+                   (float)path.misWeight,
+                   fromEnv.x,
+                   fromEnv.y,
+                   fromEnv.z);
 # else
           fragment = vec3f(0.f);
 # endif
@@ -553,8 +599,14 @@ namespace barney {
       //          dg.Ns.y,
       //          dg.Ns.z);
 
+      // if the ray is a volume hit we want it offset it into the
+      // direction the ray came from (otherwise we have a chance of
+      // the shadow ray or boucne ray to terminate right where the
+      // original ray ended; for others we want to offset based on
+      // normal */
+      const float offsetEpsilon = safe_eps(EPS,dg.P);
       vec3f frontFacingSurfaceOffset
-        = safe_eps(EPS,dg.P)*Ngff;
+        = offsetEpsilon*(isVolumeHit?dg.wo:Ngff);
       // vec3f dg_P
       //   = path.P+frontFacingSurfaceOffset;
 // if (path.dbg)
@@ -578,30 +630,39 @@ namespace barney {
       // todo check if BSDF is perfectly specular
 #if USE_MIS
       bool lightNeedsMIS = false;
+      bool lightIsDirLight = false;
 #endif
       if (sampleLights(ls,world,dg.P,Ngff,random,
 #if USE_MIS
                        lightNeedsMIS,
+                       lightIsDirLight,
 #endif
-                       1 && path.dbg)
+                       fire || 0 && path.dbg)
           // && 
           // (path.materialType != GLASS)
           ) {
-        if (0 && path.dbg) printf("eval light %f %f %f\n",
-                                  ls.direction.x,
-                                  ls.direction.y,
-                                  ls.direction.z);
+        if (fire || 0 && path.dbg)
+          printf("sample light dir %f %f %f rad %f %f %f pdf %f spike %f\n",
+                 ls.direction.x,
+                 ls.direction.y,
+                 ls.direction.z,
+                 ls.radiance.x,
+                 ls.radiance.y,
+                 ls.radiance.z,
+                 ls.pdf,
+                 reduce_max(ls.radiance)/ls.pdf);
         EvalRes f_r
-          = bsdf.eval(dg,ls.direction,0 && path.dbg)
+          = bsdf.eval(dg,ls.direction,fire)
           // * fabsf(dot(dg.Ng,ls.direction))
           ;
-        if (0 && path.dbg) printf("eval light res %f %f %f: %f\n",
+        if (fire || 0 && path.dbg) printf("eval light res %f %f %f: %f\n",
                                   f_r.value.x,
                                   f_r.value.y,
                                   f_r.value.z,
                                   f_r.pdf);
         
-        if (!f_r.valid()) {
+        if (!f_r.valid() || reduce_max(f_r.value) < 1e-4f) {
+          if (fire || 0 && path.dbg) printf(" no f_r, killing shadow ray\n");
           shadowRay.tMax = -1.f;
         } else {
           vec3f tp_sr
@@ -609,47 +670,83 @@ namespace barney {
             * (1.f/ls.pdf)
             * f_r.value
             * ls.radiance
-            * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)))
-            /// f_r.pdf
-            ;
+            * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)));
+          if (fire) {
+            printf(" -> inc tp %f %f %f, dot %f\n",
+                   incomingThroughput.x,
+                   incomingThroughput.y,
+                   incomingThroughput.z,
+                   (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction))));
+            printf(" -> shadow f_r %f %f %f ls.rad %f %f %f pdf %f\n",
+                   f_r.value.x,
+                   f_r.value.y,
+                   f_r.value.z,
+                   ls.radiance.x,
+                   ls.radiance.y,
+                   ls.radiance.z,
+                   ls.pdf);
+            printf(" -> shadow ray tp %f %f %f\n",
+                   tp_sr.x,
+                   tp_sr.y,
+                   tp_sr.z);
+          }
           shadowRay.makeShadowRay
             (/* thrghhpt */tp_sr,
              /* surface: */dg.P + frontFacingSurfaceOffset,
              /* to light */ls.direction,
-             /* length   */ls.distance * (1.f-2.f*EPS));
+             /* length   */ls.distance * (1.f-2.f*offsetEpsilon));
           // if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
           shadowRay.rngSeed = path.rngSeed + 1; random();
           shadowRay.dbg = path.dbg;
           shadowRay.pixelID = path.pixelID;
-#if USE_MIS
+
           shadowRay.misWeight = 1.f;
+#if USE_MIS
+          if (!lightIsDirLight && lightNeedsMIS) {
+            float pdf_lightRay_lightDir
+              = world.envMapLight.pdf(ls.direction);
+            float pdf_scatterRay_lightDir
+              = bsdf.pdf(dg,ls.direction);
+            // compute MIS weight weight that shadow direction
+            shadowRay.misWeight
+              = pdf_lightRay_lightDir
+              / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir + 1e-10f);
+            // and if it's too small for any reason, kill the shadow
+            // ray
+            if ((float)shadowRay.misWeight < 1e-5f)
+              shadowRay.tMax  = -1.f;
+          }
 #endif
         }
       }
-      
+
+
+
+
       // ==================================================================
       // now, let's decide what to do with the ray itself
       // ==================================================================
       path.tMax = -1.f;
       if (pathDepth >= MAX_PATH_DEPTH)
         return;
-      // if (isVolumeHit) {
-      //   // iw - make this disappear; this can/shoudl be handled by a
-      //   // proper 'volume matrial' (ie, Phase function)
-      //   path.dir = sampleCosineWeightedHemisphere(-vec3f(path.dir),random);
-      //   path.throughput = .8f * path.throughput * bsdf.getAlbedo();//baseColor;
-      //   return;
-      // }
       
       ScatterResult scatterResult;
-      // if (path.dbg)
-      bsdf.scatter(scatterResult,dg,random,path.dbg);
-      // if (path.dbg) printf("scatter result.valid ? %i\n",
-      //                      int(scatterResult.valid()));
-      if (!scatterResult.valid() || scatterResult.pdf == 0.f)
+      bsdf.scatter(scatterResult,dg,random,fire || 0 && path.dbg);
+      if (fire || 0 && path.dbg)
+        printf("scatter result.valid ? %i\n",
+               int(scatterResult.valid()));
+      if (!scatterResult.valid() || scatterResult.pdf <= 1e-6f)
         return;
-
-      if (0 && path.dbg)
+      
+      bool isDiffuseBounce
+        = scatterResult.wasDiffuse;
+        //        = !isinf(scatterResult.pdf);
+      if (isDiffuseBounce && (path.numDiffuseBounces+1)>MAX_DIFFUSE_BOUNCES) 
+        return;
+      
+      path.numDiffuseBounces = path.numDiffuseBounces + 1;
+      
+      if (fire || 0 && path.dbg)
         printf("offsetting into sign %f, direction %f %f %f\n",
                scatterResult.offsetDirection,
                frontFacingSurfaceOffset.x,
@@ -657,25 +754,25 @@ namespace barney {
                frontFacingSurfaceOffset.z);
       path.org
         = dg.P + scatterResult.offsetDirection * frontFacingSurfaceOffset;
-      if (0 && path.dbg)
-        printf("path scattered from %f %f %f to %f %f %f, dot %f\n",
-               (float)path.dir.x, 
-               (float)path.dir.y, 
-               (float)path.dir.z, 
-               (float)scatterResult.dir.x, 
-               (float)scatterResult.dir.y, 
-               (float)scatterResult.dir.z,
-               dot(path.dir,scatterResult.dir));
-      path.dir        = normalize(scatterResult.dir);
-
+      if (fire || 0 && path.dbg)
+        printf("path scattered, bsdf in scatter dir is %f %f %f, pdf %f\n",
+               (float)scatterResult.f_r.x, 
+               (float)scatterResult.f_r.y, 
+               (float)scatterResult.f_r.z,
+               scatterResult.pdf);
+      path.dir
+        = normalize(scatterResult.dir);
       
       vec3f scatterFactor
         = scatterResult.f_r
-        // * fabsf(dot(dg.Ng,path.dir))
+        // ONE_PI *
+        * (isVolumeHit?1.f:fabsf(dot(dg.Ng,path.dir)))
         / (isinf(scatterResult.pdf)? 1.f : (scatterResult.pdf + 1e-10f));
       path.throughput
         = path.throughput * scatterFactor;
       path.clearHit();
+      if ((fire || 0 && path.dbg) && scatterResult.changedMedium)
+        printf("path DID change medium\n");
       if (scatterResult.changedMedium)
         path.isInMedium = !path.isInMedium;
       
@@ -687,25 +784,24 @@ namespace barney {
                (float)path.throughput.x,
                (float)path.throughput.y,
                (float)path.throughput.z);
-
+      
+      
 #if USE_MIS
       if (lightNeedsMIS && !isinf(scatterResult.pdf)) {
-        float pdf_scatterRay_scatterDir = scatterResult.pdf;
-        float pdf_lightRay_lightDir     = ls.pdf;
+        float pdf_scatterRay_scatterDir = bsdf.pdf(dg,path.dir);
         float pdf_lightRay_scatterDir   = world.envMapLight.pdf(path.dir);
-        float pdf_scatterRay_lightDir   = bsdf.pdf(dg,ls.direction);
         
         path.misWeight
           = pdf_scatterRay_scatterDir
           / (pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir);
-        shadowRay.misWeight
-          = pdf_lightRay_lightDir
-          / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir);
-        
-        if ((float)shadowRay.misWeight < 1e-5f)
-          shadowRay.tMax  = -1.f;
-      } else
+        // if (fire || 0 && path.dbg)
+        //   printf("path mis %f shadow mis %f (tmax %f)\n",
+        //          (float)path.misWeight,
+        //          (float)shadowRay.misWeight,shadowRay.tMax);
+        // }
+      } else {
         path.misWeight = 1.f;
+      }
 #endif
     }
   
@@ -724,7 +820,20 @@ namespace barney {
       int tid = threadIdx.x + blockIdx.x*blockDim.x;
       if (tid >= numRays) return;
 
+      // pixel 105798 frag 8.085938 11.882812 18.906250
+      // pixel 864686 frag 7.183594 10.132812 11.132812
+      // resetting accumid
+      
       Ray path = readQueue[tid];
+
+#if DENOISE
+      vec3f incomingN
+        = path.hadHit()
+        ? path.getN()
+        : vec3f(0.f);
+      if (incomingN == vec3f(0.f))
+        incomingN = vec3f(1.f,0.f,0.f);
+#endif
       // what we'll add into the frame buffer
       vec3f fragment = 0.f;
       float z = path.tMax;
@@ -738,8 +847,8 @@ namespace barney {
       // to add to frame buffer; b) a outgoing ray (in-place
       // modification of 'path'); and/or c) a shadow ray
       bounce<MAX_PATH_DEPTH>(world,fragment,
-             path,shadowRay,
-             generation);
+                             path,shadowRay,
+                             generation);
     
       // write shadow and bounce ray(s), if any were generated
       // if (path.dbg)
@@ -759,6 +868,11 @@ namespace barney {
       float4 &valueToAccumInto
         = accumTiles[tileID].accum[tileOfs];
 
+#if DENOISE
+      if (generation == 0)
+        accumTiles[tileID].normal[tileOfs].set(incomingN);
+#endif
+      
       // ==================================================================
       // add to accum buffer. be careful of two things:
       //
@@ -773,8 +887,16 @@ namespace barney {
       // ==================================================================
 
 #if 1
+      // float intensity = reduce_max(fragment);
+      // if (intensity > 20.f)
+      //   printf("pixel %i frag %f %f %f\n",
+      //          path.pixelID,
+      //          fragment.x,
+      //          fragment.y,
+      //          fragment.z);
+      
       // clamping ...
-      float clampMax = 100.f*(1+accumID);
+      float clampMax = 10.f*(1+accumID);
       fragment = min(fragment,vec3f(clampMax));
 #endif
       if (accumID == 0 && generation == 0) {
@@ -858,7 +980,7 @@ namespace barney {
       default:
 #endif
 
-        g_shadeRays_pt<8><<<nb,bs,0,device->launchStream>>>
+        g_shadeRays_pt<12><<<nb,bs,0,device->launchStream>>>
         (devWorld,
          fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,

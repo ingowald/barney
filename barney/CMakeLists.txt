@@ -1,5 +1,5 @@
 # ======================================================================== #
-# Copyright 2023-2023 Ingo Wald                                            #
+# Copyright 2023-2024 Ingo Wald                                            #
 #                                                                          #
 # Licensed under the Apache License, Version 2.0 (the "License");          #
 # you may not use this file except in compliance with the License.         #
@@ -15,6 +15,7 @@
 # ======================================================================== #
 
 set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
+option(BARNEY_DENOISE "Enable Denoiser?" OFF)
 
 add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
@@ -22,7 +23,11 @@ target_link_libraries(barney-config
   cuBQL_interface
   )
 target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
-  
+if (BARNEY_DENOISE)
+  target_compile_definitions(barney-config INTERFACE -DDENOISE=1)
+endif()
+
+
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/barney/include
@@ -40,7 +45,7 @@ embed_ptx(
 # ------------------------------------------------------------------
 # surface geometry:
 # ------------------------------------------------------------------
-# ray-sphere geom intersectoin
+# ray-sphere geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-spheres-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
@@ -57,6 +62,12 @@ embed_ptx(
   OUTPUT_TARGET      barney-cylinders-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            geometry/Cylinders.dev.cu
+  )
+# ray capsules geom intersection
+embed_ptx(
+  OUTPUT_TARGET      barney-capsules-ptx
+  PTX_LINK_LIBRARIES owl::owl barney-config
+  SOURCES            geometry/Capsules.dev.cu
   )
 # ray cones geom intersection
 #embed_ptx(
@@ -198,6 +209,8 @@ add_library(barney STATIC
   geometry/Triangles.cpp
   geometry/Cylinders.h
   geometry/Cylinders.cpp
+  geometry/Capsules.h
+  geometry/Capsules.cpp
   #  geometry/Cones.h
   #  geometry/Cones.cpp
   # volume data 
@@ -240,12 +253,13 @@ add_library(barney STATIC
 target_link_libraries(barney
   PUBLIC
   owl::owl
+ # OptiX::OptiX
   cuBQL_impl
   barney-config
   barney-StructuredData-ptx
   barney-spheres-ptx
   barney-cylinders-ptx
-#  barney-cones-ptx
+  barney-capsules-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
   barney-UMeshRTXObjectSpace-ptx
@@ -253,8 +267,6 @@ target_link_libraries(barney
   barney-AWT-ptx  
   barney-BlockStructuredMC-ptx
   )
-#target_include_directories(barney PUBLIC
-#  )
 
 set_target_properties(barney
   PROPERTIES

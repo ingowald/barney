@@ -96,16 +96,16 @@ namespace barney {
   int sampleCDF(const float *cdf, int N, float v,
                 float &pdf, bool dbg = false)
   {
-    if (dbg) printf("****** sampling sdf with %i items, v = %f\n",N,v);
+    // if (dbg) printf("****** sampling sdf with %i items, v = %f\n",N,v);
     int begin = 0;
     int end   = N;
     while (end - begin > 1) {
       int mid = (begin+end)/2;
       float f_mid = cdf[mid];
 
-      if (dbg)
-        printf("[%i %i] -> %i -> %f\n",
-               begin,end,mid,f_mid);
+      // if (dbg)
+      //   printf("[%i %i] -> %i -> %f\n",
+      //          begin,end,mid,f_mid);
       if (v <= f_mid)
         end = mid;
       else
@@ -119,9 +119,6 @@ namespace barney {
       : 0.f;
     
     pdf = (f_at_position-f_before_position);
-    if (dbg)
-      printf("done, found idx %i, with query %f between %f and %f, pdf = %f\n",
-             position,v,f_before_position,f_at_position,pdf);
     return position;
   }
   
@@ -129,18 +126,30 @@ namespace barney {
   EnvMapLight::DD::pdf(vec3f dir, bool dbg) const
   {
     if (!texture)
-      return 0.f;
+      // if we don't have a texture barney will use a env-map light
+      // with constant ambient radiance; the pdf of that will be a
+      // uniform 1/(4*PI). It would be cleaner to have this handled in
+      // a wrapper class that handles both env-map and non-env-map
+      // cases (instead of returning a proper non-envmap pdf from the
+      // envmap class...), but shadeRays currently only asks the
+      // envmap for the light pdf, so this is the best way to put
+      // it... for now.
+      return ONE_OVER_FOUR_PI;
     
     vec2i pixel = worldToPixel(dir);
     float pdf_y = cdfGetPDF(pixel.y,cdf_y,dims.y);
 
     float pdf_x = cdfGetPDF(pixel.x,allCDFs_x+pixel.y*dims.x,dims.x);
 
-    return pdf_x*pdf_y
+    float pdf = pdf_x*pdf_y
       *(dims.x*dims.y)
-      *ONE_OVER_FOUR_PI
-      *(2.f/ONE_PI)
-      ;
+      *ONE_OVER_FOUR_PI;
+    
+    float rel_y = (pixel.y+.5f) / dims.y;
+    const float theta = ONE_PI * rel_y;
+    pdf *= (ONE_PI/sinf(theta));
+
+    return pdf;
   }
   
   inline __device__ float pbrt_clampf(float f, float lo, float hi)
@@ -181,7 +190,7 @@ namespace barney {
     const float phi   = TWO_PI * f_x;
     const float f_y   = (pixelID.y+.5f)/dims.y;
     const float theta = ONE_PI * f_y;
-
+    
     vec3f dir;
     dir.z = cosf(theta);
     dir.x = cosf(phi)*sinf(theta);
@@ -194,14 +203,17 @@ namespace barney {
   EnvMapLight::DD::sample(Random &r, bool dbg) const
   {
     if (!texture) return {};
-    
-    float pdf_y;
-    if (dbg) printf(" *** sampling cdf in y\n");
-    int iy = sampleCDF(cdf_y,dims.y,r(),pdf_y,dbg);
 
+    float r_y = r();
+    float r_x = r();
+    float pdf_y;
+    // if (dbg) printf(" *** sampling cdf (w/ r=%f) in y\n",r_y);
+    int iy = sampleCDF(cdf_y,dims.y,r_y,pdf_y,dbg);
+    // if (dbg) printf("found iy %i, pdf %f/%f\n",iy,pdf_y,pdf_y*dims.y);
     float pdf_x;
-    if (dbg) printf(" *** sampling cdf in x for y=%i\n",iy);
-    int ix = sampleCDF(allCDFs_x+dims.x*iy,dims.x,r(),pdf_x,dbg);
+    // if (dbg) printf(" *** sampling cdf (w/ r=%f)in x for y=%i\n",r_x,iy);
+    int ix = sampleCDF(allCDFs_x+dims.x*iy,dims.x,r_x,pdf_x,dbg);
+    // if (dbg) printf("found ix %i, pdf %f/%f\n",ix,pdf_x,pdf_x*dims.x);
 
     float sx = (ix+.5f)/dims.x;
     float sy = (iy+.5f)/dims.y;
@@ -209,25 +221,22 @@ namespace barney {
     Light::Sample sample;
     sample.radiance = (vec3f&)fromTex;
     sample.direction = pixelToWorld({ix,iy});
-    if (dbg) printf("found pixel %i %i -> world %f %f %f\n",
-                    ix,iy,
-                    sample.direction.x,
-                    sample.direction.y,
-                    sample.direction.z);
+     // if (dbg) printf("found pixel %i %i -> maxrad %f, world %f %f %f\n",
+     //                 ix,iy,
+     //                 reduce_max(sample.radiance),
+     //                 sample.direction.x,
+     //                 sample.direction.y,
+     //                 sample.direction.z);
+     
     sample.pdf = pdf_x*pdf_y
       *(dims.x*dims.y)
-      *ONE_OVER_FOUR_PI
-      *(2.f/ONE_PI)
-      ;
+      *ONE_OVER_FOUR_PI;
+    float rel_y = (iy+.5f) / dims.y;
+    const float theta = ONE_PI * rel_y;
+    sample.pdf *= (ONE_PI/sinf(theta));
+    
     sample.distance = INFINITY;
     return sample;
   }
-// #else
-//   /* dummy implementations for non-cuda compilers, just so we don't
-//      get any 'undefined' warnings */
-//   inline __device__ Light::Sample
-//   EnvMapLight::DD::sample(Random &r, bool dbg) const { return {}; }
-//   inline __device__ float
-//   EnvMapLight::DD::pdf(vec3f dir, bool dbg) const { return 0.f; }
 #endif
 }

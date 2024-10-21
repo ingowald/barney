@@ -22,28 +22,35 @@ namespace barney {
 
   struct ModelSlot;
 
-  /*! cylinders with caps, specified through an array of vertices, and
-      one array of int2 where each of the two its specified begin and
-      end vertex of a cylinder. radii can either come from a separate
-      array (if provided), or, i not, use a common radius specified in
-      this geometry */
-  struct Cylinders : public Geometry {
-    typedef std::shared_ptr<Cylinders> SP;
+  /*! A geometry made of multiple "capsules", where each capsule is
+      "pill-like" shape obtained by linearly connecting two
+      spheres. Unlike cylinders both end-points of the capsule have
+      their own radius that the rest of the shape linearly
+      interpolates between; capsules also always have "rounded caps"
+      in the sense that both of the end points form complete
+      spheres. Capsules can also interpolate a "color" attribute.
+
+      Is defined by three parameters:
+
+      `int2 radii[]` two vertex indices per prim, specifying end point
+      position and radii for each capsule.
+
+      `float3 vertices[]` position (.xyz) and radius (.w) of each vertex
+  */
+  struct Capsules : public Geometry {
+    typedef std::shared_ptr<Capsules> SP;
 
     struct DD : public Geometry::DD {
-      const vec3f *vertices;
-      const vec3f *colors;
+      const vec4f *vertices;
       const vec2i *indices;
-      const float *radii;
-      int colorPerVertex;
     };
     
-    Cylinders(ModelSlot *owner);
-    virtual ~Cylinders() = default;
+    Capsules(ModelSlot *owner);
+    virtual ~Capsules() = default;
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
-    { return "Cylinders{}"; }
+    { return "Capsules{}"; }
     
     void commit() override;
     
@@ -51,16 +58,12 @@ namespace barney {
 
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
-    bool set1i(const std::string &member, const int &value) override;
-    bool set1f(const std::string &member, const float &value) override;
     bool setData(const std::string &member, const Data::SP &value) override;
-    bool setObject(const std::string &member, const Object::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
     PODData::SP vertices;
     PODData::SP indices;
-    PODData::SP radii;
   };
 
 }

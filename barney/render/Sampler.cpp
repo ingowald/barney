@@ -34,7 +34,8 @@ namespace barney {
       if (attributeName == "color")
         return render::COLOR; 
       
-      throw std::runtime_error("PossiblyMappedParameter::set not implemented for attribute '"+attributeName+"'");
+      throw std::runtime_error("@barney: invalid attribute name '"
+                               +attributeName+"'");
     }
 
     Sampler::Sampler(ModelSlot *owner)

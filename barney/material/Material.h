@@ -132,15 +132,15 @@ namespace barney {
         return isnan(value.x) ? make_float4(0.f,0.f,0.f,1.f) : value;
       }
       if (type == ATTRIBUTE) {
-        if (0 && dbg) printf("asking hitattributes for attribute %i\n",(int)attribute);
+        // if (1 && dbg) printf("asking hitattributes for attribute %i\n",(int)attribute);
         return hitData.get(attribute,dbg);
       }
       if (type == SAMPLER) {
-        if (0 && dbg) printf("asking hitattributes for sampler %i\n",(int)samplerID);
+        // if (0 && dbg) printf("asking hitattributes for sampler %i\n",(int)samplerID);
         if (samplerID < 0) return make_float4(0.f,0.f,0.f,1.f);
         return samplers[samplerID].eval(hitData,dbg);
       }
-      printf("(Possiblymapped) un-handled material input type %i\n",(int)type);
+      // printf("(Possiblymapped) un-handled material input type %i\n",(int)type);
       return make_float4(0.f,0.f,0.f,1.f);
     }
 #endif

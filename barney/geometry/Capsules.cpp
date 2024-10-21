@@ -14,89 +14,76 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/geometry/Cylinders.h"
+#include "barney/geometry/Capsules.h"
 #include "barney/ModelSlot.h"
 
 namespace barney {
 
-  extern "C" char Cylinders_ptx[];
+  extern "C" char Capsules_ptx[];
 
-  Cylinders::Cylinders(ModelSlot *owner)
+  Capsules::Capsules(ModelSlot *owner)
     : Geometry(owner)
   {}
 
-  OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
+  OWLGeomType Capsules::createGeomType(DevGroup *devGroup)
   {
     std::cout << OWL_TERMINAL_GREEN
-              << "creating 'Cylinders' geometry type"
+              << "creating 'Capsules' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
     
     std::vector<OWLVarDecl> params
       = {
-         { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
-         { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-         { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
+      { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
+      { "indices",  OWL_BUFPTR, OWL_OFFSETOF(DD,indices)  } 
     };
     Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
-      (devGroup->owl,Cylinders_ptx);
+      (devGroup->owl,Capsules_ptx);
     OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_USER,sizeof(Cylinders::DD),
+      (devGroup->owl,OWL_GEOM_USER,sizeof(Capsules::DD),
        params.data(), (int)params.size());
-    owlGeomTypeSetBoundsProg(gt,module,"CylindersBounds");
-    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CylindersIsec");
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CylindersCH");
+    owlGeomTypeSetBoundsProg(gt,module,"CapsulesBounds");
+    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CapsulesIsec");
+    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CapsulesCH");
     owlBuildPrograms(devGroup->owl);
     
     return gt;
   }
   
-  void Cylinders::commit()
+  void Capsules::commit()
   {
     if (userGeoms.empty()) {
       OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
-        ("Cylinders",Cylinders::createGeomType);
+        ("Capsules",Capsules::createGeomType);
       OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
       userGeoms.push_back(geom);
     }
     OWLGeom geom = userGeoms[0];
 
     Geometry::commit();
-      
+
     owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
     owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
-    owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
     assert(indices);
     int numIndices = indices->count;
     if (numIndices == 0)
       std::cout << OWL_TERMINAL_RED
-                << "#bn.cylinders: warning - empty indices array"
+                << "#bn.capsules: warning - empty indices array"
                 << OWL_TERMINAL_DEFAULT
                 << std::endl;
+
     owlGeomSetPrimCount(geom,numIndices);
     
     setAttributesOn(geom);
     getMaterial()->setDeviceDataOn(geom);
   } 
 
-  bool Cylinders::set1i(const std::string &member, const int &value)
-  {
-    if (Geometry::set1i(member,value))
-      return true;
-    return false;
-  }
-  
-  bool Cylinders::set1f(const std::string &member, const float &value)
-  {
-    if (Geometry::set1f(member,value))
-      return true;
-    return false;
-  }
-  
-  bool Cylinders::setData(const std::string &member, const Data::SP &value)
+  bool Capsules::setData(const std::string &member, const Data::SP &value)
   {
     if (Geometry::setData(member,value))
+      // does 'primitive.color', and all the 'attributeN's
       return true;
+    
     if (member == "vertices") {
       vertices = value->as<PODData>();
       return true;
@@ -105,17 +92,6 @@ namespace barney {
       indices = value->as<PODData>();
       return true;
     }
-    if (member == "radii") {
-      radii = value->as<PODData>();
-      return true;
-    }
-    return false;
-  }
-
-  bool Cylinders::setObject(const std::string &member, const Object::SP &value)
-  {
-    if (Geometry::setObject(member,value))
-      return true;
     return false;
   }
 

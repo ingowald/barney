@@ -98,10 +98,6 @@ namespace barney {
     default:
       throw std::runtime_error("Texture3D with non-implemented scalar type ...");
     }
-    // if (scalarType != BN_FLOAT)
-    //   throw std::runtime_error("can only do float 3d texs..");
-
-    std::cout << "#bn.struct: creating CUDA 3D textures" << std::endl;
     for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
       auto dev = devGroup->devices[lDevID];
       auto &tex = tex3Ds[lDevID];
@@ -114,10 +110,11 @@ namespace barney {
       BARNEY_CUDA_CALL(Malloc3DArray(&tex.voxelArray,&desc,extent,0));
       cudaMemcpy3DParms copyParms;
       memset(&copyParms,0,sizeof(copyParms));
-      copyParms.srcPtr = make_cudaPitchedPtr((void *)texels,
-                                             (size_t)size.x*sizeOfScalar*numScalarsPerTexel,
-                                             (size_t)size.x,
-                                             (size_t)size.y);
+      copyParms.srcPtr
+        = make_cudaPitchedPtr((void *)texels,
+                              (size_t)size.x*sizeOfScalar*numScalarsPerTexel,
+                              (size_t)size.x,
+                              (size_t)size.y);
       copyParms.dstArray = tex.voxelArray;
       copyParms.extent   = extent;
       copyParms.kind     = cudaMemcpyHostToDevice;
@@ -142,11 +139,15 @@ namespace barney {
       // textureDesc.readMode         = cudaReadModeElementType;
       textureDesc.normalizedCoords = false;
           
-      BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObj,&resourceDesc,&textureDesc,0));
+      BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObj,
+                                           &resourceDesc,
+                                           &textureDesc,0));
           
       // 2nd texture object for nearest filtering
       textureDesc.filterMode       = cudaFilterModePoint;
-      BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,&resourceDesc,&textureDesc,0));
+      BARNEY_CUDA_CALL(CreateTextureObject(&tex.texObjNN,
+                                           &resourceDesc,
+                                           &textureDesc,0));
     }
   }
 

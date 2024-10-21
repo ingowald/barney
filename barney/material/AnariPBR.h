@@ -72,10 +72,12 @@ namespace barney {
       float4 transmission = this->transmission.eval(hitData,samplers,dbg);
       float4 ior = this->ior.eval(hitData,samplers,dbg);
 #if 1
+      // if (dbg) printf("ior %f trans %f\n",ior.x,transmission.x);
       if (ior.x != 1.f && transmission.x >= 1e-3f) {
         packedBSDF::Glass bsdf;
         bsdf.ior = ior.x;
         bsdf.attenuation = vec3f(1.f);
+        // if (dbg) printf("MADE GLASS\n");
         // bsdf.ior = 1.45f;
         // bsdf.specularTransmission = 1.f;
         // bsdf.baseColor = vec3f(1.f);
@@ -87,13 +89,15 @@ namespace barney {
 #endif
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
-      const float clampRange = .05f;
+      const float clampRange = .1f;
       
       bsdf.baseColor = (const vec3f&)baseColor;
-      bsdf.metallic = clamp(metallic.x,clampRange,1.f-clampRange);
+      bsdf.metallic = metallic.x;//clamp(metallic.x,clampRange,1.f-clampRange);
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
-      bsdf.alpha = 1.f-transmission.x;
+      bsdf.alpha = (1.f-transmission.x)
+        * baseColor.w
+        ;
       
       bsdf.ior = ior.x;
       // if (dbg)

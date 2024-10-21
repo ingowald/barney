@@ -21,6 +21,12 @@ namespace barney {
 
   extern "C" char StructuredData_ptx[];
 
+  /*! how many cells (in each dimension) will go into a macro
+      cell. eg, a value of 8 will mean that eachmacrocell covers 8x8x8
+      cells, and a 128^3 volume (with 127^3 cells...) will this have a
+      macrocell grid of 16^3 macro cells (out of which the
+      right/back/top one will only have 7x7x7 of its 8x8x8 covered by
+      actual cells */
   enum { cellsPerMC = 8 };
 
   __global__
@@ -60,7 +66,6 @@ namespace barney {
     vec3i numBlocks = divRoundUp(mcDims,blockSize);
     mcGrid.gridOrigin = worldBounds.lower;
     mcGrid.gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
-    std::cout << "building macro cells for grid of " << mcDims << " macro cells" << std::endl;
     for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
       auto dev = devGroup->devices[lDevID];
       SetActiveGPU forDuration(dev);
@@ -127,7 +132,8 @@ namespace barney {
   }
 
   // ==================================================================
-  bool StructuredData::set3f(const std::string &member, const vec3f &value) 
+  bool StructuredData::set3f(const std::string &member,
+                             const vec3f &value) 
   {
     if (member == "gridOrigin") {
       gridOrigin = value;
@@ -141,7 +147,8 @@ namespace barney {
   }
 
   // ==================================================================
-  bool StructuredData::set3i(const std::string &member, const vec3i &value) 
+  bool StructuredData::set3i(const std::string &member,
+                             const vec3i &value) 
   {
     if (member == "dims") {
       numScalars = value;
@@ -152,7 +159,8 @@ namespace barney {
   }
 
   // ==================================================================
-  bool StructuredData::setObject(const std::string &member, const Object::SP &value) 
+  bool StructuredData::setObject(const std::string &member,
+                                 const Object::SP &value) 
   {
     if (member == "texture") {
       texture = value->as<Texture3D>();

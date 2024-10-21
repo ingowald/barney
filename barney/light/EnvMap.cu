@@ -122,9 +122,9 @@ namespace barney {
   EnvMapLight::EnvMapLight(ModelSlot *owner)
     : Light(owner)
   {
-    std::cout << OWL_TERMINAL_YELLOW
-              << "#bn: created env-map light"
-              << OWL_TERMINAL_DEFAULT << std::endl;
+    // std::cout << OWL_TERMINAL_YELLOW
+    //           << "#bn: created env-map light"
+    //           << OWL_TERMINAL_DEFAULT << std::endl;
     cdf_y
       = owlDeviceBufferCreate(owner->getOWL(),OWL_FLOAT,1,nullptr);
     allCDFs_x
@@ -145,12 +145,10 @@ namespace barney {
 
   void EnvMapLight::computeCDFs()
   {
-    std::cout << "#bn: computing env-map CDFs" << std::endl;
+    // std::cout << "#bn: computing env-map CDFs" << std::endl;
     assert(texture);
     (owl2ui&)dims = owlTextureGetDimensions(texture);
 
-    PRINT(dims);
-    
     owlBufferResize(cdf_y,dims.y);
     owlBufferResize(allCDFs_x,dims.x*dims.y);
     for (auto device : owner->devGroup->devices) {
@@ -185,7 +183,7 @@ namespace barney {
 
       BARNEY_CUDA_SYNC_CHECK();
     }
-    std::cout << "#bn: computing env-map CDFs .... done." << std::endl;
+    // std::cout << "#bn: computing env-map CDFs .... done." << std::endl;
   }
   
   
