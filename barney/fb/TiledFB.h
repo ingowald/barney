@@ -24,9 +24,6 @@
 namespace barney {
 
   struct FrameBuffer;
-#if DENOISE
-# define DENOISE_NORMAL 1
-#endif
   
 #if DENOISE_NORMAL
   /*! for now, do a 48 bit half3 representation; shoul eventually go

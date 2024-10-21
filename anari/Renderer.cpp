@@ -11,8 +11,8 @@ Renderer::~Renderer() = default;
 
 void Renderer::commit()
 {
-  m_pixelSamples = getParam<int>("pixelSamples", 1);
-  m_radiance = getParam<float>("ambientRadiance", 1.0f);
+  m_pixelSamples = getParam<int>("pixelSamples", 16);
+  m_radiance = getParam<float>("ambientRadiance", .8f);
   m_crosshairs = getParam<bool>("crosshairs", false);
 }
 

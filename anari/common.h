@@ -193,6 +193,14 @@ inline bool convert_to_float4(
   else if (input->elementType() == ANARI_UFIXED8_VEC4) {
     convert_fixed8x4_to_float4(input->data(), data.data(), data.size());
   }
+  else if (input->elementType() == ANARI_UFIXED8_RGBA_SRGB) {
+    // this is WRONG in that it ignores the SRGB conversion
+    convert_fixed8x4_to_float4(input->data(), data.data(), data.size());
+  }
+  else if (input->elementType() == ANARI_UFIXED8_RGB_SRGB) {
+    // this is WRONG in that it ignores the SRGB conversion
+    convert_fixed8x3_to_float4(input->data(), data.data(), data.size());
+  }
   else if (input->elementType() == ANARI_UFIXED16) {
     convert_fixed16_to_float4(input->data(), data.data(), data.size());
   }
