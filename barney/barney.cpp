@@ -38,7 +38,11 @@
 # define BARNEY_ENTER(fct) /* nothing */
 # define BARNEY_LEAVE(fct,retValue) /* nothing */
 #else
-# define BARNEY_ENTER(fct) try {
+# define BARNEY_ENTER(fct) try {                \
+    if (0) std::cout << "@bn.entering " << fct << std::endl;     \
+
+
+
 # define BARNEY_LEAVE(fct,retValue)                                     \
   } catch (std::exception e) {                                           \
     std::cerr << OWL_TERMINAL_RED << "@" << fct << ": "              \

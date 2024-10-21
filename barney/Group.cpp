@@ -89,6 +89,7 @@ namespace barney {
       //   userGeomGroup = 0;
       // }
       for (auto geom : geoms) {
+        if (!geom) continue;
         geom->build();
         for (auto g : geom->triangleGeoms)
           triangleGeoms.push_back(g);
@@ -119,6 +120,7 @@ namespace barney {
       std::vector<Volume *> ownGroupVolumes;
       std::vector<Volume *> mergedGroupVolumes;
       for (auto &volume : volumes) {
+        if (!volume) continue;
         switch (volume->updateMode()) {
         case VolumeAccel::FULL_REBUILD:
           mergedGroupVolumes.push_back(volume.get());
@@ -147,8 +149,9 @@ namespace barney {
           volumeGeomsGroup = 0;
         }
         volumeGeoms.clear();
-        for (auto volume : volumes) 
-          volume->build(true);
+        for (auto volume : volumes)
+          if (volume)
+            volume->build(true);
         
         volumeGeomsGroup = owlUserGeomGroupCreate
           (owner->devGroup->owl,volumeGeoms.size(),volumeGeoms.data());
@@ -160,13 +163,15 @@ namespace barney {
         if (volumeGeomsGroup == 0)
           throw std::runtime_error
             ("somebody asked for refit, but there's no group yet!?");
-        for (auto volume : volumes) 
-          volume->build(false);
+        for (auto volume : volumes)
+          if (volume)
+            volume->build(false);
         owlGroupRefitAccel(volumeGeomsGroup);
       }
 
       for (auto volume : ownGroupVolumes) {
-        volume->build(true);
+        if (volume)
+          volume->build(true);
       }
     }
   }

@@ -82,25 +82,27 @@ void TransferFunction1D::commit()
         "no color data provided to transferFunction1D volume");
     return;
   }
-
-  if (m_opacityData) {
-  //   reportMessage(ANARI_SEVERITY_WARNING,
-  //       "no opacity data provided to transfer function");
-  //   return;
-  // }
-    needsOpacityData = true;
   
-    auto *opacityData = m_opacityData->beginAs<float>();
-    /* if we do have an opacity channel we assume it's float3 color[]
-       plus float opacity [] */
-    
-    // extract combined RGB+A map from color and opacity arrays (whose
-    // sizes are allowed to differ..)
-    auto *colorData = m_colorData->beginAs<math::float3>();
+  if (m_colorData->elementType() == ANARI_FLOAT32_VEC4) {
+    // k, that's the same format we want, too:
+    size_t tfSize = m_colorData->size();
+    m_rgbaMap.resize(tfSize);
+    auto *colorData = m_colorData->beginAs<math::float4>();
+    std::copy(colorData,colorData+tfSize,
+              m_rgbaMap.begin());
+  } else if (m_colorData->elementType() == ANARI_FLOAT32_VEC3) {
+    if (!m_opacityData) {
+      reportMessage(ANARI_SEVERITY_WARNING,
+                    "transferFunction1D volume has float3 color data, but no opacity data set");
+      return;
+    }
 
     size_t tfSize = std::max(m_colorData->size(), m_opacityData->size());
     m_rgbaMap.resize(tfSize);
-    for (size_t i = 0; i < tfSize; ++i) {
+    
+    auto *opacityData = m_opacityData->beginAs<float>(); 
+    auto *colorData = m_colorData->beginAs<math::float3>();
+    for (int i=0;i<tfSize;i++) {
       float colorPos = tfSize > 1
         ? (float(i) / (tfSize - 1)) * (m_colorData->size() - 1)
         : 0.f;
@@ -123,13 +125,61 @@ void TransferFunction1D::commit()
 
       m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
     }
+    
   } else {
-    needsOpacityData = false;
-    auto *colorData = m_colorData->beginAs<math::float4>();
-    size_t tfSize = m_colorData->size();
-    m_rgbaMap.resize(tfSize);
-    std::copy(colorData,colorData+tfSize,m_rgbaMap.begin());
+    reportMessage(ANARI_SEVERITY_WARNING,
+                  "opacity data provided to transfer function in a "
+                  "format that is neither float3 nor float4?");
+    return;
   }
+    
+  // if (m_opacityData) {
+  // //   reportMessage(ANARI_SEVERITY_WARNING,
+  // //       "no opacity data provided to transfer function");
+  // //   return;
+  // // }
+  //   needsOpacityData = true;
+  
+  //   auto *opacityData = m_opacityData->beginAs<float>();
+  //   /* if we do have an opacity channel we assume it's float3 color[]
+  //      plus float opacity [] */
+    
+  //   // extract combined RGB+A map from color and opacity arrays (whose
+  //   // sizes are allowed to differ..)
+  //   auto *colorData = m_colorData->beginAs<math::float3>();
+
+  //   size_t tfSize = std::max(m_colorData->size(), m_opacityData->size());
+  //   m_rgbaMap.resize(tfSize);
+  //   for (size_t i = 0; i < tfSize; ++i) {
+  //     float colorPos = tfSize > 1
+  //       ? (float(i) / (tfSize - 1)) * (m_colorData->size() - 1)
+  //       : 0.f;
+  //     float colorFrac = colorPos - floorf(colorPos);
+
+  //     math::float3 color0 = colorData[int(floorf(colorPos))];
+  //     math::float3 color1 = colorData[int(ceilf(colorPos))];
+  //     math::float3 color = math::float3(math::lerp(color0.x, color1.x, colorFrac),
+  //                                       math::lerp(color0.y, color1.y, colorFrac),
+  //                                       math::lerp(color0.z, color1.z, colorFrac));
+
+  //     float alphaPos = tfSize > 1
+  //       ? (float(i) / (tfSize - 1)) * (m_opacityData->size() - 1)
+  //       : 0.f;
+  //     float alphaFrac = alphaPos - floorf(alphaPos);
+
+  //     float alpha0 = opacityData[int(floorf(alphaPos))];
+  //     float alpha1 = opacityData[int(ceilf(alphaPos))];
+  //     float alpha = math::lerp(alpha0, alpha1, alphaFrac);
+
+  //     m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
+  //   }
+  // } else {
+  //   needsOpacityData = false;
+  //   auto *colorData = m_colorData->beginAs<math::float4>();
+  //   size_t tfSize = m_colorData->size();
+  //   m_rgbaMap.resize(tfSize);
+  //   std::copy(colorData,colorData+tfSize,m_rgbaMap.begin());
+  // }
   setBarneyParameters();
 }
 

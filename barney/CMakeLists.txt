@@ -24,7 +24,7 @@ target_link_libraries(barney-config
   )
 target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
 if (BARNEY_DENOISE)
-  target_compile_definitions(barney-config INTERFACE -DDENOISE=1)
+  target_compile_definitions(barney-config INTERFACE -DDENOISE=1 -DDENOISE_NORMAL=1)
 endif()
 
 

@@ -137,9 +137,9 @@ namespace barney {
     OWLContext getOWL() const;
     const TransferFunction *getXF() const;
     
-    ScalarField *const sf;
-    Volume      *const volume;
-    DevGroup    *const devGroup;
+    ScalarField *const sf = 0;
+    Volume      *const volume = 0;
+    DevGroup    *const devGroup = 0;
   };
   
   /*! a *volume* is a scalar field with a transfer function applied to
