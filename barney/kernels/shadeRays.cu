@@ -896,7 +896,7 @@ namespace barney {
       //          fragment.z);
       
       // clamping ...
-      float clampMax = 20.f*(1+accumID);
+      float clampMax = 10.f*(1+accumID);
       fragment = min(fragment,vec3f(clampMax));
 #endif
       if (accumID == 0 && generation == 0) {
