@@ -103,6 +103,7 @@ namespace barney {
 
       void build(bool full_rebuild) override
       {
+        assert(sf);
         if (mcGrid.dims.x == 0) {
           // macro cell grid hasn't even built ranges, yet -> let it do that.
           sf->buildMCs(mcGrid);
@@ -248,7 +249,7 @@ namespace barney {
       volume->generatedGroups = { group }; 
     }
     sampler.build(full_rebuild);
-    
+
     setVariables(geom);
     owlGroupBuildAccel(group);
   };
@@ -297,6 +298,7 @@ namespace barney {
     OWLGeomType gt = devGroup->getOrCreateGeomTypeFor
       (ptxCode, [&](DevGroup *dg)
       {
+        assert(dg);
         std::vector<OWLVarDecl> params;
         MCVolumeAccel<SFSampler>::DD::addVars(params,0);
         OWLGeomType gt = owlGeomTypeCreate
@@ -450,11 +452,6 @@ namespace barney {
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
               {
                 const float majorant = self.mcGrid.majorant(cellIdx);
-                // if (ray.dbg) printf("dda %i %i %i maj %f\n",
-                //                     cellIdx.x,
-                //                     cellIdx.y,
-                //                     cellIdx.z,
-                //                     majorant);
 
                 if (majorant == 0.f) return true;
 
