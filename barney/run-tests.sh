@@ -50,5 +50,6 @@ done
 PYTHONPATH=$pynari/bin ANARI_LIBRARY=barney $python $pynari/sample01.py -o $out/pynari01.png
 PYTHONPATH=$pynari/bin ANARI_LIBRARY=barney $python $pynari/sample02.py -o $out/pynari02.png
 PYTHONPATH=$pynari/bin ANARI_LIBRARY=barney $python $pynari/sample03.py -o $out/pynari03.png
+PYTHONPATH=$pynari/bin ANARI_LIBRARY=barney $python $pynari/sample04.py -o $out/pynari04.png
 
 
