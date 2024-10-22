@@ -203,7 +203,7 @@ namespace barney {
       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
     float scale
       = finalTiles[tileID].scale[threadIdx.x + tileSize*threadIdx.y];
-    pixelValue |= 0xff000000;
+    // pixelValue |= 0xff000000;
 
     uint32_t ofs = ix + numPixels.x*iy;
 

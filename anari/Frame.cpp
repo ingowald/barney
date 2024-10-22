@@ -213,6 +213,7 @@ void Frame::convertPixelsToFinalFormat()
         m_bnPixelBuffer,
         m_frameData.totalPixels * sizeof(uint32_t),
         cudaMemcpyDefault);
+    cudaDeviceSynchronize();
   } else if (m_colorType == ANARI_UFIXED8_RGBA_SRGB) {
     auto numPixels = m_frameData.totalPixels;
     auto *src = (math::byte4 *)m_bnPixelBuffer;
@@ -229,6 +230,7 @@ void Frame::convertPixelsToFinalFormat()
           f.z = std::pow(f.z, 1.f / 2.2f);
           return math::byte4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
         });
+    cudaDeviceSynchronize();
   } else if (m_colorType == ANARI_FLOAT32_VEC4) {
     auto numPixels = m_frameData.totalPixels;
 #if 1

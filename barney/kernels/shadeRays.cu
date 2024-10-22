@@ -826,6 +826,10 @@ namespace barney {
       
       Ray path = readQueue[tid];
 
+      float alpha
+        = (generation == 0)
+        ? (path.hadHit()? 1.f : 0.f)
+        : 0.f;
 #if DENOISE
       vec3f incomingN
         = path.hadHit()
@@ -901,7 +905,7 @@ namespace barney {
 #endif
       if (accumID == 0 && generation == 0) {
         // if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
-        valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,0.f);
+        valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,alpha);
       } else {
         // if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
 
@@ -911,6 +915,8 @@ namespace barney {
           atomicAdd(&valueToAccumInto.y,fragment.y);
         if (fragment.z > 0.f)
           atomicAdd(&valueToAccumInto.z,fragment.z);
+        if (alpha > 0.f)
+          atomicAdd(&valueToAccumInto.w,alpha);
       }
 
       // and for apps that need a depth buffer, write z
