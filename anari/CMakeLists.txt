@@ -28,8 +28,8 @@ anari_generate_queries(
 project(anari_library_barney LANGUAGES CXX)
 
 project_add_library(SHARED
-  BarneyDeviceQueries.cpp
-  BarneyGlobalState.cpp
+  TallyDeviceQueries.cpp
+  TallyGlobalState.cpp
   Camera.cpp
   Device.cpp
   Frame.cpp

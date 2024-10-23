@@ -7,9 +7,9 @@
 // CUDA
 #include <vector_functions.h>
 
-namespace barney_device {
+namespace tally_device {
 
-Instance::Instance(BarneyGlobalState *s) : Object(ANARI_INSTANCE, s) {}
+Instance::Instance(TallyGlobalState *s) : Object(ANARI_INSTANCE, s) {}
 
 Instance::~Instance() = default;
 
@@ -17,11 +17,12 @@ void Instance::commit()
 {
   math::mat4 xfm = anari::math::identity;
   getParam("transform", ANARI_FLOAT32_MAT4, &xfm);
-  m_xfm.xfm.l.vx = make_float3(xfm[0].x, xfm[0].y, xfm[0].z);
-  m_xfm.xfm.l.vy = make_float3(xfm[1].x, xfm[1].y, xfm[1].z);
-  m_xfm.xfm.l.vz = make_float3(xfm[2].x, xfm[2].y, xfm[2].z);
-  m_xfm.xfm.p = make_float3(xfm[3].x, xfm[3].y, xfm[3].z);
+  // m_xfm.xfm.l.vx = make_float3(xfm[0].x, xfm[0].y, xfm[0].z);
+  // m_xfm.xfm.l.vy = make_float3(xfm[1].x, xfm[1].y, xfm[1].z);
+  // m_xfm.xfm.l.vz = make_float3(xfm[2].x, xfm[2].y, xfm[2].z);
+  // m_xfm.xfm.p = make_float3(xfm[3].x, xfm[3].y, xfm[3].z);
 
+  m_xfm.xfm = xfm;
   m_group = getParamObject<Group>("group");
   if (!m_group)
     reportMessage(ANARI_SEVERITY_WARNING, "missing 'group' on ANARIInstance");
@@ -43,18 +44,18 @@ const Group *Instance::group() const
   return m_group.ptr;
 }
 
-const BNTransform *Instance::barneyTransform() const
+const TallyTransform *Instance::tallyTransform() const
 {
   return &m_xfm;
 }
 
 box3 Instance::bounds() const
 {
-  math::mat4 xfm;
-  xfm[0] = math::float4(m_xfm.xfm.l.vx.x, m_xfm.xfm.l.vx.y, m_xfm.xfm.l.vx.z, 0.f);
-  xfm[1] = math::float4(m_xfm.xfm.l.vy.x, m_xfm.xfm.l.vy.y, m_xfm.xfm.l.vy.z, 0.f);
-  xfm[2] = math::float4(m_xfm.xfm.l.vz.x, m_xfm.xfm.l.vz.y, m_xfm.xfm.l.vz.z, 0.f);
-  xfm[3] = math::float4(m_xfm.xfm.p.x, m_xfm.xfm.p.y, m_xfm.xfm.p.z, 1.f);
+  math::mat4 xfm = m_xfm.xfm;
+  // xfm[0] = math::float4(m_xfm.xfm.l.vx.x, m_xfm.xfm.l.vx.y, m_xfm.xfm.l.vx.z, 0.f);
+  // xfm[1] = math::float4(m_xfm.xfm.l.vy.x, m_xfm.xfm.l.vy.y, m_xfm.xfm.l.vy.z, 0.f);
+  // xfm[2] = math::float4(m_xfm.xfm.l.vz.x, m_xfm.xfm.l.vz.y, m_xfm.xfm.l.vz.z, 0.f);
+  // xfm[3] = math::float4(m_xfm.xfm.p.x, m_xfm.xfm.p.y, m_xfm.xfm.p.z, 1.f);
 
   box3 result = group()->bounds();
 
@@ -70,6 +71,6 @@ box3 Instance::bounds() const
   return result;
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Instance *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Instance *);

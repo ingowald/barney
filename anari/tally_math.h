@@ -12,7 +12,7 @@
 #include <cmath>
 #include <cstring> // for std::memcpy()
 
-namespace barney_device {
+namespace tally_device {
 
 namespace math = anari::math;
 
@@ -64,7 +64,7 @@ struct box3i
   math::int3 lower, upper;
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
 ///////////////////////////////////////////////////////////////////////////////
 // ANARITypeFor type trait mappings ///////////////////////////////////////////
@@ -72,14 +72,14 @@ struct box3i
 
 namespace anari {
 
-ANARI_TYPEFOR_SPECIALIZATION(barney_device::box1, ANARI_FLOAT32_BOX1);
-ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3, ANARI_FLOAT32_BOX3);
-ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3i, ANARI_INT32_BOX3);
+ANARI_TYPEFOR_SPECIALIZATION(tally_device::box1, ANARI_FLOAT32_BOX1);
+ANARI_TYPEFOR_SPECIALIZATION(tally_device::box3, ANARI_FLOAT32_BOX3);
+ANARI_TYPEFOR_SPECIALIZATION(tally_device::box3i, ANARI_INT32_BOX3);
 
-#ifdef ANARI_BARNEY_MATH_DEFINITIONS
-ANARI_TYPEFOR_DEFINITION(barney_device::box1);
-ANARI_TYPEFOR_DEFINITION(barney_device::box3);
-ANARI_TYPEFOR_DEFINITION(barney_device::box3i);
+#ifdef ANARI_TALLY_MATH_DEFINITIONS
+ANARI_TYPEFOR_DEFINITION(tally_device::box1);
+ANARI_TYPEFOR_DEFINITION(tally_device::box3);
+ANARI_TYPEFOR_DEFINITION(tally_device::box3i);
 #endif
 
 } // namespace anari

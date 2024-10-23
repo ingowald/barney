@@ -6,11 +6,11 @@
 #include "Geometry.h"
 #include "Material.h"
 
-namespace barney_device {
+namespace tally_device {
 
 struct Surface : public Object
 {
-  Surface(BarneyGlobalState *s);
+  Surface(TallyGlobalState *s);
   ~Surface() override;
 
   void commit() override;
@@ -20,22 +20,22 @@ struct Surface : public Object
   const Geometry *geometry() const;
   const Material *material() const;
 
-  BNGeom getBarneyGeom(BNModel model, int slot);
+  TallyGeom::SP getTallyGeom(TallyModel::SP model, int slot);
 
   bool isValid() const override;
 
  private:
-  void setBarneyParameters();
+  void setTallyParameters();
   void cleanup();
 
   uint32_t m_id{~0u};
   helium::IntrusivePtr<Geometry> m_geometry;
   helium::IntrusivePtr<Material> m_material;
 
-  BNGeom m_bnGeom{nullptr};
-  BNMaterial m_bnMat{nullptr};
+  TallyGeom::SP m_bnGeom{nullptr};
+  TallyMaterial::SP m_bnMat{nullptr};
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Surface *, ANARI_SURFACE);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::Surface *, ANARI_SURFACE);

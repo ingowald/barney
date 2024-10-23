@@ -4,18 +4,18 @@
 #pragma once
 
 #include "common.h"
-#include "BarneyGlobalState.h"
+#include "TallyGlobalState.h"
 // helium
 #include "helium/BaseObject.h"
 #include "helium/utility/ChangeObserverPtr.h"
 // std
 #include <string_view>
 
-namespace barney_device {
+namespace tally_device {
 
 struct Object : public helium::BaseObject
 {
-  Object(ANARIDataType type, BarneyGlobalState *s);
+  Object(ANARIDataType type, TallyGlobalState *s);
   virtual ~Object() = default;
 
   virtual bool getProperty(const std::string_view &name,
@@ -27,28 +27,28 @@ struct Object : public helium::BaseObject
 
   bool isValid() const override;
 
-  BarneyGlobalState *deviceState() const;
+  TallyGlobalState *deviceState() const;
 
  protected:
   // Return if this object is tracking the currently used model
-  bool isModelTracked(BNModel model, int slot = 0) const;
-  void trackModel(BNModel model, int slot = 0);
+  bool isModelTracked(TallyModel::SP model, int slot = 0) const;
+  void trackModel(TallyModel::SP model, int slot = 0);
 
-  BNModel trackedModel() const;
+  TallyModel::SP trackedModel() const;
   int trackedSlot() const;
 
  private:
-  BNModel m_bnModel{nullptr}; // not an owning reference
+  TallyModel::SP m_bnModel; // not an owning reference
   int m_slot{-1};
 };
 
 struct UnknownObject : public Object
 {
-  UnknownObject(ANARIDataType type, BarneyGlobalState *s);
+  UnknownObject(ANARIDataType type, TallyGlobalState *s);
   ~UnknownObject() override;
   bool isValid() const override;
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Object *, ANARI_OBJECT);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::Object *, ANARI_OBJECT);

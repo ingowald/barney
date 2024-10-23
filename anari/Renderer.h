@@ -5,11 +5,11 @@
 
 #include "Object.h"
 
-namespace barney_device {
+namespace tally_device {
 
 struct Renderer : public Object
 {
-  Renderer(BarneyGlobalState *s);
+  Renderer(TallyGlobalState *s);
   ~Renderer() override;
 
   void commit() override;
@@ -24,6 +24,6 @@ struct Renderer : public Object
   bool m_crosshairs{false};
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Renderer *, ANARI_RENDERER);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::Renderer *, ANARI_RENDERER);

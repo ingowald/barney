@@ -8,12 +8,13 @@
 #include <numeric>
 #include <iostream>
 
-namespace barney_device {
+namespace tally_device {
 
 // Helper functions ///////////////////////////////////////////////////////////
 
-static void addAttribute(BNGeom geom,
-    BNModel model,
+#if TALLY
+static void addAttribute(TallyGeom::SP geom,
+    TallyModel::SP model,
     int slot,
     const helium::IntrusivePtr<Array1D> &attribute,
     std::string name)
@@ -21,19 +22,20 @@ static void addAttribute(BNGeom geom,
   if (!attribute)
     return;
 
-  BNData attr = makeBarneyData(model, slot, attribute);
+  BNData attr = makeTallyData(model, slot, attribute);
   if (attr)
     bnSetData(geom, name.c_str(), attr);
 }
+#endif
 
 // Base Geometry definitions //////////////////////////////////////////////////
 
-Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
+Geometry::Geometry(TallyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
 
 Geometry::~Geometry() = default;
 
   Geometry *Geometry::createInstance(std::string_view subtype,
-                                     BarneyGlobalState *s)
+                                     TallyGlobalState *s)
   {
     if (subtype == "sphere")
       return new Sphere(s);
@@ -69,14 +71,14 @@ void Geometry::markCommitted()
 
 // Sphere //
 
-Sphere::Sphere(BarneyGlobalState *s)
+Sphere::Sphere(TallyGlobalState *s)
     : Geometry(s),
       m_index(this),
       m_vertexPosition(this),
       m_vertexRadius(this)
 {}
 
-Curve::Curve(BarneyGlobalState *s)
+Curve::Curve(TallyGlobalState *s)
     : Geometry(s),
       m_index(this),
       m_vertexPosition(this),
@@ -133,8 +135,9 @@ void Curve::commit()
   }
 }
 
-void Sphere::setBarneyParameters(BNGeom geom, BNModel model, int slot)
+void Sphere::setTallyParameters(TallyGeom::SP geom, TallyModel::SP model, int slot)
 {
+#if TALLY
   BNData origins = bnDataCreate(model,
       slot,
       BN_FLOAT3,
@@ -164,11 +167,13 @@ void Sphere::setBarneyParameters(BNGeom geom, BNModel model, int slot)
   addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
   addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
   addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
+#endif
 }
 
 
-void Curve::setBarneyParameters(BNGeom geom, BNModel model, int slot)
+void Curve::setTallyParameters(TallyGeom::SP geom, TallyModel::SP model, int slot)
 {
+#if 0
   assert(m_vertexRadius->totalSize() == m_vertexPosition->totalSize());
   int numVertices = std::min(m_vertexRadius->totalSize(),
                              m_vertexPosition->totalSize());
@@ -225,6 +230,7 @@ void Curve::setBarneyParameters(BNGeom geom, BNModel model, int slot)
   addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
   addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
   addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
+#endif
 }
 
 bool Sphere::isValid() const
@@ -292,7 +298,7 @@ box3 Curve::bounds() const
 
 // Triangle //
 
-Triangle::Triangle(BarneyGlobalState *s)
+Triangle::Triangle(TallyGlobalState *s)
   : Geometry(s),
     m_index(this),
     m_vertexPosition(this),
@@ -331,8 +337,9 @@ bool Triangle::isValid() const
   return m_vertexPosition;
 }
 
-void Triangle::setBarneyParameters(BNGeom geom, BNModel model, int slot)
+void Triangle::setTallyParameters(TallyGeom::SP geom, TallyModel::SP model, int slot)
 {
+#if TALLY
   int numVertices = m_vertexPosition->totalSize();
   int numIndices = m_index ? m_index->size() : (m_generatedIndices.size() / 3);
   const float3 *vertices = (const float3 *)m_vertexPosition->data();
@@ -363,6 +370,7 @@ void Triangle::setBarneyParameters(BNGeom geom, BNModel model, int slot)
   addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
   addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
   addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
+#endif
 }
 
 const char *Triangle::bnSubtype() const
@@ -399,6 +407,6 @@ box3 Triangle::bounds() const
   return result;
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Geometry *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Geometry *);

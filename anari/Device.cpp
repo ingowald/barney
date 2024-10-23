@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Device.h"
-#if BARNEY_MPI
+#if TALLY_MPI
 #include <mpi.h>
 #endif
 
@@ -11,19 +11,19 @@
 // std
 #include <cstring>
 
-#include "BarneyDeviceQueries.h"
+#include "TallyDeviceQueries.h"
 
-namespace barney_device {
+namespace tally_device {
 
 // Data Arrays ////////////////////////////////////////////////////////////////
 
-void *BarneyDevice::mapArray(ANARIArray a)
+void *TallyDevice::mapArray(ANARIArray a)
 {
   deviceState()->waitOnCurrentFrame();
   return helium::BaseDevice::mapArray(a);
 }
 
-ANARIArray1D BarneyDevice::newArray1D(const void *appMemory,
+ANARIArray1D TallyDevice::newArray1D(const void *appMemory,
     ANARIMemoryDeleter deleter,
     const void *userData,
     ANARIDataType type,
@@ -44,7 +44,7 @@ ANARIArray1D BarneyDevice::newArray1D(const void *appMemory,
     return (ANARIArray1D) new Array1D(deviceState(), md);
 }
 
-ANARIArray2D BarneyDevice::newArray2D(const void *appMemory,
+ANARIArray2D TallyDevice::newArray2D(const void *appMemory,
     ANARIMemoryDeleter deleter,
     const void *userData,
     ANARIDataType type,
@@ -64,7 +64,7 @@ ANARIArray2D BarneyDevice::newArray2D(const void *appMemory,
   return (ANARIArray2D) new Array2D(deviceState(), md);
 }
 
-ANARIArray3D BarneyDevice::newArray3D(const void *appMemory,
+ANARIArray3D TallyDevice::newArray3D(const void *appMemory,
     ANARIMemoryDeleter deleter,
     const void *userData,
     ANARIDataType type,
@@ -88,38 +88,38 @@ ANARIArray3D BarneyDevice::newArray3D(const void *appMemory,
 
 // Renderable Objects /////////////////////////////////////////////////////////
 
-ANARILight BarneyDevice::newLight(const char *subtype)
+ANARILight TallyDevice::newLight(const char *subtype)
 {
   initDevice();
   return (ANARILight)Light::createInstance(subtype, deviceState());
 }
 
-ANARICamera BarneyDevice::newCamera(const char *subtype)
+ANARICamera TallyDevice::newCamera(const char *subtype)
 {
   initDevice();
   return (ANARICamera)Camera::createInstance(subtype, deviceState());
 }
 
-ANARIGeometry BarneyDevice::newGeometry(const char *subtype)
+ANARIGeometry TallyDevice::newGeometry(const char *subtype)
 {
   initDevice();
   return (ANARIGeometry)Geometry::createInstance(subtype, deviceState());
 }
 
-ANARISpatialField BarneyDevice::newSpatialField(const char *subtype)
+ANARISpatialField TallyDevice::newSpatialField(const char *subtype)
 {
   initDevice();
   return (ANARISpatialField)SpatialField::createInstance(
       subtype, deviceState());
 }
 
-ANARISurface BarneyDevice::newSurface()
+ANARISurface TallyDevice::newSurface()
 {
   initDevice();
   return (ANARISurface) new Surface(deviceState());
 }
 
-ANARIVolume BarneyDevice::newVolume(const char *subtype)
+ANARIVolume TallyDevice::newVolume(const char *subtype)
 {
   initDevice();
   return (ANARIVolume)Volume::createInstance(subtype, deviceState());
@@ -127,13 +127,13 @@ ANARIVolume BarneyDevice::newVolume(const char *subtype)
 
 // Model Meta-Data ////////////////////////////////////////////////////////////
 
-ANARIMaterial BarneyDevice::newMaterial(const char *subtype)
+ANARIMaterial TallyDevice::newMaterial(const char *subtype)
 {
   initDevice();
   return (ANARIMaterial)Material::createInstance(subtype, deviceState());
 }
 
-ANARISampler BarneyDevice::newSampler(const char *subtype)
+ANARISampler TallyDevice::newSampler(const char *subtype)
 {
   initDevice();
   return (ANARISampler)Sampler::createInstance(subtype, deviceState());
@@ -141,13 +141,13 @@ ANARISampler BarneyDevice::newSampler(const char *subtype)
 
 // Instancing /////////////////////////////////////////////////////////////////
 
-ANARIGroup BarneyDevice::newGroup()
+ANARIGroup TallyDevice::newGroup()
 {
   initDevice();
   return (ANARIGroup) new Group(deviceState());
 }
 
-ANARIInstance BarneyDevice::newInstance(const char * /*subtype*/)
+ANARIInstance TallyDevice::newInstance(const char * /*subtype*/)
 {
   initDevice();
   return (ANARIInstance) new Instance(deviceState());
@@ -155,7 +155,7 @@ ANARIInstance BarneyDevice::newInstance(const char * /*subtype*/)
 
 // Top-level Worlds ///////////////////////////////////////////////////////////
 
-ANARIWorld BarneyDevice::newWorld()
+ANARIWorld TallyDevice::newWorld()
 {
   initDevice();
   return (ANARIWorld) new World(deviceState());
@@ -163,28 +163,28 @@ ANARIWorld BarneyDevice::newWorld()
 
 // Query functions ////////////////////////////////////////////////////////////
 
-const char **BarneyDevice::getObjectSubtypes(ANARIDataType objectType)
+const char **TallyDevice::getObjectSubtypes(ANARIDataType objectType)
 {
-  return barney_device::query_object_types(objectType);
+  return tally_device::query_object_types(objectType);
 }
 
-const void *BarneyDevice::getObjectInfo(ANARIDataType objectType,
+const void *TallyDevice::getObjectInfo(ANARIDataType objectType,
     const char *objectSubtype,
     const char *infoName,
     ANARIDataType infoType)
 {
-  return barney_device::query_object_info(
+  return tally_device::query_object_info(
       objectType, objectSubtype, infoName, infoType);
 }
 
-const void *BarneyDevice::getParameterInfo(ANARIDataType objectType,
+const void *TallyDevice::getParameterInfo(ANARIDataType objectType,
     const char *objectSubtype,
     const char *parameterName,
     ANARIDataType parameterType,
     const char *infoName,
     ANARIDataType infoType)
 {
-  return barney_device::query_param_info(objectType,
+  return tally_device::query_param_info(objectType,
       objectSubtype,
       parameterName,
       parameterType,
@@ -194,7 +194,7 @@ const void *BarneyDevice::getParameterInfo(ANARIDataType objectType,
 
 // Object + Parameter Lifetime Management /////////////////////////////////////
 
-int BarneyDevice::getProperty(ANARIObject object,
+int TallyDevice::getProperty(ANARIObject object,
     const char *name,
     ANARIDataType type,
     void *mem,
@@ -211,7 +211,7 @@ int BarneyDevice::getProperty(ANARIObject object,
 
 // Frame Manipulation /////////////////////////////////////////////////////////
 
-ANARIFrame BarneyDevice::newFrame()
+ANARIFrame TallyDevice::newFrame()
 {
   initDevice();
   return (ANARIFrame) new Frame(deviceState());
@@ -219,7 +219,7 @@ ANARIFrame BarneyDevice::newFrame()
 
 // Frame Rendering ////////////////////////////////////////////////////////////
 
-ANARIRenderer BarneyDevice::newRenderer(const char *)
+ANARIRenderer TallyDevice::newRenderer(const char *)
 {
   initDevice();
   return (ANARIRenderer) new Renderer(deviceState());
@@ -227,29 +227,29 @@ ANARIRenderer BarneyDevice::newRenderer(const char *)
 
 // Helper/other functions and data members ////////////////////////////////////
 
-BarneyDevice::BarneyDevice(ANARILibrary l) : helium::BaseDevice(l)
+TallyDevice::TallyDevice(ANARILibrary l) : helium::BaseDevice(l)
 {
-  m_state = std::make_unique<BarneyGlobalState>(this_device());
+  m_state = std::make_unique<TallyGlobalState>(this_device());
   deviceCommitParameters();
 }
 
-BarneyDevice::~BarneyDevice()
+TallyDevice::~TallyDevice()
 {
   auto &state = *deviceState();
   state.commitBufferClear();
-  reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
+  reportMessage(ANARI_SEVERITY_DEBUG, "destroying tally device (%p)", this);
 }
 
-void BarneyDevice::initDevice()
+void TallyDevice::initDevice()
 {
   if (m_initialized)
     return;
 
-  reportMessage(ANARI_SEVERITY_DEBUG, "initializing barney device (%p)", this);
+  reportMessage(ANARI_SEVERITY_DEBUG, "initializing tally device (%p)", this);
 
   auto &state = *deviceState();
 
-#if BARNEY_MPI
+#if TALLY_MPI
   int mpiInitialized = 0;
   MPI_Initialized(&mpiInitialized);
   if (!mpiInitialized)
@@ -276,12 +276,12 @@ void BarneyDevice::initDevice()
   std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
 #endif
   reportMessage(
-      ANARI_SEVERITY_DEBUG, "created barney context (%p)", state.context);
+      ANARI_SEVERITY_DEBUG, "created tally context (%p)", state.context);
 
   m_initialized = true;
 }
 
-void BarneyDevice::deviceCommitParameters()
+void TallyDevice::deviceCommitParameters()
 {
   auto &state = *deviceState();
 
@@ -298,23 +298,23 @@ void BarneyDevice::deviceCommitParameters()
   helium::BaseDevice::deviceCommitParameters();
 }
 
-int BarneyDevice::deviceGetProperty(
+int TallyDevice::deviceGetProperty(
     const char *name, ANARIDataType type, void *mem, uint64_t size)
 {
   std::string_view prop = name;
   if (prop == "extension" && type == ANARI_STRING_LIST) {
     helium::writeToVoidP(mem, query_extensions());
     return 1;
-  } else if (prop == "barney" && type == ANARI_BOOL) {
+  } else if (prop == "tally" && type == ANARI_BOOL) {
     helium::writeToVoidP(mem, true);
     return 1;
   }
   return 0;
 }
 
-BarneyGlobalState *BarneyDevice::deviceState() const
+TallyGlobalState *TallyDevice::deviceState() const
 {
-  return (BarneyGlobalState *)helium::BaseDevice::m_state.get();
+  return (TallyGlobalState *)helium::BaseDevice::m_state.get();
 }
 
-} // namespace barney_device
+} // namespace tally_device

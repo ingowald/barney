@@ -5,7 +5,7 @@
 // Don't make changes to this directly
 
 #include <anari/anari.h>
-namespace barney_device {
+namespace tally_device {
 #define ANARI_INFO_required 0
 #define ANARI_INFO_default 1
 #define ANARI_INFO_minimum 2

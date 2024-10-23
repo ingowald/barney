@@ -7,43 +7,43 @@
 #include "Object.h"
 #include "SpatialField.h"
 
-namespace barney_device {
+namespace tally_device {
 
 struct Volume : public Object
 {
-  Volume(BarneyGlobalState *s);
+  Volume(TallyGlobalState *s);
   ~Volume() override;
 
-  static Volume *createInstance(std::string_view subtype, BarneyGlobalState *s);
+  static Volume *createInstance(std::string_view subtype, TallyGlobalState *s);
 
   void markCommitted() override;
 
-  BNVolume getBarneyVolume(BNModel model, int slot);
+  TallyVolume::SP getTallyVolume(TallyModel::SP model, int slot);
 
   virtual box3 bounds() const = 0;
 
  protected:
-  virtual BNVolume createBarneyVolume(BNModel model, int slot) = 0;
-  virtual void setBarneyParameters() = 0;
+  virtual TallyVolume::SP createTallyVolume(TallyModel::SP model, int slot) = 0;
+  virtual void setTallyParameters() = 0;
   void cleanup();
 
-  BNVolume m_bnVolume{nullptr};
+  TallyVolume::SP m_bnVolume{nullptr};
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 struct TransferFunction1D : public Volume
 {
-  TransferFunction1D(BarneyGlobalState *s);
+  TransferFunction1D(TallyGlobalState *s);
   void commit() override;
   bool isValid() const override;
 
-  BNVolume createBarneyVolume(BNModel model, int slot) override;
+  TallyVolume::SP createTallyVolume(TallyModel::SP model, int slot) override;
 
   box3 bounds() const override;
 
  private:
-  void setBarneyParameters() override;
+  void setTallyParameters() override;
 
   helium::IntrusivePtr<SpatialField> m_field;
 
@@ -59,6 +59,6 @@ struct TransferFunction1D : public Volume
   std::vector<math::float4> m_rgbaMap;
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Volume *, ANARI_VOLUME);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::Volume *, ANARI_VOLUME);

@@ -7,7 +7,7 @@
 #include <vector_functions.h>
 #include <iostream>
 
-namespace barney_device {
+namespace tally_device {
 
 // Helper functions ///////////////////////////////////////////////////////////
 
@@ -35,6 +35,7 @@ inline MaterialParameter<math::float4> getMaterialHelper(
   return retval;
 }
 
+  #if TALLY
 template <typename T>
 inline void setBNMaterialUniform(BNMaterial m, const char *p, T v)
 {
@@ -63,21 +64,22 @@ template <typename T>
 inline void setBNMaterialHelper(BNMaterial m,
     const char *p,
     MaterialParameter<T> &mp,
-    BNModel model,
+    TallyModel::SP model,
     int slot)
 {
   if (mp.sampler) {
-    BNSampler s = mp.sampler->getBarneySampler(model, slot);
+    BNSampler s = mp.sampler->getTallySampler(model, slot);
     bnSetObject(m,p, s);
   } else if (!mp.attribute.empty())
     bnSetString(m,p, mp.attribute.c_str());
   else
     setBNMaterialUniform(m, p, mp.value);
 }
-
+#endif
+  
 // Material definitions ///////////////////////////////////////////////////////
 
-Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
+Material::Material(TallyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
 
 Material::~Material()
 {
@@ -85,7 +87,7 @@ Material::~Material()
 }
 
 Material *Material::createInstance(
-    std::string_view subtype, BarneyGlobalState *s)
+    std::string_view subtype, TallyGlobalState *s)
 {
   if (subtype == "matte")
     return new Matte(s);
@@ -95,13 +97,13 @@ Material *Material::createInstance(
     return (Material *)new UnknownObject(ANARI_MATERIAL, s);
 }
 
-BNMaterial Material::getBarneyMaterial(BNModel model, int slot)
+TallyMaterial::SP Material::getTallyMaterial(TallyModel::SP model, int slot)
 {
   if (!isModelTracked(model, slot)) {
     cleanup();
     trackModel(model, slot);
-    m_bnMat = bnMaterialCreate(model, slot, bnSubtype());
-    setBarneyParameters();
+    m_bnMat = TallyMaterial::create(bnSubtype());//bnMaterialCreate(model, slot, bnSubtype());
+    setTallyParameters();
   }
 
   return m_bnMat;
@@ -109,8 +111,8 @@ BNMaterial Material::getBarneyMaterial(BNModel model, int slot)
 
 void Material::cleanup()
 {
-  if (m_bnMat)
-    bnRelease(m_bnMat);
+  // if (m_bnMat)
+  //   bnRelease(m_bnMat);
   m_bnMat = nullptr;
 }
 
@@ -118,7 +120,7 @@ void Material::cleanup()
 
 // Matte //
 
-Matte::Matte(BarneyGlobalState *s) : Material(s)
+Matte::Matte(TallyGlobalState *s) : Material(s)
 {
   this->commit(); // init with defaults for scalar values
 }
@@ -128,7 +130,7 @@ void Matte::commit()
   Object::commit();
   m_color = getMaterialHelper(this, "color", math::float4(0.8f, 0.8f, 0.8f, 1));
   m_opacity = getMaterialHelper(this, "opacity", 1.f);
-  setBarneyParameters();
+  setTallyParameters();
 }
 
 bool Matte::isValid() const
@@ -144,15 +146,16 @@ const char *Matte::bnSubtype() const
 // #endif
 }
 
-void Matte::setBarneyParameters()
+void Matte::setTallyParameters()
 {
   if (!m_bnMat)
     return;
 
-  BNModel model = trackedModel();
+  TallyModel::SP model = trackedModel();
   int slot = trackedSlot();
 
-  // NOTE: using Barney PBR material because matte wasn't (isn't?) finished
+#if TALLY
+  // NOTE: using Tally PBR material because matte wasn't (isn't?) finished
   setBNMaterialHelper(m_bnMat, "color", m_color, model, slot);
   // setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
   // bnSet1f(m_bnMat, "metallic", 0.f);
@@ -160,11 +163,12 @@ void Matte::setBarneyParameters()
   // bnSet1f(m_bnMat, "specular", 0.f);
   // bnSet1f(m_bnMat, "transmission", 0.f);
   bnCommit(m_bnMat);
+#endif
 }
 
 // PhysicallyBased //
 
-PhysicallyBased::PhysicallyBased(BarneyGlobalState *s) : Material(s)
+PhysicallyBased::PhysicallyBased(TallyGlobalState *s) : Material(s)
 {
   this->commit(); // init with defaults for scalar values
 }
@@ -190,7 +194,7 @@ void PhysicallyBased::commit()
     = getMaterialHelper(this, "transmission", 0.f);
   m_ior
     = getParam<float>  (      "ior", 1.5f);
-  setBarneyParameters();
+  setTallyParameters();
 }
 
 const char *PhysicallyBased::bnSubtype() const
@@ -198,12 +202,12 @@ const char *PhysicallyBased::bnSubtype() const
   return "physicallyBased";
 }
 
-void PhysicallyBased::setBarneyParameters()
+void PhysicallyBased::setTallyParameters()
 {
   if (!m_bnMat)
     return;
-
-  BNModel model = trackedModel();
+#if TALLY
+  TallyModel::SP model = trackedModel();
   int slot = trackedSlot();
 
   setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, model, slot);
@@ -217,10 +221,10 @@ void PhysicallyBased::setBarneyParameters()
   setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
 
   bnSet1f(m_bnMat, "ior", m_ior);
-
   bnCommit(m_bnMat);
+#endif
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Material *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Material *);

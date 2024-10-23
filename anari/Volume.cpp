@@ -4,15 +4,15 @@
 #include "Volume.h"
 // std
 #include <numeric>
-#include "barney/common/barney-common.h"
+// #include "tally/common/tally-common.h"
 
-namespace barney_device {
+namespace tally_device {
 
-Volume::Volume(BarneyGlobalState *s) : Object(ANARI_VOLUME, s) {}
+Volume::Volume(TallyGlobalState *s) : Object(ANARI_VOLUME, s) {}
 
 Volume::~Volume() = default;
 
-Volume *Volume::createInstance(std::string_view subtype, BarneyGlobalState *s)
+Volume *Volume::createInstance(std::string_view subtype, TallyGlobalState *s)
 {
   if (subtype == "transferFunction1D")
     return new TransferFunction1D(s);
@@ -26,15 +26,15 @@ void Volume::markCommitted()
   Object::markCommitted();
 }
 
-BNVolume Volume::getBarneyVolume(BNModel model, int slot)
+TallyVolume::SP Volume::getTallyVolume(TallyModel::SP model, int slot)
 {
   if (!isValid())
     return {};
   if (!isModelTracked(model, slot)) {
     cleanup();
     trackModel(model, slot);
-    m_bnVolume = createBarneyVolume(model, slot);
-    setBarneyParameters();
+    m_bnVolume = createTallyVolume(model, slot);
+    setTallyParameters();
   }
   return m_bnVolume;
 }
@@ -42,14 +42,14 @@ BNVolume Volume::getBarneyVolume(BNModel model, int slot)
 void Volume::cleanup()
 {
   if (m_bnVolume) {
-    bnRelease(m_bnVolume);
+    // bnRelease(m_bnVolume);
     m_bnVolume = nullptr;
   }
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
-TransferFunction1D::TransferFunction1D(BarneyGlobalState *s) : Volume(s) {}
+TransferFunction1D::TransferFunction1D(TallyGlobalState *s) : Volume(s) {}
 
 bool TransferFunction1D::isValid() const
 {
@@ -180,14 +180,15 @@ void TransferFunction1D::commit()
   //   m_rgbaMap.resize(tfSize);
   //   std::copy(colorData,colorData+tfSize,m_rgbaMap.begin());
   // }
-  setBarneyParameters();
+  setTallyParameters();
 }
 
-BNVolume TransferFunction1D::createBarneyVolume(BNModel model, int slot)
+TallyVolume::SP TransferFunction1D::createTallyVolume(TallyModel::SP model, int slot)
 {
   return m_field
-      ? bnVolumeCreate(model, slot, m_field->getBarneyScalarField(model, slot))
-      : BNVolume{};
+    ? TallyTransferFunction1D::create(m_field->getTallySpatialField(model, slot))
+                          //bnVolumeCreate(model, slot, m_field->getTallySpatialField(model, slot))
+    : TallyTransferFunction1D::SP{};
 }
 
 box3 TransferFunction1D::bounds() const
@@ -195,22 +196,25 @@ box3 TransferFunction1D::bounds() const
   return m_bounds;
 }
 
-void TransferFunction1D::setBarneyParameters()
+void TransferFunction1D::setTallyParameters()
 {
-  BNModel model = trackedModel();
+  TallyModel::SP model = trackedModel();
   if (!isValid() || !model || !m_bnVolume)
     return;
   int slot = trackedSlot();
 
-  BNVolume vol = getBarneyVolume(model, slot);
+  TallyVolume::SP vol = getTallyVolume(model, slot);
+  vol->update();
+#if TALLY
   bnVolumeSetXF(vol,
       (float2 &)m_valueRange,
       (const float4 *)m_rgbaMap.data(),
       m_rgbaMap.size(),
       m_densityScale);
   bnCommit(vol);
+#endif
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Volume *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Volume *);

@@ -6,9 +6,9 @@
 #include <algorithm>
 #include <set>
 
-namespace barney_device {
+namespace tally_device {
 
-World::World(BarneyGlobalState *s)
+World::World(TallyGlobalState *s)
     : Object(ANARI_WORLD, s),
       m_zeroSurfaceData(this),
       m_zeroVolumeData(this),
@@ -26,8 +26,9 @@ World::World(BarneyGlobalState *s)
 
 World::~World()
 {
-  if (m_barneyModel)
-    bnRelease(m_barneyModel);
+  // if (m_tallyModel)
+  //   bnRelease(m_tallyModel);
+  m_tallyModel = {};
 }
 
 bool World::getProperty(
@@ -60,11 +61,11 @@ void World::commit()
   const bool addZeroInstance =
       m_zeroSurfaceData || m_zeroVolumeData || m_zeroLightData;
   if (addZeroInstance)
-    reportMessage(ANARI_SEVERITY_DEBUG, "barney::World will add zero instance");
+    reportMessage(ANARI_SEVERITY_DEBUG, "tally::World will add zero instance");
 
   if (m_zeroSurfaceData) {
     reportMessage(ANARI_SEVERITY_DEBUG,
-                  "barney::World found %zu surfaces in zero instance",
+                  "tally::World found %zu surfaces in zero instance",
         m_zeroSurfaceData->size());
     m_zeroGroup->setParamDirect("surface", getParamDirect("surface"));
   } else
@@ -72,7 +73,7 @@ void World::commit()
 
   if (m_zeroVolumeData) {
     reportMessage(ANARI_SEVERITY_DEBUG,
-        "barney::World found %zu volumes in zero instance",
+        "tally::World found %zu volumes in zero instance",
         m_zeroVolumeData->size());
     m_zeroGroup->setParamDirect("volume", getParamDirect("volume"));
   } else
@@ -80,7 +81,7 @@ void World::commit()
 
   if (m_zeroLightData) {
     reportMessage(ANARI_SEVERITY_DEBUG,
-        "barney::World found %zu lights in zero instance",
+        "tally::World found %zu lights in zero instance",
         m_zeroLightData->size());
     m_zeroGroup->setParamDirect("light", getParamDirect("light"));
   } else
@@ -108,75 +109,79 @@ void World::commit()
     m_instances.push_back(m_zeroInstance.ptr);
 }
 
-BNModel World::makeCurrent()
+TallyModel::SP World::makeCurrent()
 {
   auto *state = deviceState();
 
   if (deviceState()->currentWorld != this) {
-    if (m_barneyModel)
-      bnRelease(m_barneyModel);
-    m_barneyModel = nullptr;
-    m_lastBarneyModelBuild = 0;
-    m_barneyModel = bnModelCreate(state->context);
+    // if (m_tallyModel)
+    //   bnRelease(m_tallyModel);
+    m_tallyModel = nullptr;
+    m_lastTallyModelBuild = 0;
+    m_tallyModel = TallyModel::create();//bnModelCreate(state->context);
     state->currentWorld = this;
   }
 
-  if (state->objectUpdates.lastSceneChange > m_lastBarneyModelBuild)
-    buildBarneyModel();
+  if (state->objectUpdates.lastSceneChange > m_lastTallyModelBuild)
+    buildTallyModel();
 
-  return m_barneyModel;
+  return m_tallyModel;
 }
 
-void World::buildBarneyModel()
+void World::buildTallyModel()
 {
-  reportMessage(ANARI_SEVERITY_DEBUG, "barney::World rebuilding model");
+  PING;
+  reportMessage(ANARI_SEVERITY_DEBUG, "tally::World rebuilding model");
 
   std::vector<const Group *> groups;
-  std::vector<BNGroup> barneyGroups;
-  std::vector<BNTransform> barneyTransforms;
+  std::vector<TallyGroup::SP> tallyGroups;
+  std::vector<TallyTransform> tallyTransforms;
 
   groups.reserve(m_instances.size());
-  barneyGroups.resize(m_instances.size(), nullptr);
-  barneyTransforms.reserve(m_instances.size());
+  tallyGroups.resize(m_instances.size(), nullptr);
+  tallyTransforms.reserve(m_instances.size());
 
   for (auto inst : m_instances) {
-    barneyTransforms.push_back(*inst->barneyTransform());
+    tallyTransforms.push_back(*inst->tallyTransform());
     groups.push_back(inst->group());
   }
 
   for (size_t i = 0; i < groups.size(); i++) {
-    if (barneyGroups[i] != nullptr)
+    if (tallyGroups[i] != nullptr)
       continue;
     auto *g = groups[i];
-    BNGroup bg = g->makeBarneyGroup(m_barneyModel, 0);
+    TallyGroup::SP//TallyGroup::SP
+      bg = g->makeTallyGroup(m_tallyModel, 0);
     for (size_t j = i; j < groups.size(); j++) {
       if (groups[j] == g)
-        barneyGroups[j] = bg;
+        tallyGroups[j] = bg;
     }
   }
 
-  if (barneyTransforms.size() != barneyGroups.size()) {
+  if (tallyTransforms.size() != tallyGroups.size()) {
     reportMessage(ANARI_SEVERITY_FATAL_ERROR,
-        "Barney transforms and groups are different sizes!");
+        "Tally transforms and groups are different sizes!");
     return;
   }
 
-  bnSetInstances(m_barneyModel,
-      0,
-      barneyGroups.data(),
-      barneyTransforms.data(),
-      barneyGroups.size());
-  bnBuild(m_barneyModel, 0);
+  PING;
+  m_tallyModel->setInstances(tallyGroups,tallyTransforms);
+  // bnSetInstances(m_tallyModel,
+  //     0,
+  //     tallyGroups.data(),
+  //     tallyTransforms.data(),
+  //     tallyGroups.size());
+  // bnBuild(m_tallyModel, 0);
 
-  std::set<BNGroup> uniqueBarneyGroups;
-  for (auto bng : barneyGroups)
-    uniqueBarneyGroups.insert(bng);
-  for (auto bng : uniqueBarneyGroups)
-    bnRelease(bng);
+  // std::set<TallyGroup::SP> uniqueTallyGroups;
+  // for (auto bng : tallyGroups)
+  //   uniqueTallyGroups.insert(bng);
+  // for (auto bng : uniqueTallyGroups)
+  //   bnRelease(bng);
 
-  m_lastBarneyModelBuild = helium::newTimeStamp();
+  m_lastTallyModelBuild = helium::newTimeStamp();
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::World *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::World *);

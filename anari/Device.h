@@ -6,11 +6,11 @@
 // helium
 #include "helium/BaseDevice.h"
 
-#include "BarneyGlobalState.h"
+#include "TallyGlobalState.h"
 
-namespace barney_device {
+namespace tally_device {
 
-struct BarneyDevice : public helium::BaseDevice
+struct TallyDevice : public helium::BaseDevice
 {
   // Data Arrays //////////////////////////////////////////////////////////////
 
@@ -100,17 +100,17 @@ struct BarneyDevice : public helium::BaseDevice
   // Helper/other functions and data members
   /////////////////////////////////////////////////////////////////////////////
 
-  BarneyDevice(ANARILibrary);
-  ~BarneyDevice() override;
+  TallyDevice(ANARILibrary);
+  ~TallyDevice() override;
 
  private:
   void initDevice();
   void deviceCommitParameters() override;
   int deviceGetProperty(
       const char *name, ANARIDataType type, void *mem, uint64_t size) override;
-  BarneyGlobalState *deviceState() const;
+  TallyGlobalState *deviceState() const;
 
   bool m_initialized{false};
 };
 
-} // namespace barney_device
+} // namespace tally_device

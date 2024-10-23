@@ -6,23 +6,23 @@
 #include "Object.h"
 #include "Sampler.h"
 
-namespace barney_device {
+namespace tally_device {
 
 struct Material : public Object
 {
-  Material(BarneyGlobalState *s);
+  Material(TallyGlobalState *s);
   ~Material() override;
 
   static Material *createInstance(
-      std::string_view subtype, BarneyGlobalState *s);
+      std::string_view subtype, TallyGlobalState *s);
 
-  BNMaterial getBarneyMaterial(BNModel model, int slot);
+  TallyMaterial::SP getTallyMaterial(TallyModel::SP model, int slot);
 
  protected:
   virtual const char *bnSubtype() const = 0;
-  virtual void setBarneyParameters() = 0;
+  virtual void setTallyParameters() = 0;
   void cleanup();
-  BNMaterial m_bnMat{nullptr};
+  TallyMaterial::SP m_bnMat{nullptr};
 };
 
 template <typename SCALAR_T>
@@ -64,12 +64,12 @@ struct MaterialParameter
   */
 struct Matte : public Material
 {
-  Matte(BarneyGlobalState *s);
+  Matte(TallyGlobalState *s);
   void commit() override;
   bool isValid() const override;
 
   const char *bnSubtype() const override;
-  void setBarneyParameters() override;
+  void setTallyParameters() override;
 
  private:
   MaterialParameter<math::float4> m_color;
@@ -200,11 +200,11 @@ struct Matte : public Material
   */
 struct PhysicallyBased : public Material
 {
-  PhysicallyBased(BarneyGlobalState *s);
+  PhysicallyBased(TallyGlobalState *s);
   void commit() override;
 
   const char *bnSubtype() const override;
-  void setBarneyParameters() override;
+  void setTallyParameters() override;
 
  private:
   MaterialParameter<math::float4> m_baseColor;
@@ -219,6 +219,6 @@ struct PhysicallyBased : public Material
   float m_ior{1.5f};
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Material *, ANARI_MATERIAL);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::Material *, ANARI_MATERIAL);

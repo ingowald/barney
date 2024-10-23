@@ -6,9 +6,9 @@
 #include <cassert>
 #include <iostream>
 
-namespace barney_device {
+namespace tally_device {
 
-  Sampler::Sampler(BarneyGlobalState *s) : Object(ANARI_SAMPLER, s) {}
+  Sampler::Sampler(TallyGlobalState *s) : Object(ANARI_SAMPLER, s) {}
 
   Sampler::~Sampler()
   {
@@ -16,7 +16,7 @@ namespace barney_device {
   }
 
   Sampler *Sampler::createInstance(std::string_view subtype,
-                                   BarneyGlobalState *s)
+                                   TallyGlobalState *s)
   {
     if (subtype == "image1D")
       return new Image1D(s);
@@ -31,11 +31,11 @@ namespace barney_device {
   void Sampler::cleanup()
   {
     if (m_bnSampler) {
-      bnRelease(m_bnSampler);
+      // bnRelease(m_bnSampler);
       m_bnSampler = nullptr;
     }
     if (m_bnTextureData) {
-      bnRelease(m_bnTextureData);
+      // bnRelease(m_bnTextureData);
       m_bnTextureData = nullptr;
     }
   }
@@ -44,7 +44,7 @@ namespace barney_device {
 
   // Image1D //
 
-  Image1D::Image1D(BarneyGlobalState *s) : Sampler(s) {}
+  Image1D::Image1D(TallyGlobalState *s) : Sampler(s) {}
 
   Image1D::~Image1D() = default;
 
@@ -57,7 +57,7 @@ namespace barney_device {
     // m_image = getParamObject<helium::Array1D>("image");
     // m_inAttribute = getParamString("inAttribute", "attribute0");
     // m_linearFilter = getParamString("filter", "linear") != "nearest";
-    // m_wrapMode = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
+    // m_wrapMode = toTallyAddressMode(getParamString("wrapMode1", "clampToEdge"));
     // m_inTransform = math::identity;
     // getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
     // m_inOffset =
@@ -66,7 +66,7 @@ namespace barney_device {
     // getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
     // m_outOffset =
     //     getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
-    // setBarneyParameters();
+    // setTallyParameters();
   }
 
   bool Image1D::isValid() const
@@ -74,13 +74,13 @@ namespace barney_device {
     return m_image;
   }
 
-  void Image1D::createBarneySampler(BNModel model, int slot)
+  void Image1D::createTallySampler(TallyModel::SP model, int slot)
   {
   }
 
   // Image2D //
 
-  Image2D::Image2D(BarneyGlobalState *s) : Sampler(s) {}
+  Image2D::Image2D(TallyGlobalState *s) : Sampler(s) {}
 
   Image2D::~Image2D()
   {
@@ -94,8 +94,10 @@ namespace barney_device {
     m_image = getParamObject<helium::Array2D>("image");
     m_inAttribute = getParamString("inAttribute", "attribute0");
     m_linearFilter = getParamString("filter", "linear") != "nearest";
-    m_wrapMode1 = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
-    m_wrapMode2 = toBarneyAddressMode(getParamString("wrapMode2", "clampToEdge"));
+#if TALLY
+    m_wrapMode1 = toTallyAddressMode(getParamString("wrapMode1", "clampToEdge"));
+    m_wrapMode2 = toTallyAddressMode(getParamString("wrapMode2", "clampToEdge"));
+#endif
     m_inTransform = math::identity;
     getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
     m_inOffset =
@@ -111,7 +113,7 @@ namespace barney_device {
     return m_image;
   }
 
-  BNSampler Sampler::getBarneySampler(BNModel model, int slot)
+  TallySampler::SP Sampler::getTallySampler(TallyModel::SP model, int slot)
   {
     if (!isValid())
       return {};
@@ -120,14 +122,14 @@ namespace barney_device {
       trackModel(model, slot);
     }
     if (!m_bnSampler) 
-      createBarneySampler(model,slot);
+      createTallySampler(model,slot);
     return m_bnSampler;
   }
 
-  void Image2D::createBarneySampler(BNModel model, int slot) 
+  void Image2D::createTallySampler(TallyModel::SP model, int slot) 
   {
     // ------------------------------------------------------------------
-    // first, create 2D cuda array of texels. these barney objects
+    // first, create 2D cuda array of texels. these tally objects
     // SHOULD actually live with their respective image array...
     // ------------------------------------------------------------------
     int width  = m_image->size().x;
@@ -142,17 +144,19 @@ namespace barney_device {
       texels.resize(width*height);
     }
 
+#if TALLY
     if (m_bnTextureData)
       bnRelease(m_bnTextureData);
     m_bnTextureData
       = bnTextureData2DCreate(model,slot,BN_TEXEL_FORMAT_RGBA8,
                               width,height,texels.data());
-  
+#endif
     // ------------------------------------------------------------------
     // now, create sampler over those texels
     // ------------------------------------------------------------------
   
-    m_bnSampler = bnSamplerCreate(model,slot,"texture2D");
+    m_bnSampler = TallySampler::create("texture2D");//bnSamplerCreate(model,slot,"texture2D");
+#if TALLY
     bnSetObject(m_bnSampler,"textureData",m_bnTextureData);
   
     BNTextureFilterMode filterMode
@@ -169,11 +173,12 @@ namespace barney_device {
     bnSet4f(m_bnSampler,"outOffset",m_outOffset.x,m_outOffset.y,m_outOffset.z,m_outOffset.w);
     bnSetString(m_bnSampler,"inAttribute",m_inAttribute.c_str());
     bnCommit(m_bnSampler);
+#endif
   }
 
   // TransformSampler //
 
-  TransformSampler::TransformSampler(BarneyGlobalState *s) : Sampler(s) {}
+  TransformSampler::TransformSampler(TallyGlobalState *s) : Sampler(s) {}
 
   void TransformSampler::commit()
   {
@@ -187,20 +192,20 @@ namespace barney_device {
       getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
   }
 
-  void TransformSampler::createBarneySampler(BNModel model, int slot)
+  void TransformSampler::createTallySampler(TallyModel::SP model, int slot)
   {
-    // setBarneySampler(model, slot, "transform");
+    // setTallySampler(model, slot, "transform");
     // return m_bnSampler;
   }
 
-  // void TransformSampler::setBarneyParameters()
+  // void TransformSampler::setTallyParameters()
   // {
   //   if (!m_bnSampler)
   //     return;
 
-  //   // TODO: set and commit parameters on barney sampler
+  //   // TODO: set and commit parameters on tally sampler
   // }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Sampler *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Sampler *);

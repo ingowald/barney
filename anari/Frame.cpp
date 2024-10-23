@@ -25,18 +25,18 @@
 #endif
 #endif
 
-namespace barney_device {
+namespace tally_device {
 
-Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
+Frame::Frame(TallyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
 {
-  m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
+  m_bnFrameBuffer = TallyFrame::create();//bnFrameBufferCreate(s->context, 0);
 }
 
 Frame::~Frame()
 {
   wait();
   cleanup();
-  bnRelease(m_bnFrameBuffer);
+  m_bnFrameBuffer = {};//bnRelease(m_bnFrameBuffer);
 }
 
 bool Frame::isValid() const
@@ -44,9 +44,9 @@ bool Frame::isValid() const
   return m_valid;
 }
 
-BarneyGlobalState *Frame::deviceState() const
+TallyGlobalState *Frame::deviceState() const
 {
-  return (BarneyGlobalState *)helium::BaseObject::m_state;
+  return (TallyGlobalState *)helium::BaseObject::m_state;
 }
 
 void Frame::commit()
@@ -87,12 +87,14 @@ void Frame::commit()
   if (m_depthType == ANARI_FLOAT32)
     cudaMallocManaged((void **)&m_depthBuffer, numPixels * sizeof(float));
 
+#if TALLY
   bnFrameBufferResize(
-      m_bnFrameBuffer, size.x, size.y, m_bnPixelBuffer, m_depthBuffer);
+                      m_bnFrameBuffer, size.x, size.y, m_bnPixelBuffer, m_depthBuffer);
   bnSet1i(m_bnFrameBuffer,
       "showCrosshairs",
       m_renderer ? int(m_renderer->crosshairs()) : false);
   bnCommit(m_bnFrameBuffer);
+#endif
   m_frameData.size = size;
   m_frameData.totalPixels = numPixels;
 }
@@ -126,7 +128,9 @@ void Frame::renderFrame()
   }
 
   if (state->commitBufferLastFlush() > m_frameLastRendered) {
+#if TALLY
     bnAccumReset(m_bnFrameBuffer);
+#endif
   }
 
   auto model = m_world->makeCurrent();
@@ -136,15 +140,17 @@ void Frame::renderFrame()
 
   const int pixelSamples = std::max(m_renderer->pixelSamples(), 1);
   const float radiance = m_renderer->radiance();
-  bnSetRadiance(model, 0, radiance
-#if 0
-                /* iw- no idea where this factor came from, but it
-                   probably shouldn't be here */
-                / 10.f
-#endif
-                );
+  model->setRadiance(radiance);
+//   bnSetRadiance(model, 0, radiance
+// #if 0
+//                 /* iw- no idea where this factor came from, but it
+//                    probably shouldn't be here */
+//                 / 10.f
+// #endif
+//                 );
 
-  bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer, pixelSamples);
+  // bnRender(model, m_camera->tallyCamera(), m_bnFrameBuffer, pixelSamples);
+  model->render(m_camera->tallyCamera(), m_bnFrameBuffer, pixelSamples);
 
   auto end = std::chrono::steady_clock::now();
   m_duration = std::chrono::duration<float>(end - start).count();
@@ -270,6 +276,6 @@ void Frame::cleanup()
   m_depthBuffer = nullptr;
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Frame *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Frame *);

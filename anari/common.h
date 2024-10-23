@@ -6,7 +6,7 @@
 #include <sstream>
 #include <vector>
 #include "helium/array/Array.h"
-#include "barney_math.h"
+#include "tally_math.h"
 #include <iostream>
 #include <cassert>
 
@@ -19,7 +19,7 @@
 #endif
 #endif
 
-namespace barney_device {
+namespace tally_device {
 
 enum Attribute {
   Attribute0, Attribute1, Attribute2, Attribute3, Color, None=-1,
@@ -56,7 +56,7 @@ inline WrapMode toWrapMode(std::string str) {
   return Clamp;
 }
 
-inline BNTextureAddressMode toBarneyAddressMode(std::string str) {
+inline BNTextureAddressMode toTallyAddressMode(std::string str) {
   if (str == "clampToEdge")
     return BN_TEXTURE_CLAMP;
   else if (str == "repeat")
@@ -259,7 +259,7 @@ inline bool convert_to_rgba8(
   return false;
 }
 
-static BNData makeBarneyData(
+static BNData makeTallyData(
     BNModel model, int slot, const helium::IntrusivePtr<helium::Array> &input)
 {
   BNData res{0};
@@ -286,7 +286,7 @@ static BNData makeBarneyData(
   return res;
 }
 
-static BNTexture2D makeBarneyTexture2D(
+static BNTexture2D makeTallyTexture2D(
     BNModel model, int slot, const helium::IntrusivePtr<helium::Array> &input,
     int width, int height,
     BNTextureFilterMode filterMode = BN_TEXTURE_LINEAR,
@@ -314,4 +314,4 @@ static BNTexture2D makeBarneyTexture2D(
   return res;
 }
 
-} // namespace barney_device
+} // namespace tally_device

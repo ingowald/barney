@@ -3,14 +3,14 @@
 
 #include "Camera.h"
 
-namespace barney_device {
+namespace tally_device {
 
-Camera::Camera(BarneyGlobalState *s) : Object(ANARI_CAMERA, s)
+Camera::Camera(TallyGlobalState *s) : Object(ANARI_CAMERA, s)
 {}
 
 Camera::~Camera() = default;
 
-Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
+Camera *Camera::createInstance(std::string_view type, TallyGlobalState *s)
 {
   if (type == "perspective")
     return new Perspective(s);
@@ -20,8 +20,8 @@ Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
 
 void Camera::commit()
 {
-  if (!m_barneyCamera)
-    m_barneyCamera = bnCameraCreate(deviceState()->context,"perspective");
+  if (!m_tallyCamera)
+    m_tallyCamera = TallyCamera::create("perspective");
   m_pos = getParam<math::float3>("position", math::float3(0.f, 0.f, 0.f));
   m_dir = math::normalize(
       getParam<math::float3>("direction", math::float3(0.f, 0.f, 1.f)));
@@ -32,28 +32,30 @@ void Camera::commit()
   markUpdated();
 }
 
-BNCamera Camera::barneyCamera() const
+  TallyCamera::SP Camera::tallyCamera() const
 {
-  return m_barneyCamera;
+  return m_tallyCamera;
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
-Perspective::Perspective(BarneyGlobalState *s) : Camera(s) {}
+Perspective::Perspective(TallyGlobalState *s) : Camera(s) {}
 
 void Perspective::commit()
 {
   Camera::commit();
-  bnSet3fc(m_barneyCamera,"up",(const float3&)m_up);
-  bnSet3fc(m_barneyCamera,"position", (const float3&)m_pos);
-  bnSet3fc(m_barneyCamera,"direction",(const float3&)m_dir);
+#if TALLY
+  bnSet3fc(m_tallyCamera,"up",(const float3&)m_up);
+  bnSet3fc(m_tallyCamera,"position", (const float3&)m_pos);
+  bnSet3fc(m_tallyCamera,"direction",(const float3&)m_dir);
   float aspect = getParam<float>("aspect", 1.f);
-  bnSet1f(m_barneyCamera,"aspect",aspect);
+  bnSet1f(m_tallyCamera,"aspect",aspect);
   float fovy = getParam<float>("fovy", anari::radians(60.f));
-  bnSet1f(m_barneyCamera,"fovy",anari::degrees(fovy));
-  bnCommit(m_barneyCamera);
+  bnSet1f(m_tallyCamera,"fovy",anari::degrees(fovy));
+  bnCommit(m_tallyCamera);
+#endif
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Camera *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Camera *);

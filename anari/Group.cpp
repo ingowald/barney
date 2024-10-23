@@ -5,9 +5,9 @@
 #include <iostream>
 #include "common.h"
 
-namespace barney_device {
+namespace tally_device {
 
-Group::Group(BarneyGlobalState *s)
+Group::Group(TallyGlobalState *s)
     : Object(ANARI_GROUP, s),
       m_surfaceData(this),
       m_volumeData(this),
@@ -29,13 +29,13 @@ void Group::markCommitted()
   Object::markCommitted();
 }
 
-BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
+TallyGroup::SP Group::makeTallyGroup(TallyModel::SP model, int slot) const
 {
-  std::vector<BNGeom> barneyGeometries;
+  std::vector<TallyGeom::SP> tallyGeometries;
   std::vector<Surface *> surfaces;
-  std::vector<BNVolume> barneyVolumes;
+  std::vector<TallyVolume::SP> tallyVolumes;
   std::vector<Volume *> volumes;
-  std::vector<BNLight> barneyLights;
+  std::vector<TallyLight::SP> tallyLights;
   std::vector<Light *> lights;
 
   // Surfaces //
@@ -51,8 +51,8 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   for (auto s : surfaces) {
-    BNGeom geom = s->getBarneyGeom(model, slot);
-    barneyGeometries.push_back(geom);
+    TallyGeom::SP geom = s->getTallyGeom(model, slot);
+    tallyGeometries.push_back(geom);
   }
 
   // Volumes //
@@ -67,7 +67,7 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   for (auto v : volumes)
-    barneyVolumes.push_back(v->getBarneyVolume(model, slot));
+    tallyVolumes.push_back(v->getTallyVolume(model, slot));
 
   // Lights //
 
@@ -81,34 +81,34 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   for (auto l : lights)
-    barneyLights.push_back(l->getBarneyLight(model, slot));
+    tallyLights.push_back(l->getTallyLight(model, slot));
 
-  BNData lightsData = nullptr;
-  if (!barneyLights.empty()) {
-    lightsData = bnDataCreate(
-        model, slot, BN_OBJECT, barneyLights.size(), barneyLights.data());
-  }
+  // BNData lightsData = nullptr;
+  // if (!tallyLights.empty()) {
+  //   lightsData = bnDataCreate(model, slot, BN_OBJECT, tallyLights.size(), tallyLights.data());
+  // }
 
-  // Make barney group //
-  
-  BNGroup bg = bnGroupCreate(model,
-      slot,
-      barneyGeometries.data(),
-      barneyGeometries.size(),
-      barneyVolumes.data(),
-      barneyVolumes.size());
-  if (lightsData) {
-    bnSetData(bg, "lights", lightsData);
-    bnRelease(lightsData);
-    bnCommit(bg);
-  }
-  bnGroupBuild(bg);
+  // Make tally group //
+
+  TallyGroup::SP bg = TallyGroup::create(tallyGeometries,tallyVolumes,tallyLights);
+  // TallyGroup::SP bg = bnGroupCreate(model,
+  //     slot,
+  //     tallyGeometries.data(),
+  //     tallyGeometries.size(),
+  //     tallyVolumes.data(),
+  //     tallyVolumes.size());
+  // if (lightsData) {
+  //   bnSetData(bg, "lights", lightsData);
+  //   bnRelease(lightsData);
+  //   bnCommit(bg);
+  // }
+  // bnGroupBuild(bg);
 
   // Cleanup //
 
   // iw - do not release - the anari volumes do track their own handles, don't they!?
  
-  // for (auto bnv : barneyVolumes)
+  // for (auto bnv : tallyVolumes)
   //   bnRelease(bnv);
 
   return bg;
@@ -139,6 +139,6 @@ box3 Group::bounds() const
   return result;
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Group *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Group *);

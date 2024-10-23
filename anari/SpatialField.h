@@ -10,29 +10,29 @@
 // ours
 #include "Object.h"
 
-namespace barney_device {
+namespace tally_device {
 
 struct SpatialField : public Object
 {
-  SpatialField(BarneyGlobalState *s);
+  SpatialField(TallyGlobalState *s);
   ~SpatialField() override;
 
   static SpatialField *createInstance(
-      std::string_view subtype, BarneyGlobalState *s);
+      std::string_view subtype, TallyGlobalState *s);
 
   void markCommitted() override;
 
-  virtual BNScalarField createBarneyScalarField(BNModel model, int slot) const = 0;
+  virtual TallySpatialField::SP createTallySpatialField(TallyModel::SP model, int slot) const = 0;
 
   void cleanup()
   {
     if (m_bnField) {
-      bnRelease(m_bnField);
+      //bnRelease(m_bnField);
       m_bnField = nullptr;
     }
   }
   
-  BNScalarField getBarneyScalarField(BNModel model, int slot)
+  TallySpatialField::SP getTallySpatialField(TallyModel::SP model, int slot)
   {
     if (!isValid())
       return {};
@@ -41,23 +41,23 @@ struct SpatialField : public Object
       trackModel(model, slot);
     }
     if (!m_bnField) 
-      m_bnField = createBarneyScalarField(model,slot);
+      m_bnField = createTallySpatialField(model,slot);
     return m_bnField;
   }
   
   virtual box3 bounds() const = 0;
 
-  BNScalarField m_bnField = 0;
+  TallySpatialField::SP m_bnField = 0;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 struct UnstructuredField : public SpatialField
 {
-  UnstructuredField(BarneyGlobalState *s);
+  UnstructuredField(TallyGlobalState *s);
   void commit() override;
 
-  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
+  TallySpatialField::SP createTallySpatialField(TallyModel::SP model, int slot) const;
 
   box3 bounds() const override;
 
@@ -75,7 +75,7 @@ struct UnstructuredField : public SpatialField
   } m_params;
 
   std::vector<math::float4> m_vertices;
-  /* barney requires index offsets to be in ascending order, so this
+  /* tally requires index offsets to be in ascending order, so this
      is an array of the element indices in sequential order of
      elements (because the anari array odesn't have that requirement,
      so let's make sure to fix it) */
@@ -97,10 +97,10 @@ struct UnstructuredField : public SpatialField
 
 struct BlockStructuredField : public SpatialField
 {
-  BlockStructuredField(BarneyGlobalState *s);
+  BlockStructuredField(TallyGlobalState *s);
   void commit() override;
 
-  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
+  TallySpatialField::SP createTallySpatialField(TallyModel::SP model, int slot) const;
 
   box3 bounds() const override;
 
@@ -122,10 +122,10 @@ struct BlockStructuredField : public SpatialField
 
 struct StructuredRegularField : public SpatialField
 {
-  StructuredRegularField(BarneyGlobalState *s);
+  StructuredRegularField(TallyGlobalState *s);
   void commit() override;
 
-  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
+  TallySpatialField::SP createTallySpatialField(TallyModel::SP model, int slot) const;
 
   box3 bounds() const override;
   bool isValid() const override;
@@ -144,7 +144,7 @@ struct StructuredRegularField : public SpatialField
   helium::IntrusivePtr<helium::Array3D> m_data;
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(
-    barney_device::SpatialField *, ANARI_SPATIAL_FIELD);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(
+    tally_device::SpatialField *, ANARI_SPATIAL_FIELD);

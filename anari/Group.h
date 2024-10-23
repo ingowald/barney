@@ -9,17 +9,17 @@
 // std
 #include <vector>
 
-namespace barney_device {
+namespace tally_device {
 
 struct Group : public Object
 {
-  Group(BarneyGlobalState *s);
+  Group(TallyGlobalState *s);
   ~Group() override;
 
   void commit() override;
   void markCommitted() override;
 
-  BNGroup makeBarneyGroup(BNModel model, int slot) const;
+  TallyGroup::SP makeTallyGroup(TallyModel::SP model, int slot) const;
 
   box3 bounds() const;
 
@@ -29,6 +29,6 @@ struct Group : public Object
   helium::ChangeObserverPtr<ObjectArray> m_lightData;
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Group *, ANARI_GROUP);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::Group *, ANARI_GROUP);

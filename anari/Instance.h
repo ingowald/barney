@@ -5,11 +5,11 @@
 
 #include "Group.h"
 
-namespace barney_device {
+namespace tally_device {
 
 struct Instance : public Object
 {
-  Instance(BarneyGlobalState *s);
+  Instance(TallyGlobalState *s);
   ~Instance() override;
 
   void commit() override;
@@ -19,15 +19,15 @@ struct Instance : public Object
 
   const Group *group() const;
 
-  const BNTransform *barneyTransform() const;
+  const TallyTransform *tallyTransform() const;
 
   box3 bounds() const;
 
  private:
-  BNTransform m_xfm;
+  TallyTransform m_xfm;
   helium::IntrusivePtr<Group> m_group;
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Instance *, ANARI_INSTANCE);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::Instance *, ANARI_INSTANCE);

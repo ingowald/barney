@@ -11,16 +11,16 @@
 // std
 #include <vector>
 
-namespace barney_device {
+namespace tally_device {
 
 struct Frame : public helium::BaseFrame
 {
-  Frame(BarneyGlobalState *s);
+  Frame(TallyGlobalState *s);
   ~Frame() override;
 
   bool isValid() const override;
 
-  BarneyGlobalState *deviceState() const;
+  TallyGlobalState *deviceState() const;
 
   bool getProperty(const std::string_view &name,
       ANARIDataType type,
@@ -75,9 +75,9 @@ struct Frame : public helium::BaseFrame
   helium::TimeStamp m_lastCommitOccured{0};
   helium::TimeStamp m_frameLastRendered{0};
 
-  BNFrameBuffer m_bnFrameBuffer{nullptr};
+  TallyFrame::SP m_bnFrameBuffer{nullptr};
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Frame *, ANARI_FRAME);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::Frame *, ANARI_FRAME);

@@ -3,9 +3,9 @@
 
 #include "Renderer.h"
 
-namespace barney_device {
+namespace tally_device {
 
-Renderer::Renderer(BarneyGlobalState *s) : Object(ANARI_RENDERER, s) {}
+Renderer::Renderer(TallyGlobalState *s) : Object(ANARI_RENDERER, s) {}
 
 Renderer::~Renderer() = default;
 
@@ -31,6 +31,6 @@ bool Renderer::crosshairs() const
   return m_crosshairs;
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Renderer *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Renderer *);

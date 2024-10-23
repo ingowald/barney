@@ -6,11 +6,11 @@
 #include <atomic>
 #include <cstdarg>
 
-namespace barney_device {
+namespace tally_device {
 
 // Object definitions /////////////////////////////////////////////////////////
 
-Object::Object(ANARIDataType type, BarneyGlobalState *s)
+  Object::Object(ANARIDataType type, TallyGlobalState *s)
     : helium::BaseObject(type, s)
 {}
 
@@ -35,23 +35,23 @@ bool Object::isValid() const
   return true;
 }
 
-BarneyGlobalState *Object::deviceState() const
+TallyGlobalState *Object::deviceState() const
 {
-  return (BarneyGlobalState *)helium::BaseObject::m_state;
+  return (TallyGlobalState *)helium::BaseObject::m_state;
 }
 
-bool Object::isModelTracked(BNModel model, int slot) const
+bool Object::isModelTracked(TallyModel::SP model, int slot) const
 {
   return m_bnModel == model && m_slot == slot;
 }
 
-void Object::trackModel(BNModel model, int slot)
+void Object::trackModel(TallyModel::SP model, int slot)
 {
   m_bnModel = model;
   m_slot = slot;
 }
 
-BNModel Object::trackedModel() const
+TallyModel::SP Object::trackedModel() const
 {
   return m_bnModel;
 }
@@ -63,7 +63,7 @@ int Object::trackedSlot() const
 
 // UnknownObject definitions //////////////////////////////////////////////////
 
-UnknownObject::UnknownObject(ANARIDataType type, BarneyGlobalState *s)
+UnknownObject::UnknownObject(ANARIDataType type, TallyGlobalState *s)
     : Object(type, s)
 {}
 
@@ -74,6 +74,6 @@ bool UnknownObject::isValid() const
   return false;
 }
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Object *);
+TALLY_ANARI_TYPEFOR_DEFINITION(tally_device::Object *);

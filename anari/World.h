@@ -6,11 +6,11 @@
 #include "Array.h"
 #include "Instance.h"
 
-namespace barney_device {
+namespace tally_device {
 
 struct World : public Object
 {
-  World(BarneyGlobalState *s);
+  World(TallyGlobalState *s);
   ~World() override;
 
   bool getProperty(const std::string_view &name,
@@ -20,10 +20,10 @@ struct World : public Object
 
   void commit() override;
 
-  BNModel makeCurrent();
+  TallyModel::SP makeCurrent();
 
  private:
-  void buildBarneyModel();
+  void buildTallyModel();
 
   helium::ChangeObserverPtr<ObjectArray> m_zeroSurfaceData;
   helium::ChangeObserverPtr<ObjectArray> m_zeroVolumeData;
@@ -35,10 +35,10 @@ struct World : public Object
 
   std::vector<Instance *> m_instances;
 
-  BNModel m_barneyModel{nullptr};
-  helium::TimeStamp m_lastBarneyModelBuild{0};
+  TallyModel::SP m_tallyModel;
+  helium::TimeStamp m_lastTallyModelBuild{0};
 };
 
-} // namespace barney_device
+} // namespace tally_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::World *, ANARI_WORLD);
+TALLY_ANARI_TYPEFOR_SPECIALIZATION(tally_device::World *, ANARI_WORLD);
