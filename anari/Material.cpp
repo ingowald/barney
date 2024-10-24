@@ -190,6 +190,8 @@ void PhysicallyBased::commit()
     = getMaterialHelper(this, "transmission", 0.f);
   m_ior
     = getParam<float>  (      "ior", 1.5f);
+  m_opacity
+    = getMaterialHelper(this, "opacity", 1.f);
   setBarneyParameters();
 }
 

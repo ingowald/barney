@@ -72,6 +72,10 @@ namespace barney {
         { ior.set(value); return true; }
       if (member == "transmission")
         { transmission.set(value); return true; }
+      if (member == "opacity")
+        { /* IGNORE FOR NOW */return true; }
+      if (member == "specular")
+        { /* IGNORE FOR NOW */return true; }
       
       return false;
     }
@@ -84,6 +88,10 @@ namespace barney {
         { baseColor.set(value); return true; }
       if (member == "emission")
         { emission.set(value); return true; }
+      if (member == "specularColor")
+        { /* IGNORE FOR NOW */return true; }
+      if (member == "emissive")
+        { /* IGNORE FOR NOW */return true; }
         
       return false;
     }
@@ -96,6 +104,10 @@ namespace barney {
         { baseColor.set(value); return true; }
       if (member == "emission")
         { emission.set(value); return true; }
+      if (member == "specularColor")
+        { /* IGNORE FOR NOW */return true; }
+      if (member == "emissive")
+        { /* IGNORE FOR NOW */return true; }
         
       return false;
     }
