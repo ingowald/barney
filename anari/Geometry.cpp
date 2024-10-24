@@ -41,6 +41,12 @@ Geometry::~Geometry() = default;
       return new Curve(s);
     if (subtype == "triangle")
       return new Triangle(s);
+    if (subtype == "triangles")
+      std::cerr << "#banari: WARNING - you tried to created 'triangle*s*' geometry, but ANARI terminology is 'triangle'. This is almost certainly an error" << std::endl;
+    if (subtype == "curves")
+      std::cerr << "#banari: WARNING - you tried to created 'curve*s*' geometry, but ANARI terminology is 'curve'. This is almost certainly an error" << std::endl;
+    if (subtype == "spheres")
+      std::cerr << "#banari: WARNING - you tried to created 'sphere*s*' geometry, but ANARI terminology is 'sphere'. This is almost certainly an error" << std::endl;
     return (Geometry *)new UnknownObject(ANARI_GEOMETRY, s);
   }
 
