@@ -33,15 +33,22 @@ namespace barney {
     inline __device__ void set(vec3f v) { x = v.x; y = v.y; z = v.z; }
     inline __device__ vec3f get() const { return vec3f(x,y,z); }
     inline __device__ float4 get4f() const { return make_float4(x,y,z,0.f); }
+    inline __device__ float3 get3f() const { return make_float3(x,y,z); }
     half x,y,z;
   };
+#endif
   
   void float4ToBGBA8(uint32_t  *finalFB,
+# if DENOISE_OIDN  
+                     float3    *inputBeforeDenoising,
+                     float     *alphas,
+                     float3    *float3s,
+# else
                      float4    *inputBeforeDenoising,
                      float4    *float4s,
+# endif
                      float      denoisedWeight,
                      vec2i      numPixels);
-#endif
   
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
@@ -81,14 +88,23 @@ namespace barney {
     static
     void writeFinalPixels(
 #if DENOISE
+# if DENOISE_OIDN
+                          float3    *finalFB,
+                          float     *finalAlpha,
+# else
                           float4    *finalFB,
+# endif
 #else
                           uint32_t  *finalFB,
 #endif
                           float     *finalDepth,
-#if DENOISE_NORMAL
+# if DENOISE_NORMAL
+#  if DENOISE_OIDN
+                          float3    *finalNormal,
+#  else
                           float4    *finalNormal,
-#endif
+#  endif
+# endif
                           vec2i      numPixels,
                           FinalTile *finalTiles,
                           TileDesc  *tileDescs,

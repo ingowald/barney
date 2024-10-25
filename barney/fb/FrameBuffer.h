@@ -20,6 +20,9 @@
 #include "barney/fb/TiledFB.h"
 #include <optix.h>
 #include <optix_stubs.h>
+#if DENOISE_OIDN
+# include <OpenImageDenoise/oidn.h>
+#endif
 
 namespace barney {
 
@@ -63,17 +66,34 @@ namespace barney {
 
 
 #if DENOISE
-    bool                 denoiserCreated = false;
-    OptixDenoiser        denoiser = {};
+# if DENOISE_OIDN
+    float3              *denoiserInput   = 0;
+    float               *denoiserAlpha   = 0;
+    float3              *denoiserOutput  = 0;
+    float3              *denoiserNormal  = 0;
+# else
     float4              *denoiserInput   = 0;
     float4              *denoiserOutput  = 0;
-#if DENOISE_NORMAL
+# if DENOISE_NORMAL
     float4              *denoiserNormal  = 0;
+# endif
 #endif
+    bool                 denoiserCreated = false;
+# if DENOISE_OIDN
+    struct {
+      OIDNBuffer outputBuf = 0; 
+      OIDNBuffer normalBuf = 0; 
+      OIDNBuffer colorBuf = 0; 
+      OIDNDevice device = 0;
+      OIDNFilter filter = 0;
+    } oidn;
+# else
+    OptixDenoiser        denoiser = {};
     OptixDenoiserOptions denoiserOptions;
     void                *denoiserScratch = 0;
     void                *denoiserState   = 0;
-    OptixDenoiserSizes denoiserSizes;
+    OptixDenoiserSizes   denoiserSizes;
+# endif
     void denoise();
 #endif
     

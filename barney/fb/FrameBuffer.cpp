@@ -87,43 +87,77 @@ namespace barney {
 #if DENOISE
       // PING; BARNEY_CUDA_SYNC_CHECK();
       if (!denoiserCreated) {
-        // // if nonzero, albedo image must be given in OptixDenoiserGuideLayer
-        // unsigned int guideAlbedo;
+        denoiserCreated = true;
+# if DENOISE_OIDN
+        oidn.device = oidnNewDevice(OIDN_DEVICE_TYPE_CUDA);
+        oidnCommitDevice(oidn.device);
+        oidn.filter = oidnNewFilter(oidn.device,"RT");
+# else
         denoiserOptions.guideAlbedo = 0;
-
-        // // if nonzero, normal image must be given in OptixDenoiserGuideLayer
-        // unsigned int guideNormal;
-#if DENOISE_NORMAL
+#  if DENOISE_NORMAL
         denoiserOptions.guideNormal = 1;
-#else
+#  else
         denoiserOptions.guideNormal = 0;
-#endif
-
-        // /// alpha denoise mode
-        // OptixDenoiserAlphaMode denoiseAlpha;
-        // denoiserOptions.denoiseAlpha = OPTIX_DENOISER_ALPHA_MODE_COPY;
-        denoiserOptions.denoiseAlpha = OPTIX_DENOISER_ALPHA_MODE_DENOISE;
-
+#  endif
+        denoiserOptions.denoiseAlpha
+          // = OPTIX_DENOISER_ALPHA_MODE_COPY;
+          = OPTIX_DENOISER_ALPHA_MODE_DENOISE;
+        
         auto device = context->getDevice(0);
 
         OptixDeviceContext optixContext
-          =
-#if 1
-          owlContextGetOptixContext(context->globalContextAcrossAllGPUs,0)
-#else
-          owlContextGetOptixContext(device->owl,0)
-#endif
-          ;
-        optixDenoiserCreate(/*OptixDeviceContext */
-                            optixContext,
-                            /*OptixDenoiserModelKind*/
+          = owlContextGetOptixContext(/*device->owl*/
+                                      context->globalContextAcrossAllGPUs,0);
+        optixDenoiserCreate(optixContext,
                             OPTIX_DENOISER_MODEL_KIND_HDR,
-                            /*const OptixDenoiserOptions*/
                             &denoiserOptions,
-                            /*OptixDenoiser*/
                             &denoiser);
+# endif
       }
-
+      if (denoiserInput)
+        BARNEY_CUDA_CALL(Free(denoiserInput));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserInput,
+                              numPixels.x*numPixels.y*sizeof(*denoiserInput)));
+# if DENOISE_OIDN
+      if (denoiserAlpha)
+        BARNEY_CUDA_CALL(Free(denoiserAlpha));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserAlpha,
+                              numPixels.x*numPixels.y*sizeof(*denoiserAlpha)));
+# endif
+      if (denoiserOutput)
+        BARNEY_CUDA_CALL(Free(denoiserOutput));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserOutput,
+                              numPixels.x*numPixels.y*sizeof(*denoiserOutput)));
+      
+# if DENOISE_NORMAL
+      if (denoiserNormal)
+        BARNEY_CUDA_CALL(Free(denoiserNormal));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
+                              numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
+# endif
+      
+# if DENOISE_OIDN
+      if (oidn.colorBuf)  oidnReleaseBuffer(oidn.colorBuf);
+      if (oidn.normalBuf) oidnReleaseBuffer(oidn.normalBuf);
+      if (oidn.outputBuf) oidnReleaseBuffer(oidn.outputBuf);
+      oidn.colorBuf
+        = oidnNewSharedBuffer(oidn.device, denoiserInput,
+                              numPixels.x*numPixels.y*sizeof(*denoiserInput));
+      oidn.normalBuf
+        = oidnNewSharedBuffer(oidn.device, denoiserNormal,
+                              numPixels.x*numPixels.y*sizeof(*denoiserNormal));
+      oidn.outputBuf
+        = oidnNewSharedBuffer(oidn.device, denoiserOutput,
+                              numPixels.x*numPixels.y*sizeof(*denoiserOutput));
+      oidnSetFilterImage(oidn.filter,"color",oidn.colorBuf,
+                         OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,0,0);
+      // oidnSetFilterImage(oidn.filter,"normal",oidn.normalBuf,
+      //                    OIDN_FORMAT_FLOAT4,numPixels.x,numPixels.y,0,0,0);
+      oidnSetFilterImage(oidn.filter,"output",oidn.outputBuf,
+                         OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,0,0);
+      oidnSetFilterBool(oidn.filter,"hdr",true);
+      oidnCommitFilter(oidn.filter);
+# else
       denoiserSizes.overlapWindowSizeInPixels = 0;
       // PING; BARNEY_CUDA_SYNC_CHECK();
       optixDenoiserComputeMemoryResources(/*const OptixDenoiser */
@@ -135,30 +169,18 @@ namespace barney {
                                           // OptixDenoiserSizes* returnSizes
                                           &denoiserSizes
                                           );
-      // PING; BARNEY_CUDA_SYNC_CHECK();
-      // PRINT(denoiserSizes.overlapWindowSizeInPixels);
       if (denoiserScratch) {
         BARNEY_CUDA_CALL(Free(denoiserScratch));
         denoiserScratch = 0;
       }
-      // PING; BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(Malloc(&denoiserScratch,
                               denoiserSizes.withoutOverlapScratchSizeInBytes));
-      // PING; BARNEY_CUDA_SYNC_CHECK();
-
       if (denoiserState) {
         BARNEY_CUDA_CALL(Free(denoiserState));
         denoiserState = 0;
       }
       BARNEY_CUDA_CALL(Malloc(&denoiserState,
                               denoiserSizes.stateSizeInBytes));
-      // PING; BARNEY_CUDA_SYNC_CHECK();
-
-      // PING; BARNEY_CUDA_SYNC_CHECK();
-      
-      // PRINT(numPixels);
-      // PRINT(denoiser);
-      // PRINT(denoiserSizes.stateSizeInBytes);
       optixDenoiserSetup(// OptixDenoiser denoiser,
                          denoiser,
                          // CUstream      stream,
@@ -176,20 +198,6 @@ namespace barney {
                          //size_t        scratchSizeInBytes
                          denoiserSizes.withoutOverlapScratchSizeInBytes
                          );
-      if (denoiserInput)
-        BARNEY_CUDA_CALL(Free(denoiserInput));
-      BARNEY_CUDA_CALL(Malloc((void **)&denoiserInput,
-                              numPixels.x*numPixels.y*sizeof(*denoiserInput)));
-      if (denoiserOutput)
-        BARNEY_CUDA_CALL(Free(denoiserOutput));
-      BARNEY_CUDA_CALL(Malloc((void **)&denoiserOutput,
-                              numPixels.x*numPixels.y*sizeof(*denoiserOutput)));
-
-# if DENOISE_NORMAL
-      if (denoiserNormal)
-        BARNEY_CUDA_CALL(Free(denoiserNormal));
-      BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
-                              numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
 # endif
 #endif
     }
@@ -198,6 +206,13 @@ namespace barney {
 #if DENOISE
   void FrameBuffer::denoise()
   {
+# if DENOISE_OIDN
+    oidnExecuteFilter(oidn.filter);
+    const char *error;
+    oidnGetDeviceError(oidn.device,&error);
+    if (error)
+      PRINT(error);
+# else
     OptixDenoiserGuideLayer guideLayer = {};
     OptixDenoiserLayer layer = {};
     layer.input.format = OPTIX_PIXEL_FORMAT_FLOAT4;
@@ -207,10 +222,10 @@ namespace barney {
     layer.input.height = numPixels.y;
     layer.input.data = (CUdeviceptr)denoiserInput;
 
-#if DENOISE_NORMAL
+#  if DENOISE_NORMAL
     guideLayer.normal = layer.input;
     guideLayer.normal.data = (CUdeviceptr)denoiserNormal;
-#endif
+#  endif
     layer.output = layer.input;
     layer.output.data = (CUdeviceptr)denoiserOutput;
 
@@ -245,9 +260,13 @@ namespace barney {
        denoiserSizes.withoutOverlapScratchSizeInBytes
        );
     // PING; BARNEY_CUDA_SYNC_CHECK();
+# endif
     float denoiseWeight = powf(.95f,std::max(0,(int)accumID-2));
     float4ToBGBA8(this->finalFB,
                   this->denoiserInput,
+#if DENOISE_OIDN
+                  this->denoiserAlpha,
+#endif
                   this->denoiserOutput,
                   denoiseWeight,
                   this->numPixels);

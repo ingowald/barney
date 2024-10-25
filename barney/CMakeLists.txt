@@ -16,6 +16,7 @@
 
 set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
 option(BARNEY_DENOISE "Enable Denoiser?" OFF)
+option(BARNEY_DENOISE_OIDN "Denoiser via OIDN library?" OFF)
 
 add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
@@ -26,6 +27,12 @@ target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHO
 if (BARNEY_DENOISE)
   target_compile_definitions(barney-config INTERFACE -DDENOISE=1 -DDENOISE_NORMAL=1)
 endif()
+if (BARNEY_DENOISE_OIDN)
+  find_package(OpenImageDenoise)
+  target_compile_definitions(barney-config INTERFACE -DDENOISE=1 -DDENOISE_OIDN=1 -DDENOISE_NORMAL=1)
+  target_link_libraries(barney-config INTERFACE OpenImageDenoise)
+endif()
+    
 
 
 target_include_directories(barney-config INTERFACE
