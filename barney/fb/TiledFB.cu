@@ -117,7 +117,7 @@ namespace barney {
     float scale = reduce_max(color);
     color *= 1./scale;
     finalTiles[tileID].scale[pixelID] = scale;
-    finalTiles[tileID].normal[pixelID] = accumTiles[tileID].normal[pixelID];
+    finalTiles[tileID].normal[pixelID].set(accumTiles[tileID].normal[pixelID]);
 #else
     color.x = sqrtf(color.x);
     color.y = sqrtf(color.y);
@@ -215,7 +215,7 @@ namespace barney {
                                      float4    *finalFB,
 #endif
                                      float     *finalDepth,
-#if DENOISE_NORMAL
+#if DENOISE
 # if DENOISE_OIDN
                                      float3    *finalNormal,
 # else
@@ -266,7 +266,6 @@ namespace barney {
 
     if (finalDepth)
       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
-# if DENOISE_NORMAL
 #  if DENOISE_OIDN
     finalNormal[ofs]
       = finalTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get3f();
@@ -274,7 +273,6 @@ namespace barney {
     finalNormal[ofs]
       = finalTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get4f();
 #  endif
-# endif
   }
 #else
   __global__ void g_writeFinalPixels(uint32_t  *finalFB,
@@ -323,7 +321,7 @@ namespace barney {
                                  uint32_t  *finalFB,
 #endif
                                  float     *finalDepth,
-#if DENOISE_NORMAL
+#if DENOISE
 #  if DENOISE_OIDN
                                  float3    *finalNormal,
 #  else
@@ -354,7 +352,7 @@ namespace barney {
          finalAlpha,
 #endif
          finalDepth,
-#if DENOISE_NORMAL
+#if DENOISE
          finalNormal,
 #endif
          numPixels,

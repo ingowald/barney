@@ -869,8 +869,10 @@ namespace barney {
         = accumTiles[tileID].accum[tileOfs];
 
 #if DENOISE
-      if (generation == 0)
-        accumTiles[tileID].normal[tileOfs].set(incomingN);
+      vec3f &valueToAccumNormalInto
+        = accumTiles[tileID].normal[tileOfs];
+      // if (generation == 0)
+      //   accumTiles[tileID].normal[tileOfs] = incomingN;
 #endif
       
       // ==================================================================
@@ -886,22 +888,16 @@ namespace barney {
       // exactly once in the first generation of the first frame.
       // ==================================================================
 
-#if 1
-      // float intensity = reduce_max(fragment);
-      // if (intensity > 20.f)
-      //   printf("pixel %i frag %f %f %f\n",
-      //          path.pixelID,
-      //          fragment.x,
-      //          fragment.y,
-      //          fragment.z);
-      
       // clamping ...
       float clampMax = 10.f*(1+accumID);
       fragment = min(fragment,vec3f(clampMax));
-#endif
+      
       if (accumID == 0 && generation == 0) {
         // if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,0.f);
+#if DENOISE
+        valueToAccumNormalInto = incomingN;
+#endif
       } else {
         // if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
 
@@ -911,6 +907,14 @@ namespace barney {
           atomicAdd(&valueToAccumInto.y,fragment.y);
         if (fragment.z > 0.f)
           atomicAdd(&valueToAccumInto.z,fragment.z);
+#if DENOISE
+        if (incomingN.x > 0.f)
+          atomicAdd(&valueToAccumNormalInto.x,incomingN.x);
+        if (incomingN.y > 0.f)
+          atomicAdd(&valueToAccumNormalInto.y,incomingN.y);
+        if (incomingN.z > 0.f)
+          atomicAdd(&valueToAccumNormalInto.z,incomingN.z);
+#endif
       }
 
       // and for apps that need a depth buffer, write z

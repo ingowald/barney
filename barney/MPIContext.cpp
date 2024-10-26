@@ -267,30 +267,30 @@ namespace barney {
     // ==================================================================
     if (fb->isOwner) {
       /* ******************************************************* *
-       CAREFUL: do NOT set active gpu here - the app might have its
-       'finalFB' frame buffer allocated on another device than our
-       device[0]; setting that to active will cause segfault when
-       writing final pixel!!!!  *
-       ******************************************************* */
+         CAREFUL: do NOT set active gpu here - the app might have its
+         'finalFB' frame buffer allocated on another device than our
+         device[0]; setting that to active will cause segfault when
+         writing final pixel!!!!  *
+         ******************************************************* */
       // SetActiveGPU forDuration(devices[0]->device);
 
       // use default gpu for this:
       barney::TiledFB::writeFinalPixels(// nullptr,
 #if DENOISE
 #  if DENOISE_OIDN
-                              fb->denoiserInput,
-                              fb->denoiserAlpha,
+                                        fb->denoiserInput,
+                                        fb->denoiserAlpha,
 #  else
-                              fb->denoiserInput,
+                                        fb->denoiserInput,
 #  endif
 #else
                                         fb->finalFB,
 #endif
                                         // fb->finalFB,
                                         fb->finalDepth,
-# if DENOISE_NORMAL
-                              fb->denoiserNormal,
-# endif
+#if DENOISE
+                                        fb->denoiserNormal,
+#endif
                                         fb->numPixels,
                                         fb->ownerGather.finalTiles,
                                         fb->ownerGather.tileDescs,
@@ -298,7 +298,7 @@ namespace barney {
                                         fb->showCrosshairs);
 #if DENOISE
       fb->denoise();
-    // float4ToBGBA8(fb->finalFB,fb->denoiserInput,fb->numPixels);
+      // float4ToBGBA8(fb->finalFB,fb->denoiserInput,fb->numPixels);
 #endif
       // copy to app framebuffer - only if we're the one having that
       // frame buffer of course
@@ -352,7 +352,7 @@ namespace barney {
 
     // allStatuses.resize(allRequests.size());
     // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
-     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
     // barrier(false);
     // for (int i=0;i<allStatuses.size();i++) {
     //   auto &status = allStatuses[i];
@@ -499,10 +499,10 @@ namespace barney {
       return bnContextCreate(dataRanksOnThisContext,
                              numDataRanksOnThisContext == 0
                              ? 1 : numDataRanksOnThisContext,
-                               /*! which gpu(s) to use for this
-                                 process. default is to distribute
-                                 node's GPUs equally over all ranks on
-                                 that given node */
+                             /*! which gpu(s) to use for this
+                               process. default is to distribute
+                               node's GPUs equally over all ranks on
+                               that given node */
                              _gpuIDs,
                              numGPUs);
       // return (BNContext)new LocalContext(dataGroupIDs,

@@ -34,7 +34,6 @@ namespace barney {
     static SP create(Context *context)
     { return std::make_shared<LocalFB>(context); }
 
-#if FB_NO_PEER_ACCESS
     void ownerGatherFinalTiles() override;
     void resize(vec2i size,
                 uint32_t *hostFB,
@@ -46,7 +45,6 @@ namespace barney {
       FinalTile       *finalTiles = 0;
       TileDesc        *tileDescs = 0;
     } rank0gather;
-#endif
   };
 
   // ==================================================================

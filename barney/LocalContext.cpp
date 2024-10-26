@@ -120,9 +120,9 @@ namespace barney {
                               localFB->finalFB,
 # endif
                               localFB->finalDepth,
-# if DENOISE_NORMAL
+# if DENOISE
                               fb->denoiserNormal,
-# endif
+#endif
                               localFB->numPixels,
                               localFB->rank0gather.finalTiles,
                               localFB->rank0gather.tileDescs,

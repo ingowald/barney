@@ -19,24 +19,43 @@
 #include "barney/DeviceGroup.h"
 #include "barney/common/half.h"
 
-#define FB_NO_PEER_ACCESS 1
-
 namespace barney {
 
   struct FrameBuffer;
   
-#if DENOISE_NORMAL
   /*! for now, do a 48 bit half3 representation; shoul eventually go
       to 32 or 16, but lets at least try how much this really helps in
       the denoiser */
   struct CompressedNormal {
+    inline __device__ float4 get4f() const
+    { vec3f v = get(); return make_float4(v.x,v.y,v.z,0.f); }
+    inline __device__ float3 get3f() const
+    { vec3f v = get(); return make_float3(v.x,v.y,v.z); }
+#if 1
+    inline __device__ void set(vec3f v) {
+      if (v == vec3f(0.f)) { x = y = z = 0; return; }
+      v = normalize(v);
+      x = encode(v.x);
+      y = encode(v.y);
+      z = encode(v.z);
+    }
+    inline __device__ vec3f get() const { return vec3f(decode(x),decode(y),decode(z)); }
+  private:
+    inline __device__ int8_t encode(float f) const {
+      f = clamp(f*128.f,-127.f,+127.f);
+      return int8_t(f);
+    }
+    inline __device__ float decode(int8_t i) const {
+      if (i==0) return 0.f;
+      return (i<0) ? (i-.5f)*(1.f/128.f) : (i+.5f)*(1.f/128.f);
+    }
+    int8_t x,y,z;
+#else
     inline __device__ void set(vec3f v) { x = v.x; y = v.y; z = v.z; }
     inline __device__ vec3f get() const { return vec3f(x,y,z); }
-    inline __device__ float4 get4f() const { return make_float4(x,y,z,0.f); }
-    inline __device__ float3 get3f() const { return make_float3(x,y,z); }
     half x,y,z;
-  };
 #endif
+  };
   
   void float4ToBGBA8(uint32_t  *finalFB,
 # if DENOISE_OIDN  
@@ -56,17 +75,13 @@ namespace barney {
   struct AccumTile {
     float4 accum[pixelsPerTile];
     float  depth[pixelsPerTile];
-#if DENOISE_NORMAL
-    CompressedNormal normal[pixelsPerTile];
-#endif
+    vec3f  normal[pixelsPerTile];
   };
   struct FinalTile {
-    uint32_t rgba[pixelsPerTile];
-#if DENOISE_NORMAL
-    half     scale[pixelsPerTile];
+    uint32_t         rgba[pixelsPerTile];
+    half             scale[pixelsPerTile];
     CompressedNormal normal[pixelsPerTile];
-#endif
-    float    depth[pixelsPerTile];
+    half             depth[pixelsPerTile];
   };
   struct TileDesc {
     vec2i lower;
@@ -98,13 +113,13 @@ namespace barney {
                           uint32_t  *finalFB,
 #endif
                           float     *finalDepth,
-# if DENOISE_NORMAL
+#if DENOISE
 #  if DENOISE_OIDN
                           float3    *finalNormal,
 #  else
                           float4    *finalNormal,
 #  endif
-# endif
+#endif
                           vec2i      numPixels,
                           FinalTile *finalTiles,
                           TileDesc  *tileDescs,

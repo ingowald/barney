@@ -35,11 +35,7 @@ namespace barney {
     
     void resize(vec2i size, uint32_t *hostFB, float *hostDepth) override;
 
-    void ownerGatherFinalTiles()
-#if FB_NO_PEER_ACCESS
-      override
-#endif
-      ;
+    void ownerGatherFinalTiles() override;
     
     struct {
       /*! list of *all* ranks' tileOffset, gathered (only at master) */

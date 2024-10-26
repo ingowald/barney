@@ -22,8 +22,6 @@ namespace barney {
   {
   }
 
-  
-#if FB_NO_PEER_ACCESS
   void LocalFB::resize(vec2i size,
                        uint32_t *hostFB,
                        float    *hostDepth)
@@ -68,14 +66,11 @@ namespace barney {
       sumTiles += dev->numActiveTiles;
     }
   }
-#endif
   
   LocalFB::~LocalFB()
   {
-#if FB_NO_PEER_ACCESS
     BARNEY_CUDA_CALL_NOTHROW(Free(rank0gather.finalTiles));
     BARNEY_CUDA_CALL_NOTHROW(Free(rank0gather.tileDescs));
-#endif
   }
   
 }
