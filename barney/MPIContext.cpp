@@ -277,7 +277,12 @@ namespace barney {
       // use default gpu for this:
       barney::TiledFB::writeFinalPixels(// nullptr,
 #if DENOISE
-                                        fb->denoiserInput,
+#  if DENOISE_OIDN
+                              fb->denoiserInput,
+                              fb->denoiserAlpha,
+#  else
+                              fb->denoiserInput,
+#  endif
 #else
                                         fb->finalFB,
 #endif

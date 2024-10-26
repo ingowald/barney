@@ -110,7 +110,12 @@ namespace barney {
     localFB->ownerGatherFinalTiles();
     TiledFB::writeFinalPixels(
 # if DENOISE
+#  if DENOISE_OIDN
                               fb->denoiserInput,
+                              fb->denoiserAlpha,
+#  else
+                              fb->denoiserInput,
+#  endif
 # else
                               localFB->finalFB,
 # endif

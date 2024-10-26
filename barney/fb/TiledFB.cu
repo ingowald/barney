@@ -147,8 +147,14 @@ namespace barney {
 
 #if DENOISE
   __global__ void g_float4ToBGBA8(uint32_t  *finalFB,
+# if DENOISE_OIDN  
+                                  float3    *inputBeforeDenoising,
+                                  float     *alphas,
+                                  float3    *float3s,
+# else
                                   float4    *inputBeforeDenoising,
                                   float4    *float4s,
+#endif
                                   float      denoisedWeight,
                                   vec2i      numPixels)
   {
@@ -158,13 +164,19 @@ namespace barney {
     if (iy >= numPixels.y) return;
     
     int pid = ix+numPixels.x*iy;
+# if DENOISE_OIDN
+    float4 v;
+    (float3&)v = float3s[pid];
+    v.w = alphas[pid];
+#else
     float4 v = float4s[pid];
-#if 1
+#  if 1
     float4 v2 = inputBeforeDenoising[pid];
     v
       = denoisedWeight*(const vec4f&)v
       + (1.f-denoisedWeight)*(const vec4f&)v2;
-#endif
+#  endif
+# endif
     v.x = sqrtf(v.x);
     v.y = sqrtf(v.y);
     v.z = sqrtf(v.z);
@@ -172,21 +184,43 @@ namespace barney {
   }
   
   void float4ToBGBA8(uint32_t  *finalFB,
+#if DENOISE_OIDN
+                     float3    *inputBeforeDenoising,
+                     float     *alphas,
+                     float3    *float3s,
+#else
                      float4    *inputBeforeDenoising,
                      float4    *float4s,
+#endif
                      float      denoisedWeight,
                      vec2i      numPixels)  
   {
     vec2i tileSize = 32;
     g_float4ToBGBA8
       <<<divRoundUp(numPixels,tileSize),tileSize>>>
-      (finalFB,inputBeforeDenoising,float4s,denoisedWeight,
+      (finalFB,
+# if DENOISE_OIDN
+       inputBeforeDenoising,alphas,float3s,
+# else
+       inputBeforeDenoising,float4s,
+# endif
+       denoisedWeight,
        numPixels);
   }    
-  __global__ void g_writeFinalPixels(float4    *finalFB,
+  __global__ void g_writeFinalPixels(
+#if DENOISE_OIDN
+                                     float3    *finalFB,
+                                     float     *finalAlpha,
+#else
+                                     float4    *finalFB,
+#endif
                                      float     *finalDepth,
 #if DENOISE_NORMAL
+# if DENOISE_OIDN
+                                     float3    *finalNormal,
+# else
                                      float4    *finalNormal,
+# endif
 #endif
                                      vec2i      numPixels,
                                      FinalTile *finalTiles,
@@ -217,16 +251,29 @@ namespace barney {
     float r = ((pixelValue >>  0) & 0xff) / 255.f;
     // if (ix == 128 && iy == 128)
     //   printf("%f %f %f %f\n",r,g,b,a);
+# if DENOISE_OIDN
+    finalFB[ofs]
+      = showCrosshairs && isCrossHair
+      ? make_float3(1.f,0.f,0.f)
+      : make_float3(scale*r,scale*g,scale*b);
+    finalAlpha[ofs] = a;
+# else
     finalFB[ofs]
       = showCrosshairs && isCrossHair
       ? make_float4(1.f,0.f,0.f,1.f)
       : make_float4(scale*r,scale*g,scale*b,a);
+#endif
 
     if (finalDepth)
       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
 # if DENOISE_NORMAL
+#  if DENOISE_OIDN
+    finalNormal[ofs]
+      = finalTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get3f();
+#  else
     finalNormal[ofs]
       = finalTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get4f();
+#  endif
 # endif
   }
 #else
@@ -266,13 +313,22 @@ namespace barney {
   
   void TiledFB::writeFinalPixels(
 #if DENOISE
+# if DENOISE_OIDN
+                                 float3    *finalFB,
+                                 float     *finalAlpha,
+# else
                                  float4    *finalFB,
+# endif
 #else
                                  uint32_t  *finalFB,
 #endif
                                  float     *finalDepth,
 #if DENOISE_NORMAL
+#  if DENOISE_OIDN
+                                 float3    *finalNormal,
+#  else
                                  float4    *finalNormal,
+#  endif
 #endif
                                  vec2i      numPixels,
                                  FinalTile *finalTiles,
@@ -294,6 +350,9 @@ namespace barney {
       //   ,0,
       // device?device->launchStream:0>>>
         (finalFB,
+#if DENOISE_OIDN
+         finalAlpha,
+#endif
          finalDepth,
 #if DENOISE_NORMAL
          finalNormal,
