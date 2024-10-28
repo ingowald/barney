@@ -41,7 +41,7 @@ namespace barney_device {
 
   void Light::commit()
   {
-    m_radiance = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
+    m_color = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
   }
 
   BNLight Light::getBarneyLight(BNModel model, int slot)
@@ -65,13 +65,43 @@ namespace barney_device {
 
   // Subtypes ///////////////////////////////////////////////////////////////////
 
+  PointLight::PointLight(BarneyGlobalState *s) : Light(s) {}
+
+  void PointLight::commit()
+  {
+    Light::commit();
+    m_power = getParam<float>("power", 1.f);
+    m_intensity = getParam<float>("intensity", NAN);
+    setBarneyParameters();
+  }
+
+  const char *PointLight::bnSubtype() const
+  {
+    return "point";
+  }
+
+  void PointLight::setBarneyParameters() 
+  {
+    if (!m_bnLight)
+      return;
+    bnSet3fc(m_bnLight, "direction", (const float3 &)m_position);
+    bnSet3fc(m_bnLight, "color", (const float3 &)m_color);
+    bnSet1f (m_bnLight, "intensity", m_intensity);
+    bnSet1f (m_bnLight, "power", m_power);
+    bnCommit(m_bnLight);
+  }
+
+
+  // Subtypes ///////////////////////////////////////////////////////////////////
+
   Directional::Directional(BarneyGlobalState *s) : Light(s) {}
 
   void Directional::commit()
   {
     Light::commit();
-    m_radiance *= getParam<float>("irradiance", 1.f);
-    m_dir = getParam<math::float3>("direction", math::float3(0.f, 0.f, -1.f));
+    m_irradiance = getParam<float>("irradiance", NAN);
+    m_radiance   = getParam<float>("radiance", 1.f);
+    m_direction  = getParam<math::float3>("direction", math::float3(0.f, 0.f, -1.f));
     setBarneyParameters();
   }
 
@@ -84,8 +114,10 @@ namespace barney_device {
   {
     if (!m_bnLight)
       return;
-    bnSet3fc(m_bnLight, "direction", (const float3 &)m_dir);
-    bnSet3fc(m_bnLight, "radiance", (const float3 &)m_radiance);
+    bnSet3fc(m_bnLight, "direction", (const float3 &)m_direction);
+    bnSet3fc(m_bnLight, "color", (const float3 &)m_color);
+    bnSet1f(m_bnLight, "radiance", m_radiance);
+    bnSet1f(m_bnLight, "irradiance", m_irradiance);
     bnCommit(m_bnLight);
   }
 

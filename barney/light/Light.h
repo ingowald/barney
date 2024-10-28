@@ -27,6 +27,10 @@ namespace barney {
   struct Light : public SlottedObject {
     typedef std::shared_ptr<Light> SP;
 
+    struct DD {
+      vec3f color;
+    };
+    
     /*! what we return, during rendering, when we sample a light
         source */
     struct Sample {
@@ -44,8 +48,17 @@ namespace barney {
     Light(ModelSlot *owner) : SlottedObject(owner) {}
 
     std::string toString() const override { return "Light<>"; }
+
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    // bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
     
     static Light::SP create(ModelSlot *owner, const std::string &name);
+
+    vec3f color = vec3f(1.f);
   };
 
 };

@@ -168,6 +168,8 @@ add_library(barney STATIC
   light/Light.cpp
   light/DirLight.h
   light/DirLight.cu
+  light/PointLight.h
+  light/PointLight.cu
   light/QuadLight.h
   light/QuadLight.cu
   light/EnvMap.h

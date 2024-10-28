@@ -383,7 +383,8 @@ namespace barney {
 
     vec4f sample = 0.f;
     if (!Woodcock::sampleRange(sample,self,
-                               org,dir,tRange,majorant,ray.rngSeed))
+                               org,dir,tRange,majorant,ray.rngSeed,
+                               ray.dbg))
       return;
 
     // and: store the hit, right here in isec prog.

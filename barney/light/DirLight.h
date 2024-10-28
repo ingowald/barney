@@ -22,8 +22,10 @@ namespace barney {
 
   struct DirLight : public Light {
     struct DD {
-      vec3f direction = vec3f(0.f,0.f,-1.f);
-      vec3f radiance  = vec3f(1.f);
+      vec3f direction;
+      float radiance;
+      float irradiance;
+      vec3f color;
     };
     
     typedef std::shared_ptr<DirLight> SP;
@@ -35,11 +37,21 @@ namespace barney {
     
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
+    bool set1f(const std::string &member, const float &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
-    DD params;
+    /*! SPEC: main emission direction of the directional light */
+    vec3f direction{0.f, 0.f, -1.f};
+    
+    /*! SPEC: the amount of light arriving at a surface point,
+        assuming the light is oriented towards to the surface, in
+        W/m2 */
+    float irradiance = NAN;
+    /*! the amount of light emitted in a direction, in W/sr/m2;
+        irradiance takes precedence if also specified */
+    float radiance = 1.f;
   };
 
 }

@@ -39,6 +39,14 @@ namespace barney {
   }
 
   // ==================================================================
+  bool Light::set3f(const std::string &member, const vec3f &value)
+  {
+    if (member == "color") {
+      color = value;
+      return true;
+    }
+    return false;
+  }
   
   // ==================================================================
   

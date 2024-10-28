@@ -166,13 +166,18 @@ namespace barney {
                      world.numDirLights-1);
         weights[i] = 0.f;
         light = world.dirLights[lID[i]];
+        vec3f light_radiance
+          = light.color
+          * (isnan(light.irradiance)
+             ? light.radiance
+             : (light.irradiance * ONE_OVER_FOUR_PI));
         vec3f lightDir = -light.direction;
         float weight = dot(lightDir,N);
         if (0 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
         if (weight <= 1e-3f) continue;
-        weight *= reduce_max(light.radiance);
+        weight *= reduce_max(light_radiance);
         if (weight <= 1e-3f) continue;
-        if (0 && dbg) printf("radiance %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
+        // if (0 && dbg) printf("radiance %f %f color %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
         weights[i] = weight;
         sumWeights += weight;
       }

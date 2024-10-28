@@ -85,7 +85,8 @@ namespace barney {
       /* compute scalar of given hex in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool hexScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__
+      bool hexScalar(float &retVal, int primID, vec3f P, bool dbg=false) const;
       
       /* compute scalar of given grid in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
@@ -95,10 +96,6 @@ namespace barney {
       const float4     *vertices;
       const int        *indices;
       const Element    *elements;
-      // const int        *gridOffsets;
-      // const vec3i      *gridDims;
-      // const box4f      *gridDomains;
-      // const float      *gridScalars;
       int               numElements;
     };
 
@@ -123,14 +120,6 @@ namespace barney {
                std::vector<vec4f>   &vertices,
                std::vector<int>     &indices,
                std::vector<Element> &elements,
-               // std::vector<TetIndices> &tetIndices,
-               // std::vector<PyrIndices> &pyrIndices,
-               // std::vector<WedIndices> &wedIndices,
-               // std::vector<HexIndices> &hexIndices,
-               // std::vector<int> &gridOffsets,
-               // std::vector<vec3i> &gridDims,
-               // std::vector<box4f> &gridDomains,
-               // std::vector<float> &gridScalars,
                const box3f &domain);
 
     DD getDD(int devID);
@@ -140,18 +129,6 @@ namespace barney {
                                   const int     *indices,  int numIndices,
                                   const int     *elementOffsets,
                                   int      numElements,
-                                  //    std::vector<vec4f>   &vertices,
-                                  //    std::vector<int>     &indices,
-                                  //    std::vector<int>     &elementOffsets,
-                                  // std::vector<uint8_t> &elementTypes,
-                                  // std::vector<TetIndices> &tetIndices,
-                                  // std::vector<PyrIndices> &pyrIndices,
-                                  // std::vector<WedIndices> &wedIndices,
-                                  // std::vector<HexIndices> &hexIndices,
-                                  // std::vector<int> &gridOffsets,
-                                  // std::vector<vec3i> &gridDims,
-                                  // std::vector<box4f> &gridDomains,
-                                  // std::vector<float> &gridScalars,
                                   const box3f &domain);
     
     VolumeAccel::SP createAccel(Volume *volume) override;
@@ -162,27 +139,10 @@ namespace barney {
     
     std::vector<vec4f>      vertices;
     std::vector<int>        indices;
-    // std::vector<TetIndices> tetIndices;
-    // std::vector<PyrIndices> pyrIndices;
-    // std::vector<WedIndices> wedIndices;
-    // std::vector<HexIndices> hexIndices;
     std::vector<Element>    elements;
-    // std::vector<int>        gridOffsets;
-    // std::vector<vec3i>      gridDims;
-    // std::vector<box4f>      gridDomains;
-    // std::vector<float>      gridScalars;
-    
     OWLBuffer verticesBuffer   = 0;
     OWLBuffer indicesBuffer    = 0;
-    // OWLBuffer tetIndicesBuffer = 0;
-    // OWLBuffer pyrIndicesBuffer = 0;//todo wire in
-    // OWLBuffer wedIndicesBuffer = 0;//todo wire in
-    // OWLBuffer hexIndicesBuffer = 0;
     OWLBuffer elementsBuffer   = 0;
-    // OWLBuffer gridOffsetsBuffer = 0;
-    // OWLBuffer gridDimsBuffer = 0;
-    // OWLBuffer gridDomainsBuffer = 0;
-    // OWLBuffer gridScalarsBuffer = 0;
   };
   
   // ==================================================================
@@ -290,7 +250,10 @@ namespace barney {
      in 'retVal'. returns true if P is inside the elemnt, false if
      outside (in which case retVal is not defined) */
   inline __both__
-  bool UMeshField::DD::eltScalar(float &retVal, Element elt, vec3f P, bool dbg) const
+  bool UMeshField::DD::eltScalar(float &retVal,
+                                 Element elt,
+                                 vec3f P,
+                                 bool dbg) const
   {
     switch (elt.type) {
     case Element::TET: 
@@ -300,7 +263,7 @@ namespace barney {
     case Element::WED:
       return wedScalar(retVal,elt.ofs0,P);
     case Element::HEX:
-      return hexScalar(retVal,elt.ofs0,P);
+      return hexScalar(retVal,elt.ofs0,P,dbg);
     // case Element::GRID:
     //   return gridScalar(retVal,elt.ID,P);
     }
@@ -373,9 +336,24 @@ namespace barney {
   }
 
   inline __both__
-  bool UMeshField::DD::hexScalar(float &retVal, int ofs0, vec3f P) const
+  bool UMeshField::DD::hexScalar(float &retVal,
+                                 int ofs0,
+                                 vec3f P,
+                                 bool dbg) const
   {
+#if 0
+    UMeshField::ints<8> indices;
+    indices[0] = this->indices[ofs0+0];
+    indices[1] = this->indices[ofs0+1];
+    indices[2] = this->indices[ofs0+3];
+    indices[3] = this->indices[ofs0+2];
+    indices[4] = this->indices[ofs0+4];
+    indices[5] = this->indices[ofs0+5];
+    indices[6] = this->indices[ofs0+7];
+    indices[7] = this->indices[ofs0+6];
+#else
     UMeshField::ints<8> indices = *(const UMeshField::ints<8> *)&this->indices[ofs0];
+#endif
     return intersectHexEXT(retVal, P,
                            vertices[indices[0]],
                            vertices[indices[1]],
@@ -384,7 +362,8 @@ namespace barney {
                            vertices[indices[4]],
                            vertices[indices[5]],
                            vertices[indices[6]],
-                           vertices[indices[7]]);
+                           vertices[indices[7]],
+                           dbg);
   }
 
 //   inline __both__
