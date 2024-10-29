@@ -133,10 +133,10 @@ void Curve::commit()
     return;
   }
 
-  if (m_index) {
-    reportMessage(ANARI_SEVERITY_WARNING,
-        "primitive.index parameter on curve geometry not yet supported");
-  }
+  // if (m_index) {
+  //   reportMessage(ANARI_SEVERITY_WARNING,
+  //       "primitive.index parameter on curve geometry not yet supported");
+  // }
 }
 
 void Sphere::setBarneyParameters(BNGeom geom, BNModel model, int slot)
