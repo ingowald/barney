@@ -223,7 +223,7 @@ namespace barney {
 
     // interpolator for anari-style color/attribute interpolation
     auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
-    { 
+    {
       const vec4f value_a = attrib.fromArray.valueAt(idx.x);
       const vec4f value_b = attrib.fromArray.valueAt(idx.y);
       const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;

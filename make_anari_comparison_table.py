@@ -14,6 +14,8 @@ haystack_tests=(
     f'{data}/rungholt.mini -os 1600 1200 --camera 160.627 83.3032 252.997 55.8672 0 109.937 0 1 0 -fovy 60',
     f'{data}/embree-headlight.mini --camera -753.732 517.383 -655.327 -315.048 234.48 -451.202 0 1 0 -fovy 60',
     f'{data}/pp.mini -os 1600 1200  --camera -229013 58629.4 136061 -74489 17471.9 64223 0 1 0 -fovy 60',
+    f'-os 1024 1024 capsules://<test> --camera 0.0760238 1.3328 1.77733 0.436811 0.479053 0.438755 0 1 0 -fovy 60'
+
     )
 def haystack_table(f):
     f.write('<table rules="all">\n')
