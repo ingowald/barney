@@ -105,10 +105,10 @@ void Sphere::commit()
     return;
   }
 
-  if (m_index) {
-    reportMessage(ANARI_SEVERITY_WARNING,
-        "primitive.index parameter on sphere geometry not yet supported");
-  }
+  // if (m_index) {
+  //   reportMessage(ANARI_SEVERITY_WARNING,
+  //       "primitive.index parameter on sphere geometry not yet supported");
+  // }
 
   // m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
   // m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
