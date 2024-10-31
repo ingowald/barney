@@ -21,9 +21,14 @@
 
 namespace barney {
 
+  struct Device;
+  struct DevGroup;
   struct Context;
   struct ModelSlot;
   struct Data;
+  namespace render {
+    struct World;
+  };
   
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
@@ -82,13 +87,18 @@ namespace barney {
 
   /*! a object owned (only) in a particular data group */
   struct SlottedObject : public Object {
-    SlottedObject(ModelSlot *owner);
+    SlottedObject(Context *context, int slot);
     virtual ~SlottedObject() = default;
-    
+
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "<SlottedObject>"; }
 
-    ModelSlot *const owner = 0;
+    const std::vector<std::shared_ptr<Device>> &getDevices() const;
+    OWLContext     getOWL() const;
+    DevGroup      *getDevGroup() const;
+    render::World *getWorld() const;
+    
+    const int      slot;
   };
 
   // ==================================================================

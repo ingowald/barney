@@ -278,7 +278,7 @@ namespace barney {
   template<typename SFSampler>
   MCVolumeAccel<SFSampler>::Host::Host(ScalarField *sf, Volume *volume, const char *ptxCode)
     : Inherited(sf,volume,ptxCode),
-      mcGrid(sf->devGroup)
+      mcGrid(sf->getDevGroup())
   {}
 
   template<typename SFSampler>
@@ -292,7 +292,7 @@ namespace barney {
   template<typename SFSampler>
   void MCVolumeAccel<SFSampler>::Host::createGeom() 
   {
-    auto devGroup = sf->devGroup;
+    auto devGroup = sf->getDevGroup();
     const std::string typeString
       = getTypeString();
     OWLGeomType gt = devGroup->getOrCreateGeomTypeFor

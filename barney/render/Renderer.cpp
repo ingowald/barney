@@ -34,13 +34,19 @@ namespace barney {
 
   void Renderer::commit() 
   {
+    bgColor         = staged.bgColor;
+    ambientRadiance = staged.ambientRadiance;
+    pathsPerPixel   = staged.pathsPerPixel;
+    bgTexture       = staged.bgTexture;
   }
   
-  bool Renderer::setData(const std::string &member,
-               const std::shared_ptr<Data> &value) 
+  bool Renderer::setObject(const std::string &member,
+                           const std::shared_ptr<Object> &value) 
   {
-    if (member == "bgImage") {
-      staged.bgImage = value;
+    if (Object::setObject(member,value))
+      return true;
+    if (member == "bgTexture") {
+      staged.bgTexture = value->as<Texture>();
       return true;
     }
     return false;
@@ -48,6 +54,8 @@ namespace barney {
   
   bool Renderer::set1f(const std::string &member, const float &value)
   {
+    if (Object::set1f(member,value))
+      return true;
     if (member == "ambientRadiance") {
       staged.ambientRadiance = value;
       return true;
@@ -57,6 +65,8 @@ namespace barney {
   
   bool Renderer::set4f(const std::string &member, const vec4f &value)
   {
+    if (Object::set4f(member,value))
+      return true;
     if (member == "bgColor") {
       staged.bgColor = value;
       return true;
@@ -68,7 +78,9 @@ namespace barney {
   {
     Renderer::DD dd;
     dd.bgColor = bgColor;
-    dd.bgTexture = 0;
+    dd.bgTexture
+      = bgTexture ? bgTexture->getTextureObject(device)
+      : 0;
     dd.ambientRadiance = ambientRadiance;
     dd.pathsPerPixel = pathsPerPixel;
     return dd;

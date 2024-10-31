@@ -33,7 +33,7 @@ namespace barney {
 #endif
         PossiblyMappedParameter::DD color;
       };
-      AnariMatte(ModelSlot *owner) : HostMaterial(owner) {}
+      AnariMatte(Context *context, int slot) : HostMaterial(context,slot) {}
       virtual ~AnariMatte() = default;
 
       bool setString(const std::string &member, const std::string &value) override;

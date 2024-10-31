@@ -20,8 +20,6 @@
 
 namespace barney {
 
-  struct ModelSlot;
-
   /*! A geometry made of multiple "capsules", where each capsule is
       "pill-like" shape obtained by linearly connecting two
       spheres. Unlike cylinders both end-points of the capsule have
@@ -45,7 +43,7 @@ namespace barney {
       const vec2i *indices;
     };
     
-    Capsules(ModelSlot *owner);
+    Capsules(Context *context, int slot);
     virtual ~Capsules() = default;
     
     /*! pretty-printer for printf-debugging */

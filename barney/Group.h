@@ -26,10 +26,10 @@ namespace barney {
   /*! a logical "group" of objects in a data group -- i.e., geometries
       and volumes (and maybe, eventual, lights?) -- that can be
       instantiated */
-  struct Group : public Object {
+  struct Group : public SlottedObject {
     typedef std::shared_ptr<Group> SP;
 
-    Group(ModelSlot *owner,
+    Group(Context *context, int slot,
           const std::vector<Geometry::SP> &geoms,
           const std::vector<Volume::SP> &volumes);
     virtual ~Group();
@@ -50,7 +50,6 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override;
 
-    ModelSlot *const owner;
     const std::vector<Volume::SP>   volumes;
     const std::vector<Geometry::SP> geoms;
 

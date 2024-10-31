@@ -79,54 +79,33 @@ namespace barney {
   };
   
   PODData::PODData(Context *context,
+                   int slot,
                    BNDataType type,
                    size_t numItems,
                    const void *_items)
-    : Data(context,type,numItems)
+    : Data(context,slot,type,numItems)
   {
-    owl = owlDeviceBufferCreate(context->getGlobalOWL(),owlTypeFor(type),
+    owl = owlDeviceBufferCreate(getOWL(),owlTypeFor(type),
                                 numItems,_items);
   }
   
-  PODData::PODData(ModelSlot *owner,
-                   BNDataType type,
-                   size_t numItems,
-                   const void *_items)
-    : Data(owner,type,numItems)
-  {
-    owl = owlDeviceBufferCreate(owner->getOWL(),owlTypeFor(type),
-                                numItems,_items);
-  }
+  // PODData::PODData(ModelSlot *owner,
+  //                  BNDataType type,
+  //                  size_t numItems,
+  //                  const void *_items)
+  //   : Data(owner,type,numItems)
+  // {
+  //   owl = owlDeviceBufferCreate(getOWL(),owlTypeFor(type),
+  //                               numItems,_items);
+  // }
 
   PODData::~PODData()
   {
     if (owl) owlBufferRelease(owl);
   }
 
-  Data::SP Data::create(ModelSlot *owner,
-                        BNDataType type,
-                        size_t numItems,
-                        const void *items)
-  {
-    switch(type) {
-    case BN_INT:
-    case BN_INT2:
-    case BN_INT3:
-    case BN_INT4:
-    case BN_FLOAT:
-    case BN_FLOAT2:
-    case BN_FLOAT3:
-    case BN_FLOAT4:
-      return std::make_shared<PODData>(owner,type,numItems,items);
-    case BN_OBJECT:
-      return std::make_shared<ObjectRefsData>(owner,type,numItems,items);
-    default:
-      throw std::runtime_error("un-implemented data type '"+to_string(type)
-                               +" in Data::create()");
-    }
-  }
-  
   Data::SP Data::create(Context *context,
+                        int slot,
                         BNDataType type,
                         size_t numItems,
                         const void *items)
@@ -140,10 +119,9 @@ namespace barney {
     case BN_FLOAT2:
     case BN_FLOAT3:
     case BN_FLOAT4:
-      return std::make_shared<PODData>(context,type,numItems,items);
+      return std::make_shared<PODData>(context,slot,type,numItems,items);
     case BN_OBJECT:
-      throw std::runtime_error("global, context-level BNData can only "
-                               "be created over POD types");
+      return std::make_shared<ObjectRefsData>(context,slot,type,numItems,items);
     default:
       throw std::runtime_error("un-implemented data type '"+to_string(type)
                                +" in Data::create()");
@@ -151,26 +129,20 @@ namespace barney {
   }
   
   Data::Data(Context *context,
+             int slot,
              BNDataType type,
              size_t numItems)
-    : Object(context),
+    : SlottedObject(context,slot),
       type(type),
       count(numItems)
   {}
   
-  Data::Data(ModelSlot *owner,
-             BNDataType type,
-             size_t numItems)
-    : Object(owner->context),
-      type(type),
-      count(numItems)
-  {}
-  
-  ObjectRefsData::ObjectRefsData(ModelSlot *owner,
+  ObjectRefsData::ObjectRefsData(Context *context,
+                                 int slot,
                                  BNDataType type,
                                  size_t numItems,
                                  const void *_items)
-    : Data(owner,type,numItems)
+    : Data(context,slot,type,numItems)
   {
     items.resize(numItems);
     for (int i=0;i<numItems;i++)

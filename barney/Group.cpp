@@ -17,11 +17,10 @@
 #include "barney/ModelSlot.h"
 
 namespace barney {
-  Group::Group(ModelSlot *owner,
+  Group::Group(Context *context, int slot,
                const std::vector<Geometry::SP> &geoms,
                const std::vector<Volume::SP> &volumes)
-    : Object(owner->context),
-      owner(owner),
+    : SlottedObject(context,slot),
       geoms(geoms),
       volumes(volumes)
   {}
@@ -98,7 +97,7 @@ namespace barney {
       }
       if (!userGeoms.empty()) {
         userGeomGroup = owlUserGeomGroupCreate
-          (owner->devGroup->owl,userGeoms.size(),userGeoms.data());
+          (getOWL(),userGeoms.size(),userGeoms.data());
       }
       if (userGeomGroup) {
         owlGroupBuildAccel(userGeomGroup);
@@ -106,7 +105,7 @@ namespace barney {
       
       if (!triangleGeoms.empty()) {
         triangleGeomGroup = owlTrianglesGeomGroupCreate
-          (owner->devGroup->owl,triangleGeoms.size(),triangleGeoms.data());
+          (getOWL(),triangleGeoms.size(),triangleGeoms.data());
       }
       if (triangleGeomGroup) {
         owlGroupBuildAccel(triangleGeomGroup);
@@ -154,7 +153,7 @@ namespace barney {
             volume->build(true);
         
         volumeGeomsGroup = owlUserGeomGroupCreate
-          (owner->devGroup->owl,volumeGeoms.size(),volumeGeoms.data());
+          (getOWL(),volumeGeoms.size(),volumeGeoms.data());
         owlGroupBuildAccel(volumeGeomsGroup);
       }
       

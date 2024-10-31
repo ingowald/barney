@@ -119,17 +119,17 @@ namespace barney {
       d_primRanges is non-null - the primitmives ranges. d_primBounds
       and d_primRanges (if non-null) must be pre-allocated and
       writeaable on specified device */
-    void computeBlockFilterDomains(int deviceID,
+    void computeBlockFilterDomains(const Device::SP &device,
                                    box3f *d_primBounds,
                                    range1f *d_primRanges=0);
 
-    BlockStructuredField(ModelSlot *owner,
+    BlockStructuredField(Context *context, int slot,
                          std::vector<box3i> &blockBounds,
                          std::vector<int> &blockLevels,
                          std::vector<int> &blockOffsets,
                          std::vector<float> &blockScalars);
-
-    DD getDD(int devID);
+                     
+    DD getDD(const Device::SP &device);
 
     VolumeAccel::SP createAccel(Volume *volume) override;
 

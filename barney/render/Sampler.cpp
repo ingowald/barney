@@ -38,19 +38,19 @@ namespace barney {
                                +attributeName+"'");
     }
 
-    Sampler::Sampler(ModelSlot *owner)
-      : SlottedObject(owner),
-        samplerRegistry(owner->world->samplerRegistry),
-        samplerID(owner->world->samplerRegistry->allocate())
+    Sampler::Sampler(Context *context, int slot)
+      : SlottedObject(context,slot),
+        samplerRegistry(getWorld()->samplerRegistry),
+        samplerID(getWorld()->samplerRegistry->allocate())
     {
-      perDev.resize(owner->devGroup->size());
+      perDev.resize(getDevGroup()->size());
     }
     
     Sampler::~Sampler()
     {
       samplerRegistry->release(samplerID);
-      for (int devID=0;devID<owner->devGroup->size();devID++) {
-        auto dev = owner->devGroup->devices[devID];
+      for (int devID=0;devID<getDevGroup()->size();devID++) {
+        auto dev = getDevGroup()->devices[devID];
         SetActiveGPU forDuration(dev);
 
         Sampler::DD &dd = perDev[devID];
@@ -62,16 +62,16 @@ namespace barney {
       }
     }
     
-    Sampler::SP Sampler::create(ModelSlot *owner, const std::string &type)
+    Sampler::SP Sampler::create(Context *context, int slot, const std::string &type)
     {
       if (type == "texture1D")
-        return std::make_shared<TextureSampler>(owner,1);
+        return std::make_shared<TextureSampler>(context,slot,1);
       if (type == "texture2D" || type == "image2D")
-        return std::make_shared<TextureSampler>(owner,2);
+        return std::make_shared<TextureSampler>(context,slot,2);
       if (type == "texture3D")
-        return std::make_shared<TextureSampler>(owner,3);
+        return std::make_shared<TextureSampler>(context,slot,3);
       if (type == "transform")
-        return std::make_shared<TransformSampler>(owner);
+        return std::make_shared<TransformSampler>(context,slot);
       throw std::runtime_error("do not know what a '"+type+" sampler is !?");
     }
 
@@ -119,8 +119,8 @@ namespace barney {
     {
       SlottedObject::commit();
 
-      for (int devID=0;devID<owner->devGroup->size();devID++) {
-        auto dev = owner->devGroup->devices[devID];
+      for (int devID=0;devID<getDevGroup()->size();devID++) {
+        auto dev = getDevGroup()->devices[devID];
         SetActiveGPU forDuration(dev);
 
         Sampler::DD &dd = perDev[devID];

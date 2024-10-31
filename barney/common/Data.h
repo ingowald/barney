@@ -23,27 +23,17 @@ namespace barney {
   const std::string to_string(BNDataType type);
   OWLDataType owlTypeFor(BNDataType type);
   
-  struct Data : public Object {
+  struct Data : public SlottedObject {
     typedef std::shared_ptr<Data> SP;
 
-    Data(ModelSlot *owner,
-         BNDataType type,
-         size_t numItems);
     Data(Context *context,
+         int slot,
          BNDataType type,
          size_t numItems);
     virtual ~Data() = default;
     
-    /*! factory for a 'global' data array that lives on the
-      context itself, and spans all model slots */
     static Data::SP create(Context *context,
-                           BNDataType type,
-                           size_t numItems,
-            const void *items);
-    
-    /*! factory for a 'regular' data array that lives on a model
-      slot */
-    static Data::SP create(ModelSlot *owner,
+                           int slot,
                            BNDataType type,
                            size_t numItems,
                            const void *items);
@@ -62,16 +52,11 @@ namespace barney {
     /*! constructor for a 'global' data array that lives on the
         context itself, and spans all model slots */
     PODData(Context *context,
+            int slot,
             BNDataType type,
             size_t numItems,
             const void *items);
     
-    /*! constructor for a 'regular' data array that lives on a model
-        slot */
-    PODData(ModelSlot *owner,
-            BNDataType type,
-            size_t numItems,
-            const void *items);
     virtual ~PODData();
     
     OWLBuffer  owl   = 0;
@@ -82,7 +67,8 @@ namespace barney {
       put into this data array will remain properly refcoutned. */
   struct ObjectRefsData : public Data {
     typedef std::shared_ptr<ObjectRefsData> SP;
-    ObjectRefsData(ModelSlot *owner,
+    ObjectRefsData(Context *context,
+                   int slot,
                    BNDataType type,
                    size_t numItems,
                    const void *items);

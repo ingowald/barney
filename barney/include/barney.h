@@ -336,28 +336,38 @@ void bnSetInstances(BNModel model,
   need data to be put into cudaArray's (in order to create
   cudaTextures) */
 BN_API
-BNData bnDataCreate(BNModel model,
+BNData bnDataCreate(BNContext context,
                     int whichSlot,
                     BNDataType dataType,
                     size_t numItems,
                     const void *items);
 
+// /*! creates a cudaArray2D of specified size and texels. Can be passed
+//   to a sampler to create a matching cudaTexture2D */
+// BN_API
+// BNTextureData bnTextureData2DCreate(BNContext context,
+//                                     int whichSlot,
+//                                     BNTexelFormat texelFormat,
+//                                     int width, int height,
+//                                     const void *items);
+
 /*! creates a cudaArray2D of specified size and texels. Can be passed
-  to a sampler to create a matching cudaTexture2D */
+  to a sampler to create a matching cudaTexture2D, or as a background
+  image to a renderer */
 BN_API
-BNTextureData bnTextureData2DCreate(BNModel model,
+BNTextureData bnTextureData2DCreate(BNContext context,
                                     int whichSlot,
                                     BNTexelFormat texelFormat,
                                     int width, int height,
                                     const void *items);
 
 BN_API
-BNLight bnLightCreate(BNModel model,
+BNLight bnLightCreate(BNContext context,
                       int whichSlot,
                       const char *type);
                     
 BN_API
-BNGroup bnGroupCreate(BNModel model,
+BNGroup bnGroupCreate(BNContext context,
                       int whichSlot,
                       BNGeom *geoms, int numGeoms,
                       BNVolume *volumes, int numVolumes);
@@ -365,7 +375,7 @@ BN_API
 void bnGroupBuild(BNGroup group);
 
 BN_API
-BNTexture2D bnTexture2DCreate(BNModel model,
+BNTexture2D bnTexture2DCreate(BNContext context,
                               int whichSlot,
                               BNTexelFormat texelFormat,
                               /*! number of texels in x dimension */
@@ -378,7 +388,7 @@ BNTexture2D bnTexture2DCreate(BNModel model,
                               BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
 
 BN_API
-BNTexture3D bnTexture3DCreate(BNModel model,
+BNTexture3D bnTexture3DCreate(BNContext context,
                               int whichSlot,
                               BNTexelFormat texelFormat,
                               /*! number of texels in x dimension */
@@ -398,7 +408,7 @@ BNTexture3D bnTexture3DCreate(BNModel model,
 /*! create a new geometry of given type. currently supported types:
     "triangles", "spheres", "cylinders" */
 BN_API
-BNGeom bnGeometryCreate(BNModel model,
+BNGeom bnGeometryCreate(BNContext context,
                         int whichSlot,
                         const char *type);
 
@@ -406,19 +416,19 @@ BNGeom bnGeometryCreate(BNModel model,
 /*! create a new scalar field of given type. currently supported
     types: "structured" */
 BN_API
-BNScalarField bnScalarFieldCreate(BNModel model,
+BNScalarField bnScalarFieldCreate(BNContext context,
                                   int whichSlot,
                                   const char *type);
                                      
 /*! create a new material of given type. currently supported types:
   "matte", "glass" */
 BN_API
-BNMaterial bnMaterialCreate(BNModel model,
+BNMaterial bnMaterialCreate(BNContext context,
                             int whichSlot,
                             const char *type);
 
 BN_API
-BNSampler bnSamplerCreate(BNModel model,
+BNSampler bnSamplerCreate(BNContext context,
                           int whichSlot,
                           const char *type);
 
@@ -434,7 +444,7 @@ BNSampler bnSamplerCreate(BNModel model,
 // soon to be deprecated, but still the only way to create those
 // ------------------------------------------------------------------
 BN_API
-BNScalarField bnUMeshCreate(BNModel model,
+BNScalarField bnUMeshCreate(BNContext context,
                             int whichSlot,
                             // vertices, 4 floats each (3 floats position,
                             // 4th float scalar value)
@@ -478,7 +488,7 @@ BNScalarField bnUMeshCreate(BNModel model,
 
 
 BN_API
-BNScalarField bnBlockStructuredAMRCreate(BNModel model,
+BNScalarField bnBlockStructuredAMRCreate(BNContext context,
                                          int whichSlot,
                                          /*TODO:const float *cellWidths,*/
                                          // block bounds, 6 ints each (3 for min,
@@ -494,7 +504,7 @@ BNScalarField bnBlockStructuredAMRCreate(BNModel model,
 
 
 BN_API
-BNVolume bnVolumeCreate(BNModel model,
+BNVolume bnVolumeCreate(BNContext context,
                         int whichSlot,
                         BNScalarField sf);
 
@@ -553,7 +563,7 @@ inline void bnAssignMaterial(BNGeom geom,const BNMaterialHelper *material)
 // DEPRECATED
 // ------------------------------------------------------------------
 BN_API
-BNGeom bnTriangleMeshCreate(BNModel model,
+BNGeom bnTriangleMeshCreate(BNContext context,
                             int whichSlot,
                             const BNMaterialHelper *material,
                             const int3 *indices,
@@ -567,7 +577,7 @@ BNGeom bnTriangleMeshCreate(BNModel model,
 // DEPRECATED
 // ------------------------------------------------------------------
 BN_API
-BNScalarField bnStructuredDataCreate(BNModel model,
+BNScalarField bnStructuredDataCreate(BNContext context,
                                      int whichSlot,
                                      int3 dims,
                                      BNScalarType type,

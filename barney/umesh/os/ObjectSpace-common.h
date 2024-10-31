@@ -49,6 +49,9 @@ namespace barney {
           mesh(mesh)
       {}
 
+      const std::vector<Device::SP> &getDevices()
+      { assert(mesh); return mesh->getDevices(); }
+        
       UpdateMode updateMode() override
       { return HAS_ITS_OWN_GROUP; }
       

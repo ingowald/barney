@@ -80,10 +80,10 @@ namespace barney {
     
     const vec3i bs = 4;
     const vec3i nb = divRoundUp(dims,bs);
-    for (auto dev : devGroup->devices) {
+    for (auto dev : getDevices()) {
       SetActiveGPU forDuration(dev);
-      auto d_field = getDD(dev->owlID);
-      auto d_grid = grid.getDD(dev->owlID);
+      auto d_field = getDD(dev);
+      auto d_grid = grid.getDD(dev);
       rasterBlocks
         <<<divRoundUp(int(blockIDs.size()),1024),1024>>>
         (d_grid,d_field);
@@ -113,24 +113,24 @@ namespace barney {
     d_primRanges is non-null - the primitmives ranges. d_primBounds
     and d_primRanges (if non-null) must be pre-allocated and
     writeaable on specified device */
-  void BlockStructuredField::computeBlockFilterDomains(int deviceID,
+  void BlockStructuredField::computeBlockFilterDomains(const Device::SP &device,
                                                        box3f *d_primBounds,
                                                        range1f *d_primRanges)
   {
-    SetActiveGPU forDuration(devGroup->devices[deviceID]);
+    SetActiveGPU forDuration(device);
     int bs = 1024;
     int nb = divRoundUp(int(blockIDs.size()),bs);
     g_computeBlockFilterDomains
-      <<<nb,bs>>>(d_primBounds,d_primRanges,getDD(deviceID));
+      <<<nb,bs>>>(d_primBounds,d_primRanges,getDD(device));
     BARNEY_CUDA_SYNC_CHECK();
   }
 
-  BlockStructuredField::BlockStructuredField(ModelSlot *owner,
+  BlockStructuredField::BlockStructuredField(Context *context, int slot,
                                              std::vector<box3i> &_blockBounds,
                                              std::vector<int> &_blockLevels,
                                              std::vector<int> &_blockOffsets,
                                              std::vector<float> &_blockScalars)
-    : ScalarField(owner),
+    : ScalarField(context,slot),
       blockBounds(std::move(_blockBounds)),
       blockLevels(std::move(_blockLevels)),
       blockOffsets(std::move(_blockOffsets)),
@@ -198,9 +198,10 @@ namespace barney {
                               valueRanges.data());
   }
 
-  BlockStructuredField::DD BlockStructuredField::getDD(int devID)
+  BlockStructuredField::DD BlockStructuredField::getDD(const Device::SP &device)
   {
     BlockStructuredField::DD dd;
+    int devID = device->owlID;
 
     dd.blockBounds  = (const box3i    *)owlBufferGetPointer(blockBoundsBuffer,devID);
     dd.blockLevels  = (const int      *)owlBufferGetPointer(blockLevelsBuffer,devID);
@@ -212,20 +213,6 @@ namespace barney {
     dd.worldBounds  = worldBounds;
 
     return dd;
-  }
-
-  ScalarField *ModelSlot::createBlockStructuredAMR(std::vector<box3i> &blockBounds,
-                                                   std::vector<int> &blockLevels,
-                                                   std::vector<int> &blockOffsets,
-                                                   std::vector<float> &blockScalars)
-  {
-    ScalarField::SP sf
-      = std::make_shared<BlockStructuredField>(this,
-                                               blockBounds,
-                                               blockLevels,
-                                               blockOffsets,
-                                               blockScalars);
-    return getContext()->initReference(sf);
   }
 
   void BlockStructuredField::setVariables(OWLGeom geom)

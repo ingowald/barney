@@ -55,18 +55,18 @@ namespace barney {
     }
   }
   
-  Group *ModelSlot::createGroup(const std::vector<Geometry::SP> &geoms,
-                                const std::vector<Volume::SP> &volumes)
-  {
-    return getContext()->initReference
-      (std::make_shared<Group>(this,geoms,volumes));
-  }
+  // Group *ModelSlot::createGroup(const std::vector<Geometry::SP> &geoms,
+  //                               const std::vector<Volume::SP> &volumes)
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Group>(this,geoms,volumes));
+  // }
 
-  Volume *ModelSlot::createVolume(ScalarField::SP sf)
-  {
-    return getContext()->initReference
-      (std::make_shared<Volume>(devGroup.get(),sf));
-  }
+  // Volume *ModelSlot::createVolume(ScalarField::SP sf)
+  // {
+  //   return getContext()->initReference
+  //     (std::make_shared<Volume>(devGroup.get(),sf));
+  // }
 
   ModelSlot::SP ModelSlot::create(GlobalModel *model, int localID)
   {
@@ -74,29 +74,41 @@ namespace barney {
     return slot;
   }
 
-  Data *ModelSlot::createData(BNDataType dataType,
-                              size_t numItems,
-                              const void *items)
-  {
-    return getContext()->initReference(Data::create(this,dataType,numItems,items));
-  }
+  // render::HostMaterial::SP ModelSlot::getDefaultMaterial()
+  // {
+  //   if (!defaultMaterial) {
+  //     defaultMaterial
+  //       = render::HostMaterial::create(this,"AnariMatte");
+  //     defaultMaterial->commit();
+  //   }
+  //   return defaultMaterial;
+  // }
   
-  Light *ModelSlot::createLight(const std::string &type)
-  {
-    return getContext()->initReference(Light::create(this,type));
-  }
+  // Data *ModelSlot::createData(BNDataType dataType,
+  //                             size_t numItems,
+  //                             const void *items)
+  // {
+  //   return getContext()->initReference(Data::create(this,dataType,numItems,items));
+  // }
+  
+  // Light *ModelSlot::createLight(const std::string &type)
+  // {
+  //   return getContext()->initReference(Light::create(this,type));
+  // }
 
-  Texture *ModelSlot::createTexture(BNTexelFormat texelFormat,
-                                    vec2i size,
-                                    const void *texels,
-                                    BNTextureFilterMode  filterMode,
-                                    BNTextureAddressMode addressMode,
-                                    BNTextureColorSpace  colorSpace)
-  {
-    return getContext()->initReference
-      (std::make_shared<Texture>(this,texelFormat,size,texels,
-                                 filterMode,addressMode,colorSpace));
-  }
+  // Texture *Context::createTexture(BNTexelFormat texelFormat,
+  //                                 int slot,
+  //                                 vec2i size,
+  //                                 const void *texels,
+  //                                 BNTextureFilterMode  filterMode,
+  //                                 BNTextureAddressMode addressMode,
+  //                                 BNTextureColorSpace  colorSpace)
+  // {
+  //   return initReference(std::make_shared<Texture>
+  //                        (this,slot,
+  //                         texelFormat,size,texels,
+  //                         filterMode,addressMode,colorSpace));
+  // }
 
   void ModelSlot::build()
   {

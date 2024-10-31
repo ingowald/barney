@@ -28,8 +28,9 @@
 namespace barney {
   namespace render {
     struct DeviceMaterial;
+    struct HostMaterial;
     
-#define DEFAULT_RADIANCE_FROM_ENV .8f
+// #define DEFAULT_RADIANCE_FROM_ENV .8f
 
     // struct QuadLight {
     //   vec3f corner, edge0, edge1, emission;
@@ -49,48 +50,6 @@ namespace barney {
     //   vec3f radiance;
     // };
 
-    struct MaterialRegistry {
-      typedef std::shared_ptr<MaterialRegistry> SP;
-    
-      MaterialRegistry(DevGroup::SP devGroup);
-      virtual ~MaterialRegistry();
-      
-      int allocate();
-      void release(int nowReusableID);
-      void grow();
-
-      void setMaterial(int materialID, const DeviceMaterial &, int deviceID);
-      const DeviceMaterial *getPointer(int owlDeviceID) const;
-    
-      int numReserved = 0;
-      int nextFree = 0;
-    
-      std::stack<int> reusableIDs;
-      OWLBuffer       buffer = 0;
-      DevGroup::SP    devGroup;
-    };
-  
-    struct SamplerRegistry {
-      typedef std::shared_ptr<SamplerRegistry> SP;
-    
-      SamplerRegistry(DevGroup::SP devGroup);
-      virtual ~SamplerRegistry();
-      
-      int allocate();
-      void release(int nowReusableID);
-      void grow();
-    
-      const Sampler::DD *getPointer(int owlDeviceID) const;
-      void setDD(int samplerID, const Sampler::DD &, int deviceID);
-      
-      int numReserved = 0;
-      int nextFree = 0;
-    
-      std::stack<int> reusableIDs;
-      OWLBuffer       buffer = 0;
-      DevGroup::SP    devGroup;
-    };
-  
   
     /*! the rendering/path racing related part of a model that describes
       global render settings like light sources, background, envmap,
@@ -150,6 +109,8 @@ namespace barney {
       OWLBuffer dirLightsBuffer = 0;
       int numDirLights = 0;
       DevGroup::SP devGroup;
+  private:
+      std::shared_ptr<render::HostMaterial> defaultMaterial = 0;
     };
 
   }

@@ -18,13 +18,26 @@
 
 namespace barney {
 
+  const std::vector<Device::SP> &UMeshCUBQLSampler::Host::getDevices()
+  {
+    assert(mesh);
+    return mesh->getDevices();
+  }
+
+  
+  DevGroup *UMeshCUBQLSampler::Host::getDevGroup()
+  {
+    assert(mesh);
+    return mesh->getDevGroup();
+  }
+
   void UMeshCUBQLSampler::Host::build(bool full_rebuild)
   {
     if (bvhNodesBuffer) {
       return;
     }
 
-    SetActiveGPU forDuration(mesh->devGroup->devices[0]);
+    SetActiveGPU forDuration(getDevices()[0]);
 
     BARNEY_CUDA_SYNC_CHECK();
     assert(mesh);
@@ -33,7 +46,7 @@ namespace barney {
     if (bvhNodesBuffer != 0) {
       return;
     }
-    auto devGroup = mesh->devGroup;
+    auto devGroup = getDevGroup();
 
     bvh_t bvh;
 

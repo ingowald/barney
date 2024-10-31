@@ -29,7 +29,7 @@ namespace barney {
     };
     
     typedef std::shared_ptr<DirLight> SP;
-    DirLight(ModelSlot *owner) : Light(owner) {}
+    DirLight(Context *context, int slot) : Light(context,slot) {}
     
     DD getDD(const affine3f &instanceXfm) const;
     

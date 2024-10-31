@@ -45,7 +45,7 @@ namespace barney {
       // const vec4f *vertexAttribute[5];
     };
     
-    Triangles(ModelSlot *owner);
+    Triangles(Context *context, int slot);
     virtual ~Triangles();
     
     /*! pretty-printer for printf-debugging */

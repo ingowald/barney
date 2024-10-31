@@ -93,7 +93,7 @@ namespace barney {
         changes */
       // using DD = barney::render::DeviceMaterial;
 
-      HostMaterial(ModelSlot *owner);
+      HostMaterial(Context *context, int slot);
       virtual ~HostMaterial();
 
       // ------------------------------------------------------------------
@@ -101,7 +101,8 @@ namespace barney {
       void commit() override;
       /*! @} */
       // ------------------------------------------------------------------
-      static HostMaterial::SP create(ModelSlot *dg, const std::string &type);
+      static HostMaterial::SP create(Context *context, int slot,
+                                     const std::string &type);
     
       void setDeviceDataOn(OWLGeom geom) const;
     

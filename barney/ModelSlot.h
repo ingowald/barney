@@ -31,7 +31,6 @@ namespace barney {
   struct Light;
   
 
-  
   struct ModelSlot : public Object {
     typedef std::shared_ptr<ModelSlot> SP;
 
@@ -41,17 +40,6 @@ namespace barney {
               int slotIndex);
     virtual ~ModelSlot();
 
-    render::HostMaterial::SP getDefaultMaterial()
-    {
-      if (!defaultMaterial) {
-        defaultMaterial
-          = render::HostMaterial::create(this,"AnariMatte");
-        defaultMaterial->commit();
-      }
-      return defaultMaterial;
-    }
-    render::HostMaterial::SP defaultMaterial = 0;
-    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
     
@@ -59,29 +47,6 @@ namespace barney {
 
     static SP create(GlobalModel *model, int localID);
 
-    Group   *
-    createGroup(const std::vector<Geometry::SP> &geoms,
-                const std::vector<Volume::SP> &volumes);
-    
-    Volume *createVolume(ScalarField::SP sf);
-    
-    Texture *
-    createTexture(BNTexelFormat texelFormat,
-                  vec2i size,
-                  const void *texels,
-                  BNTextureFilterMode  filterMode,
-                  BNTextureAddressMode addressMode,
-                  BNTextureColorSpace  colorSpace);
-    
-    ScalarField *createBlockStructuredAMR(std::vector<box3i> &blockBounds,
-                                          std::vector<int> &blockLevels,
-                                          std::vector<int> &blockOffsets,
-                                          std::vector<float> &blockScalars);
-
-    Data *createData(BNDataType dataType,
-                     size_t numItems,
-                     const void *items);
-    Light *createLight(const std::string &type);
     void setInstances(std::vector<Group::SP> &groups,
                       const affine3f *xfms);
     
@@ -98,6 +63,7 @@ namespace barney {
     DevGroup::SP   const devGroup;
     GlobalModel   *const model;
     int            const localID;
+
   };
   
 }

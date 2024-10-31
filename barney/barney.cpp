@@ -22,6 +22,7 @@
 #include "barney/geometry/Triangles.h"
 #include "barney/volume/ScalarField.h"
 #include "barney/umesh/common/UMeshField.h"
+#include "barney/amr//BlockStructuredField.h"
 #include "barney/common/Data.h"
 #include "barney/common/mat4.h"
 #include "barney/Camera.h"
@@ -97,9 +98,9 @@ namespace barney {
     return (GlobalModel *)model;
   }
   
-  inline ModelSlot *checkGet(BNModel model, int whichSlot)
+  inline ModelSlot *checkGet(BNModel model, int slot)
   {
-    return checkGet(model)->getSlot(whichSlot);
+    return checkGet(model)->getSlot(slot);
   }
   
   inline Geometry *checkGet(BNGeom geom)
@@ -115,6 +116,7 @@ namespace barney {
     assert(volume);
     return (Volume *)volume;
   }
+  
   inline ScalarField *checkGet(BNScalarField sf)
   {
     assert(sf);
@@ -149,9 +151,51 @@ namespace barney {
 
   // ------------------------------------------------------------------
 
+  /*! creates a cudaArray2D of specified size and texels. Can be passed
+    to a sampler to create a matching cudaTexture2D, or as a background
+    image to a renderer */
   BN_API
-  BNTexture2D bnTexture2DCreate(BNModel model,
-                                int whichSlot,
+  BNTextureData bnTextureData2DCreate(BNContext context,
+                                      int slot,
+                                      BNTexelFormat texelFormat,
+                                      int width, int height,
+                                      const void *texels)
+  {
+    LOG_API_ENTRY;
+    TextureData::SP data
+      = std::make_shared<TextureData>(checkGet(context),slot,
+                                      texelFormat,vec3i(width,height,0),
+                                      texels);
+    if (!data) return 0;
+    return (BNTextureData)checkGet(context)->initReference(data);
+  }
+
+  // // ------------------------------------------------------------------
+  // /*! creates a cudaArray2D of specified size and texels. Can be passed
+  //   to a sampler to create a matching cudaTexture2D */
+  // BN_API
+  // BNTextureData bnTextureData2DCreate(BNModel model,
+  //                                     int slot,
+  //                                     BNTexelFormat texelFormat,
+  //                                     int width, int height,
+  //                                     const void *texels)
+  // {
+  //   LOG_API_ENTRY;
+  //   Context *context = checkGetContext(model);
+  //   TextureData::SP data
+  //     = std::make_shared<TextureData>(context,slot,
+  //                                     texelFormat,vec3i(width,height,0),
+  //                                     texels);
+  //   if (!data) return 0;
+  //   return (BNTextureData)context->initReference(data);
+  // }
+  
+  
+  
+  // ------------------------------------------------------------------
+  BN_API
+  BNTexture2D bnTexture2DCreate(BNContext context,
+                                int slot,
                                 BNTexelFormat texelFormat,
                                 /*! number of texels in x dimension */
                                 uint32_t size_x,
@@ -163,15 +207,17 @@ namespace barney {
                                 BNTextureColorSpace  colorSpace)
   {
     LOG_API_ENTRY;
-    Texture *texture = checkGet(model,whichSlot)->createTexture
-      (texelFormat,vec2i(size_x,size_y),texels,
-       filterMode,addressMode,colorSpace);
-    return (BNTexture2D)texture;
+    assert(context);
+    Texture::SP tex
+      = std::make_shared<Texture>(checkGet(context),slot,
+                                  texelFormat,vec2i(size_x,size_y),texels,
+                                  filterMode,addressMode,colorSpace);
+    return (BNTexture)checkGet(context)->initReference(tex);
   }
 
   BN_API
-  BNTexture3D bnTexture3DCreate(BNModel model,
-                                int whichSlot,
+  BNTexture3D bnTexture3DCreate(BNContext context,
+                                int slot,
                                 BNTexelFormat texelFormat,
                                 uint32_t size_x,
                                 uint32_t size_y,
@@ -183,11 +229,11 @@ namespace barney {
     LOG_API_ENTRY;
     Texture3D::SP tex
       = std::make_shared<Texture3D>
-      (checkGet(model,whichSlot),
+      (checkGet(context),slot,
        texelFormat,vec3i(size_x,size_y,size_z),texels,
        filterMode,addressMode);
-    checkGet(model,whichSlot)->context->initReference(tex);
-    return (BNTexture3D)tex.get();
+    ;
+    return (BNTexture3D)checkGet(context)->initReference(tex);
   }
   
   // ------------------------------------------------------------------
@@ -208,7 +254,7 @@ namespace barney {
 
   BN_API
   void bnSetInstances(BNModel model,
-                      int whichSlot,
+                      int slot,
                       BNGroup *_groups,
                       BNTransform *xfms,
                       int numInstances)
@@ -219,7 +265,7 @@ namespace barney {
     for (int i=0;i<numInstances;i++) {
       groups.push_back(checkGetSP(_groups[i]));
     }
-    checkGet(model,whichSlot)->setInstances(groups,(const affine3f *)xfms);
+    checkGet(model,slot)->setInstances(groups,(const affine3f *)xfms);
   }
   
   BN_API
@@ -252,8 +298,8 @@ namespace barney {
   }
 
   BN_API
-  BNGeom bnTriangleMeshCreate(BNModel model,
-                              int whichSlot,
+  BNGeom bnTriangleMeshCreate(BNContext context,
+                              int slot,
                               const BNMaterialHelper *material,
                               const int3 *indices,
                               int numIndices,
@@ -263,21 +309,21 @@ namespace barney {
                               const float2 *texcoords)
   {
     LOG_API_ENTRY;
-    BNGeom mesh = bnGeometryCreate(model,whichSlot,"triangles");
+    BNGeom mesh = bnGeometryCreate(context,slot,"triangles");
     
-    BNData _vertices = bnDataCreate(model,whichSlot,BN_FLOAT3,numVertices,vertices);
+    BNData _vertices = bnDataCreate(context,slot,BN_FLOAT3,numVertices,vertices);
     bnSetAndRelease(mesh,"vertices",_vertices);
     
-    BNData _indices  = bnDataCreate(model,whichSlot,BN_INT3,numIndices,indices);
+    BNData _indices  = bnDataCreate(context,slot,BN_INT3,numIndices,indices);
     bnSetAndRelease(mesh,"indices",_indices);
     
     if (normals) {
-      BNData _normals  = bnDataCreate(model,whichSlot,BN_FLOAT3,normals?numVertices:0,normals);
+      BNData _normals  = bnDataCreate(context,slot,BN_FLOAT3,normals?numVertices:0,normals);
       bnSetAndRelease(mesh,"normals",_normals);
     }
     
     if (texcoords) {
-      BNData _texcoords  = bnDataCreate(model,whichSlot,BN_FLOAT2,texcoords?numVertices:0,texcoords);
+      BNData _texcoords  = bnDataCreate(context,slot,BN_FLOAT2,texcoords?numVertices:0,texcoords);
       bnSetAndRelease(mesh,"texcoords",_texcoords);
     }
     bnAssignMaterial(mesh,material);
@@ -286,70 +332,44 @@ namespace barney {
   }  
   
   BN_API
-  BNScalarField bnScalarFieldCreate(BNModel model,
-                                    int whichSlot,
+  BNScalarField bnScalarFieldCreate(BNContext context,
+                                    int slot,
                                     const char *type)
   {
-    ScalarField::SP sf = ScalarField::create(checkGet(model,whichSlot),type);
-    if (!sf) return 0;
-    return (BNScalarField)checkGet(model,whichSlot)->context->initReference(sf);
+    ScalarField::SP sf = ScalarField::create(checkGet(context),slot,type);
+    return (BNScalarField)checkGet(context)->initReference(sf);
   }
   
   
   BN_API
-  BNGeom bnGeometryCreate(BNModel model,
-                          int whichSlot,
+  BNGeom bnGeometryCreate(BNContext context,
+                          int slot,
                           const char *type)
   {
-    Geometry::SP geom = Geometry::create(checkGet(model,whichSlot),type);
-    if (!geom) return 0;
-    return (BNGeom)checkGet(model,whichSlot)->context->initReference(geom);
+    Geometry::SP geom = Geometry::create(checkGet(context),slot,type);
+    return (BNGeom)checkGet(context)->initReference(geom);
   }
 
   BN_API
-  BNMaterial bnMaterialCreate(BNModel model,
-                              int whichSlot,
+  BNMaterial bnMaterialCreate(BNContext context,
+                              int slot,
                               const char *type)
   {
     render::HostMaterial::SP material
-      = render::HostMaterial::create(checkGet(model,whichSlot),type);
-    if (!material) return 0;
-#if 0
-    auto mat = checkGet(model,whichSlot)->context->initReference(material);
-    material->commit();
-    return (BNMaterial)mat;
-#else
-    return (BNMaterial)checkGet(model,whichSlot)->context->initReference(material);
-#endif
+      = render::HostMaterial::create(checkGet(context),slot,type);
+    return (BNMaterial)checkGet(context)->initReference(material);
   }
 
-  /*! creates a cudaArray2D of specified size and texels. Can be passed
-    to a sampler to create a matching cudaTexture2D */
   BN_API
-  BNTextureData bnTextureData2DCreate(BNModel model,
-                                      int whichSlot,
-                                      BNTexelFormat texelFormat,
-                                      int width, int height,
-                                      const void *texels)
-  {
-    TextureData::SP data
-      = std::make_shared<TextureData>(checkGet(model,whichSlot),
-                                      texelFormat,vec3i(width,height,0),
-                                      texels);
-    if (!data) return 0;
-    return (BNTextureData)checkGet(model,whichSlot)->context->initReference(data);
-  }
-  
-  BN_API
-  BNSampler bnSamplerCreate(BNModel model,
-                            int whichSlot,
+  BNSampler bnSamplerCreate(BNContext context,
+                            int slot,
                             const char *type)
   {
     render::Sampler::SP sampler
-      = render::Sampler::create(checkGet(model,whichSlot),type);
+      = render::Sampler::create(checkGet(context),slot,type);
     if (!sampler) return 0;
     // sampler->commit();
-    return (BNSampler)checkGet(model,whichSlot)->context->initReference(sampler);
+    return (BNSampler)checkGet(context)->initReference(sampler);
   }
 
   BN_API
@@ -380,37 +400,41 @@ namespace barney {
   }
   
   BN_API
-  BNVolume bnVolumeCreate(BNModel model,
-                          int whichSlot,
+  BNVolume bnVolumeCreate(BNContext context,
+                          int slot,
                           BNScalarField _sf)
   {
-    ScalarField::SP sf = checkGetSP(_sf);
-    return (BNVolume)checkGet(model,whichSlot)->createVolume
-      (sf);
+    LOG_API_ENTRY;
+    Volume::SP volume = Volume::create(checkGetSP(_sf));
+    return (BNVolume)checkGet(context)->initReference(volume);
   }
 
   BN_API
-  BNLight bnLightCreate(BNModel model,
-                        int whichSlot,
+  BNLight bnLightCreate(BNContext context,
+                        int slot,
                         const char *type)
   {
-    return (BNLight)checkGet(model,whichSlot)->createLight(checkGet(type));
+    LOG_API_ENTRY;
+    Light::SP light = Light::create(checkGet(context),slot,type);
+    return (BNLight)checkGet(context)->initReference(light);
   }
 
   BN_API
-  BNData bnDataCreate(BNModel model,
-                      int whichSlot,
+  BNData bnDataCreate(BNContext context,
+                      int slot,
                       BNDataType dataType,
                       size_t numItems,
                       const void *items)
   {
-    return (BNData)checkGet(model,whichSlot)->createData(dataType,numItems,items);
+    LOG_API_ENTRY;
+    Data::SP data = Data::create(checkGet(context),slot,dataType,numItems,items);
+    return (BNData)checkGet(context)->initReference(data);
   }
 
 
   BN_API
-  BNScalarField bnStructuredDataCreate(BNModel model,
-                                       int whichSlot,
+  BNScalarField bnStructuredDataCreate(BNContext context,
+                                       int slot,
                                        int3 dims,
                                        BNScalarType type,
                                        const void *scalars,
@@ -430,9 +454,9 @@ namespace barney {
     }
     
     BNScalarField sf
-      = bnScalarFieldCreate(model,whichSlot,"structured");
+      = bnScalarFieldCreate(context,slot,"structured");
     BNTexture3D texture
-      = bnTexture3DCreate(model,whichSlot,texelFormat,
+      = bnTexture3DCreate(context,slot,texelFormat,
                           dims.x,dims.y,dims.z,scalars,BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
     bnSetObject(sf,"texture",texture);
     bnRelease(texture);
@@ -444,8 +468,8 @@ namespace barney {
   }
   
   BN_API
-  BNScalarField bnUMeshCreate(BNModel model,
-                              int whichSlot,
+  BNScalarField bnUMeshCreate(BNContext context,
+                              int slot,
                               // vertices, 4 floats each (3 floats position,
                               // 4th float scalar value)
                               const float4  *vertices,
@@ -454,77 +478,27 @@ namespace barney {
                               int            numIndices,
                               const int     *elementOffsets,
                               int            numElements,
-                              // // tets, 4 ints in vtk-style each
-                              // const int *_tetIndices, int numTets,
-                              // // pyramids, 5 ints in vtk-style each
-                              // const int *_pyrIndices, int numPyrs,
-                              // // wedges/tents, 6 ints in vtk-style each
-                              // const int *_wedIndices, int numWeds,
-                              // // general (non-guaranteed cube/voxel) hexes, 8
-                              // // ints in vtk-style each
-                              // const int *_hexIndices, int numHexes,
-                              // //
-                              // int numGrids,
-                              // // offsets into gridScalars array
-                              // const int *_gridOffsets,
-                              // // grid dims (3 floats each)
-                              // const int *_gridDims,
-                              // // grid domains, 6 floats each (3 floats min corner,
-                              // // 3 floats max corner)
-                              // const float *_gridDomains,
-                              // // grid scalars
-                              // const float *_gridScalars,
-                              // int numGridScalars,
                               const float3 *domainOrNull    
                               )
   {
-    std::cout << "#bn: copying umesh from app ..." << std::endl;
-    // std::vector<vec4f>      vertices(numVertices);
-    // std::vector<vec4f>      vertices(numVertices);
-    // std::vector<int>        gridOffsets(numGrids);
-    // std::vector<vec3i>      gridDims(numGrids);
-    // std::vector<box4f>      gridDomains(numGrids);
-    // std::vector<float>      gridScalars(numGridScalars);
-    // std::vector<TetIndices> tetIndices(numTets);
-    // std::vector<PyrIndices> pyrIndices(numPyrs);
-    // std::vector<WedIndices> wedIndices(numWeds);
-    // std::vector<HexIndices> hexIndices(numHexes);
-    // memcpy(tetIndices.data(),_tetIndices,tetIndices.size()*sizeof(tetIndices[0]));
-    // memcpy(pyrIndices.data(),_pyrIndices,pyrIndices.size()*sizeof(pyrIndices[0]));
-    // memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
-    // memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
-    // memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
-    // memcpy(gridOffsets.data(),_gridOffsets,gridOffsets.size()*sizeof(gridOffsets[0]));
-    // memcpy(gridDims.data(),_gridDims,gridDims.size()*sizeof(gridDims[0]));
-    // memcpy(gridDomains.data(),_gridDomains,gridDomains.size()*sizeof(gridDomains[0]));
-    // memcpy(gridScalars.data(),_gridScalars,gridScalars.size()*sizeof(gridScalars[0]));
-
     box3f domain
       = domainOrNull
       ? *(const box3f*)domainOrNull
       : box3f();
     
     ScalarField::SP sf = 
-      UMeshField::create(checkGet(model,whichSlot),
+      UMeshField::create(checkGet(context),slot,
                          (const vec4f*)vertices,numVertices,
                          indices,numIndices,
                          elementOffsets,
                          numElements,
-                         // tetIndices,
-                         // pyrIndices,
-                         // wedIndices,
-                         // hexIndices,
-                         // gridOffsets,
-                         // gridDims,
-                         // gridDomains,
-                         // gridScalars,
                          domain);
-    return (BNScalarField)checkGet(model,whichSlot)->context->initReference(sf);
+    return (BNScalarField)checkGet(context)->initReference(sf);
   }
   
   BN_API
-  BNScalarField bnBlockStructuredAMRCreate(BNModel model,
-                                           int whichSlot,
+  BNScalarField bnBlockStructuredAMRCreate(BNContext context,
+                                           int slot,
                                            /*TODO:const float *cellWidths,*/
                                            // block bounds, 6 ints each (3 for min,
                                            // 3 for max corner)
@@ -547,18 +521,19 @@ namespace barney {
     memcpy(blockLevels.data(),_blockLevels,blockLevels.size()*sizeof(blockLevels[0]));
     memcpy(blockOffsets.data(),_blockOffsets,blockOffsets.size()*sizeof(blockOffsets[0]));
     memcpy(blockScalars.data(),_blockScalars,blockScalars.size()*sizeof(blockScalars[0]));
-    ScalarField *sf = checkGet(model,whichSlot)
-      ->createBlockStructuredAMR(blockBounds,
-                                 blockLevels,
-                                 blockOffsets,
-                                 blockScalars);
-    return (BNScalarField)sf;
+    ScalarField::SP sf =
+      std::make_shared<BlockStructuredField>(checkGet(context),slot,
+                                             blockBounds,
+                                             blockLevels,
+                                             blockOffsets,
+                                             blockScalars);
+    return (BNScalarField)checkGet(context)->initReference(sf);
   }
 
 
   BN_API
-  BNGroup bnGroupCreate(BNModel model,
-                        int whichSlot,
+  BNGroup bnGroupCreate(BNContext context,
+                        int slot,
                         BNGeom *geoms, int numGeoms,
                         BNVolume *volumes, int numVolumes)
   {
@@ -571,8 +546,10 @@ namespace barney {
     std::vector<Volume::SP> _volumes;
     for (int i=0;i<numVolumes;i++)
       _volumes.push_back(checkGet(volumes[i])->as<Volume>());
-    Group *group = checkGet(model,whichSlot)->createGroup(_geoms,_volumes);
-    return (BNGroup)group;
+    Group::SP group
+      = std::make_shared<Group>(checkGet(context),slot,
+                                _geoms,_volumes);
+    return (BNGroup)checkGet(context)->initReference(group);
     // } catch (std::runtime_error error) {
     //   std::cerr << "@barney: Error in creating group: " << error.what()
     //             << "... going to return null group." << std::endl;
@@ -596,11 +573,11 @@ namespace barney {
   
   BN_API
   void  bnBuild(BNModel model,
-                int whichSlot)
+                int slot)
   {
     BARNEY_ENTER(__PRETTY_FUNCTION__);
     LOG_API_ENTRY;
-    checkGet(model,whichSlot)->build();
+    checkGet(model,slot)->build();
     BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   

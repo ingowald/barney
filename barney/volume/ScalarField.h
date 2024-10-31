@@ -53,12 +53,11 @@ namespace barney {
       static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    ScalarField(ModelSlot *owner,
+    ScalarField(Context *context, int slot,
                 const box3f &domain=box3f());
 
-    static ScalarField::SP create(ModelSlot *dg, const std::string &type);
-    
-    OWLContext getOWL() const;
+    static ScalarField::SP create(Context *context, int slot,
+                                  const std::string &type);
     
     virtual void setVariables(OWLGeom geom);
     
@@ -66,7 +65,7 @@ namespace barney {
     
     virtual void buildMCs(MCGrid &macroCells);
 
-    DevGroup *const devGroup;
+    // DevGroup *const devGroup;
     box3f     worldBounds;
     
     /*! a clipping box used to restrict whatever primitives the volume

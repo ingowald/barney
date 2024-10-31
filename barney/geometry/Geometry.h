@@ -45,10 +45,10 @@ namespace barney {
       int materialID;
     };
     
-    Geometry(ModelSlot *owner);
+    Geometry(Context *context, int slot);
     virtual ~Geometry();
 
-    static Geometry::SP create(ModelSlot *dg, const std::string &type);
+    static Geometry::SP create(Context *context, int slot, const std::string &type);
     
     static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
@@ -61,9 +61,6 @@ namespace barney {
 
     void setAttributesOn(OWLGeom geom);
     
-    /*! get the own context that was used to create this geometry */
-    OWLContext getOWL() const;
-
     bool set1f(const std::string &member, const float &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
     bool setData(const std::string &member, const Data::SP &value) override;

@@ -83,7 +83,7 @@ namespace barney {
     /*! construct a new structured data scalar field; will not do
         anything - or have any data - untile 'set' and 'commit'ed
     */
-    StructuredData(ModelSlot *owner);
+    StructuredData(Context *context, int slot);
     virtual ~StructuredData() = default;
 
     // ------------------------------------------------------------------

@@ -26,11 +26,15 @@ namespace barney {
     typedef std::shared_ptr<Device> SP;
     
     Device(DevGroup *devGroup,
+           int contextRank,
+           int contextSize,
            int gpuID,
            int owlID,
            int globalIndex,
            int globalIndexStep);
 
+    int                const contextRank;
+    int                const contextSize;
     int                const cudaID;
     int                const owlID;
     int                const globalIndex;
@@ -87,6 +91,8 @@ namespace barney {
     typedef std::shared_ptr<DevGroup> SP;
 
     DevGroup(int lmsIdx,
+             const std::vector<int> &contextRanks,
+             int contextSize,
              const std::vector<int> &gpuIDs,
              int globalIndex,
              int globalIndexStep);

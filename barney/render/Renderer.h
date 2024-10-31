@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/common/Data.h"
+#include "barney/common/Texture.h"
 
 namespace barney {
 
@@ -48,23 +48,23 @@ namespace barney {
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     void commit() override;
-    bool setData(const std::string &member,
-                 const std::shared_ptr<Data> &value) override;
+    bool setObject(const std::string &member,
+                 const std::shared_ptr<Object> &value) override;
     bool set1f(const std::string &member, const float &value) override;
     bool set4f(const std::string &member, const vec4f &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
     struct {
-      Data::SP bgImage         = 0;
-      vec4f    bgColor          = vec4f(0,0,0,1);
-      int      pathsPerPixel   = 1;
-      float    ambientRadiance = 1.f;
+      Texture::SP bgTexture       = 0;
+      vec4f       bgColor         = vec4f(0,0,0,1);
+      int         pathsPerPixel   = 1;
+      float       ambientRadiance = 1.f;
     } staged;
-    vec4f      bgColor         = vec4f(0,0,0,1);
-    OWLTexture bgTexture       = 0;
-    int        pathsPerPixel   = 1;
-    float      ambientRadiance = 1.f;
+    vec4f       bgColor         = vec4f(0,0,0,1);
+    Texture::SP bgTexture       = 0;
+    int         pathsPerPixel   = 1;
+    float       ambientRadiance = 1.f;
   };
 
 }

@@ -26,29 +26,29 @@
 
 namespace barney {
 
-  Geometry::SP Geometry::create(ModelSlot *owner,
+  Geometry::SP Geometry::create(Context *context, int slot,
                                 const std::string &type)
   {
     if (type == "spheres")
-      return std::make_shared<Spheres>(owner);
+      return std::make_shared<Spheres>(context,slot);
 #if 0
     if (type == "cones")
-      return std::make_shared<Cones>(owner);
+      return std::make_shared<Cones>(context,slot);
 #endif
     if (type == "cylinders")
-      return std::make_shared<Cylinders>(owner);
+      return std::make_shared<Cylinders>(context,slot);
     if (type == "capsules")
-      return std::make_shared<Capsules>(owner);
+      return std::make_shared<Capsules>(context,slot);
     if (type == "triangles")
-      return std::make_shared<Triangles>(owner);
+      return std::make_shared<Triangles>(context,slot);
     
-    owner->context->warn_unsupported_object("Geometry",type);
+    context->warn_unsupported_object("Geometry",type);
     return {};
   }
 
-  Geometry::Geometry(ModelSlot *owner)
-    : SlottedObject(owner),
-      material(owner->getDefaultMaterial())
+  Geometry::Geometry(Context *context, int slot)
+    : SlottedObject(context,slot),
+      material(context->getDefaultMaterial(slot))
   {}
 
   Geometry::~Geometry()
@@ -77,9 +77,6 @@ namespace barney {
     
   
   
-  OWLContext Geometry::getOWL() const
-  { return owner->getOWL(); }
-
   void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
     vars.push_back({"materialID",OWL_INT,OWL_OFFSETOF(DD,materialID)});
@@ -111,7 +108,7 @@ namespace barney {
     };
     
     GeometryAttributes::DD dd;
-    for (int devID=0;devID<owner->devGroup->size();devID++) {
+    for (int devID=0;devID<getDevGroup()->size();devID++) {
       for (int i=0;i<attributes.count;i++) {
         const auto &in = attributes.attribute[i];
         auto &out = dd.attribute[i];

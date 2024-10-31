@@ -32,7 +32,11 @@ namespace barney {
   struct FrameBuffer;
   struct GlobalModel;
 
-  struct Context;
+  namespace render {
+    struct HostMaterial;
+    struct SamplerRegistry;
+    struct MaterialRegistry;
+  };
   
   struct Context// : public Object
   {
@@ -46,6 +50,8 @@ namespace barney {
     virtual FrameBuffer *createFB(int owningRank) = 0;
     GlobalModel *createModel();
     Renderer *createRenderer();
+
+    std::shared_ptr<render::HostMaterial> getDefaultMaterial(int slot);
     
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const 
@@ -73,14 +79,17 @@ namespace barney {
     /*! increases (the app's) reference count of said object byb
         one */
     void addHostReference(Object::SP object);
+
+    DevGroup *getDevGroup();
+    render::World *getWorld(int slot);
     
-    Device::SP getDevice(int localID)
+    Device::SP getDevice(int contextRank)
     {
-      assert(localID >= 0);
-      assert(localID < devices.size());
-      assert(devices[localID]);
-      assert(devices[localID]->device);
-      return devices[localID]->device;
+      assert(contextRank >= 0);
+      assert(contextRank < devices.size());
+      assert(devices[contextRank]);
+      assert(devices[contextRank]->device);
+      return devices[contextRank]->device;
     }
     
     std::vector<DeviceContext::SP> devices;
@@ -155,16 +164,16 @@ namespace barney {
         Context::devices */
       std::vector<int>     gpuIDs;
       barney::DevGroup::SP devGroup = 0;
+      std::shared_ptr<render::HostMaterial> defaultMaterial = 0;
+      std::vector<render::SamplerRegistry>  samplerRegistry = 0;
+      std::vector<render::MaterialRegistry> materialRegistry = 0;
+      // iw: this is more like "globals", this name doesn't fit
+      // render::World        world;
     };
+    PerSlot *getSlot(int slot);
     std::vector<PerSlot> perSlot;
     
     const bool isActiveWorker;
-
-    /* as the name implies, a single, global owl context across all
-       GPUs; this is merely there to enable peer access across all
-       GPUs; for actual rendering data each data group will have to
-       have its own context */
-    OWLContext globalContextAcrossAllGPUs = 0 ;
 
     /*! return the single 'global' own context that spans all gpus, no
         matter how many model slots those are grouped in; in theory
@@ -172,7 +181,19 @@ namespace barney {
         should live in a model slots (which has its own context), only
         truly global data (such as renderer background image) should
         ever be global */
-    OWLContext getGlobalOWL() const { return globalContextAcrossAllGPUs; }
+    OWLContext getOWL(int slot);// { return globalContextAcrossAllGPUs; }
+    // OWLContext getGlobalOWL() const;
+    const std::vector<Device::SP> &getDevices(int slot) const;
+    DevGroup *getDevGroup(int slot);
+    int contextSize() const;
+
+  private:
+    /* as the name implies, a single, global owl context across all
+       GPUs; this is merely there to enable peer access across all
+       GPUs; for actual rendering data each data group will have to
+       have its own context */
+    OWLContext globalContextAcrossAllGPUs = 0 ;
+
   };
   
 

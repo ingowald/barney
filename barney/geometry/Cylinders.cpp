@@ -21,8 +21,8 @@ namespace barney {
 
   extern "C" char Cylinders_ptx[];
 
-  Cylinders::Cylinders(ModelSlot *owner)
-    : Geometry(owner)
+  Cylinders::Cylinders(Context *context, int slot)
+    : Geometry(context,slot)
   {}
 
   OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
@@ -54,9 +54,9 @@ namespace barney {
   void Cylinders::commit()
   {
     if (userGeoms.empty()) {
-      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Cylinders",Cylinders::createGeomType);
-      OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
+      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
       userGeoms.push_back(geom);
     }
     OWLGeom geom = userGeoms[0];
