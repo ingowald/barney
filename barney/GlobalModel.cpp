@@ -30,14 +30,14 @@ namespace barney {
   GlobalModel::~GlobalModel()
   {}
   
-  void GlobalModel::render(Camera      *camera,
-                           FrameBuffer *fb,
-                           int pathsPerPixel)
+  void GlobalModel::render(Renderer *renderer,
+                           Camera      *camera,
+                           FrameBuffer *fb)
   {
     assert(context);
     assert(fb);
     context->ensureRayQueuesLargeEnoughFor(fb);
-    context->render(this,camera->getDD(),fb,pathsPerPixel);
+    context->render(renderer,this,camera->getDD(),fb);
   }
 
 }

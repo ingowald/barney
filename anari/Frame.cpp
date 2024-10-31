@@ -134,17 +134,10 @@ void Frame::renderFrame()
   m_frameLastRendered = helium::newTimeStamp();
   state->currentFrame = this;
 
-  const int pixelSamples = std::max(m_renderer->pixelSamples(), 1);
-  const float radiance = m_renderer->radiance();
-  bnSetRadiance(model, 0, radiance
-#if 0
-                /* iw- no idea where this factor came from, but it
-                   probably shouldn't be here */
-                / 10.f
-#endif
-                );
-
-  bnRender(model, m_camera->barneyCamera(), m_bnFrameBuffer, pixelSamples);
+  bnRender(m_renderer->barneyRenderer,
+           model,
+           m_camera->barneyCamera(),
+           m_bnFrameBuffer);
 
   auto end = std::chrono::steady_clock::now();
   m_duration = std::chrono::duration<float>(end - start).count();

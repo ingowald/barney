@@ -242,15 +242,15 @@ namespace barney {
     return workers.allReduceAdd(numRaysActiveLocally());
   }
 
-
-  void MPIContext::render(GlobalModel *model,
+  
+  void MPIContext::render(Renderer    *renderer,
+                          GlobalModel *model,
                           const Camera::DD &camera,
-                          FrameBuffer *_fb,
-                          int pathsPerPixel)
+                          FrameBuffer *_fb)
   {
     DistFB *fb = (DistFB *)_fb;
     if (isActiveWorker) {
-      renderTiles(model,camera,fb,pathsPerPixel);
+      renderTiles(renderer,model,camera,fb);
       finalizeTiles(fb);
     }
     // ------------------------------------------------------------------

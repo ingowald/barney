@@ -16,6 +16,7 @@
 
 #include "barney/DeviceContext.h"
 #include "barney/GlobalModel.h"
+#include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
 
 namespace barney {

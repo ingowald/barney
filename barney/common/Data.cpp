@@ -16,6 +16,7 @@
 
 #include "barney/common/Data.h"
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
 namespace barney {
 
@@ -77,6 +78,16 @@ namespace barney {
     };
   };
   
+  PODData::PODData(Context *context,
+                   BNDataType type,
+                   size_t numItems,
+                   const void *_items)
+    : Data(context,type,numItems)
+  {
+    owl = owlDeviceBufferCreate(context->getGlobalOWL(),owlTypeFor(type),
+                                numItems,_items);
+  }
+  
   PODData::PODData(ModelSlot *owner,
                    BNDataType type,
                    size_t numItems,
@@ -114,6 +125,38 @@ namespace barney {
                                +" in Data::create()");
     }
   }
+  
+  Data::SP Data::create(Context *context,
+                        BNDataType type,
+                        size_t numItems,
+                        const void *items)
+  {
+    switch(type) {
+    case BN_INT:
+    case BN_INT2:
+    case BN_INT3:
+    case BN_INT4:
+    case BN_FLOAT:
+    case BN_FLOAT2:
+    case BN_FLOAT3:
+    case BN_FLOAT4:
+      return std::make_shared<PODData>(context,type,numItems,items);
+    case BN_OBJECT:
+      throw std::runtime_error("global, context-level BNData can only "
+                               "be created over POD types");
+    default:
+      throw std::runtime_error("un-implemented data type '"+to_string(type)
+                               +" in Data::create()");
+    }
+  }
+  
+  Data::Data(Context *context,
+             BNDataType type,
+             size_t numItems)
+    : Object(context),
+      type(type),
+      count(numItems)
+  {}
   
   Data::Data(ModelSlot *owner,
              BNDataType type,

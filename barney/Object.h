@@ -88,7 +88,7 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "<SlottedObject>"; }
 
-    ModelSlot *const owner;
+    ModelSlot *const owner = 0;
   };
 
   // ==================================================================

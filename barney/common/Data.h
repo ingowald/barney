@@ -29,8 +29,20 @@ namespace barney {
     Data(ModelSlot *owner,
          BNDataType type,
          size_t numItems);
+    Data(Context *context,
+         BNDataType type,
+         size_t numItems);
     virtual ~Data() = default;
     
+    /*! factory for a 'global' data array that lives on the
+      context itself, and spans all model slots */
+    static Data::SP create(Context *context,
+                           BNDataType type,
+                           size_t numItems,
+            const void *items);
+    
+    /*! factory for a 'regular' data array that lives on a model
+      slot */
     static Data::SP create(ModelSlot *owner,
                            BNDataType type,
                            size_t numItems,
@@ -40,8 +52,22 @@ namespace barney {
     size_t     count = 0;
   };
 
+  /*! a data array for 'plain-old-data' type data (such as int, float,
+      vec3f, etc) that does not need reference-counting for object
+      lifetime handling; class-type data (any BNWhatEver) needs to be
+      in ObecjtsRefData which does the refcounting */
   struct PODData : public Data {
     typedef std::shared_ptr<PODData> SP;
+    
+    /*! constructor for a 'global' data array that lives on the
+        context itself, and spans all model slots */
+    PODData(Context *context,
+            BNDataType type,
+            size_t numItems,
+            const void *items);
+    
+    /*! constructor for a 'regular' data array that lives on a model
+        slot */
     PODData(ModelSlot *owner,
             BNDataType type,
             size_t numItems,

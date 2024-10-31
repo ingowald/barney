@@ -103,7 +103,6 @@ namespace barney {
         const QuadLight::DD *quadLights    = nullptr;
         int                  numDirLights  = 0;
         const DirLight::DD  *dirLights     = nullptr;
-        float                radiance;
         
         const DeviceMaterial *materials;
         const Sampler::DD    *samplers;
@@ -151,7 +150,6 @@ namespace barney {
       OWLBuffer dirLightsBuffer = 0;
       int numDirLights = 0;
       DevGroup::SP devGroup;
-      float radiance = DEFAULT_RADIANCE_FROM_ENV;
     };
 
   }

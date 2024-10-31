@@ -32,6 +32,7 @@ typedef struct _BNGeom         : public _BNObject{} *BNGeom;
 typedef struct _BNVolume       : public _BNObject{} *BNVolume;
 typedef struct _BNGroup        : public _BNObject{} *BNGroup;
 typedef struct _BNModel        : public _BNObject{} *BNModel;
+typedef struct _BNRenderer     : public _BNObject{} *BNRenderer;
 typedef struct _BNFrameBuffer  : public _BNObject{} *BNFrameBuffer;
 // typedef struct _BNDataGroup    : public _BNObject{} *BNDataGroup;
 typedef struct _BNTexture2D    : public _BNObject{} *BNTexture2D;
@@ -135,6 +136,8 @@ BNFrameBuffer bnFrameBufferCreate(BNContext context,
 
 BN_API
 BNModel bnModelCreate(BNContext ctx);
+BN_API
+BNRenderer bnRendererCreate(BNContext ctx, const char *ignoreForNow);
 
 
 
@@ -299,12 +302,10 @@ void bnFrameBufferResize(BNFrameBuffer fb,
                          float    *hostDepth = 0);
 
 BN_API
-void bnRender(BNModel       model,
+void bnRender(BNRenderer    renderer,
+              BNModel       model,
               BNCamera      camera,
-              BNFrameBuffer fb,
-              /*! iw - this "probably" shouldn't be here, but set as
-                  some kind of paramter to the frame, model, or camera */
-              int pathsPerPixel=1);
+              BNFrameBuffer fb);
 
 struct BNTransform {
   struct {
@@ -496,11 +497,6 @@ BN_API
 BNVolume bnVolumeCreate(BNModel model,
                         int whichSlot,
                         BNScalarField sf);
-
-BN_API
-void bnSetRadiance(BNModel model,
-                        int whichSlot,
-                        float radiance);
 
 BN_API
 void bnVolumeSetXF(BNVolume volume,

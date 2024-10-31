@@ -148,6 +148,8 @@ add_library(barney STATIC
   # model/group/data group handling
   GlobalModel.h
   GlobalModel.cpp
+  render/Renderer.h
+  render/Renderer.cpp
   Group.h
   Group.cpp
 

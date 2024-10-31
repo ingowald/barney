@@ -82,7 +82,6 @@ namespace barney {
                      size_t numItems,
                      const void *items);
     Light *createLight(const std::string &type);
-    void setRadiance(float radiance);
     void setInstances(std::vector<Group::SP> &groups,
                       const affine3f *xfms);
     

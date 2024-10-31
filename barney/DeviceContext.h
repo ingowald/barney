@@ -25,6 +25,8 @@ namespace barney {
 
   struct TiledFB;
   struct GlobalModel;
+  struct Renderer;
+  
   namespace render {
     struct World;
   };
@@ -33,13 +35,10 @@ namespace barney {
   {
     typedef std::shared_ptr<DeviceContext> SP;
     
-    /*! this is the device data for the launch params */
-    // struct DD {
-    // };
-    
     DeviceContext(Device::SP device);
 
-    void shadeRays_launch(GlobalModel *model,
+    void shadeRays_launch(Renderer *renderer,
+                          GlobalModel *model,
                           TiledFB *fb,
                           int generation);
     void shadeRays_sync();

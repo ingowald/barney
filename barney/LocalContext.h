@@ -32,10 +32,10 @@ namespace barney {
     std::string toString() const override
     { return "LocalFB{}"; }
 
-    void render(GlobalModel *model,
+    void render(Renderer *renderer,
+                GlobalModel *model,
                 const Camera::DD &camera,
-                FrameBuffer *fb,
-                int pathsPerPixel) override;
+                FrameBuffer *fb) override;
 
     /*! forward rays (during global trace); returns if _after_ that
         forward the rays need more tracing (true) or whether they're

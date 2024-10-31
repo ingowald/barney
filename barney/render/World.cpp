@@ -51,8 +51,6 @@ namespace barney {
         ? envMapLight->getDD(device)
         : EnvMapLight::DD{};
       
-      // dd.globals = globals.getDD(device);
-      dd.radiance  = radiance;
       dd.samplers  = samplerRegistry->getPointer(device->owlID);
       dd.materials = materialRegistry->getPointer(device->owlID);
 

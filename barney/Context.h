@@ -23,6 +23,7 @@
 #include "barney/common/cuda-helper.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
+#include "barney/render/Renderer.h"
 
 namespace barney {
   using namespace owl::common;
@@ -44,7 +45,8 @@ namespace barney {
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB(int owningRank) = 0;
     GlobalModel *createModel();
-
+    Renderer *createRenderer();
+    
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const 
     { return "<Context(abstract)>"; }
@@ -116,18 +118,21 @@ namespace barney {
       devices and, where applicable, across all ranks */
     virtual int numRaysActiveGlobally() = 0;
 
-    void shadeRaysLocally(GlobalModel *model, FrameBuffer *fb, int generation);
+    void shadeRaysLocally(Renderer *renderer,
+                          GlobalModel *model,
+                          FrameBuffer *fb,
+                          int generation);
     void finalizeTiles(FrameBuffer *fb);
     
-    void renderTiles(GlobalModel *model,
+    void renderTiles(Renderer *renderer,
+                     GlobalModel *model,
                      const barney::Camera::DD &camera,
-                     FrameBuffer *fb,
-                     int pathsPerPixel);
+                     FrameBuffer *fb);
     
-    virtual void render(GlobalModel *model,
+    virtual void render(Renderer    *renderer,
+                        GlobalModel *model,
                         const barney::Camera::DD &camera, 
-                        FrameBuffer *fb,
-                        int pathsPerPixel) = 0;
+                        FrameBuffer *fb) = 0;
 
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;
@@ -160,6 +165,14 @@ namespace barney {
        GPUs; for actual rendering data each data group will have to
        have its own context */
     OWLContext globalContextAcrossAllGPUs = 0 ;
+
+    /*! return the single 'global' own context that spans all gpus, no
+        matter how many model slots those are grouped in; in theory
+        this should be used for very, very little - almost all data
+        should live in a model slots (which has its own context), only
+        truly global data (such as renderer background image) should
+        ever be global */
+    OWLContext getGlobalOWL() const { return globalContextAcrossAllGPUs; }
   };
   
 
