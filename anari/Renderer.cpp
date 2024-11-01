@@ -25,19 +25,19 @@ namespace barney_device {
                                         "default");
     bnSet4fc(barneyRenderer,"bgColor",(const float4 &)m_background);
     bnSet1i(barneyRenderer,"crosshairs",(int)m_crosshairs);
-    bnSet1i(barneyRenderer,"pathPerPixel",(int)m_pixelSamples);
+    bnSet1i(barneyRenderer,"pathsPerPixel",(int)m_pixelSamples);
     bnSet1f(barneyRenderer,"ambientRadiance",m_ambientRadiance);
   }
 
-  int Renderer::pixelSamples() const
-  {
-    return m_pixelSamples;
-  }
+  // int Renderer::pixelSamples() const
+  // {
+  //   return m_pixelSamples;
+  // }
 
-  float Renderer::radiance() const
-  {
-    return m_radiance;
-  }
+  // float Renderer::radiance() const
+  // {
+  //   return m_ambientRadiance;
+  // }
 
   bool Renderer::crosshairs() const
   {

@@ -50,6 +50,7 @@ namespace barney {
     void commit() override;
     bool setObject(const std::string &member,
                  const std::shared_ptr<Object> &value) override;
+    bool set1i(const std::string &member, const int &value) override;
     bool set1f(const std::string &member, const float &value) override;
     bool set4f(const std::string &member, const vec4f &value) override;
     /*! @} */
@@ -60,11 +61,13 @@ namespace barney {
       vec4f       bgColor         = vec4f(0,0,0,1);
       int         pathsPerPixel   = 1;
       float       ambientRadiance = 1.f;
+      int         crosshairs      = 0;
     } staged;
     vec4f       bgColor         = vec4f(0,0,0,1);
     Texture::SP bgTexture       = 0;
     int         pathsPerPixel   = 1;
     float       ambientRadiance = 1.f;
+    int         crosshairs      = 0;
   };
 
 }

@@ -44,7 +44,8 @@ namespace barney_device {
     m_color = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
   }
 
-  BNLight Light::getBarneyLight(BNContext context, int slot)
+  BNLight Light::getBarneyLight(BNContext context// , int slot
+                                )
   {
     // if (!isModelTracked(model, slot)) {
     //   cleanup();

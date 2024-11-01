@@ -63,6 +63,21 @@ namespace barney {
     return false;
   }
   
+  bool Renderer::set1i(const std::string &member, const int &value)
+  {
+    if (Object::set1i(member,value))
+      return true;
+    if (member == "pathsPerPixel") {
+      staged.pathsPerPixel = value;
+      return true;
+    }
+    if (member == "crosshairs") {
+      staged.crosshairs = value;
+      return true;
+    }
+    return false;
+  }
+  
   bool Renderer::set4f(const std::string &member, const vec4f &value)
   {
     if (Object::set4f(member,value))

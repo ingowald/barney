@@ -679,6 +679,13 @@ namespace barney {
   }
 
   BN_API
+  void bnSet4fc(BNObject target, const char *param, float4 value)
+  {
+    if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
+      checkGet(target)->warn_unsupported_member(param,"vec4f");
+  }
+
+  BN_API
   void bnSet4x3fv(BNObject target, const char *param, const float *transform)
   {
     assert(transform);

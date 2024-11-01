@@ -18,11 +18,13 @@ namespace barney_device {
     static Sampler *createInstance(
                                    std::string_view subtype, BarneyGlobalState *s);
 
-    BNSampler getBarneySampler(BNModel model, int slot);
+    BNSampler getBarneySampler(BNContext context// BNModel model, int slot
+                               );
     // virtual BNSampler getBarneySampler(BNModel model, int slot) = 0;
 
   protected:
-    virtual void createBarneySampler(BNModel model, int slot) = 0;
+    virtual void createBarneySampler(BNContext context// BNModel model, int slot
+                                     ) = 0;
     // void setBarneySampler(BNModel model, int slot, const char *subtype);
     void cleanup();
 
@@ -46,7 +48,8 @@ namespace barney_device {
     // BNSampler getBarneySampler(BNModel model, int slot) override;
 
   private:
-    void createBarneySampler(BNModel model, int slot) override;
+    void createBarneySampler(BNContext context// BNModel model, int slot
+                             ) override;
 
     helium::IntrusivePtr<helium::Array1D> m_image;
     std::string m_inAttribute;
@@ -71,7 +74,8 @@ namespace barney_device {
     // BNSampler getBarneySampler(BNModel model, int slot) override;
 
   private:
-    void createBarneySampler(BNModel model, int slot) override;
+    void createBarneySampler(BNContext context// BNModel model, int slot
+                             ) override;
 
     helium::IntrusivePtr<helium::Array2D> m_image;
     std::string          m_inAttribute;
@@ -95,7 +99,8 @@ namespace barney_device {
     // BNSampler getBarneySampler(BNModel model, int slot) override;
 
   private:
-    void createBarneySampler(BNModel model, int slot) override;
+    void createBarneySampler(BNContext context// BNModel model, int slot
+                             ) override;
 
     std::string  m_inAttribute;
     math::mat4   m_outTransform{math::identity};

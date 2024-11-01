@@ -68,8 +68,9 @@ bool StructuredRegularField::isValid() const
   return m_data;
 }
 
-BNScalarField StructuredRegularField::createBarneyScalarField(
-    BNModel model, int slot) const
+  BNScalarField StructuredRegularField::createBarneyScalarField(
+    BNContext context// , int slot
+                                                              ) const
 {
   if (!isValid())
     return {};
@@ -97,8 +98,8 @@ BNScalarField StructuredRegularField::createBarneyScalarField(
     throw std::runtime_error("scalar type not implemented ...");
   }
   auto dims = m_data->size();
-  auto field = bnStructuredDataCreate(model,
-      slot,
+  auto field = bnStructuredDataCreate(context,
+                                      0/*slot*/,
       (const int3 &)dims,
       barneyType,
       m_data->data(),
@@ -198,7 +199,7 @@ void UnstructuredField::commit()
     case _ANARI_PYR:
       numToCopy = 5; break;
     default:
-      throw std::runtime_error("buggy/invalid unstructured elemnet type!?");
+      throw std::runtime_error("buggy/invalid unstructured element type!?");
     };
     int inputBegin = cellBegin[cellIdx];
     for (int i=0;i<numToCopy;i++) {
@@ -208,14 +209,15 @@ void UnstructuredField::commit()
 }
 
 BNScalarField UnstructuredField::createBarneyScalarField(
-    BNModel model, int slot) const
+    BNContext context// , int slot
+                                                         ) const
 {
-  auto ctx = deviceState()->context;
+  // auto ctx = deviceState()->context;
   std::cout << "==================================================================" << std::endl;
   std::cout << "BANARI: CREATING UMESH OF " << m_elementOffsets.size() << " elements" << std::endl;
   std::cout << "==================================================================" << std::endl;
-  return bnUMeshCreate(model,
-                       slot,
+  return bnUMeshCreate(context,
+                       0/*slot*/,
                        (const ::float4 *)m_vertices.data(),
                        m_vertices.size(),
                        m_indices.data(),
@@ -327,10 +329,11 @@ void BlockStructuredField::commit()
 }
 
 BNScalarField BlockStructuredField::createBarneyScalarField(
-    BNModel model, int slot) const
+    BNContext context// , int slot
+                                                            ) const
 {
-  return bnBlockStructuredAMRCreate(model,
-      slot,
+  return bnBlockStructuredAMRCreate(context,
+                                    0/*slot*/,
       m_generatedBlockBounds.data(),
       m_generatedBlockBounds.size() / 6,
       m_generatedBlockLevels.data(),

@@ -16,7 +16,8 @@ struct Material : public Object
   static Material *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
-  BNMaterial getBarneyMaterial(BNContext context, int slot);
+  BNMaterial getBarneyMaterial(BNContext context// , int slot
+                               );
 
  protected:
   virtual const char *bnSubtype() const = 0;

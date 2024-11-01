@@ -15,8 +15,8 @@ namespace barney_device {
 
     void commit() override;
 
-    int pixelSamples() const;
-    float radiance() const;
+    // int pixelSamples() const;
+    // float radiance() const;
     bool crosshairs() const;
     
     bool isValid() const override;

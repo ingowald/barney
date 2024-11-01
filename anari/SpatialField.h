@@ -22,7 +22,8 @@ struct SpatialField : public Object
 
   void markCommitted() override;
 
-  virtual BNScalarField createBarneyScalarField(BNModel model, int slot) const = 0;
+  virtual BNScalarField createBarneyScalarField(BNContext context// , int slot
+                                                ) const = 0;
 
   void cleanup()
   {
@@ -32,7 +33,8 @@ struct SpatialField : public Object
     }
   }
   
-  BNScalarField getBarneyScalarField(BNModel model, int slot)
+  BNScalarField getBarneyScalarField(BNContext context// , int slot
+                                     )
   {
     if (!isValid())
       return {};
@@ -41,7 +43,7 @@ struct SpatialField : public Object
     //   trackModel(model, slot);
     // }
     if (!m_bnField) 
-      m_bnField = createBarneyScalarField(model,slot);
+      m_bnField = createBarneyScalarField(context/*,slot*/);
     return m_bnField;
   }
   
@@ -57,7 +59,8 @@ struct UnstructuredField : public SpatialField
   UnstructuredField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
+  BNScalarField createBarneyScalarField(BNContext context// , int slot
+                                        ) const;
 
   box3 bounds() const override;
 
@@ -100,7 +103,8 @@ struct BlockStructuredField : public SpatialField
   BlockStructuredField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
+  BNScalarField createBarneyScalarField(BNContext context// , int slot
+                                        ) const;
 
   box3 bounds() const override;
 
@@ -125,7 +129,8 @@ struct StructuredRegularField : public SpatialField
   StructuredRegularField(BarneyGlobalState *s);
   void commit() override;
 
-  BNScalarField createBarneyScalarField(BNModel model, int slot) const;
+  BNScalarField createBarneyScalarField(BNContext context// , int slot
+                                        ) const;
 
   box3 bounds() const override;
   bool isValid() const override;

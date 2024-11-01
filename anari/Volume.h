@@ -18,12 +18,14 @@ struct Volume : public Object
 
   void markCommitted() override;
 
-  BNVolume getBarneyVolume(BNContext context, int slot);
+  BNVolume getBarneyVolume(BNContext context// , int slot
+                           );
 
   virtual box3 bounds() const = 0;
 
  protected:
-  virtual BNVolume createBarneyVolume(BNContext context, int slot) = 0;
+  virtual BNVolume createBarneyVolume(BNContext context// , int slot
+                                      ) = 0;
   virtual void setBarneyParameters() = 0;
   void cleanup();
 
@@ -38,7 +40,8 @@ struct TransferFunction1D : public Volume
   void commit() override;
   bool isValid() const override;
 
-  BNVolume createBarneyVolume(BNContext context, int slot) override;
+  BNVolume createBarneyVolume(BNContext context// , int slot
+                              ) override;
 
   box3 bounds() const override;
 

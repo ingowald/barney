@@ -26,16 +26,19 @@ void Volume::markCommitted()
   Object::markCommitted();
 }
 
-BNVolume Volume::getBarneyVolume(BNModel model, int slot)
+  BNVolume Volume::getBarneyVolume(BNContext context// , int slot
+                                 )
 {
   if (!isValid())
     return {};
-  if (!isModelTracked(model, slot)) {
-    cleanup();
-    trackModel(model, slot);
-    m_bnVolume = createBarneyVolume(model, slot);
-    setBarneyParameters();
-  }
+  // if (!isModelTracked(model, slot)) {
+  //   cleanup();
+  //   trackModel(model, slot);
+  if (!m_bnVolume)
+    m_bnVolume = createBarneyVolume(getContext()// , slot
+                                    );
+  setBarneyParameters();
+  // }
   return m_bnVolume;
 }
 
@@ -183,11 +186,14 @@ void TransferFunction1D::commit()
   setBarneyParameters();
 }
 
-BNVolume TransferFunction1D::createBarneyVolume(BNContext context, int slot)
+BNVolume TransferFunction1D::createBarneyVolume(BNContext context// , int slot
+                                                )
 {
   return m_field
-      ? bnVolumeCreate(context, slot, m_field->getBarneyScalarField(model, slot))
-      : BNVolume{};
+    ? bnVolumeCreate(context, 0/*slot*/,
+                     m_field->getBarneyScalarField(context// , slot
+                                                   ))
+    : BNVolume{};
 }
 
 box3 TransferFunction1D::bounds() const
@@ -197,12 +203,14 @@ box3 TransferFunction1D::bounds() const
 
 void TransferFunction1D::setBarneyParameters()
 {
-  BNModel model = trackedModel();
-  if (!isValid() || !model || !m_bnVolume)
+  // BNModel model = trackedModel();
+  if (!isValid() // || !model
+      || !m_bnVolume)
     return;
-  int slot = trackedSlot();
+  int slot = 0;//trackedSlot();
 
-  BNVolume vol = getBarneyVolume(model, slot);
+  BNVolume vol = getBarneyVolume(getContext()// , slot
+                                 );
   bnVolumeSetXF(vol,
       (float2 &)m_valueRange,
       (const float4 *)m_rgbaMap.data(),

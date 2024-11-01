@@ -68,7 +68,8 @@ inline void setBNMaterialHelper(BNMaterial m,
                                 )
 {
   if (mp.sampler) {
-    BNSampler s = mp.sampler->getBarneySampler(context, 0);
+    BNSampler s = mp.sampler->getBarneySampler(context// , 0
+                                               );
     bnSetObject(m,p, s);
   } else if (!mp.attribute.empty())
     bnSetString(m,p, mp.attribute.c_str());
@@ -96,13 +97,14 @@ Material *Material::createInstance(
     return (Material *)new UnknownObject(ANARI_MATERIAL, s);
 }
 
-BNMaterial Material::getBarneyMaterial(BNContext context, int slot)
+BNMaterial Material::getBarneyMaterial(BNContext context// , int slot
+                                       )
 {
   // if (!isModelTracked(model, slot)) {
     // cleanup();
     // trackContext(context, slot);
   if (!m_bnMat)
-    m_bnMat = bnMaterialCreate(context// , slot
+    m_bnMat = bnMaterialCreate(context, 0// , slot
                                , bnSubtype());
   setBarneyParameters();
   // }
@@ -156,7 +158,7 @@ void Matte::setBarneyParameters()
   // int slot = trackedSlot();
 
   // NOTE: using Barney PBR material because matte wasn't (isn't?) finished
-  setBNMaterialHelper(m_bnMat, "color", getContext()// m_color, model, slot
+  setBNMaterialHelper(m_bnMat, "color", m_color, getContext()// model, slot
                       );
   // setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
   // bnSet1f(m_bnMat, "metallic", 0.f);
