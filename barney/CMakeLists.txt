@@ -316,5 +316,6 @@ if (BARNEY_MPI)
 endif()
 
 
-add_subdirectory(testing)
+#temporarily disabled after v0.6 due to api changes
+#add_subdirectory(testing)
 

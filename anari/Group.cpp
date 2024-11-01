@@ -29,7 +29,7 @@ void Group::markCommitted()
   Object::markCommitted();
 }
 
-BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
+BNGroup Group::makeBarneyGroup(BNContext context, int slot) const
 {
   std::vector<BNGeom> barneyGeometries;
   std::vector<Surface *> surfaces;
@@ -51,7 +51,7 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   for (auto s : surfaces) {
-    BNGeom geom = s->getBarneyGeom(model, slot);
+    BNGeom geom = s->getBarneyGeom(context, slot);
     barneyGeometries.push_back(geom);
   }
 
@@ -67,7 +67,7 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   for (auto v : volumes)
-    barneyVolumes.push_back(v->getBarneyVolume(model, slot));
+    barneyVolumes.push_back(v->getBarneyVolume(context, slot));
 
   // Lights //
 
@@ -81,17 +81,17 @@ BNGroup Group::makeBarneyGroup(BNModel model, int slot) const
   }
 
   for (auto l : lights)
-    barneyLights.push_back(l->getBarneyLight(model, slot));
+    barneyLights.push_back(l->getBarneyLight(context, slot));
 
   BNData lightsData = nullptr;
   if (!barneyLights.empty()) {
     lightsData = bnDataCreate(
-        model, slot, BN_OBJECT, barneyLights.size(), barneyLights.data());
+        context, slot, BN_OBJECT, barneyLights.size(), barneyLights.data());
   }
 
   // Make barney group //
   
-  BNGroup bg = bnGroupCreate(model,
+  BNGroup bg = bnGroupCreate(context,
       slot,
       barneyGeometries.data(),
       barneyGeometries.size(),

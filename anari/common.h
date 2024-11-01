@@ -260,7 +260,7 @@ inline bool convert_to_rgba8(
 }
 
 static BNData makeBarneyData(
-    BNModel model, int slot, const helium::IntrusivePtr<helium::Array> &input)
+    BNContext context, int slot, const helium::IntrusivePtr<helium::Array> &input)
 {
   BNData res{0};
 
@@ -268,10 +268,10 @@ static BNData makeBarneyData(
 
   if (input) {
     if (input->elementType() == ANARI_FLOAT32_VEC4) {
-      res = bnDataCreate(model, slot, BN_FLOAT4, input->totalSize(), input->data());
+      res = bnDataCreate(context, slot, BN_FLOAT4, input->totalSize(), input->data());
     }
     else if (convert_to_float4(input, data) && !data.empty()) {
-      res = bnDataCreate(model, slot, BN_FLOAT4, data.size(), data.data());
+      res = bnDataCreate(context, slot, BN_FLOAT4, data.size(), data.data());
     }
     else {
       std::stringstream ss;
@@ -287,7 +287,7 @@ static BNData makeBarneyData(
 }
 
 static BNTexture2D makeBarneyTexture2D(
-    BNModel model, int slot, const helium::IntrusivePtr<helium::Array> &input,
+    BNContext context, int slot, const helium::IntrusivePtr<helium::Array> &input,
     int width, int height,
     BNTextureFilterMode filterMode = BN_TEXTURE_LINEAR,
     BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP)
@@ -298,7 +298,7 @@ static BNTexture2D makeBarneyTexture2D(
 
   if (input) {
     if (convert_to_rgba8(input, texels)) {
-      res = bnTexture2DCreate(model, slot, BN_TEXEL_FORMAT_RGBA8,
+      res = bnTexture2DCreate(context, slot, BN_TEXEL_FORMAT_RGBA8,
                               width, height, texels.data(),
                               filterMode, addressMode);
     }

@@ -183,10 +183,10 @@ void TransferFunction1D::commit()
   setBarneyParameters();
 }
 
-BNVolume TransferFunction1D::createBarneyVolume(BNModel model, int slot)
+BNVolume TransferFunction1D::createBarneyVolume(BNContext context, int slot)
 {
   return m_field
-      ? bnVolumeCreate(model, slot, m_field->getBarneyScalarField(model, slot))
+      ? bnVolumeCreate(context, slot, m_field->getBarneyScalarField(model, slot))
       : BNVolume{};
 }
 

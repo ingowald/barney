@@ -36,10 +36,10 @@ struct SpatialField : public Object
   {
     if (!isValid())
       return {};
-    if (!isModelTracked(model, slot)) {
-      cleanup();
-      trackModel(model, slot);
-    }
+    // if (!isModelTracked(model, slot)) {
+    //   cleanup();
+    //   trackModel(model, slot);
+    // }
     if (!m_bnField) 
       m_bnField = createBarneyScalarField(model,slot);
     return m_bnField;

@@ -20,7 +20,7 @@ struct Geometry : public Object
   void markCommitted() override;
 
   virtual const char *bnSubtype() const = 0;
-  virtual void setBarneyParameters(BNGeom geom, BNModel model, int slot) = 0;
+  virtual void setBarneyParameters(BNGeom geom, BNContext context, int slot) = 0;
   virtual box3 bounds() const = 0;
 
  protected:
@@ -36,7 +36,7 @@ struct Sphere : public Geometry
   void commit() override;
   bool isValid() const override;
 
-  void setBarneyParameters(BNGeom geom, BNModel model, int slot) override;
+  void setBarneyParameters(BNGeom geom, BNContext context, int slot) override;
   const char *bnSubtype() const override;
   box3 bounds() const override;
 
@@ -53,7 +53,7 @@ struct Curve : public Geometry
   void commit() override;
   bool isValid() const override;
   
-  void setBarneyParameters(BNGeom geom, BNModel model, int slot) override;
+  void setBarneyParameters(BNGeom geom, BNContext context, int slot) override;
   const char *bnSubtype() const override;
   box3 bounds() const override;
   
@@ -70,7 +70,7 @@ struct Triangle : public Geometry
   void commit() override;
   bool isValid() const override;
 
-  void setBarneyParameters(BNGeom geom, BNModel model, int slot) override;
+  void setBarneyParameters(BNGeom geom, BNContext context, int slot) override;
   const char *bnSubtype() const override;
   box3 bounds() const override;
 

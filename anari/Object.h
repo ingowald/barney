@@ -27,19 +27,20 @@ struct Object : public helium::BaseObject
 
   bool isValid() const override;
 
+  BNContext getContext() const;
   BarneyGlobalState *deviceState() const;
 
  protected:
   // Return if this object is tracking the currently used model
-  bool isModelTracked(BNModel model, int slot = 0) const;
-  void trackModel(BNModel model, int slot = 0);
+  // bool isModelTracked(BNModel model, int slot = 0) const;
+  // void trackModel(BNModel model, int slot = 0);
 
-  BNModel trackedModel() const;
-  int trackedSlot() const;
+  // BNModel trackedModel() const;
+  // int trackedSlot() const;
 
- private:
-  BNModel m_bnModel{nullptr}; // not an owning reference
-  int m_slot{-1};
+ // private:
+ //  BNModel m_bnModel{nullptr}; // not an owning reference
+ //  int m_slot{-1};
 };
 
 struct UnknownObject : public Object
