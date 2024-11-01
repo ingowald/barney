@@ -21,7 +21,7 @@ option(BARNEY_DENOISE_OIDN "Denoiser via OIDN library?" OFF)
 add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
   INTERFACE
-  cuBQL_interface
+  cuBQL
   )
 target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
 if (BARNEY_DENOISE)
@@ -265,7 +265,7 @@ target_link_libraries(barney
   PUBLIC
   owl::owl
  # OptiX::OptiX
-  cuBQL_impl
+  cuBQL_cuda_float3
   barney-config
   barney-StructuredData-ptx
   barney-spheres-ptx
