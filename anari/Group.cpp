@@ -69,9 +69,10 @@ BNGroup Group::makeBarneyGroup(BNContext context// , int slot
         });
   }
 
-  for (auto v : volumes)
+  for (auto v : volumes) {
     barneyVolumes.push_back(v->getBarneyVolume(context// , slot
                                                ));
+  }
 
   // Lights //
 
