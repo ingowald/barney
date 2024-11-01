@@ -37,7 +37,9 @@ namespace barney {
       return;
     }
 
-    SetActiveGPU forDuration(getDevices()[0]);
+    auto dev = getDevices()[0];
+    assert(dev);
+    SetActiveGPU forDuration(dev);
 
     BARNEY_CUDA_SYNC_CHECK();
     assert(mesh);
@@ -58,11 +60,15 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
 
     std::cout << OWL_TERMINAL_BLUE
-              << "#bn.umesh: cubql bvh built ..."
+              << "#bn.umesh: computing umesh element BBs ..."
               << OWL_TERMINAL_DEFAULT << std::endl;
-    mesh->computeElementBBs(/*deviceID:*/0,d_primBounds);
+    mesh->computeElementBBs(dev,///*deviceID:*/0,
+                            d_primBounds);
     BARNEY_CUDA_SYNC_CHECK();
     
+    std::cout << OWL_TERMINAL_BLUE
+              << "#bn.umesh: building cubql bvh ..."
+              << OWL_TERMINAL_DEFAULT << std::endl;
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = 3;
     static cuBQL::ManagedMemMemoryResource managedMem;
@@ -72,6 +78,9 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
+    std::cout << OWL_TERMINAL_BLUE
+              << "#bn.umesh: cubql bvh built ..."
+              << OWL_TERMINAL_DEFAULT << std::endl;
     std::vector<Element> reorderedElements(mesh->elements.size());
     for (int i=0;i<mesh->elements.size();i++) {
       reorderedElements[i] = mesh->elements[bvh.primIDs[i]];

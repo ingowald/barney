@@ -307,7 +307,9 @@ namespace barney {
 
   DevGroup *Context::getDevGroup(int slot)
   {
-    return getSlot(slot)->devGroup.get();
+    DevGroup *dg = getSlot(slot)->devGroup.get();
+    assert(dg);
+    return dg;
   }
   
   /*! helper function to print a warning when app tries to create anari

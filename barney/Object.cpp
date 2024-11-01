@@ -46,7 +46,10 @@ namespace barney {
 
   DevGroup *SlottedObject::getDevGroup() const
   {
-    return context->getDevGroup(slot);
+    assert(context);
+    DevGroup *dg = context->getDevGroup(slot);
+    assert(dg);
+    return dg;
   }
 
   const std::vector<std::shared_ptr<Device>> &SlottedObject::getDevices() const

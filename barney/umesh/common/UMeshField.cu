@@ -251,6 +251,7 @@ namespace barney {
     const vec3i bs = 4;
     const vec3i nb = divRoundUp(dims,bs);
     for (auto dev : getDevices()) {
+      assert(dev); assert(dev.get());
       SetActiveGPU forDuration(dev);
       auto d_mesh = getDD(dev);
       auto d_grid = grid.getDD(dev);
@@ -287,6 +288,7 @@ namespace barney {
                                      box3f *d_primBounds,
                                      range1f *d_primRanges)
   {
+    assert(device); assert(device.get());
     SetActiveGPU forDuration(device);
     int bs = 1024;
     int nb = divRoundUp(int(elements.size()),bs);
@@ -332,8 +334,12 @@ namespace barney {
 
   UMeshField::DD UMeshField::getDD(const Device::SP &device)
   {
+    assert(device.get());
     UMeshField::DD dd;
     int devID = device->owlID;
+    assert(verticesBuffer);
+    assert(indicesBuffer);
+    assert(elementsBuffer);
     dd.vertices
       = (const float4  *)owlBufferGetPointer(verticesBuffer,devID);
     dd.indices

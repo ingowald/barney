@@ -184,6 +184,7 @@ namespace barney {
   {
     assert(sf);
     assert(volume);
-    assert(sf->devGroup);
+    assert(devGroup);
+    // assert(sf->devGroup);  
   }
 }
