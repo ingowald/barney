@@ -36,6 +36,8 @@ namespace barney {
     struct HostMaterial;
     struct SamplerRegistry;
     struct MaterialRegistry;
+    struct DeviceMaterial;
+    
   };
   
   struct Context// : public Object
@@ -165,8 +167,8 @@ namespace barney {
       std::vector<int>     gpuIDs;
       barney::DevGroup::SP devGroup = 0;
       std::shared_ptr<render::HostMaterial> defaultMaterial = 0;
-      std::vector<render::SamplerRegistry>  samplerRegistry = 0;
-      std::vector<render::MaterialRegistry> materialRegistry = 0;
+      std::shared_ptr<render::SamplerRegistry>  samplerRegistry = 0;
+      std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
       // iw: this is more like "globals", this name doesn't fit
       // render::World        world;
     };

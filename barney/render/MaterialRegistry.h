@@ -23,6 +23,8 @@
 
 namespace barney {
   namespace render {
+
+    struct DeviceMaterial;
     
     struct MaterialRegistry {
       typedef std::shared_ptr<MaterialRegistry> SP;

@@ -44,7 +44,7 @@ namespace barney {
       slot(slot)
   {}
 
-  DevGroup      *SlottedObject::getDevGroup() const
+  DevGroup *SlottedObject::getDevGroup() const
   {
     return context->getDevGroup(slot);
   }
@@ -53,9 +53,6 @@ namespace barney {
   {
     return getDevGroup()->devices;
   }
-  
-  render::World *SlottedObject::getWorld() const
-  { return context->getWorld(slot); }
   
   OWLContext     SlottedObject::getOWL() const
   { return getDevGroup()->owl; }

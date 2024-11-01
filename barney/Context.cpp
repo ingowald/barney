@@ -18,6 +18,8 @@
 #include "barney/DeviceGroup.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/GlobalModel.h"
+#include "barney/render/SamplerRegistry.h"
+#include "barney/render/MaterialRegistry.h"
 
 namespace barney {
 
@@ -245,6 +247,11 @@ namespace barney {
                    globalIndexStep*numSlots);
       for (auto dev : dg.devGroup->devices)
         devices.push_back(std::make_shared<DeviceContext>(dev));
+      
+      dg.materialRegistry
+        = std::make_shared<render::MaterialRegistry>(dg.devGroup);
+      dg.samplerRegistry
+        = std::make_shared<render::SamplerRegistry>(dg.devGroup);
     }
   }
 

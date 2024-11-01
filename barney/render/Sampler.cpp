@@ -17,6 +17,8 @@
 #include "barney/render/Sampler.h"
 #include "barney/common/Texture.h"
 #include "barney/ModelSlot.h"
+#include "barney/render/SamplerRegistry.h"
+#include "barney/Context.h"
 
 namespace barney {
   namespace render {
@@ -40,8 +42,8 @@ namespace barney {
 
     Sampler::Sampler(Context *context, int slot)
       : SlottedObject(context,slot),
-        samplerRegistry(getWorld()->samplerRegistry),
-        samplerID(getWorld()->samplerRegistry->allocate())
+        samplerRegistry(context->getSlot(slot)->samplerRegistry),
+        samplerID(context->getSlot(slot)->samplerRegistry->allocate())
     {
       perDev.resize(getDevGroup()->size());
     }

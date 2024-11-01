@@ -268,5 +268,11 @@ namespace barney {
       dd.array = 0;
     }
   }
+
+  cudaTextureObject_t Texture::getTextureObject(const Device *device) const
+  {
+    return owlTextureGetObject(owlTexture,device->owlID);
+  }
+    
   
 }

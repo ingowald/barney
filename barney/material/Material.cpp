@@ -16,17 +16,8 @@
 
 #include "barney/material/AnariPBR.h"
 #include "barney/material/AnariMatte.h"
-#if 0
-#include "barney/render/host/material/Matte.h"
-#include "barney/material/host/Velvet.h"
-#include "barney/material/host/Blender.h"
-#include "barney/material/host/Metal.h"
-#include "barney/material/host/Glass.h"
-#include "barney/material/host/Plastic.h"
-#include "barney/material/host/VisRTX.h"
-#include "barney/material/host/MetallicPaint.h"
-#endif
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
 namespace barney {
   namespace render {
@@ -84,8 +75,8 @@ namespace barney {
     
     HostMaterial::HostMaterial(Context *context, int slot)
       : SlottedObject(context,slot),
-        materialRegistry(getWorld()->materialRegistry),
-        materialID(getWorld()->materialRegistry->allocate())
+        materialRegistry(context->getSlot(slot)->materialRegistry),
+        materialID(context->getSlot(slot)->materialRegistry->allocate())
     {}
 
     HostMaterial::~HostMaterial()

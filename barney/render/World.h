@@ -29,7 +29,7 @@ namespace barney {
   namespace render {
     struct DeviceMaterial;
     struct HostMaterial;
-    
+
 // #define DEFAULT_RADIANCE_FROM_ENV .8f
 
     // struct QuadLight {
@@ -102,15 +102,11 @@ namespace barney {
       DD getDD(const Device::SP &device) const;
 
       // Globals globals;
-      MaterialRegistry::SP materialRegistry;
-      SamplerRegistry::SP  samplerRegistry;
       OWLBuffer quadLightsBuffer = 0;
       int numQuadLights = 0;
       OWLBuffer dirLightsBuffer = 0;
       int numDirLights = 0;
       DevGroup::SP devGroup;
-  private:
-      std::shared_ptr<render::HostMaterial> defaultMaterial = 0;
     };
 
   }

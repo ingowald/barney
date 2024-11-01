@@ -21,7 +21,7 @@
 #include "barney/render/HitAttributes.h"
 // #include "barney/material/device/Material.h"
 #include "barney/render/Sampler.h"
-#include "barney/render/World.h"
+#include "barney/render/MaterialRegistry.h"
 
 namespace barney {
   namespace render {
