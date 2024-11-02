@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Frame.h"
+#if 1
 // std
 #include <algorithm>
 #include <chrono>
 #include <iostream>
 // cuda
 #include <cuda_runtime_api.h>
-// thrust
-#include <thrust/execution_policy.h>
-#include <thrust/transform.h>
+// // thrust
+// #include <thrust/execution_policy.h>
+// #include <thrust/transform.h>
 
 #ifndef PRINT
 #define PRINT(var) std::cout << #var << "=" << var << std::endl;
@@ -210,6 +211,24 @@ void Frame::convertPixelsToFinalFormat()
     auto numPixels = m_frameData.totalPixels;
     auto *src = (math::byte4 *)m_bnPixelBuffer;
     auto *dst = (math::byte4 *)m_colorBuffer;
+#if 1
+    for (int i=0;i<numPixels;i++) {
+      math::byte4 p = src[i];
+      auto f =
+        math::float4(p.x / 255.f, p.y / 255.f, p.z / 255.f, p.w / 255.f);
+      f.x = std::pow(f.x, 1.f / 2.2f);
+      f.y = std::pow(f.y, 1.f / 2.2f);
+      f.z = std::pow(f.z, 1.f / 2.2f);
+      math::byte4 v = math::byte4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
+      // uint32_t src_i = src[i];
+      // const uint8_t *bytes = (const uint8_t *)&src_i;
+      // dst[i].x = bytes[0]/255.f;
+      // dst[i].y = bytes[1]/255.f;
+      // dst[i].z = bytes[2]/255.f;
+      // dst[i].w = bytes[3]/255.f;
+      dst[i] = v;
+    }
+#else
     thrust::transform(thrust::device,
         src,
         src + numPixels,
@@ -222,6 +241,7 @@ void Frame::convertPixelsToFinalFormat()
           f.z = std::pow(f.z, 1.f / 2.2f);
           return math::byte4(f.x * 255, f.y * 255, f.z * 255, f.w * 255);
         });
+#endif
   } else if (m_colorType == ANARI_FLOAT32_VEC4) {
     auto numPixels = m_frameData.totalPixels;
 #if 1
@@ -264,3 +284,4 @@ void Frame::cleanup()
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Frame *);
+#endif

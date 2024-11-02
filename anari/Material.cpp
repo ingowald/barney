@@ -3,8 +3,8 @@
 
 #include "Material.h"
 #include "common.h"
-// CUDA
-#include <vector_functions.h>
+// // CUDA
+// #include <vector_functions.h>
 #include <iostream>
 
 namespace barney_device {

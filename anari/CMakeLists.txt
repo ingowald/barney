@@ -48,12 +48,12 @@ project_add_library(SHARED
   World.cpp
 )
 
-set_source_files_properties(
-  Frame.cpp
-  PROPERTIES
-    COMPILE_FLAGS "--extended-lambda --expt-relaxed-constexpr"
-    LANGUAGE CUDA
-)
+#set_source_files_properties(
+#  Frame.cpp
+#  PROPERTIES
+#    COMPILE_FLAGS "--extended-lambda --expt-relaxed-constexpr"
+#    LANGUAGE CUDA
+#)
 
 if (TARGET barney_mpi)
   project_link_libraries(PRIVATE anari::helium barney_mpi)
