@@ -94,16 +94,16 @@ namespace barney {
         ownerGather.firstTileOnGPU[ggID] = sumTiles;
         sumTiles += ownerGather.numTilesOnGPU[ggID];
       }
-      ownerGather.numActiveTiles = sumTiles;
+      gatheredTilesOnOwner.numActiveTiles = sumTiles;
 
-      if (ownerGather.compressedTiles)
-        BARNEY_CUDA_CALL(Free(ownerGather.compressedTiles));
-      if (ownerGather.tileDescs)
-        BARNEY_CUDA_CALL(Free(ownerGather.tileDescs));
-      BARNEY_CUDA_CALL(Malloc(&ownerGather.compressedTiles,
-                              sumTiles*sizeof(*ownerGather.compressedTiles)));
-      BARNEY_CUDA_CALL(Malloc(&ownerGather.tileDescs,
-                              sumTiles*sizeof(*ownerGather.tileDescs)));
+      if (gatheredTilesOnOwner.compressedTiles)
+        BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.compressedTiles));
+      if (gatheredTilesOnOwner.tileDescs)
+        BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.tileDescs));
+      BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.compressedTiles,
+                              sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles)));
+      BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.tileDescs,
+                              sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs)));
       BARNEY_CUDA_SYNC_CHECK();
     }
     
@@ -115,7 +115,7 @@ namespace barney {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
+                            gatheredTilesOnOwner.tileDescs+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
@@ -150,7 +150,7 @@ namespace barney {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            ownerGather.compressedTiles+ownerGather.firstTileOnGPU[ggID],
+                            gatheredTilesOnOwner.compressedTiles+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
