@@ -31,7 +31,7 @@ namespace barney {
       // const vec4f *vertexAttribute[5];
     };
 
-    Spheres(ModelSlot *owner);
+    Spheres(Context *context, int slot);
     
     static OWLGeomType createGeomType(DevGroup *device);
     

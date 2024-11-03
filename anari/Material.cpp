@@ -3,8 +3,8 @@
 
 #include "Material.h"
 #include "common.h"
-// CUDA
-#include <vector_functions.h>
+// // CUDA
+// #include <vector_functions.h>
 #include <iostream>
 
 namespace barney_device {
@@ -63,11 +63,13 @@ template <typename T>
 inline void setBNMaterialHelper(BNMaterial m,
     const char *p,
     MaterialParameter<T> &mp,
-    BNModel model,
-    int slot)
+    BNContext context// ,
+    // int slot
+                                )
 {
   if (mp.sampler) {
-    BNSampler s = mp.sampler->getBarneySampler(model, slot);
+    BNSampler s = mp.sampler->getBarneySampler(context// , 0
+                                               );
     bnSetObject(m,p, s);
   } else if (!mp.attribute.empty())
     bnSetString(m,p, mp.attribute.c_str());
@@ -95,14 +97,17 @@ Material *Material::createInstance(
     return (Material *)new UnknownObject(ANARI_MATERIAL, s);
 }
 
-BNMaterial Material::getBarneyMaterial(BNModel model, int slot)
+BNMaterial Material::getBarneyMaterial(BNContext context// , int slot
+                                       )
 {
-  if (!isModelTracked(model, slot)) {
-    cleanup();
-    trackModel(model, slot);
-    m_bnMat = bnMaterialCreate(model, slot, bnSubtype());
-    setBarneyParameters();
-  }
+  // if (!isModelTracked(model, slot)) {
+    // cleanup();
+    // trackContext(context, slot);
+  if (!m_bnMat)
+    m_bnMat = bnMaterialCreate(context, 0// , slot
+                               , bnSubtype());
+  setBarneyParameters();
+  // }
 
   return m_bnMat;
 }
@@ -149,11 +154,12 @@ void Matte::setBarneyParameters()
   if (!m_bnMat)
     return;
 
-  BNModel model = trackedModel();
-  int slot = trackedSlot();
+  // BNContext model = trackedModel();
+  // int slot = trackedSlot();
 
   // NOTE: using Barney PBR material because matte wasn't (isn't?) finished
-  setBNMaterialHelper(m_bnMat, "color", m_color, model, slot);
+  setBNMaterialHelper(m_bnMat, "color", m_color, getContext()// model, slot
+                      );
   // setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
   // bnSet1f(m_bnMat, "metallic", 0.f);
   // bnSet1f(m_bnMat, "roughness", 1.f);
@@ -205,18 +211,19 @@ void PhysicallyBased::setBarneyParameters()
   if (!m_bnMat)
     return;
 
-  BNModel model = trackedModel();
-  int slot = trackedSlot();
-
-  setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, model, slot);
-  setBNMaterialHelper(m_bnMat, "emissive", m_emissive, model, slot);
-  setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor, model, slot);
-  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
-  setBNMaterialHelper(m_bnMat, "metallic", m_metallic, model, slot);
-  setBNMaterialHelper(m_bnMat, "roughness", m_roughness, model, slot);
-  setBNMaterialHelper(m_bnMat, "specular", m_specular, model, slot);
-  setBNMaterialHelper(m_bnMat, "transmission", m_transmission, model, slot);
-  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
+  // BNModel model = trackedModel();
+  // int slot = trackedSlot();
+  auto context = getContext();
+  
+  setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, context);
+  setBNMaterialHelper(m_bnMat, "emissive", m_emissive, context);
+  setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor, context);
+  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, context);
+  setBNMaterialHelper(m_bnMat, "metallic", m_metallic, context);
+  setBNMaterialHelper(m_bnMat, "roughness", m_roughness, context);
+  setBNMaterialHelper(m_bnMat, "specular", m_specular, context);
+  setBNMaterialHelper(m_bnMat, "transmission", m_transmission, context);
+  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, context);
 
   bnSet1f(m_bnMat, "ior", m_ior);
 

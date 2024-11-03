@@ -21,13 +21,13 @@
 
 namespace barney {
 
-  struct ModelSlot;
-
-  struct Texture : public Object {
+  struct Device;
+  
+  struct Texture : public SlottedObject {
     typedef std::shared_ptr<Texture> SP;
 
-    Texture(ModelSlot *owner,
-            BNTexelFormat texelFormat,
+    Texture(Context *context, int slot,
+            BNDataType texelFormat,
             vec2i size,
             const void *texels,
             BNTextureFilterMode  filterMode,
@@ -35,6 +35,8 @@ namespace barney {
             BNTextureColorSpace  colorSpace);
     virtual ~Texture() = default;
 
+    cudaTextureObject_t getTextureObject(const Device *device) const;
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Texture{}"; }
@@ -50,11 +52,9 @@ namespace barney {
       cudaTextureObject_t   texObj;
       cudaTextureObject_t   texObjNN;
     };
-    /*! one tex3d per device */
-    std::vector<DD> tex3Ds;
     
-    Texture3D(ModelSlot *owner,
-              BNTexelFormat texelFormat,
+    Texture3D(Context *context, int slot,
+              BNDataType texelFormat,
               vec3i size,
               const void *texels,
               BNTextureFilterMode  filterMode,
@@ -64,6 +64,11 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Texture3D{}"; }
+
+    DD &getDD(const std::shared_ptr<Device> &device);
+  private:
+    /*! one tex3d per device */
+    std::vector<DD> tex3Ds;
   };
 
   struct TextureData : public SlottedObject {
@@ -74,11 +79,13 @@ namespace barney {
     };
     
     /*! one cudaArray per device */
-    TextureData(ModelSlot *owner,
-                BNTexelFormat texelFormat,
+    TextureData(Context *context, int slot,
+                BNDataType texelFormat,
                 vec3i size,
                 const void *texels);
     virtual ~TextureData();
+
+    DD &getDD(const std::shared_ptr<Device> &device);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -86,6 +93,6 @@ namespace barney {
     
     std::vector<DD> onDev;
     vec3i           dims;
-    BNTexelFormat   texelFormat;
+    BNDataType   texelFormat;
   };
 }

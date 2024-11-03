@@ -13,15 +13,15 @@ namespace barney_device {
 // Helper functions ///////////////////////////////////////////////////////////
 
 static void addAttribute(BNGeom geom,
-    BNModel model,
-    int slot,
+    BNContext context,
+    // int slot,
     const helium::IntrusivePtr<Array1D> &attribute,
     std::string name)
 {
   if (!attribute)
     return;
 
-  BNData attr = makeBarneyData(model, slot, attribute);
+  BNData attr = makeBarneyData(context, 0/*slot*/, attribute);
   if (attr)
     bnSetData(geom, name.c_str(), attr);
 }
@@ -139,16 +139,18 @@ void Curve::commit()
   // }
 }
 
-void Sphere::setBarneyParameters(BNGeom geom, BNModel model, int slot)
+void Sphere::setBarneyParameters(BNGeom geom, BNContext context// , int slot
+                                 )
 {
-  BNData origins = bnDataCreate(model,
+  int slot = 0;
+  BNData origins = bnDataCreate(context,
       slot,
       BN_FLOAT3,
       m_vertexPosition->totalSize(),
       (const float3 *)m_vertexPosition->data());
   bnSetData(geom, "origins", origins);
   if (m_vertexRadius) {
-    BNData radii = bnDataCreate(model,
+    BNData radii = bnDataCreate(context,
         slot,
         BN_FLOAT,
         m_vertexRadius->totalSize(),
@@ -158,23 +160,25 @@ void Sphere::setBarneyParameters(BNGeom geom, BNModel model, int slot)
     bnSet1f(geom, "radius", m_globalRadius);
 
 #if 0
-  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
-  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
-  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
-  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
-  addAttribute(geom, model, slot, m_attributes[4], "primitive.color");
+  addAttribute(geom, context, slot, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, context, slot, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, context, slot, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, context, slot, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, context, slot, m_attributes[4], "primitive.color");
 #endif
   
-  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
-  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
-  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
-  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
-  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
+  addAttribute(geom, context, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, context, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, context, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, context, m_vertexAttributes[4], "vertex.color");
 }
 
 
-void Curve::setBarneyParameters(BNGeom geom, BNModel model, int slot)
+void Curve::setBarneyParameters(BNGeom geom, BNContext context// , int slot
+                                )
 {
+  int slot = 0;
   assert(m_vertexRadius->totalSize() == m_vertexPosition->totalSize());
   int numVertices = std::min(m_vertexRadius->totalSize(),
                              m_vertexPosition->totalSize());
@@ -187,7 +191,7 @@ void Curve::setBarneyParameters(BNGeom geom, BNModel model, int slot)
                             in_vertex[i].z,
                             in_radius[i]);
          
-  BNData vertices = bnDataCreate(model,slot,BN_FLOAT4,
+  BNData vertices = bnDataCreate(context,slot,BN_FLOAT4,
                                  numVertices,vertex.data());
   bnSetData(geom, "vertices", vertices);
 
@@ -211,7 +215,7 @@ void Curve::setBarneyParameters(BNGeom geom, BNModel model, int slot)
 #endif
   
   BNData indices
-    = bnDataCreate(model,
+    = bnDataCreate(context,
                    slot,
                    BN_INT2,
                    index.size(),
@@ -219,18 +223,18 @@ void Curve::setBarneyParameters(BNGeom geom, BNModel model, int slot)
   bnSetData(geom, "indices", indices);
   
 #if 0
-  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
-  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
-  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
-  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
-  addAttribute(geom, model, slot, m_attributes[4], "primitive.color");
+  addAttribute(geom, context, slot, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, context, slot, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, context, slot, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, context, slot, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, context, slot, m_attributes[4], "primitive.color");
 #endif
   
-  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
-  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
-  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
-  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
-  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
+  addAttribute(geom, context, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, context, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, context, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, context, m_vertexAttributes[4], "vertex.color");
 }
 
 bool Sphere::isValid() const
@@ -337,8 +341,10 @@ bool Triangle::isValid() const
   return m_vertexPosition;
 }
 
-void Triangle::setBarneyParameters(BNGeom geom, BNModel model, int slot)
+void Triangle::setBarneyParameters(BNGeom geom, BNContext context// , int slot
+                                   )
 {
+  int slot = 0;
   int numVertices = m_vertexPosition->totalSize();
   int numIndices = m_index ? m_index->size() : (m_generatedIndices.size() / 3);
   const float3 *vertices = (const float3 *)m_vertexPosition->data();
@@ -346,29 +352,29 @@ void Triangle::setBarneyParameters(BNGeom geom, BNModel model, int slot)
                                 : (const int3 *)m_generatedIndices.data();
 
   BNData _vertices =
-      bnDataCreate(model, slot, BN_FLOAT3, numVertices, vertices);
+      bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertices);
   bnSetAndRelease(geom, "vertices", _vertices);
 
-  BNData _indices = bnDataCreate(model, slot, BN_INT3, numIndices, indices);
+  BNData _indices = bnDataCreate(context, slot, BN_INT3, numIndices, indices);
   bnSetAndRelease(geom, "indices", _indices);
 
   if (m_vertexNormal) {
     const float3 *normals = (const float3 *)m_vertexNormal->data();
-    BNData _normals = bnDataCreate(model, slot, BN_FLOAT3, numVertices, normals);
+    BNData _normals = bnDataCreate(context, slot, BN_FLOAT3, numVertices, normals);
     bnSetAndRelease(geom, "normals", _normals);
   }
 
-  addAttribute(geom, model, slot, m_attributes[0], "primitive.attribute0");
-  addAttribute(geom, model, slot, m_attributes[1], "primitive.attribute1");
-  addAttribute(geom, model, slot, m_attributes[2], "primitive.attribute2");
-  addAttribute(geom, model, slot, m_attributes[3], "primitive.attribute3");
-  addAttribute(geom, model, slot, m_attributes[4], "primitive.color");
+  addAttribute(geom, context, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, context, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, context, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, context, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, context, m_attributes[4], "primitive.color");
 
-  addAttribute(geom, model, slot, m_vertexAttributes[0], "vertex.attribute0");
-  addAttribute(geom, model, slot, m_vertexAttributes[1], "vertex.attribute1");
-  addAttribute(geom, model, slot, m_vertexAttributes[2], "vertex.attribute2");
-  addAttribute(geom, model, slot, m_vertexAttributes[3], "vertex.attribute3");
-  addAttribute(geom, model, slot, m_vertexAttributes[4], "vertex.color");
+  addAttribute(geom, context, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, context, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, context, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, context, m_vertexAttributes[4], "vertex.color");
 }
 
 const char *Triangle::bnSubtype() const

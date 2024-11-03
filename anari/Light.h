@@ -24,7 +24,8 @@ namespace barney_device {
     void markCommitted() override;
     virtual void commit() override;
 
-    BNLight getBarneyLight(BNModel model, int slot);
+    BNLight getBarneyLight(BNContext context// , int slot
+                           );
 
   protected:
     virtual const char *bnSubtype() const = 0;

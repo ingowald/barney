@@ -79,7 +79,7 @@ namespace barney {
     
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-    DD getDD(int devID) const;
+    DD getDD(const std::shared_ptr<Device> &device) const;
 
     void setVariables(OWLGeom geom);
     

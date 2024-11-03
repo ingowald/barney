@@ -23,6 +23,7 @@
 #include "barney/common/cuda-helper.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
+#include "barney/render/Renderer.h"
 
 namespace barney {
   using namespace owl::common;
@@ -31,7 +32,13 @@ namespace barney {
   struct FrameBuffer;
   struct GlobalModel;
 
-  struct Context;
+  namespace render {
+    struct HostMaterial;
+    struct SamplerRegistry;
+    struct MaterialRegistry;
+    struct DeviceMaterial;
+    
+  };
   
   struct Context// : public Object
   {
@@ -44,7 +51,10 @@ namespace barney {
     /*! create a frame buffer object suitable to this context */
     virtual FrameBuffer *createFB(int owningRank) = 0;
     GlobalModel *createModel();
+    Renderer *createRenderer();
 
+    std::shared_ptr<render::HostMaterial> getDefaultMaterial(int slot);
+    
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const 
     { return "<Context(abstract)>"; }
@@ -71,14 +81,17 @@ namespace barney {
     /*! increases (the app's) reference count of said object byb
         one */
     void addHostReference(Object::SP object);
+
+    DevGroup *getDevGroup();
+    render::World *getWorld(int slot);
     
-    Device::SP getDevice(int localID)
+    Device::SP getDevice(int contextRank)
     {
-      assert(localID >= 0);
-      assert(localID < devices.size());
-      assert(devices[localID]);
-      assert(devices[localID]->device);
-      return devices[localID]->device;
+      assert(contextRank >= 0);
+      assert(contextRank < devices.size());
+      assert(devices[contextRank]);
+      assert(devices[contextRank]->device);
+      return devices[contextRank]->device;
     }
     
     std::vector<DeviceContext::SP> devices;
@@ -116,18 +129,21 @@ namespace barney {
       devices and, where applicable, across all ranks */
     virtual int numRaysActiveGlobally() = 0;
 
-    void shadeRaysLocally(GlobalModel *model, FrameBuffer *fb, int generation);
+    void shadeRaysLocally(Renderer *renderer,
+                          GlobalModel *model,
+                          FrameBuffer *fb,
+                          int generation);
     void finalizeTiles(FrameBuffer *fb);
     
-    void renderTiles(GlobalModel *model,
+    void renderTiles(Renderer *renderer,
+                     GlobalModel *model,
                      const barney::Camera::DD &camera,
-                     FrameBuffer *fb,
-                     int pathsPerPixel);
+                     FrameBuffer *fb);
     
-    virtual void render(GlobalModel *model,
+    virtual void render(Renderer    *renderer,
+                        GlobalModel *model,
                         const barney::Camera::DD &camera, 
-                        FrameBuffer *fb,
-                        int pathsPerPixel) = 0;
+                        FrameBuffer *fb) = 0;
 
     std::mutex mutex;
     std::map<Object::SP,int> hostOwnedHandles;
@@ -150,16 +166,36 @@ namespace barney {
         Context::devices */
       std::vector<int>     gpuIDs;
       barney::DevGroup::SP devGroup = 0;
+      std::shared_ptr<render::HostMaterial> defaultMaterial = 0;
+      std::shared_ptr<render::SamplerRegistry>  samplerRegistry = 0;
+      std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
+      // iw: this is more like "globals", this name doesn't fit
+      // render::World        world;
     };
+    PerSlot *getSlot(int slot);
     std::vector<PerSlot> perSlot;
     
     const bool isActiveWorker;
 
+    /*! return the single 'global' own context that spans all gpus, no
+        matter how many model slots those are grouped in; in theory
+        this should be used for very, very little - almost all data
+        should live in a model slots (which has its own context), only
+        truly global data (such as renderer background image) should
+        ever be global */
+    OWLContext getOWL(int slot);// { return globalContextAcrossAllGPUs; }
+    // OWLContext getGlobalOWL() const;
+    const std::vector<Device::SP> &getDevices(int slot) const;
+    DevGroup *getDevGroup(int slot);
+    int contextSize() const;
+
+  private:
     /* as the name implies, a single, global owl context across all
        GPUs; this is merely there to enable peer access across all
        GPUs; for actual rendering data each data group will have to
        have its own context */
     OWLContext globalContextAcrossAllGPUs = 0 ;
+
   };
   
 

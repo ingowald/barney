@@ -18,21 +18,51 @@
 #include "barney/Context.h"
 #include "barney/ModelSlot.h"
 #include "barney/DeviceGroup.h"
+#include <barney.h>
 
 namespace barney {
 
-  Texture::Texture(ModelSlot *owner,
-                   BNTexelFormat texelFormat,
+  // Texture::Texture(ModelSlot *owner,
+  //                  BNDataType texelFormat,
+  //                  vec2i size,
+  //                  const void *texels,
+  //                  BNTextureFilterMode  filterMode,
+  //                  BNTextureAddressMode addressMode,
+  //                  BNTextureColorSpace  colorSpace)
+  //   : Object(owner->context)
+  // {
+  //   assert(OWL_TEXEL_FORMAT_RGBA8   == (int)BN_TEXEL_FORMAT_RGBA8);
+  //   assert(OWL_TEXEL_FORMAT_RGBA32F == (int)BN_TEXEL_FORMAT_RGBA32F);
+    
+  //   assert(OWL_TEXTURE_NEAREST == (int)BN_TEXTURE_NEAREST);
+  //   assert(OWL_TEXTURE_LINEAR  == (int)BN_TEXTURE_LINEAR);
+    
+  //   assert(OWL_TEXTURE_WRAP   == (int)BN_TEXTURE_WRAP);
+  //   assert(OWL_TEXTURE_CLAMP  == (int)BN_TEXTURE_CLAMP);
+  //   assert(OWL_TEXTURE_BORDER == (int)BN_TEXTURE_BORDER);
+  //   assert(OWL_TEXTURE_MIRROR == (int)BN_TEXTURE_MIRROR);
+
+  //   owlTexture 
+  //     = owlTexture2DCreate(owner->getOWL(),
+  //                          (OWLDataType)texelFormat,
+  //                          size.x,size.y,
+  //                          texels,
+  //                          (OWLTextureFilterMode)filterMode,
+  //                          (OWLTextureAddressMode)addressMode,
+  //                          // (OWLTextureColorSpace)colorSpace
+  //                          OWL_COLOR_SPACE_LINEAR
+  //                          );
+  // }
+
+  Texture::Texture(Context *context, int slot,
+                   BNDataType texelFormat,
                    vec2i size,
                    const void *texels,
                    BNTextureFilterMode  filterMode,
                    BNTextureAddressMode addressMode,
                    BNTextureColorSpace  colorSpace)
-    : Object(owner->context)
+    : SlottedObject(context,slot)
   {
-    assert(OWL_TEXEL_FORMAT_RGBA8   == (int)BN_TEXEL_FORMAT_RGBA8);
-    assert(OWL_TEXEL_FORMAT_RGBA32F == (int)BN_TEXEL_FORMAT_RGBA32F);
-    
     assert(OWL_TEXTURE_NEAREST == (int)BN_TEXTURE_NEAREST);
     assert(OWL_TEXTURE_LINEAR  == (int)BN_TEXTURE_LINEAR);
     
@@ -41,9 +71,27 @@ namespace barney {
     assert(OWL_TEXTURE_BORDER == (int)BN_TEXTURE_BORDER);
     assert(OWL_TEXTURE_MIRROR == (int)BN_TEXTURE_MIRROR);
 
+    OWLTexelFormat owlTexelFormat;
+    switch(texelFormat) {
+    case BN_FLOAT:
+      owlTexelFormat = OWL_TEXEL_FORMAT_R32F;
+      break;
+    case BN_UFIXED8:
+      owlTexelFormat = OWL_TEXEL_FORMAT_R8;
+      break;
+    case BN_FLOAT4_RGBA:
+      owlTexelFormat = OWL_TEXEL_FORMAT_RGBA32F;
+      break;
+    case BN_UFIXED8_RGBA:
+      owlTexelFormat = OWL_TEXEL_FORMAT_RGBA8;
+      break;
+    default: throw std::runtime_error("un-recognized texel format "
+                                      +std::to_string((int)texelFormat));
+    }
+    
     owlTexture 
-      = owlTexture2DCreate(owner->getOWL(),
-                           (OWLTexelFormat)texelFormat,
+      = owlTexture2DCreate(context->getOWL(slot),
+                           owlTexelFormat,
                            size.x,size.y,
                            texels,
                            (OWLTextureFilterMode)filterMode,
@@ -52,44 +100,44 @@ namespace barney {
                            OWL_COLOR_SPACE_LINEAR
                            );
   }
-
-  Texture3D::Texture3D(ModelSlot *owner,
-                       BNTexelFormat texelFormat,
+  
+  Texture3D::Texture3D(Context *context, int slot,
+                       BNDataType texelFormat,
                        vec3i size,
                        const void *texels,
                        BNTextureFilterMode  filterMode,
                        BNTextureAddressMode addressMode)
-    : SlottedObject(owner)
+    : SlottedObject(context,slot)
   {
     if (!tex3Ds.empty()) return;
 
-    auto devGroup = owner->devGroup.get();
-    tex3Ds.resize(devGroup->size());
+    auto &devices = getDevices();
+    tex3Ds.resize(context->contextSize());
 
     cudaChannelFormatDesc desc;
     cudaTextureReadMode   readMode;
     size_t sizeOfScalar;
     int numScalarsPerTexel;
     switch (texelFormat) {
-    case BN_TEXEL_FORMAT_R32F:
+    case BN_FLOAT:
       desc         = cudaCreateChannelDesc<float>();
       sizeOfScalar = 4;
       readMode     = cudaReadModeElementType;
       numScalarsPerTexel = 1;
       break;
-    case BN_TEXEL_FORMAT_R8:
+    case BN_UFIXED8:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 1;
       readMode     = cudaReadModeNormalizedFloat;
       numScalarsPerTexel = 1;
       break;
-    case BN_TEXEL_FORMAT_RGBA8:
+    case BN_UFIXED8_RGBA:
       desc         = cudaCreateChannelDesc<uchar4>();
       sizeOfScalar = 1;
       readMode     = cudaReadModeNormalizedFloat;
       numScalarsPerTexel = 4;
       break;
-    case BN_TEXEL_FORMAT_R16:
+    case BN_UFIXED16:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 2;
       readMode     = cudaReadModeNormalizedFloat;
@@ -98,9 +146,10 @@ namespace barney {
     default:
       throw std::runtime_error("Texture3D with non-implemented scalar type ...");
     }
-    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
-      auto dev = devGroup->devices[lDevID];
-      auto &tex = tex3Ds[lDevID];
+    // for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+      // auto dev = devGroup->devices[lDevID];
+    for (auto dev : devices) {
+      auto &tex = getDD(dev);//tex3Ds[dev->contextRank];
       SetActiveGPU forDuration(dev);
       // Copy voxels to cuda array
       cudaExtent extent{
@@ -151,44 +200,49 @@ namespace barney {
     }
   }
 
+  Texture3D::DD &Texture3D::getDD(const std::shared_ptr<Device> &device) 
+  {
+    return tex3Ds[device->contextRank];
+  }
+  
 
-  TextureData::TextureData(ModelSlot *owner,
-                           BNTexelFormat texelFormat,
+  TextureData::TextureData(Context *context, int slot,
+                           BNDataType texelFormat,
                            vec3i size,
                            const void *texels)
-    : SlottedObject(owner),
+    : SlottedObject(context,slot),
       dims(size),
       texelFormat(texelFormat)
   {
     if (!onDev.empty()) return;
 
-    auto devGroup = owner->devGroup.get();
-    onDev.resize(devGroup->size());
+    auto &devices = getDevices();
+    onDev.resize(context->contextSize());
 
     cudaChannelFormatDesc desc;
     // cudaTextureReadMode   readMode;
     size_t sizeOfScalar;
     int    numScalarsPerTexel;
     switch (texelFormat) {
-    case BN_TEXEL_FORMAT_R32F:
+    case BN_FLOAT:
       desc         = cudaCreateChannelDesc<float>();
       sizeOfScalar = 4;
       // readMode     = cudaReadModeElementType;
       numScalarsPerTexel = 1;
       break;
-    case BN_TEXEL_FORMAT_R8:
+    case BN_UFIXED8:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 1;
       // readMode     = cudaReadModeNormalizedFloat;
       numScalarsPerTexel = 1;
       break;
-    case BN_TEXEL_FORMAT_RGBA8:
+    case BN_UFIXED8_RGBA:
       desc         = cudaCreateChannelDesc<uchar4>();
       sizeOfScalar = 1;
       // readMode     = cudaReadModeNormalizedFloat;
       numScalarsPerTexel = 4;
       break;
-    case BN_TEXEL_FORMAT_R16:
+    case BN_UFIXED16:
       desc         = cudaCreateChannelDesc<uint16_t>();
       sizeOfScalar = 2;
       // readMode     = cudaReadModeNormalizedFloat;
@@ -198,9 +252,8 @@ namespace barney {
       throw std::runtime_error("TextureData with non-implemented scalar type ...");
     }
 
-    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
-      auto dev = devGroup->devices[lDevID];
-      auto &dd = onDev[lDevID];
+    for (auto dev : devices) {
+      auto &dd = getDD(dev);//onDev[dev->localRank];
       SetActiveGPU forDuration(dev);
       BARNEY_CUDA_CALL(MallocArray(&dd.array,&desc,size.x,size.y,0));
       BARNEY_CUDA_CALL(Memcpy2DToArray(dd.array,0,0,
@@ -212,17 +265,29 @@ namespace barney {
     }
   }
 
+  TextureData::DD &TextureData::getDD(const std::shared_ptr<Device> &device)
+  {
+    return onDev[device->contextRank];
+  }
+  
+
   TextureData::~TextureData()
   {
-    auto devGroup = owner->devGroup.get();
-    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
-      auto dev = devGroup->devices[lDevID];
-      auto &dd = onDev[lDevID];
+    // auto devGroup = owner->devGroup.get();
+    // for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+    for (auto dev : getDevices()) {
+      auto &dd = getDD(dev);//onDev[dev->localRank];
       SetActiveGPU forDuration(dev);
       if (dd.array)
         BARNEY_CUDA_CALL_NOTHROW(FreeArray(dd.array));
       dd.array = 0;
     }
   }
+
+  cudaTextureObject_t Texture::getTextureObject(const Device *device) const
+  {
+    return owlTextureGetObject(owlTexture,device->owlID);
+  }
+    
   
 }

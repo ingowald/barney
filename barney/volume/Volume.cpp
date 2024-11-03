@@ -36,12 +36,11 @@ namespace barney {
   inline ScalarField *assertNotNull(ScalarField *s)
   { assert(s); return s; }
   
-  Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
+  Volume::Volume(ScalarField::SP sf)
     : Object(assertNotNull(sf)->context),
-      devGroup(devGroup),
+      devGroup(sf->getDevGroup()),
       sf(sf),
-      xf(devGroup)
+      xf(sf->getDevGroup())
   {
     accel = sf->createAccel(this);
   }
@@ -54,7 +53,7 @@ namespace barney {
   {
     assert(accel);
     accel->build(full_rebuild);
-    devGroup->sbtDirty = true;
+    sf->getDevGroup()->sbtDirty = true;
   }
 
 }

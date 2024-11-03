@@ -35,9 +35,9 @@ namespace barney {
     std::string toString() const override
     { return "Model{}"; }
 
-    void render(Camera *camera,
-                FrameBuffer *fb,
-                int pathsPerPixel);
+    void render(Renderer    *renderer,
+                Camera      *camera,
+                FrameBuffer *fb);
 
     ModelSlot *getSlot(int whichSlot)
     {

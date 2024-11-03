@@ -250,10 +250,11 @@ namespace barney {
     
     const vec3i bs = 4;
     const vec3i nb = divRoundUp(dims,bs);
-    for (auto dev : devGroup->devices) {
+    for (auto dev : getDevices()) {
+      assert(dev); assert(dev.get());
       SetActiveGPU forDuration(dev);
-      auto d_mesh = getDD(dev->owlID);
-      auto d_grid = grid.getDD(dev->owlID);
+      auto d_mesh = getDD(dev);
+      auto d_grid = grid.getDD(dev);
       rasterElements
         <<<divRoundUp(int(elements.size()),128),128>>>
         (d_grid,d_mesh);
@@ -283,27 +284,28 @@ namespace barney {
     d_primRanges is non-null - the primitmives ranges. d_primBounds
     and d_primRanges (if non-null) must be pre-allocated and
     writeaable on specified device */
-  void UMeshField::computeElementBBs(int deviceID,
+  void UMeshField::computeElementBBs(const Device::SP &device,
                                      box3f *d_primBounds,
                                      range1f *d_primRanges)
   {
-    SetActiveGPU forDuration(devGroup->devices[deviceID]);
+    assert(device); assert(device.get());
+    SetActiveGPU forDuration(device);
     int bs = 1024;
     int nb = divRoundUp(int(elements.size()),bs);
     g_computeElementBoundingBoxes
-      <<<nb,bs>>>(d_primBounds,d_primRanges,getDD(deviceID));
+      <<<nb,bs>>>(d_primBounds,d_primRanges,getDD(device));
     BARNEY_CUDA_SYNC_CHECK();
   }
 
-  UMeshField::UMeshField(ModelSlot *owner,
+  UMeshField::UMeshField(Context *context, int slot,
                          std::vector<vec4f>   &_vertices,
                          std::vector<int>     &_indices,
                          std::vector<Element> &_elements,
                          const box3f &domain)
-  : ScalarField(owner,domain),
-    vertices(std::move(_vertices)),
-    indices(std::move(_indices)),
-    elements(std::move(_elements))
+    : ScalarField(context,slot,domain),
+      vertices(std::move(_vertices)),
+      indices(std::move(_indices)),
+      elements(std::move(_elements))
   {
     for (auto vtx : vertices) worldBounds.extend(getPos(vtx));
 
@@ -330,10 +332,14 @@ namespace barney {
                       elements.data());
   }
 
-  UMeshField::DD UMeshField::getDD(int devID)
+  UMeshField::DD UMeshField::getDD(const Device::SP &device)
   {
+    assert(device.get());
     UMeshField::DD dd;
-
+    int devID = device->owlID;
+    assert(verticesBuffer);
+    assert(indicesBuffer);
+    assert(elementsBuffer);
     dd.vertices
       = (const float4  *)owlBufferGetPointer(verticesBuffer,devID);
     dd.indices
@@ -349,7 +355,7 @@ namespace barney {
   }
   
 
-  ScalarField::SP UMeshField::create(ModelSlot *owner,
+  ScalarField::SP UMeshField::create(Context *context, int slot,
                                      const vec4f   *_vertices, int numVertices,
                                      const int     *_indices,  int numIndices,
                                      const int     *elementOffsets,
@@ -393,7 +399,7 @@ namespace barney {
     std::vector<int> indices(numIndices);
     std::copy(_indices,_indices+numIndices,indices.data());
     ScalarField::SP sf
-      = std::make_shared<UMeshField>(owner,
+      = std::make_shared<UMeshField>(context,slot,
                                      vertices,
                                      indices,
                                      elements,

@@ -39,7 +39,7 @@ namespace barney {
         PossiblyMappedParameter::DD ior;
         PossiblyMappedParameter::DD emission;
       };
-      AnariPBR(ModelSlot *owner) : HostMaterial(owner) {}
+      AnariPBR(Context *context, int slot) : HostMaterial(context,slot) {}
       virtual ~AnariPBR() = default;
       
       std::string toString() const override { return "AnariPBR"; }

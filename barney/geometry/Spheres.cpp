@@ -48,16 +48,16 @@ namespace barney {
     return gt;
   }
   
-  Spheres::Spheres(ModelSlot *owner)
-    : Geometry(owner)
+  Spheres::Spheres(Context *context, int slot)
+    : Geometry(context,slot)
   {}
 
   void Spheres::commit()
   {
     if (userGeoms.empty()) {
-      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Spheres",Spheres::createGeomType);
-      OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
+      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
       userGeoms.push_back(geom);
     }
     OWLGeom geom = userGeoms[0];

@@ -197,7 +197,7 @@ namespace barney {
     BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,mesh->elements.size()*sizeof(box3f)));
     BARNEY_CUDA_CALL(MallocManaged(&d_primRanges,mesh->elements.size()*sizeof(range1f)));
     
-    auto d_mesh = mesh->getDD(0);
+    auto d_mesh = mesh->getDD(getDevices()[0]);
     mesh->computeElementBBs(0,d_primBounds,d_primRanges);
     
     cuBQL::BuildConfig buildConfig;
@@ -336,13 +336,12 @@ namespace barney {
     // owlGeomSetBuffer(geom,"xf.values",volume->xf.valuesBuffer);
 
     
-    for (int devID = 0;devID<devGroup->devices.size(); devID++) {
-      auto dev = devGroup->devices[devID];
+    for (auto dev : getDevices()) {
       SetActiveGPU forDuration(dev);
       recomputeMajorants<<<divRoundUp(int(4*nodes.size()),1024),1024>>>
-        ((AWTNode*)owlBufferGetPointer(nodesBuffer,devID),
+        ((AWTNode*)owlBufferGetPointer(nodesBuffer,dev->owlID),
          (int)nodes.size(),
-         volume->xf.getDD(devID));
+         volume->xf.getDD(dev));
     }
     std::cout << "refitting ... umesh awt/object space geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);

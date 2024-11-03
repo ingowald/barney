@@ -20,26 +20,23 @@
 #include "barney/render/RayQueue.h"
 #include "barney/Camera.h"
 #include "barney/DeviceGroup.h"
+#include "barney/render/MaterialRegistry.h"
+#include "barney/render/SamplerRegistry.h"
 
 namespace barney {
 
   struct TiledFB;
   struct GlobalModel;
-  namespace render {
-    struct World;
-  };
+  struct Renderer;
   
   struct DeviceContext
   {
     typedef std::shared_ptr<DeviceContext> SP;
     
-    /*! this is the device data for the launch params */
-    // struct DD {
-    // };
-    
     DeviceContext(Device::SP device);
 
-    void shadeRays_launch(GlobalModel *model,
+    void shadeRays_launch(Renderer *renderer,
+                          GlobalModel *model,
                           TiledFB *fb,
                           int generation);
     void shadeRays_sync();
@@ -65,11 +62,6 @@ namespace barney {
     }
 
     render::RayQueue rays;
-    /*! each barneycontext gets its own LP: even though that lp's
-        context is (possibly) shared across multiple device contextes
-        (and thus, across multiple barney contexts) well still have one
-        LP for each device/barney context. thus, we'll have a separate
-        stream for each device/barney context */
     Device::SP device;
   };
     

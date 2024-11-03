@@ -31,7 +31,6 @@ namespace barney {
     { vec3f v = get(); return make_float4(v.x,v.y,v.z,0.f); }
     inline __device__ float3 get3f() const
     { vec3f v = get(); return make_float3(v.x,v.y,v.z); }
-#if 1
     inline __device__ void set(vec3f v) {
       if (v == vec3f(0.f)) { x = y = z = 0; return; }
       v = normalize(v);
@@ -50,24 +49,7 @@ namespace barney {
       return (i<0) ? (i-.5f)*(1.f/128.f) : (i+.5f)*(1.f/128.f);
     }
     int8_t x,y,z;
-#else
-    inline __device__ void set(vec3f v) { x = v.x; y = v.y; z = v.z; }
-    inline __device__ vec3f get() const { return vec3f(x,y,z); }
-    half x,y,z;
-#endif
   };
-  
-  void float4ToBGBA8(uint32_t  *finalFB,
-# if DENOISE_OIDN  
-                     float3    *inputBeforeDenoising,
-                     float     *alphas,
-                     float3    *float3s,
-# else
-                     float4    *inputBeforeDenoising,
-                     float4    *float4s,
-# endif
-                     float      denoisedWeight,
-                     vec2i      numPixels);
   
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
@@ -77,7 +59,7 @@ namespace barney {
     float  depth[pixelsPerTile];
     vec3f  normal[pixelsPerTile];
   };
-  struct FinalTile {
+  struct CompressedTile {
     uint32_t         rgba[pixelsPerTile];
     half             scale[pixelsPerTile];
     CompressedNormal normal[pixelsPerTile];
@@ -97,35 +79,6 @@ namespace barney {
     void resize(vec2i newSize);
     void free();
 
-    /*! write this tiledFB's tiles into given "final" frame buffer
-        (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
-        pixels) */
-    static
-    void writeFinalPixels(
-#if DENOISE
-# if DENOISE_OIDN
-                          float3    *finalFB,
-                          float     *finalAlpha,
-# else
-                          float4    *finalFB,
-# endif
-#else
-                          uint32_t  *finalFB,
-#endif
-                          float     *finalDepth,
-#if DENOISE
-#  if DENOISE_OIDN
-                          float3    *finalNormal,
-#  else
-                          float4    *finalNormal,
-#  endif
-#endif
-                          vec2i      numPixels,
-                          FinalTile *finalTiles,
-                          TileDesc  *tileDescs,
-                          int        numTiles,
-                          bool       showCrosshairs);
-    
     void finalizeTiles();
 
     /*! number of (valid) pixels */
@@ -138,7 +91,7 @@ namespace barney {
     /*! lower-left pixel coordinate for given tile ... */
     TileDesc  *tileDescs  = 0;
     AccumTile *accumTiles = 0;
-    FinalTile *finalTiles = 0;
+    CompressedTile *compressedTiles = 0;
     FrameBuffer *const owner;
     Device::SP  const device;
   };

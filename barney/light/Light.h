@@ -45,7 +45,7 @@ namespace barney {
     };
   
     
-    Light(ModelSlot *owner) : SlottedObject(owner) {}
+    Light(Context *context, int slot);
 
     std::string toString() const override { return "Light<>"; }
 
@@ -56,7 +56,9 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
     
-    static Light::SP create(ModelSlot *owner, const std::string &name);
+    static Light::SP create(Context *context,
+                            int slot,
+                            const std::string &name);
 
     vec3f color = vec3f(1.f);
   };

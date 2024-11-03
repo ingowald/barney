@@ -23,15 +23,17 @@ namespace barney {
   const std::string to_string(BNDataType type);
   OWLDataType owlTypeFor(BNDataType type);
   
-  struct Data : public Object {
+  struct Data : public SlottedObject {
     typedef std::shared_ptr<Data> SP;
 
-    Data(ModelSlot *owner,
+    Data(Context *context,
+         int slot,
          BNDataType type,
          size_t numItems);
     virtual ~Data() = default;
     
-    static Data::SP create(ModelSlot *owner,
+    static Data::SP create(Context *context,
+                           int slot,
                            BNDataType type,
                            size_t numItems,
                            const void *items);
@@ -40,12 +42,21 @@ namespace barney {
     size_t     count = 0;
   };
 
+  /*! a data array for 'plain-old-data' type data (such as int, float,
+      vec3f, etc) that does not need reference-counting for object
+      lifetime handling; class-type data (any BNWhatEver) needs to be
+      in ObecjtsRefData which does the refcounting */
   struct PODData : public Data {
     typedef std::shared_ptr<PODData> SP;
-    PODData(ModelSlot *owner,
+    
+    /*! constructor for a 'global' data array that lives on the
+        context itself, and spans all model slots */
+    PODData(Context *context,
+            int slot,
             BNDataType type,
             size_t numItems,
             const void *items);
+    
     virtual ~PODData();
     
     OWLBuffer  owl   = 0;
@@ -56,7 +67,8 @@ namespace barney {
       put into this data array will remain properly refcoutned. */
   struct ObjectRefsData : public Data {
     typedef std::shared_ptr<ObjectRefsData> SP;
-    ObjectRefsData(ModelSlot *owner,
+    ObjectRefsData(Context *context,
+                   int slot,
                    BNDataType type,
                    size_t numItems,
                    const void *items);

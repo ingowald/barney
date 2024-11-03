@@ -21,8 +21,8 @@ namespace barney {
 
   extern "C" char Capsules_ptx[];
 
-  Capsules::Capsules(ModelSlot *owner)
-    : Geometry(owner)
+  Capsules::Capsules(Context *context, int slot)
+    : Geometry(context,slot)
   {}
 
   OWLGeomType Capsules::createGeomType(DevGroup *devGroup)
@@ -53,9 +53,9 @@ namespace barney {
   void Capsules::commit()
   {
     if (userGeoms.empty()) {
-      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Capsules",Capsules::createGeomType);
-      OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
+      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
       userGeoms.push_back(geom);
     }
     OWLGeom geom = userGeoms[0];

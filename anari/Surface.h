@@ -20,7 +20,8 @@ struct Surface : public Object
   const Geometry *geometry() const;
   const Material *material() const;
 
-  BNGeom getBarneyGeom(BNModel model, int slot);
+  BNGeom getBarneyGeom(BNContext context// , int slot
+                       );
 
   bool isValid() const override;
 

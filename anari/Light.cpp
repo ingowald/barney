@@ -34,7 +34,7 @@ namespace barney_device {
 
   void Light::markCommitted()
   {
-    // NOTE: shouldn't need to override this to cause a BNModel rebuild...
+    // NOTE: shouldn't need to override this to cause a BNContext rebuild...
     deviceState()->markSceneChanged();
     Object::markCommitted();
   }
@@ -44,14 +44,17 @@ namespace barney_device {
     m_color = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
   }
 
-  BNLight Light::getBarneyLight(BNModel model, int slot)
+  BNLight Light::getBarneyLight(BNContext context// , int slot
+                                )
   {
-    if (!isModelTracked(model, slot)) {
-      cleanup();
-      trackModel(model, slot);
-      m_bnLight = bnLightCreate(model, slot, bnSubtype());
+    // if (!isModelTracked(model, slot)) {
+    //   cleanup();
+    //   trackModel(model, slot);
+    m_bnLight = bnLightCreate(getContext(),0,
+                              // model, slot, 
+                              bnSubtype());
       setBarneyParameters();
-    }
+    // }
 
     return m_bnLight;
   }
@@ -154,8 +157,8 @@ namespace barney_device {
   {
     if (!m_bnLight)
       return;
-    BNModel model = trackedModel();
-    int slot = trackedSlot();
+    // BNModel model = trackedModel();
+    // int slot = trackedSlot();
 
     bnSet3fc(m_bnLight, "direction", (const float3 &)m_direction);
     bnSet3fc(m_bnLight, "up", (const float3 &)m_up);
@@ -171,7 +174,8 @@ namespace barney_device {
       (math::float3&)asFloat4[i] = radianceValues[i];
 
     BNTexture texture
-      = bnTexture2DCreate(model,slot,BN_TEXEL_FORMAT_RGBA32F,
+      = bnTexture2DCreate(getContext(),0,// model,slot,
+                          BN_FLOAT4_RGBA,
                           width,height,asFloat4.data());
                                           
     bnSetObject(m_bnLight, "texture", texture);

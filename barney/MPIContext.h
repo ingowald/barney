@@ -33,10 +33,10 @@ namespace barney {
     /*! create a frame buffer object suitable to this context */
     FrameBuffer *createFB(int owningRank) override;
 
-    void render(GlobalModel *model,
+    void render(Renderer    *renderer,
+                GlobalModel *model,
                 const Camera::DD &camera,
-                FrameBuffer *fb,
-                int pathsPerPixel) override;
+                FrameBuffer *fb) override;
 
     /*! gives, for a given worker rank, the rank that this same rank
         has in the parent 'world' communicator */

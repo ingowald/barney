@@ -18,6 +18,8 @@
 #include "barney/DeviceGroup.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/GlobalModel.h"
+#include "barney/render/SamplerRegistry.h"
+#include "barney/render/MaterialRegistry.h"
 
 namespace barney {
 
@@ -99,12 +101,15 @@ namespace barney {
     return numActive;
   }
 
-  void Context::shadeRaysLocally(GlobalModel *model, FrameBuffer *fb, int generation)
+  void Context::shadeRaysLocally(Renderer *renderer,
+                                 GlobalModel *model,
+                                 FrameBuffer *fb,
+                                 int generation)
   {
     // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
       auto dev = devices[localID];
-      dev->shadeRays_launch(model,fb->perDev[localID].get(),generation);
+      dev->shadeRays_launch(renderer,model,fb->perDev[localID].get(),generation);
     }
     // BARNEY_CUDA_SYNC_CHECK();
     for (int localID=0; localID<devices.size(); localID++) {
@@ -153,10 +158,10 @@ namespace barney {
       devices[localID]->launch_sync();
   }
   
-  void Context::renderTiles(GlobalModel *model,
+  void Context::renderTiles(Renderer *renderer,
+                            GlobalModel *model,
                             const Camera::DD &camera,
-                            FrameBuffer *fb,
-                            int pathsPerPixel)
+                            FrameBuffer *fb)
   {
     if (!isActiveWorker)
       return;
@@ -165,7 +170,7 @@ namespace barney {
       pd.devGroup->update();
 
     // iw - todo: add wave-front-merging here.
-    for (int p=0;p<pathsPerPixel;p++) {
+    for (int p=0;p<renderer->pathsPerPixel;p++) {
 #if 0
       std::cout << "====================== resetting accumid" << std::endl;
       fb->accumID = 0;
@@ -179,7 +184,7 @@ namespace barney {
         // do we need this here?
         for (auto dev : devices) dev->launch_sync();
 
-        shadeRaysLocally(model, fb, generation);
+        shadeRaysLocally(renderer, model, fb, generation);
         // no sync required here, shadeRays syncs itself.
         
         const int numActiveGlobally = numRaysActiveGlobally();
@@ -226,23 +231,38 @@ namespace barney {
     std::vector<std::vector<int>> gpuInSlot(numSlots);
     perSlot.resize(numSlots);
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
+      std::vector<int> contextRanks;
       auto &dg = perSlot[lmsIdx];
       dg.modelRankInThisSlot = dataGroupIDs[lmsIdx];
-      for (int j=0;j<gpusPerSlot;j++)
-        dg.gpuIDs.push_back(gpuIDs[lmsIdx*gpusPerSlot+j]);
+      for (int j=0;j<gpusPerSlot;j++) {
+        int localRank = lmsIdx*gpusPerSlot+j;
+        contextRanks.push_back(localRank);
+        dg.gpuIDs.push_back(gpuIDs[localRank]);
+      }
       dg.devGroup = std::make_shared
         <DevGroup>(lmsIdx,
+                   contextRanks,numSlots*gpusPerSlot,
                    dg.gpuIDs,
                    globalIndex*numSlots+lmsIdx,
                    globalIndexStep*numSlots);
       for (auto dev : dg.devGroup->devices)
         devices.push_back(std::make_shared<DeviceContext>(dev));
+      
+      dg.materialRegistry
+        = std::make_shared<render::MaterialRegistry>(dg.devGroup);
+      dg.samplerRegistry
+        = std::make_shared<render::SamplerRegistry>(dg.devGroup);
     }
   }
 
   GlobalModel *Context::createModel()
   {
     return initReference(GlobalModel::create(this));
+  }
+
+  Renderer *Context::createRenderer()
+  {
+    return initReference(Renderer::create(this));
   }
 
   void Context::ensureRayQueuesLargeEnoughFor(FrameBuffer *fb)
@@ -258,8 +278,41 @@ namespace barney {
       dev->rays.reserve(upperBoundOnNumRays);
     }
   }
+
+  int Context::contextSize() const
+  {
+    return devices.size();
+  }
   
-  /*! helper function to print a warning when app tries to create an
+  
+  std::shared_ptr<render::HostMaterial> Context::getDefaultMaterial(int slotID)
+  {
+    auto slot = getSlot(slotID);
+    if (!slot->defaultMaterial)
+      slot->defaultMaterial = std::make_shared<render::AnariMatte>(this,slotID);
+    return slot->defaultMaterial;
+  }
+
+  Context::PerSlot *Context::getSlot(int slot) 
+  {
+    if (slot < 0 || slot >= perSlot.size())
+      throw std::runtime_error("tried to query an invalid slot!");
+    return &perSlot[slot];
+  }
+
+  OWLContext Context::getOWL(int slot) 
+  {
+    return getDevGroup(slot)->owl;
+  }
+
+  DevGroup *Context::getDevGroup(int slot)
+  {
+    DevGroup *dg = getSlot(slot)->devGroup.get();
+    assert(dg);
+    return dg;
+  }
+  
+  /*! helper function to print a warning when app tries to create anari
     object of certain kind and type that barney does not support */
   void Context::warn_unsupported_object(const std::string &kind,
                                         const std::string &type)

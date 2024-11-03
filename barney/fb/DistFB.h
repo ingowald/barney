@@ -33,17 +33,17 @@ namespace barney {
     static SP create(MPIContext *context, int owningRank)
     { return std::make_shared<DistFB>(context,owningRank); }
     
-    void resize(vec2i size, uint32_t *hostFB, float *hostDepth) override;
+    void resize(vec2i size, uint32_t channels) override;
 
-    void ownerGatherFinalTiles() override;
+    void ownerGatherCompressedTiles() override;
     
     struct {
       /*! list of *all* ranks' tileOffset, gathered (only at master) */
-      FinalTile       *finalTiles = 0;
-      TileDesc        *tileDescs = 0;
+      // CompressedTile       *compressedTiles = 0;
+      // TileDesc        *tileDescs = 0;
       std::vector<int> numTilesOnGPU;
       std::vector<int> firstTileOnGPU;
-      int numActiveTiles;
+      // int numActiveTiles;
       int numGPUs;
     } ownerGather;
     // (world)rank that owns this frame buffer

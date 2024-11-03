@@ -23,14 +23,13 @@ namespace barney {
   }
 
   void LocalFB::resize(vec2i size,
-                       uint32_t *hostFB,
-                       float    *hostDepth)
+                       uint32_t channels)
   {
-    FrameBuffer::resize(size,hostFB,hostDepth);
-    if (rank0gather.finalTiles)
-      BARNEY_CUDA_CALL(Free(rank0gather.finalTiles));
-    if (rank0gather.tileDescs)
-      BARNEY_CUDA_CALL(Free(rank0gather.tileDescs));
+    FrameBuffer::resize(size,channels);
+    if (gatheredTilesOnOwner.compressedTiles)
+      BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.compressedTiles));
+    if (gatheredTilesOnOwner.tileDescs)
+      BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.tileDescs));
 
     // do NOT set active device - it's whatever the app used!
     // SetActiveDevice forDuration(perDev[0]->device);
@@ -38,39 +37,40 @@ namespace barney {
     for (auto dev : perDev)
       sumTiles += dev->numActiveTiles;
 
-    rank0gather.numActiveTiles = sumTiles;
-    BARNEY_CUDA_CALL(Malloc(&rank0gather.finalTiles,
-                            sumTiles*sizeof(*rank0gather.finalTiles)));
-    BARNEY_CUDA_CALL(Malloc(&rank0gather.tileDescs,
-                            sumTiles*sizeof(*rank0gather.tileDescs)));
+    gatheredTilesOnOwner.numActiveTiles = sumTiles;
+    BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.compressedTiles,
+                            sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles)));
+    BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.tileDescs,
+                            sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs)));
     sumTiles = 0;
     for (auto dev : perDev) {
-      BARNEY_CUDA_CALL(Memcpy(rank0gather.tileDescs+sumTiles,
+      BARNEY_CUDA_CALL(Memcpy(gatheredTilesOnOwner.tileDescs+sumTiles,
                               dev->tileDescs,
-                              dev->numActiveTiles*sizeof(*rank0gather.tileDescs),
+                              dev->numActiveTiles*sizeof(*gatheredTilesOnOwner.tileDescs),
                               cudaMemcpyDefault));
       sumTiles += dev->numActiveTiles;
     }
   }
   
-  void LocalFB::ownerGatherFinalTiles()
+  void LocalFB::ownerGatherCompressedTiles()
   {
     // do NOT set active device - it's whatever the app used!
     // SetActiveDevice forDuration(perDev[0]->device);
     int sumTiles = 0;
     for (auto dev : perDev) {
-      BARNEY_CUDA_CALL(Memcpy(rank0gather.finalTiles+sumTiles,
-                              dev->finalTiles,
-                              dev->numActiveTiles*sizeof(*rank0gather.finalTiles),
+      BARNEY_CUDA_CALL(Memcpy(gatheredTilesOnOwner.compressedTiles+sumTiles,
+                              dev->compressedTiles,
+                              dev->numActiveTiles*sizeof(*gatheredTilesOnOwner.compressedTiles),
                               cudaMemcpyDefault));
       sumTiles += dev->numActiveTiles;
     }
+    gatheredTilesOnOwner.numActiveTiles = sumTiles;    
   }
   
   LocalFB::~LocalFB()
   {
-    BARNEY_CUDA_CALL_NOTHROW(Free(rank0gather.finalTiles));
-    BARNEY_CUDA_CALL_NOTHROW(Free(rank0gather.tileDescs));
+    BARNEY_CUDA_CALL_NOTHROW(Free(gatheredTilesOnOwner.compressedTiles));
+    BARNEY_CUDA_CALL_NOTHROW(Free(gatheredTilesOnOwner.tileDescs));
   }
   
 }

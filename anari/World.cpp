@@ -148,7 +148,7 @@ void World::buildBarneyModel()
     if (barneyGroups[i] != nullptr)
       continue;
     auto *g = groups[i];
-    BNGroup bg = g->makeBarneyGroup(m_barneyModel, 0);
+    BNGroup bg = g->makeBarneyGroup(getContext());//m_barneyModel, 0);
     for (size_t j = i; j < groups.size(); j++) {
       if (groups[j] == g)
         barneyGroups[j] = bg;

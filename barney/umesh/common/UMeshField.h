@@ -112,19 +112,19 @@ namespace barney {
       d_primRanges is non-null - the primitmives ranges. d_primBounds
       and d_primRanges (if non-null) must be pre-allocated and
       writeaable on specified device */
-    void computeElementBBs(int deviceID,
+    void computeElementBBs(const Device::SP &device,
                            box3f *d_primBounds,
                            range1f *d_primRanges=0);
     
-    UMeshField(ModelSlot *owner,
+    UMeshField(Context *context, int slot,
                std::vector<vec4f>   &vertices,
                std::vector<int>     &indices,
                std::vector<Element> &elements,
                const box3f &domain);
 
-    DD getDD(int devID);
+    DD getDD(const Device::SP &device);
 
-    static ScalarField::SP create(ModelSlot *owner,
+    static ScalarField::SP create(Context *context, int slot,
                                   const vec4f   *vertices, int numVertices,
                                   const int     *indices,  int numIndices,
                                   const int     *elementOffsets,

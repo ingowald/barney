@@ -23,7 +23,7 @@ namespace barney {
 
   struct EnvMapLight : public Light {
     typedef std::shared_ptr<EnvMapLight> SP;
-    EnvMapLight(ModelSlot *owner);
+    EnvMapLight(Context *context, int slot);
 
     struct DD {
       inline __device__ float pdf(vec3f dir, bool dbg=false) const;
