@@ -23,7 +23,7 @@
 namespace barney {
 
   // Texture::Texture(ModelSlot *owner,
-  //                  BNTexelFormat texelFormat,
+  //                  BNDataType texelFormat,
   //                  vec2i size,
   //                  const void *texels,
   //                  BNTextureFilterMode  filterMode,
@@ -44,7 +44,7 @@ namespace barney {
 
   //   owlTexture 
   //     = owlTexture2DCreate(owner->getOWL(),
-  //                          (OWLTexelFormat)texelFormat,
+  //                          (OWLDataType)texelFormat,
   //                          size.x,size.y,
   //                          texels,
   //                          (OWLTextureFilterMode)filterMode,
@@ -55,7 +55,7 @@ namespace barney {
   // }
 
   Texture::Texture(Context *context, int slot,
-                   BNTexelFormat texelFormat,
+                   BNDataType texelFormat,
                    vec2i size,
                    const void *texels,
                    BNTextureFilterMode  filterMode,
@@ -63,9 +63,6 @@ namespace barney {
                    BNTextureColorSpace  colorSpace)
     : SlottedObject(context,slot)
   {
-    assert(OWL_TEXEL_FORMAT_RGBA8   == (int)BN_TEXEL_FORMAT_RGBA8);
-    assert(OWL_TEXEL_FORMAT_RGBA32F == (int)BN_TEXEL_FORMAT_RGBA32F);
-    
     assert(OWL_TEXTURE_NEAREST == (int)BN_TEXTURE_NEAREST);
     assert(OWL_TEXTURE_LINEAR  == (int)BN_TEXTURE_LINEAR);
     
@@ -74,9 +71,27 @@ namespace barney {
     assert(OWL_TEXTURE_BORDER == (int)BN_TEXTURE_BORDER);
     assert(OWL_TEXTURE_MIRROR == (int)BN_TEXTURE_MIRROR);
 
+    OWLTexelFormat owlTexelFormat;
+    switch(texelFormat) {
+    case BN_FLOAT:
+      owlTexelFormat = OWL_TEXEL_FORMAT_R32F;
+      break;
+    case BN_UFIXED8:
+      owlTexelFormat = OWL_TEXEL_FORMAT_R8;
+      break;
+    case BN_FLOAT4_RGBA:
+      owlTexelFormat = OWL_TEXEL_FORMAT_RGBA32F;
+      break;
+    case BN_UFIXED8_RGBA:
+      owlTexelFormat = OWL_TEXEL_FORMAT_RGBA8;
+      break;
+    default: throw std::runtime_error("un-recognized texel format "
+                                      +std::to_string((int)texelFormat));
+    }
+    
     owlTexture 
       = owlTexture2DCreate(context->getOWL(slot),
-                           (OWLTexelFormat)texelFormat,
+                           owlTexelFormat,
                            size.x,size.y,
                            texels,
                            (OWLTextureFilterMode)filterMode,
@@ -87,7 +102,7 @@ namespace barney {
   }
   
   Texture3D::Texture3D(Context *context, int slot,
-                       BNTexelFormat texelFormat,
+                       BNDataType texelFormat,
                        vec3i size,
                        const void *texels,
                        BNTextureFilterMode  filterMode,
@@ -104,25 +119,25 @@ namespace barney {
     size_t sizeOfScalar;
     int numScalarsPerTexel;
     switch (texelFormat) {
-    case BN_TEXEL_FORMAT_R32F:
+    case BN_FLOAT:
       desc         = cudaCreateChannelDesc<float>();
       sizeOfScalar = 4;
       readMode     = cudaReadModeElementType;
       numScalarsPerTexel = 1;
       break;
-    case BN_TEXEL_FORMAT_R8:
+    case BN_UFIXED8:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 1;
       readMode     = cudaReadModeNormalizedFloat;
       numScalarsPerTexel = 1;
       break;
-    case BN_TEXEL_FORMAT_RGBA8:
+    case BN_UFIXED8_RGBA:
       desc         = cudaCreateChannelDesc<uchar4>();
       sizeOfScalar = 1;
       readMode     = cudaReadModeNormalizedFloat;
       numScalarsPerTexel = 4;
       break;
-    case BN_TEXEL_FORMAT_R16:
+    case BN_UFIXED16:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 2;
       readMode     = cudaReadModeNormalizedFloat;
@@ -192,7 +207,7 @@ namespace barney {
   
 
   TextureData::TextureData(Context *context, int slot,
-                           BNTexelFormat texelFormat,
+                           BNDataType texelFormat,
                            vec3i size,
                            const void *texels)
     : SlottedObject(context,slot),
@@ -209,25 +224,25 @@ namespace barney {
     size_t sizeOfScalar;
     int    numScalarsPerTexel;
     switch (texelFormat) {
-    case BN_TEXEL_FORMAT_R32F:
+    case BN_FLOAT:
       desc         = cudaCreateChannelDesc<float>();
       sizeOfScalar = 4;
       // readMode     = cudaReadModeElementType;
       numScalarsPerTexel = 1;
       break;
-    case BN_TEXEL_FORMAT_R8:
+    case BN_UFIXED8:
       desc         = cudaCreateChannelDesc<uint8_t>();
       sizeOfScalar = 1;
       // readMode     = cudaReadModeNormalizedFloat;
       numScalarsPerTexel = 1;
       break;
-    case BN_TEXEL_FORMAT_RGBA8:
+    case BN_UFIXED8_RGBA:
       desc         = cudaCreateChannelDesc<uchar4>();
       sizeOfScalar = 1;
       // readMode     = cudaReadModeNormalizedFloat;
       numScalarsPerTexel = 4;
       break;
-    case BN_TEXEL_FORMAT_R16:
+    case BN_UFIXED16:
       desc         = cudaCreateChannelDesc<uint16_t>();
       sizeOfScalar = 2;
       // readMode     = cudaReadModeNormalizedFloat;

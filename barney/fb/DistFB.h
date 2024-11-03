@@ -33,7 +33,7 @@ namespace barney {
     static SP create(MPIContext *context, int owningRank)
     { return std::make_shared<DistFB>(context,owningRank); }
     
-    void resize(vec2i size, uint32_t *hostFB, float *hostDepth) override;
+    void resize(vec2i size, uint32_t channels) override;
 
     void ownerGatherFinalTiles() override;
     

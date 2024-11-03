@@ -64,27 +64,17 @@ typedef enum {
   BN_FLOAT2,
   BN_FLOAT3,
   BN_FLOAT4,
+
+  BN_UFIXED8,
+  BN_UFIXED8_RGBA,
+  BN_UFIXED8_RGBA_SRGB,
+
+  BN_UFIXED16,
+  
+  BN_FLOAT4_RGBA,
   
   BN_RAW_DATA_BASE
 } BNDataType;
-
-typedef  enum { BN_SCALAR_UNDEFINED=0, BN_SCALAR_UINT8, BN_SCALAR_FLOAT=(int)BN_FLOAT  } BNScalarType;
-
-
-/*! supported formats for texels in textures */
-typedef enum {
-  /*! uint8_t[4] */
-  BN_TEXEL_FORMAT_RGBA8,
-  /*! float4 */
-  BN_TEXEL_FORMAT_RGBA32F,
-  /*! uint8_t */
-  BN_TEXEL_FORMAT_R8,
-  /*! uint16_t */
-  BN_TEXEL_FORMAT_R16,
-  /*! float */
-  BN_TEXEL_FORMAT_R32F
-}
-BNTexelFormat;
 
 /*! currently supported texture filter modes */
 typedef enum {
@@ -295,11 +285,21 @@ void  bnBuild(BNModel model, int whichDataSlot);
 BN_API
 void bnAccumReset(BNFrameBuffer fb);
 
+typedef enum {
+  BN_FB_COLOR = (1<<0),
+  BN_FB_DEPTH = (1<<1),
+} BNFrameBufferChannel;
+
 BN_API
 void bnFrameBufferResize(BNFrameBuffer fb,
                          int sizeX, int sizeY,
-                         uint32_t *hostRGBA,
-                         float    *hostDepth = 0);
+                         uint32_t requiredChannels = BN_FB_COLOR);
+
+BN_API
+void bnFrameBufferRead(BNFrameBuffer fb,
+                       BNFrameBufferChannel channelToRead,
+                       void *pointerToReadDataInto,
+                       BNDataType requiredFormat);
 
 BN_API
 void bnRender(BNRenderer    renderer,
@@ -357,7 +357,7 @@ BNData bnDataCreate(BNContext context,
 BN_API
 BNTextureData bnTextureData2DCreate(BNContext context,
                                     int whichSlot,
-                                    BNTexelFormat texelFormat,
+                                    BNDataType texelFormat,
                                     int width, int height,
                                     const void *items);
 
@@ -377,7 +377,7 @@ void bnGroupBuild(BNGroup group);
 BN_API
 BNTexture2D bnTexture2DCreate(BNContext context,
                               int whichSlot,
-                              BNTexelFormat texelFormat,
+                              BNDataType texelFormat,
                               /*! number of texels in x dimension */
                               uint32_t size_x,
                               /*! number of texels in y dimension */
@@ -390,7 +390,7 @@ BNTexture2D bnTexture2DCreate(BNContext context,
 BN_API
 BNTexture3D bnTexture3DCreate(BNContext context,
                               int whichSlot,
-                              BNTexelFormat texelFormat,
+                              BNDataType texelFormat,
                               /*! number of texels in x dimension */
                               uint32_t size_x,
                               /*! number of texels in y dimension */
@@ -580,7 +580,7 @@ BN_API
 BNScalarField bnStructuredDataCreate(BNContext context,
                                      int whichSlot,
                                      int3 dims,
-                                     BNScalarType type,
+                                     BNDataType /*ScalarType*/ type,
                                      const void *scalars,
                                      float3 gridOrigin,
                                      float3 gridSpacing);

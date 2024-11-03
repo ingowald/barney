@@ -23,10 +23,9 @@ namespace barney {
   }
 
   void LocalFB::resize(vec2i size,
-                       uint32_t *hostFB,
-                       float    *hostDepth)
+                       uint32_t channels)
   {
-    FrameBuffer::resize(size,hostFB,hostDepth);
+    FrameBuffer::resize(size,channels);
     if (rank0gather.finalTiles)
       BARNEY_CUDA_CALL(Free(rank0gather.finalTiles));
     if (rank0gather.tileDescs)

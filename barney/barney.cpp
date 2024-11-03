@@ -157,7 +157,7 @@ namespace barney {
   BN_API
   BNTextureData bnTextureData2DCreate(BNContext context,
                                       int slot,
-                                      BNTexelFormat texelFormat,
+                                      BNDataType texelFormat,
                                       int width, int height,
                                       const void *texels)
   {
@@ -176,7 +176,7 @@ namespace barney {
   // BN_API
   // BNTextureData bnTextureData2DCreate(BNModel model,
   //                                     int slot,
-  //                                     BNTexelFormat texelFormat,
+  //                                     BNDataType texelFormat,
   //                                     int width, int height,
   //                                     const void *texels)
   // {
@@ -196,7 +196,7 @@ namespace barney {
   BN_API
   BNTexture2D bnTexture2DCreate(BNContext context,
                                 int slot,
-                                BNTexelFormat texelFormat,
+                                BNDataType texelFormat,
                                 /*! number of texels in x dimension */
                                 uint32_t size_x,
                                 /*! number of texels in y dimension */
@@ -218,7 +218,7 @@ namespace barney {
   BN_API
   BNTexture3D bnTexture3DCreate(BNContext context,
                                 int slot,
-                                BNTexelFormat texelFormat,
+                                BNDataType texelFormat,
                                 uint32_t size_x,
                                 uint32_t size_y,
                                 uint32_t size_z,
@@ -436,28 +436,17 @@ namespace barney {
   BNScalarField bnStructuredDataCreate(BNContext context,
                                        int slot,
                                        int3 dims,
-                                       BNScalarType type,
+                                       BNDataType type,
                                        const void *scalars,
                                        float3 gridOrigin,
                                        float3 gridSpacing)
   {
-    BNTexelFormat texelFormat;
-    switch (type) {
-    case BN_SCALAR_FLOAT:
-      texelFormat = BN_TEXEL_FORMAT_R32F;
-      break;
-    case BN_SCALAR_UINT8:
-      texelFormat = BN_TEXEL_FORMAT_R8;
-      break;
-    default:
-      throw std::runtime_error("unsupported structured data format #"+std::to_string((int)type));
-    }
-    
     BNScalarField sf
       = bnScalarFieldCreate(context,slot,"structured");
     BNTexture3D texture
-      = bnTexture3DCreate(context,slot,texelFormat,
-                          dims.x,dims.y,dims.z,scalars,BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
+      = bnTexture3DCreate(context,slot,type,
+                          dims.x,dims.y,dims.z,scalars,
+                          BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
     bnSetObject(sf,"texture",texture);
     bnRelease(texture);
     bnSet3ic(sf,"dims",dims);
@@ -719,13 +708,22 @@ namespace barney {
   BN_API
   void bnFrameBufferResize(BNFrameBuffer fb,
                            int sizeX, int sizeY,
-                           uint32_t *hostRGBA,
-                           float *hostDepth)
+                           uint32_t channels)
   {
     LOG_API_ENTRY;
-    checkGet(fb)->resize(vec2i{sizeX,sizeY},hostRGBA,hostDepth);
+    checkGet(fb)->resize(vec2i{sizeX,sizeY},channels);
   }
 
+  BN_API
+  void bnFrameBufferRead(BNFrameBuffer fb,
+                         BNFrameBufferChannel channel,
+                         void *hostPtr,
+                         BNDataType requestedFormat)
+  {
+    LOG_API_ENTRY;
+    checkGet(fb)->read(channel,hostPtr,requestedFormat);
+  }
+  
 
   BN_API
   void bnAccumReset(BNFrameBuffer fb)

@@ -254,19 +254,19 @@ namespace barney {
       tex_desc.sRGB                = 0;//1;//(colorSpace == OWL_COLOR_SPACE_SRGB);
 
       switch (textureData->texelFormat) {
-      case BN_TEXEL_FORMAT_R32F:
+      case BN_FLOAT:
         tex_desc.readMode     = cudaReadModeElementType;
         dd.image.numChannels = 1;
         break;
-      case BN_TEXEL_FORMAT_R8:
+      case BN_UFIXED8:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
         dd.image.numChannels = 1;
         break;
-      case BN_TEXEL_FORMAT_RGBA8:
+      case BN_UFIXED8_RGBA:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
         dd.image.numChannels = 4;
         break;
-      case BN_TEXEL_FORMAT_R16:
+      case BN_UFIXED16:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
         dd.image.numChannels = 1;
         break;

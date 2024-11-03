@@ -20,12 +20,21 @@
 #include "barney/fb/TiledFB.h"
 #include <optix.h>
 #include <optix_stubs.h>
-#if DENOISE_OIDN
-# include <OpenImageDenoise/oidn.h>
-#endif
 
 namespace barney {
 
+  struct FrameBuffer;
+  
+  struct Denoiser {
+    static std::shared_ptr<Denoiser> create(FrameBuffer *fb);
+    
+    Denoiser(FrameBuffer *fb);
+    virtual ~Denoiser();
+    virtual void resize() = 0;
+    virtual void run() = 0;
+    FrameBuffer *const fb;
+  };
+    
   struct FrameBuffer : public Object {
 
     FrameBuffer(Context *context, const bool isOwner);
@@ -37,66 +46,40 @@ namespace barney {
 
     bool set1i(const std::string &member, const int &value);
 
-    virtual void resize(vec2i size,
-                        uint32_t *hostFB,
-                        float    *hostDepth);
-    virtual void resetAccumulation() { accumID = 0; }
+    virtual void resize(vec2i size, uint32_t channels);
+    virtual void resetAccumulation() {  /* whatever we may have in final tiles is dirty */ accumID = 0; }
     void freeResources();
 
+    void finalizeFrame() { /* whatever we may have in final tiles is dirty */dirty = true; }
     virtual void ownerGatherFinalTiles() = 0;
 
+    void read(BNFrameBufferChannel channel,
+              void *hostPtr,
+              BNDataType requestedFormat);
+              
     std::vector<TiledFB::SP> perDev;
 
-    vec2i       numPixels   = { 0,0 };
-    // the final frame buffer RGBA8 that we can definitely write into
-    // - might be our own staged copy if we can't write into host
-    // supplied one
-    uint32_t   *finalFB     = 0;
-    uint32_t   *hostFB      = 0;
+    /*! if true, then we have already gathered, re-arranged, possibly
+        denoised, tone mapped, etcpp whatever tiles the various
+        devices may have accumulated so far, and we can simply copy
+        pixels to the app */
+    bool dirty = false;
+    /*! final color buffer, in array-(not tiled) order, after
+        denoising - only on owner. All denoiser implementations will
+        generate exactly this format, so the final bnFrameBufferRead()
+        can then just copy from this format */
+    float4 *finalColor = 0;
+    /*! final depth buffer, in array-(not tiled) order, after
+        denoising - only on owner. All denoiser implementations will
+        generate exactly this format, so the final bnFrameBufferRead()
+        can then just copy from this format*/
+    float  *finalDepth = 0;
+    vec2i numPixels = {-1,-1};
 
-    // depth buffer: same as for color buffer we have two differnt
-    // poitners here - one that we can defintiely use in device code
-    // (finalDepth), and one that the app wants to eventually have the
-    // values in (might be on host). these _can_ be the same, but may
-    // not be
-    float      *finalDepth  = 0;
-    float      *hostDepth   = 0;
+    std::shared_ptr<Denoiser> denoiser;
 
-
-#if DENOISE
-# if DENOISE_OIDN
-    float3              *denoiserInput   = 0;
-    float               *denoiserAlpha   = 0;
-    float3              *denoiserOutput  = 0;
-    float3              *denoiserNormal  = 0;
-# else
-    float4              *denoiserInput   = 0;
-    float4              *denoiserOutput  = 0;
-# if DENOISE_NORMAL
-    float4              *denoiserNormal  = 0;
-# endif
-#endif
-    bool                 denoiserCreated = false;
-# if DENOISE_OIDN
-    struct {
-      OIDNBuffer outputBuf = 0; 
-      OIDNBuffer normalBuf = 0; 
-      OIDNBuffer colorBuf = 0; 
-      OIDNDevice device = 0;
-      OIDNFilter filter = 0;
-    } oidn;
-# else
-    OptixDenoiser        denoiser = {};
-    OptixDenoiserOptions denoiserOptions;
-    void                *denoiserScratch = 0;
-    void                *denoiserState   = 0;
-    OptixDenoiserSizes   denoiserSizes;
-# endif
-    void denoise();
-#endif
-    
-    uint32_t    accumID     = 0;
+    uint32_t    accumID = 0;
     const bool  isOwner;
-          bool  showCrosshairs;
+    bool  showCrosshairs = false;
   };
 }

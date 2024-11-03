@@ -101,7 +101,7 @@ namespace barney {
 
     Texture3D::SP  texture;
     Texture3D::SP  colorMapTexture;
-    BNScalarType   scalarType = BN_SCALAR_UNDEFINED;
+    BNDataType   scalarType = BN_DATA_UNDEFINED;
     vec3i numScalars  { 0,0,0 };
     vec3i numCells    { 0,0,0 }; 
     vec3f gridOrigin  { 0,0,0 };

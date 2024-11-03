@@ -57,17 +57,17 @@ namespace barney {
 #endif
   };
   
-  void float4ToBGBA8(uint32_t  *finalFB,
-# if DENOISE_OIDN  
-                     float3    *inputBeforeDenoising,
-                     float     *alphas,
-                     float3    *float3s,
-# else
-                     float4    *inputBeforeDenoising,
-                     float4    *float4s,
-# endif
-                     float      denoisedWeight,
-                     vec2i      numPixels);
+//   void float4ToBGBA8(uint32_t  *finalFB,
+// # if DENOISE_OIDN  
+//                      float3    *inputBeforeDenoising,
+//                      float     *alphas,
+//                      float3    *float3s,
+// # else
+//                      float4    *inputBeforeDenoising,
+//                      float4    *float4s,
+// # endif
+//                      float      denoisedWeight,
+//                      vec2i      numPixels);
   
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
@@ -100,31 +100,31 @@ namespace barney {
     /*! write this tiledFB's tiles into given "final" frame buffer
         (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
         pixels) */
-    static
-    void writeFinalPixels(
-#if DENOISE
-# if DENOISE_OIDN
-                          float3    *finalFB,
-                          float     *finalAlpha,
-# else
-                          float4    *finalFB,
-# endif
-#else
-                          uint32_t  *finalFB,
-#endif
-                          float     *finalDepth,
-#if DENOISE
-#  if DENOISE_OIDN
-                          float3    *finalNormal,
-#  else
-                          float4    *finalNormal,
-#  endif
-#endif
-                          vec2i      numPixels,
-                          FinalTile *finalTiles,
-                          TileDesc  *tileDescs,
-                          int        numTiles,
-                          bool       showCrosshairs);
+    // static
+//     void writeFinalPixels(
+// #if DENOISE
+// # if DENOISE_OIDN
+//                           float3    *finalFB,
+//                           float     *finalAlpha,
+// # else
+//                           float4    *finalFB,
+// # endif
+// #else
+//                           uint32_t  *finalFB,
+// #endif
+//                           float     *finalDepth,
+// #if DENOISE
+// #  if DENOISE_OIDN
+//                           float3    *finalNormal,
+// #  else
+//                           float4    *finalNormal,
+// #  endif
+// #endif
+//                           vec2i      numPixels,
+//                           FinalTile *finalTiles,
+//                           TileDesc  *tileDescs,
+//                           int        numTiles,
+//                           bool       showCrosshairs);
     
     void finalizeTiles();
 

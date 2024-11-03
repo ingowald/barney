@@ -35,9 +35,7 @@ namespace barney {
     { return std::make_shared<LocalFB>(context); }
 
     void ownerGatherFinalTiles() override;
-    void resize(vec2i size,
-                uint32_t *hostFB,
-                float    *hostDepth) override;
+    void resize(vec2i size, uint32_t channels) override;
     
     struct {
       /*! list of *all* ranks' tileOffset, gathered (only at master) */

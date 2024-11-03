@@ -14,26 +14,12 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
-option(BARNEY_DENOISE "Enable Denoiser?" OFF)
-option(BARNEY_DENOISE_OIDN "Denoiser via OIDN library?" OFF)
-
+# -------------------------------------------------------
 add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
   INTERFACE
   cuBQL
   )
-target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
-if (BARNEY_DENOISE)
-  target_compile_definitions(barney-config INTERFACE -DDENOISE=1 -DDENOISE_NORMAL=1)
-endif()
-if (BARNEY_DENOISE_OIDN)
-  find_package(OpenImageDenoise)
-  target_compile_definitions(barney-config INTERFACE -DDENOISE=1 -DDENOISE_OIDN=1 -DDENOISE_NORMAL=1)
-  target_link_libraries(barney-config INTERFACE OpenImageDenoise)
-endif()
-    
-
 
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
@@ -42,6 +28,25 @@ target_include_directories(barney-config INTERFACE
   )
 
 
+# -------------------------------------------------------
+set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
+target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
+
+# -------------------------------------------------------
+option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
+option(BARNEY_DISABLE_OIDN "explicitly DISable OIDN?" OFF)
+
+if (BARNEY_DISABLE_DENOISING)
+  target_compile_definitions(barney-config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
+elseif (NOT BARNEY_DISABLE_OIDN)
+  find_package(OpenImageDenoise)
+  if (OpenImageDenoise_FOUND)
+    target_compile_definitions(barney-config INTERFACE -DBARNEY_HAVE_OIDN=1)
+    target_link_libraries(barney-config INTERFACE OpenImageDenoise)
+  endif()
+endif()
+    
+# -------------------------------------------------------
 
 # ray gen program that launches kernel to trace rays
 embed_ptx(

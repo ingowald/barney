@@ -75,13 +75,13 @@ bool StructuredRegularField::isValid() const
   if (!isValid())
     return {};
   auto ctx = deviceState()->context;
-  BNScalarType barneyType;
+  BNDataType barneyType;
   switch (m_data->elementType()) {
   case ANARI_FLOAT32:
-    barneyType = BN_SCALAR_FLOAT;
+    barneyType = BN_FLOAT;
     break;
   case ANARI_UINT8:
-    barneyType = BN_SCALAR_UINT8;
+    barneyType = BN_UFIXED8;
     break;
   // case ANARI_FLOAT64:
   //   return ((double *)m_data)[i];

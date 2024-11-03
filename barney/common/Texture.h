@@ -27,7 +27,7 @@ namespace barney {
     typedef std::shared_ptr<Texture> SP;
 
     Texture(Context *context, int slot,
-            BNTexelFormat texelFormat,
+            BNDataType texelFormat,
             vec2i size,
             const void *texels,
             BNTextureFilterMode  filterMode,
@@ -54,7 +54,7 @@ namespace barney {
     };
     
     Texture3D(Context *context, int slot,
-              BNTexelFormat texelFormat,
+              BNDataType texelFormat,
               vec3i size,
               const void *texels,
               BNTextureFilterMode  filterMode,
@@ -80,7 +80,7 @@ namespace barney {
     
     /*! one cudaArray per device */
     TextureData(Context *context, int slot,
-                BNTexelFormat texelFormat,
+                BNDataType texelFormat,
                 vec3i size,
                 const void *texels);
     virtual ~TextureData();
@@ -93,6 +93,6 @@ namespace barney {
     
     std::vector<DD> onDev;
     vec3i           dims;
-    BNTexelFormat   texelFormat;
+    BNDataType   texelFormat;
   };
 }

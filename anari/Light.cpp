@@ -175,7 +175,7 @@ namespace barney_device {
 
     BNTexture texture
       = bnTexture2DCreate(getContext(),0,// model,slot,
-                          BN_TEXEL_FORMAT_RGBA32F,
+                          BN_FLOAT4_RGBA,
                           width,height,asFloat4.data());
                                           
     bnSetObject(m_bnLight, "texture", texture);

@@ -298,7 +298,7 @@ static BNTexture2D makeBarneyTexture2D(
 
   if (input) {
     if (convert_to_rgba8(input, texels)) {
-      res = bnTexture2DCreate(context, slot, BN_TEXEL_FORMAT_RGBA8,
+      res = bnTexture2DCreate(context, slot, BN_UFIXED8_RGBA,
                               width, height, texels.data(),
                               filterMode, addressMode);
     }

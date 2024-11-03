@@ -37,11 +37,12 @@ namespace barney {
     }
   }
 
-  void DistFB::resize(vec2i size, uint32_t *hostFB, float *hostDepth)
+  void DistFB::resize(vec2i size,
+                      uint32_t channels)
   {
     double t0 = getCurrentTime();
     
-    FrameBuffer::resize(size, hostFB, hostDepth);
+    FrameBuffer::resize(size, channels);
     std::vector<int> tilesOnGPU(perDev.size());
     for (int localID = 0;localID < perDev.size(); localID++) {
       tilesOnGPU[localID] = perDev[localID]->numActiveTiles;
@@ -99,17 +100,10 @@ namespace barney {
         BARNEY_CUDA_CALL(Free(ownerGather.finalTiles));
       if (ownerGather.tileDescs)
         BARNEY_CUDA_CALL(Free(ownerGather.tileDescs));
-#if 0
-      BARNEY_CUDA_CALL(MallocManaged(&ownerGather.finalTiles,
-                              sumTiles*sizeof(*ownerGather.finalTiles)));
-      BARNEY_CUDA_CALL(MallocManaged(&ownerGather.tileDescs,
-                              sumTiles*sizeof(*ownerGather.tileDescs)));
-#else
       BARNEY_CUDA_CALL(Malloc(&ownerGather.finalTiles,
                               sumTiles*sizeof(*ownerGather.finalTiles)));
       BARNEY_CUDA_CALL(Malloc(&ownerGather.tileDescs,
                               sumTiles*sizeof(*ownerGather.tileDescs)));
-#endif                              
       BARNEY_CUDA_SYNC_CHECK();
     }
     

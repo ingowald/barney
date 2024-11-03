@@ -149,7 +149,7 @@ namespace barney_device {
     if (m_bnTextureData)
       bnRelease(m_bnTextureData);
     m_bnTextureData
-      = bnTextureData2DCreate(context,0/*slot*/,BN_TEXEL_FORMAT_RGBA8,
+      = bnTextureData2DCreate(context,0/*slot*/,BN_UFIXED8_RGBA,
                               width,height,texels.data());
   
     // ------------------------------------------------------------------
