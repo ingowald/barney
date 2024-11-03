@@ -197,7 +197,6 @@ namespace barney {
       BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
                               numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
       denoiserSizes.overlapWindowSizeInPixels = 0;
-      // PING; BARNEY_CUDA_SYNC_CHECK();
       optixDenoiserComputeMemoryResources(/*const OptixDenoiser */
                                           denoiser,
                                           // unsigned int        outputWidth,
@@ -393,18 +392,12 @@ namespace barney {
 
   void FrameBuffer::finalizeFrame()
   {
-    PING; BARNEY_CUDA_SYNC_CHECK();
-    
     dirty = true;
     ownerGatherCompressedTiles();
-    PING; BARNEY_CUDA_SYNC_CHECK();
     if (isOwner) {
-      PING; BARNEY_CUDA_SYNC_CHECK();
       unpackTiles();
-      PING; BARNEY_CUDA_SYNC_CHECK();
     }
     
-    PING; BARNEY_CUDA_SYNC_CHECK();
   }
 
 
@@ -444,13 +437,6 @@ namespace barney {
   
   void FrameBuffer::unpackTiles()
   {
-    PING; PRINT(linearColor); PRINT(linearAlpha);
-    PRINT(linearNormal);
-    PRINT(linearDepth);
-    PRINT(gatheredTilesOnOwner.compressedTiles);
-    PRINT(gatheredTilesOnOwner.numActiveTiles);
-
-    BARNEY_CUDA_SYNC_CHECK();
     g_unpackTiles<<<gatheredTilesOnOwner.numActiveTiles,pixelsPerTile>>>
       (numPixels,
        linearColor,
@@ -459,7 +445,6 @@ namespace barney {
        linearDepth,
        gatheredTilesOnOwner.compressedTiles,
        gatheredTilesOnOwner.tileDescs);
-    BARNEY_CUDA_SYNC_CHECK();
   }
 
   void FrameBuffer::read(BNFrameBufferChannel channel,
@@ -486,6 +471,8 @@ namespace barney {
       return;
     }
 
+    if (!hostPtr) return;
+    
     if (channel != BN_FB_COLOR)
       throw std::runtime_error("trying to read un-known channel!?");
 
@@ -510,12 +497,9 @@ namespace barney {
       toFixed8<false>
         <<<divRoundUp(numPixels,bs),bs>>>
         (asFixed8,denoisedColor,numPixels);
-      PING; PRINT(numPixels);
-      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
-      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
     } break;
     default:
@@ -527,8 +511,6 @@ namespace barney {
   void FrameBuffer::resize(vec2i size,
                            uint32_t channels)
   {
-    // PING; PRINT(size);
-    
     for (auto &pd: perDev)
       pd->resize(size);
     

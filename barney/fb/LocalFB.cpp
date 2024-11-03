@@ -63,7 +63,6 @@ namespace barney {
                               dev->numActiveTiles*sizeof(*gatheredTilesOnOwner.compressedTiles),
                               cudaMemcpyDefault));
       sumTiles += dev->numActiveTiles;
-      PING; BARNEY_CUDA_SYNC_CHECK(); PRINT(dev->numActiveTiles);
     }
     gatheredTilesOnOwner.numActiveTiles = sumTiles;    
   }
