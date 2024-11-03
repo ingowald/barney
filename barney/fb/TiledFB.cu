@@ -45,9 +45,9 @@ namespace barney {
       BARNEY_CUDA_CALL(Free(accumTiles));
       accumTiles = nullptr;
     }
-    if (finalTiles) {
-      BARNEY_CUDA_CALL(Free(finalTiles));
-      finalTiles = nullptr;
+    if (compressedTiles) {
+      BARNEY_CUDA_CALL(Free(compressedTiles));
+      compressedTiles = nullptr;
     }
     if (tileDescs) {
       BARNEY_CUDA_CALL(Free(tileDescs));
@@ -86,11 +86,11 @@ namespace barney {
       : 0;
 #if 0
     BARNEY_CUDA_CALL(MallocManaged(&accumTiles, numActiveTiles * sizeof(AccumTile)));
-    BARNEY_CUDA_CALL(MallocManaged(&finalTiles, numActiveTiles * sizeof(FinalTile)));
+    BARNEY_CUDA_CALL(MallocManaged(&compressedTiles, numActiveTiles * sizeof(CompressedTile)));
     BARNEY_CUDA_CALL(MallocManaged(&tileDescs,  numActiveTiles * sizeof(TileDesc)));
 #else
     BARNEY_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
-    BARNEY_CUDA_CALL(Malloc(&finalTiles, numActiveTiles * sizeof(FinalTile)));
+    BARNEY_CUDA_CALL(Malloc(&compressedTiles, numActiveTiles * sizeof(CompressedTile)));
     BARNEY_CUDA_CALL(Malloc(&tileDescs,  numActiveTiles * sizeof(TileDesc)));
 #endif
 
@@ -105,7 +105,7 @@ namespace barney {
 
   // ==================================================================
 
-  __global__ void g_finalizeTiles(FinalTile *finalTiles,
+  __global__ void g_compressTiles(CompressedTile *compressedTiles,
                                   AccumTile *accumTiles,
                                   float      accumScale)
   {
@@ -113,39 +113,37 @@ namespace barney {
     int tileID  = blockIdx.x;
 
     vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
-#if DENOISE
     float scale = reduce_max(color);
     color *= 1./scale;
-    finalTiles[tileID].scale[pixelID] = scale;
-    finalTiles[tileID].normal[pixelID].set(accumTiles[tileID].normal[pixelID]);
-#else
-    color.x = sqrtf(color.x);
-    color.y = sqrtf(color.y);
-    color.z = sqrtf(color.z);
-#endif
+    compressedTiles[tileID].scale[pixelID] = scale;
+    compressedTiles[tileID].normal[pixelID].set(accumTiles[tileID].normal[pixelID]);
 
     uint32_t rgba32
       = owl::make_rgba(color);
 
-    finalTiles[tileID].rgba[pixelID] = rgba32;
-    finalTiles[tileID].depth[pixelID] = accumTiles[tileID].depth[pixelID];
+    if (pixelID == 0 && tileID == 0) {
+      printf("compressing %f %f %f %f\n",color.x,color.y,color.z,color.w);
+    }
+    
+    compressedTiles[tileID].rgba[pixelID] = rgba32;
+    compressedTiles[tileID].depth[pixelID] = accumTiles[tileID].depth[pixelID];
   }
 
-  /*! write this tiledFB's tiles into given "final" frame buffer
+  /*! write this tiledFB's tiles into given "compressed" frame buffer
     (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
     pixels) */
   void TiledFB::finalizeTiles()
   {
     SetActiveGPU forDuration(device);
     if (numActiveTiles > 0)
-      g_finalizeTiles<<<numActiveTiles,pixelsPerTile,0,device->launchStream>>>
-        (finalTiles,accumTiles,1.f/(owner->accumID));
+      g_compressTiles<<<numActiveTiles,pixelsPerTile,0,device->launchStream>>>
+        (compressedTiles,accumTiles,1.f/(owner->accumID));
   }
 
 
   // ==================================================================
 // #if DENOISE
-//   __global__ void g_float4ToBGBA8(uint32_t  *finalFB,
+//   __global__ void g_float4ToBGBA8(uint32_t  *compressedFB,
 // # if DENOISE_OIDN  
 //                                   float3    *inputBeforeDenoising,
 //                                   float     *alphas,
@@ -179,10 +177,10 @@ namespace barney {
 //     v.x = sqrtf(v.x);
 //     v.y = sqrtf(v.y);
 //     v.z = sqrtf(v.z);
-//     finalFB[pid] = make_rgba(vec4f(v));
+//     compressedFB[pid] = make_rgba(vec4f(v));
 //   }
   
-//   void float4ToBGBA8(uint32_t  *finalFB,
+//   void float4ToBGBA8(uint32_t  *compressedFB,
 // #if DENOISE_OIDN
 //                      float3    *inputBeforeDenoising,
 //                      float     *alphas,
@@ -197,7 +195,7 @@ namespace barney {
 //     vec2i tileSize = 32;
 //     g_float4ToBGBA8
 //       <<<divRoundUp(numPixels,tileSize),tileSize>>>
-//       (finalFB,
+//       (compressedFB,
 // # if DENOISE_OIDN
 //        inputBeforeDenoising,alphas,float3s,
 // # else
@@ -206,23 +204,23 @@ namespace barney {
 //        denoisedWeight,
 //        numPixels);
 //   }    
-//   __global__ void g_writeFinalPixels(
+//   __global__ void g_writeCompressedPixels(
 // #if DENOISE_OIDN
-//                                      float4    *finalFB,
-//                                      float     *finalAlpha,
+//                                      float4    *compressedFB,
+//                                      float     *compressedAlpha,
 // #else
-//                                      float4    *finalFB,
+//                                      float4    *compressedFB,
 // #endif
-//                                      float     *finalDepth,
+//                                      float     *compressedDepth,
 // #if DENOISE
 // # if DENOISE_OIDN
-//                                      float3    *finalNormal,
+//                                      float3    *compressedNormal,
 // # else
-//                                      float4    *finalNormal,
+//                                      float4    *compressedNormal,
 // # endif
 // #endif
 //                                      vec2i      numPixels,
-//                                      FinalTile *finalTiles,
+//                                      CompressedTile *compressedTiles,
 //                                      TileDesc  *tileDescs,
 //                                      bool       showCrosshairs)
 //   {
@@ -233,9 +231,9 @@ namespace barney {
 //     if (iy < 0 || iy >= numPixels.y) return;
 
 //     uint32_t pixelValue
-//       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
+//       = compressedTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
 //     float scale
-//       = finalTiles[tileID].scale[threadIdx.x + tileSize*threadIdx.y];
+//       = compressedTiles[tileID].scale[threadIdx.x + tileSize*threadIdx.y];
 //     pixelValue |= 0xff000000;
 
 //     uint32_t ofs = ix + numPixels.x*iy;
@@ -251,33 +249,33 @@ namespace barney {
 //     // if (ix == 128 && iy == 128)
 //     //   printf("%f %f %f %f\n",r,g,b,a);
 // # if DENOISE_OIDN
-//     finalFB[ofs]
+//     compressedFB[ofs]
 //       = showCrosshairs && isCrossHair
 //       ? make_float3(1.f,0.f,0.f)
 //       : make_float3(scale*r,scale*g,scale*b);
-//     finalAlpha[ofs] = a;
+//     compressedAlpha[ofs] = a;
 // # else
-//     finalFB[ofs]
+//     compressedFB[ofs]
 //       = showCrosshairs && isCrossHair
 //       ? make_float4(1.f,0.f,0.f,1.f)
 //       : make_float4(scale*r,scale*g,scale*b,a);
 // #endif
 
-//     if (finalDepth)
-//       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
+//     if (compressedDepth)
+//       compressedDepth[ofs] = compressedTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
 // #  if DENOISE_OIDN
-//     finalNormal[ofs]
-//       = finalTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get3f();
+//     compressedNormal[ofs]
+//       = compressedTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get3f();
 // #  else
-//     finalNormal[ofs]
-//       = finalTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get4f();
+//     compressedNormal[ofs]
+//       = compressedTiles[tileID].normal[threadIdx.x + tileSize*threadIdx.y].get4f();
 // #  endif
 //   }
 // #else
-//   __global__ void g_writeFinalPixels(uint32_t  *finalFB,
-//                                      float     *finalDepth,
+//   __global__ void g_writeCompressedPixels(uint32_t  *compressedFB,
+//                                      float     *compressedDepth,
 //                                      vec2i      numPixels,
-//                                      FinalTile *finalTiles,
+//                                      CompressedTile *compressedTiles,
 //                                      TileDesc  *tileDescs,
 //                                      bool       showCrosshairs)
 //   {
@@ -288,7 +286,7 @@ namespace barney {
 //     if (iy < 0 || iy >= numPixels.y) return;
 
 //     uint32_t pixelValue
-//       = finalTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
+//       = compressedTiles[tileID].rgba[threadIdx.x + tileSize*threadIdx.y];
 //     pixelValue |= 0xff000000;
 
     
@@ -298,42 +296,42 @@ namespace barney {
 //     bool isCenter_y = iy == numPixels.y/2;
 //     bool isCrossHair = (isCenter_x || isCenter_y) && !(isCenter_x && isCenter_y);
 
-//     finalFB[ofs]
+//     compressedFB[ofs]
 //       = showCrosshairs && isCrossHair
 //       ? 0xff0000ff
 //       : pixelValue;
 
-//     if (finalDepth)
-//       finalDepth[ofs] = finalTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
+//     if (compressedDepth)
+//       compressedDepth[ofs] = compressedTiles[tileID].depth[threadIdx.x + tileSize*threadIdx.y];
 //   }
 // #endif
   
-//   void TiledFB::writeFinalPixels(
+//   void TiledFB::writeCompressedPixels(
 // #if DENOISE
 // # if DENOISE_OIDN
-//                                  float3    *finalFB,
-//                                  float     *finalAlpha,
+//                                  float3    *compressedFB,
+//                                  float     *compressedAlpha,
 // # else
-//                                  float4    *finalFB,
+//                                  float4    *compressedFB,
 // # endif
 // #else
-//                                  uint32_t  *finalFB,
+//                                  uint32_t  *compressedFB,
 // #endif
-//                                  float     *finalDepth,
+//                                  float     *compressedDepth,
 // #if DENOISE
 // #  if DENOISE_OIDN
-//                                  float3    *finalNormal,
+//                                  float3    *compressedNormal,
 // #  else
-//                                  float4    *finalNormal,
+//                                  float4    *compressedNormal,
 // #  endif
 // #endif
 //                                  vec2i      numPixels,
-//                                  FinalTile *finalTiles,
+//                                  CompressedTile *compressedTiles,
 //                                  TileDesc  *tileDescs,
 //                                  int        numTiles,
 //                                  bool       showCrosshairs)
 //   {
-//     if (finalFB == 0) throw std::runtime_error("invalid finalfb of null!");
+//     if (compressedFB == 0) throw std::runtime_error("invalid compressedfb of null!");
 
    
 //     /*! do NOT set active GPU: app might run on a different GPU than
@@ -342,20 +340,20 @@ namespace barney {
 //     // SetActiveGPU forDuration(device);
 
 //     if (numTiles > 0)
-//       g_writeFinalPixels
+//       g_writeCompressedPixels
 //         <<<numTiles,vec2i(tileSize)>>>
 //       //   ,0,
 //       // device?device->launchStream:0>>>
-//         (finalFB,
+//         (compressedFB,
 // #if DENOISE_OIDN
-//          finalAlpha,
+//          compressedAlpha,
 // #endif
-//          finalDepth,
+//          compressedDepth,
 // #if DENOISE
-//          finalNormal,
+//          compressedNormal,
 // #endif
 //          numPixels,
-//          finalTiles,tileDescs, showCrosshairs);
+//          compressedTiles,tileDescs, showCrosshairs);
 //   }
   
 }

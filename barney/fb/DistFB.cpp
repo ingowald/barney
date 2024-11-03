@@ -96,12 +96,12 @@ namespace barney {
       }
       ownerGather.numActiveTiles = sumTiles;
 
-      if (ownerGather.finalTiles)
-        BARNEY_CUDA_CALL(Free(ownerGather.finalTiles));
+      if (ownerGather.compressedTiles)
+        BARNEY_CUDA_CALL(Free(ownerGather.compressedTiles));
       if (ownerGather.tileDescs)
         BARNEY_CUDA_CALL(Free(ownerGather.tileDescs));
-      BARNEY_CUDA_CALL(Malloc(&ownerGather.finalTiles,
-                              sumTiles*sizeof(*ownerGather.finalTiles)));
+      BARNEY_CUDA_CALL(Malloc(&ownerGather.compressedTiles,
+                              sumTiles*sizeof(*ownerGather.compressedTiles)));
       BARNEY_CUDA_CALL(Malloc(&ownerGather.tileDescs,
                               sumTiles*sizeof(*ownerGather.tileDescs)));
       BARNEY_CUDA_SYNC_CHECK();
@@ -138,7 +138,7 @@ namespace barney {
         context->world.wait(send_requests[localID]);
   }
 
-  void DistFB::ownerGatherFinalTiles()
+  void DistFB::ownerGatherCompressedTiles()
   {
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
     std::vector<MPI_Request> send_requests(perDev.size());
@@ -150,7 +150,7 @@ namespace barney {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            ownerGather.finalTiles+ownerGather.firstTileOnGPU[ggID],
+                            ownerGather.compressedTiles+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
@@ -158,7 +158,7 @@ namespace barney {
     if (context->isActiveWorker)
       for (int localID=0;localID<perDev.size();localID++)
         context->world.send(owningRank,localID,
-                            perDev[localID]->finalTiles,
+                            perDev[localID]->compressedTiles,
                             perDev[localID]->numActiveTiles,
                             send_requests[localID]);
 

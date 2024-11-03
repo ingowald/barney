@@ -145,7 +145,7 @@ add_library(barney STATIC
   Camera.cu
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
-  fb/FrameBuffer.cpp
+  fb/FrameBuffer.cu
   fb/LocalFB.h
   fb/LocalFB.cpp
   fb/TiledFB.h

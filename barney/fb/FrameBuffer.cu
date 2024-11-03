@@ -15,45 +15,88 @@
 // ======================================================================== //
 
 #include "barney/fb/FrameBuffer.h"
+#include <cuda_runtime.h>
 #if BARNEY_HAVE_OIDN
 # include <OpenImageDenoise/oidn.h>
 #endif
 
 namespace barney {
 
+  inline __device__ float from_8bit(uint8_t v) {
+    return float(v) * (1./127.f);
+  }
+  
+  inline __device__ vec4f from_8bit(uint32_t v) {
+    return vec4f(from_8bit(uint8_t(v >> 0)),
+                 from_8bit(uint8_t(v >> 8)),
+                 from_8bit(uint8_t(v >> 16)),
+                 from_8bit(uint8_t(v >> 24)));
+  }
+  
+  inline __device__ float linear_to_srgb(float x) {
+    if (x <= 0.0031308f) {
+      return 12.92f * x;
+    }
+    return 1.055f * pow(x, 1.f/2.4f) - 0.055f;
+  }
+
+  inline __device__ uint32_t make_8bit(const float f)
+  {
+    return min(255,max(0,int(f*256.f)));
+  }
+
+  inline __device__ uint32_t make_rgba8(const vec4f color)
+  {
+    return
+      (make_8bit(color.x) << 0) +
+      (make_8bit(color.y) << 8) +
+      (make_8bit(color.z) << 16) +
+      (make_8bit(color.w) << 24);
+  }
+  
+  inline __device__ float clamp(float f) { return min(1.f,max(0.f,f)); }
+
+  __global__ void copyPixels(vec2i numPixels,
+                             float4 *out,
+                             vec3f *in_color,
+                             float *in_alpha)
+  {
+    int ix = threadIdx.x+blockIdx.x*blockDim.x;
+    int iy = threadIdx.y+blockIdx.y*blockDim.y;
+    if (ix >= numPixels.x) return;
+    if (iy >= numPixels.y) return;
+    int idx = ix + numPixels.x*iy;
+    vec3f color = in_color[idx];
+    if (ix ==  0 && iy == 0)
+      printf("in color %f %f %f\n",color.x,color.y,color.z);
+    float alpha = in_alpha[idx];
+    out[idx] = vec4f(color,alpha);
+  }
+  
   struct DenoiserNone : public Denoiser {
-    DenoiserNone(FrameBuffer *fb);
-    virtual ~DenoiserNone();
-    void resize() override;
-    void run() override;
+    DenoiserNone(FrameBuffer *fb) : Denoiser(fb) {};
+    virtual ~DenoiserNone() {}
+    void resize() override { }
+                                      
+    void run() override
+    {
+      vec2i bs(8,8);
+      std::cout << "no-denoise copy on " << (int*)fb->denoisedColor << " " << fb->numPixels << std::endl;
+      copyPixels<<<divRoundUp(fb->numPixels,bs),bs>>>
+        (fb->numPixels,fb->denoisedColor,fb->linearColor,fb->linearAlpha);
+    }
   };
 
 #if !BARNEY_DISABLE_DENOISING
+#if BARNEY_HAVE_OIDN
   struct DenoiserOIDN : public Denoiser {
     DenoiserOIDN(FrameBuffer *fb)
       : Denoiser(fb)
-    {
-      device = oidnNewDevice(OIDN_DEVICE_TYPE_CUDA);
-      oidnCommitDevice(device);
-      filter = oidnNewFilter(device,"RT");
-    }
-    virtual ~DenoiserOIDN()
-    {
-      if (colorBuf)  oidnReleaseBuffer(colorBuf);
-      if (normalBuf) oidnReleaseBuffer(normalBuf);
-      if (outputBuf) oidnReleaseBuffer(outputBuf);
-      if (denoiserInput)
-        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserInput));
-      if (denoiserAlpha)
-        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserAlpha));
-      if (denoiserOutput)
-        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserOutput));
-      if (denoiserNormal)
-        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserNormal));
-    }      
+    {}
+    virtual ~DenoiserOIDN();
+    
     void resize() override
     {
-      Denoiser::resize();
       vec2i numPixels = fb->numPixels;
       if (denoiserInput)
         BARNEY_CUDA_CALL(Free(denoiserInput));
@@ -71,6 +114,7 @@ namespace barney {
       
       if (denoiserNormal)
         BARNEY_CUDA_CALL(Free(denoiserNormal));
+
       BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
                               numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
       if (colorBuf)  oidnReleaseBuffer(colorBuf);
@@ -114,7 +158,8 @@ namespace barney {
     OIDNDevice device = 0;
     OIDNFilter filter = 0;
   };
-
+#endif
+  
 #if OPTIX_VERSION > 80000  
   struct DenoiserOptix : public Denoiser {
     DenoiserOptix(FrameBuffer *fb)
@@ -242,7 +287,11 @@ namespace barney {
   };
 #endif
 #endif
-      
+
+  Denoiser::SP Denoiser::create(FrameBuffer *fb)
+  { return std::make_shared<DenoiserNone>(fb); }
+  
+  
   FrameBuffer::FrameBuffer(Context *context, const bool isOwner)
     : Object(context),
       isOwner(isOwner)
@@ -257,6 +306,7 @@ namespace barney {
   FrameBuffer::~FrameBuffer()
   {
     freeResources();
+    denoiser = 0;
   }
 
   bool FrameBuffer::set1i(const std::string &member, const int &value)
@@ -270,15 +320,26 @@ namespace barney {
 
   void FrameBuffer::freeResources()
   {
-    if (finalDepth) {
-      BARNEY_CUDA_CALL(Free(finalDepth));
-      finalDepth = 0;
+    if (denoisedColor) {
+      BARNEY_CUDA_CALL(Free(denoisedColor));
+      denoisedColor = 0;
     }
-    if (finalColor) {
-      BARNEY_CUDA_CALL(Free(finalColor));
-      finalColor = 0;
+    if (linearColor) {
+      BARNEY_CUDA_CALL(Free(linearColor));
+      linearColor = 0;
     }
-    denoiser = 0;
+    if (linearAlpha) {
+      BARNEY_CUDA_CALL(Free(linearAlpha));
+      linearAlpha = 0;
+    }
+    if (linearDepth) {
+      BARNEY_CUDA_CALL(Free(linearDepth));
+      linearDepth = 0;
+    }
+    if (linearNormal) {
+      BARNEY_CUDA_CALL(Free(linearNormal));
+      linearNormal = 0;
+    }
   }
 
   template<bool SRGB>
@@ -294,70 +355,144 @@ namespace barney {
     int idx = ix+numPixels.x*iy;
     
     float4 v = in[idx];
-    v.x = clamp(v.x);
-    v.y = clamp(v.y);
-    v.z = clamp(v.z);
-    if (SRGBA) { 
-      v.x = powf(v.x,2.2f);
-      v.y = powf(v.y,2.2f);
-      v.z = powf(v.z,2.2f);
-    }
-    out[idx] = owl::make_rgba8(v);
+    // v.x = clamp(v.x);
+    // v.y = clamp(v.y);
+    // v.z = clamp(v.z);
+    // if (SRGB) {
+    //   // this doesn't make sense - the color channel has ALREADY been
+    //   // gamma-corrected in tonemap()!?
+    //   v.x = linear_to_srgb(v.x);
+    //   v.y = linear_to_srgb(v.y);
+    //   v.z = linear_to_srgb(v.z);
+    // }
+    out[idx] = make_rgba8(v);
   }
 
-  void read(BNFrameBufferChannel channel,
-            void *hostPtr,
-            BNDataType requestedFormat)
+  __global__ void toneMap(float4 *color, vec2i numPixels)
   {
-    if (!owner) return;
+    int ix = threadIdx.x+blockIdx.x*blockDim.x;
+    if (ix >= numPixels.x) return;
+    int iy = threadIdx.y+blockIdx.y*blockDim.y;
+    if (iy >= numPixels.y) return;
+    int idx = ix+numPixels.x*iy;
+    
+    float4 v = color[idx];
+#if 1
+    v.x = sqrtf(v.x);
+    v.y = sqrtf(v.y);
+    v.z = sqrtf(v.z);
+#else
+    v.x = linear_to_srgb(v.x);
+    v.y = linear_to_srgb(v.y);
+    v.z = linear_to_srgb(v.z);
+#endif
+    color[idx] = v;
+  }
+
+
+  void FrameBuffer::finalizeFrame()
+  {
+    dirty = true;
+    ownerGatherCompressedTiles();
+    if (isOwner)
+      unpackTiles();
+  }
+
+
+  __global__ void g_unpackTiles(vec2i numPixels,
+                                vec3f *colors,
+                                float *alphas,
+                                vec3f *normals,
+                                float *depths,
+                                CompressedTile *tiles,
+                                TileDesc *descs)
+  {
+    int tileIdx = blockIdx.x;
+
+    const CompressedTile &tile = tiles[tileIdx];
+    const TileDesc        desc = descs[tileIdx];
+    
+    int subIdx = threadIdx.x;
+    int iix = subIdx % tileSize;
+    int iiy = subIdx / tileSize;
+    int ix = desc.lower.x + iix;
+    int iy = desc.lower.y + iiy;
+    if (iix >= numPixels.x) return;
+    if (iiy >= numPixels.y) return;
+    int idx = ix + numPixels.x*iy;
+    
+    vec4f rgba = from_8bit(tile.rgba[subIdx]);
+    float alpha = rgba.w;
+    vec3f color = vec3f(rgba.x,rgba.y,rgba.z)*float(tile.scale[subIdx]);
+    vec3f normal = tile.normal[subIdx].get3f();
+    float depth = tile.depth[subIdx];
+
+    colors[idx] = color;
+    alphas[idx] = alpha;
+    depths[idx] = depth;
+    normals[idx] = normal;
+  }
+  
+  void FrameBuffer::unpackTiles()
+  {
+    g_unpackTiles<<<gatheredTilesOnOwner.numActiveTiles,pixelsPerTile>>>
+      (numPixels,
+       linearColor,
+       linearAlpha,
+       linearNormal,
+       linearDepth,
+       gatheredTilesOnOwner.compressedTiles,
+       gatheredTilesOnOwner.tileDescs);
+  }
+
+  void FrameBuffer::read(BNFrameBufferChannel channel,
+                         void *hostPtr,
+                         BNDataType requestedFormat)
+  {
+    if (!isOwner) return;
 
     if (dirty) {
       denoiser->run();
+      vec2i bs(8,8);
+      std::cout << "running tonemap on " << (int*)denoisedColor << " " << numPixels << std::endl;
+      toneMap<<<divRoundUp(numPixels,bs),bs>>>(denoisedColor,numPixels);
       dirty = false;
     }
     if (channel == BN_FB_DEPTH) {
       if (requestedFormat != BN_FLOAT)
         throw std::runtime_error("can only read depth channel as BN_FLOAT format");
-      if (!finalDepth)
+      if (!linearDepth)
         throw std::runtime_error("requesting to read depth channel, but didn't create one");
-      BARNEY_CUDA_CALL(Memcpy(hostPtr,finalDepth,
-                              numPixels.x*numPixels.y*sizeof(float)));
+      BARNEY_CUDA_CALL(Memcpy(hostPtr,linearDepth,
+                              numPixels.x*numPixels.y*sizeof(float),cudaMemcpyDefault));
       return;
     }
 
-    if (channel != BN_FB_DEPTH)
+    if (channel != BN_FB_COLOR)
       throw std::runtime_error("trying to read un-known channel!?");
 
     switch(requestedFormat) {
-    case FB_FLOAT4_RGBA:
-      BN_CUDA_CALL(MallocAsync((void**)&asFixed8,
-                               numPixels.x*numPixel.y*sizeof(uint32_t),0));
-      BARNEY_CUDA_CALL(Memcpy(hostPtr,finalDepth,
-                              numPixels.x*numPixels.y*sizeof(float)));
-      break;
-    case FB_UFIXED8_RGBA: {
-      uint32_t *asFixed8;
-      BN_CUDA_CALL(MallocAsync((void**)&asFixed8,
-                               numPixels.x*numPixel.y*sizeof(uint32_t),0));
-      vec2i bs(8,8);
-      toFixed8<false>
-        <<<divRoundUp(numPixels,bs),bs>>>
-        (asFixed8,finalColor,numPixels);
-        BARNEY_CUDA_CALL(Memcpy(hostPtr,finalDepth,
-                                numPixels.x*numPixels.y*sizeof(uint32_t)));
-        BN_CUDA_CALL(FreeAsync(asFixed8,0));
+    // case BN_FLOAT4_RGBA:
+    //   BARNEY_CUDA_CALL(Memcpy(hostPtr,finalColor,
+    //                           numPixels.x*numPixels.y*sizeof(float4),cudaMemcpyDefault));
+    //   break;
+    case BN_FLOAT4_RGBA: {
+      BARNEY_CUDA_CALL(Memcpy(hostPtr,denoisedColor,
+                              numPixels.x*numPixels.y*sizeof(float4),cudaMemcpyDefault));
     } break;
-    case FB_UFIXED8_RGBA_SRGB: {
+    case BN_UFIXED8_RGBA: {
       uint32_t *asFixed8;
-      BN_CUDA_CALL(MallocAsync((void**)&asFixed8,
-                               numPixels.x*numPixel.y*sizeof(uint32_t),0));
+      BARNEY_CUDA_CALL(MallocAsync((void**)&asFixed8,
+                               numPixels.x*numPixels.y*sizeof(uint32_t),0));
       vec2i bs(8,8);
+      printf("converting, NO srgb\n");
       toFixed8<false>
         <<<divRoundUp(numPixels,bs),bs>>>
-        (asFixed8,finalColor,numPixels);
-        BARNEY_CUDA_CALL(Memcpy(hostPtr,finalDepth,
-                                numPixels.x*numPixels.y*sizeof(uint32_t)));
-        BN_CUDA_CALL(FreeAsync(asFixed8,0));
+        (asFixed8,denoisedColor,numPixels);
+      BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
+                              numPixels.x*numPixels.y*sizeof(uint32_t),
+                              cudaMemcpyDefault));
+      BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
     } break;
     default:
       throw std::runtime_error("requested to read color channel in un-supported format #"
@@ -377,15 +512,16 @@ namespace barney {
     numPixels = size;
 
     if (isOwner) {
-      // allocate/resize a owner-only, device-side depth buffer that
-      // we can write into in device kernels
-      if (channels & BN_FB_DEPTH)
-        // host wants a depth buffer, so we need to allocate one on
-        // the device side for staging
-        BARNEY_CUDA_CALL(Malloc(&finalDepth,
-                                numPixels.x*numPixels.y*sizeof(float)));
-      
-      BARNEY_CUDA_CALL(Malloc(&finalColor, numPixels.x*numPixels.y*sizeof(float4)));
+      BARNEY_CUDA_CALL(Malloc(&denoisedColor,
+                              numPixels.x*numPixels.y*sizeof(*denoisedColor)));
+      BARNEY_CUDA_CALL(Malloc(&linearDepth,
+                              numPixels.x*numPixels.y*sizeof(*linearDepth)));
+      BARNEY_CUDA_CALL(Malloc(&linearColor,
+                              numPixels.x*numPixels.y*sizeof(*linearColor)));
+      BARNEY_CUDA_CALL(Malloc(&linearAlpha,
+                              numPixels.x*numPixels.y*sizeof(*linearAlpha)));
+      BARNEY_CUDA_CALL(Malloc(&linearNormal,
+                              numPixels.x*numPixels.y*sizeof(*linearNormal)));
       
       if (!denoiser) denoiser = Denoiser::create(this);
       denoiser->resize();
