@@ -71,8 +71,11 @@ BarneyGlobalState *Frame::deviceState() const
   // BN_FLOAT3,
   // BN_FLOAT4,
     switch(type) {
-    case ANARI_FLOAT32_VEC3: return BN_FLOAT3;
-    case ANARI_FLOAT32_VEC4: return BN_FLOAT4;
+    case ANARI_UFIXED8_VEC4:       return BN_UFIXED8_RGBA;
+    case ANARI_UFIXED8_RGBA_SRGB:  return BN_UFIXED8_RGBA_SRGB;
+    case ANARI_FLOAT32:            return BN_FLOAT;
+    case ANARI_FLOAT32_VEC3:       return BN_FLOAT3;
+    case ANARI_FLOAT32_VEC4:       return BN_FLOAT4;
     }
     throw std::runtime_error("toBarney: anari data type %i not handled yet");
   }

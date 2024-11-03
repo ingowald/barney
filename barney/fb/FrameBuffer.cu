@@ -67,8 +67,6 @@ namespace barney {
     if (iy >= numPixels.y) return;
     int idx = ix + numPixels.x*iy;
     vec3f color = in_color[idx];
-    if (ix ==  0 && iy == 0)
-      printf("in color %f %f %f\n",color.x,color.y,color.z);
     float alpha = in_alpha[idx];
     out[idx] = vec4f(color,alpha);
   }
@@ -81,7 +79,6 @@ namespace barney {
     void run() override
     {
       vec2i bs(8,8);
-      std::cout << "no-denoise copy on " << (int*)fb->denoisedColor << " " << fb->numPixels << std::endl;
       copyPixels<<<divRoundUp(fb->numPixels,bs),bs>>>
         (fb->numPixels,fb->denoisedColor,fb->linearColor,fb->linearAlpha);
     }
@@ -377,7 +374,11 @@ namespace barney {
     int idx = ix+numPixels.x*iy;
     
     float4 v = color[idx];
-#if 1
+#if 0
+    // v.x = powf(v.x,1.1f);
+    // v.y = powf(v.y,1.1f);
+    // v.z = powf(v.z,1.1f);
+#elif 1
     v.x = sqrtf(v.x);
     v.y = sqrtf(v.y);
     v.z = sqrtf(v.z);
@@ -392,10 +393,18 @@ namespace barney {
 
   void FrameBuffer::finalizeFrame()
   {
+    PING; BARNEY_CUDA_SYNC_CHECK();
+    
     dirty = true;
     ownerGatherCompressedTiles();
-    if (isOwner)
+    PING; BARNEY_CUDA_SYNC_CHECK();
+    if (isOwner) {
+      PING; BARNEY_CUDA_SYNC_CHECK();
       unpackTiles();
+      PING; BARNEY_CUDA_SYNC_CHECK();
+    }
+    
+    PING; BARNEY_CUDA_SYNC_CHECK();
   }
 
 
@@ -417,8 +426,8 @@ namespace barney {
     int iiy = subIdx / tileSize;
     int ix = desc.lower.x + iix;
     int iy = desc.lower.y + iiy;
-    if (iix >= numPixels.x) return;
-    if (iiy >= numPixels.y) return;
+    if (ix >= numPixels.x) return;
+    if (iy >= numPixels.y) return;
     int idx = ix + numPixels.x*iy;
     
     vec4f rgba = from_8bit(tile.rgba[subIdx]);
@@ -435,6 +444,13 @@ namespace barney {
   
   void FrameBuffer::unpackTiles()
   {
+    PING; PRINT(linearColor); PRINT(linearAlpha);
+    PRINT(linearNormal);
+    PRINT(linearDepth);
+    PRINT(gatheredTilesOnOwner.compressedTiles);
+    PRINT(gatheredTilesOnOwner.numActiveTiles);
+
+    BARNEY_CUDA_SYNC_CHECK();
     g_unpackTiles<<<gatheredTilesOnOwner.numActiveTiles,pixelsPerTile>>>
       (numPixels,
        linearColor,
@@ -443,6 +459,7 @@ namespace barney {
        linearDepth,
        gatheredTilesOnOwner.compressedTiles,
        gatheredTilesOnOwner.tileDescs);
+    BARNEY_CUDA_SYNC_CHECK();
   }
 
   void FrameBuffer::read(BNFrameBufferChannel channel,
@@ -454,23 +471,26 @@ namespace barney {
     if (dirty) {
       denoiser->run();
       vec2i bs(8,8);
-      std::cout << "running tonemap on " << (int*)denoisedColor << " " << numPixels << std::endl;
       toneMap<<<divRoundUp(numPixels,bs),bs>>>(denoisedColor,numPixels);
+      BARNEY_CUDA_SYNC_CHECK();
       dirty = false;
     }
-    if (channel == BN_FB_DEPTH) {
+    if (channel == BN_FB_DEPTH && hostPtr && linearDepth) {
       if (requestedFormat != BN_FLOAT)
         throw std::runtime_error("can only read depth channel as BN_FLOAT format");
       if (!linearDepth)
         throw std::runtime_error("requesting to read depth channel, but didn't create one");
       BARNEY_CUDA_CALL(Memcpy(hostPtr,linearDepth,
                               numPixels.x*numPixels.y*sizeof(float),cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
       return;
     }
 
     if (channel != BN_FB_COLOR)
       throw std::runtime_error("trying to read un-known channel!?");
 
+    BARNEY_CUDA_SYNC_CHECK();
+    
     switch(requestedFormat) {
     // case BN_FLOAT4_RGBA:
     //   BARNEY_CUDA_CALL(Memcpy(hostPtr,finalColor,
@@ -482,16 +502,20 @@ namespace barney {
     } break;
     case BN_UFIXED8_RGBA: {
       uint32_t *asFixed8;
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(MallocAsync((void**)&asFixed8,
-                               numPixels.x*numPixels.y*sizeof(uint32_t),0));
+                                   numPixels.x*numPixels.y*sizeof(uint32_t),0));
+      BARNEY_CUDA_SYNC_CHECK();
       vec2i bs(8,8);
-      printf("converting, NO srgb\n");
       toFixed8<false>
         <<<divRoundUp(numPixels,bs),bs>>>
         (asFixed8,denoisedColor,numPixels);
+      PING; PRINT(numPixels);
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
     } break;
     default:
