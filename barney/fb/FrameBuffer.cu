@@ -373,10 +373,10 @@ namespace barney {
     int idx = ix+numPixels.x*iy;
     
     float4 v = color[idx];
-#if 0
-    // v.x = powf(v.x,1.1f);
-    // v.y = powf(v.y,1.1f);
-    // v.z = powf(v.z,1.1f);
+#if 1
+    v.x = linear_to_srgb(v.x);
+    v.y = linear_to_srgb(v.y);
+    v.z = linear_to_srgb(v.z);
 #elif 1
     v.x = sqrtf(v.x);
     v.y = sqrtf(v.y);

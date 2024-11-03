@@ -510,8 +510,6 @@ namespace barney {
                                that given node */
                              _gpuIDs,
                              numGPUs);
-      // return (BNContext)new LocalContext(dataGroupIDs,
-      //                                    gpuIDs);
     }
 
     // ------------------------------------------------------------------
