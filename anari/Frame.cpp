@@ -8,7 +8,6 @@
 #include <chrono>
 #include <iostream>
 // cuda
-#include <cuda_runtime_api.h>
 // // thrust
 // #include <thrust/execution_policy.h>
 // #include <thrust/transform.h>

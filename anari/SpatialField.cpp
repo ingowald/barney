@@ -184,6 +184,7 @@ void UnstructuredField::commit()
   size_t numCells = m_params.cellType->size(); //endAs<uint64_t>() - index;
   // this isn't fully spec'ed yet
   enum { _ANARI_TET = 0, _ANARI_HEX=1, _ANARI_WEDGE=2, _ANARI_PYR=3 };
+  enum { _VTK_TET = 10, _VTK_HEX=12, _VTK_WEDGE=13, _VTK_PYR=14 };
   for (int cellIdx=0;cellIdx<(int)numCells;cellIdx++) {
     int thisOffset = m_indices.size();
     m_elementOffsets.push_back(thisOffset);
@@ -197,6 +198,14 @@ void UnstructuredField::commit()
     case _ANARI_WEDGE:
       numToCopy = 6; break;
     case _ANARI_PYR:
+      numToCopy = 5; break;
+    case _VTK_TET:
+      numToCopy = 4; break;
+    case _VTK_HEX:
+      numToCopy = 8; break;
+    case _VTK_WEDGE:
+      numToCopy = 6; break;
+    case _VTK_PYR:
       numToCopy = 5; break;
     default:
       throw std::runtime_error("buggy/invalid unstructured element type!?");
