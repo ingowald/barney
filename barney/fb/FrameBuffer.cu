@@ -553,6 +553,7 @@ namespace barney {
     //   BARNEY_CUDA_CALL(Memcpy(hostPtr,finalColor,
     //                           numPixels.x*numPixels.y*sizeof(float4),cudaMemcpyDefault));
     //   break;
+    case BN_FLOAT4: 
     case BN_FLOAT4_RGBA: {
       BARNEY_CUDA_CALL(Memcpy(hostPtr,denoisedColor,
                               numPixels.x*numPixels.y*sizeof(float4),
