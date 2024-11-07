@@ -42,8 +42,6 @@ struct Frame : public helium::BaseFrame
   bool ready() const;
   void wait() const;
 
-  void convertPixelsToFinalFormat();
-
  private:
   void cleanup();
 

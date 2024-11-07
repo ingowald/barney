@@ -14,11 +14,7 @@ namespace barney_device {
     ~Renderer() override;
 
     void commit() override;
-
-    // int pixelSamples() const;
-    // float radiance() const;
     bool crosshairs() const;
-    
     bool isValid() const override;
 
     BNRenderer barneyRenderer = 0;

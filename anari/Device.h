@@ -14,8 +14,6 @@ struct BarneyDevice : public helium::BaseDevice
 {
   // Data Arrays //////////////////////////////////////////////////////////////
 
-  void *mapArray(ANARIArray) override;
-
   ANARIArray1D newArray1D(const void *appMemory,
       ANARIMemoryDeleter deleter,
       const void *userdata,
