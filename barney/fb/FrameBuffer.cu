@@ -59,14 +59,14 @@ namespace barney {
     uint32_t r = _make_8bit(color.x);
     uint32_t g = _make_8bit(color.y);
     uint32_t b = _make_8bit(color.z);
-    uint32_t a = 0xff;//_make_8bit(color.w);
+    uint32_t a = 0xff; //make_8bit(color.w);
     uint32_t ret =
       (r << 0) |
       (g << 8) |
       (b << 16) |
       (a << 24);
-    if (dbg) printf("%x %x %x %x all %x\n",
-                    r,g,b,a,ret);
+    // if (dbg) printf("%x %x %x %x all %x\n",
+    //                 r,g,b,a,ret);
     return ret;
       // (_make_8bit(color.x) << 0) +
       // (_make_8bit(color.y) << 8) +
@@ -535,7 +535,8 @@ namespace barney {
       if (!linearDepth)
         throw std::runtime_error("requesting to read depth channel, but didn't create one");
       BARNEY_CUDA_CALL(Memcpy(hostPtr,linearDepth,
-                              numPixels.x*numPixels.y*sizeof(float),cudaMemcpyDefault));
+                              numPixels.x*numPixels.y*sizeof(float),
+                              cudaMemcpyDefault));
       BARNEY_CUDA_SYNC_CHECK();
       return;
     }
@@ -554,7 +555,8 @@ namespace barney {
     //   break;
     case BN_FLOAT4_RGBA: {
       BARNEY_CUDA_CALL(Memcpy(hostPtr,denoisedColor,
-                              numPixels.x*numPixels.y*sizeof(float4),cudaMemcpyDefault));
+                              numPixels.x*numPixels.y*sizeof(float4),
+                              cudaMemcpyDefault));
     } break;
     case BN_UFIXED8_RGBA: {
       uint32_t *asFixed8;

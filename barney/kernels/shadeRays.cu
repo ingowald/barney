@@ -850,6 +850,7 @@ namespace barney {
       // what we'll add into the frame buffer
       vec3f fragment = 0.f;
       float z = path.tMax;
+      float alpha = path.hadHit();
       // create a (potential) shadow ray, and init to 'invalid'
       Ray shadowRay;
       shadowRay.tMax = -1.f;
@@ -908,12 +909,14 @@ namespace barney {
       
       if (accumID == 0 && generation == 0) {
         // if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
-        valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,0.f);
+        valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,alpha);
 #if DENOISE
         valueToAccumNormalInto = incomingN;
 #endif
       } else {
         // if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
+        if (generation == 0 && alpha) 
+          atomicAdd(&valueToAccumInto.w,alpha);
 
         if (fragment.x > 0.f)
           atomicAdd(&valueToAccumInto.x,fragment.x);

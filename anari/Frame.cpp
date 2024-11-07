@@ -102,10 +102,11 @@ void Frame::commit()
     m_depthBuffer = new float[numPixels];
 
   bnFrameBufferResize(m_bnFrameBuffer,
-      size.x,
-      size.y,
-      (uint32_t)BN_FB_COLOR
-          | (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
+                      size.x,
+                      size.y,
+                      (uint32_t)BN_FB_COLOR
+                      |
+                      (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
   bnSet1i(m_bnFrameBuffer,
       "showCrosshairs",
       m_renderer ? int(m_renderer->crosshairs()) : false);
