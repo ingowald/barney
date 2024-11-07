@@ -17,12 +17,6 @@ namespace barney_device {
 
 // Data Arrays ////////////////////////////////////////////////////////////////
 
-void *BarneyDevice::mapArray(ANARIArray a)
-{
-  deviceState()->waitOnCurrentFrame();
-  return helium::BaseDevice::mapArray(a);
-}
-
 ANARIArray1D BarneyDevice::newArray1D(const void *appMemory,
     ANARIMemoryDeleter deleter,
     const void *userData,
@@ -203,7 +197,6 @@ int BarneyDevice::getProperty(ANARIObject object,
 {
   if (mask == ANARI_WAIT) {
     auto lock = scopeLockObject();
-    deviceState()->waitOnCurrentFrame();
   }
 
   return helium::BaseDevice::getProperty(object, name, type, mem, size, mask);

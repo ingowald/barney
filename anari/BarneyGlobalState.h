@@ -19,7 +19,6 @@ struct BarneyGlobalState : public helium::BaseGlobalDeviceState
     helium::TimeStamp lastSceneChange{0};
   } objectUpdates;
 
-  Frame *currentFrame{nullptr};
   World *currentWorld{nullptr};
 
   BNContext context{nullptr};
@@ -32,7 +31,6 @@ struct BarneyGlobalState : public helium::BaseGlobalDeviceState
   // Helper methods //
 
   BarneyGlobalState(ANARIDevice d);
-  void waitOnCurrentFrame() const;
   void markSceneChanged();
 };
 

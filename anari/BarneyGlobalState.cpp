@@ -12,12 +12,6 @@ BarneyGlobalState::BarneyGlobalState(ANARIDevice d)
     : helium::BaseGlobalDeviceState(d)
 {}
 
-void BarneyGlobalState::waitOnCurrentFrame() const
-{
-  if (currentFrame)
-    currentFrame->wait();
-}
-
 void BarneyGlobalState::markSceneChanged()
 {
   objectUpdates.lastSceneChange = helium::newTimeStamp();
