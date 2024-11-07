@@ -67,7 +67,8 @@ if (NOT BARNEY_IS_SUBPROJECT)
 endif()
 
 
-set(BARNEY_CUDA_ARCHITECTURES "auto" CACHE STRING "which CUDA arch to use for building cuBQL" )
+set(BARNEY_CUDA_ARCHITECTURES "80" CACHE
+  STRING "which CUDA arch to use for building cuBQL" )
 
 if (BARNEY_CUDA_ARCHITECTURES STREQUAL "auto")
   # leave CMAKE_CUDA_ARCHITECTURES to whatever the may may or may not have set
