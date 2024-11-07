@@ -22,15 +22,18 @@
 
 namespace barney {
 
+  inline __device__ float saturate(float f, float lo=0.f, float hi=1.f)
+  { return max(lo,min(f,hi)); }
+  
   inline __device__ float from_8bit(uint8_t v) {
-    return float(v) * (1./127.f);
+    return float(v) * (1.f/255.f);
   }
   
   inline __device__ vec4f from_8bit(uint32_t v) {
-    return vec4f(from_8bit(uint8_t(v >> 0)),
-                 from_8bit(uint8_t(v >> 8)),
-                 from_8bit(uint8_t(v >> 16)),
-                 from_8bit(uint8_t(v >> 24)));
+    return vec4f(from_8bit(uint8_t((v >> 0)&0xff)),
+                 from_8bit(uint8_t((v >> 8)&0xff)),
+                 from_8bit(uint8_t((v >> 16)&0xff)),
+                 from_8bit(uint8_t((v >> 24)&0xff)));
   }
   
   inline __device__ float linear_to_srgb(float x) {
@@ -40,18 +43,35 @@ namespace barney {
     return 1.055f * pow(x, 1.f/2.4f) - 0.055f;
   }
 
-  inline __device__ uint32_t make_8bit(const float f)
+  inline __device__ uint32_t _make_8bit(const float f)
   {
     return min(255,max(0,int(f*256.f)));
   }
 
-  inline __device__ uint32_t make_rgba8(const vec4f color)
+  inline __device__ uint32_t make_rgba8(const vec4f color, bool dbg=false)
   {
-    return
-      (make_8bit(color.x) << 0) +
-      (make_8bit(color.y) << 8) +
-      (make_8bit(color.z) << 16) +
-      (make_8bit(color.w) << 24);
+    if (dbg)
+      printf("col %f %f %f %f\n",
+             color.x,
+             color.y,
+             color.z,
+             color.w);
+    uint32_t r = _make_8bit(color.x);
+    uint32_t g = _make_8bit(color.y);
+    uint32_t b = _make_8bit(color.z);
+    uint32_t a = 0xff;//_make_8bit(color.w);
+    uint32_t ret =
+      (r << 0) |
+      (g << 8) |
+      (b << 16) |
+      (a << 24);
+    if (dbg) printf("%x %x %x %x all %x\n",
+                    r,g,b,a,ret);
+    return ret;
+      // (_make_8bit(color.x) << 0) +
+      // (_make_8bit(color.y) << 8) +
+      // (_make_8bit(color.z) << 16) +
+      // (_make_8bit(color.w) << 24);
   }
   
   inline __device__ float clamp(float f) { return min(1.f,max(0.f,f)); }
@@ -388,11 +408,13 @@ namespace barney {
     int iy = threadIdx.y+blockIdx.y*blockDim.y;
     if (iy >= numPixels.y) return;
     int idx = ix+numPixels.x*iy;
+
+    bool dbg = 0;// (ix == 0 && iy == 0);
     
     float4 v = in[idx];
-    // v.x = clamp(v.x);
-    // v.y = clamp(v.y);
-    // v.z = clamp(v.z);
+    v.x = clamp(v.x);
+    v.y = clamp(v.y);
+    v.z = clamp(v.z);
     if (SRGB) {
       // this doesn't make sense - the color channel has ALREADY been
       // gamma-corrected in tonemap()!?
@@ -400,7 +422,7 @@ namespace barney {
       v.y = linear_to_srgb(v.y);
       v.z = linear_to_srgb(v.z);
     }
-    out[idx] = make_rgba8(v);
+    out[idx] = make_rgba8(v,dbg);
   }
 
   __global__ void toneMap(float4 *color, vec2i numPixels)
@@ -410,20 +432,23 @@ namespace barney {
     int iy = threadIdx.y+blockIdx.y*blockDim.y;
     if (iy >= numPixels.y) return;
     int idx = ix+numPixels.x*iy;
-    
+
     float4 v = color[idx];
+    // if (ix == 0 && iy == 0)
+    //   printf("color %f %f %f %f\n",
+    //          v.x,v.y,v.z,v.w);
 #if 1
     v.x = linear_to_srgb(v.x);
     v.y = linear_to_srgb(v.y);
     v.z = linear_to_srgb(v.z);
-#elif 1
+#elif 0
     v.x = sqrtf(v.x);
     v.y = sqrtf(v.y);
     v.z = sqrtf(v.z);
 #else
-    v.x = linear_to_srgb(v.x);
-    v.y = linear_to_srgb(v.y);
-    v.z = linear_to_srgb(v.z);
+    // v.x = linear_to_srgb(v.x);
+    // v.y = linear_to_srgb(v.y);
+    // v.z = linear_to_srgb(v.z);
 #endif
     color[idx] = v;
   }
@@ -464,7 +489,12 @@ namespace barney {
     
     vec4f rgba = from_8bit(tile.rgba[subIdx]);
     float alpha = rgba.w;
-    vec3f color = vec3f(rgba.x,rgba.y,rgba.z)*float(tile.scale[subIdx]);
+    float scale = float(tile.scale[subIdx]);
+    vec3f color = vec3f(rgba.x,rgba.y,rgba.z)*scale;
+    // if (ix == 0 && iy == 0)
+    //   printf("rgba %f %f %f scale %f color %f %f %f\n",
+    //          rgba.x,rgba.y,rgba.z,scale,
+    //          color.x,color.y,color.z);
     vec3f normal = tile.normal[subIdx].get3f();
     float depth = tile.depth[subIdx];
 

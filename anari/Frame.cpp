@@ -184,11 +184,14 @@ void *Frame::map(std::string_view channel,
   *height = m_frameData.size.y;
 
   if (channel == "channel.color") {
-    bnFrameBufferRead(m_bnFrameBuffer,BN_FB_COLOR,m_colorBuffer,toBarney(m_colorType));
+    bnFrameBufferRead(m_bnFrameBuffer,
+                      BN_FB_COLOR,
+                      m_colorBuffer,
+                      toBarney(m_colorType));
     *pixelType = m_colorType;
     return m_colorBuffer;
   } else if (channel == "channel.depth" && m_depthBuffer) {
-    bnFrameBufferRead(m_bnFrameBuffer,BN_FB_DEPTH,m_colorBuffer,BN_FLOAT);
+    bnFrameBufferRead(m_bnFrameBuffer,BN_FB_DEPTH,m_depthBuffer,BN_FLOAT);
     *pixelType = ANARI_FLOAT32;
     return m_depthBuffer;
   }
