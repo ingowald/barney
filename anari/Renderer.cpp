@@ -28,6 +28,25 @@ void Renderer::commit()
   bnSet1i(barneyRenderer, "crosshairs", (int)m_crosshairs);
   bnSet1i(barneyRenderer, "pathsPerPixel", (int)m_pixelSamples);
   bnSet1f(barneyRenderer, "ambientRadiance", m_ambientRadiance);
+
+  if (m_backgroundImage) {
+    int sx = m_backgroundImage->size().x;
+    int sy = m_backgroundImage->size().y;
+    const float4 *texels
+      = (const float4 *)m_backgroundImage->data();
+    barneyBackgroundImage
+      = bnTexture2DCreate(deviceState()->context,-1,
+                          BN_FLOAT4,sx,sy,
+                          texels);
+    bnSetObject(barneyRenderer,"bgTexture",barneyBackgroundImage);
+  } else {
+    if (barneyBackgroundImage) {
+      bnRelease(barneyBackgroundImage);
+      barneyBackgroundImage = 0;
+      bnSetObject(barneyRenderer,"bgTexture",0);
+    }
+  }
+  bnCommit(barneyRenderer);
 }
 
 bool Renderer::crosshairs() const

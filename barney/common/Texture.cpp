@@ -82,6 +82,9 @@ namespace barney {
     case BN_FLOAT4_RGBA:
       owlTexelFormat = OWL_TEXEL_FORMAT_RGBA32F;
       break;
+    case BN_FLOAT4:
+      owlTexelFormat = OWL_TEXEL_FORMAT_RGBA32F;
+      break;
     case BN_UFIXED8_RGBA:
       owlTexelFormat = OWL_TEXEL_FORMAT_RGBA8;
       break;
@@ -216,9 +219,11 @@ namespace barney {
   {
     if (!onDev.empty()) return;
 
+    PING;
     auto &devices = getDevices();
     onDev.resize(context->contextSize());
 
+    PING;
     cudaChannelFormatDesc desc;
     // cudaTextureReadMode   readMode;
     size_t sizeOfScalar;
@@ -229,6 +234,12 @@ namespace barney {
       sizeOfScalar = 4;
       // readMode     = cudaReadModeElementType;
       numScalarsPerTexel = 1;
+      break;
+    case BN_FLOAT4:
+      desc         = cudaCreateChannelDesc<float4>();
+      sizeOfScalar = 4;
+      // readMode     = cudaReadModeElementType;
+      numScalarsPerTexel = 4;
       break;
     case BN_UFIXED8:
       desc         = cudaCreateChannelDesc<uint8_t>();
@@ -255,6 +266,7 @@ namespace barney {
     for (auto dev : devices) {
       auto &dd = getDD(dev);//onDev[dev->localRank];
       SetActiveGPU forDuration(dev);
+      PING; PRINT(size);
       BARNEY_CUDA_CALL(MallocArray(&dd.array,&desc,size.x,size.y,0));
       BARNEY_CUDA_CALL(Memcpy2DToArray(dd.array,0,0,
                                        (void *)texels,

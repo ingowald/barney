@@ -19,6 +19,8 @@ namespace barney_device {
 
     BNRenderer barneyRenderer = 0;
   private:
+    BNTexture2D barneyBackgroundImage = 0;
+    
     int    m_pixelSamples{8*16};
     float  m_ambientRadiance{0.8f};
     bool   m_crosshairs{false};

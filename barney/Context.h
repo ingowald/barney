@@ -106,6 +106,7 @@ namespace barney {
     
     /*! generate a new wave-front of rays */
     void generateRays(const barney::Camera::DD &camera,
+                      Renderer *renderer,
                       FrameBuffer *fb);
     
     /*! have each *local* GPU trace its current wave-front of rays */
@@ -172,6 +173,7 @@ namespace barney {
       // iw: this is more like "globals", this name doesn't fit
       // render::World        world;
     };
+    const PerSlot *getSlot(int slot) const;
     PerSlot *getSlot(int slot);
     std::vector<PerSlot> perSlot;
     
@@ -185,8 +187,16 @@ namespace barney {
         ever be global */
     OWLContext getOWL(int slot);// { return globalContextAcrossAllGPUs; }
     // OWLContext getGlobalOWL() const;
-    const std::vector<Device::SP> &getDevices(int slot) const;
+    const std::vector<Device::SP> &getDevices(int slot) const
+    {
+      if (slot == -1)
+        return allDevices;
+      else
+        return getDevGroup(slot)->devices;
+    }
     DevGroup *getDevGroup(int slot);
+    const DevGroup *getDevGroup(int slot) const;
+    
     int contextSize() const;
 
   private:
@@ -195,7 +205,10 @@ namespace barney {
        GPUs; for actual rendering data each data group will have to
        have its own context */
     OWLContext globalContextAcrossAllGPUs = 0 ;
-
+    
+    /*! list of _all_ devices across all slots, so across DIFFERENT
+        device groups! */
+    std::vector<Device::SP> allDevices;
   };
   
 

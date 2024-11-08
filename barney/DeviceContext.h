@@ -18,6 +18,7 @@
 
 #include "barney/render/Ray.h"
 #include "barney/render/RayQueue.h"
+#include "barney/render/Renderer.h"
 #include "barney/Camera.h"
 #include "barney/DeviceGroup.h"
 #include "barney/render/MaterialRegistry.h"
@@ -44,6 +45,7 @@ namespace barney {
     
     void generateRays_launch(TiledFB *fb,
                              const Camera::DD &camera,
+                             const Renderer::DD &renderer,
                              int rngSeed);
     void generateRays_sync();
 

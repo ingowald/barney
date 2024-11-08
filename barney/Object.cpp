@@ -43,7 +43,7 @@ namespace barney {
     : Object(context),
       slot(slot)
   {}
-
+ 
   DevGroup *SlottedObject::getDevGroup() const
   {
     assert(context);
@@ -54,11 +54,18 @@ namespace barney {
 
   const std::vector<std::shared_ptr<Device>> &SlottedObject::getDevices() const
   {
-    return getDevGroup()->devices;
+    return context->getDevices(slot);
+    // return getDevGroup()->devices;
   }
   
   OWLContext     SlottedObject::getOWL() const
-  { return getDevGroup()->owl; }
+  {
+    if (slot == -1) {
+      PING;
+      return context->getOWL(slot);
+    }
+    return getDevGroup()->owl;
+  }
   
 }
 

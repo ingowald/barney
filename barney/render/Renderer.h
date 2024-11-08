@@ -58,12 +58,12 @@ namespace barney {
 
     struct {
       Texture::SP bgTexture       = 0;
-      vec4f       bgColor         = vec4f(0,0,0,1);
+      vec4f       bgColor         = vec4f(0,0,0,1.f);
       int         pathsPerPixel   = 1;
       float       ambientRadiance = 1.f;
       int         crosshairs      = 0;
     } staged;
-    vec4f       bgColor         = vec4f(0,0,0,1);
+    vec4f       bgColor         = vec4f(0,0,0,1.f);
     Texture::SP bgTexture       = 0;
     int         pathsPerPixel   = 1;
     float       ambientRadiance = 1.f;

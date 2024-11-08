@@ -88,16 +88,6 @@ namespace barney {
     owl = owlDeviceBufferCreate(getOWL(),owlTypeFor(type),
                                 numItems,_items);
   }
-  
-  // PODData::PODData(ModelSlot *owner,
-  //                  BNDataType type,
-  //                  size_t numItems,
-  //                  const void *_items)
-  //   : Data(owner,type,numItems)
-  // {
-  //   owl = owlDeviceBufferCreate(getOWL(),owlTypeFor(type),
-  //                               numItems,_items);
-  // }
 
   PODData::~PODData()
   {

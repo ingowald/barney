@@ -28,13 +28,14 @@ namespace barney {
   {}
 
   /* see generateRays.cu for implementation */
-  __global__
-  void g_generateRays(Camera camera,
-                      int rngSeed,
-                      vec2i fbSize,
-                      int *dR_count,
-                      Ray *rayQueue,
-                      TileDesc *tileDescs);
+  // __global__
+  // void g_generateRays(Camera::DD camera,
+                      
+  //                     int rngSeed,
+  //                     vec2i fbSize,
+  //                     int *dR_count,
+  //                     Ray *rayQueue,
+  //                     TileDesc *tileDescs);
   
   void  DeviceContext::generateRays_sync()
   {
@@ -62,7 +63,7 @@ namespace barney {
     DevGroup *dg = device->devGroup;
     Context *context = model->context;
     ModelSlot *modelSlot = model->getSlot(dg->lmsIdx);
-    Context::PerSlot *contextSlot = context->getSlot(dg->lmsIdx);
+    const Context::PerSlot *contextSlot = context->getSlot(dg->lmsIdx);
     owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);
     owlParamsSet1i(dg->lp,"numRays",rays.numActive);
     owlParamsSetGroup(dg->lp,"world",

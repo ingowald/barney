@@ -39,35 +39,38 @@ namespace barney {
 #endif
       
       vec3f    org;
-      vec3h    throughput;
-      vec3h    dir;
+      vec3f    dir;
       float    tMax;
       uint32_t rngSeed;
-      
-      struct {
-        uint64_t  pixelID    :28;
-        /*! type of bsdf in the hitBSDF; if this is set to NONE the
-          ray didn't have any hit yet */
-        uint64_t  bsdfType   : 3;
-        uint64_t  numDiffuseBounces:2;
-        /*! for path tracer: tracks whether we are, or aren't, in a
-          refractable medium */
-        uint64_t  isInMedium : 1;
-        uint64_t  isShadowRay: 1;
-        uint64_t  dbg        : 1;
+
+      union {
+        struct {
+          uint64_t misWeightBits:16;
+          uint64_t  pixelID    :28;
+          /*! type of bsdf in the hitBSDF; if this is set to NONE the
+            ray didn't have any hit yet */
+          uint64_t  bsdfType   : 3;
+          uint64_t  numDiffuseBounces:2;
+          /*! for path tracer: tracks whether we are, or aren't, in a
+            refractable medium */
+          uint64_t  isInMedium : 1;
+          uint64_t  isShadowRay: 1;
+          uint64_t  dbg        : 1;
+        };
+        half     misWeight;
       };
       /*! the actual hit point, in 3D float coordinates (rather than
         implicitly through org+tMax*dir), for numerical robustness
         issues */
       vec3f       P;
       // vec3h       Le;
+      vec3h    throughput;
       vec3h       N;
       union {
         PackedBSDF::Data hitBSDF;
         /*! the background color for primary rays that didn't have any intersection */
         float3           missColor;
       };
-      half     misWeight;
     };
   
     // struct RayQueue {

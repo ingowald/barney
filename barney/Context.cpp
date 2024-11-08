@@ -64,6 +64,7 @@ namespace barney {
   }
   
   void Context::generateRays(const barney::Camera::DD &camera,
+                             Renderer *renderer,
                              FrameBuffer *fb)
   {
     assert(fb);
@@ -80,7 +81,7 @@ namespace barney {
       assert(dev);
       
       dev->rays.resetWriteQueue();
-      dev->generateRays_launch(mfb,camera,accumID);
+      dev->generateRays_launch(mfb,camera,renderer->getDD(dev->device.get()),accumID);
     }
     // ------------------------------------------------------------------
     // wait for all GPUs' completion
@@ -176,7 +177,7 @@ namespace barney {
       fb->accumID = 0;
 #endif
       double _t0 = getCurrentTime();
-      generateRays(camera,fb);
+      generateRays(camera,renderer,fb);
       for (auto dev : devices) dev->launch_sync();
 
       for (int generation=0;true;generation++) {
@@ -245,8 +246,10 @@ namespace barney {
                    dg.gpuIDs,
                    globalIndex*numSlots+lmsIdx,
                    globalIndexStep*numSlots);
-      for (auto dev : dg.devGroup->devices)
+      for (auto dev : dg.devGroup->devices) {
         devices.push_back(std::make_shared<DeviceContext>(dev));
+        allDevices.push_back(dev);
+      }
       
       dg.materialRegistry
         = std::make_shared<render::MaterialRegistry>(dg.devGroup);
@@ -293,7 +296,13 @@ namespace barney {
     return slot->defaultMaterial;
   }
 
-  Context::PerSlot *Context::getSlot(int slot) 
+  const Context::PerSlot *Context::getSlot(int slot) const
+  {
+    if (slot < 0 || slot >= perSlot.size())
+      throw std::runtime_error("tried to query an invalid slot!");
+    return &perSlot[slot];
+  }
+  Context::PerSlot *Context::getSlot(int slot)
   {
     if (slot < 0 || slot >= perSlot.size())
       throw std::runtime_error("tried to query an invalid slot!");
@@ -302,10 +311,20 @@ namespace barney {
 
   OWLContext Context::getOWL(int slot) 
   {
+    if (slot == -1) {
+      PING;
+      return globalContextAcrossAllGPUs;
+    }
     return getDevGroup(slot)->owl;
   }
 
-  DevGroup *Context::getDevGroup(int slot)
+  const DevGroup *Context::getDevGroup(int slot) const
+  {
+    DevGroup *dg = getSlot(slot)->devGroup.get();
+    assert(dg);
+    return dg;
+  }
+  DevGroup *Context::getDevGroup(int slot) 
   {
     DevGroup *dg = getSlot(slot)->devGroup.get();
     assert(dg);
