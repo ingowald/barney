@@ -128,6 +128,9 @@ void UnstructuredField::commit()
   m_params.index = getParamObject<helium::Array1D>("index");
   m_params.cellType = getParamObject<helium::Array1D>("cell.type");
   m_params.cellBegin = getParamObject<helium::Array1D>("cell.begin");
+  if (!m_params.cellBegin) { // some older apps use "cell.index"
+    m_params.cellBegin = getParamObject<helium::Array1D>("cell.index");
+  }
 
   if (!m_params.vertexPosition) {
     reportMessage(ANARI_SEVERITY_WARNING, 
@@ -176,8 +179,28 @@ void UnstructuredField::commit()
     m_bounds.insert(vertexPosition[i]);
     m_vertices[i].w = vertexData[i];
   }
-  auto *index = m_params.index->beginAs<uint32_t>();
-  auto *cellBegin = m_params.cellBegin->beginAs<uint32_t>();
+
+  uint32_t *index32{nullptr};
+  uint64_t *index64{nullptr};
+  if (m_params.index->elementType() == ANARI_UINT32)
+    index32 = (uint32_t *)m_params.index->beginAs<uint32_t>();
+  else if (m_params.index->elementType() == ANARI_UINT64)
+    index64 = (uint64_t *)m_params.index->beginAs<uint64_t>();
+  else {
+    reportMessage(ANARI_SEVERITY_ERROR,
+        "parameter 'index' on unstructured spatial field has wrong element type");
+    return;
+  }
+
+  uint32_t *cellBegin32{nullptr};
+  uint64_t *cellBegin64{nullptr};
+  if (m_params.cellBegin && m_params.cellBegin->elementType() == ANARI_UINT32)
+    cellBegin32 = (uint32_t *)m_params.cellBegin->beginAs<uint32_t>();
+  else if (m_params.cellBegin && m_params.cellBegin->elementType() == ANARI_UINT64)
+    cellBegin64 = (uint64_t *)m_params.cellBegin->beginAs<uint64_t>();
+
+  //auto *index = m_params.index->beginAs<uint32_t>();
+  //auto *cellBegin = m_params.cellBegin->beginAs<uint32_t>();
   auto *cellType = m_params.cellType->beginAs<uint8_t>();
 
   // size_t numVerts = m_params.vertexPosition->size();
@@ -210,9 +233,12 @@ void UnstructuredField::commit()
     default:
       throw std::runtime_error("buggy/invalid unstructured element type!?");
     };
-    int inputBegin = cellBegin[cellIdx];
+    int inputBegin = cellBegin32 ? cellBegin32[cellIdx] : cellBegin64[cellIdx];
     for (int i=0;i<numToCopy;i++) {
-      m_indices.push_back(index[inputBegin+i]);
+      if (index32)
+        m_indices.push_back(index32[inputBegin+i]);
+      else
+        m_indices.push_back(index64[inputBegin+i]);
     }
   }
 }
