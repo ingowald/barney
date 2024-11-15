@@ -298,7 +298,7 @@ namespace barney {
 
   cudaTextureObject_t Texture::getTextureObject(const Device *device) const
   {
-    return owlTextureGetObject(owlTexture,device->owlID);
+    return (cudaTextureObject_t)owlTextureGetObject(owlTexture,device->owlID);
   }
     
   

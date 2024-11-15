@@ -89,6 +89,14 @@ endif()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+macro(CUDA_SOURCE fileName)
+  set_source_files_properties(${fileName}
+    PROPERTIES LANGUAGE CUDA
+    )
+endmacro()
+
+add_subdirectory(../saucy buildDir_saucy EXCLUDE_FROM_ALL)
+
 # ------------------------------------------------------------------
 # subprojects we depend on
 # ------------------------------------------------------------------
@@ -96,7 +104,12 @@ if (NOT (TARGET owl::owl))
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 endif()
 
-add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
+
+# swtich to 'find' if installed
+option(BARNEY_USE_CUBQL "Use CUBQL library" true)
+if (BARNEY_USE_CUBQL)
+  add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
+endif()
 
 # ------------------------------------------------------------------
 # barney itself

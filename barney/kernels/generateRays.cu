@@ -78,8 +78,8 @@ namespace barney {
       // rand();
 
       ray.org  = camera.lens_00;
-      float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));
-      float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y));
+      float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize./*SIC:!*/y))-.5f;
+      float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y))-.5f;
       vec3f ray_dir
         = camera.dir_00
         + image_u*camera.dir_du
@@ -193,7 +193,24 @@ namespace barney {
       return fromEnv && std::stoi(fromEnv);
     };
     static bool enablePerRayDebug = getPerRayDebug();
-    
+
+#if 1
+    CHECK_CUDA_LAUNCH
+      (/* cuda kernel */
+       render::g_generateRays,
+       /* launch config */
+       fb->numActiveTiles,pixelsPerTile,0,device->launchStream,
+       /* variable args */
+       camera,
+       renderer,
+       rngSeed,
+       fb->owner->accumID,
+       fb->numPixels,
+       rays._d_nextWritePos,
+       rays.receiveAndShadeWriteQueue,
+       fb->tileDescs,
+       enablePerRayDebug);
+#else
     render::g_generateRays
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,
@@ -205,5 +222,6 @@ namespace barney {
        rays.receiveAndShadeWriteQueue,
        fb->tileDescs,
        enablePerRayDebug);
+#endif
   }
 }

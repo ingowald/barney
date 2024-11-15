@@ -47,9 +47,19 @@ namespace barney {
       SetActiveGPU forDuration(dev);
       BARNEY_CUDA_SYNC_CHECK();
       auto d_grid = getDD(dev);
-      g_clearMCs
+#if 1
+      CHECK_CUDA_LAUNCH
+        (/* cuda kernel */
+         g_clearMCs,
+         /* launch config */
+         (dim3)nb,(dim3)bs,0,0,
+         /* variable args */
+         d_grid);
+#else
+       g_clearMCs
         <<<(dim3)nb,(dim3)bs>>>
         (d_grid);
+#endif
       BARNEY_CUDA_SYNC_CHECK();
     }
   }
@@ -91,9 +101,19 @@ namespace barney {
       SetActiveGPU forDuration(dev);
       auto d_xf = xf->getDD(dev);
       auto dd = getDD(dev);
+#if 1
+      CHECK_CUDA_LAUNCH
+        (/* cuda kernel */
+         mapMacroCells,
+         /* launch config */
+         (dim3)nb,(dim3)bs,0,0,
+         /* variable args */
+         dd,d_xf);
+#else
       mapMacroCells
         <<<(dim3)nb,(dim3)bs>>>
         (dd,d_xf);
+#endif
       BARNEY_CUDA_SYNC_CHECK();
     }
   }

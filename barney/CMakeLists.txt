@@ -20,6 +20,14 @@ target_link_libraries(barney-config
   INTERFACE
   cuBQL
   )
+if (TARGET cuBQL_cuda_float3)
+  target_compile_definitions(barney-config INTERFACE -DHAVE_CUBQL=1)
+#if (target cuBQL_cuda_float3)
+  target_link_libraries(barney-config INTERFACE
+    cuBQL_cuda_float3
+    )
+#endif()
+endif()
 
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
@@ -120,8 +128,28 @@ embed_ptx(
   OUTPUT_TARGET      barney-BlockStructuredMC-ptx
   PTX_LINK_LIBRARIES owl::owl barney-config
   SOURCES            amr/BlockStructuredMC.dev.cu
-)
+  )
 
+CUDA_SOURCE(kernels/generateRays.cu)
+CUDA_SOURCE(kernels/shadeRays.cu)
+CUDA_SOURCE(Camera.cu)
+CUDA_SOURCE(fb/FrameBuffer.cu)
+CUDA_SOURCE(fb/TiledFB.cu)
+CUDA_SOURCE(fb/LocalFB.cu)
+CUDA_SOURCE(light/DirLight.cu)
+CUDA_SOURCE(light/PointLight.cu)
+CUDA_SOURCE(light/QuadLight.cu)
+CUDA_SOURCE(light/EnvMap.cu)
+CUDA_SOURCE(kernels/shadeRays.cu)
+CUDA_SOURCE(volume/MCGrid.cu)
+CUDA_SOURCE(volume/StructuredData.cu)
+CUDA_SOURCE(umesh/common/UMeshField.cu)
+CUDA_SOURCE(umesh/mc/UMeshCUBQLSampler.cu)
+CUDA_SOURCE(umesh/os/RTXObjectSpace.cu)
+CUDA_SOURCE(umesh/os/AWT.cu)
+CUDA_SOURCE(amr/BlockStructuredField.cu)
+CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
+  
 add_library(barney STATIC
   common/barney-common.h
   common/cuda-helper.cpp
@@ -271,7 +299,6 @@ target_link_libraries(barney
   PUBLIC
   owl::owl
  # OptiX::OptiX
-  cuBQL_cuda_float3
   barney-config
   barney-StructuredData-ptx
   barney-spheres-ptx
