@@ -95,8 +95,11 @@ macro(CUDA_SOURCE fileName)
     )
 endmacro()
 
-add_subdirectory(../saucy buildDir_saucy EXCLUDE_FROM_ALL)
-
+option(EXP_SAUCY "Saucy exping" OFF)
+mark_as_advanced(EXP_SAUCY)
+if (EXP_SAUCY)
+  add_subdirectory(../saucy buildDir_saucy EXCLUDE_FROM_ALL)
+endif()
 # ------------------------------------------------------------------
 # subprojects we depend on
 # ------------------------------------------------------------------

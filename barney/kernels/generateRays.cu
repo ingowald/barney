@@ -78,12 +78,15 @@ namespace barney {
       // rand();
 
       ray.org  = camera.lens_00;
-      float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize./*SIC:!*/y))-.5f;
-      float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y))-.5f;
+      float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));
+      float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y));
+      float inv_aspect = fbSize.y / float(fbSize.x);
       vec3f ray_dir
         = camera.dir_00
-        + image_u*camera.dir_du
-        + image_v*camera.dir_dv;
+        + (1.f*(image_u - .5f)) * camera.dir_du
+        + (1.f*inv_aspect*(image_v - .5f)) * camera.dir_dv;
+        // + image_u*(fbSize.x/float(fbSize.y))*camera.dir_du
+        // + image_v*camera.dir_dv;
       
       if (camera.lensRadius > 0.f) {
         vec3f lens_du = normalize(camera.dir_du);
