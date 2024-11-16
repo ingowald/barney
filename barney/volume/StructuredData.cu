@@ -70,9 +70,14 @@ namespace barney {
     // for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
     //   auto dev = devGroup->devices[lDevID];
       SetActiveGPU forDuration(dev);
-      computeMCs<<<(const dim3&)numBlocks,(const dim3&)blockSize>>>
-        (mcGrid.getDD(dev),numScalars,
-         texture->getDD(dev).texObjNN);
+      CHECK_CUDA_LAUNCH(computeMCs,
+                        (const dim3&)numBlocks,(const dim3&)blockSize,0,0,
+                        //
+                        mcGrid.getDD(dev),numScalars,
+                        texture->getDD(dev).texObjNN);
+      // computeMCs<<<(const dim3&)numBlocks,(const dim3&)blockSize>>>
+      //   (mcGrid.getDD(dev),numScalars,
+      //    texture->getDD(dev).texObjNN);
     }
     BARNEY_CUDA_SYNC_CHECK();
   }

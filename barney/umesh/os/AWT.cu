@@ -338,10 +338,15 @@ namespace barney {
     
     for (auto dev : getDevices()) {
       SetActiveGPU forDuration(dev);
-      recomputeMajorants<<<divRoundUp(int(4*nodes.size()),1024),1024>>>
-        ((AWTNode*)owlBufferGetPointer(nodesBuffer,dev->owlID),
+      CHECK_CUDA_LAUNCH(recomputeMajorants,
+                        divRoundUp(int(4*nodes.size()),1024),1024,0,0,
+                        (AWTNode*)owlBufferGetPointer(nodesBuffer,dev->owlID),
          (int)nodes.size(),
          volume->xf.getDD(dev));
+      // recomputeMajorants<<<divRoundUp(int(4*nodes.size()),1024),1024>>>
+      //   ((AWTNode*)owlBufferGetPointer(nodesBuffer,dev->owlID),
+      //    (int)nodes.size(),
+      //    volume->xf.getDD(dev));
     }
     std::cout << "refitting ... umesh awt/object space geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);

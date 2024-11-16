@@ -130,26 +130,6 @@ embed_ptx(
   SOURCES            amr/BlockStructuredMC.dev.cu
   )
 
-CUDA_SOURCE(kernels/generateRays.cu)
-CUDA_SOURCE(kernels/shadeRays.cu)
-CUDA_SOURCE(Camera.cu)
-CUDA_SOURCE(fb/FrameBuffer.cu)
-CUDA_SOURCE(fb/TiledFB.cu)
-CUDA_SOURCE(fb/LocalFB.cu)
-CUDA_SOURCE(light/DirLight.cu)
-CUDA_SOURCE(light/PointLight.cu)
-CUDA_SOURCE(light/QuadLight.cu)
-CUDA_SOURCE(light/EnvMap.cu)
-CUDA_SOURCE(kernels/shadeRays.cu)
-CUDA_SOURCE(volume/MCGrid.cu)
-CUDA_SOURCE(volume/StructuredData.cu)
-CUDA_SOURCE(umesh/common/UMeshField.cu)
-CUDA_SOURCE(umesh/mc/UMeshCUBQLSampler.cu)
-CUDA_SOURCE(umesh/os/RTXObjectSpace.cu)
-CUDA_SOURCE(umesh/os/AWT.cu)
-CUDA_SOURCE(amr/BlockStructuredField.cu)
-CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
-  
 add_library(barney STATIC
   common/barney-common.h
   common/cuda-helper.cpp
@@ -294,6 +274,28 @@ add_library(barney STATIC
   # implements the c99 barney api calls
   barney.cpp
   )
+
+CUDA_SOURCE(kernels/generateRays.cu)
+CUDA_SOURCE(kernels/shadeRays.cu)
+CUDA_SOURCE(Camera.cu)
+CUDA_SOURCE(fb/FrameBuffer.cu)
+CUDA_SOURCE(fb/TiledFB.cu)
+CUDA_SOURCE(fb/LocalFB.cu)
+CUDA_SOURCE(light/DirLight.cu)
+CUDA_SOURCE(light/PointLight.cu)
+CUDA_SOURCE(light/QuadLight.cu)
+CUDA_SOURCE(light/EnvMap.cu)
+CUDA_SOURCE(kernels/shadeRays.cu)
+CUDA_SOURCE(volume/MCGrid.cu)
+CUDA_SOURCE(volume/StructuredData.cu)
+CUDA_SOURCE(umesh/common/UMeshField.cu)
+CUDA_SOURCE(umesh/mc/UMeshCUBQLSampler.cu)
+CUDA_SOURCE(umesh/os/RTXObjectSpace.cu)
+CUDA_SOURCE(umesh/os/AWT.cu)
+CUDA_SOURCE(amr/BlockStructuredField.cu)
+CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
+  
+
 
 target_link_libraries(barney
   PUBLIC

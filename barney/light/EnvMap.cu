@@ -160,26 +160,43 @@ namespace barney {
          called with one thread per pixel, in a 2d launch */
       vec2i bs = 16;
       vec2i nb = divRoundUp(dims,bs);
-      EnvMap_kernels::computeWeights_xy<<<nb,bs>>>
-        ((float*)owlBufferGetPointer(allCDFs_x,device->owlID),
-         owlTextureGetObject(texture,device->owlID),
-         dims);
+      CHECK_CUDA_LAUNCH(EnvMap_kernels::computeWeights_xy,
+                        nb,bs,0,0,
+                        //
+                        (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+                        owlTextureGetObject(texture,device->owlID),
+                        dims);
+      // EnvMap_kernels::computeWeights_xy<<<nb,bs>>>
+      //   ((float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+      //    owlTextureGetObject(texture,device->owlID),
+      //    dims);
       BARNEY_CUDA_SYNC_CHECK();
 
       /* this kernel will do one thread per line, then this one thread does
          entire line. not great, but we're not doing this per frame,
          anyway */
-      EnvMap_kernels::computeCDFs_doLine<<<dims.y,1024>>>
-        ((float*)owlBufferGetPointer(cdf_y,device->owlID),
-         (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
-         dims);
+      CHECK_CUDA_LAUNCH(EnvMap_kernels::computeCDFs_doLine,
+                        dims.y,1024,0,0,
+                        (float*)owlBufferGetPointer(cdf_y,device->owlID),
+                        (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+                        dims);
+      // EnvMap_kernels::computeCDFs_doLine<<<dims.y,1024>>>
+      //   ((float*)owlBufferGetPointer(cdf_y,device->owlID),
+      //    (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+      //    dims);
       BARNEY_CUDA_SYNC_CHECK();
       
       /* run by a single thread, to normalize the cdf_y */
-      EnvMap_kernels::normalize_cdf_y<<<1,1>>>
-        ((float*)owlBufferGetPointer(cdf_y,device->owlID),
-         (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
-         dims);
+      CHECK_CUDA_LAUNCH(EnvMap_kernels::normalize_cdf_y,
+                        1,1,0,0,
+                        //
+                        (float*)owlBufferGetPointer(cdf_y,device->owlID),
+                        (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+                        dims);
+      // EnvMap_kernels::normalize_cdf_y<<<1,1>>>
+      //   ((float*)owlBufferGetPointer(cdf_y,device->owlID),
+      //    (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+      //    dims);
 
       BARNEY_CUDA_SYNC_CHECK();
     }
