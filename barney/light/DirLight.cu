@@ -23,8 +23,11 @@ namespace barney {
     DD dd;
     dd.direction = normalize(xfmVector(instanceXfm,direction));
     dd.color = color;
-    dd.radiance = radiance;
-    dd.irradiance = irradiance;
+    dd.radiance
+      = isnan(irradiance)
+      ? radiance
+      : (irradiance * ONE_OVER_FOUR_PI);
+    // dd.irradiance = irradiance;
     return dd;
   }
 

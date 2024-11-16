@@ -26,6 +26,7 @@ namespace barney {
       baseColor .make(dd.anariPBR.baseColor, deviceID);
       emission  .make(dd.anariPBR.emission,  deviceID);
       metallic  .make(dd.anariPBR.metallic,  deviceID);
+      opacity   .make(dd.anariPBR.opacity,   deviceID);
       roughness .make(dd.anariPBR.roughness, deviceID);
       ior       .make(dd.anariPBR.ior,       deviceID);
       transmission.make(dd.anariPBR.transmission,deviceID);
@@ -73,7 +74,7 @@ namespace barney {
       if (member == "transmission")
         { transmission.set(value); return true; }
       if (member == "opacity")
-        { /* IGNORE FOR NOW */return true; }
+        { opacity.set(value); return true; }
       if (member == "specular")
         { /* IGNORE FOR NOW */return true; }
       

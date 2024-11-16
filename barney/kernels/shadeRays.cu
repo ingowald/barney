@@ -170,12 +170,11 @@ namespace barney {
         light = world.dirLights[lID[i]];
         vec3f light_radiance
           = light.color
-          * (isnan(light.irradiance)
-             ? light.radiance
-             : (light.irradiance * ONE_OVER_FOUR_PI));
+          * light.radiance;
+        
         vec3f lightDir = -light.direction;
         float weight = dot(lightDir,N);
-        if (0 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
+        if (1 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
         if (weight <= 1e-3f) continue;
         weight *= reduce_max(light_radiance);
         if (weight <= 1e-3f) continue;
@@ -272,6 +271,9 @@ namespace barney {
         = (sampleDirLights(dls,world,renderer,P,Ng,random,dbg)
            ? (reduce_max(dls.radiance)/dls.pdf)
            : 0.f);
+
+      if (dbg) printf("sampling lights dls %f els %f\n",
+                      dlsWeight,elsWeight);
       
       float sumWeights
         = alsWeight+dlsWeight+elsWeight;

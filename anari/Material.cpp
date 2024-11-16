@@ -218,7 +218,6 @@ void PhysicallyBased::setBarneyParameters()
   setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, context);
   setBNMaterialHelper(m_bnMat, "emissive", m_emissive, context);
   setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor, context);
-  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, context);
   setBNMaterialHelper(m_bnMat, "metallic", m_metallic, context);
   setBNMaterialHelper(m_bnMat, "roughness", m_roughness, context);
   setBNMaterialHelper(m_bnMat, "specular", m_specular, context);
