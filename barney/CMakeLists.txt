@@ -20,14 +20,20 @@ target_link_libraries(barney-config
   INTERFACE
   cuBQL
   )
-if (TARGET cuBQL_cuda_float3)
-  target_compile_definitions(barney-config INTERFACE -DHAVE_CUBQL=1)
+#if (TARGET cuBQL_cuda_float3)
+target_compile_definitions(barney-config INTERFACE -DHAVE_CUBQL=1)
 #if (target cuBQL_cuda_float3)
+if (BARNEY_USE_CUBQL)
   target_link_libraries(barney-config INTERFACE
     cuBQL_cuda_float3
     )
-#endif()
+else()
+  target_link_libraries(barney-config INTERFACE
+    cuBQL_host_float3 #_cuda_float3
+    )
 endif()
+#endif()
+#endif()
 
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
