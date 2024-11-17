@@ -42,8 +42,6 @@ struct Frame : public helium::BaseFrame
   bool ready() const;
   void wait() const;
 
-  void convertPixelsToFinalFormat();
-
  private:
   void cleanup();
 
@@ -59,9 +57,8 @@ struct Frame : public helium::BaseFrame
   anari::DataType m_colorType{ANARI_UNKNOWN};
   anari::DataType m_depthType{ANARI_UNKNOWN};
 
-  uint32_t *m_bnPixelBuffer{nullptr};
-  uint8_t *m_colorBuffer{nullptr};
-  float *m_depthBuffer{nullptr};
+  uint32_t *m_colorBuffer{nullptr};
+  float    *m_depthBuffer{nullptr};
 
   helium::ChangeObserverPtr<Renderer> m_renderer;
   helium::IntrusivePtr<Camera> m_camera;

@@ -51,8 +51,9 @@ namespace barney {
 
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-  TransferFunction::DD TransferFunction::getDD(int devID) const
+  TransferFunction::DD TransferFunction::getDD(const Device::SP &device) const
   {
+    int devID = device->owlID;
     TransferFunction::DD dd;
 
     dd.values = (float4*)owlBufferGetPointer(valuesBuffer,devID);

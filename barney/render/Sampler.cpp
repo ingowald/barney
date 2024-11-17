@@ -17,6 +17,8 @@
 #include "barney/render/Sampler.h"
 #include "barney/common/Texture.h"
 #include "barney/ModelSlot.h"
+#include "barney/render/SamplerRegistry.h"
+#include "barney/Context.h"
 
 namespace barney {
   namespace render {
@@ -38,19 +40,19 @@ namespace barney {
                                +attributeName+"'");
     }
 
-    Sampler::Sampler(ModelSlot *owner)
-      : SlottedObject(owner),
-        samplerRegistry(owner->world->samplerRegistry),
-        samplerID(owner->world->samplerRegistry->allocate())
+    Sampler::Sampler(Context *context, int slot)
+      : SlottedObject(context,slot),
+        samplerRegistry(context->getSlot(slot)->samplerRegistry),
+        samplerID(context->getSlot(slot)->samplerRegistry->allocate())
     {
-      perDev.resize(owner->devGroup->size());
+      perDev.resize(getDevGroup()->size());
     }
     
     Sampler::~Sampler()
     {
       samplerRegistry->release(samplerID);
-      for (int devID=0;devID<owner->devGroup->size();devID++) {
-        auto dev = owner->devGroup->devices[devID];
+      for (int devID=0;devID<getDevGroup()->size();devID++) {
+        auto dev = getDevGroup()->devices[devID];
         SetActiveGPU forDuration(dev);
 
         Sampler::DD &dd = perDev[devID];
@@ -62,16 +64,16 @@ namespace barney {
       }
     }
     
-    Sampler::SP Sampler::create(ModelSlot *owner, const std::string &type)
+    Sampler::SP Sampler::create(Context *context, int slot, const std::string &type)
     {
       if (type == "texture1D")
-        return std::make_shared<TextureSampler>(owner,1);
+        return std::make_shared<TextureSampler>(context,slot,1);
       if (type == "texture2D" || type == "image2D")
-        return std::make_shared<TextureSampler>(owner,2);
+        return std::make_shared<TextureSampler>(context,slot,2);
       if (type == "texture3D")
-        return std::make_shared<TextureSampler>(owner,3);
+        return std::make_shared<TextureSampler>(context,slot,3);
       if (type == "transform")
-        return std::make_shared<TransformSampler>(owner);
+        return std::make_shared<TransformSampler>(context,slot);
       throw std::runtime_error("do not know what a '"+type+" sampler is !?");
     }
 
@@ -119,8 +121,8 @@ namespace barney {
     {
       SlottedObject::commit();
 
-      for (int devID=0;devID<owner->devGroup->size();devID++) {
-        auto dev = owner->devGroup->devices[devID];
+      for (int devID=0;devID<getDevGroup()->size();devID++) {
+        auto dev = getDevGroup()->devices[devID];
         SetActiveGPU forDuration(dev);
 
         Sampler::DD &dd = perDev[devID];
@@ -252,19 +254,19 @@ namespace barney {
       tex_desc.sRGB                = 0;//1;//(colorSpace == OWL_COLOR_SPACE_SRGB);
 
       switch (textureData->texelFormat) {
-      case BN_TEXEL_FORMAT_R32F:
+      case BN_FLOAT:
         tex_desc.readMode     = cudaReadModeElementType;
         dd.image.numChannels = 1;
         break;
-      case BN_TEXEL_FORMAT_R8:
+      case BN_UFIXED8:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
         dd.image.numChannels = 1;
         break;
-      case BN_TEXEL_FORMAT_RGBA8:
+      case BN_UFIXED8_RGBA:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
         dd.image.numChannels = 4;
         break;
-      case BN_TEXEL_FORMAT_R16:
+      case BN_UFIXED16:
         tex_desc.readMode     = cudaReadModeNormalizedFloat;
         dd.image.numChannels = 1;
         break;

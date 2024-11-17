@@ -383,7 +383,8 @@ namespace barney {
                        const float4 v4,
                        const float4 v5,
                        const float4 v6,
-                       const float4 v7)
+                       const float4 v7,
+                       bool dbg=false)
   {
     #define HEX_DIVERGED               1e6f
     #define HEX_MAX_ITERATION          10
@@ -391,7 +392,22 @@ namespace barney {
     #define HEX_OUTSIDE_CELL_TOLERANCE 1e-6f
 
     const bool assumeInside = false;
+#if 1
+    box3f b
+      = box3f()
+      .including((const vec3f&)v0)
+      .including((const vec3f&)v1)
+      .including((const vec3f&)v2)
+      .including((const vec3f&)v3)
+      .including((const vec3f&)v4)
+      .including((const vec3f&)v5)
+      .including((const vec3f&)v6)
+      .including((const vec3f&)v7);
+    
+    const float determinantTolerance = 1e-10f * length(b.size());
+#else
     const float determinantTolerance = 1e-6f;
+#endif
     const float4 V[8] = {v0,v1,v2,v3,v4,v5,v6,v7};
 
     float pcoords[3] = {0.5, 0.5, 0.5};
@@ -400,7 +416,7 @@ namespace barney {
 
     // Enter iteration loop
     bool converged = false;
-    for (int iteration = 0; !converged && (iteration < HEX_MAX_ITERATION);
+    for (int iteration = 0; iteration < HEX_MAX_ITERATION;
          iteration++) {
 
       // Calculate element interpolation functions and derivatives
@@ -418,10 +434,9 @@ namespace barney {
       }
 
       fcol = fcol - P;
-
       // Compute determinants and generate improvements
-      const float d = det(make_LinearSpace3f(rcol, scol, tcol));
 
+      const float d = det(make_LinearSpace3f(rcol, scol, tcol));
       if (fabsf(d) < determinantTolerance) {
         return false;
       }
@@ -438,6 +453,7 @@ namespace barney {
       if ((fabsf(d0) < HEX_CONVERGED) & (fabsf(d1) < HEX_CONVERGED) &
           (fabsf(d2) < HEX_CONVERGED)) {
         converged = true;
+        break;
       } else if ((fabsf(pcoords[0]) > HEX_DIVERGED) |
                  (fabsf(pcoords[1]) > HEX_DIVERGED) |
                  (fabsf(pcoords[2]) > HEX_DIVERGED)) {
@@ -449,6 +465,7 @@ namespace barney {
       return false;
     }
 
+    if (dbg) printf("converged : %i\n",int(converged));
     const float lowerlimit = 0.f - HEX_OUTSIDE_CELL_TOLERANCE;
     const float upperlimit = 1.f + HEX_OUTSIDE_CELL_TOLERANCE;
     if (assumeInside || (pcoords[0] >= lowerlimit && pcoords[0] <= upperlimit &&
@@ -460,7 +477,7 @@ namespace barney {
         val += weights[i] * V[i].w;
       }
       value = val;
-
+      if (dbg) printf("hex value %f\n",val);
       return true;
     }
 

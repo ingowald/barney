@@ -24,7 +24,6 @@
 
 namespace barney {
 
-  struct ModelSlot;
   struct Volume;
   struct ScalarField;
   struct MCGrid;
@@ -139,7 +138,7 @@ namespace barney {
     
     ScalarField *const sf = 0;
     Volume      *const volume = 0;
-    DevGroup    *const devGroup = 0;
+    DevGroup    *const devGroup;
   };
   
   /*! a *volume* is a scalar field with a transfer function applied to
@@ -152,14 +151,15 @@ namespace barney {
   {
     typedef std::shared_ptr<Volume> SP;
     
-    Volume(DevGroup *devGroup,
-           ScalarField::SP sf);
+    Volume(ScalarField::SP sf);
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Volume{}"; }
 
     VolumeAccel::UpdateMode updateMode() { return accel->updateMode(); }
+
+    static SP create(ScalarField::SP sf) { return std::make_shared<Volume>(sf); }
     
     /*! (re-)build the accel structure for this volume, probably after
         changes to transfer functoin (or later, scalar field) */
@@ -173,17 +173,18 @@ namespace barney {
     ScalarField::SP  sf;
     VolumeAccel::SP  accel;
     TransferFunction xf;
-
+    DevGroup        *const devGroup;
+    
     std::vector<OWLGroup> generatedGroups;
-    DevGroup *const devGroup;
   };
 
 
   inline VolumeAccel::VolumeAccel(ScalarField *sf, Volume *volume)
-    : sf(sf), volume(volume), devGroup(sf->devGroup)
+    : sf(sf), volume(volume), devGroup(sf->getDevGroup())
   {
     assert(sf);
     assert(volume);
-    assert(sf->devGroup);
+    assert(devGroup);
+    // assert(sf->devGroup);  
   }
 }

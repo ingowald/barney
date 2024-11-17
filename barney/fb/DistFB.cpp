@@ -37,11 +37,12 @@ namespace barney {
     }
   }
 
-  void DistFB::resize(vec2i size, uint32_t *hostFB, float *hostDepth)
+  void DistFB::resize(vec2i size,
+                      uint32_t channels)
   {
     double t0 = getCurrentTime();
     
-    FrameBuffer::resize(size, hostFB, hostDepth);
+    FrameBuffer::resize(size, channels);
     std::vector<int> tilesOnGPU(perDev.size());
     for (int localID = 0;localID < perDev.size(); localID++) {
       tilesOnGPU[localID] = perDev[localID]->numActiveTiles;
@@ -93,23 +94,16 @@ namespace barney {
         ownerGather.firstTileOnGPU[ggID] = sumTiles;
         sumTiles += ownerGather.numTilesOnGPU[ggID];
       }
-      ownerGather.numActiveTiles = sumTiles;
+      gatheredTilesOnOwner.numActiveTiles = sumTiles;
 
-      if (ownerGather.finalTiles)
-        BARNEY_CUDA_CALL(Free(ownerGather.finalTiles));
-      if (ownerGather.tileDescs)
-        BARNEY_CUDA_CALL(Free(ownerGather.tileDescs));
-#if 0
-      BARNEY_CUDA_CALL(MallocManaged(&ownerGather.finalTiles,
-                              sumTiles*sizeof(*ownerGather.finalTiles)));
-      BARNEY_CUDA_CALL(MallocManaged(&ownerGather.tileDescs,
-                              sumTiles*sizeof(*ownerGather.tileDescs)));
-#else
-      BARNEY_CUDA_CALL(Malloc(&ownerGather.finalTiles,
-                              sumTiles*sizeof(*ownerGather.finalTiles)));
-      BARNEY_CUDA_CALL(Malloc(&ownerGather.tileDescs,
-                              sumTiles*sizeof(*ownerGather.tileDescs)));
-#endif                              
+      if (gatheredTilesOnOwner.compressedTiles)
+        BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.compressedTiles));
+      if (gatheredTilesOnOwner.tileDescs)
+        BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.tileDescs));
+      BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.compressedTiles,
+                              sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles)));
+      BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.tileDescs,
+                              sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs)));
       BARNEY_CUDA_SYNC_CHECK();
     }
     
@@ -121,7 +115,7 @@ namespace barney {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
+                            gatheredTilesOnOwner.tileDescs+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
@@ -144,7 +138,7 @@ namespace barney {
         context->world.wait(send_requests[localID]);
   }
 
-  void DistFB::ownerGatherFinalTiles()
+  void DistFB::ownerGatherCompressedTiles()
   {
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
     std::vector<MPI_Request> send_requests(perDev.size());
@@ -156,7 +150,7 @@ namespace barney {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            ownerGather.finalTiles+ownerGather.firstTileOnGPU[ggID],
+                            gatheredTilesOnOwner.compressedTiles+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
@@ -164,7 +158,7 @@ namespace barney {
     if (context->isActiveWorker)
       for (int localID=0;localID<perDev.size();localID++)
         context->world.send(owningRank,localID,
-                            perDev[localID]->finalTiles,
+                            perDev[localID]->compressedTiles,
                             perDev[localID]->numActiveTiles,
                             send_requests[localID]);
 

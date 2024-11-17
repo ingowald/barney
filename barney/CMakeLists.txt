@@ -14,19 +14,12 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
-option(BARNEY_DENOISE "Enable Denoiser?" OFF)
-
+# -------------------------------------------------------
 add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
   INTERFACE
-  cuBQL_interface
+  cuBQL
   )
-target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
-if (BARNEY_DENOISE)
-  target_compile_definitions(barney-config INTERFACE -DDENOISE=1 -DDENOISE_NORMAL=1)
-endif()
-
 
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
@@ -35,6 +28,26 @@ target_include_directories(barney-config INTERFACE
   )
 
 
+# -------------------------------------------------------
+set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
+target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
+
+# -------------------------------------------------------
+option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
+option(BARNEY_DISABLE_OIDN "explicitly DISable OIDN?" OFF)
+
+if (BARNEY_DISABLE_DENOISING)
+  target_compile_definitions(barney-config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
+elseif (NOT BARNEY_DISABLE_OIDN)
+  find_package(OpenImageDenoise)
+  if (OpenImageDenoise_FOUND)
+    message(INFO "Found OpenImageDenoise (OIDN), enabling it")
+    target_compile_definitions(barney-config INTERFACE -DBARNEY_HAVE_OIDN=1)
+    target_link_libraries(barney-config INTERFACE OpenImageDenoise)
+  endif()
+endif()
+    
+# -------------------------------------------------------
 
 # ray gen program that launches kernel to trace rays
 embed_ptx(
@@ -133,7 +146,7 @@ add_library(barney STATIC
   Camera.cu
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
-  fb/FrameBuffer.cpp
+  fb/FrameBuffer.cu
   fb/LocalFB.h
   fb/LocalFB.cpp
   fb/TiledFB.h
@@ -141,6 +154,8 @@ add_library(barney STATIC
   # model/group/data group handling
   GlobalModel.h
   GlobalModel.cpp
+  render/Renderer.h
+  render/Renderer.cpp
   Group.h
   Group.cpp
 
@@ -161,6 +176,8 @@ add_library(barney STATIC
   light/Light.cpp
   light/DirLight.h
   light/DirLight.cu
+  light/PointLight.h
+  light/PointLight.cu
   light/QuadLight.h
   light/QuadLight.cu
   light/EnvMap.h
@@ -254,7 +271,7 @@ target_link_libraries(barney
   PUBLIC
   owl::owl
  # OptiX::OptiX
-  cuBQL_impl
+  cuBQL_cuda_float3
   barney-config
   barney-StructuredData-ptx
   barney-spheres-ptx
@@ -305,5 +322,6 @@ if (BARNEY_MPI)
 endif()
 
 
-add_subdirectory(testing)
+#temporarily disabled after v0.6 due to api changes
+#add_subdirectory(testing)
 

@@ -32,16 +32,12 @@ namespace barney {
     owlGeomSet3fv(geom,"worldBounds.upper",&bb.upper.x);
   }
 
-  ScalarField::ScalarField(ModelSlot *owner,
+  ScalarField::ScalarField(Context *context, int slot,
                            const box3f &domain)
-    : SlottedObject(owner),
-      devGroup(owner->devGroup.get()),
+    : SlottedObject(context,slot),
       domain(domain)
   {}
 
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }
-  
   void ScalarField::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
   {
     vars.push_back
@@ -50,12 +46,14 @@ namespace barney {
       ({"worldBounds.upper",OWL_FLOAT3,base+OWL_OFFSETOF(DD,worldBounds.upper)});
   }
 
-  ScalarField::SP ScalarField::create(ModelSlot *owner, const std::string &type)
+  ScalarField::SP ScalarField::create(Context *context,
+                                      int slot,
+                                      const std::string &type)
   {
     if (type == "structured")
-      return std::make_shared<StructuredData>(owner);
+      return std::make_shared<StructuredData>(context,slot);
     
-    owner->context->warn_unsupported_object("ScalarField",type);
+    context->warn_unsupported_object("ScalarField",type);
     return {};
   }
 

@@ -24,21 +24,33 @@
 
 namespace barney {
 
-  Light::SP Light::create(ModelSlot *owner,
+  Light::Light(Context *context, int slot)
+    : SlottedObject(context,slot)
+  {}
+  
+  Light::SP Light::create(Context *context, int slot,
                           const std::string &type)
   {
     if (type == "directional")
-      return std::make_shared<DirLight>(owner);
+      return std::make_shared<DirLight>(context,slot);
     if (type == "quad")
-      return std::make_shared<QuadLight>(owner);
+      return std::make_shared<QuadLight>(context,slot);
     if (type == "envmap")
-      return std::make_shared<EnvMapLight>(owner);
+      return std::make_shared<EnvMapLight>(context,slot);
     
-    owner->context->warn_unsupported_object("Light",type);
+    context->warn_unsupported_object("Light",type);
     return {};
   }
 
   // ==================================================================
+  bool Light::set3f(const std::string &member, const vec3f &value)
+  {
+    if (member == "color") {
+      color = value;
+      return true;
+    }
+    return false;
+  }
   
   // ==================================================================
   

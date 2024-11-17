@@ -19,6 +19,7 @@
 #endif
 #include "barney/DeviceContext.h"
 #include "barney/render/Ray.h"
+#include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
 
 namespace barney {
@@ -31,6 +32,7 @@ namespace barney {
     __global__
     void g_generateRays(/*! the camera used for generating the rays */
                         Camera::DD camera,
+                        Renderer::DD renderer,
                         /*! a unique random number seed value for pixel
                           and lens jitter; probably just accumID */
                         int rngSeed,
@@ -68,7 +70,7 @@ namespace barney {
       Ray ray;
       ray.misWeight = 0.f;
       ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
-      Random rand(ix+fbSize.x*accumID,
+      Random rand(ix+fbSize.x*accumID+ray.pixelID,
                   iy+fbSize.y*accumID);
       // Random rand(rngSeed,ray.pixelID);
       // rand();
@@ -76,17 +78,19 @@ namespace barney {
       // rand();
 
       ray.org  = camera.lens_00;
-      ray.dir
+      float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));
+      float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y));
+      vec3f ray_dir
         = camera.dir_00
-        + ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x))*camera.dir_du
-        + ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y))*camera.dir_dv;
+        + image_u*camera.dir_du
+        + image_v*camera.dir_dv;
       
       if (camera.lensRadius > 0.f) {
         vec3f lens_du = normalize(camera.dir_du);
         vec3f lens_dv = normalize(camera.dir_dv);
         vec3f lensNormal  = cross(lens_du,lens_dv);
 
-        vec3f D = normalize(ray.dir);
+        vec3f D = normalize(ray_dir);
         vec3f pointOnImagePlane = D * (camera.focalLength / fabsf(dot(D,lensNormal)));
         float lu, lv;
         while (true) {
@@ -102,10 +106,15 @@ namespace barney {
           = (camera.lensRadius * lu) * lens_du
           + (camera.lensRadius * lv) * lens_dv;
         ray.org += lensOffset;
-        ray.dir = normalize(pointOnImagePlane - lensOffset);
+        ray_dir = normalize(pointOnImagePlane - lensOffset);
       } else {
-        ray.dir = normalize(ray.dir);
+// #if 1
+// #else
+//         ray.dir = normalize(ray.dir);
+// #endif
+        ray_dir = normalize(ray_dir);
       }
+      ray.dir = ray_dir;
       
       bool crossHair_x = (ix == fbSize.x/2);
       bool crossHair_y = (iy == fbSize.y/2);
@@ -135,9 +144,18 @@ namespace barney {
       // for *primary* rays we pre-initialize basecolor to a background
       // color; this way the shaderays function doesn't have to reverse
       // engineer pixel pos etc
-      vec3f bgColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
+      
+      vec3f bgColor
+        = (renderer.bgColor.w >= 0.f)
+        ? (const vec3f&)renderer.bgColor
+        : ((1.0f - t)*vec3f(0.9f, 0.9f, 0.9f) + t * vec3f(0.15f, 0.25f, .8f));
+      if (renderer.bgTexture) {
+        float4 v = tex2D<float4>(renderer.bgTexture,image_u,image_v);
+        bgColor = (vec3f&)v;
+      }
+      // vec3f bgColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
       // bool crossHair = 1 && (crossHair_x || crossHair_y);
-      ray.missColor = bgColor*bgColor;
+      ray.missColor = bgColor;//*bgColor;
       // ray.hit.baseColor = .5f*ray.hit.baseColor*ray.hit.baseColor;
       // if (crossHair && !ray.dbg)
       //   ray.hit.baseColor = vec3f(1,0,0);
@@ -163,6 +181,7 @@ namespace barney {
   
   void DeviceContext::generateRays_launch(TiledFB *fb,
                                           const Camera::DD &camera,
+                                          const Renderer::DD &renderer,
                                           int rngSeed)
   {
     auto device = fb->device;
@@ -178,6 +197,7 @@ namespace barney {
     render::g_generateRays
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,
+       renderer,
        rngSeed,
        fb->owner->accumID,
        fb->numPixels,

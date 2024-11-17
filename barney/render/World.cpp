@@ -15,15 +15,15 @@
 // ======================================================================== //
 
 #include "barney/render/World.h"
+#include "barney/DeviceContext.h"
 #include "barney/material/DeviceMaterial.h"
+#include "barney/material/Material.h"
 
 namespace barney {
   namespace render {
 
     World::World(DevGroup::SP devGroup)
-      : devGroup(devGroup),
-        materialRegistry(std::make_shared<MaterialRegistry>(devGroup)),
-        samplerRegistry(std::make_shared<SamplerRegistry>(devGroup))
+      : devGroup(devGroup)
         // globals(devGroup)
     {
       quadLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
@@ -51,10 +51,8 @@ namespace barney {
         ? envMapLight->getDD(device)
         : EnvMapLight::DD{};
       
-      // dd.globals = globals.getDD(device);
-      dd.radiance  = radiance;
-      dd.samplers  = samplerRegistry->getPointer(device->owlID);
-      dd.materials = materialRegistry->getPointer(device->owlID);
+      // dd.samplers  = samplerRegistry->getPointer(device->owlID);
+      // dd.materials = materialRegistry->getPointer(device->owlID);
 
       return dd;
     }

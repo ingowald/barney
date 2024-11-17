@@ -24,11 +24,6 @@ namespace barney {
     : context(context)
   {}
   
-  SlottedObject::SlottedObject(ModelSlot *owner)
-    : Object(owner->context),
-      owner(owner)
-  {}
-
   void Object::warn_unsupported_member(const std::string &type,
                                        const std::string &member)
   {
@@ -41,6 +36,35 @@ namespace barney {
               << " of type '"<< type << "'"
               << OWL_TERMINAL_DEFAULT << std::endl;
     context->alreadyWarned.insert(key);
+  }
+  
+
+  SlottedObject::SlottedObject(Context *context, int slot)
+    : Object(context),
+      slot(slot)
+  {}
+ 
+  DevGroup *SlottedObject::getDevGroup() const
+  {
+    assert(context);
+    DevGroup *dg = context->getDevGroup(slot);
+    assert(dg);
+    return dg;
+  }
+
+  const std::vector<std::shared_ptr<Device>> &SlottedObject::getDevices() const
+  {
+    return context->getDevices(slot);
+    // return getDevGroup()->devices;
+  }
+  
+  OWLContext     SlottedObject::getOWL() const
+  {
+    if (slot == -1) {
+      PING;
+      return context->getOWL(slot);
+    }
+    return getDevGroup()->owl;
   }
   
 }

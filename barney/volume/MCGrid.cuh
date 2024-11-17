@@ -80,8 +80,6 @@ namespace barney {
     if (pb.lower.z >= pb.upper.z) return;
 
     vec3i lo = vec3i((pb.lower-grid.gridOrigin)*rcp(grid.gridSpacing));
-  //project(pb.lower,worldBounds,grid.dims);
-    // vec3i hi = project(pb.upper,worldBounds,grid.dims);
     vec3i hi = vec3i((pb.upper-grid.gridOrigin)*rcp(grid.gridSpacing));
 
     lo = min(max(lo,vec3i(0)),grid.dims-vec3i(1));
@@ -111,8 +109,6 @@ namespace barney {
     if (pb.lower.z >= pb.upper.z) return;
 
     vec3i lo = vec3i((pb.lower-grid.gridOrigin)*rcp(grid.gridSpacing));
-  //project(pb.lower,worldBounds,grid.dims);
-    // vec3i hi = project(pb.upper,worldBounds,grid.dims);
     vec3i hi = vec3i((pb.upper-grid.gridOrigin)*rcp(grid.gridSpacing));
 
     lo = min(max(lo,vec3i(0)),grid.dims-vec3i(1));

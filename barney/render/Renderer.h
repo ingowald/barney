@@ -16,48 +16,58 @@
 
 #pragma once
 
-#include "barney/geometry/Geometry.h"
+#include "barney/Object.h"
+#include "barney/common/Texture.h"
 
 namespace barney {
 
-  /*! cylinders with caps, specified through an array of vertices, and
-      one array of int2 where each of the two its specified begin and
-      end vertex of a cylinder. radii can either come from a separate
-      array (if provided), or, i not, use a common radius specified in
-      this geometry */
-  struct Cones : public Geometry {
-    typedef std::shared_ptr<Cones> SP;
+  struct Device;
+  
+  /*! the base class for _any_ other type of object/actor in the
+      barney class hierarchy */
+  struct Renderer : public Object {
+    typedef std::shared_ptr<Renderer> SP;
 
-    struct DD : public Geometry::DD {
-      const vec3f *vertices;
-      const vec2i *indices;
-      const float *radii;
+    struct DD {
+      vec4f               bgColor;
+      cudaTextureObject_t bgTexture;
+      float               ambientRadiance;
+      int                 pathsPerPixel;
     };
     
-    Cones(Context *context, int slot);
-    virtual ~Cones() = default;
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Cones{}"; }
-    
-    void commit() override;
-    
-    static OWLGeomType createGeomType(DevGroup *devGroup);
+    Renderer(Context *context);
+    virtual ~Renderer() {}
 
+    /*! pretty-printer for printf-debugging */
+    virtual std::string toString() const;
+
+    static SP create(Context *context);
+
+    DD getDD(const Device *device) const;
+    
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
-    bool setData(const std::string &member, const Data::SP &value) override;
+    void commit() override;
+    bool setObject(const std::string &member,
+                 const std::shared_ptr<Object> &value) override;
+    bool set1i(const std::string &member, const int &value) override;
+    bool set1f(const std::string &member, const float &value) override;
+    bool set4f(const std::string &member, const vec4f &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
-    PODData::SP colors;
-    PODData::SP vertices;
-    PODData::SP indices;
-    PODData::SP radii;
-    bool colorPerVertex  = 0;
-    bool radiusPerVertex = 0;
-    
+    struct {
+      Texture::SP bgTexture       = 0;
+      vec4f       bgColor         = vec4f(0,0,0,1.f);
+      int         pathsPerPixel   = 1;
+      float       ambientRadiance = 1.f;
+      int         crosshairs      = 0;
+    } staged;
+    vec4f       bgColor         = vec4f(0,0,0,1.f);
+    Texture::SP bgTexture       = 0;
+    int         pathsPerPixel   = 1;
+    float       ambientRadiance = 1.f;
+    int         crosshairs      = 0;
   };
 
 }

@@ -16,51 +16,36 @@
 
 #pragma once
 
-#include "barney/Object.h"
-#include "barney/common/Data.h"
-#include "barney/common/Texture.h"
+#include "barney/DeviceGroup.h"
+// #include "barney/material/Globals.h"
+// #include "barney/render/DeviceMaterial.h"
+#include "barney/render/Sampler.h"
 
 namespace barney {
+  namespace render {
 
-  struct ModelSlot;
-  
-  struct Light : public SlottedObject {
-    typedef std::shared_ptr<Light> SP;
+    struct DeviceMaterial;
+    
+    struct MaterialRegistry {
+      typedef std::shared_ptr<MaterialRegistry> SP;
+    
+      MaterialRegistry(DevGroup::SP devGroup);
+      virtual ~MaterialRegistry();
+      
+      int allocate();
+      void release(int nowReusableID);
+      void grow();
 
-    struct DD {
-      vec3f color;
+      void setMaterial(int materialID, const DeviceMaterial &, int deviceID);
+      const DeviceMaterial *getPointer(int owlDeviceID) const;
+    
+      int numReserved = 0;
+      int nextFree = 0;
+    
+      std::stack<int> reusableIDs;
+      OWLBuffer       buffer = 0;
+      DevGroup::SP    devGroup;
     };
-    
-    /*! what we return, during rendering, when we sample a light
-        source */
-    struct Sample {
-      /* direction _to_ light */
-      vec3f direction;
-      /*! radiance coming _from_ dir */
-      vec3f radiance;
-      /*! distance to this light sample */
-      float distance;
-      /*! pdf of sample that was chosen */
-      float pdf = 0.f;
-    };
-  
-    
-    Light(Context *context, int slot);
 
-    std::string toString() const override { return "Light<>"; }
-
-    // ------------------------------------------------------------------
-    /*! @{ parameter set/commit interface */
-    // bool set1f(const std::string &member, const float &value) override;
-    bool set3f(const std::string &member, const vec3f &value) override;
-    /*! @} */
-    // ------------------------------------------------------------------
-    
-    static Light::SP create(Context *context,
-                            int slot,
-                            const std::string &name);
-
-    vec3f color = vec3f(1.f);
-  };
-
-};
+  }
+}

@@ -16,40 +16,34 @@
 
 #pragma once
 
-#include "barney/Context.h"
+#include "barney/DeviceGroup.h"
+// #include "barney/material/Globals.h"
+// #include "barney/render/DeviceMaterial.h"
+#include "barney/render/Sampler.h"
 
 namespace barney {
-
-  /*! a barney context for "local"-node rendering - no MPI */
-  struct LocalContext : public Context {
+  namespace render {
     
-    LocalContext(const std::vector<int> &dataGroupIDs,
-                 const std::vector<int> &gpuIDs);
-
-    virtual ~LocalContext();
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "LocalFB{}"; }
-
-    void render(Renderer *renderer,
-                GlobalModel *model,
-                const Camera::DD &camera,
-                FrameBuffer *fb) override;
-
-    /*! forward rays (during global trace); returns if _after_ that
-        forward the rays need more tracing (true) or whether they're
-        done (false) */
-    bool forwardRays() override;
-
-    /*! returns how many rays are active in all ray queues, across all
-        devices and, where applicable, across all ranks */
-    int numRaysActiveGlobally() override;
+    struct SamplerRegistry {
+      typedef std::shared_ptr<SamplerRegistry> SP;
     
+      SamplerRegistry(DevGroup::SP devGroup);
+      virtual ~SamplerRegistry();
+      
+      int allocate();
+      void release(int nowReusableID);
+      void grow();
     
-    /*! create a frame buffer object suitable to this context */
-    FrameBuffer *createFB(int owningRank) override;
+      const Sampler::DD *getPointer(int owlDeviceID) const;
+      void setDD(int samplerID, const Sampler::DD &, int deviceID);
+      
+      int numReserved = 0;
+      int nextFree = 0;
+    
+      std::stack<int> reusableIDs;
+      OWLBuffer       buffer = 0;
+      DevGroup::SP    devGroup;
+    };
 
-    int numTimesForwarded = 0;
-  };
+  }
 }

@@ -23,11 +23,15 @@ namespace barney {
   extern "C" char traceRays_ptx[];
 
   Device::Device(DevGroup *devGroup,
+                 int contextRank,
+                 int contextSize,
                  int cudaID,
                  int owlID,
                  int globalIndex,
                  int globalIndexStep)
-    : cudaID(cudaID),
+    : contextRank(contextRank),
+      contextSize(contextSize),
+      cudaID(cudaID),
       owlID(owlID),
       devGroup(devGroup),
       launchStream(devGroup?owlContextGetStream(devGroup->owl,owlID):0),
@@ -52,6 +56,8 @@ namespace barney {
   }
 
   DevGroup::DevGroup(int lmsIdx,
+                     const std::vector<int> &contextRanks,
+                     int contextSize,
                      const std::vector<int> &gpuIDs,
                      int globalIndex,
                      int globalIndexStep)
@@ -69,7 +75,9 @@ namespace barney {
 
     for (int localID=0;localID<gpuIDs.size();localID++)
       devices.push_back
-        (std::make_shared<Device>(this,gpuIDs[localID],localID,
+        (std::make_shared<Device>(this,
+                                  contextRanks[localID],contextSize,
+                                  gpuIDs[localID],localID,
                                   globalIndex*gpuIDs.size()+localID,
                                   globalIndexStep*gpuIDs.size()));
 

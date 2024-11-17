@@ -35,7 +35,6 @@ bool World::getProperty(
 {
   if (name == "bounds" && type == ANARI_FLOAT32_BOX3) {
     if (flags & ANARI_WAIT) {
-      deviceState()->waitOnCurrentFrame();
       deviceState()->commitBufferFlush();
       makeCurrent();
     }
@@ -56,7 +55,7 @@ void World::commit()
   m_zeroSurfaceData = getParamObject<ObjectArray>("surface");
   m_zeroVolumeData = getParamObject<ObjectArray>("volume");
   m_zeroLightData = getParamObject<ObjectArray>("light");
-  
+
   const bool addZeroInstance =
       m_zeroSurfaceData || m_zeroVolumeData || m_zeroLightData;
   if (addZeroInstance)
@@ -148,7 +147,7 @@ void World::buildBarneyModel()
     if (barneyGroups[i] != nullptr)
       continue;
     auto *g = groups[i];
-    BNGroup bg = g->makeBarneyGroup(m_barneyModel, 0);
+    BNGroup bg = g->makeBarneyGroup(getContext());//m_barneyModel, 0);
     for (size_t j = i; j < groups.size(); j++) {
       if (groups[j] == g)
         barneyGroups[j] = bg;

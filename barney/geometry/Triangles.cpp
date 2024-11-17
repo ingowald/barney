@@ -21,8 +21,8 @@ namespace barney {
 
   extern "C" char Triangles_ptx[];
 
-  Triangles::Triangles(ModelSlot *owner)
-    : Geometry(owner)
+  Triangles::Triangles(Context *context, int slot)
+    : Geometry(context,slot)
   {}
   
   Triangles::~Triangles()
@@ -84,9 +84,9 @@ namespace barney {
   void Triangles::commit() 
   {
     if (triangleGeoms.empty()) {
-      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Triangles",Triangles::createGeomType);
-      OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
+      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
       triangleGeoms = { geom };
     }
 

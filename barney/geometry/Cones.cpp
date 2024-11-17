@@ -54,9 +54,9 @@ namespace barney {
   void Cones::commit()
   {
     if (userGeoms.empty()) {
-      OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
+      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Cones",Cones::createGeomType);
-      OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
+      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
       userGeoms.push_back(geom);
     }
     OWLGeom geom = userGeoms[0];

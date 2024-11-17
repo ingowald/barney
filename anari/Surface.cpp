@@ -44,14 +44,16 @@ const Material *Surface::material() const
   return m_material.ptr;
 }
 
-BNGeom Surface::getBarneyGeom(BNModel model, int slot)
+BNGeom Surface::getBarneyGeom(BNContext context// , int slot
+                              )
 {
-  if (!isModelTracked(model, slot)) {
-    cleanup();
-    trackModel(model, slot);
-    m_bnGeom = bnGeometryCreate(model, slot, m_geometry->bnSubtype());
+  // if (!isModelTracked(model, slot)) {
+  //   cleanup();
+  //   trackModel(model, slot);
+  m_bnGeom = bnGeometryCreate(context,0,// model, slot
+                              m_geometry->bnSubtype());
     setBarneyParameters();
-  }
+  // }
 
   return m_bnGeom;
 }
@@ -66,10 +68,13 @@ void Surface::setBarneyParameters()
 {
   if (!isValid() || !m_bnGeom)
     return;
-  BNModel model = trackedModel();
-  int slot = trackedSlot();
-  bnSetObject(m_bnGeom, "material", m_material->getBarneyMaterial(model, slot));
-  m_geometry->setBarneyParameters(m_bnGeom, model, slot);
+  // BNModel model = trackedModel();
+  // int slot = trackedSlot();
+  bnSetObject(m_bnGeom, "material",
+              m_material->getBarneyMaterial(getContext()// , slot
+                                            ));
+  m_geometry->setBarneyParameters(m_bnGeom, getContext()// model, slot
+                                  );
   bnCommit(m_bnGeom);
 }
 

@@ -16,17 +16,8 @@
 
 #include "barney/material/AnariPBR.h"
 #include "barney/material/AnariMatte.h"
-#if 0
-#include "barney/render/host/material/Matte.h"
-#include "barney/material/host/Velvet.h"
-#include "barney/material/host/Blender.h"
-#include "barney/material/host/Metal.h"
-#include "barney/material/host/Glass.h"
-#include "barney/material/host/Plastic.h"
-#include "barney/material/host/VisRTX.h"
-#include "barney/material/host/MetallicPaint.h"
-#endif
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
 namespace barney {
   namespace render {
@@ -82,10 +73,10 @@ namespace barney {
       attribute = parseAttribute(attributeName);
     }
     
-    HostMaterial::HostMaterial(ModelSlot *owner)
-      : SlottedObject(owner),
-        materialRegistry(owner->world->materialRegistry),
-        materialID(owner->world->materialRegistry->allocate())
+    HostMaterial::HostMaterial(Context *context, int slot)
+      : SlottedObject(context,slot),
+        materialRegistry(context->getSlot(slot)->materialRegistry),
+        materialID(context->getSlot(slot)->materialRegistry->allocate())
     {}
 
     HostMaterial::~HostMaterial()
@@ -98,7 +89,9 @@ namespace barney {
       owlGeomSet1i(geom,"materialID",materialID);
     }
 
-    HostMaterial::SP HostMaterial::create(ModelSlot *owner, const std::string &type)
+    HostMaterial::SP HostMaterial::create(Context *context,
+                                          int slot,
+                                          const std::string &type)
     {
 #ifndef NDEBUG
       static std::set<std::string> alreadyCreated;
@@ -113,13 +106,13 @@ namespace barney {
       // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
       // specifically for anari layer:
       if (type == "AnariMatte")
-        return std::make_shared<AnariMatte>(owner); 
+        return std::make_shared<AnariMatte>(context,slot); 
       if (type == "physicallyBased" || type == "AnariPBR")
-        return std::make_shared<AnariPBR>(owner); 
+        return std::make_shared<AnariPBR>(context,slot); 
       // specifically for anari layer:
       // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
       // ==================================================================
-      return std::make_shared<AnariPBR>(owner); 
+      return std::make_shared<AnariPBR>(context,slot); 
       // if (type == "velvet")
       //   return std::make_shared<VelvetMaterial>(dg);
       // if (type == "blender")
@@ -148,7 +141,7 @@ namespace barney {
     {
       SlottedObject::commit();
       DeviceMaterial dd;
-      for (int devID=0;devID<owner->devGroup->size();devID++) {
+      for (int devID=0;devID<getDevGroup()->size();devID++) {
         this->createDD(dd,devID);
         materialRegistry->setMaterial(materialID,dd,devID);
       }

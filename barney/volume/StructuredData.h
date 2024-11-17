@@ -83,7 +83,7 @@ namespace barney {
     /*! construct a new structured data scalar field; will not do
         anything - or have any data - untile 'set' and 'commit'ed
     */
-    StructuredData(ModelSlot *owner);
+    StructuredData(Context *context, int slot);
     virtual ~StructuredData() = default;
 
     // ------------------------------------------------------------------
@@ -101,7 +101,7 @@ namespace barney {
 
     Texture3D::SP  texture;
     Texture3D::SP  colorMapTexture;
-    BNScalarType   scalarType = BN_SCALAR_UNDEFINED;
+    BNDataType   scalarType = BN_DATA_UNDEFINED;
     vec3i numScalars  { 0,0,0 };
     vec3i numCells    { 0,0,0 }; 
     vec3f gridOrigin  { 0,0,0 };

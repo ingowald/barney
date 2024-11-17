@@ -39,25 +39,11 @@ namespace barney {
     
     inline __device__ float4 AttributeTransform::applyTo(float4 in, bool dbg) const
     {
-      auto print = [&](const char *t, float4 v)
-      { printf("  %s %f %f %f %f\n",t,v.x,v.y,v.z,v.w); };
-               
-      if (dbg) {
-        print("mat0 ",mat[0]);
-        print("mat1 ",mat[1]);
-        print("mat2 ",mat[2]);
-        print("mat3 ",mat[3]);
-        print("ofs  ",offset);
-      }
       vec4f out = load(offset);
       out = out + in.x * load(mat[0]);
       out = out + in.y * load(mat[1]);
       out = out + in.z * load(mat[2]);
       out = out + in.w * load(mat[3]);
-      // if (dbg) {
-      //   print("applying this to ",in);
-      //   print("      -> gets us ",out);
-      // }
       return (const float4&)out;
     }
 #endif
@@ -90,9 +76,11 @@ namespace barney {
         };
       };
 
-      static Sampler::SP create(ModelSlot *owner, const std::string &type);
+      static Sampler::SP create(Context *context,
+                                int slot,
+                                const std::string &type);
 
-      Sampler(ModelSlot *owner);
+      Sampler(Context *context, int slot);
       virtual ~Sampler();
       
       virtual void createDD(DD &dd, int devID) {};
@@ -125,16 +113,16 @@ namespace barney {
     };
 
     struct TransformSampler : public Sampler {
-      TransformSampler(ModelSlot *owner)
-        : Sampler(owner)
+      TransformSampler(Context *context, int slot)
+        : Sampler(context,slot)
       {}
       void createDD(DD &dd, int devID) override;
       void freeDD(DD &dd, int devID) override;
     };
 
     struct TextureSampler : public Sampler {
-      TextureSampler(ModelSlot *owner, int numDims)
-        : Sampler(owner), numDims(numDims)
+      TextureSampler(Context *context, int slot, int numDims)
+        : Sampler(context,slot), numDims(numDims)
       { }
       
       virtual ~TextureSampler();

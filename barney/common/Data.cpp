@@ -16,6 +16,7 @@
 
 #include "barney/common/Data.h"
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
 namespace barney {
 
@@ -77,13 +78,14 @@ namespace barney {
     };
   };
   
-  PODData::PODData(ModelSlot *owner,
+  PODData::PODData(Context *context,
+                   int slot,
                    BNDataType type,
                    size_t numItems,
                    const void *_items)
-    : Data(owner,type,numItems)
+    : Data(context,slot,type,numItems)
   {
-    owl = owlDeviceBufferCreate(owner->getOWL(),owlTypeFor(type),
+    owl = owlDeviceBufferCreate(getOWL(),owlTypeFor(type),
                                 numItems,_items);
   }
 
@@ -92,7 +94,8 @@ namespace barney {
     if (owl) owlBufferRelease(owl);
   }
 
-  Data::SP Data::create(ModelSlot *owner,
+  Data::SP Data::create(Context *context,
+                        int slot,
                         BNDataType type,
                         size_t numItems,
                         const void *items)
@@ -106,28 +109,30 @@ namespace barney {
     case BN_FLOAT2:
     case BN_FLOAT3:
     case BN_FLOAT4:
-      return std::make_shared<PODData>(owner,type,numItems,items);
+      return std::make_shared<PODData>(context,slot,type,numItems,items);
     case BN_OBJECT:
-      return std::make_shared<ObjectRefsData>(owner,type,numItems,items);
+      return std::make_shared<ObjectRefsData>(context,slot,type,numItems,items);
     default:
       throw std::runtime_error("un-implemented data type '"+to_string(type)
                                +" in Data::create()");
     }
   }
   
-  Data::Data(ModelSlot *owner,
+  Data::Data(Context *context,
+             int slot,
              BNDataType type,
              size_t numItems)
-    : Object(owner->context),
+    : SlottedObject(context,slot),
       type(type),
       count(numItems)
   {}
   
-  ObjectRefsData::ObjectRefsData(ModelSlot *owner,
+  ObjectRefsData::ObjectRefsData(Context *context,
+                                 int slot,
                                  BNDataType type,
                                  size_t numItems,
                                  const void *_items)
-    : Data(owner,type,numItems)
+    : Data(context,slot,type,numItems)
   {
     items.resize(numItems);
     for (int i=0;i<numItems;i++)

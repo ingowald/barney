@@ -74,7 +74,8 @@ namespace barney_device {
     return m_image;
   }
 
-  void Image1D::createBarneySampler(BNModel model, int slot)
+  void Image1D::createBarneySampler(BNContext context// , int slot
+                                    )
   {
   }
 
@@ -111,20 +112,23 @@ namespace barney_device {
     return m_image;
   }
 
-  BNSampler Sampler::getBarneySampler(BNModel model, int slot)
+  BNSampler Sampler::getBarneySampler(BNContext context// , int slot
+                                      )
   {
     if (!isValid())
       return {};
-    if (!isModelTracked(model, slot)) {
-      cleanup();
-      trackModel(model, slot);
-    }
+    // if (!isModelTracked(model, slot)) {
+    //   cleanup();
+    //   trackModel(model, slot);
+    // }
     if (!m_bnSampler) 
-      createBarneySampler(model,slot);
+      createBarneySampler(context// ,slot
+                          );
     return m_bnSampler;
   }
 
-  void Image2D::createBarneySampler(BNModel model, int slot) 
+  void Image2D::createBarneySampler(BNContext context// , int slot
+                                    ) 
   {
     // ------------------------------------------------------------------
     // first, create 2D cuda array of texels. these barney objects
@@ -145,14 +149,14 @@ namespace barney_device {
     if (m_bnTextureData)
       bnRelease(m_bnTextureData);
     m_bnTextureData
-      = bnTextureData2DCreate(model,slot,BN_TEXEL_FORMAT_RGBA8,
+      = bnTextureData2DCreate(context,0/*slot*/,BN_UFIXED8_RGBA,
                               width,height,texels.data());
   
     // ------------------------------------------------------------------
     // now, create sampler over those texels
     // ------------------------------------------------------------------
   
-    m_bnSampler = bnSamplerCreate(model,slot,"texture2D");
+    m_bnSampler = bnSamplerCreate(context,0/*slot*/,"texture2D");
     bnSetObject(m_bnSampler,"textureData",m_bnTextureData);
   
     BNTextureFilterMode filterMode
@@ -187,9 +191,10 @@ namespace barney_device {
       getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
   }
 
-  void TransformSampler::createBarneySampler(BNModel model, int slot)
+  void TransformSampler::createBarneySampler(BNContext context// , int slot
+                                             )
   {
-    // setBarneySampler(model, slot, "transform");
+    // setBarneySampler(context, slot, "transform");
     // return m_bnSampler;
   }
 

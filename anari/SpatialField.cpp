@@ -68,19 +68,20 @@ bool StructuredRegularField::isValid() const
   return m_data;
 }
 
-BNScalarField StructuredRegularField::createBarneyScalarField(
-    BNModel model, int slot) const
+  BNScalarField StructuredRegularField::createBarneyScalarField(
+    BNContext context// , int slot
+                                                              ) const
 {
   if (!isValid())
     return {};
   auto ctx = deviceState()->context;
-  BNScalarType barneyType;
+  BNDataType barneyType;
   switch (m_data->elementType()) {
   case ANARI_FLOAT32:
-    barneyType = BN_SCALAR_FLOAT;
+    barneyType = BN_FLOAT;
     break;
   case ANARI_UINT8:
-    barneyType = BN_SCALAR_UINT8;
+    barneyType = BN_UFIXED8;
     break;
   // case ANARI_FLOAT64:
   //   return ((double *)m_data)[i];
@@ -97,8 +98,8 @@ BNScalarField StructuredRegularField::createBarneyScalarField(
     throw std::runtime_error("scalar type not implemented ...");
   }
   auto dims = m_data->size();
-  auto field = bnStructuredDataCreate(model,
-      slot,
+  auto field = bnStructuredDataCreate(context,
+                                      0/*slot*/,
       (const int3 &)dims,
       barneyType,
       m_data->data(),
@@ -127,6 +128,9 @@ void UnstructuredField::commit()
   m_params.index = getParamObject<helium::Array1D>("index");
   m_params.cellType = getParamObject<helium::Array1D>("cell.type");
   m_params.cellBegin = getParamObject<helium::Array1D>("cell.begin");
+  if (!m_params.cellBegin) { // some older apps use "cell.index"
+    m_params.cellBegin = getParamObject<helium::Array1D>("cell.index");
+  }
 
   if (!m_params.vertexPosition) {
     reportMessage(ANARI_SEVERITY_WARNING, 
@@ -175,14 +179,35 @@ void UnstructuredField::commit()
     m_bounds.insert(vertexPosition[i]);
     m_vertices[i].w = vertexData[i];
   }
-  auto *index = m_params.index->beginAs<uint32_t>();
-  auto *cellBegin = m_params.cellBegin->beginAs<uint32_t>();
+
+  uint32_t *index32{nullptr};
+  uint64_t *index64{nullptr};
+  if (m_params.index->elementType() == ANARI_UINT32)
+    index32 = (uint32_t *)m_params.index->beginAs<uint32_t>();
+  else if (m_params.index->elementType() == ANARI_UINT64)
+    index64 = (uint64_t *)m_params.index->beginAs<uint64_t>();
+  else {
+    reportMessage(ANARI_SEVERITY_ERROR,
+        "parameter 'index' on unstructured spatial field has wrong element type");
+    return;
+  }
+
+  uint32_t *cellBegin32{nullptr};
+  uint64_t *cellBegin64{nullptr};
+  if (m_params.cellBegin && m_params.cellBegin->elementType() == ANARI_UINT32)
+    cellBegin32 = (uint32_t *)m_params.cellBegin->beginAs<uint32_t>();
+  else if (m_params.cellBegin && m_params.cellBegin->elementType() == ANARI_UINT64)
+    cellBegin64 = (uint64_t *)m_params.cellBegin->beginAs<uint64_t>();
+
+  //auto *index = m_params.index->beginAs<uint32_t>();
+  //auto *cellBegin = m_params.cellBegin->beginAs<uint32_t>();
   auto *cellType = m_params.cellType->beginAs<uint8_t>();
 
   // size_t numVerts = m_params.vertexPosition->size();
   size_t numCells = m_params.cellType->size(); //endAs<uint64_t>() - index;
   // this isn't fully spec'ed yet
   enum { _ANARI_TET = 0, _ANARI_HEX=1, _ANARI_WEDGE=2, _ANARI_PYR=3 };
+  enum { _VTK_TET = 10, _VTK_HEX=12, _VTK_WEDGE=13, _VTK_PYR=14 };
   for (int cellIdx=0;cellIdx<(int)numCells;cellIdx++) {
     int thisOffset = m_indices.size();
     m_elementOffsets.push_back(thisOffset);
@@ -197,25 +222,37 @@ void UnstructuredField::commit()
       numToCopy = 6; break;
     case _ANARI_PYR:
       numToCopy = 5; break;
+    case _VTK_TET:
+      numToCopy = 4; break;
+    case _VTK_HEX:
+      numToCopy = 8; break;
+    case _VTK_WEDGE:
+      numToCopy = 6; break;
+    case _VTK_PYR:
+      numToCopy = 5; break;
     default:
-      throw std::runtime_error("buggy/invalid unstructured elemnet type!?");
+      throw std::runtime_error("buggy/invalid unstructured element type!?");
     };
-    int inputBegin = cellBegin[cellIdx];
+    int inputBegin = cellBegin32 ? cellBegin32[cellIdx] : cellBegin64[cellIdx];
     for (int i=0;i<numToCopy;i++) {
-      m_indices.push_back(index[inputBegin+i]);
+      if (index32)
+        m_indices.push_back(index32[inputBegin+i]);
+      else
+        m_indices.push_back(index64[inputBegin+i]);
     }
   }
 }
 
 BNScalarField UnstructuredField::createBarneyScalarField(
-    BNModel model, int slot) const
+    BNContext context// , int slot
+                                                         ) const
 {
-  auto ctx = deviceState()->context;
+  // auto ctx = deviceState()->context;
   std::cout << "==================================================================" << std::endl;
   std::cout << "BANARI: CREATING UMESH OF " << m_elementOffsets.size() << " elements" << std::endl;
   std::cout << "==================================================================" << std::endl;
-  return bnUMeshCreate(model,
-                       slot,
+  return bnUMeshCreate(context,
+                       0/*slot*/,
                        (const ::float4 *)m_vertices.data(),
                        m_vertices.size(),
                        m_indices.data(),
@@ -327,10 +364,11 @@ void BlockStructuredField::commit()
 }
 
 BNScalarField BlockStructuredField::createBarneyScalarField(
-    BNModel model, int slot) const
+    BNContext context// , int slot
+                                                            ) const
 {
-  return bnBlockStructuredAMRCreate(model,
-      slot,
+  return bnBlockStructuredAMRCreate(context,
+                                    0/*slot*/,
       m_generatedBlockBounds.data(),
       m_generatedBlockBounds.size() / 6,
       m_generatedBlockLevels.data(),

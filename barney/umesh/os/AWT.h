@@ -39,7 +39,7 @@ namespace barney {
   /*! object-space accelerator that clusters elements into, well,
     clusters of similar/nearly elements, then builds an RTX BVH and
     majorants over those clusters, disables majorant-zero clusters
-    during refit and in the isec program for a cluster perfomrs
+    during refit and in the isec program for a cluster performs
     ray-element intersection followed by (per-element) woodock
     sampling along the ray-element overlap range */
   struct UMeshAWT

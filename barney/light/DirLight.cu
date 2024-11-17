@@ -21,24 +21,49 @@ namespace barney {
   DirLight::DD DirLight::getDD(const affine3f &instanceXfm) const
   {
     DD dd;
-    dd.direction = xfmVector(instanceXfm,params.direction);
-    dd.radiance = params.radiance;
+    dd.direction = normalize(xfmVector(instanceXfm,direction));
+    dd.color = color;
+    dd.radiance
+      = isnan(irradiance)
+      ? radiance
+      : (irradiance * ONE_OVER_FOUR_PI);
+    // dd.irradiance = irradiance;
     return dd;
   }
 
-  bool DirLight::set3f(const std::string &member, const vec3f &value) 
+  bool DirLight::set1f(const std::string &member, const float &value) 
   {
-    if (member == "direction") {
-      params.direction = normalize(value);
+    if (Light::set1f(member,value))
+      return true;
+    
+    if (member == "irradiance") {
+      irradiance = value;
       return true;
     }
     if (member == "radiance") {
-      params.radiance = value;
+      radiance = value;
       return true;
     }
     return false;
   }
 
+  bool DirLight::set3f(const std::string &member, const vec3f &value) 
+  {
+    if (Light::set3f(member,value))
+      return true;
+    
+    if (member == "direction") {
+      direction = value;
+      return true;
+    }
+    if (member == "radiance") {
+      /* if - this is _not_ ANARI spec */
+      color = value;
+      radiance = 1.f;
+      return true;
+    }
+    return false;
+  }
   
 }
 

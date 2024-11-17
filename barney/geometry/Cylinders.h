@@ -20,8 +20,6 @@
 
 namespace barney {
 
-  struct ModelSlot;
-
   /*! cylinders with caps, specified through an array of vertices, and
       one array of int2 where each of the two its specified begin and
       end vertex of a cylinder. radii can either come from a separate
@@ -38,7 +36,7 @@ namespace barney {
       int colorPerVertex;
     };
     
-    Cylinders(ModelSlot *owner);
+    Cylinders(Context *context, int slot);
     virtual ~Cylinders() = default;
     
     /*! pretty-printer for printf-debugging */

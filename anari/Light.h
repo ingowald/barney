@@ -24,7 +24,8 @@ namespace barney_device {
     void markCommitted() override;
     virtual void commit() override;
 
-    BNLight getBarneyLight(BNModel model, int slot);
+    BNLight getBarneyLight(BNContext context// , int slot
+                           );
 
   protected:
     virtual const char *bnSubtype() const = 0;
@@ -32,7 +33,7 @@ namespace barney_device {
 
     void cleanup();
 
-    math::float3 m_radiance{1.f, 1.f, 1.f};
+    math::float3 m_color{1.f, 1.f, 1.f};
 
     BNLight m_bnLight{nullptr};
   };
@@ -49,7 +50,37 @@ namespace barney_device {
     const char *bnSubtype() const;
     void setBarneyParameters() override;
 
-    math::float3 m_dir{0.f, 0.f, -1.f};
+    /*! SPEC: main emission direction of the directional light */
+    math::float3 m_direction{0.f, 0.f, -1.f};
+    
+    /*! SPEC: the amount of light arriving at a surface point,
+        assuming the light is oriented towards to the surface, in
+        W/m2 */
+    float m_irradiance = NAN;
+    /*! the amount of light emitted in a direction, in W/sr/m2;
+        irradiance takes precedence if also specified */
+    float m_radiance = 1.f;
+  };
+
+  struct PointLight : public Light
+  {
+    PointLight(BarneyGlobalState *s);
+
+    void commit() override;
+
+  private:
+    const char *bnSubtype() const;
+    void setBarneyParameters() override;
+
+    math::float3 m_position{0.f, 0.f, 0.f};
+    
+    /*! SPEC: the overall amount of light emitted by the light in a
+        direction, in W/sr */
+    float        m_intensity = NAN;
+
+    /*! SPEC: the overall amount of light energy emitted, in W;
+        intensity takes precedence if also specified */
+    float        m_power = 1.f;
   };
 
   struct HDRILight : public Light

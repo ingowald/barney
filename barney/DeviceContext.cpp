@@ -16,7 +16,9 @@
 
 #include "barney/DeviceContext.h"
 #include "barney/GlobalModel.h"
+#include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
+#include "barney/Context.h"
 
 namespace barney {
   
@@ -26,13 +28,14 @@ namespace barney {
   {}
 
   /* see generateRays.cu for implementation */
-  __global__
-  void g_generateRays(Camera camera,
-                      int rngSeed,
-                      vec2i fbSize,
-                      int *dR_count,
-                      Ray *rayQueue,
-                      TileDesc *tileDescs);
+  // __global__
+  // void g_generateRays(Camera::DD camera,
+                      
+  //                     int rngSeed,
+  //                     vec2i fbSize,
+  //                     int *dR_count,
+  //                     Ray *rayQueue,
+  //                     TileDesc *tileDescs);
   
   void  DeviceContext::generateRays_sync()
   {
@@ -58,16 +61,17 @@ namespace barney {
   void DeviceContext::traceRays_launch(GlobalModel *model)
   {
     DevGroup *dg = device->devGroup;
-    ModelSlot *slot = model->getSlot(dg->lmsIdx);
-    
+    Context *context = model->context;
+    ModelSlot *modelSlot = model->getSlot(dg->lmsIdx);
+    const Context::PerSlot *contextSlot = context->getSlot(dg->lmsIdx);
     owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);
     owlParamsSet1i(dg->lp,"numRays",rays.numActive);
     owlParamsSetGroup(dg->lp,"world",
-                      slot->instances.group);
+                      modelSlot->instances.group);
     owlParamsSetBuffer(dg->lp,"materials",
-                       slot->world->materialRegistry->buffer);
+                       contextSlot->materialRegistry->buffer);
     owlParamsSetBuffer(dg->lp,"samplers",
-                       slot->world->samplerRegistry->buffer);
+                       contextSlot->samplerRegistry->buffer);
                         
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);

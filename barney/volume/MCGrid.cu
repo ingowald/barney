@@ -46,7 +46,7 @@ namespace barney {
     for (auto dev : devGroup->devices) {
       SetActiveGPU forDuration(dev);
       BARNEY_CUDA_SYNC_CHECK();
-      auto d_grid = getDD(dev->owlID);
+      auto d_grid = getDD(dev);
       g_clearMCs
         <<<(dim3)nb,(dim3)bs>>>
         (d_grid);
@@ -89,8 +89,8 @@ namespace barney {
     for (auto dev : xf->devGroup->devices) {
       BARNEY_CUDA_SYNC_CHECK();
       SetActiveGPU forDuration(dev);
-      auto d_xf = xf->getDD(dev->owlID);
-      auto dd = getDD(dev->owlID);
+      auto d_xf = xf->getDD(dev);
+      auto dd = getDD(dev);
       mapMacroCells
         <<<(dim3)nb,(dim3)bs>>>
         (dd,d_xf);
@@ -113,8 +113,9 @@ namespace barney {
   
   /*! get cuda-usable device-data for given device ID (relative to
     devices in the devgroup that this gris is in */
-  MCGrid::DD MCGrid::getDD(int devID) const
+  MCGrid::DD MCGrid::getDD(const std::shared_ptr<Device> &dev) const
   {
+    int devID = dev->owlID;
     MCGrid::DD dd;
     
     assert(majorantsBuffer);

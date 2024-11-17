@@ -180,6 +180,26 @@ namespace barney {
     if (!boxTest(ray_org,ray_dir,
                  t0,t1,
                  bb)) return;
+
+
+
+#if 1
+    render::HitAttributes hitData;
+    const DeviceMaterial &material
+      = OptixGlobals::get().materials[self.materialID];
+    PackedBSDF bsdf
+      = material.createBSDF(hitData,OptixGlobals::get().samplers,ray.dbg);
+    float opacity
+      = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
+                        ray.dir,hitData.worldNormal,ray.dbg);
+    if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
+      // optixIgnoreIntersection();
+      return;
+    }
+#endif
+    
+    
+    
     // move just a little bit less in case the ray enters the box just
     // where it touches the prim
     float t_move = .99*t0;
@@ -187,7 +207,8 @@ namespace barney {
     // move the origin forward
     ray_org = ray_org + t_move * ray_dir;
     float hit_t = ray.tMax - t_move;
-    
+
+
     if (!intersectRoundedCone(v0,v1,
                               ray_org,ray_dir,
                               hit_t,objectN))
@@ -223,7 +244,7 @@ namespace barney {
 
     // interpolator for anari-style color/attribute interpolation
     auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
-    { 
+    {
       const vec4f value_a = attrib.fromArray.valueAt(idx.x);
       const vec4f value_b = attrib.fromArray.valueAt(idx.y);
       const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
@@ -231,7 +252,6 @@ namespace barney {
     };
 
     // set up hit data for anari hit attributes
-    render::HitAttributes hitData;
     hitData.primID          = primID;
     hitData.t               = hit_t;
     hitData.objectPosition  = objectP;
@@ -255,7 +275,7 @@ namespace barney {
     self.setHitAttributes(hitData,interpolator,ray.dbg);
 
     // ... store the hit in the ray, rqs-style ...
-    const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
+    // const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
     material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
 
     // .... and let optix know we did have a hit.

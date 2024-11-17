@@ -34,12 +34,13 @@ namespace barney {
                          bool dbg) const;
         PossiblyMappedParameter::DD baseColor;
         PossiblyMappedParameter::DD metallic;
+        PossiblyMappedParameter::DD opacity;
         PossiblyMappedParameter::DD roughness;
         PossiblyMappedParameter::DD transmission;
         PossiblyMappedParameter::DD ior;
         PossiblyMappedParameter::DD emission;
       };
-      AnariPBR(ModelSlot *owner) : HostMaterial(owner) {}
+      AnariPBR(Context *context, int slot) : HostMaterial(context,slot) {}
       virtual ~AnariPBR() = default;
       
       std::string toString() const override { return "AnariPBR"; }
@@ -54,6 +55,7 @@ namespace barney {
       
       PossiblyMappedParameter baseColor    = vec3f(1.f,1.f,1.f);
       PossiblyMappedParameter metallic     = 1.f;
+      PossiblyMappedParameter opacity      = 1.f;
       PossiblyMappedParameter roughness    = 1.f;
       PossiblyMappedParameter transmission = 0.f;
       PossiblyMappedParameter ior          = 1.45f;
@@ -68,6 +70,7 @@ namespace barney {
     {
       float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
       float4 metallic = this->metallic.eval(hitData,samplers,dbg);
+      float4 opacity = this->opacity.eval(hitData,samplers,dbg);
       float4 roughness = this->roughness.eval(hitData,samplers,dbg);
       float4 transmission = this->transmission.eval(hitData,samplers,dbg);
       float4 ior = this->ior.eval(hitData,samplers,dbg);
@@ -97,8 +100,10 @@ namespace barney {
       
       bsdf.alpha = (1.f-transmission.x)
         * baseColor.w
+        * opacity.x
         ;
       
+      if (dbg) printf("baseColor.w %f opacity.x %f\n",baseColor.w,opacity.x);
       bsdf.ior = ior.x;
       // if (dbg)
       //   printf("created nvisii brdf, base %f %f %f metallic %f roughness %f ior %f alpha %f\n",
@@ -114,14 +119,20 @@ namespace barney {
 
 
 
-    inline __device__
-    float AnariPBR::DD::getOpacity(const HitAttributes &hitData,
-                                   const Sampler::DD *samplers,
-                                   bool dbg) const
-    {
-      float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
-      return baseColor.w;
-    }
+    // inline __device__
+    // float AnariPBR::DD::getOpacity(const HitAttributes &hitData,
+    //                                const Sampler::DD *samplers,
+    //                                bool dbg) const
+    // {
+    //   float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
+    //   float4 opacity = this->opacity.eval(hitData,samplers,dbg);
+    //   printf("opacity %f %f %f %f \n",
+    //          opacity.x,
+    //          opacity.y,
+    //          opacity.z,
+    //          opacity.w);
+    //   return baseColor.w * opacity.x;
+    // }
 #endif
     
   }

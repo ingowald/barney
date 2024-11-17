@@ -14,42 +14,46 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include "barney/Context.h"
+#include "PointLight.h"
 
 namespace barney {
+  
+  PointLight::DD PointLight::getDD(const affine3f &instanceXfm) const
+  {
+    DD dd;
+    dd.position  = xfmVector(instanceXfm,position);
+    dd.power     = power;
+    dd.intensity = intensity;
+    dd.color     = color;
+    return dd;
+  }
 
-  /*! a barney context for "local"-node rendering - no MPI */
-  struct LocalContext : public Context {
-    
-    LocalContext(const std::vector<int> &dataGroupIDs,
-                 const std::vector<int> &gpuIDs);
+  bool PointLight::set1f(const std::string &member, const float &value) 
+  {
+    if (Light::set1f(member,value))
+      return true;
+    if (member == "power") {
+      power = value;
+      return true;
+    }
+    if (member == "intensity") {
+      intensity = value;
+      return true;
+    }
+    return false;
+  }
+  
+  bool PointLight::set3f(const std::string &member, const vec3f &value) 
+  {
+    if (Light::set3f(member,value))
+      return true;
+    if (member == "position") {
+      position = value;
+      return true;
+    }
+    return false;
+  }
 
-    virtual ~LocalContext();
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "LocalFB{}"; }
-
-    void render(Renderer *renderer,
-                GlobalModel *model,
-                const Camera::DD &camera,
-                FrameBuffer *fb) override;
-
-    /*! forward rays (during global trace); returns if _after_ that
-        forward the rays need more tracing (true) or whether they're
-        done (false) */
-    bool forwardRays() override;
-
-    /*! returns how many rays are active in all ray queues, across all
-        devices and, where applicable, across all ranks */
-    int numRaysActiveGlobally() override;
-    
-    
-    /*! create a frame buffer object suitable to this context */
-    FrameBuffer *createFB(int owningRank) override;
-
-    int numTimesForwarded = 0;
-  };
+  
 }
+

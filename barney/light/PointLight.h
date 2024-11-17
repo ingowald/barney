@@ -16,48 +16,34 @@
 
 #pragma once
 
-#include "barney/geometry/Geometry.h"
+#include "barney/light/Light.h"
 
 namespace barney {
 
-  /*! cylinders with caps, specified through an array of vertices, and
-      one array of int2 where each of the two its specified begin and
-      end vertex of a cylinder. radii can either come from a separate
-      array (if provided), or, i not, use a common radius specified in
-      this geometry */
-  struct Cones : public Geometry {
-    typedef std::shared_ptr<Cones> SP;
-
-    struct DD : public Geometry::DD {
-      const vec3f *vertices;
-      const vec2i *indices;
-      const float *radii;
+  struct PointLight : public Light {
+    struct DD : public Light::DD {
+      vec3f position;
+      float intensity;
+      float power;
     };
     
-    Cones(Context *context, int slot);
-    virtual ~Cones() = default;
+    typedef std::shared_ptr<PointLight> SP;
+    PointLight(Context *context, int slot) : Light(context,slot) {}
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Cones{}"; }
+    DD getDD(const affine3f &instanceXfm) const;
     
-    void commit() override;
+    std::string toString() const override { return "PointLight"; }
     
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
-    PODData::SP colors;
-    PODData::SP vertices;
-    PODData::SP indices;
-    PODData::SP radii;
-    bool colorPerVertex  = 0;
-    bool radiusPerVertex = 0;
-    
+    vec3f position = vec3f(0.f,0.f,0.f);
+    float power = 1.f;
+    float intensity = NAN;
   };
 
 }

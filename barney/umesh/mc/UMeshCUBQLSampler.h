@@ -49,6 +49,9 @@ namespace barney {
 
       void build(bool full_rebuild);
 
+      const std::vector<Device::SP> &getDevices();
+      DevGroup *getDevGroup();
+      
       void setVariables(OWLGeom geom)
       {
         owlGeomSetBuffer(geom,"sampler.bvhNodes",bvhNodesBuffer);

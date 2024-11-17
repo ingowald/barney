@@ -53,8 +53,8 @@ namespace barney {
     mcGrid.scalarRanges[mcIdx] = scalarRange;
   }
   
-  StructuredData::StructuredData(ModelSlot *owner)
-    : ScalarField(owner)
+  StructuredData::StructuredData(Context *context, int slot)
+    : ScalarField(context,slot)
   {}
 
 
@@ -66,12 +66,13 @@ namespace barney {
     vec3i numBlocks = divRoundUp(mcDims,blockSize);
     mcGrid.gridOrigin = worldBounds.lower;
     mcGrid.gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
-    for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
-      auto dev = devGroup->devices[lDevID];
+    for (auto dev : getDevices()) {
+    // for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
+    //   auto dev = devGroup->devices[lDevID];
       SetActiveGPU forDuration(dev);
       computeMCs<<<(const dim3&)numBlocks,(const dim3&)blockSize>>>
-        (mcGrid.getDD(lDevID),numScalars,
-         texture->tex3Ds[lDevID].texObjNN);
+        (mcGrid.getDD(dev),numScalars,
+         texture->getDD(dev).texObjNN);
     }
     BARNEY_CUDA_SYNC_CHECK();
   }
@@ -80,14 +81,15 @@ namespace barney {
   {
     ScalarField::setVariables(geom);
     
-    for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
-      cudaTextureObject_t tex = texture->tex3Ds[lDevID].texObj;
-      owlGeomSetRaw(geom,"tex3D",&tex,lDevID);
+    for (auto dev : getDevices()) {
+      cudaTextureObject_t tex = texture->getDD(dev).texObj;
+      owlGeomSetRaw(geom,"tex3D",&tex,dev->owlID);
     }
     if (colorMapTexture)
-      for (int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
-        cudaTextureObject_t tex = colorMapTexture->tex3Ds[lDevID].texObj;
-        owlGeomSetRaw(geom,"colorMapTex3D",&tex,lDevID);
+      for (auto dev : getDevices()) {
+        //int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
+        cudaTextureObject_t tex = colorMapTexture->getDD(dev).texObj;
+        owlGeomSetRaw(geom,"colorMapTex3D",&tex,dev->owlID);
       }
     owlGeomSet3f(geom,"cellGridOrigin",
                  gridOrigin.x,

@@ -18,6 +18,7 @@
 #include "barney/fb/FrameBuffer.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/render/World.h"
+#include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
 
 namespace barney {
@@ -149,6 +150,7 @@ namespace barney {
     inline __device__
     bool sampleDirLights(Light::Sample &ls,
                          const World::DD &world,
+                         const Renderer::DD &renderer,
                          const vec3f P,
                          const vec3f N,
                          Random &random,
@@ -166,13 +168,17 @@ namespace barney {
                      world.numDirLights-1);
         weights[i] = 0.f;
         light = world.dirLights[lID[i]];
+        vec3f light_radiance
+          = light.color
+          * light.radiance;
+        
         vec3f lightDir = -light.direction;
         float weight = dot(lightDir,N);
-        if (0 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
+        if (1 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
         if (weight <= 1e-3f) continue;
-        weight *= reduce_max(light.radiance);
+        weight *= reduce_max(light_radiance);
         if (weight <= 1e-3f) continue;
-        if (0 && dbg) printf("radiance %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
+        // if (0 && dbg) printf("radiance %f %f color %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
         weights[i] = weight;
         sumWeights += weight;
       }
@@ -198,18 +204,19 @@ namespace barney {
     inline __device__
     bool sampleEnvLight(Light::Sample &ls,
                         const World::DD &world,
+                        const Renderer::DD &renderer,
                         const vec3f P,
                         const vec3f N,
                         Random &random,
                         bool dbg)
     {
       /* in barney, the environment is either a explicit hdri map (in
-         EnvMapLight); or a uniform brightness of 'world.radiance' */
+         EnvMapLight); or a uniform brightness of 'renderer.ambientRadiance' */
       if (world.envMapLight.texture)
         ls = world.envMapLight.sample(random,dbg);
       else {
         ls.direction = randomDirection(random);
-        ls.radiance  = world.radiance;
+        ls.radiance  = renderer.ambientRadiance;
         ls.pdf       = ONE_OVER_FOUR_PI;
         ls.distance  = INFINITY;
       }
@@ -219,6 +226,7 @@ namespace barney {
     inline __device__
     bool sampleLights(Light::Sample &ls,
                       const World::DD &world,
+                      const Renderer::DD &renderer,
                       const vec3f P,
                       const vec3f Ng,
                       Random &random,
@@ -245,7 +253,7 @@ namespace barney {
 #if ENV_LIGHT_SAMPLING
       Light::Sample els;
       float elsWeight
-        = (sampleEnvLight(els,world,P,Ng,random,dbg)
+        = (sampleEnvLight(els,world,renderer,P,Ng,random,dbg)
            ? (reduce_max(els.radiance)/els.pdf)
            : 0.f);
         // = world.envMapLight.sample(random,dbg);
@@ -260,9 +268,12 @@ namespace barney {
            : 0.f);
       Light::Sample dls;
       float dlsWeight
-        = (sampleDirLights(dls,world,P,Ng,random,dbg)
+        = (sampleDirLights(dls,world,renderer,P,Ng,random,dbg)
            ? (reduce_max(dls.radiance)/dls.pdf)
            : 0.f);
+
+      if (dbg) printf("sampling lights dls %f els %f\n",
+                      dlsWeight,elsWeight);
       
       float sumWeights
         = alsWeight+dlsWeight+elsWeight;
@@ -397,6 +408,7 @@ namespace barney {
   
     inline __device__
     vec3f radianceFromEnv(const World::DD &world,
+                          const Renderer::DD &renderer,
                           Ray &ray)
     {
       auto &env = world.envMapLight;
@@ -412,7 +424,7 @@ namespace barney {
         float envLightPower = 1.f;
         return envLightPower*vec3f(color.x,color.y,color.z);
       } else {
-        return world.radiance;
+        return renderer.ambientRadiance;
       }
     }
 
@@ -422,10 +434,11 @@ namespace barney {
         default color for this ray */
     inline __device__
     vec3f primaryRayMissColor(const World::DD &world,
+                          const Renderer::DD &renderer,
                           Ray &ray)
     {
       if (world.envMapLight.texture)
-        return radianceFromEnv(world,ray);
+        return radianceFromEnv(world,renderer,ray);
       return
         // primary rays do store a default misscolor in the ray itself
         // - we simply return this if there's no env-map.
@@ -436,6 +449,7 @@ namespace barney {
     template<int MAX_PATH_DEPTH>
     inline __device__
     void bounce(const World::DD &world,
+                const Renderer::DD &renderer,
                 vec3f &fragment,
                 Ray &path,
                 Ray &shadowRay,
@@ -522,7 +536,7 @@ namespace barney {
           //          path.missColor.y,
           //          path.missColor.z);
           // fragment = path.missColor;
-          fragment = primaryRayMissColor(world,path);
+          fragment = primaryRayMissColor(world,renderer,path);
           // fragment = path.throughput * backgroundOrEnv(world,path);
           
           // const vec3f fromEnv
@@ -542,7 +556,7 @@ namespace barney {
           // with the path's carried throughput.
 #if ENV_LIGHT_SAMPLING
 # if USE_MIS
-          const vec3f fromEnv = radianceFromEnv(world,path);
+          const vec3f fromEnv = radianceFromEnv(world,renderer,path);
           fragment = path.throughput * fromEnv * path.misWeight;
 
           if (fire)
@@ -558,7 +572,7 @@ namespace barney {
           fragment = vec3f(0.f);
 # endif
 #else
-          const vec3f fromEnv = radianceFromEnv(world,path);
+          const vec3f fromEnv = radianceFromEnv(world,renderer,path);
           if (0 && path.dbg)
             printf("fromenv %f %f %f\n",
                    fromEnv.x,
@@ -632,7 +646,7 @@ namespace barney {
       bool lightNeedsMIS = false;
       bool lightIsDirLight = false;
 #endif
-      if (sampleLights(ls,world,dg.P,Ngff,random,
+      if (sampleLights(ls,world,renderer,dg.P,Ngff,random,
 #if USE_MIS
                        lightNeedsMIS,
                        lightIsDirLight,
@@ -809,6 +823,7 @@ namespace barney {
     template<int MAX_PATH_DEPTH>
     __global__
     void g_shadeRays_pt(World::DD world,
+                        Renderer::DD renderer,
                         AccumTile *accumTiles,
                         int accumID,
                         Ray *readQueue,
@@ -850,7 +865,8 @@ namespace barney {
       // bounce that ray on the scene, possibly generating a) a fragment
       // to add to frame buffer; b) a outgoing ray (in-place
       // modification of 'path'); and/or c) a shadow ray
-      bounce<MAX_PATH_DEPTH>(world,fragment,
+      bounce<MAX_PATH_DEPTH>(world,renderer,
+                             fragment,
                              path,shadowRay,
                              generation);
     
@@ -873,8 +889,10 @@ namespace barney {
         = accumTiles[tileID].accum[tileOfs];
 
 #if DENOISE
-      if (generation == 0)
-        accumTiles[tileID].normal[tileOfs].set(incomingN);
+      vec3f &valueToAccumNormalInto
+        = accumTiles[tileID].normal[tileOfs];
+      // if (generation == 0)
+      //   accumTiles[tileID].normal[tileOfs] = incomingN;
 #endif
       
       // ==================================================================
@@ -890,24 +908,17 @@ namespace barney {
       // exactly once in the first generation of the first frame.
       // ==================================================================
 
-#if 1
-      // float intensity = reduce_max(fragment);
-      // if (intensity > 20.f)
-      //   printf("pixel %i frag %f %f %f\n",
-      //          path.pixelID,
-      //          fragment.x,
-      //          fragment.y,
-      //          fragment.z);
-      
       // clamping ...
       float clampMax = 10.f*(1+accumID);
       fragment = min(fragment,vec3f(clampMax));
-#endif
+      
       if (accumID == 0 && generation == 0) {
         // if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,alpha);
       } else {
         // if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
+        if (generation == 0 && alpha) 
+          atomicAdd(&valueToAccumInto.w,alpha);
 
         if (fragment.x > 0.f)
           atomicAdd(&valueToAccumInto.x,fragment.x);
@@ -915,8 +926,14 @@ namespace barney {
           atomicAdd(&valueToAccumInto.y,fragment.y);
         if (fragment.z > 0.f)
           atomicAdd(&valueToAccumInto.z,fragment.z);
-        if (alpha > 0.f)
-          atomicAdd(&valueToAccumInto.w,alpha);
+#if DENOISE
+        if (incomingN.x > 0.f)
+          atomicAdd(&valueToAccumNormalInto.x,incomingN.x);
+        if (incomingN.y > 0.f)
+          atomicAdd(&valueToAccumNormalInto.y,incomingN.y);
+        if (incomingN.z > 0.f)
+          atomicAdd(&valueToAccumNormalInto.z,incomingN.z);
+#endif
       }
 
       // and for apps that need a depth buffer, write z
@@ -932,7 +949,8 @@ namespace barney {
 
   using namespace render;
   
-  void DeviceContext::shadeRays_launch(GlobalModel *model,
+  void DeviceContext::shadeRays_launch(Renderer *renderer,
+                                       GlobalModel *model,
                                        TiledFB *fb,
                                        int generation)
   {
@@ -961,7 +979,10 @@ namespace barney {
     World *world = model->getSlot(dg->lmsIdx)->world.get();
 
     if (nb) {
-      World::DD devWorld = world->getDD(device);
+      World::DD devWorld
+        = world->getDD(device);
+      Renderer::DD devRenderer
+        = renderer->getDD(device.get());
            
       switch(renderMode) {
 #if 0
@@ -987,7 +1008,7 @@ namespace barney {
 #endif
 
         g_shadeRays_pt<12><<<nb,bs,0,device->launchStream>>>
-        (devWorld,
+          (devWorld,devRenderer,
          fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
            rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);

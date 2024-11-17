@@ -34,24 +34,27 @@ namespace barney_device {
 
   void Light::markCommitted()
   {
-    // NOTE: shouldn't need to override this to cause a BNModel rebuild...
+    // NOTE: shouldn't need to override this to cause a BNContext rebuild...
     deviceState()->markSceneChanged();
     Object::markCommitted();
   }
 
   void Light::commit()
   {
-    m_radiance = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
+    m_color = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
   }
 
-  BNLight Light::getBarneyLight(BNModel model, int slot)
+  BNLight Light::getBarneyLight(BNContext context// , int slot
+                                )
   {
-    if (!isModelTracked(model, slot)) {
-      cleanup();
-      trackModel(model, slot);
-      m_bnLight = bnLightCreate(model, slot, bnSubtype());
+    // if (!isModelTracked(model, slot)) {
+    //   cleanup();
+    //   trackModel(model, slot);
+    m_bnLight = bnLightCreate(getContext(),0,
+                              // model, slot, 
+                              bnSubtype());
       setBarneyParameters();
-    }
+    // }
 
     return m_bnLight;
   }
@@ -65,13 +68,43 @@ namespace barney_device {
 
   // Subtypes ///////////////////////////////////////////////////////////////////
 
+  PointLight::PointLight(BarneyGlobalState *s) : Light(s) {}
+
+  void PointLight::commit()
+  {
+    Light::commit();
+    m_power = getParam<float>("power", 1.f);
+    m_intensity = getParam<float>("intensity", NAN);
+    setBarneyParameters();
+  }
+
+  const char *PointLight::bnSubtype() const
+  {
+    return "point";
+  }
+
+  void PointLight::setBarneyParameters() 
+  {
+    if (!m_bnLight)
+      return;
+    bnSet3fc(m_bnLight, "direction", (const float3 &)m_position);
+    bnSet3fc(m_bnLight, "color", (const float3 &)m_color);
+    bnSet1f (m_bnLight, "intensity", m_intensity);
+    bnSet1f (m_bnLight, "power", m_power);
+    bnCommit(m_bnLight);
+  }
+
+
+  // Subtypes ///////////////////////////////////////////////////////////////////
+
   Directional::Directional(BarneyGlobalState *s) : Light(s) {}
 
   void Directional::commit()
   {
     Light::commit();
-    m_radiance *= getParam<float>("irradiance", 1.f);
-    m_dir = getParam<math::float3>("direction", math::float3(0.f, 0.f, -1.f));
+    m_irradiance = getParam<float>("irradiance", NAN);
+    m_radiance   = getParam<float>("radiance", 1.f);
+    m_direction  = getParam<math::float3>("direction", math::float3(0.f, 0.f, -1.f));
     setBarneyParameters();
   }
 
@@ -84,8 +117,10 @@ namespace barney_device {
   {
     if (!m_bnLight)
       return;
-    bnSet3fc(m_bnLight, "direction", (const float3 &)m_dir);
-    bnSet3fc(m_bnLight, "radiance", (const float3 &)m_radiance);
+    bnSet3fc(m_bnLight, "direction", (const float3 &)m_direction);
+    bnSet3fc(m_bnLight, "color", (const float3 &)m_color);
+    bnSet1f(m_bnLight, "radiance", m_radiance);
+    bnSet1f(m_bnLight, "irradiance", m_irradiance);
     bnCommit(m_bnLight);
   }
 
@@ -122,8 +157,8 @@ namespace barney_device {
   {
     if (!m_bnLight)
       return;
-    BNModel model = trackedModel();
-    int slot = trackedSlot();
+    // BNModel model = trackedModel();
+    // int slot = trackedSlot();
 
     bnSet3fc(m_bnLight, "direction", (const float3 &)m_direction);
     bnSet3fc(m_bnLight, "up", (const float3 &)m_up);
@@ -139,7 +174,8 @@ namespace barney_device {
       (math::float3&)asFloat4[i] = radianceValues[i];
 
     BNTexture texture
-      = bnTexture2DCreate(model,slot,BN_TEXEL_FORMAT_RGBA32F,
+      = bnTexture2DCreate(getContext(),0,// model,slot,
+                          BN_FLOAT4_RGBA,
                           width,height,asFloat4.data());
                                           
     bnSetObject(m_bnLight, "texture", texture);

@@ -26,7 +26,8 @@ namespace barney {
       return;
     }
     
-    SetActiveGPU forDuration(field->devGroup->devices[0]);
+    auto devGroup = field->getDevGroup();
+    SetActiveGPU forDuration(devGroup->devices[0]);
     
     BARNEY_CUDA_SYNC_CHECK();
     
@@ -34,7 +35,6 @@ namespace barney {
       std::cout << "cubql bvh already built..." << std::endl;
       return;
     }
-    auto devGroup = field->devGroup;
 
     bvh_t bvh;
 
