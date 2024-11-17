@@ -24,7 +24,6 @@ namespace barney {
     struct DD {
       vec3f direction;
       float radiance;
-      float irradiance;
       vec3f color;
     };
     

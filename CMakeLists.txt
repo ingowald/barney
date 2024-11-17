@@ -58,7 +58,7 @@ if ((NOT WIN32) AND (NOT CMAKE_BUILD_TYPE) AND (NOT CMAKE_CONFIGURATION_TYPES))
 endif()
 
 # project command is required to come after cmake_minimum_required command.
-project(Barney VERSION 1.1.5 LANGUAGES C CXX CUDA)
+project(Barney VERSION 0.7.0 LANGUAGES C CXX CUDA)
 
 if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})

@@ -170,12 +170,11 @@ namespace barney {
         light = world.dirLights[lID[i]];
         vec3f light_radiance
           = light.color
-          * (isnan(light.irradiance)
-             ? light.radiance
-             : (light.irradiance * ONE_OVER_FOUR_PI));
+          * light.radiance;
+        
         vec3f lightDir = -light.direction;
         float weight = dot(lightDir,N);
-        if (0 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
+        if (1 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
         if (weight <= 1e-3f) continue;
         weight *= reduce_max(light_radiance);
         if (weight <= 1e-3f) continue;
@@ -272,6 +271,9 @@ namespace barney {
         = (sampleDirLights(dls,world,renderer,P,Ng,random,dbg)
            ? (reduce_max(dls.radiance)/dls.pdf)
            : 0.f);
+
+      if (dbg) printf("sampling lights dls %f els %f\n",
+                      dlsWeight,elsWeight);
       
       float sumWeights
         = alsWeight+dlsWeight+elsWeight;
@@ -839,6 +841,10 @@ namespace barney {
       
       Ray path = readQueue[tid];
 
+      float alpha
+        = (generation == 0)
+        ? (path.hadHit()? 1.f : 0.f)
+        : 0.f;
 #if DENOISE
       vec3f incomingN
         = path.hadHit()
@@ -850,7 +856,6 @@ namespace barney {
       // what we'll add into the frame buffer
       vec3f fragment = 0.f;
       float z = path.tMax;
-      float alpha = path.hadHit();
       // create a (potential) shadow ray, and init to 'invalid'
       Ray shadowRay;
       shadowRay.tMax = -1.f;
@@ -910,9 +915,6 @@ namespace barney {
       if (accumID == 0 && generation == 0) {
         // if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,alpha);
-#if DENOISE
-        valueToAccumNormalInto = incomingN;
-#endif
       } else {
         // if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         if (generation == 0 && alpha) 
