@@ -234,7 +234,6 @@ bool Frame::ready() const
 
 void Frame::wait() const
 {
-  // no-op (not yet async)
 }
 
 void Frame::cleanup()
