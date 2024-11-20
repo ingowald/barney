@@ -54,13 +54,18 @@ namespace barney {
                         TileDesc *tileDescs,
                         bool enablePerRayDebug)
     {
+      // #define MERGE_ATOMICS 1 
+
+#if MERGE_ATOMICS
       __shared__ int l_count;
       if (threadIdx.x == 0)
         l_count = 0;
-
+#endif
+      
       // ------------------------------------------------------------------
+#if MERGE_ATOMICS
       __syncthreads();
-    
+#endif    
       int tileID = blockIdx.x;
     
       vec2i tileOffset = tileDescs[tileID].lower;
@@ -166,6 +171,7 @@ namespace barney {
       // ray.hit.N = vec3f(0.f);
       ray.throughput = vec3f(1.f);
     
+#if MERGE_ATOMICS
       int pos = -1;
       if (ix < fbSize.x && iy < fbSize.y) 
         pos = atomicAdd(&l_count,1);
@@ -179,6 +185,10 @@ namespace barney {
       __syncthreads();
       if (pos >= 0) 
         rayQueue[l_count + pos] = ray;
+#else
+      int pos = atomicAdd(d_count,1);
+      rayQueue[pos] = ray;
+#endif
     }
   }
   

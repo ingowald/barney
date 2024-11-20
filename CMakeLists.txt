@@ -85,11 +85,10 @@ if (NOT (DEFINED CMAKE_CUDA_ARCHITECTURES))
   endif()
 endif()
 
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(EXP_SAUCY "Saucy exping" OFF)
+option(EXP_SAUCY "Saucy experimenting" OFF)
 mark_as_advanced(EXP_SAUCY)
 if (EXP_SAUCY)
   add_subdirectory(../saucy buildDir_saucy EXCLUDE_FROM_ALL)

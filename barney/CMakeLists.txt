@@ -136,7 +136,7 @@ embed_ptx(
   SOURCES            amr/BlockStructuredMC.dev.cu
   )
 
-add_library(barney STATIC
+add_library(barney SHARED
   common/barney-common.h
   common/cuda-helper.cpp
   
@@ -333,7 +333,7 @@ if (BARNEY_MPI)
   # ------------------------------------------------------------------
   find_package(MPI REQUIRED)
 
-  add_library(barney_mpi STATIC
+  add_library(barney_mpi SHARED
     common/MPIWrappers.h
     common/MPIWrappers.cpp
     MPIContext.h

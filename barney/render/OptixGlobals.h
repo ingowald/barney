@@ -36,7 +36,8 @@ namespace barney {
 }
 
 #ifdef __CUDA_ARCH__
-extern __constant__ barney::render::OptixGlobals optixLaunchParams;
+DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
+// extern __constant__ barney::render::OptixGlobals optixLaunchParams;
 #endif
 
 namespace barney {
