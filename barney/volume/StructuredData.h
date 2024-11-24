@@ -147,7 +147,11 @@ namespace barney {
   inline __device__ float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
   {
     vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
-        
+
+    if (dbg) printf("world transform %f %f %f -> %f %f %f\n",
+                    P.x,P.y,P.z,
+                    rel.x,rel.y,rel.z);
+    
     if (rel.x < 0.f) return NAN;
     if (rel.y < 0.f) return NAN;
     if (rel.z < 0.f) return NAN;
@@ -155,6 +159,7 @@ namespace barney {
     if (rel.y >= numCells.y) return NAN;
     if (rel.z >= numCells.z) return NAN;
     float f = tex3D<float>(texObj,rel.x+.5f,rel.y+.5f,rel.z+.5f);
+    if (dbg) printf("result of tex3d() -> %f\n",f);
     return f;
   }
 #endif

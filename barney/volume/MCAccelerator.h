@@ -366,8 +366,17 @@ namespace barney {
     const DD &self = owl::getProgramData<DD>();
     Ray &ray = owl::getPRD<Ray>();
 
+    
     vec3f org = optixGetObjectRayOrigin();
     vec3f dir = optixGetObjectRayDirection();
+    // if (ray.dbg) printf("isec %f %f %f  %f %f %f\n",
+    //                     org.x,
+    //                     org.y,
+    //                     org.z,
+    //                     dir.x,
+    //                     dir.y,
+    //                     dir.z
+    //                     );
     const int primID = optixGetPrimitiveIndex();
 
     const vec3i mcID = self.mcGrid.cellID(primID);
@@ -378,6 +387,14 @@ namespace barney {
     box3f bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
 
+    // if (ray.dbg) printf("trange %f %f box %f %f %f : %f %f %f\n",
+    //                     tRange.lower,tRange.upper,
+    //                     bounds.lower.x,
+    //                     bounds.lower.y,
+    //                     bounds.lower.z,
+    //                     bounds.upper.x,
+    //                     bounds.upper.y,
+    //                     bounds.upper.z);
     if (!boxTest(ray,tRange,bounds))
       return;
 
@@ -391,6 +408,7 @@ namespace barney {
     ray.setVolumeHit(ray.org + tRange.upper*ray.dir,
                      tRange.upper,
                      getPos(sample));
+    if (ray.dbg) printf("hit at %f\n",tRange.upper);
     optixReportIntersection(tRange.upper, 0);
   }
 

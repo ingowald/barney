@@ -54,9 +54,12 @@ namespace barney {
         if (t >= tRange.upper)
           return false;
 
-        sample = volume.sampleAndMap(org+t*dir,dbg);
-        // if (dbg) printf("sample at t %f -> %f %f %f : %f\n",
-        //                 t,sample.x,
+        vec3f P = org+t*dir;
+        sample = volume.sampleAndMap(P,dbg);
+        // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
+        //                 t,
+        //                 P.x,P.y,P.z,
+        //                 sample.x,
         //                 sample.y,
         //                 sample.z,
         //                 sample.w);

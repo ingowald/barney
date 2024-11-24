@@ -24,7 +24,7 @@ namespace barney {
   OPTIX_BOUNDS_PROGRAM(SpheresBounds)(const void *geomData,                
                                      owl::common::box3f &bounds,  
                                      const int32_t primID)
-  {
+  { 
     const Spheres::DD &geom = *(const Spheres::DD *)geomData;
     vec3f origin = geom.origins[primID];
     float radius = geom.radii?geom.radii[primID]:geom.defaultRadius;

@@ -368,7 +368,6 @@ namespace barney {
     render::Sampler::SP sampler
       = render::Sampler::create(checkGet(context),slot,type);
     if (!sampler) return 0;
-    // sampler->commit();
     return (BNSampler)checkGet(context)->initReference(sampler);
   }
 

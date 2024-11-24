@@ -312,7 +312,6 @@ namespace barney {
   OWLContext Context::getOWL(int slot) 
   {
     if (slot == -1) {
-      PING;
       return globalContextAcrossAllGPUs;
     }
     return getDevGroup(slot)->owl;
