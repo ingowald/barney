@@ -111,10 +111,8 @@ endif()
 
 
 # swtich to 'find' if installed
-option(BARNEY_USE_CUBQL "Use CUBQL library" true)
-#if (BARNEY_USE_CUBQL)
+option(BARNEY_CUBQL_HOST "Use CUBQL host builder" true)
 add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
-#endif()
 
 # ------------------------------------------------------------------
 # barney itself

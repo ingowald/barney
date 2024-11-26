@@ -15,11 +15,12 @@
 // ======================================================================== //
 
 #include "barney/geometry/Attributes.dev.h"
+#include "barney/volume/StructuredData.h"
+
 #include "barney/geometry/Spheres.h"
-#include "owl/owl_device.h"
+// #include "owl/owl_device.h"
 
 namespace barney {
-  using namespace barney::render;
   
   OPTIX_BOUNDS_PROGRAM(SpheresBounds)(const void *geomData,                
                                      owl::common::box3f &bounds,  
@@ -32,6 +33,7 @@ namespace barney {
     bounds.upper = origin + radius;
   }
 
+  using namespace barney::render;
   inline __device__
   float safe_eps(float f, vec3f v)
   {

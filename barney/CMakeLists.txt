@@ -19,21 +19,21 @@ add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
   INTERFACE
   cuBQL
+  owl::owl
   )
 #if (TARGET cuBQL_cuda_float3)
-target_compile_definitions(barney-config INTERFACE -DHAVE_CUBQL=1)
 #if (target cuBQL_cuda_float3)
-if (BARNEY_USE_CUBQL)
-  target_link_libraries(barney-config INTERFACE
-    cuBQL_cuda_float3
-    )
-else()
+if (BARNEY_CUBQL_HOST)
+  target_compile_definitions(barney-config INTERFACE -DBARNEY_CUBQL_HOST=1)
   target_link_libraries(barney-config INTERFACE
     cuBQL_host_float3 #_cuda_float3
     )
+else()
+  target_link_libraries(barney-config INTERFACE
+    cuBQL_cuda_float3
+    )
 endif()
-#endif()
-#endif()
+
 
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
@@ -66,7 +66,7 @@ endif()
 # ray gen program that launches kernel to trace rays
 embed_ptx(
   OUTPUT_TARGET      barney-traceRays-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            kernels/traceRays.cu
   )
 # ------------------------------------------------------------------
@@ -74,32 +74,32 @@ embed_ptx(
 # ------------------------------------------------------------------
 # ray-sphere geom intersection
 embed_ptx(
-  OUTPUT_TARGET      barney-spheres-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  OUTPUT_TARGET      barney-Spheres-ptx
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            geometry/Spheres.dev.cu
   )
 # ray triangles geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-triangles-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            geometry/Triangles.dev.cu
   )
 # ray cylinders geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-cylinders-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            geometry/Cylinders.dev.cu
   )
 # ray capsules geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-capsules-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            geometry/Capsules.dev.cu
   )
 # ray cones geom intersection
 #embed_ptx(
 #  OUTPUT_TARGET      barney-cones-ptx
-#  PTX_LINK_LIBRARIES owl::owl barney-config
+#  PTX_LINK_LIBRARIES barney-config
 #  SOURCES            geometry/Cones.dev.cu
 #  )
 
@@ -108,22 +108,22 @@ embed_ptx(
 # ------------------------------------------------------------------
 embed_ptx(
   OUTPUT_TARGET      barney-StructuredData-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            volume/StructuredData.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            umesh/os/RTXObjectSpace.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshMC-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            umesh/mc/UMeshMC.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-AWT-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            umesh/os/AWT.dev.cu
 )
 
@@ -132,11 +132,11 @@ embed_ptx(
 # ------------------------------------------------------------------
 embed_ptx(
   OUTPUT_TARGET      barney-BlockStructuredMC-ptx
-  PTX_LINK_LIBRARIES owl::owl barney-config
+  PTX_LINK_LIBRARIES barney-config
   SOURCES            amr/BlockStructuredMC.dev.cu
   )
 
-add_library(barney SHARED
+set(BARNEY_SOURCES
   common/barney-common.h
   common/cuda-helper.cpp
   
@@ -303,21 +303,79 @@ CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
   
 
 
+# add_library(barney-internal INTERFACE)
+# target_link_libraries(barney-internal INTERFACE
+#   "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-Spheres-ptx,barney-StructuredData-ptx,barney-cylinders-ptx,barney-capsules-ptx,barney-triangles-ptx,barney-traceRays-ptx,barney-UMeshRTXObjectSpace-ptx,barney-UMeshMC-ptx,barney-AWT-ptx,barney-BlockStructuredMC-ptx>"
+
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-Spheres-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-StructuredData-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-cylinders-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-capsules-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-triangles-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-traceRays-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-UMeshRTXObjectSpace-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-UMeshMC-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-AWT-ptx>"
+   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-BlockStructuredMC-ptx>"
+#   )
+
+# ------------------------------------------------------------------
+# STATIC version of barney_mpi
+# ------------------------------------------------------------------
+#set(CMAKE_CXX_LINK_LIBRARY_USING_WHOLE_ARCHIVE 1)
+add_library(barney_static
+  #STATIC
+  OBJECT
+  ${BARNEY_SOURCES})
+target_link_libraries(barney_static PUBLIC
+  owl::owl
+  barney-config
+#  barney-internal
+#  barney-Spheres-ptx
+#  barney-StructuredData-ptx
+
+ barney-Spheres-ptx
+ barney-StructuredData-ptx
+ barney-cylinders-ptx
+ barney-capsules-ptx
+ barney-triangles-ptx
+ barney-traceRays-ptx  
+ barney-UMeshRTXObjectSpace-ptx
+ barney-UMeshMC-ptx
+ barney-AWT-ptx  
+ barney-BlockStructuredMC-ptx
+  )
+# target_link_libraries(barney_static PUBLIC
+#   "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-Spheres-ptx,barney-StructuredData-ptx,barney-cylinders-ptx,barney-capsules-ptx,barney-triangles-ptx,barney-traceRays-ptx,barney-UMeshRTXObjectSpace-ptx,barney-UMeshMC-ptx,barney-AWT-ptx,barney-BlockStructuredMC-ptx>"
+#   )
+set_target_properties(barney_static
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_ARCHITECTURES OFF
+  )
+# ------------------------------------------------------------------
+# SHARED version of barney_mpi
+# ------------------------------------------------------------------
+add_library(barney SHARED ${BARNEY_SOURCES})
 target_link_libraries(barney
   PUBLIC
   owl::owl
  # OptiX::OptiX
-  barney-config
-  barney-StructuredData-ptx
-  barney-spheres-ptx
-  barney-cylinders-ptx
-  barney-capsules-ptx
-  barney-triangles-ptx
-  barney-traceRays-ptx  
-  barney-UMeshRTXObjectSpace-ptx
-  barney-UMeshMC-ptx
-  barney-AWT-ptx  
-  barney-BlockStructuredMC-ptx
+ barney-config
+# barney-internal
+#  barney-Spheres-ptx
+#  barney-StructuredData-ptx
+#  barney-cylinders-ptx
+#  barney-capsules-ptx
+#  barney-triangles-ptx
+#  barney-traceRays-ptx  
+#  barney-UMeshRTXObjectSpace-ptx
+#  barney-UMeshMC-ptx
+#  barney-AWT-ptx  
+#  barney-BlockStructuredMC-ptx
   )
 
 set_target_properties(barney
@@ -329,10 +387,39 @@ set_target_properties(barney
   CUDA_ARCHITECTURES OFF
   )
 
+
+
+
 if (BARNEY_MPI)
-  # ------------------------------------------------------------------
   find_package(MPI REQUIRED)
 
+  # ------------------------------------------------------------------
+  # STATIC version of barney_mpi
+  # ------------------------------------------------------------------
+  add_library(barney_mpi_static STATIC
+    common/MPIWrappers.h
+    common/MPIWrappers.cpp
+    MPIContext.h
+    MPIContext.cpp
+    fb/DistFB.h
+    fb/DistFB.cpp
+    )
+  set_target_properties(barney_mpi_static
+    PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    POSITION_INDEPENDENT_CODE ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_ARCHITECTURES OFF
+    )
+  target_link_libraries(barney_mpi_static PUBLIC
+    barney_static
+    MPI::MPI_CXX
+    )
+  target_compile_definitions(barney_mpi_static PUBLIC -DBARNEY_MPI=1)
+  # ------------------------------------------------------------------
+  # SHARED version of barney_mpi
+  # ------------------------------------------------------------------
   add_library(barney_mpi SHARED
     common/MPIWrappers.h
     common/MPIWrappers.cpp

@@ -203,6 +203,12 @@ namespace barney {
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
     // buildConfig.enableSAH();
+#if BARNEY_CUBQL_HOST
+    cuBQL::host::spatialMedian(bvh,
+                               (const cuBQL::box_t<float,3>*)d_primBounds,
+                               (uint32_t)mesh->elements.size(),
+                               buildConfig);
+#else
     static cuBQL::ManagedMemMemoryResource managedMem;
     std::cout << "#bn.awt: going to build cuBQL BVH over "
               << prettyNumber(mesh->elements.size()) << " elements" << std::endl;
@@ -212,7 +218,7 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
-    
+#endif
     std::cout << "#bn.awt: building (host-)AWT nodes from cubql bvh (on the host rn :/)" << std::endl;
     buildNodes(bvh);
     std::cout << "#bn.awt: extracting awt roots (on the host rn :/)" << std::endl;
@@ -232,7 +238,11 @@ namespace barney {
     BARNEY_CUDA_CALL(Free(d_primRanges));
 
     
+#if BARNEY_CUBQL_HOST
+    cuBQL::host::freeBVH(bvh);
+#else
     cuBQL::free(bvh,0,managedMem);
+#endif
     
     // ==================================================================
 

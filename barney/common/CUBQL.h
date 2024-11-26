@@ -18,6 +18,11 @@
 
 #include "barney/common/barney-common.h"
 #include "cuBQL/bvh.h"
+#if BARNEY_CUBQL_HOST
+# include "cuBQL/builder/host.h"
+#else
+# include "cuBQL/builder/cuda.h"
+#endif
 
 namespace barney {
 
@@ -79,5 +84,17 @@ namespace barney {
         return;
       nodeRef = *--stackPtr;
     }
+  }
+
+
+
+
+  template<typename TravState, int BVH_WIDTH=4>
+  /*! sample the umesh field; can return NaN if sample did not hit
+    any unstructured element at all */
+  inline __device__
+  void traverseCUQBL(typename cuBQL::BinaryBVH<float,3>::Node *bvhNodes,
+                      TravState &ptd, vec3f P, bool dbg) 
+  {
   }
 } // ::barney
