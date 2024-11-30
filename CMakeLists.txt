@@ -34,17 +34,6 @@ else()
   set(BARNEY_IS_SUBPROJECT OFF)
 endif()
 
-if(CUDA_TOOLKIT_ROOT_DIR)
-  # Somebody called find_cuda--they are trying to use the deprecated build.
-  message(WARNING "CUDA_TOOLKIT_ROOT_DIR is set. "
-    "This usually means that a parent project has called find_cuda, which "
-    "has been deprecated in CMake since 2018 and is no longer supported by BARNEY. "
-    "Instead, the parent project is required to use 'intermediate' or 'modern' "
-    "CMake CUDA style with first-class CUDA language support (i.e., "
-    "project(foo LANGUAGES C CXX CUDA)). "
-  )
-endif()
-
 set(CMAKE_BUILD_TYPE_INIT "Release")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -57,6 +46,23 @@ if ((NOT WIN32) AND (NOT CMAKE_BUILD_TYPE) AND (NOT CMAKE_CONFIGURATION_TYPES))
     "MinSizeRel" "RelWithDebInfo")
 endif()
 
+
+# iw - do NOT use an 'option' - they can't do strings
+set(BARNEY_CUDA_ARCHITECTURES "auto" CACHE STRING
+  "Which CUDA architecture to build for")
+if (BARNEY_CUDA_ARCHITECTURES STREQUAL "auto")
+  if (NOT CMAKE_CUDA_ARCHITECTURES)
+    # 'all-major', since cmake-3.23
+    set(BARNEY_CUDA_ARCHITECTURES all-major)
+  else()
+    set(BARNEY_CUDA_ARCHITECTURES S{CMAKE_CUDA_ARCHITECTURES})
+  endif()
+  message("#barney: cuda-archs set to auto, selected '${BARNEY_CUDA_ARCHITECTURES}'")
+else()
+  message("#barney: explicit cuda archs '${BARNEY_CUDA_ARCHITECTURES}' requested by user")
+endif()
+  
+
 # project command is required to come after cmake_minimum_required command.
 project(Barney VERSION 0.7.0 LANGUAGES C CXX CUDA)
 
@@ -66,25 +72,6 @@ if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
 
-
-set(BARNEY_CUDA_ARCHITECTURES "auto" CACHE
-  STRING "which CUDA arch to use for building barney" )
-
-if (BARNEY_CUDA_ARCHITECTURES STREQUAL "auto")
-  # leave CMAKE_CUDA_ARCHITECTURES to whatever the may may or may not have set
-else()
-  set(CMAKE_CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES})
-endif()
-
-if (NOT (DEFINED CMAKE_CUDA_ARCHITECTURES))
-
-  # new cmake policy: make sure that CMAKE_CUDA_ARCHITECTURES is set
-  # to _something_, even if it's only "OFF". iw - seems to not apply on ubuntu 20.04!?
-  if (NOT CMAKE_VERSION VERSION_LESS "3.17")
-    set(CMAKE_CUDA_ARCHITECTURES OFF)
-  endif()
-endif()
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -92,6 +79,9 @@ if (NOT CUDA_SOURCE)
   macro(CUDA_SOURCE fileName)
     set_source_files_properties(${fileName}
       PROPERTIES LANGUAGE CUDA
+      )
+    set_source_files_properties(${fileName}
+      PROPERTIES CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
       )
   endmacro()
 endif()

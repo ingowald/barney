@@ -48,6 +48,14 @@ set(BANARI_SOURCES
 # static and shared anari
 add_library(banari-config INTERFACE
   )
+set_target_properties(banari-config
+  PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  )
+set_target_properties(banari-config
+  PROPERTIES
+  CUDA_ARCHITECTURES all-major
+  )
 
 target_include_directories(banari-config
   INTERFACE
