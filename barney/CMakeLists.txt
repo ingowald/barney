@@ -25,13 +25,10 @@ target_link_libraries(barney-config
 #if (target cuBQL_cuda_float3)
 if (BARNEY_CUBQL_HOST)
   target_compile_definitions(barney-config INTERFACE -DBARNEY_CUBQL_HOST=1)
-  target_link_libraries(barney-config INTERFACE
-    cuBQL_host_float3 #_cuda_float3
-    )
+  target_link_libraries(barney-config INTERFACE cuBQL)
+  set(CUBQL_LIB cuBQL_host_float3)
 else()
-  target_link_libraries(barney-config INTERFACE
-    cuBQL_cuda_float3
-    )
+  set(CUBQL_LIB cuBQL_cuda_float3)
 endif()
 
 
@@ -309,6 +306,7 @@ add_library(barney_static
   ${BARNEY_SOURCES})
 target_link_libraries(barney_static PUBLIC
   owl::owl
+  ${CUBQL_LIB}_static
   barney-config
   barney-Spheres-ptx
   barney-StructuredData-ptx
@@ -336,6 +334,7 @@ add_library(barney SHARED ${BARNEY_SOURCES})
 target_link_libraries(barney
   PUBLIC
   owl::owl
+  ${CUBQL_LIB}
   barney-config
   )
 
