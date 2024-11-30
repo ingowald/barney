@@ -24,8 +24,9 @@ namespace barney {
 
   /*! a umesh scalar field, with a CUBQL bvh sampler */
   struct UMeshCUBQLSampler {
-    enum { BVH_WIDTH = 4 };
-    using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
+    // enum { BVH_WIDTH = 4 };
+    using bvh_t  = cuBQL::BinaryBVH<float,3>;
+    // using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
     using node_t = typename bvh_t::Node;
     
     struct DD : public UMeshField::DD {

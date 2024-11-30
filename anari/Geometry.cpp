@@ -375,6 +375,8 @@ void Triangle::setBarneyParameters(BNGeom geom, BNContext context// , int slot
   addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
   addAttribute(geom, context, m_vertexAttributes[3], "vertex.attribute3");
   addAttribute(geom, context, m_vertexAttributes[4], "vertex.color");
+
+  bnCommit(geom);
 }
 
 const char *Triangle::bnSubtype() const

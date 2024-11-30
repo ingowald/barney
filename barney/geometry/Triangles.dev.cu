@@ -143,7 +143,7 @@ namespace barney {
     vec3f n = cross(v1-v0,v2-v0);
     // vec3f ws_n = optixTransformNormalFromObjectToWorldSpace(n);
     if (0 && ray.dbg)
-      printf("----------- Triangles::AH (%i %lx) at %f\n",
+      printf("----------- Triangles::AH (%i %p) at %f\n",
              primID,&self,optixGetRayTmax());
     // if (0 && ray.dbg)
     //   printf("geom normal %f %f %f world %f %f %f\n",

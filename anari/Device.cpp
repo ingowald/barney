@@ -226,6 +226,18 @@ BarneyDevice::BarneyDevice(ANARILibrary l) : helium::BaseDevice(l)
   deviceCommitParameters();
 }
 
+  BarneyDevice::BarneyDevice() : helium::BaseDevice(nullptr,nullptr)
+  {
+    m_state = std::make_unique<BarneyGlobalState>(this_device());
+    deviceCommitParameters();
+  }
+  
+  extern "C" ANARIDevice createAnariDeviceBarney()
+  {
+    PING;
+    return (ANARIDevice )new BarneyDevice();
+  }
+
 BarneyDevice::~BarneyDevice()
 {
   auto &state = *deviceState();

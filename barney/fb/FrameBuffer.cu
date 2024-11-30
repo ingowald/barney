@@ -99,8 +99,13 @@ namespace barney {
     void run() override
     {
       vec2i bs(8,8);
-      copyPixels<<<divRoundUp(fb->numPixels,bs),bs>>>
-        (fb->numPixels,fb->denoisedColor,fb->linearColor,fb->linearAlpha);
+      CHECK_CUDA_LAUNCH(copyPixels,
+                        divRoundUp(fb->numPixels,bs),bs,0,0,
+                        //
+                        fb->numPixels,fb->denoisedColor,
+                        fb->linearColor,fb->linearAlpha);
+      // copyPixels<<<divRoundUp(fb->numPixels,bs),bs>>>
+      //   (fb->numPixels,fb->denoisedColor,fb->linearColor,fb->linearAlpha);
     }
   };
 
@@ -506,6 +511,19 @@ namespace barney {
   
   void FrameBuffer::unpackTiles()
   {
+#if 1
+    CHECK_CUDA_LAUNCH(g_unpackTiles,
+                      //
+                      gatheredTilesOnOwner.numActiveTiles,pixelsPerTile,0,0,
+                      //
+                      numPixels,
+                      linearColor,
+                      linearAlpha,
+                      linearNormal,
+                      linearDepth,
+                      gatheredTilesOnOwner.compressedTiles,
+                      gatheredTilesOnOwner.tileDescs);
+#else
     g_unpackTiles<<<gatheredTilesOnOwner.numActiveTiles,pixelsPerTile>>>
       (numPixels,
        linearColor,
@@ -514,6 +532,7 @@ namespace barney {
        linearDepth,
        gatheredTilesOnOwner.compressedTiles,
        gatheredTilesOnOwner.tileDescs);
+#endif
   }
 
   void FrameBuffer::read(BNFrameBufferChannel channel,
@@ -525,7 +544,11 @@ namespace barney {
     if (dirty) {
       denoiser->run();
       vec2i bs(8,8);
-      toneMap<<<divRoundUp(numPixels,bs),bs>>>(denoisedColor,numPixels);
+      CHECK_CUDA_LAUNCH(toneMap,
+                        divRoundUp(numPixels,bs),bs,0,0,
+                        //
+                        denoisedColor,numPixels);
+      // toneMap<<<divRoundUp(numPixels,bs),bs>>>(denoisedColor,numPixels);
       BARNEY_CUDA_SYNC_CHECK();
       dirty = false;
     }
@@ -566,9 +589,13 @@ namespace barney {
                                    numPixels.x*numPixels.y*sizeof(uint32_t),0));
       BARNEY_CUDA_SYNC_CHECK();
       vec2i bs(8,8);
-      toFixed8<false>
-        <<<divRoundUp(numPixels,bs),bs>>>
-        (asFixed8,denoisedColor,numPixels);
+      CHECK_CUDA_LAUNCH(toFixed8<false>,
+                        divRoundUp(numPixels,bs),bs,0,0,
+                        //
+                        asFixed8,denoisedColor,numPixels);
+      // toFixed8<false>
+        // <<<divRoundUp(numPixels,bs),bs>>>
+        // (asFixed8,denoisedColor,numPixels);
       BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
@@ -581,9 +608,13 @@ namespace barney {
                                    numPixels.x*numPixels.y*sizeof(uint32_t),0));
       BARNEY_CUDA_SYNC_CHECK();
       vec2i bs(8,8);
-      toFixed8<true>
-        <<<divRoundUp(numPixels,bs),bs>>>
-        (asFixed8,denoisedColor,numPixels);
+      // toFixed8<true>
+      //   <<<divRoundUp(numPixels,bs),bs>>>
+      //   (asFixed8,denoisedColor,numPixels);
+      CHECK_CUDA_LAUNCH(toFixed8<true>,
+                        divRoundUp(numPixels,bs),bs,0,0,
+                        //
+                        asFixed8,denoisedColor,numPixels);
       BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));

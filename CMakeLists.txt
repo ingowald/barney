@@ -68,7 +68,7 @@ endif()
 
 
 set(BARNEY_CUDA_ARCHITECTURES "auto" CACHE
-  STRING "which CUDA arch to use for building cuBQL" )
+  STRING "which CUDA arch to use for building barney" )
 
 if (BARNEY_CUDA_ARCHITECTURES STREQUAL "auto")
   # leave CMAKE_CUDA_ARCHITECTURES to whatever the may may or may not have set
@@ -85,28 +85,37 @@ if (NOT (DEFINED CMAKE_CUDA_ARCHITECTURES))
   endif()
 endif()
 
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ------------------------------------------------------------------
+if (NOT CUDA_SOURCE)
+  macro(CUDA_SOURCE fileName)
+    set_source_files_properties(${fileName}
+      PROPERTIES LANGUAGE CUDA
+      )
+  endmacro()
+endif()
+
+
+
+# ---------------------------------------------ge---------------------
 # subprojects we depend on
 # ------------------------------------------------------------------
 if (NOT (TARGET owl::owl))
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 endif()
 
-add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
+
+# TODO: add option to find if installed
+option(BARNEY_CUBQL_HOST "Use CUBQL host builder" off)
+if (NOT (TARGET cuBQL_cuda_float3))
+  add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
+endif()
 
 # ------------------------------------------------------------------
 # barney itself
 # ------------------------------------------------------------------
 add_subdirectory(barney)
-
-# ------------------------------------------------------------------
-# sample distributed viewer/renderer
-# ------------------------------------------------------------------
-#add_subdirectory(hayMaker)
 
 # ------------------------------------------------------------------
 # ANARI device

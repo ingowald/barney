@@ -54,13 +54,18 @@ namespace barney {
                         TileDesc *tileDescs,
                         bool enablePerRayDebug)
     {
+      // #define MERGE_ATOMICS 1 
+
+#if MERGE_ATOMICS
       __shared__ int l_count;
       if (threadIdx.x == 0)
         l_count = 0;
-
+#endif
+      
       // ------------------------------------------------------------------
+#if MERGE_ATOMICS
       __syncthreads();
-    
+#endif    
       int tileID = blockIdx.x;
     
       vec2i tileOffset = tileDescs[tileID].lower;
@@ -80,10 +85,13 @@ namespace barney {
       ray.org  = camera.lens_00;
       float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));
       float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y));
+      float aspect = fbSize.x / float(fbSize.y);
       vec3f ray_dir
         = camera.dir_00
-        + image_u*camera.dir_du
-        + image_v*camera.dir_dv;
+        + (1.f*aspect*(image_u - .5f)) * camera.dir_du
+        + (1.f*(image_v - .5f)) * camera.dir_dv;
+        // + image_u*(fbSize.x/float(fbSize.y))*camera.dir_du
+        // + image_v*camera.dir_dv;
       
       if (camera.lensRadius > 0.f) {
         vec3f lens_du = normalize(camera.dir_du);
@@ -163,6 +171,7 @@ namespace barney {
       // ray.hit.N = vec3f(0.f);
       ray.throughput = vec3f(1.f);
     
+#if MERGE_ATOMICS
       int pos = -1;
       if (ix < fbSize.x && iy < fbSize.y) 
         pos = atomicAdd(&l_count,1);
@@ -176,6 +185,10 @@ namespace barney {
       __syncthreads();
       if (pos >= 0) 
         rayQueue[l_count + pos] = ray;
+#else
+      int pos = atomicAdd(d_count,1);
+      rayQueue[pos] = ray;
+#endif
     }
   }
   
@@ -193,7 +206,24 @@ namespace barney {
       return fromEnv && std::stoi(fromEnv);
     };
     static bool enablePerRayDebug = getPerRayDebug();
-    
+
+#if 1
+    CHECK_CUDA_LAUNCH
+      (/* cuda kernel */
+       render::g_generateRays,
+       /* launch config */
+       fb->numActiveTiles,pixelsPerTile,0,device->launchStream,
+       /* variable args */
+       camera,
+       renderer,
+       rngSeed,
+       fb->owner->accumID,
+       fb->numPixels,
+       rays._d_nextWritePos,
+       rays.receiveAndShadeWriteQueue,
+       fb->tileDescs,
+       enablePerRayDebug);
+#else
     render::g_generateRays
       <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
       (camera,
@@ -205,5 +235,6 @@ namespace barney {
        rays.receiveAndShadeWriteQueue,
        fb->tileDescs,
        enablePerRayDebug);
+#endif
   }
 }

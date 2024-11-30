@@ -48,6 +48,7 @@ namespace barney {
       Host(UMeshField *mesh, Volume *volume)
         : Inherited(mesh,volume)
       {}
+      virtual ~Host() {}
     // RTXObjectSpace(UMeshField *mesh, Volume *volume)
     //   : VolumeAccel(mesh,volume),
     //     mesh(mesh)
