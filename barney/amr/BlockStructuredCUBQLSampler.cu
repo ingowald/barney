@@ -45,7 +45,7 @@ namespace barney {
                                    field->blockIDs.size()*sizeof(box3f)));
     BARNEY_CUDA_SYNC_CHECK();
 
-    field->computeBlockFilterDomains(/*deviceID:*/0,d_primBounds);
+    field->computeBlockFilterDomains(devGroup->devices[0],d_primBounds);
     BARNEY_CUDA_SYNC_CHECK();
     
     cuBQL::BuildConfig buildConfig;
