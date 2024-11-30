@@ -29,7 +29,8 @@ namespace barney {
       localID(localID),
       devGroup(_model->context->perSlot[slot].devGroup),
       world(std::make_shared<render::World>(_model->context->perSlot[slot].devGroup))
-  {}
+  {
+  }
 
   ModelSlot::~ModelSlot()
   {}

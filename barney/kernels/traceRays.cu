@@ -18,15 +18,8 @@
 #include "owl/owl_device.h"
 #include "barney/render/OptixGlobals.h"
 
-// __constant__ struct {
-//   __forceinline__ __device__ const barney::DeviceContext::DD &get() const
-//   { return *(const barney::DeviceContext::DD*)this; }
-  
-//   float4 podData[(sizeof(barney::DeviceContext::DD)+sizeof(float4)-1)/sizeof(float4)];
-// } optixLaunchParams;
-
-
-__constant__ barney::render::OptixGlobals optixLaunchParams;
+// __constant__ barney::render::OptixGlobals optixLaunchParams;
+// DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
 
 namespace barney {
   namespace render {
@@ -38,7 +31,7 @@ namespace barney {
         = owl::getLaunchIndex().x
         + owl::getLaunchDims().x
         * owl::getLaunchIndex().y;
-    
+
       if (rayID >= lp.numRays)
         return;
 

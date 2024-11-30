@@ -96,10 +96,15 @@ namespace barney {
 
     BARNEY_CUDA_SYNC_CHECK();
     if (numActiveTiles)
-      setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,
-      device?device->launchStream:0>>>
-        (tileDescs,numActiveTiles,numTiles,
-         device->globalIndex,device->globalIndexStep);
+      CHECK_CUDA_LAUNCH(setTileCoords,
+                        divRoundUp(numActiveTiles,1024),1024,0,device?device->launchStream:0,
+                        //
+                        tileDescs,numActiveTiles,numTiles,
+                        device->globalIndex,device->globalIndexStep);
+      // setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,
+      // device?device->launchStream:0>>>
+      //   (tileDescs,numActiveTiles,numTiles,
+      //    device->globalIndex,device->globalIndexStep);
     BARNEY_CUDA_SYNC_CHECK();
   }
 
@@ -132,8 +137,11 @@ namespace barney {
   {
     SetActiveGPU forDuration(device);
     if (numActiveTiles > 0)
-      g_compressTiles<<<numActiveTiles,pixelsPerTile,0,device->launchStream>>>
-        (compressedTiles,accumTiles,1.f/(owner->accumID));
+      CHECK_CUDA_LAUNCH(g_compressTiles,
+                        numActiveTiles,pixelsPerTile,0,device->launchStream,
+                        compressedTiles,accumTiles,1.f/(owner->accumID));
+      // g_compressTiles<<<numActiveTiles,pixelsPerTile,0,device->launchStream>>>
+      //   (compressedTiles,accumTiles,1.f/(owner->accumID));
     BARNEY_CUDA_SYNC_CHECK();
   }
 

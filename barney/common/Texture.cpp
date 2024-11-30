@@ -219,11 +219,9 @@ namespace barney {
   {
     if (!onDev.empty()) return;
 
-    PING;
     auto &devices = getDevices();
     onDev.resize(context->contextSize());
 
-    PING;
     cudaChannelFormatDesc desc;
     // cudaTextureReadMode   readMode;
     size_t sizeOfScalar;
@@ -266,7 +264,6 @@ namespace barney {
     for (auto dev : devices) {
       auto &dd = getDD(dev);//onDev[dev->localRank];
       SetActiveGPU forDuration(dev);
-      PING; PRINT(size);
       BARNEY_CUDA_CALL(MallocArray(&dd.array,&desc,size.x,size.y,0));
       BARNEY_CUDA_CALL(Memcpy2DToArray(dd.array,0,0,
                                        (void *)texels,
@@ -298,7 +295,7 @@ namespace barney {
 
   cudaTextureObject_t Texture::getTextureObject(const Device *device) const
   {
-    return owlTextureGetObject(owlTexture,device->owlID);
+    return (cudaTextureObject_t)owlTextureGetObject(owlTexture,device->owlID);
   }
     
   

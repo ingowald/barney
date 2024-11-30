@@ -203,6 +203,12 @@ namespace barney {
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
     // buildConfig.enableSAH();
+#if BARNEY_CUBQL_HOST
+    cuBQL::host::spatialMedian(bvh,
+                               (const cuBQL::box_t<float,3>*)d_primBounds,
+                               (uint32_t)mesh->elements.size(),
+                               buildConfig);
+#else
     static cuBQL::ManagedMemMemoryResource managedMem;
     std::cout << "#bn.awt: going to build cuBQL BVH over "
               << prettyNumber(mesh->elements.size()) << " elements" << std::endl;
@@ -212,7 +218,7 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
-    
+#endif
     std::cout << "#bn.awt: building (host-)AWT nodes from cubql bvh (on the host rn :/)" << std::endl;
     buildNodes(bvh);
     std::cout << "#bn.awt: extracting awt roots (on the host rn :/)" << std::endl;
@@ -232,7 +238,11 @@ namespace barney {
     BARNEY_CUDA_CALL(Free(d_primRanges));
 
     
+#if BARNEY_CUBQL_HOST
+    cuBQL::host::freeBVH(bvh);
+#else
     cuBQL::free(bvh,0,managedMem);
+#endif
     
     // ==================================================================
 
@@ -338,10 +348,15 @@ namespace barney {
     
     for (auto dev : getDevices()) {
       SetActiveGPU forDuration(dev);
-      recomputeMajorants<<<divRoundUp(int(4*nodes.size()),1024),1024>>>
-        ((AWTNode*)owlBufferGetPointer(nodesBuffer,dev->owlID),
+      CHECK_CUDA_LAUNCH(recomputeMajorants,
+                        divRoundUp(int(4*nodes.size()),1024),1024,0,0,
+                        (AWTNode*)owlBufferGetPointer(nodesBuffer,dev->owlID),
          (int)nodes.size(),
          volume->xf.getDD(dev));
+      // recomputeMajorants<<<divRoundUp(int(4*nodes.size()),1024),1024>>>
+      //   ((AWTNode*)owlBufferGetPointer(nodesBuffer,dev->owlID),
+      //    (int)nodes.size(),
+      //    volume->xf.getDD(dev));
     }
     std::cout << "refitting ... umesh awt/object space geom" << std::endl;
     owlGroupRefitAccel(volume->generatedGroups[0]);

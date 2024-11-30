@@ -181,8 +181,6 @@ namespace barney {
                  t0,t1,
                  bb)) return;
 
-
-
 #if 1
     render::HitAttributes hitData;
     const DeviceMaterial &material
@@ -193,7 +191,7 @@ namespace barney {
       = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                         ray.dir,hitData.worldNormal,ray.dbg);
     if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
-      // optixIgnoreIntersection();
+      optixIgnoreIntersection();
       return;
     }
 #endif

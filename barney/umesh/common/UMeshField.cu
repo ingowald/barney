@@ -255,9 +255,13 @@ namespace barney {
       SetActiveGPU forDuration(dev);
       auto d_mesh = getDD(dev);
       auto d_grid = grid.getDD(dev);
-      rasterElements
-        <<<divRoundUp(int(elements.size()),128),128>>>
-        (d_grid,d_mesh);
+      CHECK_CUDA_LAUNCH(rasterElements,
+                        divRoundUp(int(elements.size()),128),128,0,0,
+                        //
+                        d_grid,d_mesh);
+      // rasterElements
+        // <<<divRoundUp(int(elements.size()),128),128>>>
+        // (d_grid,d_mesh);
       BARNEY_CUDA_SYNC_CHECK();
     }
   }
@@ -292,8 +296,11 @@ namespace barney {
     SetActiveGPU forDuration(device);
     int bs = 1024;
     int nb = divRoundUp(int(elements.size()),bs);
-    g_computeElementBoundingBoxes
-      <<<nb,bs>>>(d_primBounds,d_primRanges,getDD(device));
+    CHECK_CUDA_LAUNCH(g_computeElementBoundingBoxes,
+                      nb,bs,0,0,
+                      d_primBounds,d_primRanges,getDD(device));
+    // g_computeElementBoundingBoxes
+    //   <<<nb,bs>>>(d_primBounds,d_primRanges,getDD(device));
     BARNEY_CUDA_SYNC_CHECK();
   }
 

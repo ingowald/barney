@@ -14,6 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "barney/geometry/Attributes.dev.h"
 #include "barney/volume/StructuredData.h"
 
 namespace barney {
