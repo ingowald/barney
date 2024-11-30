@@ -19,7 +19,8 @@ add_library(barney-config INTERFACE)
 target_link_libraries(barney-config
   INTERFACE
   cuBQL
-  owl::owl
+  owl-config
+  #owl::owl
   )
 #if (TARGET cuBQL_cuda_float3)
 #if (target cuBQL_cuda_float3)
@@ -305,7 +306,7 @@ add_library(barney_static
   OBJECT
   ${BARNEY_SOURCES})
 target_link_libraries(barney_static PUBLIC
-  owl::owl
+  owl_static
   ${CUBQL_LIB}_static
   barney-config
   barney-Spheres-ptx

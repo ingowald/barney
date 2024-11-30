@@ -211,7 +211,7 @@ namespace barney {
   };
 #endif
   
-#if OPTIX_VERSION >= 80000  
+#if OPTIX_VERSION >= 80000
   struct DenoiserOptix : public Denoiser {
     DenoiserOptix(FrameBuffer *fb)
       : Denoiser(fb)
@@ -230,7 +230,7 @@ namespace barney {
                           &denoiserOptions,
                           &denoiser);
     }      
-    virtual ~DenoiserOptix();
+    virtual ~DenoiserOptix() {}
     void resize() override
     {
       Denoiser::resize();
