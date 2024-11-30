@@ -21,18 +21,20 @@ endif()
 enable_language(CUDA)
 
 find_package(anari 0.10.0 COMPONENTS code_gen)
-
+message("ANARI_FOUND ${ANARI_FOUND} anari_FOUND ${anari_FOUND}")
 include(GNUInstallDirs)
 
 ## Code generation ##
 
-
+# generates trouble for pynari!?
+if (ON)
 anari_generate_queries(
   NAME barney
   PREFIX BarneyDevice
   CPP_NAMESPACE barney_device
   JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
 )
+endif()
 
 ## Device target ##
 
@@ -125,7 +127,7 @@ install(TARGETS anari_library_barney#${PROJECT_NAME}
 
 ## Test app ##
 
-project(anariTest LANGUAGES CXX)
-project_add_executable(test/anariTest.cpp)
-project_link_libraries(${ANARI_LIBRARY_NAME})
+#project(anariTest LANGUAGES CXX)
+#project_add_executable(test/anariTest.cpp)
+#project_link_libraries(${ANARI_LIBRARY_NAME})
 #project_link_libraries(anari::anari)
