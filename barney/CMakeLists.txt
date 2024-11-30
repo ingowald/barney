@@ -301,53 +301,26 @@ CUDA_SOURCE(umesh/os/AWT.cu)
 CUDA_SOURCE(amr/BlockStructuredField.cu)
 CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
   
-
-
-# add_library(barney-internal INTERFACE)
-# target_link_libraries(barney-internal INTERFACE
-#   "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-Spheres-ptx,barney-StructuredData-ptx,barney-cylinders-ptx,barney-capsules-ptx,barney-triangles-ptx,barney-traceRays-ptx,barney-UMeshRTXObjectSpace-ptx,barney-UMeshMC-ptx,barney-AWT-ptx,barney-BlockStructuredMC-ptx>"
-
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-Spheres-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-StructuredData-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-cylinders-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-capsules-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-triangles-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-traceRays-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-UMeshRTXObjectSpace-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-UMeshMC-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-AWT-ptx>"
-   # "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-BlockStructuredMC-ptx>"
-#   )
-
 # ------------------------------------------------------------------
 # STATIC version of barney_mpi
 # ------------------------------------------------------------------
-#set(CMAKE_CXX_LINK_LIBRARY_USING_WHOLE_ARCHIVE 1)
 add_library(barney_static
-  #STATIC
   OBJECT
   ${BARNEY_SOURCES})
 target_link_libraries(barney_static PUBLIC
   owl::owl
   barney-config
-#  barney-internal
-#  barney-Spheres-ptx
-#  barney-StructuredData-ptx
-
- barney-Spheres-ptx
- barney-StructuredData-ptx
- barney-cylinders-ptx
- barney-capsules-ptx
- barney-triangles-ptx
- barney-traceRays-ptx  
- barney-UMeshRTXObjectSpace-ptx
- barney-UMeshMC-ptx
- barney-AWT-ptx  
- barney-BlockStructuredMC-ptx
+  barney-Spheres-ptx
+  barney-StructuredData-ptx
+  barney-cylinders-ptx
+  barney-capsules-ptx
+  barney-triangles-ptx
+  barney-traceRays-ptx  
+  barney-UMeshRTXObjectSpace-ptx
+  barney-UMeshMC-ptx
+  barney-AWT-ptx  
+  barney-BlockStructuredMC-ptx
   )
-# target_link_libraries(barney_static PUBLIC
-#   "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney-Spheres-ptx,barney-StructuredData-ptx,barney-cylinders-ptx,barney-capsules-ptx,barney-triangles-ptx,barney-traceRays-ptx,barney-UMeshRTXObjectSpace-ptx,barney-UMeshMC-ptx,barney-AWT-ptx,barney-BlockStructuredMC-ptx>"
-#   )
 set_target_properties(barney_static
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
@@ -363,19 +336,7 @@ add_library(barney SHARED ${BARNEY_SOURCES})
 target_link_libraries(barney
   PUBLIC
   owl::owl
- # OptiX::OptiX
- barney-config
-# barney-internal
-#  barney-Spheres-ptx
-#  barney-StructuredData-ptx
-#  barney-cylinders-ptx
-#  barney-capsules-ptx
-#  barney-triangles-ptx
-#  barney-traceRays-ptx  
-#  barney-UMeshRTXObjectSpace-ptx
-#  barney-UMeshMC-ptx
-#  barney-AWT-ptx  
-#  barney-BlockStructuredMC-ptx
+  barney-config
   )
 
 set_target_properties(barney
@@ -386,9 +347,6 @@ set_target_properties(barney
   CUDA_USE_STATIC_CUDA_RUNTIME ON
   CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
   )
-
-
-
 
 if (BARNEY_MPI)
   find_package(MPI REQUIRED)
@@ -443,7 +401,4 @@ if (BARNEY_MPI)
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
 
-
-#temporarily disabled after v0.6 due to api changes
-#add_subdirectory(testing)
 
