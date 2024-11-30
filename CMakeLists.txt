@@ -106,7 +106,7 @@ if (NOT (TARGET owl::owl))
 endif()
 
 
-# swtich to 'find' if installed
+# TODO: add option to find if installed
 option(BARNEY_CUBQL_HOST "Use CUBQL host builder" off)
 if (NOT (TARGET cuBQL_cuda_float3))
   add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
@@ -116,11 +116,6 @@ endif()
 # barney itself
 # ------------------------------------------------------------------
 add_subdirectory(barney)
-
-# ------------------------------------------------------------------
-# sample distributed viewer/renderer
-# ------------------------------------------------------------------
-#add_subdirectory(hayMaker)
 
 # ------------------------------------------------------------------
 # ANARI device
