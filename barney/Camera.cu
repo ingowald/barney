@@ -90,12 +90,13 @@ namespace barney {
     vec3f from   = (const vec3f&)position;
     vec3f dir_00 = normalize(direction);
     
-    vec3f dir_du = aspect * normalize(cross(dir_00, up));
+    vec3f dir_du = //aspect *
+      normalize(cross(dir_00, up));
     vec3f dir_dv = normalize(cross(dir_du, dir_00));
 
     dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fovy) * (float)M_PI / 180.0f)));
-    dir_00 -= 0.5f * dir_du;
-    dir_00 -= 0.5f * dir_dv;
+    // dir_00 -= 0.5f * dir_du;
+    // dir_00 -= 0.5f * dir_dv;
 
     dd.dir_00 = (float3&)dir_00;
     dd.dir_du = (float3&)dir_du;

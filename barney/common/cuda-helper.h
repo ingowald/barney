@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "owl/common.h"
 #include <cuda_runtime.h>
 #ifdef __GNUC__
 #   include <unistd.h>
@@ -124,4 +123,7 @@ void sleep(unsigned int seconds);
     }                                                                   \
   }
 
-
+#ifndef CHECK_CUDA_LAUNCH
+# define CHECK_CUDA_LAUNCH(kernel,_nb,_bs,_shm,_s,args...) \
+  kernel<<<_nb,_bs,_shm,_s>>>(args);
+#endif

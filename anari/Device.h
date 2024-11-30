@@ -98,6 +98,7 @@ struct BarneyDevice : public helium::BaseDevice
   // Helper/other functions and data members
   /////////////////////////////////////////////////////////////////////////////
 
+  BarneyDevice();
   BarneyDevice(ANARILibrary);
   ~BarneyDevice() override;
 

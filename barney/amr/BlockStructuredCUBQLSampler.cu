@@ -45,11 +45,17 @@ namespace barney {
                                    field->blockIDs.size()*sizeof(box3f)));
     BARNEY_CUDA_SYNC_CHECK();
 
-    field->computeBlockFilterDomains(/*deviceID:*/0,d_primBounds);
+    field->computeBlockFilterDomains(devGroup->devices[0],d_primBounds);
     BARNEY_CUDA_SYNC_CHECK();
     
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = 7;
+#if BARNEY_CUBQL_HOST
+    cuBQL::host::spatialMedian(bvh,
+                               (const cuBQL::box_t<float,3>*)d_primBounds,
+                               (uint32_t)field->blockIDs.size(),
+                               buildConfig);
+#else
     static cuBQL::ManagedMemMemoryResource managedMem;
     cuBQL::gpuBuilder(bvh,
                       (const cuBQL::box_t<float,3>*)d_primBounds,
@@ -57,6 +63,7 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
+#endif
     std::vector<uint32_t> reorderedElements(field->blockIDs.size());
     for (int i=0;i<field->blockIDs.size();i++) {
       reorderedElements[i] = field->blockIDs[bvh.primIDs[i]];
@@ -68,7 +75,11 @@ namespace barney {
     bvhNodesBuffer
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
+#if BARNEY_CUBQL_HOST
+    cuBQL::host::freeBVH(bvh);
+#else
     cuBQL::free(bvh,0,managedMem);
+#endif
     std::cout << "cubql bvh built ..." << std::endl;
   }
   

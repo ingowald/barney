@@ -17,6 +17,7 @@
 #pragma once
 
 #include <owl/common/math/box.h>
+#include <owl/common/math/AffineSpace.h>
 #include <owl/common/math/random.h>
 #ifdef __CUDACC__
 # define OWL_DISABLE_TBB

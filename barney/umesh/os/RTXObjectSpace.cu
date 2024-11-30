@@ -93,6 +93,12 @@ namespace barney {
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = 8;
     buildConfig.enableSAH();
+#if BARNEY_CUBQL_HOST
+    cuBQL::host::spatialMedian(bvh,
+                               (const cuBQL::box_t<float,3>*)d_primBounds,
+                               (uint32_t)mesh->elements.size(),
+                               buildConfig);
+#else
     static cuBQL::ManagedMemMemoryResource managedMem;
     cuBQL::gpuBuilder(bvh,
                       (const cuBQL::box_t<float,3>*)d_primBounds,
@@ -100,6 +106,7 @@ namespace barney {
                       buildConfig,
                       (cudaStream_t)0,
                       managedMem);
+#endif
     std::vector<Element> reorderedElements(mesh->elements.size());
     for (int i=0;i<mesh->elements.size();i++) {
       reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
@@ -116,7 +123,11 @@ namespace barney {
       c.end = int(node.admin.offset + node.admin.count);
       clusters.push_back(c);
     }
+#if BARNEY_CUBQL_HOST
+    cuBQL::host::freeBVH(bvh);
+#else
     cuBQL::free(bvh,0,managedMem);
+#endif
     
     // ==================================================================
 

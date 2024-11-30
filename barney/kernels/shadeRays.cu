@@ -1007,11 +1007,22 @@ namespace barney {
       default:
 #endif
 
+#if 1
+        CHECK_CUDA_LAUNCH(g_shadeRays_pt<12>,
+                          nb,bs,0,device->launchStream,
+                          /* args */
+                          devWorld,devRenderer,
+                          fb->accumTiles,fb->owner->accumID,
+                          rays.traceAndShadeReadQueue,numRays,
+                          rays.receiveAndShadeWriteQueue,
+                          rays._d_nextWritePos,generation);
+#else
         g_shadeRays_pt<12><<<nb,bs,0,device->launchStream>>>
           (devWorld,devRenderer,
          fb->accumTiles,fb->owner->accumID,
            rays.traceAndShadeReadQueue,numRays,
            rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
+#endif
         break;
 
       }

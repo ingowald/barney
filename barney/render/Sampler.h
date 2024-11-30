@@ -19,6 +19,7 @@
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
 #include <cuda.h>
+#include <stack>
 
 namespace barney {
   struct TextureData;
@@ -159,7 +160,8 @@ namespace barney {
     inline __device__ float4 Sampler::DD::eval(const HitAttributes &inputs, bool dbg) const
     {
       dbg = false;
-      if (dbg) printf("evaluting sampler %p texture %li\n",this,image.texture);
+      if (dbg) printf("evaluting sampler %p texture %p\n",this,
+                      (void*)image.texture);
       float4 in  = inputs.get(inAttribute);
       if (dbg) printf("in is %f %f %f %f\n",in.x,in.y,in.z,in.w);
       if (type != TRANSFORM) {

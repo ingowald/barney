@@ -24,6 +24,7 @@
 #include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
 #include "barney/render/Renderer.h"
+#include <set>
 
 namespace barney {
   using namespace owl::common;
