@@ -8,16 +8,20 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-find_package(anari 0.12.0 COMPONENTS code_gen)
+if (NOT (TARGET anari::anari))
+  find_package(anari 0.12.0 COMPONENTS code_gen)
+endif()
 include(GNUInstallDirs)
 
-## Code generation ##
-anari_generate_queries(
-  NAME barney
-  PREFIX BarneyDevice
-  CPP_NAMESPACE barney_device
-  JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
-  )
+if (NOT BANARI_SKIP_QUERIES)
+  ## Code generation ##
+  anari_generate_queries(
+    NAME barney
+    PREFIX BarneyDevice
+    CPP_NAMESPACE barney_device
+    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
+    )
+endif()
 
 ## Device target ##
 
@@ -80,13 +84,15 @@ add_library(anari_library_barney_static
 
 target_link_libraries(anari_library_barney PRIVATE
   banari-config
-  anari::helium
+  #  anari::helium
+  anari
   barney
   )
 target_link_libraries(anari_library_barney_static PUBLIC
   banari-config
 #  anari::helium_static
-  anari::helium
+#  anari::helium
+anari_static
   barney_static
   )
 set_target_properties(anari_library_barney
