@@ -72,7 +72,9 @@ add_library(anari_library_barney SHARED
 
 # static library that contains a dedicated 'create'-function that
 # generates _only_ a banari device 
-add_library(anari_library_barney_static OBJECT
+add_library(anari_library_barney_static
+  #OBJECT
+  STATIC
   ${BANARI_SOURCES}
   )
 
@@ -87,6 +89,21 @@ target_link_libraries(anari_library_barney_static PUBLIC
   anari::helium
   barney_static
   )
+set_target_properties(anari_library_barney
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  )
+set_target_properties(anari_library_barney_static
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  )
+
 
 
 include(GenerateExportHeader)

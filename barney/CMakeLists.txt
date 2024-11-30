@@ -303,7 +303,8 @@ CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
 # STATIC version of barney_mpi
 # ------------------------------------------------------------------
 add_library(barney_static
-  OBJECT
+  #OBJECT
+  STATIC
   ${BARNEY_SOURCES})
 target_link_libraries(barney_static PUBLIC
   owl_static

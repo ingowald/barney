@@ -233,7 +233,6 @@ namespace barney {
     virtual ~DenoiserOptix() {}
     void resize() override
     {
-      Denoiser::resize();
       vec2i numPixels = fb->numPixels;
       // if (denoiserInput)
       //   BARNEY_CUDA_CALL(Free(denoiserInput));
