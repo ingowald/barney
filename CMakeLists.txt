@@ -88,17 +88,13 @@ endif()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#option(EXP_SAUCY "Saucy experimenting" OFF)
-#mark_as_advanced(EXP_SAUCY)
-#if (EXP_SAUCY)
-#  add_subdirectory(../saucy buildDir_saucy EXCLUDE_FROM_ALL)
-#else()
-#  macro(CUDA_SOURCE fileName)
-#    set_source_files_properties(${fileName}
-#      PROPERTIES LANGUAGE CUDA
-#      )
-#  endmacro()
-#endif()
+if (NOT CUDA_SOURCE)
+  macro(CUDA_SOURCE fileName)
+    set_source_files_properties(${fileName}
+      PROPERTIES LANGUAGE CUDA
+      )
+  endmacro()
+endif()
 
 
 
