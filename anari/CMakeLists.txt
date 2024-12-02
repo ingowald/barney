@@ -8,7 +8,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-if (NOT (TARGET anari::anari))
+if (NOT (TARGET anari))
   find_package(anari 0.12.0 COMPONENTS code_gen)
 endif()
 include(GNUInstallDirs)
@@ -84,15 +84,15 @@ add_library(anari_library_barney_static
 
 target_link_libraries(anari_library_barney PRIVATE
   banari-config
-  #  anari::helium
+  helium
   anari
   barney
   )
 target_link_libraries(anari_library_barney_static PUBLIC
   banari-config
-#  anari::helium_static
-#  anari::helium
-anari_static
+  #anari::helium_static
+  helium
+# anari_static
   barney_static
   )
 set_target_properties(anari_library_barney

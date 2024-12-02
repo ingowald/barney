@@ -104,21 +104,12 @@ namespace barney {
                         //
                         fb->numPixels,fb->denoisedColor,
                         fb->linearColor,fb->linearAlpha);
-      // copyPixels<<<divRoundUp(fb->numPixels,bs),bs>>>
-      //   (fb->numPixels,fb->denoisedColor,fb->linearColor,fb->linearAlpha);
+      BARNEY_CUDA_SYNC_CHECK();
     }
   };
 
 #if !BARNEY_DISABLE_DENOISING
 #if BARNEY_HAVE_OIDN
-  // __global__ void g_oidnWriteReults(vec2i numPixels,
-  //                                   float4 *out,
-  //                                   float3 *in_color,
-  //                                   float  *in_alpha)
-  // {
-  //   xxx
-  // }
-  
   struct DenoiserOIDN : public Denoiser {
     DenoiserOIDN(FrameBuffer *fb)
       : Denoiser(fb)
@@ -290,6 +281,7 @@ namespace barney {
     }
     void run() override
     {
+      throw std::runtime_error("do not use - optix denoiser currently broken");
       OptixDenoiserGuideLayer guideLayer = {};
       OptixDenoiserLayer layer = {};
       auto numPixels = fb->numPixels;
@@ -339,15 +331,18 @@ namespace barney {
 
   Denoiser::SP Denoiser::create(FrameBuffer *fb)
   {
-#if !BARNEY_DISABLE_DENOISING
+#if BARNEY_DISABLE_DENOISING
+    return std::make_shared<DenoiserNone>(fb);
+#else
 # if BARNEY_HAVE_OIDN
     return std::make_shared<DenoiserOIDN>(fb);
 # endif
 # if OPTIX_VERSION >= 80000
     return std::make_shared<DenoiserOptix>(fb);
+# else
+    return std::make_shared<DenoiserNone>(fb);
 # endif
 #endif
-    return std::make_shared<DenoiserNone>(fb);
   }
   
   
@@ -413,9 +408,10 @@ namespace barney {
     if (iy >= numPixels.y) return;
     int idx = ix+numPixels.x*iy;
 
-    bool dbg = 0;// (ix == 0 && iy == 0);
+    bool dbg = 0; //(ix == 0 && iy == 0);
     
     float4 v = in[idx];
+    if (dbg) printf("tofixed in  %f %f %f %f\n",v.x,v.y,v.z,v.w);
     v.x = clamp(v.x);
     v.y = clamp(v.y);
     v.z = clamp(v.z);
@@ -438,9 +434,9 @@ namespace barney {
     int idx = ix+numPixels.x*iy;
 
     float4 v = color[idx];
-    // if (ix == 0 && iy == 0)
-    //   printf("color %f %f %f %f\n",
-    //          v.x,v.y,v.z,v.w);
+     if (ix == 0 && iy == 0)
+       printf("tonemap color %f %f %f %f\n",
+              v.x,v.y,v.z,v.w);
 #if 1
     v.x = linear_to_srgb(v.x);
     v.y = linear_to_srgb(v.y);
@@ -571,15 +567,12 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
     
     switch(requestedFormat) {
-    // case BN_FLOAT4_RGBA:
-    //   BARNEY_CUDA_CALL(Memcpy(hostPtr,finalColor,
-    //                           numPixels.x*numPixels.y*sizeof(float4),cudaMemcpyDefault));
-    //   break;
     case BN_FLOAT4: 
     case BN_FLOAT4_RGBA: {
       BARNEY_CUDA_CALL(Memcpy(hostPtr,denoisedColor,
                               numPixels.x*numPixels.y*sizeof(float4),
                               cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
     } break;
     case BN_UFIXED8_RGBA: {
       uint32_t *asFixed8;
@@ -590,14 +583,12 @@ namespace barney {
       vec2i bs(8,8);
       CHECK_CUDA_LAUNCH(toFixed8<false>,
                         divRoundUp(numPixels,bs),bs,0,0,
-                        //
                         asFixed8,denoisedColor,numPixels);
-      // toFixed8<false>
-        // <<<divRoundUp(numPixels,bs),bs>>>
-        // (asFixed8,denoisedColor,numPixels);
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
@@ -607,16 +598,14 @@ namespace barney {
                                    numPixels.x*numPixels.y*sizeof(uint32_t),0));
       BARNEY_CUDA_SYNC_CHECK();
       vec2i bs(8,8);
-      // toFixed8<true>
-      //   <<<divRoundUp(numPixels,bs),bs>>>
-      //   (asFixed8,denoisedColor,numPixels);
       CHECK_CUDA_LAUNCH(toFixed8<true>,
                         divRoundUp(numPixels,bs),bs,0,0,
-                        //
                         asFixed8,denoisedColor,numPixels);
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
     } break;
     default:
