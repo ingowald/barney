@@ -337,6 +337,7 @@ target_link_libraries(barney
   PUBLIC
   owl::owl
   barney-config
+  barney_static
   )
 
 set_target_properties(barney
