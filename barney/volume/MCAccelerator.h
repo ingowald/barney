@@ -246,7 +246,8 @@ namespace barney {
         classes will know full geometry type */
       createGeom();
       group = owlUserGeomGroupCreate(this->getOWL(),1,&geom);
-      volume->generatedGroups = { group }; 
+      volume->generatedGroups.clear();
+      volume->generatedGroups.push_back(group);
     }
     sampler.build(full_rebuild);
 
