@@ -36,45 +36,45 @@ namespace barney {
     NodeRef child[4];
   };
 
-  /*! object-space accelerator that clusters elements into, well,
-    clusters of similar/nearly elements, then builds an RTX BVH and
-    majorants over those clusters, disables majorant-zero clusters
-    during refit and in the isec program for a cluster performs
-    ray-element intersection followed by (per-element) woodock
-    sampling along the ray-element overlap range */
-  struct UMeshAWT
-  {
-    struct DD : public UMeshObjectSpace::DD {
-      using Inherited = UMeshObjectSpace::DD;
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+  // /*! object-space accelerator that clusters elements into, well,
+  //   clusters of similar/nearly elements, then builds an RTX BVH and
+  //   majorants over those clusters, disables majorant-zero clusters
+  //   during refit and in the isec program for a cluster performs
+  //   ray-element intersection followed by (per-element) woodock
+  //   sampling along the ray-element overlap range */
+  // struct UMeshAWT
+  // {
+  //   struct DD : public UMeshObjectSpace::DD {
+  //     using Inherited = UMeshObjectSpace::DD;
+  //     static void addVars(std::vector<OWLVarDecl> &vars, int base);
       
-      AWTNode             *nodes;
-      int                 *roots;
-    };
+  //     AWTNode             *nodes;
+  //     int                 *roots;
+  //   };
 
-    struct Host : public UMeshObjectSpace::Host {
-      using Inherited = UMeshObjectSpace::Host;
-      Host(UMeshField *mesh, Volume *volume)
-        : Inherited(mesh,volume)
-      {}
-      static OWLGeomType createGeomType(DevGroup *devGroup);
+  //   struct Host : public UMeshObjectSpace::Host {
+  //     using Inherited = UMeshObjectSpace::Host;
+  //     Host(UMeshField *mesh, Volume *volume)
+  //       : Inherited(mesh,volume)
+  //     {}
+  //     static OWLGeomType createGeomType(DevGroup *devGroup);
       
-      void build(bool full_rebuild) override;
+  //     void build(bool full_rebuild) override;
 
-      /*! set owl variables for this accelerator - this is virutal so
-        derived classes can add their own */
-      void setVariables(OWLGeom geom) override;
+  //     /*! set owl variables for this accelerator - this is virutal so
+  //       derived classes can add their own */
+  //     void setVariables(OWLGeom geom) override;
       
       
-      void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
-      void extractRoots();
-      void buildAWT();
+  //     void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
+  //     void extractRoots();
+  //     void buildAWT();
       
-      std::vector<int>     roots;
-      std::vector<AWTNode> nodes;
-      OWLBuffer nodesBuffer;
-      OWLBuffer rootsBuffer;
-    };
-  };
+  //     std::vector<int>     roots;
+  //     std::vector<AWTNode> nodes;
+  //     OWLBuffer nodesBuffer;
+  //     OWLBuffer rootsBuffer;
+  //   };
+  // };
   
 }

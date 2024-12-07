@@ -455,9 +455,9 @@ namespace barney {
       return std::make_shared<RTXObjectSpace::Host>
         (this,volume);
     
-    if (method == "AWT" || method == "awt")
-      return std::make_shared<UMeshAWT::Host>
-        (this,volume);
+    // if (method == "AWT" || method == "awt")
+    //   return std::make_shared<UMeshAWT::Host>
+    //     (this,volume);
     
     throw std::runtime_error("unknown BARNEY_UMESH accelerator method");
 #else

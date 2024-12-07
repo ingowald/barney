@@ -339,6 +339,16 @@ target_link_libraries(barney
   owl::owl
   barney-config
   barney_static
+  barney-Spheres-ptx
+  barney-StructuredData-ptx
+  barney-cylinders-ptx
+  barney-capsules-ptx
+  barney-triangles-ptx
+  barney-traceRays-ptx  
+  barney-UMeshRTXObjectSpace-ptx
+  barney-UMeshMC-ptx
+  barney-AWT-ptx  
+  barney-BlockStructuredMC-ptx
   )
 
 set_target_properties(barney

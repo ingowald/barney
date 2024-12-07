@@ -29,6 +29,7 @@
 // # endif
 // #endif
 
+#if 0
 namespace barney {
   namespace device {
   OPTIX_BOUNDS_PROGRAM(UMeshAWTBounds)(const void *geomData,                
@@ -618,3 +619,4 @@ namespace barney {
   }
 }
 }
+#endif
