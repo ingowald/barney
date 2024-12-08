@@ -82,7 +82,7 @@ namespace barney {
           owlBufferResize(quadLightsBuffer,quadLights.size());
           owlBufferUpload(quadLightsBuffer,quadLights.data());
         }
-        numQuadLights = quadLights.size();
+        numQuadLights = (int)quadLights.size();
       }
       void set(const std::vector<DirLight::DD> &dirLights)
       {
@@ -92,7 +92,7 @@ namespace barney {
           owlBufferResize(dirLightsBuffer,dirLights.size());
           owlBufferUpload(dirLightsBuffer,dirLights.data());
         }
-        numDirLights = dirLights.size();
+        numDirLights = (int)dirLights.size();
       }
 
       void set(EnvMapLight::SP envMapLight) {

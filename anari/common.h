@@ -12,7 +12,7 @@
 
 #ifndef PRINT
 # define PRINT(var) std::cout << #var << "=" << var << std::endl;
-#ifdef __WIN32__
+#ifdef _WIN32
 # define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
 #else
 # define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
