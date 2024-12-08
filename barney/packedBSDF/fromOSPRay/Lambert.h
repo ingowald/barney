@@ -46,7 +46,7 @@ namespace barney {
       Lambert(vec3f R, bool dbg = false)
         : BSDF(R)
       {}
-      inline __device__ Lambert(const Lambert &) = default;
+      inline Lambert(const Lambert &) = default;
       // { Lambert l; l.init(R); return l; }
 
       // static inline __device__

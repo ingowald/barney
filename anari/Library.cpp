@@ -39,7 +39,9 @@ const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
 
 // Define library entrypoint //////////////////////////////////////////////////
 
-extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
+extern "C" 
+//BARNEY_LIBRARY_INTERFACE
+ANARI_DEFINE_LIBRARY_ENTRYPOINT(
     barney, handle, scb, scbPtr)
 {
   return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
