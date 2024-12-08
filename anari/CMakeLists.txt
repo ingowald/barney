@@ -84,8 +84,8 @@ add_library(anari_library_barney_static
 
 target_link_libraries(anari_library_barney PRIVATE
   banari-config
-  helium
-  anari
+  anari::helium
+  anari::anari
   barney
   )
 target_link_libraries(anari_library_barney_static PUBLIC
@@ -95,6 +95,7 @@ target_link_libraries(anari_library_barney_static PUBLIC
 # anari_static
   barney_static
   )
+
 set_target_properties(anari_library_barney
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
@@ -108,6 +109,7 @@ set_target_properties(anari_library_barney_static
   POSITION_INDEPENDENT_CODE ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
+  EXCLUDE_FROM_ALL ON
   )
 
 
