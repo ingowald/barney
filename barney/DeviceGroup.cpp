@@ -43,7 +43,8 @@ namespace barney {
   void DevGroup::update()
   {
     if (programsDirty) {
-      std::cout << "rebuilding owl programs and pipeline..." << std::endl;
+      if (DevGroup::logging())
+        std::cout << "rebuilding owl programs and pipeline..." << std::endl;
       owlBuildPrograms(owl);
       owlBuildPipeline(owl);
       programsDirty = false;

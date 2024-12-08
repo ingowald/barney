@@ -434,9 +434,6 @@ namespace barney {
     int idx = ix+numPixels.x*iy;
 
     float4 v = color[idx];
-     if (ix == 0 && iy == 0)
-       printf("tonemap color %f %f %f %f\n",
-              v.x,v.y,v.z,v.w);
 #if 1
     v.x = linear_to_srgb(v.x);
     v.y = linear_to_srgb(v.y);
