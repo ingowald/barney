@@ -234,7 +234,6 @@ BarneyDevice::BarneyDevice(ANARILibrary l) : helium::BaseDevice(l)
   
   extern "C" ANARIDevice createAnariDeviceBarney()
   {
-    PING;
     return (ANARIDevice )new BarneyDevice();
   }
 
