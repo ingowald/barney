@@ -51,12 +51,19 @@ endif()
 set(BARNEY_CUDA_ARCHITECTURES "auto" CACHE STRING
   "Which CUDA architecture to build for")
 if (BARNEY_CUDA_ARCHITECTURES STREQUAL "auto")
-  message("#barney: cuda-archs set to auto, with CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
-  if (NOT CMAKE_CUDA_ARCHITECTURES)
+  message("CMAKE_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}")
+  if (NOT (DEFINED CMAKE_CUDA_ARCHITECTURES))
     # 'all-major', since cmake-3.23
     set(BARNEY_CUDA_ARCHITECTURES all-major)
   else()
-    set(BARNEY_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+    if("${CMAKE_CUDA_ARCHITECTURES}" STREQUAL "52")
+      # some cmake setups set cuda-archs to '52' if nothing else is
+      # set - this is almost certainly a default value that one does
+      # _not_ want to use.
+      set(BARNEY_CUDA_ARCHITECTURES all-major)
+    else()
+      set(BARNEY_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES})
+    endif()
   endif()
   message("#barney: cuda-archs set to auto, selected ${BARNEY_CUDA_ARCHITECTURES}")
 else()

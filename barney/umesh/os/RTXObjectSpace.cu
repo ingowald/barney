@@ -203,7 +203,9 @@ namespace barney {
       firstTimeBuild = false;
     }
 
-    volume->generatedGroups = { group };
+    volume->generatedGroups.clear();
+    volume->generatedGroups.push_back(group);
+
     setVariables(geom);
     
     // if (volume->xf.domain.lower < volume->xf.domain.upper) {
