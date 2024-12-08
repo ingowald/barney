@@ -68,7 +68,7 @@ namespace barney {
     if (k2 == 0.f) return false;
     
     float k1 = d2 * m3 - m1 * m2 + m2 * rr * ra;
-    float k0 = d2 * m5 - m1 * m1 + m1 * rr * ra * 2.0 - m0 * ra * ra;
+    float k0 = d2 * m5 - m1 * m1 + m1 * rr * ra * 2.0f - m0 * ra * ra;
 
     bool hadHit = false;
     
@@ -191,7 +191,7 @@ namespace barney {
       = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                         ray.dir,hitData.worldNormal,ray.dbg);
     if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
-      optixIgnoreIntersection();
+      // optixIgnoreIntersection();
       return;
     }
 #endif
@@ -200,7 +200,7 @@ namespace barney {
     
     // move just a little bit less in case the ray enters the box just
     // where it touches the prim
-    float t_move = .99*t0;
+    float t_move = .99f*t0;
 
     // move the origin forward
     ray_org = ray_org + t_move * ray_dir;
