@@ -84,10 +84,14 @@ add_library(anari_library_barney_static
 
 target_link_libraries(anari_library_barney PRIVATE
   banari-config
-  anari::helium
-  anari::anari
   barney
   )
+if (TARGET anari::helium)
+  target_link_libraries(anari_library_barney PRIVATE
+    anari::helium
+    anari::anari
+    )
+endif()
 target_link_libraries(anari_library_barney_static PUBLIC
   banari-config
   #anari::helium_static
