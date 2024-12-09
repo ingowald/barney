@@ -235,7 +235,7 @@ namespace barney {
     const float theta = ONE_PI * rel_y;
     sample.pdf *= (ONE_PI/sinf(theta));
     
-    sample.distance = INFINITY;
+    sample.distance = HUGE_VALF;//(float)INFINITY;
     return sample;
   }
 #endif
