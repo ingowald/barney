@@ -201,6 +201,17 @@ namespace barney {
     OIDNFilter filter = 0;
   };
 #endif
+
+
+  __global__ void float3_to_float4(float4 *out,
+                                   float3 *in,
+                                   int count)
+  {
+    int tid = threadIdx.x+blockIdx.x*blockDim.x;
+    if (tid >= count) return;
+    float3 v = in[tid];
+    out[tid] = make_float4(v.x,v.y,v.z,0.f);
+  }
   
 #if OPTIX_VERSION >= 80000
   struct DenoiserOptix : public Denoiser {
@@ -208,7 +219,7 @@ namespace barney {
       : Denoiser(fb)
     {
       denoiserOptions.guideAlbedo = 0;
-      denoiserOptions.guideNormal = 1;
+      denoiserOptions.guideNormal = 0;//1;
       denoiserOptions.denoiseAlpha
         = OPTIX_DENOISER_ALPHA_MODE_DENOISE;
         
@@ -221,24 +232,37 @@ namespace barney {
                           &denoiserOptions,
                           &denoiser);
     }      
-    virtual ~DenoiserOptix() {}
+    virtual ~DenoiserOptix() {
+      if (denoiserNormal)
+        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserNormal));
+      if (denoiserInput)
+        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserInput));
+      if (denoiserScratch) {
+        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserScratch));
+        denoiserScratch = 0;
+      }
+      if (denoiserState) {
+        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserState));
+        denoiserState = 0;
+      }
+    }
     void resize() override
     {
       vec2i numPixels = fb->numPixels;
-      // if (denoiserInput)
-      //   BARNEY_CUDA_CALL(Free(denoiserInput));
-      // BARNEY_CUDA_CALL(Malloc((void **)&denoiserInput,
-      //                         numPixels.x*numPixels.y*sizeof(*denoiserInput)));
+      if (denoiserInput)
+        BARNEY_CUDA_CALL(Free(denoiserInput));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserInput,
+                              numPixels.x*numPixels.y*sizeof(*denoiserInput)));
     
-      if (denoiserOutput)
-        BARNEY_CUDA_CALL(Free(denoiserOutput));
-      BARNEY_CUDA_CALL(Malloc((void **)&denoiserOutput,
-                              numPixels.x*numPixels.y*sizeof(*denoiserOutput)));
+      // if (denoiserOutput)
+      //   BARNEY_CUDA_CALL(Free(denoiserOutput));
+      // BARNEY_CUDA_CALL(Malloc((void **)&denoiserOutput,
+      //                         numPixels.x*numPixels.y*sizeof(*denoiserOutput)));
       
-      // if (fb->denoiserNormal)
-      //   BARNEY_CUDA_CALL(Free(denoiserNormal));
-      // BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
-      //                         numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
+      if (denoiserNormal)
+        BARNEY_CUDA_CALL(Free(denoiserNormal));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
+                              numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
       denoiserSizes.overlapWindowSizeInPixels = 0;
       optixDenoiserComputeMemoryResources(/*const OptixDenoiser */
                                           denoiser,
@@ -281,21 +305,27 @@ namespace barney {
     }
     void run() override
     {
-      throw std::runtime_error("do not use - optix denoiser currently broken");
       OptixDenoiserGuideLayer guideLayer = {};
       OptixDenoiserLayer layer = {};
       auto numPixels = fb->numPixels;
       layer.input.format = OPTIX_PIXEL_FORMAT_FLOAT3;
-      layer.input.rowStrideInBytes = numPixels.x*sizeof(float3);
+      layer.input.rowStrideInBytes = numPixels.x*sizeof(float4);
       layer.input.pixelStrideInBytes = sizeof(float4);
       layer.input.width = numPixels.x;
       layer.input.height = numPixels.y;
-      layer.input.data = (CUdeviceptr)fb->linearColor;//denoiserInput;
+      float3_to_float4
+        <<<divRoundUp(numPixels.x*numPixels.y,1024),1024>>>
+        (denoiserInput,(float3*)fb->linearColor,numPixels.x*numPixels.y);
+      layer.input.data = (CUdeviceptr)denoiserInput;
+      // layer.input.data = (CUdeviceptr)fb->linearColor;//denoiserInput;
 
+      float3_to_float4
+        <<<divRoundUp(numPixels.x*numPixels.y,1024),1024>>>
+        (denoiserNormal,(float3*)fb->linearNormal,numPixels.x*numPixels.y);
       guideLayer.normal = layer.input;
-      guideLayer.normal.data = (CUdeviceptr)fb->linearNormal;//denoiserNormal;
+      guideLayer.normal.data = (CUdeviceptr)denoiserNormal;
       layer.output = layer.input;
-      layer.output.data = (CUdeviceptr)denoiserOutput;
+      layer.output.data = (CUdeviceptr)fb->denoisedColor;//denoiserOutput;
 
       OptixDenoiserParams denoiserParams = {};
 
@@ -314,6 +344,7 @@ namespace barney {
          (CUdeviceptr)denoiserScratch,
          denoiserSizes.withoutOverlapScratchSizeInBytes
          );
+      BARNEY_CUDA_SYNC_CHECK();
     }
 
     OptixDenoiser        denoiser = {};
@@ -322,8 +353,10 @@ namespace barney {
     void                *denoiserState   = 0;
     OptixDenoiserSizes   denoiserSizes;
     
-    // float4              *denoiserInput   = 0;
-    float3              *denoiserOutput  = 0;
+    float4              *denoiserInput   = 0;
+    float4              *denoiserNormal   = 0;
+    // float4              *denoiserOutput  = 0;
+    // float3              *denoiserOutput  = 0;
     // float4              *denoiserNormal  = 0;
   };
 #endif
