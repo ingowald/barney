@@ -90,7 +90,9 @@ ANARILight BarneyDevice::newLight(const char *subtype)
 
 ANARICamera BarneyDevice::newCamera(const char *subtype)
 {
+  PING;
   initDevice();
+  PING;
   return (ANARICamera)Camera::createInstance(subtype, deviceState());
 }
 
@@ -239,17 +241,25 @@ BarneyDevice::BarneyDevice(ANARILibrary l) : helium::BaseDevice(l)
 
 BarneyDevice::~BarneyDevice()
 {
+  PING;
   auto &state = *deviceState();
+  PING;
   state.commitBufferClear();
+  PING;
   reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
+  PING;
 }
 
 void BarneyDevice::initDevice()
 {
+  PING;
+  PRINT((int)m_initialized);
   if (m_initialized)
     return;
 
+  PING;
   reportMessage(ANARI_SEVERITY_DEBUG, "initializing barney device (%p)", this);
+  PING;
 
   auto &state = *deviceState();
 
@@ -276,19 +286,26 @@ void BarneyDevice::initDevice()
       ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
   reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
 #else
+  PING;
   state.context = bnContextCreate();
+  PING;
   std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
+  PING;
 #endif
+  PING;
   reportMessage(
       ANARI_SEVERITY_DEBUG, "created barney context (%p)", state.context);
 
+  PING;
   m_initialized = true;
 }
 
 void BarneyDevice::deviceCommitParameters()
 {
+  PING;
   auto &state = *deviceState();
 
+  PING;
   bool allowInvalidSurfaceMaterials = state.allowInvalidSurfaceMaterials;
 
   state.allowInvalidSurfaceMaterials =
@@ -296,10 +313,13 @@ void BarneyDevice::deviceCommitParameters()
   state.invalidMaterialColor = getParam<math::float4>(
       "invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
 
+  PING;
   if (allowInvalidSurfaceMaterials != state.allowInvalidSurfaceMaterials)
     state.objectUpdates.lastSceneChange = helium::newTimeStamp();
 
+  PING;
   helium::BaseDevice::deviceCommitParameters();
+  PING;
 }
 
 int BarneyDevice::deviceGetProperty(
@@ -318,6 +338,8 @@ int BarneyDevice::deviceGetProperty(
 
 BarneyGlobalState *BarneyDevice::deviceState() const
 {
+  PING;
+  PRINT((int*)helium::BaseDevice::m_state.get());
   return (BarneyGlobalState *)helium::BaseDevice::m_state.get();
 }
 

@@ -25,7 +25,9 @@ namespace barney {
   DeviceContext::DeviceContext(Device::SP device)
     : device(device),
       rays(device.get())
-  {}
+  {
+    PING;
+  }
 
   /* see generateRays.cu for implementation */
   // __global__

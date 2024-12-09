@@ -763,6 +763,9 @@ namespace barney {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
+    PING;
+    PRINT(numDataRanksOnThisContext);
+    PRINT(numGPUs);
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
     // use those; otherwise we use IDs
@@ -776,6 +779,7 @@ namespace barney {
          ? dataRanksOnThisContext[i]
          : i);
 
+    PING;
     // ------------------------------------------------------------------
     // create list of GPUs to use for this rank. if specified by user
     // we use this; otherwise we use GPUs in order, split into groups
@@ -803,6 +807,7 @@ namespace barney {
       gpuIDs = replicatedIDs;
     }
     
+    PING;
     return (BNContext)new LocalContext(dataGroupIDs,
                                        gpuIDs);
   }

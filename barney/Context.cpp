@@ -25,12 +25,16 @@ namespace barney {
 
   Context::~Context()
   {
+    PING;
     hostOwnedHandles.clear();
-    std::map<Object::SP,int> hostOwnedHandles;
+    // std::map<Object::SP,int> hostOwnedHandles;
 
+    PING;
     perSlot.clear();
 
+    PING;
     owlContextDestroy(globalContextAcrossAllGPUs);
+    PING;
   }
   
   void Context::releaseHostReference(Object::SP object)
@@ -206,9 +210,12 @@ namespace barney {
                    int globalIndexStep)
     : isActiveWorker(!dataGroupIDs.empty())
   {
+    PING;
+    PRINT(gpuIDs.size());
     if (gpuIDs.empty())
       throw std::runtime_error("error - no GPUs...");
 
+    PING;
     globalContextAcrossAllGPUs
       = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
 
@@ -232,6 +239,7 @@ namespace barney {
     std::vector<std::vector<int>> gpuInSlot(numSlots);
     perSlot.resize(numSlots);
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
+    PING;
       std::vector<int> contextRanks;
       auto &dg = perSlot[lmsIdx];
       dg.modelRankInThisSlot = dataGroupIDs[lmsIdx];
@@ -240,6 +248,7 @@ namespace barney {
         contextRanks.push_back(localRank);
         dg.gpuIDs.push_back(gpuIDs[localRank]);
       }
+    PING;
       dg.devGroup = std::make_shared
         <DevGroup>(lmsIdx,
                    contextRanks,numSlots*gpusPerSlot,
@@ -251,11 +260,13 @@ namespace barney {
         allDevices.push_back(dev);
       }
       
+    PING;
       dg.materialRegistry
         = std::make_shared<render::MaterialRegistry>(dg.devGroup);
       dg.samplerRegistry
         = std::make_shared<render::SamplerRegistry>(dg.devGroup);
     }
+    PING;
   }
 
   GlobalModel *Context::createModel()

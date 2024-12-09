@@ -6,12 +6,17 @@
 namespace barney_device {
 
 Camera::Camera(BarneyGlobalState *s) : Object(ANARI_CAMERA, s)
-{}
+{
+  PING;
+}
 
 Camera::~Camera() = default;
 
 Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
 {
+  PING;
+  PRINT(s);
+  PRINT(type);
   if (type == "perspective")
     return new Perspective(s);
   else
@@ -20,6 +25,7 @@ Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
 
 void Camera::commit()
 {
+  PING;
   if (!m_barneyCamera)
     m_barneyCamera = bnCameraCreate(deviceState()->context,"perspective");
   m_pos = getParam<math::float3>("position", math::float3(0.f, 0.f, 0.f));
@@ -39,7 +45,9 @@ BNCamera Camera::barneyCamera() const
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
-Perspective::Perspective(BarneyGlobalState *s) : Camera(s) {}
+Perspective::Perspective(BarneyGlobalState *s) : Camera(s) {
+  PING;
+}
 
 void Perspective::commit()
 {

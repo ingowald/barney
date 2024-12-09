@@ -22,11 +22,15 @@ namespace barney {
   LocalContext::LocalContext(const std::vector<int> &dataGroupIDs,
                              const std::vector<int> &gpuIDs)
     : Context(dataGroupIDs,gpuIDs,0,1)
-  {}
+  {
+    PING;
+  }
 
   LocalContext::~LocalContext()
   { /* not doing anything, but leave this in to ensure that derived
-       classes' destrcutors get called !*/}
+       classes' destrcutors get called !*/
+    PING;
+  }
 
   FrameBuffer *LocalContext::createFB(int owningRank)
   {
