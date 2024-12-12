@@ -90,10 +90,24 @@ ANARILight BarneyDevice::newLight(const char *subtype)
 
 ANARICamera BarneyDevice::newCamera(const char *subtype)
 {
-  PING;
-  initDevice();
-  PING;
-  return (ANARICamera)Camera::createInstance(subtype, deviceState());
+  try {
+    PING;
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      PING;
+      initDevice();
+    }
+    PING;
+    ANARICamera cam
+      = (ANARICamera)Camera::createInstance(subtype, deviceState());
+    PING; PRINT(cam);
+    std::lock_guard<std::mutex> lock(mutex);
+    PING;
+    return cam;
+  } catch (const std::exception &e) {
+    PING; PRINT(e.what());
+    return 0;
+  }
 }
 
 ANARIGeometry BarneyDevice::newGeometry(const char *subtype)
@@ -228,16 +242,51 @@ BarneyDevice::BarneyDevice(ANARILibrary l) : helium::BaseDevice(l)
   deviceCommitParameters();
 }
 
-  BarneyDevice::BarneyDevice() : helium::BaseDevice(nullptr,nullptr)
+  static void default_statusFunc(const void * /*userData*/,
+                         ANARIDevice /*device*/,
+                         ANARIObject source,
+                         ANARIDataType /*sourceType*/,
+                         ANARIStatusSeverity severity,
+                         ANARIStatusCode /*code*/,
+                         const char *message)
   {
+    PING;
+    if (severity == ANARI_SEVERITY_FATAL_ERROR) {
+      fprintf(stderr, "[FATAL][%p] %s\n", source, message);
+      std::exit(1);
+    } else if (severity == ANARI_SEVERITY_ERROR) {
+      fprintf(stderr, "[ERROR][%p] %s\n", source, message);
+    } else if (severity == ANARI_SEVERITY_WARNING) {
+      fprintf(stderr, "[WARN ][%p] %s\n", source, message);
+    } else if (severity == ANARI_SEVERITY_PERFORMANCE_WARNING) {
+      fprintf(stderr, "[PERF ][%p] %s\n", source, message);
+    }
+    // Ignore INFO/DEBUG messages
+  }
+
+  BarneyDevice::BarneyDevice() : helium::BaseDevice(default_statusFunc,nullptr)
+  {
+    PING;
+    std::lock_guard<std::mutex> lock(mutex);
+    PING;
     m_state = std::make_unique<BarneyGlobalState>(this_device());
     deviceCommitParameters();
   }
   
   extern "C" ANARIDevice createAnariDeviceBarney()
   {
-    return (ANARIDevice )new BarneyDevice();
+    ANARIDevice dev = 0;
+    try {
+      dev = (ANARIDevice )new BarneyDevice();
+      return dev;
+    } catch(std::exception &err) {
+      PING;
+      PRINT(err.what());
+      return 0;
+    }
   }
+
+
 
 BarneyDevice::~BarneyDevice()
 {

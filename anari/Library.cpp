@@ -35,6 +35,7 @@ const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
   return query_extensions();
 }
 
+  
 } // namespace barney_device
 
 // Define library entrypoint //////////////////////////////////////////////////

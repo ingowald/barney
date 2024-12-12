@@ -110,6 +110,8 @@ struct BarneyDevice : public helium::BaseDevice
   BarneyGlobalState *deviceState() const;
 
   bool m_initialized{false};
+
+  std::mutex mutex;
 };
 
 } // namespace barney_device
