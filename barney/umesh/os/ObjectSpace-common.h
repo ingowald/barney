@@ -309,7 +309,7 @@ namespace barney {
     range1f &inputLeafRange;
     const int begin;
     const int end;
-    float hit_t = INFINITY;
+    float hit_t = BARNEY_INF;
     LCG<4> &rand;
   };
   
@@ -361,7 +361,7 @@ namespace barney {
                     
     if (NdotD == 0.f) { 
       if (eval(ray.org) <= 0.f) {
-        segment.begin.t = INFINITY;
+        segment.begin.t = BARNEY_INF;
         return false;
       }
       return true;
