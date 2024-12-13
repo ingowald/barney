@@ -763,9 +763,6 @@ namespace barney {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
-    PING;
-    PRINT(numDataRanksOnThisContext);
-    PRINT(numGPUs);
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
     // use those; otherwise we use IDs
@@ -779,7 +776,6 @@ namespace barney {
          ? dataRanksOnThisContext[i]
          : i);
 
-    PING;
     // ------------------------------------------------------------------
     // create list of GPUs to use for this rank. if specified by user
     // we use this; otherwise we use GPUs in order, split into groups
@@ -798,7 +794,9 @@ namespace barney {
         gpuIDs.push_back(i);
     }
     if (gpuIDs.empty())
-      throw std::runtime_error("no GPUs!?");
+      throw std::runtime_error
+        ("no GPUs!? does this machine have a NVidia GPU, "
+         "and a NVidia driver installed?");
 
     if (gpuIDs.size() < numDataRanksOnThisContext) {
       std::vector<int> replicatedIDs;
@@ -807,9 +805,8 @@ namespace barney {
       gpuIDs = replicatedIDs;
     }
     
-    PING;
     return (BNContext)new LocalContext(dataGroupIDs,
                                        gpuIDs);
   }
 
-}
+} // ::owl
