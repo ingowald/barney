@@ -36,8 +36,8 @@ struct box3
 
   void invalidate()
   {
-    lower = math::float3(INFINITY, INFINITY, INFINITY);
-    upper = math::float3(-INFINITY, -INFINITY, -INFINITY);
+    lower = math::float3(BARNEY_INF, BARNEY_INF, BARNEY_INF);
+    upper = math::float3(-BARNEY_INF, -BARNEY_INF, -BARNEY_INF);
   }
 
   box3 &insert(math::float3 v)
