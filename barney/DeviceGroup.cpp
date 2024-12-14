@@ -79,8 +79,8 @@ namespace barney {
         (std::make_shared<Device>(this,
                                   contextRanks[localID],contextSize,
                                   gpuIDs[localID],localID,
-                                  (int)globalIndex*gpuIDs.size()+localID,
-                                  (int)globalIndexStep*gpuIDs.size()));
+                                  (int)(globalIndex*gpuIDs.size())+localID,
+                                  (int)(globalIndexStep*gpuIDs.size())));
 
     OWLVarDecl params[]
       = {

@@ -26,7 +26,6 @@ namespace barney {
   Context::~Context()
   {
     hostOwnedHandles.clear();
-    std::map<Object::SP,int> hostOwnedHandles;
 
     perSlot.clear();
 
@@ -81,7 +80,9 @@ namespace barney {
       assert(dev);
       
       dev->rays.resetWriteQueue();
-      dev->generateRays_launch(mfb,camera,renderer->getDD(dev->device.get()),accumID);
+      dev->generateRays_launch(mfb,camera,
+                               renderer->getDD(dev->device.get()),
+                               accumID);
     }
     // ------------------------------------------------------------------
     // wait for all GPUs' completion

@@ -27,16 +27,6 @@ namespace barney {
       rays(device.get())
   {}
 
-  /* see generateRays.cu for implementation */
-  // __global__
-  // void g_generateRays(Camera::DD camera,
-                      
-  //                     int rngSeed,
-  //                     vec2i fbSize,
-  //                     int *dR_count,
-  //                     Ray *rayQueue,
-  //                     TileDesc *tileDescs);
-  
   void  DeviceContext::generateRays_sync()
   {
     SetActiveGPU forDuration(device);

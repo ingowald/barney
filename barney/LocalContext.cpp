@@ -25,8 +25,10 @@ namespace barney {
   {}
 
   LocalContext::~LocalContext()
-  { /* not doing anything, but leave this in to ensure that derived
-       classes' destrcutors get called !*/}
+  {
+    /* not doing anything, but leave this in to ensure that derived
+       classes' destrcutors get called !*/
+  }
 
   FrameBuffer *LocalContext::createFB(int owningRank)
   {
