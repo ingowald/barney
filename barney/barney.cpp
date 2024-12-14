@@ -794,7 +794,9 @@ namespace barney {
         gpuIDs.push_back(i);
     }
     if (gpuIDs.empty())
-      throw std::runtime_error("no GPUs!?");
+      throw std::runtime_error
+        ("no GPUs!? does this machine have a NVidia GPU, "
+         "and a NVidia driver installed?");
 
     if (gpuIDs.size() < numDataRanksOnThisContext) {
       std::vector<int> replicatedIDs;
@@ -807,4 +809,4 @@ namespace barney {
                                        gpuIDs);
   }
 
-}
+} // ::owl

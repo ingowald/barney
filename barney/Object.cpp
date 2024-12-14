@@ -61,7 +61,6 @@ namespace barney {
   OWLContext     SlottedObject::getOWL() const
   {
     if (slot == -1) {
-      PING;
       return context->getOWL(slot);
     }
     return getDevGroup()->owl;
