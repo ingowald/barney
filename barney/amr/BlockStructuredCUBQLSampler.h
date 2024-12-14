@@ -19,6 +19,7 @@
 #include "barney/amr/BlockStructuredField.h"
 #include "barney/volume/MCAccelerator.h"
 #include "barney/common/CUBQL.h"
+#include "cuBQL/traversal/fixedBoxQuery.h"
 
 namespace barney {
 
@@ -81,8 +82,18 @@ namespace barney {
   float BlockStructuredCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
     BlockStructuredSamplerPTD ptd(this);
-    
-    traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
+
+    bvh_t bvh;
+    bvh.nodes = bvhNodes;
+    bvh.primIDs = nullptr;
+    auto lambda = [&](const uint32_t *primIDs, int numPrimsInLeaf) -> int {
+      int offset = primIDs - bvh.primIDs;
+      ptd.leaf(P,offset,numPrimsInLeaf);
+      return CUBQL_CONTINUE_TRAVERSAL;
+    };
+    cuBQL::box3f box; box.lower = box.upper = P;
+    cuBQL::fixedBoxQuery::forEachLeaf(lambda,bvh,box);
+    // traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
   }
   

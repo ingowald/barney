@@ -103,7 +103,7 @@ namespace barney {
 #if BARNEY_CUBQL_HOST
     cuBQL::host::freeBVH(bvh);
 #else
-    cuBQL::cuda::free(bvh);
+    cuBQL::cuda::free(bvh,0,managedMem);
 #endif
     std::cout << OWL_TERMINAL_LIGHT_GREEN
               << "#bn.umesh: cubql bvh built ..."
