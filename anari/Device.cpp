@@ -242,10 +242,12 @@ namespace barney_device {
       std::exit(1);
     } else if (severity == ANARI_SEVERITY_ERROR) {
       fprintf(stderr, "[ERROR][%p] %s\n", source, message);
+#ifndef NDEBUG
     } else if (severity == ANARI_SEVERITY_WARNING) {
       fprintf(stderr, "[WARN ][%p] %s\n", source, message);
     } else if (severity == ANARI_SEVERITY_PERFORMANCE_WARNING) {
       fprintf(stderr, "[PERF ][%p] %s\n", source, message);
+#endif
     }
     // Ignore INFO/DEBUG messages
   }
@@ -268,9 +270,9 @@ namespace barney_device {
       dev = (ANARIDevice )new BarneyDevice();
       return dev;
     } catch(std::exception &err) {
-      std::cerr << "#banari: ran into some kind of error creating barneydevice"
-                << std::endl;
-      return 0;
+      std::cerr << "#banari: exception creating anari 'barney' GPU device: "
+                << err.what() << std::endl;
+      throw;
     }
   }
 
