@@ -19,7 +19,7 @@
 #include "barney/common/barney-common.h"
 #include "cuBQL/bvh.h"
 #if BARNEY_CUBQL_HOST
-# include "cuBQL/builder/host.h"
+# include "cuBQL/builder/cpu.h"
 #else
 # include "cuBQL/builder/cuda.h"
 #endif

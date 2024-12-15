@@ -27,7 +27,7 @@ target_link_libraries(barney-config
 if (BARNEY_CUBQL_HOST)
   target_compile_definitions(barney-config INTERFACE -DBARNEY_CUBQL_HOST=1)
   target_link_libraries(barney-config INTERFACE cuBQL)
-  set(CUBQL_LIB cuBQL_host_float3)
+  set(CUBQL_LIB cuBQL_cpu_float3)
 else()
   set(CUBQL_LIB cuBQL_cuda_float3)
 endif()

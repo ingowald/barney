@@ -83,7 +83,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (NOT CUDA_SOURCE)
+if (NOT (COMMAND CUDA_SOURCE))
   macro(CUDA_SOURCE fileName)
     set_source_files_properties(${fileName}
       PROPERTIES LANGUAGE CUDA
