@@ -92,7 +92,7 @@ add_library(anari_library_barney_static
 
 target_link_libraries(anari_library_barney PRIVATE
   banari-config
-  ${BARNEY_STATIC_LIB}#barney
+  ${BARNEY_SHARED_LIB}#barney
   )
 if (TARGET anari::helium)
   target_link_libraries(anari_library_barney PRIVATE
@@ -136,6 +136,7 @@ generate_export_header(anari_library_barney_static
 
 ## Installation ##
 
+set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 install(TARGETS anari_library_barney
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

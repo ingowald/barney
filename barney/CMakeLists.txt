@@ -417,9 +417,30 @@ if (BARNEY_MPI)
     )
   target_link_libraries(barney_mpi PUBLIC
     barney-config
+    owl::owl
+    ${CUBQL_LIB}
     MPI::MPI_CXX
+    barney-Spheres-ptx
+    barney-StructuredData-ptx
+    barney-cylinders-ptx
+    barney-capsules-ptx
+    barney-triangles-ptx
+    barney-traceRays-ptx  
+    barney-UMeshRTXObjectSpace-ptx
+    barney-UMeshMC-ptx
+    barney-AWT-ptx  
+    barney-BlockStructuredMC-ptx
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
 
+
+set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
+set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$ORIGIN")
+
+install(TARGETS cuBQL_cuda_float3 owl barney barney_mpi
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
