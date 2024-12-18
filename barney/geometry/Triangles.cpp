@@ -30,6 +30,7 @@ namespace barney {
   
   OWLGeomType Triangles::createGeomType(DevGroup *devGroup)
   {
+    if (DevGroup::logging())
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'Triangles' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;

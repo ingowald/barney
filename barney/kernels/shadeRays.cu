@@ -192,7 +192,7 @@ namespace barney {
       ls.direction
         = -light.direction;
       ls.distance
-        = INFINITY;
+        = BARNEY_INF;
       ls.radiance
         = light.radiance;
       ls.pdf
@@ -218,7 +218,7 @@ namespace barney {
         ls.direction = randomDirection(random);
         ls.radiance  = renderer.ambientRadiance;
         ls.pdf       = ONE_OVER_FOUR_PI;
-        ls.distance  = INFINITY;
+        ls.distance  = BARNEY_INF;
       }
       return true;
     }

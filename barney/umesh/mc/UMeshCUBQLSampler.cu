@@ -72,7 +72,7 @@ namespace barney {
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = 3;
 #if BARNEY_CUBQL_HOST
-    cuBQL::host::spatialMedian(bvh,
+    cuBQL::cpu::spatialMedian(bvh,
                                (const cuBQL::box_t<float,3>*)d_primBounds,
                                (uint32_t)mesh->elements.size(),
                                buildConfig);
@@ -101,9 +101,9 @@ namespace barney {
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
 #if BARNEY_CUBQL_HOST
-    cuBQL::host::freeBVH(bvh);
+    cuBQL::cpu::freeBVH(bvh);
 #else
-    cuBQL::cuda::free(bvh);
+    cuBQL::cuda::free(bvh,0,managedMem);
 #endif
     std::cout << OWL_TERMINAL_LIGHT_GREEN
               << "#bn.umesh: cubql bvh built ..."

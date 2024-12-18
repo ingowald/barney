@@ -27,6 +27,7 @@ namespace barney {
 
   OWLGeomType Cones::createGeomType(DevGroup *devGroup)
   {
+    if (DevGroup::logging())
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'Cones' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;

@@ -26,8 +26,9 @@ namespace barney {
   {}
 
   OWLGeomType Capsules::createGeomType(DevGroup *devGroup)
-  {
-    std::cout << OWL_TERMINAL_GREEN
+  { 
+    if (DevGroup::logging())
+   std::cout << OWL_TERMINAL_GREEN
               << "creating 'Capsules' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
     

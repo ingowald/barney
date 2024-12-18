@@ -115,6 +115,8 @@ namespace barney {
       return gt;
     }
 
+
+    static bool logging() { return false; }
     
     void update();
     

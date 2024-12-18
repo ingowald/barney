@@ -27,6 +27,7 @@ namespace barney {
 
   OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
   {
+    if (DevGroup::logging())
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'Cylinders' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;

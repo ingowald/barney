@@ -124,7 +124,7 @@ namespace barney {
     
 //     int it = begin;
 //     Element hit_elt;
-//     float hit_t = INFINITY;
+//     float hit_t = BARNEY_INF;
 //     while (it < end) {
 //       // find next prim:
 //       int next = it++;
@@ -275,14 +275,14 @@ namespace barney {
 //   inline __device__
 //   range1f clampToSamples(range1f range, const AWTSamples &samples)
 //   {
-//     range1f clamped = { INFINITY,-INFINITY };
+//     range1f clamped = { BARNEY_INF,-BARNEY_INF };
 //     for (int i=0;i<samples.count;i++) {
 //       float t = samples.t[i];
 //       if (t >= range.lower && t <= range.upper)
 //         clamped.extend(t);
 //     }
 //     if (clamped.upper < clamped.lower)
-//       clamped = { INFINITY, INFINITY };
+//       clamped = { BARNEY_INF, BARNEY_INF };
 //     return clamped;
 //   }
 // #endif
@@ -458,7 +458,7 @@ namespace barney {
 // #else
             node.majorant[c],
 // #endif
-            range1f{ INFINITY, INFINITY } };
+            range1f{ BARNEY_INF, BARNEY_INF } };
           if (node.majorant[c] == 0.f) {
           } else if (!boxTest(tt0,tt1,node.bounds[c],org,dir)) {
             // do nothing -- we didn't hit, just leave the range.lwoer at inf

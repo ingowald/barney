@@ -26,9 +26,9 @@ namespace barney {
       struct DD {
         inline __device__ float4 valueAt(int i, bool dbg=false) const;
           
-        const void      *ptr;
-        int/*BNDataType*/type;
-        int              size;
+        const void       *ptr;
+        int/*BNDataType*/ type;
+        int               size;
       };
     };
       
@@ -68,7 +68,7 @@ namespace barney {
     inline __device__
     float4 AttributeArray::DD::valueAt(int i, bool dbg) const
     {
-      switch(type) {
+      switch(this->type) {
       case BN_FLOAT: {
         const float v = ((const float *)ptr)[i];
         return make_float4(v,0.f,0.f,1.f);

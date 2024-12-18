@@ -43,7 +43,8 @@ namespace barney {
   void DevGroup::update()
   {
     if (programsDirty) {
-      std::cout << "rebuilding owl programs and pipeline..." << std::endl;
+      if (DevGroup::logging())
+        std::cout << "rebuilding owl programs and pipeline..." << std::endl;
       owlBuildPrograms(owl);
       owlBuildPipeline(owl);
       programsDirty = false;
@@ -78,8 +79,8 @@ namespace barney {
         (std::make_shared<Device>(this,
                                   contextRanks[localID],contextSize,
                                   gpuIDs[localID],localID,
-                                  globalIndex*gpuIDs.size()+localID,
-                                  globalIndexStep*gpuIDs.size()));
+                                  (int)(globalIndex*gpuIDs.size())+localID,
+                                  (int)(globalIndexStep*gpuIDs.size())));
 
     OWLVarDecl params[]
       = {

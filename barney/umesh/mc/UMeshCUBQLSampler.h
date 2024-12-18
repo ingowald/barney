@@ -19,14 +19,18 @@
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/volume/MCAccelerator.h"
 #include "barney/common/CUBQL.h"
+#include "cuBQL/traversal/fixedBoxQuery.h"
 
 namespace barney {
 
   /*! a umesh scalar field, with a CUBQL bvh sampler */
   struct UMeshCUBQLSampler {
-    // enum { BVH_WIDTH = 4 };
+#if 1
     using bvh_t  = cuBQL::BinaryBVH<float,3>;
-    // using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
+#else
+    enum { BVH_WIDTH = 4 };
+    using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
+#endif
     using node_t = typename bvh_t::Node;
     
     struct DD : public UMeshField::DD {
@@ -90,8 +94,20 @@ namespace barney {
   float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
     UMeshSamplerPTD ptd(this,dbg);
-    // if (dbg) printf("start cuqbl traversal \n");
-    traverseCUQBL<UMeshSamplerPTD>(bvhNodes,ptd,P,dbg);
+    //    traverseCUQBL<UMeshSamplerPTD>(bvhNodes,ptd,P,dbg);
+    typename bvh_t::box_t box; box.lower = box.upper = P;
+    bvh_t bvh;
+    bvh.nodes = bvhNodes;
+    bvh.primIDs = nullptr;
+
+    auto lambda = [&](const uint32_t *primIDs, int numPrims)
+    {
+      if (ptd.leaf(P,primIDs - bvh.primIDs, numPrims))
+        return CUBQL_CONTINUE_TRAVERSAL;
+      else
+        return CUBQL_TERMINATE_TRAVERSAL;
+    };
+    cuBQL::fixedBoxQuery::forEachLeaf(lambda,bvh,box);
     return ptd.retVal;
   }
   

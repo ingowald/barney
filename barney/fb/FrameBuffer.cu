@@ -104,21 +104,12 @@ namespace barney {
                         //
                         fb->numPixels,fb->denoisedColor,
                         fb->linearColor,fb->linearAlpha);
-      // copyPixels<<<divRoundUp(fb->numPixels,bs),bs>>>
-      //   (fb->numPixels,fb->denoisedColor,fb->linearColor,fb->linearAlpha);
+      BARNEY_CUDA_SYNC_CHECK();
     }
   };
 
 #if !BARNEY_DISABLE_DENOISING
 #if BARNEY_HAVE_OIDN
-  // __global__ void g_oidnWriteReults(vec2i numPixels,
-  //                                   float4 *out,
-  //                                   float3 *in_color,
-  //                                   float  *in_alpha)
-  // {
-  //   xxx
-  // }
-  
   struct DenoiserOIDN : public Denoiser {
     DenoiserOIDN(FrameBuffer *fb)
       : Denoiser(fb)
@@ -210,14 +201,25 @@ namespace barney {
     OIDNFilter filter = 0;
   };
 #endif
+
+
+  __global__ void float3_to_float4(float4 *out,
+                                   float3 *in,
+                                   int count)
+  {
+    int tid = threadIdx.x+blockIdx.x*blockDim.x;
+    if (tid >= count) return;
+    float3 v = in[tid];
+    out[tid] = make_float4(v.x,v.y,v.z,0.f);
+  }
   
-#if OPTIX_VERSION >= 80000  
+#if OPTIX_VERSION >= 80000
   struct DenoiserOptix : public Denoiser {
     DenoiserOptix(FrameBuffer *fb)
       : Denoiser(fb)
     {
       denoiserOptions.guideAlbedo = 0;
-      denoiserOptions.guideNormal = 1;
+      denoiserOptions.guideNormal = 0;//1;
       denoiserOptions.denoiseAlpha
         = OPTIX_DENOISER_ALPHA_MODE_DENOISE;
         
@@ -230,25 +232,37 @@ namespace barney {
                           &denoiserOptions,
                           &denoiser);
     }      
-    virtual ~DenoiserOptix();
+    virtual ~DenoiserOptix() {
+      if (denoiserNormal)
+        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserNormal));
+      if (denoiserInput)
+        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserInput));
+      if (denoiserScratch) {
+        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserScratch));
+        denoiserScratch = 0;
+      }
+      if (denoiserState) {
+        BARNEY_CUDA_CALL_NOTHROW(Free(denoiserState));
+        denoiserState = 0;
+      }
+    }
     void resize() override
     {
-      Denoiser::resize();
       vec2i numPixels = fb->numPixels;
-      // if (denoiserInput)
-      //   BARNEY_CUDA_CALL(Free(denoiserInput));
-      // BARNEY_CUDA_CALL(Malloc((void **)&denoiserInput,
-      //                         numPixels.x*numPixels.y*sizeof(*denoiserInput)));
+      if (denoiserInput)
+        BARNEY_CUDA_CALL(Free(denoiserInput));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserInput,
+                              numPixels.x*numPixels.y*sizeof(*denoiserInput)));
     
-      if (denoiserOutput)
-        BARNEY_CUDA_CALL(Free(denoiserOutput));
-      BARNEY_CUDA_CALL(Malloc((void **)&denoiserOutput,
-                              numPixels.x*numPixels.y*sizeof(*denoiserOutput)));
+      // if (denoiserOutput)
+      //   BARNEY_CUDA_CALL(Free(denoiserOutput));
+      // BARNEY_CUDA_CALL(Malloc((void **)&denoiserOutput,
+      //                         numPixels.x*numPixels.y*sizeof(*denoiserOutput)));
       
-      // if (fb->denoiserNormal)
-      //   BARNEY_CUDA_CALL(Free(denoiserNormal));
-      // BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
-      //                         numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
+      if (denoiserNormal)
+        BARNEY_CUDA_CALL(Free(denoiserNormal));
+      BARNEY_CUDA_CALL(Malloc((void **)&denoiserNormal,
+                              numPixels.x*numPixels.y*sizeof(*denoiserNormal)));
       denoiserSizes.overlapWindowSizeInPixels = 0;
       optixDenoiserComputeMemoryResources(/*const OptixDenoiser */
                                           denoiser,
@@ -295,16 +309,23 @@ namespace barney {
       OptixDenoiserLayer layer = {};
       auto numPixels = fb->numPixels;
       layer.input.format = OPTIX_PIXEL_FORMAT_FLOAT3;
-      layer.input.rowStrideInBytes = numPixels.x*sizeof(float3);
+      layer.input.rowStrideInBytes = numPixels.x*sizeof(float4);
       layer.input.pixelStrideInBytes = sizeof(float4);
       layer.input.width = numPixels.x;
       layer.input.height = numPixels.y;
-      layer.input.data = (CUdeviceptr)fb->linearColor;//denoiserInput;
+      float3_to_float4
+        <<<divRoundUp(numPixels.x*numPixels.y,1024),1024>>>
+        (denoiserInput,(float3*)fb->linearColor,numPixels.x*numPixels.y);
+      layer.input.data = (CUdeviceptr)denoiserInput;
+      // layer.input.data = (CUdeviceptr)fb->linearColor;//denoiserInput;
 
+      float3_to_float4
+        <<<divRoundUp(numPixels.x*numPixels.y,1024),1024>>>
+        (denoiserNormal,(float3*)fb->linearNormal,numPixels.x*numPixels.y);
       guideLayer.normal = layer.input;
-      guideLayer.normal.data = (CUdeviceptr)fb->linearNormal;//denoiserNormal;
+      guideLayer.normal.data = (CUdeviceptr)denoiserNormal;
       layer.output = layer.input;
-      layer.output.data = (CUdeviceptr)denoiserOutput;
+      layer.output.data = (CUdeviceptr)fb->denoisedColor;//denoiserOutput;
 
       OptixDenoiserParams denoiserParams = {};
 
@@ -323,6 +344,7 @@ namespace barney {
          (CUdeviceptr)denoiserScratch,
          denoiserSizes.withoutOverlapScratchSizeInBytes
          );
+      BARNEY_CUDA_SYNC_CHECK();
     }
 
     OptixDenoiser        denoiser = {};
@@ -331,8 +353,10 @@ namespace barney {
     void                *denoiserState   = 0;
     OptixDenoiserSizes   denoiserSizes;
     
-    // float4              *denoiserInput   = 0;
-    float3              *denoiserOutput  = 0;
+    float4              *denoiserInput   = 0;
+    float4              *denoiserNormal   = 0;
+    // float4              *denoiserOutput  = 0;
+    // float3              *denoiserOutput  = 0;
     // float4              *denoiserNormal  = 0;
   };
 #endif
@@ -340,15 +364,18 @@ namespace barney {
 
   Denoiser::SP Denoiser::create(FrameBuffer *fb)
   {
-#if !BARNEY_DISABLE_DENOISING
+#if BARNEY_DISABLE_DENOISING
+    return std::make_shared<DenoiserNone>(fb);
+#else
 # if BARNEY_HAVE_OIDN
     return std::make_shared<DenoiserOIDN>(fb);
 # endif
 # if OPTIX_VERSION >= 80000
     return std::make_shared<DenoiserOptix>(fb);
+# else
+    return std::make_shared<DenoiserNone>(fb);
 # endif
 #endif
-    return std::make_shared<DenoiserNone>(fb);
   }
   
   
@@ -414,9 +441,10 @@ namespace barney {
     if (iy >= numPixels.y) return;
     int idx = ix+numPixels.x*iy;
 
-    bool dbg = 0;// (ix == 0 && iy == 0);
+    bool dbg = 0; //(ix == 0 && iy == 0);
     
     float4 v = in[idx];
+    if (dbg) printf("tofixed in  %f %f %f %f\n",v.x,v.y,v.z,v.w);
     v.x = clamp(v.x);
     v.y = clamp(v.y);
     v.z = clamp(v.z);
@@ -439,9 +467,6 @@ namespace barney {
     int idx = ix+numPixels.x*iy;
 
     float4 v = color[idx];
-    // if (ix == 0 && iy == 0)
-    //   printf("color %f %f %f %f\n",
-    //          v.x,v.y,v.z,v.w);
 #if 1
     v.x = linear_to_srgb(v.x);
     v.y = linear_to_srgb(v.y);
@@ -572,15 +597,12 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
     
     switch(requestedFormat) {
-    // case BN_FLOAT4_RGBA:
-    //   BARNEY_CUDA_CALL(Memcpy(hostPtr,finalColor,
-    //                           numPixels.x*numPixels.y*sizeof(float4),cudaMemcpyDefault));
-    //   break;
     case BN_FLOAT4: 
     case BN_FLOAT4_RGBA: {
       BARNEY_CUDA_CALL(Memcpy(hostPtr,denoisedColor,
                               numPixels.x*numPixels.y*sizeof(float4),
                               cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
     } break;
     case BN_UFIXED8_RGBA: {
       uint32_t *asFixed8;
@@ -591,14 +613,12 @@ namespace barney {
       vec2i bs(8,8);
       CHECK_CUDA_LAUNCH(toFixed8<false>,
                         divRoundUp(numPixels,bs),bs,0,0,
-                        //
                         asFixed8,denoisedColor,numPixels);
-      // toFixed8<false>
-        // <<<divRoundUp(numPixels,bs),bs>>>
-        // (asFixed8,denoisedColor,numPixels);
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
@@ -608,16 +628,14 @@ namespace barney {
                                    numPixels.x*numPixels.y*sizeof(uint32_t),0));
       BARNEY_CUDA_SYNC_CHECK();
       vec2i bs(8,8);
-      // toFixed8<true>
-      //   <<<divRoundUp(numPixels,bs),bs>>>
-      //   (asFixed8,denoisedColor,numPixels);
       CHECK_CUDA_LAUNCH(toFixed8<true>,
                         divRoundUp(numPixels,bs),bs,0,0,
-                        //
                         asFixed8,denoisedColor,numPixels);
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
     } break;
     default:

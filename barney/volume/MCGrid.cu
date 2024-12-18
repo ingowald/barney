@@ -35,7 +35,7 @@ namespace barney {
     int iz = threadIdx.z+blockIdx.z*blockDim.z; if (iz >= grid.dims.z) return;
     
     int ii = ix + grid.dims.x*(iy + grid.dims.y*(iz));
-    grid.scalarRanges[ii] = { +INFINITY, -INFINITY };
+    grid.scalarRanges[ii] = { +BARNEY_INF, -BARNEY_INF };
   }
   
   /*! re-set all cells' ranges to "infinite empty" */

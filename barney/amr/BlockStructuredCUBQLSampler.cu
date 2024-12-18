@@ -20,7 +20,6 @@ namespace barney {
 
   void BlockStructuredCUBQLSampler::Host::build(bool full_rebuild)
   {
-    PING;
     if (bvhNodesBuffer) {
       std::cout <<" bvh already built" << std::endl;
       return;
@@ -51,7 +50,7 @@ namespace barney {
     cuBQL::BuildConfig buildConfig;
     buildConfig.makeLeafThreshold = 7;
 #if BARNEY_CUBQL_HOST
-    cuBQL::host::spatialMedian(bvh,
+    cuBQL::cpu::spatialMedian(bvh,
                                (const cuBQL::box_t<float,3>*)d_primBounds,
                                (uint32_t)field->blockIDs.size(),
                                buildConfig);
@@ -76,7 +75,7 @@ namespace barney {
       = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
                               bvh.numNodes,bvh.nodes);
 #if BARNEY_CUBQL_HOST
-    cuBQL::host::freeBVH(bvh);
+    cuBQL::cpu::freeBVH(bvh);
 #else
     cuBQL::free(bvh,0,managedMem);
 #endif

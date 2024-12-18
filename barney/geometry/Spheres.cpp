@@ -23,6 +23,7 @@ namespace barney {
   
   OWLGeomType Spheres::createGeomType(DevGroup *devGroup)
   {
+    if (DevGroup::logging())
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'Spheres' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;

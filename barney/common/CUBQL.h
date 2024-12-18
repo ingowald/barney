@@ -19,13 +19,31 @@
 #include "barney/common/barney-common.h"
 #include "cuBQL/bvh.h"
 #if BARNEY_CUBQL_HOST
-# include "cuBQL/builder/host.h"
+# include "cuBQL/builder/cpu.h"
 #else
 # include "cuBQL/builder/cuda.h"
 #endif
+#include "cuBQL/traversal/shrinkingRadiusQuery.h"
 
 namespace barney {
 
+
+#if 0
+  template<typename TravState, int BVH_WIDTH=4>
+  /*! sample the umesh field; can return NaN if sample did not hit
+    any unstructured element at all */
+  inline __device__
+  void traverseCUQBL(cuBQL::WideBVH<float,3,BVH_WIDTH> bvh,
+                     TravState &ptd, vec3f P, bool dbg)
+  {
+    auto lambda = [&](uint32_t primID) {
+    };
+    cuBQL::shrinkingRadiusQuery::forEachPrim
+      (lambda,bvh,P);
+  }
+#endif
+  
+#if 0
   template<typename TravState, int BVH_WIDTH=4>
   /*! sample the umesh field; can return NaN if sample did not hit
     any unstructured element at all */
@@ -85,7 +103,7 @@ namespace barney {
       nodeRef = *--stackPtr;
     }
   }
-
+#endif
 
 
 

@@ -31,7 +31,8 @@ namespace barney {
       
       inline __device__ void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len);
       inline __device__ bool hadHit() const { return bsdfType != PackedBSDF::NONE; }
-      inline __device__ void clearHit(float newTMax = INFINITY)     { bsdfType = PackedBSDF::NONE; tMax = newTMax; }
+      inline __device__ void clearHit(float newTMax = BARNEY_INF)
+      { bsdfType = PackedBSDF::NONE; tMax = newTMax; }
       
       inline __device__ void packNormal(vec3f N);
       inline __device__ vec3f unpackNormal() const;
@@ -46,16 +47,16 @@ namespace barney {
       union {
         struct {
           uint64_t misWeightBits:16;
-          uint64_t  pixelID    :28;
+          uint64_t pixelID      :28;
           /*! type of bsdf in the hitBSDF; if this is set to NONE the
             ray didn't have any hit yet */
-          uint64_t  bsdfType   : 3;
-          uint64_t  numDiffuseBounces:2;
+          uint64_t bsdfType         : 3;
+          uint64_t numDiffuseBounces: 2;
           /*! for path tracer: tracks whether we are, or aren't, in a
             refractable medium */
-          uint64_t  isInMedium : 1;
-          uint64_t  isShadowRay: 1;
-          uint64_t  dbg        : 1;
+          uint64_t isInMedium : 1;
+          uint64_t isShadowRay: 1;
+          uint64_t dbg        : 1;
         };
         half     misWeight;
       };

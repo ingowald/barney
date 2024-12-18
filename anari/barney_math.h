@@ -11,58 +11,67 @@
 // std
 #include <cmath>
 #include <cstring> // for std::memcpy()
+#ifdef __CUDACC__
+#include <cuda/std/limits>
+#endif
 
+#ifdef __CUDACC__
+# define BARNEY_INF ::cuda::std::numeric_limits<float>::infinity()
+#else
+# define BARNEY_INF INFINITY
+#endif
+  
 namespace barney_device {
 
-namespace math = anari::math;
+  namespace math = anari::math;
 
-struct box1
-{
-  float lower, upper;
-  box1 &insert(float v)
+  struct box1
   {
-    lower = fminf(lower, v);
-    upper = fmaxf(upper, v);
-    return *this;
-  }
-};
+    float lower, upper;
+    box1 &insert(float v)
+    {
+      lower = fminf(lower, v);
+      upper = fmaxf(upper, v);
+      return *this;
+    }
+  };
 
-struct box3
-{
-  math::float3 lower, upper;
-
-  box3() { invalidate(); }
-  box3(const math::float3 &l, const math::float3 &u) : lower(l), upper(u) {}
-
-  void invalidate()
+  struct box3
   {
-    lower = math::float3(INFINITY, INFINITY, INFINITY);
-    upper = math::float3(-INFINITY, -INFINITY, -INFINITY);
-  }
+    math::float3 lower, upper;
 
-  box3 &insert(math::float3 v)
+    box3() { invalidate(); }
+    box3(const math::float3 &l, const math::float3 &u) : lower(l), upper(u) {}
+
+    void invalidate()
+    {
+      lower = math::float3(BARNEY_INF, BARNEY_INF, BARNEY_INF);
+      upper = math::float3(-BARNEY_INF, -BARNEY_INF, -BARNEY_INF);
+    }
+
+    box3 &insert(math::float3 v)
+    {
+      lower.x = fminf(lower.x, v.x);
+      lower.y = fminf(lower.y, v.y);
+      lower.z = fminf(lower.z, v.z);
+      upper.x = fmaxf(upper.x, v.x);
+      upper.y = fmaxf(upper.y, v.y);
+      upper.z = fmaxf(upper.z, v.z);
+      return *this;
+    }
+
+    box3 &insert(const box3 b)
+    {
+      insert(b.lower);
+      insert(b.upper);
+      return *this;
+    }
+  };
+
+  struct box3i
   {
-    lower.x = fminf(lower.x, v.x);
-    lower.y = fminf(lower.y, v.y);
-    lower.z = fminf(lower.z, v.z);
-    upper.x = fmaxf(upper.x, v.x);
-    upper.y = fmaxf(upper.y, v.y);
-    upper.z = fmaxf(upper.z, v.z);
-    return *this;
-  }
-
-  box3 &insert(const box3 b)
-  {
-    insert(b.lower);
-    insert(b.upper);
-    return *this;
-  }
-};
-
-struct box3i
-{
-  math::int3 lower, upper;
-};
+    math::int3 lower, upper;
+  };
 
 } // namespace barney_device
 
@@ -72,14 +81,14 @@ struct box3i
 
 namespace anari {
 
-ANARI_TYPEFOR_SPECIALIZATION(barney_device::box1, ANARI_FLOAT32_BOX1);
-ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3, ANARI_FLOAT32_BOX3);
-ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3i, ANARI_INT32_BOX3);
+  ANARI_TYPEFOR_SPECIALIZATION(barney_device::box1, ANARI_FLOAT32_BOX1);
+  ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3, ANARI_FLOAT32_BOX3);
+  ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3i, ANARI_INT32_BOX3);
 
 #ifdef ANARI_BARNEY_MATH_DEFINITIONS
-ANARI_TYPEFOR_DEFINITION(barney_device::box1);
-ANARI_TYPEFOR_DEFINITION(barney_device::box3);
-ANARI_TYPEFOR_DEFINITION(barney_device::box3i);
+  ANARI_TYPEFOR_DEFINITION(barney_device::box1);
+  ANARI_TYPEFOR_DEFINITION(barney_device::box3);
+  ANARI_TYPEFOR_DEFINITION(barney_device::box3i);
 #endif
 
 } // namespace anari

@@ -77,10 +77,6 @@ namespace barney {
       ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
       Random rand(ix+fbSize.x*accumID+ray.pixelID,
                   iy+fbSize.y*accumID);
-      // Random rand(rngSeed,ray.pixelID);
-      // rand();
-      // rand();
-      // rand();
 
       ray.org  = camera.lens_00;
       float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));
@@ -90,8 +86,6 @@ namespace barney {
         = camera.dir_00
         + (1.f*aspect*(image_u - .5f)) * camera.dir_du
         + (1.f*(image_v - .5f)) * camera.dir_dv;
-        // + image_u*(fbSize.x/float(fbSize.y))*camera.dir_du
-        // + image_v*camera.dir_dv;
       
       if (camera.lensRadius > 0.f) {
         vec3f lens_du = normalize(camera.dir_du);
@@ -106,8 +100,6 @@ namespace barney {
           lv = 2.f*rand()-1.f;
           float f = lu*lu+lv*lv;
           if (f > 1.f) continue;
-          // lu *= 1.f/sqrtf(f);
-          // lv *= 1.f/sqrtf(f);
           break;
         }
         vec3f lensOffset
@@ -116,10 +108,6 @@ namespace barney {
         ray.org += lensOffset;
         ray_dir = normalize(pointOnImagePlane - lensOffset);
       } else {
-// #if 1
-// #else
-//         ray.dir = normalize(ray.dir);
-// #endif
         ray_dir = normalize(ray_dir);
       }
       ray.dir = ray_dir;
@@ -161,14 +149,11 @@ namespace barney {
         float4 v = tex2D<float4>(renderer.bgTexture,image_u,image_v);
         bgColor = (vec3f&)v;
       }
-      // vec3f bgColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-      // bool crossHair = 1 && (crossHair_x || crossHair_y);
-      ray.missColor = bgColor;//*bgColor;
-      // ray.hit.baseColor = .5f*ray.hit.baseColor*ray.hit.baseColor;
-      // if (crossHair && !ray.dbg)
-      //   ray.hit.baseColor = vec3f(1,0,0);
-    
-      // ray.hit.N = vec3f(0.f);
+      ray.missColor = bgColor;
+      if (ray.dbg) printf("== spawn ray has bg color %f %f %f\n",
+                          bgColor.x,
+                          bgColor.y,
+                          bgColor.z);
       ray.throughput = vec3f(1.f);
     
 #if MERGE_ATOMICS

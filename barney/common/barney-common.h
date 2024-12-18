@@ -34,6 +34,9 @@
 #include <memory>
 #include <sstream>
 #include "barney.h"
+#ifdef __CUDACC__
+#include <cuda/std/limits>
+#endif
 
 #define __barney_align(a) OWL_ALIGN(a)
 
@@ -52,6 +55,13 @@ namespace barney {
 #define ONE_OVER_TWO_PI (1.f/TWO_PI)
 #define ONE_OVER_FOUR_PI (1.f/FOUR_PI)
 
+
+#ifdef __CUDACC__
+# define BARNEY_INF ::cuda::std::numeric_limits<float>::infinity()
+#else
+# define BARNEY_INF INFINITY
+#endif
+  
   template<typename T>
   inline __device__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }

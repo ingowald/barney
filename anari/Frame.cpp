@@ -189,14 +189,6 @@ void *Frame::map(std::string_view channel,
     return m_colorBuffer;
   } else if (channel == "channel.depth" && m_depthBuffer) {
     bnFrameBufferRead(m_bnFrameBuffer,BN_FB_DEPTH,m_depthBuffer,BN_FLOAT);
-// =======
-//     bnFrameBufferRead(
-//         m_bnFrameBuffer, BN_FB_COLOR, m_colorBuffer, toBarney(m_colorType));
-//     *pixelType = m_colorType;
-//     return m_colorBuffer;
-//   } else if (channel == "channel.depth" && m_depthBuffer) {
-//     bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_colorBuffer, BN_FLOAT);
-// >>>>>>> 7ac29a9cf2ec67f4f1e9fec8e671dd2ff4c646e6
     *pixelType = ANARI_FLOAT32;
     return m_depthBuffer;
   }

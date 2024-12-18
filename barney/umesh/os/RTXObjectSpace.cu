@@ -94,10 +94,10 @@ namespace barney {
     buildConfig.makeLeafThreshold = 8;
     buildConfig.enableSAH();
 #if BARNEY_CUBQL_HOST
-    cuBQL::host::spatialMedian(bvh,
-                               (const cuBQL::box_t<float,3>*)d_primBounds,
-                               (uint32_t)mesh->elements.size(),
-                               buildConfig);
+    cuBQL::cpu::spatialMedian(bvh,
+                              (const cuBQL::box_t<float,3>*)d_primBounds,
+                              (uint32_t)mesh->elements.size(),
+                              buildConfig);
 #else
     static cuBQL::ManagedMemMemoryResource managedMem;
     cuBQL::gpuBuilder(bvh,
@@ -124,7 +124,7 @@ namespace barney {
       clusters.push_back(c);
     }
 #if BARNEY_CUBQL_HOST
-    cuBQL::host::freeBVH(bvh);
+    cuBQL::cpu::freeBVH(bvh);
 #else
     cuBQL::free(bvh,0,managedMem);
 #endif

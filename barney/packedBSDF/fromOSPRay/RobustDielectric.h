@@ -130,7 +130,7 @@ namespace barney {
         // const varying RobustDielectric* uniform self = (const varying RobustDielectric* uniform)super;
         // BSDF_SampleRes res;
         SampleRes res;
-        res.pdf = INFINITY;
+        res.pdf = BARNEY_INF;
 
         vec3f wo = dg.wo;
         vec3f incomingDir = neg(wo);// We want the actual ray direction into the surface.
