@@ -46,18 +46,22 @@ target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHO
 
 # -------------------------------------------------------
 option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
-option(BARNEY_DISABLE_OIDN "explicitly DISable OIDN?" OFF)
+#option(BARNEY_DISABLE_OIDN "explicitly DISable OIDN?" OFF)
 
 if (BARNEY_DISABLE_DENOISING)
   target_compile_definitions(barney-config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
-elseif (NOT BARNEY_DISABLE_OIDN)
-  find_package(OpenImageDenoise)
-  if (OpenImageDenoise_FOUND)
-    message(INFO "Found OpenImageDenoise (OIDN), enabling it")
-    target_compile_definitions(barney-config INTERFACE -DBARNEY_HAVE_OIDN=1)
-    target_link_libraries(barney-config INTERFACE OpenImageDenoise)
-  endif()
+#elseif (NOT BARNEY_DISABLE_OIDN)
+#  find_package(OpenImageDenoise)
+#  if (OpenImageDenoise_FOUND)
+#    message(INFO "Found OpenImageDenoise (OIDN), enabling it")
+#    target_compile_definitions(barney-config INTERFACE -DBARNEY_HAVE_OIDN=1)
+#    target_link_libraries(barney-config INTERFACE OpenImageDenoise)
+#  endif()
 endif()
+# issue 5: if oidn is built without CUDA support it will break the
+# barney build if we use it; so unless we figure out how to check that
+# let's disable it.
+target_compile_definitions(barney-config INTERFACE -DBARNEY_DISABLE_OIDN=1)
     
 # -------------------------------------------------------
 
@@ -333,13 +337,15 @@ set_target_properties(barney_static
 # ------------------------------------------------------------------
 # SHARED version of barney_mpi
 # ------------------------------------------------------------------
-add_library(barney SHARED )
+add_library(barney SHARED
+  ${BARNEY_SOURCES}
+  )
 target_link_libraries(barney
   PUBLIC
   owl::owl
   ${CUBQL_LIB}
   barney-config
-  barney_static
+#  barney_static
   barney-Spheres-ptx
   barney-StructuredData-ptx
   barney-cylinders-ptx
@@ -368,6 +374,7 @@ if (BARNEY_MPI)
   # STATIC version of barney_mpi
   # ------------------------------------------------------------------
   add_library(barney_mpi_static STATIC
+    ${BARNEY_SOURCES}
     common/MPIWrappers.h
     common/MPIWrappers.cpp
     MPIContext.h
@@ -384,7 +391,7 @@ if (BARNEY_MPI)
     CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
     )
   target_link_libraries(barney_mpi_static PUBLIC
-    barney_static
+    barney-config
     MPI::MPI_CXX
     )
   target_compile_definitions(barney_mpi_static PUBLIC -DBARNEY_MPI=1)
@@ -392,6 +399,7 @@ if (BARNEY_MPI)
   # SHARED version of barney_mpi
   # ------------------------------------------------------------------
   add_library(barney_mpi SHARED
+    ${BARNEY_SOURCES}
     common/MPIWrappers.h
     common/MPIWrappers.cpp
     MPIContext.h
@@ -408,7 +416,7 @@ if (BARNEY_MPI)
     CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
     )
   target_link_libraries(barney_mpi PUBLIC
-    barney
+    barney-config
     MPI::MPI_CXX
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)

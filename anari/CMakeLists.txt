@@ -60,7 +60,6 @@ set_target_properties(banari-config
   PROPERTIES
   CUDA_ARCHITECTURES all-major
   )
-
 target_include_directories(banari-config
   INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
@@ -74,8 +73,17 @@ add_library(anari_library_barney SHARED
   ${BANARI_SOURCES}
   )
 
+
+if (BARNEY_MPI)
+  set(BARNEY_STATIC_LIB barney_mpi_static)
+  set(BARNEY_SHARED_LIB barney_mpi)
+else()
+  set(BARNEY_STATIC_LIB barney_static)
+  set(BARNEY_SHARED_LIB barney)
+endif()
+
 # static library that contains a dedicated 'create'-function that
-# generates _only_ a banari device 
+# generates _only_ a banari device
 add_library(anari_library_barney_static
   #OBJECT
   STATIC
@@ -84,7 +92,7 @@ add_library(anari_library_barney_static
 
 target_link_libraries(anari_library_barney PRIVATE
   banari-config
-  barney
+  ${BARNEY_STATIC_LIB}#barney
   )
 if (TARGET anari::helium)
   target_link_libraries(anari_library_barney PRIVATE
@@ -97,7 +105,7 @@ target_link_libraries(anari_library_barney_static PUBLIC
   #anari::helium_static
   helium
 # anari_static
-  barney_static
+  ${BARNEY_STATIC_LIB}#  barney_static
   )
 
 set_target_properties(anari_library_barney
