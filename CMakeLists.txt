@@ -38,20 +38,20 @@ set(CMAKE_BUILD_TYPE_INIT "Release")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release")
-if ((NOT WIN32) AND (NOT CMAKE_BUILD_TYPE) AND (NOT CMAKE_CONFIGURATION_TYPES))
+#if ((NOT WIN32) AND (NOT CMAKE_BUILD_TYPE) AND (NOT CMAKE_CONFIGURATION_TYPES))
 #  message(STATUS "Setting build type to 'Release' as none was specified.")
 #  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-    "MinSizeRel" "RelWithDebInfo")
-endif()
+# Set the possible values of build type for cmake-gui
+#if (CMAKE_BUILD_TYPE)
+#  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" 
+#    "MinSizeRel" "RelWithDebInfo")
+#endif()
 
 
 # iw - do NOT use an 'option' - they can't do strings
 set(BARNEY_CUDA_ARCHITECTURES "auto" CACHE STRING
   "Which CUDA architecture to build for")
 if (BARNEY_CUDA_ARCHITECTURES STREQUAL "auto")
-  message("CMAKE_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}")
   if (NOT (DEFINED CMAKE_CUDA_ARCHITECTURES))
     # 'all-major', since cmake-3.23
     set(BARNEY_CUDA_ARCHITECTURES all-major)
@@ -73,6 +73,11 @@ endif()
 
 # project command is required to come after cmake_minimum_required command.
 project(Barney VERSION 0.7.0 LANGUAGES C CXX CUDA)
+
+if (CMAKE_BUILD_TYPE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" 
+    "MinSizeRel" "RelWithDebInfo")
+endif()
 
 if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -102,6 +107,7 @@ endif()
 # subprojects we depend on
 # ------------------------------------------------------------------
 if (NOT (TARGET owl::owl))
+  set(OWL_CUDA_STATIC ON)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 endif()
 

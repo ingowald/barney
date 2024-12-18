@@ -32,7 +32,6 @@ else()
   set(CUBQL_LIB cuBQL_cuda_float3)
 endif()
 
-
 target_include_directories(barney-config INTERFACE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/barney/include
@@ -311,10 +310,7 @@ add_library(barney_static
   STATIC
   ${BARNEY_SOURCES}
   )
-target_link_libraries(barney_static PUBLIC
-  owl_static
-  ${CUBQL_LIB}_static
-  barney-config
+set(BARNEY_STATIC_DEPENDENCIES
   barney-Spheres-ptx
   barney-StructuredData-ptx
   barney-cylinders-ptx
@@ -325,7 +321,30 @@ target_link_libraries(barney_static PUBLIC
   barney-UMeshMC-ptx
   barney-AWT-ptx  
   barney-BlockStructuredMC-ptx
+  owl_static
+  ${CUBQL_LIB}_static
   )
+target_link_libraries(barney_static
+  PUBLIC
+  barney-config
+  ${BARNEY_STATIC_DEPENDENCIES}
+  )
+#target_link_libraries(barney_static 
+#  PRIVATE
+#  ${BARNEY_STATIC_DEPENDENCIES}
+#  owl_static
+#  ${CUBQL_LIB}_static
+#  barney-Spheres-ptx
+#  barney-StructuredData-ptx
+#  barney-cylinders-ptx
+#  barney-capsules-ptx
+#  barney-triangles-ptx
+#  barney-traceRays-ptx  
+#  barney-UMeshRTXObjectSpace-ptx
+#  barney-UMeshMC-ptx
+#  barney-AWT-ptx  
+#  barney-BlockStructuredMC-ptx
+#  )
 set_target_properties(barney_static
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
@@ -342,22 +361,31 @@ add_library(barney SHARED
   )
 target_link_libraries(barney
   PUBLIC
-  owl::owl
-  ${CUBQL_LIB}
   barney-config
-#  barney_static
-  barney-Spheres-ptx
-  barney-StructuredData-ptx
-  barney-cylinders-ptx
-  barney-capsules-ptx
-  barney-triangles-ptx
-  barney-traceRays-ptx  
-  barney-UMeshRTXObjectSpace-ptx
-  barney-UMeshMC-ptx
-  barney-AWT-ptx  
-  barney-BlockStructuredMC-ptx
   )
+#target_link_libraries(barney
+#  PUBLIC
+#  ${BARNEY_STATIC_DEPENDENCIES}
+#  owl::owl_static
+#  ${CUBQL_LIB}_static
+#  barney-config
+#  barney_static
+#  barney-Spheres-ptx
+#  barney-StructuredData-ptx
+#  barney-cylinders-ptx
+#  barney-capsules-ptx
+#  barney-triangles-ptx
+#  barney-traceRays-ptx  
+#  barney-UMeshRTXObjectSpace-ptx
+#  barney-UMeshMC-ptx
+#  barney-AWT-ptx  
+#  barney-BlockStructuredMC-ptx
+#  )
 
+target_link_libraries(barney
+  PRIVATE#PUBLIC
+  ${BARNEY_STATIC_DEPENDENCIES}
+  )
 set_target_properties(barney
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
@@ -366,6 +394,7 @@ set_target_properties(barney
   CUDA_USE_STATIC_CUDA_RUNTIME ON
   CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
   )
+set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 if (BARNEY_MPI)
   find_package(MPI REQUIRED)
@@ -392,9 +421,13 @@ if (BARNEY_MPI)
     )
   target_link_libraries(barney_mpi_static PUBLIC
     barney-config
+    barney_static
     MPI::MPI_CXX
     )
   target_compile_definitions(barney_mpi_static PUBLIC -DBARNEY_MPI=1)
+
+
+  
   # ------------------------------------------------------------------
   # SHARED version of barney_mpi
   # ------------------------------------------------------------------
@@ -417,30 +450,30 @@ if (BARNEY_MPI)
     )
   target_link_libraries(barney_mpi PUBLIC
     barney-config
-    owl::owl
-    ${CUBQL_LIB}
+    ${BARNEY_STATIC_DEPENDENCIES}
+#    owl::owl_static
+#    ${CUBQL_LIB}
     MPI::MPI_CXX
-    barney-Spheres-ptx
-    barney-StructuredData-ptx
-    barney-cylinders-ptx
-    barney-capsules-ptx
-    barney-triangles-ptx
-    barney-traceRays-ptx  
-    barney-UMeshRTXObjectSpace-ptx
-    barney-UMeshMC-ptx
-    barney-AWT-ptx  
-    barney-BlockStructuredMC-ptx
+#    barney-Spheres-ptx
+#    barney-StructuredData-ptx
+#    barney-cylinders-ptx
+#    barney-capsules-ptx
+#    barney-triangles-ptx
+#    barney-traceRays-ptx  
+#    barney-UMeshRTXObjectSpace-ptx
+#    barney-UMeshMC-ptx
+#    barney-AWT-ptx  
+#    barney-BlockStructuredMC-ptx
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
+  set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
 
 
-set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
-set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$ORIGIN")
 
-install(TARGETS cuBQL_cuda_float3 owl barney barney_mpi
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
+#install(TARGETS cuBQL_cuda_float3 owl barney barney_mpi
+#  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#)
 

@@ -37,7 +37,7 @@ namespace barney {
       world(worldComm),
       workers(workersComm)
   {
-    bool dbg = true;
+    bool dbg = false;
 
     if (dbg) {
       std::stringstream ss;
