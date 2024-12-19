@@ -93,11 +93,18 @@ endif()
 if (TARGET anari::helium)
   target_link_libraries(anari_library_barney PRIVATE
     anari::helium
-    anari::anari
+    )
+else()
+  target_link_libraries(anari_library_barney PRIVATE
+    helium
     )
 endif()
+target_link_libraries(anari_library_barney PRIVATE
+  anari::anari
+  )
 
 set_target_properties(anari_library_barney
+
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
   POSITION_INDEPENDENT_CODE ON
@@ -144,12 +151,24 @@ else()
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
     )
 endif()
-#if (TARGET anari::helium)
+if (TARGET anari::helium)
+  # when building from installed source:
+  target_link_libraries(anari_library_barney_static PUBLIC#PRIVATE
+    anari::helium
+    anari_static
+    )
+else()
+  target_link_libraries(anari_library_barney_static PUBLIC#PRIVATE
+    anari
+    anari_static
+    )
+endif()
+#endif()
 target_link_libraries(anari_library_barney_static PUBLIC#PRIVATE
-  helium
   anari_static
   )
-#endif()
+
+
 
 set_target_properties(anari_library_barney_static
   PROPERTIES
