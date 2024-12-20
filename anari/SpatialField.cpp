@@ -80,6 +80,7 @@ bool StructuredRegularField::isValid() const
   case ANARI_FLOAT32:
     barneyType = BN_FLOAT;
     break;
+  case ANARI_UFIXED8:
   case ANARI_UINT8:
     barneyType = BN_UFIXED8;
     break;
