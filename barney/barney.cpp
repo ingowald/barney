@@ -351,6 +351,13 @@ namespace barney {
   }
 
   BN_API
+  void bnCountAvailableDevice(int *numGPUs)
+  {
+    cudaGetDeviceCount(numGPUs);
+  }
+
+  
+  BN_API
   BNMaterial bnMaterialCreate(BNContext context,
                               int slot,
                               const char *type)

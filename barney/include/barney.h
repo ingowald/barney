@@ -226,6 +226,9 @@ BNContext bnContextCreate(/*! how many data slots this context is to
                           int  numGPUs=-1);
 
 BN_API
+void bnCountAvailableDevice(int *numGPUs);
+
+BN_API
 void bnContextDestroy(BNContext context);
 
 struct BNHardwareInfo {
