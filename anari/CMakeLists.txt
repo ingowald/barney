@@ -162,7 +162,9 @@ else()
     anari_static
     )
 endif()
-
+if (WIN32)
+target_compile_definitions(anari_library_barney_static PRIVATE -DNOGDI=1)
+endif()
 
 
 set_target_properties(anari_library_barney_static
