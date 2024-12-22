@@ -39,7 +39,7 @@ namespace barney {
     virtual ~Renderer() {}
 
     /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const;
+    std::string toString() const override;
 
     static SP create(Context *context);
 
