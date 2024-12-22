@@ -72,7 +72,14 @@ endif()
   
 
 # project command is required to come after cmake_minimum_required command.
-project(Barney VERSION 0.7.0 LANGUAGES C CXX CUDA)
+include(CheckLanguage)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
+  enable_language(CUDA)
+else()
+  message("CUDA not found - you need to install CUDA to build barney")
+endif()
+project(Barney VERSION 0.7.0 LANGUAGES C CXX)
 
 if (CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" 
@@ -114,7 +121,7 @@ endif()
 
 # TODO: add option to find if installed
 option(BARNEY_CUBQL_HOST "Use CUBQL host builder" off)
-if (NOT (TARGET cuBQL_cuda_float3))
+if (NOT (TARGET cuBQL))
   add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
 endif()
 

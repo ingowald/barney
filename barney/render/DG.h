@@ -136,6 +136,8 @@ namespace barney {
 #ifdef _WIN32
       sinPhi = sinf(phi);
       cosPhi = cosf(phi);
+#elif __APPLE__
+      __sincosf(phi, &sinPhi, &cosPhi);
 #else
       sincosf(phi, &sinPhi, &cosPhi);
 #endif
