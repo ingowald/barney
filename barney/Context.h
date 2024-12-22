@@ -232,8 +232,7 @@ namespace barney {
         printf("******************************************************************\nCUDA fatal error %s (%s)\n",
                cudaGetErrorString(rc),where);
         fflush(0);
-        sleep(3);
-        *(int*)0 = 0;
+        throw std::runtime_error("unrecoverable cuda error");
       }                                                              
     }
   }

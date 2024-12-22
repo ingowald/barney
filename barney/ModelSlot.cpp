@@ -26,7 +26,7 @@ namespace barney {
   ModelSlot::ModelSlot(GlobalModel *_model, int slot)
     : Object(_model->context),
       model(_model),
-      localID(localID),
+      localID(slot),
       devGroup(_model->context->perSlot[slot].devGroup),
       world(std::make_shared<render::World>(_model->context->perSlot[slot].devGroup))
   {

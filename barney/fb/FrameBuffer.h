@@ -45,7 +45,7 @@ namespace barney {
     std::string toString() const override
     { return "<FrameBuffer(base)>"; }
 
-    bool set1i(const std::string &member, const int &value);
+    bool set1i(const std::string &member, const int &value) override;
 
     virtual void resize(vec2i size, uint32_t channels);
     virtual void resetAccumulation() {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }

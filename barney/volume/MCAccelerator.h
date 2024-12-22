@@ -51,7 +51,7 @@ namespace barney {
 
       /*! set owl variables for this accelerator - this is virutal so
         derived classes can add their own */
-      void setVariables(OWLGeom geom) override;
+      void setVariables(OWLGeom geom);
       
       void build(bool full_rebuild) override;
       
@@ -98,7 +98,7 @@ namespace barney {
       using Inherited::getTypeString;
       
       Host(ScalarField *sf, Volume *volume, const char *ptxCode);
-      void setVariables(OWLGeom geom) override;
+      void setVariables(OWLGeom geom);
       void createGeom() override;
 
       void build(bool full_rebuild) override
