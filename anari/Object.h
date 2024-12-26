@@ -18,12 +18,12 @@ struct Object : public helium::BaseObject
   Object(ANARIDataType type, BarneyGlobalState *s);
   virtual ~Object() = default;
 
-  virtual bool getProperty(const std::string_view &name,
-      ANARIDataType type,
-      void *ptr,
-      uint32_t flags);
+  bool getProperty(const std::string_view &name,
+                   ANARIDataType type,
+                   void *ptr,
+                   uint32_t flags) override;
 
-  virtual void commit();
+  void commit() override;
 
   bool isValid() const override;
 
