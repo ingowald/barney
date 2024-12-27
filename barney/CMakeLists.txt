@@ -303,7 +303,7 @@ CUDA_SOURCE(amr/BlockStructuredField.cu)
 CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
   
 # ------------------------------------------------------------------
-# STATIC version of barney_mpi
+# STATIC version of barney
 # ------------------------------------------------------------------
 add_library(barney_static
 #  OBJECT
@@ -354,7 +354,7 @@ set_target_properties(barney_static
   CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
   )
 # ------------------------------------------------------------------
-# SHARED version of barney_mpi
+# SHARED version of barney
 # ------------------------------------------------------------------
 add_library(barney SHARED
   ${BARNEY_SOURCES}
@@ -397,7 +397,7 @@ set_target_properties(barney
 set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 if (BARNEY_MPI)
-  find_package(MPI REQUIRED)
+#  find_package(MPI REQUIRED)
 
   # ------------------------------------------------------------------
   # STATIC version of barney_mpi

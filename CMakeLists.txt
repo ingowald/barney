@@ -124,12 +124,22 @@ endif()
 # TODO: add option to find if installed
 option(BARNEY_CUBQL_HOST "Use CUBQL host builder" off)
 if (NOT (TARGET cuBQL))
+  set(CMAKE_CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES})
   add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
 endif()
 
 # ------------------------------------------------------------------
 # barney itself
 # ------------------------------------------------------------------
+if (BARNEY_MPI)
+  find_package(MPI)
+  if (MPI_FOUND)
+    message("barney: MPI found, including in default barney and banari builds")
+  else()
+    message("barney: MPI build requested, but MPI not found... disabling")
+    set(BARNEY_MPI OFF)
+  endif()
+endif()
 add_subdirectory(barney)
 
 # ------------------------------------------------------------------

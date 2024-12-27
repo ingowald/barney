@@ -54,20 +54,24 @@ set(BANARI_SOURCES
 # static and shared anari
 add_library(banari-config INTERFACE
   )
+target_link_libraries(banari-config
+  INTERFACE
+  barney-config
+  )
 set_target_properties(banari-config
   PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   )
 set_target_properties(banari-config
   PROPERTIES
-  CUDA_ARCHITECTURES all-major
+  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
   )
 target_include_directories(banari-config
   INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
-)
+  )
 
 # ==================================================================
 # default shared-linkage for anari loader library to load when barney
@@ -103,12 +107,12 @@ else()
 endif()
 
 set_target_properties(anari_library_barney
-
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
   POSITION_INDEPENDENT_CODE ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
   )
 
 include(GenerateExportHeader)
@@ -123,7 +127,7 @@ install(TARGETS anari_library_barney
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
+  )
 
 
 
@@ -163,12 +167,13 @@ else()
     )
 endif()
 if (WIN32)
-target_compile_definitions(anari_library_barney_static PRIVATE -DNOGDI=1)
+  target_compile_definitions(anari_library_barney_static PRIVATE -DNOGDI=1)
 endif()
 
 
 set_target_properties(anari_library_barney_static
   PROPERTIES
+  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
   CUDA_SEPARABLE_COMPILATION ON
   POSITION_INDEPENDENT_CODE ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
