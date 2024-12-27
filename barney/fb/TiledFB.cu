@@ -20,9 +20,6 @@
 #include <optix_function_table.h>
 #include <optix_stubs.h>
 
-// #include "optix_host.h"
-// #include "optix_stubs.h"
-
 namespace barney {
 
   TiledFB::SP TiledFB::create(Device::SP device, FrameBuffer *owner)
@@ -84,27 +81,17 @@ namespace barney {
       ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
                    device->globalIndexStep)
       : 0;
-#if 0
-    BARNEY_CUDA_CALL(MallocManaged(&accumTiles, numActiveTiles * sizeof(AccumTile)));
-    BARNEY_CUDA_CALL(MallocManaged(&compressedTiles, numActiveTiles * sizeof(CompressedTile)));
-    BARNEY_CUDA_CALL(MallocManaged(&tileDescs,  numActiveTiles * sizeof(TileDesc)));
-#else
     BARNEY_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
     BARNEY_CUDA_CALL(Malloc(&compressedTiles, numActiveTiles * sizeof(CompressedTile)));
     BARNEY_CUDA_CALL(Malloc(&tileDescs,  numActiveTiles * sizeof(TileDesc)));
-#endif
 
     BARNEY_CUDA_SYNC_CHECK();
-    if (numActiveTiles)
+    if (numActiveTiles) {
       CHECK_CUDA_LAUNCH(setTileCoords,
                         divRoundUp(numActiveTiles,1024),1024,0,device?device->launchStream:0,
-                        //
                         tileDescs,numActiveTiles,numTiles,
                         device->globalIndex,device->globalIndexStep);
-      // setTileCoords<<<divRoundUp(numActiveTiles,1024),1024,0,
-      // device?device->launchStream:0>>>
-      //   (tileDescs,numActiveTiles,numTiles,
-      //    device->globalIndex,device->globalIndexStep);
+    }
     BARNEY_CUDA_SYNC_CHECK();
   }
 
