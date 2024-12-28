@@ -28,9 +28,7 @@ namespace barney {
     
 #define ENV_LIGHT_SAMPLING 1
 
-#define USE_MIS 1
-    
-    // inline __device__ float abs(float f) { return fabsf(f); }
+// #define USE_MIS 1
     
   inline __device__ float square(float f) { return f*f; }
   

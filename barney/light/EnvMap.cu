@@ -34,12 +34,19 @@ namespace barney {
       if (iy >= textureDims.y) return;
       
       auto importance = [&](float4 v)->float { return max(max(v.x,v.y),v.z); };
-
-      float4 fromTex = tex2D<float4>(texture,
-                                     (ix+.5f)/(textureDims.x),
-                                     (iy+.5f)/(textureDims.y));
-
-      float weight = importance(fromTex);
+      
+      // float4 fromTex = tex2D<float4>(texture,
+      //                                (ix+.5f)/(textureDims.x),
+      //                                (iy+.5f)/(textureDims.y));
+      float weight = 0.f;
+      for (int iiy=0;iiy<=2;iiy++)
+        for (int iix=0;iix<=2;iix++) {
+          float4 fromTex = tex2D<float4>(texture,
+                                         (ix+iix*.5f)/(textureDims.x),
+                                         (iy+iiy*.5f)/(textureDims.y));
+          weight = max(weight,importance(fromTex));
+        }
+      // float weight = importance(fromTex);
 
       allLines_cdf_x[ix+textureDims.x*iy] = weight;
     }
@@ -53,9 +60,9 @@ namespace barney {
     {
       int tid = threadIdx.x + blockIdx.x * blockDim.x;
     
-      int line = tid;
-      if (line >= textureDims.y) return;
-      float *thisLine_pdf = allLines_cdf_x + line * textureDims.x;
+      int y = tid;
+      if (y >= textureDims.y) return;
+      float *thisLine_pdf = allLines_cdf_x + y * textureDims.x;
     
       float sum = 0.f;
       for (int ix=0;ix<textureDims.x;ix++) 
@@ -69,12 +76,12 @@ namespace barney {
       }
       thisLine_pdf[textureDims.x-1] = 1.f;
 
-      float rel_y = (line+.5f) / textureDims.y;
+      float rel_y = (y+.5f) / textureDims.y;
 
       const float theta = ONE_PI * rel_y;
       
       float relativeWeightOfLine = sum * sinf(theta);
-      cdf_y[line] = relativeWeightOfLine;
+      cdf_y[y] = relativeWeightOfLine;
     }
 
     /*! run by a single thread, to normalize the cdf_y */

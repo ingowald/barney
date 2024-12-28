@@ -51,6 +51,7 @@ create_spheres()
 env_res_x = 128
 env_res_y = 64
 env_values = furn_value * np.ones(env_res_x*env_res_y*3, dtype=np.float32).reshape(3,env_res_x,env_res_y)
+
 #todo: env_array = device.newArray(anari.FLOAT32_RGBA,env_ones)
 env_array = device.newArray(anari.FLOAT32_VEC3,env_values)
 env_light = device.newLight('hdri')

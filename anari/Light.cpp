@@ -169,6 +169,8 @@ namespace barney_device {
     const math::float3 *radianceValues
       // = (const math::float3 *)m_radiance->data();
       = m_radiance->dataAs<math::float3>();
+    // cuda textures have to be float4, not float3, so barney only
+    // supports float3, too
     std::vector<math::float4> asFloat4(width*height);
     for (int i=0;i<width*height;i++) 
       (math::float3&)asFloat4[i] = radianceValues[i];
@@ -176,7 +178,13 @@ namespace barney_device {
     BNTexture texture
       = bnTexture2DCreate(getContext(),0,// model,slot,
                           BN_FLOAT4_RGBA,
-                          width,height,asFloat4.data());
+                          width,height,
+                          asFloat4.data(),
+                          BN_TEXTURE_LINEAR,
+                          BN_TEXTURE_WRAP,
+                          BN_TEXTURE_CLAMP,
+                          BN_COLOR_SPACE_LINEAR
+                          );
                                           
     bnSetObject(m_bnLight, "texture", texture);
     bnRelease(texture);

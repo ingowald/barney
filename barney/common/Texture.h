@@ -31,7 +31,8 @@ namespace barney {
             vec2i size,
             const void *texels,
             BNTextureFilterMode  filterMode,
-            BNTextureAddressMode addressMode,
+            BNTextureAddressMode addressMode_x,
+            BNTextureAddressMode addressMode_y,
             BNTextureColorSpace  colorSpace);
     virtual ~Texture() = default;
 

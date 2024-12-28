@@ -32,6 +32,7 @@ namespace barney {
       /*! converts from a given pixel's coordinates into the
           world-space vector that poitns to the center of that
           pixel */
+      inline __device__ vec3f  uvToWorld(float sx, float sy) const;
       inline __device__ vec3f  pixelToWorld(vec2i pixelID) const;
       inline __device__ vec2i  worldToPixel(vec3f worldDir) const;
         
@@ -89,7 +90,7 @@ namespace barney {
       ? cdf[position-1]
       : 0.f;
     
-    return (f_at_position-f_before_position);
+    return N*(f_at_position-f_before_position);
   }
 
   inline __device__
@@ -99,14 +100,14 @@ namespace barney {
     // if (dbg) printf("****** sampling sdf with %i items, v = %f\n",N,v);
     int begin = 0;
     int end   = N;
-    while (end - begin > 1) {
+    while ((end - begin) > 1) {
       int mid = (begin+end)/2;
-      float f_mid = cdf[mid];
+      float f_mid = cdf[mid-1];
 
       // if (dbg)
       //   printf("[%i %i] -> %i -> %f\n",
       //          begin,end,mid,f_mid);
-      if (v <= f_mid)
+      if (v < f_mid)
         end = mid;
       else
         begin = mid;
@@ -118,7 +119,7 @@ namespace barney {
       ? cdf[begin-1]
       : 0.f;
     
-    pdf = (f_at_position-f_before_position);
+    pdf = N*(f_at_position-f_before_position);
     return position;
   }
   
@@ -141,15 +142,13 @@ namespace barney {
 
     float pdf_x = cdfGetPDF(pixel.x,allCDFs_x+pixel.y*dims.x,dims.x);
 
-    float pdf = pdf_x*pdf_y
-      *(dims.x*dims.y)
-      *ONE_OVER_FOUR_PI;
-    
     float rel_y = (pixel.y+.5f) / dims.y;
     const float theta = ONE_PI * rel_y;
-    pdf *= (ONE_PI/sinf(theta));
+    // pdf *= (ONE_PI/sinf(theta));
 
-    return pdf;
+    // return pdf;
+
+    return pdf_x * pdf_y * 1.f/(TWO_PI*ONE_PI*sinf(theta));
   }
   
   inline __device__ float pbrt_clampf(float f, float lo, float hi)
@@ -199,6 +198,20 @@ namespace barney {
     return xfmVector(toWorld,dir);
   }
 
+  inline __device__ vec3f
+  EnvMapLight::DD::uvToWorld(float f_x, float f_y) const
+  {
+    const float phi   = TWO_PI * f_x;
+    const float theta = ONE_PI * f_y;
+    
+    vec3f dir;
+    dir.z = cosf(theta);
+    dir.x = cosf(phi)*sinf(theta);
+    dir.y = sinf(phi)*sinf(theta);
+
+    return xfmVector(toWorld,dir);
+  }
+
   inline __device__ Light::Sample
   EnvMapLight::DD::sample(Random &r, bool dbg) const
   {
@@ -215,25 +228,37 @@ namespace barney {
     int ix = sampleCDF(allCDFs_x+dims.x*iy,dims.x,r_x,pdf_x,dbg);
     // if (dbg) printf("found ix %i, pdf %f/%f\n",ix,pdf_x,pdf_x*dims.x);
 
+#if 1
+    float sx = (ix+r())/dims.x;
+    float sy = (iy+r())/dims.y;
+#else
     float sx = (ix+.5f)/dims.x;
     float sy = (iy+.5f)/dims.y;
+#endif
     float4 fromTex = tex2D<float4>(texture,sx,sy);
     Light::Sample sample;
     sample.radiance = (vec3f&)fromTex;
-    sample.direction = pixelToWorld({ix,iy});
+    sample.direction = uvToWorld(sx,sy);
+    // sample.direction = pixelToWorld({ix,iy});
      // if (dbg) printf("found pixel %i %i -> maxrad %f, world %f %f %f\n",
      //                 ix,iy,
      //                 reduce_max(sample.radiance),
      //                 sample.direction.x,
      //                 sample.direction.y,
      //                 sample.direction.z);
-     
-    sample.pdf = pdf_x*pdf_y
-      *(dims.x*dims.y)
-      *ONE_OVER_FOUR_PI;
-    float rel_y = (iy+.5f) / dims.y;
+
+    // pdf_x *= dims.x;
+    // pdf_y *= dims.y;
+
+    // *(dims.x*dims.y)
+      // *ONE_OVER_FOUR_PI;
+    // float rel_y = (iy+.5f) / dims.y;
+    float rel_y = sy;
     const float theta = ONE_PI * rel_y;
-    sample.pdf *= (ONE_PI/sinf(theta));
+    // sample.pdf *= (ONE_PI/sinf(theta));
+    sample.pdf
+      = pdf_x*pdf_y
+      * 1.f/(TWO_PI*ONE_PI*sinf(theta));
     
     sample.distance = BARNEY_INF;
     return sample;
