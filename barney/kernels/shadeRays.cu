@@ -24,11 +24,11 @@
 namespace barney {
   namespace render {
 
-#define MAX_DIFFUSE_BOUNCES 1
+#define MAX_DIFFUSE_BOUNCES 3
     
 #define ENV_LIGHT_SAMPLING 1
 
-// #define USE_MIS 1
+#define USE_MIS 1
     
   inline __device__ float square(float f) { return f*f; }
   
