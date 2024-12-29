@@ -607,8 +607,8 @@ namespace barney {
     case BN_UFIXED8_RGBA: {
       uint32_t *asFixed8;
       BARNEY_CUDA_SYNC_CHECK();
-      BARNEY_CUDA_CALL(MallocAsync((void**)&asFixed8,
-                                   numPixels.x*numPixels.y*sizeof(uint32_t),0));
+      BARNEY_CUDA_CALL(Malloc((void**)&asFixed8,
+                              numPixels.x*numPixels.y*sizeof(uint32_t)));
       BARNEY_CUDA_SYNC_CHECK();
       vec2i bs(8,8);
       CHECK_CUDA_LAUNCH(toFixed8<false>,
@@ -619,13 +619,13 @@ namespace barney {
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
       BARNEY_CUDA_SYNC_CHECK();
-      BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
+      BARNEY_CUDA_CALL(Free(asFixed8));
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
       uint32_t *asFixed8;
       BARNEY_CUDA_SYNC_CHECK();
-      BARNEY_CUDA_CALL(MallocAsync((void**)&asFixed8,
-                                   numPixels.x*numPixels.y*sizeof(uint32_t),0));
+      BARNEY_CUDA_CALL(Malloc((void**)&asFixed8,
+                                   numPixels.x*numPixels.y*sizeof(uint32_t)));
       BARNEY_CUDA_SYNC_CHECK();
       vec2i bs(8,8);
       CHECK_CUDA_LAUNCH(toFixed8<true>,
@@ -636,7 +636,7 @@ namespace barney {
                               numPixels.x*numPixels.y*sizeof(uint32_t),
                               cudaMemcpyDefault));
       BARNEY_CUDA_SYNC_CHECK();
-      BARNEY_CUDA_CALL(FreeAsync(asFixed8,0));
+      BARNEY_CUDA_CALL(Free(asFixed8));
     } break;
     default:
       throw std::runtime_error("requested to read color channel in un-supported format #"

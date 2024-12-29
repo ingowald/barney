@@ -129,7 +129,7 @@ namespace barney {
     
     VolumeAccel(ScalarField *sf, Volume *volume);
 
-    void setVariables(OWLGeom geom);
+    virtual void setVariables(OWLGeom geom);
     
     virtual UpdateMode updateMode()
     { return FULL_REBUILD; }

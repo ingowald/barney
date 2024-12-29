@@ -51,7 +51,7 @@ namespace barney {
 
       /*! set owl variables for this accelerator - this is virutal so
         derived classes can add their own */
-      void setVariables(OWLGeom geom);
+      void setVariables(OWLGeom geom) override;
       
       void build(bool full_rebuild) override;
       
@@ -98,7 +98,7 @@ namespace barney {
       using Inherited::getTypeString;
       
       Host(ScalarField *sf, Volume *volume, const char *ptxCode);
-      void setVariables(OWLGeom geom);
+      void setVariables(OWLGeom geom) override;
       void createGeom() override;
 
       void build(bool full_rebuild) override
@@ -158,7 +158,7 @@ namespace barney {
         // let parent class create the geometry itself, _we_ then only
         // set the numprims
         Inherited::createGeom();
-        
+
         // this is a *RTXTraverser* for the mcgrid, we have one prim
         // per cell:
         const int primCount = mcGrid.dims.x*mcGrid.dims.y*mcGrid.dims.z;
@@ -234,7 +234,6 @@ namespace barney {
   {
     Inherited::setVariables(geom);
     sf->setVariables(geom);
-    // getXF()->setVariables(geom);
   }
       
   template<typename SFSampler>
@@ -370,14 +369,7 @@ namespace barney {
     
     vec3f org = optixGetObjectRayOrigin();
     vec3f dir = optixGetObjectRayDirection();
-    // if (ray.dbg) printf("isec %f %f %f  %f %f %f\n",
-    //                     org.x,
-    //                     org.y,
-    //                     org.z,
-    //                     dir.x,
-    //                     dir.y,
-    //                     dir.z
-    //                     );
+    
     const int primID = optixGetPrimitiveIndex();
 
     const vec3i mcID = self.mcGrid.cellID(primID);
@@ -388,14 +380,6 @@ namespace barney {
     box3f bounds = self.mcGrid.cellBounds(mcID,self.worldBounds);
     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
 
-    // if (ray.dbg) printf("trange %f %f box %f %f %f : %f %f %f\n",
-    //                     tRange.lower,tRange.upper,
-    //                     bounds.lower.x,
-    //                     bounds.lower.y,
-    //                     bounds.lower.z,
-    //                     bounds.upper.x,
-    //                     bounds.upper.y,
-    //                     bounds.upper.z);
     if (!boxTest(ray,tRange,bounds))
       return;
 
@@ -409,7 +393,6 @@ namespace barney {
     ray.setVolumeHit(ray.org + tRange.upper*ray.dir,
                      tRange.upper,
                      getPos(sample));
-    if (ray.dbg) printf("hit at %f\n",tRange.upper);
     optixReportIntersection(tRange.upper, 0);
   }
 

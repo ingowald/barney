@@ -97,7 +97,6 @@ namespace barney {
     const vec3i nb = divRoundUp(dims,bs);
 
     for (auto dev : xf->devGroup->devices) {
-      BARNEY_CUDA_SYNC_CHECK();
       SetActiveGPU forDuration(dev);
       auto d_xf = xf->getDD(dev);
       auto dd = getDD(dev);
