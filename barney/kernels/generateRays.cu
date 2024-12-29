@@ -146,7 +146,8 @@ namespace barney {
         ? (const vec3f&)renderer.bgColor
         : ((1.0f - t)*vec3f(0.9f, 0.9f, 0.9f) + t * vec3f(0.15f, 0.25f, .8f));
       if (renderer.bgTexture) {
-        float4 v = tex2D<float4>(renderer.bgTexture,image_u,image_v);
+        float4 v = tex2D<float4>(renderer.bgTexture
+                                 image_u,image_v);
         bgColor = (vec3f&)v;
       }
       ray.missColor = bgColor;
