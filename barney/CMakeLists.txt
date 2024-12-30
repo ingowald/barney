@@ -136,6 +136,19 @@ embed_ptx(
   SOURCES            amr/BlockStructuredMC.dev.cu
   )
 
+# ------------------------------------------------------------------
+# nanovdb variants:
+# ------------------------------------------------------------------
+embed_ptx(
+  OUTPUT_TARGET      barney-NanoVDBMC-ptx
+  PTX_LINK_LIBRARIES barney-config $<BUILD_INTERFACE:barney_nanovdb>
+  SOURCES            nanovdb/NanoVDBMC.dev.cu
+  )
+set_source_files_properties(
+  nanovdb/NanoVDBMC.dev.cu
+  PROPERTIES COMPILE_FLAGS "--extended-lambda --expt-relaxed-constexpr"
+)
+
 set(BARNEY_SOURCES
   common/barney-common.h
   common/cuda-helper.cpp
@@ -276,6 +289,9 @@ set(BARNEY_SOURCES
   amr/BlockStructuredCUBQLSampler.cu
   #  amr/BlockStructuredMCAccelerator.h
   #  amr/BlockStructuredMCAccelerator.cu
+  # *nanovdb* volumes
+  nanovdb/NanoVDBField.h
+  nanovdb/NanoVDBField.cu
   
   # implements the c99 barney api calls
   barney.cpp
@@ -300,7 +316,14 @@ CUDA_SOURCE(umesh/os/RTXObjectSpace.cu)
 CUDA_SOURCE(umesh/os/AWT.cu)
 CUDA_SOURCE(amr/BlockStructuredField.cu)
 CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
-  
+CUDA_SOURCE(nanovdb/NanoVDBField.cu)
+ 
+# device lambdas:
+set_source_files_properties(
+  nanovdb/NanoVDBField.cu
+  PROPERTIES COMPILE_FLAGS "--extended-lambda --expt-relaxed-constexpr"
+)
+
 # ------------------------------------------------------------------
 # STATIC version of barney
 # ------------------------------------------------------------------
@@ -320,13 +343,16 @@ set(BARNEY_STATIC_DEPENDENCIES
   barney-UMeshMC-ptx
   barney-AWT-ptx  
   barney-BlockStructuredMC-ptx
+  barney-NanoVDBMC-ptx
   owl_static
   ${CUBQL_LIB}_static
   )
 target_link_libraries(barney_static
   PUBLIC
   barney-config
+  $<BUILD_INTERFACE:barney_nanovdb>
   ${BARNEY_STATIC_DEPENDENCIES}
+  ${BARNEY_EXTERNAL_DEPENDENCIES}
   )
 #target_link_libraries(barney_static 
 #  PRIVATE
@@ -343,6 +369,7 @@ target_link_libraries(barney_static
 #  barney-UMeshMC-ptx
 #  barney-AWT-ptx  
 #  barney-BlockStructuredMC-ptx
+#  barney-NanoVDBMC-ptx
 #  )
 set_target_properties(barney_static
   PROPERTIES
@@ -360,6 +387,7 @@ add_library(barney SHARED
   )
 target_link_libraries(barney
   PUBLIC
+  $<BUILD_INTERFACE:barney_nanovdb>
   barney-config
   )
 #target_link_libraries(barney
@@ -379,6 +407,7 @@ target_link_libraries(barney
 #  barney-UMeshMC-ptx
 #  barney-AWT-ptx  
 #  barney-BlockStructuredMC-ptx
+#  barney-NanoVDBMC-ptx
 #  )
 
 target_link_libraries(barney
@@ -463,6 +492,7 @@ if (BARNEY_MPI)
 #    barney-UMeshMC-ptx
 #    barney-AWT-ptx  
 #    barney-BlockStructuredMC-ptx
+#    barney-NanoVDBMC-ptx
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
   set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$ORIGIN")

@@ -23,6 +23,7 @@
 #include "barney/volume/ScalarField.h"
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/amr//BlockStructuredField.h"
+#include "barney/nanovdb/NanoVDBField.h"
 #include "barney/common/Data.h"
 #include "barney/common/mat4.h"
 #include "barney/Camera.h"
@@ -525,6 +526,24 @@ namespace barney {
                                              blockLevels,
                                              blockOffsets,
                                              blockScalars);
+    return (BNScalarField)checkGet(context)->initReference(sf);
+  }
+
+
+  BN_API
+  BNScalarField bnNanoVDBCreate(BNContext context,
+                                int slot,
+                                /* serialized NanoVDB grid, pointer,
+                                 currently the only supported ypte is float32: */
+                                const float *_gridData,
+                                // number of floats in gridData
+                                const int gridSize)
+  {
+    std::cout << "#bn: copying 'nanovdb' from app ..." << std::endl;
+    std::vector<float> gridData(gridSize);
+    memcpy(gridData.data(),_gridData,gridData.size()*sizeof(gridData[0]));
+    ScalarField::SP sf =
+      std::make_shared<NanoVDBField>(checkGet(context),slot,gridData);
     return (BNScalarField)checkGet(context)->initReference(sf);
   }
 

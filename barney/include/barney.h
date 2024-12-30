@@ -506,6 +506,15 @@ BNScalarField bnBlockStructuredAMRCreate(BNContext context,
                                          // block scalars
                                          const float *blockScalars, int numBlockScalars);
 
+BN_API
+BNScalarField bnNanoVDBCreate(BNContext context,
+                              int whichSlot,
+                              /* serialized NanoVDB grid, pointer,
+                               currently the only supported ypte is float32: */
+                              const float *gridData,
+                              // number of floats in gridData
+                              const int gridSize);
+
 
 BN_API
 BNVolume bnVolumeCreate(BNContext context,
