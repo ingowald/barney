@@ -48,39 +48,17 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #endif()
 
 
-# iw - do NOT use an 'option' - they can't do strings
-set(BARNEY_CUDA_ARCHITECTURES "auto" CACHE STRING
-  "Which CUDA architecture to build for")
-if (BARNEY_CUDA_ARCHITECTURES STREQUAL "auto")
-  if (NOT (DEFINED CMAKE_CUDA_ARCHITECTURES))
-    # 'all-major', since cmake-3.23
-    set(BARNEY_CUDA_ARCHITECTURES all-major)
-  else()
-    if("${CMAKE_CUDA_ARCHITECTURES}" STREQUAL "52")
-      # some cmake setups set cuda-archs to '52' if nothing else is
-      # set - this is almost certainly a default value that one does
-      # _not_ want to use.
-      set(BARNEY_CUDA_ARCHITECTURES all-major)
-    else()
-      set(BARNEY_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES})
-    endif()
-  endif()
-  message("#barney: cuda-archs set to auto, selected ${BARNEY_CUDA_ARCHITECTURES}")
-else()
-  message("#barney: explicit cuda archs ${BARNEY_CUDA_ARCHITECTURES} requested by user")
-endif()
-  
 
 # project command is required to come after cmake_minimum_required command.
+project(Barney VERSION 0.7.0 LANGUAGES C CXX)
 include(CheckLanguage)
 check_language(CUDA)
 if (CMAKE_CUDA_COMPILER)
-  message("#cuBQL: CUDA _FOUND_! building both cuda and host libs")
+  message("#barney: CUDA _FOUND_! building both cuda and host libs")
   enable_language(CUDA)
-  project(Barney VERSION 0.7.0 LANGUAGES C CXX CUDA)
 else()
-  message("CUDA not found - you need to install CUDA to build barney")
-  project(Barney VERSION 0.7.0 LANGUAGES C CXX)
+  message(AUTHOR_WARNING
+    "#barney: CUDA not found - you need to install CUDA to build barney")
 endif()
 
 if (CMAKE_BUILD_TYPE)
@@ -88,6 +66,29 @@ if (CMAKE_BUILD_TYPE)
     "MinSizeRel" "RelWithDebInfo")
 endif()
 
+
+# ==================================================================
+# configure cuda archs. cmake < 3.24 doesnt' have 'native' and
+# 'all-major'. and if we're built as a subproject, we really do
+# want the app to specify what to use, since only the app will
+# know what the rest of the app uses.
+# ==================================================================
+if ((NOT CMAKE_CUDA_ARCHITECTURES)
+    OR
+    ((${CMAKE_VERSION} VERSION_LESS 3.24) AND ("${CMAKE_CUDA_ARCHITECTURES}" STREQUAL "52"))
+    )
+  if (${CMAKE_VERSION} VERSION_LESS 3.24)
+    set(BARNEY_CUDA_ARCHITECTURES_INIT "70;80")
+  else()
+    set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
+  endif()
+  set(BARNEY_CUDA_ARCHITECTURES
+    "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
+    "Which CUDA architecture to build for")
+  set(CMAKE_CUDA_ARCHITECTURES "${BARNEY_CUDA_ARCHITECTURES}")
+endif()
+
+message("#barney: building for CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
 if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -99,18 +100,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (NOT (COMMAND CUDA_SOURCE))
   macro(CUDA_SOURCE fileName)
-    set_source_files_properties(${fileName}
-      PROPERTIES LANGUAGE CUDA
-      )
-    set_source_files_properties(${fileName}
-      PROPERTIES
-      CUDA_RESOLVE_DEVICE_SYMBOLS ON
-      CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-      )
+#    set_source_files_properties(${fileName}
+#      PROPERTIES LANGUAGE CUDA
+#      )
+#    set_source_files_properties(${fileName}
+#      PROPERTIES
+#      CUDA_RESOLVE_DEVICE_SYMBOLS ON
+#      CUDA_SEPARABLE_COMPILATION ON
+#      CUDA_ARCHITECTURES "${BARNEY_CUDA_ARCHITECTURES}"
+#      )
   endmacro()
 endif()
-
-
 
 # ------------------------------------------------------------------
 # subprojects we depend on
@@ -124,7 +124,6 @@ endif()
 # TODO: add option to find if installed
 option(BARNEY_CUBQL_HOST "Use CUBQL host builder" off)
 if (NOT (TARGET cuBQL))
-  set(CMAKE_CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES})
   add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
 endif()
 
@@ -134,9 +133,9 @@ endif()
 if (BARNEY_MPI)
   find_package(MPI)
   if (MPI_FOUND)
-    message("barney: MPI found, including in default barney and banari builds")
+    message("#barney: MPI found, including in default barney and banari builds")
   else()
-    message("barney: MPI build requested, but MPI not found... disabling")
+    message("#barney: MPI build requested, but MPI not found... disabling")
     set(BARNEY_MPI OFF)
   endif()
 endif()
@@ -145,5 +144,5 @@ add_subdirectory(barney)
 # ------------------------------------------------------------------
 # ANARI device
 # ------------------------------------------------------------------
-add_subdirectory(anari)
+#add_subdirectory(anari)
 

@@ -38,7 +38,6 @@ target_include_directories(barney-config INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/..
   )
 
-
 # -------------------------------------------------------
 set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
 target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
@@ -351,7 +350,7 @@ set_target_properties(barney_static
   POSITION_INDEPENDENT_CODE ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
+  CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
   )
 # ------------------------------------------------------------------
 # SHARED version of barney
@@ -392,7 +391,7 @@ set_target_properties(barney
   POSITION_INDEPENDENT_CODE ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
+  CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
   )
 set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 
@@ -417,7 +416,7 @@ if (BARNEY_MPI)
     POSITION_INDEPENDENT_CODE ON
     CUDA_RESOLVE_DEVICE_SYMBOLS ON
     CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
+    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
     )
   target_link_libraries(barney_mpi_static PUBLIC
     barney-config
@@ -446,7 +445,7 @@ if (BARNEY_MPI)
     POSITION_INDEPENDENT_CODE ON
     CUDA_RESOLVE_DEVICE_SYMBOLS ON
     CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
+    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
     )
   target_link_libraries(barney_mpi PUBLIC
     barney-config
