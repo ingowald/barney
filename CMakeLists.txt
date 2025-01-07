@@ -37,24 +37,37 @@ endif()
 set(CMAKE_BUILD_TYPE_INIT "Release")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-#set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release")
-#if ((NOT WIN32) AND (NOT CMAKE_BUILD_TYPE) AND (NOT CMAKE_CONFIGURATION_TYPES))
-#  message(STATUS "Setting build type to 'Release' as none was specified.")
-#  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-# Set the possible values of build type for cmake-gui
-#if (CMAKE_BUILD_TYPE)
-#  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" 
-#    "MinSizeRel" "RelWithDebInfo")
-#endif()
-
-
 
 # project command is required to come after cmake_minimum_required command.
 project(Barney VERSION 0.7.0 LANGUAGES C CXX)
+
 include(CheckLanguage)
 check_language(CUDA)
 if (CMAKE_CUDA_COMPILER)
   message("#barney: CUDA _FOUND_! building both cuda and host libs")
+  # set cmake cuda arch - this ahs to happen _before_
+  # enable_language(cuda), or cmake will default to '52', which is
+  # almost certainly going to be wrong
+  if (NOT CMAKE_CUDA_ARCHITECTURES)
+    if (${CMAKE_VERSION} VERSION_LESS 3.24)
+      # 'native' only appeared in cmake 3.24
+      message(AUTHOR_WARNING
+	" You're using a cmake < 3.24; we cannot use the 'native' or \n"
+	" 'all-major' targets with that, so will default to '70;80'\n"
+	" If you want/need to build for other architectures, either\n"
+	" set this to something else in the cmake dialog, or call\n"
+	" cmake with an explicit list such as, for example\n"
+	"     cmake -DCMAKE_CUDA_ARCHITECTURES=\"75;80;86\" ...\n"
+	)
+      set(BARNEY_CUDA_ARCHITECTURES_INIT "70;80")
+    else()
+      set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
+    endif()
+    set(CMAKE_CUDA_ARCHITECTURES
+      "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
+      "Which CUDA architecture to build for")
+  endif()
+  
   enable_language(CUDA)
 else()
   message(AUTHOR_WARNING
@@ -67,26 +80,6 @@ if (CMAKE_BUILD_TYPE)
 endif()
 
 
-# ==================================================================
-# configure cuda archs. cmake < 3.24 doesnt' have 'native' and
-# 'all-major'. and if we're built as a subproject, we really do
-# want the app to specify what to use, since only the app will
-# know what the rest of the app uses.
-# ==================================================================
-if ((NOT CMAKE_CUDA_ARCHITECTURES)
-    OR
-    ((${CMAKE_VERSION} VERSION_LESS 3.24) AND ("${CMAKE_CUDA_ARCHITECTURES}" STREQUAL "52"))
-    )
-  if (${CMAKE_VERSION} VERSION_LESS 3.24)
-    set(BARNEY_CUDA_ARCHITECTURES_INIT "70;80")
-  else()
-    set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
-  endif()
-  set(BARNEY_CUDA_ARCHITECTURES
-    "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
-    "Which CUDA architecture to build for")
-  set(CMAKE_CUDA_ARCHITECTURES "${BARNEY_CUDA_ARCHITECTURES}")
-endif()
 
 message("#barney: building for CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
 if (NOT BARNEY_IS_SUBPROJECT)
