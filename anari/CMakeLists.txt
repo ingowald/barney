@@ -15,22 +15,11 @@ endif()
 
 include(GNUInstallDirs)
 
-if (NOT BANARI_SKIP_QUERIES)
-  ## Code generation ##
-  anari_generate_queries(
-    NAME barney
-    PREFIX BarneyDevice
-    CPP_NAMESPACE barney_device
-    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
-    )
-endif()
-
 ## Device target ##
 
 project(anari_library_barney LANGUAGES CXX)
 
 set(BANARI_SOURCES
-  BarneyDeviceQueries.cpp
   BarneyGlobalState.cpp
   Camera.cpp
   Device.cpp
@@ -185,4 +174,17 @@ endif()
 #  EXPORT_MACRO_NAME "BARNEY_LIBRARY_INTERFACE"
 #  )
 
+if (NOT BANARI_SKIP_QUERIES)
+  ## Code generation ##
+  anari_generate_queries(
+    DEVICE_TARGET anari_library_barney
+    CPP_NAMESPACE barney_device
+    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
+    )
+  anari_generate_queries(
+    DEVICE_TARGET anari_library_barney_static
+    CPP_NAMESPACE barney_device
+    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
+    )
+endif()
 
