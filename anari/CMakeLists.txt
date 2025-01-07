@@ -18,10 +18,22 @@ include(GNUInstallDirs)
 if (NOT BANARI_SKIP_QUERIES)
   ## Code generation ##
   anari_generate_queries(
-    NAME barney
-    PREFIX BarneyDevice
-    CPP_NAMESPACE barney_device
-    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
+#  DEVICE_TARGET ${PROJECT_NAME}
+#  CPP_NAMESPACE visrtx
+#  JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
+#  JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/visrtx_device.json
+#  JSON_EXTENSION_FILES ${DEVICE_JSONS}
+
+DEVICE_TARGET barney
+CPP_NAMESPACE BarneyDevice
+JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
+JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
+JSON_EXTENSION_FILES ${DEVICE_JSONS}
+
+#NAME barney
+ #   PREFIX BarneyDevice
+  #  CPP_NAMESPACE barney_device
+   # JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
     )
 endif()
 
