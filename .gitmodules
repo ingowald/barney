@@ -4,3 +4,6 @@
 [submodule "submodules/cuBQL"]
 	path = submodules/cuBQL
 	url = https://github.com/ingowald/cuBQL
+[submodule "submodules/dense2vdb"]
+	path = submodules/dense2vdb
+	url = git@github.com:szellmann/dense2vdb.git
