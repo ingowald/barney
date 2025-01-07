@@ -137,5 +137,5 @@ add_subdirectory(barney)
 # ------------------------------------------------------------------
 # ANARI device
 # ------------------------------------------------------------------
-#add_subdirectory(anari)
+add_subdirectory(anari)
 

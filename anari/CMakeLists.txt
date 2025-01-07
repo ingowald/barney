@@ -62,10 +62,10 @@ set_target_properties(banari-config
   PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   )
-set_target_properties(banari-config
-  PROPERTIES
-  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-  )
+#set_target_properties(banari-config
+#  PROPERTIES
+#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
+#  )
 target_include_directories(banari-config
   INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
@@ -106,14 +106,14 @@ else()
     )
 endif()
 
-set_target_properties(anari_library_barney
-  PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-  )
+#set_target_properties(anari_library_barney
+#  PROPERTIES
+#  CUDA_SEPARABLE_COMPILATION ON
+#  POSITION_INDEPENDENT_CODE ON
+#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+#  CUDA_USE_STATIC_CUDA_RUNTIME ON
+#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
+#  )
 
 include(GenerateExportHeader)
 generate_export_header(anari_library_barney
@@ -171,14 +171,14 @@ if (WIN32)
 endif()
 
 
-set_target_properties(anari_library_barney_static
-  PROPERTIES
-  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  )
+#set_target_properties(anari_library_barney_static
+#  PROPERTIES
+#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
+#  CUDA_SEPARABLE_COMPILATION ON
+#  POSITION_INDEPENDENT_CODE ON
+#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+#  CUDA_USE_STATIC_CUDA_RUNTIME ON
+#  )
 
 #include(GenerateExportHeader)
 #generate_export_header(anari_library_barney_static
