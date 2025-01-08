@@ -164,4 +164,14 @@ device.
 - `export ANARI_LIBRARY=barney`
 
 
+# Version History
 
+## v0.8.0
+
+- updated to latest anari 0.12 SDK
+- changed cuda arch detection to use 'native' by default, but allowing
+  to override on cmdline.
+- updated cuda arch detection in owl and cubql so as to allow barney
+  to tell them which one to use (so it matches across all projects)
+- reworked path tracing (and in particular MIS code) to (mostly-)pass
+  a furnace test
