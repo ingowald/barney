@@ -131,8 +131,9 @@ bool StructuredRegularField::isValid() const
   parms.dims[1] = dims.y;
   parms.dims[2] = dims.z;
   parms.type = barneyType == BN_FLOAT?"float":"byte";
-  parms.backgroundValue = NAN;
-  parms.tolerance = 0.1f;
+  char *cr = getenv("BANARI_NVDB_COMPRESSION_RATE");
+  if (cr) parms.compressionRate = std::stof(cr);
+  else    parms.compressionRate = 0.3;
 
   uint64_t bufferSize;
   d2nvdbCompress((const char *)m_data->data(), &parms, nullptr, &bufferSize);
