@@ -29,6 +29,7 @@ namespace barney {
     static mat4f identity()
     {
       mat4f res;
+      
       res.e[ 0] = 1.f;
       res.e[ 1] = 0.f;
       res.e[ 2] = 0.f;

@@ -22,44 +22,13 @@
 
 namespace barney {
 
-  // Texture::Texture(ModelSlot *owner,
-  //                  BNDataType texelFormat,
-  //                  vec2i size,
-  //                  const void *texels,
-  //                  BNTextureFilterMode  filterMode,
-  //                  BNTextureAddressMode addressMode,
-  //                  BNTextureColorSpace  colorSpace)
-  //   : Object(owner->context)
-  // {
-  //   assert(OWL_TEXEL_FORMAT_RGBA8   == (int)BN_TEXEL_FORMAT_RGBA8);
-  //   assert(OWL_TEXEL_FORMAT_RGBA32F == (int)BN_TEXEL_FORMAT_RGBA32F);
-    
-  //   assert(OWL_TEXTURE_NEAREST == (int)BN_TEXTURE_NEAREST);
-  //   assert(OWL_TEXTURE_LINEAR  == (int)BN_TEXTURE_LINEAR);
-    
-  //   assert(OWL_TEXTURE_WRAP   == (int)BN_TEXTURE_WRAP);
-  //   assert(OWL_TEXTURE_CLAMP  == (int)BN_TEXTURE_CLAMP);
-  //   assert(OWL_TEXTURE_BORDER == (int)BN_TEXTURE_BORDER);
-  //   assert(OWL_TEXTURE_MIRROR == (int)BN_TEXTURE_MIRROR);
-
-  //   owlTexture 
-  //     = owlTexture2DCreate(owner->getOWL(),
-  //                          (OWLDataType)texelFormat,
-  //                          size.x,size.y,
-  //                          texels,
-  //                          (OWLTextureFilterMode)filterMode,
-  //                          (OWLTextureAddressMode)addressMode,
-  //                          // (OWLTextureColorSpace)colorSpace
-  //                          OWL_COLOR_SPACE_LINEAR
-  //                          );
-  // }
-
   Texture::Texture(Context *context, int slot,
                    BNDataType texelFormat,
                    vec2i size,
                    const void *texels,
                    BNTextureFilterMode  filterMode,
-                   BNTextureAddressMode addressMode,
+                   BNTextureAddressMode addressMode_x,
+                   BNTextureAddressMode addressMode_y,
                    BNTextureColorSpace  colorSpace)
     : SlottedObject(context,slot)
   {
@@ -98,7 +67,8 @@ namespace barney {
                            size.x,size.y,
                            texels,
                            (OWLTextureFilterMode)filterMode,
-                           (OWLTextureAddressMode)addressMode,
+                           (OWLTextureAddressMode)addressMode_x,
+                           (OWLTextureAddressMode)addressMode_y,
                            // (OWLTextureColorSpace)colorSpace
                            OWL_COLOR_SPACE_LINEAR
                            );

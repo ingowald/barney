@@ -226,6 +226,9 @@ BNContext bnContextCreate(/*! how many data slots this context is to
                           int  numGPUs=-1);
 
 BN_API
+void bnCountAvailableDevice(int *numGPUs);
+
+BN_API
 void bnContextDestroy(BNContext context);
 
 struct BNHardwareInfo {
@@ -384,7 +387,8 @@ BNTexture2D bnTexture2DCreate(BNContext context,
                               uint32_t size_y,
                               const void *texels,
                               BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR,
-                              BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP,
+                              BNTextureAddressMode addressMode_x = BN_TEXTURE_WRAP,
+                              BNTextureAddressMode addressMode_y = BN_TEXTURE_WRAP,
                               BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
 
 BN_API

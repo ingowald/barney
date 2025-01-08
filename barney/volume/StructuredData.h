@@ -95,7 +95,7 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
     
-    void setVariables(OWLGeom geom);
+    void setVariables(OWLGeom geom) override;
     VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 

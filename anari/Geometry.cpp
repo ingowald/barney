@@ -316,7 +316,7 @@ void Triangle::commit()
   m_index = getParamObject<Array1D>("primitive.index");
   m_vertexPosition = getParamObject<Array1D>("vertex.position");
   m_vertexNormal = getParamObject<Array1D>("vertex.normal");
-
+  
   if (!m_vertexPosition) {
     reportMessage(ANARI_SEVERITY_WARNING,
         "missing required parameter 'vertex.position' on triangle geometry");
@@ -331,6 +331,7 @@ void Triangle::commit()
 
   m_generatedIndices.clear();
   if (!m_index) {
+    PING;
     m_generatedIndices.resize(m_vertexPosition->totalSize());
     std::iota(m_generatedIndices.begin(), m_generatedIndices.end(), 0);
   }

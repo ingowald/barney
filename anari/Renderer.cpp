@@ -37,7 +37,9 @@ void Renderer::commit()
     barneyBackgroundImage
       = bnTexture2DCreate(deviceState()->context,-1,
                           BN_FLOAT4,sx,sy,
-                          texels);
+                          texels,
+                          BN_TEXTURE_LINEAR,
+                          BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP);
     bnSetObject(barneyRenderer,"bgTexture",barneyBackgroundImage);
   } else {
     if (barneyBackgroundImage) {

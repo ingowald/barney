@@ -60,7 +60,7 @@ struct UnstructuredField : public SpatialField
   void commit() override;
 
   BNScalarField createBarneyScalarField(BNContext context// , int slot
-                                        ) const;
+                                        ) const override;
 
   box3 bounds() const override;
 
@@ -104,7 +104,7 @@ struct BlockStructuredField : public SpatialField
   void commit() override;
 
   BNScalarField createBarneyScalarField(BNContext context// , int slot
-                                        ) const;
+                                        ) const override;
 
   box3 bounds() const override;
 
@@ -130,7 +130,7 @@ struct StructuredRegularField : public SpatialField
   void commit() override;
 
   BNScalarField createBarneyScalarField(BNContext context// , int slot
-                                        ) const;
+                                        ) const override;
 
   box3 bounds() const override;
   bool isValid() const override;

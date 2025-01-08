@@ -47,7 +47,7 @@ namespace barney_device {
     void commit() override;
 
   private:
-    const char *bnSubtype() const;
+    const char *bnSubtype() const override;
     void setBarneyParameters() override;
 
     /*! SPEC: main emission direction of the directional light */
@@ -69,7 +69,7 @@ namespace barney_device {
     void commit() override;
 
   private:
-    const char *bnSubtype() const;
+    const char *bnSubtype() const override;
     void setBarneyParameters() override;
 
     math::float3 m_position{0.f, 0.f, 0.f};
@@ -90,7 +90,7 @@ namespace barney_device {
     void commit() override;
 
   private:
-    const char *bnSubtype() const;
+    const char *bnSubtype() const override;
     void setBarneyParameters() override;
 
     math::float3 m_up{0.f, 0.f, 1.f};

@@ -203,7 +203,8 @@ namespace barney {
                                 uint32_t size_y,
                                 const void *texels,
                                 BNTextureFilterMode  filterMode,
-                                BNTextureAddressMode addressMode,
+                                BNTextureAddressMode addressMode_x,
+                                BNTextureAddressMode addressMode_y,
                                 BNTextureColorSpace  colorSpace)
   {
     LOG_API_ENTRY;
@@ -211,7 +212,9 @@ namespace barney {
     Texture::SP tex
       = std::make_shared<Texture>(checkGet(context),slot,
                                   texelFormat,vec2i(size_x,size_y),texels,
-                                  filterMode,addressMode,colorSpace);
+                                  filterMode,
+                                  addressMode_x,addressMode_y,
+                                  colorSpace);
     return (BNTexture)checkGet(context)->initReference(tex);
   }
 
@@ -350,6 +353,13 @@ namespace barney {
     return (BNGeom)checkGet(context)->initReference(geom);
   }
 
+  BN_API
+  void bnCountAvailableDevice(int *numGPUs)
+  {
+    cudaGetDeviceCount(numGPUs);
+  }
+
+  
   BN_API
   BNMaterial bnMaterialCreate(BNContext context,
                               int slot,

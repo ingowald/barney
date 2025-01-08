@@ -35,6 +35,9 @@ namespace barney {
       case VALUE:
         dd.value = value;
         break;
+      case INVALID:
+        dd.value = make_float4(0.f,0.f,0.f,0.f);
+        break;
       }
     }
     

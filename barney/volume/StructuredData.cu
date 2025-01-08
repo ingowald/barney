@@ -114,13 +114,14 @@ namespace barney {
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
   {
     const char *methodFromEnv = getenv("BARNEY_STRUCTURED");
-    const std::string method = methodFromEnv ? methodFromEnv : "";
-    if (method != "DDA")
+    const std::string method = methodFromEnv ? methodFromEnv : "DDA";
+    if (method != "DDA") {
       return std::make_shared<MCRTXVolumeAccel<StructuredDataSampler>::Host>
         (this,volume,StructuredData_ptx);
-    else
+    } else {
       return std::make_shared<MCDDAVolumeAccel<StructuredDataSampler>::Host>
         (this,volume,StructuredData_ptx);
+    }
   }
   
   void StructuredData::DD::addVars(std::vector<OWLVarDecl> &vars, int base)

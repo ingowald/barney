@@ -165,8 +165,17 @@ namespace barney {
       //          ws_Ns.y,
       //          ws_Ns.z
       //          );
-      // if (dot(Ns,n) < 0.f)
-      //   Ns = - Ns;
+
+      if (dot(Ns,(vec3f)optixGetObjectRayDirection()) > 0.f)
+        Ns = n;
+        
+      // if (dot(n,(vec3f)optixGetObjectRayDirection()) < 0.f) {
+      //   if (dot(Ns,n) < 0.f)
+      //     Ns = reflect(Ns,n);
+      // } else {
+      //   if (dot(Ns,n) > 0.f)
+      //     Ns = reflect(Ns,n);
+      // }
       n = Ns;
     }
     if (0 && ray.dbg)

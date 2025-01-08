@@ -266,7 +266,7 @@ static BNData makeBarneyData(
 
   std::vector<math::float4> data;
 
-  if (input) {
+  if (input && input->totalSize() > 0) {
     if (input->elementType() == ANARI_FLOAT32_VEC4) {
       res = bnDataCreate(context, slot, BN_FLOAT4, input->totalSize(), input->data());
     }
