@@ -22,7 +22,10 @@ namespace barney {
 
   struct QuadLight : public Light {
     struct DD {
-      vec3f corner, edge0, edge1, emission;
+      vec3f corner{0.f,0.f,0.f};
+      vec3f edge0{1.f,0.f,0.f};
+      vec3f edge1{0.f,1.f,0.f};
+      vec3f emission{1.f,1.f,1.f};
       /*! normal of this lights source; this could obviously be derived
         from cross(edge0,edge1), but is handle to have in a
         renderer */
@@ -38,7 +41,7 @@ namespace barney {
 
     DD getDD(const affine3f &instanceXfm) const;
     
-    std::string toString() const override { return "DirectionalLight"; }
+    std::string toString() const override { return "QuadLight"; }
     
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
@@ -46,7 +49,7 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
 
-    DD params;
+    DD staged;
   };
   
 }
