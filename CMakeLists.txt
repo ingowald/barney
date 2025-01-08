@@ -121,6 +121,8 @@ if (NOT (TARGET cuBQL))
 endif()
 
 
+add_subdirectory(submodules/dense2vdb EXCLUDE_FROM_ALL)
+
 # ------------------------------------------------------------------
 # external header only libs
 # ------------------------------------------------------------------

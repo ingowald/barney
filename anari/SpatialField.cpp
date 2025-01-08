@@ -6,8 +6,34 @@
 // ours
 #include "Array.h"
 #include "SpatialField.h"
+#include "dense2nvdb.h"
 
 namespace barney_device {
+#ifdef __WIN32__
+#  define osp_snprintf sprintf_s
+#else
+#  define osp_snprintf snprintf
+#endif
+
+  /*! return a nicely formatted number as in "3.4M" instead of
+      "3400000", etc, using mulitples of 1024 as in kilobytes,
+      etc. Ie, the value 65534 would be 64K, 64000 would be 63.8K */
+  inline std::string prettyBytes(const size_t s)
+  {
+    char buf[1000];
+    if (s >= (1024LL*1024LL*1024LL*1024LL)) {
+      osp_snprintf(buf, 1000,"%.2fT",s/(1024.f*1024.f*1024.f*1024.f));
+    } else if (s >= (1024LL*1024LL*1024LL)) {
+      osp_snprintf(buf, 1000, "%.2fG",s/(1024.f*1024.f*1024.f));
+    } else if (s >= (1024LL*1024LL)) {
+      osp_snprintf(buf, 1000, "%.2fM",s/(1024.f*1024.f));
+    } else if (s >= (1024LL)) {
+      osp_snprintf(buf, 1000, "%.2fK",s/(1024.f));
+    } else {
+      osp_snprintf(buf,1000,"%zi",s);
+    }
+    return buf;
+  }
 
 SpatialField::SpatialField(BarneyGlobalState *s)
     : Object(ANARI_SPATIAL_FIELD, s)
@@ -99,6 +125,26 @@ bool StructuredRegularField::isValid() const
     throw std::runtime_error("scalar type not implemented ...");
   }
   auto dims = m_data->size();
+#if 1
+  d2nvdbParams parms;
+  parms.dims[0] = dims.x;
+  parms.dims[1] = dims.y;
+  parms.dims[2] = dims.z;
+  parms.type = barneyType == BN_FLOAT?"float":"byte";
+  parms.backgroundValue = NAN;
+  parms.tolerance = 0.1f;
+
+  uint64_t bufferSize;
+  d2nvdbCompress((const char *)m_data->data(), &parms, nullptr, &bufferSize);
+  std::cout << "bufferSize: " << prettyBytes(bufferSize) << '\n';
+  std::cout << "size uncompressed: " << prettyBytes(dims.x*size_t(dims.y)*dims.z*anari::sizeOf(m_data->elementType())) << '\n';
+
+  std::vector<char> buffer(bufferSize);
+  d2nvdbCompress((const char *)m_data->data(), &parms, buffer.data(), &bufferSize);
+
+  auto field 
+    = bnNanoVDBCreate(context,0,(float *)buffer.data(),bufferSize/sizeof(float));
+#else
   auto field = bnStructuredDataCreate(context,
                                       0/*slot*/,
       (const int3 &)dims,
@@ -106,6 +152,7 @@ bool StructuredRegularField::isValid() const
       m_data->data(),
       (const float3 &)m_origin,
       (const float3 &)m_spacing);
+#endif
   return field;
 }
 

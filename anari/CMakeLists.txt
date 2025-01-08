@@ -70,6 +70,7 @@ target_include_directories(banari-config
   INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
   ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/../submodules/dense2vdb #TODO!!
   ${CMAKE_CURRENT_BINARY_DIR}
   )
 
@@ -85,12 +86,14 @@ if (BARNEY_MPI)
   target_link_libraries(anari_library_barney
     PRIVATE
     banari-config
+    dense2vdb
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
     )
 else()
   target_link_libraries(anari_library_barney
     PRIVATE
     banari-config
+    dense2vdb
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
     )
 endif()
@@ -145,12 +148,14 @@ if (BARNEY_MPI)
   target_link_libraries(anari_library_barney_static
     PRIVATE
     banari-config
+    dense2vdb
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
     )
 else()
   target_link_libraries(anari_library_barney_static
     PRIVATE
     banari-config
+    dense2vdb
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
     )
 endif()
