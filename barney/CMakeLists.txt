@@ -479,6 +479,7 @@ if (BARNEY_MPI)
   target_link_libraries(barney_mpi PUBLIC
     barney-config
     ${BARNEY_STATIC_DEPENDENCIES}
+    $<BUILD_INTERFACE:barney_nanovdb>
 #    owl::owl_static
 #    ${CUBQL_LIB}
     MPI::MPI_CXX
