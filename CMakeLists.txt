@@ -121,6 +121,7 @@ if (NOT (TARGET cuBQL))
 endif()
 
 
+set(DENSE2VDB_NANOVDB_INTERFACE_LIBRARY $<BUILD_INTERFACE:barney_nanovdb> CACHE STRING "")
 add_subdirectory(submodules/dense2vdb EXCLUDE_FROM_ALL)
 
 # ------------------------------------------------------------------
