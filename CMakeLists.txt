@@ -109,7 +109,8 @@ endif()
 # subprojects we depend on
 # ------------------------------------------------------------------
 if (NOT (TARGET owl::owl))
-  set(OWL_CUDA_STATIC ON)
+  set(OWL_CUDA_STATIC OFF)
+  #set(OWL_CUDA_STATIC ON)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 endif()
 
