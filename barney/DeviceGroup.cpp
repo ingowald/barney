@@ -64,6 +64,9 @@ namespace barney {
                      int globalIndexStep)
     : lmsIdx(lmsIdx)
   {
+    auto backend = rtc::Backend::get();
+    rtc = backend->createDevGroup(gpuIDs,sizeof(render::OptixGlobals));
+      
     owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
     OWLVarDecl args[]
       = {
@@ -102,6 +105,8 @@ namespace barney {
     std::cout << "DEVGROUP DESTROYING context " << (int*)owl << std::endl;
     owlContextDestroy(owl);
     owl = 0;
+
+    delete rtc; rtc = nullptr;
   }
   
 }

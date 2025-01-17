@@ -467,10 +467,10 @@ namespace barney {
     // ------------------------------------------------------------------
     // assign a GPU to this rank
     // ------------------------------------------------------------------
-    int numGPUsOnThisHost;
-    cudaGetDeviceCount(&numGPUsOnThisHost);
+    int numGPUsOnThisHost = rtc::Backend::getDeviceCount();
+    // cudaGetDeviceCount(&numGPUsOnThisHost);
     if (numGPUsOnThisHost == 0)
-      throw std::runtime_error("no GPU on this rank!");
+      throw std::runtime_error("no barney-capable devices on this rank!");
     hardware.numGPUsThisHost = numGPUsOnThisHost;
     hardware.numGPUsThisRank
       = comm.allReduceMin(std::max(hardware.numGPUsThisHost/

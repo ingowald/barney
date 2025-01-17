@@ -213,6 +213,9 @@ namespace barney {
     globalContextAcrossAllGPUs
       = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
 
+    globalGroupAcrossAllGPUs
+      = rtc::Backend::get()->createDevGroup(gpuIDs,0);
+      
     if (!isActiveWorker) 
       // not an active worker: no device groups etc, just create a
       // single default device

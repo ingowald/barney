@@ -356,7 +356,8 @@ namespace barney {
   BN_API
   void bnCountAvailableDevice(int *numGPUs)
   {
-    cudaGetDeviceCount(numGPUs);
+    if (!numGPUs) return;
+    *numGPUs = rtc::Backend::getDeviceCount();
   }
 
   
@@ -801,14 +802,14 @@ namespace barney {
         gpuIDs.push_back(_gpuIDs[i]);
     } else {
       if (numGPUs < 1)
-        cudaGetDeviceCount(&numGPUs);
+        numGPUs = rtc::Backend::getDeviceCount();
+        // cudaGetDeviceCount(&numGPUs);
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(i);
     }
     if (gpuIDs.empty())
       throw std::runtime_error
-        ("no GPUs!? does this machine have a NVidia GPU, "
-         "and a NVidia driver installed?");
+        ("no devices found!?");
 
     if (gpuIDs.size() < numDataRanksOnThisContext) {
       std::vector<int> replicatedIDs;

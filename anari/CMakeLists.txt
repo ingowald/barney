@@ -45,7 +45,7 @@ add_library(banari-config INTERFACE
   )
 target_link_libraries(banari-config
   INTERFACE
-  barney-config
+  barney_config
   )
 set_target_properties(banari-config
   PROPERTIES

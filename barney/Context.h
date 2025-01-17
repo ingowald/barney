@@ -206,6 +206,7 @@ namespace barney {
        GPUs; for actual rendering data each data group will have to
        have its own context */
     OWLContext globalContextAcrossAllGPUs = 0 ;
+    rtc::DevGroup *globalGroupAcrossAllGPUs = 0;
     
     /*! list of _all_ devices across all slots, so across DIFFERENT
         device groups! */

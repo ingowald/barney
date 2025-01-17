@@ -37,49 +37,53 @@ endif()
 set(CMAKE_BUILD_TYPE_INIT "Release")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-
 # project command is required to come after cmake_minimum_required command.
 project(Barney VERSION 0.8.0 LANGUAGES C CXX)
 
-include(CheckLanguage)
-check_language(CUDA)
-if (CMAKE_CUDA_COMPILER)
-  message("#barney: CUDA _FOUND_! building both cuda and host libs")
-  # set cmake cuda arch - this ahs to happen _before_
-  # enable_language(cuda), or cmake will default to '52', which is
-  # almost certainly going to be wrong
-  if (NOT CMAKE_CUDA_ARCHITECTURES)
-    if (${CMAKE_VERSION} VERSION_LESS 3.24)
-      # 'native' only appeared in cmake 3.24
-      message(AUTHOR_WARNING
-	" You're using a cmake < 3.24; we cannot use the 'native' or \n"
-	" 'all-major' targets with that, so will default to '70;80'\n"
-	" If you want/need to build for other architectures, either\n"
-	" set this to something else in the cmake dialog, or call\n"
-	" cmake with an explicit list such as, for example\n"
-	"     cmake -DCMAKE_CUDA_ARCHITECTURES=\"75;80;86\" ...\n"
-	)
-      set(BARNEY_CUDA_ARCHITECTURES_INIT "70;80")
-    else()
-      set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
+option(BARNEY_DISABLE_CUDA "Explicitly DISable CUDA even if available?" OFF)
+if (NOT BARNEY_DISABLE_CUDA) 
+  include(CheckLanguage)
+  check_language(CUDA)
+  if (CMAKE_CUDA_COMPILER)
+    message("#barney: CUDA _FOUND_! building both cuda and host libs")
+    # set cmake cuda arch - this ahs to happen _before_
+    # enable_language(cuda), or cmake will default to '52', which is
+    # almost certainly going to be wrong
+    if (NOT CMAKE_CUDA_ARCHITECTURES)
+      if (${CMAKE_VERSION} VERSION_LESS 3.24)
+        # 'native' only appeared in cmake 3.24
+        message(AUTHOR_WARNING
+	  " You're using a cmake < 3.24; we cannot use the 'native' or \n"
+	  " 'all-major' targets with that, so will default to '70;80'\n"
+	  " If you want/need to build for other architectures, either\n"
+	  " set this to something else in the cmake dialog, or call\n"
+	  " cmake with an explicit list such as, for example\n"
+	  "     cmake -DCMAKE_CUDA_ARCHITECTURES=\"75;80;86\" ...\n"
+	  )
+        set(BARNEY_CUDA_ARCHITECTURES_INIT "70;80")
+      else()
+        set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
+      endif()
+      set(CMAKE_CUDA_ARCHITECTURES
+        "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
+        "Which CUDA architecture to build for")
     endif()
-    set(CMAKE_CUDA_ARCHITECTURES
-      "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
-      "Which CUDA architecture to build for")
+    
+    enable_language(CUDA)
+    set(BARNEY_HAVE_CUDA ON)
+  else()
+    message(AUTHOR_WARNING
+      "#barney: CUDA not found - you need to install CUDA to build barney")
+    set(BARNEY_HAVE_CUDA OFF)
   endif()
-  
-  enable_language(CUDA)
 else()
-  message(AUTHOR_WARNING
-    "#barney: CUDA not found - you need to install CUDA to build barney")
+  set(BARNEY_HAVE_CUDA OFF)
 endif()
 
 if (CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" 
     "MinSizeRel" "RelWithDebInfo")
 endif()
-
-
 
 message("#barney: building for CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
 if (NOT BARNEY_IS_SUBPROJECT)
@@ -88,41 +92,86 @@ if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_STANDARD 17)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+ 
 
-if (NOT (COMMAND CUDA_SOURCE))
-  macro(CUDA_SOURCE fileName)
-#    set_source_files_properties(${fileName}
-#      PROPERTIES LANGUAGE CUDA
-#      )
-#    set_source_files_properties(${fileName}
-#      PROPERTIES
-#      CUDA_RESOLVE_DEVICE_SYMBOLS ON
-#      CUDA_SEPARABLE_COMPILATION ON
-#      CUDA_ARCHITECTURES "${BARNEY_CUDA_ARCHITECTURES}"
-#      )
-  endmacro()
+# ------------------------------------------------------- owl - even
+# if we build only for cpu (we we wouldn't use the owl _library_) we'd
+# still need the owl common classes ... so this _always_ gets included
+# first -------------------------------------------------------
+add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
+
+
+# -------------------------------------------------------
+add_library(barney_config INTERFACE)
+target_link_libraries(barney_config
+  INTERFACE
+  owl-config
+  )
+target_include_directories(barney_config INTERFACE
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/barney/include
+  )
+
+
+
+# -------------------------------------------------------
+# configure which backend(s) to build
+# -------------------------------------------------------
+if (BARNEY_HAVE_CUDA)
+  option(BARNEY_BACKEND_CUDA "Enable Cuda Backend?" ON)
+  option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)
+  
+  target_compile_definitions(barney_config INTERFACE
+    # we have cuda - as a *compiler*
+    -DBARNEY_HAVE_CUDA=1
+    )
+else()
+  message(AUTHOR_WARNING "#barney: no CUDA compiler found; disabling both cuda and optix backends")
 endif()
 
-# ------------------------------------------------------------------
-# subprojects we depend on
-# ------------------------------------------------------------------
-if (NOT (TARGET owl::owl))
-  set(OWL_CUDA_STATIC OFF)
-  #set(OWL_CUDA_STATIC ON)
-  add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
-endif()
+option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" ON)
+
+#if (TARGET cuBQL_cuda_float3)
+#if (target cuBQL_cuda_float3)
 
 
-# TODO: add option to find if installed
-option(BARNEY_CUBQL_HOST "Use CUBQL host builder" off)
+# ------------------------------------------------------------------
+# CUBQL
+# ------------------------------------------------------------------
+
 if (NOT (TARGET cuBQL))
   add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
 endif()
 
+if (BARNEY_HAVE_CUDA)
+  option(BARNEY_CUBQL_HOST "Use CUBQL host builder" OFF)
+else()
+  set(BARNEY_CUBQL_HOST ON)
+endif()
+if (BARNEY_CUBQL_HOST)
+  target_compile_definitions(barney_config INTERFACE -DBARNEY_CUBQL_HOST=1)
+  target_link_libraries(barney_config INTERFACE cuBQL)
+  set(CUBQL_LIB cuBQL_cpu_float3)
+else()
+  set(CUBQL_LIB cuBQL_cuda_float3)
+endif()
+target_link_libraries(barney_config
+  INTERFACE
+  cuBQL
+  )
+
 # ------------------------------------------------------------------
-# barney itself
+# barney ray tracing core
+# ------------------------------------------------------------------
+add_subdirectory(rtcore)
+
+# ------------------------------------------------------------------
+# barney system, api, and mpi stuff
 # ------------------------------------------------------------------
 if (BARNEY_MPI)
   find_package(MPI)

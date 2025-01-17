@@ -14,59 +14,36 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-# -------------------------------------------------------
-add_library(barney-config INTERFACE)
-target_link_libraries(barney-config
-  INTERFACE
-  cuBQL
-  owl-config
-  #owl::owl
-  )
-#if (TARGET cuBQL_cuda_float3)
-#if (target cuBQL_cuda_float3)
-if (BARNEY_CUBQL_HOST)
-  target_compile_definitions(barney-config INTERFACE -DBARNEY_CUBQL_HOST=1)
-  target_link_libraries(barney-config INTERFACE cuBQL)
-  set(CUBQL_LIB cuBQL_cpu_float3)
-else()
-  set(CUBQL_LIB cuBQL_cuda_float3)
-endif()
-
-target_include_directories(barney-config INTERFACE
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/barney/include
-  ${CMAKE_CURRENT_LIST_DIR}/..
-  )
 
 # -------------------------------------------------------
 set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
-target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
+target_compile_definitions(barney_config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
 
 # -------------------------------------------------------
 option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
 #option(BARNEY_DISABLE_OIDN "explicitly DISable OIDN?" OFF)
 
 if (BARNEY_DISABLE_DENOISING)
-  target_compile_definitions(barney-config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
+  target_compile_definitions(barney_config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
 #elseif (NOT BARNEY_DISABLE_OIDN)
 #  find_package(OpenImageDenoise)
 #  if (OpenImageDenoise_FOUND)
 #    message(INFO "Found OpenImageDenoise (OIDN), enabling it")
-#    target_compile_definitions(barney-config INTERFACE -DBARNEY_HAVE_OIDN=1)
-#    target_link_libraries(barney-config INTERFACE OpenImageDenoise)
+#    target_compile_definitions(barney_config INTERFACE -DBARNEY_HAVE_OIDN=1)
+#    target_link_libraries(barney_config INTERFACE OpenImageDenoise)
 #  endif()
 endif()
 # issue 5: if oidn is built without CUDA support it will break the
 # barney build if we use it; so unless we figure out how to check that
 # let's disable it.
-target_compile_definitions(barney-config INTERFACE -DBARNEY_DISABLE_OIDN=1)
+target_compile_definitions(barney_config INTERFACE -DBARNEY_DISABLE_OIDN=1)
     
 # -------------------------------------------------------
 
 # ray gen program that launches kernel to trace rays
 embed_ptx(
   OUTPUT_TARGET      barney-traceRays-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            kernels/traceRays.cu
   )
 # ------------------------------------------------------------------
@@ -75,31 +52,31 @@ embed_ptx(
 # ray-sphere geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-Spheres-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            geometry/Spheres.dev.cu
   )
 # ray triangles geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-triangles-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            geometry/Triangles.dev.cu
   )
 # ray cylinders geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-cylinders-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            geometry/Cylinders.dev.cu
   )
 # ray capsules geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-capsules-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            geometry/Capsules.dev.cu
   )
 # ray cones geom intersection
 #embed_ptx(
 #  OUTPUT_TARGET      barney-cones-ptx
-#  PTX_LINK_LIBRARIES barney-config
+#  PTX_LINK_LIBRARIES barney_config
 #  SOURCES            geometry/Cones.dev.cu
 #  )
 
@@ -108,22 +85,22 @@ embed_ptx(
 # ------------------------------------------------------------------
 embed_ptx(
   OUTPUT_TARGET      barney-StructuredData-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            volume/StructuredData.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            umesh/os/RTXObjectSpace.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshMC-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            umesh/mc/UMeshMC.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-AWT-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            umesh/os/AWT.dev.cu
 )
 
@@ -132,7 +109,7 @@ embed_ptx(
 # ------------------------------------------------------------------
 embed_ptx(
   OUTPUT_TARGET      barney-BlockStructuredMC-ptx
-  PTX_LINK_LIBRARIES barney-config
+  PTX_LINK_LIBRARIES barney_config
   SOURCES            amr/BlockStructuredMC.dev.cu
   )
 
@@ -325,7 +302,8 @@ set(BARNEY_STATIC_DEPENDENCIES
   )
 target_link_libraries(barney_static
   PUBLIC
-  barney-config
+  barney_config
+  barney_rtc
   ${BARNEY_STATIC_DEPENDENCIES}
   )
 #target_link_libraries(barney_static 
@@ -360,14 +338,15 @@ add_library(barney SHARED
   )
 target_link_libraries(barney
   PUBLIC
-  barney-config
+  barney_config
+  barney_rtc
   )
 #target_link_libraries(barney
 #  PUBLIC
 #  ${BARNEY_STATIC_DEPENDENCIES}
 #  owl::owl_static
 #  ${CUBQL_LIB}_static
-#  barney-config
+#  barney_config
 #  barney_static
 #  barney-Spheres-ptx
 #  barney-StructuredData-ptx
@@ -419,7 +398,7 @@ if (BARNEY_MPI)
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
     )
   target_link_libraries(barney_mpi_static PUBLIC
-    barney-config
+    barney_config
     barney_static
     MPI::MPI_CXX
     )
@@ -448,7 +427,8 @@ if (BARNEY_MPI)
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
     )
   target_link_libraries(barney_mpi PUBLIC
-    barney-config
+    barney_config
+    barney_rtc
     ${BARNEY_STATIC_DEPENDENCIES}
 #    owl::owl_static
 #    ${CUBQL_LIB}

@@ -4,3 +4,6 @@
 [submodule "submodules/cuBQL"]
 	path = submodules/cuBQL
 	url = https://github.com/ingowald/cuBQL
+[submodule "submodules/embree"]
+	path = submodules/embree
+	url = https://github.com/embree/embree

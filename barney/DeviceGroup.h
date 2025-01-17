@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#include "rtcore/common/Backend.h"
 
 namespace barney {
 
@@ -49,6 +50,8 @@ namespace barney {
       int recvWorkerRank  = -1;
       int recvWorkerLocal = -1;
     } rqs;
+
+    rtc::Device *rtc = 0;
   };
   
   /*! stolen from owl/Device: helper class that will set the
@@ -58,28 +61,42 @@ namespace barney {
   struct SetActiveGPU {
     inline SetActiveGPU(const Device *device)
     {
+      if (!device) return;
+      auto backend = rtc::Backend::get();
+      savedActiveDeviceID = backend->getActiveGPU();
+      backend->setActiveGPU(device->rtc->physicalID);
       // assert(device);
-      if (device) {
-        BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-        BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
-      }
+      // if (device) {
+      //   BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      //   BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
+      // }
     }
     inline SetActiveGPU(const Device::SP &device)
     {
+      auto backend = rtc::Backend::get();
+      savedActiveDeviceID = backend->getActiveGPU();
+      backend->setActiveGPU(device->rtc->physicalID);
       // assert(device);
-      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
+      // BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      // BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
     }
-    
-    inline SetActiveGPU(int cudaDeviceID)
+
+    inline SetActiveGPU(int physicalID)
     {
-      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      BARNEY_CUDA_CHECK(cudaSetDevice(cudaDeviceID));
+      auto backend = rtc::Backend::get();
+      savedActiveDeviceID = backend->getActiveGPU();
+      backend->setActiveGPU(physicalID);
+      // BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      // BARNEY_CUDA_CHECK(cudaSetDevice(cudaDeviceID));
     }
     inline ~SetActiveGPU()
     {
-      if (savedActiveDeviceID >= 0)
-        BARNEY_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
+      if (savedActiveDeviceID < 0)
+        return;
+      auto backend = rtc::Backend::get();
+      backend->setActiveGPU(savedActiveDeviceID);
+      // if (savedActiveDeviceID >= 0)
+      //   BARNEY_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
     }
   private:
     int savedActiveDeviceID = -1;
@@ -133,7 +150,7 @@ namespace barney {
         into it; i.e., this always starts with '0' on each rank, no
         matter what data the app loads into it */
     int const lmsIdx;
-
+    rtc::DevGroup *rtc = 0;
   };
   
 }
