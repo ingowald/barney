@@ -29,7 +29,8 @@ namespace barney {
 
     perSlot.clear();
 
-    owlContextDestroy(globalContextAcrossAllGPUs);
+    delete globalGroupAcrossAllGPUs;
+    // owlContextDestroy(globalContextAcrossAllGPUs);
   }
   
   void Context::releaseHostReference(Object::SP object)
@@ -210,8 +211,8 @@ namespace barney {
     if (gpuIDs.empty())
       throw std::runtime_error("error - no GPUs...");
 
-    globalContextAcrossAllGPUs
-      = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
+    // globalContextAcrossAllGPUs
+    //   = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
 
     globalGroupAcrossAllGPUs
       = rtc::Backend::get()->createDevGroup(gpuIDs,0);
@@ -313,12 +314,19 @@ namespace barney {
     return &perSlot[slot];
   }
 
-  OWLContext Context::getOWL(int slot) 
+  // OWLContext Context::getOWL(int slot) 
+  // {
+  //   if (slot == -1) {
+  //     return globalContextAcrossAllGPUs;
+  //   }
+  //   return getDevGroup(slot)->owl;
+  // }
+  rtc::DevGroup *Context::getRTC(int slot) const
   {
     if (slot == -1) {
-      return globalContextAcrossAllGPUs;
+      return globalGroupAcrossAllGPUs;
     }
-    return getDevGroup(slot)->owl;
+    return getDevGroup(slot)->rtc;
   }
 
   const DevGroup *Context::getDevGroup(int slot) const

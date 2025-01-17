@@ -25,20 +25,30 @@ namespace barney {
     : Geometry(context,slot)
   {}
 
-  OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
+  rtc::GeomType *Cylinders::createGeomType(DevGroup *devGroup)
+  // OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
   {
     if (DevGroup::logging())
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'Cylinders' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
-    
-    std::vector<OWLVarDecl> params
-      = {
-         { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
-         { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-         { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-    };
-    Geometry::addVars(params,0);
+
+#if 1
+    return getRTC()->createUserGeomType("Cylinders",
+                                        sizeof(Cylinders::DD),
+                                        "CylindersBounds",
+                                        "CylindersIsec",
+                                        "CylindersCH",
+                                        nullptr/*AH*/);
+                                        
+#else
+    // std::vector<OWLVarDecl> params
+    //   = {
+    //      { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
+    //      { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
+    //      { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
+    // };
+    // Geometry::addVars(params,0);
     OWLModule module = owlModuleCreate
       (devGroup->owl,Cylinders_ptx);
     OWLGeomType gt = owlGeomTypeCreate
@@ -48,20 +58,45 @@ namespace barney {
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CylindersIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CylindersCH");
     owlBuildPrograms(devGroup->owl);
-    
+#endif
     return gt;
   }
   
   void Cylinders::commit()
   {
     if (userGeoms.empty()) {
-      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
+      // OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
+      //   ("Cylinders",Cylinders::createGeomType);
+      rtc::GeomType *gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Cylinders",Cylinders::createGeomType);
-      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
+      // OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
+      rtc::Geom *geom = getRTC()->createGeom(gt,indices->count);
       userGeoms.push_back(geom);
     }
-    OWLGeom geom = userGeoms[0];
+    // OWLGeom geom = userGeoms[0];
+    rtc::Geom *geom = userGeoms[0];
 
+#if 1
+    for (auto device : getRTC()->devices) {
+      DD dd;
+      dd.vertices
+        = vertices
+        ? vertices->getDD(device)
+        : nullptr;
+      dd.indices
+        = indices
+        ? indices->getDD(device)
+        : nullptr;
+      dd.radii
+        = radii
+        ? radii->getDD(device)
+        : nullptr;
+      Geometry::setAttributes(dd,device);
+      setAttributes(dd,device);
+      dd.material = getMaterial()->getDD(device);
+    }
+    
+#else
     Geometry::commit();
       
     owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
@@ -78,6 +113,7 @@ namespace barney {
     
     setAttributesOn(geom);
     getMaterial()->setDeviceDataOn(geom);
+#endif
   } 
 
   bool Cylinders::set1i(const std::string &member, const int &value)

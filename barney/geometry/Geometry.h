@@ -50,7 +50,7 @@ namespace barney {
 
     static Geometry::SP create(Context *context, int slot, const std::string &type);
     
-    static void addVars(std::vector<OWLVarDecl> &vars, int base);
+    // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -59,8 +59,8 @@ namespace barney {
     /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
 
-    void setAttributesOn(OWLGeom geom);
-    
+    // void setAttributesOn(OWLGeom geom);
+
     bool set1f(const std::string &member, const float &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
     bool setData(const std::string &member, const Data::SP &value) override;
@@ -68,10 +68,15 @@ namespace barney {
     
     HostMaterial::SP getMaterial() const;
     void setMaterial(HostMaterial::SP);
-    
+
+#if 1
+    std::vector<rtc::Geom *>  triangleGeoms;
+    std::vector<rtc::Geom *>  userGeoms;
+#else
     std::vector<OWLGeom>  triangleGeoms;
     std::vector<OWLGeom>  userGeoms;
     std::vector<OWLGroup> secondPassGroups;
+#endif
 
   private:
     render::HostMaterial::SP material;

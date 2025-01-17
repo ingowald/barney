@@ -74,37 +74,20 @@ namespace barney {
       World(DevGroup::SP devGroup);
       virtual ~World();
 
-      void set(const std::vector<QuadLight::DD> &quadLights)
-      {
-        if (quadLights.empty()) 
-          owlBufferResize(quadLightsBuffer,1);
-        else {
-          owlBufferResize(quadLightsBuffer,quadLights.size());
-          owlBufferUpload(quadLightsBuffer,quadLights.data());
-        }
-        numQuadLights = (int)quadLights.size();
-      }
-      void set(const std::vector<DirLight::DD> &dirLights)
-      {
-        if (dirLights.empty()) 
-          owlBufferResize(dirLightsBuffer,1);
-        else {
-          owlBufferResize(dirLightsBuffer,dirLights.size());
-          owlBufferUpload(dirLightsBuffer,dirLights.data());
-        }
-        numDirLights = (int)dirLights.size();
-      }
+      void set(const std::vector<QuadLight::DD> &quadLights);
+      void set(const std::vector<DirLight::DD> &dirLights);
+      void set(EnvMapLight::SP envMapLight);
 
-      void set(EnvMapLight::SP envMapLight) {
-        this->envMapLight = envMapLight;
-      }
-      
       DD getDD(const Device::SP &device) const;
+      
+      rtc::DevGroup *getRTC() const { return devGroup->rtc; }
 
       // Globals globals;
-      OWLBuffer quadLightsBuffer = 0;
+      // OWLBuffer quadLightsBuffer = 0;
+      rtc::Buffer *quadLightsBuffer = 0;
       int numQuadLights = 0;
-      OWLBuffer dirLightsBuffer = 0;
+      // OWLBuffer dirLightsBuffer = 0;
+      rtc::Buffer *dirLightsBuffer = 0;
       int numDirLights = 0;
       DevGroup::SP devGroup;
     };

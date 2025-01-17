@@ -27,7 +27,8 @@ namespace barney {
       
       Sampler::DD           *samplers;
       DeviceMaterial        *materials;
-      OptixTraversableHandle world;
+      // OptixTraversableHandle world;
+      rtc::device::AccelHandle  world;
       Ray                   *rays;
       int                    numRays;
     };

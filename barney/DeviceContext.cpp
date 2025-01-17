@@ -54,6 +54,20 @@ namespace barney {
     Context *context = model->context;
     ModelSlot *modelSlot = model->getSlot(dg->lmsIdx);
     const Context::PerSlot *contextSlot = context->getSlot(dg->lmsIdx);
+#if 1
+    {
+      auto device = this->device->rtc;
+      barney::render::OptixGlobals dd;
+      dd.rays    = /* already a single device pointer */
+        rays.traceAndShadeReadQueue;
+      dd.numRays = rays.numActive;
+      dd.world   = modelSlot->instances.group->getDD(device);
+      dd.materials = contextSlot->materialRegistry->getDD(device);
+      dd.samplers = contextSlot->samplerRegistry->getDD(device);
+      
+      device->launchTrace(&dd);
+    }
+#else
     owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);
     owlParamsSet1i(dg->lp,"numRays",rays.numActive);
     owlParamsSetGroup(dg->lp,"world",
@@ -67,5 +81,6 @@ namespace barney {
     int nb = divRoundUp(rays.numActive,bs);
     if (nb)
       owlAsyncLaunch2DOnDevice(dg->rg,bs,nb,device->owlID,dg->lp);
+#endif
   }
 }

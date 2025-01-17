@@ -11,7 +11,8 @@ namespace barney {
       OptixDevice(DevGroup *parent,
                   int physicalGPU,
                   size_t sizeOfGlobals);
-        
+      virtual ~OptixDevice();
+      
       OWLContext      owl = 0;
       OWLLaunchParams lp  = 0;
       OWLRayGen       rg  = 0;
@@ -24,7 +25,22 @@ namespace barney {
       DevGroup(OptixBackend *backend,
                const std::vector<int> &gpuIDs,
                size_t sizeOfGlobals);
+      virtual ~DevGroup();
 
+      rtc::Group *
+      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
+        override
+      { BARNEY_NYI(); };
+      
+      rtc::Group *
+      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) 
+        override
+      { BARNEY_NYI(); };
+
+      void free(rtc::Group *)
+        override 
+      { BARNEY_NYI(); };
+      
       std::vector<OptixDevice *> devices;
     };
     

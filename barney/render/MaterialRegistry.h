@@ -37,13 +37,20 @@ namespace barney {
       void grow();
 
       void setMaterial(int materialID, const DeviceMaterial &, int deviceID);
-      const DeviceMaterial *getPointer(int owlDeviceID) const;
+      // const DeviceMaterial *getPointer(int owlDeviceID) const;
     
       int numReserved = 0;
       int nextFree = 0;
     
       std::stack<int> reusableIDs;
-      OWLBuffer       buffer = 0;
+      // OWLBuffer       buffer = 0;
+
+      DeviceMaterial *getDD(rtc::Device *device) const
+      { return (DeviceMaterial *)buffer->getDD(device); }
+
+      rtc::DevGroup *getRTC() const { return devGroup->rtc; }
+      
+      rtc::Buffer    *buffer = 0;
       DevGroup::SP    devGroup;
     };
 

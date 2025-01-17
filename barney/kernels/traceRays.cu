@@ -23,7 +23,37 @@
 
 namespace barney {
   namespace render {
+
+#if 1
+    template<typename RTCore>
+    inline __device__ __host__
+    void traceRays(const RTCore &rtcore)
+    {
+      auto &lp = rtcore.getLaunchParams();
+      const int rayID
+        = rtcore.getLaunchIndex().x
+        + rtcore.getLaunchDims().x
+        * rtcore.getLaunchIndex().y;
+
+      if (rayID >= lp.numRays)
+        return;
+
+      Ray &ray = lp.rays[rayID];
+
+      vec3f dir = ray.dir;
+      if (dir.x == 0.f) dir.x = 1e-6f;
+      if (dir.y == 0.f) dir.y = 1e-6f;
+      if (dir.z == 0.f) dir.z = 1e-6f;
       
+      rtcore.traceRay(lp.world,
+                      ray.org,
+                      dir,
+                      0.f,ray.tMax,
+                      /* PRD */
+                      ray);
+    }
+                   
+#else
     OPTIX_RAYGEN_PROGRAM(traceRays)()
     {
       auto &lp = optixLaunchParams;
@@ -48,6 +78,7 @@ namespace barney {
                              0.f,ray.tMax),
                     ray);
     }
+#endif
 
   }
 }

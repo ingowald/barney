@@ -36,22 +36,26 @@ namespace barney {
             BNTextureColorSpace  colorSpace);
     virtual ~Texture() = default;
 
-    cudaTextureObject_t getTextureObject(const Device *device) const;
+    // cudaTextureObject_t getTextureObject(const Device *device) const;
+    rtc::device::TextureObject getTextureObject(const Device *device) const;
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Texture{}"; }
 
-    OWLTexture owlTexture = 0;
+    rtc::Texture *rtcTexture = 0;
+    // OWLTexture owlTexture = 0;
   };
 
   struct Texture3D : public SlottedObject {
     typedef std::shared_ptr<Texture3D> SP;
 
     struct DD {
-      cudaArray_t           voxelArray = 0;
-      cudaTextureObject_t   texObj;
-      cudaTextureObject_t   texObjNN;
+      // cudaArray_t           voxelArray = 0;
+      // cudaTextureObject_t   texObj;
+      // cudaTextureObject_t   texObjNN;
+      rtc::device::TextureObject texObj;
+      rtc::device::TextureObject texObjNN;
     };
     
     Texture3D(Context *context, int slot,

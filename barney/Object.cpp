@@ -58,12 +58,9 @@ namespace barney {
     // return getDevGroup()->devices;
   }
   
-  OWLContext     SlottedObject::getOWL() const
+  rtc::DevGroup *SlottedObject::getRTC() const
   {
-    if (slot == -1) {
-      return context->getOWL(slot);
-    }
-    return getDevGroup()->owl;
+    return context->getRTC(slot);
   }
   
 }

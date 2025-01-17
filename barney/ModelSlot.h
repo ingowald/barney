@@ -43,7 +43,8 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
     
-    OWLContext getOWL() const;
+    // OWLContext getOWL() const;
+    rtc::DevGroup *getRTC() const;
 
     static SP create(GlobalModel *model, int localID);
 
@@ -53,7 +54,8 @@ namespace barney {
     struct {
       std::vector<Group::SP> groups;
       std::vector<affine3f>  xfms;
-      OWLGroup group = 0;
+      //      OWLGroup group = 0;
+      rtc::Group *group = 0;
     } instances;
 
     void build();

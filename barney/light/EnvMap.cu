@@ -111,10 +111,15 @@ namespace barney {
     DD dd;
     dd.dims = dims;
     if (texture) {
-      dd.texture 
-        = owlTextureGetObject(texture,device->owlID);
-      dd.cdf_y = (const float *)owlBufferGetPointer(cdf_y,device->owlID);
-      dd.allCDFs_x = (const float *)owlBufferGetPointer(allCDFs_x,device->owlID);
+      dd.texture
+        // = owlTextureGetObject(texture,device->owlID);
+        = texture->getDD(device->rtc);
+      dd.cdf_y
+        // = (const float *)owlBufferGetPointer(cdf_y,device->owlID);
+        = (const float *)cdf_y->getDD(device->rtc);
+      dd.allCDFs_x
+        // = (const float *)owlBufferGetPointer(allCDFs_x,device->owlID);
+        = (const float *)allCDFs_x->getDD(device->rtc);
     } else {
       dd.texture = 0;
       dd.cdf_y = 0;
@@ -132,10 +137,13 @@ namespace barney {
     // std::cout << OWL_TERMINAL_YELLOW
     //           << "#bn: created env-map light"
     //           << OWL_TERMINAL_DEFAULT << std::endl;
+    auto rtc = getRTC();
     cdf_y
-      = owlDeviceBufferCreate(getOWL(),OWL_FLOAT,1,nullptr);
+      // = owlDeviceBufferCreate(getOWL(),OWL_FLOAT,1,nullptr);
+      = rtc->createBuffer(sizeof(float));
     allCDFs_x
-      = owlDeviceBufferCreate(getOWL(),OWL_FLOAT,1,nullptr);
+      // = owlDeviceBufferCreate(getOWL(),OWL_FLOAT,1,nullptr);
+      = rtc->createBuffer(sizeof(float));
   }
   
   void EnvMapLight::commit()
@@ -145,7 +153,8 @@ namespace barney {
     toWorld.vx = normalize(cross(toWorld.vy,toWorld.vz));
     toLocal    = rcp(toWorld);
     assert(params.texture);
-    texture    = params.texture->owlTexture;
+    // texture    = params.texture->owlTexture;
+    texture    = params.texture->rtcTexture;
     computeCDFs();
   }
 
@@ -154,13 +163,21 @@ namespace barney {
   {
     // std::cout << "#bn: computing env-map CDFs" << std::endl;
     assert(texture);
-    (owl2ui&)dims = owlTextureGetDimensions(texture);
-
-    owlBufferResize(cdf_y,dims.y);
-    owlBufferResize(allCDFs_x,dims.x*dims.y);
+    dims = (const vec2i &)texture->getDims();//owlTextureGetDimensions(texture);
+    auto rtc = getRTC();
+    // owlBufferResize(cdf_y,dims.y);
+    rtc->free(cdf_y);
+    cdf_y = rtc->createBuffer(dims.y*sizeof(float));
+    // owlBufferResize(allCDFs_x,dims.x*dims.y);
+    rtc->free(allCDFs_x);
+    allCDFs_x = rtc->createBuffer(dims.x*dims.y*sizeof(float));
+    
     for (auto device : getDevices()) {
       SetActiveGPU forThisKernel(device);
 
+#if 1
+      BARNEY_NYI();
+#else
       BARNEY_CUDA_SYNC_CHECK();
       
       /* computes an importance sampling weight for each pixel; gets
@@ -206,6 +223,7 @@ namespace barney {
       //    dims);
 
       BARNEY_CUDA_SYNC_CHECK();
+#endif
     }
     // std::cout << "#bn: computing env-map CDFs .... done." << std::endl;
   }

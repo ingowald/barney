@@ -236,21 +236,23 @@ set(BARNEY_SOURCES
   volume/StructuredData.h
   volume/StructuredData.cu
   # *unstructured* volumes
-  umesh/common/UMeshField.h
-  umesh/common/UMeshField.cu
-  # ... macro-cell based methods
-  umesh/mc/UMeshCUBQLSampler.h
-  umesh/mc/UMeshCUBQLSampler.cu
-  # ... object-space methods
-  umesh/os/RTXObjectSpace.h
-  umesh/os/RTXObjectSpace.cu
-  umesh/os/AWT.h
-  umesh/os/AWT.cu
-  # *amr* volumes
-  amr/BlockStructuredField.h
-  amr/BlockStructuredField.cu
-  amr/BlockStructuredCUBQLSampler.h
-  amr/BlockStructuredCUBQLSampler.cu
+
+  
+#  umesh/common/UMeshField.h
+#  umesh/common/UMeshField.cu
+#  # ... macro-cell based methods
+#  umesh/mc/UMeshCUBQLSampler.h
+#  umesh/mc/UMeshCUBQLSampler.cu
+#  # ... object-space methods
+#  umesh/os/RTXObjectSpace.h
+#  umesh/os/RTXObjectSpace.cu
+#  umesh/os/AWT.h
+#  umesh/os/AWT.cu
+#  # *amr* volumes
+#  amr/BlockStructuredField.h
+#  amr/BlockStructuredField.cu
+#  amr/BlockStructuredCUBQLSampler.h
+#  amr/BlockStructuredCUBQLSampler.cu
   #  amr/BlockStructuredMCAccelerator.h
   #  amr/BlockStructuredMCAccelerator.cu
   
@@ -293,10 +295,10 @@ set(BARNEY_STATIC_DEPENDENCIES
   barney-capsules-ptx
   barney-triangles-ptx
   barney-traceRays-ptx  
-  barney-UMeshRTXObjectSpace-ptx
-  barney-UMeshMC-ptx
-  barney-AWT-ptx  
-  barney-BlockStructuredMC-ptx
+#  barney-UMeshRTXObjectSpace-ptx
+#  barney-UMeshMC-ptx
+#  barney-AWT-ptx  
+#  barney-BlockStructuredMC-ptx
   owl_static
   ${CUBQL_LIB}_static
   )
@@ -306,22 +308,6 @@ target_link_libraries(barney_static
   barney_rtc
   ${BARNEY_STATIC_DEPENDENCIES}
   )
-#target_link_libraries(barney_static 
-#  PRIVATE
-#  ${BARNEY_STATIC_DEPENDENCIES}
-#  owl_static
-#  ${CUBQL_LIB}_static
-#  barney-Spheres-ptx
-#  barney-StructuredData-ptx
-#  barney-cylinders-ptx
-#  barney-capsules-ptx
-#  barney-triangles-ptx
-#  barney-traceRays-ptx  
-#  barney-UMeshRTXObjectSpace-ptx
-#  barney-UMeshMC-ptx
-#  barney-AWT-ptx  
-#  barney-BlockStructuredMC-ptx
-#  )
 set_target_properties(barney_static
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
@@ -341,24 +327,6 @@ target_link_libraries(barney
   barney_config
   barney_rtc
   )
-#target_link_libraries(barney
-#  PUBLIC
-#  ${BARNEY_STATIC_DEPENDENCIES}
-#  owl::owl_static
-#  ${CUBQL_LIB}_static
-#  barney_config
-#  barney_static
-#  barney-Spheres-ptx
-#  barney-StructuredData-ptx
-#  barney-cylinders-ptx
-#  barney-capsules-ptx
-#  barney-triangles-ptx
-#  barney-traceRays-ptx  
-#  barney-UMeshRTXObjectSpace-ptx
-#  barney-UMeshMC-ptx
-#  barney-AWT-ptx  
-#  barney-BlockStructuredMC-ptx
-#  )
 
 target_link_libraries(barney
   PRIVATE#PUBLIC

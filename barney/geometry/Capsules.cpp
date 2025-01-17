@@ -26,7 +26,10 @@ namespace barney {
   {}
 
   OWLGeomType Capsules::createGeomType(DevGroup *devGroup)
-  { 
+  {
+#if 1
+    BARNEY_NYI();
+#else
     if (DevGroup::logging())
    std::cout << OWL_TERMINAL_GREEN
               << "creating 'Capsules' geometry type"
@@ -49,10 +52,14 @@ namespace barney {
     owlBuildPrograms(devGroup->owl);
     
     return gt;
+#endif
   }
   
   void Capsules::commit()
   {
+#if 1
+    BARNEY_NYI();
+#else
     if (userGeoms.empty()) {
       OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Capsules",Capsules::createGeomType);
@@ -77,6 +84,7 @@ namespace barney {
     
     setAttributesOn(geom);
     getMaterial()->setDeviceDataOn(geom);
+#endif
   } 
 
   bool Capsules::setData(const std::string &member, const Data::SP &value)

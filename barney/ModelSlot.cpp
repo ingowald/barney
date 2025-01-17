@@ -35,11 +35,17 @@ namespace barney {
   ModelSlot::~ModelSlot()
   {}
   
-  OWLContext ModelSlot::getOWL() const
+  // OWLContext ModelSlot::getOWL() const
+  // {
+  //   assert(devGroup);
+  //   assert(devGroup->owl);
+  //   return devGroup->owl;
+  // }
+  rtc::DevGroup *ModelSlot::getRTC() const
   {
     assert(devGroup);
-    assert(devGroup->owl);
-    return devGroup->owl;
+    assert(devGroup->rtc);
+    return devGroup->rtc;
   }
 
   void ModelSlot::setInstances(std::vector<Group::SP> &groups,
@@ -51,7 +57,8 @@ namespace barney {
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());
     devGroup->sbtDirty = true;
     if (instances.group) {
-      owlGroupRelease(instances.group);
+      // owlGroupRelease(instances.group);
+      getRTC()->free(instances.group);
       instances.group = 0;      
     }
   }
@@ -116,8 +123,10 @@ namespace barney {
     std::vector<QuadLight::DD> quadLights;
     std::vector<DirLight::DD>  dirLights;
 
-    std::vector<affine3f> owlTransforms;
-    std::vector<OWLGroup> owlGroups;
+    // std::vector<affine3f> owlTransforms;
+    std::vector<affine3f> rtcTransforms;
+    // std::vector<OWLGroup> owlGroups;
+    std::vector<rtc::Group *> rtcGroups;
     EnvMapLight::SP envMapLight;
     
     for (int i=0;i<instances.groups.size();i++) {
@@ -139,32 +148,44 @@ namespace barney {
         }
       
       if (group->userGeomGroup) {
-        owlGroups.push_back(group->userGeomGroup);
-        owlTransforms.push_back(instances.xfms[i]);
+        // owlGroups.push_back(group->userGeomGroup);
+        rtcGroups.push_back(group->userGeomGroup);
+        // owlTransforms.push_back(instances.xfms[i]);
+        rtcTransforms.push_back(instances.xfms[i]);
       }
       if (group->volumeGeomsGroup) {
-        owlGroups.push_back(group->volumeGeomsGroup);
-        owlTransforms.push_back(instances.xfms[i]);
+        // owlGroups.push_back(group->volumeGeomsGroup);
+        rtcGroups.push_back(group->volumeGeomsGroup);
+        // owlTransforms.push_back(instances.xfms[i]);
+        rtcTransforms.push_back(instances.xfms[i]);
       }
       if (group->triangleGeomGroup) {
-        owlGroups.push_back(group->triangleGeomGroup);
-        owlTransforms.push_back(instances.xfms[i]);
+        // owlGroups.push_back(group->triangleGeomGroup);
+        rtcGroups.push_back(group->triangleGeomGroup);
+        // owlTransforms.push_back(instances.xfms[i]);
+        rtcTransforms.push_back(instances.xfms[i]);
       }
       for (auto volume : group->volumes) {
         for (auto gg : volume->generatedGroups) {
-          owlGroups.push_back(gg);
-          owlTransforms.push_back(instances.xfms[i]);
+          // owlGroups.push_back(gg);
+          rtcGroups.push_back(gg);
+          // owlTransforms.push_back(instances.xfms[i]);
+          rtcTransforms.push_back(instances.xfms[i]);
         }
       }
     }
       
+    // instances.group
+    //   = owlInstanceGroupCreate(devGroup->owl,
+    //                            owlGroups.size(),
+    //                            owlGroups.data(),
+    //                            nullptr,
+    //                            (const float *)owlTransforms.data());
     instances.group
-      = owlInstanceGroupCreate(devGroup->owl,
-                               owlGroups.size(),
-                               owlGroups.data(),
-                               nullptr,
-                               (const float *)owlTransforms.data());
-    owlGroupBuildAccel(instances.group);
+      = getRTC()->createInstanceGroup(rtcGroups,
+                                      rtcTransforms);
+    // owlGroupBuildAccel(instances.group);
+    instances.group->buildAccel();
     world->set(envMapLight);
     world->set(quadLights);
     world->set(dirLights);

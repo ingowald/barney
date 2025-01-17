@@ -30,6 +30,13 @@ namespace barney {
                            params,
                            -1);
     }
+
+    OptixDevice::~OptixDevice()
+    {
+      owlContextDestroy(owl);
+      owl = 0;
+    }
+
     
     DevGroup::DevGroup(OptixBackend *backend,
                        const std::vector<int> &gpuIDs,
@@ -39,6 +46,13 @@ namespace barney {
 
       for (int devID=0;devID<gpuIDs.size();devID++)
         devices.push_back(new OptixDevice(this,gpuIDs[devID],sizeOfGlobals));
+    }
+
+    DevGroup::~DevGroup()
+    {
+      for (auto device : devices)
+        delete device;
+      devices.clear();
     }
     
     rtc::DevGroup *OptixBackend

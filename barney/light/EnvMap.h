@@ -38,12 +38,15 @@ namespace barney {
         
       linear3f            toWorld;
       linear3f            toLocal;
-      cudaTextureObject_t texture;
+      // cudaTextureObject_t texture;
+      rtc::device::TextureObject texture;
       vec2i               dims;
       const float        *cdf_y;
       const float        *allCDFs_x;
     };
 
+    rtc::DevGroup *getRTC() const;
+    
     DD getDD(const Device::SP &device) const;
 
     // ==================================================================
@@ -72,9 +75,12 @@ namespace barney {
 
     linear3f   toWorld;
     linear3f   toLocal;
-    OWLTexture texture = 0;
-    OWLBuffer  cdf_y;
-    OWLBuffer  allCDFs_x;
+    // OWLTexture texture = 0;
+    // OWLBuffer  cdf_y;
+    // OWLBuffer  allCDFs_x;
+    rtc::Texture *texture = 0;
+    rtc::Buffer  *cdf_y;
+    rtc::Buffer  *allCDFs_x;
     vec2i      dims;
   };
 

@@ -20,8 +20,8 @@
 
 namespace barney {
 
-  OWLContext VolumeAccel::getOWL() const
-  { return sf->getOWL(); }
+  // OWLContext VolumeAccel::getOWL() const
+  // { return sf->getOWL(); }
 
   void VolumeAccel::setVariables(OWLGeom geom)
   {

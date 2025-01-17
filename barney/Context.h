@@ -186,8 +186,10 @@ namespace barney {
         should live in a model slots (which has its own context), only
         truly global data (such as renderer background image) should
         ever be global */
-    OWLContext getOWL(int slot);// { return globalContextAcrossAllGPUs; }
+    // OWLContext getOWL(int slot);// { return globalContextAcrossAllGPUs; }
     // OWLContext getGlobalOWL() const;
+    rtc::DevGroup *getRTC(int slot) const;
+    
     const std::vector<Device::SP> &getDevices(int slot) const
     {
       if (slot == -1)
@@ -205,7 +207,7 @@ namespace barney {
        GPUs; this is merely there to enable peer access across all
        GPUs; for actual rendering data each data group will have to
        have its own context */
-    OWLContext globalContextAcrossAllGPUs = 0 ;
+    // OWLContext globalContextAcrossAllGPUs = 0 ;
     rtc::DevGroup *globalGroupAcrossAllGPUs = 0;
     
     /*! list of _all_ devices across all slots, so across DIFFERENT

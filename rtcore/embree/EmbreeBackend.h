@@ -10,6 +10,20 @@ namespace barney {
       DevGroup(EmbreeBackend *backend,
                const std::vector<int> &gpuIDs,
                size_t sizeOfGlobals);
+      rtc::Group *
+      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
+        override
+      { BARNEY_NYI(); };
+      
+      rtc::Group *
+      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) 
+        override
+      { BARNEY_NYI(); };
+
+      void free(rtc::Group *)
+        override 
+      { BARNEY_NYI(); };
+      
     };
 
     struct EmbreeBackend : public rtc::Backend {

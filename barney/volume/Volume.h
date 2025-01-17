@@ -118,25 +118,25 @@ namespace barney {
         return Inherited::mapColor(mapped,point,f);
       }
 
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        Inherited::addVars(vars,base);
-        TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
-      }
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base)
+      // {
+      //   Inherited::addVars(vars,base);
+      //   TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
+      // }
       
       TransferFunction::DD xf;
     };
     
     VolumeAccel(ScalarField *sf, Volume *volume);
 
-    virtual void setVariables(OWLGeom geom);
+    // virtual void setVariables(OWLGeom geom);
     
     virtual UpdateMode updateMode()
     { return FULL_REBUILD; }
 
     virtual void build(bool full_rebuild) = 0;
 
-    OWLContext getOWL() const;
+    // OWLContext getOWL() const;
     const TransferFunction *getXF() const;
     
     ScalarField *const sf = 0;
@@ -178,7 +178,8 @@ namespace barney {
     TransferFunction xf;
     DevGroup        *const devGroup;
     
-    std::vector<OWLGroup> generatedGroups;
+    std::vector<rtc::Group *> generatedGroups;
+    // std::vector<OWLGroup> generatedGroups;
   };
 
 

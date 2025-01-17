@@ -30,10 +30,10 @@ namespace barney {
 
     struct DD : public Geometry::DD {
       const vec3f *vertices;
-      const vec3f *colors;
+      // const vec3f *colors;
       const vec2i *indices;
       const float *radii;
-      int colorPerVertex;
+      // int colorPerVertex;
     };
     
     Cylinders(Context *context, int slot);

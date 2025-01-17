@@ -62,11 +62,13 @@ namespace barney {
     triangleGeoms.clear();
     
     if (triangleGeomGroup) {
-      owlGroupRelease(triangleGeomGroup);
+      // owlGroupRelease(triangleGeomGroup);
+      getRTC()->free(triangleGeomGroup);
       triangleGeomGroup = 0;
     }
     if (userGeomGroup) {
-      owlGroupRelease(userGeomGroup);
+      // owlGroupRelease(userGeomGroup);
+      getRTC()->free(userGeomGroup);
       userGeomGroup = 0;
     }
   }
@@ -96,19 +98,25 @@ namespace barney {
           userGeoms.push_back(g);
       }
       if (!userGeoms.empty()) {
-        userGeomGroup = owlUserGeomGroupCreate
-          (getOWL(),userGeoms.size(),userGeoms.data());
+        // userGeomGroup = owlUserGeomGroupCreate
+        //   (getOWL(),userGeoms.size(),userGeoms.data());
+        userGeomGroup
+          = getRTC()->createUserGeomsGroup(userGeoms);
       }
       if (userGeomGroup) {
-        owlGroupBuildAccel(userGeomGroup);
+        userGeomGroup->buildAccel();
+        // owlGroupBuildAccel(userGeomGroup);
       }
       
       if (!triangleGeoms.empty()) {
-        triangleGeomGroup = owlTrianglesGeomGroupCreate
-          (getOWL(),triangleGeoms.size(),triangleGeoms.data());
+        triangleGeomGroup
+          = getRTC()->createTrianglesGroup(triangleGeoms);
+        // triangleGeomGroup = owlTrianglesGeomGroupCreate
+        //   (getOWL(),triangleGeoms.size(),triangleGeoms.data());
       }
       if (triangleGeomGroup) {
-        owlGroupBuildAccel(triangleGeomGroup);
+        triangleGeomGroup->buildAccel();
+        // owlGroupBuildAccel(triangleGeomGroup);
       }
     }
 
@@ -144,7 +152,8 @@ namespace barney {
       if (needRebuild) {
         // std::cout << "#bn: running volume _build_ pass" << std::endl;
         if (volumeGeomsGroup) {
-          owlGroupRelease(volumeGeomsGroup);
+          // owlGroupRelease(volumeGeomsGroup);
+          getRTC()->free(volumeGeomsGroup);
           volumeGeomsGroup = 0;
         }
         volumeGeoms.clear();
@@ -152,9 +161,11 @@ namespace barney {
           if (volume)
             volume->build(true);
         
-        volumeGeomsGroup = owlUserGeomGroupCreate
-          (getOWL(),volumeGeoms.size(),volumeGeoms.data());
-        owlGroupBuildAccel(volumeGeomsGroup);
+        // volumeGeomsGroup = owlUserGeomGroupCreate
+        //   (getOWL(),volumeGeoms.size(),volumeGeoms.data());
+        volumeGeomsGroup = getRTC()->createUserGeomsGroup(volumeGeoms);
+        // owlGroupBuildAccel(volumeGeomsGroup);
+        volumeGeomsGroup->buildAccel();
       }
       
       if (needRefit) {
@@ -165,7 +176,8 @@ namespace barney {
         for (auto volume : volumes)
           if (volume)
             volume->build(false);
-        owlGroupRefitAccel(volumeGeomsGroup);
+        // owlGroupRefitAccel(volumeGeomsGroup);
+        volumeGeomsGroup->refitAccel();
       }
 
       for (auto volume : ownGroupVolumes) {

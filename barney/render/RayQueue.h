@@ -27,7 +27,8 @@ namespace barney {
       RayQueue(Device *device)
         : device(device)
       {
-        BARNEY_CUDA_CALL(MallocHost((void **)&h_numActive,sizeof(int)));
+        // BARNEY_CUDA_CALL(MallocHost((void **)&h_numActive,sizeof(int)));
+        BARNEY_NYI();
       }
       ~RayQueue()
       {
@@ -47,11 +48,12 @@ namespace barney {
       Ray *receiveAndShadeWriteQueue = nullptr;
 
       int readNumActive() {
-        BARNEY_CUDA_CALL(MemcpyAsync(h_numActive,_d_nextWritePos,sizeof(int),
-                                     cudaMemcpyDeviceToHost,
-                                     device->launchStream));
-        BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
-        return *h_numActive;
+        BARNEY_NYI();
+        // BARNEY_CUDA_CALL(MemcpyAsync(h_numActive,_d_nextWritePos,sizeof(int),
+        //                              cudaMemcpyDeviceToHost,
+        //                              device->launchStream));
+        // BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
+        // return *h_numActive;
       }
       /*! current write position in the write queue (during shading and
         ray generation) */
@@ -68,7 +70,8 @@ namespace barney {
 
       void resetWriteQueue()
       {
-        BARNEY_CUDA_CALL(MemsetAsync(_d_nextWritePos,0,sizeof(int),device->launchStream));
+        BARNEY_NYI();
+        // BARNEY_CUDA_CALL(MemsetAsync(_d_nextWritePos,0,sizeof(int),device->launchStream));
       }
     
       void swap()
@@ -84,19 +87,20 @@ namespace barney {
     
       void resize(int newSize)
       {
-        assert(device);
-        SetActiveGPU forDuration(device);
+        BARNEY_NYI();
+        // assert(device);
+        // SetActiveGPU forDuration(device);
       
-        if (traceAndShadeReadQueue)  BARNEY_CUDA_CALL(Free(traceAndShadeReadQueue));
-        if (receiveAndShadeWriteQueue) BARNEY_CUDA_CALL(Free(receiveAndShadeWriteQueue));
+        // if (traceAndShadeReadQueue)  BARNEY_CUDA_CALL(Free(traceAndShadeReadQueue));
+        // if (receiveAndShadeWriteQueue) BARNEY_CUDA_CALL(Free(receiveAndShadeWriteQueue));
 
-        if (!_d_nextWritePos)
-          BARNEY_CUDA_CALL(Malloc(&_d_nextWritePos,sizeof(int)));
+        // if (!_d_nextWritePos)
+        //   BARNEY_CUDA_CALL(Malloc(&_d_nextWritePos,sizeof(int)));
         
-        BARNEY_CUDA_CALL(Malloc(&traceAndShadeReadQueue, newSize*sizeof(Ray)));
-        BARNEY_CUDA_CALL(Malloc(&receiveAndShadeWriteQueue,newSize*sizeof(Ray)));
+        // BARNEY_CUDA_CALL(Malloc(&traceAndShadeReadQueue, newSize*sizeof(Ray)));
+        // BARNEY_CUDA_CALL(Malloc(&receiveAndShadeWriteQueue,newSize*sizeof(Ray)));
 
-        size = newSize;
+        // size = newSize;
       }
     
     };

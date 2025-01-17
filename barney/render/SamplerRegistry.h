@@ -34,14 +34,20 @@ namespace barney {
       void release(int nowReusableID);
       void grow();
     
-      const Sampler::DD *getPointer(int owlDeviceID) const;
+      // const Sampler::DD *getPointer(int owlDeviceID) const;
       void setDD(int samplerID, const Sampler::DD &, int deviceID);
+
+      Sampler::DD *getDD(rtc::Device *device) const
+      { return (Sampler::DD *)buffer->getDD(device); }
+
+      rtc::DevGroup *getRTC() const { return devGroup->rtc; }
       
       int numReserved = 0;
       int nextFree = 0;
     
       std::stack<int> reusableIDs;
-      OWLBuffer       buffer = 0;
+      // OWLBuffer       buffer = 0;
+      rtc::Buffer    *buffer = 0;
       DevGroup::SP    devGroup;
     };
 

@@ -30,7 +30,7 @@ namespace barney {
 
     struct DD {
       vec4f               bgColor;
-      cudaTextureObject_t bgTexture;
+      rtc::device::TextureObject bgTexture;
       float               ambientRadiance;
       int                 pathsPerPixel;
     };

@@ -18,6 +18,7 @@
 
 #include "barney/common/barney-common.h"
 #include "barney/common/mat4.h"
+#include "rtcore/common/Backend.h"
 
 namespace barney {
 
@@ -94,8 +95,9 @@ namespace barney {
     std::string toString() const override { return "<SlottedObject>"; }
 
     const std::vector<std::shared_ptr<Device>> &getDevices() const;
-    OWLContext     getOWL() const;
+    //    OWLContext     getOWL() const;
     DevGroup *getDevGroup() const;
+    rtc::DevGroup *getRTC() const;
     // render::World *getWorld() const;
     
     const int      slot;

@@ -55,14 +55,22 @@ namespace barney {
 
     /*! lights assigned to this group */
     ObjectRefsData::SP lights;
-    
+
+#if 1
+    std::vector<rtc::Geom *> triangleGeoms;
+    std::vector<rtc::Geom *> userGeoms;
+    std::vector<rtc::Geom *> volumeGeoms;
+    rtc::Group *userGeomGroup     = 0;
+    rtc::Group *triangleGeomGroup = 0;
+    rtc::Group *volumeGeomsGroup  = 0;
+#else
     std::vector<OWLGeom> triangleGeoms;
     std::vector<OWLGeom> userGeoms;
     std::vector<OWLGeom> volumeGeoms;
     OWLGroup userGeomGroup     = 0;
     OWLGroup triangleGeomGroup = 0;
     OWLGroup volumeGeomsGroup  = 0;
-    
+#endif   
     // std::vector<MultiPass::Object::SP> multiPassObjects;
   };
   
