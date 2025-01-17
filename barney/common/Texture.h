@@ -43,6 +43,7 @@ namespace barney {
     std::string toString() const override
     { return "Texture{}"; }
 
+    rtc::TextureData *rtcTextureData = 0;
     rtc::Texture *rtcTexture = 0;
     // OWLTexture owlTexture = 0;
   };
@@ -72,16 +73,19 @@ namespace barney {
 
     DD &getDD(const std::shared_ptr<Device> &device);
   private:
+    rtc::TextureData *rtcTextureData = 0;
+    rtc::Texture *rtcTexture = 0;
+    rtc::Texture *rtcTextureNN = 0;
     /*! one tex3d per device */
-    std::vector<DD> tex3Ds;
+    // std::vector<DD> tex3Ds;
   };
 
   struct TextureData : public SlottedObject {
     typedef std::shared_ptr<TextureData> SP;
 
-    struct DD {
-      cudaArray_t array = 0;
-    };
+    // struct DD {
+    //   cudaArray_t array = 0;
+    // };
     
     /*! one cudaArray per device */
     TextureData(Context *context, int slot,
@@ -90,14 +94,15 @@ namespace barney {
                 const void *texels);
     virtual ~TextureData();
 
-    DD &getDD(const std::shared_ptr<Device> &device);
+    // DD &getDD(const std::shared_ptr<Device> &device);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "TextureData{}"; }
-    
-    std::vector<DD> onDev;
+
+    rtc::TextureData *rtcTextureData = 0;
+    // std::vector<DD> onDev;
     vec3i           dims;
-    BNDataType   texelFormat;
+    BNDataType      texelFormat;
   };
 }

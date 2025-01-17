@@ -78,6 +78,31 @@ namespace barney {
     };
   };
   
+  size_t owlSizeOf(BNDataType type)
+  {
+    switch (type) {
+    case BN_FLOAT:
+      return sizeof(float);
+    case BN_FLOAT2:
+      return sizeof(vec2f);
+    case BN_FLOAT3:
+      return sizeof(vec3f);
+    case BN_FLOAT4:
+      return sizeof(vec4f);
+    case BN_INT:
+      return sizeof(int);
+    case BN_INT2:
+      return sizeof(vec2i);
+    case BN_INT3:
+      return sizeof(vec3i);
+    case BN_INT4:
+      return sizeof(vec4i);
+    default:
+      throw std::runtime_error("#bn internal error: owlSizeOf() not implemented for "
+                               "numerical BNDataType #"+std::to_string(int(type)));
+    };
+  };
+  
   PODData::PODData(Context *context,
                    int slot,
                    BNDataType type,
@@ -85,13 +110,17 @@ namespace barney {
                    const void *_items)
     : Data(context,slot,type,numItems)
   {
-    owl = owlDeviceBufferCreate(getOWL(),owlTypeFor(type),
-                                numItems,_items);
+    // owl = owlDeviceBufferCreate(getOWL(),owlTypeFor(type),
+    //                             numItems,_items);
+    rtcBuffer
+      = getRTC()->createBuffer(numItems*owlSizeOf(type),_items);
   }
 
   PODData::~PODData()
   {
-    if (owl) owlBufferRelease(owl);
+    if (rtcBuffer) getRTC()->free(rtcBuffer);
+    rtcBuffer = 0;
+    // if (owl) owlBufferRelease(owl);
   }
 
   Data::SP Data::create(Context *context,
@@ -126,7 +155,7 @@ namespace barney {
       type(type),
       count(numItems)
   {}
-  
+
   ObjectRefsData::ObjectRefsData(Context *context,
                                  int slot,
                                  BNDataType type,
@@ -138,5 +167,4 @@ namespace barney {
     for (int i=0;i<numItems;i++)
       items[i] = (((Object **)_items)[i])->shared_from_this();
   }
-  
 };

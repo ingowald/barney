@@ -22,6 +22,7 @@ namespace barney {
 
   const std::string to_string(BNDataType type);
   OWLDataType owlTypeFor(BNDataType type);
+  size_t owlSizeOf(BNDataType type);
   
   struct Data : public SlottedObject {
     typedef std::shared_ptr<Data> SP;
@@ -59,7 +60,8 @@ namespace barney {
     
     virtual ~PODData();
     
-    OWLBuffer  owl   = 0;
+    rtc::Buffer *rtcBuffer   = 0;
+    // OWLBuffer  owl   = 0;
   };
 
   /*! data array over reference-counted barney object handles (e.g.,
@@ -74,5 +76,4 @@ namespace barney {
                    const void *items);
     std::vector<Object::SP> items;
   };
-  
 };

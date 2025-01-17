@@ -27,9 +27,32 @@ namespace barney {
                           size_t numBytes,
                           size_t ofs = 0) = 0;
     };
+
+    struct TextureData {
+      typedef enum {
+        FLOAT,
+        FLOAT4,
+        UCHAR,
+        UCHAR4,
+        USHORT,
+      } Format;
+    };
+    
     struct Texture {
+      typedef enum {
+        WRAP,CLAMP,BORDER,MIRROR,
+      } AddressMode;
+      
+      typedef enum {
+        FILTER_MODE_NEAREST,FILTER_MODE_LINEAR,
+      } FilterMode;
+    
+      typedef enum {
+        COLOR_SPACE_LINEAR, COLOR_SPACE_SRGB,
+      } ColorSpace;
+    
       const vec3i &getDims() const;
-      virtual void *getDD(Device *) const = 0;
+      virtual rtc::device::TextureObject getDD(Device *) const = 0;
     };
     
     struct Device {
@@ -53,11 +76,35 @@ namespace barney {
       // ==================================================================
       // buffer stuff
       // ==================================================================
-      virtual Buffer *createBuffer(size_t numBytes) const
+      virtual Buffer *createBuffer(size_t numBytes, const void *initValues = 0) const
       { BARNEY_NYI(); }
       virtual void free(Buffer *) const
       { BARNEY_NYI(); }
       virtual void copy(Buffer *dst, Buffer *src, size_t numBytes) const
+      { BARNEY_NYI(); }
+      
+      // ==================================================================
+      // texture stuff
+      // ==================================================================
+
+      virtual rtc::TextureData *
+      createTextureData(vec3i dims,
+                        rtc::TextureData::Format format,
+                        const void *texels) const
+      { BARNEY_NYI(); }
+                        
+      virtual rtc::Texture *
+      createTexture(rtc::TextureData *data,
+                    rtc::Texture::FilterMode filterMode,
+                    rtc::Texture::AddressMode addressModes[3],
+                    const vec4f borderColor = vec4f(0.f),
+                    rtc::Texture::ColorSpace colorSpace
+                    = rtc::Texture::COLOR_SPACE_LINEAR) const
+      { BARNEY_NYI(); }
+                        
+      virtual void free(TextureData *) const
+      { BARNEY_NYI(); }
+      virtual void free(Texture *) const
       { BARNEY_NYI(); }
       
       // ==================================================================
