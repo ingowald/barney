@@ -27,21 +27,22 @@ namespace barney {
     typedef std::shared_ptr<Device> SP;
     
     Device(DevGroup *devGroup,
+           rtc::Device *rtc,
            int contextRank,
            int contextSize,
-           int gpuID,
-           int owlID,
+           // int gpuID,
+           // int owlID,
            int globalIndex,
            int globalIndexStep);
 
     int                const contextRank;
     int                const contextSize;
-    int                const cudaID;
-    int                const owlID;
+    // int                const cudaID;
+    // int                const owlID;
     int                const globalIndex;
     int                const globalIndexStep;
     DevGroup          *const devGroup;
-    cudaStream_t       const launchStream;
+    // cudaStream_t       const launchStream;
 
     /* for ray queue cycling - who to cycle with */
     struct {
@@ -51,20 +52,24 @@ namespace barney {
       int recvWorkerLocal = -1;
     } rqs;
 
-    rtc::Device *rtc = 0;
+    int setActive() const { return rtc->setActive(); }
+    void restoreActive(int old) const  { rtc->restoreActive(old); }
+    rtc::Device *const rtc;
   };
   
   /*! stolen from owl/Device: helper class that will set the
-      active cuda device (to the device associated with a given
-      Context::DeviceData) for the duration fo the lifetime of this
-      class, and resets it to whatever it was after class dies */
+    active cuda device (to the device associated with a given
+    Context::DeviceData) for the duration fo the lifetime of this
+    class, and resets it to whatever it was after class dies */
   struct SetActiveGPU {
     inline SetActiveGPU(const Device *device)
+      : savedDevice(device)
     {
       if (!device) return;
-      auto backend = rtc::Backend::get();
-      savedActiveDeviceID = backend->getActiveGPU();
-      backend->setActiveGPU(device->rtc->physicalID);
+      // auto backend = rtc::Backend::get();
+      savedActiveDeviceID = device->setActive();
+      // rtbackend->getActiveGPU();
+      // backend->setActiveGPU(device->rtc->physicalID);
       // assert(device);
       // if (device) {
       //   BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
@@ -72,34 +77,40 @@ namespace barney {
       // }
     }
     inline SetActiveGPU(const Device::SP &device)
+      : savedDevice(device.get())
     {
-      auto backend = rtc::Backend::get();
-      savedActiveDeviceID = backend->getActiveGPU();
-      backend->setActiveGPU(device->rtc->physicalID);
+      savedActiveDeviceID = device->setActive();
+      // auto backend = rtc::Backend::get();
+      // savedActiveDeviceID = device->setActive();
+      // savedActiveDeviceID = backend->getActiveGPU();
+      // backend->setActiveGPU(device->rtc->physicalID);
       // assert(device);
       // BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
       // BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
     }
 
-    inline SetActiveGPU(int physicalID)
-    {
-      auto backend = rtc::Backend::get();
-      savedActiveDeviceID = backend->getActiveGPU();
-      backend->setActiveGPU(physicalID);
-      // BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      // BARNEY_CUDA_CHECK(cudaSetDevice(cudaDeviceID));
-    }
+    // inline SetActiveGPU(int physicalID)
+    // {
+    //   auto backend = rtc::Backend::get();
+    //   savedActiveDeviceID = backend->getActiveGPU();
+    //   backend->setActiveGPU(physicalID);
+    //   // BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+    //   // BARNEY_CUDA_CHECK(cudaSetDevice(cudaDeviceID));
+    // }
     inline ~SetActiveGPU()
     {
-      if (savedActiveDeviceID < 0)
-        return;
-      auto backend = rtc::Backend::get();
-      backend->setActiveGPU(savedActiveDeviceID);
+      savedDevice->restoreActive(savedActiveDeviceID);
+      
+      // if (savedActiveDeviceID < 0)
+      //   return;
+      // auto backend = rtc::Backend::get();
+      // backend->setActiveGPU(savedActiveDeviceID);
       // if (savedActiveDeviceID >= 0)
       //   BARNEY_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
     }
   private:
     int savedActiveDeviceID = -1;
+    const Device *const savedDevice;
   };
   
 
@@ -118,12 +129,13 @@ namespace barney {
     int size() const { return (int)devices.size(); }
     
     template<typename CreateGTLambda>
-    OWLGeomType
+    // OWLGeomType
+    rtc::GeomType *
     getOrCreateGeomTypeFor(const std::string &geomTypeString,
                            const CreateGTLambda &createGT)
     {
       std::lock_guard<std::mutex> lock(this->mutex);
-      OWLGeomType gt = geomTypes[geomTypeString];
+      rtc::GeomType *gt = geomTypes[geomTypeString];
       if (gt)
         return gt;
       
@@ -137,20 +149,24 @@ namespace barney {
     
     void update();
     
-    std::map<std::string,OWLGeomType> geomTypes;
+    std::map<std::string,rtc::GeomType *> geomTypes;
     std::mutex               mutex;
-    OWLContext               owl = 0;
-    OWLRayGen                rg = 0;
-    OWLLaunchParams          lp = 0;
+    // OWLContext               owl = 0;
+    // OWLRayGen                rg = 0;
+    // OWLLaunchParams          lp = 0;
     std::vector<Device::SP>  devices;
     bool programsDirty = true;
     bool sbtDirty = true;
     /*! local model slot index. this this is the *local index* of the
-        slot, not the global rank of the the model part that is loaded
-        into it; i.e., this always starts with '0' on each rank, no
-        matter what data the app loads into it */
+      slot, not the global rank of the the model part that is loaded
+      into it; i.e., this always starts with '0' on each rank, no
+      matter what data the app loads into it */
     int const lmsIdx;
     rtc::DevGroup *rtc = 0;
+
+    rtc::ComputeKernel *generateRaysKernel = 0;
+    rtc::ComputeKernel *shadeRaysKernel = 0;
+    rtc::TraceKernel   *traceRaysKernel = 0;
   };
   
 }

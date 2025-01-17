@@ -8,12 +8,6 @@ namespace barney {
       numPhysicalDevices = 1;
     }
 
-    void EmbreeBackend::setActiveGPU(int physicalID) 
-    { /* ignore */ }
-    
-    int  EmbreeBackend::getActiveGPU()
-    { /* ignore */ return 0; }
-
     DevGroup::DevGroup(EmbreeBackend *backend,
                        const std::vector<int> &gpuIDs,
                        size_t sizeOfGlobals)

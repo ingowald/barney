@@ -59,6 +59,11 @@ namespace barney {
     /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
 
+    void setAttributesOn(Geometry::DD &dd,
+                         rtc::Device *device);
+    void fillDD(Geometry::DD &dd,
+                rtc::Device *device);
+    
     // void setAttributesOn(OWLGeom geom);
 
     bool set1f(const std::string &member, const float &value) override;

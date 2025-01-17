@@ -21,6 +21,10 @@
 
 namespace barney {
 
+  rtc::Texture::ColorSpace toRTC(BNTextureColorSpace mode);
+  rtc::Texture::FilterMode toRTC(BNTextureFilterMode mode);
+  rtc::Texture::AddressMode toRTC(BNTextureAddressMode mode);
+  
   struct Device;
   
   struct Texture : public SlottedObject {

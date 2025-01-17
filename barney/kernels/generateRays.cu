@@ -29,6 +29,37 @@ namespace barney {
       *d_count. This kernel operates on *tiles* (not complete frames);
       the list of tiles to generate rays for is passed in 'tileDescs';
       there will be one cuda block per tile */
+#if 1
+    struct GenerateRaysKernel {
+      struct DD {
+        template<typename RTCore>
+        __device__ __host__ void run(const RTCore &rtcore);
+        
+        Camera::DD camera;
+        Renderer::DD renderer;
+        /*! a unique random number seed value for pixel
+          and lens jitter; probably just accumID */
+        int rngSeed;
+        int accumID;
+        /*! full frame buffer size, to check if a given
+          tile's pixel ID is still valid */
+        vec2i fbSize;
+        /*! pointer to a device-side int that tracks the
+          next write position in the 'write' ray
+          queue; can be atomically incremented on the
+          device */
+        int *d_count;
+        /*! pointer to device-side ray queue to write
+          newly generated raysinto */
+        Ray *rayQueue;
+        /*! tile descriptors for the tiles that the
+          frame buffer owns on this device; rays
+          should only get generated for these tiles */
+        TileDesc *tileDescs;
+        bool enablePerRayDebug;
+      };
+    };
+#else
     __global__
     void g_generateRays(/*! the camera used for generating the rays */
                         Camera::DD camera,
@@ -175,6 +206,7 @@ namespace barney {
       rayQueue[pos] = ray;
 #endif
     }
+#endif
   }
   
   void DeviceContext::generateRays_launch(TiledFB *fb,
@@ -193,6 +225,23 @@ namespace barney {
     static bool enablePerRayDebug = getPerRayDebug();
 
 #if 1
+    render::GenerateRaysKernel::DD args = {
+       /* variable args */
+       camera,
+       renderer,
+       rngSeed,
+       (int)fb->owner->accumID,
+       fb->numPixels,
+       rays._d_nextWritePos,
+       rays.receiveAndShadeWriteQueue,
+       fb->tileDescs,
+       enablePerRayDebug
+    };
+    device->devGroup->generateRaysKernel->launch(device->rtc,
+                                                 fb->numActiveTiles,
+                                                 pixelsPerTile,
+                                                 &args);
+#elif 1
     CHECK_CUDA_LAUNCH
       (/* cuda kernel */
        render::g_generateRays,

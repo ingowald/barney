@@ -51,16 +51,17 @@ namespace barney {
 
     static OWLParams createLP(Device *device);
 
-
     void sync() // const
     {
-      SetActiveGPU forDuration(device);
-      BARNEY_CUDA_SYNC_CHECK();
+      device->rtc->sync();
+      // SetActiveGPU forDuration(device);
+      // BARNEY_CUDA_SYNC_CHECK();
     } 
     
     void launch_sync() const
     {
-      BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
+      // BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
+      BARNEY_NYI();
     }
 
     render::RayQueue rays;

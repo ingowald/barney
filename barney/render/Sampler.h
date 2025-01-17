@@ -71,12 +71,15 @@ namespace barney {
         union {
           struct {
             AttributeTransform  inTransform;
-            cudaTextureObject_t texture;
+            // cudaTextureObject_t texture;
+            rtc::device::TextureObject texture;
             int                 numChannels;
           } image;
         };
       };
 
+      virtual DD getDD(rtc::Device *device) const = 0;
+      
       static Sampler::SP create(Context *context,
                                 int slot,
                                 const std::string &type);
@@ -84,8 +87,8 @@ namespace barney {
       Sampler(Context *context, int slot);
       virtual ~Sampler();
       
-      virtual void createDD(DD &dd, int devID) {};
-      virtual void freeDD(DD &dd, int devID) {};
+      // virtual void createDD(DD &dd, int devID) {};
+      // virtual void freeDD(DD &dd, int devID) {};
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
@@ -99,7 +102,8 @@ namespace barney {
       /*! @} */
       // ------------------------------------------------------------------
 
-      std::vector<DD> perDev;
+      // std::vector<DD> perDev;
+      rtc::Texture *rtcTexture = 0;
       
       /*! the registry from whom we got our 'samplerID' - this mainly
           exists for lifetime reasons, to make sure the registry
@@ -117,8 +121,9 @@ namespace barney {
       TransformSampler(Context *context, int slot)
         : Sampler(context,slot)
       {}
-      void createDD(DD &dd, int devID) override;
-      void freeDD(DD &dd, int devID) override;
+      DD getDD(rtc::Device *device) const override;
+      // void createDD(DD &dd, int devID) override;
+      // void freeDD(DD &dd, int devID) override;
     };
 
     struct TextureSampler : public Sampler {
@@ -143,12 +148,14 @@ namespace barney {
       std::string toString() const override
       { return "TextureSampler"+std::to_string(numDims)+"D"; }
 
-      void createDD(DD &dd, int devID) override;
-      void freeDD(DD &dd, int devID) override;
+      DD getDD(rtc::Device *device) const override;
+      // void createDD(DD &dd, int devID) override;
+      // void freeDD(DD &dd, int devID) override;
       
       mat4f inTransform { mat4f::identity() };
       vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
-      BNTextureAddressMode wrapModes[3] = { BN_TEXTURE_WRAP, BN_TEXTURE_WRAP, BN_TEXTURE_WRAP };
+      BNTextureAddressMode wrapModes[3]
+      = { BN_TEXTURE_WRAP, BN_TEXTURE_WRAP, BN_TEXTURE_WRAP };
       BNTextureFilterMode filterMode = BN_TEXTURE_LINEAR;
       const int   numDims=0;
       std::shared_ptr<TextureData> textureData{ 0 };

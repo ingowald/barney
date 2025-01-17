@@ -211,9 +211,9 @@ namespace barney {
 
     void SamplerRegistry::setDD(int samplerID,
                                const Sampler::DD &dd,
-                               int deviceID)
+                                rtc::Device *device)
     {
-      buffer->upload(&dd,sizeof(dd),samplerID*sizeof(dd));
+      buffer->upload(&dd,sizeof(dd),/*offset*/samplerID*sizeof(dd),device);
       // BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+samplerID),
       //                         &dd,sizeof(dd),cudaMemcpyDefault));
     }

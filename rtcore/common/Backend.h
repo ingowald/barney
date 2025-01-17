@@ -12,6 +12,7 @@ namespace barney {
     struct Backend;
     struct Device;
     struct Geom;
+    struct GeomType;
     struct Group;
 
     struct Group {
@@ -25,7 +26,8 @@ namespace barney {
       virtual void *getDD(Device *) const = 0;
       virtual void upload(const void *hostPtr,
                           size_t numBytes,
-                          size_t ofs = 0) = 0;
+                          size_t ofs = 0,
+                          const Device *device=nullptr) = 0;
     };
 
     struct TextureData {
@@ -62,17 +64,73 @@ namespace barney {
           physicalID(physicalID)
       {}
 
-      virtual void launchTrace(const void *ddPtr) = 0;
+      virtual void copyAsync(void *dst, void *src, size_t numBytes)
+      { BARNEY_NYI(); }
+      
+      virtual void buildPipeline()
+      { BARNEY_NYI(); }
+      
+      virtual void buildSBT()
+      { BARNEY_NYI(); }
+      
+      /*! sets this gpu as active, and returns physical ID of GPU that
+          was active before */
+      virtual int setActive() const = 0;
+      
+      /*! restores the gpu whose ID was previously returend by setActive() */
+      virtual void restoreActive(int oldActive) const = 0;
+      
+      // virtual void launchTrace(const void *ddPtr) = 0;
+      virtual void sync() { BARNEY_NYI(); }
       
       Backend *const backend;
       const int physicalID;
     };
 
+
+    struct ComputeKernel {
+      virtual void launch(rtc::Device *device,
+                          vec2i numBlocks,
+                          vec2i blockSize,
+                          const void *dd)
+      { BARNEY_NYI(); }
+      virtual void launch(rtc::Device *device,
+                          int numBlocks,
+                          int blockSize,
+                          const void *dd)
+      { BARNEY_NYI(); }
+      virtual void sync(rtc::Device *device)
+      { BARNEY_NYI(); }
+    };
+
+    struct TraceKernel {
+      virtual void launch(rtc::Device *device,
+                          vec2i launchDims,
+                          const void *dd)
+      { BARNEY_NYI(); }
+      virtual void launch(rtc::Device *device,
+                          int launchDims,
+                          const void *dd)
+      { BARNEY_NYI(); }
+      virtual void sync(rtc::Device *device)
+      { BARNEY_NYI(); }
+    };
+    
     struct DevGroup {
       DevGroup(Backend *backend)
         : backend(backend)
       {}
+      virtual ~DevGroup() {}
 
+      virtual void destroy()
+      { BARNEY_NYI(); }
+      
+      // ==================================================================
+      // kernels
+      // ==================================================================
+      rtc::ComputeKernel *createCompute(size_t ddSize);
+      rtc::TraceKernel *createTrace(size_t ddSize);
+      
       // ==================================================================
       // buffer stuff
       // ==================================================================
@@ -106,6 +164,24 @@ namespace barney {
       { BARNEY_NYI(); }
       virtual void free(Texture *) const
       { BARNEY_NYI(); }
+
+      // ==================================================================
+      // geom/geomtype stuff
+      // ==================================================================
+
+      virtual rtc::GeomType *createGeomType(const char *typeName,
+                                            size_t sizeOfDD,
+                                            const char *boundsFctName,
+                                            const char *isecFctName,
+                                            const char *ahFctName,
+                                            const char *chFctName)
+      { BARNEY_NYI(); }
+      
+      virtual void free(Geom *)
+      { BARNEY_NYI(); }
+      
+      virtual void free(GeomType *)
+      { BARNEY_NYI(); }
       
       // ==================================================================
       // group/accel stuff
@@ -123,6 +199,7 @@ namespace barney {
       
       virtual void free(rtc::Group *) = 0;
 
+      std::vector<Device *> devices;
       Backend *const backend;
     };
     
@@ -130,15 +207,17 @@ namespace barney {
       typedef std::shared_ptr<Backend> SP;
       virtual ~Backend() = default;
 
-      virtual void setActiveGPU(int physicalID) = 0;
-      virtual int  getActiveGPU() = 0;
-      virtual DevGroup *createDevGroup(const std::vector<int> &gpuIDs,
+      // virtual void setActiveGPU(int physicalID) = 0;
+      // virtual int  getActiveGPU() = 0;
+      virtual rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs,
                                        size_t sizeOfGlobals) = 0;
-      
+
+      virtual rtc::Device *createDevice(int physicalID);
+
       /*! number of 'physical' devices - num cuda capable gpus if cuda
         or optix, or 1 if embree */
       int numPhysicalDevices = 0;
-
+      
       static int getDeviceCount();
       static rtc::Backend *get();
     private:
@@ -163,8 +242,30 @@ namespace barney {
 
 // TODO:
 template<typename T>
+inline __device__ __host__ T tex1D(barney::rtc::device::TextureObject to,
+                                   float x)
+{
+#ifdef __CUDA_ARCH__
+  printf("tex2d missing...\n");
+  return T{};
+#else
+  BARNEY_NYI();
+#endif
+}
+template<typename T>
 inline __device__ __host__ T tex2D(barney::rtc::device::TextureObject to,
                                    float x, float y)
+{
+#ifdef __CUDA_ARCH__
+  printf("tex2d missing...\n");
+  return T{};
+#else
+  BARNEY_NYI();
+#endif
+}
+template<typename T>
+inline __device__ __host__ T tex3D(barney::rtc::device::TextureObject to,
+                                   float x, float y, float z)
 {
 #ifdef __CUDA_ARCH__
   printf("tex2d missing...\n");

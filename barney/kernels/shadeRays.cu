@@ -33,7 +33,7 @@ namespace barney {
   inline __device__ float square(float f) { return f*f; }
   
     
-    // enum { MAX_PATH_DEPTH = 10 };
+    enum { MAX_PATH_DEPTH = 10 };
 
     inline __device__
     float safe_eps(float f, vec3f v)
@@ -444,7 +444,6 @@ namespace barney {
     }
 
     /*! ugh - that should all go into material::AnariPhysical .... */
-    template<int MAX_PATH_DEPTH>
     inline __device__
     void bounce(const World::DD &world,
                 const Renderer::DD &renderer,
@@ -740,7 +739,7 @@ namespace barney {
       // ==================================================================
       path.tMax = -1.f;
       if (pathDepth >= MAX_PATH_DEPTH)
-        return;
+         return;
       
       ScatterResult scatterResult;
       bsdf.scatter(scatterResult,dg,random,fire || 0 && path.dbg);
@@ -818,7 +817,25 @@ namespace barney {
     }
   
 
-    template<int MAX_PATH_DEPTH>
+    struct ShadeRaysKernel {
+      struct DD {
+        template<typename RTCore>
+        inline __host__ __device__
+        void run(const RTCore &rtcore);
+        
+        World::DD world;
+        Renderer::DD renderer;
+        AccumTile *accumTiles;
+        int accumID;
+        Ray *readQueue;
+        int numRays;
+        Ray *writeQueue;
+        int *d_nextWritePos;
+        int generation;
+      };
+    };
+
+#if 1
     __global__
     void g_shadeRays_pt(World::DD world,
                         Renderer::DD renderer,
@@ -829,6 +846,11 @@ namespace barney {
                         Ray *writeQueue,
                         int *d_nextWritePos,
                         int generation)
+#else
+      template<typename RTCore>
+      inline __host__ __device__
+      void ShadeRaysKernel::DD::run(const RTCore &rtcore)
+#endif
     {
       int tid = threadIdx.x + blockIdx.x*blockDim.x;
       if (tid >= numRays) return;
@@ -863,7 +885,7 @@ namespace barney {
       // bounce that ray on the scene, possibly generating a) a fragment
       // to add to frame buffer; b) a outgoing ray (in-place
       // modification of 'path'); and/or c) a shadow ray
-      bounce<MAX_PATH_DEPTH>(world,renderer,
+      bounce(world,renderer,
                              fragment,
                              path,shadowRay,
                              generation);
@@ -1006,6 +1028,19 @@ namespace barney {
 #endif
 
 #if 1
+        render::ShadeRaysKernel::DD args = {
+          devWorld,devRenderer,
+          fb->accumTiles,
+          (int)fb->owner->accumID,
+          rays.traceAndShadeReadQueue,numRays,
+          rays.receiveAndShadeWriteQueue,
+          rays._d_nextWritePos,generation
+        };
+        device->devGroup->shadeRaysKernel->launch(device->rtc,
+                                                  nb,bs,
+                                                  &args);
+        
+#elif 1
         CHECK_CUDA_LAUNCH(g_shadeRays_pt<12>,
                           nb,bs,0,device->launchStream,
                           /* args */

@@ -35,7 +35,8 @@ namespace barney {
       void grow();
     
       // const Sampler::DD *getPointer(int owlDeviceID) const;
-      void setDD(int samplerID, const Sampler::DD &, int deviceID);
+      void setDD(int samplerID, const Sampler::DD &, rtc::Device *device);
+      // void setDD(int samplerID, const Sampler::DD &, int deviceID);
 
       Sampler::DD *getDD(rtc::Device *device) const
       { return (Sampler::DD *)buffer->getDD(device); }

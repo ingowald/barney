@@ -23,18 +23,20 @@ namespace barney {
   extern "C" char traceRays_ptx[];
 
   Device::Device(DevGroup *devGroup,
+                 rtc::Device *rtc,
                  int contextRank,
                  int contextSize,
-                 int cudaID,
-                 int owlID,
+                 // int cudaID,
+                 // int owlID,
                  int globalIndex,
                  int globalIndexStep)
     : contextRank(contextRank),
       contextSize(contextSize),
-      cudaID(cudaID),
-      owlID(owlID),
+      // cudaID(cudaID),
+      // owlID(owlID),
       devGroup(devGroup),
-      launchStream(devGroup?owlContextGetStream(devGroup->owl,owlID):0),
+      rtc(rtc),
+      // launchStream(devGroup?owlContextGetStream(devGroup->owl,owlID):0),
       globalIndex(globalIndex),
       globalIndexStep(globalIndexStep)
   {
@@ -45,13 +47,19 @@ namespace barney {
     if (programsDirty) {
       if (DevGroup::logging())
         std::cout << "rebuilding owl programs and pipeline..." << std::endl;
-      owlBuildPrograms(owl);
-      owlBuildPipeline(owl);
+      // owlBuildPrograms(owl);
+      // owlBuildPipeline(owl);
+      for (auto device : devices)
+        device->rtc->buildPipeline();
+      // devGroup->buildPipeline();
       programsDirty = false;
     }
     if (sbtDirty) {
       // std::cout << "rebuilding owl sbt..." << std::endl;
-      owlBuildSBT(owl);
+      for (auto device : devices)
+        device->rtc->buildSBT();
+      // devGroup->buildSBT();
+      // owlBuildSBT(owl);
       sbtDirty = false;
     }
   }
@@ -66,47 +74,50 @@ namespace barney {
   {
     auto backend = rtc::Backend::get();
     rtc = backend->createDevGroup(gpuIDs,sizeof(render::OptixGlobals));
-      
-    owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
-    OWLVarDecl args[]
-      = {
-      { nullptr }
-    };
-    OWLModule module = owlModuleCreate(owl,traceRays_ptx);
-    rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
+    
+    // owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
+    // OWLVarDecl args[]
+    //   = {
+    //   { nullptr }
+    // };
+    // OWLModule module = owlModuleCreate(owl,traceRays_ptx);
+    // rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
 
-    owlBuildPrograms(owl);
+    // owlBuildPrograms(owl);
 
     for (int localID=0;localID<gpuIDs.size();localID++)
       devices.push_back
         (std::make_shared<Device>(this,
-                                  contextRanks[localID],contextSize,
-                                  gpuIDs[localID],localID,
+                                  rtc->devices[localID],
+                                  contextRanks[localID],
+                                  contextSize,
+                                  // gpuIDs[localID],localID,
                                   (int)(globalIndex*gpuIDs.size())+localID,
                                   (int)(globalIndexStep*gpuIDs.size())));
 
-    OWLVarDecl params[]
-      = {
-      { "world", OWL_GROUP, OWL_OFFSETOF(render::OptixGlobals, world) },
-      { "materials", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, materials) },
-      { "samplers", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, samplers) },
-      { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::OptixGlobals,rays) },
-      { "numRays",  OWL_INT, OWL_OFFSETOF(render::OptixGlobals,numRays) },
-      { nullptr }
-    };
-    lp = owlParamsCreate(owl,
-                         sizeof(render::OptixGlobals),
-                         params,
-                         -1);
+    // OWLVarDecl params[]
+    //   = {
+    //   { "world", OWL_GROUP, OWL_OFFSETOF(render::OptixGlobals, world) },
+    //   { "materials", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, materials) },
+    //   { "samplers", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, samplers) },
+    //   { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::OptixGlobals,rays) },
+    //   { "numRays",  OWL_INT, OWL_OFFSETOF(render::OptixGlobals,numRays) },
+    //   { nullptr }
+    // };
+    // lp = owlParamsCreate(owl,
+    //                      sizeof(render::OptixGlobals),
+    //                      params,
+    //                      -1);
   }
 
   DevGroup::~DevGroup()
   {
-    std::cout << "DEVGROUP DESTROYING context " << (int*)owl << std::endl;
-    owlContextDestroy(owl);
-    owl = 0;
 
-    delete rtc; rtc = nullptr;
+    std::cout << "DEVGROUP DESTROYING context " << (int*)rtc << std::endl;
+    // owlContextDestroy(owl);
+    // owl = 0;
+    rtc->destroy();
+    rtc = nullptr;
   }
   
 }

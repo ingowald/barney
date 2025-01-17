@@ -22,21 +22,21 @@
 
 namespace barney {
 
-  inline rtc::Texture::ColorSpace toRTC(BNTextureColorSpace mode)
+  rtc::Texture::ColorSpace toRTC(BNTextureColorSpace mode)
   { return 
       (mode == BN_COLOR_SPACE_LINEAR)
       ? rtc::Texture::COLOR_SPACE_LINEAR
       : rtc::Texture::COLOR_SPACE_SRGB;
   }
   
-  inline rtc::Texture::FilterMode toRTC(BNTextureFilterMode mode)
+  rtc::Texture::FilterMode toRTC(BNTextureFilterMode mode)
   { return 
       (mode == BN_TEXTURE_NEAREST)
       ? rtc::Texture::FILTER_MODE_NEAREST
       : rtc::Texture::FILTER_MODE_LINEAR;
   }
   
-  inline rtc::Texture::AddressMode toRTC(BNTextureAddressMode mode)
+  rtc::Texture::AddressMode toRTC(BNTextureAddressMode mode)
   {
     switch(mode) {
     case BN_TEXTURE_WRAP: return rtc::Texture::WRAP;

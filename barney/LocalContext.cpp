@@ -68,9 +68,10 @@ namespace barney {
       numCopied[devID] = count;
       Ray *src = nextDev->rays.traceAndShadeReadQueue;
       Ray *dst = thisDev->rays.receiveAndShadeWriteQueue;
-      BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
-                                   cudaMemcpyDefault,
-                                   thisDev->device->launchStream));
+      thisDev->device->rtc->copyAsync(dst,src,count*sizeof(Ray));
+      // BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
+      //                              cudaMemcpyDefault,
+      //                              thisDev->device->launchStream));
     }
 
     for (auto dev : devices) dev->sync();

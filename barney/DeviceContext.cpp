@@ -56,16 +56,18 @@ namespace barney {
     const Context::PerSlot *contextSlot = context->getSlot(dg->lmsIdx);
 #if 1
     {
-      auto device = this->device->rtc;
       barney::render::OptixGlobals dd;
       dd.rays    = /* already a single device pointer */
         rays.traceAndShadeReadQueue;
       dd.numRays = rays.numActive;
-      dd.world   = modelSlot->instances.group->getDD(device);
-      dd.materials = contextSlot->materialRegistry->getDD(device);
-      dd.samplers = contextSlot->samplerRegistry->getDD(device);
+      dd.world   = modelSlot->instances.group->getDD(device->rtc);
+      dd.materials = contextSlot->materialRegistry->getDD(device->rtc);
+      dd.samplers = contextSlot->samplerRegistry->getDD(device->rtc);
       
-      device->launchTrace(&dd);
+      //device->launchTrace(&dd);
+      int bs = 1024;
+      int nb = divRoundUp(rays.numActive,bs);
+      device->devGroup->traceRaysKernel->launch(device->rtc,vec2i(nb,bs),&dd);
     }
 #else
     owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);

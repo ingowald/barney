@@ -29,8 +29,8 @@ namespace barney {
     struct EmbreeBackend : public rtc::Backend {
       EmbreeBackend();
       
-      void setActiveGPU(int physicalID) override;
-      int  getActiveGPU() override;
+      // void setActiveGPU(int physicalID) override;
+      // int  getActiveGPU() override;
       rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs,
                                     size_t sizeOfGlobals) override;
     };

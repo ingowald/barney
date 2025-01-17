@@ -16,19 +16,19 @@ namespace barney {
     {}
     
 
-    void BaseBackend::setActiveGPU(int physicalID) 
+    int BaseDevice::setActive() const
     {
+      int oldActive = 0;
+      BARNEY_CUDA_CHECK(cudaGetDevice(&oldActive));
       BARNEY_CUDA_CHECK(cudaSetDevice(physicalID));
+      return oldActive;
     }
     
-    int  BaseBackend::getActiveGPU()
+    void BaseDevice::restoreActive(int oldActive) const
     {
-      int current = 0;
-      BARNEY_CUDA_CHECK(cudaGetDevice(&current));
-      return current;
+      BARNEY_CUDA_CHECK(cudaSetDevice(oldActive));
     }
-
-
+    
     rtc::DevGroup *CUDABackend
     ::createDevGroup(const std::vector<int> &gpuIDs,
                      size_t sizeOfGlobals)

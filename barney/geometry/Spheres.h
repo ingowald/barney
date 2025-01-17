@@ -33,7 +33,8 @@ namespace barney {
 
     Spheres(Context *context, int slot);
     
-    static OWLGeomType createGeomType(DevGroup *device);
+    // static OWLGeomType createGeomType(DevGroup *device);
+    static rtc::GeomType *createGeomType(DevGroup *device);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override

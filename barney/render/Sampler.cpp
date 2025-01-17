@@ -45,23 +45,23 @@ namespace barney {
         samplerRegistry(context->getSlot(slot)->samplerRegistry),
         samplerID(context->getSlot(slot)->samplerRegistry->allocate())
     {
-      perDev.resize(getDevGroup()->size());
+      // perDev.resize(getDevGroup()->size());
     }
     
     Sampler::~Sampler()
     {
       samplerRegistry->release(samplerID);
-      for (int devID=0;devID<getDevGroup()->size();devID++) {
-        auto dev = getDevGroup()->devices[devID];
-        SetActiveGPU forDuration(dev);
+      // for (int devID=0;devID<getDevGroup()->size();devID++) {
+      //   auto dev = getDevGroup()->devices[devID];
+      //   SetActiveGPU forDuration(dev);
 
-        Sampler::DD &dd = perDev[devID];
-        freeDD(dd,devID);
-        /*! MIGHT want to upload something to device sampler library
-            that indicates that this is now dead - but if it is, and
-            somebody else were to stell use it, then that's a bug on
-            that somebody else's side, anyway (OR it is a bug on the user's side */
-      }
+      //   Sampler::DD &dd = perDev[devID];
+      //   freeDD(dd,devID);
+      //   /*! MIGHT want to upload something to device sampler library
+      //       that indicates that this is now dead - but if it is, and
+      //       somebody else were to stell use it, then that's a bug on
+      //       that somebody else's side, anyway (OR it is a bug on the user's side */
+      // }
     }
     
     Sampler::SP Sampler::create(Context *context, int slot, const std::string &type)
@@ -120,16 +120,19 @@ namespace barney {
     void Sampler::commit() 
     {
       SlottedObject::commit();
-
-      for (int devID=0;devID<getDevGroup()->size();devID++) {
-        auto dev = getDevGroup()->devices[devID];
-        SetActiveGPU forDuration(dev);
-
-        Sampler::DD &dd = perDev[devID];
-        freeDD(dd,devID);
-        createDD(dd,devID);
-        samplerRegistry->setDD(samplerID,dd,devID);
+      for (auto device : getDevices()) {
+        DD dd = getDD(device->rtc);
+        samplerRegistry->setDD(samplerID,dd,device->rtc);
       }
+      // for (int devID=0;devID<getDevGroup()->size();devID++) {
+      //   auto dev = getDevGroup()->devices[devID];
+      //   SetActiveGPU forDuration(dev);
+
+      //   Sampler::DD &dd = perDev[devID];
+      //   freeDD(dd,devID);
+      //   createDD(dd,devID);
+      //   samplerRegistry->setDD(samplerID,dd,devID);
+      // }
     }
 
     TextureSampler::~TextureSampler()
@@ -185,8 +188,30 @@ namespace barney {
     void TextureSampler::commit() 
     {
       Sampler::commit();
+
+      if (rtcTexture) {
+        getRTC()->free(rtcTexture);
+        rtcTexture = 0;
+      }
+
+      if (!textureData) {
+        std::cerr << "WARNING: Image Sampler without any texture data?" << std::endl;
+      } else {
+        rtc::Texture::FilterMode
+          filterMode = toRTC(this->filterMode);
+        rtc::Texture::AddressMode
+          addressModes[3] = {
+          toRTC(this->wrapModes[0]),
+          toRTC(this->wrapModes[1]),
+          toRTC(this->wrapModes[2])
+        };
+        rtcTexture = getRTC()->createTexture(textureData->rtcTextureData,
+                                             filterMode,
+                                             addressModes);
+      }
     }
-    
+
+#if 0
     void TextureSampler::createDD(DD &dd, int devID)
     {
       switch(numDims) {
@@ -276,28 +301,29 @@ namespace barney {
           
       BARNEY_CUDA_CALL(CreateTextureObject(&dd.image.texture,&resourceDesc,&tex_desc,0));
     }
+#endif
     
-    void TextureSampler::freeDD(DD &dd, int devID)
-    {
-      if (dd.image.texture)
-        BARNEY_CUDA_CALL(DestroyTextureObject(dd.image.texture));
-      dd.image.texture = 0;
-      dd.type = Sampler::INVALID;
-    }
+    // void TextureSampler::freeDD(DD &dd, int devID)
+    // {
+    //   if (dd.image.texture)
+    //     BARNEY_CUDA_CALL(DestroyTextureObject(dd.image.texture));
+    //   dd.image.texture = 0;
+    //   dd.type = Sampler::INVALID;
+    // }
     
-    void TransformSampler::createDD(DD &dd, int devID)
-    {
-      dd.type = Sampler::TRANSFORM;
-      (vec4f&)dd.outTransform.offset = outOffset;
-      memcpy(&dd.outTransform.mat,&outTransform,sizeof(outTransform));
-    }
+    // void TransformSampler::createDD(DD &dd, int devID)
+    // {
+    //   dd.type = Sampler::TRANSFORM;
+    //   (vec4f&)dd.outTransform.offset = outOffset;
+    //   memcpy(&dd.outTransform.mat,&outTransform,sizeof(outTransform));
+    // }
 
-    void TransformSampler::freeDD(DD &dd, int devID)
-    {
-      /* no device data to free for this one ... */
-      dd.type = Sampler::INVALID;
+    // void TransformSampler::freeDD(DD &dd, int devID)
+    // {
+    //   /* no device data to free for this one ... */
+    //   dd.type = Sampler::INVALID;
       
-    }
+    // }
 
   }
 }

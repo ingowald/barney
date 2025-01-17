@@ -60,6 +60,7 @@ namespace barney {
         GeometryAttribute::DD attribute[numAttributes];
         GeometryAttribute::DD colorAttribute;
       };
+      DD getDD(rtc::Device *device);
       GeometryAttribute attribute[numAttributes];
       GeometryAttribute colorAttribute;
     };

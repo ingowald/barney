@@ -59,6 +59,8 @@ namespace barney {
             const void *items);
     
     virtual ~PODData();
+
+    const void *getDD(rtc::Device *device) const { return rtcBuffer->getDD(device); }
     
     rtc::Buffer *rtcBuffer   = 0;
     // OWLBuffer  owl   = 0;
