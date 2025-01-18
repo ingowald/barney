@@ -31,12 +31,12 @@ namespace barney {
         values; values inside the domain get linearly interpolated
         from the array of values.  Mind: 'w' component of returned
         value is a *density*, not a alpha-opacity! */
-      inline __device__
+      inline __both__
       vec4f map(float s, bool dbg=false) const;
 
       /*! compute the majorant (max opacity times baseDensity) for
           given range of scalar values */
-      inline __device__
+      inline __both__
       float majorant(range1f r, bool dbg = false) const;
 
       float4  *values;
@@ -73,7 +73,7 @@ namespace barney {
     the domain get linearly interpolated from the array of values.
     Mind: 'w' component of returned value is a *density*, not a
     alpha-opacity! */
-  inline __device__
+  inline __both__
   vec4f TransferFunction::DD::map(float s, bool dbg) const
   {
     float f = (s-domain.lower)/domain.span();

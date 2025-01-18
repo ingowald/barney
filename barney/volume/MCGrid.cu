@@ -23,9 +23,11 @@ namespace barney {
   {
     assert(devGroup);
     scalarRangesBuffer
-      = owlDeviceBufferCreate(devGroup->owl,OWL_FLOAT2,1,nullptr);
+      = devGroup->rtc->createBuffer(sizeof(float2));
+      // = owlDeviceBufferCreate(devGroup->owl,OWL_FLOAT2,1,nullptr);
     majorantsBuffer
-      = owlDeviceBufferCreate(devGroup->owl,OWL_FLOAT,1,nullptr);
+      = devGroup->rtc->createBuffer(sizeof(float));
+      // = owlDeviceBufferCreate(devGroup->owl,OWL_FLOAT,1,nullptr);
   }
                             
   __global__ void g_clearMCs(MCGrid::DD grid)
@@ -124,26 +126,32 @@ namespace barney {
     assert(dims.y > 0);
     assert(dims.z > 0);
     this->dims = dims;
-    int numCells = (int)owl::common::volume(dims);
-    owlBufferResize(majorantsBuffer,numCells);
-    owlBufferResize(scalarRangesBuffer,numCells);
+    size_t numCells = owl::common::volume(dims);
+
+    devGroup->rtc->free(majorantsBuffer);
+    devGroup->rtc->free(scalarRangesBuffer);
+
+    majorantsBuffer
+      = devGroup->rtc->createBuffer(sizeof(float)*numCells);
+    scalarRangesBuffer
+      = devGroup->rtc->createBuffer(sizeof(float2)*numCells);
   }
     
   
   /*! get cuda-usable device-data for given device ID (relative to
     devices in the devgroup that this gris is in */
-  MCGrid::DD MCGrid::getDD(const std::shared_ptr<Device> &dev) const
+  MCGrid::DD MCGrid::getDD(const std::shared_ptr<Device> &device) const
   {
-    int devID = dev->owlID;
+    // int devID = dev->owlID;
     MCGrid::DD dd;
     
     assert(majorantsBuffer);
     dd.majorants
-      = (float *)owlBufferGetPointer(majorantsBuffer,devID);
+      = (float *)majorantsBuffer->getDD(device->rtc);
 
     assert(scalarRangesBuffer);
     dd.scalarRanges
-      = (range1f*)owlBufferGetPointer(scalarRangesBuffer,devID);
+      = (range1f*)scalarRangesBuffer->getDD(device->rtc);
     
     dd.dims = dims;
     dd.gridOrigin = gridOrigin;
@@ -151,26 +159,26 @@ namespace barney {
     return dd;
   }
 
-  void MCGrid::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
-  {
-    vars.push_back
-      ({"majorants",OWL_BUFPTR,base+OWL_OFFSETOF(DD,majorants)});
-    vars.push_back
-      ({"scalarRanges",OWL_BUFPTR,base+OWL_OFFSETOF(DD,scalarRanges)});
-    vars.push_back
-      ({"dims",OWL_INT3,base+OWL_OFFSETOF(DD,dims)});
-    vars.push_back
-      ({"gridOrigin",OWL_FLOAT3,base+OWL_OFFSETOF(DD,gridOrigin)});
-    vars.push_back
-      ({"gridSpacing",OWL_FLOAT3,base+OWL_OFFSETOF(DD,gridSpacing)});
-  }
+  // void MCGrid::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  // {
+  //   vars.push_back
+  //     ({"majorants",OWL_BUFPTR,base+OWL_OFFSETOF(DD,majorants)});
+  //   vars.push_back
+  //     ({"scalarRanges",OWL_BUFPTR,base+OWL_OFFSETOF(DD,scalarRanges)});
+  //   vars.push_back
+  //     ({"dims",OWL_INT3,base+OWL_OFFSETOF(DD,dims)});
+  //   vars.push_back
+  //     ({"gridOrigin",OWL_FLOAT3,base+OWL_OFFSETOF(DD,gridOrigin)});
+  //   vars.push_back
+  //     ({"gridSpacing",OWL_FLOAT3,base+OWL_OFFSETOF(DD,gridSpacing)});
+  // }
   
-  void MCGrid::setVariables(OWLGeom geom)
-  {
-    owlGeomSetBuffer(geom,"majorants",majorantsBuffer);
-    owlGeomSet3i(geom,"dims",dims.x,dims.y,dims.z);
-    owlGeomSet3f(geom,"gridOrigin",gridOrigin.x,gridOrigin.y,gridOrigin.z);
-    owlGeomSet3f(geom,"gridSpacing",gridSpacing.x,gridSpacing.y,gridSpacing.z);
-  }
+  // void MCGrid::setVariables(OWLGeom geom)
+  // {
+  //   owlGeomSetBuffer(geom,"majorants",majorantsBuffer);
+  //   owlGeomSet3i(geom,"dims",dims.x,dims.y,dims.z);
+  //   owlGeomSet3f(geom,"gridOrigin",gridOrigin.x,gridOrigin.y,gridOrigin.z);
+  //   owlGeomSet3f(geom,"gridSpacing",gridSpacing.x,gridSpacing.y,gridSpacing.z);
+  // }
   
 } // ::vopat

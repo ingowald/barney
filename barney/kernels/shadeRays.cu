@@ -42,13 +42,6 @@ namespace barney {
     }
 
     
-    typedef enum {
-      RENDER_MODE_UNDEFINED,
-      RENDER_MODE_LOCAL,
-      RENDER_MODE_AO,
-      RENDER_MODE_PT
-    } RenderMode;
-  
     inline __device__
     vec3f randomDirection(Random &rng)
     {
@@ -979,87 +972,25 @@ namespace barney {
     int bs = 128;
     int nb = divRoundUp(numRays,bs);
 
-    static RenderMode renderMode = RENDER_MODE_UNDEFINED;
-    if (renderMode == RENDER_MODE_UNDEFINED) {
-      const char *_fromEnv = getenv("BARNEY_RENDER");
-      if (!_fromEnv)
-        _fromEnv = "pt";
-      const std::string mode = _fromEnv;
-      if (mode == "AO" || mode == "ao")
-        renderMode = RENDER_MODE_AO;
-      else if (mode == "PT" || mode == "pt")
-        renderMode = RENDER_MODE_PT;
-      else if (mode == "local" || mode == "LOCAL")
-        renderMode = RENDER_MODE_LOCAL;
-      else
-        throw std::runtime_error("unknown barney render mode '"+mode+"'");
-    }
-
     DevGroup *dg = device->devGroup;
     World *world = model->getSlot(dg->lmsIdx)->world.get();
 
-    if (nb) {
-      World::DD devWorld
-        = world->getDD(device);
-      Renderer::DD devRenderer
-        = renderer->getDD(device.get());
+    World::DD devWorld
+      = world->getDD(device);
+    Renderer::DD devRenderer
+      = renderer->getDD(device.get());
            
-      switch(renderMode) {
-#if 0
-      case RENDER_MODE_LOCAL:
-        g_shadeRays_pt<0>
-          <<<nb,bs,0,device->launchStream>>>
-          (world->getDD(device),
-           fb->accumTiles,fb->owner->accumID,
-           rays.traceAndShadeReadQueue,numRays,
-           rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
-        break;
-      case RENDER_MODE_AO:
-        g_shadeRays_pt<1>
-          <<<nb,bs,0,device->launchStream>>>
-          (world->getDD(device),
-           fb->accumTiles,fb->owner->accumID,
-           rays.traceAndShadeReadQueue,numRays,
-           rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
-        break;
-      case RENDER_MODE_PT:
-#else
-      default:
-#endif
-
-#if 1
-        render::ShadeRaysKernel::DD args = {
-          devWorld,devRenderer,
-          fb->accumTiles,
-          (int)fb->owner->accumID,
-          rays.traceAndShadeReadQueue,numRays,
-          rays.receiveAndShadeWriteQueue,
-          rays._d_nextWritePos,generation
-        };
-        device->devGroup->shadeRaysKernel->launch(device->rtc,
-                                                  nb,bs,
-                                                  &args);
-        
-#elif 1
-        CHECK_CUDA_LAUNCH(g_shadeRays_pt<12>,
-                          nb,bs,0,device->launchStream,
-                          /* args */
-                          devWorld,devRenderer,
-                          fb->accumTiles,fb->owner->accumID,
-                          rays.traceAndShadeReadQueue,numRays,
-                          rays.receiveAndShadeWriteQueue,
-                          rays._d_nextWritePos,generation);
-#else
-        g_shadeRays_pt<12><<<nb,bs,0,device->launchStream>>>
-          (devWorld,devRenderer,
-         fb->accumTiles,fb->owner->accumID,
-           rays.traceAndShadeReadQueue,numRays,
-           rays.receiveAndShadeWriteQueue,rays._d_nextWritePos,generation);
-#endif
-        break;
-
-      }
-    }
+    render::ShadeRaysKernel::DD args = {
+      devWorld,devRenderer,
+      fb->accumTiles,
+      (int)fb->owner->accumID,
+      rays.traceAndShadeReadQueue,numRays,
+      rays.receiveAndShadeWriteQueue,
+      rays._d_nextWritePos,generation
+    };
+    device->shadeRaysKernel->launch(device->rtc,
+                                    nb,bs,
+                                    &args);
   }
 
 }

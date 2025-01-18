@@ -23,12 +23,14 @@ namespace barney {
   // OWLContext VolumeAccel::getOWL() const
   // { return sf->getOWL(); }
 
-  void VolumeAccel::setVariables(OWLGeom geom)
-  {
-    // owlGeomSet3fv(geom,"domain,lower",&volume->domain.lower.x);
-    // owlGeomSet3fv(geom,"domain,upper",&volume->domain.upper.x);
-    getXF()->setVariables(geom);
-  }
+  //   void fillDD(Vo::DD &dd,
+  //               rtc::Device *device);
+  // // void VolumeAccel::setVariables(OWLGeom geom)
+  // {
+  //   // owlGeomSet3fv(geom,"domain,lower",&volume->domain.lower.x);
+  //   // owlGeomSet3fv(geom,"domain,upper",&volume->domain.upper.x);
+  //   getXF()->setVariables(geom);
+  // }
 
   inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
   { assert(s); return s; }

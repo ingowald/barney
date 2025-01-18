@@ -72,7 +72,7 @@ namespace barney {
         return bounds;
       }
       
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
     MCGrid(DevGroup *devGroup);
@@ -81,7 +81,7 @@ namespace barney {
         devices in the devgroup that this gris is in */
     DD getDD(const std::shared_ptr<Device> &device) const;
 
-    void setVariables(OWLGeom geom);
+    // void setVariables(OWLGeom geom);
     
     /*! allocate memory for the given grid */
     void resize(vec3i dims);
@@ -98,9 +98,9 @@ namespace barney {
     inline bool built() const { return (dims != vec3i(0)); }
     
     /* buffer of range1f's, the min/max scalar values per cell */
-    OWLBuffer scalarRangesBuffer = 0;
+    rtc::Buffer *scalarRangesBuffer = 0;
     /* buffer of floats, the actual per-cell majorants */
-    OWLBuffer majorantsBuffer = 0;
+    rtc::Buffer *majorantsBuffer = 0;
     vec3i     dims { 0,0,0 };
     vec3f     gridOrigin;
     vec3f     gridSpacing;

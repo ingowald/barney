@@ -54,6 +54,13 @@ namespace barney {
 
     int setActive() const { return rtc->setActive(); }
     void restoreActive(int old) const  { rtc->restoreActive(old); }
+
+    rtc::ComputeKernel *setTileCoordsKernel;
+    rtc::ComputeKernel *compressTilesKernel;
+    rtc::ComputeKernel *generateRaysKernel;
+    rtc::ComputeKernel *shadeRaysKernel;
+    rtc::TraceKernel   *traceRaysKernel;
+    
     rtc::Device *const rtc;
   };
   
@@ -163,10 +170,6 @@ namespace barney {
       matter what data the app loads into it */
     int const lmsIdx;
     rtc::DevGroup *rtc = 0;
-
-    rtc::ComputeKernel *generateRaysKernel = 0;
-    rtc::ComputeKernel *shadeRaysKernel = 0;
-    rtc::TraceKernel   *traceRaysKernel = 0;
   };
   
 }

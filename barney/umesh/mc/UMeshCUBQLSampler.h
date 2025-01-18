@@ -34,13 +34,13 @@ namespace barney {
     using node_t = typename bvh_t::Node;
     
     struct DD : public UMeshField::DD {
-      inline __device__ float sample(vec3f P, bool dbg = false) const;
+      inline __both__ float sample(vec3f P, bool dbg = false) const;
 
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        UMeshField::DD::addVars(vars,base);
-        vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
-      }
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base)
+      // {
+      //   UMeshField::DD::addVars(vars,base);
+      //   vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
+      // }
   
       node_t  *bvhNodes;
     };

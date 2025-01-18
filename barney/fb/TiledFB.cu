@@ -112,7 +112,7 @@ namespace barney {
       ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
                    device->globalIndexStep)
       : 0;
-#if 1
+// #if 1
     auto rtc = device->rtc;
     accumTiles
       = (AccumTile *)rtc->alloc(numActiveTiles * sizeof(AccumTile));
@@ -120,32 +120,16 @@ namespace barney {
       = (CompressedTile *)rtc->alloc(numActiveTiles * sizeof(CompressedTile));
     tileDescs
       = (TileDesc *)rtc->alloc(numActiveTiles * sizeof(TileDesc));
-    if (numActiveTiles) {
-      SetTileCoordsKernel::DD args = {
-        tileDescs,
-        numActiveTiles,
-        numTiles,
-        device->globalIndex,
-        device->globalIndexStep
-      };
-      setTileCoordsKernel->launch(device,
-                                  divRoundUp(numActiveTiles,1024),1024,
-                                  args);
-    }
-#else
-    BARNEY_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
-    BARNEY_CUDA_CALL(Malloc(&compressedTiles, numActiveTiles * sizeof(CompressedTile)));
-    BARNEY_CUDA_CALL(Malloc(&tileDescs,  numActiveTiles * sizeof(TileDesc)));
-
-    BARNEY_CUDA_SYNC_CHECK();
-    if (numActiveTiles) {
-      CHECK_CUDA_LAUNCH(setTileCoords,
-                        divRoundUp(numActiveTiles,1024),1024,0,device?device->launchStream:0,
-                        tileDescs,numActiveTiles,numTiles,
-                        device->globalIndex,device->globalIndexStep);
-    }
-    BARNEY_CUDA_SYNC_CHECK();
-#endif
+    SetTileCoordsKernel::DD args = {
+      tileDescs,
+      numActiveTiles,
+      numTiles,
+      device->globalIndex,
+      device->globalIndexStep
+    };
+    device->setTileCoordsKernel->launch(device->rtc,
+                                        divRoundUp(numActiveTiles,1024),1024,
+                                        &args);
   }
 
   // ==================================================================
@@ -172,7 +156,7 @@ namespace barney {
           .set(accumTiles[tileID].normal[pixelID]);
 
         uint32_t rgba32
-          = owl::make_rgba(color);
+          = make_rgba(color);
 
         compressedTiles[tileID].rgba[pixelID]
           = rgba32;
@@ -213,9 +197,9 @@ namespace barney {
         accumTiles,
         1.f/(owner->accumID)
       };
-      compressTilesKernel->launch(device,
-                                  numActiveTiles,pixelsPerTile,
-                                  args);       
+      device->compressTilesKernel->launch(device->rtc,
+                                          numActiveTiles,pixelsPerTile,
+                                          &args);       
       // CHECK_CUDA_LAUNCH(g_compressTiles,
       //                   
       // numActiveTiles,pixelsPerTile,0,device->launchStream,

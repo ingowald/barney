@@ -54,35 +54,19 @@ namespace barney {
     Context *context = model->context;
     ModelSlot *modelSlot = model->getSlot(dg->lmsIdx);
     const Context::PerSlot *contextSlot = context->getSlot(dg->lmsIdx);
-#if 1
-    {
-      barney::render::OptixGlobals dd;
-      dd.rays    = /* already a single device pointer */
-        rays.traceAndShadeReadQueue;
-      dd.numRays = rays.numActive;
-      dd.world   = modelSlot->instances.group->getDD(device->rtc);
-      dd.materials = contextSlot->materialRegistry->getDD(device->rtc);
-      dd.samplers = contextSlot->samplerRegistry->getDD(device->rtc);
+    
+    barney::render::OptixGlobals dd;
+    dd.rays    = /* already a single device pointer */
+      rays.traceAndShadeReadQueue;
+    dd.numRays = rays.numActive;
+    dd.world   = modelSlot->instances.group->getDD(device->rtc);
+    dd.materials = contextSlot->materialRegistry->getDD(device->rtc);
+    dd.samplers = contextSlot->samplerRegistry->getDD(device->rtc);
       
-      //device->launchTrace(&dd);
-      int bs = 1024;
-      int nb = divRoundUp(rays.numActive,bs);
-      device->devGroup->traceRaysKernel->launch(device->rtc,vec2i(nb,bs),&dd);
-    }
-#else
-    owlParamsSetPointer(dg->lp,"rays",rays.traceAndShadeReadQueue);
-    owlParamsSet1i(dg->lp,"numRays",rays.numActive);
-    owlParamsSetGroup(dg->lp,"world",
-                      modelSlot->instances.group);
-    owlParamsSetBuffer(dg->lp,"materials",
-                       contextSlot->materialRegistry->buffer);
-    owlParamsSetBuffer(dg->lp,"samplers",
-                       contextSlot->samplerRegistry->buffer);
-                        
+    //device->launchTrace(&dd);
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);
-    if (nb)
-      owlAsyncLaunch2DOnDevice(dg->rg,bs,nb,device->owlID,dg->lp);
-#endif
+    device->traceRaysKernel->launch(device->rtc,vec2i(nb,bs),&dd);
   }
+  
 }

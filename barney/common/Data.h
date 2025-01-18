@@ -78,4 +78,15 @@ namespace barney {
                    const void *items);
     std::vector<Object::SP> items;
   };
+
+
+
+
+  inline void *getDD(rtc::Device *device, const PODData *data)
+  { return data?data->rtcBuffer->getDD(device):nullptr; }
+
+  inline void *getDD(rtc::Device *device, const PODData::SP &data)
+  { return data?data->rtcBuffer->getDD(device):nullptr; }
+  
+  
 };

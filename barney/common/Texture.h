@@ -75,7 +75,8 @@ namespace barney {
     std::string toString() const override
     { return "Texture3D{}"; }
 
-    DD &getDD(const std::shared_ptr<Device> &device);
+    DD getDD(const std::shared_ptr<Device> &device);
+    DD getDD(const rtc::Device *device);
   private:
     rtc::TextureData *rtcTextureData = 0;
     rtc::Texture *rtcTexture = 0;

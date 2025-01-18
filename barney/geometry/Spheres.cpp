@@ -48,12 +48,12 @@ namespace barney {
     // owlBuildPrograms(devGroup->owl);
     // return gt;
     
-    return devGroup->rtc->createGeomType("Spheres",
-                                         sizeof(Spheres::DD),
-                                         "SpheresBounds",
-                                         "SpheresIsec",
-                                         nullptr,
-                                         "SpheresCH");
+    return devGroup->rtc->createUserGeomType("Spheres",
+                                             sizeof(Spheres::DD),
+                                             "SpheresBounds",
+                                             "SpheresIsec",
+                                             nullptr,
+                                             "SpheresCH");
   }
   
   Spheres::Spheres(Context *context, int slot)
@@ -68,10 +68,11 @@ namespace barney {
     auto rtc = devGroup->rtc;
     if (userGeoms.empty()) {
       int numOrigins = origins->count;
-      rtc::GeomType *gt = rtc->getOrCreateGeomTypeFor
+      rtc::GeomType *gt = devGroup->getOrCreateGeomTypeFor
         ("Spheres",Spheres::createGeomType);
       // OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      rtc::Geom *geom = rtc->createGeom(gt,numOrigins);
+      rtc::Geom *geom = rtc->createGeom(gt);
+      geom->setPrimCount(numOrigins);
       userGeoms.push_back(geom);
     }
     // OWLGeom geom = userGeoms[0];
@@ -82,10 +83,12 @@ namespace barney {
     Spheres::DD dd;
     for (auto device : rtc->devices) {
       Geometry::writeDD(dd,device);
-      dd.origins = origins?origins->rtcBuffer(device):0;
-      dd.radii = radii?radii->rtcBuffer(device):0;
-      dd.colors = colors?colors->rtcBuffer(device):0;
-      geom->setDD(dd,device);
+      dd.origins = (vec3f*)getDD(device,origins);
+      dd.radii   = (float*)getDD(device,radii);
+      dd.colors  = (vec3f*)getDD(device,colors);
+      dd.defaultRadius = defaultRadius;
+      // done:
+      geom->setDD(&dd,device);
     }
     // owlGeomSet1f(geom,"defaultRadius",defaultRadius);
     // owlGeomSetBuffer(geom,"origins",origins?origins->owl:0);

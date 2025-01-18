@@ -14,6 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "barney/common/barney-common.h"
 #include "barney/fb/FrameBuffer.h"
 #include <cuda_runtime.h>
 #if BARNEY_HAVE_OIDN
@@ -22,57 +23,57 @@
 
 namespace barney {
 
-  inline __device__ float saturate(float f, float lo=0.f, float hi=1.f)
-  { return max(lo,min(f,hi)); }
+  // inline __device__ float saturate(float f, float lo=0.f, float hi=1.f)
+  // { return max(lo,min(f,hi)); }
   
-  inline __device__ float from_8bit(uint8_t v) {
+  inline __both__ float from_8bit(uint8_t v) {
     return float(v) * (1.f/255.f);
-  }
+   }
   
-  inline __device__ vec4f from_8bit(uint32_t v) {
-    return vec4f(from_8bit(uint8_t((v >> 0)&0xff)),
-                 from_8bit(uint8_t((v >> 8)&0xff)),
-                 from_8bit(uint8_t((v >> 16)&0xff)),
-                 from_8bit(uint8_t((v >> 24)&0xff)));
-  }
+  // inline __device__ vec4f from_8bit(uint32_t v) {
+  //   return vec4f(from_8bit(uint8_t((v >> 0)&0xff)),
+  //                from_8bit(uint8_t((v >> 8)&0xff)),
+  //                from_8bit(uint8_t((v >> 16)&0xff)),
+  //                from_8bit(uint8_t((v >> 24)&0xff)));
+  // }
   
-  inline __device__ float linear_to_srgb(float x) {
-    if (x <= 0.0031308f) {
-      return 12.92f * x;
-    }
-    return 1.055f * pow(x, 1.f/2.4f) - 0.055f;
-  }
+  // inline __device__ float linear_to_srgb(float x) {
+  //   if (x <= 0.0031308f) {
+  //     return 12.92f * x;
+  //   }
+  //   return 1.055f * pow(x, 1.f/2.4f) - 0.055f;
+  // }
 
-  inline __device__ uint32_t _make_8bit(const float f)
-  {
-    return min(255,max(0,int(f*256.f)));
-  }
+  // inline __device__ uint32_t _make_8bit(const float f)
+  // {
+  //   return min(255,max(0,int(f*256.f)));
+  // }
 
-  inline __device__ uint32_t make_rgba8(const vec4f color, bool dbg=false)
-  {
-    if (dbg)
-      printf("col %f %f %f %f\n",
-             color.x,
-             color.y,
-             color.z,
-             color.w);
-    uint32_t r = _make_8bit(color.x);
-    uint32_t g = _make_8bit(color.y);
-    uint32_t b = _make_8bit(color.z);
-    uint32_t a = 0xff; //make_8bit(color.w);
-    uint32_t ret =
-      (r << 0) |
-      (g << 8) |
-      (b << 16) |
-      (a << 24);
-    // if (dbg) printf("%x %x %x %x all %x\n",
-    //                 r,g,b,a,ret);
-    return ret;
-      // (_make_8bit(color.x) << 0) +
-      // (_make_8bit(color.y) << 8) +
-      // (_make_8bit(color.z) << 16) +
-      // (_make_8bit(color.w) << 24);
-  }
+  // inline __device__ uint32_t make_rgba8(const vec4f color, bool dbg=false)
+  // {
+  //   if (dbg)
+  //     printf("col %f %f %f %f\n",
+  //            color.x,
+  //            color.y,
+  //            color.z,
+  //            color.w);
+  //   uint32_t r = _make_8bit(color.x);
+  //   uint32_t g = _make_8bit(color.y);
+  //   uint32_t b = _make_8bit(color.z);
+  //   uint32_t a = 0xff; //make_8bit(color.w);
+  //   uint32_t ret =
+  //     (r << 0) |
+  //     (g << 8) |
+  //     (b << 16) |
+  //     (a << 24);
+  //   // if (dbg) printf("%x %x %x %x all %x\n",
+  //   //                 r,g,b,a,ret);
+  //   return ret;
+  //     // (_make_8bit(color.x) << 0) +
+  //     // (_make_8bit(color.y) << 8) +
+  //     // (_make_8bit(color.z) << 16) +
+  //     // (_make_8bit(color.w) << 24);
+  // }
   
   inline __device__ float clamp(float f) { return min(1.f,max(0.f,f)); }
 
@@ -455,7 +456,8 @@ namespace barney {
       v.y = linear_to_srgb(v.y);
       v.z = linear_to_srgb(v.z);
     }
-    out[idx] = make_rgba8(v,dbg);
+    out[idx] = make_rgba(v);
+    // out[idx] = make_rgba8(v);
   }
 
   __global__ void toneMap(float4 *color, vec2i numPixels)

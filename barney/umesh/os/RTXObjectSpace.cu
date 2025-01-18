@@ -20,14 +20,14 @@ namespace barney {
     
   extern "C" char RTXObjectSpace_ptx[];
   
-  void RTXObjectSpace::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
-  {
-    Inherited::addVars(vars,base);
-    vars.push_back
-      ({ "clusters",       OWL_BUFPTR, base+OWL_OFFSETOF(DD,clusters) });
-    vars.push_back
-      ({ "firstTimeBuild", OWL_INT,    base+OWL_OFFSETOF(DD,firstTimeBuild) });
-  }
+  // void RTXObjectSpace::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
+  // {
+  //   Inherited::addVars(vars,base);
+  //   vars.push_back
+  //     ({ "clusters",       OWL_BUFPTR, base+OWL_OFFSETOF(DD,clusters) });
+  //   vars.push_back
+  //     ({ "firstTimeBuild", OWL_INT,    base+OWL_OFFSETOF(DD,firstTimeBuild) });
+  // }
 
   OWLGeomType RTXObjectSpace::Host::createGeomType(DevGroup *devGroup)
   {
@@ -136,12 +136,12 @@ namespace barney {
     PING; PRINT(clustersBuffer);
   }
 
-  void RTXObjectSpace::Host::setVariables(OWLGeom geom)
-  {
-    Inherited::setVariables(geom);
-    owlGeomSetBuffer(geom,"clusters",clustersBuffer);
-    owlGeomSet1i(geom,"firstTimeBuild",(int)firstTimeBuild);
-  }
+  // void RTXObjectSpace::Host::setVariables(OWLGeom geom)
+  // {
+  //   Inherited::setVariables(geom);
+  //   owlGeomSetBuffer(geom,"clusters",clustersBuffer);
+  //   owlGeomSet1i(geom,"firstTimeBuild",(int)firstTimeBuild);
+  // }
   
 
   void RTXObjectSpace::Host::build(bool full_rebuild)

@@ -34,11 +34,11 @@ namespace barney {
     struct DD : public UMeshField::DD {
       using Inherited = UMeshField::DD;
       
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        Inherited::addVars(vars,base);
-        TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
-      }
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base)
+      // {
+      //   Inherited::addVars(vars,base);
+      //   TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
+      // }
 
       TransferFunction::DD xf;
     };
@@ -57,10 +57,14 @@ namespace barney {
       
       /*! set owl variables for this accelerator - this is virutal so
         derived classes can add their own */
-      virtual void setVariables(OWLGeom geom)
+      // virtual void setVariables(OWLGeom geom)
+      // {
+      //   mesh->setVariables(geom);
+      //   getXF()->setVariables(geom);
+      // }
+      void writeDD(UMeshObjectSpace::DD &dd, rtc::Device *device)
       {
-        mesh->setVariables(geom);
-        getXF()->setVariables(geom);
+        mesh->writeDD(dd,device);
       }
       
       UMeshField *const mesh;

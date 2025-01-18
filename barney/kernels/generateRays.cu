@@ -237,10 +237,10 @@ namespace barney {
        fb->tileDescs,
        enablePerRayDebug
     };
-    device->devGroup->generateRaysKernel->launch(device->rtc,
-                                                 fb->numActiveTiles,
-                                                 pixelsPerTile,
-                                                 &args);
+    device->generateRaysKernel->launch(device->rtc,
+                                       fb->numActiveTiles,
+                                       pixelsPerTile,
+                                       &args);
 #elif 1
     CHECK_CUDA_LAUNCH
       (/* cuda kernel */

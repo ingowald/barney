@@ -32,11 +32,11 @@ namespace barney {
     struct DD : public BlockStructuredField::DD {
       inline __device__ float sample(vec3f P, bool dbg = false) const;
 
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        BlockStructuredField::DD::addVars(vars,base);
-        vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
-      }
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base)
+      // {
+      //   BlockStructuredField::DD::addVars(vars,base);
+      //   vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
+      // }
   
       node_t  *bvhNodes;
     };

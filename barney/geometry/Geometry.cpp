@@ -93,7 +93,7 @@ namespace barney {
   // }
   
 
-  void Geometry::fillDD(Geometry::DD &dd,
+  void Geometry::writeDD(Geometry::DD &dd,
                         rtc::Device *device)
   {
     setAttributesOn(dd,device);

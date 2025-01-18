@@ -33,44 +33,8 @@ namespace barney {
   typedef std::array<int,6> WedIndices;
   typedef std::array<int,8> HexIndices;
 
-  /*! helper class that performs woodcock sampling over a given
-      parameter range, for a given sample'able volume type */
-  struct Woodcock {
-    template<typename VolumeSampler>
-    static inline __device__
-    bool sampleRange(vec4f &sample,
-                     const VolumeSampler &volume,
-                     vec3f org, vec3f dir,
-                     range1f &tRange,
-                     float majorant,
-                     uint32_t &rngSeed,
-                     bool dbg=false)
-    {
-      LCG<4> &rand = (LCG<4> &)rngSeed;
-      float t = tRange.lower;
-      while (true) {
-        float dt = - logf(1.f-rand())/majorant;
-        t += dt;
-        if (t >= tRange.upper)
-          return false;
 
-        vec3f P = org+t*dir;
-        sample = volume.sampleAndMap(P,dbg);
-        // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
-        //                 t,
-        //                 P.x,P.y,P.z,
-        //                 sample.x,
-        //                 sample.y,
-        //                 sample.z,
-        //                 sample.w);
-        if (sample.w >= rand()*majorant) {
-          tRange.upper = t;
-          return true;
-        }
-      }
-    }
-  };
-  
+
   struct VolumeAccel {
     /*! one particular problem of _volume_ accels is that due to
         changes to the transfer function the number of 'valid'
@@ -102,35 +66,8 @@ namespace barney {
     
     typedef std::shared_ptr<VolumeAccel> SP;
 
-    /*! device data for a volume accel - takes the device data for the
-        underlying scalar field, and 'adds' a transfer function (and
-        then gets the ability to sample field and map with xf */
-    template<typename ScalarFieldSampler>
-    struct DD : public ScalarFieldSampler::DD {
-      using Inherited = typename ScalarFieldSampler::DD;
-      
-      inline __device__
-      vec4f sampleAndMap(vec3f point, bool dbg=false) const
-      {
-        float f = this->sample(point,dbg);
-        if (isnan(f)) return vec4f(0.f);
-        vec4f mapped = xf.map(f,dbg);
-        return Inherited::mapColor(mapped,point,f);
-      }
-
-      // static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      // {
-      //   Inherited::addVars(vars,base);
-      //   TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
-      // }
-      
-      TransferFunction::DD xf;
-    };
-    
     VolumeAccel(ScalarField *sf, Volume *volume);
 
-    // virtual void setVariables(OWLGeom geom);
-    
     virtual UpdateMode updateMode()
     { return FULL_REBUILD; }
 
@@ -143,6 +80,12 @@ namespace barney {
     Volume      *const volume = 0;
     DevGroup    *const devGroup;
   };
+
+
+
+
+
+  struct VolumeAccel;
   
   /*! a *volume* is a scalar field with a transfer function applied to
       it; it's main job is to create something that can intersect a
@@ -152,6 +95,23 @@ namespace barney {
       elements, or look up a 3d texture, etc) */
   struct Volume : public Object
   {
+    template<typename SFType>
+    struct DD {
+      inline __both__
+      vec4f sampleAndMap(vec3f point, bool dbg=false) const
+      {
+        float f = sf.sample(point,dbg);
+        if (isnan(f)) return vec4f(0.f);
+        vec4f mapped = xf.map(f,dbg);
+        return mapped;
+        // return Inherited::mapColor(mapped,point,f);
+      }
+      
+      typename SFType::DD  sf;
+      TransferFunction::DD xf;
+    };
+  
+    
     typedef std::shared_ptr<Volume> SP;
     
     Volume(ScalarField::SP sf);
@@ -183,6 +143,49 @@ namespace barney {
   };
 
 
+
+
+  /*! helper class that performs woodcock sampling over a given
+      parameter range, for a given sample'able volume type */
+  struct Woodcock {
+    template<typename SFType>
+    static inline __device__
+    bool sampleRange(vec4f &sample,
+                     const Volume::DD<SFType> &volume,
+                     vec3f org, vec3f dir,
+                     range1f &tRange,
+                     float majorant,
+                     uint32_t &rngSeed,
+                     bool dbg=false)
+    {
+      LCG<4> &rand = (LCG<4> &)rngSeed;
+      float t = tRange.lower;
+      while (true) {
+        float dt = - logf(1.f-rand())/majorant;
+        t += dt;
+        if (t >= tRange.upper)
+          return false;
+
+        vec3f P = org+t*dir;
+        sample = volume.sampleAndMap(P,dbg);
+        // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
+        //                 t,
+        //                 P.x,P.y,P.z,
+        //                 sample.x,
+        //                 sample.y,
+        //                 sample.z,
+        //                 sample.w);
+        if (sample.w >= rand()*majorant) {
+          tRange.upper = t;
+          return true;
+        }
+      }
+    }
+  };
+
+
+
+  
   inline VolumeAccel::VolumeAccel(ScalarField *sf, Volume *volume)
     : sf(sf), volume(volume), devGroup(sf->getDevGroup())
   {

@@ -34,7 +34,7 @@ namespace barney {
               << OWL_TERMINAL_DEFAULT << std::endl;
 
 #if 1
-    return getRTC()->createUserGeomType("Cylinders",
+    return devGroup->rtc->createUserGeomType("Cylinders",
                                         sizeof(Cylinders::DD),
                                         "CylindersBounds",
                                         "CylindersIsec",
@@ -58,8 +58,8 @@ namespace barney {
     owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CylindersIsec");
     owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CylindersCH");
     owlBuildPrograms(devGroup->owl);
-#endif
     return gt;
+#endif
   }
   
   void Cylinders::commit()
@@ -70,30 +70,32 @@ namespace barney {
       rtc::GeomType *gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Cylinders",Cylinders::createGeomType);
       // OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      rtc::Geom *geom = getRTC()->createGeom(gt,indices->count);
+      rtc::Geom *geom = getRTC()->createGeom(gt);
+      geom->setPrimCount(indices->count);
       userGeoms.push_back(geom);
     }
     // OWLGeom geom = userGeoms[0];
     rtc::Geom *geom = userGeoms[0];
 
 #if 1
+    DD dd;
     for (auto device : getRTC()->devices) {
-      DD dd;
-      dd.vertices
-        = vertices
-        ? vertices->getDD(device)
-        : nullptr;
-      dd.indices
-        = indices
-        ? indices->getDD(device)
-        : nullptr;
-      dd.radii
-        = radii
-        ? radii->getDD(device)
-        : nullptr;
-      Geometry::setAttributes(dd,device);
-      setAttributes(dd,device);
-      dd.material = getMaterial()->getDD(device);
+      Geometry::writeDD(dd,device);
+      dd.vertices = (vec3f*)getDD(device,vertices);
+        // = vertices
+        // ? vertices->getDD(device)
+        // : nullptr;
+      dd.indices  = (vec2i*)getDD(device,indices);
+        // ? indices->getDD(device)
+        // : nullptr;
+      dd.radii = (float*)getDD(device,radii);
+      //   = radii
+      //   ? radii->getDD(device)
+      //   : nullptr;
+      // Geometry::setAttributes(dd,device);
+      // setAttributes(dd,device);
+      // dd.material = getMaterial()->getDD(device);
+      geom->setDD(&dd,device);
     }
     
 #else

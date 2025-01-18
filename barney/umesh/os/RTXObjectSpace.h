@@ -60,7 +60,7 @@ namespace barney {
 
       /*! set owl variables for this accelerator - this is virutal so
         derived classes can add their own */
-      void setVariables(OWLGeom geom) override;
+      // void setVariables(OWLGeom geom) override;
       
       std::vector<Cluster> clusters;
       OWLBuffer clustersBuffer = 0;

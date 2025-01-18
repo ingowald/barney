@@ -100,6 +100,46 @@ namespace barney {
   
   inline __both__ vec3f lerp(vec3f f, box3f box)
   { return lerp(f,box.lower,box.upper); }
+
+
+  inline __both__ float linear_to_srgb(float x) {
+    if (x <= 0.0031308f) {
+      return 12.92f * x;
+    }
+    return 1.055f * pow(x, 1.f/2.4f) - 0.055f;
+  }
+
+  inline __both__ uint32_t make_8bit(const float f)
+  {
+    return min(255,max(0,int(f*256.f)));
+  }
+
+  inline __both__ uint32_t make_rgba(const vec3f color)
+  {
+    return
+      (make_8bit(color.x) << 0) +
+      (make_8bit(color.y) << 8) +
+      (make_8bit(color.z) << 16) +
+      (0xffU << 24);
+  }
+  inline __both__ uint32_t make_rgba(const vec4f color)
+  {
+    return
+      (make_8bit(color.x) << 0) +
+      (make_8bit(color.y) << 8) +
+      (make_8bit(color.z) << 16) +
+      (make_8bit(color.w) << 24);
+  }
+
+  inline __both__ uint32_t make_rgba(const float4 color)
+  {
+    return
+      (make_8bit(color.x) << 0) +
+      (make_8bit(color.y) << 8) +
+      (make_8bit(color.z) << 16) +
+      (make_8bit(color.w) << 24);
+  }
+
 }
 
 #define BARNEY_NYI() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not yet implemented")

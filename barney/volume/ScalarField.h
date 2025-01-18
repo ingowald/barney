@@ -46,11 +46,11 @@ namespace barney {
           implementation (provided here int his base class coommon to
           all scalar fields) is to just return the xf-color mapped
           RBGA value */
-      inline __device__ vec4f mapColor(vec4f xfColorMapped,
-                                       vec3f point, float scalar) const
-      { return xfColorMapped; }
+      // inline __both__ vec4f mapColor(vec4f xfColorMapped,
+      //                                vec3f point, float scalar) const
+      // { return xfColorMapped; }
 
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
     ScalarField(Context *context, int slot,
@@ -58,8 +58,11 @@ namespace barney {
 
     static ScalarField::SP create(Context *context, int slot,
                                   const std::string &type);
+
+    void writeDD(DD &dd, rtc::Device *device)
+    { dd.worldBounds = worldBounds; }
     
-    virtual void setVariables(OWLGeom geom);
+    // virtual void setVariables(OWLGeom geom);
     
     virtual std::shared_ptr<VolumeAccel> createAccel(Volume *volume) = 0;
     

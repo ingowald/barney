@@ -52,7 +52,7 @@ namespace barney {
         all device-side pointers and function to access this field and
         sample/evaluate its elemnets */
     struct DD : public ScalarField::DD {
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
       
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
@@ -99,8 +99,8 @@ namespace barney {
       int               numElements;
     };
 
-    // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    void setVariables(OWLGeom geom) override;
+    // // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
+    // void setVariables(OWLGeom geom) override;
     
     /*! build *initial* macro-cell grid (ie, the scalar field min/max
       ranges, but not yet the majorants) over a umesh */
@@ -140,9 +140,9 @@ namespace barney {
     std::vector<vec4f>      vertices;
     std::vector<int>        indices;
     std::vector<Element>    elements;
-    OWLBuffer verticesBuffer   = 0;
-    OWLBuffer indicesBuffer    = 0;
-    OWLBuffer elementsBuffer   = 0;
+    rtc::Buffer *verticesBuffer   = 0;
+    rtc::Buffer *indicesBuffer    = 0;
+    rtc::Buffer *elementsBuffer   = 0;
   };
   
   // ==================================================================

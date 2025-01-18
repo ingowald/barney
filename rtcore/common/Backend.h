@@ -30,6 +30,15 @@ namespace barney {
                           const Device *device=nullptr) = 0;
     };
 
+    struct Geom {
+      /*! only for user geoms */
+      virtual void setPrimCount(int primCount);
+      /*! can only get called on triangle type geoms */
+      virtual void setVertices(rtc::Buffer *vertices, int numVertices) = 0;
+      virtual void setIndices(rtc::Buffer *indices, int numIndices) = 0;
+      virtual void setDD(const void *dd, const Device *device) = 0;
+    };
+
     struct TextureData {
       typedef enum {
         FLOAT,
@@ -57,6 +66,41 @@ namespace barney {
       virtual rtc::device::TextureObject getDD(Device *) const = 0;
     };
     
+    struct ComputeKernel {
+      virtual void launch(rtc::Device *device,
+                          int numBlocks,
+                          int blockSize,
+                          const void *dd)
+      { BARNEY_NYI(); }
+
+      virtual void launch(rtc::Device *device,
+                          vec2i numBlocks,
+                          vec2i blockSize,
+                          const void *dd)
+      { BARNEY_NYI(); }
+
+      virtual void launch(rtc::Device *device,
+                          vec3i numBlocks,
+                          vec3i blockSize,
+                          const void *dd)
+      { BARNEY_NYI(); }
+    };
+
+    struct TraceKernel {
+      virtual void launch(rtc::Device *device,
+                          vec2i launchDims,
+                          const void *dd)
+      { BARNEY_NYI(); }
+      virtual void launch(rtc::Device *device,
+                          int launchDims,
+                          const void *dd)
+      { BARNEY_NYI(); }
+      virtual void sync()
+      { BARNEY_NYI(); }
+    };
+    
+
+
     struct Device {
       Device(Backend *const backend,
              const int physicalID)
@@ -94,34 +138,6 @@ namespace barney {
     };
 
 
-    struct ComputeKernel {
-      virtual void launch(rtc::Device *device,
-                          vec2i numBlocks,
-                          vec2i blockSize,
-                          const void *dd)
-      { BARNEY_NYI(); }
-      virtual void launch(rtc::Device *device,
-                          int numBlocks,
-                          int blockSize,
-                          const void *dd)
-      { BARNEY_NYI(); }
-      virtual void sync(rtc::Device *device)
-      { BARNEY_NYI(); }
-    };
-
-    struct TraceKernel {
-      virtual void launch(rtc::Device *device,
-                          vec2i launchDims,
-                          const void *dd)
-      { BARNEY_NYI(); }
-      virtual void launch(rtc::Device *device,
-                          int launchDims,
-                          const void *dd)
-      { BARNEY_NYI(); }
-      virtual void sync(rtc::Device *device)
-      { BARNEY_NYI(); }
-    };
-    
     struct DevGroup {
       DevGroup(Backend *backend)
         : backend(backend)
@@ -175,12 +191,21 @@ namespace barney {
       // geom/geomtype stuff
       // ==================================================================
 
-      virtual rtc::GeomType *createGeomType(const char *typeName,
-                                            size_t sizeOfDD,
-                                            const char *boundsFctName,
-                                            const char *isecFctName,
-                                            const char *ahFctName,
-                                            const char *chFctName)
+      virtual rtc::Geom *createGeom(rtc::GeomType *gt)
+      { BARNEY_NYI(); }
+      
+      virtual rtc::GeomType *createUserGeomType(const char *typeName,
+                                                size_t sizeOfDD,
+                                                const char *boundsFctName,
+                                                const char *isecFctName,
+                                                const char *ahFctName,
+                                                const char *chFctName)
+      { BARNEY_NYI(); }
+      
+      virtual rtc::GeomType *createTrianglesGeomType(const char *typeName,
+                                                     size_t sizeOfDD,
+                                                     const char *ahFctName,
+                                                     const char *chFctName)
       { BARNEY_NYI(); }
       
       virtual void free(Geom *)
@@ -242,6 +267,7 @@ namespace barney {
     Backend *createBackend_optix();
     Backend *createBackend_embree();
   }
+
 }
 
 

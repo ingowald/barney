@@ -59,17 +59,13 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
 
-    static OWLGeomType createGeomType(DevGroup *devGroup);
+    static rtc::GeomType *createGeomType(DevGroup *devGroup);
 
     PODData::SP vertices;
     PODData::SP indices;
     PODData::SP normals;
+    // TODO: do we still need this in times of ANARI?
     PODData::SP texcoords;
-    // PODData::SP vertexAttribute0;
-    // PODData::SP vertexAttribute1;
-    // PODData::SP vertexAttribute2;
-    // PODData::SP vertexAttribute3;
-    // PODData::SP vertexAttribute4;
   };
 
 }

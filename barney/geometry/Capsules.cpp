@@ -25,34 +25,36 @@ namespace barney {
     : Geometry(context,slot)
   {}
 
-  OWLGeomType Capsules::createGeomType(DevGroup *devGroup)
+  rtc::GeomType *Capsules::createGeomType(DevGroup *devGroup)
   {
-#if 1
-    BARNEY_NYI();
-#else
     if (DevGroup::logging())
-   std::cout << OWL_TERMINAL_GREEN
-              << "creating 'Capsules' geometry type"
-              << OWL_TERMINAL_DEFAULT << std::endl;
+      std::cout << OWL_TERMINAL_GREEN
+                << "creating 'Capsules' geometry type"
+                << OWL_TERMINAL_DEFAULT << std::endl;
     
-    std::vector<OWLVarDecl> params
-      = {
-      { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-      { "indices",  OWL_BUFPTR, OWL_OFFSETOF(DD,indices)  } 
-    };
-    Geometry::addVars(params,0);
-    OWLModule module = owlModuleCreate
-      (devGroup->owl,Capsules_ptx);
-    OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_USER,sizeof(Capsules::DD),
-       params.data(), (int)params.size());
-    owlGeomTypeSetBoundsProg(gt,module,"CapsulesBounds");
-    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CapsulesIsec");
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CapsulesCH");
-    owlBuildPrograms(devGroup->owl);
+    // std::vector<OWLVarDecl> params
+    //   = {
+    //   { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
+    //   { "indices",  OWL_BUFPTR, OWL_OFFSETOF(DD,indices)  } 
+    // };
+    // Geometry::addVars(params,0);
+    // OWLModule module = owlModuleCreate
+    //   (devGroup->owl,Capsules_ptx);
+    // OWLGeomType gt = owlGeomTypeCreate
+    //   (devGroup->owl,OWL_GEOM_USER,sizeof(Capsules::DD),
+    //    params.data(), (int)params.size());
+    // owlGeomTypeSetBoundsProg(gt,module,"CapsulesBounds");
+    // owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CapsulesIsec");
+    // owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CapsulesCH");
+    // owlBuildPrograms(devGroup->owl);
     
-    return gt;
-#endif
+    // return gt;
+    return devGroup->rtc->createUserGeomType("Capsules",
+                                             sizeof(Capsules::DD),
+                                             "CapsulesBounds",
+                                             "CapsulesIsec",
+                                             nullptr,
+                                             "CapsulesCH");
   }
   
   void Capsules::commit()

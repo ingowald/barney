@@ -23,19 +23,19 @@ namespace barney {
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
-    MCRTXVolumeAccel<StructuredDataSampler>::boundsProg
+    MCRTXVolumeAccel<StructuredData>::boundsProg
       (geomData,bounds,primID);
   }
 
   OPTIX_INTERSECT_PROGRAM(Structured_MCRTX_Isec)()
   {
-    MCRTXVolumeAccel<StructuredDataSampler>::isProg();
+    MCRTXVolumeAccel<StructuredData>::isProg();
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCRTX_CH)()
   {
     /* nothing - already all set in isec */
-    MCRTXVolumeAccel<StructuredDataSampler>::chProg();
+    MCRTXVolumeAccel<StructuredData>::chProg();
   }
   
 
@@ -47,17 +47,17 @@ namespace barney {
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
   {
-    MCDDAVolumeAccel<StructuredDataSampler>::boundsProg(geomData,bounds,primID);
+    MCDDAVolumeAccel<StructuredData>::boundsProg(geomData,bounds,primID);
   }
 
   OPTIX_INTERSECT_PROGRAM(Structured_MCDDA_Isec)()
   {
-    MCDDAVolumeAccel<StructuredDataSampler>::isProg();
+    MCDDAVolumeAccel<StructuredData>::isProg();
   }
   
   OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCDDA_CH)()
   {
-    MCDDAVolumeAccel<StructuredDataSampler>::chProg();
+    MCDDAVolumeAccel<StructuredData>::chProg();
     /* nothing - already all set in isec */
   }
   

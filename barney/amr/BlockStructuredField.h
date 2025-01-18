@@ -87,7 +87,7 @@ namespace barney {
 
     struct DD : public ScalarField::DD {
 
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
       
       /* compute basis function contribution of given block at point P, and add
          that to 'sumWeightedValues' and 'sumWeights'. returns true if P is
@@ -111,7 +111,7 @@ namespace barney {
     };
 
     // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    void setVariables(OWLGeom geom) override;
+    // void setVariables(OWLGeom geom) override;
 
     void buildMCs(MCGrid &macroCells) override;
     

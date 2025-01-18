@@ -61,7 +61,7 @@ namespace barney {
 
     void setAttributesOn(Geometry::DD &dd,
                          rtc::Device *device);
-    void fillDD(Geometry::DD &dd,
+    void writeDD(Geometry::DD &dd,
                 rtc::Device *device);
     
     // void setAttributesOn(OWLGeom geom);

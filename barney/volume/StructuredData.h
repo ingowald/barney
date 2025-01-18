@@ -51,33 +51,37 @@ namespace barney {
         texture object (which does trilinerar interpolation) as well
         as a "NN" (nearest) sampling for the macro-cell generation */
     struct DD : public ScalarField::DD {
-      cudaTextureObject_t texObj;
+      
+      inline __both__ float sample(const vec3f P, bool dbg=false) const;
+      
+      // cudaTextureObject_t texObj;
+      rtc::device::TextureObject texObj;
       vec3f cellGridOrigin;
       vec3f cellGridSpacing;
       vec3i numCells;
-      cudaTextureObject_t colorMappingTexObj;
+//       rtc::device::TextureObject colorMappingTexObj;
 
-#ifdef __CUDA_ARCH__
-      /*! "template-virtual" function that a sampler calls on an
-          _already_ transfer-function mapped RGBA value, allowing the
-          scalar field to do some additional color mapping on top of
-          whatever came out of the transfer function. the default
-          implementation (provided here int his base class coommon to
-          all scalar fields) is to just return the xf-color mapped
-          RBGA value */
-      inline __device__ vec4f mapColor(vec4f xfColorMapped,
-                                       vec3f P, float scalar) const
-      {
-        if (!colorMappingTexObj) return xfColorMapped;
-        vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
-        float4 fromColorMap = tex3D<float4>(colorMappingTexObj,rel.x,rel.y,rel.z);
-        fromColorMap.w = xfColorMapped.w;
-        return fromColorMap;
-      }
-#endif
+// #ifdef __CUDACC__
+//       /*! "template-virtual" function that a sampler calls on an
+//           _already_ transfer-function mapped RGBA value, allowing the
+//           scalar field to do some additional color mapping on top of
+//           whatever came out of the transfer function. the default
+//           implementation (provided here int his base class coommon to
+//           all scalar fields) is to just return the xf-color mapped
+//           RBGA value */
+//       inline __both__ vec4f mapColor(vec4f xfColorMapped,
+//                                        vec3f P, float scalar) const
+//       {
+//         if (!colorMappingTexObj) return xfColorMapped;
+//         vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
+//         float4 fromColorMap = tex3D<float4>(colorMappingTexObj,rel.x,rel.y,rel.z);
+//         fromColorMap.w = xfColorMapped.w;
+//         return fromColorMap;
+//       }
+// #endif
 
       
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
 
     /*! construct a new structured data scalar field; will not do
@@ -95,12 +99,14 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
     
-    void setVariables(OWLGeom geom) override;
+    // void setVariables(OWLGeom geom) override;
+    void writeDD(DD &dd, rtc::Device *device);
     VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 
     Texture3D::SP  texture;
     Texture3D::SP  colorMapTexture;
+    rtc::ComputeKernel *computeMCsKernel = 0;
     BNDataType   scalarType = BN_DATA_UNDEFINED;
     vec3i numScalars  { 0,0,0 };
     vec3i numCells    { 0,0,0 }; 
@@ -108,50 +114,70 @@ namespace barney {
     vec3f gridSpacing { 1,1,1 };
   };
 
-  /*! for structured data, the sampler doesn't have to do much but
-      sample the 3D texture that the structeuddata field has already
-      created. in thoery one could argue that the 3d texture should
-      belong ot the sampler (not the field), but the field needs it to
-      compute the macro cells, so we'll leave it as such for now */
-  struct StructuredDataSampler {
-    struct DD : public StructuredData::DD {
-      inline __device__ float sample(const vec3f P, bool dbg) const;
-      // inline __device__ vec4f mapColor(vec4f xfColorMapped,
-      //                                  vec3f point, float scalar) const
-      // { return xfColorMapped; }
-    };
+  // /*! for structured data, the sampler doesn't have to do much but
+  //     sample the 3D texture that the structeuddata field has already
+  //     created. in thoery one could argue that the 3d texture should
+  //     belong ot the sampler (not the field), but the field needs it to
+  //     compute the macro cells, so we'll leave it as such for now */
+  // struct StructuredDataSampler {
+  //   struct DD : public StructuredData::DD {
+  //     inline __device__ float sample(const vec3f P, bool dbg) const;
+  //     // inline __device__ vec4f mapColor(vec4f xfColorMapped,
+  //     //                                  vec3f point, float scalar) const
+  //     // { return xfColorMapped; }
+  //   };
 
-    struct Host
-    {
-      Host(ScalarField *field)
-        : field((StructuredData *)field)
-      {}
+  //   struct Host
+  //   {
+  //     Host(ScalarField *field)
+  //       : field((StructuredData *)field)
+  //     {}
 
-      /*! builds the string that allows for properly matching optix
-        device progs for this type */
-      inline std::string getTypeString() const { return "Structured"; }
+  //     /*! builds the string that allows for properly matching optix
+  //       device progs for this type */
+  //     inline std::string getTypeString() const { return "Structured"; }
 
-      /*! doesn'ta ctualy do anything for this class, but required to
-          make the template instantiating it happy */
-      void setVariables(OWLGeom geom) { /* nothing to do for this class */}
+  //     /*! doesn'ta ctualy do anything for this class, but required to
+  //         make the template instantiating it happy */
+  //     void setVariables(OWLGeom geom) { /* nothing to do for this class */}
       
-      /*! doesn'ta ctualy do anything for this class, but required to
-          make the template instantiating it happy */
-      void build(bool full_rebuild) { /* nothing to do for this class */}
+  //     /*! doesn'ta ctualy do anything for this class, but required to
+  //         make the template instantiating it happy */
+  //     void build(bool full_rebuild) { /* nothing to do for this class */}
       
-      StructuredData *const field;
-    };
-  };
+  //     StructuredData *const field;
+  //   };
+  // };
   
-#ifdef __CUDA_ARCH__
-  inline __device__ float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
+// #ifdef __CUDA_ARCH__
+//   inline __device__ float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
+//   {
+//     vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
+
+//     if (dbg) printf("world transform %f %f %f -> %f %f %f\n",
+//                     P.x,P.y,P.z,
+//                     rel.x,rel.y,rel.z);
+    
+//     if (rel.x < 0.f) return NAN;
+//     if (rel.y < 0.f) return NAN;
+//     if (rel.z < 0.f) return NAN;
+//     if (rel.x >= numCells.x) return NAN;
+//     if (rel.y >= numCells.y) return NAN;
+//     if (rel.z >= numCells.z) return NAN;
+//     float f = tex3D<float>(texObj,rel.x+.5f,rel.y+.5f,rel.z+.5f);
+//     if (dbg) printf("result of tex3d() -> %f\n",f);
+//     return f;
+//   }
+// #endif
+  inline __both__
+  float StructuredData::DD::sample(const vec3f P, bool dbg) const
   {
     vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
-
+        
     if (dbg) printf("world transform %f %f %f -> %f %f %f\n",
                     P.x,P.y,P.z,
                     rel.x,rel.y,rel.z);
-    
+        
     if (rel.x < 0.f) return NAN;
     if (rel.y < 0.f) return NAN;
     if (rel.z < 0.f) return NAN;
@@ -162,7 +188,7 @@ namespace barney {
     if (dbg) printf("result of tex3d() -> %f\n",f);
     return f;
   }
-#endif
+  
 }
 
 
