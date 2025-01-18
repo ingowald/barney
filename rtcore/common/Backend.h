@@ -67,6 +67,12 @@ namespace barney {
       virtual void copyAsync(void *dst, void *src, size_t numBytes)
       { BARNEY_NYI(); }
       
+      virtual void *alloc(size_t numBytes)
+      { BARNEY_NYI(); }
+      
+      virtual void free(void *mem)
+      { BARNEY_NYI(); }
+      
       virtual void buildPipeline()
       { BARNEY_NYI(); }
       
