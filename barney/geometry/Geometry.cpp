@@ -139,7 +139,7 @@ namespace barney {
     return attributes;
   }
   
-#if 0
+#if 1
   void Geometry::setAttributesOn(Geometry::DD &dd,
                                  rtc::Device *device)
   {

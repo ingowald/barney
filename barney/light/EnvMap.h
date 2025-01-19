@@ -45,8 +45,6 @@ namespace barney {
       const float        *allCDFs_x;
     };
 
-    rtc::DevGroup *getRTC() const;
-    
     DD getDD(const Device::SP &device) const;
 
     // ==================================================================

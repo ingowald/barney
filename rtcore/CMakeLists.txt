@@ -104,6 +104,14 @@ if (BARNEY_BACKEND_EMBREE)
 endif()
 
 # ==================================================================
+if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
+  add_library(barney_rtc_cuda_common STATIC
+    cuda/CUDACommon.cu
+    )
+  target_link_libraries(barney_rtc_cuda_common PUBLIC barney_rtc_common)
+endif()
+
+# ==================================================================
 if (BARNEY_BACKEND_CUDA)
   message("ENabling CUDA backend")
   target_compile_definitions(barney_config INTERFACE
@@ -113,7 +121,7 @@ if (BARNEY_BACKEND_CUDA)
   add_library(barney_rtc_cuda STATIC
     cuda/CUDABackend.cu
     )
-  target_link_libraries(barney_rtc_cuda PUBLIC barney_rtc_common)
+  target_link_libraries(barney_rtc_cuda PUBLIC barney_rtc_cuda_common)
   target_link_libraries(barney_rtc PUBLIC barney_rtc_cuda)
 endif()
 
@@ -127,7 +135,7 @@ if (BARNEY_BACKEND_OPTIX)
   add_library(barney_rtc_optix STATIC
     optix/OptixBackend.cpp
     )
-  target_link_libraries(barney_rtc_optix PUBLIC barney_rtc_cuda)
+  target_link_libraries(barney_rtc_optix PUBLIC barney_rtc_cuda_common)
   target_link_libraries(barney_rtc PUBLIC barney_rtc_optix)
 endif()
 
@@ -135,7 +143,7 @@ endif()
 
 # ==================================================================
 # ==================================================================
-if (BARNEY_BACKEND_CUDA)
+if (BARNEY_HAVE_CUDA)
   macro(CUDA_SOURCE fileName)
     # nothing to do, leave it to cuda to compile this.
   endmacro()

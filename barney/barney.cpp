@@ -484,7 +484,10 @@ namespace barney {
       = domainOrNull
       ? *(const box3f*)domainOrNull
       : box3f();
-    
+
+#if 1
+    BARNEY_NYI();
+#else
     ScalarField::SP sf = 
       UMeshField::create(checkGet(context),slot,
                          (const vec4f*)vertices,numVertices,
@@ -493,6 +496,7 @@ namespace barney {
                          numElements,
                          domain);
     return (BNScalarField)checkGet(context)->initReference(sf);
+#endif
   }
   
   BN_API
@@ -511,6 +515,9 @@ namespace barney {
                                            const float *_blockScalars,
                                            int numBlockScalars)
   {
+#if 1
+    BARNEY_NYI();
+#else
     std::cout << "#bn: copying 'amr' from app ..." << std::endl;
     std::vector<box3i> blockBounds(numBlocks);
     std::vector<int>   blockLevels(numBlocks);
@@ -527,6 +534,7 @@ namespace barney {
                                              blockOffsets,
                                              blockScalars);
     return (BNScalarField)checkGet(context)->initReference(sf);
+#endif
   }
 
 

@@ -97,6 +97,7 @@ namespace barney {
     const std::vector<std::shared_ptr<Device>> &getDevices() const;
     //    OWLContext     getOWL() const;
     DevGroup *getDevGroup() const;
+    
     rtc::DevGroup *getRTC() const;
     // render::World *getWorld() const;
     

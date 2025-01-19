@@ -16,14 +16,14 @@ namespace barney {
     struct Group;
 
     struct Group {
-      virtual rtc::device::AccelHandle getDD(Device *) const = 0;
+      virtual rtc::device::AccelHandle getDD(const Device *) const = 0;
       
       virtual void buildAccel() = 0;
       virtual void refitAccel() = 0;
     };
 
     struct Buffer {
-      virtual void *getDD(Device *) const = 0;
+      virtual void *getDD(const Device *) const = 0;
       virtual void upload(const void *hostPtr,
                           size_t numBytes,
                           size_t ofs = 0,
@@ -47,6 +47,7 @@ namespace barney {
         UCHAR4,
         USHORT,
       } Format;
+      vec3i dims;
     };
     
     struct Texture {
@@ -62,8 +63,12 @@ namespace barney {
         COLOR_SPACE_LINEAR, COLOR_SPACE_SRGB,
       } ColorSpace;
     
-      const vec3i &getDims() const;
-      virtual rtc::device::TextureObject getDD(Device *) const = 0;
+      const vec3i &getDims() const {
+        return data->dims;
+      }
+      virtual rtc::device::TextureObject getDD(const Device *) const = 0;
+
+      TextureData *data;
     };
     
     struct ComputeKernel {
@@ -108,20 +113,11 @@ namespace barney {
           physicalID(physicalID)
       {}
 
-      virtual void copyAsync(void *dst, void *src, size_t numBytes)
-      { BARNEY_NYI(); }
-      
-      virtual void *alloc(size_t numBytes)
-      { BARNEY_NYI(); }
-      
-      virtual void free(void *mem)
-      { BARNEY_NYI(); }
-      
-      virtual void buildPipeline()
-      { BARNEY_NYI(); }
-      
-      virtual void buildSBT()
-      { BARNEY_NYI(); }
+      virtual void copyAsync(void *dst, void *src, size_t numBytes) = 0;
+      virtual void *alloc(size_t numBytes) = 0;
+      virtual void free(void *mem) = 0;
+      virtual void buildPipeline() = 0;
+      virtual void buildSBT() = 0;
       
       /*! sets this gpu as active, and returns physical ID of GPU that
           was active before */
@@ -131,7 +127,7 @@ namespace barney {
       virtual void restoreActive(int oldActive) const = 0;
       
       // virtual void launchTrace(const void *ddPtr) = 0;
-      virtual void sync() { BARNEY_NYI(); }
+      virtual void sync() = 0;
       
       Backend *const backend;
       const int physicalID;
@@ -144,8 +140,7 @@ namespace barney {
       {}
       virtual ~DevGroup() {}
 
-      virtual void destroy()
-      { BARNEY_NYI(); }
+      virtual void destroy() = 0;
       
       // ==================================================================
       // kernels
@@ -156,12 +151,12 @@ namespace barney {
       // ==================================================================
       // buffer stuff
       // ==================================================================
-      virtual Buffer *createBuffer(size_t numBytes, const void *initValues = 0) const
-      { BARNEY_NYI(); }
-      virtual void free(Buffer *) const
-      { BARNEY_NYI(); }
-      virtual void copy(Buffer *dst, Buffer *src, size_t numBytes) const
-      { BARNEY_NYI(); }
+      virtual rtc::Buffer *createBuffer(size_t numBytes,
+                                   const void *initValues = 0) const = 0;
+      virtual void free(rtc::Buffer *) const = 0;
+      virtual void copy(rtc::Buffer *dst,
+                        rtc::Buffer *src,
+                        size_t numBytes) const = 0;
       
       // ==================================================================
       // texture stuff
@@ -170,8 +165,7 @@ namespace barney {
       virtual rtc::TextureData *
       createTextureData(vec3i dims,
                         rtc::TextureData::Format format,
-                        const void *texels) const
-      { BARNEY_NYI(); }
+                        const void *texels) const = 0;
                         
       virtual rtc::Texture *
       createTexture(rtc::TextureData *data,
@@ -179,54 +173,48 @@ namespace barney {
                     rtc::Texture::AddressMode addressModes[3],
                     const vec4f borderColor = vec4f(0.f),
                     rtc::Texture::ColorSpace colorSpace
-                    = rtc::Texture::COLOR_SPACE_LINEAR) const
-      { BARNEY_NYI(); }
+                    = rtc::Texture::COLOR_SPACE_LINEAR) const = 0;
                         
-      virtual void free(TextureData *) const
-      { BARNEY_NYI(); }
-      virtual void free(Texture *) const
-      { BARNEY_NYI(); }
+      virtual void free(rtc::TextureData *) const = 0;
+      virtual void free(rtc::Texture *) const = 0;
 
       // ==================================================================
       // geom/geomtype stuff
       // ==================================================================
 
-      virtual rtc::Geom *createGeom(rtc::GeomType *gt)
-      { BARNEY_NYI(); }
+      virtual rtc::Geom *
+      createGeom(rtc::GeomType *gt) = 0;
+        
+      virtual rtc::GeomType *
+      createUserGeomType(const char *typeName,
+                         size_t sizeOfDD,
+                         const char *boundsFctName,
+                         const char *isecFctName,
+                         const char *ahFctName,
+                         const char *chFctName) = 0;
       
-      virtual rtc::GeomType *createUserGeomType(const char *typeName,
-                                                size_t sizeOfDD,
-                                                const char *boundsFctName,
-                                                const char *isecFctName,
-                                                const char *ahFctName,
-                                                const char *chFctName)
-      { BARNEY_NYI(); }
+      virtual rtc::GeomType *
+      createTrianglesGeomType(const char *typeName,
+                              size_t sizeOfDD,
+                              const char *ahFctName,
+                              const char *chFctName) = 0;
       
-      virtual rtc::GeomType *createTrianglesGeomType(const char *typeName,
-                                                     size_t sizeOfDD,
-                                                     const char *ahFctName,
-                                                     const char *chFctName)
-      { BARNEY_NYI(); }
+      virtual void free(rtc::Geom *) = 0;
       
-      virtual void free(Geom *)
-      { BARNEY_NYI(); }
-      
-      virtual void free(GeomType *)
-      { BARNEY_NYI(); }
+      virtual void free(rtc::GeomType *) = 0;
       
       // ==================================================================
       // group/accel stuff
       // ==================================================================
-      virtual Group *
-      createTrianglesGroup(const std::vector<Geom *> &geoms) = 0;
+      virtual rtc::Group *
+      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms) = 0;
       
-      virtual Group *
-      createUserGeomsGroup(const std::vector<Geom *> &geoms) = 0;
+      virtual rtc::Group *
+      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) = 0;
 
-      virtual Group *
-      createInstanceGroup(const std::vector<Group *> &groups,
-                          const std::vector<affine3f> &xfms)
-      { BARNEY_NYI(); }
+      virtual rtc::Group *
+      createInstanceGroup(const std::vector<rtc::Group *> &groups,
+                          const std::vector<affine3f> &xfms) = 0;
       
       virtual void free(rtc::Group *) = 0;
 
@@ -243,7 +231,7 @@ namespace barney {
       virtual rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs,
                                        size_t sizeOfGlobals) = 0;
 
-      virtual rtc::Device *createDevice(int physicalID);
+      virtual rtc::Device *createDevice(int physicalID) = 0;
 
       /*! number of 'physical' devices - num cuda capable gpus if cuda
         or optix, or 1 if embree */
@@ -257,11 +245,6 @@ namespace barney {
     };
 
     // helper function(s)
-    template<typename T> void resizeAndUpload(rtc::Buffer *&buffer,
-                                              const std::vector<T> &data);
-
-
-    
 
     Backend *createBackend_cuda();
     Backend *createBackend_optix();

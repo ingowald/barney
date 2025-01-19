@@ -10,12 +10,11 @@ namespace barney {
 
     struct BaseDevice : public rtc::Device {
       /*! sets this gpu as active, and returns physical ID of GPU that
-          was active before */
+        was active before */
       int setActive() const override;
       
       /*! restores the gpu whose ID was previously returend by setActive() */
       void restoreActive(int oldActive) const override;
-      
     };
       
     struct BaseDevGroup : public rtc::DevGroup {
@@ -29,7 +28,7 @@ namespace barney {
       // void setActiveGPU(int physicalID) override;
       // int  getActiveGPU() override;
     };
-
+    
     struct CUDABackend : public cuda::BaseBackend {
       rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs,
                                     size_t sizeOfGlobals) override;

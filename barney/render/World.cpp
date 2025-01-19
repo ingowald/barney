@@ -122,8 +122,8 @@ namespace barney {
 
 
     void MaterialRegistry::setMaterial(int materialID,
-                                      const DeviceMaterial &dd,
-                                      int deviceID)
+                                       const DeviceMaterial &dd,
+                                       int deviceID)
     {
       buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID);
       // BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+materialID),
@@ -210,7 +210,7 @@ namespace barney {
     // }    
 
     void SamplerRegistry::setDD(int samplerID,
-                               const Sampler::DD &dd,
+                                const Sampler::DD &dd,
                                 rtc::Device *device)
     {
       buffer->upload(&dd,sizeof(dd),/*offset*/samplerID*sizeof(dd),device);
@@ -218,38 +218,43 @@ namespace barney {
       //                         &dd,sizeof(dd),cudaMemcpyDefault));
     }
 
-
-      void World::set(const std::vector<QuadLight::DD> &quadLights)
-      {
-        barney::rtc::resizeAndUpload(quadLightsBuffer,quadLights);
-        // rtccore
-        // if (quadLights.empty())
-        //   // owlBufferResize(quadLightsBuffer,1);
-        //   quadLightsBuffer->resize(sizeof(QuadLight::DD));
-        // else {
-        //   // owlBufferResize(quadLightsBuffer,quadLights.size());
-        //   // owlBufferUpload(quadLightsBuffer,quadLights.data());
-        //   quadLightsBuffer->resizeAndUpload(quadLights);
-        // }
-        numQuadLights = (int)quadLights.size();
-      }
     
-      void World::set(const std::vector<DirLight::DD> &dirLights)
-      {
-        barney::rtc::resizeAndUpload(dirLightsBuffer,dirLights);
-        // if (dirLights.empty()) 
-        //   owlBufferResize(dirLightsBuffer,1);
-        // else {
-        //   owlBufferResize(dirLightsBuffer,dirLights.size());
-        //   owlBufferUpload(dirLightsBuffer,dirLights.data());
-        // }
-        numDirLights = (int)dirLights.size();
-      }
+    void World::set(const std::vector<QuadLight::DD> &quadLights)
+    {
+      // barney::rtc::resizeAndUpload(quadLightsBuffer,quadLights);
+      auto rtc = devGroup->rtc;
+      rtc->free(quadLightsBuffer);
+      quadLightsBuffer
+        = rtc->createBuffer(quadLights.size()*sizeof(quadLights[0]),
+                            quadLights.data());
+      
+      // rtccore
+      // if (quadLights.empty())
+      //   // owlBufferResize(quadLightsBuffer,1);
+      //   quadLightsBuffer->resize(sizeof(QuadLight::DD));
+      // else {
+      //   // owlBufferResize(quadLightsBuffer,quadLights.size());
+      //   // owlBufferUpload(quadLightsBuffer,quadLights.data());
+      //   quadLightsBuffer->resizeAndUpload(quadLights);
+      // }
+      numQuadLights = (int)quadLights.size();
+    }
+    
+    void World::set(const std::vector<DirLight::DD> &dirLights)
+    {
+      auto rtc = devGroup->rtc;
+      rtc->free(dirLightsBuffer);
+      dirLightsBuffer
+        = rtc->createBuffer(dirLights.size()*sizeof(dirLights[0]),
+                            dirLights.data());
+
+      numDirLights = (int)dirLights.size();
+    }
 
     void World::set(EnvMapLight::SP envMapLight)
     {
-        this->envMapLight = envMapLight;
-      }
+      this->envMapLight = envMapLight;
+    }
       
     
   }

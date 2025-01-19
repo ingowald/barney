@@ -211,6 +211,34 @@ namespace barney {
       }
     }
 
+    Sampler::DD TextureSampler::getDD(rtc::Device *device) const
+    {
+      Sampler::DD dd;
+      switch(numDims) {
+      case 1:
+        dd.type = Sampler::IMAGE1D; break;
+      case 2:
+        dd.type = Sampler::IMAGE2D; break;
+      case 3:
+        dd.type = Sampler::IMAGE3D; break;
+      };
+      dd.inAttribute = (AttributeKind)inAttribute;
+
+      (vec4f&)dd.outTransform.offset = outOffset;
+      memcpy(&dd.outTransform.mat,&outTransform,sizeof(outTransform));
+      
+      (vec4f&)dd.image.inTransform.offset = inOffset;
+      memcpy(&dd.image.inTransform.mat,&inTransform,sizeof(inTransform));
+      
+      if (!rtcTexture) {
+        std::cout << "WARN: NO TEXTURE DATA ON IMAGE SAMPLER!" << std::endl;
+        dd.image.texture = 0;
+      } else {
+        dd.image.texture = rtcTexture->getDD(device);
+      }
+      return dd;
+    }
+    
 #if 0
     void TextureSampler::createDD(DD &dd, int devID)
     {
@@ -310,6 +338,17 @@ namespace barney {
     //   dd.image.texture = 0;
     //   dd.type = Sampler::INVALID;
     // }
+
+    Sampler::DD TransformSampler::getDD(rtc::Device *device) const
+    {
+      Sampler::DD dd;
+      dd.type = Sampler::TRANSFORM;
+      (vec4f&)dd.outTransform.offset = outOffset;
+      memcpy(&dd.outTransform.mat,&outTransform,sizeof(outTransform));
+      return dd;
+    }
+
+
     
     // void TransformSampler::createDD(DD &dd, int devID)
     // {

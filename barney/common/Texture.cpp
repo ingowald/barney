@@ -294,6 +294,21 @@ namespace barney {
   // {
   //   return tex3Ds[device->contextRank];
   // }
+
+
+  Texture3D::DD Texture3D::getDD(const std::shared_ptr<Device> &device)
+  {
+    return getDD(device->rtc);
+  }
+  
+  Texture3D::DD Texture3D::getDD(const rtc::Device *device)
+  {
+    Texture3D::DD dd;
+    dd.texObj = rtcTexture->getDD(device);
+    dd.texObjNN = rtcTextureNN->getDD(device);
+    return dd;
+  }
+  
   
 
   TextureData::TextureData(Context *context, int slot,

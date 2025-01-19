@@ -103,7 +103,7 @@ namespace barney {
       // ------------------------------------------------------------------
 
       // std::vector<DD> perDev;
-      rtc::Texture *rtcTexture = 0;
+      // rtc::Texture *rtcTexture = 0;
       
       /*! the registry from whom we got our 'samplerID' - this mainly
           exists for lifetime reasons, to make sure the registry
@@ -159,6 +159,7 @@ namespace barney {
       BNTextureFilterMode filterMode = BN_TEXTURE_LINEAR;
       const int   numDims=0;
       std::shared_ptr<TextureData> textureData{ 0 };
+      rtc::Texture *rtcTexture = 0;
     };
   
     

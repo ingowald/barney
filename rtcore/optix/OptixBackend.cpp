@@ -64,6 +64,13 @@ namespace barney {
     
     OptixBackend::OptixBackend()
     {}
+
+    rtc::Device *OptixBackend::createDevice(int physicalID)
+    {
+      BARNEY_NYI();
+    }
+      
+    
   }
   namespace rtc {
     
