@@ -45,7 +45,7 @@
 
 
 # define BARNEY_LEAVE(fct,retValue)                                     \
-  } catch (std::exception e) {                                           \
+  } catch (std::exception &e) {                                           \
     std::cerr << OWL_TERMINAL_RED << "@" << fct << ": "              \
               << e.what() << OWL_TERMINAL_DEFAULT << std::endl;      \
     return retValue ;                                                   \

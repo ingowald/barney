@@ -14,15 +14,18 @@ target_include_directories(barney_config INTERFACE
 
 
 # ==================================================================
-add_library(barney_rtc_common SHARED
+add_library(barney_rtc_common STATIC#SHARED
   common/Backend.cpp
   )
 target_link_libraries(barney_rtc_common PUBLIC barney_config)
-set_property(TARGET barney_rtc_common PROPERTY CXX_STANDARD 20)
+set_property(TARGET barney_rtc_common PROPERTY
+  CXX_STANDARD 20)
+set_property(TARGET barney_rtc_common PROPERTY 
+  CUDA_SEPARABLE_COMPILATION ON)
 
 
 # ==================================================================
-add_library(barney_rtc SHARED
+add_library(barney_rtc STATIC#SHARED
   common/Backend.cpp
   common/RTCore.cpp
   rtc.cpp
@@ -108,7 +111,10 @@ if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
   add_library(barney_rtc_cuda_common STATIC
     cuda/CUDACommon.cu
     )
-  target_link_libraries(barney_rtc_cuda_common PUBLIC barney_rtc_common)
+  target_link_libraries(barney_rtc_cuda_common PUBLIC
+    barney_rtc_common
+    cuda
+    )
 endif()
 
 # ==================================================================
@@ -135,7 +141,11 @@ if (BARNEY_BACKEND_OPTIX)
   add_library(barney_rtc_optix STATIC
     optix/OptixBackend.cpp
     )
-  target_link_libraries(barney_rtc_optix PUBLIC barney_rtc_cuda_common)
+  target_link_libraries(barney_rtc_optix PUBLIC
+    barney_rtc_cuda_common
+    #owl_static
+    owl
+    )
   target_link_libraries(barney_rtc PUBLIC barney_rtc_optix)
 endif()
 

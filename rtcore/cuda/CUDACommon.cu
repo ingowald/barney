@@ -27,6 +27,13 @@ namespace barney {
       BARNEY_CUDA_CHECK(cudaSetDevice(oldActive));
     }
     
+    void *BaseDevice::alloc(size_t numBytes)
+    {
+      void *ptr = 0;
+      BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
+      return ptr;
+    }
+    
     void *BaseDevice::allocHost(size_t numBytes) 
     {
       void *ptr = 0;
@@ -34,28 +41,23 @@ namespace barney {
       return ptr;
     }
       
-      void BaseDevice::freeHost(void *mem) 
-      {
+    void BaseDevice::freeHost(void *mem) 
+    {
       BARNEY_CUDA_CALL(FreeHost(mem));
     }
       
-      void BaseDevice::memsetAsync(void *mem,int value, size_t size) 
+    void BaseDevice::free(void *mem) 
+    {
+      BARNEY_CUDA_CALL(Free(mem));
+    }
+      
+    void BaseDevice::memsetAsync(void *mem,int value, size_t size) 
     {
       BARNEY_NYI();
     }
       
 
     void BaseDevice::copyAsync(void *dst, void *src, size_t numBytes) 
-    {
-      BARNEY_NYI();
-    }
-      
-    void *BaseDevice::alloc(size_t numBytes) 
-    {
-      BARNEY_NYI();
-    }
-      
-    void BaseDevice::free(void *mem) 
     {
       BARNEY_NYI();
     }
@@ -236,7 +238,7 @@ namespace barney {
                          filterMode,addressModes,
                          borderColor,normalizedCoords,colorSpace);
     }
-    
+
   }
 }
 

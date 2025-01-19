@@ -324,14 +324,9 @@ set_target_properties(barney_static
 add_library(barney SHARED
   ${BARNEY_SOURCES}
   )
-target_link_libraries(barney
-  PUBLIC
+target_link_libraries(barney PUBLIC
   barney_config
   barney_rtc
-  )
-
-target_link_libraries(barney
-  PRIVATE#PUBLIC
   ${BARNEY_STATIC_DEPENDENCIES}
   )
 set_target_properties(barney
@@ -370,6 +365,7 @@ if (BARNEY_MPI)
   target_link_libraries(barney_mpi_static PUBLIC
     barney_config
     barney_static
+    barney_rtc
     MPI::MPI_CXX
     )
   target_compile_definitions(barney_mpi_static PUBLIC -DBARNEY_MPI=1)
