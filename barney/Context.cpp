@@ -155,10 +155,14 @@ namespace barney {
     // ------------------------------------------------------------------
     for (int localID = 0; localID < devices.size(); localID++)
       // (will set active GPU internally)
-      fb->perDev[localID]->finalizeTiles();
-
+      fb->perDev[localID]->finalizeTiles_launch();
+    
     for (int localID = 0; localID < devices.size(); localID++)
-      devices[localID]->launch_sync();
+      // (will set active GPU internally)
+      fb->perDev[localID]->finalizeTiles_sync();
+
+    // for (int localID = 0; localID < devices.size(); localID++)
+    //   devices[localID]->launch_sync();
   }
   
   void Context::renderTiles(Renderer *renderer,
@@ -180,12 +184,12 @@ namespace barney {
 #endif
       double _t0 = getCurrentTime();
       generateRays(camera,renderer,fb);
-      for (auto dev : devices) dev->launch_sync();
+      for (auto dev : devices) dev->sync();
 
       for (int generation=0;true;generation++) {
         traceRaysGlobally(model);
         // do we need this here?
-        for (auto dev : devices) dev->launch_sync();
+        for (auto dev : devices) dev->sync();
 
         shadeRaysLocally(renderer, model, fb, generation);
         // no sync required here, shadeRays syncs itself.

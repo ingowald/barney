@@ -45,7 +45,11 @@ namespace barney {
                           int generation);
     void shadeRays_sync();
     void traceRays_launch(GlobalModel *model);
-    
+    void traceRays_sync() const
+    {
+      device->devGroup->traceRaysKernel->sync(device->rtc);
+    }
+
     void generateRays_launch(TiledFB *fb,
                              const Camera::DD &camera,
                              const Renderer::DD &renderer,
@@ -61,12 +65,6 @@ namespace barney {
       // BARNEY_CUDA_SYNC_CHECK();
     } 
     
-    void launch_sync() const
-    {
-      // BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
-      BARNEY_NYI();
-    }
-
     render::RayQueue rays;
     Device::SP device;
   };

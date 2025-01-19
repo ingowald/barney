@@ -49,15 +49,17 @@ namespace barney {
         std::cout << "rebuilding owl programs and pipeline..." << std::endl;
       // owlBuildPrograms(owl);
       // owlBuildPipeline(owl);
-      for (auto device : devices)
-        device->rtc->buildPipeline();
+      // for (auto device : devices)
+      //   device->rtc->buildPipeline();
       // devGroup->buildPipeline();
+      rtc->buildPipeline();
       programsDirty = false;
     }
     if (sbtDirty) {
       // std::cout << "rebuilding owl sbt..." << std::endl;
-      for (auto device : devices)
-        device->rtc->buildSBT();
+      // for (auto device : devices)
+      //   device->rtc->buildSBT();
+      rtc->buildSBT();
       // devGroup->buildSBT();
       // owlBuildSBT(owl);
       sbtDirty = false;
@@ -109,7 +111,7 @@ namespace barney {
     shadeRaysKernel
       = rtc->createCompute("shadeRays");
     traceRaysKernel
-      = rtc->createTrace("traceRays");
+      = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
   }
 
   DevGroup::~DevGroup()

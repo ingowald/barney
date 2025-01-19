@@ -85,12 +85,16 @@ namespace barney {
                const std::vector<int> &gpuIDs);
       virtual ~DevGroup();
 
-
-
       void destroy() 
         override
       { BARNEY_NYI(); };
       
+
+      // ==================================================================
+      // rt pipeline/sbtstuff
+      // ==================================================================
+      void buildPipeline() override;
+      void buildSBT() override;
 
       // ==================================================================
       // kernels
@@ -99,7 +103,7 @@ namespace barney {
       createCompute(const std::string &) override;
       
       rtc::TraceKernel *
-      createTrace(const std::string &) override;
+      createTrace(const std::string &, size_t) override;
 
       // ==================================================================
       // geomtype

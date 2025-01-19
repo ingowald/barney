@@ -44,8 +44,6 @@ namespace barney {
       void memsetAsync(void *mem,int value, size_t size) override;
       void *alloc(size_t numBytes) override;
       void free(void *mem) override;
-      void buildPipeline() override;
-      void buildSBT() override;
       void sync() override;
       
       /*! sets this gpu as active, and returns physical ID of GPU that

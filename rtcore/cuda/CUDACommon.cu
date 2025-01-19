@@ -53,28 +53,18 @@ namespace barney {
       
     void BaseDevice::memsetAsync(void *mem,int value, size_t size) 
     {
-      BARNEY_NYI();
+      BARNEY_CUDA_CALL(MemsetAsync(mem,value,size,stream));
     }
       
 
     void BaseDevice::copyAsync(void *dst, void *src, size_t numBytes) 
     {
-      BARNEY_NYI();
-    }
-      
-    void BaseDevice::buildPipeline() 
-    {
-      BARNEY_NYI();
-    }
-      
-    void BaseDevice::buildSBT() 
-    {
-      BARNEY_NYI();
+      BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
     }
       
     void BaseDevice::sync() 
     {
-      BARNEY_NYI();
+      BARNEY_CUDA_CALL(StreamSynchronize(stream));
     }
       
 

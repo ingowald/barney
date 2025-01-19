@@ -31,7 +31,7 @@ namespace barney {
   {
     SetActiveGPU forDuration(device);
 
-    this->launch_sync();
+    device->rtc->sync();
     rays.swap();
     // rays.numActive = *rays.d_nextWritePos;
     // *rays.d_nextWritePos = 0;
@@ -42,7 +42,7 @@ namespace barney {
   void DeviceContext::shadeRays_sync()
   {
     SetActiveGPU forDuration(device);
-    launch_sync();
+    device->rtc->sync();
     rays.swap();
     rays.numActive = rays.readNumActive();
     rays.resetWriteQueue();

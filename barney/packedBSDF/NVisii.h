@@ -405,12 +405,12 @@ namespace barney {
           //E(μ) is in fact the sum of the red and green channels in our environment BRDF
           // vec2 sampleE_o = texture2D(BRDFlut, vec2(NdotV, alpha)).xy;
           // E_o = sampleE_o.x + sampleE_o.y;
-          float E_o = tex2D<float>(GGX_E_LOOKUP, v_dot_n, alpha);
+          float E_o = rtc::tex2D<float>(GGX_E_LOOKUP, v_dot_n, alpha);
           float oneMinusE_o = 1.0 - E_o;
-          float E_i = tex2D<float>(GGX_E_LOOKUP, l_dot_n, alpha);
+          float E_i = rtc::tex2D<float>(GGX_E_LOOKUP, l_dot_n, alpha);
           float oneMinusE_i = 1.0 - E_i;
 
-          float Eavg = tex2D<float>(GGX_E_AVG_LOOKUP, alpha, .5);
+          float Eavg = rtc::tex2D<float>(GGX_E_AVG_LOOKUP, alpha, .5);
           // float Eavg = AverageEnergy(alpha);
           float oneMinusEavg = 1.0 - Eavg;
 	

@@ -117,14 +117,11 @@ namespace barney {
     struct TraceKernel {
       virtual void launch(rtc::Device *device,
                           vec2i launchDims,
-                          const void *dd)
-      { BARNEY_NYI(); }
+                          const void *dd) = 0;
       virtual void launch(rtc::Device *device,
                           int launchDims,
-                          const void *dd)
-      { BARNEY_NYI(); }
-      virtual void sync()
-      { BARNEY_NYI(); }
+                          const void *dd) = 0;
+      virtual void sync(rtc::Device *device) = 0;
     };
     
 
@@ -141,8 +138,6 @@ namespace barney {
       virtual void freeHost(void *mem) = 0;
       virtual void memsetAsync(void *mem,int value, size_t size) = 0;
       virtual void copyAsync(void *dst, void *src, size_t size) = 0;
-      virtual void buildPipeline() = 0;
-      virtual void buildSBT() = 0;
       
       /*! sets this gpu as active, and returns physical ID of GPU that
         was active before */
@@ -172,11 +167,17 @@ namespace barney {
       virtual void destroy() = 0;
       
       // ==================================================================
+      // rt pipeline/sbtstuff
+      // ==================================================================
+      virtual void buildPipeline() = 0;
+      virtual void buildSBT() = 0;
+      
+      // ==================================================================
       // kernels
       // ==================================================================
       virtual rtc::ComputeKernel *createCompute(const std::string &) = 0;
       
-      virtual rtc::TraceKernel *createTrace(const std::string &) = 0;
+      virtual rtc::TraceKernel *createTrace(const std::string &, size_t) = 0;
       
       // ==================================================================
       // buffer stuff
@@ -279,43 +280,8 @@ namespace barney {
     Backend *createBackend_optix();
     Backend *createBackend_embree();
   }
-
   
 }
 
 
 
-// TODO:
-template<typename T>
-inline __device__ __host__ T tex1D(barney::rtc::device::TextureObject to,
-                                   float x)
-{
-#ifdef __CUDA_ARCH__
-  printf("tex2d missing...\n");
-  return T{};
-#else
-  BARNEY_NYI();
-#endif
-}
-template<typename T>
-inline __device__ __host__ T tex2D(barney::rtc::device::TextureObject to,
-                                   float x, float y)
-{
-#ifdef __CUDA_ARCH__
-  printf("tex2d missing...\n");
-  return T{};
-#else
-  BARNEY_NYI();
-#endif
-}
-template<typename T>
-inline __device__ __host__ T tex3D(barney::rtc::device::TextureObject to,
-                                   float x, float y, float z)
-{
-#ifdef __CUDA_ARCH__
-  printf("tex2d missing...\n");
-  return T{};
-#else
-  BARNEY_NYI();
-#endif
-}

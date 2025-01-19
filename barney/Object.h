@@ -19,6 +19,7 @@
 #include "barney/common/barney-common.h"
 #include "barney/common/mat4.h"
 #include "rtcore/common/Backend.h"
+#include "rtcore/common/RTCore.h"
 
 namespace barney {
 

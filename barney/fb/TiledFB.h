@@ -80,7 +80,8 @@ namespace barney {
     void resize(vec2i newSize);
     void free();
 
-    void finalizeTiles();
+    void finalizeTiles_launch();
+    void finalizeTiles_sync();
 
     /*! number of (valid) pixels */
     vec2i numPixels       = { 0,0 };

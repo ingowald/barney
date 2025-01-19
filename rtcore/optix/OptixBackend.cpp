@@ -72,6 +72,21 @@ namespace barney {
 
 
     // ==================================================================
+    // rtcore/pipeline stuff
+    // ==================================================================
+    void DevGroup::buildPipeline() 
+    {
+      owlBuildPipeline(owl);
+    }
+      
+    void DevGroup::buildSBT() 
+    {
+      owlBuildSBT(owl);
+    }
+      
+    
+
+    // ==================================================================
     // buffer
     // ==================================================================
 
@@ -264,19 +279,65 @@ namespace barney {
     DevGroup::createCompute(const std::string &kernelName) 
     {
       return new ComputeWrapper(kernelName);
-      // typedef rtc::ComputeKernel *(*CreatorFct)(/*cuda::BaseDevGroup **/);
-
-      // const std::string symbolName
-      //   = "barney_rtc_cuda_createCompute_"
-      //   + kernelName;
-      // CreatorFct fct = (CreatorFct)rtc::getSymbol(symbolName);
-      // return fct();
     }
+
+
+    struct TraceWrapper : public rtc::TraceKernel
+    {
+      TraceWrapper(optix::DevGroup *dg,
+                   const std::string &kernelName,
+                   size_t sizeOfLP)
+      {
+        const char *ptxCode = (const char *)
+          rtc::getSymbol(kernelName+"_ptx");
+        OWLVarDecl rg_args[]
+          = {
+          { nullptr }
+        };
+        mod = owlModuleCreate(dg->owl,ptxCode);
+        rg = owlRayGenCreate(dg->owl,mod,
+                             kernelName.c_str(),
+                             0,rg_args,-1);
+        owlBuildPrograms(dg->owl);
+
+        OWLVarDecl lp_args[]
+          = {
+          { "raw", OWL_USER_TYPE(sizeOfLP), 0 },
+          { nullptr }
+        };
+        lp = owlParamsCreate(dg->owl,sizeOfLP,lp_args,-1);
+      }
+
+      void launch(rtc::Device *device,
+                  vec2i dims,
+                  const void *dd) override
+      {
+        owlParamsSetRaw(lp,"raw",dd);
+        owlAsyncLaunch2DOnDevice(rg,dims.x,dims.y,
+                                 ((OptixDevice*)device)->localID,lp);
+      }
+      void launch(rtc::Device *device,
+                  int launchDims,
+                  const void *dd) override
+      {
+        BARNEY_NYI();
+      }
+      void sync(rtc::Device *device) override
+      {
+        BARNEY_NYI();
+      }
+      
+      
+      OWLModule mod;
+      OWLRayGen rg;
+      OWLLaunchParams lp;
+    };
     
     rtc::TraceKernel *
-    DevGroup::createTrace(const std::string &kernelName)
+    DevGroup::createTrace(const std::string &kernelName,
+                          size_t sizeOfLP)
     {
-      BARNEY_NYI();
+      return new TraceWrapper(this,kernelName,sizeOfLP);
     }
 
     

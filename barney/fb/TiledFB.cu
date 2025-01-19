@@ -166,7 +166,7 @@ namespace barney {
   /*! write this tiledFB's tiles into given "compressed" frame buffer
     (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
     pixels) */
-  void TiledFB::finalizeTiles()
+  void TiledFB::finalizeTiles_launch()
   {
     SetActiveGPU forDuration(device);
     if (numActiveTiles > 0) {
@@ -181,10 +181,15 @@ namespace barney {
                  &args);       
     }
   }
+  
+  void TiledFB::finalizeTiles_sync()
+  {
+    device->rtc->sync();
+  }
 }
 
-RTC_CUDA_DEFINE_COMPUTE(setTileCoords,barney::SetTileCoordsKernel);
-RTC_CUDA_DEFINE_COMPUTE(compressTiles,barney::CompressTilesKernel);
+RTC_CUDA_COMPUTE_KERNEL(setTileCoords,barney::SetTileCoordsKernel);
+RTC_CUDA_COMPUTE_KERNEL(compressTiles,barney::CompressTilesKernel);
 
 
   
