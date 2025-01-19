@@ -29,13 +29,16 @@ namespace barney {
   struct TiledFB;
   struct GlobalModel;
   struct Renderer;
-  
+
+  /*! TODO kill this class, merge into Device and DeviceGroup */
   struct DeviceContext
   {
     typedef std::shared_ptr<DeviceContext> SP;
     
     DeviceContext(Device::SP device);
 
+    DevGroup *getDevGroup() const { return device->devGroup; }
+    
     void shadeRays_launch(Renderer *renderer,
                           GlobalModel *model,
                           TiledFB *fb,

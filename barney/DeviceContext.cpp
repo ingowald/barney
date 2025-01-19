@@ -66,7 +66,7 @@ namespace barney {
     //device->launchTrace(&dd);
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);
-    device->traceRaysKernel->launch(device->rtc,vec2i(nb,bs),&dd);
+    getDevGroup()->traceRaysKernel->launch(device->rtc,vec2i(nb,bs),&dd);
   }
   
 }

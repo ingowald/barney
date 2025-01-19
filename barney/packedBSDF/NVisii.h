@@ -26,18 +26,18 @@
 namespace barney {
   namespace render {
 
-      inline __device__ float pow2(float f) { return f*f; }
-      inline __device__ float pow5(float f) { return pow2(pow2(f))*f; }
-      inline __device__ float mix(float a, float b, float f) { return (1.f-f)*a + f*b; }
-      inline __device__ vec3f mix(vec3f a, vec3f b, vec3f f)
+      inline __both__ float pow2(float f) { return f*f; }
+      inline __both__ float pow5(float f) { return pow2(pow2(f))*f; }
+      inline __both__ float mix(float a, float b, float f) { return (1.f-f)*a + f*b; }
+      inline __both__ vec3f mix(vec3f a, vec3f b, vec3f f)
       { return vec3f(mix(a.x,b.x,f.x),mix(a.y,b.y,f.y),mix(a.z,b.z,f.z)); }
-      inline __device__ float heaviside(float f) { return (f<0.f)?0.f:1.f; }
+      inline __both__ float heaviside(float f) { return (f<0.f)?0.f:1.f; }
 
     
     namespace packedBSDF {
       namespace nvisii {
         using LCGRand = Random;
-        inline __device__ float lcg_randomf(Random &r) { return r(); }
+        inline __both__ float lcg_randomf(Random &r) { return r(); }
         
 #define DISNEY_DIFFUSE_BRDF 0
 #define DISNEY_GLOSSY_BRDF 1
@@ -68,12 +68,12 @@ namespace barney {
 
 #ifdef __CUDACC__
         inline
-        __device__ bool same_hemisphere(const float3 &w_o, const float3 &w_i, const float3 &n) {
+        __both__ bool same_hemisphere(const float3 &w_o, const float3 &w_i, const float3 &n) {
           return dot(w_o, n) * dot(w_i, n) > 0.f;
         }
 
         inline
-        __device__ bool relative_ior(const float3 &w_o, const float3 &n, float ior, float &eta_o, float &eta_i)
+        __both__ bool relative_ior(const float3 &w_o, const float3 &n, float ior, float &eta_o, float &eta_i)
         {
           bool entering = dot(w_o, n) > 0.f;
           eta_i = entering ? 1.f : ior;
@@ -84,7 +84,7 @@ namespace barney {
         // Sample the hemisphere using a cosine weighted distribution,
         // returns a vector in a hemisphere oriented about (0, 0, 1)
         inline
-        __device__ float3 cos_sample_hemisphere(float2 u) {
+        __both__ float3 cos_sample_hemisphere(float2 u) {
           float2 s = 2.f * u - make_float2(1.f);
           float2 d;
           float radius = 0.f;
@@ -105,19 +105,19 @@ namespace barney {
         }
 
         inline
-        __device__ float3 spherical_dir(float sin_theta, float cos_theta, float phi) {
+        __both__ float3 spherical_dir(float sin_theta, float cos_theta, float phi) {
           return make_float3(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
         }
 
         inline
-        __device__ float power_heuristic(float n_f, float pdf_f, float n_g, float pdf_g) {
+        __both__ float power_heuristic(float n_f, float pdf_f, float n_g, float pdf_g) {
           float f = n_f * pdf_f;
           float g = n_g * pdf_g;
           return (f * f) / (f * f + g * g);
         }
 
         inline
-        __device__ float schlick_weight(float cos_theta) {
+        __both__ float schlick_weight(float cos_theta) {
           return pow(saturate(1.f - cos_theta), 5.f);
         }
 
@@ -126,7 +126,7 @@ namespace barney {
         // eta_i: material on incident side's ior
         // eta_t: material on transmitted side's ior
         inline
-        __device__ float fresnel_dielectric(float cos_theta_i, float eta_i, float eta_t) {
+        __both__ float fresnel_dielectric(float cos_theta_i, float eta_i, float eta_t) {
           float g = pow2(eta_t) / pow2(eta_i) - 1.f + pow2(cos_theta_i);
           if (g < 0.f) {
             return 1.f;
@@ -138,7 +138,7 @@ namespace barney {
         // D_GTR1: Generalized Trowbridge-Reitz with gamma=1
         // Burley notes eq. 4
         inline
-        __device__ float gtr_1(float cos_theta_h, float alpha) {
+        __both__ float gtr_1(float cos_theta_h, float alpha) {
           if (alpha >= 1.f) {
             return M_1_PI;
           }
@@ -149,7 +149,7 @@ namespace barney {
         // D_GTR2: Generalized Trowbridge-Reitz with gamma=2
         // Burley notes eq. 8
         inline
-        __device__ float gtr_2(float cos_theta_h, float alpha) {
+        __both__ float gtr_2(float cos_theta_h, float alpha) {
           float alpha_sqr = alpha * alpha;
           return M_1_PI * alpha_sqr / max(pow2(1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h), SMALL_EPSILON);
         }
@@ -157,32 +157,32 @@ namespace barney {
         // D_GTR2 Anisotropic: Anisotropic generalized Trowbridge-Reitz with gamma=2
         // Burley notes eq. 13
         inline
-        __device__ float gtr_2_aniso(float h_dot_n, float h_dot_x, float h_dot_y, float2 alpha) {
+        __both__ float gtr_2_aniso(float h_dot_n, float h_dot_x, float h_dot_y, float2 alpha) {
           return M_1_PI / max((alpha.x * alpha.y * pow2(pow2(h_dot_x / alpha.x) + pow2(h_dot_y / alpha.y) + h_dot_n * h_dot_n)), SMALL_EPSILON);
         }
 
         inline
-        __device__ float smith_shadowing_ggx(float n_dot_o, float alpha_g) {
+        __both__ float smith_shadowing_ggx(float n_dot_o, float alpha_g) {
           float a = alpha_g * alpha_g;
           float b = n_dot_o * n_dot_o;
           return 1.f / (n_dot_o + sqrt(a + b - a * b));
         }
 
         inline
-        __device__ float smith_shadowing_ggx_aniso(float n_dot_o, float o_dot_x, float o_dot_y, float2 alpha) {
+        __both__ float smith_shadowing_ggx_aniso(float n_dot_o, float o_dot_x, float o_dot_y, float2 alpha) {
           return 1.f / (n_dot_o + sqrt(pow2(o_dot_x * alpha.x) + pow2(o_dot_y * alpha.y) + pow2(n_dot_o)));
         }
 
         // Sample a reflection direction the hemisphere oriented along n and spanned by v_x, v_y using the random samples in s
         inline
-        __device__ float3 sample_lambertian_dir(const float3 &n, const float3 &v_x, const float3 &v_y, const float2 &s) {
+        __both__ float3 sample_lambertian_dir(const float3 &n, const float3 &v_x, const float3 &v_y, const float2 &s) {
           const float3 hemi_dir = normalize(cos_sample_hemisphere(s));
           return hemi_dir.x * v_x + hemi_dir.y * v_y + hemi_dir.z * n;
         }
 
         // Sample the microfacet normal vectors for the various microfacet distributions
         inline
-        __device__ float3 sample_gtr_1_h(const float3 &n, const float3 &v_x, const float3 &v_y, float alpha, const float2 &s) {
+        __both__ float3 sample_gtr_1_h(const float3 &n, const float3 &v_x, const float3 &v_y, float alpha, const float2 &s) {
           float phi_h = 2.f * M_PI * s.x;
           float alpha_sqr = alpha * alpha;
           float cos_theta_h_sqr = (1.f - pow(alpha_sqr, 1.f - s.y)) / (1.f - alpha_sqr);
@@ -193,7 +193,7 @@ namespace barney {
         }
 
         inline
-        __device__ float3 sample_gtr_2_h(const float3 &n, const float3 &v_x, const float3 &v_y, float alpha, const float2 &s) {
+        __both__ float3 sample_gtr_2_h(const float3 &n, const float3 &v_x, const float3 &v_y, float alpha, const float2 &s) {
           float phi_h = 2.f * M_PI * s.x;
           float cos_theta_h_sqr = (1.f - s.y) / (1.f + (alpha * alpha - 1.f) * s.y);
           float cos_theta_h = sqrt(cos_theta_h_sqr);
@@ -203,14 +203,14 @@ namespace barney {
         }
 
         inline
-        __device__ float3 sample_gtr_2_aniso_h(const float3 &n, const float3 &v_x, const float3 &v_y, const float2 &alpha, const float2 &s) {
+        __both__ float3 sample_gtr_2_aniso_h(const float3 &n, const float3 &v_x, const float3 &v_y, const float2 &alpha, const float2 &s) {
           float x = 2.f * M_PI * s.x;
           float3 w_h = sqrt(s.y / (1.f - s.y)) * (alpha.x * cos(x) * v_x + alpha.y * sin(x) * v_y) + n;
           return normalize(w_h);
         }
 
         inline
-        __device__ float lambertian_pdf(const float3 &w_i, const float3 &n) {
+        __both__ float lambertian_pdf(const float3 &w_i, const float3 &n) {
           float d = dot(w_i, n);
           if (d > 0.f) {
             return d * M_1_PI;
@@ -219,7 +219,7 @@ namespace barney {
         }
 
         inline
-        __device__ float gtr_1_pdf(const float3 &w_o, const float3 &w_i, const float3 &w_h, const float3 &n, float alpha) {
+        __both__ float gtr_1_pdf(const float3 &w_o, const float3 &w_i, const float3 &w_h, const float3 &n, float alpha) {
           if (!same_hemisphere(w_o, w_i, n)) {
             return 0.f;
           }
@@ -229,7 +229,7 @@ namespace barney {
         }
 
         inline
-        __device__ float gtr_2_pdf(const float3 &w_o, const float3 &w_i, const float3 &w_h, const float3 &n, float alpha) {
+        __both__ float gtr_2_pdf(const float3 &w_o, const float3 &w_i, const float3 &w_h, const float3 &n, float alpha) {
           if (!same_hemisphere(w_o, w_i, n)) {
             return 0.f;
           }
@@ -239,7 +239,7 @@ namespace barney {
         }
 
         inline
-        __device__ float gtr_2_transmission_pdf(const float3 &w_o, const float3 &w_i, const float3 &n, float transmission_roughness, float ior)
+        __both__ float gtr_2_transmission_pdf(const float3 &w_o, const float3 &w_i, const float3 &n, float transmission_roughness, float ior)
         {
           float alpha = max(MIN_ALPHA, transmission_roughness * transmission_roughness);
 
@@ -289,7 +289,7 @@ namespace barney {
           // return 1.f;
         }
 
-        // __device__ float gtr_2_transmission_pdf(const float3 &w_o, const float3 &w_i, const float3 &n,
+        // __both__ float gtr_2_transmission_pdf(const float3 &w_o, const float3 &w_i, const float3 &n,
         // 	float alpha, float ior)
         // {
         // 	if (same_hemisphere(w_o, w_i, n)) {
@@ -318,7 +318,7 @@ namespace barney {
         // }
 
         inline
-        __device__ float gtr_2_aniso_pdf(const float3 &w_o, const float3 &w_i, const float3 &w_h, const float3 &n,
+        __both__ float gtr_2_aniso_pdf(const float3 &w_o, const float3 &w_i, const float3 &w_h, const float3 &n,
                                          const float3 &v_x, const float3 &v_y, const float2 alpha)
         {
           if (!same_hemisphere(w_o, w_i, n)) {
@@ -330,21 +330,21 @@ namespace barney {
         }
 
         inline
-        __device__ float3 disney_diffuse_color(const DisneyMaterial &mat, const float3 &n,
+        __both__ float3 disney_diffuse_color(const DisneyMaterial &mat, const float3 &n,
                                                const float3 &w_o, const float3 &w_i, const float3 &w_h)
         {
           return mat.base_color;
         }
 
         inline
-        __device__ float3 disney_subsurface_color(const DisneyMaterial &mat, const float3 &n,
+        __both__ float3 disney_subsurface_color(const DisneyMaterial &mat, const float3 &n,
                                                   const float3 &w_o, const float3 &w_i)
         {
           return mat.subsurface_color;
         }
 
         inline
-        __device__ void disney_diffuse(const DisneyMaterial &mat, const float3 &n,
+        __both__ void disney_diffuse(const DisneyMaterial &mat, const float3 &n,
                                        const float3 &w_o, const float3 &w_i, const float3 &w_h, float3 &bsdf, float3 &color)
         {
           float n_dot_o = fabs(dot(w_o, n));
@@ -358,7 +358,7 @@ namespace barney {
         }
 
         inline
-        __device__ void disney_subsurface(const DisneyMaterial &mat, const float3 &n,
+        __both__ void disney_subsurface(const DisneyMaterial &mat, const float3 &n,
                                           const float3 &w_o, const float3 &w_i, const float3 &w_h, float3 &bsdf, float3 &color) {
           float n_dot_o = fabs(dot(w_o, n));
           float n_dot_i = fabs(dot(w_i, n));
@@ -374,7 +374,7 @@ namespace barney {
 
         // Eavg in the algorithm is fitted into this
         inline
-        __device__ float AverageEnergy(float rough){
+        __both__ float AverageEnergy(float rough){
           float smoothness = 1.0 - rough;
           float r = -0.0761947f - 0.383026f * smoothness;
           r = 1.04997f + smoothness * r;
@@ -385,14 +385,18 @@ namespace barney {
         // multiple scattering...
         // Favg in the algorithm is fitted into this
         inline
-        __device__ float3 AverageFresnel(float3 specularColor){
+        __both__ float3 AverageFresnel(float3 specularColor){
           return specularColor + (make_float3(1.0f) - specularColor) * (1.0f / 21.0f);
         }
 
-        inline
-        __device__ float3 disney_multiscatter(const DisneyMaterial &mat, const float3 &n,
-                                              const float3 &w_o, const float3 &w_i, const float3 &w_h,
-                                              cudaTextureObject_t GGX_E_LOOKUP, cudaTextureObject_t GGX_E_AVG_LOOKUP)
+        inline __both__ float3
+        disney_multiscatter(const DisneyMaterial &mat,
+                            const float3 &n,
+                            const float3 &w_o,
+                            const float3 &w_i,
+                            const float3 &w_h,
+                            rtc::device::TextureObject GGX_E_LOOKUP,
+                            rtc::device::TextureObject GGX_E_AVG_LOOKUP)
         {
           float v_dot_n = abs(dot(w_o, n));
           float l_dot_n = abs(dot(w_i, n));
@@ -421,7 +425,7 @@ namespace barney {
           return brdf * energyScale;
         }
 
-        // __device__ float G(float3 i, float3 o, float3 h, float alpha)
+        // __both__ float G(float3 i, float3 o, float3 h, float alpha)
         // {
         // 	alpha = 1.f - alpha;
         // 	// Roughly follows Eq 23 from Microfacet Models for Refraction.
@@ -429,7 +433,7 @@ namespace barney {
         // 	return smith_shadowing_ggx(fabs(dot(i, h)), alpha) * smith_shadowing_ggx(fabs(dot(o, h)), alpha);
         // }
 
-        // __device__ float D(float3 m, float3 n, float alpha)
+        // __both__ float D(float3 m, float3 n, float alpha)
         // {
         // 	// alpha = 1.f - alpha;
         // 	// float alpha_sqr = alpha * alpha;
@@ -446,7 +450,7 @@ namespace barney {
         // 	// return gtr_2(fabs(dot(n, w_ht)), alpha);
         // }
 
-        // __device__ float F(float3 i, float3 m, float eta_t, float eta_i)
+        // __both__ float F(float3 i, float3 m, float eta_t, float eta_i)
         // {
         // 	// From Eq 22 of Microfacet Models for Refraction
         // 	float c = fabs(dot(i, m));
@@ -459,7 +463,7 @@ namespace barney {
         // 	return f;
         // }
 
-        inline __device__
+        inline __both__
         float3 disney_microfacet_reflection_color(const DisneyMaterial &mat,
                                                   const float3 &n,
                                                   
@@ -478,7 +482,7 @@ namespace barney {
         }
 
         inline
-        __device__ float3
+        __both__ float3
         disney_microfacet_isotropic(const DisneyMaterial &mat,
                                     const float3 &n,
                                     const float3 &w_o,
@@ -510,7 +514,7 @@ namespace barney {
         }
 
         inline
-        __device__ float3 disney_microfacet_transmission_color(const DisneyMaterial &mat, const float3 &n,
+        __both__ float3 disney_microfacet_transmission_color(const DisneyMaterial &mat, const float3 &n,
                                                                const float3 &w_o, const float3 &w_i, const float3 &w_h)
         {	
           // Approximate absorption
@@ -519,7 +523,7 @@ namespace barney {
         }
 
         inline
-        __device__ void
+        __both__ void
         disney_microfacet_transmission_isotropic(const DisneyMaterial &mat,
                                                  const float3 &n,
 
@@ -587,7 +591,7 @@ namespace barney {
         }
 
         inline
-        __device__ float3 disney_microfacet_anisotropic(const DisneyMaterial &mat, const float3 &n,
+        __both__ float3 disney_microfacet_anisotropic(const DisneyMaterial &mat, const float3 &n,
                                                         const float3 &w_o, const float3 &w_i, const float3 &w_h, const float3 &v_x, const float3 &v_y)
         {
           float lum = luminance(mat.base_color);
@@ -607,7 +611,7 @@ namespace barney {
         }
 
         inline
-        __device__ float disney_clear_coat(const DisneyMaterial &mat, const float3 &n,
+        __both__ float disney_clear_coat(const DisneyMaterial &mat, const float3 &n,
                                            const float3 &w_o, const float3 &w_i, const float3 &w_h)
         {
           float alpha = lerp_r(0.1f, MIN_ALPHA, mat.clearcoat_gloss);
@@ -618,7 +622,7 @@ namespace barney {
         }
 
         inline
-        __device__ float3 disney_sheen(const DisneyMaterial &mat, const float3 &n,
+        __both__ float3 disney_sheen(const DisneyMaterial &mat, const float3 &n,
                                        const float3 &w_o, const float3 &w_i, const float3 &w_h)
         {
           float lum = luminance(mat.base_color);
@@ -642,7 +646,7 @@ namespace barney {
          * @param pdf The returned probability of this sample
          */
         inline
-        __device__ void disney_brdf(
+        __both__ void disney_brdf(
                                     const DisneyMaterial &mat, 
                                     const float3 &g_n,
                                     const float3 &s_n,
@@ -725,7 +729,7 @@ namespace barney {
          * @param pdf The returned probability of this sample
          */
         inline
-        __device__ void disney_pdf(
+        __both__ void disney_pdf(
                                    const DisneyMaterial &mat, 
                                    const float3 &g_n,
                                    const float3 &s_n,
@@ -848,7 +852,7 @@ namespace barney {
          * @param bsdf The throughput of all brdfs in the sampled direction
          */
         inline
-        __device__ void sample_disney_brdf(
+        __both__ void sample_disney_brdf(
                                            const DisneyMaterial &mat,
                                            LCGRand &rng,
                                            const float3 &g_n, const float3 &s_n, const float3 &b_n, 
@@ -1017,7 +1021,7 @@ namespace barney {
       
       struct NVisii {
 #ifdef __CUDACC__
-        inline __device__
+        inline __both__
         nvisii::DisneyMaterial unpack() const {
           nvisii::DisneyMaterial mat;
           mat.base_color = (float3)(vec3f)baseColor;
@@ -1039,8 +1043,8 @@ namespace barney {
           return mat;
         }
 #endif
-        inline __device__ vec3f getAlbedo(bool dbg) const;
-        inline __device__
+        inline __both__ vec3f getAlbedo(bool dbg) const;
+        inline __both__
         float getOpacity(bool isShadowRay,
                          bool isInMedium,
                          vec3f rayDir,
@@ -1049,13 +1053,13 @@ namespace barney {
         {
           return (float)alpha;
         }
-        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-        inline __device__ float pdf(DG dg, vec3f wi, bool dbg) const;
-        inline __device__ void scatter(ScatterResult &scatter,
+        inline __both__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+        inline __both__ float pdf(DG dg, vec3f wi, bool dbg) const;
+        inline __both__ void scatter(ScatterResult &scatter,
                                        const render::DG &dg,
                                        Random &random,
                                        bool dbg) const;
-        inline __device__ void setDefaults()
+        inline __both__ void setDefaults()
         {
         //   	this->base_color = vec4(.8, .8, .8, 1.0);
 	// this->subsurface_radius = vec4(1.0, .2, .1, 1.0);
@@ -1121,7 +1125,7 @@ namespace barney {
       };
 
 #ifdef __CUDACC__
-      inline __device__ vec3f NVisii::getAlbedo(bool dbg) const
+      inline __both__ vec3f NVisii::getAlbedo(bool dbg) const
       {
         vec3f baseColor = this->baseColor;
         // if (dbg) printf("visrtx::getalbedo %f %f %f\n",
@@ -1131,7 +1135,7 @@ namespace barney {
         return baseColor;
       }
 
-      inline __device__ void NVisii::scatter(ScatterResult &scatter,
+      inline __both__ void NVisii::scatter(ScatterResult &scatter,
                                              const render::DG &dg,
                                              Random &rng,
                                              bool dbg) const
@@ -1154,7 +1158,7 @@ namespace barney {
          * @param bsdf The throughput of all brdfs in the sampled direction
          */
         // inline
-        // __device__ void sample_disney_brdf(
+        // __both__ void sample_disney_brdf(
         //                                    const DisneyMaterial &mat,
         //                                    LCGRand &rng,
         //                                    const float3 &g_n, const float3 &s_n, const float3 &b_n, 
@@ -1232,7 +1236,7 @@ namespace barney {
 // #endif
       }
 
-      inline __device__ EvalRes NVisii::eval(DG dg, vec3f wi, bool dbg) const
+      inline __both__ EvalRes NVisii::eval(DG dg, vec3f wi, bool dbg) const
       {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
@@ -1257,7 +1261,7 @@ namespace barney {
          * @param w_h The halfway vector between the incoming and outgoing vectors
          * @param pdf The returned probability of this sample
          */
-        // __device__ void disney_brdf(
+        // __both__ void disney_brdf(
         //                             const DisneyMaterial &mat, 
         //                             const float3 &g_n,
         //                             const float3 &s_n,
@@ -1294,7 +1298,7 @@ namespace barney {
         return ret;
       }
 
-      inline __device__ float NVisii::pdf(DG dg, vec3f wi, bool dbg) const
+      inline __both__ float NVisii::pdf(DG dg, vec3f wi, bool dbg) const
       {
         using namespace nvisii;
         DisneyMaterial mat = unpack();

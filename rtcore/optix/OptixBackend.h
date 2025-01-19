@@ -34,6 +34,17 @@ namespace barney {
       OWLBuffer owl;
     };
 
+    struct Group : public rtc::Group {
+      Group(OWLGroup owlGroup) : owlGroup(owlGroup) {}
+      virtual ~Group() { owlGroupRelease(owlGroup); }
+      
+      rtc::device::AccelHandle getDD(const rtc::Device *) const override;
+      void buildAccel() override;
+      void refitAccel() override;
+      
+      OWLGroup const owlGroup;
+    };
+    
     struct Geom : public rtc::Geom {
       Geom(OWLGeom geom);
       virtual ~Geom();
@@ -74,10 +85,26 @@ namespace barney {
                const std::vector<int> &gpuIDs);
       virtual ~DevGroup();
 
+
+
       void destroy() 
         override
       { BARNEY_NYI(); };
       
+
+      // ==================================================================
+      // kernels
+      // ==================================================================
+      rtc::ComputeKernel *
+      createCompute(const std::string &) override;
+      
+      rtc::TraceKernel *
+      createTrace(const std::string &) override;
+
+      // ==================================================================
+      // geomtype
+      // ==================================================================
+
       
       void free(rtc::GeomType *) 
         override 
@@ -108,9 +135,7 @@ namespace barney {
       // group/accel stuff
       // ==================================================================
       rtc::Group *
-      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
-        override
-      { BARNEY_NYI(); };
+      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms) override;
       
       rtc::Group *
       createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) 
@@ -119,9 +144,7 @@ namespace barney {
 
       rtc::Group *
       createInstanceGroup(const std::vector<rtc::Group *> &groups,
-                          const std::vector<affine3f> &xfms) 
-        override 
-      { BARNEY_NYI(); };
+                          const std::vector<affine3f> &xfms) override;
 
       void free(rtc::Group *)
         override 

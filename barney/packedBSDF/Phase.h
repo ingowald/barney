@@ -27,15 +27,15 @@ namespace barney {
           color */
       struct Phase {
         inline Phase() = default;
-        inline __device__ Phase(vec3f color, float avg_reflectance=.7f);
+        inline __both__ Phase(vec3f color, float avg_reflectance=.7f);
 
-        inline __device__
+        inline __both__
         float pdf(DG dg, vec3f wi, bool dbg) const;
         
-        inline __device__
+        inline __both__
         EvalRes eval(DG dg, vec3f wi, bool dbg) const;
         
-        inline __device__
+        inline __both__
         void scatter(ScatterResult &scatter,
                      const render::DG &dg,
                      Random &random,
@@ -44,17 +44,17 @@ namespace barney {
         float3 albedo;
       };
 
-      inline __device__
+      inline __both__
       Phase::Phase(vec3f color, float avg_reflectance)
       {
         (vec3f&)this->albedo = avg_reflectance * color;
       }
       
-      inline __device__
+      inline __both__
       float Phase::pdf(DG dg, vec3f wi, bool dbg) const
       { return ONE_OVER_FOUR_PI; }
         
-      inline __device__
+      inline __both__
       EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
       {
         float density = ONE_OVER_FOUR_PI;
@@ -63,7 +63,7 @@ namespace barney {
 
       /*! simple omnidirectional phase function - scatter into any
         random direction */
-      inline __device__
+      inline __both__
       void Phase::scatter(ScatterResult &scatter,
                           const render::DG &dg,
                           Random &random,

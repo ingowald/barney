@@ -174,8 +174,9 @@ namespace barney {
       // ==================================================================
       // kernels
       // ==================================================================
-      rtc::ComputeKernel *createCompute(size_t ddSize);
-      rtc::TraceKernel *createTrace(size_t ddSize);
+      virtual rtc::ComputeKernel *createCompute(const std::string &) = 0;
+      
+      virtual rtc::TraceKernel *createTrace(const std::string &) = 0;
       
       // ==================================================================
       // buffer stuff

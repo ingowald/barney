@@ -56,33 +56,31 @@ namespace barney {
   }
 
   struct SetTileCoordsKernel {
-    struct DD {
-      TileDesc *tileDescs;
-      int numActiveTiles;
-      vec2i numTiles;
-      int globalIndex;
-      int globalIndexStep;
+    TileDesc *tileDescs;
+    int numActiveTiles;
+    vec2i numTiles;
+    int globalIndex;
+    int globalIndexStep;
 
-      template<typename RTCore>
-      inline __device__ __host__
-      void run(const RTCore &rtCore)
-      {
-        int tid
-          = rtCore.threadIdx().x
-          + rtCore.blockIdx().x*rtCore.blockDim().x;
-        if (tid >= numActiveTiles)
-          return;
+    template<typename RTCore>
+    inline __device__ __host__
+    void run(const RTCore &rtCore)
+    {
+      int tid
+        = rtCore.getThreadIdx().x
+        + rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
+      if (tid >= numActiveTiles)
+        return;
         
-        int tileID = tid * globalIndexStep + globalIndex;
+      int tileID = tid * globalIndexStep + globalIndex;
         
-        int tile_x = tileID % numTiles.x;
-        int tile_y = tileID / numTiles.x;
-        tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
-      }
-      
-    };
+      int tile_x = tileID % numTiles.x;
+      int tile_y = tileID / numTiles.x;
+      tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
+    }
   };
-  
+
+
   // __global__ void setTileCoords(TileDesc *tileDescs,
   //                               int numActiveTiles,
   //                               vec2i numTiles,
@@ -120,70 +118,50 @@ namespace barney {
       = (CompressedTile *)rtc->alloc(numActiveTiles * sizeof(CompressedTile));
     tileDescs
       = (TileDesc *)rtc->alloc(numActiveTiles * sizeof(TileDesc));
-    SetTileCoordsKernel::DD args = {
+    SetTileCoordsKernel args = {
       tileDescs,
       numActiveTiles,
       numTiles,
       device->globalIndex,
       device->globalIndexStep
     };
-    device->setTileCoordsKernel->launch(device->rtc,
-                                        divRoundUp(numActiveTiles,1024),1024,
-                                        &args);
+    getDevGroup()->setTileCoordsKernel
+      ->launch(device->rtc,
+               divRoundUp(numActiveTiles,1024),1024,
+               &args);
   }
 
   // ==================================================================
 
 
   struct CompressTilesKernel {
-    struct DD {
-      CompressedTile *compressedTiles;
-      AccumTile      *accumTiles;
-      float           accumScale;
+    CompressedTile *compressedTiles;
+    AccumTile      *accumTiles;
+    float           accumScale;
 
-      template<typename RTCore>
-      inline __host__ __device__
-      void run(const RTCore &rtCore)
-      {
-        int pixelID = rtCore.threadIdx().x;
-        int tileID  = rtCore.blockIdx().x;
+    template<typename RTCore>
+    inline __host__ __device__
+    void run(const RTCore &rtCore)
+    {
+      int pixelID = rtCore.getThreadIdx().x;
+      int tileID  = rtCore.getBlockIdx().x;
 
-        vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
-        float scale = reduce_max(color);
-        color *= 1./scale;
-        compressedTiles[tileID].scale[pixelID] = scale;
-        compressedTiles[tileID].normal[pixelID]
-          .set(accumTiles[tileID].normal[pixelID]);
+      vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
+      float scale = reduce_max(color);
+      color *= 1./scale;
+      compressedTiles[tileID].scale[pixelID] = scale;
+      compressedTiles[tileID].normal[pixelID]
+        .set(accumTiles[tileID].normal[pixelID]);
 
-        uint32_t rgba32
-          = make_rgba(color);
+      uint32_t rgba32
+        = make_rgba(color);
 
-        compressedTiles[tileID].rgba[pixelID]
-          = rgba32;
-        compressedTiles[tileID].depth[pixelID]
-          = accumTiles[tileID].depth[pixelID];
-      }
-    };
+      compressedTiles[tileID].rgba[pixelID]
+        = rgba32;
+      compressedTiles[tileID].depth[pixelID]
+        = accumTiles[tileID].depth[pixelID];
+    }
   };
-  // __global__ void g_compressTiles(CompressedTile *compressedTiles,
-  //                                 AccumTile *accumTiles,
-  //                                 float      accumScale)
-  // {
-  //   int pixelID = threadIdx.x;
-  //   int tileID  = blockIdx.x;
-
-  //   vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
-  //   float scale = reduce_max(color);
-  //   color *= 1./scale;
-  //   compressedTiles[tileID].scale[pixelID] = scale;
-  //   compressedTiles[tileID].normal[pixelID].set(accumTiles[tileID].normal[pixelID]);
-
-  //   uint32_t rgba32
-  //     = owl::make_rgba(color);
-
-  //   compressedTiles[tileID].rgba[pixelID] = rgba32;
-  //   compressedTiles[tileID].depth[pixelID] = accumTiles[tileID].depth[pixelID];
-  // }
 
   /*! write this tiledFB's tiles into given "compressed" frame buffer
     (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
@@ -192,22 +170,21 @@ namespace barney {
   {
     SetActiveGPU forDuration(device);
     if (numActiveTiles > 0) {
-      CompressTilesKernel::DD args = {
+      CompressTilesKernel args = {
         compressedTiles,
         accumTiles,
         1.f/(owner->accumID)
       };
-      device->compressTilesKernel->launch(device->rtc,
-                                          numActiveTiles,pixelsPerTile,
-                                          &args);       
-      // CHECK_CUDA_LAUNCH(g_compressTiles,
-      //                   
-      // numActiveTiles,pixelsPerTile,0,device->launchStream,
-      // compressedTiles,accumTiles,1.f/(owner->accumID));
+      getDevGroup()->compressTilesKernel
+        ->launch(device->rtc,
+                 numActiveTiles,pixelsPerTile,
+                 &args);       
     }
-    // g_compressTiles<<<numActiveTiles,pixelsPerTile,0,device->launchStream>>>
-    //   (compressedTiles,accumTiles,1.f/(owner->accumID));
-    // BARNEY_CUDA_SYNC_CHECK();
   }
-
 }
+
+RTC_CUDA_DEFINE_COMPUTE(setTileCoords,barney::SetTileCoordsKernel);
+RTC_CUDA_DEFINE_COMPUTE(compressTiles,barney::CompressTilesKernel);
+
+
+  

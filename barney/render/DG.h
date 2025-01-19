@@ -49,20 +49,20 @@ namespace barney {
     };
 
     struct EvalRes {
-      inline __device__ EvalRes() {}
-      inline __device__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
-      static inline __device__ EvalRes zero() { return { vec3f(0.f),0.f }; }
-      inline __device__ bool valid() const    { return pdf > 0.f; };// && !isinf(pdf) }
+      inline __both__ EvalRes() {}
+      inline __both__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
+      static inline __both__ EvalRes zero() { return { vec3f(0.f),0.f }; }
+      inline __both__ bool valid() const    { return pdf > 0.f; };// && !isinf(pdf) }
       vec3f value;
       float pdf;
     };
 
 
     struct SampleRes {
-      // inline __device__ SampleRes() {}
-      // inline __device__ SampleRes(vec3f v, float p) : value(v),pdf(p) {}
-      static inline __device__ SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
-      inline __device__ bool valid() const    { return pdf > 0.f; };// && !isinf(pdf); }
+      // inline __both__ SampleRes() {}
+      // inline __both__ SampleRes(vec3f v, float p) : value(v),pdf(p) {}
+      static inline __both__ SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
+      inline __both__ bool valid() const    { return pdf > 0.f; };// && !isinf(pdf); }
       vec3f weight;
       vec3f wi;
       int   type;
@@ -81,7 +81,7 @@ namespace barney {
       //   SPECULAR_TRANS = (1<<4),
       //   GLOSSY_TRANS   = (1<<5),
       // } Type;
-      inline __device__ bool valid() const    { return pdf > 0.f
+      inline __both__ bool valid() const    { return pdf > 0.f
           // && !isinf(pdf)
           ;
       }
@@ -96,7 +96,7 @@ namespace barney {
     };
 
 
-    inline __device__
+    inline __both__
     vec3f sampleCosineWeightedHemisphere(vec3f Ns, Random &random)
     {
       while (1) {
@@ -108,28 +108,28 @@ namespace barney {
       }
     }
 
-  inline __device__ float pbrt_clampf(float f, float lo, float hi)
+  inline __both__ float pbrt_clampf(float f, float lo, float hi)
   { return max(lo,min(hi,f)); }
 
-  inline __device__ float pbrtSphericalTheta(const vec3f &v)
+  inline __both__ float pbrtSphericalTheta(const vec3f &v)
   {
     return acosf(pbrt_clampf(v.z, -1.f, 1.f));
   }
 
-  inline __device__ float pbrtSphericalPhi(const vec3f &v)
+  inline __both__ float pbrtSphericalPhi(const vec3f &v)
   {
     float p = atan2f(v.y, v.x);
     return (p < 0.f) ? (p + float(2.f * M_PI)) : p;
   }
 
 
-    inline __device__
+    inline __both__
     float luminance(vec3f c)
     { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
 
 
 
-    inline __device__
+    inline __both__
     vec3f cartesian(float phi, float sinTheta, float cosTheta)
     {
       float sinPhi, cosPhi;
@@ -146,7 +146,7 @@ namespace barney {
                    cosTheta);
     }
 
-    inline __device__
+    inline __both__
     vec3f cartesian(const float phi, const float cosTheta)
     {
       return cartesian(phi, cos2sin(cosTheta), cosTheta);
@@ -155,7 +155,7 @@ namespace barney {
 
 
 
-    inline __device__
+    inline __both__
     vec3f cosineSampleHemisphere(const vec2f s)
     {
       const float phi = two_pi * s.x;
@@ -164,13 +164,13 @@ namespace barney {
       return cartesian(phi, sinTheta, cosTheta);
     }
 
-    inline __device__
+    inline __both__
     float cosineSampleHemispherePDF(const vec3f &dir)
     {
       return dir.z * one_over_pi;
     }
 
-    inline __device__
+    inline __both__
     float cosineSampleHemispherePDF(float cosTheta)
     {
       return cosTheta * one_over_pi;

@@ -988,9 +988,10 @@ namespace barney {
       rays.receiveAndShadeWriteQueue,
       rays._d_nextWritePos,generation
     };
-    device->shadeRaysKernel->launch(device->rtc,
-                                    nb,bs,
-                                    &args);
+    getDevGroup()->shadeRaysKernel
+      ->launch(device->rtc,
+               nb,bs,
+               &args);
   }
 
 }

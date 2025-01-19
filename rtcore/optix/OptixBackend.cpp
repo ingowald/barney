@@ -211,6 +211,125 @@ namespace barney {
       owlBuildPrograms(devGroup->owl);
       owlModuleRelease(module);
     }
+
+
+    // ==================================================================
+    // kernels
+    // ==================================================================
+
+    struct ComputeWrapper : public ::barney::rtc::ComputeKernel {
+      typedef void (*LaunchFct)(vec3i, vec3i, int, cudaStream_t, const void *);
+      
+      ComputeWrapper(const std::string &kernelName)        
+      {
+        const std::string symbolName
+          = "barney_rtc_cuda_launch_"+kernelName;
+        launchFct = (LaunchFct)rtc::getSymbol(symbolName);
+      }
+      
+      LaunchFct launchFct = 0;
+      
+      void launch(rtc::Device *device,
+                  int numBlocks,
+                  int blockSize,
+                  const void *dd) override
+      {
+        do_launch(device,vec3i(numBlocks,1,1),vec3i(blockSize,1,1),dd);
+      }
+      void launch(rtc::Device *device,
+                  vec2i nb,
+                  vec2i bs,
+                  const void *dd) override
+      {
+        do_launch(device,vec3i(nb.x,nb.y,1),vec3i(bs.x,bs.y,1),dd);
+      }
+      void launch(rtc::Device *device,
+                  vec3i nb,
+                  vec3i bs,
+                  const void *dd) override
+      {
+        do_launch(device,nb,bs,dd);
+      }
+      void do_launch(rtc::Device *device,
+                     vec3i nb,
+                     vec3i bs,
+                     const void *dd) 
+      {
+        cuda::SetActiveGPU forDuration(device);
+        launchFct(nb,bs,0,((cuda::BaseDevice*)device)->stream,dd);
+      }
+    };
+    
+    rtc::ComputeKernel *
+    DevGroup::createCompute(const std::string &kernelName) 
+    {
+      return new ComputeWrapper(kernelName);
+      // typedef rtc::ComputeKernel *(*CreatorFct)(/*cuda::BaseDevGroup **/);
+
+      // const std::string symbolName
+      //   = "barney_rtc_cuda_createCompute_"
+      //   + kernelName;
+      // CreatorFct fct = (CreatorFct)rtc::getSymbol(symbolName);
+      // return fct();
+    }
+    
+    rtc::TraceKernel *
+    DevGroup::createTrace(const std::string &kernelName)
+    {
+      BARNEY_NYI();
+    }
+
+    
+    // ==================================================================
+    // groups
+    // ==================================================================
+    rtc::Group *
+    DevGroup::createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
+    {
+      std::vector<OWLGeom> owlGeoms;
+      for (auto geom : geoms)
+        owlGeoms.push_back(((Geom *)geom)->geom);
+      OWLGroup g = owlTrianglesGeomGroupCreate(owl,
+                                               owlGeoms.size(),
+                                               owlGeoms.data());
+      return new Group(g);
+    }
+
+    rtc::Group *
+    DevGroup::createInstanceGroup(const std::vector<rtc::Group *> &groups,
+                                  const std::vector<affine3f> &xfms)
+    {
+      std::vector<OWLGroup> owlGroups;
+      for (auto group : groups)
+        owlGroups.push_back(((Group *)group)->owlGroup);
+      OWLGroup g
+        = owlInstanceGroupCreate(owl,
+                                 owlGroups.size(),
+                                 owlGroups.data(),
+                                 nullptr,
+                                 (const float *)xfms.data());
+      return new Group(g);
+    }
+
+    
+    rtc::device::AccelHandle
+    Group::getDD(const rtc::Device *device) const
+    {
+      OptixTraversableHandle handle
+        = owlGroupGetTraversable(owlGroup,device->localID);
+      return (const rtc::device::AccelHandle &)handle;
+    }
+    
+    void Group::buildAccel()
+    {
+      owlGroupBuildAccel(owlGroup);
+    }
+    
+    void Group::refitAccel() 
+    {
+      owlGroupRefitAccel(owlGroup);
+    }
+      
     
   }
   namespace rtc {

@@ -32,7 +32,11 @@ namespace barney {
     struct BaseDevice : public rtc::Device {
       BaseDevice(int physicalGPU, int localID)
         : rtc::Device(physicalGPU,localID)
-      {}
+      {
+        int saved = setActive();
+        cudaStreamCreate(&stream);
+        restoreActive(saved);
+      }
       
       void copyAsync(void *dst, void *src, size_t numBytes) override;
       void *allocHost(size_t numBytes) override;
@@ -50,6 +54,8 @@ namespace barney {
       
       /*! restores the gpu whose ID was previously returend by setActive() */
       void restoreActive(int oldActive) const override;
+
+      cudaStream_t stream;
     };
 
     struct TextureData : public rtc::TextureData {

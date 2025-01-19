@@ -29,10 +29,8 @@ namespace barney {
       *d_count. This kernel operates on *tiles* (not complete frames);
       the list of tiles to generate rays for is passed in 'tileDescs';
       there will be one cuda block per tile */
-#if 1
     struct GenerateRaysKernel {
-      struct DD {
-        template<typename RTCore>
+      template<typename RTCore>
         __device__ __host__ void run(const RTCore &rtcore);
         
         Camera::DD camera;
@@ -57,51 +55,18 @@ namespace barney {
           should only get generated for these tiles */
         TileDesc *tileDescs;
         bool enablePerRayDebug;
-      };
     };
-#else
-    __global__
-    void g_generateRays(/*! the camera used for generating the rays */
-                        Camera::DD camera,
-                        Renderer::DD renderer,
-                        /*! a unique random number seed value for pixel
-                          and lens jitter; probably just accumID */
-                        int rngSeed,
-                        int accumID,
-                        /*! full frame buffer size, to check if a given
-                          tile's pixel ID is still valid */
-                        vec2i fbSize,
-                        /*! pointer to a device-side int that tracks the
-                          next write position in the 'write' ray
-                          queue; can be atomically incremented on the
-                          device */
-                        int *d_count,
-                        /*! pointer to device-side ray queue to write
-                          newly generated raysinto */
-                        Ray *rayQueue,
-                        /*! tile descriptors for the tiles that the
-                          frame buffer owns on this device; rays
-                          should only get generated for these tiles */
-                        TileDesc *tileDescs,
-                        bool enablePerRayDebug)
-    {
-      // #define MERGE_ATOMICS 1 
 
-#if MERGE_ATOMICS
-      __shared__ int l_count;
-      if (threadIdx.x == 0)
-        l_count = 0;
-#endif
-      
+    template<typename RTCore>
+    __device__ __host__
+    void GenerateRaysKernel::run(const RTCore &rtCore)
+    {
       // ------------------------------------------------------------------
-#if MERGE_ATOMICS
-      __syncthreads();
-#endif    
-      int tileID = blockIdx.x;
+      int tileID = rtCore.getBlockIdx().x;
     
       vec2i tileOffset = tileDescs[tileID].lower;
-      int ix = (threadIdx.x % tileSize) + tileOffset.x;
-      int iy = (threadIdx.x / tileSize) + tileOffset.y;
+      int ix = (rtCore.getThreadIdx().x % tileSize) + tileOffset.x;
+      int iy = (rtCore.getThreadIdx().x / tileSize) + tileOffset.y;
 
       Ray ray;
       ray.misWeight = 0.f;
@@ -187,26 +152,24 @@ namespace barney {
                           bgColor.z);
       ray.throughput = vec3f(1.f);
     
-#if MERGE_ATOMICS
-      int pos = -1;
-      if (ix < fbSize.x && iy < fbSize.y) 
-        pos = atomicAdd(&l_count,1);
+// #if MERGE_ATOMICS
+//       int pos = -1;
+//       if (ix < fbSize.x && iy < fbSize.y) 
+//         pos = atomicAdd(&l_count,1);
 
-      // ------------------------------------------------------------------
-      __syncthreads();
-      if (threadIdx.x == 0) 
-        l_count = atomicAdd(d_count,l_count);
+//       // ------------------------------------------------------------------
+//       __syncthreads();
+//       if (threadIdx.x == 0) 
+//         l_count = atomicAdd(d_count,l_count);
     
-      // ------------------------------------------------------------------
-      __syncthreads();
-      if (pos >= 0) 
-        rayQueue[l_count + pos] = ray;
-#else
-      int pos = atomicAdd(d_count,1);
+//       // ------------------------------------------------------------------
+//       __syncthreads();
+//       if (pos >= 0) 
+//         rayQueue[l_count + pos] = ray;
+// #else
+      int pos = rtCore.atomicAdd(d_count,1);
       rayQueue[pos] = ray;
-#endif
     }
-#endif
   }
   
   void DeviceContext::generateRays_launch(TiledFB *fb,
@@ -223,9 +186,7 @@ namespace barney {
       return fromEnv && std::stoi(fromEnv);
     };
     static bool enablePerRayDebug = getPerRayDebug();
-
-#if 1
-    render::GenerateRaysKernel::DD args = {
+    render::GenerateRaysKernel args = {
        /* variable args */
        camera,
        renderer,
@@ -237,38 +198,11 @@ namespace barney {
        fb->tileDescs,
        enablePerRayDebug
     };
-    device->generateRaysKernel->launch(device->rtc,
-                                       fb->numActiveTiles,
-                                       pixelsPerTile,
-                                       &args);
-#elif 1
-    CHECK_CUDA_LAUNCH
-      (/* cuda kernel */
-       render::g_generateRays,
-       /* launch config */
-       fb->numActiveTiles,pixelsPerTile,0,device->launchStream,
-       /* variable args */
-       camera,
-       renderer,
-       rngSeed,
-       fb->owner->accumID,
-       fb->numPixels,
-       rays._d_nextWritePos,
-       rays.receiveAndShadeWriteQueue,
-       fb->tileDescs,
-       enablePerRayDebug);
-#else
-    render::g_generateRays
-      <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
-      (camera,
-       renderer,
-       rngSeed,
-       fb->owner->accumID,
-       fb->numPixels,
-       rays._d_nextWritePos,
-       rays.receiveAndShadeWriteQueue,
-       fb->tileDescs,
-       enablePerRayDebug);
-#endif
+    getDevGroup()->generateRaysKernel
+      ->launch(device->rtc,
+               fb->numActiveTiles,
+               pixelsPerTile,
+               &args);
   }
 }
+RTC_CUDA_DEFINE_COMPUTE(generateRays,barney::render::GenerateRaysKernel);

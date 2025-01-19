@@ -100,19 +100,16 @@ namespace barney {
                                   (int)(globalIndexStep*gpuIDs.size())));
     }
 
-    // OWLVarDecl params[]
-    //   = {
-    //   { "world", OWL_GROUP, OWL_OFFSETOF(render::OptixGlobals, world) },
-    //   { "materials", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, materials) },
-    //   { "samplers", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, samplers) },
-    //   { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::OptixGlobals,rays) },
-    //   { "numRays",  OWL_INT, OWL_OFFSETOF(render::OptixGlobals,numRays) },
-    //   { nullptr }
-    // };
-    // lp = owlParamsCreate(owl,
-    //                      sizeof(render::OptixGlobals),
-    //                      params,
-    //                      -1);
+    setTileCoordsKernel
+      = rtc->createCompute("setTileCoords");
+    compressTilesKernel
+      = rtc->createCompute("compressTiles");
+    generateRaysKernel
+      = rtc->createCompute("generateRays");
+    shadeRaysKernel
+      = rtc->createCompute("shadeRays");
+    traceRaysKernel
+      = rtc->createTrace("traceRays");
   }
 
   DevGroup::~DevGroup()

@@ -25,18 +25,18 @@ namespace barney {
     namespace packedBSDF {
       
       struct Glass {
-        inline __device__
+        inline __both__
         vec3f getAlbedo(bool dbg) const;
         
-        inline __device__
+        inline __both__
         float getOpacity(bool isShadowRay,
                               bool isInMedium,
                               vec3f rayDir,
                               vec3f Ng,
                               bool dbg=false) const;
-        inline __device__ float pdf(DG dg, vec3f wi, bool dbg) const;
-        inline __device__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-        inline __device__ void scatter(ScatterResult &scatter,
+        inline __both__ float pdf(DG dg, vec3f wi, bool dbg) const;
+        inline __both__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+        inline __both__ void scatter(ScatterResult &scatter,
                                        const render::DG &dg,
                                        Random &random,
                                        bool dbg) const;
@@ -45,13 +45,13 @@ namespace barney {
         float3 attenuation;
       };
 
-      inline __device__ EvalRes Glass::eval(DG dg, vec3f wi, bool dbg) const
+      inline __both__ EvalRes Glass::eval(DG dg, vec3f wi, bool dbg) const
       {
         return EvalRes::zero();
       }
 
       
-      inline __device__
+      inline __both__
       float Glass::getOpacity(bool isShadowRay,
                               bool isInMedium,
                               vec3f rayDir,
@@ -83,7 +83,7 @@ namespace barney {
         return 1.f;
       }
       
-      inline __device__
+      inline __both__
       void Glass::scatter(ScatterResult &scatter,
                           const render::DG &dg,
                           Random &random,
@@ -117,7 +117,7 @@ namespace barney {
       }
       
       
-      inline __device__ float Glass::pdf(DG dg, vec3f wi, bool dbg) const
+      inline __both__ float Glass::pdf(DG dg, vec3f wi, bool dbg) const
       {
         return 0.f;
       }

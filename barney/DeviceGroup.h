@@ -18,6 +18,7 @@
 
 #include "barney/common/barney-common.h"
 #include "rtcore/common/Backend.h"
+#include "rtcore/common/RTCore.h"
 
 namespace barney {
 
@@ -55,12 +56,6 @@ namespace barney {
     int setActive() const { return rtc->setActive(); }
     void restoreActive(int old) const  { rtc->restoreActive(old); }
 
-    rtc::ComputeKernel *setTileCoordsKernel;
-    rtc::ComputeKernel *compressTilesKernel;
-    rtc::ComputeKernel *generateRaysKernel;
-    rtc::ComputeKernel *shadeRaysKernel;
-    rtc::TraceKernel   *traceRaysKernel;
-    
     rtc::Device *const rtc;
   };
   
@@ -170,6 +165,11 @@ namespace barney {
       matter what data the app loads into it */
     int const lmsIdx;
     rtc::DevGroup *rtc = 0;
-  };
+    rtc::ComputeKernel *setTileCoordsKernel;
+    rtc::ComputeKernel *compressTilesKernel;
+    rtc::ComputeKernel *generateRaysKernel;
+    rtc::ComputeKernel *shadeRaysKernel;
+    rtc::TraceKernel   *traceRaysKernel;
+ };
   
 }

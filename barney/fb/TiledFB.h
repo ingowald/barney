@@ -76,6 +76,7 @@ namespace barney {
     TiledFB(Device::SP device, FrameBuffer *owner);
     virtual ~TiledFB();
 
+    DevGroup *getDevGroup() const { return device->devGroup; }
     void resize(vec2i newSize);
     void free();
 

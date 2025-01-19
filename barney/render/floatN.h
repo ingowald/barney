@@ -41,37 +41,37 @@ namespace barney {
   namespace render {
     using ::isnan;
     
-    inline __device__ float saturate(float f) { return max(0.f,min(f,1.f)); }
+    inline __both__ float saturate(float f) { return max(0.f,min(f,1.f)); }
 
-    inline __device__ bool isnan(float3 v)
+    inline __both__ bool isnan(float3 v)
     { return isnan(v.x) || isnan(v.y) || isnan(v.z); }
     
     using ::make_float2;
-    inline __device__ float2 make_float2(float v) { return ::make_float2(v,v); }
+    inline __both__ float2 make_float2(float v) { return ::make_float2(v,v); }
     using ::make_float3;
-    inline __device__ float3 make_float3(float v) { return ::make_float3(v,v,v); }
+    inline __both__ float3 make_float3(float v) { return ::make_float3(v,v,v); }
 
 #define FLOATN_OP(op)                                            \
-    inline __device__ float2 operator op(float2 a, float b)      \
+    inline __both__ float2 operator op(float2 a, float b)      \
     { return make_float2(a.x op b,a.y op b); }                   \
-    inline __device__ float2 operator op(float a, float2 b)      \
+    inline __both__ float2 operator op(float a, float2 b)      \
     { return make_float2(a op b.x,a op b.y); }                   \
-    inline __device__ float2 operator op(float2 a, float2 b)     \
+    inline __both__ float2 operator op(float2 a, float2 b)     \
     { return make_float2(a.x op b.x,a.y op b.y); }               \
-    inline __device__ float3 operator op(float3 a, float b)      \
+    inline __both__ float3 operator op(float3 a, float b)      \
     { return make_float3(a.x op b,a.y op b,a.z op b); }                  \
-    inline __device__ float3 operator op(float a, float3 b)      \
+    inline __both__ float3 operator op(float a, float3 b)      \
     { return make_float3(a op b.x,a op b.y,a op b.z); }                  \
-    inline __device__ float3 operator op(float3 a, float3 b)     \
+    inline __both__ float3 operator op(float3 a, float3 b)     \
     { return make_float3(a.x op b.x,a.y op b.y, a.z op b.z); }              \
 
-    inline __device__ bool all_zero(float3 v) { return v.x==0 && v.y==0 && v.z == 0; }
+    inline __both__ bool all_zero(float3 v) { return v.x==0 && v.y==0 && v.z == 0; }
     FLOATN_OP(-)
     FLOATN_OP(+)
     FLOATN_OP(*)
     FLOATN_OP(/)
     
-    inline __device__ float3 operator-(float3 a)
+    inline __both__ float3 operator-(float3 a)
     { return make_float3(-a.x,-a.y,-a.z); }
     
     inline __both__ float lerp_r(float a, float b, float factor) { return (1.f-factor)*a+factor*b; }
@@ -113,15 +113,15 @@ namespace barney {
       return lerp(s, f[x0], f[x1]);
     }
 
-    inline __device__ float dot(float3 a, float3 b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
-    inline __device__ float3 cross(float3 a, float3 b)
+    inline __both__ float dot(float3 a, float3 b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
+    inline __both__ float3 cross(float3 a, float3 b)
     { return make_float3(a.y*b.z-a.z*b.y,
                          a.z*b.x-a.x*b.z,
                          a.x*b.y-a.y*b.x);
     }
-    inline __device__ float3 normalize(float3 a) { return a * (1.f/sqrtf(dot(a,a))); }
-    inline __device__ float3 reflect(float3 v, float3 n) { return v - (2.f*dot(v,n))*n; }
-    inline __device__ float3 refract(float3 v, float3 n, float eta)
+    inline __both__ float3 normalize(float3 a) { return a * (1.f/sqrtf(dot(a,a))); }
+    inline __both__ float3 reflect(float3 v, float3 n) { return v - (2.f*dot(v,n))*n; }
+    inline __both__ float3 refract(float3 v, float3 n, float eta)
     {
       float dotValue = dot(n,v);
       float k = 1.f-eta*eta*(1.f-dotValue*dotValue);
@@ -130,7 +130,7 @@ namespace barney {
         : make_float3(0.f);
     }
     
-    inline __device__ float interp3DLinear(vec3f p,
+    inline __both__ float interp3DLinear(vec3f p,
                                            float *f,
                                            vec3i size)
     { 
@@ -165,8 +165,6 @@ namespace barney {
 
       return lerp(sz, f0, f1);
     }
-
-
     
   }
 }

@@ -49,32 +49,32 @@ namespace barney {
       Type type;
 
 #ifdef __CUDACC__
-      inline __device__ PackedBSDF();
-      inline __device__ PackedBSDF(Type type, Data data)
+      inline __both__ PackedBSDF();
+      inline __both__ PackedBSDF(Type type, Data data)
         : type(type), data(data) {}
-      inline __device__ PackedBSDF(const packedBSDF::Invalid &invalid)
+      inline __both__ PackedBSDF(const packedBSDF::Invalid &invalid)
       { type = INVALID; }
-      inline __device__ PackedBSDF(const packedBSDF::Phase  &phase)
+      inline __both__ PackedBSDF(const packedBSDF::Phase  &phase)
       { type = TYPE_Phase; data.phase = phase; }
-      inline __device__ PackedBSDF(const packedBSDF::NVisii  &nvisii)
+      inline __both__ PackedBSDF(const packedBSDF::NVisii  &nvisii)
       { type = TYPE_NVisii; data.nvisii = nvisii; }
-      inline __device__ PackedBSDF(const packedBSDF::Glass  &glass)
+      inline __both__ PackedBSDF(const packedBSDF::Glass  &glass)
       { type = TYPE_Glass; data.glass = glass; }
-      // inline __device__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
+      // inline __both__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
       
-      inline __device__
+      inline __both__
       EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
 
-      inline __device__
+      inline __both__
       float pdf(render::DG dg, vec3f w_i, bool dbg=false) const;
       
-      inline __device__
+      inline __both__
       void scatter(ScatterResult &scatter,
                    const render::DG &dg,
                    Random &random,
                    bool dbg=false) const;
       
-      inline __device__
+      inline __both__
       float getOpacity(bool isShadowRay,
                        bool isInMedium,
                        vec3f rayDir,
@@ -85,11 +85,11 @@ namespace barney {
 
 
 #ifdef __CUDACC__
-    // inline __device__
+    // inline __both__
     // PackedBSDF::PackedBSDF(const packedBSDF::VisRTX &visRTX)
     // { type = TYPE_VisRTX; data.visRTX = visRTX; }
     
-    inline __device__
+    inline __both__
     EvalRes PackedBSDF::eval(render::DG dg, vec3f w_i, bool dbg) const
     {
       if (type == TYPE_Phase)
@@ -103,7 +103,7 @@ namespace barney {
       return EvalRes();
     }
     
-    inline __device__
+    inline __both__
     float PackedBSDF::pdf(render::DG dg, vec3f w_i, bool dbg) const
     {
       if (type == TYPE_NVisii)
@@ -115,7 +115,7 @@ namespace barney {
       return 0.f;
     }
     
-    inline __device__
+    inline __both__
     float PackedBSDF::getOpacity(bool isShadowRay,
                                  bool isInMedium,
                                  vec3f rayDir,
@@ -129,7 +129,7 @@ namespace barney {
       return 1.f;
     }
 
-    inline __device__
+    inline __both__
     void PackedBSDF::scatter(ScatterResult &scatter,
                              const render::DG &dg,
                              Random &random,

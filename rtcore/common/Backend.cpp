@@ -90,6 +90,10 @@ namespace barney {
       void *lib = dlopen(nullptr,RTLD_GLOBAL);
       void* symbol = (void*)dlsym(lib, symbolName.c_str());
 #endif
+      if (!symbol)
+        throw std::runtime_error
+          ("#barney::rtcore: could not find required symbol "
+           +symbolName);
       return symbol;
     }
     

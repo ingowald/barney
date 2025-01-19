@@ -48,7 +48,7 @@ namespace barney {
       bool  mustReflect;
     };
 
-    inline __device__
+    inline __both__
     RefractionResult refractionDirection(const vec3f& incomingDir,
                                          const vec3f& surfaceNormal,
                                          const float eta,
@@ -95,7 +95,7 @@ namespace barney {
       return res;
     }
 
-    inline __device__
+    inline __both__
     vec3f reflectionDirection(const vec3f& incomingDir, const vec3f& normal)
     { // Imagine a particle traveling toward the surface and then bouncing off in the
       // reflection direction.
@@ -111,15 +111,15 @@ namespace barney {
 
     struct RobustDielectric
     {
-      inline __device__
+      inline __both__
       RobustDielectric(float eta) : eta(eta)
       {}
       
-      inline __device__
+      inline __both__
       EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
       { return EvalRes::zero(); }
 
-      inline __device__
+      inline __both__
       SampleRes sample(const DG &dg,
                      Random &randomF,
                        bool dbg = false)
