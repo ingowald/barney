@@ -6,25 +6,37 @@ namespace barney {
   namespace optix {
     struct OptixBackend;
     struct DevGroup;
+    struct Device;
     
-    struct OptixDevice {
-      OptixDevice(DevGroup *parent,
+    struct OptixDevice : public cuda::BaseDevice {
+      OptixDevice(const optix::DevGroup *parent,
                   int physicalGPU,
-                  size_t sizeOfGlobals);
+                  int owlID);
       virtual ~OptixDevice();
-      
-      OWLContext      owl = 0;
-      OWLLaunchParams lp  = 0;
-      OWLRayGen       rg  = 0;
 
-      DevGroup *const parent;
-      int       const physicalGPU;
+      const DevGroup *const parent;
+      // OWLLaunchParams lp  = 0;
+      // OWLRayGen       rg  = 0;
+
+      // DevGroup *const parent;
+      // int       const physicalGPU;
+    };
+
+    struct OptixBuffer : public rtc::Buffer {
+      OptixBuffer(const optix::DevGroup *dg,
+                  size_t size,
+                  const void *initData);
+      void *getDD(const rtc::Device *) const override;
+      void upload(const void *hostPtr,
+                  size_t numBytes,
+                  size_t ofs = 0,
+                  const rtc::Device *device=nullptr) override;
+      OWLBuffer owl;
     };
     
     struct DevGroup : public cuda::BaseDevGroup {
       DevGroup(OptixBackend *backend,
-               const std::vector<int> &gpuIDs,
-               size_t sizeOfGlobals);
+               const std::vector<int> &gpuIDs);
       virtual ~DevGroup();
 
       void destroy() 
@@ -90,39 +102,12 @@ namespace barney {
       // texture stuff
       // ==================================================================
 
-
-      rtc::TextureData *
-      createTextureData(vec3i dims,
-                        rtc::TextureData::Format format,
-                        const void *texels) const
-        override 
-      { BARNEY_NYI(); };
-                        
-      rtc::Texture *
-      createTexture(rtc::TextureData *data,
-                    rtc::Texture::FilterMode filterMode,
-                    rtc::Texture::AddressMode addressModes[3],
-                    const vec4f borderColor = vec4f(0.f),
-                    rtc::Texture::ColorSpace colorSpace
-                    = rtc::Texture::COLOR_SPACE_LINEAR) const
-        override 
-      { BARNEY_NYI(); };
-                        
-      void free(rtc::TextureData *) const
-        override 
-      { BARNEY_NYI(); };
-      void free(rtc::Texture *) const 
-        override 
-      { BARNEY_NYI(); };
-
-
       // ==================================================================
       // buffer stuff
       // ==================================================================
       rtc::Buffer *createBuffer(size_t numBytes,
-                                const void *initValues = 0) const 
-        override 
-      { BARNEY_NYI(); };
+                                const void *initValues = 0) const override;
+
       void free(rtc::Buffer *) const 
         override 
       { BARNEY_NYI(); };
@@ -131,10 +116,8 @@ namespace barney {
                 size_t numBytes) const 
         override 
       { BARNEY_NYI(); };
-        
-        
-      
-      std::vector<OptixDevice *> devices;
+         
+      OWLContext      owl = 0;
     };
     
     struct OptixBackend : public cuda::BaseBackend {
@@ -142,10 +125,7 @@ namespace barney {
       OptixBackend();
       virtual ~OptixBackend() = default;
       
-      rtc::Device *createDevice(int physicalID) override;
-      
-      rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs,
-                                    size_t sizeOfGlobals) override;
+      rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs) override;
     };
     
   }

@@ -190,7 +190,7 @@ namespace barney {
       Sampler::commit();
 
       if (rtcTexture) {
-        getRTC()->free(rtcTexture);
+        getRTC()->freeTexture(rtcTexture);
         rtcTexture = 0;
       }
 

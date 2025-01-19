@@ -4,48 +4,47 @@ extern "C" char traceRays_ptx[];
 
 namespace barney {
   namespace optix {
-
-    OptixDevice::OptixDevice(DevGroup *parent,
+    
+    OptixDevice::OptixDevice(const optix::DevGroup *parent,
                              int physicalGPU,
-                             size_t sizeOfGlobals)
-      : parent(parent), physicalGPU(physicalGPU)
+                             int localID)
+      : cuda::BaseDevice(physicalGPU,localID),
+        parent(parent)
     {
-      owl = owlContextCreate((int*)&physicalGPU,1);
-      OWLVarDecl args[]
-        = {
-        { nullptr }
-      };
-      OWLModule module = owlModuleCreate(owl,traceRays_ptx);
-      rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
+      // owl = owlContextCreate((int*)&physicalGPU,1);
+      // OWLVarDecl args[]
+      //   = {
+      //   { nullptr }
+      // };
+      // OWLModule module = owlModuleCreate(owl,traceRays_ptx);
+      // rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
       
-      owlBuildPrograms(owl);
+      // owlBuildPrograms(owl);
 
-      OWLVarDecl params[]
-        = {
-        { "raw", OWL_USER_TYPE(sizeOfGlobals), 0 },
-        { nullptr }
-      };
-      lp = owlParamsCreate(owl,
-                           sizeOfGlobals,
-                           params,
-                           -1);
+      // OWLVarDecl params[]
+      //   = {
+      //   { "raw", OWL_USER_TYPE(sizeOfGlobals), 0 },
+      //   { nullptr },,
+      // };
+      // lp = owlParamsCreate(owl,
+      //                      sizeOfGlobals,
+      //                      params,
+      //                      -1);
     }
 
     OptixDevice::~OptixDevice()
     {
-      owlContextDestroy(owl);
-      owl = 0;
     }
 
     
     DevGroup::DevGroup(OptixBackend *backend,
-                       const std::vector<int> &gpuIDs,
-                       size_t sizeOfGlobals)
-      : cuda::BaseDevGroup(backend,gpuIDs,sizeOfGlobals)
+                       const std::vector<int> &gpuIDs)
+      : cuda::BaseDevGroup(backend,gpuIDs)
     {
+      owl = owlContextCreate((int*)gpuIDs.data(),gpuIDs.size());
 
-      for (int devID=0;devID<gpuIDs.size();devID++)
-        devices.push_back(new OptixDevice(this,gpuIDs[devID],sizeOfGlobals));
+      for (int owlID=0;owlID<gpuIDs.size();owlID++)
+        devices.push_back(new OptixDevice(this,gpuIDs[owlID],owlID));
     }
 
     DevGroup::~DevGroup()
@@ -53,24 +52,55 @@ namespace barney {
       for (auto device : devices)
         delete device;
       devices.clear();
+      owlContextDestroy(owl);
+      owl = 0;
     }
     
     rtc::DevGroup *OptixBackend
-    ::createDevGroup(const std::vector<int> &gpuIDs,
-                     size_t sizeOfGlobals)
+    ::createDevGroup(const std::vector<int> &gpuIDs)
     {
-      return new DevGroup(this,gpuIDs,sizeOfGlobals);
+      assert(!gpuIDs.empty());
+      optix::DevGroup *dg = new DevGroup(this,gpuIDs);
+      // assert(dg);
+      // for (auto gpuID : gpuIDs)
+      //   dg->devices.push_back(new OptixDevice(dg,gpuID));
+      return dg;
     }
     
     OptixBackend::OptixBackend()
     {}
-
-    rtc::Device *OptixBackend::createDevice(int physicalID)
-    {
-      BARNEY_NYI();
-    }
-      
     
+    rtc::Buffer *DevGroup::createBuffer(size_t numBytes,
+                                        const void *initValues) const
+    {
+      return new OptixBuffer(this,numBytes,initValues);
+    }
+
+    OptixBuffer::OptixBuffer(const optix::DevGroup *dg,
+                             size_t size,
+                             const void *initData)
+    {
+      owl = owlDeviceBufferCreate(dg->owl,OWL_BYTE,size,initData);
+    }
+    
+    void *OptixBuffer::getDD(const rtc::Device *device) const
+    { return (void*)owlBufferGetPointer(owl,device->localID); }
+    
+    void OptixBuffer::upload(const void *hostPtr,
+                             size_t numBytes,
+                             size_t ofs,
+                             const rtc::Device *device)
+    {
+      if (device) {
+        uint8_t *devPtr = (uint8_t*)owlBufferGetPointer(owl,device->localID);
+        BARNEY_CUDA_CALL(Memcpy(devPtr+ofs,hostPtr,
+                                numBytes,cudaMemcpyDefault));
+      } else {
+        owlBufferUpload(owl,hostPtr,ofs,numBytes);
+      }
+    }
+    
+
   }
   namespace rtc {
     

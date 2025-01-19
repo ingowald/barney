@@ -28,11 +28,15 @@ namespace barney {
   
     Backend *Backend::create()
     {
+#if 1
+      return createBackend_optix();
+#else
       const char *_fromEnv = getenv("BARNEY_BACKEND");;
       std::string fromEnv = _fromEnv?_fromEnv:"";
       if (fromEnv == "") {
         // nothing to do, leave defautl selection below
       } else if (fromEnv == "optix") {
+        PING;
         return createBackend_optix();
       } else if (fromEnv == "embree" || fromEnv == "cpu") {
         return createBackend_embree();
@@ -47,11 +51,11 @@ namespace barney {
 #if BARNEY_HAVE_CUDA
       try {
         be = createBackend_optix();
-      } catch (...) {}
+      } catch (std::exception &e) { PING; PRINT(e.what()); }
       if (!be) {
         try {
           be = createBackend_cuda();
-        } catch (...) {}
+        } catch (std::exception &e) {PING; PRINT(e.what()); }
       }
       if (be && be->numPhysicalDevices == 0) {
         std::cout << "#barney: no GPUs found; trying CPU callback" << std::endl;
@@ -61,11 +65,13 @@ namespace barney {
 #endif
       be = createBackend_embree();
       return be;
+#endif
     }
   
     Backend *Backend::get()
     {
       if (!singleton) singleton = create();
+      PING; PRINT(singleton);
       return singleton;
     }
   

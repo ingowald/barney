@@ -150,6 +150,8 @@ set(BARNEY_SOURCES
   Group.h
   Group.cpp
 
+  render/RayQueue.h
+  render/RayQueue.cpp
   render/World.h
   render/World.cpp
   

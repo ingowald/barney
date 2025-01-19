@@ -32,7 +32,7 @@ namespace barney {
   rtc::Texture::FilterMode toRTC(BNTextureFilterMode mode)
   { return 
       (mode == BN_TEXTURE_NEAREST)
-      ? rtc::Texture::FILTER_MODE_NEAREST
+      ? rtc::Texture::FILTER_MODE_POINT
       : rtc::Texture::FILTER_MODE_LINEAR;
   }
   
@@ -63,22 +63,27 @@ namespace barney {
     case BN_FLOAT:
       // owlTexelFormat = OWL_TEXEL_FORMAT_R32F;
       format = rtc::TextureData::FLOAT;
+      // readMode = rtc::Texture::ELEMENT_TYPE;
       break;
     case BN_UFIXED8:
       // owlTexelFormat = OWL_TEXEL_FORMAT_R8;
       format = rtc::TextureData::UCHAR;
+      // readMode = rtc::Texture::NORMALIZED_FLOAT;
       break;
     case BN_FLOAT4_RGBA:
       // owlTexelFormat = OWL_TEXEL_FORMAT_RGBA32F;
       format = rtc::TextureData::FLOAT4;
+      // readMode = rtc::Texture::ELEMENT_TYPE;
       break;
     case BN_FLOAT4:
       // owlTexelFormat = OWL_TEXEL_FORMAT_RGBA32F;
       format = rtc::TextureData::FLOAT4;
+      // readMode = rtc::Texture::ELEMENT_TYPE;
       break;
     case BN_UFIXED8_RGBA:
       // owlTexelFormat = OWL_TEXEL_FORMAT_RGBA8;
       format = rtc::TextureData::UCHAR4;
+      // readMode = rtc::Texture::NORMALIZED_FLOAT;
       break;
     default: throw std::runtime_error("un-recognized texel format "
                                       +std::to_string((int)texelFormat));
@@ -195,7 +200,7 @@ namespace barney {
                                 rtcAddressModes);
     rtcTextureNN
       = getRTC()->createTexture(rtcTextureData,
-                                rtc::Texture::FILTER_MODE_NEAREST,
+                                rtc::Texture::FILTER_MODE_POINT,
                                 rtcAddressModes);
 
 
@@ -457,7 +462,7 @@ namespace barney {
   {
     // auto devGroup = owner->devGroup.get();
     // for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
-    getRTC()->free(rtcTextureData);
+    getRTC()->freeTextureData(rtcTextureData);
     rtcTextureData = 0;
     // for (auto dev : getDevices()) {
     //   auto &dd = getDD(dev);//onDev[dev->localRank];

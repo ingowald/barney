@@ -16,18 +16,19 @@ namespace barney {
     struct Group;
 
     struct Group {
-      virtual rtc::device::AccelHandle getDD(const Device *) const = 0;
+      virtual rtc::device::AccelHandle
+      getDD(const rtc::Device *) const = 0;
       
       virtual void buildAccel() = 0;
       virtual void refitAccel() = 0;
     };
 
     struct Buffer {
-      virtual void *getDD(const Device *) const = 0;
+      virtual void *getDD(const rtc::Device *) const = 0;
       virtual void upload(const void *hostPtr,
                           size_t numBytes,
                           size_t ofs = 0,
-                          const Device *device=nullptr) = 0;
+                          const rtc::Device *device=nullptr) = 0;
     };
 
     struct Geom {
@@ -36,7 +37,7 @@ namespace barney {
       /*! can only get called on triangle type geoms */
       virtual void setVertices(rtc::Buffer *vertices, int numVertices) = 0;
       virtual void setIndices(rtc::Buffer *indices, int numIndices) = 0;
-      virtual void setDD(const void *dd, const Device *device) = 0;
+      virtual void setDD(const void *dd, const rtc::Device *device) = 0;
     };
 
     struct TextureData {
@@ -47,7 +48,13 @@ namespace barney {
         UCHAR4,
         USHORT,
       } Format;
-      vec3i dims;
+      TextureData(const vec3i dims,
+                  const rtc::TextureData::Format format)
+        : dims(dims), format(format)
+      {}
+        
+      const vec3i dims;
+      const Format format;
     };
     
     struct Texture {
@@ -56,19 +63,27 @@ namespace barney {
       } AddressMode;
       
       typedef enum {
-        FILTER_MODE_NEAREST,FILTER_MODE_LINEAR,
+        FILTER_MODE_POINT,FILTER_MODE_LINEAR,
       } FilterMode;
     
       typedef enum {
         COLOR_SPACE_LINEAR, COLOR_SPACE_SRGB,
       } ColorSpace;
-    
+
+      // typedef enum {
+      //   NORMALIZED_FLOAT, ELEMENT_TYPE
+      // } ReadMode;
+
+      Texture(TextureData *const data)
+        : data(data)
+      {}
+      
       const vec3i &getDims() const {
         return data->dims;
       }
-      virtual rtc::device::TextureObject getDD(const Device *) const = 0;
+      virtual rtc::device::TextureObject getDD(const rtc::Device *) const = 0;
 
-      TextureData *data;
+      TextureData *const data;
     };
     
     struct ComputeKernel {
@@ -107,20 +122,22 @@ namespace barney {
 
 
     struct Device {
-      Device(Backend *const backend,
-             const int physicalID)
-        : backend(backend),
-          physicalID(physicalID)
+      Device(const int physicalID, int localID)
+        : physicalID(physicalID),
+          localID(localID)
       {}
 
-      virtual void copyAsync(void *dst, void *src, size_t numBytes) = 0;
       virtual void *alloc(size_t numBytes) = 0;
       virtual void free(void *mem) = 0;
+      virtual void *allocHost(size_t numBytes) = 0;
+      virtual void freeHost(void *mem) = 0;
+      virtual void memsetAsync(void *mem,int value, size_t size) = 0;
+      virtual void copyAsync(void *dst, void *src, size_t size) = 0;
       virtual void buildPipeline() = 0;
       virtual void buildSBT() = 0;
       
       /*! sets this gpu as active, and returns physical ID of GPU that
-          was active before */
+        was active before */
       virtual int setActive() const = 0;
       
       /*! restores the gpu whose ID was previously returend by setActive() */
@@ -129,8 +146,9 @@ namespace barney {
       // virtual void launchTrace(const void *ddPtr) = 0;
       virtual void sync() = 0;
       
-      Backend *const backend;
+      // Backend *const backend;
       const int physicalID;
+      const int localID;
     };
 
 
@@ -140,6 +158,9 @@ namespace barney {
       {}
       virtual ~DevGroup() {}
 
+      // /*! this must only ever get called by Backend::createDevGroup */
+      // virtual rtc::Device *createDevice(int physicalID) = 0;
+      
       virtual void destroy() = 0;
       
       // ==================================================================
@@ -152,7 +173,7 @@ namespace barney {
       // buffer stuff
       // ==================================================================
       virtual rtc::Buffer *createBuffer(size_t numBytes,
-                                   const void *initValues = 0) const = 0;
+                                        const void *initValues = 0) const = 0;
       virtual void free(rtc::Buffer *) const = 0;
       virtual void copy(rtc::Buffer *dst,
                         rtc::Buffer *src,
@@ -169,14 +190,16 @@ namespace barney {
                         
       virtual rtc::Texture *
       createTexture(rtc::TextureData *data,
+                    // rtc::Texture::ReadMode   readMode,
                     rtc::Texture::FilterMode filterMode,
                     rtc::Texture::AddressMode addressModes[3],
                     const vec4f borderColor = vec4f(0.f),
+                    bool normalizedCoords = true,
                     rtc::Texture::ColorSpace colorSpace
                     = rtc::Texture::COLOR_SPACE_LINEAR) const = 0;
                         
-      virtual void free(rtc::TextureData *) const = 0;
-      virtual void free(rtc::Texture *) const = 0;
+      virtual void freeTextureData(rtc::TextureData *) const = 0;
+      virtual void freeTexture(rtc::Texture *) const = 0;
 
       // ==================================================================
       // geom/geomtype stuff
@@ -228,10 +251,10 @@ namespace barney {
 
       // virtual void setActiveGPU(int physicalID) = 0;
       // virtual int  getActiveGPU() = 0;
-      virtual rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs,
-                                       size_t sizeOfGlobals) = 0;
-
-      virtual rtc::Device *createDevice(int physicalID) = 0;
+      virtual rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs
+                                            //      ,
+                                            // size_t sizeOfGlobals
+                                            ) = 0;
 
       /*! number of 'physical' devices - num cuda capable gpus if cuda
         or optix, or 1 if embree */
@@ -251,6 +274,7 @@ namespace barney {
     Backend *createBackend_embree();
   }
 
+  
 }
 
 

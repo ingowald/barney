@@ -73,7 +73,7 @@ namespace barney {
     : lmsIdx(lmsIdx)
   {
     auto backend = rtc::Backend::get();
-    rtc = backend->createDevGroup(gpuIDs,sizeof(render::OptixGlobals));
+    rtc = backend->createDevGroup(gpuIDs);//,sizeof(render::OptixGlobals));
     
     // owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
     // OWLVarDecl args[]
@@ -85,7 +85,11 @@ namespace barney {
 
     // owlBuildPrograms(owl);
 
-    for (int localID=0;localID<gpuIDs.size();localID++)
+    PING; PRINT(rtc->devices.size());
+    
+    for (int localID=0;localID<gpuIDs.size();localID++) {
+      assert(localID < rtc->devices.size());
+      assert(localID < contextRanks.size());
       devices.push_back
         (std::make_shared<Device>(this,
                                   rtc->devices[localID],
@@ -94,6 +98,7 @@ namespace barney {
                                   // gpuIDs[localID],localID,
                                   (int)(globalIndex*gpuIDs.size())+localID,
                                   (int)(globalIndexStep*gpuIDs.size())));
+    }
 
     // OWLVarDecl params[]
     //   = {
