@@ -26,15 +26,15 @@ namespace barney {
     EnvMapLight(Context *context, int slot);
 
     struct DD {
-      inline __device__ float pdf(vec3f dir, bool dbg=false) const;
-      inline __device__ Light::Sample sample(Random &r, bool dbg=false) const;
-      inline __device__ vec3f  eval(vec3f dir, bool dbg=false) const;
+      inline __both__ float pdf(vec3f dir, bool dbg=false) const;
+      inline __both__ Light::Sample sample(Random &r, bool dbg=false) const;
+      inline __both__ vec3f  eval(vec3f dir, bool dbg=false) const;
       /*! converts from a given pixel's coordinates into the
           world-space vector that poitns to the center of that
           pixel */
-      inline __device__ vec3f  uvToWorld(float sx, float sy) const;
-      inline __device__ vec3f  pixelToWorld(vec2i pixelID) const;
-      inline __device__ vec2i  worldToPixel(vec3f worldDir) const;
+      inline __both__ vec3f  uvToWorld(float sx, float sy) const;
+      inline __both__ vec3f  pixelToWorld(vec2i pixelID) const;
+      inline __both__ vec2i  worldToPixel(vec3f worldDir) const;
         
       linear3f            toWorld;
       linear3f            toLocal;
@@ -85,7 +85,7 @@ namespace barney {
 
 
 #ifdef __CUDACC__
-  inline __device__
+  inline __both__
   float cdfGetPDF(int position, const float *cdf, int N)
   {
     float f_at_position = cdf[position];
@@ -97,7 +97,7 @@ namespace barney {
     return N*(f_at_position-f_before_position);
   }
 
-  inline __device__
+  inline __both__
   int sampleCDF(const float *cdf, int N, float v,
                 float &pdf, bool dbg = false)
   {
@@ -127,7 +127,7 @@ namespace barney {
     return position;
   }
   
-  inline __device__ float
+  inline __both__ float
   EnvMapLight::DD::pdf(vec3f dir, bool dbg) const
   {
     if (!texture)
@@ -155,21 +155,21 @@ namespace barney {
     return pdf_x * pdf_y * 1.f/(TWO_PI*ONE_PI*sinf(theta));
   }
   
-  inline __device__ float pbrt_clampf(float f, float lo, float hi)
+  inline __both__ float pbrt_clampf(float f, float lo, float hi)
   { return max(lo,min(hi,f)); }
   
-  inline __device__ float pbrtSphericalTheta(const vec3f &v)
+  inline __both__ float pbrtSphericalTheta(const vec3f &v)
   {
     return acosf(pbrt_clampf(v.z, -1.f, 1.f));
   }
   
-  inline __device__ float pbrtSphericalPhi(const vec3f &v)
+  inline __both__ float pbrtSphericalPhi(const vec3f &v)
   {
     float p = atan2f(v.y, v.x);
     return (p < 0.f) ? (p + float(2.f * M_PI)) : p;
   }
 
-  inline __device__ vec2i
+  inline __both__ vec2i
   EnvMapLight::DD::worldToPixel(vec3f worldDir) const
   {
     vec3f localDir = xfmVector(toLocal,worldDir);
@@ -186,7 +186,7 @@ namespace barney {
     return {ix,iy};
   }
   
-  inline __device__ vec3f
+  inline __both__ vec3f
   EnvMapLight::DD::pixelToWorld(vec2i pixelID) const
   {
     const float f_x   = (pixelID.x+.5f)/dims.x;
@@ -202,7 +202,7 @@ namespace barney {
     return xfmVector(toWorld,dir);
   }
 
-  inline __device__ vec3f
+  inline __both__ vec3f
   EnvMapLight::DD::uvToWorld(float f_x, float f_y) const
   {
     const float phi   = TWO_PI * f_x;
@@ -216,7 +216,7 @@ namespace barney {
     return xfmVector(toWorld,dir);
   }
 
-  inline __device__ Light::Sample
+  inline __both__ Light::Sample
   EnvMapLight::DD::sample(Random &r, bool dbg) const
   {
     if (!texture) return {};

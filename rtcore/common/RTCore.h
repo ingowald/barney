@@ -20,6 +20,8 @@ namespace barney {
       { return {blockIdx.x,blockIdx.y,blockIdx.z}; }
       inline __device__ int atomicAdd(int *ptr, int inc) const
       { return ::atomicAdd(ptr,inc); }
+      inline __device__ float atomicAdd(float *ptr, float inc) const
+      { return ::atomicAdd(ptr,inc); }
     };
     
     template<typename KernelT>

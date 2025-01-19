@@ -30,19 +30,19 @@ namespace barney {
 
 #define USE_MIS 1
     
-  inline __device__ float square(float f) { return f*f; }
+    inline __both__ float square(float f) { return f*f; }
   
     
     enum { MAX_PATH_DEPTH = 10 };
 
-    inline __device__
+    inline __both__
     float safe_eps(float f, vec3f v)
     {
       return max(f,1e-5f*reduce_max(abs(v)));
     }
 
     
-    inline __device__
+    inline __both__
     vec3f randomDirection(Random &rng)
     {
       vec3f v;
@@ -55,7 +55,7 @@ namespace barney {
       }
     }
 
-    inline __device__
+    inline __both__
     bool sampleAreaLights(Light::Sample &ls,
                           const render::World::DD &world,
                           const vec3f P,
@@ -138,7 +138,7 @@ namespace barney {
       return true;
     }
 
-    inline __device__
+    inline __both__
     bool sampleDirLights(Light::Sample &ls,
                          const World::DD &world,
                          const Renderer::DD &renderer,
@@ -192,7 +192,7 @@ namespace barney {
       return weights[i] != 0.f;
     }
 
-    inline __device__
+    inline __both__
     bool sampleEnvLight(Light::Sample &ls,
                         const World::DD &world,
                         const Renderer::DD &renderer,
@@ -214,7 +214,7 @@ namespace barney {
       return true;
     }
 
-    inline __device__
+    inline __both__
     bool sampleLights(Light::Sample &ls,
                       const World::DD &world,
                       const Renderer::DD &renderer,
@@ -235,7 +235,7 @@ namespace barney {
       // acutally have sampled a dir-light. that _may_ be true because
       // even if we did sample a dirlight there still _is_ a pdf for
       // the env-map light... but it's a bit iffy.
-       lightNeedsMIS = true;
+      lightNeedsMIS = true;
 # else
       lightNeedsMIS = false;
 # endif
@@ -247,7 +247,7 @@ namespace barney {
         = (sampleEnvLight(els,world,renderer,P,Ng,random,dbg)
            ? (reduce_max(els.radiance)/els.pdf)
            : 0.f);
-        // = world.envMapLight.sample(random,dbg);
+      // = world.envMapLight.sample(random,dbg);
 #else
       float elsWeight = 0.f;
 #endif
@@ -307,7 +307,7 @@ namespace barney {
 
 
 
-    inline __device__
+    inline __both__
     float schlick(float cosine,
                   float ref_idx)
     {
@@ -318,7 +318,7 @@ namespace barney {
   
   
 
-    inline __device__
+    inline __both__
     bool refract(const vec3f& v,
                  const vec3f& n,
                  float ni_over_nt,
@@ -335,7 +335,7 @@ namespace barney {
         return false;
     }
   
-    // inline __device__
+    // inline __both__
     // vec3f reflect(const vec3f &v,
     //               const vec3f &n)
     // {
@@ -344,7 +344,7 @@ namespace barney {
   
 
 
-    // inline __device__
+    // inline __both__
     // bool scatter_glass(vec3f &scattered_direction,
     //                    Random &random,
     //                    // const vec3f &org,
@@ -397,7 +397,7 @@ namespace barney {
 
 
   
-    inline __device__
+    inline __both__
     vec3f radianceFromEnv(const World::DD &world,
                           const Renderer::DD &renderer,
                           Ray &ray)
@@ -420,13 +420,13 @@ namespace barney {
     }
 
     /*! if there _is_ a dedicated env-map light specified, this looks
-        up the background color from that map; otherwise, it returns
-        the 'ray.misscolor' that the primary ray generation has set as
-        default color for this ray */
-    inline __device__
+      up the background color from that map; otherwise, it returns
+      the 'ray.misscolor' that the primary ray generation has set as
+      default color for this ray */
+    inline __both__
     vec3f primaryRayMissColor(const World::DD &world,
-                          const Renderer::DD &renderer,
-                          Ray &ray)
+                              const Renderer::DD &renderer,
+                              Ray &ray)
     {
       if (world.envMapLight.texture)
         return radianceFromEnv(world,renderer,ray);
@@ -437,7 +437,7 @@ namespace barney {
     }
 
     /*! ugh - that should all go into material::AnariPhysical .... */
-    inline __device__
+    inline __both__
     void bounce(const World::DD &world,
                 const Renderer::DD &renderer,
                 vec3f &fragment,
@@ -492,9 +492,9 @@ namespace barney {
                    fragment.y,
                    fragment.z);
           if (0 && path.dbg) printf("shadow miss, frag %f %f %f\n",
-                               fragment.x,
-                               fragment.y,
-                               fragment.z);
+                                    fragment.x,
+                                    fragment.y,
+                                    fragment.z);
         }
 
         // this path is done.
@@ -585,8 +585,8 @@ namespace barney {
       Random &random = (Random &)path.rngSeed;
       const PackedBSDF bsdf = path.getBSDF();
       // bool doTransmission = false;
-        // =  ((float)path.mini.transmission > 0.f)
-        // && (random() < (float)path.mini.transmission);
+      // =  ((float)path.mini.transmission > 0.f)
+      // && (random() < (float)path.mini.transmission);
       render::DG dg;
       dg.P  = path.P;
       dg.Ng = Ng;
@@ -613,13 +613,13 @@ namespace barney {
         = offsetEpsilon*(isVolumeHit?dg.wo:Ngff);
       // vec3f dg_P
       //   = path.P+frontFacingSurfaceOffset;
-// if (path.dbg)
+      // if (path.dbg)
       //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
       //          pathDepth,
       //          (float)path.transmission,
       //          (float)path.ior,
       //          int(doTransmission));
-// #if 1
+      // #if 1
       // if (path.dbg) printf("mattype %i\n",path.materialType);
 
 
@@ -660,10 +660,10 @@ namespace barney {
           // * fabsf(dot(dg.Ng,ls.direction))
           ;
         if (fire || 0 && path.dbg) printf("eval light res %f %f %f: %f\n",
-                                  f_r.value.x,
-                                  f_r.value.y,
-                                  f_r.value.z,
-                                  f_r.pdf);
+                                          f_r.value.x,
+                                          f_r.value.y,
+                                          f_r.value.z,
+                                          f_r.pdf);
         
         if (!f_r.valid() || reduce_max(f_r.value) < 1e-4f) {
           if (fire || 0 && path.dbg) printf(" no f_r, killing shadow ray\n");
@@ -732,7 +732,7 @@ namespace barney {
       // ==================================================================
       path.tMax = -1.f;
       if (pathDepth >= MAX_PATH_DEPTH)
-         return;
+        return;
       
       ScatterResult scatterResult;
       bsdf.scatter(scatterResult,dg,random,fire || 0 && path.dbg);
@@ -744,7 +744,7 @@ namespace barney {
       
       bool isDiffuseBounce
         = scatterResult.wasDiffuse;
-        //        = !isinf(scatterResult.pdf);
+      //        = !isinf(scatterResult.pdf);
       if (isDiffuseBounce && (path.numDiffuseBounces+1)>MAX_DIFFUSE_BOUNCES) 
         return;
       
@@ -811,39 +811,24 @@ namespace barney {
   
 
     struct ShadeRaysKernel {
-      struct DD {
-        template<typename RTCore>
-        inline __host__ __device__
-        void run(const RTCore &rtcore);
-        
-        World::DD world;
-        Renderer::DD renderer;
-        AccumTile *accumTiles;
-        int accumID;
-        Ray *readQueue;
-        int numRays;
-        Ray *writeQueue;
-        int *d_nextWritePos;
-        int generation;
-      };
+      template<typename ComputeInterface>
+      inline __both__
+      void run(const ComputeInterface &compute);
+      
+      World::DD world;
+      Renderer::DD renderer;
+      AccumTile *accumTiles;
+      int accumID;
+      Ray *readQueue;
+      int numRays;
+      Ray *writeQueue;
+      int *d_nextWritePos;
+      int generation;
     };
-
-#if 1
-    __global__
-    void g_shadeRays_pt(World::DD world,
-                        Renderer::DD renderer,
-                        AccumTile *accumTiles,
-                        int accumID,
-                        Ray *readQueue,
-                        int numRays,
-                        Ray *writeQueue,
-                        int *d_nextWritePos,
-                        int generation)
-#else
-      template<typename RTCore>
-      inline __host__ __device__
-      void ShadeRaysKernel::DD::run(const RTCore &rtcore)
-#endif
+    
+    template<typename ComputeInterface>
+    inline __both__
+    void ShadeRaysKernel::run(const ComputeInterface &compute)
     {
       int tid = threadIdx.x + blockIdx.x*blockDim.x;
       if (tid >= numRays) return;
@@ -873,15 +858,15 @@ namespace barney {
       Ray shadowRay;
       shadowRay.tMax = -1.f;
       
-        // printf("sammpling dir for N %f %f %f\n",dg.N.x,dg.N.y,dg.N.z);
+      // printf("sammpling dir for N %f %f %f\n",dg.N.x,dg.N.y,dg.N.z);
 
       // bounce that ray on the scene, possibly generating a) a fragment
       // to add to frame buffer; b) a outgoing ray (in-place
       // modification of 'path'); and/or c) a shadow ray
       bounce(world,renderer,
-                             fragment,
-                             path,shadowRay,
-                             generation);
+             fragment,
+             path,shadowRay,
+             generation);
     
       // write shadow and bounce ray(s), if any were generated
       // if (path.dbg)
@@ -889,10 +874,10 @@ namespace barney {
       //          path.tMax,shadowRay.tMax,
       //          fragment.x,fragment.y,fragment.z);
       if (shadowRay.tMax > 0.f) {
-        writeQueue[atomicAdd(d_nextWritePos,1)] = shadowRay;
+        writeQueue[compute.atomicAdd(d_nextWritePos,1)] = shadowRay;
       }
       if (path.tMax > 0.f) {
-        writeQueue[atomicAdd(d_nextWritePos,1)] = path;
+        writeQueue[compute.atomicAdd(d_nextWritePos,1)] = path;
       }
 
       // and write the shade fragment, if generated
@@ -931,21 +916,21 @@ namespace barney {
       } else {
         // if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         if (generation == 0 && alpha) 
-          atomicAdd(&valueToAccumInto.w,alpha);
+          compute.atomicAdd(&valueToAccumInto.w,alpha);
 
         if (fragment.x > 0.f)
-          atomicAdd(&valueToAccumInto.x,fragment.x);
+          compute.atomicAdd(&valueToAccumInto.x,fragment.x);
         if (fragment.y > 0.f)
-          atomicAdd(&valueToAccumInto.y,fragment.y);
+          compute.atomicAdd(&valueToAccumInto.y,fragment.y);
         if (fragment.z > 0.f)
-          atomicAdd(&valueToAccumInto.z,fragment.z);
+          compute.atomicAdd(&valueToAccumInto.z,fragment.z);
 #if DENOISE
         if (incomingN.x > 0.f)
-          atomicAdd(&valueToAccumNormalInto.x,incomingN.x);
+          compute.atomicAdd(&valueToAccumNormalInto.x,incomingN.x);
         if (incomingN.y > 0.f)
-          atomicAdd(&valueToAccumNormalInto.y,incomingN.y);
+          compute.atomicAdd(&valueToAccumNormalInto.y,incomingN.y);
         if (incomingN.z > 0.f)
-          atomicAdd(&valueToAccumNormalInto.z,incomingN.z);
+          compute.atomicAdd(&valueToAccumNormalInto.z,incomingN.z);
 #endif
       }
 
@@ -980,11 +965,12 @@ namespace barney {
     Renderer::DD devRenderer
       = renderer->getDD(device.get());
            
-    render::ShadeRaysKernel::DD args = {
+    render::ShadeRaysKernel args = {
       devWorld,devRenderer,
       fb->accumTiles,
       (int)fb->owner->accumID,
-      rays.traceAndShadeReadQueue,numRays,
+      rays.traceAndShadeReadQueue,
+      numRays,
       rays.receiveAndShadeWriteQueue,
       rays._d_nextWritePos,generation
     };
@@ -995,3 +981,5 @@ namespace barney {
   }
 
 }
+
+RTC_CUDA_DEFINE_COMPUTE(shadeRays,barney::render::ShadeRaysKernel);
