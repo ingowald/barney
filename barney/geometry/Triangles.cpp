@@ -93,7 +93,7 @@ namespace barney {
     if (triangleGeoms.empty()) {
       rtc::GeomType *gt = devGroup->getOrCreateGeomTypeFor
         ("Triangles",Triangles::createGeomType);
-      rtc::Geom *geom = rtc->createGeom(gt);
+      rtc::Geom *geom = gt->createGeom();
       //owlGeomCreate(getDevGroup()->owl,gt);
       triangleGeoms = { geom };
     }

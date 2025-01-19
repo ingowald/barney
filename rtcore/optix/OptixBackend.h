@@ -22,8 +22,8 @@ namespace barney {
       // int       const physicalGPU;
     };
 
-    struct OptixBuffer : public rtc::Buffer {
-      OptixBuffer(const optix::DevGroup *dg,
+    struct Buffer : public rtc::Buffer {
+      Buffer(const optix::DevGroup *dg,
                   size_t size,
                   const void *initData);
       void *getDD(const rtc::Device *) const override;
@@ -32,6 +32,41 @@ namespace barney {
                   size_t ofs = 0,
                   const rtc::Device *device=nullptr) override;
       OWLBuffer owl;
+    };
+
+    struct Geom : public rtc::Geom {
+      Geom(OWLGeom geom);
+      virtual ~Geom();
+      void setDD(const void *dd, const rtc::Device *device) override;
+      
+      OWLGeom const geom;
+    };
+
+    struct TrianglesGeom : public Geom {
+      TrianglesGeom(OWLGeom geom);
+      
+      /*! only for user geoms */
+      void setPrimCount(int primCount) override;
+      /*! can only get called on triangle type geoms */
+      void setVertices(rtc::Buffer *vertices, int numVertices) override;
+      void setIndices(rtc::Buffer *indices, int numIndices) override;
+    };
+    
+    struct GeomType : public rtc::GeomType {
+      GeomType(const DevGroup *devGroup) : devGroup(devGroup) {}
+      ~GeomType() override;
+      
+      const DevGroup *const devGroup;
+      OWLGeomType gt = 0;
+    };
+    struct TrianglesGeomType : public GeomType
+    {
+      TrianglesGeomType(const DevGroup *dg,
+                        const std::string &typeName,
+                        size_t sizeOfDD,
+                        const std::string &ahFctName,
+                        const std::string &chFctName);
+      rtc::Geom *createGeom() override;
     };
     
     struct DevGroup : public cuda::BaseDevGroup {
@@ -51,10 +86,6 @@ namespace barney {
       void free(rtc::Geom *)
         override 
       { BARNEY_NYI(); };
-      rtc::Geom *
-      createGeom(rtc::GeomType *gt) 
-        override 
-      { BARNEY_NYI(); };
       
       rtc::GeomType *
       createUserGeomType(const char *typeName,
@@ -70,9 +101,7 @@ namespace barney {
       createTrianglesGeomType(const char *typeName,
                               size_t sizeOfDD,
                               const char *ahFctName,
-                              const char *chFctName) 
-        override 
-      { BARNEY_NYI(); };
+                              const char *chFctName) override;
       
 
       // ==================================================================
@@ -108,14 +137,10 @@ namespace barney {
       rtc::Buffer *createBuffer(size_t numBytes,
                                 const void *initValues = 0) const override;
 
-      void free(rtc::Buffer *) const 
-        override 
-      { BARNEY_NYI(); };
+      void free(rtc::Buffer *) const override;
       void copy(rtc::Buffer *dst,
                 rtc::Buffer *src,
-                size_t numBytes) const 
-        override 
-      { BARNEY_NYI(); };
+                size_t numBytes) const override;
          
       OWLContext      owl = 0;
     };

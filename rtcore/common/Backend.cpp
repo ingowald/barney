@@ -1,4 +1,10 @@
 #include "rtcore/common/Backend.h"
+#ifdef _WIN32
+# include <windows.h>
+#else
+# include <dlfcn.h>
+#endif
+
 
 namespace barney {
   namespace rtc {
@@ -74,7 +80,19 @@ namespace barney {
       PING; PRINT(singleton);
       return singleton;
     }
-  
+
+    const void *getSymbol(const std::string &symbolName)
+    {
+#ifdef _WIN32
+      HMODULE libCurrent = GetModuleHandle(NULL);
+      void* symbol = (void*)GetProcAddress(libCurrent, symbolName.c_str());
+#else
+      void *lib = dlopen(nullptr,RTLD_GLOBAL);
+      void* symbol = (void*)dlsym(lib, symbolName.c_str());
+#endif
+      return symbol;
+    }
+    
     Backend *Backend::singleton = nullptr;
   }
 }

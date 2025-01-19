@@ -71,7 +71,7 @@ namespace barney {
       rtc::GeomType *gt = devGroup->getOrCreateGeomTypeFor
         ("Spheres",Spheres::createGeomType);
       // OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      rtc::Geom *geom = rtc->createGeom(gt);
+      rtc::Geom *geom = gt->createGeom();
       geom->setPrimCount(numOrigins);
       userGeoms.push_back(geom);
     }

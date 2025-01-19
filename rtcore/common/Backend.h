@@ -15,6 +15,14 @@ namespace barney {
     struct GeomType;
     struct Group;
 
+    const void *getSymbol(const std::string &symName);
+    
+    struct GeomType {
+      virtual rtc::Geom *createGeom() = 0;
+        
+      virtual ~GeomType() = default;
+    };
+    
     struct Group {
       virtual rtc::device::AccelHandle
       getDD(const rtc::Device *) const = 0;
@@ -33,7 +41,7 @@ namespace barney {
 
     struct Geom {
       /*! only for user geoms */
-      virtual void setPrimCount(int primCount);
+      virtual void setPrimCount(int primCount) = 0;
       /*! can only get called on triangle type geoms */
       virtual void setVertices(rtc::Buffer *vertices, int numVertices) = 0;
       virtual void setIndices(rtc::Buffer *indices, int numIndices) = 0;
@@ -205,9 +213,6 @@ namespace barney {
       // geom/geomtype stuff
       // ==================================================================
 
-      virtual rtc::Geom *
-      createGeom(rtc::GeomType *gt) = 0;
-        
       virtual rtc::GeomType *
       createUserGeomType(const char *typeName,
                          size_t sizeOfDD,

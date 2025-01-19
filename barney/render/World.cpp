@@ -96,6 +96,7 @@ namespace barney {
         = rtc->createBuffer(newNumBytes);
       rtc->copy(newBuffer,oldBuffer,oldNumBytes);
       rtc->free(oldBuffer);
+      this->buffer = newBuffer;
     }
 
     int MaterialRegistry::allocate()

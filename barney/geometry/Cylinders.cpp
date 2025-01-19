@@ -70,7 +70,7 @@ namespace barney {
       rtc::GeomType *gt = getDevGroup()->getOrCreateGeomTypeFor
         ("Cylinders",Cylinders::createGeomType);
       // OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      rtc::Geom *geom = getRTC()->createGeom(gt);
+      rtc::Geom *geom = gt->createGeom();
       geom->setPrimCount(indices->count);
       userGeoms.push_back(geom);
     }
