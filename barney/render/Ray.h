@@ -70,7 +70,7 @@ namespace barney {
       union {
         PackedBSDF::Data hitBSDF;
         /*! the background color for primary rays that didn't have any intersection */
-        float3           missColor;
+        float4           missColor;
       };
     };
   

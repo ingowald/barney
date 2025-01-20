@@ -29,13 +29,13 @@ namespace barney {
       inline __device__ __host__
       void run(const RTCoreInterface &rtcore)
       {
-        auto &lp = OptixGlobals::get();//optixLaunchParams;//rtcore.getLaunchParams();
-        // auto &lp = optixLaunchParams;//rtcore.getLaunchParams();
         const int rayID
           = rtcore.getLaunchIndex().x
           + rtcore.getLaunchDims().x
           * rtcore.getLaunchIndex().y;
         
+        auto &lp = OptixGlobals::get();
+
         if (rayID >= lp.numRays)
           return;
         
@@ -45,7 +45,7 @@ namespace barney {
         if (dir.x == 0.f) dir.x = 1e-6f;
         if (dir.y == 0.f) dir.y = 1e-6f;
         if (dir.z == 0.f) dir.z = 1e-6f;
-        
+
         rtcore.traceRay(lp.world,
                         ray.org,
                         dir,
@@ -55,33 +55,6 @@ namespace barney {
       }
     };
     
-// #else
-//     OPTIX_RAYGEN_PROGRAM(traceRays)()
-//     {
-//       auto &lp = optixLaunchParams;
-//       const int rayID
-//         = owl::getLaunchIndex().x
-//         + owl::getLaunchDims().x
-//         * owl::getLaunchIndex().y;
-
-//       if (rayID >= lp.numRays)
-//         return;
-
-//       Ray &ray = lp.rays[rayID];
-
-//       vec3f dir = ray.dir;
-//       if (dir.x == 0.f) dir.x = 1e-6f;
-//       if (dir.y == 0.f) dir.y = 1e-6f;
-//       if (dir.z == 0.f) dir.z = 1e-6f;
-
-//       owl::traceRay(lp.world,
-//                     owl::Ray(ray.org,
-//                              dir,
-//                              0.f,ray.tMax),
-//                     ray);
-//     }
-// #endif
-
   }
 }
 

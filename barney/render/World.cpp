@@ -126,7 +126,8 @@ namespace barney {
                                        const DeviceMaterial &dd,
                                        int deviceID)
     {
-      buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID);
+      buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID,
+                     devGroup->devices[deviceID]->rtc);
       // BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+materialID),
       //                         &dd,sizeof(dd),cudaMemcpyDefault));
     }

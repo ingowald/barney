@@ -167,7 +167,7 @@ namespace barney {
 #ifdef __CUDACC__
     inline __device__ float4 Sampler::DD::eval(const HitAttributes &inputs, bool dbg) const
     {
-      dbg = false;
+      // dbg = true;
       if (dbg) printf("evaluting sampler %p texture %p\n",this,
                       (void*)image.texture);
       float4 in  = inputs.get(inAttribute);
@@ -179,18 +179,24 @@ namespace barney {
         if (type == IMAGE1D)
           fromTex = tex1D<float4>(image.texture,coord.x);
         else if (type == IMAGE2D) {
-          if (dbg) printf("sampling 2d texture at %f %f\n",coord.x,coord.y);
-          fromTex = tex2D<float4>(image.texture,coord.x,coord.y);
+          if (dbg) printf("sampling 2d texture %p at %f %f\n",
+                          (int*)image.texture,coord.x,coord.y);
+          fromTex = rtc::tex2D<float4>(image.texture,coord.x,coord.y);
         } else
-          fromTex = tex3D<float4>(image.texture,coord.x,coord.y,coord.z);
+          fromTex = rtc::tex3D<float4>(image.texture,coord.x,coord.y,coord.z);
 
         if (dbg) printf("fromTex is %f %f %f %f\n",fromTex.x,fromTex.y,fromTex.z,fromTex.w);
         in.x = fromTex.x;
+
         if (image.numChannels >= 1) in.y = fromTex.y;
         if (image.numChannels >= 2) in.z = fromTex.z;
         if (image.numChannels >= 3) in.w = fromTex.w;
+        if (dbg) printf("numchan %i -> %f %f %f %f\n",
+                        image.numChannels,
+                        in.x,in.y,in.z,in.w);
       }
-      return outTransform.applyTo(in,dbg);
+      float4 out = outTransform.applyTo(in,dbg);
+      return out;
     }
 #endif
   }

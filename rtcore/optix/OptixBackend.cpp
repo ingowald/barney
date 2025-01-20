@@ -211,7 +211,7 @@ namespace barney {
       : GeomType(devGroup)
     {
       OWLVarDecl vars[] = {
-        {"raw",OWL_USER_TYPE(sizeOfDD),0},
+        {"raw",(OWLDataType)(OWL_USER_TYPE_BEGIN+sizeOfDD),0},
         {nullptr}
       };
       gt = owlGeomTypeCreate(devGroup->owl,OWL_GEOM_TRIANGLES,
@@ -221,8 +221,10 @@ namespace barney {
         = (const char *)rtc::getSymbol(typeName+"_ptx");
       OWLModule module = owlModuleCreate
         (devGroup->owl,Triangles_ptx);
-      owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"TrianglesCH");
-      owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,"TrianglesAH");
+      owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
+                               chFctName.c_str());//"TrianglesCH");
+      owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
+                           ahFctName.c_str());//"TrianglesAH");
       owlBuildPrograms(devGroup->owl);
       owlModuleRelease(module);
     }
@@ -300,9 +302,10 @@ namespace barney {
                              0,rg_args,-1);
         owlBuildPrograms(dg->owl);
 
+        PRINT(sizeOfLP);
         OWLVarDecl lp_args[]
           = {
-          { "raw", OWL_USER_TYPE(sizeOfLP), 0 },
+          { "raw", (OWLDataType)(OWL_USER_TYPE_BEGIN+sizeOfLP), 0 },
           { nullptr }
         };
         lp = owlParamsCreate(dg->owl,sizeOfLP,lp_args,-1);
@@ -312,9 +315,9 @@ namespace barney {
                   vec2i dims,
                   const void *dd) override
       {
-        owlParamsSetRaw(lp,"raw",dd);
-        owlAsyncLaunch2DOnDevice(rg,dims.x,dims.y,
-                                 ((OptixDevice*)device)->localID,lp);
+        int devID = ((OptixDevice*)device)->localID;
+        owlParamsSetRaw(lp,"raw",dd,devID);
+        owlAsyncLaunch2DOnDevice(rg,dims.x,dims.y,devID,lp);
       }
       void launch(rtc::Device *device,
                   int launchDims,
@@ -324,7 +327,9 @@ namespace barney {
       }
       void sync(rtc::Device *device) override
       {
-        BARNEY_NYI();
+        int devID = ((OptixDevice*)device)->localID;
+        cudaStream_t s = owlParamsGetCudaStream(lp,devID);
+        BARNEY_CUDA_CALL(StreamSynchronize(s));
       }
       
       

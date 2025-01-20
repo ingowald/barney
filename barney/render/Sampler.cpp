@@ -119,6 +119,7 @@ namespace barney {
 
     void Sampler::commit() 
     {
+      PING; PRINT(this);
       SlottedObject::commit();
       for (auto device : getDevices()) {
         DD dd = getDD(device->rtc);
@@ -143,9 +144,12 @@ namespace barney {
     {
       if (Sampler::setObject(member,value)) return true;
 
-      if (member == "textureData")
-        { textureData = value->as<TextureData>(); return true; }
-
+      if (member == "textureData") {
+        textureData = value->as<TextureData>();
+        PING; PRINT(textureData);
+        return true;
+      }
+      
       return false;
     }
 
@@ -187,8 +191,9 @@ namespace barney {
 
     void TextureSampler::commit() 
     {
-      Sampler::commit();
-
+      PING; PRINT(this);
+      PRINT(rtcTexture);
+      // PRINT(rtcTexture);
       if (rtcTexture) {
         getRTC()->freeTexture(rtcTexture);
         rtcTexture = 0;
@@ -205,10 +210,17 @@ namespace barney {
           toRTC(this->wrapModes[1]),
           toRTC(this->wrapModes[2])
         };
+        PING;
         rtcTexture = getRTC()->createTexture(textureData->rtcTextureData,
                                              filterMode,
                                              addressModes);
+        PRINT(rtcTexture);
       }
+
+
+      
+      Sampler::commit();
+      PING; PRINT(this);
     }
 
     Sampler::DD TextureSampler::getDD(rtc::Device *device) const
@@ -235,6 +247,22 @@ namespace barney {
         dd.image.texture = 0;
       } else {
         dd.image.texture = rtcTexture->getDD(device);
+        std::cout << "***** image texture on host " << (int*)dd.image.texture << std::endl;
+        switch (textureData->texelFormat) {
+        case BN_FLOAT:
+        case BN_UFIXED8:
+        case BN_UFIXED16:
+          dd.image.numChannels = 1;
+          break;
+        case BN_FLOAT4:
+        case BN_UFIXED8_RGBA:
+        case BN_UFIXED8_RGBA_SRGB:
+          dd.image.numChannels = 4;
+          break;
+        default:
+          PRINT(textureData->texelFormat);
+          throw std::runtime_error("unsupported texel format in image sampler");
+        }
       }
       return dd;
     }

@@ -107,6 +107,7 @@ namespace barney {
                                 rtcFilterMode,
                                 rtcAddressModes,
                                 vec4f(0.f),
+                                true,
                                 rtcColorSpace);
                                 
     // assert(OWL_TEXTURE_NEAREST == (int)BN_TEXTURE_NEAREST);

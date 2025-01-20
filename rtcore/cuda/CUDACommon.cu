@@ -31,6 +31,7 @@ namespace barney {
     {
       void *ptr = 0;
       BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
+      assert(ptr);
       return ptr;
     }
     
@@ -97,6 +98,7 @@ namespace barney {
          numScalarsPerTexel = 1;
         break;
       case TextureData::UCHAR4:
+        PING;
         desc         = cudaCreateChannelDesc<uchar4>();
         sizeOfScalar = 1;
         readMode     = cudaReadModeNormalizedFloat;
@@ -117,22 +119,40 @@ namespace barney {
         auto &dd = perDev[dev->localID];
         SetActiveGPU forDuration(dev);
 
-        unsigned int padded_x = (unsigned)dims.x;
-        unsigned int padded_y = std::max(1u,(unsigned)dims.y);
-        unsigned int padded_z = std::max(1u,(unsigned)dims.z);
-        cudaExtent extent{padded_x,padded_y,padded_z};
-        BARNEY_CUDA_CALL(Malloc3DArray(&dd.array,&desc,extent,0));
-        cudaMemcpy3DParms copyParms;
-        memset(&copyParms,0,sizeof(copyParms));
-        copyParms.srcPtr
-          = make_cudaPitchedPtr((void *)texels,
-                                (size_t)padded_x*sizeOfScalar*numScalarsPerTexel,
-                                (size_t)padded_x,
-                                (size_t)padded_y);
-        copyParms.dstArray = dd.array;
-        copyParms.extent   = extent;
-        copyParms.kind     = cudaMemcpyHostToDevice;
-        BARNEY_CUDA_CALL(Memcpy3D(&copyParms));
+        if (dims.z != 0) {
+          unsigned int padded_x = (unsigned)dims.x;
+          unsigned int padded_y = std::max(1u,(unsigned)dims.y);
+          unsigned int padded_z = std::max(1u,(unsigned)dims.z);
+          cudaExtent extent{padded_x,padded_y,padded_z};
+          PRINT(padded_x);
+          PRINT(padded_y);
+          PRINT(padded_z);
+          PRINT(numScalarsPerTexel);
+          PRINT(sizeOfScalar);
+          BARNEY_CUDA_CALL(Malloc3DArray(&dd.array,&desc,extent,0));
+          cudaMemcpy3DParms copyParms;
+          memset(&copyParms,0,sizeof(copyParms));
+          copyParms.srcPtr
+            = make_cudaPitchedPtr((void *)texels,
+                                  (size_t)padded_x*sizeOfScalar*numScalarsPerTexel,
+                                  (size_t)padded_x,
+                                  (size_t)padded_y);
+          copyParms.dstArray = dd.array;
+          copyParms.extent   = extent;
+          copyParms.kind     = cudaMemcpyHostToDevice;
+          BARNEY_CUDA_CALL(Memcpy3D(&copyParms));
+        } else if (dims.y != 0) {
+          PRINT(dims);
+          BARNEY_CUDA_CALL(MallocArray(&dd.array,&desc,dims.x,dims.y,0));
+          BARNEY_CUDA_CALL(Memcpy2DToArray(dd.array,0,0,
+                                           (void *)texels,
+                                           (size_t)dims.x*sizeOfScalar*numScalarsPerTexel,
+                                           (size_t)dims.x*sizeOfScalar*numScalarsPerTexel,
+                                           (size_t)dims.y,
+                                           cudaMemcpyHostToDevice));
+        } else {
+          BARNEY_NYI();
+        }
       }
     }
     
@@ -200,12 +220,20 @@ namespace barney {
         textureDesc.addressMode[2] = toCUDA(addressModes[2]);
         textureDesc.filterMode     = toCUDA(filterMode);
         textureDesc.readMode       = data->readMode;
-        
+        PING; PRINT((int)textureDesc.readMode);
+        PRINT(cudaReadModeNormalizedFloat);
+        PRINT(cudaReadModeElementType);
+        textureDesc.borderColor[0] = borderColor.x;
+        textureDesc.borderColor[1] = borderColor.y;
+        textureDesc.borderColor[2] = borderColor.z;
+        textureDesc.borderColor[3] = borderColor.w;
         textureDesc.normalizedCoords = normalizedCoords;
+        PRINT(normalizedCoords);
         
         BARNEY_CUDA_CALL(CreateTextureObject(&dd,
                                              &resourceDesc,
                                              &textureDesc,0));
+        std::cout << "created texture object : " << (int*)dd << std::endl;
       }
     }
     
@@ -213,7 +241,8 @@ namespace barney {
     rtc::device::TextureObject
     Texture::getDD(const rtc::Device *device) const
     {
-      return (const rtc::device::TextureObject&)perDev[device->localID];
+      cudaTextureObject_t to = perDev[device->localID];
+      return (const rtc::device::TextureObject&)to;
     }
     
     rtc::Texture *

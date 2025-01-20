@@ -75,19 +75,7 @@ namespace barney {
     : lmsIdx(lmsIdx)
   {
     auto backend = rtc::Backend::get();
-    rtc = backend->createDevGroup(gpuIDs);//,sizeof(render::OptixGlobals));
-    
-    // owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
-    // OWLVarDecl args[]
-    //   = {
-    //   { nullptr }
-    // };
-    // OWLModule module = owlModuleCreate(owl,traceRays_ptx);
-    // rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
-
-    // owlBuildPrograms(owl);
-
-    PING; PRINT(rtc->devices.size());
+    rtc = backend->createDevGroup(gpuIDs);
     
     for (int localID=0;localID<gpuIDs.size();localID++) {
       assert(localID < rtc->devices.size());
@@ -116,10 +104,7 @@ namespace barney {
 
   DevGroup::~DevGroup()
   {
-
     std::cout << "DEVGROUP DESTROYING context " << (int*)rtc << std::endl;
-    // owlContextDestroy(owl);
-    // owl = 0;
     rtc->destroy();
     rtc = nullptr;
   }

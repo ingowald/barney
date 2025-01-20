@@ -25,26 +25,28 @@ namespace barney {
     struct OptixGlobals {
       static inline __device__ const OptixGlobals &get();
       
+      int                    numRays;
       Sampler::DD           *samplers;
       DeviceMaterial        *materials;
       // OptixTraversableHandle world;
       rtc::device::AccelHandle  world;
       Ray                   *rays;
-      int                    numRays;
     };
     
   }
 }
 
 #ifdef __CUDA_ARCH__
-# ifndef DECLARE_OPTIX_LAUNCH_PARAMS
-/*! in owl we can only change the _type_ of launch params, they always
-    need to be caleld 'optixLaunchParams', and must have __constant__
-    storage*/
-#  define DECLARE_OPTIX_LAUNCH_PARAMS(a) extern __constant__ a optixLaunchParams
-# endif
-DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
-// extern __constant__ barney::render::OptixGlobals optixLaunchParams;
+ extern __constant__ barney::render::OptixGlobals optixLaunchParams;
+// # ifndef DECLARE_OPTIX_LAUNCH_PARAMS
+// /*! in owl we can only change the _type_ of launch params, they always
+//     need to be caleld 'optixLaunchParams', and must have __constant__
+//     storage*/
+// #  define DECLARE_OPTIX_LAUNCH_PARAMS(LPType ) \
+//   extern __constant__ LPType optixLaunchParams
+// # endif
+// DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
+// // extern __constant__ barney::render::OptixGlobals optixLaunchParams;
 #endif
 
 namespace barney {
@@ -52,7 +54,9 @@ namespace barney {
       
 #ifdef __CUDA_ARCH__
     inline __device__ const OptixGlobals &OptixGlobals::get()
-    { return optixLaunchParams; }
+    {
+      return optixLaunchParams;
+    }
 #endif      
   }
 }

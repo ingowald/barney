@@ -108,8 +108,8 @@ namespace barney {
       }
       ray.dir = ray_dir;
       
-      bool crossHair_x = (ix == fbSize.x/2);
-      bool crossHair_y = (iy == fbSize.y/2);
+      bool crossHair_x = (ix == 0);//fbSize.x/2);
+      bool crossHair_y = (iy == 0);//fbSize.y/2);
  
       ray.dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
       ray.clearHit();
@@ -137,13 +137,14 @@ namespace barney {
       // color; this way the shaderays function doesn't have to reverse
       // engineer pixel pos etc
       
-      vec3f bgColor
+      vec4f bgColor
         = (renderer.bgColor.w >= 0.f)
-        ? (const vec3f&)renderer.bgColor
-        : ((1.0f - t)*vec3f(0.9f, 0.9f, 0.9f) + t * vec3f(0.15f, 0.25f, .8f));
+        ? renderer.bgColor
+        : ((1.0f - t)*vec4f(0.9f, 0.9f, 0.9f,1.f)
+           + t *      vec4f(0.15f, 0.25f, .8f,1.f));
       if (renderer.bgTexture) {
-        float4 v = tex2D<float4>(renderer.bgTexture,image_u,image_v);
-        bgColor = (vec3f&)v;
+        float4 v = rtc::tex2D<float4>(renderer.bgTexture,image_u,image_v);
+        bgColor = v;
       }
       ray.missColor = bgColor;
       if (ray.dbg) printf("== spawn ray has bg color %f %f %f\n",

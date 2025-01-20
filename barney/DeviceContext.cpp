@@ -58,11 +58,12 @@ namespace barney {
     barney::render::OptixGlobals dd;
     dd.rays    = /* already a single device pointer */
       rays.traceAndShadeReadQueue;
+    assert(dd.rays);
     dd.numRays = rays.numActive;
     dd.world   = modelSlot->instances.group->getDD(device->rtc);
     dd.materials = contextSlot->materialRegistry->getDD(device->rtc);
     dd.samplers = contextSlot->samplerRegistry->getDD(device->rtc);
-      
+
     //device->launchTrace(&dd);
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);

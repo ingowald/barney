@@ -146,15 +146,23 @@ namespace barney {
       int pixelID = rtCore.getThreadIdx().x;
       int tileID  = rtCore.getBlockIdx().x;
 
+      bool dbg = pixelID == 0 && tileID == 0;
+      
       vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
+      vec4f org = color;
       float scale = reduce_max(color);
       color *= 1./scale;
       compressedTiles[tileID].scale[pixelID] = scale;
       compressedTiles[tileID].normal[pixelID]
         .set(accumTiles[tileID].normal[pixelID]);
 
+      
       uint32_t rgba32
         = make_rgba(color);
+
+      if (dbg) { printf("org %f %f %f %f -> scale %f color %f %f %f %f -> %x\n",
+                        org.x,org.y,org.z,org.w,scale,
+                        color.x,color.y,color.z,color.w,rgba32); }
 
       compressedTiles[tileID].rgba[pixelID]
         = rgba32;

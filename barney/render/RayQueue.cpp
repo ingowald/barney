@@ -43,6 +43,7 @@ namespace barney {
       //                              cudaMemcpyDeviceToHost,
       //                              device->launchStream));
       // BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
+      numActive = *h_numActive;
       return *h_numActive;
     }
     
@@ -81,7 +82,7 @@ namespace barney {
 
       if (!_d_nextWritePos)
         _d_nextWritePos = (int*)rtc->alloc(sizeof(int));
-        
+
       traceAndShadeReadQueue = (Ray*)rtc->alloc(newSize*sizeof(Ray));
       receiveAndShadeWriteQueue = (Ray*)rtc->alloc(newSize*sizeof(Ray));
         

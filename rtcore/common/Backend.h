@@ -55,11 +55,15 @@ namespace barney {
         UCHAR,
         UCHAR4,
         USHORT,
+        NUM_FORMATS
       } Format;
       TextureData(const vec3i dims,
                   const rtc::TextureData::Format format)
         : dims(dims), format(format)
-      {}
+      {
+        assert(format < NUM_FORMATS);
+        PING; PRINT(format);
+      }
         
       const vec3i dims;
       const Format format;

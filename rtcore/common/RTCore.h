@@ -101,7 +101,10 @@ namespace barney {
     {
 #ifdef __CUDA_ARCH__
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
-      return ::tex2D<float4>(texObj,x,y);
+      float4 v = ::tex2D<float4>(texObj,x,y);
+      // printf("%p %f %f -> %f %f %f %f\n",
+      //        (int*)texObj,x,y,v.x,v.y,v.z,v.w);
+      return v;
       // return T{};
 #else
       BARNEY_NYI();

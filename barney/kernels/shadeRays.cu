@@ -454,7 +454,7 @@ namespace barney {
       // bool fire = 0 && (path.pixelID == 963212);
       // bool fire = 1 && (path.pixelID == 428428);
 
-      if (fire || 0 && path.dbg)
+      if (1 && path.dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
                pathDepth,
                path.org.x,
@@ -482,7 +482,7 @@ namespace barney {
             path.misWeight *
 #endif
             (vec3f)path.throughput;
-          if (fire)
+          if (path.dbg)
             printf("_shadow_ ray reaches light: tp %f %f %f misweight %f frag %f %f %f\n",
                    (float)path.throughput.x,
                    (float)path.throughput.y,
@@ -491,7 +491,7 @@ namespace barney {
                    fragment.x,
                    fragment.y,
                    fragment.z);
-          if (0 && path.dbg) printf("shadow miss, frag %f %f %f\n",
+          if (1 && path.dbg) printf("shadow miss, frag %f %f %f\n",
                                     fragment.x,
                                     fragment.y,
                                     fragment.z);
@@ -520,14 +520,16 @@ namespace barney {
           // ----------------------------------------------------------------
           // PRIMARY ray that didn't hit anything -> background
           // ----------------------------------------------------------------
-          // if (path.dbg)
-          //   printf("miss primary %f %f %f\n",
-          //          path.missColor.x,
-          //          path.missColor.y,
-          //          path.missColor.z);
           // fragment = path.missColor;
           fragment = primaryRayMissColor(world,renderer,path);
           // fragment = path.throughput * backgroundOrEnv(world,path);
+
+          if (path.dbg)
+            printf("miss primary %f %f %f -> %f %f %f\n",
+                   path.missColor.x,
+                   path.missColor.y,
+                   path.missColor.z,
+                   fragment.x,fragment.y,fragment.z);
           
           // const vec3f fromEnv
           //   = // 1.5f*
@@ -841,7 +843,7 @@ namespace barney {
 
       float alpha
         = (generation == 0)
-        ? (path.hadHit()? 1.f : 0.f)
+        ? (path.hadHit()? 1.f : path.missColor.w)
         : 0.f;
 #if DENOISE
       vec3f incomingN
@@ -869,10 +871,10 @@ namespace barney {
              generation);
     
       // write shadow and bounce ray(s), if any were generated
-      // if (path.dbg)
-      //   printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
-      //          path.tMax,shadowRay.tMax,
-      //          fragment.x,fragment.y,fragment.z);
+      if (path.dbg)
+        printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
+               path.tMax,shadowRay.tMax,
+               fragment.x,fragment.y,fragment.z);
       if (shadowRay.tMax > 0.f) {
         writeQueue[compute.atomicAdd(d_nextWritePos,1)] = shadowRay;
       }
@@ -911,10 +913,14 @@ namespace barney {
       fragment = min(fragment,vec3f(clampMax));
       
       if (accumID == 0 && generation == 0) {
-        // if (path.dbg) printf("init frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
-        valueToAccumInto = make_float4(fragment.x,fragment.y,fragment.z,alpha);
+        if (path.dbg) printf("init frag %f %f %f\n",
+                             fragment.x,fragment.y,fragment.z);
+        valueToAccumInto = make_float4(fragment.x,fragment.y,
+                                       fragment.z,alpha);
+        if (path.dbg) printf("valueToAcc %f %f %f %f\n",
+                             valueToAccumInto.x,valueToAccumInto.y,valueToAccumInto.z,valueToAccumInto.w);
       } else {
-        // if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
+        if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         if (generation == 0 && alpha) 
           compute.atomicAdd(&valueToAccumInto.w,alpha);
 

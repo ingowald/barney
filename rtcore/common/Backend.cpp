@@ -77,7 +77,6 @@ namespace barney {
     Backend *Backend::get()
     {
       if (!singleton) singleton = create();
-      PING; PRINT(singleton);
       return singleton;
     }
 

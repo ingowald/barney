@@ -106,7 +106,7 @@ namespace barney {
     if (x <= 0.0031308f) {
       return 12.92f * x;
     }
-    return 1.055f * pow(x, 1.f/2.4f) - 0.055f;
+    return 1.055f * powf(x, 1.f/2.4f) - 0.055f;
   }
 
   inline __both__ uint32_t make_8bit(const float f)
@@ -140,6 +140,9 @@ namespace barney {
       (make_8bit(color.w) << 24);
   }
 
+  inline __both__ float clamp(float f, float lo=0.f, float hi=1.f)
+  { return min(hi,max(lo,f)); }
+  
 }
 
 #define BARNEY_NYI() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not yet implemented")
