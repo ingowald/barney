@@ -72,15 +72,19 @@ add_library(anari_library_barney SHARED
 
 if (BARNEY_MPI)
   target_link_libraries(anari_library_barney
-    PRIVATE
+    #PRIVATE
+    PUBLIC
     banari-config
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
+    #    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
+    barney_mpi_static
     )
 else()
   target_link_libraries(anari_library_barney
-    PRIVATE
+    #PRIVATE
+    PUBLIC
     banari-config
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
+    #    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
+    barney
     )
 endif()
 if (TARGET anari::helium)
@@ -112,7 +116,7 @@ generate_export_header(anari_library_barney
 ## Installation ##
 
 set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$ORIGIN")
-install(TARGETS anari_library_barney
+install(TARGETS barney anari_library_barney
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -123,41 +127,43 @@ install(TARGETS anari_library_barney
 
 
 
-# ==================================================================
-# STATIC version of this device. need this for baking into pynari
-# ==================================================================
-add_library(anari_library_barney_static STATIC
-  ${BANARI_SOURCES}
-  )
+# # ==================================================================
+# # STATIC version of this device. need this for baking into pynari
+# # ==================================================================
+# add_library(anari_library_barney_static STATIC
+#   ${BANARI_SOURCES}
+#   )
 
-if (BARNEY_MPI)
-  target_link_libraries(anari_library_barney_static
-    PRIVATE
-    banari-config
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
-    )
-else()
-  target_link_libraries(anari_library_barney_static
-    PRIVATE
-    banari-config
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
-    )
-endif()
-if (TARGET anari::helium)
-  # when building from installed source:
-  target_link_libraries(anari_library_barney_static PUBLIC
-    anari::helium
-    anari_static
-    )
-else()
-  target_link_libraries(anari_library_barney_static PUBLIC
-    helium
-    anari_static
-    )
-endif()
-if (WIN32)
-  target_compile_definitions(anari_library_barney_static PRIVATE -DNOGDI=1)
-endif()
+# if (BARNEY_MPI)
+#   target_link_libraries(anari_library_barney_static
+#     PRIVATE
+#     banari-config
+#     #   "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
+#     barney_mpi_static
+#     )
+# else()
+#   target_link_libraries(anari_library_barney_static
+#     PRIVATE
+#     banari-config
+# #    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
+#     barney_static
+#     )
+# endif()
+# if (TARGET anari::helium)
+#   # when building from installed source:
+#   target_link_libraries(anari_library_barney_static PUBLIC
+#     anari::helium
+#     anari_static
+#     )
+# else()
+#   target_link_libraries(anari_library_barney_static PUBLIC
+#     helium
+#     anari_static
+#     )
+# endif()
+# if (WIN32)
+#   target_compile_definitions(anari_library_barney_static PRIVATE -DNOGDI=1)
+# endif()
 
 
 #set_target_properties(anari_library_barney_static
@@ -181,10 +187,10 @@ if (NOT BANARI_SKIP_QUERIES)
     CPP_NAMESPACE barney_device
     JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
     )
-  anari_generate_queries(
-    DEVICE_TARGET anari_library_barney_static
-    CPP_NAMESPACE barney_device
-    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
-    )
+  # anari_generate_queries(
+  #   DEVICE_TARGET anari_library_barney_static
+  #   CPP_NAMESPACE barney_device
+  #   JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
+  #   )
 endif()
 

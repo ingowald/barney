@@ -150,9 +150,7 @@ namespace barney {
       createInstanceGroup(const std::vector<rtc::Group *> &groups,
                           const std::vector<affine3f> &xfms) override;
 
-      void free(rtc::Group *)
-        override 
-      { BARNEY_NYI(); };
+      void free(rtc::Group *) override;
 
       // ==================================================================
       // texture stuff

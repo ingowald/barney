@@ -24,6 +24,8 @@ namespace barney {
     };
     
     struct Group {
+      virtual ~Group() = default;
+      
       virtual rtc::device::AccelHandle
       getDD(const rtc::Device *) const = 0;
       

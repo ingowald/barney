@@ -349,6 +349,11 @@ namespace barney {
     // ==================================================================
     // groups
     // ==================================================================
+    void DevGroup::free(rtc::Group *group)
+    {
+      delete group;
+    }
+    
     rtc::Group *
     DevGroup::createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
     {
