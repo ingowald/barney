@@ -196,8 +196,8 @@ namespace barney {
   }
 }
 
-RTC_CUDA_COMPUTE_KERNEL(setTileCoords,barney::SetTileCoordsKernel);
-RTC_CUDA_COMPUTE_KERNEL(compressTiles,barney::CompressTilesKernel);
+RTC_CUDA_COMPUTE(setTileCoords,barney::SetTileCoordsKernel);
+RTC_CUDA_COMPUTE(compressTiles,barney::CompressTilesKernel);
 
 
   

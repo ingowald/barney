@@ -31,7 +31,7 @@ namespace barney {
       dd.run(::barney::cuda::ComputeInterface());
     }
     
-#define RTC_CUDA_COMPUTE_KERNEL(KernelName,ClassName)                   \
+#define RTC_CUDA_COMPUTE(KernelName,ClassName)                   \
     extern "C" void                                                     \
     barney_rtc_cuda_launch_##KernelName(::barney::vec3ui nb,            \
                                         ::barney::vec3ui bs,            \

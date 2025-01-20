@@ -988,4 +988,4 @@ namespace barney {
 
 }
 
-RTC_CUDA_COMPUTE_KERNEL(shadeRays,barney::render::ShadeRaysKernel);
+RTC_CUDA_COMPUTE(shadeRays,barney::render::ShadeRaysKernel);

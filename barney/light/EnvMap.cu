@@ -19,55 +19,87 @@
 #include "barney/Context.h"
 
 namespace barney {
-  namespace EnvMap_kernels {
 
-    /*! computes an importance sampling weight for each pixel; gets
-        called with one thread per pixel, in a 2d launch */
-    __global__ void computeWeights_xy(float *allLines_cdf_x,
-                                      cudaTextureObject_t texture,
-                                      vec2i textureDims)
+  struct ComputeWeights_xy {
+    float *allLines_cdf_x;
+    rtc::device::TextureObject texture;
+    vec2i textureDims;
+      
+    template<typename RTComputeInterface>
+    inline __both__
+    void run(const RTComputeInterface &ci)
     {
-      int ix = threadIdx.x + blockIdx.x * blockDim.x;
-      int iy = threadIdx.y + blockIdx.y * blockDim.y;
-
+      /*! computes an importance sampling weight for each pixel; gets
+        called with one thread per pixel, in a 2d launch */
+      // __global__ void computeWeights_xy(float *allLines_cdf_x,
+      //                                   cudaTextureObject_t texture,
+      //                                   vec2i textureDims)
+      // {
+      int ix = ci.getThreadIdx().x
+        + ci.getBlockIdx().x
+        * ci.getBlockDim().x;
+      int iy = ci.getThreadIdx().y
+        + ci.getBlockIdx().y
+        * ci.getBlockDim().y;
+        
       if (ix >= textureDims.x) return;
       if (iy >= textureDims.y) return;
-      
-      auto importance = [&](float4 v)->float { return max(max(v.x,v.y),v.z); };
-      
+        
+      auto importance = [&](float4 v)->float
+      { return max(max(v.x,v.y),v.z); };
+        
       // float4 fromTex = tex2D<float4>(texture,
       //                                (ix+.5f)/(textureDims.x),
       //                                (iy+.5f)/(textureDims.y));
       float weight = 0.f;
       for (int iiy=0;iiy<=2;iiy++)
         for (int iix=0;iix<=2;iix++) {
-          float4 fromTex = tex2D<float4>(texture,
-                                         (ix+iix*.5f)/(textureDims.x),
-                                         (iy+iiy*.5f)/(textureDims.y));
+          float4 fromTex
+            = rtc::tex2D<float4>(texture,
+                                 (ix+iix*.5f)/(textureDims.x),
+                                 (iy+iiy*.5f)/(textureDims.y));
           weight = max(weight,importance(fromTex));
         }
       // float weight = importance(fromTex);
-
+        
       allLines_cdf_x[ix+textureDims.x*iy] = weight;
     }
+  };
 
-    /*! this kernel does one thread per line, then this one thread does
-      entire line. not great, but we're not doing this per frame,
-      anyway */
-    __global__ void computeCDFs_doLine(float *cdf_y,
-                                       float *allLines_cdf_x,
-                                       vec2i textureDims)
+  /*! this kernel does one thread per line, then this one thread does
+    entire line. not great, but we're not doing this per frame,
+    anyway */
+  struct ComputeCDFs_doLine {
+    float *cdf_y;
+    float *allLines_cdf_x;
+    vec2i textureDims;
+    // __global__ void computeCDFs_doLine(float *cdf_y,
+    //                                    float *allLines_cdf_x,
+    //                                    vec2i textureDims)
+    // {
+    template<typename RTComputeInterface>
+    inline __both__
+    void run(const RTComputeInterface &ci)
     {
-      int tid = threadIdx.x + blockIdx.x * blockDim.x;
-    
+      /*! computes an importance sampling weight for each pixel; gets
+        called with one thread per pixel, in a 2d launch */
+      // __global__ void computeWeights_xy(float *allLines_cdf_x,
+      //                                   cudaTextureObject_t texture,
+      //                                   vec2i textureDims)
+      // {
+        
+      int tid
+        = ci.getThreadIdx().x
+        + ci.getBlockIdx().x * ci.getBlockDim().x;
+        
       int y = tid;
       if (y >= textureDims.y) return;
       float *thisLine_pdf = allLines_cdf_x + y * textureDims.x;
-    
+        
       float sum = 0.f;
       for (int ix=0;ix<textureDims.x;ix++) 
         sum += thisLine_pdf[ix];
-
+        
       float rcp_sum = 1.f/sum;
       sum = 0.f;
       for (int ix=0;ix<textureDims.x;ix++) {
@@ -75,27 +107,36 @@ namespace barney {
         thisLine_pdf[ix] = sum * rcp_sum;
       }
       thisLine_pdf[textureDims.x-1] = 1.f;
-
+        
       float rel_y = (y+.5f) / textureDims.y;
-
+        
       const float theta = ONE_PI * rel_y;
-      
+        
       float relativeWeightOfLine = sum * sinf(theta);
       cdf_y[y] = relativeWeightOfLine;
     }
+  };
 
-    /*! run by a single thread, to normalize the cdf_y */
-    __global__ void normalize_cdf_y(float *cdf_y,
-                                    const float *allLines_cdf_x,
-                                    vec2i textureDims)
+  /*! run by a single thread, to normalize the cdf_y */
+  struct Normalize_cdf_y {
+    float *cdf_y;
+    const float *allLines_cdf_x;
+    vec2i textureDims;
+    // __global__ void normalize_cdf_y(float *cdf_y,
+    //                                 const float *allLines_cdf_x,
+    //                                 vec2i textureDims)
+    // {
+    template<typename RTComputeInterface>
+    inline __both__
+    void run(const RTComputeInterface &ci)
     {
-      if (threadIdx.x != 0) return;
-
+      if (ci.getThreadIdx().x != 0) return;
+        
       float sum = 0.f;
       for (int i=0;i<textureDims.y;i++)
         sum += cdf_y[i];
       float rcp_sum = 1.f/sum;
-    
+        
       sum = 0.f;
       for (int i=0;i<textureDims.y;i++) {
         sum += cdf_y[i];
@@ -103,9 +144,8 @@ namespace barney {
       }
       cdf_y[textureDims.y-1] = 1.f;
     }
-  }
-                                             
-                                             
+  };
+    
   EnvMapLight::DD EnvMapLight::getDD(const Device::SP &device) const
   {
     DD dd;
@@ -131,21 +171,6 @@ namespace barney {
     return dd;
   }
 
-  EnvMapLight::EnvMapLight(Context *context, int slot)
-    : Light(context,slot)
-  {
-    // std::cout << OWL_TERMINAL_YELLOW
-    //           << "#bn: created env-map light"
-    //           << OWL_TERMINAL_DEFAULT << std::endl;
-    auto rtc = getRTC();
-    cdf_y
-      // = owlDeviceBufferCreate(getOWL(),OWL_FLOAT,1,nullptr);
-      = rtc->createBuffer(sizeof(float));
-    allCDFs_x
-      // = owlDeviceBufferCreate(getOWL(),OWL_FLOAT,1,nullptr);
-      = rtc->createBuffer(sizeof(float));
-  }
-  
   void EnvMapLight::commit()
   {
     toWorld.vz = normalize(params.up);
@@ -175,66 +200,91 @@ namespace barney {
     for (auto device : getDevices()) {
       SetActiveGPU forThisKernel(device);
 
-#if 1
-      BARNEY_NYI();
-#else
-      BARNEY_CUDA_SYNC_CHECK();
-      
-      /* computes an importance sampling weight for each pixel; gets
-         called with one thread per pixel, in a 2d launch */
-      vec2i bs = 16;
-      vec2i nb = divRoundUp(dims,bs);
-      CHECK_CUDA_LAUNCH(EnvMap_kernels::computeWeights_xy,
-                        nb,bs,0,0,
-                        //
-                        (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
-                        owlTextureGetObject(texture,device->owlID),
-                        dims);
+      {
+        ComputeWeights_xy kernelData = {
+          (float*)allCDFs_x->getDD(device->rtc),
+          texture->getDD(device->rtc),
+          dims
+        };
+        
+        /* computes an importance sampling weight for each pixel; gets
+           called with one thread per pixel, in a 2d launch */
+        vec2i bs = 16;
+        vec2i nb = divRoundUp(dims,bs);
+        computeWeights_xy->launch(device->rtc,nb,bs,&kernelData);
+        // CHECK_CUDA_LAUNCH(EnvMap_kernels::computeWeights_xy,
+        //               nb,bs,0,0,
+        //               //
+        //               (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+        //               owlTextureGetObject(texture,device->owlID),
+        //               dims);
+      }
       // EnvMap_kernels::computeWeights_xy<<<nb,bs>>>
       //   ((float*)owlBufferGetPointer(allCDFs_x,device->owlID),
       //    owlTextureGetObject(texture,device->owlID),
       //    dims);
-      BARNEY_CUDA_SYNC_CHECK();
+      // BARNEY_CUDA_SYNC_CHECK();
 
       /* this kernel will do one thread per line, then this one thread does
          entire line. not great, but we're not doing this per frame,
          anyway */
-      CHECK_CUDA_LAUNCH(EnvMap_kernels::computeCDFs_doLine,
-                        dims.y,1024,0,0,
-                        (float*)owlBufferGetPointer(cdf_y,device->owlID),
-                        (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
-                        dims);
+      {
+        ComputeCDFs_doLine kernelData = {
+          (float*)cdf_y->getDD(device->rtc),
+          (float*)allCDFs_x->getDD(device->rtc),
+          dims
+        };
+        computeCDFs_doLine->launch(device->rtc,
+                                   dims.y,1024,
+                                   &kernelData);
+      }
+        // CHECK_CUDA_LAUNCH(EnvMap_kernels::computeCDFs_doLine,
+        //                   dims.y,1024,0,0,
+        //                   (float*)owlBufferGetPointer(cdf_y,device->owlID),
+        //                   (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+        //                   dims);
       // EnvMap_kernels::computeCDFs_doLine<<<dims.y,1024>>>
       //   ((float*)owlBufferGetPointer(cdf_y,device->owlID),
       //    (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
       //    dims);
-      BARNEY_CUDA_SYNC_CHECK();
+      // BARNEY_CUDA_SYNC_CHECK();
       
       /* run by a single thread, to normalize the cdf_y */
-      CHECK_CUDA_LAUNCH(EnvMap_kernels::normalize_cdf_y,
-                        1,1,0,0,
-                        //
-                        (float*)owlBufferGetPointer(cdf_y,device->owlID),
-                        (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
-                        dims);
+      {
+        Normalize_cdf_y kernelArgs = {
+          (float*)cdf_y->getDD(device->rtc),
+          (float*)allCDFs_x->getDD(device->rtc),
+          dims
+        };
+        normalize_cdf_y->launch(device->rtc,1,1,&kernelArgs);
+      // CHECK_CUDA_LAUNCH(EnvMap_kernels::normalize_cdf_y,
+      //                   1,1,0,0,
+      //                   //
+      //                   (float*)owlBufferGetPointer(cdf_y,device->owlID),
+      //                   (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
+      //                   dims);
+      }
       // EnvMap_kernels::normalize_cdf_y<<<1,1>>>
       //   ((float*)owlBufferGetPointer(cdf_y,device->owlID),
       //    (float*)owlBufferGetPointer(allCDFs_x,device->owlID),
       //    dims);
 
-      BARNEY_CUDA_SYNC_CHECK();
-#endif
+      // BARNEY_CUDA_SYNC_CHECK();
+// #endif
+      device->rtc->sync();
     }
     // std::cout << "#bn: computing env-map CDFs .... done." << std::endl;
   }
   
   
-  bool EnvMapLight::set2i(const std::string &member, const vec2i &value) 
+  bool EnvMapLight::set2i(const std::string &member,
+                          const vec2i &value) 
   {
     return false;
   }
 
-  bool EnvMapLight::set3f(const std::string &member, const vec3f &value) 
+  bool EnvMapLight::set3f(const std::string &member,
+                          const vec3f &value) 
   {
     if (member == "direction") {
       params.direction = value;
@@ -247,7 +297,8 @@ namespace barney {
     return false;
   }
 
-  bool EnvMapLight::setObject(const std::string &member, const Object::SP &value) 
+  bool EnvMapLight::setObject(const std::string &member,
+                              const Object::SP &value) 
   {
     if (member == "texture") {
       params.texture = value->as<Texture>();
@@ -257,4 +308,32 @@ namespace barney {
     return false;
   }
 
+
+  EnvMapLight::EnvMapLight(Context *context, int slot)
+    : Light(context,slot)
+  {
+    // std::cout << OWL_TERMINAL_YELLOW
+    //           << "#bn: created env-map light"
+    //           << OWL_TERMINAL_DEFAULT << std::endl;
+    auto rtc = getRTC();
+    cdf_y
+      // = owlDeviceBufferCreate(getOWL(),OWL_FLOAT,1,nullptr);
+      = rtc->createBuffer(sizeof(float));
+    allCDFs_x
+      // = owlDeviceBufferCreate(getOWL(),OWL_FLOAT,1,nullptr);
+      = rtc->createBuffer(sizeof(float));
+
+    computeWeights_xy
+      = rtc->createCompute("computeWeights_xy");
+    computeCDFs_doLine
+      = rtc->createCompute("computeCDFs_doLine");
+    normalize_cdf_y
+      = rtc->createCompute("normalize_cdf_y");
+  }
+  
+  
 }
+
+RTC_CUDA_COMPUTE(computeWeights_xy,barney::ComputeWeights_xy);
+RTC_CUDA_COMPUTE(computeCDFs_doLine,barney::ComputeCDFs_doLine);
+RTC_CUDA_COMPUTE(normalize_cdf_y,barney::Normalize_cdf_y);

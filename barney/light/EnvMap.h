@@ -79,6 +79,10 @@ namespace barney {
     rtc::Texture *texture = 0;
     rtc::Buffer  *cdf_y;
     rtc::Buffer  *allCDFs_x;
+    rtc::ComputeKernel *computeWeights_xy;
+    rtc::ComputeKernel *computeCDFs_doLine;
+    rtc::ComputeKernel *normalize_cdf_y;
+    
     vec2i      dims;
   };
 

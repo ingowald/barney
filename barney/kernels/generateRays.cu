@@ -206,4 +206,4 @@ namespace barney {
                &args);
   }
 }
-RTC_CUDA_COMPUTE_KERNEL(generateRays,barney::render::GenerateRaysKernel);
+RTC_CUDA_COMPUTE(generateRays,barney::render::GenerateRaysKernel);
