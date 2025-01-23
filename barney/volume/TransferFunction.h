@@ -17,10 +17,11 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
+#include "barney/Object.h"
 
 namespace barney {
 
-  struct TransferFunction : public Object {
+  struct TransferFunction : public SlottedObject {
     struct DD {
 
       // static void addVars(std::vector<OWLVarDecl> &vars, int base);
@@ -46,11 +47,11 @@ namespace barney {
     };
 
     TransferFunction(Context *context,
-                     const std::vector<Device *> &devices);
+                     const DevGroup::SP &devices);
 
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-    DD getDD(Device *device) const;
+    DD getDD(Device *device);
     
     void set(const range1f &domain,
              const std::vector<vec4f> &values,
@@ -58,11 +59,13 @@ namespace barney {
     // std::vector<OWLVarDecl> getVarDecls(uint32_t myOffset);
     // void setVariables(OWLGeom geom) const;
 
-    struct PerLogical {
+    struct PLD {
       rtc::Buffer        *valuesBuffer = 0;
     };
-    std::vector<PerLogical> logical;
-    // OWLBuffer           valuesBuffer = 0;
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
+
     range1f             domain = { 0.f, 1.f };
     std::vector<vec4f>  values;
     float               baseDensity;

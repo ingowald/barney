@@ -18,29 +18,21 @@
 
 namespace barney {
 
-  TransferFunction::TransferFunction(DevGroup *devGroup)
-    : devGroup(devGroup)
+  TransferFunction::TransferFunction(Context *context,
+                                     const DevGroup::SP &devices)
+    : SlottedObject(context,devices)
   {
     domain = { 0.f,1.f };
     values = { vec4f(1.f), vec4f(1.f) };
     baseDensity  = 1.f;
-    valuesBuffer = devGroup->rtc->createBuffer(sizeof(float4)*values.size(),
-                                               values.data());
-
-                                         //  devGroup->owl,
-                                         // OWL_FLOAT4,
-                                         // values.size(),
-                                         // values.data());
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      pld->valuesBuffer
+        = device->rtc->createBuffer(sizeof(float4)*values.size(),
+                               values.data());
+    }
   }
 
-  // void TransferFunction::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
-  // {
-  //   vars.push_back({"xf.values",OWL_BUFPTR,base+OWL_OFFSETOF(DD,values)});
-  //   vars.push_back({"xf.numValues",OWL_INT,base+OWL_OFFSETOF(DD,numValues)});
-  //   vars.push_back({"xf.baseDensity",OWL_FLOAT,base+OWL_OFFSETOF(DD,baseDensity)});
-  //   vars.push_back({"xf.domain",OWL_FLOAT2,base+OWL_OFFSETOF(DD,domain)});
-  // }
-  
   void TransferFunction::set(const range1f &domain,
                              const std::vector<vec4f> &values,
                              float baseDensity)
@@ -48,23 +40,23 @@ namespace barney {
     this->domain = domain;
     this->baseDensity = baseDensity;
     this->values = values;
-
-    devGroup->rtc->free(valuesBuffer);
-    valuesBuffer = devGroup->rtc->createBuffer(sizeof(float4)*values.size(),
-                                               values.data());
-    // owlBufferResize(this->valuesBuffer,this->values.size());
-    // owlBufferUpload(this->valuesBuffer,this->values.data());
+    
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      device->rtc->freeBuffer(pld->valuesBuffer);
+      pld->valuesBuffer
+        = device->rtc->createBuffer(sizeof(float4)*values.size(),
+                               values.data());
+    }
   }
-
-    /*! get cuda-usable device-data for given device ID (relative to
-        devices in the devgroup that this gris is in */
-  TransferFunction::DD TransferFunction::getDD(const Device::SP &device) const
+  
+  /*! get cuda-usable device-data for given device ID (relative to
+    devices in the devgroup that this gris is in */
+  TransferFunction::DD TransferFunction::getDD(Device *device) 
   {
-    // int devID = device->owlID;
     TransferFunction::DD dd;
 
-    dd.values = (float4*)valuesBuffer->getDD(device->rtc);
-    // owlBufferGetPointer(valuesBuffer,devID);
+    dd.values = (float4*)getPLD(device)->valuesBuffer->getDD();
     dd.domain = domain;
     dd.baseDensity = baseDensity;
     dd.numValues = (int)values.size();
@@ -72,25 +64,4 @@ namespace barney {
     return dd;
   }
     
-  // std::vector<OWLVarDecl> TransferFunction::getVarDecls(uint32_t myOffset)
-  // {
-  //   return
-  //     {
-  //      { "xf.values",      OWL_BUFPTR, myOffset+OWL_OFFSETOF(DD,values) },
-  //      { "xf.domain",      OWL_FLOAT2, myOffset+OWL_OFFSETOF(DD,domain) },
-  //      { "xf.baseDensity", OWL_FLOAT,  myOffset+OWL_OFFSETOF(DD,baseDensity) },
-  //      { "xf.numValues",   OWL_INT,    myOffset+OWL_OFFSETOF(DD,numValues) },
-  //     };
-  // }
-  
-  // void TransferFunction::setVariables(OWLGeom geom) const
-  // {
-  //   owlGeomSet2f(geom,"xf.domain",domain.lower,domain.upper);
-  //   owlGeomSet1f(geom,"xf.baseDensity",baseDensity);
-  //   owlGeomSet1i(geom,"xf.numValues",(int)values.size());
-  //   // intentionally set to null for first-time build
-  //   owlGeomSetBuffer(geom,"xf.values",valuesBuffer);
-  // }
-  
-  
 }

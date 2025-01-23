@@ -97,19 +97,19 @@ namespace barney {
         if (org.x < 0.f || org.x > f_size.x)
           // ray passes by the volume ...
           return;
-        t_nr.x = -CUDART_INF_F; t_nr.x = +CUDART_INF_F;
+        t_nr.x = -BARNEY_INF; t_nr.x = +BARNEY_INF;
       }
       if (dir.y == 0.f) {
         if (org.y < 0.f || org.y > f_size.y)
           // ray passes by the volume ...
           return;
-        t_nr.y = -CUDART_INF_F; t_nr.y = +CUDART_INF_F;
+        t_nr.y = -BARNEY_INF; t_nr.y = +BARNEY_INF;
       }
       if (dir.z == 0.f) {
         if (org.z < 0.f || org.z > f_size.z)
           // ray passes by the volume ...
           return;
-        t_nr.z = -CUDART_INF_F; t_nr.z = +CUDART_INF_F;
+        t_nr.z = -BARNEY_INF; t_nr.z = +BARNEY_INF;
       }
     
       float ray_t0 = max(0.f,reduce_max(t_nr));
@@ -141,13 +141,13 @@ namespace barney {
       vec3f t_next
         = {
         ((dir.x == 0.f)
-         ? CUDART_INF_F
+         ? BARNEY_INF
          : (abs(f_cell_end.x - org_in_volume.x) * t_step.x)),
         ((dir.y == 0.f)
-         ? CUDART_INF_F
+         ? BARNEY_INF
          : (abs(f_cell_end.y - org_in_volume.y) * t_step.y)),
         ((dir.z == 0.f)
-         ? CUDART_INF_F
+         ? BARNEY_INF
          : (abs(f_cell_end.z - org_in_volume.z) * t_step.z))
       };
       // if (dbg)

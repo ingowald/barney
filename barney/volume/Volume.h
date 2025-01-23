@@ -33,8 +33,6 @@ namespace barney {
   typedef std::array<int,6> WedIndices;
   typedef std::array<int,8> HexIndices;
 
-
-
   struct VolumeAccel {
     /*! one particular problem of _volume_ accels is that due to
         changes to the transfer function the number of 'valid'
@@ -61,8 +59,12 @@ namespace barney {
         that some geometries will have their build called twice - once
         with fullRebuild true, once with false - even if _they_ have
         not asked for that kind of pass */
-    typedef enum { FULL_REBUILD, BUILD_THEN_REFIT, REFIT,
-      HAS_ITS_OWN_GROUP } UpdateMode;
+    typedef enum {
+      FULL_REBUILD,
+      BUILD_THEN_REFIT,
+      REFIT,
+      HAS_ITS_OWN_GROUP
+    } UpdateMode;
     
     typedef std::shared_ptr<VolumeAccel> SP;
 
@@ -73,7 +75,6 @@ namespace barney {
 
     virtual void build(bool full_rebuild) = 0;
 
-    // OWLContext getOWL() const;
     const TransferFunction *getXF() const;
     
     ScalarField *const sf = 0;
@@ -93,7 +94,7 @@ namespace barney {
       use some kind of volume accelerator that implements the
       scalar-field type specific stuff (eg, traverse a bvh over
       elements, or look up a 3d texture, etc) */
-  struct Volume : public Object
+  struct Volume : public SlottedObject
   {
     template<typename SFType>
     struct DD {
@@ -104,7 +105,6 @@ namespace barney {
         if (isnan(f)) return vec4f(0.f);
         vec4f mapped = xf.map(f,dbg);
         return mapped;
-        // return Inherited::mapColor(mapped,point,f);
       }
       
       typename SFType::DD  sf;
@@ -195,7 +195,5 @@ namespace barney {
   {
     assert(sf);
     assert(volume);
-    assert(devGroup);
-    // assert(sf->devGroup);  
   }
 }

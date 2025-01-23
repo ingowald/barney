@@ -87,7 +87,8 @@ namespace barney {
     /*! construct a new structured data scalar field; will not do
         anything - or have any data - untile 'set' and 'commit'ed
     */
-    StructuredData(Context *context, int slot);
+    StructuredData(Context *context,
+                   const DevGroup::SP &devices);
     virtual ~StructuredData() = default;
 
     // ------------------------------------------------------------------
@@ -107,11 +108,14 @@ namespace barney {
     Texture3D::SP  texture;
     Texture3D::SP  colorMapTexture;
 
-    struct PerLogical {
+    struct PLD {
       rtc::Compute *computeMCs = 0;
     };
-    std::vector<PerLogical> logical;
-    BNDataType   scalarType = BN_DATA_UNDEFINED;
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
+    
+    BNDataType scalarType = BN_DATA_UNDEFINED;
     vec3i numScalars  { 0,0,0 };
     vec3i numCells    { 0,0,0 }; 
     vec3f gridOrigin  { 0,0,0 };

@@ -53,10 +53,12 @@ namespace barney {
       // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    ScalarField(Context *context, int slot,
+    ScalarField(Context *context,
+                const DevGroup::SP &devices,
                 const box3f &domain=box3f());
 
-    static ScalarField::SP create(Context *context, int slot,
+    static ScalarField::SP create(Context *context,
+                                  const DevGroup::SP &devices,
                                   const std::string &type);
 
     void writeDD(DD &dd, Device *device)
@@ -66,7 +68,6 @@ namespace barney {
     
     virtual void buildMCs(MCGrid &macroCells);
 
-    // DevGroup *const devGroup;
     box3f     worldBounds;
     
     /*! a clipping box used to restrict whatever primitives the volume

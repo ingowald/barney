@@ -19,10 +19,7 @@
 #include "barney/DeviceGroup.h"
 #include "barney/volume/Volume.h"
 #include "barney/volume/MCGrid.h"
-#ifdef __CUDA_ARCH__
-#  include "owl/owl_device.h"
-#  include "barney/volume/DDA.h"
-#endif
+#include "barney/volume/DDA.h"
 
 namespace barney {
   using render::Ray;
@@ -62,7 +59,7 @@ namespace barney {
       
       /*! creates the actual OWL geometry object that contains the
         prims that realize this volume accel. */
-      virtual void createGeom() = 0;
+      virtual rtc::Geom *createGeom(Device *device) = 0;
 
       // /*! returns (part of) a string that allows to identify the
       //     device-side optix intersect/ch/bounds/etc functions that
@@ -75,9 +72,14 @@ namespace barney {
       { return sampler.getTypeString(); }
 
       typename ScalarFieldType::Host sampler;
-      rtc::Geom *geom  = 0;
-      rtc::Group *group = 0; 
-      // const char  *const ptxCode;
+      
+      struct PLD {
+        rtc::Geom *geom  = 0;
+        rtc::Group *group = 0; 
+      };
+      PLD *getPLD(Device *device) 
+      { return &perLogical[device->contextRank]; } 
+      std::vector<PLD> perLogical;
     };
   };
   
@@ -106,7 +108,7 @@ namespace barney {
       
       Host(ScalarField *sf, Volume *volume);
       // void setVariables(OWLGeom geom) override;
-      void createGeom() override;
+      rtc::Geom *createGeom(Device *device) override;
 
       void build(bool full_rebuild) override
       {
@@ -132,17 +134,15 @@ namespace barney {
   struct MCRTXVolumeAccel : public MCVolumeAccel<ScalarFieldType> {
     struct DD : public MCVolumeAccel<ScalarFieldType>::DD {};
 
-#ifdef __CUDA_ARCH__
     /*! optix bounds prog for this class of accels */
-    static inline __device__
+    static inline __both__
     void boundsProg(const void *geomData,
                     owl::common::box3f &bounds,
                     const int32_t primID);
     /*! optix isec prog for this class of accels */
-    static inline __device__ void isProg();
+    static inline __both__ void isProg();
     /*! optix closest-hit prog for this class of accels */
-    static inline __device__ void chProg();
-#endif
+    static inline __both__ void chProg();
 
     struct Host : public MCVolumeAccel<ScalarFieldType>::Host {
       using Inherited = typename MCVolumeAccel<ScalarFieldType>::Host;
@@ -160,17 +160,18 @@ namespace barney {
       std::string getTypeString() const override
       { return sampler.getTypeString()+"_MCRTX"; }
       
-      void createGeom() override
+      rtc::Geom *createGeom(Device *device) override
       {
         // let parent class create the geometry itself, _we_ then only
         // set the numprims
-        Inherited::createGeom();
+        rtc::Geom *geom = Inherited::createGeom(device);
 
         // this is a *RTXTraverser* for the mcgrid, we have one prim
         // per cell:
         const int primCount = mcGrid.dims.x*mcGrid.dims.y*mcGrid.dims.z;
         // owlGeomSetPrimCount(geom,primCount);
         geom->setPrimCount(primCount);
+        return geom;
       }
     };
   };
@@ -182,17 +183,15 @@ namespace barney {
   struct MCDDAVolumeAccel : public MCVolumeAccel<ScalarFieldType> {
     using DD = typename MCVolumeAccel<ScalarFieldType>::DD;
     
-#ifdef __CUDA_ARCH__
     /*! optix bounds prog for this class of accels */
-    static inline __device__
+    static inline __both__
     void boundsProg(const void *geomData,
                     owl::common::box3f &bounds,
                     const int32_t primID);
     /*! optix isec prog for this class of accels */
-    static inline __device__ void isProg();
+    static inline __both__ void isProg();
     /*! optix closest-hit prog for this class of accels */
-    static inline __device__ void chProg();
-#endif
+    static inline __both__ void chProg();
 
     struct Host : public MCVolumeAccel<ScalarFieldType>::Host {
       using Inherited = typename MCVolumeAccel<ScalarFieldType>::Host;
@@ -208,16 +207,17 @@ namespace barney {
       std::string getTypeString() const override
       { return sampler.getTypeString()+"_MCDDA"; }
       
-      void createGeom() override
+      rtc::Geom *createGeom(Device *device) override
       {
         // let parent class create the geometry itself, _we_ then only
         // set the numprims
-        Inherited::createGeom();
+        rtc::Geom *geom = Inherited::createGeom(device);
         
         // this is a *DDATraverser* for the mcgrid, we have one prim
         // over the whole grid
         const int primCount = 1;
         geom->setPrimCount(primCount);
+        return geom;
       }
     };
   };
@@ -257,19 +257,22 @@ namespace barney {
   template<typename ScalarFieldType>
   void OWLVolumeAccel<ScalarFieldType>::Host::build(bool full_rebuild) 
   {
-    if (!geom) {
-      /*! first time build needs to create the actual OWL geom object;
-        this is done in virtual function because only derived
-        classes will know full geometry type */
-      createGeom();
-      // group = owlUserGeomGroupCreate(this->getOWL(),1,&geom);
-      group = devGroup->rtc->createUserGeomsGroup({geom});
-      volume->generatedGroups.clear();
-      volume->generatedGroups.push_back(group);
-    }
     sampler.build(full_rebuild);
-
-    for (auto device : devGroup->devices) {
+    
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      // Accel::PLD *accelPLD = VolumeAccel::getPLD(device);
+      Volume::PLD *volumePLD = volume->getPLD(device);
+        
+      if (!pld->geom) {
+        /*! first time build needs to create the actual OWL geom object;
+          this is done in virtual function because only derived
+          classes will know full geometry type */
+        pld->geom = createGeom(device);
+        rtc::Group *group = device->rtc->createUserGeomsGroup({pld->geom});
+        volumePLD->generatedGroups = {group};
+      }
+      
       typename OWLVolumeAccel<ScalarFieldType>::DD dd;
 #if 1
       BARNEY_NYI();
@@ -277,11 +280,11 @@ namespace barney {
       dd = getDD(device->rtc);
 #endif
       // writeDD(dd,device->rtc);
-      geom->setDD(&dd,device->rtc);
+      pld->geom->setDD(&dd);
+
+      rtc::Group *group = volumePLD->generatedGroups[0];
+      group->buildAccel();
     }
-    // setVariables(geom);
-    // owlGroupBuildAccel(group);
-    group->buildAccel();
   };
   
 
@@ -307,73 +310,38 @@ namespace barney {
 
   template<typename ScalarFieldType>
   MCVolumeAccel<ScalarFieldType>::Host::Host(ScalarField *sf,
-                                       Volume *volume)
+                                             Volume *volume)
     : Inherited(sf,volume),
-      mcGrid(sf->getDevGroup())
+      mcGrid(sf->devices)
   {}
 
-  // template<typename ScalarFieldType>
-  // void MCVolumeAccel<ScalarFieldType>::Host::setVariables(OWLGeom geom) 
-  // {
-  //   Inherited::setVariables(geom);
-  //   mcGrid.setVariables(geom);
-  //   sampler.setVariables(geom);
-  // }
-
   template<typename ScalarFieldType>
-  void MCVolumeAccel<ScalarFieldType>::Host::createGeom() 
+  rtc::Geom *MCVolumeAccel<ScalarFieldType>::Host::createGeom(Device *device) 
   {
-    auto devGroup = sf->getDevGroup();
+    auto devGroup = sf->devices;
     const std::string typeString
       = getTypeString();
-    rtc::GeomType *gt = devGroup->getOrCreateGeomTypeFor
-      (typeString, [&](DevGroup *dg)
-      {
-        assert(dg);
-        // std::vector<OWLVarDecl> params;
-        // MCVolumeAccel<ScalarFieldType>::DD::addVars(params,0);
-        // OWLGeomType gt = owlGeomTypeCreate
-        //   (dg->owl,OWL_GEOM_USER,
-        //    sizeof(MCVolumeAccel<ScalarFieldType>::DD),params.data(),(int)params.size());
-        // OWLModule module = owlModuleCreate(dg->owl,ptxCode);
+    rtc::GeomType *gt = device->geomTypes.get
+      (typeString,[&](rtc::Device *dev) {
         const std::string boundsProg = typeString+"_Bounds";
         const std::string isProg = typeString+"_Isec";
         const std::string chProg = typeString+"_CH";
-        // owlGeomTypeSetBoundsProg(gt,module,boundsProg.c_str());
-        // owlGeomTypeSetIntersectProg(gt,0,module,isProg.c_str());
-        // owlGeomTypeSetClosestHit(gt,0,module,chProg.c_str());
-        // owlBuildPrograms(dg->owl);
-        // return gt;
-        return devGroup->rtc->createUserGeomType(typeString.c_str(),
-                                                 sizeof(DD),
-                                                 boundsProg.c_str(),
-                                                 isProg.c_str(),
-                                                 nullptr,
-                                                 chProg.c_str());
+        return dev->createUserGeomType(typeString.c_str(),
+                                       sizeof(DD),
+                                       boundsProg.c_str(),
+                                       isProg.c_str(),
+                                       nullptr,
+                                       chProg.c_str());
       });
-        
-    // geom = owlGeomCreate(devGroup->owl,gt);
-    geom = devGroup->rtc->createGeom(gt);
-    // geom = owlGeomCreate(devGroup->owl,gt);
-    // this CREATES the geom, but doesn't yet set prim count (prim
-    // count depends on how the mc grid is traersed), so has to be
-    // set in the derived function
+    return gt->createGeom();
   }
       
-  
-
-
-
-
-
-
   // ------------------------------------------------------------------
   // device progs: macro-cell accel with RTX traversal
   // ------------------------------------------------------------------
 
-#ifdef __CUDA_ARCH__
   template<typename ScalarFieldType>
-  inline __device__
+  inline __both__
   void MCRTXVolumeAccel<ScalarFieldType>::boundsProg(const void *geomData,
                                                owl::common::box3f &bounds,
                                                const int32_t primID)
@@ -397,9 +365,10 @@ namespace barney {
   }
 
   template<typename ScalarFieldType>
-  inline __device__
+  inline __both__
   void MCRTXVolumeAccel<ScalarFieldType>::isProg()
   {
+#if 0
     /* ALL of this code should be exactly the same in any
        instantiation of the MCRTXVolumeAccel<> tempalte! */
     const DD &self = owl::getProgramData<DD>();
@@ -433,13 +402,13 @@ namespace barney {
                      tRange.upper,
                      getPos(sample));
     optixReportIntersection(tRange.upper, 0);
+#endif
   }
 
   template<typename ScalarFieldType>
-  inline __device__
+  inline __both__
   void MCRTXVolumeAccel<ScalarFieldType>::chProg()
   {/* nothing - already all set in isec */}
-#endif
 
 
   // ------------------------------------------------------------------
@@ -447,9 +416,8 @@ namespace barney {
   // ------------------------------------------------------------------
 
 
-#ifdef __CUDA_ARCH__
   template<typename ScalarFieldType>
-  inline __device__
+  inline __both__
   void MCDDAVolumeAccel<ScalarFieldType>::boundsProg(const void *geomData,
                                                owl::common::box3f &bounds,
                                                const int32_t primID)
@@ -459,9 +427,10 @@ namespace barney {
   }
 
   template<typename ScalarFieldType>
-  inline __device__
+  inline __both__
   void MCDDAVolumeAccel<ScalarFieldType>::isProg()
   {
+#if 0
     /* ALL of this code should be exactly the same in any
        instantiation of the MCDDAVolumeAccel<> tempalte! */
     const DD &self = owl::getProgramData<DD>();
@@ -514,12 +483,12 @@ namespace barney {
               },
               /*NO debug*/false
               );
+#endif
   }
     
   template<typename ScalarFieldType>
-  inline __device__
+  inline __both__
   void MCDDAVolumeAccel<ScalarFieldType>::chProg()
   {/* nothing - already all set in isec */}
-#endif
 
 }

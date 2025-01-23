@@ -39,10 +39,9 @@ namespace barney {
   { assert(s); return s; }
   
   Volume::Volume(ScalarField::SP sf)
-    : Object(assertNotNull(sf)->context),
-      devGroup(sf->getDevGroup()),
+    : SlottedObject(sf->context,sf->devices),
       sf(sf),
-      xf(sf->getDevGroup())
+      xf(sf->context,sf->devices)
   {
     accel = sf->createAccel(this);
   }
@@ -55,7 +54,8 @@ namespace barney {
   {
     assert(accel);
     accel->build(full_rebuild);
-    sf->getDevGroup()->sbtDirty = true;
+    for (auto device : *devices)
+      device->sbtDirty = true;
   }
 
 }
