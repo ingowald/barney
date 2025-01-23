@@ -24,11 +24,11 @@ namespace barney {
     
     struct AnariPBR : public HostMaterial {
       struct DD {
-       inline __device__
+       inline __both__
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
-        inline __device__
+        inline __both__
         float getOpacity(const HitAttributes &hitData,
                          const Sampler::DD *samplers,
                          bool dbg) const;
@@ -40,18 +40,24 @@ namespace barney {
         PossiblyMappedParameter::DD ior;
         PossiblyMappedParameter::DD emission;
       };
-      AnariPBR(Context *context, int slot) : HostMaterial(context,slot) {}
+      
+      AnariPBR(SlotContext *context) : HostMaterial(context) {}
       virtual ~AnariPBR() = default;
       
       std::string toString() const override { return "AnariPBR"; }
       
-      void createDD(DeviceMaterial &dd, int deviceID) const override;
+      DeviceMaterial getDD(Device *device) override;
 
-      bool setObject(const std::string &member, const Object::SP &value) override;
-      bool setString(const std::string &member, const std::string &value) override;
-      bool set1f(const std::string &member, const float &value) override;
-      bool set3f(const std::string &member, const vec3f &value) override;
-      bool set4f(const std::string &member, const vec4f &value) override;
+      bool setObject(const std::string &member,
+                     const Object::SP &value) override;
+      bool setString(const std::string &member,
+                     const std::string &value) override;
+      bool set1f(const std::string &member,
+                 const float &value) override;
+      bool set3f(const std::string &member,
+                 const vec3f &value) override;
+      bool set4f(const std::string &member,
+                 const vec4f &value) override;
       
       PossiblyMappedParameter baseColor    = vec3f(1.f,1.f,1.f);
       PossiblyMappedParameter metallic     = 1.f;
@@ -62,8 +68,7 @@ namespace barney {
       PossiblyMappedParameter emission     = vec3f(0.f,0.f,0.f);
     };
       
-#ifdef __CUDACC__
-    inline __device__
+    inline __both__
     PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData,
                                         const Sampler::DD *samplers,
                                         bool dbg) const
@@ -79,14 +84,7 @@ namespace barney {
       if (ior.x != 1.f && transmission.x >= 1e-3f) {
         packedBSDF::Glass bsdf;
         bsdf.ior = ior.x;
-        bsdf.attenuation = vec3f(1.f);
-        // if (dbg) printf("MADE GLASS\n");
-        // bsdf.ior = 1.45f;
-        // bsdf.specularTransmission = 1.f;
-        // bsdf.baseColor = vec3f(1.f);
-        // bsdf.metallic = 0.f;
-        // bsdf.roughness = 0.f;
-        // bsdf.specular = 0.f;
+        (vec3f&)bsdf.attenuation = vec3f(1.f);
         return bsdf;
       }
 #endif
@@ -105,35 +103,8 @@ namespace barney {
       
       if (dbg) printf("baseColor.w %f opacity.x %f\n",baseColor.w,opacity.x);
       bsdf.ior = ior.x;
-      // if (dbg)
-      //   printf("created nvisii brdf, base %f %f %f metallic %f roughness %f ior %f alpha %f\n",
-      //          (float)bsdf.baseColor.x,
-      //          (float)bsdf.baseColor.y,
-      //          (float)bsdf.baseColor.z,
-      //          (float)bsdf.metallic,
-      //          (float)bsdf.roughness,
-      //          (float)bsdf.ior,
-      //                 (float)bsdf.alpha);
       return bsdf;
     }
 
-
-
-    // inline __device__
-    // float AnariPBR::DD::getOpacity(const HitAttributes &hitData,
-    //                                const Sampler::DD *samplers,
-    //                                bool dbg) const
-    // {
-    //   float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
-    //   float4 opacity = this->opacity.eval(hitData,samplers,dbg);
-    //   printf("opacity %f %f %f %f \n",
-    //          opacity.x,
-    //          opacity.y,
-    //          opacity.z,
-    //          opacity.w);
-    //   return baseColor.w * opacity.x;
-    // }
-#endif
-    
   }
 }

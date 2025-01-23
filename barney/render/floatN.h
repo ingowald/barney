@@ -75,11 +75,16 @@ namespace barney {
     { return make_float3(-a.x,-a.y,-a.z); }
     
     inline __both__ float lerp_r(float a, float b, float factor) { return (1.f-factor)*a+factor*b; }
+
     inline __both__ vec3f lerp_r(vec3f a, vec3f b, vec3f factor) { return (1.f-factor)*a+factor*b; }
 
     inline __both__ float lerp_l(float factor, float a, float b) { return (1.f-factor)*a+factor*b; }
     inline __both__ vec3f lerp_l(vec3f factor, vec3f a, vec3f b) { return (1.f-factor)*a+factor*b; }
 
+    // inline __both__ float3 lerp_r(float3 a, float3 b, float3 factor) { return (1.f-factor)*a+factor*b; }
+    // inline __both__ float3 lerp_l(float3 factor, float3 a, float3 b) { return (1.f-factor)*a+factor*b; }
+    // inline __both__ float3 lerp_r(float3 a, float3 b, float factor) { return (1.f-factor)*a+factor*b; }
+    
     inline __both__ float rcp(float f) { return 1.f/f; }
     inline __both__ float rcpf(float f) { return 1.f/f; }
     inline __both__ float abs(float f) { return fabsf(f); }

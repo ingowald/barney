@@ -48,7 +48,6 @@ namespace barney {
 
       Type type;
 
-#ifdef __CUDACC__
       inline __both__ PackedBSDF();
       inline __both__ PackedBSDF(Type type, Data data)
         : type(type), data(data) {}
@@ -60,7 +59,6 @@ namespace barney {
       { type = TYPE_NVisii; data.nvisii = nvisii; }
       inline __both__ PackedBSDF(const packedBSDF::Glass  &glass)
       { type = TYPE_Glass; data.glass = glass; }
-      // inline __both__ PackedBSDF(const packedBSDF::VisRTX &visRTX);
       
       inline __both__
       EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
@@ -80,22 +78,14 @@ namespace barney {
                        vec3f rayDir,
                        vec3f Ng,
                        bool dbg=false) const;
-#endif
     };
 
 
-#ifdef __CUDACC__
-    // inline __both__
-    // PackedBSDF::PackedBSDF(const packedBSDF::VisRTX &visRTX)
-    // { type = TYPE_VisRTX; data.visRTX = visRTX; }
-    
     inline __both__
     EvalRes PackedBSDF::eval(render::DG dg, vec3f w_i, bool dbg) const
     {
       if (type == TYPE_Phase)
         return data.phase.eval(dg,w_i,dbg);
-      // if (type == TYPE_VisRTX)
-      //   return data.visRTX.eval(dg,w_i,dbg);
       if (type == TYPE_NVisii)
         return data.nvisii.eval(dg,w_i,dbg);
       if (type == TYPE_Glass)
@@ -144,7 +134,6 @@ namespace barney {
       if (type == TYPE_Glass)
         return data.glass.scatter(scatter,dg,random,dbg);
     }
-#endif
     
   }
 }

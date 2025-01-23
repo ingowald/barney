@@ -20,10 +20,12 @@
 namespace barney {
   namespace render {
     
-    void AnariMatte::createDD(DeviceMaterial &dd, int deviceID) const 
+    DeviceMaterial AnariMatte::getDD(Device *device) 
     {
+      DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariMatte;
       color.make(dd.anariMatte.color,deviceID);
+      return dd;
     }
 
     /*! need wants to accept: 

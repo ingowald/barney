@@ -20,8 +20,9 @@
 namespace barney {
   namespace render {
     
-    void AnariPBR::createDD(DeviceMaterial &dd, int deviceID) const 
+    DeviceMaterial AnariPBR::getDD(Device *device) 
     {
+      DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariPBR;
       baseColor .make(dd.anariPBR.baseColor, deviceID);
       emission  .make(dd.anariPBR.emission,  deviceID);
@@ -30,6 +31,7 @@ namespace barney {
       roughness .make(dd.anariPBR.roughness, deviceID);
       ior       .make(dd.anariPBR.ior,       deviceID);
       transmission.make(dd.anariPBR.transmission,deviceID);
+      return dd;
     }
     
     bool AnariPBR::setObject(const std::string &member, const Object::SP &value) 

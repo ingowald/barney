@@ -14,6 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "barney/Context.h"
 #include "barney/material/AnariPBR.h"
 #include "barney/material/AnariMatte.h"
 #include "barney/ModelSlot.h"
@@ -22,8 +23,10 @@
 namespace barney {
   namespace render {
     
-    void PossiblyMappedParameter::make(DD &dd, int deviceID) const
+    PossiblyMappedParameter::DD
+    PossiblyMappedParameter::getDD(Device *device) 
     {
+      PossiblyMappedParameter::DD dd;
       dd.type = type;
       switch(type) {
       case SAMPLER:
@@ -39,6 +42,7 @@ namespace barney {
         dd.value = make_float4(0.f,0.f,0.f,0.f);
         break;
       }
+      return dd;
     }
     
     void PossiblyMappedParameter::set(const vec3f  &v)
@@ -76,10 +80,10 @@ namespace barney {
       attribute = parseAttribute(attributeName);
     }
     
-    HostMaterial::HostMaterial(Context *context, int slot)
-      : SlottedObject(context,slot),
-        materialRegistry(context->getSlot(slot)->materialRegistry),
-        materialID(context->getSlot(slot)->materialRegistry->allocate())
+    HostMaterial::HostMaterial(SlotContext *slotContext)
+      : SlottedObject(slotContext->context,slotContext->devices),
+        materialRegistry(slotContext->materialRegistry),
+        materialID(slotContext->materialRegistry->allocate())
     {}
 
     HostMaterial::~HostMaterial()
@@ -87,13 +91,7 @@ namespace barney {
       materialRegistry->release(materialID);
     }
     
-    void HostMaterial::setDeviceDataOn(OWLGeom geom) const
-    {
-      owlGeomSet1i(geom,"materialID",materialID);
-    }
-
-    HostMaterial::SP HostMaterial::create(Context *context,
-                                          int slot,
+    HostMaterial::SP HostMaterial::create(SlotContext *slotContext,
                                           const std::string &type)
     {
 #ifndef NDEBUG
@@ -109,13 +107,13 @@ namespace barney {
       // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
       // specifically for anari layer:
       if (type == "AnariMatte")
-        return std::make_shared<AnariMatte>(context,slot); 
+        return std::make_shared<AnariMatte>(slotContext); 
       if (type == "physicallyBased" || type == "AnariPBR")
-        return std::make_shared<AnariPBR>(context,slot); 
+        return std::make_shared<AnariPBR>(slotContext); 
       // specifically for anari layer:
       // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
       // ==================================================================
-      return std::make_shared<AnariPBR>(context,slot); 
+      return std::make_shared<AnariPBR>(slotContext); 
       // if (type == "velvet")
       //   return std::make_shared<VelvetMaterial>(dg);
       // if (type == "blender")
@@ -143,10 +141,9 @@ namespace barney {
     void HostMaterial::commit()
     {
       SlottedObject::commit();
-      DeviceMaterial dd;
-      for (int devID=0;devID<getDevGroup()->size();devID++) {
-        this->createDD(dd,devID);
-        materialRegistry->setMaterial(materialID,dd,devID);
+      for (auto device : *devices) {
+        DeviceMaterial dd = getDD(device);
+        materialRegistry->setMaterial(materialID,dd,device);
       }
       hasBeenCommittedAtLeastOnce = true;      
     }

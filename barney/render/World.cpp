@@ -121,22 +121,14 @@ namespace barney {
       reusableIDs.push(nowReusableID);
     }
   
-    // const DeviceMaterial *MaterialRegistry::getPointer(int owlDeviceID) const 
-    // {
-    //   return (DeviceMaterial *)owlBufferGetPointer(buffer,owlDeviceID);
-    // }    
-
-
     void MaterialRegistry::setMaterial(int materialID,
                                        const DeviceMaterial &dd,
-                                       int deviceID)
+                                       Device *device)
     {
-      for (auto device : *devices) {
+      // for (auto device : *devices) {
         PLD *pld = getPLD(device);
         pld->buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID);
-      }
-      // BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+materialID),
-      //                         &dd,sizeof(dd),cudaMemcpyDefault));
+      // }
     }
 
 

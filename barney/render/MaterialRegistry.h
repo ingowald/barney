@@ -36,7 +36,9 @@ namespace barney {
       void release(int nowReusableID);
       void grow();
 
-      void setMaterial(int materialID, const DeviceMaterial &, int deviceID);
+      void setMaterial(int materialID,
+                       const DeviceMaterial &dd,
+                       Device *device);
       // const DeviceMaterial *getPointer(int owlDeviceID) const;
     
       int numReserved = 0;

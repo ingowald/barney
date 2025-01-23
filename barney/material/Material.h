@@ -19,18 +19,18 @@
 #include "barney/Object.h"
 #include "barney/common/mat4.h"
 #include "barney/render/HitAttributes.h"
-// #include "barney/material/device/Material.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/MaterialRegistry.h"
 
 namespace barney {
+  struct SlotContext;
+  
   namespace render {
 
     struct DeviceMaterial;
     
     struct PossiblyMappedParameter {
-      typedef enum { INVALID=0, VALUE, ATTRIBUTE, SAMPLER// , ARRAY
-      } Type;
+      typedef enum { INVALID=0, VALUE, ATTRIBUTE, SAMPLER } Type;
 
       PossiblyMappedParameter() = default;
       PossiblyMappedParameter(const vec3f v)
@@ -39,21 +39,15 @@ namespace barney {
       { type = VALUE; value = make_float4(v,0.f,0.f,1.f); }
     
       struct DD {
-#ifdef __CUDACC__
-        inline __device__
+        inline __both__
         float4 eval(const HitAttributes &hitData,
                     const Sampler::DD *samplers,
                     bool dbg=false) const;
-#endif        
         Type type;
         union {
           float4               value;
           HitAttributes::Which attribute;
           int                  samplerID;
-          // struct {
-          //   BNDataType  elementType;
-          //   const void *pointer;
-          // } array;
         };
       };
 
@@ -62,15 +56,13 @@ namespace barney {
       void set(const vec3f &v);
       void set(const vec4f &v);
       void set(Sampler::SP sampler);
-      // void set(PODData::SP array);
       void set(const std::string &attributeName);
-      void make(DD &dd, int deviceID) const;
+      
+      DD getDD(Device *device);
       
       Type type = VALUE;
       Sampler::SP          sampler;
-      // PODData::SP          array;
       HitAttributes::Which attribute;
-      //float4               value { NAN,NAN,NAN,NAN };
       float4               value { 0.f, 0.f, 0.f, 1.f };
     };
 
@@ -91,9 +83,8 @@ namespace barney {
         materials .... and possibly even change the actual OWLGeom
         (and even worse, its type) if the assigned material's type
         changes */
-      // using DD = barney::render::DeviceMaterial;
 
-      HostMaterial(Context *context, int slot);
+      HostMaterial(SlotContext *context);
       virtual ~HostMaterial();
 
       // ------------------------------------------------------------------
@@ -101,15 +92,10 @@ namespace barney {
       void commit() override;
       /*! @} */
       // ------------------------------------------------------------------
-      static HostMaterial::SP create(Context *context, int slot,
+      static HostMaterial::SP create(SlotContext *context,
                                      const std::string &type);
     
-      void setDeviceDataOn(OWLGeom geom) const;
-    
-      virtual void createDD(DeviceMaterial &dd, int deviceID) const = 0;
-
-      /*! declares the device-data's variables to an owl geom */
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      virtual DeviceMaterial getDD(Device *device) = 0;
 
       /*! this material's index in the device list of all DeviceMaterials */
       const int materialID;
@@ -118,33 +104,26 @@ namespace barney {
       
       // keep reference to material library, so it cannot die before
       // all materials are dead
-      MaterialRegistry::SP materialRegistry;
+      const MaterialRegistry::SP materialRegistry;
     };
 
-#ifdef __CUDACC__
-    inline __device__
+    inline __both__
     float4 PossiblyMappedParameter::DD::eval(const HitAttributes &hitData,
                                              const Sampler::DD *samplers,
                                              bool dbg) const
     {
-      // if (1 && dbg)
-      //   printf("evaluating attrib, type %i, val.x %f\n",int(type),value.x);
       if (type == VALUE) {
         return isnan(value.x) ? make_float4(0.f,0.f,0.f,1.f) : value;
       }
       if (type == ATTRIBUTE) {
-        // if (1 && dbg) printf("asking hitattributes for attribute %i\n",(int)attribute);
         return hitData.get(attribute,dbg);
       }
       if (type == SAMPLER) {
-        // if (0 && dbg) printf("asking hitattributes for sampler %i\n",(int)samplerID);
         if (samplerID < 0) return make_float4(0.f,0.f,0.f,1.f);
         return samplers[samplerID].eval(hitData,dbg);
       }
-      // printf("(Possiblymapped) un-handled material input type %i\n",(int)type);
       return make_float4(0.f,0.f,0.f,1.f);
     }
-#endif
 
   }
 }
