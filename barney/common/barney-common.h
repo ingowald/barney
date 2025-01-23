@@ -33,7 +33,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
-#include "barney.h"
+#include "barney/barney.h"
 #ifdef __CUDACC__
 #include <cuda/std/limits>
 #endif

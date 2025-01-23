@@ -51,7 +51,7 @@ embed_ptx(
 # ------------------------------------------------------------------
 # ray-sphere geom intersection
 embed_ptx(
-  OUTPUT_TARGET      barney-Spheres-ptx
+  OUTPUT_TARGET      barney-spheres-ptx
   PTX_LINK_LIBRARIES barney_config
   SOURCES            geometry/Spheres.dev.cu
   )
@@ -262,52 +262,30 @@ CUDA_SOURCE(amr/BlockStructuredField.cu)
 CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
   
 # ------------------------------------------------------------------
-# STATIC version of barney
-# ------------------------------------------------------------------
-add_library(barney_static
-#  OBJECT
-  STATIC
-  ${BARNEY_SOURCES}
-  )
-set(BARNEY_STATIC_DEPENDENCIES
-  barney-Spheres-ptx
-  barney-StructuredData-ptx
-  barney-cylinders-ptx
-  barney-capsules-ptx
-  barney-triangles-ptx
-  barney-traceRays-ptx  
-#  barney-UMeshRTXObjectSpace-ptx
-#  barney-UMeshMC-ptx
-#  barney-AWT-ptx  
-#  barney-BlockStructuredMC-ptx
-  owl_static
-  ${CUBQL_LIB}_static
-  )
-target_link_libraries(barney_static
-  PUBLIC
-  barney_config
-  barney_rtc
-  ${BARNEY_STATIC_DEPENDENCIES}
-  )
-set_target_properties(barney_static
-  PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-#  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-  )
-# ------------------------------------------------------------------
 # SHARED version of barney
 # ------------------------------------------------------------------
 add_library(barney SHARED
   ${BARNEY_SOURCES}
   )
-target_link_libraries(barney PUBLIC
-  barney_config
-  barney_rtc
-  ${BARNEY_STATIC_DEPENDENCIES}
-  )
+if (OFF)
+  add_library(barney SHARED
+    ${BARNEY_SOURCES}
+    )
+  target_link_libraries(barney PUBLIC
+    barney_config
+    barney_rtc
+    ${BARNEY_STATIC_DEPENDENCIES}
+    )
+else()
+  target_link_libraries(barney PUBLIC
+    #  barney_config
+    #  barney_rtc
+    #  ${BARNEY_STATIC_DEPENDENCIES}
+    $<BUILD_INTERFACE:barney_config>
+    $<BUILD_INTERFACE:barney_rtc>
+    $<BUILD_INTERFACE:barney-spheres-ptx>
+    )
+endif()
 set_target_properties(barney
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
@@ -316,40 +294,9 @@ set_target_properties(barney
   CUDA_USE_STATIC_CUDA_RUNTIME ON
   CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
   )
-set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
+#set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 if (BARNEY_MPI)
-#  find_package(MPI REQUIRED)
-
-  # ------------------------------------------------------------------
-  # STATIC version of barney_mpi
-  # ------------------------------------------------------------------
-  add_library(barney_mpi_static STATIC
-    ${BARNEY_SOURCES}
-    common/MPIWrappers.h
-    common/MPIWrappers.cpp
-    MPIContext.h
-    MPIContext.cpp
-    fb/DistFB.h
-    fb/DistFB.cpp
-    )
-  set_target_properties(barney_mpi_static
-    PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-    )
-  target_link_libraries(barney_mpi_static PUBLIC
-    barney_config
-    barney_static
-    barney_rtc
-    MPI::MPI_CXX
-    )
-  target_compile_definitions(barney_mpi_static PUBLIC -DBARNEY_MPI=1)
-
-
   
   # ------------------------------------------------------------------
   # SHARED version of barney_mpi
@@ -400,4 +347,8 @@ endif()
 #  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 #  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 #)
+
+# ------------------------------------------------------------------
+# cmake package install
+# ------------------------------------------------------------------
 

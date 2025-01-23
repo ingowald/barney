@@ -4,7 +4,7 @@
 #pragma once
 
 // barney
-#include "barney.h"
+#include "barney/barney.h"
 // anari
 #include <helium/helium_math.h>
 #include <anari/anari_cpp.hpp>

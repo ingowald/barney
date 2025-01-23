@@ -23,10 +23,13 @@ namespace barney {
   {
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
-      pld->scalarRangesBuffer
-        = device->rtc->createBuffer(sizeof(float2));
-      pld->majorantsBuffer
-        = device->rtc->createBuffer(sizeof(float));
+      auto rtc = device->rtc;
+      
+      pld->scalarRangesBuffer = rtc->createBuffer(sizeof(float2));
+      pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
+
+      pld->mapMCs             = rtc->createCompute("mapMCs");
+      pld->clearMCs           = rtc->createCompute("clearMCs");
     }
   }
                             

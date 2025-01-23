@@ -18,7 +18,6 @@
 #include "barney/Context.h"
 #include "barney/ModelSlot.h"
 #include "barney/DeviceGroup.h"
-#include <barney.h>
 
 namespace barney {
 

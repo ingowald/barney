@@ -19,7 +19,6 @@
 #include "barney/Group.h"
 #include "barney/material/Material.h"
 #include "barney/render/World.h"
-#include "barney.h"
 #include <set>
 
 namespace barney {

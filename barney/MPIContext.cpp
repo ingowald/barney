@@ -412,7 +412,7 @@ namespace barney {
     return (numTimesForwarded % numDifferentModelSlots) != 0;
   }
 
-  BN_API
+  BARNEY_API
   void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
   {
     LOG_API_ENTRY;
@@ -479,7 +479,7 @@ namespace barney {
     assert(hardware.numGPUsThisRank > 0);
   }
 
-  BN_API
+  BARNEY_API
   BNContext bnMPIContextCreate(MPI_Comm _comm,
                                /*! how many data slots this context is to
                                  offer, and which part(s) of the

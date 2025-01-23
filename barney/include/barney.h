@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,12 +16,45 @@
 
 #pragma once
 
-#include "owl/owl.h"
+#include <cstdint>
 #if BARNEY_MPI
 # include <mpi.h>
 #endif
 
-#define BN_API extern "C"
+#define BARNEY_VERSION_MAJOR @BARNEY_VERSION_MAJOR@
+#define BARNEY_VERSION_MINOR @BARNEY_VERSION_MINOR@
+#define BARNEY_VERSION_PATCH @BARNEY_VERSION_PATCH@
+#define BARNEY_BOOL_ON  1
+#define BARNEY_BOOL_OFF 0
+#define BARNEY_HAVE_CUDA  BARNEY_BOOL_@BARNEY_HAVE_CUDA@
+
+#if defined(_MSC_VER)
+#  define BARNEY_DLL_EXPORT __declspec(dllexport)
+#  define BARNEY_DLL_IMPORT __declspec(dllimport)
+#elif defined(__clang__) || defined(__GNUC__)
+#  define BARNEY_DLL_EXPORT __attribute__((visibility("default")))
+#  define BARNEY_DLL_IMPORT __attribute__((visibility("default")))
+#else
+#  define BARNEY_DLL_EXPORT
+#  define BARNEY_DLL_IMPORT
+#endif
+
+#ifdef __cplusplus
+#  define BARNEY_API extern "C" BARNEY_DLL_EXPORT
+#else
+#  define BARNEY_API /* bla */
+#endif
+
+#ifdef BARNEY_HAVE_CUDA
+// use cuda internal types for float3 etc
+# include <driver_types.h>
+#else
+// define some dummy wrappers
+struct float2 { float x,y; }
+struct float3 { float x,y,z; }
+struct float4 { float x,y,z,w; }
+#endif
+
 
 typedef struct _BNContext                           *BNContext;
 typedef struct _BNObject                         {} *BNObject;
@@ -116,17 +149,17 @@ struct BNGridlet {
 
 /*! create a new camera of given type. currently supported types:
     "pinhole" */
-BN_API
+BARNEY_API
 BNCamera bnCameraCreate(BNContext context,
                         const char *type);
 
-BN_API
+BARNEY_API
 BNFrameBuffer bnFrameBufferCreate(BNContext context,
                                   int owningRank);
 
-BN_API
+BARNEY_API
 BNModel bnModelCreate(BNContext ctx);
-BN_API
+BARNEY_API
 BNRenderer bnRendererCreate(BNContext ctx, const char *ignoreForNow);
 
 
@@ -136,74 +169,74 @@ BNRenderer bnRendererCreate(BNContext ctx, const char *ignoreForNow);
 // general set/commit semantics
 // ==================================================================
 
-BN_API
+BARNEY_API
 void bnCommit(BNObject target);
               
-BN_API
+BARNEY_API
 void bnSetString(BNObject target, const char *paramName, const char *value);
 
-BN_API
+BARNEY_API
 void bnSetData(BNObject target, const char *paramName, BNData value);
 
-BN_API
+BARNEY_API
 void bnSetObject(BNObject target, const char *paramName, const BNObject value);
 
-BN_API
+BARNEY_API
 void bnSetLight(BNObject target, const char *paramName, BNLight value);
 
-BN_API
+BARNEY_API
 void bnSet1i(BNObject target, const char *paramName, int value);
 
-BN_API
+BARNEY_API
 void bnSet2i(BNObject target, const char *paramName, int x, int y);
 
-BN_API
+BARNEY_API
 void bnSet2ic(BNObject target, const char *paramName, int2 v);
 
-BN_API
+BARNEY_API
 void bnSet3i(BNObject target, const char *paramName, int x, int y, int z);
 
-BN_API
+BARNEY_API
 void bnSet3ic(BNObject target, const char *paramName, int3 v);
 
-BN_API
+BARNEY_API
 void bnSet4i(BNObject target, const char *paramName, int x, int y, int z, int w);
 
-BN_API
+BARNEY_API
 void bnSet4ic(BNObject target, const char *paramName, int4 v);
 
-BN_API
+BARNEY_API
 void bnSet1f(BNObject target, const char *paramName, float value);
 
-BN_API
+BARNEY_API
 void bnSet2f(BNObject target, const char *paramName, float x, float y);
 
-BN_API
+BARNEY_API
 void bnSet2fc(BNObject target, const char *paramName, float2 v);
 
-BN_API
+BARNEY_API
 void bnSet3f(BNObject target, const char *paramName, float x, float y, float z);
 
-BN_API
+BARNEY_API
 void bnSet3fc(BNObject target, const char *paramName, float3 v);
 
-BN_API
+BARNEY_API
 void bnSet4f(BNObject target, const char *paramName, float x, float y, float z, float w);
 
-BN_API
+BARNEY_API
 void bnSet4fc(BNObject target, const char *paramName, float4 v);
 
-BN_API
+BARNEY_API
 void bnSet4x3fv(BNObject target, const char *paramName, const float *affineMatrix);
 
-BN_API
+BARNEY_API
 void bnSet4x4fv(BNObject target, const char *paramName, const float *xfm);
 
 
 
 /*! helper function to fill in a BNCamera structure from a more
     user-friendly from/at/up/fovy specification */
-BN_API
+BARNEY_API
 void bnPinholeCamera(BNCamera camera,
                      float3 from,
                      float3 at,
@@ -211,7 +244,7 @@ void bnPinholeCamera(BNCamera camera,
                      float  fovy,
                      float  aspect);
 
-BN_API
+BARNEY_API
 BNContext bnContextCreate(/*! how many data slots this context is to
                               offer, and which part(s) of the
                               distributed model data these slot(s)
@@ -225,10 +258,10 @@ BNContext bnContextCreate(/*! how many data slots this context is to
                           const int *gpuIDs=nullptr,
                           int  numGPUs=-1);
 
-BN_API
+BARNEY_API
 void bnCountAvailableDevice(int *numGPUs);
 
-BN_API
+BARNEY_API
 void bnContextDestroy(BNContext context);
 
 struct BNHardwareInfo {
@@ -242,7 +275,7 @@ struct BNHardwareInfo {
 
 
 #if BARNEY_MPI
-BN_API
+BARNEY_API
 BNContext bnMPIContextCreate(MPI_Comm comm,
                              /*! how many data slots this context is to
                                offer, and which part(s) of the
@@ -258,7 +291,7 @@ BNContext bnMPIContextCreate(MPI_Comm comm,
                              int  numGPUs=-1
                              );
 
-BN_API
+BARNEY_API
 void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 
 #endif
@@ -271,21 +304,21 @@ void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
     the object referenced by this handle may not get destroyed
     immediagtely if it had other indirect references, such as, for
     example, a group still holding a refernce to a geometry */
-BN_API
+BARNEY_API
 void  bnRelease(BNObject object);
 
 /*! increases (the app's) reference count of said object byb one */
-BN_API
+BARNEY_API
 void  bnAddReference(BNObject object);
 
-BN_API
+BARNEY_API
 void  bnBuild(BNModel model, int whichDataSlot);
 
 // ==================================================================
 // render interface
 // ==================================================================
 
-BN_API
+BARNEY_API
 void bnAccumReset(BNFrameBuffer fb);
 
 typedef enum {
@@ -293,18 +326,18 @@ typedef enum {
   BN_FB_DEPTH = (1<<1),
 } BNFrameBufferChannel;
 
-BN_API
+BARNEY_API
 void bnFrameBufferResize(BNFrameBuffer fb,
                          int sizeX, int sizeY,
                          uint32_t requiredChannels = BN_FB_COLOR);
 
-BN_API
+BARNEY_API
 void bnFrameBufferRead(BNFrameBuffer fb,
                        BNFrameBufferChannel channelToRead,
                        void *pointerToReadDataInto,
                        BNDataType requiredFormat);
 
-BN_API
+BARNEY_API
 void bnRender(BNRenderer    renderer,
               BNModel       model,
               BNCamera      camera,
@@ -321,7 +354,7 @@ struct BNTransform {
   } xfm;
 };
 
-BN_API
+BARNEY_API
 void bnSetInstances(BNModel model,
                     int whichSlot,
                     BNGroup *groupsToInstantiate,
@@ -338,7 +371,7 @@ void bnSetInstances(BNModel model,
   arrays of this type can _not_ be assigned to samplers because these
   need data to be put into cudaArray's (in order to create
   cudaTextures) */
-BN_API
+BARNEY_API
 BNData bnDataCreate(BNContext context,
                     int whichSlot,
                     BNDataType dataType,
@@ -347,7 +380,7 @@ BNData bnDataCreate(BNContext context,
 
 // /*! creates a cudaArray2D of specified size and texels. Can be passed
 //   to a sampler to create a matching cudaTexture2D */
-// BN_API
+// BARNEY_API
 // BNTextureData bnTextureData2DCreate(BNContext context,
 //                                     int whichSlot,
 //                                     BNTexelFormat texelFormat,
@@ -357,27 +390,27 @@ BNData bnDataCreate(BNContext context,
 /*! creates a cudaArray2D of specified size and texels. Can be passed
   to a sampler to create a matching cudaTexture2D, or as a background
   image to a renderer */
-BN_API
+BARNEY_API
 BNTextureData bnTextureData2DCreate(BNContext context,
                                     int whichSlot,
                                     BNDataType texelFormat,
                                     int width, int height,
                                     const void *items);
 
-BN_API
+BARNEY_API
 BNLight bnLightCreate(BNContext context,
                       int whichSlot,
                       const char *type);
                     
-BN_API
+BARNEY_API
 BNGroup bnGroupCreate(BNContext context,
                       int whichSlot,
                       BNGeom *geoms, int numGeoms,
                       BNVolume *volumes, int numVolumes);
-BN_API
+BARNEY_API
 void bnGroupBuild(BNGroup group);
 
-BN_API
+BARNEY_API
 BNTexture2D bnTexture2DCreate(BNContext context,
                               int whichSlot,
                               BNDataType texelFormat,
@@ -391,7 +424,7 @@ BNTexture2D bnTexture2DCreate(BNContext context,
                               BNTextureAddressMode addressMode_y = BN_TEXTURE_WRAP,
                               BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
 
-BN_API
+BARNEY_API
 BNTexture3D bnTexture3DCreate(BNContext context,
                               int whichSlot,
                               BNDataType texelFormat,
@@ -411,7 +444,7 @@ BNTexture3D bnTexture3DCreate(BNContext context,
 
 /*! create a new geometry of given type. currently supported types:
     "triangles", "spheres", "cylinders" */
-BN_API
+BARNEY_API
 BNGeom bnGeometryCreate(BNContext context,
                         int whichSlot,
                         const char *type);
@@ -419,19 +452,19 @@ BNGeom bnGeometryCreate(BNContext context,
 
 /*! create a new scalar field of given type. currently supported
     types: "structured" */
-BN_API
+BARNEY_API
 BNScalarField bnScalarFieldCreate(BNContext context,
                                   int whichSlot,
                                   const char *type);
                                      
 /*! create a new material of given type. currently supported types:
   "matte", "glass" */
-BN_API
+BARNEY_API
 BNMaterial bnMaterialCreate(BNContext context,
                             int whichSlot,
                             const char *type);
 
-BN_API
+BARNEY_API
 BNSampler bnSamplerCreate(BNContext context,
                           int whichSlot,
                           const char *type);
@@ -447,7 +480,7 @@ BNSampler bnSamplerCreate(BNContext context,
 // ------------------------------------------------------------------
 // soon to be deprecated, but still the only way to create those
 // ------------------------------------------------------------------
-BN_API
+BARNEY_API
 BNScalarField bnUMeshCreate(BNContext context,
                             int whichSlot,
                             // vertices, 4 floats each (3 floats position,
@@ -491,7 +524,7 @@ BNScalarField bnUMeshCreate(BNContext context,
                             const float3 *domainOrNull=0);
 
 
-BN_API
+BARNEY_API
 BNScalarField bnBlockStructuredAMRCreate(BNContext context,
                                          int whichSlot,
                                          /*TODO:const float *cellWidths,*/
@@ -507,12 +540,12 @@ BNScalarField bnBlockStructuredAMRCreate(BNContext context,
                                          const float *blockScalars, int numBlockScalars);
 
 
-BN_API
+BARNEY_API
 BNVolume bnVolumeCreate(BNContext context,
                         int whichSlot,
                         BNScalarField sf);
 
-BN_API
+BARNEY_API
 void bnVolumeSetXF(BNVolume volume,
                    float2 domain,
                    const float4 *colorMap,
@@ -566,7 +599,7 @@ inline void bnAssignMaterial(BNGeom geom,const BNMaterialHelper *material)
 // ------------------------------------------------------------------
 // DEPRECATED
 // ------------------------------------------------------------------
-BN_API
+BARNEY_API
 BNGeom bnTriangleMeshCreate(BNContext context,
                             int whichSlot,
                             const BNMaterialHelper *material,
@@ -580,7 +613,7 @@ BNGeom bnTriangleMeshCreate(BNContext context,
 // ------------------------------------------------------------------
 // DEPRECATED
 // ------------------------------------------------------------------
-BN_API
+BARNEY_API
 BNScalarField bnStructuredDataCreate(BNContext context,
                                      int whichSlot,
                                      int3 dims,

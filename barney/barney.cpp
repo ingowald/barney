@@ -14,7 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney.h"
 #include "barney/Context.h"
 #include "barney/LocalContext.h"
 #include "barney/fb/FrameBuffer.h"
@@ -154,7 +153,7 @@ namespace barney {
   /*! creates a cudaArray2D of specified size and texels. Can be passed
     to a sampler to create a matching cudaTexture2D, or as a background
     image to a renderer */
-  BN_API
+  BARNEY_API
   BNTextureData bnTextureData2DCreate(BNContext _context,
                                       int slot,
                                       BNDataType texelFormat,
@@ -176,7 +175,7 @@ namespace barney {
   // // ------------------------------------------------------------------
   // /*! creates a cudaArray2D of specified size and texels. Can be passed
   //   to a sampler to create a matching cudaTexture2D */
-  // BN_API
+  // BARNEY_API
   // BNTextureData bnTextureData2DCreate(BNModel model,
   //                                     int slot,
   //                                     BNDataType texelFormat,
@@ -196,7 +195,7 @@ namespace barney {
   
   
   // ------------------------------------------------------------------
-  BN_API
+  BARNEY_API
   BNTexture2D bnTexture2DCreate(BNContext _context,
                                 int slot,
                                 BNDataType texelFormat,
@@ -227,7 +226,7 @@ namespace barney {
     return (BNTexture)context->initReference(tex);
   }
 
-  BN_API
+  BARNEY_API
   BNTexture3D bnTexture3DCreate(BNContext _context,
                                 int slot,
                                 BNDataType texelFormat,
@@ -255,21 +254,21 @@ namespace barney {
   
   // ------------------------------------------------------------------
   
-  BN_API
+  BARNEY_API
   BNModel bnModelCreate(BNContext ctx)
   {
     LOG_API_ENTRY;
     return (BNModel)checkGet(ctx)->createModel();
   }
 
-  BN_API
+  BARNEY_API
   BNRenderer bnRendererCreate(BNContext ctx, const char *ignoreForNow)
   {
     LOG_API_ENTRY;
     return (BNRenderer)checkGet(ctx)->createRenderer();
   }
 
-  BN_API
+  BARNEY_API
   void bnSetInstances(BNModel model,
                       int slot,
                       BNGroup *_groups,
@@ -285,7 +284,7 @@ namespace barney {
     checkGet(model,slot)->setInstances(groups,(const affine3f *)xfms);
   }
   
-  BN_API
+  BARNEY_API
   void  bnRelease(BNObject _object)
   {
     LOG_API_ENTRY;
@@ -296,7 +295,7 @@ namespace barney {
     context->releaseHostReference(object->shared_from_this());
   }
   
-  BN_API
+  BARNEY_API
   void  bnAddReference(BNObject _object)
   {
     LOG_API_ENTRY;
@@ -307,14 +306,14 @@ namespace barney {
   }
 
 
-  BN_API
+  BARNEY_API
   void bnContextDestroy(BNContext context)
   {
     LOG_API_ENTRY;
     delete (Context *)context;
   }
 
-  BN_API
+  BARNEY_API
   BNGeom bnTriangleMeshCreate(BNContext context,
                               int slot,
                               const BNMaterialHelper *material,
@@ -348,7 +347,7 @@ namespace barney {
     return mesh;
   }  
   
-  BN_API
+  BARNEY_API
   BNScalarField bnScalarFieldCreate(BNContext _context,
                                     int slot,
                                     const char *type)
@@ -362,7 +361,7 @@ namespace barney {
   }
   
   
-  BN_API
+  BARNEY_API
   BNGeom bnGeometryCreate(BNContext _context,
                           int slot,
                           const char *type)
@@ -374,7 +373,7 @@ namespace barney {
     return (BNGeom)context->initReference(geom);
   }
 
-  BN_API
+  BARNEY_API
   void bnCountAvailableDevice(int *numGPUs)
   {
     if (!numGPUs) return;
@@ -382,7 +381,7 @@ namespace barney {
   }
 
   
-  BN_API
+  BARNEY_API
   BNMaterial bnMaterialCreate(BNContext _context,
                               int slot,
                               const char *type)
@@ -393,7 +392,7 @@ namespace barney {
     return (BNMaterial)context->initReference(material);
   }
 
-  BN_API
+  BARNEY_API
   BNSampler bnSamplerCreate(BNContext _context,
                             int slot,
                             const char *type)
@@ -405,7 +404,7 @@ namespace barney {
     return (BNSampler)context->initReference(sampler);
   }
 
-  BN_API
+  BARNEY_API
   BNCamera bnCameraCreate(BNContext context,
                           const char *type)
   {
@@ -415,7 +414,7 @@ namespace barney {
   }
 
 
-  BN_API
+  BARNEY_API
   void bnVolumeSetXF(BNVolume volume,
                      float2 domain,
                      const float4 *_values,
@@ -432,7 +431,7 @@ namespace barney {
     checkGet(volume)->setXF(range1f(domain.x,domain.y),values,densityAt1);
   }
   
-  BN_API
+  BARNEY_API
   BNVolume bnVolumeCreate(BNContext context,
                           int slot,
                           BNScalarField _sf)
@@ -442,7 +441,7 @@ namespace barney {
     return (BNVolume)checkGet(context)->initReference(volume);
   }
 
-  BN_API
+  BARNEY_API
   BNLight bnLightCreate(BNContext _context,
                         int slot,
                         const char *type)
@@ -455,7 +454,7 @@ namespace barney {
     return (BNLight)context->initReference(light);
   }
 
-  BN_API
+  BARNEY_API
   BNData bnDataCreate(BNContext _context,
                       int slot,
                       BNDataType dataType,
@@ -471,7 +470,7 @@ namespace barney {
   }
 
 
-  BN_API
+  BARNEY_API
   BNScalarField bnStructuredDataCreate(BNContext context,
                                        int slot,
                                        int3 dims,
@@ -495,7 +494,7 @@ namespace barney {
     return sf;
   }
   
-  BN_API
+  BARNEY_API
   BNScalarField bnUMeshCreate(BNContext context,
                               int slot,
                               // vertices, 4 floats each (3 floats position,
@@ -528,7 +527,7 @@ namespace barney {
 #endif
   }
   
-  BN_API
+  BARNEY_API
   BNScalarField bnBlockStructuredAMRCreate(BNContext context,
                                            int slot,
                                            /*TODO:const float *cellWidths,*/
@@ -567,7 +566,7 @@ namespace barney {
   }
 
 
-  BN_API
+  BARNEY_API
   BNGroup bnGroupCreate(BNContext _context,
                         int slot,
                         BNGeom *geoms, int numGeoms,
@@ -595,7 +594,7 @@ namespace barney {
     BARNEY_LEAVE(__PRETTY_FUNCTION__,0);
   }
 
-  BN_API
+  BARNEY_API
   void  bnGroupBuild(BNGroup group)
   {
     LOG_API_ENTRY;
@@ -608,7 +607,7 @@ namespace barney {
     BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
-  BN_API
+  BARNEY_API
   void  bnBuild(BNModel model,
                 int slot)
   {
@@ -618,7 +617,7 @@ namespace barney {
     BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
-  BN_API
+  BARNEY_API
   void bnCommit(BNObject target)
   {
     LOG_API_ENTRY;
@@ -626,14 +625,14 @@ namespace barney {
   }
   
               
-  BN_API
+  BARNEY_API
   void bnSetString(BNObject target, const char *param, const char *value)
   {
     if (!checkGet(target)->setString(checkGet(param),value))
       checkGet(target)->warn_unsupported_member(param,"std::string");
   }
 
-  BN_API
+  BARNEY_API
   void bnSetData(BNObject target, const char *param, BNData value)
   {
     if (!checkGet(target)->setData(checkGet(param),
@@ -641,7 +640,7 @@ namespace barney {
       checkGet(target)->warn_unsupported_member(param,"BNData");
   }
 
-  BN_API
+  BARNEY_API
   void bnSetObject(BNObject target, const char *param, BNObject value)
   {
     Object::SP asObject
@@ -653,49 +652,49 @@ namespace barney {
       checkGet(target)->warn_unsupported_member(param,"BNObject");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet1i(BNObject target, const char *param, int x)
   {
     if (!checkGet(target)->set1i(checkGet(param),x))
       checkGet(target)->warn_unsupported_member(param,"int");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet2i(BNObject target, const char *param, int x, int y)
   {
     if (!checkGet(target)->set2i(checkGet(param),vec2i(x,y)))
       checkGet(target)->warn_unsupported_member(param,"vec2i");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet3i(BNObject target, const char *param, int x, int y, int z)
   {
     if (!checkGet(target)->set3i(checkGet(param),vec3i(x,y,z)))
       checkGet(target)->warn_unsupported_member(param,"vec3i");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet3ic(BNObject target, const char *param, int3 value)
   {
     if (!checkGet(target)->set3i(checkGet(param),(const vec3i&)value))
       checkGet(target)->warn_unsupported_member(param,"vec3i");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet4i(BNObject target, const char *param, int x, int y, int z, int w)
   {
     if (!checkGet(target)->set4i(checkGet(param),vec4i(x,y,z,w)))
       checkGet(target)->warn_unsupported_member(param,"vec4i");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet1f(BNObject target, const char *param, float value)
   {
     if (!checkGet(target)->set1f(checkGet(param),value))
       checkGet(target)->warn_unsupported_member(param,"float");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet3f(BNObject target, const char *param, float x, float y, float z)
   {
     LOG_API_ENTRY;
@@ -703,28 +702,28 @@ namespace barney {
       checkGet(target)->warn_unsupported_member(param,"vec3f");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet4f(BNObject target, const char *param, float x, float y, float z, float w)
   {
     if (!checkGet(target)->set4f(checkGet(param),vec4f(x,y,z,w)))
       checkGet(target)->warn_unsupported_member(param,"vec4f");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet3fc(BNObject target, const char *param, float3 value)
   {
     if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
       checkGet(target)->warn_unsupported_member(param,"vec3f");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet4fc(BNObject target, const char *param, float4 value)
   {
     if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
       checkGet(target)->warn_unsupported_member(param,"vec4f");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet4x3fv(BNObject target, const char *param, const float *transform)
   {
     assert(transform);
@@ -732,7 +731,7 @@ namespace barney {
       checkGet(target)->warn_unsupported_member(param,"affine3f");
   }
 
-  BN_API
+  BARNEY_API
   void bnSet4x4fv(BNObject target, const char *param, const float *transform)
   {
     assert(transform);
@@ -746,7 +745,7 @@ namespace barney {
   
 
   
-  BN_API
+  BARNEY_API
   BNFrameBuffer bnFrameBufferCreate(BNContext context,
                                     int owningRank)
   {
@@ -755,7 +754,7 @@ namespace barney {
     return (BNFrameBuffer)fb;
   }
 
-  BN_API
+  BARNEY_API
   void bnFrameBufferResize(BNFrameBuffer fb,
                            int sizeX, int sizeY,
                            uint32_t channels)
@@ -764,7 +763,7 @@ namespace barney {
     checkGet(fb)->resize(vec2i{sizeX,sizeY},channels);
   }
 
-  BN_API
+  BARNEY_API
   void bnFrameBufferRead(BNFrameBuffer fb,
                          BNFrameBufferChannel channel,
                          void *hostPtr,
@@ -775,13 +774,13 @@ namespace barney {
   }
   
 
-  BN_API
+  BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)
   {
     checkGet(fb)->resetAccumulation();
   }
   
-  BN_API
+  BARNEY_API
   void bnRender(BNRenderer renderer,
                 BNModel    model,
                 BNCamera   camera,
@@ -799,7 +798,7 @@ namespace barney {
     // printf("time in %f\n",float((t_sum / (t1 - t_first))));
   }
 
-  BN_API
+  BARNEY_API
   BNContext bnContextCreate(/*! how many data slots this context is to
                               offer, and which part(s) of the
                               distributed model data these slot(s)

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "barney/Object.h"
-#include <barney.h>
 
 namespace barney {
 
