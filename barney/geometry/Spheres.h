@@ -31,10 +31,9 @@ namespace barney {
       // const vec4f *vertexAttribute[5];
     };
 
-    Spheres(Context *context, int slot);
+    Spheres(SlotContext *slotContext);
     
-    // static OWLGeomType createGeomType(DevGroup *device);
-    static rtc::GeomType *createGeomType(DevGroup *device);
+    static rtc::GeomType *createGeomType(rtc::Device *device);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override

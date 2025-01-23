@@ -114,7 +114,34 @@ embed_ptx(
   )
 
 set(BARNEY_SOURCES
-  # BEGIN
+    # actual geometry types
+  geometry/Geometry.h
+  geometry/Geometry.cpp
+  geometry/Spheres.h
+  geometry/Spheres.cpp
+  geometry/Triangles.h
+  geometry/Triangles.cpp
+  geometry/Cylinders.h
+  geometry/Cylinders.cpp
+  geometry/Capsules.h
+  geometry/Capsules.cpp
+  #  geometry/Cones.h
+  #  geometry/Cones.cpp
+  # volume data 
+  volume/Volume.h
+  volume/Volume.cpp
+  volume/ScalarField.h
+  volume/ScalarField.cpp
+  volume/MCAccelerator.h
+  volume/TransferFunction.h
+  volume/TransferFunction.cpp
+  volume/MCGrid.h
+  volume/MCGrid.cu
+  volume/MCAccelerator.h
+  # *structured* volumes
+  volume/StructuredData.h
+  volume/StructuredData.cu
+
   # samplers
   render/Sampler.h
   render/Sampler.cpp
@@ -154,6 +181,8 @@ set(BARNEY_SOURCES
   render/Renderer.cpp
   Group.h
   Group.cpp
+  render/GeometryAttributes.h
+  render/GeometryAttributes.cpp
 
   render/RayQueue.h
   render/RayQueue.cpp
@@ -188,58 +217,7 @@ set(BARNEY_SOURCES
   material/AnariPBR.cpp
   material/AnariMatte.h
   material/AnariMatte.cpp
-  #material/device/Material.h
-  #material/device/Velvet.h
-  #material/device/VisRTX.h
-  #material/device/Matte.h
-  #material/device/Blender.h
-  #material/device/Glass.h
-  #material/device/Metal.h
-  #material/device/Plastic.h
-  
-  #material/host/VisRTX.h
-  #material/host/VisRTX.cpp
-  #material/host/Velvet.h
-  #material/host/Velvet.cpp
-  #material/host/Plastic.h
-  #material/host/Plastic.cpp
-  #material/host/Matte.h
-  #material/host/Matte.cpp
-  #material/host/Blender.h
-  #material/host/Blender.cpp
-  #material/host/Glass.h
-  #material/host/Glass.cpp
-  #material/host/Metal.h
-  #material/host/Metal.cpp
-  #material/host/MetallicPaint.h
-  #material/host/MetallicPaint.cpp
-  # actual geometry types
-  geometry/Geometry.h
-  geometry/Geometry.cpp
-  geometry/Spheres.h
-  geometry/Spheres.cpp
-  geometry/Triangles.h
-  geometry/Triangles.cpp
-  geometry/Cylinders.h
-  geometry/Cylinders.cpp
-  geometry/Capsules.h
-  geometry/Capsules.cpp
-  #  geometry/Cones.h
-  #  geometry/Cones.cpp
-  # volume data 
-  volume/Volume.h
-  volume/Volume.cpp
-  volume/ScalarField.h
-  volume/ScalarField.cpp
-  volume/MCAccelerator.h
-  volume/TransferFunction.h
-  volume/TransferFunction.cpp
-  volume/MCGrid.h
-  volume/MCGrid.cu
-  volume/MCAccelerator.h
-  # *structured* volumes
-  volume/StructuredData.h
-  volume/StructuredData.cu
+
   # *unstructured* volumes
 
   

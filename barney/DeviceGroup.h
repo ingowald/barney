@@ -25,7 +25,7 @@ namespace barney {
   struct TiledFB;
   struct RayQueue;
   
-  typedef rtc::GeomType (*GeomTypeCreationFct)(rtc::Device *);
+  typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *);
                          
   struct GeomTypeRegistry {
     GeomTypeRegistry(rtc::Device *device);
@@ -34,21 +34,6 @@ namespace barney {
     std::map<std::string,rtc::GeomType *> geomTypes;
 
     rtc::Device *const device;    
-    // template<typename CreateGTLambda>
-    // // OWLGeomType
-    // rtc::GeomType *
-    // getOrCreateGeomTypeFor(const std::string &geomTypeString,
-    //                        const CreateGTLambda &createGT)
-    // {
-    //   std::lock_guard<std::mutex> lock(this->mutex);
-    //   rtc::GeomType *gt = geomTypes[geomTypeString];
-    //   if (gt)
-    //     return gt;
-      
-    //   gt = geomTypes[geomTypeString] = createGT(this);
-    //   programsDirty = true;
-    //   return gt;
-    // }
   };
 
   

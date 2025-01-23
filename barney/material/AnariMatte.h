@@ -17,6 +17,7 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/packedBSDF/NVisii.h"
 #include "barney/render/HitAttributes.h"
 #include "barney/material/Material.h"

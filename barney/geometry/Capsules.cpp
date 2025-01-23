@@ -16,45 +16,29 @@
 
 #include "barney/geometry/Capsules.h"
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
 namespace barney {
 
   extern "C" char Capsules_ptx[];
 
-  Capsules::Capsules(Context *context, int slot)
-    : Geometry(context,slot)
+  Capsules::Capsules(SlotContext *slotContext)
+    : Geometry(slotContext)
   {}
 
-  rtc::GeomType *Capsules::createGeomType(DevGroup *devGroup)
+  rtc::GeomType *Capsules::createGeomType(rtc::Device *device)
   {
-    if (DevGroup::logging())
+    if (Context::logging())
       std::cout << OWL_TERMINAL_GREEN
                 << "creating 'Capsules' geometry type"
                 << OWL_TERMINAL_DEFAULT << std::endl;
     
-    // std::vector<OWLVarDecl> params
-    //   = {
-    //   { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-    //   { "indices",  OWL_BUFPTR, OWL_OFFSETOF(DD,indices)  } 
-    // };
-    // Geometry::addVars(params,0);
-    // OWLModule module = owlModuleCreate
-    //   (devGroup->owl,Capsules_ptx);
-    // OWLGeomType gt = owlGeomTypeCreate
-    //   (devGroup->owl,OWL_GEOM_USER,sizeof(Capsules::DD),
-    //    params.data(), (int)params.size());
-    // owlGeomTypeSetBoundsProg(gt,module,"CapsulesBounds");
-    // owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CapsulesIsec");
-    // owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CapsulesCH");
-    // owlBuildPrograms(devGroup->owl);
-    
-    // return gt;
-    return devGroup->rtc->createUserGeomType("Capsules",
-                                             sizeof(Capsules::DD),
-                                             "CapsulesBounds",
-                                             "CapsulesIsec",
-                                             nullptr,
-                                             "CapsulesCH");
+    return device->createUserGeomType("Capsules",
+                                      sizeof(Capsules::DD),
+                                      "CapsulesBounds",
+                                      "CapsulesIsec",
+                                      nullptr,
+                                      "CapsulesCH");
   }
   
   void Capsules::commit()

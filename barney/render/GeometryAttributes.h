@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,13 +18,15 @@
 
 #include "barney/Object.h"
 #include "barney/render/floatN.h"
+#include "barney/common/Data.h"
+#include "barney/render/HitAttributes.h"
 
 namespace barney {
   namespace render {
       
     struct AttributeArray {
       struct DD {
-        inline __device__ float4 valueAt(int i, bool dbg=false) const;
+        inline __both__ float4 valueAt(int i, bool dbg=false) const;
           
         const void       *ptr;
         int/*BNDataType*/ type;
@@ -53,20 +55,20 @@ namespace barney {
       enum { count = numAttributes };
       struct DD {
         enum { count = numAttributes };
-        inline __device__ GeometryAttribute::DD &operator[](int i)
+        inline __both__ GeometryAttribute::DD &operator[](int i)
         { return attribute[i]; }
-        inline __device__ const GeometryAttribute::DD &operator[](int i) const
+        inline __both__ const GeometryAttribute::DD &operator[](int i) const
         { return attribute[i]; }
         GeometryAttribute::DD attribute[numAttributes];
         GeometryAttribute::DD colorAttribute;
       };
-      DD getDD(rtc::Device *device);
+      DD getDD(Device *device);
       GeometryAttribute attribute[numAttributes];
       GeometryAttribute colorAttribute;
     };
   
       
-    inline __device__
+    inline __both__
     float4 AttributeArray::DD::valueAt(int i, bool dbg) const
     {
       switch(this->type) {

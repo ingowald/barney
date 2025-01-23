@@ -26,6 +26,7 @@
 namespace barney {
   
   struct ModelSlot;
+  struct SlotContext;  
   using render::GeometryAttribute;
   using render::GeometryAttributes;
   using render::HostMaterial;
@@ -36,7 +37,7 @@ namespace barney {
     struct DD {
 
       template<typename InterpolatePerVertex>
-      inline __device__
+      inline __both__
       void setHitAttributes(render::HitAttributes &hit,
                             const InterpolatePerVertex &interpolate,
                             bool dbg=false) const;
@@ -45,10 +46,10 @@ namespace barney {
       int materialID;
     };
     
-    Geometry(Context *context, int slot);
+    Geometry(SlotContext *context);
     virtual ~Geometry();
 
-    static Geometry::SP create(Context *context, int slot, const std::string &type);
+    static Geometry::SP create(SlotContext *context, const std::string &type);
     
     // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
@@ -60,32 +61,30 @@ namespace barney {
     virtual void build() {}
 
     void setAttributesOn(Geometry::DD &dd,
-                         rtc::Device *device);
+                         Device *device);
     void writeDD(Geometry::DD &dd,
-                rtc::Device *device);
+                Device *device);
     
     // void setAttributesOn(OWLGeom geom);
 
-    bool set1f(const std::string &member, const float &value) override;
-    bool set3f(const std::string &member, const vec3f &value) override;
-    bool setData(const std::string &member, const Data::SP &value) override;
-    bool setObject(const std::string &member, const Object::SP &value) override;
+    bool set1f(const std::string &member,
+               const float &value) override;
+    bool set3f(const std::string &member,
+               const vec3f &value) override;
+    bool setData(const std::string &member,
+                 const Data::SP &value) override;
+    bool setObject(const std::string &member,
+                   const Object::SP &value) override;
     
     HostMaterial::SP getMaterial() const;
     void setMaterial(HostMaterial::SP);
 
-#if 1
     struct PLD {
       std::vector<rtc::Geom *>  triangleGeoms;
       std::vector<rtc::Geom *>  userGeoms;
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
-#else
-    std::vector<OWLGeom>  triangleGeoms;
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGroup> secondPassGroups;
-#endif
 
   private:
     render::HostMaterial::SP material;
@@ -94,12 +93,15 @@ namespace barney {
   };
 
   template<typename InterpolatePerVertex>
-  inline __device__
+  inline __both__
   void Geometry::DD::setHitAttributes(render::HitAttributes &hit,
                                       const InterpolatePerVertex &interpolate,
                                       bool dbg) const
   {
-    auto set = [&](float4 &out, const GeometryAttribute::DD &in,bool dbg=false) {
+    auto set = [&](float4 &out,
+                   const GeometryAttribute::DD &in,
+                   bool dbg=false)
+    {
       switch(in.scope) {
       case GeometryAttribute::INVALID:
         /* nothing - leave default */

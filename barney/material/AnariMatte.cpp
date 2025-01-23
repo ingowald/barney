@@ -24,7 +24,7 @@ namespace barney {
     {
       DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariMatte;
-      color.make(dd.anariMatte.color,deviceID);
+      dd.anariMatte.color = color.getDD(device);
       return dd;
     }
 
@@ -32,7 +32,8 @@ namespace barney {
 
       "color" = <Sampler>
      */
-    bool AnariMatte::setObject(const std::string &member, const Object::SP &value) 
+    bool AnariMatte::setObject(const std::string &member,
+                               const Object::SP &value) 
     {
       if (HostMaterial::setObject(member,value)) return true;
 
@@ -44,7 +45,8 @@ namespace barney {
     }
     
     
-    bool AnariMatte::setString(const std::string &member, const std::string &value) 
+    bool AnariMatte::setString(const std::string &member,
+                               const std::string &value) 
     {
       if (HostMaterial::setString(member,value)) return true;
 

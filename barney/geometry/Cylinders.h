@@ -36,7 +36,7 @@ namespace barney {
       // int colorPerVertex;
     };
     
-    Cylinders(Context *context, int slot);
+    Cylinders(SlotContext *slotContext);
     virtual ~Cylinders() = default;
     
     /*! pretty-printer for printf-debugging */
@@ -45,7 +45,7 @@ namespace barney {
     
     void commit() override;
     
-    static rtc::GeomType *createGeomType(DevGroup *devGroup);
+    static rtc::GeomType *createGeomType(rtc::Device *device);
 
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

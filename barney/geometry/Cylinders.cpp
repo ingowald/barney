@@ -16,123 +16,72 @@
 
 #include "barney/geometry/Cylinders.h"
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
 namespace barney {
 
   extern "C" char Cylinders_ptx[];
 
-  Cylinders::Cylinders(Context *context, int slot)
-    : Geometry(context,slot)
+  Cylinders::Cylinders(SlotContext *slotContext)
+    : Geometry(slotContext)
   {}
 
-  rtc::GeomType *Cylinders::createGeomType(DevGroup *devGroup)
+  rtc::GeomType *Cylinders::createGeomType(rtc::Device *device)
   // OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
   {
-    if (DevGroup::logging())
+    if (Context::logging())
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'Cylinders' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
 
-#if 1
-    return devGroup->rtc->createUserGeomType("Cylinders",
-                                        sizeof(Cylinders::DD),
-                                        "CylindersBounds",
-                                        "CylindersIsec",
-                                        "CylindersCH",
-                                        nullptr/*AH*/);
-                                        
-#else
-    // std::vector<OWLVarDecl> params
-    //   = {
-    //      { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
-    //      { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-    //      { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-    // };
-    // Geometry::addVars(params,0);
-    OWLModule module = owlModuleCreate
-      (devGroup->owl,Cylinders_ptx);
-    OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_USER,sizeof(Cylinders::DD),
-       params.data(), (int)params.size());
-    owlGeomTypeSetBoundsProg(gt,module,"CylindersBounds");
-    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CylindersIsec");
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CylindersCH");
-    owlBuildPrograms(devGroup->owl);
-    return gt;
-#endif
+    return device->createUserGeomType("Cylinders",
+                                      sizeof(Cylinders::DD),
+                                      "CylindersBounds",
+                                      "CylindersIsec",
+                                      "CylindersCH",
+                                      nullptr/*AH*/);
   }
   
   void Cylinders::commit()
   {
-    if (userGeoms.empty()) {
-      // OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
-      //   ("Cylinders",Cylinders::createGeomType);
-      rtc::GeomType *gt = getDevGroup()->getOrCreateGeomTypeFor
-        ("Cylinders",Cylinders::createGeomType);
-      // OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      rtc::Geom *geom = gt->createGeom();
-      geom->setPrimCount(indices->count);
-      userGeoms.push_back(geom);
-    }
-    // OWLGeom geom = userGeoms[0];
-    rtc::Geom *geom = userGeoms[0];
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      if (pld->userGeoms.empty()) {
+        rtc::GeomType *gt
+          = device->geomTypes.get("Cylinders",Cylinders::createGeomType);
+        rtc::Geom *geom = gt->createGeom();
+        geom->setPrimCount(indices->count);
+        pld->userGeoms.push_back(geom);
+      }
+      rtc::Geom *geom = pld->userGeoms[0];
 
-#if 1
-    DD dd;
-    for (auto device : getRTC()->devices) {
+      Cylinders::DD dd;
       Geometry::writeDD(dd,device);
-      dd.vertices = (vec3f*)getDD(device,vertices);
-        // = vertices
-        // ? vertices->getDD(device)
-        // : nullptr;
-      dd.indices  = (vec2i*)getDD(device,indices);
-        // ? indices->getDD(device)
-        // : nullptr;
-      dd.radii = (float*)getDD(device,radii);
-      //   = radii
-      //   ? radii->getDD(device)
-      //   : nullptr;
-      // Geometry::setAttributes(dd,device);
-      // setAttributes(dd,device);
-      // dd.material = getMaterial()->getDD(device);
-      geom->setDD(&dd,device);
+      dd.vertices = (vec3f*)(vertices?vertices->getDD(device):0);
+      dd.indices  = (vec2i*)(indices?indices->getDD(device):0);
+      dd.radii    = (float*)(radii?radii->getDD(device):0);
+      geom->setDD(&dd);
     }
-    
-#else
-    Geometry::commit();
-      
-    owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
-    owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
-    owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
-    assert(indices);
-    int numIndices = indices->count;
-    if (numIndices == 0)
-      std::cout << OWL_TERMINAL_RED
-                << "#bn.cylinders: warning - empty indices array"
-                << OWL_TERMINAL_DEFAULT
-                << std::endl;
-    owlGeomSetPrimCount(geom,numIndices);
-    
-    setAttributesOn(geom);
-    getMaterial()->setDeviceDataOn(geom);
-#endif
   } 
 
-  bool Cylinders::set1i(const std::string &member, const int &value)
+  bool Cylinders::set1i(const std::string &member,
+                        const int &value)
   {
     if (Geometry::set1i(member,value))
       return true;
     return false;
   }
   
-  bool Cylinders::set1f(const std::string &member, const float &value)
+  bool Cylinders::set1f(const std::string &member,
+                        const float &value)
   {
     if (Geometry::set1f(member,value))
       return true;
     return false;
   }
   
-  bool Cylinders::setData(const std::string &member, const Data::SP &value)
+  bool Cylinders::setData(const std::string &member,
+                          const Data::SP &value)
   {
     if (Geometry::setData(member,value))
       return true;
@@ -151,7 +100,8 @@ namespace barney {
     return false;
   }
 
-  bool Cylinders::setObject(const std::string &member, const Object::SP &value)
+  bool Cylinders::setObject(const std::string &member,
+                            const Object::SP &value)
   {
     if (Geometry::setObject(member,value))
       return true;

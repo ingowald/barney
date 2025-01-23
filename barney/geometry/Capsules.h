@@ -43,7 +43,7 @@ namespace barney {
       const vec2i *indices;
     };
     
-    Capsules(Context *context, int slot);
+    Capsules(SlotContext *slotContext);
     virtual ~Capsules() = default;
     
     /*! pretty-printer for printf-debugging */
@@ -52,7 +52,7 @@ namespace barney {
     
     void commit() override;
     
-    static rtc::GeomType *createGeomType(DevGroup *devGroup);
+    static rtc::GeomType *createGeomType(rtc::Device *device);
 
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

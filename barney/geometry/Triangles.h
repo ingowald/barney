@@ -45,7 +45,7 @@ namespace barney {
       // const vec4f *vertexAttribute[5];
     };
     
-    Triangles(Context *context, int slot);
+    Triangles(SlotContext *slotContext);
     virtual ~Triangles();
     
     /*! pretty-printer for printf-debugging */
@@ -55,11 +55,12 @@ namespace barney {
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     void commit() override;
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setData(const std::string &member,
+                 const Data::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
-    static rtc::GeomType *createGeomType(DevGroup *devGroup);
+    static rtc::GeomType *createGeomType(rtc::Device *device);
 
     PODData::SP vertices;
     PODData::SP indices;
