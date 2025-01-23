@@ -155,19 +155,22 @@ namespace barney {
     to a sampler to create a matching cudaTexture2D, or as a background
     image to a renderer */
   BN_API
-  BNTextureData bnTextureData2DCreate(BNContext context,
+  BNTextureData bnTextureData2DCreate(BNContext _context,
                                       int slot,
                                       BNDataType texelFormat,
                                       int width, int height,
                                       const void *texels)
   {
     LOG_API_ENTRY;
+    Context *context = checkGet(_context);
     TextureData::SP data
-      = std::make_shared<TextureData>(checkGet(context),slot,
-                                      texelFormat,vec3i(width,height,0),
+      = std::make_shared<TextureData>(context,
+                                      context->getDevices(slot),
+                                      texelFormat,
+                                      vec3i(width,height,0),
                                       texels);
     if (!data) return 0;
-    return (BNTextureData)checkGet(context)->initReference(data);
+    return (BNTextureData)context->initReference(data);
   }
 
   // // ------------------------------------------------------------------
@@ -194,7 +197,7 @@ namespace barney {
   
   // ------------------------------------------------------------------
   BN_API
-  BNTexture2D bnTexture2DCreate(BNContext context,
+  BNTexture2D bnTexture2DCreate(BNContext _context,
                                 int slot,
                                 BNDataType texelFormat,
                                 /*! number of texels in x dimension */
@@ -208,18 +211,24 @@ namespace barney {
                                 BNTextureColorSpace  colorSpace)
   {
     LOG_API_ENTRY;
-    assert(context);
+    Context *context = checkGet(_context);
+    auto devices = context->getDevices(slot);
+    TextureData::SP td
+      = std::make_shared<TextureData>(context,devices,
+                                      texelFormat,
+                                      vec3i(size_x,size_y,0),
+                                      texels);
     Texture::SP tex
-      = std::make_shared<Texture>(checkGet(context),slot,
-                                  texelFormat,vec2i(size_x,size_y),texels,
-                                  filterMode,
+      = std::make_shared<Texture>(context,devices,
+                                  td,filterMode,
                                   addressMode_x,addressMode_y,
                                   colorSpace);
-    return (BNTexture)checkGet(context)->initReference(tex);
+    
+    return (BNTexture)context->initReference(tex);
   }
 
   BN_API
-  BNTexture3D bnTexture3DCreate(BNContext context,
+  BNTexture3D bnTexture3DCreate(BNContext _context,
                                 int slot,
                                 BNDataType texelFormat,
                                 uint32_t size_x,
@@ -230,13 +239,18 @@ namespace barney {
                                 BNTextureAddressMode addressMode)
   {
     LOG_API_ENTRY;
+    Context *context = checkGet(_context);
+    auto devices = context->getDevices(slot);
+    TextureData::SP td
+      = std::make_shared<TextureData>(context,devices,
+                                      texelFormat,
+                                      vec3i(size_x,size_y,size_z),
+                                      texels);
     Texture3D::SP tex
-      = std::make_shared<Texture3D>
-      (checkGet(context),slot,
-       texelFormat,vec3i(size_x,size_y,size_z),texels,
-       filterMode,addressMode);
-    ;
-    return (BNTexture3D)checkGet(context)->initReference(tex);
+      = std::make_shared<Texture3D>(context,devices,
+                                    td,filterMode,addressMode);
+    
+    return (BNTexture3D)context->initReference(tex);
   }
   
   // ------------------------------------------------------------------
@@ -335,22 +349,29 @@ namespace barney {
   }  
   
   BN_API
-  BNScalarField bnScalarFieldCreate(BNContext context,
+  BNScalarField bnScalarFieldCreate(BNContext _context,
                                     int slot,
                                     const char *type)
   {
-    ScalarField::SP sf = ScalarField::create(checkGet(context),slot,type);
-    return (BNScalarField)checkGet(context)->initReference(sf);
+    Context *context = checkGet(_context);
+    ScalarField::SP sf
+      = ScalarField::create(context,
+                            context->getSlot(slot)->devices,
+                            type);
+    return (BNScalarField)context->initReference(sf);
   }
   
   
   BN_API
-  BNGeom bnGeometryCreate(BNContext context,
+  BNGeom bnGeometryCreate(BNContext _context,
                           int slot,
                           const char *type)
   {
-    Geometry::SP geom = Geometry::create(checkGet(context),slot,type);
-    return (BNGeom)checkGet(context)->initReference(geom);
+    Context *context = checkGet(_context);
+    Geometry::SP geom
+      = Geometry::create(context->getSlot(slot),
+                         type);
+    return (BNGeom)context->initReference(geom);
   }
 
   BN_API
@@ -362,24 +383,26 @@ namespace barney {
 
   
   BN_API
-  BNMaterial bnMaterialCreate(BNContext context,
+  BNMaterial bnMaterialCreate(BNContext _context,
                               int slot,
                               const char *type)
   {
+    Context *context = checkGet(_context);
     render::HostMaterial::SP material
-      = render::HostMaterial::create(checkGet(context),slot,type);
-    return (BNMaterial)checkGet(context)->initReference(material);
+      = render::HostMaterial::create(context->getSlot(slot),type);
+    return (BNMaterial)context->initReference(material);
   }
 
   BN_API
-  BNSampler bnSamplerCreate(BNContext context,
+  BNSampler bnSamplerCreate(BNContext _context,
                             int slot,
                             const char *type)
   {
+    Context *context = checkGet(_context);
     render::Sampler::SP sampler
-      = render::Sampler::create(checkGet(context),slot,type);
+      = render::Sampler::create(context->getSlot(slot),type);
     if (!sampler) return 0;
-    return (BNSampler)checkGet(context)->initReference(sampler);
+    return (BNSampler)context->initReference(sampler);
   }
 
   BN_API
@@ -420,25 +443,31 @@ namespace barney {
   }
 
   BN_API
-  BNLight bnLightCreate(BNContext context,
+  BNLight bnLightCreate(BNContext _context,
                         int slot,
                         const char *type)
   {
     LOG_API_ENTRY;
-    Light::SP light = Light::create(checkGet(context),slot,type);
-    return (BNLight)checkGet(context)->initReference(light);
+    Context *context = checkGet(_context);
+    Light::SP light = Light::create(context,
+                                    context->getDevices(slot),
+                                    type);
+    return (BNLight)context->initReference(light);
   }
 
   BN_API
-  BNData bnDataCreate(BNContext context,
+  BNData bnDataCreate(BNContext _context,
                       int slot,
                       BNDataType dataType,
                       size_t numItems,
                       const void *items)
   {
     LOG_API_ENTRY;
-    Data::SP data = Data::create(checkGet(context),slot,dataType,numItems,items);
-    return (BNData)checkGet(context)->initReference(data);
+    Context *context = checkGet(_context);
+    Data::SP data = Data::create(context,
+                                 context->getDevices(slot),
+                                 dataType,numItems,items);
+    return (BNData)context->initReference(data);
   }
 
 
@@ -539,14 +568,15 @@ namespace barney {
 
 
   BN_API
-  BNGroup bnGroupCreate(BNContext context,
+  BNGroup bnGroupCreate(BNContext _context,
                         int slot,
                         BNGeom *geoms, int numGeoms,
                         BNVolume *volumes, int numVolumes)
   {
     LOG_API_ENTRY;
     BARNEY_ENTER(__PRETTY_FUNCTION__);
-    // try {
+    Context *context = checkGet(_context);
+    auto devices = context->getDevices(slot);
     std::vector<Geometry::SP> _geoms;
     for (int i=0;i<numGeoms;i++)
       _geoms.push_back(checkGet(geoms[i])->as<Geometry>());
@@ -554,9 +584,9 @@ namespace barney {
     for (int i=0;i<numVolumes;i++)
       _volumes.push_back(checkGet(volumes[i])->as<Volume>());
     Group::SP group
-      = std::make_shared<Group>(checkGet(context),slot,
+      = std::make_shared<Group>(context,devices,
                                 _geoms,_volumes);
-    return (BNGroup)checkGet(context)->initReference(group);
+    return (BNGroup)context->initReference(group);
     // } catch (std::runtime_error error) {
     //   std::cerr << "@barney: Error in creating group: " << error.what()
     //             << "... going to return null group." << std::endl;

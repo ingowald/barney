@@ -114,6 +114,9 @@ embed_ptx(
   )
 
 set(BARNEY_SOURCES
+  # *structured* volumes
+  volume/StructuredData.h
+  volume/StructuredData.cu
     # actual geometry types
   geometry/Geometry.h
   geometry/Geometry.cpp
@@ -138,9 +141,6 @@ set(BARNEY_SOURCES
   volume/MCGrid.h
   volume/MCGrid.cu
   volume/MCAccelerator.h
-  # *structured* volumes
-  volume/StructuredData.h
-  volume/StructuredData.cu
 
   # samplers
   render/Sampler.h
