@@ -657,5 +657,11 @@ namespace barney {
   {
     return getPLD(device)->tiledFB.get();
   }
+
+  Device *FrameBuffer::getDenoiserDevice() const
+  {
+    return (*devices)[0];
+  }
+  
 }
   

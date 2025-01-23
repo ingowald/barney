@@ -27,6 +27,24 @@ namespace barney {
     }
 #endif
 
+
+    void Buffer::upload(const void *hostPtr,
+                  size_t numBytes,
+                  size_t ofs)
+    {
+      uploadAsync(hostPtr,numBytes,ofs);
+      device->sync();
+    }
+    
+    void Buffer::uploadAsync(const void *hostPtr,
+                              size_t numBytes,
+                              size_t ofs)
+    {
+      device->copyAsync(((uint8_t*)getDD())+ofs,hostPtr,numBytes);
+    }
+
+
+    
     int Backend::getDeviceCount()
     {
       return get()->numPhysicalDevices;

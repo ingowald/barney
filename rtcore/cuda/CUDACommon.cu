@@ -53,7 +53,7 @@ namespace barney {
     }
       
 
-    void BaseDevice::copyAsync(void *dst, void *src, size_t numBytes) 
+    void BaseDevice::copyAsync(void *dst, const void *src, size_t numBytes) 
     {
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
     }

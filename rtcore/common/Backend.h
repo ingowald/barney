@@ -119,7 +119,9 @@ namespace barney {
       } ColorSpace;
 
       Texture(TextureData *const data,
-              const TextureDesc &desc);
+              const TextureDesc &desc)
+        : Object(data->device), data(data)
+      {}
       
       const vec3i &getDims() const {
         return data->dims;
@@ -200,7 +202,7 @@ namespace barney {
       virtual void *allocHost(size_t numBytes) = 0;
       virtual void freeHost(void *mem) = 0;
       virtual void memsetAsync(void *mem,int value, size_t size) = 0;
-      virtual void copyAsync(void *dst, void *src, size_t size) = 0;
+      virtual void copyAsync(void *dst, const void *src, size_t size) = 0;
       
       // ==================================================================
       // kernels

@@ -347,7 +347,7 @@ namespace barney {
     
   }
   namespace rtc {
-    
+
     Backend *createBackend_optix()
     {
       PING;

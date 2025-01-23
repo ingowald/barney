@@ -26,6 +26,9 @@
 
 namespace barney {
 
+  Geometry::PLD *Geometry::getPLD(Device *device)
+  { return &perLogical[device->contextRank]; }
+
   Geometry::SP Geometry::create(SlotContext *context,
                                 const std::string &type)
   {

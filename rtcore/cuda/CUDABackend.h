@@ -36,7 +36,7 @@ namespace barney {
         restoreActive(saved);
       }
       
-      void copyAsync(void *dst, void *src, size_t numBytes) override;
+      void copyAsync(void *dst, const void *src, size_t numBytes) override;
       void *allocHost(size_t numBytes) override;
       void freeHost(void *mem) override;
       void memsetAsync(void *mem,int value, size_t size) override;

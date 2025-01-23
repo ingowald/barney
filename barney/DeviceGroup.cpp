@@ -21,8 +21,23 @@
 
 namespace barney {
 
-  extern "C" char traceRays_ptx[];
+  // extern "C" char traceRays_ptx[];
 
+  GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
+    : device(device)
+  {
+  }
+  
+  rtc::GeomType *GeomTypeRegistry::get(const std::string &name,
+                                       GeomTypeCreationFct callBack)
+  {
+    if (geomTypes.find(name) == geomTypes.end()) {
+      geomTypes[name] = callBack(device);
+    }
+    return geomTypes[name];
+  }
+
+  
   // Device::Device(rtc::Device *rtc,
   //                int contextRank,
   //                int contextSize,

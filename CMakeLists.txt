@@ -308,20 +308,21 @@ install(
 )
 
 if (BARNEY_MPI)
-install(
-  TARGETS barney_mpi
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  NAMELINK_SKIP
-  # on Windows put the dlls into bin
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  # ... and the import lib into the devel package
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+  install(
+    TARGETS barney_mpi
+    EXPORT barney_Exports
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    NAMELINK_SKIP
+    # on Windows put the dlls into bin
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    # ... and the import lib into the devel package
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
 endif()
 
 install(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/barney
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+  )
 
 

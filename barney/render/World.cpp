@@ -41,6 +41,11 @@ namespace barney {
     World::~World()
     {}
 
+    World::PLD *World::getPLD(Device *device)
+    {
+      return &perLogical[device->contextRank];
+    }
+    
     World::DD World::getDD(Device *device) 
     {
       PLD *pld = getPLD(device);
@@ -64,147 +69,13 @@ namespace barney {
       return dd;
     }
 
-    MaterialRegistry::MaterialRegistry(const DevGroup::SP &devices)
-      : devices(devices)
-    {
-      numReserved = 1;
-      perLogical.resize(devices->numLogical);
-      
-      for (auto device : *devices)
-        getPLD(device)->buffer
-          = device->rtc->createBuffer(numReserved*sizeof(DeviceMaterial));
-    }
 
-    MaterialRegistry::~MaterialRegistry()
-    {
-      // owlBufferRelease(buffer);
-      for (auto device : *devices)
-        device->rtc->free(getPLD(device)->buffer);
-    }
-    
-    void MaterialRegistry::grow()
-    {
-      size_t oldNumBytes = numReserved * sizeof(DeviceMaterial);
-      numReserved *= 2;
-      size_t newNumBytes = numReserved * sizeof(DeviceMaterial);
-      for (auto device : *devices) {
-      // ------------------------------------------------------------------
-      // save old materials
-      // ------------------------------------------------------------------
-        PLD *pld = getPLD(device);
-        rtc::Buffer *oldBuffer = pld->buffer;
-        auto rtc = device->rtc;
-        
-        rtc::Buffer *newBuffer
-          = rtc->createBuffer(newNumBytes);
-        rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
-        rtc->sync();
-        rtc->free(oldBuffer);
-        pld->buffer = newBuffer;
-      }
-    }
-
-    int MaterialRegistry::allocate()
-    {
-      if (!reusableIDs.empty()) {
-        int ID = reusableIDs.top();
-        reusableIDs.pop();
-        return ID;
-      }
-      if (nextFree == numReserved) grow();
-
-      return nextFree++;
-    }
-   
-    void MaterialRegistry::release(int nowReusableID)
-    {
-      reusableIDs.push(nowReusableID);
-    }
-  
-    void MaterialRegistry::setMaterial(int materialID,
-                                       const DeviceMaterial &dd,
-                                       Device *device)
-    {
-      // for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        pld->buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID);
-      // }
-    }
-
-
-
-    SamplerRegistry::SamplerRegistry(const DevGroup::SP &devices)
-      : devices(devices)
-    {
-      numReserved = 1;
-      perLogical.resize(devices->numLogical);
-      
-      for (auto device : *devices)
-        getPLD(device)->buffer
-          = device->rtc->createBuffer(numReserved*sizeof(Sampler::DD));
-    }
-
-    SamplerRegistry::~SamplerRegistry()
-    {
-      for (auto device : *devices)
-        device->rtc->freeBuffer(getPLD(device)->buffer);
-    }
-    
-    void SamplerRegistry::grow()
-    {
-      size_t oldNumBytes = numReserved * sizeof(Sampler::DD);
-      numReserved *= 2;
-      size_t newNumBytes = numReserved * sizeof(Sampler::DD);
-      
-      for (auto device : *devices) {
-        // ------------------------------------------------------------------
-        // save old samplers
-        // ------------------------------------------------------------------
-        PLD *pld = getPLD(device);
-        rtc::Buffer *oldBuffer = pld->buffer;
-        auto rtc = device->rtc;
-        
-        rtc::Buffer *newBuffer
-          = rtc->createBuffer(newNumBytes);
-        rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
-        rtc->sync();
-        rtc->free(oldBuffer);
-        pld->buffer = newBuffer;
-      }
-    }
-
-    int SamplerRegistry::allocate()
-    {
-      if (!reusableIDs.empty()) {
-        int ID = reusableIDs.top();
-        reusableIDs.pop();
-        return ID;
-      }
-      if (nextFree == numReserved) grow();
-
-      return nextFree++;
-    }
-   
-    void SamplerRegistry::release(int nowReusableID)
-    {
-      reusableIDs.push(nowReusableID);
-    }
-  
     // const Sampler::DD *SamplerRegistry::getPointer(int owlDeviceID) const
     // {
     //   // return (Sampler::DD *)owlBufferGetPointer(buffer,owlDeviceID);
     //   return (Sampler::DD *)owlBufferGetPointer(buffer,owlDeviceID);
     // }    
 
-    void SamplerRegistry::setDD(int samplerID,
-                                const Sampler::DD &dd,
-                                Device *device)
-    {
-      size_t offset = samplerID*sizeof(dd);
-      getPLD(device)->buffer->upload(&dd,sizeof(dd),offset);
-    }
-
-    
     void World::set(const std::vector<QuadLight::DD> &quadLights)
     {
       for (auto device : *devices) {

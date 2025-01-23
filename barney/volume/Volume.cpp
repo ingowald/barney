@@ -20,6 +20,9 @@
 
 namespace barney {
 
+  Volume::PLD *Volume::getPLD(Device *device)
+  { return &perLogical[device->contextRank]; }
+
   // OWLContext VolumeAccel::getOWL() const
   // { return sf->getOWL(); }
 

@@ -186,6 +186,10 @@ set(BARNEY_SOURCES
   render/RayQueue.cpp
   render/World.h
   render/World.cpp
+  render/MaterialRegistry.h
+  render/MaterialRegistry.cpp
+  render/SamplerRegistry.h
+  render/SamplerRegistry.cpp
   
   #  material/Globals.h
   #  material/Globals.cu
@@ -283,6 +287,8 @@ else()
     #  ${BARNEY_STATIC_DEPENDENCIES}
     $<BUILD_INTERFACE:barney_config>
     $<BUILD_INTERFACE:barney_rtc>
+    $<BUILD_INTERFACE:barney_rtc_cuda_common>
+    $<BUILD_INTERFACE:barney_rtc_optix>
     $<BUILD_INTERFACE:barney-spheres-ptx>
     )
 endif()
@@ -319,13 +325,25 @@ if (BARNEY_MPI)
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
     )
   target_link_libraries(barney_mpi PUBLIC
-    barney_config
-    barney_rtc
-    ${BARNEY_STATIC_DEPENDENCIES}
-#    owl::owl_static
+    barney
+#    barney_config
+#    barney_rtc
+#    ${BARNEY_STATIC_DEPENDENCIES}
+
+#    $<BUILD_INTERFACE:barney_config>
+#    $<BUILD_INTERFACE:barney_rtc>
+#    $<BUILD_INTERFACE:barney-spheres-ptx>
+
+    #    owl::owl_static
 #    ${CUBQL_LIB}
-    MPI::MPI_CXX
-#    barney-Spheres-ptx
+
+
+#MPI::MPI_CXX
+    $<BUILD_INTERFACE:MPI::MPI_CXX>
+
+
+
+    #    barney-Spheres-ptx
 #    barney-StructuredData-ptx
 #    barney-cylinders-ptx
 #    barney-capsules-ptx

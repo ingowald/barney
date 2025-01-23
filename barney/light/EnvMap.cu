@@ -20,6 +20,9 @@
 
 namespace barney {
 
+  EnvMapLight::PLD *EnvMapLight::getPLD(Device *device)
+  { return &perLogical[device->contextRank]; }
+
   /*! computes an importance sampling weight for each pixel; gets
     called with one thread per pixel, in a 2d launch */
   struct ComputeWeights_xy {
