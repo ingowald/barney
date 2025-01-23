@@ -40,28 +40,27 @@ namespace barney {
     SetActiveGPU forDuration(device);
     if (accumTiles)  {
       device->rtc->free(accumTiles);
-      // BARNEY_CUDA_CALL(Free(accumTiles));
-        accumTiles = nullptr;
+      accumTiles = nullptr;
     }
     if (compressedTiles) {
       device->rtc->free(compressedTiles);
-      // BARNEY_CUDA_CALL(Free(compressedTiles));
       compressedTiles = nullptr;
     }
     if (tileDescs) {
       device->rtc->free(tileDescs);
-      // BARNEY_CUDA_CALL(Free(tileDescs));
       tileDescs = nullptr;
     }
   }
 
   struct SetTileCoords {
+    /* kernel ARGS */
     TileDesc *tileDescs;
     int numActiveTiles;
     vec2i numTiles;
     int globalIndex;
     int globalIndexStep;
 
+    /* kernel CODE */
     template<typename RTCore>
     inline __device__ __host__
     void run(const RTCore &rtCore)

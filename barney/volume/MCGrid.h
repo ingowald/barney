@@ -79,7 +79,7 @@ namespace barney {
     
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-    DD getDD(const std::shared_ptr<Device> &device) const;
+    DD getDD(Device *device);
 
     // void setVariables(OWLGeom geom);
     
@@ -91,7 +91,7 @@ namespace barney {
     
     /*! given the current per-cell scalar ranges, map each such cell's
         range through the transfer functoin to compute a majorant */
-    void computeMajorants(const TransferFunction *xf);
+    void computeMajorants(TransferFunction *xf);
 
     /*! checks if this macro-cell grid has already been
         allocated/built - mostly for sanity checking nd debugging */
@@ -102,6 +102,9 @@ namespace barney {
       rtc::Buffer *scalarRangesBuffer = 0;
       /* buffer of floats, the actual per-cell majorants */
       rtc::Buffer *majorantsBuffer = 0;
+      
+      rtc::Compute *mapMCs = 0;
+      rtc::Compute *clearMCs = 0;
     };
     PLD *getPLD(Device *device) 
     { return &perLogical[device->contextRank]; } 
@@ -110,7 +113,7 @@ namespace barney {
     vec3i     dims { 0,0,0 };
     vec3f     gridOrigin;
     vec3f     gridSpacing;
-    DevGroup *const devices;
+    const DevGroup::SP devices;
   };
   
 }
