@@ -75,7 +75,7 @@ namespace barney {
       // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    MCGrid(DevGroup *devGroup);
+    MCGrid(const DevGroup::SP &devices);
     
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
@@ -96,15 +96,21 @@ namespace barney {
     /*! checks if this macro-cell grid has already been
         allocated/built - mostly for sanity checking nd debugging */
     inline bool built() const { return (dims != vec3i(0)); }
+
+    struct PLD {
+      /* buffer of range1f's, the min/max scalar values per cell */
+      rtc::Buffer *scalarRangesBuffer = 0;
+      /* buffer of floats, the actual per-cell majorants */
+      rtc::Buffer *majorantsBuffer = 0;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
     
-    /* buffer of range1f's, the min/max scalar values per cell */
-    rtc::Buffer *scalarRangesBuffer = 0;
-    /* buffer of floats, the actual per-cell majorants */
-    rtc::Buffer *majorantsBuffer = 0;
     vec3i     dims { 0,0,0 };
     vec3f     gridOrigin;
     vec3f     gridSpacing;
-    DevGroup *const devGroup;
+    DevGroup *const devices;
   };
   
 }

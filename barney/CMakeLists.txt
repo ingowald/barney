@@ -157,8 +157,6 @@ set(BARNEY_SOURCES
   DeviceContext.cpp
   Context.h
   Context.cpp
-  MultiPass.h
-  MultiPass.cpp
   DeviceGroup.h
   DeviceGroup.cpp
   LocalContext.h

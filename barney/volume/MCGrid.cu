@@ -18,16 +18,16 @@
 
 namespace barney {
 
-  MCGrid::MCGrid(DevGroup *devGroup)
-    : devGroup(devGroup)
+  MCGrid::MCGrid(const DevGroup::SP &devices)
+    : devices(devices)
   {
-    assert(devGroup);
-    scalarRangesBuffer
-      = devGroup->rtc->createBuffer(sizeof(float2));
-      // = owlDeviceBufferCreate(devGroup->owl,OWL_FLOAT2,1,nullptr);
-    majorantsBuffer
-      = devGroup->rtc->createBuffer(sizeof(float));
-      // = owlDeviceBufferCreate(devGroup->owl,OWL_FLOAT,1,nullptr);
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      pld->scalarRangesBuffer
+        = device->rtc->createBuffer(sizeof(float2));
+      pld->majorantsBuffer
+        = deice->rtc->createBuffer(sizeof(float));
+    }
   }
                             
   __global__ void g_clearMCs(MCGrid::DD grid)
@@ -45,9 +45,9 @@ namespace barney {
   {
     const vec3i bs = 4;
     const vec3i nb = divRoundUp(dims,bs);
-    for (auto dev : devGroup->devices) {
-      SetActiveGPU forDuration(dev);
-      BARNEY_CUDA_SYNC_CHECK();
+    for (auto device : *devices) {
+      BARNEY_NYI();
+#if 0
       auto d_grid = getDD(dev);
 #if 1
       CHECK_CUDA_LAUNCH
@@ -63,6 +63,7 @@ namespace barney {
         (d_grid);
 #endif
       BARNEY_CUDA_SYNC_CHECK();
+#endif
     }
   }
   
