@@ -17,10 +17,11 @@
 #include "barney/ModelSlot.h"
 
 namespace barney {
-  Group::Group(Context *context, int slot,
+  Group::Group(Context *context, 
+               const DevGroup::SP &devices, 
                const std::vector<Geometry::SP> &geoms,
                const std::vector<Volume::SP> &volumes)
-    : SlottedObject(context,slot),
+    : SlottedObject(context,devices),
       geoms(geoms),
       volumes(volumes)
   {}
@@ -54,22 +55,27 @@ namespace barney {
   std::string Group::toString() const 
   { return "Group"; }
 
+  Group::PLD *Group::getPLD(Device *device)
+  { return &perLogical[device->contextRank]; }
+
   void Group::freeAllGeoms()
   {
     // we should NOT call owlGeomRelease on these here: they do belong
     // to the Geometry's!
-    userGeoms.clear();
-    triangleGeoms.clear();
-    
-    if (triangleGeomGroup) {
-      // owlGroupRelease(triangleGeomGroup);
-      getRTC()->free(triangleGeomGroup);
-      triangleGeomGroup = 0;
-    }
-    if (userGeomGroup) {
-      // owlGroupRelease(userGeomGroup);
-      getRTC()->free(userGeomGroup);
-      userGeomGroup = 0;
+    // userGeoms.clear();
+    // triangleGeoms.clear();
+
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
+      if (pld->triangleGeomGroup) {
+        rtc->free(pld->triangleGeomGroup);
+        pld->triangleGeomGroup = 0;
+      }
+      if (pld->userGeomGroup) {
+        rtc->free(pld->userGeomGroup);
+        pld->userGeomGroup = 0;
+      }
     }
   }
   
@@ -77,50 +83,43 @@ namespace barney {
   {
     freeAllGeoms();
 
+    // ==================================================================
     // triangles and user geoms - for now always rebuild
+    // ==================================================================
     {
-      // userGeoms.clear();
-      // triangleGeoms.clear();
-      // if (triangleGeomGroup) {
-      //   owlGroupRelease(triangleGeomGroup);
-      //   triangleGeomGroup = 0;
-      // }
-      // if (userGeomGroup) {
-      //   owlGroupRelease(userGeomGroup);
-      //   userGeomGroup = 0;
-      // }
+      // first, let them all build/update themselves
       for (auto geom : geoms) {
         if (!geom) continue;
         geom->build();
-        for (auto g : geom->triangleGeoms)
-          triangleGeoms.push_back(g);
-        for (auto g : geom->userGeoms)
-          userGeoms.push_back(g);
-      }
-      if (!userGeoms.empty()) {
-        // userGeomGroup = owlUserGeomGroupCreate
-        //   (getOWL(),userGeoms.size(),userGeoms.data());
-        userGeomGroup
-          = getRTC()->createUserGeomsGroup(userGeoms);
-      }
-      if (userGeomGroup) {
-        userGeomGroup->buildAccel();
-        // owlGroupBuildAccel(userGeomGroup);
       }
       
-      if (!triangleGeoms.empty()) {
-        triangleGeomGroup
-          = getRTC()->createTrianglesGroup(triangleGeoms);
-        // triangleGeomGroup = owlTrianglesGeomGroupCreate
-        //   (getOWL(),triangleGeoms.size(),triangleGeoms.data());
-      }
-      if (triangleGeomGroup) {
-        triangleGeomGroup->buildAccel();
-        // owlGroupBuildAccel(triangleGeomGroup);
+      // now, do our stuff on a per-device basis
+      for (auto device : *devices) {
+        PLD *myPLD = getPLD(device);
+        for (auto geom : geoms) {
+          Geometry::PLD *geomPLD = geom->getPLD(device);
+          for (auto g : geomPLD->triangleGeoms)
+            myPLD->triangleGeoms.push_back(g);
+          for (auto g : geomPLD->userGeoms)
+            myPLD->userGeoms.push_back(g);
+        }
+        
+        if (!myPLD->userGeoms.empty()) {
+          myPLD->userGeomGroup
+            = device->rtc->createUserGeomsGroup(myPLD->userGeoms);
+          myPLD->userGeomGroup->buildAccel();
+        }
+        
+        if (!myPLD->triangleGeoms.empty()) {
+          myPLD->triangleGeomGroup
+            = device->rtc->createTrianglesGroup(myPLD->triangleGeoms);
+          myPLD->triangleGeomGroup->buildAccel();
+        }
       }
     }
-
+    // ==================================================================
     // volumes - these may need two passes
+    // ==================================================================
     {
       bool needRefit = false;
       bool needRebuild = false;
@@ -150,40 +149,51 @@ namespace barney {
         }
       }
       if (needRebuild) {
-        // std::cout << "#bn: running volume _build_ pass" << std::endl;
-        if (volumeGeomsGroup) {
-          // owlGroupRelease(volumeGeomsGroup);
-          getRTC()->free(volumeGeomsGroup);
-          volumeGeomsGroup = 0;
+        // ------------------------------------------------------------------
+        // clear all pld data
+        // ------------------------------------------------------------------
+        for (auto device : *devices) {
+          auto myPLD = getPLD(device);
+          auto rtc = device->rtc;
+          if (myPLD->volumeGeomsGroup) {
+            // owlGroupRelease(volumeGeomsGroup);
+            rtc->free(myPLD->volumeGeomsGroup);
+            myPLD->volumeGeomsGroup = 0;
+          }
+          myPLD->volumeGeoms.clear();
         }
-        volumeGeoms.clear();
+        // ------------------------------------------------------------------
+        // rebuidl the volumes themselves
+        // ------------------------------------------------------------------
         for (auto volume : volumes)
           if (volume)
             volume->build(true);
-        
-        // volumeGeomsGroup = owlUserGeomGroupCreate
-        //   (getOWL(),volumeGeoms.size(),volumeGeoms.data());
-        volumeGeomsGroup = getRTC()->createUserGeomsGroup(volumeGeoms);
-        // owlGroupBuildAccel(volumeGeomsGroup);
-        volumeGeomsGroup->buildAccel();
+        // ------------------------------------------------------------------
+        // and rebuild our pld data
+        // ------------------------------------------------------------------
+        for (auto device : *devices) {
+          PLD *myPLD = getPLD(device);
+          auto rtc = device->rtc;
+          for (auto volume : volumes)
+            Volume::PLD *volumePLD = volume->getPLD(device);
+          myPLD->volumeGeomsGroup
+            = rtc->createUserGeomsGroup(myPLD->volumeGeoms);
+          myPLD->volumeGeomsGroup->buildAccel();
+        }
       }
       
       if (needRefit) {
         // std::cout << "#bn: running volume _refit_ pass" << std::endl;
-        if (volumeGeomsGroup == 0)
-          throw std::runtime_error
-            ("somebody asked for refit, but there's no group yet!?");
         for (auto volume : volumes)
-          if (volume)
-            volume->build(false);
+          volume->build(false);
         // owlGroupRefitAccel(volumeGeomsGroup);
-        volumeGeomsGroup->refitAccel();
+        for (auto device : *devices) 
+          getPLD(device)->volumeGeomsGroup->refitAccel();
       }
-
-      for (auto volume : ownGroupVolumes) {
-        if (volume)
+      
+      for (auto volume : ownGroupVolumes) 
+        for (auto device : *devices) 
           volume->build(true);
-      }
     }
   }
   

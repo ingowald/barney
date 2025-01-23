@@ -14,9 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DeviceContext.h"
 #include "owl/owl_device.h"
 #include "barney/render/OptixGlobals.h"
+#include "barney/Context.h"
+#include "barney/GlobalModel.h"
+#include "barney/ModelSlot.h"
+#include "barney/render/SamplerRegistry.h"
+#include "barney/render/MaterialRegistry.h"
 
 // __constant__ barney::render::OptixGlobals optixLaunchParams;
 // // DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
@@ -56,6 +60,34 @@ namespace barney {
     };
     
   }
+
+
+  void Context::traceRaysLocally(GlobalModel *globalModel)
+  {
+    // ------------------------------------------------------------------
+    // launch all in parallel ...
+    // ------------------------------------------------------------------
+    for (auto model : globalModel->modelSlots)
+      for (auto device : *model->devices) {
+        barney::render::OptixGlobals dd;
+        auto ctx     = model->slotContext;
+        dd.rays      = device->rayQueue->traceAndShadeReadQueue;
+        dd.numRays   = device->rayQueue->numActive;
+        dd.world     = model->getInstanceAccel(device);
+        dd.materials = ctx->materialRegistry->getDD(device);
+        dd.samplers  = ctx->samplerRegistry->getDD(device);
+        
+        int bs = 1024;
+        int nb = divRoundUp(dd.numRays,bs);
+        device->traceRays->launch(vec2i(nb,bs),&dd);
+      }
+    
+    // ------------------------------------------------------------------
+    // ... and sync 'til all are done
+    // ------------------------------------------------------------------
+    syncCheckAll();
+  }
+
 }
 
 RTC_OPTIX_TRACE_KERNEL(traceRays,

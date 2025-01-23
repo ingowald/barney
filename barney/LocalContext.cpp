@@ -54,36 +54,29 @@ namespace barney {
       return false;
     }
 
-    const int numDevices = (int)devices.size();
+    const int numDevices = (int)allDevices->size();
     const int dgSize = numDevices / numSlots;
     std::vector<int> numCopied(numDevices);
-    for (int devID=0;devID<numDevices;devID++) {
-      auto thisDev = devices[devID];
-      SetActiveGPU forDuration(thisDev->device);
+    for (auto device : *allDevices) {
+      int devID = device->contextRank;
+      SetActiveGPU forDuration(device);
 
       int nextID = (devID + dgSize) % numDevices;
-      auto nextDev = devices[nextID];
+      auto nextDev = (*allDevices)[nextID];
 
-      int count = nextDev->rays.numActive;
-      numCopied[devID] = count;
-      Ray *src = nextDev->rays.traceAndShadeReadQueue;
-      Ray *dst = thisDev->rays.receiveAndShadeWriteQueue;
-      thisDev->device->rtc->copyAsync(dst,src,count*sizeof(Ray));
-      // BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
-      //                              cudaMemcpyDefault,
-      //                              thisDev->device->launchStream));
+      int count = nextDev->rayQueue->numActive;
+      numCopied[nextID] = count;
+      Ray *src = nextDev->rayQueue->traceAndShadeReadQueue;
+      Ray *dst = device->rayQueue->receiveAndShadeWriteQueue;
+      device->rtc->copyAsync(dst,src,count*sizeof(Ray));
     }
 
-    for (auto dev : devices) dev->sync();
-
-    for (int devID=0;devID<numDevices;devID++) {
-      auto thisDev = devices[devID];
-      thisDev->sync();
-      thisDev->rays.swap();
-      thisDev->rays.numActive = numCopied[devID];
+    for (auto device : *allDevices) {
+      int devID = device->contextRank;
+      device->sync();
+      device->rayQueue->swap();
+      device->rayQueue->numActive = numCopied[devID];
     }
-
-    for (auto dev : devices) dev->sync();
 
     ++numTimesForwarded;
     return (numTimesForwarded % numSlots) != 0;
@@ -99,11 +92,11 @@ namespace barney {
 
     // render all tiles, in tile format and writing into accum buffer
     renderTiles(renderer,model,camera,fb);
-    for (auto dev : devices) dev->sync();
+    syncCheckAll();
 
     // convert all tiles from accum to RGBA
     finalizeTiles(fb);
-    for (auto dev : devices) dev->sync();
+    syncCheckAll();
 
     // ------------------------------------------------------------------
     // done rendering, let the frame buffer know about it, so it can

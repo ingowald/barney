@@ -29,42 +29,49 @@ namespace barney {
   struct Texture;
   struct Data;
   struct Light;
-  
 
-  struct ModelSlot : public Object {
+  struct SlotContext;
+
+  struct ModelSlot : public SlottedObject {
     typedef std::shared_ptr<ModelSlot> SP;
 
     ModelSlot(GlobalModel *model,
               /*! index with which the given rank's context will refer
                   to this _locally_; not the data rank in it */
-              int slotIndex);
+              int slotID);
     virtual ~ModelSlot();
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
     
-    // OWLContext getOWL() const;
-    rtc::DevGroup *getRTC() const;
-
     static SP create(GlobalModel *model, int localID);
 
     void setInstances(std::vector<Group::SP> &groups,
                       const affine3f *xfms);
-    
+
     struct {
       std::vector<Group::SP> groups;
       std::vector<affine3f>  xfms;
       //      OWLGroup group = 0;
-      rtc::Group *group = 0;
     } instances;
+
+    rtc::device::AccelHandle getInstanceAccel(Device *device)
+    { return getPLD(device)->instanceGroup->getDD(); }
+    struct PLD {
+      rtc::Group *instanceGroup = 0;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
 
     void build();
 
-    render::World::SP world;
-    // MultiPass::Instances multiPassInstances;
-    DevGroup::SP   const devGroup;
+    // ------------------------------------------------------------------
+    // do not change order of these:
+    // ------------------------------------------------------------------
+    int            const slotID;
     GlobalModel   *const model;
-    int            const localID;
+    SlotContext   *const slotContext;
+    render::World::SP world;
 
   };
   

@@ -28,7 +28,7 @@ namespace barney {
   
   inline __both__ float from_8bit(uint8_t v) {
     return float(v) * (1.f/255.f);
-   }
+  }
   
   inline __device__ vec4f from_8bit(uint32_t v) {
     return vec4f(from_8bit(uint8_t((v >> 0)&0xff)),
@@ -87,6 +87,7 @@ namespace barney {
       BARNEY_CUDA_SYNC_CHECK();
     }
   };
+
 
 #if !BARNEY_DISABLE_DENOISING
 #if BARNEY_HAVE_OIDN
@@ -154,7 +155,7 @@ namespace barney {
       // oidnSetFilterImage(filter,"normal",normalBuf,
       //                    OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,0,0);
       // oidnSetFilterImage(filter,"albedo",normalBuf,
-                         // OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,0,0);
+      // OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,0,0);
       oidnSetFilterImage(filter,"output",outputBuf,
                          OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,0,0);
       oidnSetFilterBool(filter,"hdr",true);
@@ -363,10 +364,10 @@ namespace barney {
     : Object(context),
       isOwner(isOwner)
   {
-    perDev.resize(context->devices.size());
-    for (int localID=0;localID<context->devices.size();localID++) {
-      perDev[localID]
-        = TiledFB::create(context->getDevice(localID),this);
+    perLogical.resize(devices->numLogical);
+    for (auto device : *devices) {
+      getPLD(device)->tiledFB
+        = TiledFB::create(device,this);
     }
   }
 
@@ -462,6 +463,14 @@ namespace barney {
   }
 
 
+  void FrameBuffer::finalizeTiles()
+  {
+    for (auto device : *devices) 
+      getFor(device)->finalizeTiles_launch();
+    for (auto device : *devices)
+      device->sync();
+  }
+  
   void FrameBuffer::finalizeFrame()
   {
     dirty = true;
@@ -469,7 +478,6 @@ namespace barney {
     if (isOwner) {
       unpackTiles();
     }
-    
   }
 
 
@@ -600,7 +608,7 @@ namespace barney {
       uint32_t *asFixed8;
       BARNEY_CUDA_SYNC_CHECK();
       BARNEY_CUDA_CALL(Malloc((void**)&asFixed8,
-                                   numPixels.x*numPixels.y*sizeof(uint32_t)));
+                              numPixels.x*numPixels.y*sizeof(uint32_t)));
       BARNEY_CUDA_SYNC_CHECK();
       vec2i bs(8,8);
       CHECK_CUDA_LAUNCH(toFixed8<true>,
@@ -622,28 +630,32 @@ namespace barney {
   void FrameBuffer::resize(vec2i size,
                            uint32_t channels)
   {
-    for (auto &pd: perDev)
-      pd->resize(size);
+    for (auto device : *devices)
+      getFor(device)->resize(size);
     
     freeResources();
     numPixels = size;
 
     if (isOwner) {
-      BARNEY_CUDA_CALL(Malloc(&denoisedColor,
-                              numPixels.x*numPixels.y*sizeof(*denoisedColor)));
-      BARNEY_CUDA_CALL(Malloc(&linearDepth,
-                              numPixels.x*numPixels.y*sizeof(*linearDepth)));
-      BARNEY_CUDA_CALL(Malloc(&linearColor,
-                              numPixels.x*numPixels.y*sizeof(*linearColor)));
-      BARNEY_CUDA_CALL(Malloc(&linearAlpha,
-                              numPixels.x*numPixels.y*sizeof(*linearAlpha)));
-      BARNEY_CUDA_CALL(Malloc(&linearNormal,
-                              numPixels.x*numPixels.y*sizeof(*linearNormal)));
+      auto rtc = getDenoiserDevice()->rtc;
+      int np = numPixels.x*numPixels.y;
+      denoisedColor = (float4*)rtc->alloc(np*sizeof(*denoisedColor));
+      linearDepth   = (float *)rtc->alloc(np*sizeof(*linearDepth));
+      linearColor   = (vec3f *)rtc->alloc(np*sizeof(*linearColor));
+      linearAlpha   = (float *)rtc->alloc(np*sizeof(*linearAlpha));
+      linearNormal  = (vec3f *)rtc->alloc(np*sizeof(*linearNormal));
       
       if (!denoiser) denoiser = Denoiser::create(this);
       denoiser->resize();
     }
   }
     
-
+  FrameBuffer::PLD *FrameBuffer::getPLD(Device *device) 
+  { return &perLogical[device->contextRank]; }
+  
+  TiledFB *FrameBuffer::getFor(Device *device)
+  {
+    return getPLD(device)->tiledFB.get();
+  }
 }
+  

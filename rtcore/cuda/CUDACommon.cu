@@ -9,11 +9,6 @@ namespace barney {
       BARNEY_CUDA_CALL(GetDeviceCount(&numPhysicalDevices));
     }
     
-    BaseDevGroup::BaseDevGroup(BaseBackend *backend,
-                               const std::vector<int> &gpuIDs)
-      : rtc::DevGroup(backend)
-    {}
-    
     int BaseDevice::setActive() const
     {
       int oldActive = 0;
@@ -69,42 +64,41 @@ namespace barney {
     }
       
 
-    TextureData::TextureData(const BaseDevGroup *dg,
+    TextureData::TextureData(BaseDevice *device,
                              vec3i dims,
-                             rtc::TextureData::Format format,
+                             rtc::DataType format,
                              const void *texels)
-      : rtc::TextureData(dims,format)
+      : rtc::TextureData(device,dims,format)
     {
       cudaChannelFormatDesc desc;
       size_t sizeOfScalar;
       size_t numScalarsPerTexel;
       switch (format) {
-      case TextureData::FLOAT:
+      case rtc::FLOAT:
         desc         = cudaCreateChannelDesc<float>();
         sizeOfScalar = 4;
         readMode     = cudaReadModeElementType;
         numScalarsPerTexel = 1;
         break;
-      case TextureData::FLOAT4:
+      case rtc::FLOAT4:
         desc         = cudaCreateChannelDesc<float4>();
         sizeOfScalar = 4;
         readMode     = cudaReadModeElementType;
         numScalarsPerTexel = 4;
         break;
-      case TextureData::UCHAR:
+      case rtc::UCHAR:
         desc         = cudaCreateChannelDesc<uint8_t>();
         sizeOfScalar = 1;
          readMode     = cudaReadModeNormalizedFloat;
          numScalarsPerTexel = 1;
         break;
-      case TextureData::UCHAR4:
-        PING;
+      case rtc::UCHAR4:
         desc         = cudaCreateChannelDesc<uchar4>();
         sizeOfScalar = 1;
         readMode     = cudaReadModeNormalizedFloat;
         numScalarsPerTexel = 4;
         break;
-      case TextureData::USHORT:
+      case rtc::USHORT:
         desc         = cudaCreateChannelDesc<uint16_t>();
         sizeOfScalar = 2;
         readMode     = cudaReadModeNormalizedFloat;
@@ -114,63 +108,52 @@ namespace barney {
         BARNEY_NYI();
       };
       
-      perDev.resize(dg->devices.size());
-      for (auto dev : dg->devices) {
-        auto &dd = perDev[dev->localID];
-        SetActiveGPU forDuration(dev);
+      SetActiveGPU forDuration(device);
 
-        if (dims.z != 0) {
-          unsigned int padded_x = (unsigned)dims.x;
-          unsigned int padded_y = std::max(1u,(unsigned)dims.y);
-          unsigned int padded_z = std::max(1u,(unsigned)dims.z);
-          cudaExtent extent{padded_x,padded_y,padded_z};
-          PRINT(padded_x);
-          PRINT(padded_y);
-          PRINT(padded_z);
-          PRINT(numScalarsPerTexel);
-          PRINT(sizeOfScalar);
-          BARNEY_CUDA_CALL(Malloc3DArray(&dd.array,&desc,extent,0));
-          cudaMemcpy3DParms copyParms;
-          memset(&copyParms,0,sizeof(copyParms));
-          copyParms.srcPtr
-            = make_cudaPitchedPtr((void *)texels,
-                                  (size_t)padded_x*sizeOfScalar*numScalarsPerTexel,
-                                  (size_t)padded_x,
-                                  (size_t)padded_y);
-          copyParms.dstArray = dd.array;
-          copyParms.extent   = extent;
-          copyParms.kind     = cudaMemcpyHostToDevice;
-          BARNEY_CUDA_CALL(Memcpy3D(&copyParms));
-        } else if (dims.y != 0) {
-          PRINT(dims);
-          BARNEY_CUDA_CALL(MallocArray(&dd.array,&desc,dims.x,dims.y,0));
-          BARNEY_CUDA_CALL(Memcpy2DToArray(dd.array,0,0,
-                                           (void *)texels,
-                                           (size_t)dims.x*sizeOfScalar*numScalarsPerTexel,
-                                           (size_t)dims.x*sizeOfScalar*numScalarsPerTexel,
-                                           (size_t)dims.y,
-                                           cudaMemcpyHostToDevice));
-        } else {
-          BARNEY_NYI();
-        }
+      if (dims.z != 0) {
+        unsigned int padded_x = (unsigned)dims.x;
+        unsigned int padded_y = std::max(1u,(unsigned)dims.y);
+        unsigned int padded_z = std::max(1u,(unsigned)dims.z);
+        cudaExtent extent{padded_x,padded_y,padded_z};
+        PRINT(padded_x);
+        PRINT(padded_y);
+        PRINT(padded_z);
+        PRINT(numScalarsPerTexel);
+        PRINT(sizeOfScalar);
+        BARNEY_CUDA_CALL(Malloc3DArray(&array,&desc,extent,0));
+        cudaMemcpy3DParms copyParms;
+        memset(&copyParms,0,sizeof(copyParms));
+        copyParms.srcPtr
+          = make_cudaPitchedPtr((void *)texels,
+                                (size_t)padded_x*sizeOfScalar*numScalarsPerTexel,
+                                (size_t)padded_x,
+                                (size_t)padded_y);
+        copyParms.dstArray = array;
+        copyParms.extent   = extent;
+        copyParms.kind     = cudaMemcpyHostToDevice;
+        BARNEY_CUDA_CALL(Memcpy3D(&copyParms));
+      } else if (dims.y != 0) {
+        PRINT(dims);
+        BARNEY_CUDA_CALL(MallocArray(&array,&desc,dims.x,dims.y,0));
+        BARNEY_CUDA_CALL(Memcpy2DToArray(array,0,0,
+                                         (void *)texels,
+                                         (size_t)dims.x*sizeOfScalar*numScalarsPerTexel,
+                                         (size_t)dims.x*sizeOfScalar*numScalarsPerTexel,
+                                         (size_t)dims.y,
+                                         cudaMemcpyHostToDevice));
+      } else {
+        BARNEY_NYI();
       }
     }
     
     rtc::TextureData *
-    BaseDevGroup::createTextureData(vec3i dims,
-                                    rtc::TextureData::Format format,
-                                    const void *texels) const
+    BaseDevice::createTextureData(vec3i dims,
+                                  rtc::DataType format,
+                                  const void *texels) 
     {
       return new TextureData(this,dims,format,texels);
     }
 
-    // inline cudaTextureReadMode toCUDA(rtc::Texture::ReadMode mode)
-    // {
-    //   return (mode == rtc::Texture::NORMALIZED_FLOAT)
-    //     ? cudaReadModeNormalizedFloat
-    //     : cudaReadModeElementType;
-    // }
-    
     inline cudaTextureFilterMode toCUDA(rtc::Texture::FilterMode mode)
     {
       return (mode == rtc::Texture::FILTER_MODE_POINT)
@@ -194,70 +177,43 @@ namespace barney {
       return cudaAddressModeMirror;
     }
 
-    Texture::Texture(const BaseDevGroup *dg,
-                     TextureData *data,
-                     rtc::Texture::FilterMode filterMode,
-                     rtc::Texture::AddressMode addressModes[3],
-                     const vec4f borderColor,
-                     bool normalizedCoords,
-                     rtc::Texture::ColorSpace colorSpace)
-      : rtc::Texture(data)
+    Texture::Texture(TextureData *data,
+                     const rtc::TextureDesc &desc)
+      : rtc::Texture(data,desc)
     {
-      perDev.resize(dg->devices.size());
-      for (auto dev : dg->devices) {
-        auto &dd = perDev[dev->localID];
-        auto &dataDD
-          = data->perDev[dev->localID];
-        cudaResourceDesc resourceDesc;
-        memset(&resourceDesc,0,sizeof(resourceDesc));
-        resourceDesc.resType         = cudaResourceTypeArray;
-        resourceDesc.res.array.array = dataDD.array;
-        
-        cudaTextureDesc textureDesc;
-        memset(&textureDesc,0,sizeof(textureDesc));
-        textureDesc.addressMode[0] = toCUDA(addressModes[0]);
-        textureDesc.addressMode[1] = toCUDA(addressModes[1]);
-        textureDesc.addressMode[2] = toCUDA(addressModes[2]);
-        textureDesc.filterMode     = toCUDA(filterMode);
-        textureDesc.readMode       = data->readMode;
-        PING; PRINT((int)textureDesc.readMode);
-        PRINT(cudaReadModeNormalizedFloat);
-        PRINT(cudaReadModeElementType);
-        textureDesc.borderColor[0] = borderColor.x;
-        textureDesc.borderColor[1] = borderColor.y;
-        textureDesc.borderColor[2] = borderColor.z;
-        textureDesc.borderColor[3] = borderColor.w;
-        textureDesc.normalizedCoords = normalizedCoords;
-        PRINT(normalizedCoords);
-        
-        BARNEY_CUDA_CALL(CreateTextureObject(&dd,
-                                             &resourceDesc,
-                                             &textureDesc,0));
-        std::cout << "created texture object : " << (int*)dd << std::endl;
-      }
-    }
-    
-    
-    rtc::device::TextureObject
-    Texture::getDD(const rtc::Device *device) const
-    {
-      cudaTextureObject_t to = perDev[device->localID];
-      return (const rtc::device::TextureObject&)to;
-    }
-    
-    rtc::Texture *
-    BaseDevGroup::createTexture(rtc::TextureData *data,
-                                rtc::Texture::FilterMode filterMode,
-                                rtc::Texture::AddressMode addressModes[3],
-                                const vec4f borderColor,
-                                bool normalizedCoords,
-                                rtc::Texture::ColorSpace colorSpace) const
-    {
-      return new Texture(this,(TextureData*)data,
-                         filterMode,addressModes,
-                         borderColor,normalizedCoords,colorSpace);
+      cudaResourceDesc resourceDesc;
+      memset(&resourceDesc,0,sizeof(resourceDesc));
+      resourceDesc.resType         = cudaResourceTypeArray;
+      resourceDesc.res.array.array = data->array;
+      
+      cudaTextureDesc textureDesc;
+      memset(&textureDesc,0,sizeof(textureDesc));
+      textureDesc.addressMode[0] = toCUDA(desc.addressMode[0]);
+      textureDesc.addressMode[1] = toCUDA(desc.addressMode[1]);
+      textureDesc.addressMode[2] = toCUDA(desc.addressMode[2]);
+      textureDesc.filterMode     = toCUDA(desc.filterMode);
+      textureDesc.readMode       = data->readMode;
+      textureDesc.borderColor[0] = desc.borderColor.x;
+      textureDesc.borderColor[1] = desc.borderColor.y;
+      textureDesc.borderColor[2] = desc.borderColor.z;
+      textureDesc.borderColor[3] = desc.borderColor.w;
+      textureDesc.normalizedCoords = desc.normalizedCoords;
+      
+      BARNEY_CUDA_CALL(CreateTextureObject(&textureObject,
+                                           &resourceDesc,
+                                           &textureDesc,0));
+      std::cout << "created texture object : "
+                << (int*)textureObject << std::endl;
     }
 
+    rtc::Texture *
+    TextureData::createTexture(const rtc::TextureDesc &desc) 
+    {
+      return new Texture(this,desc);
+    }
+
+    
+    
   }
 }
 

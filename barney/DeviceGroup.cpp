@@ -17,35 +17,35 @@
 #include "barney/DeviceGroup.h"
 #include "barney/DeviceContext.h"
 #include "barney/render/OptixGlobals.h"
+#include "barney/Context.h"
 
 namespace barney {
 
   extern "C" char traceRays_ptx[];
 
-  Device::Device(DevGroup *devGroup,
-                 rtc::Device *rtc,
-                 int contextRank,
-                 int contextSize,
-                 // int cudaID,
-                 // int owlID,
-                 int globalIndex,
-                 int globalIndexStep)
-    : contextRank(contextRank),
-      contextSize(contextSize),
-      // cudaID(cudaID),
-      // owlID(owlID),
-      devGroup(devGroup),
-      rtc(rtc),
-      // launchStream(devGroup?owlContextGetStream(devGroup->owl,owlID):0),
-      globalIndex(globalIndex),
-      globalIndexStep(globalIndexStep)
-  {
-  }
+  // Device::Device(rtc::Device *rtc,
+  //                int contextRank,
+  //                int contextSize,
+  //                // int cudaID,
+  //                // int owlID,
+  //                int globalIndex,
+  //                int globalIndexStep)
+  //   : contextRank(contextRank),
+  //     contextSize(contextSize),
+  //     // cudaID(cudaID),
+  //     // owlID(owlID),
+  //     rtc(rtc),
+  //     // launchStream(devGroup?owlContextGetStream(devGroup->owl,owlID):0),
+  //     globalIndex(globalIndex),
+  //     globalIndexStep(globalIndexStep),
+  //     geomTypes(rtc)
+  // {
+  // }
 
-  void DevGroup::update()
+  void Device::syncPipelineAndSBT()
   {
     if (programsDirty) {
-      if (DevGroup::logging())
+      if (Context::logging())
         std::cout << "rebuilding owl programs and pipeline..." << std::endl;
       // owlBuildPrograms(owl);
       // owlBuildPipeline(owl);
@@ -66,6 +66,38 @@ namespace barney {
     }
   }
 
+  DevGroup::DevGroup(const std::vector<Device*> &devices,
+                     int numLogical)
+    : std::vector<Device *>(devices),
+      numLogical(numLogical)
+  {}
+
+
+  Device::Device(rtc::Device *rtc,
+                 int contextRank,
+                 int contextSize,
+                 int globalIndex,
+                 int globalIndexStep)
+    : contextRank(contextRank),
+      contextSize(contextSize),
+      globalIndex(globalIndex),
+      globalIndexStep(globalIndexStep),rtc(rtc),
+      geomTypes(rtc)
+  {
+    setTileCoords
+      = rtc->createCompute("setTileCoords");
+    compressTiles
+      = rtc->createCompute("compressTiles");
+    generateRays
+      = rtc->createCompute("generateRays");
+    shadeRays
+      = rtc->createCompute("shadeRays");
+    traceRays
+      = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
+  }
+    
+  
+#if 0
   DevGroup::DevGroup(int lmsIdx,
                      const std::vector<int> &contextRanks,
                      int contextSize,
@@ -101,12 +133,13 @@ namespace barney {
     traceRaysKernel
       = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
   }
+#endif
 
-  DevGroup::~DevGroup()
-  {
-    std::cout << "DEVGROUP DESTROYING context " << (int*)rtc << std::endl;
-    rtc->destroy();
-    rtc = nullptr;
-  }
+  // DevGroup::~DevGroup()
+  // {
+  //   std::cout << "DEVGROUP DESTROYING context " << (int*)rtc << std::endl;
+  //   rtc->destroy();
+  //   rtc = nullptr;
+  // }
   
 }

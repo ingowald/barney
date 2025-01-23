@@ -100,13 +100,17 @@ namespace barney {
     // ------------------------------------------------------------------
     
     // void setVariables(OWLGeom geom) override;
-    void writeDD(DD &dd, rtc::Device *device);
+    void writeDD(DD &dd, Device *device);
     VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 
     Texture3D::SP  texture;
     Texture3D::SP  colorMapTexture;
-    rtc::ComputeKernel *computeMCsKernel = 0;
+
+    struct PerLogical {
+      rtc::Compute *computeMCs = 0;
+    };
+    std::vector<PerLogical> logical;
     BNDataType   scalarType = BN_DATA_UNDEFINED;
     vec3i numScalars  { 0,0,0 };
     vec3i numCells    { 0,0,0 }; 

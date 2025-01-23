@@ -26,7 +26,10 @@
 #include "barney/light/QuadLight.h"
 
 namespace barney {
+  struct SlotContext;
+  
   namespace render {
+
     struct DeviceMaterial;
     struct HostMaterial;
 
@@ -66,30 +69,33 @@ namespace barney {
         const DeviceMaterial *materials;
         const Sampler::DD    *samplers;
         
-        EnvMapLight::DD   envMapLight;
-        // Globals::DD     globals;
+        EnvMapLight::DD       envMapLight;
       };
-      EnvMapLight::SP envMapLight;
+      struct {
+        EnvMapLight::SP light;
+        affine3f        xfm;
+      } envMapLight;
 
-      World(DevGroup::SP devGroup);
+      World(SlotContext *slotContext);
       virtual ~World();
 
       void set(const std::vector<QuadLight::DD> &quadLights);
       void set(const std::vector<DirLight::DD> &dirLights);
-      void set(EnvMapLight::SP envMapLight);
+      void set(EnvMapLight::SP envMapLight, const affine3f &xfm);
 
-      DD getDD(const Device::SP &device) const;
+      DD getDD(Device *device);
+
+      struct PLD {
+        rtc::Buffer *quadLightsBuffer = 0;
+        int numQuadLights = 0;
+        rtc::Buffer *dirLightsBuffer = 0;
+        int numDirLights = 0;
+      };
+      PLD *getPLD(Device *device);
       
-      rtc::DevGroup *getRTC() const { return devGroup->rtc; }
-
-      // Globals globals;
-      // OWLBuffer quadLightsBuffer = 0;
-      rtc::Buffer *quadLightsBuffer = 0;
-      int numQuadLights = 0;
-      // OWLBuffer dirLightsBuffer = 0;
-      rtc::Buffer *dirLightsBuffer = 0;
-      int numDirLights = 0;
-      DevGroup::SP devGroup;
+      std::vector<PLD> perLogical;
+      DevGroup::SP const devices;
+      SlotContext *const slotContext;
     };
 
   }

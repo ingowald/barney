@@ -37,7 +37,10 @@ namespace barney {
     };
 
     typedef std::shared_ptr<QuadLight> SP;
-    QuadLight(Context *context, int slot) : Light(context,slot) {}
+    QuadLight(Context *context,
+              const DevGroup::SP &devices)
+      : Light(context,devices)
+    {}
 
     DD getDD(const affine3f &instanceXfm) const;
     

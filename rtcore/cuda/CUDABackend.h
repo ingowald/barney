@@ -8,7 +8,6 @@ namespace barney {
 
     struct BaseBackend;
     struct DevGroup;
-    struct BaseDevGroup;
     
     struct SetActiveGPU {
       inline SetActiveGPU(const rtc::Device *device)
@@ -28,10 +27,9 @@ namespace barney {
     };
   
 
-
     struct BaseDevice : public rtc::Device {
-      BaseDevice(int physicalGPU, int localID)
-        : rtc::Device(physicalGPU,localID)
+      BaseDevice(int physicalGPU)
+        : rtc::Device(physicalGPU)
       {
         int saved = setActive();
         cudaStreamCreate(&stream);
@@ -53,74 +51,50 @@ namespace barney {
       /*! restores the gpu whose ID was previously returend by setActive() */
       void restoreActive(int oldActive) const override;
 
+
+      rtc::TextureData *
+      createTextureData(vec3i dims,
+                        rtc::DataType format,
+                        const void *texels) override;
+
+      void freeTextureData(rtc::TextureData *) override 
+      { BARNEY_NYI(); };
+      void freeTexture(rtc::Texture *) override 
+      { BARNEY_NYI(); };
+      
       cudaStream_t stream;
     };
 
     struct TextureData : public rtc::TextureData {
-      TextureData(const BaseDevGroup *dg,
+      TextureData(BaseDevice *device,
                   vec3i dims,
-                  rtc::TextureData::Format format,
+                  rtc::DataType format,
                   const void *texels);
-      struct PerDev {
-        cudaArray_t array;
-      };
-      std::vector<PerDev> perDev;
+
+      rtc::Texture *
+      createTexture(const rtc::TextureDesc &desc) override;
+      
+      cudaArray_t array;
       cudaTextureReadMode readMode;
     };
     
     struct Texture : public rtc::Texture {
-      Texture(const BaseDevGroup *dg,
-              TextureData *data,
-              // rtc::Texture::ReadMode   readMode,
-              rtc::Texture::FilterMode filterMode,
-              rtc::Texture::AddressMode addressModes[3],
-              const vec4f borderColor,
-              bool normalizedCoords,
-              rtc::Texture::ColorSpace colorSpace);
-
-      rtc::device::TextureObject getDD(const rtc::Device *) const override;
+      Texture(TextureData *data,
+              const rtc::TextureDesc &desc);
       
-      std::vector<cudaTextureObject_t> perDev;
-    };
-    
-    struct BaseDevGroup : public rtc::DevGroup {
-      BaseDevGroup(BaseBackend *backend,
-                   const std::vector<int> &gpuIDs);
+      rtc::device::TextureObject getDD() const override
+      { return (const rtc::device::TextureObject&)textureObject; }
       
-      rtc::TextureData *
-      createTextureData(vec3i dims,
-                        rtc::TextureData::Format format,
-                        const void *texels) const
-        override;
-
-      rtc::Texture *
-      createTexture(rtc::TextureData *data,
-                    // rtc::Texture::ReadMode   readMode,
-                    rtc::Texture::FilterMode filterMode,
-                    rtc::Texture::AddressMode addressModes[3],
-                    const vec4f borderColor = vec4f(0.f),
-                    bool normalizedCoords = true,
-                    rtc::Texture::ColorSpace colorSpace
-                    = rtc::Texture::COLOR_SPACE_LINEAR) const override;
-      
-      void freeTextureData(rtc::TextureData *) const
-        override 
-      { BARNEY_NYI(); };
-      void freeTexture(rtc::Texture *) const 
-        override 
-      { BARNEY_NYI(); };
-
-
+      cudaTextureObject_t textureObject;
     };
     
     struct BaseBackend : public rtc::Backend {
       BaseBackend();
-      // void setActiveGPU(int physicalID) override;
-      // int  getActiveGPU() override;
     };
     
     struct CUDABackend : public cuda::BaseBackend {
-      rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs) override;
+      std::vector<rtc::Device *>
+      createDevices(const std::vector<int> &gpuIDs) override;
     };
     
   }

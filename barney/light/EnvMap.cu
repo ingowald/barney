@@ -124,18 +124,21 @@ namespace barney {
       cdf_y[textureDims.y-1] = 1.f;
     }
   };
-    
-  EnvMapLight::DD EnvMapLight::getDD(const Device::SP &device) const
+
+  /*! TODO not yet applying xfm!!! */
+  EnvMapLight::DD EnvMapLight::getDD(Device *device,
+                                     const affine3f &xfm) 
   {
     DD dd;
     dd.dims = dims;
     if (texture) {
+      PLD *pld = getPLD(device);
       dd.texture
-        = texture->getDD(device->rtc);
+        = texture->getDD(device);
       dd.cdf_y
-        = (const float *)cdf_y->getDD(device->rtc);
+        = (const float *)pld->cdf_y->getDD();
       dd.allCDFs_x
-        = (const float *)allCDFs_x->getDD(device->rtc);
+        = (const float *)pld->allCDFs_x->getDD();
     } else {
       dd.texture = 0;
       dd.cdf_y = 0;
@@ -154,8 +157,7 @@ namespace barney {
     toWorld.vx = normalize(cross(toWorld.vy,toWorld.vz));
     toLocal    = rcp(toWorld);
     assert(params.texture);
-    // texture    = params.texture->owlTexture;
-    texture    = params.texture->rtcTexture;
+    texture    = params.texture;
     computeCDFs();
   }
 
@@ -164,49 +166,57 @@ namespace barney {
   {
     // std::cout << "#bn: computing env-map CDFs" << std::endl;
     assert(texture);
-    dims = (const vec2i &)texture->getDims();
-    auto rtc = getRTC();
-    rtc->free(cdf_y);
-    cdf_y = rtc->createBuffer(dims.y*sizeof(float));
-    rtc->free(allCDFs_x);
-    allCDFs_x = rtc->createBuffer(dims.x*dims.y*sizeof(float));
+    dims = texture->getDims();
     
-    for (auto device : getDevices()) {
-      SetActiveGPU forThisKernel(device);
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
+
+      if (pld->cdf_y)
+        rtc->freeBuffer(pld->cdf_y);
+      pld->cdf_y
+        = rtc->createBuffer(dims.y*sizeof(float));
       
+      if (pld->allCDFs_x)
+        rtc->freeBuffer(pld->allCDFs_x);
+      pld->allCDFs_x
+        = rtc->createBuffer(dims.x*dims.y*sizeof(float));
+
       /* computes an importance sampling weight for each pixel; gets
          called with one thread per pixel, in a 2d launch */
       {
         ComputeWeights_xy kernelData = {
-          (float*)allCDFs_x->getDD(device->rtc),
-          texture->getDD(device->rtc),
+          (float*)pld->allCDFs_x->getDD(),
+          texture->getDD(device),
           dims
         };
         vec2i bs = 16;
         vec2i nb = divRoundUp(dims,bs);
-        computeWeights_xy->launch(device->rtc,nb,bs,&kernelData);
+        pld->computeWeights_xy
+          ->launch(nb,bs,&kernelData);
       }
       /* this kernel will do one thread per line, then this one thread does
          entire line. not great, but we're not doing this per frame,
          anyway */
       {
         ComputeCDFs_doLine kernelData = {
-          (float*)cdf_y->getDD(device->rtc),
-          (float*)allCDFs_x->getDD(device->rtc),
+          (float*)pld->cdf_y->getDD(),
+          (float*)pld->allCDFs_x->getDD(),
           dims
         };
-        computeCDFs_doLine->launch(device->rtc,
-                                   dims.y,1024,
-                                   &kernelData);
+        pld->computeCDFs_doLine
+          ->launch(dims.y,1024,
+                   &kernelData);
       }
       /* run by a single thread, to normalize the cdf_y */
       {
         Normalize_cdf_y kernelArgs = {
-          (float*)cdf_y->getDD(device->rtc),
-          (float*)allCDFs_x->getDD(device->rtc),
+          (float*)pld->cdf_y->getDD(),
+          (float*)pld->allCDFs_x->getDD(),
           dims
         };
-        normalize_cdf_y->launch(device->rtc,1,1,&kernelArgs);
+        pld->normalize_cdf_y
+          ->launch(1,1,&kernelArgs);
       }
       device->rtc->sync();
     }
@@ -244,26 +254,27 @@ namespace barney {
   }
 
 
-  EnvMapLight::EnvMapLight(Context *context, int slot)
-    : Light(context,slot)
+  EnvMapLight::EnvMapLight(Context *context,
+                const DevGroup::SP &devices)
+    : Light(context,devices)
   {
-    // std::cout << OWL_TERMINAL_YELLOW
-    //           << "#bn: created env-map light"
-    //           << OWL_TERMINAL_DEFAULT << std::endl;
-    auto rtc = getRTC();
-    cdf_y
-      = rtc->createBuffer(sizeof(float));
-    allCDFs_x
-      = rtc->createBuffer(sizeof(float));
-
-    computeWeights_xy
-      = rtc->createCompute("computeWeights_xy");
-    computeCDFs_doLine
-      = rtc->createCompute("computeCDFs_doLine");
-    normalize_cdf_y
-      = rtc->createCompute("normalize_cdf_y");
-  }
-  
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
+      pld->cdf_y
+        = rtc->createBuffer(sizeof(float));
+      pld->allCDFs_x
+        = rtc->createBuffer(sizeof(float));
+      
+      pld->computeWeights_xy
+        = rtc->createCompute("computeWeights_xy");
+      pld->computeCDFs_doLine
+        = rtc->createCompute("computeCDFs_doLine");
+      pld->normalize_cdf_y
+        = rtc->createCompute("normalize_cdf_y");
+    }
+    
+  } 
 }
 
 RTC_CUDA_COMPUTE(computeWeights_xy,barney::ComputeWeights_xy);

@@ -20,21 +20,22 @@
 
 namespace barney {
 
-  const std::string to_string(BNDataType type);
-  OWLDataType owlTypeFor(BNDataType type);
+  rtc::DataType toRTC(BNDataType format);
+  
+  std::string to_string(BNDataType type);
   size_t owlSizeOf(BNDataType type);
   
   struct Data : public SlottedObject {
     typedef std::shared_ptr<Data> SP;
 
     Data(Context *context,
-         int slot,
+         const DevGroup::SP &devices,
          BNDataType type,
          size_t numItems);
     virtual ~Data() = default;
     
     static Data::SP create(Context *context,
-                           int slot,
+                           const DevGroup::SP &devices,
                            BNDataType type,
                            size_t numItems,
                            const void *items);
@@ -53,17 +54,22 @@ namespace barney {
     /*! constructor for a 'global' data array that lives on the
         context itself, and spans all model slots */
     PODData(Context *context,
-            int slot,
+            const DevGroup::SP &devices,
             BNDataType type,
             size_t numItems,
             const void *items);
     
     virtual ~PODData();
 
-    const void *getDD(rtc::Device *device) const { return rtcBuffer->getDD(device); }
-    
-    rtc::Buffer *rtcBuffer   = 0;
-    // OWLBuffer  owl   = 0;
+    const void *getDD(Device *device) 
+    { return getPLD(device)->rtcBuffer->getDD(); }
+
+    struct PLD {
+      rtc::Buffer *rtcBuffer   = 0;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; }
+    std::vector<PLD> perLogical;
   };
 
   /*! data array over reference-counted barney object handles (e.g.,
@@ -72,21 +78,11 @@ namespace barney {
   struct ObjectRefsData : public Data {
     typedef std::shared_ptr<ObjectRefsData> SP;
     ObjectRefsData(Context *context,
-                   int slot,
+                   const DevGroup::SP &devices,
                    BNDataType type,
                    size_t numItems,
                    const void *items);
     std::vector<Object::SP> items;
   };
 
-
-
-
-  inline void *getDD(rtc::Device *device, const PODData *data)
-  { return data?data->rtcBuffer->getDD(device):nullptr; }
-
-  inline void *getDD(rtc::Device *device, const PODData::SP &data)
-  { return data?data->rtcBuffer->getDD(device):nullptr; }
-  
-  
-};
+}

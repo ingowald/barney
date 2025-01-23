@@ -89,7 +89,7 @@ namespace barney {
     return false;
   }
 
-  Renderer::DD Renderer::getDD(const Device *device) const
+  Renderer::DD Renderer::getDD(Device *device) const
   {
     Renderer::DD dd;
     dd.bgColor = bgColor;

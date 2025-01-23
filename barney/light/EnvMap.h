@@ -23,7 +23,8 @@ namespace barney {
 
   struct EnvMapLight : public Light {
     typedef std::shared_ptr<EnvMapLight> SP;
-    EnvMapLight(Context *context, int slot);
+    EnvMapLight(Context *context,
+                const DevGroup::SP &devices);
 
     struct DD {
       inline __both__ float pdf(vec3f dir, bool dbg=false) const;
@@ -39,13 +40,13 @@ namespace barney {
       linear3f            toWorld;
       linear3f            toLocal;
       // cudaTextureObject_t texture;
-      rtc::device::TextureObject texture;
+      rtc::device::TextureObject texture = 0;
       vec2i               dims;
-      const float        *cdf_y;
-      const float        *allCDFs_x;
+      const float        *cdf_y = 0;
+      const float        *allCDFs_x = 0;
     };
 
-    DD getDD(const Device::SP &device) const;
+    DD getDD(Device *device, const affine3f &xfm);
 
     // ==================================================================
     std::string toString() const override { return "EnvMapLight"; }
@@ -70,19 +71,25 @@ namespace barney {
       vec3f       up        { 0.f, 0.f, 1.f };
       Texture::SP texture;
     } params;
+    Texture::SP texture;
 
     linear3f   toWorld;
     linear3f   toLocal;
     // OWLTexture texture = 0;
     // OWLBuffer  cdf_y;
     // OWLBuffer  allCDFs_x;
-    rtc::Texture *texture = 0;
-    rtc::Buffer  *cdf_y;
-    rtc::Buffer  *allCDFs_x;
-    rtc::ComputeKernel *computeWeights_xy;
-    rtc::ComputeKernel *computeCDFs_doLine;
-    rtc::ComputeKernel *normalize_cdf_y;
-    
+
+    struct PLD {
+      rtc::Buffer  *cdf_y = 0;
+      rtc::Buffer  *allCDFs_x = 0;
+      
+      rtc::Compute *computeWeights_xy;
+      rtc::Compute *computeCDFs_doLine;
+      rtc::Compute *normalize_cdf_y;
+    };
+
+    PLD *getPLD(Device *);
+    std::vector<PLD> perLogical;
     vec2i      dims;
   };
 

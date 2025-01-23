@@ -15,88 +15,93 @@
 // ======================================================================== //
 
 #include "barney/render/World.h"
-#include "barney/DeviceContext.h"
+#include "barney/Context.h"
 #include "barney/material/DeviceMaterial.h"
 #include "barney/material/Material.h"
+#include "barney/render/MaterialRegistry.h"
+#include "barney/render/SamplerRegistry.h"
 
 namespace barney {
   namespace render {
 
-    World::World(DevGroup::SP devGroup)
-      : devGroup(devGroup)
-        // globals(devGroup)
+    World::World(SlotContext *slotContext)
+      : devices(slotContext->devices),
+        slotContext(slotContext)
     {
-      auto rtc = getRTC();
-      quadLightsBuffer = rtc->createBuffer(sizeof(QuadLight::DD));
-      dirLightsBuffer = rtc->createBuffer(sizeof(DirLight::DD));
-      // quadLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
-      //                                          OWL_USER_TYPE(QuadLight),
-      //                                          1,nullptr);
-      // dirLightsBuffer = owlDeviceBufferCreate(devGroup->owl,
-      //                                         OWL_USER_TYPE(DirLight),
-      //                                         1,nullptr);
+      for (auto device : *devices) {
+        PLD *pld = getPLD(device);
+        auto rtc = device->rtc;
+        pld->quadLightsBuffer
+          = rtc->createBuffer(sizeof(QuadLight::DD));
+        pld->dirLightsBuffer
+          = rtc->createBuffer(sizeof(DirLight::DD));
+      }
     }
+    
     World::~World()
     {}
 
-    World::DD World::getDD(const Device::SP &device) const
+    World::DD World::getDD(Device *device) 
     {
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
       DD dd;
       dd.quadLights
-        // = (QuadLight::DD *)owlBufferGetPointer(quadLightsBuffer,device->owlID);
-        = (QuadLight::DD *)quadLightsBuffer->getDD(device->rtc);
-      dd.numQuadLights = numQuadLights;
+        = (QuadLight::DD *)pld->quadLightsBuffer->getDD();
+      dd.numQuadLights = pld->numQuadLights;
       dd.dirLights
-        // = (DirLight::DD *)owlBufferGetPointer(dirLightsBuffer,device->owlID);
-        = (DirLight::DD *)dirLightsBuffer->getDD(device->rtc);
-      dd.numDirLights = numDirLights;
-
+        = (DirLight::DD *)pld->dirLightsBuffer->getDD();
+      dd.numDirLights = pld->numDirLights;
+      
       dd.envMapLight
-        = envMapLight
-        ? envMapLight->getDD(device)
+        = envMapLight.light
+        ? envMapLight.light->getDD(device,envMapLight.xfm)
         : EnvMapLight::DD{};
       
-      // dd.samplers  = samplerRegistry->getPointer(device->owlID);
-      // dd.materials = materialRegistry->getPointer(device->owlID);
+      dd.samplers  = slotContext->samplerRegistry->getDD(device);
+      dd.materials = slotContext->materialRegistry->getDD(device);
 
       return dd;
     }
 
-    MaterialRegistry::MaterialRegistry(DevGroup::SP devGroup)
-      : devGroup(devGroup)
+    MaterialRegistry::MaterialRegistry(const DevGroup::SP &devices)
+      : devices(devices)
     {
-      auto rtc = getRTC();
       numReserved = 1;
+      perLogical.resize(devices->numLogical);
       
-      // buffer = owlDeviceBufferCreate
-      //   (devGroup->owl,OWL_USER_TYPE(DeviceMaterial),numReserved,nullptr);
-      buffer = rtc->createBuffer(numReserved*sizeof(DeviceMaterial));
+      for (auto device : *devices)
+        getPLD(device)->buffer
+          = device->rtc->createBuffer(numReserved*sizeof(DeviceMaterial));
     }
 
     MaterialRegistry::~MaterialRegistry()
     {
       // owlBufferRelease(buffer);
-      devGroup->rtc->free(buffer);
+      for (auto device : *devices)
+        device->rtc->free(getPLD(device)->buffer);
     }
     
     void MaterialRegistry::grow()
     {
-      assert(this->buffer);
-      
+      size_t oldNumBytes = numReserved * sizeof(DeviceMaterial);
+      numReserved *= 2;
+      size_t newNumBytes = numReserved * sizeof(DeviceMaterial);
+      for (auto device : *devices) {
       // ------------------------------------------------------------------
       // save old materials
       // ------------------------------------------------------------------
-      rtc::Buffer *oldBuffer = this->buffer;
-      size_t oldNumBytes = numReserved * sizeof(DeviceMaterial);
-      auto rtc = getRTC();
-      numReserved *= 2;
-      size_t newNumBytes = numReserved * sizeof(DeviceMaterial);
-
-      rtc::Buffer *newBuffer
-        = rtc->createBuffer(newNumBytes);
-      rtc->copy(newBuffer,oldBuffer,oldNumBytes);
-      rtc->free(oldBuffer);
-      this->buffer = newBuffer;
+        PLD *pld = getPLD(device);
+        rtc::Buffer *oldBuffer = pld->buffer;
+        auto rtc = device->rtc;
+        
+        rtc::Buffer *newBuffer
+          = rtc->createBuffer(newNumBytes);
+        rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
+        rtc->sync();
+        rtc->free(oldBuffer);
+        pld->buffer = newBuffer;
+      }
     }
 
     int MaterialRegistry::allocate()
@@ -126,66 +131,54 @@ namespace barney {
                                        const DeviceMaterial &dd,
                                        int deviceID)
     {
-      buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID,
-                     devGroup->devices[deviceID]->rtc);
+      for (auto device : *devices) {
+        PLD *pld = getPLD(device);
+        pld->buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID);
+      }
       // BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+materialID),
       //                         &dd,sizeof(dd),cudaMemcpyDefault));
     }
 
 
 
-    SamplerRegistry::SamplerRegistry(DevGroup::SP devGroup)
-      : devGroup(devGroup)
+    SamplerRegistry::SamplerRegistry(const DevGroup::SP &devices)
+      : devices(devices)
     {
       numReserved = 1;
-      // buffer = owlDeviceBufferCreate
-      //   (devGroup->owl,OWL_USER_TYPE(Sampler::DD),1,nullptr);
-      buffer = getRTC()->createBuffer(sizeof(Sampler::DD));
+      perLogical.resize(devices->numLogical);
+      
+      for (auto device : *devices)
+        getPLD(device)->buffer
+          = device->rtc->createBuffer(numReserved*sizeof(Sampler::DD));
     }
 
     SamplerRegistry::~SamplerRegistry()
     {
-      // owlBufferRelease(buffer);
-      getRTC()->free(buffer);
+      for (auto device : *devices)
+        device->rtc->freeBuffer(getPLD(device)->buffer);
     }
     
     void SamplerRegistry::grow()
     {
-      auto rtc = getRTC();
-
       size_t oldNumBytes = numReserved * sizeof(Sampler::DD);
       numReserved *= 2;
       size_t newNumBytes = numReserved * sizeof(Sampler::DD);
-      rtc::Buffer *newBuffer
-        = rtc->createBuffer(newNumBytes);
-      rtc->copy(newBuffer,this->buffer,oldNumBytes);
-      rtc->free(this->buffer);
-      this->buffer = newBuffer;
-      // // ------------------------------------------------------------------
-      // // save old materials
-      // // ------------------------------------------------------------------
-      // OWLBuffer tmp = owlDeviceBufferCreate
-      //   (devGroup->owl,OWL_USER_TYPE(Sampler::DD),numReserved,nullptr);
-      // for (int i=0;i<devGroup->size();i++) {
-      //   BARNEY_CUDA_CALL(Memcpy((void*)owlBufferGetPointer(tmp,i),
-      //                           (void*)owlBufferGetPointer(buffer,i),
-      //                           oldNumBytes,cudaMemcpyDefault));
-      // }
-
-      // // ------------------------------------------------------------------
-      // // resize backing storage
-      // // ------------------------------------------------------------------
-      // owlBufferResize(buffer,numReserved);
-
-      // // ------------------------------------------------------------------
-      // // and restore old values into resized storage
-      // // ------------------------------------------------------------------
-      // for (int i=0;i<devGroup->size();i++) {
-      //   BARNEY_CUDA_CALL(Memcpy((void*)owlBufferGetPointer(buffer,i),
-      //                           (void*)owlBufferGetPointer(tmp,i),
-      //                           oldNumBytes,cudaMemcpyDefault));
-      // }
-      // owlBufferRelease(tmp);
+      
+      for (auto device : *devices) {
+        // ------------------------------------------------------------------
+        // save old samplers
+        // ------------------------------------------------------------------
+        PLD *pld = getPLD(device);
+        rtc::Buffer *oldBuffer = pld->buffer;
+        auto rtc = device->rtc;
+        
+        rtc::Buffer *newBuffer
+          = rtc->createBuffer(newNumBytes);
+        rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
+        rtc->sync();
+        rtc->free(oldBuffer);
+        pld->buffer = newBuffer;
+      }
     }
 
     int SamplerRegistry::allocate()
@@ -213,49 +206,43 @@ namespace barney {
 
     void SamplerRegistry::setDD(int samplerID,
                                 const Sampler::DD &dd,
-                                rtc::Device *device)
+                                Device *device)
     {
-      buffer->upload(&dd,sizeof(dd),/*offset*/samplerID*sizeof(dd),device);
-      // BARNEY_CUDA_CALL(Memcpy((void*)(getPointer(deviceID)+samplerID),
-      //                         &dd,sizeof(dd),cudaMemcpyDefault));
+      size_t offset = samplerID*sizeof(dd);
+      getPLD(device)->buffer->upload(&dd,sizeof(dd),offset);
     }
 
     
     void World::set(const std::vector<QuadLight::DD> &quadLights)
     {
-      // barney::rtc::resizeAndUpload(quadLightsBuffer,quadLights);
-      auto rtc = devGroup->rtc;
-      rtc->free(quadLightsBuffer);
-      quadLightsBuffer
-        = rtc->createBuffer(quadLights.size()*sizeof(quadLights[0]),
-                            quadLights.data());
-      
-      // rtccore
-      // if (quadLights.empty())
-      //   // owlBufferResize(quadLightsBuffer,1);
-      //   quadLightsBuffer->resize(sizeof(QuadLight::DD));
-      // else {
-      //   // owlBufferResize(quadLightsBuffer,quadLights.size());
-      //   // owlBufferUpload(quadLightsBuffer,quadLights.data());
-      //   quadLightsBuffer->resizeAndUpload(quadLights);
-      // }
-      numQuadLights = (int)quadLights.size();
+      for (auto device : *devices) {
+        auto pld = getPLD(device);
+        auto rtc = device->rtc;
+        rtc->freeBuffer(pld->quadLightsBuffer);
+        pld->quadLightsBuffer
+          = rtc->createBuffer(quadLights.size()*sizeof(quadLights[0]),
+                              quadLights.data());
+        pld->numQuadLights = (int)quadLights.size();
+      }
     }
     
     void World::set(const std::vector<DirLight::DD> &dirLights)
     {
-      auto rtc = devGroup->rtc;
-      rtc->free(dirLightsBuffer);
-      dirLightsBuffer
-        = rtc->createBuffer(dirLights.size()*sizeof(dirLights[0]),
-                            dirLights.data());
-
-      numDirLights = (int)dirLights.size();
+      for (auto device : *devices) {
+        auto pld = getPLD(device);
+        auto rtc = device->rtc;
+        rtc->freeBuffer(pld->dirLightsBuffer);
+        pld->dirLightsBuffer
+          = rtc->createBuffer(dirLights.size()*sizeof(dirLights[0]),
+                              dirLights.data());
+        pld->numDirLights = (int)dirLights.size();
+      }
     }
 
-    void World::set(EnvMapLight::SP envMapLight)
+    void World::set(EnvMapLight::SP envMapLight, const affine3f &xfm)
     {
-      this->envMapLight = envMapLight;
+      this->envMapLight.light = envMapLight;
+      this->envMapLight.xfm = xfm;
     }
       
     

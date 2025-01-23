@@ -5,118 +5,50 @@
 namespace barney {
   namespace optix {
     struct OptixBackend;
-    struct DevGroup;
-    struct Device;
-    
-    struct OptixDevice : public cuda::BaseDevice {
-      OptixDevice(const optix::DevGroup *parent,
-                  int physicalGPU,
-                  int owlID);
-      virtual ~OptixDevice();
 
-      const DevGroup *const parent;
-      // OWLLaunchParams lp  = 0;
-      // OWLRayGen       rg  = 0;
+    struct Device : public cuda::BaseDevice {
+      Device(int physicalGPU);
+      virtual ~Device();
 
-      // DevGroup *const parent;
-      // int       const physicalGPU;
-    };
-
-    struct Buffer : public rtc::Buffer {
-      Buffer(const optix::DevGroup *dg,
-                  size_t size,
-                  const void *initData);
-      void *getDD(const rtc::Device *) const override;
-      void upload(const void *hostPtr,
-                  size_t numBytes,
-                  size_t ofs = 0,
-                  const rtc::Device *device=nullptr) override;
-      OWLBuffer owl;
-    };
-
-    struct Group : public rtc::Group {
-      Group(OWLGroup owlGroup) : owlGroup(owlGroup) {}
-      virtual ~Group() { owlGroupRelease(owlGroup); }
+      void destroy() override;
       
-      rtc::device::AccelHandle getDD(const rtc::Device *) const override;
-      void buildAccel() override;
-      void refitAccel() override;
-      
-      OWLGroup const owlGroup;
-    };
-    
-    struct Geom : public rtc::Geom {
-      Geom(OWLGeom geom);
-      virtual ~Geom();
-      void setDD(const void *dd, const rtc::Device *device) override;
-      
-      OWLGeom const geom;
-    };
-
-    struct TrianglesGeom : public Geom {
-      TrianglesGeom(OWLGeom geom);
-      
-      /*! only for user geoms */
-      void setPrimCount(int primCount) override;
-      /*! can only get called on triangle type geoms */
-      void setVertices(rtc::Buffer *vertices, int numVertices) override;
-      void setIndices(rtc::Buffer *indices, int numIndices) override;
-    };
-    
-    struct GeomType : public rtc::GeomType {
-      GeomType(const DevGroup *devGroup) : devGroup(devGroup) {}
-      ~GeomType() override;
-      
-      const DevGroup *const devGroup;
-      OWLGeomType gt = 0;
-    };
-    struct TrianglesGeomType : public GeomType
-    {
-      TrianglesGeomType(const DevGroup *dg,
-                        const std::string &typeName,
-                        size_t sizeOfDD,
-                        const std::string &ahFctName,
-                        const std::string &chFctName);
-      rtc::Geom *createGeom() override;
-    };
-    
-    struct DevGroup : public cuda::BaseDevGroup {
-      DevGroup(OptixBackend *backend,
-               const std::vector<int> &gpuIDs);
-      virtual ~DevGroup();
-
-      void destroy() 
-        override
-      { BARNEY_NYI(); };
-      
-
-      // ==================================================================
-      // rt pipeline/sbtstuff
-      // ==================================================================
-      void buildPipeline() override;
-      void buildSBT() override;
-
       // ==================================================================
       // kernels
       // ==================================================================
-      rtc::ComputeKernel *
+      rtc::Compute *
       createCompute(const std::string &) override;
       
-      rtc::TraceKernel *
+      rtc::Trace *
       createTrace(const std::string &, size_t) override;
 
       // ==================================================================
-      // geomtype
+      // buffer stuff
+      // ==================================================================
+      rtc::Buffer *createBuffer(size_t numBytes,
+                                const void *initValues = 0) override;
+      void freeBuffer(rtc::Buffer *) override;
+      
+      // ==================================================================
+      // texture stuff
       // ==================================================================
 
-      
-      void free(rtc::GeomType *) 
-        override 
-      { BARNEY_NYI(); };
+      // in parent
 
-      void free(rtc::Geom *)
-        override 
-      { BARNEY_NYI(); };
+      // ==================================================================
+      // ray tracing pipeline related stuff
+      // ==================================================================
+
+
+      // ------------------------------------------------------------------
+      // rt pipeline/sbtstuff
+      // ------------------------------------------------------------------
+
+      void buildPipeline() override;
+      void buildSBT() override;
+
+      // ------------------------------------------------------------------
+      // geomtype stuff
+      // ------------------------------------------------------------------
       
       rtc::GeomType *
       createUserGeomType(const char *typeName,
@@ -134,40 +66,90 @@ namespace barney {
                               const char *ahFctName,
                               const char *chFctName) override;
       
+      void freeGeomType(rtc::GeomType *) override 
+      { BARNEY_NYI(); };
 
-      // ==================================================================
+      // ------------------------------------------------------------------
+      // geom stuff
+      // ------------------------------------------------------------------
+      
+      void freeGeom(rtc::Geom *) override 
+      { BARNEY_NYI(); };
+      
+      // ------------------------------------------------------------------
       // group/accel stuff
-      // ==================================================================
+      // ------------------------------------------------------------------
       rtc::Group *
       createTrianglesGroup(const std::vector<rtc::Geom *> &geoms) override;
       
       rtc::Group *
-      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) 
-        override
+      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) override
       { BARNEY_NYI(); };
 
       rtc::Group *
       createInstanceGroup(const std::vector<rtc::Group *> &groups,
                           const std::vector<affine3f> &xfms) override;
 
-      void free(rtc::Group *) override;
-
-      // ==================================================================
-      // texture stuff
-      // ==================================================================
-
-      // ==================================================================
-      // buffer stuff
-      // ==================================================================
-      rtc::Buffer *createBuffer(size_t numBytes,
-                                const void *initValues = 0) const override;
-
-      void free(rtc::Buffer *) const override;
-      void copy(rtc::Buffer *dst,
-                rtc::Buffer *src,
-                size_t numBytes) const override;
+      void freeGroup(rtc::Group *) override;
          
       OWLContext      owl = 0;
+    };
+    
+    
+    struct Buffer : public rtc::Buffer {
+      Buffer(optix::Device *device,
+             size_t size,
+             const void *initData);
+      void *getDD() const override;
+      
+      OWLBuffer owl;
+    };
+
+    struct Group : public rtc::Group {
+      Group(optix::Device *device, OWLGroup owlGroup);
+      virtual ~Group() { owlGroupRelease(owl); }
+      
+      rtc::device::AccelHandle getDD() const override;
+      void buildAccel() override;
+      void refitAccel() override;
+      
+      OWLGroup const owl;
+    };
+
+    struct GeomType;
+    
+    struct Geom : public rtc::Geom {
+      Geom(GeomType *gt, OWLGeom geom);
+      virtual ~Geom();
+      void setDD(const void *dd) override;
+      
+      OWLGeom const owl;
+    };
+
+    struct TrianglesGeom : public Geom {
+      TrianglesGeom(GeomType *gt, OWLGeom geom);
+      
+      /*! only for user geoms */
+      void setPrimCount(int primCount) override;
+      /*! can only get called on triangle type geoms */
+      void setVertices(rtc::Buffer *vertices, int numVertices) override;
+      void setIndices(rtc::Buffer *indices, int numIndices) override;
+    };
+    
+    struct GeomType : public rtc::GeomType {
+      GeomType(optix::Device *device) : rtc::GeomType(device) {}
+      ~GeomType() override;
+      
+      OWLGeomType gt = 0;
+    };
+    struct TrianglesGeomType : public GeomType
+    {
+      TrianglesGeomType(optix::Device *device,
+                        const std::string &typeName,
+                        size_t sizeOfDD,
+                        const std::string &ahFctName,
+                        const std::string &chFctName);
+      rtc::Geom *createGeom() override;
     };
     
     struct OptixBackend : public cuda::BaseBackend {
@@ -175,7 +157,8 @@ namespace barney {
       OptixBackend();
       virtual ~OptixBackend() = default;
       
-      rtc::DevGroup *createDevGroup(const std::vector<int> &gpuIDs) override;
+      std::vector<rtc::Device *>
+      createDevices(const std::vector<int> &gpuIDs) override;
     };
     
   }

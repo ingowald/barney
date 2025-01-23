@@ -29,7 +29,7 @@ namespace barney {
     struct MaterialRegistry {
       typedef std::shared_ptr<MaterialRegistry> SP;
     
-      MaterialRegistry(DevGroup::SP devGroup);
+      MaterialRegistry(const DevGroup::SP &devices);
       virtual ~MaterialRegistry();
       
       int allocate();
@@ -45,13 +45,17 @@ namespace barney {
       std::stack<int> reusableIDs;
       // OWLBuffer       buffer = 0;
 
-      DeviceMaterial *getDD(rtc::Device *device) const
-      { return (DeviceMaterial *)buffer->getDD(device); }
+      DeviceMaterial *getDD(Device *device) 
+      { return (DeviceMaterial *)getPLD(device)->buffer->getDD(); }
 
-      rtc::DevGroup *getRTC() const { return devGroup->rtc; }
-      
-      rtc::Buffer    *buffer = 0;
-      DevGroup::SP    devGroup;
+      struct PLD {
+        rtc::Buffer    *buffer = 0;
+        Device::SP      device;
+      };
+      PLD *getPLD(Device *device);
+      std::vector<PLD> perLogical;
+
+      DevGroup::SP const devices;
     };
 
   }

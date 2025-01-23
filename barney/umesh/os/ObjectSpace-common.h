@@ -49,9 +49,6 @@ namespace barney {
           mesh(mesh)
       {}
 
-      const std::vector<Device::SP> &getDevices()
-      { assert(mesh); return mesh->getDevices(); }
-        
       UpdateMode updateMode() override
       { return HAS_ITS_OWN_GROUP; }
       
@@ -62,7 +59,7 @@ namespace barney {
       //   mesh->setVariables(geom);
       //   getXF()->setVariables(geom);
       // }
-      void writeDD(UMeshObjectSpace::DD &dd, rtc::Device *device)
+      void writeDD(UMeshObjectSpace::DD &dd, Device *device)
       {
         mesh->writeDD(dd,device);
       }

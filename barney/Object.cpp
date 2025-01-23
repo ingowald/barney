@@ -39,29 +39,11 @@ namespace barney {
   }
   
 
-  SlottedObject::SlottedObject(Context *context, int slot)
+  SlottedObject::SlottedObject(Context *context,
+                               const DevGroup::SP &devices)
     : Object(context),
-      slot(slot)
+      devices(devices)
   {}
  
-  DevGroup *SlottedObject::getDevGroup() const
-  {
-    assert(context);
-    DevGroup *dg = context->getDevGroup(slot);
-    assert(dg);
-    return dg;
-  }
-
-  const std::vector<std::shared_ptr<Device>> &SlottedObject::getDevices() const
-  {
-    return context->getDevices(slot);
-    // return getDevGroup()->devices;
-  }
-  
-  rtc::DevGroup *SlottedObject::getRTC() const
-  {
-    return context->getRTC(slot);
-  }
-  
 }
 

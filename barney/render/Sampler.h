@@ -18,36 +18,21 @@
 
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
-#include <cuda.h>
 #include <stack>
 
 namespace barney {
   struct TextureData;
+  struct SlotContext;
   
   namespace render {
     struct SamplerRegistry;
     
     struct AttributeTransform {
-#ifdef __CUDACC__
-      inline __device__ float4 applyTo(float4 in, bool dbg) const;
-#endif
+      inline __both__ float4 applyTo(float4 in, bool dbg) const;
+      
       float4 mat[4];
       float4 offset;
     };
-      
-#ifdef __CUDACC__
-    inline __device__ vec4f load(float4 v) { return (const vec4f&)v; }
-    
-    inline __device__ float4 AttributeTransform::applyTo(float4 in, bool dbg) const
-    {
-      vec4f out = load(offset);
-      out = out + in.x * load(mat[0]);
-      out = out + in.y * load(mat[1]);
-      out = out + in.z * load(mat[2]);
-      out = out + in.w * load(mat[3]);
-      return (const float4&)out;
-    }
-#endif
     
     struct Sampler : public SlottedObject {
       typedef std::shared_ptr<Sampler> SP;
@@ -61,35 +46,29 @@ namespace barney {
       } Type;
 
       struct DD {
-#ifdef __CUDACC__
-        inline __device__ float4 eval(const HitAttributes &inputs, bool dbg) const;
-#endif
+        inline __both__
+        float4 eval(const HitAttributes &inputs, bool dbg) const;
         
         Type type=INVALID;
         AttributeKind      inAttribute;
         AttributeTransform outTransform;
         union {
           struct {
-            AttributeTransform  inTransform;
-            // cudaTextureObject_t texture;
+            AttributeTransform         inTransform;
             rtc::device::TextureObject texture;
-            int                 numChannels;
+            int                        numChannels;
           } image;
         };
       };
 
-      virtual DD getDD(rtc::Device *device) const = 0;
+      virtual DD getDD(Device *device) = 0;
       
-      static Sampler::SP create(Context *context,
-                                int slot,
+      static Sampler::SP create(SlotContext *context,
                                 const std::string &type);
 
-      Sampler(Context *context, int slot);
+      Sampler(SlotContext *slotContext);
       virtual ~Sampler();
       
-      // virtual void createDD(DD &dd, int devID) {};
-      // virtual void freeDD(DD &dd, int devID) {};
-
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
       bool setObject(const std::string &member,
@@ -102,15 +81,11 @@ namespace barney {
       /*! @} */
       // ------------------------------------------------------------------
 
-      // std::vector<DD> perDev;
-      // rtc::Texture *rtcTexture = 0;
-      
       /*! the registry from whom we got our 'samplerID' - this mainly
           exists for lifetime reasons, to make sure the registry
           doesn't die before we do, because we have to release our
           samplerID when we die */
-      std::shared_ptr<SamplerRegistry> samplerRegistry;
-      
+      const std::shared_ptr<SamplerRegistry> samplerRegistry;
       const int   samplerID;
       int   inAttribute  { render::ATTRIBUTE_0 };
       mat4f outTransform { mat4f::identity() };
@@ -118,17 +93,19 @@ namespace barney {
     };
 
     struct TransformSampler : public Sampler {
-      TransformSampler(Context *context, int slot)
-        : Sampler(context,slot)
+      TransformSampler(SlotContext *slotContext)
+        : Sampler(slotContext)
       {}
-      DD getDD(rtc::Device *device) const override;
+      DD getDD(Device *device) override;
       // void createDD(DD &dd, int devID) override;
       // void freeDD(DD &dd, int devID) override;
     };
 
     struct TextureSampler : public Sampler {
-      TextureSampler(Context *context, int slot, int numDims)
-        : Sampler(context,slot), numDims(numDims)
+      TextureSampler(SlotContext *slotContext,
+                     int numDims)
+        : Sampler(slotContext),
+          numDims(numDims)
       { }
       
       virtual ~TextureSampler();
@@ -136,7 +113,7 @@ namespace barney {
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
       bool setObject(const std::string &member,
-                   const std::shared_ptr<Object> &value) override;
+                     const std::shared_ptr<Object> &value) override;
       bool set4x4f(const std::string &member, const mat4f &value) override;
       bool set4f(const std::string &member, const vec4f &value) override;
       bool set1i(const std::string &member, const int   &value) override;
@@ -148,9 +125,14 @@ namespace barney {
       std::string toString() const override
       { return "TextureSampler"+std::to_string(numDims)+"D"; }
 
-      DD getDD(rtc::Device *device) const override;
-      // void createDD(DD &dd, int devID) override;
-      // void freeDD(DD &dd, int devID) override;
+      DD getDD(Device *device) override;
+      
+      struct PLD {
+        rtc::Texture *rtcTexture = 0;
+      };
+      PLD *getPLD(Device *device) 
+      { return &perLogical[device->contextRank]; }
+      std::vector<PLD> perLogical;
       
       mat4f inTransform { mat4f::identity() };
       vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
@@ -159,13 +141,30 @@ namespace barney {
       BNTextureFilterMode filterMode = BN_TEXTURE_LINEAR;
       const int   numDims=0;
       std::shared_ptr<TextureData> textureData{ 0 };
-      rtc::Texture *rtcTexture = 0;
     };
   
     
 
-#ifdef __CUDACC__
-    inline __device__ float4 Sampler::DD::eval(const HitAttributes &inputs, bool dbg) const
+
+
+    inline __both__
+    vec4f load(float4 v) { return (const vec4f&)v; }
+    
+    inline __both__
+    float4 AttributeTransform::applyTo(float4 in,
+                                       bool dbg) const
+    {
+      vec4f out = load(offset);
+      out = out + in.x * load(mat[0]);
+      out = out + in.y * load(mat[1]);
+      out = out + in.z * load(mat[2]);
+      out = out + in.w * load(mat[3]);
+      return (const float4&)out;
+    }
+    
+    inline __both__
+    float4 Sampler::DD::eval(const HitAttributes &inputs,
+                             bool dbg) const
     {
       // dbg = true;
       if (dbg) printf("evaluting sampler %p texture %p\n",this,
@@ -198,6 +197,5 @@ namespace barney {
       float4 out = outTransform.applyTo(in,dbg);
       return out;
     }
-#endif
   }
 }

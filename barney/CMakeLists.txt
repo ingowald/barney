@@ -114,6 +114,11 @@ embed_ptx(
   )
 
 set(BARNEY_SOURCES
+  # BEGIN
+  # samplers
+  render/Sampler.h
+  render/Sampler.cpp
+  
   common/barney-common.h
   common/cuda-helper.cpp
   
@@ -175,9 +180,7 @@ set(BARNEY_SOURCES
   light/QuadLight.cu
   light/EnvMap.h
   light/EnvMap.cu
-  # samplers
-  render/Sampler.h
-  render/Sampler.cpp
+
   # materials
   material/Material.h
   material/Material.cpp

@@ -28,8 +28,9 @@ namespace barney {
     hostOwnedHandles.clear();
 
     perSlot.clear();
-
-    delete globalGroupAcrossAllGPUs;
+    ownedStuff.clear();
+    allDevices = 0;
+    //delete globalGroupAcrossAllGPUs;
     // owlContextDestroy(globalContextAcrossAllGPUs);
   }
   
@@ -63,78 +64,14 @@ namespace barney {
     it->second++;
   }
   
-  void Context::generateRays(const barney::Camera::DD &camera,
-                             Renderer *renderer,
-                             FrameBuffer *fb)
-  {
-    assert(fb);
-    int accumID=fb->accumID;
-
-    // ------------------------------------------------------------------
-    // launch all GPUs to do their stuff
-    // ------------------------------------------------------------------
-    for (int localID=0; localID<devices.size(); localID++) {
-      barney::TiledFB *mfb = fb->perDev[localID].get();
-      assert(mfb);
-      
-      auto dev = devices[localID];
-      assert(dev);
-      
-      dev->rays.resetWriteQueue();
-      dev->generateRays_launch(mfb,camera,
-                               renderer->getDD(dev->device.get()),
-                               accumID);
-    }
-    // ------------------------------------------------------------------
-    // wait for all GPUs' completion
-    // ------------------------------------------------------------------
-    for (int localID=0; localID<devices.size(); localID++) {
-      auto dev = devices[localID];
-      dev->generateRays_sync();
-    }
-  }
-  
   /*! returns how many rays are active in all ray queues, across all
     devices and, where applicable, across all ranks */
   int Context::numRaysActiveLocally()
   {
     int numActive = 0;
-    for (auto dev : devices)
-      numActive += dev->rays.numActiveRays();
+    for (auto device : *allDevices)
+      numActive += device->rayQueue->numActiveRays();
     return numActive;
-  }
-
-  void Context::shadeRaysLocally(Renderer *renderer,
-                                 GlobalModel *model,
-                                 FrameBuffer *fb,
-                                 int generation)
-  {
-    // BARNEY_CUDA_SYNC_CHECK();
-    for (int localID=0; localID<devices.size(); localID++) {
-      auto dev = devices[localID];
-      dev->shadeRays_launch(renderer,model,fb->perDev[localID].get(),generation);
-    }
-    // BARNEY_CUDA_SYNC_CHECK();
-    for (int localID=0; localID<devices.size(); localID++) {
-      auto dev = devices[localID];
-      dev->shadeRays_sync();
-    }
-    // BARNEY_CUDA_SYNC_CHECK();
-  }
-  
-  void Context::traceRaysLocally(GlobalModel *model)
-  {
-    // ------------------------------------------------------------------
-    // launch all in parallel ...
-    // ------------------------------------------------------------------
-    for (int localID=0; localID<devices.size(); localID++) {
-      auto dev = devices[localID];
-      dev->traceRays_launch(model);
-    }
-    // ------------------------------------------------------------------
-    // ... and sync 'til all are done
-    // ------------------------------------------------------------------
-    for (auto dev : devices) dev->sync();
   }
 
   void Context::traceRaysGlobally(GlobalModel *model)
@@ -150,16 +87,17 @@ namespace barney {
 
   void Context::finalizeTiles(FrameBuffer *fb)
   {
-    // ------------------------------------------------------------------
-    // tell each device to finalize its rendered accum tiles
-    // ------------------------------------------------------------------
-    for (int localID = 0; localID < devices.size(); localID++)
-      // (will set active GPU internally)
-      fb->perDev[localID]->finalizeTiles_launch();
+    fb->finalizeTiles();
+    // // ------------------------------------------------------------------
+    // // tell each device to finalize its rendered accum tiles
+    // // ------------------------------------------------------------------
+    // for (int localID = 0; localID < devices.size(); localID++)
+    //   // (will set active GPU internally)
+    //   fb->perDev[localID]->finalizeTiles_launch();
     
-    for (int localID = 0; localID < devices.size(); localID++)
-      // (will set active GPU internally)
-      fb->perDev[localID]->finalizeTiles_sync();
+    // for (int localID = 0; localID < devices.size(); localID++)
+    //   // (will set active GPU internally)
+    //   fb->perDev[localID]->finalizeTiles_sync();
 
     // for (int localID = 0; localID < devices.size(); localID++)
     //   devices[localID]->launch_sync();
@@ -173,8 +111,11 @@ namespace barney {
     if (!isActiveWorker)
       return;
 
-    for (auto &pd : perSlot) 
-      pd.devGroup->update();
+    for (auto device : *allDevices)
+      device->syncPipelineAndSBT();
+    
+    // for (auto &pd : perSlot) 
+    //   pd.devGroup->update();
 
     // iw - todo: add wave-front-merging here.
     for (int p=0;p<renderer->pathsPerPixel;p++) {
@@ -184,12 +125,12 @@ namespace barney {
 #endif
       double _t0 = getCurrentTime();
       generateRays(camera,renderer,fb);
-      for (auto dev : devices) dev->sync();
+      for (auto dev : *allDevices) dev->sync();
 
       for (int generation=0;true;generation++) {
         traceRaysGlobally(model);
         // do we need this here?
-        for (auto dev : devices) dev->sync();
+        for (auto dev : *allDevices) dev->sync();
 
         shadeRaysLocally(renderer, model, fb, generation);
         // no sync required here, shadeRays syncs itself.
@@ -205,6 +146,9 @@ namespace barney {
     }
   }
 
+
+  #if 0
+  // question: how do we handle non-active workers now!?
   
   Context::Context(const std::vector<int> &dataGroupIDs,
                    const std::vector<int> &gpuIDs,
@@ -218,8 +162,10 @@ namespace barney {
     // globalContextAcrossAllGPUs
     //   = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
 
-    globalGroupAcrossAllGPUs
-      = rtc::Backend::get()->createDevGroup(gpuIDs);
+    logical.resize(gpuIDs);
+    for (int i=0;i<gpuIDs.size();i++) {
+      logical[i].device = std::make_shared<Device>();
+    }
       
     if (!isActiveWorker) 
       // not an active worker: no device groups etc, just create a
@@ -266,7 +212,8 @@ namespace barney {
         = std::make_shared<render::SamplerRegistry>(dg.devGroup);
     }
   }
-
+#endif
+  
   GlobalModel *Context::createModel()
   {
     return initReference(GlobalModel::create(this));
@@ -282,68 +229,37 @@ namespace barney {
     if (!isActiveWorker)
       return;
 
-    for (int localID = 0; localID < devices.size(); localID++) {
-      auto dev = devices[localID];
-      auto devFB = fb->perDev[localID].get();
+    for (auto device : *allDevices) {
       int upperBoundOnNumRays
-        = 2 * (devFB->numActiveTiles+1) * barney::pixelsPerTile;
-      dev->rays.reserve(upperBoundOnNumRays);
+        = 2 * (fb->getFor(device)->numActiveTiles+1) * barney::pixelsPerTile;
+      device->rayQueue->reserve(upperBoundOnNumRays);
     }
   }
 
   int Context::contextSize() const
   {
-    return devices.size();
+    return allDevices->size();
   }
   
   
-  std::shared_ptr<render::HostMaterial> Context::getDefaultMaterial(int slotID)
-  {
-    auto slot = getSlot(slotID);
-    if (!slot->defaultMaterial)
-      slot->defaultMaterial = std::make_shared<render::AnariMatte>(this,slotID);
-    return slot->defaultMaterial;
-  }
-
-  const Context::PerSlot *Context::getSlot(int slot) const
-  {
-    if (slot < 0 || slot >= perSlot.size())
-      throw std::runtime_error("tried to query an invalid slot!");
-    return &perSlot[slot];
-  }
-  Context::PerSlot *Context::getSlot(int slot)
-  {
-    if (slot < 0 || slot >= perSlot.size())
-      throw std::runtime_error("tried to query an invalid slot!");
-    return &perSlot[slot];
-  }
-
-  // OWLContext Context::getOWL(int slot) 
+  // std::shared_ptr<render::HostMaterial> Context::getDefaultMaterial(int slotID)
   // {
-  //   if (slot == -1) {
-  //     return globalContextAcrossAllGPUs;
-  //   }
-  //   return getDevGroup(slot)->owl;
+  //   auto slot = getSlot(slotID);
+  //   if (!slot->defaultMaterial)
+  //     slot->defaultMaterial = std::make_shared<render::AnariMatte>(this,slotID);
+  //   return slot->defaultMaterial;
   // }
-  rtc::DevGroup *Context::getRTC(int slot) const
+
+  SlotContext *Context::getSlot(int slot)
   {
-    if (slot == -1) {
-      return globalGroupAcrossAllGPUs;
-    }
-    return getDevGroup(slot)->rtc;
+    if (slot < 0 || slot >= perSlot.size())
+      throw std::runtime_error("tried to query an invalid slot!");
+    return &perSlot[slot];
   }
 
-  const DevGroup *Context::getDevGroup(int slot) const
+  bool Context::logging() 
   {
-    DevGroup *dg = getSlot(slot)->devGroup.get();
-    assert(dg);
-    return dg;
-  }
-  DevGroup *Context::getDevGroup(int slot) 
-  {
-    DevGroup *dg = getSlot(slot)->devGroup.get();
-    assert(dg);
-    return dg;
+    return true;
   }
   
   /*! helper function to print a warning when app tries to create anari

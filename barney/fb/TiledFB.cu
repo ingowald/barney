@@ -22,12 +22,12 @@
 
 namespace barney {
 
-  TiledFB::SP TiledFB::create(Device::SP device, FrameBuffer *owner)
+  TiledFB::SP TiledFB::create(Device *device, FrameBuffer *owner)
   {
     return std::make_shared<TiledFB>(device, owner);
   }
 
-  TiledFB::TiledFB(Device::SP device, FrameBuffer *owner)
+  TiledFB::TiledFB(Device *device, FrameBuffer *owner)
     : device(device),
       owner(owner)
   {}
@@ -55,7 +55,7 @@ namespace barney {
     }
   }
 
-  struct SetTileCoordsKernel {
+  struct SetTileCoords {
     TileDesc *tileDescs;
     int numActiveTiles;
     vec2i numTiles;
@@ -118,23 +118,22 @@ namespace barney {
       = (CompressedTile *)rtc->alloc(numActiveTiles * sizeof(CompressedTile));
     tileDescs
       = (TileDesc *)rtc->alloc(numActiveTiles * sizeof(TileDesc));
-    SetTileCoordsKernel args = {
+    SetTileCoords args = {
       tileDescs,
       numActiveTiles,
       numTiles,
       device->globalIndex,
       device->globalIndexStep
     };
-    getDevGroup()->setTileCoordsKernel
-      ->launch(device->rtc,
-               divRoundUp(numActiveTiles,1024),1024,
+    device->setTileCoords
+      ->launch(divRoundUp(numActiveTiles,1024),1024,
                &args);
   }
 
   // ==================================================================
 
 
-  struct CompressTilesKernel {
+  struct CompressTiles {
     CompressedTile *compressedTiles;
     AccumTile      *accumTiles;
     float           accumScale;
@@ -172,26 +171,21 @@ namespace barney {
   {
     SetActiveGPU forDuration(device);
     if (numActiveTiles > 0) {
-      CompressTilesKernel args = {
+      CompressTiles args = {
         compressedTiles,
         accumTiles,
         1.f/(owner->accumID)
       };
-      getDevGroup()->compressTilesKernel
-        ->launch(device->rtc,
-                 numActiveTiles,pixelsPerTile,
+      device->compressTiles
+        ->launch(numActiveTiles,pixelsPerTile,
                  &args);       
     }
   }
   
-  void TiledFB::finalizeTiles_sync()
-  {
-    device->rtc->sync();
-  }
 }
 
-RTC_CUDA_COMPUTE(setTileCoords,barney::SetTileCoordsKernel);
-RTC_CUDA_COMPUTE(compressTiles,barney::CompressTilesKernel);
+RTC_CUDA_COMPUTE(setTileCoords,barney::SetTileCoords);
+RTC_CUDA_COMPUTE(compressTiles,barney::CompressTiles);
 
 
   

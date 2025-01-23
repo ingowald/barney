@@ -20,7 +20,7 @@
 
 namespace barney {
 
-  struct TransferFunction {
+  struct TransferFunction : public Object {
     struct DD {
 
       // static void addVars(std::vector<OWLVarDecl> &vars, int base);
@@ -45,24 +45,27 @@ namespace barney {
       int      numValues;
     };
 
-    TransferFunction(DevGroup *devGroup);
+    TransferFunction(Context *context,
+                     const std::vector<Device *> &devices);
 
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-    DD getDD(const std::shared_ptr<Device> &device) const;
+    DD getDD(Device *device) const;
     
     void set(const range1f &domain,
              const std::vector<vec4f> &values,
              float baseDensity);
     // std::vector<OWLVarDecl> getVarDecls(uint32_t myOffset);
     // void setVariables(OWLGeom geom) const;
-    
-    rtc::Buffer        *valuesBuffer = 0;
+
+    struct PerLogical {
+      rtc::Buffer        *valuesBuffer = 0;
+    };
+    std::vector<PerLogical> logical;
     // OWLBuffer           valuesBuffer = 0;
     range1f             domain = { 0.f, 1.f };
     std::vector<vec4f>  values;
     float               baseDensity;
-    DevGroup     *const devGroup;
   };
 
 

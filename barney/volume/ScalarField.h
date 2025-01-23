@@ -59,10 +59,8 @@ namespace barney {
     static ScalarField::SP create(Context *context, int slot,
                                   const std::string &type);
 
-    void writeDD(DD &dd, rtc::Device *device)
+    void writeDD(DD &dd, Device *device)
     { dd.worldBounds = worldBounds; }
-    
-    // virtual void setVariables(OWLGeom geom);
     
     virtual std::shared_ptr<VolumeAccel> createAccel(Volume *volume) = 0;
     

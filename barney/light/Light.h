@@ -45,7 +45,7 @@ namespace barney {
     };
   
     
-    Light(Context *context, int slot);
+    Light(Context *context, const DevGroup::SP &devices);
 
     std::string toString() const override { return "Light<>"; }
 
@@ -57,7 +57,7 @@ namespace barney {
     // ------------------------------------------------------------------
     
     static Light::SP create(Context *context,
-                            int slot,
+                            const DevGroup::SP &devices,
                             const std::string &name);
 
     vec3f color = vec3f(1.f);

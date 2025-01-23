@@ -953,39 +953,48 @@ namespace barney {
 
   using namespace render;
   
-  void DeviceContext::shadeRays_launch(Renderer *renderer,
-                                       GlobalModel *model,
-                                       TiledFB *fb,
-                                       int generation)
+  void Context::shadeRaysLocally(Renderer *renderer,
+                                 GlobalModel *model,
+                                 FrameBuffer *fb,
+                                 int generation)
   {
-    SetActiveGPU forDuration(device);
-    int numRays = rays.numActive;
-    int bs = 128;
-    int nb = divRoundUp(numRays,bs);
+    for (auto slotModel : model->modelSlots) {
+      World *world = slotModel->world.get();
+      for (auto device : *world->devices) {
+        RayQueue *rayQueue = device->rayQueue;
+        TiledFB *devFB     = fb->getFor(device);
+        int numRays        = rayQueue->numActive;
+        int bs = 128;
+        int nb = divRoundUp(numRays,bs);
+        World::DD devWorld
+          = world->getDD(device);
+        Renderer::DD devRenderer
+          = renderer->getDD(device);
+        
+        render::ShadeRaysKernel args = {
+          devWorld,devRenderer,
+          devFB->accumTiles,
+          (int)fb->accumID,
+          rayQueue->traceAndShadeReadQueue,
+          numRays,
+          rayQueue->receiveAndShadeWriteQueue,
+          rayQueue->_d_nextWritePos,generation
+        };
+        device->shadeRays->launch(nb,bs,&args);
+      }
+    }
 
-    DevGroup *dg = device->devGroup;
-    World *world = model->getSlot(dg->lmsIdx)->world.get();
-
-    World::DD devWorld
-      = world->getDD(device);
-    Renderer::DD devRenderer
-      = renderer->getDD(device.get());
-           
-    render::ShadeRaysKernel args = {
-      devWorld,devRenderer,
-      fb->accumTiles,
-      (int)fb->owner->accumID,
-      rays.traceAndShadeReadQueue,
-      numRays,
-      rays.receiveAndShadeWriteQueue,
-      rays._d_nextWritePos,generation
-    };
-    getDevGroup()->shadeRaysKernel
-      ->launch(device->rtc,
-               nb,bs,
-               &args);
+    // ------------------------------------------------------------------
+    // wait for kernel to complete, and swap queues 
+    // ------------------------------------------------------------------
+    for (auto device : *allDevices) {
+      device->rtc->sync();
+      device->rayQueue->swap();
+      device->rayQueue->numActive = device->rayQueue->readNumActive();
+      device->rayQueue->resetWriteQueue();
+    }
   }
-
+  
 }
 
 RTC_CUDA_COMPUTE(shadeRays,barney::render::ShadeRaysKernel);

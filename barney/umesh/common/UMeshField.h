@@ -140,9 +140,12 @@ namespace barney {
     std::vector<vec4f>      vertices;
     std::vector<int>        indices;
     std::vector<Element>    elements;
-    rtc::Buffer *verticesBuffer   = 0;
-    rtc::Buffer *indicesBuffer    = 0;
-    rtc::Buffer *elementsBuffer   = 0;
+    struct PerLogical {
+      rtc::Buffer *verticesBuffer   = 0;
+      rtc::Buffer *indicesBuffer    = 0;
+      rtc::Buffer *elementsBuffer   = 0;
+    };
+    std::vector<PerLogical> logical;
   };
   
   // ==================================================================

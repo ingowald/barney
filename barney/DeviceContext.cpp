@@ -20,6 +20,7 @@
 #include "barney/fb/FrameBuffer.h"
 #include "barney/Context.h"
 
+#if 0
 namespace barney {
   
   DeviceContext::DeviceContext(Device::SP device)
@@ -71,3 +72,4 @@ namespace barney {
   }
   
 }
+#endif

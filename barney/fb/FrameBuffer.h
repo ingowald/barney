@@ -51,6 +51,7 @@ namespace barney {
     virtual void resetAccumulation() {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }
     void freeResources();
 
+    void finalizeTiles();
     void finalizeFrame();
     virtual void ownerGatherCompressedTiles() = 0;
 
@@ -63,8 +64,14 @@ namespace barney {
       TileDesc       *tileDescs      = 0;
       int             numActiveTiles = 0;
     } gatheredTilesOnOwner;
+
+    TiledFB *getFor(Device *device);
+    struct PLD {
+      TiledFB::SP tiledFB;
+    };
+    PLD *getPLD(Device *device);
     
-    std::vector<TiledFB::SP> perDev;
+    std::vector<PLD> perLogical;
 
     /*! on owner, take the 'gatheredTilesOnOwner', and unpack them into
         linear color, depth, alpha, and normal channels, so denoiser
@@ -94,6 +101,9 @@ namespace barney {
     
     vec2i numPixels = {-1,-1};
 
+    Device *getDenoiserDevice() const;
+    
+    const DevGroup::SP devices;
     Denoiser::SP denoiser;
 
     uint32_t    accumID = 0;

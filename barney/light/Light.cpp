@@ -24,19 +24,21 @@
 
 namespace barney {
 
-  Light::Light(Context *context, int slot)
-    : SlottedObject(context,slot)
+  Light::Light(Context *context,
+               const DevGroup::SP &devices)
+    : SlottedObject(context,devices)
   {}
   
-  Light::SP Light::create(Context *context, int slot,
+  Light::SP Light::create(Context *context,
+                          const DevGroup::SP &devices,
                           const std::string &type)
   {
     if (type == "directional")
-      return std::make_shared<DirLight>(context,slot);
+      return std::make_shared<DirLight>(context,devices);
     if (type == "quad")
-      return std::make_shared<QuadLight>(context,slot);
+      return std::make_shared<QuadLight>(context,devices);
     if (type == "envmap")
-      return std::make_shared<EnvMapLight>(context,slot);
+      return std::make_shared<EnvMapLight>(context,devices);
     
     context->warn_unsupported_object("Light",type);
     return {};

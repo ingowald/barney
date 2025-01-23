@@ -43,7 +43,7 @@ namespace barney {
 
     static SP create(Context *context);
 
-    DD getDD(const Device *device) const;
+    DD getDD(Device *device) const;
     
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

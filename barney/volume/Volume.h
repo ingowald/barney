@@ -78,7 +78,7 @@ namespace barney {
     
     ScalarField *const sf = 0;
     Volume      *const volume = 0;
-    DevGroup    *const devGroup;
+    const DevGroup::SP devices;
   };
 
 
@@ -110,7 +110,6 @@ namespace barney {
       typename SFType::DD  sf;
       TransferFunction::DD xf;
     };
-  
     
     typedef std::shared_ptr<Volume> SP;
     
@@ -122,7 +121,8 @@ namespace barney {
 
     VolumeAccel::UpdateMode updateMode() { return accel->updateMode(); }
 
-    static SP create(ScalarField::SP sf) { return std::make_shared<Volume>(sf); }
+    static SP create(ScalarField::SP sf)
+    { return std::make_shared<Volume>(sf); }
     
     /*! (re-)build the accel structure for this volume, probably after
         changes to transfer functoin (or later, scalar field) */
@@ -136,9 +136,12 @@ namespace barney {
     ScalarField::SP  sf;
     VolumeAccel::SP  accel;
     TransferFunction xf;
-    DevGroup        *const devGroup;
-    
-    std::vector<rtc::Group *> generatedGroups;
+
+    struct PLD {
+      std::vector<rtc::Group *> generatedGroups;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
     // std::vector<OWLGroup> generatedGroups;
   };
 
@@ -187,7 +190,8 @@ namespace barney {
 
   
   inline VolumeAccel::VolumeAccel(ScalarField *sf, Volume *volume)
-    : sf(sf), volume(volume), devGroup(sf->getDevGroup())
+    : sf(sf), volume(volume),
+      devices(sf->devices)
   {
     assert(sf);
     assert(volume);

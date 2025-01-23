@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
 #include "barney/DeviceContext.h"
 #include "barney/material/DeviceMaterial.h"
 #include "barney/render/Sampler.h"

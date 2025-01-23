@@ -29,7 +29,8 @@ namespace barney {
   struct Group : public SlottedObject {
     typedef std::shared_ptr<Group> SP;
 
-    Group(Context *context, int slot,
+    Group(Context *context,
+          const DevGroup::SP &devices,
           const std::vector<Geometry::SP> &geoms,
           const std::vector<Volume::SP> &volumes);
     virtual ~Group();
@@ -57,12 +58,17 @@ namespace barney {
     ObjectRefsData::SP lights;
 
 #if 1
-    std::vector<rtc::Geom *> triangleGeoms;
-    std::vector<rtc::Geom *> userGeoms;
-    std::vector<rtc::Geom *> volumeGeoms;
-    rtc::Group *userGeomGroup     = 0;
-    rtc::Group *triangleGeomGroup = 0;
-    rtc::Group *volumeGeomsGroup  = 0;
+    struct /* per logical device */PLD {
+      std::vector<rtc::Geom *> triangleGeoms;
+      std::vector<rtc::Geom *> userGeoms;
+      std::vector<rtc::Geom *> volumeGeoms;
+      rtc::Group *userGeomGroup     = 0;
+      rtc::Group *triangleGeomGroup = 0;
+      rtc::Group *volumeGeomsGroup  = 0;
+    };
+    PLD *getPLD(Device *device);
+    
+    std::vector<PLD> perLogical;
 #else
     std::vector<OWLGeom> triangleGeoms;
     std::vector<OWLGeom> userGeoms;

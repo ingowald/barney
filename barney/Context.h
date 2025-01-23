@@ -19,12 +19,13 @@
 #include "barney/render/Ray.h"
 #include "barney/geometry/Geometry.h"
 #include "barney/Camera.h"
-#include "barney/DeviceContext.h"
+// #include "barney/DeviceContext.h"
 #include "barney/common/cuda-helper.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
 #include "barney/render/Renderer.h"
 #include <set>
+#include "barney/render/RayQueue.h"
 
 namespace barney {
   using namespace owl::common;
@@ -37,8 +38,19 @@ namespace barney {
     struct HostMaterial;
     struct SamplerRegistry;
     struct MaterialRegistry;
-    struct DeviceMaterial;
-    
+    struct DeviceMaterial;    
+  };
+
+  struct SlotContext {
+    Context *context;
+    int modelRankInThisSlot;//dataGroupID;
+    /*! device(s) inside this data group; will be a subset of
+      Context::devices */
+    std::vector<int>     gpuIDs;
+    DevGroup::SP         devices;
+    std::shared_ptr<render::HostMaterial>     defaultMaterial = 0;
+    std::shared_ptr<render::SamplerRegistry>  samplerRegistry = 0;
+    std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
   };
   
   struct Context// : public Object
@@ -54,7 +66,9 @@ namespace barney {
     GlobalModel *createModel();
     Renderer *createRenderer();
 
-    std::shared_ptr<render::HostMaterial> getDefaultMaterial(int slot);
+    // std::shared_ptr<render::HostMaterial> getDefaultMaterial(int slot);
+
+    static bool logging();
     
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const 
@@ -83,24 +97,12 @@ namespace barney {
         one */
     void addHostReference(Object::SP object);
 
-    DevGroup *getDevGroup();
     render::World *getWorld(int slot);
     
-    Device::SP getDevice(int contextRank)
-    {
-      assert(contextRank >= 0);
-      assert(contextRank < devices.size());
-      assert(devices[contextRank]);
-      assert(devices[contextRank]->device);
-      return devices[contextRank]->device;
-    }
-    
-    std::vector<DeviceContext::SP> devices;
-
     /* goes across all devices, syncs that device, and checks for
        errors - careful, this will be very slow, shoudl only be used
        for debugging multi-gpu race conditions and such */
-    void syncCheckAll(const char *where);
+    void syncCheckAll(const char *where="");
     
     // for debugging ...
     virtual void barrier(bool warn=true) {}
@@ -162,21 +164,8 @@ namespace barney {
                                  const std::string &type);
     std::set<std::string> alreadyWarned;
 
-    struct PerSlot {
-      int modelRankInThisSlot;//dataGroupID;
-      /*! device(s) inside this data group; will be a subset of
-        Context::devices */
-      std::vector<int>     gpuIDs;
-      barney::DevGroup::SP devGroup = 0;
-      std::shared_ptr<render::HostMaterial> defaultMaterial = 0;
-      std::shared_ptr<render::SamplerRegistry>  samplerRegistry = 0;
-      std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
-      // iw: this is more like "globals", this name doesn't fit
-      // render::World        world;
-    };
-    const PerSlot *getSlot(int slot) const;
-    PerSlot *getSlot(int slot);
-    std::vector<PerSlot> perSlot;
+    SlotContext *getSlot(int slot);
+    std::vector<SlotContext> perSlot;
     
     const bool isActiveWorker;
 
@@ -188,31 +177,25 @@ namespace barney {
         ever be global */
     // OWLContext getOWL(int slot);// { return globalContextAcrossAllGPUs; }
     // OWLContext getGlobalOWL() const;
-    rtc::DevGroup *getRTC(int slot) const;
+    // rtc::DevGroup *getRTC(int slot) const;
     
-    const std::vector<Device::SP> &getDevices(int slot) const
-    {
-      if (slot == -1)
+    
+    DevGroup::SP getDevices(int slot) {
+      if (slot < 0)
         return allDevices;
-      else
-        return getDevGroup(slot)->devices;
+      else 
+        return getSlot(slot)->devices;
     }
-    DevGroup *getDevGroup(int slot);
-    const DevGroup *getDevGroup(int slot) const;
     
     int contextSize() const;
 
-  private:
-    /* as the name implies, a single, global owl context across all
-       GPUs; this is merely there to enable peer access across all
-       GPUs; for actual rendering data each data group will have to
-       have its own context */
-    // OWLContext globalContextAcrossAllGPUs = 0 ;
-    rtc::DevGroup *globalGroupAcrossAllGPUs = 0;
+    struct OwnedStuff {
+      Device::SP device;
+      RayQueue::SP rayQueue;
+    };
+    std::vector<OwnedStuff> ownedStuff;
     
-    /*! list of _all_ devices across all slots, so across DIFFERENT
-        device groups! */
-    std::vector<Device::SP> allDevices;
+    DevGroup::SP allDevices;
   };
   
 
@@ -226,18 +209,20 @@ namespace barney {
      for debugging multi-gpu race conditions and such */
   inline void Context::syncCheckAll(const char *where)
   {
-    for (auto dev : devices) {
-      SetActiveGPU forDuration(dev->device);
+    for (auto device : *allDevices)
+      device->rtc->sync();
+      // {
+      // SetActiveGPU forDuration(dev->device);
 
-      cudaDeviceSynchronize();                                   
-      cudaError_t rc = cudaGetLastError();                        
-      if (rc != cudaSuccess) {                                    
-        printf("******************************************************************\nCUDA fatal error %s (%s)\n",
-               cudaGetErrorString(rc),where);
-        fflush(0);
-        throw std::runtime_error("unrecoverable cuda error");
-      }                                                              
-    }
+      // cudaDeviceSynchronize();                                   
+      // cudaError_t rc = cudaGetLastError();                        
+      // if (rc != cudaSuccess) {                                    
+      //   printf("******************************************************************\nCUDA fatal error %s (%s)\n",
+      //          cudaGetErrorString(rc),where);
+      //   fflush(0);
+      //   throw std::runtime_error("unrecoverable cuda error");
+      // }                                                              
+  // }
   }
     
 }

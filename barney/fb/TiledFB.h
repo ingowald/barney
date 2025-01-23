@@ -71,17 +71,15 @@ namespace barney {
 
   struct TiledFB {
     typedef std::shared_ptr<TiledFB> SP;
-    static SP create(Device::SP device, FrameBuffer *owner);
+    static SP create(Device *device, FrameBuffer *owner);
 
-    TiledFB(Device::SP device, FrameBuffer *owner);
+    TiledFB(Device *device, FrameBuffer *owner);
     virtual ~TiledFB();
 
-    DevGroup *getDevGroup() const { return device->devGroup; }
     void resize(vec2i newSize);
     void free();
 
     void finalizeTiles_launch();
-    void finalizeTiles_sync();
 
     /*! number of (valid) pixels */
     vec2i numPixels       = { 0,0 };
@@ -95,7 +93,7 @@ namespace barney {
     AccumTile *accumTiles = 0;
     CompressedTile *compressedTiles = 0;
     FrameBuffer *const owner;
-    Device::SP  const device;
+    Device      *const device;
   };
 
 }

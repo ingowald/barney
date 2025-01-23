@@ -17,7 +17,7 @@
 #ifdef __CUDACC__
 # define OWL_DISABLE_TBB
 #endif
-#include "barney/DeviceContext.h"
+#include "barney/DeviceGroup.h"
 #include "barney/render/Ray.h"
 #include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
@@ -29,7 +29,7 @@ namespace barney {
       *d_count. This kernel operates on *tiles* (not complete frames);
       the list of tiles to generate rays for is passed in 'tileDescs';
       there will be one cuda block per tile */
-    struct GenerateRaysKernel {
+    struct GenerateRays {
       template<typename RTCore>
         __device__ __host__ void run(const RTCore &rtcore);
         
@@ -37,7 +37,6 @@ namespace barney {
         Renderer::DD renderer;
         /*! a unique random number seed value for pixel
           and lens jitter; probably just accumID */
-        int rngSeed;
         int accumID;
         /*! full frame buffer size, to check if a given
           tile's pixel ID is still valid */
@@ -59,7 +58,7 @@ namespace barney {
 
     template<typename RTCore>
     __device__ __host__
-    void GenerateRaysKernel::run(const RTCore &rtCore)
+    void GenerateRays::run(const RTCore &rtCore)
     {
       // ------------------------------------------------------------------
       int tileID = rtCore.getBlockIdx().x;
@@ -172,38 +171,52 @@ namespace barney {
       rayQueue[pos] = ray;
     }
   }
-  
-  void DeviceContext::generateRays_launch(TiledFB *fb,
-                                          const Camera::DD &camera,
-                                          const Renderer::DD &renderer,
-                                          int rngSeed)
-  {
-    auto device = fb->device;
-    SetActiveGPU forDuration(device);
 
+
+
+  void Context::generateRays(const barney::Camera::DD &camera,
+                             Renderer *renderer,
+                             FrameBuffer *fb)
+  {
     auto getPerRayDebug = [&]()
     {
       const char *fromEnv = getenv("BARNEY_DBG_RENDER");
       return fromEnv && std::stoi(fromEnv);
     };
     static bool enablePerRayDebug = getPerRayDebug();
-    render::GenerateRaysKernel args = {
-       /* variable args */
-       camera,
-       renderer,
-       rngSeed,
-       (int)fb->owner->accumID,
-       fb->numPixels,
-       rays._d_nextWritePos,
-       rays.receiveAndShadeWriteQueue,
-       fb->tileDescs,
-       enablePerRayDebug
-    };
-    getDevGroup()->generateRaysKernel
-      ->launch(device->rtc,
-               fb->numActiveTiles,
-               pixelsPerTile,
-               &args);
+    
+    assert(fb);
+    int accumID=fb->accumID;
+    // ------------------------------------------------------------------
+    // launch all GPUs to do their stuff
+    // ------------------------------------------------------------------
+    for (auto device : *allDevices) {
+      TiledFB *devFB = fb->getFor(device);
+      render::GenerateRays args = {
+        /* variable args */
+        camera,
+        renderer->getDD(device),
+        accumID,
+        fb->numPixels,
+        device->rayQueue->_d_nextWritePos,
+        device->rayQueue->receiveAndShadeWriteQueue,
+        devFB->tileDescs,
+        enablePerRayDebug
+      };
+      device->generateRays->launch(devFB->numActiveTiles,
+                                   pixelsPerTile,
+                                   &args);
+    }
+    // ------------------------------------------------------------------
+    // wait for all GPUs' completion
+    // ------------------------------------------------------------------
+    for (auto device : *allDevices) {
+      device->rtc->sync();
+      device->rayQueue->swap();
+      device->rayQueue->numActive = device->rayQueue->readNumActive();
+      device->rayQueue->resetWriteQueue();
+    }
   }
+  
 }
-RTC_CUDA_COMPUTE(generateRays,barney::render::GenerateRaysKernel);
+RTC_CUDA_COMPUTE(generateRays,barney::render::GenerateRays);

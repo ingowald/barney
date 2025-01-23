@@ -5,81 +5,47 @@ extern "C" char traceRays_ptx[];
 namespace barney {
   namespace optix {
     
-    OptixDevice::OptixDevice(const optix::DevGroup *parent,
-                             int physicalGPU,
-                             int localID)
-      : cuda::BaseDevice(physicalGPU,localID),
-        parent(parent)
+    Device::Device(int physicalGPU)
+      : cuda::BaseDevice(physicalGPU)
     {
-      // owl = owlContextCreate((int*)&physicalGPU,1);
-      // OWLVarDecl args[]
-      //   = {
-      //   { nullptr }
-      // };
-      // OWLModule module = owlModuleCreate(owl,traceRays_ptx);
-      // rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
-      
-      // owlBuildPrograms(owl);
-
-      // OWLVarDecl params[]
-      //   = {
-      //   { "raw", OWL_USER_TYPE(sizeOfGlobals), 0 },
-      //   { nullptr },,
-      // };
-      // lp = owlParamsCreate(owl,
-      //                      sizeOfGlobals,
-      //                      params,
-      //                      -1);
+      owl = owlContextCreate(&physicalGPU,1);
     }
 
-    OptixDevice::~OptixDevice()
+    Device::~Device()
     {
+      destroy();
     }
 
-    
-    DevGroup::DevGroup(OptixBackend *backend,
-                       const std::vector<int> &gpuIDs)
-      : cuda::BaseDevGroup(backend,gpuIDs)
+    void Device::destroy()
     {
-      owl = owlContextCreate((int*)gpuIDs.data(),gpuIDs.size());
-
-      for (int owlID=0;owlID<gpuIDs.size();owlID++)
-        devices.push_back(new OptixDevice(this,gpuIDs[owlID],owlID));
-    }
-
-    DevGroup::~DevGroup()
-    {
-      for (auto device : devices)
-        delete device;
-      devices.clear();
-      owlContextDestroy(owl);
+      if (owl) owlContextDestroy(owl);
       owl = 0;
     }
-    
-    rtc::DevGroup *OptixBackend
-    ::createDevGroup(const std::vector<int> &gpuIDs)
-    {
-      assert(!gpuIDs.empty());
-      optix::DevGroup *dg = new DevGroup(this,gpuIDs);
-      // assert(dg);
-      // for (auto gpuID : gpuIDs)
-      //   dg->devices.push_back(new OptixDevice(dg,gpuID));
-      return dg;
-    }
+
+
     
     OptixBackend::OptixBackend()
     {}
 
+    std::vector<rtc::Device *>
+    OptixBackend::createDevices(const std::vector<int> &gpuIDs)
+    {
+      std::vector<rtc::Device *> devs;
+      for (auto gpuID : gpuIDs)
+        devs.push_back(new optix::Device(gpuID));
+      return devs;
+    }
+    
 
     // ==================================================================
     // rtcore/pipeline stuff
     // ==================================================================
-    void DevGroup::buildPipeline() 
+    void Device::buildPipeline() 
     {
       owlBuildPipeline(owl);
     }
       
-    void DevGroup::buildSBT() 
+    void Device::buildSBT() 
     {
       owlBuildSBT(owl);
     }
@@ -90,72 +56,51 @@ namespace barney {
     // buffer
     // ==================================================================
 
-    void DevGroup::free(rtc::Buffer *buffer) const
+    void Device::freeBuffer(rtc::Buffer *buffer) 
     {
       delete buffer;
     }
     
-    void DevGroup::copy(rtc::Buffer *dst,
-                        rtc::Buffer *src,
-                        size_t numBytes) const
-    {
-      for (auto dev : devices) {
-        BARNEY_CUDA_CALL(Memcpy(dst->getDD(dev),src->getDD(dev),
-                                numBytes,cudaMemcpyDefault));
-      }
-    }
-    
-    rtc::Buffer *DevGroup::createBuffer(size_t numBytes,
-                                        const void *initValues) const
+    rtc::Buffer *Device::createBuffer(size_t numBytes,
+                                      const void *initValues) 
     {
       return new Buffer(this,numBytes,initValues);
     }
-
-    Buffer::Buffer(const optix::DevGroup *dg,
-                             size_t size,
-                             const void *initData)
+    
+    Buffer::Buffer(optix::Device *device,
+                   size_t size,
+                   const void *initData)
+      : rtc::Buffer(device)
     {
-      owl = owlDeviceBufferCreate(dg->owl,OWL_BYTE,size,initData);
+      owl = owlDeviceBufferCreate(device->owl,OWL_BYTE,size,initData);
     }
     
-    void *Buffer::getDD(const rtc::Device *device) const
-    { return (void*)owlBufferGetPointer(owl,device->localID); }
+    void *Buffer::getDD() const
+    { return (void*)owlBufferGetPointer(owl,0); }
     
-    void Buffer::upload(const void *hostPtr,
-                             size_t numBytes,
-                             size_t ofs,
-                             const rtc::Device *device)
-    {
-      if (device) {
-        uint8_t *devPtr = (uint8_t*)owlBufferGetPointer(owl,device->localID);
-        BARNEY_CUDA_CALL(Memcpy(devPtr+ofs,hostPtr,
-                                numBytes,cudaMemcpyDefault));
-      } else {
-        owlBufferUpload(owl,hostPtr,ofs,numBytes);
-      }
-    }
-    
-
     // ==================================================================
     // geom
     // ==================================================================
 
-    Geom::Geom(OWLGeom geom)
-      : geom(geom)
+    Geom::Geom(GeomType *gt,
+               OWLGeom geom)
+      : rtc::Geom(gt->device),
+        owl(geom)
     {}
     
     Geom::~Geom()
     {
-      owlGeomRelease(geom);
+      owlGeomRelease(owl);
     }
 
-    void Geom::setDD(const void *dd, const rtc::Device *device)
+    void Geom::setDD(const void *dd)
     {
-      owlGeomSetRaw(geom,"raw",dd);
+      owlGeomSetRaw(owl,"raw",dd);
     }
 
-    TrianglesGeom::TrianglesGeom(OWLGeom geom)
-      : Geom(geom)
+    TrianglesGeom::TrianglesGeom(GeomType *gt,
+                                 OWLGeom geom)
+      : Geom(gt,geom)
     {}
     
     /*! only for user geoms */
@@ -168,13 +113,13 @@ namespace barney {
     /*! can only get called on triangle type geoms */
     void TrianglesGeom::setVertices(rtc::Buffer *vertices, int numVertices)
     {
-      owlTrianglesSetVertices(geom,((Buffer*)vertices)->owl,
+      owlTrianglesSetVertices(owl,((Buffer*)vertices)->owl,
                               numVertices,sizeof(float3),0);
     }
     
     void TrianglesGeom::setIndices(rtc::Buffer *indices, int numIndices)
     {
-      owlTrianglesSetIndices(geom,((Buffer*)indices)->owl,
+      owlTrianglesSetIndices(owl,((Buffer*)indices)->owl,
                              numIndices,sizeof(int3),0);
     }
     
@@ -183,14 +128,14 @@ namespace barney {
     // ==================================================================
     rtc::Geom *TrianglesGeomType::createGeom()
     {
-      OWLGeom geom = owlGeomCreate(devGroup->owl,gt);
-      return new TrianglesGeom(geom);
+      OWLGeom geom = owlGeomCreate(((optix::Device*)device)->owl,this->gt);
+      return new TrianglesGeom(this,geom);
     }
     
     rtc::GeomType *
-    DevGroup::createTrianglesGeomType(const char *typeName,
-                                      size_t sizeOfDD,
-                                      const char *ahFctName,
+    Device::createTrianglesGeomType(const char *typeName,
+                                    size_t sizeOfDD,
+                                    const char *ahFctName,
                                       const char *chFctName)
     {
       return new TrianglesGeomType(this,typeName,sizeOfDD,
@@ -203,29 +148,29 @@ namespace barney {
       gt = 0;
     }
     
-    TrianglesGeomType::TrianglesGeomType(const DevGroup *devGroup,
+    TrianglesGeomType::TrianglesGeomType(optix::Device *device,
                                          const std::string &typeName,
                                          size_t sizeOfDD,
                                          const std::string &ahFctName,
                                          const std::string &chFctName)
-      : GeomType(devGroup)
+      : GeomType(device)
     {
       OWLVarDecl vars[] = {
         {"raw",(OWLDataType)(OWL_USER_TYPE_BEGIN+sizeOfDD),0},
         {nullptr}
       };
-      gt = owlGeomTypeCreate(devGroup->owl,OWL_GEOM_TRIANGLES,
+      gt = owlGeomTypeCreate(device->owl,OWL_GEOM_TRIANGLES,
                              sizeOfDD,vars,-1);
       
       const char *Triangles_ptx
         = (const char *)rtc::getSymbol(typeName+"_ptx");
       OWLModule module = owlModuleCreate
-        (devGroup->owl,Triangles_ptx);
+        (device->owl,Triangles_ptx);
       owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
                                chFctName.c_str());//"TrianglesCH");
       owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
                            ahFctName.c_str());//"TrianglesAH");
-      owlBuildPrograms(devGroup->owl);
+      owlBuildPrograms(device->owl);
       owlModuleRelease(module);
     }
 
@@ -234,10 +179,13 @@ namespace barney {
     // kernels
     // ==================================================================
 
-    struct ComputeWrapper : public ::barney::rtc::ComputeKernel {
-      typedef void (*LaunchFct)(vec3i, vec3i, int, cudaStream_t, const void *);
+    struct ComputeWrapper : public ::barney::rtc::Compute {
+      typedef void (*LaunchFct)(vec3i, vec3i, int,
+                                cudaStream_t, const void *);
       
-      ComputeWrapper(const std::string &kernelName)        
+      ComputeWrapper(Device *device,
+                     const std::string &kernelName)
+        : rtc::Compute(device)
       {
         const std::string symbolName
           = "barney_rtc_cuda_launch_"+kernelName;
@@ -246,29 +194,25 @@ namespace barney {
       
       LaunchFct launchFct = 0;
       
-      void launch(rtc::Device *device,
-                  int numBlocks,
+      void launch(int numBlocks,
                   int blockSize,
                   const void *dd) override
       {
-        do_launch(device,vec3i(numBlocks,1,1),vec3i(blockSize,1,1),dd);
+        do_launch(vec3i(numBlocks,1,1),vec3i(blockSize,1,1),dd);
       }
-      void launch(rtc::Device *device,
-                  vec2i nb,
+      void launch(vec2i nb,
                   vec2i bs,
                   const void *dd) override
       {
-        do_launch(device,vec3i(nb.x,nb.y,1),vec3i(bs.x,bs.y,1),dd);
+        do_launch(vec3i(nb.x,nb.y,1),vec3i(bs.x,bs.y,1),dd);
       }
-      void launch(rtc::Device *device,
-                  vec3i nb,
+      void launch(vec3i nb,
                   vec3i bs,
                   const void *dd) override
       {
-        do_launch(device,nb,bs,dd);
+        do_launch(nb,bs,dd);
       }
-      void do_launch(rtc::Device *device,
-                     vec3i nb,
+      void do_launch(vec3i nb,
                      vec3i bs,
                      const void *dd) 
       {
@@ -277,18 +221,19 @@ namespace barney {
       }
     };
     
-    rtc::ComputeKernel *
-    DevGroup::createCompute(const std::string &kernelName) 
+    rtc::Compute *
+    Device::createCompute(const std::string &kernelName) 
     {
-      return new ComputeWrapper(kernelName);
+      return new ComputeWrapper(this,kernelName);
     }
 
 
-    struct TraceWrapper : public rtc::TraceKernel
+    struct TraceWrapper : public rtc::Trace
     {
-      TraceWrapper(optix::DevGroup *dg,
+      TraceWrapper(optix::Device *device,
                    const std::string &kernelName,
                    size_t sizeOfLP)
+        : Trace(device)
       {
         const char *ptxCode = (const char *)
           rtc::getSymbol(kernelName+"_ptx");
@@ -296,50 +241,44 @@ namespace barney {
           = {
           { nullptr }
         };
-        mod = owlModuleCreate(dg->owl,ptxCode);
-        rg = owlRayGenCreate(dg->owl,mod,
+        mod = owlModuleCreate(device->owl,ptxCode);
+        rg = owlRayGenCreate(device->owl,mod,
                              kernelName.c_str(),
                              0,rg_args,-1);
-        owlBuildPrograms(dg->owl);
+        owlBuildPrograms(device->owl);
 
-        PRINT(sizeOfLP);
         OWLVarDecl lp_args[]
           = {
           { "raw", (OWLDataType)(OWL_USER_TYPE_BEGIN+sizeOfLP), 0 },
           { nullptr }
         };
-        lp = owlParamsCreate(dg->owl,sizeOfLP,lp_args,-1);
+        lp = owlParamsCreate(device->owl,sizeOfLP,lp_args,-1);
       }
 
-      void launch(rtc::Device *device,
-                  vec2i dims,
-                  const void *dd) override
+      void launch(vec2i dims, const void *dd) override
       {
-        int devID = ((OptixDevice*)device)->localID;
-        owlParamsSetRaw(lp,"raw",dd,devID);
-        owlAsyncLaunch2DOnDevice(rg,dims.x,dims.y,devID,lp);
+        owlParamsSetRaw(lp,"raw",dd,0);
+        owlAsyncLaunch2DOnDevice(rg,dims.x,dims.y,0,lp);
       }
-      void launch(rtc::Device *device,
-                  int launchDims,
+      
+      void launch(int launchDims,
                   const void *dd) override
       {
         BARNEY_NYI();
       }
-      void sync(rtc::Device *device) override
+      void sync() override
       {
-        int devID = ((OptixDevice*)device)->localID;
-        cudaStream_t s = owlParamsGetCudaStream(lp,devID);
+        cudaStream_t s = owlParamsGetCudaStream(lp,0);
         BARNEY_CUDA_CALL(StreamSynchronize(s));
       }
-      
-      
+     
       OWLModule mod;
       OWLRayGen rg;
       OWLLaunchParams lp;
     };
     
-    rtc::TraceKernel *
-    DevGroup::createTrace(const std::string &kernelName,
+    rtc::Trace *
+    Device::createTrace(const std::string &kernelName,
                           size_t sizeOfLP)
     {
       return new TraceWrapper(this,kernelName,sizeOfLP);
@@ -349,56 +288,60 @@ namespace barney {
     // ==================================================================
     // groups
     // ==================================================================
-    void DevGroup::free(rtc::Group *group)
+    void Device::freeGroup(rtc::Group *group)
     {
       delete group;
     }
+
+    Group::Group(optix::Device *device, OWLGroup owl)
+      : rtc::Group(device),
+        owl(owl)
+    {}
     
     rtc::Group *
-    DevGroup::createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
+    Device::createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
     {
       std::vector<OWLGeom> owlGeoms;
       for (auto geom : geoms)
-        owlGeoms.push_back(((Geom *)geom)->geom);
+        owlGeoms.push_back(((Geom *)geom)->owl);
       OWLGroup g = owlTrianglesGeomGroupCreate(owl,
                                                owlGeoms.size(),
                                                owlGeoms.data());
-      return new Group(g);
+      return new Group(this,g);
     }
 
     rtc::Group *
-    DevGroup::createInstanceGroup(const std::vector<rtc::Group *> &groups,
+    Device::createInstanceGroup(const std::vector<rtc::Group *> &groups,
                                   const std::vector<affine3f> &xfms)
     {
-      std::vector<OWLGroup> owlGroups;
+      std::vector<OWLGroup> owls;
       for (auto group : groups)
-        owlGroups.push_back(((Group *)group)->owlGroup);
+        owls.push_back(((Group *)group)->owl);
       OWLGroup g
         = owlInstanceGroupCreate(owl,
-                                 owlGroups.size(),
-                                 owlGroups.data(),
+                                 owls.size(),
+                                 owls.data(),
                                  nullptr,
                                  (const float *)xfms.data());
-      return new Group(g);
+      return new Group(this,g);
     }
 
     
-    rtc::device::AccelHandle
-    Group::getDD(const rtc::Device *device) const
+    rtc::device::AccelHandle Group::getDD() const
     {
       OptixTraversableHandle handle
-        = owlGroupGetTraversable(owlGroup,device->localID);
+        = owlGroupGetTraversable(owl,0);
       return (const rtc::device::AccelHandle &)handle;
     }
     
     void Group::buildAccel()
     {
-      owlGroupBuildAccel(owlGroup);
+      owlGroupBuildAccel(owl);
     }
     
     void Group::refitAccel() 
     {
-      owlGroupRefitAccel(owlGroup);
+      owlGroupRefitAccel(owl);
     }
       
     

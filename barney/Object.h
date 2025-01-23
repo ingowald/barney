@@ -20,18 +20,18 @@
 #include "barney/common/mat4.h"
 #include "rtcore/common/Backend.h"
 #include "rtcore/common/RTCore.h"
+#include "barney/DeviceGroup.h"
 
 namespace barney {
 
-  struct Device;
-  struct DevGroup;
   struct Context;
   struct ModelSlot;
   struct Data;
+  
   namespace render {
     struct World;
   };
-  
+
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
   struct Object : public std::enable_shared_from_this<Object> {
@@ -86,23 +86,16 @@ namespace barney {
     // NOT a shared pointer to avoid cyclical dependencies.
     Context *const context;
   };
-
+ 
   /*! a object owned (only) in a particular data group */
   struct SlottedObject : public Object {
-    SlottedObject(Context *context, int slot);
+    SlottedObject(Context *context, const DevGroup::SP &devices);
     virtual ~SlottedObject() = default;
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "<SlottedObject>"; }
 
-    const std::vector<std::shared_ptr<Device>> &getDevices() const;
-    //    OWLContext     getOWL() const;
-    DevGroup *getDevGroup() const;
-    
-    rtc::DevGroup *getRTC() const;
-    // render::World *getWorld() const;
-    
-    const int      slot;
+    const DevGroup::SP devices;    
   };
 
   // ==================================================================

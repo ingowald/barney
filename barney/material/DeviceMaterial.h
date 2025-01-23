@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "barney/render/Ray.h"
 #include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/render/HitAttributes.h"
 // #include "barney/render/device/GeometryAttributes.h"

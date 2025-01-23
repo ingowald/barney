@@ -19,8 +19,53 @@
 #include "barney/Context.h"
 
 namespace barney {
-
-  const std::string to_string(BNDataType type)
+  
+  rtc::DataType toRTC(BNDataType type)
+  {
+    switch (type) {
+    case BN_FLOAT:
+      return rtc::FLOAT;
+      
+    case BN_FLOAT2:
+      return rtc::FLOAT2;
+      
+    case BN_FLOAT3:
+      return rtc::FLOAT3;
+      
+    case BN_FLOAT4:
+      return rtc::FLOAT4;
+      
+    case BN_INT:
+      return rtc::INT;
+      
+    case BN_INT2:
+      return rtc::INT2;
+      
+    case BN_INT3:
+      return rtc::INT3;
+      
+    case BN_INT4:
+      return rtc::INT4;
+      
+    case BN_UFIXED8:
+      return rtc::UCHAR;
+      
+    case BN_UFIXED16:
+      return rtc::USHORT;
+      
+    case BN_UFIXED8_RGBA:
+      return rtc::UCHAR4;
+      
+    case BN_FLOAT4_RGBA:
+      return rtc::FLOAT4;
+      
+    default: throw std::runtime_error
+        ("un-recognized barney data type #"
+         +std::to_string((int)type));
+    };
+  }
+  
+  std::string to_string(BNDataType type)
   {
     switch (type) {
     case BN_DATA_UNDEFINED:
@@ -48,33 +93,9 @@ namespace barney {
     case BN_FLOAT4:
       return "BN_FLOAT4";
     default:
-      throw std::runtime_error("#bn internal error: to_string not implemented for "
-                               "numerical BNDataType #"+std::to_string(int(type)));
-    };
-  };
-  
-  OWLDataType owlTypeFor(BNDataType type)
-  {
-    switch (type) {
-    case BN_FLOAT:
-      return OWL_FLOAT;
-    case BN_FLOAT2:
-      return OWL_FLOAT2;
-    case BN_FLOAT3:
-      return OWL_FLOAT3;
-    case BN_FLOAT4:
-      return OWL_FLOAT4;
-    case BN_INT:
-      return OWL_INT;
-    case BN_INT2:
-      return OWL_INT2;
-    case BN_INT3:
-      return OWL_INT3;
-    case BN_INT4:
-      return OWL_INT4;
-    default:
-      throw std::runtime_error("#bn internal error: owlTypeFor() not implemented for "
-                               "numerical BNDataType #"+std::to_string(int(type)));
+      throw std::runtime_error
+        ("#bn internal error: to_string not implemented for "
+         "numerical BNDataType #"+std::to_string(int(type)));
     };
   };
   
@@ -98,33 +119,41 @@ namespace barney {
     case BN_INT4:
       return sizeof(vec4i);
     default:
-      throw std::runtime_error("#bn internal error: owlSizeOf() not implemented for "
-                               "numerical BNDataType #"+std::to_string(int(type)));
+      throw std::runtime_error
+        ("#bn internal error: owlSizeOf() not implemented for "
+         "numerical BNDataType #"+std::to_string(int(type)));
     };
   };
   
+  Data::Data(Context *context,
+             const DevGroup::SP &devices,
+             BNDataType type,
+             size_t numItems)
+    : SlottedObject(context,devices),
+      type(type),
+      count(numItems)
+  {}
+
   PODData::PODData(Context *context,
-                   int slot,
+                   const DevGroup::SP &devices,
                    BNDataType type,
                    size_t numItems,
                    const void *_items)
-    : Data(context,slot,type,numItems)
+    : Data(context,devices,type,numItems)
   {
-    // owl = owlDeviceBufferCreate(getOWL(),owlTypeFor(type),
-    //                             numItems,_items);
-    rtcBuffer
-      = getRTC()->createBuffer(numItems*owlSizeOf(type),_items);
+    for (auto device : *devices) 
+      getPLD(device)->rtcBuffer 
+        = device->rtc->createBuffer(numItems*owlSizeOf(type),_items);
   }
-
+  
   PODData::~PODData()
   {
-    if (rtcBuffer) getRTC()->free(rtcBuffer);
-    rtcBuffer = 0;
-    // if (owl) owlBufferRelease(owl);
+    for (auto device : *devices)
+      device->rtc->freeBuffer(getPLD(device)->rtcBuffer);
   }
 
   Data::SP Data::create(Context *context,
-                        int slot,
+                        const DevGroup::SP &devices,
                         BNDataType type,
                         size_t numItems,
                         const void *items)
@@ -138,30 +167,24 @@ namespace barney {
     case BN_FLOAT2:
     case BN_FLOAT3:
     case BN_FLOAT4:
-      return std::make_shared<PODData>(context,slot,type,numItems,items);
+      return std::make_shared<PODData>
+        (context,devices,type,numItems,items);
     case BN_OBJECT:
-      return std::make_shared<ObjectRefsData>(context,slot,type,numItems,items);
+      return std::make_shared<ObjectRefsData>
+        (context,devices,type,numItems,items);
     default:
-      throw std::runtime_error("un-implemented data type '"+to_string(type)
+      throw std::runtime_error("un-implemented data type '"
+                               +to_string(type)
                                +" in Data::create()");
     }
   }
   
-  Data::Data(Context *context,
-             int slot,
-             BNDataType type,
-             size_t numItems)
-    : SlottedObject(context,slot),
-      type(type),
-      count(numItems)
-  {}
-
   ObjectRefsData::ObjectRefsData(Context *context,
-                                 int slot,
+                                 const DevGroup::SP &devices,
                                  BNDataType type,
                                  size_t numItems,
                                  const void *_items)
-    : Data(context,slot,type,numItems)
+    : Data(context,devices,type,numItems)
   {
     items.resize(numItems);
     for (int i=0;i<numItems;i++)

@@ -75,8 +75,12 @@ namespace barney {
     void setMaterial(HostMaterial::SP);
 
 #if 1
-    std::vector<rtc::Geom *>  triangleGeoms;
-    std::vector<rtc::Geom *>  userGeoms;
+    struct PLD {
+      std::vector<rtc::Geom *>  triangleGeoms;
+      std::vector<rtc::Geom *>  userGeoms;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
 #else
     std::vector<OWLGeom>  triangleGeoms;
     std::vector<OWLGeom>  userGeoms;
