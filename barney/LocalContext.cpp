@@ -54,15 +54,15 @@ namespace barney {
       return false;
     }
 
-    const int numDevices = (int)allDevices->size();
+    const int numDevices = (int)devices->size();
     const int dgSize = numDevices / numSlots;
     std::vector<int> numCopied(numDevices);
-    for (auto device : *allDevices) {
+    for (auto device : *devices) {
       int devID = device->contextRank;
       SetActiveGPU forDuration(device);
 
       int nextID = (devID + dgSize) % numDevices;
-      auto nextDev = (*allDevices)[nextID];
+      auto nextDev = (*devices)[nextID];
 
       int count = nextDev->rayQueue->numActive;
       numCopied[nextID] = count;
@@ -71,7 +71,7 @@ namespace barney {
       device->rtc->copyAsync(dst,src,count*sizeof(Ray));
     }
 
-    for (auto device : *allDevices) {
+    for (auto device : *devices) {
       int devID = device->contextRank;
       device->sync();
       device->rayQueue->swap();

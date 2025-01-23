@@ -987,7 +987,7 @@ namespace barney {
     // ------------------------------------------------------------------
     // wait for kernel to complete, and swap queues 
     // ------------------------------------------------------------------
-    for (auto device : *allDevices) {
+    for (auto device : *devices) {
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();

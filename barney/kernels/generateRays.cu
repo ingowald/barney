@@ -190,7 +190,7 @@ namespace barney {
     // ------------------------------------------------------------------
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
-    for (auto device : *allDevices) {
+    for (auto device : *devices) {
       TiledFB *devFB = fb->getFor(device);
       render::GenerateRays args = {
         /* variable args */
@@ -210,7 +210,7 @@ namespace barney {
     // ------------------------------------------------------------------
     // wait for all GPUs' completion
     // ------------------------------------------------------------------
-    for (auto device : *allDevices) {
+    for (auto device : *devices) {
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();

@@ -75,15 +75,13 @@ if (BARNEY_MPI)
     #PRIVATE
     PUBLIC
     banari-config
-    #    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
-    barney_mpi_static
+    barney_mpi
     )
 else()
   target_link_libraries(anari_library_barney
     #PRIVATE
     PUBLIC
     banari-config
-    #    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
     barney
     )
 endif()
@@ -127,58 +125,6 @@ install(TARGETS barney anari_library_barney
 
 
 
-# # ==================================================================
-# # STATIC version of this device. need this for baking into pynari
-# # ==================================================================
-# add_library(anari_library_barney_static STATIC
-#   ${BANARI_SOURCES}
-#   )
-
-# if (BARNEY_MPI)
-#   target_link_libraries(anari_library_barney_static
-#     PRIVATE
-#     banari-config
-#     #   "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
-#     barney_mpi_static
-#     )
-# else()
-#   target_link_libraries(anari_library_barney_static
-#     PRIVATE
-#     banari-config
-# #    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
-#     barney_static
-#     )
-# endif()
-# if (TARGET anari::helium)
-#   # when building from installed source:
-#   target_link_libraries(anari_library_barney_static PUBLIC
-#     anari::helium
-#     anari_static
-#     )
-# else()
-#   target_link_libraries(anari_library_barney_static PUBLIC
-#     helium
-#     anari_static
-#     )
-# endif()
-# if (WIN32)
-#   target_compile_definitions(anari_library_barney_static PRIVATE -DNOGDI=1)
-# endif()
-
-
-#set_target_properties(anari_library_barney_static
-#  PROPERTIES
-#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-#  CUDA_SEPARABLE_COMPILATION ON
-#  POSITION_INDEPENDENT_CODE ON
-#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-#  CUDA_USE_STATIC_CUDA_RUNTIME ON
-#  )
-
-#include(GenerateExportHeader)
-#generate_export_header(anari_library_barney_static
-#  EXPORT_MACRO_NAME "BARNEY_LIBRARY_INTERFACE"
-#  )
 
 if (NOT BANARI_SKIP_QUERIES)
   ## Code generation ##
@@ -187,10 +133,5 @@ if (NOT BANARI_SKIP_QUERIES)
     CPP_NAMESPACE barney_device
     JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
     )
-  # anari_generate_queries(
-  #   DEVICE_TARGET anari_library_barney_static
-  #   CPP_NAMESPACE barney_device
-  #   JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
-  #   )
 endif()
 

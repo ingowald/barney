@@ -182,7 +182,7 @@ namespace barney {
     
     DevGroup::SP getDevices(int slot) {
       if (slot < 0)
-        return allDevices;
+        return this->devices;
       else 
         return getSlot(slot)->devices;
     }
@@ -195,7 +195,7 @@ namespace barney {
     };
     std::vector<OwnedStuff> ownedStuff;
     
-    DevGroup::SP allDevices;
+    DevGroup::SP devices;
   };
   
 
@@ -209,7 +209,7 @@ namespace barney {
      for debugging multi-gpu race conditions and such */
   inline void Context::syncCheckAll(const char *where)
   {
-    for (auto device : *allDevices)
+    for (auto device : *devices)
       device->rtc->sync();
       // {
       // SetActiveGPU forDuration(dev->device);

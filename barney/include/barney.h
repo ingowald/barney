@@ -47,7 +47,7 @@
 
 #ifdef BARNEY_HAVE_CUDA
 // use cuda internal types for float3 etc
-# include <driver_types.h>
+# include <cuda_runtime.h>
 #else
 // define some dummy wrappers
 struct float2 { float x,y; }

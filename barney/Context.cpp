@@ -29,7 +29,7 @@ namespace barney {
 
     perSlot.clear();
     ownedStuff.clear();
-    allDevices = 0;
+    devices = 0;
     //delete globalGroupAcrossAllGPUs;
     // owlContextDestroy(globalContextAcrossAllGPUs);
   }
@@ -69,7 +69,7 @@ namespace barney {
   int Context::numRaysActiveLocally()
   {
     int numActive = 0;
-    for (auto device : *allDevices)
+    for (auto device : *devices)
       numActive += device->rayQueue->numActiveRays();
     return numActive;
   }
@@ -111,7 +111,7 @@ namespace barney {
     if (!isActiveWorker)
       return;
 
-    for (auto device : *allDevices)
+    for (auto device : *devices)
       device->syncPipelineAndSBT();
     
     // for (auto &pd : perSlot) 
@@ -125,12 +125,12 @@ namespace barney {
 #endif
       double _t0 = getCurrentTime();
       generateRays(camera,renderer,fb);
-      for (auto dev : *allDevices) dev->sync();
+      for (auto dev : *devices) dev->sync();
 
       for (int generation=0;true;generation++) {
         traceRaysGlobally(model);
         // do we need this here?
-        for (auto dev : *allDevices) dev->sync();
+        for (auto dev : *devices) dev->sync();
 
         shadeRaysLocally(renderer, model, fb, generation);
         // no sync required here, shadeRays syncs itself.
@@ -203,7 +203,7 @@ namespace barney {
                    globalIndexStep*numSlots);
       for (auto dev : dg.devGroup->devices) {
         devices.push_back(std::make_shared<DeviceContext>(dev));
-        allDevices.push_back(dev);
+        devices.push_back(dev);
       }
       
       dg.materialRegistry
@@ -218,7 +218,7 @@ namespace barney {
   {
     return initReference(GlobalModel::create(this));
   }
-
+  
   Renderer *Context::createRenderer()
   {
     return initReference(Renderer::create(this));
@@ -229,7 +229,7 @@ namespace barney {
     if (!isActiveWorker)
       return;
 
-    for (auto device : *allDevices) {
+    for (auto device : *devices) {
       int upperBoundOnNumRays
         = 2 * (fb->getFor(device)->numActiveTiles+1) * barney::pixelsPerTile;
       device->rayQueue->reserve(upperBoundOnNumRays);
@@ -238,7 +238,7 @@ namespace barney {
 
   int Context::contextSize() const
   {
-    return allDevices->size();
+    return devices->size();
   }
   
   
