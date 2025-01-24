@@ -17,6 +17,8 @@
 #include "barney/geometry/Capsules.h"
 #include "owl/owl_device.h"
 
+RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+
 namespace barney {
   using namespace barney::render;
 
@@ -127,157 +129,179 @@ namespace barney {
     return box3f(min(box_a.lower,box_b.lower),
                  max(box_a.upper,box_b.upper));
   }
-  
-  /*! boudns program for a single capsule, computes as bbox of the two
+
+  struct CapsulesPrograms {
+    /*! boudns program for a single capsule, computes as bbox of the two
       end-cap spheres */
-  OPTIX_BOUNDS_PROGRAM(CapsulesBounds)(const void *geomData,
-                                       owl::common::box3f &bounds,  
-                                       const int32_t primID)
-  {
-    const Capsules::DD &geom = *(const Capsules::DD *)geomData;
-    vec2i indices = geom.indices[primID];
-    bounds = getBounds(geom.vertices[indices.x],
-                       geom.vertices[indices.y]);
-  }
+    // OPTIX_BOUNDS_PROGRAM(CapsulesBounds)(const void *geomData,
+    //                                      owl::common::box3f &bounds,  
+    //                                      const int32_t primID)
+    template<typename RTBackend>
+    static inline __both__
+    void bounds(const RTBackend &rt,
+                const void *geomData,
+                owl::common::box3f &bounds,  
+                const int32_t primID)
+    {
+      const Capsules::DD &geom = *(const Capsules::DD *)geomData;
+      vec2i indices = geom.indices[primID];
+      bounds = getBounds(geom.vertices[indices.x],
+                         geom.vertices[indices.y]);
+    }
 
-  /*! closest-hit program - doesn't do anything because we do all the
+    /*! closest-hit program - doesn't do anything because we do all the
       work in IS prog, but needs to exist to make optix happy */
-  OPTIX_CLOSEST_HIT_PROGRAM(CapsulesCH)()
-  {
-    /* nothing - already set in isec */
-  }
-
-  /*! optix intersection program for capsules geometry; will use the
+    template<typename RTBackend>
+    static inline __both__
+    void closest_hit(const RTBackend &rt)
+    {
+      /* nothing - already set in isec */
+    }
+    
+    template<typename RTBackend>
+    static inline __both__
+    void any_hit(const RTBackend &rt)
+    {
+      /* nothing - already set in isec */
+    }
+  
+    /*! optix intersection program for capsules geometry; will use the
       move-your-origin trick to improve numerical robustness and call
       quielez intersector. Unlike regular optix is programs this
       _will_ modify the ray and store the hit point if an intersection
       is found */
-  OPTIX_INTERSECT_PROGRAM(CapsulesIsec)()
-  {
-    const int primID
-      = optixGetPrimitiveIndex();
-    const auto &self
-      = owl::getProgramData<Capsules::DD>();
-    Ray &ray    = getPRD<Ray>();
+    template<typename RTBackend>
+    static inline __both__
+    void intersect(const RTBackend &rt)
+    {
+      const int primID
+        = rt.getPrimitiveIndex();
+      const auto &self
+        = owl::getProgramData<Capsules::DD>();
+      Ray &ray    = getPRD<Ray>();
 
-    const vec2i idx = self.indices[primID];
+      const vec2i idx = self.indices[primID];
 
-    // get the end points and radii
-    const vec4f v0 = self.vertices[idx.x];
-    const vec4f v1 = self.vertices[idx.y];
+      // get the end points and radii
+      const vec4f v0 = self.vertices[idx.x];
+      const vec4f v1 = self.vertices[idx.y];
 
-    // ray from optix: this is an IS prog so this is _object_ space
-    vec3f ray_org  = optixGetObjectRayOrigin();
-    vec3f ray_dir  = optixGetObjectRayDirection();
-    float len_dir = length(ray_dir);
-    vec3f objectN;
+      // ray from optix: this is an IS prog so this is _object_ space
+      vec3f ray_org  = rt.getObjectRayOrigin();
+      vec3f ray_dir  = rt.getObjectRayDirection();
+      float len_dir = length(ray_dir);
+      vec3f objectN;
 
-    // set up move-your-origin trick: compute bbox, perform ray-box
-    // test, and use the box enter distance as move-your-origin
-    // distance
-    float t0 = 0.f, t1 = ray.tMax;
-    box3f bb = getBounds(v0,v1);
-    if (!boxTest(ray_org,ray_dir,
-                 t0,t1,
-                 bb)) return;
+      // set up move-your-origin trick: compute bbox, perform ray-box
+      // test, and use the box enter distance as move-your-origin
+      // distance
+      float t0 = 0.f, t1 = ray.tMax;
+      box3f bb = getBounds(v0,v1);
+      if (!boxTest(ray_org,ray_dir,
+                   t0,t1,
+                   bb)) return;
 
 #if 1
-    render::HitAttributes hitData;
-    const DeviceMaterial &material
-      = OptixGlobals::get().materials[self.materialID];
-    PackedBSDF bsdf
-      = material.createBSDF(hitData,OptixGlobals::get().samplers,ray.dbg);
-    float opacity
-      = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                        ray.dir,hitData.worldNormal,ray.dbg);
-    if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
-      // optixIgnoreIntersection();
-      return;
-    }
+      render::HitAttributes hitData;
+      const DeviceMaterial &material
+        = OptixGlobals::get(rt).materials[self.materialID];
+      PackedBSDF bsdf
+        = material.createBSDF(hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+      float opacity
+        = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
+                          ray.dir,hitData.worldNormal,ray.dbg);
+      if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
+        // optixIgnoreIntersection();
+        return;
+      }
 #endif
     
     
     
-    // move just a little bit less in case the ray enters the box just
-    // where it touches the prim
-    float t_move = .99f*t0;
+      // move just a little bit less in case the ray enters the box just
+      // where it touches the prim
+      float t_move = .99f*t0;
 
-    // move the origin forward
-    ray_org = ray_org + t_move * ray_dir;
-    float hit_t = ray.tMax - t_move;
+      // move the origin forward
+      ray_org = ray_org + t_move * ray_dir;
+      float hit_t = ray.tMax - t_move;
 
 
-    if (!intersectRoundedCone(v0,v1,
-                              ray_org,ray_dir,
-                              hit_t,objectN))
-      // no intersection, ignore
-      return;
-    if (hit_t < 0.f || hit_t > ray.tMax-t_move)
-      // intersection not in valid ray interval, ignore
-      return;
+      if (!intersectRoundedCone(v0,v1,
+                                ray_org,ray_dir,
+                                hit_t,objectN))
+        // no intersection, ignore
+        return;
+      if (hit_t < 0.f || hit_t > ray.tMax-t_move)
+        // intersection not in valid ray interval, ignore
+        return;
 
-    // compute object hit point _before_ moving back the distance -
-    // this uses the forward-moved origin with the 'backward'-moved
-    // distance, so is the valid position
-    vec3f objectP = ray_org + hit_t * ray_dir;
+      // compute object hit point _before_ moving back the distance -
+      // this uses the forward-moved origin with the 'backward'-moved
+      // distance, so is the valid position
+      vec3f objectP = ray_org + hit_t * ray_dir;
 
-    // this is the hit distance relative to the _original_ origin
-    hit_t += t_move;
+      // this is the hit distance relative to the _original_ origin
+      hit_t += t_move;
 
-    // compute an interpolation weight for the anari-style attribute
-    // interpolation
-    const vec3f _v0 = getPos(v0);
-    const vec3f _v1 = getPos(v1);
-    float l01 = length(_v1-_v0);
-    float lp0 = length(objectP-_v0);
-    float lerp_t = 0.f;
-    if (l01 < 1e-8f || lp0 < 1e-8f)
-      lerp_t = 0.f;
-    else {
-      lerp_t
-        = dot(objectP-_v0,_v1-_v0)
-        / (lp0*l01);
-      lerp_t = max(0.f,min(1.f,lerp_t));
+      // compute an interpolation weight for the anari-style attribute
+      // interpolation
+      const vec3f _v0 = getPos(v0);
+      const vec3f _v1 = getPos(v1);
+      float l01 = length(_v1-_v0);
+      float lp0 = length(objectP-_v0);
+      float lerp_t = 0.f;
+      if (l01 < 1e-8f || lp0 < 1e-8f)
+        lerp_t = 0.f;
+      else {
+        lerp_t
+          = dot(objectP-_v0,_v1-_v0)
+          / (lp0*l01);
+        lerp_t = max(0.f,min(1.f,lerp_t));
+      }
+
+      // interpolator for anari-style color/attribute interpolation
+      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
+      {
+        const vec4f value_a = attrib.fromArray.valueAt(idx.x);
+        const vec4f value_b = attrib.fromArray.valueAt(idx.y);
+        const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
+        return ret;
+      };
+
+      // set up hit data for anari hit attributes
+      hitData.primID          = primID;
+      hitData.t               = hit_t;
+      hitData.objectPosition  = objectP;
+      hitData.objectNormal    = normalize(objectN);
+      hitData.worldPosition
+        = rt.transformPointFromObjectToWorldSpace(objectP);
+      hitData.worldNormal
+        = normalize(rt.transformNormalFromObjectToWorldSpace(objectN));
+
+      // compute a stable epsilon for surface offsetting
+      float surfOfs_eps = 1.f;
+      surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.x));
+      surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.y));
+      surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.z));
+      surfOfs_eps *= 1e-5f;
+
+      // ... and shift the hit point just a little bit off the surface
+      hitData.worldPosition += surfOfs_eps * hitData.worldNormal;
+
+      // trigger the anari attribute evaluation
+      self.setHitAttributes(hitData,interpolator,ray.dbg);
+
+      // ... store the hit in the ray, rqs-style ...
+      // const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
+      material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+
+      // .... and let optix know we did have a hit.
+      rt.reportIntersection(hit_t, 0);
     }
-
-    // interpolator for anari-style color/attribute interpolation
-    auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
-    {
-      const vec4f value_a = attrib.fromArray.valueAt(idx.x);
-      const vec4f value_b = attrib.fromArray.valueAt(idx.y);
-      const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
-      return ret;
-    };
-
-    // set up hit data for anari hit attributes
-    hitData.primID          = primID;
-    hitData.t               = hit_t;
-    hitData.objectPosition  = objectP;
-    hitData.objectNormal    = normalize(objectN);
-    hitData.worldPosition
-      = optixTransformPointFromObjectToWorldSpace(objectP);
-    hitData.worldNormal
-      = normalize(optixTransformNormalFromObjectToWorldSpace(objectN));
-
-    // compute a stable epsilon for surface offsetting
-    float surfOfs_eps = 1.f;
-    surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.x));
-    surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.y));
-    surfOfs_eps = max(surfOfs_eps,fabsf(hitData.worldPosition.z));
-    surfOfs_eps *= 1e-5f;
-
-    // ... and shift the hit point just a little bit off the surface
-    hitData.worldPosition += surfOfs_eps * hitData.worldNormal;
-
-    // trigger the anari attribute evaluation
-    self.setHitAttributes(hitData,interpolator,ray.dbg);
-
-    // ... store the hit in the ray, rqs-style ...
-    // const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
-    material.setHit(ray,hitData,OptixGlobals::get().samplers,ray.dbg);
-
-    // .... and let optix know we did have a hit.
-    optixReportIntersection(hit_t, 0);
-  }
+  };
   
 }
+RTC_DECLARE_USER_GEOM(Capsules,barney::CapsulesPrograms);
+
+

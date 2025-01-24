@@ -112,7 +112,7 @@ namespace barney {
       d_primRanges is non-null - the primitmives ranges. d_primBounds
       and d_primRanges (if non-null) must be pre-allocated and
       writeaable on specified device */
-    void computeElementBBs(const Device::SP &device,
+    void computeElementBBs(Device *device,
                            box3f *d_primBounds,
                            range1f *d_primRanges=0);
     
@@ -122,7 +122,7 @@ namespace barney {
                std::vector<Element> &elements,
                const box3f &domain);
 
-    DD getDD(const Device::SP &device);
+    DD getDD(Device *device);
 
     static ScalarField::SP create(Context *context, int slot,
                                   const vec4f   *vertices, int numVertices,

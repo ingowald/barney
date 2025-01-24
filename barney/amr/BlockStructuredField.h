@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "barney/Object.h"
 #include "barney/ModelSlot.h"
 
 namespace barney {
@@ -119,7 +120,7 @@ namespace barney {
       d_primRanges is non-null - the primitmives ranges. d_primBounds
       and d_primRanges (if non-null) must be pre-allocated and
       writeaable on specified device */
-    void computeBlockFilterDomains(const Device::SP &device,
+    void computeBlockFilterDomains(Device *device,
                                    box3f *d_primBounds,
                                    range1f *d_primRanges=0);
 
@@ -129,7 +130,7 @@ namespace barney {
                          std::vector<int> &blockOffsets,
                          std::vector<float> &blockScalars);
                      
-    DD getDD(const Device::SP &device);
+    DD getDD(Device *device);
 
     VolumeAccel::SP createAccel(Volume *volume) override;
 

@@ -288,9 +288,11 @@ namespace barney {
       typedef std::shared_ptr<Backend> SP;
       virtual ~Backend() = default;
 
-      virtual std::vector<rtc::Device *>
-      createDevices(const std::vector<int> &gpuIDs) = 0;
+      // virtual std::vector<rtc::Device *>
+      // createDevices(const std::vector<int> &gpuIDs) = 0;
 
+      virtual rtc::Device *createDevice(int gpuID) = 0;
+      
       /*! number of 'physical' devices - num cuda capable gpus if cuda
         or optix, or 1 if embree */
       int numPhysicalDevices = 0;

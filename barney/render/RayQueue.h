@@ -23,8 +23,6 @@ namespace barney {
   using render::Ray;
   
   struct RayQueue {
-    typedef std::shared_ptr<RayQueue> SP;
-    
     RayQueue(Device *device);
     //   : device(device)
     // {

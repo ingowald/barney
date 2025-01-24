@@ -93,8 +93,7 @@ namespace barney {
     };
     
     struct CUDABackend : public cuda::BaseBackend {
-      std::vector<rtc::Device *>
-      createDevices(const std::vector<int> &gpuIDs) override;
+      rtc::Device *createDevice(int gpuID) override;
     };
     
   }

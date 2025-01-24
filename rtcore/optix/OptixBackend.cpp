@@ -1,7 +1,5 @@
 #include "rtcore/optix/OptixBackend.h"
 
-extern "C" char traceRays_ptx[];
-
 namespace barney {
   namespace optix {
     
@@ -27,13 +25,9 @@ namespace barney {
     OptixBackend::OptixBackend()
     {}
 
-    std::vector<rtc::Device *>
-    OptixBackend::createDevices(const std::vector<int> &gpuIDs)
+    rtc::Device *OptixBackend::createDevice(int gpuID) 
     {
-      std::vector<rtc::Device *> devs;
-      for (auto gpuID : gpuIDs)
-        devs.push_back(new optix::Device(gpuID));
-      return devs;
+      return new optix::Device(gpuID);
     }
     
 
@@ -348,6 +342,7 @@ namespace barney {
   }
   namespace rtc {
 
+    __attribute__((visibility("default")))
     Backend *createBackend_optix()
     {
       PING;

@@ -38,7 +38,7 @@ namespace barney {
 
   
   struct Device {
-    typedef std::shared_ptr<Device> SP;
+    // typedef std::shared_ptr<Device> SP;
     
     Device(rtc::Device *rtc,
            int contextRank,
@@ -92,10 +92,6 @@ namespace barney {
       : savedDevice(device)
     { assert(device); savedActiveDeviceID = device->setActive(); }
     
-    inline SetActiveGPU(const Device::SP &device)
-      : savedDevice(device.get())
-    { savedActiveDeviceID = device->setActive(); }
-
     inline ~SetActiveGPU()
     { savedDevice->restoreActive(savedActiveDeviceID); }
   private:

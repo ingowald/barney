@@ -14,13 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "owl/owl_device.h"
 #include "barney/render/OptixGlobals.h"
 #include "barney/Context.h"
 #include "barney/GlobalModel.h"
 #include "barney/ModelSlot.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
+
+RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
 // __constant__ barney::render::OptixGlobals optixLaunchParams;
 // // DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
@@ -38,7 +39,7 @@ namespace barney {
           + rtcore.getLaunchDims().x
           * rtcore.getLaunchIndex().y;
         
-        auto &lp = OptixGlobals::get();
+        auto &lp = OptixGlobals::get(rtcore);
 
         if (rayID >= lp.numRays)
           return;
@@ -91,5 +92,4 @@ namespace barney {
 }
 
 RTC_OPTIX_TRACE_KERNEL(traceRays,
-                       barney::render::TraceRaysKernel,
-                       OptixGlobals);
+                       barney::render::TraceRaysKernel);

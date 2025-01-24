@@ -189,12 +189,6 @@ namespace barney {
     
     int contextSize() const;
 
-    struct OwnedStuff {
-      Device::SP device;
-      RayQueue::SP rayQueue;
-    };
-    std::vector<OwnedStuff> ownedStuff;
-    
     DevGroup::SP devices;
   };
   

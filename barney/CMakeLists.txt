@@ -40,10 +40,14 @@ target_compile_definitions(barney_config INTERFACE -DBARNEY_DISABLE_OIDN=1)
     
 # -------------------------------------------------------
 
+add_library(barney_config_ptx INTERFACE)
+target_link_libraries(barney_config_ptx INTERFACE barney_config)
+target_compile_definitions(barney_config_ptx INTERFACE -DBARNEY_COMPILE_OPTIX_PROGRAMS=1)
+
 # ray gen program that launches kernel to trace rays
 embed_ptx(
   OUTPUT_TARGET      barney-traceRays-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            kernels/traceRays.cu
   )
 # ------------------------------------------------------------------
@@ -52,25 +56,25 @@ embed_ptx(
 # ray-sphere geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-spheres-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            geometry/Spheres.dev.cu
   )
 # ray triangles geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-triangles-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            geometry/Triangles.dev.cu
   )
 # ray cylinders geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-cylinders-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            geometry/Cylinders.dev.cu
   )
 # ray capsules geom intersection
 embed_ptx(
   OUTPUT_TARGET      barney-capsules-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            geometry/Capsules.dev.cu
   )
 # ray cones geom intersection
@@ -85,22 +89,22 @@ embed_ptx(
 # ------------------------------------------------------------------
 embed_ptx(
   OUTPUT_TARGET      barney-StructuredData-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            volume/StructuredData.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            umesh/os/RTXObjectSpace.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshMC-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            umesh/mc/UMeshMC.dev.cu
 )
 embed_ptx(
   OUTPUT_TARGET      barney-AWT-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            umesh/os/AWT.dev.cu
 )
 
@@ -109,7 +113,7 @@ embed_ptx(
 # ------------------------------------------------------------------
 embed_ptx(
   OUTPUT_TARGET      barney-BlockStructuredMC-ptx
-  PTX_LINK_LIBRARIES barney_config
+  PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            amr/BlockStructuredMC.dev.cu
   )
 
@@ -152,6 +156,7 @@ set(BARNEY_SOURCES
   # actual device kernels for CUDA ray gen and shading
   kernels/generateRays.cu
   kernels/shadeRays.cu
+  kernels/traceRays.cu
   # all the barney "plumbing" stuff on the host
   DeviceContext.h
   DeviceContext.cpp
@@ -272,13 +277,9 @@ add_library(barney SHARED
   ${BARNEY_SOURCES}
   )
 if (OFF)
-  add_library(barney SHARED
-    ${BARNEY_SOURCES}
-    )
   target_link_libraries(barney PUBLIC
-    barney_config
-    barney_rtc
-    ${BARNEY_STATIC_DEPENDENCIES}
+    $<BUILD_INTERFACE:barney_rtc>
+    $<BUILD_INTERFACE:barney-spheres-ptx>
     )
 else()
   target_link_libraries(barney PUBLIC
@@ -286,10 +287,12 @@ else()
     #  barney_rtc
     #  ${BARNEY_STATIC_DEPENDENCIES}
     $<BUILD_INTERFACE:barney_config>
-    $<BUILD_INTERFACE:barney_rtc>
-    $<BUILD_INTERFACE:barney_rtc_cuda_common>
+    $<BUILD_INTERFACE:barney_rtc_common>
     $<BUILD_INTERFACE:barney_rtc_optix>
+    $<BUILD_INTERFACE:barney_rtc_cuda_common>
+    #    $<BUILD_INTERFACE:barney_rtc>
     $<BUILD_INTERFACE:barney-spheres-ptx>
+    $<BUILD_INTERFACE:barney-traceRays-ptx>
     )
 endif()
 set_target_properties(barney

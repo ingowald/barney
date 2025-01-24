@@ -16,6 +16,10 @@
 
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
 
+RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+
+
+#if 0
 namespace barney {
 
   // ==================================================================
@@ -71,3 +75,4 @@ namespace barney {
   }
 
 }
+#endif

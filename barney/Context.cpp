@@ -23,15 +23,96 @@
 
 namespace barney {
 
+  Context::Context(const std::vector<int> &dataGroupIDs,
+                   const std::vector<int> &gpuIDs,
+                   int globalIndex,
+                   int globalIndexStep)
+    : isActiveWorker(!dataGroupIDs.empty())
+  {
+    
+    if (gpuIDs.empty())
+      throw std::runtime_error("error - no GPUs...");
+
+    // globalContextAcrossAllGPUs
+    //   = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
+
+    if (!isActiveWorker)  {
+      // not an active worker: no device groups etc, just create a
+      // single default device
+      throw std::runtime_error
+        ("inactive workers not implemented right now");
+      return;
+    }
+
+    if (gpuIDs.size() < dataGroupIDs.size())
+      throw std::runtime_error("not enough GPUs ("
+                               +std::to_string(gpuIDs.size())
+                               +") for requested num data groups ("
+                               +std::to_string(dataGroupIDs.size())
+                               +")");
+    if (gpuIDs.size() % dataGroupIDs.size())
+      throw std::runtime_error("requested num GPUs is not a multiple of "
+                               "requested num data groups");
+    int numSlots = dataGroupIDs.size();
+    int gpusPerSlot = (int)gpuIDs.size() / numSlots;
+    std::vector<std::vector<int>> gpuInSlot(numSlots);
+    perSlot.resize(numSlots);
+    std::vector<Device *> allDevices;
+    rtc::Backend *backend = rtc::Backend::get();
+    for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
+      std::vector<int> contextRanks;
+      auto &dg = perSlot[lmsIdx];
+      dg.modelRankInThisSlot = dataGroupIDs[lmsIdx];
+      std::vector<Device *> slotDevices;
+      for (int j=0;j<gpusPerSlot;j++) {
+        int localRank = lmsIdx*gpusPerSlot+j;
+        contextRanks.push_back(localRank);
+        int gpuID = gpuIDs[localRank];
+        rtc::Device *rtc = backend->createDevice(gpuID);
+        Device *device
+          = new Device(rtc,
+                       allDevices.size(),gpuIDs.size(),
+                       globalIndex*numSlots+lmsIdx,
+                       globalIndexStep*numSlots);
+        slotDevices.push_back(device);
+        allDevices.push_back(device);
+        dg.gpuIDs.push_back(gpuID);
+      }
+
+      dg.devices
+        = std::make_shared<DevGroup>(slotDevices,allDevices.size());
+      // dg.devGroup = std::make_shared
+      //   <DevGroup>(lmsIdx,
+      //              contextRanks,numSlots*gpusPerSlot,
+      //              dg.gpuIDs,
+      //              globalIndex*numSlots+lmsIdx,
+      //              globalIndexStep*numSlots);
+      // for (auto dev : dg.devGroup->devices) {
+      //   devices.push_back(std::make_shared<DeviceContext>(dev));
+      //   devices.push_back(dev); 
+      // }
+      
+    }
+    this->devices = std::make_shared<DevGroup>(allDevices,allDevices.size());
+
+    for (auto &dg : perSlot)
+      dg.materialRegistry
+        = std::make_shared<render::MaterialRegistry>(dg.devices);
+    for (auto &dg : perSlot)
+      dg.samplerRegistry
+        = std::make_shared<render::SamplerRegistry>(dg.devices);
+  }
+  
   Context::~Context()
   {
     hostOwnedHandles.clear();
 
     perSlot.clear();
-    ownedStuff.clear();
-    devices = 0;
-    //delete globalGroupAcrossAllGPUs;
-    // owlContextDestroy(globalContextAcrossAllGPUs);
+    std::cout << "going to kill off devices ..." << std::endl;
+    for (auto &device : *devices) {
+      delete device;
+      device = 0;
+    }
   }
   
   void Context::releaseHostReference(Object::SP object)
@@ -147,73 +228,6 @@ namespace barney {
   }
 
 
-  #if 0
-  // question: how do we handle non-active workers now!?
-  
-  Context::Context(const std::vector<int> &dataGroupIDs,
-                   const std::vector<int> &gpuIDs,
-                   int globalIndex,
-                   int globalIndexStep)
-    : isActiveWorker(!dataGroupIDs.empty())
-  {
-    if (gpuIDs.empty())
-      throw std::runtime_error("error - no GPUs...");
-
-    // globalContextAcrossAllGPUs
-    //   = owlContextCreate((int32_t*)gpuIDs.data(),(int)gpuIDs.size());
-
-    logical.resize(gpuIDs);
-    for (int i=0;i<gpuIDs.size();i++) {
-      logical[i].device = std::make_shared<Device>();
-    }
-      
-    if (!isActiveWorker) 
-      // not an active worker: no device groups etc, just create a
-      // single default device
-      return;
-
-
-    if (gpuIDs.size() < dataGroupIDs.size())
-      throw std::runtime_error("not enough GPUs ("
-                               +std::to_string(gpuIDs.size())
-                               +") for requested num data groups ("
-                               +std::to_string(dataGroupIDs.size())
-                               +")");
-    if (gpuIDs.size() % dataGroupIDs.size())
-      throw std::runtime_error("requested num GPUs is not a multiple of "
-                               "requested num data groups");
-    int numSlots = dataGroupIDs.size();
-    int gpusPerSlot = (int)gpuIDs.size() / numSlots;
-    std::vector<std::vector<int>> gpuInSlot(numSlots);
-    perSlot.resize(numSlots);
-    for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
-      std::vector<int> contextRanks;
-      auto &dg = perSlot[lmsIdx];
-      dg.modelRankInThisSlot = dataGroupIDs[lmsIdx];
-      for (int j=0;j<gpusPerSlot;j++) {
-        int localRank = lmsIdx*gpusPerSlot+j;
-        contextRanks.push_back(localRank);
-        dg.gpuIDs.push_back(gpuIDs[localRank]);
-      }
-      dg.devGroup = std::make_shared
-        <DevGroup>(lmsIdx,
-                   contextRanks,numSlots*gpusPerSlot,
-                   dg.gpuIDs,
-                   globalIndex*numSlots+lmsIdx,
-                   globalIndexStep*numSlots);
-      for (auto dev : dg.devGroup->devices) {
-        devices.push_back(std::make_shared<DeviceContext>(dev));
-        devices.push_back(dev);
-      }
-      
-      dg.materialRegistry
-        = std::make_shared<render::MaterialRegistry>(dg.devGroup);
-      dg.samplerRegistry
-        = std::make_shared<render::SamplerRegistry>(dg.devGroup);
-    }
-  }
-#endif
-  
   GlobalModel *Context::createModel()
   {
     return initReference(GlobalModel::create(this));

@@ -1,15 +1,18 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#ifdef __CUDA_ARCH__
+#include "owl/owl_device.h"
+#endif
 
 namespace barney {
   namespace rtc {
 
     typedef struct _OpaqueTextureHandle *OpaqueTextureHandle;
   }
+#ifdef __CUDACC__
   namespace cuda {
 
-#ifdef __CUDACC__
     struct ComputeInterface
     {
       inline __device__ vec3ui getThreadIdx() const
@@ -46,11 +49,83 @@ namespace barney {
   } // ::barney::cuda
 
   namespace optix {
+    inline __device__ const void *getLaunchParamsPointer();
+    
+#ifdef __CUDA_ARCH__
     struct RTCoreInterface : public cuda::ComputeInterface {
+      // inline __device__ RTCoreInterface(const void *globalsMem)
+      //   : globalsMem(globalsMem)
+      // {}
+      inline __device__ void ignoreIntersection() const
+      { optixIgnoreIntersection(); }
+      
+      inline __device__ void reportIntersection(float t, int i) const
+      { optixReportIntersection(t,i); }
+
+      inline __device__ void *getPRD() const
+      { return ::owl::getPRDPointer(); }
+      
+      inline __device__ const void *getProgramData() const
+      { return (const void *)optixGetSbtDataPointer(); }
+      
+      inline __device__ const void *getLPData() const
+      { return getLaunchParamsPointer(); }
+      
       inline __device__ vec3i getLaunchDims()  const
       { return optixGetLaunchDimensions(); }
+      
       inline __device__ vec3i getLaunchIndex() const
       { return optixGetLaunchIndex(); }
+
+      inline __device__ vec2f getTriangleBarycentrics() const
+      { return optixGetTriangleBarycentrics(); }
+      
+      inline __device__ int getPrimitiveIndex() const
+      { return optixGetPrimitiveIndex(); }
+      
+      inline __device__ float getRayTmax() const
+      { return optixGetRayTmax(); }
+      
+      inline __device__ float getRayTmin() const
+      { return optixGetRayTmin(); }
+
+      inline __device__ vec3f getObjectRayDirection() const
+      { return optixGetObjectRayDirection(); }
+      
+      inline __device__ vec3f getObjectRayOrigin() const
+      { return optixGetObjectRayOrigin(); }
+      
+      inline __device__ vec3f getWorldRayDirection() const
+      { return optixGetWorldRayDirection(); }
+      
+      inline __device__ vec3f getWorldRayOrigin() const
+      { return optixGetWorldRayOrigin(); }
+      
+      inline __device__
+      vec3f transformNormalFromObjectToWorldSpace(vec3f v) const
+      { return optixTransformNormalFromObjectToWorldSpace(v); }
+      
+      inline __device__
+      vec3f transformPointFromObjectToWorldSpace(vec3f v) const
+      { return optixTransformPointFromObjectToWorldSpace(v); }
+      
+      inline __device__
+      vec3f transformVectorFromObjectToWorldSpace(vec3f v) const
+      { return optixTransformVectorFromObjectToWorldSpace(v); }
+      
+      inline __device__
+      vec3f transformNormalFromWorldToObjectSpace(vec3f v) const
+      { return optixTransformNormalFromWorldToObjectSpace(v); }
+      
+      inline __device__
+      vec3f transformPointFromWorldToObjectSpace(vec3f v) const
+      { return optixTransformPointFromWorldToObjectSpace(v); }
+      
+      inline __device__
+      vec3f transformVectorFromWorldToObjectSpace(vec3f v) const
+      { return optixTransformVectorFromWorldToObjectSpace(v); }
+      
+      
       template<typename PRDType>
       inline __device__ void traceRay(rtc::device::AccelHandle world,
                                        vec3f org,
@@ -62,18 +137,84 @@ namespace barney {
         owl::traceRay((const OptixTraversableHandle &)world,
                              owl::Ray(org,dir,t0,t1),prd);
       }
+      // const void *const globalsMem;
     };
-    
-#define RTC_OPTIX_TRACE_KERNEL(KernelName,RayGenType,LaunchParamsType)  \
-    extern "C" __global__ void                                          \
-    __raygen__##KernelName()                                            \
-    {                                                                   \
-      ::barney::optix::RTCoreInterface rtcore;                          \
-      RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();           \
-      rg->run(rtcore);                                                  \
-    }
 #endif
-  } // ::barney::optix
+    
+
+#if BARNEY_COMPILE_OPTIX_PROGRAMS
+#define RTC_DECLARE_GLOBALS(Type)                               \
+    __constant__ Type optixLaunchParams;                        \
+    namespace barney {                                          \
+      namespace optix {                                         \
+        inline __device__ const void *getLaunchParamsPointer()  \
+        { return &optixLaunchParams; }                          \
+      }                                                         \
+    }
+#else
+#define RTC_DECLARE_GLOBALS(Type) /* nothing */
+#endif
+
+
+#if BARNEY_COMPILE_OPTIX_PROGRAMS
+# define RTC_OPTIX_TRACE_KERNEL(name,RayGenType)                         \
+    extern "C" __global__                                               \
+    void __raygen__##name()                                             \
+    {                                                                   \
+      RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();           \
+      ::barney::optix::RTCoreInterface rtcore;                          \
+      rg->run(rtcore);                                                  \
+    }                                                                   
+#else
+# define RTC_OPTIX_TRACE_KERNEL(name,RayGenType) /* nothing */
+#endif
+    
+
+#define RTC_DECLARE_USER_GEOM(name,type)                  \
+                                                          \
+  extern "C" __global__                                   \
+  void __closesthit__##name() {                           \
+    ::barney::optix::RTCoreInterface rtcore;              \
+    type::closest_hit(rtcore);                            \
+  }                                                       \
+                                                          \
+  extern "C" __global__                                   \
+  void __anyhit__##name() {                               \
+    ::barney::optix::RTCoreInterface rtcore;              \
+    type::any_hit(rtcore);                                \
+  }                                                       \
+                                                          \
+  extern "C" __global__                                   \
+  void __insersect__##name() {                            \
+    ::barney::optix::RTCoreInterface rtcore;              \
+    type::intersect(rtcore);                              \
+  }                                                       \
+                                                          \
+  extern "C" __global__                                   \
+  void __boundsFunc__##name(const void *geom,             \
+                            owl::common::box3f &result,   \
+                            int primID)                   \
+  {                                                       \
+    ::barney::optix::RTCoreInterface rtcore;              \
+    type::bounds(rtcore,geom,result,primID);              \
+  }                                                       \
+  
+#define RTC_DECLARE_TRIANGLES_GEOM(name,type)   \
+                                                \
+  extern "C" __global__                         \
+  void __closesthit__##name() {                 \
+    ::barney::optix::RTCoreInterface rtcore;    \
+    type::closest_hit(rtcore);                  \
+  }                                             \
+                                                \
+  extern "C" __global__                         \
+  void __anyhit__##name() {                     \
+    ::barney::optix::RTCoreInterface rtcore;    \
+    type::any_hit(rtcore);                      \
+  }                                             \
+  
+} // ::barney::optix
+#endif  
 }
 
 namespace barney {

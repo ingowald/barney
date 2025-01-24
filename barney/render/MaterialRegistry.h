@@ -51,8 +51,8 @@ namespace barney {
       { return (DeviceMaterial *)getPLD(device)->buffer->getDD(); }
 
       struct PLD {
-        rtc::Buffer    *buffer = 0;
-        Device::SP      device;
+        rtc::Buffer *buffer = 0;
+        // Device      *device;
       };
       PLD *getPLD(Device *device);
       std::vector<PLD> perLogical;

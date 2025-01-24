@@ -17,8 +17,53 @@
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/volume/StructuredData.h"
 
+RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+
 namespace barney {
 
+  struct Structured_MCRTX_Programs {
+    template<typename RTBackend>
+    static inline __both__
+    void bounds(const RTBackend &rt,
+                const void *geomData,
+                owl::common::box3f &bounds,  
+                const int32_t primID)
+    {printf("todo\n");}
+    template<typename RTBackend>
+    static inline __both__
+    void closest_hit(const RTBackend &rt)
+    {printf("todo\n");}
+    template<typename RTBackend>
+    static inline __both__
+    void any_hit(const RTBackend &rt)
+    {printf("todo\n");}
+    template<typename RTBackend>
+    static inline __both__
+    void intersect(const RTBackend &rt)
+    {printf("todo\n");}
+  };
+  struct Structured_MCDDA_Programs {
+    template<typename RTBackend>
+    static inline __both__
+    void bounds(const RTBackend &rt,
+                const void *geomData,
+                owl::common::box3f &bounds,  
+                const int32_t primID)
+    {printf("todo\n");}
+    template<typename RTBackend>
+    static inline __both__
+    void closest_hit(const RTBackend &rt)
+    {printf("todo\n");}
+    template<typename RTBackend>
+    static inline __both__
+    void any_hit(const RTBackend &rt)
+    {printf("todo\n");}
+    template<typename RTBackend>
+    static inline __both__
+    void intersect(const RTBackend &rt)
+    {printf("todo\n");}
+  };
+#if 0
   OPTIX_BOUNDS_PROGRAM(Structured_MCRTX_Bounds)(const void *geomData,
                                                 owl::common::box3f &bounds,
                                                 const int32_t primID)
@@ -60,6 +105,9 @@ namespace barney {
     MCDDAVolumeAccel<StructuredData>::chProg();
     /* nothing - already all set in isec */
   }
-  
+#endif
 }
+
+RTC_DECLARE_USER_GEOM(Structured_MCRTX,barney::Structured_MCRTX_Programs);
+RTC_DECLARE_USER_GEOM(Structured_MCDDA,barney::Structured_MCDDA_Programs);
 

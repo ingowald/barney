@@ -25,7 +25,9 @@ namespace barney {
   namespace render {
       
     struct OptixGlobals {
-      static inline __device__ const OptixGlobals &get();
+      template<typename DevInterface>
+      static inline __both__
+      const OptixGlobals &get(const DevInterface &dev);
       
       int                    numRays;
       Sampler::DD           *samplers;
@@ -54,11 +56,11 @@ namespace barney {
 namespace barney {
   namespace render {
       
-#ifdef __CUDA_ARCH__
-    inline __device__ const OptixGlobals &OptixGlobals::get()
+    template<typename RTBackend>
+    inline __both__
+    const OptixGlobals &OptixGlobals::get(const RTBackend &be)
     {
-      return optixLaunchParams;
+      return *(OptixGlobals*)be.getLPData();
     }
-#endif      
   }
 }

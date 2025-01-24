@@ -157,8 +157,7 @@ namespace barney {
       OptixBackend();
       virtual ~OptixBackend() = default;
       
-      std::vector<rtc::Device *>
-      createDevices(const std::vector<int> &gpuIDs) override;
+      rtc::Device *createDevice(int gpuID) override;
     };
     
   }
