@@ -94,6 +94,10 @@ if (BARNEY_BACKEND_EMBREE)
   target_compile_definitions(barney_config INTERFACE -DBARNEY_BACKEND_EMBREE=1)
   add_library(barney_rtc_embree STATIC
     embree/EmbreeBackend.cpp
+    embree/Compute.cpp
+    embree/Device.cpp
+    embree/Buffer.cpp
+    embree/Texture.cpp
     )
   target_link_libraries(barney_rtc_embree PUBLIC
     barney_rtc_common
