@@ -39,15 +39,15 @@ namespace barney {
   {
     SetActiveGPU forDuration(device);
     if (accumTiles)  {
-      device->rtc->free(accumTiles);
+      device->rtc->freeMem(accumTiles);
       accumTiles = nullptr;
     }
     if (compressedTiles) {
-      device->rtc->free(compressedTiles);
+      device->rtc->freeMem(compressedTiles);
       compressedTiles = nullptr;
     }
     if (tileDescs) {
-      device->rtc->free(tileDescs);
+      device->rtc->freeMem(tileDescs);
       tileDescs = nullptr;
     }
   }

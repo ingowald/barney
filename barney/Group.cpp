@@ -78,11 +78,11 @@ namespace barney {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
       if (pld->triangleGeomGroup) {
-        rtc->free(pld->triangleGeomGroup);
+        rtc->freeGroup(pld->triangleGeomGroup);
         pld->triangleGeomGroup = 0;
       }
       if (pld->userGeomGroup) {
-        rtc->free(pld->userGeomGroup);
+        rtc->freeGroup(pld->userGeomGroup);
         pld->userGeomGroup = 0;
       }
     }
@@ -166,7 +166,7 @@ namespace barney {
           auto rtc = device->rtc;
           if (myPLD->volumeGeomsGroup) {
             // owlGroupRelease(volumeGeomsGroup);
-            rtc->free(myPLD->volumeGeomsGroup);
+            rtc->freeGroup(myPLD->volumeGeomsGroup);
             myPLD->volumeGeomsGroup = 0;
           }
           myPLD->volumeGeoms.clear();

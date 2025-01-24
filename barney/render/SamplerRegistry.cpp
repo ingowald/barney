@@ -60,7 +60,7 @@ namespace barney {
           = rtc->createBuffer(newNumBytes);
         rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
         rtc->sync();
-        rtc->free(oldBuffer);
+        rtc->freeBuffer(oldBuffer);
         pld->buffer = newBuffer;
       }
     }

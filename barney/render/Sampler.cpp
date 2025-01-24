@@ -172,7 +172,7 @@ namespace barney {
       for (auto device : *devices) {
         PLD *pld = getPLD(device);
         if (pld->rtcTexture)
-          device->rtc->free(pld->rtcTexture);
+          device->rtc->freeTexture(pld->rtcTexture);
         pld->rtcTexture = 0;
       }
 

@@ -76,9 +76,9 @@ namespace barney {
     SetActiveGPU forDuration(device);
     auto rtc = device->rtc;
     if (traceAndShadeReadQueue)
-      rtc->free(traceAndShadeReadQueue);
+      rtc->freeMem(traceAndShadeReadQueue);
     if (receiveAndShadeWriteQueue)
-      rtc->free(receiveAndShadeWriteQueue);
+      rtc->freeMem(receiveAndShadeWriteQueue);
 
     if (!_d_nextWritePos)
       _d_nextWritePos = (int*)rtc->alloc(sizeof(int));

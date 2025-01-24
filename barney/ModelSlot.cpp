@@ -59,7 +59,7 @@ namespace barney {
       auto pld = getPLD(device);
       if (pld->instanceGroup) {
         // owlGroupRelease(instances.group);
-        device->rtc->free(pld->instanceGroup);
+        device->rtc->freeGroup(pld->instanceGroup);
         pld->instanceGroup = 0;
       }
     }

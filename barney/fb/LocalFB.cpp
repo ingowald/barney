@@ -31,9 +31,9 @@ namespace barney {
     FrameBuffer::resize(size,channels);
     
     if (gatheredTilesOnOwner.compressedTiles)
-      rtc->free(gatheredTilesOnOwner.compressedTiles);
+      rtc->freeMem(gatheredTilesOnOwner.compressedTiles);
     if (gatheredTilesOnOwner.tileDescs)
-      rtc->free(gatheredTilesOnOwner.tileDescs);
+      rtc->freeMem(gatheredTilesOnOwner.tileDescs);
     // if (gatheredTilesOnOwner.compressedTiles)
     //   BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.compressedTiles));
     // if (gatheredTilesOnOwner.tileDescs)
@@ -91,8 +91,8 @@ namespace barney {
   LocalFB::~LocalFB()
   {
     auto frontDev = getDenoiserDevice();
-    frontDev->rtc->free(gatheredTilesOnOwner.compressedTiles);
-    frontDev->rtc->free(gatheredTilesOnOwner.tileDescs);
+    frontDev->rtc->freeMem(gatheredTilesOnOwner.compressedTiles);
+    frontDev->rtc->freeMem(gatheredTilesOnOwner.tileDescs);
     // BARNEY_CUDA_CALL_NOTHROW(Free(gatheredTilesOnOwner.compressedTiles));
     // BARNEY_CUDA_CALL_NOTHROW(Free(gatheredTilesOnOwner.tileDescs));
   }

@@ -40,7 +40,7 @@ namespace barney {
     {
       // owlBufferRelease(buffer);
       for (auto device : *devices)
-        device->rtc->free(getPLD(device)->buffer);
+        device->rtc->freeBuffer(getPLD(device)->buffer);
     }
     
     void MaterialRegistry::grow()
@@ -60,7 +60,7 @@ namespace barney {
           = rtc->createBuffer(newNumBytes);
         rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
         rtc->sync();
-        rtc->free(oldBuffer);
+        rtc->freeBuffer(oldBuffer);
         pld->buffer = newBuffer;
       }
     }

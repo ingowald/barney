@@ -198,7 +198,7 @@ namespace barney {
       // pure compute related stuff
       // ==================================================================
       virtual void *alloc(size_t numBytes) = 0;
-      virtual void free(void *mem) = 0;
+      virtual void freeMem(void *mem) = 0;
       virtual void *allocHost(size_t numBytes) = 0;
       virtual void freeHost(void *mem) = 0;
       virtual void memsetAsync(void *mem,int value, size_t size) = 0;

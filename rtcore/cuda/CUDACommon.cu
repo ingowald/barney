@@ -42,7 +42,7 @@ namespace barney {
       BARNEY_CUDA_CALL(FreeHost(mem));
     }
       
-    void BaseDevice::free(void *mem) 
+    void BaseDevice::freeMem(void *mem) 
     {
       BARNEY_CUDA_CALL(Free(mem));
     }

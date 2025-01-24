@@ -41,7 +41,7 @@ namespace barney {
       void freeHost(void *mem) override;
       void memsetAsync(void *mem,int value, size_t size) override;
       void *alloc(size_t numBytes) override;
-      void free(void *mem) override;
+      void freeMem(void *mem) override;
       void sync() override;
       
       /*! sets this gpu as active, and returns physical ID of GPU that
