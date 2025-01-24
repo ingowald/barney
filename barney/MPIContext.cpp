@@ -236,7 +236,7 @@ namespace barney {
   /*! create a frame buffer object suitable to this context */
     FrameBuffer *MPIContext::createFB(int owningRank)
   {
-    return initReference(DistFB::create(this,owningRank));
+    return initReference(std::make_shared<DistFB>(this,devices,owningRank));
   }
 
   /*! returns how many rays are active in all ray queues, across all

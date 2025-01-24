@@ -18,14 +18,17 @@
 #include "barney/MPIContext.h"
 
 namespace barney {
-
+  
   DistFB::DistFB(MPIContext *context,
-           int owningRank)
-      : FrameBuffer(context,owningRank == context->world.rank),
-        context(context),
-        owningRank(owningRank),
-        isOwner(context->world.rank == owningRank),
-        ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
+                 const DevGroup::SP &devices,
+                 int owningRank)
+    : FrameBuffer(context,
+                  devices,
+                  owningRank == context->world.rank),
+      context(context),
+      owningRank(owningRank),
+      isOwner(context->world.rank == owningRank),
+      ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
   {
     if (isOwner) {
       ownerGather.numGPUs = context->numWorkers * context->gpusPerWorker;

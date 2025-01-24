@@ -99,7 +99,7 @@ if (BARNEY_BACKEND_EMBREE)
     barney_rtc_common
     embree_local
     )
-  target_link_libraries(barney_rtc PUBLIC barney_rtc_embree)
+  #  target_link_libraries(barney_rtc PUBLIC barney_rtc_embree)
 endif()
 
 # ==================================================================
@@ -112,6 +112,8 @@ if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
 #    barney_rtc_common
 #    cuda
     )
+else()
+  add_library(barney_rtc_cuda_common INTERFACE) # DUMMY!
 endif()
 
 # ==================================================================
@@ -126,6 +128,8 @@ if (BARNEY_BACKEND_CUDA)
     )
 #  target_link_libraries(barney_rtc_cuda PUBLIC barney_rtc_cuda_common)
   target_link_libraries(barney_rtc PUBLIC barney_rtc_cuda)
+else()
+  add_library(barney_rtc_cuda INTERFACE) # DUMMY!
 endif()
 
 # ==================================================================
@@ -144,6 +148,8 @@ if (BARNEY_BACKEND_OPTIX)
 #    barney_rtc_common
     #owl
     )
+else()
+  add_library(barney_rtc_optix INTERFACE) # DUMMY!
 endif()
 
 

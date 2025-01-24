@@ -290,6 +290,7 @@ else()
     $<BUILD_INTERFACE:barney_rtc_common>
     $<BUILD_INTERFACE:barney_rtc_optix>
     $<BUILD_INTERFACE:barney_rtc_cuda_common>
+    $<BUILD_INTERFACE:barney_rtc_embree>
     #    $<BUILD_INTERFACE:barney_rtc>
     $<BUILD_INTERFACE:barney-spheres-ptx>
     $<BUILD_INTERFACE:barney-triangles-ptx>

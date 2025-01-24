@@ -27,11 +27,9 @@ namespace barney {
     typedef std::shared_ptr<DistFB> SP;
 
     DistFB(MPIContext *context,
+           const DevGroup::SP &devices,
            int owningRank);
     virtual ~DistFB() = default;
-    
-    static SP create(MPIContext *context, int owningRank)
-    { return std::make_shared<DistFB>(context,owningRank); }
     
     void resize(vec2i size, uint32_t channels) override;
 
