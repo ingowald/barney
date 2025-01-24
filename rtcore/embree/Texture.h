@@ -5,7 +5,7 @@
 namespace barney {
   namespace embree {
     
-    struct SWTexture;
+    struct TextureSampler;
     struct Texture;
     struct TextureData;
     
@@ -17,6 +17,9 @@ namespace barney {
                   const void *texels);
       rtc::Texture *createTexture(const rtc::TextureDesc &desc) override;
       
+      size_t sizeOfScalar;
+      size_t numScalarsPerTexel;
+      std::vector<uint8_t> data;
       Device *const device;
     };
 
@@ -26,9 +29,9 @@ namespace barney {
       Texture(TextureData *const data,
               const rtc::TextureDesc &desc);
       rtc::device::TextureObject getDD() const override
-      { return (const rtc::device::TextureObject &)swTex; }
+      { return (const rtc::device::TextureObject &)sampler; }
 
-      SWTexture *swTex = 0;
+      TextureSampler *sampler = 0;
     };
       
   }

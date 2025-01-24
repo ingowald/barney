@@ -29,17 +29,17 @@ RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 namespace barney {
   namespace render {
 
-    struct TraceRaysKernel {
-      template<typename RTCoreInterface>
-      inline __device__ __host__
-      void run(const RTCoreInterface &rtcore)
+    struct TraceRays {
+      template<typename RTCBackend>
+      inline __both__
+      void run(const RTCBackend &rt)
       {
         const int rayID
-          = rtcore.getLaunchIndex().x
-          + rtcore.getLaunchDims().x
-          * rtcore.getLaunchIndex().y;
+          = rt.getLaunchIndex().x
+          + rt.getLaunchDims().x
+          * rt.getLaunchIndex().y;
         
-        auto &lp = OptixGlobals::get(rtcore);
+        auto &lp = OptixGlobals::get(rt);
 
         if (rayID >= lp.numRays)
           return;
@@ -51,12 +51,12 @@ namespace barney {
         if (dir.y == 0.f) dir.y = 1e-6f;
         if (dir.z == 0.f) dir.z = 1e-6f;
 
-        rtcore.traceRay(lp.world,
-                        ray.org,
-                        dir,
-                        0.f,ray.tMax,
-                        /* PRD */
-                        ray);
+        rt.traceRay(lp.world,
+                    ray.org,
+                    dir,
+                    0.f,ray.tMax,
+                    /* PRD */
+                    (void *)&ray);
       }
     };
     
@@ -88,8 +88,6 @@ namespace barney {
     // ------------------------------------------------------------------
     syncCheckAll();
   }
-
 }
 
-RTC_OPTIX_TRACE_KERNEL(traceRays,
-                       barney::render::TraceRaysKernel);
+RTC_DECLARE_TRACE(traceRays,barney::render::TraceRays);

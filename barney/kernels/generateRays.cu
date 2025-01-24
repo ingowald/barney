@@ -217,6 +217,6 @@ namespace barney {
       device->rayQueue->resetWriteQueue();
     }
   }
-  
 }
+
 RTC_DECLARE_COMPUTE(generateRays,barney::render::GenerateRays);

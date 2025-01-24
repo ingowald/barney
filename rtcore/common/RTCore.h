@@ -14,6 +14,52 @@ namespace barney {
   
 #if BARNEY_BACKEND_EMBREE
   namespace embree {
+    struct TraceInterface {
+// #  ifdef __CUDA_ARCH__
+//       /* the embree compute interface only makes sense on the host,
+//          and for the device sometimes isn't even callable (std::atomic
+//          etc), so let's make those fcts 'go away' for device code */
+// #  else
+      void ignoreIntersection() const;
+      void reportIntersection(float t, int i) const;
+      void *getPRD() const;
+      const void *getProgramData() const;
+      const void *getLPData() const;
+      vec3i getLaunchDims()  const;
+      vec3i getLaunchIndex() const;
+      vec2f getTriangleBarycentrics() const;
+      int getPrimitiveIndex() const;
+      float getRayTmax() const;
+      float getRayTmin() const;
+      vec3f getObjectRayDirection() const;
+      vec3f getObjectRayOrigin() const;
+      vec3f getWorldRayDirection() const;
+      vec3f getWorldRayOrigin() const;
+      vec3f transformNormalFromObjectToWorldSpace(vec3f v) const;
+      vec3f transformPointFromObjectToWorldSpace(vec3f v) const;
+      vec3f transformVectorFromObjectToWorldSpace(vec3f v) const;
+      vec3f transformNormalFromWorldToObjectSpace(vec3f v) const;
+      vec3f transformPointFromWorldToObjectSpace(vec3f v) const;
+      vec3f transformVectorFromWorldToObjectSpace(vec3f v) const;
+      void  traceRay(rtc::device::AccelHandle world,
+                     vec3f org,
+                     vec3f dir,
+                     float t0,
+                     float t1,
+                     void *prdPtr) const;
+      
+      // template<typename PRDType>
+      // inline __device__ void traceRay(rtc::device::AccelHandle world,
+      //                                 vec3f org,
+      //                                 vec3f dir,
+      //                                 float t0,
+      //                                 float t1,
+      //                                 PRDType &prd) const
+      // {
+      //   this->trace(world,org,dir,t0,t1,&prd);
+      // }
+    };
+    
     struct ComputeInterface {
 #  ifdef __CUDA_ARCH__
       /* the embree compute interface only makes sense on the host,
@@ -77,7 +123,7 @@ namespace barney {
       dd.run(::barney::cuda::ComputeInterface());
     }
     
-#  define RTC_CUDA_COMPUTE(KernelName,ClassName)                          \
+#  define RTC_DECLARE_CUDA_COMPUTE(KernelName,ClassName)                \
     extern "C" void                                                     \
     barney_rtc_cuda_launch_##KernelName(::barney::vec3ui nb,            \
                                         ::barney::vec3ui bs,            \
@@ -91,17 +137,28 @@ namespace barney {
     }
   } // ::barney::cuda
 #else
-#  define RTC_CUDA_COMPUTE(KernelName,ClassName)  /* nothing */
+#  define RTC_DECLARE_CUDA_COMPUTE(KernelName,ClassName)  /* nothing */
 #endif
-
+  
 #if BARNEY_BACKEND_EMBREE
-#  define RTC_EMBREE_COMPUTE(KernelName,ClassName)                         \
-  extern "C" void barney_rtc_embree_compute_##KernelName(const void *dd)       \
+#  define RTC_DECLARE_EMBREE_COMPUTE(KernelName,ClassName)              \
+  extern "C"                                                            \
+  void barney_rtc_embree_compute_##KernelName(const void *dd)           \
   {                                                                     \
-    ((ClassName*)dd)->run(::barney::embree::ComputeInterface());        \
-  };
+    ::barney::embree::ComputeInterface rt;                              \
+    ((ClassName*)dd)->run(rt);                                          \
+  }
+  
+#  define RTC_DECLARE_EMBREE_TRACE(KernelName,ClassName)                \
+  extern "C"                                                            \
+  void barney_rtc_embree_trace_##KernelName(const void *dd)             \
+  {                                                                     \
+    ::barney::embree::TraceInterface rt;                                \
+    ((ClassName*)dd)->run(rt);                                          \
+  }
 #else
-#  define RTC_EMBREE_COMPUTE(KernelName,ClassName) /* nothing */
+#  define RTC_DECLARE_EMBREE_COMPUTE(KernelName,ClassName) /* nothing */
+#  define RTC_DECLARE_EMBREE_TRACE(KernelName,ClassName) /* nothing */
 #endif
 
   
@@ -183,17 +240,46 @@ namespace barney {
       { return optixTransformVectorFromWorldToObjectSpace(v); }
       
       
-      template<typename PRDType>
       inline __device__ void traceRay(rtc::device::AccelHandle world,
                                       vec3f org,
                                       vec3f dir,
                                       float t0,
                                       float t1,
-                                      PRDType &prd) const
+                                      void *prdPtr) const
       {
-        owl::traceRay((const OptixTraversableHandle &)world,
-                      owl::Ray(org,dir,t0,t1),prd);
+#if 1
+        unsigned int           p0 = 0;
+        unsigned int           p1 = 0;
+        owl::packPointer(prdPtr,p0,p1);
+        
+        uint32_t rayFlags = 0u;
+        owl::Ray ray(org,dir,t0,t1);
+        optixTrace((const OptixTraversableHandle &)world,
+                   (const float3&)ray.origin,
+                   (const float3&)ray.direction,
+                   ray.tmin,
+                   ray.tmax,
+                   ray.time,
+                   ray.visibilityMask,
+                   /*rayFlags     */ rayFlags,
+                   /*SBToffset    */ ray.rayType,
+                   /*SBTstride    */ ray.numRayTypes * (ray.disablePerGeometrySBTRecords) ? 0 : 1,
+                   /*missSBTIndex */ ray.rayType,              
+                   p0,
+                   p1);
+#endif
       }
+      // template<typename PRDType>
+      // inline __device__ void traceRay(rtc::device::AccelHandle world,
+      //                                 vec3f org,
+      //                                 vec3f dir,
+      //                                 float t0,
+      //                                 float t1,
+      //                                 PRDType &prd) const
+      // {
+      //   owl::traceRay((const OptixTraversableHandle &)world,
+      //                 owl::Ray(org,dir,t0,t1),prd);
+      // }
       // const void *const globalsMem;
     };
 
@@ -206,7 +292,7 @@ namespace barney {
       }                                                         \
     }
 
-# define RTC_OPTIX_TRACE_KERNEL(name,RayGenType)                \
+# define RTC_DECLARE_OPTIX_TRACE(name,RayGenType)               \
     extern "C" __global__                                       \
     void __raygen__##name()                                     \
     {                                                           \
@@ -262,7 +348,7 @@ namespace barney {
   } // ::barney::optix
 #else
 # define RTC_DECLARE_GLOBALS(Type) /* nothing */
-# define RTC_OPTIX_TRACE_KERNEL(name,RayGenType) /* nothing */
+# define RTC_DECLARE_OPTIX_TRACE(name,RayGenType) /* nothing */
 #endif  
 }
 
@@ -331,7 +417,11 @@ namespace barney {
 
 
 #  define RTC_DECLARE_COMPUTE(name,kernel) \
-  RTC_CUDA_COMPUTE(name,kernel)            \
-  RTC_EMBREE_COMPUTE(name,kernel)
+  RTC_DECLARE_CUDA_COMPUTE(name,kernel)            \
+  RTC_DECLARE_EMBREE_COMPUTE(name,kernel)
+
+#  define RTC_DECLARE_TRACE(name,kernel)         \
+  RTC_DECLARE_OPTIX_TRACE(name,kernel)           \
+  RTC_DECLARE_EMBREE_TRACE(name,kernel)
 
 

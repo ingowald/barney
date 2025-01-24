@@ -280,6 +280,6 @@ namespace barney {
   } 
 }
 
-RTC_CUDA_COMPUTE(computeWeights_xy,barney::ComputeWeights_xy);
-RTC_CUDA_COMPUTE(computeCDFs_doLine,barney::ComputeCDFs_doLine);
-RTC_CUDA_COMPUTE(normalize_cdf_y,barney::Normalize_cdf_y);
+RTC_DECLARE_COMPUTE(computeWeights_xy,barney::ComputeWeights_xy);
+RTC_DECLARE_COMPUTE(computeCDFs_doLine,barney::ComputeCDFs_doLine);
+RTC_DECLARE_COMPUTE(normalize_cdf_y,barney::Normalize_cdf_y);

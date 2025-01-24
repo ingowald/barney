@@ -813,9 +813,9 @@ namespace barney {
   
 
     struct ShadeRaysKernel {
-      template<typename ComputeInterface>
+      template<typename RTCBackend>
       inline __both__
-      void run(const ComputeInterface &compute);
+      void run(const RTCBackend &rt);
       
       World::DD world;
       Renderer::DD renderer;
@@ -828,11 +828,11 @@ namespace barney {
       int generation;
     };
     
-    template<typename ComputeInterface>
+    template<typename RTCBackend>
     inline __both__
-    void ShadeRaysKernel::run(const ComputeInterface &compute)
+    void ShadeRaysKernel::run(const RTCBackend &rt)
     {
-      int tid = threadIdx.x + blockIdx.x*blockDim.x;
+      int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
       if (tid >= numRays) return;
 
       // pixel 105798 frag 8.085938 11.882812 18.906250
@@ -876,10 +876,10 @@ namespace barney {
                path.tMax,shadowRay.tMax,
                fragment.x,fragment.y,fragment.z);
       if (shadowRay.tMax > 0.f) {
-        writeQueue[compute.atomicAdd(d_nextWritePos,1)] = shadowRay;
+        writeQueue[rt.atomicAdd(d_nextWritePos,1)] = shadowRay;
       }
       if (path.tMax > 0.f) {
-        writeQueue[compute.atomicAdd(d_nextWritePos,1)] = path;
+        writeQueue[rt.atomicAdd(d_nextWritePos,1)] = path;
       }
 
       // and write the shade fragment, if generated
@@ -922,21 +922,21 @@ namespace barney {
       } else {
         if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         if (generation == 0 && alpha) 
-          compute.atomicAdd(&valueToAccumInto.w,alpha);
+          rt.atomicAdd(&valueToAccumInto.w,alpha);
 
         if (fragment.x > 0.f)
-          compute.atomicAdd(&valueToAccumInto.x,fragment.x);
+          rt.atomicAdd(&valueToAccumInto.x,fragment.x);
         if (fragment.y > 0.f)
-          compute.atomicAdd(&valueToAccumInto.y,fragment.y);
+          rt.atomicAdd(&valueToAccumInto.y,fragment.y);
         if (fragment.z > 0.f)
-          compute.atomicAdd(&valueToAccumInto.z,fragment.z);
+          rt.atomicAdd(&valueToAccumInto.z,fragment.z);
 #if DENOISE
         if (incomingN.x > 0.f)
-          compute.atomicAdd(&valueToAccumNormalInto.x,incomingN.x);
+          rt.atomicAdd(&valueToAccumNormalInto.x,incomingN.x);
         if (incomingN.y > 0.f)
-          compute.atomicAdd(&valueToAccumNormalInto.y,incomingN.y);
+          rt.atomicAdd(&valueToAccumNormalInto.y,incomingN.y);
         if (incomingN.z > 0.f)
-          compute.atomicAdd(&valueToAccumNormalInto.z,incomingN.z);
+          rt.atomicAdd(&valueToAccumNormalInto.z,incomingN.z);
 #endif
       }
 
@@ -997,4 +997,4 @@ namespace barney {
   
 }
 
-RTC_CUDA_COMPUTE(shadeRays,barney::render::ShadeRaysKernel);
+RTC_DECLARE_COMPUTE(shadeRays,barney::render::ShadeRaysKernel);

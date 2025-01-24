@@ -176,5 +176,5 @@ namespace barney {
 
 
 
-RTC_CUDA_COMPUTE(clearMCs,barney::ClearMCs);
-RTC_CUDA_COMPUTE(mapMCs,barney::MapMCs);
+RTC_DECLARE_COMPUTE(clearMCs,barney::ClearMCs);
+RTC_DECLARE_COMPUTE(mapMCs,barney::MapMCs);
