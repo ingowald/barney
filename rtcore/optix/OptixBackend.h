@@ -63,8 +63,8 @@ namespace barney {
       rtc::GeomType *
       createTrianglesGeomType(const char *typeName,
                               size_t sizeOfDD,
-                              const char *ahFctName,
-                              const char *chFctName) override;
+                              bool has_ah,
+                              bool has_ch) override;
       
       void freeGeomType(rtc::GeomType *) override 
       { BARNEY_NYI(); };
@@ -146,9 +146,7 @@ namespace barney {
     {
       TrianglesGeomType(optix::Device *device,
                         const std::string &typeName,
-                        size_t sizeOfDD,
-                        const std::string &ahFctName,
-                        const std::string &chFctName);
+                        size_t sizeOfDD, bool has_ah, bool has_ch);
       rtc::Geom *createGeom() override;
     };
     

@@ -78,9 +78,11 @@ namespace barney {
         allDevices.push_back(device);
         dg.gpuIDs.push_back(gpuID);
       }
-
+      PING;
       dg.devices
         = std::make_shared<DevGroup>(slotDevices,allDevices.size());
+      PRINT(dg.devices);
+      PRINT(dg.devices->size());
       // dg.devGroup = std::make_shared
       //   <DevGroup>(lmsIdx,
       //              contextRanks,numSlots*gpusPerSlot,
@@ -244,8 +246,10 @@ namespace barney {
       return;
 
     for (auto device : *devices) {
+      assert(device);
       int upperBoundOnNumRays
         = 2 * (fb->getFor(device)->numActiveTiles+1) * barney::pixelsPerTile;
+      assert(device->rayQueue);
       device->rayQueue->reserve(upperBoundOnNumRays);
     }
   }
@@ -266,8 +270,8 @@ namespace barney {
 
   SlotContext *Context::getSlot(int slot)
   {
-    if (slot < 0 || slot >= perSlot.size())
-      throw std::runtime_error("tried to query an invalid slot!");
+    assert(slot >= 0);
+    assert(slot < perSlot.size());
     return &perSlot[slot];
   }
 

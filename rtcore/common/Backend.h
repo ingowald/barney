@@ -256,8 +256,8 @@ namespace barney {
       virtual rtc::GeomType *
       createTrianglesGeomType(const char *typeName,
                               size_t sizeOfDD,
-                              const char *ahFctName,
-                              const char *chFctName) = 0;
+                              bool has_ah,
+                              bool has_ch) = 0;
       
       virtual void freeGeomType(rtc::GeomType *) = 0;
 

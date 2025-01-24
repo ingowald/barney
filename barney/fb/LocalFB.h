@@ -24,16 +24,14 @@ namespace barney {
   struct LocalFB : public FrameBuffer {
     typedef std::shared_ptr<LocalFB> SP;
 
-    LocalFB(Context *context);
+    LocalFB(Context *context,
+            const DevGroup::SP &devices);
     virtual ~LocalFB();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "LocalFB{}"; }
     
-    static SP create(Context *context)
-    { return std::make_shared<LocalFB>(context); }
-
     void ownerGatherCompressedTiles() override;
     void resize(vec2i size, uint32_t channels) override;
     

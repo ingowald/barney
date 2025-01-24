@@ -99,6 +99,7 @@ namespace barney {
       globalIndexStep(globalIndexStep),rtc(rtc),
       geomTypes(rtc)
   {
+    rayQueue = new RayQueue(this);
     setTileCoords
       = rtc->createCompute("setTileCoords");
     compressTiles

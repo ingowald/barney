@@ -21,6 +21,28 @@
 
 namespace barney {
 
+  TextureData::PLD *TextureData::getPLD(Device *device) 
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
+  Texture::PLD *Texture::getPLD(Device *device) 
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
+  Texture3D::PLD *Texture3D::getPLD(Device *device) 
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
+  
   rtc::Texture::ColorSpace toRTC(BNTextureColorSpace mode)
   { return 
       (mode == BN_COLOR_SPACE_LINEAR)
@@ -85,13 +107,18 @@ namespace barney {
     : SlottedObject(context,devices),
       data(data)
   {
+    perLogical.resize(devices->numLogical);
     rtc::TextureDesc desc;
     desc.filterMode     = toRTC(filterMode);
     desc.addressMode[0] = toRTC(addressMode_x);
     desc.addressMode[1] = toRTC(addressMode_y);
     desc.colorSpace     = toRTC(colorSpace);
-    for (auto device : *devices) 
-      data->getPLD(device)->rtc->createTexture(desc);
+    for (auto device : *devices) {
+      auto pld = getPLD(device);
+      assert(pld);
+      pld->rtcTexture
+        = data->getPLD(device)->rtc->createTexture(desc);
+    }
   }
   
   Texture3D::Texture3D(Context *context,
@@ -102,6 +129,7 @@ namespace barney {
     : SlottedObject(context,devices),
       data(data)
   {
+    perLogical.resize(devices->numLogical);
     rtc::TextureDesc desc;
     desc.addressMode[0] = toRTC(addressMode);
     desc.addressMode[1] = toRTC(addressMode);
@@ -132,10 +160,14 @@ namespace barney {
       numChannels(numChannelsOf(texelFormat)),
       texelFormat(texelFormat)
   {
+    perLogical.resize(devices->numLogical);
     rtc::DataType format = toRTC(texelFormat);
-    for (auto device : *devices)
-      getPLD(device)->rtc
+    for (auto device : *devices) {
+      auto pld = getPLD(device);
+      pld->rtc
         = device->rtc->createTextureData(size,format,texels);
+      assert(pld->rtc);
+    }
   }
 
   TextureData::~TextureData()
@@ -147,7 +179,10 @@ namespace barney {
   rtc::device::TextureObject
   Texture::getTextureObject(Device *device) 
   {
-    return getPLD(device)->rtcTexture->getDD();
+    auto pld = getPLD(device);
+    assert(pld);
+    assert(pld->rtcTexture);
+    return pld->rtcTexture->getDD();
   }
     
   

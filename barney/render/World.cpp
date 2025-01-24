@@ -28,6 +28,7 @@ namespace barney {
       : devices(slotContext->devices),
         slotContext(slotContext)
     {
+      perLogical.resize(devices->numLogical);
       for (auto device : *devices) {
         PLD *pld = getPLD(device);
         auto rtc = device->rtc;
@@ -43,6 +44,9 @@ namespace barney {
 
     World::PLD *World::getPLD(Device *device)
     {
+      assert(device);
+      assert(device->contextRank >= 0);
+      assert(device->contextRank < perLogical.size());
       return &perLogical[device->contextRank];
     }
     

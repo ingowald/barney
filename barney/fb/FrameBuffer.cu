@@ -360,10 +360,14 @@ namespace barney {
   }
   
   
-  FrameBuffer::FrameBuffer(Context *context, const bool isOwner)
-    : Object(context),
+  FrameBuffer::FrameBuffer(Context *context,
+                           const DevGroup::SP &devices,
+                           const bool isOwner)
+    : SlottedObject(context,devices),
       isOwner(isOwner)
   {
+    PING; PRINT(devices->numLogical);
+    PRINT(devices->size());
     perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
       getPLD(device)->tiledFB
@@ -651,11 +655,18 @@ namespace barney {
   }
     
   FrameBuffer::PLD *FrameBuffer::getPLD(Device *device) 
-  { return &perLogical[device->contextRank]; }
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
   
   TiledFB *FrameBuffer::getFor(Device *device)
   {
-    return getPLD(device)->tiledFB.get();
+    auto pld = getPLD(device);
+    assert(pld);
+    return pld->tiledFB.get();
   }
 
   Device *FrameBuffer::getDenoiserDevice() const

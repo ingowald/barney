@@ -141,6 +141,7 @@ namespace barney {
                    const void *_items)
     : Data(context,devices,type,numItems)
   {
+    perLogical.resize(devices->numLogical);
     for (auto device : *devices) 
       getPLD(device)->rtcBuffer 
         = device->rtc->createBuffer(numItems*owlSizeOf(type),_items);

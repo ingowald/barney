@@ -37,8 +37,7 @@ namespace barney {
                 << OWL_TERMINAL_DEFAULT << std::endl;
     return device->createTrianglesGeomType("Triangles",
                                            sizeof(Triangles::DD),
-                                           "TrianglesAH",
-                                           "TrianglesCH");
+                                           /*ah*/true,/*ch*/false);
   }
   
   /*! handle data arrays for vertices, indices, normals, etc; note

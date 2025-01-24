@@ -27,7 +27,12 @@
 namespace barney {
 
   Geometry::PLD *Geometry::getPLD(Device *device)
-  { return &perLogical[device->contextRank]; }
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
 
   Geometry::SP Geometry::create(SlotContext *context,
                                 const std::string &type)
@@ -52,7 +57,9 @@ namespace barney {
   Geometry::Geometry(SlotContext *slotContext)
     : SlottedObject(slotContext->context,slotContext->devices),
       material(slotContext->defaultMaterial)
-  {}
+  {
+    perLogical.resize(devices->numLogical);
+  }
 
   Geometry::~Geometry()
   {

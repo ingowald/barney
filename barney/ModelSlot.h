@@ -35,6 +35,7 @@ namespace barney {
     typedef std::shared_ptr<ModelSlot> SP;
 
     ModelSlot(GlobalModel *model,
+              const DevGroup::SP &devices,
               /*! index with which the given rank's context will refer
                   to this _locally_; not the data rank in it */
               int slotID);
@@ -43,7 +44,7 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
     
-    static SP create(GlobalModel *model, int localID);
+    // static SP create(GlobalModel *model, int localID);
 
     void setInstances(std::vector<Group::SP> &groups,
                       const affine3f *xfms);
@@ -55,7 +56,12 @@ namespace barney {
     } instances;
 
     rtc::device::AccelHandle getInstanceAccel(Device *device)
-    { return getPLD(device)->instanceGroup->getDD(); }
+    {
+      auto *pld = getPLD(device);
+      assert(pld);
+      assert(pld->instanceGroup);
+      return pld->instanceGroup->getDD();
+    }
     struct PLD {
       rtc::Group *instanceGroup = 0;
     };

@@ -36,9 +36,11 @@ namespace barney {
     FrameBuffer *const fb;
   };
     
-  struct FrameBuffer : public Object {
+  struct FrameBuffer : public SlottedObject {
 
-    FrameBuffer(Context *context, const bool isOwner);
+    FrameBuffer(Context *context,
+                const DevGroup::SP &devices,
+                const bool isOwner);
     virtual ~FrameBuffer();
 
     /*! pretty-printer for printf-debugging */
@@ -103,7 +105,6 @@ namespace barney {
 
     Device *getDenoiserDevice() const;
     
-    const DevGroup::SP devices;
     Denoiser::SP denoiser;
 
     uint32_t    accumID = 0;

@@ -19,10 +19,12 @@
 
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/DDA.h"
-#include <owl/owl_device.h>
+// #include <owl/owl_device.h>
+
+RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
 namespace barney {
-
+#if 0
   // ==================================================================
   //
   // UMesh Data, Macro-Cell (MC) accelerator, and traversal
@@ -76,6 +78,6 @@ namespace barney {
     MCDDAVolumeAccel<UMeshCUBQLSampler>::chProg();
     /* nothing - already all set in isec */
   }
-  
+#endif  
 }
 

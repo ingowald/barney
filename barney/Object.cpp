@@ -43,7 +43,10 @@ namespace barney {
                                const DevGroup::SP &devices)
     : Object(context),
       devices(devices)
-  {}
+  {
+    assert(devices);
+    assert(!devices->empty());
+  }
  
 }
 

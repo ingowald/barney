@@ -19,10 +19,13 @@
 namespace barney {
 
   GlobalModel::GlobalModel(Context *context)
-    : Object(context)
+    : SlottedObject(context,context->devices)
   {
     for (int slot=0;slot<context->perSlot.size();slot++) {
-      ModelSlot::SP modelSlot = ModelSlot::create(this,slot);
+      assert(context->perSlot[slot].devices);
+      ModelSlot::SP modelSlot
+        = std::make_shared<ModelSlot>(this,context->perSlot[slot].devices,
+                                      slot);
       modelSlots.push_back(modelSlot);
     }
   }

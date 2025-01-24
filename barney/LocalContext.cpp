@@ -33,7 +33,7 @@ namespace barney {
   FrameBuffer *LocalContext::createFB(int owningRank)
   {
     assert(owningRank == 0);
-    return initReference(LocalFB::create(this));
+    return initReference(std::make_shared<LocalFB>(this,devices));
   }
 
   /*! returns how many rays are active in all ray queues, across all

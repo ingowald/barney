@@ -66,6 +66,7 @@ namespace barney {
 
   void RayQueue::reserve(int requiredSize)
   {
+    assert(this);
     if (size >= requiredSize) return;
     resize(requiredSize);
   }

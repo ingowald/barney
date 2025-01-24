@@ -292,6 +292,7 @@ else()
     $<BUILD_INTERFACE:barney_rtc_cuda_common>
     #    $<BUILD_INTERFACE:barney_rtc>
     $<BUILD_INTERFACE:barney-spheres-ptx>
+    $<BUILD_INTERFACE:barney-triangles-ptx>
     $<BUILD_INTERFACE:barney-traceRays-ptx>
     )
 endif()

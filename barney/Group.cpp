@@ -17,6 +17,16 @@
 #include "barney/ModelSlot.h"
 
 namespace barney {
+
+  Group::PLD *Group::getPLD(Device *device)
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
+
+
   Group::Group(Context *context, 
                const DevGroup::SP &devices, 
                const std::vector<Geometry::SP> &geoms,
@@ -24,7 +34,9 @@ namespace barney {
     : SlottedObject(context,devices),
       geoms(geoms),
       volumes(volumes)
-  {}
+  {
+    perLogical.resize(devices->numLogical);
+  }
   
   Group::~Group()
   {
@@ -54,9 +66,6 @@ namespace barney {
   /*! pretty-printer for printf-debugging */
   std::string Group::toString() const 
   { return "Group"; }
-
-  Group::PLD *Group::getPLD(Device *device)
-  { return &perLogical[device->contextRank]; }
 
   void Group::freeAllGeoms()
   {

@@ -107,7 +107,8 @@ namespace barney {
       default:
         BARNEY_NYI();
       };
-      
+
+      PING;
       SetActiveGPU forDuration(device);
 
       if (dims.z != 0) {
@@ -144,6 +145,7 @@ namespace barney {
       } else {
         BARNEY_NYI();
       }
+      PING;
     }
     
     rtc::TextureData *
@@ -151,6 +153,7 @@ namespace barney {
                                   rtc::DataType format,
                                   const void *texels) 
     {
+      PING;
       return new TextureData(this,dims,format,texels);
     }
 

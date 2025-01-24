@@ -129,11 +129,10 @@ namespace barney {
     rtc::GeomType *
     Device::createTrianglesGeomType(const char *typeName,
                                     size_t sizeOfDD,
-                                    const char *ahFctName,
-                                      const char *chFctName)
+                                    bool has_ah,
+                                    bool has_ch)
     {
-      return new TrianglesGeomType(this,typeName,sizeOfDD,
-                                   ahFctName,chFctName);
+      return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
     }
 
     GeomType::~GeomType()
@@ -145,8 +144,8 @@ namespace barney {
     TrianglesGeomType::TrianglesGeomType(optix::Device *device,
                                          const std::string &typeName,
                                          size_t sizeOfDD,
-                                         const std::string &ahFctName,
-                                         const std::string &chFctName)
+                                         bool has_ah,
+                                         bool has_ch)
       : GeomType(device)
     {
       OWLVarDecl vars[] = {
@@ -160,10 +159,14 @@ namespace barney {
         = (const char *)rtc::getSymbol(typeName+"_ptx");
       OWLModule module = owlModuleCreate
         (device->owl,Triangles_ptx);
-      owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
-                               chFctName.c_str());//"TrianglesCH");
-      owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
-                           ahFctName.c_str());//"TrianglesAH");
+      if (has_ch)
+        owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
+                                 typeName.c_str());
+                                 // chFctName.c_str());//"TrianglesCH");
+      if (has_ah)
+        owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
+                             typeName.c_str());
+      // ahFctName.c_str());//"TrianglesAH");
       owlBuildPrograms(device->owl);
       owlModuleRelease(module);
     }

@@ -32,8 +32,7 @@ namespace barney {
     struct PLD {
       rtc::TextureData *rtc = 0;
     };
-    PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; } 
+    PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
    
     TextureData(Context *context,
@@ -72,8 +71,7 @@ namespace barney {
     struct PLD {
       rtc::Texture *rtcTexture = 0;
     };
-    PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; }
+    PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
     
     /*! pretty-printer for printf-debugging */
@@ -104,8 +102,7 @@ namespace barney {
       rtc::Texture *rtcTextureNN = 0;
     };
     
-    PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; }
+    PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
     
     /*! pretty-printer for printf-debugging */

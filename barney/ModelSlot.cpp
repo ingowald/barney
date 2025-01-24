@@ -23,14 +23,26 @@
 
 namespace barney {
 
-  ModelSlot::ModelSlot(GlobalModel *_model, int slotID)
+  ModelSlot::PLD *ModelSlot::getPLD(Device *device)
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
+
+  ModelSlot::ModelSlot(GlobalModel *_model,
+                       const DevGroup::SP &devices,
+                       int slotID)
     : SlottedObject(_model->context,
-             _model->context->getSlot(slotID)->devices),
+                    devices),
       model(_model),
       slotID(slotID),
       slotContext(_model->context->getSlot(slotID)),
       world(std::make_shared<render::World>(slotContext))
-  {}
+  {
+    perLogical.resize(devices->numLogical);
+  }
 
   ModelSlot::~ModelSlot()
   {}
@@ -66,11 +78,11 @@ namespace barney {
   //     (std::make_shared<Volume>(devGroup.get(),sf));
   // }
 
-  ModelSlot::SP ModelSlot::create(GlobalModel *model, int localID)
-  {
-    ModelSlot::SP slot = std::make_shared<ModelSlot>(model,localID);
-    return slot;
-  }
+  // ModelSlot::SP ModelSlot::create(GlobalModel *model, int localID)
+  // {
+  //   ModelSlot::SP slot = std::make_shared<ModelSlot>(model,localID);
+  //   return slot;
+  // }
 
   // render::HostMaterial::SP ModelSlot::getDefaultMaterial()
   // {
@@ -197,9 +209,6 @@ namespace barney {
       pld->instanceGroup->buildAccel();
     }
   }
-
-  ModelSlot::PLD *ModelSlot::getPLD(Device *device)
-  { return &perLogical[device->contextRank]; }
 
 }
 

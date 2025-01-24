@@ -34,7 +34,7 @@ namespace barney {
       dd.run(::barney::cuda::ComputeInterface());
     }
     
-#define RTC_CUDA_COMPUTE(KernelName,ClassName)                   \
+#define RTC_CUDA_COMPUTE(KernelName,ClassName)                          \
     extern "C" void                                                     \
     barney_rtc_cuda_launch_##KernelName(::barney::vec3ui nb,            \
                                         ::barney::vec3ui bs,            \
@@ -47,11 +47,14 @@ namespace barney {
         (*(typename ClassName *)dd);                                    \
     }
   } // ::barney::cuda
+#endif
 
+
+  
+#if BARNEY_COMPILE_OPTIX_PROGRAMS
   namespace optix {
     inline __device__ const void *getLaunchParamsPointer();
     
-#ifdef __CUDA_ARCH__
     struct RTCoreInterface : public cuda::ComputeInterface {
       // inline __device__ RTCoreInterface(const void *globalsMem)
       //   : globalsMem(globalsMem)
@@ -128,21 +131,18 @@ namespace barney {
       
       template<typename PRDType>
       inline __device__ void traceRay(rtc::device::AccelHandle world,
-                                       vec3f org,
-                                       vec3f dir,
-                                       float t0,
-                                       float t1,
-                                       PRDType &prd) const
+                                      vec3f org,
+                                      vec3f dir,
+                                      float t0,
+                                      float t1,
+                                      PRDType &prd) const
       {
         owl::traceRay((const OptixTraversableHandle &)world,
-                             owl::Ray(org,dir,t0,t1),prd);
+                      owl::Ray(org,dir,t0,t1),prd);
       }
       // const void *const globalsMem;
     };
-#endif
-    
 
-#if BARNEY_COMPILE_OPTIX_PROGRAMS
 #define RTC_DECLARE_GLOBALS(Type)                               \
     __constant__ Type optixLaunchParams;                        \
     namespace barney {                                          \
@@ -151,69 +151,64 @@ namespace barney {
         { return &optixLaunchParams; }                          \
       }                                                         \
     }
-#else
-#define RTC_DECLARE_GLOBALS(Type) /* nothing */
-#endif
 
-
-#if BARNEY_COMPILE_OPTIX_PROGRAMS
-# define RTC_OPTIX_TRACE_KERNEL(name,RayGenType)                         \
-    extern "C" __global__                                               \
-    void __raygen__##name()                                             \
-    {                                                                   \
-      RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();           \
-      ::barney::optix::RTCoreInterface rtcore;                          \
-      rg->run(rtcore);                                                  \
+# define RTC_OPTIX_TRACE_KERNEL(name,RayGenType)                \
+    extern "C" __global__                                       \
+    void __raygen__##name()                                     \
+    {                                                           \
+      RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();   \
+      ::barney::optix::RTCoreInterface rtcore;                  \
+      rg->run(rtcore);                                          \
     }                                                                   
-#else
-# define RTC_OPTIX_TRACE_KERNEL(name,RayGenType) /* nothing */
-#endif
     
 
-#define RTC_DECLARE_USER_GEOM(name,type)                  \
-                                                          \
-  extern "C" __global__                                   \
-  void __closesthit__##name() {                           \
-    ::barney::optix::RTCoreInterface rtcore;              \
-    type::closest_hit(rtcore);                            \
-  }                                                       \
-                                                          \
-  extern "C" __global__                                   \
-  void __anyhit__##name() {                               \
-    ::barney::optix::RTCoreInterface rtcore;              \
-    type::any_hit(rtcore);                                \
-  }                                                       \
-                                                          \
-  extern "C" __global__                                   \
-  void __insersect__##name() {                            \
-    ::barney::optix::RTCoreInterface rtcore;              \
-    type::intersect(rtcore);                              \
-  }                                                       \
-                                                          \
-  extern "C" __global__                                   \
-  void __boundsFunc__##name(const void *geom,             \
-                            owl::common::box3f &result,   \
-                            int primID)                   \
-  {                                                       \
-    ::barney::optix::RTCoreInterface rtcore;              \
-    type::bounds(rtcore,geom,result,primID);              \
-  }                                                       \
+#define RTC_DECLARE_USER_GEOM(name,type)                        \
+                                                                \
+    extern "C" __global__                                       \
+    void __closesthit__##name() {                               \
+      ::barney::optix::RTCoreInterface rtcore;                  \
+      type::closest_hit(rtcore);                                \
+    }                                                           \
+                                                                \
+    extern "C" __global__                                       \
+    void __anyhit__##name() {                                   \
+      ::barney::optix::RTCoreInterface rtcore;                  \
+      type::any_hit(rtcore);                                    \
+    }                                                           \
+                                                                \
+    extern "C" __global__                                       \
+    void __insersect__##name() {                                \
+      ::barney::optix::RTCoreInterface rtcore;                  \
+      type::intersect(rtcore);                                  \
+    }                                                           \
+                                                                \
+    extern "C" __global__                                       \
+    void __boundsFunc__##name(const void *geom,                 \
+                              owl::common::box3f &result,       \
+                              int primID)                       \
+    {                                                           \
+      ::barney::optix::RTCoreInterface rtcore;                  \
+      type::bounds(rtcore,geom,result,primID);                  \
+    }                                                           \
   
 #define RTC_DECLARE_TRIANGLES_GEOM(name,type)   \
                                                 \
-  extern "C" __global__                         \
-  void __closesthit__##name() {                 \
-    ::barney::optix::RTCoreInterface rtcore;    \
-    type::closest_hit(rtcore);                  \
-  }                                             \
+    extern "C" __global__                       \
+    void __closesthit__##name() {               \
+      ::barney::optix::RTCoreInterface rtcore;  \
+      type::closest_hit(rtcore);                \
+    }                                           \
                                                 \
-  extern "C" __global__                         \
-  void __anyhit__##name() {                     \
-    ::barney::optix::RTCoreInterface rtcore;    \
-    type::any_hit(rtcore);                      \
-  }                                             \
+    extern "C" __global__                       \
+    void __anyhit__##name() {                   \
+      ::barney::optix::RTCoreInterface rtcore;  \
+      type::any_hit(rtcore);                    \
+    }                                           \
   
-} // ::barney::optix
+  } // ::barney::optix
+#else
+# define RTC_DECLARE_GLOBALS(Type) /* nothing */
+# define RTC_OPTIX_TRACE_KERNEL(name,RayGenType) /* nothing */
 #endif  
 }
 
@@ -233,7 +228,7 @@ namespace barney {
     }
     template<typename T>
     inline __both__ T tex2D(barney::rtc::device::TextureObject to,
-                                 float x, float y);
+                            float x, float y);
 
 
     template<>

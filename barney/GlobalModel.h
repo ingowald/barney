@@ -23,7 +23,7 @@ namespace barney {
 
   struct ModelSlot;
   
-  struct GlobalModel : public Object {
+  struct GlobalModel : public SlottedObject {
     typedef std::shared_ptr<GlobalModel> SP;
 
     static SP create(Context *ctx) { return std::make_shared<GlobalModel>(ctx); }
