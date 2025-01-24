@@ -31,7 +31,7 @@ namespace barney {
       there will be one cuda block per tile */
     struct GenerateRays {
       template<typename RTCore>
-        __device__ __host__ void run(const RTCore &rtcore);
+        __both__ void run(const RTCore &rtcore);
         
         Camera::DD camera;
         Renderer::DD renderer;
@@ -56,20 +56,20 @@ namespace barney {
         bool enablePerRayDebug;
     };
 
-    template<typename RTCore>
-    __device__ __host__
-    void GenerateRays::run(const RTCore &rtCore)
+    template<typename RTBackend>
+    __both__
+    void GenerateRays::run(const RTBackend &rt)
     {
       // ------------------------------------------------------------------
-      int tileID = rtCore.getBlockIdx().x;
+      int tileID = rt.getBlockIdx().x;
     
       vec2i tileOffset = tileDescs[tileID].lower;
-      int ix = (rtCore.getThreadIdx().x % tileSize) + tileOffset.x;
-      int iy = (rtCore.getThreadIdx().x / tileSize) + tileOffset.y;
+      int ix = (rt.getThreadIdx().x % tileSize) + tileOffset.x;
+      int iy = (rt.getThreadIdx().x / tileSize) + tileOffset.y;
 
       Ray ray;
       ray.misWeight = 0.f;
-      ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
+      ray.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
       Random rand(ix+fbSize.x*accumID+ray.pixelID,
                   iy+fbSize.y*accumID);
 
@@ -167,7 +167,7 @@ namespace barney {
 //       if (pos >= 0) 
 //         rayQueue[l_count + pos] = ray;
 // #else
-      int pos = rtCore.atomicAdd(d_count,1);
+      int pos = rt.atomicAdd(d_count,1);
       rayQueue[pos] = ray;
     }
   }
@@ -219,4 +219,4 @@ namespace barney {
   }
   
 }
-RTC_CUDA_COMPUTE(generateRays,barney::render::GenerateRays);
+RTC_DECLARE_COMPUTE(generateRays,barney::render::GenerateRays);

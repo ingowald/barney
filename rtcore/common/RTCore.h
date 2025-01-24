@@ -4,12 +4,55 @@
 #ifdef __CUDA_ARCH__
 #include "owl/owl_device.h"
 #endif
+#include <atomic>
 
 namespace barney {
   namespace rtc {
 
     typedef struct _OpaqueTextureHandle *OpaqueTextureHandle;
   }
+  
+#if BARNEY_BACKEND_EMBREE
+  namespace embree {
+    struct ComputeInterface {
+#  ifdef __CUDA_ARCH__
+      /* the embree compute interface only makes sense on the host,
+         and for the device sometimes isn't even callable (std::atomic
+         etc), so let's make those fcts 'go away' for device code */
+      inline __both__ vec3ui getThreadIdx() const
+      { return vec3ui(0); }
+      inline __both__ vec3ui getBlockDim() const
+      { return vec3ui(0); }
+      inline __both__ vec3ui getBlockIdx() const
+      { return vec3ui(0); }
+      inline __both__ int atomicAdd(int *ptr, int inc) const
+      { return 0; }
+      inline __both__ float atomicAdd(float *ptr, float inc) const
+      { return 0.f; }
+#  else
+      inline __both__ vec3ui getThreadIdx() const
+      { return this->threadIdx; }
+      
+      inline __both__ vec3ui getBlockDim() const
+      { return this->blockDim; }
+      
+      inline __both__ vec3ui getBlockIdx() const
+      { return this->blockIdx; }
+      
+      inline __both__ int atomicAdd(int *ptr, int inc) const
+      { return ((std::atomic<int> *)ptr)->fetch_add(inc); }
+      
+      inline __both__ float atomicAdd(float *ptr, float inc) const
+      { return ((std::atomic<float> *)ptr)->fetch_add(inc); }
+      
+      vec3ui threadIdx;
+      vec3ui blockIdx;
+      vec3ui blockDim;
+#  endif
+    };
+  }
+#endif
+  
 #ifdef __CUDACC__
   namespace cuda {
 
@@ -34,7 +77,7 @@ namespace barney {
       dd.run(::barney::cuda::ComputeInterface());
     }
     
-#define RTC_CUDA_COMPUTE(KernelName,ClassName)                          \
+#  define RTC_CUDA_COMPUTE(KernelName,ClassName)                          \
     extern "C" void                                                     \
     barney_rtc_cuda_launch_##KernelName(::barney::vec3ui nb,            \
                                         ::barney::vec3ui bs,            \
@@ -47,8 +90,19 @@ namespace barney {
         (*(typename ClassName *)dd);                                    \
     }
   } // ::barney::cuda
+#else
+#  define RTC_CUDA_COMPUTE(KernelName,ClassName)  /* nothing */
 #endif
 
+#if BARNEY_BACKEND_EMBREE
+#  define RTC_EMBREE_COMPUTE(KernelName,ClassName)                         \
+  extern "C" void barney_rtc_embree_compute_##KernelName(const void *dd)       \
+  {                                                                     \
+    ((ClassName*)dd)->run(::barney::embree::ComputeInterface());        \
+  };
+#else
+#  define RTC_EMBREE_COMPUTE(KernelName,ClassName) /* nothing */
+#endif
 
   
 #if BARNEY_COMPILE_OPTIX_PROGRAMS
@@ -274,3 +328,10 @@ namespace barney {
     }
   }
 }
+
+
+#  define RTC_DECLARE_COMPUTE(name,kernel) \
+  RTC_CUDA_COMPUTE(name,kernel)            \
+  RTC_EMBREE_COMPUTE(name,kernel)
+
+

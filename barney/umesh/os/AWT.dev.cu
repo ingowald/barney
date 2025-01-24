@@ -17,6 +17,7 @@
 #include <owl/owl_device.h>
 #include "barney/umesh/os/AWT.h"
 
+RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 // #define AWT_SAMPLE_MODE 1
 
 #ifndef AWT_THRESHOLD

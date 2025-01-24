@@ -4,10 +4,17 @@
 
 namespace barney {
   namespace embree {
+
+    struct ComputeInterface {
+    };
     
     struct Compute : public rtc::Compute
     {
+      typedef void (*ComputeFct)(ComputeInterface &,
+                                 const void *dd);
+      
       Compute(Device *device, const std::string &name);
+      ComputeFct computeFct = 0;
     };
     
     struct Trace : public rtc::Trace

@@ -104,6 +104,10 @@ if (BARNEY_BACKEND_EMBREE)
     embree_local
     )
   #  target_link_libraries(barney_rtc PUBLIC barney_rtc_embree)
+else()
+  add_library(barney_rtc_embree INTERFACE
+    # dummy
+    )
 endif()
 
 # ==================================================================

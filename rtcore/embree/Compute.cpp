@@ -6,7 +6,10 @@ namespace barney {
     Compute::Compute(Device *device,
                      const std::string &name)
       : rtc::Compute(device)
-    { BARNEY_NYI(); }
+    {
+      computeFct = (ComputeFct)rtc::getSymbol
+        ("barney_rtc_embree_compute_"+name);
+    }
 
     Trace::Trace(Device *device,
                  const std::string &name,
