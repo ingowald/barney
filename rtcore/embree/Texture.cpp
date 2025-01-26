@@ -24,9 +24,34 @@ namespace barney {
                         bool dbg=false)
     {
       switch (mode) {
-      case rtc::Texture::WRAP:
+      case rtc::Texture::WRAP: {
+#if 1
         out = {};
-        printf("wrap\n"); return;
+        tc = tc * N - .5f;
+        tc = fmodf(tc,N);
+        if (tc < 0.f) tc += N;
+        float fc = floorf(tc);
+        int ic = int(fc);
+        out.f = tc - ic;
+        out.idx0 = ic;
+        out.idx1 = int(fmodf(tc+1.f,N));
+#else
+        out = {};
+        tc = tc * N + .5f;
+        float fc = floorf(tc);
+        int ic = int(fc);
+        out.f = tc - ic;
+
+        int i0 = ic-1;
+        int i1 = ic+0;
+        if (i0 < 0) i0 = -i0;
+        if (i1 < 0) i1 = -i1;
+        i0 = i0 % (N);
+        i1 = i1 % (N);
+        out.idx0 = i0;
+        out.idx1 = i1;
+#endif
+      } return;
       case rtc::Texture::MIRROR: {
         out = {};
         tc = tc * N + .5f;

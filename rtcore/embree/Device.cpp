@@ -99,7 +99,6 @@ namespace barney {
   
       // TraceInterface *ti2 = (TraceInterface *)TraceInterface::get();//args->context;
       TraceInterface *ti = (TraceInterface *)args->context;
-      // printf("two tis %p %p\n",ti,ti2);
 
       int primID = hit->primID;
       int geomID = hit->geomID;
@@ -181,23 +180,15 @@ namespace barney {
       RTCIntersectArguments iargs;
       rtcInitIntersectArguments(&iargs);
       iargs.context = &ti->embreeRayQueryContext;
-      // iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
       iargs.filter = intersectionFilter;
-      // rtcIntersect1(data.g_scene,RTCRayHit_(primary),&iargs);
 
-      // printf("calling rtcIntersect1\n");
-      rtcIntersect1(embreeScene,&rayHit,&iargs);//,&isecArgs);
+      rtcIntersect1(embreeScene,&rayHit,&iargs);
 
-      // printf("AFTER rtcIntersect1 -> %i\n",rayHit.hit.geomID);
-  
       if ((int)rayHit.hit.geomID >= 0) {
     
         int primID = rayHit.hit.primID;
         int geomID = rayHit.hit.geomID;
         int instID = rayHit.hit.instID[0];
-        // PRINT(primID);
-        // PRINT(geomID);
-        // PRINT(instID);
     
         GeomGroup *group = (GeomGroup *)ig->groups[instID];
         Geom *geom = (Geom *)group->geoms[geomID];
@@ -214,7 +205,6 @@ namespace barney {
           ti->embreeRay = &rayHit.ray;
           ti->embreeHit = &rayHit.hit;
     
-          // printf("calling closesthit\n");
           gt->ch(*ti);
         }
       }

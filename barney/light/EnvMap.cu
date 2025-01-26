@@ -261,6 +261,7 @@ namespace barney {
                 const DevGroup::SP &devices)
     : Light(context,devices)
   {
+    perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;

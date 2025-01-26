@@ -153,25 +153,7 @@ namespace barney {
                           bgColor.z);
       ray.throughput = vec3f(1.f);
     
-// #if MERGE_ATOMICS
-//       int pos = -1;
-//       if (ix < fbSize.x && iy < fbSize.y) 
-//         pos = atomicAdd(&l_count,1);
-
-//       // ------------------------------------------------------------------
-//       __syncthreads();
-//       if (threadIdx.x == 0) 
-//         l_count = atomicAdd(d_count,l_count);
-    
-//       // ------------------------------------------------------------------
-//       __syncthreads();
-//       if (pos >= 0) 
-//         rayQueue[l_count + pos] = ray;
-// #else
       int pos = rt.atomicAdd(d_count,1);
-      if (pos < 10)
-        printf("generate %i %p : %f %f %f\n",
-               pos,rayQueue,ray.org.x,ray.org.y,ray.org.z);
       rayQueue[pos] = ray;
     }
   }

@@ -51,16 +51,6 @@ namespace barney {
         if (dir.y == 0.f) dir.y = 1e-6f;
         if (dir.z == 0.f) dir.z = 1e-6f;
 
-        if (rayID < 10)
-        printf("traceRays %i: %p  %f %f %f  ; %f %f %f -> %p\n",
-               rayID,
-               lp.rays,
-               ray.org.x,
-               ray.org.y,
-               ray.org.z,
-               dir.x,
-               dir.y,
-               dir.z,&ray);
         ti.traceRay(lp.world,
                     ray.org,
                     dir,

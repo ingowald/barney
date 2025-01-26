@@ -174,13 +174,9 @@ namespace barney {
 
     GeomGroup *InstanceGroup::getGroup(int groupID) 
     {
-      PING; PRINT(this); PRINT(groupID);
-      PRINT(groups.size());
-      
       assert(groupID >= 0 && groupID < groups.size());
       rtc::Group *g = groups[groupID];
       assert(g);
-      PRINT(g);
       return (GeomGroup*)g;
     }
     
@@ -201,12 +197,8 @@ namespace barney {
     
     
       embreeScene = rtcNewScene(device->embreeDevice);
-      PING;
-      PRINT(this);
-      PRINT(groups.size());
       for (int instID=0;instID<groups.size();instID++) {
         embree::Group *group = (embree::Group *)groups[instID];
-        PRINT(group);
         RTCGeometry geom
           = rtcNewGeometry(device->embreeDevice,RTC_GEOMETRY_TYPE_INSTANCE);
         assert(group);
