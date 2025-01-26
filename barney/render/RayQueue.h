@@ -37,7 +37,7 @@ namespace barney {
     // {
     //   // BARNEY_CUDA_CALL(FreeHost(h_numActive));
     // }
-    int *h_numActive;
+    int *h_numActive = 0;
 
     /*! the read queue, where local kernels operating on rays (trace
       and shade) can read rays from. this is actually a misnomer

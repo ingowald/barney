@@ -911,7 +911,7 @@ namespace barney {
       // clamping ...
       float clampMax = 10.f*(1+accumID);
       fragment = min(fragment,vec3f(clampMax));
-      
+
       if (accumID == 0 && generation == 0) {
         if (path.dbg) printf("init frag %f %f %f\n",
                              fragment.x,fragment.y,fragment.z);
@@ -970,7 +970,8 @@ namespace barney {
           = world->getDD(device);
         Renderer::DD devRenderer
           = renderer->getDD(device);
-        
+        rayQueue->resetWriteQueue();
+
         render::ShadeRaysKernel args = {
           devWorld,devRenderer,
           devFB->accumTiles,
@@ -991,7 +992,7 @@ namespace barney {
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
-      device->rayQueue->resetWriteQueue();
+      // device->rayQueue->resetWriteQueue();
     }
   }
   

@@ -146,7 +146,8 @@ namespace barney {
         bgColor = v;
       }
       ray.missColor = bgColor;
-      if (ray.dbg) printf("== spawn ray has bg color %f %f %f\n",
+      if (1 && ray.dbg) printf("== spawn ray has bg tex %p bg color %f %f %f\n",
+                               (void*)renderer.bgTexture,
                           bgColor.x,
                           bgColor.y,
                           bgColor.z);
@@ -168,6 +169,9 @@ namespace barney {
 //         rayQueue[l_count + pos] = ray;
 // #else
       int pos = rt.atomicAdd(d_count,1);
+      if (pos < 10)
+        printf("generate %i %p : %f %f %f\n",
+               pos,rayQueue,ray.org.x,ray.org.y,ray.org.z);
       rayQueue[pos] = ray;
     }
   }
@@ -192,6 +196,7 @@ namespace barney {
     // ------------------------------------------------------------------
     for (auto device : *devices) {
       TiledFB *devFB = fb->getFor(device);
+      device->rayQueue->resetWriteQueue();
       render::GenerateRays args = {
         /* variable args */
         camera,
@@ -214,7 +219,7 @@ namespace barney {
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
-      device->rayQueue->resetWriteQueue();
+      // device->rayQueue->resetWriteQueue();
     }
   }
 }

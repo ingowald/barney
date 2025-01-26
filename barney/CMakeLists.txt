@@ -118,6 +118,9 @@ embed_ptx(
   )
 
 set(BARNEY_SOURCES
+  geometry/Triangles.dev.cu
+
+  
   # *structured* volumes
   volume/StructuredData.h
   volume/StructuredData.cu

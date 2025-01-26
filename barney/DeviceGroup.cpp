@@ -104,6 +104,14 @@ namespace barney {
       = rtc->createCompute("setTileCoords");
     compressTiles
       = rtc->createCompute("compressTiles");
+    unpackTiles
+      = rtc->createCompute("unpackTiles");
+    copyPixels
+      = rtc->createCompute("copyPixels");
+    toneMap
+      = rtc->createCompute("toneMap");
+    toFixed8
+      = rtc->createCompute("toFixed8");
     generateRays
       = rtc->createCompute("generateRays");
     shadeRays

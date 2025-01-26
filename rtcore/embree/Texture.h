@@ -28,8 +28,7 @@ namespace barney {
     {
       Texture(TextureData *const data,
               const rtc::TextureDesc &desc);
-      rtc::device::TextureObject getDD() const override
-      { return (const rtc::device::TextureObject &)sampler; }
+      rtc::device::TextureObject getDD() const override;
 
       TextureSampler *sampler = 0;
     };

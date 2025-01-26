@@ -31,9 +31,9 @@ namespace barney {
     // RTC_CH_PROGRAM(TrianglesCH)()
     // {}
 
-    template<typename RTBackend>
+    template<typename TraceInterface>
     static inline __both__
-    void closest_hit(const RTBackend &rt)
+    void closest_hit(TraceInterface &rt)
     {}
 
     /*! triangles geom AH program; mostly check on transparency */
@@ -43,11 +43,12 @@ namespace barney {
     // void TrianglesAH(const RTBackend &rt)
     // RTC_AH_PROGRAM(TrianglesAH)()
       
-    template<typename RTBackend>
+    template<typename TraceInterface>
     static inline __both__
-    void any_hit(const RTBackend &rt)
+    void any_hit(TraceInterface &rt)
     {
       auto &ray = *(Ray *)rt.getPRD();
+
       // auto &ray = rt.getPRD<Ray>();
       // auto &self = rt.getProgramData<Triangles::DD>();
       auto &self = *(Triangles::DD*)rt.getProgramData();
@@ -60,7 +61,7 @@ namespace barney {
       vec3f v2 = self.vertices[triangle.z];
       vec3f n = cross(v1-v0,v2-v0);
       // vec3f ws_n = soptixTransformNormalFromObjectToWorldSpace(n);
-      if (0 && ray.dbg)
+      if (1 && ray.dbg)
         printf("----------- Triangles::AH (%i %p) at %f\n",
                primID,&self,rt.getRayTmax());
       // if (0 && ray.dbg)
@@ -101,7 +102,6 @@ namespace barney {
                n.x,n.y,n.z);
       //   else 
       // n = cross(v1-v0,v2-v0);
-
       const vec3f osN = normalize(n);
       n = rt.transformNormalFromObjectToWorldSpace(n);
       n = normalize(n);

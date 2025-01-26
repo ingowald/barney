@@ -124,7 +124,10 @@ namespace barney {
     }
 
     rtc::Texture *TextureData::createTexture(const rtc::TextureDesc &desc) 
-    { return new Texture(this,desc); }
+    {
+      PING;
+      return new Texture(this,desc);
+    }
 
 
 
@@ -143,6 +146,11 @@ namespace barney {
       rtc::TextureDesc const desc;
     };
 
+    rtc::device::TextureObject Texture::getDD() const
+    {
+      return (const rtc::device::TextureObject &)sampler;
+    }
+    
     template<typename T, int FILTER_MODE>
     struct TextureSamplerT// : public TextureSampler
     {
@@ -446,6 +454,16 @@ namespace barney {
       sampler = createSampler(data,desc);
     }
 
+    __both__ float tex2D1f(barney::rtc::device::TextureObject to,
+                           float x, float y)
+    { return ((TextureSampler *)to)->tex2D({x,y}).x; }
+    
+    __both__ float4 tex2D4f(barney::rtc::device::TextureObject to,
+                            float x, float y)
+    {
+      vec4f v = ((TextureSampler *)to)->tex2D({x,y});
+      return (const float4&)v;
+    }
 
 
   }

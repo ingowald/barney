@@ -349,7 +349,10 @@ namespace barney {
     Backend *createBackend_optix()
     {
       PING;
-      return new barney::optix::OptixBackend;
+      Backend *be = new barney::optix::OptixBackend;
+
+      PRINT(be);
+      return be;
     }
   }
 }

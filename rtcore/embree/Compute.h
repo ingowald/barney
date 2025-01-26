@@ -26,15 +26,16 @@ namespace barney {
       void launch(vec3i numBlocks,
                   vec3i blockSize,
                           const void *dd) override;
-      
+
+      std::string const name;
       ComputeFct computeFct = 0;
     };
     
     struct Trace : public rtc::Trace
     {
-      typedef void (*TraceFct)(TraceInterface &,
-                                 const void *dd);
-      Trace(Device *device, const std::string &name, size_t sizeOfRG);
+      typedef void (*TraceFct)(TraceInterface &);
+      Trace(Device *device,
+            const std::string &name);
       
       void launch(vec2i launchDims,
                   const void *dd);      

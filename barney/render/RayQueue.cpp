@@ -56,7 +56,6 @@ namespace barney {
   {
     auto rtc = device->rtc;
     rtc->memsetAsync(_d_nextWritePos,0,sizeof(int));
-    // BARNEY_CUDA_CALL(MemsetAsync(_d_nextWritePos,0,sizeof(int),device->launchStream));
   }
     
   void RayQueue::swap()
@@ -80,13 +79,16 @@ namespace barney {
     if (receiveAndShadeWriteQueue)
       rtc->freeMem(receiveAndShadeWriteQueue);
 
-    if (!_d_nextWritePos)
-      _d_nextWritePos = (int*)rtc->alloc(sizeof(int));
+    if (!_d_nextWritePos) {
+      _d_nextWritePos = (int*)rtc->alloc(sizeof(int)); 
+    }
 
     traceAndShadeReadQueue = (Ray*)rtc->alloc(newSize*sizeof(Ray));
     receiveAndShadeWriteQueue = (Ray*)rtc->alloc(newSize*sizeof(Ray));
         
     size = newSize;
+
+    resetWriteQueue();
   }
 }
 

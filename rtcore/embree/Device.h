@@ -82,11 +82,8 @@ namespace barney {
       // rt pipeline/sbtstuff
       // ------------------------------------------------------------------
 
-      void buildPipeline() override
-      { BARNEY_NYI(); }
-      
-      void buildSBT() override
-      { BARNEY_NYI(); }
+      void buildPipeline() override;
+      void buildSBT() override;
 
       // ------------------------------------------------------------------
       // geomtype stuff
@@ -102,15 +99,12 @@ namespace barney {
         override 
       { BARNEY_NYI(); }
       
-      rtc::GeomType *
-      createTrianglesGeomType(const char *typeName,
-                              size_t sizeOfDD,
-                              bool has_ah,
-                              bool has_ch) override
-      { BARNEY_NYI(); }
+      rtc::GeomType *createTrianglesGeomType(const char *typeName,
+                                             size_t sizeOfDD,
+                                             bool has_ah,
+                                             bool has_ch) override;
       
-      void freeGeomType(rtc::GeomType *) override 
-      { BARNEY_NYI(); }
+      void freeGeomType(rtc::GeomType *) override;
 
       // ------------------------------------------------------------------
       // geom stuff
@@ -123,21 +117,18 @@ namespace barney {
       // group/accel stuff
       // ------------------------------------------------------------------
       rtc::Group *
-      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms) override
-      { BARNEY_NYI(); }
+      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms) override;
       
       rtc::Group *
-      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) override
-      { BARNEY_NYI(); }
-
+      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) override;
+      
       rtc::Group *
       createInstanceGroup(const std::vector<rtc::Group *> &groups,
-                          const std::vector<affine3f> &xfms) override
-      { BARNEY_NYI(); }
+                          const std::vector<affine3f> &xfms) override;
+      
+      void freeGroup(rtc::Group *group) override;
 
-      void freeGroup(rtc::Group *group) override
-      { delete group; }
-
+      
       RTCDevice embreeDevice = 0;
     };
     

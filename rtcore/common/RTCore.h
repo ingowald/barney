@@ -1,70 +1,96 @@
 #pragma once
 
+#include "barney/barney.h"
 #include "barney/common/barney-common.h"
 #ifdef __CUDA_ARCH__
 #include "owl/owl_device.h"
 #endif
 #include <atomic>
 
-namespace barney {
-  namespace rtc {
+#if BARNEY_BACKEND_EMBREE
+# include <embree4/rtcore_common.h>
+# include <embree4/rtcore_ray.h>
+#endif
 
-    typedef struct _OpaqueTextureHandle *OpaqueTextureHandle;
-  }
+namespace barney {
+  // namespace rtc {
+
+  //   typedef struct _OpaqueTextureHandle *OpaqueTextureHandle;
+  // }
   
 #if BARNEY_BACKEND_EMBREE
   namespace embree {
+
+    __both__ float tex2D1f(barney::rtc::device::TextureObject to,
+                           float x, float y);
+    __both__ float4 tex2D4f(barney::rtc::device::TextureObject to,
+                            float x, float y);
+    
+    struct InstanceGroup;
     struct TraceInterface {
-// #  ifdef __CUDA_ARCH__
-//       /* the embree compute interface only makes sense on the host,
-//          and for the device sometimes isn't even callable (std::atomic
-//          etc), so let's make those fcts 'go away' for device code */
-// #  else
-      void ignoreIntersection() const;
-      void reportIntersection(float t, int i) const;
-      void *getPRD() const;
-      const void *getProgramData() const;
-      const void *getLPData() const;
-      vec3i getLaunchDims()  const;
-      vec3i getLaunchIndex() const;
-      vec2f getTriangleBarycentrics() const;
-      int getPrimitiveIndex() const;
-      float getRayTmax() const;
-      float getRayTmin() const;
-      vec3f getObjectRayDirection() const;
-      vec3f getObjectRayOrigin() const;
-      vec3f getWorldRayDirection() const;
-      vec3f getWorldRayOrigin() const;
-      vec3f transformNormalFromObjectToWorldSpace(vec3f v) const;
-      vec3f transformPointFromObjectToWorldSpace(vec3f v) const;
-      vec3f transformVectorFromObjectToWorldSpace(vec3f v) const;
-      vec3f transformNormalFromWorldToObjectSpace(vec3f v) const;
-      vec3f transformPointFromWorldToObjectSpace(vec3f v) const;
-      vec3f transformVectorFromWorldToObjectSpace(vec3f v) const;
-      void  traceRay(rtc::device::AccelHandle world,
-                     vec3f org,
-                     vec3f dir,
-                     float t0,
-                     float t1,
-                     void *prdPtr) const;
-      
-      // template<typename PRDType>
-      // inline __device__ void traceRay(rtc::device::AccelHandle world,
-      //                                 vec3f org,
-      //                                 vec3f dir,
-      //                                 float t0,
-      //                                 float t1,
-      //                                 PRDType &prd) const
-      // {
-      //   this->trace(world,org,dir,t0,t1,&prd);
-      // }
+      // #  ifdef __CUDA_ARCH__
+      //       /* the embree compute interface only makes sense on the host,
+      //          and for the device sometimes isn't even callable (std::atomic
+      //          etc), so let's make those fcts 'go away' for device code */
+      // #  else
+      __both__ void ignoreIntersection(); 
+      __both__ void reportIntersection(float t, int i);
+      __both__ void *getPRD() const;
+      __both__ const void *getProgramData() const;
+      __both__ const void *getLPData() const;
+      __both__ vec3i getLaunchDims()  const;
+      __both__ vec3i getLaunchIndex() const;
+      __both__ vec2f getTriangleBarycentrics() const;
+      __both__ int getPrimitiveIndex() const;
+      __both__ float getRayTmax() const;
+      __both__ float getRayTmin() const;
+      __both__ vec3f getObjectRayDirection() const;
+      __both__ vec3f getObjectRayOrigin() const;
+      __both__ vec3f getWorldRayDirection() const;
+      __both__ vec3f getWorldRayOrigin() const;
+      __both__ vec3f transformNormalFromObjectToWorldSpace(vec3f v) const;
+      __both__ vec3f transformPointFromObjectToWorldSpace(vec3f v) const;
+      __both__ vec3f transformVectorFromObjectToWorldSpace(vec3f v) const;
+      __both__ vec3f transformNormalFromWorldToObjectSpace(vec3f v) const;
+      __both__ vec3f transformPointFromWorldToObjectSpace(vec3f v) const;
+      __both__ vec3f transformVectorFromWorldToObjectSpace(vec3f v) const;
+      __both__ void  traceRay(rtc::device::AccelHandle world,
+                              vec3f org,
+                              vec3f dir,
+                              float t0,
+                              float t1,
+                              void *prdPtr);
+      static TraceInterface *get();
+
+      /* this HAS to be the first entry! :*/
+      RTCRayQueryContext embreeRayQueryContext;
+      vec3i     launchIndex;
+      vec3i     launchDimensions;
+      bool      ignoreThisHit;
+      float     isec_t;
+      vec2f     triangleBarycentrics;
+      int       primID;
+      int       geomID;
+      int       instID;
+      vec3f     worldOrigin;
+      vec3f     worldDirection;
+      void           *prd;
+      const void     *geomData;
+      const void     *lpData;
+      const affine3f *objectToWorldXfm;
+      const affine3f *worldToObjectXfm;
+      RTCRay         *embreeRay;
+      RTCHit         *embreeHit;
+      InstanceGroup  *world;
     };
     
     struct ComputeInterface {
 #  ifdef __CUDA_ARCH__
       /* the embree compute interface only makes sense on the host,
          and for the device sometimes isn't even callable (std::atomic
-         etc), so let's make those fcts 'go away' for device code */
+         etc), so let's make those fcts 'go away' for device code,
+         just like we maek cuda built-in 'threadIdx' etc go away on
+         host. */
       inline __both__ vec3ui getThreadIdx() const
       { return vec3ui(0); }
       inline __both__ vec3ui getBlockDim() const
@@ -89,12 +115,19 @@ namespace barney {
       { return ((std::atomic<int> *)ptr)->fetch_add(inc); }
       
       inline __both__ float atomicAdd(float *ptr, float inc) const
-      { return ((std::atomic<float> *)ptr)->fetch_add(inc); }
-      
+      {
+        //        return ((std::atomic<float> *)ptr)->fetch_add(inc);
+        float f =  ((std::atomic<float> *)ptr)->fetch_add(inc);;
+        PRINT(f);
+        PRINT(inc);
+        PRINT(*ptr);
+        return f;
+      }
+#  endif
       vec3ui threadIdx;
       vec3ui blockIdx;
       vec3ui blockDim;
-#  endif
+      vec3ui gridDim;
     };
   }
 #endif
@@ -143,22 +176,43 @@ namespace barney {
 #if BARNEY_BACKEND_EMBREE
 #  define RTC_DECLARE_EMBREE_COMPUTE(KernelName,ClassName)              \
   extern "C"                                                            \
-  void barney_rtc_embree_compute_##KernelName(const void *dd)           \
+  void barney_rtc_embree_computeBlock_##KernelName                      \
+  (::barney::embree::ComputeInterface &ci,const void *dd)               \
   {                                                                     \
-    ::barney::embree::ComputeInterface rt;                              \
-    ((ClassName*)dd)->run(rt);                                          \
+    auto &tid = ci.threadIdx;                                           \
+    for (tid.z=0;tid.z<ci.blockDim.z;tid.z++)                           \
+      for (tid.y=0;tid.y<ci.blockDim.y;tid.y++)                         \
+        for (tid.x=0;tid.x<ci.blockDim.x;tid.x++)                       \
+          ((ClassName*)dd)->run(ci);                                    \
   }
   
-#  define RTC_DECLARE_EMBREE_TRACE(KernelName,ClassName)                \
+#  define RTC_DECLARE_EMBREE_TRACE(KernelName,RayGenType)               \
   extern "C"                                                            \
-  void barney_rtc_embree_trace_##KernelName(const void *dd)             \
+  void barney_rtc_embree_trace_##KernelName                             \
+  (::barney::embree::TraceInterface &rt)                                \
   {                                                                     \
-    ::barney::embree::TraceInterface rt;                                \
-    ((ClassName*)dd)->run(rt);                                          \
+    RayGenType::run(rt);                                                \
   }
+
+#define RTC_DECLARE_EMBREE_USER_GEOM(name,type)        /* nothing yet */
+  
+#define RTC_DECLARE_EMBREE_TRIANGLES_GEOM(name,type)        \
+                                                            \
+  extern "C"                                                \
+  void barney_embree_ch_##name                              \
+  (::barney::embree::TraceInterface &rtcore)                \
+  { type::closest_hit(rtcore); }                            \
+                                                            \
+  extern "C"                                                \
+  void barney_embree_ah_##name                              \
+  (::barney::embree::TraceInterface &rtcore)                \
+  { type::any_hit(rtcore); }                               
+  
 #else
 #  define RTC_DECLARE_EMBREE_COMPUTE(KernelName,ClassName) /* nothing */
 #  define RTC_DECLARE_EMBREE_TRACE(KernelName,ClassName) /* nothing */
+#  define RTC_DECLARE_EMBREE_TRIANGLES_GEOM(name,type) /* nothing */
+#define RTC_DECLARE_EMBREE_USER_GEOM(name,type)        /* nothing */
 #endif
 
   
@@ -245,7 +299,7 @@ namespace barney {
                                       vec3f dir,
                                       float t0,
                                       float t1,
-                                      void *prdPtr) const
+                                      void *prdPtr) 
       {
 #if 1
         unsigned int           p0 = 0;
@@ -302,7 +356,7 @@ namespace barney {
     }                                                                   
     
 
-#define RTC_DECLARE_USER_GEOM(name,type)                        \
+#define RTC_DECLARE_OPTIX_USER_GEOM(name,type)                        \
                                                                 \
     extern "C" __global__                                       \
     void __closesthit__##name() {                               \
@@ -331,24 +385,26 @@ namespace barney {
       type::bounds(rtcore,geom,result,primID);                  \
     }                                                           \
   
-#define RTC_DECLARE_TRIANGLES_GEOM(name,type)   \
-                                                \
-    extern "C" __global__                       \
-    void __closesthit__##name() {               \
-      ::barney::optix::RTCoreInterface rtcore;  \
-      type::closest_hit(rtcore);                \
-    }                                           \
-                                                \
-    extern "C" __global__                       \
-    void __anyhit__##name() {                   \
-      ::barney::optix::RTCoreInterface rtcore;  \
-      type::any_hit(rtcore);                    \
-    }                                           \
+#define RTC_DECLARE_OPTIX_TRIANGLES_GEOM(name,type)     \
+                                                        \
+    extern "C" __global__                               \
+    void __closesthit__##name() {                       \
+      ::barney::optix::RTCoreInterface rtcore;          \
+      type::closest_hit(rtcore);                        \
+    }                                                   \
+                                                        \
+    extern "C" __global__                               \
+    void __anyhit__##name() {                           \
+      ::barney::optix::RTCoreInterface rtcore;          \
+      type::any_hit(rtcore);                            \
+    }                                                   \
   
   } // ::barney::optix
 #else
 # define RTC_DECLARE_GLOBALS(Type) /* nothing */
 # define RTC_DECLARE_OPTIX_TRACE(name,RayGenType) /* nothing */
+# define RTC_DECLARE_OPTIX_TRIANGLES_GEOM(name,type) /* nothing */
+# define RTC_DECLARE_OPTIX_USER_GEOM(name,type) /* nothing */
 #endif  
 }
 
@@ -360,7 +416,7 @@ namespace barney {
                                        float x)
     {
 #ifdef __CUDA_ARCH__
-      printf("tex2d missing...\n");
+      printf("tex1d missing...\n");
       return T{};
 #else
       BARNEY_NYI();
@@ -377,29 +433,38 @@ namespace barney {
     {
 #ifdef __CUDA_ARCH__
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
-      float4 v = ::tex2D<float4>(texObj,x,y);
-      // printf("%p %f %f -> %f %f %f %f\n",
-      //        (int*)texObj,x,y,v.x,v.y,v.z,v.w);
-      return v;
+      return ::tex2D<float4>(texObj,x,y);
       // return T{};
+#elif BARNEY_BACKEND_EMBREE
+      // this in on th ehost, and we _do_ have the embree backend built in:
+      return embree::tex2D4f(to,x,y);
 #else
-      BARNEY_NYI();
+      // this cannot possibly happen because we have to have either a
+      // cuda or an embree backend to even call this.
+      return {0.f,0.f,0.f,0.f};
 #endif
     }
+
 
     template<>
     inline __both__ float tex2D<float>(barney::rtc::device::TextureObject to,
                                        float x, float y)
     {
 #ifdef __CUDA_ARCH__
+      // we _must_ be on the device, so this is a cuda teture
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       return ::tex2D<float>(texObj,x,y);
       // return T{};
+#elif BACKEND_EMBREE
+      // this in on th ehost, and we _do_ have the embree backend built in:
+      printf("tex2d1f\n");
+      return embree::tex2D1f(texObj,x,y);
 #else
-      BARNEY_NYI();
+      // this cannot possibly happen because we have to have either a
+      // cuda or an embree backend to even call this.
+      return 0.f;
 #endif
     }
-
 
     template<typename T>
     inline __device__ __host__ T tex3D(barney::rtc::device::TextureObject to,
@@ -416,12 +481,23 @@ namespace barney {
 }
 
 
-#  define RTC_DECLARE_COMPUTE(name,kernel) \
+#  define RTC_DECLARE_COMPUTE(name,kernel)         \
   RTC_DECLARE_CUDA_COMPUTE(name,kernel)            \
   RTC_DECLARE_EMBREE_COMPUTE(name,kernel)
 
 #  define RTC_DECLARE_TRACE(name,kernel)         \
   RTC_DECLARE_OPTIX_TRACE(name,kernel)           \
   RTC_DECLARE_EMBREE_TRACE(name,kernel)
+
+#define RTC_DECLARE_TRIANGLES_GEOM(name,type)   \
+  RTC_DECLARE_OPTIX_TRIANGLES_GEOM(name,type)   \
+  RTC_DECLARE_EMBREE_TRIANGLES_GEOM(name,type)     
+
+
+#define RTC_DECLARE_USER_GEOM(name,type)   \
+  RTC_DECLARE_OPTIX_USER_GEOM(name,type)   \
+  RTC_DECLARE_EMBREE_USER_GEOM(name,type)     
+
+
 
 

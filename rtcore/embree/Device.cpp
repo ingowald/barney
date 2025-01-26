@@ -2,67 +2,226 @@
 #include "rtcore/embree/Compute.h"
 #include "rtcore/embree/Texture.h"
 #include "rtcore/embree/Buffer.h"
+#include "rtcore/embree/Triangles.h"
+#include "rtcore/embree/UserGeom.h"
+#include "rtcore/embree/Group.h"
+// ---- common ----
 #include "rtcore/common/RTCore.h"
 
 namespace barney {
   namespace embree {
 
+    __thread TraceInterface *perThreadTraceInterface = 0;
+    
+    TraceInterface *TraceInterface::get()
+    {
+      // if (!perThreadTraceInterface)
+      //   perThreadTraceInterface = new TraceInterface;
+      return perThreadTraceInterface;
+    }
+
     // ------------------------------------------------------------------
     // rt core interface
     // ------------------------------------------------------------------
-    void TraceInterface::ignoreIntersection() const
-      { BARNEY_NYI(); }
-      void TraceInterface::reportIntersection(float t, int i) const
-      { BARNEY_NYI(); }
-      void *TraceInterface::getPRD() const
-      { BARNEY_NYI(); }
-      const void *TraceInterface::getProgramData() const
-      { BARNEY_NYI(); }
-      const void *TraceInterface::getLPData() const
-      { BARNEY_NYI(); }
-      vec3i TraceInterface::getLaunchDims()  const
-      { BARNEY_NYI(); }
-      vec3i TraceInterface::getLaunchIndex() const
-      { BARNEY_NYI(); }
-      vec2f TraceInterface::getTriangleBarycentrics() const
-      { BARNEY_NYI(); }
-      int TraceInterface::getPrimitiveIndex() const
-      { BARNEY_NYI(); }
-      float TraceInterface::getRayTmax() const
-      { BARNEY_NYI(); }
-      float TraceInterface::getRayTmin() const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::getObjectRayDirection() const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::getObjectRayOrigin() const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::getWorldRayDirection() const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::getWorldRayOrigin() const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::transformNormalFromObjectToWorldSpace(vec3f v) const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::transformPointFromObjectToWorldSpace(vec3f v) const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::transformVectorFromObjectToWorldSpace(vec3f v) const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::transformNormalFromWorldToObjectSpace(vec3f v) const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::transformPointFromWorldToObjectSpace(vec3f v) const
-      { BARNEY_NYI(); }
-      vec3f TraceInterface::transformVectorFromWorldToObjectSpace(vec3f v) const
-      { BARNEY_NYI(); }
-      void  TraceInterface::traceRay(rtc::device::AccelHandle world,
-                     vec3f org,
-                     vec3f dir,
-                     float t0,
-                     float t1,
-                     void *prdPtr) const
-      { BARNEY_NYI(); }
+    void TraceInterface::ignoreIntersection() 
+    { ignoreThisHit = true;  }
+    void TraceInterface::reportIntersection(float t, int i)
+    { isec_t = t;  }
+    void *TraceInterface::getPRD() const
+    { return prd; }
+    const void *TraceInterface::getProgramData() const
+    { return geomData; }
+    const void *TraceInterface::getLPData() const
+    { return lpData; }
+    vec3i TraceInterface::getLaunchDims()  const
+    { return launchDimensions; }
+    vec3i TraceInterface::getLaunchIndex() const
+    { return launchIndex; }
+    vec2f TraceInterface::getTriangleBarycentrics() const
+    { return triangleBarycentrics; }
+    int TraceInterface::getPrimitiveIndex() const
+    { return primID; }
+    float TraceInterface::getRayTmax() const
+    { return embreeRay->tfar; }
+    float TraceInterface::getRayTmin() const
+    { return embreeRay->tnear; }
+    vec3f TraceInterface::getObjectRayDirection() const
+    { return *(vec3f*)&embreeRay->dir_x; }
+    vec3f TraceInterface::getObjectRayOrigin() const
+    { return *(vec3f*)&embreeRay->org_x; }
+    vec3f TraceInterface::getWorldRayDirection() const
+    { return worldDirection; }
+    vec3f TraceInterface::getWorldRayOrigin() const
+    { return worldOrigin; }
+    vec3f TraceInterface::transformNormalFromObjectToWorldSpace(vec3f v) const
+    {
+      return xfmVector(objectToWorldXfm->l,
+                         (const owl::common::vec3f &)v);
+    }
+    vec3f TraceInterface::transformPointFromObjectToWorldSpace(vec3f v) const
+    { 
+      return xfmPoint(*objectToWorldXfm,
+                        (const owl::common::vec3f &)v);
+    }
+    vec3f TraceInterface::transformVectorFromObjectToWorldSpace(vec3f v) const
+    { 
+      return xfmVector(objectToWorldXfm->l,
+                         (const owl::common::vec3f &)v);
+    }
+
+    vec3f TraceInterface::transformNormalFromWorldToObjectSpace(vec3f v) const
+    {
+      return xfmVector(worldToObjectXfm->l,
+                         (const owl::common::vec3f &)v);
+    }
+    vec3f TraceInterface::transformPointFromWorldToObjectSpace(vec3f v) const
+    { 
+      return xfmPoint(*worldToObjectXfm,
+                        (const owl::common::vec3f &)v);
+    }
+    vec3f TraceInterface::transformVectorFromWorldToObjectSpace(vec3f v) const
+    { 
+      return xfmVector(worldToObjectXfm->l,
+                         (const owl::common::vec3f &)v);
+    }
+
+    void intersectionFilter(const RTCFilterFunctionNArguments* args)
+    {
+      /* avoid crashing when debug visualizations are used */
+      if (args->context == nullptr) return;
+
+      assert(args->N == 1);
+      int* valid = args->valid;
+      if (valid[0] != -1) return;
+      // const RTCRayQueryContext* context = (const RTCRayQueryContext*) args->context;
+      RTCRay* ray = (RTCRay*)args->ray;
+      RTCHit* hit = (RTCHit*)args->hit;
+  
+      // TraceInterface *ti2 = (TraceInterface *)TraceInterface::get();//args->context;
+      TraceInterface *ti = (TraceInterface *)args->context;
+      // printf("two tis %p %p\n",ti,ti2);
+
+      int primID = hit->primID;
+      int geomID = hit->geomID;
+      int instID = hit->instID[0];
+
+      InstanceGroup *ig = ti->world;
+      GeomGroup *group = ig->getGroup(instID);
+      Geom *geom = (Geom*)group->getGeom(geomID);
+      GeomType *gt = geom->type;
+      if (gt->ah) {
+        ti->geomData = (void*)geom->programData.data();
+        ti->ignoreThisHit = false;
+        ti->primID = primID;
+        ti->geomID = geomID;
+        ti->instID = instID;
+        ti->triangleBarycentrics = { hit->u,hit->v };
+        ti->objectToWorldXfm = &ig->xfms[instID];
+        ti->worldToObjectXfm = &ig->inverseXfms[instID];
+        ti->embreeRay = ray;
+        ti->embreeHit = hit;
+    
+        gt->ah(*ti);
+
+        if (ti->ignoreThisHit) {
+          valid[0] = 0;
+          return;
+        } 
+      }
+    }
+
+    
+    __both__ void TraceInterface::traceRay(rtc::device::AccelHandle world,
+                                   vec3f rayOrigin,
+                                   vec3f rayDirection,
+                                   float tmin,
+                                   float tmax,
+                                   void *prdPtr) 
+    {
+      perThreadTraceInterface = this;
+      InstanceGroup *ig = (InstanceGroup *)world;
+      RTCScene embreeScene = ig->embreeScene;
+      assert(embreeScene);
+
+      RTCRayHit rayHit;
+  
+      TraceInterface *ti = this;//TraceInterface::get();
+      // LaunchContext *lc = LaunchContext::get();
+      ti->world = ig;
+
+      ti->worldOrigin = rayOrigin;
+      ti->worldDirection = rayDirection;
+      ti->prd = prdPtr;
+
+      rayHit.ray.org_x = rayOrigin.x;        // x coordinate of ray origin
+      rayHit.ray.org_y = rayOrigin.y;        // y coordinate of ray origin
+      rayHit.ray.org_z = rayOrigin.z;        // z coordinate of ray origin
+      rayHit.ray.tnear = tmin;        // start of ray segment
+  
+      rayHit.ray.dir_x = rayDirection.x;        // x coordinate of ray direction
+      rayHit.ray.dir_y = rayDirection.y;        // y coordinate of ray direction
+      rayHit.ray.dir_z = rayDirection.z;        // z coordinate of ray direction
+      rayHit.ray.time = 0;         // time of this ray for motion blur
+  
+      rayHit.ray.tfar = tmax;         // end of ray segment (set to hit distance)
+      
+      rayHit.ray.mask = -1;
+      rayHit.ray.flags = 0;
+      rayHit.hit.primID    = RTC_INVALID_GEOMETRY_ID;
+      rayHit.hit.geomID    = RTC_INVALID_GEOMETRY_ID;
+      rayHit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
+      
+      ti->embreeRay = &rayHit.ray;
+      ti->embreeHit = &rayHit.hit;
+      
+      rtcInitRayQueryContext(&ti->embreeRayQueryContext);
+      ti->world = ig;
+  
+      /* intersect ray with scene */
+      RTCIntersectArguments iargs;
+      rtcInitIntersectArguments(&iargs);
+      iargs.context = &ti->embreeRayQueryContext;
+      // iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+      iargs.filter = intersectionFilter;
+      // rtcIntersect1(data.g_scene,RTCRayHit_(primary),&iargs);
+
+      // printf("calling rtcIntersect1\n");
+      rtcIntersect1(embreeScene,&rayHit,&iargs);//,&isecArgs);
+
+      // printf("AFTER rtcIntersect1 -> %i\n",rayHit.hit.geomID);
+  
+      if ((int)rayHit.hit.geomID >= 0) {
+    
+        int primID = rayHit.hit.primID;
+        int geomID = rayHit.hit.geomID;
+        int instID = rayHit.hit.instID[0];
+        // PRINT(primID);
+        // PRINT(geomID);
+        // PRINT(instID);
+    
+        GeomGroup *group = (GeomGroup *)ig->groups[instID];
+        Geom *geom = (Geom *)group->geoms[geomID];
+        GeomType *gt = geom->type;
+        if (gt->ch) {
+
+          ti->geomData = (void*)geom->programData.data();
+          ti->primID = primID;
+          ti->geomID = geomID;
+          ti->instID = instID;
+          ti->triangleBarycentrics = { rayHit.hit.u,rayHit.hit.v };
+          ti->objectToWorldXfm = &ig->xfms[instID];
+          ti->worldToObjectXfm = &ig->inverseXfms[instID];
+          ti->embreeRay = &rayHit.ray;
+          ti->embreeHit = &rayHit.hit;
+    
+          // printf("calling closesthit\n");
+          gt->ch(*ti);
+        }
+      }
+      
+    }
       
     
-    
-
 
     // ------------------------------------------------------------------
     // device
@@ -85,6 +244,45 @@ namespace barney {
       embreeDevice = 0;
     }
 
+
+    // ------------------------------------------------------------------
+    // group/accel stuff
+    // ------------------------------------------------------------------
+
+    rtc::Group *
+    Device::createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
+    { return new TrianglesGroup(this,geoms); }
+    
+    rtc::Group *
+    Device::createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) 
+    { return new UserGeomGroup(this,geoms); }
+      
+    rtc::Group *
+    Device::createInstanceGroup(const std::vector<rtc::Group *> &groups,
+                                const std::vector<affine3f> &xfms) 
+    { return new InstanceGroup(this,groups,xfms); }
+    
+    void Device::freeGroup(rtc::Group *group) 
+    { delete group; }
+
+    // ------------------------------------------------------------------
+    // geom stuff
+    // ------------------------------------------------------------------
+
+
+    rtc::GeomType *Device::createTrianglesGeomType(const char *typeName,
+                                                   size_t sizeOfDD,
+                                                   bool has_ah,
+                                                   bool has_ch)
+    {
+      return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
+    }
+    
+    void Device::freeGeomType(rtc::GeomType *gt) 
+    {
+      delete gt;
+    }
+    
     rtc::TextureData *Device::createTextureData(vec3i dims,
                                                 rtc::DataType format,
                                                 const void *texels) 
@@ -114,8 +312,15 @@ namespace barney {
     
     rtc::Trace *Device::createTrace(const std::string &name,
                                     size_t rayGenSize) 
-    { return new Trace(this,name,rayGenSize); }
+    { return new Trace(this,name); }
     
+    void Device::buildPipeline()
+    {}
+    
+    void Device::buildSBT()
+    {}
+      
+
     
   }
 }

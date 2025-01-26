@@ -44,17 +44,16 @@ namespace barney {
     
     struct GeomType : public Object {
       GeomType(Device *device) : Object(device) {}
-      virtual rtc::Geom *createGeom() = 0;
-        
       virtual ~GeomType() = default;
+      
+      virtual rtc::Geom *createGeom() = 0;
     };
     
     struct Group : public Object {
       Group(Device *device) : Object(device) {}
       virtual ~Group() = default;
       
-      virtual rtc::device::AccelHandle
-      getDD() const = 0;
+      virtual rtc::device::AccelHandle getDD() const = 0;
       
       virtual void buildAccel() = 0;
       virtual void refitAccel() = 0;
@@ -203,6 +202,8 @@ namespace barney {
       virtual void freeHost(void *mem) = 0;
       virtual void memsetAsync(void *mem,int value, size_t size) = 0;
       virtual void copyAsync(void *dst, const void *src, size_t size) = 0;
+      void copy(void *dst, const void *src, size_t size)
+      { copyAsync(dst,src,size); sync(); }
       
       // ==================================================================
       // kernels

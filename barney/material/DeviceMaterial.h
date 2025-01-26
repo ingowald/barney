@@ -33,22 +33,20 @@ namespace barney {
         TYPE_AnariPBR
       } Type;
 
-#ifdef __CUDA_ARCH__
-      inline __device__
+      inline __both__
       PackedBSDF createBSDF(const HitAttributes &hitData,
                             const Sampler::DD *samplers,
                             bool dbg=false) const;
-      inline __device__
+      inline __both__
       float getOpacity(const HitAttributes &hitData,
                        const Sampler::DD *samplers,
                        bool dbg) const;
 
-      inline __device__
+      inline __both__
       void setHit(Ray &ray,
                   const HitAttributes &hitData,
                   const Sampler::DD *samplers,
                   bool dbg=false) const;
-#endif
       
       Type type;
       union {
@@ -57,8 +55,7 @@ namespace barney {
       };
     };
 
-#ifdef __CUDA_ARCH__
-    inline __device__
+    inline __both__
     PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData,
                                           const Sampler::DD *samplers,
                                           bool dbg) const
@@ -76,7 +73,7 @@ namespace barney {
       return packedBSDF::Invalid();
     }
 
-    // inline __device__
+    // inline __both__
     // float DeviceMaterial::getOpacity(const HitAttributes &hitData,
     //                                  const Sampler::DD *samplers,
     //                                  bool dbg) const
@@ -89,7 +86,7 @@ namespace barney {
     //   // return 1.f;
     // }
     
-    inline __device__
+    inline __both__
     void DeviceMaterial::setHit(Ray &ray,
                                 const HitAttributes &hitData,
                                 const Sampler::DD *samplers,
@@ -98,7 +95,6 @@ namespace barney {
       ray.setHit(hitData.worldPosition,hitData.worldNormal,
                  hitData.t,createBSDF(hitData,samplers,dbg));
     }
-#endif
     
   }
 }

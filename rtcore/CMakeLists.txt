@@ -91,18 +91,23 @@ if (BARNEY_BACKEND_EMBREE)
   endif()
 
   
-  target_compile_definitions(barney_config INTERFACE -DBARNEY_BACKEND_EMBREE=1)
+#  target_compile_definitions(barney_config INTERFACE -DBARNEY_BACKEND_EMBREE=1)
   add_library(barney_rtc_embree STATIC
     embree/EmbreeBackend.cpp
     embree/Compute.cpp
     embree/Device.cpp
     embree/Buffer.cpp
     embree/Texture.cpp
+    embree/GeomType.cpp
+    embree/Triangles.cpp
+    embree/Group.cpp
     )
   target_link_libraries(barney_rtc_embree PUBLIC
     barney_rtc_common
     embree_local
     )
+#  target_link_libraries(barney_rtc_config INTERFACE embree_local)
+  target_link_libraries(barney_config INTERFACE embree_local)
   #  target_link_libraries(barney_rtc PUBLIC barney_rtc_embree)
 else()
   add_library(barney_rtc_embree INTERFACE
@@ -127,10 +132,7 @@ endif()
 # ==================================================================
 if (BARNEY_BACKEND_CUDA)
   message("ENabling CUDA backend")
-  target_compile_definitions(barney_config INTERFACE
-    # we'll build the cuda *backend*
-    -DBARNEY_BACKEND_CUDA=1
-    )
+#  target_compile_definitions(barney_config INTERFACE -DBARNEY_BACKEND_CUDA=1)
   add_library(barney_rtc_cuda STATIC
     cuda/CUDABackend.cu
     )
@@ -143,10 +145,7 @@ endif()
 # ==================================================================
 if (BARNEY_BACKEND_OPTIX)
   message("ENabling optix backend")
-  target_compile_definitions(barney_config INTERFACE
-    # we will build the optix backend
-    -DBARNEY_BACKEND_OPTIX=1
-    )
+#  target_compile_definitions(barney_config INTERFACE -DBARNEY_BACKEND_OPTIX=1)
   add_library(barney_rtc_optix OBJECT# STATIC
     optix/OptixBackend.cpp
     )
@@ -175,7 +174,7 @@ else()
         PROPERTIES
         LANGUAGE CXX
         CXX_STANDARD 17
-        COMPILE_OPTIONS   "-D__CUDA_ARCH__=1;-D__CUDACC__=1"
+#        COMPILE_OPTIONS   "-D__CUDA_ARCH__=1;-D__CUDACC__=1"
         )
       
     else()
@@ -183,7 +182,8 @@ else()
         PROPERTIES
         LANGUAGE CXX
         CXX_STANDARD 17
-        COMPILE_OPTIONS   "-D__CUDA_ARCH__=1;-xc++;-D__CUDACC__=1"
+#        COMPILE_OPTIONS   "-D__CUDA_ARCH__=1;-xc++;-D__CUDACC__=1"
+        COMPILE_OPTIONS   "-xc++"
         )
     endif()
   endmacro()

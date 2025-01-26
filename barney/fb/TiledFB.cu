@@ -147,7 +147,7 @@ namespace barney {
       vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
       vec4f org = color;
       float scale = reduce_max(color);
-      color *= 1./scale;
+      color *= 1.f/scale;
       compressedTiles[tileID].scale[pixelID] = scale;
       compressedTiles[tileID].normal[pixelID]
         .set(accumTiles[tileID].normal[pixelID]);

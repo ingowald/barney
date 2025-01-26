@@ -30,16 +30,16 @@ namespace barney {
   namespace render {
 
     struct TraceRays {
-      template<typename RTCBackend>
-      inline __both__
-      void run(const RTCBackend &rt)
+      template<typename TraceInterface>
+      inline __both__ static 
+      void run(TraceInterface &ti)
       {
         const int rayID
-          = rt.getLaunchIndex().x
-          + rt.getLaunchDims().x
-          * rt.getLaunchIndex().y;
+          = ti.getLaunchIndex().x
+          + ti.getLaunchDims().x
+          * ti.getLaunchIndex().y;
         
-        auto &lp = OptixGlobals::get(rt);
+        auto &lp = OptixGlobals::get(ti);
 
         if (rayID >= lp.numRays)
           return;
@@ -51,7 +51,17 @@ namespace barney {
         if (dir.y == 0.f) dir.y = 1e-6f;
         if (dir.z == 0.f) dir.z = 1e-6f;
 
-        rt.traceRay(lp.world,
+        if (rayID < 10)
+        printf("traceRays %i: %p  %f %f %f  ; %f %f %f -> %p\n",
+               rayID,
+               lp.rays,
+               ray.org.x,
+               ray.org.y,
+               ray.org.z,
+               dir.x,
+               dir.y,
+               dir.z,&ray);
+        ti.traceRay(lp.world,
                     ray.org,
                     dir,
                     0.f,ray.tMax,

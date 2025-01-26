@@ -391,6 +391,7 @@ namespace barney {
           return specularColor + (vec3f(1.f) - specularColor) * (1.0f / 21.0f);
         }
 
+#if 0
         inline __both__ vec3f
         disney_multiscatter(const DisneyMaterial &mat,
                             const vec3f &n,
@@ -426,6 +427,7 @@ namespace barney {
 
           return brdf * energyScale;
         }
+#endif
 
         // __both__ float G(vec3f i, vec3f o, vec3f h, float alpha)
         // {

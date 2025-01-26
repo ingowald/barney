@@ -55,7 +55,7 @@ namespace barney {
       const char *_fromEnv = getenv("BARNEY_BACKEND");;
       std::string fromEnv = _fromEnv?_fromEnv:"";
       if (fromEnv == "") {
-        // nothing to do, leave defautl selection below
+        // nothing to do, leave default selection below
       } else if (fromEnv == "optix") {
         PING;
         return createBackend_optix();
@@ -68,24 +68,25 @@ namespace barney {
           ("#barney: user requested unknown barney backend '"+fromEnv+"'");
       }
 
-      Backend *be = nullptr;
-#if BARNEY_HAVE_CUDA
+#if BARNEY_BACKEND_OPTIX
       try {
-        be = createBackend_optix();
+        return createBackend_optix();
       } catch (std::exception &e) { PING; PRINT(e.what()); }
-      if (!be) {
-        try {
-          be = createBackend_cuda();
-        } catch (std::exception &e) {PING; PRINT(e.what()); }
-      }
-      if (be && be->numPhysicalDevices == 0) {
-        std::cout << "#barney: no GPUs found; trying CPU callback" << std::endl;
-        delete be;
-        be = nullptr;
-      }
 #endif
-      be = createBackend_embree();
-      return be;
+      
+#if BARNEY_BACKEND_CUDA
+      try {
+        return createBackend_cuda();
+      } catch (std::exception &e) {PING; PRINT(e.what()); }
+#endif
+      
+#if BARNEY_BACKEND_EMBREE
+      try {
+        return createBackend_embree();
+      } catch (std::exception &e) {PING; PRINT(e.what()); }
+#endif
+      throw std::runtime_error("could not create _any_ backend!?");
+      return nullptr;
     }
   
     Backend *Backend::get()
