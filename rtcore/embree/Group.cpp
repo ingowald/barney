@@ -10,7 +10,8 @@ namespace barney {
 
     void virtualBoundsFunc(const struct RTCBoundsFunctionArguments* args)
     {
-      TraceInterface *ti = TraceInterface::get();
+      TraceInterface *ti = /* just need the type*/0;//TraceInterface::get();
+      // TraceInterface *ti = (TraceInterface *)args->context;
       const UserGeom *geom = (const UserGeom *)args->geometryUserPtr;
       // const Sphere* spheres = (const Sphere*) args->geometryUserPtr;
       const void *geomData = (const void *)geom->programData.data();
@@ -37,40 +38,41 @@ namespace barney {
       unsigned int primID = args->primID;
       unsigned int geomID = args->geomID;
       int instID = args->context->instID[0];
-      TraceInterface *lc = embree::TraceInterface::get();
-      lc->primID = primID;
-      lc->geomID = geomID;
+      // TraceInterface *ti = embree::TraceInterface::get();
+      TraceInterface *ti = (TraceInterface *)args->context;
+      ti->primID = primID;
+      ti->geomID = geomID;
       // UserGeom *user = (UserGeom *)group->geoms[geomID];
-      lc->instID = instID;
-      lc->geomData = user->programData.data();
-      lc->embreeRay = &rayHit->ray;
-      lc->embreeHit = &rayHit->hit;
+      ti->instID = instID;
+      ti->geomData = user->programData.data();
+      ti->embreeRay = &rayHit->ray;
+      ti->embreeHit = &rayHit->hit;
 
-      InstanceGroup *ig = lc->world;
+      InstanceGroup *ig = ti->world;
       Group *group = (embree::Group*)ig->groups[instID];
-      lc->objectToWorldXfm = &ig->xfms[instID];
-      lc->worldToObjectXfm = &ig->inverseXfms[instID];
+      ti->objectToWorldXfm = &ig->xfms[instID];
+      ti->worldToObjectXfm = &ig->inverseXfms[instID];
       
-      lc->isec_t = INFINITY;
+      ti->isec_t = INFINITY;
       UserGeomType *type = (UserGeomType *)user->type;
-      if (lc->isec_t < INFINITY) {
-        float save_t = lc->embreeRay->tfar;
-        lc->embreeRay->tfar = lc->isec_t;
-        lc->ignoreThisHit = false;
+      if (ti->isec_t < INFINITY) {
+        float save_t = ti->embreeRay->tfar;
+        ti->embreeRay->tfar = ti->isec_t;
+        ti->ignoreThisHit = false;
         if (type->ah)
-          type->ah(*lc);
-        if (!lc->ignoreThisHit) {
+          type->ah(*ti);
+        if (!ti->ignoreThisHit) {
           // SAVE this hit
-          rayHit->hit.primID    = lc->primID;
-          rayHit->hit.geomID    = lc->geomID;
-          rayHit->hit.instID[0] = lc->instID;
+          rayHit->hit.primID    = ti->primID;
+          rayHit->hit.geomID    = ti->geomID;
+          rayHit->hit.instID[0] = ti->instID;
           // printf("NOT ignoring hit - saving .... %i:%i:%i\n",
           //        rayHit->hit.instID[0],
           //        rayHit->hit.geomID,
           //        rayHit->hit.primID);
           args->valid[0] = -1;
         } else {
-          lc->embreeRay->tfar = save_t;
+          ti->embreeRay->tfar = save_t;
           args->valid[0] = 0;
         }
       }

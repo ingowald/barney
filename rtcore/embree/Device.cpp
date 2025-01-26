@@ -13,12 +13,12 @@ namespace barney {
 
     __thread TraceInterface *perThreadTraceInterface = 0;
     
-    TraceInterface *TraceInterface::get()
-    {
-      // if (!perThreadTraceInterface)
-      //   perThreadTraceInterface = new TraceInterface;
-      return perThreadTraceInterface;
-    }
+    // TraceInterface *TraceInterface::get()
+    // {
+    //   // if (!perThreadTraceInterface)
+    //   //   perThreadTraceInterface = new TraceInterface;
+    //   return perThreadTraceInterface;
+    // }
 
     // ------------------------------------------------------------------
     // rt core interface

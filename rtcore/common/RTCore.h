@@ -60,7 +60,7 @@ namespace barney {
                               float t0,
                               float t1,
                               void *prdPtr);
-      static TraceInterface *get();
+      // static TraceInterface *get();
 
       /* this HAS to be the first entry! :*/
       RTCRayQueryContext embreeRayQueryContext;
@@ -115,14 +115,7 @@ namespace barney {
       { return ((std::atomic<int> *)ptr)->fetch_add(inc); }
       
       inline __both__ float atomicAdd(float *ptr, float inc) const
-      {
-        //        return ((std::atomic<float> *)ptr)->fetch_add(inc);
-        float f =  ((std::atomic<float> *)ptr)->fetch_add(inc);;
-        PRINT(f);
-        PRINT(inc);
-        PRINT(*ptr);
-        return f;
-      }
+      { return ((std::atomic<float> *)ptr)->fetch_add(inc); }
 #  endif
       vec3ui threadIdx;
       vec3ui blockIdx;
