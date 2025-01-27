@@ -94,6 +94,7 @@ namespace barney {
       {
         assert(format < NUM_DATA_TYPES);
       }
+      virtual ~TextureData() {}
 
       virtual rtc::Texture *
       createTexture(const rtc::TextureDesc &desc) = 0;
@@ -121,6 +122,7 @@ namespace barney {
               const TextureDesc &desc)
         : Object(data->device), data(data)
       {}
+      virtual ~Texture() {}
       
       const vec3i &getDims() const {
         return data->dims;

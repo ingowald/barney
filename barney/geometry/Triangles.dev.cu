@@ -49,6 +49,7 @@ namespace barney {
     {
       auto &ray = *(Ray *)rt.getPRD();
 
+      if (ray.dbg) printf("triangle anyhit\n");
       // auto &ray = rt.getPRD<Ray>();
       // auto &self = rt.getProgramData<Triangles::DD>();
       auto &self = *(Triangles::DD*)rt.getProgramData();

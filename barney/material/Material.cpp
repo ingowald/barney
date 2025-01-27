@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -55,11 +55,6 @@ namespace barney {
       set(vec4f(v,0.f,0.f,1.f));
     }
 
-    // void PossiblyMappedParameter::set(const vec4f  &v)
-    // {
-    //   set(vec4f(v.x,v.y,v.z,v.w));
-    // }
-
     void PossiblyMappedParameter::set(const vec4f &v)
     {
       type    = VALUE;
@@ -103,41 +98,11 @@ namespace barney {
         std::cout << "#bn: creating (at least one of) material type '" << type << "'" << std::endl;
       }
 #endif
-      // if (type == "matte")
-      //   return std::make_shared<AnariMatte>(owner);
-      // ==================================================================
-      // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-      // specifically for anari layer:
       if (type == "AnariMatte")
         return std::make_shared<AnariMatte>(slotContext); 
       if (type == "physicallyBased" || type == "AnariPBR")
         return std::make_shared<AnariPBR>(slotContext); 
-      // specifically for anari layer:
-      // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      // ==================================================================
       return std::make_shared<AnariPBR>(slotContext); 
-      // if (type == "velvet")
-      //   return std::make_shared<VelvetMaterial>(dg);
-      // if (type == "blender")
-      //   return std::make_shared<BlenderMaterial1>(dg); 
-      // if (type == "glass")
-      //   return std::make_shared<GlassMaterial>(dg); 
-      // if (type == "metal")
-      //   return std::make_shared<MetalMaterial>(dg); 
-      // if (type == "plastic")
-      //   return std::make_shared<PlasticMaterial>(dg);
-      // if (type == "metallic_paint")
-      //   return std::make_shared<MetallicPaintMaterial>(dg);
-      // if (type == "velvet")
-      //   return std::make_shared<VelvetMaterial>(dg);
-      // else
-      // if (type == "physicallyBased")
-      //   return std::make_shared<AnariPhysicalMaterial>(dg);
-      // iw - "eventually" we should have different materials like
-      // 'matte' and 'glass', 'metal' etc here, but for now, let's just
-      // ignore the type and create a single one thta contains all
-      // fields....
-      // return std::make_shared<MiniMaterial>(dg);
     }
 
     void HostMaterial::commit()

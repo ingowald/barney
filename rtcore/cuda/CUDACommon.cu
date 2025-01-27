@@ -24,6 +24,7 @@ namespace barney {
     
     void *BaseDevice::alloc(size_t numBytes)
     {
+      SetActiveGPU forDuration(this);
       void *ptr = 0;
       BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
       assert(ptr);
@@ -32,6 +33,7 @@ namespace barney {
     
     void *BaseDevice::allocHost(size_t numBytes) 
     {
+      SetActiveGPU forDuration(this);
       void *ptr = 0;
       BARNEY_CUDA_CALL(MallocHost(&ptr,numBytes));
       return ptr;
@@ -39,31 +41,35 @@ namespace barney {
       
     void BaseDevice::freeHost(void *mem) 
     {
+      SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(FreeHost(mem));
     }
       
     void BaseDevice::freeMem(void *mem) 
     {
+      SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(Free(mem));
     }
       
     void BaseDevice::memsetAsync(void *mem,int value, size_t size) 
     {
+      SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(MemsetAsync(mem,value,size,stream));
     }
       
 
     void BaseDevice::copyAsync(void *dst, const void *src, size_t numBytes) 
     {
+      SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
     }
       
     void BaseDevice::sync() 
     {
+      SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(StreamSynchronize(stream));
     }
       
-
     TextureData::TextureData(BaseDevice *device,
                              vec3i dims,
                              rtc::DataType format,
@@ -108,9 +114,6 @@ namespace barney {
         BARNEY_NYI();
       };
 
-      PING;
-      SetActiveGPU forDuration(device);
-
       if (dims.z != 0) {
         unsigned int padded_x = (unsigned)dims.x;
         unsigned int padded_y = std::max(1u,(unsigned)dims.y);
@@ -129,7 +132,6 @@ namespace barney {
         copyParms.kind     = cudaMemcpyHostToDevice;
         BARNEY_CUDA_CALL(Memcpy3D(&copyParms));
       } else if (dims.y != 0) {
-        PRINT(dims);
         BARNEY_CUDA_CALL(MallocArray(&array,&desc,dims.x,dims.y,0));
         BARNEY_CUDA_CALL(Memcpy2DToArray(array,0,0,
                                          (void *)texels,
@@ -147,7 +149,7 @@ namespace barney {
                                   rtc::DataType format,
                                   const void *texels) 
     {
-      PING;
+      SetActiveGPU forDuration(this);
       return new TextureData(this,dims,format,texels);
     }
 
@@ -199,17 +201,14 @@ namespace barney {
       BARNEY_CUDA_CALL(CreateTextureObject(&textureObject,
                                            &resourceDesc,
                                            &textureDesc,0));
-      std::cout << "created texture object : "
-                << (int*)textureObject << std::endl;
     }
 
     rtc::Texture *
     TextureData::createTexture(const rtc::TextureDesc &desc) 
     {
+      SetActiveGPU forDuration(device);
       return new Texture(this,desc);
-    }
-
-    
+    }    
     
   }
 }

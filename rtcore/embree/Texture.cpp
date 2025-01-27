@@ -36,8 +36,7 @@ namespace barney {
     
     void computeAddress(LerpAddresses &out,
                         rtc::Texture::AddressMode mode,
-                        float tc, int N,
-                        bool dbg=false)
+                        float tc, int N)
     {
       switch (mode) {
       case rtc::Texture::WRAP: {
@@ -192,13 +191,8 @@ namespace barney {
     }
     
     template<typename T, int FILTER_MODE>
-    struct TextureSamplerT// : public TextureSampler
-    {
-      // TextureSamplerT(TextureData *data,
-      //                 const rtc::TextureDesc &desc)
-      //   : data(data), desc(desc)
-      // {}
-    };
+    struct TextureSamplerT
+    {};
 
 
     template<typename T>
@@ -206,8 +200,9 @@ namespace barney {
                     const rtc::TextureDesc &desc,
                     int64_t idx)
     {
-      throw std::runtime_error
-        (std::string(__PRETTY_FUNCTION__)+"not implemented");
+      printf("gettexel not implemented for type... %i == %i\n",(int)data->format,
+             (int)rtc::UCHAR4);
+      return vec4f(0.f);
     }
     
     template<>
@@ -236,6 +231,8 @@ namespace barney {
                             const rtc::TextureDesc &desc,
                             int64_t idx)
     {
+      // printf("gettexel uchar4 data %p idx %li, eltsize %li\n",data,idx,
+      //        sizeof(vec4uc),data);
       if (idx < 0) return desc.borderColor;
       vec4uc v = ((const vec4uc*)data->data.data())[idx];
       vec4f  vf = vec4f(v);
@@ -260,7 +257,6 @@ namespace barney {
       }
       vec4f tex2D(vec2f tc) override
       {
-        printf("point %f %f\n",tc.x,tc.y);
         vec2i size = {data->dims.x,data->dims.y};
         int ix = uint32_t(fabsf(tc.x) * size.x) % (uint32_t)size.x;
         int iy = uint32_t(fabsf(tc.y) * size.y) % (uint32_t)size.y;
@@ -269,26 +265,15 @@ namespace barney {
       vec4f tex3D(vec3f tc) override
       {
         if (desc.normalizedCoords) {
-          printf("3d, normalized, point %f %f %f, %s, address %i %i %i\n",tc.x,tc.y,tc.z,
-                 desc.normalizedCoords?"normalized":"not normalized",
-                 int(desc.addressMode[0]),
-                 int(desc.addressMode[1]),
-                 int(desc.addressMode[2]));
+          // not implemented...
+          return vec4f(0.f);
         } else {
-          // LerpAddresses lx,ly,lz;
-          // computeAddress(lx,desc.addressMode[0],tc.x,data->dims.x);
-          // computeAddress(ly,desc.addressMode[1],tc.y,data->dims.y);
-          // computeAddress(lz,desc.addressMode[2],tc.z,data->dims.z);
           int Nx = data->dims.x;
           int Ny = data->dims.y;
           int Nz = data->dims.z;
           uint32_t lx = uint32_t(clamp(tc.x,0,Nx-1));
           uint32_t ly = uint32_t(clamp(tc.y,0,Ny-1));
           uint32_t lz = uint32_t(clamp(tc.z,0,Nz-1));
-          // printf("lerp addresses %f -> %i, %f -> %i, %f -> %i\n",
-          //        tc.x,lx.idx0,
-          //        tc.y,ly.idx0,
-          //        tc.z,lz.idx0);
           auto pixelAddress = [](int ix, int iy, int iz, int Nx, int Ny) {
             return (std::min(ix,std::min(iy,iz)) == -1)
               ? size_t(-1)
@@ -297,16 +282,8 @@ namespace barney {
 
           int64_t i = pixelAddress(lx,ly,lz,
                                    data->dims.x,data->dims.y);
-          // printf("tex3d[%i %i %i] %f %f %f -> addr %i\n",
-          //        Nx,Ny,Nz,
-          //        tc.x,tc.y,tc.z,int(i));
           return getTexel<T>(data,desc,i);
         }
-        printf("point %f %f %f, %s, address %i %i %i\n",tc.x,tc.y,tc.z,
-               desc.normalizedCoords?"normalized":"not normalized",
-               int(desc.addressMode[0]),
-               int(desc.addressMode[1]),
-               int(desc.addressMode[2]));
         vec2i size = {data->dims.x,data->dims.y};
         int ix = uint32_t(fabsf(tc.x) * size.x) % (uint32_t)size.x;
         int iy = uint32_t(fabsf(tc.y) * size.y) % (uint32_t)size.y;
@@ -322,6 +299,9 @@ namespace barney {
                       const rtc::TextureDesc &desc)
         : TextureSampler(data, desc)
       {}
+      virtual ~TextureSamplerT() {
+        while (true) PING;
+      }
       vec4f tex1D(float tc) override
       {
         int size = data->dims.x;
@@ -331,14 +311,11 @@ namespace barney {
       vec4f tex2D(vec2f tc) override
       {
         if (desc.normalizedCoords == false) {
-          printf("tex2d, NOT normalized... not implemented\n");
           return vec4f(0.f,0.f,0.f,0.f);
         } else {
-          bool dbg = 0;//max(fabsf(tc.x-.5f),fabsf(tc.y-.5f))<.001f;
-          if (dbg) printf("tc %f %f\n",tc.x,tc.y);
           LerpAddresses lx,ly;
-          computeAddress(lx,desc.addressMode[0],tc.x,data->dims.x,dbg);
-          computeAddress(ly,desc.addressMode[1],tc.y,data->dims.y,dbg);
+          computeAddress(lx,desc.addressMode[0],tc.x,data->dims.x);
+          computeAddress(ly,desc.addressMode[1],tc.y,data->dims.y);
 
           auto pixelAddress = [](int ix, int iy, int size) {
             return (std::min(ix,iy) == -1) ? -1 : (ix+iy*size);
@@ -347,7 +324,7 @@ namespace barney {
           int i01 = pixelAddress(lx.idx1,ly.idx0,data->dims.x);
           int i10 = pixelAddress(lx.idx0,ly.idx1,data->dims.x);
           int i11 = pixelAddress(lx.idx1,ly.idx1,data->dims.x);
-      
+
           vec4f v00 = getTexel<T>(data,desc,i00);
           vec4f v01 = getTexel<T>(data,desc,i01);
           vec4f v10 = getTexel<T>(data,desc,i10);
@@ -473,7 +450,7 @@ namespace barney {
     {
       switch (data->format) {
       case rtc::UCHAR4:
-        return createSampler<uchar4>(data,desc);
+        return createSampler<vec4uc>(data,desc);
         break;
       case rtc::FLOAT4:
         return createSampler<vec4f>(data,desc);
@@ -487,7 +464,7 @@ namespace barney {
     }
     
     
-      Texture::Texture(TextureData *const data,
+    Texture::Texture(TextureData *const data,
                      const rtc::TextureDesc &desc)
       : rtc::Texture(data,desc)
     {
@@ -501,6 +478,8 @@ namespace barney {
     __both__ vec4f tex2D4f(barney::rtc::device::TextureObject to,
                             float x, float y)
     {
+      // PING;
+      // PRINT(to);
       vec4f v = ((TextureSampler *)to)->tex2D({x,y});
       return v;
     }

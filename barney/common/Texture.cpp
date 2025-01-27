@@ -135,10 +135,13 @@ namespace barney {
     desc.addressMode[1] = toRTC(addressMode);
     desc.addressMode[2] = toRTC(addressMode);
     for (auto device : *devices) {
+      auto pld = getPLD(device);
       desc.filterMode = toRTC(filterMode);
-      data->getPLD(device)->rtc->createTexture(desc);
+      pld->rtcTextureNN 
+        = data->getPLD(device)->rtc->createTexture(desc);
       desc.filterMode = rtc::Texture::FILTER_MODE_POINT;
-      data->getPLD(device)->rtc->createTexture(desc);
+      pld->rtcTexture
+        = data->getPLD(device)->rtc->createTexture(desc);
     }
   }
 

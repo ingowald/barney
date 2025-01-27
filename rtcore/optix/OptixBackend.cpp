@@ -300,7 +300,8 @@ namespace barney {
       TraceWrapper(optix::Device *device,
                    const std::string &kernelName,
                    size_t sizeOfLP)
-        : Trace(device)
+        : Trace(device),
+          device(device)
       {
         const char *ptxCode = (const char *)
           rtc::getSymbol(kernelName+"_ptx");
@@ -320,10 +321,22 @@ namespace barney {
           { nullptr }
         };
         lp = owlParamsCreate(device->owl,sizeOfLP,lp_args,-1);
+        lpStream = owlParamsGetCudaStream(lp,0);
       }
 
       void launch(vec2i dims, const void *dd) override
       {
+        // 'in theory' we should be able to share the stream between
+        // cuda kernels and trace kernels; but at least right now we
+        // can't tell owl which stream to use, so owl generates its
+        // own stream (per lp, to boot). so we can't currently
+        // schedule this trace call into the existing cuda stream, and
+        // consequently have to do a manual sync here to make sure
+        // that whatever is in the cuda stream is already done by the
+        // time the owl trace gets launched 
+        cuda::SetActiveGPU forDuration(device);
+        BARNEY_CUDA_CALL(StreamSynchronize(/*inherited!*/device->stream));
+        
         owlParamsSetRaw(lp,"raw",dd,0);
         owlAsyncLaunch2DOnDevice(rg,dims.x,dims.y,0,lp);
       }
@@ -335,16 +348,16 @@ namespace barney {
       }
       void sync() override
       {
-        cudaStream_t s = owlParamsGetCudaStream(lp,0);
-
-        BARNEY_CUDA_CALL(StreamSynchronize(s));
-
-        cudaDeviceSynchronize();
+        cuda::SetActiveGPU forDuration(device);
+        BARNEY_CUDA_CALL(StreamSynchronize(lpStream));
+        // cudaDeviceSynchronize();
       }
      
       OWLModule mod;
       OWLRayGen rg;
       OWLLaunchParams lp;
+      cudaStream_t lpStream;
+      optix::Device *const device;
     };
     
     rtc::Trace *

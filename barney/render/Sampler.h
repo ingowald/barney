@@ -30,8 +30,8 @@ namespace barney {
     struct AttributeTransform {
       inline __both__ vec4f applyTo(vec4f in, bool dbg) const;
       
-      vec4f mat[4];
-      vec4f offset;
+      float4 mat[4];
+      float4 offset;
     };
     
     struct Sampler : public SlottedObject {
@@ -105,11 +105,7 @@ namespace barney {
 
     struct TextureSampler : public Sampler {
       TextureSampler(SlotContext *slotContext,
-                     int numDims)
-        : Sampler(slotContext),
-          numDims(numDims)
-      { }
-      
+                     int numDims);
       virtual ~TextureSampler();
 
       // ------------------------------------------------------------------
@@ -132,8 +128,7 @@ namespace barney {
       struct PLD {
         rtc::Texture *rtcTexture = 0;
       };
-      PLD *getPLD(Device *device) 
-      { return &perLogical[device->contextRank]; }
+      PLD *getPLD(Device *device);
       std::vector<PLD> perLogical;
       
       mat4f inTransform { mat4f::identity() };
@@ -145,13 +140,6 @@ namespace barney {
       std::shared_ptr<TextureData> textureData{ 0 };
     };
   
-    
-
-
-
-    inline __both__
-    vec4f load(vec4f v) { return (const vec4f&)v; }
-    
     inline __both__
     vec4f AttributeTransform::applyTo(vec4f in,
                                        bool dbg) const

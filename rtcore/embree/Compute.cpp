@@ -53,13 +53,18 @@ namespace barney {
       std::barrier<void(*)()> barrier;
     };
 
+    int numThreads() {
+      int nt = std::thread::hardware_concurrency();
+      int maxNumThreads = 1<<30;
+      return std::min(nt,maxNumThreads);
+    }
+    
     LaunchSystem::LaunchSystem()
-      : barrier(std::thread::hardware_concurrency()+1,[](){})
+      : barrier(numThreads()+1,[](){})
     {
-      threads.reserve(std::thread::hardware_concurrency());
-      for (int i=0;i<std::thread::hardware_concurrency();i++)
+      threads.reserve(numThreads());
+      for (int i=0;i<numThreads();i++)
         threads.emplace_back([this](){ this->threadFct(); });
-
 
       barrier.arrive_and_wait();
     }

@@ -101,6 +101,11 @@ namespace barney {
                          (const owl::common::vec3f &)v);
     }
 
+
+    /*! intersection filter for TRIANGLES geoms, that allows us to
+        hook in any-hit program on top of embree hardcoded
+        triangles. User geoms will NOT use this function, and will
+        handle ah programs directly in their embree isec callback */
     void intersectionFilter(const RTCFilterFunctionNArguments* args)
     {
       /* avoid crashing when debug visualizations are used */
@@ -127,6 +132,9 @@ namespace barney {
       if (gt->ah) {
         ti->geomData = (void*)geom->programData.data();
         ti->ignoreThisHit = false;
+        // int saved_primID = ti->primID;
+        // int saved_geomID = ti->geomID;
+        // int saved_instID = ti->instID;
         ti->primID = primID;
         ti->geomID = geomID;
         ti->instID = instID;
@@ -191,11 +199,20 @@ namespace barney {
       
       rtcInitRayQueryContext(&ti->embreeRayQueryContext);
       ti->world = ig;
-  
+
+      
       /* intersect ray with scene */
       RTCIntersectArguments iargs;
       rtcInitIntersectArguments(&iargs);
       iargs.context = &ti->embreeRayQueryContext;
+#if 0
+#define FEATURE_MASK \
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS
+
+
+      iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+#endif
       iargs.filter = intersectionFilter;
 
       rtcIntersect1(embreeScene,&rayHit,&iargs);
@@ -311,15 +328,19 @@ namespace barney {
     }
 
     void Device::freeTextureData(rtc::TextureData *td) 
-    { delete td; }
+    {
+      delete (TextureData*)td;
+    }
       
     void Device::freeTexture(rtc::Texture *tex) 
-    { delete tex; }
+    {
+      delete (Texture *)tex;
+    }
 
 
     void Device::freeBuffer(rtc::Buffer *buffer) 
     {
-      delete buffer;
+      delete (Buffer*)buffer;
     }
     
     rtc::Compute *Device::createCompute(const std::string &name) 
@@ -335,8 +356,6 @@ namespace barney {
     
     void Device::buildSBT()
     {}
-      
-
     
   }
 }

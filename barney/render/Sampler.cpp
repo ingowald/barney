@@ -50,7 +50,7 @@ namespace barney {
     {
       samplerRegistry->release(samplerID);
     }
-    
+
     Sampler::SP Sampler::create(SlotContext *context,
                                 const std::string &type)
     {
@@ -114,6 +114,15 @@ namespace barney {
       }
     }
 
+    
+    TextureSampler::TextureSampler(SlotContext *slotContext,
+                                   int numDims)
+      : Sampler(slotContext),
+        numDims(numDims)
+    {
+      perLogical.resize(devices->numLogical);
+    }
+    
     TextureSampler::~TextureSampler()
     {}
     
@@ -166,6 +175,14 @@ namespace barney {
       return false;
     }
 
+    TextureSampler::PLD *TextureSampler::getPLD(Device *device) 
+    {
+      assert(device);
+      assert(device->contextRank >= 0);
+      assert(device->contextRank < perLogical.size());
+      return &perLogical[device->contextRank];
+    }
+    
     void TextureSampler::commit() 
     {
       // PRINT(rtcTexture);
@@ -187,6 +204,8 @@ namespace barney {
         desc.addressMode[2] = toRTC(wrapModes[2]);
         for (auto device : *devices) {
           PLD *pld = getPLD(device);
+          if (pld->rtcTexture)
+            device->rtc->freeTexture(pld->rtcTexture);
           pld->rtcTexture
             = textureData->getPLD(device)->rtc
             ->createTexture(desc);

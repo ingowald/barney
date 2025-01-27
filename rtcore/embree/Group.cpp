@@ -66,13 +66,16 @@ namespace barney {
       ti->worldToObjectXfm = &ig->inverseXfms[instID];
       
       UserGeomType *type = (UserGeomType *)user->type;
+      /* set to 'no hit found' - this is NOT the ray.tmax value that
+        the isec code will test against */
       ti->isec_t = INFINITY;
       type->intersect(*ti);
+      // check if isec did 'save' a hit
       if (ti->isec_t < INFINITY) {
         float save_t = ti->embreeRay->tfar;
         ti->embreeRay->tfar = ti->isec_t;
         ti->ignoreThisHit = false;
-        if (type->ah)
+        if (type->ah) 
           type->ah(*ti);
         if (!ti->ignoreThisHit) {
           // "accept" this hit
@@ -211,6 +214,7 @@ namespace barney {
         rtcSetGeometryInstancedScene(geom,group->embreeScene);
         rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,
                                 &xfms[instID]);
+              
         rtcAttachGeometry(embreeScene,geom);
         rtcCommitGeometry(geom);
         rtcEnableGeometry(geom);

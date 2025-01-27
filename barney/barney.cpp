@@ -628,7 +628,6 @@ namespace barney {
   BARNEY_API
   void bnSetString(BNObject target, const char *param, const char *value)
   {
-    PING; PRINT(target); PRINT(param); PRINT(value);
     if (!checkGet(target)->setString(checkGet(param),value))
       checkGet(target)->warn_unsupported_member(param,"std::string");
   }
