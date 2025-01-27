@@ -93,7 +93,8 @@ namespace barney {
       pld->computeMCs->launch(numBlocks,blockSize,
                               &args);
     }
-    BARNEY_CUDA_SYNC_CHECK();
+    for (auto device : *devices)
+      device->sync();
   }
   
   StructuredData::DD StructuredData::getDD(Device *device)
@@ -102,9 +103,6 @@ namespace barney {
     // ScalarField::writeDD(dd,device);
     dd.worldBounds = worldBounds;
     dd.texObj = texture->getDD(device).texObj;
-    PING;
-    PRINT(gridOrigin);
-    PRINT(gridSpacing);
     dd.cellGridOrigin = gridOrigin;
     dd.cellGridSpacing = gridSpacing;
     dd.numCells = numCells;

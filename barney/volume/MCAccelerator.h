@@ -190,26 +190,6 @@ namespace barney {
   }
   
 
-  // /*! declares this class' optix/owl device variables */
-  // template<typename SFType>
-  // void OWLVolumeAccel<SFType>::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
-  // {
-  //   VolumeAccel::DD<SFType>::addVars(vars,base);
-  // }
-
-
-
-  // /*! declares this class' optix/owl device variables */
-  // template<typename SFType>
-  // void MCVolumeAccel<SFType>::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
-  // {
-  //   using Inherited = typename OWLVolumeAccel<SFType>::DD;
-  //   Inherited::addVars(vars,base);
-  //   MCGrid::DD::addVars(vars,base+OWL_OFFSETOF(DD,mcGrid));
-  // }
-
-
-
   template<typename SFType>
   MCVolumeAccel<SFType>::MCVolumeAccel(ScalarField *sf,
                                                 Volume *volume)
@@ -218,96 +198,6 @@ namespace barney {
   {
     perLogical.resize(devices->numLogical);
   }
-
-  // template<typename SFType>
-  // rtc::Geom *MCVolumeAccel<SFType>::createGeom(Device *device) 
-  // {
-  //   auto devGroup = sf->devices;
-  //   const std::string typeString
-  //     = getTypeString();
-  //   rtc::GeomType *gt = device->geomTypes.get
-  //     (typeString,[&](rtc::Device *dev) {
-  //       return dev->createUserGeomType(typeString.c_str(),
-  //                                      sizeof(DD),
-  //                                      /*ah*/false,/*ch*/true);
-  //     });
-  //   return gt->createGeom();
-  // }
-      
-  // ------------------------------------------------------------------
-  // device progs: macro-cell accel with RTX traversal
-  // ------------------------------------------------------------------
-
-  // template<typename SFType>
-  // inline __both__
-  // void MCVolumeAccel<SFType>::boundsProg(const void *geomData,
-  //                                                 owl::common::box3f &bounds,
-  //                                                 const int32_t primID)
-  // {
-  //   // "RTX": we need to create one prim per macro cell
-    
-  //   // for now, do not use refitting, simple do rebuild every
-  //   // frame... in this case we can simply return empty box for every
-  //   // inactive cell.
-
-  //   const DD &self = *(DD*)geomData;
-  //   if (primID >= self.mcGrid.numCells()) return;
-    
-  //   const float maj = self.mcGrid.majorants[primID];
-  //   if (maj == 0.f) {
-  //     bounds = box3f();
-  //   } else {
-  //     const vec3i mcID = self.mcGrid.cellID(primID);
-  //     bounds = self.mcGrid.cellBounds(mcID,self.volume.sf.worldBounds);
-  //   }
-  // }
-
-//   template<typename SFType>
-//   inline __both__
-//   void MCRTXVolumeAccel<SFType>::isProg()
-//   {
-// #if 0
-//     /* ALL of this code should be exactly the same in any
-//        instantiation of the MCRTXVolumeAccel<> tempalte! */
-//     const DD &self = owl::getProgramData<DD>();
-//     Ray &ray = owl::getPRD<Ray>();
-
-    
-//     vec3f org = optixGetObjectRayOrigin();
-//     vec3f dir = optixGetObjectRayDirection();
-    
-//     const int primID = optixGetPrimitiveIndex();
-
-//     const vec3i mcID = self.mcGrid.cellID(primID);
-    
-//     const float majorant = self.mcGrid.majorants[primID];
-//     if (majorant == 0.f) return;
-    
-//     box3f bounds = self.mcGrid.cellBounds(mcID,self.volume.sf.worldBounds);
-//     range1f tRange = { optixGetRayTmin(), optixGetRayTmax() };
-
-//     if (!boxTest(ray,tRange,bounds))
-//       return;
-
-//     vec4f sample = 0.f;
-//     if (!Woodcock::sampleRange(sample,self.volume,
-//                                org,dir,tRange,majorant,ray.rngSeed,
-//                                ray.dbg))
-//       return;
-
-//     // and: store the hit, right here in isec prog.
-//     ray.setVolumeHit(ray.org + tRange.upper*ray.dir,
-//                      tRange.upper,
-//                      getPos(sample));
-//     optixReportIntersection(tRange.upper, 0);
-// #endif
-//   }
-
-//   template<typename SFType>
-//   inline __both__
-//   void MCRTXVolumeAccel<SFType>::chProg()
-//   {/* nothing - already all set in isec */}
-
 
   // ------------------------------------------------------------------
   // device progs: macro-cell accel with DDA traversal
@@ -323,8 +213,6 @@ namespace barney {
                                          const int32_t primID)
   {
     const DD &self = *(DD*)geomData;
-    printf("bounds sent %x %x\n",
-           self.beginSentinel,self.endSentinel);
     bounds = self.volume.sf.worldBounds;
   }
   
@@ -334,11 +222,8 @@ namespace barney {
   void MCVolumeAccel<SFType>::isProg(TraceInterface &ti)
   {
     const void *pd = ti.getProgramData();
-    printf("isprog: pd %p, sizeof %li\n",pd,sizeof(MCVolumeAccel<SFType>::DD));
            
     const DD &self = *(typename MCVolumeAccel<SFType>::DD*)pd;
-    printf("bounds sent %x %x\n",
-           self.beginSentinel,self.endSentinel);
     Ray &ray = *(Ray*)ti.getPRD();
     
     box3f bounds = self.volume.sf.worldBounds;

@@ -494,10 +494,9 @@ namespace barney {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       return ::tex2D<float>(texObj,x,y);
       // return T{};
-#elif BACKEND_EMBREE
+#elif BARNEY_BACKEND_EMBREE
       // this in on th ehost, and we _do_ have the embree backend built in:
-      printf("tex2d1f\n");
-      return embree::tex2D1f(texObj,x,y);
+      return embree::tex2D1f(to,x,y);
 #else
       // this cannot possibly happen because we have to have either a
       // cuda or an embree backend to even call this.
@@ -517,11 +516,12 @@ namespace barney {
 #ifdef __CUDA_ARCH__
       // we _must_ be on the device, so this is a cuda teture
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
-      return ::tex3D<float>(texObj,x,y,z);
+      float f= ::tex3D<float>(texObj,x,y,z);
+      return f;
       // return T{};
-#elif BACKEND_EMBREE
+#elif BARNEY_BACKEND_EMBREE
       // this in on th ehost, and we _do_ have the embree backend built in:
-      return embree::tex3D1f(texObj,x,y,z);
+      return embree::tex3D1f(to,x,y,z);
 #else
       // this cannot possibly happen because we have to have either a
       // cuda or an embree backend to even call this.
@@ -540,9 +540,9 @@ namespace barney {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       return ::tex3D<float4>(texObj,x,y,z);
       // return T{};
-#elif BACKEND_EMBREE
+#elif BARNEY_BACKEND_EMBREE
       // this in on th ehost, and we _do_ have the embree backend built in:
-      return embree::tex3D4f(texObj,x,y,z);
+      return embree::tex3D4f(to,x,y,z);
 #else
       // this cannot possibly happen because we have to have either a
       // cuda or an embree backend to even call this.

@@ -65,7 +65,7 @@ namespace barney {
     PLD *getPLD(Device *device) 
     { return &perLogical[device->contextRank]; } 
     std::vector<PLD> perLogical;
-
+    
     range1f             domain = { 0.f, 1.f };
     std::vector<vec4f>  values;
     float               baseDensity;

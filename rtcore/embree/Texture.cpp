@@ -266,6 +266,7 @@ namespace barney {
       {
         if (desc.normalizedCoords) {
           // not implemented...
+          PING;
           return vec4f(0.f);
         } else {
           int Nx = data->dims.x;
@@ -477,7 +478,9 @@ namespace barney {
     
     __both__ float tex3D1f(barney::rtc::device::TextureObject to,
                            float x, float y, float z)
-    { return ((TextureSampler *)to)->tex3D({x,y,z}).x; }
+    {
+      return ((TextureSampler *)to)->tex3D({x,y,z}).x;
+    }
     
     __both__ vec4f tex2D4f(barney::rtc::device::TextureObject to,
                             float x, float y)

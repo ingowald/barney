@@ -115,13 +115,8 @@ namespace barney {
     DD<SFType> getDD(Device *device)
     {
       DD<SFType> dd;
-      // ((SFType *)sf)
-      // sf->as<SFType>()->writeDD(dd.sf,device);
       dd.sf = sf->as<SFType>()->getDD(device);
       dd.xf = xf.getDD(device);
-      PING;
-      PRINT(dd.sf.cellGridOrigin);
-      PRINT(dd.sf.cellGridSpacing);
       return dd;
     }
 

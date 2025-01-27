@@ -56,7 +56,7 @@ namespace barney {
   TransferFunction::DD TransferFunction::getDD(Device *device) 
   {
     TransferFunction::DD dd;
-
+    
     dd.values = (float4*)getPLD(device)->valuesBuffer->getDD();
     dd.domain = domain;
     dd.baseDensity = baseDensity;
