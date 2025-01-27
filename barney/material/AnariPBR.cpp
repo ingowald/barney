@@ -19,6 +19,14 @@
 
 namespace barney {
   namespace render {
+
+    AnariPBR::AnariPBR(SlotContext *context)
+      : HostMaterial(context)
+    {
+      PING; PRINT(context);
+      PRINT(this->context);
+      PRINT(((Object*)this)->context);
+    }
     
     DeviceMaterial AnariPBR::getDD(Device *device) 
     {

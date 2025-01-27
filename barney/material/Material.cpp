@@ -84,7 +84,9 @@ namespace barney {
       : SlottedObject(slotContext->context,slotContext->devices),
         materialRegistry(slotContext->materialRegistry),
         materialID(slotContext->materialRegistry->allocate())
-    {}
+    {
+      assert(slotContext->context);
+    }
 
     HostMaterial::~HostMaterial()
     {

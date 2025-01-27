@@ -41,7 +41,7 @@ namespace barney {
         PossiblyMappedParameter::DD emission;
       };
       
-      AnariPBR(SlotContext *context) : HostMaterial(context) {}
+      AnariPBR(SlotContext *context);
       virtual ~AnariPBR() = default;
       
       std::string toString() const override { return "AnariPBR"; }

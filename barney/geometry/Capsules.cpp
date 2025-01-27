@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -36,10 +36,6 @@ namespace barney {
     return device->createUserGeomType("Capsules",
                                       sizeof(Capsules::DD),
                                       /*ah*/false,/*ch*/true);
-                                      // "CapsulesBounds",
-                                      // "CapsulesIsec",
-                                      // nullptr,
-                                      // "CapsulesCH");
   }
   
   void Capsules::commit()
@@ -47,12 +43,6 @@ namespace barney {
     for (auto device : *devices) {
       auto rtc = device->rtc;
       PLD *pld = getPLD(device);
-      // if (userGeoms.empty()) {
-      //   OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
-      //     ("Capsules",Capsules::createGeomType);
-      //   OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      //   userGeoms.push_back(geom);
-      // }
       if (pld->userGeoms.empty()) {
         rtc::GeomType *gt
           = device->geomTypes.get("Capsules",
@@ -60,20 +50,8 @@ namespace barney {
         rtc::Geom *geom = gt->createGeom();
         pld->userGeoms = { geom };
       }
-      // OWLGeom geom = userGeoms[0];
       rtc::Geom *geom = pld->userGeoms[0];
-
-      Capsules::DD dd;
-      Geometry::writeDD(dd,device);
-      dd.vertices  = (vec4f*)(vertices?vertices->getDD(device):0);
-      dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
-      // done:
-      geom->setDD(&dd);
       
-      // Geometry::commit();
-      
-      // owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
-      // owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
       assert(indices);
       int numIndices = indices ? indices->count : 0;
       if (numIndices == 0)
@@ -82,10 +60,14 @@ namespace barney {
                   << OWL_TERMINAL_DEFAULT
                   << std::endl;
       geom->setPrimCount(numIndices);
-      // owlGeomSetPrimCount(geom,numIndices);
+
+      Capsules::DD dd;
+      Geometry::writeDD(dd,device);
+      dd.vertices  = (vec4f*)(vertices?vertices->getDD(device):0);
+      dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
+      // done:
+      geom->setDD(&dd);
       
-    //   setAttributesOn(geom);
-    // getMaterial()->setDeviceDataOn(geom);
     }
   } 
 

@@ -62,6 +62,7 @@ namespace barney {
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
       std::vector<int> contextRanks;
       auto &dg = perSlot[lmsIdx];
+      dg.context = this;
       dg.modelRankInThisSlot = dataGroupIDs[lmsIdx];
       std::vector<Device *> slotDevices;
       for (int j=0;j<gpusPerSlot;j++) {
