@@ -111,6 +111,20 @@ namespace barney {
       TransferFunction::DD xf;
     };
     
+    template<typename SFType>
+    DD<SFType> getDD(Device *device)
+    {
+      DD<SFType> dd;
+      // ((SFType *)sf)
+      // sf->as<SFType>()->writeDD(dd.sf,device);
+      dd.sf = sf->as<SFType>()->getDD(device);
+      dd.xf = xf.getDD(device);
+      PING;
+      PRINT(dd.sf.cellGridOrigin);
+      PRINT(dd.sf.cellGridSpacing);
+      return dd;
+    }
+
     typedef std::shared_ptr<Volume> SP;
     
     Volume(ScalarField::SP sf);
@@ -152,7 +166,7 @@ namespace barney {
       parameter range, for a given sample'able volume type */
   struct Woodcock {
     template<typename SFType>
-    static inline __device__
+    static inline __both__
     bool sampleRange(vec4f &sample,
                      const Volume::DD<SFType> &volume,
                      vec3f org, vec3f dir,

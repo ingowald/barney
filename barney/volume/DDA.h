@@ -29,53 +29,53 @@ namespace barney {
     using namespace owl::common;
 
 #if DDA_FAST
-    inline __device__ int get(vec3i v, int dim)
+    inline __both__ int get(vec3i v, int dim)
     {
       return dim == 0 ? v.x : (dim == 1 ? v.y : v.z);
     }
-    inline __device__ float get(vec3f v, int dim)
+    inline __both__ float get(vec3f v, int dim)
     {
       return dim == 0 ? v.x : (dim == 1 ? v.y : v.z);
     }
 
-    inline __device__ void set(vec3f &vec, int dim, float value)
+    inline __both__ void set(vec3f &vec, int dim, float value)
     {
       vec.x = (dim == 0) ? value : vec.x;
       vec.y = (dim == 1) ? value : vec.y;
       vec.z = (dim == 2) ? value : vec.z;
     }
   
-    inline __device__ void set(vec3i &vec, int dim, int value)
+    inline __both__ void set(vec3i &vec, int dim, int value)
     {
       vec.x = (dim == 0) ? value : vec.x;
       vec.y = (dim == 1) ? value : vec.y;
       vec.z = (dim == 2) ? value : vec.z;
     }
 
-    inline __device__ int smallestDim(vec3f v)
+    inline __both__ int smallestDim(vec3f v)
     {
       return v.x <= min(v.y,v.z) ? 0 : (v.y <= min(v.x,v.z) ? 1 : 2);
     }
 #else
-    inline __device__ int   get(vec3i v, int dim) { return v[dim]; }
-    inline __device__ float get(vec3f v, int dim) { return v[dim]; }
+    inline __both__ int   get(vec3i v, int dim) { return v[dim]; }
+    inline __both__ float get(vec3f v, int dim) { return v[dim]; }
 
-    inline __device__ void set(vec3f &vec, int dim, float value) { vec[dim] = value; }
-    inline __device__ void set(vec3i &vec, int dim, int   value) { vec[dim] = value; }
+    inline __both__ void set(vec3f &vec, int dim, float value) { vec[dim] = value; }
+    inline __both__ void set(vec3i &vec, int dim, int   value) { vec[dim] = value; }
 
-    inline __device__ int smallestDim(vec3f v)
+    inline __both__ int smallestDim(vec3f v)
     {
       return arg_min(v);
     }
 #endif
 
-    inline __device__ vec3f floor(vec3f v)
+    inline __both__ vec3f floor(vec3f v)
     {
       return { floorf(v.x),floorf(v.y),floorf(v.z) };
     }
   
     template<typename Lambda>
-    inline __device__ void dda3(vec3f org,
+    inline __both__ void dda3(vec3f org,
                                 vec3f dir,
                                 float tMax,
                                 vec3ui gridSize,

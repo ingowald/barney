@@ -121,6 +121,7 @@ set(BARNEY_SOURCES
   geometry/Triangles.dev.cu
   geometry/Capsules.dev.cu
   geometry/Spheres.dev.cu
+  volume/StructuredData.dev.cu
 
   
   # *structured* volumes
@@ -294,6 +295,9 @@ target_link_libraries(barney PUBLIC
   $<BUILD_INTERFACE:barney-triangles-ptx>
   $<BUILD_INTERFACE:barney-capsules-ptx>
   $<BUILD_INTERFACE:barney-spheres-ptx>
+  #
+  $<BUILD_INTERFACE:barney-StructuredData-ptx>
+  #
   $<BUILD_INTERFACE:barney-traceRays-ptx>
   )
 set_target_properties(barney

@@ -46,10 +46,10 @@ namespace barney {
       vec3f    gridOrigin;
       vec3f    gridSpacing;
 
-      inline __device__ int numCells() const
+      inline __both__ int numCells() const
       { return dims.x*dims.y*dims.z; }
       
-      inline __device__ vec3i cellID(int linearID) const
+      inline __both__ vec3i cellID(int linearID) const
       {
         vec3i mcID;
         mcID.x = linearID % dims.x;
@@ -58,12 +58,14 @@ namespace barney {
         return mcID;
       }
       
-      inline __device__
+      inline __both__
       float majorant(vec3i cellID) const
-      { return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)]; }
+      {
+        return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
+      }
       
       /*! returns the bounding box of the given cell */
-      inline __device__ box3f cellBounds(vec3i cellID,
+      inline __both__ box3f cellBounds(vec3i cellID,
                                          const box3f &worldBounds) const
       {
         box3f bounds;
@@ -109,6 +111,7 @@ namespace barney {
     PLD *getPLD(Device *device) 
     { return &perLogical[device->contextRank]; } 
     std::vector<PLD> perLogical;
+
     
     vec3i     dims { 0,0,0 };
     vec3f     gridOrigin;

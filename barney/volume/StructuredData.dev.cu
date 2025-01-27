@@ -16,98 +16,70 @@
 
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/volume/StructuredData.h"
+#include "barney/volume/MCAccelerator.h"
 
 RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
 namespace barney {
 
-  struct Structured_MCRTX_Programs {
-    template<typename RTBackend>
+  // struct Structured_MCRTX_Programs {
+  //   template<typename RTBackend>
+  //   static inline __both__
+  //   void bounds(const RTBackend &rt,
+  //               const void *geomData,
+  //               owl::common::box3f &bounds,  
+  //               const int32_t primID)
+  //   {printf("todo\n");}
+  //   template<typename RTBackend>
+  //   static inline __both__
+  //   void closest_hit(const RTBackend &rt)
+  //   {printf("todo\n");}
+  //   template<typename RTBackend>
+  //   static inline __both__
+  //   void any_hit(const RTBackend &rt)
+  //   {printf("todo\n");}
+  //   template<typename RTBackend>
+  //   static inline __both__
+  //   void intersect(const RTBackend &rt)
+  //   {printf("todo\n");}
+  // };
+  struct MCAccel_Structured_Programs {
+    
+    template<typename TraceInterface>
     static inline __both__
-    void bounds(const RTBackend &rt,
+    void bounds(const TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
-    {printf("todo\n");}
-    template<typename RTBackend>
+    {
+      MCVolumeAccel<StructuredData>::boundsProg(ti,geomData,bounds,primID);
+      // const MCVolumeAccel<StructuredData>::DD &geom
+      //   = *(const MCVolumeAccel<StructuredData>::DD *)geomData;
+      // bounds = geom.volume.sf.worldBounds;
+    }
+    
+    template<typename TraceInterface>
     static inline __both__
-    void closest_hit(const RTBackend &rt)
-    {printf("todo\n");}
-    template<typename RTBackend>
+    void intersect(TraceInterface &ti)
+    {
+      MCVolumeAccel<StructuredData>::isProg(ti);
+      // const void *geomData = ti.getGeomData();
+      // const MCVolumeAccel<StructuredData>::DD &geom
+      //   = *(const MCVolumeAccel<StructuredData>::DD *)geomData;
+      // geom.isProg(ti);
+    }
+    
+    template<typename TraceInterface>
     static inline __both__
-    void any_hit(const RTBackend &rt)
-    {printf("todo\n");}
-    template<typename RTBackend>
+    void closest_hit(TraceInterface &ti)
+    { /* nothing to do */ }
+    
+    template<typename TraceInterface>
     static inline __both__
-    void intersect(const RTBackend &rt)
-    {printf("todo\n");}
+    void any_hit(TraceInterface &ti)
+    { /* nothing to do */ }
   };
-  struct Structured_MCDDA_Programs {
-    template<typename RTBackend>
-    static inline __both__
-    void bounds(const RTBackend &rt,
-                const void *geomData,
-                owl::common::box3f &bounds,  
-                const int32_t primID)
-    {printf("todo\n");}
-    template<typename RTBackend>
-    static inline __both__
-    void closest_hit(const RTBackend &rt)
-    {printf("todo\n");}
-    template<typename RTBackend>
-    static inline __both__
-    void any_hit(const RTBackend &rt)
-    {printf("todo\n");}
-    template<typename RTBackend>
-    static inline __both__
-    void intersect(const RTBackend &rt)
-    {printf("todo\n");}
-  };
-#if 0
-  OPTIX_BOUNDS_PROGRAM(Structured_MCRTX_Bounds)(const void *geomData,
-                                                owl::common::box3f &bounds,
-                                                const int32_t primID)
-  {
-    MCRTXVolumeAccel<StructuredData>::boundsProg
-      (geomData,bounds,primID);
-  }
-
-  OPTIX_INTERSECT_PROGRAM(Structured_MCRTX_Isec)()
-  {
-    MCRTXVolumeAccel<StructuredData>::isProg();
-  }
-  
-  OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCRTX_CH)()
-  {
-    /* nothing - already all set in isec */
-    MCRTXVolumeAccel<StructuredData>::chProg();
-  }
-  
-
-
-
-
-
-  OPTIX_BOUNDS_PROGRAM(Structured_MCDDA_Bounds)(const void *geomData,
-                                                owl::common::box3f &bounds,
-                                                const int32_t primID)
-  {
-    MCDDAVolumeAccel<StructuredData>::boundsProg(geomData,bounds,primID);
-  }
-
-  OPTIX_INTERSECT_PROGRAM(Structured_MCDDA_Isec)()
-  {
-    MCDDAVolumeAccel<StructuredData>::isProg();
-  }
-  
-  OPTIX_CLOSEST_HIT_PROGRAM(Structured_MCDDA_CH)()
-  {
-    MCDDAVolumeAccel<StructuredData>::chProg();
-    /* nothing - already all set in isec */
-  }
-#endif
 }
 
-RTC_DECLARE_USER_GEOM(Structured_MCRTX,barney::Structured_MCRTX_Programs);
-RTC_DECLARE_USER_GEOM(Structured_MCDDA,barney::Structured_MCDDA_Programs);
+RTC_DECLARE_USER_GEOM(MCAccel_Structured,barney::MCAccel_Structured_Programs);
 

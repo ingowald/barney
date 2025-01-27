@@ -55,7 +55,11 @@ namespace barney {
 
     int numThreads() {
       int nt = std::thread::hardware_concurrency();
+#if 1
+      int maxNumThreads = 1;
+#else
       int maxNumThreads = 1<<30;
+#endif
       return std::min(nt,maxNumThreads);
     }
     

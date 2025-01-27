@@ -23,8 +23,12 @@ namespace barney {
 
     __both__ float tex2D1f(barney::rtc::device::TextureObject to,
                            float x, float y);
+    __both__ float tex3D1f(barney::rtc::device::TextureObject to,
+                           float x, float y, float z);
     __both__ vec4f tex2D4f(barney::rtc::device::TextureObject to,
                            float x, float y);
+    __both__ vec4f tex3D4f(barney::rtc::device::TextureObject to,
+                           float x, float y, float z);
     
     struct InstanceGroup;
     struct TraceInterface {
@@ -502,14 +506,47 @@ namespace barney {
     }
 
     template<typename T>
-    inline __device__ __host__ T tex3D(barney::rtc::device::TextureObject to,
-                                       float x, float y, float z)
+    inline __both__ T tex3D(barney::rtc::device::TextureObject to,
+                                       float x, float y, float z);
+    
+    template<>
+    inline __both__
+    float tex3D<float>(barney::rtc::device::TextureObject to,
+                       float x, float y, float z)
     {
 #ifdef __CUDA_ARCH__
-      printf("tex2d missing...\n");
-      return T{};
+      // we _must_ be on the device, so this is a cuda teture
+      cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
+      return ::tex3D<float>(texObj,x,y,z);
+      // return T{};
+#elif BACKEND_EMBREE
+      // this in on th ehost, and we _do_ have the embree backend built in:
+      return embree::tex3D1f(texObj,x,y,z);
 #else
-      BARNEY_NYI();
+      // this cannot possibly happen because we have to have either a
+      // cuda or an embree backend to even call this.
+      return 0.f;
+#endif
+    }
+
+
+    template<>
+    inline __both__
+    vec4f tex3D<vec4f>(barney::rtc::device::TextureObject to,
+                       float x, float y, float z)
+    {
+#ifdef __CUDA_ARCH__
+      // we _must_ be on the device, so this is a cuda teture
+      cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
+      return ::tex3D<float4>(texObj,x,y,z);
+      // return T{};
+#elif BACKEND_EMBREE
+      // this in on th ehost, and we _do_ have the embree backend built in:
+      return embree::tex3D4f(texObj,x,y,z);
+#else
+      // this cannot possibly happen because we have to have either a
+      // cuda or an embree backend to even call this.
+      return 0.f;
 #endif
     }
   }

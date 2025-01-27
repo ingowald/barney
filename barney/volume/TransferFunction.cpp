@@ -22,6 +22,7 @@ namespace barney {
                                      const DevGroup::SP &devices)
     : SlottedObject(context,devices)
   {
+    perLogical.resize(devices->numLogical);
     domain = { 0.f,1.f };
     values = { vec4f(1.f), vec4f(1.f) };
     baseDensity  = 1.f;

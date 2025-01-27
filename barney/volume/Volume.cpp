@@ -47,6 +47,7 @@ namespace barney {
       xf(sf->context,sf->devices)
   {
     accel = sf->createAccel(this);
+    perLogical.resize(devices->numLogical);
   }
 
   const TransferFunction *VolumeAccel::getXF() const { return &volume->xf; }

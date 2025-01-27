@@ -59,10 +59,10 @@ namespace barney {
       //   mesh->setVariables(geom);
       //   getXF()->setVariables(geom);
       // }
-      void writeDD(UMeshObjectSpace::DD &dd, Device *device)
-      {
-        mesh->writeDD(dd,device);
-      }
+      // void writeDD(UMeshObjectSpace::DD &dd, Device *device)
+      // {
+      //   mesh->writeDD(dd,device);
+      // }
       
       UMeshField *const mesh;
       OWLGeom   geom  = 0;

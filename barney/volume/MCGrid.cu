@@ -21,6 +21,7 @@ namespace barney {
   MCGrid::MCGrid(const DevGroup::SP &devices)
     : devices(devices)
   {
+    perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
@@ -113,6 +114,7 @@ namespace barney {
     cell's value range through the given transfer function */
   void MCGrid::computeMajorants(TransferFunction *xf)
   {
+    PING;
     assert(xf);
     assert(dims.x > 0);
     assert(dims.y > 0);
@@ -129,6 +131,7 @@ namespace barney {
     }
     for (auto device : *devices) 
       device->sync();
+    PING;
   }
   
   /*! allocate memory for the given grid */
@@ -139,7 +142,8 @@ namespace barney {
     assert(dims.z > 0);
     this->dims = dims;
     size_t numCells = owl::common::volume(dims);
-
+    
+    PING; PRINT(numCells);
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
@@ -150,6 +154,7 @@ namespace barney {
         = rtc->createBuffer(sizeof(float)*numCells);
       pld->scalarRangesBuffer
         = rtc->createBuffer(sizeof(float2)*numCells);
+      PRINT(pld->majorantsBuffer);
     }
   }
   
@@ -165,10 +170,15 @@ namespace barney {
       = (float *)pld->majorantsBuffer->getDD();
     dd.scalarRanges
       = (range1f*)pld->scalarRangesBuffer->getDD();
+
+    PING;
+    PRINT(dd.majorants);
     
     dd.dims = dims;
     dd.gridOrigin = gridOrigin;
     dd.gridSpacing = gridSpacing;
+    PRINT(dd.gridSpacing);
+    PRINT(dd.gridOrigin);
     return dd;
   }
   

@@ -61,11 +61,11 @@ namespace barney {
                                   const DevGroup::SP &devices,
                                   const std::string &type);
 
-    void writeDD(DD &dd, Device *device)
-    { dd.worldBounds = worldBounds; }
+    // virtual void writeDD(DD &dd, Device *device)
+    // { dd.worldBounds = worldBounds; }
     
     virtual std::shared_ptr<VolumeAccel> createAccel(Volume *volume) = 0;
-    
+
     virtual void buildMCs(MCGrid &macroCells);
 
     box3f     worldBounds;

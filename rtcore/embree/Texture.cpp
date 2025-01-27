@@ -475,6 +475,10 @@ namespace barney {
                            float x, float y)
     { return ((TextureSampler *)to)->tex2D({x,y}).x; }
     
+    __both__ float tex3D1f(barney::rtc::device::TextureObject to,
+                           float x, float y, float z)
+    { return ((TextureSampler *)to)->tex3D({x,y,z}).x; }
+    
     __both__ vec4f tex2D4f(barney::rtc::device::TextureObject to,
                             float x, float y)
     {
@@ -484,6 +488,10 @@ namespace barney {
       return v;
     }
 
+    __both__ vec4f tex3D4f(barney::rtc::device::TextureObject to,
+                           float x, float y, float z)
+    { return ((TextureSampler *)to)->tex3D({x,y,z}); }
+    
 
   }
 }

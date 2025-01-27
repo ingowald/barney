@@ -29,15 +29,15 @@ namespace barney {
       actual cells */
   enum { cellsPerMC = 8 };
 
-  struct ComputeMCs {
+  struct StructuredData_ComputeMCs {
     /* kernel CODE */
     template<typename RTCore>
     inline __both__ void run(const RTCore &rtCore)
     {
       vec3i mcID
-        = vec3i(rtCore.threadIdx())
-        + vec3i(rtCore.blockIdx())
-        * vec3i(rtCore.blockDim());
+        = vec3i(rtCore.getThreadIdx())
+        + vec3i(rtCore.getBlockIdx())
+        * vec3i(rtCore.getBlockDim());
       if (mcID.x >= mcGrid.dims.x) return;
       if (mcID.y >= mcGrid.dims.y) return;
       if (mcID.z >= mcGrid.dims.z) return;
@@ -67,7 +67,12 @@ namespace barney {
   StructuredData::StructuredData(Context *context,
                                  const DevGroup::SP &devices)
     : ScalarField(context,devices)
-  {}
+  {
+    perLogical.resize(devices->numLogical);
+    for (auto device : *devices)
+      getPLD(device)->computeMCs
+        = device->rtc->createCompute("StructuredData_computeMCs");
+  }
 
 
   void StructuredData::buildMCs(MCGrid &mcGrid) 
@@ -80,7 +85,7 @@ namespace barney {
     mcGrid.gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
-      ComputeMCs args = {
+      StructuredData_ComputeMCs args = {
         mcGrid.getDD(device),
         numScalars,
         texture->getDD(device)
@@ -91,30 +96,24 @@ namespace barney {
     BARNEY_CUDA_SYNC_CHECK();
   }
   
-  void StructuredData::writeDD(DD &dd, Device *device)
+  StructuredData::DD StructuredData::getDD(Device *device)
   {
-    ScalarField::writeDD(dd,device);
+    DD dd;
+    // ScalarField::writeDD(dd,device);
+    dd.worldBounds = worldBounds;
     dd.texObj = texture->getDD(device).texObj;
+    PING;
+    PRINT(gridOrigin);
+    PRINT(gridSpacing);
     dd.cellGridOrigin = gridOrigin;
     dd.cellGridSpacing = gridSpacing;
     dd.numCells = numCells;
+    return dd;
   }
   
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
   {
-    const char *methodFromEnv = getenv("BARNEY_STRUCTURED");
-    const std::string method = methodFromEnv ? methodFromEnv : "DDA";
-#if 1
-    BARNEY_NYI();
-#else
-    if (method != "DDA") {
-      return std::make_shared<MCRTXVolumeAccel<StructuredDataSampler>::Host>
-        (this,volume);//,StructuredData_ptx);
-    } else {
-      return std::make_shared<MCDDAVolumeAccel<StructuredDataSampler>::Host>
-        (this,volume);//,StructuredData_ptx);
-    }
-#endif
+    return std::make_shared<MCVolumeAccel<StructuredData>>(this,volume);
   }
   
   // ==================================================================
@@ -168,3 +167,4 @@ namespace barney {
   
 }
 
+RTC_DECLARE_COMPUTE(StructuredData_computeMCs,barney::StructuredData_ComputeMCs);
