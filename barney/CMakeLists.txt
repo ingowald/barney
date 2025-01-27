@@ -119,6 +119,7 @@ embed_ptx(
 
 set(BARNEY_SOURCES
   geometry/Triangles.dev.cu
+  geometry/Capsules.dev.cu
 
   
   # *structured* volumes
@@ -297,6 +298,7 @@ else()
     #    $<BUILD_INTERFACE:barney_rtc>
     $<BUILD_INTERFACE:barney-spheres-ptx>
     $<BUILD_INTERFACE:barney-triangles-ptx>
+    $<BUILD_INTERFACE:barney-capsules-ptx>
     $<BUILD_INTERFACE:barney-traceRays-ptx>
     )
 endif()

@@ -35,10 +35,7 @@ namespace barney {
                 << OWL_TERMINAL_DEFAULT << std::endl;
     return device->createUserGeomType("Spheres",
                                       sizeof(Spheres::DD),
-                                      "SpheresBounds",
-                                      "SpheresIsec",
-                                      nullptr,
-                                      "SpheresCH");
+                                      /*ah*/false,/*ch*/true);
   }
   
   void Spheres::commit()

@@ -323,15 +323,9 @@ namespace barney {
       = getTypeString();
     rtc::GeomType *gt = device->geomTypes.get
       (typeString,[&](rtc::Device *dev) {
-        const std::string boundsProg = typeString+"_Bounds";
-        const std::string isProg = typeString+"_Isec";
-        const std::string chProg = typeString+"_CH";
         return dev->createUserGeomType(typeString.c_str(),
                                        sizeof(DD),
-                                       boundsProg.c_str(),
-                                       isProg.c_str(),
-                                       nullptr,
-                                       chProg.c_str());
+                                       /*ah*/false,/*ch*/true);
       });
     return gt->createGeom();
   }

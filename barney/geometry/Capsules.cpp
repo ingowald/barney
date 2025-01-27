@@ -32,45 +32,61 @@ namespace barney {
       std::cout << OWL_TERMINAL_GREEN
                 << "creating 'Capsules' geometry type"
                 << OWL_TERMINAL_DEFAULT << std::endl;
-    
+
     return device->createUserGeomType("Capsules",
                                       sizeof(Capsules::DD),
-                                      "CapsulesBounds",
-                                      "CapsulesIsec",
-                                      nullptr,
-                                      "CapsulesCH");
+                                      /*ah*/false,/*ch*/true);
+                                      // "CapsulesBounds",
+                                      // "CapsulesIsec",
+                                      // nullptr,
+                                      // "CapsulesCH");
   }
   
   void Capsules::commit()
   {
-#if 1
-    BARNEY_NYI();
-#else
-    if (userGeoms.empty()) {
-      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
-        ("Capsules",Capsules::createGeomType);
-      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      userGeoms.push_back(geom);
+    for (auto device : *devices) {
+      auto rtc = device->rtc;
+      PLD *pld = getPLD(device);
+      // if (userGeoms.empty()) {
+      //   OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
+      //     ("Capsules",Capsules::createGeomType);
+      //   OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
+      //   userGeoms.push_back(geom);
+      // }
+      if (pld->userGeoms.empty()) {
+        rtc::GeomType *gt
+          = device->geomTypes.get("Capsules",
+                                  Capsules::createGeomType);
+        rtc::Geom *geom = gt->createGeom();
+        pld->userGeoms = { geom };
+      }
+      // OWLGeom geom = userGeoms[0];
+      rtc::Geom *geom = pld->userGeoms[0];
+
+      Capsules::DD dd;
+      Geometry::writeDD(dd,device);
+      dd.vertices  = (vec4f*)(vertices?vertices->getDD(device):0);
+      dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
+      // done:
+      geom->setDD(&dd);
+      
+      // Geometry::commit();
+      
+      // owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
+      // owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
+      assert(indices);
+      int numIndices = indices ? indices->count : 0;
+      if (numIndices == 0)
+        std::cout << OWL_TERMINAL_RED
+                  << "#bn.capsules: warning - empty indices array"
+                  << OWL_TERMINAL_DEFAULT
+                  << std::endl;
+      geom->setPrimCount(numIndices);
+      // owlGeomSetPrimCount(geom,numIndices);
+      
+    //   setAttributesOn(geom);
+    // getMaterial()->setDeviceDataOn(geom);
     }
-    OWLGeom geom = userGeoms[0];
-
-    Geometry::commit();
-
-    owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
-    owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
-    assert(indices);
-    int numIndices = indices->count;
-    if (numIndices == 0)
-      std::cout << OWL_TERMINAL_RED
-                << "#bn.capsules: warning - empty indices array"
-                << OWL_TERMINAL_DEFAULT
-                << std::endl;
-
-    owlGeomSetPrimCount(geom,numIndices);
-    
-    setAttributesOn(geom);
-    getMaterial()->setDeviceDataOn(geom);
-#endif
   } 
 
   bool Capsules::setData(const std::string &member, const Data::SP &value)

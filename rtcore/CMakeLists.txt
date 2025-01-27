@@ -99,6 +99,7 @@ if (BARNEY_BACKEND_EMBREE)
     embree/Buffer.cpp
     embree/Texture.cpp
     embree/GeomType.cpp
+    embree/Geom.cpp
     embree/Triangles.cpp
     embree/Group.cpp
     )

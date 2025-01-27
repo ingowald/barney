@@ -27,7 +27,7 @@ namespace barney {
      codebase. Note this code is not very numerically stable, so needs
      to be used with the "move-your-origin" trick (see ray tracing
      gems) to work in practice */
-  inline __device__
+  inline __both__
   bool intersectRoundedCone(// first end-point
                             const vec4f a,
                             // second end-point
@@ -119,7 +119,7 @@ namespace barney {
     return hadHit;
   }
 
-  inline __device__ box3f getBounds(vec4f va, vec4f vb)
+  inline __both__ box3f getBounds(vec4f va, vec4f vb)
   {
     vec3f a  = getPos(va);
     vec3f b  = getPos(vb);
@@ -138,7 +138,7 @@ namespace barney {
     //                                      const int32_t primID)
     template<typename RTBackend>
     static inline __both__
-    void bounds(const RTBackend &rt,
+    void bounds(RTBackend &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -153,14 +153,14 @@ namespace barney {
       work in IS prog, but needs to exist to make optix happy */
     template<typename RTBackend>
     static inline __both__
-    void closest_hit(const RTBackend &rt)
+    void closest_hit(RTBackend &rt)
     {
       /* nothing - already set in isec */
     }
     
     template<typename RTBackend>
     static inline __both__
-    void any_hit(const RTBackend &rt)
+    void any_hit(RTBackend &rt)
     {
       /* nothing - already set in isec */
     }
@@ -172,13 +172,13 @@ namespace barney {
       is found */
     template<typename RTBackend>
     static inline __both__
-    void intersect(const RTBackend &rt)
+    void intersect(RTBackend &rt)
     {
       const int primID
         = rt.getPrimitiveIndex();
       const auto &self
-        = owl::getProgramData<Capsules::DD>();
-      Ray &ray    = getPRD<Ray>();
+        = *(Capsules::DD*)rt.getProgramData();//owl::getProgramData<Capsules::DD>();
+      Ray &ray    = *(Ray*)rt.getPRD();//getPRD<Ray>();
 
       const vec2i idx = self.indices[primID];
 

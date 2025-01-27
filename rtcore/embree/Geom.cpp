@@ -14,34 +14,22 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "rtcore/embree/Triangles.h"
+#include "rtcore/embree/Geom.h"
 
 namespace barney {
   namespace embree {
-
-    TrianglesGeom::TrianglesGeom(TrianglesGeomType *type)
-      : Geom(type)
+    
+    Geom::Geom(GeomType *type)
+      : rtc::Geom(type->device),
+        type(type),
+        programData(type->sizeOfProgramData)
     {}
     
-    /*! only for user geoms */
-    void TrianglesGeom::setPrimCount(int primCount)
+    void Geom::setDD(const void *dd)
     {
-      throw std::runtime_error("setPrimCount only makes sense for user geoms");
-    }
-    
-    /*! can only get called on triangle type geoms */
-    void TrianglesGeom::setVertices(rtc::Buffer *vertices,
-                                    int numVertices)
-    {
-      this->vertices = (vec3f*)((Buffer *)vertices)->mem;
-      this->numVertices = numVertices;
-    }
-    
-    void TrianglesGeom::setIndices(rtc::Buffer *indices, int numIndices)
-    {
-      this->indices = (vec3i*)((Buffer *)indices)->mem;
-      this->numIndices = numIndices;
+      memcpy(programData.data(),dd,programData.size());
     }
 
   }
 }
+

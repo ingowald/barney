@@ -16,6 +16,7 @@
 
 #include "rtcore/embree/GeomType.h"
 #include "rtcore/embree/Triangles.h"
+#include "rtcore/embree/UserGeom.h"
 
 namespace barney {
   namespace embree {
@@ -65,7 +66,7 @@ namespace barney {
     { return new TrianglesGeom(this); }
 
     rtc::Geom *UserGeomType::createGeom()
-    { BARNEY_NYI(); }
+    { return new UserGeom(this); }
     
   }
 }

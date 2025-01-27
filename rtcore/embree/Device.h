@@ -108,15 +108,10 @@ namespace barney {
       // geomtype stuff
       // ------------------------------------------------------------------
       
-      rtc::GeomType *
-      createUserGeomType(const char *typeName,
-                         size_t sizeOfDD,
-                         const char *boundsFctName,
-                         const char *isecFctName,
-                         const char *ahFctName,
-                         const char *chFctName) 
-        override 
-      { BARNEY_NYI(); }
+      rtc::GeomType *createUserGeomType(const char *typeName,
+                                        size_t sizeOfDD,
+                                        bool has_ah,
+                                        bool has_ch) override;
       
       rtc::GeomType *createTrianglesGeomType(const char *typeName,
                                              size_t sizeOfDD,

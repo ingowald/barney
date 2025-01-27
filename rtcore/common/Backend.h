@@ -248,10 +248,8 @@ namespace barney {
       virtual rtc::GeomType *
       createUserGeomType(const char *typeName,
                          size_t sizeOfDD,
-                         const char *boundsFctName,
-                         const char *isecFctName,
-                         const char *ahFctName,
-                         const char *chFctName) = 0;
+                         bool has_ah,
+                         bool has_ch) = 0;
       
       
       virtual rtc::GeomType *

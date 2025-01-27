@@ -134,14 +134,14 @@ namespace barney {
   
     template<typename RTBackend>
     static inline __both__
-    void any_hit(const RTBackend &rt)
+    void any_hit(RTBackend &rt)
     {
       /* nothing - already set in isec */
     }
   
     template<typename RTBackend>
     static inline __both__
-    void intersect(const RTBackend &rt)
+    void intersect(RTBackend &rt)
     {
       const int primID = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
       const auto &self = *(const Spheres::DD*)rt.getProgramData();

@@ -36,10 +36,7 @@ namespace barney {
 
     return device->createUserGeomType("Cylinders",
                                       sizeof(Cylinders::DD),
-                                      "CylindersBounds",
-                                      "CylindersIsec",
-                                      "CylindersCH",
-                                      nullptr/*AH*/);
+                                      /*ah*/false,/*ch*/true);
   }
   
   void Cylinders::commit()

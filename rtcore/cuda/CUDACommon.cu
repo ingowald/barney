@@ -116,11 +116,6 @@ namespace barney {
         unsigned int padded_y = std::max(1u,(unsigned)dims.y);
         unsigned int padded_z = std::max(1u,(unsigned)dims.z);
         cudaExtent extent{padded_x,padded_y,padded_z};
-        PRINT(padded_x);
-        PRINT(padded_y);
-        PRINT(padded_z);
-        PRINT(numScalarsPerTexel);
-        PRINT(sizeOfScalar);
         BARNEY_CUDA_CALL(Malloc3DArray(&array,&desc,extent,0));
         cudaMemcpy3DParms copyParms;
         memset(&copyParms,0,sizeof(copyParms));
@@ -145,7 +140,6 @@ namespace barney {
       } else {
         BARNEY_NYI();
       }
-      PING;
     }
     
     rtc::TextureData *

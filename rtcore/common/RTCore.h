@@ -187,7 +187,31 @@ namespace barney {
     RayGenType::run(rt);                                                \
   }
 
-#define RTC_DECLARE_EMBREE_USER_GEOM(name,type)        /* nothing yet */
+#define RTC_DECLARE_EMBREE_USER_GEOM(name,type)             \
+                                                            \
+  extern "C"                                                \
+  void barney_embree_ch_##name                              \
+  (::barney::embree::TraceInterface &rtcore)                \
+  { type::closest_hit(rtcore); }                            \
+                                                            \
+  extern "C"                                                \
+  void barney_embree_ah_##name                              \
+  (::barney::embree::TraceInterface &rtcore)                \
+  { type::any_hit(rtcore); }                                \
+                                                            \
+  extern "C"                                                \
+  void barney_embree_bounds_##name                          \
+  (::barney::embree::TraceInterface &rtcore,                \
+   const void *dd,                                          \
+   ::owl::common::box3f &bounds,                            \
+   int primID)                                              \
+  { type::bounds(rtcore,dd,bounds,primID); }                \
+                                                            \
+  extern "C"                                                \
+  void barney_embree_intersect_##name                       \
+  (::barney::embree::TraceInterface &rtcore)                \
+  { type::intersect(rtcore); }                               
+  
   
 #define RTC_DECLARE_EMBREE_TRIANGLES_GEOM(name,type)        \
                                                             \
@@ -349,7 +373,7 @@ namespace barney {
     }                                                                   
     
 
-#define RTC_DECLARE_OPTIX_USER_GEOM(name,type)                        \
+#define RTC_DECLARE_OPTIX_USER_GEOM(name,type)                  \
                                                                 \
     extern "C" __global__                                       \
     void __closesthit__##name() {                               \
@@ -364,19 +388,36 @@ namespace barney {
     }                                                           \
                                                                 \
     extern "C" __global__                                       \
-    void __insersect__##name() {                                \
+    void __intersection__##name() {                             \
       ::barney::optix::RTCoreInterface rtcore;                  \
       type::intersect(rtcore);                                  \
     }                                                           \
                                                                 \
-    extern "C" __global__                                       \
-    void __boundsFunc__##name(const void *geom,                 \
-                              owl::common::box3f &result,       \
-                              int primID)                       \
-    {                                                           \
-      ::barney::optix::RTCoreInterface rtcore;                  \
-      type::bounds(rtcore,geom,result,primID);                  \
-    }                                                           \
+    __device__ void __boundsFunc__##name(const void *geom,              \
+                                         owl::common::box3f &result,    \
+                                         int primID)                    \
+    {                                                                   \
+      ::barney::optix::RTCoreInterface rtcore;                          \
+      type::bounds(rtcore,geom,result,primID);                          \
+    }                                                                   \
+    extern "C" __global__                                               \
+    void __boundsFuncKernel__##name(const void *geom,                   \
+                                    owl::common::box3f *boundsArray,    \
+                                    int numPrims)                       \
+    {                                                                   \
+      uint32_t blockIndex                                               \
+        = blockIdx.x                                                    \
+        + blockIdx.y * gridDim.x                                        \
+        + blockIdx.z * gridDim.x * gridDim.y;                           \
+      uint32_t primID                                                   \
+        = threadIdx.x + blockDim.x*threadIdx.y                          \
+        + blockDim.x*blockDim.y*blockIndex;                             \
+      if (primID < numPrims) {                                          \
+        __boundsFunc__##name(geom,boundsArray[primID],primID);          \
+      }                                                                 \
+    }                                                                   \
+                                                                        \
+    
   
 #define RTC_DECLARE_OPTIX_TRIANGLES_GEOM(name,type)     \
                                                         \

@@ -96,12 +96,21 @@ namespace barney {
                                  OWLGeom geom)
       : Geom(gt,geom)
     {}
+    UserGeom::UserGeom(GeomType *gt,
+                                 OWLGeom geom)
+      : Geom(gt,geom)
+    {}
     
     /*! only for user geoms */
     void TrianglesGeom::setPrimCount(int primCount)
     {
       throw std::runtime_error
         ("invalid to call setprimcount on triangles");
+    }
+    /*! only for user geoms */
+    void UserGeom::setPrimCount(int primCount)
+    {
+      owlGeomSetPrimCount(owl,primCount);
     }
     
     /*! can only get called on triangle type geoms */
@@ -110,20 +119,30 @@ namespace barney {
       owlTrianglesSetVertices(owl,((Buffer*)vertices)->owl,
                               numVertices,sizeof(float3),0);
     }
+    /*! can only get called on triangle type geoms */
+    void UserGeom::setVertices(rtc::Buffer *vertices, int numVertices)
+    {
+      /* ignore */
+    }
     
     void TrianglesGeom::setIndices(rtc::Buffer *indices, int numIndices)
     {
       owlTrianglesSetIndices(owl,((Buffer*)indices)->owl,
                              numIndices,sizeof(int3),0);
     }
+    /*! can only get called on triangle type geoms */
+    void UserGeom::setIndices(rtc::Buffer *indices, int numIndices)
+    {
+      /* ignore */
+    }
     
     // ==================================================================
     // geomtype
     // ==================================================================
-    rtc::Geom *TrianglesGeomType::createGeom()
+    GeomType::~GeomType()
     {
-      OWLGeom geom = owlGeomCreate(((optix::Device*)device)->owl,this->gt);
-      return new TrianglesGeom(this,geom);
+      // CANNOYT yet release this because owl cannot do that yet
+      gt = 0;
     }
     
     rtc::GeomType *
@@ -134,12 +153,16 @@ namespace barney {
     {
       return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
     }
-
-    GeomType::~GeomType()
+    
+    rtc::GeomType *
+    Device::createUserGeomType(const char *typeName,
+                                    size_t sizeOfDD,
+                                    bool has_ah,
+                                    bool has_ch)
     {
-      //      owlGeomTypeRelease(gt);
-      gt = 0;
+      return new UserGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
     }
+    
     
     TrianglesGeomType::TrianglesGeomType(optix::Device *device,
                                          const std::string &typeName,
@@ -171,6 +194,51 @@ namespace barney {
       owlModuleRelease(module);
     }
 
+    UserGeomType::UserGeomType(optix::Device *device,
+                               const std::string &typeName,
+                               size_t sizeOfDD,
+                               bool has_ah,
+                               bool has_ch)
+      : GeomType(device)
+    {
+      OWLVarDecl vars[] = {
+        {"raw",(OWLDataType)(OWL_USER_TYPE_BEGIN+sizeOfDD),0},
+        {nullptr}
+      };
+      gt = owlGeomTypeCreate(device->owl,OWL_GEOM_USER,
+                             sizeOfDD,vars,-1);
+      
+      const char *User_ptx
+        = (const char *)rtc::getSymbol(typeName+"_ptx");
+      OWLModule module = owlModuleCreate
+        (device->owl,User_ptx);
+      if (has_ch)
+        owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
+                                 typeName.c_str());
+      if (has_ah)
+        owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
+                             typeName.c_str());
+      owlGeomTypeSetBoundsProg(gt,/*ray type*/module,
+                               typeName.c_str());
+      owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,
+                                  typeName.c_str());
+      owlBuildPrograms(device->owl);
+      owlModuleRelease(module);
+    }
+    
+    rtc::Geom *TrianglesGeomType::createGeom()
+    {
+      OWLGeom geom = owlGeomCreate(((optix::Device*)device)->owl,this->gt);
+      return new TrianglesGeom(this,geom);
+    }
+
+    rtc::Geom *UserGeomType::createGeom()
+    {
+      OWLGeom geom = owlGeomCreate(((optix::Device*)device)->owl,this->gt);
+      return new UserGeom(this,geom);
+    }
+
+    
 
     // ==================================================================
     // kernels
@@ -304,6 +372,18 @@ namespace barney {
       OWLGroup g = owlTrianglesGeomGroupCreate(owl,
                                                owlGeoms.size(),
                                                owlGeoms.data());
+      return new Group(this,g);
+    }
+
+    rtc::Group *
+    Device::createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms)
+    {
+      std::vector<OWLGeom> owlGeoms;
+      for (auto geom : geoms)
+        owlGeoms.push_back(((Geom *)geom)->owl);
+      OWLGroup g = owlUserGeomGroupCreate(owl,
+                                          owlGeoms.size(),
+                                          owlGeoms.data());
       return new Group(this,g);
     }
 

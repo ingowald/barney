@@ -53,12 +53,9 @@ namespace barney {
       rtc::GeomType *
       createUserGeomType(const char *typeName,
                          size_t sizeOfDD,
-                         const char *boundsFctName,
-                         const char *isecFctName,
-                         const char *ahFctName,
-                         const char *chFctName) 
-        override 
-      { BARNEY_NYI(); };
+                         bool has_ah,
+                         bool has_ch) 
+        override;
       
       rtc::GeomType *
       createTrianglesGeomType(const char *typeName,
@@ -83,8 +80,7 @@ namespace barney {
       createTrianglesGroup(const std::vector<rtc::Geom *> &geoms) override;
       
       rtc::Group *
-      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) override
-      { BARNEY_NYI(); };
+      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) override;
 
       rtc::Group *
       createInstanceGroup(const std::vector<rtc::Group *> &groups,
@@ -135,10 +131,19 @@ namespace barney {
       void setVertices(rtc::Buffer *vertices, int numVertices) override;
       void setIndices(rtc::Buffer *indices, int numIndices) override;
     };
+    struct UserGeom : public Geom {
+      UserGeom(GeomType *gt, OWLGeom geom);
+      
+      /*! only for user geoms */
+      void setPrimCount(int primCount) override;
+      /*! can only get called on triangle type geoms */
+      void setVertices(rtc::Buffer *vertices, int numVertices) override;
+      void setIndices(rtc::Buffer *indices, int numIndices) override;
+    };
     
     struct GeomType : public rtc::GeomType {
       GeomType(optix::Device *device) : rtc::GeomType(device) {}
-      ~GeomType() override;
+      virtual ~GeomType() override;
       
       OWLGeomType gt = 0;
     };
@@ -147,6 +152,13 @@ namespace barney {
       TrianglesGeomType(optix::Device *device,
                         const std::string &typeName,
                         size_t sizeOfDD, bool has_ah, bool has_ch);
+      rtc::Geom *createGeom() override;
+    };
+    struct UserGeomType : public GeomType
+    {
+      UserGeomType(optix::Device *device,
+                   const std::string &typeName,
+                   size_t sizeOfDD, bool has_ah, bool has_ch);
       rtc::Geom *createGeom() override;
     };
     

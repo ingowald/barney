@@ -286,6 +286,14 @@ namespace barney {
       return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
     }
     
+    rtc::GeomType *Device::createUserGeomType(const char *typeName,
+                                                   size_t sizeOfDD,
+                                                   bool has_ah,
+                                                   bool has_ch)
+    {
+      return new UserGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
+    }
+    
     void Device::freeGeomType(rtc::GeomType *gt) 
     {
       delete gt;
