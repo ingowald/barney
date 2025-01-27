@@ -27,10 +27,10 @@ namespace barney {
       to 32 or 16, but lets at least try how much this really helps in
       the denoiser */
   struct CompressedNormal {
-    inline __device__ __host__ float4 get4f() const
-    { vec3f v = get(); return make_float4(v.x,v.y,v.z,0.f); }
-    inline __device__ __host__ float3 get3f() const
-    { vec3f v = get(); return make_float3(v.x,v.y,v.z); }
+    inline __device__ __host__ vec4f get4f() const
+    { vec3f v = get(); return vec4f(v.x,v.y,v.z,0.f); }
+    inline __device__ __host__ vec3f get3f() const
+    { vec3f v = get(); return vec3f(v.x,v.y,v.z); }
     inline __device__ __host__ void set(vec3f v) {
       if (v == vec3f(0.f)) { x = y = z = 0; return; }
       v = normalize(v);
@@ -55,7 +55,7 @@ namespace barney {
   enum { pixelsPerTile = tileSize*tileSize };
 
   struct AccumTile {
-    float4 accum[pixelsPerTile];
+    vec4f accum[pixelsPerTile];
     float  depth[pixelsPerTile];
     vec3f  normal[pixelsPerTile];
   };

@@ -38,7 +38,7 @@ namespace barney {
       namespace nvisii {
         using LCGRand = Random;
         inline __both__ float lcg_randomf(Random &r) { return r(); }
-        
+
 #define DISNEY_DIFFUSE_BRDF 0
 #define DISNEY_GLOSSY_BRDF 1
 #define DISNEY_CLEARCOAT_BRDF 2
@@ -83,9 +83,9 @@ namespace barney {
         // Sample the hemisphere using a cosine weighted distribution,
         // returns a vector in a hemisphere oriented about (0, 0, 1)
         inline
-        __both__ vec3f cos_sample_hemisphere(float2 u) {
-          float2 s = 2.f * u - make_float2(1.f);
-          float2 d;
+        __both__ vec3f cos_sample_hemisphere(vec2f u) {
+          vec2f s = 2.f * u - vec2f(1.f);
+          vec2f d;
           float radius = 0.f;
           float theta = 0.f;
           if (s.x == 0.f && s.y == 0.f) {
@@ -99,13 +99,13 @@ namespace barney {
               theta  = M_PI / 2.f - M_PI / 4.f * (s.x / s.y);
             }
           }
-          d = radius * make_float2(cos(theta), sin(theta));
-          return vec3f(d.x, d.y, sqrt(max(0.f, 1.f - d.x * d.x - d.y * d.y)));
+          d = radius * vec2f(cosf(theta), sinf(theta));
+          return vec3f(d.x, d.y, sqrtf(max(0.f, 1.f - d.x * d.x - d.y * d.y)));
         }
 
         inline
         __both__ vec3f spherical_dir(float sin_theta, float cos_theta, float phi) {
-          return sin_theta * cos(phi), sin_theta * sin(phi), cos_theta;
+          return vec3f{ sin_theta * cosf(phi), sin_theta * sinf(phi), cos_theta };
         }
 
         inline
@@ -117,7 +117,7 @@ namespace barney {
 
         inline
         __both__ float schlick_weight(float cos_theta) {
-          return pow(saturate(1.f - cos_theta), 5.f);
+          return powf(saturate(1.f - cos_theta), 5.f);
         }
 
         // Complete Fresnel Dielectric computation, for transmission at ior near 1
@@ -142,21 +142,24 @@ namespace barney {
             return M_1_PI;
           }
           float alpha_sqr = alpha * alpha;
-          return M_1_PI * (alpha_sqr - 1.f) / (log(alpha_sqr) * (1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h));
+          return M_1_PI * (alpha_sqr - 1.f) / (logf(alpha_sqr) * (1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h));
         }
 
         // D_GTR2: Generalized Trowbridge-Reitz with gamma=2
         // Burley notes eq. 8
         inline
-        __both__ float gtr_2(float cos_theta_h, float alpha) {
+        __both__ float gtr_2(float cos_theta_h, float alpha, bool dbg=0)
+        {
           float alpha_sqr = alpha * alpha;
-          return M_1_PI * alpha_sqr / max(pow2(1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h), SMALL_EPSILON);
+          float den1 = 1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h;
+          float den2 = max(den1, SMALL_EPSILON);
+          return M_1_PI * alpha_sqr / den2;
         }
 
         // D_GTR2 Anisotropic: Anisotropic generalized Trowbridge-Reitz with gamma=2
         // Burley notes eq. 13
         inline
-        __both__ float gtr_2_aniso(float h_dot_n, float h_dot_x, float h_dot_y, float2 alpha) {
+        __both__ float gtr_2_aniso(float h_dot_n, float h_dot_x, float h_dot_y, vec2f alpha) {
           return M_1_PI / max((alpha.x * alpha.y * pow2(pow2(h_dot_x / alpha.x) + pow2(h_dot_y / alpha.y) + h_dot_n * h_dot_n)), SMALL_EPSILON);
         }
 
@@ -164,47 +167,47 @@ namespace barney {
         __both__ float smith_shadowing_ggx(float n_dot_o, float alpha_g) {
           float a = alpha_g * alpha_g;
           float b = n_dot_o * n_dot_o;
-          return 1.f / (n_dot_o + sqrt(a + b - a * b));
+          return 1.f / (n_dot_o + sqrtf(a + b - a * b));
         }
 
         inline
-        __both__ float smith_shadowing_ggx_aniso(float n_dot_o, float o_dot_x, float o_dot_y, float2 alpha) {
-          return 1.f / (n_dot_o + sqrt(pow2(o_dot_x * alpha.x) + pow2(o_dot_y * alpha.y) + pow2(n_dot_o)));
+        __both__ float smith_shadowing_ggx_aniso(float n_dot_o, float o_dot_x, float o_dot_y, vec2f alpha) {
+          return 1.f / (n_dot_o + sqrtf(pow2(o_dot_x * alpha.x) + pow2(o_dot_y * alpha.y) + pow2(n_dot_o)));
         }
 
         // Sample a reflection direction the hemisphere oriented along n and spanned by v_x, v_y using the random samples in s
         inline
-        __both__ vec3f sample_lambertian_dir(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const float2 &s) {
+        __both__ vec3f sample_lambertian_dir(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const vec2f &s) {
           const vec3f hemi_dir = normalize(cos_sample_hemisphere(s));
           return hemi_dir.x * v_x + hemi_dir.y * v_y + hemi_dir.z * n;
         }
 
         // Sample the microfacet normal vectors for the various microfacet distributions
         inline
-        __both__ vec3f sample_gtr_1_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const float2 &s) {
+        __both__ vec3f sample_gtr_1_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const vec2f &s) {
           float phi_h = 2.f * M_PI * s.x;
           float alpha_sqr = alpha * alpha;
           float cos_theta_h_sqr = (1.f - pow(alpha_sqr, 1.f - s.y)) / (1.f - alpha_sqr);
-          float cos_theta_h = sqrt(cos_theta_h_sqr);
+          float cos_theta_h = sqrtf(cos_theta_h_sqr);
           float sin_theta_h = 1.f - cos_theta_h_sqr;
           vec3f hemi_dir = normalize(spherical_dir(sin_theta_h, cos_theta_h, phi_h));
           return hemi_dir.x * v_x + hemi_dir.y * v_y + hemi_dir.z * n;
         }
 
         inline
-        __both__ vec3f sample_gtr_2_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const float2 &s) {
+        __both__ vec3f sample_gtr_2_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const vec2f &s) {
           float phi_h = 2.f * M_PI * s.x;
           float cos_theta_h_sqr = (1.f - s.y) / (1.f + (alpha * alpha - 1.f) * s.y);
-          float cos_theta_h = sqrt(cos_theta_h_sqr);
+          float cos_theta_h = sqrtf(cos_theta_h_sqr);
           float sin_theta_h = 1.f - cos_theta_h_sqr;
           vec3f hemi_dir = normalize(spherical_dir(sin_theta_h, cos_theta_h, phi_h));
           return hemi_dir.x * v_x + hemi_dir.y * v_y + hemi_dir.z * n;
         }
 
         inline
-        __both__ vec3f sample_gtr_2_aniso_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const float2 &alpha, const float2 &s) {
+        __both__ vec3f sample_gtr_2_aniso_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const vec2f &alpha, const vec2f &s) {
           float x = 2.f * M_PI * s.x;
-          vec3f w_h = sqrt(s.y / (1.f - s.y)) * (alpha.x * cos(x) * v_x + alpha.y * sin(x) * v_y) + n;
+          vec3f w_h = sqrtf(s.y / (1.f - s.y)) * (alpha.x * cosf(x) * v_x + alpha.y * sinf(x) * v_y) + n;
           return normalize(w_h);
         }
 
@@ -318,7 +321,7 @@ namespace barney {
 
         inline
         __both__ float gtr_2_aniso_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, const vec3f &n,
-                                         const vec3f &v_x, const vec3f &v_y, const float2 alpha)
+                                         const vec3f &v_x, const vec3f &v_y, const vec2f alpha)
         {
           if (!same_hemisphere(w_o, w_i, n)) {
             return 0.f;
@@ -406,7 +409,7 @@ namespace barney {
           float alpha = max(mat.roughness*mat.roughness, MIN_ALPHA);
 
           //E(μ) is in fact the sum of the red and green channels in our environment BRDF
-          // vec2 sampleE_o = texture2D(BRDFlut, vec2(NdotV, alpha)).xy;
+          // vec2 sampleE_o = texture2D(BRDFlut, vec2f(NdotV, alpha)).xy;
           // E_o = sampleE_o.x + sampleE_o.y;
           float E_o = rtc::tex2D<float>(GGX_E_LOOKUP, v_dot_n, alpha);
           float oneMinusE_o = 1.0 - E_o;
@@ -496,10 +499,10 @@ namespace barney {
           float lum = luminance(mat.base_color);
           vec3f tint = lum > 0.f ? mat.base_color / lum : vec3f(1.f);
           vec3f spec = lerp_r(mat.specular * 0.08f
-                               * lerp_r(vec3f(1.f), tint, mat.specular_tint), mat.base_color, mat.metallic);
+                              * lerp_r(vec3f(1.f), tint, mat.specular_tint), mat.base_color, mat.metallic);
 
           float alpha = max(MIN_ALPHA, mat.roughness * mat.roughness);
-          float d = gtr_2(fabs(dot(n, w_h)), alpha);
+          float d = gtr_2(fabsf(dot(n, w_h)), alpha, dbg);
           // Finding dot(w_o, n) to be less noisy, but doesn't look as good for crazy normal maps compared to dot(w_i, w_h)
           // Also finding fresnel to be introducing unwanted energy for smooth plastics, so I'm adding a correction term.
           vec3f f = lerp_r(spec, vec3f(1.f),
@@ -509,10 +512,10 @@ namespace barney {
           float g_i = smith_shadowing_ggx(fabs(dot(n, w_i)), alpha);
           float g_o = smith_shadowing_ggx(fabs(dot(n, w_o)), alpha);
           float g   = g_i * g_o;
-          if (dbg)
-            printf("microfacet_iso spec %f %f %f d %f f %f %f %f g %f (%f %f)\n",
-                   spec.x,spec.y,spec.z,
-                   d,f.x,f.y,f.z,g,g_i,g_o);
+          // if (dbg)
+          //   printf("microfacet_iso spec %f %f %f d %f f %f %f %f g %f (%f %f)\n",
+          //          spec.x,spec.y,spec.z,
+          //          d,f.x,f.y,f.z,g,g_i,g_o);
           return d * f * g;
         }
 
@@ -601,9 +604,9 @@ namespace barney {
           vec3f tint = lum > 0.f ? mat.base_color / lum : vec3f(1.f);
           vec3f spec = lerp_r(mat.specular * 0.08f * lerp_r(vec3f(1.f), tint, mat.specular_tint), mat.base_color, mat.metallic);
 
-          float aspect = sqrt(1.f - mat.anisotropy * 0.9f);
+          float aspect = sqrtf(1.f - mat.anisotropy * 0.9f);
           float a = max(MIN_ALPHA,mat.roughness * mat.roughness);
-          float2 alpha = make_float2(max(MIN_ALPHA, a / aspect), max(MIN_ALPHA, a * aspect));
+          vec2f alpha = vec2f(max(MIN_ALPHA, a / aspect), max(MIN_ALPHA, a * aspect));
           float d = gtr_2_aniso(fabs(dot(n, w_h)), fabs(dot(w_h, v_x)), fabs(dot(w_h, v_y)), alpha);
           // Finding dot(w_o, n) to be less noisy, but doesn't look as good for crazy normal maps compared to dot(w_i, w_h)
           // Also finding fresnel to be introducing unwanted energy for smooth plastics, so I'm adding a correction term.
@@ -663,6 +666,7 @@ namespace barney {
                                     bool dbg = false
                                     ) {
           // initialize bsdf value to black for now.
+
           bsdf = vec3f(0.f);
 
           // transmissive objects refract when back of surface is visible.
@@ -675,7 +679,6 @@ namespace barney {
           }
 
           float coat = disney_clear_coat(mat, b_n, w_o, w_i, w_h);
-          // if (dbg) printf("nvis coat %f\n",coat);
           vec3f sheen = disney_sheen(mat, b_n, w_o, w_i, w_h);
           vec3f diffuse_bsdf, diffuse_color;
           disney_diffuse(mat, b_n, w_o, w_i, w_h, diffuse_bsdf, diffuse_color);
@@ -685,11 +688,10 @@ namespace barney {
           if (mat.anisotropy == 0.f) {
             gloss = disney_microfacet_isotropic(mat, b_n, w_o, w_i, w_h, dbg);
             // gloss = gloss + disney_multiscatter(mat, n, w_o, w_i, GGX_E_LOOKUP, GGX_E_AVG_LOOKUP);
-          } else 
-            {
-              gloss = disney_microfacet_anisotropic(mat, b_n, w_o, w_i, w_h, v_x, v_y);
+          } else {
+            gloss = disney_microfacet_anisotropic(mat, b_n, w_o, w_i, w_h, v_x, v_y);
               // gloss = gloss + disney_multiscatter(mat, n, w_o, w_i, GGX_E_LOOKUP, GGX_E_AVG_LOOKUP);
-            }
+          }
 	
           // if (dbg) printf("nvis gloss %f %f %f\n",gloss.x,gloss.y,gloss.z);
           // if (dbg) printf("nvis diffuse bsdf %f %f %f color %f %f %f, (1-metal)*(1-spec) %f\n",
@@ -705,12 +707,12 @@ namespace barney {
           vec3f flat = lerp_r(diffuse_bsdf * diffuse_color, 
                                subsurface_bsdf * subsurface_color, 
                                mat.flatness);
-          if (dbg) printf("BRDF: flat %f %f %f\n",flat.x,flat.y,flat.z);
-          if (dbg) printf("BRDF: 1-met %f 1-spec %f sheen %f %f %f coat %f gloss %f %f %f aniso %f\n",1.f-mat.metallic,1.f-mat.specular_transmission,
-                          sheen.x,sheen.y,sheen.z,
-                          coat,
-                          gloss.x,gloss.y,gloss.z,
-                          mat.anisotropy);
+          // if (dbg) printf("BRDF: flat %f %f %f\n",flat.x,flat.y,flat.z);
+          // if (dbg) printf("BRDF: 1-met %f 1-spec %f sheen %f %f %f coat %f gloss %f %f %f aniso %f\n",1.f-mat.metallic,1.f-mat.specular_transmission,
+          //                 sheen.x,sheen.y,sheen.z,
+          //                 coat,
+          //                 gloss.x,gloss.y,gloss.z,
+          //                 mat.anisotropy);
           
           
           bsdf = (flat
@@ -784,7 +786,7 @@ namespace barney {
           float alpha = max(MIN_ALPHA, mat.roughness * mat.roughness);
           float t_alpha = max(MIN_ALPHA, mat.transmission_roughness * mat.transmission_roughness);
           float aspect = sqrtf(1.f - mat.anisotropy * 0.9f);
-          float2 alpha_aniso = make_float2(max(MIN_ALPHA, alpha / aspect), max(MIN_ALPHA, alpha * aspect));
+          vec2f alpha_aniso = vec2f(max(MIN_ALPHA, alpha / aspect), max(MIN_ALPHA, alpha * aspect));
 
           float clearcoat_alpha = lerp_r(0.1f, MIN_ALPHA, mat.clearcoat_gloss);
 
@@ -825,8 +827,8 @@ namespace barney {
           // n_comp -= lerp_r(transmission_kludge, metallic_kludge, mat.metallic);
 
 #if IMPORTANCE_SAMPLE_BRDF
-          if (dbg) printf("PDF diff %f micro %f trans %f coat %f\n",
-                          diffuse,microfacet,microfacet_transmission,clear_coat);
+          // if (dbg) printf("PDF diff %f micro %f trans %f coat %f\n",
+          //                 diffuse,microfacet,microfacet_transmission,clear_coat);
           pdf = (diffuse_weight*diffuse
                  + glossy_weight*microfacet
                  + clearcoat_weight*clear_coat
@@ -916,8 +918,9 @@ namespace barney {
           glossy_weight       *= scale_weights;
           clearcoat_weight    *= scale_weights;
           transmission_weight *= scale_weights;
-          if (dbg) printf("scatter type weights %f %f %f %f\n",
-                          diffuse_weight,glossy_weight,clearcoat_weight,transmission_weight);
+          // if (dbg) printf("scatter type weights %f %f %f %f\n",
+          //                 diffuse_weight,glossy_weight,clearcoat_weight,transmission_w
+          // eight);
           float type_rng = lcg_randomf(rng);
           float type_pdf = 0.f;
           if (type_rng < diffuse_weight) {
@@ -953,7 +956,7 @@ namespace barney {
 #endif
           if (dbg) printf(" => scatter type %i\n",sampled_bsdf);
 
-          float2 samples = make_float2(lcg_randomf(rng), lcg_randomf(rng));
+          vec2f samples = vec2f(lcg_randomf(rng), lcg_randomf(rng));
           if (sampled_bsdf == DISNEY_DIFFUSE_BRDF) {
             w_i = sample_lambertian_dir(b_n, v_x, v_y, samples);
           } else if (sampled_bsdf == DISNEY_GLOSSY_BRDF) {
@@ -962,8 +965,8 @@ namespace barney {
             if (mat.anisotropy == 0.f) {
               w_h = sample_gtr_2_h(b_n, v_x, v_y, alpha, samples);
             } else {
-              float aspect = sqrt(1.f - mat.anisotropy * 0.9f);
-              float2 alpha_aniso = make_float2(max(MIN_ALPHA, alpha / aspect), max(MIN_ALPHA, alpha * aspect));
+              float aspect = sqrtf(1.f - mat.anisotropy * 0.9f);
+              vec2f alpha_aniso = vec2f(max(MIN_ALPHA, alpha / aspect), max(MIN_ALPHA, alpha * aspect));
               w_h = sample_gtr_2_aniso_h(b_n, v_x, v_y, alpha_aniso, samples);
             }
             w_i = reflect(-w_o, w_h);

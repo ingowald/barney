@@ -98,7 +98,7 @@ namespace barney {
                                       const InterpolatePerVertex &interpolate,
                                       bool dbg) const
   {
-    auto set = [&](float4 &out,
+    auto set = [&](vec4f &out,
                    const GeometryAttribute::DD &in,
                    bool dbg=false)
     {
@@ -119,7 +119,7 @@ namespace barney {
     };
     
     for (int i=0;i<attributes.count;i++) {
-      float4     &out = hit.attribute[i];
+      vec4f     &out = hit.attribute[i];
       const auto &in  = this->attributes.attribute[i];
       set(out,in);
     }

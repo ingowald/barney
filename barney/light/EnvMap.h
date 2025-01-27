@@ -250,7 +250,7 @@ namespace barney {
     float sx = (ix+.5f)/dims.x;
     float sy = (iy+.5f)/dims.y;
 #endif
-    float4 fromTex = tex2D<float4>(texture,sx,sy);
+    vec4f fromTex = tex2D<vec4f>(texture,sx,sy);
     Light::Sample sample;
     sample.radiance = (vec3f&)fromTex;
     sample.direction = uvToWorld(sx,sy);

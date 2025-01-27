@@ -36,10 +36,10 @@ namespace barney {
         dd.attribute = attribute;
         break;
       case VALUE:
-        dd.value = value;
+        (vec4f&)dd.value = value;
         break;
       case INVALID:
-        dd.value = make_float4(0.f,0.f,0.f,0.f);
+        (vec4f&)dd.value = vec4f(0.f,0.f,0.f,0.f);
         break;
       }
       return dd;
@@ -47,20 +47,20 @@ namespace barney {
     
     void PossiblyMappedParameter::set(const vec3f  &v)
     {
-      set(make_float4(v.x,v.y,v.z,1.f));
+      set(vec4f(v.x,v.y,v.z,1.f));
     }
 
     void PossiblyMappedParameter::set(const float &v)
     {
-      set(make_float4(v,0.f,0.f,1.f));
+      set(vec4f(v,0.f,0.f,1.f));
     }
 
-    void PossiblyMappedParameter::set(const vec4f  &v)
-    {
-      set(make_float4(v.x,v.y,v.z,v.w));
-    }
+    // void PossiblyMappedParameter::set(const vec4f  &v)
+    // {
+    //   set(vec4f(v.x,v.y,v.z,v.w));
+    // }
 
-    void PossiblyMappedParameter::set(const float4 &v)
+    void PossiblyMappedParameter::set(const vec4f &v)
     {
       type    = VALUE;
       sampler = {};

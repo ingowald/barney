@@ -79,7 +79,7 @@ namespace barney {
           res.fresnelReflectionCoefficient = 1.f;
           res.mustReflect = true;
         } else {// Refracting.
-          float cos2 = sqrt(clamp(1.f - sin2*sin2));
+          float cos2 = sqrtf(clamp(1.f - sin2*sin2));
           vec3f N2 = normalize(dirParallelToNormal);
           res.outgoingDirection = N2*cos2 + b*sin2;
           float c1 = cos1_abs;
@@ -185,7 +185,7 @@ namespace barney {
         } else {// Transmission
           res.wi = dirT;// Outgoing ray direction.
           res.type = BSDF_SPECULAR_TRANSMISSION;
-          //res.weight = vec3f(rsqrt(self->eta));// Solid angle compression.
+          //res.weight = vec3f(rsqrtf(self->eta));// Solid angle compression.
     
           if (be_careful) {
             geometricCosine = dot(res.wi, geometricNormal);

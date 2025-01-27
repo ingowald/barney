@@ -73,14 +73,16 @@ namespace barney {
                                         const Sampler::DD *samplers,
                                         bool dbg) const
     {
-      float4 baseColor = this->baseColor.eval(hitData,samplers,dbg);
-      float4 metallic = this->metallic.eval(hitData,samplers,dbg);
-      float4 opacity = this->opacity.eval(hitData,samplers,dbg);
-      float4 roughness = this->roughness.eval(hitData,samplers,dbg);
-      float4 transmission = this->transmission.eval(hitData,samplers,dbg);
-      float4 ior = this->ior.eval(hitData,samplers,dbg);
+      vec4f baseColor = this->baseColor.eval(hitData,samplers,dbg);
+      vec4f metallic = this->metallic.eval(hitData,samplers,dbg);
+      if (dbg) printf("metallic %f %f %f %f\n",
+                      metallic.x,metallic.y,metallic.z,metallic.w);         
+      vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
+      vec4f roughness = this->roughness.eval(hitData,samplers,dbg);
+      vec4f transmission = this->transmission.eval(hitData,samplers,dbg);
+      vec4f ior = this->ior.eval(hitData,samplers,dbg);
+      if (dbg) printf("ior %f trans %f\n",ior.x,transmission.x);
 #if 1
-      // if (dbg) printf("ior %f trans %f\n",ior.x,transmission.x);
       if (ior.x != 1.f && transmission.x >= 1e-3f) {
         packedBSDF::Glass bsdf;
         bsdf.ior = ior.x;

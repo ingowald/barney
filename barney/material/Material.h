@@ -34,13 +34,19 @@ namespace barney {
 
       PossiblyMappedParameter() = default;
       PossiblyMappedParameter(const vec3f v)
-      { type = VALUE; value = make_float4(v.x,v.y,v.z,1.f); }
+      { type = VALUE; value = vec4f(v.x,v.y,v.z,1.f); }
       PossiblyMappedParameter(float v)
-      { type = VALUE; value = make_float4(v,0.f,0.f,1.f); }
-    
+      { type = VALUE; value = vec4f(v,0.f,0.f,1.f); }
+      
       struct DD {
+        // inline DD() {}
+        // inline DD(DD &&other)
+        // { memcpy(this,&other,sizeof(other)); }
+        // inline DD &operator=(const DD &other)
+        // { memcpy(this,&other,sizeof(other)); return *this; }
+        
         inline __both__
-        float4 eval(const HitAttributes &hitData,
+        vec4f eval(const HitAttributes &hitData,
                     const Sampler::DD *samplers,
                     bool dbg=false) const;
         Type type;
@@ -51,7 +57,6 @@ namespace barney {
         };
       };
 
-      void set(const float4 &v);
       void set(const float &v);
       void set(const vec3f &v);
       void set(const vec4f &v);
@@ -63,7 +68,7 @@ namespace barney {
       Type type = VALUE;
       Sampler::SP          sampler;
       HitAttributes::Which attribute;
-      float4               value { 0.f, 0.f, 0.f, 1.f };
+      vec4f               value { 0.f, 0.f, 0.f, 1.f };
     };
 
     /*! barney 'virtual' material implementation that takes anari-like
@@ -108,21 +113,21 @@ namespace barney {
     };
 
     inline __both__
-    float4 PossiblyMappedParameter::DD::eval(const HitAttributes &hitData,
-                                             const Sampler::DD *samplers,
-                                             bool dbg) const
+    vec4f PossiblyMappedParameter::DD::eval(const HitAttributes &hitData,
+                                            const Sampler::DD *samplers,
+                                            bool dbg) const
     {
       if (type == VALUE) {
-        return isnan(value.x) ? make_float4(0.f,0.f,0.f,1.f) : value;
+        return isnan(value.x) ? vec4f(0.f,0.f,0.f,1.f) : barney::load(value);
       }
       if (type == ATTRIBUTE) {
         return hitData.get(attribute,dbg);
       }
       if (type == SAMPLER) {
-        if (samplerID < 0) return make_float4(0.f,0.f,0.f,1.f);
+        if (samplerID < 0) return vec4f(0.f,0.f,0.f,1.f);
         return samplers[samplerID].eval(hitData,dbg);
       }
-      return make_float4(0.f,0.f,0.f,1.f);
+      return vec4f(0.f,0.f,0.f,1.f);
     }
 
   }

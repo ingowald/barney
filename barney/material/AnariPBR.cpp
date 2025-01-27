@@ -40,7 +40,7 @@ namespace barney {
       dd.anariPBR.roughness    = roughness.getDD(device);
       dd.anariPBR.ior          = ior.getDD(device);
       dd.anariPBR.transmission = transmission.getDD(device);
-      
+
       return dd;
     }
     
@@ -58,7 +58,7 @@ namespace barney {
     bool AnariPBR::setString(const std::string &member, const std::string &value) 
     {
       if (HostMaterial::setString(member,value)) return true;
-      
+
       if (member == "baseColor")
         { baseColor.set(value); return true; }
       if (member == "metallic")

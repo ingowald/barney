@@ -61,7 +61,7 @@ namespace barney {
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
 
-      float4 baseColor = this->color.eval(hitData,samplers,dbg);
+      vec4f baseColor = this->color.eval(hitData,samplers,dbg);
 
       // not anari-conformant, but useful: if geometry _has_ a color
       // attribute, use it, no matter whether our input is point to it

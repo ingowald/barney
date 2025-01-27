@@ -70,6 +70,7 @@ namespace barney {
   float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
   
   inline __both__ vec4f make_vec4f(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
+  inline __both__ vec4f load(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
   
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
   inline __both__ vec3f getPos(vec4f v)
@@ -131,14 +132,14 @@ namespace barney {
       (make_8bit(color.w) << 24);
   }
 
-  inline __both__ uint32_t make_rgba(const float4 color)
-  {
-    return
-      (make_8bit(color.x) << 0) +
-      (make_8bit(color.y) << 8) +
-      (make_8bit(color.z) << 16) +
-      (make_8bit(color.w) << 24);
-  }
+  // inline __both__ uint32_t make_rgba(const float4 color)
+  // {
+  //   return
+  //     (make_8bit(color.x) << 0) +
+  //     (make_8bit(color.y) << 8) +
+  //     (make_8bit(color.z) << 16) +
+  //     (make_8bit(color.w) << 24);
+  // }
 
   inline __both__ float clamp(float f, float lo=0.f, float hi=1.f)
   { return min(hi,max(lo,f)); }

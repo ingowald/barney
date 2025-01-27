@@ -28,10 +28,10 @@ namespace barney {
     struct SamplerRegistry;
     
     struct AttributeTransform {
-      inline __both__ float4 applyTo(float4 in, bool dbg) const;
+      inline __both__ vec4f applyTo(vec4f in, bool dbg) const;
       
-      float4 mat[4];
-      float4 offset;
+      vec4f mat[4];
+      vec4f offset;
     };
     
     struct Sampler : public SlottedObject {
@@ -46,8 +46,10 @@ namespace barney {
       } Type;
 
       struct DD {
+        inline __both__ DD() {}
+        inline __both__ DD(DD &&other) { memcpy(this,&other,sizeof(other)); }
         inline __both__
-        float4 eval(const HitAttributes &inputs, bool dbg) const;
+        vec4f eval(const HitAttributes &inputs, bool dbg) const;
         
         Type type=INVALID;
         AttributeKind      inAttribute;
@@ -148,10 +150,10 @@ namespace barney {
 
 
     inline __both__
-    vec4f load(float4 v) { return (const vec4f&)v; }
+    vec4f load(vec4f v) { return (const vec4f&)v; }
     
     inline __both__
-    float4 AttributeTransform::applyTo(float4 in,
+    vec4f AttributeTransform::applyTo(vec4f in,
                                        bool dbg) const
     {
       vec4f out = load(offset);
@@ -159,30 +161,30 @@ namespace barney {
       out = out + in.y * load(mat[1]);
       out = out + in.z * load(mat[2]);
       out = out + in.w * load(mat[3]);
-      return (const float4&)out;
+      return (const vec4f&)out;
     }
     
     inline __both__
-    float4 Sampler::DD::eval(const HitAttributes &inputs,
+    vec4f Sampler::DD::eval(const HitAttributes &inputs,
                              bool dbg) const
     {
       // dbg = true;
       if (dbg) printf("evaluting sampler %p texture %p\n",this,
                       (void*)image.texture);
-      float4 in  = inputs.get(inAttribute);
+      vec4f in  = inputs.get(inAttribute);
       if (dbg) printf("in is %f %f %f %f\n",in.x,in.y,in.z,in.w);
       if (type != TRANSFORM) {
-        float4 coord = image.inTransform.applyTo(in,dbg);
+        vec4f coord = image.inTransform.applyTo(in,dbg);
         if (dbg) printf("coord is %f %f %f %f\n",coord.x,coord.y,coord.z,coord.w);
-        float4 fromTex;
+        vec4f fromTex;
         if (type == IMAGE1D)
-          fromTex = tex1D<float4>(image.texture,coord.x);
+          fromTex = tex1D<vec4f>(image.texture,coord.x);
         else if (type == IMAGE2D) {
           if (dbg) printf("sampling 2d texture %p at %f %f\n",
                           (int*)image.texture,coord.x,coord.y);
-          fromTex = rtc::tex2D<float4>(image.texture,coord.x,coord.y);
+          fromTex = rtc::tex2D<vec4f>(image.texture,coord.x,coord.y);
         } else
-          fromTex = rtc::tex3D<float4>(image.texture,coord.x,coord.y,coord.z);
+          fromTex = rtc::tex3D<vec4f>(image.texture,coord.x,coord.y,coord.z);
 
         if (dbg) printf("fromTex is %f %f %f %f\n",fromTex.x,fromTex.y,fromTex.z,fromTex.w);
         in.x = fromTex.x;
@@ -194,7 +196,7 @@ namespace barney {
                         image.numChannels,
                         in.x,in.y,in.z,in.w);
       }
-      float4 out = outTransform.applyTo(in,dbg);
+      vec4f out = outTransform.applyTo(in,dbg);
       return out;
     }
   }

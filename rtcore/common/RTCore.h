@@ -23,8 +23,8 @@ namespace barney {
 
     __both__ float tex2D1f(barney::rtc::device::TextureObject to,
                            float x, float y);
-    __both__ float4 tex2D4f(barney::rtc::device::TextureObject to,
-                            float x, float y);
+    __both__ vec4f tex2D4f(barney::rtc::device::TextureObject to,
+                           float x, float y);
     
     struct InstanceGroup;
     struct TraceInterface {
@@ -462,12 +462,13 @@ namespace barney {
 
 
     template<>
-    inline __both__ float4 tex2D<float4>(barney::rtc::device::TextureObject to,
+    inline __both__ vec4f tex2D<vec4f>(barney::rtc::device::TextureObject to,
                                          float x, float y)
     {
 #ifdef __CUDA_ARCH__
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
-      return ::tex2D<float4>(texObj,x,y);
+      float4 v = ::tex2D<float4>(texObj,x,y);
+      return (const vec4f &)v;
       // return T{};
 #elif BARNEY_BACKEND_EMBREE
       // this in on th ehost, and we _do_ have the embree backend built in:

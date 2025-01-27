@@ -411,7 +411,7 @@ namespace barney {
         const float inv2Pi = 1.f/(2.f*M_PI);
         vec2f uv(phi * inv2Pi, theta * invPi);
 
-        float4 color = tex2D<float4>(env.texture,uv.x,uv.y);
+        vec4f color = tex2D<vec4f>(env.texture,uv.x,uv.y);
         float envLightPower = 1.f;
         return envLightPower*vec3f(color.x,color.y,color.z);
       } else {
@@ -479,7 +479,7 @@ namespace barney {
           // fragment = clamp((vec3f)path.throughput,vec3f(0.f),vec3f(1.f));
           fragment =
 # if USE_MIS
-            path.misWeight *
+            (float)path.misWeight *
 #endif
             (vec3f)path.throughput;
           if (path.dbg)
@@ -549,7 +549,7 @@ namespace barney {
 #if ENV_LIGHT_SAMPLING
 # if USE_MIS
           const vec3f fromEnv = radianceFromEnv(world,renderer,path);
-          fragment = path.throughput * fromEnv * path.misWeight;
+          fragment = (vec3f)path.throughput * fromEnv * (float)path.misWeight;
 
           if (fire)
             printf("bounce ray hits env light: tp %f %f %f misweight %f fromEnv %f %f %f\n",
@@ -885,7 +885,7 @@ namespace barney {
       // and write the shade fragment, if generated
       int tileID  = path.pixelID / pixelsPerTile;
       int tileOfs = path.pixelID % pixelsPerTile;
-      float4 &valueToAccumInto
+      vec4f &valueToAccumInto
         = accumTiles[tileID].accum[tileOfs];
 
 #if DENOISE
@@ -915,8 +915,8 @@ namespace barney {
       if (accumID == 0 && generation == 0) {
         if (path.dbg) printf("init frag %f %f %f\n",
                              fragment.x,fragment.y,fragment.z);
-        valueToAccumInto = make_float4(fragment.x,fragment.y,
-                                       fragment.z,alpha);
+        valueToAccumInto = vec4f(fragment.x,fragment.y,
+                                 fragment.z,alpha);
         if (path.dbg) printf("valueToAcc %f %f %f %f\n",
                              valueToAccumInto.x,valueToAccumInto.y,valueToAccumInto.z,valueToAccumInto.w);
       } else {

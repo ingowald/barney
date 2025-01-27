@@ -70,7 +70,7 @@ namespace barney {
     {
       const float sqrCosT = render::sqrCosT(cosI, eta);
       if (sqrCosT < 0.0f) return vec3f(0.f);
-      return refract(I, N, cosI, sqrt(sqrCosT), eta);
+      return refract(I, N, cosI, sqrtf(sqrCosT), eta);
     }
 
     inline  __both__ float refract(float cosI, float eta)

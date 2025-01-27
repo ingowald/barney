@@ -283,6 +283,8 @@ namespace barney {
       {
         cuda::SetActiveGPU forDuration(device);
         launchFct(nb,bs,0,((cuda::BaseDevice*)device)->stream,dd);
+
+        cudaDeviceSynchronize();
       }
     };
     
@@ -334,7 +336,10 @@ namespace barney {
       void sync() override
       {
         cudaStream_t s = owlParamsGetCudaStream(lp,0);
+
         BARNEY_CUDA_CALL(StreamSynchronize(s));
+
+        cudaDeviceSynchronize();
       }
      
       OWLModule mod;

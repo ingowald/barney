@@ -57,7 +57,7 @@ namespace barney {
   }
   
   // __global__ void copyPixels(vec2i numPixels,
-  //                            float4 *out,
+  //                            vec4f *out,
   //                            vec3f *in_color,
   //                            float *in_alpha)
   // {
@@ -74,7 +74,7 @@ namespace barney {
 
   struct CopyPixels {
     vec2i numPixels;
-    float4 *out;
+    vec4f *out;
     vec3f *in_color;
     float *in_alpha;
 
@@ -212,14 +212,14 @@ namespace barney {
 #endif
 
 
-  // __global__ void float3_to_float4(float4 *out,
+  // __global__ void float3_to_vec4f(vec4f *out,
   //                                  float3 *in,
   //                                  int count)
   // {
   //   int tid = threadIdx.x+blockIdx.x*blockDim.x;
   //   if (tid >= count) return;
   //   float3 v = in[tid];
-  //   out[tid] = make_float4(v.x,v.y,v.z,0.f);
+  //   out[tid] = make_vec4f(v.x,v.y,v.z,0.f);
   // }
   
 #if OPTIX_VERSION >= 80000
@@ -318,17 +318,17 @@ namespace barney {
       OptixDenoiserLayer layer = {};
       auto numPixels = fb->numPixels;
       layer.input.format = OPTIX_PIXEL_FORMAT_FLOAT3;
-      layer.input.rowStrideInBytes = numPixels.x*sizeof(float4);
-      layer.input.pixelStrideInBytes = sizeof(float4);
+      layer.input.rowStrideInBytes = numPixels.x*sizeof(vec4f);
+      layer.input.pixelStrideInBytes = sizeof(vec4f);
       layer.input.width = numPixels.x;
       layer.input.height = numPixels.y;
-      float3_to_float4
+      float3_to_vec4f
         <<<divRoundUp(numPixels.x*numPixels.y,1024),1024>>>
         (denoiserInput,(float3*)fb->linearColor,numPixels.x*numPixels.y);
       layer.input.data = (CUdeviceptr)denoiserInput;
       // layer.input.data = (CUdeviceptr)fb->linearColor;//denoiserInput;
 
-      float3_to_float4
+      float3_to_vec4f
         <<<divRoundUp(numPixels.x*numPixels.y,1024),1024>>>
         (denoiserNormal,(float3*)fb->linearNormal,numPixels.x*numPixels.y);
       guideLayer.normal = layer.input;
@@ -362,11 +362,11 @@ namespace barney {
     void                *denoiserState   = 0;
     OptixDenoiserSizes   denoiserSizes;
     
-    float4              *denoiserInput   = 0;
-    float4              *denoiserNormal   = 0;
-    // float4              *denoiserOutput  = 0;
+    vec4f              *denoiserInput   = 0;
+    vec4f              *denoiserNormal   = 0;
+    // vec4f              *denoiserOutput  = 0;
     // float3              *denoiserOutput  = 0;
-    // float4              *denoiserNormal  = 0;
+    // vec4f              *denoiserNormal  = 0;
   };
 #endif
 #endif
@@ -449,7 +449,7 @@ namespace barney {
 // #if 1
   struct ToFixed8 {
     uint32_t *out;
-    float4 *in;
+    vec4f *in;
     vec2i numPixels;
     bool SRGB;
     template<typename CI>
@@ -460,7 +460,7 @@ namespace barney {
       int iy = ci.getThreadIdx().y+ci.getBlockIdx().y*ci.getBlockDim().y;
       if (iy >= numPixels.y) return;
       int idx = ix+numPixels.x*iy;
-      float4 v = in[idx];
+      vec4f v = in[idx];
       v.x = clamp(v.x);
       v.y = clamp(v.y);
       v.z = clamp(v.z);
@@ -478,7 +478,7 @@ namespace barney {
 //   template<bool SRGB>
 //   __global__
 //   void toFixed8(uint32_t *out,
-//                 float4 *in,
+//                 vec4f *in,
 //                 vec2i numPixels)
 //   {
 //     int ix = threadIdx.x+blockIdx.x*blockDim.x;
@@ -487,7 +487,7 @@ namespace barney {
 //     if (iy >= numPixels.y) return;
 //     int idx = ix+numPixels.x*iy;
 
-//     float4 v = in[idx];
+//     vec4f v = in[idx];
 //     v.x = clamp(v.x);
 //     v.y = clamp(v.y);
 //     v.z = clamp(v.z);
@@ -505,7 +505,7 @@ namespace barney {
 
 // #if 1
   struct ToneMap {
-    float4 *color;
+    vec4f *color;
     vec2i numPixels;
     
     template<typename CI>
@@ -517,7 +517,7 @@ namespace barney {
       if (iy >= numPixels.y) return;
       int idx = ix+numPixels.x*iy;
       
-      float4 v = color[idx];
+      vec4f v = color[idx];
 #if 0
       v.x = linear_to_srgb(v.x);
       v.y = linear_to_srgb(v.y);
@@ -535,7 +535,7 @@ namespace barney {
     }
   };
 // #else
-//   __global__ void toneMap(float4 *color, vec2i numPixels)
+//   __global__ void toneMap(vec4f *color, vec2i numPixels)
 //   {
 //     int ix = threadIdx.x+blockIdx.x*blockDim.x;
 //     if (ix >= numPixels.x) return;
@@ -543,7 +543,7 @@ namespace barney {
 //     if (iy >= numPixels.y) return;
 //     int idx = ix+numPixels.x*iy;
 
-//     float4 v = color[idx];
+//     vec4f v = color[idx];
 // #if 0
 //     v.x = linear_to_srgb(v.x);
 //     v.y = linear_to_srgb(v.y);
@@ -751,9 +751,9 @@ namespace barney {
     case BN_FLOAT4: 
     case BN_FLOAT4_RGBA: {
       device->rtc->copy(hostPtr,denoisedColor,
-                        numPixels.x*numPixels.y*sizeof(float4));
+                        numPixels.x*numPixels.y*sizeof(vec4f));
       // BARNEY_CUDA_CALL(Memcpy(hostPtr,denoisedColor,
-      //                         numPixels.x*numPixels.y*sizeof(float4),
+      //                         numPixels.x*numPixels.y*sizeof(vec4f),
       //                         cudaMemcpyDefault));
       // BARNEY_CUDA_SYNC_CHECK();
     } break;
@@ -823,7 +823,7 @@ namespace barney {
     if (isOwner) {
       auto rtc = getDenoiserDevice()->rtc;
       int np = numPixels.x*numPixels.y;
-      denoisedColor = (float4*)rtc->alloc(np*sizeof(*denoisedColor));
+      denoisedColor = (vec4f*)rtc->alloc(np*sizeof(*denoisedColor));
       linearDepth   = (float *)rtc->alloc(np*sizeof(*linearDepth));
       linearColor   = (vec3f *)rtc->alloc(np*sizeof(*linearColor));
       linearAlpha   = (float *)rtc->alloc(np*sizeof(*linearAlpha));

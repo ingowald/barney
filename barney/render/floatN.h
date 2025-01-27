@@ -37,6 +37,31 @@
 #define one_over_pi (float(1.f/M_PI))
 #define two_pi (float(2.f*M_PI))
 
+
+namespace barney {
+  namespace render {
+    using ::isnan;
+
+    inline __both__ float sqr(float f) { return f*f; }
+    inline __both__ float cos2sin(const float f) { return sqrtf(max(0.f, 1.f - sqr(f))); }
+    inline __both__ float sin2cos(const float f) { return cos2sin(f); }
+    inline __both__ float saturate(float f) { return max(0.f,min(f,1.f)); }
+    inline __both__ float lerp_r(float a, float b, float factor) { return (1.f-factor)*a+factor*b; }
+
+    inline __both__ vec3f lerp_r(vec3f a, vec3f b, vec3f factor) { return (1.f-factor)*a+factor*b; }
+
+    inline __both__ float lerp_l(float factor, float a, float b) { return (1.f-factor)*a+factor*b; }
+    inline __both__ vec3f lerp_l(vec3f factor, vec3f a, vec3f b) { return (1.f-factor)*a+factor*b; }
+
+
+
+    inline __both__ vec3f neg(vec3f v) { return vec3f(-v.x,-v.y,-v.z); }
+    
+  }
+}
+
+
+#if 0
 namespace barney {
   namespace render {
     using ::isnan;
@@ -173,3 +198,4 @@ namespace barney {
     
   }
 }
+#endif

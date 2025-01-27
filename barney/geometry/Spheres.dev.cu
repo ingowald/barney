@@ -124,8 +124,8 @@ namespace barney {
       };
       self.setHitAttributes(hitData,interpolator,ray.dbg);
 
-      // if (ray.dbg)
-      //   printf("HIT SPHERES %i\n",self.materialID);
+      if (ray.dbg)
+        printf("HIT SPHERES %i\n",self.materialID);
       const DeviceMaterial &material
         = OptixGlobals::get(rt).materials[self.materialID];
       material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);

@@ -44,14 +44,14 @@ namespace barney {
       if (ix >= textureDims.x) return;
       if (iy >= textureDims.y) return;
         
-      auto importance = [&](float4 v)->float
+      auto importance = [&](vec4f v)->float
       { return max(max(v.x,v.y),v.z); };
         
       float weight = 0.f;
       for (int iiy=0;iiy<=2;iiy++)
         for (int iix=0;iix<=2;iix++) {
-          float4 fromTex
-            = rtc::tex2D<float4>(texture,
+          vec4f fromTex
+            = rtc::tex2D<vec4f>(texture,
                                  (ix+iix*.5f)/(textureDims.x),
                                  (iy+iiy*.5f)/(textureDims.y));
           weight = max(weight,importance(fromTex));

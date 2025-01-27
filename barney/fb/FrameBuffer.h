@@ -90,7 +90,7 @@ namespace barney {
         generate exactly this format, so the compressed bnFrameBufferRead()
         can then just copy from this format */
 
-    float4 *denoisedColor = 0;
+    vec4f *denoisedColor = 0;
     
     vec3f *linearColor = 0;
     /*! linear depth buffer, in array-(not tiled) order, after
