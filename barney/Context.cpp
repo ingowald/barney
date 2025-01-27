@@ -78,22 +78,8 @@ namespace barney {
         allDevices.push_back(device);
         dg.gpuIDs.push_back(gpuID);
       }
-      PING;
       dg.devices
         = std::make_shared<DevGroup>(slotDevices,allDevices.size());
-      PRINT(dg.devices);
-      PRINT(dg.devices->size());
-      // dg.devGroup = std::make_shared
-      //   <DevGroup>(lmsIdx,
-      //              contextRanks,numSlots*gpusPerSlot,
-      //              dg.gpuIDs,
-      //              globalIndex*numSlots+lmsIdx,
-      //              globalIndexStep*numSlots);
-      // for (auto dev : dg.devGroup->devices) {
-      //   devices.push_back(std::make_shared<DeviceContext>(dev));
-      //   devices.push_back(dev); 
-      // }
-      
     }
     this->devices = std::make_shared<DevGroup>(allDevices,allDevices.size());
 
