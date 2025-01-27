@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -22,24 +22,12 @@ namespace barney {
 
     AnariPBR::AnariPBR(SlotContext *context)
       : HostMaterial(context)
-    {
-      PING; PRINT(context);
-      PRINT(this->context);
-      PRINT(((Object*)this)->context);
-    }
+    {}
     
     DeviceMaterial AnariPBR::getDD(Device *device) 
     {
       DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariPBR;
-      // baseColor .make(dd.anariPBR.baseColor, deviceID);
-      // emission  .make(dd.anariPBR.emission,  deviceID);
-      // metallic  .make(dd.anariPBR.metallic,  deviceID);
-      // opacity   .make(dd.anariPBR.opacity,   deviceID);
-      // roughness .make(dd.anariPBR.roughness, deviceID);
-      // ior       .make(dd.anariPBR.ior,       deviceID);
-
-      // transmission.make(dd.anariPBR.transmission,deviceID);
 
       dd.anariPBR.baseColor    = baseColor.getDD(device);
       dd.anariPBR.emission     = emission.getDD(device);

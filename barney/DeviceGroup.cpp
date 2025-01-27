@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -21,12 +21,9 @@
 
 namespace barney {
 
-  // extern "C" char traceRays_ptx[];
-
   GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
     : device(device)
-  {
-  }
+  {}
   
   rtc::GeomType *GeomTypeRegistry::get(const std::string &name,
                                        GeomTypeCreationFct callBack)
@@ -37,46 +34,16 @@ namespace barney {
     return geomTypes[name];
   }
 
-  
-  // Device::Device(rtc::Device *rtc,
-  //                int contextRank,
-  //                int contextSize,
-  //                // int cudaID,
-  //                // int owlID,
-  //                int globalIndex,
-  //                int globalIndexStep)
-  //   : contextRank(contextRank),
-  //     contextSize(contextSize),
-  //     // cudaID(cudaID),
-  //     // owlID(owlID),
-  //     rtc(rtc),
-  //     // launchStream(devGroup?owlContextGetStream(devGroup->owl,owlID):0),
-  //     globalIndex(globalIndex),
-  //     globalIndexStep(globalIndexStep),
-  //     geomTypes(rtc)
-  // {
-  // }
-
   void Device::syncPipelineAndSBT()
   {
     if (programsDirty) {
       if (Context::logging())
-        std::cout << "rebuilding owl programs and pipeline..." << std::endl;
-      // owlBuildPrograms(owl);
-      // owlBuildPipeline(owl);
-      // for (auto device : devices)
-      //   device->rtc->buildPipeline();
-      // devGroup->buildPipeline();
+        std::cout << "rebuilding ray tracing programs and pipeline..." << std::endl;
       rtc->buildPipeline();
       programsDirty = false;
     }
     if (sbtDirty) {
-      // std::cout << "rebuilding owl sbt..." << std::endl;
-      // for (auto device : devices)
-      //   device->rtc->buildSBT();
       rtc->buildSBT();
-      // devGroup->buildSBT();
-      // owlBuildSBT(owl);
       sbtDirty = false;
     }
   }

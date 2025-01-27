@@ -45,7 +45,6 @@ namespace barney {
 #endif
     if (type == "cylinders")
       return std::make_shared<Cylinders>(context);
-    PING;
     if (type == "capsules")
       return std::make_shared<Capsules>(context);
     if (type == "triangles")
