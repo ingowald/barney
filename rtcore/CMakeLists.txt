@@ -101,6 +101,7 @@ if (BARNEY_BACKEND_EMBREE)
     embree/GeomType.cpp
     embree/Geom.cpp
     embree/Triangles.cpp
+    embree/UserGeom.cpp
     embree/Group.cpp
     )
   target_link_libraries(barney_rtc_embree PUBLIC

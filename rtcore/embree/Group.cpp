@@ -69,27 +69,31 @@ namespace barney {
       ti->objectToWorldXfm = &ig->xfms[instID];
       ti->worldToObjectXfm = &ig->inverseXfms[instID];
       
-      ti->isec_t = INFINITY;
       UserGeomType *type = (UserGeomType *)user->type;
-      if (ti->isec_t < INFINITY) {
-        float save_t = ti->embreeRay->tfar;
-        ti->embreeRay->tfar = ti->isec_t;
-        ti->ignoreThisHit = false;
-        if (type->ah)
-          type->ah(*ti);
-        if (!ti->ignoreThisHit) {
-          // SAVE this hit
-          rayHit->hit.primID    = ti->primID;
-          rayHit->hit.geomID    = ti->geomID;
-          rayHit->hit.instID[0] = ti->instID;
-          // printf("NOT ignoring hit - saving .... %i:%i:%i\n",
-          //        rayHit->hit.instID[0],
-          //        rayHit->hit.geomID,
-          //        rayHit->hit.primID);
-          args->valid[0] = -1;
-        } else {
-          ti->embreeRay->tfar = save_t;
-          args->valid[0] = 0;
+
+      if (type->intersect) {
+        ti->isec_t = INFINITY;
+        type->intersect(*ti);
+        if (ti->isec_t < INFINITY) {
+          float save_t = ti->embreeRay->tfar;
+          ti->embreeRay->tfar = ti->isec_t;
+          ti->ignoreThisHit = false;
+          if (type->ah)
+            type->ah(*ti);
+          if (!ti->ignoreThisHit) {
+            // SAVE this hit
+            rayHit->hit.primID    = ti->primID;
+            rayHit->hit.geomID    = ti->geomID;
+            rayHit->hit.instID[0] = ti->instID;
+            // printf("NOT ignoring hit - saving .... %i:%i:%i\n",
+            //        rayHit->hit.instID[0],
+            //        rayHit->hit.geomID,
+            //        rayHit->hit.primID);
+            args->valid[0] = -1;
+          } else {
+            ti->embreeRay->tfar = save_t;
+            args->valid[0] = 0;
+          }
         }
       }
     }
@@ -116,6 +120,7 @@ namespace barney {
         RTCGeometry eg
           = rtcNewGeometry(device->embreeDevice,RTC_GEOMETRY_TYPE_USER);
 
+        PING; PRINT(user->primCount);
         rtcSetGeometryUserPrimitiveCount(eg,user->primCount);
         rtcSetGeometryUserData(eg,user);
         rtcSetGeometryBoundsFunction(eg,virtualBoundsFunc,user);

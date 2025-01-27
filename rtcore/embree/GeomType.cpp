@@ -66,7 +66,8 @@ namespace barney {
     { return new TrianglesGeom(this); }
 
     rtc::Geom *UserGeomType::createGeom()
-    { return new UserGeom(this); }
+    { PING;
+      return new UserGeom(this); }
     
   }
 }

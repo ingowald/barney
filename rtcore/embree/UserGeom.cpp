@@ -26,6 +26,7 @@ namespace barney {
     /*! only for user geoms */
     void UserGeom::setPrimCount(int primCount)
     {
+      PING; PRINT(this); PRINT(primCount);
       this->primCount = primCount;
     }
     
