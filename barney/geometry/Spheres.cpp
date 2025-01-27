@@ -53,33 +53,17 @@ namespace barney {
         geom->setPrimCount(numOrigins);
         pld->userGeoms.push_back(geom);
       }
-      // OWLGeom geom = userGeoms[0];
-      // rtc::Geom *geom = pld->userGeoms[0];
-    }
-    
-    Geometry::commit();
-    
-    for (auto device : *devices) {
-      PLD *pld = getPLD(device);
-      auto rtc = device->rtc;
+      rtc::Geom *geom = pld->userGeoms[0];
+      
       Spheres::DD dd;
       Geometry::writeDD(dd,device);
-      dd.origins = (vec3f*)origins->getDD(device);
-      dd.radii   = (float*)radii->getDD(device);
-      dd.colors  = (vec3f*)colors->getDD(device);
+      dd.origins = (vec3f*)(origins->getDD(device));
+      dd.radii   = (float*)(radii?radii->getDD(device):0);
+      dd.colors  = (vec3f*)(colors?colors->getDD(device):0);
       dd.defaultRadius = defaultRadius;
       // done:
-      pld->userGeoms[0]->setDD(&dd);
+      geom->setDD(&dd);
     }
-    // owlGeomSet1f(geom,"defaultRadius",defaultRadius);
-    // owlGeomSetBuffer(geom,"origins",origins?origins->owl:0);
-    // owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
-    // owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
-    // int numOrigins = origins->count;
-    // owlGeomSetPrimCount(geom,numOrigins);
-    
-    // setAttributesOn(geom);
-    // getMaterial()->setDeviceDataOn(geom);
   } 
 
   bool Spheres::set1f(const std::string &member, const float &value)

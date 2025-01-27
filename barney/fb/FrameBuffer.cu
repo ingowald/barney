@@ -394,8 +394,6 @@ namespace barney {
     : SlottedObject(context,devices),
       isOwner(isOwner)
   {
-    PING; PRINT(devices->numLogical);
-    PRINT(devices->size());
     perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
       getPLD(device)->tiledFB

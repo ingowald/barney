@@ -27,9 +27,7 @@ namespace barney {
     void virtualBoundsFunc(const struct RTCBoundsFunctionArguments* args)
     {
       TraceInterface *ti = /* just need the type*/0;//TraceInterface::get();
-      // TraceInterface *ti = (TraceInterface *)args->context;
       const UserGeom *geom = (const UserGeom *)args->geometryUserPtr;
-      // const Sphere* spheres = (const Sphere*) args->geometryUserPtr;
       const void *geomData = (const void *)geom->programData.data();
       int primID = args->primID;
       box3f bounds;
@@ -54,11 +52,9 @@ namespace barney {
       unsigned int primID = args->primID;
       unsigned int geomID = args->geomID;
       int instID = args->context->instID[0];
-      // TraceInterface *ti = embree::TraceInterface::get();
       TraceInterface *ti = (TraceInterface *)args->context;
       ti->primID = primID;
       ti->geomID = geomID;
-      // UserGeom *user = (UserGeom *)group->geoms[geomID];
       ti->instID = instID;
       ti->geomData = user->programData.data();
       ti->embreeRay = &rayHit->ray;
@@ -70,30 +66,23 @@ namespace barney {
       ti->worldToObjectXfm = &ig->inverseXfms[instID];
       
       UserGeomType *type = (UserGeomType *)user->type;
-
-      if (type->intersect) {
-        ti->isec_t = INFINITY;
-        type->intersect(*ti);
-        if (ti->isec_t < INFINITY) {
-          float save_t = ti->embreeRay->tfar;
-          ti->embreeRay->tfar = ti->isec_t;
-          ti->ignoreThisHit = false;
-          if (type->ah)
-            type->ah(*ti);
-          if (!ti->ignoreThisHit) {
-            // SAVE this hit
-            rayHit->hit.primID    = ti->primID;
-            rayHit->hit.geomID    = ti->geomID;
-            rayHit->hit.instID[0] = ti->instID;
-            // printf("NOT ignoring hit - saving .... %i:%i:%i\n",
-            //        rayHit->hit.instID[0],
-            //        rayHit->hit.geomID,
-            //        rayHit->hit.primID);
-            args->valid[0] = -1;
-          } else {
-            ti->embreeRay->tfar = save_t;
-            args->valid[0] = 0;
-          }
+      ti->isec_t = INFINITY;
+      type->intersect(*ti);
+      if (ti->isec_t < INFINITY) {
+        float save_t = ti->embreeRay->tfar;
+        ti->embreeRay->tfar = ti->isec_t;
+        ti->ignoreThisHit = false;
+        if (type->ah)
+          type->ah(*ti);
+        if (!ti->ignoreThisHit) {
+          // "accept" this hit
+          rayHit->hit.primID    = ti->primID;
+          rayHit->hit.geomID    = ti->geomID;
+          rayHit->hit.instID[0] = ti->instID;
+          args->valid[0] = -1;
+        } else {
+          ti->embreeRay->tfar = save_t;
+          args->valid[0] = 0;
         }
       }
     }
@@ -120,7 +109,6 @@ namespace barney {
         RTCGeometry eg
           = rtcNewGeometry(device->embreeDevice,RTC_GEOMETRY_TYPE_USER);
 
-        PING; PRINT(user->primCount);
         rtcSetGeometryUserPrimitiveCount(eg,user->primCount);
         rtcSetGeometryUserData(eg,user);
         rtcSetGeometryBoundsFunction(eg,virtualBoundsFunc,user);

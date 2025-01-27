@@ -25,13 +25,13 @@ RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 namespace barney {
 
   using namespace barney::render;
-  inline __device__
+  inline __both__
   float safe_eps(float f, vec3f v)
   {
     return max(f,1e-6f*reduce_max(abs(v)));
   }
 
-  inline __device__
+  inline __both__
   float safe_eps(float f, float v)
   {
     return max(f,1e-6f*fabsf(v));
@@ -54,10 +54,9 @@ namespace barney {
       bounds.upper = origin + radius;
     }
     
-    // OPTIX_CLOSEST_HIT_PROGRAM(SpheresCH)()
     template<typename RTBackend>
     static inline __both__
-    void closest_hit(const RTBackend &rt)
+    void closest_hit(RTBackend &rt)
     {
       auto &ray = *(Ray*)rt.getPRD();
       auto &self = *(Spheres::DD*)rt.getProgramData();
@@ -146,7 +145,7 @@ namespace barney {
       const int primID = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
       const auto &self = *(const Spheres::DD*)rt.getProgramData();
       // = owl::getProgramData<Spheres::DD>();
-      auto &ray = owl::getPRD<Ray>();
+      auto &ray = *(Ray*)rt.getPRD();//owl::getPRD<Ray>();
       
       vec3f center = self.origins[primID];
       float radius = self.radii?self.radii[primID]:self.defaultRadius;

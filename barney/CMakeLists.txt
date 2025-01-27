@@ -120,6 +120,7 @@ embed_ptx(
 set(BARNEY_SOURCES
   geometry/Triangles.dev.cu
   geometry/Capsules.dev.cu
+  geometry/Spheres.dev.cu
 
   
   # *structured* volumes
@@ -128,14 +129,14 @@ set(BARNEY_SOURCES
     # actual geometry types
   geometry/Geometry.h
   geometry/Geometry.cpp
-  geometry/Spheres.h
-  geometry/Spheres.cpp
   geometry/Triangles.h
   geometry/Triangles.cpp
   geometry/Cylinders.h
   geometry/Cylinders.cpp
   geometry/Capsules.h
   geometry/Capsules.cpp
+  geometry/Spheres.h
+  geometry/Spheres.cpp
   #  geometry/Cones.h
   #  geometry/Cones.cpp
   # volume data 
@@ -280,28 +281,21 @@ CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
 add_library(barney SHARED
   ${BARNEY_SOURCES}
   )
-if (OFF)
-  target_link_libraries(barney PUBLIC
-    $<BUILD_INTERFACE:barney_rtc>
-    $<BUILD_INTERFACE:barney-spheres-ptx>
-    )
-else()
-  target_link_libraries(barney PUBLIC
-    #  barney_config
-    #  barney_rtc
-    #  ${BARNEY_STATIC_DEPENDENCIES}
-    $<BUILD_INTERFACE:barney_config>
-    $<BUILD_INTERFACE:barney_rtc_common>
-    $<BUILD_INTERFACE:barney_rtc_optix>
-    $<BUILD_INTERFACE:barney_rtc_cuda_common>
-    $<BUILD_INTERFACE:barney_rtc_embree>
-    #    $<BUILD_INTERFACE:barney_rtc>
-    $<BUILD_INTERFACE:barney-spheres-ptx>
-    $<BUILD_INTERFACE:barney-triangles-ptx>
-    $<BUILD_INTERFACE:barney-capsules-ptx>
-    $<BUILD_INTERFACE:barney-traceRays-ptx>
-    )
-endif()
+target_link_libraries(barney PUBLIC
+  #  barney_config
+  #  barney_rtc
+  #  ${BARNEY_STATIC_DEPENDENCIES}
+  $<BUILD_INTERFACE:barney_config>
+  $<BUILD_INTERFACE:barney_rtc_common>
+  $<BUILD_INTERFACE:barney_rtc_optix>
+  $<BUILD_INTERFACE:barney_rtc_cuda_common>
+  $<BUILD_INTERFACE:barney_rtc_embree>
+  #    $<BUILD_INTERFACE:barney_rtc>
+  $<BUILD_INTERFACE:barney-triangles-ptx>
+  $<BUILD_INTERFACE:barney-capsules-ptx>
+  $<BUILD_INTERFACE:barney-spheres-ptx>
+  $<BUILD_INTERFACE:barney-traceRays-ptx>
+  )
 set_target_properties(barney
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
@@ -336,47 +330,11 @@ if (BARNEY_MPI)
     )
   target_link_libraries(barney_mpi PUBLIC
     barney
-#    barney_config
-#    barney_rtc
-#    ${BARNEY_STATIC_DEPENDENCIES}
-
-#    $<BUILD_INTERFACE:barney_config>
-#    $<BUILD_INTERFACE:barney_rtc>
-#    $<BUILD_INTERFACE:barney-spheres-ptx>
-
-    #    owl::owl_static
-#    ${CUBQL_LIB}
-
-
-#MPI::MPI_CXX
     $<BUILD_INTERFACE:MPI::MPI_CXX>
-
-
-
-    #    barney-Spheres-ptx
-#    barney-StructuredData-ptx
-#    barney-cylinders-ptx
-#    barney-capsules-ptx
-#    barney-triangles-ptx
-#    barney-traceRays-ptx  
-#    barney-UMeshRTXObjectSpace-ptx
-#    barney-UMeshMC-ptx
-#    barney-AWT-ptx  
-#    barney-BlockStructuredMC-ptx
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
   set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
 
 
-
-#install(TARGETS cuBQL_cuda_float3 owl barney barney_mpi
-#  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-#  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#)
-
-# ------------------------------------------------------------------
-# cmake package install
-# ------------------------------------------------------------------
 
