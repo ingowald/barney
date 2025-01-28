@@ -18,21 +18,15 @@
 
 namespace barney {
 
-  const std::vector<Device::SP> &UMeshCUBQLSampler::Host::getDevices()
+  UMeshCUBQLSampler::DD UMeshCUBQLSampler::getDD(Device *device)
   {
-    assert(mesh);
-    return mesh->getDevices();
+    BARNEY_NYI();
   }
-
   
-  DevGroup *UMeshCUBQLSampler::Host::getDevGroup()
+  void UMeshCUBQLSampler::build(bool full_rebuild)
   {
-    assert(mesh);
-    return mesh->getDevGroup();
-  }
-
-  void UMeshCUBQLSampler::Host::build(bool full_rebuild)
-  {
+    BARNEY_NYI();
+#if 0
     if (bvhNodesBuffer) {
       return;
     }
@@ -108,6 +102,7 @@ namespace barney {
     std::cout << OWL_TERMINAL_LIGHT_GREEN
               << "#bn.umesh: cubql bvh built ..."
               << OWL_TERMINAL_DEFAULT << std::endl;
+#endif
   }
   
 }

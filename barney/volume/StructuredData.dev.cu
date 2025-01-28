@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -22,27 +22,6 @@ RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
 namespace barney {
 
-  // struct Structured_MCRTX_Programs {
-  //   template<typename RTBackend>
-  //   static inline __both__
-  //   void bounds(const RTBackend &rt,
-  //               const void *geomData,
-  //               owl::common::box3f &bounds,  
-  //               const int32_t primID)
-  //   {printf("todo\n");}
-  //   template<typename RTBackend>
-  //   static inline __both__
-  //   void closest_hit(const RTBackend &rt)
-  //   {printf("todo\n");}
-  //   template<typename RTBackend>
-  //   static inline __both__
-  //   void any_hit(const RTBackend &rt)
-  //   {printf("todo\n");}
-  //   template<typename RTBackend>
-  //   static inline __both__
-  //   void intersect(const RTBackend &rt)
-  //   {printf("todo\n");}
-  // };
   struct MCAccel_Structured_Programs {
     
     template<typename TraceInterface>

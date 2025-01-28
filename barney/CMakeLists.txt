@@ -21,17 +21,9 @@ target_compile_definitions(barney_config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHO
 
 # -------------------------------------------------------
 option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
-#option(BARNEY_DISABLE_OIDN "explicitly DISable OIDN?" OFF)
 
 if (BARNEY_DISABLE_DENOISING)
   target_compile_definitions(barney_config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
-#elseif (NOT BARNEY_DISABLE_OIDN)
-#  find_package(OpenImageDenoise)
-#  if (OpenImageDenoise_FOUND)
-#    message(INFO "Found OpenImageDenoise (OIDN), enabling it")
-#    target_compile_definitions(barney_config INTERFACE -DBARNEY_HAVE_OIDN=1)
-#    target_link_libraries(barney_config INTERFACE OpenImageDenoise)
-#  endif()
 endif()
     
 # -------------------------------------------------------
@@ -120,12 +112,20 @@ set(BARNEY_SOURCES
   geometry/Triangles.dev.cu
   geometry/Capsules.dev.cu
   geometry/Spheres.dev.cu
-  volume/StructuredData.dev.cu
+  
+  # unstructured meshes
+  umesh/common/UMeshField.h
+  umesh/common/UMeshField.cu
+  umesh/mc/UMeshCUBQLSampler.h
+  umesh/mc/UMeshCUBQLSampler.cu
+  umesh/mc/UMeshMC.dev.cu
   
   # *structured* volumes
   volume/StructuredData.h
   volume/StructuredData.cu
-    # actual geometry types
+  volume/StructuredData.dev.cu
+  
+  # actual geometry types
   geometry/Geometry.h
   geometry/Geometry.cpp
   geometry/Triangles.h

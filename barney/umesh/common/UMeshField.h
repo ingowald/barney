@@ -22,6 +22,7 @@
    logically be part of this file, but kept in separate file because
    these were mostly imported from oepnvkl */
 #include "barney/umesh/common/ElementIntersection.h"
+#include "barney/volume/MCAccelerator.h"
 
 namespace barney {
 
@@ -52,7 +53,6 @@ namespace barney {
         all device-side pointers and function to access this field and
         sample/evaluate its elemnets */
     struct DD : public ScalarField::DD {
-      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
       
       inline __both__ box4f eltBounds(Element element) const;
       inline __both__ box4f tetBounds(int primID) const;
@@ -99,43 +99,45 @@ namespace barney {
       int               numElements;
     };
 
-    // // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    // void setVariables(OWLGeom geom) override;
-    
     /*! build *initial* macro-cell grid (ie, the scalar field min/max
       ranges, but not yet the majorants) over a umesh */
     void buildInitialMacroCells(MCGrid &grid);
 
-    void buildMCs(MCGrid &macroCells) override;
-    
     /*! computes, on specified device, the bounding boxes and - if
       d_primRanges is non-null - the primitmives ranges. d_primBounds
       and d_primRanges (if non-null) must be pre-allocated and
       writeaable on specified device */
-    void computeElementBBs(Device *device,
-                           box3f *d_primBounds,
+    void computeElementBBs(Device  *device,
+                           box3f   *d_primBounds,
                            range1f *d_primRanges=0);
     
-    UMeshField(Context *context, int slot,
+    UMeshField(Context *context,
+               const DevGroup::SP   &devices,
                std::vector<vec4f>   &vertices,
                std::vector<int>     &indices,
                std::vector<Element> &elements,
                const box3f &domain);
 
+    /*! create from pure array-of-scalars represenation */
+    static SP create(Context            *context,
+                     const DevGroup::SP &devices,
+                     const vec4f        *_vertices,
+                     int                 numVertices,
+                     const int          *_indices,
+                     int                 numIndices,
+                     const int          *elementOffsets,
+                     int                 numElements,
+                     const box3f        &domain);
+    
     DD getDD(Device *device);
 
-    static ScalarField::SP create(Context *context, int slot,
-                                  const vec4f   *vertices, int numVertices,
-                                  const int     *indices,  int numIndices,
-                                  const int     *elementOffsets,
-                                  int      numElements,
-                                  const box3f &domain);
-    
+    void buildMCs(MCGrid &macroCells) override;
+
     VolumeAccel::SP createAccel(Volume *volume) override;
 
     /*! returns part of the string used to find the optix device
         programs that operate on this type */
-    std::string getTypeString() const { return "UMesh"; };
+    static std::string typeName() { return "UMesh"; };
     
     std::vector<vec4f>      vertices;
     std::vector<int>        indices;

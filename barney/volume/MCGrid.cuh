@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,6 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+/*! \file MCGrid.cuh Helper functions for building macro-cell grids,
+  basically to allow for atomic min/max updates when 'rasterizing'
+  primitives into a grid */
 #pragma once
 
 #include "barney/volume/MCGrid.h"
@@ -21,7 +24,57 @@
 
 namespace barney {
 
-  inline __device__
+  // -----------------------------------------------------------------------------
+  // INTERFACE
+  // -----------------------------------------------------------------------------
+
+  /*! performs an atomin float min on given address, in device specific way */
+  inline __both__
+  float fatomicMin(float *addr, float value);
+  inline __both__
+
+  /*! performs an atomin float max on given address, in device specific way */
+  float fatomicMax(float *addr, float value);
+  inline __both__
+  int project(float f,
+              const interval<float> range,
+              int dim);
+
+  /*! projects a given position into a grid defined by world-space
+      'bounds' and dimensions 'dims', and return the cell that this
+      world-sapce point projects to */
+  inline __both__
+  vec3i project(const vec3f &pos,
+                const box3f &bounds,
+                const vec3i &dims);
+
+  /*! rasters a given 4D-(space-and-value)-primitive into the given
+      grid; computing all grid cells that this prim covers, and doing,
+      for each cell, an atomin min/max based on the prim's value range
+      (its min/max .w values) */
+  inline __both__
+  void rasterBox(MCGrid::DD grid,
+                 const box3f worldBounds,
+                 const box4f primBounds4);
+
+  // -----------------------------------------------------------------------------
+  // IMPLEMENTATION
+  // -----------------------------------------------------------------------------
+
+#if __CUDA_ARCH__
+  using ::atomicCAS;
+#else
+  inline uint32_t atomicCAS(uint32_t *ptr, uint32_t _expected, uint32_t newValue)
+  {
+    uint32_t expected = _expected;
+    ((std::atomic<uint32_t>*)ptr)->compare_exchange_strong(expected,newValue);
+    return expected;
+  }
+  inline uint32_t __float_as_int(float f)
+  { return (const uint32_t &)f; }
+#endif
+  
+  inline __both__
   float fatomicMin(float *addr, float value)
   {
     float old = *addr, assumed;
@@ -35,7 +88,7 @@ namespace barney {
     return old;
   }
 
-  inline __device__
+  inline __both__
   float fatomicMax(float *addr, float value)
   {
     float old = *addr, assumed;
@@ -49,7 +102,7 @@ namespace barney {
     return old;
   }
   
-  inline __device__
+  inline __both__
   int project(float f,
               const interval<float> range,
               int dim)
@@ -57,7 +110,7 @@ namespace barney {
     return max(0,min(dim-1,int(dim*(f-range.lower)/(range.upper-range.lower))));
   }
 
-  inline __device__
+  inline __both__
   vec3i project(const vec3f &pos,
                 const box3f &bounds,
                 const vec3i &dims)
@@ -67,11 +120,10 @@ namespace barney {
                  project(pos.z,{bounds.lower.z,bounds.upper.z},dims.z));
   }
 
-  inline __device__
+  inline __both__
   void rasterBox(MCGrid::DD grid,
                  const box3f worldBounds,
-                 const box4f primBounds4,
-                 bool dbg=false)
+                 const box4f primBounds4)
   {
     box3f pb = box3f(vec3f(primBounds4.lower),
                      vec3f(primBounds4.upper));
@@ -98,7 +150,7 @@ namespace barney {
         }
   }
 
-  inline __device__
+  inline __both__
   void rasterBox(MCGrid::DD grid,
                  const box4f primBounds4)
   {

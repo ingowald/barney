@@ -14,70 +14,56 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-/*! \file UMeshCUBQLMC.dev.cu implements the DDA and RTX traversers for a umesh
-  scalar field with cubql sampler and macro cell accel */
+/*! \file UMeshMC.dev.cu implements a macro-cell accelerated
+    unstructured mesh data type.
+
+    This particular voluem type:
+
+    - uses cubql to accelerate point-in-element queries (for the
+      scalar field evaluation)
+
+    - uses macro cells and DDA traversal for domain traversal
+*/
 
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/DDA.h"
-// #include <owl/owl_device.h>
 
 RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
 namespace barney {
-#if 0
-  // ==================================================================
-  //
-  // UMesh Data, Macro-Cell (MC) accelerator, and traversal
-  // via an RTX BVH built over active macro-cells
-  //
-  // ================================================================== 
 
-  OPTIX_BOUNDS_PROGRAM(UMesh_CUBQL_MCRTX_Bounds)(const void *geomData,
-                                                 owl::common::box3f &bounds,
-                                                 const int32_t primID)
-  {
-    MCRTXVolumeAccel<UMeshCUBQLSampler>::boundsProg
-      (geomData,bounds,primID);
-  }
+  struct UMeshMC_Programs {
+    
+    template<typename TraceInterface>
+    static inline __both__
+    void bounds(const TraceInterface &ti,
+                const void *geomData,
+                owl::common::box3f &bounds,  
+                const int32_t primID)
+    {
+      MCVolumeAccel<UMeshCUBQLSampler>::boundsProg(ti,geomData,bounds,primID);
+    }
+    
+    template<typename TraceInterface>
+    static inline __both__
+    void intersect(TraceInterface &ti)
+    {
+      MCVolumeAccel<UMeshCUBQLSampler>::isProg(ti);
+    }
+    
+    template<typename TraceInterface>
+    static inline __both__
+    void closest_hit(TraceInterface &ti)
+    { /* nothing to do */ }
+    
+    template<typename TraceInterface>
+    static inline __both__
+    void any_hit(TraceInterface &ti)
+    { /* nothing to do */ }
+  };
 
-  OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCRTX_Isec)()
-  {
-    MCRTXVolumeAccel<UMeshCUBQLSampler>::isProg();
-  }
-  
-  OPTIX_CLOSEST_HIT_PROGRAM(UMesh_CUBQL_MCRTX_CH)()
-  {
-    MCRTXVolumeAccel<UMeshCUBQLSampler>::chProg();
-  }
-  
-
-
-
-
-  // ==================================================================
-  //
-  // UMesh Data, Macro-Cell (MC) accelerator, and cuda-DDA
-  // traversal
-  //
-  // ================================================================== 
-
-  OPTIX_BOUNDS_PROGRAM(UMesh_CUBQL_MCDDA_Bounds)(const void *geomData,
-                                                 owl::common::box3f &bounds,
-                                                 const int32_t primID)
-  {
-    MCDDAVolumeAccel<UMeshCUBQLSampler>::boundsProg(geomData,bounds,primID);
-  }
-
-  OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCDDA_Isec)()
-  {
-    MCDDAVolumeAccel<UMeshCUBQLSampler>::isProg();
-  }
-  
-  OPTIX_CLOSEST_HIT_PROGRAM(UMesh_CUBQL_MCDDA_CH)()
-  {
-    MCDDAVolumeAccel<UMeshCUBQLSampler>::chProg();
-    /* nothing - already all set in isec */
-  }
-#endif  
 }
+
+RTC_DECLARE_USER_GEOM(UMeshMC,barney::UMeshMC_Programs);
+
 

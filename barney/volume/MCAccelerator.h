@@ -24,75 +24,13 @@
 namespace barney {
   using render::Ray;
   
-  /*! a volume accel that creates an OWL geometry in the barney render
-    graph; this is the base class that just defines the very concept
-    of having a OWL geom, variables, etc; the actual sampler, accel
-    struct, and traverser have to be added in derived classes */
-  // template<typename SFType>
-  // struct OWLVolumeAccel {
-  //   // /*! device-side data for this geom (this is what goes into the
-  //   //   SBT); derived classes may add additional fields */
-  //   // struct DD// : public VolumeAccel::DD<SFType>
-  //   // {
-  //   //   VolumeDD<SFType> volume;
-  //   //   /*! declares this class' optix/owl device variables */
-  //   //   // static void addVars(std::vector<OWLVarDecl> &vars, int base);
-  //   // };
-  //   /*! host-side code that implements the actual VolumeAccel */
-  //   struct Host : public VolumeAccel {
-  //     using Inherited = VolumeAccel;
-      
-  //     /* constuctor of host-side data */
-  //     Host(ScalarField *sf, Volume *volume);
-
-  //     UpdateMode updateMode() override
-  //     { return HAS_ITS_OWN_GROUP; }
-
-  //     // void writeDD(DD &dd, rtc::Device *device);
-  //     // DD getDD(rtc::Device *device) { DD dd; return dd; }
-        
-  //     /*! set owl variables for this accelerator - this is virutal so
-  //       derived classes can add their own */
-  //     // void setVariables(OWLGeom geom) override;
-      
-  //     void build(bool full_rebuild) override;
-      
-  //     /*! creates the actual OWL geometry object that contains the
-  //       prims that realize this volume accel. */
-  //     virtual rtc::Geom *createGeom(Device *device) = 0;
-
-  //     // /*! returns (part of) a string that allows to identify the
-  //     //     device-side optix intersect/ch/bounds/etc functions that
-  //     //     realize this geometry. Eg, if this accel uses macrocells,
-  //     //     and all the device-functions are named after a scheme
-  //     //     "<MyScalarType>_MC_<Bounds/Isec/CH/...>()" then this
-  //     //     function should ask the scalar field type to create
-  //     //     "<MyScalarType>", and append "_MC" to it */
-  //     virtual std::string getTypeString() const = 0;
-
-  //     // typename SFType::Host sampler;
-      
-  //     struct PLD {
-  //       rtc::Geom *geom  = 0;
-  //       rtc::Group *group = 0; 
-  //     };
-  //     PLD *getPLD(Device *device) 
-  //     { return &perLogical[device->contextRank]; } 
-  //     std::vector<PLD> perLogical;
-  //   };
-  // };
-  
   template<typename SFType>
-  struct MCVolumeAccel : public VolumeAccel //OWLVolumeAccel<SFType>
+  struct MCVolumeAccel : public VolumeAccel 
   {
-    struct DD // : public OWLVolumeAccel<SFType>::DD
+    struct DD 
     {
-      /*! declares this class' optix/owl device variables */
-      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
-      int beginSentinel = 0x1234;
       Volume::DD<SFType> volume;
       MCGrid::DD mcGrid;
-      int endSentinel = 0x5678;
     };
 
     static rtc::GeomType *createGeomType(rtc::Device *device);
@@ -102,7 +40,7 @@ namespace barney {
     
     struct PLD {
       rtc::Geom  *geom  = 0;
-      rtc::Group *group  = 0;
+      rtc::Group *group = 0;
     };
     PLD *getPLD(Device *device) 
     { return &perLogical[device->contextRank]; } 
