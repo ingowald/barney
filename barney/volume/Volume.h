@@ -34,44 +34,10 @@ namespace barney {
   typedef std::array<int,8> HexIndices;
 
   struct VolumeAccel {
-    /*! one particular problem of _volume_ accels is that due to
-        changes to the transfer function the number of 'valid'
-        (owl-)prims in a given group can change over successive
-        builds. one option to handle that is to always rebuild
-        everything form scratch, but that is expensive. Instead, we
-        have this function to allow a given volume to specify whether
-        it wants a full rebuild (either because it doesn't have nay
-        special pass for refitting, or because it's the first time
-        this thing is ever built, etc - UpdateMode::FULL_REBUILD), or
-        whether it is fine with refitting (UpdateMode::REFIT)). The
-        third update mode - "BUILD_THEN_REFIT" - allows a volume accel
-        to request a full rebuild _and_ a additional refit after that;
-        this is in order to allow enabling all prims in the initial
-        build, and then disabling all majorant-zero ones in a second
-        pass. 
-
-        Note: If any one of the voluems in a group request either
-        full_rebuild or build_then_refit, then all prims will have
-        their 'build(fullRebuild)' method called with rebuild==true;
-        if any one of the volumes in a group request either refit or
-        build_then_refit, then build will be called (possibly a second
-        time!) with fullRebuild==false. In particular, this does mean
-        that some geometries will have their build called twice - once
-        with fullRebuild true, once with false - even if _they_ have
-        not asked for that kind of pass */
-    typedef enum {
-      FULL_REBUILD,
-      BUILD_THEN_REFIT,
-      REFIT,
-      HAS_ITS_OWN_GROUP
-    } UpdateMode;
     
     typedef std::shared_ptr<VolumeAccel> SP;
 
     VolumeAccel(ScalarField *sf, Volume *volume);
-
-    virtual UpdateMode updateMode()
-    { return FULL_REBUILD; }
 
     virtual void build(bool full_rebuild) = 0;
 
@@ -128,8 +94,6 @@ namespace barney {
     std::string toString() const override
     { return "Volume{}"; }
 
-    VolumeAccel::UpdateMode updateMode() { return accel->updateMode(); }
-
     static SP create(ScalarField::SP sf)
     { return std::make_shared<Volume>(sf); }
     
@@ -148,6 +112,7 @@ namespace barney {
 
     struct PLD {
       std::vector<rtc::Group *> generatedGroups;
+      std::vector<rtc::Geom *>  generatedGeoms;
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;

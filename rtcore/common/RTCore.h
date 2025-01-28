@@ -517,6 +517,7 @@ namespace barney {
       // we _must_ be on the device, so this is a cuda teture
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       float f= ::tex3D<float>(texObj,x,y,z);
+      // printf("tex3d -> %f\n",f);
       return f;
       // return T{};
 #elif BARNEY_BACKEND_EMBREE

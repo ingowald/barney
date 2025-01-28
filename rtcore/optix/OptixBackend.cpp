@@ -97,7 +97,7 @@ namespace barney {
       : Geom(gt,geom)
     {}
     UserGeom::UserGeom(GeomType *gt,
-                                 OWLGeom geom)
+                       OWLGeom geom)
       : Geom(gt,geom)
     {}
     
@@ -210,6 +210,7 @@ namespace barney {
       
       const char *User_ptx
         = (const char *)rtc::getSymbol(typeName+"_ptx");
+
       OWLModule module = owlModuleCreate
         (device->owl,User_ptx);
       if (has_ch)

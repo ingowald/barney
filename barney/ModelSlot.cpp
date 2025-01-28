@@ -190,12 +190,10 @@ namespace barney {
           rtcGroups.push_back(groupPLD->triangleGeomGroup);
           rtcTransforms.push_back(instances.xfms[i]);
         }
-        for (auto volume : group->volumes) {
-          Volume::PLD *volumePLD = volume->getPLD(device);
-          for (auto gg : volumePLD->generatedGroups) {
-            rtcGroups.push_back(gg);
-            rtcTransforms.push_back(instances.xfms[i]);
-          }
+
+        for (auto group : groupPLD->volumeGroups) {
+          rtcGroups.push_back(group);
+          rtcTransforms.push_back(instances.xfms[i]);
         }
       }
   

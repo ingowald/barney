@@ -49,9 +49,6 @@ namespace barney {
           mesh(mesh)
       {}
 
-      UpdateMode updateMode() override
-      { return HAS_ITS_OWN_GROUP; }
-      
       /*! set owl variables for this accelerator - this is virutal so
         derived classes can add their own */
       // virtual void setVariables(OWLGeom geom)

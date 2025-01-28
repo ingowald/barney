@@ -62,6 +62,7 @@ namespace barney {
       std::vector<rtc::Geom *> triangleGeoms;
       std::vector<rtc::Geom *> userGeoms;
       std::vector<rtc::Geom *> volumeGeoms;
+      std::vector<rtc::Group *> volumeGroups;
       rtc::Group *userGeomGroup     = 0;
       rtc::Group *triangleGeomGroup = 0;
       rtc::Group *volumeGeomsGroup  = 0;

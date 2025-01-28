@@ -132,77 +132,63 @@ namespace barney {
     {
       bool needRefit = false;
       bool needRebuild = false;
-      std::vector<Volume *> ownGroupVolumes;
-      std::vector<Volume *> mergedGroupVolumes;
-      for (auto &volume : volumes) {
-        if (!volume) continue;
-        switch (volume->updateMode()) {
-        case VolumeAccel::FULL_REBUILD:
-          mergedGroupVolumes.push_back(volume.get());
-          needRebuild = true;
-          break;
-        case VolumeAccel::REFIT:
-          mergedGroupVolumes.push_back(volume.get());
-          needRefit = true;
-          break;
-        case VolumeAccel::BUILD_THEN_REFIT:
-          mergedGroupVolumes.push_back(volume.get());
-          needRebuild = true;
-          needRefit = true;
-          break;
-        case VolumeAccel::HAS_ITS_OWN_GROUP:
-          ownGroupVolumes.push_back(volume.get());
-          break;
-        default:
-          BARNEY_NYI();
+      
+      // ------------------------------------------------------------------
+      // clear all pld data
+      // ------------------------------------------------------------------
+      for (auto device : *devices) {
+        auto myPLD = getPLD(device);
+        auto rtc = device->rtc;
+        // if we have a volume geoms _group_, then it is _us_ that
+        // created this, and we have to free it.
+        if (myPLD->volumeGeomsGroup) {
+          rtc->freeGroup(myPLD->volumeGeomsGroup);
+          myPLD->volumeGeomsGroup = 0;
         }
-      }
-      if (needRebuild) {
-        // ------------------------------------------------------------------
-        // clear all pld data
-        // ------------------------------------------------------------------
-        for (auto device : *devices) {
-          auto myPLD = getPLD(device);
-          auto rtc = device->rtc;
-          if (myPLD->volumeGeomsGroup) {
-            // owlGroupRelease(volumeGeomsGroup);
-            rtc->freeGroup(myPLD->volumeGeomsGroup);
-            myPLD->volumeGeomsGroup = 0;
-          }
-          myPLD->volumeGeoms.clear();
-        }
-        // ------------------------------------------------------------------
-        // rebuidl the volumes themselves
-        // ------------------------------------------------------------------
-        for (auto volume : volumes)
-          if (volume)
-            volume->build(true);
-        // ------------------------------------------------------------------
-        // and rebuild our pld data
-        // ------------------------------------------------------------------
-        for (auto device : *devices) {
-          PLD *myPLD = getPLD(device);
-          auto rtc = device->rtc;
-          for (auto volume : volumes)
-            Volume::PLD *volumePLD = volume->getPLD(device);
-          myPLD->volumeGeomsGroup
-            = rtc->createUserGeomsGroup(myPLD->volumeGeoms);
-          myPLD->volumeGeomsGroup->buildAccel();
-        }
+
+        // the volume _geoms_ are created/owned by the actual volume
+        // accel, and it is _their_ job to free those if required.
+        myPLD->volumeGeoms.clear();
+        
+        // the volume _groups_ are created/owned by the actual volume
+        // accel, and it is _their_ job to free those if required.
+        myPLD->volumeGroups.clear();
       }
       
-      if (needRefit) {
-        // std::cout << "#bn: running volume _refit_ pass" << std::endl;
-        for (auto volume : volumes)
-          volume->build(false);
-        // owlGroupRefitAccel(volumeGeomsGroup);
-        for (auto device : *devices) 
-          getPLD(device)->volumeGeomsGroup->refitAccel();
-      }
-      
-      for (auto volume : ownGroupVolumes) 
-        for (auto device : *devices) 
+      // ------------------------------------------------------------------
+      // rebuild the volumes themselves. the result is, with each
+      // volume, two (possibly) empty sets of generated geoms and
+      // volumes, respectively, that we can now gather here.
+      // ------------------------------------------------------------------
+      for (auto volume : volumes)
+        if (volume)
           volume->build(true);
+
+      // ------------------------------------------------------------------
+      // now that all volumes (and their accels) have been built, go
+      // over all those and gather the generated volume geoms and
+      // volume grousp
+      // ------------------------------------------------------------------
+      for (auto device : *devices) {
+        PLD *myPLD = getPLD(device);
+        auto rtc = device->rtc;
+        for (auto volume : volumes) {
+          Volume::PLD *volumePLD = volume->getPLD(device);
+          // gather all geoms from this group (if any)
+          for (auto geom : volumePLD->generatedGeoms)
+            myPLD->volumeGeoms.push_back(geom);
+          // gather all geoms from this group (if any)
+          for (auto group : volumePLD->generatedGroups) {
+            assert(group);
+            myPLD->volumeGroups.push_back(group);
+          }
+        }
+
+        // now we have all rtc geoms and all rtc groups across all the
+        // volumes that have been in our current group.
+        if (!myPLD->volumeGeoms.empty())
+          printf("todo: build volume geoms group, and add it to root\n");
+      }
     }
   }
   

@@ -165,27 +165,36 @@ namespace barney {
     mcGrid.computeMajorants(&volume->xf);
     
     for (auto device : *devices) {
+      // build our own internal per-device data: one geom, and one
+      // group that contains it.
       PLD *pld = getPLD(device);
       if (!pld->geom) {
         std::string typeName = getTypeName();
         rtc::GeomType *gt
           = device->geomTypes.get(typeName,
                                   MCVolumeAccel<SFType>::createGeomType);
-        rtc::Geom *geom = gt->createGeom();
-        pld->geom  = geom;
-        geom->setPrimCount(1);
+
+        // build a single-prim geometry, that single prim is our
+        // entire MC/DDA grid
+        pld->geom = gt->createGeom();
+        pld->geom->setPrimCount(1);
+      }
+      rtc::Geom *geom = pld->geom;
+      DD dd = getDD(device);
+      geom->setDD(&dd);
+
+      if (!pld->group) {
+        // now put that into a instantiable group, and build it.
         pld->group = device->rtc->createUserGeomsGroup({geom});
       }
-      rtc::Group *group = pld->group;
+      pld->group->buildAccel();
 
+      // now let the actual volume we're building know about the
+      // group we just created
       Volume::PLD *volumePLD = volume->getPLD(device);
-      if (volumePLD->generatedGroups.empty()) {
-        volumePLD->generatedGroups = {group};
-      }
-
-      DD dd = getDD(device);
-      pld->geom->setDD(&dd);
-      group->buildAccel();
+      if (volumePLD->generatedGroups.empty()) 
+        volumePLD->generatedGroups = { pld->group };
+      
     }
   }
   

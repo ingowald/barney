@@ -91,6 +91,7 @@ embed_ptx(
   OUTPUT_TARGET      barney-StructuredData-ptx
   PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            volume/StructuredData.dev.cu
+  EMBEDDED_SYMBOL_NAMES MCAccel_Structured_ptx
 )
 embed_ptx(
   OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
