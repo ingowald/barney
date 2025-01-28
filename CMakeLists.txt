@@ -78,7 +78,7 @@ if (NOT BARNEY_DISABLE_CUDA)
     set(BARNEY_HAVE_CUDA ON)
   else()
     message(AUTHOR_WARNING
-      "#barney: CUDA not found - you need to install CUDA to build barney")
+      "#barney: CUDA not found - going to build (much) slower cpu-only embree backend.")
     set(BARNEY_HAVE_CUDA OFF)
   endif()
 else()
@@ -109,7 +109,14 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 # _library_) we'd still need the owl common classes ... so this
 # _always_ gets included first
 # ------------------------------------------------------------------
-add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
+if (BARNEY_HAVE_CUDA)
+  add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
+else()
+  add_library(owl_common INTERFACE)
+  target_include_directories(owl_common INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
+    )
+endif()
 # ------------------------------------------------------------------
 
 
@@ -137,6 +144,7 @@ configure_file(
 if (BARNEY_HAVE_CUDA)
   option(BARNEY_BACKEND_CUDA "Enable Cuda Backend?" ON)
   option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)
+  option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" ON)
   
 #  target_compile_definitions(barney_config INTERFACE
 #    # we have cuda - as a *compiler*
@@ -144,9 +152,11 @@ if (BARNEY_HAVE_CUDA)
 #    )
 else()
   message(AUTHOR_WARNING "#barney: no CUDA compiler found; disabling both cuda and optix backends")
+  set(BARNEY_BACKEND_CUDA OFF)
+  set(BARNEY_BACKEND_OPTIX OFF)
+  set(BARNEY_BACKEND_EMBREE ON)
 endif()
 
-option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" ON)
 
 #if (TARGET cuBQL_cuda_float3)
 #if (target cuBQL_cuda_float3)
@@ -156,7 +166,11 @@ option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" ON)
 # CUBQL
 # ------------------------------------------------------------------
 
+message("configuring rtcore")
 if (NOT (TARGET cuBQL))
+  if (NOT BARNEY_HAVE_CUDA)
+    set(CMAKE_CUDA_ARCHITECTURES native)
+  endif()
   add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
 endif()
 
@@ -181,11 +195,13 @@ target_link_libraries(barney_config
 # ------------------------------------------------------------------
 # barney ray tracing core
 # ------------------------------------------------------------------
+message("configuring rtcore")
 add_subdirectory(rtcore)
 
 # ------------------------------------------------------------------
 # barney system, api, and mpi stuff
 # ------------------------------------------------------------------
+message("configuring mpi")
 if (BARNEY_MPI)
   find_package(MPI)
   if (MPI_FOUND)
@@ -195,6 +211,8 @@ if (BARNEY_MPI)
     set(BARNEY_MPI OFF)
   endif()
 endif()
+
+message("configuring barney")
 add_subdirectory(barney)
 
 
@@ -204,6 +222,7 @@ add_subdirectory(barney)
 # ------------------------------------------------------------------
 # ANARI device
 # ------------------------------------------------------------------
+message("configuring anari")
 add_subdirectory(anari)
 
 

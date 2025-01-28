@@ -44,6 +44,7 @@ add_library(barney_config_ptx INTERFACE)
 target_link_libraries(barney_config_ptx INTERFACE barney_config)
 target_compile_definitions(barney_config_ptx INTERFACE -DBARNEY_COMPILE_OPTIX_PROGRAMS=1)
 
+if (BARNEY_BACKEND_OPTIX)
 # ray gen program that launches kernel to trace rays
 embed_ptx(
   OUTPUT_TARGET      barney-traceRays-ptx
@@ -117,13 +118,13 @@ embed_ptx(
   PTX_LINK_LIBRARIES barney_config_ptx
   SOURCES            amr/BlockStructuredMC.dev.cu
   )
+endif()
 
 set(BARNEY_SOURCES
   geometry/Triangles.dev.cu
   geometry/Capsules.dev.cu
   geometry/Spheres.dev.cu
   volume/StructuredData.dev.cu
-
   
   # *structured* volumes
   volume/StructuredData.h
