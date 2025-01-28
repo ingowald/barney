@@ -433,7 +433,7 @@ namespace barney {
       return
         // primary rays do store a default misscolor in the ray itself
         // - we simply return this if there's no env-map.
-        ray.missColor;
+        (const vec3f&)ray.missColor;
     }
 
     /*! ugh - that should all go into material::AnariPhysical .... */

@@ -23,10 +23,12 @@
 # define OWL_DISABLE_TBB
 #endif
 #include <owl/common/parallel/parallel_for.h>
-#include <owl/owl.h>
-// #include "barney.h"
+#include "barney/barney.h"
+#if BARNEY_HAVE_CUDA
 #include "barney/common/cuda-helper.h"
+#include <owl/owl.h>
 #include <cuda_runtime.h>
+#endif
 #include <string.h>
 #include <mutex>
 #include <vector>
@@ -63,10 +65,10 @@ namespace barney {
 #endif
   
   template<typename T>
-  inline __device__
+  inline __both__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }
 
-  inline __device__
+  inline __both__
   float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
   
   inline __both__ vec4f make_vec4f(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }

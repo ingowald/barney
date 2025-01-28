@@ -27,24 +27,24 @@ namespace barney {
       to 32 or 16, but lets at least try how much this really helps in
       the denoiser */
   struct CompressedNormal {
-    inline __device__ __host__ vec4f get4f() const
+    inline __both__ vec4f get4f() const
     { vec3f v = get(); return vec4f(v.x,v.y,v.z,0.f); }
-    inline __device__ __host__ vec3f get3f() const
+    inline __both__ vec3f get3f() const
     { vec3f v = get(); return vec3f(v.x,v.y,v.z); }
-    inline __device__ __host__ void set(vec3f v) {
+    inline __both__ void set(vec3f v) {
       if (v == vec3f(0.f)) { x = y = z = 0; return; }
       v = normalize(v);
       x = encode(v.x);
       y = encode(v.y);
       z = encode(v.z);
     }
-    inline __device__ __host__ vec3f get() const { return vec3f(decode(x),decode(y),decode(z)); }
+    inline __both__ vec3f get() const { return vec3f(decode(x),decode(y),decode(z)); }
   private:
-    inline __device__ __host__ int8_t encode(float f) const {
+    inline __both__ int8_t encode(float f) const {
       f = clamp(f*128.f,-127.f,+127.f);
       return int8_t(f);
     }
-    inline __device__ __host__ float decode(int8_t i) const {
+    inline __both__ float decode(int8_t i) const {
       if (i==0) return 0.f;
       return (i<0) ? (i-.5f)*(1.f/128.f) : (i+.5f)*(1.f/128.f);
     }

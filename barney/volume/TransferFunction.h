@@ -98,7 +98,7 @@ namespace barney {
 
   /*! compute the majorant (max opacity times baseDensity) for
     given range of scalar values */
-  inline __host__
+  inline __both__
   float TransferFunction::DD::majorant(range1f r, bool dbg) const
   {
     float f_lo = (r.lower-domain.lower)/domain.span();

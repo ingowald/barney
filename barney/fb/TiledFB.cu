@@ -16,9 +16,9 @@
 
 #include "barney/fb/TiledFB.h"
 #include "barney/fb/FrameBuffer.h"
-#include <optix.h>
-#include <optix_function_table.h>
-#include <optix_stubs.h>
+// #include <optix.h>
+// #include <optix_function_table.h>
+// #include <optix_stubs.h>
 
 namespace barney {
 
@@ -62,7 +62,7 @@ namespace barney {
 
     /* kernel CODE */
     template<typename RTCore>
-    inline __device__ __host__
+    inline __both__
     void run(const RTCore &rtCore)
     {
       int tid
@@ -78,24 +78,6 @@ namespace barney {
       tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
     }
   };
-
-
-  // __global__ void setTileCoords(TileDesc *tileDescs,
-  //                               int numActiveTiles,
-  //                               vec2i numTiles,
-  //                               int globalIndex,
-  //                               int globalIndexStep)
-  // {
-  //   int tid = threadIdx.x + blockIdx.x*blockDim.x;
-  //   if (tid >= numActiveTiles)
-  //     return;
-
-  //   int tileID = tid * globalIndexStep + globalIndex;
-
-  //   int tile_x = tileID % numTiles.x;
-  //   int tile_y = tileID / numTiles.x;
-  //   tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
-  // }
 
   void TiledFB::resize(vec2i newSize)
   {
@@ -138,7 +120,7 @@ namespace barney {
     float           accumScale;
 
     template<typename RTCore>
-    inline __host__ __device__
+    inline __both__
     void run(const RTCore &rtCore)
     {
       int pixelID = rtCore.getThreadIdx().x;

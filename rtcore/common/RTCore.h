@@ -450,7 +450,7 @@ namespace barney {
   namespace rtc {
     // TODO:
     template<typename T>
-    inline __device__ __host__ T tex1D(barney::rtc::device::TextureObject to,
+    inline __both__ T tex1D(barney::rtc::device::TextureObject to,
                                        float x)
     {
 #ifdef __CUDA_ARCH__

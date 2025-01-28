@@ -141,12 +141,12 @@ namespace barney {
     std::vector<uint32_t> blockIDs;
     std::vector<range1f>  valueRanges;
 
-    OWLBuffer blockBoundsBuffer  = 0;
-    OWLBuffer blockLevelsBuffer  = 0;
-    OWLBuffer blockOffsetsBuffer = 0;
-    OWLBuffer blockScalarsBuffer = 0;
-    OWLBuffer blockIDsBuffer     = 0;
-    OWLBuffer valueRangesBuffer  = 0;
+    rtc::Buffer *blockBoundsBuffer  = 0;
+    rtc::Buffer *blockLevelsBuffer  = 0;
+    rtc::Buffer *blockOffsetsBuffer = 0;
+    rtc::Buffer *blockScalarsBuffer = 0;
+    rtc::Buffer *blockIDsBuffer     = 0;
+    rtc::Buffer *valueRangesBuffer  = 0;
   };
 
   /* compute basis function contribution of given block at point P, and add

@@ -143,7 +143,7 @@ namespace barney {
       numActive += device->rayQueue->numActiveRays();
     return numActive;
   }
-
+ 
   void Context::traceRaysGlobally(GlobalModel *model)
   {
     while (true) {

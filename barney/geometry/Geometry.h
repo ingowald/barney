@@ -107,7 +107,7 @@ namespace barney {
         /* nothing - leave default */
         break;
       case GeometryAttribute::CONSTANT:
-        out = in.value;
+        out = load(in.value);
         break;
       case GeometryAttribute::PER_PRIM:
         out = in.fromArray.valueAt(hit.primID);

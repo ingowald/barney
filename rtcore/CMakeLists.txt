@@ -7,6 +7,9 @@ target_include_directories(barney_config INTERFACE
 #  ${CMAKE_CURRENT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}
   )
+if (NOT BARNEY_HAVE_CUDA)
+  target_link_libraries(barney_config INTERFACE owl-config)
+endif()
 
 
 # ==================================================================
@@ -19,15 +22,12 @@ set_property(TARGET barney_rtc_config PROPERTY
 
 
 # ==================================================================
-add_library(barney_rtc_common OBJECT #STATIC#SHARED
+add_library(barney_rtc_common OBJECT
   common/Backend.cpp
   common/RTCore.cpp
   rtc.cpp
   )
 target_link_libraries(barney_rtc_common PUBLIC barney_rtc_config)
-#set_property(TARGET barney_rtc_common PROPERTY 
-#  CUDA_SEPARABLE_COMPILATION ON
-#  )
 
 
 # ==================================================================
@@ -68,15 +68,8 @@ if (BARNEY_BACKEND_EMBREE)
   set(EMBREE_TASKING_SYSTEM "INTERNAL" CACHE STRING "" FORCE)
   set(EMBREE_MAX_INSTANCE_LEVEL_COUNT "1" CACHE STRING "" FORCE)
 
-  #anari_sdk_fetch_project(
-  #  NAME anari_helide_embree
-  #  URL "https://github.com/RenderKit/embree/archive/refs/tags/v4.3.3.zip"
-  #  MD5 a03f49d17084612dc0f28bdc36d92e89
-  #  ADD_SUBDIR
-  #)
   add_subdirectory(../submodules/embree builddir_rtc_embree EXCLUDE_FROM_ALL)
   add_library(embree_local INTERFACE)
-  #  project_add_library(INTERFACE)
   target_link_libraries(embree_local INTERFACE embree tasking)
   target_compile_definitions(embree_local INTERFACE TASKING_INTERNAL)
   target_include_directories(embree_local INTERFACE
@@ -91,8 +84,8 @@ if (BARNEY_BACKEND_EMBREE)
   endif()
 
   
-#  target_compile_definitions(barney_config INTERFACE -DBARNEY_BACKEND_EMBREE=1)
-  add_library(barney_rtc_embree STATIC
+add_library(barney_rtc_embree STATIC
+  embree/Float16.cpp
     embree/EmbreeBackend.cpp
     embree/Compute.cpp
     embree/Device.cpp
@@ -163,52 +156,5 @@ endif()
 
 
 
-# ==================================================================
-# ==================================================================
-if (BARNEY_HAVE_CUDA)
-  macro(CUDA_SOURCE fileName)
-    # nothing to do, leave it to cuda to compile this.
-  endmacro()
-else()
-  macro(CUDA_SOURCE fileName)
-    if (WIN32)
-      set_source_files_properties(${fileName}
-        PROPERTIES
-        LANGUAGE CXX
-        CXX_STANDARD 17
-#        COMPILE_OPTIONS   "-D__CUDA_ARCH__=1;-D__CUDACC__=1"
-        )
-      
-    else()
-      set_source_files_properties(${fileName}
-        PROPERTIES
-        LANGUAGE CXX
-        CXX_STANDARD 17
-#        COMPILE_OPTIONS   "-D__CUDA_ARCH__=1;-xc++;-D__CUDACC__=1"
-        COMPILE_OPTIONS   "-xc++"
-        )
-    endif()
-  endmacro()
-endif()
-
-
-# ==================================================================
-#add_library(barney_rtc INTERFACE# STATIC#SHARED
-#  )
-#target_link_libraries(barney_rtc INTERFACE
-#  barney_rtc_common
-#  )
-#if (BARNEY_BACKEND_OPTIX)
-#  target_link_libraries(barney_rtc INTERFACE#PUBLIC
-#    barney_rtc_common
-#    barney_rtc_cuda_common
-#    barney_rtc_optix
-
-#    $<BUILD_INTERFACE:barney_rtc_common>
-#    $<BUILD_INTERFACE:barney_rtc_cuda_common>
-#    $<BUILD_INTERFACE:barney_rtc_optix>
-#    )
-#endif()
-# ==================================================================
 
 

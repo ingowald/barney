@@ -98,10 +98,10 @@ namespace barney {
     // dir_00 -= 0.5f * dir_du;
     // dir_00 -= 0.5f * dir_dv;
 
-    dd.dir_00 = (float3&)dir_00;
-    dd.dir_du = (float3&)dir_du;
-    dd.dir_dv = (float3&)dir_dv;
-    dd.lens_00 = (float3&)from;
+    dd.dir_00  = dir_00;
+    dd.dir_du  = dir_du;
+    dd.dir_dv  = dir_dv;
+    dd.lens_00 = from;
 
     dd.lensRadius  = defaultValues.lensRadius;
     dd.focalLength = defaultValues.focalLength;

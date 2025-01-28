@@ -145,7 +145,7 @@ namespace barney {
         vec4f v = rtc::tex2D<vec4f>(renderer.bgTexture,image_u,image_v);
         bgColor = v;
       }
-      ray.missColor = bgColor;
+      (vec4f&)ray.missColor = bgColor;
       if (1 && ray.dbg) printf("== spawn ray has bg tex %p bg color %f %f %f\n",
                                (void*)renderer.bgTexture,
                           bgColor.x,

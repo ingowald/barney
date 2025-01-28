@@ -18,8 +18,10 @@
 
 #include "barney/Context.h"
 #include "barney/fb/TiledFB.h"
-#include <optix.h>
-#include <optix_stubs.h>
+// #ifdef BARNEY_BACKEND_OPTIX
+// #include <optix.h>
+// #include <optix_stubs.h>
+// #endif
 
 namespace barney {
 

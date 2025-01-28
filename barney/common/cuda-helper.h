@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+// #include <cuda_runtime.h>
 #ifdef __GNUC__
 #   include <unistd.h>
 #endif

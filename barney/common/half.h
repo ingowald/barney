@@ -20,7 +20,12 @@
     types etc that it should have had in the first place */
 
 #include "barney/common/barney-common.h"
+#if BARNEY_HAVE_CUDA
 #include <cuda_fp16.h>
+#else
+#  include "rtcore/embree/Float16.h"
+typedef float16_t half;
+#endif
 
 namespace owl {
   namespace common  {

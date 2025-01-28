@@ -54,9 +54,9 @@ namespace barney {
             const std::string &name);
       
       void launch(vec2i launchDims,
-                  const void *dd);      
+                  const void *dd) override;
       void launch(int launchDims,
-                  const void *dd);
+                  const void *dd) override;
       
       void sync() override
       { /* no-op */ }

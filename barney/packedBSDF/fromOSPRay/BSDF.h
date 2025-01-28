@@ -55,9 +55,9 @@ namespace barney {
     struct BSDF {
       inline BSDF() = default;
       inline BSDF(const BSDF &) = default;
-      inline __device__ float importance() const { return luminance(albedo); }
-      inline __device__ vec3f getAlbedo(bool dbg =false) const { return albedo; }
-      inline __device__ BSDF(vec3f albedo=vec3f(.5f), bool dbg=false)
+      inline __both__ float importance() const { return luminance(albedo); }
+      inline __both__ vec3f getAlbedo(bool dbg =false) const { return albedo; }
+      inline __both__ BSDF(vec3f albedo=vec3f(.5f), bool dbg=false)
         : albedo(albedo)
       {}
       vec3f albedo;

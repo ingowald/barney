@@ -1,4 +1,7 @@
 #include "rtcore/optix/OptixBackend.h"
+#include <optix.h>
+#include <optix_function_table.h>
+#include <optix_stubs.h>
 
 namespace barney {
   namespace optix {

@@ -122,46 +122,9 @@ namespace barney {
     DevGroup(const std::vector<Device*> &devices,
              int numLogical);
     
-    /*! the model slot that this
-      int const lmsIndx;
-      
       /*! *TOTAL* number of logical devices in the context;
       *NOT* how many devices there are in this group. */
     int const numLogical;
   };
-  
- //  // still need this?
- //  struct DevGroup {
- //    typedef std::shared_ptr<DevGroup> SP;
-
- //    DevGroup(int lmsIdx,
- //             const std::vector<int> &contextRanks,
- //             int contextSize,
- //             const std::vector<int> &gpuIDs,
- //             int globalIndex,
- //             int globalIndexStep);
- //    ~DevGroup();
-    
- //    int size() const { return (int)devices.size(); }
-    
-
-
- //    static bool logging() { return false; }
-    
- //    void update();
-    
- //    // OWLContext               owl = 0;
- //    // OWLRayGen                rg = 0;
- //    // OWLLaunchParams          lp = 0;
- //    std::vector<Device::SP>  devices;
- //    bool programsDirty = true;
- //    bool sbtDirty = true;
- //    /*! local model slot index. this this is the *local index* of the
- //      slot, not the global rank of the the model part that is loaded
- //      into it; i.e., this always starts with '0' on each rank, no
- //      matter what data the app loads into it */
- //    int const lmsIdx;
- //    rtc::DevGroup *rtc = 0;
- // };
   
 }

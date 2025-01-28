@@ -41,7 +41,7 @@ namespace barney {
 
     /* kernel CODE */
     template<typename RTCore>
-    inline __device__ __host__
+    inline __both__
     void run(const RTCore &rtCore)
     {
       int ix = rtCore.getThreadIdx().x

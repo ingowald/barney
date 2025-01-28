@@ -112,9 +112,9 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 if (BARNEY_HAVE_CUDA)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 else()
-  add_library(owl_common INTERFACE)
-  target_include_directories(owl_common INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
+  add_library(owl-config INTERFACE)
+  target_include_directories(owl-config INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/owl/include
     )
 endif()
 # ------------------------------------------------------------------
@@ -305,18 +305,6 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
 
 install(
   TARGETS barney
-#  owl-config
-#  owl_static
-#  cuBQL
-#  barney_config
-#  barney_rtc
-#  barney_rtc_common
-#  barney_rtc_cuda_common
-#  barney_rtc_optix
-#  barney-triangles-ptx
-#  barney-spheres-ptx
-#  barney-cylinders-ptx
-#  barney-capsules-ptx
   EXPORT barney_Exports
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     NAMELINK_SKIP

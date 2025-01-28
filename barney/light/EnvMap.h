@@ -95,7 +95,6 @@ namespace barney {
 
 
 
-#ifdef __CUDACC__
   inline __both__
   float cdfGetPDF(int position, const float *cdf, int N)
   {
@@ -278,5 +277,4 @@ namespace barney {
     sample.distance = BARNEY_INF;
     return sample;
   }
-#endif
 }

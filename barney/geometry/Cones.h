@@ -43,7 +43,7 @@ namespace barney {
     
     void commit() override;
     
-    static OWLGeomType createGeomType(DevGroup *devGroup);
+    // static OWLGeomType createGeomType(DevGroup *devGroup);
 
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

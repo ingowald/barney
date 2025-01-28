@@ -16,7 +16,7 @@
 
 #include "barney/common/barney-common.h"
 #include "barney/fb/FrameBuffer.h"
-#include <cuda_runtime.h>
+// #include <cuda_runtime.h>
 #if BARNEY_HAVE_OIDN
 # include <OpenImageDenoise/oidn.h>
 #endif
@@ -49,8 +49,8 @@ namespace barney {
     uint32_t b = _make_8bit(color.z);
     uint32_t a = 0xff; //make_8bit(color.w);
     uint32_t ret =
-      (r << 0) |
-      (g << 8) |
+      (r <<  0) |
+      (g <<  8) |
       (b << 16) |
       (a << 24);
     return ret;
