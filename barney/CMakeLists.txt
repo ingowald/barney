@@ -20,7 +20,10 @@ set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled
 target_compile_definitions(barney_config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
 
 # -------------------------------------------------------
-option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
+#option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
+
+# hard-coded 'off' for now, have to move that into the device abstraction
+set(BARNEY_DISABLE_DENOISING)
 
 if (BARNEY_DISABLE_DENOISING)
   target_compile_definitions(barney_config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
