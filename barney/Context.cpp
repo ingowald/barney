@@ -228,7 +228,7 @@ namespace barney {
     if (gpuIDs.size() % dataGroupIDs.size())
       throw std::runtime_error("requested num GPUs is not a multiple of "
                                "requested num data groups");
-    int numSlots = dataGroupIDs.size();
+    int numSlots = (int)dataGroupIDs.size();
     int gpusPerSlot = (int)gpuIDs.size() / numSlots;
     std::vector<std::vector<int>> gpuInSlot(numSlots);
     perSlot.resize(numSlots);
@@ -285,7 +285,7 @@ namespace barney {
 
   int Context::contextSize() const
   {
-    return devices.size();
+    return (int)devices.size();
   }
   
   
