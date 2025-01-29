@@ -23,6 +23,7 @@ cmake_minimum_required(VERSION 3.12)
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
   cmake_policy(SET CMP0104 NEW)
 endif()
+  cmake_policy(SET CMP0079 NEW)
 
 if (WIN32)
   # MPI is off by default on windows. whoever wants to use mpi under windows
@@ -77,8 +78,7 @@ if (NOT BARNEY_DISABLE_CUDA)
     enable_language(CUDA)
     set(BARNEY_HAVE_CUDA ON)
   else()
-    message(AUTHOR_WARNING
-      "#barney: CUDA not found - going to build (much) slower cpu-only embree backend.")
+  message(AUTHOR_WARNING "#barney: no CUDA compiler found; disabling cuda/optix backend")
     set(BARNEY_HAVE_CUDA OFF)
   endif()
 else()
@@ -90,20 +90,19 @@ if (CMAKE_BUILD_TYPE)
     "MinSizeRel" "RelWithDebInfo")
 endif()
 
-message("#barney: building for CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
+if (BARNEY_HAVE_CUDA)
+  message("#barney: building for CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
+endif()
 if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 endif()
 
-#set(CMAKE_CXX_STANDARD 17)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
  
-
 # ------------------------------------------------------------------
 # owl - even if we build only for cpu (we we wouldn't use the owl
 # _library_) we'd still need the owl common classes ... so this
@@ -151,7 +150,6 @@ if (BARNEY_HAVE_CUDA)
 #    -DBARNEY_HAVE_CUDA=1
 #    )
 else()
-  message(AUTHOR_WARNING "#barney: no CUDA compiler found; disabling both cuda and optix backends")
   set(BARNEY_BACKEND_CUDA OFF)
   set(BARNEY_BACKEND_OPTIX OFF)
   set(BARNEY_BACKEND_EMBREE ON)
