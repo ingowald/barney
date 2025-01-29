@@ -372,7 +372,6 @@ if (BARNEY_MPI)
     $<BUILD_INTERFACE:MPI::MPI_CXX>
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
-  set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
 
 

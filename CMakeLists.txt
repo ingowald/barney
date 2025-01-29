@@ -248,11 +248,8 @@ set(BARNEY_CMAKE_INSTALL_DESTINATION
   ${CMAKE_INSTALL_LIBDIR}/cmake/barney-${BARNEY_VERSION}#${PROJECT_VERSION}
 )
 
-install(EXPORT barney_Exports
-  DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
-  NAMESPACE barney::
-  )
-
+if (OFF)
+  # do we still need this???
 project(anari_headers)
 project_add_library(INTERFACE)
 project_include_directories(
@@ -266,12 +263,13 @@ INTERFACE
 if (WIN32)
   project_compile_definitions(INTERFACE -D_USE_MATH_DEFINES)
 endif()
-
+endif()
 
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
-  "${PROJECT_SOURCE_DIR}/cmake/barneyConfig.cmake.in"
+  "${PROJECT_SOURCE_DIR}/barney/barneyConfig.cmake.in"
+#  "${PROJECT_SOURCE_DIR}/cmake/barneyConfig.cmake.in"
   "${PROJECT_BINARY_DIR}/barneyConfig.cmake"
 INSTALL_DESTINATION
   ${BARNEY_CMAKE_INSTALL_DESTINATION}
@@ -303,7 +301,7 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
 
 install(
   TARGETS barney
-  EXPORT barney_Exports
+  EXPORT barneyTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     NAMELINK_SKIP
   # on Windows put the dlls into bin
@@ -311,18 +309,37 @@ install(
   # ... and the import lib into the devel package
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+install(EXPORT barneyTargets
+  DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
+  NAMESPACE barney::
+  )
 
 if (BARNEY_MPI)
-  install(
-    TARGETS barney_mpi
-    EXPORT barney_Exports
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    NAMELINK_SKIP
-    # on Windows put the dlls into bin
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    # ... and the import lib into the devel package
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
+  if (OFF)
+    install(
+      TARGETS barney_mpi
+      EXPORT barneyTargets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      NAMELINK_SKIP
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      )
+  else()
+    install(
+      TARGETS barney_mpi
+      EXPORT barney_mpiTargetrs
+      FILE
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      NAMELINK_SKIP
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      )
+    install(EXPORT barney_mpiTargets
+      FILE barney_mpiTargets.cmake
+      DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
+      NAMESPACE barney::
+      )
+  endif()
 endif()
 
 install(
