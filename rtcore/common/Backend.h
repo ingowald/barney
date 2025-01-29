@@ -174,13 +174,23 @@ namespace barney {
       virtual void sync() = 0;
     };
 
+    struct Denoiser {
+      virtual ~Denoiser() = default;
+      virtual void resize(vec2i dims) = 0;
+      virtual void run(vec4f *out_rgba,
+                       vec3f *in_rgb,
+                       float *in_alpha,
+                       vec3f *in_normal) = 0;
+    };
+    
     struct Device {
       Device(const int physicalID)
         : physicalID(physicalID)
       {}
       
       virtual void destroy() = 0;
-      
+
+      virtual Denoiser *createDenoiser() { return nullptr; }
       // ==================================================================
       // control flow related stuff
       // ==================================================================

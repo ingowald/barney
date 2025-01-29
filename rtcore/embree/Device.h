@@ -29,6 +29,8 @@ namespace barney {
       Device(int physicalGPU);
       virtual ~Device();
 
+      rtc::Denoiser *createDenoiser() override;
+
       void destroy() override;
 
       // ==================================================================

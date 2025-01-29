@@ -30,6 +30,8 @@
 #cmakedefine01 BARNEY_BACKEND_OPTIX
 #cmakedefine01 BARNEY_BACKEND_CUDA
 #cmakedefine01 BARNEY_BACKEND_EMBREE
+#cmakedefine01 BARNEY_OIDN_CPU
+#cmakedefine01 BARNEY_OIDN_GPU
 
 #if defined(_MSC_VER)
 #  define BARNEY_DLL_EXPORT __declspec(dllexport)

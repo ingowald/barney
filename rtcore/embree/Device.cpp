@@ -27,7 +27,7 @@
 namespace barney {
   namespace embree {
 
-    __thread TraceInterface *perThreadTraceInterface = 0;
+    // __thread TraceInterface *perThreadTraceInterface = 0;
     
     // TraceInterface *TraceInterface::get()
     // {
@@ -161,7 +161,7 @@ namespace barney {
                                    float tmax,
                                    void *prdPtr) 
     {
-      perThreadTraceInterface = this;
+      // perThreadTraceInterface = this;
       InstanceGroup *ig = (InstanceGroup *)world;
       RTCScene embreeScene = ig->embreeScene;
       assert(embreeScene);
@@ -263,6 +263,11 @@ namespace barney {
       destroy();
     }
 
+    rtc::Denoiser *Device::createDenoiser()
+    {
+      return nullptr;
+    }
+    
     void Device::destroy()
     {
       rtcReleaseDevice(embreeDevice);

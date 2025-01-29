@@ -1,8 +1,20 @@
-#add_subdirectory(rtc)
+
+# ==================================================================
+option(BARNEY_DISABLE_OIDN "DISable OIDN even if found?" OFF)
+if (NOT BARNEY_DISABLE_OIDN)
+  find_package(OpenImageDenoise)
+  if (OIDN_DEVICE_CPU)
+    message("found OIDN *CPU* device support")
+    set(BARNEY_OIDN_CPU ON)
+  endif()
+  if (OIDN_DEVICE_GPU)
+    message("found OIDN *GPU* device support")
+    set(BARNEY_OIDN_GPU ON)
+  endif()
+endif()
 
 # ==================================================================
 
-#message("CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(barney_config INTERFACE
 #  ${CMAKE_CURRENT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}
@@ -83,9 +95,8 @@ if (BARNEY_BACKEND_EMBREE)
     target_compile_options(embree_local INTERFACE -flax-vector-conversions -fsigned-char)
   endif()
 
-  
-add_library(barney_rtc_embree STATIC
-  embree/Float16.cpp
+  add_library(barney_rtc_embree STATIC
+    embree/Float16.cpp
     embree/EmbreeBackend.cpp
     embree/Compute.cpp
     embree/Device.cpp
