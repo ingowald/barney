@@ -90,7 +90,8 @@ namespace barney {
       out[idx] = vec4f(color,alpha);
     }
   };
-  
+
+#if 0
   struct DenoiserNone : public Denoiser {
     DenoiserNone(FrameBuffer *fb) : Denoiser(fb) {};
     virtual ~DenoiserNone() {}
@@ -386,7 +387,7 @@ namespace barney {
 # endif
 #endif
   }
-  
+#endif
   
   FrameBuffer::FrameBuffer(Context *context,
                            const DevGroup::SP &devices,
@@ -705,24 +706,30 @@ namespace barney {
     Device *device = getDenoiserDevice();
 
     if (dirty) {
-      denoiser->run();
-      vec2i bs(8,8);
-// #if 1
-      ToneMap args = { denoisedColor,numPixels };
-      device->toneMap->launch(divRoundUp(numPixels,bs),bs,
-                              &args);
-      // CHECK_CUDA_LAUNCH(toneMap,
-      //                   divRoundUp(numPixels,bs),bs,0,0,
-      //                   //
-      //                   );
-// #else
-//       CHECK_CUDA_LAUNCH(toneMap,
-//                         divRoundUp(numPixels,bs),bs,0,0,
-//                         //
-//                         denoisedColor,numPixels);
-// #endif
-      // toneMap<<<divRoundUp(numPixels,bs),bs>>>(denoisedColor,numPixels);
-      // BARNEY_CUDA_SYNC_CHECK();
+      
+      // -----------------------------------------------------------------------------
+      // (HDR) denoising
+      // -----------------------------------------------------------------------------
+      {
+#if 1
+        vec2i bs(8,8);
+        CopyPixels args = { this->numPixels,this->denoisedColor,
+                            this->linearColor,this->linearAlpha };
+        device->copyPixels->launch(divRoundUp(this->numPixels,bs),bs,&args);
+#else
+        denoiser->run();
+#endif
+      }
+
+      // -----------------------------------------------------------------------------
+      // tone map (denoised) frame buffer
+      // -----------------------------------------------------------------------------
+      {
+        vec2i bs(8,8);
+        ToneMap args = { denoisedColor,numPixels };
+        device->toneMap->launch(divRoundUp(numPixels,bs),bs,
+                                &args);
+      }
       dirty = false;
     }
     if (channel == BN_FB_DEPTH && hostPtr && linearDepth) {
@@ -829,8 +836,10 @@ namespace barney {
       linearAlpha   = (float *)rtc->alloc(np*sizeof(*linearAlpha));
       linearNormal  = (vec3f *)rtc->alloc(np*sizeof(*linearNormal));
       
-      if (!denoiser) denoiser = Denoiser::create(this);
-      denoiser->resize();
+      // if (!denoiser) denoiser = Denoiser::create(this);
+      // denoiser->resize();
+      if (denoiser)
+        denoiser->resize(numPixels);
     }
   }
     

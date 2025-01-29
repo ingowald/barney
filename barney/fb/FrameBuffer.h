@@ -26,7 +26,8 @@
 namespace barney {
 
   struct FrameBuffer;
-  
+
+#if 0
   struct Denoiser {
     typedef std::shared_ptr<Denoiser> SP;
     static SP create(FrameBuffer *fb);
@@ -37,7 +38,8 @@ namespace barney {
     virtual void run() = 0;
     FrameBuffer *const fb;
   };
-    
+#endif
+  
   struct FrameBuffer : public SlottedObject {
 
     FrameBuffer(Context *context,
@@ -106,8 +108,8 @@ namespace barney {
     vec2i numPixels = {-1,-1};
 
     Device *getDenoiserDevice() const;
-    
-    Denoiser::SP denoiser;
+    rtc::Denoiser *denoiser;
+    // Denoiser::SP denoiser;
 
     uint32_t    accumID = 0;
     const bool  isOwner;
