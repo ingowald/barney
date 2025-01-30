@@ -461,10 +461,7 @@ namespace barney {
     __attribute__((visibility("default")))
     Backend *createBackend_optix()
     {
-      PING;
       Backend *be = new barney::optix::OptixBackend;
-
-      PRINT(be);
       return be;
     }
   }
