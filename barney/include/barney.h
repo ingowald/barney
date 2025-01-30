@@ -26,12 +26,9 @@
 #define BARNEY_VERSION_MINOR @BARNEY_VERSION_MINOR@
 #define BARNEY_VERSION_PATCH @BARNEY_VERSION_PATCH@
 
-#cmakedefine01 BARNEY_HAVE_CUDA
 #cmakedefine01 BARNEY_BACKEND_OPTIX
 #cmakedefine01 BARNEY_BACKEND_CUDA
 #cmakedefine01 BARNEY_BACKEND_EMBREE
-#cmakedefine01 BARNEY_OIDN_CPU
-#cmakedefine01 BARNEY_OIDN_GPU
 
 #if defined(_MSC_VER)
 #  define BARNEY_DLL_EXPORT __declspec(dllexport)
@@ -49,20 +46,6 @@
 #else
 #  define BARNEY_API /* bla */
 #endif
-
-#if BARNEY_HAVE_CUDA
-// use cuda internal types for float3 etc
-# include <cuda_runtime.h>
-#else
-// define some dummy wrappers
-struct float2 { float x,y; };
-struct float3 { float x,y,z; };
-struct float4 { float x,y,z,w; };
-struct int2 { int x,y; };
-struct int3 { int x,y,z; };
-struct int4 { int x,y,z,w; };
-#endif
-
 
 typedef struct _BNContext                           *BNContext;
 typedef struct _BNObject                         {} *BNObject;
@@ -84,6 +67,13 @@ typedef struct _BNMaterial     : public _BNObject{} *BNMaterial;
 typedef struct _BNSampler     : public _BNObject{} *BNSampler;
 
 typedef BNTexture2D BNTexture;
+
+struct bn_float2 { float x,y; };
+struct bn_float3 { float x,y,z; };
+struct bn_float4 { float x,y,z,w; };
+struct bn_int2 { int x,y; };
+struct bn_int3 { int x,y,z; };
+struct bn_int4 { int x,y,z,w; };
 
 typedef enum {
   /*! a undefined data type */
@@ -141,9 +131,9 @@ typedef enum {
 BNTextureColorSpace;
 
 struct BNGridlet {
-  float3 lower;
-  float3 upper;
-  int3   dims;
+  bn_float3 lower;
+  bn_float3 upper;
+  bn_int3   dims;
 };
 
 #define BN_FOVY_DEGREES(degrees) ((float)(degrees*M_PI/180.f))
@@ -199,19 +189,10 @@ BARNEY_API
 void bnSet2i(BNObject target, const char *paramName, int x, int y);
 
 BARNEY_API
-void bnSet2ic(BNObject target, const char *paramName, int2 v);
-
-BARNEY_API
 void bnSet3i(BNObject target, const char *paramName, int x, int y, int z);
 
 BARNEY_API
-void bnSet3ic(BNObject target, const char *paramName, int3 v);
-
-BARNEY_API
 void bnSet4i(BNObject target, const char *paramName, int x, int y, int z, int w);
-
-BARNEY_API
-void bnSet4ic(BNObject target, const char *paramName, int4 v);
 
 BARNEY_API
 void bnSet1f(BNObject target, const char *paramName, float value);
@@ -220,19 +201,10 @@ BARNEY_API
 void bnSet2f(BNObject target, const char *paramName, float x, float y);
 
 BARNEY_API
-void bnSet2fc(BNObject target, const char *paramName, float2 v);
-
-BARNEY_API
 void bnSet3f(BNObject target, const char *paramName, float x, float y, float z);
 
 BARNEY_API
-void bnSet3fc(BNObject target, const char *paramName, float3 v);
-
-BARNEY_API
 void bnSet4f(BNObject target, const char *paramName, float x, float y, float z, float w);
-
-BARNEY_API
-void bnSet4fc(BNObject target, const char *paramName, float4 v);
 
 BARNEY_API
 void bnSet4x3fv(BNObject target, const char *paramName, const float *affineMatrix);
@@ -240,17 +212,38 @@ void bnSet4x3fv(BNObject target, const char *paramName, const float *affineMatri
 BARNEY_API
 void bnSet4x4fv(BNObject target, const char *paramName, const float *xfm);
 
+/* add cuda vector type variants of set functions; but do that only if
+   cuda.h or cuda/vector_types.h has already been included */
+# ifdef __VECTOR_TYPES__
+BARNEY_API
+void bnSet2ic(BNObject target, const char *paramName, int2 v);
+
+BARNEY_API
+void bnSet3ic(BNObject target, const char *paramName, int3 v);
+
+BARNEY_API
+void bnSet4ic(BNObject target, const char *paramName, int4 v);
+
+BARNEY_API
+void bnSet2fc(BNObject target, const char *paramName, float2 v);
+
+BARNEY_API
+void bnSet3fc(BNObject target, const char *paramName, float3 v);
+
+BARNEY_API
+void bnSet4fc(BNObject target, const char *paramName, float4 v);
+# endif
 
 
 /*! helper function to fill in a BNCamera structure from a more
     user-friendly from/at/up/fovy specification */
 BARNEY_API
-void bnPinholeCamera(BNCamera camera,
-                     float3 from,
-                     float3 at,
-                     float3 up,
-                     float  fovy,
-                     float  aspect);
+void bnPinholeCamera(BNCamera  camera,
+                     bn_float3 from,
+                     bn_float3 at,
+                     bn_float3 up,
+                     float     fovy,
+                     float     aspect);
 
 BARNEY_API
 BNContext bnContextCreate(/*! how many data slots this context is to
@@ -353,13 +346,11 @@ void bnRender(BNRenderer    renderer,
 
 struct BNTransform {
   struct {
-    struct {
-      float3 vx;
-      float3 vy;
-      float3 vz;
-    } l;
-    float3 p;
-  } xfm;
+    bn_float3 vx;
+    bn_float3 vy;
+    bn_float3 vz;
+  } l;
+  bn_float3 p;
 };
 
 BARNEY_API
@@ -485,67 +476,67 @@ BNSampler bnSamplerCreate(BNContext context,
 
 
 
-// ------------------------------------------------------------------
-// soon to be deprecated, but still the only way to create those
-// ------------------------------------------------------------------
-BARNEY_API
-BNScalarField bnUMeshCreate(BNContext context,
-                            int whichSlot,
-                            // vertices, 4 floats each (3 floats position,
-                            // 4th float scalar value)
-                            const float4 *vertices, int numVertices,
-                            /*! array of all the vertex indices of all
-                                elements, one after another;
-                                ie. elements with different vertex
-                                counts can come in any order, so a
-                                mesh with one tet and one hex would
-                                have an index array of size 12, with
-                                four for the tet and eight for the
-                                hex */
-                            const int *_indices, int numIndices,
-                            /*! one int per logical element, stating
-                                where in the indices array it's N
-                                differnt vertices will be located */
-                            const int *_elementOffsets,
-                            int numElements,
-                            // // tets, 4 ints in vtk-style each
-                            // const int *tets,       int numTets,
-                            // // pyramids, 5 ints in vtk-style each
-                            // const int *pyrs,       int numPyrs,
-                            // // wedges/tents, 6 ints in vtk-style each
-                            // const int *wedges,     int numWedges,
-                            // // general (non-guaranteed cube/voxel) hexes, 8
-                            // // ints in vtk-style each
-                            // const int *hexes,      int numHexes,
-                            // //
-                            // int numGrids,
-                            // // offsets into gridIndices array
-                            // const int *_gridOffsets,
-                            // // grid dims (3 floats each)
-                            // const int *_gridDims,
-                            // // grid domains, 6 floats each (3 floats min corner,
-                            // // 3 floats max corner)
-                            // const float *gridDomains,
-                            // // grid scalars
-                            // const float *gridScalars,
-                            // int numGridScalars,
-                            const float3 *domainOrNull=0);
+// // ------------------------------------------------------------------
+// // soon to be deprecated, but still the only way to create those
+// // ------------------------------------------------------------------
+// BARNEY_API
+// BNScalarField bnUMeshCreate(BNContext context,
+//                             int whichSlot,
+//                             // vertices, 4 floats each (3 floats position,
+//                             // 4th float scalar value)
+//                             const float4 *vertices, int numVertices,
+//                             /*! array of all the vertex indices of all
+//                                 elements, one after another;
+//                                 ie. elements with different vertex
+//                                 counts can come in any order, so a
+//                                 mesh with one tet and one hex would
+//                                 have an index array of size 12, with
+//                                 four for the tet and eight for the
+//                                 hex */
+//                             const int *_indices, int numIndices,
+//                             /*! one int per logical element, stating
+//                                 where in the indices array it's N
+//                                 differnt vertices will be located */
+//                             const int *_elementOffsets,
+//                             int numElements,
+//                             // // tets, 4 ints in vtk-style each
+//                             // const int *tets,       int numTets,
+//                             // // pyramids, 5 ints in vtk-style each
+//                             // const int *pyrs,       int numPyrs,
+//                             // // wedges/tents, 6 ints in vtk-style each
+//                             // const int *wedges,     int numWedges,
+//                             // // general (non-guaranteed cube/voxel) hexes, 8
+//                             // // ints in vtk-style each
+//                             // const int *hexes,      int numHexes,
+//                             // //
+//                             // int numGrids,
+//                             // // offsets into gridIndices array
+//                             // const int *_gridOffsets,
+//                             // // grid dims (3 floats each)
+//                             // const int *_gridDims,
+//                             // // grid domains, 6 floats each (3 floats min corner,
+//                             // // 3 floats max corner)
+//                             // const float *gridDomains,
+//                             // // grid scalars
+//                             // const float *gridScalars,
+//                             // int numGridScalars,
+//                             const bn_float3 *domainOrNull=0);
 
 
-BARNEY_API
-BNScalarField bnBlockStructuredAMRCreate(BNContext context,
-                                         int whichSlot,
-                                         /*TODO:const float *cellWidths,*/
-                                         // block bounds, 6 ints each (3 for min,
-                                         // 3 for max corner)
-                                         const int *blockBounds, int numBlocks,
-                                         // refinement level, per block,
-                                         // finest is level 0,
-                                         const int *blockLevels,
-                                         // offsets into blockData array
-                                         const int *blockOffsets,
-                                         // block scalars
-                                         const float *blockScalars, int numBlockScalars);
+// BARNEY_API
+// BNScalarField bnBlockStructuredAMRCreate(BNContext context,
+//                                          int whichSlot,
+//                                          /*TODO:const float *cellWidths,*/
+//                                          // block bounds, 6 ints each (3 for min,
+//                                          // 3 for max corner)
+//                                          const int *blockBounds, int numBlocks,
+//                                          // refinement level, per block,
+//                                          // finest is level 0,
+//                                          const int *blockLevels,
+//                                          // offsets into blockData array
+//                                          const int *blockOffsets,
+//                                          // block scalars
+//                                          const float *blockScalars, int numBlockScalars);
 
 
 BARNEY_API
@@ -554,11 +545,11 @@ BNVolume bnVolumeCreate(BNContext context,
                         BNScalarField sf);
 
 BARNEY_API
-void bnVolumeSetXF(BNVolume volume,
-                   float2 domain,
-                   const float4 *colorMap,
-                   int numColorMapValues,
-                   float densityAt1);
+void bnVolumeSetXF(BNVolume         volume,
+                   bn_float2        domain,
+                   const bn_float4 *colorMap,
+                   int              numColorMapValues,
+                   float            densityAt1);
 
 
 
@@ -568,65 +559,65 @@ void bnVolumeSetXF(BNVolume volume,
 // HELPER FUNCTION(S) - may not survivie into final API
 // ==================================================================
 
-struct BNMaterialHelper {
-  float3 baseColor          { .7f,.7f,.7f };
-  float  transmission       { 0.f };
-  float  ior                { 1.45f };
-  float  metallic           { 1.f };
-  float  roughness          { 0.f };
-  BNTexture2D alphaTexture  { 0 };
-  BNTexture2D colorTexture  { 0 };
-};
+// struct BNMaterialHelper {
+//   bn_float3   baseColor     { .7f,.7f,.7f };
+//   float       transmission  { 0.f };
+//   float       ior           { 1.45f };
+//   float       metallic      { 1.f };
+//   float       roughness     { 0.f };
+//   BNTexture2D alphaTexture  { 0 };
+//   BNTexture2D colorTexture  { 0 };
+// };
 
-/*! c++ helper function */
-inline void bnSetAndRelease(BNObject target, const char *paramName,
-                            BNObject value)
-{ bnSetObject(target,paramName,value); bnRelease(value); }
+// /*! c++ helper function */
+// inline void bnSetAndRelease(BNObject target, const char *paramName,
+//                             BNObject value)
+// { bnSetObject(target,paramName,value); bnRelease(value); }
 
-/*! c++ helper function */
-inline void bnSetAndRelease(BNObject target, const char *paramName,
-                            BNData value)
-{ bnSetData(target,paramName,value); bnRelease(value); }
+// /*! c++ helper function */
+// inline void bnSetAndRelease(BNObject target, const char *paramName,
+//                             BNData value)
+// { bnSetData(target,paramName,value); bnRelease(value); }
   
-/*! helper function for assinging leftover BNMaterial definition from old API */
-inline void bnAssignMaterial(BNGeom geom,const BNMaterialHelper *material)
-{
-  bnSet3fc(geom,"material.baseColor",material->baseColor);
-  bnSet1f(geom,"material.transmission",material->transmission);
-  bnSet1f(geom,"material.ior",material->ior);
-  if (material->colorTexture)
-    bnSetObject(geom,"material.colorTexture",material->colorTexture);
-  if (material->alphaTexture)
-    bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
-  bnCommit(geom);
-}
+// /*! helper function for assinging leftover BNMaterial definition from old API */
+// inline void bnAssignMaterial(BNGeom geom,const BNMaterialHelper *material)
+// {
+//   bnSet3fc(geom,"material.baseColor",material->baseColor);
+//   bnSet1f(geom,"material.transmission",material->transmission);
+//   bnSet1f(geom,"material.ior",material->ior);
+//   if (material->colorTexture)
+//     bnSetObject(geom,"material.colorTexture",material->colorTexture);
+//   if (material->alphaTexture)
+//     bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
+//   bnCommit(geom);
+// }
 
 
 
 
-// ------------------------------------------------------------------
-// DEPRECATED
-// ------------------------------------------------------------------
-BARNEY_API
-BNGeom bnTriangleMeshCreate(BNContext context,
-                            int whichSlot,
-                            const BNMaterialHelper *material,
-                            const int3 *indices,
-                            int numIndices,
-                            const float3 *vertices,
-                            int numVertices,
-                            const float3 *normals,
-                            const float2 *texcoords);
+// // ------------------------------------------------------------------
+// // DEPRECATED
+// // ------------------------------------------------------------------
+// BARNEY_API
+// BNGeom bnTriangleMeshCreate(BNContext context,
+//                             int whichSlot,
+//                             const BNMaterialHelper *material,
+//                             const int3 *indices,
+//                             int numIndices,
+//                             const float3 *vertices,
+//                             int numVertices,
+//                             const float3 *normals,
+//                             const float2 *texcoords);
 
-// ------------------------------------------------------------------
-// DEPRECATED
-// ------------------------------------------------------------------
-BARNEY_API
-BNScalarField bnStructuredDataCreate(BNContext context,
-                                     int whichSlot,
-                                     int3 dims,
-                                     BNDataType /*ScalarType*/ type,
-                                     const void *scalars,
-                                     float3 gridOrigin,
-                                     float3 gridSpacing);
+// // ------------------------------------------------------------------
+// // DEPRECATED
+// // ------------------------------------------------------------------
+// BARNEY_API
+// BNScalarField bnStructuredDataCreate(BNContext context,
+//                                      int whichSlot,
+//                                      int3 dims,
+//                                      BNDataType /*ScalarType*/ type,
+//                                      const void *scalars,
+//                                      float3 gridOrigin,
+//                                      float3 gridSpacing);
 

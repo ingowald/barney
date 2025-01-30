@@ -143,11 +143,12 @@ void Sphere::setBarneyParameters(BNGeom geom, BNContext context// , int slot
                                  )
 {
   int slot = 0;
-  BNData origins = bnDataCreate(context,
-      slot,
-      BN_FLOAT3,
-      m_vertexPosition->totalSize(),
-      (const float3 *)m_vertexPosition->data());
+  BNData origins
+    = bnDataCreate(context,
+                   slot,
+                   BN_FLOAT3,
+                   m_vertexPosition->totalSize(),
+                   (const bn_float3 *)m_vertexPosition->data());
   bnSetData(geom, "origins", origins);
   if (m_vertexRadius) {
     BNData radii = bnDataCreate(context,
@@ -182,14 +183,16 @@ void Curve::setBarneyParameters(BNGeom geom, BNContext context// , int slot
   assert(m_vertexRadius->totalSize() == m_vertexPosition->totalSize());
   int numVertices = std::min(m_vertexRadius->totalSize(),
                              m_vertexPosition->totalSize());
-  const float3 *in_vertex = (const float3 *)m_vertexPosition->data();
-  const float  *in_radius = (const float *)m_vertexRadius->data();
+  const bn_float3 *in_vertex
+    = (const bn_float3 *)m_vertexPosition->data();
+  const float  *in_radius
+    = (const float *)m_vertexRadius->data();
   std::vector<math::float4> vertex(numVertices);
   for (int i=0;i<numVertices;i++)
     vertex[i] = math::float4(in_vertex[i].x,
-                            in_vertex[i].y,
-                            in_vertex[i].z,
-                            in_radius[i]);
+                             in_vertex[i].y,
+                             in_vertex[i].z,
+                             in_radius[i]);
          
   BNData vertices = bnDataCreate(context,slot,BN_FLOAT4,
                                  numVertices,vertex.data());
@@ -347,10 +350,16 @@ void Triangle::setBarneyParameters(BNGeom geom, BNContext context// , int slot
 {
   int slot = 0;
   int numVertices = m_vertexPosition->totalSize();
-  int numIndices = m_index ? m_index->size() : (m_generatedIndices.size() / 3);
-  const float3 *vertices = (const float3 *)m_vertexPosition->data();
-  const int3 *indices = m_index ? (const int3 *)m_index->data()
-                                : (const int3 *)m_generatedIndices.data();
+  int numIndices
+    = m_index
+    ? m_index->size()
+    : (m_generatedIndices.size() / 3);
+  const bn_float3 *vertices
+    = (const bn_float3 *)m_vertexPosition->data();
+  const bn_int3 *indices
+    = m_index
+    ? (const bn_int3 *)m_index->data()
+    : (const bn_int3 *)m_generatedIndices.data();
 
   BNData _vertices =
       bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertices);
@@ -360,7 +369,7 @@ void Triangle::setBarneyParameters(BNGeom geom, BNContext context// , int slot
   bnSetAndRelease(geom, "indices", _indices);
 
   if (m_vertexNormal) {
-    const float3 *normals = (const float3 *)m_vertexNormal->data();
+    const bn_float3 *normals = (const bn_float3 *)m_vertexNormal->data();
     BNData _normals = bnDataCreate(context, slot, BN_FLOAT3, numVertices, normals);
     bnSetAndRelease(geom, "normals", _normals);
   }

@@ -17,13 +17,13 @@ void Instance::commit()
 {
   math::mat4 xfm = anari::math::identity;
   getParam("transform", ANARI_FLOAT32_MAT4, &xfm);
-  (anari::math::float3&)m_xfm.xfm.l.vx
+  (anari::math::float3&)m_xfm.l.vx
     = anari::math::float3(xfm[0].x, xfm[0].y, xfm[0].z);
-  (anari::math::float3&)m_xfm.xfm.l.vy
+  (anari::math::float3&)m_xfm.l.vy
     = anari::math::float3(xfm[1].x, xfm[1].y, xfm[1].z);
-  (anari::math::float3&)m_xfm.xfm.l.vz
+  (anari::math::float3&)m_xfm.l.vz
     = anari::math::float3(xfm[2].x, xfm[2].y, xfm[2].z);
-  (anari::math::float3&)m_xfm.xfm.p
+  (anari::math::float3&)m_xfm.p
     = anari::math::float3(xfm[3].x, xfm[3].y, xfm[3].z);
 
   m_group = getParamObject<Group>("group");
@@ -55,10 +55,10 @@ const BNTransform *Instance::barneyTransform() const
 box3 Instance::bounds() const
 {
   math::mat4 xfm;
-  xfm[0] = math::float4(m_xfm.xfm.l.vx.x, m_xfm.xfm.l.vx.y, m_xfm.xfm.l.vx.z, 0.f);
-  xfm[1] = math::float4(m_xfm.xfm.l.vy.x, m_xfm.xfm.l.vy.y, m_xfm.xfm.l.vy.z, 0.f);
-  xfm[2] = math::float4(m_xfm.xfm.l.vz.x, m_xfm.xfm.l.vz.y, m_xfm.xfm.l.vz.z, 0.f);
-  xfm[3] = math::float4(m_xfm.xfm.p.x, m_xfm.xfm.p.y, m_xfm.xfm.p.z, 1.f);
+  xfm[0] = math::float4(m_xfm.l.vx.x, m_xfm.l.vx.y, m_xfm.l.vx.z, 0.f);
+  xfm[1] = math::float4(m_xfm.l.vy.x, m_xfm.l.vy.y, m_xfm.l.vy.z, 0.f);
+  xfm[2] = math::float4(m_xfm.l.vz.x, m_xfm.l.vz.y, m_xfm.l.vz.z, 0.f);
+  xfm[3] = math::float4(m_xfm.p.x, m_xfm.p.y, m_xfm.p.z, 1.f);
 
   box3 result = group()->bounds();
 

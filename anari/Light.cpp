@@ -87,8 +87,8 @@ namespace barney_device {
   {
     if (!m_bnLight)
       return;
-    bnSet3fc(m_bnLight, "direction", (const float3 &)m_position);
-    bnSet3fc(m_bnLight, "color", (const float3 &)m_color);
+    bnSet3fc(m_bnLight, "direction", m_position);
+    bnSet3fc(m_bnLight, "color", m_color);
     bnSet1f (m_bnLight, "intensity", m_intensity);
     bnSet1f (m_bnLight, "power", m_power);
     bnCommit(m_bnLight);
@@ -117,8 +117,8 @@ namespace barney_device {
   {
     if (!m_bnLight)
       return;
-    bnSet3fc(m_bnLight, "direction", (const float3 &)m_direction);
-    bnSet3fc(m_bnLight, "color", (const float3 &)m_color);
+    bnSet3fc(m_bnLight, "direction", m_direction);
+    bnSet3fc(m_bnLight, "color", m_color);
     bnSet1f(m_bnLight, "radiance", m_radiance);
     bnSet1f(m_bnLight, "irradiance", m_irradiance);
     bnCommit(m_bnLight);
@@ -160,8 +160,8 @@ namespace barney_device {
     // BNModel model = trackedModel();
     // int slot = trackedSlot();
 
-    bnSet3fc(m_bnLight, "direction", (const float3 &)m_direction);
-    bnSet3fc(m_bnLight, "up", (const float3 &)m_up);
+    bnSet3fc(m_bnLight, "direction", m_direction);
+    bnSet3fc(m_bnLight, "up", m_up);
 
     assert(m_radiance);
     int width  = m_radiance->size().x;

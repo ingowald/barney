@@ -25,6 +25,24 @@ namespace barney_device {
 
   namespace math = anari::math;
 
+  inline void bnSet3ic(BNObject o, const char *n, math::int3 v)
+  { bnSet3i(o,n,v.x,v.y,v.z); }
+  inline void bnSet3fc(BNObject o, const char *n, math::float3 v)
+  { bnSet3f(o,n,v.x,v.y,v.z); }
+  inline void bnSet4fc(BNObject o, const char *n, math::float4 v)
+  { bnSet4f(o,n,v.x,v.y,v.z,v.z); }
+  inline void bnSetAndRelease(BNObject o, const char *n, BNObject v)
+  {
+    bnSetObject(o,n,v);
+    bnRelease(v);
+  }
+  inline void bnSetAndRelease(BNObject o, const char *n, BNData v)
+  {
+    bnSetData(o,n,v);
+    bnRelease(v);
+  }
+
+  
   struct box1
   {
     float lower, upper;

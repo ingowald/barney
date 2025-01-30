@@ -313,6 +313,7 @@ namespace barney {
     delete (Context *)context;
   }
 
+#if 0
   BARNEY_API
   BNGeom bnTriangleMeshCreate(BNContext context,
                               int slot,
@@ -346,7 +347,7 @@ namespace barney {
     bnCommit(mesh);
     return mesh;
   }  
-  
+#endif
   BARNEY_API
   BNScalarField bnScalarFieldCreate(BNContext _context,
                                     int slot,
@@ -416,8 +417,8 @@ namespace barney {
 
   BARNEY_API
   void bnVolumeSetXF(BNVolume volume,
-                     float2 domain,
-                     const float4 *_values,
+                     bn_float2 domain,
+                     const bn_float4 *_values,
                      int numValues,
                      float densityAt1)
   {
@@ -470,6 +471,7 @@ namespace barney {
   }
 
 
+#if 0
   BARNEY_API
   BNScalarField bnStructuredDataCreate(BNContext context,
                                        int slot,
@@ -493,6 +495,7 @@ namespace barney {
     bnCommit(sf);
     return sf;
   }
+#endif
   
   BARNEY_API
   BNScalarField bnUMeshCreate(BNContext context,

@@ -24,7 +24,7 @@ void Renderer::commit()
   m_background = getParam<math::float4>("background", math::float4(0, 0, 0, 1));
   m_backgroundImage = getParamObject<Array2D>("background");
 
-  bnSet4fc(barneyRenderer, "bgColor", (const float4 &)m_background);
+  bnSet4fc(barneyRenderer, "bgColor", m_background);
   bnSet1i(barneyRenderer, "crosshairs", (int)m_crosshairs);
   bnSet1i(barneyRenderer, "pathsPerPixel", (int)m_pixelSamples);
   bnSet1f(barneyRenderer, "ambientRadiance", m_ambientRadiance);
@@ -32,8 +32,8 @@ void Renderer::commit()
   if (m_backgroundImage) {
     int sx = m_backgroundImage->size().x;
     int sy = m_backgroundImage->size().y;
-    const float4 *texels
-      = (const float4 *)m_backgroundImage->data();
+    const bn_float4 *texels
+      = (const bn_float4 *)m_backgroundImage->data();
     barneyBackgroundImage
       = bnTexture2DCreate(deviceState()->context,-1,
                           BN_FLOAT4,sx,sy,

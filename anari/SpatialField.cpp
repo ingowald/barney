@@ -98,13 +98,28 @@ bool StructuredRegularField::isValid() const
     throw std::runtime_error("scalar type not implemented ...");
   }
   auto dims = m_data->size();
-  auto field = bnStructuredDataCreate(context,
-                                      0/*slot*/,
-      (const int3 &)dims,
-      barneyType,
-      m_data->data(),
-      (const float3 &)m_origin,
-      (const float3 &)m_spacing);
+  // auto field = bnStructuredDataCreate(context,
+  //                                     0/*slot*/,
+  //     (const int3 &)dims,
+  //     barneyType,
+  //     m_data->data(),
+  //     (const float3 &)m_origin,
+  //     (const float3 &)m_spacing);
+
+  BNScalarField sf
+    = bnScalarFieldCreate(context,0,"structured");
+  BNTexture3D texture
+    = bnTexture3DCreate(context,0,barneyType,
+                        dims.x,dims.y,dims.z,m_data->data(),
+                        BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
+  bnSetObject(sf,"texture",texture);
+  bnRelease(texture);
+  bnSet3i(sf,"dims",dims.x,dims.y,dims.z);
+  bnSet3fc(sf,"gridOrigin",m_origin);
+  bnSet3fc(sf,"gridSpacing",m_spacing);
+  bnCommit(sf);
+  auto field = sf;
+    
   return field;
 }
 
@@ -251,9 +266,12 @@ BNScalarField UnstructuredField::createBarneyScalarField(
   std::cout << "==================================================================" << std::endl;
   std::cout << "BANARI: CREATING UMESH OF " << m_elementOffsets.size() << " elements" << std::endl;
   std::cout << "==================================================================" << std::endl;
+#if 1
+  exit(0);
+#else
   return bnUMeshCreate(context,
                        0/*slot*/,
-                       (const ::float4 *)m_vertices.data(),
+                       (const bn_float4 *)m_vertices.data(),
                        m_vertices.size(),
                        m_indices.data(),
                        m_indices.size(),
@@ -277,6 +295,7 @@ BNScalarField UnstructuredField::createBarneyScalarField(
                        // m_generatedGridScalars.size()
                        nullptr
                        );
+#endif
 }
 
 box3 UnstructuredField::bounds() const
@@ -294,10 +313,10 @@ void BlockStructuredField::commit()
 {
   Object::commit();
 
-  m_params.cellWidth = getParamObject<helium::Array1D>("cellWidth");
+  m_params.cellWidth   = getParamObject<helium::Array1D>("cellWidth");
   m_params.blockBounds = getParamObject<helium::Array1D>("block.bounds");
-  m_params.blockLevel = getParamObject<helium::Array1D>("block.level");
-  m_params.blockData = getParamObject<helium::ObjectArray>("block.data");
+  m_params.blockLevel  = getParamObject<helium::Array1D>("block.level");
+  m_params.blockData   = getParamObject<helium::ObjectArray>("block.data");
 
   if (!m_params.blockBounds) {
     reportMessage(ANARI_SEVERITY_WARNING,
@@ -367,6 +386,12 @@ BNScalarField BlockStructuredField::createBarneyScalarField(
     BNContext context// , int slot
                                                             ) const
 {
+  std::cout << "==================================================================" << std::endl;
+  std::cout << "BANARI: CREATING AMR DATA" << std::endl;
+  std::cout << "==================================================================" << std::endl;
+#if 1
+  exit(0);
+#else
   return bnBlockStructuredAMRCreate(context,
                                     0/*slot*/,
       m_generatedBlockBounds.data(),
@@ -375,6 +400,7 @@ BNScalarField BlockStructuredField::createBarneyScalarField(
       m_generatedBlockOffsets.data(),
       m_generatedBlockScalars.data(),
       m_generatedBlockScalars.size());
+#endif
 }
 
 box3 BlockStructuredField::bounds() const

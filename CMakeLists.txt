@@ -15,7 +15,7 @@
 # ======================================================================== #
 
 set(BARNEY_VERSION_MAJOR 0)
-set(BARNEY_VERSION_MINOR 8)
+set(BARNEY_VERSION_MINOR 9)
 set(BARNEY_VERSION_PATCH 0)
 
 cmake_minimum_required(VERSION 3.12)
@@ -129,10 +129,6 @@ target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
   )
-configure_file(
-    ${PROJECT_SOURCE_DIR}/barney/include/barney.h
-    include/barney/barney.h
-    )
 
 # ------------------------------------------------------------------
 
@@ -155,13 +151,23 @@ else()
   set(BARNEY_BACKEND_EMBREE ON)
 endif()
 
-
-#if (TARGET cuBQL_cuda_float3)
-#if (target cuBQL_cuda_float3)
-
+# ==================================================================
+option(BARNEY_DISABLE_OIDN "DISable OIDN even if found?" OFF)
+if (NOT BARNEY_DISABLE_OIDN)
+  find_package(OpenImageDenoise)
+  if (OIDN_DEVICE_CPU)
+    message("found OIDN *CPU* device")
+    set(BARNEY_OIDN_CPU ON)
+  endif()
+  if (OIDN_DEVICE_GPU)
+    message("found OIDN *GPU* device")
+    set(BARNEY_OIDN_GPU ON)
+  endif()
+endif()
+message("BARNEY_OIDN_CPU ${BARNEY_OIDN_CPU}")
 
 # ------------------------------------------------------------------
-# CUBQL
+# rtcore
 # ------------------------------------------------------------------
 
 message("configuring rtcore")
@@ -341,6 +347,19 @@ if (BARNEY_MPI)
       )
   endif()
 endif()
+
+# configures the public api
+configure_file(
+  ${PROJECT_SOURCE_DIR}/barney/include/barney.h
+  include/barney/barney.h
+  )
+# internal configurations that shoudln't be visible in external api
+configure_file(
+  ${PROJECT_SOURCE_DIR}/barney/barneyConfig.h.in
+  # we put this into builddir/include where build will find it - but
+  # this will *not* get installed
+  include/barney/barneyConfig.h
+  )
 
 install(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/barney

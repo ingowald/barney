@@ -217,8 +217,8 @@ namespace barney_device {
     BNVolume vol = getBarneyVolume(getContext()// , slot
                                    );
     bnVolumeSetXF(vol,
-                  (float2 &)m_valueRange,
-                  (const float4 *)m_rgbaMap.data(),
+                  (bn_float2 &)m_valueRange,
+                  (const bn_float4 *)m_rgbaMap.data(),
                   m_rgbaMap.size(),
                   m_densityScale);
     bnCommit(vol);

@@ -16,6 +16,9 @@
 
 #pragma once
 
+// automatically generated, in build dir
+#include "barney/barneyConfig.h"
+
 #include <owl/common/math/box.h>
 #include <owl/common/math/AffineSpace.h>
 #include <owl/common/math/random.h>

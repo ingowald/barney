@@ -46,9 +46,9 @@ namespace barney_device {
   void Perspective::commit()
   {
     Camera::commit();
-    bnSet3fc(m_barneyCamera,"up",(const float3&)m_up);
-    bnSet3fc(m_barneyCamera,"position", (const float3&)m_pos);
-    bnSet3fc(m_barneyCamera,"direction",(const float3&)m_dir);
+    bnSet3fc(m_barneyCamera,"up",m_up);
+    bnSet3fc(m_barneyCamera,"position", m_pos);
+    bnSet3fc(m_barneyCamera,"direction",m_dir);
     float aspect = getParam<float>("aspect", 1.f);
     bnSet1f(m_barneyCamera,"aspect",aspect);
     float fovy = getParam<float>("fovy", anari::radians(60.f));
