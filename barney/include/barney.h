@@ -559,6 +559,31 @@ void bnVolumeSetXF(BNVolume         volume,
 // HELPER FUNCTION(S) - may not survivie into final API
 // ==================================================================
 
+#ifdef __cplusplus
+inline void bnSetAndRelease(BNObject o, const char *n, BNObject v)
+{
+  bnSetObject(o,n,v);
+  bnRelease(v);
+}
+inline void bnSetAndRelease(BNObject o, const char *n, BNData v)
+{
+  bnSetData(o,n,v);
+  bnRelease(v);
+}
+inline void bnSet(BNObject o, const char *n, bn_float2 v)
+{ bnSet2f(o,n,v.x,v.y); }
+inline void bnSet(BNObject o, const char *n, bn_float3 v)
+{ bnSet3f(o,n,v.x,v.y,v.z); }
+inline void bnSet(BNObject o, const char *n, bn_float4 v)
+{ bnSet4f(o,n,v.x,v.y,v.z,v.w); }
+inline void bnSet(BNObject o, const char *n, bn_int2 v)
+{ bnSet2i(o,n,v.x,v.y); }
+inline void bnSet(BNObject o, const char *n, bn_int3 v)
+{ bnSet3i(o,n,v.x,v.y,v.z); }
+inline void bnSet(BNObject o, const char *n, bn_int4 v)
+{ bnSet4i(o,n,v.x,v.y,v.z,v.w); }
+#endif
+
 // struct BNMaterialHelper {
 //   bn_float3   baseColor     { .7f,.7f,.7f };
 //   float       transmission  { 0.f };

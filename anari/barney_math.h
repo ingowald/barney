@@ -31,16 +31,6 @@ namespace barney_device {
   { bnSet3f(o,n,v.x,v.y,v.z); }
   inline void bnSet4fc(BNObject o, const char *n, math::float4 v)
   { bnSet4f(o,n,v.x,v.y,v.z,v.z); }
-  inline void bnSetAndRelease(BNObject o, const char *n, BNObject v)
-  {
-    bnSetObject(o,n,v);
-    bnRelease(v);
-  }
-  inline void bnSetAndRelease(BNObject o, const char *n, BNData v)
-  {
-    bnSetData(o,n,v);
-    bnRelease(v);
-  }
 
   
   struct box1

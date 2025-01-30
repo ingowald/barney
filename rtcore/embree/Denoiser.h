@@ -18,19 +18,30 @@
 
 #include "rtcore/embree/Device.h"
 
+#if BARNEY_OIDN_CPU
+# include <OpenImageDenoise/oidn.h>
+
 namespace barney {
   namespace embree {
-#if BARNEY_OIDN_CPU
     struct Denoiser : public rtc::Denoiser
     {
       Denoiser(Device *device);
+      virtual ~Denoiser();
+      
       void resize(vec2i size) override;
-      void run(vec4f *out_rgba,
-               vec3f *in_rgb,
-               float *in_alpha,
-               vec3f *in_normal) override;
-      vec2i size { 0,0 }
+      void run(// output
+               vec4f *out_rgba,
+               // input channels
+               vec4f *in_rgba,
+               vec3f *in_normal,
+               float blendFactor) override;
+      
+      vec2i         numPixels { 0,0 };
+      Device *const rtc;
+
+      OIDNDevice oidnDevice = 0;
+      OIDNFilter filter = 0;
     };
-#endif
   }
 }
+#endif

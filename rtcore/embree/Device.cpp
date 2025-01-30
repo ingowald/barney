@@ -21,6 +21,7 @@
 #include "rtcore/embree/Triangles.h"
 #include "rtcore/embree/UserGeom.h"
 #include "rtcore/embree/Group.h"
+#include "rtcore/embree/Denoiser.h"
 // ---- common ----
 #include "rtcore/common/RTCore.h"
 
@@ -265,7 +266,12 @@ namespace barney {
 
     rtc::Denoiser *Device::createDenoiser()
     {
+#if BARNEY_OIDN_CPU
+      return new Denoiser(this);
+#else
+      // we have no way of denoising
       return nullptr;
+#endif
     }
     
     void Device::destroy()

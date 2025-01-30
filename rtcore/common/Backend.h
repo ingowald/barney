@@ -1,5 +1,6 @@
 #pragma once
 
+#include "barney/barneyConfig.h"
 #include "barney/common/barney-common.h"
 
 namespace barney {
@@ -151,18 +152,13 @@ namespace barney {
       Compute(rtc::Device *device) : Object(device) {}
       virtual void launch(int numBlocks,
                           int blockSize,
-                          const void *dd)
-      { BARNEY_NYI(); }
-
+                          const void *dd) = 0;
       virtual void launch(vec2i numBlocks,
                           vec2i blockSize,
-                          const void *dd)
-      { BARNEY_NYI(); }
-
+                          const void *dd) = 0;
       virtual void launch(vec3i numBlocks,
                           vec3i blockSize,
-                          const void *dd)
-      { BARNEY_NYI(); }
+                          const void *dd) = 0;
     };
 
     struct Trace : public Object {

@@ -93,11 +93,15 @@ if (BARNEY_BACKEND_EMBREE)
     embree/Triangles.cpp
     embree/UserGeom.cpp
     embree/Group.cpp
+    embree/Denoiser.cpp
     )
   target_link_libraries(barney_rtc_embree PUBLIC
     barney_rtc_common
     embree_local
     )
+  if (BARNEY_OIDN_CPU)
+    target_link_libraries(barney_rtc_embree PUBLIC OpenImageDenoise)
+  endif()
   target_link_libraries(barney_config INTERFACE embree_local)
 else()
   add_library(barney_rtc_embree INTERFACE
