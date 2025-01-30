@@ -23,6 +23,8 @@
 
 namespace barney {
   namespace embree {
+
+    /*! oidn-based CPU denoiser */
     struct Denoiser : public rtc::Denoiser
     {
       Denoiser(Device *device);

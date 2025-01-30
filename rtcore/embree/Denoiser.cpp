@@ -33,31 +33,13 @@ namespace barney {
 
     Denoiser::~Denoiser()
     {
-      // if (colorBuf)  oidnReleaseBuffer(colorBuf);
-      // if (normalBuf) oidnReleaseBuffer(normalBuf);
-      // if (outputBuf) oidnReleaseBuffer(outputBuf);
-      // oidnReleaseFilter(filter);
-      // oidnReleaseDevice(device);
+      oidnReleaseFilter(filter);
+      oidnReleaseDevice(oidnDevice);
     }
     
     void Denoiser::resize(vec2i size)
     {
       this->numPixels = size;
-      // if (colorBuf)  oidnReleaseBuffer(colorBuf);
-      // if (normalBuf) oidnReleaseBuffer(normalBuf);
-      // if (outputBuf) oidnReleaseBuffer(outputBuf);
-      // colorBuf
-      //   = oidnNewSharedBuffer(device, fb->linearColor,
-      //                         numPixels.x*numPixels.y*sizeof(vec4f));
-      // normalBuf
-      //   = oidnNewSharedBuffer(device, fb->linearNormal,
-      //                         numPixels.x*numPixels.y*sizeof(vec3f));
-      // oidnSetFilterImage(filter,"color",colorBuf,
-      //                    OIDN_FORMAT_FLOAT4,numPixels.x,numPixels.y,0,0,0);
-      // oidnSetFilterImage(filter,"output",outputBuf,
-      //                    OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,0,0);
-      // oidnSetFilterBool(filter,"hdr",true);
-      // oidnCommitFilter(filter);
     }
     
     void Denoiser::run(// output
@@ -70,16 +52,17 @@ namespace barney {
       oidnSetSharedFilterImage(filter,"color",in_rgba,
                                OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,
                                sizeof(vec4f),0);
-      // oidnSetSharedFilterImage(filter,"color",in_rgba,
-      //                          OIDN_FORMAT_FLOAT4,numPixels.x,numPixels.y,0,0,0);
-      // oidnSetSharedFilterImage(filter,"normal",in_normal,
-      //                          OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,0,0);
-      
+#if 1
+      // no normal channel - oidn complains about 'unsupported
+      // combination' if we pass this.
+#else
+      oidnSetSharedFilterImage(filter,"normal",in_normal,
+                                OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,
+                                sizeof(vec3f),0);
+#endif
       oidnSetSharedFilterImage(filter,"output",out_rgba,
                                OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,
                                sizeof(vec4f),0);
-      // oidnSetSharedFilterImage(filter,"output",out_rgba,
-      //                          OIDN_FORMAT_FLOAT4,numPixels.x,numPixels.y,0,0,0);
       oidnSetFilterBool(filter,"hdr",true);
       oidnCommitFilter(filter);
 
