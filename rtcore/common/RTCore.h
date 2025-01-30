@@ -322,7 +322,6 @@ namespace barney {
                                       float t1,
                                       void *prdPtr) 
       {
-#if 1
         unsigned int           p0 = 0;
         unsigned int           p1 = 0;
         owl::packPointer(prdPtr,p0,p1);
@@ -330,32 +329,19 @@ namespace barney {
         uint32_t rayFlags = 0u;
         owl::Ray ray(org,dir,t0,t1);
         optixTrace((const OptixTraversableHandle &)world,
-                   (const float3&)ray.origin,
-                   (const float3&)ray.direction,
+                   (const ::float3&)ray.origin,
+                   (const ::float3&)ray.direction,
                    ray.tmin,
                    ray.tmax,
                    ray.time,
                    ray.visibilityMask,
                    /*rayFlags     */ rayFlags,
                    /*SBToffset    */ ray.rayType,
-                   /*SBTstride    */ ray.numRayTypes * (ray.disablePerGeometrySBTRecords) ? 0 : 1,
+                   /*SBTstride    */ ray.numRayTypes,
                    /*missSBTIndex */ ray.rayType,              
                    p0,
                    p1);
-#endif
       }
-      // template<typename PRDType>
-      // inline __device__ void traceRay(rtc::device::AccelHandle world,
-      //                                 vec3f org,
-      //                                 vec3f dir,
-      //                                 float t0,
-      //                                 float t1,
-      //                                 PRDType &prd) const
-      // {
-      //   owl::traceRay((const OptixTraversableHandle &)world,
-      //                 owl::Ray(org,dir,t0,t1),prd);
-      // }
-      // const void *const globalsMem;
     };
 
 #define RTC_DECLARE_GLOBALS(Type)                               \
@@ -471,7 +457,7 @@ namespace barney {
     {
 #ifdef __CUDA_ARCH__
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
-      float4 v = ::tex2D<float4>(texObj,x,y);
+      ::float4 v = ::tex2D<::float4>(texObj,x,y);
       return (const vec4f &)v;
       // return T{};
 #elif BARNEY_BACKEND_EMBREE
@@ -539,7 +525,8 @@ namespace barney {
 #ifdef __CUDA_ARCH__
       // we _must_ be on the device, so this is a cuda teture
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
-      return ::tex3D<float4>(texObj,x,y,z);
+      ::float4 v = ::tex3D<::float4>(texObj,x,y,z);
+      return load(v);
       // return T{};
 #elif BARNEY_BACKEND_EMBREE
       // this in on th ehost, and we _do_ have the embree backend built in:

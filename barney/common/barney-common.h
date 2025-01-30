@@ -42,8 +42,24 @@
 #ifdef __CUDACC__
 #include <cuda/std/limits>
 #endif
+#if BARNEY_HAVE_CUDA
+#include <cuda.h>
+#endif
 
 #define __barney_align(a) OWL_ALIGN(a)
+
+
+#ifdef __VECTOR_TYPES_H__
+// cuda/vector_types.h will define these types
+#else
+struct float2 { float x,y; };
+struct float3 { float x,y,z; };
+struct float4 { float x,y,z,w; };
+struct int2 { int x,y; };
+struct int3 { int x,y,z; };
+struct int4 { int x,y,z,w; };
+#endif
+
 
 namespace barney {
   using namespace owl;
@@ -67,21 +83,6 @@ namespace barney {
 # define BARNEY_INF INFINITY
 #endif
 
-#ifdef __VECTOR_TYPES__
-  using ::float2;
-  using ::float3;
-  using ::float4;
-  using ::int2;
-  using ::int3;
-  using ::int4;
-#else
-  struct float2 { float x,y; };
-  struct float3 { float x,y,z; };
-  struct float4 { float x,y,z,w; };
-  struct int2 { int x,y; };
-  struct int3 { int x,y,z; };
-  struct int4 { int x,y,z,w; };
-#endif
   
   
   template<typename T>
