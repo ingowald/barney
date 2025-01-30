@@ -126,10 +126,7 @@ namespace barney {
     inline __both__
     float luminance(vec3f c)
     { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
-    inline __both__
-    float luminance(float3 c)
-    { return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z; }
-
+    
     inline __both__
     vec3f reflect(vec3f v, vec3f n) { return v - (2.f*dot(v,n))*n; }
     

@@ -454,7 +454,7 @@ namespace barney {
 #ifdef NDEBUG
       bool dbg = false;
 #else
-      book dbg = ray.dbg;
+      bool dbg = path.dbg;
 #endif
       
       bool fire = dbg;//0 && (path.pixelID == 969722);
