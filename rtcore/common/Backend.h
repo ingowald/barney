@@ -176,11 +176,14 @@ namespace barney {
 
     struct Denoiser {
       virtual ~Denoiser() = default;
+      /*! if this returns true, the denoiser::run() has to be fed with
+          float4 color and normal data; otherwise, it needs to be fed
+          with float3 color and normal data */
       virtual void resize(vec2i dims) = 0;
       virtual void run(vec4f *out_rgba,
-                       vec3f *in_rgb,
-                       float *in_alpha,
-                       vec3f *in_normal) = 0;
+                       vec4f *in_rgba,
+                       vec3f *in_normal,
+                       float blendFactor=0.f) = 0;
     };
     
     struct Device {

@@ -112,9 +112,7 @@ if (BARNEY_BACKEND_EMBREE)
     barney_rtc_common
     embree_local
     )
-#  target_link_libraries(barney_rtc_config INTERFACE embree_local)
   target_link_libraries(barney_config INTERFACE embree_local)
-  #  target_link_libraries(barney_rtc PUBLIC barney_rtc_embree)
 else()
   add_library(barney_rtc_embree INTERFACE
     # dummy
@@ -128,8 +126,6 @@ if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
     )
   target_link_libraries(barney_rtc_cuda_common PUBLIC
     barney_rtc_config
-#    barney_rtc_common
-#    cuda
     )
 else()
   add_library(barney_rtc_cuda_common INTERFACE) # DUMMY!
@@ -138,11 +134,9 @@ endif()
 # ==================================================================
 if (BARNEY_BACKEND_CUDA)
   message("ENabling CUDA backend")
-#  target_compile_definitions(barney_config INTERFACE -DBARNEY_BACKEND_CUDA=1)
   add_library(barney_rtc_cuda STATIC
     cuda/CUDABackend.cu
     )
-#  target_link_libraries(barney_rtc_cuda PUBLIC barney_rtc_cuda_common)
   target_link_libraries(barney_rtc PUBLIC barney_rtc_cuda)
 else()
   add_library(barney_rtc_cuda INTERFACE) # DUMMY!
@@ -151,15 +145,13 @@ endif()
 # ==================================================================
 if (BARNEY_BACKEND_OPTIX)
   message("ENabling optix backend")
-#  target_compile_definitions(barney_config INTERFACE -DBARNEY_BACKEND_OPTIX=1)
   add_library(barney_rtc_optix OBJECT# STATIC
     optix/OptixBackend.cpp
+    optix/Denoiser.cpp
     )
   target_link_libraries(barney_rtc_optix PUBLIC
     barney_rtc_config
     owl_static
-#    barney_rtc_common
-    #owl
     )
 else()
   add_library(barney_rtc_optix INTERFACE) # DUMMY!

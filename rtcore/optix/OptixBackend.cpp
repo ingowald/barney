@@ -1,4 +1,5 @@
 #include "rtcore/optix/OptixBackend.h"
+#include "rtcore/optix/Denoiser.h"
 #include <optix.h>
 #include <optix_function_table.h>
 #include <optix_stubs.h>
@@ -15,6 +16,16 @@ namespace barney {
     Device::~Device()
     {
       destroy();
+    }
+
+    rtc::Denoiser *Device::createDenoiser()
+    {
+#if OPTIX_VERSION >= 80000
+      return new Denoiser(this);
+#else
+      // we only support optix 8 denoiser
+      return nullptr;
+#endif
     }
 
     void Device::destroy()

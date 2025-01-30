@@ -82,7 +82,7 @@ namespace barney {
     rtc::Compute *setTileCoords = 0;
     rtc::Compute *compressTiles = 0;
     rtc::Compute *unpackTiles = 0;
-    rtc::Compute *copyPixels = 0;
+    // rtc::Compute *copyPixels = 0;
     rtc::Trace   *traceRays = 0;
     RayQueue     *rayQueue = 0;
   };

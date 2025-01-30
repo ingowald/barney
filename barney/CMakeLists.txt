@@ -85,21 +85,21 @@ if (BARNEY_BACKEND_OPTIX)
     SOURCES            volume/StructuredData.dev.cu
     EMBEDDED_SYMBOL_NAMES MCAccel_Structured_ptx
     )
-  embed_ptx(
-    OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
-    PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            umesh/os/RTXObjectSpace.dev.cu
-    )
+#  embed_ptx(
+#    OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
+#    PTX_LINK_LIBRARIES barney_config_ptx
+#    SOURCES            umesh/os/RTXObjectSpace.dev.cu
+#    )
   embed_ptx(
     OUTPUT_TARGET      barney-UMeshMC-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
     SOURCES            umesh/mc/UMeshMC.dev.cu
     )
-  embed_ptx(
-    OUTPUT_TARGET      barney-AWT-ptx
-    PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            umesh/os/AWT.dev.cu
-    )
+#  embed_ptx(
+#    OUTPUT_TARGET      barney-AWT-ptx
+#    PTX_LINK_LIBRARIES barney_config_ptx
+#    SOURCES            umesh/os/AWT.dev.cu
+#    )
 
   # ------------------------------------------------------------------
   # amr variants:

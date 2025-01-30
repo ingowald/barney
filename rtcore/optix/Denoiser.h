@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,29 +16,31 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
-#include "cuBQL/bvh.h"
-#if BARNEY_CUBQL_HOST
-# include "cuBQL/builder/cpu.h"
-#else
-# include "cuBQL/builder/cuda.h"
-#endif
-#include "cuBQL/traversal/shrinkingRadiusQuery.h"
-
-#ifdef __CUDACC__
-namespace cuBQL {
-  using float3 = ::float3;
-  using float4 = ::float4;
-}
-#endif
+#include "rtcore/optix/Device.h"
 
 namespace barney {
+  namespace optix {
 
-  
-  inline __both__ vec3f to_barney(cuBQL::float3 v)
-  { return vec3f(v.x,v.y,v.z); }
-  
-  inline __both__ cuBQL::float3 to_cubql(vec3f v)
-  { return {v.x,v.y,v.z}; }
-  
-} // ::barney
+#if OPTIX_VERSION >= 80000
+    struct Denoiser : public rtc::Denoiser {
+      Denoiser(Device *device);
+      virtual ~Denoiser();
+      void resize(vec2i dims) override;
+      void run(vec4f *out_rgba,
+               vec4f *in_rgba,
+               vec3f *in_normal,
+               float blendFactor) override;
+      Device *const device;
+
+      vec2i                numPixels;
+      OptixDenoiser        denoiser = {};
+      OptixDenoiserOptions denoiserOptions;
+      void                *denoiserScratch = 0;
+      void                *denoiserState   = 0;
+      OptixDenoiserSizes   denoiserSizes;
+    };
+#endif
+    
+  }
+}
+

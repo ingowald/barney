@@ -445,16 +445,25 @@ namespace barney {
                 Ray &shadowRay,
                 int pathDepth)
     {
+      
       const float EPS = 1e-4f;
 
       const bool  hadNoIntersection  = !path.hadHit();
       const vec3f incomingThroughput = path.throughput;
       
-      bool fire = path.dbg;//0 && (path.pixelID == 969722);
+#ifdef NDEBUG
+      bool dbg = false;
+#else
+      book dbg = ray.dbg;
+#endif
+      
+      bool fire = dbg;//0 && (path.pixelID == 969722);
+      // fire =
+      //   path.pixelID==85640;
       // bool fire = 0 && (path.pixelID == 963212);
       // bool fire = 1 && (path.pixelID == 428428);
 
-      if (1 && path.dbg)
+      if (fire || 1 && dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
                pathDepth,
                path.org.x,
@@ -482,7 +491,7 @@ namespace barney {
             (float)path.misWeight *
 #endif
             (vec3f)path.throughput;
-          if (path.dbg)
+          if (fire || dbg)
             printf("_shadow_ ray reaches light: tp %f %f %f misweight %f frag %f %f %f\n",
                    (float)path.throughput.x,
                    (float)path.throughput.y,
@@ -491,7 +500,7 @@ namespace barney {
                    fragment.x,
                    fragment.y,
                    fragment.z);
-          if (1 && path.dbg) printf("shadow miss, frag %f %f %f\n",
+          if (1 && dbg) printf("shadow miss, frag %f %f %f\n",
                                     fragment.x,
                                     fragment.y,
                                     fragment.z);
@@ -524,7 +533,7 @@ namespace barney {
           fragment = primaryRayMissColor(world,renderer,path);
           // fragment = path.throughput * backgroundOrEnv(world,path);
 
-          if (path.dbg)
+          if (dbg)
             printf("miss primary %f %f %f -> %f %f %f\n",
                    path.missColor.x,
                    path.missColor.y,
@@ -551,7 +560,7 @@ namespace barney {
           const vec3f fromEnv = radianceFromEnv(world,renderer,path);
           fragment = (vec3f)path.throughput * fromEnv * (float)path.misWeight;
 
-          if (fire)
+          if (fire || fire)
             printf("bounce ray hits env light: tp %f %f %f misweight %f fromEnv %f %f %f\n",
                    (float)path.throughput.x,
                    (float)path.throughput.y,
@@ -565,7 +574,7 @@ namespace barney {
 # endif
 #else
           const vec3f fromEnv = radianceFromEnv(world,renderer,path);
-          if (0 && path.dbg)
+          if (fire || 0 && dbg)
             printf("fromenv %f %f %f\n",
                    fromEnv.x,
                    fromEnv.y,
@@ -599,7 +608,7 @@ namespace barney {
       // if (dg.Ng == vec3f(0.f))
       //   dg.Ng = dg.Ns = -path.dir;
       
-      // if (1 && path.dbg)
+      // if (1 && dbg)
       //   printf("dg.N %f %f %f\n",
       //          dg.Ns.x,
       //          dg.Ns.y,
@@ -615,14 +624,14 @@ namespace barney {
         = offsetEpsilon*(isVolumeHit?dg.wo:Ngff);
       // vec3f dg_P
       //   = path.P+frontFacingSurfaceOffset;
-      // if (path.dbg)
+      // if (dbg)
       //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
       //          pathDepth,
       //          (float)path.transmission,
       //          (float)path.ior,
       //          int(doTransmission));
       // #if 1
-      // if (path.dbg) printf("mattype %i\n",path.materialType);
+      // if (dbg) printf("mattype %i\n",path.materialType);
 
 
 
@@ -643,11 +652,11 @@ namespace barney {
                        lightNeedsMIS,
                        lightIsDirLight,
 #endif
-                       fire || 0 && path.dbg)
+                       fire || 0 && dbg)
           // && 
           // (path.materialType != GLASS)
           ) {
-        if (fire || 0 && path.dbg)
+        if (fire || 0 && dbg)
           printf("sample light dir %f %f %f rad %f %f %f pdf %f spike %f\n",
                  ls.direction.x,
                  ls.direction.y,
@@ -661,14 +670,14 @@ namespace barney {
           = bsdf.eval(dg,ls.direction,fire)
           // * fabsf(dot(dg.Ng,ls.direction))
           ;
-        if (fire || 0 && path.dbg) printf("eval light res %f %f %f: %f\n",
+        if (fire || 0 && dbg) printf("eval light res %f %f %f: %f\n",
                                           f_r.value.x,
                                           f_r.value.y,
                                           f_r.value.z,
                                           f_r.pdf);
         
         if (!f_r.valid() || reduce_max(f_r.value) < 1e-4f) {
-          if (fire || 0 && path.dbg) printf(" no f_r, killing shadow ray\n");
+          if (fire || 0 && dbg) printf(" no f_r, killing shadow ray\n");
           shadowRay.tMax = -1.f;
         } else {
           vec3f tp_sr
@@ -701,7 +710,7 @@ namespace barney {
              /* surface: */dg.P + frontFacingSurfaceOffset,
              /* to light */ls.direction,
              /* length   */ls.distance * (1.f-2.f*offsetEpsilon));
-          // if (path.dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
+          // if (dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
           shadowRay.rngSeed = path.rngSeed + 1; random();
           shadowRay.dbg = path.dbg;
           shadowRay.pixelID = path.pixelID;
@@ -771,9 +780,19 @@ namespace barney {
       
       vec3f scatterFactor
         = scatterResult.f_r
-        // ONE_PI *
         * (isVolumeHit?1.f:fabsf(dot(dg.Ng,path.dir)))
         / (isinf(scatterResult.pdf)? 1.f : (scatterResult.pdf + 1e-10f));
+
+#if 1
+      // uhhhh.... this is TOTALLY wrong, but let's limit how much
+      // each bounce can increase the throughput of a ray ... this
+      // makes fireflies go away (well, makes them go 'less', but can
+      // lose a lot of envergy if the brdf sample code isn't close to
+      // the actual brdf.
+      scatterFactor = min(scatterFactor,vec3f(1.5f));
+#endif
+
+      
       path.throughput
         = path.throughput * scatterFactor;
       path.clearHit();
@@ -909,6 +928,16 @@ namespace barney {
       // ==================================================================
 
       // clamping ...
+
+      // auto checkFragComp = [path](float f) {
+      //   if (isnan(f)) printf("NAN fragment!\n");
+      //   if (isinf(f)) printf("INF fragment!\n");
+      //   if (f > 1e3f) printf("huge fragment %f, %i\n",f,path.pixelID);
+      // };
+      // checkFragComp(fragment.x);
+      // checkFragComp(fragment.y);
+      // checkFragComp(fragment.z);
+
       float clampMax = 10.f*(1+accumID);
       fragment = min(fragment,vec3f(clampMax));
 

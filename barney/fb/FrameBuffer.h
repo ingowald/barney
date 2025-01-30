@@ -96,14 +96,9 @@ namespace barney {
 
     vec4f *denoisedColor = 0;
     
-    vec3f *linearColor = 0;
-    /*! linear depth buffer, in array-(not tiled) order, after
-        denoising - only on owner. All denoiser implementations will
-        generate exactly this format, so the linear bnFrameBufferRead()
-        can then just copy from this format*/
-    float  *linearDepth = 0;
-    float  *linearAlpha = 0;
-    vec3f  *linearNormal = 0;
+    vec4f *linearColor = 0;
+    float *linearDepth = 0;
+    vec3f *linearNormal = 0;
     
     vec2i numPixels = {-1,-1};
 

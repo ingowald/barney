@@ -68,31 +68,30 @@ namespace barney {
     };
   
       
-    // inline __both__
-    // float4 AttributeArray::DD::valueAt(int i, bool dbg) const
-    // {
-    //   float4 vv = value;
-    //   switch(this->type) {
-    //   case BN_FLOAT: {
-    //     const float v = ((const float *)ptr)[i];
-    //     return vec4f(v,0.f,0.f,1.f);
-    //   }
-    //   case BN_FLOAT2: {
-    //     const float2 v = ((const float2 *)ptr)[i];
-    //     return vec4f(v.x,v.y,0.f,1.f);
-    //   }
-    //   case BN_FLOAT3: {
-    //     const float3 v = ((const float3 *)ptr)[i];
-    //     return vec4f(v.x,v.y,v.z,1.f);
-    //   }
-    //   case BN_FLOAT4: {
-    //     const float4 v = ((const float4 *)ptr)[i];
-    //     return v;
-    //   }
-    //   default:
-    //     return vec4f(0.f,0.f,0.f,0.f);
-    //   };
-    // }
+    inline __both__
+    vec4f AttributeArray::DD::valueAt(int i, bool dbg) const
+    {
+      switch(this->type) {
+      case BN_FLOAT: {
+        const float v = ((const float *)ptr)[i];
+        return vec4f(v,0.f,0.f,1.f);
+      }
+      case BN_FLOAT2: {
+        const float2 v = ((const float2 *)ptr)[i];
+        return vec4f(v.x,v.y,0.f,1.f);
+      }
+      case BN_FLOAT3: {
+        const float3 v = ((const float3 *)ptr)[i];
+        return vec4f(v.x,v.y,v.z,1.f);
+      }
+      case BN_FLOAT4: {
+        const float4 v = ((const float4 *)ptr)[i];
+        return (const vec4f&)v;
+      }
+      default:
+        return vec4f(0.f,0.f,0.f,0.f);
+      };
+    }
     
   }
 }

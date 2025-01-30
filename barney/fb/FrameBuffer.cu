@@ -72,24 +72,24 @@ namespace barney {
   // }
 
 
-  struct CopyPixels {
-    vec2i numPixels;
-    vec4f *out;
-    vec3f *in_color;
-    float *in_alpha;
+  // struct CopyPixels {
+  //   vec2i numPixels;
+  //   vec4f *out;
+  //   vec3f *in_color;
+  //   float *in_alpha;
 
-    template<typename CI>
-    __both__ void run(const CI &ci) {
-      int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
-      int iy = ci.getThreadIdx().y+ci.getBlockIdx().y*ci.getBlockDim().y;
-      if (ix >= numPixels.x) return;
-      if (iy >= numPixels.y) return;
-      int idx = ix + numPixels.x*iy;
-      vec3f color = in_color[idx];
-      float alpha = in_alpha[idx];
-      out[idx] = vec4f(color,alpha);
-    }
-  };
+  //   template<typename CI>
+  //   __both__ void run(const CI &ci) {
+  //     int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
+  //     int iy = ci.getThreadIdx().y+ci.getBlockIdx().y*ci.getBlockDim().y;
+  //     if (ix >= numPixels.x) return;
+  //     if (iy >= numPixels.y) return;
+  //     int idx = ix + numPixels.x*iy;
+  //     vec3f color = in_color[idx];
+  //     float alpha = in_alpha[idx];
+  //     out[idx] = vec4f(color,alpha);
+  //   }
+  // };
 
 #if 0
   struct DenoiserNone : public Denoiser {
@@ -400,6 +400,10 @@ namespace barney {
       getPLD(device)->tiledFB
         = TiledFB::create(device,this);
     }
+
+    Device *device = getDenoiserDevice();
+    assert(device);
+    denoiser = device->rtc->createDenoiser();
   }
 
   FrameBuffer::~FrameBuffer()
@@ -430,11 +434,11 @@ namespace barney {
       device->rtc->freeMem(linearColor);
       linearColor = 0;
     }
-    if (linearAlpha) {
-      device->rtc->freeMem(linearAlpha);
-      // BARNEY_CUDA_CALL(Free(linearAlpha));
-      linearAlpha = 0;
-    }
+    // if (linearAlpha) {
+    //   device->rtc->freeMem(linearAlpha);
+    //   // BARNEY_CUDA_CALL(Free(linearAlpha));
+    //   linearAlpha = 0;
+    // }
     if (linearDepth) {
       device->rtc->freeMem(linearDepth);
       // BARNEY_CUDA_CALL(Free(linearDepth));
@@ -618,8 +622,7 @@ namespace barney {
   
   struct UnpackTiles {
     vec2i numPixels;
-    vec3f *colors;
-    float *alphas;
+    float4 *out_rgba;
     vec3f *normals;
     float *depths;
     CompressedTile *tiles;
@@ -644,57 +647,65 @@ namespace barney {
       
       uint32_t rgba8 = tile.rgba[subIdx];
       vec4f rgba = from_8bit(rgba8);
-      float alpha = rgba.w;
       float scale = float(tile.scale[subIdx]);
-      vec3f color = vec3f(rgba.x,rgba.y,rgba.z)*scale;
+      rgba.x *= scale;
+      rgba.y *= scale;
+      rgba.z *= scale;
       vec3f normal = tile.normal[subIdx].get3f();
       float depth = tile.depth[subIdx];
+
+      // auto checkFragComp = [](float f) {
+      //   if (isnan(f)) printf("NAN fragment!\n");
+      //   if (isinf(f)) printf("INF fragment!\n");
+      // };
+      // checkFragComp(rgba.x);
+      // checkFragComp(rgba.y);
+      // checkFragComp(rgba.z);
       
-      colors[idx] = color;
-      alphas[idx] = alpha;
+      
+      out_rgba[idx] = (const float4&)rgba;//color;
       depths[idx] = depth;
       normals[idx] = normal;
     }
-     };
-     
-     void FrameBuffer::unpackTiles()
-    {
-// #if 1
-      UnpackTiles args = {
-        numPixels,
-        linearColor,
-        linearAlpha,
-        linearNormal,
-        linearDepth,
-        gatheredTilesOnOwner.compressedTiles,
-        gatheredTilesOnOwner.tileDescs
-      };
-      auto device = getDenoiserDevice();
-      device->unpackTiles->launch(gatheredTilesOnOwner.numActiveTiles,
-                                  pixelsPerTile,
-                                  &args);
-      device->sync();
-      //     CHECK_CUDA_LAUNCH(g_unpackTiles,
-//                       //
-//                       gatheredTilesOnOwner.numActiveTiles,pixelsPerTile,0,0,
-//                       //
-//                       numPixels,
-//                       linearColor,
-//                       linearAlpha,
-//                       linearNormal,
-//                       linearDepth,
-//                       gatheredTilesOnOwner.compressedTiles,
-//                       gatheredTilesOnOwner.tileDescs);
-// #else
-//     g_unpackTiles<<<gatheredTilesOnOwner.numActiveTiles,pixelsPerTile>>>
-//       (numPixels,
-//        linearColor,
-//        linearAlpha,
-//        linearNormal,
-//        linearDepth,
-//        gatheredTilesOnOwner.compressedTiles,
-//        gatheredTilesOnOwner.tileDescs);
-// #endif
+  };
+  
+  void FrameBuffer::unpackTiles()
+  {
+    // #if 1
+    UnpackTiles args = {
+      numPixels,
+      (float4*)linearColor,
+      linearNormal,
+      linearDepth,
+      gatheredTilesOnOwner.compressedTiles,
+      gatheredTilesOnOwner.tileDescs
+    };
+    auto device = getDenoiserDevice();
+    device->unpackTiles->launch(gatheredTilesOnOwner.numActiveTiles,
+                                pixelsPerTile,
+                                &args);
+    device->sync();
+    //     CHECK_CUDA_LAUNCH(g_unpackTiles,
+    //                       //
+    //                       gatheredTilesOnOwner.numActiveTiles,pixelsPerTile,0,0,
+    //                       //
+    //                       numPixels,
+    //                       linearColor,
+    //                       linearAlpha,
+    //                       linearNormal,
+    //                       linearDepth,
+    //                       gatheredTilesOnOwner.compressedTiles,
+    //                       gatheredTilesOnOwner.tileDescs);
+    // #else
+    //     g_unpackTiles<<<gatheredTilesOnOwner.numActiveTiles,pixelsPerTile>>>
+    //       (numPixels,
+    //        linearColor,
+    //        linearAlpha,
+    //        linearNormal,
+    //        linearDepth,
+    //        gatheredTilesOnOwner.compressedTiles,
+    //        gatheredTilesOnOwner.tileDescs);
+    // #endif
   }
 
   void FrameBuffer::read(BNFrameBufferChannel channel,
@@ -710,15 +721,18 @@ namespace barney {
       // -----------------------------------------------------------------------------
       // (HDR) denoising
       // -----------------------------------------------------------------------------
-      {
-#if 1
-        vec2i bs(8,8);
-        CopyPixels args = { this->numPixels,this->denoisedColor,
-                            this->linearColor,this->linearAlpha };
-        device->copyPixels->launch(divRoundUp(this->numPixels,bs),bs,&args);
-#else
-        denoiser->run();
-#endif
+      if (!denoiser) {
+        device->rtc->copy(this->denoisedColor,this->linearColor,
+                          numPixels.x*numPixels.y*sizeof(vec4f));
+        // vec2i bs(8,8);
+        // CopyPixels args = { this->numPixels,this->denoisedColor,
+        //                     this->linearColor,this->linearAlpha };
+        // device->copyPixels->launch(divRoundUp(this->numPixels,bs),bs,&args);
+      } else {
+        float blendFactor = accumID / (accumID+200.f); 
+        denoiser->run(this->denoisedColor,
+                      this->linearColor,
+                      this->linearNormal,blendFactor);
       }
 
       // -----------------------------------------------------------------------------
@@ -832,8 +846,8 @@ namespace barney {
       int np = numPixels.x*numPixels.y;
       denoisedColor = (vec4f*)rtc->alloc(np*sizeof(*denoisedColor));
       linearDepth   = (float *)rtc->alloc(np*sizeof(*linearDepth));
-      linearColor   = (vec3f *)rtc->alloc(np*sizeof(*linearColor));
-      linearAlpha   = (float *)rtc->alloc(np*sizeof(*linearAlpha));
+      linearColor   = (vec4f *)rtc->alloc(np*sizeof(*linearColor));
+      // linearAlpha   = (float *)rtc->alloc(np*sizeof(*linearAlpha));
       linearNormal  = (vec3f *)rtc->alloc(np*sizeof(*linearNormal));
       
       // if (!denoiser) denoiser = Denoiser::create(this);
@@ -865,7 +879,7 @@ namespace barney {
   
 }
   
-RTC_DECLARE_COMPUTE(copyPixels,barney::CopyPixels);
+// RTC_DECLARE_COMPUTE(copyPixels,barney::CopyPixels);
 RTC_DECLARE_COMPUTE(toneMap,barney::ToneMap);
 RTC_DECLARE_COMPUTE(toFixed8,barney::ToFixed8);
 RTC_DECLARE_COMPUTE(unpackTiles,barney::UnpackTiles);

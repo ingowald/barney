@@ -73,8 +73,8 @@ namespace barney {
       = rtc->createCompute("compressTiles");
     unpackTiles
       = rtc->createCompute("unpackTiles");
-    copyPixels
-      = rtc->createCompute("copyPixels");
+    // copyPixels
+    //   = rtc->createCompute("copyPixels");
     toneMap
       = rtc->createCompute("toneMap");
     toFixed8
