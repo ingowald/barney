@@ -98,7 +98,7 @@ namespace barney {
     
     auto lambda = [&](const uint32_t *primIDs, int numPrims)
     {
-      if (traversal.leaf(P,primIDs - bvh.primIDs, numPrims))
+      if (traversal.leaf(P,int(primIDs - bvh.primIDs), numPrims))
         return CUBQL_CONTINUE_TRAVERSAL;
       else
         return CUBQL_TERMINATE_TRAVERSAL;

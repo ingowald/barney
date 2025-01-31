@@ -276,12 +276,13 @@ namespace barney_device {
     } catch(std::exception &err) {
       std::cerr << "#banari: exception creating anari 'barney' GPU device: "
                 << err.what() << std::endl;
-      throw;
+  //    throw;
+      return 0;
     }
   }
 
 
-
+  
   BarneyDevice::~BarneyDevice()
   {
     auto &state = *deviceState();
@@ -331,7 +332,7 @@ namespace barney_device {
       m_initialized = true;
     } catch (const std::exception &err) {
       std::cerr << "#banari: ran into some kind of exception in barney device init"
-                << std::endl;
+                << err.what() << std::endl;
     }
   }
 

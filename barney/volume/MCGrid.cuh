@@ -76,7 +76,7 @@ namespace barney {
   {
       return (const float&)i;
   }
-#endif
+#endif 
   
   inline __both__
   float fatomicMin(float *addr, float value)

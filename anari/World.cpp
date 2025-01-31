@@ -164,7 +164,7 @@ void World::buildBarneyModel()
       0,
       barneyGroups.data(),
       barneyTransforms.data(),
-      barneyGroups.size());
+      (int)barneyGroups.size());
   bnBuild(m_barneyModel, 0);
 
   std::set<BNGroup> uniqueBarneyGroups;

@@ -233,7 +233,7 @@ inline bool convert_to_float4(
 
 inline uint32_t make_8bit(const float f)
 {
-  return fminf(255,fmaxf(0,int(f*256.f)));
+  return (uint32_t)fminf(255.f,fmaxf(0.f,f*256.f));
 }
 
 inline uint32_t make_rgba8(const math::float4 color)

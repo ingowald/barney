@@ -219,7 +219,7 @@ namespace barney_device {
     bnVolumeSetXF(vol,
                   (bn_float2 &)m_valueRange,
                   (const bn_float4 *)m_rgbaMap.data(),
-                  m_rgbaMap.size(),
+                  (int)m_rgbaMap.size(),
                   m_densityScale);
     bnCommit(vol);
   }

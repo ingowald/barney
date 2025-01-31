@@ -14,17 +14,15 @@
 
 
 #if defined(_MSC_VER)
+#  define BARNEY_VISIBILITY_DEFAULT /* nothing */
 #elif defined(__clang__) || defined(__GNUC__)
 #  define BARNEY_VISIBILITY_DEFAULT  __attribute__((visibility("default")))
 #else
+#  define BARNEY_VISIBILITY_DEFAULT /* nothing */
 #endif
 
 
 namespace barney {
-  // namespace rtc {
-
-  //   typedef struct _OpaqueTextureHandle *OpaqueTextureHandle;
-  // }
   
 #if BARNEY_BACKEND_EMBREE
   namespace embree {
@@ -72,7 +70,6 @@ namespace barney {
                               float t0,
                               float t1,
                               void *prdPtr);
-      // static TraceInterface *get();
 
       /* this HAS to be the first entry! :*/
       RTCRayQueryContext embreeRayQueryContext;
@@ -128,11 +125,12 @@ namespace barney {
       
       inline __both__ float atomicAdd(float *ptr, float inc) const
       { return ((std::atomic<float> *)ptr)->fetch_add(inc); }
+
 #  endif
-      // vec3ui threadIdx;
-      // vec3ui blockIdx;
-      // vec3ui blockDim;
-      // vec3ui gridDim;
+      vec3ui threadIdx;
+      vec3ui blockIdx;
+      vec3ui blockDim;
+      vec3ui gridDim;
     };
   }
 #endif
