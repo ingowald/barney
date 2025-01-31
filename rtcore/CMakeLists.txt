@@ -127,8 +127,8 @@ if (BARNEY_BACKEND_CUDA)
   add_library(barney_rtc_cuda STATIC
     cuda/CUDABackend.cu
     )
-  target_link_libraries(barney_rtc PUBLIC barney_rtc_cuda)
 else()
+  target_link_libraries(barney_rtc_cuda PUBLIC barney_rtc_common)
   add_library(barney_rtc_cuda INTERFACE) # DUMMY!
 endif()
 
