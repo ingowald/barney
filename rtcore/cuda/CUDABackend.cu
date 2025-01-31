@@ -3,10 +3,9 @@
 namespace barney {
   namespace cuda {
 
-    rtc::DevGroup *CUDABackend
-    ::createDevGroup(const std::vector<int> &gpuIDs,
-                     size_t sizeOfGlobals)
-    {
+    rtc::Device *CUDABackend
+    ::createDevice(int gpuID)
+    { 
       BARNEY_NYI();
     }
     

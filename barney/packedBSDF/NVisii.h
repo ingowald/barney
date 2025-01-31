@@ -69,7 +69,7 @@ namespace barney {
         inline
         __both__ bool same_hemisphere(const vec3f &w_o, const vec3f &w_i, const vec3f &n) {
           return dot(w_o, n) * dot(w_i, n) > 0.f;
-        }
+        } 
 
         inline
         __both__ bool relative_ior(const vec3f &w_o, const vec3f &n, float ior, float &eta_o, float &eta_i)
@@ -93,10 +93,10 @@ namespace barney {
           } else {
             if (fabs(s.x) > fabs(s.y)) {
               radius = s.x;
-              theta  = M_PI / 4.f * (s.y / s.x);
+              theta  = (float)M_PI / 4.f * (s.y / s.x);
             } else {
               radius = s.y;
-              theta  = M_PI / 2.f - M_PI / 4.f * (s.x / s.y);
+              theta  = (float)M_PI / 2.f - (float)M_PI / 4.f * (s.x / s.y);
             }
           }
           d = radius * vec2f(cosf(theta), sinf(theta));
@@ -139,10 +139,10 @@ namespace barney {
         inline
         __both__ float gtr_1(float cos_theta_h, float alpha) {
           if (alpha >= 1.f) {
-            return M_1_PI;
+            return (float)M_1_PI;
           }
           float alpha_sqr = alpha * alpha;
-          return M_1_PI * (alpha_sqr - 1.f) / (logf(alpha_sqr) * (1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h));
+          return (float)M_1_PI * (alpha_sqr - 1.f) / (logf(alpha_sqr) * (1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h));
         }
 
         // D_GTR2: Generalized Trowbridge-Reitz with gamma=2
@@ -153,14 +153,14 @@ namespace barney {
           float alpha_sqr = alpha * alpha;
           float den1 = 1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h;
           float den2 = max(den1, SMALL_EPSILON);
-          return M_1_PI * alpha_sqr / den2;
+          return (float)M_1_PI * alpha_sqr / den2;
         }
 
         // D_GTR2 Anisotropic: Anisotropic generalized Trowbridge-Reitz with gamma=2
         // Burley notes eq. 13
         inline
         __both__ float gtr_2_aniso(float h_dot_n, float h_dot_x, float h_dot_y, vec2f alpha) {
-          return M_1_PI / max((alpha.x * alpha.y * pow2(pow2(h_dot_x / alpha.x) + pow2(h_dot_y / alpha.y) + h_dot_n * h_dot_n)), SMALL_EPSILON);
+          return (float)M_1_PI / max((alpha.x * alpha.y * pow2(pow2(h_dot_x / alpha.x) + pow2(h_dot_y / alpha.y) + h_dot_n * h_dot_n)), SMALL_EPSILON);
         }
 
         inline
@@ -185,7 +185,7 @@ namespace barney {
         // Sample the microfacet normal vectors for the various microfacet distributions
         inline
         __both__ vec3f sample_gtr_1_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const vec2f &s) {
-          float phi_h = 2.f * M_PI * s.x;
+          float phi_h = 2.f * (float)M_PI * s.x;
           float alpha_sqr = alpha * alpha;
           float cos_theta_h_sqr = (1.f - pow(alpha_sqr, 1.f - s.y)) / (1.f - alpha_sqr);
           float cos_theta_h = sqrtf(cos_theta_h_sqr);
@@ -196,7 +196,7 @@ namespace barney {
 
         inline
         __both__ vec3f sample_gtr_2_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const vec2f &s) {
-          float phi_h = 2.f * M_PI * s.x;
+          float phi_h = 2.f * (float)M_PI * s.x;
           float cos_theta_h_sqr = (1.f - s.y) / (1.f + (alpha * alpha - 1.f) * s.y);
           float cos_theta_h = sqrtf(cos_theta_h_sqr);
           float sin_theta_h = 1.f - cos_theta_h_sqr;
@@ -206,7 +206,7 @@ namespace barney {
 
         inline
         __both__ vec3f sample_gtr_2_aniso_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const vec2f &alpha, const vec2f &s) {
-          float x = 2.f * M_PI * s.x;
+          float x = 2.f * (float)M_PI * s.x;
           vec3f w_h = sqrtf(s.y / (1.f - s.y)) * (alpha.x * cosf(x) * v_x + alpha.y * sinf(x) * v_y) + n;
           return normalize(w_h);
         }
@@ -215,7 +215,7 @@ namespace barney {
         __both__ float lambertian_pdf(const vec3f &w_i, const vec3f &n) {
           float d = dot(w_i, n);
           if (d > 0.f) {
-            return d * M_1_PI;
+            return d * (float)M_1_PI;
           }
           return 0.f;
         }
@@ -359,7 +359,7 @@ namespace barney {
           float fi = schlick_weight(n_dot_i);
           float fo = schlick_weight(n_dot_o);
           color = disney_diffuse_color(mat, n, w_o, w_i, w_h);
-          bsdf = M_1_PI * lerp_r(1.f, fd90, fi) * lerp_r(1.f, fd90, fo);
+          bsdf = (float)M_1_PI * lerp_r(1.f, fd90, fi) * lerp_r(1.f, fd90, fo);
         }
 
         inline
@@ -374,13 +374,13 @@ namespace barney {
           float Fss = lerp_r(1.0f, Fss90, FL) * lerp_r(1.0f, Fss90, FV);
           float ss = 1.25f * (Fss * (1.f / (n_dot_i + n_dot_o) - .5f) + .5f);
           color = disney_subsurface_color(mat, n, w_o, w_i);
-          bsdf = M_1_PI * ss;
+          bsdf = (float)M_1_PI * ss;
         }
 
         // Eavg in the algorithm is fitted into this
         inline
         __both__ float AverageEnergy(float rough){
-          float smoothness = 1.0 - rough;
+          float smoothness = 1.f - rough;
           float r = -0.0761947f - 0.383026f * smoothness;
           r = 1.04997f + smoothness * r;
           r = 0.409255f + smoothness * r;

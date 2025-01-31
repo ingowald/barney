@@ -42,14 +42,14 @@ namespace barney {
       case rtc::Texture::WRAP: {
 #if 1
         out = {};
-        tc = tc * N - .5f;
-        tc = fmodf(tc,N);
-        if (tc < 0.f) tc += N;
+        tc = tc * (float)N - .5f;
+        tc = fmodf(tc,(float)N);
+        if (tc < 0.f) tc += (float)N;
         float fc = floorf(tc);
         int ic = int(fc);
         out.f = tc - ic;
         out.idx0 = ic;
-        out.idx1 = int(fmodf(tc+1.f,N));
+        out.idx1 = int(fmodf(tc+1.f,(float)N));
 #else
         out = {};
         tc = tc * N + .5f;
@@ -272,9 +272,9 @@ namespace barney {
           int Nx = data->dims.x;
           int Ny = data->dims.y;
           int Nz = data->dims.z;
-          uint32_t lx = uint32_t(clamp(tc.x,0,Nx-1));
-          uint32_t ly = uint32_t(clamp(tc.y,0,Ny-1));
-          uint32_t lz = uint32_t(clamp(tc.z,0,Nz-1));
+          uint32_t lx = (uint32_t)clamp(tc.x,0.f,Nx-1.f);
+          uint32_t ly = (uint32_t)clamp(tc.y,0.f,Ny-1.f);
+          uint32_t lz = (uint32_t)clamp(tc.z,0.f,Nz-1.f);
           auto pixelAddress = [](int ix, int iy, int iz, int Nx, int Ny) {
             return (std::min(ix,std::min(iy,iz)) == -1)
               ? size_t(-1)
@@ -301,7 +301,6 @@ namespace barney {
         : TextureSampler(data, desc)
       {}
       virtual ~TextureSamplerT() {
-        while (true) PING;
       }
       vec4f tex1D(float tc) override
       {

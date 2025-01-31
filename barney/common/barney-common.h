@@ -70,8 +70,8 @@ namespace barney {
   using Random = LCG<8>;
 
 #define ONE_PI ((float)M_PI)
-#define TWO_PI (2.f*M_PI)
-#define FOUR_PI (4.f*M_PI)
+#define TWO_PI (2.f*ONE_PI)
+#define FOUR_PI (4.f*ONE_PI)
 #define ONE_OVER_PI (1.f/ONE_PI)
 #define ONE_OVER_TWO_PI (1.f/TWO_PI)
 #define ONE_OVER_FOUR_PI (1.f/FOUR_PI)
@@ -166,7 +166,11 @@ namespace barney {
 
   inline __both__ float clamp(float f, float lo=0.f, float hi=1.f)
   { return min(hi,max(lo,f)); }
-  
+  inline __both__ int clamp(int f, int lo, int hi)
+  {
+      return min(hi, max(lo, f));
+  }
+
 }
 
 #define BARNEY_NYI() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not yet implemented")

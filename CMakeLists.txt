@@ -68,7 +68,11 @@ if (NOT BARNEY_DISABLE_CUDA)
 	  )
         set(BARNEY_CUDA_ARCHITECTURES_INIT "70;80")
       else()
+	      if (WIN32)
+        set(BARNEY_CUDA_ARCHITECTURES_INIT "all-major")
+	      else()
         set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
+endif()
       endif()
       set(CMAKE_CUDA_ARCHITECTURES
         "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING

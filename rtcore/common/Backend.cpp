@@ -61,8 +61,8 @@ namespace barney {
         return createBackend_optix();
       } else if (fromEnv == "embree" || fromEnv == "cpu") {
         return createBackend_embree();
-      // } else if (fromEnv == "cuda") {
-      //   return createBackend_cuda();
+      } else if (fromEnv == "cuda") {
+        return createBackend_cuda();
       } else {
         throw std::runtime_error
           ("#barney: user requested unknown barney backend '"+fromEnv+"'");

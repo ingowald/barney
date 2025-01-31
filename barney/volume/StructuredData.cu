@@ -51,7 +51,7 @@ namespace barney {
             if (scalarID.y >= numScalars.y) continue;
             if (scalarID.z >= numScalars.z) continue;
             float f = tex3D<float>(scalars.texObjNN,
-                                   scalarID.x,scalarID.y,scalarID.z);
+                                   (float)scalarID.x, (float)scalarID.y, (float)scalarID.z);
             scalarRange.extend(f);
           }
       int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));

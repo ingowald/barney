@@ -53,7 +53,7 @@ namespace barney {
     if (gpuIDs.size() % dataGroupIDs.size())
       throw std::runtime_error("requested num GPUs is not a multiple of "
                                "requested num data groups");
-    int numSlots = dataGroupIDs.size();
+    int numSlots = (int)dataGroupIDs.size();
     int gpusPerSlot = (int)gpuIDs.size() / numSlots;
     std::vector<std::vector<int>> gpuInSlot(numSlots);
     perSlot.resize(numSlots);
@@ -72,7 +72,8 @@ namespace barney {
         rtc::Device *rtc = backend->createDevice(gpuID);
         Device *device
           = new Device(rtc,
-                       allDevices.size(),gpuIDs.size(),
+                       (int)allDevices.size(),
+              (int)gpuIDs.size(),
                        globalIndex*numSlots+lmsIdx,
                        globalIndexStep*numSlots);
         slotDevices.push_back(device);
@@ -80,7 +81,7 @@ namespace barney {
         dg.gpuIDs.push_back(gpuID);
       }
       dg.devices
-        = std::make_shared<DevGroup>(slotDevices,allDevices.size());
+        = std::make_shared<DevGroup>(slotDevices,(int)allDevices.size());
     }
     this->devices = std::make_shared<DevGroup>(allDevices,allDevices.size());
 
@@ -243,7 +244,7 @@ namespace barney {
 
   int Context::contextSize() const
   {
-    return devices->size();
+    return (int)devices->size();
   }
   
   

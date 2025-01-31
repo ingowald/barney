@@ -190,8 +190,8 @@ namespace barney {
     const float inv2Pi = ONE_OVER_TWO_PI;
     vec2f uv(phi * inv2Pi, theta * invPi);
     
-    int ix = clamp(int(uv.x*dims.x),0,dims.x-1);
-    int iy = clamp(int(uv.y*dims.y),0,dims.y-1);
+    int ix = (int)clamp(uv.x*(float)dims.x,0.f,dims.x-1.f);
+    int iy = (int)clamp(uv.y*(float)dims.y,0.f,dims.y-1.f);
 
     return {ix,iy};
   }

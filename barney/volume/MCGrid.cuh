@@ -72,6 +72,10 @@ namespace barney {
   }
   inline uint32_t __float_as_int(float f)
   { return (const uint32_t &)f; }
+  inline float __int_as_float(int i)
+  {
+      return (const float&)i;
+  }
 #endif
   
   inline __both__
@@ -81,9 +85,9 @@ namespace barney {
     if(old <= value) return old;
     do {
       assumed = old;
-      old = atomicCAS((unsigned int*)addr,
+      old = __int_as_float(atomicCAS((unsigned int*)addr,
                       __float_as_int(assumed),
-                      __float_as_int(value));
+                      __float_as_int(value)));
     } while(old!=assumed);
     return old;
   }
@@ -95,9 +99,9 @@ namespace barney {
     if(old >= value) return old;
     do {
       assumed = old;
-      old = atomicCAS((unsigned int*)addr,
+      old = __int_as_float(atomicCAS((unsigned int*)addr,
                       __float_as_int(assumed),
-                      __float_as_int(value));
+                      __float_as_int(value)));
     } while(old!=assumed);
     return old;
   }
