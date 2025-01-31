@@ -407,8 +407,8 @@ namespace barney {
         vec3f d = xfmVector(env.toLocal,normalize(ray.dir));
         float theta = pbrtSphericalTheta(d);
         float phi   = pbrtSphericalPhi(d);
-        const float invPi  = 1.f/M_PI;
-        const float inv2Pi = 1.f/(2.f*M_PI);
+        const float invPi  = 1.f/(float)M_PI;
+        const float inv2Pi = 1.f/(2.f* (float)M_PI);
         vec2f uv(phi * inv2Pi, theta * invPi);
 
         vec4f color = tex2D<vec4f>(env.texture,uv.x,uv.y);

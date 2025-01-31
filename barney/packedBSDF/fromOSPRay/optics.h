@@ -48,12 +48,14 @@ namespace barney {
       return (2.0f*cosI) * N - I;
     }
 
+#if 0
     /*! Reflects a viewing vector I at a normal N. */
     inline __both__  vec3f reflect(const vec3f& I, const vec3f& N)
     {
       return reflect(I, N, dot(I, N));
     }
-    
+#endif
+
     //! \brief Refracts a viewing vector I at a normal N
     /*! \detailed Refracts a viewing vector I at a normal N using the
      *  relative refraction index eta. Eta is refraction index of outside

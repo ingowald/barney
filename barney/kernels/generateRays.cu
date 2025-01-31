@@ -70,8 +70,8 @@ namespace barney {
       Ray ray;
       ray.misWeight = 0.f;
       ray.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
-      Random rand(ix+fbSize.x*accumID+ray.pixelID,
-                  iy+fbSize.y*accumID);
+      Random rand(unsigned(ix+fbSize.x*accumID+ray.pixelID),
+                  unsigned(iy+fbSize.y*accumID));
 
       ray.org  = camera.lens_00;
       float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));

@@ -124,11 +124,13 @@ endif()
 # ==================================================================
 if (BARNEY_BACKEND_CUDA)
   message("ENabling CUDA backend")
-  add_library(barney_rtc_cuda STATIC
+  add_library(barney_rtc_cuda OBJECT #STATIC
     cuda/CUDABackend.cu
     )
+  target_link_libraries(barney_rtc_cuda PUBLIC 
+    barney_rtc_config
+    )
 else()
-  target_link_libraries(barney_rtc_cuda PUBLIC barney_rtc_common)
   add_library(barney_rtc_cuda INTERFACE) # DUMMY!
 endif()
 

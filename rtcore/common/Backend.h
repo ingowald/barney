@@ -316,11 +316,13 @@ namespace barney {
 
     // helper function(s)
 
+    extern "C" {
     Backend *createBackend_cuda();
     Backend *createBackend_optix();
     Backend *createBackend_embree();
+    }
   }
-  
+
 }
 
 

@@ -458,7 +458,8 @@ namespace barney {
   }
   namespace rtc {
 
-    __attribute__((visibility("default")))
+    //__attribute__((visibility("default")))
+      extern "C"
     Backend *createBackend_optix()
     {
       PING;

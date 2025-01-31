@@ -50,7 +50,7 @@ namespace barney {
       Task *volatile task = 0;
 
       std::mutex mutex;
-      std::barrier<void(*)()> barrier;
+      std::barrier<void(*)() noexcept> barrier;
     };
 
     int numThreads() {
@@ -64,7 +64,7 @@ namespace barney {
     }
     
     LaunchSystem::LaunchSystem()
-      : barrier(numThreads()+1,[](){})
+      : barrier(numThreads()+1,[]() noexcept {})
     {
       threads.reserve(numThreads());
       for (int i=0;i<numThreads();i++)

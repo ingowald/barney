@@ -6,14 +6,6 @@ namespace barney {
     struct TextureData;
     struct Device;
 
-    // struct Compute : public rtc::Compute
-    // {
-    //   Compute(Device *device, const std::string &name);
-    // };
-      
-    
-    
-
     EmbreeBackend::EmbreeBackend()
     {
       numPhysicalDevices = 1;
@@ -30,6 +22,7 @@ namespace barney {
   }
   namespace rtc {
     
+      extern "C"
     Backend *createBackend_embree()
     {
       return new barney::embree::EmbreeBackend;

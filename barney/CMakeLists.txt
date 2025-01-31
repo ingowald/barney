@@ -14,20 +14,6 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-
-# -------------------------------------------------------
-set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
-target_compile_definitions(barney_config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
-
-# -------------------------------------------------------
-#option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
-
-# hard-coded 'off' for now, have to move that into the device abstraction
-set(BARNEY_DISABLE_DENOISING)
-
-if (BARNEY_DISABLE_DENOISING)
-  target_compile_definitions(barney_config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
-endif()
     
 # -------------------------------------------------------
 
@@ -318,6 +304,7 @@ target_link_libraries(barney PUBLIC
   $<BUILD_INTERFACE:barney_config>
   $<BUILD_INTERFACE:barney_rtc_common>
   $<BUILD_INTERFACE:barney_rtc_optix>
+  $<BUILD_INTERFACE:barney_rtc_cuda>
   $<BUILD_INTERFACE:barney_rtc_cuda_common>
   $<BUILD_INTERFACE:barney_rtc_embree>
   )
