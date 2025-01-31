@@ -311,7 +311,8 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
 
 install(
   TARGETS barney
-  EXPORT barneyTargets
+#  EXPORT barneyTargets
+  EXPORT barney-config
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     NAMELINK_SKIP
   # on Windows put the dlls into bin
@@ -319,7 +320,8 @@ install(
   # ... and the import lib into the devel package
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-install(EXPORT barneyTargets
+#install(EXPORT barneyTargets
+install(EXPORT barney-config
   DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
   NAMESPACE barney::
   )
@@ -337,15 +339,17 @@ if (BARNEY_MPI)
   else()
     install(
       TARGETS barney_mpi
-      EXPORT barney_mpiTargetrs
-      FILE
+#      EXPORT barney_mpiTargets
+      EXPORT barney_mpi-config
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       NAMELINK_SKIP
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       )
-    install(EXPORT barney_mpiTargets
-      FILE barney_mpiTargets.cmake
+#    install(EXPORT barney_mpiTargets
+    install(EXPORT barney_mpi-config
+#      FILE barney_mpiTargets.cmake
+      FILE barney_mpi-config.cmake
       DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
       NAMESPACE barney::
       )

@@ -13,7 +13,8 @@ find_dependency(Threads)
 #  find_dependency(anari)
 #endif()
 
-include(${CMAKE_CURRENT_LIST_DIR}/barneyTargets.cmake)
+#include(${CMAKE_CURRENT_LIST_DIR}/barneyTargets.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/barney-config.cmake)
 
 if (NOT TARGET barney::barney)
   message(FATAL_ERROR "CMAKE_PREFIX_PATH or barney_DIR are pointing to a \
@@ -32,4 +33,11 @@ if (@BARNEY_MPI@)
   set(BARNEY_BUILT_WITH_MPI ON)
 endif()
    
+
+foreach(component ${barney_FIND_COMPONENTS})
+  # For requested component, execute its "config" script
+  message("cfind component ${component}")
+  include(${CMAKE_CURRENT_LIST_DIR}/${component}-config.cmake)
+endforeach()
+
 check_required_components(@PROJECT_NAME@)

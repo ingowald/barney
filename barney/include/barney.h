@@ -16,12 +16,6 @@
 
 #pragma once
 
-#include <cstdint>
-#include <cstddef>
-#if BARNEY_MPI
-# include <mpi.h>
-#endif
-
 #define BARNEY_VERSION_MAJOR @BARNEY_VERSION_MAJOR@
 #define BARNEY_VERSION_MINOR @BARNEY_VERSION_MINOR@
 #define BARNEY_VERSION_PATCH @BARNEY_VERSION_PATCH@
@@ -29,6 +23,12 @@
 #cmakedefine01 BARNEY_BACKEND_OPTIX
 #cmakedefine01 BARNEY_BACKEND_CUDA
 #cmakedefine01 BARNEY_BACKEND_EMBREE
+
+#include <cstdint>
+#include <cstddef>
+#if BARNEY_MPI
+# include <mpi.h>
+#endif
 
 #if defined(_MSC_VER)
 #  define BARNEY_DLL_EXPORT __declspec(dllexport)
