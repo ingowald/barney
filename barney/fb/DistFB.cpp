@@ -46,10 +46,8 @@ namespace barney {
     double t0 = getCurrentTime();
     
     FrameBuffer::resize(size, channels);
-    std::vector<int> tilesOnGPU(devices->numLogical);//perDev.size());
+    std::vector<int> tilesOnGPU(devices->numLogical);
     for (auto device : *devices) {
-    // for (int localID = 0;localID < perDev.size(); localID++) {
-      // tilesOnGPU[localID] = perDev[localID]->numActiveTiles;
       tilesOnGPU[device->contextRank]
         = getPLD(device)->tiledFB->numActiveTiles;
     }
@@ -102,15 +100,32 @@ namespace barney {
       }
       gatheredTilesOnOwner.numActiveTiles = sumTiles;
 
-      if (gatheredTilesOnOwner.compressedTiles)
-        BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.compressedTiles));
-      if (gatheredTilesOnOwner.tileDescs)
-        BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.tileDescs));
-      BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.compressedTiles,
-                              sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles)));
-      BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.tileDescs,
-                              sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs)));
-      BARNEY_CUDA_SYNC_CHECK();
+      Device *frontDev = getDenoiserDevice();
+      
+      if (gatheredTilesOnOwner.compressedTiles) {
+        frontDev->rtc->freeMem(gatheredTilesOnOwner.compressedTiles);
+        gatheredTilesOnOwner.compressedTiles = 0;
+        // BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.compressedTiles));
+      }
+      
+      if (gatheredTilesOnOwner.tileDescs) {
+        // BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.tileDescs));
+        frontDev->rtc->freeMem(gatheredTilesOnOwner.tileDescs);
+        gatheredTilesOnOwner.tileDescs = 0;
+      }
+      
+      // BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.compressedTiles,
+      //                         sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles)));
+      gatheredTilesOnOwner.compressedTiles
+        = (CompressedTile *)frontDev->rtc->alloc
+        (sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles));
+      
+      // BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.tileDescs,
+      //                         sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs)));
+      gatheredTilesOnOwner.tileDescs
+        = (TileDesc *)frontDev->rtc->alloc
+        (sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs));
+      // BARNEY_CUDA_SYNC_CHECK();
     }
     
     // ------------------------------------------------------------------

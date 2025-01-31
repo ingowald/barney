@@ -20,7 +20,7 @@ namespace barney {
 
     rtc::Denoiser *Device::createDenoiser()
     {
-#if OPTIX_VERSION >= 80000
+#if !OPTIX_DISABLE_DENOISING && OPTIX_VERSION >= 80000
       return new Denoiser(this);
 #else
       // we only support optix 8 denoiser
@@ -35,6 +35,14 @@ namespace barney {
     }
 
 
+
+    void Device::sync()
+    {
+      cuda::BaseDevice::sync();
+      for (auto s : activeTraceStreams)
+        cudaStreamSynchronize(s);
+      activeTraceStreams.clear();
+    }
     
     OptixBackend::OptixBackend()
     {}
@@ -297,9 +305,10 @@ namespace barney {
                      const void *dd) 
       {
         cuda::SetActiveGPU forDuration(device);
+        if (nb.x == 0) return;
         launchFct(nb,bs,0,((cuda::BaseDevice*)device)->stream,dd);
 
-        cudaDeviceSynchronize();
+        // cudaDeviceSynchronize();
       }
     };
     
@@ -348,12 +357,19 @@ namespace barney {
         // schedule this trace call into the existing cuda stream, and
         // consequently have to do a manual sync here to make sure
         // that whatever is in the cuda stream is already done by the
-        // time the owl trace gets launched 
+        // time the owl trace gets launched
+        if (dims.x == 0 || dims.y == 0) return;
+        
         cuda::SetActiveGPU forDuration(device);
         BARNEY_CUDA_CALL(StreamSynchronize(/*inherited!*/device->stream));
         
         owlParamsSetRaw(lp,"raw",dd,0);
-        owlAsyncLaunch2DOnDevice(rg,dims.x,dims.y,0,lp);
+        owlAsyncLaunch2D(rg,dims.x,dims.y,lp);
+
+        device->activeTraceStreams.push_back(lpStream);
+        // owlAsyncLaunch2DOnDevice(rg,dims.x,dims.y,0,lp);
+
+        // owlLaunchSync(lp);
       }
       
       void launch(int launchDims,
@@ -363,8 +379,11 @@ namespace barney {
       }
       void sync() override
       {
+        printf("optixbe syn lp %p\n",lp);
         cuda::SetActiveGPU forDuration(device);
+        owlLaunchSync(lp);
         BARNEY_CUDA_CALL(StreamSynchronize(lpStream));
+        BARNEY_CUDA_CALL(StreamSynchronize(device->stream));
         // cudaDeviceSynchronize();
       }
      

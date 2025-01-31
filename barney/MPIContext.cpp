@@ -332,11 +332,18 @@ namespace barney {
     done (false) */
   bool MPIContext::forwardRays()
   {
-    if (numDifferentModelSlots == 1)
-      return false;
-
+    // PING; PRINT(numDifferentModelSlots); exit(0);
     int numDevices = devices->size();
     std::vector<MPI_Request> allRequests;
+
+    syncCheckAll();
+    if (numDifferentModelSlots == 1) {
+      // do NOT copy or swap. rays are in trace queue, which is also
+      // the shade read queue, so nothing to do.
+      //
+      // no more trace rounds required: return false
+      return false;
+    }
 
     // ------------------------------------------------------------------
     // exchange how many we're going to send/recv

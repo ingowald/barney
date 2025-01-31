@@ -112,6 +112,10 @@ namespace barney {
       void freeGroup(rtc::Group *) override;
          
       OWLContext      owl = 0;
+
+      void sync() override;
+      
+      std::vector<cudaStream_t> activeTraceStreams;
     };
     
   }

@@ -12,6 +12,14 @@
 # include <embree4/rtcore_ray.h>
 #endif
 
+
+#if defined(_MSC_VER)
+#elif defined(__clang__) || defined(__GNUC__)
+#  define BARNEY_VISIBILITY_DEFAULT  __attribute__((visibility("default")))
+#else
+#endif
+
+
 namespace barney {
   // namespace rtc {
 
@@ -121,10 +129,10 @@ namespace barney {
       inline __both__ float atomicAdd(float *ptr, float inc) const
       { return ((std::atomic<float> *)ptr)->fetch_add(inc); }
 #  endif
-      vec3ui threadIdx;
-      vec3ui blockIdx;
-      vec3ui blockDim;
-      vec3ui gridDim;
+      // vec3ui threadIdx;
+      // vec3ui blockIdx;
+      // vec3ui blockDim;
+      // vec3ui gridDim;
     };
   }
 #endif
@@ -155,6 +163,7 @@ namespace barney {
     
 #  define RTC_DECLARE_CUDA_COMPUTE(KernelName,ClassName)                \
     extern "C" void                                                     \
+    BARNEY_VISIBILITY_DEFAULT                                           \
     barney_rtc_cuda_launch_##KernelName(::barney::vec3ui nb,            \
                                         ::barney::vec3ui bs,            \
                                         int shmSize,                    \

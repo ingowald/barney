@@ -55,29 +55,28 @@ if (NOT BARNEY_DISABLE_CUDA)
     # set cmake cuda arch - this ahs to happen _before_
     # enable_language(cuda), or cmake will default to '52', which is
     # almost certainly going to be wrong
-    if (NOT CMAKE_CUDA_ARCHITECTURES)
-      if (${CMAKE_VERSION} VERSION_LESS 3.24)
-        # 'native' only appeared in cmake 3.24
-        message(AUTHOR_WARNING
-	  " You're using a cmake < 3.24; we cannot use the 'native' or \n"
-	  " 'all-major' targets with that, so will default to '70;80'\n"
-	  " If you want/need to build for other architectures, either\n"
-	  " set this to something else in the cmake dialog, or call\n"
-	  " cmake with an explicit list such as, for example\n"
-	  "     cmake -DCMAKE_CUDA_ARCHITECTURES=\"75;80;86\" ...\n"
-	  )
-        set(BARNEY_CUDA_ARCHITECTURES_INIT "70;80")
-      else()
-	      if (WIN32)
+    #    if (NOT CMAKE_CUDA_ARCHITECTURES)
+    if (${CMAKE_VERSION} VERSION_LESS 3.24)
+      # 'native' only appeared in cmake 3.24
+      message(AUTHOR_WARNING
+        " You're using a cmake < 3.24; we cannot use the 'native' or \n"
+        " 'all-major' targets with that, so will default to '70;80'\n"
+        " If you want/need to build for other architectures, either\n"
+        " set this to something else in the cmake dialog, or call\n"
+        " cmake with an explicit list such as, for example\n"
+        "     cmake -DCMAKE_CUDA_ARCHITECTURES=\"75;80;86\" ...\n"
+	)
+      set(BARNEY_CUDA_ARCHITECTURES_INIT "70;80")
+    else()
+      if (WIN32)
         set(BARNEY_CUDA_ARCHITECTURES_INIT "all-major")
-	      else()
+      else()
         set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
-endif()
       endif()
-      set(CMAKE_CUDA_ARCHITECTURES
-        "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
-        "Which CUDA architecture to build for")
     endif()
+    set(CMAKE_CUDA_ARCHITECTURES
+      "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
+      "Which CUDA architecture to build for")
     
     enable_language(CUDA)
     set(BARNEY_HAVE_CUDA ON)
@@ -106,7 +105,10 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
- 
+#set_target_properties(my_library PROPERTIES CXX_VISIBILITY_PRESET hidden)
+#set(PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+
 # ------------------------------------------------------------------
 # owl - even if we build only for cpu (we we wouldn't use the owl
 # _library_) we'd still need the owl common classes ... so this
@@ -156,19 +158,28 @@ else()
 endif()
 
 # ==================================================================
-option(BARNEY_DISABLE_OIDN "DISable OIDN even if found?" OFF)
-if (NOT BARNEY_DISABLE_OIDN)
-  find_package(OpenImageDenoise)
-  if (OIDN_DEVICE_CPU)
-    message("found OIDN *CPU* device")
-    set(BARNEY_OIDN_CPU ON)
+option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
+
+# ==================================================================
+if (BARNEY_DISABLE_DENOISING)
+  set(BARNEY_DISABLE_OIDN ON)
+  set(BARNEY_OIDN_CPU OFF)
+  set(BARNEY_OIDN_CPU OFF)
+else()
+  option(BARNEY_DISABLE_OIDN "DISable OIDN even if found?" OFF)
+  if (NOT BARNEY_DISABLE_OIDN)
+    find_package(OpenImageDenoise)
+    if (OIDN_DEVICE_CPU)
+      message("found OIDN *CPU* device")
+      set(BARNEY_OIDN_CPU ON)
+    endif()
+    if (OIDN_DEVICE_GPU)
+      message("found OIDN *GPU* device")
+      set(BARNEY_OIDN_GPU ON)
+    endif()
   endif()
-  if (OIDN_DEVICE_GPU)
-    message("found OIDN *GPU* device")
-    set(BARNEY_OIDN_GPU ON)
-  endif()
+  message("BARNEY_OIDN_CPU ${BARNEY_OIDN_CPU}")
 endif()
-message("BARNEY_OIDN_CPU ${BARNEY_OIDN_CPU}")
 
 # ------------------------------------------------------------------
 # rtcore

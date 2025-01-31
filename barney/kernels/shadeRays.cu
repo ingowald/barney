@@ -851,13 +851,10 @@ namespace barney {
     inline __both__
     void ShadeRaysKernel::run(const RTCBackend &rt)
     {
+      bool dbg = 0;
       int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
       if (tid >= numRays) return;
 
-      // pixel 105798 frag 8.085938 11.882812 18.906250
-      // pixel 864686 frag 7.183594 10.132812 11.132812
-      // resetting accumid
-      
       Ray path = readQueue[tid];
 
       float alpha
@@ -879,8 +876,6 @@ namespace barney {
       Ray shadowRay;
       shadowRay.tMax = -1.f;
       
-      // printf("sammpling dir for N %f %f %f\n",dg.N.x,dg.N.y,dg.N.z);
-
       // bounce that ray on the scene, possibly generating a) a fragment
       // to add to frame buffer; b) a outgoing ray (in-place
       // modification of 'path'); and/or c) a shadow ray
@@ -890,7 +885,7 @@ namespace barney {
              generation);
     
       // write shadow and bounce ray(s), if any were generated
-      if (path.dbg)
+      if (dbg)
         printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
                path.tMax,shadowRay.tMax,
                fragment.x,fragment.y,fragment.z);
@@ -910,8 +905,6 @@ namespace barney {
 #if DENOISE
       vec3f &valueToAccumNormalInto
         = accumTiles[tileID].normal[tileOfs];
-      // if (generation == 0)
-      //   accumTiles[tileID].normal[tileOfs] = incomingN;
 #endif
       
       // ==================================================================
@@ -928,28 +921,18 @@ namespace barney {
       // ==================================================================
 
       // clamping ...
-
-      // auto checkFragComp = [path](float f) {
-      //   if (isnan(f)) printf("NAN fragment!\n");
-      //   if (isinf(f)) printf("INF fragment!\n");
-      //   if (f > 1e3f) printf("huge fragment %f, %i\n",f,path.pixelID);
-      // };
-      // checkFragComp(fragment.x);
-      // checkFragComp(fragment.y);
-      // checkFragComp(fragment.z);
-
       float clampMax = 10.f*(1+accumID);
       fragment = min(fragment,vec3f(clampMax));
 
       if (accumID == 0 && generation == 0) {
-        if (path.dbg) printf("init frag %f %f %f\n",
+        if (dbg) printf("init frag %f %f %f\n",
                              fragment.x,fragment.y,fragment.z);
         valueToAccumInto = vec4f(fragment.x,fragment.y,
                                  fragment.z,alpha);
-        if (path.dbg) printf("valueToAcc %f %f %f %f\n",
+        if (dbg) printf("valueToAcc %f %f %f %f\n",
                              valueToAccumInto.x,valueToAccumInto.y,valueToAccumInto.z,valueToAccumInto.w);
       } else {
-        if (path.dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
+        if (dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         if (generation == 0 && alpha) 
           rt.atomicAdd(&valueToAccumInto.w,alpha);
 
@@ -990,6 +973,7 @@ namespace barney {
     for (auto slotModel : model->modelSlots) {
       World *world = slotModel->world.get();
       for (auto device : *world->devices) {
+        SetActiveGPU forDuration(device);
         RayQueue *rayQueue = device->rayQueue;
         TiledFB *devFB     = fb->getFor(device);
         int numRays        = rayQueue->numActive;
@@ -999,7 +983,6 @@ namespace barney {
           = world->getDD(device);
         Renderer::DD devRenderer
           = renderer->getDD(device);
-        rayQueue->resetWriteQueue();
 
         render::ShadeRaysKernel args = {
           devWorld,devRenderer,
@@ -1008,7 +991,8 @@ namespace barney {
           rayQueue->traceAndShadeReadQueue,
           numRays,
           rayQueue->receiveAndShadeWriteQueue,
-          rayQueue->_d_nextWritePos,generation
+          rayQueue->_d_nextWritePos,
+          generation,
         };
         device->shadeRays->launch(nb,bs,&args);
       }
@@ -1018,10 +1002,11 @@ namespace barney {
     // wait for kernel to complete, and swap queues 
     // ------------------------------------------------------------------
     for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
-      // device->rayQueue->resetWriteQueue();
+      device->rayQueue->resetWriteQueue();
     }
   }
   

@@ -149,8 +149,6 @@ namespace barney {
                         const barney::Camera::DD &camera, 
                         FrameBuffer *fb) = 0;
 
-    std::mutex mutex;
-    std::map<Object::SP,int> hostOwnedHandles;
     // std::vector<barney::DeviceGroup::SP> barneys;
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
@@ -162,25 +160,8 @@ namespace barney {
         support */
     void warn_unsupported_object(const std::string &kind,
                                  const std::string &type);
-    std::set<std::string> alreadyWarned;
-
-    SlotContext *getSlot(int slot);
-    std::vector<SlotContext> perSlot;
-    
-    const bool isActiveWorker;
-
-    /*! return the single 'global' own context that spans all gpus, no
-        matter how many model slots those are grouped in; in theory
-        this should be used for very, very little - almost all data
-        should live in a model slots (which has its own context), only
-        truly global data (such as renderer background image) should
-        ever be global */
-    // OWLContext getOWL(int slot);// { return globalContextAcrossAllGPUs; }
-    // OWLContext getGlobalOWL() const;
-    // rtc::DevGroup *getRTC(int slot) const;
-    
-    
-    DevGroup::SP getDevices(int slot) {
+    DevGroup::SP getDevices(int slot)
+    {
       if (slot < 0)
         return this->devices;
       else 
@@ -189,6 +170,13 @@ namespace barney {
     
     int contextSize() const;
 
+    std::mutex mutex;
+    std::map<Object::SP,int> hostOwnedHandles;
+    const bool isActiveWorker;
+    std::set<std::string> alreadyWarned;
+
+    SlotContext *getSlot(int slot);
+    std::vector<SlotContext> perSlot;
     DevGroup::SP devices;
   };
   
@@ -204,19 +192,7 @@ namespace barney {
   inline void Context::syncCheckAll(const char *where)
   {
     for (auto device : *devices)
-      device->rtc->sync();
-      // {
-      // SetActiveGPU forDuration(dev->device);
-
-      // cudaDeviceSynchronize();                                   
-      // cudaError_t rc = cudaGetLastError();                        
-      // if (rc != cudaSuccess) {                                    
-      //   printf("******************************************************************\nCUDA fatal error %s (%s)\n",
-      //          cudaGetErrorString(rc),where);
-      //   fflush(0);
-      //   throw std::runtime_error("unrecoverable cuda error");
-      // }                                                              
-  // }
+      device->sync();
   }
     
 }

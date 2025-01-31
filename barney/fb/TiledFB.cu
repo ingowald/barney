@@ -118,11 +118,13 @@ namespace barney {
     CompressedTile *compressedTiles;
     AccumTile      *accumTiles;
     float           accumScale;
+    int             globalIdx;
+    int             globalIdxStep;
 
     template<typename RTCore>
     inline __both__
     void run(const RTCore &rtCore)
-    {
+    { 
       int pixelID = rtCore.getThreadIdx().x;
       int tileID  = rtCore.getBlockIdx().x;
 
@@ -155,7 +157,9 @@ namespace barney {
       CompressTiles args = {
         compressedTiles,
         accumTiles,
-        1.f/(owner->accumID)
+        1.f/(owner->accumID),
+        device->globalIndex,
+        device->globalIndexStep,
       };
       device->compressTiles
         ->launch(numActiveTiles,pixelsPerTile,

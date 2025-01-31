@@ -85,7 +85,10 @@ namespace barney {
       //                         cudaMemcpyDefault));
       sumTiles += devFB->numActiveTiles;
     }
-    gatheredTilesOnOwner.numActiveTiles = sumTiles;    
+    gatheredTilesOnOwner.numActiveTiles = sumTiles;
+    
+    for (auto device : *devices)
+      device->sync();
   }
   
   LocalFB::~LocalFB()

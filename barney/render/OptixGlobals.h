@@ -30,6 +30,7 @@ namespace barney {
       const OptixGlobals &get(const DevInterface &dev);
       
       int                    numRays;
+      int                    globalIndex;
       Sampler::DD           *samplers;
       DeviceMaterial        *materials;
       // OptixTraversableHandle world;

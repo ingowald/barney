@@ -61,19 +61,21 @@ namespace barney {
     void GenerateRays::run(const RTBackend &rt)
     {
       // ------------------------------------------------------------------
-      int tileID = rt.getBlockIdx().x;
-    
+      int tileID   = rt.getBlockIdx().x;
+      int lPixelID = rt.getThreadIdx().x;
+
       vec2i tileOffset = tileDescs[tileID].lower;
-      int ix = (rt.getThreadIdx().x % tileSize) + tileOffset.x;
-      int iy = (rt.getThreadIdx().x / tileSize) + tileOffset.y;
+      int ix = (lPixelID % tileSize) + tileOffset.x;
+      int iy = (lPixelID / tileSize) + tileOffset.y;
 
       Ray ray;
       ray.misWeight = 0.f;
       ray.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
-      Random rand(unsigned(ix+fbSize.x*accumID+ray.pixelID),
+      Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
 
       ray.org  = camera.lens_00;
+
       float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));
       float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y));
       float aspect = fbSize.x / float(fbSize.y);
@@ -117,12 +119,12 @@ namespace barney {
       ray.rngSeed     = rand.state;
       ray.tMax        = 1e30f;
       ray.numDiffuseBounces = 0;
-      if (1 && ray.dbg)
+      if (0 && ray.dbg)
         printf("-------------------------------------------------------\n");
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              
-      if (1 && ray.dbg)
+      if (0 && ray.dbg)
         printf("======================\nspawned %f %f %f dir %f %f %f\n",
                ray.org.x,
                ray.org.y,
@@ -177,6 +179,7 @@ namespace barney {
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
     for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
       TiledFB *devFB = fb->getFor(device);
       device->rayQueue->resetWriteQueue();
       render::GenerateRays args = {
@@ -188,7 +191,7 @@ namespace barney {
         device->rayQueue->_d_nextWritePos,
         device->rayQueue->receiveAndShadeWriteQueue,
         devFB->tileDescs,
-        enablePerRayDebug
+        enablePerRayDebug,
       };
       device->generateRays->launch(devFB->numActiveTiles,
                                    pixelsPerTile,
@@ -198,10 +201,11 @@ namespace barney {
     // wait for all GPUs' completion
     // ------------------------------------------------------------------
     for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
-      // device->rayQueue->resetWriteQueue();
+      device->rayQueue->resetWriteQueue();
     }
   }
 }

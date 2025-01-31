@@ -61,8 +61,8 @@ namespace barney {
     };
     
   }
-
-
+  
+      
   void Context::traceRaysLocally(GlobalModel *globalModel)
   {
     // ------------------------------------------------------------------
@@ -70,6 +70,7 @@ namespace barney {
     // ------------------------------------------------------------------
     for (auto model : globalModel->modelSlots)
       for (auto device : *model->devices) {
+        SetActiveGPU forDuration(device);
         barney::render::OptixGlobals dd;
         auto ctx     = model->slotContext;
         dd.rays      = device->rayQueue->traceAndShadeReadQueue;
@@ -77,7 +78,7 @@ namespace barney {
         dd.world     = model->getInstanceAccel(device);
         dd.materials = ctx->materialRegistry->getDD(device);
         dd.samplers  = ctx->samplerRegistry->getDD(device);
-        
+        dd.globalIndex = device->globalIndex;
         int bs = 1024;
         int nb = divRoundUp(dd.numRays,bs);
         device->traceRays->launch(vec2i(nb,bs),&dd);

@@ -292,7 +292,9 @@ CUDA_SOURCE(umesh/os/RTXObjectSpace.cu)
 CUDA_SOURCE(umesh/os/AWT.cu)
 CUDA_SOURCE(amr/BlockStructuredField.cu)
 CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
-  
+
+find_package(CUDAToolkit REQUIRED)
+
 # ------------------------------------------------------------------
 # barney itself
 # ------------------------------------------------------------------
@@ -307,6 +309,7 @@ target_link_libraries(barney PUBLIC
   $<BUILD_INTERFACE:barney_rtc_cuda>
   $<BUILD_INTERFACE:barney_rtc_cuda_common>
   $<BUILD_INTERFACE:barney_rtc_embree>
+#    CUDA::cuda_driver
   )
 
 if (BARNEY_BACKEND_OPTIX)
@@ -326,10 +329,12 @@ endif()
 set_target_properties(barney
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
+  CXX_VISIBILITY_PRESET hidden
+  CUDA_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+  #  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  #  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  #  CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
   )
 
 if (BARNEY_MPI)
@@ -346,18 +351,39 @@ if (BARNEY_MPI)
     fb/DistFB.h
     fb/DistFB.cpp
     )
-  set_target_properties(barney_mpi
-    PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-    )
+  if (OFF)
+    set_target_properties(barney_mpi
+      PROPERTIES
+      CUDA_SEPARABLE_COMPILATION ON
+      POSITION_INDEPENDENT_CODE ON
+      CXX_VISIBILITY_PRESET hidden
+      CUDA_VISIBILITY_PRESET hidden
+      #    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+      #    CUDA_USE_STATIC_CUDA_RUNTIME ON
+      #    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+      )
+  endif()
   target_link_libraries(barney_mpi PUBLIC
-    barney
+#    $<BUILD_INTERFACE:barney_config>
+#    $<BUILD_INTERFACE:barney_rtc_common>
+#    $<BUILD_INTERFACE:barney_rtc_optix>
+#    $<BUILD_INTERFACE:barney_rtc_cuda>
+#    $<BUILD_INTERFACE:barney_rtc_cuda_common>
+#    $<BUILD_INTERFACE:barney_rtc_embree>
+#    $<BUILD_INTERFACE:barney-triangles-ptx>
+#    $<BUILD_INTERFACE:barney-capsules-ptx>
+#    $<BUILD_INTERFACE:barney-spheres-ptx>
+    #
+#    $<BUILD_INTERFACE:barney-StructuredData-ptx>
+    #
+#    $<BUILD_INTERFACE:barney-traceRays-ptx>
+#    $<BUILD_INTERFACE:barney>
+#    barney
     # link to mpi during build only
-    $<BUILD_INTERFACE:MPI::MPI_CXX>
+#    $<BUILD_INTERFACE:MPI::MPI_CXX>
+    #    CUDA::cuda_driver
+    barney
+    MPI::MPI_CXX
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
