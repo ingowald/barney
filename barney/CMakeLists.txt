@@ -356,6 +356,7 @@ if (BARNEY_MPI)
     )
   target_link_libraries(barney_mpi PUBLIC
     barney
+    # link to mpi during build only
     $<BUILD_INTERFACE:MPI::MPI_CXX>
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)

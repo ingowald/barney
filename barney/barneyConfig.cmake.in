@@ -29,6 +29,10 @@ set(BARNEY_DATAROOTDIR
   ${CMAKE_CURRENT_LIST_DIR}/../../../@CMAKE_INSTALL_DATAROOTDIR@/barney
 )
 
+if (TARGET barney::barney_mpi)
+  find_dependency(MPI::MPI_CXX)
+endif()
+
 if (@BARNEY_MPI@)
   set(BARNEY_BUILT_WITH_MPI ON)
 endif()
