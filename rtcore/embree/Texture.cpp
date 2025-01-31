@@ -301,7 +301,6 @@ namespace barney {
         : TextureSampler(data, desc)
       {}
       virtual ~TextureSamplerT() {
-        while (true) PING;
       }
       vec4f tex1D(float tc) override
       {
