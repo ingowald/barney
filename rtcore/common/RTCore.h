@@ -16,7 +16,11 @@
 #if defined(_MSC_VER)
 #  define BARNEY_VISIBILITY_DEFAULT /* nothing */
 #elif defined(__clang__) || defined(__GNUC__)
+# if __CUDACC__
+#  define BARNEY_VISIBILITY_DEFAULT /* nothing */
+# else
 #  define BARNEY_VISIBILITY_DEFAULT  __attribute__((visibility("default")))
+# endif
 #else
 #  define BARNEY_VISIBILITY_DEFAULT /* nothing */
 #endif
