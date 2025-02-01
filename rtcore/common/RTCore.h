@@ -180,6 +180,7 @@ namespace barney {
 #if BARNEY_BACKEND_EMBREE
 #  define RTC_DECLARE_EMBREE_COMPUTE(KernelName,ClassName)              \
   extern "C"                                                            \
+  BARNEY_VISIBILITY_DEFAULT                                             \
   void barney_rtc_embree_computeBlock_##KernelName                      \
   (::barney::embree::ComputeInterface &ci,const void *dd)               \
   {                                                                     \
@@ -192,6 +193,7 @@ namespace barney {
   
 #  define RTC_DECLARE_EMBREE_TRACE(KernelName,RayGenType)               \
   extern "C"                                                            \
+  BARNEY_VISIBILITY_DEFAULT                                             \
   void barney_rtc_embree_trace_##KernelName                             \
   (::barney::embree::TraceInterface &rt)                                \
   {                                                                     \
@@ -200,16 +202,19 @@ namespace barney {
 
 #define RTC_DECLARE_EMBREE_USER_GEOM(name,type)             \
                                                             \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
   void barney_embree_ch_##name                              \
   (::barney::embree::TraceInterface &rtcore)                \
   { type::closest_hit(rtcore); }                            \
                                                             \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
   void barney_embree_ah_##name                              \
   (::barney::embree::TraceInterface &rtcore)                \
   { type::any_hit(rtcore); }                                \
                                                             \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
   void barney_embree_bounds_##name                          \
   (::barney::embree::TraceInterface &rtcore,                \
@@ -218,6 +223,7 @@ namespace barney {
    int primID)                                              \
   { type::bounds(rtcore,dd,bounds,primID); }                \
                                                             \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
   void barney_embree_intersect_##name                       \
   (::barney::embree::TraceInterface &rtcore)                \
@@ -226,11 +232,13 @@ namespace barney {
   
 #define RTC_DECLARE_EMBREE_TRIANGLES_GEOM(name,type)        \
                                                             \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
   void barney_embree_ch_##name                              \
   (::barney::embree::TraceInterface &rtcore)                \
   { type::closest_hit(rtcore); }                            \
                                                             \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
   void barney_embree_ah_##name                              \
   (::barney::embree::TraceInterface &rtcore)                \
@@ -240,7 +248,7 @@ namespace barney {
 #  define RTC_DECLARE_EMBREE_COMPUTE(KernelName,ClassName) /* nothing */
 #  define RTC_DECLARE_EMBREE_TRACE(KernelName,ClassName) /* nothing */
 #  define RTC_DECLARE_EMBREE_TRIANGLES_GEOM(name,type) /* nothing */
-#define RTC_DECLARE_EMBREE_USER_GEOM(name,type)        /* nothing */
+#  define RTC_DECLARE_EMBREE_USER_GEOM(name,type)        /* nothing */
 #endif
 
   
@@ -564,6 +572,7 @@ namespace barney {
 #define RTC_DECLARE_USER_GEOM(name,type)   \
   RTC_DECLARE_OPTIX_USER_GEOM(name,type)   \
   RTC_DECLARE_EMBREE_USER_GEOM(name,type)     
+
 
 
 

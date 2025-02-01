@@ -112,11 +112,11 @@ namespace barney {
       if (self.colors)
         (vec3f&)hitData.color = self.colors[primID];
     
-      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
+      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
       { /* does not make sense for spheres *///return make_float4(0,0,0,1);
 
         // doesn't make sense, but anari sdk assumes for spheres per-vtx is same as per-prim
-        float4 v = attrib.fromArray.valueAt(hitData.primID,ray.dbg);
+        vec4f v = attrib.fromArray.valueAt(hitData.primID,ray.dbg);
         if (ray.dbg)
           printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
         return v;

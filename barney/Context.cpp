@@ -265,7 +265,11 @@ namespace barney {
 
   bool Context::logging() 
   {
+#ifdef NDEBUG
+    return false;
+#else
     return true;
+#endif
   }
   
   /*! helper function to print a warning when app tries to create anari

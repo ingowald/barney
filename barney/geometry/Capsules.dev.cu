@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/geometry/Capsules.h"
-#include "owl/owl_device.h"
 
 RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
@@ -261,7 +260,7 @@ namespace barney {
       }
 
       // interpolator for anari-style color/attribute interpolation
-      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
+      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
       {
         const vec4f value_a = attrib.fromArray.valueAt(idx.x);
         const vec4f value_b = attrib.fromArray.valueAt(idx.y);

@@ -123,7 +123,7 @@ namespace barney {
       hitData.isShadowRay     = ray.isShadowRay;
     
       auto interpolator
-        = [&](const GeometryAttribute::DD &attrib) -> float4
+        = [&](const GeometryAttribute::DD &attrib) -> vec4f
         {
           const vec4f value_a = attrib.fromArray.valueAt(triangle.x);
           const vec4f value_b = attrib.fromArray.valueAt(triangle.y);

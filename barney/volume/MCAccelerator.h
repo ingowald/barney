@@ -85,9 +85,9 @@ namespace barney {
   rtc::GeomType *MCVolumeAccel<SFType>::createGeomType(rtc::Device *device)
   {
     std::string typeName = getTypeName();
-    std::cout << OWL_TERMINAL_GREEN
-              << "creating '" << typeName << "' Volume type"
-              << OWL_TERMINAL_DEFAULT << std::endl;
+    // std::cout << OWL_TERMINAL_GREEN
+    //           << "creating '" << typeName << "' Volume type"
+    //           << OWL_TERMINAL_DEFAULT << std::endl;
 
     return device->createUserGeomType(typeName.c_str(),
                                       sizeof(DD),

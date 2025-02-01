@@ -275,6 +275,9 @@ endif()
 CUDA_SOURCE(kernels/traceRays.cu)
 CUDA_SOURCE(kernels/generateRays.cu)
 CUDA_SOURCE(kernels/shadeRays.cu)
+CUDA_SOURCE(geometry/Triangles.dev.cu)
+CUDA_SOURCE(geometry/Spheres.dev.cu)
+CUDA_SOURCE(geometry/Capsules.dev.cu)
 CUDA_SOURCE(Camera.cu)
 CUDA_SOURCE(fb/FrameBuffer.cu)
 CUDA_SOURCE(fb/TiledFB.cu)
@@ -286,6 +289,7 @@ CUDA_SOURCE(light/EnvMap.cu)
 CUDA_SOURCE(kernels/shadeRays.cu)
 CUDA_SOURCE(volume/MCGrid.cu)
 CUDA_SOURCE(volume/StructuredData.cu)
+CUDA_SOURCE(volume/StructuredData.dev.cu)
 CUDA_SOURCE(umesh/common/UMeshField.cu)
 CUDA_SOURCE(umesh/mc/UMeshCUBQLSampler.cu)
 CUDA_SOURCE(umesh/os/RTXObjectSpace.cu)
@@ -301,6 +305,12 @@ CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
 add_library(barney SHARED
   ${BARNEY_SOURCES}
   )
+if (APPLE)
+  set_target_properties(barney PROPERTIES INSTALL_RPATH "$loader_path")
+else()
+  set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+
 target_link_libraries(barney PUBLIC
   # base config and rtcore - these go into barney, one way or another
   $<BUILD_INTERFACE:barney_config>

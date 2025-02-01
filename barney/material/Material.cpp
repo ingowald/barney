@@ -95,6 +95,7 @@ namespace barney {
       static std::set<std::string> alreadyCreated;
       if (alreadyCreated.find(type) == alreadyCreated.end()) {
         alreadyCreated.insert(type);
+        if (Context::logging())
         std::cout << "#bn: creating (at least one of) material type '" << type << "'" << std::endl;
       }
 #endif

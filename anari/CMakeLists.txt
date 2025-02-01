@@ -113,16 +113,16 @@ generate_export_header(anari_library_barney
 
 ## Installation ##
 
-set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$ORIGIN")
+if (APPLE)
+  set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$loader_path")
+else()
+  set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
 install(TARGETS barney anari_library_barney
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
-
-
-
-
 
 
 
