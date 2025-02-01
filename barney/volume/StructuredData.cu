@@ -100,7 +100,6 @@ namespace barney {
   StructuredData::DD StructuredData::getDD(Device *device)
   {
     DD dd;
-    // ScalarField::writeDD(dd,device);
     dd.worldBounds = worldBounds;
     dd.texObj = texture->getDD(device).texObj;
     dd.cellGridOrigin = gridOrigin;

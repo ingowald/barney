@@ -38,19 +38,6 @@ namespace barney {
     struct DD {
       /*! world bounds, CLIPPED TO DOMAIN (if non-empty domain is present!) */
       box3f                worldBounds;
-
-      /*! "template-virtual" function that a sampler calls on an
-          _already_ transfer-function mapped RGBA value, allowing the
-          scalar field to do some additional color mapping on top of
-          whatever came out of the transfer function. the default
-          implementation (provided here int his base class coommon to
-          all scalar fields) is to just return the xf-color mapped
-          RBGA value */
-      // inline __both__ vec4f mapColor(vec4f xfColorMapped,
-      //                                vec3f point, float scalar) const
-      // { return xfColorMapped; }
-
-      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
     ScalarField(Context *context,
@@ -61,9 +48,6 @@ namespace barney {
                                   const DevGroup::SP &devices,
                                   const std::string &type);
 
-    // virtual void writeDD(DD &dd, Device *device)
-    // { dd.worldBounds = worldBounds; }
-    
     virtual std::shared_ptr<VolumeAccel> createAccel(Volume *volume) = 0;
 
     virtual void buildMCs(MCGrid &macroCells);

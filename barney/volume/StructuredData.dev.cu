@@ -32,9 +32,6 @@ namespace barney {
                 const int32_t primID)
     {
       MCVolumeAccel<StructuredData>::boundsProg(ti,geomData,bounds,primID);
-      // const MCVolumeAccel<StructuredData>::DD &geom
-      //   = *(const MCVolumeAccel<StructuredData>::DD *)geomData;
-      // bounds = geom.volume.sf.worldBounds;
     }
     
     template<typename TraceInterface>
@@ -42,10 +39,6 @@ namespace barney {
     void intersect(TraceInterface &ti)
     {
       MCVolumeAccel<StructuredData>::isProg(ti);
-      // const void *geomData = ti.getGeomData();
-      // const MCVolumeAccel<StructuredData>::DD &geom
-      //   = *(const MCVolumeAccel<StructuredData>::DD *)geomData;
-      // geom.isProg(ti);
     }
     
     template<typename TraceInterface>

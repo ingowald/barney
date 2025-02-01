@@ -134,14 +134,15 @@ namespace barney {
     desc.addressMode[0] = toRTC(addressMode);
     desc.addressMode[1] = toRTC(addressMode);
     desc.addressMode[2] = toRTC(addressMode);
-    // we do 3d textruing in non-normalized colors so integer coordinate is cell ID
+    // we do 3d texturing in non-normalized colors so integer coordinate is cell ID
     desc.normalizedCoords = false;
     for (auto device : *devices) {
       auto pld = getPLD(device);
-      desc.filterMode = toRTC(filterMode);
+      desc.filterMode = rtc::Texture::FILTER_MODE_POINT;
       pld->rtcTextureNN 
         = data->getPLD(device)->rtc->createTexture(desc);
-      desc.filterMode = rtc::Texture::FILTER_MODE_POINT;
+      
+      desc.filterMode = toRTC(filterMode);
       pld->rtcTexture
         = data->getPLD(device)->rtc->createTexture(desc);
     }

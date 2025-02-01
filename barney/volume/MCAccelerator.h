@@ -195,10 +195,6 @@ namespace barney {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
-    // printf("dda grid dims %i %i %i\n",
-    //        self.mcGrid.dims.x,
-    //        self.mcGrid.dims.y,
-    //        self.mcGrid.dims.z);
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
@@ -222,7 +218,7 @@ namespace barney {
                 ti.reportIntersection(tRange.upper, 0);
                 return false;
               },
-              ray.dbg//              /*NO debug*/false
+              /*NO debug:*/false
               );
   }
   
