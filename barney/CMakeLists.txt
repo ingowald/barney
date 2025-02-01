@@ -293,7 +293,7 @@ CUDA_SOURCE(umesh/os/AWT.cu)
 CUDA_SOURCE(amr/BlockStructuredField.cu)
 CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
 
-find_package(CUDAToolkit REQUIRED)
+#find_package(CUDAToolkit REQUIRED)
 
 # ------------------------------------------------------------------
 # barney itself
