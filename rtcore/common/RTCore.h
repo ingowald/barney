@@ -11,7 +11,7 @@
 # include <embree4/rtcore_common.h>
 # include <embree4/rtcore_ray.h>
 #endif
-
+ 
 
 #if defined(_MSC_VER)
 #  define BARNEY_VISIBILITY_DEFAULT /* nothing */

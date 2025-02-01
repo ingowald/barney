@@ -47,7 +47,7 @@ namespace barney {
         rtc::GeomType *gt
           = device->geomTypes.get("Cylinders",Cylinders::createGeomType);
         rtc::Geom *geom = gt->createGeom();
-        geom->setPrimCount(indices->count);
+        geom->setPrimCount((int)indices->count);
         pld->userGeoms.push_back(geom);
       }
       rtc::Geom *geom = pld->userGeoms[0];

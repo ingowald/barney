@@ -83,7 +83,7 @@ namespace barney {
       dg.devices
         = std::make_shared<DevGroup>(slotDevices,(int)allDevices.size());
     }
-    this->devices = std::make_shared<DevGroup>(allDevices,allDevices.size());
+    this->devices = std::make_shared<DevGroup>(allDevices,(int)allDevices.size());
 
     for (auto &dg : perSlot)
       dg.materialRegistry

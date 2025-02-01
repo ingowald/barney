@@ -53,7 +53,7 @@ namespace barney {
       rtc::Geom *geom = pld->userGeoms[0];
       
       assert(indices);
-      int numIndices = indices ? indices->count : 0;
+      int numIndices = indices ? (int)indices->count : 0;
       if (numIndices == 0)
         std::cout << OWL_TERMINAL_RED
                   << "#bn.capsules: warning - empty indices array"

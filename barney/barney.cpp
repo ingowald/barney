@@ -816,50 +816,57 @@ namespace barney {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
-    // ------------------------------------------------------------------
-    // create vector of data groups; if actual specified by user we
-    // use those; otherwise we use IDs
-    // [0,1,...numModelSlotsOnThisHost)
-    // ------------------------------------------------------------------
-    assert(numDataRanksOnThisContext > 0);
-    std::vector<int> dataGroupIDs;
-    for (int i=0;i<numDataRanksOnThisContext;i++)
-      dataGroupIDs.push_back
-        (dataRanksOnThisContext
-         ? dataRanksOnThisContext[i]
-         : i);
+    try {
+        // ------------------------------------------------------------------
+        // create vector of data groups; if actual specified by user we
+        // use those; otherwise we use IDs
+        // [0,1,...numModelSlotsOnThisHost)
+        // ------------------------------------------------------------------
+        assert(numDataRanksOnThisContext > 0);
+        std::vector<int> dataGroupIDs;
+        for (int i = 0;i < numDataRanksOnThisContext;i++)
+            dataGroupIDs.push_back
+            (dataRanksOnThisContext
+                ? dataRanksOnThisContext[i]
+                : i);
 
-    // ------------------------------------------------------------------
-    // create list of GPUs to use for this rank. if specified by user
-    // we use this; otherwise we use GPUs in order, split into groups
-    // according to how many ranks there are on this host. Ie, if host
-    // has four GPUs the first rank will take 0 and 1; and the second
-    // one will take 2 and 3.
-    // ------------------------------------------------------------------
-    std::vector<int> gpuIDs;
-    if (_gpuIDs) {
-      for (int i=0;i<numGPUs;i++)
-        gpuIDs.push_back(_gpuIDs[i]);
-    } else {
-      if (numGPUs < 1)
-        numGPUs = rtc::Backend::getDeviceCount();
-        // cudaGetDeviceCount(&numGPUs);
-      for (int i=0;i<numGPUs;i++)
-        gpuIDs.push_back(i);
-    }
-    if (gpuIDs.empty())
-      throw std::runtime_error
-        ("no devices found!?");
+        // ------------------------------------------------------------------
+        // create list of GPUs to use for this rank. if specified by user
+        // we use this; otherwise we use GPUs in order, split into groups
+        // according to how many ranks there are on this host. Ie, if host
+        // has four GPUs the first rank will take 0 and 1; and the second
+        // one will take 2 and 3.
+        // ------------------------------------------------------------------
+        std::vector<int> gpuIDs;
+        if (_gpuIDs) {
+            for (int i = 0;i < numGPUs;i++)
+                gpuIDs.push_back(_gpuIDs[i]);
+        }
+        else {
+            if (numGPUs < 1)
+                numGPUs = rtc::Backend::getDeviceCount();
+            // cudaGetDeviceCount(&numGPUs);
+            for (int i = 0;i < numGPUs;i++)
+                gpuIDs.push_back(i);
+        }
+        if (gpuIDs.empty())
+            throw std::runtime_error
+            ("no devices found!?");
 
-    if (gpuIDs.size() < numDataRanksOnThisContext) {
-      std::vector<int> replicatedIDs;
-      for (int i=0;i<numDataRanksOnThisContext;i++)
-        replicatedIDs.push_back(gpuIDs[i % gpuIDs.size()]);
-      gpuIDs = replicatedIDs;
+        if (gpuIDs.size() < numDataRanksOnThisContext) {
+            std::vector<int> replicatedIDs;
+            for (int i = 0;i < numDataRanksOnThisContext;i++)
+                replicatedIDs.push_back(gpuIDs[i % gpuIDs.size()]);
+            gpuIDs = replicatedIDs;
+        }
+
+        return (BNContext)new LocalContext(dataGroupIDs,
+            gpuIDs);
+    } 
+    catch (const std::exception& e) {
+        std::cerr << "error creating barney context : " << e.what() << std::endl;
+        return 0;
     }
-    
-    return (BNContext)new LocalContext(dataGroupIDs,
-                                       gpuIDs);
   }
 
 } // ::owl
