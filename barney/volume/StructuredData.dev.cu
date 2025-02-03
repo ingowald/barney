@@ -31,14 +31,14 @@ namespace barney {
                 owl::common::box3f &bounds,  
                 const int32_t primID)
     {
-      MCVolumeAccel<StructuredData>::boundsProg(ti,geomData,bounds,primID);
+      MCVolumeAccel<StructuredDataSampler>::boundsProg(ti,geomData,bounds,primID);
     }
     
     template<typename TraceInterface>
     static inline __both__
     void intersect(TraceInterface &ti)
     {
-      MCVolumeAccel<StructuredData>::isProg(ti);
+      MCVolumeAccel<StructuredDataSampler>::isProg(ti);
     }
     
     template<typename TraceInterface>

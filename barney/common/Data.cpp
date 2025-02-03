@@ -134,6 +134,7 @@ namespace barney {
       count(numItems)
   {}
 
+
   PODData::PODData(Context *context,
                    const DevGroup::SP &devices,
                    BNDataType type,
@@ -142,9 +143,11 @@ namespace barney {
     : Data(context,devices,type,numItems)
   {
     perLogical.resize(devices->numLogical);
-    for (auto device : *devices) 
+    for (auto device : *devices) {
       getPLD(device)->rtcBuffer 
         = device->rtc->createBuffer(numItems*owlSizeOf(type),_items);
+      assert(getPLD(device)->rtcBuffer);
+    }
   }
   
   PODData::~PODData()
@@ -153,6 +156,23 @@ namespace barney {
       device->rtc->freeBuffer(getPLD(device)->rtcBuffer);
   }
 
+  const void *PODData::getDD(Device *device) 
+  {
+    assert(device);
+    PLD *pld = getPLD(device);
+    assert(pld);
+    assert(pld->rtcBuffer);
+    return pld->rtcBuffer->getDD();
+  }
+  
+  PODData::PLD *PODData::getPLD(Device *device) 
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
+  
   Data::SP Data::create(Context *context,
                         const DevGroup::SP &devices,
                         BNDataType type,

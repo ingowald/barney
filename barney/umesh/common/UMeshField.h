@@ -17,7 +17,6 @@
 #pragma once
 
 #include "barney/ModelSlot.h"
-// #include "barney/volume/MCAccelerator.h"
 /* all routines for point-element sampling/intersection - shold
    logically be part of this file, but kept in separate file because
    these were mostly imported from oepnvkl */
@@ -27,7 +26,8 @@
 namespace barney {
 
   struct Element {
-    typedef enum { TET=0, PYR, WED, HEX// , GRID
+    typedef enum {
+      TET=0, PYR, WED, HEX// , GRID
     } Type;
     
     inline __both__ Element() {}
@@ -42,6 +42,17 @@ namespace barney {
   {
     typedef std::shared_ptr<UMeshField> SP;
 
+    virtual ~UMeshField()
+    {
+      PING;
+      PING;
+      PING;
+      PING;
+      PING;
+      PING;
+      exit(0);
+    }
+    
     /*! helper class for representing an N-long integer tuple, to
        represent wedge, pyramid, hex, etc elemnet indices */
     template<int N>
@@ -112,22 +123,16 @@ namespace barney {
                            range1f *d_primRanges=0);
     
     UMeshField(Context *context,
-               const DevGroup::SP   &devices,
-               std::vector<vec4f>   &vertices,
-               std::vector<int>     &indices,
-               std::vector<Element> &elements,
-               const box3f &domain);
+               const DevGroup::SP &devices);
 
-    /*! create from pure array-of-scalars represenation */
-    static SP create(Context            *context,
-                     const DevGroup::SP &devices,
-                     const vec4f        *_vertices,
-                     int                 numVertices,
-                     const int          *_indices,
-                     int                 numIndices,
-                     const int          *elementOffsets,
-                     int                 numElements,
-                     const box3f        &domain);
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool setData(const std::string &member,
+                 const std::shared_ptr<Data> &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+
     
     DD getDD(Device *device);
 
@@ -138,16 +143,23 @@ namespace barney {
     /*! returns part of the string used to find the optix device
         programs that operate on this type */
     static std::string typeName() { return "UMesh"; };
-    
-    std::vector<vec4f>      vertices;
-    std::vector<int>        indices;
-    std::vector<Element>    elements;
-    struct PerLogical {
-      rtc::Buffer *verticesBuffer   = 0;
-      rtc::Buffer *indicesBuffer    = 0;
-      rtc::Buffer *elementsBuffer   = 0;
+
+    /*! @{ set by the user, as paramters */
+    PODData::SP vertices;
+    PODData::SP indices;
+    PODData::SP elementOffsets;
+    int numElements;
+    /*! @} */
+    /* internal-format 'elements' that encode both elemne type and
+       offset in the indices array; each element is self-contained so
+       can be re-ordered at will */
+    // std::vector<Element>    elements;
+    struct PLD {
+      box3f   *pWorldBounds = 0;
+      Element *elements     = 0;
     };
-    std::vector<PerLogical> logical;
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
   };
   
   // ==================================================================
@@ -204,13 +216,7 @@ namespace barney {
       .including(make_vec4f(vertices[indices[6]]))
       .including(make_vec4f(vertices[indices[7]]));
   }
-
-  // inline __both__
-  // box4f UMeshField::DD::gridBounds(int gridID) const
-  // {
-  //   return gridDomains[gridID];
-  // }
-  
+ 
   inline __both__
   box4f UMeshField::DD::eltBounds(Element element) const
   {
@@ -269,8 +275,6 @@ namespace barney {
       return wedScalar(retVal,elt.ofs0,P);
     case Element::HEX:
       return hexScalar(retVal,elt.ofs0,P,dbg);
-    // case Element::GRID:
-    //   return gridScalar(retVal,elt.ID,P);
     }
     return false;
   }
@@ -279,28 +283,12 @@ namespace barney {
   bool UMeshField::DD::tetScalar(float &retVal, int ofs0, vec3f P, bool dbg) const
   {
     vec4i indices = *(const vec4i *)&this->indices[ofs0];
-    // if (dbg) printf("tetscalar ofs %i idx %i %i %i %i ref  %i %i %i %i\n",
-    //                 ofs0,indices.x,indices.y,indices.z,indices.w,
-    //                 this->indices[ofs0+0],
-    //                 this->indices[ofs0+1],
-    //                 this->indices[ofs0+1],
-    //                 this->indices[ofs0+2]);
     
     float4 v0 = vertices[indices.x];
     float4 v1 = vertices[indices.y];
     float4 v2 = vertices[indices.z];
     float4 v3 = vertices[indices.w];
 
-    // if (dbg) {
-    //   printf("v0 %f %f %f : %f\n",
-    //          v0.x,v0.y,v0.z,v0.w);
-    //   printf("v1 %f %f %f : %f\n",
-    //          v1.x,v1.y,v1.z,v1.w);
-    //   printf("v2 %f %f %f : %f\n",
-    //          v2.x,v2.y,v2.z,v2.w);
-    //   printf("v3 %f %f %f : %f\n",
-    //          v3.x,v3.y,v3.z,v3.w);
-    // }
     float t3 = evalToImplicitPlane(P,v0,v1,v2);
     if (t3 < 0.f) return false;
     float t2 = evalToImplicitPlane(P,v0,v3,v1);
@@ -330,7 +318,8 @@ namespace barney {
   inline __both__
   bool UMeshField::DD::wedScalar(float &retVal, int ofs0, vec3f P) const
   {
-    UMeshField::ints<6> indices = *(const UMeshField::ints<6> *)&this->indices[ofs0];
+    UMeshField::ints<6> indices
+      = *(const UMeshField::ints<6> *)&this->indices[ofs0];
     return intersectWedgeEXT(retVal, P,
                              vertices[indices[0]],
                              vertices[indices[1]],
@@ -346,19 +335,8 @@ namespace barney {
                                  vec3f P,
                                  bool dbg) const
   {
-#if 0
-    UMeshField::ints<8> indices;
-    indices[0] = this->indices[ofs0+0];
-    indices[1] = this->indices[ofs0+1];
-    indices[2] = this->indices[ofs0+3];
-    indices[3] = this->indices[ofs0+2];
-    indices[4] = this->indices[ofs0+4];
-    indices[5] = this->indices[ofs0+5];
-    indices[6] = this->indices[ofs0+7];
-    indices[7] = this->indices[ofs0+6];
-#else
-    UMeshField::ints<8> indices = *(const UMeshField::ints<8> *)&this->indices[ofs0];
-#endif
+    UMeshField::ints<8> indices
+      = *(const UMeshField::ints<8> *)&this->indices[ofs0];
     return intersectHexEXT(retVal, P,
                            vertices[indices[0]],
                            vertices[indices[1]],
@@ -371,55 +349,5 @@ namespace barney {
                            dbg);
   }
 
-//   inline __both__
-//   bool UMeshField::DD::gridScalar(float &retVal, int primID, vec3f P) const
-//   {
-//     const box3f bounds = box3f((const vec3f &)gridDomains[primID].lower,
-//                                (const vec3f &)gridDomains[primID].upper);
-    
-//     if (!bounds.contains(P))
-//       return false;
-
-//     vec3i numScalars = gridDims[primID]+1;
-//     vec3f cellSize = bounds.size()/vec3f(gridDims[primID]);
-//     vec3f objPos = (P-bounds.lower)/cellSize;
-//     vec3i imin(objPos);
-//     vec3i imax = min(imin+1,numScalars-1);
-
-//     auto linearIndex = [numScalars](const int x, const int y, const int z) {
-//                          return z*numScalars.y*numScalars.x + y*numScalars.x + x;
-//                        };
-
-//     const float *scalars = gridScalars + gridOffsets[primID];
-
-//     float f1 = scalars[linearIndex(imin.x,imin.y,imin.z)];
-//     float f2 = scalars[linearIndex(imax.x,imin.y,imin.z)];
-//     float f3 = scalars[linearIndex(imin.x,imax.y,imin.z)];
-//     float f4 = scalars[linearIndex(imax.x,imax.y,imin.z)];
-
-//     float f5 = scalars[linearIndex(imin.x,imin.y,imax.z)];
-//     float f6 = scalars[linearIndex(imax.x,imin.y,imax.z)];
-//     float f7 = scalars[linearIndex(imin.x,imax.y,imax.z)];
-//     float f8 = scalars[linearIndex(imax.x,imax.y,imax.z)];
-
-// #define EMPTY(x) isnan(x)
-//     if (EMPTY(f1) || EMPTY(f2) || EMPTY(f3) || EMPTY(f4) ||
-//         EMPTY(f5) || EMPTY(f6) || EMPTY(f7) || EMPTY(f8))
-//       return false;
-
-//     vec3f frac = objPos-vec3f(imin);
-
-//     float f12 = lerp(f1,f2,frac.x);
-//     float f56 = lerp(f5,f6,frac.x);
-//     float f34 = lerp(f3,f4,frac.x);
-//     float f78 = lerp(f7,f8,frac.x);
-
-//     float f1234 = lerp(f12,f34,frac.y);
-//     float f5678 = lerp(f56,f78,frac.y);
-
-//     retVal = lerp(f1234,f5678,frac.z);
-
-//     return true;
-//   }
   
 }

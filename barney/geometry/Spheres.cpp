@@ -27,13 +27,14 @@ namespace barney {
   {}
 
 
-  rtc::GeomType *Spheres::createGeomType(rtc::Device *device)
+  rtc::GeomType *Spheres::createGeomType(rtc::Device *device, const void *)
   {
     if (Context::logging())
       std::cout << OWL_TERMINAL_GREEN
                 << "creating 'Spheres' geometry type"
                 << OWL_TERMINAL_DEFAULT << std::endl;
-    return device->createUserGeomType("Spheres",
+    return device->createUserGeomType("Spheres_ptx",
+                                      "Spheres",
                                       sizeof(Spheres::DD),
                                       /*ah*/false,/*ch*/true);
   }

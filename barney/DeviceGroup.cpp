@@ -26,10 +26,11 @@ namespace barney {
   {}
   
   rtc::GeomType *GeomTypeRegistry::get(const std::string &name,
-                                       GeomTypeCreationFct callBack)
+                                       GeomTypeCreationFct callBack,
+                                       const void *cbData)
   {
     if (geomTypes.find(name) == geomTypes.end()) {
-      geomTypes[name] = callBack(device);
+      geomTypes[name] = callBack(device,cbData);
     }
     return geomTypes[name];
   }
@@ -73,8 +74,7 @@ namespace barney {
       = rtc->createCompute("compressTiles");
     unpackTiles
       = rtc->createCompute("unpackTiles");
-    // copyPixels
-    //   = rtc->createCompute("copyPixels");
+    
     toneMap
       = rtc->createCompute("toneMap");
     toFixed8
@@ -83,6 +83,17 @@ namespace barney {
       = rtc->createCompute("generateRays");
     shadeRays
       = rtc->createCompute("shadeRays");
+
+    // umesh related:
+    umeshCreateElements 
+      = rtc->createCompute("umeshCreateElements");
+    umeshRasterElements 
+      = rtc->createCompute("umeshRasterElements");
+    umeshReorderElements 
+      = rtc->createCompute("umeshReorderElements");
+    umeshComputeElementBBs
+      = rtc->createCompute("umeshComputeElementBBs");
+      
     traceRays
       = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
   }

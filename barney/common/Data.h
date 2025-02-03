@@ -61,14 +61,12 @@ namespace barney {
     
     virtual ~PODData();
 
-    const void *getDD(Device *device) 
-    { return getPLD(device)->rtcBuffer->getDD(); }
+    const void *getDD(Device *device);
 
     struct PLD {
       rtc::Buffer *rtcBuffer   = 0;
     };
-    PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; }
+    PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
   };
 

@@ -168,25 +168,28 @@ namespace barney {
     }
     
     rtc::GeomType *
-    Device::createTrianglesGeomType(const char *typeName,
+    Device::createTrianglesGeomType(const char *ptxName,
+                                    const char *typeName,
                                     size_t sizeOfDD,
                                     bool has_ah,
                                     bool has_ch)
     {
-      return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
+      return new TrianglesGeomType(this,ptxName,typeName,sizeOfDD,has_ah,has_ch);
     }
     
     rtc::GeomType *
-    Device::createUserGeomType(const char *typeName,
-                                    size_t sizeOfDD,
-                                    bool has_ah,
-                                    bool has_ch)
+    Device::createUserGeomType(const char *ptxName,
+                               const char *typeName,
+                               size_t sizeOfDD,
+                               bool has_ah,
+                               bool has_ch)
     {
-      return new UserGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
+      return new UserGeomType(this,ptxName,typeName,sizeOfDD,has_ah,has_ch);
     }
     
     
     TrianglesGeomType::TrianglesGeomType(optix::Device *device,
+                                         const std::string &ptxName,
                                          const std::string &typeName,
                                          size_t sizeOfDD,
                                          bool has_ah,
@@ -201,7 +204,7 @@ namespace barney {
                              sizeOfDD,vars,-1);
       
       const char *Triangles_ptx
-        = (const char *)rtc::getSymbol(typeName+"_ptx");
+        = (const char *)rtc::getSymbol(ptxName);//+"_ptx");
       OWLModule module = owlModuleCreate
         (device->owl,Triangles_ptx);
       if (has_ch)
@@ -217,6 +220,7 @@ namespace barney {
     }
 
     UserGeomType::UserGeomType(optix::Device *device,
+                               const std::string &ptxName,
                                const std::string &typeName,
                                size_t sizeOfDD,
                                bool has_ah,
@@ -231,7 +235,7 @@ namespace barney {
                              sizeOfDD,vars,-1);
       
       const char *User_ptx
-        = (const char *)rtc::getSymbol(typeName+"_ptx");
+        = (const char *)rtc::getSymbol(ptxName);//+"_ptx");
 
       OWLModule module = owlModuleCreate
         (device->owl,User_ptx);

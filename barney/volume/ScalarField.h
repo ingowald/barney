@@ -26,7 +26,7 @@ namespace barney {
   struct VolumeAccel;
   struct MCGrid;
   struct ModelSlot;
-  
+
   /*! abstracts any sort of scalar field (unstructured, amr,
     structured, rbfs....) _before_ any transfer function(s) get
     applied to it */
@@ -39,6 +39,7 @@ namespace barney {
       /*! world bounds, CLIPPED TO DOMAIN (if non-empty domain is present!) */
       box3f                worldBounds;
     };
+    DD getDD(Device *device) const { return { worldBounds }; }
     
     ScalarField(Context *context,
                 const DevGroup::SP &devices,
@@ -59,6 +60,29 @@ namespace barney {
         ghost cells, or if this is a spatial partitioning of a umesh,
         etc */
     const box3f domain;
+  };
+  
+  /*! abstraction for a class that can sample a given scalar
+    field. it's up to that class to create the right sampler for its
+    data, and to do that only for the kind of traversers/accels that
+    actually need to be able to sample.
+
+    For the device side, all the actual sampling functionality will be
+    in the DD's of the derived classes; the parent class doesnt' even
+    have a DD, because all the device-side sampling code will (have to
+    be) resolved through templates, in which case the classes using
+    the sampler will know the actual type of that sampler (and it's
+    DD)
+  */
+  struct ScalarFieldSampler {
+    virtual void build() = 0;
+    struct DD {
+      /* derived classes ned to implement:
+         
+         inline __both__ float sample(vec3f P, bool dbg)
+         
+      */
+    };
   };
   
 }

@@ -22,11 +22,12 @@ namespace barney {
   }
   namespace rtc {
     
-      extern "C"
+    extern "C"
     Backend *createBackend_embree()
     {
       return new barney::embree::EmbreeBackend;
     }
+    
   }
 }
 

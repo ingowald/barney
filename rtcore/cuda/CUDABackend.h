@@ -40,7 +40,7 @@ namespace barney {
       void *allocHost(size_t numBytes) override;
       void freeHost(void *mem) override;
       void memsetAsync(void *mem,int value, size_t size) override;
-      void *alloc(size_t numBytes) override;
+      void *allocMem(size_t numBytes) override;
       void freeMem(void *mem) override;
       void sync() override;
       

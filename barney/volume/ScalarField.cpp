@@ -19,11 +19,15 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 #include "barney/volume/StructuredData.h"
+#include "barney/umesh/common/UMeshField.h"
 
 namespace barney {
 
   void ScalarField::buildMCs(MCGrid &macroCells)
-  { throw std::runtime_error("this calar field type does not know how to build macro-cells"); }
+  {
+    throw std::runtime_error
+      ("this calar field type does not know how to build macro-cells");
+  }
   
   ScalarField::ScalarField(Context *context,
                            const DevGroup::SP &devices,
@@ -38,6 +42,8 @@ namespace barney {
   {
     if (type == "structured")
       return std::make_shared<StructuredData>(context,devices);
+    if (type == "unstructured")
+      return std::make_shared<UMeshField>(context,devices);
     
     context->warn_unsupported_object("ScalarField",type);
     return {};

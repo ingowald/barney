@@ -52,7 +52,8 @@ namespace barney {
     
     void commit() override;
     
-    static rtc::GeomType *createGeomType(rtc::Device *device);
+    static rtc::GeomType *createGeomType(rtc::Device *device,
+                                         const void *);
 
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

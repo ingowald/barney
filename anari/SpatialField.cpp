@@ -267,8 +267,33 @@ BNScalarField UnstructuredField::createBarneyScalarField(
   std::cout << "==================================================================" << std::endl;
   std::cout << "BANARI: CREATING UMESH OF " << m_elementOffsets.size() << " elements" << std::endl;
   std::cout << "==================================================================" << std::endl;
+  
 #if 1
-  exit(0);
+  PING;
+  PRINT(m_vertices.size());
+  BNData verticesData
+    = bnDataCreate(context,0,BN_FLOAT4,
+                   m_vertices.size(),
+                   (const bn_float4 *)m_vertices.data());
+  BNData indicesData
+    = bnDataCreate(context,0,BN_INT,
+                   m_indices.size(),
+                   (const int *)m_indices.data());
+  BNData elementOffsetsData
+    = bnDataCreate(context,0,BN_INT,
+                   m_elementOffsets.size(),
+                   (const int *)m_elementOffsets.data());
+  BNScalarField sf = bnScalarFieldCreate(context,0,"unstructured");
+  PRINT(verticesData);
+  PRINT(indicesData);
+  PRINT(elementOffsetsData);
+  bnSetData(sf,"vertices",verticesData);
+  bnSetData(sf,"indices",indicesData);
+  bnSetData(sf,"elementOffsets",elementOffsetsData);
+  PING;
+  bnCommit(sf);
+  PING;
+  return sf;
 #else
   return bnUMeshCreate(context,
                        0/*slot*/,

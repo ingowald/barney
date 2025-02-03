@@ -27,8 +27,16 @@ namespace barney {
     struct Device : public cuda::BaseDevice {
       Device(int physicalGPU);
       virtual ~Device();
-
+      
       void destroy() override;
+
+      /*! returns a string that describes what kind of compute device
+          this is (eg, "cuda" vs "cpu" */
+      std::string computeType() const override { return "cuda"; }
+      
+      /*! returns a string that describes what kind of compute device
+          this is (eg, "optix" vs "embree" */
+      std::string traceType() const override { return "optix"; }
       
       // ==================================================================
       // denoiser
@@ -74,14 +82,16 @@ namespace barney {
       // ------------------------------------------------------------------
       
       rtc::GeomType *
-      createUserGeomType(const char *typeName,
+      createUserGeomType(const char *ptxName,
+                         const char *typeName,
                          size_t sizeOfDD,
                          bool has_ah,
                          bool has_ch) 
         override;
       
       rtc::GeomType *
-      createTrianglesGeomType(const char *typeName,
+      createTrianglesGeomType(const char *ptxName,
+                              const char *typeName,
                               size_t sizeOfDD,
                               bool has_ah,
                               bool has_ch) override;

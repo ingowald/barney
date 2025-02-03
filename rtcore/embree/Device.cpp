@@ -306,7 +306,8 @@ namespace barney {
     // ------------------------------------------------------------------
 
 
-    rtc::GeomType *Device::createTrianglesGeomType(const char *typeName,
+    rtc::GeomType *Device::createTrianglesGeomType(const char */*ignore*/,
+                                                   const char *typeName,
                                                    size_t sizeOfDD,
                                                    bool has_ah,
                                                    bool has_ch)
@@ -314,10 +315,11 @@ namespace barney {
       return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
     }
     
-    rtc::GeomType *Device::createUserGeomType(const char *typeName,
-                                                   size_t sizeOfDD,
-                                                   bool has_ah,
-                                                   bool has_ch)
+    rtc::GeomType *Device::createUserGeomType(const char */*ignore*/,
+                                              const char *typeName,
+                                              size_t sizeOfDD,
+                                              bool has_ah,
+                                              bool has_ch)
     {
       return new UserGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
     }

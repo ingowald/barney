@@ -39,25 +39,14 @@ namespace barney {
 
       - "gridSpacing" (float3) : world-space spacing of the scalar
       grid positions
-
-      - (experimental) "colorMapTexture" : _additional_ 3D RGB texture
-        that "overwrites" the RGB component of the transfer function -
-        ie, for the final RGBA sample 'a' comes from the transfer
-        functoin, while RGB comes from that 3D texture
   */
   struct StructuredData : public ScalarField
   {
-    /*! device data for this class; note we specify both the 'usual'
-        texture object (which does trilinerar interpolation) as well
-        as a "NN" (nearest) sampling for the macro-cell generation */
+    /*! device data for this class. nothis special for a structured
+        data object; all sampling related stuff will be in the
+        StructuredDataSampler */
     struct DD : public ScalarField::DD {
-      
-      inline __both__ float sample(const vec3f P, bool dbg=false) const;
-      
-      rtc::device::TextureObject texObj;
-      vec3f cellGridOrigin;
-      vec3f cellGridSpacing;
-      vec3i numCells;
+      /* nothing */
     };
 
     /*! construct a new structured data scalar field; will not do
@@ -67,8 +56,6 @@ namespace barney {
                    const DevGroup::SP &devices);
     virtual ~StructuredData() = default;
 
-    static std::string typeName() { return "Structured"; }
-    
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     bool set3i(const std::string &member, const vec3i &value) override;
@@ -78,13 +65,12 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
     
-    // void setVariables(OWLGeom geom) override;
     DD getDD(Device *device);
     VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 
     Texture3D::SP  texture;
-    Texture3D::SP  colorMapTexture;
+    // Texture3D::SP  colorMapTexture;
 
     struct PLD {
       rtc::Compute *computeMCs = 0;
@@ -100,38 +86,38 @@ namespace barney {
     vec3f gridSpacing { 1,1,1 };
   };
 
+  /*! sampler object for a StructreData object, using a 3d texture */
+  struct StructuredDataSampler : public ScalarFieldSampler {
+    StructuredDataSampler(StructuredData *const sf)
+      : sf(sf)
+    {}
+    
+    struct DD {
+      inline __both__ float sample(const vec3f P, bool dbg=false) const;
+      
+      rtc::device::TextureObject texObj;
+      vec3f cellGridOrigin;
+      vec3f cellGridSpacing;
+      vec3i numCells;
+    };
+
+    void build() override {}
+    
+    DD getDD(Device *device);
+    StructuredData *const sf;
+  };
+  
   inline __both__
-  float StructuredData::DD::sample(const vec3f P, bool dbg) const
+  float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
   {
     vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
-        
-    if (0 && dbg) {
-      printf("org %f %f %f\n",
-             cellGridOrigin.x,
-             cellGridOrigin.y,
-             cellGridOrigin.z);
-      printf("spc %f %f %f\n",
-             cellGridSpacing.x,
-             cellGridSpacing.y,
-             cellGridSpacing.z);
-      printf("world transform %f %f %f -> %f %f %f\n",
-             P.x,P.y,P.z,
-             rel.x,rel.y,rel.z);
-      printf("numCells %i %i %i\n",
-             numCells.x,
-             numCells.y,
-             numCells.z);
-    }
-        
     if (rel.x < 0.f) return NAN;
     if (rel.y < 0.f) return NAN;
     if (rel.z < 0.f) return NAN;
     if (rel.x >= numCells.x) return NAN;
     if (rel.y >= numCells.y) return NAN;
     if (rel.z >= numCells.z) return NAN;
-    if (dbg) printf("calling tex3d\n");
     float f = tex3D<float>(texObj,rel.x+.5f,rel.y+.5f,rel.z+.5f);
-    if (dbg) printf("result of tex3d() -> %f\n",f);
     return f;
   }
   

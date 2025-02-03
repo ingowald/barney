@@ -25,12 +25,14 @@ namespace barney {
   struct TiledFB;
   struct RayQueue;
   
-  typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *);
+  typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *device,
+                                                const void  *callbackData);
                          
   struct GeomTypeRegistry {
     GeomTypeRegistry(rtc::Device *device);
     rtc::GeomType *get(const std::string &name,
-                       GeomTypeCreationFct callback);
+                       GeomTypeCreationFct callback,
+                       const void *callBackData=nullptr);
     std::map<std::string,rtc::GeomType *> geomTypes;
 
     rtc::Device *const device;    
@@ -82,9 +84,17 @@ namespace barney {
     rtc::Compute *setTileCoords = 0;
     rtc::Compute *compressTiles = 0;
     rtc::Compute *unpackTiles = 0;
+
+    // umesh related:
+    rtc::Compute *umeshCreateElements = 0;
+    rtc::Compute *umeshRasterElements = 0;
+    rtc::Compute *umeshReorderElements = 0;
+    rtc::Compute *umeshComputeElementBBs = 0;
+    
     // rtc::Compute *copyPixels = 0;
     rtc::Trace   *traceRays = 0;
     RayQueue     *rayQueue = 0;
+    uint64_t sentinel = 0x1234567;
   };
   
   /*! stolen from owl/Device: helper class that will set the

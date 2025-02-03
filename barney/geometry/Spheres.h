@@ -33,7 +33,8 @@ namespace barney {
 
     Spheres(SlotContext *slotContext);
     
-    static rtc::GeomType *createGeomType(rtc::Device *device);
+    static rtc::GeomType *createGeomType(rtc::Device *device,
+                                         const void *);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -52,11 +53,6 @@ namespace barney {
     PODData::SP origins = 0;
     PODData::SP colors  = 0;
     PODData::SP radii   = 0;
-    // PODData::SP vertexAttribute0;
-    // PODData::SP vertexAttribute1;
-    // PODData::SP vertexAttribute2;
-    // PODData::SP vertexAttribute3;
-    // PODData::SP vertexAttribute4;
     float       defaultRadius = .1f;
   };
   

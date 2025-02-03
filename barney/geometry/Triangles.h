@@ -60,7 +60,8 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
 
-    static rtc::GeomType *createGeomType(rtc::Device *device);
+    static rtc::GeomType *createGeomType(rtc::Device *device,
+                                         const void *);
 
     PODData::SP vertices;
     PODData::SP indices;

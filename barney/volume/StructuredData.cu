@@ -51,7 +51,9 @@ namespace barney {
             if (scalarID.y >= numScalars.y) continue;
             if (scalarID.z >= numScalars.z) continue;
             float f = tex3D<float>(scalars.texObjNN,
-                                   (float)scalarID.x, (float)scalarID.y, (float)scalarID.z);
+                                   (float)scalarID.x,
+                                   (float)scalarID.y,
+                                   (float)scalarID.z);
             scalarRange.extend(f);
           }
       int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
@@ -97,20 +99,28 @@ namespace barney {
       device->sync();
   }
   
-  StructuredData::DD StructuredData::getDD(Device *device)
+  StructuredDataSampler::DD StructuredDataSampler::getDD(Device *device)
   {
     DD dd;
-    dd.worldBounds = worldBounds;
-    dd.texObj = texture->getDD(device).texObj;
-    dd.cellGridOrigin = gridOrigin;
-    dd.cellGridSpacing = gridSpacing;
-    dd.numCells = numCells;
+    // dd.worldBounds = sf->worldBounds;
+    dd.texObj = sf->texture->getDD(device).texObj;
+    dd.cellGridOrigin = sf->gridOrigin;
+    dd.cellGridSpacing = sf->gridSpacing;
+    dd.numCells = sf->numCells;
     return dd;
   }
   
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
   {
-    return std::make_shared<MCVolumeAccel<StructuredData>>(this,volume);
+    auto sampler = std::make_shared<StructuredDataSampler>(this);
+    return std::make_shared<MCVolumeAccel<StructuredDataSampler>>
+      (volume,
+       sampler,
+       /* RTC_DECLARE_USER_GEOM is in Structured.dev.cu: */
+       "StructuredData_ptx",
+       /* the name used in RTC_DECLARE_USER_GEOM() */
+       "MCAccel_Structured"
+       );
   }
   
   // ==================================================================
@@ -148,10 +158,10 @@ namespace barney {
       texture = value->as<Texture3D>();
       return true;
     }
-    if (member == "textureColorMap") {
-      colorMapTexture = value->as<Texture3D>();
-      return true;
-    }
+    // if (member == "textureColorMap") {
+    //   colorMapTexture = value->as<Texture3D>();
+    //   return true;
+    // }
     return false;
   }
 

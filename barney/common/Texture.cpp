@@ -28,6 +28,7 @@ namespace barney {
     assert(device->contextRank < perLogical.size());
     return &perLogical[device->contextRank];
   }
+  
   Texture::PLD *Texture::getPLD(Device *device) 
   {
     assert(device);
@@ -35,6 +36,7 @@ namespace barney {
     assert(device->contextRank < perLogical.size());
     return &perLogical[device->contextRank];
   }
+
   Texture3D::PLD *Texture3D::getPLD(Device *device) 
   {
     assert(device);

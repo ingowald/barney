@@ -391,10 +391,6 @@ namespace barney {
       if (!denoiser) {
         device->rtc->copy(this->denoisedColor,this->linearColor,
                           numPixels.x*numPixels.y*sizeof(vec4f));
-        // vec2i bs(8,8);
-        // CopyPixels args = { this->numPixels,this->denoisedColor,
-        //                     this->linearColor,this->linearAlpha };
-        // device->copyPixels->launch(divRoundUp(this->numPixels,bs),bs,&args);
       } else {
         float blendFactor = accumID / (accumID+200.f); 
         denoiser->run(this->denoisedColor,
@@ -420,10 +416,6 @@ namespace barney {
         throw std::runtime_error("requesting to read depth channel, but didn't create one");
       device->rtc->copy(hostPtr,linearDepth,
                         numPixels.x*numPixels.y*sizeof(float));
-      // BARNEY_CUDA_CALL(Memcpy(hostPtr,linearDepth,
-      //                         numPixels.x*numPixels.y*sizeof(float),
-      //                         cudaMemcpyDefault));
-      // BARNEY_CUDA_SYNC_CHECK();
       device->rtc->sync();
       return;
     }
@@ -433,64 +425,29 @@ namespace barney {
     if (channel != BN_FB_COLOR)
       throw std::runtime_error("trying to read un-known channel!?");
 
-    // BARNEY_CUDA_SYNC_CHECK();
-    
     switch(requestedFormat) {
     case BN_FLOAT4: 
     case BN_FLOAT4_RGBA: {
       device->rtc->copy(hostPtr,denoisedColor,
                         numPixels.x*numPixels.y*sizeof(vec4f));
-      // BARNEY_CUDA_CALL(Memcpy(hostPtr,denoisedColor,
-      //                         numPixels.x*numPixels.y*sizeof(vec4f),
-      //                         cudaMemcpyDefault));
-      // BARNEY_CUDA_SYNC_CHECK();
     } break;
     case BN_UFIXED8_RGBA: {
       uint32_t *asFixed8
-        = (uint32_t*)device->rtc->alloc(numPixels.x*numPixels.y*sizeof(uint32_t));
-      // BARNEY_CUDA_SYNC_CHECK();
-      // BARNEY_CUDA_CALL(Malloc((void**)&asFixed8,
-      //                         numPixels.x*numPixels.y*sizeof(uint32_t)));
-      // BARNEY_CUDA_SYNC_CHECK();
+        = (uint32_t*)device->rtc->allocMem(numPixels.x*numPixels.y*sizeof(uint32_t));
       vec2i bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,false };
       device->toFixed8->launch(divRoundUp(numPixels,bs),bs,&args);
-      // CHECK_CUDA_LAUNCH(toFixed8<false>,
-      //                   divRoundUp(numPixels,bs),bs,0,0,
-      //                   asFixed8,denoisedColor,numPixels);
-      // BARNEY_CUDA_SYNC_CHECK();
-      // BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
-      //                         numPixels.x*numPixels.y*sizeof(uint32_t),
-      //                         cudaMemcpyDefault));
       device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
-      // BARNEY_CUDA_SYNC_CHECK();
-      // BARNEY_CUDA_CALL(Free(asFixed8));
       device->rtc->freeMem(asFixed8);
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
       uint32_t *asFixed8
-        = (uint32_t*)device->rtc->alloc(numPixels.x*numPixels.y*sizeof(uint32_t));
+        = (uint32_t*)device->rtc->allocMem(numPixels.x*numPixels.y*sizeof(uint32_t));
       vec2i bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,true };
       device->toFixed8->launch(divRoundUp(numPixels,bs),bs,&args);
       device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
       device->rtc->freeMem(asFixed8);
-
-      // uint32_t *asFixed8; 
-      // BARNEY_CUDA_SYNC_CHECK();
-      // BARNEY_CUDA_CALL(Malloc((void**)&asFixed8,
-      //                         numPixels.x*numPixels.y*sizeof(uint32_t)));
-      // BARNEY_CUDA_SYNC_CHECK();
-      // vec2i bs(8,8);
-      // CHECK_CUDA_LAUNCH(toFixed8<true>,
-      //                   divRoundUp(numPixels,bs),bs,0,0,
-      //                   asFixed8,denoisedColor,numPixels);
-      // BARNEY_CUDA_SYNC_CHECK();
-      // BARNEY_CUDA_CALL(Memcpy(hostPtr,asFixed8,
-      //                         numPixels.x*numPixels.y*sizeof(uint32_t),
-      //                         cudaMemcpyDefault));
-      // BARNEY_CUDA_SYNC_CHECK();
-      // BARNEY_CUDA_CALL(Free(asFixed8));
     } break;
     default:
       throw std::runtime_error("requested to read color channel in un-supported format #"
@@ -511,11 +468,10 @@ namespace barney {
     if (isOwner) {
       auto rtc = getDenoiserDevice()->rtc;
       int np = numPixels.x*numPixels.y;
-      denoisedColor = (vec4f*)rtc->alloc(np*sizeof(*denoisedColor));
-      linearDepth   = (float *)rtc->alloc(np*sizeof(*linearDepth));
-      linearColor   = (vec4f *)rtc->alloc(np*sizeof(*linearColor));
-      // linearAlpha   = (float *)rtc->alloc(np*sizeof(*linearAlpha));
-      linearNormal  = (vec3f *)rtc->alloc(np*sizeof(*linearNormal));
+      denoisedColor = (vec4f*)rtc->allocMem(np*sizeof(*denoisedColor));
+      linearDepth   = (float *)rtc->allocMem(np*sizeof(*linearDepth));
+      linearColor   = (vec4f *)rtc->allocMem(np*sizeof(*linearColor));
+      linearNormal  = (vec3f *)rtc->allocMem(np*sizeof(*linearNormal));
       
       // if (!denoiser) denoiser = Denoiser::create(this);
       // denoiser->resize();

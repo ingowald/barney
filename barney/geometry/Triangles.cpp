@@ -29,13 +29,15 @@ namespace barney {
   Triangles::~Triangles()
   {}
   
-  rtc::GeomType *Triangles::createGeomType(rtc::Device *device)
+  rtc::GeomType *Triangles::createGeomType(rtc::Device *device,
+                                           const void *)
   {
     if (Context::logging())
       std::cout << OWL_TERMINAL_GREEN
                 << "creating 'Triangles' geometry type"
                 << OWL_TERMINAL_DEFAULT << std::endl;
-    return device->createTrianglesGeomType("Triangles",
+    return device->createTrianglesGeomType("Triangles_ptx",
+                                           "Triangles",
                                            sizeof(Triangles::DD),
                                            /*ah*/true,/*ch*/false);
   }

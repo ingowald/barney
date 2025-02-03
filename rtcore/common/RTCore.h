@@ -27,6 +27,90 @@
 
 
 namespace barney {
+
+
+
+#if __CUDA_ARCH__
+  using ::atomicCAS;
+#else
+  inline uint32_t __float_as_int(float f)
+  { return (const uint32_t &)f; }
+  inline float __int_as_float(int i)
+  {
+      return (const float&)i;
+  }
+  inline int atomicCAS(int *ptr, int _expected, int newValue)
+  {
+    int expected = _expected;
+    ((std::atomic<int>*)ptr)->compare_exchange_strong(expected,newValue);
+    return expected;
+  }
+#endif 
+
+#ifndef __CUDACC__
+#endif
+  
+  
+  inline __both__
+  void fatomicMin(float *addr, float value)
+  {
+    float old = *addr;
+    if(old <= value) return;
+
+    int _expected = __float_as_int(old);
+    int _desired  = __float_as_int(value);
+    while (true) {
+      uint32_t _found = barney::atomicCAS((int*)addr,_expected,_desired);
+      if (_found == _expected)
+        // write went though; we _did_ write the new mininm and
+        // are done.
+        return;
+      // '_expected' changed, so write did not go through, and
+      // somebody else wrote something new to that location.
+      old = __int_as_float(_found);
+      if (old <= value)
+        // somebody else wrote something that's already smaller
+        // than what we have ... leave it be, and done.
+        return;
+      else {
+        // somebody else wrote something, but ours is _still_ smaller.
+        _expected = _found;
+        continue;
+      }
+    } 
+  }
+
+  inline __both__
+  void fatomicMax(float *addr, float value)
+  {
+    float old = *addr;
+    if(old >= value) return;
+
+    int _expected = __float_as_int(old);
+    int _desired  = __float_as_int(value);
+    while (true) {
+      uint32_t _found = barney::atomicCAS((int*)addr,_expected,_desired);
+      if (_found == _expected)
+        // write went though; we _did_ write the new mininm and
+        // are done.
+        return;
+      // '_expected' changed, so write did not go through, and
+      // somebody else wrote something new to that location.
+      old = __int_as_float(_found);
+      if (old >= value)
+        // somebody else wrote something that's already smaller
+        // than what we have ... leave it be, and done.
+        return;
+      else {
+        // somebody else wrote something, but ours is _still_ smaller.
+        _expected = _found;
+        continue;
+      }
+    } 
+  }
+  
+
+
   
 #if BARNEY_BACKEND_EMBREE
   namespace embree {
@@ -39,6 +123,15 @@ namespace barney {
                            float x, float y);
     __both__ vec4f tex3D4f(barney::rtc::device::TextureObject to,
                            float x, float y, float z);
+
+    inline uint32_t __float_as_int(float f)
+    {
+      return (const uint32_t &)f;
+    }
+    inline float __int_as_float(int i)
+    {
+      return (const float&)i;
+    }
     
     struct InstanceGroup;
     struct TraceInterface {
@@ -98,6 +191,10 @@ namespace barney {
     };
     
     struct ComputeInterface {
+      inline __both__ vec3ui launchIndex() const
+      {
+        return getThreadIdx() + getBlockIdx() * getBlockDim();
+      }
 #  ifdef __CUDA_ARCH__
       /* the embree compute interface only makes sense on the host,
          and for the device sometimes isn't even callable (std::atomic
@@ -130,6 +227,62 @@ namespace barney {
       inline __both__ float atomicAdd(float *ptr, float inc) const
       { return ((std::atomic<float> *)ptr)->fetch_add(inc); }
 
+#if 0
+      inline __both__ void atomicMin(float *addr, float value) const
+      {
+        fatomicMin(addr,value);
+        // float old = *addr;
+        // if(old <= value) return;
+
+        // uint32_t _expected = __float_as_int(old);
+        // uint32_t _desired  = __float_as_int(value);
+        // while (true) {
+        //   ((std::atomic<uint32_t>*)addr)
+        //     ->compare_exchange_weak(_expected,_desired);
+        //   if (_expected == __float_as_int(old))
+        //     // write went though; we _did_ write the new mininm and
+        //     // are done.
+        //     return;
+        //   // '_expected' changed, so write did not go through, and
+        //   // somebody else wrote something new to that location.
+        //   old = __int_as_float(_expected);
+        //   if (old <= value)
+        //     // somebody else wrote something that's already smaller
+        //     // than what we have ... leave it be, and done.
+        //     return;
+        //   else
+        //     // somebody else wrote something, but ours is _still_ smaller.
+        //     continue;
+        // } 
+      }
+      inline __both__ void atomicMax(float *addr, float value) const
+      {
+        float old = *addr;
+        if(old >= value) return;
+
+        uint32_t _expected = __float_as_int(old);
+        uint32_t _desired  = __float_as_int(value);
+        while (true) {
+          ((std::atomic<uint32_t>*)addr)
+            ->compare_exchange_weak(_expected,_desired);
+          if (_expected == __float_as_int(old))
+            // write went though; we _did_ write the new mininm and
+            // are done.
+            return;
+          // '_expected' changed, so write did not go through, and
+          // somebody else wrote something new to that location.
+          old = __int_as_float(_expected);
+          if (old >= value)
+            // somebody else wrote something that's already smaller
+            // than what we have ... leave it be, and done.
+            return;
+          else
+            // somebody else wrote something, but ours is _still_ smaller.
+            continue;
+        } 
+      }
+#endif
+      
 #  endif
       vec3ui threadIdx;
       vec3ui blockIdx;
@@ -144,6 +297,10 @@ namespace barney {
 
     struct ComputeInterface
     {
+      inline __device__ vec3ui launchIndex() const
+      {
+        return getThreadIdx() + getBlockIdx() * getBlockDim();
+      }
       inline __device__ vec3ui getThreadIdx() const
       { return threadIdx; }
       inline __device__ vec3ui getBlockDim() const
@@ -154,6 +311,63 @@ namespace barney {
       { return ::atomicAdd(ptr,inc); }
       inline __device__ float atomicAdd(float *ptr, float inc) const
       { return ::atomicAdd(ptr,inc); }
+
+#if 0
+      inline __both__ void atomicMin(float *addr, float value) const
+      {
+        float old = *addr;
+        if(old <= value) return;
+
+        int _expected = __float_as_int(old);
+        int _desired  = __float_as_int(value);
+        while (true) {
+          uint32_t _found = ::atomicCAS((int*)addr,_expected,_desired);
+          if (_found == _expected)
+            // write went though; we _did_ write the new mininm and
+            // are done.
+            return;
+          // '_expected' changed, so write did not go through, and
+          // somebody else wrote something new to that location.
+          old = __int_as_float(_found);
+          if (old <= value)
+            // somebody else wrote something that's already smaller
+            // than what we have ... leave it be, and done.
+            return;
+          else {
+            // somebody else wrote something, but ours is _still_ smaller.
+            _expected = _found;
+            continue;
+          }
+        } 
+      }
+      inline __both__ void atomicMax(float *addr, float value) const
+      {
+        float old = *addr;
+        if(old >= value) return;
+
+        int _expected = __float_as_int(old);
+        int _desired  = __float_as_int(value);
+        while (true) {
+          uint32_t _found = ::atomicCAS((int*)addr,_expected,_desired);
+          if (_found == _expected)
+            // write went though; we _did_ write the new mininm and
+            // are done.
+            return;
+          // '_expected' changed, so write did not go through, and
+          // somebody else wrote something new to that location.
+          old = __int_as_float(_found);
+          if (old >= value)
+            // somebody else wrote something that's already smaller
+            // than what we have ... leave it be, and done.
+            return;
+          else {
+            // somebody else wrote something, but ours is _still_ smaller.
+            _expected = _found;
+            continue;
+          }
+        } 
+      }
+#endif
     };
     
     template<typename KernelT>
@@ -372,7 +586,7 @@ namespace barney {
       }                                                         \
     }
 
-# define RTC_DECLARE_OPTIX_TRACE(name,RayGenType)               \
+# define RTC_DECLARE_OPTIX_TRACE(name,RayGenType)          \
     extern "C" __global__                                       \
     void __raygen__##name()                                     \
     {                                                           \

@@ -32,7 +32,15 @@ namespace barney {
       rtc::Denoiser *createDenoiser() override;
 
       void destroy() override;
-
+ 
+      /*! returns a string that describes what kind of compute device
+          this is (eg, "cuda" vs "cpu" */
+      std::string computeType() const override { return "cpu"; }
+      
+      /*! returns a string that describes what kind of compute device
+          this is (eg, "optix" vs "embree" */
+      std::string traceType() const override { return "embree"; }
+     
       // ==================================================================
       // basic compute stuff
       // ==================================================================
@@ -48,7 +56,7 @@ namespace barney {
       void memsetAsync(void *mem,int value, size_t size) override
       { memset(mem,value,size); }
       
-      void *alloc(size_t numBytes) override
+      void *allocMem(size_t numBytes) override
       { return malloc(numBytes); }
       
       void freeMem(void *mem) override
@@ -85,7 +93,7 @@ namespace barney {
       // ==================================================================
       rtc::Buffer *createBuffer(size_t numBytes,
                                 const void *initValues = 0) override;
-      
+     
       void freeBuffer(rtc::Buffer *buffer) override;
       
       // ==================================================================
@@ -110,12 +118,14 @@ namespace barney {
       // geomtype stuff
       // ------------------------------------------------------------------
       
-      rtc::GeomType *createUserGeomType(const char *typeName,
+      rtc::GeomType *createUserGeomType(const char *ptxName,
+                                        const char *typeName,
                                         size_t sizeOfDD,
                                         bool has_ah,
                                         bool has_ch) override;
       
-      rtc::GeomType *createTrianglesGeomType(const char *typeName,
+      rtc::GeomType *createTrianglesGeomType(const char *ptxName,
+                                             const char *typeName,
                                              size_t sizeOfDD,
                                              bool has_ah,
                                              bool has_ch) override;

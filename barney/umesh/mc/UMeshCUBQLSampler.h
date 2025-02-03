@@ -23,7 +23,7 @@
 namespace barney {
   
   /*! a umesh scalar field, with a CUBQL bvh sampler */
-  struct UMeshCUBQLSampler : public ScalarField {
+  struct UMeshCUBQLSampler : public ScalarFieldSampler {
 #if 1
     using bvh_t  = cuBQL::BinaryBVH<float,3>;
 #else
@@ -42,7 +42,8 @@ namespace barney {
     /*! per-device data - parent store the umesh, we just store the
       bvh nodes */
     struct PLD {
-      rtc::Buffer *nodesBuffer = 0;
+      node_t *bvhNodes = 0;
+      // bvh_t bvh;
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
@@ -58,23 +59,26 @@ namespace barney {
       bool const dbg;
     };
     
-    UMeshCUBQLSampler(Context *context,
-                      const DevGroup::SP &devicess)
-      : ScalarField(context,devices)
-    {}
+    UMeshCUBQLSampler(UMeshField *mesh);
     
     /*! builds the string that allows for properly matching optix
       device progs for this type */
     inline static std::string typeName() { return "UMesh_CUBQL"; }
-    
-    void build(bool full_rebuild);
+
+    void build() override;
+
+    UMeshField *const mesh;
+    const DevGroup::SP devices;
   };
   
   inline __both__
   bool UMeshCUBQLSampler::Traversal::leaf(vec3f P, int offset, int count)
   {
+    // if (dbg) printf("at leaf %i %i\n",offset,count);
     for (int i=0;i<count;i++) {
       auto elt = mesh->elements[offset+i];
+      // if (dbg) printf("elt type %i id %i, mesh %p\n",
+      //                 elt.type,elt.ofs0,mesh);
       if (mesh->eltScalar(retVal,elt,P,dbg))
         return false;
     }

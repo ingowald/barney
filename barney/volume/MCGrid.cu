@@ -26,7 +26,7 @@ namespace barney {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
       
-      pld->scalarRangesBuffer = rtc->createBuffer(sizeof(float2));
+      pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
       pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
 
       pld->mapMCs             = rtc->createCompute("mapMCs");
@@ -105,13 +105,8 @@ namespace barney {
       
       int mcIdx = mcID.x + grid.dims.x*(mcID.y + grid.dims.y*mcID.z);
       range1f scalarRange = grid.scalarRanges[mcIdx];
+
       const float maj = xf.majorant(scalarRange);
-      // printf("mapmc %f %f in %f %f -> %f\n",
-      //        scalarRange.lower,
-      //        scalarRange.upper,
-      //        xf.domain.lower,
-      //        xf.domain.upper,
-      //        maj);
       grid.majorants[mcIdx] = maj;
     }
   };
@@ -120,6 +115,10 @@ namespace barney {
     cell's value range through the given transfer function */
   void MCGrid::computeMajorants(TransferFunction *xf)
   {
+    std::cout << "-------------------------" << std::endl;
+    std::cout << "(re-)computing majorants!" << std::endl;
+    std::cout << "-------------------------" << std::endl;
+      
     assert(xf);
     assert(dims.x > 0);
     assert(dims.y > 0);
@@ -127,7 +126,7 @@ namespace barney {
     const vec3i bs = 4;
     // cuda num blocks
     const vec3i nb = divRoundUp(dims,bs);
-
+    
     for (auto device : *devices) {
       auto d_xf = xf->getDD(device);
       auto dd = getDD(device);
@@ -156,7 +155,7 @@ namespace barney {
       pld->majorantsBuffer
         = rtc->createBuffer(sizeof(float)*numCells);
       pld->scalarRangesBuffer
-        = rtc->createBuffer(sizeof(float2)*numCells);
+        = rtc->createBuffer(sizeof(range1f)*numCells);
     }
     for (auto device : *devices) 
       device->sync();

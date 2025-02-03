@@ -22,7 +22,7 @@ namespace barney {
       BARNEY_CUDA_CHECK(cudaSetDevice(oldActive));
     }
     
-    void *BaseDevice::alloc(size_t numBytes)
+    void *BaseDevice::allocMem(size_t numBytes)
     {
       SetActiveGPU forDuration(this);
       void *ptr = 0;

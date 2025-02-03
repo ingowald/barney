@@ -80,11 +80,11 @@ namespace barney {
       rtc->freeMem(receiveAndShadeWriteQueue);
 
     if (!_d_nextWritePos) {
-      _d_nextWritePos = (int*)rtc->alloc(sizeof(int)); 
+      _d_nextWritePos = (int*)rtc->allocMem(sizeof(int)); 
     }
 
-    traceAndShadeReadQueue = (Ray*)rtc->alloc(newSize*sizeof(Ray));
-    receiveAndShadeWriteQueue = (Ray*)rtc->alloc(newSize*sizeof(Ray));
+    traceAndShadeReadQueue = (Ray*)rtc->allocMem(newSize*sizeof(Ray));
+    receiveAndShadeWriteQueue = (Ray*)rtc->allocMem(newSize*sizeof(Ray));
         
     size = newSize;
 

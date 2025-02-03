@@ -28,13 +28,6 @@ namespace barney {
   // INTERFACE
   // -----------------------------------------------------------------------------
 
-  /*! performs an atomin float min on given address, in device specific way */
-  inline __both__
-  float fatomicMin(float *addr, float value);
-  inline __both__
-
-  /*! performs an atomin float max on given address, in device specific way */
-  float fatomicMax(float *addr, float value);
   inline __both__
   int project(float f,
               const interval<float> range,
@@ -61,51 +54,6 @@ namespace barney {
   // IMPLEMENTATION
   // -----------------------------------------------------------------------------
 
-#if __CUDA_ARCH__
-  using ::atomicCAS;
-#else
-  inline uint32_t atomicCAS(uint32_t *ptr, uint32_t _expected, uint32_t newValue)
-  {
-    uint32_t expected = _expected;
-    ((std::atomic<uint32_t>*)ptr)->compare_exchange_strong(expected,newValue);
-    return expected;
-  }
-  inline uint32_t __float_as_int(float f)
-  { return (const uint32_t &)f; }
-  inline float __int_as_float(int i)
-  {
-      return (const float&)i;
-  }
-#endif 
-  
-  inline __both__
-  float fatomicMin(float *addr, float value)
-  {
-    float old = *addr, assumed;
-    if(old <= value) return old;
-    do {
-      assumed = old;
-      old = __int_as_float(atomicCAS((unsigned int*)addr,
-                      __float_as_int(assumed),
-                      __float_as_int(value)));
-    } while(old!=assumed);
-    return old;
-  }
-
-  inline __both__
-  float fatomicMax(float *addr, float value)
-  {
-    float old = *addr, assumed;
-    if(old >= value) return old;
-    do {
-      assumed = old;
-      old = __int_as_float(atomicCAS((unsigned int*)addr,
-                      __float_as_int(assumed),
-                      __float_as_int(value)));
-    } while(old!=assumed);
-    return old;
-  }
-  
   inline __both__
   int project(float f,
               const interval<float> range,

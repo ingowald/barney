@@ -105,27 +105,20 @@ namespace barney {
       if (gatheredTilesOnOwner.compressedTiles) {
         frontDev->rtc->freeMem(gatheredTilesOnOwner.compressedTiles);
         gatheredTilesOnOwner.compressedTiles = 0;
-        // BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.compressedTiles));
       }
       
       if (gatheredTilesOnOwner.tileDescs) {
-        // BARNEY_CUDA_CALL(Free(gatheredTilesOnOwner.tileDescs));
         frontDev->rtc->freeMem(gatheredTilesOnOwner.tileDescs);
         gatheredTilesOnOwner.tileDescs = 0;
       }
       
-      // BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.compressedTiles,
-      //                         sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles)));
       gatheredTilesOnOwner.compressedTiles
-        = (CompressedTile *)frontDev->rtc->alloc
+        = (CompressedTile *)frontDev->rtc->allocMem
         (sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles));
       
-      // BARNEY_CUDA_CALL(Malloc(&gatheredTilesOnOwner.tileDescs,
-      //                         sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs)));
       gatheredTilesOnOwner.tileDescs
-        = (TileDesc *)frontDev->rtc->alloc
+        = (TileDesc *)frontDev->rtc->allocMem
         (sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs));
-      // BARNEY_CUDA_SYNC_CHECK();
     }
     
     // ------------------------------------------------------------------
@@ -143,9 +136,8 @@ namespace barney {
 
     if (context->isActiveWorker)
       for (auto device : *devices) 
-      // for (int localID=0;localID<perDev.size();localID++)
         context->world.send(owningRank,
-                            device->contextRank,//localID,
+                            device->contextRank,
                             getPLD(device)->tiledFB->tileDescs,
                             tilesOnGPU[device->contextRank],
                             send_requests[device->contextRank]);

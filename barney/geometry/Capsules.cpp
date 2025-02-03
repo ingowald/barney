@@ -26,14 +26,15 @@ namespace barney {
     : Geometry(slotContext)
   {}
 
-  rtc::GeomType *Capsules::createGeomType(rtc::Device *device)
+  rtc::GeomType *Capsules::createGeomType(rtc::Device *device, const void *)
   {
     if (Context::logging())
       std::cout << OWL_TERMINAL_GREEN
                 << "creating 'Capsules' geometry type"
                 << OWL_TERMINAL_DEFAULT << std::endl;
 
-    return device->createUserGeomType("Capsules",
+    return device->createUserGeomType("Capsules_ptx",
+                                      "Capsules",
                                       sizeof(Capsules::DD),
                                       /*ah*/false,/*ch*/true);
   }

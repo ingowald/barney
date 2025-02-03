@@ -188,6 +188,14 @@ namespace barney {
       {}
       
       virtual void destroy() = 0;
+      
+      /*! returns a string that describes what kind of compute device
+          this is (eg, "cuda" vs "cpu" */
+      virtual std::string computeType() const = 0;
+      
+      /*! returns a string that describes what kind of compute device
+          this is (eg, "optix" vs "embree" */
+      virtual std::string traceType() const = 0;
 
       virtual Denoiser *createDenoiser() { return nullptr; }
       // ==================================================================
@@ -207,7 +215,7 @@ namespace barney {
       // ==================================================================
       // pure compute related stuff
       // ==================================================================
-      virtual void *alloc(size_t numBytes) = 0;
+      virtual void *allocMem(size_t numBytes) = 0;
       virtual void freeMem(void *mem) = 0;
       virtual void *allocHost(size_t numBytes) = 0;
       virtual void freeHost(void *mem) = 0;
@@ -257,14 +265,16 @@ namespace barney {
       // geomtype stuff
       // ------------------------------------------------------------------
       virtual rtc::GeomType *
-      createUserGeomType(const char *typeName,
+      createUserGeomType(const char *ptxName,
+                         const char *typeName,
                          size_t sizeOfDD,
                          bool has_ah,
                          bool has_ch) = 0;
       
       
       virtual rtc::GeomType *
-      createTrianglesGeomType(const char *typeName,
+      createTrianglesGeomType(const char *ptxName,
+                              const char *typeName,
                               size_t sizeOfDD,
                               bool has_ah,
                               bool has_ch) = 0;

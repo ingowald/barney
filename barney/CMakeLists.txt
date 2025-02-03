@@ -69,7 +69,7 @@ if (BARNEY_BACKEND_OPTIX)
     OUTPUT_TARGET      barney-StructuredData-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
     SOURCES            volume/StructuredData.dev.cu
-    EMBEDDED_SYMBOL_NAMES MCAccel_Structured_ptx
+#    EMBEDDED_SYMBOL_NAMES MCAccel_Structured_ptx
     )
 #  embed_ptx(
 #    OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
@@ -80,6 +80,7 @@ if (BARNEY_BACKEND_OPTIX)
     OUTPUT_TARGET      barney-UMeshMC-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
     SOURCES            umesh/mc/UMeshMC.dev.cu
+ #   EMBEDDED_SYMBOL_NAMES MCAccel_UMesh_ptx
     )
 #  embed_ptx(
 #    OUTPUT_TARGET      barney-AWT-ptx
@@ -319,8 +320,15 @@ target_link_libraries(barney PUBLIC
   $<BUILD_INTERFACE:barney_rtc_cuda>
   $<BUILD_INTERFACE:barney_rtc_cuda_common>
   $<BUILD_INTERFACE:barney_rtc_embree>
-#    CUDA::cuda_driver
+
+  $<BUILD_INTERFACE:cuBQL_cpu_float3>
+  #    CUDA::cuda_driver
   )
+if (BARNEY_HAVE_CUDA)
+target_link_libraries(barney PUBLIC
+  $<BUILD_INTERFACE:cuBQL_cuda_float3>
+  )
+endif()
 
 if (BARNEY_BACKEND_OPTIX)
   # optix embedded ptx code strings for the precompiled kernels. these
@@ -332,6 +340,7 @@ if (BARNEY_BACKEND_OPTIX)
     $<BUILD_INTERFACE:barney-spheres-ptx>
     #
     $<BUILD_INTERFACE:barney-StructuredData-ptx>
+    $<BUILD_INTERFACE:barney-UMeshMC-ptx>
     #
     $<BUILD_INTERFACE:barney-traceRays-ptx>
     )
@@ -395,7 +404,7 @@ if (BARNEY_MPI)
     barney
     MPI::MPI_CXX
     )
-  target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
+#  target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
 
 

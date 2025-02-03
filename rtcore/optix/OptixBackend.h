@@ -21,7 +21,7 @@
 namespace barney {
   namespace optix {
     struct OptixBackend;
-    
+
     struct Buffer : public rtc::Buffer {
       Buffer(optix::Device *device,
              size_t size,
@@ -80,6 +80,7 @@ namespace barney {
     struct TrianglesGeomType : public GeomType
     {
       TrianglesGeomType(optix::Device *device,
+                        const std::string &ptxName,
                         const std::string &typeName,
                         size_t sizeOfDD, bool has_ah, bool has_ch);
       rtc::Geom *createGeom() override;
@@ -87,6 +88,7 @@ namespace barney {
     struct UserGeomType : public GeomType
     {
       UserGeomType(optix::Device *device,
+                   const std::string &ptxName,
                    const std::string &typeName,
                    size_t sizeOfDD, bool has_ah, bool has_ch);
       rtc::Geom *createGeom() override;

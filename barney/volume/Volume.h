@@ -37,13 +37,12 @@ namespace barney {
     
     typedef std::shared_ptr<VolumeAccel> SP;
 
-    VolumeAccel(ScalarField *sf, Volume *volume);
+    VolumeAccel(Volume *volume);
 
     virtual void build(bool full_rebuild) = 0;
 
     const TransferFunction *getXF() const;
     
-    ScalarField *const sf = 0;
     Volume      *const volume = 0;
     const DevGroup::SP devices;
   };
@@ -62,26 +61,28 @@ namespace barney {
       elements, or look up a 3d texture, etc) */
   struct Volume : public SlottedObject
   {
-    template<typename SFType>
+    template<typename SFSampler>
     struct DD {
       inline __both__
       vec4f sampleAndMap(vec3f point, bool dbg=false) const
       {
-        float f = sf.sample(point,dbg);
+        float f = sfSampler.sample(point,dbg);
         if (isnan(f)) return vec4f(0.f);
         vec4f mapped = xf.map(f,dbg);
         return mapped;
       }
       
-      typename SFType::DD  sf;
-      TransferFunction::DD xf;
+      ScalarField::DD        sfCommon;
+      typename SFSampler::DD sfSampler;
+      TransferFunction::DD   xf;
     };
     
-    template<typename SFType>
-    DD<SFType> getDD(Device *device)
+    template<typename SFSampler>
+    DD<SFSampler> getDD(Device *device, std::shared_ptr<SFSampler> sampler)
     {
-      DD<SFType> dd;
-      dd.sf = sf->as<SFType>()->getDD(device);
+      DD<SFSampler> dd;
+      dd.sfCommon = sf->getDD(device);
+      dd.sfSampler = sampler->getDD(device);
       dd.xf = xf.getDD(device);
       return dd;
     }
@@ -125,15 +126,15 @@ namespace barney {
   /*! helper class that performs woodcock sampling over a given
       parameter range, for a given sample'able volume type */
   struct Woodcock {
-    template<typename SFType>
+    template<typename VolumeDD>
     static inline __both__
     bool sampleRange(vec4f &sample,
-                     const Volume::DD<SFType> &volume,
+                     const VolumeDD &sfSampler,
                      vec3f org, vec3f dir,
                      range1f &tRange,
                      float majorant,
                      uint32_t &rngSeed,
-                     bool dbg=false)
+                     bool dbg=false) 
     {
       LCG<4> &rand = (LCG<4> &)rngSeed;
       float t = tRange.lower;
@@ -144,7 +145,7 @@ namespace barney {
           return false;
 
         vec3f P = org+t*dir;
-        sample = volume.sampleAndMap(P,dbg);
+        sample = sfSampler.sampleAndMap(P,dbg);
         // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
         //                 t,
         //                 P.x,P.y,P.z,
@@ -163,11 +164,11 @@ namespace barney {
 
 
   
-  inline VolumeAccel::VolumeAccel(ScalarField *sf, Volume *volume)
-    : sf(sf), volume(volume),
-      devices(sf->devices)
+  inline VolumeAccel::VolumeAccel(Volume *volume)
+    : volume(volume),
+      devices(volume->devices)
   {
-    assert(sf);
     assert(volume);
+    assert(volume->sf);
   }
 }

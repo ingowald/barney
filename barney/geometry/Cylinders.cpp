@@ -26,15 +26,15 @@ namespace barney {
     : Geometry(slotContext)
   {}
 
-  rtc::GeomType *Cylinders::createGeomType(rtc::Device *device)
-  // OWLGeomType Cylinders::createGeomType(DevGroup *devGroup)
+  rtc::GeomType *Cylinders::createGeomType(rtc::Device *device, const void *)
   {
     if (Context::logging())
     std::cout << OWL_TERMINAL_GREEN
               << "creating 'Cylinders' geometry type"
               << OWL_TERMINAL_DEFAULT << std::endl;
 
-    return device->createUserGeomType("Cylinders",
+    return device->createUserGeomType("Cylinders_ptx",
+                                      "Cylinders",
                                       sizeof(Cylinders::DD),
                                       /*ah*/false,/*ch*/true);
   }

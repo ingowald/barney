@@ -91,14 +91,13 @@ namespace barney {
       ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
                    device->globalIndexStep)
       : 0;
-// #if 1
     auto rtc = device->rtc;
     accumTiles
-      = (AccumTile *)rtc->alloc(numActiveTiles * sizeof(AccumTile));
+      = (AccumTile *)rtc->allocMem(numActiveTiles * sizeof(AccumTile));
     compressedTiles
-      = (CompressedTile *)rtc->alloc(numActiveTiles * sizeof(CompressedTile));
+      = (CompressedTile *)rtc->allocMem(numActiveTiles * sizeof(CompressedTile));
     tileDescs
-      = (TileDesc *)rtc->alloc(numActiveTiles * sizeof(TileDesc));
+      = (TileDesc *)rtc->allocMem(numActiveTiles * sizeof(TileDesc));
     SetTileCoords args = {
       tileDescs,
       numActiveTiles,
