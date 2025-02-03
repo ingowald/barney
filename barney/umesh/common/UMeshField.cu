@@ -181,12 +181,29 @@ namespace barney {
       }
 
       box4f bounds = dd.eltBounds(elt);
+
       barney::fatomicMin(&d_worldBounds->lower.x,bounds.lower.x);
       barney::fatomicMin(&d_worldBounds->lower.y,bounds.lower.y);
       barney::fatomicMin(&d_worldBounds->lower.z,bounds.lower.z); 
       barney::fatomicMax(&d_worldBounds->upper.x,bounds.upper.x);
       barney::fatomicMax(&d_worldBounds->upper.y,bounds.upper.y);
       barney::fatomicMax(&d_worldBounds->upper.z,bounds.upper.z); 
+      if (tid < 10) {
+        printf("(%i) bounds (%f %f %f)(%f %f %f)->(%f %f %f)(%f %f %f)\n",
+               tid,
+               bounds.lower.x,
+               bounds.lower.y,
+               bounds.lower.z,
+               bounds.upper.x,
+               bounds.upper.y,
+               bounds.upper.z,
+               d_worldBounds->lower.x,
+               d_worldBounds->lower.y,
+               d_worldBounds->lower.z,
+               d_worldBounds->upper.x,
+               d_worldBounds->upper.y,
+               d_worldBounds->upper.z);
+      }
     }
   };
   
@@ -209,9 +226,12 @@ namespace barney {
     std::cout << "------------------------------------------" << std::endl;
     
     float maxWidth = reduce_max(worldBounds.size());//getBox(worldBounds).size());
+    PRINT(worldBounds);
     int MC_GRID_SIZE
       = 200 + int(sqrtf(elementOffsets->count/10));
+    PRINT(MC_GRID_SIZE);
     vec3i dims = 1+vec3i(worldBounds.size() * ((MC_GRID_SIZE-1) / maxWidth));
+    PRINT(dims);
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.um: building initial macro cell grid of " << dims << " MCs"
               << OWL_TERMINAL_DEFAULT << std::endl;
@@ -355,6 +375,7 @@ namespace barney {
         = (Element*)rtc->allocMem(numElements*sizeof(Element));
 
       box3f emptyBox;
+      PRINT(emptyBox);
       rtc->copy(pld->pWorldBounds,&emptyBox,sizeof(emptyBox));
       UMeshCreateElements args = {
         // UMeshField::DD dd;
@@ -371,8 +392,11 @@ namespace barney {
       device->umeshCreateElements->launch(nb,bs,&args);
     }
     
-    for (auto device : *devices)
+    for (auto device : *devices) {
       device->sync();
+      PLD *pld = getPLD(device); 
+      PING; PRINT(*pld->pWorldBounds);
+    }
     std::cout << "#bn.umesh: copying down world bounds"
               << std::endl;
     Device *anyDev = (*devices)[0];

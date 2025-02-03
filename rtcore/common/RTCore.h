@@ -32,17 +32,26 @@ namespace barney {
 
 #if __CUDA_ARCH__
   using ::atomicCAS;
+  using ::__int_as_float;
+  using ::__float_as_int;
 #else
-  inline uint32_t __float_as_int(float f)
-  { return (const uint32_t &)f; }
+  inline uint32_t
+  __float_as_int(float f)
+  {
+    uint32_t ui;
+    memcpy(&ui,&f,sizeof(f));
+    return ui;
+  }
   inline float __int_as_float(int i)
   {
-      return (const float&)i;
+    float f;
+    memcpy(&f,&i,sizeof(f));
+    return f;
   }
   inline int atomicCAS(int *ptr, int _expected, int newValue)
   {
     int expected = _expected;
-    ((std::atomic<int>*)ptr)->compare_exchange_strong(expected,newValue);
+    ((std::atomic<int>*)ptr)->compare_exchange_weak(expected,newValue);
     return expected;
   }
 #endif 
@@ -54,11 +63,11 @@ namespace barney {
   inline __both__
   void fatomicMin(float *addr, float value)
   {
-    float old = *addr;
+    float old = *(volatile float *)addr;
     if(old <= value) return;
 
-    int _expected = __float_as_int(old);
-    int _desired  = __float_as_int(value);
+    int _expected = barney::__float_as_int(old);
+    int _desired  = barney::__float_as_int(value);
     while (true) {
       uint32_t _found = barney::atomicCAS((int*)addr,_expected,_desired);
       if (_found == _expected)
@@ -67,7 +76,7 @@ namespace barney {
         return;
       // '_expected' changed, so write did not go through, and
       // somebody else wrote something new to that location.
-      old = __int_as_float(_found);
+      old = barney::__int_as_float(_found);
       if (old <= value)
         // somebody else wrote something that's already smaller
         // than what we have ... leave it be, and done.
@@ -83,11 +92,11 @@ namespace barney {
   inline __both__
   void fatomicMax(float *addr, float value)
   {
-    float old = *addr;
+    float old = *(volatile float *)addr;
     if(old >= value) return;
 
-    int _expected = __float_as_int(old);
-    int _desired  = __float_as_int(value);
+    int _expected = barney::__float_as_int(old);
+    int _desired  = barney::__float_as_int(value);
     while (true) {
       uint32_t _found = barney::atomicCAS((int*)addr,_expected,_desired);
       if (_found == _expected)
@@ -96,7 +105,7 @@ namespace barney {
         return;
       // '_expected' changed, so write did not go through, and
       // somebody else wrote something new to that location.
-      old = __int_as_float(_found);
+      old = barney::__int_as_float(_found);
       if (old >= value)
         // somebody else wrote something that's already smaller
         // than what we have ... leave it be, and done.
@@ -226,63 +235,6 @@ namespace barney {
       
       inline __both__ float atomicAdd(float *ptr, float inc) const
       { return ((std::atomic<float> *)ptr)->fetch_add(inc); }
-
-#if 0
-      inline __both__ void atomicMin(float *addr, float value) const
-      {
-        fatomicMin(addr,value);
-        // float old = *addr;
-        // if(old <= value) return;
-
-        // uint32_t _expected = __float_as_int(old);
-        // uint32_t _desired  = __float_as_int(value);
-        // while (true) {
-        //   ((std::atomic<uint32_t>*)addr)
-        //     ->compare_exchange_weak(_expected,_desired);
-        //   if (_expected == __float_as_int(old))
-        //     // write went though; we _did_ write the new mininm and
-        //     // are done.
-        //     return;
-        //   // '_expected' changed, so write did not go through, and
-        //   // somebody else wrote something new to that location.
-        //   old = __int_as_float(_expected);
-        //   if (old <= value)
-        //     // somebody else wrote something that's already smaller
-        //     // than what we have ... leave it be, and done.
-        //     return;
-        //   else
-        //     // somebody else wrote something, but ours is _still_ smaller.
-        //     continue;
-        // } 
-      }
-      inline __both__ void atomicMax(float *addr, float value) const
-      {
-        float old = *addr;
-        if(old >= value) return;
-
-        uint32_t _expected = __float_as_int(old);
-        uint32_t _desired  = __float_as_int(value);
-        while (true) {
-          ((std::atomic<uint32_t>*)addr)
-            ->compare_exchange_weak(_expected,_desired);
-          if (_expected == __float_as_int(old))
-            // write went though; we _did_ write the new mininm and
-            // are done.
-            return;
-          // '_expected' changed, so write did not go through, and
-          // somebody else wrote something new to that location.
-          old = __int_as_float(_expected);
-          if (old >= value)
-            // somebody else wrote something that's already smaller
-            // than what we have ... leave it be, and done.
-            return;
-          else
-            // somebody else wrote something, but ours is _still_ smaller.
-            continue;
-        } 
-      }
-#endif
-      
 #  endif
       vec3ui threadIdx;
       vec3ui blockIdx;
