@@ -219,27 +219,6 @@ set(BARNEY_SOURCES
   material/AnariMatte.h
   material/AnariMatte.cpp
 
-  # *unstructured* volumes
-
-  
-#  umesh/common/UMeshField.h
-#  umesh/common/UMeshField.cu
-#  # ... macro-cell based methods
-#  umesh/mc/UMeshCUBQLSampler.h
-#  umesh/mc/UMeshCUBQLSampler.cu
-#  # ... object-space methods
-#  umesh/os/RTXObjectSpace.h
-#  umesh/os/RTXObjectSpace.cu
-#  umesh/os/AWT.h
-#  umesh/os/AWT.cu
-#  # *amr* volumes
-#  amr/BlockStructuredField.h
-#  amr/BlockStructuredField.cu
-#  amr/BlockStructuredCUBQLSampler.h
-#  amr/BlockStructuredCUBQLSampler.cu
-  #  amr/BlockStructuredMCAccelerator.h
-  #  amr/BlockStructuredMCAccelerator.cu
-  
   # implements the c99 barney api calls
   barney.cpp
   )
@@ -320,14 +299,18 @@ target_link_libraries(barney PUBLIC
   $<BUILD_INTERFACE:barney_rtc_cuda>
   $<BUILD_INTERFACE:barney_rtc_cuda_common>
   $<BUILD_INTERFACE:barney_rtc_embree>
-
-  $<BUILD_INTERFACE:cuBQL_cpu_float3>
+  
+  #  $<BUILD_INTERFACE:cuBQL_cpu_float3>
+  $<BUILD_INTERFACE:cuBQL_cpu_float3_static>
+  #  cuBQL_cpu_float3_static
   #    CUDA::cuda_driver
   )
 if (BARNEY_HAVE_CUDA)
-target_link_libraries(barney PUBLIC
-  $<BUILD_INTERFACE:cuBQL_cuda_float3>
-  )
+  target_link_libraries(barney PUBLIC
+    $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
+    #  $<BUILD_INTERFACE:cuBQL_cuda_float3>
+    #    cuBQL_cuda_float3_static
+    )
 endif()
 
 if (BARNEY_BACKEND_OPTIX)
@@ -351,9 +334,6 @@ set_target_properties(barney
   CXX_VISIBILITY_PRESET hidden
   CUDA_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
-  #  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  #  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  #  CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
   )
 
 if (BARNEY_MPI)
@@ -370,18 +350,17 @@ if (BARNEY_MPI)
     fb/DistFB.h
     fb/DistFB.cpp
     )
-  if (OFF)
-    set_target_properties(barney_mpi
-      PROPERTIES
-      CUDA_SEPARABLE_COMPILATION ON
-      POSITION_INDEPENDENT_CODE ON
-      CXX_VISIBILITY_PRESET hidden
-      CUDA_VISIBILITY_PRESET hidden
-      #    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-      #    CUDA_USE_STATIC_CUDA_RUNTIME ON
-      #    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-      )
-  endif()
+  set_target_properties(barney_mpi
+    PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CXX_VISIBILITY_PRESET hidden
+    CUDA_VISIBILITY_PRESET hidden
+    POSITION_INDEPENDENT_CODE ON
+ 
+    #    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    #    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    #    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+    )
   target_link_libraries(barney_mpi PUBLIC
 #    $<BUILD_INTERFACE:barney_config>
 #    $<BUILD_INTERFACE:barney_rtc_common>
@@ -404,7 +383,7 @@ if (BARNEY_MPI)
     barney
     MPI::MPI_CXX
     )
-#  target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
+  target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
 endif()
 
 

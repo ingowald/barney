@@ -307,9 +307,12 @@ namespace barney_device {
         MPI_Init(nullptr, nullptr);
       int rank, size;
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      MPI_Comm_size(MPI_COMM_WORLD, &size);
 
       state.context = bnMPIContextCreate(MPI_COMM_WORLD, &rank, 1, nullptr, 0);
 
+      std::cout << "#banari: creating barney *MPI* context (rank #" << rank << " out of " << size << " total ranks)" << std::endl;
+      
       auto &info = state.bnInfo;
       bnMPIQueryHardware(&info, MPI_COMM_WORLD);
       reportMessage(ANARI_SEVERITY_DEBUG, "BNHardwareInfo:");
@@ -323,6 +326,7 @@ namespace barney_device {
                     ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
       reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
 #else
+      std::cout << "#banari: creating *non-mpi* barney context" << std::endl;
       state.context = bnContextCreate();
       std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
 #endif

@@ -201,9 +201,9 @@ endif()
 if (BARNEY_CUBQL_HOST)
   target_compile_definitions(barney_config INTERFACE -DBARNEY_CUBQL_HOST=1)
   target_link_libraries(barney_config INTERFACE cuBQL)
-  set(CUBQL_LIB cuBQL_cpu_float3)
+#  set(CUBQL_LIBS cuBQL_cpu_float3_static)
 else()
-  set(CUBQL_LIB cuBQL_cuda_float3)
+#  set(CUBQL_LIBS cuBQL_cpu_float3_static cuBQL_cuda_float3)
 endif()
 target_link_libraries(barney_config
   INTERFACE
@@ -321,7 +321,7 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
 )
 
 install(
-  TARGETS barney
+  TARGETS barney # ${CUBQL_LIBS}
 #  EXPORT barneyTargets
   EXPORT barney-config
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -338,10 +338,10 @@ install(EXPORT barney-config
   )
 
 if (BARNEY_MPI)
-  if (OFF)
+  if (ON)
     install(
       TARGETS barney_mpi
-      EXPORT barneyTargets
+      EXPORT barney-config
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       NAMELINK_SKIP
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

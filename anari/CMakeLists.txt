@@ -51,10 +51,6 @@ set_target_properties(banari-config
   PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   )
-#set_target_properties(banari-config
-#  PROPERTIES
-#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-#  )
 target_include_directories(banari-config
   INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
@@ -85,26 +81,17 @@ else()
     barney
     )
 endif()
-if (TARGET anari::helium)
+#if (TARGET anari::helium)
   target_link_libraries(anari_library_barney PRIVATE
     anari::helium
     anari::anari
     )
-else()
-  target_link_libraries(anari_library_barney PRIVATE
-    helium
-    anari
-    )
-endif()
-
-#set_target_properties(anari_library_barney
-#  PROPERTIES
-#  CUDA_SEPARABLE_COMPILATION ON
-#  POSITION_INDEPENDENT_CODE ON
-#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-#  CUDA_USE_STATIC_CUDA_RUNTIME ON
-#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-#  )
+#else()
+#  target_link_libraries(anari_library_barney PRIVATE
+#    helium
+#    anari
+#    )
+#endif()
 
 include(GenerateExportHeader)
 generate_export_header(anari_library_barney
@@ -118,7 +105,8 @@ if (APPLE)
 else()
   set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
-install(TARGETS barney anari_library_barney
+install(TARGETS# barney
+  anari_library_barney
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

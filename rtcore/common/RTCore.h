@@ -16,10 +16,10 @@
 #if defined(_MSC_VER)
 #  define BARNEY_VISIBILITY_DEFAULT /* nothing */
 #elif defined(__clang__) || defined(__GNUC__)
-# if __CUDACC__
+# ifdef __CUDA_ARCH__
 #  define BARNEY_VISIBILITY_DEFAULT /* nothing */
 # else
-#  define BARNEY_VISIBILITY_DEFAULT  __attribute__((visibility("default")))
+#  define BARNEY_VISIBILITY_DEFAULT  __attribute__ ((visibility("default")))
 # endif
 #else
 #  define BARNEY_VISIBILITY_DEFAULT /* nothing */
@@ -330,9 +330,9 @@ namespace barney {
     }
     
 #  define RTC_DECLARE_CUDA_COMPUTE(KernelName,ClassName)                \
-    extern "C" void                                                     \
+    extern "C"                                                          \
     BARNEY_VISIBILITY_DEFAULT                                           \
-    barney_rtc_cuda_launch_##KernelName(::barney::vec3ui nb,            \
+    void barney_rtc_cuda_launch_##KernelName(::barney::vec3ui nb,       \
                                         ::barney::vec3ui bs,            \
                                         int shmSize,                    \
                                         cudaStream_t stream,            \
@@ -372,20 +372,20 @@ namespace barney {
 
 #define RTC_DECLARE_EMBREE_USER_GEOM(name,type)             \
                                                             \
-  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   void barney_embree_ch_##name                              \
   (::barney::embree::TraceInterface &rtcore)                \
   { type::closest_hit(rtcore); }                            \
                                                             \
-  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   void barney_embree_ah_##name                              \
   (::barney::embree::TraceInterface &rtcore)                \
   { type::any_hit(rtcore); }                                \
                                                             \
-  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   void barney_embree_bounds_##name                          \
   (::barney::embree::TraceInterface &rtcore,                \
    const void *dd,                                          \
@@ -393,8 +393,8 @@ namespace barney {
    int primID)                                              \
   { type::bounds(rtcore,dd,bounds,primID); }                \
                                                             \
-  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   void barney_embree_intersect_##name                       \
   (::barney::embree::TraceInterface &rtcore)                \
   { type::intersect(rtcore); }                               
@@ -402,14 +402,14 @@ namespace barney {
   
 #define RTC_DECLARE_EMBREE_TRIANGLES_GEOM(name,type)        \
                                                             \
-  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   void barney_embree_ch_##name                              \
   (::barney::embree::TraceInterface &rtcore)                \
   { type::closest_hit(rtcore); }                            \
                                                             \
-  BARNEY_VISIBILITY_DEFAULT                                 \
   extern "C"                                                \
+  BARNEY_VISIBILITY_DEFAULT                                 \
   void barney_embree_ah_##name                              \
   (::barney::embree::TraceInterface &rtcore)                \
   { type::any_hit(rtcore); }                               

@@ -54,10 +54,14 @@ namespace barney {
     {
       const char *_fromEnv = getenv("BARNEY_BACKEND");;
       std::string fromEnv = _fromEnv?_fromEnv:"";
+#ifndef NDEBUG
+      if (fromEnv != "")
+        std::cout << "#bn: backend requested from env: '"
+                  << fromEnv << "'" << std::endl;
+#endif
       if (fromEnv == "") {
         // nothing to do, leave default selection below
       } else if (fromEnv == "optix") {
-        PING;
         return createBackend_optix();
       } else if (fromEnv == "embree" || fromEnv == "cpu") {
         return createBackend_embree();
@@ -101,8 +105,16 @@ namespace barney {
       HMODULE libCurrent = GetModuleHandle(NULL);
       void* symbol = (void*)GetProcAddress(libCurrent, symbolName.c_str());
 #else
-      void *lib = dlopen(nullptr,RTLD_GLOBAL);
-      void* symbol = (void*)dlsym(lib, symbolName.c_str());
+      // void *lib = dlopen(nullptr,RTLD_NOW);
+      void *lib = dlopen(nullptr,RTLD_LOCAL|RTLD_NOW);
+# ifndef NDEBUG
+      if (!lib) std::cout << "#bn: error on dlopen(null): " << dlerror() << std::endl;
+# endif
+      void* symbol = (void*)dlsym(RTLD_DEFAULT, symbolName.c_str());
+      // void* symbol = (void*)dlsym(lib, symbolName.c_str());
+# ifndef NDEBUG
+      if (!lib) std::cout << "#bn: error on dlsym: " << dlerror() << std::endl;
+# endif
 #endif
       if (!symbol)
         throw std::runtime_error

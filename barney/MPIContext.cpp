@@ -36,6 +36,7 @@ namespace barney {
       world(worldComm),
       workers(workersComm)
   {
+    PING;
     bool dbg = false;
 
     if (dbg) {
