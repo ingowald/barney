@@ -897,8 +897,8 @@ namespace barney {
       }
 
       // and write the shade fragment, if generated
-      int tileID  = path.pixelID / pixelsPerTile;
-      int tileOfs = path.pixelID % pixelsPerTile;
+      int tileID  = int(path.pixelID / pixelsPerTile);
+      int tileOfs = int(path.pixelID % pixelsPerTile);
       vec4f &valueToAccumInto
         = accumTiles[tileID].accum[tileOfs];
 

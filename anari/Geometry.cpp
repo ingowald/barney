@@ -181,7 +181,7 @@ void Curve::setBarneyParameters(BNGeom geom, BNContext context// , int slot
 {
   int slot = 0;
   assert(m_vertexRadius->totalSize() == m_vertexPosition->totalSize());
-  int numVertices = std::min(m_vertexRadius->totalSize(),
+  int numVertices = (int)std::min(m_vertexRadius->totalSize(),
                              m_vertexPosition->totalSize());
   const bn_float3 *in_vertex
     = (const bn_float3 *)m_vertexPosition->data();
@@ -198,7 +198,7 @@ void Curve::setBarneyParameters(BNGeom geom, BNContext context// , int slot
                                  numVertices,vertex.data());
   bnSetData(geom, "vertices", vertices);
 
-  int numIndices = m_index->totalSize();
+  int numIndices = (int)m_index->totalSize();
   std::vector<math::int2> index(numIndices);
   const int  *in_index = (const int *)m_index->data();
   for (int i=0;i<numIndices;i++) {
@@ -224,14 +224,6 @@ void Curve::setBarneyParameters(BNGeom geom, BNContext context// , int slot
                    index.size(),
                    (const int *)index.data());
   bnSetData(geom, "indices", indices);
-  
-#if 0
-  addAttribute(geom, context, slot, m_attributes[0], "primitive.attribute0");
-  addAttribute(geom, context, slot, m_attributes[1], "primitive.attribute1");
-  addAttribute(geom, context, slot, m_attributes[2], "primitive.attribute2");
-  addAttribute(geom, context, slot, m_attributes[3], "primitive.attribute3");
-  addAttribute(geom, context, slot, m_attributes[4], "primitive.color");
-#endif
   
   addAttribute(geom, context, m_vertexAttributes[0], "vertex.attribute0");
   addAttribute(geom, context, m_vertexAttributes[1], "vertex.attribute1");
@@ -349,11 +341,11 @@ void Triangle::setBarneyParameters(BNGeom geom, BNContext context// , int slot
                                    )
 {
   int slot = 0;
-  int numVertices = m_vertexPosition->totalSize();
+  int numVertices = (int)m_vertexPosition->totalSize();
   int numIndices
     = m_index
-    ? m_index->size()
-    : (m_generatedIndices.size() / 3);
+    ? (int)m_index->size()
+    : (int)(m_generatedIndices.size() / 3);
   const bn_float3 *vertices
     = (const bn_float3 *)m_vertexPosition->data();
   const bn_int3 *indices

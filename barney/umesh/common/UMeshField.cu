@@ -228,7 +228,7 @@ namespace barney {
     float maxWidth = reduce_max(worldBounds.size());//getBox(worldBounds).size());
     PRINT(worldBounds);
     int MC_GRID_SIZE
-      = 200 + int(sqrtf(elementOffsets->count/10));
+      = 200 + int(sqrtf(elementOffsets->count/10.f));
     PRINT(MC_GRID_SIZE);
     vec3i dims = 1+vec3i(worldBounds.size() * ((MC_GRID_SIZE-1) / maxWidth));
     PRINT(dims);
@@ -357,13 +357,13 @@ namespace barney {
     
     std::cout << "#bn.umesh: computing device-side elements[] representation"
               << std::endl;
-    this->numElements = elementOffsets->count;
+    this->numElements = (int)elementOffsets->count;
     for (auto device : *devices) {
       PLD *pld = getPLD(device); 
       auto rtc = device->rtc;
       
-      int numElements = elementOffsets->count;
-      int numIndices  = indices->count;
+      int numElements = (int)elementOffsets->count;
+      int numIndices  = (int)indices->count;
       if (pld->elements)
         rtc->freeMem(pld->elements);
       if (pld->pWorldBounds)
@@ -416,7 +416,7 @@ namespace barney {
     dd.vertices = (float4 *)vertices->getDD(device);
     dd.indices  = (int    *)indices->getDD(device);
     dd.elements = (Element*)getPLD(device)->elements;
-    dd.numElements = elementOffsets->count;
+    dd.numElements = (int)elementOffsets->count;
     assert(dd.vertices);
     assert(dd.indices);
     assert(dd.elements);

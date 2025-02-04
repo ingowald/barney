@@ -90,8 +90,8 @@ namespace barney {
       rtc::Buffer *indicesBuffer
         = indices->getPLD(device)->rtcBuffer;
       
-      int numVertices = vertices->count;
-      int numIndices  = indices->count;
+      int numVertices = (int)vertices->count;
+      int numIndices  = (int)indices->count;
       
       geom->setVertices(verticesBuffer,numVertices);
       geom->setIndices(indicesBuffer,numIndices);

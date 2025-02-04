@@ -116,89 +116,9 @@ namespace barney {
                                  Device *device)
   {
     dd.attributes = attributes.getDD(device);
-    dd.materialID = material->materialID;
-    
-    // auto set = [&](GeometryAttribute::DD &out,
-    //                const GeometryAttribute &in,
-    //                rtc::Device *device,
-    //                const std::string &dbgName)
-    // {
-    //   if (in.perVertex) {
-    //     out.scope = GeometryAttribute::PER_VERTEX;
-    //     out.fromArray.type = in.perVertex->type;
-    //     out.fromArray.ptr
-    //       // = owlBufferGetPointer(in.perVertex->owl,devID);
-    //       = in.perVertex->getDD(device);
-    //     out.fromArray.size = in.perVertex->count;
-    //   } else if (in.perPrim) {
-    //     out.scope = GeometryAttribute::PER_PRIM;
-    //     out.fromArray.type = in.perPrim->type;
-    //     out.fromArray.ptr
-    //       // = owlBufferGetPointer(in.perPrim->owl,devID);
-    //       = in.perPrim->getDD(device);
-    //     out.fromArray.size = in.perPrim->count;
-    //   } else {
-    //     out.scope = GeometryAttribute::CONSTANT;
-    //     (vec4f&)out.value = in.constant;
-    //   }
-    // };
-
-    // for (int i=0;i<attributes.count;i++) {
-    //   const auto &in = attributes.attribute[i];
-    //   auto &out = dd.attributes.attribute[i];
-    //   set(out,in,device,"attr"+std::to_string(i));
-    // }
-    // set(dd.attributes.colorAttribute,
-    //     attributes.colorAttribute,device,"color");
-    
-    // GeometryAttributes::DD dd;
-    // for (int devID=0;devID<getDevGroup()->size();devID++) {
-    //   for (int i=0;i<attributes.count;i++) {
-    //     const auto &in = attributes.attribute[i];
-    //     auto &out = dd.attribute[i];
-    //     set(out,in,devID,"attr"+std::to_string(i));
-    //   }
-    //   set(dd.colorAttribute,attributes.colorAttribute,devID,"color");
-    //   owlGeomSetRaw(geom,"attributes",&dd,devID);
-    // }
+    dd.materialID = material->materialID;  
   }
   
-  // void Geometry::setAttributesOn(OWLGeom geom)
-  // // void Geometry::setAttributesOn(OWLGeom geom)
-  // {
-  //   auto set = [&](GeometryAttribute::DD &out, const GeometryAttribute &in,
-  //                  const int devID,
-  //                  const std::string &dbgName)
-  //   {
-  //     if (in.perVertex) {
-  //       out.scope = GeometryAttribute::PER_VERTEX;
-  //       out.fromArray.type = in.perVertex->type;
-  //       out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
-  //       out.fromArray.size = in.perVertex->count;
-  //     } else if (in.perPrim) {
-  //       out.scope = GeometryAttribute::PER_PRIM;
-  //       out.fromArray.type = in.perPrim->type;
-  //       out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
-  //       out.fromArray.size = in.perPrim->count;
-  //     } else {
-  //       out.scope = GeometryAttribute::CONSTANT;
-  //       (vec4f&)out.value = in.constant;
-  //     }
-  //   };
-    
-  //   GeometryAttributes::DD dd;
-  //   for (int devID=0;devID<getDevGroup()->size();devID++) {
-  //     for (int i=0;i<attributes.count;i++) {
-  //       const auto &in = attributes.attribute[i];
-  //       auto &out = dd.attribute[i];
-  //       set(out,in,devID,"attr"+std::to_string(i));
-  //     }
-  //     set(dd.colorAttribute,attributes.colorAttribute,devID,"color");
-  //     owlGeomSetRaw(geom,"attributes",&dd,devID);
-  //   }
-  // }
-  
-
   bool Geometry::set1f(const std::string &member, const float &value)
   {
     return false;
