@@ -14,35 +14,33 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "rtcore/optix/OptixBackend.h"
+#include "rtcore/optix/Group.h"
 #include "rtcore/optix/Device.h"
-#include <optix.h>
-#include <optix_function_table.h>
-#include <optix_stubs.h>
 
 namespace barney {
   namespace optix {
-    
-    OptixBackend::OptixBackend()
+
+    Group::Group(optix::Device *device, OWLGroup owl)
+      : rtc::Group(device),
+        owl(owl)
     {}
-
-    rtc::Device *OptixBackend::createDevice(int gpuID) 
+    
+    rtc::device::AccelHandle Group::getDD() const
     {
-      return new optix::Device(gpuID);
-    }    
-
-  }
-  namespace rtc {
-
-    //__attribute__((visibility("default")))
-      extern "C"
-    Backend *createBackend_optix()
-    {
-      Backend *be = new barney::optix::OptixBackend;
-      return be;
+      OptixTraversableHandle handle
+        = owlGroupGetTraversable(owl,0);
+      return (const rtc::device::AccelHandle &)handle;
     }
+    
+    void Group::buildAccel()
+    {
+      owlGroupBuildAccel(owl);
+    }
+    
+    void Group::refitAccel() 
+    {
+      owlGroupRefitAccel(owl);
+    }
+      
   }
 }
-
-  
-  

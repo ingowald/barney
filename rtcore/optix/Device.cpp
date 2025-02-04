@@ -16,6 +16,9 @@
 
 #include "rtcore/optix/Device.h"
 #include "rtcore/optix/Denoiser.h"
+#include "rtcore/optix/Buffer.h"
+#include "rtcore/optix/Geom.h"
+#include "rtcore/optix/Group.h"
 
 namespace barney {
   namespace optix {

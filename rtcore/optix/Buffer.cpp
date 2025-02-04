@@ -14,35 +14,22 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "rtcore/optix/OptixBackend.h"
+#include "rtcore/optix/Buffer.h"
 #include "rtcore/optix/Device.h"
-#include <optix.h>
-#include <optix_function_table.h>
-#include <optix_stubs.h>
 
 namespace barney {
   namespace optix {
-    
-    OptixBackend::OptixBackend()
-    {}
 
-    rtc::Device *OptixBackend::createDevice(int gpuID) 
+    Buffer::Buffer(optix::Device *device,
+                   size_t size,
+                   const void *initData)
+      : rtc::Buffer(device)
     {
-      return new optix::Device(gpuID);
-    }    
-
-  }
-  namespace rtc {
-
-    //__attribute__((visibility("default")))
-      extern "C"
-    Backend *createBackend_optix()
-    {
-      Backend *be = new barney::optix::OptixBackend;
-      return be;
+      owl = owlDeviceBufferCreate(device->owl,OWL_BYTE,size,initData);
     }
+    
+    void *Buffer::getDD() const
+    { return (void*)owlBufferGetPointer(owl,0); }
+    
   }
 }
-
-  
-  

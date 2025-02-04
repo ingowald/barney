@@ -144,6 +144,10 @@ if (BARNEY_BACKEND_OPTIX)
     optix/Denoiser.cpp
     optix/Device.h
     optix/Device.cpp
+    optix/Group.h
+    optix/Group.cpp
+    optix/Buffer.h
+    optix/Buffer.cpp
     )
   target_link_libraries(barney_rtc_optix PUBLIC
     barney_rtc_config
