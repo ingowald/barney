@@ -9,7 +9,6 @@ Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s) {}
 
 Surface::~Surface()
 {
-  PING;
   cleanup();
 }
   

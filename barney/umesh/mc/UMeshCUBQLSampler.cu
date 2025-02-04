@@ -15,7 +15,9 @@
 // ======================================================================== //
 
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
-#include "cuBQL/builder/cuda.h"
+#ifdef __CUDACC__
+# include "cuBQL/builder/cuda.h"
+#endif
 #include "cuBQL/builder/cpu.h"
 
 namespace barney {
@@ -82,12 +84,14 @@ namespace barney {
       device->rtc->sync();
       
       SetActiveGPU forDuration(device);
+#ifdef __CUDACC__
       if (device->rtc->computeType() == "cuda")
         cuBQL::gpuBuilder(bvh,
                           (const cuBQL::box_t<float,3>*)primBounds,
                           numElements,
                           cuBQL::BuildConfig());
       else
+#endif
         cuBQL::cpu::spatialMedian(bvh,
                                   (const cuBQL::box_t<float,3>*)primBounds,
                                   numElements,
@@ -125,9 +129,11 @@ namespace barney {
       device->rtc->sync();
       
       // ... and kill whatever else cubql may have in the bvh
+#ifdef __CUDACC__
       if (device->rtc->computeType() == "cuda")
         cuBQL::cuda::free(bvh,0);
       else
+#endif
         cuBQL::cpu::freeBVH(bvh);
       
       std::cout << OWL_TERMINAL_LIGHT_GREEN
