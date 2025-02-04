@@ -14,13 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "rtcore/optix/Group.h"
+#include "rtcore/optix/Geom.h"
+#include "rtcore/optix/Buffer.h"
 #include "rtcore/optix/Device.h"
 
 namespace barney {
   namespace optix {
 
-    // ==================================================================
+
     // geom
     // ==================================================================
 
@@ -83,6 +84,10 @@ namespace barney {
     {
       /* ignore */
     }
+
+    GeomType::GeomType(optix::Device *device)
+      : rtc::GeomType(device)
+    {}
     
     GeomType::~GeomType()
     {

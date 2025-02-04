@@ -90,10 +90,21 @@ namespace barney {
     {
       return new Buffer(this,numBytes,initValues);
     }
+
+
+    // ==================================================================
+    // geom
+    // ==================================================================
+
+    void Device::freeGeom(rtc::Geom *geom)
+    { assert(geom); delete geom; }
     
     // ==================================================================
     // geomtype
     // ==================================================================
+    
+    void Device::freeGeomType(rtc::GeomType *gt)
+    { assert(gt); delete gt; }
     
     rtc::GeomType *
     Device::createTrianglesGeomType(const char *ptxName,

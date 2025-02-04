@@ -146,6 +146,8 @@ if (BARNEY_BACKEND_OPTIX)
     optix/Device.cpp
     optix/Group.h
     optix/Group.cpp
+    optix/Geom.h
+    optix/Geom.cpp
     optix/Buffer.h
     optix/Buffer.cpp
     )

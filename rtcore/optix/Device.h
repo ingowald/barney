@@ -96,18 +96,13 @@ namespace barney {
                               bool has_ah,
                               bool has_ch) override;
       
-      void freeGeomType(rtc::GeomType *) override 
-      { BARNEY_NYI(); };
+      void freeGeomType(rtc::GeomType *) override;
 
       // ------------------------------------------------------------------
       // geom stuff
       // ------------------------------------------------------------------
       
-      void freeGeom(rtc::Geom *) override 
-      {
-        std::cout << "FREEGEOM - MISSING!" << std::endl;
-        BARNEY_NYI();
-      };
+      void freeGeom(rtc::Geom *) override;
       
       // ------------------------------------------------------------------
       // group/accel stuff

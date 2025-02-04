@@ -145,7 +145,7 @@ target_include_directories(barney_config INTERFACE
 if (BARNEY_HAVE_CUDA)
   option(BARNEY_BACKEND_CUDA "Enable Cuda Backend?" ON)
   option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)
-  option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" ON)
+  option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" OFF)
   
 #  target_compile_definitions(barney_config INTERFACE
 #    # we have cuda - as a *compiler*

@@ -52,7 +52,7 @@ namespace barney {
     };
     
     struct GeomType : public rtc::GeomType {
-      GeomType(optix::Device *device) : rtc::GeomType(device) {}
+      GeomType(optix::Device *device);
       virtual ~GeomType() override;
       
       OWLGeomType gt = 0;
