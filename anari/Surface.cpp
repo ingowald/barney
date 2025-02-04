@@ -7,7 +7,12 @@ namespace barney_device {
 
 Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s) {}
 
-Surface::~Surface() = default;
+Surface::~Surface()
+{
+  PING;
+  cleanup();
+}
+  
 
 void Surface::commit()
 {
@@ -50,11 +55,12 @@ BNGeom Surface::getBarneyGeom(BNContext context// , int slot
   // if (!isModelTracked(model, slot)) {
   //   cleanup();
   //   trackModel(model, slot);
+  cleanup();
   m_bnGeom = bnGeometryCreate(context,0,// model, slot
                               m_geometry->bnSubtype());
-    setBarneyParameters();
+  setBarneyParameters();
   // }
-
+  
   return m_bnGeom;
 }
 
@@ -80,6 +86,7 @@ void Surface::setBarneyParameters()
 
 void Surface::cleanup()
 {
+  PING;
   if (m_bnGeom)
     bnRelease(m_bnGeom);
   m_bnGeom = nullptr;

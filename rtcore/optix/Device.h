@@ -104,7 +104,10 @@ namespace barney {
       // ------------------------------------------------------------------
       
       void freeGeom(rtc::Geom *) override 
-      { BARNEY_NYI(); };
+      {
+        std::cout << "FREEGEOM - MISSING!" << std::endl;
+        BARNEY_NYI();
+      };
       
       // ------------------------------------------------------------------
       // group/accel stuff

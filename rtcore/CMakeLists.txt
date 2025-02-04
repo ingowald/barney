@@ -138,8 +138,12 @@ endif()
 if (BARNEY_BACKEND_OPTIX)
   message("ENabling optix backend")
   add_library(barney_rtc_optix OBJECT# STATIC
+    optix/OptixBackend.h
     optix/OptixBackend.cpp
+    optix/Denoiser.h
     optix/Denoiser.cpp
+    optix/Device.h
+    optix/Device.cpp
     )
   target_link_libraries(barney_rtc_optix PUBLIC
     barney_rtc_config
