@@ -109,6 +109,9 @@ set(BARNEY_SOURCES
   umesh/mc/UMeshCUBQLSampler.h
   umesh/mc/UMeshCUBQLSampler.cu
   umesh/mc/UMeshMC.dev.cu
+
+  umesh/os/AWT.cu
+  umesh/os/AWT.h
   
   # *structured* volumes
   volume/StructuredData.h
@@ -139,7 +142,7 @@ set(BARNEY_SOURCES
   volume/MCGrid.h
   volume/MCGrid.cu
   volume/MCAccelerator.h
-
+  
   # samplers
   render/Sampler.h
   render/Sampler.cpp
