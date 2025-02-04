@@ -136,8 +136,7 @@ namespace barney {
       // geom stuff
       // ------------------------------------------------------------------
       
-      void freeGeom(rtc::Geom *) override 
-      { BARNEY_NYI(); }
+      void freeGeom(rtc::Geom *) override;
       
       // ------------------------------------------------------------------
       // group/accel stuff

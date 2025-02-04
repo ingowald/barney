@@ -305,6 +305,9 @@ namespace barney {
     // geom stuff
     // ------------------------------------------------------------------
 
+    void Device::freeGeom(rtc::Geom *geom) 
+    { delete geom; }
+
 
     rtc::GeomType *Device::createTrianglesGeomType(const char */*ignore*/,
                                                    const char *typeName,

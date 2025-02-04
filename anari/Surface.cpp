@@ -86,7 +86,6 @@ void Surface::setBarneyParameters()
 
 void Surface::cleanup()
 {
-  PING;
   if (m_bnGeom)
     bnRelease(m_bnGeom);
   m_bnGeom = nullptr;
