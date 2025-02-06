@@ -128,6 +128,39 @@ namespace barney {
   struct Woodcock {
     template<typename VolumeDD>
     static inline __both__
+    bool sampleRangeT(vec4f &sample,
+                      const VolumeDD &sfSampler,
+                      vec3f org, vec3f dir,
+                      range1f &tRange,
+                      float majorant,
+                      uint32_t &rngSeed,
+                      bool dbg=false) 
+    {
+      LCG<4> &rand = (LCG<4> &)rngSeed;
+      float t = tRange.lower;
+      while (true) {
+        float dt = - logf(1.f-rand())/majorant;
+        t += dt;
+        if (t >= tRange.upper)
+          return false;
+
+        sample = sfSampler.sampleAndMap(t,dbg);
+        // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
+        //                 t,
+        //                 P.x,P.y,P.z,
+        //                 sample.x,
+        //                 sample.y,
+        //                 sample.z,
+        //                 sample.w);
+        if (sample.w >= rand()*majorant) {
+          tRange.upper = t;
+          return true;
+        }
+      }
+    }
+
+    template<typename VolumeDD>
+    static inline __both__
     bool sampleRange(vec4f &sample,
                      const VolumeDD &sfSampler,
                      vec3f org, vec3f dir,

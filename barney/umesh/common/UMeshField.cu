@@ -18,6 +18,7 @@
 #include "barney/Context.h"
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
+#include "barney/umesh/os/AWT.h"
 
 namespace barney {
 
@@ -188,22 +189,22 @@ namespace barney {
       barney::fatomicMax(&d_worldBounds->upper.x,bounds.upper.x);
       barney::fatomicMax(&d_worldBounds->upper.y,bounds.upper.y);
       barney::fatomicMax(&d_worldBounds->upper.z,bounds.upper.z); 
-      if (tid < 10) {
-        printf("(%i) bounds (%f %f %f)(%f %f %f)->(%f %f %f)(%f %f %f)\n",
-               tid,
-               bounds.lower.x,
-               bounds.lower.y,
-               bounds.lower.z,
-               bounds.upper.x,
-               bounds.upper.y,
-               bounds.upper.z,
-               d_worldBounds->lower.x,
-               d_worldBounds->lower.y,
-               d_worldBounds->lower.z,
-               d_worldBounds->upper.x,
-               d_worldBounds->upper.y,
-               d_worldBounds->upper.z);
-      }
+      // if (tid < 10) {
+      //   printf("(%i) bounds (%f %f %f)(%f %f %f)->(%f %f %f)(%f %f %f)\n",
+      //          tid,
+      //          bounds.lower.x,
+      //          bounds.lower.y,
+      //          bounds.lower.z,
+      //          bounds.upper.x,
+      //          bounds.upper.y,
+      //          bounds.upper.z,
+      //          d_worldBounds->lower.x,
+      //          d_worldBounds->lower.y,
+      //          d_worldBounds->lower.z,
+      //          d_worldBounds->upper.x,
+      //          d_worldBounds->upper.y,
+      //          d_worldBounds->upper.z);
+      // }
     }
   };
   
@@ -226,12 +227,9 @@ namespace barney {
     std::cout << "------------------------------------------" << std::endl;
     
     float maxWidth = reduce_max(worldBounds.size());//getBox(worldBounds).size());
-    PRINT(worldBounds);
     int MC_GRID_SIZE
       = 200 + int(sqrtf(elementOffsets->count/10.f));
-    PRINT(MC_GRID_SIZE);
     vec3i dims = 1+vec3i(worldBounds.size() * ((MC_GRID_SIZE-1) / maxWidth));
-    PRINT(dims);
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.um: building initial macro cell grid of " << dims << " MCs"
               << OWL_TERMINAL_DEFAULT << std::endl;
@@ -351,6 +349,7 @@ namespace barney {
   
   void UMeshField::commit()
   {
+    PING;
     assert(indices);
     assert(vertices);
     assert(elementOffsets);
@@ -375,7 +374,6 @@ namespace barney {
         = (Element*)rtc->allocMem(numElements*sizeof(Element));
 
       box3f emptyBox;
-      PRINT(emptyBox);
       rtc->copy(pld->pWorldBounds,&emptyBox,sizeof(emptyBox));
       UMeshCreateElements args = {
         // UMeshField::DD dd;
@@ -395,7 +393,6 @@ namespace barney {
     for (auto device : *devices) {
       device->sync();
       PLD *pld = getPLD(device); 
-      PING; PRINT(*pld->pWorldBounds);
     }
     std::cout << "#bn.umesh: copying down world bounds"
               << std::endl;
@@ -413,6 +410,7 @@ namespace barney {
     assert(vertices);
     assert(indices);
     assert(getPLD(device)->elements);
+    (ScalarField::DD &)dd = ScalarField::getDD(device);
     dd.vertices = (float4 *)vertices->getDD(device);
     dd.indices  = (int    *)indices->getDD(device);
     dd.elements = (Element*)getPLD(device)->elements;
@@ -425,6 +423,9 @@ namespace barney {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
+#if 1
+    return std::make_shared<AWTAccel>(volume,this);
+#else
     auto sampler
       = std::make_shared<UMeshCUBQLSampler>(this);
     return std::make_shared<MCVolumeAccel<UMeshCUBQLSampler>>
@@ -433,6 +434,7 @@ namespace barney {
        /* it's in mc/UMeshMC.dev.cu */
        "UMeshMC_ptx",
        "UMeshMC");
+#endif
   }
 
 }

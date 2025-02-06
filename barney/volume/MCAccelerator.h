@@ -143,7 +143,6 @@ namespace barney {
       Volume::PLD *volumePLD = volume->getPLD(device);
       if (volumePLD->generatedGroups.empty()) 
         volumePLD->generatedGroups = { pld->group };
-      
     }
   }
   

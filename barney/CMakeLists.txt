@@ -82,11 +82,11 @@ if (BARNEY_BACKEND_OPTIX)
     SOURCES            umesh/mc/UMeshMC.dev.cu
  #   EMBEDDED_SYMBOL_NAMES MCAccel_UMesh_ptx
     )
-#  embed_ptx(
-#    OUTPUT_TARGET      barney-AWT-ptx
-#    PTX_LINK_LIBRARIES barney_config_ptx
-#    SOURCES            umesh/os/AWT.dev.cu
-#    )
+  embed_ptx(
+    OUTPUT_TARGET      barney-AWT-ptx
+    PTX_LINK_LIBRARIES barney_config_ptx
+    SOURCES            umesh/os/AWT.dev.cu
+    )
 
   # ------------------------------------------------------------------
   # amr variants:
@@ -110,6 +110,7 @@ set(BARNEY_SOURCES
   umesh/mc/UMeshCUBQLSampler.cu
   umesh/mc/UMeshMC.dev.cu
 
+  umesh/os/AWT.dev.cu
   umesh/os/AWT.cu
   umesh/os/AWT.h
   
@@ -327,6 +328,7 @@ if (BARNEY_BACKEND_OPTIX)
     #
     $<BUILD_INTERFACE:barney-StructuredData-ptx>
     $<BUILD_INTERFACE:barney-UMeshMC-ptx>
+    $<BUILD_INTERFACE:barney-AWT-ptx>
     #
     $<BUILD_INTERFACE:barney-traceRays-ptx>
     )

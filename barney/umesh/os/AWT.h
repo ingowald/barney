@@ -24,8 +24,13 @@
 
 namespace barney {
 
+  struct RefitInfo {
+    int numNotDone;
+    int parent;
+  };
+  
   struct __barney_align(16) AWTNode {
-    enum { count_bits = 4,
+    enum { count_bits = 3,
            offset_bits = 32-count_bits,
            max_leaf_size = ((1<<count_bits)-1) };
     // int     depth[4];
@@ -47,38 +52,32 @@ namespace barney {
   struct AWTAccel : public VolumeAccel  {
     struct DD 
     {
-      box3f                 bounds;
+      // box3f                 bounds;
       UMeshField::DD        mesh;
       TransferFunction::DD  xf;
       AWTNode              *awtNodes;
+      uint32_t             *primIDs;
     };
 
     static rtc::GeomType *createGeomType(rtc::Device *device,
                                          const void *cbData);
     
     struct PLD {
-      AWTNode      *awtNodes = 0;
-      uint32_t     *parents  = 0;
-      rtc::Geom    *geom     = 0;
-      rtc::Compute *copyNodes = 0;
-      rtc::Compute *setLeafMajorants = 0;
-      rtc::Compute *propagateMajorants = 0;
-      int           numNodes = 0;
+      AWTNode      *awtNodes   = 0;
+      uint32_t     *primIDs    = 0;
+      RefitInfo    *refitInfos = 0;
+      rtc::Geom    *geom       = 0;
+      rtc::Group   *group      = 0;
+      rtc::Compute *copyNodes  = 0;
+      rtc::Compute *computeMajorants = 0;
+      int           numNodes   = 0;
       box3f         bounds;
     };
     PLD *getPLD(Device *device) 
     { return &perLogical[device->contextRank]; } 
     std::vector<PLD> perLogical;
 
-    DD getDD(Device *device)
-    {
-      auto pld = getPLD(device);
-      DD dd;
-      dd.mesh     = mesh->getDD(device);
-      dd.awtNodes = pld->awtNodes;
-      dd.bounds   = pld->bounds;
-      return dd;
-    }
+    DD getDD(Device *device);
 
     AWTAccel(Volume *volume,
              UMeshField *mesh);

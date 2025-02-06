@@ -34,7 +34,8 @@ namespace barney {
                            const box3f &domain)
     : SlottedObject(context,devices),
       domain(domain)
-  {}
+  {
+  }
 
   ScalarField::SP ScalarField::create(Context *context,
                                       const DevGroup::SP &devices,
