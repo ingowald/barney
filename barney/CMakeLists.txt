@@ -19,9 +19,15 @@
 
 if (BARNEY_BACKEND_OPTIX)
   add_library(barney_config_ptx INTERFACE)
-  target_link_libraries(barney_config_ptx INTERFACE barney_config)
-  target_compile_definitions(barney_config_ptx INTERFACE -DBARNEY_COMPILE_OPTIX_PROGRAMS=1)
-
+  target_link_libraries(barney_config_ptx
+    INTERFACE
+    barney_config
+    )
+  target_compile_definitions(barney_config_ptx
+    INTERFACE
+    -DBARNEY_COMPILE_OPTIX_PROGRAMS=1
+    )
+  
   # ray gen program that launches kernel to trace rays
   embed_ptx(
     OUTPUT_TARGET      barney-traceRays-ptx
@@ -97,6 +103,8 @@ if (BARNEY_BACKEND_OPTIX)
     SOURCES            amr/BlockStructuredMC.dev.cu
     )
 endif()
+
+
 
 set(BARNEY_SOURCES
   geometry/Triangles.dev.cu
@@ -255,7 +263,6 @@ else()
 endif()
 # ==================================================================
 
-
 CUDA_SOURCE(kernels/traceRays.cu)
 CUDA_SOURCE(kernels/generateRays.cu)
 CUDA_SOURCE(kernels/shadeRays.cu)
@@ -281,21 +288,7 @@ CUDA_SOURCE(umesh/os/AWT.cu)
 CUDA_SOURCE(amr/BlockStructuredField.cu)
 CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
 
-#find_package(CUDAToolkit REQUIRED)
-
-# ------------------------------------------------------------------
-# barney itself
-# ------------------------------------------------------------------
-add_library(barney SHARED
-  ${BARNEY_SOURCES}
-  )
-if (APPLE)
-  set_target_properties(barney PROPERTIES INSTALL_RPATH "$loader_path")
-else()
-  set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
-endif()
-
-target_link_libraries(barney PUBLIC
+list(APPEND BARNEY_DEPENDS
   # base config and rtcore - these go into barney, one way or another
   $<BUILD_INTERFACE:barney_config>
   $<BUILD_INTERFACE:barney_rtc_common>
@@ -304,24 +297,19 @@ target_link_libraries(barney PUBLIC
   $<BUILD_INTERFACE:barney_rtc_cuda_common>
   $<BUILD_INTERFACE:barney_rtc_embree>
   
-  #  $<BUILD_INTERFACE:cuBQL_cpu_float3>
   $<BUILD_INTERFACE:cuBQL_cpu_float3_static>
-  #  cuBQL_cpu_float3_static
-  #    CUDA::cuda_driver
   )
+
 if (BARNEY_HAVE_CUDA)
-  target_link_libraries(barney PUBLIC
+  list(APPEND BARNEY_DEPENDS
     $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
-    #  $<BUILD_INTERFACE:cuBQL_cuda_float3>
-    #    cuBQL_cuda_float3_static
     )
 endif()
-
 if (BARNEY_BACKEND_OPTIX)
   # optix embedded ptx code strings for the precompiled kernels. these
   # only go into barney if optix mode is enabled (because otherwise we
   # cannot even compile them)
-  target_link_libraries(barney PUBLIC
+  list(APPEND BARNEY_DEPENDS
     $<BUILD_INTERFACE:barney-triangles-ptx>
     $<BUILD_INTERFACE:barney-capsules-ptx>
     $<BUILD_INTERFACE:barney-spheres-ptx>
@@ -333,6 +321,17 @@ if (BARNEY_BACKEND_OPTIX)
     $<BUILD_INTERFACE:barney-traceRays-ptx>
     )
 endif()
+
+
+# ------------------------------------------------------------------
+# barney itself
+# ------------------------------------------------------------------
+add_library(barney SHARED
+  ${BARNEY_SOURCES}
+  )
+target_link_libraries(barney PUBLIC
+  ${BARNEY_DEPENDS}
+  )
 set_target_properties(barney
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
@@ -340,6 +339,12 @@ set_target_properties(barney
   CUDA_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
   )
+if (APPLE)
+  set_target_properties(barney PROPERTIES INSTALL_RPATH "$loader_path")
+else()
+  set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+  
 
 if (BARNEY_MPI)
   
@@ -361,34 +366,19 @@ if (BARNEY_MPI)
     CXX_VISIBILITY_PRESET hidden
     CUDA_VISIBILITY_PRESET hidden
     POSITION_INDEPENDENT_CODE ON
- 
-    #    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    #    CUDA_USE_STATIC_CUDA_RUNTIME ON
-    #    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
     )
   target_link_libraries(barney_mpi PUBLIC
-#    $<BUILD_INTERFACE:barney_config>
-#    $<BUILD_INTERFACE:barney_rtc_common>
-#    $<BUILD_INTERFACE:barney_rtc_optix>
-#    $<BUILD_INTERFACE:barney_rtc_cuda>
-#    $<BUILD_INTERFACE:barney_rtc_cuda_common>
-#    $<BUILD_INTERFACE:barney_rtc_embree>
-#    $<BUILD_INTERFACE:barney-triangles-ptx>
-#    $<BUILD_INTERFACE:barney-capsules-ptx>
-#    $<BUILD_INTERFACE:barney-spheres-ptx>
-    #
-#    $<BUILD_INTERFACE:barney-StructuredData-ptx>
-    #
-#    $<BUILD_INTERFACE:barney-traceRays-ptx>
-#    $<BUILD_INTERFACE:barney>
-#    barney
-    # link to mpi during build only
-#    $<BUILD_INTERFACE:MPI::MPI_CXX>
-    #    CUDA::cuda_driver
-    barney
+    ${BARNEY_DEPENDS}
     MPI::MPI_CXX
     )
   target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
+  if (APPLE)
+    set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$loader_path")
+  else()
+    set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$ORIGIN")
+  endif()
+
+
 endif()
 
 
