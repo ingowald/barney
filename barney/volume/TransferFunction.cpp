@@ -38,7 +38,6 @@ namespace barney {
                              const std::vector<vec4f> &values,
                              float baseDensity)
   {
-    PING; PRINT(this); PRINT(domain);
     this->domain = domain;
     this->baseDensity = baseDensity;
     this->values = values;
@@ -63,8 +62,6 @@ namespace barney {
     dd.baseDensity = baseDensity;
     dd.numValues = (int)values.size();
 
-    PING; PRINT(this); PRINT(domain);
-    
     return dd;
   }
     

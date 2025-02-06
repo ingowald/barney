@@ -314,12 +314,17 @@ namespace barney {
     
     const AWTAccel::DD &self = *(AWTAccel::DD*)pd;
     Ray &ray = *(Ray*)ti.getPRD();
+#ifdef NDEBUG
+    bool dbg = false;
+#else
+    bool dbg = ray.dbg;
+#endif
 
     vec3f org = ti.getObjectRayOrigin();
     vec3f dir = ti.getObjectRayDirection();
     // if (!ray.dbg) return;
     
-    if (ray.dbg) {
+    if (dbg) {
       printf("=========== ray at awt ===========\n");
       printf("org %f %f %f\n",org.x,org.y,org.z);
       printf("dir %f %f %f\n",dir.x,dir.y,dir.z);
@@ -338,12 +343,12 @@ namespace barney {
                                  curr.tRange.lower,curr.tRange.upper,
                  self.mesh.worldBounds)) {
       // doesn't even overlap the bounding box... 
-      if (ray.dbg)
+      if (dbg)
         printf(" -> clip out %f %f\n",curr.tRange.lower,curr.tRange.upper);
       return;
     }
 
-    if (ray.dbg) {
+    if (dbg) {
       vec3f P = org + curr.tRange.lower*dir;
       printf("ENTERING at %f, pos %f %f %f\n",
              curr.tRange.lower,
@@ -359,16 +364,16 @@ namespace barney {
       while (!done) {
         /* repeat until we successfully POPPED SOMETHING */
         while (!done) {
-          if (ray.dbg) printf("popping at depth %i\n",
+          if (dbg) printf("popping at depth %i\n",
                               int(stack-stackBase));
           if (stack == stackBase) {
             done = true;
             break;
-          }
+          } 
 
           curr = *--stack;
           curr.tRange.upper = min(curr.tRange.upper,tHit);
-          if (ray.dbg)
+          if (dbg)
             printf("@ %i:%i, range %f %f maj %f\n",
                    curr.ref.offset,
                    curr.ref.count,
@@ -390,14 +395,16 @@ namespace barney {
           childEntry[i].ref = node.child[i].nodeRef;
           childEntry[i].majorant = node.child[i].majorant;
           childEntry[i].tRange = curr.tRange;
-          if (!node.child[i].nodeRef.valid()
+          if (node.child[i].majorant == 0.f
+              ||
+              !node.child[i].nodeRef.valid()
               ||
               !boxTest(org,dir,
                        childEntry[i].tRange.lower,
                        childEntry[i].tRange.upper,
                        node.child[i].bounds)) 
             childEntry[i].tRange.lower = BARNEY_INF;
-          if (ray.dbg) {
+          if (dbg) {
             // printf(" box %i (%f %f %f)(%f %f %f)\n",
             //        i,
             //        node.child[i].bounds.lower.x,
@@ -423,7 +430,7 @@ namespace barney {
           if (childEntry[i].majorant > 0.f
               &&
               childEntry[i].tRange.lower < ray.tMax) {
-            if (ray.dbg)
+            if (dbg)
               printf("pushing depth %i, node %i:%i dist %f\n",
                    int(stack-stackBase),
                    childEntry[i].ref.offset,
@@ -435,12 +442,12 @@ namespace barney {
       }
 
       /* we're at a leaf */
-      if (ray.dbg)
+      if (dbg)
         printf("----------- leaf!\n");
       for (int i=0;i<curr.ref.count;i++)
         intersectPrim(self,sample,
                       org,dir,tHit,self.primIDs[curr.ref.offset+i],
-                      ray.rngSeed,ray.dbg);
+                      ray.rngSeed,dbg);
     }
     if (tHit < ray.tMax) {
       ray.setVolumeHit(org+tHit*dir,

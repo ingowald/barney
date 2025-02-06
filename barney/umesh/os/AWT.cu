@@ -108,7 +108,7 @@ namespace barney {
     RefitInfo *out_infos;
     const typename cuBQL::WideBVH<float,3,AWT_NODE_WIDTH>::Node *in_nodes;
     int numNodes;
-    Element *out_elements;
+    // Element *out_elements;
     Element *in_elements;
     uint32_t *primIDs;
 
@@ -135,9 +135,9 @@ namespace barney {
           if (!out.nodeRef.isLeaf()) {
             out_infos[out.nodeRef.offset].parent = tid * AWT_NODE_WIDTH + cid;
           } else {
-            for (int j=0;j<out.nodeRef.count;j++)
-              out_elements[out.nodeRef.offset+j]
-                = in_elements[primIDs[out.nodeRef.offset+j]];
+            // for (int j=0;j<out.nodeRef.count;j++)
+            //   out_elements[out.nodeRef.offset+j]
+            //     = in_elements[primIDs[out.nodeRef.offset+j]];
           }
           numActive++;
         } else {
@@ -183,52 +183,40 @@ namespace barney {
         std::cout << "#AWT: building INITIAL BVH" << std::endl;
         cuBQL::WideBVH<float,3,AWT_NODE_WIDTH> bvh;
         int numElements = mesh->numElements;
-        PRINT(numElements);
         box3f *primBounds
           = (box3f*)device->rtc->allocMem(numElements*sizeof(box3f));
         range1f *valueRanges
           = (range1f*)device->rtc->allocMem(numElements*sizeof(range1f));
         mesh->computeElementBBs(device,
                                 primBounds,valueRanges);
-        PING; PRINT(meshPLD);
         rtc->sync();
-        PING;
         rtc->copy(&pld->bounds,meshPLD->pWorldBounds,sizeof(box3f));
-        PING;
-        PRINT(pld->bounds);
         
         SetActiveGPU forDuration(device);
         cuBQL::BuildConfig buildConfig;
         buildConfig.maxAllowedLeafSize = AWTNode::max_leaf_size;
         buildConfig.makeLeafThreshold = AWTNode::max_leaf_size;
-        PING;
         cuBQL::gpuBuilder(bvh,
                           (const cuBQL::box_t<float,3>*)primBounds,
                           numElements,
                           buildConfig);
-        PING;
         rtc->sync();
-        PING;
         rtc->freeMem(primBounds);
         rtc->freeMem(valueRanges);
 
-        PING;
         int numNodes = bvh.numNodes;
-        Element *tempElements
-          = (Element*)rtc->allocMem(numElements*sizeof(Element));
+        // Element *tempElements
+        //   = (Element*)rtc->allocMem(numElements*sizeof(Element));
         pld->refitInfos = (RefitInfo*)rtc->allocMem(numNodes*sizeof(RefitInfo));
         pld->awtNodes = (AWTNode *)rtc->allocMem(numNodes*sizeof(AWTNode));
         pld->numNodes = numNodes;
-        PRINT(numNodes);
-        PRINT(meshPLD->elements);
-        PRINT(bvh.primIDs);
         {
           CopyNodes args = {
             pld->awtNodes,
             pld->refitInfos,
             bvh.nodes,
             pld->numNodes,
-            tempElements,
+            // tempElements,
             meshPLD->elements,
             bvh.primIDs
           };
@@ -237,16 +225,13 @@ namespace barney {
           pld->copyNodes->launch(nb,bs,&args);
         }
         device->sync();
-        PING;
         pld->primIDs = bvh.primIDs;
         bvh.primIDs = 0;
         cuBQL::cuda::free(bvh);
 
-        PING;
-        PRINT(meshPLD->elements);
         // rtc->copy(meshPLD->elements,tempElements,numElements*sizeof(Element));
         rtc->sync();
-        rtc->freeMem(tempElements);
+        // rtc->freeMem(tempElements);
 
         rtc::GeomType *gt
           = device->geomTypes.get("UMeshAWT",
@@ -256,7 +241,6 @@ namespace barney {
         pld->geom->setPrimCount(1);
         
         DD dd = getDD(device);
-        PING; PRINT(dd.xf.domain);
         pld->geom->setDD(&dd);
         // now put that into a instantiable group, and build it.
         pld->group = device->rtc->createUserGeomsGroup({pld->geom});
