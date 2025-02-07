@@ -60,6 +60,7 @@ namespace barney {
     for (auto dev : getDevices()) {
       SetActiveGPU forDuration(dev);
       size_t sizeInBytes = gridData.size() * sizeof(gridData[0]);
+      printf("NanoVDBField::NanoVDBField: %lld, %lld\n", gridData.size(), sizeof(gridData[0]));
 
       int devID = dev->owlID;
 

@@ -537,10 +537,11 @@ namespace barney {
                                  currently the only supported ypte is float32: */
                                 const float *_gridData,
                                 // number of floats in gridData
-                                const int gridSize)
+                                const size_t gridSize)
   {
     std::cout << "#bn: copying 'nanovdb' from app ..." << std::endl;
     std::vector<float> gridData(gridSize);
+    printf("bnNanoVDBCreate: %lld\n", gridSize);
     memcpy(gridData.data(),_gridData,gridData.size()*sizeof(gridData[0]));
     ScalarField::SP sf =
       std::make_shared<NanoVDBField>(checkGet(context),slot,gridData);

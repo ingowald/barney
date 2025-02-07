@@ -513,7 +513,7 @@ BNScalarField bnNanoVDBCreate(BNContext context,
                                currently the only supported ypte is float32: */
                               const float *gridData,
                               // number of floats in gridData
-                              const int gridSize);
+                              const size_t gridSize);
 
 
 BN_API
