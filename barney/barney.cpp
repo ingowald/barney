@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,19 +14,41 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney.h"
 #include "barney/Context.h"
 #include "barney/LocalContext.h"
 #include "barney/fb/FrameBuffer.h"
-#include "barney/Model.h"
+#include "barney/GlobalModel.h"
 #include "barney/geometry/Triangles.h"
+#include "barney/volume/ScalarField.h"
+#include "barney/umesh/common/UMeshField.h"
+#include "barney/amr//BlockStructuredField.h"
+#include "barney/common/Data.h"
+#include "barney/common/mat4.h"
+#include "barney/Camera.h"
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
-#if 1
+#if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
-# define LOG_API_ENTRY /**/
+# define LOG_API_ENTRY /**/ 
+#endif
+
+#ifdef NDEBUG
+# define BARNEY_ENTER(fct) /* nothing */
+# define BARNEY_LEAVE(fct,retValue) /* nothing */
+#else
+# define BARNEY_ENTER(fct) try {                \
+    if (0) std::cout << "@bn.entering " << fct << std::endl;     \
+
+
+
+# define BARNEY_LEAVE(fct,retValue)                                     \
+  } catch (std::exception &e) {                                           \
+    std::cerr << OWL_TERMINAL_RED << "@" << fct << ": "              \
+              << e.what() << OWL_TERMINAL_DEFAULT << std::endl;      \
+    return retValue ;                                                   \
+  }
 #endif
 
 namespace barney {
@@ -37,37 +59,63 @@ namespace barney {
     return (Context *)context;
   }
   
-  inline Material checkGet(const BNMaterial *material)
+  inline Renderer *checkGet(BNRenderer renderer)
   {
-    assert(material);
-    Material result;
-    result.baseColor = (const vec3f&)material->baseColor;
-    return result;
+    assert(renderer);
+    return (Renderer *)renderer;
   }
   
-  inline DataGroup *checkGet(BNDataGroup dg)
+  inline std::string checkGet(const char *s)
   {
-    assert(dg);
-    return (DataGroup *)dg;
+    assert(s != nullptr);
+    return s;
   }
   
-  inline Model *checkGet(BNModel model)
+  inline Object *checkGet(BNObject object)
+  {
+    if (!object) throw std::runtime_error
+                   ("@barney: trying to use/access null object");
+    assert(object);
+    return (Object *)object;
+  }
+
+  inline Data *checkGet(BNData data)
+  {
+    assert(data);
+    return (Data *)data;
+  }
+
+  inline Camera *checkGet(BNCamera camera)
+  {
+    assert(camera);
+    return (Camera *)camera;
+  }
+  
+  inline GlobalModel *checkGet(BNModel model)
   {
     assert(model);
-    return (Model *)model;
+    return (GlobalModel *)model;
+  }
+  
+  inline ModelSlot *checkGet(BNModel model, int slot)
+  {
+    return checkGet(model)->getSlot(slot);
   }
   
   inline Geometry *checkGet(BNGeom geom)
   {
+    if (!geom) throw std::runtime_error("@barney: trying to use/access null geometry");
     assert(geom);
     return (Geometry *)geom;
   }
   
   inline Volume *checkGet(BNVolume volume)
   {
+    if (!volume) throw std::runtime_error("@barney: trying to use/access null volume");
     assert(volume);
     return (Volume *)volume;
   }
+  
   inline ScalarField *checkGet(BNScalarField sf)
   {
     assert(sf);
@@ -76,6 +124,8 @@ namespace barney {
   
   inline Group *checkGet(BNGroup group)
   {
+    if (!group) throw std::runtime_error
+                   ("@barney: trying to use/access null group");
     assert(group);
     return (Group *)group;
   }
@@ -99,82 +149,175 @@ namespace barney {
   }
 
   // ------------------------------------------------------------------
+
+  /*! creates a cudaArray2D of specified size and texels. Can be passed
+    to a sampler to create a matching cudaTexture2D, or as a background
+    image to a renderer */
+  BARNEY_API
+  BNTextureData bnTextureData2DCreate(BNContext _context,
+                                      int slot,
+                                      BNDataType texelFormat,
+                                      int width, int height,
+                                      const void *texels)
+  {
+    LOG_API_ENTRY;
+    Context *context = checkGet(_context);
+    TextureData::SP data
+      = std::make_shared<TextureData>(context,
+                                      context->getDevices(slot),
+                                      texelFormat,
+                                      vec3i(width,height,0),
+                                      texels);
+    if (!data) return 0;
+    return (BNTextureData)context->initReference(data);
+  }
+
+  // // ------------------------------------------------------------------
+  // /*! creates a cudaArray2D of specified size and texels. Can be passed
+  //   to a sampler to create a matching cudaTexture2D */
+  // BARNEY_API
+  // BNTextureData bnTextureData2DCreate(BNModel model,
+  //                                     int slot,
+  //                                     BNDataType texelFormat,
+  //                                     int width, int height,
+  //                                     const void *texels)
+  // {
+  //   LOG_API_ENTRY;
+  //   Context *context = checkGetContext(model);
+  //   TextureData::SP data
+  //     = std::make_shared<TextureData>(context,slot,
+  //                                     texelFormat,vec3i(width,height,0),
+  //                                     texels);
+  //   if (!data) return 0;
+  //   return (BNTextureData)context->initReference(data);
+  // }
   
-  BN_API
+  
+  
+  // ------------------------------------------------------------------
+  BARNEY_API
+  BNTexture2D bnTexture2DCreate(BNContext _context,
+                                int slot,
+                                BNDataType texelFormat,
+                                /*! number of texels in x dimension */
+                                uint32_t size_x,
+                                /*! number of texels in y dimension */
+                                uint32_t size_y,
+                                const void *texels,
+                                BNTextureFilterMode  filterMode,
+                                BNTextureAddressMode addressMode_x,
+                                BNTextureAddressMode addressMode_y,
+                                BNTextureColorSpace  colorSpace)
+  {
+    LOG_API_ENTRY;
+    Context *context = checkGet(_context);
+    auto devices = context->getDevices(slot);
+    TextureData::SP td
+      = std::make_shared<TextureData>(context,devices,
+                                      texelFormat,
+                                      vec3i(size_x,size_y,0),
+                                      texels);
+    Texture::SP tex
+      = std::make_shared<Texture>(context,devices,
+                                  td,filterMode,
+                                  addressMode_x,addressMode_y,
+                                  colorSpace);
+    
+    return (BNTexture)context->initReference(tex);
+  }
+
+  BARNEY_API
+  BNTexture3D bnTexture3DCreate(BNContext _context,
+                                int slot,
+                                BNDataType texelFormat,
+                                uint32_t size_x,
+                                uint32_t size_y,
+                                uint32_t size_z,
+                                const void *texels,
+                                BNTextureFilterMode  filterMode,
+                                BNTextureAddressMode addressMode)
+  {
+    LOG_API_ENTRY;
+    Context *context = checkGet(_context);
+    auto devices = context->getDevices(slot);
+    TextureData::SP td
+      = std::make_shared<TextureData>(context,devices,
+                                      texelFormat,
+                                      vec3i(size_x,size_y,size_z),
+                                      texels);
+    Texture3D::SP tex
+      = std::make_shared<Texture3D>(context,devices,
+                                    td,filterMode,addressMode);
+    
+    return (BNTexture3D)context->initReference(tex);
+  }
+  
+  // ------------------------------------------------------------------
+  
+  BARNEY_API
   BNModel bnModelCreate(BNContext ctx)
   {
     LOG_API_ENTRY;
     return (BNModel)checkGet(ctx)->createModel();
   }
 
-  BN_API
-  BNDataGroup bnGetDataGroup(BNModel model,
-                             int dataGroupID)
+  BARNEY_API
+  BNRenderer bnRendererCreate(BNContext ctx, const char *ignoreForNow)
   {
     LOG_API_ENTRY;
-    return (BNDataGroup)checkGet(model)->getDG(dataGroupID);
+    return (BNRenderer)checkGet(ctx)->createRenderer();
   }
-  
-  BN_API
-  void bnSetInstances(BNDataGroup dataGroup,
-                           BNGroup *_groups,
-                           BNTransform *xfms,
-                           int numInstances)
+
+  BARNEY_API
+  void bnSetInstances(BNModel model,
+                      int slot,
+                      BNGroup *_groups,
+                      BNTransform *xfms,
+                      int numInstances)
   {
     LOG_API_ENTRY;
-    
+
     std::vector<Group::SP> groups;
     for (int i=0;i<numInstances;i++) {
       groups.push_back(checkGetSP(_groups[i]));
     }
-    checkGet(dataGroup)->setInstances(groups,(const affine3f *)xfms);
+    checkGet(model,slot)->setInstances(groups,(const affine3f *)xfms);
   }
   
+  BARNEY_API
+  void  bnRelease(BNObject _object)
+  {
+    LOG_API_ENTRY;
+    Object *object = checkGet(_object);
+    assert(object);
+    Context *context = object->getContext();
+    assert(context);
+    context->releaseHostReference(object->shared_from_this());
+  }
+  
+  BARNEY_API
+  void  bnAddReference(BNObject _object)
+  {
+    LOG_API_ENTRY;
+    if (_object == 0) return;
+    Object *object = checkGet(_object);
+    Context *context = object->getContext();
+    context->addHostReference(object->shared_from_this());
+  }
 
-  BN_API
+
+  BARNEY_API
   void bnContextDestroy(BNContext context)
   {
     LOG_API_ENTRY;
     delete (Context *)context;
   }
 
-  BN_API
-  BNGeom bnSpheresCreate(BNDataGroup       dataGroup,
-                         const BNMaterial *material,
-                         const float3     *origins,
-                         int               nubarneygins,
-                         const float      *radii,
-                         float             defaultRadius)
-  {
-    LOG_API_ENTRY;
-    Spheres *spheres = checkGet(dataGroup)->createSpheres
-      (checkGet(material),(const vec3f*)origins,nubarneygins,radii,defaultRadius);
-    return (BNGeom)spheres;
-  }
-
-  BN_API
-  BNGeom bnCylindersCreate(BNDataGroup       dataGroup,
-                           const BNMaterial *material,
-                           const float3     *points,
-                           int               numPoints,
-                           const int2       *indices,
-                           int               numIndices,
-                           const float      *radii,
-                           float             defaultRadius)
-  {
-    LOG_API_ENTRY;
-    Cylinders *cylinders = checkGet(dataGroup)->createCylinders
-      (checkGet(material),
-       (const vec3f*)points,numPoints,
-       (const vec2i*)indices,numIndices,
-       radii,defaultRadius);
-    return (BNGeom)cylinders;
-  }
-  
-
-  BN_API
-  BNGeom bnTriangleMeshCreate(BNDataGroup dataGroup,
-                              const BNMaterial *material,
+#if 0
+  BARNEY_API
+  BNGeom bnTriangleMeshCreate(BNContext context,
+                              int slot,
+                              const BNMaterialHelper *material,
                               const int3 *indices,
                               int numIndices,
                               const float3 *vertices,
@@ -182,181 +325,430 @@ namespace barney {
                               const float3 *normals,
                               const float2 *texcoords)
   {
-    // LOG_API_ENTRY;
-    Triangles *triangles = checkGet(dataGroup)->createTriangles
-      (checkGet(material),
-       numIndices,
-       (const vec3i*)indices,
-       numVertices,
-       (const vec3f*)vertices,
-       (const vec3f*)normals,
-       (const vec2f*)texcoords);
-    return (BNGeom)triangles;
+    LOG_API_ENTRY;
+    BNGeom mesh = bnGeometryCreate(context,slot,"triangles");
+    
+    BNData _vertices = bnDataCreate(context,slot,BN_FLOAT3,numVertices,vertices);
+    bnSetAndRelease(mesh,"vertices",_vertices);
+    
+    BNData _indices  = bnDataCreate(context,slot,BN_INT3,numIndices,indices);
+    bnSetAndRelease(mesh,"indices",_indices);
+    
+    if (normals) {
+      BNData _normals  = bnDataCreate(context,slot,BN_FLOAT3,normals?numVertices:0,normals);
+      bnSetAndRelease(mesh,"normals",_normals);
+    }
+    
+    if (texcoords) {
+      BNData _texcoords  = bnDataCreate(context,slot,BN_FLOAT2,texcoords?numVertices:0,texcoords);
+      bnSetAndRelease(mesh,"texcoords",_texcoords);
+    }
+    bnAssignMaterial(mesh,material);
+    bnCommit(mesh);
+    return mesh;
+  }  
+#endif
+  BARNEY_API
+  BNScalarField bnScalarFieldCreate(BNContext _context,
+                                    int slot,
+                                    const char *type)
+  {
+    Context *context = checkGet(_context);
+    ScalarField::SP sf
+      = ScalarField::create(context,
+                            context->getSlot(slot)->devices,
+                            type);
+    return (BNScalarField)context->initReference(sf);
+  }
+  
+  
+  BARNEY_API
+  BNGeom bnGeometryCreate(BNContext _context,
+                          int slot,
+                          const char *type)
+  {
+    Context *context = checkGet(_context);
+    Geometry::SP geom
+      = Geometry::create(context->getSlot(slot),
+                         type);
+    return (BNGeom)context->initReference(geom);
   }
 
-  BN_API
-  void bnTriangleMeshUpdate(BNGeom geom,
-                            const BNMaterial *material,
-                            const int3 *indices,
-                            int numIndices,
-                            const float3 *vertices,
-                            int numVertices,
-                            const float3 *normals,
-                            const float2 *texcoords)
+  BARNEY_API
+  void bnCountAvailableDevice(int *numGPUs)
   {
-    Triangles *triangles = (Triangles *)checkGet(geom);
-    triangles->update(checkGet(material),
-                      numIndices,
-                      (const vec3i*)indices,
-                      numVertices,
-                      (const vec3f*)vertices,
-                      (const vec3f*)normals,
-                      (const vec2f*)texcoords);
+    if (!numGPUs) return;
+    *numGPUs = rtc::Backend::getDeviceCount();
   }
 
   
+  BARNEY_API
+  BNMaterial bnMaterialCreate(BNContext _context,
+                              int slot,
+                              const char *type)
+  {
+    Context *context = checkGet(_context);
+    render::HostMaterial::SP material
+      = render::HostMaterial::create(context->getSlot(slot),type);
+    return (BNMaterial)context->initReference(material);
+  }
 
-  BN_API
+  BARNEY_API
+  BNSampler bnSamplerCreate(BNContext _context,
+                            int slot,
+                            const char *type)
+  {
+    Context *context = checkGet(_context);
+    render::Sampler::SP sampler
+      = render::Sampler::create(context->getSlot(slot),type);
+    if (!sampler) return 0;
+    return (BNSampler)context->initReference(sampler);
+  }
+
+  BARNEY_API
+  BNCamera bnCameraCreate(BNContext context,
+                          const char *type)
+  {
+    Camera::SP camera = Camera::create(checkGet(context),type);
+    if (!camera) return 0;
+    return (BNCamera)checkGet(context)->initReference(camera);
+  }
+
+
+  BARNEY_API
   void bnVolumeSetXF(BNVolume volume,
-                     float2 domain,
-                     const float4 *_values,
+                     bn_float2 domain,
+                     const bn_float4 *_values,
                      int numValues,
                      float densityAt1)
   {
     LOG_API_ENTRY;
     std::vector<vec4f> values;
     assert(_values);
+
     for (int i=0;i<numValues;i++)
       values.push_back((const vec4f &)_values[i]);
+
     checkGet(volume)->setXF(range1f(domain.x,domain.y),values,densityAt1);
   }
   
-  BN_API
-  BNVolume bnVolumeCreate(BNDataGroup dataGroup,
+  BARNEY_API
+  BNVolume bnVolumeCreate(BNContext context,
+                          int slot,
                           BNScalarField _sf)
   {
-    ScalarField::SP sf = checkGetSP(_sf);
-    return (BNVolume)checkGet(dataGroup)->createVolume(sf);
+    LOG_API_ENTRY;
+    Volume::SP volume = Volume::create(checkGetSP(_sf));
+    return (BNVolume)checkGet(context)->initReference(volume);
   }
 
-  BN_API
-  BNScalarField bnUMeshCreate(BNDataGroup dataGroup,
+  BARNEY_API
+  BNLight bnLightCreate(BNContext _context,
+                        int slot,
+                        const char *type)
+  {
+    LOG_API_ENTRY;
+    Context *context = checkGet(_context);
+    Light::SP light = Light::create(context,
+                                    context->getDevices(slot),
+                                    type);
+    return (BNLight)context->initReference(light);
+  }
+
+  BARNEY_API
+  BNData bnDataCreate(BNContext _context,
+                      int slot,
+                      BNDataType dataType,
+                      size_t numItems,
+                      const void *items)
+  {
+    LOG_API_ENTRY;
+    Context *context = checkGet(_context);
+    Data::SP data = Data::create(context,
+                                 context->getDevices(slot),
+                                 dataType,numItems,items);
+    return (BNData)context->initReference(data);
+  }
+
+
+#if 0
+  BARNEY_API
+  BNScalarField bnStructuredDataCreate(BNContext context,
+                                       int slot,
+                                       int3 dims,
+                                       BNDataType type,
+                                       const void *scalars,
+                                       float3 gridOrigin,
+                                       float3 gridSpacing)
+  {
+    BNScalarField sf
+      = bnScalarFieldCreate(context,slot,"structured");
+    BNTexture3D texture
+      = bnTexture3DCreate(context,slot,type,
+                          dims.x,dims.y,dims.z,scalars,
+                          BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
+    bnSetObject(sf,"texture",texture);
+    bnRelease(texture);
+    bnSet3ic(sf,"dims",dims);
+    bnSet3fc(sf,"gridOrigin",gridOrigin);
+    bnSet3fc(sf,"gridSpacing",gridSpacing);
+    bnCommit(sf);
+    return sf;
+  }
+#endif
+  
+  BARNEY_API
+  BNScalarField bnUMeshCreate(BNContext context,
+                              int slot,
                               // vertices, 4 floats each (3 floats position,
                               // 4th float scalar value)
-                              const float *_vertices, int numVertices,
-                              // tets, 4 ints in vtk-style each
-                              const int *_tetIndices, int numTets,
-                              // pyramids, 5 ints in vtk-style each
-                              const int *_pyrIndices, int numPyrs,
-                              // wedges/tents, 6 ints in vtk-style each
-                              const int *_wedIndices, int numWeds,
-                              // general (non-guaranteed cube/voxel) hexes, 8
-                              // ints in vtk-style each
-                              const int *_hexIndices, int numHexes,
-                              //
-                              int numGrids,
-                              // offsets into gridScalars array
-                              const int *_gridOffsets,
-                              // grid dims (3 floats each)
-                              const int *_gridDims,
-                              // grid domains, 6 floats each (3 floats min corner,
-                              // 3 floats max corner)
-                              const float *_gridDomains,
-                              // grid scalars
-                              const float *_gridScalars, int numGridScalars)
+                              const float4  *vertices,
+                              int            numVertices,
+                              const int     *indices,
+                              int            numIndices,
+                              const int     *elementOffsets,
+                              int            numElements,
+                              const float3 *domainOrNull    
+                              )
   {
-    std::cout << "#bn: copying umesh from app ..." << std::endl;
-    std::vector<vec4f>      vertices(numVertices);
-    std::vector<int>        gridOffsets(numGrids);
-    std::vector<vec3i>      gridDims(numGrids);
-    std::vector<box4f>      gridDomains(numGrids);
-    std::vector<float>      gridScalars(numGridScalars);
-    std::vector<TetIndices> tetIndices(numTets);
-    std::vector<PyrIndices> pyrIndices(numPyrs);
-    std::vector<WedIndices> wedIndices(numWeds);
-    std::vector<HexIndices> hexIndices(numHexes);
-    memcpy(tetIndices.data(),_tetIndices,tetIndices.size()*sizeof(tetIndices[0]));
-    memcpy(pyrIndices.data(),_pyrIndices,pyrIndices.size()*sizeof(pyrIndices[0]));
-    memcpy(wedIndices.data(),_wedIndices,wedIndices.size()*sizeof(wedIndices[0]));
-    memcpy(hexIndices.data(),_hexIndices,hexIndices.size()*sizeof(hexIndices[0]));
-    memcpy(vertices.data(),_vertices,vertices.size()*sizeof(vertices[0]));
-    memcpy(gridOffsets.data(),_gridOffsets,gridOffsets.size()*sizeof(gridOffsets[0]));
-    memcpy(gridDims.data(),_gridDims,gridDims.size()*sizeof(gridDims[0]));
-    memcpy(gridDomains.data(),_gridDomains,gridDomains.size()*sizeof(gridDomains[0]));
-    memcpy(gridScalars.data(),_gridScalars,gridScalars.size()*sizeof(gridScalars[0]));
-    ScalarField *sf = checkGet(dataGroup)->createUMesh(vertices,
-                                                       tetIndices,
-                                                       pyrIndices,
-                                                       wedIndices,
-                                                       hexIndices,
-                                                       gridOffsets,
-                                                       gridDims,
-                                                       gridDomains,
-                                                       gridScalars);
-    return (BNScalarField)sf;
+    box3f domain
+      = domainOrNull
+      ? *(const box3f*)domainOrNull
+      : box3f();
+
+#if 1
+    BARNEY_NYI();
+#else
+    ScalarField::SP sf = 
+      UMeshField::create(checkGet(context),slot,
+                         (const vec4f*)vertices,numVertices,
+                         indices,numIndices,
+                         elementOffsets,
+                         numElements,
+                         domain);
+    return (BNScalarField)checkGet(context)->initReference(sf);
+#endif
   }
   
+  BARNEY_API
+  BNScalarField bnBlockStructuredAMRCreate(BNContext context,
+                                           int slot,
+                                           /*TODO:const float *cellWidths,*/
+                                           // block bounds, 6 ints each (3 for min,
+                                           // 3 for max corner)
+                                           const int *_blockBounds, int numBlocks,
+                                           // refinement level, per block,
+                                           // finest is level 0,
+                                           const int *_blockLevels,
+                                           // offsets into blockData array
+                                           const int *_blockOffsets,
+                                           // block scalars
+                                           const float *_blockScalars,
+                                           int numBlockScalars)
+  {
+#if 1
+    BARNEY_NYI();
+#else
+    std::cout << "#bn: copying 'amr' from app ..." << std::endl;
+    std::vector<box3i> blockBounds(numBlocks);
+    std::vector<int>   blockLevels(numBlocks);
+    std::vector<int>   blockOffsets(numBlocks);
+    std::vector<float> blockScalars(numBlockScalars);
+    memcpy(blockBounds.data(),_blockBounds,blockBounds.size()*sizeof(blockBounds[0]));
+    memcpy(blockLevels.data(),_blockLevels,blockLevels.size()*sizeof(blockLevels[0]));
+    memcpy(blockOffsets.data(),_blockOffsets,blockOffsets.size()*sizeof(blockOffsets[0]));
+    memcpy(blockScalars.data(),_blockScalars,blockScalars.size()*sizeof(blockScalars[0]));
+    ScalarField::SP sf =
+      std::make_shared<BlockStructuredField>(checkGet(context),slot,
+                                             blockBounds,
+                                             blockLevels,
+                                             blockOffsets,
+                                             blockScalars);
+    return (BNScalarField)checkGet(context)->initReference(sf);
+#endif
+  }
 
-  BN_API
-  BNGroup bnGroupCreate(BNDataGroup dataGroup,
+
+  BARNEY_API
+  BNGroup bnGroupCreate(BNContext _context,
+                        int slot,
                         BNGeom *geoms, int numGeoms,
                         BNVolume *volumes, int numVolumes)
   {
     LOG_API_ENTRY;
+    BARNEY_ENTER(__PRETTY_FUNCTION__);
+    Context *context = checkGet(_context);
+    auto devices = context->getDevices(slot);
     std::vector<Geometry::SP> _geoms;
     for (int i=0;i<numGeoms;i++)
       _geoms.push_back(checkGet(geoms[i])->as<Geometry>());
     std::vector<Volume::SP> _volumes;
     for (int i=0;i<numVolumes;i++)
       _volumes.push_back(checkGet(volumes[i])->as<Volume>());
-    Group *group = checkGet(dataGroup)->createGroup(_geoms,_volumes);
-    return (BNGroup)group;
+    Group::SP group
+      = std::make_shared<Group>(context,devices,
+                                _geoms,_volumes);
+    return (BNGroup)context->initReference(group);
+    // } catch (std::runtime_error error) {
+    //   std::cerr << "@barney: Error in creating group: " << error.what()
+    //             << "... going to return null group." << std::endl;
+    //   return BNGroup{0};
+    // }
+    BARNEY_LEAVE(__PRETTY_FUNCTION__,0);
   }
 
-  BN_API
+  BARNEY_API
   void  bnGroupBuild(BNGroup group)
   {
     LOG_API_ENTRY;
+    BARNEY_ENTER(__PRETTY_FUNCTION__);
+    if (!group) {
+      std::cerr << "@barney(WARNING): bnGroupBuild with null group - ignoring this, but this is is an app error that should be fixed, and is only likely to cause issues later on" << std::endl;
+      return;
+    }
     checkGet(group)->build();
+    BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
-  BN_API
-  void  bnBuild(BNDataGroup dataGroup)
+  BARNEY_API
+  void  bnBuild(BNModel model,
+                int slot)
+  {
+    BARNEY_ENTER(__PRETTY_FUNCTION__);
+    LOG_API_ENTRY;
+    checkGet(model,slot)->build();
+    BARNEY_LEAVE(__PRETTY_FUNCTION__,);
+  }
+  
+  BARNEY_API
+  void bnCommit(BNObject target)
   {
     LOG_API_ENTRY;
-    checkGet(dataGroup)->build();
+    checkGet(target)->commit();
   }
   
-  BN_API
-  void bnPinholeCamera(BNCamera *camera,
-                       float3 _from,
-                       float3 _at,
-                       float3 _up,
-                       float  fov,
-                       float  aspect)
+              
+  BARNEY_API
+  void bnSetString(BNObject target, const char *param, const char *value)
   {
-    assert(camera);
-    vec3f from = (const vec3f&)_from;
-    vec3f at   = (const vec3f&)_at;
-    vec3f up   = (const vec3f&)_up;
-    
-    vec3f dir_00  = normalize(at-from);
-    
-    vec3f dir_du = aspect * normalize(cross(dir_00, up));
-    vec3f dir_dv = normalize(cross(dir_du, dir_00));
+    if (!checkGet(target)->setString(checkGet(param),value))
+      checkGet(target)->warn_unsupported_member(param,"std::string");
+  }
 
-    dir_00 *= (float)(1.f / (2.0f * tanf((0.5f * fov) * M_PI / 180.0f)));
-    dir_00 -= 0.5f * dir_du;
-    dir_00 -= 0.5f * dir_dv;
+  BARNEY_API
+  void bnSetData(BNObject target, const char *param, BNData value)
+  {
+    if (!checkGet(target)->setData(checkGet(param),
+                                   checkGet(value)->shared_from_this()->as<Data>()))
+      checkGet(target)->warn_unsupported_member(param,"BNData");
+  }
 
-    camera->dir_00 = (float3&)dir_00;
-    camera->dir_du = (float3&)dir_du;
-    camera->dir_dv = (float3&)dir_dv;
-    camera->lens_00 = (float3&)from;
-    camera->lensRadius = 0.f;
+  BARNEY_API
+  void bnSetObject(BNObject target, const char *param, BNObject value)
+  {
+    Object::SP asObject
+      = value 
+      ? checkGet(value)->shared_from_this()
+      : Object::SP{};
+    bool accepted = checkGet(target)->setObject(checkGet(param),asObject);
+    if (!accepted)
+      checkGet(target)->warn_unsupported_member(param,"BNObject");
+  }
+
+  BARNEY_API
+  void bnSet1i(BNObject target, const char *param, int x)
+  {
+    if (!checkGet(target)->set1i(checkGet(param),x))
+      checkGet(target)->warn_unsupported_member(param,"int");
+  }
+
+  BARNEY_API
+  void bnSet2i(BNObject target, const char *param, int x, int y)
+  {
+    if (!checkGet(target)->set2i(checkGet(param),vec2i(x,y)))
+      checkGet(target)->warn_unsupported_member(param,"vec2i");
+  }
+
+  BARNEY_API
+  void bnSet3i(BNObject target, const char *param, int x, int y, int z)
+  {
+    if (!checkGet(target)->set3i(checkGet(param),vec3i(x,y,z)))
+      checkGet(target)->warn_unsupported_member(param,"vec3i");
+  }
+
+  BARNEY_API
+  void bnSet3ic(BNObject target, const char *param, int3 value)
+  {
+    if (!checkGet(target)->set3i(checkGet(param),(const vec3i&)value))
+      checkGet(target)->warn_unsupported_member(param,"vec3i");
+  }
+
+  BARNEY_API
+  void bnSet4i(BNObject target, const char *param, int x, int y, int z, int w)
+  {
+    if (!checkGet(target)->set4i(checkGet(param),vec4i(x,y,z,w)))
+      checkGet(target)->warn_unsupported_member(param,"vec4i");
+  }
+
+  BARNEY_API
+  void bnSet1f(BNObject target, const char *param, float value)
+  {
+    if (!checkGet(target)->set1f(checkGet(param),value))
+      checkGet(target)->warn_unsupported_member(param,"float");
+  }
+
+  BARNEY_API
+  void bnSet3f(BNObject target, const char *param, float x, float y, float z)
+  {
+    LOG_API_ENTRY;
+    if (!checkGet(target)->set3f(checkGet(param),vec3f(x,y,z)))
+      checkGet(target)->warn_unsupported_member(param,"vec3f");
+  }
+
+  BARNEY_API
+  void bnSet4f(BNObject target, const char *param, float x, float y, float z, float w)
+  {
+    if (!checkGet(target)->set4f(checkGet(param),vec4f(x,y,z,w)))
+      checkGet(target)->warn_unsupported_member(param,"vec4f");
+  }
+
+  BARNEY_API
+  void bnSet3fc(BNObject target, const char *param, float3 value)
+  {
+    if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
+      checkGet(target)->warn_unsupported_member(param,"vec3f");
+  }
+
+  BARNEY_API
+  void bnSet4fc(BNObject target, const char *param, float4 value)
+  {
+    if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
+      checkGet(target)->warn_unsupported_member(param,"vec4f");
+  }
+
+  BARNEY_API
+  void bnSet4x3fv(BNObject target, const char *param, const float *transform)
+  {
+    assert(transform);
+    if (!checkGet(target)->set4x3f(checkGet(param),*(const affine3f*)transform))
+      checkGet(target)->warn_unsupported_member(param,"affine3f");
+  }
+
+  BARNEY_API
+  void bnSet4x4fv(BNObject target, const char *param, const float *transform)
+  {
+    assert(transform);
+    if (!checkGet(target)->set4x4f(checkGet(param),*(const mat4f*)transform))
+      checkGet(target)->warn_unsupported_member(param,"mat4f");
   }
   
-  BN_API
+
+
+
+  
+
+  
+  BARNEY_API
   BNFrameBuffer bnFrameBufferCreate(BNContext context,
                                     int owningRank)
   {
@@ -365,94 +757,116 @@ namespace barney {
     return (BNFrameBuffer)fb;
   }
 
-  BN_API
+  BARNEY_API
   void bnFrameBufferResize(BNFrameBuffer fb,
                            int sizeX, int sizeY,
-                           uint32_t *hostRGBA,
-                           float *hostDepth)
+                           uint32_t channels)
   {
     LOG_API_ENTRY;
-    checkGet(fb)->resize(vec2i{sizeX,sizeY},hostRGBA,hostDepth);
+    checkGet(fb)->resize(vec2i{sizeX,sizeY},channels);
   }
 
+  BARNEY_API
+  void bnFrameBufferRead(BNFrameBuffer fb,
+                         BNFrameBufferChannel channel,
+                         void *hostPtr,
+                         BNDataType requestedFormat)
+  {
+    LOG_API_ENTRY;
+    checkGet(fb)->read(channel,hostPtr,requestedFormat);
+  }
+  
 
-  BN_API
+  BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)
   {
     checkGet(fb)->resetAccumulation();
   }
   
-  BN_API
-  void bnRender(BNModel model,
-                const BNCamera *_camera,
+  BARNEY_API
+  void bnRender(BNRenderer renderer,
+                BNModel    model,
+                BNCamera   camera,
                 BNFrameBuffer fb)
   {
-    static int numPrinted = 0;
-    if (++numPrinted < 3)
-      LOG_API_ENTRY;
+    // static double t_first = getCurrentTime();
+    // static double t_sum = 0.;
+    
+    // double t0 = getCurrentTime();
+    // LOG_API_ENTRY;
+    checkGet(model)->render(checkGet(renderer),checkGet(camera),checkGet(fb));
+    // double t1 = getCurrentTime();
 
-    assert(_camera);
-    Camera camera;
-    camera.lens_00 = (const vec3f&)_camera->lens_00;
-    camera.dir_00 = (const vec3f&)_camera->dir_00;
-    camera.dir_du = (const vec3f&)_camera->dir_du;
-    camera.dir_dv = (const vec3f&)_camera->dir_dv;
-    camera.lensRadius = _camera->lensRadius;
-    checkGet(model)->render(camera,checkGet(fb));
+    // t_sum += (t1-t0);
+    // printf("time in %f\n",float((t_sum / (t1 - t_first))));
   }
 
-  BN_API
-  BNContext bnContextCreate(const int *dataGroupsOnThisRank,
-                            int  numDataGroupsOnThisRank,
+  BARNEY_API
+  BNContext bnContextCreate(/*! how many data slots this context is to
+                              offer, and which part(s) of the
+                              distributed model data these slot(s)
+                              will hold */
+                            const int *dataRanksOnThisContext,
+                            int        numDataRanksOnThisContext,
                             /*! which gpu(s) to use for this
                               process. default is to distribute
-                                 node's GPUs equally over all ranks on
-                                 that given node */
+                              node's GPUs equally over all ranks on
+                              that given node */
                             const int *_gpuIDs,
                             int  numGPUs)
   {
     LOG_API_ENTRY;
-    // ------------------------------------------------------------------
-    // create vector of data groups; if actual specified by user we
-    // use those; otherwise we use IDs
-    // [0,1,...numDataGroupsOnThisHost)
-    // ------------------------------------------------------------------
-    assert(numDataGroupsOnThisRank > 0);
-    std::vector<int> dataGroupIDs;
-    for (int i=0;i<numDataGroupsOnThisRank;i++)
-      dataGroupIDs.push_back
-        (dataGroupsOnThisRank
-         ? dataGroupsOnThisRank[i]
-         : i);
+    try {
+        // ------------------------------------------------------------------
+        // create vector of data groups; if actual specified by user we
+        // use those; otherwise we use IDs
+        // [0,1,...numModelSlotsOnThisHost)
+        // ------------------------------------------------------------------
+        assert(numDataRanksOnThisContext > 0);
+        std::vector<int> dataGroupIDs;
+        for (int i = 0;i < numDataRanksOnThisContext;i++)
+            dataGroupIDs.push_back
+            (dataRanksOnThisContext
+                ? dataRanksOnThisContext[i]
+                : i);
 
-    // ------------------------------------------------------------------
-    // create list of GPUs to use for this rank. if specified by user
-    // we use this; otherwise we use GPUs in order, split into groups
-    // according to how many ranks there are on this host. Ie, if host
-    // has four GPUs the first rank will take 0 and 1; and the second
-    // one will take 2 and 3.
-    // ------------------------------------------------------------------
-    std::vector<int> gpuIDs;
-    if (_gpuIDs) {
-      for (int i=0;i<numGPUs;i++)
-        gpuIDs.push_back(_gpuIDs[i]);
-    } else {
-      if (numGPUs < 1)
-        cudaGetDeviceCount(&numGPUs);
-      for (int i=0;i<numGPUs;i++)
-        gpuIDs.push_back(i);
-    }
+        // ------------------------------------------------------------------
+        // create list of GPUs to use for this rank. if specified by user
+        // we use this; otherwise we use GPUs in order, split into groups
+        // according to how many ranks there are on this host. Ie, if host
+        // has four GPUs the first rank will take 0 and 1; and the second
+        // one will take 2 and 3.
+        // ------------------------------------------------------------------
+        std::vector<int> gpuIDs;
+        if (_gpuIDs) {
+            for (int i = 0;i < numGPUs;i++)
+                gpuIDs.push_back(_gpuIDs[i]);
+        }
+        else {
+            if (numGPUs < 1)
+                numGPUs = rtc::Backend::getDeviceCount();
+            // cudaGetDeviceCount(&numGPUs);
+            for (int i = 0;i < numGPUs;i++)
+                gpuIDs.push_back(i);
+        }
+        if (gpuIDs.empty())
+            throw std::runtime_error
+            ("no devices found!?");
 
-    if (gpuIDs.size() < numDataGroupsOnThisRank) {
-      std::vector<int> replicatedIDs;
-      for (int i=0;i<numDataGroupsOnThisRank;i++)
-        replicatedIDs.push_back(gpuIDs[i % gpuIDs.size()]);
-      gpuIDs = replicatedIDs;
+        if (gpuIDs.size() < numDataRanksOnThisContext) {
+            std::vector<int> replicatedIDs;
+            for (int i = 0;i < numDataRanksOnThisContext;i++)
+                replicatedIDs.push_back(gpuIDs[i % gpuIDs.size()]);
+            gpuIDs = replicatedIDs;
+        }
+
+        return (BNContext)new LocalContext(dataGroupIDs,
+            gpuIDs);
+    } 
+    catch (const std::exception& e) {
+        std::cerr << "error creating barney context : " << e.what() << std::endl;
+        return 0;
     }
-    
-    return (BNContext)new LocalContext(dataGroupIDs,
-                                       gpuIDs);
   }
 
-  
-}
+} // ::owl

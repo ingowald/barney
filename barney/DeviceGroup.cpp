@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,89 +16,132 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/DeviceContext.h"
+#include "barney/render/OptixGlobals.h"
+#include "barney/Context.h"
 
 namespace barney {
 
-  extern "C" char traceRays_ptx[];
-
-  Device::Device(DevGroup *devGroup,
-                 int cudaID,
-                 int owlID,
-                 int globalIndex,
-                 int globalIndexStep)
-    : cudaID(cudaID),
-      owlID(owlID),
-      devGroup(devGroup),
-      launchStream(devGroup?owlContextGetStream(devGroup->owl,owlID):0),
-      globalIndex(globalIndex),
-      globalIndexStep(globalIndexStep)
+  GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
+    : device(device)
+  {}
+  
+  rtc::GeomType *GeomTypeRegistry::get(const std::string &name,
+                                       GeomTypeCreationFct callBack,
+                                       const void *cbData)
   {
+    if (geomTypes.find(name) == geomTypes.end()) {
+      geomTypes[name] = callBack(device,cbData);
+    }
+    return geomTypes[name];
   }
 
-  OWLGeomType
-  DevGroup::getOrCreateGeomTypeFor(const std::string &geomTypeString,
-                                 OWLGeomType (*createOnce)(DevGroup *))
-  {
-    std::lock_guard<std::mutex> lock(this->mutex);
-    OWLGeomType gt = geomTypes[geomTypeString];
-    if (gt)
-      return gt;
-
-    gt = geomTypes[geomTypeString] = createOnce(this);
-    programsDirty = true;
-    return gt;
-  }
-
-  void DevGroup::update()
+  void Device::syncPipelineAndSBT()
   {
     if (programsDirty) {
-      std::cout << "rebuilding owl programs and pipeline..." << std::endl;
-      owlBuildPrograms(owl);
-      owlBuildPipeline(owl);
+      if (Context::logging())
+        std::cout << "rebuilding ray tracing programs and pipeline..." << std::endl;
+      rtc->buildPipeline();
       programsDirty = false;
     }
     if (sbtDirty) {
-      std::cout << "rebuilding owl sbt..." << std::endl;
-      owlBuildSBT(owl);
+      rtc->buildSBT();
       sbtDirty = false;
     }
   }
 
-  DevGroup::DevGroup(int ldgID,
+  DevGroup::DevGroup(const std::vector<Device*> &devices,
+                     int numLogical)
+    : std::vector<Device *>(devices),
+      numLogical(numLogical)
+  {}
+
+
+  Device::Device(rtc::Device *rtc,
+                 int contextRank,
+                 int contextSize,
+                 int globalIndex,
+                 int globalIndexStep)
+    : contextRank(contextRank),
+      contextSize(contextSize),
+      globalIndex(globalIndex),
+      globalIndexStep(globalIndexStep),rtc(rtc),
+      geomTypes(rtc)
+  {
+    rayQueue = new RayQueue(this);
+    setTileCoords
+      = rtc->createCompute("setTileCoords");
+    compressTiles
+      = rtc->createCompute("compressTiles");
+    unpackTiles
+      = rtc->createCompute("unpackTiles");
+    
+    toneMap
+      = rtc->createCompute("toneMap");
+    toFixed8
+      = rtc->createCompute("toFixed8");
+    generateRays
+      = rtc->createCompute("generateRays");
+    shadeRays
+      = rtc->createCompute("shadeRays");
+
+    // umesh related:
+    umeshCreateElements 
+      = rtc->createCompute("umeshCreateElements");
+    umeshRasterElements 
+      = rtc->createCompute("umeshRasterElements");
+    umeshReorderElements 
+      = rtc->createCompute("umeshReorderElements");
+    umeshComputeElementBBs
+      = rtc->createCompute("umeshComputeElementBBs");
+      
+    traceRays
+      = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
+  }
+    
+  
+#if 0
+  DevGroup::DevGroup(int lmsIdx,
+                     const std::vector<int> &contextRanks,
+                     int contextSize,
                      const std::vector<int> &gpuIDs,
                      int globalIndex,
                      int globalIndexStep)
-    : ldgID(ldgID)
+    : lmsIdx(lmsIdx)
   {
-    owl = owlContextCreate((int*)gpuIDs.data(),gpuIDs.size());
-
-    OWLVarDecl args[]
-      = {
-         { nullptr }
-    };
-    OWLModule module = owlModuleCreate(owl,traceRays_ptx);
-    rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
-
-    owlBuildPrograms(owl);
-
-    for (int localID=0;localID<gpuIDs.size();localID++)
+    auto backend = rtc::Backend::get();
+    rtc = backend->createDevGroup(gpuIDs);
+    
+    for (int localID=0;localID<gpuIDs.size();localID++) {
+      assert(localID < rtc->devices.size());
+      assert(localID < contextRanks.size());
       devices.push_back
-        (std::make_shared<Device>(this,gpuIDs[localID],localID,
-                                  globalIndex*gpuIDs.size()+localID,
-                                  globalIndexStep*gpuIDs.size()));
+        (std::make_shared<Device>(this,
+                                  rtc->devices[localID],
+                                  contextRanks[localID],
+                                  contextSize,
+                                  // gpuIDs[localID],localID,
+                                  (int)(globalIndex*gpuIDs.size())+localID,
+                                  (int)(globalIndexStep*gpuIDs.size())));
+    }
 
-    // using DD = DeviceContext::DD;
-    OWLVarDecl params[]
-      = {
-         { "world", OWL_GROUP, OWL_OFFSETOF(DeviceContext::DD, world) },
-         { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(DeviceContext::DD,rays) },
-         { "numRays",  OWL_INT, OWL_OFFSETOF(DeviceContext::DD,numRays) },
-         { nullptr }
-    };
-    lp = owlParamsCreate(owl,
-                         sizeof(DeviceContext::DD),
-                         params,
-                         -1);
+    setTileCoordsKernel
+      = rtc->createCompute("setTileCoords");
+    compressTilesKernel
+      = rtc->createCompute("compressTiles");
+    generateRaysKernel
+      = rtc->createCompute("generateRays");
+    shadeRaysKernel
+      = rtc->createCompute("shadeRays");
+    traceRaysKernel
+      = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
   }
+#endif
 
+  // DevGroup::~DevGroup()
+  // {
+  //   std::cout << "DEVGROUP DESTROYING context " << (int*)rtc << std::endl;
+  //   rtc->destroy();
+  //   rtc = nullptr;
+  // }
+  
 }

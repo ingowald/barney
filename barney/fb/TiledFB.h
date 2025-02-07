@@ -17,51 +17,73 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
+#include "barney/common/half.h"
 
 namespace barney {
 
   struct FrameBuffer;
   
+  /*! for now, do a 48 bit half3 representation; shoul eventually go
+      to 32 or 16, but lets at least try how much this really helps in
+      the denoiser */
+  struct CompressedNormal {
+    inline __both__ vec4f get4f() const
+    { vec3f v = get(); return vec4f(v.x,v.y,v.z,0.f); }
+    inline __both__ vec3f get3f() const
+    { vec3f v = get(); return vec3f(v.x,v.y,v.z); }
+    inline __both__ void set(vec3f v) {
+      if (v == vec3f(0.f)) { x = y = z = 0; return; }
+      v = normalize(v);
+      x = encode(v.x);
+      y = encode(v.y);
+      z = encode(v.z);
+    }
+    inline __both__ vec3f get() const { return vec3f(decode(x),decode(y),decode(z)); }
+  private:
+    inline __both__ int8_t encode(float f) const {
+      f = clamp(f*128.f,-127.f,+127.f);
+      return int8_t(f);
+    }
+    inline __both__ float decode(int8_t i) const {
+      if (i==0) return 0.f;
+      return (i<0) ? (i-.5f)*(1.f/128.f) : (i+.5f)*(1.f/128.f);
+    }
+    int8_t x,y,z;
+  };
+  
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
-  
+
   struct AccumTile {
-    float4 accum[pixelsPerTile];
+    vec4f accum[pixelsPerTile];
     float  depth[pixelsPerTile];
+    vec3f  normal[pixelsPerTile];
   };
-  struct FinalTile {
-    uint32_t rgba[pixelsPerTile];
-    float    depth[pixelsPerTile];
+  struct CompressedTile {
+    uint32_t         rgba[pixelsPerTile];
+    half             scale[pixelsPerTile];
+    CompressedNormal normal[pixelsPerTile];
+    half             depth[pixelsPerTile];
   };
   struct TileDesc {
     vec2i lower;
   };
-  
+
   struct TiledFB {
     typedef std::shared_ptr<TiledFB> SP;
-    static SP create(Device::SP device, FrameBuffer *owner);
+    static SP create(Device *device, FrameBuffer *owner);
 
-    TiledFB(Device::SP device, FrameBuffer *owner);
-    
+    TiledFB(Device *device, FrameBuffer *owner);
+    virtual ~TiledFB();
+
     void resize(vec2i newSize);
+    void free();
 
-    /*! write this tiledFB's tiles into given "final" frame buffer
-        (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
-        pixels) */
-    static
-    void writeFinalPixels(Device    *device,
-                          uint32_t  *finalFB,
-                          float     *finalDepth,
-                          vec2i      numPixels,
-                          FinalTile *finalTiles,
-                          TileDesc  *tileDescs,
-                          int        numTiles);
-    
-    void finalizeTiles();
+    void finalizeTiles_launch();
 
     /*! number of (valid) pixels */
     vec2i numPixels       = { 0,0 };
-    
+
     /*! number of tiles to cover the entire frame buffer; some on the
       right/bottom may be partly filled */
     vec2i numTiles        = { 0, 0 };
@@ -69,9 +91,9 @@ namespace barney {
     /*! lower-left pixel coordinate for given tile ... */
     TileDesc  *tileDescs  = 0;
     AccumTile *accumTiles = 0;
-    FinalTile *finalTiles = 0;
+    CompressedTile *compressedTiles = 0;
     FrameBuffer *const owner;
-    Device::SP const device;
+    Device      *const device;
   };
-  
+
 }

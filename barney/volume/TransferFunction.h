@@ -17,24 +17,27 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
+#include "barney/Object.h"
 
 namespace barney {
 
-  struct TransferFunction {
+  struct TransferFunction : public SlottedObject {
     struct DD {
 
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      
       /*! maps given scalar through this trnasfer function, and
         returns /opacity-times-density value for that scalar. scalars
         outside the specified domain get mapped to the boundary
         values; values inside the domain get linearly interpolated
         from the array of values.  Mind: 'w' component of returned
         value is a *density*, not a alpha-opacity! */
-      inline __device__
+      inline __both__
       vec4f map(float s, bool dbg=false) const;
 
       /*! compute the majorant (max opacity times baseDensity) for
           given range of scalar values */
-      inline __device__
+      inline __both__
       float majorant(range1f r, bool dbg = false) const;
 
       float4  *values;
@@ -43,23 +46,29 @@ namespace barney {
       int      numValues;
     };
 
-    TransferFunction(DevGroup *devGroup);
+    TransferFunction(Context *context,
+                     const DevGroup::SP &devices);
 
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-    DD getDD(int devID) const;
+    DD getDD(Device *device);
     
     void set(const range1f &domain,
              const std::vector<vec4f> &values,
              float baseDensity);
-    std::vector<OWLVarDecl> getVarDecls(uint32_t myOffset);
-    void setVariables(OWLGeom geom, bool firstTime);
+    // std::vector<OWLVarDecl> getVarDecls(uint32_t myOffset);
+    // void setVariables(OWLGeom geom) const;
+
+    struct PLD {
+      rtc::Buffer        *valuesBuffer = 0;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
     
-    OWLBuffer           valuesBuffer = 0;
-    range1f             domain;
+    range1f             domain = { 0.f, 1.f };
     std::vector<vec4f>  values;
     float               baseDensity;
-    DevGroup     *const devGroup;
   };
 
 
@@ -70,15 +79,21 @@ namespace barney {
     the domain get linearly interpolated from the array of values.
     Mind: 'w' component of returned value is a *density*, not a
     alpha-opacity! */
-  inline __device__
+  inline __both__
   vec4f TransferFunction::DD::map(float s, bool dbg) const
   {
+    if (dbg) printf("mapping %f into %f %f\n",
+                    s,domain.lower,domain.upper);
     float f = (s-domain.lower)/domain.span();
     f = clamp(f,0.f,1.f);
     f *= (numValues-1);
+
+    if (dbg) printf("rel %f\n",f);
+    
     int idx = clamp(int(f),0,numValues-2);
     f -= idx;
 
+                    
     float4 v0 = values[idx];
     float4 v1 = values[idx+1];
     vec4f r = (1.f-f)*(const vec4f&)v0 + f*(const vec4f&)v1;
@@ -89,7 +104,7 @@ namespace barney {
 
   /*! compute the majorant (max opacity times baseDensity) for
     given range of scalar values */
-  inline __device__
+  inline __both__
   float TransferFunction::DD::majorant(range1f r, bool dbg) const
   {
     float f_lo = (r.lower-domain.lower)/domain.span();

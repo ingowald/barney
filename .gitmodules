@@ -3,4 +3,7 @@
 	url = https://github.com/owl-project/owl
 [submodule "submodules/cuBQL"]
 	path = submodules/cuBQL
-	url = git@github.com:ingowald/cuBQL
+	url = https://github.com/ingowald/cuBQL
+[submodule "submodules/embree"]
+	path = submodules/embree
+	url = https://github.com/embree/embree

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,128 +14,200 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DeviceContext.h"
-#include "barney/Ray.h"
+#ifdef __CUDACC__
+# define OWL_DISABLE_TBB
+#endif
+#include "barney/DeviceGroup.h"
+#include "barney/render/Ray.h"
+#include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
 
 namespace barney {
-
-  /*! generates a new wave-front of rays, to be written to
+  namespace render {
+    /*! generates a new wave-front of rays, to be written to
       'rayQueue[]', at (atomically incrementable) positoin
       *d_count. This kernel operates on *tiles* (not complete frames);
       the list of tiles to generate rays for is passed in 'tileDescs';
       there will be one cuda block per tile */
-  __global__
-  void g_generateRays(/*! the camera used for generating the rays */
-                      Camera camera,
-                      /*! a unique random number seed value for pixel
-                          and lens jitter; probably just accumID */
-                      int rngSeed,
-                      int accumID,
-                      /*! full frame buffer size, to check if a given
-                          tile's pixel ID is still valid */
-                      vec2i fbSize,
-                      /*! pointer to a device-side int that tracks the
-                          next write position in the 'write' ray
-                          queue; can be atomically incremented on the
-                          device */
-                      int *d_count,
-                      /*! pointer to device-side ray queue to write
-                          newly generated raysinto */
-                      Ray *rayQueue,
-                      /*! tile descriptors for the tiles that the
-                          frame buffer owns on this device; rays
-                          should only get generated for these tiles */
-                      TileDesc *tileDescs)
-  {
-    __shared__ int l_count;
-    if (threadIdx.x == 0)
-      l_count = 0;
+    struct GenerateRays {
+      template<typename RTCore>
+        __both__ void run(const RTCore &rtcore);
+        
+        Camera::DD camera;
+        Renderer::DD renderer;
+        /*! a unique random number seed value for pixel
+          and lens jitter; probably just accumID */
+        int accumID;
+        /*! full frame buffer size, to check if a given
+          tile's pixel ID is still valid */
+        vec2i fbSize;
+        /*! pointer to a device-side int that tracks the
+          next write position in the 'write' ray
+          queue; can be atomically incremented on the
+          device */
+        int *d_count;
+        /*! pointer to device-side ray queue to write
+          newly generated raysinto */
+        Ray *rayQueue;
+        /*! tile descriptors for the tiles that the
+          frame buffer owns on this device; rays
+          should only get generated for these tiles */
+        TileDesc *tileDescs;
+        bool enablePerRayDebug;
+    };
 
-    // ------------------------------------------------------------------
-    __syncthreads();
-    
-    int tileID = blockIdx.x;
-    
-    vec2i tileOffset = tileDescs[tileID].lower;
-    int ix = (threadIdx.x % tileSize) + tileOffset.x;
-    int iy = (threadIdx.x / tileSize) + tileOffset.y;
+    template<typename RTBackend>
+    __both__
+    void GenerateRays::run(const RTBackend &rt)
+    {
+      // ------------------------------------------------------------------
+      int tileID   = rt.getBlockIdx().x;
+      int lPixelID = rt.getThreadIdx().x;
 
-    // bool dbg = ((ix == 0) || (ix == fbSize.x-1)) && ((iy==0) || (iy == fbSize.y-1));
-    Ray ray;
-    ray.pixelID = tileID * (tileSize*tileSize) + threadIdx.x;
-    Random rand(rngSeed,ray.pixelID);
-    rand();
-    rand();
-    rand();
-    
-    ray.org  = camera.lens_00;
-    ray.dir
-      = camera.dir_00
-      + ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x))*camera.dir_du
-      + ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y))*camera.dir_dv;
-    ray.dir = normalize(ray.dir);
+      vec2i tileOffset = tileDescs[tileID].lower;
+      int ix = (lPixelID % tileSize) + tileOffset.x;
+      int iy = (lPixelID / tileSize) + tileOffset.y;
 
-    bool centerPixel = ((ix == fbSize.x/2) && (iy == fbSize.y/2));
-    ray.dbg = centerPixel;
+      Ray ray;
+      ray.misWeight = 0.f;
+      ray.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
+      Random rand(unsigned(ix+fbSize.x*accumID),
+                  unsigned(iy+fbSize.y*accumID));
 
-#if PRINT_BALLOT
-    int ball = __ballot(1);
-    if (ray.dbg) printf("=================================\n**** NEW PRIMARY RAY (ballot %x)\n",ball);
-    ray.numPrimsThisRay = 0;
-    ray.numIsecsThisRay = 0;
-    ray.numLeavesThisRay = 0;
-#endif
-    
-    ray.tMax = 1e30f;
-    ray.rngSeed = rand.state;
-    ray.hadHit = false;
+      ray.org  = camera.lens_00;
 
-    const float t = (iy+.5f)/float(fbSize.y);
-    // for *primary* rays we pre-initialize basecolor to a background
-    // color; this way the shaderays function doesn't have to reverse
-    // engineer pixel pos etc
-    ray.hit.baseColor = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
+      float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));
+      float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y));
+      float aspect = fbSize.x / float(fbSize.y);
+      vec3f ray_dir
+        = camera.dir_00
+        + (1.f*aspect*(image_u - .5f)) * camera.dir_du
+        + (1.f*(image_v - .5f)) * camera.dir_dv;
+      
+      if (camera.lensRadius > 0.f) {
+        vec3f lens_du = normalize(camera.dir_du);
+        vec3f lens_dv = normalize(camera.dir_dv);
+        vec3f lensNormal  = cross(lens_du,lens_dv);
 
-    bool crossHair = ((ix == fbSize.x/2) || (iy == fbSize.y/2));
-    if (crossHair)
-      ray.hit.baseColor = vec3f(1,0,0);
-    
-    ray.hit.N = vec3f(0.f);
-    ray.throughput = vec3f(1.f);
-    
-    // ray.color = (1.0f - t)*vec3f(1.0f, 1.0f, 1.0f) + t * vec3f(0.5f, 0.7f, 1.0f);
-    
-    int pos = -1;
-    if (ix < fbSize.x && iy < fbSize.y) 
-      pos = atomicAdd(&l_count,1);
+        vec3f D = normalize(ray_dir);
+        vec3f pointOnImagePlane = D * (camera.focalLength / fabsf(dot(D,lensNormal)));
+        float lu, lv;
+        while (true) {
+          lu = 2.f*rand()-1.f;
+          lv = 2.f*rand()-1.f;
+          float f = lu*lu+lv*lv;
+          if (f > 1.f) continue;
+          break;
+        }
+        vec3f lensOffset
+          = (camera.lensRadius * lu) * lens_du
+          + (camera.lensRadius * lv) * lens_dv;
+        ray.org += lensOffset;
+        ray_dir = normalize(pointOnImagePlane - lensOffset);
+      } else {
+        ray_dir = normalize(ray_dir);
+      }
+      ray.dir = ray_dir;
+      
+      bool crossHair_x = (ix == fbSize.x/2);
+      bool crossHair_y = (iy == fbSize.y/2);
+ 
+      ray.dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
+      ray.clearHit();
+      ray.isShadowRay = false;
+      ray.isInMedium  = false;
+      ray.rngSeed     = rand.state;
+      ray.tMax        = 1e30f;
+      ray.numDiffuseBounces = 0;
+      if (0 && ray.dbg)
+        printf("-------------------------------------------------------\n");
+      // if (ray.dbg)
+      //   printf("  # generating INTO %lx\n",rayQueue);
+             
+      if (0 && ray.dbg)
+        printf("======================\nspawned %f %f %f dir %f %f %f\n",
+               ray.org.x,
+               ray.org.y,
+               ray.org.z,
+               (float)ray.dir.x,
+               (float)ray.dir.y,
+               (float)ray.dir.z);
 
-    // ------------------------------------------------------------------
-    __syncthreads();
-    if (threadIdx.x == 0) 
-      l_count = atomicAdd(d_count,l_count);
+      const float t = (iy+.5f)/float(fbSize.y);
+      // for *primary* rays we pre-initialize basecolor to a background
+      // color; this way the shaderays function doesn't have to reverse
+      // engineer pixel pos etc
+      
+      vec4f bgColor
+        = (renderer.bgColor.w >= 0.f)
+        ? renderer.bgColor
+        : ((1.0f - t)*vec4f(0.9f, 0.9f, 0.9f,1.f)
+           + t *      vec4f(0.15f, 0.25f, .8f,1.f));
+      if (renderer.bgTexture) {
+        vec4f v = rtc::tex2D<vec4f>(renderer.bgTexture,image_u,image_v);
+        bgColor = v;
+      }
+      (vec4f&)ray.missColor = bgColor;
+      if (0 && ray.dbg) printf("== spawn ray has bg tex %p bg color %f %f %f\n",
+                               (void*)renderer.bgTexture,
+                          bgColor.x,
+                          bgColor.y,
+                          bgColor.z);
+      ray.throughput = vec3f(1.f);
     
-    // ------------------------------------------------------------------
-    __syncthreads();
-    if (pos >= 0) 
-      rayQueue[l_count + pos] = ray;
+      int pos = rt.atomicAdd(d_count,1);
+      rayQueue[pos] = ray;
+    }
   }
-  
-  void DeviceContext::generateRays_launch(TiledFB *fb,
-                                          const Camera &camera,
-                                          int rngSeed)
+
+
+
+  void Context::generateRays(const barney::Camera::DD &camera,
+                             Renderer *renderer,
+                             FrameBuffer *fb)
   {
-    auto device = fb->device;
-    SetActiveGPU forDuration(device);
+    auto getPerRayDebug = [&]()
+    {
+      const char *fromEnv = getenv("BARNEY_DBG_RENDER");
+      return fromEnv && std::stoi(fromEnv);
+    };
+    static bool enablePerRayDebug = getPerRayDebug();
     
-    g_generateRays
-      <<<fb->numActiveTiles,pixelsPerTile,0,device->launchStream>>>
-      (camera,
-       rngSeed,
-       fb->owner->accumID,
-       fb->numPixels,
-       rays.d_nextWritePos,
-       rays.writeQueue,
-       fb->tileDescs);
+    assert(fb);
+    int accumID=fb->accumID;
+    // ------------------------------------------------------------------
+    // launch all GPUs to do their stuff
+    // ------------------------------------------------------------------
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      TiledFB *devFB = fb->getFor(device);
+      device->rayQueue->resetWriteQueue();
+      render::GenerateRays args = {
+        /* variable args */
+        camera,
+        renderer->getDD(device),
+        accumID,
+        fb->numPixels,
+        device->rayQueue->_d_nextWritePos,
+        device->rayQueue->receiveAndShadeWriteQueue,
+        devFB->tileDescs,
+        enablePerRayDebug,
+      };
+      device->generateRays->launch(devFB->numActiveTiles,
+                                   pixelsPerTile,
+                                   &args);
+    }
+    // ------------------------------------------------------------------
+    // wait for all GPUs' completion
+    // ------------------------------------------------------------------
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      device->rtc->sync();
+      device->rayQueue->swap();
+      device->rayQueue->numActive = device->rayQueue->readNumActive();
+      device->rayQueue->resetWriteQueue();
+    }
   }
 }
+
+RTC_DECLARE_COMPUTE(generateRays,barney::render::GenerateRays);

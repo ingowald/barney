@@ -40,18 +40,36 @@ BarneyGlobalState *Object::deviceState() const
   return (BarneyGlobalState *)helium::BaseObject::m_state;
 }
 
+  BNContext Object::getContext() const { return deviceState()->context; }
+  
+// bool Object::isModelTracked(BNModel model, int slot) const
+// {
+//   return m_bnModel == model && m_slot == slot;
+// }
+
+// void Object::trackModel(BNModel model, int slot)
+// {
+//   m_bnModel = model;
+//   m_slot = slot;
+// }
+
+// BNModel Object::trackedModel() const
+// {
+//   return m_bnModel;
+// }
+
+// int Object::trackedSlot() const
+// {
+//   return m_slot;
+// }
+
 // UnknownObject definitions //////////////////////////////////////////////////
 
 UnknownObject::UnknownObject(ANARIDataType type, BarneyGlobalState *s)
     : Object(type, s)
-{
-  s->objectCounts.unknown++;
-}
+{}
 
-UnknownObject::~UnknownObject()
-{
-  deviceState()->objectCounts.unknown--;
-}
+UnknownObject::~UnknownObject() = default;
 
 bool UnknownObject::isValid() const
 {

@@ -15,90 +15,97 @@
 // ======================================================================== //
 
 #include "barney/geometry/Triangles.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
 namespace barney {
 
   extern "C" char Triangles_ptx[];
 
-  Triangles::Triangles(DataGroup *owner,
-                       const Material &material,
-                       int numIndices,
-                       const vec3i *indices,
-                       int numVertices,
-                       const vec3f *vertices,
-                       const vec3f *normals,
-                       const vec2f *texcoords)
-    : Geometry(owner,material)
+  Triangles::Triangles(SlotContext *slotContext)
+    : Geometry(slotContext)
+  {}
+  
+  Triangles::~Triangles()
+  {}
+  
+  rtc::GeomType *Triangles::createGeomType(rtc::Device *device,
+                                           const void *)
   {
-    OWLGeomType gt = owner->devGroup->getOrCreateGeomTypeFor
-      ("Triangles",Triangles::createGeomType);
-    OWLGeom geom = owlGeomCreate(owner->devGroup->owl,gt);
-
-    verticesBuffer = owlDeviceBufferCreate
-      (owner->devGroup->owl,
-       OWL_FLOAT3,numVertices,vertices);
-    indicesBuffer = owlDeviceBufferCreate
-      (owner->devGroup->owl,
-       OWL_INT3,numIndices,indices);
-
-    owlTrianglesSetVertices(geom,verticesBuffer,
-                            numVertices,sizeof(float3),0);
-    owlTrianglesSetIndices(geom,indicesBuffer,
-                           numIndices,sizeof(int3),0);
-    owlGeomSetRaw(geom,"material",&material);
-    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
-    owlGeomSetBuffer(geom,"indices",indicesBuffer);
-    
-    triangleGeoms.push_back(geom);
-  }
-
-  void Triangles::update(const Material &material,
-                         int numIndices,
-                         const vec3i *indices,
-                         int numVertices,
-                         const vec3f *vertices,
-                         const vec3f *normals,
-                         const vec2f *texcoords)
-  {
-    OWLGeom geom = triangleGeoms[0];
-    
-    owlBufferResize(verticesBuffer,numVertices);
-    owlBufferResize(indicesBuffer,numIndices);
-    owlBufferUpload(verticesBuffer,vertices);
-    owlBufferUpload(indicesBuffer,indices);
-
-    owlTrianglesSetVertices(geom,verticesBuffer,
-                            numVertices,sizeof(float3),0);
-    owlTrianglesSetIndices(geom,indicesBuffer,
-                           numIndices,sizeof(int3),0);
-    owlGeomSetRaw(geom,"material",&material);
-    owlGeomSetBuffer(geom,"vertices",verticesBuffer);
-    owlGeomSetBuffer(geom,"indices",indicesBuffer);
+    if (Context::logging())
+      std::cout << OWL_TERMINAL_GREEN
+                << "creating 'Triangles' geometry type"
+                << OWL_TERMINAL_DEFAULT << std::endl;
+    return device->createTrianglesGeomType("Triangles_ptx",
+                                           "Triangles",
+                                           sizeof(Triangles::DD),
+                                           /*ah*/true,/*ch*/false);
   }
   
-  OWLGeomType Triangles::createGeomType(DevGroup *devGroup)
+  /*! handle data arrays for vertices, indices, normals, etc; note
+      that 'general' geometry attributes of the ANARI material system
+      are already handled in parent class */
+  bool Triangles::setData(const std::string &member,
+                          const Data::SP &value)
   {
-    std::cout << OWL_TERMINAL_GREEN
-              << "creating 'Triangles' geometry type"
-              << OWL_TERMINAL_DEFAULT << std::endl;
+    if (Geometry::setData(member,value))
+      return true;
     
-    static OWLVarDecl params[]
-      = {
-         { "material", OWL_USER_TYPE(Material), OWL_OFFSETOF(DD,material) },
-         { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-         { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-         { nullptr }
-    };
-    OWLModule module = owlModuleCreate
-      (devGroup->owl,Triangles_ptx);
-    OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_TRIANGLES,sizeof(Triangles::DD),
-       params,-1);
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"TrianglesCH");
-    owlBuildPrograms(devGroup->owl);
+    if (member == "vertices") {
+      vertices = value->as<PODData>();
+      return true;
+    }
+    if (member == "indices") {
+      indices = value->as<PODData>();
+      return true;
+    }
+    if (member == "normals") {
+      normals = value->as<PODData>();
+      return true;
+    }
+    if (member == "texcoords") {
+      texcoords = value->as<PODData>();
+      return true;
+    }
     
-    return gt;
+    return false;
+  }
+  
+  void Triangles::commit() 
+  {
+    for (auto device : *devices) {
+      auto rtc = device->rtc;
+      PLD *pld = getPLD(device);
+      if (pld->triangleGeoms.empty()) {
+        rtc::GeomType *gt
+          = device->geomTypes.get("Triangles",
+                                  Triangles::createGeomType);
+        rtc::Geom *geom = gt->createGeom();
+        pld->triangleGeoms = { geom };
+      }
+    
+      rtc::Geom *geom = pld->triangleGeoms[0];
+      rtc::Buffer *verticesBuffer
+        = vertices->getPLD(device)->rtcBuffer;
+      rtc::Buffer *indicesBuffer
+        = indices->getPLD(device)->rtcBuffer;
+      
+      int numVertices = (int)vertices->count;
+      int numIndices  = (int)indices->count;
+      
+      geom->setVertices(verticesBuffer,numVertices);
+      geom->setIndices(indicesBuffer,numIndices);
+      
+      Triangles::DD dd;
+      Geometry::writeDD(dd,device);
+      dd.vertices  = (vec3f*)vertices->getDD(device);
+      dd.indices   = (vec3i*)indices->getDD(device);
+      dd.normals   = (vec3f*)(normals?normals->getDD(device):0);
+      dd.texcoords = (vec2f*)(texcoords?texcoords->getDD(device):0);
+      // done:
+      geom->setDD(&dd);
+    }
+    
   }
   
 }

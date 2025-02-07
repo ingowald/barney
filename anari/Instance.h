@@ -21,6 +21,8 @@ struct Instance : public Object
 
   const BNTransform *barneyTransform() const;
 
+  box3 bounds() const;
+
  private:
   BNTransform m_xfm;
   helium::IntrusivePtr<Group> m_group;

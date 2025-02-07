@@ -17,17 +17,17 @@ struct Camera : public Object
   static Camera *createInstance(
       std::string_view type, BarneyGlobalState *state);
 
-  float4 imageRegion() const;
+  math::float4 imageRegion() const;
 
-  const BNCamera *barneyCamera() const;
+  BNCamera barneyCamera() const;
 
  protected:
-  float3 m_pos;
-  float3 m_dir;
-  float3 m_up;
-  float4 m_imageRegion;
+  math::float3 m_pos;
+  math::float3 m_dir;
+  math::float3 m_up;
+  math::float4 m_imageRegion;
 
-  BNCamera m_barneyCamera;
+  BNCamera m_barneyCamera = 0;
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////

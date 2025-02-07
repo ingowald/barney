@@ -16,7 +16,7 @@ namespace barney_device {
 struct Frame : public helium::BaseFrame
 {
   Frame(BarneyGlobalState *s);
-  ~Frame();
+  ~Frame() override;
 
   bool isValid() const override;
 
@@ -43,23 +43,24 @@ struct Frame : public helium::BaseFrame
   void wait() const;
 
  private:
-  void convertPixelsToFinalFormat();
+  void cleanup();
 
   bool m_valid{false};
 
   struct FrameData
   {
     int frameID{0};
-    uint2 size;
+    math::uint2 size;
+    size_t totalPixels{0};
   } m_frameData;
 
   anari::DataType m_colorType{ANARI_UNKNOWN};
   anari::DataType m_depthType{ANARI_UNKNOWN};
 
-  std::vector<uint8_t> m_pixelBuffer;
-  std::vector<float> m_depthBuffer;
+  uint32_t *m_colorBuffer{nullptr};
+  float    *m_depthBuffer{nullptr};
 
-  helium::IntrusivePtr<Renderer> m_renderer;
+  helium::ChangeObserverPtr<Renderer> m_renderer;
   helium::IntrusivePtr<Camera> m_camera;
   helium::IntrusivePtr<World> m_world;
 
@@ -72,7 +73,6 @@ struct Frame : public helium::BaseFrame
   helium::TimeStamp m_frameLastRendered{0};
 
   BNFrameBuffer m_bnFrameBuffer{nullptr};
-  std::vector<uint32_t> m_bnHostBuffer;
 };
 
 } // namespace barney_device

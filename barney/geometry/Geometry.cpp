@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -15,12 +15,178 @@
 // ======================================================================== //
 
 #include "barney/geometry/Geometry.h"
-#include "barney/DataGroup.h"
+#include "barney/ModelSlot.h"
+#include "barney/Context.h"
+
+#include "barney/geometry/Triangles.h"
+#include "barney/geometry/Spheres.h"
+#include "barney/geometry/Cones.h"
+#include "barney/geometry/Cylinders.h"
+#include "barney/geometry/Capsules.h"
 
 namespace barney {
+
+  Geometry::PLD *Geometry::getPLD(Device *device)
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
+
+  Geometry::SP Geometry::create(SlotContext *context,
+                                const std::string &type)
+  {
+    if (type == "spheres")
+      return std::make_shared<Spheres>(context);
+#if 0
+    if (type == "cones")
+      return std::make_shared<Cones>(context);
+#endif
+    if (type == "cylinders")
+      return std::make_shared<Cylinders>(context);
+    if (type == "capsules")
+      return std::make_shared<Capsules>(context);
+    if (type == "triangles")
+      return std::make_shared<Triangles>(context);
+    
+    context->context->warn_unsupported_object("Geometry",type);
+    return {};
+  }
+
+  Geometry::Geometry(SlotContext *slotContext)
+    : SlottedObject(slotContext->context,slotContext->devices),
+      material(slotContext->defaultMaterial)
+  {
+    perLogical.resize(devices->numLogical);
+  }
+
+  Geometry::~Geometry()
+  {
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      for (auto &geom : pld->triangleGeoms)
+        if (geom) {
+          // owlGeomRelease(geom);
+          device->rtc->freeGeom(geom);
+          geom = 0;
+        }
+      for (auto &geom : pld->userGeoms)
+        if (geom) {
+          // owlGeomRelease(geom);
+          device->rtc->freeGeom(geom);
+          geom = 0;
+        }
+    }
+  }
+
+  HostMaterial::SP Geometry::getMaterial() const
+  {
+    assert(this->material);
+    return this->material;
+  }
   
-  OWLContext Geometry::getOWL() const
-  { return owner->getOWL(); }
+  void Geometry::setMaterial(HostMaterial::SP mat)
+  {
+    if (mat) {
+      assert(mat->hasBeenCommittedAtLeastOnce);
+    }
+    this->material = mat;
+  }
+    
+  
+  
+  // void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
+  // {
+  //   vars.push_back({"materialID",OWL_INT,OWL_OFFSETOF(DD,materialID)});
+  //   vars.push_back({"attributes",OWL_USER_TYPE(GeometryAttributes::DD),
+  //       OWL_OFFSETOF(DD,attributes)});
+  // }
+  
+
+  void Geometry::writeDD(Geometry::DD &dd,
+                         Device *device)
+  {
+    setAttributesOn(dd,device);
+    dd.attributes = attributes.getDD(device);
+    dd.materialID = getMaterial()->materialID;
+  }  
+  
+  void Geometry::setAttributesOn(Geometry::DD &dd,
+                                 Device *device)
+  {
+    dd.attributes = attributes.getDD(device);
+    dd.materialID = material->materialID;  
+  }
+  
+  bool Geometry::set1f(const std::string &member, const float &value)
+  {
+    return false;
+  }
+  
+  bool Geometry::set3f(const std::string &member, const vec3f &value)
+  {
+    return false;
+  }
+  
+  bool Geometry::setData(const std::string &member, const Data::SP &value)
+  {
+    if (member == "primitive.attribute0") {
+      attributes.attribute[0].perPrim = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.attribute1") {
+      attributes.attribute[1].perPrim = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.attribute2") {
+      attributes.attribute[2].perPrim = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.attribute3") {
+      attributes.attribute[3].perPrim = value->as<PODData>();
+      return true;
+    }
+    if (member == "primitive.color") {
+      attributes.colorAttribute.perPrim = value->as<PODData>();
+      return true;
+    }
+    
+    if (member == "vertex.attribute0") {
+      attributes.attribute[0].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.attribute1") {
+      attributes.attribute[1].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.attribute2") {
+      attributes.attribute[2].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.attribute3") {
+      attributes.attribute[3].perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.color") {
+      attributes.colorAttribute.perVertex = value->as<PODData>();
+      return true;
+    }
+    return false;
+  }
+  
+  bool Geometry::setObject(const std::string &member, const Object::SP &value)
+  {
+    if (member == "material") {
+      HostMaterial::SP newMaterial = value->as<HostMaterial>();
+      if (value && !newMaterial) {
+        throw std::runtime_error("invalid material in geometry::set(\"material\"");
+      }
+      setMaterial(newMaterial);
+      return true;
+    }
+    return false;
+  }
 
 }
 

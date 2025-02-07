@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -20,10 +20,10 @@
 
 #include "barney/Object.h"
 #include "barney/volume/TransferFunction.h"
+#include "barney/volume/ScalarField.h"
 
 namespace barney {
 
-  struct DataGroup;
   struct Volume;
   struct ScalarField;
   struct MCGrid;
@@ -34,80 +34,73 @@ namespace barney {
   typedef std::array<int,8> HexIndices;
 
   struct VolumeAccel {
+    
     typedef std::shared_ptr<VolumeAccel> SP;
 
-    struct DD {
-      template<typename FieldSampler>
-      inline __device__
-      vec4f sampleAndMap(const FieldSampler &field,
-                         vec3f point, bool dbg=false) const
-      {
-        float f = field.sample(point,dbg);
-        if (isnan(f)) return vec4f(0.f);
-        return xf.map(f,dbg);
-      }
-      TransferFunction::DD xf;
-    };
+    VolumeAccel(Volume *volume);
+
+    virtual void build(bool full_rebuild) = 0;
+
+    const TransferFunction *getXF() const;
     
-    VolumeAccel(ScalarField *field, Volume *volume);
-    
-    virtual void build() = 0;
-    
-    virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs);
-    virtual void setVariables(OWLGeom geom, bool firstTime);
-    
-    ScalarField *const field;
-    Volume      *const volume;
-    DevGroup    *const devGroup;
+    Volume      *const volume = 0;
+    const DevGroup::SP devices;
   };
 
-  /*! abstracts any sort of scalar field (unstructured, amr,
-    structured, rbfs....) _before_ any transfer function(s) get
-    applied to it */
-  struct ScalarField : public Object
-  {
-    typedef std::shared_ptr<ScalarField> SP;
 
-    struct DD {
-      box4f             worldBounds;
-    };
-    
-    ScalarField(DevGroup *devGroup)
-      : devGroup(devGroup)
-    {}
 
-    OWLContext getOWL() const;
-    virtual std::vector<OWLVarDecl> getVarDecls(uint32_t baseOfs) = 0;
-    virtual void setVariables(OWLGeom geom, bool firstTime) = 0;
-    
-    virtual VolumeAccel::SP createAccel(Volume *volume) = 0;
-    virtual void buildMCs(MCGrid &macroCells)
-    { throw std::runtime_error("this calar field type does not know how to build macro-cells"); }
-    
-    DevGroup *const devGroup;
-    box4f     worldBounds;
-  };
 
+
+  struct VolumeAccel;
+  
   /*! a *volume* is a scalar field with a transfer function applied to
       it; it's main job is to create something that can intersect a
       ray with that scalars-plus-transferfct thingy, for which it will
       use some kind of volume accelerator that implements the
       scalar-field type specific stuff (eg, traverse a bvh over
       elements, or look up a 3d texture, etc) */
-  struct Volume : public Object
+  struct Volume : public SlottedObject
   {
+    template<typename SFSampler>
+    struct DD {
+      inline __both__
+      vec4f sampleAndMap(vec3f point, bool dbg=false) const
+      {
+        float f = sfSampler.sample(point,dbg);
+        if (isnan(f)) return vec4f(0.f);
+        vec4f mapped = xf.map(f,dbg);
+        return mapped;
+      }
+      
+      ScalarField::DD        sfCommon;
+      typename SFSampler::DD sfSampler;
+      TransferFunction::DD   xf;
+    };
+    
+    template<typename SFSampler>
+    DD<SFSampler> getDD(Device *device, std::shared_ptr<SFSampler> sampler)
+    {
+      DD<SFSampler> dd;
+      dd.sfCommon = sf->getDD(device);
+      dd.sfSampler = sampler->getDD(device);
+      dd.xf = xf.getDD(device);
+      return dd;
+    }
+
     typedef std::shared_ptr<Volume> SP;
     
-    Volume(DevGroup *devGroup,
-           ScalarField::SP sf);
+    Volume(ScalarField::SP sf);
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Volume{}"; }
 
+    static SP create(ScalarField::SP sf)
+    { return std::make_shared<Volume>(sf); }
+    
     /*! (re-)build the accel structure for this volume, probably after
         changes to transfer functoin (or later, scalar field) */
-    virtual void build();
+    virtual void build(bool full_rebuild);
     
     void setXF(const range1f &domain,
                const std::vector<vec4f> &values,
@@ -118,17 +111,97 @@ namespace barney {
     VolumeAccel::SP  accel;
     TransferFunction xf;
 
-    std::vector<OWLGroup> generatedGroups;
-    DevGroup *const devGroup;
+    struct PLD {
+      std::vector<rtc::Group *> generatedGroups;
+      std::vector<rtc::Geom *>  generatedGeoms;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+    // std::vector<OWLGroup> generatedGroups;
   };
 
 
-  inline VolumeAccel::VolumeAccel(ScalarField *field, Volume *volume)
-    : field(field), volume(volume), devGroup(field->devGroup)
+
+
+  /*! helper class that performs woodcock sampling over a given
+      parameter range, for a given sample'able volume type */
+  struct Woodcock {
+    template<typename VolumeDD>
+    static inline __both__
+    bool sampleRangeT(vec4f &sample,
+                      const VolumeDD &sfSampler,
+                      vec3f org, vec3f dir,
+                      range1f &tRange,
+                      float majorant,
+                      uint32_t &rngSeed,
+                      bool dbg=false) 
+    {
+      LCG<4> &rand = (LCG<4> &)rngSeed;
+      float t = tRange.lower;
+      while (true) {
+        float dt = - logf(1.f-rand())/majorant;
+        t += dt;
+        if (t >= tRange.upper)
+          return false;
+
+        sample = sfSampler.sampleAndMap(t,dbg);
+        // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
+        //                 t,
+        //                 P.x,P.y,P.z,
+        //                 sample.x,
+        //                 sample.y,
+        //                 sample.z,
+        //                 sample.w);
+        if (sample.w >= rand()*majorant) {
+          tRange.upper = t;
+          return true;
+        }
+      }
+    }
+
+    template<typename VolumeDD>
+    static inline __both__
+    bool sampleRange(vec4f &sample,
+                     const VolumeDD &sfSampler,
+                     vec3f org, vec3f dir,
+                     range1f &tRange,
+                     float majorant,
+                     uint32_t &rngSeed,
+                     bool dbg=false) 
+    {
+      LCG<4> &rand = (LCG<4> &)rngSeed;
+      float t = tRange.lower;
+      while (true) {
+        float dt = - logf(1.f-rand())/majorant;
+        t += dt;
+        if (t >= tRange.upper)
+          return false;
+
+        vec3f P = org+t*dir;
+        sample = sfSampler.sampleAndMap(P,dbg);
+        // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
+        //                 t,
+        //                 P.x,P.y,P.z,
+        //                 sample.x,
+        //                 sample.y,
+        //                 sample.z,
+        //                 sample.w);
+        if (sample.w >= rand()*majorant) {
+          tRange.upper = t;
+          return true;
+        }
+      }
+    }
+  };
+
+
+
+  
+  inline VolumeAccel::VolumeAccel(Volume *volume)
+    : volume(volume),
+      devices(volume->devices)
   {
-    assert(field);
     assert(volume);
-    assert(field->devGroup);
-    assert(field->devGroup == volume->devGroup);
+    assert(volume->sf);
   }
 }

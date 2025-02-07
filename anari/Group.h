@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "Light.h"
 #include "Surface.h"
 #include "Volume.h"
 // std
@@ -18,13 +19,15 @@ struct Group : public Object
   void commit() override;
   void markCommitted() override;
 
-  BNGroup makeBarneyGroup(BNDataGroup dg) const;
+  BNGroup makeBarneyGroup(BNContext context// , int slot
+                          ) const;
 
-private:
-  void cleanup();
+  box3 bounds() const;
 
-  helium::IntrusivePtr<ObjectArray> m_surfaceData;
-  helium::IntrusivePtr<ObjectArray> m_volumeData;
+ private:
+  helium::ChangeObserverPtr<ObjectArray> m_surfaceData;
+  helium::ChangeObserverPtr<ObjectArray> m_volumeData;
+  helium::ChangeObserverPtr<ObjectArray> m_lightData;
 };
 
 } // namespace barney_device

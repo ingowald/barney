@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -15,10 +15,12 @@
 // ======================================================================== //
 
 #include "barney/DeviceContext.h"
-#include "barney/Ray.h"
-#include "barney/Model.h"
+#include "barney/GlobalModel.h"
+#include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
+#include "barney/Context.h"
 
+#if 0
 namespace barney {
   
   DeviceContext::DeviceContext(Device::SP device)
@@ -26,44 +28,48 @@ namespace barney {
       rays(device.get())
   {}
 
-  /* see generateRays.cu for implementation */
-  __global__
-  void g_generateRays(Camera camera,
-                      int rngSeed,
-                      vec2i fbSize,
-                      int *d_count,
-                      Ray *rayQueue,
-                      TileDesc *tileDescs);
-  
   void  DeviceContext::generateRays_sync()
   {
     SetActiveGPU forDuration(device);
 
-    this->launch_sync();
-    std::swap(rays.readQueue, rays.writeQueue);
-    rays.numActive = *rays.d_nextWritePos;
-    *rays.d_nextWritePos = 0;
+    device->rtc->sync();
+    rays.swap();
+    // rays.numActive = *rays.d_nextWritePos;
+    // *rays.d_nextWritePos = 0;
+    rays.numActive = rays.readNumActive();
+    rays.resetWriteQueue();
   }
   
   void DeviceContext::shadeRays_sync()
   {
     SetActiveGPU forDuration(device);
-    launch_sync();
-    std::swap(rays.readQueue, rays.writeQueue);
-    rays.numActive = *rays.d_nextWritePos;
-    *rays.d_nextWritePos = 0;
+    device->rtc->sync();
+    rays.swap();
+    rays.numActive = rays.readNumActive();
+    rays.resetWriteQueue();
   }
 
-  void DeviceContext::traceRays_launch(Model *model)
+  void DeviceContext::traceRays_launch(GlobalModel *model)
   {
     DevGroup *dg = device->devGroup;
-    owlParamsSetPointer(dg->lp,"rays",rays.readQueue);
-    owlParamsSet1i(dg->lp,"numRays",rays.numActive);
-    OWLGroup world = model->getDG(dg->ldgID)->instances.group;
-    owlParamsSetGroup(dg->lp,"world",world);
+    Context *context = model->context;
+    ModelSlot *modelSlot = model->getSlot(dg->lmsIdx);
+    const Context::PerSlot *contextSlot = context->getSlot(dg->lmsIdx);
+    
+    barney::render::OptixGlobals dd;
+    dd.rays    = /* already a single device pointer */
+      rays.traceAndShadeReadQueue;
+    assert(dd.rays);
+    dd.numRays = rays.numActive;
+    dd.world   = modelSlot->instances.group->getDD(device->rtc);
+    dd.materials = contextSlot->materialRegistry->getDD(device->rtc);
+    dd.samplers = contextSlot->samplerRegistry->getDD(device->rtc);
+
+    //device->launchTrace(&dd);
     int bs = 1024;
     int nb = divRoundUp(rays.numActive,bs);
-    if (nb)
-      owlAsyncLaunch2DOnDevice(dg->rg,bs,nb,device->owlID,dg->lp);
+    getDevGroup()->traceRaysKernel->launch(device->rtc,vec2i(nb,bs),&dd);
   }
+  
 }
+#endif

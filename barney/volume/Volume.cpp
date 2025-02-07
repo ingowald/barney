@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -15,54 +15,51 @@
 // ======================================================================== //
 
 #include "barney/volume/Volume.h"
-#include "barney/DataGroup.h"
+#include "barney/volume/ScalarField.h"
+#include "barney/ModelSlot.h"
 
 namespace barney {
 
-  OWLContext ScalarField::getOWL() const
-  { return devGroup->owl; }//owner->getOWL(); }
+  Volume::PLD *Volume::getPLD(Device *device)
+  { return &perLogical[device->contextRank]; }
+
+  // OWLContext VolumeAccel::getOWL() const
+  // { return sf->getOWL(); }
+
+  //   void fillDD(Vo::DD &dd,
+  //               rtc::Device *device);
+  // // void VolumeAccel::setVariables(OWLGeom geom)
+  // {
+  //   // owlGeomSet3fv(geom,"domain,lower",&volume->domain.lower.x);
+  //   // owlGeomSet3fv(geom,"domain,upper",&volume->domain.upper.x);
+  //   getXF()->setVariables(geom);
+  // }
+
+  inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
+  { assert(s); return s; }
   
-  Volume::Volume(DevGroup *devGroup,
-                 ScalarField::SP sf)
-    : devGroup(devGroup), sf(sf), xf(devGroup)
+  inline ScalarField *assertNotNull(ScalarField *s)
+  { assert(s); return s; }
+  
+  Volume::Volume(ScalarField::SP sf)
+    : SlottedObject(sf->context,sf->devices),
+      sf(sf),
+      xf(sf->context,sf->devices)
   {
     accel = sf->createAccel(this);
+    perLogical.resize(devices->numLogical);
   }
 
+  const TransferFunction *VolumeAccel::getXF() const { return &volume->xf; }
   
   /*! (re-)build the accel structure for this volume, probably after
     changes to transfer functoin (or later, scalar field) */
-  void Volume::build()
+  void Volume::build(bool full_rebuild)
   {
     assert(accel);
-    accel->build();
-    devGroup->sbtDirty = true;
+    accel->build(full_rebuild);
+    for (auto device : *devices)
+      device->sbtDirty = true;
   }
 
-  std::vector<OWLVarDecl> VolumeAccel::getVarDecls(uint32_t baseOfs)
-  {
-    return volume->xf.getVarDecls(baseOfs);
-  }
-  
-  void VolumeAccel::setVariables(OWLGeom geom, bool firstTime)
-  {
-    volume->xf.setVariables(geom,firstTime);
-    field->setVariables(geom,firstTime);
-  }
-    
-  
-  std::vector<OWLVarDecl> ScalarField::getVarDecls(uint32_t baseOfs)
-  {
-    return
-      {
-       { "worldBounds.lower", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.lower) },
-       { "worldBounds.upper", OWL_FLOAT4, baseOfs+OWL_OFFSETOF(DD,worldBounds.upper) }
-      };
-  }
-  
-  void ScalarField::setVariables(OWLGeom geom, bool firstTime)
-  {
-    owlGeomSet4fv(geom,"worldBounds.lower",&worldBounds.lower.x);
-    owlGeomSet4fv(geom,"worldBounds.upper",&worldBounds.upper.x);
-  }
 }

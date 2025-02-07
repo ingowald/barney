@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -24,27 +24,27 @@ namespace barney {
   struct LocalFB : public FrameBuffer {
     typedef std::shared_ptr<LocalFB> SP;
 
-    LocalFB(Context *context)
-      : FrameBuffer(context, true)
-    {}
+    LocalFB(Context *context,
+            const DevGroup::SP &devices);
+    virtual ~LocalFB();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "LocalFB{}"; }
     
-    static SP create(Context *context)
-    { return std::make_shared<LocalFB>(context); }
+    void ownerGatherCompressedTiles() override;
+    void resize(vec2i size, uint32_t channels) override;
     
-    // void resize(vec2i size, uint32_t *hostFB, float *hostDepth) override;
+    // struct {
+    //   /*! list of *all* ranks' tileOffset, gathered (only at master) */
+    //   int numActiveTiles = 0;
+    //   CompressedTile       *compressedTiles = 0;
+    //   TileDesc        *tileDescs = 0;
+    // } rank0gather;
   };
 
   // ==================================================================
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
-  
-  // inline void LocalFB::resize(vec2i newSize, uint32_t *hostFB, float *hostDepth) 
-  // {
-  //   FrameBuffer::resize(newSize, hostFB, hostDepth);
-  // }
   
 }

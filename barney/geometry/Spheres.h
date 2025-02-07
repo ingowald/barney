@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,29 +23,37 @@ namespace barney {
   struct Spheres : public Geometry {
     typedef std::shared_ptr<Spheres> SP;
 
-    struct DD {
-      vec3f   *origins;
-      float   *radii;
-      float    defaultRadius;
-      Material material;
+    struct DD : public Geometry::DD {
+      vec3f       *origins;
+      float       *radii;
+      vec3f       *colors;
+      float        defaultRadius;
+      // const vec4f *vertexAttribute[5];
     };
 
-    Spheres(DataGroup *owner,
-            const Material &material,
-            const vec3f *origins,
-            int numOrigins,
-            const float *radii,
-            float defaultRadius);
+    Spheres(SlotContext *slotContext);
     
-    static OWLGeomType createGeomType(DevGroup *device);
+    static rtc::GeomType *createGeomType(rtc::Device *device,
+                                         const void *);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Spheres{}"; }
 
-    OWLBuffer originsBuffer = 0;
-    OWLBuffer radiiBuffer   = 0;
-    float     defaultRadius = .1f;
+    void commit() override;
+    
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    bool set1f(const std::string &member, const float &value) override;
+    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setObject(const std::string &member, const Object::SP &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+
+    PODData::SP origins = 0;
+    PODData::SP colors  = 0;
+    PODData::SP radii   = 0;
+    float       defaultRadius = .1f;
   };
   
 }

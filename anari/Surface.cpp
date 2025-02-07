@@ -5,15 +5,13 @@
 
 namespace barney_device {
 
-Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s)
-{
-  s->objectCounts.groups++;
-}
+Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s) {}
 
 Surface::~Surface()
 {
-  deviceState()->objectCounts.groups--;
+  cleanup();
 }
+  
 
 void Surface::commit()
 {
@@ -30,6 +28,8 @@ void Surface::commit()
     reportMessage(ANARI_SEVERITY_WARNING, "missing 'geometry' on ANARISurface");
     return;
   }
+
+  setBarneyParameters();
 }
 
 void Surface::markCommitted()
@@ -48,9 +48,46 @@ const Material *Surface::material() const
   return m_material.ptr;
 }
 
-BNGeom Surface::makeBarneyGeom(BNDataGroup dg) const
+BNGeom Surface::getBarneyGeom(BNContext context// , int slot
+                              )
 {
-  return geometry()->makeBarneyGeometry(dg, material()->barneyMaterial());
+  // if (!isModelTracked(model, slot)) {
+  //   cleanup();
+  //   trackModel(model, slot);
+  cleanup();
+  m_bnGeom = bnGeometryCreate(context,0,// model, slot
+                              m_geometry->bnSubtype());
+  setBarneyParameters();
+  // }
+  
+  return m_bnGeom;
+}
+
+bool Surface::isValid() const
+{
+  return m_geometry && m_material && m_geometry->isValid()
+      && m_material->isValid();
+}
+
+void Surface::setBarneyParameters()
+{
+  if (!isValid() || !m_bnGeom)
+    return;
+  // BNModel model = trackedModel();
+  // int slot = trackedSlot();
+  bnSetObject(m_bnGeom, "material",
+              m_material->getBarneyMaterial(getContext()// , slot
+                                            ));
+  m_geometry->setBarneyParameters(m_bnGeom, getContext()// model, slot
+                                  );
+  bnCommit(m_bnGeom);
+}
+
+void Surface::cleanup()
+{
+  if (m_bnGeom)
+    bnRelease(m_bnGeom);
+  m_bnGeom = nullptr;
 }
 
 } // namespace barney_device

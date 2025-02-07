@@ -18,7 +18,18 @@ struct Volume : public Object
 
   void markCommitted() override;
 
-  virtual BNVolume makeBarneyVolume(BNDataGroup dg) const = 0;
+  BNVolume getBarneyVolume(BNContext context// , int slot
+                           );
+
+  virtual box3 bounds() const = 0;
+
+ protected:
+  virtual BNVolume createBarneyVolume(BNContext context// , int slot
+                                      ) = 0;
+  virtual void setBarneyParameters() = 0;
+  void cleanup();
+
+  BNVolume m_bnVolume{nullptr};
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -27,23 +38,28 @@ struct TransferFunction1D : public Volume
 {
   TransferFunction1D(BarneyGlobalState *s);
   void commit() override;
+  bool isValid() const override;
 
-  BNVolume makeBarneyVolume(BNDataGroup dg) const override;
+  BNVolume createBarneyVolume(BNContext context// , int slot
+                              ) override;
+
+  box3 bounds() const override;
 
  private:
-  void cleanup();
+  void setBarneyParameters() override;
 
   helium::IntrusivePtr<SpatialField> m_field;
 
-  anari::box3 m_bounds;
+  box3 m_bounds;
 
-  anari::box1 m_valueRange{0.f, 1.f};
+  box1 m_valueRange{0.f, 1.f};
   float m_densityScale{1.f};
 
   helium::IntrusivePtr<helium::Array1D> m_colorData;
   helium::IntrusivePtr<helium::Array1D> m_opacityData;
+  bool needsOpacityData;
 
-  std::vector<float4> m_rgbaMap;
+  std::vector<math::float4> m_rgbaMap;
 };
 
 } // namespace barney_device

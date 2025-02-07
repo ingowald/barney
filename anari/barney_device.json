@@ -8,8 +8,15 @@
       "khr_instance_transform",
       "khr_camera_perspective",
       "khr_device_synchronization",
+      "khr_geometry_sphere",
       "khr_geometry_triangle",
+      "khr_light_directional",
       "khr_material_matte",
+      "khr_sampler_image1d",
+      "khr_sampler_image2d",
+      "khr_sampler_image3d",
+      "khr_sampler_transform",
+      "khr_material_physically_based",
       "khr_spatial_field_structured_regular",
       "khr_volume_transfer_function1d"
     ]
@@ -34,6 +41,15 @@
           "description": "background color and alpha (RGBA)"
         },
         {
+          "name": "pixelSamples",
+          "types": [
+            "ANARI_INT32"
+          ],
+          "tags": [],
+          "default": 1,
+          "description": "number of pixel samples per-frame"
+        },
+        {
           "name": "ambientRadiance",
           "types": [
             "ANARI_FLOAT32"
@@ -41,6 +57,15 @@
           "tags": [],
           "default": 1.0,
           "description": "ambient light intensity"
+        },
+        {
+          "name": "crosshairs",
+          "types": [
+            "ANARI_BOOL"
+          ],
+          "tags": [],
+          "default": false,
+          "description": "enable crosshairs"
         }
       ]
     }

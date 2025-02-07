@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "owl/common.h"
-#include <cuda_runtime.h>
-#include <unistd.h>
-
+// #include <cuda_runtime.h>
+#ifdef __GNUC__
+#   include <unistd.h>
+#endif
 // inline void barneyRaise_impl(std::string str)
 // {
 //   fprintf(stderr,"%s\n",str.c_str());
@@ -36,6 +36,17 @@
 //   raise(SIGINT);
 // #endif
 // }
+
+#ifdef _WIN32
+#include <windows.h>
+
+// Custom usleep function for Windows
+void usleep(__int64 usec);
+
+// Custom sleep function for Windows, emulating Unix sleep
+void sleep(unsigned int seconds);
+#endif
+
 
 #define BARNEY_RAISE(MSG) throw std::runtime_error("fatal barney cuda error ... ")
 // #define BARNEY_RAISE(MSG) ::barneyRaise_impl(MSG);
@@ -112,4 +123,10 @@
     }                                                                   \
   }
 
+#ifndef CHECK_CUDA_LAUNCH
+# define CHECK_CUDA_LAUNCH(kernel,_nb,_bs,_shm,_s,...) \
+  kernel<<<_nb,_bs,_shm,_s>>>(__VA_ARGS__);
 
+//# define CHECK_CUDA_LAUNCH(kernel,_nb,_bs,_shm,_s,args...) \
+//  kernel<<<_nb,_bs,_shm,_s>>>(args);
+#endif

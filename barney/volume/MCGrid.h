@@ -39,16 +39,52 @@ namespace barney {
       majorants, and dimensionality of grid */
     struct DD {
       float   *majorants;
+      // not actually exported to optix programs, only used by cuda
+      // kernels
       range1f *scalarRanges;
       vec3i    dims;
-    };
+      vec3f    gridOrigin;
+      vec3f    gridSpacing;
 
-    MCGrid(DevGroup *devGroup);
+      inline __both__ int numCells() const
+      { return dims.x*dims.y*dims.z; }
+      
+      inline __both__ vec3i cellID(int linearID) const
+      {
+        vec3i mcID;
+        mcID.x = linearID % dims.x;
+        mcID.y = (linearID / dims.x) % dims.y;
+        mcID.z = linearID / (dims.x*dims.y);
+        return mcID;
+      }
+      
+      inline __both__
+      float majorant(vec3i cellID) const
+      {
+        return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
+      }
+      
+      /*! returns the bounding box of the given cell */
+      inline __both__ box3f cellBounds(vec3i cellID,
+                                         const box3f &worldBounds) const
+      {
+        box3f bounds;
+        bounds.lower = gridOrigin + vec3f(cellID)*gridSpacing;
+        bounds.upper = min(bounds.lower+gridSpacing,worldBounds.upper);
+        return bounds;
+      }
+      
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
+    };
+    
+    MCGrid(const DevGroup::SP &devices);
     
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-    DD getDD(int devID) const;
+    DD getDD(Device *device);
 
+    // void setVariables(OWLGeom geom);
+    
     /*! allocate memory for the given grid */
     void resize(vec3i dims);
 
@@ -62,13 +98,25 @@ namespace barney {
     /*! checks if this macro-cell grid has already been
         allocated/built - mostly for sanity checking nd debugging */
     inline bool built() const { return (dims != vec3i(0)); }
+
+    struct PLD {
+      /* buffer of range1f's, the min/max scalar values per cell */
+      rtc::Buffer *scalarRangesBuffer = 0;
+      /* buffer of floats, the actual per-cell majorants */
+      rtc::Buffer *majorantsBuffer = 0;
+      
+      rtc::Compute *mapMCs = 0;
+      rtc::Compute *clearMCs = 0;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
+
     
-    /* buffer of range1f's, the min/max scalar values per cell */
-    OWLBuffer scalarRangesBuffer = 0;
-    /* buffer of floats, the actual per-cell majorants */
-    OWLBuffer majorantsBuffer = 0;
     vec3i     dims { 0,0,0 };
-    DevGroup *const devGroup;
+    vec3f     gridOrigin;
+    vec3f     gridSpacing;
+    const DevGroup::SP devices;
   };
   
 }

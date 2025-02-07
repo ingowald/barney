@@ -1,71 +1,74 @@
-// ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// // ======================================================================== //
+// // Copyright 2023-2024 Ingo Wald                                            //
+// //                                                                          //
+// // Licensed under the Apache License, Version 2.0 (the "License");          //
+// // you may not use this file except in compliance with the License.         //
+// // You may obtain a copy of the License at                                  //
+// //                                                                          //
+// //     http://www.apache.org/licenses/LICENSE-2.0                           //
+// //                                                                          //
+// // Unless required by applicable law or agreed to in writing, software      //
+// // distributed under the License is distributed on an "AS IS" BASIS,        //
+// // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// // See the License for the specific language governing permissions and      //
+// // limitations under the License.                                           //
+// // ======================================================================== //
 
-#pragma once
+// #pragma once
 
-#include "barney/Ray.h"
-#include "barney/Camera.h"
+// #include "barney/render/Ray.h"
+// #include "barney/render/RayQueue.h"
+// #include "barney/render/Renderer.h"
+// #include "barney/Camera.h"
+// #include "barney/DeviceGroup.h"
+// #include "barney/render/MaterialRegistry.h"
+// #include "barney/render/SamplerRegistry.h"
 
-namespace barney {
+// namespace barney {
 
-  struct TiledFB;
-  struct Model;
-  
-  struct DeviceContext
-  {
-    typedef std::shared_ptr<DeviceContext> SP;
+// #if 0
+//   struct TiledFB;
+//   struct GlobalModel;
+//   struct Renderer;
+
+//   /*! TODO kill this class, merge into Device and DeviceGroup */
+//   struct DeviceContext
+//   {
+//     typedef std::shared_ptr<DeviceContext> SP;
     
-    /*! this is the device data for the launch params */
-    struct DD {
-      OptixTraversableHandle world;
-      Ray                   *rays;
-      int                    numRays;
-    };
+//     DeviceContext(Device::SP device);
+
+//     DevGroup *getDevGroup() const { return device->devGroup; }
     
-    DeviceContext(Device::SP device);
+//     void shadeRays_launch(Renderer *renderer,
+//                           GlobalModel *model,
+//                           TiledFB *fb,
+//                           int generation);
+//     void shadeRays_sync();
+//     void traceRays_launch(GlobalModel *model);
+//     void traceRays_sync() const
+//     {
+//       device->devGroup->traceRaysKernel->sync(device->rtc);
+//     }
 
-    void shadeRays_launch(TiledFB *fb, int generation);
-    void shadeRays_sync();
-    void traceRays_launch(Model *model);
+//     void generateRays_launch(TiledFB *fb,
+//                              const Camera::DD &camera,
+//                              const Renderer::DD &renderer,
+//                              int rngSeed);
+//     void generateRays_sync();
+
+//     static OWLParams createLP(Device *device);
+
+//     void sync() // const
+//     {
+//       device->rtc->sync();
+//       // SetActiveGPU forDuration(device);
+//       // BARNEY_CUDA_SYNC_CHECK();
+//     } 
     
-    void generateRays_launch(TiledFB *fb,
-                             const Camera &camera,
-                             int rngSeed);
-    void generateRays_sync();
-
-    static OWLParams createLP(Device *device);
-
-
-    void sync() const {
-      SetActiveGPU forDuration(device);
-      BARNEY_CUDA_SYNC_CHECK();
-    }
+//     render::RayQueue rays;
+//     Device::SP device;
+//   };
+// #endif
     
-    void launch_sync() const
-    {
-      BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
-    }
-
-    barney::RayQueue rays;
-    /*! each barneycontext gets its own LP: even though that lp's
-        context is (possibly) shared across multiple device contextes
-        (and thus, across multiple barney contexts) well still have one
-        LP for each device/barney context. thus, we'll have a separate
-        stream for each device/barney context */
-    Device::SP device;
-  };
-    
-}
+// }

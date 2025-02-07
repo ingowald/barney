@@ -17,27 +17,49 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#include "rtcore/common/Backend.h"
+#include "rtcore/common/RTCore.h"
 
 namespace barney {
 
-  struct DevGroup;
+  struct TiledFB;
+  struct RayQueue;
+  
+  typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *device,
+                                                const void  *callbackData);
+                         
+  struct GeomTypeRegistry {
+    GeomTypeRegistry(rtc::Device *device);
+    rtc::GeomType *get(const std::string &name,
+                       GeomTypeCreationFct callback,
+                       const void *callBackData=nullptr);
+    std::map<std::string,rtc::GeomType *> geomTypes;
+
+    rtc::Device *const device;    
+  };
+
   
   struct Device {
-    typedef std::shared_ptr<Device> SP;
+    // typedef std::shared_ptr<Device> SP;
     
-    Device(DevGroup *devGroup,
-           int gpuID,
-           int owlID,
+    Device(rtc::Device *rtc,
+           int contextRank,
+           int contextSize,
            int globalIndex,
            int globalIndexStep);
-
-    int                const cudaID;
-    int                const owlID;
+    
+    /*! rank and size in the *LOCAL NODE*'s context; ie, these are NOT
+        physical Device IDs (a context can use a subset of gpus, as
+        well as oversubscribe some!); and they are *not* the 'global'
+        device IDs that MPI-wide ray queue cycling would argue about,
+        either */
+    int                const contextRank;
+    int                const contextSize;
     int                const globalIndex;
     int                const globalIndexStep;
-    DevGroup          *const devGroup;
-    cudaStream_t       const launchStream;
-
+    
+    void sync() { rtc->sync(); }
+    
     /* for ray queue cycling - who to cycle with */
     struct {
       int sendWorkerRank  = -1;
@@ -45,69 +67,74 @@ namespace barney {
       int recvWorkerRank  = -1;
       int recvWorkerLocal = -1;
     } rqs;
+
+    int  setActive() const { return rtc->setActive(); }
+    void restoreActive(int old) const  { rtc->restoreActive(old); }
+    void syncPipelineAndSBT();
+    
+    bool programsDirty = true;
+    bool sbtDirty = true;
+    
+    GeomTypeRegistry geomTypes;
+    rtc::Device *const rtc;
+    rtc::Compute *generateRays = 0;
+    rtc::Compute *shadeRays = 0;
+    rtc::Compute *toneMap = 0;
+    rtc::Compute *toFixed8 = 0;
+    rtc::Compute *setTileCoords = 0;
+    rtc::Compute *compressTiles = 0;
+    rtc::Compute *unpackTiles = 0;
+
+    // umesh related:
+    rtc::Compute *umeshCreateElements = 0;
+    rtc::Compute *umeshRasterElements = 0;
+    rtc::Compute *umeshReorderElements = 0;
+    rtc::Compute *umeshComputeElementBBs = 0;
+    
+    // rtc::Compute *copyPixels = 0;
+    rtc::Trace   *traceRays = 0;
+    RayQueue     *rayQueue = 0;
+    uint64_t sentinel = 0x1234567;
   };
   
   /*! stolen from owl/Device: helper class that will set the
-      active cuda device (to the device associated with a given
-      Context::DeviceData) for the duration fo the lifetime of this
-      class, and resets it to whatever it was after class dies */
+    active cuda device (to the device associated with a given
+    Context::DeviceData) for the duration fo the lifetime of this
+    class, and resets it to whatever it was after class dies */
   struct SetActiveGPU {
     inline SetActiveGPU(const Device *device)
-    {
-      // assert(device);
-      if (device) {
-        BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-        BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
-      }
-    }
-    inline SetActiveGPU(const Device::SP &device)
-    {
-      // assert(device);
-      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      BARNEY_CUDA_CHECK(cudaSetDevice(device?device->cudaID:0));
-    }
+      : savedDevice(device)
+    { assert(device); savedActiveDeviceID = device->setActive(); }
     
-    inline SetActiveGPU(int cudaDeviceID)
-    {
-      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      BARNEY_CUDA_CHECK(cudaSetDevice(cudaDeviceID));
-    }
     inline ~SetActiveGPU()
-    {
-      if (savedActiveDeviceID >= 0)
-        BARNEY_CUDA_CHECK_NOTHROW(cudaSetDevice(savedActiveDeviceID));
-    }
+    { savedDevice->restoreActive(savedActiveDeviceID); }
   private:
     int savedActiveDeviceID = -1;
+    const Device *const savedDevice;
   };
-  
 
-  // still need this?
-  struct DevGroup {
+  /*! a group of devices that need to share in "something".
+    in practive, this is either one of:
+
+    a) the list of devices in a given local model slot
+
+    b) a list of all devices in the local context; or
+
+    c) a single device (eg, the one that does final frame buffer
+    assembly and/or denoisign
+
+    In the first case the lmsIdx is the local index of that model slot,
+    in the other cases it is '-1'
+  */
+  struct DevGroup : public std::vector<Device*> {
     typedef std::shared_ptr<DevGroup> SP;
-
-    DevGroup(int ldgID,
-             const std::vector<int> &gpuIDs,
-             int globalIndex,
-             int globalIndexStep);
     
-    int size() const { return devices.size(); }
+    DevGroup(const std::vector<Device*> &devices,
+             int numLogical);
     
-    OWLGeomType getOrCreateGeomTypeFor(const std::string &geomTypeString,
-                                       OWLGeomType (*createOnce)(DevGroup *));
-    void update();
-    
-    std::map<std::string,OWLGeomType> geomTypes;
-    std::mutex               mutex;
-    OWLContext               owl = 0;
-    OWLRayGen                rg = 0;
-    OWLLaunchParams          lp = 0;
-    std::vector<Device::SP>  devices;
-    bool programsDirty = true;
-    bool sbtDirty = true;
-    /*! local device group ID */
-    int const ldgID;
-
+      /*! *TOTAL* number of logical devices in the context;
+      *NOT* how many devices there are in this group. */
+    int const numLogical;
   };
   
 }

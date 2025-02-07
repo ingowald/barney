@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,14 +18,17 @@
 #include "barney/MPIContext.h"
 
 namespace barney {
-
+  
   DistFB::DistFB(MPIContext *context,
-           int owningRank)
-      : FrameBuffer(context,owningRank == context->world.rank),
-        context(context),
-        owningRank(owningRank),
-        isOwner(context->world.rank == owningRank),
-        ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
+                 const DevGroup::SP &devices,
+                 int owningRank)
+    : FrameBuffer(context,
+                  devices,
+                  owningRank == context->world.rank),
+      context(context),
+      owningRank(owningRank),
+      isOwner(context->world.rank == owningRank),
+      ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
   {
     if (isOwner) {
       ownerGather.numGPUs = context->numWorkers * context->gpusPerWorker;
@@ -37,14 +40,16 @@ namespace barney {
     }
   }
 
-  void DistFB::resize(vec2i size, uint32_t *hostFB, float *hostDepth)
+  void DistFB::resize(vec2i size,
+                      uint32_t channels)
   {
     double t0 = getCurrentTime();
     
-    FrameBuffer::resize(size, hostFB, hostDepth);
-    std::vector<int> tilesOnGPU(perDev.size());
-    for (int localID = 0;localID < perDev.size(); localID++) {
-      tilesOnGPU[localID] = perDev[localID]->numActiveTiles;
+    FrameBuffer::resize(size, channels);
+    std::vector<int> tilesOnGPU(devices->numLogical);
+    for (auto device : *devices) {
+      tilesOnGPU[device->contextRank]
+        = getPLD(device)->tiledFB->numActiveTiles;
     }
 
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
@@ -93,17 +98,27 @@ namespace barney {
         ownerGather.firstTileOnGPU[ggID] = sumTiles;
         sumTiles += ownerGather.numTilesOnGPU[ggID];
       }
-      ownerGather.numActiveTiles = sumTiles;
+      gatheredTilesOnOwner.numActiveTiles = sumTiles;
 
-      if (ownerGather.finalTiles)
-        BARNEY_CUDA_CALL(Free(ownerGather.finalTiles));
-      BARNEY_CUDA_CALL(Malloc(&ownerGather.finalTiles,
-                              sumTiles*sizeof(*ownerGather.finalTiles)));
-      if (ownerGather.tileDescs)
-        BARNEY_CUDA_CALL(Free(ownerGather.tileDescs));
-      BARNEY_CUDA_CALL(Malloc(&ownerGather.tileDescs,
-                              sumTiles*sizeof(*ownerGather.tileDescs)));
-      BARNEY_CUDA_SYNC_CHECK();
+      Device *frontDev = getDenoiserDevice();
+      
+      if (gatheredTilesOnOwner.compressedTiles) {
+        frontDev->rtc->freeMem(gatheredTilesOnOwner.compressedTiles);
+        gatheredTilesOnOwner.compressedTiles = 0;
+      }
+      
+      if (gatheredTilesOnOwner.tileDescs) {
+        frontDev->rtc->freeMem(gatheredTilesOnOwner.tileDescs);
+        gatheredTilesOnOwner.tileDescs = 0;
+      }
+      
+      gatheredTilesOnOwner.compressedTiles
+        = (CompressedTile *)frontDev->rtc->allocMem
+        (sumTiles*sizeof(*gatheredTilesOnOwner.compressedTiles));
+      
+      gatheredTilesOnOwner.tileDescs
+        = (TileDesc *)frontDev->rtc->allocMem
+        (sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs));
     }
     
     // ------------------------------------------------------------------
@@ -114,16 +129,18 @@ namespace barney {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            ownerGather.tileDescs+ownerGather.firstTileOnGPU[ggID],
+                            gatheredTilesOnOwner.tileDescs+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
 
     if (context->isActiveWorker)
-      for (int localID=0;localID<perDev.size();localID++)
-        context->world.send(owningRank,localID,
-                            perDev[localID]->tileDescs,tilesOnGPU[localID],
-                            send_requests[localID]);
+      for (auto device : *devices) 
+        context->world.send(owningRank,
+                            device->contextRank,
+                            getPLD(device)->tiledFB->tileDescs,
+                            tilesOnGPU[device->contextRank],
+                            send_requests[device->contextRank]);
 
     // ------------------------------------------------------------------
     // and wait for those to complete
@@ -137,10 +154,10 @@ namespace barney {
         context->world.wait(send_requests[localID]);
   }
 
-  void DistFB::ownerGatherFinalTiles()
+  void DistFB::ownerGatherCompressedTiles()
   {
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
-    std::vector<MPI_Request> send_requests(perDev.size());
+    std::vector<MPI_Request> send_requests(devices->size());
     // ------------------------------------------------------------------
     // trigger all sends and receives - for gpu descs
     // ------------------------------------------------------------------
@@ -149,17 +166,18 @@ namespace barney {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            ownerGather.finalTiles+ownerGather.firstTileOnGPU[ggID],
+                            gatheredTilesOnOwner.compressedTiles+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
 
     if (context->isActiveWorker)
-      for (int localID=0;localID<perDev.size();localID++)
-        context->world.send(owningRank,localID,
-                            perDev[localID]->finalTiles,
-                            perDev[localID]->numActiveTiles,
-                            send_requests[localID]);
+      for (auto device : *devices)
+      // for (int localID=0;localID<perDev.size();localID++)
+        context->world.send(owningRank,device->contextRank,//localID,
+                            getPLD(device)->tiledFB->compressedTiles,
+                            getPLD(device)->tiledFB->numActiveTiles,
+                            send_requests[device->contextRank]);
 
     // ------------------------------------------------------------------
     // and wait for those to complete
@@ -169,8 +187,8 @@ namespace barney {
         context->world.wait(recv_requests[ggID]);
     
     if (context->isActiveWorker)
-      for (int localID=0;localID<perDev.size();localID++)
-        context->world.wait(send_requests[localID]);
+      for (auto device : *devices)
+        context->world.wait(send_requests[device->contextRank]);
   }
   
 }

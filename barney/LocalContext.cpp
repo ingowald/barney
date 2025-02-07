@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,11 +23,17 @@ namespace barney {
                              const std::vector<int> &gpuIDs)
     : Context(dataGroupIDs,gpuIDs,0,1)
   {}
-  
-  FrameBuffer *LocalContext::createFB(int owningRank) 
+
+  LocalContext::~LocalContext()
+  {
+    /* not doing anything, but leave this in to ensure that derived
+       classes' destrcutors get called !*/
+  }
+
+  FrameBuffer *LocalContext::createFB(int owningRank)
   {
     assert(owningRank == 0);
-    return initReference(LocalFB::create(this));
+    return initReference(std::make_shared<LocalFB>(this,devices));
   }
 
   /*! returns how many rays are active in all ray queues, across all
@@ -39,95 +45,117 @@ namespace barney {
 
   bool LocalContext::forwardRays()
   {
-    const int numDataGroups = perDG.size();
-    if (numDataGroups == 1)
+    const int numSlots = (int)perSlot.size();
+    if (numSlots == 1) {
+      // do NOT copy or swap. rays are in trace queue, which is also
+      // the shade read queue, so nothing to do.
+      //
+      // no more trace rounds required: return false
       return false;
-    
-    const int numDevices = devices.size();
-    const int dgSize = numDevices / numDataGroups;
-    int numCopied[numDevices];
-    for (int devID=0;devID<numDevices;devID++) {
-      auto thisDev = devices[devID];
-      SetActiveGPU forDuration(thisDev->device);
-      
+    }
+
+    const int numDevices = (int)devices->size();
+    const int dgSize = numDevices / numSlots;
+    std::vector<int> numCopied(numDevices);
+    for (auto device : *devices) {
+      int devID = device->contextRank;
+      SetActiveGPU forDuration(device);
+
       int nextID = (devID + dgSize) % numDevices;
-      auto nextDev = devices[nextID];
-      
-      int count = nextDev->rays.numActive;
-      // std::cout << "forwarding " << count << " rays between " << devID << " and " << nextID << std::endl;
-      numCopied[devID] = count;
-      Ray *src = nextDev->rays.readQueue;
-      Ray *dst = thisDev->rays.writeQueue;
-      BARNEY_CUDA_CALL(MemcpyAsync(dst,src,count*sizeof(Ray),
-                                   cudaMemcpyDefault,
-                                   thisDev->device->launchStream));
+      auto nextDev = (*devices)[nextID];
+
+      int count = nextDev->rayQueue->numActive;
+      numCopied[nextID] = count;
+      Ray *src = nextDev->rayQueue->traceAndShadeReadQueue;
+      Ray *dst = device->rayQueue->receiveAndShadeWriteQueue;
+      device->rtc->copyAsync(dst,src,count*sizeof(Ray));
     }
 
-    for (auto dev : devices) dev->sync();
-
-    for (int devID=0;devID<numDevices;devID++) {
-      auto thisDev = devices[devID];
-      thisDev->launch_sync();
-      thisDev->rays.swap();
-      thisDev->rays.numActive = numCopied[devID];
+    for (auto device : *devices) {
+      int devID = device->contextRank;
+      device->sync();
+      device->rayQueue->swap();
+      device->rayQueue->numActive = numCopied[devID];
     }
-
-    for (auto dev : devices) dev->sync();
 
     ++numTimesForwarded;
-    return (numTimesForwarded % numDataGroups) != 0;
-    // return false;
+    return (numTimesForwarded % numSlots) != 0;
   }
 
-  void LocalContext::render(Model *model,
-                            const Camera &camera,
+  void LocalContext::render(Renderer    *renderer,
+                            GlobalModel *model,
+                            const Camera::DD &camera,
                             FrameBuffer *fb)
   {
     assert(model);
     assert(fb);
 
     // render all tiles, in tile format and writing into accum buffer
-    renderTiles(model,camera,fb);
-    for (auto dev : devices) dev->sync();
-    
+    renderTiles(renderer,model,camera,fb);
+    syncCheckAll();
+
     // convert all tiles from accum to RGBA
     finalizeTiles(fb);
-    for (auto dev : devices) dev->sync();
+    syncCheckAll();
 
     // ------------------------------------------------------------------
-    // tell all GPUs to write their final pixels
+    // done rendering, let the frame buffer know about it, so it can
+    // do whatever needs doing with the latest finalized tiles
     // ------------------------------------------------------------------
-    for (int localID = 0; localID < devices.size(); localID++) {
-      auto &devFB = *fb->perDev[localID];
-      TiledFB::writeFinalPixels(nullptr,//devFB.device.get(),
-                                fb->finalFB,
-                                fb->finalDepth,
-                                fb->numPixels,
-                                devFB.finalTiles,
-                                devFB.tileDescs,
-                                devFB.numActiveTiles);
-    }
-    for (auto dev : devices) dev->sync();
-    // ------------------------------------------------------------------
-    // wait for all GPUs to complete, so pixels are all written before
-    // we return and/or copy to app
-    // ------------------------------------------------------------------
-    for (int localID = 0; localID < devices.size(); localID++)
-      devices[localID]->launch_sync();
+    fb->finalizeFrame();
+//     // ------------------------------------------------------------------
+//     // tell all GPUs to write their final pixels
+//     // ------------------------------------------------------------------
+//     // ***NO*** active device here
+//     LocalFB *localFB = (LocalFB*)fb;
+//     localFB->finalize();
+// //     localFB->ownerGatherFinalTiles();
+// //     TiledFB::writeFinalPixels(
+// // # if DENOISE
+// // #  if DENOISE_OIDN
+// //                               fb->denoiserInput,
+// //                               fb->denoiserAlpha,
+// // #  else
+// //                               fb->denoiserInput,
+// // #  endif
+// // # else
+// //                               localFB->finalFB,
+// // # endif
+// //                               localFB->finalDepth,
+// // # if DENOISE
+// //                               fb->denoiserNormal,
+// // #endif
+// //                               localFB->numPixels,
+// //                               localFB->rank0gather.finalTiles,
+// //                               localFB->rank0gather.tileDescs,
+// //                               localFB->rank0gather.numActiveTiles,
+// //                               fb->showCrosshairs);
+//     // ------------------------------------------------------------------
+//     // wait for all GPUs to complete, so pixels are all written before
+//     // we return and/or copy to app
+//     // ------------------------------------------------------------------
+//     for (int localID = 0; localID < devices.size(); localID++)
+//       devices[localID]->launch_sync();
 
-    // ------------------------------------------------------------------
-    // copy final frame buffer to app's frame buffer memory
-    // ------------------------------------------------------------------
-    if (fb->hostFB && fb->finalFB)
-      BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
-                            fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
-                            cudaMemcpyDefault));
-    if (fb->hostDepth && fb->finalDepth)
-      BARNEY_CUDA_CALL(Memcpy(fb->hostDepth,fb->finalDepth,
-                            fb->numPixels.x*fb->numPixels.y*sizeof(float),
-                            cudaMemcpyDefault));
 
-    for (auto dev : devices) dev->sync();
+// # if DENOISE
+//     fb->denoise();
+// #endif
+
+    // // ------------------------------------------------------------------
+    // // copy final frame buffer to app's frame buffer memory
+    // // ------------------------------------------------------------------
+    // if (fb->hostFB && fb->finalFB) 
+    //   BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
+    //                         fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
+    //                         cudaMemcpyDefault));
+    // if (fb->hostDepth && fb->finalDepth)
+    //   BARNEY_CUDA_CALL(Memcpy(fb->hostDepth,fb->finalDepth,
+    //                         fb->numPixels.x*fb->numPixels.y*sizeof(float),
+    //                         cudaMemcpyDefault));
+
+    // for (auto dev : devices) dev->sync();
+
   }
-  
+
 }

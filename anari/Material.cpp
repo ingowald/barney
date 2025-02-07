@@ -2,17 +2,88 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Material.h"
+#include "common.h"
+// // CUDA
+// #include <vector_functions.h>
+#include <iostream>
 
 namespace barney_device {
 
-Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s)
+// Helper functions ///////////////////////////////////////////////////////////
+
+template <typename T>
+inline MaterialParameter<T> getMaterialHelper(
+    Object *o, const char *p, T defaultValue)
 {
-  s->objectCounts.groups++;
+  MaterialParameter<T> retval;
+  retval.value = o->getParam<T>(p, defaultValue);
+  retval.attribute = o->getParamString(p, "");
+  retval.sampler = o->getParamObject<Sampler>(p);
+  return retval;
 }
+
+template <>
+inline MaterialParameter<math::float4> getMaterialHelper(
+    Object *o, const char *p, math::float4 defaultValue)
+{
+  MaterialParameter<math::float4> retval;
+  retval.value = defaultValue;
+  o->getParam(p, ANARI_FLOAT32_VEC3, &retval.value);
+  o->getParam(p, ANARI_FLOAT32_VEC4, &retval.value);
+  retval.attribute = o->getParamString(p, "");
+  retval.sampler = o->getParamObject<Sampler>(p);
+  return retval;
+}
+
+template <typename T>
+inline void setBNMaterialUniform(BNMaterial m, const char *p, T v)
+{
+  throw std::runtime_error("unhandled setBNMaterialUniform type");
+}
+
+template <>
+inline void setBNMaterialUniform(BNMaterial m, const char *p, float v)
+{
+  bnSet1f(m, p, v);
+}
+
+template <>
+inline void setBNMaterialUniform(BNMaterial m, const char *p, math::float3 v)
+{
+  bnSet3f(m, p, v.x, v.y, v.z);
+}
+
+template <>
+inline void setBNMaterialUniform(BNMaterial m, const char *p, math::float4 v)
+{
+  bnSet4f(m, p, v.x, v.y, v.z, v.w);
+}
+
+template <typename T>
+inline void setBNMaterialHelper(BNMaterial m,
+    const char *p,
+    MaterialParameter<T> &mp,
+    BNContext context// ,
+    // int slot
+                                )
+{
+  if (mp.sampler) {
+    BNSampler s = mp.sampler->getBarneySampler(context// , 0
+                                               );
+    bnSetObject(m,p, s);
+  } else if (!mp.attribute.empty())
+    bnSetString(m,p, mp.attribute.c_str());
+  else
+    setBNMaterialUniform(m, p, mp.value);
+}
+
+// Material definitions ///////////////////////////////////////////////////////
+
+Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
 
 Material::~Material()
 {
-  deviceState()->objectCounts.groups--;
+  cleanup();
 }
 
 Material *Material::createInstance(
@@ -20,45 +91,142 @@ Material *Material::createInstance(
 {
   if (subtype == "matte")
     return new Matte(s);
-#if 0
   else if (subtype == "physicallyBased")
-    return new PBM(s);
-#endif
+    return new PhysicallyBased(s);
   else
     return (Material *)new UnknownObject(ANARI_MATERIAL, s);
 }
 
-void Material::markCommitted()
+BNMaterial Material::getBarneyMaterial(BNContext context// , int slot
+                                       )
 {
-  deviceState()->markSceneChanged();
-  Object::markCommitted();
+  // if (!isModelTracked(model, slot)) {
+    // cleanup();
+    // trackContext(context, slot);
+  if (!m_bnMat)
+    m_bnMat = bnMaterialCreate(context, 0// , slot
+                               , bnSubtype());
+  setBarneyParameters();
+  // }
+
+  return m_bnMat;
 }
 
-const BNMaterial *Material::barneyMaterial() const
+void Material::cleanup()
 {
-  return &m_bnMaterial;
+  if (m_bnMat)
+    bnRelease(m_bnMat);
+  m_bnMat = nullptr;
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
-Matte::Matte(BarneyGlobalState *s) : Material(s) {}
+// Matte //
+
+Matte::Matte(BarneyGlobalState *s) : Material(s)
+{
+  this->commit(); // init with defaults for scalar values
+}
 
 void Matte::commit()
 {
   Object::commit();
+  m_color = getMaterialHelper(this, "color", math::float4(0.8f, 0.8f, 0.8f, 1));
+  m_opacity = getMaterialHelper(this, "opacity", 1.f);
+  setBarneyParameters();
+}
 
-  m_bnMaterial.baseColor = make_float3(0.8f, 0.8f, 0.8f);
-  m_bnMaterial.ior = 1.5f;
-  m_bnMaterial.alphaTextureID = -1;
-  m_bnMaterial.colorTextureID = -1;
+bool Matte::isValid() const
+{
+  return !m_color.sampler || m_color.sampler->isValid();
+}
 
+const char *Matte::bnSubtype() const
+{
+  return "AnariMatte";
+// #else
+//   return "physicallyBased";
+// #endif
+}
 
-  float4 color = make_float4(0.f, 0.f, 0.f, 1.f);
-  if (getParam("color", ANARI_FLOAT32_VEC4, &color))
-    std::memcpy(&m_bnMaterial.baseColor, &color, sizeof(float3));
-  m_bnMaterial.baseColor = getParam<float3>("color", m_bnMaterial.baseColor);
+void Matte::setBarneyParameters()
+{
+  if (!m_bnMat)
+    return;
 
-  m_bnMaterial.transparency = getParam<float>("opacity", color.w);
+  // BNContext model = trackedModel();
+  // int slot = trackedSlot();
+
+  // NOTE: using Barney PBR material because matte wasn't (isn't?) finished
+  setBNMaterialHelper(m_bnMat, "color", m_color, getContext()// model, slot
+                      );
+  // setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
+  // bnSet1f(m_bnMat, "metallic", 0.f);
+  // bnSet1f(m_bnMat, "roughness", 1.f);
+  // bnSet1f(m_bnMat, "specular", 0.f);
+  // bnSet1f(m_bnMat, "transmission", 0.f);
+  bnCommit(m_bnMat);
+}
+
+// PhysicallyBased //
+
+PhysicallyBased::PhysicallyBased(BarneyGlobalState *s) : Material(s)
+{
+  this->commit(); // init with defaults for scalar values
+}
+
+void PhysicallyBased::commit()
+{
+  Object::commit();
+  m_baseColor
+    = getMaterialHelper(this, "baseColor", math::float4(1, 1, 1, 1));
+  m_emissive
+    = getMaterialHelper(this, "emissive", math::float3(0, 0, 0));
+  m_specularColor
+    = getMaterialHelper(this, "specularColor", math::float3(1, 1, 1));
+  m_opacity
+    = getMaterialHelper(this, "opacity", 1.f);
+  m_metallic
+    = getMaterialHelper(this, "metallic", 1.f);
+  m_roughness
+    = getMaterialHelper(this, "roughness", 1.f);
+  m_specular
+    = getMaterialHelper(this, "specular", 0.f);
+  m_transmission
+    = getMaterialHelper(this, "transmission", 0.f);
+  m_ior
+    = getParam<float>  (      "ior", 1.5f);
+  m_opacity
+    = getMaterialHelper(this, "opacity", 1.f);
+  setBarneyParameters();
+}
+
+const char *PhysicallyBased::bnSubtype() const
+{
+  return "physicallyBased";
+}
+
+void PhysicallyBased::setBarneyParameters()
+{
+  if (!m_bnMat)
+    return;
+
+  // BNModel model = trackedModel();
+  // int slot = trackedSlot();
+  auto context = getContext();
+  
+  setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, context);
+  setBNMaterialHelper(m_bnMat, "emissive", m_emissive, context);
+  setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor, context);
+  setBNMaterialHelper(m_bnMat, "metallic", m_metallic, context);
+  setBNMaterialHelper(m_bnMat, "roughness", m_roughness, context);
+  setBNMaterialHelper(m_bnMat, "specular", m_specular, context);
+  setBNMaterialHelper(m_bnMat, "transmission", m_transmission, context);
+  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, context);
+
+  bnSet1f(m_bnMat, "ior", m_ior);
+
+  bnCommit(m_bnMat);
 }
 
 } // namespace barney_device

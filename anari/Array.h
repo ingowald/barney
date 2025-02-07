@@ -12,35 +12,37 @@
 
 namespace barney_device {
 
-struct Array1D : public helium::Array1D
-{
-  Array1D(BarneyGlobalState *state, const helium::Array1DMemoryDescriptor &d);
-  ~Array1D() override;
-};
+using Array1D = helium::Array1D;
+using Array2D = helium::Array2D;
+using Array3D = helium::Array3D;
+using ObjectArray = helium::ObjectArray;
 
-struct Array2D : public helium::Array2D
-{
-  Array2D(BarneyGlobalState *state, const helium::Array2DMemoryDescriptor &d);
-  ~Array2D() override;
-};
+// Inlined definitions ////////////////////////////////////////////////////////
 
-struct Array3D : public helium::Array3D
+inline size_t getNumBytes(const helium::Array &arr)
 {
-  Array3D(BarneyGlobalState *state, const helium::Array3DMemoryDescriptor &d);
-  ~Array3D() override;
-};
+  return arr.totalCapacity() * anari::sizeOf(arr.elementType());
+}
 
-struct ObjectArray : public helium::ObjectArray
+inline size_t getNumBytes(const helium::IntrusivePtr<Array1D> &arr)
 {
-  ObjectArray(
-      BarneyGlobalState *state, const helium::Array1DMemoryDescriptor &d);
-  ~ObjectArray() override;
-};
+  return arr ? getNumBytes(*arr) : size_t(0);
+}
+
+inline size_t getNumBytes(const helium::IntrusivePtr<Array2D> &arr)
+{
+  return arr ? getNumBytes(*arr) : size_t(0);
+}
+
+inline size_t getNumBytes(const helium::IntrusivePtr<Array3D> &arr)
+{
+  return arr ? getNumBytes(*arr) : size_t(0);
+}
+
+template <typename T>
+inline size_t getNumBytes(const std::vector<T> &v)
+{
+  return v.size() * sizeof(T);
+}
 
 } // namespace barney_device
-
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array1D *, ANARI_ARRAY1D);
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array2D *, ANARI_ARRAY2D);
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array3D *, ANARI_ARRAY3D);
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(
-    barney_device::ObjectArray *, ANARI_ARRAY1D);

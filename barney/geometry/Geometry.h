@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2024 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,40 +17,113 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/Ray.h"
+#include "barney/render/Ray.h"
+#include "barney/render/HitAttributes.h"
+#include "barney/render/GeometryAttributes.h"
+#include "barney/render/OptixGlobals.h"
+#include "barney/material/Material.h"
 
 namespace barney {
-
-  struct DataGroup;
   
-  struct Material {
-    vec3f baseColor;
-  };
-
-  struct Geometry : public Object {
+  struct ModelSlot;
+  struct SlotContext;  
+  using render::GeometryAttribute;
+  using render::GeometryAttributes;
+  using render::HostMaterial;
+  
+  struct Geometry : public SlottedObject {
     typedef std::shared_ptr<Geometry> SP;
 
-    Geometry(DataGroup *owner,
-             const Material &material)
-      : owner(owner),
-        material(material)
-    {}
+    struct DD {
 
+      template<typename InterpolatePerVertex>
+      inline __both__
+      void setHitAttributes(render::HitAttributes &hit,
+                            const InterpolatePerVertex &interpolate,
+                            bool dbg=false) const;
+
+      render::GeometryAttributes::DD attributes;
+      int materialID;
+    };
+    
+    Geometry(SlotContext *context);
+    virtual ~Geometry();
+
+    static Geometry::SP create(SlotContext *context, const std::string &type);
+    
+    // static void addVars(std::vector<OWLVarDecl> &vars, int base);
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Geometry{}"; }
 
+    /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
-    
-    Material    material;
-    DataGroup  *owner;
 
-    /*! get the own context that was used to create this geometry */
-    OWLContext getOWL() const;
+    void setAttributesOn(Geometry::DD &dd,
+                         Device *device);
+    void writeDD(Geometry::DD &dd,
+                Device *device);
     
-    std::vector<OWLGeom>  triangleGeoms;
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGroup> secondPassGroups;
+    // void setAttributesOn(OWLGeom geom);
+
+    bool set1f(const std::string &member,
+               const float &value) override;
+    bool set3f(const std::string &member,
+               const vec3f &value) override;
+    bool setData(const std::string &member,
+                 const Data::SP &value) override;
+    bool setObject(const std::string &member,
+                   const Object::SP &value) override;
+    
+    HostMaterial::SP getMaterial() const;
+    void setMaterial(HostMaterial::SP);
+
+    struct PLD {
+      std::vector<rtc::Geom *>  triangleGeoms;
+      std::vector<rtc::Geom *>  userGeoms;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+
+  private:
+    render::HostMaterial::SP material;
+
+    render::GeometryAttributes attributes;
   };
 
+  template<typename InterpolatePerVertex>
+  inline __both__
+  void Geometry::DD::setHitAttributes(render::HitAttributes &hit,
+                                      const InterpolatePerVertex &interpolate,
+                                      bool dbg) const
+  {
+    auto set = [&](vec4f &out,
+                   const GeometryAttribute::DD &in,
+                   bool dbg=false)
+    {
+      switch(in.scope) {
+      case GeometryAttribute::INVALID:
+        /* nothing - leave default */
+        break;
+      case GeometryAttribute::CONSTANT:
+        out = load(in.value);
+        break;
+      case GeometryAttribute::PER_PRIM:
+        out = in.fromArray.valueAt(hit.primID);
+        break;
+      case GeometryAttribute::PER_VERTEX:
+        out = interpolate(in);
+        break; 
+      }
+    };
+    
+    for (int i=0;i<attributes.count;i++) {
+      vec4f     &out = hit.attribute[i];
+      const auto &in  = this->attributes.attribute[i];
+      set(out,in);
+    }
+    set(hit.color,this->attributes.colorAttribute,dbg);
+  }
+  
 }

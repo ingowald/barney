@@ -16,6 +16,7 @@
 
 #pragma once
 
+
 #include "barney/common/barney-common.h"
 #ifndef BARNEY_MPI
 # pragma error(FATAL "should not include mpi.h unless from barney_mpi")

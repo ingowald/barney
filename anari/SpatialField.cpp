@@ -3,29 +3,27 @@
 
 // std
 #include <cfloat>
-/// anari
-#include "helium/array/Array3D.h"
 // ours
+#include "Array.h"
 #include "SpatialField.h"
 
 namespace barney_device {
 
 SpatialField::SpatialField(BarneyGlobalState *s)
     : Object(ANARI_SPATIAL_FIELD, s)
-{
-  s->objectCounts.spatialFields++;
-}
+{}
 
-SpatialField::~SpatialField()
-{
-  deviceState()->objectCounts.spatialFields--;
-}
+SpatialField::~SpatialField() = default;
 
 SpatialField *SpatialField::createInstance(
     std::string_view subtype, BarneyGlobalState *s)
 {
   if (subtype == "unstructured")
     return new UnstructuredField(s);
+  else if (subtype == "amr")
+    return new BlockStructuredField(s);
+  else if (subtype == "structuredRegular")
+    return new StructuredRegularField(s);
   else
     return (SpatialField *)new UnknownObject(ANARI_SPATIAL_FIELD, s);
 }
@@ -38,6 +36,102 @@ void SpatialField::markCommitted()
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
+// StructuredRegularField //
+
+StructuredRegularField::StructuredRegularField(BarneyGlobalState *s)
+    : SpatialField(s)
+{}
+
+void StructuredRegularField::commit()
+{
+  Object::commit();
+  m_data = getParamObject<helium::Array3D>("data");
+
+  if (!m_data) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'data' on 'structuredRegular' field");
+    return;
+  }
+
+  m_origin = getParam<helium::float3>("origin", helium::float3(0.f));
+  m_spacing = getParam<helium::float3>("spacing", helium::float3(1.f));
+  m_dims = m_data->size();
+
+  const auto dims = m_data->size();
+  m_coordUpperBound = helium::float3(std::nextafterf((float)dims.x - 1, 0),
+      std::nextafterf((float)dims.y - 1, 0),
+      std::nextafterf((float)dims.z - 1, 0));
+}
+
+bool StructuredRegularField::isValid() const
+{
+  return m_data;
+}
+
+  BNScalarField StructuredRegularField::createBarneyScalarField(
+    BNContext context// , int slot
+                                                              ) const
+{
+  if (!isValid())
+    return {};
+  auto ctx = deviceState()->context;
+  BNDataType barneyType;
+  switch (m_data->elementType()) {
+  case ANARI_FLOAT32:
+    barneyType = BN_FLOAT;
+    break;
+  case ANARI_UINT8:
+    barneyType = BN_UFIXED8;
+    break;
+  // case ANARI_FLOAT64:
+  //   return ((double *)m_data)[i];
+  // case ANARI_UFIXED8:
+  //   return ((uint8_t *)m_data)[i] /
+  //   float(std::numeric_limits<uint8_t>::max());
+  // case ANARI_UFIXED16:
+  //   return ((uint16_t *)m_data)[i]
+  //       / float(std::numeric_limits<uint16_t>::max());
+  // case ANARI_FIXED16:
+  //   return ((int16_t *)m_data)[i] /
+  //   float(std::numeric_limits<int16_t>::max());
+  default:
+    throw std::runtime_error("scalar type not implemented ...");
+  }
+  auto dims = m_data->size();
+  // auto field = bnStructuredDataCreate(context,
+  //                                     0/*slot*/,
+  //     (const int3 &)dims,
+  //     barneyType,
+  //     m_data->data(),
+  //     (const float3 &)m_origin,
+  //     (const float3 &)m_spacing);
+
+  BNScalarField sf
+    = bnScalarFieldCreate(context,0,"structured");
+  BNTexture3D texture
+    = bnTexture3DCreate(context,0,barneyType,
+                        dims.x,dims.y,dims.z,m_data->data(),
+                        BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
+  bnSetObject(sf,"texture",texture);
+  bnRelease(texture);
+  bnSet3i(sf,"dims",dims.x,dims.y,dims.z);
+  bnSet3fc(sf,"gridOrigin",m_origin);
+  bnSet3fc(sf,"gridSpacing",m_spacing);
+  bnCommit(sf);
+  auto field = sf;
+    
+  return field;
+}
+
+box3 StructuredRegularField::bounds() const
+{
+  return isValid()
+      ? box3(m_origin, m_origin + ((helium::float3(m_dims) - 1.f) * m_spacing))
+      : box3{};
+}
+
+// UnstructuredField //
+
 UnstructuredField::UnstructuredField(BarneyGlobalState *s) : SpatialField(s) {}
 
 void UnstructuredField::commit()
@@ -47,10 +141,14 @@ void UnstructuredField::commit()
   m_params.vertexPosition = getParamObject<helium::Array1D>("vertex.position");
   m_params.vertexData = getParamObject<helium::Array1D>("vertex.data");
   m_params.index = getParamObject<helium::Array1D>("index");
-  m_params.cellIndex = getParamObject<helium::Array1D>("cell.index");
+  m_params.cellType = getParamObject<helium::Array1D>("cell.type");
+  m_params.cellBegin = getParamObject<helium::Array1D>("cell.begin");
+  if (!m_params.cellBegin) { // some older apps use "cell.index"
+    m_params.cellBegin = getParamObject<helium::Array1D>("cell.index");
+  }
 
   if (!m_params.vertexPosition) {
-    reportMessage(ANARI_SEVERITY_WARNING,
+    reportMessage(ANARI_SEVERITY_WARNING, 
         "missing required parameter 'vertex.position' on unstructured spatial field");
     return;
   }
@@ -67,136 +165,266 @@ void UnstructuredField::commit()
     return;
   }
 
-  if (!m_params.cellIndex) {
+  if (!m_params.cellType) {
     reportMessage(ANARI_SEVERITY_WARNING,
-        "missing required parameter 'cell.index' on unstructured spatial field");
+        "missing required parameter 'cell.type' on unstructured spatial field");
     return;
   }
 
-  m_params.gridData = getParamObject<helium::ObjectArray>("grid.data");
-  m_params.gridDomains = getParamObject<helium::Array1D>("grid.domains");
+  if (!m_params.cellBegin) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'cell.begin' on unstructured spatial field");
+    return;
+  }
 
-  auto *vertexPosition = m_params.vertexPosition->beginAs<float3>();
+  // m_params.gridData = getParamObject<helium::ObjectArray>("grid.data");
+  // m_params.gridDomains = getParamObject<helium::Array1D>("grid.domains");
+
+  m_bounds.invalidate();
+  m_indices.clear();
+  m_vertices.clear();
+  m_elementOffsets.clear();
+  
+  auto *vertexPosition = m_params.vertexPosition->beginAs<math::float3>();
+  int numVertices      = int(m_params.vertexPosition->endAs<math::float3>()-vertexPosition);
   auto *vertexData = m_params.vertexData->beginAs<float>();
-  auto *index = m_params.index->beginAs<uint64_t>();
-  auto *cellIndex = m_params.cellIndex->beginAs<uint64_t>();
-
-  size_t numVerts = m_params.vertexPosition->size();
-  size_t numCells = m_params.cellIndex->size();
-  size_t numIndices = m_params.index->endAs<uint64_t>() - index;
-
-  m_generatedVertices.clear();
-  m_generatedTets.clear();
-  m_generatedPyrs.clear();
-  m_generatedWedges.clear();
-  m_generatedHexes.clear();
-
-  m_bounds = {
-      float3{FLT_MAX, FLT_MAX, FLT_MAX}, float3{-FLT_MAX, -FLT_MAX, -FLT_MAX}};
-
-  for (size_t i = 0; i < numIndices; ++i) {
-    m_bounds.insert(vertexPosition[index[i]]);
+  m_vertices.resize(numVertices);
+  for (int i=0;i<numVertices;i++) {
+    (math::float3&)m_vertices[i] = vertexPosition[i];
+    m_bounds.insert(vertexPosition[i]);
+    m_vertices[i].w = vertexData[i];
   }
 
-  for (size_t i = 0; i < numVerts; ++i) {
-    float3 pos = vertexPosition[i];
-    float value = vertexData[i];
-    m_generatedVertices.push_back(pos.x);
-    m_generatedVertices.push_back(pos.y);
-    m_generatedVertices.push_back(pos.z);
-    m_generatedVertices.push_back(value);
+  uint32_t *index32{nullptr};
+  uint64_t *index64{nullptr};
+  if (m_params.index->elementType() == ANARI_UINT32)
+    index32 = (uint32_t *)m_params.index->beginAs<uint32_t>();
+  else if (m_params.index->elementType() == ANARI_UINT64)
+    index64 = (uint64_t *)m_params.index->beginAs<uint64_t>();
+  else {
+    reportMessage(ANARI_SEVERITY_ERROR,
+        "parameter 'index' on unstructured spatial field has wrong element type");
+    return;
   }
 
-  for (size_t i = 0; i < numCells; ++i) {
-    uint64_t firstIndex = cellIndex[i];
-    uint64_t lastIndex = i < numCells - 1 ? cellIndex[i + 1] : numIndices;
+  uint32_t *cellBegin32{nullptr};
+  uint64_t *cellBegin64{nullptr};
+  if (m_params.cellBegin && m_params.cellBegin->elementType() == ANARI_UINT32)
+    cellBegin32 = (uint32_t *)m_params.cellBegin->beginAs<uint32_t>();
+  else if (m_params.cellBegin && m_params.cellBegin->elementType() == ANARI_UINT64)
+    cellBegin64 = (uint64_t *)m_params.cellBegin->beginAs<uint64_t>();
 
-    if (lastIndex - firstIndex == 4) {
-      for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-        m_generatedTets.push_back(index[j]);
-      }
-    } else if (lastIndex - firstIndex == 5) {
-      for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-        m_generatedPyrs.push_back(index[j]);
-      }
-    } else if (lastIndex - firstIndex == 6) {
-      for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-        m_generatedWedges.push_back(index[j]);
-      }
-    } else if (lastIndex - firstIndex == 8) {
-      for (uint64_t j = firstIndex; j < lastIndex; ++j) {
-        m_generatedHexes.push_back(index[j]);
-      }
-    }
-  }
+  //auto *index = m_params.index->beginAs<uint32_t>();
+  //auto *cellBegin = m_params.cellBegin->beginAs<uint32_t>();
+  auto *cellType = m_params.cellType->beginAs<uint8_t>();
 
-  if (m_params.gridData && m_params.gridDomains) {
-    m_generatedGridOffsets.clear();
-    m_generatedGridDims.clear();
-    m_generatedGridDomains.clear();
-    m_generatedGridScalars.clear();
-
-    size_t numGrids = m_params.gridData->totalSize();
-    auto *gridData = (helium::Array3D **)m_params.gridData->handlesBegin();
-    auto *gridDomains = m_params.gridDomains->beginAs<anari::box3>();
-
-    for (size_t i = 0; i < numGrids; ++i) {
-      const helium::Array3D *gd = *(gridData + i);
-      const anari::box3 domain = *(gridDomains + i);
-
-      m_generatedGridOffsets.push_back(m_generatedGridScalars.size());
-
-      // from anari's array3d we get the number of vertices, not cells!
-      m_generatedGridDims.push_back(gd->size().x - 1);
-      m_generatedGridDims.push_back(gd->size().y - 1);
-      m_generatedGridDims.push_back(gd->size().z - 1);
-
-      anari::box1 valueRange{FLT_MAX, -FLT_MAX};
-      for (unsigned z = 0; z < gd->size().z; ++z)
-        for (unsigned y = 0; y < gd->size().y; ++y)
-          for (unsigned x = 0; x < gd->size().x; ++x) {
-            size_t index =
-                z * size_t(gd->size().x) * gd->size().y + y * gd->size().x + x;
-            float f = gd->dataAs<float>()[index];
-            m_generatedGridScalars.push_back(f);
-            valueRange.insert(f);
-          }
-
-      m_generatedGridDomains.push_back(domain.lower.x);
-      m_generatedGridDomains.push_back(domain.lower.y);
-      m_generatedGridDomains.push_back(domain.lower.z);
-      m_generatedGridDomains.push_back(valueRange.lower);
-      m_generatedGridDomains.push_back(domain.upper.x);
-      m_generatedGridDomains.push_back(domain.upper.y);
-      m_generatedGridDomains.push_back(domain.upper.z);
-      m_generatedGridDomains.push_back(valueRange.upper);
+  // size_t numVerts = m_params.vertexPosition->size();
+  size_t numCells = m_params.cellType->size(); //endAs<uint64_t>() - index;
+  // this isn't fully spec'ed yet
+  enum { _ANARI_TET = 0, _ANARI_HEX=1, _ANARI_WEDGE=2, _ANARI_PYR=3 };
+  enum { _VTK_TET = 10, _VTK_HEX=12, _VTK_WEDGE=13, _VTK_PYR=14 };
+  for (int cellIdx=0;cellIdx<(int)numCells;cellIdx++) {
+    int thisOffset = (int)m_indices.size();
+    m_elementOffsets.push_back(thisOffset);
+    uint8_t type = cellType[cellIdx];
+    int numToCopy = -1;
+    switch(type) {
+    case _ANARI_TET:
+      numToCopy = 4; break;
+    case _ANARI_HEX:
+      numToCopy = 8; break;
+    case _ANARI_WEDGE:
+      numToCopy = 6; break;
+    case _ANARI_PYR:
+      numToCopy = 5; break;
+    case _VTK_TET:
+      numToCopy = 4; break;
+    case _VTK_HEX:
+      numToCopy = 8; break;
+    case _VTK_WEDGE:
+      numToCopy = 6; break;
+    case _VTK_PYR:
+      numToCopy = 5; break;
+    default:
+      throw std::runtime_error("buggy/invalid unstructured element type!?");
+    };
+    int inputBegin =
+        int(cellBegin32 ? cellBegin32[cellIdx] : cellBegin64[cellIdx]);
+    for (int i=0;i<numToCopy;i++) {
+      if (index32)
+        m_indices.push_back(index32[inputBegin+i]);
+      else
+        m_indices.push_back((int)index64[inputBegin+i]);
     }
   }
 }
 
-BNScalarField UnstructuredField::makeBarneyScalarField(BNDataGroup dg) const
+BNScalarField UnstructuredField::createBarneyScalarField(
+    BNContext context// , int slot
+                                                         ) const
 {
-  auto ctx = deviceState()->context;
-  return bnUMeshCreate(dg,
-      m_generatedVertices.data(),
-      m_generatedVertices.size() / 4,
-      m_generatedTets.data(),
-      m_generatedTets.size() / 4,
-      m_generatedPyrs.data(),
-      m_generatedPyrs.size() / 5,
-      m_generatedWedges.data(),
-      m_generatedWedges.size() / 6,
-      m_generatedHexes.data(),
-      m_generatedHexes.size() / 8,
-      m_generatedGridOffsets.size(),
-      m_generatedGridOffsets.data(),
-      m_generatedGridDims.data(),
-      m_generatedGridDomains.data(),
-      m_generatedGridScalars.data(),
-      m_generatedGridScalars.size());
+  // auto ctx = deviceState()->context;
+  std::cout << "==================================================================" << std::endl;
+  std::cout << "BANARI: CREATING UMESH OF " << m_elementOffsets.size() << " elements" << std::endl;
+  std::cout << "==================================================================" << std::endl;
+  
+#if 1
+  BNData verticesData
+    = bnDataCreate(context,0,BN_FLOAT4,
+                   m_vertices.size(),
+                   (const bn_float4 *)m_vertices.data());
+  BNData indicesData
+    = bnDataCreate(context,0,BN_INT,
+                   m_indices.size(),
+                   (const int *)m_indices.data());
+  BNData elementOffsetsData
+    = bnDataCreate(context,0,BN_INT,
+                   m_elementOffsets.size(),
+                   (const int *)m_elementOffsets.data());
+  BNScalarField sf = bnScalarFieldCreate(context,0,"unstructured");
+  bnSetData(sf,"vertices",verticesData);
+  bnSetData(sf,"indices",indicesData);
+  bnSetData(sf,"elementOffsets",elementOffsetsData);
+  bnCommit(sf);
+  return sf;
+#else
+  return bnUMeshCreate(context,
+                       0/*slot*/,
+                       (const bn_float4 *)m_vertices.data(),
+                       m_vertices.size(),
+                       m_indices.data(),
+                       m_indices.size(),
+                       m_elementOffsets.data(),
+                       m_elementOffsets.size(),
+                       // m_generatedVertices.data(),
+                       // m_generatedVertices.size() / 4,
+                       // m_generatedTets.data(),
+                       // m_generatedTets.size() / 4,
+                       // m_generatedPyrs.data(),
+                       // m_generatedPyrs.size() / 5,
+                       // m_generatedWedges.data(),
+                       // m_generatedWedges.size() / 6,
+                       // m_generatedHexes.data(),
+                       // m_generatedHexes.size() / 8,
+                       // m_generatedGridOffsets.size(),
+                       // m_generatedGridOffsets.data(),
+                       // m_generatedGridDims.data(),
+                       // m_generatedGridDomains.data(),
+                       // m_generatedGridScalars.data(),
+                       // m_generatedGridScalars.size()
+                       nullptr
+                       );
+#endif
 }
 
-anari::box3 UnstructuredField::bounds() const
+box3 UnstructuredField::bounds() const
+{
+  return m_bounds;
+}
+
+// BlockStructuredField //
+
+BlockStructuredField::BlockStructuredField(BarneyGlobalState *s)
+    : SpatialField(s)
+{}
+
+void BlockStructuredField::commit()
+{
+  Object::commit();
+
+  m_params.cellWidth   = getParamObject<helium::Array1D>("cellWidth");
+  m_params.blockBounds = getParamObject<helium::Array1D>("block.bounds");
+  m_params.blockLevel  = getParamObject<helium::Array1D>("block.level");
+  m_params.blockData   = getParamObject<helium::ObjectArray>("block.data");
+
+  if (!m_params.blockBounds) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'block.bounds' on amr spatial field");
+    return;
+  }
+
+  if (!m_params.blockLevel) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'block.level' on amr spatial field");
+    return;
+  }
+
+  if (!m_params.blockData) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'block.data' on amr spatial field");
+    return;
+  }
+
+  size_t numBlocks = m_params.blockData->totalSize();
+  auto *blockBounds = m_params.blockBounds->beginAs<box3i>();
+  auto *blockLevels = m_params.blockLevel->beginAs<int>();
+  auto *blockData = (helium::Array3D **)m_params.blockData->handlesBegin();
+
+  m_generatedBlockBounds.clear();
+  m_generatedBlockLevels.clear();
+  m_generatedBlockOffsets.clear();
+  m_generatedBlockScalars.clear();
+
+  m_bounds.invalidate();
+
+  for (size_t i = 0; i < numBlocks; ++i) {
+    const box3i bounds = *(blockBounds + i);
+    const int level = *(blockLevels + i);
+    const helium::Array3D *bd = *(blockData + i);
+
+    m_generatedBlockBounds.push_back(bounds.lower.x);
+    m_generatedBlockBounds.push_back(bounds.lower.y);
+    m_generatedBlockBounds.push_back(bounds.lower.z);
+    m_generatedBlockBounds.push_back(bounds.upper.x);
+    m_generatedBlockBounds.push_back(bounds.upper.y);
+    m_generatedBlockBounds.push_back(bounds.upper.z);
+    m_generatedBlockLevels.push_back(level);
+    m_generatedBlockOffsets.push_back((int)m_generatedBlockScalars.size());
+
+    for (unsigned z = 0; z < bd->size().z; ++z)
+      for (unsigned y = 0; y < bd->size().y; ++y)
+        for (unsigned x = 0; x < bd->size().x; ++x) {
+          size_t index =
+              z * size_t(bd->size().x) * bd->size().y + y * bd->size().x + x;
+          float f = bd->dataAs<float>()[index];
+          m_generatedBlockScalars.push_back(f);
+        }
+
+    box3 worldBounds;
+    worldBounds.lower = math::float3(
+        float(bounds.lower.x * (1 << level)),
+        float(bounds.lower.y * (1 << level)),
+        float(bounds.lower.z * (1 << level)));
+    worldBounds.upper = math::float3(
+        float((bounds.upper.x + 1) * (1 << level)),
+        float((bounds.upper.y + 1) * (1 << level)),
+        float((bounds.upper.z + 1) * (1 << level)));
+    m_bounds.insert(worldBounds);
+  }
+}
+
+BNScalarField BlockStructuredField::createBarneyScalarField(
+    BNContext context// , int slot
+                                                            ) const
+{
+  std::cout << "==================================================================" << std::endl;
+  std::cout << "BANARI: CREATING AMR DATA" << std::endl;
+  std::cout << "==================================================================" << std::endl;
+#if 1
+  exit(0);
+#else
+  return bnBlockStructuredAMRCreate(context,
+                                    0/*slot*/,
+      m_generatedBlockBounds.data(),
+      m_generatedBlockBounds.size() / 6,
+      m_generatedBlockLevels.data(),
+      m_generatedBlockOffsets.data(),
+      m_generatedBlockScalars.data(),
+      m_generatedBlockScalars.size());
+#endif
+}
+
+box3 BlockStructuredField::bounds() const
 {
   return m_bounds;
 }
