@@ -19,7 +19,9 @@
 
 RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
-enum { AWT_STACK_DEPTH = 256 };
+enum { AWT_STACK_DEPTH = 32 };
+
+#define JOINT_FIRST_STEP 1
 
 namespace barney {
 
@@ -142,13 +144,21 @@ namespace barney {
                      Element elt,
                      const vec3f &org,
                      const vec3f &dir,
+#if JOINT_FIRST_STEP
+                     range1f clippedRange,
+#else
                      float &tHit,
+#endif
                      bool dbg
                      )
   {
     Cubic cubic;
+#if JOINT_FIRST_STEP
+    cubic.tRange = clippedRange;
+#else
     cubic.tRange = {1e-6f,tHit};
-
+#endif
+    
     // printf("tet ofs0 %i\n",elt.ofs0);
     vec4i tet = *(const vec4i *)&mesh.indices[elt.ofs0];
     // printf("tet ofs0 %i -> %i %i %i %i\n",elt.ofs0,
@@ -209,10 +219,62 @@ namespace barney {
     const Cubic &cubic;
     const TransferFunction::DD &xf;
   };
+
+  inline __both__
+  bool woodcockSampleJFS(vec4f &sample,
+                         CubicSampler &sfSampler,
+                         vec3f org,
+                         vec3f dir,
+                         range1f &tRange,
+                         float majorant,
+#if JOINT_FIRST_STEP
+                         range1f jfsRange,
+                         float jfsMajorant,
+#endif
+                         uint32_t &rngSeed,
+                         bool dbg=false)
+  {
+    LCG<4> &rand = (LCG<4> &)rngSeed;
+    float t = tRange.lower;
+
+#if JOINT_FIRST_STEP
+    if (t >= tRange.upper)
+      return false;
+      
+    if (tRange.lower == jfsRange.lower)
+      {
+        sample = sfSampler.sampleAndMap(t,dbg);
+        if (sample.w >= rand()*jfsMajorant) {
+          tRange.upper = t;
+          return true;
+        }
+      }
+#endif
     
+    
+    while (true) {
+      float dt = - logf(1.f-rand())/majorant;
+      t += dt;
+      
+      if (t >= tRange.upper)
+        return false;
+      
+      sample = sfSampler.sampleAndMap(t,dbg);
+      if (sample.w >= rand()*majorant) {
+        tRange.upper = t;
+        return true;
+      }
+    }
+  }
+
+        
   inline __both__
   void intersectPrim(const AWTAccel::DD &self,
                      vec4f &acceptedSample,
+#if JOINT_FIRST_STEP
+                     range1f jfsRange,
+                     float jfsMajorant,
+#endif
                      vec3f org,
                      vec3f dir,
                      float &tHit,
@@ -221,12 +283,17 @@ namespace barney {
                      bool dbg=false)
   {
     Cubic cubic
-      = cubicFromTet(self.mesh,self.mesh.elements[primID],org,dir,tHit,
+      = cubicFromTet(self.mesh,self.mesh.elements[primID],org,dir,
+#if JOINT_FIRST_STEP
+                     jfsRange,
+#else
+                     tHit,
+#endif
                      dbg);
     if (dbg)
       printf("tet %i %f %f\n",primID,cubic.tRange.lower,cubic.tRange.upper);
-
-    if (cubic.tRange.lower >= cubic.tRange.upper)
+    
+    if (cubic.tRange.lower > cubic.tRange.upper)
       return;
 
     if (dbg)
@@ -244,11 +311,20 @@ namespace barney {
     if (dbg)
       printf("->woodcock range %f %f majorant %f\n",
              cubic.tRange.lower,
-           cubic.tRange.upper,
+             cubic.tRange.upper,
              majorant);
-    if (Woodcock::sampleRangeT(sample,cubicSampler,
-                               org,dir,cubic.tRange,
-                               majorant,rng,dbg)) {
+    if (woodcockSampleJFS(sample,cubicSampler,
+                          org,dir,cubic.tRange,
+                          majorant,
+#if JOINT_FIRST_STEP
+                          jfsRange,
+                          jfsMajorant,
+#endif
+                          rng,dbg)
+        // Woodcock::sampleRangeT(sample,cubicSampler,
+        //                        org,dir,cubic.tRange,
+        //                        majorant,rng,dbg)
+        ) {
       tHit = cubic.tRange.upper;
       acceptedSample = sample;
       if (dbg)
@@ -358,17 +434,22 @@ namespace barney {
     curr.ref = { 0,0 };
     *stack++ = curr;
 
-    bool done = false;
-    while (!done) {
+    // bool done = false;
+    while (1) {
       /* repeat until we REACH A LEAF */
-      while (!done) {
+      while (1) {
         /* repeat until we successfully POPPED SOMETHING */
-        while (!done) {
+        while (1) {
           if (dbg) printf("popping at depth %i\n",
                               int(stack-stackBase));
           if (stack == stackBase) {
-            done = true;
-            break;
+            if (tHit < ray.tMax) {
+              ray.setVolumeHit(org+tHit*dir,
+                               tHit,(const vec3f&)sample);
+            }
+            return;
+            // done = true;
+            // break;
           } 
 
           curr = *--stack;
@@ -442,17 +523,40 @@ namespace barney {
       }
 
       /* we're at a leaf */
-      if (dbg)
-        printf("----------- leaf!\n");
-      for (int i=0;i<curr.ref.count;i++)
+      // if (ray.dbg)
+      //   printf("----------- leaf len %f!\n",curr.tRange.span());
+      
+#if JOINT_FIRST_STEP
+      LCG<4> &rand = (LCG<4> &)ray.rngSeed;
+      float dt0 = - logf(1.f-rand())/curr.majorant;
+      curr.tRange.lower += dt0;
+      if (curr.tRange.lower > curr.tRange.upper)
+        continue;
+#endif
+
+      for (int i=0;i<curr.ref.count;i++) {
         intersectPrim(self,sample,
+#if JOINT_FIRST_STEP
+                      curr.tRange,
+                      curr.majorant,
+#endif
                       org,dir,tHit,self.primIDs[curr.ref.offset+i],
                       ray.rngSeed,dbg);
+#if JOINT_FIRST_STEP
+        curr.tRange.upper = min(curr.tRange.upper,tHit);
+#endif
+      }
     }
-    if (tHit < ray.tMax) {
-      ray.setVolumeHit(org+tHit*dir,
-                       tHit,(const vec3f&)sample);
-    }
+// #else
+//       for (int i=0;i<curr.ref.count;i++)
+//         intersectPrim(self,sample,
+//                       org,dir,tHit,self.primIDs[curr.ref.offset+i],
+//                       ray.rngSeed,dbg);
+// #endif
+    // if (tHit < ray.tMax) {
+    //   ray.setVolumeHit(org+tHit*dir,
+    //                    tHit,(const vec3f&)sample);
+    // }
   }
   
 } // ::barney

@@ -148,7 +148,7 @@ namespace barney {
         bgColor = v;
       }
       (vec4f&)ray.missColor = bgColor;
-      if (1 && ray.dbg) printf("== spawn ray has bg tex %p bg color %f %f %f\n",
+      if (0 && ray.dbg) printf("== spawn ray has bg tex %p bg color %f %f %f\n",
                                (void*)renderer.bgTexture,
                           bgColor.x,
                           bgColor.y,
