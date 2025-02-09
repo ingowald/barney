@@ -21,7 +21,9 @@ RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
 enum { AWT_STACK_DEPTH = 32 };
 
-#define JOINT_FIRST_STEP 1
+#define AWT_SAMPLE_THRESHOLD 4.f
+
+// #define JOINT_FIRST_STEP 1
 
 namespace barney {
 
@@ -69,7 +71,9 @@ namespace barney {
   struct Cubic {
     inline __both__ float eval(float t, bool dbg=false) const
     {
-      t = (t-tRange.lower)/tRange.span();
+      t = tRange.span()==0.f
+        ? 0.f
+        : ((t-tRange.lower)/tRange.span());
       t = 3.f*t;
       float _f0, _f1;
       if (t >= 2.f) {
@@ -144,20 +148,12 @@ namespace barney {
                      Element elt,
                      const vec3f &org,
                      const vec3f &dir,
-#if JOINT_FIRST_STEP
-                     range1f clippedRange,
-#else
-                     float &tHit,
-#endif
+                     range1f initRange,
                      bool dbg
                      )
   {
     Cubic cubic;
-#if JOINT_FIRST_STEP
-    cubic.tRange = clippedRange;
-#else
-    cubic.tRange = {1e-6f,tHit};
-#endif
+    cubic.tRange = initRange;
     
     // printf("tet ofs0 %i\n",elt.ofs0);
     vec4i tet = *(const vec4i *)&mesh.indices[elt.ofs0];
@@ -174,7 +170,7 @@ namespace barney {
     if (dbg)
       printf("clipped range %f %f\n",
              cubic.tRange.lower,cubic.tRange.upper);
-    if (cubic.tRange.lower < cubic.tRange.upper) {
+    if (cubic.tRange.lower <= cubic.tRange.upper) {
       vec3f P0 = org+cubic.tRange.lower*dir;
       vec3f P1 = org+cubic.tRange.upper*dir;
       cubic.f0 = eval(P0,v0,v1,v2,v3);
@@ -271,10 +267,8 @@ namespace barney {
   inline __both__
   void intersectPrim(const AWTAccel::DD &self,
                      vec4f &acceptedSample,
-#if JOINT_FIRST_STEP
-                     range1f jfsRange,
-                     float jfsMajorant,
-#endif
+                     range1f tRange,
+                     float parentMajorant,
                      vec3f org,
                      vec3f dir,
                      float &tHit,
@@ -284,23 +278,31 @@ namespace barney {
   {
     Cubic cubic
       = cubicFromTet(self.mesh,self.mesh.elements[primID],org,dir,
-#if JOINT_FIRST_STEP
-                     jfsRange,
-#else
-                     tHit,
-#endif
+                     tRange,
                      dbg);
     if (dbg)
       printf("tet %i %f %f\n",primID,cubic.tRange.lower,cubic.tRange.upper);
     
     if (cubic.tRange.lower > cubic.tRange.upper)
       return;
-
+    
     if (dbg)
       printf("VALID TET\n");
-
+    
     vec4f sample;
     CubicSampler cubicSampler(cubic,self.xf);
+#ifdef AWT_SAMPLE_THRESHOLD
+    if (tRange.lower == tRange.upper) {
+      LCG<4> &rand = (LCG<4> &)rng;
+      float t = tRange.lower;
+      sample = cubicSampler.sampleAndMap(t,dbg);
+      if (sample.w >= rand()*parentMajorant) {
+        tHit = t;
+        acceptedSample = sample;
+      }
+      return;
+    }
+#endif
     range1f tetRange = {
       min(cubic.f0,cubic.f3),
       max(cubic.f0,cubic.f3)
@@ -334,9 +336,6 @@ namespace barney {
     
   }
   
-  
-
-
   
   struct __barney_align(16) StackEntry {
     AWTNode::NodeRef ref; // 1 dword
@@ -470,11 +469,38 @@ namespace barney {
         if (curr.ref.count)
           break;
 
+#ifdef AWT_SAMPLE_THRESHOLD
+        float tLen = curr.tRange.span();
+        if (tLen > 0.f) {
+          float expectedNumSteps
+            = tLen// * self.xf.baseDensity
+            * curr.majorant;
+          if (expectedNumSteps <= AWT_SAMPLE_THRESHOLD) {
+            LCG<4> &rand = (LCG<4> &)ray.rngSeed;
+            float dt0 = - logf(1.f-rand())/curr.majorant;
+            curr.tRange.lower += dt0;
+            if (curr.tRange.lower >= curr.tRange.upper)
+              continue;
+            
+            *stack++ = curr;
+            curr.tRange.upper = curr.tRange.lower;
+          }
+        }
+#endif
+
+        
         AWTNode node = self.awtNodes[curr.ref.offset];
         StackEntry childEntry[AWT_NODE_WIDTH];
         for (int i=0;i<AWT_NODE_WIDTH;i++) {
           childEntry[i].ref = node.child[i].nodeRef;
-          childEntry[i].majorant = node.child[i].majorant;
+          childEntry[i].majorant
+            =
+#ifdef AWT_SAMPLE_THRESHOLD
+            (curr.tRange.lower == curr.tRange.upper)
+            ? curr.majorant
+            :
+#endif
+            node.child[i].majorant;
           childEntry[i].tRange = curr.tRange;
           if (node.child[i].majorant == 0.f
               ||
@@ -510,7 +536,7 @@ namespace barney {
         for (int i=AWT_NODE_WIDTH-1;i>=0;--i) {
           if (childEntry[i].majorant > 0.f
               &&
-              childEntry[i].tRange.lower < ray.tMax) {
+              childEntry[i].tRange.lower < tHit) {//ray.tMax) {
             if (dbg)
               printf("pushing depth %i, node %i:%i dist %f\n",
                    int(stack-stackBase),
@@ -535,16 +561,13 @@ namespace barney {
 #endif
 
       for (int i=0;i<curr.ref.count;i++) {
+        curr.tRange.upper = min(curr.tRange.upper,tHit);
         intersectPrim(self,sample,
-#if JOINT_FIRST_STEP
                       curr.tRange,
                       curr.majorant,
-#endif
                       org,dir,tHit,self.primIDs[curr.ref.offset+i],
                       ray.rngSeed,dbg);
-#if JOINT_FIRST_STEP
         curr.tRange.upper = min(curr.tRange.upper,tHit);
-#endif
       }
     }
 // #else
