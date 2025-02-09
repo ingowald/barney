@@ -21,12 +21,19 @@ RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
 enum { AWT_STACK_DEPTH = 32 };
 
-#define AWT_SAMPLE_THRESHOLD 4.f
+// #define AWT_SAMPLE_THRESHOLD 4.f
 
 // #define JOINT_FIRST_STEP 1
 
 namespace barney {
 
+  inline __both__
+  bool verySmall(range1f r)
+  {
+    float l = r.span();
+    return l >= 0.f && l < 1e-5f * r.upper;
+  }
+  
   struct AWTPrograms {
     template<typename TraceInterface>
     static inline __both__
@@ -511,6 +518,16 @@ namespace barney {
                        childEntry[i].tRange.upper,
                        node.child[i].bounds)) 
             childEntry[i].tRange.lower = BARNEY_INF;
+
+          if ((curr.tRange.lower < curr.tRange.upper) &&
+              verySmall(childEntry[i].tRange)) {
+            printf("box test collapsed to veeeery small value [%f %f] (%f -> %f)\n",
+                   childEntry[i].tRange.lower,childEntry[i].tRange.upper,
+                   curr.tRange.span(),childEntry[i].tRange.span());
+            childEntry[i].tRange.lower = nextafter(childEntry[i].tRange.lower,-1.f);
+            childEntry[i].tRange.upper = nextafter(childEntry[i].tRange.upper,BARNEY_INF);
+          }
+              
           if (dbg) {
             // printf(" box %i (%f %f %f)(%f %f %f)\n",
             //        i,
