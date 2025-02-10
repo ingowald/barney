@@ -509,6 +509,7 @@ namespace barney {
 #endif
             node.child[i].majorant;
           childEntry[i].tRange = curr.tRange;
+          
           if (node.child[i].majorant == 0.f
               ||
               !node.child[i].nodeRef.valid()
@@ -521,9 +522,9 @@ namespace barney {
 
           if ((curr.tRange.lower < curr.tRange.upper) &&
               verySmall(childEntry[i].tRange)) {
-            printf("box test collapsed to veeeery small value [%f %f] (%f -> %f)\n",
-                   childEntry[i].tRange.lower,childEntry[i].tRange.upper,
-                   curr.tRange.span(),childEntry[i].tRange.span());
+            // printf("box test collapsed to veeeery small value [%f %f] (%.10f -> %.10f)\n",
+            //        childEntry[i].tRange.lower,childEntry[i].tRange.upper,
+            //        curr.tRange.span(),childEntry[i].tRange.span());
             childEntry[i].tRange.lower = nextafter(childEntry[i].tRange.lower,-1.f);
             childEntry[i].tRange.upper = nextafter(childEntry[i].tRange.upper,BARNEY_INF);
           }

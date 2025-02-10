@@ -45,7 +45,7 @@ namespace barney {
       union {
         struct {
           uint64_t misWeightBits:16;
-          uint64_t pixelID      :28;
+          uint64_t pixelID      :27;
           /*! type of bsdf in the hitBSDF; if this is set to NONE the
             ray didn't have any hit yet */
           uint64_t bsdfType         : 3;

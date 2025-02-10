@@ -82,13 +82,13 @@ namespace barney {
   inline __both__
   vec4f TransferFunction::DD::map(float s, bool dbg) const
   {
-    if (dbg) printf("mapping %f into %f %f\n",
-                    s,domain.lower,domain.upper);
+    // if (dbg) printf("mapping %f into %f %f\n",
+    //                 s,domain.lower,domain.upper);
     float f = (s-domain.lower)/domain.span();
     f = clamp(f,0.f,1.f);
     f *= (numValues-1);
 
-    if (dbg) printf("rel %f\n",f);
+    // if (dbg) printf("rel %f\n",f);
     
     int idx = clamp(int(f),0,numValues-2);
     f -= idx;

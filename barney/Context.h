@@ -178,6 +178,7 @@ namespace barney {
     SlotContext *getSlot(int slot);
     std::vector<SlotContext> perSlot;
     DevGroup::SP devices;
+    int const globalIndex;
   };
   
 

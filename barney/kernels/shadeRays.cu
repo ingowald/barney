@@ -24,6 +24,9 @@
 namespace barney {
   namespace render {
 
+
+#define SCI_VIS_MODE 1
+    
 #define MAX_DIFFUSE_BOUNCES 3
     
 #define ENV_LIGHT_SAMPLING 1
@@ -334,68 +337,6 @@ namespace barney {
       else
         return false;
     }
-  
-    // inline __both__
-    // vec3f reflect(const vec3f &v,
-    //               const vec3f &n)
-    // {
-    //   return v - 2.0f*dot(v, n)*n;
-    // }
-  
-
-
-    // inline __both__
-    // bool scatter_glass(vec3f &scattered_direction,
-    //                    Random &random,
-    //                    // const vec3f &org,
-    //                    const vec3f &dir,
-    //                    // const vec3f &P,
-    //                    vec3f N,
-    //                    const float ior
-    //                    // ,
-    //                    // PerRayData &prd
-    //                    )
-    // {
-    //   // const vec3f org   = optixGetWorldRayOrigin();
-    //   // const vec3f dir   = normalize((vec3f)optixGetWorldRayDirection());
-
-    //   // N = normalize(N);
-    //   vec3f outward_normal;
-    //   vec3f reflected = reflect(dir,N);
-    //   float ni_over_nt;
-    //   // prd.out.attenuation = vec3f(1.f, 1.f, 1.f); 
-    //   vec3f refracted;
-    //   float reflect_prob;
-    //   float cosine;
-  
-    //   if (dot(dir,N) > 0.f) {
-    //     outward_normal = -N;
-    //     ni_over_nt = ior;
-    //     cosine = dot(dir, N);// / vec3f(dir).length();
-    //     cosine = sqrtf(1.f - ior*ior*(1.f-cosine*cosine));
-    //   }
-    //   else {
-    //     outward_normal = N;
-    //     ni_over_nt = 1.0 / ior;
-    //     cosine = -dot(dir, N);// / vec3f(dir).length();
-    //   }
-    //   if (refract(dir, outward_normal, ni_over_nt, refracted)) 
-    //     reflect_prob = schlick(cosine, ior);
-    //   else 
-    //     reflect_prob = 1.f;
-
-    //   // prd.out.scattered_origin = P;
-    //   if (random() < reflect_prob) 
-    //     // prd.out.
-    //     scattered_direction = reflected;
-    //   else 
-    //     // prd.out.
-    //     scattered_direction = refracted;
-  
-    //   return true;
-    // }
-
-
   
     inline __both__
     vec3f radianceFromEnv(const World::DD &world,
@@ -735,6 +676,7 @@ namespace barney {
         }
       }
 
+      path.clearHit();
 
 
 
@@ -747,19 +689,41 @@ namespace barney {
       
       ScatterResult scatterResult;
       bsdf.scatter(scatterResult,dg,random,fire || 0 && path.dbg);
+#ifndef NDEBUG
+      if (scatterResult.type == ScatterResult::INVALID)
+        printf("broken BSDF, doesn't set scatter type!\n");
+#endif 
       if (fire || 0 && path.dbg)
         printf("scatter result.valid ? %i\n",
                int(scatterResult.valid()));
       if (!scatterResult.valid() || scatterResult.pdf <= 1e-6f)
         return;
       
-      bool isDiffuseBounce
-        = scatterResult.wasDiffuse;
-      //        = !isinf(scatterResult.pdf);
-      if (isDiffuseBounce && (path.numDiffuseBounces+1)>MAX_DIFFUSE_BOUNCES) 
-        return;
+      // bool isDiffuseBounce
+      //   =  (scatterResult.type == ScatterResult::DIFFUSE)
+      //   || (scatterResult.type == ScatterResult::VOLUME);
+      // //        = !isinf(scatterResult.pdf);
+      // if (isDiffuseBounce && (path.numDiffuseBounces+1)>MAX_DIFFUSE_BOUNCES) 
+      //   return;
+
+
+      if (scatterResult.type == ScatterResult::VOLUME) {
+#if SCI_VIS_MODE
+        // sci vis mode: volumes do shadow, but nothing more
+        path.tMax = -1.f;
+#else
+        // treat volume scatter like a diffuse scatter.
+        scatterResult.type = ScatterResult::DIFFUSE;
+#endif
+      }
       
-      path.numDiffuseBounces = path.numDiffuseBounces + 1;
+      if (scatterResult.type == ScatterResult::DIFFUSE) {
+        if (path.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES)
+          path.tMax = -1.f;
+        else
+          path.numDiffuseBounces = path.numDiffuseBounces + 1;
+      }
+      
       
       if (fire || 0 && path.dbg)
         printf("offsetting into sign %f, direction %f %f %f\n",
@@ -795,7 +759,6 @@ namespace barney {
       
       path.throughput
         = path.throughput * scatterFactor;
-      path.clearHit();
       if ((fire || 0 && path.dbg) && scatterResult.changedMedium)
         printf("path DID change medium\n");
       if (scatterResult.changedMedium)
