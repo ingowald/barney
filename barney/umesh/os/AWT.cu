@@ -16,7 +16,9 @@
 
 #include "barney/umesh/os/AWT.h"
 #include <cuBQL/bvh.h>
-#include <cuBQL/builder/cuda/wide_gpu_builder.h>
+#if BARNEY_HAVE_CUDA
+# include <cuBQL/builder/cuda/wide_gpu_builder.h>
+#endif
 
 namespace barney {
 
@@ -73,11 +75,11 @@ namespace barney {
 
         int numNotDone
           = ci.atomicAdd(&refitInfos[nodeID].numNotDone,-1)-1;
-#if __CUDA_ARCH__
-        __threadfence();
-#else
-        __builtin_ia32_mfence();
-#endif
+// #if __CUDA_ARCH__
+//         __threadfence();
+// #else
+//         __builtin_ia32_mfence();
+// #endif
         if (numNotDone != 0)
           break;
 
@@ -169,6 +171,7 @@ namespace barney {
 
   void AWTAccel::build(bool full_rebuild)
   {
+#if BARNEY_HAVE_CUDA
     for (auto device : *devices) {
       auto pld = getPLD(device);
       UMeshField::PLD *meshPLD = mesh->getPLD(device);
@@ -271,6 +274,9 @@ namespace barney {
       DD dd = getDD(device);
       pld->geom->setDD(&dd);
     }
+#else
+    throw std::runtime_error("umesh AWT backend currently requires CUDA");
+#endif
   }
 
   AWTAccel::DD AWTAccel::getDD(Device *device)
