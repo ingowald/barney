@@ -33,7 +33,7 @@
 #if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
-# define LOG_API_ENTRY /**/
+# define LOG_API_ENTRY /**/ 
 #endif
 
 #ifdef NDEBUG
@@ -602,6 +602,7 @@ namespace barney {
   BN_API
   void bnCommit(BNObject target)
   {
+    LOG_API_ENTRY;
     checkGet(target)->commit();
   }
   
@@ -678,6 +679,7 @@ namespace barney {
   BN_API
   void bnSet3f(BNObject target, const char *param, float x, float y, float z)
   {
+    LOG_API_ENTRY;
     if (!checkGet(target)->set3f(checkGet(param),vec3f(x,y,z)))
       checkGet(target)->warn_unsupported_member(param,"vec3f");
   }
