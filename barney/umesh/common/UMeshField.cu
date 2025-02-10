@@ -423,7 +423,7 @@ namespace barney {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if 1
+#if BARNEY_HAVE_CUDA && 1
     return std::make_shared<AWTAccel>(volume,this);
 #else
     auto sampler

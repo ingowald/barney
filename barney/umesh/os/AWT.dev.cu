@@ -19,10 +19,9 @@
 
 RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
 
-enum { AWT_STACK_DEPTH = 32 };
+enum { AWT_STACK_DEPTH = 64 };
 
 // #define AWT_SAMPLE_THRESHOLD 4.f
-
 // #define JOINT_FIRST_STEP 1
 
 namespace barney {
@@ -561,6 +560,8 @@ namespace barney {
                    childEntry[i].ref.offset,
                    childEntry[i].ref.count,
                    childEntry[i].tRange.lower);
+if (stack - stackBase >= AWT_STACK_DEPTH)
+printf("STACK OVERFLOW!\n");
             *stack++ = childEntry[i];
           }
         }
