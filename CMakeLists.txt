@@ -39,7 +39,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 
 # project command is required to come after cmake_minimum_required command.
-project(Barney VERSION 0.7.0 LANGUAGES C CXX)
+project(Barney VERSION 0.8.0 LANGUAGES C CXX)
 
 include(CheckLanguage)
 check_language(CUDA)
@@ -109,7 +109,7 @@ endif()
 # subprojects we depend on
 # ------------------------------------------------------------------
 if (NOT (TARGET owl::owl))
-  set(OWL_CUDA_STATIC ON)
+  #set(OWL_CUDA_STATIC ON)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 endif()
 

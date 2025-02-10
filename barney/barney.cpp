@@ -33,7 +33,7 @@
 #if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
-# define LOG_API_ENTRY /**/
+# define LOG_API_ENTRY /**/ 
 #endif
 
 #ifdef NDEBUG
@@ -537,10 +537,11 @@ namespace barney {
                                  currently the only supported ypte is float32: */
                                 const float *_gridData,
                                 // number of floats in gridData
-                                const int gridSize)
+                                const size_t gridSize)
   {
     std::cout << "#bn: copying 'nanovdb' from app ..." << std::endl;
     std::vector<float> gridData(gridSize);
+    printf("bnNanoVDBCreate: %lld\n", gridSize);
     memcpy(gridData.data(),_gridData,gridData.size()*sizeof(gridData[0]));
     ScalarField::SP sf =
       std::make_shared<NanoVDBField>(checkGet(context),slot,gridData);
@@ -601,6 +602,7 @@ namespace barney {
   BN_API
   void bnCommit(BNObject target)
   {
+    LOG_API_ENTRY;
     checkGet(target)->commit();
   }
   
@@ -677,6 +679,7 @@ namespace barney {
   BN_API
   void bnSet3f(BNObject target, const char *param, float x, float y, float z)
   {
+    LOG_API_ENTRY;
     if (!checkGet(target)->set3f(checkGet(param),vec3f(x,y,z)))
       checkGet(target)->warn_unsupported_member(param,"vec3f");
   }
