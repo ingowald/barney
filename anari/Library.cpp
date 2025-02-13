@@ -43,7 +43,7 @@ namespace barney_device {
 // Define library entrypoint //////////////////////////////////////////////////
 
 extern "C" 
-//BARNEY_LIBRARY_INTERFACE
+BARNEY_LIBRARY_INTERFACE
 ANARI_DEFINE_LIBRARY_ENTRYPOINT(barney, handle, scb, scbPtr)
 {
   return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
