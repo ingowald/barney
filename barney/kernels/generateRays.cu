@@ -75,9 +75,11 @@ namespace barney {
                   unsigned(iy+fbSize.y*accumID));
 
       ray.org  = camera.lens_00;
-
-      float image_u = ((ix+((accumID==0)?.5f:rand()))/float(fbSize.x));
-      float image_v = ((iy+((accumID==0)?.5f:rand()))/float(fbSize.y));
+      
+      float pixel_u = ((accumID == 0) ? .5f : rand());
+      float pixel_v = ((accumID == 0) ? .5f : rand());
+      float image_u = ((ix+pixel_u)/float(fbSize.x));
+      float image_v = ((iy+pixel_v)/float(fbSize.y));
       float aspect = fbSize.x / float(fbSize.y);
       vec3f ray_dir
         = camera.dir_00
@@ -144,7 +146,9 @@ namespace barney {
         : ((1.0f - t)*vec4f(0.9f, 0.9f, 0.9f,1.f)
            + t *      vec4f(0.15f, 0.25f, .8f,1.f));
       if (renderer.bgTexture) {
-        vec4f v = rtc::tex2D<vec4f>(renderer.bgTexture,image_u,image_v);
+        float bg_u = ((ix + pixel_u+.5f) / float(fbSize.x-1.f));
+        float bg_v = ((iy + pixel_v+.5f) / float(fbSize.y-1.f));
+        vec4f v = rtc::tex2D<vec4f>(renderer.bgTexture, bg_u, bg_v);//image_u + .5f / fbSize.x, image_v + .5f / fbSize.y);
         bgColor = v;
       }
       (vec4f&)ray.missColor = bgColor;
