@@ -141,7 +141,8 @@ namespace barney {
       // color; this way the shaderays function doesn't have to reverse
       // engineer pixel pos etc
       
-      vec3f bgColor
+      vec3f bgColor = vec3f(0.0f, 0.0f, 0.0f);
+#if 0 //TODO: MJ
         = (renderer.bgColor.w >= 0.f)
         ? (const vec3f&)renderer.bgColor
         : ((1.0f - t)*vec3f(0.9f, 0.9f, 0.9f) + t * vec3f(0.15f, 0.25f, .8f));
@@ -149,6 +150,7 @@ namespace barney {
         float4 v = tex2D<float4>(renderer.bgTexture,image_u,image_v);
         bgColor = (vec3f&)v;
       }
+#endif      
       ray.missColor = bgColor;
       if (ray.dbg) printf("== spawn ray has bg color %f %f %f\n",
                           bgColor.x,

@@ -19,14 +19,11 @@
 #include "barney/volume/MCAccelerator.h"
 #include "barney/volume/MCGrid.cuh"
 
-//#define NANOVDBFIELD_OLD_VERSION
-
 namespace barney {
 
   extern "C" char NanoVDBMC_ptx[];
 
-#ifdef NANOVDBFIELD_OLD_VERSION
-  enum { MC_GRID_SIZE = 16 };
+  enum { MC_GRID_SIZE = 8 };
 
   __global__ void computeMCs(MCGrid::DD grid,
                              NanoVDBField::DD field)
@@ -55,43 +52,6 @@ namespace barney {
                            vec4f(mcBounds.upper,scalarRange.upper));
     rasterBox(grid,getBox(field.worldBounds),cellBounds);
   }
-#else
-  enum { cellsPerMC = 8 };
-
-  __global__
-  void nanoVDBComputeMCs(MCGrid::DD mcGrid,
-                  vec3i numScalars,
-                  NanoVDBField::DD field)
-  {
-    vec3i mcID = vec3i(threadIdx) + vec3i(blockIdx) * vec3i(blockDim);
-    if (mcID.x >= mcGrid.dims.x) return;
-    if (mcID.y >= mcGrid.dims.y) return;
-    if (mcID.z >= mcGrid.dims.z) return;
-
-    nanovdb::NanoGrid<float>* const nanogrid = (nanovdb::NanoGrid<float> *)field.gridPtr;
-    typedef typename nanovdb::NanoGrid<float>::AccessorType AccessorType;
-    AccessorType acc = nanogrid->getAccessor();    
-
-    range1f scalarRange;
-    for (int iiz=0;iiz<=cellsPerMC;iiz++)
-      for (int iiy=0;iiy<=cellsPerMC;iiy++)
-        for (int iix=0;iix<=cellsPerMC;iix++) {
-          vec3i scalarID = mcID*int(cellsPerMC) + vec3i(iix,iiy,iiz);
-          if (scalarID.x >= numScalars.x) continue;
-          if (scalarID.y >= numScalars.y) continue;
-          if (scalarID.z >= numScalars.z) continue;
-
-          nanovdb::Coord coord = nanovdb::Coord(scalarID.x, scalarID.y, scalarID.z);
-
-          //if (acc.isActive(coord)) very slow rendering
-          {
-              scalarRange.extend(acc.getValue(coord));
-          }
-        }
-    int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
-    mcGrid.scalarRanges[mcIdx] = scalarRange;
-  }
-#endif  
 
   NanoVDBField::NanoVDBField(Context *context, int slot,
                              std::vector<float> &gridData)
@@ -138,7 +98,6 @@ namespace barney {
     }
   }
 
-#ifdef NANOVDBFIELD_OLD_VERSION
   void NanoVDBField::buildMCs(MCGrid &grid)
   {
 
@@ -174,41 +133,6 @@ namespace barney {
       BARNEY_CUDA_SYNC_CHECK();
     }
   }
-#else
-  void NanoVDBField::buildMCs(MCGrid &mcGrid) 
-  {
-		auto vdb_dims = gridHandles[0].gridMetaData()->worldBBox().dim();
-		auto vdb_spacing = gridHandles[0].gridMetaData()->voxelSize();
-    vec3f gridSpacing(vdb_spacing[0], vdb_spacing[1], vdb_spacing[2]);
-
-		vec3i dims;
-		dims.x = (int)(vdb_dims[0] / gridSpacing[0]);
-		dims.y = (int)(vdb_dims[1] / gridSpacing[1]);
-		dims.z = (int)(vdb_dims[2] / gridSpacing[2]);
-
-    printf("NanoVDBField::buildMCs, dims: %d, %d, %d\n", dims.x, dims.y, dims.z);
-
-    vec3i numCells = dims - vec3i(1);
-    vec3i numScalars = dims;
-
-    vec3i mcDims = divRoundUp(numCells,vec3i(cellsPerMC));
-    mcGrid.resize(mcDims);
-    vec3i blockSize(4);
-    vec3i numBlocks = divRoundUp(mcDims,blockSize);
-    mcGrid.gridOrigin = worldBounds.lower;
-    mcGrid.gridSpacing = vec3f(cellsPerMC) * gridSpacing; //worldBounds.size(); //this->gridSpacing;
-    for (auto dev : getDevices()) {
-      SetActiveGPU forDuration(dev);
-
-      CHECK_CUDA_LAUNCH(nanoVDBComputeMCs,
-                        (const dim3&)numBlocks,(const dim3&)blockSize,0,0,
-                        //
-                        mcGrid.getDD(dev),numScalars,
-                        getDD(dev));
-    }
-    BARNEY_CUDA_SYNC_CHECK();
-  }
-#endif  
 
   NanoVDBField::DD NanoVDBField::getDD(const Device::SP &device)
   {

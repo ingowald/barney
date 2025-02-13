@@ -435,8 +435,10 @@ namespace barney {
                           const Renderer::DD &renderer,
                           Ray &ray)
     {
+#if 0 //TODO: MJ      
       if (world.envMapLight.texture)
         return radianceFromEnv(world,renderer,ray);
+#endif        
       return
         // primary rays do store a default misscolor in the ray itself
         // - we simply return this if there's no env-map.
