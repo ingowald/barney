@@ -100,9 +100,9 @@ BNGroup Group::makeBarneyGroup(BNContext context// , int slot
   BNGroup bg = bnGroupCreate(context,
       slot,
       barneyGeometries.data(),
-      barneyGeometries.size(),
+      (int)barneyGeometries.size(),
       barneyVolumes.data(),
-      barneyVolumes.size());
+      (int)(int)(int)(int)(int)(int)(int)(int)(int)barneyVolumes.size());
   if (lightsData) {
     bnSetData(bg, "lights", lightsData);
     bnRelease(lightsData);

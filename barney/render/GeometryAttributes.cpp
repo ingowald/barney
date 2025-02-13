@@ -32,14 +32,14 @@ namespace barney {
           out.fromArray.ptr
             // = owlBufferGetPointer(in.perVertex->owl,devID);
             = in.perVertex->getDD(device);
-          out.fromArray.size = in.perVertex->count;
+          out.fromArray.size = (int)in.perVertex->count;
         } else if (in.perPrim) {
           out.scope = GeometryAttribute::PER_PRIM;
           out.fromArray.type = in.perPrim->type;
           out.fromArray.ptr
             // = owlBufferGetPointer(in.perPrim->owl,devID);
             = in.perPrim->getDD(device);
-          out.fromArray.size = in.perPrim->count;
+          out.fromArray.size = (int)in.perPrim->count;
         } else {
           out.scope = GeometryAttribute::CONSTANT;
           (vec4f&)out.value = in.constant;
