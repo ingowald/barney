@@ -16,11 +16,10 @@ struct Group : public Object
   Group(BarneyGlobalState *s);
   ~Group() override;
 
-  void commit() override;
-  void markCommitted() override;
+  void commitParameters() override;
+  void markFinalized() override;
 
-  BNGroup makeBarneyGroup(BNContext context// , int slot
-                          ) const;
+  BNGroup makeBarneyGroup(BNContext context) const;
 
   box3 bounds() const;
 

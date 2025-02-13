@@ -16,12 +16,11 @@ struct Geometry : public Object
   static Geometry *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
-  void commit() override;
-  void markCommitted() override;
+  void commitParameters() override;
+  void markFinalized() override;
 
   virtual const char *bnSubtype() const = 0;
-  virtual void setBarneyParameters(BNGeom geom, BNContext context// , int slot
-                                   ) = 0;
+  virtual void setBarneyParameters(BNGeom geom, BNContext context) = 0;
   virtual box3 bounds() const = 0;
 
  protected:
@@ -34,11 +33,11 @@ struct Geometry : public Object
 struct Sphere : public Geometry
 {
   Sphere(BarneyGlobalState *s);
-  void commit() override;
+  void commitParameters() override;
+  void finalize() override;
   bool isValid() const override;
 
-  void setBarneyParameters(BNGeom geom, BNContext context// , int slot
-                           ) override;
+  void setBarneyParameters(BNGeom geom, BNContext context) override;
   const char *bnSubtype() const override;
   box3 bounds() const override;
 
@@ -52,15 +51,15 @@ struct Sphere : public Geometry
 struct Curve : public Geometry
 {
   Curve(BarneyGlobalState *s);
-  void commit() override;
+  void commitParameters() override;
+  void finalize() override;
   bool isValid() const override;
-  
-  void setBarneyParameters(BNGeom geom, BNContext context// , int slot
-                           ) override;
+
+  void setBarneyParameters(BNGeom geom, BNContext context) override;
   const char *bnSubtype() const override;
   box3 bounds() const override;
-  
-private:
+
+ private:
   helium::ChangeObserverPtr<Array1D> m_index;
   helium::ChangeObserverPtr<Array1D> m_vertexPosition;
   helium::ChangeObserverPtr<Array1D> m_vertexRadius;
@@ -70,11 +69,11 @@ private:
 struct Triangle : public Geometry
 {
   Triangle(BarneyGlobalState *s);
-  void commit() override;
+  void commitParameters() override;
+  void finalize() override;
   bool isValid() const override;
 
-  void setBarneyParameters(BNGeom geom, BNContext context// , int slot
-                           ) override;
+  void setBarneyParameters(BNGeom geom, BNContext context) override;
   const char *bnSubtype() const override;
   box3 bounds() const override;
 

@@ -5,56 +5,61 @@
 
 namespace barney_device {
 
-  Camera::Camera(BarneyGlobalState *s) : Object(ANARI_CAMERA, s)
-  {}
+Camera::Camera(BarneyGlobalState *s) : Object(ANARI_CAMERA, s) {}
 
-  Camera::~Camera() = default;
+Camera::~Camera()
+{
+  if (m_barneyCamera)
+    bnRelease(m_barneyCamera);
+}
 
-  Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
-  {
-    if (type == "perspective")
-      return new Perspective(s);
-    else
-      return (Camera *)new UnknownObject(ANARI_CAMERA, s);
-  }
+Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
+{
+  if (type == "perspective")
+    return new Perspective(s);
+  else
+    return (Camera *)new UnknownObject(ANARI_CAMERA, s);
+}
 
-  void Camera::commit()
-  {
-    if (!m_barneyCamera)
-      m_barneyCamera = bnCameraCreate(deviceState()->context,"perspective");
-    m_pos = getParam<math::float3>("position", math::float3(0.f, 0.f, 0.f));
-    m_dir = math::normalize
-      (getParam<math::float3>("direction", math::float3(0.f, 0.f, 1.f)));
-    m_up = math::normalize
-      (getParam<math::float3>("up", math::float3(0.f, 1.f, 0.f)));
-    m_imageRegion = math::float4(0.f, 0.f, 1.f, 1.f);
-    getParam("imageRegion", ANARI_FLOAT32_BOX2, &m_imageRegion);
-    markUpdated();
-  }
+void Camera::commitParameters()
+{
+  m_pos = getParam<math::float3>("position", math::float3(0.f, 0.f, 0.f));
+  m_dir = math::normalize(
+      getParam<math::float3>("direction", math::float3(0.f, 0.f, 1.f)));
+  m_up = math::normalize(
+      getParam<math::float3>("up", math::float3(0.f, 1.f, 0.f)));
+  m_imageRegion = math::float4(0.f, 0.f, 1.f, 1.f);
+  getParam("imageRegion", ANARI_FLOAT32_BOX2, &m_imageRegion);
+}
 
-  BNCamera Camera::barneyCamera() const
-  {
-    return m_barneyCamera;
-  }
+BNCamera Camera::barneyCamera() const
+{
+  return m_barneyCamera;
+}
 
-  // Subtypes ///////////////////////////////////////////////////////////////////
+// Subtypes ///////////////////////////////////////////////////////////////////
 
-  Perspective::Perspective(BarneyGlobalState *s)
-    : Camera(s)
-  {}
+Perspective::Perspective(BarneyGlobalState *s) : Camera(s)
+{
+  m_barneyCamera = bnCameraCreate(deviceState()->context, "perspective");
+}
 
-  void Perspective::commit()
-  {
-    Camera::commit();
-    bnSet3fc(m_barneyCamera,"up",m_up);
-    bnSet3fc(m_barneyCamera,"position", m_pos);
-    bnSet3fc(m_barneyCamera,"direction",m_dir);
-    float aspect = getParam<float>("aspect", 1.f);
-    bnSet1f(m_barneyCamera,"aspect",aspect);
-    float fovy = getParam<float>("fovy", anari::radians(60.f));
-    bnSet1f(m_barneyCamera,"fovy",anari::degrees(fovy));
-    bnCommit(m_barneyCamera);
-  }
+void Perspective::commitParameters()
+{
+  Camera::commitParameters();
+  m_aspect = getParam<float>("aspect", 1.f);
+  m_fovy = getParam<float>("fovy", anari::radians(60.f));
+}
+
+void Perspective::finalize()
+{
+  bnSet3fc(m_barneyCamera, "up", m_up);
+  bnSet3fc(m_barneyCamera, "position", m_pos);
+  bnSet3fc(m_barneyCamera, "direction", m_dir);
+  bnSet1f(m_barneyCamera, "aspect", m_aspect);
+  bnSet1f(m_barneyCamera, "fovy", anari::degrees(m_fovy));
+  bnCommit(m_barneyCamera);
+}
 
 } // namespace barney_device
 
