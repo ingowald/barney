@@ -13,15 +13,15 @@ struct Surface : public Object
   Surface(BarneyGlobalState *s);
   ~Surface() override;
 
-  void commit() override;
-  void markCommitted() override;
+  void commitParameters() override;
+  void finalize() override;
+  void markFinalized() override;
 
   uint32_t id() const;
   const Geometry *geometry() const;
   const Material *material() const;
 
-  BNGeom getBarneyGeom(BNContext context// , int slot
-                       );
+  BNGeom getBarneyGeom(BNContext context);
 
   bool isValid() const override;
 

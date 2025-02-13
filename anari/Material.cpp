@@ -63,16 +63,16 @@ template <typename T>
 inline void setBNMaterialHelper(BNMaterial m,
     const char *p,
     MaterialParameter<T> &mp,
-    BNContext context// ,
+    BNContext context // ,
     // int slot
-                                )
+)
 {
   if (mp.sampler) {
-    BNSampler s = mp.sampler->getBarneySampler(context// , 0
-                                               );
-    bnSetObject(m,p, s);
+    BNSampler s = mp.sampler->getBarneySampler(context // , 0
+    );
+    bnSetObject(m, p, s);
   } else if (!mp.attribute.empty())
-    bnSetString(m,p, mp.attribute.c_str());
+    bnSetString(m, p, mp.attribute.c_str());
   else
     setBNMaterialUniform(m, p, mp.value);
 }
@@ -97,18 +97,16 @@ Material *Material::createInstance(
     return (Material *)new UnknownObject(ANARI_MATERIAL, s);
 }
 
-BNMaterial Material::getBarneyMaterial(BNContext context// , int slot
-                                       )
+void Material::finalize()
 {
-  // if (!isModelTracked(model, slot)) {
-    // cleanup();
-    // trackContext(context, slot);
-  if (!m_bnMat)
-    m_bnMat = bnMaterialCreate(context, 0// , slot
-                               , bnSubtype());
   setBarneyParameters();
-  // }
+}
 
+BNMaterial Material::getBarneyMaterial(BNContext context)
+{
+  if (!m_bnMat)
+    m_bnMat = bnMaterialCreate(context, 0, bnSubtype());
+  setBarneyParameters();
   return m_bnMat;
 }
 
@@ -125,15 +123,14 @@ void Material::cleanup()
 
 Matte::Matte(BarneyGlobalState *s) : Material(s)
 {
-  this->commit(); // init with defaults for scalar values
+  this->commitParameters(); // init with defaults for scalar values
 }
 
-void Matte::commit()
+void Matte::commitParameters()
 {
-  Object::commit();
+  Object::commitParameters();
   m_color = getMaterialHelper(this, "color", math::float4(0.8f, 0.8f, 0.8f, 1));
   m_opacity = getMaterialHelper(this, "opacity", 1.f);
-  setBarneyParameters();
 }
 
 bool Matte::isValid() const
@@ -144,9 +141,6 @@ bool Matte::isValid() const
 const char *Matte::bnSubtype() const
 {
   return "AnariMatte";
-// #else
-//   return "physicallyBased";
-// #endif
 }
 
 void Matte::setBarneyParameters()
@@ -154,17 +148,7 @@ void Matte::setBarneyParameters()
   if (!m_bnMat)
     return;
 
-  // BNContext model = trackedModel();
-  // int slot = trackedSlot();
-
-  // NOTE: using Barney PBR material because matte wasn't (isn't?) finished
-  setBNMaterialHelper(m_bnMat, "color", m_color, getContext()// model, slot
-                      );
-  // setBNMaterialHelper(m_bnMat, "opacity", m_opacity, model, slot);
-  // bnSet1f(m_bnMat, "metallic", 0.f);
-  // bnSet1f(m_bnMat, "roughness", 1.f);
-  // bnSet1f(m_bnMat, "specular", 0.f);
-  // bnSet1f(m_bnMat, "transmission", 0.f);
+  setBNMaterialHelper(m_bnMat, "color", m_color, getContext());
   bnCommit(m_bnMat);
 }
 
@@ -172,33 +156,23 @@ void Matte::setBarneyParameters()
 
 PhysicallyBased::PhysicallyBased(BarneyGlobalState *s) : Material(s)
 {
-  this->commit(); // init with defaults for scalar values
+  this->commitParameters(); // init with defaults for scalar values
 }
 
-void PhysicallyBased::commit()
+void PhysicallyBased::commitParameters()
 {
-  Object::commit();
-  m_baseColor
-    = getMaterialHelper(this, "baseColor", math::float4(1, 1, 1, 1));
-  m_emissive
-    = getMaterialHelper(this, "emissive", math::float3(0, 0, 0));
-  m_specularColor
-    = getMaterialHelper(this, "specularColor", math::float3(1, 1, 1));
-  m_opacity
-    = getMaterialHelper(this, "opacity", 1.f);
-  m_metallic
-    = getMaterialHelper(this, "metallic", 1.f);
-  m_roughness
-    = getMaterialHelper(this, "roughness", 1.f);
-  m_specular
-    = getMaterialHelper(this, "specular", 0.f);
-  m_transmission
-    = getMaterialHelper(this, "transmission", 0.f);
-  m_ior
-    = getParam<float>  (      "ior", 1.5f);
-  m_opacity
-    = getMaterialHelper(this, "opacity", 1.f);
-  setBarneyParameters();
+  Object::commitParameters();
+  m_baseColor = getMaterialHelper(this, "baseColor", math::float4(1, 1, 1, 1));
+  m_emissive = getMaterialHelper(this, "emissive", math::float3(0, 0, 0));
+  m_specularColor =
+      getMaterialHelper(this, "specularColor", math::float3(1, 1, 1));
+  m_opacity = getMaterialHelper(this, "opacity", 1.f);
+  m_metallic = getMaterialHelper(this, "metallic", 1.f);
+  m_roughness = getMaterialHelper(this, "roughness", 1.f);
+  m_specular = getMaterialHelper(this, "specular", 0.f);
+  m_transmission = getMaterialHelper(this, "transmission", 0.f);
+  m_ior = getParam<float>("ior", 1.5f);
+  m_opacity = getMaterialHelper(this, "opacity", 1.f);
 }
 
 const char *PhysicallyBased::bnSubtype() const
@@ -211,10 +185,8 @@ void PhysicallyBased::setBarneyParameters()
   if (!m_bnMat)
     return;
 
-  // BNModel model = trackedModel();
-  // int slot = trackedSlot();
   auto context = getContext();
-  
+
   setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, context);
   setBNMaterialHelper(m_bnMat, "emissive", m_emissive, context);
   setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor, context);
@@ -225,7 +197,6 @@ void PhysicallyBased::setBarneyParameters()
   setBNMaterialHelper(m_bnMat, "opacity", m_opacity, context);
 
   bnSet1f(m_bnMat, "ior", m_ior);
-
   bnCommit(m_bnMat);
 }
 

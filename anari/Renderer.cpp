@@ -16,14 +16,17 @@ Renderer::~Renderer()
   bnRelease(barneyRenderer);
 }
 
-void Renderer::commit()
+void Renderer::commitParameters()
 {
   m_pixelSamples = getParam<int>("pixelSamples", 16);
   m_ambientRadiance = getParam<float>("ambientRadiance", .8f);
   m_crosshairs = getParam<bool>("crosshairs", false);
   m_background = getParam<math::float4>("background", math::float4(0, 0, 0, 1));
   m_backgroundImage = getParamObject<Array2D>("background");
+}
 
+void Renderer::finalize()
+{
   bnSet4fc(barneyRenderer, "bgColor", m_background);
   bnSet1i(barneyRenderer, "crosshairs", (int)m_crosshairs);
   bnSet1i(barneyRenderer, "pathsPerPixel", (int)m_pixelSamples);

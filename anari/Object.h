@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "common.h"
 #include "BarneyGlobalState.h"
+#include "common.h"
 // helium
 #include "helium/BaseObject.h"
 #include "helium/utility/ChangeObserverPtr.h"
@@ -19,28 +19,16 @@ struct Object : public helium::BaseObject
   virtual ~Object() = default;
 
   bool getProperty(const std::string_view &name,
-                   ANARIDataType type,
-                   void *ptr,
-                   uint32_t flags) override;
+      ANARIDataType type,
+      void *ptr,
+      uint32_t flags) override;
 
-  void commit() override;
-
+  void commitParameters() override;
+  void finalize() override;
   bool isValid() const override;
 
   BNContext getContext() const;
   BarneyGlobalState *deviceState() const;
-
- protected:
-  // Return if this object is tracking the currently used model
-  // bool isModelTracked(BNModel model, int slot = 0) const;
-  // void trackModel(BNModel model, int slot = 0);
-
-  // BNModel trackedModel() const;
-  // int trackedSlot() const;
-
- // private:
- //  BNModel m_bnModel{nullptr}; // not an owning reference
- //  int m_slot{-1};
 };
 
 struct UnknownObject : public Object

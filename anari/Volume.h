@@ -16,16 +16,14 @@ struct Volume : public Object
 
   static Volume *createInstance(std::string_view subtype, BarneyGlobalState *s);
 
-  void markCommitted() override;
+  void markFinalized() override;
 
-  BNVolume getBarneyVolume(BNContext context// , int slot
-                           );
+  BNVolume getBarneyVolume(BNContext context);
 
   virtual box3 bounds() const = 0;
 
  protected:
-  virtual BNVolume createBarneyVolume(BNContext context// , int slot
-                                      ) = 0;
+  virtual BNVolume createBarneyVolume(BNContext context) = 0;
   virtual void setBarneyParameters() = 0;
   void cleanup();
 
@@ -37,11 +35,12 @@ struct Volume : public Object
 struct TransferFunction1D : public Volume
 {
   TransferFunction1D(BarneyGlobalState *s);
-  void commit() override;
+
+  void commitParameters() override;
+  void finalize() override;
   bool isValid() const override;
 
-  BNVolume createBarneyVolume(BNContext context// , int slot
-                              ) override;
+  BNVolume createBarneyVolume(BNContext context) override;
 
   box3 bounds() const override;
 

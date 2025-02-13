@@ -35,7 +35,7 @@ bool World::getProperty(
 {
   if (name == "bounds" && type == ANARI_FLOAT32_BOX3) {
     if (flags & ANARI_WAIT) {
-      deviceState()->commitBufferFlush();
+      deviceState()->commitBuffer.flush();
       makeCurrent();
     }
     box3 bounds;
@@ -50,12 +50,16 @@ bool World::getProperty(
   return Object::getProperty(name, type, ptr, flags);
 }
 
-void World::commit()
+void World::commitParameters()
 {
   m_zeroSurfaceData = getParamObject<ObjectArray>("surface");
   m_zeroVolumeData = getParamObject<ObjectArray>("volume");
   m_zeroLightData = getParamObject<ObjectArray>("light");
+  m_instanceData = getParamObject<ObjectArray>("instance");
+}
 
+void World::finalize()
+{
   const bool addZeroInstance =
       m_zeroSurfaceData || m_zeroVolumeData || m_zeroLightData;
   if (addZeroInstance)
@@ -63,7 +67,7 @@ void World::commit()
 
   if (m_zeroSurfaceData) {
     reportMessage(ANARI_SEVERITY_DEBUG,
-                  "barney::World found %zu surfaces in zero instance",
+        "barney::World found %zu surfaces in zero instance",
         m_zeroSurfaceData->size());
     m_zeroGroup->setParamDirect("surface", getParamDirect("surface"));
   } else
@@ -87,23 +91,23 @@ void World::commit()
 
   m_zeroInstance->setParam("id", getParam<uint32_t>("id", ~0u));
 
-  m_zeroGroup->commit();
-  m_zeroInstance->commit();
-
-  m_instanceData = getParamObject<ObjectArray>("instance");
+  m_zeroGroup->commitParameters();
+  m_zeroInstance->commitParameters();
+  m_zeroGroup->finalize();
+  m_zeroInstance->finalize();
 
   m_instances.clear();
+
   if (m_instanceData) {
-    m_instanceData->removeAppendedHandles();
-    if (addZeroInstance)
-      m_instanceData->appendHandle(m_zeroInstance.ptr);
     std::for_each(m_instanceData->handlesBegin(),
         m_instanceData->handlesEnd(),
         [&](auto *o) {
           if (o && o->isValid())
             m_instances.push_back((Instance *)o);
         });
-  } else if (addZeroInstance)
+  }
+
+  if (addZeroInstance)
     m_instances.push_back(m_zeroInstance.ptr);
 }
 
@@ -111,7 +115,7 @@ BNModel World::makeCurrent()
 {
   auto *state = deviceState();
 
-  if (deviceState()->currentWorld != this) {
+  if (state->currentWorld != this) {
     if (m_barneyModel)
       bnRelease(m_barneyModel);
     m_barneyModel = nullptr;
@@ -147,7 +151,7 @@ void World::buildBarneyModel()
     if (barneyGroups[i] != nullptr)
       continue;
     auto *g = groups[i];
-    BNGroup bg = g->makeBarneyGroup(getContext());//m_barneyModel, 0);
+    BNGroup bg = g->makeBarneyGroup(getContext()); // m_barneyModel, 0);
     for (size_t j = i; j < groups.size(); j++) {
       if (groups[j] == g)
         barneyGroups[j] = bg;

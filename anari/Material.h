@@ -16,8 +16,9 @@ struct Material : public Object
   static Material *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
-  BNMaterial getBarneyMaterial(BNContext context// , int slot
-                               );
+  void finalize() override;
+
+  BNMaterial getBarneyMaterial(BNContext context);
 
  protected:
   virtual const char *bnSubtype() const = 0;
@@ -36,37 +37,38 @@ struct MaterialParameter
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
-  // ==================================================================
-  /*! ANARI "matte" material
+// ==================================================================
+/*! ANARI "matte" material
 
-    from anari spec:
-    <param>
-    name: "color"
-    type: FLOAT32_VEC3 / SAMPLER / STRING
-    default: (0.8, 0.8, 0.8)
-    description: diffuse color
+  from anari spec:
+  <param>
+  name: "color"
+  type: FLOAT32_VEC3 / SAMPLER / STRING
+  default: (0.8, 0.8, 0.8)
+  description: diffuse color
 
-    <param>
-    name: "opacity"
-    type: FLOAT32 / SAMPLER / STRING
-    default: 1.0             opacity
+  <param>
+  name: "opacity"
+  type: FLOAT32 / SAMPLER / STRING
+  default: 1.0             opacity
 
-    <param>
-    name: "alphaMode"
-    type:  STRING
-    default: "opaque"
-    description: control cut-out transparency, possible values: opaque, blend, mask
+  <param>
+  name: "alphaMode"
+  type:  STRING
+  default: "opaque"
+  description: control cut-out transparency, possible values: opaque, blend,
+  mask
 
-    <param>
-    name: "alphaCutoff"
-    type: FLOAT32
-    default: 0.5
-    description: threshold when alphaMode is mask
-  */
+  <param>
+  name: "alphaCutoff"
+  type: FLOAT32
+  default: 0.5
+  description: threshold when alphaMode is mask
+*/
 struct Matte : public Material
 {
   Matte(BarneyGlobalState *s);
-  void commit() override;
+  void commitParameters() override;
   bool isValid() const override;
 
   const char *bnSubtype() const override;
@@ -77,132 +79,132 @@ struct Matte : public Material
   MaterialParameter<float> m_opacity;
 };
 
-  // ==================================================================
-  /*! ANARI "matte" material
+// ==================================================================
+/*! ANARI "matte" material
 
-    from anari spec:
+  from anari spec:
 
-    <param>
-    baseColor
-    FLOAT32_VEC3 / SAMPLER / STRING
-    (1.0, 1.0, 1.0)
+  <param>
+  baseColor
+  FLOAT32_VEC3 / SAMPLER / STRING
+  (1.0, 1.0, 1.0)
 
-    <param>
-    opacity
-    FLOAT32 / SAMPLER / STRING
-    1.0
+  <param>
+  opacity
+  FLOAT32 / SAMPLER / STRING
+  1.0
 
-    <param>
-    metallic
-    FLOAT32 / SAMPLER / STRING
-    1.0
+  <param>
+  metallic
+  FLOAT32 / SAMPLER / STRING
+  1.0
 
-    <param>
-    roughness
-    FLOAT32 / SAMPLER / STRING
-    1.0
+  <param>
+  roughness
+  FLOAT32 / SAMPLER / STRING
+  1.0
 
-    <param>
-    normal
-    SAMPLER
+  <param>
+  normal
+  SAMPLER
 
-    <param>
-    emissive
-    FLOAT32_VEC3 / SAMPLER / STRING
-    (0.0, 0.0, 0.0)
+  <param>
+  emissive
+  FLOAT32_VEC3 / SAMPLER / STRING
+  (0.0, 0.0, 0.0)
 
-    <param>
-    occlusion
-    SAMPLER
+  <param>
+  occlusion
+  SAMPLER
 
-    <param>
-    alphaMode
-    STRING
-    opaque
+  <param>
+  alphaMode
+  STRING
+  opaque
 
-    <param>
-    alphaCutoff
-    FLOAT32
-    0.5
+  <param>
+  alphaCutoff
+  FLOAT32
+  0.5
 
-    <param>
-    specular
-    FLOAT32 / SAMPLER / STRING
-    0.0
+  <param>
+  specular
+  FLOAT32 / SAMPLER / STRING
+  0.0
 
-    <param>
-    specularColor
-    FLOAT32_VEC3 / SAMPLER / STRING
-    (1.0, 1.0, 1.0)
+  <param>
+  specularColor
+  FLOAT32_VEC3 / SAMPLER / STRING
+  (1.0, 1.0, 1.0)
 
-    <param>
-    clearcoat
-    FLOAT32 / SAMPLER / STRING
-    0.0
+  <param>
+  clearcoat
+  FLOAT32 / SAMPLER / STRING
+  0.0
 
-    <param>
-    clearcoatRoughness
-    FLOAT32 / SAMPLER / STRING
-    0.0
+  <param>
+  clearcoatRoughness
+  FLOAT32 / SAMPLER / STRING
+  0.0
 
-    <param>
-    clearcoatNormal
-    SAMPLER
+  <param>
+  clearcoatNormal
+  SAMPLER
 
-    <param>
-    transmission
-    FLOAT32 / SAMPLER / STRING
-    0.0
+  <param>
+  transmission
+  FLOAT32 / SAMPLER / STRING
+  0.0
 
-    <param>
-    ior
-    FLOAT32
-    1.5
+  <param>
+  ior
+  FLOAT32
+  1.5
 
-    <param>
-    thickness
-    FLOAT32 / SAMPLER / STRING
-    0.0
+  <param>
+  thickness
+  FLOAT32 / SAMPLER / STRING
+  0.0
 
-    <param>
-    attenuationDistance
-    FLOAT32
-    INF
+  <param>
+  attenuationDistance
+  FLOAT32
+  INF
 
-    <param>
-    attenuationColor
-    FLOAT32_VEC3
-    (1.0, 1.0, 1.0)
+  <param>
+  attenuationColor
+  FLOAT32_VEC3
+  (1.0, 1.0, 1.0)
 
-    <param>
-    sheenColor
-    FLOAT32_VEC3 / SAMPLER / STRING
-    (0.0, 0.0, 0.0)
+  <param>
+  sheenColor
+  FLOAT32_VEC3 / SAMPLER / STRING
+  (0.0, 0.0, 0.0)
 
-    <param>
-    sheenRoughness
-    FLOAT32 / SAMPLER / STRING
-    0.0
+  <param>
+  sheenRoughness
+  FLOAT32 / SAMPLER / STRING
+  0.0
 
-    <param>
-    iridescence
-    FLOAT32 / SAMPLER / STRING
-    0.0
+  <param>
+  iridescence
+  FLOAT32 / SAMPLER / STRING
+  0.0
 
-    <param>
-    iridescenceIor
-    FLOAT32
-    1.3
+  <param>
+  iridescenceIor
+  FLOAT32
+  1.3
 
-    <param>
-    iridescenceThickness
-    FLOAT32 / SAMPLER / STRING
-    0.0
-  */
+  <param>
+  iridescenceThickness
+  FLOAT32 / SAMPLER / STRING
+  0.0
+*/
 struct PhysicallyBased : public Material
 {
   PhysicallyBased(BarneyGlobalState *s);
-  void commit() override;
+  void commitParameters() override;
 
   const char *bnSubtype() const override;
   void setBarneyParameters() override;

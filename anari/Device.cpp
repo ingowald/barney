@@ -282,11 +282,11 @@ namespace barney_device {
   }
 
 
-  
+
   BarneyDevice::~BarneyDevice()
   {
     auto &state = *deviceState();
-    state.commitBufferClear();
+    state.commitBuffer.clear();
     reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
   }
 
@@ -312,7 +312,7 @@ namespace barney_device {
       state.context = bnMPIContextCreate(MPI_COMM_WORLD, &rank, 1, nullptr, 0);
 
       std::cout << "#banari: creating barney *MPI* context (rank #" << rank << " out of " << size << " total ranks)" << std::endl;
-      
+
       auto &info = state.bnInfo;
       bnMPIQueryHardware(&info, MPI_COMM_WORLD);
       reportMessage(ANARI_SEVERITY_DEBUG, "BNHardwareInfo:");

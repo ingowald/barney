@@ -14,7 +14,12 @@ Object::Object(ANARIDataType type, BarneyGlobalState *s)
     : helium::BaseObject(type, s)
 {}
 
-void Object::commit()
+void Object::commitParameters()
+{
+  // no-op
+}
+
+void Object::finalize()
 {
   // no-op
 }
@@ -40,28 +45,10 @@ BarneyGlobalState *Object::deviceState() const
   return (BarneyGlobalState *)helium::BaseObject::m_state;
 }
 
-  BNContext Object::getContext() const { return deviceState()->context; }
-  
-// bool Object::isModelTracked(BNModel model, int slot) const
-// {
-//   return m_bnModel == model && m_slot == slot;
-// }
-
-// void Object::trackModel(BNModel model, int slot)
-// {
-//   m_bnModel = model;
-//   m_slot = slot;
-// }
-
-// BNModel Object::trackedModel() const
-// {
-//   return m_bnModel;
-// }
-
-// int Object::trackedSlot() const
-// {
-//   return m_slot;
-// }
+BNContext Object::getContext() const
+{
+  return deviceState()->context;
+}
 
 // UnknownObject definitions //////////////////////////////////////////////////
 

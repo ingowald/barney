@@ -39,62 +39,42 @@ set(BANARI_SOURCES
 
 # helper 'interface-'library that contains common settings for both
 # static and shared anari
-add_library(banari-config INTERFACE
-  )
-target_link_libraries(banari-config
-  INTERFACE
-  barney_config
-  )
-set_target_properties(banari-config
-  PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
+add_library(banari-config INTERFACE)
+target_link_libraries(banari-config INTERFACE barney_config)
+set_target_properties(banari-config PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(banari-config
-  INTERFACE
+INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
-  )
+)
 
 # ==================================================================
 # default shared-linkage for anari loader library to load when barney
 # device is requested
 # ==================================================================
-add_library(anari_library_barney SHARED
-  ${BANARI_SOURCES}
-  )
+add_library(anari_library_barney SHARED ${BANARI_SOURCES})
 
 if (BARNEY_MPI)
   target_link_libraries(anari_library_barney
-    #PRIVATE
-    PUBLIC
+  PUBLIC
     banari-config
     barney_mpi
-    )
+  )
 else()
   target_link_libraries(anari_library_barney
-    #PRIVATE
-    PUBLIC
+  PUBLIC
     banari-config
     barney
-    )
+  )
 endif()
-#if (TARGET anari::helium)
-  target_link_libraries(anari_library_barney PRIVATE
-    anari::helium
-    anari::anari
-    )
-#else()
-#  target_link_libraries(anari_library_barney PRIVATE
-#    helium
-#    anari
-#    )
-#endif()
+
+target_link_libraries(anari_library_barney PRIVATE anari::helium anari::anari)
 
 include(GenerateExportHeader)
 generate_export_header(anari_library_barney
   EXPORT_MACRO_NAME "BARNEY_LIBRARY_INTERFACE"
-  )
+)
 
 ## Installation ##
 
@@ -108,9 +88,7 @@ install(TARGETS# barney
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-
-
+)
 
 if (NOT BANARI_SKIP_QUERIES)
   ## Code generation ##
@@ -118,6 +96,6 @@ if (NOT BANARI_SKIP_QUERIES)
     DEVICE_TARGET anari_library_barney
     CPP_NAMESPACE barney_device
     JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
-    )
+  )
 endif()
 

@@ -4,8 +4,6 @@
 #include "Instance.h"
 // anari
 #include <anari/anari_cpp/ext/linalg.h>
-// CUDA
-// #include <vector_functions.h>
 
 namespace barney_device {
 
@@ -13,28 +11,33 @@ Instance::Instance(BarneyGlobalState *s) : Object(ANARI_INSTANCE, s) {}
 
 Instance::~Instance() = default;
 
-void Instance::commit()
+void Instance::commitParameters()
 {
   math::mat4 xfm = anari::math::identity;
   getParam("transform", ANARI_FLOAT32_MAT4, &xfm);
-  (anari::math::float3&)m_xfm.l.vx
-    = anari::math::float3(xfm[0].x, xfm[0].y, xfm[0].z);
-  (anari::math::float3&)m_xfm.l.vy
-    = anari::math::float3(xfm[1].x, xfm[1].y, xfm[1].z);
-  (anari::math::float3&)m_xfm.l.vz
-    = anari::math::float3(xfm[2].x, xfm[2].y, xfm[2].z);
-  (anari::math::float3&)m_xfm.p
-    = anari::math::float3(xfm[3].x, xfm[3].y, xfm[3].z);
-
+  m_transform = xfm;
   m_group = getParamObject<Group>("group");
+}
+
+void Instance::finalize()
+{
+  const auto &xfm = m_transform;
+  (anari::math::float3 &)m_xfm.l.vx =
+      anari::math::float3(xfm[0].x, xfm[0].y, xfm[0].z);
+  (anari::math::float3 &)m_xfm.l.vy =
+      anari::math::float3(xfm[1].x, xfm[1].y, xfm[1].z);
+  (anari::math::float3 &)m_xfm.l.vz =
+      anari::math::float3(xfm[2].x, xfm[2].y, xfm[2].z);
+  (anari::math::float3 &)m_xfm.p =
+      anari::math::float3(xfm[3].x, xfm[3].y, xfm[3].z);
   if (!m_group)
     reportMessage(ANARI_SEVERITY_WARNING, "missing 'group' on ANARIInstance");
 }
 
-void Instance::markCommitted()
+void Instance::markFinalized()
 {
   deviceState()->markSceneChanged();
-  Object::markCommitted();
+  Object::markFinalized();
 }
 
 bool Instance::isValid() const

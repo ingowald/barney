@@ -20,10 +20,9 @@ struct SpatialField : public Object
   static SpatialField *createInstance(
       std::string_view subtype, BarneyGlobalState *s);
 
-  void markCommitted() override;
+  void markFinalized() override;
 
-  virtual BNScalarField createBarneyScalarField(BNContext context// , int slot
-                                                ) const = 0;
+  virtual BNScalarField createBarneyScalarField(BNContext context) const = 0;
 
   void cleanup()
   {
@@ -32,21 +31,16 @@ struct SpatialField : public Object
       m_bnField = nullptr;
     }
   }
-  
-  BNScalarField getBarneyScalarField(BNContext context// , int slot
-                                     )
+
+  BNScalarField getBarneyScalarField(BNContext context)
   {
     if (!isValid())
       return {};
-    // if (!isModelTracked(model, slot)) {
-    //   cleanup();
-    //   trackModel(model, slot);
-    // }
-    if (!m_bnField) 
-      m_bnField = createBarneyScalarField(context/*,slot*/);
+    if (!m_bnField)
+      m_bnField = createBarneyScalarField(context);
     return m_bnField;
   }
-  
+
   virtual box3 bounds() const = 0;
 
   BNScalarField m_bnField = 0;
@@ -57,10 +51,11 @@ struct SpatialField : public Object
 struct UnstructuredField : public SpatialField
 {
   UnstructuredField(BarneyGlobalState *s);
-  void commit() override;
 
-  BNScalarField createBarneyScalarField(BNContext context// , int slot
-                                        ) const override;
+  void commitParameters() override;
+  void finalize() override;
+
+  BNScalarField createBarneyScalarField(BNContext context) const override;
 
   box3 bounds() const override;
 
@@ -72,9 +67,6 @@ struct UnstructuredField : public SpatialField
     helium::IntrusivePtr<helium::Array1D> index;
     helium::IntrusivePtr<helium::Array1D> cellType;
     helium::IntrusivePtr<helium::Array1D> cellBegin;
-    // "stitcher" extensions
-    // helium::IntrusivePtr<helium::ObjectArray> gridData;
-    // helium::IntrusivePtr<helium::Array1D> gridDomains;
   } m_params;
 
   std::vector<math::float4> m_vertices;
@@ -82,18 +74,8 @@ struct UnstructuredField : public SpatialField
      is an array of the element indices in sequential order of
      elements (because the anari array odesn't have that requirement,
      so let's make sure to fix it) */
-  std::vector<int>          m_indices;
-  std::vector<int>          m_elementOffsets;
-  // std::vector<float> m_generatedVertices;
-  // std::vector<int> m_generatedTets;
-  // std::vector<int> m_generatedPyrs;
-  // std::vector<int> m_generatedWedges;
-  // std::vector<int> m_generatedHexes;
-  // // for stitcher
-  // std::vector<int> m_generatedGridOffsets;
-  // std::vector<int> m_generatedGridDims;
-  // std::vector<float> m_generatedGridDomains;
-  // std::vector<float> m_generatedGridScalars;
+  std::vector<int> m_indices;
+  std::vector<int> m_elementOffsets;
 
   box3 m_bounds;
 };
@@ -101,10 +83,10 @@ struct UnstructuredField : public SpatialField
 struct BlockStructuredField : public SpatialField
 {
   BlockStructuredField(BarneyGlobalState *s);
-  void commit() override;
+  void commitParameters() override;
+  void finalize() override;
 
-  BNScalarField createBarneyScalarField(BNContext context// , int slot
-                                        ) const override;
+  BNScalarField createBarneyScalarField(BNContext context) const override;
 
   box3 bounds() const override;
 
@@ -127,10 +109,10 @@ struct BlockStructuredField : public SpatialField
 struct StructuredRegularField : public SpatialField
 {
   StructuredRegularField(BarneyGlobalState *s);
-  void commit() override;
+  void commitParameters() override;
+  void finalize() override;
 
-  BNScalarField createBarneyScalarField(BNContext context// , int slot
-                                        ) const override;
+  BNScalarField createBarneyScalarField(BNContext context) const override;
 
   box3 bounds() const override;
   bool isValid() const override;
