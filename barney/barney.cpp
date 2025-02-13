@@ -26,6 +26,8 @@
 #include "barney/common/mat4.h"
 #include "barney/Camera.h"
 
+static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this isn't going to work");
+
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
 #if 0
