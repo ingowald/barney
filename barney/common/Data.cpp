@@ -148,6 +148,8 @@ namespace barney {
         = device->rtc->createBuffer(numItems*owlSizeOf(type),_items);
       assert(getPLD(device)->rtcBuffer);
     }
+    for (auto device : *devices)
+      device->sync();
   }
   
   PODData::~PODData()

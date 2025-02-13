@@ -66,11 +66,11 @@ namespace barney {
     struct DD : public ScalarField::DD {
       
       inline __both__ box4f eltBounds(Element element) const;
-      inline __both__ box4f tetBounds(int primID) const;
-      inline __both__ box4f pyrBounds(int primID) const;
-      inline __both__ box4f wedBounds(int primID) const;
-      inline __both__ box4f hexBounds(int primID) const;
-      // inline __both__ box4f gridBounds(int primID) const;
+      inline __both__ box4f tetBounds(int ofs0) const;
+      inline __both__ box4f pyrBounds(int ofs0) const;
+      inline __both__ box4f wedBounds(int ofs0) const;
+      inline __both__ box4f hexBounds(int ofs0) const;
+      // inline __both__ box4f gridBounds(int ofs0) const;
 
       /* compute scalar of given umesh element at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
@@ -80,29 +80,29 @@ namespace barney {
       /* compute scalar of given tet in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool tetScalar(float &retVal, int primID, vec3f P, bool dbg = false) const;
+      inline __both__ bool tetScalar(float &retVal, int ofs0, vec3f P, bool dbg = false) const;
       
       /* compute scalar of given pyramid in umesh, at point P, and
          return that in 'retVal'. returns true if P is inside the
          elemnt, false if outside (in which case retVal is not
          defined) */
-      inline __both__ bool pyrScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool pyrScalar(float &retVal, int ofs0, vec3f P) const;
       
       /* compute scalar of given wedge in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool wedScalar(float &retVal, int primID, vec3f P) const;
+      inline __both__ bool wedScalar(float &retVal, int ofs0, vec3f P) const;
       
       /* compute scalar of given hex in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
       inline __both__
-      bool hexScalar(float &retVal, int primID, vec3f P, bool dbg=false) const;
+      bool hexScalar(float &retVal, int ofs0, vec3f P, bool dbg=false) const;
       
       /* compute scalar of given grid in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      // inline __both__ bool gridScalar(float &retVal, int primID, vec3f P) const;
+      // inline __both__ bool gridScalar(float &retVal, int ofs0, vec3f P) const;
       
       const float4     *vertices;
       const int        *indices;

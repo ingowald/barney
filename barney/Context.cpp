@@ -27,7 +27,8 @@ namespace barney {
                    const std::vector<int> &gpuIDs,
                    int globalIndex,
                    int globalIndexStep)
-    : isActiveWorker(!dataGroupIDs.empty())
+    : isActiveWorker(!dataGroupIDs.empty()),
+      globalIndex(globalIndex)
   {
     
     if (gpuIDs.empty())
@@ -173,6 +174,16 @@ namespace barney {
     // for (int localID = 0; localID < devices.size(); localID++)
     //   devices[localID]->launch_sync();
   }
+
+  bool logGenerations()
+  {
+    static int value = -1;
+    if (value == -1) {
+      char *e = getenv("BARNEY_LOG_GENERATIONS");
+      value = (e && std::stoi(e) != 0);
+    }
+    return value != 0;
+  }
   
   void Context::renderTiles(Renderer *renderer,
                             GlobalModel *model,
@@ -207,8 +218,13 @@ namespace barney {
         // no sync required here, shadeRays syncs itself.
         
         const int numActiveGlobally = numRaysActiveGlobally();
+        if (globalIndex == 0 && logGenerations())
+          printf("#generation %i num active %s after bounce\n",
+                 generation,prettyNumber(numActiveGlobally).c_str());
         if (numActiveGlobally > 0)
           continue;
+
+                 
     
         break;
       }

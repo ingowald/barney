@@ -16,16 +16,23 @@
 
 #pragma once
 
-#include "barney/umesh/os/ObjectSpace-common.h"
+#include "barney/umesh/common/UMeshField.h"
+#include "barney/volume/Volume.h"
 
-#define AWT_DEFAULT_MAX_DEPTH 7
+// #define AWT_DEFAULT_MAX_DEPTH 7
+#define AWT_NODE_WIDTH 4
 
 namespace barney {
 
+  struct RefitInfo {
+    int numNotDone;
+    int parent;
+  };
+  
   struct __barney_align(16) AWTNode {
-    enum { count_bits = 4, offset_bits = 32-count_bits, max_leaf_size = ((1<<count_bits)-1) };
-    box4f   bounds[4];
-    float   majorant[4];
+    enum { count_bits = 3,
+           offset_bits = 32-count_bits,
+           max_leaf_size = ((1<<count_bits)-1) };
     // int     depth[4];
     struct NodeRef {
       inline __both__ bool valid() const { return count != 0 || offset != 0; }
@@ -33,48 +40,51 @@ namespace barney {
       uint32_t offset:offset_bits;
       uint32_t count :count_bits;
     };
-    NodeRef child[4];
+    struct __barney_align(16) Child {
+      box3f    bounds;
+      float    majorant;
+      NodeRef  nodeRef;
+    };
+    Child child[AWT_NODE_WIDTH];
   };
 
-  // /*! object-space accelerator that clusters elements into, well,
-  //   clusters of similar/nearly elements, then builds an RTX BVH and
-  //   majorants over those clusters, disables majorant-zero clusters
-  //   during refit and in the isec program for a cluster performs
-  //   ray-element intersection followed by (per-element) woodock
-  //   sampling along the ray-element overlap range */
-  // struct UMeshAWT
-  // {
-  //   struct DD : public UMeshObjectSpace::DD {
-  //     using Inherited = UMeshObjectSpace::DD;
-  //     static void addVars(std::vector<OWLVarDecl> &vars, int base);
-      
-  //     AWTNode             *nodes;
-  //     int                 *roots;
-  //   };
 
-  //   struct Host : public UMeshObjectSpace::Host {
-  //     using Inherited = UMeshObjectSpace::Host;
-  //     Host(UMeshField *mesh, Volume *volume)
-  //       : Inherited(mesh,volume)
-  //     {}
-  //     static OWLGeomType createGeomType(DevGroup *devGroup);
-      
-  //     void build(bool full_rebuild) override;
+  struct AWTAccel : public VolumeAccel  {
+    struct DD 
+    {
+      // box3f                 bounds;
+      UMeshField::DD        mesh;
+      TransferFunction::DD  xf;
+      AWTNode              *awtNodes;
+      uint32_t             *primIDs;
+    };
 
-  //     /*! set owl variables for this accelerator - this is virutal so
-  //       derived classes can add their own */
-  //     void setVariables(OWLGeom geom) override;
-      
-      
-  //     void buildNodes(cuBQL::WideBVH<float,3, 4> &qbvh);
-  //     void extractRoots();
-  //     void buildAWT();
-      
-  //     std::vector<int>     roots;
-  //     std::vector<AWTNode> nodes;
-  //     OWLBuffer nodesBuffer;
-  //     OWLBuffer rootsBuffer;
-  //   };
-  // };
-  
+    static rtc::GeomType *createGeomType(rtc::Device *device,
+                                         const void *cbData);
+    
+    struct PLD {
+      AWTNode      *awtNodes   = 0;
+      uint32_t     *primIDs    = 0;
+      RefitInfo    *refitInfos = 0;
+      rtc::Geom    *geom       = 0;
+      rtc::Group   *group      = 0;
+      rtc::Compute *copyNodes  = 0;
+      rtc::Compute *computeMajorants = 0;
+      int           numNodes   = 0;
+      box3f         bounds;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
+
+    DD getDD(Device *device);
+
+    AWTAccel(Volume *volume,
+             UMeshField *mesh);
+    
+    void build(bool full_rebuild) override;
+
+    UMeshField *const mesh;
+  };
+    
 }

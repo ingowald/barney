@@ -47,7 +47,7 @@ namespace barney {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
       if (pld->userGeoms.empty()) {
-        int numOrigins = origins->count;
+        int numOrigins = (int)origins->count;
         rtc::GeomType *gt
           = device->geomTypes.get("Spheres",Spheres::createGeomType);
         rtc::Geom *geom = gt->createGeom();

@@ -1219,7 +1219,10 @@ namespace barney {
         scatter.pdf = pdf;
         scatter.f_r = bsdf;
         scatter.dir = normalize(w_i);
-        scatter.wasDiffuse = (sampled_bsdf == DISNEY_DIFFUSE_BRDF);
+        scatter.type
+          = (sampled_bsdf == DISNEY_DIFFUSE_BRDF)
+          ? ScatterResult::DIFFUSE
+          : ScatterResult::GLOSSY;
 
         if (dbg) printf(" => done scatter, f_r %f %f %f pdf %f\n",
                         scatter.f_r.x,
@@ -1227,15 +1230,6 @@ namespace barney {
                         scatter.f_r.z,
                         scatter.pdf
                         );
-
-// #else
-//         // ugh ... visrtx doesn't have scattering;
-//         scatter.dir = sampleCosineWeightedHemisphere(dg.Ns,rng);
-
-//         EvalRes er = eval(dg,scatter.dir,dbg);
-//         scatter.pdf = fabsf(dot(scatter.dir,dg.Ng))/M_PI;//1.f/M_PI;//er.pdf;
-//         scatter.f_r = er.value;
-// #endif
       }
 
       inline __both__ EvalRes NVisii::eval(DG dg, vec3f wi, bool dbg) const
@@ -1244,37 +1238,6 @@ namespace barney {
         DisneyMaterial mat = unpack();
 
         mat.alpha = 1.f;
-
-        
-        // if (dbg) printf("disney base %f %f %f\n",
-        //                 mat.base_color.x,
-        //                 mat.base_color.y,
-        //                 mat.base_color.z);
-        /* 
-         * Compute the throughput of a given sampled direction
-         * @param mat The structure containing material information.
-         * @param g_n The geometric normal (cross product of the two triangle edges)
-         * @param s_n The shading normal (per-vertex interpolated normal)
-         * @param b_n The bent normal (see A.3 here https://arxiv.org/abs/1705.01263)
-         * @param v_x The tangent vector
-         * @param v_y The binormal vector
-         * @param w_o The outgoing (aka view) vector
-         * @param w_i The sampled incoming (aka light) vector
-         * @param w_h The halfway vector between the incoming and outgoing vectors
-         * @param pdf The returned probability of this sample
-         */
-        // __both__ void disney_brdf(
-        //                             const DisneyMaterial &mat, 
-        //                             const vec3f &g_n,
-        //                             const vec3f &s_n,
-        //                             const vec3f &b_n,
-        //                             const vec3f &v_x, 
-        //                             const vec3f &v_y,
-        //                             const vec3f &w_o, 
-        //                             const vec3f &w_i, 
-        //                             const vec3f &w_h, 
-        //                             vec3f &bsdf
-        
         // * @param g_n The geometric normal (cross product of the two triangle edges)
         vec3f g_n = (vec3f)dg.Ng;
          // * @param s_n The shading normal (per-vertex interpolated normal)

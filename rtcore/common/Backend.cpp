@@ -11,19 +11,22 @@ namespace barney {
 #if !BARNEY_BACKEND_CUDA
     Backend *createBackend_cuda()
     {
-      throw std::runtime_error("#barney: cuda support not compiled in!");
+	    return 0;
+      //throw std::runtime_error("#barney: cuda support not compiled in!");
     }
 #endif
 #if !BARNEY_BACKEND_OPTIX
     Backend *createBackend_optix()
     {
-      throw std::runtime_error("#barney: optix support not compiled in!");
+	    return 0;
+      //throw std::runtime_error("#barney: optix support not compiled in!");
     }
 #endif
 #if !BARNEY_BACKEND_EMBREE
     Backend *createBackend_embree()
     {
-      throw std::runtime_error("#barney: embree/cpu support not compiled in!");
+	    return 0;
+      //throw std::runtime_error("#barney: embree/cpu support not compiled in!");
     }
 #endif
 
@@ -102,7 +105,7 @@ namespace barney {
     const void *getSymbol(const std::string &symbolName)
     {
 #ifdef _WIN32
-      HMODULE libCurrent = GetModuleHandle(NULL);
+        HMODULE libCurrent = GetModuleHandle("barney");
       void* symbol = (void*)GetProcAddress(libCurrent, symbolName.c_str());
 #else
       // void *lib = dlopen(nullptr,RTLD_NOW);

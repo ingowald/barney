@@ -320,8 +320,14 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
     PATTERN Findbarney.cmake EXCLUDE
 )
 
+if (BARNEY_MPI)
+  set(BARNEY_MPI_INSTALL barney_mpi)
+else()
+  set(BARNEY_MPI_INSTALL)
+endif()
 install(
   TARGETS barney # ${CUBQL_LIBS}
+  ${BARNEY_MPI_INSTALL}
 #  EXPORT barneyTargets
   EXPORT barney-config
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -337,35 +343,35 @@ install(EXPORT barney-config
   NAMESPACE barney::
   )
 
-if (BARNEY_MPI)
-  if (ON)
-    install(
-      TARGETS barney_mpi
-      EXPORT barney-config
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      NAMELINK_SKIP
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      )
-  else()
-    install(
-      TARGETS barney_mpi
-#      EXPORT barney_mpiTargets
-      EXPORT barney_mpi-config
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      NAMELINK_SKIP
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      )
-#    install(EXPORT barney_mpiTargets
-    install(EXPORT barney_mpi-config
-#      FILE barney_mpiTargets.cmake
-      FILE barney_mpi-config.cmake
-      DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
-      NAMESPACE barney::
-      )
-  endif()
-endif()
+# if (BARNEY_MPI)
+#   if (ON)
+#     install(
+#       TARGETS barney_mpi
+#       EXPORT barney-config
+#       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#       NAMELINK_SKIP
+#       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#       )
+#   else()
+#     install(
+#       TARGETS barney_mpi
+# #      EXPORT barney_mpiTargets
+#       EXPORT barney_mpi-config
+#       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#       NAMELINK_SKIP
+#       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#       )
+# #    install(EXPORT barney_mpiTargets
+#     install(EXPORT barney_mpi-config
+# #      FILE barney_mpiTargets.cmake
+#       FILE barney_mpi-config.cmake
+#       DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
+#       NAMESPACE barney::
+#       )
+#   endif()
+# endif()
 
 # configures the public api
 configure_file(
@@ -382,7 +388,6 @@ configure_file(
 
 install(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/barney
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
   )
-
 

@@ -58,7 +58,8 @@ namespace barney {
       EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
       {
         float density = ONE_OVER_FOUR_PI;
-        return EvalRes(density*(const vec3f&)albedo,density);
+        return EvalRes(//density*
+                       (const vec3f&)albedo,density);
       }
 
       /*! simple omnidirectional phase function - scatter into any
@@ -71,7 +72,7 @@ namespace barney {
       {
         // see global illumination compendium, page 19
         float r1 = random();
-        float r2 = random();
+        float r2 = random(); 
         // float phi = two_pi*r1;
         // float theta = acosf(1.f-2.f*r2);
         float x = cosf(two_pi*r1)*sqrtf(r2*(1.f-r2));
@@ -79,8 +80,9 @@ namespace barney {
         float z = (1.f-2.f*r2);
         float density = ONE_OVER_FOUR_PI;
         scatter.pdf = density;
-        scatter.f_r = (const vec3f&)albedo * density;
+        scatter.f_r = (const vec3f&)albedo;// * density;
         scatter.dir = vec3f(x,y,z);
+        scatter.type = ScatterResult::VOLUME;
       }
       
     }

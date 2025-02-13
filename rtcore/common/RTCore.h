@@ -14,7 +14,8 @@
  
 
 #if defined(_MSC_VER)
-#  define BARNEY_VISIBILITY_DEFAULT /* nothing */
+//#  define BARNEY_VISIBILITY_DEFAULT /* nothing */
+#  define BARNEY_VISIBILITY_DEFAULT __declspec(dllexport)
 #elif defined(__clang__) || defined(__GNUC__)
 # ifdef __CUDA_ARCH__
 #  define BARNEY_VISIBILITY_DEFAULT /* nothing */
@@ -539,7 +540,7 @@ namespace barney {
     }
 
 # define RTC_DECLARE_OPTIX_TRACE(name,RayGenType)          \
-    extern "C" __global__                                       \
+    extern "C"  __global__                                       \
     void __raygen__##name()                                     \
     {                                                           \
       RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();   \

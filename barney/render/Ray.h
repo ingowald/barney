@@ -45,7 +45,7 @@ namespace barney {
       union {
         struct {
           uint64_t misWeightBits:16;
-          uint64_t pixelID      :28;
+          uint64_t pixelID      :27;
           /*! type of bsdf in the hitBSDF; if this is set to NONE the
             ray didn't have any hit yet */
           uint64_t bsdfType         : 3;
@@ -142,7 +142,7 @@ namespace barney {
       vec3f t_fr = max(t_lo,t_hi);
       t0 = max(t0,reduce_max(t_nr));
       t1 = min(t1,reduce_min(t_fr));
-      return t0 < t1;
+      return t0 <= t1;
     }
 
     inline __both__
@@ -167,7 +167,7 @@ namespace barney {
       vec3f t_fr = max(t_lo,t_hi);
       t0 = max(t0,reduce_max(t_nr));
       t1 = min(t1,reduce_min(t_fr));
-      return t0 < t1;
+      return t0 <= t1;
     }
 
     inline __both__
