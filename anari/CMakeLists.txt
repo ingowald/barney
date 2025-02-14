@@ -78,12 +78,12 @@ generate_export_header(anari_library_barney
 
 ## Installation ##
 
-if (OFF)
 if (APPLE)
   set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$loader_path")
 else()
   set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
+if (OFF)
 install(TARGETS# barney
   anari_library_barney
   EXPORT barney-config
