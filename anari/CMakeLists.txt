@@ -78,6 +78,7 @@ generate_export_header(anari_library_barney
 
 ## Installation ##
 
+if (OFF)
 if (APPLE)
   set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$loader_path")
 else()
@@ -90,6 +91,7 @@ install(TARGETS# barney
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+endif()
 
 if (NOT BANARI_SKIP_QUERIES)
   ## Code generation ##
@@ -99,4 +101,3 @@ if (NOT BANARI_SKIP_QUERIES)
     JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
   )
 endif()
-

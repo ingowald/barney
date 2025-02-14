@@ -329,9 +329,16 @@ if (BARNEY_MPI)
 else()
   set(BARNEY_MPI_INSTALL)
 endif()
+if (TARGET anari_library_barney)
+  set(BARNEY_ANARI_INSTALL anari_library_barney)
+else()
+  set(BARNEY_ANARI_INSTALL)
+endif()
+
 install(
   TARGETS barney # ${CUBQL_LIBS}
   ${BARNEY_MPI_INSTALL}
+  ${BARNEY_ANARI_INSTALL}
 #  EXPORT barneyTargets
   EXPORT barney-config
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
