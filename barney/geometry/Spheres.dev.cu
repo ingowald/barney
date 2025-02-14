@@ -59,21 +59,23 @@ namespace barney {
     {
       auto &ray = *(Ray*)rt.getPRD();
       auto &self = *(Spheres::DD*)rt.getProgramData();
-      // auto &ray = owl::getPRD<Ray>();
-      // auto &self = owl::getProgramData<Spheres::DD>();
-      int primID = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
-    
-      float t_hit = rt.getRayTmax(); //optixGetRayTmax();
+      int primID = rt.getPrimitiveIndex();
 
-      vec3f org = rt.getWorldRayOrigin(); //optixGetWorldRayOrigin();
-      vec3f dir = rt.getWorldRayDirection(); //optixGetWorldRayDirection();
-      /*! isec code has temporarily stored object-space hit position in
-        ray.P, see below! */
+#ifdef NDEBUG
+      bool dbg = false;
+#else
+      bool dbg = path.dbg;
+#endif
+      
+      float t_hit = rt.getRayTmax(); 
+
+      vec3f org = rt.getWorldRayOrigin(); 
+      vec3f dir = rt.getWorldRayDirection();
+      /*! isec code has temporarily stored object-space hit position
+        in ray.P, see below! */
       vec3f objectP = ray.P;
-      // vec3f worldP = optixTransformPointFromObjectToWorldSpace(objectP);
       vec3f worldP = rt.transformPointFromObjectToWorldSpace(objectP);
       
-      // vec3f P   = org + t_hit * dir;
       vec3f objectCenter
         = self.origins[primID];
       vec3f objectN
@@ -91,17 +93,7 @@ namespace barney {
       vec3f worldN
         = rt.transformVectorFromObjectToWorldSpace(objectN);
 
-      // } else {
-      //   N = normalize(P-center);
-      //   float eps = 1e-6f;
-      //   eps = safe_eps(eps,radius);
-      //   eps = safe_eps(eps,P);
-      
-      //   float offset = radius*(1.f+eps);
-      //   P = center + offset * N;
-      // }
-
-      render::HitAttributes hitData;//(OptixGlobals::get());
+      render::HitAttributes hitData;
       hitData.worldPosition   = worldP;
 
       hitData.objectPosition  = objectP;
@@ -113,21 +105,16 @@ namespace barney {
         (vec3f&)hitData.color = self.colors[primID];
     
       auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
-      { /* does not make sense for spheres *///return make_float4(0,0,0,1);
-
-        // doesn't make sense, but anari sdk assumes for spheres per-vtx is same as per-prim
-        vec4f v = attrib.fromArray.valueAt(hitData.primID,ray.dbg);
-        if (ray.dbg)
-          printf("querying attribute prim %i -> %f %f %f %f \n",hitData.primID,v.x,v.y,v.z,v.w);
+      { // doesn't make sense, but anari sdk assumes for spheres
+        // per-vtx is same as per-prim
+        vec4f v = attrib.fromArray.valueAt(hitData.primID,dbg);
         return v;
       };
-      self.setHitAttributes(hitData,interpolator,ray.dbg);
+      self.setHitAttributes(hitData,interpolator,dbg);
 
-      if (ray.dbg)
-        printf("HIT SPHERES %i\n",self.materialID);
       const DeviceMaterial &material
         = OptixGlobals::get(rt).materials[self.materialID];
-      material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+      material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,dbg);
     }
   
     template<typename RTBackend>

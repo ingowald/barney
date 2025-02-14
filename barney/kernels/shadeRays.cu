@@ -25,7 +25,7 @@ namespace barney {
   namespace render {
 
 
-#define SCI_VIS_MODE 1
+#define SCI_VIS_MODE 0
     
 #define MAX_DIFFUSE_BOUNCES 3
     
@@ -399,12 +399,8 @@ namespace barney {
 #endif
       
       bool fire = dbg;//0 && (path.pixelID == 969722);
-      // fire =
-      //   path.pixelID==85640;
-      // bool fire = 0 && (path.pixelID == 963212);
-      // bool fire = 1 && (path.pixelID == 428428);
 
-      if (fire || 1 && dbg)
+      if (dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
                pathDepth,
                path.org.x,
@@ -432,7 +428,7 @@ namespace barney {
             (float)path.misWeight *
 #endif
             (vec3f)path.throughput;
-          if (fire || dbg)
+          if (dbg)
             printf("_shadow_ ray reaches light: tp %f %f %f misweight %f frag %f %f %f\n",
                    (float)path.throughput.x,
                    (float)path.throughput.y,
@@ -441,7 +437,7 @@ namespace barney {
                    fragment.x,
                    fragment.y,
                    fragment.z);
-          if (1 && dbg) printf("shadow miss, frag %f %f %f\n",
+          if (dbg) printf("shadow miss, frag %f %f %f\n",
                                     fragment.x,
                                     fragment.y,
                                     fragment.z);
@@ -480,15 +476,6 @@ namespace barney {
                    path.missColor.y,
                    path.missColor.z,
                    fragment.x,fragment.y,fragment.z);
-          
-          // const vec3f fromEnv
-          //   = // 1.5f*
-          //   backgroundOrEnv(world,path);
-
-          // const vec3f tp = path.throughput;
-          // const vec3f addtl = tp
-          //   * fromEnv;
-          // fragment = addtl;
         } else {
           // ----------------------------------------------------------------
           // SECONDARY ray that didn't hit anything -> env-light
@@ -515,7 +502,7 @@ namespace barney {
 # endif
 #else
           const vec3f fromEnv = radianceFromEnv(world,renderer,path);
-          if (fire || 0 && dbg)
+          if (dbg)
             printf("fromenv %f %f %f\n",
                    fromEnv.x,
                    fromEnv.y,
@@ -545,15 +532,6 @@ namespace barney {
       dg.Ns = Ng;
       dg.wo = -normalize((vec3f)path.dir);
       dg.insideMedium = path.isInMedium;
-      // for volumes:
-      // if (dg.Ng == vec3f(0.f))
-      //   dg.Ng = dg.Ns = -path.dir;
-      
-      // if (1 && dbg)
-      //   printf("dg.N %f %f %f\n",
-      //          dg.Ns.x,
-      //          dg.Ns.y,
-      //          dg.Ns.z);
 
       // if the ray is a volume hit we want it offset it into the
       // direction the ray came from (otherwise we have a chance of
@@ -563,19 +541,6 @@ namespace barney {
       const float offsetEpsilon = safe_eps(EPS,dg.P);
       vec3f frontFacingSurfaceOffset
         = offsetEpsilon*(isVolumeHit?dg.wo:Ngff);
-      // vec3f dg_P
-      //   = path.P+frontFacingSurfaceOffset;
-      // if (dbg)
-      //   printf("(%i) hit trans %f ior %f, dotrans %i\n",
-      //          pathDepth,
-      //          (float)path.transmission,
-      //          (float)path.ior,
-      //          int(doTransmission));
-      // #if 1
-      // if (dbg) printf("mattype %i\n",path.materialType);
-
-
-
 
       // ==================================================================
       // FIRST, let us look at generating any shadow rays, if
@@ -593,11 +558,8 @@ namespace barney {
                        lightNeedsMIS,
                        lightIsDirLight,
 #endif
-                       fire || 0 && dbg)
-          // && 
-          // (path.materialType != GLASS)
-          ) {
-        if (fire || 0 && dbg)
+                       dbg)) {
+        if (dbg)
           printf("sample light dir %f %f %f rad %f %f %f pdf %f spike %f\n",
                  ls.direction.x,
                  ls.direction.y,
@@ -608,17 +570,16 @@ namespace barney {
                  ls.pdf,
                  reduce_max(ls.radiance)/ls.pdf);
         EvalRes f_r
-          = bsdf.eval(dg,ls.direction,fire)
-          // * fabsf(dot(dg.Ng,ls.direction))
-          ;
-        if (fire || 0 && dbg) printf("eval light res %f %f %f: %f\n",
-                                          f_r.value.x,
-                                          f_r.value.y,
-                                          f_r.value.z,
-                                          f_r.pdf);
-        
+          = bsdf.eval(dg,ls.direction,fire);
+        if (dbg) printf("eval light res %f %f %f: %f\n",
+                        f_r.value.x,
+                        f_r.value.y,
+                        f_r.value.z,
+                        f_r.pdf);
+          
         if (!f_r.valid() || reduce_max(f_r.value) < 1e-4f) {
-          if (fire || 0 && dbg) printf(" no f_r, killing shadow ray\n");
+          if (dbg)
+            printf(" no f_r, killing shadow ray\n");
           shadowRay.tMax = -1.f;
         } else {
           vec3f tp_sr
@@ -651,11 +612,10 @@ namespace barney {
              /* surface: */dg.P + frontFacingSurfaceOffset,
              /* to light */ls.direction,
              /* length   */ls.distance * (1.f-2.f*offsetEpsilon));
-          // if (dbg) printf("new shadow ray len %f %f\n",ls.dist,shadowRay.tMax);
           shadowRay.rngSeed = path.rngSeed + 1; random();
           shadowRay.dbg = path.dbg;
           shadowRay.pixelID = path.pixelID;
-
+            
           shadowRay.misWeight = 1.f;
 #if USE_MIS
           if (!lightIsDirLight && lightNeedsMIS) {
@@ -675,17 +635,19 @@ namespace barney {
 #endif
         }
       }
-
-      path.clearHit();
-
-
-
+      
       // ==================================================================
       // now, let's decide what to do with the ray itself
       // ==================================================================
-      path.tMax = -1.f;
-      if (pathDepth >= MAX_PATH_DEPTH)
+
+      // if we exceeded max depth we die, one way or another.
+      if (pathDepth >= MAX_PATH_DEPTH) {
+        path.tMax = -1.f;
         return;
+      }
+      // now per default, "create" a valid scatter ray.
+      path.clearHit();
+      path.tMax = BARNEY_INF;
       
       ScatterResult scatterResult;
       bsdf.scatter(scatterResult,dg,random,fire || 0 && path.dbg);
@@ -693,24 +655,17 @@ namespace barney {
       if (scatterResult.type == ScatterResult::INVALID)
         printf("broken BSDF, doesn't set scatter type!\n");
 #endif 
-      if (fire || 0 && path.dbg)
+      if (dbg)
         printf("scatter result.valid ? %i\n",
                int(scatterResult.valid()));
       if (!scatterResult.valid() || scatterResult.pdf <= 1e-6f)
         return;
       
-      // bool isDiffuseBounce
-      //   =  (scatterResult.type == ScatterResult::DIFFUSE)
-      //   || (scatterResult.type == ScatterResult::VOLUME);
-      // //        = !isinf(scatterResult.pdf);
-      // if (isDiffuseBounce && (path.numDiffuseBounces+1)>MAX_DIFFUSE_BOUNCES) 
-      //   return;
-
-
       if (scatterResult.type == ScatterResult::VOLUME) {
 #if SCI_VIS_MODE
         // sci vis mode: volumes do shadow, but nothing more
         path.tMax = -1.f;
+        return;
 #else
         // treat volume scatter like a diffuse scatter.
         scatterResult.type = ScatterResult::DIFFUSE;
@@ -718,14 +673,14 @@ namespace barney {
       }
       
       if (scatterResult.type == ScatterResult::DIFFUSE) {
-        if (path.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES)
+        if (path.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES) {
           path.tMax = -1.f;
-        else
+          return;
+        } else
           path.numDiffuseBounces = path.numDiffuseBounces + 1;
       }
       
-      
-      if (fire || 0 && path.dbg)
+      if (dbg)
         printf("offsetting into sign %f, direction %f %f %f\n",
                scatterResult.offsetDirection,
                frontFacingSurfaceOffset.x,
@@ -733,7 +688,7 @@ namespace barney {
                frontFacingSurfaceOffset.z);
       path.org
         = dg.P + scatterResult.offsetDirection * frontFacingSurfaceOffset;
-      if (fire || 0 && path.dbg)
+      if (dbg)
         printf("path scattered, bsdf in scatter dir is %f %f %f, pdf %f\n",
                (float)scatterResult.f_r.x, 
                (float)scatterResult.f_r.y, 
@@ -746,7 +701,7 @@ namespace barney {
         = scatterResult.f_r
         * (isVolumeHit?1.f:fabsf(dot(dg.Ng,path.dir)))
         / (isinf(scatterResult.pdf)? 1.f : (scatterResult.pdf + 1e-10f));
-
+      
 #if 1
       // uhhhh.... this is TOTALLY wrong, but let's limit how much
       // each bounce can increase the throughput of a ray ... this
@@ -756,15 +711,14 @@ namespace barney {
       scatterFactor = min(scatterFactor,vec3f(1.5f));
 #endif
 
-      
       path.throughput
         = path.throughput * scatterFactor;
-      if ((fire || 0 && path.dbg) && scatterResult.changedMedium)
+      if (dbg && scatterResult.changedMedium)
         printf("path DID change medium\n");
       if (scatterResult.changedMedium)
         path.isInMedium = !path.isInMedium;
       
-      if (0 && path.dbg)
+      if (dbg)
         printf("scatter dir %f %f %f tp %f %f %f\n",
                (float)path.dir.x,
                (float)path.dir.y,
@@ -782,11 +736,6 @@ namespace barney {
         path.misWeight
           = pdf_scatterRay_scatterDir
           / (pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir);
-        // if (fire || 0 && path.dbg)
-        //   printf("path mis %f shadow mis %f (tmax %f)\n",
-        //          (float)path.misWeight,
-        //          (float)shadowRay.misWeight,shadowRay.tMax);
-        // }
       } else {
         path.misWeight = 1.f;
       }
@@ -814,12 +763,16 @@ namespace barney {
     inline __both__
     void ShadeRaysKernel::run(const RTCBackend &rt)
     {
-      bool dbg = 0;
       int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
       if (tid >= numRays) return;
 
       Ray path = readQueue[tid];
-
+#ifdef NDEBUG
+      bool dbg = false;
+#else
+      bool dbg = path.dbg;
+#endif
+      
       float alpha
         = (generation == 0)
         ? (path.hadHit()? 1.f : path.missColor.w)
