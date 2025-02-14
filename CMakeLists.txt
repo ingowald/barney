@@ -20,6 +20,8 @@ set(BARNEY_VERSION_PATCH 0)
 
 cmake_minimum_required(VERSION 3.12)
 
+set(CMAKE_CUDA_USE_STATIC_CUDA_RUNTIME ON)
+
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
   cmake_policy(SET CMP0104 NEW)
 endif()
@@ -105,6 +107,7 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+
 #set_target_properties(my_library PROPERTIES CXX_VISIBILITY_PRESET hidden)
 #set(PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
@@ -115,6 +118,7 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 # _always_ gets included first
 # ------------------------------------------------------------------
 if (BARNEY_HAVE_CUDA)
+  set(OWL_CUDA_STATIC ON)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 else()
   add_library(owl-config INTERFACE)

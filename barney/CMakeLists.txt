@@ -322,7 +322,6 @@ if (BARNEY_BACKEND_OPTIX)
     )
 endif()
 
-
 # ------------------------------------------------------------------
 # barney itself
 # ------------------------------------------------------------------
@@ -338,6 +337,7 @@ set_target_properties(barney
   CXX_VISIBILITY_PRESET hidden
   CUDA_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
   )
 if (APPLE)
   set_target_properties(barney PROPERTIES INSTALL_RPATH "$loader_path")
