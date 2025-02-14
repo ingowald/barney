@@ -57,14 +57,14 @@ add_library(anari_library_barney SHARED ${BANARI_SOURCES})
 
 if (BARNEY_MPI)
   target_link_libraries(anari_library_barney
-  PUBLIC
-    banari-config
+    PUBLIC
+    $<BUILD_INTERFACE:banari-config>
     barney_mpi
-  )
+    )
 else()
   target_link_libraries(anari_library_barney
-  PUBLIC
-    banari-config
+    PUBLIC
+    $<BUILD_INTERFACE:banari-config>
     barney
   )
 endif()
@@ -85,6 +85,7 @@ else()
 endif()
 install(TARGETS# barney
   anari_library_barney
+  EXPORT barney-config
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
