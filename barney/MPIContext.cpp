@@ -264,68 +264,6 @@ namespace barney {
     // do whatever needs doing with the latest finalized tiles
     // ------------------------------------------------------------------
     fb->finalizeFrame();
-    // ------------------------------------------------------------------
-    // done rendering, now gather all final tiles at master
-    // ------------------------------------------------------------------
-    // fb->ownerGatherFinalTiles();
-
-    // ==================================================================
-    // now MASTER (who has gathered all the ranks' final tiles) -
-    // writes them into proper row-major frame buffer order
-    // (writeFinalPixels), then copies them to app FB). only master
-    // can/shuld do this - ranks don't even have a 'finalFB' to
-    // write into.
-    // ==================================================================
-//     if (fb->isOwner) {
-//       /* ******************************************************* *
-//          CAREFUL: do NOT set active gpu here - the app might have its
-//          'finalFB' frame buffer allocated on another device than our
-//          device[0]; setting that to active will cause segfault when
-//          writing final pixel!!!!  *
-//          ******************************************************* */
-//       // SetActiveGPU forDuration(devices[0]->device);
-
-//       // use default gpu for this:
-//       barney::TiledFB::writeFinalPixels(// nullptr,
-// #if DENOISE
-// #  if DENOISE_OIDN
-//                                         fb->denoiserInput,
-//                                         fb->denoiserAlpha,
-// #  else
-//                                         fb->denoiserInput,
-// #  endif
-// #else
-//                                         fb->finalFB,
-// #endif
-//                                         // fb->finalFB,
-//                                         fb->finalDepth,
-// #if DENOISE
-//                                         fb->denoiserNormal,
-// #endif
-//                                         fb->numPixels,
-//                                         fb->ownerGather.finalTiles,
-//                                         fb->ownerGather.tileDescs,
-//                                         fb->ownerGather.numActiveTiles,
-//                                         fb->showCrosshairs);
-// #if DENOISE
-//       fb->denoise();
-//       // float4ToBGBA8(fb->finalFB,fb->denoiserInput,fb->numPixels);
-// #endif
-//       // copy to app framebuffer - only if we're the one having that
-//       // frame buffer of course
-//       BARNEY_CUDA_SYNC_CHECK();
-//       if (fb->hostFB && fb->finalFB != fb->hostFB) {
-//         BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
-//                                 fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
-//                                 cudaMemcpyDefault));
-//       }
-//       if (fb->hostDepth && fb->finalDepth != fb->hostDepth) {
-//         BARNEY_CUDA_CALL(Memcpy(fb->hostDepth,fb->finalDepth,
-//                                 fb->numPixels.x*fb->numPixels.y*sizeof(float),
-//                                 cudaMemcpyDefault));
-//       }
-//     }
-    BARNEY_CUDA_SYNC_CHECK();
   }
 
   /*! forward rays (during global trace); returns if _after_ that
@@ -349,7 +287,6 @@ namespace barney {
     // ------------------------------------------------------------------
     // exchange how many we're going to send/recv
     // ------------------------------------------------------------------
-    // std::vector<MPI_Status> allStatuses;
     std::vector<int> numIncoming(numDevices);
     std::vector<int> numOutgoing(numDevices);
     for (auto &ni : numIncoming) ni = -1;
