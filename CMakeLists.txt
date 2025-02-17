@@ -25,7 +25,8 @@ set(CMAKE_CUDA_USE_STATIC_CUDA_RUNTIME ON)
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
   cmake_policy(SET CMP0104 NEW)
 endif()
-  cmake_policy(SET CMP0079 NEW)
+cmake_policy(SET CMP0079 NEW)
+cmake_policy(SET CMP0076 NEW)
 
 if (WIN32)
   # MPI is off by default on windows. whoever wants to use mpi under windows

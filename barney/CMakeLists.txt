@@ -56,7 +56,7 @@ if (BARNEY_BACKEND_OPTIX)
   embed_ptx(
     OUTPUT_TARGET      barney-triangles-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            geometry/Triangles.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/geometry/Triangles.dev.cu
     )
   # ray cylinders geom intersection
   embed_ptx(

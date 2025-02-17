@@ -82,7 +82,7 @@ if (BARNEY_HAVE_CUDA)
     $<BUILD_INTERFACE:banari-config>
     #barney
     $<BUILD_INTERFACE:barney_static>
-    ${BARNEY_DEPENDS}
+    #${BARNEY_DEPENDS}
   )
 endif()
 
