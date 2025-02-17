@@ -104,10 +104,54 @@ void Buffer::upload(const void* hostPtr,
     }
   
 
+
+
+    /*Export a symbol to ask the dynamic loader about in order to locate this library at runtime.*/
+
+    extern "C" int _rtcore_anchor()
+    {
+        return 0;
+    }
+
+
+        std::string rtcore_symbols_location()
+        {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+            MEMORY_BASIC_INFORMATION mbi;
+            VirtualQuery((LPCVOID)&_rtcore_anchor, &mbi, sizeof(mbi));
+            char pathBuf[16384];
+            if (!GetModuleFileNameA(
+                static_cast<HMODULE>(mbi.AllocationBase), pathBuf, sizeof(pathBuf)))
+                return std::string();
+
+            std::string path = std::string(pathBuf);
+//            path.resize(path.rfind('\\') + 1);
+#else
+            const char* anchor = "_anari_anchor";
+            void* handle = dlsym(RTLD_DEFAULT, anchor);
+            if (!handle)
+                return std::string();
+
+            Dl_info di;
+            int ret = dladdr(handle, &di);
+            if (!ret || !di.dli_saddr || !di.dli_fname)
+                return std::string();
+
+            std::string path = std::string(di.dli_fname);
+            path.resize(path.rfind('/') + 1);
+#endif
+
+            return path;
+        }
+
+
     const void *getSymbol(const std::string &symbolName)
     {
 #ifdef _WIN32
-        HMODULE libCurrent = GetModuleHandle("barney");
+        std::string rtCoreLib = rtcore_symbols_location();
+        PRINT(rtCoreLib);
+        HMODULE libCurrent = GetModuleHandle(rtCoreLib.c_str());
+        PRINT(libCurrent);
       void* symbol = (void*)GetProcAddress(libCurrent, symbolName.c_str());
 #else
       // void *lib = dlopen(nullptr,RTLD_NOW);

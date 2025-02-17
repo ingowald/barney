@@ -108,9 +108,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
-#set_target_properties(my_library PROPERTIES CXX_VISIBILITY_PRESET hidden)
-#set(PROPERTIES CXX_VISIBILITY_PRESET hidden)
-
 
 # ------------------------------------------------------------------
 # owl - even if we build only for cpu (we we wouldn't use the owl

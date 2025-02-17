@@ -168,6 +168,7 @@ namespace barney {
   
 }
 
+
 RTC_DECLARE_COMPUTE(setTileCoords,barney::SetTileCoords);
 RTC_DECLARE_COMPUTE(compressTiles,barney::CompressTiles);
 
