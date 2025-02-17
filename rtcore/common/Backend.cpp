@@ -31,19 +31,26 @@ namespace barney {
 #endif
 
 
-    void Buffer::upload(const void *hostPtr,
-                  size_t numBytes,
-                  size_t ofs)
-    {
-      uploadAsync(hostPtr,numBytes,ofs);
-      device->sync();
-    }
-    
     void Buffer::uploadAsync(const void *hostPtr,
                               size_t numBytes,
                               size_t ofs)
     {
       device->copyAsync(((uint8_t*)getDD())+ofs,hostPtr,numBytes);
+    }
+
+    // helper function(s)
+Backend* Backend::get()
+    {
+        if (!singleton) singleton = create();
+        return singleton;
+    }
+
+void Buffer::upload(const void* hostPtr,
+        size_t numBytes,
+        size_t ofs)
+    {
+        uploadAsync(hostPtr, numBytes, ofs);
+        device->sync();
     }
 
 
@@ -96,11 +103,6 @@ namespace barney {
       return nullptr;
     }
   
-    Backend *Backend::get()
-    {
-      if (!singleton) singleton = create();
-      return singleton;
-    }
 
     const void *getSymbol(const std::string &symbolName)
     {

@@ -81,7 +81,7 @@ if (BARNEY_BACKEND_EMBREE)
     target_compile_options(embree_local INTERFACE -flax-vector-conversions -fsigned-char)
   endif()
 
-  add_library(barney_rtc_embree STATIC
+  add_library(barney_rtc_embree OBJECT #STATIC
     embree/Float16.cpp
     embree/EmbreeBackend.cpp
     embree/Compute.cpp

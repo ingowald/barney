@@ -14,7 +14,16 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-    
+if(MSVC) # That's also clang-cl
+  # /bigobj is needed for bigger binding projects due to the limit to 64k
+  # addressable sections
+  set_property(
+    TARGET barney_config
+    APPEND
+    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+endif()
+
+
 # -------------------------------------------------------
 
 if (BARNEY_BACKEND_OPTIX)
@@ -322,6 +331,13 @@ if (BARNEY_BACKEND_OPTIX)
     )
 endif()
 
+if (BARNEY_HAVE_CUDA)
+        set_source_files_properties(Context.cpp
+        PROPERTIES
+        LANGUAGE CUDA
+        )
+endif()
+
 # ------------------------------------------------------------------
 # barney itself
 # ------------------------------------------------------------------
@@ -345,6 +361,22 @@ else()
   set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
   
+add_library(barney_static STATIC #OBJECT
+  ${BARNEY_SOURCES}
+  )
+target_link_libraries(barney_static PUBLIC
+  ${BARNEY_DEPENDS}
+  )
+set_target_properties(barney_static
+  PROPERTIES
+#  CUDA_SEPARABLE_COMPILATION ON
+#  CXX_VISIBILITY_PRESET hidden
+#  CUDA_VISIBILITY_PRESET hidden
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  )
+
+
 
 if (BARNEY_MPI)
   

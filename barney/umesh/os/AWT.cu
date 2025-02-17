@@ -63,7 +63,7 @@ namespace barney {
       if (!child->nodeRef.isLeaf()) return;
 
       range1f leafRange;
-      for (int i=0;i<child->nodeRef.count;i++) {
+      for (int i=0;i<(int)child->nodeRef.count;i++) {
         Element elt = mesh.elements[primIDs[child->nodeRef.offset+i]];
         leafRange.extend(getRange(mesh.eltBounds(elt)));
       }
@@ -85,7 +85,7 @@ namespace barney {
 
         majorant = 0.f;
         int numValid = 0;
-        for (int i=0;i<AWT_NODE_WIDTH;i++) {
+        for (int i=0;i<(int)AWT_NODE_WIDTH;i++) {
           auto &child = node->child[i];
           if (!child.nodeRef.valid()) continue;
           majorant = max(majorant,child.majorant);
