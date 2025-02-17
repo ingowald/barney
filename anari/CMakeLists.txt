@@ -15,11 +15,16 @@ include(GNUInstallDirs)
 
 ## Device target ##
 
-project(anari_library_barney LANGUAGES CXX CUDA)
+if (BARNEY_HAVE_CUDA)
+  project(anari_library_barney LANGUAGES CXX CUDA)
+else()
+  project(anari_library_barney LANGUAGES CXX)
+endif()
+
+project(anari_library_barney LANGUAGES CXX)
 
 
 set(BANARI_SOURCES
-dummy.cu
   BarneyGlobalState.cpp
   Camera.cpp
   Device.cpp
@@ -38,7 +43,11 @@ dummy.cu
   Volume.cpp
   World.cpp
   )
-  
+
+if (BARNEY_HAVE_CUDA)
+  list(APPEND BANARI_SOURCES dummy.cu)
+endif()
+
 
 
 # helper 'interface-'library that contains common settings for both
@@ -67,10 +76,10 @@ if (BARNEY_MPI)
     )
 else()
 if (BARNEY_HAVE_CUDA)
-        set_source_files_properties(World.cpp
-        PROPERTIES
-        LANGUAGE CUDA
-        )
+#        set_source_files_properties(World.cpp
+#        PROPERTIES
+#        LANGUAGE CUDA
+#        )
         set_target_properties(anari_library_barney
         PROPERTIES
         LANGUAGE CUDA
