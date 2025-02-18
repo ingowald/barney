@@ -17,12 +17,11 @@ include(GNUInstallDirs)
 
 if (BARNEY_HAVE_CUDA)
   project(anari_library_barney LANGUAGES CXX CUDA)
+  set(DUMMY_CU dummy.cu)
 else()
   project(anari_library_barney LANGUAGES CXX)
+  set(DUMMY_CU)
 endif()
-
-project(anari_library_barney LANGUAGES CXX)
-
 
 set(BANARI_SOURCES
   BarneyGlobalState.cpp
@@ -42,11 +41,8 @@ set(BANARI_SOURCES
   Surface.cpp
   Volume.cpp
   World.cpp
+  ${DUMMY_CU}
   )
-
-if (BARNEY_HAVE_CUDA)
-  list(APPEND BANARI_SOURCES dummy.cu)
-endif()
 
 
 
@@ -76,28 +72,32 @@ if (BARNEY_MPI)
     )
 else()
 if (BARNEY_HAVE_CUDA)
-#        set_source_files_properties(World.cpp
-#        PROPERTIES
-#        LANGUAGE CUDA
-#        )
+        set_source_files_properties(World.cpp
+        PROPERTIES
+        LANGUAGE CUDA
+        )
         set_target_properties(anari_library_barney
         PROPERTIES
         LANGUAGE CUDA
         CUDA_SEPARABLE_COMPILATION ON
         )
   endif()
-  target_link_libraries(anari_library_barney
-    PUBLIC
-    $<BUILD_INTERFACE:banari-config>
+#  target_link_libraries(anari_library_barney
+#    PUBLIC
+#    $<BUILD_INTERFACE:banari-config>
     #barney
-    $<BUILD_INTERFACE:barney_static>
-    #${BARNEY_DEPENDS}
-  )
-endif()
+#    $<BUILD_INTERFACE:barney_static>
+#    ${BARNEY_DEPENDS}
+#  )
 
 target_link_libraries(anari_library_barney PUBLIC
-  ${BARNEY_DEPENDS}
+   $<BUILD_INTERFACE:banari-config>
+   #$<BUILD_INTERFACE:barney_static>
+   
+   ${BARNEY_DEPENDS}
+   barney_static
   )
+endif()
 
 target_link_libraries(anari_library_barney PRIVATE anari::helium anari::anari)
 if(MSVC)
@@ -115,7 +115,13 @@ set_target_properties(anari_library_barney
   CUDA_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
-  LANGUAGE CUDA
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+
+  #LANGUAGE CUDA
   )
 
 include(GenerateExportHeader)

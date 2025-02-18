@@ -1,9 +1,16 @@
 #include "rtcore/cuda/CUDABackend.h"
 
+
+
 namespace barney {
   namespace cuda {
 
-    BaseBackend::BaseBackend()
+      __global__ void cuda_common_dummy() {
+          printf("bla\n");
+      };
+      extern void _cuda_common_dummy() { cuda_common_dummy <<<32, 32 >>> (); }
+
+      BaseBackend::BaseBackend()
     {
       cudaFree(0);
       BARNEY_CUDA_CALL(GetDeviceCount(&numPhysicalDevices));

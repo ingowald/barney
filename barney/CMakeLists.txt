@@ -325,13 +325,14 @@ if (BARNEY_BACKEND_OPTIX)
   list(APPEND BARNEY_DEPENDS
     $<BUILD_INTERFACE:barney-triangles-ptx>
     $<BUILD_INTERFACE:barney-capsules-ptx>
-    $<BUILD_INTERFACE:barney-spheres-ptx>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-spheres-ptx>>
     #
     $<BUILD_INTERFACE:barney-StructuredData-ptx>
     $<BUILD_INTERFACE:barney-UMeshMC-ptx>
     $<BUILD_INTERFACE:barney-AWT-ptx>
     #
-    $<BUILD_INTERFACE:barney-traceRays-ptx>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-traceRays-ptx>>
+#    $<BUILD_INTERFACE:barney-traceRays-ptx>
     )
 endif()
 
@@ -365,7 +366,7 @@ else()
   set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
   
-add_library(barney_static STATIC #OBJECT
+add_library(barney_static STATIC
   ${BARNEY_SOURCES}
   )
 target_link_libraries(barney_static PUBLIC
@@ -373,11 +374,17 @@ target_link_libraries(barney_static PUBLIC
   )
 set_target_properties(barney_static
   PROPERTIES
-#  CUDA_SEPARABLE_COMPILATION ON
+  CUDA_SEPARABLE_COMPILATION ON
   CXX_VISIBILITY_PRESET default
   CUDA_VISIBILITY_PRESET default
   POSITION_INDEPENDENT_CODE ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+
   )
 
 

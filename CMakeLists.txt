@@ -340,6 +340,7 @@ endif()
 
 install(
   TARGETS barney # ${CUBQL_LIBS}
+  barney_static
   ${BARNEY_MPI_INSTALL}
   ${BARNEY_ANARI_INSTALL}
 #  EXPORT barneyTargets

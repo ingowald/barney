@@ -12,5 +12,5 @@ cmake --build builddir-win-optix-only --config Debug
 cmake --build builddir-win-embree-only --config Release
 cmake --build builddir-win-embree-only --config Debug
 
-cmake --build builddir-win-both --config Relase
+cmake --build builddir-win-both --config Release
 cmake --build builddir-win-both --config Debug
