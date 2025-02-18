@@ -323,16 +323,15 @@ if (BARNEY_BACKEND_OPTIX)
   # only go into barney if optix mode is enabled (because otherwise we
   # cannot even compile them)
   list(APPEND BARNEY_DEPENDS
-    $<BUILD_INTERFACE:barney-triangles-ptx>
-    $<BUILD_INTERFACE:barney-capsules-ptx>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-triangles-ptx>>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-capsules-ptx>>
     $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-spheres-ptx>>
     #
-    $<BUILD_INTERFACE:barney-StructuredData-ptx>
-    $<BUILD_INTERFACE:barney-UMeshMC-ptx>
-    $<BUILD_INTERFACE:barney-AWT-ptx>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-StructuredData-ptx>>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-UMeshMC-ptx>>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-AWT-ptx>>
     #
     $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-traceRays-ptx>>
-#    $<BUILD_INTERFACE:barney-traceRays-ptx>
     )
 endif()
 
@@ -374,17 +373,12 @@ target_link_libraries(barney_static PUBLIC
   )
 set_target_properties(barney_static
   PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  CXX_VISIBILITY_PRESET default
+  CUDA_SEPARABLE_COMPILATION   ON
+  POSITION_INDEPENDENT_CODE    ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+  CXX_VISIBILITY_PRESET  default
   CUDA_VISIBILITY_PRESET default
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-
   )
 
 
