@@ -81,7 +81,7 @@ if (BARNEY_BACKEND_EMBREE)
     target_compile_options(embree_local INTERFACE -flax-vector-conversions -fsigned-char)
   endif()
 
-  add_library(barney_rtc_embree STATIC
+  add_library(barney_rtc_embree OBJECT #STATIC
     embree/Float16.cpp
     embree/EmbreeBackend.cpp
     embree/Compute.cpp
@@ -111,12 +111,24 @@ endif()
 
 # ==================================================================
 if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
-  add_library(barney_rtc_cuda_common OBJECT #STATIC
+  add_library(barney_rtc_cuda_common STATIC
     cuda/CUDACommon.cu
     )
   target_link_libraries(barney_rtc_cuda_common PUBLIC
     barney_rtc_config
     )
+set_target_properties(barney_rtc_cuda_common
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  CXX_VISIBILITY_PRESET default
+  CUDA_VISIBILITY_PRESET default
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  )
 else()
   add_library(barney_rtc_cuda_common INTERFACE) # DUMMY!
 endif()
@@ -124,12 +136,26 @@ endif()
 # ==================================================================
 if (BARNEY_BACKEND_CUDA)
   message("ENabling CUDA backend")
-  add_library(barney_rtc_cuda OBJECT #STATIC
+  add_library(barney_rtc_cuda STATIC
     cuda/CUDABackend.cu
     )
   target_link_libraries(barney_rtc_cuda PUBLIC 
     barney_rtc_config
+#    barney_rtc_common
     )
+ set_target_properties(barney_rtc_cuda
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  CXX_VISIBILITY_PRESET default
+  CUDA_VISIBILITY_PRESET default
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+)
+
 else()
   add_library(barney_rtc_cuda INTERFACE) # DUMMY!
 endif()
@@ -137,7 +163,7 @@ endif()
 # ==================================================================
 if (BARNEY_BACKEND_OPTIX)
   message("ENabling optix backend")
-  add_library(barney_rtc_optix OBJECT# STATIC
+  add_library(barney_rtc_optix STATIC
     optix/OptixBackend.h
     optix/OptixBackend.cpp
     optix/Denoiser.h

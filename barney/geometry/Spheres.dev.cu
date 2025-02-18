@@ -64,7 +64,7 @@ namespace barney {
 #ifdef NDEBUG
       bool dbg = false;
 #else
-      bool dbg = path.dbg;
+      bool dbg = ray.dbg;
 #endif
       
       float t_hit = rt.getRayTmax(); 

@@ -25,7 +25,8 @@ set(CMAKE_CUDA_USE_STATIC_CUDA_RUNTIME ON)
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
   cmake_policy(SET CMP0104 NEW)
 endif()
-  cmake_policy(SET CMP0079 NEW)
+cmake_policy(SET CMP0079 NEW)
+cmake_policy(SET CMP0076 NEW)
 
 if (WIN32)
   # MPI is off by default on windows. whoever wants to use mpi under windows
@@ -48,6 +49,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 
+message("BARNEY_DISABLE_CUDA ${BARNEY_DISABLE_CUDA}")
 option(BARNEY_DISABLE_CUDA "Explicitly DISable CUDA even if available?" OFF)
 if (NOT BARNEY_DISABLE_CUDA) 
   include(CheckLanguage)
@@ -87,7 +89,9 @@ if (NOT BARNEY_DISABLE_CUDA)
     set(BARNEY_HAVE_CUDA OFF)
   endif()
 else()
+  message("explicitly disabling cuda")
   set(BARNEY_HAVE_CUDA OFF)
+  set(CMAKE_CUDA_ARCHITECTURES)
 endif()
 
 if (CMAKE_BUILD_TYPE)
@@ -107,9 +111,6 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-
-#set_target_properties(my_library PROPERTIES CXX_VISIBILITY_PRESET hidden)
-#set(PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 
 # ------------------------------------------------------------------
@@ -191,8 +192,10 @@ endif()
 
 message("configuring rtcore")
 if (NOT (TARGET cuBQL))
-  if (NOT BARNEY_HAVE_CUDA)
-    set(CMAKE_CUDA_ARCHITECTURES native)
+  if (BARNEY_HAVE_CUDA)
+    #set(CMAKE_CUDA_ARCHITECTURES native)
+  else()
+    set(CUBQL_DISABLE_CUDA ON)
   endif()
   add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
 endif()
@@ -337,6 +340,7 @@ endif()
 
 install(
   TARGETS barney # ${CUBQL_LIBS}
+  barney_static
   ${BARNEY_MPI_INSTALL}
   ${BARNEY_ANARI_INSTALL}
 #  EXPORT barneyTargets

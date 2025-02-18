@@ -15,7 +15,13 @@ include(GNUInstallDirs)
 
 ## Device target ##
 
-project(anari_library_barney LANGUAGES CXX)
+if (BARNEY_HAVE_CUDA)
+  project(anari_library_barney LANGUAGES CXX CUDA)
+  set(DUMMY_CU dummy.cu)
+else()
+  project(anari_library_barney LANGUAGES CXX)
+  set(DUMMY_CU)
+endif()
 
 set(BANARI_SOURCES
   BarneyGlobalState.cpp
@@ -35,7 +41,10 @@ set(BANARI_SOURCES
   Surface.cpp
   Volume.cpp
   World.cpp
+  ${DUMMY_CU}
   )
+
+
 
 # helper 'interface-'library that contains common settings for both
 # static and shared anari
@@ -62,14 +71,58 @@ if (BARNEY_MPI)
     barney_mpi
     )
 else()
-  target_link_libraries(anari_library_barney
-    PUBLIC
-    $<BUILD_INTERFACE:banari-config>
-    barney
+if (BARNEY_HAVE_CUDA)
+        set_source_files_properties(World.cpp
+        PROPERTIES
+        LANGUAGE CUDA
+        )
+        set_target_properties(anari_library_barney
+        PROPERTIES
+        LANGUAGE CUDA
+        CUDA_SEPARABLE_COMPILATION ON
+        )
+  endif()
+#  target_link_libraries(anari_library_barney
+#    PUBLIC
+#    $<BUILD_INTERFACE:banari-config>
+    #barney
+#    $<BUILD_INTERFACE:barney_static>
+#    ${BARNEY_DEPENDS}
+#  )
+
+target_link_libraries(anari_library_barney PUBLIC
+   $<BUILD_INTERFACE:banari-config>
+   #$<BUILD_INTERFACE:barney_static>
+   
+   ${BARNEY_DEPENDS}
+   barney_static
   )
 endif()
 
 target_link_libraries(anari_library_barney PRIVATE anari::helium anari::anari)
+if(MSVC)
+    target_compile_options(anari_library_barney INTERFACE
+        "$<$<CONFIG:Debug>:/MTd>"
+        "$<$<CONFIG:Release>:/MT>"
+        "$<$<CONFIG:RelWithDebInfo>:/MT>"
+        "$<$<CONFIG:MinSizeRel>:/MT>"
+    )
+endif()
+set_target_properties(anari_library_barney
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  CXX_VISIBILITY_PRESET hidden
+  CUDA_VISIBILITY_PRESET hidden
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+
+  #LANGUAGE CUDA
+  )
 
 include(GenerateExportHeader)
 generate_export_header(anari_library_barney

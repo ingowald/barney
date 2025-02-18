@@ -14,10 +14,23 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-    
+message("CMAKE_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}")
+
+if(MSVC) # That's also clang-cl
+  # /bigobj is needed for bigger binding projects due to the limit to 64k
+  # addressable sections
+  set_property(
+    TARGET barney_config
+    APPEND
+    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+endif()
+
+
 # -------------------------------------------------------
 
 if (BARNEY_BACKEND_OPTIX)
+  message("embedding programs for optix backend")
+  cmake_policy(SET CMP0076 NEW)
   add_library(barney_config_ptx INTERFACE)
   target_link_libraries(barney_config_ptx
     INTERFACE
@@ -32,7 +45,7 @@ if (BARNEY_BACKEND_OPTIX)
   embed_ptx(
     OUTPUT_TARGET      barney-traceRays-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            kernels/traceRays.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/kernels/traceRays.cu
     )
   # ------------------------------------------------------------------
   # surface geometry:
@@ -41,25 +54,25 @@ if (BARNEY_BACKEND_OPTIX)
   embed_ptx(
     OUTPUT_TARGET      barney-spheres-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            geometry/Spheres.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/geometry/Spheres.dev.cu
     )
   # ray triangles geom intersection
   embed_ptx(
     OUTPUT_TARGET      barney-triangles-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            geometry/Triangles.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/geometry/Triangles.dev.cu
     )
   # ray cylinders geom intersection
   embed_ptx(
     OUTPUT_TARGET      barney-cylinders-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            geometry/Cylinders.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/geometry/Cylinders.dev.cu
     )
   # ray capsules geom intersection
   embed_ptx(
     OUTPUT_TARGET      barney-capsules-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            geometry/Capsules.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/geometry/Capsules.dev.cu
     )
   # ray cones geom intersection
   #embed_ptx(
@@ -74,7 +87,7 @@ if (BARNEY_BACKEND_OPTIX)
   embed_ptx(
     OUTPUT_TARGET      barney-StructuredData-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            volume/StructuredData.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/volume/StructuredData.dev.cu
 #    EMBEDDED_SYMBOL_NAMES MCAccel_Structured_ptx
     )
 #  embed_ptx(
@@ -85,13 +98,13 @@ if (BARNEY_BACKEND_OPTIX)
   embed_ptx(
     OUTPUT_TARGET      barney-UMeshMC-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            umesh/mc/UMeshMC.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/umesh/mc/UMeshMC.dev.cu
  #   EMBEDDED_SYMBOL_NAMES MCAccel_UMesh_ptx
     )
   embed_ptx(
     OUTPUT_TARGET      barney-AWT-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            umesh/os/AWT.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/umesh/os/AWT.dev.cu
     )
 
   # ------------------------------------------------------------------
@@ -100,7 +113,7 @@ if (BARNEY_BACKEND_OPTIX)
   embed_ptx(
     OUTPUT_TARGET      barney-BlockStructuredMC-ptx
     PTX_LINK_LIBRARIES barney_config_ptx
-    SOURCES            amr/BlockStructuredMC.dev.cu
+    SOURCES            ${CMAKE_CURRENT_SOURCE_DIR}/amr/BlockStructuredMC.dev.cu
     )
 endif()
 
@@ -310,16 +323,23 @@ if (BARNEY_BACKEND_OPTIX)
   # only go into barney if optix mode is enabled (because otherwise we
   # cannot even compile them)
   list(APPEND BARNEY_DEPENDS
-    $<BUILD_INTERFACE:barney-triangles-ptx>
-    $<BUILD_INTERFACE:barney-capsules-ptx>
-    $<BUILD_INTERFACE:barney-spheres-ptx>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-triangles-ptx>>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-capsules-ptx>>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-spheres-ptx>>
     #
-    $<BUILD_INTERFACE:barney-StructuredData-ptx>
-    $<BUILD_INTERFACE:barney-UMeshMC-ptx>
-    $<BUILD_INTERFACE:barney-AWT-ptx>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-StructuredData-ptx>>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-UMeshMC-ptx>>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-AWT-ptx>>
     #
-    $<BUILD_INTERFACE:barney-traceRays-ptx>
+    $<BUILD_INTERFACE:$<TARGET_OBJECTS:barney-traceRays-ptx>>
     )
+endif()
+
+if (BARNEY_HAVE_CUDA)
+        set_source_files_properties(Context.cpp
+        PROPERTIES
+        LANGUAGE CUDA
+        )
 endif()
 
 # ------------------------------------------------------------------
@@ -345,6 +365,23 @@ else()
   set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
   
+add_library(barney_static STATIC
+  ${BARNEY_SOURCES}
+  )
+target_link_libraries(barney_static PUBLIC
+  ${BARNEY_DEPENDS}
+  )
+set_target_properties(barney_static
+  PROPERTIES
+  CUDA_SEPARABLE_COMPILATION   ON
+  POSITION_INDEPENDENT_CODE    ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+  CXX_VISIBILITY_PRESET  default
+  CUDA_VISIBILITY_PRESET default
+  )
+
+
 
 if (BARNEY_MPI)
   

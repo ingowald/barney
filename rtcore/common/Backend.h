@@ -324,7 +324,7 @@ namespace barney {
       static rtc::Backend *singleton;
     };
 
-    // helper function(s)
+
 
     extern "C" {
     Backend *createBackend_cuda();
