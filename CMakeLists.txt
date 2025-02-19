@@ -28,13 +28,14 @@ endif()
 cmake_policy(SET CMP0079 NEW)
 cmake_policy(SET CMP0076 NEW)
 
-if (WIN32)
-  # MPI is off by default on windows. whoever wants to use mpi under windows
-  # probably better know what he's doing, anyway
-  option(BARNEY_MPI "Enable MPI Support" OFF)
-else()
-  option(BARNEY_MPI "Enable MPI Support" ON)
-endif()
+option(BARNEY_MPI "Enable MPI Support" OFF)
+#if (WIN32)
+#  # MPI is off by default on windows. whoever wants to use mpi under windows
+#  # probably better know what he's doing, anyway
+#  option(BARNEY_MPI "Enable MPI Support" OFF)
+#else()
+#  option(BARNEY_MPI "Enable MPI Support" ON)
+#endif()
 
 if (NOT (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR}))
   set(BARNEY_IS_SUBPROJECT ON)
@@ -49,7 +50,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 
-message("BARNEY_DISABLE_CUDA ${BARNEY_DISABLE_CUDA}")
 option(BARNEY_DISABLE_CUDA "Explicitly DISable CUDA even if available?" OFF)
 if (NOT BARNEY_DISABLE_CUDA) 
   include(CheckLanguage)

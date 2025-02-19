@@ -612,9 +612,14 @@ namespace barney {
   } // ::barney::optix
 #else
 # define RTC_DECLARE_GLOBALS(Type) /* nothing */
-# define RTC_DECLARE_OPTIX_TRACE(name,RayGenType) /* nothing */
 # define RTC_DECLARE_OPTIX_TRIANGLES_GEOM(name,type) /* nothing */
 # define RTC_DECLARE_OPTIX_USER_GEOM(name,type) /* nothing */
+# define RTC_DECLARE_OPTIX_TRACE(name,RayGenType)                       \
+  extern char name##_ptx[];                                             \
+  extern "C" BARNEY_VISIBILITY_DEFAULT                                  \
+  char *get_ptx_##name() { return name##_ptx; }                           
+
+  
 #endif  
 }
 

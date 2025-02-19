@@ -94,8 +94,8 @@ target_link_libraries(anari_library_barney PUBLIC
    $<BUILD_INTERFACE:banari-config>
    #$<BUILD_INTERFACE:barney_static>
    
-   ${BARNEY_DEPENDS}
-   barney_static
+   barney#_static
+#   ${BARNEY_DEPENDS}
   )
 endif()
 

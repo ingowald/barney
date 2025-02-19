@@ -92,3 +92,4 @@ namespace barney {
 }
 
 RTC_DECLARE_TRACE(traceRays,barney::render::TraceRays);
+ 
