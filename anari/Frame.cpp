@@ -192,7 +192,7 @@ void *Frame::map(std::string_view channel,
   } else if (channel == "channel.depthGPU") {
     *pixelType = ANARI_FLOAT32;
     return bnFrameBufferGetPointer(m_bnFrameBuffer,
-                                   BN_FB_COLOR);
+                                   BN_FB_DEPTH);
   }
 
   *width = 0;

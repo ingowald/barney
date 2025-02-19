@@ -146,11 +146,29 @@ install(TARGETS# barney
 )
 endif()
 
-if (NOT BANARI_SKIP_QUERIES)
-  ## Code generation ##
-  anari_generate_queries(
-    DEVICE_TARGET anari_library_barney
-    CPP_NAMESPACE barney_device
-    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
+#if (NOT BANARI_SKIP_QUERIES)
+## Code generation ##
+
+#anari_generate_queries(
+#    DEVICE_TARGET anari_library_barney
+#    CPP_NAMESPACE barney_device
+#    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
+#    )
+
+file(GLOB DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "visrtx_*.json")
+list(APPEND DEVICE_JSONS "barney_device.json")
+
+foreach(file ${DEVICE_JSONS})
+  file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file} INPUT ${file})
+endforeach()
+
+anari_generate_queries(
+  DEVICE_TARGET anari_library_barney
+  CPP_NAMESPACE barney_device
+  JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
+  JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
+  JSON_EXTENSION_FILES ${DEVICE_JSONS}
   )
-endif()
+
+  
+#endif()
