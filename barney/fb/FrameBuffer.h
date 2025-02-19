@@ -79,6 +79,8 @@ namespace barney {
     
     std::vector<PLD> perLogical;
 
+    void *getPointer(BNFrameBufferChannel channel);
+    
     /*! on owner, take the 'gatheredTilesOnOwner', and unpack them into
         linear color, depth, alpha, and normal channels, so denoiser
         can then run on it */

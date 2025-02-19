@@ -495,6 +495,19 @@ namespace barney {
     return pld->tiledFB.get();
   }
 
+
+  void *FrameBuffer::getPointer(BNFrameBufferChannel channel)
+  {
+    switch(channel) {
+    case BN_FB_COLOR:
+      return denoisedColor;
+    case BN_FB_DEPTH:
+      return linearDepth;
+    default:
+      BARNEY_NYI();
+    };
+  }
+  
   Device *FrameBuffer::getDenoiserDevice() const
   {
     return (*devices)[0];

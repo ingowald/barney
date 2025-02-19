@@ -778,6 +778,14 @@ namespace barney {
     checkGet(fb)->read(channel,hostPtr,requestedFormat);
   }
   
+  BARNEY_API
+  void *bnFrameBufferGetPointer(BNFrameBuffer fb,
+                                BNFrameBufferChannel channel)
+  {
+    LOG_API_ENTRY;
+    return checkGet(fb)->getPointer(channel);
+  }
+  
 
   BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)

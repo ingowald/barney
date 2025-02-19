@@ -339,6 +339,10 @@ void bnFrameBufferRead(BNFrameBuffer fb,
                        BNDataType requiredFormat);
 
 BARNEY_API
+void *bnFrameBufferGetPointer(BNFrameBuffer fb,
+                              BNFrameBufferChannel channelToRead);
+
+BARNEY_API
 void bnRender(BNRenderer    renderer,
               BNModel       model,
               BNCamera      camera,
