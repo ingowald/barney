@@ -57,10 +57,8 @@ namespace barney {
                         rtc::DataType format,
                         const void *texels) override;
 
-      void freeTextureData(rtc::TextureData *) override 
-      { BARNEY_NYI(); };
-      void freeTexture(rtc::Texture *) override 
-      { BARNEY_NYI(); };
+      void freeTextureData(rtc::TextureData *) override;
+      void freeTexture(rtc::Texture *) override;
       
       cudaStream_t stream;
     };
@@ -70,7 +68,8 @@ namespace barney {
                   vec3i dims,
                   rtc::DataType format,
                   const void *texels);
-
+      virtual ~TextureData() override;
+      
       rtc::Texture *
       createTexture(const rtc::TextureDesc &desc) override;
       
@@ -81,6 +80,7 @@ namespace barney {
     struct Texture : public rtc::Texture {
       Texture(TextureData *data,
               const rtc::TextureDesc &desc);
+      virtual ~Texture() override;
       
       rtc::device::TextureObject getDD() const override
       { return (const rtc::device::TextureObject&)textureObject; }

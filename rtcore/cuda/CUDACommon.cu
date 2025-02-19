@@ -5,12 +5,7 @@
 namespace barney {
   namespace cuda {
 
-      __global__ void cuda_common_dummy() {
-          printf("bla\n");
-      };
-      extern void _cuda_common_dummy() { cuda_common_dummy <<<32, 32 >>> (); }
-
-      BaseBackend::BaseBackend()
+    BaseBackend::BaseBackend()
     {
       cudaFree(0);
       BARNEY_CUDA_CALL(GetDeviceCount(&numPhysicalDevices));
@@ -76,7 +71,17 @@ namespace barney {
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(StreamSynchronize(stream));
     }
-      
+
+    void BaseDevice::freeTextureData(rtc::TextureData *td)
+    {
+      if (td) delete td;
+    }
+    
+    void BaseDevice::freeTexture(rtc::Texture *tex)
+    {
+      if (tex) delete tex;
+    }
+    
     TextureData::TextureData(BaseDevice *device,
                              vec3i dims,
                              rtc::DataType format,
@@ -150,6 +155,12 @@ namespace barney {
         BARNEY_NYI();
       }
     }
+
+    TextureData::~TextureData()
+    {
+      BARNEY_CUDA_CALL_NOTHROW(FreeArray(array));
+      array = 0;
+    }
     
     rtc::TextureData *
     BaseDevice::createTextureData(vec3i dims,
@@ -210,6 +221,12 @@ namespace barney {
                                            &textureDesc,0));
     }
 
+    Texture::~Texture()
+    {
+      BARNEY_CUDA_CALL_NOTHROW(DestroyTextureObject(textureObject));
+      textureObject = 0;
+    }
+    
     rtc::Texture *
     TextureData::createTexture(const rtc::TextureDesc &desc) 
     {
