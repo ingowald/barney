@@ -112,6 +112,10 @@ namespace barney_device {
     BarneyGlobalState *deviceState() const;
 
     bool m_initialized{false};
+    
+    /*! allows for setting which gpu to use. must be set before the
+        first commit, and should not be changed after that */
+    int  m_cudaDevice = 0;
   };
 
 } // namespace barney_device

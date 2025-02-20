@@ -327,7 +327,8 @@ namespace barney_device {
       reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
 #else
       std::cout << "#banari: creating *non-mpi* barney context" << std::endl;
-      state.context = bnContextCreate();
+      std::cout << "#banari: using cuda device #" << m_cudaDevice << std::endl;
+      state.context = bnContextCreate(&m_cudaDevice,1);
       std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
 #endif
       reportMessage(
@@ -346,10 +347,14 @@ namespace barney_device {
 
     bool allowInvalidSurfaceMaterials = state.allowInvalidSurfaceMaterials;
 
+    m_cudaDevice = getParam<int>("cudaDevice", 0);
+    std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
+ 
     state.allowInvalidSurfaceMaterials =
       getParam<bool>("allowInvalidMaterials", true);
-    state.invalidMaterialColor = getParam<math::float4>(
-                                                        "invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
+    state.invalidMaterialColor
+      = getParam<math::float4>
+      ("invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
 
     if (allowInvalidSurfaceMaterials != state.allowInvalidSurfaceMaterials)
       state.objectUpdates.lastSceneChange = helium::newTimeStamp();
@@ -357,8 +362,10 @@ namespace barney_device {
     helium::BaseDevice::deviceCommitParameters();
   }
 
-  int BarneyDevice::deviceGetProperty(
-                                      const char *name, ANARIDataType type, void *mem, uint64_t size)
+  int BarneyDevice::deviceGetProperty(const char *name,
+                                      ANARIDataType type,
+                                      void *mem,
+                                      uint64_t size)
   {
     std::string_view prop = name;
     if (prop == "extension" && type == ANARI_STRING_LIST) {
