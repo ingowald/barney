@@ -28,7 +28,6 @@ endif()
 cmake_policy(SET CMP0079 NEW)
 cmake_policy(SET CMP0076 NEW)
 
-option(BARNEY_MPI "Enable MPI Support" OFF)
 #if (WIN32)
 #  # MPI is off by default on windows. whoever wants to use mpi under windows
 #  # probably better know what he's doing, anyway
@@ -36,6 +35,7 @@ option(BARNEY_MPI "Enable MPI Support" OFF)
 #else()
 #  option(BARNEY_MPI "Enable MPI Support" ON)
 #endif()
+option(BARNEY_MPI "Enable MPI Support" OFF)
 
 if (NOT (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR}))
   set(BARNEY_IS_SUBPROJECT ON)
