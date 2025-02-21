@@ -20,7 +20,7 @@
 
 #include "barney/volume/Volume.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Volume;
   struct VolumeAccel;

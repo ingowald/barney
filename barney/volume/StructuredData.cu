@@ -17,9 +17,12 @@
 #include "barney/volume/StructuredData.h"
 #include "barney/Context.h"
 
-namespace barney {
+RTC_IMPORT_USER_GEOM_TYPE(StructuredData,BARNEY_NS::StructuredData::DD,false,false);
+RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
 
-  extern "C" char StructuredData_ptx[];
+namespace BARNEY_NS {
+
+  // extern "C" char StructuredData_ptx[];
 
   /*! how many cells (in each dimension) will go into a macro
       cell. eg, a value of 8 will mean that eachmacrocell covers 8x8x8
@@ -31,8 +34,7 @@ namespace barney {
 
   struct StructuredData_ComputeMCs {
     /* kernel CODE */
-    template<typename RTCore>
-    inline __both__ void run(const RTCore &rtCore)
+    inline __device__ void run(const rtc::ComputeInterface &rtCore)
     {
       vec3i mcID
         = vec3i(rtCore.getThreadIdx())
@@ -50,7 +52,7 @@ namespace barney {
             if (scalarID.x >= numScalars.x) continue;
             if (scalarID.y >= numScalars.y) continue;
             if (scalarID.z >= numScalars.z) continue;
-            float f = tex3D<float>(scalars.texObjNN,
+            float f = rtc::tex3D<float>(scalars.texObjNN,
                                    (float)scalarID.x,
                                    (float)scalarID.y,
                                    (float)scalarID.z);
@@ -73,7 +75,8 @@ namespace barney {
     perLogical.resize(devices->numLogical);
     for (auto device : *devices)
       getPLD(device)->computeMCs
-        = device->rtc->createCompute("StructuredData_computeMCs");
+        // = device->rtc->createCompute("StructuredData_computeMCs");
+        = rtc::createCompute_StructuredData_computeMCs(device->rtc);
   }
 
 
@@ -174,4 +177,4 @@ namespace barney {
   
 }
 
-RTC_DECLARE_COMPUTE(StructuredData_computeMCs,barney::StructuredData_ComputeMCs);
+RTC_EXPORT_COMPUTE3D(StructuredData_computeMCs,BARNEY_NS::StructuredData_ComputeMCs);

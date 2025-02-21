@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct ModelSlot;
 
@@ -56,7 +56,7 @@ namespace barney {
     /*! @{ parameter set/commit interface */
     void commit() override;
     bool setData(const std::string &member,
-                 const Data::SP &value) override;
+                 const barney_api::Data::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 

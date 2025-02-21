@@ -21,7 +21,7 @@
 // #include "barney/render/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     struct DeviceMaterial;

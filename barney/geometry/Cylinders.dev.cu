@@ -17,10 +17,10 @@
 #include "barney/geometry/Cylinders.h"
 #include "owl/owl_device.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
-namespace barney {
-  using namespace barney::render;
+namespace BARNEY_NS {
+  using namespace BARNEY_NS::render;
 
   /* ray - rounded cone intersection. */
   inline __device__
@@ -118,9 +118,8 @@ namespace barney {
   //                                       owl::common::box3f &bounds,  
   //                                       const int32_t primID)
 
-    template<typename RTBackend>
     static inline __both__
-    void bounds(const RTBackend &rt,
+    void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -137,23 +136,20 @@ namespace barney {
       bounds.upper = max(box_a.upper,box_b.upper);
     }
   
-    template<typename RTBackend>
     static inline __both__
-    void closest_hit(RTBackend &rt)
+    void closest_hit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
   
-    template<typename RTBackend>
     static inline __both__
-    void any_hit(RTBackend &rt)
+    void any_hit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
   
-    template<typename RTBackend>
     static inline __both__
-    void intersect(RTBackend &rt)
+    void intersect(rtc::TraceInterface &rt)
     // OPTIX_INTERSECT_PROGRAM(CylindersIsec)()
     {
       // capped
@@ -161,7 +157,7 @@ namespace barney {
         = optixGetPrimitiveIndex();
       const auto &self
         = owl::getProgramData<Cylinders::DD>();
-      Ray &ray    = getPRD<Ray>();
+      Ray &ray    = *(Ray*)rt.getPRD();
       
       const vec2i idx = self.indices[primID];
       const vec3f v0  = self.vertices[idx.x];
@@ -280,5 +276,5 @@ namespace barney {
   
 }
 
-RTC_DECLARE_USER_GEOM(Cylinders,barney::CylindersPrograms);
+RTC_EXPORT_USER_GEOM(Cylinders,BARNEY_NS::CylindersPrograms);
 

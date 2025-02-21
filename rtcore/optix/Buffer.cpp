@@ -17,13 +17,13 @@
 #include "rtcore/optix/Buffer.h"
 #include "rtcore/optix/Device.h"
 
-namespace barney {
+namespace rtc {
   namespace optix {
 
     Buffer::Buffer(optix::Device *device,
                    size_t size,
                    const void *initData)
-      : rtc::Buffer(device)
+      : device(device)
     {
       owl = owlDeviceBufferCreate(device->owl,OWL_BYTE,size,initData);
     }

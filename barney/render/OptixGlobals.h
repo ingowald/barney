@@ -21,7 +21,7 @@
 #include "barney/render/Sampler.h"
 #include "barney/render/HitAttributes.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     struct OptixGlobals {
@@ -42,7 +42,7 @@ namespace barney {
 }
 
 #ifdef __CUDA_ARCH__
- extern __constant__ barney::render::OptixGlobals optixLaunchParams;
+extern __constant__ BARNEY_NS::render::OptixGlobals optixLaunchParams;
 // # ifndef DECLARE_OPTIX_LAUNCH_PARAMS
 // /*! in owl we can only change the _type_ of launch params, they always
 //     need to be caleld 'optixLaunchParams', and must have __constant__
@@ -54,7 +54,7 @@ namespace barney {
 // // extern __constant__ barney::render::OptixGlobals optixLaunchParams;
 #endif
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     template<typename RTBackend>

@@ -16,62 +16,74 @@
 
 #pragma once
 
-#include "rtcore/common/Backend.h"
+#include "rtcore/optix/Device.h"
+#include "rtcore/optix/Buffer.h"
+#include <owl/owl.h>
 
-namespace barney {
+namespace rtc {
   namespace optix {
     struct Device;
     
     struct GeomType;
     
-    struct Geom : public rtc::Geom {
+    struct Geom {
       Geom(GeomType *gt, OWLGeom geom);
       virtual ~Geom();
-      void setDD(const void *dd) override;
+      void setDD(const void *dd);
+
+      virtual void setPrimCount(int primCount) = 0;
+      virtual void setVertices(Buffer *vertices, int numVertices) = 0;
+      virtual void setIndices(Buffer *indices, int numIndices) = 0;
       
-      OWLGeom const owl;
+      GeomType *const gt;
+      OWLGeom   const owl;
     };
 
-    struct TrianglesGeom : public Geom {
+    struct TrianglesGeom : public optix::Geom {
       TrianglesGeom(GeomType *gt, OWLGeom geom);
       
+      void setPrimCount(int primCount) override { assert(0); }
+      void setVertices(Buffer *vertices, int numVertices) override;
+      void setIndices(Buffer *indices, int numIndices) override;
       /*! only for user geoms */
-      void setPrimCount(int primCount) override;
       /*! can only get called on triangle type geoms */
-      void setVertices(rtc::Buffer *vertices, int numVertices) override;
-      void setIndices(rtc::Buffer *indices, int numIndices) override;
     };
-    struct UserGeom : public Geom {
+    struct UserGeom : public optix::Geom {
       UserGeom(GeomType *gt, OWLGeom geom);
       
-      /*! only for user geoms */
-      void setPrimCount(int primCount) override;
-      /*! can only get called on triangle type geoms */
-      void setVertices(rtc::Buffer *vertices, int numVertices) override;
-      void setIndices(rtc::Buffer *indices, int numIndices) override;
+      void setPrimCount(int primCount);
+      void setVertices(Buffer *vertices, int numVertices) override
+      { assert(0); }
+      void setIndices(Buffer *indices, int numIndices) override
+      { assert(0); }
     };
     
-    struct GeomType : public rtc::GeomType {
+    struct GeomType {
       GeomType(optix::Device *device);
-      virtual ~GeomType() override;
+      virtual ~GeomType();
+      
+      virtual Geom *createGeom() = 0;
       
       OWLGeomType gt = 0;
+      optix::Device *const device;
     };
     struct TrianglesGeomType : public GeomType
     {
       TrianglesGeomType(optix::Device *device,
-                        const std::string &ptxName,
+                        const std::string &ptxCode,
                         const std::string &typeName,
-                        size_t sizeOfDD, bool has_ah, bool has_ch);
-      rtc::Geom *createGeom() override;
+                        size_t sizeOfDD,
+                        bool has_ah, bool has_ch);
+      Geom *createGeom() override;
     };
     struct UserGeomType : public GeomType
     {
       UserGeomType(optix::Device *device,
-                   const std::string &ptxName,
+                   const std::string &ptxCode,
                    const std::string &typeName,
-                   size_t sizeOfDD, bool has_ah, bool has_ch);
-      rtc::Geom *createGeom() override;
+                   size_t sizeOfDD,
+                   bool has_ah, bool has_ch);
+      Geom *createGeom() override;
     };
     
   }

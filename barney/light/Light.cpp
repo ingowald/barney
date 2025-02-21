@@ -22,7 +22,7 @@
 #include "barney/light/DirLight.h"
 #include "barney/light/EnvMap.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   Light::Light(Context *context,
                const DevGroup::SP &devices)

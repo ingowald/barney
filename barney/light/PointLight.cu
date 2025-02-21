@@ -16,7 +16,7 @@
 
 #include "PointLight.h"
 
-namespace barney {
+namespace BARNEY_NS {
   
   PointLight::DD PointLight::getDD(const affine3f &instanceXfm) const
   {

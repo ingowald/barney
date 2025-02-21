@@ -17,11 +17,11 @@
 #include "rtcore/optix/Group.h"
 #include "rtcore/optix/Device.h"
 
-namespace barney {
+namespace rtc {
   namespace optix {
 
     Group::Group(optix::Device *device, OWLGroup owl)
-      : rtc::Group(device),
+      : device(device),
         owl(owl)
     {}
     

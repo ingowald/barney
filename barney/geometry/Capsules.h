@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! A geometry made of multiple "capsules", where each capsule is
       "pill-like" shape obtained by linearly connecting two
@@ -57,7 +57,7 @@ namespace barney {
 
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setData(const std::string &member, const barney_api::Data::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 

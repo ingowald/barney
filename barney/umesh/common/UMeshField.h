@@ -23,7 +23,7 @@
 #include "barney/umesh/common/ElementIntersection.h"
 #include "barney/volume/MCAccelerator.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Element {
     typedef enum {
@@ -171,10 +171,10 @@ namespace barney {
   {
     const vec4i indices = *(const vec4i*)&this->indices[ofs0];
     return box4f()
-      .including(make_vec4f(vertices[indices.x]))
-      .including(make_vec4f(vertices[indices.y]))
-      .including(make_vec4f(vertices[indices.z]))
-      .including(make_vec4f(vertices[indices.w]));
+      .including(load(vertices[indices.x]))
+      .including(load(vertices[indices.y]))
+      .including(load(vertices[indices.z]))
+      .including(load(vertices[indices.w]));
   }
 
   inline __both__
@@ -182,11 +182,11 @@ namespace barney {
   {
     UMeshField::ints<5> indices = *(const UMeshField::ints<5> *)&this->indices[ofs0];
     return box4f()
-      .including(make_vec4f(vertices[indices[0]]))
-      .including(make_vec4f(vertices[indices[1]]))
-      .including(make_vec4f(vertices[indices[2]]))
-      .including(make_vec4f(vertices[indices[3]]))
-      .including(make_vec4f(vertices[indices[4]]));
+      .including(load(vertices[indices[0]]))
+      .including(load(vertices[indices[1]]))
+      .including(load(vertices[indices[2]]))
+      .including(load(vertices[indices[3]]))
+      .including(load(vertices[indices[4]]));
   }
 
   inline __both__
@@ -194,12 +194,12 @@ namespace barney {
   {
     UMeshField::ints<6> indices = *(const UMeshField::ints<6> *)&this->indices[ofs0];
     return box4f()
-      .including(make_vec4f(vertices[indices[0]]))
-      .including(make_vec4f(vertices[indices[1]]))
-      .including(make_vec4f(vertices[indices[2]]))
-      .including(make_vec4f(vertices[indices[3]]))
-      .including(make_vec4f(vertices[indices[4]]))
-      .including(make_vec4f(vertices[indices[5]]));
+      .including(load(vertices[indices[0]]))
+      .including(load(vertices[indices[1]]))
+      .including(load(vertices[indices[2]]))
+      .including(load(vertices[indices[3]]))
+      .including(load(vertices[indices[4]]))
+      .including(load(vertices[indices[5]]));
   }
   
   inline __both__
@@ -207,14 +207,14 @@ namespace barney {
   {
     UMeshField::ints<8> indices = *(const UMeshField::ints<8> *)&this->indices[ofs0];
     return box4f()
-      .including(make_vec4f(vertices[indices[0]]))
-      .including(make_vec4f(vertices[indices[1]]))
-      .including(make_vec4f(vertices[indices[2]]))
-      .including(make_vec4f(vertices[indices[3]]))
-      .including(make_vec4f(vertices[indices[4]]))
-      .including(make_vec4f(vertices[indices[5]]))
-      .including(make_vec4f(vertices[indices[6]]))
-      .including(make_vec4f(vertices[indices[7]]));
+      .including(load(vertices[indices[0]]))
+      .including(load(vertices[indices[1]]))
+      .including(load(vertices[indices[2]]))
+      .including(load(vertices[indices[3]]))
+      .including(load(vertices[indices[4]]))
+      .including(load(vertices[indices[5]]))
+      .including(load(vertices[indices[6]]))
+      .including(load(vertices[indices[7]]));
   }
  
   inline __both__
@@ -253,9 +253,9 @@ namespace barney {
 
   /*! evaluate (relative) distance of point P to the implicit plane
       defined by points A,B,C. distance is not normalized */
-  inline __both__
-  float evalToImplicitPlane(vec3f P, float4 a, float4 b, float4 c)
-  { return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c)); }
+  // inline __both__
+  // float evalToImplicitPlane(vec3f P, float4 a, float4 b, float4 c)
+  // { return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c)); }
 
   /* compute scalar of given umesh element at point P, and return that
      in 'retVal'. returns true if P is inside the elemnt, false if
@@ -284,10 +284,10 @@ namespace barney {
   {
     vec4i indices = *(const vec4i *)&this->indices[ofs0];
     
-    float4 v0 = vertices[indices.x];
-    float4 v1 = vertices[indices.y];
-    float4 v2 = vertices[indices.z];
-    float4 v3 = vertices[indices.w];
+    vec4f v0 = load(vertices[indices.x]);
+    vec4f v1 = load(vertices[indices.y]);
+    vec4f v2 = load(vertices[indices.z]);
+    vec4f v3 = load(vertices[indices.w]);
 
     float t3 = evalToImplicitPlane(P,v0,v1,v2);
     if (t3 < 0.f) return false;

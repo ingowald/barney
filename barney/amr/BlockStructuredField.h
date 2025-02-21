@@ -19,7 +19,7 @@
 #include "barney/Object.h"
 #include "barney/ModelSlot.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct BlockStructuredField : public ScalarField
   {

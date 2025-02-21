@@ -18,18 +18,18 @@
 
 #include "rtcore/optix/Device.h"
 
-namespace barney {
+namespace rtc {
   namespace optix {
 
 #if OPTIX_VERSION >= 80000
-    struct Denoiser : public rtc::Denoiser {
+    struct Denoiser {
       Denoiser(Device *device);
       virtual ~Denoiser();
-      void resize(vec2i dims) override;
+      void resize(vec2i dims);
       void run(vec4f *out_rgba,
                vec4f *in_rgba,
                vec3f *in_normal,
-               float blendFactor) override;
+               float blendFactor);
       Device *const device;
 
       vec2i                numPixels;

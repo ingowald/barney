@@ -19,7 +19,7 @@
 #include "barney/DeviceGroup.h"
 #include "barney/render/Ray.h"
 
-namespace barney {
+namespace BARNEY_NS {
   using render::Ray;
   
   struct RayQueue {

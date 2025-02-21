@@ -19,7 +19,7 @@
 #include "barney/light/Light.h"
 #include "barney/DeviceGroup.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct EnvMapLight : public Light {
     typedef std::shared_ptr<EnvMapLight> SP;
@@ -27,15 +27,15 @@ namespace barney {
                 const DevGroup::SP &devices);
 
     struct DD {
-      inline __both__ float pdf(vec3f dir, bool dbg=false) const;
-      inline __both__ Light::Sample sample(Random &r, bool dbg=false) const;
-      inline __both__ vec3f  eval(vec3f dir, bool dbg=false) const;
+      inline __device__ float pdf(vec3f dir, bool dbg=false) const;
+      inline __device__ Light::Sample sample(Random &r, bool dbg=false) const;
+      inline __device__ vec3f  eval(vec3f dir, bool dbg=false) const;
       /*! converts from a given pixel's coordinates into the
           world-space vector that poitns to the center of that
           pixel */
-      inline __both__ vec3f  uvToWorld(float sx, float sy) const;
-      inline __both__ vec3f  pixelToWorld(vec2i pixelID) const;
-      inline __both__ vec2i  worldToPixel(vec3f worldDir) const;
+      inline __device__ vec3f  uvToWorld(float sx, float sy) const;
+      inline __device__ vec3f  pixelToWorld(vec2i pixelID) const;
+      inline __device__ vec2i  worldToPixel(vec3f worldDir) const;
         
       linear3f            toWorld;
       linear3f            toLocal;
@@ -83,9 +83,9 @@ namespace barney {
       rtc::Buffer  *cdf_y = 0;
       rtc::Buffer  *allCDFs_x = 0;
       
-      rtc::Compute *computeWeights_xy;
-      rtc::Compute *computeCDFs_doLine;
-      rtc::Compute *normalize_cdf_y;
+      rtc::ComputeKernel2D *computeWeights_xy;
+      rtc::ComputeKernel2D *computeCDFs_doLine;
+      rtc::ComputeKernel1D *normalize_cdf_y;
     };
 
     PLD *getPLD(Device *);
@@ -95,7 +95,7 @@ namespace barney {
 
 
 
-  inline __both__
+  inline __device__
   float cdfGetPDF(int position, const float *cdf, int N)
   {
     float f_at_position = cdf[position];
@@ -107,7 +107,7 @@ namespace barney {
     return N*(f_at_position-f_before_position);
   }
 
-  inline __both__
+  inline __device__
   int sampleCDF(const float *cdf, int N, float v,
                 float &pdf, bool dbg = false)
   {
@@ -137,7 +137,7 @@ namespace barney {
     return position;
   }
   
-  inline __both__ float
+  inline __device__ float
   EnvMapLight::DD::pdf(vec3f dir, bool dbg) const
   {
     if (!texture)
@@ -165,21 +165,21 @@ namespace barney {
     return pdf_x * pdf_y * 1.f/(TWO_PI*ONE_PI*sinf(theta));
   }
   
-  inline __both__ float pbrt_clampf(float f, float lo, float hi)
+  inline __device__ float pbrt_clampf(float f, float lo, float hi)
   { return max(lo,min(hi,f)); }
   
-  inline __both__ float pbrtSphericalTheta(const vec3f &v)
+  inline __device__ float pbrtSphericalTheta(const vec3f &v)
   {
     return acosf(pbrt_clampf(v.z, -1.f, 1.f));
   }
   
-  inline __both__ float pbrtSphericalPhi(const vec3f &v)
+  inline __device__ float pbrtSphericalPhi(const vec3f &v)
   {
     float p = atan2f(v.y, v.x);
     return (p < 0.f) ? (p + float(2.f * M_PI)) : p;
   }
 
-  inline __both__ vec2i
+  inline __device__ vec2i
   EnvMapLight::DD::worldToPixel(vec3f worldDir) const
   {
     vec3f localDir = xfmVector(toLocal,worldDir);
@@ -196,7 +196,7 @@ namespace barney {
     return {ix,iy};
   }
   
-  inline __both__ vec3f
+  inline __device__ vec3f
   EnvMapLight::DD::pixelToWorld(vec2i pixelID) const
   {
     const float f_x   = (pixelID.x+.5f)/dims.x;
@@ -212,7 +212,7 @@ namespace barney {
     return xfmVector(toWorld,dir);
   }
 
-  inline __both__ vec3f
+  inline __device__ vec3f
   EnvMapLight::DD::uvToWorld(float f_x, float f_y) const
   {
     const float phi   = TWO_PI * f_x;
@@ -226,7 +226,8 @@ namespace barney {
     return xfmVector(toWorld,dir);
   }
 
-  inline __both__ Light::Sample
+#if RTC_DEVICE_CODE
+  inline __device__ Light::Sample
   EnvMapLight::DD::sample(Random &r, bool dbg) const
   {
     if (!texture) return {};
@@ -249,7 +250,7 @@ namespace barney {
     float sx = (ix+.5f)/dims.x;
     float sy = (iy+.5f)/dims.y;
 #endif
-    vec4f fromTex = tex2D<vec4f>(texture,sx,sy);
+    vec4f fromTex = rtc::tex2D<vec4f>(texture,sx,sy);
     Light::Sample sample;
     sample.radiance = (vec3f&)fromTex;
     sample.direction = uvToWorld(sx,sy);
@@ -277,4 +278,5 @@ namespace barney {
     sample.distance = BARNEY_INF;
     return sample;
   }
+#endif
 }

@@ -38,7 +38,7 @@
 #include "barney/packedBSDF/fromOSPRay/Lambert.h"
 #include "barney/packedBSDF/fromOSPRay/optics.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     struct RefractionResult

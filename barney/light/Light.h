@@ -20,7 +20,7 @@
 #include "barney/common/Data.h"
 #include "barney/common/Texture.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct ModelSlot;
   

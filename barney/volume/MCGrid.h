@@ -18,8 +18,9 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/volume/TransferFunction.h"
+#include "barney/common/math.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! a grid of macro-cells, with each macro-cell storing both value
       range of the underlying field, and majorant after mapping
@@ -46,10 +47,11 @@ namespace barney {
       vec3f    gridOrigin;
       vec3f    gridSpacing;
 
-      inline __both__ int numCells() const
+#if RTC_DEVICE_CODE
+      inline __device__ int numCells() const
       { return dims.x*dims.y*dims.z; }
       
-      inline __both__ vec3i cellID(int linearID) const
+      inline __device__ vec3i cellID(int linearID) const
       {
         vec3i mcID;
         mcID.x = linearID % dims.x;
@@ -58,14 +60,14 @@ namespace barney {
         return mcID;
       }
       
-      inline __both__
+      inline __device__
       float majorant(vec3i cellID) const
       {
         return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
       }
       
       /*! returns the bounding box of the given cell */
-      inline __both__ box3f cellBounds(vec3i cellID,
+      inline __device__ box3f cellBounds(vec3i cellID,
                                          const box3f &worldBounds) const
       {
         box3f bounds;
@@ -73,6 +75,7 @@ namespace barney {
         bounds.upper = min(bounds.lower+gridSpacing,worldBounds.upper);
         return bounds;
       }
+#endif
       
       // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
@@ -105,8 +108,8 @@ namespace barney {
       /* buffer of floats, the actual per-cell majorants */
       rtc::Buffer *majorantsBuffer = 0;
       
-      rtc::Compute *mapMCs = 0;
-      rtc::Compute *clearMCs = 0;
+      rtc::ComputeKernel3D *mapMCs = 0;
+      rtc::ComputeKernel3D *clearMCs = 0;
     };
     PLD *getPLD(Device *device) 
     { return &perLogical[device->contextRank]; } 

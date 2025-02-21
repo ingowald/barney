@@ -18,7 +18,7 @@
 
 #include "barney/light/Light.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct PointLight : public Light {
     struct DD : public Light::DD {

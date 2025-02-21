@@ -19,7 +19,7 @@
 #include "barney/DeviceGroup.h"
 #include "barney/common/half.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct FrameBuffer;
   

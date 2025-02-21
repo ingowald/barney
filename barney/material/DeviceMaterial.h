@@ -23,7 +23,7 @@
 #include "barney/material/AnariMatte.h"
 #include "barney/material/AnariPBR.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     struct DeviceMaterial {
@@ -33,16 +33,16 @@ namespace barney {
         TYPE_AnariPBR
       } Type;
 
-      inline __both__
+      inline __device__
       PackedBSDF createBSDF(const HitAttributes &hitData,
                             const Sampler::DD *samplers,
                             bool dbg=false) const;
-      inline __both__
+      inline __device__
       float getOpacity(const HitAttributes &hitData,
                        const Sampler::DD *samplers,
                        bool dbg) const;
 
-      inline __both__
+      inline __device__
       void setHit(Ray &ray,
                   const HitAttributes &hitData,
                   const Sampler::DD *samplers,
@@ -55,7 +55,7 @@ namespace barney {
       };
     };
 
-    inline __both__
+    inline __device__
     PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData,
                                           const Sampler::DD *samplers,
                                           bool dbg) const
@@ -73,7 +73,7 @@ namespace barney {
       return packedBSDF::Invalid();
     }
 
-    // inline __both__
+    // inline __device__
     // float DeviceMaterial::getOpacity(const HitAttributes &hitData,
     //                                  const Sampler::DD *samplers,
     //                                  bool dbg) const
@@ -86,7 +86,7 @@ namespace barney {
     //   // return 1.f;
     // }
     
-    inline __both__
+    inline __device__
     void DeviceMaterial::setHit(Ray &ray,
                                 const HitAttributes &hitData,
                                 const Sampler::DD *samplers,

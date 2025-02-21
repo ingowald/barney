@@ -20,7 +20,10 @@
 # include <cuBQL/builder/cuda/wide_gpu_builder.h>
 #endif
 
-namespace barney {
+RTC_IMPORT_COMPUTE1D(copyNodes);
+RTC_IMPORT_COMPUTE1D(computeMajorants);
+
+namespace BARNEY_NS {
 
   // struct ClearMajorants {
   //   AWTNode       *awtNodes;
@@ -152,14 +155,14 @@ namespace barney {
     }
   };
 
-  rtc::GeomType *AWTAccel::createGeomType(rtc::Device *device,
-                                const void *cbData)
-  {
-    return device->createUserGeomType("AWT_ptx",
-                                      "AWT",
-                                      sizeof(DD),
-                                      /*ah*/false,/*ch*/false);
-  }
+  // rtc::GeomType *AWTAccel::createGeomType(rtc::Device *device,
+  //                               const void *cbData)
+  // {
+  //   return device->createUserGeomType("AWT_ptx",
+  //                                     "AWT",
+  //                                     sizeof(DD),
+  //                                     /*ah*/false,/*ch*/false);
+  // }
 
   AWTAccel::AWTAccel(Volume *volume,
                      UMeshField *mesh)
@@ -178,8 +181,10 @@ namespace barney {
       auto rtc = device->rtc;
 
       if (pld->copyNodes == 0) {
-        pld->copyNodes        = rtc->createCompute("copyNodes");
-        pld->computeMajorants = rtc->createCompute("computeMajorants");
+        pld->copyNodes        //= rtc->createCompute("copyNodes");
+          = rtc::createCompute_copyNodes(rtc);
+        pld->computeMajorants //= rtc->createCompute("computeMajorants");
+          = rtc::createCompute_computeMajorants(rtc);
       }
       
       if (pld->awtNodes == 0) {
@@ -291,7 +296,7 @@ namespace barney {
   }
 }
 
-RTC_DECLARE_COMPUTE(copyNodes,barney::CopyNodes);
-RTC_DECLARE_COMPUTE(computeMajorants,barney::ComputeMajorants);
+RTC_EXPORT_COMPUTE1D(copyNodes,BARNEY_NS::CopyNodes);
+RTC_EXPORT_COMPUTE1D(computeMajorants,BARNEY_NS::ComputeMajorants);
 
 

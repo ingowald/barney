@@ -20,7 +20,7 @@
 #include "barney/render/HitAttributes.h"
 #include "barney/packedBSDF/fromOSPRay/RobustDielectric.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     namespace packedBSDF {
       

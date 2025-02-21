@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! cylinders with caps, specified through an array of vertices, and
       one array of int2 where each of the two its specified begin and

@@ -19,13 +19,13 @@
 #include "barney/Object.h"
 #include "barney/common/Texture.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Device;
   
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
-  struct Renderer : public Object {
+  struct Renderer : public barney_api::ParameterizedObject {
     typedef std::shared_ptr<Renderer> SP;
 
     struct DD {

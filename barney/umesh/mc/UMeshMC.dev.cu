@@ -28,15 +28,14 @@
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/DDA.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct UMeshMC_Programs {
     
-    template<typename TraceInterface>
-    static inline __both__
-    void bounds(const TraceInterface &ti,
+    static inline __device__
+    void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -44,26 +43,23 @@ namespace barney {
       MCVolumeAccel<UMeshCUBQLSampler>::boundsProg(ti,geomData,bounds,primID);
     }
     
-    template<typename TraceInterface>
-    static inline __both__
-    void intersect(TraceInterface &ti)
+    static inline __device__
+    void intersect(rtc::TraceInterface &ti)
     {
       MCVolumeAccel<UMeshCUBQLSampler>::isProg(ti);
     }
     
-    template<typename TraceInterface>
-    static inline __both__
-    void closest_hit(TraceInterface &ti)
+    static inline __device__
+    void closest_hit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
     
-    template<typename TraceInterface>
-    static inline __both__
-    void any_hit(TraceInterface &ti)
+    static inline __device__
+    void any_hit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
   };
 
 }
 
-RTC_DECLARE_USER_GEOM(UMeshMC,barney::UMeshMC_Programs);
+RTC_EXPORT_USER_GEOM(UMeshMC,BARNEY_NS::UMeshMC_Programs);
 
 

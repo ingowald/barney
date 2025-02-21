@@ -18,7 +18,7 @@
 
 #include "barney/common/barney-common.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     enum { numAttributes = 4 };
@@ -42,8 +42,8 @@ namespace barney {
     struct HitAttributes {
       typedef AttributeKind Which;
         
-      inline __both__ HitAttributes();
-      inline __both__ vec4f get(Which attribute, bool dbg=false) const;
+      inline __device__ HitAttributes();
+      inline __device__ vec4f get(Which attribute, bool dbg=false) const;
       
       vec4f color;
       vec4f attribute[numAttributes];
@@ -56,7 +56,7 @@ namespace barney {
       bool   isShadowRay = false;
     };
 
-    inline __both__ HitAttributes::HitAttributes()
+    inline __device__ HitAttributes::HitAttributes()
     {
       color
         = vec4f(NAN,NAN,NAN,NAN);
@@ -65,7 +65,7 @@ namespace barney {
             = vec4f(NAN,NAN,NAN,NAN);
     }
 
-    inline __both__
+    inline __device__
     vec4f HitAttributes::get(Which whichOne, bool dbg) const
     {
       if (whichOne == ATTRIBUTE_0)

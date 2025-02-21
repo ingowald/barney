@@ -23,7 +23,7 @@
 #define SMALL_EPSILON 2e-10f
 #define IMPORTANCE_SAMPLE_BRDF 1
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
       inline __both__ float pow2(float f) { return f*f; }

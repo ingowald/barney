@@ -259,8 +259,8 @@ BNContext bnContextCreate(/*! how many data slots this context is to
                           const int *gpuIDs=nullptr,
                           int  numGPUs=-1);
 
-BARNEY_API
-void bnCountAvailableDevice(int *numGPUs);
+// BARNEY_API
+// void bnCountAvailableDevice(int *numGPUs);
 
 BARNEY_API
 void bnContextDestroy(BNContext context);

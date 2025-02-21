@@ -22,7 +22,7 @@
 #include "barney/volume/TransferFunction.h"
 #include "barney/volume/ScalarField.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Volume;
   struct ScalarField;

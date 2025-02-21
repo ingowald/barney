@@ -20,13 +20,14 @@
 #include "barney/ModelSlot.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
+#include "rtcore/RTCore.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
 // __constant__ barney::render::OptixGlobals optixLaunchParams;
 // // DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     struct TraceRays {
@@ -71,7 +72,7 @@ namespace barney {
     for (auto model : globalModel->modelSlots)
       for (auto device : *model->devices) {
         SetActiveGPU forDuration(device);
-        barney::render::OptixGlobals dd;
+        render::OptixGlobals dd;
         auto ctx     = model->slotContext;
         dd.rays      = device->rayQueue->traceAndShadeReadQueue;
         dd.numRays   = device->rayQueue->numActive;
@@ -79,9 +80,10 @@ namespace barney {
         dd.materials = ctx->materialRegistry->getDD(device);
         dd.samplers  = ctx->samplerRegistry->getDD(device);
         dd.globalIndex = device->globalIndex;
-        int bs = 1024;
-        int nb = divRoundUp(dd.numRays,bs);
-        device->traceRays->launch(vec2i(nb,bs),&dd);
+        // int bs = 1024;
+        // int nb = divRoundUp(dd.numRays,bs);
+        device->traceRays->launch(dd.numRays,//vec2i(nb,bs),
+                                  &dd);
       }
     
     // ------------------------------------------------------------------
@@ -91,5 +93,5 @@ namespace barney {
   }
 }
 
-RTC_DECLARE_TRACE(traceRays,barney::render::TraceRays);
+RTC_EXPORT_TRACE(traceRays,BARNEY_NS::render::TraceRays);
  

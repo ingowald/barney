@@ -22,21 +22,22 @@
 #include "barney/volume/MCGrid.h"
 #include "barney/common/barney-common.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
+#if RTC_DEVICE_CODE
   // -----------------------------------------------------------------------------
   // INTERFACE
   // -----------------------------------------------------------------------------
 
-  inline __both__
+  inline __device__
   int project(float f,
-              const interval<float> range,
+              const range1f range,
               int dim);
 
   /*! projects a given position into a grid defined by world-space
       'bounds' and dimensions 'dims', and return the cell that this
       world-sapce point projects to */
-  inline __both__
+  inline __device__
   vec3i project(const vec3f &pos,
                 const box3f &bounds,
                 const vec3i &dims);
@@ -45,7 +46,7 @@ namespace barney {
       grid; computing all grid cells that this prim covers, and doing,
       for each cell, an atomin min/max based on the prim's value range
       (its min/max .w values) */
-  inline __both__
+  inline __device__
   void rasterBox(MCGrid::DD grid,
                  const box3f worldBounds,
                  const box4f primBounds4);
@@ -54,15 +55,15 @@ namespace barney {
   // IMPLEMENTATION
   // -----------------------------------------------------------------------------
 
-  inline __both__
+  inline __device__
   int project(float f,
-              const interval<float> range,
+              const range1f range,
               int dim)
   {
     return max(0,min(dim-1,int(dim*(f-range.lower)/(range.upper-range.lower))));
   }
 
-  inline __both__
+  inline __device__
   vec3i project(const vec3f &pos,
                 const box3f &bounds,
                 const vec3i &dims)
@@ -72,7 +73,7 @@ namespace barney {
                  project(pos.z,{bounds.lower.z,bounds.upper.z},dims.z));
   }
 
-  inline __both__
+  inline __device__
   void rasterBox(MCGrid::DD grid,
                  const box3f worldBounds,
                  const box4f primBounds4)
@@ -97,12 +98,12 @@ namespace barney {
             + iy * grid.dims.x
             + iz * grid.dims.x * grid.dims.y;
           auto &cell = grid.scalarRanges[cellID];
-          fatomicMin(&cell.lower,primBounds4.lower.w);
-          fatomicMax(&cell.upper,primBounds4.upper.w);
+          rtc::fatomicMin(&cell.lower,primBounds4.lower.w);
+          rtc::fatomicMax(&cell.upper,primBounds4.upper.w);
         }
   }
 
-  inline __both__
+  inline __device__
   void rasterBox(MCGrid::DD grid,
                  const box4f primBounds4)
   {
@@ -126,9 +127,10 @@ namespace barney {
             + iy * grid.dims.x
             + iz * grid.dims.x * grid.dims.y;
           auto &cell = grid.scalarRanges[cellID];
-          fatomicMin(&cell.lower,primBounds4.lower.w);
-          fatomicMax(&cell.upper,primBounds4.upper.w);
+          rtc::fatomicMin(&cell.lower,primBounds4.lower.w);
+          rtc::fatomicMax(&cell.upper,primBounds4.upper.w);
         }
   }
+#endif
   
 }

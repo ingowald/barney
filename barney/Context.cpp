@@ -234,14 +234,14 @@ namespace barney {
   }
 
 
-  GlobalModel *Context::createModel()
+  std::shared_ptr<barney_api::Model> Context::createModel()
   {
-    return initReference(GlobalModel::create(this));
+    return GlobalModel::create(this);
   }
   
-  Renderer *Context::createRenderer()
+  std::shared_ptr<barney_api::Renderer> Context::createRenderer()
   {
-    return initReference(Renderer::create(this));
+    return Renderer::create(this);
   }
 
   void Context::ensureRayQueuesLargeEnoughFor(FrameBuffer *fb)

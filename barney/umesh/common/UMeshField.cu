@@ -14,13 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "barney/common/barney-common.h"
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/Context.h"
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
 #include "barney/umesh/os/AWT.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   UMeshField::PLD *UMeshField::getPLD(Device *device) 
   {
@@ -29,11 +30,12 @@ namespace barney {
     assert(device->contextRank < perLogical.size());
     return &perLogical[device->contextRank];
   }
-  
-  inline __both__ float length3(vec4f v)
+
+#if RTC_DEVICE_CODE
+  inline __device__ float length3(vec4f v)
   { return length(getPos(v)); }
   
-  template<int D> inline __both__
+  template<int D> inline __device__
   void rasterTet(MCGrid::DD grid,
                  vec4f a,
                  vec4f b,
@@ -97,7 +99,7 @@ namespace barney {
     rasterTet<D-1>(grid,oa,ob,oc,od1);
   }
   
-  template<> inline __both__
+  template<> inline __device__
   void rasterTet<0>(MCGrid::DD grid,
                     vec4f a,
                     vec4f b,
@@ -111,33 +113,38 @@ namespace barney {
     bb.extend(d);
     rasterBox(grid,bb);
   }
+#endif
   
   struct UMeshRasterElements {
     /* kernel data */
     UMeshField::DD mesh;
     MCGrid::DD     grid;
-    
-    template<typename CI>
-    inline __both__
-    void run(const CI &ci)
-    {
-      const int eltIdx = ci.launchIndex().x;
-      if (eltIdx >= mesh.numElements) return;    
 
-      auto elt = mesh.elements[eltIdx];
-      if (elt.type == Element::TET) {
-        const vec4i indices = *(const vec4i *)&mesh.indices[elt.ofs0];
-        vec4f a = make_vec4f(mesh.vertices[indices.x]);
-        vec4f b = make_vec4f(mesh.vertices[indices.y]);
-        vec4f c = make_vec4f(mesh.vertices[indices.z]);
-        vec4f d = make_vec4f(mesh.vertices[indices.w]);
-        rasterTet<5>(grid,a,b,c,d);
-      } else {
-        const box4f eltBounds = mesh.eltBounds(elt);
-        rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
-      }
-    }
+    inline __device__
+    void run(const rtc::ComputeInterface &ci);
   };
+
+#if RTC_DEVICE_CODE
+  inline __device__
+  void UMeshRasterElements::run(const rtc::ComputeInterface &ci)
+  {
+    const int eltIdx = ci.launchIndex().x;
+    if (eltIdx >= mesh.numElements) return;    
+
+    auto elt = mesh.elements[eltIdx];
+    if (elt.type == Element::TET) {
+      const vec4i indices = *(const vec4i *)&mesh.indices[elt.ofs0];
+      vec4f a = load(mesh.vertices[indices.x]);
+      vec4f b = load(mesh.vertices[indices.y]);
+      vec4f c = load(mesh.vertices[indices.z]);
+      vec4f d = load(mesh.vertices[indices.w]);
+      rasterTet<5>(grid,a,b,c,d);
+    } else {
+      const box4f eltBounds = mesh.eltBounds(elt);
+      rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
+    }
+  }
+#endif
 
   /*! KERNEL that creates an elements[] array from the
       elementOffsets[] array */
@@ -148,9 +155,12 @@ namespace barney {
     int     *elementOffsets;
     box3f   *d_worldBounds;
 
+    inline __device__ void run(const rtc::ComputeInterface &ci);
+  };
+
+#if RTC_DEVICE_CODE
     /*! kernel CODE */
-    template<typename CI>
-    inline __both__ void run(const CI &ci)
+  inline __device__ void UMeshCreateElements::run(const rtc::ComputeInterface &ci)
     {
       int tid = ci.launchIndex().x;
       if (tid >= dd.numElements) return;
@@ -183,12 +193,12 @@ namespace barney {
 
       box4f bounds = dd.eltBounds(elt);
 
-      barney::fatomicMin(&d_worldBounds->lower.x,bounds.lower.x);
-      barney::fatomicMin(&d_worldBounds->lower.y,bounds.lower.y);
-      barney::fatomicMin(&d_worldBounds->lower.z,bounds.lower.z); 
-      barney::fatomicMax(&d_worldBounds->upper.x,bounds.upper.x);
-      barney::fatomicMax(&d_worldBounds->upper.y,bounds.upper.y);
-      barney::fatomicMax(&d_worldBounds->upper.z,bounds.upper.z); 
+      rtc::fatomicMin(&d_worldBounds->lower.x,bounds.lower.x);
+      rtc::fatomicMin(&d_worldBounds->lower.y,bounds.lower.y);
+      rtc::fatomicMin(&d_worldBounds->lower.z,bounds.lower.z); 
+      rtc::fatomicMax(&d_worldBounds->upper.x,bounds.upper.x);
+      rtc::fatomicMax(&d_worldBounds->upper.y,bounds.upper.y);
+      rtc::fatomicMax(&d_worldBounds->upper.z,bounds.upper.z); 
       // if (tid < 10) {
       //   printf("(%i) bounds (%f %f %f)(%f %f %f)->(%f %f %f)(%f %f %f)\n",
       //          tid,
@@ -206,7 +216,7 @@ namespace barney {
       //          d_worldBounds->upper.z);
       // }
     }
-  };
+#endif
   
   void UMeshField::buildMCs(MCGrid &grid)
   {
@@ -264,11 +274,15 @@ namespace barney {
     box3f         *d_primBounds;
     range1f       *d_primRanges;
     UMeshField::DD mesh;
-    
+
+    inline __device__
+    void run(const rtc::ComputeInterface &ci);
+  };
+
+#if RTC_DEVICE_CODE
     /* kernel FUNCTION */
-    template<typename ComputeInterface>
-    inline __both__
-    void run(const ComputeInterface &ci)
+    inline __device__
+    void UMeshComputeElementBBs::run(const rtc::ComputeInterface &ci)
     {
       const int tid = ci.launchIndex().x;
       if (tid >= mesh.numElements) return;
@@ -278,8 +292,8 @@ namespace barney {
       d_primBounds[tid] = getBox(eb);
       if (d_primRanges) d_primRanges[tid] = getRange(eb);
     }
-  };
-
+#endif
+  
   bool UMeshField::setData(const std::string &member,
                            const std::shared_ptr<Data> &value)
   {
@@ -439,7 +453,7 @@ namespace barney {
 
 }
 
-RTC_DECLARE_COMPUTE(umeshRasterElements,barney::UMeshRasterElements);
-RTC_DECLARE_COMPUTE(umeshCreateElements,barney::UMeshCreateElements);
-RTC_DECLARE_COMPUTE(umeshComputeElementBBs,barney::UMeshComputeElementBBs);
+RTC_EXPORT_COMPUTE1D(umeshRasterElements,BARNEY_NS::UMeshRasterElements);
+RTC_EXPORT_COMPUTE1D(umeshCreateElements,BARNEY_NS::UMeshCreateElements);
+RTC_EXPORT_COMPUTE1D(umeshComputeElementBBs,BARNEY_NS::UMeshComputeElementBBs);
 

@@ -20,7 +20,7 @@
 // #include <optix_function_table.h>
 // #include <optix_stubs.h>
 
-namespace barney {
+namespace BARNEY_NS {
 
   TiledFB::SP TiledFB::create(Device *device, FrameBuffer *owner)
   {

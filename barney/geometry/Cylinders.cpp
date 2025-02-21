@@ -18,26 +18,28 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-namespace barney {
+RTC_IMPORT_USER_GEOM_TYPE(Cylinders,BARNEY_NS::Cylinders::DD,false,false);
 
-  extern "C" char Cylinders_ptx[];
+namespace BARNEY_NS {
+
+  // extern "C" char Cylinders_ptx[];
 
   Cylinders::Cylinders(SlotContext *slotContext)
     : Geometry(slotContext)
   {}
 
-  rtc::GeomType *Cylinders::createGeomType(rtc::Device *device, const void *)
-  {
-    if (Context::logging())
-    std::cout << OWL_TERMINAL_GREEN
-              << "creating 'Cylinders' geometry type"
-              << OWL_TERMINAL_DEFAULT << std::endl;
+  // rtc::GeomType *Cylinders::createGeomType(rtc::Device *device, const void *)
+  // {
+  //   if (Context::logging())
+  //   std::cout << OWL_TERMINAL_GREEN
+  //             << "creating 'Cylinders' geometry type"
+  //             << OWL_TERMINAL_DEFAULT << std::endl;
 
-    return device->createUserGeomType("Cylinders_ptx",
-                                      "Cylinders",
-                                      sizeof(Cylinders::DD),
-                                      /*ah*/false,/*ch*/true);
-  }
+  //   return device->createUserGeomType("Cylinders_ptx",
+  //                                     "Cylinders",
+  //                                     sizeof(Cylinders::DD),
+  //                                     /*ah*/false,/*ch*/true);
+  // }
   
   void Cylinders::commit()
   {
@@ -78,7 +80,7 @@ namespace barney {
   }
   
   bool Cylinders::setData(const std::string &member,
-                          const Data::SP &value)
+                          const barney_api::Data::SP &value)
   {
     if (Geometry::setData(member,value))
       return true;

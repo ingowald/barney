@@ -18,26 +18,28 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-namespace barney {
+RTC_IMPORT_USER_GEOM_TYPE(Capsules,BARNEY_NS::Capsules::DD,false,false);
 
-  extern "C" char Capsules_ptx[];
+namespace BARNEY_NS {
+
+  // extern "C" char Capsules_ptx[];
 
   Capsules::Capsules(SlotContext *slotContext)
     : Geometry(slotContext)
   {}
 
-  rtc::GeomType *Capsules::createGeomType(rtc::Device *device, const void *)
-  {
-    if (Context::logging())
-      std::cout << OWL_TERMINAL_GREEN
-                << "creating 'Capsules' geometry type"
-                << OWL_TERMINAL_DEFAULT << std::endl;
+  // rtc::GeomType *Capsules::createGeomType(rtc::Device *device, const void *)
+  // {
+  //   if (Context::logging())
+  //     std::cout << OWL_TERMINAL_GREEN
+  //               << "creating 'Capsules' geometry type"
+  //               << OWL_TERMINAL_DEFAULT << std::endl;
 
-    return device->createUserGeomType("Capsules_ptx",
-                                      "Capsules",
-                                      sizeof(Capsules::DD),
-                                      /*ah*/false,/*ch*/true);
-  }
+  //   return device->createUserGeomType("Capsules_ptx",
+  //                                     "Capsules",
+  //                                     sizeof(Capsules::DD),
+  //                                     /*ah*/false,/*ch*/true);
+  // }
   
   void Capsules::commit()
   {
@@ -72,7 +74,7 @@ namespace barney {
     }
   } 
 
-  bool Capsules::setData(const std::string &member, const Data::SP &value)
+  bool Capsules::setData(const std::string &member, const barney_api::Data::SP &value)
   {
     if (Geometry::setData(member,value))
       // does 'primitive.color', and all the 'attributeN's
@@ -90,4 +92,3 @@ namespace barney {
   }
 
 }
-

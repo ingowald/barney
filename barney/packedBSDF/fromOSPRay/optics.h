@@ -33,7 +33,7 @@
 
 #pragma once
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     // helper function which computes cosT^2 from cosI and eta
     inline __both__ float sqrCosT(const float cosI, const float eta)

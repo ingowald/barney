@@ -2,12 +2,11 @@
 # ==================================================================
 
 target_include_directories(barney_config INTERFACE
-#  ${CMAKE_CURRENT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}
   )
-if (NOT BARNEY_HAVE_CUDA)
-  target_link_libraries(barney_config INTERFACE owl-config)
-endif()
+#if (NOT BARNEY_HAVE_CUDA)
+target_link_libraries(barney_config INTERFACE owl-config)
+#endif()
 
 
 # ==================================================================
@@ -113,6 +112,7 @@ endif()
 if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
   add_library(barney_rtc_cuda_common STATIC
     cuda/CUDACommon.cu
+    cuda/cuda-helper.cpp
     )
   target_link_libraries(barney_rtc_cuda_common PUBLIC
     barney_rtc_config
@@ -137,7 +137,7 @@ endif()
 if (BARNEY_BACKEND_CUDA)
   message("ENabling CUDA backend")
   add_library(barney_rtc_cuda STATIC
-    cuda/CUDABackend.cu
+    cuda/CUDACommon.cu
     )
   target_link_libraries(barney_rtc_cuda PUBLIC 
     barney_rtc_config
@@ -181,6 +181,8 @@ if (BARNEY_BACKEND_OPTIX)
     barney_rtc_config
     owl_static
     )
+  target_compile_definitions(barney_rtc_optix
+    PUBLIC -DBARNEY_RTC_OPTIX=1)
 else()
   add_library(barney_rtc_optix INTERFACE) # DUMMY!
 endif()

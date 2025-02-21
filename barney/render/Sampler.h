@@ -18,12 +18,14 @@
 
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
+#include "barney/common/mat4.h"
+
 #include <stack>
 
-namespace barney {
+namespace BARNEY_NS {
   struct TextureData;
   struct SlotContext;
-  
+
   namespace render {
     struct SamplerRegistry;
     
@@ -73,13 +75,13 @@ namespace barney {
       
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
-      bool setObject(const std::string &member,
-                   const std::shared_ptr<Object> &value) override;
-      bool set4x4f(const std::string &member, const mat4f &value) override;
+      void commit() override;
+      bool set4x4f(const std::string &member, const vec4f *value) override;
       bool set4f(const std::string &member, const vec4f &value) override;
       bool setString(const std::string &member,
                      const std::string &value) override;
-      void commit() override;
+      bool setObject(const std::string &member,
+                   const std::shared_ptr<Object> &value) override;
       /*! @} */
       // ------------------------------------------------------------------
 
@@ -112,7 +114,7 @@ namespace barney {
       /*! @{ parameter set/commit interface */
       bool setObject(const std::string &member,
                      const std::shared_ptr<Object> &value) override;
-      bool set4x4f(const std::string &member, const mat4f &value) override;
+      bool set4x4f(const std::string &member, const vec4f *value) override;
       bool set4f(const std::string &member, const vec4f &value) override;
       bool set1i(const std::string &member, const int   &value) override;
       void commit() override;
@@ -139,8 +141,9 @@ namespace barney {
       const int   numDims=0;
       std::shared_ptr<TextureData> textureData{ 0 };
     };
-  
-    inline __both__
+    
+#if RTC_DEVICE_CODE
+    inline __device__
     vec4f AttributeTransform::applyTo(vec4f in,
                                        bool dbg) const
     {
@@ -152,7 +155,7 @@ namespace barney {
       return (const vec4f&)out;
     }
     
-    inline __both__
+    inline __device__
     vec4f Sampler::DD::eval(const HitAttributes &inputs,
                              bool dbg) const
     {
@@ -166,7 +169,7 @@ namespace barney {
         if (dbg) printf("coord is %f %f %f %f\n",coord.x,coord.y,coord.z,coord.w);
         vec4f fromTex;
         if (type == IMAGE1D)
-          fromTex = tex1D<vec4f>(image.texture,coord.x);
+          fromTex = rtc::tex1D<vec4f>(image.texture,coord.x);
         else if (type == IMAGE2D) {
           if (dbg) printf("sampling 2d texture %p at %f %f\n",
                           (int*)image.texture,coord.x,coord.y);
@@ -187,5 +190,6 @@ namespace barney {
       vec4f out = outTransform.applyTo(in,dbg);
       return out;
     }
+#endif
   }
 }

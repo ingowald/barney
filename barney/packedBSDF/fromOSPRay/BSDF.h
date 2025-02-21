@@ -18,7 +18,7 @@
 
 // #include "barney/material/device/DG.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
 #define BSDF_SPECULAR_REFLECTION   (1<<0)  /*!< perfect specular light reflection   */

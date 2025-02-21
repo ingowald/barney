@@ -17,12 +17,13 @@
 #pragma once
 
 #include "barney/Object.h"
+#include "rtcore/Frontend.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  rtc::Texture::ColorSpace toRTC(BNTextureColorSpace mode);
-  rtc::Texture::FilterMode toRTC(BNTextureFilterMode mode);
-  rtc::Texture::AddressMode toRTC(BNTextureAddressMode mode);
+  rtc::ColorSpace toRTC(BNTextureColorSpace mode);
+  rtc::FilterMode toRTC(BNTextureFilterMode mode);
+  rtc::AddressMode toRTC(BNTextureAddressMode mode);
   
   struct Device;
   

@@ -16,10 +16,10 @@
 
 #include "rtcore/optix/Denoiser.h"
 #include <optix.h>
-#include <optix_function_table.h>
-#include <optix_stubs.h>
+// #include <optix_function_table.h>
+// #include <optix_stubs.h>
 
-namespace barney {
+namespace rtc {
   namespace optix {
 
 #if OPTIX_VERSION >= 80000

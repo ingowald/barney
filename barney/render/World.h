@@ -25,7 +25,7 @@
 #include "barney/light/DirLight.h"
 #include "barney/light/QuadLight.h"
 
-namespace barney {
+namespace BARNEY_NS {
   struct SlotContext;
   
   namespace render {

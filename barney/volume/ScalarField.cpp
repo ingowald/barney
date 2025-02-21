@@ -21,7 +21,7 @@
 #include "barney/volume/StructuredData.h"
 #include "barney/umesh/common/UMeshField.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   void ScalarField::buildMCs(MCGrid &macroCells)
   {

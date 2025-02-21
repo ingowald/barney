@@ -24,7 +24,7 @@
 #include "owl/common/math/vec.h"
 #include "owl/common/math/LinearSpace.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   inline __both__
   vec3f make_vec3f(float4 v) { return vec3f(v.x,v.y,v.z); }

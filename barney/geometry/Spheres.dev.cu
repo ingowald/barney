@@ -15,15 +15,15 @@
 // ======================================================================== //
 
 #include "barney/geometry/Attributes.dev.h"
-
 #include "barney/geometry/Spheres.h"
+
 // #include "owl/owl_device.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
-namespace barney {
+namespace BARNEY_NS {
 
-  using namespace barney::render;
+  using namespace BARNEY_NS::render;
   inline __both__
   float safe_eps(float f, vec3f v)
   {
@@ -39,9 +39,8 @@ namespace barney {
   
   struct SpheresPrograms {
     
-    template<typename RTBackend>
-    static inline __both__
-    void bounds(const RTBackend &rt,
+    static inline __device__
+    void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -53,9 +52,8 @@ namespace barney {
       bounds.upper = origin + radius;
     }
     
-    template<typename RTBackend>
-    static inline __both__
-    void closest_hit(RTBackend &rt)
+    static inline __device__
+    void closest_hit(rtc::TraceInterface &rt)
     {
       auto &ray = *(Ray*)rt.getPRD();
       auto &self = *(Spheres::DD*)rt.getProgramData();
@@ -117,16 +115,14 @@ namespace barney {
       material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,dbg);
     }
   
-    template<typename RTBackend>
-    static inline __both__
-    void any_hit(RTBackend &rt)
+    static inline __device__
+    void any_hit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
   
-    template<typename RTBackend>
-    static inline __both__
-    void intersect(RTBackend &rt)
+    static inline __device__
+    void intersect(rtc::TraceInterface &rt)
     {
       const int primID = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
       const auto &self = *(const Spheres::DD*)rt.getProgramData();
@@ -193,5 +189,5 @@ namespace barney {
   };
 
 }
-RTC_DECLARE_USER_GEOM(Spheres,barney::SpheresPrograms);
+RTC_EXPORT_USER_GEOM(Spheres,BARNEY_NS::SpheresPrograms);
 

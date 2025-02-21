@@ -16,7 +16,7 @@
 
 #include "barney/volume/TransferFunction.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   TransferFunction::TransferFunction(Context *context,
                                      const DevGroup::SP &devices)

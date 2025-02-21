@@ -17,7 +17,7 @@
 #include "barney/Context.h"
 #include "barney/render/SamplerRegistry.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     SamplerRegistry::SamplerRegistry(const DevGroup::SP &devices)

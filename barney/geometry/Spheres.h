@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Spheres : public Geometry {
     typedef std::shared_ptr<Spheres> SP;
@@ -45,7 +45,7 @@ namespace barney {
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     bool set1f(const std::string &member, const float &value) override;
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setData(const std::string &member, const barney_api::Data::SP &value) override;
     bool setObject(const std::string &member, const Object::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------

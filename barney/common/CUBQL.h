@@ -32,8 +32,7 @@ namespace cuBQL {
 }
 #endif
 
-namespace barney {
-
+namespace BARNEY_NS {
   
   inline __both__ vec3f to_barney(cuBQL::float3 v)
   { return vec3f(v.x,v.y,v.z); }

@@ -21,7 +21,7 @@
 # include <OpenImageDenoise/oidn.h>
 #endif
 
-namespace barney {
+namespace BARNEY_NS {
 
   // inline __device__ float saturate(float f, float lo=0.f, float hi=1.f)
   // { return max(lo,min(f,hi)); }
@@ -118,120 +118,126 @@ namespace barney {
     }
   }
 
-// #if 1
+  // #if 1
   struct ToFixed8 {
     uint32_t *out;
     vec4f *in;
     vec2i numPixels;
     bool SRGB;
-    template<typename CI>
-    __both__ void run(const CI &ci)
-    {
-      int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
-      if (ix >= numPixels.x) return;
-      int iy = ci.getThreadIdx().y+ci.getBlockIdx().y*ci.getBlockDim().y;
-      if (iy >= numPixels.y) return;
-      int idx = ix+numPixels.x*iy;
-      vec4f v = in[idx];
-      v.x = clamp(v.x);
-      v.y = clamp(v.y);
-      v.z = clamp(v.z);
-      if (SRGB) {
-        // this doesn't make sense - the color channel has ALREADY been
-        // gamma-corrected in tonemap()!?
-        v.x = linear_to_srgb(v.x);
-        v.y = linear_to_srgb(v.y);
-        v.z = linear_to_srgb(v.z);
-      }
-      out[idx] = make_rgba(v);
-    }
+    __device__ void run(const rtc::ComputeInterface &ci);
   };
-// #else
-//   template<bool SRGB>
-//   __global__
-//   void toFixed8(uint32_t *out,
-//                 vec4f *in,
-//                 vec2i numPixels)
-//   {
-//     int ix = threadIdx.x+blockIdx.x*blockDim.x;
-//     if (ix >= numPixels.x) return;
-//     int iy = threadIdx.y+blockIdx.y*blockDim.y;
-//     if (iy >= numPixels.y) return;
-//     int idx = ix+numPixels.x*iy;
 
-//     vec4f v = in[idx];
-//     v.x = clamp(v.x);
-//     v.y = clamp(v.y);
-//     v.z = clamp(v.z);
-//     if (SRGB) {
-//       // this doesn't make sense - the color channel has ALREADY been
-//       // gamma-corrected in tonemap()!?
-//       v.x = linear_to_srgb(v.x);
-//       v.y = linear_to_srgb(v.y);
-//       v.z = linear_to_srgb(v.z);
-//     }
-//     out[idx] = make_rgba(v);
-//     // out[idx] = make_rgba8(v);
-//   }
-// #endif
+#if RTC_DEVICE_CODE
+  __device__ void ToFixed8::run(const rtc::ComputeInterface &ci)
+  {
+    int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
+    if (ix >= numPixels.x) return;
+    int iy = ci.getThreadIdx().y+ci.getBlockIdx().y*ci.getBlockDim().y;
+    if (iy >= numPixels.y) return;
+    int idx = ix+numPixels.x*iy;
+    vec4f v = in[idx];
+    v.x = clamp(v.x);
+    v.y = clamp(v.y);
+    v.z = clamp(v.z);
+    if (SRGB) {
+      // this doesn't make sense - the color channel has ALREADY been
+      // gamma-corrected in tonemap()!?
+      v.x = linear_to_srgb(v.x);
+      v.y = linear_to_srgb(v.y);
+      v.z = linear_to_srgb(v.z);
+    }
+    out[idx] = make_rgba(v);
+  }
+#endif
+  // #else
+  //   template<bool SRGB>
+  //   __global__
+  //   void toFixed8(uint32_t *out,
+  //                 vec4f *in,
+  //                 vec2i numPixels)
+  //   {
+  //     int ix = threadIdx.x+blockIdx.x*blockDim.x;
+  //     if (ix >= numPixels.x) return;
+  //     int iy = threadIdx.y+blockIdx.y*blockDim.y;
+  //     if (iy >= numPixels.y) return;
+  //     int idx = ix+numPixels.x*iy;
 
-// #if 1
+  //     vec4f v = in[idx];
+  //     v.x = clamp(v.x);
+  //     v.y = clamp(v.y);
+  //     v.z = clamp(v.z);
+  //     if (SRGB) {
+  //       // this doesn't make sense - the color channel has ALREADY been
+  //       // gamma-corrected in tonemap()!?
+  //       v.x = linear_to_srgb(v.x);
+  //       v.y = linear_to_srgb(v.y);
+  //       v.z = linear_to_srgb(v.z);
+  //     }
+  //     out[idx] = make_rgba(v);
+  //     // out[idx] = make_rgba8(v);
+  //   }
+  // #endif
+
+  // #if 1
   struct ToneMap {
     vec4f *color;
     vec2i numPixels;
     
-    template<typename CI>
-    __both__ void run(const CI &ci)
-    {
-      int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
-      if (ix >= numPixels.x) return;
-      int iy = ci.getThreadIdx().y+ci.getBlockIdx().y*ci.getBlockDim().y;
-      if (iy >= numPixels.y) return;
-      int idx = ix+numPixels.x*iy;
-      
-      vec4f v = color[idx];
-#if 0
-      v.x = linear_to_srgb(v.x);
-      v.y = linear_to_srgb(v.y);
-      v.z = linear_to_srgb(v.z);
-#elif 1
-      v.x = sqrtf(v.x);
-      v.y = sqrtf(v.y);
-      v.z = sqrtf(v.z);
-#else
-      // v.x = linear_to_srgb(v.x);
-      // v.y = linear_to_srgb(v.y);
-      // v.z = linear_to_srgb(v.z);
-#endif
-      color[idx] = v;
-    }
+    __device__ void run(const rtc::ComputeInterface &ci);
   };
-// #else
-//   __global__ void toneMap(vec4f *color, vec2i numPixels)
-//   {
-//     int ix = threadIdx.x+blockIdx.x*blockDim.x;
-//     if (ix >= numPixels.x) return;
-//     int iy = threadIdx.y+blockIdx.y*blockDim.y;
-//     if (iy >= numPixels.y) return;
-//     int idx = ix+numPixels.x*iy;
+  
+#if BARNEY_DEVICE_CODE
+  __device__ void run(const rtc::ComputeInterface &ci)
+  {
+    int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
+    if (ix >= numPixels.x) return;
+    int iy = ci.getThreadIdx().y+ci.getBlockIdx().y*ci.getBlockDim().y;
+    if (iy >= numPixels.y) return;
+    int idx = ix+numPixels.x*iy;
+      
+    vec4f v = color[idx];
+#if 0
+    v.x = linear_to_srgb(v.x);
+    v.y = linear_to_srgb(v.y);
+    v.z = linear_to_srgb(v.z);
+#elif 1
+    v.x = sqrtf(v.x);
+    v.y = sqrtf(v.y);
+    v.z = sqrtf(v.z);
+#else
+    // v.x = linear_to_srgb(v.x);
+    // v.y = linear_to_srgb(v.y);
+    // v.z = linear_to_srgb(v.z);
+#endif
+    color[idx] = v;
+  }
+#endif
+  // #else
+  //   __global__ void toneMap(vec4f *color, vec2i numPixels)
+  //   {
+  //     int ix = threadIdx.x+blockIdx.x*blockDim.x;
+  //     if (ix >= numPixels.x) return;
+  //     int iy = threadIdx.y+blockIdx.y*blockDim.y;
+  //     if (iy >= numPixels.y) return;
+  //     int idx = ix+numPixels.x*iy;
 
-//     vec4f v = color[idx];
-// #if 0
-//     v.x = linear_to_srgb(v.x);
-//     v.y = linear_to_srgb(v.y);
-//     v.z = linear_to_srgb(v.z);
-// #elif 1
-//     v.x = sqrtf(v.x);
-//     v.y = sqrtf(v.y);
-//     v.z = sqrtf(v.z);
-// #else
-//     // v.x = linear_to_srgb(v.x);
-//     // v.y = linear_to_srgb(v.y);
-//     // v.z = linear_to_srgb(v.z);
-// #endif
-//     color[idx] = v;
-//   }
-// #endif
+  //     vec4f v = color[idx];
+  // #if 0
+  //     v.x = linear_to_srgb(v.x);
+  //     v.y = linear_to_srgb(v.y);
+  //     v.z = linear_to_srgb(v.z);
+  // #elif 1
+  //     v.x = sqrtf(v.x);
+  //     v.y = sqrtf(v.y);
+  //     v.z = sqrtf(v.z);
+  // #else
+  //     // v.x = linear_to_srgb(v.x);
+  //     // v.y = linear_to_srgb(v.y);
+  //     // v.z = linear_to_srgb(v.z);
+  // #endif
+  //     color[idx] = v;
+  //   }
+  // #endif
 
   void FrameBuffer::finalizeTiles()
   {
@@ -295,46 +301,49 @@ namespace barney {
     CompressedTile *tiles;
     TileDesc *descs;
     
-    template<typename CI>
-    __both__ void run(const CI &ci)
-    {
-      int tileIdx = ci.getBlockIdx().x;
-      
-      const CompressedTile &tile = tiles[tileIdx];
-      const TileDesc        desc = descs[tileIdx];
-      
-      int subIdx = ci.getThreadIdx().x;
-      int iix = subIdx % tileSize;
-      int iiy = subIdx / tileSize;
-      int ix = desc.lower.x + iix;
-      int iy = desc.lower.y + iiy;
-      if (ix >= numPixels.x) return;
-      if (iy >= numPixels.y) return;
-      int idx = ix + numPixels.x*iy;
-      
-      uint32_t rgba8 = tile.rgba[subIdx];
-      vec4f rgba = from_8bit(rgba8);
-      float scale = float(tile.scale[subIdx]);
-      rgba.x *= scale;
-      rgba.y *= scale;
-      rgba.z *= scale;
-      vec3f normal = tile.normal[subIdx].get3f();
-      float depth = tile.depth[subIdx];
-
-      // auto checkFragComp = [](float f) {
-      //   if (isnan(f)) printf("NAN fragment!\n");
-      //   if (isinf(f)) printf("INF fragment!\n");
-      // };
-      // checkFragComp(rgba.x);
-      // checkFragComp(rgba.y);
-      // checkFragComp(rgba.z);
-      
-      
-      out_rgba[idx] = (const float4&)rgba;//color;
-      depths[idx] = depth;
-      normals[idx] = normal;
-    }
+    __device__ void run(const rtc::ComputeInterface &ci);
   };
+
+#if RTC_DEVICE_CODE
+  __device__ void UnpackTiles::run(const rtc::ComputeInterface &ci)
+  {
+    int tileIdx = ci.getBlockIdx().x;
+      
+    const CompressedTile &tile = tiles[tileIdx];
+    const TileDesc        desc = descs[tileIdx];
+      
+    int subIdx = ci.getThreadIdx().x;
+    int iix = subIdx % tileSize;
+    int iiy = subIdx / tileSize;
+    int ix = desc.lower.x + iix;
+    int iy = desc.lower.y + iiy;
+    if (ix >= numPixels.x) return;
+    if (iy >= numPixels.y) return;
+    int idx = ix + numPixels.x*iy;
+      
+    uint32_t rgba8 = tile.rgba[subIdx];
+    vec4f rgba = from_8bit(rgba8);
+    float scale = float(tile.scale[subIdx]);
+    rgba.x *= scale;
+    rgba.y *= scale;
+    rgba.z *= scale;
+    vec3f normal = tile.normal[subIdx].get3f();
+    float depth = tile.depth[subIdx];
+
+    // auto checkFragComp = [](float f) {
+    //   if (isnan(f)) printf("NAN fragment!\n");
+    //   if (isinf(f)) printf("INF fragment!\n");
+    // };
+    // checkFragComp(rgba.x);
+    // checkFragComp(rgba.y);
+    // checkFragComp(rgba.z);
+      
+      
+    out_rgba[idx] = (const float4&)rgba;//color;
+    depths[idx] = depth;
+    normals[idx] = normal;
+  }
+#endif
   
   void FrameBuffer::unpackTiles()
   {
@@ -516,6 +525,6 @@ namespace barney {
 }
   
 // RTC_DECLARE_COMPUTE(copyPixels,barney::CopyPixels);
-RTC_DECLARE_COMPUTE(toneMap,barney::ToneMap);
-RTC_DECLARE_COMPUTE(toFixed8,barney::ToFixed8);
-RTC_DECLARE_COMPUTE(unpackTiles,barney::UnpackTiles);
+RTC_DECLARE_COMPUTE1D(toneMap,barney::ToneMap);
+RTC_DECLARE_COMPUTE1D(toFixed8,barney::ToFixed8);
+RTC_DECLARE_COMPUTE1D(unpackTiles,barney::UnpackTiles);

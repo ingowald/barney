@@ -18,27 +18,27 @@
 
 #include "barney/Object.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   rtc::DataType toRTC(BNDataType format);
   
   std::string to_string(BNDataType type);
   size_t owlSizeOf(BNDataType type);
   
-  struct Data : public SlottedObject {
+  struct BaseData : public barney_api::Data {//SlottedObject {
     typedef std::shared_ptr<Data> SP;
 
-    Data(Context *context,
+    BaseData(Context *context,
          const DevGroup::SP &devices,
          BNDataType type,
          size_t numItems);
-    virtual ~Data() = default;
+    virtual ~BaseData() = default;
     
-    static Data::SP create(Context *context,
-                           const DevGroup::SP &devices,
-                           BNDataType type,
-                           size_t numItems,
-                           const void *items);
+    static BaseData::SP create(Context *context,
+                               const DevGroup::SP &devices,
+                               BNDataType type,
+                               size_t numItems,
+                               const void *items);
     
     BNDataType type  = BN_DATA_UNDEFINED;
     size_t     count = 0;
@@ -48,7 +48,7 @@ namespace barney {
       vec3f, etc) that does not need reference-counting for object
       lifetime handling; class-type data (any BNWhatEver) needs to be
       in ObecjtsRefData which does the refcounting */
-  struct PODData : public Data {
+  struct PODData : public BaseData {
     typedef std::shared_ptr<PODData> SP;
     
     /*! constructor for a 'global' data array that lives on the
@@ -73,7 +73,7 @@ namespace barney {
   /*! data array over reference-counted barney object handles (e.g.,
       BNTexture's, BNlight's, etc. this has to make sure that objects
       put into this data array will remain properly refcoutned. */
-  struct ObjectRefsData : public Data {
+  struct ObjectRefsData : public BaseData {
     typedef std::shared_ptr<ObjectRefsData> SP;
     ObjectRefsData(Context *context,
                    const DevGroup::SP &devices,

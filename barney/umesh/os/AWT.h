@@ -22,7 +22,7 @@
 // #define AWT_DEFAULT_MAX_DEPTH 7
 #define AWT_NODE_WIDTH 4
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct RefitInfo {
     int numNotDone;
@@ -68,8 +68,8 @@ namespace barney {
       RefitInfo    *refitInfos = 0;
       rtc::Geom    *geom       = 0;
       rtc::Group   *group      = 0;
-      rtc::Compute *copyNodes  = 0;
-      rtc::Compute *computeMajorants = 0;
+      rtc::ComputeKernel1D *copyNodes  = 0;
+      rtc::ComputeKernel1D *computeMajorants = 0;
       int           numNodes   = 0;
       box3f         bounds;
     };

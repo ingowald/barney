@@ -21,7 +21,7 @@
 #include "barney/common/Data.h"
 #include "barney/render/HitAttributes.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     struct AttributeArray {

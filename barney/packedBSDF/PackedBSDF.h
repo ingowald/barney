@@ -22,7 +22,7 @@
 #include "barney/packedBSDF/fromOSPRay/Glass.h"
 #include "barney/packedBSDF/Phase.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     namespace packedBSDF {

@@ -35,7 +35,7 @@
 
 #include "barney/packedBSDF/fromOSPRay/BSDF.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     typedef uint32_t BSDFType;
@@ -62,7 +62,7 @@ namespace barney {
         EvalRes res;
         float cosThetaI = max(dot(wi, dg.Ns), 0.f);
         res.pdf = cosineSampleHemispherePDF(cosThetaI);
-        res.value = (vec3f)albedo * one_over_pi * cosThetaI;
+        res.value = (vec3f)albedo * ONE_OVER_PI * cosThetaI;
         return res;
       }
       

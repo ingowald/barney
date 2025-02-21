@@ -20,7 +20,7 @@
 #include "barney/common/Texture.h"
 #include "barney/volume/MCAccelerator.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct ModelSlot;
 
@@ -73,7 +73,7 @@ namespace barney {
     // Texture3D::SP  colorMapTexture;
 
     struct PLD {
-      rtc::Compute *computeMCs = 0;
+      rtc::ComputeKernel3D *computeMCs = 0;
     };
     PLD *getPLD(Device *device) 
     { return &perLogical[device->contextRank]; } 
@@ -93,7 +93,7 @@ namespace barney {
     {}
     
     struct DD {
-      inline __both__ float sample(const vec3f P, bool dbg=false) const;
+      inline __device__ float sample(const vec3f P, bool dbg=false) const;
       
       rtc::device::TextureObject texObj;
       vec3f cellGridOrigin;
@@ -106,8 +106,8 @@ namespace barney {
     DD getDD(Device *device);
     StructuredData *const sf;
   };
-  
-  inline __both__
+#if RTC_DEVICE_CODE
+  inline __device__
   float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
   {
     vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
@@ -117,10 +117,10 @@ namespace barney {
     if (rel.x >= numCells.x) return NAN;
     if (rel.y >= numCells.y) return NAN;
     if (rel.z >= numCells.z) return NAN;
-    float f = tex3D<float>(texObj,rel.x+.5f,rel.y+.5f,rel.z+.5f);
+    float f = rtc::tex3D<float>(texObj,rel.x+.5f,rel.y+.5f,rel.z+.5f);
     return f;
   }
-  
+#endif
 }
 
 

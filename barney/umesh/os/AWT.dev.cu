@@ -17,16 +17,16 @@
 #include <owl/owl_device.h>
 #include "barney/umesh/os/AWT.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
 enum { AWT_STACK_DEPTH = 64 };
 
 // #define AWT_SAMPLE_THRESHOLD 4.f
 // #define JOINT_FIRST_STEP 1
 
-namespace barney {
+namespace BARNEY_NS {
 
-  inline __both__
+  inline __device__
   bool verySmall(range1f r)
   {
     float l = r.span();
@@ -34,19 +34,16 @@ namespace barney {
   }
   
   struct AWTPrograms {
-    template<typename TraceInterface>
-    static inline __both__
-    void closest_hit(TraceInterface &rt)
+    static inline __device__
+    void closest_hit(rtc::TraceInterface &rt)
     {}
 
-    template<typename TraceInterface>
-    static inline __both__
-    void any_hit(TraceInterface &rt)
+    static inline __device__
+    void any_hit(rtc::TraceInterface &rt)
     {}
 
-    template<typename RTBackend>
-    static inline __both__
-    void bounds(const RTBackend &rt,
+    static inline __device__
+    void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -65,9 +62,8 @@ namespace barney {
       
     }
 
-    template<typename TI>
-    static inline __both__
-    void intersect(TI &ti);
+    static inline __device__
+    void intersect(rtc::TraceInterface &ti);
   };
 
   
@@ -75,7 +71,7 @@ namespace barney {
     t=0, t=1/3, t=2/3, and 1=1.f) with corresponding values of f0,
     f1, f2, and f3 */
   struct Cubic {
-    inline __both__ float eval(float t, bool dbg=false) const
+    inline __device__ float eval(float t, bool dbg=false) const
     {
       t = tRange.span()==0.f
         ? 0.f
@@ -100,7 +96,7 @@ namespace barney {
     float f0, f1, f2, f3;
   };
 
-  inline __both__
+  inline __device__
   void clip(range1f &range,
             vec4f _a, vec4f _b, vec4f _c,
             const vec3f &org,
@@ -123,7 +119,7 @@ namespace barney {
       range.lower = max(range.lower,plane_t);
   }
 
-  inline __both__
+  inline __device__
   float evalToPlane(vec3f P, 
                     vec3f a, vec3f b, vec3f c)
   {
@@ -131,7 +127,7 @@ namespace barney {
     return dot(P-a,N);
   }
   
-  inline __both__
+  inline __device__
   float eval(vec3f P, 
              vec4f _a, vec4f _b, vec4f _c, vec4f _d)
   {
@@ -149,7 +145,7 @@ namespace barney {
       / (f0+f1+f2+f3);
   }
     
-  inline __both__
+  inline __device__
   Cubic cubicFromTet(const UMeshField::DD &mesh,
                      Element elt,
                      const vec3f &org,
@@ -198,12 +194,12 @@ namespace barney {
   }
 
   struct CubicSampler {
-    inline __both__
+    inline __device__
     CubicSampler(const Cubic &cubic,
                  const TransferFunction::DD &xf)
       : cubic(cubic),xf(xf)
     {}
-    inline __both__
+    inline __device__
     vec4f sampleAndMap(float t, bool dbg=false) const
     {
       float f = cubic.eval(t,dbg);
@@ -222,7 +218,7 @@ namespace barney {
     const TransferFunction::DD &xf;
   };
 
-  inline __both__
+  inline __device__
   bool woodcockSampleJFS(vec4f &sample,
                          CubicSampler &sfSampler,
                          vec3f org,
@@ -270,7 +266,7 @@ namespace barney {
   }
 
         
-  inline __both__
+  inline __device__
   void intersectPrim(const AWTAccel::DD &self,
                      vec4f &acceptedSample,
                      range1f tRange,
@@ -350,14 +346,14 @@ namespace barney {
   };
 
   // template<typename T>
-  // inline __both__
+  // inline __device__
   // void swap(T &a, T &b)
   // {
   //   T c = a; a = b; b = c;
   // }
     
   template<bool ascending>
-  inline __both__
+  inline __device__
   void order(StackEntry *childEntry, int a, int b)
   {
     if (ascending  && childEntry[a].tRange.lower <= childEntry[b].tRange.lower ||
@@ -367,11 +363,11 @@ namespace barney {
   }
   
   template<int N>
-  inline __both__
+  inline __device__
   void sort(StackEntry *childEntry);
   
   template<>
-  inline __both__
+  inline __device__
   void sort<4>(StackEntry *childEntry)
   {
     order<true>(childEntry,0,1);
@@ -382,11 +378,10 @@ namespace barney {
     order<true>(childEntry,0,1);
   }
 
-  template<typename TI>
-  inline __both__
-  void AWTPrograms::intersect(TI &ti)
+  inline __device__
+  void AWTPrograms::intersect(rtc::TraceInterface &ti)
   {
-    using barney::render::boxTest;
+    using BARNEY_NS::render::boxTest;
     
     StackEntry stackBase[AWT_STACK_DEPTH];
     StackEntry *stack = stackBase;
@@ -603,4 +598,4 @@ printf("STACK OVERFLOW!\n");
   
 } // ::barney
 
-RTC_DECLARE_USER_GEOM(AWT,barney::AWTPrograms);
+RTC_EXPORT_USER_GEOM(AWT,BARNEY_NS::AWTPrograms);

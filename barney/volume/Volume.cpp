@@ -18,7 +18,7 @@
 #include "barney/volume/ScalarField.h"
 #include "barney/ModelSlot.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   Volume::PLD *Volume::getPLD(Device *device)
   { return &perLogical[device->contextRank]; }
@@ -42,9 +42,9 @@ namespace barney {
   { assert(s); return s; }
   
   Volume::Volume(ScalarField::SP sf)
-    : SlottedObject(sf->context,sf->devices),
+    : SlottedObject((Context*)sf->context,sf->devices),
       sf(sf),
-      xf(sf->context,sf->devices)
+      xf((Context*)sf->context,sf->devices)
   {
     accel = sf->createAccel(this);
     perLogical.resize(devices->numLogical);

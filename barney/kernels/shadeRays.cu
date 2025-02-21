@@ -20,8 +20,9 @@
 #include "barney/render/World.h"
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
+#include "rtcore/RTCore.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
 
@@ -32,20 +33,22 @@ namespace barney {
 #define ENV_LIGHT_SAMPLING 1
 
 #define USE_MIS 1
-    
-    inline __both__ float square(float f) { return f*f; }
+
+
+#if RTC_DEVICE_CODE
+    inline __device__ float square(float f) { return f*f; }
   
     
     enum { MAX_PATH_DEPTH = 10 };
 
-    inline __both__
+    inline __device__
     float safe_eps(float f, vec3f v)
     {
       return max(f,1e-5f*reduce_max(abs(v)));
     }
 
     
-    inline __both__
+    inline __device__
     vec3f randomDirection(Random &rng)
     {
       vec3f v;
@@ -58,7 +61,7 @@ namespace barney {
       }
     }
 
-    inline __both__
+    inline __device__
     bool sampleAreaLights(Light::Sample &ls,
                           const render::World::DD &world,
                           const vec3f P,
@@ -141,7 +144,7 @@ namespace barney {
       return true;
     }
 
-    inline __both__
+    inline __device__
     bool sampleDirLights(Light::Sample &ls,
                          const World::DD &world,
                          const Renderer::DD &renderer,
@@ -195,7 +198,7 @@ namespace barney {
       return weights[i] != 0.f;
     }
 
-    inline __both__
+    inline __device__
     bool sampleEnvLight(Light::Sample &ls,
                         const World::DD &world,
                         const Renderer::DD &renderer,
@@ -217,7 +220,7 @@ namespace barney {
       return true;
     }
 
-    inline __both__
+    inline __device__
     bool sampleLights(Light::Sample &ls,
                       const World::DD &world,
                       const Renderer::DD &renderer,
@@ -310,7 +313,7 @@ namespace barney {
 
 
 
-    inline __both__
+    inline __device__
     float schlick(float cosine,
                   float ref_idx)
     {
@@ -321,7 +324,7 @@ namespace barney {
   
   
 
-    inline __both__
+    inline __device__
     bool refract(const vec3f& v,
                  const vec3f& n,
                  float ni_over_nt,
@@ -338,7 +341,7 @@ namespace barney {
         return false;
     }
   
-    inline __both__
+    inline __device__
     vec3f radianceFromEnv(const World::DD &world,
                           const Renderer::DD &renderer,
                           Ray &ray)
@@ -352,7 +355,7 @@ namespace barney {
         const float inv2Pi = 1.f/(2.f* (float)M_PI);
         vec2f uv(phi * inv2Pi, theta * invPi);
 
-        vec4f color = tex2D<vec4f>(env.texture,uv.x,uv.y);
+        vec4f color = rtc::tex2D<vec4f>(env.texture,uv.x,uv.y);
         float envLightPower = 1.f;
         return envLightPower*vec3f(color.x,color.y,color.z);
       } else {
@@ -364,7 +367,7 @@ namespace barney {
       up the background color from that map; otherwise, it returns
       the 'ray.misscolor' that the primary ray generation has set as
       default color for this ray */
-    inline __both__
+    inline __device__
     vec3f primaryRayMissColor(const World::DD &world,
                               const Renderer::DD &renderer,
                               Ray &ray)
@@ -378,7 +381,7 @@ namespace barney {
     }
 
     /*! ugh - that should all go into material::AnariPhysical .... */
-    inline __both__
+    inline __device__
     void bounce(const World::DD &world,
                 const Renderer::DD &renderer,
                 vec3f &fragment,
@@ -741,12 +744,11 @@ namespace barney {
       }
 #endif
     }
-  
+#endif // device code  
 
     struct ShadeRaysKernel {
-      template<typename RTCBackend>
-      inline __both__
-      void run(const RTCBackend &rt);
+      inline __device__
+      void run(const rtc::ComputeInterface &rt);
       
       World::DD world;
       Renderer::DD renderer;
@@ -758,10 +760,10 @@ namespace barney {
       int *d_nextWritePos;
       int generation;
     };
-    
-    template<typename RTCBackend>
-    inline __both__
-    void ShadeRaysKernel::run(const RTCBackend &rt)
+
+#if RTC_DEVICE_CODE
+    inline __device__
+    void ShadeRaysKernel::run(const rtc::ComputeInterface &rt)
     {
       int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
       if (tid >= numRays) return;
@@ -877,6 +879,7 @@ namespace barney {
           tile_z = min(tile_z,z);
       }
     }
+#endif
   }  
 
   using namespace render;
@@ -928,4 +931,4 @@ namespace barney {
   
 }
 
-RTC_DECLARE_COMPUTE(shadeRays,barney::render::ShadeRaysKernel);
+RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::ShadeRaysKernel);

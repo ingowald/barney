@@ -17,10 +17,10 @@
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Triangles.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
-namespace barney {
-  using namespace barney::render;
+namespace BARNEY_NS {
+  using namespace BARNEY_NS::render;
     
   struct TrianglesPrograms {
       
@@ -31,9 +31,8 @@ namespace barney {
     // RTC_CH_PROGRAM(TrianglesCH)()
     // {}
 
-    template<typename TraceInterface>
     static inline __both__
-    void closest_hit(TraceInterface &rt)
+    void closest_hit(rtc::TraceInterface &rt)
     {}
 
     /*! triangles geom AH program; mostly check on transparency */
@@ -43,9 +42,8 @@ namespace barney {
     // void TrianglesAH(const RTBackend &rt)
     // RTC_AH_PROGRAM(TrianglesAH)()
       
-    template<typename TraceInterface>
     static inline __both__
-    void any_hit(TraceInterface &rt)
+    void any_hit(rtc::TraceInterface &rt)
     {
       auto &ray = *(Ray *)rt.getPRD();
 
@@ -159,4 +157,4 @@ namespace barney {
 
 }
 
-RTC_DECLARE_TRIANGLES_GEOM(Triangles,barney::TrianglesPrograms);
+RTC_EXPORT_TRIANGLES_GEOM(Triangles,BARNEY_NS::TrianglesPrograms);

@@ -17,12 +17,11 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "barney/common/mat4.h"
 #include "barney/render/HitAttributes.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/MaterialRegistry.h"
 
-namespace barney {
+namespace BARNEY_NS {
   struct SlotContext;
   
   namespace render {
@@ -45,7 +44,7 @@ namespace barney {
         // inline DD &operator=(const DD &other)
         // { memcpy(this,&other,sizeof(other)); return *this; }
         
-        inline __both__
+        inline __device__
         vec4f eval(const HitAttributes &hitData,
                     const Sampler::DD *samplers,
                     bool dbg=false) const;
@@ -112,13 +111,13 @@ namespace barney {
       const MaterialRegistry::SP materialRegistry;
     };
 
-    inline __both__
+    inline __device__
     vec4f PossiblyMappedParameter::DD::eval(const HitAttributes &hitData,
                                             const Sampler::DD *samplers,
                                             bool dbg) const
     {
       if (type == VALUE) {
-        return isnan(value.x) ? vec4f(0.f,0.f,0.f,1.f) : barney::load(value);
+        return isnan(value.x) ? vec4f(0.f,0.f,0.f,1.f) : rtc::load(value);
       }
       if (type == ATTRIBUTE) {
         return hitData.get(attribute,dbg);

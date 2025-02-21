@@ -20,7 +20,7 @@
 #endif
 #include "cuBQL/builder/cpu.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct UMeshReorderElements {
     Element        *out;
@@ -28,8 +28,7 @@ namespace barney {
     const uint32_t *primIDs;
     int             numElements;
     
-    template<typename CI>
-    inline __both__ void run(const CI &ci)
+    inline __device__ void run(const rtc::ComputeInterface &ci)
     {
       int li = ci.launchIndex().x;
       if (li >= numElements) return;
@@ -144,4 +143,4 @@ namespace barney {
   
 }
 
-RTC_DECLARE_COMPUTE(umeshReorderElements,barney::UMeshReorderElements);
+RTC_EXPORT_COMPUTE1D(umeshReorderElements,BARNEY_NS::UMeshReorderElements);

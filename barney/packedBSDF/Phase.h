@@ -18,7 +18,7 @@
 
 #include "barney/render/DG.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     namespace packedBSDF {
 
@@ -75,8 +75,8 @@ namespace barney {
         float r2 = random(); 
         // float phi = two_pi*r1;
         // float theta = acosf(1.f-2.f*r2);
-        float x = cosf(two_pi*r1)*sqrtf(r2*(1.f-r2));
-        float y = sinf(two_pi*r1)*sqrtf(r2*(1.f-r2));
+        float x = cosf(TWO_PI*r1)*sqrtf(r2*(1.f-r2));
+        float y = sinf(TWO_PI*r1)*sqrtf(r2*(1.f-r2));
         float z = (1.f-2.f*r2);
         float density = ONE_OVER_FOUR_PI;
         scatter.pdf = density;

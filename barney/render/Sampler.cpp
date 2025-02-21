@@ -20,7 +20,7 @@
 #include "barney/render/SamplerRegistry.h"
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     
     AttributeKind parseAttribute(const std::string &attributeName)
@@ -85,12 +85,12 @@ namespace barney {
       return false;
     }
 
-    bool Sampler::set4x4f(const std::string &member, const mat4f &value)
+    bool Sampler::set4x4f(const std::string &member, const vec4f *value)
     {
       if (SlottedObject::set4x4f(member,value)) return true;
 
       if (member == "outTransform")
-        { outTransform = value; return true; }
+        { outTransform = *(mat4f*)value; return true; }
       
       return false;
     }
@@ -155,12 +155,12 @@ namespace barney {
       return false;
     }
     
-    bool TextureSampler::set4x4f(const std::string &member, const mat4f &value)
+    bool TextureSampler::set4x4f(const std::string &member, const vec4f *value)
     {
       if (Sampler::set4x4f(member,value)) return true;
 
       if (member == "inTransform")
-        { inTransform = value; return true; }      
+        { inTransform = *(mat4f*)value; return true; }      
 
       return false;
     }

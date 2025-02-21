@@ -1,5 +1,9 @@
 #pragma once
 
+
+#if 1
+#else
+
 #include "barney/barney.h"
 #include "barney/common/barney-common.h"
 #ifdef __CUDA_ARCH__
@@ -29,6 +33,8 @@
 
 namespace barney {
 
+  inline __both__ vec4f load(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
+  
 
 
 #if __CUDA_ARCH__
@@ -720,7 +726,7 @@ namespace barney {
       return load(v);
       // return T{};
 #elif BARNEY_BACKEND_EMBREE
-      // this in on th ehost, and we _do_ have the embree backend built in:
+      // this in on the host, and we _do_ have the embree backend built in:
       return embree::tex3D4f(to,x,y,z);
 #else
       // this cannot possibly happen because we have to have either a
@@ -753,3 +759,4 @@ namespace barney {
 
 
 
+#endif

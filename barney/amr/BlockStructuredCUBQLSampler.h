@@ -21,7 +21,7 @@
 #include "barney/common/CUBQL.h"
 #include "cuBQL/traversal/fixedBoxQuery.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! a umesh scalar field, with a CUBQL bvh sampler */
   struct BlockStructuredCUBQLSampler {

@@ -21,7 +21,7 @@
 #include "barney/render/World.h"
 #include <set>
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct GlobalModel;
   struct Context;

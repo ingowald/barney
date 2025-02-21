@@ -16,18 +16,18 @@
 
 #pragma once
 
+#include "barney/api/Context.h"
 #include "barney/render/Ray.h"
 #include "barney/geometry/Geometry.h"
 #include "barney/Camera.h"
 // #include "barney/DeviceContext.h"
-#include "barney/common/cuda-helper.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
 #include "barney/render/Renderer.h"
 #include <set>
 #include "barney/render/RayQueue.h"
 
-namespace barney {
+namespace BARNEY_NS {
   using namespace owl::common;
   using render::Ray;
   
@@ -53,7 +53,7 @@ namespace barney {
     std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
   };
   
-  struct Context// : public Object
+  struct Context : public barney_api::Context
   {
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs,
@@ -62,9 +62,9 @@ namespace barney {
     virtual ~Context();
     
     /*! create a frame buffer object suitable to this context */
-    virtual FrameBuffer *createFB(int owningRank) = 0;
-    GlobalModel *createModel();
-    Renderer *createRenderer();
+    // virtual FrameBuffer *createFB(int owningRank) = 0;
+    std::shared_ptr<barney_api::Model> createModel() override;
+    std::shared_ptr<barney_api::Renderer> createRenderer();
 
     // std::shared_ptr<render::HostMaterial> getDefaultMaterial(int slot);
 
@@ -73,29 +73,6 @@ namespace barney {
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const 
     { return "<Context(abstract)>"; }
-
-    template<typename T>
-    T *initReference(std::shared_ptr<T> sp)
-    {
-      if (!sp) return 0;
-      std::lock_guard<std::mutex> lock(mutex);
-      hostOwnedHandles[sp]++;
-      return sp.get();
-    }
-    
-    /*! decreases (the app's) reference count of said object by
-      one. if said refernce count falls to 0 the object handle gets
-      destroyed and may no longer be used by the app, and the object
-      referenced to by this handle may be removed (from the app's
-      point of view). Note the object referenced by this handle may
-      not get destroyed immediagtely if it had other indirect
-      references, such as, for example, a group still holding a
-      refernce to a geometry */
-    void releaseHostReference(Object::SP object);
-    
-    /*! increases (the app's) reference count of said object byb
-        one */
-    void addHostReference(Object::SP object);
 
     render::World *getWorld(int slot);
     
@@ -108,7 +85,7 @@ namespace barney {
     virtual void barrier(bool warn=true) {}
     
     /*! generate a new wave-front of rays */
-    void generateRays(const barney::Camera::DD &camera,
+    void generateRays(const Camera::DD &camera,
                       Renderer *renderer,
                       FrameBuffer *fb);
     
@@ -141,12 +118,12 @@ namespace barney {
     
     void renderTiles(Renderer *renderer,
                      GlobalModel *model,
-                     const barney::Camera::DD &camera,
+                     const Camera::DD &camera,
                      FrameBuffer *fb);
     
     virtual void render(Renderer    *renderer,
                         GlobalModel *model,
-                        const barney::Camera::DD &camera, 
+                        const Camera::DD &camera, 
                         FrameBuffer *fb) = 0;
 
     // std::vector<barney::DeviceGroup::SP> barneys;
@@ -170,8 +147,8 @@ namespace barney {
     
     int contextSize() const;
 
-    std::mutex mutex;
-    std::map<Object::SP,int> hostOwnedHandles;
+    // std::mutex mutex;
+    // std::map<Object::SP,int> hostOwnedHandles;
     const bool isActiveWorker;
     std::set<std::string> alreadyWarned;
 

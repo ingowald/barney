@@ -190,7 +190,6 @@ endif()
 # rtcore
 # ------------------------------------------------------------------
 
-message("configuring rtcore")
 if (NOT (TARGET cuBQL))
   if (BARNEY_HAVE_CUDA)
     #set(CMAKE_CUDA_ARCHITECTURES native)
@@ -223,6 +222,8 @@ target_link_libraries(barney_config
 # ------------------------------------------------------------------
 message("configuring rtcore")
 add_subdirectory(rtcore)
+  
+
 
 # ------------------------------------------------------------------
 # barney system, api, and mpi stuff
@@ -296,10 +297,10 @@ endif()
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
-  "${PROJECT_SOURCE_DIR}/barney/barneyConfig.cmake.in"
+  "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.cmake.in"
 #  "${PROJECT_SOURCE_DIR}/cmake/barneyConfig.cmake.in"
   "${PROJECT_BINARY_DIR}/barneyConfig.cmake"
-INSTALL_DESTINATION
+  INSTALL_DESTINATION
   ${BARNEY_CMAKE_INSTALL_DESTINATION}
 )
 
@@ -395,7 +396,7 @@ configure_file(
   )
 # internal configurations that shoudln't be visible in external api
 configure_file(
-  ${PROJECT_SOURCE_DIR}/barney/barneyConfig.h.in
+  ${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in
   # we put this into builddir/include where build will find it - but
   # this will *not* get installed
   include/barney/barneyConfig.h

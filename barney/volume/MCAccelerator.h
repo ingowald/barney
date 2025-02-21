@@ -21,10 +21,9 @@
 #include "barney/volume/MCGrid.h"
 #include "barney/volume/DDA.h"
 
-namespace barney {
+namespace BARNEY_NS {
   using render::Ray;
-
-
+ 
   template<typename SFSampler>
   struct MCVolumeAccel : public VolumeAccel 
   {
@@ -91,7 +90,7 @@ namespace barney {
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
 
-
+#if 0
   template<typename SFSampler>
   rtc::GeomType *MCVolumeAccel<SFSampler>
   ::createGeomType(rtc::Device *device,
@@ -103,7 +102,7 @@ namespace barney {
                                       sizeof(DD),
                                       /*ah*/false,/*ch*/false);
   }
-  
+#endif
 
   template<typename SFSampler>
   void MCVolumeAccel<SFSampler>::build(bool full_rebuild) 

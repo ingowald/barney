@@ -17,11 +17,13 @@
 #include "barney/render/Renderer.h"
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
-  Renderer::Renderer(Context *context) : Object(context) {};
+  Renderer::Renderer(Context *context)
+    : barney_api::ParameterizedObject(context)
+  {}
 
   /*! pretty-printer for printf-debugging */
   std::string Renderer::toString() const

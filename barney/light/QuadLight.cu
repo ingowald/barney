@@ -16,7 +16,7 @@
 
 #include "QuadLight.h"
 
-namespace barney {
+namespace BARNEY_NS {
   
   QuadLight::DD QuadLight::getDD(const affine3f &instanceXfm) const
   {

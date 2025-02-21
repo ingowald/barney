@@ -18,26 +18,28 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-namespace barney {
-  
-  extern "C" char Spheres_ptx[];
+RTC_IMPORT_USER_GEOM_TYPE(Spheres,BARNEY_NS::Spheres::DD,false,true);
+
+namespace BARNEY_NS {
+
+  // extern "C" char Spheres_ptx[];
   
   Spheres::Spheres(SlotContext *slotContext)
     : Geometry(slotContext)
   {}
 
 
-  rtc::GeomType *Spheres::createGeomType(rtc::Device *device, const void *)
-  {
-    if (Context::logging())
-      std::cout << OWL_TERMINAL_GREEN
-                << "creating 'Spheres' geometry type"
-                << OWL_TERMINAL_DEFAULT << std::endl;
-    return device->createUserGeomType("Spheres_ptx",
-                                      "Spheres",
-                                      sizeof(Spheres::DD),
-                                      /*ah*/false,/*ch*/true);
-  }
+  // rtc::GeomType *Spheres::createGeomType(rtc::Device *device, const void *)
+  // {
+  //   if (Context::logging())
+  //     std::cout << OWL_TERMINAL_GREEN
+  //               << "creating 'Spheres' geometry type"
+  //               << OWL_TERMINAL_DEFAULT << std::endl;
+  //   return device->createUserGeomType("Spheres_ptx",
+  //                                     "Spheres",
+  //                                     sizeof(Spheres::DD),
+  //                                     /*ah*/false,/*ch*/true);
+  // }
   
   void Spheres::commit()
   {

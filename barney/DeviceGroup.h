@@ -17,17 +17,18 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
-#include "rtcore/common/Backend.h"
-#include "rtcore/common/RTCore.h"
+// #include "rtcore/common/Backend.h"
+// #include "rtcore/common/RTCore.h"
+#include "rtcore/Frontend.h"
 
-namespace barney {
-
+namespace BARNEY_NS {
+  
   struct TiledFB;
   struct RayQueue;
   
   typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *device,
-                                                const void  *callbackData);
-                         
+                                                        const void  *callbackData);
+  
   struct GeomTypeRegistry {
     GeomTypeRegistry(rtc::Device *device);
     rtc::GeomType *get(const std::string &name,
@@ -77,22 +78,22 @@ namespace barney {
     
     GeomTypeRegistry geomTypes;
     rtc::Device *const rtc;
-    rtc::Compute *generateRays = 0;
-    rtc::Compute *shadeRays = 0;
-    rtc::Compute *toneMap = 0;
-    rtc::Compute *toFixed8 = 0;
-    rtc::Compute *setTileCoords = 0;
-    rtc::Compute *compressTiles = 0;
-    rtc::Compute *unpackTiles = 0;
+    rtc::ComputeKernel1D *generateRays = 0;
+    rtc::ComputeKernel1D *shadeRays = 0;
+    rtc::ComputeKernel2D *toneMap = 0;
+    rtc::ComputeKernel2D *toFixed8 = 0;
+    rtc::ComputeKernel2D *setTileCoords = 0;
+    rtc::ComputeKernel2D *compressTiles = 0;
+    rtc::ComputeKernel2D *unpackTiles = 0;
 
     // umesh related:
-    rtc::Compute *umeshCreateElements = 0;
-    rtc::Compute *umeshRasterElements = 0;
-    rtc::Compute *umeshReorderElements = 0;
-    rtc::Compute *umeshComputeElementBBs = 0;
+    rtc::ComputeKernel1D *umeshCreateElements = 0;
+    rtc::ComputeKernel1D *umeshRasterElements = 0;
+    rtc::ComputeKernel1D *umeshReorderElements = 0;
+    rtc::ComputeKernel1D *umeshComputeElementBBs = 0;
     
     // rtc::Compute *copyPixels = 0;
-    rtc::Trace   *traceRays = 0;
+    rtc::TraceKernel1D *traceRays = 0;
     RayQueue     *rayQueue = 0;
     uint64_t sentinel = 0x1234567;
   };

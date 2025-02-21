@@ -18,7 +18,7 @@
 
 #include "barney/light/Light.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct DirLight : public Light {
     struct DD {

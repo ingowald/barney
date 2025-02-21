@@ -267,10 +267,10 @@ namespace barney_device {
   {
     ANARIDevice dev = 0;
     try {
-      int numGPUs = 0;
-      bnCountAvailableDevice(&numGPUs);
-      if (numGPUs == 0)
-        throw std::runtime_error("#barney/anari: cannot create device - no GPUs?");
+      // int numGPUs = 0;
+      // bnCountAvailableDevice(&numGPUs);
+      // if (numGPUs == 0)
+      //   throw std::runtime_error("#barney/anari: cannot create device - no GPUs?");
       dev = (ANARIDevice )new BarneyDevice();
       return dev;
     } catch(std::exception &err) {

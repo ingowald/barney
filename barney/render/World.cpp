@@ -21,7 +21,7 @@
 #include "barney/render/MaterialRegistry.h"
 #include "barney/render/SamplerRegistry.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     World::World(SlotContext *slotContext)

@@ -17,10 +17,10 @@
 #include "barney/Camera.h"
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   Camera::Camera(Context *owner)
-    : Object(owner)
+    : barney_api::ParameterizedObject(owner)
   {}
 
   // ##################################################################

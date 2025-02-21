@@ -18,9 +18,11 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-namespace barney {
+RTC_IMPORT_TRIANGLES_GEOM_TYPE(Triangles,BARNEY_NS::Triangles::DD,true,false);
 
-  extern "C" char Triangles_ptx[];
+namespace BARNEY_NS {
+
+  // extern "C" char Triangles_ptx[];
 
   Triangles::Triangles(SlotContext *slotContext)
     : Geometry(slotContext)
@@ -29,24 +31,24 @@ namespace barney {
   Triangles::~Triangles()
   {}
   
-  rtc::GeomType *Triangles::createGeomType(rtc::Device *device,
-                                           const void *)
-  {
-    if (Context::logging())
-      std::cout << OWL_TERMINAL_GREEN
-                << "creating 'Triangles' geometry type"
-                << OWL_TERMINAL_DEFAULT << std::endl;
-    return device->createTrianglesGeomType("Triangles_ptx",
-                                           "Triangles",
-                                           sizeof(Triangles::DD),
-                                           /*ah*/true,/*ch*/false);
-  }
+  // rtc::GeomType *Triangles::createGeomType(rtc::Device *device,
+  //                                          const void *)
+  // {
+  //   if (Context::logging())
+  //     std::cout << OWL_TERMINAL_GREEN
+  //               << "creating 'Triangles' geometry type"
+  //               << OWL_TERMINAL_DEFAULT << std::endl;
+  //   return device->createTrianglesGeomType("Triangles_ptx",
+  //                                          "Triangles",
+  //                                          sizeof(Triangles::DD),
+  //                                          /*ah*/true,/*ch*/false);
+  // }
   
   /*! handle data arrays for vertices, indices, normals, etc; note
       that 'general' geometry attributes of the ANARI material system
       are already handled in parent class */
   bool Triangles::setData(const std::string &member,
-                          const Data::SP &value)
+                          const barney_api::Data::SP &value)
   {
     if (Geometry::setData(member,value))
       return true;

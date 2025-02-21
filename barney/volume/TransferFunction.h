@@ -19,7 +19,7 @@
 #include "barney/DeviceGroup.h"
 #include "barney/Object.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct TransferFunction : public SlottedObject {
     struct DD {

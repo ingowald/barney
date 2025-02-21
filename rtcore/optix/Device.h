@@ -16,48 +16,66 @@
 
 #pragma once
 
-#include "rtcore/cuda/CUDABackend.h"
+#include "rtcore/cuda/CUDACommon.h"
+#include <owl/owl.h>
 
-namespace barney {
+namespace rtc {
   namespace optix {
     
-    struct OptixBackend;
-    using barney::cuda::SetActiveGPU;
+    using rtc::cuda_common::SetActiveGPU;
+
+    struct Device;
+    struct Denoiser;
+    struct Group;
+    struct Buffer;
+    struct Geom;
+    struct GeomType;
+
+    using rtc::cuda_common::TextureData;
+    using rtc::cuda_common::Texture;
     
-    struct Device : public cuda::BaseDevice {
+    struct TraceKernel1D {
+      TraceKernel1D(Device *device,
+                    const std::string &ptxCode,
+                    const std::string &kernelName);
+      void launch(int launchDims,
+                  const void *kernelData);
+    };
+    
+    struct Device : public cuda_common::Device {
       Device(int physicalGPU);
       virtual ~Device();
       
-      void destroy() override;
+      void destroy();
 
       /*! returns a string that describes what kind of compute device
           this is (eg, "cuda" vs "cpu" */
-      std::string computeType() const override { return "cuda"; }
+      std::string computeType() const { return "cuda"; }
       
       /*! returns a string that describes what kind of compute device
           this is (eg, "optix" vs "embree" */
-      std::string traceType() const override { return "optix"; }
+      std::string traceType() const { return "optix"; }
       
       // ==================================================================
       // denoiser
       // ==================================================================
-      rtc::Denoiser *createDenoiser() override;
+      Denoiser *createDenoiser();
 
       // ==================================================================
       // kernels
       // ==================================================================
-      rtc::Compute *
-      createCompute(const std::string &) override;
+      // rtc::Compute *
+      // createCompute(const std::string &);
       
-      rtc::Trace *
-      createTrace(const std::string &, size_t) override;
+      // rtc::Trace *
+      // createTrace(const std::string &, size_t);
 
       // ==================================================================
       // buffer stuff
       // ==================================================================
-      rtc::Buffer *createBuffer(size_t numBytes,
-                                const void *initValues = 0) override;
-      void freeBuffer(rtc::Buffer *) override;
+      Buffer *createBuffer(size_t numBytes,
+                           const void *initValues = 0);
+      void freeBuffer(Buffer *);
       
       // ==================================================================
       // texture stuff
@@ -74,57 +92,99 @@ namespace barney {
       // rt pipeline/sbtstuff
       // ------------------------------------------------------------------
 
-      void buildPipeline() override;
-      void buildSBT() override;
+      void buildPipeline();
+      void buildSBT();
 
       // ------------------------------------------------------------------
       // geomtype stuff
       // ------------------------------------------------------------------
       
-      rtc::GeomType *
-      createUserGeomType(const char *ptxName,
-                         const char *typeName,
-                         size_t sizeOfDD,
-                         bool has_ah,
-                         bool has_ch) 
-        override;
+      // rtc::GeomType *
+      // createUserGeomType(const char *ptxName,
+      //                    const char *typeName,
+      //                    size_t sizeOfDD,
+      //                    bool has_ah,
+      //                    bool has_ch) 
+      //  ;
       
-      rtc::GeomType *
-      createTrianglesGeomType(const char *ptxName,
-                              const char *typeName,
-                              size_t sizeOfDD,
-                              bool has_ah,
-                              bool has_ch) override;
+      // rtc::GeomType *
+      // createTrianglesGeomType(const char *ptxName,
+      //                         const char *typeName,
+      //                         size_t sizeOfDD,
+      //                         bool has_ah,
+      //                         bool has_ch);
       
-      void freeGeomType(rtc::GeomType *) override;
+      void freeGeomType(GeomType *);
 
       // ------------------------------------------------------------------
       // geom stuff
       // ------------------------------------------------------------------
       
-      void freeGeom(rtc::Geom *) override;
+      void freeGeom(Geom *);
       
       // ------------------------------------------------------------------
       // group/accel stuff
       // ------------------------------------------------------------------
-      rtc::Group *
-      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms) override;
+      Group *
+      createTrianglesGroup(const std::vector<Geom *> &geoms);
       
-      rtc::Group *
-      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) override;
+      Group *
+      createUserGeomsGroup(const std::vector<Geom *> &geoms);
 
-      rtc::Group *
-      createInstanceGroup(const std::vector<rtc::Group *> &groups,
-                          const std::vector<affine3f> &xfms) override;
+      Group *
+      createInstanceGroup(const std::vector<Group *> &groups,
+                          const std::vector<affine3f> &xfms);
 
-      void freeGroup(rtc::Group *) override;
+      void freeGroup(Group *);
          
       OWLContext      owl = 0;
 
-      void sync() override;
+      void sync();
       
       std::vector<cudaStream_t> activeTraceStreams;
     };
-    
+
   }
 }
+
+
+#define RTC_IMPORT_USER_GEOM_TYPE(Type,Class,has_ah,has_ch)     \
+  extern "C" char Type##_ptx[];                                 \
+  rtc::GeomType *createGeomType_##Type(rtc::Device *device)     \
+  {                                                             \
+    return new rtc::optix::UserGeomType(device,                 \
+                                        Type##_ptx,             \
+                                        #Type,                  \
+                                        sizeof(Class),          \
+                                        has_ah,has_ch);         \
+  }
+
+#define RTC_IMPORT_TRIANGLES_GEOM_TYPE(Type,Class,has_ah,has_ch)        \
+  extern "C" char Type##_ptx[];                                         \
+  rtc::GeomType *createGeomType_##Type(rtc::Device *device)             \
+  {                                                                     \
+    return new rtc::optix::TrianglesGeomType(device,                    \
+                                             Type##_ptx,                \
+                                             #Type,                     \
+                                             sizeof(Class),             \
+                                             has_ah,has_ch);            \
+  }
+
+
+#define RTC_IMPORT_TRACE1D(kernelName,fileNameBase)                   \
+  extern "C" char kernelName##_ptx[];                                 \
+  rtc::TraceKernel1D *createTrace_##kernelName(rtc::Device *device)     \
+  {                                                                     \
+    return new rtc::TraceKernel2D(device,kernelName##_ptx,#kernelName); \
+  }
+# define RTC_EXPORT_TRACE1D(name,RayGenType)                     \
+  extern "C"  __global__                                         \
+  void __raygen__##name()                                        \
+  {                                                              \
+    RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();      \
+    ::rtc::optix::TraceInterface rtcore;                      \
+    rg->run(rtcore);                                             \
+  }                                                                   
+    
+
+

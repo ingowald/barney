@@ -16,7 +16,7 @@
 
 #include "barney/GlobalModel.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   GlobalModel::GlobalModel(Context *context)
     : SlottedObject(context,context->devices)

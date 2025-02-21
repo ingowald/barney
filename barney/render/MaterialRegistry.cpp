@@ -19,7 +19,7 @@
 #include "barney/material/Material.h"
 #include "barney/render/MaterialRegistry.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     MaterialRegistry::PLD *MaterialRegistry::getPLD(Device *device)

@@ -19,7 +19,7 @@
 #include "barney/common/half.h"
 #include "barney/packedBSDF/PackedBSDF.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     
     struct Ray {

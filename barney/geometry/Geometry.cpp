@@ -24,7 +24,7 @@
 #include "barney/geometry/Cylinders.h"
 #include "barney/geometry/Capsules.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   Geometry::PLD *Geometry::getPLD(Device *device)
   {

@@ -23,7 +23,7 @@
 #include "barney/render/OptixGlobals.h"
 #include "barney/material/Material.h"
 
-namespace barney {
+namespace BARNEY_NS {
   
   struct ModelSlot;
   struct SlotContext;  
@@ -72,7 +72,7 @@ namespace barney {
     bool set3f(const std::string &member,
                const vec3f &value) override;
     bool setData(const std::string &member,
-                 const Data::SP &value) override;
+                 const barney_api::Data::SP &value) override;
     bool setObject(const std::string &member,
                    const Object::SP &value) override;
     
@@ -80,8 +80,8 @@ namespace barney {
     void setMaterial(HostMaterial::SP);
 
     struct PLD {
-      std::vector<rtc::Geom *>  triangleGeoms;
-      std::vector<rtc::Geom *>  userGeoms;
+      std::vector<rtc::Geom *> triangleGeoms;
+      std::vector<rtc::Geom *> userGeoms;
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;

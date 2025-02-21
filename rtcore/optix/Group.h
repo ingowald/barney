@@ -17,20 +17,22 @@
 #pragma once
 
 #include "rtcore/common/Backend.h"
+#include <owl/owl.h>
 
-namespace barney {
+namespace rtc {
   namespace optix {
     struct Device;
 
-    struct Group : public rtc::Group {
+    struct Group {
       Group(optix::Device *device, OWLGroup owlGroup);
       virtual ~Group() { owlGroupRelease(owl); }
       
-      rtc::device::AccelHandle getDD() const override;
-      void buildAccel() override;
-      void refitAccel() override;
+      rtc::device::AccelHandle getDD() const;
+      void buildAccel();
+      void refitAccel();
       
       OWLGroup const owl;
+      optix::Device *const device;
     };
 
   }

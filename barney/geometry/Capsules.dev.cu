@@ -16,10 +16,10 @@
 
 #include "barney/geometry/Capsules.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
-namespace barney {
-  using namespace barney::render;
+namespace BARNEY_NS {
+  using namespace BARNEY_NS::render;
 
   /* perform an actual ray-capsule intersection. Code is mostly stolen
      from inigo quielez' shadertoy example, and updated to fit this
@@ -135,9 +135,8 @@ namespace barney {
     // OPTIX_BOUNDS_PROGRAM(CapsulesBounds)(const void *geomData,
     //                                      owl::common::box3f &bounds,  
     //                                      const int32_t primID)
-    template<typename RTBackend>
     static inline __both__
-    void bounds(RTBackend &rt,
+    void bounds(rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -150,16 +149,14 @@ namespace barney {
 
     /*! closest-hit program - doesn't do anything because we do all the
       work in IS prog, but needs to exist to make optix happy */
-    template<typename RTBackend>
     static inline __both__
-    void closest_hit(RTBackend &rt)
+    void closest_hit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
     
-    template<typename RTBackend>
     static inline __both__
-    void any_hit(RTBackend &rt)
+    void any_hit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
@@ -169,9 +166,8 @@ namespace barney {
       quielez intersector. Unlike regular optix is programs this
       _will_ modify the ray and store the hit point if an intersection
       is found */
-    template<typename RTBackend>
     static inline __both__
-    void intersect(RTBackend &rt)
+    void intersect(rtc::TraceInterface &rt)
     {
       const int primID
         = rt.getPrimitiveIndex();
@@ -301,6 +297,7 @@ namespace barney {
   };
   
 }
-RTC_DECLARE_USER_GEOM(Capsules,barney::CapsulesPrograms);
+RTC_EXPORT_USER_GEOM(Capsules,BARNEY_NS::CapsulesPrograms);
+
 
 

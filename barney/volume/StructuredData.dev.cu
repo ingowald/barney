@@ -18,15 +18,14 @@
 #include "barney/volume/StructuredData.h"
 #include "barney/volume/MCAccelerator.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct MCAccel_Structured_Programs {
     
-    template<typename TraceInterface>
     static inline __both__
-    void bounds(const TraceInterface &ti,
+    void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -34,24 +33,21 @@ namespace barney {
       MCVolumeAccel<StructuredDataSampler>::boundsProg(ti,geomData,bounds,primID);
     }
     
-    template<typename TraceInterface>
     static inline __both__
-    void intersect(TraceInterface &ti)
+    void intersect(rtc::TraceInterface &ti)
     {
       MCVolumeAccel<StructuredDataSampler>::isProg(ti);
     }
     
-    template<typename TraceInterface>
     static inline __both__
-    void closest_hit(TraceInterface &ti)
+    void closest_hit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
     
-    template<typename TraceInterface>
     static inline __both__
-    void any_hit(TraceInterface &ti)
+    void any_hit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
   };
 }
 
-RTC_DECLARE_USER_GEOM(MCAccel_Structured,barney::MCAccel_Structured_Programs);
+RTC_EXPORT_USER_GEOM(MCAccel_Structured,BARNEY_NS::MCAccel_Structured_Programs);
 

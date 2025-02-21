@@ -1,17 +1,15 @@
-#include "rtcore/cuda/CUDABackend.h"
+#include "rtcore/cuda/CUDACommon.h"
 
+namespace rtc {
+  namespace cuda_common {
 
-
-namespace barney {
-  namespace cuda {
-
-    BaseBackend::BaseBackend()
-    {
-      cudaFree(0);
-      BARNEY_CUDA_CALL(GetDeviceCount(&numPhysicalDevices));
-    }
+    // BaseBackend::BaseBackend()
+    // {
+    //   cudaFree(0);
+    //   BARNEY_CUDA_CALL(GetDeviceCount(&numPhysicalDevices));
+    // }
     
-    int BaseDevice::setActive() const
+    int Device::setActive() const
     {
       int oldActive = 0;
       BARNEY_CUDA_CHECK(cudaGetDevice(&oldActive));
@@ -19,12 +17,12 @@ namespace barney {
       return oldActive;
     }
     
-    void BaseDevice::restoreActive(int oldActive) const
+    void Device::restoreActive(int oldActive) const
     {
       BARNEY_CUDA_CHECK(cudaSetDevice(oldActive));
     }
     
-    void *BaseDevice::allocMem(size_t numBytes)
+    void *Device::allocMem(size_t numBytes)
     {
       SetActiveGPU forDuration(this);
       void *ptr = 0;
@@ -33,7 +31,7 @@ namespace barney {
       return ptr;
     }
     
-    void *BaseDevice::allocHost(size_t numBytes) 
+    void *Device::allocHost(size_t numBytes) 
     {
       SetActiveGPU forDuration(this);
       void *ptr = 0;
@@ -41,52 +39,52 @@ namespace barney {
       return ptr;
     }
       
-    void BaseDevice::freeHost(void *mem) 
+    void Device::freeHost(void *mem) 
     {
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(FreeHost(mem));
     }
       
-    void BaseDevice::freeMem(void *mem) 
+    void Device::freeMem(void *mem) 
     {
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(Free(mem));
     }
       
-    void BaseDevice::memsetAsync(void *mem,int value, size_t size) 
+    void Device::memsetAsync(void *mem,int value, size_t size) 
     {
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(MemsetAsync(mem,value,size,stream));
     }
       
 
-    void BaseDevice::copyAsync(void *dst, const void *src, size_t numBytes) 
+    void Device::copyAsync(void *dst, const void *src, size_t numBytes) 
     {
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
     }
       
-    void BaseDevice::sync() 
+    void Device::sync() 
     {
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(StreamSynchronize(stream));
     }
 
-    void BaseDevice::freeTextureData(rtc::TextureData *td)
+    void Device::freeTextureData(TextureData *td)
     {
       if (td) delete td;
     }
     
-    void BaseDevice::freeTexture(rtc::Texture *tex)
+    void Device::freeTexture(Texture *tex)
     {
       if (tex) delete tex;
     }
     
-    TextureData::TextureData(BaseDevice *device,
+    TextureData::TextureData(Device *device,
                              vec3i dims,
                              rtc::DataType format,
                              const void *texels)
-      : rtc::TextureData(device,dims,format)
+      : device(device), dims(dims), format(format)
     {
       cudaChannelFormatDesc desc;
       size_t sizeOfScalar;
@@ -107,8 +105,8 @@ namespace barney {
       case rtc::UCHAR:
         desc         = cudaCreateChannelDesc<uint8_t>();
         sizeOfScalar = 1;
-         readMode     = cudaReadModeNormalizedFloat;
-         numScalarsPerTexel = 1;
+        readMode     = cudaReadModeNormalizedFloat;
+        numScalarsPerTexel = 1;
         break;
       case rtc::UCHAR4:
         desc         = cudaCreateChannelDesc<uchar4>();
@@ -123,7 +121,7 @@ namespace barney {
         numScalarsPerTexel = 1;
         break;
       default:
-        BARNEY_NYI();
+        assert(0);
       };
 
       if (dims.z != 0) {
@@ -152,7 +150,7 @@ namespace barney {
                                          (size_t)dims.y,
                                          cudaMemcpyHostToDevice));
       } else {
-        BARNEY_NYI();
+        assert(0);
       }
     }
 
@@ -162,32 +160,32 @@ namespace barney {
       array = 0;
     }
     
-    rtc::TextureData *
-    BaseDevice::createTextureData(vec3i dims,
-                                  rtc::DataType format,
-                                  const void *texels) 
+    TextureData *
+    Device::createTextureData(vec3i dims,
+                              rtc::DataType format,
+                              const void *texels) 
     {
       SetActiveGPU forDuration(this);
       return new TextureData(this,dims,format,texels);
     }
 
-    inline cudaTextureFilterMode toCUDA(rtc::Texture::FilterMode mode)
+    inline cudaTextureFilterMode toCUDA(FilterMode mode)
     {
-      return (mode == rtc::Texture::FILTER_MODE_POINT)
+      return (mode == FILTER_MODE_POINT)
         ? cudaFilterModePoint
         : cudaFilterModeLinear;
     }
     
-    inline cudaTextureAddressMode toCUDA(rtc::Texture::AddressMode mode)
+    inline cudaTextureAddressMode toCUDA(AddressMode mode)
     {
       switch (mode) {
-      case rtc::Texture::MIRROR:
+      case MIRROR:
         return cudaAddressModeMirror;
-      case rtc::Texture::CLAMP:
+      case CLAMP:
         return cudaAddressModeClamp;
-      case rtc::Texture::WRAP:
+      case WRAP:
         return cudaAddressModeWrap;
-      case rtc::Texture::BORDER:
+      case BORDER:
         return cudaAddressModeBorder;
       };
       // just to make teh compiler happy:
@@ -195,8 +193,8 @@ namespace barney {
     }
 
     Texture::Texture(TextureData *data,
-                     const rtc::TextureDesc &desc)
-      : rtc::Texture(data,desc)
+                     const TextureDesc &desc)
+      : data(data)//, desc(desc)
     {
       cudaResourceDesc resourceDesc;
       memset(&resourceDesc,0,sizeof(resourceDesc));
@@ -227,8 +225,7 @@ namespace barney {
       textureObject = 0;
     }
     
-    rtc::Texture *
-    TextureData::createTexture(const rtc::TextureDesc &desc) 
+    Texture *TextureData::createTexture(const TextureDesc &desc) 
     {
       SetActiveGPU forDuration(device);
       return new Texture(this,desc);

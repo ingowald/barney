@@ -16,20 +16,37 @@
 
 #pragma once
 
-#include "rtcore/common/Backend.h"
+#include "rtcore/optix/Device.h"
+#include <owl/owl.h>
 
-namespace barney {
+namespace rtc {
   namespace optix {
     struct Device;
     
-    struct Buffer : public rtc::Buffer {
+    struct Buffer {
       Buffer(optix::Device *device,
              size_t size,
              const void *initData);
-      void *getDD() const override;
-      
+      void *getDD() const;
+
+      void upload(const void *hostPtr,
+                  size_t numBytes,
+                  size_t ofs = 0);
+      void uploadAsync(const void *hostPtr,
+                       size_t numBytes,
+                       size_t ofs = 0);
+
+      optix::Device *const device;      
       OWLBuffer owl;
     };
 
+    inline void Buffer::uploadAsync(const void *hostPtr,
+                                    size_t numBytes,
+                                    size_t ofs)
+    {
+      device->copyAsync(((uint8_t*)getDD())+ofs,hostPtr,numBytes);
+    }
+    
+    
   }
 }

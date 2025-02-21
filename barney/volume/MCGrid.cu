@@ -16,7 +16,10 @@
 
 #include "barney/volume/MCGrid.h"
 
-namespace barney {
+RTC_IMPORT_COMPUTE3D(clearMCs)
+RTC_IMPORT_COMPUTE3D(mapMCs)
+
+namespace BARNEY_NS {
 
   MCGrid::MCGrid(const DevGroup::SP &devices)
     : devices(devices)
@@ -29,8 +32,10 @@ namespace barney {
       pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
       pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
 
-      pld->mapMCs             = rtc->createCompute("mapMCs");
-      pld->clearMCs           = rtc->createCompute("clearMCs");
+      pld->mapMCs//             = rtc->createCompute("mapMCs");
+        = rtc::createCompute_mapMCs(device->rtc);
+      pld->clearMCs//           = rtc->createCompute("clearMCs");
+        = rtc::createCompute_clearMCs(device->rtc);
     }
   }
                             
@@ -184,5 +189,5 @@ namespace barney {
 
 
 
-RTC_DECLARE_COMPUTE(clearMCs,barney::ClearMCs);
-RTC_DECLARE_COMPUTE(mapMCs,barney::MapMCs);
+RTC_EXPORT_COMPUTE3D(clearMCs,BARNEY_NS::ClearMCs);
+RTC_EXPORT_COMPUTE3D(mapMCs,BARNEY_NS::MapMCs);

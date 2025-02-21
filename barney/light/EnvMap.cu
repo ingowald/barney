@@ -18,7 +18,7 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   EnvMapLight::PLD *EnvMapLight::getPLD(Device *device)
   { return &perLogical[device->contextRank]; }

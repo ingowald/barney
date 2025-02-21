@@ -19,16 +19,16 @@
 #include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/material/Material.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     
     struct AnariPBR : public HostMaterial {
       struct DD {
-       inline __both__
+       inline __device__
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
-        inline __both__
+        inline __device__
         float getOpacity(const HitAttributes &hitData,
                          const Sampler::DD *samplers,
                          bool dbg) const;
@@ -68,7 +68,7 @@ namespace barney {
       PossiblyMappedParameter emission     = vec3f(0.f,0.f,0.f);
     };
       
-    inline __both__
+    inline __device__
     PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData,
                                         const Sampler::DD *samplers,
                                         bool dbg) const

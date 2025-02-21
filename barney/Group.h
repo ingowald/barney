@@ -21,7 +21,7 @@
 // #include "barney/MultiPass.h"
 #include "barney/common/Data.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! a logical "group" of objects in a data group -- i.e., geometries
       and volumes (and maybe, eventual, lights?) -- that can be
@@ -39,7 +39,8 @@ namespace barney {
     /*! @{ parameter set/commit interface */
     void commit() override;
     bool setObject(const std::string &member, const Object::SP &value) override;
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setData(const std::string &member,
+                 const barney_api::Data::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
     

@@ -21,7 +21,7 @@
 #include "barney/light/Light.h"
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   ModelSlot::PLD *ModelSlot::getPLD(Device *device)
   {

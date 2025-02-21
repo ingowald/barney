@@ -17,12 +17,14 @@
 #ifdef __CUDACC__
 # define OWL_DISABLE_TBB
 #endif
+#include "barney/common/barney-common.h"
 #include "barney/DeviceGroup.h"
 #include "barney/render/Ray.h"
 #include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
+#include "rtcore/RTCore.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     /*! generates a new wave-front of rays, to be written to
       'rayQueue[]', at (atomically incrementable) positoin
@@ -30,35 +32,34 @@ namespace barney {
       the list of tiles to generate rays for is passed in 'tileDescs';
       there will be one cuda block per tile */
     struct GenerateRays {
-      template<typename RTCore>
-        __both__ void run(const RTCore &rtcore);
-        
-        Camera::DD camera;
-        Renderer::DD renderer;
-        /*! a unique random number seed value for pixel
-          and lens jitter; probably just accumID */
-        int accumID;
-        /*! full frame buffer size, to check if a given
-          tile's pixel ID is still valid */
-        vec2i fbSize;
-        /*! pointer to a device-side int that tracks the
-          next write position in the 'write' ray
-          queue; can be atomically incremented on the
-          device */
-        int *d_count;
-        /*! pointer to device-side ray queue to write
-          newly generated raysinto */
-        Ray *rayQueue;
-        /*! tile descriptors for the tiles that the
-          frame buffer owns on this device; rays
-          should only get generated for these tiles */
-        TileDesc *tileDescs;
-        bool enablePerRayDebug;
+      __device__ void run(const rtc::ComputeInterface &rtcore);
+      
+      Camera::DD camera;
+      Renderer::DD renderer;
+      /*! a unique random number seed value for pixel
+        and lens jitter; probably just accumID */
+      int accumID;
+      /*! full frame buffer size, to check if a given
+        tile's pixel ID is still valid */
+      vec2i fbSize;
+      /*! pointer to a device-side int that tracks the
+        next write position in the 'write' ray
+        queue; can be atomically incremented on the
+        device */
+      int *d_count;
+      /*! pointer to device-side ray queue to write
+        newly generated raysinto */
+      Ray *rayQueue;
+      /*! tile descriptors for the tiles that the
+        frame buffer owns on this device; rays
+        should only get generated for these tiles */
+      TileDesc *tileDescs;
+      bool enablePerRayDebug;
     };
 
-    template<typename RTBackend>
-    __both__
-    void GenerateRays::run(const RTBackend &rt)
+#if RTC_DEVICE_CODE
+    __device__
+    void GenerateRays::run(const rtc::ComputeInterface &rt)
     {
       // ------------------------------------------------------------------
       int tileID   = rt.getBlockIdx().x;
@@ -154,19 +155,18 @@ namespace barney {
       (vec4f&)ray.missColor = bgColor;
       if (0 && ray.dbg) printf("== spawn ray has bg tex %p bg color %f %f %f\n",
                                (void*)renderer.bgTexture,
-                          bgColor.x,
-                          bgColor.y,
-                          bgColor.z);
+                               bgColor.x,
+                               bgColor.y,
+                               bgColor.z);
       ray.throughput = vec3f(1.f);
     
       int pos = rt.atomicAdd(d_count,1);
       rayQueue[pos] = ray;
     }
-  }
-
-
-
-  void Context::generateRays(const barney::Camera::DD &camera,
+#endif
+  }  
+  
+  void Context::generateRays(const Camera::DD &camera,
                              Renderer *renderer,
                              FrameBuffer *fb)
   {
@@ -214,4 +214,5 @@ namespace barney {
   }
 }
 
-RTC_DECLARE_COMPUTE(generateRays,barney::render::GenerateRays);
+RTC_EXPORT_COMPUTE1D(generateRays,BARNEY_NS::render::GenerateRays);
+

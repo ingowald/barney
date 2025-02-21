@@ -19,7 +19,7 @@
 #include "barney/DeviceGroup.h"
 #include "barney/render/Sampler.h"
 
-namespace barney {
+namespace BARNEY_NS {
   struct ModelSlot;
   
   namespace render {

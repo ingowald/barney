@@ -23,7 +23,7 @@
 // #include <optix_stubs.h>
 // #endif
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct FrameBuffer;
 

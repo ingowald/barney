@@ -36,11 +36,11 @@
 #include "barney/common/Texture.h"
 #include "barney/common/Data.h"
 #include "barney/common/half.h"
-#include "barney/render/floatN.h"
+#include "barney/common/math.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
-
+    
     struct DG {
       vec3f Ng, Ns;
       vec3f wo;
@@ -172,7 +172,7 @@ namespace barney {
     inline __both__
     vec3f cosineSampleHemisphere(const vec2f s)
     {
-      const float phi = two_pi * s.x;
+      const float phi = TWO_PI * s.x;
       const float cosTheta = sqrtf(s.y);
       const float sinTheta = sqrtf(1.0f - s.y);
       return cartesian(phi, sinTheta, cosTheta);
@@ -181,13 +181,13 @@ namespace barney {
     inline __both__
     float cosineSampleHemispherePDF(const vec3f &dir)
     {
-      return dir.z * one_over_pi;
+      return dir.z * ONE_OVER_PI;
     }
 
     inline __both__
     float cosineSampleHemispherePDF(float cosTheta)
     {
-      return cosTheta * one_over_pi;
+      return cosTheta * ONE_OVER_PI;
     }
 
   }

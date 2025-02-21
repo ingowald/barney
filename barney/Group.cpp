@@ -16,7 +16,7 @@
 
 #include "barney/ModelSlot.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   Group::PLD *Group::getPLD(Device *device)
   {

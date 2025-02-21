@@ -16,7 +16,7 @@
 
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
 
-RTC_DECLARE_GLOBALS(barney::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
 
 #if 0

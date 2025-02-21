@@ -17,8 +17,7 @@
 #pragma once
 
 // automatically generated, in build dir
-#include "barney/barneyConfig.h"
-
+#include "barney/api/common.h"
 #include <owl/common/math/box.h>
 #include <owl/common/math/AffineSpace.h>
 #include <owl/common/math/random.h>
@@ -26,82 +25,65 @@
 # define OWL_DISABLE_TBB
 #endif
 #include <owl/common/parallel/parallel_for.h>
-#include "barney/barney.h"
-#if BARNEY_HAVE_CUDA
-#include "barney/common/cuda-helper.h"
-#include <owl/owl.h>
-#include <cuda_runtime.h>
-#endif
-#include <string.h>
-#include <mutex>
-#include <vector>
-#include <map>
-#include <memory>
-#include <sstream>
-#include "barney/barney.h"
-#ifdef __CUDACC__
-#include <cuda/std/limits>
-#endif
-#if BARNEY_HAVE_CUDA
-#include <cuda.h>
-#endif
+#include "rtcore/RTCore.h"
+#include "rtcore/Frontend.h"
+
+// #include "barney/barney.h"
+// #if BARNEY_HAVE_CUDA
+// // #include "barney/common/cuda-helper.h"
+// #include <owl/owl.h>
+// #include <cuda_runtime.h>
+// #endif
+// #ifdef __CUDACC__
+// #include <cuda/std/limits>
+// #endif
+// #if BARNEY_HAVE_CUDA
+// #include <cuda.h>
+// #endif
 
 #define __barney_align(a) OWL_ALIGN(a)
 
 
-#ifdef __VECTOR_TYPES_H__
-// cuda/vector_types.h will define these types
-#else
-struct float2 { float x,y; };
-struct float3 { float x,y,z; };
-struct float4 { float x,y,z,w; };
-struct int2 { int x,y; };
-struct int3 { int x,y,z; };
-struct int4 { int x,y,z,w; };
+
+// #ifdef __VECTOR_TYPES_H__
+// // cuda/vector_types.h will define these types
+// #else
+// struct float2 { float x,y; };
+// struct float3 { float x,y,z; };
+// struct float4 { float x,y,z,w; };
+// struct int2 { int x,y; };
+// struct int3 { int x,y,z; };
+// struct int4 { int x,y,z,w; };
+// #endif
+
+#if BARNEY_RTC_OPTIX
+#  define BARNEY_NS barney_optix
 #endif
 
 
-namespace barney {
-  using namespace owl;
+
+namespace BARNEY_NS {
+  // using namespace barney::rtc;
+  
   using namespace owl::common;
-
-  using range1f = interval<float>;
-
+  typedef owl::common::interval<float> range1f;
   using Random = LCG<8>;
 
-#define ONE_PI ((float)M_PI)
-#define TWO_PI (2.f*ONE_PI)
-#define FOUR_PI (4.f*ONE_PI)
-#define ONE_OVER_PI (1.f/ONE_PI)
-#define ONE_OVER_TWO_PI (1.f/TWO_PI)
-#define ONE_OVER_FOUR_PI (1.f/FOUR_PI)
-
-
-#ifdef __CUDACC__
-# define BARNEY_INF ::cuda::std::numeric_limits<float>::infinity()
-#else
-# define BARNEY_INF INFINITY
-#endif
-
-  
+  using rtc::load;
   
   template<typename T>
   inline __both__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }
 
-  inline __both__
-  float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
-  
-  inline __both__ vec4f make_vec4f(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
-  inline __both__ vec4f load(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
+  // inline __both__ vec4f make_vec4f(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
   
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
   inline __both__ vec3f getPos(vec4f v)
   {return vec3f{v.x,v.y,v.z}; }
 
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
-  inline __both__ vec3f getPos(float4 v)
-  {return vec3f{v.x,v.y,v.z}; }
+  // inline __both__ vec3f getPos(float4 v)
+  // {return vec3f{v.x,v.y,v.z}; }
 
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
   inline __both__ box3f getBox(box4f bb)
@@ -112,67 +94,6 @@ namespace barney {
   /*! helper function to extract 1f scalar range from 4f point-plus-scalar */
   inline __both__ range1f getRange(box4f bb)
   { return range1f{bb.lower.w,bb.upper.w}; }
-
-  inline __both__ float lerp_r(float v0, float v1, float f)
-  { return (1.f-f)*v0 + f*v1; }
-
-  inline __both__ vec3f lerp_l(vec3f f, vec3f v0, vec3f v1)
-  { return (vec3f(1.f)-f)*v0 + f*v1; }
-
-  inline __both__ float lerp_l(float f, float v0, float v1)
-  { return (1.f-f)*v0 + f*v1; }
-
-  inline __both__ vec3f lerp_r(box3f box, vec3f f)
-  { return lerp_l(f,box.lower,box.upper); }
-  
-  inline __both__ vec3f lerp_l(vec3f f, box3f box)
-  { return lerp_l(f,box.lower,box.upper); }
-
-
-  inline __both__ float linear_to_srgb(float x) {
-    if (x <= 0.0031308f) {
-      return 12.92f * x;
-    }
-    return 1.055f * powf(x, 1.f/2.4f) - 0.055f;
-  }
-
-  inline __both__ uint32_t make_8bit(const float f)
-  {
-    return min(255,max(0,int(f*256.f)));
-  }
-
-  inline __both__ uint32_t make_rgba(const vec3f color)
-  {
-    return
-      (make_8bit(color.x) << 0) +
-      (make_8bit(color.y) << 8) +
-      (make_8bit(color.z) << 16) +
-      (0xffU << 24);
-  }
-  inline __both__ uint32_t make_rgba(const vec4f color)
-  {
-    return
-      (make_8bit(color.x) << 0) +
-      (make_8bit(color.y) << 8) +
-      (make_8bit(color.z) << 16) +
-      (make_8bit(color.w) << 24);
-  }
-
-  // inline __both__ uint32_t make_rgba(const float4 color)
-  // {
-  //   return
-  //     (make_8bit(color.x) << 0) +
-  //     (make_8bit(color.y) << 8) +
-  //     (make_8bit(color.z) << 16) +
-  //     (make_8bit(color.w) << 24);
-  // }
-
-  inline __both__ float clamp(float f, float lo=0.f, float hi=1.f)
-  { return min(hi,max(lo,f)); }
-  inline __both__ int clamp(int f, int lo, int hi)
-  {
-      return min(hi, max(lo, f));
-  }
 
 }
 
