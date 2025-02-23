@@ -34,11 +34,11 @@ namespace rtc {
     using rtc::cuda_common::TextureData;
     using rtc::cuda_common::Texture;
     
-    struct TraceKernel1D {
-      TraceKernel1D(Device *device,
+    struct TraceKernel2D {
+      TraceKernel2D(Device *device,
                     const std::string &ptxCode,
                     const std::string &kernelName);
-      void launch(int launchDims,
+      void launch(vec2i launchDims,
                   const void *kernelData);
     };
     
@@ -171,13 +171,8 @@ namespace rtc {
   }
 
 
-#define RTC_IMPORT_TRACE1D(kernelName,fileNameBase)                   \
-  extern "C" char kernelName##_ptx[];                                 \
-  rtc::TraceKernel1D *createTrace_##kernelName(rtc::Device *device)     \
-  {                                                                     \
-    return new rtc::TraceKernel2D(device,kernelName##_ptx,#kernelName); \
-  }
-# define RTC_EXPORT_TRACE1D(name,RayGenType)                     \
+
+# define RTC_EXPORT_TRACE2D(name,RayGenType)                     \
   extern "C"  __global__                                         \
   void __raygen__##name()                                        \
   {                                                              \
@@ -185,6 +180,13 @@ namespace rtc {
     ::rtc::optix::TraceInterface rtcore;                      \
     rg->run(rtcore);                                             \
   }                                                                   
-    
+#define RTC_IMPORT_TRACE2D(fileNameBase,kernelName)                  \
+  extern "C" char fileNameBase##_ptx[];                                 \
+  rtc::TraceKernel2D *createTrace_##kernelName(rtc::Device *device)     \
+  {                                                                     \
+    return new rtc::TraceKernel2D(device,fileNameBase##_ptx,#kernelName); \
+  }
+
+
 
 

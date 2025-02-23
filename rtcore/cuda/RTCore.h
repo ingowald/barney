@@ -155,17 +155,11 @@ namespace rtc {
 
 
 #define RTC_IMPORT_COMPUTE1D(name)                                      \
-  namespace rtc {                                                       \
-    rtc::ComputeKernel1D *createCompute_##name(rtc::Device *dev);       \
-  }
+    rtc::ComputeKernel1D *createCompute_##name(rtc::Device *dev);       
 #define RTC_IMPORT_COMPUTE2D(name)                                      \
-  namespace rtc {                                                       \
-    rtc::ComputeKernel2D *createCompute_##name(rtc::Device *dev);       \
-  }
+    rtc::ComputeKernel2D *createCompute_##name(rtc::Device *dev);       
 #define RTC_IMPORT_COMPUTE3D(name)                                      \
-  namespace rtc {                                                       \
-    rtc::ComputeKernel3D *createCompute_##name(rtc::Device *dev);       \
-  }
+    rtc::ComputeKernel3D *createCompute_##name(rtc::Device *dev);       
 
 
 #define RTC_EXPORT_COMPUTE1D(name,className)                            \
@@ -187,11 +181,9 @@ namespace rtc {
     }                                                                   \
     rtc::Device *const device;                                          \
   };                                                                    \
-  namespace rtc {                                                       \
-    rtc::ComputeKernel1D *createCompute_##name(rtc::Device *dev)        \
-    { return new _barney_cuda_compute1D_##name(dev); }                  \
-  }                                               
-
+  rtc::ComputeKernel1D *createCompute_##name(rtc::Device *dev)          \
+  { return new _barney_cuda_compute1D_##name(dev); }                    \
+  
 #define RTC_EXPORT_COMPUTE2D(name,className)                            \
   __global__ void _barney_cuda_kernel_##name(className dd)              \
   {                                                                     \
@@ -211,10 +203,8 @@ namespace rtc {
     }                                                                   \
     rtc::Device *const device;                                          \
   };                                                                    \
-  namespace rtc {                                                       \
-    rtc::ComputeKernel2D *createCompute_##name(rtc::Device *dev)        \
-    { return new _barney_cuda_compute2D_##name(dev); }                  \
-  }                                               
+  rtc::ComputeKernel2D *createCompute_##name(rtc::Device *dev)          \
+  { return new _barney_cuda_compute2D_##name(dev); }                    \
 
 #define RTC_EXPORT_COMPUTE3D(name,className)                            \
   __global__ void _barney_cuda_kernel_##name(className dd)              \
@@ -235,8 +225,6 @@ namespace rtc {
     }                                                                   \
     rtc::Device *const device;                                          \
   };                                                                    \
-  namespace rtc {                                                       \
-    rtc::ComputeKernel3D *createCompute_##name(rtc::Device *dev)        \
-    { return new _barney_cuda_compute3D_##name(dev); }                  \
-  }                                               
+  rtc::ComputeKernel3D *createCompute_##name(rtc::Device *dev)          \
+  { return new _barney_cuda_compute3D_##name(dev); }                    \
 

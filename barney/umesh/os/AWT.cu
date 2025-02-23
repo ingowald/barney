@@ -20,10 +20,11 @@
 # include <cuBQL/builder/cuda/wide_gpu_builder.h>
 #endif
 
-RTC_IMPORT_COMPUTE1D(copyNodes);
-RTC_IMPORT_COMPUTE1D(computeMajorants);
-
 namespace BARNEY_NS {
+  
+  RTC_IMPORT_COMPUTE1D(copyNodes);
+  RTC_IMPORT_COMPUTE1D(computeMajorants);
+
 
   // struct ClearMajorants {
   //   AWTNode       *awtNodes;
@@ -182,9 +183,9 @@ namespace BARNEY_NS {
 
       if (pld->copyNodes == 0) {
         pld->copyNodes        //= rtc->createCompute("copyNodes");
-          = rtc::createCompute_copyNodes(rtc);
+          = createCompute_copyNodes(rtc);
         pld->computeMajorants //= rtc->createCompute("computeMajorants");
-          = rtc::createCompute_computeMajorants(rtc);
+          = createCompute_computeMajorants(rtc);
       }
       
       if (pld->awtNodes == 0) {
@@ -242,8 +243,7 @@ namespace BARNEY_NS {
         // rtc->freeMem(tempElements);
 
         rtc::GeomType *gt
-          = device->geomTypes.get("UMeshAWT",
-                                  createGeomType,
+          = device->geomTypes.get(createGeomType,
                                   this);
         pld->geom = gt->createGeom();
         pld->geom->setPrimCount(1);
@@ -294,9 +294,10 @@ namespace BARNEY_NS {
     dd.primIDs  = pld->primIDs;
     return dd;
   }
+
+  RTC_EXPORT_COMPUTE1D(copyNodes,CopyNodes);
+  RTC_EXPORT_COMPUTE1D(computeMajorants,ComputeMajorants);
 }
 
-RTC_EXPORT_COMPUTE1D(copyNodes,BARNEY_NS::CopyNodes);
-RTC_EXPORT_COMPUTE1D(computeMajorants,BARNEY_NS::ComputeMajorants);
 
 

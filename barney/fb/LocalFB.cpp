@@ -16,7 +16,8 @@
 
 #include "barney/fb/LocalFB.h"
 
-namespace barney {
+namespace BARNEY_NS {
+  
   LocalFB::LocalFB(Context *context,
                    const DevGroup::SP &devices)
     : FrameBuffer(context, devices, true)

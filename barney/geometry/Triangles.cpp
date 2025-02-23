@@ -80,8 +80,7 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       if (pld->triangleGeoms.empty()) {
         rtc::GeomType *gt
-          = device->geomTypes.get("Triangles",
-                                  Triangles::createGeomType);
+          = device->geomTypes.get(Triangles::createGeomType);
         rtc::Geom *geom = gt->createGeom();
         pld->triangleGeoms = { geom };
       }

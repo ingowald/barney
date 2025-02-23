@@ -41,18 +41,18 @@ namespace BARNEY_NS {
   }
 }
 
-#ifdef __CUDA_ARCH__
-extern __constant__ BARNEY_NS::render::OptixGlobals optixLaunchParams;
-// # ifndef DECLARE_OPTIX_LAUNCH_PARAMS
-// /*! in owl we can only change the _type_ of launch params, they always
-//     need to be caleld 'optixLaunchParams', and must have __constant__
-//     storage*/
-// #  define DECLARE_OPTIX_LAUNCH_PARAMS(LPType ) \
-//   extern __constant__ LPType optixLaunchParams
-// # endif
-// DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
-// // extern __constant__ barney::render::OptixGlobals optixLaunchParams;
-#endif
+// #ifdef __CUDA_ARCH__
+// extern __constant__ BARNEY_NS::render::OptixGlobals optixLaunchParams;
+// // # ifndef DECLARE_OPTIX_LAUNCH_PARAMS
+// // /*! in owl we can only change the _type_ of launch params, they always
+// //     need to be caleld 'optixLaunchParams', and must have __constant__
+// //     storage*/
+// // #  define DECLARE_OPTIX_LAUNCH_PARAMS(LPType ) \
+// //   extern __constant__ LPType optixLaunchParams
+// // # endif
+// // DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
+// // // extern __constant__ barney::render::OptixGlobals optixLaunchParams;
+// #endifS
 
 namespace BARNEY_NS {
   namespace render {

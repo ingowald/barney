@@ -118,8 +118,7 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       if (!pld->geom) {
         rtc::GeomType *gt
-          = device->geomTypes.get(programsTypeName,
-                                  MCVolumeAccel<SFSampler>::createGeomType,
+          = device->geomTypes.get(MCVolumeAccel<SFSampler>::createGeomType,
                                   this);
 
         // build a single-prim geometry, that single prim is our

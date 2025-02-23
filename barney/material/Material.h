@@ -111,6 +111,7 @@ namespace BARNEY_NS {
       const MaterialRegistry::SP materialRegistry;
     };
 
+#if RTC_DEVICE_CODE
     inline __device__
     vec4f PossiblyMappedParameter::DD::eval(const HitAttributes &hitData,
                                             const Sampler::DD *samplers,
@@ -128,6 +129,7 @@ namespace BARNEY_NS {
       }
       return vec4f(0.f,0.f,0.f,1.f);
     }
-
+#endif
+    
   }
 }

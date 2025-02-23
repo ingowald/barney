@@ -51,7 +51,7 @@ namespace BARNEY_NS {
       if (pld->userGeoms.empty()) {
         int numOrigins = (int)origins->count;
         rtc::GeomType *gt
-          = device->geomTypes.get("Spheres",Spheres::createGeomType);
+          = device->geomTypes.get(Spheres::createGeomType);
         rtc::Geom *geom = gt->createGeom();
         geom->setPrimCount(numOrigins);
         pld->userGeoms.push_back(geom);

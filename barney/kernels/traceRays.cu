@@ -22,45 +22,49 @@
 #include "barney/render/MaterialRegistry.h"
 #include "rtcore/RTCore.h"
 
-RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
 // __constant__ barney::render::OptixGlobals optixLaunchParams;
 // // DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
 
 namespace BARNEY_NS {
+  RTC_DECLARE_GLOBALS(render::OptixGlobals);
+  
   namespace render {
 
     struct TraceRays {
-      template<typename TraceInterface>
-      inline __both__ static 
-      void run(TraceInterface &ti)
-      {
-        const int rayID
-          = ti.getLaunchIndex().x
-          + ti.getLaunchDims().x
-          * ti.getLaunchIndex().y;
-        
-        auto &lp = OptixGlobals::get(ti);
-
-        if (rayID >= lp.numRays)
-          return;
-        
-        Ray &ray = lp.rays[rayID];
-        
-        vec3f dir = ray.dir;
-        if (dir.x == 0.f) dir.x = 1e-6f;
-        if (dir.y == 0.f) dir.y = 1e-6f;
-        if (dir.z == 0.f) dir.z = 1e-6f;
-
-        ti.traceRay(lp.world,
-                    ray.org,
-                    dir,
-                    0.f,ray.tMax,
-                    /* PRD */
-                    (void *)&ray);
-      }
+      inline __device__ static 
+      void run(rtc::TraceInterface &ti);
     };
-    
+
+#if RTC_DEVICE_CODE
+    inline __device__ static 
+    void run(rtc::TraceInterface &ti)
+    {
+      const int rayID
+        = ti.getLaunchIndex().x
+        + ti.getLaunchDims().x
+        * ti.getLaunchIndex().y;
+        
+      auto &lp = OptixGlobals::get(ti);
+
+      if (rayID >= lp.numRays)
+        return;
+        
+      Ray &ray = lp.rays[rayID];
+        
+      vec3f dir = ray.dir;
+      if (dir.x == 0.f) dir.x = 1e-6f;
+      if (dir.y == 0.f) dir.y = 1e-6f;
+      if (dir.z == 0.f) dir.z = 1e-6f;
+
+      ti.traceRay(lp.world,
+                  ray.org,
+                  dir,
+                  0.f,ray.tMax,
+                  /* PRD */
+                  (void *)&ray);
+    }
+#endif    
   }
   
       
@@ -80,9 +84,9 @@ namespace BARNEY_NS {
         dd.materials = ctx->materialRegistry->getDD(device);
         dd.samplers  = ctx->samplerRegistry->getDD(device);
         dd.globalIndex = device->globalIndex;
-        // int bs = 1024;
-        // int nb = divRoundUp(dd.numRays,bs);
-        device->traceRays->launch(dd.numRays,//vec2i(nb,bs),
+        int bs = 1024;
+        int nb = divRoundUp(dd.numRays,bs);
+        device->traceRays->launch(vec2i(nb,bs),
                                   &dd);
       }
     
@@ -91,7 +95,8 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     syncCheckAll();
   }
+  
+  RTC_EXPORT_TRACE2D(traceRays,BARNEY_NS::render::TraceRays);
 }
 
-RTC_EXPORT_TRACE(traceRays,BARNEY_NS::render::TraceRays);
  

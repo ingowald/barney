@@ -48,8 +48,7 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       if (pld->userGeoms.empty()) {
         rtc::GeomType *gt
-          = device->geomTypes.get("Capsules",
-                                  Capsules::createGeomType);
+          = device->geomTypes.get(Capsules::createGeomType);
         rtc::Geom *geom = gt->createGeom();
         pld->userGeoms = { geom };
       }

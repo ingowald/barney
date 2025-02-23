@@ -25,7 +25,7 @@ namespace BARNEY_NS {
   
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
-  struct Renderer : public barney_api::ParameterizedObject {
+  struct Renderer : public barney_api::Renderer {//ParameterizedObject {
     typedef std::shared_ptr<Renderer> SP;
 
     struct DD {

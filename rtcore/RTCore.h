@@ -8,6 +8,7 @@
 namespace rtc {
   using namespace optix;
 
+  using optix::TraceInterface;
 #if __CUDA_ARCH__
   using cuda_common::load;
   using cuda_common::tex1D;

@@ -59,8 +59,10 @@ namespace BARNEY_NS {
   FrameBuffer::FrameBuffer(Context *context,
                            const DevGroup::SP &devices,
                            const bool isOwner)
-    : SlottedObject(context,devices),
-      isOwner(isOwner)
+    : barney_api::FrameBuffer(context),
+      //SlottedObject(context,devices),
+      isOwner(isOwner),
+      devices(devices)
   {
     perLogical.resize(devices->numLogical);
     for (auto device : *devices) {

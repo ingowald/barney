@@ -46,8 +46,9 @@ namespace BARNEY_NS {
     
     // static SP create(GlobalModel *model, int localID);
 
-    void setInstances(std::vector<Group::SP> &groups,
-                      const affine3f *xfms);
+    void setInstances(barney_api::Group **groups,
+                      const affine3f *xfms,
+                      int numInstances);
 
     struct {
       std::vector<Group::SP> groups;

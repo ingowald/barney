@@ -451,9 +451,9 @@ namespace BARNEY_NS {
 #endif
   }
 
+  RTC_EXPORT_COMPUTE1D(umeshRasterElements,UMeshRasterElements);
+  RTC_EXPORT_COMPUTE1D(umeshCreateElements,UMeshCreateElements);
+  RTC_EXPORT_COMPUTE1D(umeshComputeElementBBs,UMeshComputeElementBBs);
 }
 
-RTC_EXPORT_COMPUTE1D(umeshRasterElements,BARNEY_NS::UMeshRasterElements);
-RTC_EXPORT_COMPUTE1D(umeshCreateElements,BARNEY_NS::UMeshCreateElements);
-RTC_EXPORT_COMPUTE1D(umeshComputeElementBBs,BARNEY_NS::UMeshComputeElementBBs);
 

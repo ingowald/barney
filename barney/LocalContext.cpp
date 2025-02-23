@@ -17,7 +17,7 @@
 #include "barney/LocalContext.h"
 #include "barney/fb/LocalFB.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   LocalContext::LocalContext(const std::vector<int> &dataGroupIDs,
                              const std::vector<int> &gpuIDs)
@@ -30,10 +30,10 @@ namespace barney {
        classes' destrcutors get called !*/
   }
 
-  FrameBuffer *LocalContext::createFB(int owningRank)
+  std::shared_ptr<barney_api::FrameBuffer> LocalContext::createFrameBuffer(int owningRank)
   {
     assert(owningRank == 0);
-    return initReference(std::make_shared<LocalFB>(this,devices));
+    return std::make_shared<LocalFB>(this,devices);
   }
 
   /*! returns how many rays are active in all ray queues, across all

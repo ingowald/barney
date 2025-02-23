@@ -19,7 +19,7 @@
 #include "barney/Context.h"
 #include "barney/fb/FrameBuffer.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct LocalFB : public FrameBuffer {
     typedef std::shared_ptr<LocalFB> SP;

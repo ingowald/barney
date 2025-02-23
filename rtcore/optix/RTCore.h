@@ -4,18 +4,14 @@
 #include "rtcore/cuda/CUDACommon.h"
 #include "rtcore/cuda/RTCore.h"
 
-#define RTC_DECLARE_GLOBALS(Type)                               \
-  __constant__ Type optixLaunchParams;                          \
-  namespace rtc {                                               \
-    namespace optix {                                           \
-      inline __device__ const void *getLaunchParamsPointer()    \
-      { return &::optixLaunchParams; }                          \
-    }                                                           \
-  }
+#define RTC_DECLARE_GLOBALS(Type)                                       \
+  extern "C" __constant__ Type optixLaunchParams;                       \
+  inline __device__ const void *getLaunchParamsPointer()                \
+  { return &optixLaunchParams; }                                        \
+  
 
 
-
-#define RTC_EXPORT_USER_GEOM(name,type)                                \
+#define RTC_EXPORT_USER_GEOM(name,type)                                 \
                                                                         \
   extern "C" __global__                                                 \
   void __closesthit__##name() {                                         \
@@ -81,9 +77,8 @@ namespace rtc {
   namespace optix {
 
     using namespace rtc::cuda_common;
-    
     inline __device__ const void *getLaunchParamsPointer();
-
+    
     /*! the interface that pipeline programs use to talk to / query
       data from the ray tracing core */
     struct TraceInterface {

@@ -19,20 +19,37 @@
 #include "barney/render/OptixGlobals.h"
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
+  RTC_IMPORT_COMPUTE1D(setTileCoords);
+  RTC_IMPORT_COMPUTE1D(compressTiles);
+  RTC_IMPORT_COMPUTE1D(unpackTiles);
+    
+  RTC_IMPORT_COMPUTE1D(toneMap);
+  RTC_IMPORT_COMPUTE1D(toFixed8);
+  RTC_IMPORT_COMPUTE1D(generateRays);
+  RTC_IMPORT_COMPUTE1D(shadeRays);
+
+  // umesh related:
+  RTC_IMPORT_COMPUTE1D(umeshCreateElements);
+  RTC_IMPORT_COMPUTE1D(umeshRasterElements);
+  RTC_IMPORT_COMPUTE1D(umeshReorderElements);
+  RTC_IMPORT_COMPUTE1D(umeshComputeElementBBs);
+
+  RTC_IMPORT_TRACE2D(traceRays,traceRays);
+
+  
   GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
     : device(device)
   {}
   
-  rtc::GeomType *GeomTypeRegistry::get(const std::string &name,
-                                       GeomTypeCreationFct callBack,
+  rtc::GeomType *GeomTypeRegistry::get(GeomTypeCreationFct callBack,
                                        const void *cbData)
   {
-    if (geomTypes.find(name) == geomTypes.end()) {
-      geomTypes[name] = callBack(device,cbData);
+    if (geomTypes.find(callBack) == geomTypes.end()) {
+      geomTypes[callBack] = callBack(device,cbData);
     }
-    return geomTypes[name];
+    return geomTypes[callBack];
   }
 
   void Device::syncPipelineAndSBT()
@@ -69,33 +86,35 @@ namespace barney {
   {
     rayQueue = new RayQueue(this);
     setTileCoords
-      = rtc->createCompute("setTileCoords");
+      // = rtc->createCompute("setTileCoords");
+      = createCompute_setTileCoords(rtc);
     compressTiles
-      = rtc->createCompute("compressTiles");
+      // = rtc->createCompute("compressTiles");
+      = createCompute_compressTiles(rtc);
     unpackTiles
-      = rtc->createCompute("unpackTiles");
+      = createCompute_unpackTiles(rtc);
     
     toneMap
-      = rtc->createCompute("toneMap");
+      = createCompute_toneMap(rtc);
     toFixed8
-      = rtc->createCompute("toFixed8");
+      = createCompute_toFixed8(rtc);
     generateRays
-      = rtc->createCompute("generateRays");
+      = createCompute_generateRays(rtc);
     shadeRays
-      = rtc->createCompute("shadeRays");
+      = createCompute_shadeRays(rtc);
 
     // umesh related:
     umeshCreateElements 
-      = rtc->createCompute("umeshCreateElements");
+      = createCompute_umeshCreateElements(rtc);
     umeshRasterElements 
-      = rtc->createCompute("umeshRasterElements");
+      = createCompute_umeshRasterElements(rtc);
     umeshReorderElements 
-      = rtc->createCompute("umeshReorderElements");
+      = createCompute_umeshReorderElements(rtc);
     umeshComputeElementBBs
-      = rtc->createCompute("umeshComputeElementBBs");
+      = createCompute_umeshComputeElementBBs(rtc);
       
     traceRays
-      = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
+      = createTrace_traceRays(rtc);
   }
     
   

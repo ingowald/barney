@@ -4,6 +4,7 @@
 # include "optix/Device.h"
 # include "optix/Geom.h" 
 # include "optix/Group.h" 
+# include "optix/Denoiser.h" 
 # include "cuda/CUDACommon.h" 
 
 namespace rtc {

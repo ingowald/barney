@@ -47,7 +47,7 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       if (pld->userGeoms.empty()) {
         rtc::GeomType *gt
-          = device->geomTypes.get("Cylinders",Cylinders::createGeomType);
+          = device->geomTypes.get(Cylinders::createGeomType);
         rtc::Geom *geom = gt->createGeom();
         geom->setPrimCount((int)indices->count);
         pld->userGeoms.push_back(geom);

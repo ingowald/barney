@@ -150,7 +150,7 @@ namespace BARNEY_NS {
     // std::mutex mutex;
     // std::map<Object::SP,int> hostOwnedHandles;
     const bool isActiveWorker;
-    std::set<std::string> alreadyWarned;
+    // std::set<std::string> alreadyWarned;
 
     SlotContext *getSlot(int slot);
     std::vector<SlotContext> perSlot;

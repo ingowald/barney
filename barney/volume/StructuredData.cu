@@ -17,10 +17,11 @@
 #include "barney/volume/StructuredData.h"
 #include "barney/Context.h"
 
-RTC_IMPORT_USER_GEOM_TYPE(StructuredData,BARNEY_NS::StructuredData::DD,false,false);
-RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
-
 namespace BARNEY_NS {
+
+  RTC_IMPORT_USER_GEOM_TYPE(StructuredData,StructuredData::DD,false,false);
+  RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
+
 
   // extern "C" char StructuredData_ptx[];
 
@@ -76,7 +77,7 @@ namespace BARNEY_NS {
     for (auto device : *devices)
       getPLD(device)->computeMCs
         // = device->rtc->createCompute("StructuredData_computeMCs");
-        = rtc::createCompute_StructuredData_computeMCs(device->rtc);
+        = createCompute_StructuredData_computeMCs(device->rtc);
   }
 
 
@@ -175,6 +176,6 @@ namespace BARNEY_NS {
     worldBounds.upper = gridOrigin + gridSpacing * vec3f(numCells);
   }
   
+  RTC_EXPORT_COMPUTE3D(StructuredData_computeMCs,StructuredData_ComputeMCs);
 }
 
-RTC_EXPORT_COMPUTE3D(StructuredData_computeMCs,BARNEY_NS::StructuredData_ComputeMCs);

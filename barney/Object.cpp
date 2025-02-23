@@ -18,30 +18,15 @@
 #include "barney/Context.h"
 #include "barney/ModelSlot.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  Object::Object(Context *context)
-    : context(context)
-  {}
+  // Object::Object(Context *context)
+  //   : context(context)
+  // {}
   
-  void Object::warn_unsupported_member(const std::string &type,
-                                       const std::string &member)
-  {
-    std::string key = toString()+"_"+type+"_"+member;
-    if (context->alreadyWarned.find(key) != context->alreadyWarned.end())
-      return;
-    std::cout << OWL_TERMINAL_RED
-              << "#bn: warning - invalid member access. "
-              << "Object '" << toString() << "' does not have a member '"<<member<<"'"
-              << " of type '"<< type << "'"
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    context->alreadyWarned.insert(key);
-  }
-  
-
   SlottedObject::SlottedObject(Context *context,
                                const DevGroup::SP &devices)
-    : Object(context),
+    : barney_api::ParameterizedObject(context),
       devices(devices)
   {
     assert(devices);

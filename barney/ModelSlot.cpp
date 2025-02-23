@@ -47,12 +47,19 @@ namespace BARNEY_NS {
   ModelSlot::~ModelSlot()
   {}
   
-  void ModelSlot::setInstances(std::vector<Group::SP> &groups,
-                               const affine3f *xfms)
+  void ModelSlot::setInstances(barney_api::Group **groups,
+                               const affine3f *xfms,
+                               int numUserInstances)
   {
-    int numUserInstances = (int)groups.size();
-    instances.groups = groups;
+    instances.groups.resize(numUserIntances);
     instances.xfms.resize(numUserInstances);
+    for (int i=0;i<numUserInstances;i++) {
+      auto g = groups[i];
+      instances.groups[i]
+        = g
+        ? g->shared_from_this()->as<Group>();
+        : {};
+    }
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());
     for (auto device : *devices) {
       device->sbtDirty = true;

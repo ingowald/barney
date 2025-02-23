@@ -31,10 +31,9 @@ namespace BARNEY_NS {
   
   struct GeomTypeRegistry {
     GeomTypeRegistry(rtc::Device *device);
-    rtc::GeomType *get(const std::string &name,
-                       GeomTypeCreationFct callback,
+    rtc::GeomType *get(GeomTypeCreationFct callback,
                        const void *callBackData=nullptr);
-    std::map<std::string,rtc::GeomType *> geomTypes;
+    std::map<GeomTypeCreationFct,rtc::GeomType *> geomTypes;
 
     rtc::Device *const device;    
   };
@@ -80,11 +79,11 @@ namespace BARNEY_NS {
     rtc::Device *const rtc;
     rtc::ComputeKernel1D *generateRays = 0;
     rtc::ComputeKernel1D *shadeRays = 0;
-    rtc::ComputeKernel2D *toneMap = 0;
-    rtc::ComputeKernel2D *toFixed8 = 0;
-    rtc::ComputeKernel2D *setTileCoords = 0;
-    rtc::ComputeKernel2D *compressTiles = 0;
-    rtc::ComputeKernel2D *unpackTiles = 0;
+    rtc::ComputeKernel1D *toneMap = 0;
+    rtc::ComputeKernel1D *toFixed8 = 0;
+    rtc::ComputeKernel1D *setTileCoords = 0;
+    rtc::ComputeKernel1D *compressTiles = 0;
+    rtc::ComputeKernel1D *unpackTiles = 0;
 
     // umesh related:
     rtc::ComputeKernel1D *umeshCreateElements = 0;
@@ -92,10 +91,8 @@ namespace BARNEY_NS {
     rtc::ComputeKernel1D *umeshReorderElements = 0;
     rtc::ComputeKernel1D *umeshComputeElementBBs = 0;
     
-    // rtc::Compute *copyPixels = 0;
-    rtc::TraceKernel1D *traceRays = 0;
+    rtc::TraceKernel2D *traceRays = 0;
     RayQueue     *rayQueue = 0;
-    uint64_t sentinel = 0x1234567;
   };
   
   /*! stolen from owl/Device: helper class that will set the

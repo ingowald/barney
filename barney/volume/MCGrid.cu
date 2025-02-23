@@ -16,10 +16,10 @@
 
 #include "barney/volume/MCGrid.h"
 
-RTC_IMPORT_COMPUTE3D(clearMCs)
-RTC_IMPORT_COMPUTE3D(mapMCs)
 
 namespace BARNEY_NS {
+  RTC_IMPORT_COMPUTE3D(clearMCs)
+  RTC_IMPORT_COMPUTE3D(mapMCs)
 
   MCGrid::MCGrid(const DevGroup::SP &devices)
     : devices(devices)
@@ -33,9 +33,9 @@ namespace BARNEY_NS {
       pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
 
       pld->mapMCs//             = rtc->createCompute("mapMCs");
-        = rtc::createCompute_mapMCs(device->rtc);
+        = createCompute_mapMCs(device->rtc);
       pld->clearMCs//           = rtc->createCompute("clearMCs");
-        = rtc::createCompute_clearMCs(device->rtc);
+        = createCompute_clearMCs(device->rtc);
     }
   }
                             
@@ -185,9 +185,9 @@ namespace BARNEY_NS {
     return dd;
   }
   
+  RTC_EXPORT_COMPUTE3D(clearMCs,ClearMCs);
+  RTC_EXPORT_COMPUTE3D(mapMCs,MapMCs);
 } // ::barney
 
 
 
-RTC_EXPORT_COMPUTE3D(clearMCs,BARNEY_NS::ClearMCs);
-RTC_EXPORT_COMPUTE3D(mapMCs,BARNEY_NS::MapMCs);

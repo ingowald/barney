@@ -19,7 +19,7 @@
 namespace BARNEY_NS {
 
   GlobalModel::GlobalModel(Context *context)
-    : SlottedObject(context,context->devices)
+    // : barney_api::SlottedObject(context,context->devices)
   {
     for (int slot=0;slot<context->perSlot.size();slot++) {
       assert(context->perSlot[slot].devices);

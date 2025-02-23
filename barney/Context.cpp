@@ -21,7 +21,7 @@
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   Context::Context(const std::vector<int> &dataGroupIDs,
                    const std::vector<int> &gpuIDs,
@@ -59,7 +59,7 @@ namespace barney {
     std::vector<std::vector<int>> gpuInSlot(numSlots);
     perSlot.resize(numSlots);
     std::vector<Device *> allDevices;
-    rtc::Backend *backend = rtc::Backend::get();
+    // rtc::Backend *backend = rtc::Backend::get();
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
       std::vector<int> contextRanks;
       auto &dg = perSlot[lmsIdx];
@@ -70,7 +70,8 @@ namespace barney {
         int localRank = lmsIdx*gpusPerSlot+j;
         contextRanks.push_back(localRank);
         int gpuID = gpuIDs[localRank];
-        rtc::Device *rtc = backend->createDevice(gpuID);
+        // rtc::Device *rtc = backend->createDevice(gpuID);
+        rtc::Device *rtc = new rtc::Device(gpuID);//backend->createDevice(gpuID);
         Device *device
           = new Device(rtc,
                        (int)allDevices.size(),
@@ -106,35 +107,35 @@ namespace barney {
     }
   }
   
-  void Context::releaseHostReference(Object::SP object)
-  {
-    auto it = hostOwnedHandles.find(object);
-    if (it == hostOwnedHandles.end())
-      throw std::runtime_error
-        ("trying to bnRelease() a handle that either does not "
-         "exist, or that the app (no lnoger) has any valid references on");
+  // void Context::releaseHostReference(Object::SP object)
+  // {
+  //   auto it = hostOwnedHandles.find(object);
+  //   if (it == hostOwnedHandles.end())
+  //     throw std::runtime_error
+  //       ("trying to bnRelease() a handle that either does not "
+  //        "exist, or that the app (no lnoger) has any valid references on");
 
-    const int remainingReferences = --it->second;
+  //   const int remainingReferences = --it->second;
 
-    if (remainingReferences == 0) {
-      // remove the std::shared-ptr handle:
-      it->second = {};
-      // and make barney forget that it ever had this object 
-      hostOwnedHandles.erase(it);
-    }
-  }
+  //   if (remainingReferences == 0) {
+  //     // remove the std::shared-ptr handle:
+  //     it->second = {};
+  //     // and make barney forget that it ever had this object 
+  //     hostOwnedHandles.erase(it);
+  //   }
+  // }
   
-  void Context::addHostReference(Object::SP object)
-  {
-    auto it = hostOwnedHandles.find(object);
-    if (it == hostOwnedHandles.end())
-      throw std::runtime_error
-        ("trying to bnAddReference() to a handle that either does not "
-         "exist, or that the app (no lnoger) has any valid primary references on");
+  // void Context::addHostReference(Object::SP object)
+  // {
+  //   auto it = hostOwnedHandles.find(object);
+  //   if (it == hostOwnedHandles.end())
+  //     throw std::runtime_error
+  //       ("trying to bnAddReference() to a handle that either does not "
+  //        "exist, or that the app (no lnoger) has any valid primary references on");
     
-    // add one ref count:
-    it->second++;
-  }
+  //   // add one ref count:
+  //   it->second++;
+  // }
   
   /*! returns how many rays are active in all ray queues, across all
     devices and, where applicable, across all ranks */
@@ -252,7 +253,7 @@ namespace barney {
     for (auto device : *devices) {
       assert(device);
       int upperBoundOnNumRays
-        = 2 * (fb->getFor(device)->numActiveTiles+1) * barney::pixelsPerTile;
+        = 2 * (fb->getFor(device)->numActiveTiles+1) * BARNEY_NS::pixelsPerTile;
       assert(device->rayQueue);
       device->rayQueue->reserve(upperBoundOnNumRays);
     }
@@ -293,6 +294,7 @@ namespace barney {
   void Context::warn_unsupported_object(const std::string &kind,
                                         const std::string &type)
   {
+    static std::set<std::string> alreadyWarned;
     if (alreadyWarned.find(kind+"::"+type) != alreadyWarned.end())
       return;
     std::cout << OWL_TERMINAL_RED

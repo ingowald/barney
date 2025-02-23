@@ -40,7 +40,7 @@ namespace BARNEY_NS {
   };
 #endif
   
-  struct FrameBuffer : public SlottedObject {
+  struct FrameBuffer : barney_api::FrameBuffer {//public SlottedObject {
 
     FrameBuffer(Context *context,
                 const DevGroup::SP &devices,
@@ -111,5 +111,6 @@ namespace BARNEY_NS {
     uint32_t    accumID = 0;
     const bool  isOwner;
     bool  showCrosshairs = false;
+    DevGroup::SP const devices;
   };
 }

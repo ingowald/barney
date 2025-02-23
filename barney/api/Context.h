@@ -18,6 +18,7 @@
 
 #include "barney/api/common.h"
 #include <mutex>
+#include <set>
 
 namespace barney_api {
   
@@ -163,7 +164,10 @@ namespace barney_api {
     virtual ~Data() = default;
   };
 
-  struct FrameBuffer : public Object {
+  struct FrameBuffer : public ParameterizedObject {
+    inline FrameBuffer(Context *context)
+      : ParameterizedObject(context)
+    {}
     virtual ~FrameBuffer() = default;
 
     virtual void  resetAccumulation() = 0;
@@ -340,5 +344,23 @@ namespace barney_api {
   template<typename T>
   inline std::shared_ptr<T> Object::as() 
   { return std::dynamic_pointer_cast<T>(shared_from_this()); }
+
+  inline void Object::warn_unsupported_member(const std::string &type,
+                                              const std::string &member)
+  {
+    static std::set<std::string> alreadyWarned;
+    std::string key = toString()+"_"+type+"_"+member;
+    if (// context->
+        alreadyWarned.find(key) != // context->
+        alreadyWarned.end())
+      return;
+    std::cout << OWL_TERMINAL_RED
+              << "#bn: warning - invalid member access. "
+              << "Object '" << toString() << "' does not have a member '"<<member<<"'"
+              << " of type '"<< type << "'"
+              << OWL_TERMINAL_DEFAULT << std::endl;
+    // context->
+      alreadyWarned.insert(key);
+  }
   
 }

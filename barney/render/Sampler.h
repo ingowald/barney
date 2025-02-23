@@ -30,7 +30,7 @@ namespace BARNEY_NS {
     struct SamplerRegistry;
     
     struct AttributeTransform {
-      inline __both__ vec4f applyTo(vec4f in, bool dbg) const;
+      inline __device__ vec4f applyTo(vec4f in, bool dbg) const;
       
       float4 mat[4];
       float4 offset;
@@ -48,11 +48,12 @@ namespace BARNEY_NS {
       } Type;
 
       struct DD {
-        inline __both__ DD() {}
-        inline __both__ DD(DD &&other) { memcpy(this,&other,sizeof(other)); }
-        inline __both__
+#if RTC_DEVICE_CODE
+        inline __device__ DD() {}
+        inline __device__ DD(DD &&other) { memcpy(this,&other,sizeof(other)); }
+        inline __device__
         vec4f eval(const HitAttributes &inputs, bool dbg) const;
-        
+#endif
         Type type=INVALID;
         AttributeKind      inAttribute;
         AttributeTransform outTransform;
