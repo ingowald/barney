@@ -32,7 +32,7 @@ namespace BARNEY_NS {
   //   int            numNodes;
 
   //   template<typename CI>
-  //   inline __both__ void run(const CI &ci)
+  //   inline __rtc_device void run(const CI &ci)
   //   {
   //     int nodeID = ci.launchIndex().x;
   //     if (nodeID >= numNodes) return;
@@ -54,8 +54,7 @@ namespace BARNEY_NS {
     UMeshField::DD mesh;
     TransferFunction::DD xf;
 
-    template<typename CI>
-    inline __both__ void run(const CI &ci)
+    inline __rtc_device void run(const rtc::ComputeInterface &ci)
     {
       int tid = ci.launchIndex().x;
       int nodeID = tid / AWT_NODE_WIDTH;
@@ -118,9 +117,8 @@ namespace BARNEY_NS {
     Element *in_elements;
     uint32_t *primIDs;
 
-    template<typename CI>
-    inline __both__
-    void run(const CI &ci)
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &ci)
     {
       int tid = ci.launchIndex().x;
       if (tid >= numNodes) return;

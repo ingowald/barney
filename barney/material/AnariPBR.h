@@ -25,11 +25,11 @@ namespace BARNEY_NS {
     struct AnariPBR : public HostMaterial {
       struct DD {
 #if RTC_DEVICE_CODE
-       inline __device__
+       inline __rtc_device
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
-        inline __device__
+        inline __rtc_device
         float getOpacity(const HitAttributes &hitData,
                          const Sampler::DD *samplers,
                          bool dbg) const;
@@ -71,20 +71,17 @@ namespace BARNEY_NS {
     };
       
 #if RTC_DEVICE_CODE
-    inline __device__
+    inline __rtc_device
     PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData,
                                         const Sampler::DD *samplers,
                                         bool dbg) const
     {
       vec4f baseColor = this->baseColor.eval(hitData,samplers,dbg);
       vec4f metallic = this->metallic.eval(hitData,samplers,dbg);
-      if (dbg) printf("metallic %f %f %f %f\n",
-                      metallic.x,metallic.y,metallic.z,metallic.w);         
       vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
       vec4f roughness = this->roughness.eval(hitData,samplers,dbg);
       vec4f transmission = this->transmission.eval(hitData,samplers,dbg);
       vec4f ior = this->ior.eval(hitData,samplers,dbg);
-      if (dbg) printf("ior %f trans %f\n",ior.x,transmission.x);
 #if 1
       if (ior.x != 1.f && transmission.x >= 1e-3f) {
         packedBSDF::Glass bsdf;
@@ -98,7 +95,7 @@ namespace BARNEY_NS {
       const float clampRange = .1f;
       
       bsdf.baseColor = (const vec3f&)baseColor;
-      bsdf.metallic = metallic.x;//clamp(metallic.x,clampRange,1.f-clampRange);
+      bsdf.metallic = metallic.x;
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
       
       bsdf.alpha = (1.f-transmission.x)
@@ -106,7 +103,6 @@ namespace BARNEY_NS {
         * opacity.x
         ;
       
-      if (dbg) printf("baseColor.w %f opacity.x %f\n",baseColor.w,opacity.x);
       bsdf.ior = ior.x;
       return bsdf;
     }

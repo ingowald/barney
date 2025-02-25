@@ -23,19 +23,19 @@ namespace BARNEY_NS {
   namespace render {
     
     struct Ray {
-      inline __both__ void setVolumeHit(vec3f P, float t, vec3f albedo);
-      inline __both__ PackedBSDF getBSDF() const;
-      inline __both__ void setHit(vec3f P, vec3f N, float t,
+      inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo);
+      inline __rtc_device PackedBSDF getBSDF() const;
+      inline __rtc_device void setHit(vec3f P, vec3f N, float t,
                                     const PackedBSDF &packedBSDF);
       
-      inline __both__ void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len);
-      inline __both__ bool hadHit() const { return bsdfType != PackedBSDF::NONE; }
-      inline __both__ void clearHit(float newTMax = BARNEY_INF)
+      inline __rtc_device void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len);
+      inline __rtc_device bool hadHit() const { return bsdfType != PackedBSDF::NONE; }
+      inline __rtc_device void clearHit(float newTMax = BARNEY_INF)
       { bsdfType = PackedBSDF::NONE; tMax = newTMax; }
       
-      inline __both__ void packNormal(vec3f N);
-      inline __both__ vec3f unpackNormal() const;
-      inline __both__ vec3f getN() const  { return unpackNormal(); }
+      inline __rtc_device void packNormal(vec3f N);
+      inline __rtc_device vec3f unpackNormal() const;
+      inline __rtc_device vec3f getN() const  { return unpackNormal(); }
       
       vec3f    org;
       vec3f    dir;
@@ -86,13 +86,13 @@ namespace BARNEY_NS {
     //   int  size     = 0;
     // };
 
-    inline __both__ PackedBSDF Ray::getBSDF() const
+    inline __rtc_device PackedBSDF Ray::getBSDF() const
     {
       return PackedBSDF((PackedBSDF::Type)bsdfType,hitBSDF);
     }
     
     
-    inline __both__ void Ray::setHit(vec3f P, vec3f N, float t,
+    inline __rtc_device void Ray::setHit(vec3f P, vec3f N, float t,
                                        const PackedBSDF &packedBSDF)
     {
       this->packNormal(N);
@@ -102,7 +102,7 @@ namespace BARNEY_NS {
       this->P         = P;
     }
     
-    inline __both__ void Ray::setVolumeHit(vec3f P,
+    inline __rtc_device void Ray::setVolumeHit(vec3f P,
                                              float t,
                                              vec3f albedo)
     {
@@ -110,7 +110,7 @@ namespace BARNEY_NS {
              packedBSDF::Phase(albedo));
     }
 
-    inline __both__
+    inline __rtc_device
     void Ray::makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len)
     {
       this->bsdfType = PackedBSDF::NONE;
@@ -121,17 +121,17 @@ namespace BARNEY_NS {
       this->tMax = len;
     }
 
-    inline __both__ void Ray::packNormal(vec3f N)
+    inline __rtc_device void Ray::packNormal(vec3f N)
     {
       this->N = N;
     }
   
-    inline __both__ vec3f Ray::unpackNormal() const
+    inline __rtc_device vec3f Ray::unpackNormal() const
     {
       return (vec3f)N;
     }
     
-    inline __both__
+    inline __rtc_device
     bool boxTest(vec3f org, vec3f dir,
                  float &t0, float &t1,
                  const box3f &box)
@@ -145,7 +145,7 @@ namespace BARNEY_NS {
       return t0 <= t1;
     }
 
-    inline __both__
+    inline __rtc_device
     bool boxTest(const Ray &ray,
                  range1f &tRange,
                  const box3f &box)
@@ -155,7 +155,7 @@ namespace BARNEY_NS {
       return boxTest(org,dir,tRange.lower,tRange.upper,box);
     }
 
-    inline __both__
+    inline __rtc_device
     bool boxTest(float &t0, float &t1,
                  box3f box,
                  const vec3f org,
@@ -170,7 +170,7 @@ namespace BARNEY_NS {
       return t0 <= t1;
     }
 
-    inline __both__
+    inline __rtc_device
     bool boxTest(float &t0, float &t1,
                  box4f box,
                  const vec3f org,

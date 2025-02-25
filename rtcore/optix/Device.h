@@ -148,7 +148,7 @@ namespace rtc {
 }
 
 
-#define RTC_IMPORT_USER_GEOM_TYPE(Type,Class,has_ah,has_ch)     \
+#define RTC_IMPORT_USER_GEOM(Type,Class,has_ah,has_ch)     \
   extern "C" char Type##_ptx[];                                 \
   rtc::GeomType *createGeomType_##Type(rtc::Device *device)     \
   {                                                             \
@@ -159,7 +159,7 @@ namespace rtc {
                                         has_ah,has_ch);         \
   }
 
-#define RTC_IMPORT_TRIANGLES_GEOM_TYPE(Type,Class,has_ah,has_ch)        \
+#define RTC_IMPORT_TRIANGLES_GEOM(Type,Class,has_ah,has_ch)        \
   extern "C" char Type##_ptx[];                                         \
   rtc::GeomType *createGeomType_##Type(rtc::Device *device)             \
   {                                                                     \

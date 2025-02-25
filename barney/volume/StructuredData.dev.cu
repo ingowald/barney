@@ -25,30 +25,32 @@ namespace BARNEY_NS {
 
   struct MCAccel_Structured_Programs {
     
-    static inline __both__
+    static inline __rtc_device
     void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
-                const int32_t primID)
+                const int32_t primID) 
     {
       MCVolumeAccel<StructuredDataSampler>::boundsProg(ti,geomData,bounds,primID);
     }
     
-    static inline __both__
+    static inline __rtc_device
     void intersect(rtc::TraceInterface &ti)
     {
       MCVolumeAccel<StructuredDataSampler>::isProg(ti);
     }
     
-    static inline __both__
-    void closest_hit(rtc::TraceInterface &ti)
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
     
-    static inline __both__
-    void any_hit(rtc::TraceInterface &ti)
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
   };
+  
 }
 
-RTC_EXPORT_USER_GEOM(MCAccel_Structured,BARNEY_NS::MCAccel_Structured_Programs);
+RTC_EXPORT_USER_GEOM(MCAccel_Structured,BARNEY_NS::MCAccel_Structured_Programs,false,false);
+
 

@@ -26,23 +26,23 @@ namespace BARNEY_NS {
   // inline __device__ float saturate(float f, float lo=0.f, float hi=1.f)
   // { return max(lo,min(f,hi)); }
   
-  inline __both__ float from_8bit(uint8_t v) {
+  inline __rtc_device float from_8bit(uint8_t v) {
     return float(v) * (1.f/255.f);
   }
   
-  inline __both__ vec4f from_8bit(uint32_t v) {
+  inline __rtc_device vec4f from_8bit(uint32_t v) {
     return vec4f(from_8bit(uint8_t((v >> 0)&0xff)),
                  from_8bit(uint8_t((v >> 8)&0xff)),
                  from_8bit(uint8_t((v >> 16)&0xff)),
                  from_8bit(uint8_t((v >> 24)&0xff)));
   }
   
-  inline __both__ uint32_t _make_8bit(const float f)
+  inline __rtc_device uint32_t _make_8bit(const float f)
   {
     return min(255,max(0,int(f*256.f)));
   }
 
-  inline __both__ uint32_t make_rgba8(const vec4f color)
+  inline __rtc_device uint32_t make_rgba8(const vec4f color)
   {
     uint32_t r = _make_8bit(color.x);
     uint32_t g = _make_8bit(color.y);
@@ -126,11 +126,11 @@ namespace BARNEY_NS {
     vec4f *in;
     vec2i numPixels;
     bool SRGB;
-    __device__ void run(const rtc::ComputeInterface &ci);
+    __rtc_device void run(const rtc::ComputeInterface &ci);
   };
 
 #if RTC_DEVICE_CODE
-  __device__ void ToFixed8::run(const rtc::ComputeInterface &ci)
+  __rtc_device void ToFixed8::run(const rtc::ComputeInterface &ci)
   {
     int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
     if (ix >= numPixels.x) return;
@@ -186,12 +186,12 @@ namespace BARNEY_NS {
     vec2i numPixels;
     
 #if RTC_DEVICE_CODE
-    __device__ void run(const rtc::ComputeInterface &ci);
+    __rtc_device void run(const rtc::ComputeInterface &ci);
 #endif
   };
   
 #if RTC_DEVICE_CODE
-  __device__ void ToneMap::run(const rtc::ComputeInterface &ci)
+  __rtc_device void ToneMap::run(const rtc::ComputeInterface &ci)
   {
     int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
     if (ix >= numPixels.x) return;
@@ -305,11 +305,11 @@ namespace BARNEY_NS {
     CompressedTile *tiles;
     TileDesc *descs;
     
-    __device__ void run(const rtc::ComputeInterface &ci);
+    __rtc_device void run(const rtc::ComputeInterface &ci);
   };
 
 #if RTC_DEVICE_CODE
-  __device__ void UnpackTiles::run(const rtc::ComputeInterface &ci)
+  __rtc_device void UnpackTiles::run(const rtc::ComputeInterface &ci)
   {
     int tileIdx = ci.getBlockIdx().x;
       
@@ -334,16 +334,7 @@ namespace BARNEY_NS {
     vec3f normal = tile.normal[subIdx].get3f();
     float depth = tile.depth[subIdx];
 
-    // auto checkFragComp = [](float f) {
-    //   if (isnan(f)) printf("NAN fragment!\n");
-    //   if (isinf(f)) printf("INF fragment!\n");
-    // };
-    // checkFragComp(rgba.x);
-    // checkFragComp(rgba.y);
-    // checkFragComp(rgba.z);
-      
-      
-    out_rgba[idx] = (const float4&)rgba;//color;
+    out_rgba[idx] = (const float4&)rgba;
     depths[idx] = depth;
     normals[idx] = normal;
   }
@@ -351,7 +342,6 @@ namespace BARNEY_NS {
   
   void FrameBuffer::unpackTiles()
   {
-    // #if 1
     UnpackTiles args = {
       numPixels,
       (float4*)linearColor,
@@ -365,27 +355,6 @@ namespace BARNEY_NS {
                                 pixelsPerTile,
                                 &args);
     device->sync();
-    //     CHECK_CUDA_LAUNCH(g_unpackTiles,
-    //                       //
-    //                       gatheredTilesOnOwner.numActiveTiles,pixelsPerTile,0,0,
-    //                       //
-    //                       numPixels,
-    //                       linearColor,
-    //                       linearAlpha,
-    //                       linearNormal,
-    //                       linearDepth,
-    //                       gatheredTilesOnOwner.compressedTiles,
-    //                       gatheredTilesOnOwner.tileDescs);
-    // #else
-    //     g_unpackTiles<<<gatheredTilesOnOwner.numActiveTiles,pixelsPerTile>>>
-    //       (numPixels,
-    //        linearColor,
-    //        linearAlpha,
-    //        linearNormal,
-    //        linearDepth,
-    //        gatheredTilesOnOwner.compressedTiles,
-    //        gatheredTilesOnOwner.tileDescs);
-    // #endif
   }
 
   void FrameBuffer::read(BNFrameBufferChannel channel,
@@ -415,9 +384,9 @@ namespace BARNEY_NS {
       // tone map (denoised) frame buffer
       // -----------------------------------------------------------------------------
       {
-        vec2i bs(8,8);
+        vec2ui bs(8,8);
         ToneMap args = { denoisedColor,numPixels };
-        device->toneMap->launch(divRoundUp(numPixels,bs),bs,
+        device->toneMap->launch(divRoundUp(vec2ui(numPixels),bs),bs,
                                 &args);
       }
       dirty = false;
@@ -447,18 +416,18 @@ namespace BARNEY_NS {
     case BN_UFIXED8_RGBA: {
       uint32_t *asFixed8
         = (uint32_t*)device->rtc->allocMem(numPixels.x*numPixels.y*sizeof(uint32_t));
-      vec2i bs(8,8);
+      vec2ui bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,false };
-      device->toFixed8->launch(divRoundUp(numPixels,bs),bs,&args);
+      device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
       device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
       device->rtc->freeMem(asFixed8);
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
       uint32_t *asFixed8
         = (uint32_t*)device->rtc->allocMem(numPixels.x*numPixels.y*sizeof(uint32_t));
-      vec2i bs(8,8);
+      vec2ui bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,true };
-      device->toFixed8->launch(divRoundUp(numPixels,bs),bs,&args);
+      device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
       device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
       device->rtc->freeMem(asFixed8);
     } break;

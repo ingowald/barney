@@ -36,19 +36,19 @@ namespace BARNEY_NS {
 
 
 #if RTC_DEVICE_CODE
-    inline __device__ float square(float f) { return f*f; }
+    inline __rtc_device float square(float f) { return f*f; }
   
     
     enum { MAX_PATH_DEPTH = 10 };
 
-    inline __device__
+    inline __rtc_device
     float safe_eps(float f, vec3f v)
     {
       return max(f,1e-5f*reduce_max(abs(v)));
     }
 
     
-    inline __device__
+    inline __rtc_device
     vec3f randomDirection(Random &rng)
     {
       vec3f v;
@@ -61,7 +61,7 @@ namespace BARNEY_NS {
       }
     }
 
-    inline __device__
+    inline __rtc_device
     bool sampleAreaLights(Light::Sample &ls,
                           const render::World::DD &world,
                           const vec3f P,
@@ -144,7 +144,7 @@ namespace BARNEY_NS {
       return true;
     }
 
-    inline __device__
+    inline __rtc_device
     bool sampleDirLights(Light::Sample &ls,
                          const World::DD &world,
                          const Renderer::DD &renderer,
@@ -198,7 +198,7 @@ namespace BARNEY_NS {
       return weights[i] != 0.f;
     }
 
-    inline __device__
+    inline __rtc_device
     bool sampleEnvLight(Light::Sample &ls,
                         const World::DD &world,
                         const Renderer::DD &renderer,
@@ -220,7 +220,7 @@ namespace BARNEY_NS {
       return true;
     }
 
-    inline __device__
+    inline __rtc_device
     bool sampleLights(Light::Sample &ls,
                       const World::DD &world,
                       const Renderer::DD &renderer,
@@ -313,7 +313,7 @@ namespace BARNEY_NS {
 
 
 
-    inline __device__
+    inline __rtc_device
     float schlick(float cosine,
                   float ref_idx)
     {
@@ -324,7 +324,7 @@ namespace BARNEY_NS {
   
   
 
-    inline __device__
+    inline __rtc_device
     bool refract(const vec3f& v,
                  const vec3f& n,
                  float ni_over_nt,
@@ -341,7 +341,7 @@ namespace BARNEY_NS {
         return false;
     }
   
-    inline __device__
+    inline __rtc_device
     vec3f radianceFromEnv(const World::DD &world,
                           const Renderer::DD &renderer,
                           Ray &ray)
@@ -367,7 +367,7 @@ namespace BARNEY_NS {
       up the background color from that map; otherwise, it returns
       the 'ray.misscolor' that the primary ray generation has set as
       default color for this ray */
-    inline __device__
+    inline __rtc_device
     vec3f primaryRayMissColor(const World::DD &world,
                               const Renderer::DD &renderer,
                               Ray &ray)
@@ -381,7 +381,7 @@ namespace BARNEY_NS {
     }
 
     /*! ugh - that should all go into material::AnariPhysical .... */
-    inline __device__
+    inline __rtc_device
     void bounce(const World::DD &world,
                 const Renderer::DD &renderer,
                 vec3f &fragment,
@@ -747,7 +747,7 @@ namespace BARNEY_NS {
 #endif // device code  
 
     struct ShadeRaysKernel {
-      inline __device__
+      inline __rtc_device
       void run(const rtc::ComputeInterface &rt);
       
       World::DD world;
@@ -762,7 +762,7 @@ namespace BARNEY_NS {
     };
 
 #if RTC_DEVICE_CODE
-    inline __device__
+    inline __rtc_device
     void ShadeRaysKernel::run(const rtc::ComputeInterface &rt)
     {
       int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;

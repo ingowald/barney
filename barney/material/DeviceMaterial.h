@@ -34,16 +34,16 @@ namespace BARNEY_NS {
       } Type;
 
 #if RTC_DEVICE_CODE
-      inline __device__
+      inline __rtc_device
       PackedBSDF createBSDF(const HitAttributes &hitData,
                             const Sampler::DD *samplers,
                             bool dbg=false) const;
-      inline __device__
+      inline __rtc_device
       float getOpacity(const HitAttributes &hitData,
                        const Sampler::DD *samplers,
                        bool dbg) const;
 
-      inline __device__
+      inline __rtc_device
       void setHit(Ray &ray,
                   const HitAttributes &hitData,
                   const Sampler::DD *samplers,
@@ -57,7 +57,7 @@ namespace BARNEY_NS {
     };
 
 #if RTC_DEVICE_CODE
-    inline __device__
+    inline __rtc_device
     PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData,
                                           const Sampler::DD *samplers,
                                           bool dbg) const
@@ -75,7 +75,7 @@ namespace BARNEY_NS {
       return packedBSDF::Invalid();
     }
 
-    // inline __device__
+    // inline __rtc_device
     // float DeviceMaterial::getOpacity(const HitAttributes &hitData,
     //                                  const Sampler::DD *samplers,
     //                                  bool dbg) const
@@ -88,7 +88,7 @@ namespace BARNEY_NS {
     //   // return 1.f;
     // }
     
-    inline __device__
+    inline __rtc_device
     void DeviceMaterial::setHit(Ray &ray,
                                 const HitAttributes &hitData,
                                 const Sampler::DD *samplers,

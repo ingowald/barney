@@ -26,7 +26,7 @@ namespace BARNEY_NS {
       
     struct AttributeArray {
       struct DD {
-        inline __both__ vec4f valueAt(int i, bool dbg=false) const;
+        inline __rtc_device vec4f valueAt(int i, bool dbg=false) const;
           
         const void       *ptr;
         int/*BNDataType*/ type;
@@ -39,7 +39,7 @@ namespace BARNEY_NS {
         
       struct DD {
         union {
-          float4             value;
+          rtc::float4        value;
           AttributeArray::DD fromArray;
         };
         int/*Scope*/         scope;
@@ -55,9 +55,9 @@ namespace BARNEY_NS {
       enum { count = numAttributes };
       struct DD {
         enum { count = numAttributes };
-        inline __both__ GeometryAttribute::DD &operator[](int i)
+        inline __rtc_device GeometryAttribute::DD &operator[](int i)
         { return attribute[i]; }
-        inline __both__ const GeometryAttribute::DD &operator[](int i) const
+        inline __rtc_device const GeometryAttribute::DD &operator[](int i) const
         { return attribute[i]; }
         GeometryAttribute::DD attribute[numAttributes];
         GeometryAttribute::DD colorAttribute;
@@ -68,7 +68,7 @@ namespace BARNEY_NS {
     };
   
       
-    inline __both__
+    inline __rtc_device
     vec4f AttributeArray::DD::valueAt(int i, bool dbg) const
     {
       switch(this->type) {
@@ -77,16 +77,17 @@ namespace BARNEY_NS {
         return vec4f(v,0.f,0.f,1.f);
       }
       case BN_FLOAT2: {
-        const float2 v = ((const float2 *)ptr)[i];
+        const vec2f v = ((const vec2f *)ptr)[i];
         return vec4f(v.x,v.y,0.f,1.f);
       }
       case BN_FLOAT3: {
-        const float3 v = ((const float3 *)ptr)[i];
+        const vec3f v = ((const vec3f *)ptr)[i];
         return vec4f(v.x,v.y,v.z,1.f);
       }
       case BN_FLOAT4: {
-        const float4 v = ((const float4 *)ptr)[i];
-        return (const vec4f&)v;
+        return rtc::load(*(const rtc::float4*)ptr);
+        // const float4 v = ((const float4 *)ptr)[i];   
+        // return (const vec4f&)v;
       }
       default:
         return vec4f(0.f,0.f,0.f,0.f);

@@ -32,15 +32,15 @@ namespace BARNEY_NS {
         values; values inside the domain get linearly interpolated
         from the array of values.  Mind: 'w' component of returned
         value is a *density*, not a alpha-opacity! */
-      inline __both__
+      inline __rtc_device
       vec4f map(float s, bool dbg=false) const;
 
       /*! compute the majorant (max opacity times baseDensity) for
           given range of scalar values */
-      inline __both__
+      inline __rtc_device
       float majorant(range1f r, bool dbg = false) const;
 
-      float4  *values;
+      rtc::float4  *values;
       range1f  domain;
       float    baseDensity;
       int      numValues;
@@ -74,12 +74,12 @@ namespace BARNEY_NS {
 
 
   /*! maps given scalar through this trnasfer function, and returns
-    /opacity-times-density value for that scalar. scalars outside the
+    opacity-times-density value for that scalar. scalars outside the
     specified domain get mapped to the boundary values; values inside
     the domain get linearly interpolated from the array of values.
     Mind: 'w' component of returned value is a *density*, not a
     alpha-opacity! */
-  inline __both__
+  inline __rtc_device
   vec4f TransferFunction::DD::map(float s, bool dbg) const
   {
     // if (dbg) printf("mapping %f into %f %f\n",
@@ -94,9 +94,9 @@ namespace BARNEY_NS {
     f -= idx;
 
                     
-    float4 v0 = values[idx];
-    float4 v1 = values[idx+1];
-    vec4f r = (1.f-f)*(const vec4f&)v0 + f*(const vec4f&)v1;
+    vec4f v0 = rtc::load(values[idx]);
+    vec4f v1 = rtc::load(values[idx+1]);
+    vec4f r = (1.f-f)*v0 + f*v1;
     r.w *= baseDensity;
     return r;
   }
@@ -104,7 +104,7 @@ namespace BARNEY_NS {
 
   /*! compute the majorant (max opacity times baseDensity) for
     given range of scalar values */
-  inline __both__
+  inline __rtc_device
   float TransferFunction::DD::majorant(range1f r, bool dbg) const
   {
     float f_lo = (r.lower-domain.lower)/domain.span();

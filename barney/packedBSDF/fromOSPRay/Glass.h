@@ -25,18 +25,18 @@ namespace BARNEY_NS {
     namespace packedBSDF {
       
       struct Glass {
-        inline __both__
+        inline __rtc_device
         vec3f getAlbedo(bool dbg) const;
         
-        inline __both__
+        inline __rtc_device
         float getOpacity(bool isShadowRay,
                               bool isInMedium,
                               vec3f rayDir,
                               vec3f Ng,
                               bool dbg=false) const;
-        inline __both__ float pdf(DG dg, vec3f wi, bool dbg) const;
-        inline __both__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-        inline __both__ void scatter(ScatterResult &scatter,
+        inline __rtc_device float pdf(DG dg, vec3f wi, bool dbg) const;
+        inline __rtc_device EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+        inline __rtc_device void scatter(ScatterResult &scatter,
                                        const render::DG &dg,
                                        Random &random,
                                        bool dbg) const;
@@ -45,13 +45,13 @@ namespace BARNEY_NS {
         float3 attenuation;
       };
 
-      inline __both__ EvalRes Glass::eval(DG dg, vec3f wi, bool dbg) const
+      inline __rtc_device EvalRes Glass::eval(DG dg, vec3f wi, bool dbg) const
       {
         return EvalRes::zero();
       }
 
       
-      inline __both__
+      inline __rtc_device
       float Glass::getOpacity(bool isShadowRay,
                               bool isInMedium,
                               vec3f rayDir,
@@ -83,7 +83,7 @@ namespace BARNEY_NS {
         return 1.f;
       }
       
-      inline __both__
+      inline __rtc_device
       void Glass::scatter(ScatterResult &scatter,
                           const render::DG &dg,
                           Random &random,
@@ -117,7 +117,7 @@ namespace BARNEY_NS {
       }
       
       
-      inline __both__ float Glass::pdf(DG dg, vec3f wi, bool dbg) const
+      inline __rtc_device float Glass::pdf(DG dg, vec3f wi, bool dbg) const
       {
         return 0.f;
       }

@@ -23,15 +23,15 @@
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
 namespace BARNEY_NS {
-
   using namespace BARNEY_NS::render;
-  inline __both__
+  
+  inline __rtc_device
   float safe_eps(float f, vec3f v)
   {
     return max(f,1e-6f*reduce_max(abs(v)));
   }
 
-  inline __both__
+  inline __rtc_device
   float safe_eps(float f, float v)
   {
     return max(f,1e-6f*fabsf(v));
@@ -40,7 +40,7 @@ namespace BARNEY_NS {
   
   struct SpheresPrograms {
     
-    static inline __device__
+    static inline __rtc_device
     void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
@@ -53,8 +53,8 @@ namespace BARNEY_NS {
       bounds.upper = origin + radius;
     }
     
-    static inline __device__
-    void closest_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &rt)
     {
       auto &ray = *(Ray*)rt.getPRD();
       auto &self = *(Spheres::DD*)rt.getProgramData();
@@ -116,13 +116,13 @@ namespace BARNEY_NS {
       material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,dbg);
     }
   
-    static inline __device__
-    void any_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
   
-    static inline __device__
+    static inline __rtc_device
     void intersect(rtc::TraceInterface &rt)
     {
       const int primID = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
@@ -188,7 +188,7 @@ namespace BARNEY_NS {
       }
     }
   };
-
 }
-RTC_EXPORT_USER_GEOM(Spheres,BARNEY_NS::SpheresPrograms);
+
+RTC_EXPORT_USER_GEOM(Spheres,BARNEY_NS::SpheresPrograms,false,true);
 

@@ -93,7 +93,7 @@ namespace BARNEY_NS {
     {}
     
     struct DD {
-      inline __device__ float sample(const vec3f P, bool dbg=false) const;
+      inline __rtc_device float sample(const vec3f P, bool dbg=false) const;
       
       rtc::device::TextureObject texObj;
       vec3f cellGridOrigin;
@@ -107,7 +107,7 @@ namespace BARNEY_NS {
     StructuredData *const sf;
   };
 #if RTC_DEVICE_CODE
-  inline __device__
+  inline __rtc_device
   float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
   {
     vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);

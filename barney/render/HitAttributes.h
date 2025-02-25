@@ -42,8 +42,8 @@ namespace BARNEY_NS {
     struct HitAttributes {
       typedef AttributeKind Which;
         
-      inline __device__ HitAttributes();
-      inline __device__ vec4f get(Which attribute, bool dbg=false) const;
+      inline __rtc_device HitAttributes();
+      inline __rtc_device vec4f get(Which attribute, bool dbg=false) const;
       
       vec4f color;
       vec4f attribute[numAttributes];
@@ -56,7 +56,7 @@ namespace BARNEY_NS {
       bool   isShadowRay = false;
     };
 
-    inline __device__ HitAttributes::HitAttributes()
+    inline __rtc_device HitAttributes::HitAttributes()
     {
       color
         = vec4f(NAN,NAN,NAN,NAN);
@@ -65,7 +65,7 @@ namespace BARNEY_NS {
             = vec4f(NAN,NAN,NAN,NAN);
     }
 
-    inline __device__
+    inline __rtc_device
     vec4f HitAttributes::get(Which whichOne, bool dbg) const
     {
       if (whichOne == ATTRIBUTE_0)

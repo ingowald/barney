@@ -63,7 +63,7 @@ namespace BARNEY_NS {
   {
     template<typename SFSampler>
     struct DD {
-      inline __both__
+      inline __rtc_device
       vec4f sampleAndMap(vec3f point, bool dbg=false) const
       {
         float f = sfSampler.sample(point,dbg);
@@ -127,7 +127,7 @@ namespace BARNEY_NS {
       parameter range, for a given sample'able volume type */
   struct Woodcock {
     template<typename VolumeDD>
-    static inline __both__
+    static inline __rtc_device
     bool sampleRangeT(vec4f &sample,
                       const VolumeDD &sfSampler,
                       vec3f org, vec3f dir,
@@ -160,7 +160,7 @@ namespace BARNEY_NS {
     }
 
     template<typename VolumeDD>
-    static inline __both__
+    static inline __rtc_device
     bool sampleRange(vec4f &sample,
                      const VolumeDD &sfSampler,
                      vec3f org, vec3f dir,

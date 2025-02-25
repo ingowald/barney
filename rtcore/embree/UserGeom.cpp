@@ -16,7 +16,7 @@
 
 #include "rtcore/embree/UserGeom.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     UserGeom::UserGeom(UserGeomType *type)
@@ -30,10 +30,10 @@ namespace barney {
     }
     
     /*! can only get called on triangle type geoms */
-    void UserGeom::setVertices(rtc::Buffer *vertices,
+    void UserGeom::setVertices(Buffer *vertices,
                                     int numVertices)
     {/*ignore*/}
-    void UserGeom::setIndices(rtc::Buffer *indices, int numIndices)
+    void UserGeom::setIndices(Buffer *indices, int numIndices)
     {/*ignore*/}
     
   }

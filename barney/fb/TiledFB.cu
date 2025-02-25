@@ -61,13 +61,13 @@ namespace BARNEY_NS {
     int globalIndexStep;
 
     /* kernel CODE */
-    inline __device__
+    inline __rtc_device
     void run(const rtc::ComputeInterface &rtCore);
   };
 
 #if RTC_DEVICE_CODE
   /* kernel CODE */
-  inline __device__
+  inline __rtc_device
   void SetTileCoords::run(const rtc::ComputeInterface &rtCore)
   {
     int tid
@@ -126,12 +126,12 @@ namespace BARNEY_NS {
     int             globalIdx;
     int             globalIdxStep;
 
-    inline __device__
+    inline __rtc_device
     void run(const rtc::ComputeInterface &rtCore);
   };
 
 #if RTC_DEVICE_CODE
-  inline __device__
+  inline __rtc_device
   void CompressTiles::run(const rtc::ComputeInterface &rtCore)
   { 
     int pixelID = rtCore.getThreadIdx().x;

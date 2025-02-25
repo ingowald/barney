@@ -98,6 +98,9 @@ if (BARNEY_BACKEND_EMBREE)
     barney_rtc_common
     embree_local
     )
+  target_compile_definitions(barney_rtc_embree
+    PUBLIC -DBARNEY_RTC_EMBREE=1)
+
   if (BARNEY_OIDN_CPU)
     target_link_libraries(barney_rtc_embree PUBLIC OpenImageDenoise)
   endif()

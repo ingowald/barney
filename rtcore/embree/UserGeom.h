@@ -20,7 +20,7 @@
 #include "rtcore/embree/Buffer.h"
 #include "rtcore/embree/Geom.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     struct UserGeom : public Geom

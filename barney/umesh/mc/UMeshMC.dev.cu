@@ -35,7 +35,7 @@ namespace BARNEY_NS {
 
   struct UMeshMC_Programs {
     
-    static inline __device__
+    static inline __rtc_device
     void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
@@ -43,24 +43,24 @@ namespace BARNEY_NS {
     {
       MCVolumeAccel<UMeshCUBQLSampler>::boundsProg(ti,geomData,bounds,primID);
     }
-    
-    static inline __device__
+
+    static inline __rtc_device
     void intersect(rtc::TraceInterface &ti)
     {
       MCVolumeAccel<UMeshCUBQLSampler>::isProg(ti);
     }
     
-    static inline __device__
-    void closest_hit(rtc::TraceInterface &ti)
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
     
-    static inline __device__
-    void any_hit(rtc::TraceInterface &ti)
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
   };
 
 }
 
-RTC_EXPORT_USER_GEOM(UMeshMC,BARNEY_NS::UMeshMC_Programs);
+RTC_EXPORT_USER_GEOM(UMeshMC,BARNEY_NS::UMeshMC_Programs,false,false);
 
 

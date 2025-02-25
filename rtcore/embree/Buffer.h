@@ -25,6 +25,11 @@ namespace rtc {
     {
       Buffer(Device *device,size_t numBytes,const void *initMem);
       virtual ~Buffer();
+
+      void upload(const void *hostPtr,
+                  size_t numBytes,
+                  size_t ofs = 0);
+      
       void *getDD() const;
       void *mem = 0;
     };

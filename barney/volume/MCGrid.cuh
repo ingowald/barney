@@ -30,7 +30,7 @@ namespace BARNEY_NS {
   // INTERFACE
   // -----------------------------------------------------------------------------
 
-  inline __device__
+  inline __rtc_device
   int project(float f,
               const range1f range,
               int dim);
@@ -38,7 +38,7 @@ namespace BARNEY_NS {
   /*! projects a given position into a grid defined by world-space
       'bounds' and dimensions 'dims', and return the cell that this
       world-sapce point projects to */
-  inline __device__
+  inline __rtc_device
   vec3i project(const vec3f &pos,
                 const box3f &bounds,
                 const vec3i &dims);
@@ -47,7 +47,7 @@ namespace BARNEY_NS {
       grid; computing all grid cells that this prim covers, and doing,
       for each cell, an atomin min/max based on the prim's value range
       (its min/max .w values) */
-  inline __device__
+  inline __rtc_device
   void rasterBox(MCGrid::DD grid,
                  const box3f worldBounds,
                  const box4f primBounds4);
@@ -56,7 +56,7 @@ namespace BARNEY_NS {
   // IMPLEMENTATION
   // -----------------------------------------------------------------------------
 
-  inline __device__
+  inline __rtc_device
   int project(float f,
               const range1f range,
               int dim)
@@ -64,7 +64,7 @@ namespace BARNEY_NS {
     return max(0,min(dim-1,int(dim*(f-range.lower)/(range.upper-range.lower))));
   }
 
-  inline __device__
+  inline __rtc_device
   vec3i project(const vec3f &pos,
                 const box3f &bounds,
                 const vec3i &dims)
@@ -74,7 +74,7 @@ namespace BARNEY_NS {
                  project(pos.z,{bounds.lower.z,bounds.upper.z},dims.z));
   }
 
-  inline __device__
+  inline __rtc_device
   void rasterBox(MCGrid::DD grid,
                  const box3f worldBounds,
                  const box4f primBounds4)
@@ -104,7 +104,7 @@ namespace BARNEY_NS {
         }
   }
 
-  inline __device__
+  inline __rtc_device
   void rasterBox(MCGrid::DD grid,
                  const box4f primBounds4)
   {

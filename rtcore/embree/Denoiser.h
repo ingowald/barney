@@ -21,7 +21,7 @@
 #if BARNEY_OIDN_CPU
 # include <OpenImageDenoise/oidn.h>
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     /*! oidn-based CPU denoiser */

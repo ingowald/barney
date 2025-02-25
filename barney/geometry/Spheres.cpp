@@ -18,7 +18,7 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-RTC_IMPORT_USER_GEOM_TYPE(Spheres,BARNEY_NS::Spheres::DD,false,true);
+RTC_IMPORT_USER_GEOM(Spheres,BARNEY_NS::Spheres::DD,false,true);
 
 namespace BARNEY_NS {
 

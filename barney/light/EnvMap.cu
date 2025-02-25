@@ -34,7 +34,7 @@ namespace BARNEY_NS {
     rtc::device::TextureObject texture;
     vec2i textureDims;
     
-    inline __device__
+    inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
   };
   
@@ -46,7 +46,7 @@ namespace BARNEY_NS {
     float *allLines_cdf_x;
     vec2i textureDims;
 
-    inline __device__
+    inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
   };
 
@@ -57,13 +57,13 @@ namespace BARNEY_NS {
     const float *allLines_cdf_x;
     vec2i        textureDims;
     
-    inline __device__
+    inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
   };
 
 
 #if RTC_DEVICE_CODE
-  inline __device__
+  inline __rtc_device
   void Normalize_cdf_y::run(const rtc::ComputeInterface &ci)
   {
     if (ci.getThreadIdx().x != 0) return;
@@ -81,7 +81,7 @@ namespace BARNEY_NS {
     cdf_y[textureDims.y-1] = 1.f;
   }
   
-  inline __device__
+  inline __rtc_device
   void ComputeWeights_xy::run(const rtc::ComputeInterface &ci)
   {
     int ix = ci.getThreadIdx().x
@@ -110,7 +110,7 @@ namespace BARNEY_NS {
     allLines_cdf_x[ix+textureDims.x*iy] = weight;
   }
   
-  inline __device__
+  inline __rtc_device
   void ComputeCDFs_doLine::run(const rtc::ComputeInterface &ci)
   {
     int tid
@@ -206,8 +206,8 @@ namespace BARNEY_NS {
           texture->getDD(device),
           dims
         };
-        vec2i bs = 16;
-        vec2i nb = divRoundUp(dims,bs);
+        vec2ui bs = 16;
+        vec2ui nb = divRoundUp(vec2ui(dims),bs);
         pld->computeWeights_xy
           ->launch(nb,bs,&kernelData);
       }

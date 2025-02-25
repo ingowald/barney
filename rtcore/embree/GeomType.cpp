@@ -18,42 +18,61 @@
 #include "rtcore/embree/Triangles.h"
 #include "rtcore/embree/UserGeom.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
+    // GeomType::GeomType(Device *device,
+    //                    const std::string &name,
+    //                    size_t sizeOfProgramData,
+    //                    bool has_ah,
+    //                    bool has_ch)
+    //   : sizeOfProgramData(sizeOfProgramData)
+    // {
+    //   if (has_ah)
+    //     ah = (AnyHitFct)rtc::getSymbol("barney_embree_ah_"+name);
+    //   if (has_ch)
+    //     ch = (ClosestHitFct)rtc::getSymbol("barney_embree_ch_"+name);
+    // }
+    
     GeomType::GeomType(Device *device,
-                       const std::string &name,
                        size_t sizeOfProgramData,
-                       bool has_ah,
-                       bool has_ch)
-      : rtc::GeomType(device),
-        sizeOfProgramData(sizeOfProgramData)
-    {
-      if (has_ah)
-        ah = (AnyHitFct)rtc::getSymbol("barney_embree_ah_"+name);
-      if (has_ch)
-        ch = (ClosestHitFct)rtc::getSymbol("barney_embree_ch_"+name);
-    }
+                       AnyHitFct     ah,
+                       ClosestHitFct ch)
+      : device(device),
+        sizeOfProgramData(sizeOfProgramData),
+        ah(ah),ch(ch)
+    {}
     
     TrianglesGeomType::TrianglesGeomType(Device *device,
-                                         const std::string &name,
                                          size_t sizeOfProgramData,
-                                         bool has_ah,
-                                         bool has_ch)
-      : GeomType(device,name,sizeOfProgramData,has_ah,has_ch)
+                                         AnyHitFct     ah,
+                                         ClosestHitFct ch)
+      : GeomType(device,sizeOfProgramData,ah,ch)
+    {
+    }
+    
+    UserGeomType::UserGeomType(Device *device,
+                               size_t sizeOfProgramData,
+                               BoundsFct     bounds,
+                               IntersectFct  intersect,
+                               AnyHitFct     ah,
+                               ClosestHitFct ch)
+      : GeomType(device,sizeOfProgramData,ah,ch),
+        bounds(bounds),
+        intersect(intersect)
     {
     }
 
-    UserGeomType::UserGeomType(Device *device,
-                                         const std::string &name,
-                                         size_t sizeOfProgramData,
-                                         bool has_ah,
-                                         bool has_ch)
-      : GeomType(device,name,sizeOfProgramData,has_ah,has_ch)
-    {
-      intersect = (IntersectFct)rtc::getSymbol("barney_embree_intersect_"+name);
-      bounds    = (BoundsFct)rtc::getSymbol("barney_embree_bounds_"+name);
-    }
+    // UserGeomType::UserGeomType(Device *device,
+    //                                      const std::string &name,
+    //                                      size_t sizeOfProgramData,
+    //                                      bool has_ah,
+    //                                      bool has_ch)
+    //   : GeomType(device,name,sizeOfProgramData,has_ah,has_ch)
+    // {
+    //   intersect = (IntersectFct)rtc::getSymbol("barney_embree_intersect_"+name);
+    //   bounds    = (BoundsFct)rtc::getSymbol("barney_embree_bounds_"+name);
+    // }
 
     
     UserGeomType::~UserGeomType()
@@ -62,10 +81,10 @@ namespace barney {
     TrianglesGeomType::~TrianglesGeomType()
     {}
     
-    rtc::Geom *TrianglesGeomType::createGeom()
+    Geom *TrianglesGeomType::createGeom()
     { return new TrianglesGeom(this); }
 
-    rtc::Geom *UserGeomType::createGeom()
+    Geom *UserGeomType::createGeom()
     { return new UserGeom(this); }
     
   }

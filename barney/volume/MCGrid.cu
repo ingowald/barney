@@ -45,9 +45,8 @@ namespace BARNEY_NS {
     MCGrid::DD grid;
 
     /* kernel CODE */
-    template<typename RTCore>
-    inline __both__
-    void run(const RTCore &rtCore)
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &rtCore)
     {
       int ix = rtCore.getThreadIdx().x
         +rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
@@ -70,8 +69,8 @@ namespace BARNEY_NS {
   /*! re-set all cells' ranges to "infinite empty" */
   void MCGrid::clearCells()
   {
-    const vec3i bs = 4;
-    const vec3i nb = divRoundUp(dims,bs);
+    const vec3ui bs = 4;
+    const vec3ui nb = divRoundUp(vec3ui(dims),bs);
     for (auto device : *devices) {
       auto d_grid = getDD(device);
       ClearMCs args = { d_grid };
@@ -90,9 +89,8 @@ namespace BARNEY_NS {
     TransferFunction::DD xf;
     
     /* kernel CODE */
-    template<typename RTCore>
-    inline __both__
-    void run(const RTCore &rtCore)
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &rtCore)
     {
       int ix = rtCore.getThreadIdx().x
         +rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
@@ -128,9 +126,9 @@ namespace BARNEY_NS {
     assert(dims.x > 0);
     assert(dims.y > 0);
     assert(dims.z > 0);
-    const vec3i bs = 4;
+    const vec3ui bs = 4;
     // cuda num blocks
-    const vec3i nb = divRoundUp(dims,bs);
+    const vec3ui nb = divRoundUp(vec3ui(dims),bs);
     
     for (auto device : *devices) {
       auto d_xf = xf->getDD(device);

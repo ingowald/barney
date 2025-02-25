@@ -18,7 +18,7 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-RTC_IMPORT_USER_GEOM_TYPE(Capsules,BARNEY_NS::Capsules::DD,false,false);
+RTC_IMPORT_USER_GEOM(Capsules,BARNEY_NS::Capsules::DD,false,false);
 
 namespace BARNEY_NS {
 

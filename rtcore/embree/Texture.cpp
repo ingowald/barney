@@ -16,7 +16,7 @@
 
 #include "rtcore/embree/Texture.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     struct LerpAddresses {
@@ -35,11 +35,11 @@ namespace barney {
     }
     
     void computeAddress(LerpAddresses &out,
-                        rtc::Texture::AddressMode mode,
+                        rtc::AddressMode mode,
                         float tc, int N)
     {
       switch (mode) {
-      case rtc::Texture::WRAP: {
+      case rtc::WRAP: {
 #if 1
         out = {};
         tc = tc * (float)N - .5f;
@@ -67,7 +67,7 @@ namespace barney {
         out.idx1 = i1;
 #endif
       } return;
-      case rtc::Texture::MIRROR: {
+      case rtc::MIRROR: {
         out = {};
         tc = tc * N + .5f;
         float fc = floorf(tc);
@@ -86,10 +86,10 @@ namespace barney {
         out.idx1 = i1;
     
       } return;
-      case rtc::Texture::BORDER:
+      case rtc::BORDER:
         out = {};
         printf("border\n"); return;
-      case rtc::Texture::CLAMP: {
+      case rtc::CLAMP: {
         // NOT NORMALIZED:
         tc = tc * N;
 
@@ -115,8 +115,9 @@ namespace barney {
                              vec3i dims,
                              rtc::DataType format,
                              const void *texels)
-      : rtc::TextureData(device,dims,format),
-        device(device)
+      : device(device),
+        dims(dims),
+        format(format)
     {
       // cudaChannelFormatDesc desc;
       size_t sizeOfScalar;
@@ -153,7 +154,7 @@ namespace barney {
         numScalarsPerTexel = 1;
         break;
       default:
-        BARNEY_NYI();
+        assert(0);
       };
 
       size_t padded_x = (unsigned)dims.x;
@@ -163,27 +164,12 @@ namespace barney {
       memcpy(data.data(),texels,data.size());
     }
 
-    rtc::Texture *TextureData::createTexture(const rtc::TextureDesc &desc) 
+    Texture *TextureData::createTexture(const rtc::TextureDesc &desc) 
     {
       return new Texture(this,desc);
     }
 
 
-
-
-    struct TextureSampler {
-      TextureSampler(TextureData *data,
-                     const rtc::TextureDesc &desc)
-        : data(data), desc(desc)
-      {}
-      
-      virtual vec4f tex1D(float x) = 0;
-      virtual vec4f tex2D(vec2f x) = 0;
-      virtual vec4f tex3D(vec3f x) = 0;
-      
-      TextureData     *const data;
-      rtc::TextureDesc const desc;
-    };
 
     rtc::device::TextureObject Texture::getDD() const
     {
@@ -242,7 +228,7 @@ namespace barney {
 
     
     template<typename T>
-    struct TextureSamplerT<T,rtc::Texture::FILTER_MODE_POINT>
+    struct TextureSamplerT<T,rtc::FILTER_MODE_POINT>
       : public TextureSampler
     {
       TextureSamplerT(TextureData *data,
@@ -293,7 +279,7 @@ namespace barney {
     };
 
     template<typename T>
-    struct TextureSamplerT<T,rtc::Texture::FILTER_MODE_LINEAR>
+    struct TextureSamplerT<T,rtc::FILTER_MODE_LINEAR>
       : public TextureSampler
     {
       TextureSamplerT(TextureData *data,
@@ -436,12 +422,12 @@ namespace barney {
     TextureSampler *createSampler(TextureData *data,
                                   const rtc::TextureDesc &desc)
     {
-      if (desc.filterMode == rtc::Texture::FILTER_MODE_POINT)
+      if (desc.filterMode == rtc::FILTER_MODE_POINT)
         return new TextureSamplerT
-          <texel_t,rtc::Texture::FILTER_MODE_POINT>(data,desc);
+          <texel_t,rtc::FILTER_MODE_POINT>(data,desc);
       else
         return new TextureSamplerT
-          <texel_t,rtc::Texture::FILTER_MODE_LINEAR>(data,desc);
+          <texel_t,rtc::FILTER_MODE_LINEAR>(data,desc);
     }
     
 
@@ -466,22 +452,21 @@ namespace barney {
     
     Texture::Texture(TextureData *const data,
                      const rtc::TextureDesc &desc)
-      : rtc::Texture(data,desc)
     {
       sampler = createSampler(data,desc);
     }
 
-    __both__ float tex2D1f(barney::rtc::device::TextureObject to,
+    __both__ float tex2D1f(rtc::device::TextureObject to,
                            float x, float y)
     { return ((TextureSampler *)to)->tex2D({x,y}).x; }
     
-    __both__ float tex3D1f(barney::rtc::device::TextureObject to,
+    __both__ float tex3D1f(rtc::device::TextureObject to,
                            float x, float y, float z)
     {
       return ((TextureSampler *)to)->tex3D({x,y,z}).x;
     }
     
-    __both__ vec4f tex2D4f(barney::rtc::device::TextureObject to,
+    __both__ vec4f tex2D4f(rtc::device::TextureObject to,
                             float x, float y)
     {
       // PING;
@@ -490,7 +475,7 @@ namespace barney {
       return v;
     }
 
-    __both__ vec4f tex3D4f(barney::rtc::device::TextureObject to,
+    __both__ vec4f tex3D4f(rtc::device::TextureObject to,
                            float x, float y, float z)
     { return ((TextureSampler *)to)->tex3D({x,y,z}); }
     

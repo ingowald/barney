@@ -23,11 +23,12 @@
 
 namespace BARNEY_NS {
   namespace render {
-      
+
     struct OptixGlobals {
-      template<typename DevInterface>
-      static inline __both__
-      const OptixGlobals &get(const DevInterface &dev);
+#if BARNEY_DEVICE_PROGRAM
+      static inline __rtc_device
+      const OptixGlobals &get(const rtc::TraceInterface &dev);
+#endif
       
       int                    numRays;
       int                    globalIndex;
@@ -37,7 +38,6 @@ namespace BARNEY_NS {
       rtc::device::AccelHandle  world;
       Ray                   *rays;
     };
-    
   }
 }
 
@@ -56,12 +56,13 @@ namespace BARNEY_NS {
 
 namespace BARNEY_NS {
   namespace render {
-      
-    template<typename RTBackend>
-    inline __both__
-    const OptixGlobals &OptixGlobals::get(const RTBackend &be)
+
+#if BARNEY_DEVICE_PROGRAM
+    inline __rtc_device
+    const OptixGlobals &OptixGlobals::get(const rtc::TraceInterface &be)
     {
       return *(OptixGlobals*)be.getLPData();
     }
+#endif
   }
 }

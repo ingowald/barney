@@ -1,6 +1,10 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#ifdef __CUDACC__
+#include <cuda/std/limits>
+#endif
+#include <limits>
 
 #define ONE_PI ((float)M_PI)
 #define TWO_PI (2.f*ONE_PI)
@@ -10,10 +14,10 @@
 #define ONE_OVER_FOUR_PI (1.f/FOUR_PI)
 
 
-#ifdef __CUDACC__
+#ifdef __CUDA_ARCH__
 # define BARNEY_INF ::cuda::std::numeric_limits<float>::infinity()
 #else
-# define BARNEY_INF INFINITY
+# define BARNEY_INF std::numeric_limits<float>::infinity()
 #endif
 
 namespace BARNEY_NS {

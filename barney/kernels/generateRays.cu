@@ -32,7 +32,7 @@ namespace BARNEY_NS {
       the list of tiles to generate rays for is passed in 'tileDescs';
       there will be one cuda block per tile */
     struct GenerateRays {
-      __device__ void run(const rtc::ComputeInterface &rtcore);
+      __rtc_device void run(const rtc::ComputeInterface &rtcore);
       
       Camera::DD camera;
       Renderer::DD renderer;
@@ -58,7 +58,7 @@ namespace BARNEY_NS {
     };
 
 #if RTC_DEVICE_CODE
-    __device__
+    __rtc_device
     void GenerateRays::run(const rtc::ComputeInterface &rt)
     {
       // ------------------------------------------------------------------

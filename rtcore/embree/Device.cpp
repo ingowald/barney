@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "rtcore/embree/Device.h"
-#include "rtcore/embree/Compute.h"
 #include "rtcore/embree/Texture.h"
 #include "rtcore/embree/Buffer.h"
 #include "rtcore/embree/Triangles.h"
@@ -23,6 +22,7 @@
 #include "rtcore/embree/Group.h"
 #include "rtcore/embree/Denoiser.h"
 #include "rtcore/embree/TraceInterface.h"
+#include "rtcore/embree/ComputeInterface.h"
 // ---- common ----
 #include "rtcore/common/RTCore.h"
 
@@ -253,7 +253,6 @@ namespace rtc {
     // ------------------------------------------------------------------
     
     Device::Device(int physicalGPU)
-      : rtc::Device(physicalGPU)
     {
       embreeDevice = rtcNewDevice("verbose=0");
       ls = createLaunchSystem();
@@ -265,7 +264,7 @@ namespace rtc {
       destroy();
     }
 
-    rtc::Denoiser *Device::createDenoiser()
+    Denoiser *Device::createDenoiser()
     {
 #if BARNEY_OIDN_CPU
       return new Denoiser(this);
@@ -286,87 +285,86 @@ namespace rtc {
     // group/accel stuff
     // ------------------------------------------------------------------
 
-    rtc::Group *
-    Device::createTrianglesGroup(const std::vector<rtc::Geom *> &geoms)
+    Group *
+    Device::createTrianglesGroup(const std::vector<Geom *> &geoms)
     { return new TrianglesGroup(this,geoms); }
     
-    rtc::Group *
-    Device::createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) 
+    Group *
+    Device::createUserGeomsGroup(const std::vector<Geom *> &geoms) 
     { return new UserGeomGroup(this,geoms); }
       
-    rtc::Group *
-    Device::createInstanceGroup(const std::vector<rtc::Group *> &groups,
+    Group *
+    Device::createInstanceGroup(const std::vector<Group *> &groups,
                                 const std::vector<affine3f> &xfms) 
     { return new InstanceGroup(this,groups,xfms); }
     
-    void Device::freeGroup(rtc::Group *group) 
+    void Device::freeGroup(Group *group) 
     { delete group; }
 
     // ------------------------------------------------------------------
     // geom stuff
     // ------------------------------------------------------------------
 
-    void Device::freeGeom(rtc::Geom *geom) 
+    void Device::freeGeom(Geom *geom) 
     { delete geom; }
 
 
-    rtc::GeomType *Device::createTrianglesGeomType(const char */*ignore*/,
-                                                   const char *typeName,
-                                                   size_t sizeOfDD,
-                                                   bool has_ah,
-                                                   bool has_ch)
-    {
-      return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
-    }
+    // GeomType *Device::createTrianglesGeomType(const char */*ignore*/,
+    //                                           size_t sizeOfDD,
+    //                                           bool has_ah,
+    //                                           bool has_ch)
+    // {
+    //   return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
+    // }
     
-    rtc::GeomType *Device::createUserGeomType(const char */*ignore*/,
-                                              const char *typeName,
-                                              size_t sizeOfDD,
-                                              bool has_ah,
-                                              bool has_ch)
-    {
-      return new UserGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
-    }
+    // GeomType *Device::createUserGeomType(const char */*ignore*/,
+    //                                           const char *typeName,
+    //                                           size_t sizeOfDD,
+    //                                           bool has_ah,
+    //                                           bool has_ch)
+    // {
+    //   return new UserGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
+    // }
     
-    void Device::freeGeomType(rtc::GeomType *gt) 
+    void Device::freeGeomType(GeomType *gt) 
     {
       delete gt;
     }
     
-    rtc::TextureData *Device::createTextureData(vec3i dims,
+    TextureData *Device::createTextureData(vec3i dims,
                                                 rtc::DataType format,
                                                 const void *texels) 
     { return new TextureData(this,dims,format,texels); }
 
-    rtc::Buffer *Device::createBuffer(size_t numBytes,
+    Buffer *Device::createBuffer(size_t numBytes,
                                       const void *initValues) 
     {
       return new Buffer(this,numBytes,initValues);
     }
 
-    void Device::freeTextureData(rtc::TextureData *td) 
+    void Device::freeTextureData(TextureData *td) 
     {
       delete (TextureData*)td;
     }
       
-    void Device::freeTexture(rtc::Texture *tex) 
+    void Device::freeTexture(Texture *tex) 
     {
       delete (Texture *)tex;
     }
 
 
-    void Device::freeBuffer(rtc::Buffer *buffer) 
+    void Device::freeBuffer(Buffer *buffer) 
     {
       delete (Buffer*)buffer;
     }
     
-    rtc::Compute *Device::createCompute(const std::string &name) 
-    { return new Compute(this,name); }
+    // Compute *Device::createCompute(const std::string &name) 
+    // { return new Compute(this,name); }
     
     
-    rtc::Trace *Device::createTrace(const std::string &name,
-                                    size_t rayGenSize) 
-    { return new Trace(this,name); }
+    // Trace *Device::createTrace(const std::string &name,
+    //                                 size_t rayGenSize) 
+    // { return new Trace(this,name); }
     
     void Device::buildPipeline()
     {}

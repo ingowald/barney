@@ -28,7 +28,7 @@ namespace BARNEY_NS {
     struct AnariMatte : public HostMaterial {      
       struct DD {
 #if RTC_DEVICE_CODE
-        inline __device__
+        inline __rtc_device
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
@@ -56,7 +56,7 @@ namespace BARNEY_NS {
       
   
 #if RTC_DEVICE_CODE
-    inline __device__
+    inline __rtc_device
     PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData,
                                           const Sampler::DD *samplers,
                                           bool dbg) const

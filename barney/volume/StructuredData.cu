@@ -19,7 +19,7 @@
 
 namespace BARNEY_NS {
 
-  RTC_IMPORT_USER_GEOM_TYPE(StructuredData,StructuredData::DD,false,false);
+  RTC_IMPORT_USER_GEOM(StructuredData,StructuredData::DD,false,false);
   RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
 
 
@@ -35,7 +35,7 @@ namespace BARNEY_NS {
 
   struct StructuredData_ComputeMCs {
     /* kernel CODE */
-    inline __device__ void run(const rtc::ComputeInterface &rtCore)
+    inline __rtc_device void run(const rtc::ComputeInterface &rtCore)
     {
       vec3i mcID
         = vec3i(rtCore.getThreadIdx())
@@ -85,8 +85,8 @@ namespace BARNEY_NS {
   {
     vec3i mcDims = divRoundUp(numCells,vec3i(cellsPerMC));
     mcGrid.resize(mcDims);
-    vec3i blockSize(4);
-    vec3i numBlocks = divRoundUp(mcDims,blockSize);
+    vec3ui blockSize(4);
+    vec3ui numBlocks = divRoundUp(vec3ui(mcDims),blockSize);
     mcGrid.gridOrigin = worldBounds.lower;
     mcGrid.gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
     for (auto device : *devices) {

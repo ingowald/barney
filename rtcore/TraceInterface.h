@@ -8,3 +8,12 @@ namespace rtc {
 #endif
 
 
+
+#if BARNEY_RTC_EMBREE
+# include "embree/TraceInterface.h"
+namespace rtc {
+  using rtc::embree::TraceInterface;
+}
+#endif
+
+

@@ -16,13 +16,12 @@
 
 #include "rtcore/embree/Buffer.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     Buffer::Buffer(Device *device,
                    size_t numBytes,
                    const void *initMem)
-      : rtc::Buffer(device)
     {
       mem = malloc(numBytes);
       if (initMem)
@@ -39,5 +38,12 @@ namespace barney {
       return mem;
     }
 
+    void Buffer::upload(const void *hostPtr,
+                        size_t numBytes,
+                        size_t ofs)
+    {
+      memcpy(((uint8_t*)mem) + ofs,hostPtr,numBytes);
+    }
+      
   }
 }

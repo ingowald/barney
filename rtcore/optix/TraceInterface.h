@@ -15,18 +15,18 @@
   
 
 
-#define RTC_EXPORT_USER_GEOM(name,type)                                 \
+#define RTC_EXPORT_USER_GEOM(name,type,has_ah,has_ch)                   \
                                                                         \
   extern "C" __global__                                                 \
   void __closesthit__##name() {                                         \
     ::rtc::optix::TraceInterface rtcore;                                \
-    type::closest_hit(rtcore);                                          \
+    type::closestHit(rtcore);                                          \
   }                                                                     \
                                                                         \
   extern "C" __global__                                                 \
   void __anyhit__##name() {                                             \
     ::rtc::optix::TraceInterface rtcore;                                \
-    type::any_hit(rtcore);                                              \
+    type::anyHit(rtcore);                                              \
   }                                                                     \
                                                                         \
   extern "C" __global__                                                 \
@@ -61,18 +61,18 @@
                                                                         \
     
   
-#define RTC_EXPORT_TRIANGLES_GEOM(name,type)   \
+#define RTC_EXPORT_TRIANGLES_GEOM(name,type,has_ah,has_ch)    \
                                                 \
   extern "C" __global__                         \
   void __closesthit__##name() {                 \
     ::rtc::optix::TraceInterface rtcore;     \
-    type::closest_hit(rtcore);                  \
+    type::closestHit(rtcore);                  \
   }                                             \
                                                 \
   extern "C" __global__                         \
   void __anyhit__##name() {                     \
     ::rtc::optix::TraceInterface rtcore;     \
-    type::any_hit(rtcore);                      \
+    type::anyHit(rtcore);                      \
   }                                             \
   
   

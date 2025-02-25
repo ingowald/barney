@@ -12,6 +12,9 @@
 namespace rtc {
   namespace cuda_common {
 
+#define __rtc_device __device__
+#define __rtc_both   __device__ __host__
+    
     using ::float2;
     using ::float3;
     using ::float4;

@@ -15,10 +15,11 @@
 // ======================================================================== //
 
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
-#ifdef __CUDACC__
+#if BARNEY_RTC_EMBREE
+# include "cuBQL/builder/cpu.h"
+#else
 # include "cuBQL/builder/cuda.h"
 #endif
-#include "cuBQL/builder/cpu.h"
 
 namespace BARNEY_NS {
 
@@ -28,7 +29,7 @@ namespace BARNEY_NS {
     const uint32_t *primIDs;
     int             numElements;
     
-    inline __device__ void run(const rtc::ComputeInterface &ci)
+    inline __rtc_device void run(const rtc::ComputeInterface &ci)
     {
       int li = ci.launchIndex().x;
       if (li >= numElements) return;
@@ -83,18 +84,17 @@ namespace BARNEY_NS {
       device->rtc->sync();
       
       SetActiveGPU forDuration(device);
-#ifdef __CUDACC__
-      if (device->rtc->computeType() == "cuda")
-        cuBQL::gpuBuilder(bvh,
-                          (const cuBQL::box_t<float,3>*)primBounds,
-                          numElements,
-                          cuBQL::BuildConfig());
-      else
+#if BARNEY_RTC_EMBREE
+      cuBQL::cpu::spatialMedian(bvh,
+                                (const cuBQL::box_t<float,3>*)primBounds,
+                                numElements,
+                                cuBQL::BuildConfig());
+#else
+      cuBQL::gpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)primBounds,
+                        numElements,
+                        cuBQL::BuildConfig());
 #endif
-        cuBQL::cpu::spatialMedian(bvh,
-                                  (const cuBQL::box_t<float,3>*)primBounds,
-                                  numElements,
-                                  cuBQL::BuildConfig());
       device->rtc->sync();
       device->rtc->freeMem(primBounds);
       device->rtc->freeMem(valueRanges);
@@ -128,13 +128,11 @@ namespace BARNEY_NS {
       device->rtc->sync();
       
       // ... and kill whatever else cubql may have in the bvh
-#ifdef __CUDACC__
-      if (device->rtc->computeType() == "cuda")
-        cuBQL::cuda::free(bvh,0);
-      else
-#endif
-        cuBQL::cpu::freeBVH(bvh);
-      
+#if BARNEY_RTC_EMBREE
+      cuBQL::cpu::freeBVH(bvh);
+#else
+      cuBQL::cuda::free(bvh,0);
+#endif      
       std::cout << OWL_TERMINAL_LIGHT_GREEN
                 << "#bn.umesh: cubql bvh built ..."
                 << OWL_TERMINAL_DEFAULT << std::endl;

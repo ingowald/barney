@@ -30,10 +30,10 @@ namespace BARNEY_NS {
     struct SamplerRegistry;
     
     struct AttributeTransform {
-      inline __device__ vec4f applyTo(vec4f in, bool dbg) const;
+      inline __rtc_device vec4f applyTo(vec4f in, bool dbg) const;
       
-      float4 mat[4];
-      float4 offset;
+      rtc::float4 mat[4];
+      rtc::float4 offset;
     };
     
     struct Sampler : public SlottedObject {
@@ -49,9 +49,9 @@ namespace BARNEY_NS {
 
       struct DD {
 #if RTC_DEVICE_CODE
-        inline __device__ DD() {}
-        inline __device__ DD(DD &&other) { memcpy(this,&other,sizeof(other)); }
-        inline __device__
+        inline __rtc_device DD() {}
+        inline __rtc_device DD(DD &&other) { memcpy(this,&other,sizeof(other)); }
+        inline __rtc_device
         vec4f eval(const HitAttributes &inputs, bool dbg) const;
 #endif
         Type type=INVALID;
@@ -144,7 +144,7 @@ namespace BARNEY_NS {
     };
     
 #if RTC_DEVICE_CODE
-    inline __device__
+    inline __rtc_device
     vec4f AttributeTransform::applyTo(vec4f in,
                                        bool dbg) const
     {
@@ -156,7 +156,7 @@ namespace BARNEY_NS {
       return (const vec4f&)out;
     }
     
-    inline __device__
+    inline __rtc_device
     vec4f Sampler::DD::eval(const HitAttributes &inputs,
                              bool dbg) const
     {

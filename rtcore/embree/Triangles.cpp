@@ -16,7 +16,7 @@
 
 #include "rtcore/embree/Triangles.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     TrianglesGeom::TrianglesGeom(TrianglesGeomType *type)
@@ -30,14 +30,14 @@ namespace barney {
     }
     
     /*! can only get called on triangle type geoms */
-    void TrianglesGeom::setVertices(rtc::Buffer *vertices,
+    void TrianglesGeom::setVertices(Buffer *vertices,
                                     int numVertices)
     {
       this->vertices = (vec3f*)((Buffer *)vertices)->mem;
       this->numVertices = numVertices;
     }
     
-    void TrianglesGeom::setIndices(rtc::Buffer *indices, int numIndices)
+    void TrianglesGeom::setIndices(Buffer *indices, int numIndices)
     {
       this->indices = (vec3i*)((Buffer *)indices)->mem;
       this->numIndices = numIndices;

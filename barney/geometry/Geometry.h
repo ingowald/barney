@@ -37,7 +37,7 @@ namespace BARNEY_NS {
     struct DD {
 
       template<typename InterpolatePerVertex>
-      inline __both__
+      inline __rtc_device
       void setHitAttributes(render::HitAttributes &hit,
                             const InterpolatePerVertex &interpolate,
                             bool dbg=false) const;
@@ -93,7 +93,7 @@ namespace BARNEY_NS {
   };
 
   template<typename InterpolatePerVertex>
-  inline __both__
+  inline __rtc_device
   void Geometry::DD::setHitAttributes(render::HitAttributes &hit,
                                       const InterpolatePerVertex &interpolate,
                                       bool dbg) const

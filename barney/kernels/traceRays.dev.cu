@@ -25,15 +25,14 @@
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
 namespace BARNEY_NS {
-  
   namespace render {
 
     struct TraceRays {
-      inline __device__ static 
+      inline __rtc_device static 
       void run(rtc::TraceInterface &ti);
     };
 
-    inline __device__ 
+    inline __rtc_device 
     void TraceRays::run(rtc::TraceInterface &ti)
     {
       const int rayID
@@ -62,9 +61,7 @@ namespace BARNEY_NS {
     }
   }
   
-#if BARNEY_COMPILE_OPTIX_PROGRAMS    
-  RTC_EXPORT_TRACE2D(traceRays,BARNEY_NS::render::TraceRays);
-#endif
+  RTC_EXPORT_TRACE2D(traceRays,render::TraceRays);
 }
 
  

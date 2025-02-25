@@ -24,6 +24,21 @@ namespace rtc {
   namespace embree {
 
     using namespace owl::common;
+
+#define __rtc_device /* ignore for embree device */
+#define __rtc_both /* ignore for embree device */
+
+    
+#if __CUDACC__
+    /* in case the embree backend is compiled with nvcc, the float4
+       type already exists. */
+    using ::float4;
+#else
+    /* if no nvcc is available we'll compile the embree backend with
+       msvc/gcc, which won't have this type */
+    struct float4 { float x; float y; float z; float w; };
+#endif
+    inline vec4f load(const ::rtc::embree::float4 &v) { return (const vec4f&)v; }
     
     struct LaunchSystem;
     LaunchSystem *createLaunchSystem();
@@ -36,6 +51,29 @@ namespace rtc {
     struct GeomType;
     struct TextureData;
     struct Texture;
+
+    struct ComputeKernel1D;
+    struct ComputeKernel2D;
+    struct ComputeKernel3D;
+
+    struct TraceInterface;
+    
+    typedef void (*TraceKernelFct)(rtc::embree::TraceInterface &);
+    
+    struct TraceKernel2D {
+      TraceKernel2D(Device *device,
+                    TraceKernelFct kernelFct)
+        : device(device),
+          kernelFct(kernelFct)
+      {}
+      
+      //               const std::string &ptxCode,
+      //               const std::string &kernelName);
+      void launch(vec2i launchDims,
+                  const void *kernelData);
+      TraceKernelFct const kernelFct;
+      Device *const device;
+    };
     
     struct Device {
       Device(int physicalGPU);
@@ -57,6 +95,9 @@ namespace rtc {
       // basic compute stuff
       // ==================================================================
       void copyAsync(void *dst, const void *src, size_t numBytes)
+      { memcpy(dst,src,numBytes); }
+
+      void copy(void *dst, const void *src, size_t numBytes)
       { memcpy(dst,src,numBytes); }
       
       void *allocHost(size_t numBytes)
@@ -130,17 +171,17 @@ namespace rtc {
       // geomtype stuff
       // ------------------------------------------------------------------
       
-      GeomType *createUserGeomType(const char *ptxName,
-                                        const char *typeName,
-                                        size_t sizeOfDD,
-                                        bool has_ah,
-                                        bool has_ch);
+      // GeomType *createUserGeomType(const char *ptxName,
+      //                                   const char *typeName,
+      //                                   size_t sizeOfDD,
+      //                                   bool has_ah,
+      //                                   bool has_ch);
       
-      GeomType *createTrianglesGeomType(const char *ptxName,
-                                             const char *typeName,
-                                             size_t sizeOfDD,
-                                             bool has_ah,
-                                             bool has_ch);
+      // GeomType *createTrianglesGeomType(const char *ptxName,
+      //                                        const char *typeName,
+      //                                        size_t sizeOfDD,
+      //                                        bool has_ah,
+      //                                        bool has_ch);
       
       void freeGeomType(GeomType *);
 
@@ -171,3 +212,12 @@ namespace rtc {
     
   }
 }
+
+#define RTC_DECLARE_GLOBALS(ignore) /* ignore */
+
+#define RTC_IMPORT_TRACE2D(name,Class)                                  \
+  ::rtc::TraceKernel2D *createTrace_##name(::rtc::Device *device);
+
+#define RTC_EXPORT_TRACE2D(name,Class)                                  \
+  rtc::TraceKernel2D *createTrace_##kernelName(rtc::Device *device)     \
+  { return new ::rtc::TraceKernel2D(device,Class::run); }

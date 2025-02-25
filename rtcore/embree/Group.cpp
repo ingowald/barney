@@ -19,9 +19,10 @@
 #include "rtcore/embree/Triangles.h"
 #include "rtcore/embree/UserGeom.h"
 // 
+#include "rtcore/embree/TraceInterface.h"
 #include "rtcore/common/RTCore.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     void virtualBoundsFunc(const struct RTCBoundsFunctionArguments* args)
@@ -91,7 +92,7 @@ namespace barney {
     }
 
     InstanceGroup::InstanceGroup(Device *device,
-                                 const std::vector<rtc::Group *> &groups,
+                                 const std::vector<Group *> &groups,
                                  const std::vector<affine3f>     &xfms)
       : Group(device),
         groups(groups),
@@ -129,7 +130,7 @@ namespace barney {
 
 
     TrianglesGroup::TrianglesGroup(Device *device,
-                                   const std::vector<rtc::Geom *> &geoms)
+                                   const std::vector<Geom *> &geoms)
       : GeomGroup(device,geoms)
     {}
 
@@ -183,7 +184,7 @@ namespace barney {
     GeomGroup *InstanceGroup::getGroup(int groupID) 
     {
       assert(groupID >= 0 && groupID < groups.size());
-      rtc::Group *g = groups[groupID];
+      Group *g = groups[groupID];
       assert(g);
       return (GeomGroup*)g;
     }

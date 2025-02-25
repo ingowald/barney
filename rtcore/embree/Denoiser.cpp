@@ -18,7 +18,7 @@
 
 #if BARNEY_OIDN_CPU
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     Denoiser::Denoiser(Device *device)

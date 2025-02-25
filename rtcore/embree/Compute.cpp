@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "rtcore/embree/Compute.h"
+#include "rtcore/embree/ComputeInterface.h"
 #include "rtcore/common/RTCore.h"
 #include <owl/common/parallel/parallel_for.h>
 #include <mutex>

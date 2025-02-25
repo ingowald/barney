@@ -24,6 +24,7 @@ namespace rtc {
   
     struct Group {
       Group(Device *device)
+        : device(device)
       {}
       void refitAccel() { buildAccel(); }
       virtual void buildAccel() = 0;
@@ -35,6 +36,7 @@ namespace rtc {
         return dd;
       }
       RTCScene embreeScene = 0;
+      Device *const device;
     };
     
     struct GeomGroup : public Group {

@@ -32,10 +32,10 @@ namespace BARNEY_NS {
   }
 
 #if RTC_DEVICE_CODE
-  inline __device__ float length3(vec4f v)
+  inline __rtc_device float length3(vec4f v)
   { return length(getPos(v)); }
   
-  template<int D> inline __device__
+  template<int D> inline __rtc_device
   void rasterTet(MCGrid::DD grid,
                  vec4f a,
                  vec4f b,
@@ -99,7 +99,7 @@ namespace BARNEY_NS {
     rasterTet<D-1>(grid,oa,ob,oc,od1);
   }
   
-  template<> inline __device__
+  template<> inline __rtc_device
   void rasterTet<0>(MCGrid::DD grid,
                     vec4f a,
                     vec4f b,
@@ -120,12 +120,12 @@ namespace BARNEY_NS {
     UMeshField::DD mesh;
     MCGrid::DD     grid;
 
-    inline __device__
+    inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
   };
 
 #if RTC_DEVICE_CODE
-  inline __device__
+  inline __rtc_device
   void UMeshRasterElements::run(const rtc::ComputeInterface &ci)
   {
     const int eltIdx = ci.launchIndex().x;
@@ -155,12 +155,12 @@ namespace BARNEY_NS {
     int     *elementOffsets;
     box3f   *d_worldBounds;
 
-    inline __device__ void run(const rtc::ComputeInterface &ci);
+    inline __rtc_device void run(const rtc::ComputeInterface &ci);
   };
 
 #if RTC_DEVICE_CODE
     /*! kernel CODE */
-  inline __device__ void UMeshCreateElements::run(const rtc::ComputeInterface &ci)
+  inline __rtc_device void UMeshCreateElements::run(const rtc::ComputeInterface &ci)
     {
       int tid = ci.launchIndex().x;
       if (tid >= dd.numElements) return;
@@ -275,13 +275,13 @@ namespace BARNEY_NS {
     range1f       *d_primRanges;
     UMeshField::DD mesh;
 
-    inline __device__
+    inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
   };
 
 #if RTC_DEVICE_CODE
     /* kernel FUNCTION */
-    inline __device__
+    inline __rtc_device
     void UMeshComputeElementBBs::run(const rtc::ComputeInterface &ci)
     {
       const int tid = ci.launchIndex().x;
@@ -425,7 +425,7 @@ namespace BARNEY_NS {
     assert(indices);
     assert(getPLD(device)->elements);
     (ScalarField::DD &)dd = ScalarField::getDD(device);
-    dd.vertices = (float4 *)vertices->getDD(device);
+    dd.vertices = (rtc::float4 *)vertices->getDD(device);
     dd.indices  = (int    *)indices->getDD(device);
     dd.elements = (Element*)getPLD(device)->elements;
     dd.numElements = (int)elementOffsets->count;

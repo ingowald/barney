@@ -16,12 +16,11 @@
 
 #include "rtcore/embree/Geom.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
     
     Geom::Geom(GeomType *type)
-      : rtc::Geom(type->device),
-        type(type),
+      : type(type),
         programData(type->sizeOfProgramData)
     {}
     

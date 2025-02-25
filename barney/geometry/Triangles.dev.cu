@@ -25,30 +25,15 @@ namespace BARNEY_NS {
     
   struct TrianglesPrograms {
       
-    // template<typename RTBackend>
-    // inline __both__
-    // void TrianglesCH(const RTBackend &rt)
-    // OPTIX_CLOSEST_HIT_PROGRAM(TrianglesCH)()
-    // RTC_CH_PROGRAM(TrianglesCH)()
-    // {}
-
-    static inline __both__
-    void closest_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &rt)
     {}
 
-    /*! triangles geom AH program; mostly check on transparency */
-    // OPTIX_ANY_HIT_PROGRAM(TrianglesAH)()
-    // template<typename RTBackend>
-    // inline __both__
-    // void TrianglesAH(const RTBackend &rt)
-    // RTC_AH_PROGRAM(TrianglesAH)()
-      
-    static inline __both__
-    void any_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &rt)
     {
       auto &ray = *(Ray *)rt.getPRD();
 
-      if (ray.dbg) printf("triangle anyhit\n");
       // auto &ray = rt.getPRD<Ray>();
       // auto &self = rt.getProgramData<Triangles::DD>();
       auto &self = *(Triangles::DD*)rt.getProgramData();
@@ -61,9 +46,6 @@ namespace BARNEY_NS {
       vec3f v2 = self.vertices[triangle.z];
       vec3f n = cross(v1-v0,v2-v0);
       // vec3f ws_n = soptixTransformNormalFromObjectToWorldSpace(n);
-      if (1 && ray.dbg)
-        printf("----------- Triangles::AH (%i %p) at %f\n",
-               primID,&self,rt.getRayTmax());
       // if (0 && ray.dbg)
       //   printf("geom normal %f %f %f world %f %f %f\n",
       //          n.x,n.y,n.z,
@@ -158,4 +140,4 @@ namespace BARNEY_NS {
 
 }
 
-RTC_EXPORT_TRIANGLES_GEOM(Triangles,BARNEY_NS::TrianglesPrograms);
+RTC_EXPORT_TRIANGLES_GEOM(Triangles,BARNEY_NS::TrianglesPrograms,true,false);

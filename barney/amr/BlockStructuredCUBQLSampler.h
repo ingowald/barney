@@ -23,6 +23,7 @@
 
 namespace BARNEY_NS {
 
+#if 0
   /*! a umesh scalar field, with a CUBQL bvh sampler */
   struct BlockStructuredCUBQLSampler {
     enum { BVH_WIDTH = 4 };
@@ -96,6 +97,7 @@ namespace BARNEY_NS {
     // traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
   }
+#endif
   
 }
 

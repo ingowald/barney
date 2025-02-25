@@ -27,7 +27,7 @@ enum { AWT_STACK_DEPTH = 64 };
 
 namespace BARNEY_NS {
 
-  inline __device__
+  inline __rtc_device
   bool verySmall(range1f r)
   {
     float l = r.span();
@@ -35,15 +35,15 @@ namespace BARNEY_NS {
   }
   
   struct AWTPrograms {
-    static inline __device__
-    void closest_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &rt)
     {}
 
-    static inline __device__
-    void any_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &rt)
     {}
 
-    static inline __device__
+    static inline __rtc_device
     void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
@@ -63,7 +63,7 @@ namespace BARNEY_NS {
       
     }
 
-    static inline __device__
+    static inline __rtc_device
     void intersect(rtc::TraceInterface &ti);
   };
 
@@ -72,7 +72,7 @@ namespace BARNEY_NS {
     t=0, t=1/3, t=2/3, and 1=1.f) with corresponding values of f0,
     f1, f2, and f3 */
   struct Cubic {
-    inline __device__ float eval(float t, bool dbg=false) const
+    inline __rtc_device float eval(float t, bool dbg=false) const
     {
       t = tRange.span()==0.f
         ? 0.f
@@ -97,7 +97,7 @@ namespace BARNEY_NS {
     float f0, f1, f2, f3;
   };
 
-  inline __device__
+  inline __rtc_device
   void clip(range1f &range,
             vec4f _a, vec4f _b, vec4f _c,
             const vec3f &org,
@@ -120,7 +120,7 @@ namespace BARNEY_NS {
       range.lower = max(range.lower,plane_t);
   }
 
-  inline __device__
+  inline __rtc_device
   float evalToPlane(vec3f P, 
                     vec3f a, vec3f b, vec3f c)
   {
@@ -128,7 +128,7 @@ namespace BARNEY_NS {
     return dot(P-a,N);
   }
   
-  inline __device__
+  inline __rtc_device
   float eval(vec3f P, 
              vec4f _a, vec4f _b, vec4f _c, vec4f _d)
   {
@@ -146,7 +146,7 @@ namespace BARNEY_NS {
       / (f0+f1+f2+f3);
   }
     
-  inline __device__
+  inline __rtc_device
   Cubic cubicFromTet(const UMeshField::DD &mesh,
                      Element elt,
                      const vec3f &org,
@@ -195,12 +195,12 @@ namespace BARNEY_NS {
   }
 
   struct CubicSampler {
-    inline __device__
+    inline __rtc_device
     CubicSampler(const Cubic &cubic,
                  const TransferFunction::DD &xf)
       : cubic(cubic),xf(xf)
     {}
-    inline __device__
+    inline __rtc_device
     vec4f sampleAndMap(float t, bool dbg=false) const
     {
       float f = cubic.eval(t,dbg);
@@ -219,7 +219,7 @@ namespace BARNEY_NS {
     const TransferFunction::DD &xf;
   };
 
-  inline __device__
+  inline __rtc_device
   bool woodcockSampleJFS(vec4f &sample,
                          CubicSampler &sfSampler,
                          vec3f org,
@@ -267,7 +267,7 @@ namespace BARNEY_NS {
   }
 
         
-  inline __device__
+  inline __rtc_device
   void intersectPrim(const AWTAccel::DD &self,
                      vec4f &acceptedSample,
                      range1f tRange,
@@ -347,14 +347,14 @@ namespace BARNEY_NS {
   };
 
   // template<typename T>
-  // inline __device__
+  // inline __rtc_device
   // void swap(T &a, T &b)
   // {
   //   T c = a; a = b; b = c;
   // }
     
   template<bool ascending>
-  inline __device__
+  inline __rtc_device
   void order(StackEntry *childEntry, int a, int b)
   {
     if (ascending  && childEntry[a].tRange.lower <= childEntry[b].tRange.lower ||
@@ -364,11 +364,11 @@ namespace BARNEY_NS {
   }
   
   template<int N>
-  inline __device__
+  inline __rtc_device
   void sort(StackEntry *childEntry);
   
   template<>
-  inline __device__
+  inline __rtc_device
   void sort<4>(StackEntry *childEntry)
   {
     order<true>(childEntry,0,1);
@@ -379,7 +379,7 @@ namespace BARNEY_NS {
     order<true>(childEntry,0,1);
   }
 
-  inline __device__
+  inline __rtc_device
   void AWTPrograms::intersect(rtc::TraceInterface &ti)
   {
     using BARNEY_NS::render::boxTest;
@@ -599,4 +599,4 @@ printf("STACK OVERFLOW!\n");
   
 } // ::barney
 
-RTC_EXPORT_USER_GEOM(AWT,BARNEY_NS::AWTPrograms);
+RTC_EXPORT_USER_GEOM(AWT,BARNEY_NS::AWTPrograms,false,false);

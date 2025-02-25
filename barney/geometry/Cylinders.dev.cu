@@ -119,7 +119,7 @@ namespace BARNEY_NS {
   //                                       owl::common::box3f &bounds,  
   //                                       const int32_t primID)
 
-    static inline __both__
+    static inline __rtc_device
     void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
@@ -137,27 +137,27 @@ namespace BARNEY_NS {
       bounds.upper = max(box_a.upper,box_b.upper);
     }
   
-    static inline __both__
-    void closest_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
   
-    static inline __both__
-    void any_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
   
-    static inline __both__
+    static inline __rtc_device
     void intersect(rtc::TraceInterface &rt)
     // OPTIX_INTERSECT_PROGRAM(CylindersIsec)()
     {
       // capped
       const int primID
-        = optixGetPrimitiveIndex();
+        = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
       const auto &self
-        = owl::getProgramData<Cylinders::DD>();
+        = *(Cylinders::DD*)rt.getProgramData();//owl::getProgramData<Cylinders::DD>();
       Ray &ray    = *(Ray*)rt.getPRD();
       
       const vec2i idx = self.indices[primID];
@@ -167,11 +167,11 @@ namespace BARNEY_NS {
       const float radius
         = self.radii[primID];
       
-      const vec3f ray_org  = optixGetObjectRayOrigin();
-      const vec3f ray_dir  = optixGetObjectRayDirection();
-      float hit_t      = optixGetRayTmax();
-      const float ray_tmin = optixGetRayTmin();
-      const float ray_tmax = optixGetRayTmax();
+      const vec3f ray_org  = rt.getObjectRayOrigin();//optixGetObjectRayOrigin();
+      const vec3f ray_dir  = rt.getObjectRayDirection();//optixGetObjectRayDirection();
+      float hit_t      = rt.getRayTmax();//optixGetRayTmax();
+      const float ray_tmin = rt.getRayTmin();//optixGetRayTmin();
+      const float ray_tmax = rt.getRayTmax();//optixGetRayTmax();
     
       const vec3f d = ray_dir;
       const vec3f s = v1 - v0; // axis
@@ -277,5 +277,5 @@ namespace BARNEY_NS {
   
 }
 
-RTC_EXPORT_USER_GEOM(Cylinders,BARNEY_NS::CylindersPrograms);
+RTC_EXPORT_USER_GEOM(Cylinders,BARNEY_NS::CylindersPrograms,false,false);
 

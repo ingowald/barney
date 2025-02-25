@@ -59,18 +59,18 @@ namespace BARNEY_NS {
     
     void build(bool full_rebuild) override;
     
+#if BARNEY_DEVICE_PROGRAM
     /*! optix bounds prog for this class of accels */
-    template<typename TraceInterface>
-    static inline __both__
-    void boundsProg(TraceInterface &ti,
+    static inline __rtc_device
+    void boundsProg(const rtc::TraceInterface &ti,
                     const void *geomData,
                     owl::common::box3f &bounds,
                     const int32_t primID);
     /*! optix isec prog for this class of accels */
-    template<typename TraceInterface>
-    static inline __both__ void isProg(TraceInterface &ti);
+    static inline __rtc_device void isProg(rtc::TraceInterface &ti);
     /*! optix closest-hit prog for this class of accels */
-  
+#endif
+    
     MCGrid       mcGrid;
     const std::shared_ptr<SFSampler> sfSampler;
     
@@ -163,23 +163,21 @@ namespace BARNEY_NS {
   // device progs: macro-cell accel with DDA traversal
   // ------------------------------------------------------------------
 
-
+#if BARNEY_DEVICE_PROGRAM
   template<typename SFSampler>
-  template<typename TraceInterface>
-  inline __both__
-  void MCVolumeAccel<SFSampler>::boundsProg(TraceInterface &ti,
-                                         const void *geomData,
-                                         owl::common::box3f &bounds,
-                                         const int32_t primID)
+  inline __rtc_device
+  void MCVolumeAccel<SFSampler>::boundsProg(const rtc::TraceInterface &ti,
+                                            const void *geomData,
+                                            owl::common::box3f &bounds,
+                                            const int32_t primID)
   {
     const DD &self = *(DD*)geomData;
     bounds = self.volume.sfCommon.worldBounds;
   }
   
   template<typename SFSampler>
-  template<typename TraceInterface>
-  inline __both__
-  void MCVolumeAccel<SFSampler>::isProg(TraceInterface &ti)
+  inline __rtc_device
+  void MCVolumeAccel<SFSampler>::isProg(rtc::TraceInterface &ti)
   {
     const void *pd = ti.getProgramData();
            
@@ -234,5 +232,5 @@ namespace BARNEY_NS {
               /*NO debug:*/false
               );
   }
-  
+#endif
 }

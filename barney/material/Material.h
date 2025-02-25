@@ -44,14 +44,14 @@ namespace BARNEY_NS {
         // inline DD &operator=(const DD &other)
         // { memcpy(this,&other,sizeof(other)); return *this; }
 #if RTC_DEVICE_CODE
-        inline __device__
+        inline __rtc_device
         vec4f eval(const HitAttributes &hitData,
                     const Sampler::DD *samplers,
                     bool dbg=false) const;
 #endif
         Type type;
         union {
-          float4               value;
+          rtc::float4          value;
           HitAttributes::Which attribute;
           int                  samplerID;
         };
@@ -113,7 +113,7 @@ namespace BARNEY_NS {
     };
 
 #if RTC_DEVICE_CODE
-    inline __device__
+    inline __rtc_device
     vec4f PossiblyMappedParameter::DD::eval(const HitAttributes &hitData,
                                             const Sampler::DD *samplers,
                                             bool dbg) const

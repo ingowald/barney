@@ -21,7 +21,7 @@
 #include "rtcore/embree/GeomType.h"
 #include "rtcore/embree/Geom.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     struct TrianglesGeomType;

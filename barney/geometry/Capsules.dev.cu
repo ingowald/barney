@@ -27,7 +27,7 @@ namespace BARNEY_NS {
      codebase. Note this code is not very numerically stable, so needs
      to be used with the "move-your-origin" trick (see ray tracing
      gems) to work in practice */
-  inline __both__
+  inline __rtc_device
   bool intersectRoundedCone(// first end-point
                             const vec4f a,
                             // second end-point
@@ -119,7 +119,7 @@ namespace BARNEY_NS {
     return hadHit;
   }
 
-  inline __both__ box3f getBounds(vec4f va, vec4f vb)
+  inline __rtc_device box3f getBounds(vec4f va, vec4f vb)
   {
     vec3f a  = getPos(va);
     vec3f b  = getPos(vb);
@@ -136,8 +136,8 @@ namespace BARNEY_NS {
     // OPTIX_BOUNDS_PROGRAM(CapsulesBounds)(const void *geomData,
     //                                      owl::common::box3f &bounds,  
     //                                      const int32_t primID)
-    static inline __both__
-    void bounds(rtc::TraceInterface &rt,
+    static inline __rtc_device
+    void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -150,14 +150,14 @@ namespace BARNEY_NS {
 
     /*! closest-hit program - doesn't do anything because we do all the
       work in IS prog, but needs to exist to make optix happy */
-    static inline __both__
-    void closest_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
     
-    static inline __both__
-    void any_hit(rtc::TraceInterface &rt)
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &rt)
     {
       /* nothing - already set in isec */
     }
@@ -167,7 +167,7 @@ namespace BARNEY_NS {
       quielez intersector. Unlike regular optix is programs this
       _will_ modify the ray and store the hit point if an intersection
       is found */
-    static inline __both__
+    static inline __rtc_device
     void intersect(rtc::TraceInterface &rt)
     {
       const int primID
@@ -298,7 +298,7 @@ namespace BARNEY_NS {
   };
   
 }
-RTC_EXPORT_USER_GEOM(Capsules,BARNEY_NS::CapsulesPrograms);
+RTC_EXPORT_USER_GEOM(Capsules,BARNEY_NS::CapsulesPrograms,false,false);
 
 
 

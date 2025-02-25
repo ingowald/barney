@@ -29,7 +29,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       pld->valuesBuffer
-        = device->rtc->createBuffer(sizeof(float4)*values.size(),
+        = device->rtc->createBuffer(sizeof(rtc::float4)*values.size(),
                                values.data());
     }
   }
@@ -46,7 +46,7 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       device->rtc->freeBuffer(pld->valuesBuffer);
       pld->valuesBuffer
-        = device->rtc->createBuffer(sizeof(float4)*values.size(),
+        = device->rtc->createBuffer(sizeof(rtc::float4)*values.size(),
                                values.data());
     }
   }
@@ -57,7 +57,7 @@ namespace BARNEY_NS {
   {
     TransferFunction::DD dd;
     
-    dd.values = (float4*)getPLD(device)->valuesBuffer->getDD();
+    dd.values = (rtc::float4*)getPLD(device)->valuesBuffer->getDD();
     dd.domain = domain;
     dd.baseDensity = baseDensity;
     dd.numValues = (int)values.size();

@@ -18,7 +18,7 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-RTC_IMPORT_USER_GEOM_TYPE(Cylinders,BARNEY_NS::Cylinders::DD,false,false);
+RTC_IMPORT_USER_GEOM(Cylinders,BARNEY_NS::Cylinders::DD,false,false);
 
 namespace BARNEY_NS {
 

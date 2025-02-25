@@ -33,7 +33,7 @@ namespace BARNEY_NS {
     using node_t = typename bvh_t::Node;
     
     struct DD : public UMeshField::DD {
-      inline __both__ float sample(vec3f P, bool dbg = false) const;
+      inline __rtc_device float sample(vec3f P, bool dbg = false) const;
       
       node_t  *bvhNodes;
     };
@@ -51,8 +51,8 @@ namespace BARNEY_NS {
     /*! for-cubql traversal state that we can use with a cubql
       traversal call back */
     struct Traversal {
-      inline __both__ Traversal(const UMeshCUBQLSampler::DD *const mesh, bool dbg);
-      inline __both__ bool leaf(vec3f P, int offset, int count);
+      inline __rtc_device Traversal(const UMeshCUBQLSampler::DD *const mesh, bool dbg);
+      inline __rtc_device bool leaf(vec3f P, int offset, int count);
       
       const UMeshCUBQLSampler::DD *const mesh;
       float retVal = NAN;
@@ -71,7 +71,7 @@ namespace BARNEY_NS {
     const DevGroup::SP devices;
   };
   
-  inline __both__
+  inline __rtc_device
   bool UMeshCUBQLSampler::Traversal::leaf(vec3f P, int offset, int count)
   {
     // if (dbg) printf("at leaf %i %i\n",offset,count);
@@ -85,13 +85,13 @@ namespace BARNEY_NS {
     return true;
   }
 
-  inline __both__
+  inline __rtc_device
   UMeshCUBQLSampler::Traversal::Traversal(const UMeshCUBQLSampler::DD *const mesh,
                                           bool dbg)
     : mesh(mesh), dbg(dbg)
   {}
   
-  inline __both__
+  inline __rtc_device
   float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
     UMeshCUBQLSampler::Traversal traversal(this,dbg);
@@ -100,7 +100,9 @@ namespace BARNEY_NS {
     bvh.nodes = bvhNodes;
     bvh.primIDs = nullptr;
     
-    auto lambda = [&](const uint32_t *primIDs, int numPrims)
+    auto lambda = [&]
+      // __rtc_device
+      (const uint32_t *primIDs, int numPrims)
     {
       if (traversal.leaf(P,int(primIDs - bvh.primIDs), numPrims))
         return CUBQL_CONTINUE_TRAVERSAL;
