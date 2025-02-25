@@ -17,7 +17,7 @@
 #include "barney/material/AnariMatte.h"
 #include "barney/material/DeviceMaterial.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     
     DeviceMaterial AnariMatte::getDD(Device *device) 

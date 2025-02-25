@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
+#include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

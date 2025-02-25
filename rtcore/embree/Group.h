@@ -19,15 +19,16 @@
 #include "rtcore/embree/Triangles.h"
 #include "embree4/rtcore.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
   
-    struct Group : public rtc::Group {
-      Group(Device *device) : rtc::Group(device) 
+    struct Group {
+      Group(Device *device)
       {}
-      void refitAccel() override { buildAccel(); }
-    
-      rtc::device::AccelHandle getDD() const override
+      void refitAccel() { buildAccel(); }
+      virtual void buildAccel() = 0;
+      
+      rtc::device::AccelHandle getDD() const
       {
         rtc::device::AccelHandle dd;
         (const void *&)dd = (const void *)this;
@@ -35,23 +36,23 @@ namespace barney {
       }
       RTCScene embreeScene = 0;
     };
-  
+    
     struct GeomGroup : public Group {
       GeomGroup(Device *device,
-                const std::vector<rtc::Geom *> &geoms)
+                const std::vector<Geom *> &geoms)
         : Group(device),
           geoms(geoms)
       {}
       
-      rtc::Geom *getGeom(int geomID) 
+      Geom *getGeom(int geomID) 
       { assert(geomID >= 0 && geomID < geoms.size()); return geoms[geomID]; }
       
-      std::vector<rtc::Geom *> geoms;
+      std::vector<Geom *> geoms;
     };
       
     struct TrianglesGroup : public GeomGroup {
       TrianglesGroup(Device *device,
-                     const std::vector<rtc::Geom *> &geoms);
+                     const std::vector<Geom *> &geoms);
       
       void buildAccel() override;
       
@@ -59,7 +60,7 @@ namespace barney {
   
     struct UserGeomGroup : public GeomGroup {
       UserGeomGroup(Device *device,
-                    const std::vector<rtc::Geom *> &geoms)
+                    const std::vector<Geom *> &geoms)
         : GeomGroup(device,geoms)
       {}
 
@@ -68,14 +69,14 @@ namespace barney {
   
     struct InstanceGroup : public Group {
       InstanceGroup(Device *device,
-                    const std::vector<rtc::Group *> &groups,
+                    const std::vector<Group *> &groups,
                     const std::vector<affine3f>     &xfms);
 
       GeomGroup *getGroup(int groupID);
       
       void buildAccel() override;
     
-      std::vector<rtc::Group*> groups;
+      std::vector<Group*> groups;
       std::vector<affine3f>    xfms;
       std::vector<affine3f>    inverseXfms;
     };

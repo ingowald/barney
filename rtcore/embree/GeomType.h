@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "rtcore/common/Backend.h"
+#include "rtcore/embree/Device.h"
 
 namespace barney {
   namespace embree {
@@ -30,13 +30,15 @@ namespace barney {
                               const void *gt, box3f &result, int primID);
 
 
-    struct GeomType : public rtc::GeomType
+    struct GeomType
     {
       GeomType(Device *device,
                const std::string &name,
                size_t sizeOfProgramData,
                bool has_ah,
                bool has_ch);
+      virtual Geom *createGeom() = 0;
+      
       AnyHitFct ah = 0;
       ClosestHitFct ch = 0;
       size_t const sizeOfProgramData;
@@ -52,7 +54,7 @@ namespace barney {
       
       virtual ~TrianglesGeomType();
       
-      rtc::Geom *createGeom() override;
+      Geom *createGeom() override;
     };
 
     struct UserGeomType : public GeomType
@@ -64,7 +66,7 @@ namespace barney {
                    bool has_ch);
       virtual ~UserGeomType();
       
-      rtc::Geom *createGeom() override;
+      Geom *createGeom() override;
       
       BoundsFct     bounds = 0;
       IntersectFct  intersect = 0;

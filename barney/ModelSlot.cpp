@@ -34,11 +34,11 @@ namespace BARNEY_NS {
   ModelSlot::ModelSlot(GlobalModel *_model,
                        const DevGroup::SP &devices,
                        int slotID)
-    : SlottedObject(_model->context,
+    : SlottedObject((Context *)_model->context,
                     devices),
       model(_model),
       slotID(slotID),
-      slotContext(_model->context->getSlot(slotID)),
+      slotContext(((Context *)_model->context)->getSlot(slotID)),
       world(std::make_shared<render::World>(slotContext))
   {
     perLogical.resize(devices->numLogical);
@@ -51,14 +51,14 @@ namespace BARNEY_NS {
                                const affine3f *xfms,
                                int numUserInstances)
   {
-    instances.groups.resize(numUserIntances);
+    instances.groups.resize(numUserInstances);
     instances.xfms.resize(numUserInstances);
     for (int i=0;i<numUserInstances;i++) {
       auto g = groups[i];
       instances.groups[i]
         = g
-        ? g->shared_from_this()->as<Group>();
-        : {};
+        ? g->shared_from_this()->as<Group>()
+        : Group::SP{};
     }
     std::copy(xfms,xfms+numUserInstances,instances.xfms.data());
     for (auto device : *devices) {

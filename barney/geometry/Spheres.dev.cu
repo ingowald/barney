@@ -16,6 +16,7 @@
 
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Spheres.h"
+#include "rtcore/TraceInterface.h"
 
 // #include "owl/owl_device.h"
 

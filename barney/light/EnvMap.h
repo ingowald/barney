@@ -18,6 +18,7 @@
 
 #include "barney/light/Light.h"
 #include "barney/DeviceGroup.h"
+#include "barney/common/math.h"
 
 namespace BARNEY_NS {
 
@@ -27,6 +28,7 @@ namespace BARNEY_NS {
                 const DevGroup::SP &devices);
 
     struct DD {
+#if RTC_DEVICE_CODE
       inline __device__ float pdf(vec3f dir, bool dbg=false) const;
       inline __device__ Light::Sample sample(Random &r, bool dbg=false) const;
       inline __device__ vec3f  eval(vec3f dir, bool dbg=false) const;
@@ -36,7 +38,7 @@ namespace BARNEY_NS {
       inline __device__ vec3f  uvToWorld(float sx, float sy) const;
       inline __device__ vec3f  pixelToWorld(vec2i pixelID) const;
       inline __device__ vec2i  worldToPixel(vec3f worldDir) const;
-        
+#endif
       linear3f            toWorld;
       linear3f            toLocal;
       // cudaTextureObject_t texture;
@@ -84,7 +86,7 @@ namespace BARNEY_NS {
       rtc::Buffer  *allCDFs_x = 0;
       
       rtc::ComputeKernel2D *computeWeights_xy;
-      rtc::ComputeKernel2D *computeCDFs_doLine;
+      rtc::ComputeKernel1D *computeCDFs_doLine;
       rtc::ComputeKernel1D *normalize_cdf_y;
     };
 
@@ -95,6 +97,7 @@ namespace BARNEY_NS {
 
 
 
+#if RTC_DEVICE_CODE
   inline __device__
   float cdfGetPDF(int position, const float *cdf, int N)
   {
@@ -226,7 +229,6 @@ namespace BARNEY_NS {
     return xfmVector(toWorld,dir);
   }
 
-#if RTC_DEVICE_CODE
   inline __device__ Light::Sample
   EnvMapLight::DD::sample(Random &r, bool dbg) const
   {

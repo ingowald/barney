@@ -43,11 +43,12 @@ namespace BARNEY_NS {
         // { memcpy(this,&other,sizeof(other)); }
         // inline DD &operator=(const DD &other)
         // { memcpy(this,&other,sizeof(other)); return *this; }
-        
+#if RTC_DEVICE_CODE
         inline __device__
         vec4f eval(const HitAttributes &hitData,
                     const Sampler::DD *samplers,
                     bool dbg=false) const;
+#endif
         Type type;
         union {
           float4               value;

@@ -79,8 +79,8 @@ namespace BARNEY_NS {
     rtc::Device *const rtc;
     rtc::ComputeKernel1D *generateRays = 0;
     rtc::ComputeKernel1D *shadeRays = 0;
-    rtc::ComputeKernel1D *toneMap = 0;
-    rtc::ComputeKernel1D *toFixed8 = 0;
+    rtc::ComputeKernel2D *toneMap = 0;
+    rtc::ComputeKernel2D *toFixed8 = 0;
     rtc::ComputeKernel1D *setTileCoords = 0;
     rtc::ComputeKernel1D *compressTiles = 0;
     rtc::ComputeKernel1D *unpackTiles = 0;

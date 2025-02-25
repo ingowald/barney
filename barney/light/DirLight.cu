@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "DirLight.h"
+#include "barney/common/math.h"
 
 namespace BARNEY_NS {
   

@@ -27,6 +27,7 @@
 
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/DDA.h"
+#include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

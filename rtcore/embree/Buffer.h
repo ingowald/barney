@@ -18,14 +18,14 @@
 
 #include "rtcore/embree/Device.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
-    struct Buffer : public rtc::Buffer
+    struct Buffer
     {
       Buffer(Device *device,size_t numBytes,const void *initMem);
       virtual ~Buffer();
-      void *getDD() const override;
+      void *getDD() const;
       void *mem = 0;
     };
 

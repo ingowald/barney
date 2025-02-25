@@ -19,7 +19,7 @@
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
 #include "barney/common/mat4.h"
-
+#include "rtcore/Frontend.h"
 #include <stack>
 
 namespace BARNEY_NS {
@@ -148,11 +148,11 @@ namespace BARNEY_NS {
     vec4f AttributeTransform::applyTo(vec4f in,
                                        bool dbg) const
     {
-      vec4f out = load(offset);
-      out = out + in.x * load(mat[0]);
-      out = out + in.y * load(mat[1]);
-      out = out + in.z * load(mat[2]);
-      out = out + in.w * load(mat[3]);
+      vec4f out = rtc::load(offset);
+      out = out + in.x * rtc::load(mat[0]);
+      out = out + in.y * rtc::load(mat[1]);
+      out = out + in.z * rtc::load(mat[2]);
+      out = out + in.w * rtc::load(mat[3]);
       return (const vec4f&)out;
     }
     

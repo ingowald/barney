@@ -20,7 +20,7 @@
 #include "barney/render/World.h"
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
-#include "rtcore/RTCore.h"
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
   namespace render {

@@ -20,6 +20,10 @@
 
 namespace BARNEY_NS {
 
+  RTC_IMPORT_COMPUTE2D(computeWeights_xy);
+  RTC_IMPORT_COMPUTE1D(computeCDFs_doLine);
+  RTC_IMPORT_COMPUTE1D(normalize_cdf_y);
+  
   EnvMapLight::PLD *EnvMapLight::getPLD(Device *device)
   { return &perLogical[device->contextRank]; }
 
@@ -30,37 +34,10 @@ namespace BARNEY_NS {
     rtc::device::TextureObject texture;
     vec2i textureDims;
     
-    template<typename RTComputeInterface>
-    inline __both__
-    void run(const RTComputeInterface &ci)
-    {
-      int ix = ci.getThreadIdx().x
-        + ci.getBlockIdx().x
-        * ci.getBlockDim().x;
-      int iy = ci.getThreadIdx().y
-        + ci.getBlockIdx().y
-        * ci.getBlockDim().y;
-        
-      if (ix >= textureDims.x) return;
-      if (iy >= textureDims.y) return;
-        
-      auto importance = [&](vec4f v)->float
-      { return max(max(v.x,v.y),v.z); };
-        
-      float weight = 0.f;
-      for (int iiy=0;iiy<=2;iiy++)
-        for (int iix=0;iix<=2;iix++) {
-          vec4f fromTex
-            = rtc::tex2D<vec4f>(texture,
-                                 (ix+iix*.5f)/(textureDims.x),
-                                 (iy+iiy*.5f)/(textureDims.y));
-          weight = max(weight,importance(fromTex));
-        }
-        
-      allLines_cdf_x[ix+textureDims.x*iy] = weight;
-    }
+    inline __device__
+    void run(const rtc::ComputeInterface &ci);
   };
-
+  
   /*! this kernel does one thread per line, then this one thread does
     entire line. not great, but we're not doing this per frame,
     anyway */
@@ -69,65 +46,102 @@ namespace BARNEY_NS {
     float *allLines_cdf_x;
     vec2i textureDims;
 
-    template<typename RTComputeInterface>
-    inline __both__
-    void run(const RTComputeInterface &ci)
-    {
-      int tid
-        = ci.getThreadIdx().x
-        + ci.getBlockIdx().x * ci.getBlockDim().x;
-        
-      int y = tid;
-      if (y >= textureDims.y) return;
-      float *thisLine_pdf = allLines_cdf_x + y * textureDims.x;
-        
-      float sum = 0.f;
-      for (int ix=0;ix<textureDims.x;ix++) 
-        sum += thisLine_pdf[ix];
-        
-      float rcp_sum = 1.f/sum;
-      sum = 0.f;
-      for (int ix=0;ix<textureDims.x;ix++) {
-        sum += thisLine_pdf[ix];
-        thisLine_pdf[ix] = sum * rcp_sum;
-      }
-      thisLine_pdf[textureDims.x-1] = 1.f;
-        
-      float rel_y = (y+.5f) / textureDims.y;
-        
-      const float theta = ONE_PI * rel_y;
-        
-      float relativeWeightOfLine = sum * sinf(theta);
-      cdf_y[y] = relativeWeightOfLine;
-    }
+    inline __device__
+    void run(const rtc::ComputeInterface &ci);
   };
 
+  
   /*! run by a single thread, to normalize the cdf_y */
   struct Normalize_cdf_y {
     float       *cdf_y;
     const float *allLines_cdf_x;
     vec2i        textureDims;
     
-    template<typename RTComputeInterface>
-    inline __both__
-    void run(const RTComputeInterface &ci)
-    {
-      if (ci.getThreadIdx().x != 0) return;
-        
-      float sum = 0.f;
-      for (int i=0;i<textureDims.y;i++)
-        sum += cdf_y[i];
-      float rcp_sum = 1.f/sum;
-        
-      sum = 0.f;
-      for (int i=0;i<textureDims.y;i++) {
-        sum += cdf_y[i];
-        cdf_y[i] = sum * rcp_sum;
-      }
-      cdf_y[textureDims.y-1] = 1.f;
-    }
+    inline __device__
+    void run(const rtc::ComputeInterface &ci);
   };
 
+
+#if RTC_DEVICE_CODE
+  inline __device__
+  void Normalize_cdf_y::run(const rtc::ComputeInterface &ci)
+  {
+    if (ci.getThreadIdx().x != 0) return;
+        
+    float sum = 0.f;
+    for (int i=0;i<textureDims.y;i++)
+      sum += cdf_y[i];
+    float rcp_sum = 1.f/sum;
+        
+    sum = 0.f;
+    for (int i=0;i<textureDims.y;i++) {
+      sum += cdf_y[i];
+      cdf_y[i] = sum * rcp_sum;
+    }
+    cdf_y[textureDims.y-1] = 1.f;
+  }
+  
+  inline __device__
+  void ComputeWeights_xy::run(const rtc::ComputeInterface &ci)
+  {
+    int ix = ci.getThreadIdx().x
+      + ci.getBlockIdx().x
+      * ci.getBlockDim().x;
+    int iy = ci.getThreadIdx().y
+      + ci.getBlockIdx().y
+      * ci.getBlockDim().y;
+        
+    if (ix >= textureDims.x) return;
+    if (iy >= textureDims.y) return;
+        
+    auto importance = [&](vec4f v)->float
+    { return max(max(v.x,v.y),v.z); };
+        
+    float weight = 0.f;
+    for (int iiy=0;iiy<=2;iiy++)
+      for (int iix=0;iix<=2;iix++) {
+        vec4f fromTex
+          = rtc::tex2D<vec4f>(texture,
+                              (ix+iix*.5f)/(textureDims.x),
+                              (iy+iiy*.5f)/(textureDims.y));
+        weight = max(weight,importance(fromTex));
+      }
+        
+    allLines_cdf_x[ix+textureDims.x*iy] = weight;
+  }
+  
+  inline __device__
+  void ComputeCDFs_doLine::run(const rtc::ComputeInterface &ci)
+  {
+    int tid
+      = ci.getThreadIdx().x
+      + ci.getBlockIdx().x * ci.getBlockDim().x;
+        
+    int y = tid;
+    if (y >= textureDims.y) return;
+    float *thisLine_pdf = allLines_cdf_x + y * textureDims.x;
+        
+    float sum = 0.f;
+    for (int ix=0;ix<textureDims.x;ix++) 
+      sum += thisLine_pdf[ix];
+        
+    float rcp_sum = 1.f/sum;
+    sum = 0.f;
+    for (int ix=0;ix<textureDims.x;ix++) {
+      sum += thisLine_pdf[ix];
+      thisLine_pdf[ix] = sum * rcp_sum;
+    }
+    thisLine_pdf[textureDims.x-1] = 1.f;
+        
+    float rel_y = (y+.5f) / textureDims.y;
+        
+    const float theta = ONE_PI * rel_y;
+        
+    float relativeWeightOfLine = sum * sinf(theta);
+    cdf_y[y] = relativeWeightOfLine;
+  }
+#endif
+  
   /*! TODO not yet applying xfm!!! */
   EnvMapLight::DD EnvMapLight::getDD(Device *device,
                                      const affine3f &xfm) 
@@ -163,7 +177,6 @@ namespace BARNEY_NS {
     texture    = params.texture;
     computeCDFs();
   }
-
 
   void EnvMapLight::computeCDFs()
   {
@@ -271,16 +284,17 @@ namespace BARNEY_NS {
         = rtc->createBuffer(sizeof(float));
       
       pld->computeWeights_xy
-        = rtc->createCompute("computeWeights_xy");
+        = createCompute_computeWeights_xy(rtc);
       pld->computeCDFs_doLine
-        = rtc->createCompute("computeCDFs_doLine");
+        = createCompute_computeCDFs_doLine(rtc);
       pld->normalize_cdf_y
-        = rtc->createCompute("normalize_cdf_y");
+        = createCompute_normalize_cdf_y(rtc);
     }
     
-  } 
+  }
+
+  RTC_EXPORT_COMPUTE2D(computeWeights_xy,ComputeWeights_xy);
+  RTC_EXPORT_COMPUTE1D(computeCDFs_doLine,ComputeCDFs_doLine);
+  RTC_EXPORT_COMPUTE1D(normalize_cdf_y,Normalize_cdf_y);
 }
 
-RTC_DECLARE_COMPUTE(computeWeights_xy,barney::ComputeWeights_xy);
-RTC_DECLARE_COMPUTE(computeCDFs_doLine,barney::ComputeCDFs_doLine);
-RTC_DECLARE_COMPUTE(normalize_cdf_y,barney::Normalize_cdf_y);

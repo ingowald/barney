@@ -784,7 +784,7 @@ namespace barney_api {
 #endif
   
   BARNEY_API
-  void bnSet4x3fv(BNObject target, const char *param, const float *transform)
+  void bnSet4x3fv(BNObject target, const char *param, const BNTransform *transform)
   {
     assert(transform);
     if (!checkGet(target)->set4x3f(checkGet(param),*(const affine3f*)transform))
@@ -792,10 +792,10 @@ namespace barney_api {
   }
 
   BARNEY_API
-  void bnSet4x4fv(BNObject target, const char *param, const float *transform)
+  void bnSet4x4fv(BNObject target, const char *param, const bn_float4 *transform)
   {
     assert(transform);
-    if (!checkGet(target)->set4x4f(checkGet(param),*(const mat4f*)transform))
+    if (!checkGet(target)->set4x4f(checkGet(param),(const vec4f*)transform))
       checkGet(target)->warn_unsupported_member(param,"mat4f");
   }
   

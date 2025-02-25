@@ -20,7 +20,7 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     
     PossiblyMappedParameter::DD

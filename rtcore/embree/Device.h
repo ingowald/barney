@@ -16,85 +16,97 @@
 
 #pragma once
 
-#include "rtcore/common/Backend.h"
+#include "rtcore/common/rtcore-common.h"
+// #include "rtcore/common/Backend.h"
 #include "embree4/rtcore.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
+    using namespace owl::common;
+    
     struct LaunchSystem;
     LaunchSystem *createLaunchSystem();
+
+    struct Device;
+    struct Denoiser;
+    struct Group;
+    struct Buffer;
+    struct Geom;
+    struct GeomType;
+    struct TextureData;
+    struct Texture;
     
-    struct Device : public rtc::Device {
+    struct Device {
       Device(int physicalGPU);
       virtual ~Device();
 
-      rtc::Denoiser *createDenoiser() override;
+      Denoiser *createDenoiser();
 
-      void destroy() override;
+      void destroy();
  
-      /*! returns a string that describes what kind of compute device
-          this is (eg, "cuda" vs "cpu" */
-      std::string computeType() const override { return "cpu"; }
+      // /*! returns a string that describes what kind of compute device
+      //     this is (eg, "cuda" vs "cpu" */
+      // std::string computeType() const { return "cpu"; }
       
-      /*! returns a string that describes what kind of compute device
-          this is (eg, "optix" vs "embree" */
-      std::string traceType() const override { return "embree"; }
+      // /*! returns a string that describes what kind of compute device
+      //     this is (eg, "optix" vs "embree" */
+      // std::string traceType() const { return "embree"; }
      
       // ==================================================================
       // basic compute stuff
       // ==================================================================
-      void copyAsync(void *dst, const void *src, size_t numBytes) override
+      void copyAsync(void *dst, const void *src, size_t numBytes)
       { memcpy(dst,src,numBytes); }
       
-      void *allocHost(size_t numBytes) override
+      void *allocHost(size_t numBytes)
       { return malloc(numBytes); }
       
-      void freeHost(void *mem) override
+      void freeHost(void *mem)
       { free(mem); }
       
-      void memsetAsync(void *mem,int value, size_t size) override
+      void memsetAsync(void *mem,int value, size_t size)
       { memset(mem,value,size); }
       
-      void *allocMem(size_t numBytes) override
+      void *allocMem(size_t numBytes)
       { return malloc(numBytes); }
       
-      void freeMem(void *mem) override
+      void freeMem(void *mem)
       { free(mem); }
       
-      void sync() override
+      void sync()
       {/*no-op*/}
       
       /*! sets this gpu as active, and returns physical ID of GPU that
         was active before */
-      int setActive() const override
+      int setActive() const
       {/*no-op*/ return 0; }
       
       /*! restores the gpu whose ID was previously returend by setActive() */
-      void restoreActive(int oldActive) const override
+      void restoreActive(int oldActive) const
       {/*no-op*/}
 
-      rtc::TextureData *createTextureData(vec3i dims,
-                                          rtc::DataType format,
-                                          const void *texels) override;
-      void freeTextureData(rtc::TextureData *td) override;
-      void freeTexture(rtc::Texture *tex) override;
+      TextureData *createTextureData(vec3i dims,
+                                     rtc::DataType format,
+                                     const void *texels);
+      void freeTextureData(TextureData *td);
+      void freeTexture(Texture *tex);
       
       // ==================================================================
       // kernels
       // ==================================================================
-      rtc::Compute *createCompute(const std::string &name) override;
+      // Compute *createCompute(const std::string &name);
       
-      rtc::Trace *createTrace(const std::string &name,
-                              size_t rayGenSize) override;
+      // Trace *createTrace(const std::string &name,
+      //                         size_t rayGenSize);
 
       // ==================================================================
       // buffer stuff
       // ==================================================================
-      rtc::Buffer *createBuffer(size_t numBytes,
-                                const void *initValues = 0) override;
+      Buffer *createBuffer(size_t numBytes,
+                                const void *initValues = 0);
      
-      void freeBuffer(rtc::Buffer *buffer) override;
+      void freeBuffer(Buffer *buffer);
       
       // ==================================================================
       // texture stuff
@@ -111,47 +123,47 @@ namespace barney {
       // rt pipeline/sbtstuff
       // ------------------------------------------------------------------
 
-      void buildPipeline() override;
-      void buildSBT() override;
+      void buildPipeline();
+      void buildSBT();
 
       // ------------------------------------------------------------------
       // geomtype stuff
       // ------------------------------------------------------------------
       
-      rtc::GeomType *createUserGeomType(const char *ptxName,
+      GeomType *createUserGeomType(const char *ptxName,
                                         const char *typeName,
                                         size_t sizeOfDD,
                                         bool has_ah,
-                                        bool has_ch) override;
+                                        bool has_ch);
       
-      rtc::GeomType *createTrianglesGeomType(const char *ptxName,
+      GeomType *createTrianglesGeomType(const char *ptxName,
                                              const char *typeName,
                                              size_t sizeOfDD,
                                              bool has_ah,
-                                             bool has_ch) override;
+                                             bool has_ch);
       
-      void freeGeomType(rtc::GeomType *) override;
+      void freeGeomType(GeomType *);
 
       // ------------------------------------------------------------------
       // geom stuff
       // ------------------------------------------------------------------
       
-      void freeGeom(rtc::Geom *) override;
+      void freeGeom(Geom *);
       
       // ------------------------------------------------------------------
       // group/accel stuff
       // ------------------------------------------------------------------
-      rtc::Group *
-      createTrianglesGroup(const std::vector<rtc::Geom *> &geoms) override;
+      Group *
+      createTrianglesGroup(const std::vector<Geom *> &geoms);
       
-      rtc::Group *
-      createUserGeomsGroup(const std::vector<rtc::Geom *> &geoms) override;
+      Group *
+      createUserGeomsGroup(const std::vector<Geom *> &geoms);
       
-      rtc::Group *
-      createInstanceGroup(const std::vector<rtc::Group *> &groups,
-                          const std::vector<affine3f> &xfms) override;
+      Group *
+      createInstanceGroup(const std::vector<Group *> &groups,
+                          const std::vector<affine3f> &xfms);
       
-      void freeGroup(rtc::Group *group) override;
+      void freeGroup(Group *group);
 
       LaunchSystem *ls = 0;
       RTCDevice embreeDevice = 0;

@@ -16,7 +16,7 @@
 
 #include "RayQueue.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   RayQueue::RayQueue(Device *device)
     : device(device)

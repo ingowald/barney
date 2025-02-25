@@ -25,13 +25,13 @@ namespace barney {
     struct Texture;
     struct TextureData;
     
-    struct TextureData : public rtc::TextureData
+    struct TextureData 
     {
       TextureData(Device *device,
                   vec3i dims,
                   rtc::DataType format,
                   const void *texels);
-      rtc::Texture *createTexture(const rtc::TextureDesc &desc) override;
+      Texture *createTexture(const rtc::TextureDesc &desc);
       
       size_t sizeOfScalar;
       size_t numScalarsPerTexel;
@@ -40,11 +40,11 @@ namespace barney {
     };
 
 
-    struct Texture : public rtc::Texture
+    struct Texture
     {
       Texture(TextureData *const data,
               const rtc::TextureDesc &desc);
-      rtc::device::TextureObject getDD() const override;
+      rtc::device::TextureObject getDD() const;
 
       TextureSampler *sampler = 0;
     };

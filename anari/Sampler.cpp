@@ -133,8 +133,8 @@ void Image2D::createBarneySampler(BNContext context)
   bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
   bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode1);
   bnSet1i(m_bnSampler, "wrapMode1", (int)m_wrapMode2);
-  bnSet4x4fv(m_bnSampler, "inTransform", (const float *)&m_inTransform);
-  bnSet4x4fv(m_bnSampler, "outTransform", (const float *)&m_outTransform);
+  bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
+  bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
   bnSet4f(m_bnSampler,
       "inOffset",
       m_inOffset.x,

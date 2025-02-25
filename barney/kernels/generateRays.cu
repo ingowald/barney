@@ -22,7 +22,7 @@
 #include "barney/render/Ray.h"
 #include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
-#include "rtcore/RTCore.h"
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
   namespace render {

@@ -25,8 +25,8 @@
 # define OWL_DISABLE_TBB
 #endif
 #include <owl/common/parallel/parallel_for.h>
-#include "rtcore/RTCore.h"
 #include "rtcore/Frontend.h"
+#include "rtcore/ComputeInterface.h"
 
 // #include "barney/barney.h"
 // #if BARNEY_HAVE_CUDA
@@ -69,7 +69,7 @@ namespace BARNEY_NS {
   typedef owl::common::interval<float> range1f;
   using Random = LCG<8>;
 
-  using rtc::load;
+  //  using rtc::load;
   
   template<typename T>
   inline __both__

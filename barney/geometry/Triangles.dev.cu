@@ -16,6 +16,7 @@
 
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Triangles.h"
+#include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

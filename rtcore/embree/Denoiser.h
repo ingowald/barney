@@ -25,18 +25,18 @@ namespace barney {
   namespace embree {
 
     /*! oidn-based CPU denoiser */
-    struct Denoiser : public rtc::Denoiser
+    struct Denoiser
     {
       Denoiser(Device *device);
       virtual ~Denoiser();
       
-      void resize(vec2i size) override;
+      void resize(vec2i size);
       void run(// output
                vec4f *out_rgba,
                // input channels
                vec4f *in_rgba,
                vec3f *in_normal,
-               float blendFactor) override;
+               float blendFactor);
       
       vec2i         numPixels { 0,0 };
       Device *const rtc;

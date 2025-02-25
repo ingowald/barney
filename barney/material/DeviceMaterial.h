@@ -33,6 +33,7 @@ namespace BARNEY_NS {
         TYPE_AnariPBR
       } Type;
 
+#if RTC_DEVICE_CODE
       inline __device__
       PackedBSDF createBSDF(const HitAttributes &hitData,
                             const Sampler::DD *samplers,
@@ -47,7 +48,7 @@ namespace BARNEY_NS {
                   const HitAttributes &hitData,
                   const Sampler::DD *samplers,
                   bool dbg=false) const;
-      
+#endif      
       Type type;
       union {
         AnariPBR::DD   anariPBR;
@@ -55,6 +56,7 @@ namespace BARNEY_NS {
       };
     };
 
+#if RTC_DEVICE_CODE
     inline __device__
     PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData,
                                           const Sampler::DD *samplers,
@@ -95,6 +97,6 @@ namespace BARNEY_NS {
       ray.setHit(hitData.worldPosition,hitData.worldNormal,
                  hitData.t,createBSDF(hitData,samplers,dbg));
     }
-    
+#endif
   }
 }

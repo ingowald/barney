@@ -25,8 +25,8 @@ namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE1D(compressTiles);
   RTC_IMPORT_COMPUTE1D(unpackTiles);
     
-  RTC_IMPORT_COMPUTE1D(toneMap);
-  RTC_IMPORT_COMPUTE1D(toFixed8);
+  RTC_IMPORT_COMPUTE2D(toneMap);
+  RTC_IMPORT_COMPUTE2D(toFixed8);
   RTC_IMPORT_COMPUTE1D(generateRays);
   RTC_IMPORT_COMPUTE1D(shadeRays);
 
@@ -36,7 +36,7 @@ namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE1D(umeshReorderElements);
   RTC_IMPORT_COMPUTE1D(umeshComputeElementBBs);
 
-  RTC_IMPORT_TRACE2D(traceRays,traceRays);
+  RTC_IMPORT_TRACE2D(/*traceRays.cu*/traceRays,/*ray gen name */traceRays);
 
   
   GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)

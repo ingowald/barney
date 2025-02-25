@@ -75,6 +75,15 @@ struct bn_int2 { int x,y; };
 struct bn_int3 { int x,y,z; };
 struct bn_int4 { int x,y,z,w; };
 
+struct BNTransform {
+  struct {
+    bn_float3 vx;
+    bn_float3 vy;
+    bn_float3 vz;
+  } l;
+  bn_float3 p;
+};
+
 typedef enum {
   /*! a undefined data type */
   BN_DATA_UNDEFINED,
@@ -207,10 +216,10 @@ BARNEY_API
 void bnSet4f(BNObject target, const char *paramName, float x, float y, float z, float w);
 
 BARNEY_API
-void bnSet4x3fv(BNObject target, const char *paramName, const float *affineMatrix);
+void bnSet4x3fv(BNObject target, const char *paramName, const BNTransform *affineMatrix);
 
 BARNEY_API
-void bnSet4x4fv(BNObject target, const char *paramName, const float *xfm);
+void bnSet4x4fv(BNObject target, const char *paramName, const bn_float4 *xfm);
 
 /* add cuda vector type variants of set functions; but do that only if
    cuda.h or cuda/vector_types.h has already been included */
@@ -347,15 +356,6 @@ void bnRender(BNRenderer    renderer,
               BNModel       model,
               BNCamera      camera,
               BNFrameBuffer fb);
-
-struct BNTransform {
-  struct {
-    bn_float3 vx;
-    bn_float3 vy;
-    bn_float3 vz;
-  } l;
-  bn_float3 p;
-};
 
 BARNEY_API
 void bnSetInstances(BNModel model,

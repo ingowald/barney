@@ -134,10 +134,10 @@ namespace BARNEY_NS {
     auto elt = mesh.elements[eltIdx];
     if (elt.type == Element::TET) {
       const vec4i indices = *(const vec4i *)&mesh.indices[elt.ofs0];
-      vec4f a = load(mesh.vertices[indices.x]);
-      vec4f b = load(mesh.vertices[indices.y]);
-      vec4f c = load(mesh.vertices[indices.z]);
-      vec4f d = load(mesh.vertices[indices.w]);
+      vec4f a = rtc::load(mesh.vertices[indices.x]);
+      vec4f b = rtc::load(mesh.vertices[indices.y]);
+      vec4f c = rtc::load(mesh.vertices[indices.z]);
+      vec4f d = rtc::load(mesh.vertices[indices.w]);
       rasterTet<5>(grid,a,b,c,d);
     } else {
       const box4f eltBounds = mesh.eltBounds(elt);

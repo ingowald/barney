@@ -22,7 +22,7 @@ namespace BARNEY_NS {
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
   Renderer::Renderer(Context *context)
-    : barney_api::ParameterizedObject(context)
+    : barney_api::Renderer(context)
   {}
 
   /*! pretty-printer for printf-debugging */

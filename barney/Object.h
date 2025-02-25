@@ -31,7 +31,7 @@ namespace BARNEY_NS {
   };
 
   /*! a object owned (only) in a particular data group */
-  struct SlottedObject : public barney_api::ParameterizedObject {
+  struct SlottedObject : public barney_api::Object {
     SlottedObject(Context *context, const DevGroup::SP &devices);
     virtual ~SlottedObject() = default;
 

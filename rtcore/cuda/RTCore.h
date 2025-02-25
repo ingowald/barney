@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cuda.h>
+#include "CUDACommon.h"
 
 namespace rtc {
   namespace cuda_common {
@@ -174,7 +175,7 @@ namespace rtc {
     _barney_cuda_compute1D_##name(rtc::Device *device)                  \
       : device(device)                                                  \
       {}                                                                \
-    void launch(int nb, int bs, const void *ddPtr) override             \
+    void launch(unsigned int nb, unsigned int bs, const void *ddPtr) override             \
     {                                                                   \
       _barney_cuda_kernel_##name<<<nb,bs,0,device->stream>>>            \
         (*(const className*)ddPtr);                                     \
@@ -196,9 +197,9 @@ namespace rtc {
     _barney_cuda_compute2D_##name(rtc::Device *device)                  \
       : device(device)                                                  \
       {}                                                                \
-    void launch(rtc::vec2i nb, rtc::vec2i bs, const void *ddPtr) override    \
+    void launch(::rtc::vec2ui nb, ::rtc::vec2ui bs, const void *ddPtr) override  \
     {                                                                   \
-      _barney_cuda_kernel_##name<<<(dim3)nb,(dim3)bs,0,device->stream>>> \
+      _barney_cuda_kernel_##name<<<{nb.x,nb.y},{bs.x,bs.y},0,device->stream>>> \
         (*(const className*)ddPtr);                                     \
     }                                                                   \
     rtc::Device *const device;                                          \
@@ -218,9 +219,9 @@ namespace rtc {
     _barney_cuda_compute3D_##name(rtc::Device *device)                  \
       : device(device)                                                  \
       {}                                                                \
-    void launch(rtc::vec3i nb, rtc::vec3i bs, const void *ddPtr) override         \
+    void launch(rtc::vec3ui nb, rtc::vec3ui bs, const void *ddPtr) override         \
     {                                                                   \
-      _barney_cuda_kernel_##name<<<(dim3)nb,(dim3)bs,0,device->stream>>> \
+      _barney_cuda_kernel_##name<<<{nb.x,nb.y,nb.z},{bs.x,bs.y,bs.z},0,device->stream>>> \
         (*(const className*)ddPtr);                                     \
     }                                                                   \
     rtc::Device *const device;                                          \

@@ -185,11 +185,13 @@ namespace BARNEY_NS {
     vec4f *color;
     vec2i numPixels;
     
+#if RTC_DEVICE_CODE
     __device__ void run(const rtc::ComputeInterface &ci);
+#endif
   };
   
-#if BARNEY_DEVICE_CODE
-  __device__ void run(const rtc::ComputeInterface &ci)
+#if RTC_DEVICE_CODE
+  __device__ void ToneMap::run(const rtc::ComputeInterface &ci)
   {
     int ix = ci.getThreadIdx().x+ci.getBlockIdx().x*ci.getBlockDim().x;
     if (ix >= numPixels.x) return;
@@ -524,9 +526,9 @@ namespace BARNEY_NS {
     return (*devices)[0];
   }
   
+  RTC_EXPORT_COMPUTE2D(toneMap,ToneMap);
+  RTC_EXPORT_COMPUTE2D(toFixed8,ToFixed8);
+  RTC_EXPORT_COMPUTE1D(unpackTiles,UnpackTiles);
 }
   
 // RTC_DECLARE_COMPUTE(copyPixels,barney::CopyPixels);
-RTC_DECLARE_COMPUTE1D(toneMap,barney::ToneMap);
-RTC_DECLARE_COMPUTE1D(toFixed8,barney::ToFixed8);
-RTC_DECLARE_COMPUTE1D(unpackTiles,barney::UnpackTiles);

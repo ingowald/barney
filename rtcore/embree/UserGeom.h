@@ -30,8 +30,8 @@ namespace barney {
       /*! only for user geoms */
       void setPrimCount(int primCount) override;
       /*! can only get called on triangle type geoms */
-      void setVertices(rtc::Buffer *vertices, int numVertices) override;
-      void setIndices(rtc::Buffer *indices, int numIndices) override;
+      void setVertices(Buffer *vertices, int numVertices) override;
+      void setIndices(Buffer *indices, int numIndices) override;
 
       int primCount = 0;
     };

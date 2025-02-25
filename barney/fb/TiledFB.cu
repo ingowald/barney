@@ -61,23 +61,29 @@ namespace BARNEY_NS {
     int globalIndexStep;
 
     /* kernel CODE */
-    template<typename RTCore>
-    inline __both__
-    void run(const RTCore &rtCore)
-    {
-      int tid
-        = rtCore.getThreadIdx().x
-        + rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
-      if (tid >= numActiveTiles)
-        return;
-        
-      int tileID = tid * globalIndexStep + globalIndex;
-        
-      int tile_x = tileID % numTiles.x;
-      int tile_y = tileID / numTiles.x;
-      tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
-    }
+    inline __device__
+    void run(const rtc::ComputeInterface &rtCore);
   };
+
+#if RTC_DEVICE_CODE
+  /* kernel CODE */
+  inline __device__
+  void SetTileCoords::run(const rtc::ComputeInterface &rtCore)
+  {
+    int tid
+      = rtCore.getThreadIdx().x
+      + rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
+    if (tid >= numActiveTiles)
+      return;
+        
+    int tileID = tid * globalIndexStep + globalIndex;
+        
+    int tile_x = tileID % numTiles.x;
+    int tile_y = tileID / numTiles.x;
+    tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
+  }
+#endif
+  
 
   void TiledFB::resize(vec2i newSize)
   {
@@ -120,32 +126,36 @@ namespace BARNEY_NS {
     int             globalIdx;
     int             globalIdxStep;
 
-    template<typename RTCore>
-    inline __both__
-    void run(const RTCore &rtCore)
-    { 
-      int pixelID = rtCore.getThreadIdx().x;
-      int tileID  = rtCore.getBlockIdx().x;
-
-      vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
-      vec4f org = color;
-      float scale = reduce_max(color);
-      color *= 1.f/scale;
-      compressedTiles[tileID].scale[pixelID] = scale;
-      compressedTiles[tileID].normal[pixelID]
-        .set(accumTiles[tileID].normal[pixelID]);
-
-      
-      uint32_t rgba32
-        = make_rgba(color);
-
-      compressedTiles[tileID].rgba[pixelID]
-        = rgba32;
-      compressedTiles[tileID].depth[pixelID]
-        = accumTiles[tileID].depth[pixelID];
-    }
+    inline __device__
+    void run(const rtc::ComputeInterface &rtCore);
   };
 
+#if RTC_DEVICE_CODE
+  inline __device__
+  void CompressTiles::run(const rtc::ComputeInterface &rtCore)
+  { 
+    int pixelID = rtCore.getThreadIdx().x;
+    int tileID  = rtCore.getBlockIdx().x;
+
+    vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
+    vec4f org = color;
+    float scale = reduce_max(color);
+    color *= 1.f/scale;
+    compressedTiles[tileID].scale[pixelID] = scale;
+    compressedTiles[tileID].normal[pixelID]
+      .set(accumTiles[tileID].normal[pixelID]);
+
+      
+    uint32_t rgba32
+      = make_rgba(color);
+
+    compressedTiles[tileID].rgba[pixelID]
+      = rgba32;
+    compressedTiles[tileID].depth[pixelID]
+      = accumTiles[tileID].depth[pixelID];
+  }
+#endif
+  
   /*! write this tiledFB's tiles into given "compressed" frame buffer
     (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
     pixels) */
@@ -166,11 +176,11 @@ namespace BARNEY_NS {
     }
   }
   
+  RTC_EXPORT_COMPUTE1D(setTileCoords,SetTileCoords);
+  RTC_EXPORT_COMPUTE1D(compressTiles,CompressTiles);
 }
 
 
-RTC_DECLARE_COMPUTE(setTileCoords,barney::SetTileCoords);
-RTC_DECLARE_COMPUTE(compressTiles,barney::CompressTiles);
 
 
   

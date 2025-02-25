@@ -39,16 +39,22 @@ namespace rtc {
   
     
     struct ComputeKernel1D {
-      virtual void launch(int nb, int bs,
+      virtual void launch(unsigned int nb, unsigned int bs,
                           const void *pKernelData) = 0;
     };
     struct ComputeKernel2D {
-      virtual void launch(vec2i nb, vec2i bs,
+      virtual void launch(vec2ui nb, vec2ui bs,
                           const void *pKernelData) = 0;
+      inline void launch(vec2i nb, vec2i bs,
+                         const void *pKernelData)
+      { launch(vec2ui(nb),vec2ui(bs),pKernelData); }
     };
     struct ComputeKernel3D {
-      virtual void launch(vec3i nb, vec3i bs,
+      virtual void launch(vec3ui nb, vec3ui bs,
                           const void *pKernelData) = 0;
+      inline void launch(vec3i nb, vec3i bs,
+                         const void *pKernelData)
+      { launch(vec3ui(nb),vec3ui(bs),pKernelData); }
     };
     
     struct Device {

@@ -19,7 +19,7 @@
 #include "barney/ModelSlot.h"
 #include "barney/DeviceGroup.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   TextureData::PLD *TextureData::getPLD(Device *device) 
   {
@@ -45,27 +45,27 @@ namespace barney {
     return &perLogical[device->contextRank];
   }
   
-  rtc::Texture::ColorSpace toRTC(BNTextureColorSpace mode)
+  rtc::ColorSpace toRTC(BNTextureColorSpace mode)
   { return 
       (mode == BN_COLOR_SPACE_LINEAR)
-      ? rtc::Texture::COLOR_SPACE_LINEAR
-      : rtc::Texture::COLOR_SPACE_SRGB;
+      ? rtc::COLOR_SPACE_LINEAR
+      : rtc::COLOR_SPACE_SRGB;
   }
   
-  rtc::Texture::FilterMode toRTC(BNTextureFilterMode mode)
+  rtc::FilterMode toRTC(BNTextureFilterMode mode)
   { return 
       (mode == BN_TEXTURE_NEAREST)
-      ? rtc::Texture::FILTER_MODE_POINT
-      : rtc::Texture::FILTER_MODE_LINEAR;
+      ? rtc::FILTER_MODE_POINT
+      : rtc::FILTER_MODE_LINEAR;
   }
   
-  rtc::Texture::AddressMode toRTC(BNTextureAddressMode mode)
+  rtc::AddressMode toRTC(BNTextureAddressMode mode)
   {
     switch(mode) {
-    case BN_TEXTURE_WRAP: return rtc::Texture::WRAP;
-    case BN_TEXTURE_MIRROR: return rtc::Texture::MIRROR;
-    case BN_TEXTURE_CLAMP: return rtc::Texture::CLAMP;
-    case BN_TEXTURE_BORDER: return rtc::Texture::BORDER;
+    case BN_TEXTURE_WRAP: return rtc::WRAP;
+    case BN_TEXTURE_MIRROR: return rtc::MIRROR;
+    case BN_TEXTURE_CLAMP: return rtc::CLAMP;
+    case BN_TEXTURE_BORDER: return rtc::BORDER;
     default:
       BARNEY_INVALID_VALUE();
     }
@@ -140,7 +140,7 @@ namespace barney {
     desc.normalizedCoords = false;
     for (auto device : *devices) {
       auto pld = getPLD(device);
-      desc.filterMode = rtc::Texture::FILTER_MODE_POINT;
+      desc.filterMode = rtc::FILTER_MODE_POINT;
       pld->rtcTextureNN 
         = data->getPLD(device)->rtc->createTexture(desc);
       

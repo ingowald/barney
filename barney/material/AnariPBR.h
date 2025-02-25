@@ -24,6 +24,7 @@ namespace BARNEY_NS {
     
     struct AnariPBR : public HostMaterial {
       struct DD {
+#if RTC_DEVICE_CODE
        inline __device__
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
@@ -32,6 +33,7 @@ namespace BARNEY_NS {
         float getOpacity(const HitAttributes &hitData,
                          const Sampler::DD *samplers,
                          bool dbg) const;
+#endif
         PossiblyMappedParameter::DD baseColor;
         PossiblyMappedParameter::DD metallic;
         PossiblyMappedParameter::DD opacity;
@@ -68,6 +70,7 @@ namespace BARNEY_NS {
       PossiblyMappedParameter emission     = vec3f(0.f,0.f,0.f);
     };
       
+#if RTC_DEVICE_CODE
     inline __device__
     PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData,
                                         const Sampler::DD *samplers,
@@ -107,6 +110,7 @@ namespace BARNEY_NS {
       bsdf.ior = ior.x;
       return bsdf;
     }
-
+#endif
+    
   }
 }

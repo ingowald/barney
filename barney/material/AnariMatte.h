@@ -27,10 +27,12 @@ namespace BARNEY_NS {
       
     struct AnariMatte : public HostMaterial {      
       struct DD {
+#if RTC_DEVICE_CODE
         inline __device__
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
+#endif
         PossiblyMappedParameter::DD color;
       };
       AnariMatte(SlotContext *context) : HostMaterial(context) {}
@@ -53,6 +55,7 @@ namespace BARNEY_NS {
     };
       
   
+#if RTC_DEVICE_CODE
     inline __device__
     PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData,
                                           const Sampler::DD *samplers,
@@ -76,6 +79,6 @@ namespace BARNEY_NS {
       bsdf.roughness = 1.f;
       return bsdf;
     }
-    
+#endif    
   }
 }

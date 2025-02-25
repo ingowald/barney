@@ -42,6 +42,7 @@ namespace BARNEY_NS {
     
     BNDataType type  = BN_DATA_UNDEFINED;
     size_t     count = 0;
+    DevGroup::SP const devices;
   };
 
   /*! a data array for 'plain-old-data' type data (such as int, float,

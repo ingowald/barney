@@ -21,6 +21,7 @@
 
 #include "barney/volume/MCGrid.h"
 #include "barney/common/barney-common.h"
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 

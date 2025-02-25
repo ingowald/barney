@@ -16,7 +16,7 @@
 
 #include "barney/render/GeometryAttributes.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     GeometryAttributes::DD GeometryAttributes::getDD(Device *device)

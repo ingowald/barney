@@ -17,7 +17,7 @@
 #include "barney/material/AnariPBR.h"
 #include "barney/material/DeviceMaterial.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     AnariPBR::AnariPBR(SlotContext *context)

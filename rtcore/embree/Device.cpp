@@ -22,10 +22,11 @@
 #include "rtcore/embree/UserGeom.h"
 #include "rtcore/embree/Group.h"
 #include "rtcore/embree/Denoiser.h"
+#include "rtcore/embree/TraceInterface.h"
 // ---- common ----
 #include "rtcore/common/RTCore.h"
 
-namespace barney {
+namespace rtc {
   namespace embree {
 
     // __thread TraceInterface *perThreadTraceInterface = 0;

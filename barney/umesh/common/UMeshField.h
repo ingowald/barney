@@ -171,10 +171,10 @@ namespace BARNEY_NS {
   {
     const vec4i indices = *(const vec4i*)&this->indices[ofs0];
     return box4f()
-      .including(load(vertices[indices.x]))
-      .including(load(vertices[indices.y]))
-      .including(load(vertices[indices.z]))
-      .including(load(vertices[indices.w]));
+      .including(rtc::load(vertices[indices.x]))
+      .including(rtc::load(vertices[indices.y]))
+      .including(rtc::load(vertices[indices.z]))
+      .including(rtc::load(vertices[indices.w]));
   }
 
   inline __both__
@@ -182,11 +182,11 @@ namespace BARNEY_NS {
   {
     UMeshField::ints<5> indices = *(const UMeshField::ints<5> *)&this->indices[ofs0];
     return box4f()
-      .including(load(vertices[indices[0]]))
-      .including(load(vertices[indices[1]]))
-      .including(load(vertices[indices[2]]))
-      .including(load(vertices[indices[3]]))
-      .including(load(vertices[indices[4]]));
+      .including(rtc::load(vertices[indices[0]]))
+      .including(rtc::load(vertices[indices[1]]))
+      .including(rtc::load(vertices[indices[2]]))
+      .including(rtc::load(vertices[indices[3]]))
+      .including(rtc::load(vertices[indices[4]]));
   }
 
   inline __both__
@@ -194,12 +194,12 @@ namespace BARNEY_NS {
   {
     UMeshField::ints<6> indices = *(const UMeshField::ints<6> *)&this->indices[ofs0];
     return box4f()
-      .including(load(vertices[indices[0]]))
-      .including(load(vertices[indices[1]]))
-      .including(load(vertices[indices[2]]))
-      .including(load(vertices[indices[3]]))
-      .including(load(vertices[indices[4]]))
-      .including(load(vertices[indices[5]]));
+      .including(rtc::load(vertices[indices[0]]))
+      .including(rtc::load(vertices[indices[1]]))
+      .including(rtc::load(vertices[indices[2]]))
+      .including(rtc::load(vertices[indices[3]]))
+      .including(rtc::load(vertices[indices[4]]))
+      .including(rtc::load(vertices[indices[5]]));
   }
   
   inline __both__
@@ -207,14 +207,14 @@ namespace BARNEY_NS {
   {
     UMeshField::ints<8> indices = *(const UMeshField::ints<8> *)&this->indices[ofs0];
     return box4f()
-      .including(load(vertices[indices[0]]))
-      .including(load(vertices[indices[1]]))
-      .including(load(vertices[indices[2]]))
-      .including(load(vertices[indices[3]]))
-      .including(load(vertices[indices[4]]))
-      .including(load(vertices[indices[5]]))
-      .including(load(vertices[indices[6]]))
-      .including(load(vertices[indices[7]]));
+      .including(rtc::load(vertices[indices[0]]))
+      .including(rtc::load(vertices[indices[1]]))
+      .including(rtc::load(vertices[indices[2]]))
+      .including(rtc::load(vertices[indices[3]]))
+      .including(rtc::load(vertices[indices[4]]))
+      .including(rtc::load(vertices[indices[5]]))
+      .including(rtc::load(vertices[indices[6]]))
+      .including(rtc::load(vertices[indices[7]]));
   }
  
   inline __both__
@@ -284,10 +284,10 @@ namespace BARNEY_NS {
   {
     vec4i indices = *(const vec4i *)&this->indices[ofs0];
     
-    vec4f v0 = load(vertices[indices.x]);
-    vec4f v1 = load(vertices[indices.y]);
-    vec4f v2 = load(vertices[indices.z]);
-    vec4f v3 = load(vertices[indices.w]);
+    vec4f v0 = rtc::load(vertices[indices.x]);
+    vec4f v1 = rtc::load(vertices[indices.y]);
+    vec4f v2 = rtc::load(vertices[indices.z]);
+    vec4f v3 = rtc::load(vertices[indices.w]);
 
     float t3 = evalToImplicitPlane(P,v0,v1,v2);
     if (t3 < 0.f) return false;

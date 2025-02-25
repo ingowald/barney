@@ -17,9 +17,10 @@
 #include "barney/common/Data.h"
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
+#include "barney/DeviceGroup.h"
 
-namespace barney {
-  
+namespace BARNEY_NS {
+
   rtc::DataType toRTC(BNDataType type)
   {
     switch (type) {
@@ -97,7 +98,9 @@ namespace barney {
         ("#bn internal error: to_string not implemented for "
          "numerical BNDataType #"+std::to_string(int(type)));
     };
-  };
+  }
+
+  
   
   size_t owlSizeOf(BNDataType type)
   {
@@ -123,15 +126,16 @@ namespace barney {
         ("#bn internal error: owlSizeOf() not implemented for "
          "numerical BNDataType #"+std::to_string(int(type)));
     };
-  };
-  
-  Data::Data(Context *context,
+  }
+
+  BaseData::BaseData(Context *context,
              const DevGroup::SP &devices,
              BNDataType type,
              size_t numItems)
-    : SlottedObject(context,devices),
+    : barney_api::Data(context),
       type(type),
-      count(numItems)
+      count(numItems),
+      devices(devices)
   {}
 
 
@@ -140,7 +144,7 @@ namespace barney {
                    BNDataType type,
                    size_t numItems,
                    const void *_items)
-    : Data(context,devices,type,numItems)
+    : BaseData(context,devices,type,numItems)
   {
     perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
@@ -175,11 +179,11 @@ namespace barney {
     return &perLogical[device->contextRank];
   }
   
-  Data::SP Data::create(Context *context,
-                        const DevGroup::SP &devices,
-                        BNDataType type,
-                        size_t numItems,
-                        const void *items)
+  BaseData::SP BaseData::create(Context *context,
+                                const DevGroup::SP &devices,
+                                BNDataType type,
+                                size_t numItems,
+                                const void *items)
   {
     switch(type) {
     case BN_INT:
@@ -207,7 +211,7 @@ namespace barney {
                                  BNDataType type,
                                  size_t numItems,
                                  const void *_items)
-    : Data(context,devices,type,numItems)
+    : BaseData(context,devices,type,numItems)
   {
     items.resize(numItems);
     for (int i=0;i<numItems;i++)

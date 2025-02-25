@@ -47,50 +47,6 @@ namespace barney_api {
     void warn_unsupported_member(const std::string &type,
                                  const std::string &member);
 
-    // // ------------------------------------------------------------------
-    // /*! @{ parameter set/commit interface */
-    // virtual void commit() {}
-    // virtual bool setObject(const std::string &member,
-    //                        const Object::SP &value)
-    // { return false; }
-    // virtual bool setData(const std::string &member,
-    //                      const std::shared_ptr<Data> &value)
-    // { return false; }
-    // virtual bool setString(const std::string &member,
-    //                        const std::string &value)
-    // { return false; }
-    // virtual bool set1f(const std::string &member, const float &value) { return false; }
-    // virtual bool set2f(const std::string &member, const vec2f &value) { return false; }
-    // virtual bool set3f(const std::string &member, const vec3f &value) { return false; }
-    // virtual bool set4f(const std::string &member, const vec4f &value) { return false; }
-    // virtual bool set1i(const std::string &member, const int   &value) { return false; }
-    // virtual bool set2i(const std::string &member, const vec2i &value) { return false; }
-    // virtual bool set3i(const std::string &member, const vec3i &value) { return false; }
-    // virtual bool set4i(const std::string &member, const vec4i &value) { return false; }
-    // virtual bool set4x3f(const std::string &member, const affine3f &value) { return false; }
-    // virtual bool set4x4f(const std::string &member, const vec4f *value) { return false; }
-    // /*! @} */
-    // ------------------------------------------------------------------
-
-    
-    /*! returns the context that this object was created in */
-    Context *getContext() const { return context; }
-    
-    // NOT a shared pointer to avoid cyclical dependencies.
-    Context *const context;
-  };
-    
-
-  /*! the base class for _any_ other type of object/actor in the
-      barney class hierarchy */
-  struct ParameterizedObject : public Object {
-    
-    ParameterizedObject(Context *context) : Object(context) {}
-    virtual ~ParameterizedObject() {}
-
-    void warn_unsupported_member(const std::string &type,
-                                 const std::string &member);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     virtual void commit() {}
@@ -103,29 +59,71 @@ namespace barney_api {
     virtual bool setString(const std::string &member,
                            const std::string &value)
     { return false; }
-    virtual bool set1f(const std::string &member, const float &value) 
-    { return false; }
-    virtual bool set2f(const std::string &member, const vec2f &value) 
-    { return false; }
-    virtual bool set3f(const std::string &member, const vec3f &value) 
-    { return false; }
-    virtual bool set4f(const std::string &member, const vec4f &value) 
-    { return false; }
-    virtual bool set1i(const std::string &member, const int   &value) 
-    { return false; }
-    virtual bool set2i(const std::string &member, const vec2i &value) 
-    { return false; }
-    virtual bool set3i(const std::string &member, const vec3i &value) 
-    { return false; }
-    virtual bool set4i(const std::string &member, const vec4i &value) 
-    { return false; }
-    virtual bool set4x3f(const std::string &member, const affine3f &value) 
-    { return false; }
-    virtual bool set4x4f(const std::string &member, const vec4f *value) 
-    { return false; }
+    virtual bool set1f(const std::string &member, const float &value) { return false; }
+    virtual bool set2f(const std::string &member, const vec2f &value) { return false; }
+    virtual bool set3f(const std::string &member, const vec3f &value) { return false; }
+    virtual bool set4f(const std::string &member, const vec4f &value) { return false; }
+    virtual bool set1i(const std::string &member, const int   &value) { return false; }
+    virtual bool set2i(const std::string &member, const vec2i &value) { return false; }
+    virtual bool set3i(const std::string &member, const vec3i &value) { return false; }
+    virtual bool set4i(const std::string &member, const vec4i &value) { return false; }
+    virtual bool set4x3f(const std::string &member, const affine3f &value) { return false; }
+    virtual bool set4x4f(const std::string &member, const vec4f *value) { return false; }
     /*! @} */
     // ------------------------------------------------------------------
+
+    /*! returns the context that this object was created in */
+    Context *getContext() const { return context; }
+    
+    // NOT a shared pointer to avoid cyclical dependencies.
+    Context *const context;
   };
+    
+// a  /*! the base class for _any_ other type of object/actor in the
+//       barney class hierarchy */
+//   struct ParameterizedObject : public Object {
+    
+//     ParameterizedObject(Context *context) : Object(context) {}
+//     virtual ~ParameterizedObject() {}
+
+//     void warn_unsupported_member(const std::string &type,
+//                                  const std::string &member);
+
+//     // ------------------------------------------------------------------
+//     /*! @{ parameter set/commit interface */
+//     virtual void commit() {}
+//     virtual bool setObject(const std::string &member,
+//                            const Object::SP &value)
+//     { return false; }
+//     virtual bool setData(const std::string &member,
+//                          const std::shared_ptr<Data> &value)
+//     { return false; }
+//     virtual bool setString(const std::string &member,
+//                            const std::string &value)
+//     { return false; }
+//     virtual bool set1f(const std::string &member, const float &value) 
+//     { return false; }
+//     virtual bool set2f(const std::string &member, const vec2f &value) 
+//     { return false; }
+//     virtual bool set3f(const std::string &member, const vec3f &value) 
+//     { return false; }
+//     virtual bool set4f(const std::string &member, const vec4f &value) 
+//     { return false; }
+//     virtual bool set1i(const std::string &member, const int   &value) 
+//     { return false; }
+//     virtual bool set2i(const std::string &member, const vec2i &value) 
+//     { return false; }
+//     virtual bool set3i(const std::string &member, const vec3i &value) 
+//     { return false; }
+//     virtual bool set4i(const std::string &member, const vec4i &value) 
+//     { return false; }
+//     virtual bool set4x3f(const std::string &member, const affine3f &value) 
+//     { return false; }
+//     virtual bool set4x4f(const std::string &member, const vec4f *value) 
+//     { return false; }
+//     /*! @} */
+//     // ------------------------------------------------------------------
+//   };
     
 
 
@@ -134,39 +132,46 @@ namespace barney_api {
   //   virtual ~Renderer() = default;
   // };
 
-  struct Renderer : public ParameterizedObject {
+  struct Renderer : public Object {
+    Renderer(Context *context) : Object(context) {}
     virtual ~Renderer() = default;
   };
 
-  struct Material : public ParameterizedObject {
+  struct Material : public Object {
+    Material(Context *context) : Object(context) {}
     virtual ~Material() = default;
   };
 
-  struct Geometry : public ParameterizedObject {
+  struct Geometry : public Object {
+    Geometry(Context *context) : Object(context) {}
     virtual ~Geometry() = default;
   };
 
-  struct Sampler : public ParameterizedObject {
+  struct Sampler : public Object {
+    Sampler(Context *context) : Object(context) {}
     virtual ~Sampler() = default;
   };
  
-  struct Light : public ParameterizedObject {
+  struct Light : public Object {
+    Light(Context *context) : Object(context) {}
     virtual ~Light() = default;
   };
   
-  struct Camera : public ParameterizedObject {
+  struct Camera : public Object {
+    Camera(Context *context) : Object(context) {}
     virtual ~Camera() = default;
   };
  
   
   struct Data : public Object {
+    Data(Context *context) : Object(context) {}
     typedef std::shared_ptr<Data> SP;
     virtual ~Data() = default;
   };
 
-  struct FrameBuffer : public ParameterizedObject {
+  struct FrameBuffer : public Object {
     inline FrameBuffer(Context *context)
-      : ParameterizedObject(context)
+      : Object(context)
     {}
     virtual ~FrameBuffer() = default;
 
@@ -178,20 +183,24 @@ namespace barney_api {
                        BNDataType requestedFormat) = 0;
   };
   
-  struct TextureData : public ParameterizedObject {
+  struct TextureData : public Object {
+    TextureData(Context *context) : Object(context) {}
     virtual ~TextureData() = default;
   };
 
-  struct ScalarField : public ParameterizedObject {
+  struct ScalarField : public Object {
+    ScalarField(Context *context) : Object(context) {}
     virtual ~ScalarField() = default;
   };
 
   struct Group : public Object {
+    Group(Context *context) : Object(context) {}
     virtual ~Group() = default;
     virtual void build() = 0;
   };
 
   struct Volume : public Object {
+    Volume(Context *context) : Object(context) {}
     virtual ~Volume() = default;
     virtual void setXF(range1f domain,
                        const bn_float4 *values,
@@ -200,6 +209,7 @@ namespace barney_api {
   };
   
   struct Model : public Object{
+    Model(Context *context) : Object(context) {}
     virtual void setInstances(int slot,
                               Group **groups,
                               const affine3f *xfms,
@@ -210,7 +220,8 @@ namespace barney_api {
                         FrameBuffer *fb) = 0;
   };
   
-  struct Texture : public ParameterizedObject {
+  struct Texture : public Object {
+    Texture(Context *context) : Object(context) {}
     virtual ~Texture() = default;
   };
 

@@ -26,7 +26,6 @@ namespace BARNEY_NS {
   struct GlobalModel;
   struct Context;
   struct Texture;
-  struct Data;
   struct Light;
 
   struct SlotContext;
