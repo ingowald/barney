@@ -34,7 +34,7 @@ namespace BARNEY_NS {
       const float *radii;
     };
     
-    Cones(Context *context, int slot);
+    Cones(Context *context, DevGroup::SP devices);
     virtual ~Cones() = default;
     
     /*! pretty-printer for printf-debugging */

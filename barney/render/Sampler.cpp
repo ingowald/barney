@@ -41,7 +41,8 @@ namespace BARNEY_NS {
     }
 
     Sampler::Sampler(SlotContext *slotContext)
-      : SlottedObject(slotContext->context,slotContext->devices),
+      : barney_api::Sampler(slotContext->context),
+        devices(slotContext->devices),
         samplerRegistry(slotContext->samplerRegistry),
         samplerID(slotContext->samplerRegistry->allocate())
     {}
@@ -69,7 +70,7 @@ namespace BARNEY_NS {
     bool Sampler::setObject(const std::string &member,
                                  const std::shared_ptr<Object> &value)
     {
-      if (SlottedObject::setObject(member,value)) return true;
+      // if (SlottedObject::setObject(member,value)) return true;
 
       return false;
     }
@@ -77,7 +78,7 @@ namespace BARNEY_NS {
     bool Sampler::setString(const std::string &member,
                             const std::string &value)
     {
-      if (SlottedObject::setString(member,value)) return true;
+      // if (SlottedObject::setString(member,value)) return true;
 
       if (member == "inAttribute")
         { inAttribute = parseAttribute(value); return true; }
@@ -87,7 +88,7 @@ namespace BARNEY_NS {
 
     bool Sampler::set4x4f(const std::string &member, const vec4f *value)
     {
-      if (SlottedObject::set4x4f(member,value)) return true;
+      // if (SlottedObject::set4x4f(member,value)) return true;
 
       if (member == "outTransform")
         { outTransform = *(mat4f*)value; return true; }
@@ -97,7 +98,7 @@ namespace BARNEY_NS {
     
     bool Sampler::set4f(const std::string &member, const vec4f &value)
     {
-      if (SlottedObject::set4f(member,value)) return true;
+      // if (SlottedObject::set4f(member,value)) return true;
 
       if (member == "outOffset")
         { outOffset = value; return true; }
@@ -107,7 +108,7 @@ namespace BARNEY_NS {
 
     void Sampler::commit() 
     {
-      SlottedObject::commit();
+      // SlottedObject::commit();
       for (auto device : *devices) {
         DD dd = getDD(device);
         samplerRegistry->setDD(samplerID,dd,device);

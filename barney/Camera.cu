@@ -20,7 +20,7 @@
 namespace BARNEY_NS {
 
   Camera::Camera(Context *owner)
-    : barney_api::Object(owner)
+    : barney_api::Camera(owner)
   {}
 
   // ##################################################################

@@ -182,6 +182,7 @@ if (BARNEY_BACKEND_OPTIX)
     )
   target_link_libraries(barney_rtc_optix PUBLIC
     barney_rtc_config
+    barney_rtc_cuda
     owl_static
     )
   target_compile_definitions(barney_rtc_optix
@@ -191,6 +192,14 @@ else()
 endif()
 
 
+add_library(barney_rtc INTERFACE
+  )
+if (BARNEY_BACKEND_OPTIX)
+  target_link_libraries(barney_rtc INTERFACE barney_rtc_optix)
+endif()
+if (BARNEY_BACKEND_EMBREE)
+  target_link_libraries(barney_rtc INTERFACE barney_rtc_embree)
+endif()
 
 
 

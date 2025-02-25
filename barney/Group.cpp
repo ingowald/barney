@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
 namespace BARNEY_NS {
 
@@ -31,7 +32,8 @@ namespace BARNEY_NS {
                const DevGroup::SP &devices, 
                const std::vector<Geometry::SP> &geoms,
                const std::vector<Volume::SP> &volumes)
-    : SlottedObject(context,devices),
+    : barney_api::Group(context),
+      devices(devices),
       geoms(geoms),
       volumes(volumes)
   {

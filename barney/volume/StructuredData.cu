@@ -14,8 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/volume/StructuredData.h"
 #include "barney/Context.h"
+#include "barney/volume/StructuredData.h"
+#include "barney/common/Texture.h"
 
 namespace BARNEY_NS {
 
@@ -53,7 +54,7 @@ namespace BARNEY_NS {
             if (scalarID.x >= numScalars.x) continue;
             if (scalarID.y >= numScalars.y) continue;
             if (scalarID.z >= numScalars.z) continue;
-            float f = rtc::tex3D<float>(scalars.texObjNN,
+            float f = rtc::tex3D<float>(scalars,
                                    (float)scalarID.x,
                                    (float)scalarID.y,
                                    (float)scalarID.z);
@@ -66,7 +67,9 @@ namespace BARNEY_NS {
     /* kernel ARGS */
     MCGrid::DD mcGrid;
     vec3i numScalars;
-    Texture3D::DD scalars;
+    // Texture::DD scalars;
+    rtc::device::TextureObject scalars;
+    // Texture3D::DD scalars;
   };
   
   StructuredData::StructuredData(Context *context,
@@ -94,7 +97,7 @@ namespace BARNEY_NS {
       StructuredData_ComputeMCs args = {
         mcGrid.getDD(device),
         numScalars,
-        texture->getDD(device)
+        textureNN->getDD(device)
       };
       pld->computeMCs->launch(numBlocks,blockSize,
                               &args);
@@ -107,7 +110,7 @@ namespace BARNEY_NS {
   {
     DD dd;
     // dd.worldBounds = sf->worldBounds;
-    dd.texObj = sf->texture->getDD(device).texObj;
+    dd.texObj = sf->texture->getDD(device);
     dd.cellGridOrigin = sf->gridOrigin;
     dd.cellGridSpacing = sf->gridSpacing;
     dd.numCells = sf->numCells;
@@ -119,11 +122,12 @@ namespace BARNEY_NS {
     auto sampler = std::make_shared<StructuredDataSampler>(this);
     return std::make_shared<MCVolumeAccel<StructuredDataSampler>>
       (volume,
-       sampler,
-       /* RTC_DECLARE_USER_GEOM is in Structured.dev.cu: */
-       "StructuredData_ptx",
-       /* the name used in RTC_DECLARE_USER_GEOM() */
-       "MCAccel_Structured"
+       createGeomType_StructuredData,
+       sampler
+       // /* RTC_DECLARE_USER_GEOM is in Structured.dev.cu: */
+       // "StructuredData_ptx",
+       // /* the name used in RTC_DECLARE_USER_GEOM() */
+       // "MCAccel_Structured"
        );
   }
   
@@ -158,8 +162,21 @@ namespace BARNEY_NS {
   bool StructuredData::setObject(const std::string &member,
                                  const Object::SP &value) 
   {
-    if (member == "texture") {
-      texture = value->as<Texture3D>();
+    if (member == "textureData") {
+      // texture = value->as<Texture3D>();
+      scalars = value->as<TextureData>();
+      
+      BNTextureAddressMode addressModes[3] = {
+        BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP
+      };
+      texture = std::make_shared<Texture>((Context*)context,scalars,
+                                          BN_TEXTURE_LINEAR,
+                                          addressModes,
+                                          BN_COLOR_SPACE_LINEAR);
+      textureNN = std::make_shared<Texture>((Context*)context,scalars,
+                                            BN_TEXTURE_NEAREST,
+                                            addressModes,
+                                            BN_COLOR_SPACE_LINEAR);
       return true;
     }
     // if (member == "textureColorMap") {

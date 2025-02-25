@@ -212,7 +212,8 @@ namespace BARNEY_NS {
       device->rayQueue->resetWriteQueue();
     }
   }
+  
+  RTC_EXPORT_COMPUTE1D(generateRays,BARNEY_NS::render::GenerateRays);
 }
 
-RTC_EXPORT_COMPUTE1D(generateRays,BARNEY_NS::render::GenerateRays);
 

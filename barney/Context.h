@@ -63,9 +63,57 @@ namespace BARNEY_NS {
     
     /*! create a frame buffer object suitable to this context */
     // virtual FrameBuffer *createFB(int owningRank) = 0;
-    std::shared_ptr<barney_api::Model> createModel() override;
-    std::shared_ptr<barney_api::Renderer> createRenderer();
+    std::shared_ptr<barney_api::Model>
+    createModel() override;
+    
+    std::shared_ptr<barney_api::Renderer>
+    createRenderer();
 
+    std::shared_ptr<barney_api::Volume>
+    createVolume(const std::shared_ptr<barney_api::ScalarField> &sf) override;
+
+    std::shared_ptr<barney_api::TextureData> 
+    createTextureData(int slot,
+                      BNDataType texelFormat,
+                      vec3i dims,
+                      const void *texels) override;
+    
+    std::shared_ptr<barney_api::ScalarField>
+    createScalarField(int slot, const std::string &type) override;
+    
+    std::shared_ptr<barney_api::Geometry>
+    createGeometry(int slot, const std::string &type) override;
+    
+    std::shared_ptr<barney_api::Material>
+    createMaterial(int slot, const std::string &type) override;
+
+    std::shared_ptr<barney_api::Sampler>
+    createSampler(int slot, const std::string &type) override;
+
+    std::shared_ptr<barney_api::Light>
+    createLight(int slot, const std::string &type) override;
+
+    std::shared_ptr<barney_api::Group>
+    createGroup(int slot,
+                barney_api::Geometry **geoms, int numGeoms,
+                barney_api::Volume **volumes, int numVolumes) override;
+
+    std::shared_ptr<barney_api::Data>
+    createData(int slot,
+               BNDataType dataType,
+               size_t numItems,
+               const void *items) override;
+    
+    std::shared_ptr<barney_api::Camera>
+    createCamera(const std::string &type) override;
+
+    std::shared_ptr<barney_api::Texture>
+    createTexture(const std::shared_ptr<barney_api::TextureData> &td,
+                  BNTextureFilterMode  filterMode,
+                  BNTextureAddressMode addressModes[],
+                  BNTextureColorSpace  colorSpace) override;
+ 
+    
     // std::shared_ptr<render::HostMaterial> getDefaultMaterial(int slot);
 
     static bool logging();

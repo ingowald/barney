@@ -26,13 +26,12 @@ namespace BARNEY_NS {
   struct TiledFB;
   struct RayQueue;
   
-  typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *device,
-                                                        const void  *callbackData);
+  typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *device);
+                                                        // const void  *callbackData);
   
   struct GeomTypeRegistry {
     GeomTypeRegistry(rtc::Device *device);
-    rtc::GeomType *get(GeomTypeCreationFct callback,
-                       const void *callBackData=nullptr);
+    rtc::GeomType *get(GeomTypeCreationFct callback);
     std::map<GeomTypeCreationFct,rtc::GeomType *> geomTypes;
 
     rtc::Device *const device;    

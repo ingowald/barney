@@ -22,7 +22,7 @@
 namespace BARNEY_NS {
 
   /*! the camera model we use in barney */
-  struct Camera : public barney_api::Object {
+  struct Camera : public barney_api::Camera {
     typedef std::shared_ptr<Camera> SP;
     typedef enum { UNDEFINED=0, PERSPECTIVE } Type;
     /*! device-data for the camera object; to avoid virtual functions

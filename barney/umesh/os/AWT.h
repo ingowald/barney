@@ -59,9 +59,6 @@ namespace BARNEY_NS {
       uint32_t             *primIDs;
     };
 
-    static rtc::GeomType *createGeomType(rtc::Device *device,
-                                         const void *cbData);
-    
     struct PLD {
       AWTNode      *awtNodes   = 0;
       uint32_t     *primIDs    = 0;

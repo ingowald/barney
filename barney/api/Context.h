@@ -30,7 +30,7 @@ namespace barney_api {
   struct Object : public std::enable_shared_from_this<Object> {
     typedef std::shared_ptr<Object> SP;
 
-    Object(Context *context);
+    Object(Context *context) : context(context) {};
     virtual ~Object() {}
 
     /*! dynamically cast to another (typically derived) class, e.g. to
@@ -202,7 +202,7 @@ namespace barney_api {
   struct Volume : public Object {
     Volume(Context *context) : Object(context) {}
     virtual ~Volume() = default;
-    virtual void setXF(range1f domain,
+    virtual void setXF(const range1f &domain,
                        const bn_float4 *values,
                        int numValues,
                        float unitDensity) = 0;
@@ -338,6 +338,7 @@ namespace barney_api {
 
 #if BARNEY_BACKEND_EMBREE
   Context *createContext_embree(const std::vector<int> &dgIDs);
+
 #endif
 #if BARNEY_BACKEND_OPTIX
   Context *createContext_optix(const std::vector<int> &dgIDs,
@@ -373,5 +374,38 @@ namespace barney_api {
     // context->
       alreadyWarned.insert(key);
   }
+
+
+
+  inline void Context::releaseHostReference(Object::SP object)
+  {
+    auto it = hostOwnedHandles.find(object);
+    if (it == hostOwnedHandles.end())
+      throw std::runtime_error
+        ("trying to bnRelease() a handle that either does not "
+         "exist, or that the app (no lnoger) has any valid references on");
+
+    const int remainingReferences = --it->second;
+
+    if (remainingReferences == 0) {
+      // remove the std::shared-ptr handle:
+      it->second = {};
+      // and make barney forget that it ever had this object 
+      hostOwnedHandles.erase(it);
+    }
+  }
+  
+  inline void Context::addHostReference(Object::SP object)
+  {
+    auto it = hostOwnedHandles.find(object);
+    if (it == hostOwnedHandles.end())
+      throw std::runtime_error
+        ("trying to bnAddReference() to a handle that either does not "
+         "exist, or that the app (no lnoger) has any valid primary references on");
+    
+    // add one ref count:
+    it->second++;
+  }
+
   
 }

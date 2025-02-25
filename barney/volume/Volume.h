@@ -59,7 +59,7 @@ namespace BARNEY_NS {
       use some kind of volume accelerator that implements the
       scalar-field type specific stuff (eg, traverse a bvh over
       elements, or look up a 3d texture, etc) */
-  struct Volume : public SlottedObject
+  struct Volume : public barney_api::Volume
   {
     template<typename SFSampler>
     struct DD {
@@ -103,14 +103,15 @@ namespace BARNEY_NS {
     virtual void build(bool full_rebuild);
     
     void setXF(const range1f &domain,
-               const std::vector<vec4f> &values,
-               float baseDensity)
-    { xf.set(domain,values,baseDensity); }
+               const bn_float4 *values,
+               int numValues,
+               float baseDensity) override;
                
     ScalarField::SP  sf;
     VolumeAccel::SP  accel;
     TransferFunction xf;
-
+    DevGroup::SP const devices;
+    
     struct PLD {
       std::vector<rtc::Group *> generatedGroups;
       std::vector<rtc::Geom *>  generatedGeoms;

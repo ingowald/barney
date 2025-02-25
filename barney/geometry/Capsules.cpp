@@ -22,25 +22,10 @@ RTC_IMPORT_USER_GEOM(Capsules,BARNEY_NS::Capsules::DD,false,false);
 
 namespace BARNEY_NS {
 
-  // extern "C" char Capsules_ptx[];
-
-  Capsules::Capsules(SlotContext *slotContext)
-    : Geometry(slotContext)
+  Capsules::Capsules(Context *context, DevGroup::SP devices)
+    : Geometry(context,devices)
   {}
 
-  // rtc::GeomType *Capsules::createGeomType(rtc::Device *device, const void *)
-  // {
-  //   if (Context::logging())
-  //     std::cout << OWL_TERMINAL_GREEN
-  //               << "creating 'Capsules' geometry type"
-  //               << OWL_TERMINAL_DEFAULT << std::endl;
-
-  //   return device->createUserGeomType("Capsules_ptx",
-  //                                     "Capsules",
-  //                                     sizeof(Capsules::DD),
-  //                                     /*ah*/false,/*ch*/true);
-  // }
-  
   void Capsules::commit()
   {
     for (auto device : *devices) {
@@ -48,7 +33,7 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       if (pld->userGeoms.empty()) {
         rtc::GeomType *gt
-          = device->geomTypes.get(Capsules::createGeomType);
+          = device->geomTypes.get(createGeomType_Capsules);
         rtc::Geom *geom = gt->createGeom();
         pld->userGeoms = { geom };
       }

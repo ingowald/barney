@@ -46,6 +46,13 @@ namespace rtc {
     {
       device->copyAsync(((uint8_t*)getDD())+ofs,hostPtr,numBytes);
     }
+    inline void Buffer::upload(const void *hostPtr,
+                               size_t numBytes,
+                               size_t ofs)
+    {
+      device->copyAsync(((uint8_t*)getDD())+ofs,hostPtr,numBytes);
+      device->sync();
+    }
     
     
   }

@@ -26,7 +26,8 @@ namespace BARNEY_NS {
 
   Light::Light(Context *context,
                const DevGroup::SP &devices)
-    : SlottedObject(context,devices)
+    : barney_api::Light(context),
+      devices(devices)
   {}
   
   Light::SP Light::create(Context *context,

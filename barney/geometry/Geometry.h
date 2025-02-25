@@ -26,12 +26,11 @@
 namespace BARNEY_NS {
   
   struct ModelSlot;
-  struct SlotContext;  
   using render::GeometryAttribute;
   using render::GeometryAttributes;
   using render::HostMaterial;
   
-  struct Geometry : public SlottedObject {
+  struct Geometry : public barney_api::Geometry {
     typedef std::shared_ptr<Geometry> SP;
 
     struct DD {
@@ -46,10 +45,13 @@ namespace BARNEY_NS {
       int materialID;
     };
     
-    Geometry(SlotContext *context);
+    Geometry(Context *context,
+             DevGroup::SP devices);
     virtual ~Geometry();
 
-    static Geometry::SP create(SlotContext *context, const std::string &type);
+    static Geometry::SP create(Context *context,
+                               DevGroup::SP devices,
+                               const std::string &type);
     
     // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
@@ -85,7 +87,7 @@ namespace BARNEY_NS {
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
-
+    DevGroup::SP const devices;
   private:
     render::HostMaterial::SP material;
 

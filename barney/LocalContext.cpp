@@ -17,6 +17,26 @@
 #include "barney/LocalContext.h"
 #include "barney/fb/LocalFB.h"
 
+namespace barney_api {
+#if BARNEY_RTC_EMBREE
+  Context *createContext_embree(const std::vector<int> &dgIDs)
+  {
+    std::vector<int> gpuIDs = { 0 };
+    return new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+  }
+#endif
+#if BARNEY_RTC_OPTIX
+  Context *createContext_optix(const std::vector<int> &dgIDs,
+                               int numGPUs, const int *_gpuIDs)
+  {
+    std::vector<int> gpuIDs;
+    for (int i=0;i<numGPUs;i++)
+      gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
+    return new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+  }
+#endif
+}
+
 namespace BARNEY_NS {
 
   LocalContext::LocalContext(const std::vector<int> &dataGroupIDs,

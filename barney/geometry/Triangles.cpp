@@ -24,8 +24,8 @@ namespace BARNEY_NS {
 
   // extern "C" char Triangles_ptx[];
 
-  Triangles::Triangles(SlotContext *slotContext)
-    : Geometry(slotContext)
+  Triangles::Triangles(Context *context, DevGroup::SP devices)
+    : Geometry(context,devices)
   {}
   
   Triangles::~Triangles()
@@ -80,7 +80,7 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       if (pld->triangleGeoms.empty()) {
         rtc::GeomType *gt
-          = device->geomTypes.get(Triangles::createGeomType);
+          = device->geomTypes.get(createGeomType_Triangles);
         rtc::Geom *geom = gt->createGeom();
         pld->triangleGeoms = { geom };
       }

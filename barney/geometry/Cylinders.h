@@ -36,7 +36,7 @@ namespace BARNEY_NS {
       // int colorPerVertex;
     };
     
-    Cylinders(SlotContext *slotContext);
+    Cylinders(Context *context, DevGroup::SP devices);
     virtual ~Cylinders() = default;
     
     /*! pretty-printer for printf-debugging */
@@ -45,9 +45,6 @@ namespace BARNEY_NS {
     
     void commit() override;
     
-    static rtc::GeomType *createGeomType(rtc::Device *device,
-                                         const void *);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     bool set1i(const std::string &member, const int &value) override;

@@ -26,7 +26,7 @@ namespace BARNEY_NS {
   /*! a logical "group" of objects in a data group -- i.e., geometries
       and volumes (and maybe, eventual, lights?) -- that can be
       instantiated */
-  struct Group : public SlottedObject {
+  struct Group : public barney_api::Group {
     typedef std::shared_ptr<Group> SP;
 
     Group(Context *context,
@@ -78,7 +78,8 @@ namespace BARNEY_NS {
     OWLGroup userGeomGroup     = 0;
     OWLGroup triangleGeomGroup = 0;
     OWLGroup volumeGeomsGroup  = 0;
-#endif   
+#endif
+    DevGroup::SP const devices;
     // std::vector<MultiPass::Object::SP> multiPassObjects;
   };
   

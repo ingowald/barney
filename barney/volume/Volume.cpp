@@ -23,6 +23,16 @@ namespace BARNEY_NS {
   Volume::PLD *Volume::getPLD(Device *device)
   { return &perLogical[device->contextRank]; }
 
+  void Volume::setXF(const range1f &domain,
+                     const bn_float4 *_values,
+                     int numValues,
+                     float baseDensity) 
+  {
+    std::vector<vec4f> values(numValues);
+    memcpy(values.data(),_values,numValues*sizeof(*_values));
+    xf.set(domain,values,baseDensity);
+  }
+
   // OWLContext VolumeAccel::getOWL() const
   // { return sf->getOWL(); }
 
@@ -42,7 +52,7 @@ namespace BARNEY_NS {
   { assert(s); return s; }
   
   Volume::Volume(ScalarField::SP sf)
-    : SlottedObject((Context*)sf->context,sf->devices),
+    : barney_api::Volume(sf->context),
       sf(sf),
       xf((Context*)sf->context,sf->devices)
   {

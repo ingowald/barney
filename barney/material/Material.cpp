@@ -76,7 +76,8 @@ namespace BARNEY_NS {
     }
     
     HostMaterial::HostMaterial(SlotContext *slotContext)
-      : SlottedObject(slotContext->context,slotContext->devices),
+      : barney_api::Material(slotContext->context),
+        devices(slotContext->devices),
         materialRegistry(slotContext->materialRegistry),
         materialID(slotContext->materialRegistry->allocate())
     {
@@ -108,7 +109,6 @@ namespace BARNEY_NS {
 
     void HostMaterial::commit()
     {
-      SlottedObject::commit();
       for (auto device : *devices) {
         DeviceMaterial dd = getDD(device);
         materialRegistry->setMaterial(materialID,dd,device);

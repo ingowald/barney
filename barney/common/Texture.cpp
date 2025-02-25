@@ -37,14 +37,6 @@ namespace BARNEY_NS {
     return &perLogical[device->contextRank];
   }
 
-  Texture3D::PLD *Texture3D::getPLD(Device *device) 
-  {
-    assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
-  }
-  
   rtc::ColorSpace toRTC(BNTextureColorSpace mode)
   { return 
       (mode == BN_COLOR_SPACE_LINEAR)
@@ -100,20 +92,21 @@ namespace BARNEY_NS {
   rtc::DataType toRTC(BNDataType format);
 
   Texture::Texture(Context *context, 
-                   const DevGroup::SP &devices,
                    TextureData::SP data,
                    BNTextureFilterMode  filterMode,
-                   BNTextureAddressMode addressMode_x,
-                   BNTextureAddressMode addressMode_y,
+                   BNTextureAddressMode addressModes[],
                    BNTextureColorSpace  colorSpace)
-    : SlottedObject(context,devices),
+    : barney_api::Texture(context),
+      devices(data->devices),
       data(data)
   {
     perLogical.resize(devices->numLogical);
     rtc::TextureDesc desc;
     desc.filterMode     = toRTC(filterMode);
-    desc.addressMode[0] = toRTC(addressMode_x);
-    desc.addressMode[1] = toRTC(addressMode_y);
+    for (int i=0;i<3;i++)
+      if (data->dims[i] > 0)
+        desc.addressMode[i] = toRTC(addressModes[i]);
+    // desc.addressMode[1] = toRTC(addressMode_y);
     desc.colorSpace     = toRTC(colorSpace);
     for (auto device : *devices) {
       auto pld = getPLD(device);
@@ -121,6 +114,15 @@ namespace BARNEY_NS {
       pld->rtcTexture
         = data->getPLD(device)->rtc->createTexture(desc);
     }
+  }
+
+#if 0
+  Texture3D::PLD *Texture3D::getPLD(Device *device) 
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
   }
   
   Texture3D::Texture3D(Context *context,
@@ -157,13 +159,15 @@ namespace BARNEY_NS {
     dd.texObjNN = getPLD(device)->rtcTextureNN->getDD();
     return dd;
   }
+#endif
   
   TextureData::TextureData(Context *context,
                            const DevGroup::SP &devices,
                            BNDataType texelFormat,
                            vec3i size,
                            const void *texels)
-    : SlottedObject(context,devices),
+    : barney_api::TextureData(context),
+      devices(devices),
       dims(size),
       numChannels(numChannelsOf(texelFormat)),
       texelFormat(texelFormat)
@@ -192,6 +196,5 @@ namespace BARNEY_NS {
     assert(pld->rtcTexture);
     return pld->rtcTexture->getDD();
   }
-    
   
 }

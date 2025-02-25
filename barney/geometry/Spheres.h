@@ -31,10 +31,7 @@ namespace BARNEY_NS {
       // const vec4f *vertexAttribute[5];
     };
 
-    Spheres(SlotContext *slotContext);
-    
-    static rtc::GeomType *createGeomType(rtc::Device *device,
-                                         const void *);
+    Spheres(Context *context, DevGroup::SP devices);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override

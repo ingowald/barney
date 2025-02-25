@@ -21,10 +21,8 @@ RTC_IMPORT_USER_GEOM_TYPE(Cones);
 
 namespace BARNEY_NS {
 
-  // extern "C" char Cones_ptx[];
-
-  Cones::Cones(ModelSlot *owner)
-    : Geometry(owner)
+  Cones::Cones(Context *context, DevGroup::SP devices)
+    : Geometry(context,devices)
   {}
 
 #if 0

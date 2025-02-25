@@ -21,7 +21,7 @@
 namespace rtc {
   namespace optix {
 
-
+    // ==================================================================
     // geom
     // ==================================================================
 
@@ -79,12 +79,11 @@ namespace rtc {
       gt = 0;
     }
 
-    #if 0
     TrianglesGeomType::TrianglesGeomType(optix::Device *device,
                                          const std::string &ptxCode,
+                                         const std::string &typeName,
                                          size_t sizeOfDD,
-                                         const std::string &ahName,
-                                         const std::string &chName)
+                                         bool has_ah, bool has_ch)
       : GeomType(device)
     {
       OWLVarDecl vars[] = {
@@ -95,16 +94,16 @@ namespace rtc {
                              sizeOfDD,vars,-1);
       
       const char *ptx = ptxCode.c_str();
-        // = (const char *)rtc::getSymbol(ptxName);//+"_ptx");
+      // = (const char *)rtc::getSymbol(ptxName);//+"_ptx");
       OWLModule module = owlModuleCreate
         (device->owl,ptx);
-      if (!chName.empty())
+      if (has_ch)
         owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
-                                 chName.c_str());
-                                 // chFctName.c_str());//"TrianglesCH");
-      if (!ahName.empty())
+                                 typeName.c_str());
+      // chFctName.c_str());//"TrianglesCH");
+      if (has_ah)
         owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
-                             ahName.c_str());
+                             typeName.c_str());
       // ahFctName.c_str());//"TrianglesAH");
       owlBuildPrograms(device->owl);
       owlModuleRelease(module);
@@ -112,11 +111,9 @@ namespace rtc {
 
     UserGeomType::UserGeomType(optix::Device *device,
                                const std::string &ptxCode,
+                               const std::string &typeName,
                                size_t sizeOfDD,
-                               const std::string &boundsName,
-                               const std::string &isName,
-                               const std::string &ahName,
-                               const std::string &chName)
+                               bool has_ah, bool has_ch)
       : GeomType(device)
     {
       OWLVarDecl vars[] = {
@@ -130,20 +127,19 @@ namespace rtc {
 
       OWLModule module = owlModuleCreate
         (device->owl,ptx);
-      if (!chName.empty())
+      if (has_ch)
         owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
-                                 chName.c_str());
-      if (!ahName.empty())
+                                 typeName.c_str());
+      if (has_ah)
         owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
-                             ahName.c_str());
+                             typeName.c_str());
       owlGeomTypeSetBoundsProg(gt,/*ray type*/module,
-                               boundsName.c_str());
+                               typeName.c_str());
       owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,
-                                  isName.c_str());
+                                  typeName.c_str());
       owlBuildPrograms(device->owl);
       owlModuleRelease(module);
     }
-#endif
     
     Geom *TrianglesGeomType::createGeom()
     {

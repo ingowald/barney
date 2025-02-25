@@ -134,6 +134,43 @@ namespace rtc {
     // kernels
     // ==================================================================
 
+
+    TraceKernel2D::TraceKernel2D(Device *device,
+                                 const std::string &ptxCode,
+                                 const std::string &kernelName,
+                                 size_t sizeOfLP)
+      : device(device)
+    {
+      OWLVarDecl rg_args[]
+        = {
+        { nullptr }
+      };
+      mod = owlModuleCreate(device->owl,ptxCode.c_str());
+      rg = owlRayGenCreate(device->owl,mod,
+                           kernelName.c_str(),
+                           0,rg_args,-1);
+      owlBuildPrograms(device->owl);
+      
+      OWLVarDecl lp_args[]
+        = {
+        { "raw", (OWLDataType)(OWL_USER_TYPE_BEGIN+sizeOfLP), 0 },
+        { nullptr }
+      };
+      lp = owlParamsCreate(device->owl,sizeOfLP,lp_args,-1);
+      lpStream = owlParamsGetCudaStream(lp,0);
+    }
+    
+    void TraceKernel2D::launch(vec2i dims,
+                               const void *kernelData)
+    {
+      SetActiveGPU forDuration(device);
+      BARNEY_CUDA_CALL(StreamSynchronize(/*inherited!*/device->stream));
+      
+      owlParamsSetRaw(lp,"raw",kernelData,0);
+      owlAsyncLaunch2D(rg,dims.x,dims.y,lp);
+    }
+
+    
     // struct ComputeWrapper : public ::barney::Compute {
     //   typedef void (*LaunchFct)(vec3i, vec3i, int,
     //                             cudaStream_t, const void *);

@@ -929,6 +929,6 @@ namespace BARNEY_NS {
     }
   }
   
+  RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::ShadeRaysKernel);
 }
 
-RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::ShadeRaysKernel);

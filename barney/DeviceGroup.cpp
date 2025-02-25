@@ -36,18 +36,17 @@ namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE1D(umeshReorderElements);
   RTC_IMPORT_COMPUTE1D(umeshComputeElementBBs);
 
-  RTC_IMPORT_TRACE2D(/*traceRays.cu*/traceRays,/*ray gen name */traceRays);
+  RTC_IMPORT_TRACE2D(/*traceRays.cu*/traceRays,/*ray gen name */traceRays,/*launch params data type*/sizeof(BARNEY_NS::render::OptixGlobals));
 
   
   GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
     : device(device)
   {}
   
-  rtc::GeomType *GeomTypeRegistry::get(GeomTypeCreationFct callBack,
-                                       const void *cbData)
+  rtc::GeomType *GeomTypeRegistry::get(GeomTypeCreationFct callBack)
   {
     if (geomTypes.find(callBack) == geomTypes.end()) {
-      geomTypes[callBack] = callBack(device,cbData);
+      geomTypes[callBack] = callBack(device);
     }
     return geomTypes[callBack];
   }

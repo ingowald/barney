@@ -1,4 +1,5 @@
-#include "../barney/common/barney-common.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 __global__ void dummyKernel()
 {

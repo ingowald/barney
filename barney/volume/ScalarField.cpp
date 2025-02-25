@@ -32,10 +32,10 @@ namespace BARNEY_NS {
   ScalarField::ScalarField(Context *context,
                            const DevGroup::SP &devices,
                            const box3f &domain)
-    : SlottedObject(context,devices),
+    : barney_api::ScalarField(context),
+      devices(devices),
       domain(domain)
-  {
-  }
+  {}
 
   ScalarField::SP ScalarField::create(Context *context,
                                       const DevGroup::SP &devices,

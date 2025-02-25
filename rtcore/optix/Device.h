@@ -37,9 +37,15 @@ namespace rtc {
     struct TraceKernel2D {
       TraceKernel2D(Device *device,
                     const std::string &ptxCode,
-                    const std::string &kernelName);
+                    const std::string &kernelName,
+                    size_t sizeOfLP);
       void launch(vec2i launchDims,
                   const void *kernelData);
+      Device *const device;
+      OWLModule mod;
+      OWLRayGen rg;
+      OWLParams lp;
+      cudaStream_t lpStream;
     };
     
     struct Device : public cuda_common::Device {
@@ -150,7 +156,7 @@ namespace rtc {
 
 #define RTC_IMPORT_USER_GEOM(Type,Class,has_ah,has_ch)     \
   extern "C" char Type##_ptx[];                                 \
-  rtc::GeomType *createGeomType_##Type(rtc::Device *device)     \
+  rtc::GeomType *createGeomType_##Type(rtc::Device *device)    \
   {                                                             \
     return new rtc::optix::UserGeomType(device,                 \
                                         Type##_ptx,             \
@@ -177,16 +183,15 @@ namespace rtc {
   void __raygen__##name()                                        \
   {                                                              \
     RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();      \
-    ::rtc::optix::TraceInterface rtcore;                      \
-    rg->run(rtcore);                                             \
-  }                                                                   
-#define RTC_IMPORT_TRACE2D(fileNameBase,kernelName)                  \
+    ::rtc::optix::TraceInterface rtcore;                         \
+    rg->run(rtcore);                                          \
+  }
+
+#define RTC_IMPORT_TRACE2D(fileNameBase,kernelName,sizeOfLP)          \
   extern "C" char fileNameBase##_ptx[];                                 \
   rtc::TraceKernel2D *createTrace_##kernelName(rtc::Device *device)     \
   {                                                                     \
-    return new rtc::TraceKernel2D(device,fileNameBase##_ptx,#kernelName); \
+  return new rtc::TraceKernel2D(device,fileNameBase##_ptx,              \
+                                #kernelName,sizeOfLP);                   \
   }
-
-
-
 

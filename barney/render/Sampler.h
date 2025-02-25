@@ -36,7 +36,7 @@ namespace BARNEY_NS {
       rtc::float4 offset;
     };
     
-    struct Sampler : public SlottedObject {
+    struct Sampler : public barney_api::Sampler {
       typedef std::shared_ptr<Sampler> SP;
       
       typedef enum {
@@ -95,6 +95,7 @@ namespace BARNEY_NS {
       int   inAttribute  { render::ATTRIBUTE_0 };
       mat4f outTransform { mat4f::identity() };
       vec4f outOffset    { 0.f, 0.f, 0.f, 0.f };
+      DevGroup::SP const devices;
     };
 
     struct TransformSampler : public Sampler {

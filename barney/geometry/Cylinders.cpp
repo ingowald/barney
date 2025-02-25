@@ -22,32 +22,17 @@ RTC_IMPORT_USER_GEOM(Cylinders,BARNEY_NS::Cylinders::DD,false,false);
 
 namespace BARNEY_NS {
 
-  // extern "C" char Cylinders_ptx[];
-
-  Cylinders::Cylinders(SlotContext *slotContext)
-    : Geometry(slotContext)
+  Cylinders::Cylinders(Context *context, DevGroup::SP devices)
+    : Geometry(context,devices)
   {}
 
-  // rtc::GeomType *Cylinders::createGeomType(rtc::Device *device, const void *)
-  // {
-  //   if (Context::logging())
-  //   std::cout << OWL_TERMINAL_GREEN
-  //             << "creating 'Cylinders' geometry type"
-  //             << OWL_TERMINAL_DEFAULT << std::endl;
-
-  //   return device->createUserGeomType("Cylinders_ptx",
-  //                                     "Cylinders",
-  //                                     sizeof(Cylinders::DD),
-  //                                     /*ah*/false,/*ch*/true);
-  // }
-  
   void Cylinders::commit()
   {
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       if (pld->userGeoms.empty()) {
         rtc::GeomType *gt
-          = device->geomTypes.get(Cylinders::createGeomType);
+          = device->geomTypes.get(createGeomType_Cylinders);
         rtc::Geom *geom = gt->createGeom();
         geom->setPrimCount((int)indices->count);
         pld->userGeoms.push_back(geom);

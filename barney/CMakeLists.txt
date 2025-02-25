@@ -46,6 +46,7 @@ add_library(barney SHARED
   )
 target_link_libraries(barney PUBLIC
   $<BUILD_INTERFACE:barney_config>
+  $<BUILD_INTERFACE:barney_rtc>
   )
 set_target_properties(barney
   PROPERTIES
@@ -229,11 +230,12 @@ if (BARNEY_BACKEND_OPTIX)
     target_link_libraries(barney_optix PRIVATE barney-${basename}-ptx)
   endforeach()
   target_link_libraries(barney_optix PRIVATE barney_config barney_rtc_optix)
-  target_link_libraries(barney PRIVATE barney_optix)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_optix>)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cuda_float3>)
 endif()
 
 if (BARNEY_BACKEND_EMBREE)
-  add_library(barney_embree_host ${HOST_SOURCES})
+  add_library(barney_embree_host STATIC ${HOST_SOURCES})
   if (NOT BARNEY_HAVE_CUDA)
     foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
       set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
@@ -244,7 +246,7 @@ if (BARNEY_BACKEND_EMBREE)
   endif()
   target_link_libraries(barney_embree_host PRIVATE barney_config barney_rtc_embree)
   
-  add_library(barney_embree_programs ${DEVICE_PROGRAM_SOURCES})
+  add_library(barney_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})
   if (NOT BARNEY_HAVE_CUDA)
     foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
       set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
@@ -256,8 +258,9 @@ if (BARNEY_BACKEND_EMBREE)
   target_link_libraries(barney_embree_programs PRIVATE barney_config barney_rtc_embree)
   target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
   
-
-  target_link_libraries(barney PRIVATE barney_embree_host barney_embree_programs)
+  target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
+  target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3>)
 endif()
     
 

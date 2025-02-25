@@ -24,23 +24,10 @@ namespace BARNEY_NS {
 
   // extern "C" char Spheres_ptx[];
   
-  Spheres::Spheres(SlotContext *slotContext)
-    : Geometry(slotContext)
+  Spheres::Spheres(Context *context, DevGroup::SP devices)
+    : Geometry(context,devices)
   {}
 
-
-  // rtc::GeomType *Spheres::createGeomType(rtc::Device *device, const void *)
-  // {
-  //   if (Context::logging())
-  //     std::cout << OWL_TERMINAL_GREEN
-  //               << "creating 'Spheres' geometry type"
-  //               << OWL_TERMINAL_DEFAULT << std::endl;
-  //   return device->createUserGeomType("Spheres_ptx",
-  //                                     "Spheres",
-  //                                     sizeof(Spheres::DD),
-  //                                     /*ah*/false,/*ch*/true);
-  // }
-  
   void Spheres::commit()
   {
     if (!origins) return;
@@ -51,7 +38,7 @@ namespace BARNEY_NS {
       if (pld->userGeoms.empty()) {
         int numOrigins = (int)origins->count;
         rtc::GeomType *gt
-          = device->geomTypes.get(Spheres::createGeomType);
+          = device->geomTypes.get(createGeomType_Spheres);
         rtc::Geom *geom = gt->createGeom();
         geom->setPrimCount(numOrigins);
         pld->userGeoms.push_back(geom);

@@ -45,7 +45,7 @@ namespace BARNEY_NS {
       // const vec4f *vertexAttribute[5];
     };
     
-    Triangles(SlotContext *slotContext);
+    Triangles(Context *context, DevGroup::SP devices);
     virtual ~Triangles();
     
     /*! pretty-printer for printf-debugging */
@@ -59,9 +59,6 @@ namespace BARNEY_NS {
                  const barney_api::Data::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
-
-    static rtc::GeomType *createGeomType(rtc::Device *device,
-                                         const void *);
 
     PODData::SP vertices;
     PODData::SP indices;

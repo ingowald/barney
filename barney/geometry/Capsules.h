@@ -43,7 +43,7 @@ namespace BARNEY_NS {
       const vec2i *indices;
     };
     
-    Capsules(SlotContext *slotContext);
+    Capsules(Context *context, DevGroup::SP devices);
     virtual ~Capsules() = default;
     
     /*! pretty-printer for printf-debugging */
@@ -52,9 +52,6 @@ namespace BARNEY_NS {
     
     void commit() override;
     
-    static rtc::GeomType *createGeomType(rtc::Device *device,
-                                         const void *);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     bool setData(const std::string &member, const barney_api::Data::SP &value) override;

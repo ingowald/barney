@@ -139,6 +139,6 @@ namespace BARNEY_NS {
     }
   }
   
+  RTC_EXPORT_COMPUTE1D(umeshReorderElements,BARNEY_NS::UMeshReorderElements);
 }
 
-RTC_EXPORT_COMPUTE1D(umeshReorderElements,BARNEY_NS::UMeshReorderElements);

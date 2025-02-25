@@ -69,7 +69,9 @@ namespace BARNEY_NS {
     VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 
-    Texture3D::SP  texture;
+    TextureData::SP scalars;
+    Texture::SP  texture;
+    Texture::SP  textureNN;
     // Texture3D::SP  colorMapTexture;
 
     struct PLD {

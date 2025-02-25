@@ -17,7 +17,7 @@
 #include "rtcore/optix/Denoiser.h"
 #include <optix.h>
 // #include <optix_function_table.h>
-// #include <optix_stubs.h>
+#include <optix_stubs.h>
 
 namespace rtc {
   namespace optix {

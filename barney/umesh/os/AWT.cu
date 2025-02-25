@@ -20,6 +20,9 @@
 # include <cuBQL/builder/cuda/wide_gpu_builder.h>
 #endif
 
+/*! defines the 'createGeomType_AWT()' function */
+RTC_IMPORT_USER_GEOM(AWT,BARNEY_NS::AWTAccel::DD,false,false);
+
 namespace BARNEY_NS {
   
   RTC_IMPORT_COMPUTE1D(copyNodes);
@@ -241,8 +244,7 @@ namespace BARNEY_NS {
         // rtc->freeMem(tempElements);
 
         rtc::GeomType *gt
-          = device->geomTypes.get(createGeomType,
-                                  this);
+          = device->geomTypes.get(createGeomType_AWT);
         pld->geom = gt->createGeom();
         pld->geom->setPrimCount(1);
         

@@ -18,11 +18,13 @@
 #include "barney/DeviceGroup.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/GlobalModel.h"
+#include "barney/render/Sampler.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
 
 namespace BARNEY_NS {
 
+  
   Context::Context(const std::vector<int> &dataGroupIDs,
                    const std::vector<int> &gpuIDs,
                    int globalIndex,
@@ -75,7 +77,7 @@ namespace BARNEY_NS {
         Device *device
           = new Device(rtc,
                        (int)allDevices.size(),
-              (int)gpuIDs.size(),
+                       (int)gpuIDs.size(),
                        globalIndex*numSlots+lmsIdx,
                        globalIndexStep*numSlots);
         slotDevices.push_back(device);
@@ -304,6 +306,102 @@ namespace BARNEY_NS {
               << OWL_TERMINAL_DEFAULT << std::endl;
     alreadyWarned.insert(kind+"::"+type);
   }
+
+  std::shared_ptr<barney_api::Camera>
+  Context::createCamera(const std::string &type)
+  {
+    return Camera::create(this,type);
+  }
+  
+  std::shared_ptr<barney_api::Volume>
+  Context::createVolume(const std::shared_ptr<barney_api::ScalarField> &sf)
+  {
+    return Volume::create(sf->as<ScalarField>());
+  }
+
+  std::shared_ptr<barney_api::TextureData> 
+  Context::createTextureData(int slot,
+                             BNDataType texelFormat,
+                             vec3i dims,
+                             const void *texels)
+  {
+    return std::make_shared<TextureData>(this,
+                                         getDevices(slot),
+                                         texelFormat,
+                                         dims,texels);
+  }
+
+  std::shared_ptr<barney_api::Texture>
+  Context::createTexture(const std::shared_ptr<barney_api::TextureData> &td,
+                         BNTextureFilterMode  filterMode,
+                         BNTextureAddressMode addressModes[],
+                         BNTextureColorSpace  colorSpace)
+  {
+    return std::make_shared<Texture>(this,
+                                     td->as<TextureData>(),
+                                     filterMode,addressModes,colorSpace);
+  }
+  
+    
+  std::shared_ptr<barney_api::ScalarField>
+  Context::createScalarField(int slot, const std::string &type)
+  {
+    return ScalarField::create(this,getDevices(slot),type);
+  }
+    
+  std::shared_ptr<barney_api::Geometry>
+  Context::createGeometry(int slot, const std::string &type) 
+  {
+    return Geometry::create(this,getDevices(slot),type);
+  }
+    
+  std::shared_ptr<barney_api::Material>
+  Context::createMaterial(int slot, const std::string &type) 
+  {
+    return render::HostMaterial::create(getSlot(slot),type);
+  }
+
+  std::shared_ptr<barney_api::Sampler>
+  Context::createSampler(int slot, const std::string &type) 
+  {
+    return render::Sampler::create(getSlot(slot),type);
+  }
+
+  std::shared_ptr<barney_api::Light>
+  Context::createLight(int slot, const std::string &type) 
+  {
+    return Light::create(this,getDevices(slot),type);
+  }
+
+  std::shared_ptr<barney_api::Group>
+  Context::createGroup(int slot,
+                       barney_api::Geometry **_geoms, int numGeoms,
+                       barney_api::Volume **_volumes, int numVolumes) 
+  {
+    std::vector<Geometry::SP> geoms;
+    std::vector<Volume::SP> volumes;
+    for (int i=0;i<numGeoms;i++) {
+      auto g = _geoms[i];
+      if (g) geoms.push_back(g->as<Geometry>());
+    }
+    for (int i=0;i<numVolumes;i++) {
+      auto g = _volumes[i];
+      if (g) volumes.push_back(g->as<Volume>());
+    }
+    return std::make_shared<Group>(this,
+                                   getDevices(slot),
+                                   geoms,volumes);
+  }
+
+  std::shared_ptr<barney_api::Data>
+  Context::createData(int slot,
+                      BNDataType dataType,
+                      size_t numItems,
+                      const void *items)
+  {
+    return BaseData::create(this,getDevices(slot),dataType,numItems,items);
+  }
+  
   
 }
 

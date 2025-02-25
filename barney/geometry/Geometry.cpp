@@ -34,29 +34,31 @@ namespace BARNEY_NS {
     return &perLogical[device->contextRank];
   }
 
-  Geometry::SP Geometry::create(SlotContext *context,
+  Geometry::SP Geometry::create(Context *context,
+                                DevGroup::SP devices,
                                 const std::string &type)
   {
     if (type == "spheres")
-      return std::make_shared<Spheres>(context);
+      return std::make_shared<Spheres>(context,devices);
 #if 0
     if (type == "cones")
-      return std::make_shared<Cones>(context);
+      return std::make_shared<Cones>(context,devices);
 #endif
     if (type == "cylinders")
-      return std::make_shared<Cylinders>(context);
+      return std::make_shared<Cylinders>(context,devices);
     if (type == "capsules")
-      return std::make_shared<Capsules>(context);
+      return std::make_shared<Capsules>(context,devices);
     if (type == "triangles")
-      return std::make_shared<Triangles>(context);
+      return std::make_shared<Triangles>(context,devices);
     
-    context->context->warn_unsupported_object("Geometry",type);
+    context->warn_unsupported_object("Geometry",type);
     return {};
   }
 
-  Geometry::Geometry(SlotContext *slotContext)
-    : SlottedObject(slotContext->context,slotContext->devices),
-      material(slotContext->defaultMaterial)
+  Geometry::Geometry(Context *context,
+                     DevGroup::SP devices)
+    : barney_api::Geometry(context),
+      devices(devices)
   {
     perLogical.resize(devices->numLogical);
   }

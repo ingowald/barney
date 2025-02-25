@@ -24,7 +24,7 @@ namespace BARNEY_NS {
 
   struct ModelSlot;
   
-  struct Light : public SlottedObject {
+  struct Light : public barney_api::Light {
     typedef std::shared_ptr<Light> SP;
 
     struct DD {
@@ -61,6 +61,7 @@ namespace BARNEY_NS {
                             const std::string &name);
 
     vec3f color = vec3f(1.f);
+    DevGroup::SP const devices;
   };
 
 };

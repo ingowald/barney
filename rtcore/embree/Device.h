@@ -215,9 +215,9 @@ namespace rtc {
 
 #define RTC_DECLARE_GLOBALS(ignore) /* ignore */
 
-#define RTC_IMPORT_TRACE2D(name,Class)                                  \
+#define RTC_IMPORT_TRACE2D(name,Class,sizeOfLP)                           \
   ::rtc::TraceKernel2D *createTrace_##name(::rtc::Device *device);
 
 #define RTC_EXPORT_TRACE2D(name,Class)                                  \
-  rtc::TraceKernel2D *createTrace_##kernelName(rtc::Device *device)     \
+  rtc::TraceKernel2D *createTrace_##name(rtc::Device *device)     \
   { return new ::rtc::TraceKernel2D(device,Class::run); }

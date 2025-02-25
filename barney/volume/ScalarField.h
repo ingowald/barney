@@ -30,7 +30,7 @@ namespace BARNEY_NS {
   /*! abstracts any sort of scalar field (unstructured, amr,
     structured, rbfs....) _before_ any transfer function(s) get
     applied to it */
-  struct ScalarField : public SlottedObject
+  struct ScalarField : public barney_api::ScalarField
   {
     typedef std::shared_ptr<ScalarField> SP;
 
@@ -60,6 +60,7 @@ namespace BARNEY_NS {
         ghost cells, or if this is a spatial partitioning of a umesh,
         etc */
     const box3f domain;
+    DevGroup::SP const devices;
   };
   
   /*! abstraction for a class that can sample a given scalar

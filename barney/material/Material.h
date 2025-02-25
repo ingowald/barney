@@ -74,7 +74,7 @@ namespace BARNEY_NS {
     /*! barney 'virtual' material implementation that takes anari-like
       material paramters, and then builder barney::render:: style
       device materials to be put into the device geometries */
-    struct HostMaterial : public SlottedObject {
+    struct HostMaterial : public barney_api::Material {
       typedef std::shared_ptr<HostMaterial> SP;
 
       /*! pretty-printer for printf-debugging */
@@ -89,7 +89,7 @@ namespace BARNEY_NS {
         (and even worse, its type) if the assigned material's type
         changes */
 
-      HostMaterial(SlotContext *context);
+      HostMaterial(SlotContext *slotContext);
       virtual ~HostMaterial();
 
       // ------------------------------------------------------------------
@@ -106,6 +106,7 @@ namespace BARNEY_NS {
       const int materialID;
 
       bool hasBeenCommittedAtLeastOnce = false;
+      DevGroup::SP const devices;
       
       // keep reference to material library, so it cannot die before
       // all materials are dead

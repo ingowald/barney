@@ -33,8 +33,8 @@ namespace BARNEY_NS {
       MCGrid::DD            mcGrid;
     };
 
-    static rtc::GeomType *createGeomType(rtc::Device *device,
-                                         const void *cbData);
+    // static rtc::GeomType *createGeomType(rtc::Device *device,
+    //                                      const void *cbData);
     
     struct PLD {
       rtc::Geom  *geom  = 0;
@@ -53,9 +53,13 @@ namespace BARNEY_NS {
     }
 
     MCVolumeAccel(Volume *volume,
-                  const std::shared_ptr<SFSampler> &sfSampler,
-                  const std::string &embeddedPTXStringName,
-                  const std::string &programsTypeName);
+                  GeomTypeCreationFct creatorFct,
+                  const std::shared_ptr<SFSampler> &sfSampler);
+      // ,
+      //             const std::string &embeddedPTXStringName,
+      //             const std::string &programsTypeName);
+
+      GeomTypeCreationFct const creatorFct;
     
     void build(bool full_rebuild) override;
     
@@ -67,42 +71,18 @@ namespace BARNEY_NS {
                     owl::common::box3f &bounds,
                     const int32_t primID);
     /*! optix isec prog for this class of accels */
-    static inline __rtc_device void isProg(rtc::TraceInterface &ti);
+    static inline __rtc_device
+    void isProg(rtc::TraceInterface &ti);
     /*! optix closest-hit prog for this class of accels */
 #endif
     
     MCGrid       mcGrid;
     const std::shared_ptr<SFSampler> sfSampler;
-    
-    /*! the name of the ptx string that _contains_ the rtx programs
-        that implement this type; i.e., where the
-        RTC_DECLARE_USER_GEOM() is set. Eg, if that user geom
-        declartion is in <somePath>/UMeshMC.dev.cu, then the ptx will
-        be put into a symbold UMeshMC_ptx - and the
-        embeddedPTXStringName should be set to "UMeshMC_ptx". */
-    const std::string embeddedPTXStringName;
-
-    /*! the name of the type in RTC_DECLARE_USER_GEOM() */
-    const std::string programsTypeName;
   };
   
   // ==================================================================
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
-
-#if 0
-  template<typename SFSampler>
-  rtc::GeomType *MCVolumeAccel<SFSampler>
-  ::createGeomType(rtc::Device *device,
-                   const void *cbData)
-  {
-    MCVolumeAccel<SFSampler> *self = (MCVolumeAccel<SFSampler>*)cbData;
-    return device->createUserGeomType(self->embeddedPTXStringName.c_str(),
-                                      self->programsTypeName.c_str(),
-                                      sizeof(DD),
-                                      /*ah*/false,/*ch*/false);
-  }
-#endif
 
   template<typename SFSampler>
   void MCVolumeAccel<SFSampler>::build(bool full_rebuild) 
@@ -118,8 +98,9 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       if (!pld->geom) {
         rtc::GeomType *gt
-          = device->geomTypes.get(MCVolumeAccel<SFSampler>::createGeomType,
-                                  this);
+          = device->geomTypes.get(creatorFct);
+        // MCVolumeAccel<SFSampler>::createGeomType,
+        //                           this);
 
         // build a single-prim geometry, that single prim is our
         // entire MC/DDA grid
@@ -146,15 +127,14 @@ namespace BARNEY_NS {
   
 
   template<typename SFSampler>
-  MCVolumeAccel<SFSampler>::MCVolumeAccel(Volume *volume,
-                                       const std::shared_ptr<SFSampler> &sfSampler,
-                                       const std::string &embeddedPTXStringName,
-                                       const std::string &programsTypeName)
+  MCVolumeAccel<SFSampler>::
+  MCVolumeAccel(Volume *volume,
+                GeomTypeCreationFct creatorFct,
+                const std::shared_ptr<SFSampler> &sfSampler)
     : VolumeAccel(volume),
       mcGrid(volume->sf->devices),
-      embeddedPTXStringName(embeddedPTXStringName),
-      programsTypeName(programsTypeName),
-      sfSampler(sfSampler)
+      sfSampler(sfSampler),
+      creatorFct(creatorFct)
   {
     perLogical.resize(devices->numLogical);
   }

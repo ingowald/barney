@@ -26,8 +26,9 @@ namespace BARNEY_NS {
   rtc::AddressMode toRTC(BNTextureAddressMode mode);
   
   struct Device;
+  struct Context;
   
-  struct TextureData : public SlottedObject {
+  struct TextureData : public barney_api::TextureData {
     typedef std::shared_ptr<TextureData> SP;
 
     struct PLD {
@@ -50,18 +51,17 @@ namespace BARNEY_NS {
     int             numChannels;
     vec3i           dims;
     BNDataType      texelFormat;
+    DevGroup::SP    const devices;
   };
 
 
-  struct Texture : public SlottedObject {
+  struct Texture : public barney_api::Texture {
     typedef std::shared_ptr<Texture> SP;
 
     Texture(Context *context,
-            const DevGroup::SP &devices,
             TextureData::SP data, 
             BNTextureFilterMode  filterMode,
-            BNTextureAddressMode addressMode_x,
-            BNTextureAddressMode addressMode_y,
+            BNTextureAddressMode addressModes[],
             BNTextureColorSpace  colorSpace);
     virtual ~Texture() = default;
 
@@ -81,38 +81,39 @@ namespace BARNEY_NS {
 
     vec2i getDims() const { return {data->dims.x,data->dims.y}; }
     TextureData::SP data;
+    DevGroup::SP    const devices;
   };
 
-  struct Texture3D : public SlottedObject {
-    typedef std::shared_ptr<Texture3D> SP;
+  // struct Texture3D : public SlottedObject {
+  //   typedef std::shared_ptr<Texture3D> SP;
 
-    struct DD {
-      rtc::device::TextureObject texObj;
-      rtc::device::TextureObject texObjNN;
-    };
+  //   struct DD {
+  //     rtc::device::TextureObject texObj;
+  //     rtc::device::TextureObject texObjNN;
+  //   };
 
-    Texture3D(Context *context,
-              const DevGroup::SP &devices,
-              TextureData::SP data,
-              BNTextureFilterMode  filterMode,
-              BNTextureAddressMode addressMode);
-    virtual ~Texture3D() = default;
+  //   Texture3D(Context *context,
+  //             const DevGroup::SP &devices,
+  //             TextureData::SP data,
+  //             BNTextureFilterMode  filterMode,
+  //             BNTextureAddressMode addressMode);
+  //   virtual ~Texture3D() = default;
     
-    struct PLD {
-      rtc::Texture *rtcTexture = 0;
-      rtc::Texture *rtcTextureNN = 0;
-    };
+  //   struct PLD {
+  //     rtc::Texture *rtcTexture = 0;
+  //     rtc::Texture *rtcTextureNN = 0;
+  //   };
     
-    PLD *getPLD(Device *device);
-    std::vector<PLD> perLogical;
+  //   PLD *getPLD(Device *device);
+  //   std::vector<PLD> perLogical;
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Texture3D{}"; }
+  //   /*! pretty-printer for printf-debugging */
+  //   std::string toString() const override
+  //   { return "Texture3D{}"; }
 
-    DD getDD(Device *device);
-  private:
-    TextureData::SP data;
-  };
+  //   DD getDD(Device *device);
+  // private:
+  //   TextureData::SP data;
+  // };
 
 }
