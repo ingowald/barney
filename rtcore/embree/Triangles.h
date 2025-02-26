@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "rtcore/common/Backend.h"
 #include "rtcore/embree/Buffer.h"
 #include "rtcore/embree/GeomType.h"
 #include "rtcore/embree/Geom.h"
@@ -25,7 +24,6 @@ namespace rtc {
   namespace embree {
 
     struct TrianglesGeomType;
-    
     
     struct TrianglesGeom : public Geom
     {

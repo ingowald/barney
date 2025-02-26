@@ -1,20 +1,22 @@
-#pragma once
+DEPRECATED
 
-#if !BARNEY_DEVICE_PROGRAM
-# error "RTcore.h should only ever be included by device programs"
-#endif
+// #pragma once
 
-/*! SHOULD ONLY EVER BE INCLUDED BY DEVICE PROGRAMS */
-#include "rtcore/common/rtcore-common.h"
+// #if !BARNEY_DEVICE_PROGRAM
+// # error "RTcore.h should only ever be included by device programs"
+// #endif
 
-#if BARNEY_RTC_OPTIX
-# include "optix/RTCore.h"
+// /*! SHOULD ONLY EVER BE INCLUDED BY DEVICE PROGRAMS */
+// #include "rtcore/common/rtcore-common.h"
 
-namespace rtc {
-  using namespace optix;
+// #if BARNEY_RTC_OPTIX
+// # include "optix/RTCore.h"
 
-  using optix::TraceInterface;
-  using cuda_common::load;
-}
-#endif
+// namespace rtc {
+//   using namespace optix;
+
+//   using optix::TraceInterface;
+//   using cuda_common::load;
+// }
+// #endif
 

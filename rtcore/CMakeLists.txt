@@ -19,12 +19,12 @@ set_property(TARGET barney_rtc_config PROPERTY
 
 
 # ==================================================================
-add_library(barney_rtc_common OBJECT
-  common/Backend.cpp
-  common/RTCore.cpp
-  rtc.cpp
+add_library(barney_rtc_common INTERFACE
+#  common/Backend.cpp
+#  common/RTCore.cpp
+#  rtc.cpp
   )
-target_link_libraries(barney_rtc_common PUBLIC barney_rtc_config)
+target_link_libraries(barney_rtc_common INTERFACE barney_rtc_config)
 
 
 # ==================================================================

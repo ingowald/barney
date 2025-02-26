@@ -20,7 +20,6 @@
 #include "rtcore/embree/UserGeom.h"
 // 
 #include "rtcore/embree/TraceInterface.h"
-#include "rtcore/common/RTCore.h"
 
 namespace rtc {
   namespace embree {

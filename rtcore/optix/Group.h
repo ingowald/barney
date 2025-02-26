@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "rtcore/common/Backend.h"
+#include "rtcore/optix/Device.h"
 #include <owl/owl.h>
 
 namespace rtc {

@@ -23,20 +23,9 @@
 #include "rtcore/embree/Denoiser.h"
 #include "rtcore/embree/TraceInterface.h"
 #include "rtcore/embree/ComputeInterface.h"
-// ---- common ----
-#include "rtcore/common/RTCore.h"
 
 namespace rtc {
   namespace embree {
-
-    // __thread TraceInterface *perThreadTraceInterface = 0;
-    
-    // TraceInterface *TraceInterface::get()
-    // {
-    //   // if (!perThreadTraceInterface)
-    //   //   perThreadTraceInterface = new TraceInterface;
-    //   return perThreadTraceInterface;
-    // }
 
     // ------------------------------------------------------------------
     // rt core interface
