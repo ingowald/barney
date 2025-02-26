@@ -98,7 +98,7 @@ namespace barney_device {
     // Helper/other functions and data members
     /////////////////////////////////////////////////////////////////////////////
 
-    // BarneyDevice();
+    BarneyDevice();
     BarneyDevice(ANARILibrary library, const std::string &subType="default");
     ~BarneyDevice() override;
 
@@ -116,7 +116,7 @@ namespace barney_device {
     /*! allows for setting which gpu to use. must be set before the
         first commit, and should not be changed after that */
     int  m_cudaDevice = 0;
-    const std::string deviceType;
+    const std::string deviceType = "default";
   };
 
 } // namespace barney_device
