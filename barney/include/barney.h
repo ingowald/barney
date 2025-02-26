@@ -30,19 +30,22 @@
 # include <mpi.h>
 #endif
 
-#if defined(_MSC_VER)
-#  define BARNEY_DLL_EXPORT __declspec(dllexport)
-#  define BARNEY_DLL_IMPORT __declspec(dllimport)
+#ifdef _WIN32
+# ifdef barney_STATIC
+#  define BARNEY_INTERFACE /* nothing */
+# elif defined(barney_EXPORTS)
+#  define BARNEY_INTERFACE __declspec(dllexport)
+# else
+#  define BARNEY_INTERFACE __declspec(dllimport)
+# endif
 #elif defined(__clang__) || defined(__GNUC__)
-#  define BARNEY_DLL_EXPORT __attribute__((visibility("default")))
-#  define BARNEY_DLL_IMPORT __attribute__((visibility("default")))
+#  define BARNEY_INTERFACE __attribute__((visibility("default")))
 #else
-#  define BARNEY_DLL_EXPORT
-#  define BARNEY_DLL_IMPORT
+#  define BARNEY_INTERFACE
 #endif
 
 #ifdef __cplusplus
-#  define BARNEY_API extern "C" BARNEY_DLL_EXPORT
+#  define BARNEY_API extern "C" BARNEY_INTERFACE
 #else
 #  define BARNEY_API /* bla */
 #endif

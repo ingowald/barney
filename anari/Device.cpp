@@ -223,7 +223,9 @@ namespace barney_device {
 
   // Helper/other functions and data members ////////////////////////////////////
 
-  BarneyDevice::BarneyDevice(ANARILibrary l) : helium::BaseDevice(l)
+  BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
+    : helium::BaseDevice(l),
+      deviceType(subType)
   {
     m_state = std::make_unique<BarneyGlobalState>(this_device());
     deviceCommitParameters();

@@ -42,7 +42,7 @@ target_compile_definitions(barney_config_ptx
 # barney itself
 # ------------------------------------------------------------------
 add_library(barney SHARED
-  api/barney.cpp
+  api/barney.cu
   )
 target_link_libraries(barney PUBLIC
   $<BUILD_INTERFACE:barney_config>
@@ -64,7 +64,10 @@ else()
 endif()
   
 add_library(barney_static STATIC
-  api/barney.cpp
+  api/barney.cu
+  )
+target_compile_definitions(barney_static PUBLIC
+  -Dbarney_STATIC=1
   )
 target_link_libraries(barney_static PUBLIC
   $<BUILD_INTERFACE:barney_config>
@@ -94,8 +97,8 @@ set(HOST_SOURCES
   umesh/mc/UMeshCUBQLSampler.h
   umesh/mc/UMeshCUBQLSampler.cu
 
-  umesh/os/AWT.cu
-  umesh/os/AWT.h
+#  umesh/os/AWT.cu
+#  umesh/os/AWT.h
   
   # *structured* volumes
   volume/StructuredData.h
@@ -212,7 +215,7 @@ set(DEVICE_PROGRAM_SOURCES
   geometry/Capsules.dev.cu
   volume/StructuredData.dev.cu
   umesh/mc/UMeshMC.dev.cu
-  umesh/os/AWT.dev.cu
+#  umesh/os/AWT.dev.cu
   amr/BlockStructuredMC.dev.cu
   kernels/traceRays.dev.cu
   )
@@ -229,9 +232,18 @@ if (BARNEY_BACKEND_OPTIX)
       )
     target_link_libraries(barney_optix PRIVATE barney-${basename}-ptx)
   endforeach()
+  set_target_properties(barney_optix
+    PROPERTIES
+    CUDA_SEPARABLE_COMPILATION   ON
+    POSITION_INDEPENDENT_CODE    ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+#    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+    CXX_VISIBILITY_PRESET  default
+    CUDA_VISIBILITY_PRESET default
+    )
   target_link_libraries(barney_optix PRIVATE barney_config barney_rtc_optix)
   target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_optix>)
-  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cuda_float3>)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cuda_float3_static>)
 endif()
 
 if (BARNEY_BACKEND_EMBREE)
@@ -260,7 +272,7 @@ if (BARNEY_BACKEND_EMBREE)
   
   target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
   target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
-  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3>)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
 endif()
     
 

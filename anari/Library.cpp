@@ -27,9 +27,9 @@ namespace barney_device {
     : anari::LibraryImpl(lib, defaultStatusCB, statusCBPtr)
   {}
 
-  ANARIDevice BarneyLibrary::newDevice(const char * /*subtype*/)
+  ANARIDevice BarneyLibrary::newDevice(const char *subType)
   {
-    return (ANARIDevice) new BarneyDevice(this_library());
+    return (ANARIDevice) new BarneyDevice(this_library(),subType);
   }
 
   const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)

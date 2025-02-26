@@ -30,7 +30,7 @@ struct BarneyGlobalState : public helium::BaseGlobalDeviceState
 
   // Helper methods //
 
-  BarneyGlobalState(ANARIDevice d);
+  BarneyGlobalState(ANARIDevice d, const std::string &subType);
   void markSceneChanged();
 };
 

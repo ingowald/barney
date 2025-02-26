@@ -35,8 +35,8 @@ namespace BARNEY_NS {
            max_leaf_size = ((1<<count_bits)-1) };
     // int     depth[4];
     struct NodeRef {
-      inline __both__ bool valid() const { return count != 0 || offset != 0; }
-      inline __both__ bool isLeaf() const { return count != 0; }
+      inline __rtc_device bool valid() const { return count != 0 || offset != 0; }
+      inline __rtc_device bool isLeaf() const { return count != 0; }
       uint32_t offset:offset_bits;
       uint32_t count :count_bits;
     };

@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "barney/umesh/os/AWT.h"
+#if 0
 #include <cuBQL/bvh.h>
 #if BARNEY_HAVE_CUDA
 # include <cuBQL/builder/cuda/wide_gpu_builder.h>
@@ -59,6 +60,7 @@ namespace BARNEY_NS {
 
     inline __rtc_device void run(const rtc::ComputeInterface &ci)
     {
+#if 0
       int tid = ci.launchIndex().x;
       int nodeID = tid / AWT_NODE_WIDTH;
       if (nodeID >= numNodes) return;
@@ -108,6 +110,7 @@ namespace BARNEY_NS {
         
         continue;
       }
+#endif
     }
   };
 
@@ -123,6 +126,7 @@ namespace BARNEY_NS {
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci)
     {
+#if 0
       int tid = ci.launchIndex().x;
       if (tid >= numNodes) return;
 
@@ -154,17 +158,9 @@ namespace BARNEY_NS {
         }
       }
       out_infos[tid].numNotDone = numActive;
+#endif
     }
   };
-
-  // rtc::GeomType *AWTAccel::createGeomType(rtc::Device *device,
-  //                               const void *cbData)
-  // {
-  //   return device->createUserGeomType("AWT_ptx",
-  //                                     "AWT",
-  //                                     sizeof(DD),
-  //                                     /*ah*/false,/*ch*/false);
-  // }
 
   AWTAccel::AWTAccel(Volume *volume,
                      UMeshField *mesh)
@@ -301,3 +297,4 @@ namespace BARNEY_NS {
 
 
 
+#endif
