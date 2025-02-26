@@ -25,6 +25,11 @@ if(MSVC) # That's also clang-cl
     PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
 endif()
 
+if (BARNEY_MPI)
+  target_compile_definitions(barney_config INTERFACE
+    -DBARNEY_MPI=1
+    )
+endif()
 
 
 add_library(barney_config_ptx INTERFACE)
@@ -66,6 +71,13 @@ endif()
 add_library(barney_static STATIC
   api/barney.cu
   )
+if (NOT BARNEY_HAVE_CUDA)
+  set_source_files_properties(api/barney.cu PROPERTIES LANGUAGE CXX)
+  if (NOT WIN32)
+    set_source_files_properties(api/barney.cu PROPERTIES COMPILE_OPTIONS "-xc++")
+  endif()
+endif()
+
 target_compile_definitions(barney_static PUBLIC
   -Dbarney_STATIC=1
   )
@@ -208,6 +220,15 @@ set(HOST_SOURCES
   material/AnariMatte.cpp
   )
 
+if (BARNEY_API)
+  list(APPEND BARNEY_HOST_SOURCES
+    fb/DistFB.h
+    fb/DistFB.cpp
+    MPIContext.h
+    MPIContext.cpp
+    )
+endif()
+
 set(DEVICE_PROGRAM_SOURCES
   geometry/Spheres.dev.cu
   geometry/Triangles.dev.cu
@@ -247,29 +268,26 @@ if (BARNEY_BACKEND_OPTIX)
 endif()
 
 if (BARNEY_BACKEND_EMBREE)
-  add_library(barney_embree_host STATIC ${HOST_SOURCES})
   if (NOT BARNEY_HAVE_CUDA)
     foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
-      set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
-      if (NOT WIN32)
-        set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
+      get_filename_component(ext "${src}" EXT)
+      if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+	message("setting language of ${src} to CXX")
+	set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
+	if (NOT WIN32)
+          set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
+	endif()
       endif()
     endforeach()
   endif()
+  
+  add_library(barney_embree_host STATIC ${HOST_SOURCES})
   target_link_libraries(barney_embree_host PRIVATE barney_config barney_rtc_embree)
   
-  add_library(barney_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})
-  if (NOT BARNEY_HAVE_CUDA)
-    foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
-      set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
-      if (NOT WIN32)
-        set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
-      endif()
-    endforeach()
-  endif()
+  add_library(barney_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
   target_link_libraries(barney_embree_programs PRIVATE barney_config barney_rtc_embree)
   target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
-  
+
   target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
   target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
   target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)

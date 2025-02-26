@@ -25,7 +25,7 @@ namespace rtc {
     struct Geom
     {
       Geom(GeomType *type);
-      
+      virtual ~Geom() = default;
       void setDD(const void *dd);
 
       /*! only for user geoms */

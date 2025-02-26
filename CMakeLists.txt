@@ -328,11 +328,11 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
     PATTERN Findbarney.cmake EXCLUDE
 )
 
-if (BARNEY_MPI)
-  set(BARNEY_MPI_INSTALL barney_mpi)
-else()
-  set(BARNEY_MPI_INSTALL)
-endif()
+#if (BARNEY_MPI)
+#  set(BARNEY_MPI_INSTALL barney_mpi)
+#else()
+#  set(BARNEY_MPI_INSTALL)
+#endif()
 if (TARGET anari_library_barney)
   set(BARNEY_ANARI_INSTALL anari_library_barney)
 else()
@@ -342,7 +342,7 @@ endif()
 install(
   TARGETS barney # ${CUBQL_LIBS}
   barney_static
-  ${BARNEY_MPI_INSTALL}
+#  ${BARNEY_MPI_INSTALL}
   ${BARNEY_ANARI_INSTALL}
 #  EXPORT barneyTargets
   EXPORT barney-config

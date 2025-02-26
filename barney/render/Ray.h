@@ -67,8 +67,10 @@ namespace BARNEY_NS {
       vec3h       N;
       union {
         PackedBSDF::Data hitBSDF;
-        /*! the background color for primary rays that didn't have any intersection */
-        float4           missColor;
+        /*! the background color for primary rays that didn't have any intersection.
+          do not use float4 here since that might incur padding for alignment reasosn.
+         */
+        bn_float4 missColor;
       };
     };
   

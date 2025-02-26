@@ -41,7 +41,7 @@ namespace BARNEY_NS {
                      Random &random,
                      bool dbg) const;
         
-        float3 albedo;
+        rtc::float3 albedo;
       };
 
       inline __both__

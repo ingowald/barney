@@ -437,7 +437,7 @@ namespace BARNEY_NS {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if BARNEY_HAVE_CUDA && 1
+#if BARNEY_HAVE_CUDA || 1
     assert(0);
     return {};
     // return std::make_shared<AWTAccel>(volume,this);

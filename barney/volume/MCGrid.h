@@ -48,10 +48,10 @@ namespace BARNEY_NS {
       vec3f    gridSpacing;
 
 #if RTC_DEVICE_CODE
-      inline __device__ int numCells() const
+      inline __rtc_device int numCells() const
       { return dims.x*dims.y*dims.z; }
       
-      inline __device__ vec3i cellID(int linearID) const
+      inline __rtc_device vec3i cellID(int linearID) const
       {
         vec3i mcID;
         mcID.x = linearID % dims.x;
@@ -60,14 +60,14 @@ namespace BARNEY_NS {
         return mcID;
       }
       
-      inline __device__
+      inline __rtc_device
       float majorant(vec3i cellID) const
       {
         return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
       }
       
       /*! returns the bounding box of the given cell */
-      inline __device__ box3f cellBounds(vec3i cellID,
+      inline __rtc_device box3f cellBounds(vec3i cellID,
                                          const box3f &worldBounds) const
       {
         box3f bounds;

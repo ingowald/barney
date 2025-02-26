@@ -42,7 +42,7 @@ namespace BARNEY_NS {
                                        bool dbg) const;
 
         float  ior;
-        float3 attenuation;
+        rtc::float3 attenuation;
       };
 
       inline __rtc_device EvalRes Glass::eval(DG dg, vec3f wi, bool dbg) const

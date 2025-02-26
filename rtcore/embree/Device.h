@@ -36,8 +36,10 @@ namespace rtc {
 #else
     /* if no nvcc is available we'll compile the embree backend with
        msvc/gcc, which won't have this type */
+    struct float3 { float x; float y; float z; };
     struct float4 { float x; float y; float z; float w; };
 #endif
+    inline vec3f load(const ::rtc::embree::float3 &v) { return (const vec3f&)v; }
     inline vec4f load(const ::rtc::embree::float4 &v) { return (const vec4f&)v; }
     
     struct LaunchSystem;

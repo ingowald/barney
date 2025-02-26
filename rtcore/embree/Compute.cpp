@@ -21,6 +21,7 @@
 #include <thread>
 #include <condition_variable>
 #include <barrier>
+#include "rtcore/embree/TraceInterface.h"
 
 namespace rtc {
   namespace embree {
@@ -183,38 +184,24 @@ namespace rtc {
     // }
       
 
-    // Trace::Trace(Device *device,
-    //              const std::string &name)
-    //   : rtc::Trace(device)
-    // { 
-    //   traceFct = (TraceFct)rtc::getSymbol
-    //     ("barney_rtc_embree_trace_"+name);
-    // }
-    
-    // void Trace::launch(vec2i launchDims,
-    //                    const void *dd) 
-    // {
-    //   parallel_for_3D
-    //     (device,vec3i(launchDims.x,launchDims.y,1),
-    //      [&](vec3i bid) {
-    //      // (numBlocks,
-    //   // for (int iy=0;iy<launchDims.y;iy++)
-    //   //   for (int ix=0;ix<launchDims.x;ix++)
-    //        int ix = bid.x;
-    //        int iy = bid.y;
-    //        embree::TraceInterface ci;
-    //        ci.launchIndex = vec3i(ix,iy,0);
-    //        ci.launchDimensions = {launchDims.x,launchDims.y,1};
-    //        ci.lpData = dd;
-    //        traceFct(ci);
-    //      });
-    // }
+    void TraceKernel2D::launch(vec2i launchDims,
+                               const void *dd) 
+    {
+      parallel_for_3D
+        (device,vec3i(launchDims.x,launchDims.y,1),
+         [&](vec3i bid) {
+         // (numBlocks,
+      // for (int iy=0;iy<launchDims.y;iy++)
+      //   for (int ix=0;ix<launchDims.x;ix++)
+           int ix = bid.x;
+           int iy = bid.y;
+           embree::TraceInterface ci;
+           ci.launchIndex = vec3i(ix,iy,0);
+           ci.launchDimensions = {launchDims.x,launchDims.y,1};
+           ci.lpData = dd;
+           kernelFct(ci);
+         });
+    }
       
-    // void Trace::launch(int launchDims,
-    //                    const void *dd) 
-    // {
-    //   launch(vec2i(launchDims,1),dd);
-    // }
-
   }
 }

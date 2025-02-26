@@ -37,7 +37,7 @@ namespace BARNEY_NS {
 
     void render(barney_api::Renderer    *renderer,
                 barney_api::Camera      *camera,
-                barney_api::FrameBuffer *fb);
+                barney_api::FrameBuffer *fb) override;
 
     ModelSlot *getSlot(int whichSlot)
     {

@@ -26,6 +26,7 @@ namespace rtc {
       Group(Device *device)
         : device(device)
       {}
+      virtual ~Group() = default;
       void refitAccel() { buildAccel(); }
       virtual void buildAccel() = 0;
       

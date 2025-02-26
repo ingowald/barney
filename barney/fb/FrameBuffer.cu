@@ -299,7 +299,7 @@ namespace BARNEY_NS {
   
   struct UnpackTiles {
     vec2i numPixels;
-    float4 *out_rgba;
+    rtc::float4 *out_rgba;
     vec3f *normals;
     float *depths;
     CompressedTile *tiles;
@@ -334,7 +334,7 @@ namespace BARNEY_NS {
     vec3f normal = tile.normal[subIdx].get3f();
     float depth = tile.depth[subIdx];
 
-    out_rgba[idx] = (const float4&)rgba;
+    out_rgba[idx] = (const rtc::float4&)rgba;
     depths[idx] = depth;
     normals[idx] = normal;
   }
@@ -344,7 +344,7 @@ namespace BARNEY_NS {
   {
     UnpackTiles args = {
       numPixels,
-      (float4*)linearColor,
+      (rtc::float4*)linearColor,
       linearNormal,
       linearDepth,
       gatheredTilesOnOwner.compressedTiles,

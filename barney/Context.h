@@ -67,7 +67,7 @@ namespace BARNEY_NS {
     createModel() override;
     
     std::shared_ptr<barney_api::Renderer>
-    createRenderer();
+    createRenderer() override;
 
     std::shared_ptr<barney_api::Volume>
     createVolume(const std::shared_ptr<barney_api::ScalarField> &sf) override;

@@ -53,8 +53,9 @@ namespace BARNEY_NS {
 
     bool set1i(const std::string &member, const int &value) override;
 
-    virtual void resize(vec2i size, uint32_t channels);
-    virtual void resetAccumulation() {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }
+    void resize(vec2i size, uint32_t channels) override;
+    void resetAccumulation() override
+    {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }
     void freeResources();
 
     void finalizeTiles();
@@ -63,7 +64,7 @@ namespace BARNEY_NS {
 
     void read(BNFrameBufferChannel channel,
               void *hostPtr,
-              BNDataType requestedFormat);
+              BNDataType requestedFormat) override;
 
     struct {
       CompressedTile *compressedTiles     = 0;
@@ -79,7 +80,7 @@ namespace BARNEY_NS {
     
     std::vector<PLD> perLogical;
 
-    void *getPointer(BNFrameBufferChannel channel);
+    void *getPointer(BNFrameBufferChannel channel) override;
     
     /*! on owner, take the 'gatheredTilesOnOwner', and unpack them into
         linear color, depth, alpha, and normal channels, so denoiser

@@ -36,6 +36,7 @@ namespace rtc {
                size_t        sizeOfProgramData,
                AnyHitFct     ah,
                ClosestHitFct ch);
+      virtual ~GeomType() = default;
       virtual Geom *createGeom() = 0;
       
       AnyHitFct     const ah;

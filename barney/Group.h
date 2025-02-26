@@ -44,7 +44,7 @@ namespace BARNEY_NS {
     /*! @} */
     // ------------------------------------------------------------------
     
-    void build();
+    void build() override;
 
     void freeAllGeoms();
     void freeAllVolumes();

@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/geometry/Cylinders.h"
-#include "owl/owl_device.h"
 #include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
@@ -24,7 +23,7 @@ namespace BARNEY_NS {
   using namespace BARNEY_NS::render;
 
   /* ray - rounded cone intersection. */
-  inline __device__
+  inline __rtc_device
   bool intersectRoundedCone(const vec3f  pa, const vec3f  pb,
                             const float  ra, const float  rb,
                             const vec3f ray_org,
@@ -249,7 +248,7 @@ namespace BARNEY_NS {
       lerp_t = max(0.f,min(1.f,lerp_t));
 
 
-      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> float4
+      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
       {
         const vec4f value_a = attrib.fromArray.valueAt(idx.x);
         const vec4f value_b = attrib.fromArray.valueAt(idx.y);
