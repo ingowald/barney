@@ -24,8 +24,8 @@ namespace rtc {
 
 #if OPTIX_VERSION >= 80000
     
-    Denoiser::Denoiser(Device *device)
-      : device(device)
+      Optix8Denoiser::Optix8Denoiser(Device *device)
+      : Denoiser(device)
     {
       SetActiveGPU forDuration(device);
       denoiserOptions.guideAlbedo = 0;
@@ -41,7 +41,7 @@ namespace rtc {
                           &denoiser);
     }
     
-    Denoiser::~Denoiser()
+    Optix8Denoiser::~Optix8Denoiser()
     {
       SetActiveGPU forDuration(device);
       if (denoiserScratch) {
@@ -54,7 +54,7 @@ namespace rtc {
       }
     }
     
-    void Denoiser::resize(vec2i numPixels)
+    void Optix8Denoiser::resize(vec2i numPixels)
     {
       this->numPixels = numPixels;
       SetActiveGPU forDuration(device);
@@ -100,7 +100,7 @@ namespace rtc {
                          );
     }
     
-    void Denoiser::run(// output
+    void Optix8Denoiser::run(// output
                        vec4f *out_rgba,
                        // input channels
                        vec4f *in_rgba,
