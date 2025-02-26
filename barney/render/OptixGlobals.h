@@ -20,39 +20,44 @@
 #include "barney/material/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/HitAttributes.h"
+#if BARNEY_DEVICE_PROGRAM
+# include "rtcore/TraceInterface.h"
+#endif
 
 namespace BARNEY_NS {
   namespace render {
 
+    /*! defines all constant global launch parameter data. The struct
+        type itself is also defined on the host (so its contents can
+        be marshalled there, but the 'get()' method can only be
+        available in device programs */
     struct OptixGlobals {
 #if BARNEY_DEVICE_PROGRAM
       static inline __rtc_device
       const OptixGlobals &get(const rtc::TraceInterface &dev);
 #endif
-      
-      int                    numRays;
-      int                    globalIndex;
-      Sampler::DD           *samplers;
-      DeviceMaterial        *materials;
-      // OptixTraversableHandle world;
-      rtc::device::AccelHandle  world;
+
+      /*! the current ray queue for the traceRays() kernel */
       Ray                   *rays;
+      
+      /*! number of ryas in the queue */
+      int                    numRays;
+      
+      /*! this device's world to trace rays into */
+      rtc::device::AccelHandle  world;
+      
+      /*! global list of samplers, to allow calling samplers during
+          anyhit material evaluation */
+      Sampler::DD           *samplers;
+      
+      /*! global list of materials, to allow anyhit material
+          evaluation */
+      DeviceMaterial        *materials;
+      
+      // int                    globalIndex;
     };
   }
 }
-
-// #ifdef __CUDA_ARCH__
-// extern __constant__ BARNEY_NS::render::OptixGlobals optixLaunchParams;
-// // # ifndef DECLARE_OPTIX_LAUNCH_PARAMS
-// // /*! in owl we can only change the _type_ of launch params, they always
-// //     need to be caleld 'optixLaunchParams', and must have __constant__
-// //     storage*/
-// // #  define DECLARE_OPTIX_LAUNCH_PARAMS(LPType ) \
-// //   extern __constant__ LPType optixLaunchParams
-// // # endif
-// // DECLARE_OPTIX_LAUNCH_PARAMS(barney::render::OptixGlobals);
-// // // extern __constant__ barney::render::OptixGlobals optixLaunchParams;
-// #endifS
 
 namespace BARNEY_NS {
   namespace render {

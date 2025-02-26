@@ -14,47 +14,40 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+/*! \file rtcore/cudaCommon/ComputeKerne.h Defines basic abstraction
+  for 1D, 2D, and 3D compute kernels, and the IMPORT macros to
+  import such kernels on host code */
+
 #pragma once
 
-#include "rtcore/optix/Device.h"
+#include "rtcore/cudaCommon/cuda-common.h"
 
 namespace rtc {
-  namespace optix {
+  namespace cuda_common {
 
-    /*! abstract interface to a denoiser. implementation(s) depend of
-        which optix version and/or oidn are available */
-    struct Denoiser {
-      Denoiser(Device* device) : device(device) {}
-      virtual ~Denoiser() = default;
-      virtual void resize(vec2i dims) = 0;
-      virtual void run(vec4f* out_rgba,
-                       vec4f* in_rgba,
-                       vec3f* in_normal,
-                       float blendFactor) = 0;
-      Device* const device;
+    struct ComputeKernel1D {
+      virtual void launch(unsigned int nb, unsigned int bs,
+                          const void *pKernelData) = 0;
     };
-
-#if OPTIX_VERSION >= 80000
-    /*! denoising using optix 8 built-in denoiser. only available for
-        optix 8 or newer */
-    struct Optix8Denoiser : public Denoiser {
-      Optix8Denoiser(Device *device);
-      virtual ~Optix8Denoiser();
-      void resize(vec2i dims) override;
-      void run(vec4f *out_rgba,
-               vec4f *in_rgba,
-               vec3f *in_normal,
-               float blendFactor) override;
-
-      vec2i                numPixels;
-      OptixDenoiser        denoiser = {};
-      OptixDenoiserOptions denoiserOptions;
-      void                *denoiserScratch = 0;
-      void                *denoiserState   = 0;
-      OptixDenoiserSizes   denoiserSizes;
+    
+    struct ComputeKernel2D {
+      virtual void launch(vec2ui nb, vec2ui bs,
+                          const void *pKernelData) = 0;
     };
-#endif
+    
+    struct ComputeKernel3D {
+      virtual void launch(vec3ui nb, vec3ui bs,
+                          const void *pKernelData) = 0;
+    };
     
   }
 }
+
+#define RTC_IMPORT_COMPUTE1D(name)                                      \
+    rtc::ComputeKernel1D *createCompute_##name(rtc::Device *dev);       
+#define RTC_IMPORT_COMPUTE2D(name)                                      \
+    rtc::ComputeKernel2D *createCompute_##name(rtc::Device *dev);       
+#define RTC_IMPORT_COMPUTE3D(name)                                      \
+    rtc::ComputeKernel3D *createCompute_##name(rtc::Device *dev);       
+
 

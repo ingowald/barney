@@ -17,6 +17,7 @@
 #include "barney/Context.h"
 #include "barney/volume/StructuredData.h"
 #include "barney/common/Texture.h"
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 
@@ -34,6 +35,8 @@ namespace BARNEY_NS {
       actual cells */
   enum { cellsPerMC = 8 };
 
+  /*! compute kernel that computes macro-cell information for a 3D
+      structured data grid */
   struct StructuredData_ComputeMCs {
     /* kernel CODE */
     inline __rtc_device void run(const rtc::ComputeInterface &rtCore)
@@ -67,9 +70,7 @@ namespace BARNEY_NS {
     /* kernel ARGS */
     MCGrid::DD mcGrid;
     vec3i numScalars;
-    // Texture::DD scalars;
     rtc::device::TextureObject scalars;
-    // Texture3D::DD scalars;
   };
   
   StructuredData::StructuredData(Context *context,

@@ -14,24 +14,41 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-/*! \file rtcore/TraceInterface.h \brief Defines the interface with
-    which pipeline/device programs (closest hit, anythit, etc) can
-    talk to to the ray tracing pipeline (eg, to ask for primitive ID,
-    call ignoreIntersction(), etc */
-
 #pragma once
 
-#if BARNEY_RTC_OPTIX
-# include "rtcore/optix/TraceInterface.h"
-namespace rtc {
-  using rtc::optix::TraceInterface;
-}
+#include "rtcore/common/rtcore-common.h"
+#include <cuda_runtime.h>
+#ifdef __CUDACC__
+# include <cuda/std/limits>
+# include <cuda.h>
 #endif
+#include "cuda-helper.h"
 
-#if BARNEY_RTC_EMBREE
-# include "rtcore/embree/TraceInterface.h"
+#define __rtc_device __device__
+#define __rtc_both   __device__ __host__
+
 namespace rtc {
-  using rtc::embree::TraceInterface;
+  namespace cuda_common {
+
+    using namespace owl::common;    
+    
+    // ------------------------------------------------------------------
+    // cuda vector types - import those into namesapce so we can
+    // always disambiguate by writing rtc::float4 no matter what
+    // backend we use
+    // ------------------------------------------------------------------
+    using ::float2;
+    using ::float3;
+    using ::float4;
+    using ::int2;
+    using ::int3;
+    using ::int4;
+    
+    inline __both__ vec3f load(const float3 &v)
+    { return vec3f(v.x,v.y,v.z); }
+    inline __both__ vec4f load(const float4 &v)
+    { return vec4f(v.x,v.y,v.z,v.w); }
+    
+  }
 }
-#endif
 

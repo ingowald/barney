@@ -16,44 +16,42 @@
 
 #pragma once
 
-#include "rtcore/optix/Device.h"
+#include "rtcore/common/rtcore-common.h"
+#include "embree4/rtcore.h"
 
+#define __rtc_device /* ignore - for embree device we use all cpu */
+#define __rtc_both /* ignore - for embree device we use all cpu */
+    
 namespace rtc {
-  namespace optix {
+  namespace embree {
 
-    /*! abstract interface to a denoiser. implementation(s) depend of
-        which optix version and/or oidn are available */
-    struct Denoiser {
-      Denoiser(Device* device) : device(device) {}
-      virtual ~Denoiser() = default;
-      virtual void resize(vec2i dims) = 0;
-      virtual void run(vec4f* out_rgba,
-                       vec4f* in_rgba,
-                       vec3f* in_normal,
-                       float blendFactor) = 0;
-      Device* const device;
-    };
-
-#if OPTIX_VERSION >= 80000
-    /*! denoising using optix 8 built-in denoiser. only available for
-        optix 8 or newer */
-    struct Optix8Denoiser : public Denoiser {
-      Optix8Denoiser(Device *device);
-      virtual ~Optix8Denoiser();
-      void resize(vec2i dims) override;
-      void run(vec4f *out_rgba,
-               vec4f *in_rgba,
-               vec3f *in_normal,
-               float blendFactor) override;
-
-      vec2i                numPixels;
-      OptixDenoiser        denoiser = {};
-      OptixDenoiserOptions denoiserOptions;
-      void                *denoiserScratch = 0;
-      void                *denoiserState   = 0;
-      OptixDenoiserSizes   denoiserSizes;
-    };
+    using namespace owl::common;    
+    
+    // ------------------------------------------------------------------
+    // cuda vector types - if embree device _does_ get compiled with
+    // cuda compiler we use cuda types; otherwise we define our own
+    // wrappers
+    // ------------------------------------------------------------------
+#ifdef __CUDACC__
+    using ::float2;
+    using ::float3;
+    using ::float4;
+    using ::int2;
+    using ::int3;
+    using ::int4;
+    
+    /* in case the embree backend is compiled with nvcc, the float4
+       type already exists. */
+    using ::float4;
+#else
+    /* if no nvcc is available we'll compile the embree backend with
+       msvc/gcc, which won't have this type */
+    struct float3 { float x; float y; float z; };
+    struct float4 { float x; float y; float z; float w; };
 #endif
+    
+    inline vec3f load(const ::rtc::embree::float3 &v) { return (const vec3f&)v; }
+    inline vec4f load(const ::rtc::embree::float4 &v) { return (const vec4f&)v; }
     
   }
 }
