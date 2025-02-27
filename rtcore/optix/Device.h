@@ -156,12 +156,12 @@ namespace rtc {
 
 #define RTC_IMPORT_USER_GEOM(moduleName,typeName,DDType,has_ah,has_ch)  \
   extern "C" char moduleName##_ptx[];                                   \
-  rtc::GeomType *createGeomType_##Type(rtc::Device *device)             \
+  rtc::GeomType *createGeomType_##typeName(rtc::Device *device)         \
   {                                                                     \
     return new rtc::optix::UserGeomType(device,                         \
                                         moduleName##_ptx,               \
                                         #typeName,                      \
-                                        sizeof(DD),                     \
+                                        sizeof(DDType),                 \
                                         has_ah,has_ch);                 \
   }
 

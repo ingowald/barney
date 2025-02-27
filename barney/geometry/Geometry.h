@@ -34,7 +34,6 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<Geometry> SP;
 
     struct DD {
-
       template<typename InterpolatePerVertex>
       inline __rtc_device
       void setHitAttributes(render::HitAttributes &hit,

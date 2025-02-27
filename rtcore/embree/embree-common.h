@@ -28,28 +28,15 @@ namespace rtc {
     using namespace owl::common;    
     
     // ------------------------------------------------------------------
-    // cuda vector types - if embree device _does_ get compiled with
-    // cuda compiler we use cuda types; otherwise we define our own
-    // wrappers
+    // cuda vector types - we may NOT use the cuda vector types EVEN
+    // IF CUDA IS AVAILABLE, because the cuda vector types have
+    // alignemnt, and these here do not - meaning that if some files
+    // were to get compiled by nvcc and others by gcc/msvc we get
+    // nasty differences is interpreting the same types in differnt ways
     // ------------------------------------------------------------------
-#ifdef __CUDACC__
-    using ::float2;
-    using ::float3;
-    using ::float4;
-    using ::int2;
-    using ::int3;
-    using ::int4;
-    
-    /* in case the embree backend is compiled with nvcc, the float4
-       type already exists. */
-    using ::float4;
-#else
-    /* if no nvcc is available we'll compile the embree backend with
-       msvc/gcc, which won't have this type */
     struct float3 { float x; float y; float z; };
     struct float4 { float x; float y; float z; float w; };
-#endif
-    
+
     inline vec3f load(const ::rtc::embree::float3 &v) { return (const vec3f&)v; }
     inline vec4f load(const ::rtc::embree::float4 &v) { return (const vec4f&)v; }
     

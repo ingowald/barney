@@ -15,23 +15,12 @@
 // ======================================================================== //
 
 #include "barney/api/Context.h"
-// #include "barney/Context.h"
-// #include "barney/LocalContext.h"
-// #include "barney/fb/FrameBuffer.h"
-// #include "barney/GlobalModel.h"
-// #include "barney/geometry/Triangles.h"
-// #include "barney/volume/ScalarField.h"
-// #include "barney/umesh/common/UMeshField.h"
-// #include "barney/amr//BlockStructuredField.h"
-// #include "barney/common/Data.h"
-// #include "barney/common/mat4.h"
-// #include "barney/Camera.h"
 
 static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this isn't going to work");
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
-#if 1
+#if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/ 
@@ -41,15 +30,15 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 # define BARNEY_ENTER(fct) /* nothing */
 # define BARNEY_LEAVE(fct,retValue) /* nothing */
 #else
-# define BARNEY_ENTER(fct) try {                \
-    if (0) std::cout << "@bn.entering " << fct << std::endl;     \
-
+# define BARNEY_ENTER(fct) try {                                 \
+  if (0) std::cout << "@bn.entering " << fct << std::endl;       \
+  
 
 
 # define BARNEY_LEAVE(fct,retValue)                                     \
-  } catch (std::exception &e) {                                           \
-    std::cerr << OWL_TERMINAL_RED << "@" << fct << ": "              \
-              << e.what() << OWL_TERMINAL_DEFAULT << std::endl;      \
+  } catch (std::exception &e) {                                         \
+    std::cerr << OWL_TERMINAL_RED << "@" << fct << ": "                 \
+              << e.what() << OWL_TERMINAL_DEFAULT << std::endl;         \
     return retValue ;                                                   \
   }
 #endif
@@ -883,7 +872,6 @@ namespace barney_api {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
-        PING;
     try {
       // ------------------------------------------------------------------
       // create vector of data groups; if actual specified by user we
@@ -907,7 +895,6 @@ namespace barney_api {
       // ------------------------------------------------------------------
       if (numGPUs == 1 && _gpuIDs[0] == -1) {
 # if BARNEY_BACKEND_EMBREE
-        PING;
         return (BNContext)createContext_embree(dataGroupIDs);
 # else
         throw std::runtime_error
@@ -916,7 +903,6 @@ namespace barney_api {
 # endif
       }
 
-        PING;
       // ------------------------------------------------------------------
       // 2) if user did specify a list of GPUs, create a GPU backend,
       // or return an error.
@@ -930,7 +916,6 @@ namespace barney_api {
            "but optix support not compiled in");
 #endif
       }
-        PING;
 
       // ------------------------------------------------------------------
       // 3) if user did not specify an explicit GPU list, try to
@@ -940,6 +925,7 @@ namespace barney_api {
 
 #if BARNEY_BACKEND_OPTIX
       try {
+        PING; PRINT(numGPUs); 
         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
       } catch (std::exception &e) {
         std::cerr << "#barney(warn): could not create optix backend (reason: "
@@ -947,14 +933,11 @@ namespace barney_api {
       }
 #endif
       
-        PING;
 # if BARNEY_BACKEND_EMBREE
-        PING;
       return (BNContext)createContext_embree(dataGroupIDs);
 #endif
       throw std::runtime_error("could not generate _any_ backend?!");
       
-        PING;
 #if 0
       // ------------------------------------------------------------------
       // create list of GPUs to use for this rank. if specified by user
@@ -994,6 +977,7 @@ namespace barney_api {
       std::cerr << "error creating barney context : " << e.what() << std::endl;
       return 0;
     }
+    return 0;
   }
 
 } // ::owl

@@ -39,6 +39,9 @@ namespace BARNEY_NS {
         
       struct DD {
         union {
+          /*! careful - this requires alignment, which means that the
+              follwing value - even if just a int - will also require
+              16 bytes, every time */
           rtc::float4        value;
           AttributeArray::DD fromArray;
         };

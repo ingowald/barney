@@ -92,10 +92,8 @@ namespace BARNEY_NS {
   
   void Group::build()
   {
-    PING;
     freeAllGeoms();
 
-    PING;
     // ==================================================================
     // triangles and user geoms - for now always rebuild
     // ==================================================================
@@ -106,7 +104,6 @@ namespace BARNEY_NS {
         geom->build();
       }
       
-    PING;
       // now, do our stuff on a per-device basis
       for (auto device : *devices) {
         PLD *myPLD = getPLD(device);
@@ -118,30 +115,22 @@ namespace BARNEY_NS {
             myPLD->userGeoms.push_back(g);
         }
         
-    PING;
         if (!myPLD->userGeoms.empty()) {
-    PING;
           myPLD->userGeomGroup
             = device->rtc->createUserGeomsGroup(myPLD->userGeoms);
-    PING;
           myPLD->userGeomGroup->buildAccel();
         }
-    PING;
         
         if (!myPLD->triangleGeoms.empty()) {
-    PING;
           myPLD->triangleGeomGroup
             = device->rtc->createTrianglesGroup(myPLD->triangleGeoms);
-    PING;
           myPLD->triangleGeomGroup->buildAccel();
-    PING;
         }
       }
     }
     // ==================================================================
     // volumes - these may need two passes
     // ==================================================================
-    PING;
     {
       bool needRefit = false;
       bool needRebuild = false;
@@ -159,7 +148,6 @@ namespace BARNEY_NS {
           myPLD->volumeGeomsGroup = 0;
         }
 
-    PING;
         // the volume _geoms_ are created/owned by the actual volume
         // accel, and it is _their_ job to free those if required.
         myPLD->volumeGeoms.clear();
@@ -169,7 +157,6 @@ namespace BARNEY_NS {
         myPLD->volumeGroups.clear();
       }
       
-    PING;
       // ------------------------------------------------------------------
       // rebuild the volumes themselves. the result is, with each
       // volume, two (possibly) empty sets of generated geoms and
@@ -178,7 +165,6 @@ namespace BARNEY_NS {
       for (auto volume : volumes)
         if (volume)
           volume->build(true);
-    PING;
 
       // ------------------------------------------------------------------
       // now that all volumes (and their accels) have been built, go
@@ -200,13 +186,11 @@ namespace BARNEY_NS {
           }
         }
 
-    PING;
         // now we have all rtc geoms and all rtc groups across all the
         // volumes that have been in our current group.
         if (!myPLD->volumeGeoms.empty())
           printf("todo: build volume geoms group, and add it to root\n");
       }
-    PING;
     }
   }
   

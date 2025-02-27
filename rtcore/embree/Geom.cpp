@@ -22,13 +22,14 @@ namespace rtc {
     Geom::Geom(GeomType *type)
       : type(type),
         programData(type->sizeOfProgramData)
-    {
-      PING; PRINT(type->sizeOfProgramData);
-    }
+    {}
     
     void Geom::setDD(const void *dd)
     {
       memcpy(programData.data(),dd,programData.size());
+
+      uint8_t *ptr = (uint8_t*)programData.data();
+      ptr += programData.size();
     }
 
   }

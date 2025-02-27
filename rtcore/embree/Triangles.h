@@ -35,10 +35,10 @@ namespace rtc {
       void setVertices(Buffer *vertices, int numVertices) override;
       void setIndices(Buffer *indices, int numIndices) override;
 
-      vec3f *vertices = 0;
       int numVertices = 0;
-      vec3i *indices = 0;
       int numIndices = 0;
+      vec3f *vertices = 0;
+      vec3i *indices = 0;
     };
     
   }

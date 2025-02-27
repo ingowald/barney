@@ -34,8 +34,6 @@ namespace BARNEY_NS {
     {
       auto &ray = *(Ray *)rt.getPRD();
 
-      // auto &ray = rt.getPRD<Ray>();
-      // auto &self = rt.getProgramData<Triangles::DD>();
       auto &self = *(Triangles::DD*)rt.getProgramData();
       const float u = rt.getTriangleBarycentrics().x;
       const float v = rt.getTriangleBarycentrics().y;
@@ -45,11 +43,6 @@ namespace BARNEY_NS {
       vec3f v1 = self.vertices[triangle.y];
       vec3f v2 = self.vertices[triangle.z];
       vec3f n = cross(v1-v0,v2-v0);
-      // vec3f ws_n = soptixTransformNormalFromObjectToWorldSpace(n);
-      // if (0 && ray.dbg)
-      //   printf("geom normal %f %f %f world %f %f %f\n",
-      //          n.x,n.y,n.z,
-      //          ws_n.x,ws_n.y,ws_n.z);
       if (self.normals) {
         vec3f Ns
           = (1.f-u-v) * self.normals[triangle.x]
@@ -57,37 +50,15 @@ namespace BARNEY_NS {
           + (      v) * self.normals[triangle.z];
         Ns = normalize(Ns);
 
-        // vec3f ws_Ns
-        //   = optixTransformNormalFromObjectToWorldSpace(Ns);
-        // if (0 && ray.dbg)
-        //   printf("shading normal %f %f %f world %f %f %f\n",
-        //          Ns.x,Ns.y,Ns.z,
-        //          ws_Ns.x,
-        //          ws_Ns.y,
-        //          ws_Ns.z
-        //          );
-
         if (dot(Ns,(vec3f)rt.getObjectRayDirection()) > 0.f)
           Ns = n;
         
-        // if (dot(n,(vec3f)rt.getObjectRayDirection()) < 0.f) {
-        //   if (dot(Ns,n) < 0.f)
-        //     Ns = reflect(Ns,n);
-        // } else {
-        //   if (dot(Ns,n) > 0.f)
-        //     Ns = reflect(Ns,n);
-        // }
         n = Ns;
       }
-      if (0 && ray.dbg)
-        printf("final normal %f %f %f\n",
-               n.x,n.y,n.z);
-      //   else 
-      // n = cross(v1-v0,v2-v0);
       const vec3f osN = normalize(n);
       n = rt.transformNormalFromObjectToWorldSpace(n);
       n = normalize(n);
-    
+
       // ------------------------------------------------------------------
       // get texture coordinates
       // ------------------------------------------------------------------
@@ -102,7 +73,7 @@ namespace BARNEY_NS {
       hitData.primID          = primID;
       hitData.t               = rt.getRayTmax();
       hitData.isShadowRay     = ray.isShadowRay;
-    
+
       auto interpolator
         = [&](const GeometryAttribute::DD &attrib) -> vec4f
         {

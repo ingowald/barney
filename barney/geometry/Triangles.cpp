@@ -108,6 +108,5 @@ namespace BARNEY_NS {
     }
     
   }
-  
 }
 

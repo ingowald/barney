@@ -21,10 +21,7 @@ namespace barney_api {
 #if BARNEY_RTC_EMBREE
   Context *createContext_embree(const std::vector<int> &dgIDs)
   {
-    PING;
     std::vector<int> gpuIDs = { 0 };
-    PRINT(dgIDs.size());
-    PING;
     return new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
   }
 #endif
@@ -32,6 +29,8 @@ namespace barney_api {
   Context *createContext_optix(const std::vector<int> &dgIDs,
                                int numGPUs, const int *_gpuIDs)
   {
+    if (numGPUs == -1)
+      cudaGetDeviceCount(&numGPUs);
     std::vector<int> gpuIDs;
     for (int i=0;i<numGPUs;i++)
       gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);

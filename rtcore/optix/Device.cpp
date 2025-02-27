@@ -29,6 +29,7 @@ namespace rtc {
     Device::Device(int physicalGPU)
       : cuda_common::Device(physicalGPU)
     {
+      PING;
       owl = owlContextCreate(&physicalGPU,1);
     }
 

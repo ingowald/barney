@@ -336,7 +336,7 @@ namespace barney_device {
       else if (m_cudaDevice == -1)
         state.context = bnContextCreate(&zero,1,&m_cudaDevice,1);
       else
-        state.context = bnContextCreate(&zero,1,nullptr,0);
+        state.context = bnContextCreate(&zero,1,nullptr,-1);
       std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
 #endif
       reportMessage(
@@ -356,7 +356,8 @@ namespace barney_device {
     bool allowInvalidSurfaceMaterials = state.allowInvalidSurfaceMaterials;
 
     m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
-    std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
+    if (m_cudaDevice != -2)
+      std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
  
     state.allowInvalidSurfaceMaterials =
       getParam<bool>("allowInvalidMaterials", true);

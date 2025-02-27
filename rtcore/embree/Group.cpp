@@ -26,21 +26,13 @@ namespace rtc {
 
     void virtualBoundsFunc(const struct RTCBoundsFunctionArguments* args)
     {
-    PING;
       TraceInterface *ti = /* just need the type*/0;//TraceInterface::get();
       const UserGeom *geom = (const UserGeom *)args->geometryUserPtr;
-      PRINT(geom);
       const void *geomData = (const void *)geom->programData.data();
-      PRINT(geomData);
-      PRINT(geom->programData.size());
       int primID = args->primID;
-      PRINT(primID);
       box3f bounds;
       UserGeomType *type = (UserGeomType *)geom->type;
-      PRINT(type);
-      PRINT((int*)type->bounds);
       type->bounds(*ti,geomData,bounds,primID);
-      PING;
       
       RTCBounds* bounds_o = args->bounds_o;
       bounds_o->lower_x = bounds.lower.x;
@@ -53,7 +45,6 @@ namespace rtc {
 
     void virtualIntersect(const RTCIntersectFunctionNArguments* args)
     {
-    PING;
       int *valid = args->valid;
       void *ptr  = args->geometryUserPtr;
       UserGeom *user = (UserGeom *)ptr;
@@ -109,7 +100,6 @@ namespace rtc {
 
     void UserGeomGroup::buildAccel() 
     {
-    PING;
       if (embreeScene) {
         rtcReleaseScene(embreeScene);
         embreeScene = 0;
@@ -118,12 +108,10 @@ namespace rtc {
       embree::Device *device = (embree::Device *)this->device;
       embreeScene = rtcNewScene(device->embreeDevice);
       for (auto geom : geoms) {
-    PING;
         UserGeom *user = (UserGeom *)geom;
         RTCGeometry eg
           = rtcNewGeometry(device->embreeDevice,RTC_GEOMETRY_TYPE_USER);
 
-    PING;
         rtcSetGeometryUserPrimitiveCount(eg,user->primCount);
         rtcSetGeometryUserData(eg,user);
         rtcSetGeometryBoundsFunction(eg,virtualBoundsFunc,user);
@@ -134,12 +122,9 @@ namespace rtc {
         rtcAttachGeometry(embreeScene,eg);
         rtcEnableGeometry(eg);
 
-    PING;
         rtcReleaseGeometry(eg);
       }
-    PING;
       rtcCommitScene(embreeScene);
-    PING;
     }
 
 
@@ -151,7 +136,6 @@ namespace rtc {
   
     void TrianglesGroup::buildAccel() 
     {
-    PING;
       if (embreeScene) {
         rtcReleaseScene(embreeScene);
         embreeScene = 0;
@@ -206,7 +190,6 @@ namespace rtc {
     
     void InstanceGroup::buildAccel() 
     {
-      PING;
       embree::Device *device = (embree::Device *)this->device;
       if (embreeScene) {
         rtcReleaseScene(embreeScene);
@@ -220,11 +203,8 @@ namespace rtc {
       inverseXfms = xfms;
       for (auto &xfm : inverseXfms) xfm = rcp(xfm);
     
-      PING;
-    
       embreeScene = rtcNewScene(device->embreeDevice);
       for (int instID=0;instID<groups.size();instID++) {
-      PING;
         embree::Group *group = (embree::Group *)groups[instID];
         RTCGeometry geom
           = rtcNewGeometry(device->embreeDevice,RTC_GEOMETRY_TYPE_INSTANCE);
@@ -237,11 +217,8 @@ namespace rtc {
         rtcAttachGeometry(embreeScene,geom);
         rtcCommitGeometry(geom);
         rtcEnableGeometry(geom);
-      PING;
       }
-      PING;
       rtcCommitScene(embreeScene);
-      PING;
     }
   
   }

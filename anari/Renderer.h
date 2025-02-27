@@ -24,7 +24,7 @@ struct Renderer : public Object
  private:
   BNTexture2D barneyBackgroundImage{nullptr};
 
-  int m_pixelSamples{8 * 16};
+  int m_pixelSamples{1};
   float m_ambientRadiance{0.8f};
   bool m_crosshairs{false};
   anari::math::float4 m_background{0.f, 0.f, 0.f, 1.f};

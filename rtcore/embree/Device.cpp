@@ -145,12 +145,12 @@ namespace rtc {
     }
 
     
-    __both__ void TraceInterface::traceRay(rtc::device::AccelHandle world,
-                                   vec3f rayOrigin,
-                                   vec3f rayDirection,
-                                   float tmin,
-                                   float tmax,
-                                   void *prdPtr) 
+    void TraceInterface::traceRay(rtc::device::AccelHandle world,
+                                  vec3f rayOrigin,
+                                  vec3f rayDirection,
+                                  float tmin,
+                                  float tmax,
+                                  void *prdPtr) 
     {
       // perThreadTraceInterface = this;
       InstanceGroup *ig = (InstanceGroup *)world;
@@ -197,9 +197,9 @@ namespace rtc {
       rtcInitIntersectArguments(&iargs);
       iargs.context = &ti->embreeRayQueryContext;
 #if 0
-#define FEATURE_MASK \
-  RTC_FEATURE_FLAG_TRIANGLE | \
-  RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS
+#define FEATURE_MASK                                    \
+      RTC_FEATURE_FLAG_TRIANGLE |                       \
+        RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS
 
 
       iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
@@ -207,7 +207,6 @@ namespace rtc {
       iargs.filter = intersectionFilter;
 
       rtcIntersect1(embreeScene,&rayHit,&iargs);
-
       if ((int)rayHit.hit.geomID >= 0) {
     
         int primID = rayHit.hit.primID;
@@ -243,11 +242,8 @@ namespace rtc {
     
     Device::Device(int physicalGPU)
     {
-      PING;
       embreeDevice = rtcNewDevice("verbose=0");
-      PING;
       ls = createLaunchSystem();
-      PING;
     }
 
     Device::~Device()

@@ -93,7 +93,7 @@ namespace rtc {
        sizeof(DD),                                              \
        Programs::bounds,                                        \
        Programs::intersect,                                     \
-       has_ch?Programs::anyHit:0,                               \
+       has_ah?Programs::anyHit:0,                               \
        has_ch?Programs::closestHit:0);                          \
   }
 
@@ -104,7 +104,7 @@ namespace rtc {
     return new rtc::embree::TrianglesGeomType                           \
       (device,                                                          \
        sizeof(DD),                                                      \
-       has_ch?Programs::anyHit:0,                                       \
+       has_ah?Programs::anyHit:0,                                       \
        has_ch?Programs::closestHit:0);                                  \
   }
 

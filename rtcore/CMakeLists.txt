@@ -29,6 +29,7 @@ target_link_libraries(barney_rtc_common INTERFACE barney_rtc_config)
 
 # ==================================================================
 if (BARNEY_BACKEND_EMBREE)
+  message("enabling EMBREE backend")
   if (APPLE AND ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "arm64")
     set(COMPILE_FOR_ARM ON)
   elseif (UNIX AND ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")

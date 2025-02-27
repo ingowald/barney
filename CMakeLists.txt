@@ -33,7 +33,7 @@ cmake_policy(SET CMP0076 NEW)
 #  # probably better know what he's doing, anyway
 #  option(BARNEY_MPI "Enable MPI Support" OFF)
 #else()
-#  option(BARNEY_MPI "Enable MPI Support" ON)
+#  option(BARNEY_MPI "Enable MPI Support" OFF)
 #endif()
 option(BARNEY_MPI "Enable MPI Support" OFF)
 
@@ -228,8 +228,8 @@ add_subdirectory(rtcore)
 # ------------------------------------------------------------------
 # barney system, api, and mpi stuff
 # ------------------------------------------------------------------
-message("configuring mpi")
 if (BARNEY_MPI)
+  message("configuring mpi")
   find_package(MPI)
   if (MPI_FOUND)
     message("#barney: MPI found, including in default barney and banari builds")
@@ -238,6 +238,7 @@ if (BARNEY_MPI)
     set(BARNEY_MPI OFF)
   endif()
 endif()
+message("BARNEY_MPI is ${BARNEY_MPI}")
 
 message("configuring barney")
 add_subdirectory(barney)

@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "rtcore/embree/ComputeInterface.h"
+#include "rtcore/embree/ComputeKernel.h"
 #include <owl/common/parallel/parallel_for.h>
 #include <mutex>
 #include <thread>
@@ -55,7 +56,7 @@ namespace rtc {
 
     int numThreads() {
       int nt = std::thread::hardware_concurrency();
-#if 1
+#if 0
       int maxNumThreads = 1;
 #else
       int maxNumThreads = 1<<30;
@@ -108,9 +109,7 @@ namespace rtc {
           int tid = numJobs.taken++;
           if (tid >= numJobs.total)
             break;
-          printf("started %i/%i\n",tid,numJobs.total);
           task->run(tid);
-          printf("finished %i/%i\n",tid,numJobs.total);
         }
         
         // ------------------------------------------------------------------
@@ -121,7 +120,7 @@ namespace rtc {
     }
     
     template<typename Kernel>
-    void parallel_for_3D(Device *device, vec3i dims, const Kernel &lambda)
+    void parallel_for_3D(Device *device, vec3ui dims, const Kernel &lambda)
     {
       LaunchSystem *ls = ((embree::Device *)device)->ls;
       int numTotal = dims.x*dims.y*dims.z;
@@ -131,67 +130,77 @@ namespace rtc {
         int ix = tid % dims.x;
         int iz = tid / (dims.x * dims.y);
         int iy = (tid / dims.x) % dims.y;
-        lambda(vec3i(ix,iy,iz));
+        lambda(vec3ui(ix,iy,iz));
       });
       ls->launchAndWait(numTotal,&task);
     }
     
                          
     
-    // Compute::Compute(Device *device,
-    //                  const std::string &name)
-    //   : rtc::Compute(device),
-    //     name(name)
-    // {
-    //   computeFct = (ComputeFct)rtc::getSymbol
-    //     ("barney_rtc_embree_computeBlock_"+name);
-    // }
+    void ComputeKernel1D::launch(unsigned int numBlocks,
+                                 unsigned int blockSize,
+                                 const void *dd)
+    {
+      parallel_for_3D
+        (device,vec3ui(numBlocks,1,1),
+         // (numBlocks,
+         [&](vec3ui bid){
+           embree::ComputeInterface ci;
+           ci.gridDim = vec3ui(numBlocks,1u,1u);
+           ci.blockIdx = bid;
+           ci.blockDim = vec3ui(blockSize,1u,1u);
+           ci.threadIdx = vec3ui(0);
+           for (ci.threadIdx.x=0;ci.threadIdx.x<blockSize;ci.threadIdx.x++)
+             computeFct(ci,dd);
+         });
+    }
+    
+    void ComputeKernel2D::launch(vec2ui numBlocks,
+                                 vec2ui blockSize,
+                                 const void *dd)
+    {
+      parallel_for_3D
+        (device,vec3ui(numBlocks.x,numBlocks.y,1),
+         // (numBlocks,
+         [&](vec3ui bid){
+           embree::ComputeInterface ci;
+           ci.gridDim = vec3ui(numBlocks.x,numBlocks.y,1);
+           ci.blockIdx = bid;
+           ci.blockDim = vec3ui(blockSize.x,blockSize.y,1);
+           ci.threadIdx = vec3ui(0);
+           for (ci.threadIdx.y=0;ci.threadIdx.y<blockSize.y;ci.threadIdx.y++)
+             for (ci.threadIdx.x=0;ci.threadIdx.x<blockSize.x;ci.threadIdx.x++)
+               computeFct(ci,dd);
+         });
+    }
 
-    // void Compute::launch(int numBlocks,
-    //                      int blockSize,
-    //                      const void *dd)
-    // {
-    //   launch(vec3i(numBlocks,1,1),
-    //          vec3i(blockSize,1,1),
-    //          dd);
-    // }
-
-    // void Compute::launch(vec2i numBlocks,
-    //                      vec2i blockSize,
-    //                      const void *dd)
-    // {
-    //   launch(vec3i(numBlocks.x,numBlocks.y,1),
-    //          vec3i(blockSize.x,blockSize.y,1),
-    //          dd);
-    // }
-
-    // void Compute::launch(vec3i numBlocks,
-    //                      vec3i blockSize,
-    //                      const void *dd)
-    // {
-    //   parallel_for_3D
-    //     (device,numBlocks,
-    //      // (numBlocks,
-    //      [&](vec3i bid){
-    //        embree::ComputeInterface ci;
-    //        ci.gridDim = vec3ui(numBlocks);//vec3ui(numBlocks,1,1);
-    //        ci.blockIdx = vec3ui(bid);//vec3ui(b,0,0);
-    //        ci.blockDim = vec3ui(blockSize);//vec3ui(blockSize,1,1);
-    //        ci.threadIdx = vec3ui(0);
-    //        computeFct(ci,dd);
-    //      });
-    // }
+    void ComputeKernel3D::launch(vec3ui numBlocks,
+                                 vec3ui blockSize,
+                                 const void *dd)
+    {
+      parallel_for_3D
+        (device,numBlocks,
+         // (numBlocks,
+         [&](vec3ui bid){
+           embree::ComputeInterface ci;
+           ci.gridDim = vec3ui(numBlocks);
+           ci.blockIdx = bid;
+           ci.blockDim = vec3ui(blockSize);
+           ci.threadIdx = vec3ui(0);
+           for (ci.threadIdx.z=0;ci.threadIdx.z<blockSize.z;ci.threadIdx.z++)
+             for (ci.threadIdx.y=0;ci.threadIdx.y<blockSize.y;ci.threadIdx.y++)
+               for (ci.threadIdx.x=0;ci.threadIdx.x<blockSize.x;ci.threadIdx.x++)
+                 computeFct(ci,dd);
+         });
+    }
       
 
     void TraceKernel2D::launch(vec2i launchDims,
                                const void *dd) 
     {
       parallel_for_3D
-        (device,vec3i(launchDims.x,launchDims.y,1),
-         [&](vec3i bid) {
-         // (numBlocks,
-      // for (int iy=0;iy<launchDims.y;iy++)
-      //   for (int ix=0;ix<launchDims.x;ix++)
+        (device,vec3ui(launchDims.x,launchDims.y,1),
+         [&](vec3ui bid) {
            int ix = bid.x;
            int iy = bid.y;
            embree::TraceInterface ci;
