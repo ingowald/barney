@@ -337,10 +337,12 @@ namespace barney_api {
   };
 
 #if BARNEY_BACKEND_EMBREE
+  extern "C"
   Context *createContext_embree(const std::vector<int> &dgIDs);
 
 #endif
 #if BARNEY_BACKEND_OPTIX
+  extern "C"
   Context *createContext_optix(const std::vector<int> &dgIDs,
                                int numGPUs, const int *gpuIDs);
 #endif
