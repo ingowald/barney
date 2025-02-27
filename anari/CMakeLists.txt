@@ -100,14 +100,14 @@ target_link_libraries(anari_library_barney PUBLIC
 endif()
 
 target_link_libraries(anari_library_barney PRIVATE anari::helium anari::anari)
-if(MSVC)
-    target_compile_options(anari_library_barney INTERFACE
-        "$<$<CONFIG:Debug>:/MTd>"
-        "$<$<CONFIG:Release>:/MT>"
-        "$<$<CONFIG:RelWithDebInfo>:/MT>"
-        "$<$<CONFIG:MinSizeRel>:/MT>"
-    )
-endif()
+# if(MSVC)
+#     target_compile_options(anari_library_barney INTERFACE
+#         "$<$<CONFIG:Debug>:/MTd>"
+#         "$<$<CONFIG:Release>:/MT>"
+#         "$<$<CONFIG:RelWithDebInfo>:/MT>"
+#         "$<$<CONFIG:MinSizeRel>:/MT>"
+#     )
+# endif()
 set_target_properties(anari_library_barney
   PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
