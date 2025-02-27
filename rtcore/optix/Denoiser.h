@@ -21,8 +21,15 @@
 namespace rtc {
   namespace optix {
 
+<<<<<<< HEAD
     struct Denoiser {
       Denoiser(Device *device) : device(device) {}
+=======
+    /*! abstract interface to a denoiser. implementation(s) depend of
+        which optix version and/or oidn are available */
+    struct Denoiser {
+      Denoiser(Device* device) : device(device) {}
+>>>>>>> b8a6b972a9c4c9d19463d8761a2ec223e81f4cab
       virtual ~Denoiser() = default;
       virtual void resize(vec2i dims) = 0;
       virtual void run(vec4f* out_rgba,
@@ -33,6 +40,8 @@ namespace rtc {
     };
 
 #if OPTIX_VERSION >= 80000
+    /*! denoising using optix 8 built-in denoiser. only available for
+        optix 8 or newer */
     struct Optix8Denoiser : public Denoiser {
       Optix8Denoiser(Device *device);
       virtual ~Optix8Denoiser();

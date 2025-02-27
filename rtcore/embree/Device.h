@@ -16,32 +16,11 @@
 
 #pragma once
 
-#include "rtcore/common/rtcore-common.h"
-// #include "rtcore/common/Backend.h"
-#include "embree4/rtcore.h"
+#include "rtcore/embree/embree-common.h"
 
 namespace rtc {
   namespace embree {
 
-    using namespace owl::common;
-
-#define __rtc_device /* ignore for embree device */
-#define __rtc_both /* ignore for embree device */
-
-    
-#if __CUDACC__
-    /* in case the embree backend is compiled with nvcc, the float4
-       type already exists. */
-    using ::float4;
-#else
-    /* if no nvcc is available we'll compile the embree backend with
-       msvc/gcc, which won't have this type */
-    struct float3 { float x; float y; float z; };
-    struct float4 { float x; float y; float z; float w; };
-#endif
-    inline vec3f load(const ::rtc::embree::float3 &v) { return (const vec3f&)v; }
-    inline vec4f load(const ::rtc::embree::float4 &v) { return (const vec4f&)v; }
-    
     struct LaunchSystem;
     LaunchSystem *createLaunchSystem();
 

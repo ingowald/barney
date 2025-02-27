@@ -20,7 +20,7 @@
 #include "barney/ModelSlot.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
-#include "rtcore/ComputeInterface.h"
+// #include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 
@@ -39,7 +39,7 @@ namespace BARNEY_NS {
         dd.world     = model->getInstanceAccel(device);
         dd.materials = ctx->materialRegistry->getDD(device);
         dd.samplers  = ctx->samplerRegistry->getDD(device);
-        dd.globalIndex = device->globalIndex;
+        // dd.globalIndex = device->globalIndex;
         int bs = 1024;
         int nb = divRoundUp(dd.numRays,bs);
         device->traceRays->launch(vec2i(nb,bs),

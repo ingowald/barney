@@ -14,28 +14,40 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+/*! \file rtcore/cudaCommon/ComputeKerne.h Defines basic abstraction
+  for 1D, 2D, and 3D compute kernels, and the IMPORT macros to
+  import such kernels on host code */
+
 #pragma once
 
-#include "rtcore/embree/Buffer.h"
-#include "rtcore/embree/Geom.h"
+#include "rtcore/cudaCommon/cuda-common.h"
 
 namespace rtc {
-  namespace embree {
+  namespace cuda_common {
 
-    struct UserGeom : public Geom
-    {
-      UserGeom(UserGeomType *type);
-      
-      /*! only for user geoms */
-      void setPrimCount(int primCount) override;
-      /*! can only get called on triangle type geoms */
-      void setVertices(Buffer *vertices, int numVertices) override;
-      void setIndices(Buffer *indices, int numIndices) override;
-
-      int primCount = 0;
+    struct ComputeKernel1D {
+      virtual void launch(unsigned int nb, unsigned int bs,
+                          const void *pKernelData) = 0;
+    };
+    
+    struct ComputeKernel2D {
+      virtual void launch(vec2ui nb, vec2ui bs,
+                          const void *pKernelData) = 0;
+    };
+    
+    struct ComputeKernel3D {
+      virtual void launch(vec3ui nb, vec3ui bs,
+                          const void *pKernelData) = 0;
     };
     
   }
 }
+
+#define RTC_IMPORT_COMPUTE1D(name)                                      \
+    rtc::ComputeKernel1D *createCompute_##name(rtc::Device *dev);       
+#define RTC_IMPORT_COMPUTE2D(name)                                      \
+    rtc::ComputeKernel2D *createCompute_##name(rtc::Device *dev);       
+#define RTC_IMPORT_COMPUTE3D(name)                                      \
+    rtc::ComputeKernel3D *createCompute_##name(rtc::Device *dev);       
 
 

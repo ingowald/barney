@@ -16,26 +16,25 @@
 
 #pragma once
 
-#include "rtcore/embree/Buffer.h"
-#include "rtcore/embree/Geom.h"
+#include "rtcore/cudaCommon/cuda-common.h"
 
 namespace rtc {
-  namespace embree {
+  namespace cuda_common {
 
-    struct UserGeom : public Geom
+    struct TextureData;
+    
+    struct Texture
     {
-      UserGeom(UserGeomType *type);
+      Texture(TextureData *data,
+              const TextureDesc &desc);
+      virtual ~Texture();
       
-      /*! only for user geoms */
-      void setPrimCount(int primCount) override;
-      /*! can only get called on triangle type geoms */
-      void setVertices(Buffer *vertices, int numVertices) override;
-      void setIndices(Buffer *indices, int numIndices) override;
+      rtc::device::TextureObject getDD() const
+      { return (const rtc::device::TextureObject&)textureObject; }
 
-      int primCount = 0;
+      TextureData *const data;
+      cudaTextureObject_t textureObject;
     };
     
   }
 }
-
-

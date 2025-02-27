@@ -19,12 +19,12 @@ set_property(TARGET barney_rtc_config PROPERTY
 
 
 # ==================================================================
-add_library(barney_rtc_common OBJECT
-  common/Backend.cpp
-  common/RTCore.cpp
-  rtc.cpp
+add_library(barney_rtc_common INTERFACE
+#  common/Backend.cpp
+#  common/RTCore.cpp
+#  rtc.cpp
   )
-target_link_libraries(barney_rtc_common PUBLIC barney_rtc_config)
+target_link_libraries(barney_rtc_common INTERFACE barney_rtc_config)
 
 
 # ==================================================================
@@ -114,8 +114,13 @@ endif()
 # ==================================================================
 if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
   add_library(barney_rtc_cuda_common STATIC
-    cuda/CUDACommon.cu
-    cuda/cuda-helper.cpp
+    cudaCommon/Device.h
+    cudaCommon/Device.cu
+    cudaCommon/Texture.h
+    cudaCommon/Texture.cu
+    cudaCommon/TextureData.h
+    cudaCommon/TextureData.cu
+    cudaCommon/cuda-helper.cpp
     )
   target_link_libraries(barney_rtc_cuda_common PUBLIC
     barney_rtc_config
@@ -137,31 +142,31 @@ else()
 endif()
 
 # ==================================================================
-if (BARNEY_BACKEND_CUDA)
-  message("ENabling CUDA backend")
-  add_library(barney_rtc_cuda STATIC
-    cuda/CUDACommon.cu
-    )
-  target_link_libraries(barney_rtc_cuda PUBLIC 
-    barney_rtc_config
-#    barney_rtc_common
-    )
- set_target_properties(barney_rtc_cuda
-  PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  CXX_VISIBILITY_PRESET default
-  CUDA_VISIBILITY_PRESET default
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-)
+# if (BARNEY_BACKEND_CUDA)
+#   message("ENabling CUDA backend")
+#   add_library(barney_rtc_cuda STATIC
+#     cuda/CUDACommon.cu
+#     )
+#   target_link_libraries(barney_rtc_cuda PUBLIC 
+#     barney_rtc_config
+# #    barney_rtc_common
+#     )
+#  set_target_properties(barney_rtc_cuda
+#   PROPERTIES
+#   CUDA_SEPARABLE_COMPILATION ON
+#   CXX_VISIBILITY_PRESET default
+#   CUDA_VISIBILITY_PRESET default
+#   POSITION_INDEPENDENT_CODE ON
+#   CUDA_USE_STATIC_CUDA_RUNTIME ON
+#   CUDA_SEPARABLE_COMPILATION ON
+#   POSITION_INDEPENDENT_CODE ON
+#   CUDA_RESOLVE_DEVICE_SYMBOLS ON
+#   CUDA_USE_STATIC_CUDA_RUNTIME ON
+# )
 
-else()
-  add_library(barney_rtc_cuda INTERFACE) # DUMMY!
-endif()
+# else()
+#   add_library(barney_rtc_cuda INTERFACE) # DUMMY!
+# endif()
 
 # ==================================================================
 if (BARNEY_BACKEND_OPTIX)
@@ -182,7 +187,7 @@ if (BARNEY_BACKEND_OPTIX)
     )
   target_link_libraries(barney_rtc_optix PUBLIC
     barney_rtc_config
-    barney_rtc_cuda
+    barney_rtc_cuda_common
     owl_static
     )
   target_compile_definitions(barney_rtc_optix

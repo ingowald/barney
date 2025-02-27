@@ -16,26 +16,39 @@
 
 #pragma once
 
-#include "rtcore/embree/Buffer.h"
-#include "rtcore/embree/Geom.h"
+#include "rtcore/common/rtcore-common.h"
+#include <cuda_runtime.h>
+#ifdef __CUDACC__
+# include <cuda/std/limits>
+# include <cuda.h>
+#endif
+#include "cuda-helper.h"
+
+#define __rtc_device __device__
+#define __rtc_both   __device__ __host__
 
 namespace rtc {
-  namespace embree {
+  namespace cuda_common {
 
-    struct UserGeom : public Geom
-    {
-      UserGeom(UserGeomType *type);
-      
-      /*! only for user geoms */
-      void setPrimCount(int primCount) override;
-      /*! can only get called on triangle type geoms */
-      void setVertices(Buffer *vertices, int numVertices) override;
-      void setIndices(Buffer *indices, int numIndices) override;
-
-      int primCount = 0;
-    };
+    using namespace owl::common;    
+    
+    // ------------------------------------------------------------------
+    // cuda vector types - import those into namesapce so we can
+    // always disambiguate by writing rtc::float4 no matter what
+    // backend we use
+    // ------------------------------------------------------------------
+    using ::float2;
+    using ::float3;
+    using ::float4;
+    using ::int2;
+    using ::int3;
+    using ::int4;
+    
+    inline __both__ vec3f load(const float3 &v)
+    { return vec3f(v.x,v.y,v.z); }
+    inline __both__ vec4f load(const float4 &v)
+    { return vec4f(v.x,v.y,v.z,v.w); }
     
   }
 }
-
 

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "rtcore/cuda/CUDACommon.h"
+#include "rtcore/cudaCommon/Device.h"
 #include <owl/owl.h>
 
 namespace rtc {

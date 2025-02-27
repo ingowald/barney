@@ -17,7 +17,6 @@
 #pragma once
 
 #include "rtcore/embree/Triangles.h"
-#include "embree4/rtcore.h"
 
 namespace rtc {
   namespace embree {

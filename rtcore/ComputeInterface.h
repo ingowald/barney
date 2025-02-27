@@ -3,7 +3,7 @@
 #include "rtcore/common/rtcore-common.h"
 
 #if BARNEY_RTC_OPTIX
-# include "cuda/RTCore.h"
+# include "rtcore/cudaCommon/ComputeInterface.h"
 
 namespace rtc {
 #ifdef __CUDACC__
