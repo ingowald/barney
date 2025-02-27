@@ -21,8 +21,8 @@
 namespace rtc {
   namespace embree {
 
-    Denoiser::Denoiser(Device *device)
-      : rtc(device)
+    DenoiserOIDN::DenoiserOIDN(Device *device)
+      : Denoiser(device)
     {
       oidnDevice = 
         oidnNewDevice(OIDN_DEVICE_TYPE_CPU);
@@ -31,18 +31,18 @@ namespace rtc {
       filter = oidnNewFilter(oidnDevice,"RT");
     }
 
-    Denoiser::~Denoiser()
+    DenoiserOIDN::~DenoiserOIDN()
     {
       oidnReleaseFilter(filter);
       oidnReleaseDevice(oidnDevice);
     }
     
-    void Denoiser::resize(vec2i size)
+    void DenoiserOIDN::resize(vec2i size)
     {
       this->numPixels = size;
     }
     
-    void Denoiser::run(// output
+    void DenoiserOIDN::run(// output
                        vec4f *out_rgba,
                        // input channels
                        vec4f *in_rgba,

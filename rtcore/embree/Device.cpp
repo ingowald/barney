@@ -267,7 +267,7 @@ namespace rtc {
     Denoiser *Device::createDenoiser()
     {
 #if BARNEY_OIDN_CPU
-      return new Denoiser(this);
+      return new DenoiserOIDN(this);
 #else
       // we have no way of denoising
       return nullptr;

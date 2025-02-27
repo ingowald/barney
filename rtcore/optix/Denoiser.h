@@ -21,16 +21,16 @@
 namespace rtc {
   namespace optix {
 
-      struct Denoiser {
-          Denoiser(Device* device) : device(device) {}
-          virtual ~Denoiser() = default;
-          virtual void resize(vec2i dims) = 0;
-          virtual void run(vec4f* out_rgba,
-              vec4f* in_rgba,
-              vec3f* in_normal,
-              float blendFactor) = 0;
-          Device* const device;
-      };
+    struct Denoiser {
+      Denoiser(Device *device) : device(device) {}
+      virtual ~Denoiser() = default;
+      virtual void resize(vec2i dims) = 0;
+      virtual void run(vec4f* out_rgba,
+                       vec4f* in_rgba,
+                       vec3f* in_normal,
+                       float blendFactor) = 0;
+      Device* const device;
+    };
 
 #if OPTIX_VERSION >= 80000
     struct Optix8Denoiser : public Denoiser {

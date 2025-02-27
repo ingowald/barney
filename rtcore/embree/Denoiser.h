@@ -20,30 +20,42 @@
 
 #if BARNEY_OIDN_CPU
 # include <OpenImageDenoise/oidn.h>
+#endif
 
 namespace rtc {
   namespace embree {
 
+    struct Denoiser {
+      Denoiser(Device *device) : rtc(device) {}
+      virtual ~Denoiser() = default;
+      virtual void resize(vec2i dims) = 0;
+      virtual void run(vec4f* out_rgba,
+                       vec4f* in_rgba,
+                       vec3f* in_normal,
+                       float blendFactor) = 0;
+      Device *const rtc;
+    };
+    
+#if BARNEY_OIDN_CPU
     /*! oidn-based CPU denoiser */
-    struct Denoiser
+    struct DenoiserOIDN : public Denoiser
     {
-      Denoiser(Device *device);
-      virtual ~Denoiser();
+      DenoiserOIDN(Device *device);
+      virtual ~DenoiserOIDN();
       
-      void resize(vec2i size);
+      void resize(vec2i size) override;
       void run(// output
                vec4f *out_rgba,
                // input channels
                vec4f *in_rgba,
                vec3f *in_normal,
-               float blendFactor);
+               float blendFactor) override;
       
       vec2i         numPixels { 0,0 };
-      Device *const rtc;
 
       OIDNDevice oidnDevice = 0;
       OIDNFilter filter = 0;
     };
+#endif
   }
 }
-#endif
