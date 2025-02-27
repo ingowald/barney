@@ -31,7 +31,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
-#if 0
+#if 1
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/ 
@@ -883,6 +883,7 @@ namespace barney_api {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
+        PING;
     try {
       // ------------------------------------------------------------------
       // create vector of data groups; if actual specified by user we
@@ -906,6 +907,7 @@ namespace barney_api {
       // ------------------------------------------------------------------
       if (numGPUs == 1 && _gpuIDs[0] == -1) {
 # if BARNEY_BACKEND_EMBREE
+        PING;
         return (BNContext)createContext_embree(dataGroupIDs);
 # else
         throw std::runtime_error
@@ -914,6 +916,7 @@ namespace barney_api {
 # endif
       }
 
+        PING;
       // ------------------------------------------------------------------
       // 2) if user did specify a list of GPUs, create a GPU backend,
       // or return an error.
@@ -927,6 +930,7 @@ namespace barney_api {
            "but optix support not compiled in");
 #endif
       }
+        PING;
 
       // ------------------------------------------------------------------
       // 3) if user did not specify an explicit GPU list, try to
@@ -943,11 +947,14 @@ namespace barney_api {
       }
 #endif
       
+        PING;
 # if BARNEY_BACKEND_EMBREE
+        PING;
       return (BNContext)createContext_embree(dataGroupIDs);
 #endif
       throw std::runtime_error("could not generate _any_ backend?!");
       
+        PING;
 #if 0
       // ------------------------------------------------------------------
       // create list of GPUs to use for this rank. if specified by user

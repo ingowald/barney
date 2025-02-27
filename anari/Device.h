@@ -114,8 +114,10 @@ namespace barney_device {
     bool m_initialized{false};
     
     /*! allows for setting which gpu to use. must be set before the
-        first commit, and should not be changed after that */
-    int  m_cudaDevice = 0;
+        first commit, and should not be changed after that. '-2' means
+        'leave it to barney', '-1' means 'use cpu', any value >= 0
+        means 'use this specific gpu */
+    int  m_cudaDevice = -2;
     const std::string deviceType = "default";
   };
 

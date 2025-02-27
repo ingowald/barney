@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,11 +18,9 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-RTC_IMPORT_USER_GEOM(Spheres,BARNEY_NS::Spheres::DD,false,true);
-
 namespace BARNEY_NS {
 
-  // extern "C" char Spheres_ptx[];
+  RTC_IMPORT_USER_GEOM(Spheres,Spheres,Spheres::DD,false,true);
   
   Spheres::Spheres(Context *context, DevGroup::SP devices)
     : Geometry(context,devices)

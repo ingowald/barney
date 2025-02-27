@@ -21,7 +21,7 @@
 
 namespace BARNEY_NS {
 
-  RTC_IMPORT_USER_GEOM(StructuredData,StructuredData::DD,false,false);
+  RTC_IMPORT_USER_GEOM(/*file*/StructuredData,/*name*/StructuredData,/*geomtype device data */StructuredData::DD,false,false);
   RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
 
 

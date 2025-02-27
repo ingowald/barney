@@ -138,6 +138,6 @@ namespace BARNEY_NS {
     }
   };
 
+  RTC_EXPORT_TRIANGLES_GEOM(Triangles,Triangles::DD,TrianglesPrograms,true,false);
 }
 
-RTC_EXPORT_TRIANGLES_GEOM(Triangles,BARNEY_NS::TrianglesPrograms,true,false);

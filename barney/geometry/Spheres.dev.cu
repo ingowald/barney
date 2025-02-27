@@ -47,6 +47,7 @@ namespace BARNEY_NS {
                 const int32_t primID)
     { 
       const Spheres::DD &geom = *(const Spheres::DD *)geomData;
+      printf("orgs %p\n",geom.origins);
       vec3f origin = geom.origins[primID];
       float radius = geom.radii?geom.radii[primID]:geom.defaultRadius;
       bounds.lower = origin - radius;
@@ -188,7 +189,7 @@ namespace BARNEY_NS {
       }
     }
   };
+  RTC_EXPORT_USER_GEOM(Spheres,Spheres::DD,SpheresPrograms,false,true);
 }
 
-RTC_EXPORT_USER_GEOM(Spheres,BARNEY_NS::SpheresPrograms,false,true);
 

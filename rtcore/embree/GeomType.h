@@ -77,33 +77,35 @@ namespace rtc {
   }
 }
 
-#define RTC_IMPORT_USER_GEOM(Type,Class,has_ah,has_ch)     \
-  extern ::rtc::GeomType *createGeomType_##Type(::rtc::Device *);
+#define RTC_IMPORT_USER_GEOM(moduleName,typeName,DD,has_ah,has_ch)      \
+  extern ::rtc::GeomType *createGeomType_##typeName(::rtc::Device *);
 
-#define RTC_EXPORT_USER_GEOM(Type,Class,has_ah,has_ch)     \
-  ::rtc::GeomType *createGeomType_##Type(::rtc::Device *device) \
+#define RTC_IMPORT_TRIANGLES_GEOM(moduleName,typeName,DD,has_ah,has_ch) \
+  extern rtc::GeomType *createGeomType_##typeName(rtc::Device *);
+
+
+
+#define RTC_EXPORT_USER_GEOM(name,DD,Programs,has_ah,has_ch)    \
+  ::rtc::GeomType *createGeomType_##name(::rtc::Device *device) \
   {                                                             \
     return new ::rtc::embree::UserGeomType                      \
       (device,                                                  \
-       sizeof(Class),                                           \
-       Class::bounds,                                           \
-       Class::intersect,                                        \
-       has_ch?Class::anyHit:0,                                  \
-       has_ch?Class::closestHit:0);                             \
+       sizeof(DD),                                              \
+       Programs::bounds,                                        \
+       Programs::intersect,                                     \
+       has_ch?Programs::anyHit:0,                               \
+       has_ch?Programs::closestHit:0);                          \
   }
 
 
-#define RTC_IMPORT_TRIANGLES_GEOM(Type,Class,has_ah,has_ch)     \
-  extern rtc::GeomType *createGeomType_##Type(rtc::Device *);
-
-#define RTC_EXPORT_TRIANGLES_GEOM(Type,Class,has_ah,has_ch)     \
-  rtc::GeomType *createGeomType_##Type(rtc::Device *device)     \
-  {                                                             \
-    return new rtc::embree::TrianglesGeomType                   \
-      (device,                                                  \
-       sizeof(Class),                                           \
-       has_ch?Class::anyHit:0,                                  \
-       has_ch?Class::closestHit:0);                             \
+#define RTC_EXPORT_TRIANGLES_GEOM(name,DD,Programs,has_ah,has_ch)       \
+  rtc::GeomType *createGeomType_##name(rtc::Device *device)             \
+  {                                                                     \
+    return new rtc::embree::TrianglesGeomType                           \
+      (device,                                                          \
+       sizeof(DD),                                                      \
+       has_ch?Programs::anyHit:0,                                       \
+       has_ch?Programs::closestHit:0);                                  \
   }
 
 

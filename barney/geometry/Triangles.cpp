@@ -18,9 +18,9 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-RTC_IMPORT_TRIANGLES_GEOM(Triangles,BARNEY_NS::Triangles::DD,true,false);
-
 namespace BARNEY_NS {
+
+  RTC_IMPORT_TRIANGLES_GEOM(Triangles,Triangles,Triangles::DD,true,false);
 
   // extern "C" char Triangles_ptx[];
 

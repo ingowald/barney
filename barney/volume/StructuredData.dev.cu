@@ -49,8 +49,7 @@ namespace BARNEY_NS {
     { /* nothing to do */ }
   };
   
-  RTC_EXPORT_USER_GEOM(StructuredData,MCAccel_Structured_Programs,false,false);
-  // RTC_EXPORT_USER_GEOM(MCAccel_Structured,MCAccel_Structured_Programs,false,false);
+  RTC_EXPORT_USER_GEOM(StructuredData,StructuredData::DD,MCAccel_Structured_Programs,false,false);
 }
 
 

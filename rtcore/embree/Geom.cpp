@@ -22,7 +22,9 @@ namespace rtc {
     Geom::Geom(GeomType *type)
       : type(type),
         programData(type->sizeOfProgramData)
-    {}
+    {
+      PING; PRINT(type->sizeOfProgramData);
+    }
     
     void Geom::setDD(const void *dd)
     {

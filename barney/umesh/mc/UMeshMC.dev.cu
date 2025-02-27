@@ -59,8 +59,10 @@ namespace BARNEY_NS {
     { /* nothing to do */ }
   };
 
+  using UMeshMC = MCVolumeAccel<UMeshCUBQLSampler>;
+
+  RTC_EXPORT_USER_GEOM(UMeshMC,UMeshMC::DD,UMeshMC_Programs,false,false);
 }
 
-RTC_EXPORT_USER_GEOM(UMeshMC,BARNEY_NS::UMeshMC_Programs,false,false);
 
 

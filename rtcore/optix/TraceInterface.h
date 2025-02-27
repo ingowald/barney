@@ -30,18 +30,18 @@
   
 
 
-#define RTC_EXPORT_USER_GEOM(name,type,has_ah,has_ch)                   \
+#define RTC_EXPORT_USER_GEOM(name,DD,type,has_ah,has_ch)                \
                                                                         \
   extern "C" __global__                                                 \
   void __closesthit__##name() {                                         \
     ::rtc::optix::TraceInterface rtcore;                                \
-    type::closestHit(rtcore);                                          \
+    type::closestHit(rtcore);                                           \
   }                                                                     \
                                                                         \
   extern "C" __global__                                                 \
   void __anyhit__##name() {                                             \
     ::rtc::optix::TraceInterface rtcore;                                \
-    type::anyHit(rtcore);                                              \
+    type::anyHit(rtcore);                                               \
   }                                                                     \
                                                                         \
   extern "C" __global__                                                 \
@@ -76,19 +76,19 @@
                                                                         \
     
   
-#define RTC_EXPORT_TRIANGLES_GEOM(name,type,has_ah,has_ch)    \
-                                                \
-  extern "C" __global__                         \
-  void __closesthit__##name() {                 \
-    ::rtc::optix::TraceInterface rtcore;     \
-    type::closestHit(rtcore);                  \
-  }                                             \
-                                                \
-  extern "C" __global__                         \
-  void __anyhit__##name() {                     \
-    ::rtc::optix::TraceInterface rtcore;     \
-    type::anyHit(rtcore);                      \
-  }                                             \
+#define RTC_EXPORT_TRIANGLES_GEOM(name,DD,type,has_ah,has_ch)   \
+                                                                \
+  extern "C" __global__                                         \
+  void __closesthit__##name() {                                 \
+    ::rtc::optix::TraceInterface rtcore;                        \
+    type::closestHit(rtcore);                                   \
+  }                                                             \
+                                                                \
+  extern "C" __global__                                         \
+  void __anyhit__##name() {                                     \
+    ::rtc::optix::TraceInterface rtcore;                        \
+    type::anyHit(rtcore);                                       \
+  }                                                             \
   
   
 

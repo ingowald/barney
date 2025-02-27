@@ -24,6 +24,7 @@ namespace rtc {
                    const void *initMem)
     {
       mem = malloc(numBytes);
+      PING; PRINT(mem); PRINT(numBytes);
       if (initMem)
         memcpy(mem,initMem,numBytes);
     }
@@ -35,6 +36,7 @@ namespace rtc {
     
     void *Buffer::getDD() const
     {
+      PING; PRINT(mem);
       return mem;
     }
 

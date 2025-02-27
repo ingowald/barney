@@ -243,8 +243,11 @@ namespace rtc {
     
     Device::Device(int physicalGPU)
     {
+      PING;
       embreeDevice = rtcNewDevice("verbose=0");
+      PING;
       ls = createLaunchSystem();
+      PING;
     }
 
     Device::~Device()

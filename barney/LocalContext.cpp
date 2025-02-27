@@ -21,7 +21,10 @@ namespace barney_api {
 #if BARNEY_RTC_EMBREE
   Context *createContext_embree(const std::vector<int> &dgIDs)
   {
+    PING;
     std::vector<int> gpuIDs = { 0 };
+    PRINT(dgIDs.size());
+    PING;
     return new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
   }
 #endif

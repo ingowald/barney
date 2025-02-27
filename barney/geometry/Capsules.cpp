@@ -18,9 +18,9 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-RTC_IMPORT_USER_GEOM(Capsules,BARNEY_NS::Capsules::DD,false,false);
-
 namespace BARNEY_NS {
+
+  RTC_IMPORT_USER_GEOM(Capsules,Capsules,Capsules::DD,false,false);
 
   Capsules::Capsules(Context *context, DevGroup::SP devices)
     : Geometry(context,devices)

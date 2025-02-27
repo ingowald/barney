@@ -18,9 +18,9 @@
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
-RTC_IMPORT_USER_GEOM(Cylinders,BARNEY_NS::Cylinders::DD,false,false);
-
 namespace BARNEY_NS {
+
+  RTC_IMPORT_USER_GEOM(Cylinders,Cylinders,Cylinders::DD,false,false);
 
   Cylinders::Cylinders(Context *context, DevGroup::SP devices)
     : Geometry(context,devices)

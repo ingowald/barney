@@ -297,8 +297,8 @@ namespace BARNEY_NS {
     }
   };
   
+  RTC_EXPORT_USER_GEOM(Capsules,Capsules::DD,CapsulesPrograms,false,false);
 }
-RTC_EXPORT_USER_GEOM(Capsules,BARNEY_NS::CapsulesPrograms,false,false);
 
 
 

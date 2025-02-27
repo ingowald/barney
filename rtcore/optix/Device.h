@@ -154,25 +154,25 @@ namespace rtc {
 }
 
 
-#define RTC_IMPORT_USER_GEOM(Type,Class,has_ah,has_ch)     \
-  extern "C" char Type##_ptx[];                                 \
-  rtc::GeomType *createGeomType_##Type(rtc::Device *device)    \
-  {                                                             \
-    return new rtc::optix::UserGeomType(device,                 \
-                                        Type##_ptx,             \
-                                        #Type,                  \
-                                        sizeof(Class),          \
-                                        has_ah,has_ch);         \
-  }
-
-#define RTC_IMPORT_TRIANGLES_GEOM(Type,Class,has_ah,has_ch)        \
-  extern "C" char Type##_ptx[];                                         \
+#define RTC_IMPORT_USER_GEOM(moduleName,typeName,DDType,has_ah,has_ch)  \
+  extern "C" char moduleName##_ptx[];                                   \
   rtc::GeomType *createGeomType_##Type(rtc::Device *device)             \
   {                                                                     \
+    return new rtc::optix::UserGeomType(device,                         \
+                                        moduleName##_ptx,               \
+                                        #typeName,                      \
+                                        sizeof(DD),                     \
+                                        has_ah,has_ch);                 \
+  }
+
+#define RTC_IMPORT_TRIANGLES_GEOM(moduleName,typeName,DDType,has_ah,has_ch) \
+  extern "C" char moduleName##_ptx[];                                   \
+  rtc::GeomType *createGeomType_##typeName(rtc::Device *device)         \
+  {                                                                     \
     return new rtc::optix::TrianglesGeomType(device,                    \
-                                             Type##_ptx,                \
-                                             #Type,                     \
-                                             sizeof(Class),             \
+                                             moduleName##_ptx,          \
+                                             #typeName,                 \
+                                             sizeof(DDType),            \
                                              has_ah,has_ch);            \
   }
 

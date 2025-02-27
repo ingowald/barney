@@ -55,7 +55,7 @@ namespace rtc {
 
     int numThreads() {
       int nt = std::thread::hardware_concurrency();
-#if 0
+#if 1
       int maxNumThreads = 1;
 #else
       int maxNumThreads = 1<<30;
@@ -108,9 +108,9 @@ namespace rtc {
           int tid = numJobs.taken++;
           if (tid >= numJobs.total)
             break;
-          // printf("started %i/%i\n",tid,numJobs.total);
+          printf("started %i/%i\n",tid,numJobs.total);
           task->run(tid);
-          // printf("finished %i/%i\n",tid,numJobs.total);
+          printf("finished %i/%i\n",tid,numJobs.total);
         }
         
         // ------------------------------------------------------------------

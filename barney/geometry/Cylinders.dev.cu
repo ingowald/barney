@@ -274,7 +274,7 @@ namespace BARNEY_NS {
     }
   };
   
+  RTC_EXPORT_USER_GEOM(Cylinders,Cylinders::DD,CylindersPrograms,false,false);  
 }
 
-RTC_EXPORT_USER_GEOM(Cylinders,BARNEY_NS::CylindersPrograms,false,false);
 
