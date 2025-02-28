@@ -19,7 +19,7 @@
 #include "barney/Context.h"
 #include "barney/common/MPIWrappers.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! barney context for collaborative MPI-parallel rendering */
   struct MPIContext : public Context
@@ -31,7 +31,8 @@ namespace barney {
                const std::vector<int> &gpuIDs);
 
     /*! create a frame buffer object suitable to this context */
-    FrameBuffer *createFB(int owningRank) override;
+    std::shared_ptr<barney_api::FrameBuffer>
+    createFrameBuffer(int owningRank) override;
 
     void render(Renderer    *renderer,
                 GlobalModel *model,

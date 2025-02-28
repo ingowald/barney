@@ -17,7 +17,7 @@
 #include "barney/fb/DistFB.h"
 #include "barney/MPIContext.h"
 
-namespace barney {
+namespace BARNEY_NS {
   
   DistFB::DistFB(MPIContext *context,
                  const DevGroup::SP &devices,

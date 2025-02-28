@@ -26,14 +26,11 @@
 
 #include <cstdint>
 #include <cstddef>
-#if BARNEY_MPI
-# include <mpi.h>
-#endif
 
 #ifdef _WIN32
-# ifdef barney_STATIC
+# if defined(barney_STATIC) || defined(barney_mpi_STATIC)
 #  define BARNEY_INTERFACE /* nothing */
-# elif defined(barney_EXPORTS)
+# elif defined(barney_EXPORTS) || defined(barney_mpi_EXPORTS)
 #  define BARNEY_INTERFACE __declspec(dllexport)
 # else
 #  define BARNEY_INTERFACE __declspec(dllimport)
@@ -46,8 +43,10 @@
 
 #ifdef __cplusplus
 #  define BARNEY_API extern "C" BARNEY_INTERFACE
+#  define BN_IF_CPP(a) a
 #else
 #  define BARNEY_API /* bla */
+#  define BN_IF_CPP(a) /* ignore */
 #endif
 
 typedef struct _BNContext                           *BNContext;
@@ -86,6 +85,11 @@ struct BNTransform {
   } l;
   bn_float3 p;
 };
+
+typedef enum {
+  BN_FB_COLOR = (1<<0),
+  BN_FB_DEPTH = (1<<1),
+} BNFrameBufferChannel;
 
 typedef enum {
   /*! a undefined data type */
@@ -148,8 +152,15 @@ struct BNGridlet {
   bn_int3   dims;
 };
 
-#define BN_FOVY_DEGREES(degrees) ((float)(degrees*M_PI/180.f))
 
+struct BNHardwareInfo {
+  int numRanks;
+  int numHosts;
+  int numGPUsThisRank;
+  int numGPUsThisHost;
+  int numRanksThisHost;
+  int localRank;
+};
 
 
 
@@ -158,21 +169,27 @@ struct BNGridlet {
 // ==================================================================
 
 /*! create a new camera of given type. currently supported types:
-    "pinhole" */
+  "pinhole" */
 BARNEY_API
-BNCamera bnCameraCreate(BNContext context,
-                        const char *type);
+BNCamera      bnCameraCreate(BNContext context,
+                             const char *type);
 
+/*! creates a new frame buffer that can be used to render into.  In
+  case of using MPI-parallel rendering only the 'owningRank' is
+  allowed to read the frame buffer's content. For non-mpi rendering,
+  owningRank should be 0 */
 BARNEY_API
 BNFrameBuffer bnFrameBufferCreate(BNContext context,
-                                  int owningRank);
+                                  int owningRank BN_IF_CPP(= 0));
 
 BARNEY_API
-BNModel bnModelCreate(BNContext ctx);
+BNModel       bnModelCreate(BNContext ctx);
+
+/*! create a new renderer object. Currently supported types:
+    "pathTracer", "default" (same as pathtracer) */
 BARNEY_API
-BNRenderer bnRendererCreate(BNContext ctx, const char *ignoreForNow);
-
-
+BNRenderer    bnRendererCreate(BNContext ctx,
+                               const char *type BN_IF_CPP(= "default"));
 
 
 // ==================================================================
@@ -247,16 +264,6 @@ void bnSet4fc(BNObject target, const char *paramName, float4 v);
 # endif
 
 
-/*! helper function to fill in a BNCamera structure from a more
-    user-friendly from/at/up/fovy specification */
-BARNEY_API
-void bnPinholeCamera(BNCamera  camera,
-                     bn_float3 from,
-                     bn_float3 at,
-                     bn_float3 up,
-                     float     fovy,
-                     float     aspect);
-
 BARNEY_API
 BNContext bnContextCreate(/*! how many data slots this context is to
                               offer, and which part(s) of the
@@ -271,44 +278,12 @@ BNContext bnContextCreate(/*! how many data slots this context is to
                           const int *gpuIDs=nullptr,
                           int  numGPUs=-1);
 
-// BARNEY_API
-// void bnCountAvailableDevice(int *numGPUs);
-
+/*! destroys a barney context, and all still-active objects aquired
+    from this context. After calling bnCntextDestroy, all handles
+    acquired through the given context may no longer be accessed or
+    used in any form */
 BARNEY_API
 void bnContextDestroy(BNContext context);
-
-struct BNHardwareInfo {
-  int numRanks;
-  int numHosts;
-  int numGPUsThisRank;
-  int numGPUsThisHost;
-  int numRanksThisHost;
-  int localRank;
-};
-
-
-#if BARNEY_MPI
-BARNEY_API
-BNContext bnMPIContextCreate(MPI_Comm comm,
-                             /*! how many data slots this context is to
-                               offer, and which part(s) of the
-                               distributed model data these slot(s)
-                               will hold */
-                             const int *dataRanksOnThisContext=0,
-                             int        numDataRanksOnThisContext=1,
-                             /*! which gpu(s) to use for this
-                               process. default is to distribute
-                               node's GPUs equally over all ranks on
-                               that given node */
-                             const int *gpuIDs=nullptr,
-                             int  numGPUs=-1
-                             );
-
-BARNEY_API
-void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
-
-#endif
-
 
 /*! decreases (the app's) reference count of said object by one. if
     said refernce count falls to 0 the object handle gets destroyed
@@ -320,12 +295,18 @@ void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 BARNEY_API
 void  bnRelease(BNObject object);
 
-/*! increases (the app's) reference count of said object byb one */
+/*! increases (the app's) reference count of said object by one. This
+    will not interfere with barney's internal reference counting (the
+    given object will not get deleted until no other barney objects
+    use it any more); but will tell barney that the _app_ no longer
+    has any claim on this object, and that it is free to remove it if
+    it is no longer needed internally */
 BARNEY_API
 void  bnAddReference(BNObject object);
 
 BARNEY_API
-void  bnBuild(BNModel model, int whichDataSlot);
+void  bnBuild(BNModel model,
+              int whichDataSlot);
 
 // ==================================================================
 // render interface
@@ -334,15 +315,10 @@ void  bnBuild(BNModel model, int whichDataSlot);
 BARNEY_API
 void bnAccumReset(BNFrameBuffer fb);
 
-typedef enum {
-  BN_FB_COLOR = (1<<0),
-  BN_FB_DEPTH = (1<<1),
-} BNFrameBufferChannel;
-
 BARNEY_API
 void bnFrameBufferResize(BNFrameBuffer fb,
                          int sizeX, int sizeY,
-                         uint32_t requiredChannels = BN_FB_COLOR);
+                         uint32_t requiredChannels BN_IF_CPP( = BN_FB_COLOR));
 
 BARNEY_API
 void bnFrameBufferRead(BNFrameBuffer fb,
@@ -350,6 +326,11 @@ void bnFrameBufferRead(BNFrameBuffer fb,
                        void *pointerToReadDataInto,
                        BNDataType requiredFormat);
 
+/*! returns a pointer to the internal frame buffer, for the specified
+    channel type. Note that this is likely going to be a device
+    pointer, and may or may not be readable on the host; but that in
+    case of using a cpu backend it may also be a host pointer and only
+    be accessible there. */
 BARNEY_API
 void *bnFrameBufferGetPointer(BNFrameBuffer fb,
                               BNFrameBufferChannel channelToRead);
@@ -384,15 +365,6 @@ BNData bnDataCreate(BNContext context,
                     size_t numItems,
                     const void *items);
 
-// /*! creates a cudaArray2D of specified size and texels. Can be passed
-//   to a sampler to create a matching cudaTexture2D */
-// BARNEY_API
-// BNTextureData bnTextureData2DCreate(BNContext context,
-//                                     int whichSlot,
-//                                     BNTexelFormat texelFormat,
-//                                     int width, int height,
-//                                     const void *items);
-
 /*! creates a cudaArray2D of specified size and texels. Can be passed
   to a sampler to create a matching cudaTexture2D, or as a background
   image to a renderer */
@@ -417,39 +389,41 @@ BARNEY_API
 void bnGroupBuild(BNGroup group);
 
 BARNEY_API
-BNTexture2D bnTexture2DCreate(BNContext context,
-                              int whichSlot,
-                              BNDataType texelFormat,
-                              /*! number of texels in x dimension */
-                              uint32_t size_x,
-                              /*! number of texels in y dimension */
-                              uint32_t size_y,
-                              const void *texels,
-                              BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR,
-                              BNTextureAddressMode addressMode_x = BN_TEXTURE_WRAP,
-                              BNTextureAddressMode addressMode_y = BN_TEXTURE_WRAP,
-                              BNTextureColorSpace  colorSpace  = BN_COLOR_SPACE_LINEAR);
+BNTexture2D
+bnTexture2DCreate(BNContext context,
+                  int whichSlot,
+                  BNDataType texelFormat,
+                  /*! number of texels in x dimension */
+                  uint32_t size_x,
+                  /*! number of texels in y dimension */
+                  uint32_t size_y,
+                  const void *texels,
+                  BNTextureFilterMode  filterMode    BN_IF_CPP(= BN_TEXTURE_LINEAR),
+                  BNTextureAddressMode addressMode_x BN_IF_CPP(= BN_TEXTURE_WRAP),
+                  BNTextureAddressMode addressMode_y BN_IF_CPP(= BN_TEXTURE_WRAP),
+                  BNTextureColorSpace  colorSpace  = BN_IF_CPP(BN_COLOR_SPACE_LINEAR));
 
 BARNEY_API
-BNTexture3D bnTexture3DCreate(BNContext context,
-                              int whichSlot,
-                              BNDataType texelFormat,
-                              /*! number of texels in x dimension */
-                              uint32_t size_x,
-                              /*! number of texels in y dimension */
-                              uint32_t size_y, 
-                              /*! number of texels in z dimension */
-                              uint32_t size_z,
-                              const void *texels,
-                              BNTextureFilterMode  filterMode  = BN_TEXTURE_LINEAR,
-                              BNTextureAddressMode addressMode = BN_TEXTURE_CLAMP);
+BNTexture3D
+bnTexture3DCreate(BNContext context,
+                  int whichSlot,
+                  BNDataType texelFormat,
+                  /*! number of texels in x dimension */
+                  uint32_t size_x,
+                  /*! number of texels in y dimension */
+                  uint32_t size_y, 
+                  /*! number of texels in z dimension */
+                  uint32_t size_z,
+                  const void *texels,
+                  BNTextureFilterMode  filterMode  BN_IF_CPP(= BN_TEXTURE_LINEAR),
+                  BNTextureAddressMode addressMode BN_IF_CPP(= BN_TEXTURE_CLAMP));
 
 // ------------------------------------------------------------------
 // object-"create" interface
 // ------------------------------------------------------------------
 
-/*! create a new geometry of given type. currently supported types:
-    "triangles", "spheres", "cylinders" */
+/*! create a new geometry of given type. Currently supported types:
+    "triangles", "spheres", "cylinders", "capsules" */
 BARNEY_API
 BNGeom bnGeometryCreate(BNContext context,
                         int whichSlot,
@@ -476,76 +450,6 @@ BNSampler bnSamplerCreate(BNContext context,
                           const char *type);
 
 
-
-
-
-
-
-
-
-// // ------------------------------------------------------------------
-// // soon to be deprecated, but still the only way to create those
-// // ------------------------------------------------------------------
-// BARNEY_API
-// BNScalarField bnUMeshCreate(BNContext context,
-//                             int whichSlot,
-//                             // vertices, 4 floats each (3 floats position,
-//                             // 4th float scalar value)
-//                             const float4 *vertices, int numVertices,
-//                             /*! array of all the vertex indices of all
-//                                 elements, one after another;
-//                                 ie. elements with different vertex
-//                                 counts can come in any order, so a
-//                                 mesh with one tet and one hex would
-//                                 have an index array of size 12, with
-//                                 four for the tet and eight for the
-//                                 hex */
-//                             const int *_indices, int numIndices,
-//                             /*! one int per logical element, stating
-//                                 where in the indices array it's N
-//                                 differnt vertices will be located */
-//                             const int *_elementOffsets,
-//                             int numElements,
-//                             // // tets, 4 ints in vtk-style each
-//                             // const int *tets,       int numTets,
-//                             // // pyramids, 5 ints in vtk-style each
-//                             // const int *pyrs,       int numPyrs,
-//                             // // wedges/tents, 6 ints in vtk-style each
-//                             // const int *wedges,     int numWedges,
-//                             // // general (non-guaranteed cube/voxel) hexes, 8
-//                             // // ints in vtk-style each
-//                             // const int *hexes,      int numHexes,
-//                             // //
-//                             // int numGrids,
-//                             // // offsets into gridIndices array
-//                             // const int *_gridOffsets,
-//                             // // grid dims (3 floats each)
-//                             // const int *_gridDims,
-//                             // // grid domains, 6 floats each (3 floats min corner,
-//                             // // 3 floats max corner)
-//                             // const float *gridDomains,
-//                             // // grid scalars
-//                             // const float *gridScalars,
-//                             // int numGridScalars,
-//                             const bn_float3 *domainOrNull=0);
-
-
-// BARNEY_API
-// BNScalarField bnBlockStructuredAMRCreate(BNContext context,
-//                                          int whichSlot,
-//                                          /*TODO:const float *cellWidths,*/
-//                                          // block bounds, 6 ints each (3 for min,
-//                                          // 3 for max corner)
-//                                          const int *blockBounds, int numBlocks,
-//                                          // refinement level, per block,
-//                                          // finest is level 0,
-//                                          const int *blockLevels,
-//                                          // offsets into blockData array
-//                                          const int *blockOffsets,
-//                                          // block scalars
-//                                          const float *blockScalars, int numBlockScalars);
-
-
 BARNEY_API
 BNVolume bnVolumeCreate(BNContext context,
                         int whichSlot,
@@ -560,23 +464,8 @@ void bnVolumeSetXF(BNVolume         volume,
 
 
 
-
-
-// ==================================================================
-// HELPER FUNCTION(S) - may not survivie into final API
-// ==================================================================
-
 #ifdef __cplusplus
-inline void bnSetAndRelease(BNObject o, const char *n, BNObject v)
-{
-  bnSetObject(o,n,v);
-  bnRelease(v);
-}
-inline void bnSetAndRelease(BNObject o, const char *n, BNData v)
-{
-  bnSetData(o,n,v);
-  bnRelease(v);
-}
+/* just for c++ : polymorphic versions */
 inline void bnSet(BNObject o, const char *n, bn_float2 v)
 { bnSet2f(o,n,v.x,v.y); }
 inline void bnSet(BNObject o, const char *n, bn_float3 v)
@@ -590,66 +479,4 @@ inline void bnSet(BNObject o, const char *n, bn_int3 v)
 inline void bnSet(BNObject o, const char *n, bn_int4 v)
 { bnSet4i(o,n,v.x,v.y,v.z,v.w); }
 #endif
-
-// struct BNMaterialHelper {
-//   bn_float3   baseColor     { .7f,.7f,.7f };
-//   float       transmission  { 0.f };
-//   float       ior           { 1.45f };
-//   float       metallic      { 1.f };
-//   float       roughness     { 0.f };
-//   BNTexture2D alphaTexture  { 0 };
-//   BNTexture2D colorTexture  { 0 };
-// };
-
-// /*! c++ helper function */
-// inline void bnSetAndRelease(BNObject target, const char *paramName,
-//                             BNObject value)
-// { bnSetObject(target,paramName,value); bnRelease(value); }
-
-// /*! c++ helper function */
-// inline void bnSetAndRelease(BNObject target, const char *paramName,
-//                             BNData value)
-// { bnSetData(target,paramName,value); bnRelease(value); }
-  
-// /*! helper function for assinging leftover BNMaterial definition from old API */
-// inline void bnAssignMaterial(BNGeom geom,const BNMaterialHelper *material)
-// {
-//   bnSet3fc(geom,"material.baseColor",material->baseColor);
-//   bnSet1f(geom,"material.transmission",material->transmission);
-//   bnSet1f(geom,"material.ior",material->ior);
-//   if (material->colorTexture)
-//     bnSetObject(geom,"material.colorTexture",material->colorTexture);
-//   if (material->alphaTexture)
-//     bnSetObject(geom,"material.alphaTexture",material->alphaTexture);
-//   bnCommit(geom);
-// }
-
-
-
-
-// // ------------------------------------------------------------------
-// // DEPRECATED
-// // ------------------------------------------------------------------
-// BARNEY_API
-// BNGeom bnTriangleMeshCreate(BNContext context,
-//                             int whichSlot,
-//                             const BNMaterialHelper *material,
-//                             const int3 *indices,
-//                             int numIndices,
-//                             const float3 *vertices,
-//                             int numVertices,
-//                             const float3 *normals,
-//                             const float2 *texcoords);
-
-// // ------------------------------------------------------------------
-// // DEPRECATED
-// // ------------------------------------------------------------------
-// BARNEY_API
-// BNScalarField bnStructuredDataCreate(BNContext context,
-//                                      int whichSlot,
-//                                      int3 dims,
-//                                      BNDataType /*ScalarType*/ type,
-//                                      const void *scalars,
-//                                      float3 gridOrigin,
-//                                      float3 gridSpacing);
 

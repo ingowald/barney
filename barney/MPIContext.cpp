@@ -23,7 +23,7 @@
 # define LOG_API_ENTRY /**/
 #endif
 
-namespace barney {
+namespace BARNEY_NS {
 
   MPIContext::MPIContext(const mpi::Comm &worldComm,
                          const mpi::Comm &workersComm,
@@ -235,9 +235,10 @@ namespace barney {
   }
 
   /*! create a frame buffer object suitable to this context */
-    FrameBuffer *MPIContext::createFB(int owningRank)
+  std::shared_ptr<barney_api::FrameBuffer>
+  MPIContext::createFrameBuffer(int owningRank)
   {
-    return initReference(std::make_shared<DistFB>(this,devices,owningRank));
+    return std::make_shared<DistFB>(this,devices,owningRank);
   }
 
   /*! returns how many rays are active in all ray queues, across all
@@ -415,16 +416,20 @@ namespace barney {
     // ------------------------------------------------------------------
     // assign a GPU to this rank
     // ------------------------------------------------------------------
-    int numGPUsOnThisHost = rtc::Backend::getDeviceCount();
+    int numGPUsOnThisHost = 0;
+#if BARNEY_RTC_OPTIX
+    cudaGetDeviceCount(&numGPUsOnThisHost);
+#endif
     // cudaGetDeviceCount(&numGPUsOnThisHost);
-    if (numGPUsOnThisHost == 0)
-      throw std::runtime_error("no barney-capable devices on this rank!");
+    // if (numGPUsOnThisHost == 0)
+    //   throw std::runtime_error("no barney-capable devices on this rank!");
     hardware.numGPUsThisHost = numGPUsOnThisHost;
     hardware.numGPUsThisRank
-      = comm.allReduceMin(std::max(hardware.numGPUsThisHost/
-                                   hardware.numRanksThisHost,
-                                   1));
-    assert(hardware.numGPUsThisRank > 0);
+      = comm.allReduceMin(hardware.numGPUsThisHost == 0
+                          ? 0
+                          : std::max(hardware.numGPUsThisHost/
+                                     hardware.numRanksThisHost,
+                                     1));
   }
 
   BARNEY_API
