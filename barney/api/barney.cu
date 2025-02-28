@@ -15,6 +15,10 @@
 // ======================================================================== //
 
 #include "barney/api/Context.h"
+#if BARNEY_MPI
+# include "barney/common/MPIWrappers.h"
+# include "barney/barney_mpi.h"
+#endif
 
 static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this isn't going to work");
 
@@ -45,6 +49,35 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 
 namespace barney_api {
 
+  extern "C" {
+#if BARNEY_BACKEND_EMBREE
+    barney_api::Context *
+    createContext_embree(const std::vector<int> &dgIDs);
+#endif
+#if BARNEY_BACKEND_OPTIX
+    barney_api::Context *
+    createContext_optix(const std::vector<int> &dgIDs,
+                        int numGPUs, const int *gpuIDs);
+#endif
+#if BARNEY_MPI
+# if BARNEY_BACKEND_EMBREE
+    barney_api::Context *
+    createMPIContext_embree(barney_api::mpi::Comm world,
+                            barney_api::mpi::Comm workers,
+                            bool isActiveWorker,
+                            const std::vector<int> &dgIDs);
+# endif
+# if BARNEY_BACKEND_OPTIX
+    barney_api::Context *
+    createMPIContext_optix(barney_api::mpi::Comm world,
+                           barney_api::mpi::Comm workers,
+                           bool isActiveWorker,
+                           const std::vector<int> &dgIDs,
+                           const std::vector<int> &gpuIDs);
+# endif
+#endif
+  }
+  
   inline Context *checkGet(BNContext context)
   {
     assert(context);
@@ -980,4 +1013,128 @@ namespace barney_api {
     return 0;
   }
 
+#if BARNEY_MPI
+  BARNEY_API
+  BNContext bnMPIContextCreate(MPI_Comm _comm,
+                               /*! how many data slots this context is to
+                                 offer, and which part(s) of the
+                                 distributed model data these slot(s)
+                                 will hold */
+                               const int *dataRanksOnThisContext,
+                               int        numDataRanksOnThisContext,
+                               /*! which gpu(s) to use for this
+                                 process. default is to distribute
+                                 node's GPUs equally over all ranks on
+                                 that given node */
+                               const int *_gpuIDs,
+                               int  numGPUs
+                               )
+  {
+    LOG_API_ENTRY;
+
+    mpi::Comm world(_comm);
+
+    if (world.size == 1) {
+      // std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
+      return bnContextCreate(dataRanksOnThisContext,
+                             numDataRanksOnThisContext == 0
+                             ? 1 : numDataRanksOnThisContext,
+                             /*! which gpu(s) to use for this
+                               process. default is to distribute
+                               node's GPUs equally over all ranks on
+                               that given node */
+                             _gpuIDs,
+                             numGPUs);
+    }
+
+    // ------------------------------------------------------------------
+    // create vector of data groups; if actual specified by user we
+    // use those; otherwise we use IDs
+    // [0,1,...numModelSlotsOnThisHost)
+    // ------------------------------------------------------------------
+    assert(/* data groups == 0 is allowed for passive nodes*/
+           numDataRanksOnThisContext >= 0);
+    std::vector<int> dataGroupIDs;
+    int rank;
+    MPI_Comm_rank(world, &rank);
+    for (int i=0;i<numDataRanksOnThisContext;i++)
+      dataGroupIDs.push_back
+        (dataRanksOnThisContext
+         ? dataRanksOnThisContext[i]
+         : rank*numDataRanksOnThisContext+i);
+
+    // check if we're an active worker
+    bool isActiveWorker = !dataGroupIDs.empty();
+    mpi::Comm workers = world.split(isActiveWorker);
+    
+    // ------------------------------------------------------------------
+    // create list of GPUs to use for this rank. if specified by user
+    // we use this; otherwise we use GPUs in order, split into groups
+    // according to how many ranks there are on this host. Ie, if host
+    // has four GPUs the first rank will take 0 and 1; and the second
+    // one will take 2 and 3.
+    // ------------------------------------------------------------------
+    BNHardwareInfo hardware;
+    bnMPIQueryHardware(&hardware,_comm);
+
+    if (_gpuIDs) {
+      // gpu IDs _are_ specified by user - use them, or fail
+      assert(numGPUs > 0);
+      if (numGPUs == 1 && _gpuIDs[0] == -1) {
+# if BARNEY_BACKEND_EMBREE
+        return (BNContext)createMPIContext_embree(world,
+                                                  workers,
+                                                  isActiveWorker,
+                                                  dataGroupIDs);
+# else
+        throw std::runtime_error
+          ("explicitly asked for CPU backend, "
+           "but cpu/embree backend not compiled in");
+# endif
+      }
+#if BARNEY_BACKEND_OPTIX
+      std::vector<int> gpuIDs = {_gpuIDs,_gpuIDs+numGPUs};
+      return (BNContext)createMPIContext_optix(world,
+                                               workers,
+                                               isActiveWorker,
+                                               dataGroupIDs,
+                                               gpuIDs);
+#else
+      throw std::runtime_error("explicitly asked for gpus to use, "
+                               "but optix backend not compiled in");
+#endif
+    }
+
+    
+    // user did NOT request any GPUs, it's up to us. 
+#if BARNEY_BACKEND_OPTIX
+    try {
+      if (hardware.numGPUsThisRank == 0)
+        throw std::runtime_error("don't have any GPUs on this node");
+
+      std::vector<int> gpuIDs;      
+      for (int i=0;i<hardware.numGPUsThisRank;i++)
+        gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
+                          + i) % hardware.numGPUsThisHost);
+      return (BNContext)createMPIContext_optix(world,
+                                               workers,
+                                               isActiveWorker,
+                                               dataGroupIDs,
+                                               gpuIDs);
+    } catch (std::exception &e) {
+      std::cout << "#barney: could not create optix context" << std::endl;
+    }
+#endif
+    
+# if BARNEY_BACKEND_EMBREE
+    return (BNContext)createMPIContext_embree(world,
+                                              workers,
+                                              isActiveWorker,
+                                              dataGroupIDs);
+# else
+    throw std::runtime_error
+      ("cannot find GPUs for otpix backend, but cpu backend not compiled in");
+# endif
+  }
+#endif
 } // ::owl

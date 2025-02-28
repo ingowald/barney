@@ -336,17 +336,15 @@ namespace barney_api {
     std::map<Object::SP,int> hostOwnedHandles;
   };
 
-#if BARNEY_BACKEND_EMBREE
-  extern "C"
-  Context *createContext_embree(const std::vector<int> &dgIDs);
-
-#endif
-#if BARNEY_BACKEND_OPTIX
-  extern "C"
-  Context *createContext_optix(const std::vector<int> &dgIDs,
-                               int numGPUs, const int *gpuIDs);
-#endif
-
+// #if BARNEY_BACKEND_EMBREE
+//   extern "C"
+//   Context *createContext_embree(const std::vector<int> &dgIDs);
+// #endif
+// #if BARNEY_BACKEND_OPTIX
+//   extern "C"
+//   Context *createContext_optix(const std::vector<int> &dgIDs,
+//                                int numGPUs, const int *gpuIDs);
+// #endif
 
   /*! pretty-printer for printf-debugging */
   inline std::string Object::toString() const

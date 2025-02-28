@@ -24,8 +24,8 @@ namespace BARNEY_NS {
   /*! barney context for collaborative MPI-parallel rendering */
   struct MPIContext : public Context
   {
-    MPIContext(const mpi::Comm &worldComm,
-               const mpi::Comm &workersComm,
+    MPIContext(const barney_api::mpi::Comm &worldComm,
+               const barney_api::mpi::Comm &workersComm,
                bool isActiveWorker,
                const std::vector<int> &dataGroupIDs,
                const std::vector<int> &gpuIDs);
@@ -61,8 +61,8 @@ namespace BARNEY_NS {
     int numDifferentModelSlots = -1;
     int numTimesForwarded = 0;
     
-    mpi::Comm world;
-    mpi::Comm workers;
+    barney_api::mpi::Comm world;
+    barney_api::mpi::Comm workers;
     int numWorkers;
   };
 

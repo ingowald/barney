@@ -25,9 +25,9 @@
 #include <stdexcept>
 
 #define BN_MPI_CALL(fctCall)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw mpi::Exception(__PRETTY_FUNCTION__,rc); }
+  { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney_api::mpi::Exception(__PRETTY_FUNCTION__,rc); }
     
-namespace BARNEY_NS {
+namespace barney_api {
   namespace mpi {
 
     inline std::string mpiErrorString(int rc)

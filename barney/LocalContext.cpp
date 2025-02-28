@@ -20,9 +20,6 @@
 namespace barney_api {
 #if BARNEY_RTC_EMBREE
   extern "C" {
-    // #if _WIN32
-    //   __declspec(dllexport)
-    // #endif
     Context *createContext_embree(const std::vector<int> &dgIDs)
     {
       std::vector<int> gpuIDs = { 0 };
@@ -32,9 +29,6 @@ namespace barney_api {
 #endif
 #if BARNEY_RTC_OPTIX
   extern "C" {
-    // #if _WIN32
-    //   __declspec(dllexport)
-    // #endif
     Context *createContext_optix(const std::vector<int> &dgIDs,
                                  int numGPUs, const int *_gpuIDs)
     {

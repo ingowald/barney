@@ -25,8 +25,8 @@
 
 namespace BARNEY_NS {
 
-  MPIContext::MPIContext(const mpi::Comm &worldComm,
-                         const mpi::Comm &workersComm,
+  MPIContext::MPIContext(const barney_api::mpi::Comm &worldComm,
+                         const barney_api::mpi::Comm &workersComm,
                          bool isActiveWorker,
                          const std::vector<int> &dataGroupIDs,
                          const std::vector<int> &gpuIDs)
@@ -370,7 +370,7 @@ namespace BARNEY_NS {
     BNHardwareInfo &hardware = *_hardware;
 
     assert(_comm != MPI_COMM_NULL);
-    mpi::Comm comm(_comm);
+    barney_api::mpi::Comm comm(_comm);
 
     hardware.numRanks = comm.size;
     char hostName[MPI_MAX_PROCESSOR_NAME];
@@ -432,97 +432,30 @@ namespace BARNEY_NS {
                                      1));
   }
 
-  BARNEY_API
-  BNContext bnMPIContextCreate(MPI_Comm _comm,
-                               /*! how many data slots this context is to
-                                 offer, and which part(s) of the
-                                 distributed model data these slot(s)
-                                 will hold */
-                               const int *dataRanksOnThisContext,
-                               int        numDataRanksOnThisContext,
-                               /*! which gpu(s) to use for this
-                                 process. default is to distribute
-                                 node's GPUs equally over all ranks on
-                                 that given node */
-                               const int *_gpuIDs,
-                               int  numGPUs
-                               )
-  {
-    LOG_API_ENTRY;
-
-    mpi::Comm world(_comm);
-
-    if (world.size == 1) {
-      // std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
-      return bnContextCreate(dataRanksOnThisContext,
-                             numDataRanksOnThisContext == 0
-                             ? 1 : numDataRanksOnThisContext,
-                             /*! which gpu(s) to use for this
-                               process. default is to distribute
-                               node's GPUs equally over all ranks on
-                               that given node */
-                             _gpuIDs,
-                             numGPUs);
+  extern "C" {
+# if BARNEY_BACKEND_EMBREE
+    barney_api::Context *
+    createMPIContext_embree(barney_api::mpi::Comm world,
+                            barney_api::mpi::Comm workers,
+                            bool isActiveWorker,
+                            const std::vector<int> &dgIDs)
+    {
+      std::vector<int> gpuIDs = { 0 };
+      return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
+                                       gpuIDs,dgIDs);
     }
-
-    // ------------------------------------------------------------------
-    // create vector of data groups; if actual specified by user we
-    // use those; otherwise we use IDs
-    // [0,1,...numModelSlotsOnThisHost)
-    // ------------------------------------------------------------------
-    assert(/* data groups == 0 is allowed for passive nodes*/
-           numDataRanksOnThisContext >= 0);
-    std::vector<int> dataGroupIDs;
-    int rank;
-    MPI_Comm_rank(world, &rank);
-    for (int i=0;i<numDataRanksOnThisContext;i++)
-      dataGroupIDs.push_back
-        (dataRanksOnThisContext
-         ? dataRanksOnThisContext[i]
-         : rank*numDataRanksOnThisContext+i);
-
-    // ------------------------------------------------------------------
-    // create list of GPUs to use for this rank. if specified by user
-    // we use this; otherwise we use GPUs in order, split into groups
-    // according to how many ranks there are on this host. Ie, if host
-    // has four GPUs the first rank will take 0 and 1; and the second
-    // one will take 2 and 3.
-    // ------------------------------------------------------------------
-    BNHardwareInfo hardware;
-    bnMPIQueryHardware(&hardware,_comm);
-
-    std::vector<int> gpuIDs;
-    if (_gpuIDs) {
-      for (int i=0;i<numGPUs;i++)
-        gpuIDs.push_back(_gpuIDs[i]);
-    } else {
-      if (numGPUs < 1)
-        numGPUs = hardware.numGPUsThisRank;
-      for (int i=0;i<numGPUs;i++)
-        gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
-                          + i) % hardware.numGPUsThisHost);
+# endif
+# if BARNEY_BACKEND_OPTIX
+    barney_api::Context *
+    createMPIContext_optix(barney_api::mpi::Comm world,
+                           barney_api::mpi::Comm workers,
+                           bool isActiveWorker,
+                           const std::vector<int> &dgIDs,
+                           const std::vector<int> &gpuIDs)
+    {
+      return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
+                                       gpuIDs,dgIDs);
     }
-
-    // if (1) {
-    //   std::stringstream ss;
-    //   ss << "#bn." << world.rank << ": gpuIDs ";
-    //   for (auto i : gpuIDs) ss << i << " ";
-    //   ss << std::endl;
-    //   ss << "localRank " << hardware.localRank << std::endl;
-    //   ss << "numGPUsThisRank " << hardware.numGPUsThisRank << std::endl;
-    //   ss << "numGPUsThisHost " << hardware.numGPUsThisHost << std::endl;
-    //   std::cout << ss.str() << std::flush;
-    //   world.barrier();
-    //   exit(0);
-    // }
-
-    bool isActiveWorker = !dataGroupIDs.empty();
-    mpi::Comm workers = world.split(isActiveWorker);
-
-    return (BNContext)new MPIContext(world,
-                                     workers,
-                                     isActiveWorker,
-                                     dataGroupIDs,
-                                     gpuIDs);
+# endif
   }
 }
