@@ -114,6 +114,7 @@ namespace BARNEY_NS {
         //                 scatter.f_r.y,
         //                 scatter.f_r.z,
         //                 scatter.pdf);
+        scatter.type = ScatterResult::SPECULAR;
       }
       
       

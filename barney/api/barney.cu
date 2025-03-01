@@ -964,7 +964,6 @@ namespace barney_api {
 
 #if BARNEY_BACKEND_OPTIX
       try {
-        PING; PRINT(numGPUs); 
         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
       } catch (std::exception &e) {
         std::cerr << "#barney(warn): could not create optix backend (reason: "
