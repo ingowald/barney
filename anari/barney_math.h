@@ -5,6 +5,9 @@
 
 // barney
 #include "barney/barney.h"
+#if BARNEY_MPI
+# include "barney/barney_mpi.h"
+#endif
 // anari
 #include <helium/helium_math.h>
 #include <anari/anari_cpp.hpp>

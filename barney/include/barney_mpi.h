@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,35 +16,25 @@
 
 #pragma once
 
-#include "barney/fb/FrameBuffer.h"
-#include "barney/common/MPIWrappers.h"
+#include "barney.h"
+#include <mpi.h>
 
-namespace BARNEY_NS {
+BARNEY_API
+BNContext bnMPIContextCreate(MPI_Comm comm,
+                             /*! how many data slots this context is to
+                               offer, and which part(s) of the
+                               distributed model data these slot(s)
+                               will hold */
+                             const int *dataRanksOnThisContext=0,
+                             int        numDataRanksOnThisContext=1,
+                             /*! which gpu(s) to use for this
+                               process. default is to distribute
+                               node's GPUs equally over all ranks on
+                               that given node */
+                             const int *gpuIDs=nullptr,
+                             int  numGPUs=-1
+                             );
 
-  struct MPIContext;
-  
-  struct DistFB : public FrameBuffer {
-    typedef std::shared_ptr<DistFB> SP;
+BARNEY_API
+void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 
-    DistFB(MPIContext *context,
-           const DevGroup::SP &devices,
-           int owningRank);
-    virtual ~DistFB() = default;
-    
-    void resize(vec2i size, uint32_t channels) override;
-
-    void ownerGatherCompressedTiles() override;
-    
-    struct {
-      std::vector<int> numTilesOnGPU;
-      std::vector<int> firstTileOnGPU;
-      int numGPUs;
-    } ownerGather;
-    // (world)rank that owns this frame buffer
-    const int owningRank;
-    const bool isOwner;
-    const bool ownerIsWorker;
-    MPIContext *context;
-  };
-
-}

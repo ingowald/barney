@@ -27,20 +27,7 @@ namespace BARNEY_NS {
 
   struct FrameBuffer;
 
-#if 0
-  struct Denoiser {
-    typedef std::shared_ptr<Denoiser> SP;
-    static SP create(FrameBuffer *fb);
-    
-    Denoiser(FrameBuffer *fb) : fb(fb) {};
-    virtual ~Denoiser() {};
-    virtual void resize() = 0;
-    virtual void run() = 0;
-    FrameBuffer *const fb;
-  };
-#endif
-  
-  struct FrameBuffer : barney_api::FrameBuffer {//public SlottedObject {
+  struct FrameBuffer : barney_api::FrameBuffer {
 
     FrameBuffer(Context *context,
                 const DevGroup::SP &devices,

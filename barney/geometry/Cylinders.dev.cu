@@ -68,7 +68,7 @@ namespace BARNEY_NS {
 
     // Caps. 
     float h1 = m3 * m3 - m5 + ra * ra;
-    if (h1 > 0.0)
+    if (h1 > 0.f)
       {
         t = -m3 - sqrtf(h1);
         hit_t = t;
@@ -181,7 +181,7 @@ namespace BARNEY_NS {
     
       const vec3f f = v0 - ray_org;
       const vec3f sxf = cross(s, f);
-      const float ra = 1.0f/a;
+      const float ra = 1.f/a;
       const float ts = dot(sxd, sxf) * ra; // (sd)(s x f) / (s x d)^2, in ray-space
       const vec3f fp = f - ts * d; // f' = v0 - closest point to axis
     

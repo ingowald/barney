@@ -43,15 +43,7 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<UMeshField> SP;
 
     virtual ~UMeshField()
-    {
-      PING;
-      PING;
-      PING;
-      PING;
-      PING;
-      PING;
-      exit(0);
-    }
+    {}
     
     /*! helper class for representing an N-long integer tuple, to
        represent wedge, pyramid, hex, etc elemnet indices */

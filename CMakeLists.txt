@@ -151,11 +151,6 @@ if (BARNEY_HAVE_CUDA)
   option(BARNEY_BACKEND_CUDA "Enable Cuda Backend?" ON)
   option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)
   option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" OFF)
-  
-#  target_compile_definitions(barney_config INTERFACE
-#    # we have cuda - as a *compiler*
-#    -DBARNEY_HAVE_CUDA=1
-#    )
 else()
   set(BARNEY_BACKEND_CUDA OFF)
   set(BARNEY_BACKEND_OPTIX OFF)
@@ -238,7 +233,6 @@ if (BARNEY_MPI)
     set(BARNEY_MPI OFF)
   endif()
 endif()
-message("BARNEY_MPI is ${BARNEY_MPI}")
 
 message("configuring barney")
 add_subdirectory(barney)
@@ -278,28 +272,10 @@ set(BARNEY_CMAKE_INSTALL_DESTINATION
   ${CMAKE_INSTALL_LIBDIR}/cmake/barney-${BARNEY_VERSION}#${PROJECT_VERSION}
 )
 
-if (OFF)
-  # do we still need this???
-project(anari_headers)
-project_add_library(INTERFACE)
-project_include_directories(
-INTERFACE
-  $<BUILD_INTERFACE:${GENERATED_HEADER_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/barney>
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-if (WIN32)
-  project_compile_definitions(INTERFACE -D_USE_MATH_DEFINES)
-endif()
-endif()
-
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
   "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.cmake.in"
-#  "${PROJECT_SOURCE_DIR}/cmake/barneyConfig.cmake.in"
   "${PROJECT_BINARY_DIR}/barneyConfig.cmake"
   INSTALL_DESTINATION
   ${BARNEY_CMAKE_INSTALL_DESTINATION}
@@ -329,72 +305,44 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
     PATTERN Findbarney.cmake EXCLUDE
 )
 
-#if (BARNEY_MPI)
-#  set(BARNEY_MPI_INSTALL barney_mpi)
-#else()
-#  set(BARNEY_MPI_INSTALL)
-#endif()
+set(BARNEY_INSTALL_TARGETS barney barney_static)
+if (TARGET barney_mpi)
+  list(APPEND BARNEY_INSTALL_TARGETS barney_mpi barney_mpi_static)
+endif()
 if (TARGET anari_library_barney)
-  set(BARNEY_ANARI_INSTALL anari_library_barney)
-else()
-  set(BARNEY_ANARI_INSTALL)
+  list(APPEND BARNEY_INSTALL_TARGETS anari_library_barney)
+endif()
+if (TARGET anari_library_barney_mpi)
+  list(APPEND BARNEY_INSTALL_TARGETS anari_library_barney_mpi)
 endif()
 
 install(
-  TARGETS barney # ${CUBQL_LIBS}
-  barney_static
-#  ${BARNEY_MPI_INSTALL}
-  ${BARNEY_ANARI_INSTALL}
-#  EXPORT barneyTargets
+  TARGETS
+  ${BARNEY_INSTALL_TARGETS}
   EXPORT barney-config
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    NAMELINK_SKIP
+  NAMELINK_SKIP
   # on Windows put the dlls into bin
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   # ... and the import lib into the devel package
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-#install(EXPORT barneyTargets
 install(EXPORT barney-config
   DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
   NAMESPACE barney::
   )
 
-# if (BARNEY_MPI)
-#   if (ON)
-#     install(
-#       TARGETS barney_mpi
-#       EXPORT barney-config
-#       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#       NAMELINK_SKIP
-#       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-#       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#       )
-#   else()
-#     install(
-#       TARGETS barney_mpi
-# #      EXPORT barney_mpiTargets
-#       EXPORT barney_mpi-config
-#       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#       NAMELINK_SKIP
-#       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-#       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#       )
-# #    install(EXPORT barney_mpiTargets
-#     install(EXPORT barney_mpi-config
-# #      FILE barney_mpiTargets.cmake
-#       FILE barney_mpi-config.cmake
-#       DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
-#       NAMESPACE barney::
-#       )
-#   endif()
-# endif()
-
 # configures the public api
 configure_file(
   ${PROJECT_SOURCE_DIR}/barney/include/barney.h
   include/barney/barney.h
+)
+if (BARNEY_MPI)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/barney/include/barney_mpi.h
+    include/barney/barney_mpi.h
   )
+endif()
 # internal configurations that shoudln't be visible in external api
 configure_file(
   ${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in
