@@ -103,19 +103,19 @@ namespace BARNEY_NS {
         if (org.x < 0.f || org.x > f_size.x)
           // ray passes by the volume ...
           return;
-        t_nr.x = -BARNEY_INF; t_nr.x = +BARNEY_INF;
+        t_nr.x = -BARNEY_INF; t_fr.x = +BARNEY_INF;
       }
       if (dir.y == 0.f) {
         if (org.y < 0.f || org.y > f_size.y)
           // ray passes by the volume ...
           return;
-        t_nr.y = -BARNEY_INF; t_nr.y = +BARNEY_INF;
+        t_nr.y = -BARNEY_INF; t_fr.y = +BARNEY_INF;
       }
       if (dir.z == 0.f) {
         if (org.z < 0.f || org.z > f_size.z)
           // ray passes by the volume ...
           return;
-        t_nr.z = -BARNEY_INF; t_nr.z = +BARNEY_INF;
+        t_nr.z = -BARNEY_INF; t_fr.z = +BARNEY_INF;
       }
     
       float ray_t0 = max(0.f,reduce_max(t_nr));
