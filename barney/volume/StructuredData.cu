@@ -21,7 +21,9 @@
 
 namespace BARNEY_NS {
 
-  RTC_IMPORT_USER_GEOM(/*file*/StructuredData,/*name*/StructuredData,/*geomtype device data */StructuredData::DD,false,false);
+  RTC_IMPORT_USER_GEOM(/*file*/StructuredData,/*name*/StructuredMC,
+                       /*geomtype device data */
+                       MCVolumeAccel<StructuredDataSampler>::DD,false,false);
   RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
 
 
@@ -80,7 +82,6 @@ namespace BARNEY_NS {
     perLogical.resize(devices->numLogical);
     for (auto device : *devices)
       getPLD(device)->computeMCs
-        // = device->rtc->createCompute("StructuredData_computeMCs");
         = createCompute_StructuredData_computeMCs(device->rtc);
   }
 
@@ -110,7 +111,6 @@ namespace BARNEY_NS {
   StructuredDataSampler::DD StructuredDataSampler::getDD(Device *device)
   {
     DD dd;
-    // dd.worldBounds = sf->worldBounds;
     dd.texObj = sf->texture->getDD(device);
     dd.cellGridOrigin = sf->gridOrigin;
     dd.cellGridSpacing = sf->gridSpacing;
@@ -123,13 +123,8 @@ namespace BARNEY_NS {
     auto sampler = std::make_shared<StructuredDataSampler>(this);
     return std::make_shared<MCVolumeAccel<StructuredDataSampler>>
       (volume,
-       createGeomType_StructuredData,
-       sampler
-       // /* RTC_DECLARE_USER_GEOM is in Structured.dev.cu: */
-       // "StructuredData_ptx",
-       // /* the name used in RTC_DECLARE_USER_GEOM() */
-       // "MCAccel_Structured"
-       );
+       createGeomType_StructuredMC,
+       sampler);
   }
   
   // ==================================================================
@@ -164,9 +159,8 @@ namespace BARNEY_NS {
                                  const Object::SP &value) 
   {
     if (member == "textureData") {
-      // texture = value->as<Texture3D>();
       scalars = value->as<TextureData>();
-      
+      PRINT((int*)scalars.get());
       BNTextureAddressMode addressModes[3] = {
         BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP
       };
@@ -180,10 +174,6 @@ namespace BARNEY_NS {
                                             BN_COLOR_SPACE_LINEAR);
       return true;
     }
-    // if (member == "textureColorMap") {
-    //   colorMapTexture = value->as<Texture3D>();
-    //   return true;
-    // }
     return false;
   }
 

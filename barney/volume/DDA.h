@@ -81,14 +81,20 @@ namespace BARNEY_NS {
                                 vec3ui gridSize,
                                 const Lambda &lambda,
                                 bool dbg)
-    {    
+    {
       const box3f bounds = { vec3f(0.f), vec3f(gridSize) };
       const vec3f floor_org = floor(org);
       const vec3f floor_org_plus_one = floor_org + vec3f(1.f);
       const vec3f rcp_dir     = rcp(dir);
       const vec3f abs_rcp_dir = abs(rcp(dir));
+      // if (dbg) {
+      //   printf("dir %f %f %f, rcp %f %f %f abs %f %f %f\n",
+      //          dir.x,dir.y,dir.z,
+      //          rcp_dir.x,rcp_dir.y,rcp_dir.z,
+      //          abs_rcp_dir.x,abs_rcp_dir.y,abs_rcp_dir.z);
+      // }
       const vec3f f_size = vec3f(gridSize);
-    
+      
       vec3f t_lo = (vec3f(0.f) - org) * rcp(dir);
       vec3f t_hi = (f_size     - org) * rcp(dir);
       vec3f t_nr = min(t_lo,t_hi);
@@ -131,7 +137,8 @@ namespace BARNEY_NS {
       //          f_cell_end.x,
       //          f_cell_end.y,
       //          f_cell_end.z);
-    
+
+      
       vec3f t_step = abs(rcp_dir);
       // if (dbg)
       //   printf("t_step %f %f %f\n",

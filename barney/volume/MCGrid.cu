@@ -32,9 +32,9 @@ namespace BARNEY_NS {
       pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
       pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
 
-      pld->mapMCs//             = rtc->createCompute("mapMCs");
+      pld->mapMCs
         = createCompute_mapMCs(device->rtc);
-      pld->clearMCs//           = rtc->createCompute("clearMCs");
+      pld->clearMCs
         = createCompute_clearMCs(device->rtc);
     }
   }
@@ -110,6 +110,7 @@ namespace BARNEY_NS {
       range1f scalarRange = grid.scalarRanges[mcIdx];
 
       const float maj = xf.majorant(scalarRange);
+
       grid.majorants[mcIdx] = maj;
     }
   };

@@ -103,6 +103,10 @@ namespace BARNEY_NS {
     perLogical.resize(devices->numLogical);
     rtc::TextureDesc desc;
     desc.filterMode     = toRTC(filterMode);
+
+    if (data->dims[2] > 0)
+      desc.normalizedCoords = false;
+
     for (int i=0;i<3;i++)
       if (data->dims[i] > 0)
         desc.addressMode[i] = toRTC(addressModes[i]);
