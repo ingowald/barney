@@ -173,8 +173,6 @@ endif()
 if (BARNEY_BACKEND_OPTIX)
   message("ENabling optix backend")
   add_library(barney_rtc_optix STATIC
-    optix/OptixBackend.h
-    optix/OptixBackend.cpp
     optix/Denoiser.h
     optix/Denoiser.cpp
     optix/Device.h

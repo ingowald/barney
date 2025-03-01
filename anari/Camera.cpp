@@ -49,6 +49,8 @@ void Perspective::commitParameters()
   Camera::commitParameters();
   m_aspect = getParam<float>("aspect", 1.f);
   m_fovy = getParam<float>("fovy", anari::radians(60.f));
+  m_focusDistance = getParam<float>("focusDistance", 0.f);
+  m_apertureRadius = getParam<float>("apertureRadius", 0.f);
 }
 
 void Perspective::finalize()
@@ -57,6 +59,8 @@ void Perspective::finalize()
   bnSet3fc(m_barneyCamera, "position", m_pos);
   bnSet3fc(m_barneyCamera, "direction", m_dir);
   bnSet1f(m_barneyCamera, "aspect", m_aspect);
+  bnSet1f(m_barneyCamera, "focusDistance", m_focusDistance);
+  bnSet1f(m_barneyCamera, "apertureRadius", m_apertureRadius);
   bnSet1f(m_barneyCamera, "fovy", anari::degrees(m_fovy));
   bnCommit(m_barneyCamera);
 }

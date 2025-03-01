@@ -87,13 +87,14 @@ namespace BARNEY_NS {
         + (1.f*aspect*(image_u - .5f)) * camera.dir_du
         + (1.f*(image_v - .5f)) * camera.dir_dv;
       
-      if (camera.lensRadius > 0.f) {
+      if (camera.apertureRadius > 0.f) {
         vec3f lens_du = normalize(camera.dir_du);
         vec3f lens_dv = normalize(camera.dir_dv);
         vec3f lensNormal  = cross(lens_du,lens_dv);
 
         vec3f D = normalize(ray_dir);
-        vec3f pointOnImagePlane = D * (camera.focalLength / fabsf(dot(D,lensNormal)));
+        vec3f pointOnImagePlane
+          = D * (camera.focusDistance / fabsf(dot(D,lensNormal)));
         float lu, lv;
         while (true) {
           lu = 2.f*rand()-1.f;
@@ -103,8 +104,8 @@ namespace BARNEY_NS {
           break;
         }
         vec3f lensOffset
-          = (camera.lensRadius * lu) * lens_du
-          + (camera.lensRadius * lv) * lens_dv;
+          = (camera.apertureRadius * lu) * lens_du
+          + (camera.apertureRadius * lv) * lens_dv;
         ray.org += lensOffset;
         ray_dir = normalize(pointOnImagePlane - lensOffset);
       } else {

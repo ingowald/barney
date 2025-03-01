@@ -274,7 +274,7 @@ if (BARNEY_BACKEND_EMBREE)
   target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
 
   add_library(barney_embree STATIC ${HOST_SOURCES})
-  #target_link_libraries(barney_embree PUBLIC barney_config barney_rtc_embree)
+  target_link_libraries(barney_embree PUBLIC barney_config barney_rtc_embree)
   target_link_libraries(barney_embree PRIVATE
     barney_embree_programs
     $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)

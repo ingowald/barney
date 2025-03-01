@@ -29,7 +29,6 @@ namespace rtc {
     Device::Device(int physicalGPU)
       : cuda_common::Device(physicalGPU)
     {
-      PING;
       owl = owlContextCreate(&physicalGPU,1);
     }
 
@@ -59,8 +58,9 @@ namespace rtc {
     void Device::sync()
     {
       cuda_common::Device::sync();
-      for (auto s : activeTraceStreams)
+      for (auto s : activeTraceStreams) {
         cudaStreamSynchronize(s);
+      }
       activeTraceStreams.clear();
     }
     
@@ -169,6 +169,7 @@ namespace rtc {
       
       owlParamsSetRaw(lp,"raw",kernelData,0);
       owlAsyncLaunch2D(rg,dims.x,dims.y,lp);
+      device->activeTraceStreams.push_back(lpStream);
     }
     
     // ==================================================================

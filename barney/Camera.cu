@@ -28,12 +28,7 @@ namespace BARNEY_NS {
   struct PerspectiveCamera : public Camera {
     PerspectiveCamera(Context *owner)
       : Camera(owner)
-    {
-      char *fl = getenv("BARNEY_FOCAL_LENGTH");
-      if (fl) defaultValues.focalLength = std::stof(fl);
-      char *lr = getenv("BARNEY_LENS_RADIUS");
-      if (lr) defaultValues.lensRadius = std::stof(lr);
-    }
+    {}
     virtual ~PerspectiveCamera() = default;
 
     // ------------------------------------------------------------------
@@ -49,6 +44,8 @@ namespace BARNEY_NS {
     vec3f up        { 0, 1, 0 };
     float aspect    = 1.f;
     float fovy      = 60.f;
+    float focusDistance  = 0.f;
+    float apertureRadius = 0.f;
   };
   
   bool PerspectiveCamera::set1f(const std::string &member, const float &value)
@@ -57,6 +54,14 @@ namespace BARNEY_NS {
       return true;
     if (member == "aspect") {
       aspect = value;
+      return true;
+    }
+    if (member == "apertureRadius") {
+      apertureRadius = value;
+      return true;
+    }
+    if (member == "focusDistance") {
+      focusDistance = value;
       return true;
     }
     if (member == "fovy") {
@@ -102,9 +107,8 @@ namespace BARNEY_NS {
     dd.dir_du  = dir_du;
     dd.dir_dv  = dir_dv;
     dd.lens_00 = from;
-
-    dd.lensRadius  = defaultValues.lensRadius;
-    dd.focalLength = defaultValues.focalLength;
+    dd.focusDistance = focusDistance;
+    dd.apertureRadius = apertureRadius;
   }
     
 

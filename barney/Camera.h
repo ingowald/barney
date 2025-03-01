@@ -43,17 +43,12 @@ namespace BARNEY_NS {
       /*! lens center ... */
       vec3f lens_00;
       /* radius of lens, for DOF */
-      float lensRadius;
+      float apertureRadius;
       /* distance to focal plane, for DOF */
-      float focalLength;
+      float focusDistance;
     };
     DD dd;
 
-    struct {
-      float focalLength = 0.f;
-      float lensRadius = 0.f;
-    } defaultValues;
-    
     Camera(Context *owner);
     virtual ~Camera() = default;
     
