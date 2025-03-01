@@ -18,14 +18,14 @@
 
 #include "barney/render/device/HitAttributes.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     namespace device {
       
       struct MaterialInput {
         typedef enum { VALUE, ATTRIBUTE, SAMPLER, UNDEFINED } Type;
       
-        inline __device__
+        inline __rtc_device
         float4 eval(const HitAttributes &hitData) const;
       
         Type type;
@@ -36,7 +36,7 @@ namespace barney {
         };
       };
 
-      inline __device__
+      inline __rtc_device
       float4 MaterialInput::eval(const HitAttributes &hitData,
                                  Sampler::DD *samplers) const
       {

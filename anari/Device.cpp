@@ -223,7 +223,9 @@ namespace barney_device {
 
   // Helper/other functions and data members ////////////////////////////////////
 
-  BarneyDevice::BarneyDevice(ANARILibrary l) : helium::BaseDevice(l)
+  BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
+    : helium::BaseDevice(l),
+      deviceType(subType)
   {
     m_state = std::make_unique<BarneyGlobalState>(this_device());
     deviceCommitParameters();
@@ -267,16 +269,17 @@ namespace barney_device {
   {
     ANARIDevice dev = 0;
     try {
-      int numGPUs = 0;
-      bnCountAvailableDevice(&numGPUs);
-      if (numGPUs == 0)
-        throw std::runtime_error("#barney/anari: cannot create device - no GPUs?");
+      // int numGPUs = 0;
+      // bnCountAvailableDevice(&numGPUs);
+      // if (numGPUs == 0)
+      //   throw std::runtime_error("#barney/anari: cannot create device - no GPUs?");
       dev = (ANARIDevice )new BarneyDevice();
       return dev;
     } catch(std::exception &err) {
       std::cerr << "#banari: exception creating anari 'barney' GPU device: "
                 << err.what() << std::endl;
-      throw;
+  //    throw;
+      return 0;
     }
   }
 
@@ -285,7 +288,7 @@ namespace barney_device {
   BarneyDevice::~BarneyDevice()
   {
     auto &state = *deviceState();
-    state.commitBufferClear();
+    state.commitBuffer.clear();
     reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
   }
 
@@ -306,8 +309,11 @@ namespace barney_device {
         MPI_Init(nullptr, nullptr);
       int rank, size;
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      MPI_Comm_size(MPI_COMM_WORLD, &size);
 
       state.context = bnMPIContextCreate(MPI_COMM_WORLD, &rank, 1, nullptr, 0);
+
+      std::cout << "#banari: creating barney *MPI* context (rank #" << rank << " out of " << size << " total ranks)" << std::endl;
 
       auto &info = state.bnInfo;
       bnMPIQueryHardware(&info, MPI_COMM_WORLD);
@@ -322,7 +328,16 @@ namespace barney_device {
                     ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
       reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
 #else
-      state.context = bnContextCreate();
+      // std::cout << "#banari: creating *non-mpi* barney context" << std::endl;
+      if (m_cudaDevice >= 0)
+        std::cout << "#banari: using cuda device #" << m_cudaDevice << std::endl;
+      int zero = 0;
+      if (m_cudaDevice >= 0)
+        state.context = bnContextCreate(&zero,1,&m_cudaDevice,1);
+      else if (m_cudaDevice == -1)
+        state.context = bnContextCreate(&zero,1,&m_cudaDevice,1);
+      else
+        state.context = bnContextCreate(&zero,1,nullptr,-1);
       std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
 #endif
       reportMessage(
@@ -331,7 +346,7 @@ namespace barney_device {
       m_initialized = true;
     } catch (const std::exception &err) {
       std::cerr << "#banari: ran into some kind of exception in barney device init"
-                << std::endl;
+                << err.what() << std::endl;
     }
   }
 
@@ -341,10 +356,15 @@ namespace barney_device {
 
     bool allowInvalidSurfaceMaterials = state.allowInvalidSurfaceMaterials;
 
+    m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
+    if (m_cudaDevice != -2)
+      std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
+ 
     state.allowInvalidSurfaceMaterials =
       getParam<bool>("allowInvalidMaterials", true);
-    state.invalidMaterialColor = getParam<math::float4>(
-                                                        "invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
+    state.invalidMaterialColor
+      = getParam<math::float4>
+      ("invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
 
     if (allowInvalidSurfaceMaterials != state.allowInvalidSurfaceMaterials)
       state.objectUpdates.lastSceneChange = helium::newTimeStamp();
@@ -352,8 +372,10 @@ namespace barney_device {
     helium::BaseDevice::deviceCommitParameters();
   }
 
-  int BarneyDevice::deviceGetProperty(
-                                      const char *name, ANARIDataType type, void *mem, uint64_t size)
+  int BarneyDevice::deviceGetProperty(const char *name,
+                                      ANARIDataType type,
+                                      void *mem,
+                                      uint64_t size)
   {
     std::string_view prop = name;
     if (prop == "extension" && type == ANARI_STRING_LIST) {

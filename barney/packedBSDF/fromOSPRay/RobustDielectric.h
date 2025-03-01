@@ -38,7 +38,7 @@
 #include "barney/packedBSDF/fromOSPRay/Lambert.h"
 #include "barney/packedBSDF/fromOSPRay/optics.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     struct RefractionResult
@@ -48,7 +48,7 @@ namespace barney {
       bool  mustReflect;
     };
 
-    inline __device__
+    inline __rtc_device
     RefractionResult refractionDirection(const vec3f& incomingDir,
                                          const vec3f& surfaceNormal,
                                          const float eta,
@@ -79,7 +79,7 @@ namespace barney {
           res.fresnelReflectionCoefficient = 1.f;
           res.mustReflect = true;
         } else {// Refracting.
-          float cos2 = sqrt(clamp(1.f - sin2*sin2));
+          float cos2 = sqrtf(clamp(1.f - sin2*sin2));
           vec3f N2 = normalize(dirParallelToNormal);
           res.outgoingDirection = N2*cos2 + b*sin2;
           float c1 = cos1_abs;
@@ -95,7 +95,7 @@ namespace barney {
       return res;
     }
 
-    inline __device__
+    inline __rtc_device
     vec3f reflectionDirection(const vec3f& incomingDir, const vec3f& normal)
     { // Imagine a particle traveling toward the surface and then bouncing off in the
       // reflection direction.
@@ -111,15 +111,15 @@ namespace barney {
 
     struct RobustDielectric
     {
-      inline __device__
+      inline __rtc_device
       RobustDielectric(float eta) : eta(eta)
       {}
       
-      inline __device__
+      inline __rtc_device
       EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
       { return EvalRes::zero(); }
 
-      inline __device__
+      inline __rtc_device
       SampleRes sample(const DG &dg,
                      Random &randomF,
                        bool dbg = false)
@@ -185,7 +185,7 @@ namespace barney {
         } else {// Transmission
           res.wi = dirT;// Outgoing ray direction.
           res.type = BSDF_SPECULAR_TRANSMISSION;
-          //res.weight = vec3f(rsqrt(self->eta));// Solid angle compression.
+          //res.weight = vec3f(rsqrtf(self->eta));// Solid angle compression.
     
           if (be_careful) {
             geometricCosine = dot(res.wi, geometricNormal);

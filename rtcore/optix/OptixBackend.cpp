@@ -1,5 +1,5 @@
 // // ======================================================================== //
-// // Copyright 2023-2023 Ingo Wald                                            //
+// // Copyright 2023-2025 Ingo Wald                                            //
 // //                                                                          //
 // // Licensed under the Apache License, Version 2.0 (the "License");          //
 // // you may not use this file except in compliance with the License.         //
@@ -14,11 +14,32 @@
 // // limitations under the License.                                           //
 // // ======================================================================== //
 
-// #include "barney/MultiPass.h"
-// #include "barney/Group.h"
+// #include "rtcore/optix/OptixBackend.h"
+// #include "rtcore/optix/Device.h"
 
 // namespace barney {
+//   namespace optix {
+    
+//   //   OptixBackend::OptixBackend()
+//   //   {}
 
-//   void MultiPass::Instances::instantiate(Group *group, const affine3f &xfm)
-//   { for (const auto &obj : group->multiPassObjects) this->push_back({obj,xfm}); }
+//   //   rtc::Device *OptixBackend::createDevice(int gpuID) 
+//   //   {
+//   //     return new optix::Device(gpuID);
+//   //   }    
+
+//   // }
+//   // namespace rtc {
+
+//   //   //__attribute__((visibility("default")))
+//   //     extern "C"
+//   //   Backend *createBackend_optix()
+//   //   {
+//   //     Backend *be = new barney::optix::OptixBackend;
+//   //     return be;
+//   //   }
+//   }
 // }
+
+  
+  

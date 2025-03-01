@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+// #include <cuda_runtime.h>
 #ifdef __GNUC__
 #   include <unistd.h>
 #endif
@@ -45,6 +45,24 @@ void usleep(__int64 usec);
 
 // Custom sleep function for Windows, emulating Unix sleep
 void sleep(unsigned int seconds);
+
+// Custom usleep function for Windows
+inline void usleep(__int64 usec)
+{
+    // Convert microseconds to milliseconds (1 millisecond = 1000 microseconds)
+    // Minimum sleep time is 1 millisecond
+    __int64 msec = (usec / 1000 > 0) ? (usec / 1000) : 1;
+
+    // Use the Sleep function from Windows API
+    Sleep(static_cast<DWORD>(msec));
+}
+
+// Custom sleep function for Windows, emulating Unix sleep
+inline void sleep(unsigned int seconds)
+{
+    // Convert seconds to milliseconds and call Sleep
+    Sleep(seconds * 1000);
+}
 #endif
 
 
@@ -57,7 +75,7 @@ void sleep(unsigned int seconds);
   {                                                                     \
     cudaError_t rc = call;                                              \
     if (rc != cudaSuccess) {                                            \
-      printf("error code %i\n",rc); fflush(0);usleep(100);              \
+    printf("error code %i\n",rc); fflush(0);                            \
       fprintf(stderr,                                                   \
               "CUDA call (%s) failed with code %d (line %d): %s\n",     \
               #call, rc, __LINE__, cudaGetErrorString(rc));             \

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,70 +16,49 @@
 
 #include "barney/geometry/Capsules.h"
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  extern "C" char Capsules_ptx[];
+  RTC_IMPORT_USER_GEOM(Capsules,Capsules,Capsules::DD,false,false);
 
-  Capsules::Capsules(Context *context, int slot)
-    : Geometry(context,slot)
+  Capsules::Capsules(Context *context, DevGroup::SP devices)
+    : Geometry(context,devices)
   {}
 
-  OWLGeomType Capsules::createGeomType(DevGroup *devGroup)
-  { 
-    if (DevGroup::logging())
-   std::cout << OWL_TERMINAL_GREEN
-              << "creating 'Capsules' geometry type"
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    
-    std::vector<OWLVarDecl> params
-      = {
-      { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-      { "indices",  OWL_BUFPTR, OWL_OFFSETOF(DD,indices)  } 
-    };
-    Geometry::addVars(params,0);
-    OWLModule module = owlModuleCreate
-      (devGroup->owl,Capsules_ptx);
-    OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_USER,sizeof(Capsules::DD),
-       params.data(), (int)params.size());
-    owlGeomTypeSetBoundsProg(gt,module,"CapsulesBounds");
-    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"CapsulesIsec");
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"CapsulesCH");
-    owlBuildPrograms(devGroup->owl);
-    
-    return gt;
-  }
-  
   void Capsules::commit()
   {
-    if (userGeoms.empty()) {
-      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
-        ("Capsules",Capsules::createGeomType);
-      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      userGeoms.push_back(geom);
+    for (auto device : *devices) {
+      auto rtc = device->rtc;
+      PLD *pld = getPLD(device);
+      if (pld->userGeoms.empty()) {
+        rtc::GeomType *gt
+          = device->geomTypes.get(createGeomType_Capsules);
+        rtc::Geom *geom = gt->createGeom();
+        pld->userGeoms = { geom };
+      }
+      rtc::Geom *geom = pld->userGeoms[0];
+      
+      assert(indices);
+      int numIndices = indices ? (int)indices->count : 0;
+      if (numIndices == 0)
+        std::cout << OWL_TERMINAL_RED
+                  << "#bn.capsules: warning - empty indices array"
+                  << OWL_TERMINAL_DEFAULT
+                  << std::endl;
+      geom->setPrimCount(numIndices);
+
+      Capsules::DD dd;
+      Geometry::writeDD(dd,device);
+      dd.vertices  = (vec4f*)(vertices?vertices->getDD(device):0);
+      dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
+      // done:
+      geom->setDD(&dd);
+      
     }
-    OWLGeom geom = userGeoms[0];
-
-    Geometry::commit();
-
-    owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
-    owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
-    assert(indices);
-    int numIndices = indices->count;
-    if (numIndices == 0)
-      std::cout << OWL_TERMINAL_RED
-                << "#bn.capsules: warning - empty indices array"
-                << OWL_TERMINAL_DEFAULT
-                << std::endl;
-
-    owlGeomSetPrimCount(geom,numIndices);
-    
-    setAttributesOn(geom);
-    getMaterial()->setDeviceDataOn(geom);
   } 
 
-  bool Capsules::setData(const std::string &member, const Data::SP &value)
+  bool Capsules::setData(const std::string &member, const barney_api::Data::SP &value)
   {
     if (Geometry::setData(member,value))
       // does 'primitive.color', and all the 'attributeN's
@@ -97,4 +76,3 @@ namespace barney {
   }
 
 }
-

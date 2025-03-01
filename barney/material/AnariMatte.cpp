@@ -17,20 +17,23 @@
 #include "barney/material/AnariMatte.h"
 #include "barney/material/DeviceMaterial.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     
-    void AnariMatte::createDD(DeviceMaterial &dd, int deviceID) const 
+    DeviceMaterial AnariMatte::getDD(Device *device) 
     {
+      DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariMatte;
-      color.make(dd.anariMatte.color,deviceID);
+      dd.anariMatte.color = color.getDD(device);
+      return dd;
     }
 
     /*! need wants to accept: 
 
       "color" = <Sampler>
      */
-    bool AnariMatte::setObject(const std::string &member, const Object::SP &value) 
+    bool AnariMatte::setObject(const std::string &member,
+                               const Object::SP &value) 
     {
       if (HostMaterial::setObject(member,value)) return true;
 
@@ -42,7 +45,8 @@ namespace barney {
     }
     
     
-    bool AnariMatte::setString(const std::string &member, const std::string &value) 
+    bool AnariMatte::setString(const std::string &member,
+                               const std::string &value) 
     {
       if (HostMaterial::setString(member,value)) return true;
 

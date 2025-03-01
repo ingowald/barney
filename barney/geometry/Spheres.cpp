@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,63 +16,42 @@
 
 #include "barney/geometry/Spheres.h"
 #include "barney/ModelSlot.h"
+#include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
+
+  RTC_IMPORT_USER_GEOM(Spheres,Spheres,Spheres::DD,false,true);
   
-  extern "C" char Spheres_ptx[];
-  
-  OWLGeomType Spheres::createGeomType(DevGroup *devGroup)
-  {
-    if (DevGroup::logging())
-    std::cout << OWL_TERMINAL_GREEN
-              << "creating 'Spheres' geometry type"
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    
-    std::vector<OWLVarDecl> params
-      = {
-         { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
-         { "defaultRadius", OWL_FLOAT, OWL_OFFSETOF(DD,defaultRadius) },
-         { "origins", OWL_BUFPTR, OWL_OFFSETOF(DD,origins) },
-         { "colors", OWL_BUFPTR, OWL_OFFSETOF(DD,colors) },
-    };
-    Geometry::addVars(params,0);
-    OWLModule module = owlModuleCreate
-      (devGroup->owl,Spheres_ptx);
-    OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_USER,sizeof(Spheres::DD),
-       params.data(),(int)params.size());
-    owlGeomTypeSetBoundsProg(gt,module,"SpheresBounds");
-    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"SpheresIsec");
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"SpheresCH");
-    owlBuildPrograms(devGroup->owl);
-    
-    return gt;
-  }
-  
-  Spheres::Spheres(Context *context, int slot)
-    : Geometry(context,slot)
+  Spheres::Spheres(Context *context, DevGroup::SP devices)
+    : Geometry(context,devices)
   {}
 
   void Spheres::commit()
   {
-    if (userGeoms.empty()) {
-      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
-        ("Spheres",Spheres::createGeomType);
-      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      userGeoms.push_back(geom);
-    }
-    OWLGeom geom = userGeoms[0];
+    if (!origins) return;
 
-    Geometry::commit();
-    owlGeomSet1f(geom,"defaultRadius",defaultRadius);
-    owlGeomSetBuffer(geom,"origins",origins?origins->owl:0);
-    owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
-    owlGeomSetBuffer(geom,"colors",colors?colors->owl:0);
-    int numOrigins = origins->count;
-    owlGeomSetPrimCount(geom,numOrigins);
-    
-    setAttributesOn(geom);
-    getMaterial()->setDeviceDataOn(geom);
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
+      if (pld->userGeoms.empty()) {
+        int numOrigins = (int)origins->count;
+        rtc::GeomType *gt
+          = device->geomTypes.get(createGeomType_Spheres);
+        rtc::Geom *geom = gt->createGeom();
+        geom->setPrimCount(numOrigins);
+        pld->userGeoms.push_back(geom);
+      }
+      rtc::Geom *geom = pld->userGeoms[0];
+      
+      Spheres::DD dd;
+      Geometry::writeDD(dd,device);
+      dd.origins = (vec3f*)(origins->getDD(device));
+      dd.radii   = (float*)(radii?radii->getDD(device):0);
+      dd.colors  = (vec3f*)(colors?colors->getDD(device):0);
+      dd.defaultRadius = defaultRadius;
+      // done:
+      geom->setDD(&dd);
+    }
   } 
 
   bool Spheres::set1f(const std::string &member, const float &value)

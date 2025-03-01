@@ -18,7 +18,7 @@
 
 #include "barney/render/DG.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     namespace packedBSDF {
 
@@ -27,43 +27,44 @@ namespace barney {
           color */
       struct Phase {
         inline Phase() = default;
-        inline __device__ Phase(vec3f color, float avg_reflectance=.7f);
+        inline __both__ Phase(vec3f color, float avg_reflectance=.7f);
 
-        inline __device__
+        inline __both__
         float pdf(DG dg, vec3f wi, bool dbg) const;
         
-        inline __device__
+        inline __both__
         EvalRes eval(DG dg, vec3f wi, bool dbg) const;
         
-        inline __device__
+        inline __both__
         void scatter(ScatterResult &scatter,
                      const render::DG &dg,
                      Random &random,
                      bool dbg) const;
         
-        float3 albedo;
+        rtc::float3 albedo;
       };
 
-      inline __device__
+      inline __both__
       Phase::Phase(vec3f color, float avg_reflectance)
       {
         (vec3f&)this->albedo = avg_reflectance * color;
       }
       
-      inline __device__
+      inline __both__
       float Phase::pdf(DG dg, vec3f wi, bool dbg) const
       { return ONE_OVER_FOUR_PI; }
         
-      inline __device__
+      inline __both__
       EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
       {
         float density = ONE_OVER_FOUR_PI;
-        return EvalRes(density*(const vec3f&)albedo,density);
+        return EvalRes(//density*
+                       (const vec3f&)albedo,density);
       }
 
       /*! simple omnidirectional phase function - scatter into any
         random direction */
-      inline __device__
+      inline __both__
       void Phase::scatter(ScatterResult &scatter,
                           const render::DG &dg,
                           Random &random,
@@ -71,16 +72,17 @@ namespace barney {
       {
         // see global illumination compendium, page 19
         float r1 = random();
-        float r2 = random();
+        float r2 = random(); 
         // float phi = two_pi*r1;
         // float theta = acosf(1.f-2.f*r2);
-        float x = cosf(two_pi*r1)*sqrtf(r2*(1.f-r2));
-        float y = sinf(two_pi*r1)*sqrtf(r2*(1.f-r2));
+        float x = cosf(TWO_PI*r1)*sqrtf(r2*(1.f-r2));
+        float y = sinf(TWO_PI*r1)*sqrtf(r2*(1.f-r2));
         float z = (1.f-2.f*r2);
         float density = ONE_OVER_FOUR_PI;
         scatter.pdf = density;
-        scatter.f_r = (const vec3f&)albedo * density;
+        scatter.f_r = (const vec3f&)albedo;// * density;
         scatter.dir = vec3f(x,y,z);
+        scatter.type = ScatterResult::VOLUME;
       }
       
     }

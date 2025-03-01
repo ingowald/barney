@@ -1,27 +1,28 @@
 {
-  "info": {
-    "name": "BARNEY_DEVICE",
-    "type": "device",
-    "dependencies": [
-      "anari_core_1_0",
-      "anari_core_objects_base_1_0",
-      "khr_instance_transform",
-      "khr_camera_perspective",
-      "khr_device_synchronization",
-      "khr_geometry_sphere",
-      "khr_geometry_triangle",
-      "khr_light_directional",
-      "khr_material_matte",
-      "khr_sampler_image1d",
-      "khr_sampler_image2d",
-      "khr_sampler_image3d",
-      "khr_sampler_transform",
-      "khr_material_physically_based",
-      "khr_spatial_field_structured_regular",
-      "khr_volume_transfer_function1d"
-    ]
-  },
-  "objects": [
+    "info": {
+        "name": "BARNEY_DEVICE",
+        "type": "device",
+        "dependencies": [
+            "anari_core_1_0",
+            "anari_core_objects_base_1_0",
+            "khr_instance_transform",
+            "khr_camera_perspective",
+            "khr_device_synchronization",
+            "khr_geometry_sphere",
+            "khr_geometry_triangle",
+            "khr_light_directional",
+            "khr_material_matte",
+            "khr_sampler_image1d",
+            "khr_sampler_image2d",
+            "khr_sampler_image3d",
+            "khr_sampler_transform",
+            "khr_material_physically_based",
+            "khr_spatial_field_structured_regular",
+            "khr_volume_transfer_function1d",
+            "visrtx_cuda_output_buffers"
+        ]
+    },
+    "objects": [
     {
       "type": "ANARI_RENDERER",
       "name": "default",

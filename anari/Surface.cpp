@@ -7,14 +7,20 @@ namespace barney_device {
 
 Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s) {}
 
-Surface::~Surface() = default;
+Surface::~Surface()
+{
+  cleanup();
+}
 
-void Surface::commit()
+void Surface::commitParameters()
 {
   m_id = getParam<uint32_t>("id", ~0u);
   m_geometry = getParamObject<Geometry>("geometry");
   m_material = getParamObject<Material>("material");
+}
 
+void Surface::finalize()
+{
   if (!m_material) {
     reportMessage(ANARI_SEVERITY_WARNING, "missing 'material' on ANARISurface");
     return;
@@ -28,10 +34,10 @@ void Surface::commit()
   setBarneyParameters();
 }
 
-void Surface::markCommitted()
+void Surface::markFinalized()
 {
   deviceState()->markSceneChanged();
-  Object::markCommitted();
+  Object::markFinalized();
 }
 
 const Geometry *Surface::geometry() const
@@ -44,16 +50,11 @@ const Material *Surface::material() const
   return m_material.ptr;
 }
 
-BNGeom Surface::getBarneyGeom(BNContext context// , int slot
-                              )
+BNGeom Surface::getBarneyGeom(BNContext context)
 {
-  // if (!isModelTracked(model, slot)) {
-  //   cleanup();
-  //   trackModel(model, slot);
-  m_bnGeom = bnGeometryCreate(context,0,// model, slot
-                              m_geometry->bnSubtype());
-    setBarneyParameters();
-  // }
+  cleanup();
+  m_bnGeom = bnGeometryCreate(context, 0, m_geometry->bnSubtype());
+  setBarneyParameters();
 
   return m_bnGeom;
 }
@@ -68,13 +69,9 @@ void Surface::setBarneyParameters()
 {
   if (!isValid() || !m_bnGeom)
     return;
-  // BNModel model = trackedModel();
-  // int slot = trackedSlot();
-  bnSetObject(m_bnGeom, "material",
-              m_material->getBarneyMaterial(getContext()// , slot
-                                            ));
-  m_geometry->setBarneyParameters(m_bnGeom, getContext()// model, slot
-                                  );
+  bnSetObject(
+      m_bnGeom, "material", m_material->getBarneyMaterial(getContext()));
+  m_geometry->setBarneyParameters(m_bnGeom, getContext());
   bnCommit(m_bnGeom);
 }
 

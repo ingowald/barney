@@ -18,7 +18,7 @@
 
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! a barney context for "local"-node rendering - no MPI */
   struct LocalContext : public Context {
@@ -48,7 +48,8 @@ namespace barney {
     
     
     /*! create a frame buffer object suitable to this context */
-    FrameBuffer *createFB(int owningRank) override;
+    std::shared_ptr<barney_api::FrameBuffer>
+    createFrameBuffer(int owningRank) override;
 
     int numTimesForwarded = 0;
   };

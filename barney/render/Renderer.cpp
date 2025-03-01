@@ -17,11 +17,13 @@
 #include "barney/render/Renderer.h"
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
-  Renderer::Renderer(Context *context) : Object(context) {};
+  Renderer::Renderer(Context *context)
+    : barney_api::Renderer(context)
+  {}
 
   /*! pretty-printer for printf-debugging */
   std::string Renderer::toString() const
@@ -89,7 +91,7 @@ namespace barney {
     return false;
   }
 
-  Renderer::DD Renderer::getDD(const Device *device) const
+  Renderer::DD Renderer::getDD(Device *device) const
   {
     Renderer::DD dd;
     dd.bgColor = bgColor;

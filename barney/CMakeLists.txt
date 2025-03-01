@@ -14,142 +14,131 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-# -------------------------------------------------------
-add_library(barney-config INTERFACE)
-target_link_libraries(barney-config
+message("CMAKE_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}")
+
+if(MSVC) # That's also clang-cl
+  # /bigobj is needed for bigger binding projects due to the limit to 64k
+  # addressable sections
+  set_property(
+    TARGET barney_config
+    APPEND
+    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+endif()
+
+add_library(barney_config_ptx INTERFACE)
+target_link_libraries(barney_config_ptx
   INTERFACE
-  cuBQL
-  owl-config
-  #owl::owl
+  barney_config
+)
+target_compile_definitions(barney_config_ptx
+  INTERFACE
+  -DBARNEY_DEVICE_PROGRAM=1
+)
+
+macro(set_library_properties tgt)
+  set_target_properties(${tgt}
+    PROPERTIES
+    CUDA_SEPARABLE_COMPILATION   ON
+    POSITION_INDEPENDENT_CODE    ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+    CXX_VISIBILITY_PRESET  default
+    CUDA_VISIBILITY_PRESET default
   )
-#if (TARGET cuBQL_cuda_float3)
-#if (target cuBQL_cuda_float3)
-if (BARNEY_CUBQL_HOST)
-  target_compile_definitions(barney-config INTERFACE -DBARNEY_CUBQL_HOST=1)
-  target_link_libraries(barney-config INTERFACE cuBQL)
-  set(CUBQL_LIB cuBQL_cpu_float3)
+if (APPLE)
+  set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
 else()
-  set(CUBQL_LIB cuBQL_cuda_float3)
+  set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
+endmacro()
 
-target_include_directories(barney-config INTERFACE
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/barney/include
-  ${CMAKE_CURRENT_LIST_DIR}/..
-  )
 
-# -------------------------------------------------------
-set(AWT_THRESHOLD "4" CACHE STRING "AWT switch-to-sampling threshold (if enabled)")
-target_compile_definitions(barney-config INTERFACE -DAWT_THRESHOLD=${AWT_THRESHOLD})
+# in the barney backend all sources will only use host-side code, but
+# we can still compile them with nvcc if it's avaible - so _if_ nvcc
+# is available we leave the language for .cu files on 'cuda' in order
+# to let the same sources be properly compiled for non-embree
+# backends; but if there's no cuda vailable we have to change the
+# language to CPP else cmake will just skip these sources.
+macro(configure_cuda_source src)
+  if (NOT BARNEY_HAVE_CUDA)
+    get_filename_component(ext "${src}" EXT)
+    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+      message("setting language of ${src} to CXX")
+      set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
+      if (NOT WIN32)
+        set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
+      endif()
+    endif()
+  endif()
+endmacro()
 
-# -------------------------------------------------------
-option(BARNEY_DISABLE_DENOISING "explicitly DISable denoiser?" OFF)
-#option(BARNEY_DISABLE_OIDN "explicitly DISable OIDN?" OFF)
 
-if (BARNEY_DISABLE_DENOISING)
-  target_compile_definitions(barney-config INTERFACE -DBARNEY_DISABLE_DENOISING=1)
-#elseif (NOT BARNEY_DISABLE_OIDN)
-#  find_package(OpenImageDenoise)
-#  if (OpenImageDenoise_FOUND)
-#    message(INFO "Found OpenImageDenoise (OIDN), enabling it")
-#    target_compile_definitions(barney-config INTERFACE -DBARNEY_HAVE_OIDN=1)
-#    target_link_libraries(barney-config INTERFACE OpenImageDenoise)
-#  endif()
-endif()
-# issue 5: if oidn is built without CUDA support it will break the
-# barney build if we use it; so unless we figure out how to check that
-# let's disable it.
-target_compile_definitions(barney-config INTERFACE -DBARNEY_DISABLE_OIDN=1)
-    
-# -------------------------------------------------------
 
-# ray gen program that launches kernel to trace rays
-embed_ptx(
-  OUTPUT_TARGET      barney-traceRays-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            kernels/traceRays.cu
-  )
-# ------------------------------------------------------------------
-# surface geometry:
-# ------------------------------------------------------------------
-# ray-sphere geom intersection
-embed_ptx(
-  OUTPUT_TARGET      barney-Spheres-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            geometry/Spheres.dev.cu
-  )
-# ray triangles geom intersection
-embed_ptx(
-  OUTPUT_TARGET      barney-triangles-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            geometry/Triangles.dev.cu
-  )
-# ray cylinders geom intersection
-embed_ptx(
-  OUTPUT_TARGET      barney-cylinders-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            geometry/Cylinders.dev.cu
-  )
-# ray capsules geom intersection
-embed_ptx(
-  OUTPUT_TARGET      barney-capsules-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            geometry/Capsules.dev.cu
-  )
-# ray cones geom intersection
-#embed_ptx(
-#  OUTPUT_TARGET      barney-cones-ptx
-#  PTX_LINK_LIBRARIES barney-config
-#  SOURCES            geometry/Cones.dev.cu
-#  )
 
-# ------------------------------------------------------------------
-# volume variants:
-# ------------------------------------------------------------------
-embed_ptx(
-  OUTPUT_TARGET      barney-StructuredData-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            volume/StructuredData.dev.cu
-)
-embed_ptx(
-  OUTPUT_TARGET      barney-UMeshRTXObjectSpace-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            umesh/os/RTXObjectSpace.dev.cu
-)
-embed_ptx(
-  OUTPUT_TARGET      barney-UMeshMC-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            umesh/mc/UMeshMC.dev.cu
-)
-embed_ptx(
-  OUTPUT_TARGET      barney-AWT-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            umesh/os/AWT.dev.cu
-)
 
-# ------------------------------------------------------------------
-# amr variants:
-# ------------------------------------------------------------------
-embed_ptx(
-  OUTPUT_TARGET      barney-BlockStructuredMC-ptx
-  PTX_LINK_LIBRARIES barney-config
-  SOURCES            amr/BlockStructuredMC.dev.cu
-  )
 
-set(BARNEY_SOURCES
+
+
+#############################################################################
+# main step - crete the actual 'backends'; ie, the 'instantiations' of
+# barney's actuall classes, algorithms, kernels, programs, etc, for a
+# given rtcore.
+#############################################################################
+
+# define all the host-side sources
+set(HOST_SOURCES
+  umesh/common/UMeshField.h
+  umesh/common/UMeshField.cu
+  umesh/mc/UMeshCUBQLSampler.h
+  umesh/mc/UMeshCUBQLSampler.cu
+
+#  umesh/os/AWT.cu
+#  umesh/os/AWT.h
+  
+  # *structured* volumes
+  volume/StructuredData.h
+  volume/StructuredData.cu
+  
+  # actual geometry types
+  geometry/Geometry.h
+  geometry/Geometry.cpp
+  geometry/Triangles.h
+  geometry/Triangles.cpp
+  geometry/Cylinders.h
+  geometry/Cylinders.cpp
+  geometry/Capsules.h
+  geometry/Capsules.cpp
+  geometry/Spheres.h
+  geometry/Spheres.cpp
+  #  geometry/Cones.h
+  #  geometry/Cones.cpp
+  # volume data 
+  volume/Volume.h
+  volume/Volume.cpp
+  volume/ScalarField.h
+  volume/ScalarField.cpp
+  volume/MCAccelerator.h
+  volume/TransferFunction.h
+  volume/TransferFunction.cpp
+  volume/MCGrid.h
+  volume/MCGrid.cu
+  volume/MCAccelerator.h
+  
+  # samplers
+  render/Sampler.h
+  render/Sampler.cpp
+  
   common/barney-common.h
-  common/cuda-helper.cpp
   
   # actual device kernels for CUDA ray gen and shading
   kernels/generateRays.cu
   kernels/shadeRays.cu
+  kernels/traceRays.cu
   # all the barney "plumbing" stuff on the host
   DeviceContext.h
   DeviceContext.cpp
   Context.h
   Context.cpp
-  MultiPass.h
-  MultiPass.cpp
   DeviceGroup.h
   DeviceGroup.cpp
   LocalContext.h
@@ -172,15 +161,23 @@ set(BARNEY_SOURCES
   render/Renderer.cpp
   Group.h
   Group.cpp
+  render/GeometryAttributes.h
+  render/GeometryAttributes.cpp
 
+  render/RayQueue.h
+  render/RayQueue.cpp
   render/World.h
   render/World.cpp
+  render/MaterialRegistry.h
+  render/MaterialRegistry.cpp
+  render/SamplerRegistry.h
+  render/SamplerRegistry.cpp
   
   #  material/Globals.h
   #  material/Globals.cu
   ModelSlot.h
   ModelSlot.cpp
-  # general common/data-related stuff
+  # general csommon/data-related stuff
   common/Texture.h
   common/Texture.cpp
   common/Data.h
@@ -196,9 +193,7 @@ set(BARNEY_SOURCES
   light/QuadLight.cu
   light/EnvMap.h
   light/EnvMap.cu
-  # samplers
-  render/Sampler.h
-  render/Sampler.cpp
+
   # materials
   material/Material.h
   material/Material.cpp
@@ -206,273 +201,182 @@ set(BARNEY_SOURCES
   material/AnariPBR.cpp
   material/AnariMatte.h
   material/AnariMatte.cpp
-  #material/device/Material.h
-  #material/device/Velvet.h
-  #material/device/VisRTX.h
-  #material/device/Matte.h
-  #material/device/Blender.h
-  #material/device/Glass.h
-  #material/device/Metal.h
-  #material/device/Plastic.h
-  
-  #material/host/VisRTX.h
-  #material/host/VisRTX.cpp
-  #material/host/Velvet.h
-  #material/host/Velvet.cpp
-  #material/host/Plastic.h
-  #material/host/Plastic.cpp
-  #material/host/Matte.h
-  #material/host/Matte.cpp
-  #material/host/Blender.h
-  #material/host/Blender.cpp
-  #material/host/Glass.h
-  #material/host/Glass.cpp
-  #material/host/Metal.h
-  #material/host/Metal.cpp
-  #material/host/MetallicPaint.h
-  #material/host/MetallicPaint.cpp
-  # actual geometry types
-  geometry/Geometry.h
-  geometry/Geometry.cpp
-  geometry/Spheres.h
-  geometry/Spheres.cpp
-  geometry/Triangles.h
-  geometry/Triangles.cpp
-  geometry/Cylinders.h
-  geometry/Cylinders.cpp
-  geometry/Capsules.h
-  geometry/Capsules.cpp
-  #  geometry/Cones.h
-  #  geometry/Cones.cpp
-  # volume data 
-  volume/Volume.h
-  volume/Volume.cpp
-  volume/ScalarField.h
-  volume/ScalarField.cpp
-  volume/MCAccelerator.h
-  volume/TransferFunction.h
-  volume/TransferFunction.cpp
-  volume/MCGrid.h
-  volume/MCGrid.cu
-  volume/MCAccelerator.h
-  # *structured* volumes
-  volume/StructuredData.h
-  volume/StructuredData.cu
-  # *unstructured* volumes
-  umesh/common/UMeshField.h
-  umesh/common/UMeshField.cu
-  # ... macro-cell based methods
-  umesh/mc/UMeshCUBQLSampler.h
-  umesh/mc/UMeshCUBQLSampler.cu
-  # ... object-space methods
-  umesh/os/RTXObjectSpace.h
-  umesh/os/RTXObjectSpace.cu
-  umesh/os/AWT.h
-  umesh/os/AWT.cu
-  # *amr* volumes
-  amr/BlockStructuredField.h
-  amr/BlockStructuredField.cu
-  amr/BlockStructuredCUBQLSampler.h
-  amr/BlockStructuredCUBQLSampler.cu
-  #  amr/BlockStructuredMCAccelerator.h
-  #  amr/BlockStructuredMCAccelerator.cu
-  
-  # implements the c99 barney api calls
-  barney.cpp
-  )
+)
 
-CUDA_SOURCE(kernels/generateRays.cu)
-CUDA_SOURCE(kernels/shadeRays.cu)
-CUDA_SOURCE(Camera.cu)
-CUDA_SOURCE(fb/FrameBuffer.cu)
-CUDA_SOURCE(fb/TiledFB.cu)
-CUDA_SOURCE(fb/LocalFB.cu)
-CUDA_SOURCE(light/DirLight.cu)
-CUDA_SOURCE(light/PointLight.cu)
-CUDA_SOURCE(light/QuadLight.cu)
-CUDA_SOURCE(light/EnvMap.cu)
-CUDA_SOURCE(kernels/shadeRays.cu)
-CUDA_SOURCE(volume/MCGrid.cu)
-CUDA_SOURCE(volume/StructuredData.cu)
-CUDA_SOURCE(umesh/common/UMeshField.cu)
-CUDA_SOURCE(umesh/mc/UMeshCUBQLSampler.cu)
-CUDA_SOURCE(umesh/os/RTXObjectSpace.cu)
-CUDA_SOURCE(umesh/os/AWT.cu)
-CUDA_SOURCE(amr/BlockStructuredField.cu)
-CUDA_SOURCE(amr/BlockStructuredCUBQLSampler.cu)
-  
-# ------------------------------------------------------------------
-# STATIC version of barney
-# ------------------------------------------------------------------
-add_library(barney_static
-#  OBJECT
-  STATIC
-  ${BARNEY_SOURCES}
-  )
-set(BARNEY_STATIC_DEPENDENCIES
-  barney-Spheres-ptx
-  barney-StructuredData-ptx
-  barney-cylinders-ptx
-  barney-capsules-ptx
-  barney-triangles-ptx
-  barney-traceRays-ptx  
-  barney-UMeshRTXObjectSpace-ptx
-  barney-UMeshMC-ptx
-  barney-AWT-ptx  
-  barney-BlockStructuredMC-ptx
-  owl_static
-  ${CUBQL_LIB}_static
-  )
-target_link_libraries(barney_static
-  PUBLIC
-  barney-config
-  ${BARNEY_STATIC_DEPENDENCIES}
-  )
-#target_link_libraries(barney_static 
-#  PRIVATE
-#  ${BARNEY_STATIC_DEPENDENCIES}
-#  owl_static
-#  ${CUBQL_LIB}_static
-#  barney-Spheres-ptx
-#  barney-StructuredData-ptx
-#  barney-cylinders-ptx
-#  barney-capsules-ptx
-#  barney-triangles-ptx
-#  barney-traceRays-ptx  
-#  barney-UMeshRTXObjectSpace-ptx
-#  barney-UMeshMC-ptx
-#  barney-AWT-ptx  
-#  barney-BlockStructuredMC-ptx
-#  )
-set_target_properties(barney_static
-  PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-  )
-# ------------------------------------------------------------------
-# SHARED version of barney
-# ------------------------------------------------------------------
-add_library(barney SHARED
-  ${BARNEY_SOURCES}
-  )
-target_link_libraries(barney
-  PUBLIC
-  barney-config
-  )
-#target_link_libraries(barney
-#  PUBLIC
-#  ${BARNEY_STATIC_DEPENDENCIES}
-#  owl::owl_static
-#  ${CUBQL_LIB}_static
-#  barney-config
-#  barney_static
-#  barney-Spheres-ptx
-#  barney-StructuredData-ptx
-#  barney-cylinders-ptx
-#  barney-capsules-ptx
-#  barney-triangles-ptx
-#  barney-traceRays-ptx  
-#  barney-UMeshRTXObjectSpace-ptx
-#  barney-UMeshMC-ptx
-#  barney-AWT-ptx  
-#  barney-BlockStructuredMC-ptx
-#  )
+# all the source that eventually go into barney_mpi
+set(MPI_SOURCES
+  fb/DistFB.h
+  fb/DistFB.cpp
+  MPIContext.h
+  MPIContext.cpp
+)
 
-target_link_libraries(barney
-  PRIVATE#PUBLIC
-  ${BARNEY_STATIC_DEPENDENCIES}
-  )
-set_target_properties(barney
-  PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-  )
-set_target_properties(barney PROPERTIES INSTALL_RPATH "$ORIGIN")
+set(DEVICE_PROGRAM_SOURCES
+  geometry/Spheres.dev.cu
+  geometry/Triangles.dev.cu
+  geometry/Cylinders.dev.cu
+  geometry/Capsules.dev.cu
+  volume/StructuredData.dev.cu
+  umesh/mc/UMeshMC.dev.cu
+  #  umesh/os/AWT.dev.cu
+  amr/BlockStructuredMC.dev.cu
+  kernels/traceRays.dev.cu
+)
 
+# ------------------------------------------------------------------
+# optix backend: instantiates all the barney classes, device
+# programs, etcpp - except the api itself - in a optix
+# configuration.
+# ------------------------------------------------------------------
+if (BARNEY_BACKEND_OPTIX)
+  add_library(barney_optix ${HOST_SOURCES})
+  foreach(src  ${DEVICE_PROGRAM_SOURCES})
+    get_filename_component(basename "${src}" NAME_WE)
+    embed_ptx(
+      OUTPUT_TARGET      barney-${basename}-ptx
+      PTX_LINK_LIBRARIES barney_config_ptx barney_rtc_optix
+      SOURCES            ${src}
+      )
+    target_link_libraries(barney_optix PRIVATE barney-${basename}-ptx)
+  endforeach()
+  set_library_properties(barney_optix)
+  target_link_libraries(barney_optix PUBLIC
+    barney_config
+    barney_rtc_optix
+    $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
+  )
+  if (BARNEY_MPI)
+    add_library(barney_mpi_optix ${MPI_SOURCES})
+    target_link_libraries(barney_mpi_optix PUBLIC barney_optix MPI::MPI_CXX)
+  endif()
+endif()
+
+# ------------------------------------------------------------------
+# embree backend: instantiates all the barney classes, device
+# programs, etcpp - except the api itself - in an embree configuration
+# that'll run on the host.
+# ------------------------------------------------------------------
+if (BARNEY_BACKEND_EMBREE)
+  # in the barney backend all sources will only use host-side code,
+  # but we can still compile them with nvcc if it's avaible - so
+  # _if_ nvcc is available we leave the language for .cu files on
+  # 'cuda' in order to let the same sources be properly compiled for
+  # non-embree backends; but if there's no cuda vailable we have to
+  # change the language to CPP else cmake will just skip these
+  # sources.
+  foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
+    configure_cuda_source(${src})
+  endforeach()
+
+  # ----------- barney_embree -----------
+  add_library(barney_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
+  target_link_libraries(barney_embree_programs PUBLIC barney_config barney_rtc_embree)
+  target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
+
+  add_library(barney_embree STATIC ${HOST_SOURCES})
+  #target_link_libraries(barney_embree PUBLIC barney_config barney_rtc_embree)
+  target_link_libraries(barney_embree PRIVATE
+    barney_embree_programs
+    $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
+
+  if (BARNEY_MPI)
+    add_library(barney_mpi_embree ${MPI_SOURCES})
+    target_link_libraries(barney_mpi_embree PUBLIC barney_embree MPI::MPI_CXX)
+  endif()
+
+  # # ----------- barney_embree -----------
+  # add_library(barney_embree_host STATIC ${HOST_SOURCES})
+  # target_link_libraries(barney_embree PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
+
+  # target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
+  # target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
+  # target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
+  # target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
+  # target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
+  # target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
+
+  # if (BARNEY_MPI)
+  #   add_library(barney_mpi_embree STATIC ${MPI_SOURCES})
+  #   target_link_libraries(barney_mpi_embree PUBLIC barney_embree)
+  # endif()
+endif()
+    
+
+
+
+
+# =============================================================================
+# create frontends for barney and barney_static
+# =============================================================================
+configure_cuda_source(api/barney.cu)
+
+# ------------------------------------------------------------------
+# barney
+# ------------------------------------------------------------------
+add_library(barney SHARED api/barney.cu)
+target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_config>)
+set_library_properties(barney)
+
+# ------------------------------------------------------------------
+# barney_static
+# ------------------------------------------------------------------
+add_library(barney_static STATIC api/barney.cu)
+
+target_compile_definitions(barney_static PUBLIC -Dbarney_STATIC=1)
+target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_config>)
+set_library_properties(barney_static)
+
+# =============================================================================
+# create frontends for barney_mpi and barney_mpi_static
+# =============================================================================
 if (BARNEY_MPI)
-#  find_package(MPI REQUIRED)
-
   # ------------------------------------------------------------------
-  # STATIC version of barney_mpi
-  # ------------------------------------------------------------------
-  add_library(barney_mpi_static STATIC
-    ${BARNEY_SOURCES}
-    common/MPIWrappers.h
-    common/MPIWrappers.cpp
-    MPIContext.h
-    MPIContext.cpp
-    fb/DistFB.h
-    fb/DistFB.cpp
-    )
-  set_target_properties(barney_mpi_static
-    PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-    )
-  target_link_libraries(barney_mpi_static PUBLIC
-    barney-config
-    barney_static
-    MPI::MPI_CXX
-    )
-  target_compile_definitions(barney_mpi_static PUBLIC -DBARNEY_MPI=1)
-
-
-  
-  # ------------------------------------------------------------------
-  # SHARED version of barney_mpi
+  # barney_mpi
   # ------------------------------------------------------------------
   add_library(barney_mpi SHARED
-    ${BARNEY_SOURCES}
-    common/MPIWrappers.h
-    common/MPIWrappers.cpp
-    MPIContext.h
-    MPIContext.cpp
-    fb/DistFB.h
-    fb/DistFB.cpp
-    )
-  set_target_properties(barney_mpi
-    PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-    )
+    api/barney.cu
+  )
   target_link_libraries(barney_mpi PUBLIC
-    barney-config
-    ${BARNEY_STATIC_DEPENDENCIES}
-#    owl::owl_static
-#    ${CUBQL_LIB}
-    MPI::MPI_CXX
-#    barney-Spheres-ptx
-#    barney-StructuredData-ptx
-#    barney-cylinders-ptx
-#    barney-capsules-ptx
-#    barney-triangles-ptx
-#    barney-traceRays-ptx  
-#    barney-UMeshRTXObjectSpace-ptx
-#    barney-UMeshMC-ptx
-#    barney-AWT-ptx  
-#    barney-BlockStructuredMC-ptx
-    )
-  target_compile_definitions(barney_mpi PUBLIC -DBARNEY_MPI=1)
-  set_target_properties(barney_mpi PROPERTIES INSTALL_RPATH "$ORIGIN")
+    #    barney_config
+    $<BUILD_INTERFACE:barney_config>
+  )
+  set_library_properties(barney_mpi)
+  
+  # ------------------------------------------------------------------
+  # barney_mpi_static
+  # ------------------------------------------------------------------
+  add_library(barney_mpi_static STATIC api/barney.cu)
+  target_compile_definitions(barney_mpi_static PUBLIC
+    -Dbarney_mpi_STATIC=1 -DBARNEY_MPI=1)
+  target_link_libraries(barney_mpi_static PUBLIC
+    #   barney_config
+    $<BUILD_INTERFACE:barney_config>
+  )
+  set_library_properties(barney_mpi_static)
 endif()
 
 
+#############################################################################
+# last step - link all optix/embree backend(s) to all
+# mpi/nompi/static/shared frontends
+#############################################################################
 
-#install(TARGETS cuBQL_cuda_float3 owl barney barney_mpi
-#  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-#  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#)
+# link optix backend (if enabled) to all frontends
+if (BARNEY_BACKEND_OPTIX)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_optix>)
+  target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_optix>)
+  if (BARNEY_MPI)
+    target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
+    target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
+  endif()
+endif()
+# link embree backend (if enabled) to all frontends
+if (BARNEY_BACKEND_EMBREE)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_embree>)
+  target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_embree>)
+  if (BARNEY_MPI)
+    target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_embree>)
+    target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_embree>)
+  endif()
+endif()
 

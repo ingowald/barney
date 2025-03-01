@@ -20,7 +20,7 @@
 #include "barney/common/Texture.h"
 #include "barney/volume/MCAccelerator.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct ModelSlot;
 
@@ -39,51 +39,21 @@ namespace barney {
 
       - "gridSpacing" (float3) : world-space spacing of the scalar
       grid positions
-
-      - (experimental) "colorMapTexture" : _additional_ 3D RGB texture
-        that "overwrites" the RGB component of the transfer function -
-        ie, for the final RGBA sample 'a' comes from the transfer
-        functoin, while RGB comes from that 3D texture
   */
   struct StructuredData : public ScalarField
   {
-    /*! device data for this class; note we specify both the 'usual'
-        texture object (which does trilinerar interpolation) as well
-        as a "NN" (nearest) sampling for the macro-cell generation */
+    /*! device data for this class. nothis special for a structured
+        data object; all sampling related stuff will be in the
+        StructuredDataSampler */
     struct DD : public ScalarField::DD {
-      cudaTextureObject_t texObj;
-      vec3f cellGridOrigin;
-      vec3f cellGridSpacing;
-      vec3i numCells;
-      cudaTextureObject_t colorMappingTexObj;
-
-#ifdef __CUDA_ARCH__
-      /*! "template-virtual" function that a sampler calls on an
-          _already_ transfer-function mapped RGBA value, allowing the
-          scalar field to do some additional color mapping on top of
-          whatever came out of the transfer function. the default
-          implementation (provided here int his base class coommon to
-          all scalar fields) is to just return the xf-color mapped
-          RBGA value */
-      inline __device__ vec4f mapColor(vec4f xfColorMapped,
-                                       vec3f P, float scalar) const
-      {
-        if (!colorMappingTexObj) return xfColorMapped;
-        vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
-        float4 fromColorMap = tex3D<float4>(colorMappingTexObj,rel.x,rel.y,rel.z);
-        fromColorMap.w = xfColorMapped.w;
-        return fromColorMap;
-      }
-#endif
-
-      
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      /* nothing */
     };
 
     /*! construct a new structured data scalar field; will not do
         anything - or have any data - untile 'set' and 'commit'ed
     */
-    StructuredData(Context *context, int slot);
+    StructuredData(Context *context,
+                   const DevGroup::SP &devices);
     virtual ~StructuredData() = default;
 
     // ------------------------------------------------------------------
@@ -95,71 +65,61 @@ namespace barney {
     /*! @} */
     // ------------------------------------------------------------------
     
-    void setVariables(OWLGeom geom) override;
+    DD getDD(Device *device);
     VolumeAccel::SP createAccel(Volume *volume) override;
     void buildMCs(MCGrid &macroCells) override;
 
-    Texture3D::SP  texture;
-    Texture3D::SP  colorMapTexture;
-    BNDataType   scalarType = BN_DATA_UNDEFINED;
+    TextureData::SP scalars;
+    Texture::SP  texture;
+    Texture::SP  textureNN;
+    // Texture3D::SP  colorMapTexture;
+
+    struct PLD {
+      rtc::ComputeKernel3D *computeMCs = 0;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
+    
+    BNDataType scalarType = BN_DATA_UNDEFINED;
     vec3i numScalars  { 0,0,0 };
     vec3i numCells    { 0,0,0 }; 
     vec3f gridOrigin  { 0,0,0 };
     vec3f gridSpacing { 1,1,1 };
   };
 
-  /*! for structured data, the sampler doesn't have to do much but
-      sample the 3D texture that the structeuddata field has already
-      created. in thoery one could argue that the 3d texture should
-      belong ot the sampler (not the field), but the field needs it to
-      compute the macro cells, so we'll leave it as such for now */
-  struct StructuredDataSampler {
-    struct DD : public StructuredData::DD {
-      inline __device__ float sample(const vec3f P, bool dbg) const;
-      // inline __device__ vec4f mapColor(vec4f xfColorMapped,
-      //                                  vec3f point, float scalar) const
-      // { return xfColorMapped; }
+  /*! sampler object for a StructreData object, using a 3d texture */
+  struct StructuredDataSampler : public ScalarFieldSampler {
+    StructuredDataSampler(StructuredData *const sf)
+      : sf(sf)
+    {}
+    
+    struct DD {
+      inline __rtc_device float sample(const vec3f P, bool dbg=false) const;
+      
+      rtc::device::TextureObject texObj;
+      vec3f cellGridOrigin;
+      vec3f cellGridSpacing;
+      vec3i numCells;
     };
 
-    struct Host
-    {
-      Host(ScalarField *field)
-        : field((StructuredData *)field)
-      {}
-
-      /*! builds the string that allows for properly matching optix
-        device progs for this type */
-      inline std::string getTypeString() const { return "Structured"; }
-
-      /*! doesn'ta ctualy do anything for this class, but required to
-          make the template instantiating it happy */
-      void setVariables(OWLGeom geom) { /* nothing to do for this class */}
-      
-      /*! doesn'ta ctualy do anything for this class, but required to
-          make the template instantiating it happy */
-      void build(bool full_rebuild) { /* nothing to do for this class */}
-      
-      StructuredData *const field;
-    };
+    void build() override {}
+    
+    DD getDD(Device *device);
+    StructuredData *const sf;
   };
-  
-#ifdef __CUDA_ARCH__
-  inline __device__ float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
+#if RTC_DEVICE_CODE
+  inline __rtc_device
+  float StructuredDataSampler::DD::sample(const vec3f P, bool dbg) const
   {
     vec3f rel = (P - cellGridOrigin) * rcp(cellGridSpacing);
-
-    if (dbg) printf("world transform %f %f %f -> %f %f %f\n",
-                    P.x,P.y,P.z,
-                    rel.x,rel.y,rel.z);
-    
     if (rel.x < 0.f) return NAN;
     if (rel.y < 0.f) return NAN;
     if (rel.z < 0.f) return NAN;
     if (rel.x >= numCells.x) return NAN;
     if (rel.y >= numCells.y) return NAN;
     if (rel.z >= numCells.z) return NAN;
-    float f = tex3D<float>(texObj,rel.x+.5f,rel.y+.5f,rel.z+.5f);
-    if (dbg) printf("result of tex3d() -> %f\n",f);
+    float f = rtc::tex3D<float>(texObj,rel.x+.5f,rel.y+.5f,rel.z+.5f);
     return f;
   }
 #endif

@@ -25,8 +25,11 @@
 #include "barney/light/DirLight.h"
 #include "barney/light/QuadLight.h"
 
-namespace barney {
+namespace BARNEY_NS {
+  struct SlotContext;
+  
   namespace render {
+
     struct DeviceMaterial;
     struct HostMaterial;
 
@@ -66,47 +69,33 @@ namespace barney {
         const DeviceMaterial *materials;
         const Sampler::DD    *samplers;
         
-        EnvMapLight::DD   envMapLight;
-        // Globals::DD     globals;
+        EnvMapLight::DD       envMapLight;
       };
-      EnvMapLight::SP envMapLight;
+      struct {
+        EnvMapLight::SP light;
+        affine3f        xfm;
+      } envMapLight;
 
-      World(DevGroup::SP devGroup);
+      World(SlotContext *slotContext);
       virtual ~World();
 
-      void set(const std::vector<QuadLight::DD> &quadLights)
-      {
-        if (quadLights.empty()) 
-          owlBufferResize(quadLightsBuffer,1);
-        else {
-          owlBufferResize(quadLightsBuffer,quadLights.size());
-          owlBufferUpload(quadLightsBuffer,quadLights.data());
-        }
-        numQuadLights = (int)quadLights.size();
-      }
-      void set(const std::vector<DirLight::DD> &dirLights)
-      {
-        if (dirLights.empty()) 
-          owlBufferResize(dirLightsBuffer,1);
-        else {
-          owlBufferResize(dirLightsBuffer,dirLights.size());
-          owlBufferUpload(dirLightsBuffer,dirLights.data());
-        }
-        numDirLights = (int)dirLights.size();
-      }
+      void set(const std::vector<QuadLight::DD> &quadLights);
+      void set(const std::vector<DirLight::DD> &dirLights);
+      void set(EnvMapLight::SP envMapLight, const affine3f &xfm);
 
-      void set(EnvMapLight::SP envMapLight) {
-        this->envMapLight = envMapLight;
-      }
+      DD getDD(Device *device);
+
+      struct PLD {
+        rtc::Buffer *quadLightsBuffer = 0;
+        int numQuadLights = 0;
+        rtc::Buffer *dirLightsBuffer = 0;
+        int numDirLights = 0;
+      };
+      PLD *getPLD(Device *device);
       
-      DD getDD(const Device::SP &device) const;
-
-      // Globals globals;
-      OWLBuffer quadLightsBuffer = 0;
-      int numQuadLights = 0;
-      OWLBuffer dirLightsBuffer = 0;
-      int numDirLights = 0;
-      DevGroup::SP devGroup;
+      std::vector<PLD> perLogical;
+      DevGroup::SP const devices;
+      SlotContext *const slotContext;
     };
 
   }

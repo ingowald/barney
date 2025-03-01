@@ -15,99 +15,130 @@
 // ======================================================================== //
 
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
+#if BARNEY_RTC_EMBREE
+# include "cuBQL/builder/cpu.h"
+#else
+# include "cuBQL/builder/cuda.h"
+#endif
 
-namespace barney {
+namespace BARNEY_NS {
 
-  const std::vector<Device::SP> &UMeshCUBQLSampler::Host::getDevices()
-  {
-    assert(mesh);
-    return mesh->getDevices();
-  }
-
-  
-  DevGroup *UMeshCUBQLSampler::Host::getDevGroup()
-  {
-    assert(mesh);
-    return mesh->getDevGroup();
-  }
-
-  void UMeshCUBQLSampler::Host::build(bool full_rebuild)
-  {
-    if (bvhNodesBuffer) {
-      return;
-    }
-
-    auto dev = getDevices()[0];
-    assert(dev);
-    SetActiveGPU forDuration(dev);
-
-    BARNEY_CUDA_SYNC_CHECK();
-    assert(mesh);
-    assert(!mesh->elements.empty());
-
-    if (bvhNodesBuffer != 0) {
-      return;
-    }
-    auto devGroup = getDevGroup();
-
-    bvh_t bvh;
-
-    // this initially builds ONLY on first GPU!
-    box3f *d_primBounds = 0;
-    BARNEY_CUDA_SYNC_CHECK();
-    BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,
-                                   mesh->elements.size()*sizeof(box3f)));
-    BARNEY_CUDA_SYNC_CHECK();
-
-    std::cout << OWL_TERMINAL_BLUE
-              << "#bn.umesh: computing umesh element BBs ..."
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    mesh->computeElementBBs(dev,///*deviceID:*/0,
-                            d_primBounds);
-    BARNEY_CUDA_SYNC_CHECK();
+  struct UMeshReorderElements {
+    Element        *out;
+    Element        *in;
+    const uint32_t *primIDs;
+    int             numElements;
     
-    std::cout << OWL_TERMINAL_BLUE
-              << "#bn.umesh: building cubql bvh ..."
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    cuBQL::BuildConfig buildConfig;
-    buildConfig.makeLeafThreshold = 3;
-#if BARNEY_CUBQL_HOST
-    cuBQL::cpu::spatialMedian(bvh,
-                               (const cuBQL::box_t<float,3>*)d_primBounds,
-                               (uint32_t)mesh->elements.size(),
-                               buildConfig);
+    inline __rtc_device void run(const rtc::ComputeInterface &ci)
+    {
+      int li = ci.launchIndex().x;
+      if (li >= numElements) return;
 
-#else
-    static cuBQL::ManagedMemMemoryResource managedMem;
-    cuBQL::gpuBuilder(bvh,
-                      (const cuBQL::box_t<float,3>*)d_primBounds,
-                      (uint32_t)mesh->elements.size(),
-                      buildConfig,
-                      (cudaStream_t)0,
-                      managedMem);
-#endif
-    std::cout << OWL_TERMINAL_BLUE
-              << "#bn.umesh: cubql bvh built ..."
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    std::vector<Element> reorderedElements(mesh->elements.size());
-    for (int i=0;i<mesh->elements.size();i++) {
-      reorderedElements[i] = mesh->elements[bvh.primIDs[i]];
+      out[li] = in[primIDs[li]];
     }
-    mesh->elements = reorderedElements;
-    owlBufferUpload(mesh->elementsBuffer,reorderedElements.data());
-    BARNEY_CUDA_CALL(Free(d_primBounds));
+  };
+  
+  UMeshCUBQLSampler::UMeshCUBQLSampler(UMeshField *mesh)
+    : mesh(mesh),
+      devices(mesh->devices)
+  {
+    perLogical.resize(devices->size());
+  }
 
-    bvhNodesBuffer
-      = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
-                              bvh.numNodes,bvh.nodes);
-#if BARNEY_CUBQL_HOST
-    cuBQL::cpu::freeBVH(bvh);
-#else
-    cuBQL::cuda::free(bvh,0,managedMem);
-#endif
-    std::cout << OWL_TERMINAL_LIGHT_GREEN
-              << "#bn.umesh: cubql bvh built ..."
-              << OWL_TERMINAL_DEFAULT << std::endl;
+  UMeshCUBQLSampler::PLD *UMeshCUBQLSampler::getPLD(Device *device) 
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
   }
   
+  UMeshCUBQLSampler::DD UMeshCUBQLSampler::getDD(Device *device)
+  {
+    DD dd;
+    (UMeshField::DD &)dd = mesh->getDD(device);
+    dd.bvhNodes = getPLD(device)->bvhNodes;
+    return dd;
+  }
+
+  void UMeshCUBQLSampler::build()
+  {
+    int numElements = mesh->numElements;
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      if (pld->bvhNodes != 0)
+        /* BVH already built! */
+        continue;
+
+      std::cout << "------------------------------------------" << std::endl;
+      std::cout << "building UMeshCUBQL BVH!" << std::endl;
+      std::cout << "------------------------------------------" << std::endl;
+      
+      bvh_t bvh;
+      box3f *primBounds
+        = (box3f*)device->rtc->allocMem(numElements*sizeof(box3f));
+      range1f *valueRanges
+        = (range1f*)device->rtc->allocMem(numElements*sizeof(range1f));
+      mesh->computeElementBBs(device,
+                              primBounds,valueRanges);
+      device->rtc->sync();
+      
+      SetActiveGPU forDuration(device);
+#if BARNEY_RTC_EMBREE
+      cuBQL::cpu::spatialMedian(bvh,
+                                (const cuBQL::box_t<float,3>*)primBounds,
+                                numElements,
+                                cuBQL::BuildConfig());
+#else
+      cuBQL::gpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)primBounds,
+                        numElements,
+                        cuBQL::BuildConfig());
+#endif
+      device->rtc->sync();
+      device->rtc->freeMem(primBounds);
+      device->rtc->freeMem(valueRanges);
+    
+      Element *reorderedElements
+        = (Element *)device->rtc->allocMem(numElements*sizeof(Element));
+      UMeshReorderElements args =
+        {
+          // Element  *out;
+          reorderedElements,
+          // Element  *in;
+          mesh->getPLD(device)->elements,
+          // uint32_t *primIDs;
+          bvh.primIDs,
+          // int numElements;
+          numElements
+        };
+      int bs = 128;
+      int nb = divRoundUp(numElements,bs);
+      device->umeshReorderElements->launch(nb,bs,&args);
+      device->rtc->copy(mesh->getPLD(device)->elements,
+                        reorderedElements,
+                        numElements*sizeof(Element));
+      device->rtc->sync();
+      device->rtc->freeMem(reorderedElements);
+
+      // "save the node"
+      pld->bvhNodes
+        = (node_t *)device->rtc->allocMem(bvh.numNodes*sizeof(node_t));
+      device->rtc->copy(pld->bvhNodes,bvh.nodes,bvh.numNodes*sizeof(node_t));
+      device->rtc->sync();
+      
+      // ... and kill whatever else cubql may have in the bvh
+#if BARNEY_RTC_EMBREE
+      cuBQL::cpu::freeBVH(bvh);
+#else
+      cuBQL::cuda::free(bvh,0);
+#endif      
+      std::cout << OWL_TERMINAL_LIGHT_GREEN
+                << "#bn.umesh: cubql bvh built ..."
+                << OWL_TERMINAL_DEFAULT << std::endl;
+    }
+  }
+  
+  RTC_EXPORT_COMPUTE1D(umeshReorderElements,BARNEY_NS::UMeshReorderElements);
 }
+

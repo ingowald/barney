@@ -16,21 +16,20 @@ Group::Group(BarneyGlobalState *s)
 
 Group::~Group() = default;
 
-void Group::commit()
+void Group::commitParameters()
 {
   m_surfaceData = getParamObject<ObjectArray>("surface");
   m_volumeData = getParamObject<ObjectArray>("volume");
   m_lightData = getParamObject<ObjectArray>("light");
 }
 
-void Group::markCommitted()
+void Group::markFinalized()
 {
   deviceState()->markSceneChanged();
-  Object::markCommitted();
+  Object::markFinalized();
 }
 
-BNGroup Group::makeBarneyGroup(BNContext context// , int slot
-                               ) const
+BNGroup Group::makeBarneyGroup(BNContext context) const
 {
   std::vector<BNGeom> barneyGeometries;
   std::vector<Surface *> surfaces;
@@ -39,7 +38,6 @@ BNGroup Group::makeBarneyGroup(BNContext context// , int slot
   std::vector<BNLight> barneyLights;
   std::vector<Light *> lights;
 
-  int slot = 0;
   // Surfaces //
 
   if (m_surfaceData) {
@@ -49,14 +47,17 @@ BNGroup Group::makeBarneyGroup(BNContext context// , int slot
           auto *s = (Surface *)o;
           if (s && s->isValid())
             surfaces.push_back(s);
+          else {
+            reportMessage(ANARI_SEVERITY_WARNING,
+                "encountered invalid surface (%p)",
+                this,
+                s);
+          }
         });
   }
 
-  for (auto s : surfaces) {
-    BNGeom geom = s->getBarneyGeom(context// , slot
-                                   );
-    barneyGeometries.push_back(geom);
-  }
+  for (auto s : surfaces)
+    barneyGeometries.push_back(s->getBarneyGeom(context));
 
   // Volumes //
 
@@ -66,13 +67,17 @@ BNGroup Group::makeBarneyGroup(BNContext context// , int slot
           auto *v = (Volume *)o;
           if (v && v->isValid())
             volumes.push_back(v);
+          else {
+            reportMessage(ANARI_SEVERITY_WARNING,
+                "encountered invalid volume (%p)",
+                this,
+                v);
+          }
         });
   }
 
-  for (auto v : volumes) {
-    barneyVolumes.push_back(v->getBarneyVolume(context// , slot
-                                               ));
-  }
+  for (auto v : volumes)
+    barneyVolumes.push_back(v->getBarneyVolume(context));
 
   // Lights //
 
@@ -82,27 +87,32 @@ BNGroup Group::makeBarneyGroup(BNContext context// , int slot
           auto *l = (Light *)o;
           if (l && l->isValid())
             lights.push_back(l);
+          else {
+            reportMessage(ANARI_SEVERITY_WARNING,
+                "encountered invalid volume (%p)",
+                this,
+                l);
+          }
         });
   }
 
   for (auto l : lights)
-    barneyLights.push_back(l->getBarneyLight(context// , slot
-                                             ));
+    barneyLights.push_back(l->getBarneyLight(context));
 
   BNData lightsData = nullptr;
   if (!barneyLights.empty()) {
-    lightsData = bnDataCreate
-      (context, slot, BN_OBJECT, barneyLights.size(), barneyLights.data());
+    lightsData = bnDataCreate(
+        context, 0, BN_OBJECT, barneyLights.size(), barneyLights.data());
   }
 
   // Make barney group //
-  
+
   BNGroup bg = bnGroupCreate(context,
-      slot,
+      0,
       barneyGeometries.data(),
-      barneyGeometries.size(),
+      (int)barneyGeometries.size(),
       barneyVolumes.data(),
-      barneyVolumes.size());
+      (int)barneyVolumes.size());
   if (lightsData) {
     bnSetData(bg, "lights", lightsData);
     bnRelease(lightsData);
@@ -110,12 +120,11 @@ BNGroup Group::makeBarneyGroup(BNContext context// , int slot
   }
   bnGroupBuild(bg);
 
-  // Cleanup //
-
-  // iw - do not release - the anari volumes do track their own handles, don't they!?
- 
-  // for (auto bnv : barneyVolumes)
-  //   bnRelease(bnv);
+  reportMessage(ANARI_SEVERITY_DEBUG,
+      "barney::Group constructed with %zu surfaces, %zu volumes, and %zu lights",
+      barneyGeometries.size(),
+      barneyVolumes.size(),
+      barneyLights.size());
 
   return bg;
 }

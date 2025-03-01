@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2019-2020 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,26 +14,28 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "cuda-helper.h"
+#pragma once
 
-#ifdef _WIN32
+#include "rtcore/embree/Buffer.h"
+#include "rtcore/embree/Geom.h"
 
-// Custom usleep function for Windows
-void usleep(__int64 usec)
-{
-    // Convert microseconds to milliseconds (1 millisecond = 1000 microseconds)
-    // Minimum sleep time is 1 millisecond
-    __int64 msec = (usec / 1000 > 0) ? (usec / 1000) : 1;
+namespace rtc {
+  namespace embree {
 
-    // Use the Sleep function from Windows API
-    Sleep(static_cast<DWORD>(msec));
+    struct UserGeom : public Geom
+    {
+      UserGeom(UserGeomType *type);
+      
+      /*! only for user geoms */
+      void setPrimCount(int primCount) override;
+      /*! can only get called on triangle type geoms */
+      void setVertices(Buffer *vertices, int numVertices) override;
+      void setIndices(Buffer *indices, int numIndices) override;
+
+      int primCount = 0;
+    };
+    
+  }
 }
 
-// Custom sleep function for Windows, emulating Unix sleep
-void sleep(unsigned int seconds)
-{
-    // Convert seconds to milliseconds and call Sleep
-    Sleep(seconds * 1000);
-}
 
-#endif

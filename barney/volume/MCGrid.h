@@ -18,8 +18,9 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/volume/TransferFunction.h"
+#include "barney/common/math.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! a grid of macro-cells, with each macro-cell storing both value
       range of the underlying field, and majorant after mapping
@@ -46,10 +47,11 @@ namespace barney {
       vec3f    gridOrigin;
       vec3f    gridSpacing;
 
-      inline __device__ int numCells() const
+#if RTC_DEVICE_CODE
+      inline __rtc_device int numCells() const
       { return dims.x*dims.y*dims.z; }
       
-      inline __device__ vec3i cellID(int linearID) const
+      inline __rtc_device vec3i cellID(int linearID) const
       {
         vec3i mcID;
         mcID.x = linearID % dims.x;
@@ -58,12 +60,14 @@ namespace barney {
         return mcID;
       }
       
-      inline __device__
+      inline __rtc_device
       float majorant(vec3i cellID) const
-      { return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)]; }
+      {
+        return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
+      }
       
       /*! returns the bounding box of the given cell */
-      inline __device__ box3f cellBounds(vec3i cellID,
+      inline __rtc_device box3f cellBounds(vec3i cellID,
                                          const box3f &worldBounds) const
       {
         box3f bounds;
@@ -71,17 +75,18 @@ namespace barney {
         bounds.upper = min(bounds.lower+gridSpacing,worldBounds.upper);
         return bounds;
       }
+#endif
       
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
     
-    MCGrid(DevGroup *devGroup);
+    MCGrid(const DevGroup::SP &devices);
     
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-    DD getDD(const std::shared_ptr<Device> &device) const;
+    DD getDD(Device *device);
 
-    void setVariables(OWLGeom geom);
+    // void setVariables(OWLGeom geom);
     
     /*! allocate memory for the given grid */
     void resize(vec3i dims);
@@ -91,20 +96,30 @@ namespace barney {
     
     /*! given the current per-cell scalar ranges, map each such cell's
         range through the transfer functoin to compute a majorant */
-    void computeMajorants(const TransferFunction *xf);
+    void computeMajorants(TransferFunction *xf);
 
     /*! checks if this macro-cell grid has already been
         allocated/built - mostly for sanity checking nd debugging */
     inline bool built() const { return (dims != vec3i(0)); }
+
+    struct PLD {
+      /* buffer of range1f's, the min/max scalar values per cell */
+      rtc::Buffer *scalarRangesBuffer = 0;
+      /* buffer of floats, the actual per-cell majorants */
+      rtc::Buffer *majorantsBuffer = 0;
+      
+      rtc::ComputeKernel3D *mapMCs = 0;
+      rtc::ComputeKernel3D *clearMCs = 0;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
+
     
-    /* buffer of range1f's, the min/max scalar values per cell */
-    OWLBuffer scalarRangesBuffer = 0;
-    /* buffer of floats, the actual per-cell majorants */
-    OWLBuffer majorantsBuffer = 0;
     vec3i     dims { 0,0,0 };
     vec3f     gridOrigin;
     vec3f     gridSpacing;
-    DevGroup *const devGroup;
+    const DevGroup::SP devices;
   };
   
 }

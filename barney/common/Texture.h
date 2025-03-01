@@ -17,83 +17,103 @@
 #pragma once
 
 #include "barney/Object.h"
-#include <barney.h>
+#include "rtcore/Frontend.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  struct Device;
+  rtc::ColorSpace toRTC(BNTextureColorSpace mode);
+  rtc::FilterMode toRTC(BNTextureFilterMode mode);
+  rtc::AddressMode toRTC(BNTextureAddressMode mode);
   
-  struct Texture : public SlottedObject {
-    typedef std::shared_ptr<Texture> SP;
-
-    Texture(Context *context, int slot,
-            BNDataType texelFormat,
-            vec2i size,
-            const void *texels,
-            BNTextureFilterMode  filterMode,
-            BNTextureAddressMode addressMode_x,
-            BNTextureAddressMode addressMode_y,
-            BNTextureColorSpace  colorSpace);
-    virtual ~Texture() = default;
-
-    cudaTextureObject_t getTextureObject(const Device *device) const;
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Texture{}"; }
-
-    OWLTexture owlTexture = 0;
-  };
-
-  struct Texture3D : public SlottedObject {
-    typedef std::shared_ptr<Texture3D> SP;
-
-    struct DD {
-      cudaArray_t           voxelArray = 0;
-      cudaTextureObject_t   texObj;
-      cudaTextureObject_t   texObjNN;
-    };
-    
-    Texture3D(Context *context, int slot,
-              BNDataType texelFormat,
-              vec3i size,
-              const void *texels,
-              BNTextureFilterMode  filterMode,
-              BNTextureAddressMode addressMode);
-    virtual ~Texture3D() = default;
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Texture3D{}"; }
-
-    DD &getDD(const std::shared_ptr<Device> &device);
-  private:
-    /*! one tex3d per device */
-    std::vector<DD> tex3Ds;
-  };
-
-  struct TextureData : public SlottedObject {
+  struct Device;
+  struct Context;
+  
+  struct TextureData : public barney_api::TextureData {
     typedef std::shared_ptr<TextureData> SP;
 
-    struct DD {
-      cudaArray_t array = 0;
+    struct PLD {
+      rtc::TextureData *rtc = 0;
     };
-    
-    /*! one cudaArray per device */
-    TextureData(Context *context, int slot,
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+   
+    TextureData(Context *context,
+                const DevGroup::SP &devices,
                 BNDataType texelFormat,
                 vec3i size,
                 const void *texels);
     virtual ~TextureData();
 
-    DD &getDD(const std::shared_ptr<Device> &device);
-    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "TextureData{}"; }
-    
-    std::vector<DD> onDev;
+
+    int             numChannels;
     vec3i           dims;
-    BNDataType   texelFormat;
+    BNDataType      texelFormat;
+    DevGroup::SP    const devices;
   };
+
+
+  struct Texture : public barney_api::Texture {
+    typedef std::shared_ptr<Texture> SP;
+
+    Texture(Context *context,
+            TextureData::SP data, 
+            BNTextureFilterMode  filterMode,
+            BNTextureAddressMode addressModes[],
+            BNTextureColorSpace  colorSpace);
+    virtual ~Texture() = default;
+
+    rtc::device::TextureObject getTextureObject(Device *device);
+    rtc::device::TextureObject getDD(Device *device)
+    { return getTextureObject(device); }
+
+    struct PLD {
+      rtc::Texture *rtcTexture = 0;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+    
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override
+    { return "Texture{}"; }
+
+    vec2i getDims() const { return {data->dims.x,data->dims.y}; }
+    TextureData::SP data;
+    DevGroup::SP    const devices;
+  };
+
+  // struct Texture3D : public SlottedObject {
+  //   typedef std::shared_ptr<Texture3D> SP;
+
+  //   struct DD {
+  //     rtc::device::TextureObject texObj;
+  //     rtc::device::TextureObject texObjNN;
+  //   };
+
+  //   Texture3D(Context *context,
+  //             const DevGroup::SP &devices,
+  //             TextureData::SP data,
+  //             BNTextureFilterMode  filterMode,
+  //             BNTextureAddressMode addressMode);
+  //   virtual ~Texture3D() = default;
+    
+  //   struct PLD {
+  //     rtc::Texture *rtcTexture = 0;
+  //     rtc::Texture *rtcTextureNN = 0;
+  //   };
+    
+  //   PLD *getPLD(Device *device);
+  //   std::vector<PLD> perLogical;
+    
+  //   /*! pretty-printer for printf-debugging */
+  //   std::string toString() const override
+  //   { return "Texture3D{}"; }
+
+  //   DD getDD(Device *device);
+  // private:
+  //   TextureData::SP data;
+  // };
+
 }

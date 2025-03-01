@@ -20,7 +20,7 @@
 #include "barney/render/SamplerRegistry.h"
 #include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
     
     AttributeKind parseAttribute(const std::string &attributeName)
@@ -40,40 +40,29 @@ namespace barney {
                                +attributeName+"'");
     }
 
-    Sampler::Sampler(Context *context, int slot)
-      : SlottedObject(context,slot),
-        samplerRegistry(context->getSlot(slot)->samplerRegistry),
-        samplerID(context->getSlot(slot)->samplerRegistry->allocate())
-    {
-      perDev.resize(getDevGroup()->size());
-    }
+    Sampler::Sampler(SlotContext *slotContext)
+      : barney_api::Sampler(slotContext->context),
+        devices(slotContext->devices),
+        samplerRegistry(slotContext->samplerRegistry),
+        samplerID(slotContext->samplerRegistry->allocate())
+    {}
     
     Sampler::~Sampler()
     {
       samplerRegistry->release(samplerID);
-      for (int devID=0;devID<getDevGroup()->size();devID++) {
-        auto dev = getDevGroup()->devices[devID];
-        SetActiveGPU forDuration(dev);
-
-        Sampler::DD &dd = perDev[devID];
-        freeDD(dd,devID);
-        /*! MIGHT want to upload something to device sampler library
-            that indicates that this is now dead - but if it is, and
-            somebody else were to stell use it, then that's a bug on
-            that somebody else's side, anyway (OR it is a bug on the user's side */
-      }
     }
-    
-    Sampler::SP Sampler::create(Context *context, int slot, const std::string &type)
+
+    Sampler::SP Sampler::create(SlotContext *context,
+                                const std::string &type)
     {
       if (type == "texture1D")
-        return std::make_shared<TextureSampler>(context,slot,1);
+        return std::make_shared<TextureSampler>(context,1);
       if (type == "texture2D" || type == "image2D")
-        return std::make_shared<TextureSampler>(context,slot,2);
+        return std::make_shared<TextureSampler>(context,2);
       if (type == "texture3D")
-        return std::make_shared<TextureSampler>(context,slot,3);
+        return std::make_shared<TextureSampler>(context,3);
       if (type == "transform")
-        return std::make_shared<TransformSampler>(context,slot);
+        return std::make_shared<TransformSampler>(context);
       throw std::runtime_error("do not know what a '"+type+" sampler is !?");
     }
 
@@ -81,7 +70,7 @@ namespace barney {
     bool Sampler::setObject(const std::string &member,
                                  const std::shared_ptr<Object> &value)
     {
-      if (SlottedObject::setObject(member,value)) return true;
+      // if (SlottedObject::setObject(member,value)) return true;
 
       return false;
     }
@@ -89,7 +78,7 @@ namespace barney {
     bool Sampler::setString(const std::string &member,
                             const std::string &value)
     {
-      if (SlottedObject::setString(member,value)) return true;
+      // if (SlottedObject::setString(member,value)) return true;
 
       if (member == "inAttribute")
         { inAttribute = parseAttribute(value); return true; }
@@ -97,19 +86,19 @@ namespace barney {
       return false;
     }
 
-    bool Sampler::set4x4f(const std::string &member, const mat4f &value)
+    bool Sampler::set4x4f(const std::string &member, const vec4f *value)
     {
-      if (SlottedObject::set4x4f(member,value)) return true;
+      // if (SlottedObject::set4x4f(member,value)) return true;
 
       if (member == "outTransform")
-        { outTransform = value; return true; }
+        { outTransform = *(mat4f*)value; return true; }
       
       return false;
     }
     
     bool Sampler::set4f(const std::string &member, const vec4f &value)
     {
-      if (SlottedObject::set4f(member,value)) return true;
+      // if (SlottedObject::set4f(member,value)) return true;
 
       if (member == "outOffset")
         { outOffset = value; return true; }
@@ -119,19 +108,22 @@ namespace barney {
 
     void Sampler::commit() 
     {
-      SlottedObject::commit();
-
-      for (int devID=0;devID<getDevGroup()->size();devID++) {
-        auto dev = getDevGroup()->devices[devID];
-        SetActiveGPU forDuration(dev);
-
-        Sampler::DD &dd = perDev[devID];
-        freeDD(dd,devID);
-        createDD(dd,devID);
-        samplerRegistry->setDD(samplerID,dd,devID);
+      // SlottedObject::commit();
+      for (auto device : *devices) {
+        DD dd = getDD(device);
+        samplerRegistry->setDD(samplerID,dd,device);
       }
     }
 
+    
+    TextureSampler::TextureSampler(SlotContext *slotContext,
+                                   int numDims)
+      : Sampler(slotContext),
+        numDims(numDims)
+    {
+      perLogical.resize(devices->numLogical);
+    }
+    
     TextureSampler::~TextureSampler()
     {}
     
@@ -140,9 +132,11 @@ namespace barney {
     {
       if (Sampler::setObject(member,value)) return true;
 
-      if (member == "textureData")
-        { textureData = value->as<TextureData>(); return true; }
-
+      if (member == "textureData") {
+        textureData = value->as<TextureData>();
+        return true;
+      }
+      
       return false;
     }
 
@@ -162,12 +156,12 @@ namespace barney {
       return false;
     }
     
-    bool TextureSampler::set4x4f(const std::string &member, const mat4f &value)
+    bool TextureSampler::set4x4f(const std::string &member, const vec4f *value)
     {
       if (Sampler::set4x4f(member,value)) return true;
 
       if (member == "inTransform")
-        { inTransform = value; return true; }      
+        { inTransform = *(mat4f*)value; return true; }      
 
       return false;
     }
@@ -182,13 +176,49 @@ namespace barney {
       return false;
     }
 
-    void TextureSampler::commit() 
+    TextureSampler::PLD *TextureSampler::getPLD(Device *device) 
     {
-      Sampler::commit();
+      assert(device);
+      assert(device->contextRank >= 0);
+      assert(device->contextRank < perLogical.size());
+      return &perLogical[device->contextRank];
     }
     
-    void TextureSampler::createDD(DD &dd, int devID)
+    void TextureSampler::commit() 
     {
+      // PRINT(rtcTexture);
+      for (auto device : *devices) {
+        PLD *pld = getPLD(device);
+        if (pld->rtcTexture)
+          device->rtc->freeTexture(pld->rtcTexture);
+        pld->rtcTexture = 0;
+      }
+
+      if (!textureData) {
+        std::cerr << "WARNING: Image Sampler without any texture data?"
+                  << std::endl;
+      } else {
+        rtc::TextureDesc desc;
+        desc.filterMode = toRTC(filterMode);
+        desc.addressMode[0] = toRTC(wrapModes[0]);
+        desc.addressMode[1] = toRTC(wrapModes[1]);
+        desc.addressMode[2] = toRTC(wrapModes[2]);
+        for (auto device : *devices) {
+          PLD *pld = getPLD(device);
+          if (pld->rtcTexture)
+            device->rtc->freeTexture(pld->rtcTexture);
+          pld->rtcTexture
+            = textureData->getPLD(device)->rtc
+            ->createTexture(desc);
+        };
+      }
+
+      Sampler::commit();
+    }
+
+    Sampler::DD TextureSampler::getDD(Device *device) 
+    {
+      Sampler::DD dd;
       switch(numDims) {
       case 1:
         dd.type = Sampler::IMAGE1D; break;
@@ -198,105 +228,31 @@ namespace barney {
         dd.type = Sampler::IMAGE3D; break;
       };
       dd.inAttribute = (AttributeKind)inAttribute;
-      
+
       (vec4f&)dd.outTransform.offset = outOffset;
       memcpy(&dd.outTransform.mat,&outTransform,sizeof(outTransform));
       
       (vec4f&)dd.image.inTransform.offset = inOffset;
       memcpy(&dd.image.inTransform.mat,&inTransform,sizeof(inTransform));
-      
-      if (!textureData) {
+
+      PLD *pld = getPLD(device);
+      if (!pld->rtcTexture) {
         std::cout << "WARN: NO TEXTURE DATA ON IMAGE SAMPLER!" << std::endl;
         dd.image.texture = 0;
-        return;
+      } else {
+        dd.image.texture = pld->rtcTexture->getDD();
+        dd.image.numChannels = textureData->numChannels;
       }
-
-      // Create a texture object
-      cudaResourceDesc resourceDesc;
-      memset(&resourceDesc,0,sizeof(resourceDesc));
-      resourceDesc.resType         = cudaResourceTypeArray;
-      resourceDesc.res.array.array = textureData->onDev[devID].array;
-      
-      cudaTextureDesc tex_desc;
-      memset(&tex_desc,0,sizeof(tex_desc));
-      for (int i=0;i<3;i++)
-        switch (wrapModes[i]) {
-        case BN_TEXTURE_WRAP:
-          tex_desc.addressMode[i] = cudaAddressModeWrap;
-          break;
-        case BN_TEXTURE_CLAMP:
-          tex_desc.addressMode[i] = cudaAddressModeClamp;
-          break;
-        case BN_TEXTURE_BORDER:
-          tex_desc.addressMode[i] = cudaAddressModeBorder;
-          break;
-        case BN_TEXTURE_MIRROR:
-          tex_desc.addressMode[i] = cudaAddressModeMirror;
-          break;
-        default:
-          throw std::runtime_error("invalid texture mode!?");
-        }
-      
-      tex_desc.filterMode       =
-        (filterMode == BN_TEXTURE_LINEAR)
-        ? cudaFilterModeLinear
-        : cudaFilterModePoint;
-      tex_desc.normalizedCoords = 1;
-      tex_desc.maxAnisotropy       = 1;
-      tex_desc.maxMipmapLevelClamp = 0;
-      // tex_desc.maxMipmapLevelClamp = 99;
-      tex_desc.minMipmapLevelClamp = 0;
-      tex_desc.mipmapFilterMode    = cudaFilterModePoint;
-      tex_desc.borderColor[0]      = 1.0f;
-      tex_desc.borderColor[1]      = 0.0f;
-      tex_desc.borderColor[2]      = 0.0f;
-      tex_desc.borderColor[3]      = 1.0f;
-      tex_desc.sRGB                = 0;//1;//(colorSpace == OWL_COLOR_SPACE_SRGB);
-
-      switch (textureData->texelFormat) {
-      case BN_FLOAT:
-        tex_desc.readMode     = cudaReadModeElementType;
-        dd.image.numChannels = 1;
-        break;
-      case BN_UFIXED8:
-        tex_desc.readMode     = cudaReadModeNormalizedFloat;
-        dd.image.numChannels = 1;
-        break;
-      case BN_UFIXED8_RGBA:
-        tex_desc.readMode     = cudaReadModeNormalizedFloat;
-        dd.image.numChannels = 4;
-        break;
-      case BN_UFIXED16:
-        tex_desc.readMode     = cudaReadModeNormalizedFloat;
-        dd.image.numChannels = 1;
-        break;
-      default:
-        throw std::runtime_error("unsupported texel format in image sampler");
-      }
-          
-      BARNEY_CUDA_CALL(CreateTextureObject(&dd.image.texture,&resourceDesc,&tex_desc,0));
+      return dd;
     }
     
-    void TextureSampler::freeDD(DD &dd, int devID)
+    Sampler::DD TransformSampler::getDD(Device *device) 
     {
-      if (dd.image.texture)
-        BARNEY_CUDA_CALL(DestroyTextureObject(dd.image.texture));
-      dd.image.texture = 0;
-      dd.type = Sampler::INVALID;
-    }
-    
-    void TransformSampler::createDD(DD &dd, int devID)
-    {
+      Sampler::DD dd;
       dd.type = Sampler::TRANSFORM;
       (vec4f&)dd.outTransform.offset = outOffset;
       memcpy(&dd.outTransform.mat,&outTransform,sizeof(outTransform));
-    }
-
-    void TransformSampler::freeDD(DD &dd, int devID)
-    {
-      /* no device data to free for this one ... */
-      dd.type = Sampler::INVALID;
-      
+      return dd;
     }
 
   }

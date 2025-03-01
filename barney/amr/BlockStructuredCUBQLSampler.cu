@@ -16,8 +16,9 @@
 
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
+#if 0
   void BlockStructuredCUBQLSampler::Host::build(bool full_rebuild)
   {
     if (bvhNodesBuffer) {
@@ -82,4 +83,5 @@ namespace barney {
     std::cout << "cubql bvh built ..." << std::endl;
   }
   
+#endif
 }

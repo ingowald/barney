@@ -19,18 +19,18 @@
 #include "barney/Object.h"
 #include "barney/common/Texture.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Device;
   
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
-  struct Renderer : public Object {
+  struct Renderer : public barney_api::Renderer {//Object {
     typedef std::shared_ptr<Renderer> SP;
 
     struct DD {
       vec4f               bgColor;
-      cudaTextureObject_t bgTexture;
+      rtc::device::TextureObject bgTexture;
       float               ambientRadiance;
       int                 pathsPerPixel;
     };
@@ -43,7 +43,7 @@ namespace barney {
 
     static SP create(Context *context);
 
-    DD getDD(const Device *device) const;
+    DD getDD(Device *device) const;
     
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

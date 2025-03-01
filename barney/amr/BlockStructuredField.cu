@@ -22,8 +22,9 @@
 #define BUFFER_CREATE owlDeviceBufferCreate
 // #define BUFFER_CREATE owlManagedMemoryBufferCreate
 
-namespace barney {
+namespace BARNEY_NS {
 
+#if 0
   extern "C" char BlockStructuredMC_ptx[];
 
   enum { MC_GRID_SIZE = 128 };
@@ -266,4 +267,5 @@ namespace barney {
     
     throw std::runtime_error("unknown BARNEY_AMR accelerator method");
   }
+#endif
 }

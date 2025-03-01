@@ -16,13 +16,17 @@
 
 #include "barney/GlobalModel.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   GlobalModel::GlobalModel(Context *context)
-    : Object(context)
+    : barney_api::Model(context)
+    // : barney_api::SlottedObject(context,context->devices)
   {
     for (int slot=0;slot<context->perSlot.size();slot++) {
-      ModelSlot::SP modelSlot = ModelSlot::create(this,slot);
+      assert(context->perSlot[slot].devices);
+      ModelSlot::SP modelSlot
+        = std::make_shared<ModelSlot>(this,context->perSlot[slot].devices,
+                                      slot);
       modelSlots.push_back(modelSlot);
     }
   }
@@ -30,14 +34,17 @@ namespace barney {
   GlobalModel::~GlobalModel()
   {}
   
-  void GlobalModel::render(Renderer *renderer,
-                           Camera      *camera,
-                           FrameBuffer *fb)
+  void GlobalModel::render(barney_api::Renderer *renderer,
+                           barney_api::Camera      *_camera,
+                           barney_api::FrameBuffer *_fb)
   {
     assert(context);
+    FrameBuffer *fb = (FrameBuffer *)_fb;
+    Camera *camera = (Camera *)_camera;
     assert(fb);
+    Context *context = (Context *)this->context;
     context->ensureRayQueuesLargeEnoughFor(fb);
-    context->render(renderer,this,camera->getDD(),fb);
+    context->render((Renderer*)renderer,this,camera->getDD(),fb);
   }
 
 }

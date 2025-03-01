@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! cylinders with caps, specified through an array of vertices, and
       one array of int2 where each of the two its specified begin and
@@ -34,7 +34,7 @@ namespace barney {
       const float *radii;
     };
     
-    Cones(Context *context, int slot);
+    Cones(Context *context, DevGroup::SP devices);
     virtual ~Cones() = default;
     
     /*! pretty-printer for printf-debugging */
@@ -43,7 +43,7 @@ namespace barney {
     
     void commit() override;
     
-    static OWLGeomType createGeomType(DevGroup *devGroup);
+    // static OWLGeomType createGeomType(DevGroup *devGroup);
 
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */

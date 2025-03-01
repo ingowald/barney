@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,16 +18,19 @@
 #include "barney/volume/ScalarField.h"
 #include "barney/ModelSlot.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  OWLContext VolumeAccel::getOWL() const
-  { return sf->getOWL(); }
+  Volume::PLD *Volume::getPLD(Device *device)
+  { return &perLogical[device->contextRank]; }
 
-  void VolumeAccel::setVariables(OWLGeom geom)
+  void Volume::setXF(const range1f &domain,
+                     const bn_float4 *_values,
+                     int numValues,
+                     float baseDensity) 
   {
-    // owlGeomSet3fv(geom,"domain,lower",&volume->domain.lower.x);
-    // owlGeomSet3fv(geom,"domain,upper",&volume->domain.upper.x);
-    getXF()->setVariables(geom);
+    std::vector<vec4f> values(numValues);
+    memcpy(values.data(),_values,numValues*sizeof(*_values));
+    xf.set(domain,values,baseDensity);
   }
 
   inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
@@ -37,12 +40,13 @@ namespace barney {
   { assert(s); return s; }
   
   Volume::Volume(ScalarField::SP sf)
-    : Object(assertNotNull(sf)->context),
-      devGroup(sf->getDevGroup()),
+    : barney_api::Volume(sf->context),
       sf(sf),
-      xf(sf->getDevGroup())
+      xf((Context*)sf->context,sf->devices),
+      devices(sf->devices)
   {
     accel = sf->createAccel(this);
+    perLogical.resize(devices->numLogical);
   }
 
   const TransferFunction *VolumeAccel::getXF() const { return &volume->xf; }
@@ -53,7 +57,8 @@ namespace barney {
   {
     assert(accel);
     accel->build(full_rebuild);
-    sf->getDevGroup()->sbtDirty = true;
+    for (auto device : *devices)
+      device->sbtDirty = true;
   }
 
 }

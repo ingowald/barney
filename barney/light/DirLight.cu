@@ -15,8 +15,9 @@
 // ======================================================================== //
 
 #include "DirLight.h"
+#include "barney/common/math.h"
 
-namespace barney {
+namespace BARNEY_NS {
   
   DirLight::DD DirLight::getDD(const affine3f &instanceXfm) const
   {

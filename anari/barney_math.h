@@ -4,7 +4,10 @@
 #pragma once
 
 // barney
-#include "barney.h"
+#include "barney/barney.h"
+#if BARNEY_MPI
+# include "barney/barney_mpi.h"
+#endif
 // anari
 #include <helium/helium_math.h>
 #include <anari/anari_cpp.hpp>
@@ -25,6 +28,14 @@ namespace barney_device {
 
   namespace math = anari::math;
 
+  inline void bnSet3ic(BNObject o, const char *n, math::int3 v)
+  { bnSet3i(o,n,v.x,v.y,v.z); }
+  inline void bnSet3fc(BNObject o, const char *n, math::float3 v)
+  { bnSet3f(o,n,v.x,v.y,v.z); }
+  inline void bnSet4fc(BNObject o, const char *n, math::float4 v)
+  { bnSet4f(o,n,v.x,v.y,v.z,v.z); }
+
+  
   struct box1
   {
     float lower, upper;

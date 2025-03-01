@@ -17,14 +17,15 @@
 #include "barney/geometry/Cones.h"
 #include "barney/ModelSlot.h"
 
-namespace barney {
+RTC_IMPORT_USER_GEOM_TYPE(Cones);
 
-  extern "C" char Cones_ptx[];
+namespace BARNEY_NS {
 
-  Cones::Cones(ModelSlot *owner)
-    : Geometry(owner)
+  Cones::Cones(Context *context, DevGroup::SP devices)
+    : Geometry(context,devices)
   {}
 
+#if 0
   OWLGeomType Cones::createGeomType(DevGroup *devGroup)
   {
     if (DevGroup::logging())
@@ -51,6 +52,7 @@ namespace barney {
     
     return gt;
   }
+#endif
   
   void Cones::commit()
   {

@@ -23,20 +23,19 @@
 #include "barney/render/OptixGlobals.h"
 #include "barney/material/Material.h"
 
-namespace barney {
+namespace BARNEY_NS {
   
   struct ModelSlot;
   using render::GeometryAttribute;
   using render::GeometryAttributes;
   using render::HostMaterial;
   
-  struct Geometry : public SlottedObject {
+  struct Geometry : public barney_api::Geometry {
     typedef std::shared_ptr<Geometry> SP;
 
     struct DD {
-
       template<typename InterpolatePerVertex>
-      inline __device__
+      inline __rtc_device
       void setHitAttributes(render::HitAttributes &hit,
                             const InterpolatePerVertex &interpolate,
                             bool dbg=false) const;
@@ -45,12 +44,15 @@ namespace barney {
       int materialID;
     };
     
-    Geometry(Context *context, int slot);
+    Geometry(Context *context,
+             DevGroup::SP devices);
     virtual ~Geometry();
 
-    static Geometry::SP create(Context *context, int slot, const std::string &type);
+    static Geometry::SP create(Context *context,
+                               DevGroup::SP devices,
+                               const std::string &type);
     
-    static void addVars(std::vector<OWLVarDecl> &vars, int base);
+    // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -59,20 +61,32 @@ namespace barney {
     /*! ask this geometry to build whatever owl geoms it needs to build */
     virtual void build() {}
 
-    void setAttributesOn(OWLGeom geom);
+    void setAttributesOn(Geometry::DD &dd,
+                         Device *device);
+    void writeDD(Geometry::DD &dd,
+                Device *device);
     
-    bool set1f(const std::string &member, const float &value) override;
-    bool set3f(const std::string &member, const vec3f &value) override;
-    bool setData(const std::string &member, const Data::SP &value) override;
-    bool setObject(const std::string &member, const Object::SP &value) override;
+    // void setAttributesOn(OWLGeom geom);
+
+    bool set1f(const std::string &member,
+               const float &value) override;
+    bool set3f(const std::string &member,
+               const vec3f &value) override;
+    bool setData(const std::string &member,
+                 const barney_api::Data::SP &value) override;
+    bool setObject(const std::string &member,
+                   const Object::SP &value) override;
     
     HostMaterial::SP getMaterial() const;
     void setMaterial(HostMaterial::SP);
-    
-    std::vector<OWLGeom>  triangleGeoms;
-    std::vector<OWLGeom>  userGeoms;
-    std::vector<OWLGroup> secondPassGroups;
 
+    struct PLD {
+      std::vector<rtc::Geom *> triangleGeoms;
+      std::vector<rtc::Geom *> userGeoms;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+    DevGroup::SP const devices;
   private:
     render::HostMaterial::SP material;
 
@@ -80,18 +94,21 @@ namespace barney {
   };
 
   template<typename InterpolatePerVertex>
-  inline __device__
+  inline __rtc_device
   void Geometry::DD::setHitAttributes(render::HitAttributes &hit,
                                       const InterpolatePerVertex &interpolate,
                                       bool dbg) const
   {
-    auto set = [&](float4 &out, const GeometryAttribute::DD &in,bool dbg=false) {
+    auto set = [&](vec4f &out,
+                   const GeometryAttribute::DD &in,
+                   bool dbg=false)
+    {
       switch(in.scope) {
       case GeometryAttribute::INVALID:
         /* nothing - leave default */
         break;
       case GeometryAttribute::CONSTANT:
-        out = in.value;
+        out = rtc::load(in.value);
         break;
       case GeometryAttribute::PER_PRIM:
         out = in.fromArray.valueAt(hit.primID);
@@ -103,7 +120,7 @@ namespace barney {
     };
     
     for (int i=0;i<attributes.count;i++) {
-      float4     &out = hit.attribute[i];
+      vec4f     &out = hit.attribute[i];
       const auto &in  = this->attributes.attribute[i];
       set(out,in);
     }

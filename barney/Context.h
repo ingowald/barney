@@ -16,17 +16,18 @@
 
 #pragma once
 
+#include "barney/api/Context.h"
 #include "barney/render/Ray.h"
 #include "barney/geometry/Geometry.h"
 #include "barney/Camera.h"
-#include "barney/DeviceContext.h"
-#include "barney/common/cuda-helper.h"
+// #include "barney/DeviceContext.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
 #include "barney/render/Renderer.h"
 #include <set>
+#include "barney/render/RayQueue.h"
 
-namespace barney {
+namespace BARNEY_NS {
   using namespace owl::common;
   using render::Ray;
   
@@ -37,11 +38,22 @@ namespace barney {
     struct HostMaterial;
     struct SamplerRegistry;
     struct MaterialRegistry;
-    struct DeviceMaterial;
-    
+    struct DeviceMaterial;    
+  };
+
+  struct SlotContext {
+    Context *context;
+    int modelRankInThisSlot;//dataGroupID;
+    /*! device(s) inside this data group; will be a subset of
+      Context::devices */
+    std::vector<int>     gpuIDs;
+    DevGroup::SP         devices;
+    std::shared_ptr<render::HostMaterial>     defaultMaterial = 0;
+    std::shared_ptr<render::SamplerRegistry>  samplerRegistry = 0;
+    std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
   };
   
-  struct Context// : public Object
+  struct Context : public barney_api::Context
   {
     Context(const std::vector<int> &dataGroupIDs,
             const std::vector<int> &gpuIDs,
@@ -50,63 +62,78 @@ namespace barney {
     virtual ~Context();
     
     /*! create a frame buffer object suitable to this context */
-    virtual FrameBuffer *createFB(int owningRank) = 0;
-    GlobalModel *createModel();
-    Renderer *createRenderer();
+    // virtual FrameBuffer *createFB(int owningRank) = 0;
+    std::shared_ptr<barney_api::Model>
+    createModel() override;
+    
+    std::shared_ptr<barney_api::Renderer>
+    createRenderer() override;
 
-    std::shared_ptr<render::HostMaterial> getDefaultMaterial(int slot);
+    std::shared_ptr<barney_api::Volume>
+    createVolume(const std::shared_ptr<barney_api::ScalarField> &sf) override;
+
+    std::shared_ptr<barney_api::TextureData> 
+    createTextureData(int slot,
+                      BNDataType texelFormat,
+                      vec3i dims,
+                      const void *texels) override;
+    
+    std::shared_ptr<barney_api::ScalarField>
+    createScalarField(int slot, const std::string &type) override;
+    
+    std::shared_ptr<barney_api::Geometry>
+    createGeometry(int slot, const std::string &type) override;
+    
+    std::shared_ptr<barney_api::Material>
+    createMaterial(int slot, const std::string &type) override;
+
+    std::shared_ptr<barney_api::Sampler>
+    createSampler(int slot, const std::string &type) override;
+
+    std::shared_ptr<barney_api::Light>
+    createLight(int slot, const std::string &type) override;
+
+    std::shared_ptr<barney_api::Group>
+    createGroup(int slot,
+                barney_api::Geometry **geoms, int numGeoms,
+                barney_api::Volume **volumes, int numVolumes) override;
+
+    std::shared_ptr<barney_api::Data>
+    createData(int slot,
+               BNDataType dataType,
+               size_t numItems,
+               const void *items) override;
+    
+    std::shared_ptr<barney_api::Camera>
+    createCamera(const std::string &type) override;
+
+    std::shared_ptr<barney_api::Texture>
+    createTexture(const std::shared_ptr<barney_api::TextureData> &td,
+                  BNTextureFilterMode  filterMode,
+                  BNTextureAddressMode addressModes[],
+                  BNTextureColorSpace  colorSpace) override;
+ 
+    
+    // std::shared_ptr<render::HostMaterial> getDefaultMaterial(int slot);
+
+    static bool logging();
     
     /*! pretty-printer for printf-debugging */
     virtual std::string toString() const 
     { return "<Context(abstract)>"; }
 
-    template<typename T>
-    T *initReference(std::shared_ptr<T> sp)
-    {
-      if (!sp) return 0;
-      std::lock_guard<std::mutex> lock(mutex);
-      hostOwnedHandles[sp]++;
-      return sp.get();
-    }
-    
-    /*! decreases (the app's) reference count of said object by
-      one. if said refernce count falls to 0 the object handle gets
-      destroyed and may no longer be used by the app, and the object
-      referenced to by this handle may be removed (from the app's
-      point of view). Note the object referenced by this handle may
-      not get destroyed immediagtely if it had other indirect
-      references, such as, for example, a group still holding a
-      refernce to a geometry */
-    void releaseHostReference(Object::SP object);
-    
-    /*! increases (the app's) reference count of said object byb
-        one */
-    void addHostReference(Object::SP object);
-
-    DevGroup *getDevGroup();
     render::World *getWorld(int slot);
     
-    Device::SP getDevice(int contextRank)
-    {
-      assert(contextRank >= 0);
-      assert(contextRank < devices.size());
-      assert(devices[contextRank]);
-      assert(devices[contextRank]->device);
-      return devices[contextRank]->device;
-    }
-    
-    std::vector<DeviceContext::SP> devices;
-
     /* goes across all devices, syncs that device, and checks for
        errors - careful, this will be very slow, shoudl only be used
        for debugging multi-gpu race conditions and such */
-    void syncCheckAll(const char *where);
+    void syncCheckAll(const char *where="");
     
     // for debugging ...
     virtual void barrier(bool warn=true) {}
     
     /*! generate a new wave-front of rays */
-    void generateRays(const barney::Camera::DD &camera,
+    void generateRays(const Camera::DD &camera,
                       Renderer *renderer,
                       FrameBuffer *fb);
     
@@ -139,16 +166,14 @@ namespace barney {
     
     void renderTiles(Renderer *renderer,
                      GlobalModel *model,
-                     const barney::Camera::DD &camera,
+                     const Camera::DD &camera,
                      FrameBuffer *fb);
     
     virtual void render(Renderer    *renderer,
                         GlobalModel *model,
-                        const barney::Camera::DD &camera, 
+                        const Camera::DD &camera, 
                         FrameBuffer *fb) = 0;
 
-    std::mutex mutex;
-    std::map<Object::SP,int> hostOwnedHandles;
     // std::vector<barney::DeviceGroup::SP> barneys;
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
@@ -160,56 +185,25 @@ namespace barney {
         support */
     void warn_unsupported_object(const std::string &kind,
                                  const std::string &type);
-    std::set<std::string> alreadyWarned;
-
-    struct PerSlot {
-      int modelRankInThisSlot;//dataGroupID;
-      /*! device(s) inside this data group; will be a subset of
-        Context::devices */
-      std::vector<int>     gpuIDs;
-      barney::DevGroup::SP devGroup = 0;
-      std::shared_ptr<render::HostMaterial> defaultMaterial = 0;
-      std::shared_ptr<render::SamplerRegistry>  samplerRegistry = 0;
-      std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
-      // iw: this is more like "globals", this name doesn't fit
-      // render::World        world;
-    };
-    const PerSlot *getSlot(int slot) const;
-    PerSlot *getSlot(int slot);
-    std::vector<PerSlot> perSlot;
-    
-    const bool isActiveWorker;
-
-    /*! return the single 'global' own context that spans all gpus, no
-        matter how many model slots those are grouped in; in theory
-        this should be used for very, very little - almost all data
-        should live in a model slots (which has its own context), only
-        truly global data (such as renderer background image) should
-        ever be global */
-    OWLContext getOWL(int slot);// { return globalContextAcrossAllGPUs; }
-    // OWLContext getGlobalOWL() const;
-    const std::vector<Device::SP> &getDevices(int slot) const
+    DevGroup::SP getDevices(int slot)
     {
-      if (slot == -1)
-        return allDevices;
-      else
-        return getDevGroup(slot)->devices;
+      if (slot < 0)
+        return this->devices;
+      else 
+        return getSlot(slot)->devices;
     }
-    DevGroup *getDevGroup(int slot);
-    const DevGroup *getDevGroup(int slot) const;
     
     int contextSize() const;
 
-  private:
-    /* as the name implies, a single, global owl context across all
-       GPUs; this is merely there to enable peer access across all
-       GPUs; for actual rendering data each data group will have to
-       have its own context */
-    OWLContext globalContextAcrossAllGPUs = 0 ;
-    
-    /*! list of _all_ devices across all slots, so across DIFFERENT
-        device groups! */
-    std::vector<Device::SP> allDevices;
+    // std::mutex mutex;
+    // std::map<Object::SP,int> hostOwnedHandles;
+    const bool isActiveWorker;
+    // std::set<std::string> alreadyWarned;
+
+    SlotContext *getSlot(int slot);
+    std::vector<SlotContext> perSlot;
+    DevGroup::SP devices;
+    int const globalIndex;
   };
   
 
@@ -223,18 +217,8 @@ namespace barney {
      for debugging multi-gpu race conditions and such */
   inline void Context::syncCheckAll(const char *where)
   {
-    for (auto dev : devices) {
-      SetActiveGPU forDuration(dev->device);
-
-      cudaDeviceSynchronize();                                   
-      cudaError_t rc = cudaGetLastError();                        
-      if (rc != cudaSuccess) {                                    
-        printf("******************************************************************\nCUDA fatal error %s (%s)\n",
-               cudaGetErrorString(rc),where);
-        fflush(0);
-        throw std::runtime_error("unrecoverable cuda error");
-      }                                                              
-    }
+    for (auto device : *devices)
+      device->sync();
   }
     
 }

@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Spheres : public Geometry {
     typedef std::shared_ptr<Spheres> SP;
@@ -31,9 +31,7 @@ namespace barney {
       // const vec4f *vertexAttribute[5];
     };
 
-    Spheres(Context *context, int slot);
-    
-    static OWLGeomType createGeomType(DevGroup *device);
+    Spheres(Context *context, DevGroup::SP devices);
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
@@ -44,7 +42,7 @@ namespace barney {
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     bool set1f(const std::string &member, const float &value) override;
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setData(const std::string &member, const barney_api::Data::SP &value) override;
     bool setObject(const std::string &member, const Object::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
@@ -52,11 +50,6 @@ namespace barney {
     PODData::SP origins = 0;
     PODData::SP colors  = 0;
     PODData::SP radii   = 0;
-    // PODData::SP vertexAttribute0;
-    // PODData::SP vertexAttribute1;
-    // PODData::SP vertexAttribute2;
-    // PODData::SP vertexAttribute3;
-    // PODData::SP vertexAttribute4;
     float       defaultRadius = .1f;
   };
   

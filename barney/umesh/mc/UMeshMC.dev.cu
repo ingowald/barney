@@ -14,68 +14,55 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-/*! \file UMeshCUBQLMC.dev.cu implements the DDA and RTX traversers for a umesh
-  scalar field with cubql sampler and macro cell accel */
+/*! \file UMeshMC.dev.cu implements a macro-cell accelerated
+    unstructured mesh data type.
+
+    This particular voluem type:
+
+    - uses cubql to accelerate point-in-element queries (for the
+      scalar field evaluation)
+
+    - uses macro cells and DDA traversal for domain traversal
+*/
 
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/DDA.h"
-#include <owl/owl_device.h>
+#include "rtcore/TraceInterface.h"
 
-namespace barney {
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
-  // ==================================================================
-  //
-  // UMesh Data, Macro-Cell (MC) accelerator, and traversal
-  // via an RTX BVH built over active macro-cells
-  //
-  // ================================================================== 
+namespace BARNEY_NS {
 
-  OPTIX_BOUNDS_PROGRAM(UMesh_CUBQL_MCRTX_Bounds)(const void *geomData,
-                                                 owl::common::box3f &bounds,
-                                                 const int32_t primID)
-  {
-    MCRTXVolumeAccel<UMeshCUBQLSampler>::boundsProg
-      (geomData,bounds,primID);
-  }
+  struct UMeshMC_Programs {
+    
+    static inline __rtc_device
+    void bounds(const rtc::TraceInterface &ti,
+                const void *geomData,
+                owl::common::box3f &bounds,  
+                const int32_t primID)
+    {
+      MCVolumeAccel<UMeshCUBQLSampler>::boundsProg(ti,geomData,bounds,primID);
+    }
 
-  OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCRTX_Isec)()
-  {
-    MCRTXVolumeAccel<UMeshCUBQLSampler>::isProg();
-  }
-  
-  OPTIX_CLOSEST_HIT_PROGRAM(UMesh_CUBQL_MCRTX_CH)()
-  {
-    MCRTXVolumeAccel<UMeshCUBQLSampler>::chProg();
-  }
-  
+    static inline __rtc_device
+    void intersect(rtc::TraceInterface &ti)
+    {
+      MCVolumeAccel<UMeshCUBQLSampler>::isProg(ti);
+    }
+    
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &ti)
+    { /* nothing to do */ }
+    
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &ti)
+    { /* nothing to do */ }
+  };
 
+  using UMeshMC = MCVolumeAccel<UMeshCUBQLSampler>;
 
-
-
-  // ==================================================================
-  //
-  // UMesh Data, Macro-Cell (MC) accelerator, and cuda-DDA
-  // traversal
-  //
-  // ================================================================== 
-
-  OPTIX_BOUNDS_PROGRAM(UMesh_CUBQL_MCDDA_Bounds)(const void *geomData,
-                                                 owl::common::box3f &bounds,
-                                                 const int32_t primID)
-  {
-    MCDDAVolumeAccel<UMeshCUBQLSampler>::boundsProg(geomData,bounds,primID);
-  }
-
-  OPTIX_INTERSECT_PROGRAM(UMesh_CUBQL_MCDDA_Isec)()
-  {
-    MCDDAVolumeAccel<UMeshCUBQLSampler>::isProg();
-  }
-  
-  OPTIX_CLOSEST_HIT_PROGRAM(UMesh_CUBQL_MCDDA_CH)()
-  {
-    MCDDAVolumeAccel<UMeshCUBQLSampler>::chProg();
-    /* nothing - already all set in isec */
-  }
-  
+  RTC_EXPORT_USER_GEOM(UMeshMC,UMeshMC::DD,UMeshMC_Programs,false,false);
 }
+
+
 

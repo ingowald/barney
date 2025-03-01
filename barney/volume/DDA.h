@@ -23,72 +23,78 @@
 
 // #define DDA_FAST 1
 
-namespace barney {
+namespace BARNEY_NS {
 
   namespace dda {
     using namespace owl::common;
 
 #if DDA_FAST
-    inline __device__ int get(vec3i v, int dim)
+    inline __rtc_device int get(vec3i v, int dim)
     {
       return dim == 0 ? v.x : (dim == 1 ? v.y : v.z);
     }
-    inline __device__ float get(vec3f v, int dim)
+    inline __rtc_device float get(vec3f v, int dim)
     {
       return dim == 0 ? v.x : (dim == 1 ? v.y : v.z);
     }
 
-    inline __device__ void set(vec3f &vec, int dim, float value)
+    inline __rtc_device void set(vec3f &vec, int dim, float value)
     {
       vec.x = (dim == 0) ? value : vec.x;
       vec.y = (dim == 1) ? value : vec.y;
       vec.z = (dim == 2) ? value : vec.z;
     }
   
-    inline __device__ void set(vec3i &vec, int dim, int value)
+    inline __rtc_device void set(vec3i &vec, int dim, int value)
     {
       vec.x = (dim == 0) ? value : vec.x;
       vec.y = (dim == 1) ? value : vec.y;
       vec.z = (dim == 2) ? value : vec.z;
     }
 
-    inline __device__ int smallestDim(vec3f v)
+    inline __rtc_device int smallestDim(vec3f v)
     {
       return v.x <= min(v.y,v.z) ? 0 : (v.y <= min(v.x,v.z) ? 1 : 2);
     }
 #else
-    inline __device__ int   get(vec3i v, int dim) { return v[dim]; }
-    inline __device__ float get(vec3f v, int dim) { return v[dim]; }
+    inline __rtc_device int   get(vec3i v, int dim) { return v[dim]; }
+    inline __rtc_device float get(vec3f v, int dim) { return v[dim]; }
 
-    inline __device__ void set(vec3f &vec, int dim, float value) { vec[dim] = value; }
-    inline __device__ void set(vec3i &vec, int dim, int   value) { vec[dim] = value; }
+    inline __rtc_device void set(vec3f &vec, int dim, float value) { vec[dim] = value; }
+    inline __rtc_device void set(vec3i &vec, int dim, int   value) { vec[dim] = value; }
 
-    inline __device__ int smallestDim(vec3f v)
+    inline __rtc_device int smallestDim(vec3f v)
     {
       return arg_min(v);
     }
 #endif
 
-    inline __device__ vec3f floor(vec3f v)
+    inline __rtc_device vec3f floor(vec3f v)
     {
       return { floorf(v.x),floorf(v.y),floorf(v.z) };
     }
   
     template<typename Lambda>
-    inline __device__ void dda3(vec3f org,
+    inline __rtc_device void dda3(vec3f org,
                                 vec3f dir,
                                 float tMax,
                                 vec3ui gridSize,
                                 const Lambda &lambda,
                                 bool dbg)
-    {    
+    {
       const box3f bounds = { vec3f(0.f), vec3f(gridSize) };
       const vec3f floor_org = floor(org);
       const vec3f floor_org_plus_one = floor_org + vec3f(1.f);
       const vec3f rcp_dir     = rcp(dir);
       const vec3f abs_rcp_dir = abs(rcp(dir));
+      // if (dbg) {
+      //   printf("dir %f %f %f, rcp %f %f %f abs %f %f %f\n",
+      //          dir.x,dir.y,dir.z,
+      //          rcp_dir.x,rcp_dir.y,rcp_dir.z,
+      //          abs_rcp_dir.x,abs_rcp_dir.y,abs_rcp_dir.z);
+      // }
       const vec3f f_size = vec3f(gridSize);
-    
+      
       vec3f t_lo = (vec3f(0.f) - org) * rcp(dir);
       vec3f t_hi = (f_size     - org) * rcp(dir);
       vec3f t_nr = min(t_lo,t_hi);
@@ -97,19 +103,19 @@ namespace barney {
         if (org.x < 0.f || org.x > f_size.x)
           // ray passes by the volume ...
           return;
-        t_nr.x = -CUDART_INF_F; t_nr.x = +CUDART_INF_F;
+        t_nr.x = -BARNEY_INF; t_nr.x = +BARNEY_INF;
       }
       if (dir.y == 0.f) {
         if (org.y < 0.f || org.y > f_size.y)
           // ray passes by the volume ...
           return;
-        t_nr.y = -CUDART_INF_F; t_nr.y = +CUDART_INF_F;
+        t_nr.y = -BARNEY_INF; t_nr.y = +BARNEY_INF;
       }
       if (dir.z == 0.f) {
         if (org.z < 0.f || org.z > f_size.z)
           // ray passes by the volume ...
           return;
-        t_nr.z = -CUDART_INF_F; t_nr.z = +CUDART_INF_F;
+        t_nr.z = -BARNEY_INF; t_nr.z = +BARNEY_INF;
       }
     
       float ray_t0 = max(0.f,reduce_max(t_nr));
@@ -131,7 +137,8 @@ namespace barney {
       //          f_cell_end.x,
       //          f_cell_end.y,
       //          f_cell_end.z);
-    
+
+      
       vec3f t_step = abs(rcp_dir);
       // if (dbg)
       //   printf("t_step %f %f %f\n",
@@ -141,13 +148,13 @@ namespace barney {
       vec3f t_next
         = {
         ((dir.x == 0.f)
-         ? CUDART_INF_F
+         ? BARNEY_INF
          : (abs(f_cell_end.x - org_in_volume.x) * t_step.x)),
         ((dir.y == 0.f)
-         ? CUDART_INF_F
+         ? BARNEY_INF
          : (abs(f_cell_end.y - org_in_volume.y) * t_step.y)),
         ((dir.z == 0.f)
-         ? CUDART_INF_F
+         ? BARNEY_INF
          : (abs(f_cell_end.z - org_in_volume.z) * t_step.z))
       };
       // if (dbg)

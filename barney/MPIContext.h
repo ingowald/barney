@@ -19,19 +19,20 @@
 #include "barney/Context.h"
 #include "barney/common/MPIWrappers.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! barney context for collaborative MPI-parallel rendering */
   struct MPIContext : public Context
   {
-    MPIContext(const mpi::Comm &worldComm,
-               const mpi::Comm &workersComm,
+    MPIContext(const barney_api::mpi::Comm &worldComm,
+               const barney_api::mpi::Comm &workersComm,
                bool isActiveWorker,
                const std::vector<int> &dataGroupIDs,
                const std::vector<int> &gpuIDs);
 
     /*! create a frame buffer object suitable to this context */
-    FrameBuffer *createFB(int owningRank) override;
+    std::shared_ptr<barney_api::FrameBuffer>
+    createFrameBuffer(int owningRank) override;
 
     void render(Renderer    *renderer,
                 GlobalModel *model,
@@ -60,8 +61,8 @@ namespace barney {
     int numDifferentModelSlots = -1;
     int numTimesForwarded = 0;
     
-    mpi::Comm world;
-    mpi::Comm workers;
+    barney_api::mpi::Comm world;
+    barney_api::mpi::Comm workers;
     int numWorkers;
   };
 

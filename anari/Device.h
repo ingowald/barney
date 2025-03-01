@@ -99,7 +99,7 @@ namespace barney_device {
     /////////////////////////////////////////////////////////////////////////////
 
     BarneyDevice();
-    BarneyDevice(ANARILibrary);
+    BarneyDevice(ANARILibrary library, const std::string &subType="default");
     ~BarneyDevice() override;
 
   private:
@@ -112,6 +112,13 @@ namespace barney_device {
     BarneyGlobalState *deviceState() const;
 
     bool m_initialized{false};
+    
+    /*! allows for setting which gpu to use. must be set before the
+        first commit, and should not be changed after that. '-2' means
+        'leave it to barney', '-1' means 'use cpu', any value >= 0
+        means 'use this specific gpu */
+    int  m_cudaDevice = -2;
+    const std::string deviceType = "default";
   };
 
 } // namespace barney_device

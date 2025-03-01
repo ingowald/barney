@@ -16,6 +16,7 @@
 
 #pragma once
 
+
 #include "barney/common/barney-common.h"
 #ifndef BARNEY_MPI
 # pragma error(FATAL "should not include mpi.h unless from barney_mpi")
@@ -24,9 +25,9 @@
 #include <stdexcept>
 
 #define BN_MPI_CALL(fctCall)                                                 \
-    { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney::mpi::Exception(__PRETTY_FUNCTION__,rc); }
+  { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney_api::mpi::Exception(__PRETTY_FUNCTION__,rc); }
     
-namespace barney {
+namespace barney_api {
   namespace mpi {
 
     inline std::string mpiErrorString(int rc)
