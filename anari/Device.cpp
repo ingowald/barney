@@ -337,35 +337,46 @@ namespace barney_device {
 
     try {
 #if BARNEY_MPI
-      int mpiInitialized = 0;
-      MPI_Initialized(&mpiInitialized);
-      if (!mpiInitialized)
-        MPI_Init(nullptr, nullptr);
-      int rank, size;
-      MPI_Comm_rank(comm, &rank);
-      MPI_Comm_size(comm, &size);
+      if (comm != 0) {
+        int mpiInitialized = 0;
+        MPI_Initialized(&mpiInitialized);
+        if (!mpiInitialized)
+          MPI_Init(nullptr, nullptr);
+        int rank, size;
+        MPI_Comm_rank(comm, &rank);
+        MPI_Comm_size(comm, &size);
 
-      state.context
-        = bnMPIContextCreate(comm, &rank, 1, nullptr, 0);
+        if (m_cudaDevice >= 0)
+          state.context
+            = bnMPIContextCreate(comm, &rank, 1, &m_cudaDevice,1);
+        else
+          state.context
+            = bnMPIContextCreate(comm, &rank, 1, nullptr, 0);
 
-      std::cout << "#banari: creating barney *MPI* context (rank #" << rank << " out of " << size << " total ranks)" << std::endl;
-
-      auto &info = state.bnInfo;
-      bnMPIQueryHardware(&info, MPI_COMM_WORLD);
-      reportMessage(ANARI_SEVERITY_DEBUG, "BNHardwareInfo:");
-      reportMessage(ANARI_SEVERITY_DEBUG, "    numRanks: %i", info.numRanks);
-      reportMessage(ANARI_SEVERITY_DEBUG, "    numHosts: %i", info.numHosts);
-      reportMessage(
-                    ANARI_SEVERITY_DEBUG, "    numGPUsThisRank: %i", info.numGPUsThisRank);
-      reportMessage(
-                    ANARI_SEVERITY_DEBUG, "    numGPUsThisHost: %i", info.numGPUsThisHost);
-      reportMessage(
-                    ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
-      reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
+        auto &info = state.bnInfo;
+        bnMPIQueryHardware(&info, MPI_COMM_WORLD);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "BNHardwareInfo:");
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numRanks: %i", info.numRanks);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numHosts: %i", info.numHosts);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numGPUsThisRank: %i", info.numGPUsThisRank);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numGPUsThisHost: %i", info.numGPUsThisHost);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
+      } else
+        reportMessage
+          (ANARI_SEVERITY_DEBUG,
+           "app passed null communicator, falling back to local rendering");
 #else
-      // std::cout << "#banari: creating *non-mpi* barney context" << std::endl;
       if (m_cudaDevice >= 0)
-        std::cout << "#banari: using cuda device #" << m_cudaDevice << std::endl;
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "using cuda device #%i", m_cudaDevice);
       int zero = 0;
       if (m_cudaDevice >= 0)
         state.context = bnContextCreate(&zero,1,&m_cudaDevice,1);
