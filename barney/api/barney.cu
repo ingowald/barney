@@ -905,6 +905,12 @@ namespace barney_api {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
+    if (getenv("BARNEY_FORCE_CPU")) {
+	    static int negOne = -1;
+	    _gpuIDs = &negOne;
+	    numGPUs = 1;
+    }
+
     try {
       // ------------------------------------------------------------------
       // create vector of data groups; if actual specified by user we
