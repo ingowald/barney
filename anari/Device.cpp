@@ -223,10 +223,44 @@ namespace barney_device {
 
   // Helper/other functions and data members ////////////////////////////////////
 
+  std::vector<std::string> splitString(std::string s, const char delim)
+  {
+    std::vector<std::string> res;
+    while (true) {
+      int pos = s.find(delim);
+      if (pos == s.npos)
+        break;
+      res.push_back(s.substr(0,pos));
+      s = s.substr(pos+1);
+    }
+    res.push_back(s);
+    return res;
+  }
+  
   BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
     : helium::BaseDevice(l),
       deviceType(subType)
   {
+    std::vector<std::string> subTypeFlags = splitString(subType,',');
+    for (auto flag : subTypeFlags) {
+      if (flag == "cpu")
+        { m_cudaDevice = -1; continue; }
+#if BARNEY_MPI
+      if (flag == "local")
+        { comm = 0; continue; }
+      if (flag == "default" || flag == "mpi")
+        { comm = MPI_COMM_WORLD; continue; }
+#endif
+      std::stringstream ss;
+      ss << "un-recognized feature '%s' on device subtype";
+      reportMessage(ANARI_SEVERITY_WARNING,ss.str().c_str());
+    }
+    
+    int last = 0;
+    while (true) {
+    }
+
+    
     m_state = std::make_unique<BarneyGlobalState>(this_device());
     deviceCommitParameters();
   }
