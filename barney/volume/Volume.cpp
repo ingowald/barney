@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,18 +33,6 @@ namespace BARNEY_NS {
     xf.set(domain,values,baseDensity);
   }
 
-  // OWLContext VolumeAccel::getOWL() const
-  // { return sf->getOWL(); }
-
-  //   void fillDD(Vo::DD &dd,
-  //               rtc::Device *device);
-  // // void VolumeAccel::setVariables(OWLGeom geom)
-  // {
-  //   // owlGeomSet3fv(geom,"domain,lower",&volume->domain.lower.x);
-  //   // owlGeomSet3fv(geom,"domain,upper",&volume->domain.upper.x);
-  //   getXF()->setVariables(geom);
-  // }
-
   inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
   { assert(s); return s; }
   
@@ -54,7 +42,8 @@ namespace BARNEY_NS {
   Volume::Volume(ScalarField::SP sf)
     : barney_api::Volume(sf->context),
       sf(sf),
-      xf((Context*)sf->context,sf->devices)
+      xf((Context*)sf->context,sf->devices),
+      devices(sf->devices)
   {
     accel = sf->createAccel(this);
     perLogical.resize(devices->numLogical);

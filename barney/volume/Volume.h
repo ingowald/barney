@@ -96,7 +96,9 @@ namespace BARNEY_NS {
     { return "Volume{}"; }
 
     static SP create(ScalarField::SP sf)
-    { return std::make_shared<Volume>(sf); }
+    {
+      return std::make_shared<Volume>(sf);
+    }
     
     /*! (re-)build the accel structure for this volume, probably after
         changes to transfer functoin (or later, scalar field) */

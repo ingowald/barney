@@ -49,7 +49,9 @@ namespace BARNEY_NS {
     { /* nothing to do */ }
   };
   
-  RTC_EXPORT_USER_GEOM(StructuredData,StructuredData::DD,MCAccel_Structured_Programs,false,false);
+  RTC_EXPORT_USER_GEOM(StructuredMC,
+                       typename MCVolumeAccel<StructuredDataSampler>::DD,
+                       MCAccel_Structured_Programs,false,false);
 }
 
 

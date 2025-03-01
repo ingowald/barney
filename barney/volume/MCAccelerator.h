@@ -33,9 +33,6 @@ namespace BARNEY_NS {
       MCGrid::DD            mcGrid;
     };
 
-    // static rtc::GeomType *createGeomType(rtc::Device *device,
-    //                                      const void *cbData);
-    
     struct PLD {
       rtc::Geom  *geom  = 0;
       rtc::Group *group = 0;
@@ -99,9 +96,6 @@ namespace BARNEY_NS {
       if (!pld->geom) {
         rtc::GeomType *gt
           = device->geomTypes.get(creatorFct);
-        // MCVolumeAccel<SFSampler>::createGeomType,
-        //                           this);
-
         // build a single-prim geometry, that single prim is our
         // entire MC/DDA grid
         pld->geom = gt->createGeom();
@@ -180,20 +174,32 @@ namespace BARNEY_NS {
     vec3f mcGridOrigin  = self.mcGrid.gridOrigin;
     vec3f mcGridSpacing = self.mcGrid.gridSpacing;
 
+    // printf("grid %f %f %f / %f %f %f\n",
+    //        mcGridOrigin.x,
+    //        mcGridOrigin.y,
+    //        mcGridOrigin.z,
+    //        mcGridSpacing.x,
+    //        mcGridSpacing.y,
+    //        mcGridSpacing.z);
     vec3f dda_org = obj_org;
     vec3f dda_dir = obj_dir;
 
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
+    // printf("isec\n");
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
               {
+                // printf("dda %i %i %i \n",
+                //        cellIdx.x,
+                //        cellIdx.y,
+                //        cellIdx.z);
                 const float majorant = self.mcGrid.majorant(cellIdx);
-
+                
                 if (majorant == 0.f) return true;
-
+                
                 vec4f   sample = 0.f;
                 range1f tRange = {t0,min(t1,ray.tMax)};
                 if (!Woodcock::sampleRange(sample,self.volume,
@@ -201,7 +207,7 @@ namespace BARNEY_NS {
                                            tRange,majorant,ray.rngSeed,
                                            ray.dbg)) 
                   return true;
-
+                
                 vec3f P = ray.org + tRange.upper*ray.dir;
                 ray.setVolumeHit(P,
                                  tRange.upper,

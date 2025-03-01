@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -129,59 +129,6 @@ namespace BARNEY_NS {
     // do whatever needs doing with the latest finalized tiles
     // ------------------------------------------------------------------
     fb->finalizeFrame();
-//     // ------------------------------------------------------------------
-//     // tell all GPUs to write their final pixels
-//     // ------------------------------------------------------------------
-//     // ***NO*** active device here
-//     LocalFB *localFB = (LocalFB*)fb;
-//     localFB->finalize();
-// //     localFB->ownerGatherFinalTiles();
-// //     TiledFB::writeFinalPixels(
-// // # if DENOISE
-// // #  if DENOISE_OIDN
-// //                               fb->denoiserInput,
-// //                               fb->denoiserAlpha,
-// // #  else
-// //                               fb->denoiserInput,
-// // #  endif
-// // # else
-// //                               localFB->finalFB,
-// // # endif
-// //                               localFB->finalDepth,
-// // # if DENOISE
-// //                               fb->denoiserNormal,
-// // #endif
-// //                               localFB->numPixels,
-// //                               localFB->rank0gather.finalTiles,
-// //                               localFB->rank0gather.tileDescs,
-// //                               localFB->rank0gather.numActiveTiles,
-// //                               fb->showCrosshairs);
-//     // ------------------------------------------------------------------
-//     // wait for all GPUs to complete, so pixels are all written before
-//     // we return and/or copy to app
-//     // ------------------------------------------------------------------
-//     for (int localID = 0; localID < devices.size(); localID++)
-//       devices[localID]->launch_sync();
-
-
-// # if DENOISE
-//     fb->denoise();
-// #endif
-
-    // // ------------------------------------------------------------------
-    // // copy final frame buffer to app's frame buffer memory
-    // // ------------------------------------------------------------------
-    // if (fb->hostFB && fb->finalFB) 
-    //   BARNEY_CUDA_CALL(Memcpy(fb->hostFB,fb->finalFB,
-    //                         fb->numPixels.x*fb->numPixels.y*sizeof(uint32_t),
-    //                         cudaMemcpyDefault));
-    // if (fb->hostDepth && fb->finalDepth)
-    //   BARNEY_CUDA_CALL(Memcpy(fb->hostDepth,fb->finalDepth,
-    //                         fb->numPixels.x*fb->numPixels.y*sizeof(float),
-    //                         cudaMemcpyDefault));
-
-    // for (auto dev : devices) dev->sync();
-
   }
 
 }
