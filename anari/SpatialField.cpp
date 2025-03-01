@@ -99,7 +99,7 @@ BNScalarField StructuredRegularField::createBarneyScalarField(
                                          dims.z,
                                          m_data->data());
   bnSetObject(sf, "textureData", td);
-  bnRelease(textureData);
+  bnRelease(td);
 #else
   BNTexture3D texture = bnTexture3DCreate(context,
       0,
