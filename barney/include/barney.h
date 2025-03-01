@@ -402,6 +402,12 @@ BNTextureData bnTextureData2DCreate(BNContext context,
                                     BNDataType texelFormat,
                                     int width, int height,
                                     const void *items);
+BARNEY_API
+BNTextureData bnTextureData3DCreate(BNContext context,
+                                    int whichSlot,
+                                    BNDataType texelFormat,
+                                    int width, int height, int depth,
+                                    const void *items);
 
 BARNEY_API
 BNLight bnLightCreate(BNContext context,
