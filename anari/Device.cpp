@@ -264,8 +264,8 @@ namespace barney_device {
     : helium::BaseDevice(l),
       deviceType(subType)
   {
-    anari::DeviceImpl::m_defaultStatusCB = default_statusFunc;
-    anari::DeviceImpl::m_defaultStatusCBUserPtr = nullptr;
+    // anari::DeviceImpl::m_defaultStatusCB = default_statusFunc;
+    // anari::DeviceImpl::m_defaultStatusCBUserPtr = nullptr;
     
     std::vector<std::string> subTypeFlags = splitString(subType,',');
     for (auto flag : subTypeFlags) {
