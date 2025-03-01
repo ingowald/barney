@@ -342,10 +342,11 @@ namespace barney_device {
       if (!mpiInitialized)
         MPI_Init(nullptr, nullptr);
       int rank, size;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      MPI_Comm_size(MPI_COMM_WORLD, &size);
+      MPI_Comm_rank(comm, &rank);
+      MPI_Comm_size(comm, &size);
 
-      state.context = bnMPIContextCreate(MPI_COMM_WORLD, &rank, 1, nullptr, 0);
+      state.context
+        = bnMPIContextCreate(comm, &rank, 1, nullptr, 0);
 
       std::cout << "#banari: creating barney *MPI* context (rank #" << rank << " out of " << size << " total ranks)" << std::endl;
 
