@@ -160,7 +160,6 @@ namespace BARNEY_NS {
   {
     if (member == "textureData") {
       scalars = value->as<TextureData>();
-      PRINT((int*)scalars.get());
       BNTextureAddressMode addressModes[3] = {
         BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP
       };

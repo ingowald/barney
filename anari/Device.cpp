@@ -328,8 +328,9 @@ namespace barney_device {
                     ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
       reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
 #else
-      std::cout << "#banari: creating *non-mpi* barney context" << std::endl;
-      std::cout << "#banari: using cuda device #" << m_cudaDevice << std::endl;
+      // std::cout << "#banari: creating *non-mpi* barney context" << std::endl;
+      if (m_cudaDevice >= 0)
+        std::cout << "#banari: using cuda device #" << m_cudaDevice << std::endl;
       int zero = 0;
       if (m_cudaDevice >= 0)
         state.context = bnContextCreate(&zero,1,&m_cudaDevice,1);
