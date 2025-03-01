@@ -90,6 +90,17 @@ BNScalarField StructuredRegularField::createBarneyScalarField(
   auto dims = m_data->size();
 
   BNScalarField sf = bnScalarFieldCreate(context, 0, "structured");
+#if 1
+  BNTexture3D td = bnTextureDataCreate(context,
+                                       0,
+                                       barneyType,
+                                       dims.x,
+                                       dims.y,
+                                       dims.z,
+                                       m_data->data());
+  bnSetObject(sf, "textureData", td);
+  bnRelease(texture);
+#else
   BNTexture3D texture = bnTexture3DCreate(context,
       0,
       barneyType,
@@ -101,6 +112,7 @@ BNScalarField StructuredRegularField::createBarneyScalarField(
       BN_TEXTURE_CLAMP);
   bnSetObject(sf, "texture", texture);
   bnRelease(texture);
+#endif
   bnSet3i(sf, "dims", dims.x, dims.y, dims.z);
   bnSet3fc(sf, "gridOrigin", m_origin);
   bnSet3fc(sf, "gridSpacing", m_spacing);
