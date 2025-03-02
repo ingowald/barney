@@ -287,7 +287,7 @@ if (BARNEY_BACKEND_EMBREE)
 
   if (BARNEY_MPI)
     add_library(barney_mpi_embree ${MPI_SOURCES})
-    target_link_libraries(barney_mpi_embree PUBLIC barney_embree MPI::MPI_CXX)
+    target_link_libraries(barney_mpi_embree PRIVATE barney_embree MPI::MPI_CXX)
   endif()
 
   # # ----------- barney_embree -----------
