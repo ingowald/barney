@@ -272,12 +272,15 @@ if (BARNEY_BACKEND_EMBREE)
   add_library(barney_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
   target_link_libraries(barney_embree_programs PUBLIC barney_config barney_rtc_embree)
   target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
+  set_library_properties(barney_embree_programs)
 
   add_library(barney_embree STATIC ${HOST_SOURCES})
   target_link_libraries(barney_embree PUBLIC barney_config barney_rtc_embree)
   target_link_libraries(barney_embree PRIVATE
     barney_embree_programs
+    barney_config
     $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
+  set_library_properties(barney_embree)
 
   if (BARNEY_MPI)
     add_library(barney_mpi_embree ${MPI_SOURCES})

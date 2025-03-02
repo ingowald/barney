@@ -271,10 +271,16 @@ namespace barney_device {
     for (auto flag : subTypeFlags) {
       if (flag == "cpu")
         { m_cudaDevice = -1; continue; }
+      if (flag == "default") {
+#if BARNEY_MPI
+        comm = MPI_COMM_WORLD; 
+#endif
+        continue;
+      }
 #if BARNEY_MPI
       if (flag == "local")
         { comm = 0; continue; }
-      if (flag == "default" || flag == "mpi")
+      if (flag == "mpi")
         { comm = MPI_COMM_WORLD; continue; }
 #endif
       std::cout << "un-recognized feature '" << flag << "' on device subtype" << std::endl;
