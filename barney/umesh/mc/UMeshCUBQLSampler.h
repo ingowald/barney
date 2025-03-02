@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,14 +17,13 @@
 #pragma once
 
 #include "barney/umesh/common/UMeshField.h"
-#include "barney/volume/MCAccelerator.h"
 #include "barney/common/CUBQL.h"
 #include "cuBQL/traversal/fixedBoxQuery.h"
 
-namespace barney {
-
+namespace BARNEY_NS {
+  
   /*! a umesh scalar field, with a CUBQL bvh sampler */
-  struct UMeshCUBQLSampler {
+  struct UMeshCUBQLSampler : public ScalarFieldSampler {
 #if 1
     using bvh_t  = cuBQL::BinaryBVH<float,3>;
 #else
@@ -34,83 +33,86 @@ namespace barney {
     using node_t = typename bvh_t::Node;
     
     struct DD : public UMeshField::DD {
-      inline __device__ float sample(vec3f P, bool dbg = false) const;
-
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        UMeshField::DD::addVars(vars,base);
-        vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
-      }
-  
+      inline __rtc_device float sample(vec3f P, bool dbg = false) const;
+      
       node_t  *bvhNodes;
     };
-
-    struct Host {
-      Host(ScalarField *sf) : mesh((UMeshField *)sf) {}
-
-      /*! builds the string that allows for properly matching optix
-          device progs for this type */
-      inline std::string getTypeString() const { return "UMesh_CUBQL"; }
-
-      void build(bool full_rebuild);
-
-      const std::vector<Device::SP> &getDevices();
-      DevGroup *getDevGroup();
-      
-      void setVariables(OWLGeom geom)
-      {
-        owlGeomSetBuffer(geom,"sampler.bvhNodes",bvhNodesBuffer);
-      }
-      
-      OWLBuffer   bvhNodesBuffer = 0;
-      UMeshField *const mesh;
+    DD getDD(Device *device);
+    
+    /*! per-device data - parent store the umesh, we just store the
+      bvh nodes */
+    struct PLD {
+      node_t *bvhNodes = 0;
+      // bvh_t bvh;
     };
-  };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+    
+    /*! for-cubql traversal state that we can use with a cubql
+      traversal call back */
+    struct Traversal {
+      inline __rtc_device Traversal(const UMeshCUBQLSampler::DD *const mesh, bool dbg);
+      inline __rtc_device bool leaf(vec3f P, int offset, int count);
+      
+      const UMeshCUBQLSampler::DD *const mesh;
+      float retVal = NAN;
+      bool const dbg;
+    };
+    
+    UMeshCUBQLSampler(UMeshField *mesh);
+    
+    /*! builds the string that allows for properly matching optix
+      device progs for this type */
+    inline static std::string typeName() { return "UMesh_CUBQL"; }
 
+    void build() override;
 
-  /*! per-traversal data for the cuBQLTrave callback */
-  struct UMeshSamplerPTD {
-    inline __device__ UMeshSamplerPTD(const UMeshCUBQLSampler::DD *mesh, bool dbg)
-      : mesh(mesh), dbg(dbg)
-    {}
-    inline __device__ bool leaf(vec3f P, int offset, int count)
-    {
-      // if (dbg) printf("cubql leaf P %f %f %f ofs %i cnt %i\n",
-      //                 P.x,P.y,P.z,offset,count);
-      for (int i=0;i<count;i++) {
-        auto elt = mesh->elements[offset+i];
-        if (mesh->eltScalar(retVal,elt,P,dbg))
-          return false;
-      }
-      return true;
-    }
-
-    const UMeshCUBQLSampler::DD *const mesh;
-    float retVal = NAN;
-    bool const dbg;
+    UMeshField *const mesh;
+    const DevGroup::SP devices;
   };
   
-  inline __device__
+  inline __rtc_device
+  bool UMeshCUBQLSampler::Traversal::leaf(vec3f P, int offset, int count)
+  {
+    // if (dbg) printf("at leaf %i %i\n",offset,count);
+    for (int i=0;i<count;i++) {
+      auto elt = mesh->elements[offset+i];
+      // if (dbg) printf("elt type %i id %i, mesh %p\n",
+      //                 elt.type,elt.ofs0,mesh);
+      if (mesh->eltScalar(retVal,elt,P,dbg))
+        return false;
+    }
+    return true;
+  }
+
+  inline __rtc_device
+  UMeshCUBQLSampler::Traversal::Traversal(const UMeshCUBQLSampler::DD *const mesh,
+                                          bool dbg)
+    : mesh(mesh), dbg(dbg)
+  {}
+  
+  inline __rtc_device
   float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
-    UMeshSamplerPTD ptd(this,dbg);
-    //    traverseCUQBL<UMeshSamplerPTD>(bvhNodes,ptd,P,dbg);
-    typename bvh_t::box_t box; box.lower = box.upper = P;
+    UMeshCUBQLSampler::Traversal traversal(this,dbg);
+    typename bvh_t::box_t box; box.lower = box.upper = to_cubql(P);
     bvh_t bvh;
     bvh.nodes = bvhNodes;
     bvh.primIDs = nullptr;
-
-    auto lambda = [&](const uint32_t *primIDs, int numPrims)
+    
+    auto lambda = [&]
+      // __rtc_device
+      (const uint32_t *primIDs, int numPrims)
     {
-      if (ptd.leaf(P,primIDs - bvh.primIDs, numPrims))
+      if (traversal.leaf(P,int(primIDs - bvh.primIDs), numPrims))
         return CUBQL_CONTINUE_TRAVERSAL;
       else
         return CUBQL_TERMINATE_TRAVERSAL;
     };
     cuBQL::fixedBoxQuery::forEachLeaf(lambda,bvh,box);
-    return ptd.retVal;
+    return traversal.retVal;
   }
   
-}
+} // ::barney
 
 

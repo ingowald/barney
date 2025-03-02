@@ -17,20 +17,21 @@
 #pragma once
 
 #include "barney/ModelSlot.h"
-// #include "barney/volume/MCAccelerator.h"
 /* all routines for point-element sampling/intersection - shold
    logically be part of this file, but kept in separate file because
    these were mostly imported from oepnvkl */
 #include "barney/umesh/common/ElementIntersection.h"
+#include "barney/volume/MCAccelerator.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Element {
-    typedef enum { TET=0, PYR, WED, HEX// , GRID
+    typedef enum {
+      TET=0, PYR, WED, HEX// , GRID
     } Type;
     
-    inline __both__ Element() {}
-    inline __both__ Element(int ofs0, Type type)
+    inline __rtc_device Element() {}
+    inline __rtc_device Element(int ofs0, Type type)
       : type(type), ofs0(ofs0)
     {}
     uint32_t ofs0:29;
@@ -41,172 +42,174 @@ namespace barney {
   {
     typedef std::shared_ptr<UMeshField> SP;
 
+    virtual ~UMeshField()
+    {}
+    
     /*! helper class for representing an N-long integer tuple, to
        represent wedge, pyramid, hex, etc elemnet indices */
     template<int N>
     struct ints { int v[N];
-      inline __both__ int &operator[](int i)      { return v[i]; }
-      inline __both__ int operator[](int i) const { return v[i]; }
+      inline __rtc_device int &operator[](int i)      { return v[i]; }
+      inline __rtc_device int operator[](int i) const { return v[i]; }
     };
     /*! device-data for a unstructured-mesh scalar field, containing
         all device-side pointers and function to access this field and
         sample/evaluate its elemnets */
     struct DD : public ScalarField::DD {
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
       
-      inline __both__ box4f eltBounds(Element element) const;
-      inline __both__ box4f tetBounds(int primID) const;
-      inline __both__ box4f pyrBounds(int primID) const;
-      inline __both__ box4f wedBounds(int primID) const;
-      inline __both__ box4f hexBounds(int primID) const;
-      // inline __both__ box4f gridBounds(int primID) const;
+      inline __rtc_device box4f eltBounds(Element element) const;
+      inline __rtc_device box4f tetBounds(int ofs0) const;
+      inline __rtc_device box4f pyrBounds(int ofs0) const;
+      inline __rtc_device box4f wedBounds(int ofs0) const;
+      inline __rtc_device box4f hexBounds(int ofs0) const;
+      // inline __rtc_device box4f gridBounds(int ofs0) const;
 
       /* compute scalar of given umesh element at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool eltScalar(float &retVal, Element elt, vec3f P, bool dbg = false) const;
+      inline __rtc_device bool eltScalar(float &retVal, Element elt, vec3f P, bool dbg = false) const;
       
       /* compute scalar of given tet in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool tetScalar(float &retVal, int primID, vec3f P, bool dbg = false) const;
+      inline __rtc_device bool tetScalar(float &retVal, int ofs0, vec3f P, bool dbg = false) const;
       
       /* compute scalar of given pyramid in umesh, at point P, and
          return that in 'retVal'. returns true if P is inside the
          elemnt, false if outside (in which case retVal is not
          defined) */
-      inline __both__ bool pyrScalar(float &retVal, int primID, vec3f P) const;
+      inline __rtc_device bool pyrScalar(float &retVal, int ofs0, vec3f P) const;
       
       /* compute scalar of given wedge in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__ bool wedScalar(float &retVal, int primID, vec3f P) const;
+      inline __rtc_device bool wedScalar(float &retVal, int ofs0, vec3f P) const;
       
       /* compute scalar of given hex in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      inline __both__
-      bool hexScalar(float &retVal, int primID, vec3f P, bool dbg=false) const;
+      inline __rtc_device
+      bool hexScalar(float &retVal, int ofs0, vec3f P, bool dbg=false) const;
       
       /* compute scalar of given grid in umesh, at point P, and return
          that in 'retVal'. returns true if P is inside the elemnt,
          false if outside (in which case retVal is not defined) */
-      // inline __both__ bool gridScalar(float &retVal, int primID, vec3f P) const;
+      // inline __rtc_device bool gridScalar(float &retVal, int ofs0, vec3f P) const;
       
-      const float4     *vertices;
-      const int        *indices;
-      const Element    *elements;
-      int               numElements;
+      const rtc::float4 *vertices;
+      const int         *indices;
+      const Element     *elements;
+      int                numElements;
     };
 
-    // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    void setVariables(OWLGeom geom) override;
-    
     /*! build *initial* macro-cell grid (ie, the scalar field min/max
       ranges, but not yet the majorants) over a umesh */
     void buildInitialMacroCells(MCGrid &grid);
 
-    void buildMCs(MCGrid &macroCells) override;
-    
     /*! computes, on specified device, the bounding boxes and - if
       d_primRanges is non-null - the primitmives ranges. d_primBounds
       and d_primRanges (if non-null) must be pre-allocated and
       writeaable on specified device */
-    void computeElementBBs(const Device::SP &device,
-                           box3f *d_primBounds,
+    void computeElementBBs(Device  *device,
+                           box3f   *d_primBounds,
                            range1f *d_primRanges=0);
     
-    UMeshField(Context *context, int slot,
-               std::vector<vec4f>   &vertices,
-               std::vector<int>     &indices,
-               std::vector<Element> &elements,
-               const box3f &domain);
+    UMeshField(Context *context,
+               const DevGroup::SP &devices);
 
-    DD getDD(const Device::SP &device);
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool setData(const std::string &member,
+                 const std::shared_ptr<Data> &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
 
-    static ScalarField::SP create(Context *context, int slot,
-                                  const vec4f   *vertices, int numVertices,
-                                  const int     *indices,  int numIndices,
-                                  const int     *elementOffsets,
-                                  int      numElements,
-                                  const box3f &domain);
     
+    DD getDD(Device *device);
+
+    void buildMCs(MCGrid &macroCells) override;
+
     VolumeAccel::SP createAccel(Volume *volume) override;
 
     /*! returns part of the string used to find the optix device
         programs that operate on this type */
-    std::string getTypeString() const { return "UMesh"; };
-    
-    std::vector<vec4f>      vertices;
-    std::vector<int>        indices;
-    std::vector<Element>    elements;
-    OWLBuffer verticesBuffer   = 0;
-    OWLBuffer indicesBuffer    = 0;
-    OWLBuffer elementsBuffer   = 0;
+    static std::string typeName() { return "UMesh"; };
+
+    /*! @{ set by the user, as paramters */
+    PODData::SP vertices;
+    PODData::SP indices;
+    PODData::SP elementOffsets;
+    int numElements;
+    /*! @} */
+    /* internal-format 'elements' that encode both elemne type and
+       offset in the indices array; each element is self-contained so
+       can be re-ordered at will */
+    // std::vector<Element>    elements;
+    struct PLD {
+      box3f   *pWorldBounds = 0;
+      Element *elements     = 0;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
   };
   
   // ==================================================================
   // IMPLEMENTATION
   // ==================================================================
   
-  inline __both__
+  inline __rtc_device
   box4f UMeshField::DD::tetBounds(int ofs0) const
   {
     const vec4i indices = *(const vec4i*)&this->indices[ofs0];
     return box4f()
-      .including(make_vec4f(vertices[indices.x]))
-      .including(make_vec4f(vertices[indices.y]))
-      .including(make_vec4f(vertices[indices.z]))
-      .including(make_vec4f(vertices[indices.w]));
+      .including(rtc::load(vertices[indices.x]))
+      .including(rtc::load(vertices[indices.y]))
+      .including(rtc::load(vertices[indices.z]))
+      .including(rtc::load(vertices[indices.w]));
   }
 
-  inline __both__
+  inline __rtc_device
   box4f UMeshField::DD::pyrBounds(int ofs0) const
   {
     UMeshField::ints<5> indices = *(const UMeshField::ints<5> *)&this->indices[ofs0];
     return box4f()
-      .including(make_vec4f(vertices[indices[0]]))
-      .including(make_vec4f(vertices[indices[1]]))
-      .including(make_vec4f(vertices[indices[2]]))
-      .including(make_vec4f(vertices[indices[3]]))
-      .including(make_vec4f(vertices[indices[4]]));
+      .including(rtc::load(vertices[indices[0]]))
+      .including(rtc::load(vertices[indices[1]]))
+      .including(rtc::load(vertices[indices[2]]))
+      .including(rtc::load(vertices[indices[3]]))
+      .including(rtc::load(vertices[indices[4]]));
   }
 
-  inline __both__
+  inline __rtc_device
   box4f UMeshField::DD::wedBounds(int ofs0) const
   {
     UMeshField::ints<6> indices = *(const UMeshField::ints<6> *)&this->indices[ofs0];
     return box4f()
-      .including(make_vec4f(vertices[indices[0]]))
-      .including(make_vec4f(vertices[indices[1]]))
-      .including(make_vec4f(vertices[indices[2]]))
-      .including(make_vec4f(vertices[indices[3]]))
-      .including(make_vec4f(vertices[indices[4]]))
-      .including(make_vec4f(vertices[indices[5]]));
+      .including(rtc::load(vertices[indices[0]]))
+      .including(rtc::load(vertices[indices[1]]))
+      .including(rtc::load(vertices[indices[2]]))
+      .including(rtc::load(vertices[indices[3]]))
+      .including(rtc::load(vertices[indices[4]]))
+      .including(rtc::load(vertices[indices[5]]));
   }
   
-  inline __both__
+  inline __rtc_device
   box4f UMeshField::DD::hexBounds(int ofs0) const
   {
     UMeshField::ints<8> indices = *(const UMeshField::ints<8> *)&this->indices[ofs0];
     return box4f()
-      .including(make_vec4f(vertices[indices[0]]))
-      .including(make_vec4f(vertices[indices[1]]))
-      .including(make_vec4f(vertices[indices[2]]))
-      .including(make_vec4f(vertices[indices[3]]))
-      .including(make_vec4f(vertices[indices[4]]))
-      .including(make_vec4f(vertices[indices[5]]))
-      .including(make_vec4f(vertices[indices[6]]))
-      .including(make_vec4f(vertices[indices[7]]));
+      .including(rtc::load(vertices[indices[0]]))
+      .including(rtc::load(vertices[indices[1]]))
+      .including(rtc::load(vertices[indices[2]]))
+      .including(rtc::load(vertices[indices[3]]))
+      .including(rtc::load(vertices[indices[4]]))
+      .including(rtc::load(vertices[indices[5]]))
+      .including(rtc::load(vertices[indices[6]]))
+      .including(rtc::load(vertices[indices[7]]));
   }
-
-  // inline __both__
-  // box4f UMeshField::DD::gridBounds(int gridID) const
-  // {
-  //   return gridDomains[gridID];
-  // }
-  
-  inline __both__
+ 
+  inline __rtc_device
   box4f UMeshField::DD::eltBounds(Element element) const
   {
     switch (element.type) {
@@ -227,7 +230,7 @@ namespace barney {
 
   /*! evaluate (relative) distance of point P to the implicit plane
       defined by points A,B,C. distance is not normalized */
-  inline __both__
+  inline __rtc_device
   float evalToImplicitPlane(vec3f P, vec3f a, vec3f b, vec3f c)
   {
     vec3f N = cross(b-a,c-a);
@@ -236,20 +239,20 @@ namespace barney {
 
   /*! evaluate (relative) distance of point P to the implicit plane
       defined by points A,B,C. distance is not normalized */
-  inline __both__
+  inline __rtc_device
   float evalToImplicitPlane(vec3f P, vec4f a, vec4f b, vec4f c)
   { return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c)); }
 
   /*! evaluate (relative) distance of point P to the implicit plane
       defined by points A,B,C. distance is not normalized */
-  inline __both__
-  float evalToImplicitPlane(vec3f P, float4 a, float4 b, float4 c)
-  { return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c)); }
+  // inline __rtc_device
+  // float evalToImplicitPlane(vec3f P, float4 a, float4 b, float4 c)
+  // { return evalToImplicitPlane(P,getPos(a),getPos(b),getPos(c)); }
 
   /* compute scalar of given umesh element at point P, and return that
      in 'retVal'. returns true if P is inside the elemnt, false if
      outside (in which case retVal is not defined) */
-  inline __both__
+  inline __rtc_device
   bool UMeshField::DD::eltScalar(float &retVal,
                                  Element elt,
                                  vec3f P,
@@ -264,38 +267,20 @@ namespace barney {
       return wedScalar(retVal,elt.ofs0,P);
     case Element::HEX:
       return hexScalar(retVal,elt.ofs0,P,dbg);
-    // case Element::GRID:
-    //   return gridScalar(retVal,elt.ID,P);
     }
     return false;
   }
   
-  inline __both__
+  inline __rtc_device
   bool UMeshField::DD::tetScalar(float &retVal, int ofs0, vec3f P, bool dbg) const
   {
     vec4i indices = *(const vec4i *)&this->indices[ofs0];
-    // if (dbg) printf("tetscalar ofs %i idx %i %i %i %i ref  %i %i %i %i\n",
-    //                 ofs0,indices.x,indices.y,indices.z,indices.w,
-    //                 this->indices[ofs0+0],
-    //                 this->indices[ofs0+1],
-    //                 this->indices[ofs0+1],
-    //                 this->indices[ofs0+2]);
     
-    float4 v0 = vertices[indices.x];
-    float4 v1 = vertices[indices.y];
-    float4 v2 = vertices[indices.z];
-    float4 v3 = vertices[indices.w];
+    vec4f v0 = rtc::load(vertices[indices.x]);
+    vec4f v1 = rtc::load(vertices[indices.y]);
+    vec4f v2 = rtc::load(vertices[indices.z]);
+    vec4f v3 = rtc::load(vertices[indices.w]);
 
-    // if (dbg) {
-    //   printf("v0 %f %f %f : %f\n",
-    //          v0.x,v0.y,v0.z,v0.w);
-    //   printf("v1 %f %f %f : %f\n",
-    //          v1.x,v1.y,v1.z,v1.w);
-    //   printf("v2 %f %f %f : %f\n",
-    //          v2.x,v2.y,v2.z,v2.w);
-    //   printf("v3 %f %f %f : %f\n",
-    //          v3.x,v3.y,v3.z,v3.w);
-    // }
     float t3 = evalToImplicitPlane(P,v0,v1,v2);
     if (t3 < 0.f) return false;
     float t2 = evalToImplicitPlane(P,v0,v3,v1);
@@ -310,111 +295,51 @@ namespace barney {
     return true;
   }
 
-  inline __both__
+  inline __rtc_device
   bool UMeshField::DD::pyrScalar(float &retVal, int ofs0, vec3f P) const
   {
     UMeshField::ints<5> indices = *(const UMeshField::ints<5> *)&this->indices[ofs0];
     return intersectPyrEXT(retVal, P,
-                           vertices[indices[0]],
-                           vertices[indices[1]],
-                           vertices[indices[2]],
-                           vertices[indices[3]],
-                           vertices[indices[4]]);
+                           rtc::load(vertices[indices[0]]),
+                           rtc::load(vertices[indices[1]]),
+                           rtc::load(vertices[indices[2]]),
+                           rtc::load(vertices[indices[3]]),
+                           rtc::load(vertices[indices[4]]));
   }
 
-  inline __both__
+  inline __rtc_device
   bool UMeshField::DD::wedScalar(float &retVal, int ofs0, vec3f P) const
   {
-    UMeshField::ints<6> indices = *(const UMeshField::ints<6> *)&this->indices[ofs0];
+    UMeshField::ints<6> indices
+      = *(const UMeshField::ints<6> *)&this->indices[ofs0];
     return intersectWedgeEXT(retVal, P,
-                             vertices[indices[0]],
-                             vertices[indices[1]],
-                             vertices[indices[2]],
-                             vertices[indices[3]],
-                             vertices[indices[4]],
-                             vertices[indices[5]]);
+                             rtc::load(vertices[indices[0]]),
+                             rtc::load(vertices[indices[1]]),
+                             rtc::load(vertices[indices[2]]),
+                             rtc::load(vertices[indices[3]]),
+                             rtc::load(vertices[indices[4]]),
+                             rtc::load(vertices[indices[5]]));
   }
 
-  inline __both__
+  inline __rtc_device
   bool UMeshField::DD::hexScalar(float &retVal,
                                  int ofs0,
                                  vec3f P,
                                  bool dbg) const
   {
-#if 0
-    UMeshField::ints<8> indices;
-    indices[0] = this->indices[ofs0+0];
-    indices[1] = this->indices[ofs0+1];
-    indices[2] = this->indices[ofs0+3];
-    indices[3] = this->indices[ofs0+2];
-    indices[4] = this->indices[ofs0+4];
-    indices[5] = this->indices[ofs0+5];
-    indices[6] = this->indices[ofs0+7];
-    indices[7] = this->indices[ofs0+6];
-#else
-    UMeshField::ints<8> indices = *(const UMeshField::ints<8> *)&this->indices[ofs0];
-#endif
+    UMeshField::ints<8> indices
+      = *(const UMeshField::ints<8> *)&this->indices[ofs0];
     return intersectHexEXT(retVal, P,
-                           vertices[indices[0]],
-                           vertices[indices[1]],
-                           vertices[indices[2]],
-                           vertices[indices[3]],
-                           vertices[indices[4]],
-                           vertices[indices[5]],
-                           vertices[indices[6]],
-                           vertices[indices[7]],
+                           rtc::load(vertices[indices[0]]),
+                           rtc::load(vertices[indices[1]]),
+                           rtc::load(vertices[indices[2]]),
+                           rtc::load(vertices[indices[3]]),
+                           rtc::load(vertices[indices[4]]),
+                           rtc::load(vertices[indices[5]]),
+                           rtc::load(vertices[indices[6]]),
+                           rtc::load(vertices[indices[7]]),
                            dbg);
   }
 
-//   inline __both__
-//   bool UMeshField::DD::gridScalar(float &retVal, int primID, vec3f P) const
-//   {
-//     const box3f bounds = box3f((const vec3f &)gridDomains[primID].lower,
-//                                (const vec3f &)gridDomains[primID].upper);
-    
-//     if (!bounds.contains(P))
-//       return false;
-
-//     vec3i numScalars = gridDims[primID]+1;
-//     vec3f cellSize = bounds.size()/vec3f(gridDims[primID]);
-//     vec3f objPos = (P-bounds.lower)/cellSize;
-//     vec3i imin(objPos);
-//     vec3i imax = min(imin+1,numScalars-1);
-
-//     auto linearIndex = [numScalars](const int x, const int y, const int z) {
-//                          return z*numScalars.y*numScalars.x + y*numScalars.x + x;
-//                        };
-
-//     const float *scalars = gridScalars + gridOffsets[primID];
-
-//     float f1 = scalars[linearIndex(imin.x,imin.y,imin.z)];
-//     float f2 = scalars[linearIndex(imax.x,imin.y,imin.z)];
-//     float f3 = scalars[linearIndex(imin.x,imax.y,imin.z)];
-//     float f4 = scalars[linearIndex(imax.x,imax.y,imin.z)];
-
-//     float f5 = scalars[linearIndex(imin.x,imin.y,imax.z)];
-//     float f6 = scalars[linearIndex(imax.x,imin.y,imax.z)];
-//     float f7 = scalars[linearIndex(imin.x,imax.y,imax.z)];
-//     float f8 = scalars[linearIndex(imax.x,imax.y,imax.z)];
-
-// #define EMPTY(x) isnan(x)
-//     if (EMPTY(f1) || EMPTY(f2) || EMPTY(f3) || EMPTY(f4) ||
-//         EMPTY(f5) || EMPTY(f6) || EMPTY(f7) || EMPTY(f8))
-//       return false;
-
-//     vec3f frac = objPos-vec3f(imin);
-
-//     float f12 = lerp(f1,f2,frac.x);
-//     float f56 = lerp(f5,f6,frac.x);
-//     float f34 = lerp(f3,f4,frac.x);
-//     float f78 = lerp(f7,f8,frac.x);
-
-//     float f1234 = lerp(f12,f34,frac.y);
-//     float f5678 = lerp(f56,f78,frac.y);
-
-//     retVal = lerp(f1234,f5678,frac.z);
-
-//     return true;
-//   }
   
 }

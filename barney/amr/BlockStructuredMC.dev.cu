@@ -15,7 +15,12 @@
 // ======================================================================== //
 
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
+#include "rtcore/TraceInterface.h"
 
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
+
+
+#if 0
 namespace barney {
 
   // ==================================================================
@@ -71,3 +76,4 @@ namespace barney {
   }
 
 }
+#endif

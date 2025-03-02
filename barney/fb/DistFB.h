@@ -19,7 +19,7 @@
 #include "barney/fb/FrameBuffer.h"
 #include "barney/common/MPIWrappers.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct MPIContext;
   
@@ -27,23 +27,17 @@ namespace barney {
     typedef std::shared_ptr<DistFB> SP;
 
     DistFB(MPIContext *context,
+           const DevGroup::SP &devices,
            int owningRank);
     virtual ~DistFB() = default;
-    
-    static SP create(MPIContext *context, int owningRank)
-    { return std::make_shared<DistFB>(context,owningRank); }
     
     void resize(vec2i size, uint32_t channels) override;
 
     void ownerGatherCompressedTiles() override;
     
     struct {
-      /*! list of *all* ranks' tileOffset, gathered (only at master) */
-      // CompressedTile       *compressedTiles = 0;
-      // TileDesc        *tileDescs = 0;
       std::vector<int> numTilesOnGPU;
       std::vector<int> firstTileOnGPU;
-      // int numActiveTiles;
       int numGPUs;
     } ownerGather;
     // (world)rank that owns this frame buffer

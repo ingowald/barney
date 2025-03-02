@@ -16,13 +16,14 @@
 
 #pragma once
 
+#include "barney/render/Ray.h"
 #include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/render/HitAttributes.h"
 // #include "barney/render/device/GeometryAttributes.h"
 #include "barney/material/AnariMatte.h"
 #include "barney/material/AnariPBR.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     struct DeviceMaterial {
@@ -32,23 +33,22 @@ namespace barney {
         TYPE_AnariPBR
       } Type;
 
-#ifdef __CUDA_ARCH__
-      inline __device__
+#if RTC_DEVICE_CODE
+      inline __rtc_device
       PackedBSDF createBSDF(const HitAttributes &hitData,
                             const Sampler::DD *samplers,
                             bool dbg=false) const;
-      inline __device__
+      inline __rtc_device
       float getOpacity(const HitAttributes &hitData,
                        const Sampler::DD *samplers,
                        bool dbg) const;
 
-      inline __device__
+      inline __rtc_device
       void setHit(Ray &ray,
                   const HitAttributes &hitData,
                   const Sampler::DD *samplers,
                   bool dbg=false) const;
-#endif
-      
+#endif      
       Type type;
       union {
         AnariPBR::DD   anariPBR;
@@ -56,13 +56,13 @@ namespace barney {
       };
     };
 
-#ifdef __CUDA_ARCH__
-    inline __device__
+#if RTC_DEVICE_CODE
+    inline __rtc_device
     PackedBSDF DeviceMaterial::createBSDF(const HitAttributes &hitData,
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      if (0 && dbg) printf("devicematerial type %i\n",(int)type);
+      if (dbg) printf("devicematerial type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)
@@ -75,7 +75,7 @@ namespace barney {
       return packedBSDF::Invalid();
     }
 
-    // inline __device__
+    // inline __rtc_device
     // float DeviceMaterial::getOpacity(const HitAttributes &hitData,
     //                                  const Sampler::DD *samplers,
     //                                  bool dbg) const
@@ -88,7 +88,7 @@ namespace barney {
     //   // return 1.f;
     // }
     
-    inline __device__
+    inline __rtc_device
     void DeviceMaterial::setHit(Ray &ray,
                                 const HitAttributes &hitData,
                                 const Sampler::DD *samplers,
@@ -98,6 +98,5 @@ namespace barney {
                  hitData.t,createBSDF(hitData,samplers,dbg));
     }
 #endif
-    
   }
 }

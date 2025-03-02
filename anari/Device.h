@@ -99,7 +99,7 @@ namespace barney_device {
     /////////////////////////////////////////////////////////////////////////////
 
     BarneyDevice();
-    BarneyDevice(ANARILibrary);
+    BarneyDevice(ANARILibrary library, const std::string &subType="default");
     ~BarneyDevice() override;
 
   private:
@@ -112,6 +112,22 @@ namespace barney_device {
     BarneyGlobalState *deviceState() const;
 
     bool m_initialized{false};
+    
+    /*! allows for setting which gpu to use. must be set before the
+        first commit, and should not be changed after that. '-2' means
+        'leave it to barney', '-1' means 'use cpu', any value >= 0
+        means 'use this specific gpu */
+    int  m_cudaDevice = -2;
+    const std::string deviceType = "default";
+#if BARNEY_MPI
+    /*! communicator to use for barney data-parallel rendering, set as
+        a uint64_t. If set to 0, we'll use local rendering even if mpi
+        support is compiled in, any other value will be interpreted as
+        a MPI_Comm type. If device gets created with subtype "mpi" or
+        "default", the default value for comm is MPI_COMM_WORLD, if it
+        is created with subtype "local" it will default to 0 */
+    MPI_Comm comm = MPI_COMM_WORLD;
+#endif
   };
 
 } // namespace barney_device

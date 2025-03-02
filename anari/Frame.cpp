@@ -67,33 +67,36 @@ BNDataType toBarney(anari::DataType type)
   throw std::runtime_error("toBarney: anari data type %i not handled yet");
 }
 
-void Frame::commit()
+void Frame::commitParameters()
+{
+  m_renderer = getParamObject<Renderer>("renderer");
+  m_camera = getParamObject<Camera>("camera");
+  m_world = getParamObject<World>("world");
+  m_colorType = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
+  m_depthType = getParam<anari::DataType>("channel.depth", ANARI_UNKNOWN);
+  m_frameData.size = getParam<math::uint2>("size", math::uint2(10, 10));
+}
+
+void Frame::finalize()
 {
   cleanup();
 
-  m_renderer = getParamObject<Renderer>("renderer");
   if (!m_renderer) {
     reportMessage(ANARI_SEVERITY_WARNING,
         "missing required parameter 'renderer' on frame");
   }
 
-  m_camera = getParamObject<Camera>("camera");
   if (!m_camera) {
     reportMessage(
         ANARI_SEVERITY_WARNING, "missing required parameter 'camera' on frame");
   }
 
-  m_world = getParamObject<World>("world");
   if (!m_world) {
     reportMessage(
         ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
   }
 
-  m_colorType = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
-  m_depthType = getParam<anari::DataType>("channel.depth", ANARI_UNKNOWN);
-
-  auto size = getParam<math::uint2>("size", math::uint2(10, 10));
-
+  const auto &size = m_frameData.size;
   const auto numPixels = size.x * size.y;
 
   m_colorBuffer =
@@ -102,17 +105,14 @@ void Frame::commit()
     m_depthBuffer = new float[numPixels];
 
   bnFrameBufferResize(m_bnFrameBuffer,
-                      size.x,
-                      size.y,
-                      (uint32_t)BN_FB_COLOR
-                      |
-                      (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
+      size.x,
+      size.y,
+      (uint32_t)BN_FB_COLOR
+          | (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
   bnSet1i(m_bnFrameBuffer,
       "showCrosshairs",
       m_renderer ? int(m_renderer->crosshairs()) : false);
   bnCommit(m_bnFrameBuffer);
-  m_frameData.size = size;
-  m_frameData.totalPixels = numPixels;
 }
 
 bool Frame::getProperty(
@@ -133,7 +133,8 @@ void Frame::renderFrame()
   auto start = std::chrono::steady_clock::now();
 
   auto *state = deviceState();
-  state->commitBufferFlush();
+  if (state->commitBuffer.flush())
+    bnAccumReset(m_bnFrameBuffer);
 
   if (!isValid()) {
     reportMessage(
@@ -153,13 +154,7 @@ void Frame::renderFrame()
     return;
   }
 
-  if (state->commitBufferLastFlush() > m_frameLastRendered) {
-    bnAccumReset(m_bnFrameBuffer);
-  }
-
   auto model = m_world->makeCurrent();
-
-  m_frameLastRendered = helium::newTimeStamp();
 
   bnRender(m_renderer->barneyRenderer,
       model,
@@ -181,16 +176,23 @@ void *Frame::map(std::string_view channel,
   *height = m_frameData.size.y;
 
   if (channel == "channel.color") {
-    bnFrameBufferRead(m_bnFrameBuffer,
-                      BN_FB_COLOR,
-                      m_colorBuffer,
-                      toBarney(m_colorType));
+    bnFrameBufferRead(
+        m_bnFrameBuffer, BN_FB_COLOR, m_colorBuffer, toBarney(m_colorType));
     *pixelType = m_colorType;
     return m_colorBuffer;
   } else if (channel == "channel.depth" && m_depthBuffer) {
-    bnFrameBufferRead(m_bnFrameBuffer,BN_FB_DEPTH,m_depthBuffer,BN_FLOAT);
+    bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_depthBuffer, BN_FLOAT);
     *pixelType = ANARI_FLOAT32;
     return m_depthBuffer;
+  } else if (channel == "channel.colorGPU") {
+    *pixelType = ANARI_FLOAT32_VEC4;
+    return bnFrameBufferGetPointer(m_bnFrameBuffer,
+                                   BN_FB_COLOR);
+    return m_colorBuffer;
+  } else if (channel == "channel.depthGPU") {
+    *pixelType = ANARI_FLOAT32;
+    return bnFrameBufferGetPointer(m_bnFrameBuffer,
+                                   BN_FB_DEPTH);
   }
 
   *width = 0;
@@ -224,9 +226,7 @@ bool Frame::ready() const
   return true; // not yet async
 }
 
-void Frame::wait() const
-{
-}
+void Frame::wait() const {}
 
 void Frame::cleanup()
 {

@@ -25,94 +25,19 @@
 #endif
 #include "cuBQL/traversal/shrinkingRadiusQuery.h"
 
-namespace barney {
-
-
-#if 0
-  template<typename TravState, int BVH_WIDTH=4>
-  /*! sample the umesh field; can return NaN if sample did not hit
-    any unstructured element at all */
-  inline __device__
-  void traverseCUQBL(cuBQL::WideBVH<float,3,BVH_WIDTH> bvh,
-                     TravState &ptd, vec3f P, bool dbg)
-  {
-    auto lambda = [&](uint32_t primID) {
-    };
-    cuBQL::shrinkingRadiusQuery::forEachPrim
-      (lambda,bvh,P);
-  }
+#ifdef __CUDACC__
+namespace cuBQL {
+  using float3 = ::float3;
+  using float4 = ::float4;
+}
 #endif
+
+namespace BARNEY_NS {
   
-#if 0
-  template<typename TravState, int BVH_WIDTH=4>
-  /*! sample the umesh field; can return NaN if sample did not hit
-    any unstructured element at all */
-  inline __device__
-  void traverseCUQBL(typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node *bvhNodes,
-                      TravState &ptd, vec3f P, bool dbg) 
-  {
-    using node_t = typename cuBQL::WideBVH<float,3,BVH_WIDTH>::Node;
-    struct NodeRef {
-      union {
-        struct {
-          uint32_t offset:29;
-          uint32_t count : 3;
-        };
-        uint32_t bits;
-      };
-    };
-    NodeRef nodeRef;
-    nodeRef.offset = 0;
-    nodeRef.count  = 0;
-    NodeRef stackBase[30];
-    NodeRef *stackPtr = stackBase;
-    while (true) {
-      while (nodeRef.count == 0) {
-        NodeRef childRef[BVH_WIDTH];
-        node_t node = bvhNodes[nodeRef.offset];
-#pragma unroll
-        for (int i=0;i<BVH_WIDTH;i++) {
-          const box3f &bounds = (const box3f&)node.children[i].bounds;
-          if (node.children[i].valid && bounds.contains(P)) {
-            childRef[i].offset = (int)node.children[i].offset;
-            childRef[i].count  = (int)node.children[i].count;
-          } else
-            childRef[i].bits = 0;
-        }
-        nodeRef.bits = 0;
-#pragma unroll
-        for (int i=0;i<BVH_WIDTH;i++) {
-          if (childRef[i].bits == 0)
-            continue;
-          if (nodeRef.bits == 0)
-            nodeRef = childRef[i];
-          else 
-            *stackPtr++ = childRef[i];
-        }
-        if (nodeRef.bits == 0) {
-          if (stackPtr == stackBase)
-            return;
-          nodeRef = *--stackPtr;
-        }
-      }
-      // leaf ...
-      if (ptd.leaf(P,nodeRef.offset,nodeRef.count) == false)
-        return;
-      if (stackPtr == stackBase)
-        return;
-      nodeRef = *--stackPtr;
-    }
-  }
-#endif
-
-
-
-  template<typename TravState, int BVH_WIDTH=4>
-  /*! sample the umesh field; can return NaN if sample did not hit
-    any unstructured element at all */
-  inline __device__
-  void traverseCUQBL(typename cuBQL::BinaryBVH<float,3>::Node *bvhNodes,
-                      TravState &ptd, vec3f P, bool dbg) 
-  {
-  }
+  inline __both__ vec3f to_barney(cuBQL::float3 v)
+  { return vec3f(v.x,v.y,v.z); }
+  
+  inline __both__ cuBQL::float3 to_cubql(vec3f v)
+  { return {v.x,v.y,v.z}; }
+  
 } // ::barney

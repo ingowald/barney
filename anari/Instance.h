@@ -12,8 +12,9 @@ struct Instance : public Object
   Instance(BarneyGlobalState *s);
   ~Instance() override;
 
-  void commit() override;
-  void markCommitted() override;
+  void commitParameters() override;
+  void finalize() override;
+  void markFinalized() override;
 
   bool isValid() const override;
 
@@ -24,6 +25,7 @@ struct Instance : public Object
   box3 bounds() const;
 
  private:
+  math::mat4 m_transform;
   BNTransform m_xfm;
   helium::IntrusivePtr<Group> m_group;
 };

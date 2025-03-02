@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,45 +17,107 @@
 #include "barney/DeviceGroup.h"
 #include "barney/DeviceContext.h"
 #include "barney/render/OptixGlobals.h"
+#include "barney/Context.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  extern "C" char traceRays_ptx[];
+  RTC_IMPORT_COMPUTE1D(setTileCoords);
+  RTC_IMPORT_COMPUTE1D(compressTiles);
+  RTC_IMPORT_COMPUTE1D(unpackTiles);
+    
+  RTC_IMPORT_COMPUTE2D(toneMap);
+  RTC_IMPORT_COMPUTE2D(toFixed8);
+  RTC_IMPORT_COMPUTE1D(generateRays);
+  RTC_IMPORT_COMPUTE1D(shadeRays);
 
-  Device::Device(DevGroup *devGroup,
-                 int contextRank,
-                 int contextSize,
-                 int cudaID,
-                 int owlID,
-                 int globalIndex,
-                 int globalIndexStep)
-    : contextRank(contextRank),
-      contextSize(contextSize),
-      cudaID(cudaID),
-      owlID(owlID),
-      devGroup(devGroup),
-      launchStream(devGroup?owlContextGetStream(devGroup->owl,owlID):0),
-      globalIndex(globalIndex),
-      globalIndexStep(globalIndexStep)
+  // umesh related:
+  RTC_IMPORT_COMPUTE1D(umeshCreateElements);
+  RTC_IMPORT_COMPUTE1D(umeshRasterElements);
+  RTC_IMPORT_COMPUTE1D(umeshReorderElements);
+  RTC_IMPORT_COMPUTE1D(umeshComputeElementBBs);
+
+  RTC_IMPORT_TRACE2D(/*traceRays.cu*/traceRays,/*ray gen name */traceRays,/*launch params data type*/sizeof(BARNEY_NS::render::OptixGlobals));
+
+  
+  GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
+    : device(device)
+  {}
+  
+  rtc::GeomType *GeomTypeRegistry::get(GeomTypeCreationFct callBack)
   {
+    if (geomTypes.find(callBack) == geomTypes.end()) {
+      geomTypes[callBack] = callBack(device);
+    }
+    return geomTypes[callBack];
   }
 
-  void DevGroup::update()
+  void Device::syncPipelineAndSBT()
   {
     if (programsDirty) {
-      if (DevGroup::logging())
-        std::cout << "rebuilding owl programs and pipeline..." << std::endl;
-      owlBuildPrograms(owl);
-      owlBuildPipeline(owl);
+      if (Context::logging())
+        std::cout << "rebuilding ray tracing programs and pipeline..." << std::endl;
+      rtc->buildPipeline();
       programsDirty = false;
     }
     if (sbtDirty) {
-      // std::cout << "rebuilding owl sbt..." << std::endl;
-      owlBuildSBT(owl);
+      rtc->buildSBT();
       sbtDirty = false;
     }
   }
 
+  DevGroup::DevGroup(const std::vector<Device*> &devices,
+                     int numLogical)
+    : std::vector<Device *>(devices),
+      numLogical(numLogical)
+  {}
+
+
+  Device::Device(rtc::Device *rtc,
+                 int contextRank,
+                 int contextSize,
+                 int globalIndex,
+                 int globalIndexStep)
+    : contextRank(contextRank),
+      contextSize(contextSize),
+      globalIndex(globalIndex),
+      globalIndexStep(globalIndexStep),rtc(rtc),
+      geomTypes(rtc)
+  {
+    rayQueue = new RayQueue(this);
+    setTileCoords
+      // = rtc->createCompute("setTileCoords");
+      = createCompute_setTileCoords(rtc);
+    compressTiles
+      // = rtc->createCompute("compressTiles");
+      = createCompute_compressTiles(rtc);
+    unpackTiles
+      = createCompute_unpackTiles(rtc);
+    
+    toneMap
+      = createCompute_toneMap(rtc);
+    toFixed8
+      = createCompute_toFixed8(rtc);
+    generateRays
+      = createCompute_generateRays(rtc);
+    shadeRays
+      = createCompute_shadeRays(rtc);
+
+    // umesh related:
+    umeshCreateElements 
+      = createCompute_umeshCreateElements(rtc);
+    umeshRasterElements 
+      = createCompute_umeshRasterElements(rtc);
+    umeshReorderElements 
+      = createCompute_umeshReorderElements(rtc);
+    umeshComputeElementBBs
+      = createCompute_umeshComputeElementBBs(rtc);
+      
+    traceRays
+      = createTrace_traceRays(rtc);
+  }
+    
+  
+#if 0
   DevGroup::DevGroup(int lmsIdx,
                      const std::vector<int> &contextRanks,
                      int contextSize,
@@ -64,44 +126,40 @@ namespace barney {
                      int globalIndexStep)
     : lmsIdx(lmsIdx)
   {
-    owl = owlContextCreate((int*)gpuIDs.data(),(int)gpuIDs.size());
-    OWLVarDecl args[]
-      = {
-      { nullptr }
-    };
-    OWLModule module = owlModuleCreate(owl,traceRays_ptx);
-    rg = owlRayGenCreate(owl,module,"traceRays",0,args,-1);
-
-    owlBuildPrograms(owl);
-
-    for (int localID=0;localID<gpuIDs.size();localID++)
+    auto backend = rtc::Backend::get();
+    rtc = backend->createDevGroup(gpuIDs);
+    
+    for (int localID=0;localID<gpuIDs.size();localID++) {
+      assert(localID < rtc->devices.size());
+      assert(localID < contextRanks.size());
       devices.push_back
         (std::make_shared<Device>(this,
-                                  contextRanks[localID],contextSize,
-                                  gpuIDs[localID],localID,
+                                  rtc->devices[localID],
+                                  contextRanks[localID],
+                                  contextSize,
+                                  // gpuIDs[localID],localID,
                                   (int)(globalIndex*gpuIDs.size())+localID,
                                   (int)(globalIndexStep*gpuIDs.size())));
+    }
 
-    OWLVarDecl params[]
-      = {
-      { "world", OWL_GROUP, OWL_OFFSETOF(render::OptixGlobals, world) },
-      { "materials", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, materials) },
-      { "samplers", OWL_BUFPTR, OWL_OFFSETOF(render::OptixGlobals, samplers) },
-      { "rays",  OWL_RAW_POINTER, OWL_OFFSETOF(render::OptixGlobals,rays) },
-      { "numRays",  OWL_INT, OWL_OFFSETOF(render::OptixGlobals,numRays) },
-      { nullptr }
-    };
-    lp = owlParamsCreate(owl,
-                         sizeof(render::OptixGlobals),
-                         params,
-                         -1);
+    setTileCoordsKernel
+      = rtc->createCompute("setTileCoords");
+    compressTilesKernel
+      = rtc->createCompute("compressTiles");
+    generateRaysKernel
+      = rtc->createCompute("generateRays");
+    shadeRaysKernel
+      = rtc->createCompute("shadeRays");
+    traceRaysKernel
+      = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
   }
+#endif
 
-  DevGroup::~DevGroup()
-  {
-    std::cout << "DEVGROUP DESTROYING context " << (int*)owl << std::endl;
-    owlContextDestroy(owl);
-    owl = 0;
-  }
+  // DevGroup::~DevGroup()
+  // {
+  //   std::cout << "DEVGROUP DESTROYING context " << (int*)rtc << std::endl;
+  //   rtc->destroy();
+  //   rtc = nullptr;
+  // }
   
 }

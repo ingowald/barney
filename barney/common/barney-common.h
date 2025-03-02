@@ -16,6 +16,8 @@
 
 #pragma once
 
+// automatically generated, in build dir
+#include "barney/api/common.h"
 #include <owl/common/math/box.h>
 #include <owl/common/math/AffineSpace.h>
 #include <owl/common/math/random.h>
@@ -23,61 +25,65 @@
 # define OWL_DISABLE_TBB
 #endif
 #include <owl/common/parallel/parallel_for.h>
-#include <owl/owl.h>
-// #include "barney.h"
-#include "barney/common/cuda-helper.h"
-#include <cuda_runtime.h>
-#include <string.h>
-#include <mutex>
-#include <vector>
-#include <map>
-#include <memory>
-#include <sstream>
-#include "barney.h"
-#ifdef __CUDACC__
-#include <cuda/std/limits>
-#endif
+#include "rtcore/Frontend.h"
+#include "rtcore/ComputeInterface.h"
+
+// #include "barney/barney.h"
+// #if BARNEY_HAVE_CUDA
+// // #include "barney/common/cuda-helper.h"
+// #include <owl/owl.h>
+// #include <cuda_runtime.h>
+// #endif
+// #ifdef __CUDACC__
+// #include <cuda/std/limits>
+// #endif
+// #if BARNEY_HAVE_CUDA
+// #include <cuda.h>
+// #endif
 
 #define __barney_align(a) OWL_ALIGN(a)
 
-namespace barney {
-  using namespace owl;
+
+
+// #ifdef __VECTOR_TYPES_H__
+// // cuda/vector_types.h will define these types
+// #else
+// struct float2 { float x,y; };
+// struct float3 { float x,y,z; };
+// struct float4 { float x,y,z,w; };
+// struct int2 { int x,y; };
+// struct int3 { int x,y,z; };
+// struct int4 { int x,y,z,w; };
+// #endif
+
+#if BARNEY_RTC_OPTIX
+#  define BARNEY_NS barney_optix
+#endif
+
+
+
+namespace BARNEY_NS {
+  // using namespace barney::rtc;
+  
   using namespace owl::common;
-
-  using range1f = interval<float>;
-
+  typedef owl::common::interval<float> range1f;
   using Random = LCG<8>;
 
-#define ONE_PI ((float)M_PI)
-#define TWO_PI (2.f*M_PI)
-#define FOUR_PI (4.f*M_PI)
-#define ONE_OVER_PI (1.f/ONE_PI)
-#define ONE_OVER_TWO_PI (1.f/TWO_PI)
-#define ONE_OVER_FOUR_PI (1.f/FOUR_PI)
-
-
-#ifdef __CUDACC__
-# define BARNEY_INF ::cuda::std::numeric_limits<float>::infinity()
-#else
-# define BARNEY_INF INFINITY
-#endif
+  //  using rtc::load;
   
   template<typename T>
-  inline __device__
+  inline __both__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }
 
-  inline __device__
-  float safeDiv(float a, float b) { return (b==0.f)?0.f:(a/b); }
-  
-  inline __both__ vec4f make_vec4f(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
+  // inline __both__ vec4f make_vec4f(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
   
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
   inline __both__ vec3f getPos(vec4f v)
   {return vec3f{v.x,v.y,v.z}; }
 
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
-  inline __both__ vec3f getPos(float4 v)
-  {return vec3f{v.x,v.y,v.z}; }
+  // inline __both__ vec3f getPos(float4 v)
+  // {return vec3f{v.x,v.y,v.z}; }
 
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
   inline __both__ box3f getBox(box4f bb)
@@ -89,18 +95,9 @@ namespace barney {
   inline __both__ range1f getRange(box4f bb)
   { return range1f{bb.lower.w,bb.upper.w}; }
 
-  inline __both__ float lerp(float v0, float v1, float f)
-  { return (1.f-f)*v0 + f*v1; }
-
-  inline __both__ vec3f lerp(vec3f f, vec3f v0, vec3f v1)
-  { return (vec3f(1.f)-f)*v0 + f*v1; }
-
-  inline __both__ vec3f lerp(box3f box, vec3f f)
-  { return lerp(f,box.lower,box.upper); }
-  
-  inline __both__ vec3f lerp(vec3f f, box3f box)
-  { return lerp(f,box.lower,box.upper); }
 }
 
 #define BARNEY_NYI() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not yet implemented")
+
+#define BARNEY_INVALID_VALUE() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" invalid or un-implemented switch value")
 

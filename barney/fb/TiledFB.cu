@@ -16,18 +16,18 @@
 
 #include "barney/fb/TiledFB.h"
 #include "barney/fb/FrameBuffer.h"
-#include <optix.h>
-#include <optix_function_table.h>
-#include <optix_stubs.h>
+// #include <optix.h>
+// #include <optix_function_table.h>
+// #include <optix_stubs.h>
 
-namespace barney {
+namespace BARNEY_NS {
 
-  TiledFB::SP TiledFB::create(Device::SP device, FrameBuffer *owner)
+  TiledFB::SP TiledFB::create(Device *device, FrameBuffer *owner)
   {
     return std::make_shared<TiledFB>(device, owner);
   }
 
-  TiledFB::TiledFB(Device::SP device, FrameBuffer *owner)
+  TiledFB::TiledFB(Device *device, FrameBuffer *owner)
     : device(device),
       owner(owner)
   {}
@@ -39,35 +39,51 @@ namespace barney {
   {
     SetActiveGPU forDuration(device);
     if (accumTiles)  {
-      BARNEY_CUDA_CALL(Free(accumTiles));
+      device->rtc->freeMem(accumTiles);
       accumTiles = nullptr;
     }
     if (compressedTiles) {
-      BARNEY_CUDA_CALL(Free(compressedTiles));
+      device->rtc->freeMem(compressedTiles);
       compressedTiles = nullptr;
     }
     if (tileDescs) {
-      BARNEY_CUDA_CALL(Free(tileDescs));
+      device->rtc->freeMem(tileDescs);
       tileDescs = nullptr;
     }
   }
 
-  __global__ void setTileCoords(TileDesc *tileDescs,
-                                int numActiveTiles,
-                                vec2i numTiles,
-                                int globalIndex,
-                                int globalIndexStep)
+  struct SetTileCoords {
+    /* kernel ARGS */
+    TileDesc *tileDescs;
+    int numActiveTiles;
+    vec2i numTiles;
+    int globalIndex;
+    int globalIndexStep;
+
+    /* kernel CODE */
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &rtCore);
+  };
+
+#if RTC_DEVICE_CODE
+  /* kernel CODE */
+  inline __rtc_device
+  void SetTileCoords::run(const rtc::ComputeInterface &rtCore)
   {
-    int tid = threadIdx.x + blockIdx.x*blockDim.x;
+    int tid
+      = rtCore.getThreadIdx().x
+      + rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
     if (tid >= numActiveTiles)
       return;
-
+        
     int tileID = tid * globalIndexStep + globalIndex;
-
+        
     int tile_x = tileID % numTiles.x;
     int tile_y = tileID / numTiles.x;
     tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
   }
+#endif
+  
 
   void TiledFB::resize(vec2i newSize)
   {
@@ -81,55 +97,90 @@ namespace barney {
       ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
                    device->globalIndexStep)
       : 0;
-    BARNEY_CUDA_CALL(Malloc(&accumTiles, numActiveTiles * sizeof(AccumTile)));
-    BARNEY_CUDA_CALL(Malloc(&compressedTiles, numActiveTiles * sizeof(CompressedTile)));
-    BARNEY_CUDA_CALL(Malloc(&tileDescs,  numActiveTiles * sizeof(TileDesc)));
-
-    BARNEY_CUDA_SYNC_CHECK();
-    if (numActiveTiles) {
-      CHECK_CUDA_LAUNCH(setTileCoords,
-                        divRoundUp(numActiveTiles,1024),1024,0,device?device->launchStream:0,
-                        tileDescs,numActiveTiles,numTiles,
-                        device->globalIndex,device->globalIndexStep);
-    }
-    BARNEY_CUDA_SYNC_CHECK();
+    auto rtc = device->rtc;
+    accumTiles
+      = (AccumTile *)rtc->allocMem(numActiveTiles * sizeof(AccumTile));
+    compressedTiles
+      = (CompressedTile *)rtc->allocMem(numActiveTiles * sizeof(CompressedTile));
+    tileDescs
+      = (TileDesc *)rtc->allocMem(numActiveTiles * sizeof(TileDesc));
+    SetTileCoords args = {
+      tileDescs,
+      numActiveTiles,
+      numTiles,
+      device->globalIndex,
+      device->globalIndexStep
+    };
+    device->setTileCoords
+      ->launch(divRoundUp(numActiveTiles,1024),1024,
+               &args);
   }
 
   // ==================================================================
 
-  __global__ void g_compressTiles(CompressedTile *compressedTiles,
-                                  AccumTile *accumTiles,
-                                  float      accumScale)
-  {
-    int pixelID = threadIdx.x;
-    int tileID  = blockIdx.x;
+
+  struct CompressTiles {
+    CompressedTile *compressedTiles;
+    AccumTile      *accumTiles;
+    float           accumScale;
+    int             globalIdx;
+    int             globalIdxStep;
+
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &rtCore);
+  };
+
+#if RTC_DEVICE_CODE
+  inline __rtc_device
+  void CompressTiles::run(const rtc::ComputeInterface &rtCore)
+  { 
+    int pixelID = rtCore.getThreadIdx().x;
+    int tileID  = rtCore.getBlockIdx().x;
 
     vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
+    vec4f org = color;
     float scale = reduce_max(color);
-    color *= 1./scale;
+    color *= 1.f/scale;
     compressedTiles[tileID].scale[pixelID] = scale;
-    compressedTiles[tileID].normal[pixelID].set(accumTiles[tileID].normal[pixelID]);
+    compressedTiles[tileID].normal[pixelID]
+      .set(accumTiles[tileID].normal[pixelID]);
 
+      
     uint32_t rgba32
-      = owl::make_rgba(color);
+      = make_rgba(color);
 
-    compressedTiles[tileID].rgba[pixelID] = rgba32;
-    compressedTiles[tileID].depth[pixelID] = accumTiles[tileID].depth[pixelID];
+    compressedTiles[tileID].rgba[pixelID]
+      = rgba32;
+    compressedTiles[tileID].depth[pixelID]
+      = accumTiles[tileID].depth[pixelID];
   }
-
+#endif
+  
   /*! write this tiledFB's tiles into given "compressed" frame buffer
     (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
     pixels) */
-  void TiledFB::finalizeTiles()
+  void TiledFB::finalizeTiles_launch()
   {
     SetActiveGPU forDuration(device);
-    if (numActiveTiles > 0)
-      CHECK_CUDA_LAUNCH(g_compressTiles,
-                        numActiveTiles,pixelsPerTile,0,device->launchStream,
-                        compressedTiles,accumTiles,1.f/(owner->accumID));
-      // g_compressTiles<<<numActiveTiles,pixelsPerTile,0,device->launchStream>>>
-      //   (compressedTiles,accumTiles,1.f/(owner->accumID));
-    BARNEY_CUDA_SYNC_CHECK();
+    if (numActiveTiles > 0) {
+      CompressTiles args = {
+        compressedTiles,
+        accumTiles,
+        1.f/(owner->accumID),
+        device->globalIndex,
+        device->globalIndexStep,
+      };
+      device->compressTiles
+        ->launch(numActiveTiles,pixelsPerTile,
+                 &args);       
+    }
   }
-
+  
+  RTC_EXPORT_COMPUTE1D(setTileCoords,SetTileCoords);
+  RTC_EXPORT_COMPUTE1D(compressTiles,CompressTiles);
 }
+
+
+
+
+  

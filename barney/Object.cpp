@@ -18,53 +18,20 @@
 #include "barney/Context.h"
 #include "barney/ModelSlot.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  Object::Object(Context *context)
-    : context(context)
-  {}
+  // Object::Object(Context *context)
+  //   : context(context)
+  // {}
   
-  void Object::warn_unsupported_member(const std::string &type,
-                                       const std::string &member)
+  SlottedObject::SlottedObject(Context *context,
+                               const DevGroup::SP &devices)
+    : barney_api::Object(context),
+      devices(devices)
   {
-    std::string key = toString()+"_"+type+"_"+member;
-    if (context->alreadyWarned.find(key) != context->alreadyWarned.end())
-      return;
-    std::cout << OWL_TERMINAL_RED
-              << "#bn: warning - invalid member access. "
-              << "Object '" << toString() << "' does not have a member '"<<member<<"'"
-              << " of type '"<< type << "'"
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    context->alreadyWarned.insert(key);
+    assert(devices);
+    assert(!devices->empty());
   }
-  
-
-  SlottedObject::SlottedObject(Context *context, int slot)
-    : Object(context),
-      slot(slot)
-  {}
  
-  DevGroup *SlottedObject::getDevGroup() const
-  {
-    assert(context);
-    DevGroup *dg = context->getDevGroup(slot);
-    assert(dg);
-    return dg;
-  }
-
-  const std::vector<std::shared_ptr<Device>> &SlottedObject::getDevices() const
-  {
-    return context->getDevices(slot);
-    // return getDevGroup()->devices;
-  }
-  
-  OWLContext     SlottedObject::getOWL() const
-  {
-    if (slot == -1) {
-      return context->getOWL(slot);
-    }
-    return getDevGroup()->owl;
-  }
-  
 }
 

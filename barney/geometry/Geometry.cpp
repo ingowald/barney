@@ -24,41 +24,62 @@
 #include "barney/geometry/Cylinders.h"
 #include "barney/geometry/Capsules.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  Geometry::SP Geometry::create(Context *context, int slot,
+  Geometry::PLD *Geometry::getPLD(Device *device)
+  {
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
+
+  Geometry::SP Geometry::create(Context *context,
+                                DevGroup::SP devices,
                                 const std::string &type)
   {
     if (type == "spheres")
-      return std::make_shared<Spheres>(context,slot);
+      return std::make_shared<Spheres>(context,devices);
 #if 0
     if (type == "cones")
-      return std::make_shared<Cones>(context,slot);
+      return std::make_shared<Cones>(context,devices);
 #endif
     if (type == "cylinders")
-      return std::make_shared<Cylinders>(context,slot);
+      return std::make_shared<Cylinders>(context,devices);
     if (type == "capsules")
-      return std::make_shared<Capsules>(context,slot);
+      return std::make_shared<Capsules>(context,devices);
     if (type == "triangles")
-      return std::make_shared<Triangles>(context,slot);
+      return std::make_shared<Triangles>(context,devices);
     
     context->warn_unsupported_object("Geometry",type);
     return {};
   }
 
-  Geometry::Geometry(Context *context, int slot)
-    : SlottedObject(context,slot),
-      material(context->getDefaultMaterial(slot))
-  {}
+  Geometry::Geometry(Context *context,
+                     DevGroup::SP devices)
+    : barney_api::Geometry(context),
+      devices(devices)
+  {
+    perLogical.resize(devices->numLogical);
+  }
 
   Geometry::~Geometry()
   {
-    for (auto &geom : triangleGeoms)
-      if (geom) { owlGeomRelease(geom); geom = 0; }
-    for (auto &geom : userGeoms)
-      if (geom) { owlGeomRelease(geom); geom = 0; }
-    for (auto &group : secondPassGroups)
-      if (group) { owlGroupRelease(group); group = 0; }
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      for (auto &geom : pld->triangleGeoms)
+        if (geom) {
+          // owlGeomRelease(geom);
+          device->rtc->freeGeom(geom);
+          geom = 0;
+        }
+      for (auto &geom : pld->userGeoms)
+        if (geom) {
+          // owlGeomRelease(geom);
+          device->rtc->freeGeom(geom);
+          geom = 0;
+        }
+    }
   }
 
   HostMaterial::SP Geometry::getMaterial() const
@@ -77,49 +98,29 @@ namespace barney {
     
   
   
-  void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
-  {
-    vars.push_back({"materialID",OWL_INT,OWL_OFFSETOF(DD,materialID)});
-    vars.push_back({"attributes",OWL_USER_TYPE(GeometryAttributes::DD),
-        OWL_OFFSETOF(DD,attributes)});
-  }
-
-
-  void Geometry::setAttributesOn(OWLGeom geom)
-  {
-    auto set = [&](GeometryAttribute::DD &out, const GeometryAttribute &in,
-                   const int devID,
-                   const std::string &dbgName)
-    {
-      if (in.perVertex) {
-        out.scope = GeometryAttribute::PER_VERTEX;
-        out.fromArray.type = in.perVertex->type;
-        out.fromArray.ptr  = owlBufferGetPointer(in.perVertex->owl,devID);
-        out.fromArray.size = in.perVertex->count;
-      } else if (in.perPrim) {
-        out.scope = GeometryAttribute::PER_PRIM;
-        out.fromArray.type = in.perPrim->type;
-        out.fromArray.ptr  = owlBufferGetPointer(in.perPrim->owl,devID);
-        out.fromArray.size = in.perPrim->count;
-      } else {
-        out.scope = GeometryAttribute::CONSTANT;
-        (vec4f&)out.value = in.constant;
-      }
-    };
-    
-    GeometryAttributes::DD dd;
-    for (int devID=0;devID<getDevGroup()->size();devID++) {
-      for (int i=0;i<attributes.count;i++) {
-        const auto &in = attributes.attribute[i];
-        auto &out = dd.attribute[i];
-        set(out,in,devID,"attr"+std::to_string(i));
-      }
-      set(dd.colorAttribute,attributes.colorAttribute,devID,"color");
-      owlGeomSetRaw(geom,"attributes",&dd,devID);
-    }
-  }
+  // void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
+  // {
+  //   vars.push_back({"materialID",OWL_INT,OWL_OFFSETOF(DD,materialID)});
+  //   vars.push_back({"attributes",OWL_USER_TYPE(GeometryAttributes::DD),
+  //       OWL_OFFSETOF(DD,attributes)});
+  // }
   
 
+  void Geometry::writeDD(Geometry::DD &dd,
+                         Device *device)
+  {
+    setAttributesOn(dd,device);
+    dd.attributes = attributes.getDD(device);
+    dd.materialID = getMaterial()->materialID;
+  }  
+  
+  void Geometry::setAttributesOn(Geometry::DD &dd,
+                                 Device *device)
+  {
+    dd.attributes = attributes.getDD(device);
+    dd.materialID = material->materialID;  
+  }
+  
   bool Geometry::set1f(const std::string &member, const float &value)
   {
     return false;

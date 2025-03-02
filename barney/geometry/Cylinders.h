@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! cylinders with caps, specified through an array of vertices, and
       one array of int2 where each of the two its specified begin and
@@ -30,13 +30,13 @@ namespace barney {
 
     struct DD : public Geometry::DD {
       const vec3f *vertices;
-      const vec3f *colors;
+      // const vec3f *colors;
       const vec2i *indices;
       const float *radii;
-      int colorPerVertex;
+      // int colorPerVertex;
     };
     
-    Cylinders(Context *context, int slot);
+    Cylinders(Context *context, DevGroup::SP devices);
     virtual ~Cylinders() = default;
     
     /*! pretty-printer for printf-debugging */
@@ -45,13 +45,11 @@ namespace barney {
     
     void commit() override;
     
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     bool set1i(const std::string &member, const int &value) override;
     bool set1f(const std::string &member, const float &value) override;
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setData(const std::string &member, const barney_api::Data::SP &value) override;
     bool setObject(const std::string &member, const Object::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------

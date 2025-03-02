@@ -17,32 +17,39 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
-// #include "barney/material/Globals.h"
-// #include "barney/render/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 
-namespace barney {
+namespace BARNEY_NS {
+  struct ModelSlot;
+  
   namespace render {
     
     struct SamplerRegistry {
       typedef std::shared_ptr<SamplerRegistry> SP;
     
-      SamplerRegistry(DevGroup::SP devGroup);
+      SamplerRegistry(const DevGroup::SP &devices);
       virtual ~SamplerRegistry();
       
       int allocate();
       void release(int nowReusableID);
       void grow();
     
-      const Sampler::DD *getPointer(int owlDeviceID) const;
-      void setDD(int samplerID, const Sampler::DD &, int deviceID);
-      
+      void setDD(int samplerID, const Sampler::DD &, Device *device);
+
+      Sampler::DD *getDD(Device *device) 
+      { return (Sampler::DD *)getPLD(device)->buffer->getDD(); }
+
       int numReserved = 0;
       int nextFree = 0;
-    
       std::stack<int> reusableIDs;
-      OWLBuffer       buffer = 0;
-      DevGroup::SP    devGroup;
+      
+      struct PLD {
+        rtc::Buffer    *buffer = 0;
+      };
+      PLD *getPLD(Device *);
+      std::vector<PLD> perLogical;
+      
+      DevGroup::SP const devices;
     };
 
   }

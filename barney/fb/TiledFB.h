@@ -19,7 +19,7 @@
 #include "barney/DeviceGroup.h"
 #include "barney/common/half.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct FrameBuffer;
   
@@ -27,24 +27,24 @@ namespace barney {
       to 32 or 16, but lets at least try how much this really helps in
       the denoiser */
   struct CompressedNormal {
-    inline __device__ float4 get4f() const
-    { vec3f v = get(); return make_float4(v.x,v.y,v.z,0.f); }
-    inline __device__ float3 get3f() const
-    { vec3f v = get(); return make_float3(v.x,v.y,v.z); }
-    inline __device__ void set(vec3f v) {
+    inline __both__ vec4f get4f() const
+    { vec3f v = get(); return vec4f(v.x,v.y,v.z,0.f); }
+    inline __both__ vec3f get3f() const
+    { vec3f v = get(); return vec3f(v.x,v.y,v.z); }
+    inline __both__ void set(vec3f v) {
       if (v == vec3f(0.f)) { x = y = z = 0; return; }
       v = normalize(v);
       x = encode(v.x);
       y = encode(v.y);
       z = encode(v.z);
     }
-    inline __device__ vec3f get() const { return vec3f(decode(x),decode(y),decode(z)); }
+    inline __both__ vec3f get() const { return vec3f(decode(x),decode(y),decode(z)); }
   private:
-    inline __device__ int8_t encode(float f) const {
+    inline __both__ int8_t encode(float f) const {
       f = clamp(f*128.f,-127.f,+127.f);
       return int8_t(f);
     }
-    inline __device__ float decode(int8_t i) const {
+    inline __both__ float decode(int8_t i) const {
       if (i==0) return 0.f;
       return (i<0) ? (i-.5f)*(1.f/128.f) : (i+.5f)*(1.f/128.f);
     }
@@ -55,7 +55,7 @@ namespace barney {
   enum { pixelsPerTile = tileSize*tileSize };
 
   struct AccumTile {
-    float4 accum[pixelsPerTile];
+    vec4f accum[pixelsPerTile];
     float  depth[pixelsPerTile];
     vec3f  normal[pixelsPerTile];
   };
@@ -71,15 +71,15 @@ namespace barney {
 
   struct TiledFB {
     typedef std::shared_ptr<TiledFB> SP;
-    static SP create(Device::SP device, FrameBuffer *owner);
+    static SP create(Device *device, FrameBuffer *owner);
 
-    TiledFB(Device::SP device, FrameBuffer *owner);
+    TiledFB(Device *device, FrameBuffer *owner);
     virtual ~TiledFB();
 
     void resize(vec2i newSize);
     void free();
 
-    void finalizeTiles();
+    void finalizeTiles_launch();
 
     /*! number of (valid) pixels */
     vec2i numPixels       = { 0,0 };
@@ -93,7 +93,7 @@ namespace barney {
     AccumTile *accumTiles = 0;
     CompressedTile *compressedTiles = 0;
     FrameBuffer *const owner;
-    Device::SP  const device;
+    Device      *const device;
   };
 
 }

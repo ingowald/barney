@@ -19,50 +19,64 @@
 #include "barney/Group.h"
 #include "barney/material/Material.h"
 #include "barney/render/World.h"
-#include "barney.h"
 #include <set>
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct GlobalModel;
   struct Context;
   struct Texture;
-  struct Data;
   struct Light;
-  
 
-  struct ModelSlot : public Object {
+  struct SlotContext;
+
+  struct ModelSlot : public SlottedObject {
     typedef std::shared_ptr<ModelSlot> SP;
 
     ModelSlot(GlobalModel *model,
+              const DevGroup::SP &devices,
               /*! index with which the given rank's context will refer
                   to this _locally_; not the data rank in it */
-              int slotIndex);
+              int slotID);
     virtual ~ModelSlot();
 
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
     
-    OWLContext getOWL() const;
+    // static SP create(GlobalModel *model, int localID);
 
-    static SP create(GlobalModel *model, int localID);
+    void setInstances(barney_api::Group **groups,
+                      const affine3f *xfms,
+                      int numInstances);
 
-    void setInstances(std::vector<Group::SP> &groups,
-                      const affine3f *xfms);
-    
     struct {
       std::vector<Group::SP> groups;
       std::vector<affine3f>  xfms;
-      OWLGroup group = 0;
+      //      OWLGroup group = 0;
     } instances;
+
+    rtc::device::AccelHandle getInstanceAccel(Device *device)
+    {
+      auto *pld = getPLD(device);
+      assert(pld);
+      assert(pld->instanceGroup);
+      return pld->instanceGroup->getDD();
+    }
+    struct PLD {
+      rtc::Group *instanceGroup = 0;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
 
     void build();
 
-    render::World::SP world;
-    // MultiPass::Instances multiPassInstances;
-    DevGroup::SP   const devGroup;
+    // ------------------------------------------------------------------
+    // do not change order of these:
+    // ------------------------------------------------------------------
+    int            const slotID;
     GlobalModel   *const model;
-    int            const localID;
+    SlotContext   *const slotContext;
+    render::World::SP world;
 
   };
   

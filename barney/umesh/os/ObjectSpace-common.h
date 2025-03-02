@@ -30,48 +30,31 @@ namespace barney {
   // ------------------------------------------------------------------
   /*! base class for object-space volume accelerator for an
     unstructured mesh field */
-  struct UMeshObjectSpace {
-    struct DD : public UMeshField::DD {
-      using Inherited = UMeshField::DD;
-      
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        Inherited::addVars(vars,base);
-        TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
-      }
-
+  struct UMeshObjectSpace : public VolumeAccel {
+    struct DD {
+      Volume::DD<UMeshField> volume;
       TransferFunction::DD xf;
     };
 
-    struct Host : public VolumeAccel {
-      Host(UMeshField *mesh, Volume *volume)
-        : VolumeAccel(mesh,volume),
-          mesh(mesh)
-      {}
-
-      const std::vector<Device::SP> &getDevices()
-      { assert(mesh); return mesh->getDevices(); }
-        
-      UpdateMode updateMode() override
-      { return HAS_ITS_OWN_GROUP; }
-      
-      /*! set owl variables for this accelerator - this is virutal so
-        derived classes can add their own */
-      virtual void setVariables(OWLGeom geom)
-      {
-        mesh->setVariables(geom);
-        getXF()->setVariables(geom);
-      }
-      
-      UMeshField *const mesh;
-      OWLGeom   geom  = 0;
-      OWLGroup  group = 0;
+    struct PLD {
+      rtc::Geom  *geom  = 0;
+      rtc::Group *group = 0;
     };
+    PLD *getPLD(Device *device) 
+    { assert(!perLogical.empty()); return &perLogical[device->contextRank]; } 
+    std::vector<PLD> perLogical;
+
+    UMeshObjectSpace(UMeshField *mesh, Volume *volume)
+      : VolumeAccel(mesh,volume),
+        mesh(mesh)
+    {}
+      
+    UMeshField *const mesh;
   };
   
   /*! the main function provided by this header file - intersecting a
     ray against a given leaf node in a object-space umesh bvh */
-  inline __device__
+  inline __both__
   float intersectLeaf(Ray &ray,
                       range1f &inputLeafRange,
                       const UMeshObjectSpace::DD &self,
@@ -86,11 +69,11 @@ namespace barney {
     struct EndPoint { float t, scalar; };
 
     /*! compute scalar range covered by this segment */
-    __device__ range1f scalarRange() const;
+    __both__ range1f scalarRange() const;
 
     /*! returns the interpolated scalar value along this segment; this
       code assumes that t is INSIDE that segment! */
-    __device__ float lerp(float t) const;
+    __both__ float lerp(float t) const;
     
     EndPoint begin, end;
   };
@@ -102,16 +85,16 @@ namespace barney {
   struct Plane {
     /*! 'constructor' the sets a new plane equation going through
       three points */
-    __device__ void set(vec3f a, vec3f b, vec3f c);
+    __both__ void set(vec3f a, vec3f b, vec3f c);
 
     /*! clip given linear segment to the POSITIVE half-space defined
       by this plane (ie, for a tet this is assuming INSIDE-facing
       planes like VTK) */
-    __device__ bool clip(LinearSegment &segment,
+    __both__ bool clip(LinearSegment &segment,
                          const Ray &ray) const;
 
     /*! compute (scaled) distance of point v to this plane */
-    __device__ float eval(vec3f v) const;
+    __both__ float eval(vec3f v) const;
     
     vec3f N; //!< normal of plane
     vec3f P; //!< anchor point of plane
@@ -123,17 +106,17 @@ namespace barney {
     function along the [t0,t1] interavl that the ray overlaps this
     tet (which for a tet must be a linear function) */
   struct TetIntersector {
-    __device__ bool set(const UMeshObjectSpace::DD &dd,
+    __both__ bool set(const UMeshObjectSpace::DD &dd,
                         Element elt);
-    __device__ void set(float4 v0, float4 v1, float4 v2, float4 v3);
+    __both__ void set(vec4f v0, vec4f v1, vec4f v2, vec4f v3);
     
-    __device__ bool computeSegment(LinearSegment &segment,
+    __both__ bool computeSegment(LinearSegment &segment,
                                    const Ray &ray,
                                    const range1f &inputRange) const;
     
     /*! compute interpolated scalar value at position P, assuming that
       P is inside the tet */
-    __device__ float lerp_inside(const vec3f P) const;
+    __both__ float lerp_inside(const vec3f P) const;
 
     /*! the four positions of that tet's vertices */
     vec3f v0, v1, v2, v3;
@@ -152,7 +135,7 @@ namespace barney {
     handled in separate cases */
   struct ElementIntersector
   {
-    inline __device__
+    inline __both__
     ElementIntersector(const UMeshObjectSpace::DD &dd,
                        Ray &ray,
                        range1f leafRange);
@@ -160,56 +143,56 @@ namespace barney {
     /*! compute curently set element's scalar value at P, map it
       through the trnasfer function, and store result in
       this->mapped; */
-    inline __device__
+    inline __both__
     void sampleAndMap(vec3f P, bool dbg);
 
     /*! assume a enw element, and do whatever precomputations are
       required for that, deending on its type */
-    inline __device__
+    inline __both__
     bool setElement(Element elt);
     
     /*! compute (scaled) distance of P relative to plane abc */
-    inline __device__
+    inline __both__
     float evalToPlane(vec3f P, vec4f a, vec4f b, vec4f c);
 
     /*! clip currently active t-range (whch eventually describes
       interval of t values for which element overlaps the ray) to
       given plane, assuming inside facing planes */
-    inline __device__
+    inline __both__
     void clipRangeToPlane(vec4f a, vec4f b, vec4f c);
     
     /*! clip currently active t-range (whch eventually describes
       interval of t values for which element overlaps the ray) to
       given bilinear path, assuming inside facing planes */
-    inline __device__
+    inline __both__
     void clipRangeToPatch(vec4f a, vec4f b, vec4f c, vec4f d);
 
     /*! evaluate the current element at position P, storing the scalar
       value in sample, and returnign whether the point was actually
       inside (true) or outside (false) the volume; if outside the
       retured sample may be undefined */
-    inline __device__ bool evalElement(vec3f P, float &sample);
+    inline __both__ bool evalElement(vec3f P, float &sample);
 
     /*! 'evalElement' for a specific tet */
-    inline __device__
+    inline __both__
     bool evalTet(vec3f P, float &sample);
 
     /*! 'evalElement' for a specific pyr elemnt */
-    inline __device__
+    inline __both__
     bool evalPyr(vec3f P, float& sample);
 
     /*! 'evalElement' for a specific wedge element */
-    inline __device__
+    inline __both__
     bool evalWed(vec3f P, float& sample);
 
     /*! 'evalElement' for a specific hex element */
-    inline __device__
+    inline __both__
     bool evalHex(vec3f P, float& sample);
 
     /*! comute (conservative) *scalar* range of current ray-elemtn
       overlap segmehnt; this can be conservative, so may actually
       compute the entire element's scalr range */
-    inline __device__
+    inline __both__
     range1f computeElementScalarRange();
 
     /*! computes and sets the current element's t range (ie,
@@ -222,11 +205,11 @@ namespace barney {
       outside-the-elment positions would properly reutrn 'invalid'
       samples. (though obviously, the tighter the range the
       better) */
-    inline __device__
+    inline __both__
     bool computeElementRange();
 
     /*! compute majorant of current t range */
-    inline __device__
+    inline __both__
     float computeRangeMajorant();
     
     Ray &ray;
@@ -265,7 +248,7 @@ namespace barney {
     enum { maxSegments = 4 };
 
     const bool dbg;
-    inline __device__
+    inline __both__
     NewIntersector(Ray &ray,
                    range1f &inputLeafRange,
                    const UMeshObjectSpace::DD &self,
@@ -275,16 +258,16 @@ namespace barney {
 
     /*! intesect all test in currelt leaf, by gathering segments and
       intersecting those when required */
-    inline __device__ void doTets();
+    inline __both__ void doTets();
     /*! do all non-tet-non-grid elemnets in current leaf, using
       specialized ElementIntersector helper class */
-    inline __device__ void doOthers();
+    inline __both__ void doOthers();
     /*! intesect all gridlets in currelt leaf */
-    // inline __device__ void doGrids();
+    // inline __both__ void doGrids();
     
     /*! intersect all currently gathered segments - this is a helper
       function for doTets() */
-    inline __device__ void doSegments();
+    inline __both__ void doSegments();
 
 
     /* do ray-gridlet element intersection; currently doing only
@@ -292,11 +275,11 @@ namespace barney {
        gridlet's majorant. TODO: at some point compute how many
        samples to expect for full gridlet, and if too high, swtich to
        DDA and per-cell intersection */
-    // inline __device__
+    // inline __both__
     // void doGrid(int gridID);
 
     /*! sample a gridlet on given position */
-    inline __device__
+    inline __both__
     float sampleGrid(const box4f &domain, vec3i dims, const float *scalars,
                      vec3f P);
 
@@ -346,13 +329,13 @@ namespace barney {
   // "Plane::" stuff
   // ------------------------------------------------------------------
   
-  inline __device__ void Plane::set(vec3f a, vec3f b, vec3f c)
+  inline __both__ void Plane::set(vec3f a, vec3f b, vec3f c)
   { N = cross(b-a,c-a); P = a; }
   
-  inline __device__ float Plane::eval(vec3f v) const
+  inline __both__ float Plane::eval(vec3f v) const
   { return dot(v-P,N); }
   
-  inline __device__
+  inline __both__
   bool Plane::clip(LinearSegment &segment,
                    const Ray &ray)
     const
@@ -380,7 +363,7 @@ namespace barney {
   // ------------------------------------------------------------------
   // "LinearSegment::" stuff
   // ------------------------------------------------------------------
-  inline __device__
+  inline __both__
   bool clipSegment(LinearSegment &clipped,
                    const LinearSegment &original,
                    float t,
@@ -404,7 +387,7 @@ namespace barney {
 
   /*! returns the interpolated scalar value along this segment; this
     code assumes that t is INSIDE that segment! */
-  inline __device__
+  inline __both__
   float LinearSegment::lerp(float t) const
   {
     const float len = this->end.t-this->begin.t;
@@ -416,7 +399,7 @@ namespace barney {
       +    f *this->end.scalar;
   }
     
-  inline __device__
+  inline __both__
   range1f LinearSegment::scalarRange() const
   { return { min(begin.scalar,end.scalar),max(begin.scalar,end.scalar) }; }
 
@@ -424,7 +407,7 @@ namespace barney {
   // "TetIntersector::" stuff
   // ------------------------------------------------------------------
 
-  inline __device__
+  inline __both__
   float TetIntersector::lerp_inside(const vec3f P) const
   {
     float t0 = p0.eval(P);
@@ -443,11 +426,11 @@ namespace barney {
       (t0+t1+t2+t3);
   }
   
-  inline __device__
-  void TetIntersector::set(float4 __v0,
-                           float4 __v1,
-                           float4 __v2,
-                           float4 __v3)
+  inline __both__
+  void TetIntersector::set(vec4f __v0,
+                           vec4f __v1,
+                           vec4f __v2,
+                           vec4f __v3)
   {
     w0 = __v0.w;
     w1 = __v1.w;
@@ -464,13 +447,13 @@ namespace barney {
     p0.set(v1,v3,v2);
   }
   
-  inline __device__
+  inline __both__
   bool TetIntersector::set(const UMeshObjectSpace::DD &dd,
                            Element elt)
   {
     if (elt.type != Element::TET) return false;
 
-    int4 indices = (const vec4i &)dd.indices[elt.ofs0];
+    vec4i indices = (const vec4i &)dd.indices[elt.ofs0];
     set(dd.vertices[indices.x],
         dd.vertices[indices.y],
         dd.vertices[indices.z],
@@ -479,7 +462,7 @@ namespace barney {
     return true;
   }
 
-  inline __device__
+  inline __both__
   bool TetIntersector::computeSegment(LinearSegment &segment,
                                       const Ray &ray,
                                       const range1f &inputRange)
@@ -504,7 +487,7 @@ namespace barney {
   // ------------------------------------------------------------------
   // "ElementIntersector::" stuff
   // ------------------------------------------------------------------
-  inline __device__
+  inline __both__
   void ElementIntersector::sampleAndMap(vec3f P, bool dbg)
   {
     if (!evalElement(P, scalar))
@@ -514,7 +497,7 @@ namespace barney {
   }
 
 
-  inline __device__
+  inline __both__
   ElementIntersector::ElementIntersector(const UMeshObjectSpace::DD &dd,
                                          Ray &ray,
                                          range1f leafRange)
@@ -522,7 +505,7 @@ namespace barney {
   {}
 
 
-  inline __device__
+  inline __both__
   bool ElementIntersector::setElement(Element elt)
   {
     element = elt;
@@ -574,7 +557,7 @@ namespace barney {
   }
 
   /*! compute (scaled) distance of P relative to plane abc */
-  inline __device__
+  inline __both__
   float ElementIntersector::evalToPlane(vec3f P, vec4f a, vec4f b, vec4f c)
   {
     vec3f N = (cross(getPos(b)-getPos(a),getPos(c)-getPos(a)));
@@ -584,7 +567,7 @@ namespace barney {
   /*! clip currently active t-range (whch eventually describes
     interval of t values for which element overlaps the ray) to
     given plane, assuming inside facing planes */
-  inline __device__
+  inline __both__
   void ElementIntersector::clipRangeToPlane(vec4f a, vec4f b, vec4f c)
   {
     vec3f N = (cross(getPos(b)-getPos(a),getPos(c)-getPos(a)));
@@ -601,7 +584,7 @@ namespace barney {
   /*! clip currently active t-range (whch eventually describes
     interval of t values for which element overlaps the ray) to
     given bilinear path, assuming inside facing planes */
-  inline __device__
+  inline __both__
   void ElementIntersector::clipRangeToPatch(vec4f a, vec4f b, vec4f c, vec4f d)
   {
     vec3f NRef = cross(getPos(b)-getPos(a),getPos(c)-getPos(a));
@@ -622,7 +605,7 @@ namespace barney {
     value in sample, and returnign whether the point was actually
     inside (true) or outside (false) the volume; if outside the
     retured sample may be undefined */
-  inline __device__ bool ElementIntersector::evalElement(vec3f P, float &sample)
+  inline __both__ bool ElementIntersector::evalElement(vec3f P, float &sample)
   {
     switch(element.type){
     case Element::Type::TET:
@@ -639,7 +622,7 @@ namespace barney {
   }
 
   /*! 'evalElement' for a specific tet */
-  inline __device__
+  inline __both__
   bool ElementIntersector::evalTet(vec3f P, float &sample)
   {
     float t3 = evalToImplicitPlane(P,v0,v1,v2);
@@ -656,21 +639,21 @@ namespace barney {
   }
 
   /*! 'evalElement' for a specific pyr elemnt */
-  inline __device__
+  inline __both__
   bool ElementIntersector::evalPyr(vec3f P, float& sample)
   {
     return intersectPyrEXT(sample, P, v0, v1, v2, v3, v4);
   }
 
   /*! 'evalElement' for a specific wedge element */
-  inline __device__
+  inline __both__
   bool ElementIntersector::evalWed(vec3f P, float& sample)
   {
     return intersectWedgeEXT(sample, P, v0, v1, v2, v3, v4, v5);
   }
 
   /*! 'evalElement' for a specific hex element */
-  inline __device__
+  inline __both__
   bool ElementIntersector::evalHex(vec3f P, float& sample)
   {
     return intersectHexEXT(sample, P, v0, v1, v2, v3, v4, v5, v6, v7);
@@ -679,7 +662,7 @@ namespace barney {
   /*! comute (conservative) *scalar* range of current ray-elemtn
     overlap segmehnt; this can be conservative, so may actually
     compute the entire element's scalr range */
-  inline __device__
+  inline __both__
   range1f ElementIntersector::computeElementScalarRange() 
   {
     float scalar_t0 = 0.f;
@@ -720,7 +703,7 @@ namespace barney {
     outside-the-elment positions would properly reutrn 'invalid'
     samples. (though obviously, the tighter the range the
     better) */
-  inline __device__
+  inline __both__
   bool ElementIntersector::computeElementRange()
   {
     elementTRange = leafRange;
@@ -760,7 +743,7 @@ namespace barney {
   }
   
   /*! compute majorant of current t range */
-  inline __device__
+  inline __both__
   float ElementIntersector::computeRangeMajorant()
   {
     return dd.xf.majorant(computeElementScalarRange());
@@ -770,7 +753,7 @@ namespace barney {
   // ------------------------------------------------------------------
   // "NewIntersector::" stuff
   // ------------------------------------------------------------------
-  inline __device__
+  inline __both__
   NewIntersector::NewIntersector(Ray &ray,
                                  range1f &inputLeafRange,
                                  const UMeshObjectSpace::DD &self,
@@ -790,7 +773,7 @@ namespace barney {
       doOthers();
   }
 
-  inline __device__
+  inline __both__
   void NewIntersector::doSegments()
   {
     // if (dbg)
@@ -874,7 +857,7 @@ namespace barney {
 
   /*! do all non-tet-non-grid elemnets in current leaf, using
     specialized ElementIntersector helper class */
-  inline __device__ void NewIntersector::doOthers()
+  inline __both__ void NewIntersector::doOthers()
   {
     ElementIntersector isec(self,ray,inputLeafRange);
     int it = begin;
@@ -917,7 +900,7 @@ namespace barney {
   }
 
   /*! sample a gridlet on given position */
-  inline __device__
+  inline __both__
   float NewIntersector::sampleGrid(const box4f &domain,
                                    vec3i dims,
                                    const float *scalars,
@@ -973,7 +956,7 @@ namespace barney {
      gridlet's majorant. TODO: at some point compute how many
      samples to expect for full gridlet, and if too high, swtich to
      DDA and per-cell intersection */
-  // inline __device__
+  // inline __both__
   // void NewIntersector::doGrid(int gridID)
   // {
   //   box4f domain = self.gridDomains[gridID];
@@ -1024,7 +1007,7 @@ namespace barney {
   // }
     
   // /*! intesect all gridlets in currelt leaf */
-  // inline __device__ void NewIntersector::doGrids()
+  // inline __both__ void NewIntersector::doGrids()
   // {
   //   for (int it=begin;it<end;it++) {
   //     const Element elt = self.elements[it];
@@ -1036,7 +1019,7 @@ namespace barney {
     
   /*! intesect all test in currelt leaf, by gathering segments and
     intersecting those when required */
-  inline __device__ void NewIntersector::doTets()
+  inline __both__ void NewIntersector::doTets()
   {
     TetIntersector isec;
     int it = begin;
@@ -1085,7 +1068,7 @@ namespace barney {
 
   /*! the main function provided by this header file - intersecting a
     ray against a given leaf node in a object-space umesh bvh */
-  inline __device__
+  inline __both__
   float intersectLeaf(Ray &ray,
                       range1f &inputLeafRange,
                       const UMeshObjectSpace::DD &self,

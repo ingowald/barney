@@ -18,7 +18,7 @@
 
 #include "barney/common/barney-common.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     enum { numAttributes = 4 };
@@ -42,11 +42,11 @@ namespace barney {
     struct HitAttributes {
       typedef AttributeKind Which;
         
-      inline __device__ HitAttributes();
-      inline __device__ float4 get(Which attribute, bool dbg=false) const;
+      inline __rtc_device HitAttributes();
+      inline __rtc_device vec4f get(Which attribute, bool dbg=false) const;
       
-      float4 color;
-      float4 attribute[numAttributes];
+      vec4f color;
+      vec4f attribute[numAttributes];
       vec3f  worldPosition;
       vec3f  objectPosition;
       vec3f  worldNormal;
@@ -56,19 +56,17 @@ namespace barney {
       bool   isShadowRay = false;
     };
 
-    inline __device__ HitAttributes::HitAttributes()
+    inline __rtc_device HitAttributes::HitAttributes()
     {
       color
-        = make_float4(NAN,NAN,NAN,NAN);
-      // = make_float4(0,0,0,1);
+        = vec4f(NAN,NAN,NAN,NAN);
       for (int i=0;i<numAttributes;i++)
         attribute[i]
-            = make_float4(NAN,NAN,NAN,NAN);
-      // = make_float4(0,0,0,1);
+            = vec4f(NAN,NAN,NAN,NAN);
     }
 
-    inline __device__
-    float4 HitAttributes::get(Which whichOne, bool dbg) const
+    inline __rtc_device
+    vec4f HitAttributes::get(Which whichOne, bool dbg) const
     {
       if (whichOne == ATTRIBUTE_0)
         return attribute[0];
@@ -80,7 +78,7 @@ namespace barney {
         return attribute[3];
       if (whichOne == COLOR)
         return color;
-      return make_float4(0.f,0.f,0.f,1.f);
+      return vec4f(0.f,0.f,0.f,1.f);
     }
 
   }

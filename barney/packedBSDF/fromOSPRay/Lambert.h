@@ -35,34 +35,34 @@
 
 #include "barney/packedBSDF/fromOSPRay/BSDF.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
 
     typedef uint32_t BSDFType;
 
     struct Lambert : public BSDF {
 
-      inline __device__
+      inline __both__
       Lambert(vec3f R, bool dbg = false)
         : BSDF(R)
       {}
       inline Lambert(const Lambert &) = default;
       // { Lambert l; l.init(R); return l; }
 
-      // static inline __device__
+      // static inline __both__
       // Lambert create(vec3f R, bool dbg = false)
       // { Lambert l; l.init(R); return l; }
                      
-      // inline __device__ void init(vec3f R, bool dbg = false)
+      // inline __both__ void init(vec3f R, bool dbg = false)
       // { BSDF::init(R); }
         
-      inline __device__
+      inline __both__
       EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
       {
         EvalRes res;
         float cosThetaI = max(dot(wi, dg.Ns), 0.f);
         res.pdf = cosineSampleHemispherePDF(cosThetaI);
-        res.value = (vec3f)albedo * one_over_pi * cosThetaI;
+        res.value = (vec3f)albedo * ONE_OVER_PI * cosThetaI;
         return res;
       }
       

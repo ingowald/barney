@@ -19,10 +19,10 @@
 #include "barney/common/barney-common.h"
 #include "barney/Object.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! the camera model we use in barney */
-  struct Camera : public Object {
+  struct Camera : public barney_api::Camera {
     typedef std::shared_ptr<Camera> SP;
     typedef enum { UNDEFINED=0, PERSPECTIVE } Type;
     /*! device-data for the camera object; to avoid virtual functions
@@ -43,17 +43,12 @@ namespace barney {
       /*! lens center ... */
       vec3f lens_00;
       /* radius of lens, for DOF */
-      float lensRadius;
+      float apertureRadius;
       /* distance to focal plane, for DOF */
-      float focalLength;
+      float focusDistance;
     };
     DD dd;
 
-    struct {
-      float focalLength = 0.f;
-      float lensRadius = 0.f;
-    } defaultValues;
-    
     Camera(Context *owner);
     virtual ~Camera() = default;
     

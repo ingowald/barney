@@ -5,19 +5,23 @@ option(BARNEY_BUILD_ANARI "Build ANARI device" ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-if (NOT (TARGET anari))
-  find_package(anari 0.12.0 COMPONENTS code_gen)
-  if (NOT anari_FOUND)
-    message("barney: ANARI SDK not found - skipping this")
-    return()
-  endif()
+find_package(anari 0.13.0 COMPONENTS code_gen)
+if (NOT anari_FOUND)
+  message("barney: ANARI SDK not found - skipping this")
+  return()
 endif()
 
 include(GNUInstallDirs)
 
 ## Device target ##
 
-project(anari_library_barney LANGUAGES CXX)
+if (BARNEY_HAVE_CUDA)
+  project(anari_library_barney LANGUAGES CXX CUDA)
+  set(DUMMY_CU dummy.cu)
+else()
+  project(anari_library_barney LANGUAGES CXX)
+  set(DUMMY_CU)
+endif()
 
 set(BANARI_SOURCES
   BarneyGlobalState.cpp
@@ -37,154 +41,121 @@ set(BANARI_SOURCES
   Surface.cpp
   Volume.cpp
   World.cpp
+  ${DUMMY_CU}
   )
+
+
 
 # helper 'interface-'library that contains common settings for both
 # static and shared anari
-add_library(banari-config INTERFACE
-  )
-target_link_libraries(banari-config
-  INTERFACE
-  barney-config
-  )
-set_target_properties(banari-config
-  PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
-#set_target_properties(banari-config
-#  PROPERTIES
-#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-#  )
+add_library(banari-config INTERFACE)
+target_link_libraries(banari-config INTERFACE barney_config)
+set_target_properties(banari-config PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(banari-config
-  INTERFACE
+INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
-  )
+)
 
 # ==================================================================
 # default shared-linkage for anari loader library to load when barney
 # device is requested
 # ==================================================================
-add_library(anari_library_barney SHARED
-  ${BANARI_SOURCES}
-  )
+add_library(anari_library_barney SHARED ${BANARI_SOURCES})
+target_link_libraries(anari_library_barney PRIVATE
+  $<BUILD_INTERFACE:banari-config>
+#  barney
+  barney_static
+  anari::helium
+  anari::anari
+)
 
 if (BARNEY_MPI)
-  target_link_libraries(anari_library_barney
-    PRIVATE
-    banari-config
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
-    )
-else()
-  target_link_libraries(anari_library_barney
-    PRIVATE
-    banari-config
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
-    )
-endif()
-if (TARGET anari::helium)
-  target_link_libraries(anari_library_barney PRIVATE
+  add_library(anari_library_barney_mpi SHARED ${BANARI_SOURCES})
+  target_link_libraries(anari_library_barney_mpi PRIVATE
+    $<BUILD_INTERFACE:banari-config>
+    barney_mpi_static
     anari::helium
     anari::anari
-    )
-else()
-  target_link_libraries(anari_library_barney PRIVATE
-    helium
-    anari
-    )
+  )
 endif()
 
-#set_target_properties(anari_library_barney
-#  PROPERTIES
-#  CUDA_SEPARABLE_COMPILATION ON
-#  POSITION_INDEPENDENT_CODE ON
-#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-#  CUDA_USE_STATIC_CUDA_RUNTIME ON
-#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-#  )
+
+if (BARNEY_HAVE_CUDA)
+  set_source_files_properties(World.cpp
+    PROPERTIES
+    LANGUAGE CUDA
+  )
+  set_target_properties(anari_library_barney
+    PROPERTIES
+    LANGUAGE CUDA
+    CUDA_SEPARABLE_COMPILATION ON
+  )
+endif()
+
+#target_link_libraries(anari_library_barney PRIVATE )
+# if(MSVC)
+#     target_compile_options(anari_library_barney INTERFACE
+#         "$<$<CONFIG:Debug>:/MTd>"
+#         "$<$<CONFIG:Release>:/MT>"
+#         "$<$<CONFIG:RelWithDebInfo>:/MT>"
+#         "$<$<CONFIG:MinSizeRel>:/MT>"
+#     )
+# endif()
+set_target_properties(anari_library_barney
+  PROPERTIES
+  CXX_VISIBILITY_PRESET  hidden
+  CUDA_VISIBILITY_PRESET hidden
+  CUDA_SEPARABLE_COMPILATION   ON
+  POSITION_INDEPENDENT_CODE    ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+)
 
 include(GenerateExportHeader)
 generate_export_header(anari_library_barney
   EXPORT_MACRO_NAME "BARNEY_LIBRARY_INTERFACE"
-  )
+)
 
 ## Installation ##
 
-set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$ORIGIN")
-install(TARGETS anari_library_barney
+if (APPLE)
+  set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$loader_path")
+else()
+  set_target_properties(anari_library_barney PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+if (OFF)
+install(TARGETS# barney
+  anari_library_barney
+  EXPORT barney-config
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+)
+endif()
 
+file(GLOB DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "visrtx_*.json")
+list(APPEND DEVICE_JSONS "barney_device.json")
 
+foreach(file ${DEVICE_JSONS})
+  file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file} INPUT ${file})
+endforeach()
 
-
-
-
-# ==================================================================
-# STATIC version of this device. need this for baking into pynari
-# ==================================================================
-add_library(anari_library_barney_static STATIC
-  ${BANARI_SOURCES}
-  )
-
+anari_generate_queries(
+  DEVICE_TARGET anari_library_barney
+  CPP_NAMESPACE barney_device
+  JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
+  JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
+  JSON_EXTENSION_FILES ${DEVICE_JSONS}
+)
 if (BARNEY_MPI)
-  target_link_libraries(anari_library_barney_static
-    PRIVATE
-    banari-config
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_mpi_static>"
-    )
-else()
-  target_link_libraries(anari_library_barney_static
-    PRIVATE
-    banari-config
-    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
-    )
-endif()
-if (TARGET anari::helium)
-  # when building from installed source:
-  target_link_libraries(anari_library_barney_static PUBLIC
-    anari::helium
-    anari_static
-    )
-else()
-  target_link_libraries(anari_library_barney_static PUBLIC
-    helium
-    anari_static
-    )
-endif()
-if (WIN32)
-  target_compile_definitions(anari_library_barney_static PRIVATE -DNOGDI=1)
-endif()
-
-
-#set_target_properties(anari_library_barney_static
-#  PROPERTIES
-#  CUDA_ARCHITECTURES ${BARNEY_CUDA_ARCHITECTURES}
-#  CUDA_SEPARABLE_COMPILATION ON
-#  POSITION_INDEPENDENT_CODE ON
-#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-#  CUDA_USE_STATIC_CUDA_RUNTIME ON
-#  )
-
-#include(GenerateExportHeader)
-#generate_export_header(anari_library_barney_static
-#  EXPORT_MACRO_NAME "BARNEY_LIBRARY_INTERFACE"
-#  )
-
-if (NOT BANARI_SKIP_QUERIES)
-  ## Code generation ##
   anari_generate_queries(
-    DEVICE_TARGET anari_library_barney
+    DEVICE_TARGET anari_library_barney_mpi
     CPP_NAMESPACE barney_device
-    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
-    )
-  anari_generate_queries(
-    DEVICE_TARGET anari_library_barney_static
-    CPP_NAMESPACE barney_device
-    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/barney_device.json
-    )
+    JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
+    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
+    JSON_EXTENSION_FILES ${DEVICE_JSONS}
+  )
 endif()
-
+  

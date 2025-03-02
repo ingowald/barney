@@ -18,27 +18,20 @@
 
 #include "barney/Context.h"
 #include "barney/fb/TiledFB.h"
-#include <optix.h>
-#include <optix_stubs.h>
+// #ifdef BARNEY_BACKEND_OPTIX
+// #include <optix.h>
+// #include <optix_stubs.h>
+// #endif
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct FrameBuffer;
-  
-  struct Denoiser {
-    typedef std::shared_ptr<Denoiser> SP;
-    static SP create(FrameBuffer *fb);
-    
-    Denoiser(FrameBuffer *fb) : fb(fb) {};
-    virtual ~Denoiser() {};
-    virtual void resize() = 0;
-    virtual void run() = 0;
-    FrameBuffer *const fb;
-  };
-    
-  struct FrameBuffer : public Object {
 
-    FrameBuffer(Context *context, const bool isOwner);
+  struct FrameBuffer : barney_api::FrameBuffer {
+
+    FrameBuffer(Context *context,
+                const DevGroup::SP &devices,
+                const bool isOwner);
     virtual ~FrameBuffer();
 
     /*! pretty-printer for printf-debugging */
@@ -47,25 +40,35 @@ namespace barney {
 
     bool set1i(const std::string &member, const int &value) override;
 
-    virtual void resize(vec2i size, uint32_t channels);
-    virtual void resetAccumulation() {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }
+    void resize(vec2i size, uint32_t channels) override;
+    void resetAccumulation() override
+    {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }
     void freeResources();
 
+    void finalizeTiles();
     void finalizeFrame();
     virtual void ownerGatherCompressedTiles() = 0;
 
     void read(BNFrameBufferChannel channel,
               void *hostPtr,
-              BNDataType requestedFormat);
+              BNDataType requestedFormat) override;
 
     struct {
       CompressedTile *compressedTiles     = 0;
       TileDesc       *tileDescs      = 0;
       int             numActiveTiles = 0;
     } gatheredTilesOnOwner;
-    
-    std::vector<TiledFB::SP> perDev;
 
+    TiledFB *getFor(Device *device);
+    struct PLD {
+      TiledFB::SP tiledFB;
+    };
+    PLD *getPLD(Device *device);
+    
+    std::vector<PLD> perLogical;
+
+    void *getPointer(BNFrameBufferChannel channel) override;
+    
     /*! on owner, take the 'gatheredTilesOnOwner', and unpack them into
         linear color, depth, alpha, and normal channels, so denoiser
         can then run on it */
@@ -81,23 +84,21 @@ namespace barney {
         generate exactly this format, so the compressed bnFrameBufferRead()
         can then just copy from this format */
 
-    float4 *denoisedColor = 0;
+    vec4f *denoisedColor = 0;
     
-    vec3f *linearColor = 0;
-    /*! linear depth buffer, in array-(not tiled) order, after
-        denoising - only on owner. All denoiser implementations will
-        generate exactly this format, so the linear bnFrameBufferRead()
-        can then just copy from this format*/
-    float  *linearDepth = 0;
-    float  *linearAlpha = 0;
-    vec3f  *linearNormal = 0;
+    vec4f *linearColor = 0;
+    float *linearDepth = 0;
+    vec3f *linearNormal = 0;
     
     vec2i numPixels = {-1,-1};
 
-    Denoiser::SP denoiser;
+    Device *getDenoiserDevice() const;
+    rtc::Denoiser *denoiser;
+    // Denoiser::SP denoiser;
 
     uint32_t    accumID = 0;
     const bool  isOwner;
     bool  showCrosshairs = false;
+    DevGroup::SP const devices;
   };
 }

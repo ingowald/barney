@@ -19,11 +19,11 @@
 #include "barney/Context.h"
 #include "barney/ModelSlot.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct ModelSlot;
   
-  struct GlobalModel : public Object {
+  struct GlobalModel : public barney_api::Model {//SlottedObject {
     typedef std::shared_ptr<GlobalModel> SP;
 
     static SP create(Context *ctx) { return std::make_shared<GlobalModel>(ctx); }
@@ -35,9 +35,9 @@ namespace barney {
     std::string toString() const override
     { return "Model{}"; }
 
-    void render(Renderer    *renderer,
-                Camera      *camera,
-                FrameBuffer *fb);
+    void render(barney_api::Renderer    *renderer,
+                barney_api::Camera      *camera,
+                barney_api::FrameBuffer *fb) override;
 
     ModelSlot *getSlot(int whichSlot)
     {
@@ -46,6 +46,16 @@ namespace barney {
       return modelSlots[whichSlot].get();
     }
     std::vector<ModelSlot::SP> modelSlots;
+
+    void setInstances(int slot,
+                      barney_api::Group **groups,
+                      const affine3f *xfms,
+                      int numInstances) override
+    { getSlot(slot)->setInstances(groups,xfms,numInstances); }
+    
+    void build(int slot) override
+    { getSlot(slot)->build(); }
+      
   };
 
 }

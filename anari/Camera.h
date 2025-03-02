@@ -12,7 +12,7 @@ struct Camera : public Object
   Camera(BarneyGlobalState *s);
   ~Camera() override;
 
-  virtual void commit() override;
+  virtual void commitParameters() override;
 
   static Camera *createInstance(
       std::string_view type, BarneyGlobalState *state);
@@ -27,7 +27,7 @@ struct Camera : public Object
   math::float3 m_up;
   math::float4 m_imageRegion;
 
-  BNCamera m_barneyCamera = 0;
+  BNCamera m_barneyCamera{nullptr};
 };
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -36,11 +36,14 @@ struct Perspective : public Camera
 {
   Perspective(BarneyGlobalState *s);
 
-  void commit() override;
+  void commitParameters() override;
+  void finalize() override;
 
  private:
   float m_fovy{30.f};
   float m_aspect{1.f};
+  float m_focusDistance = 0.f;
+  float m_apertureRadius = 0.f;
 };
 
 } // namespace barney_device

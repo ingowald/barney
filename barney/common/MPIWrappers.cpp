@@ -16,7 +16,7 @@
 
 #include "barney/common/MPIWrappers.h"
 
-namespace barney {
+namespace barney_api {
   namespace mpi {
 
     void init(int &ac, char **av)

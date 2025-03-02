@@ -20,11 +20,11 @@
 #include "barney/common/Data.h"
 #include "barney/common/Texture.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct ModelSlot;
   
-  struct Light : public SlottedObject {
+  struct Light : public barney_api::Light {
     typedef std::shared_ptr<Light> SP;
 
     struct DD {
@@ -45,7 +45,7 @@ namespace barney {
     };
   
     
-    Light(Context *context, int slot);
+    Light(Context *context, const DevGroup::SP &devices);
 
     std::string toString() const override { return "Light<>"; }
 
@@ -57,10 +57,11 @@ namespace barney {
     // ------------------------------------------------------------------
     
     static Light::SP create(Context *context,
-                            int slot,
+                            const DevGroup::SP &devices,
                             const std::string &name);
 
     vec3f color = vec3f(1.f);
+    DevGroup::SP const devices;
   };
 
 };

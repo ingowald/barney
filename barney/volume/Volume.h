@@ -22,7 +22,7 @@
 #include "barney/volume/TransferFunction.h"
 #include "barney/volume/ScalarField.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct Volume;
   struct ScalarField;
@@ -33,18 +33,144 @@ namespace barney {
   typedef std::array<int,6> WedIndices;
   typedef std::array<int,8> HexIndices;
 
+  struct VolumeAccel {
+    
+    typedef std::shared_ptr<VolumeAccel> SP;
+
+    VolumeAccel(Volume *volume);
+
+    virtual void build(bool full_rebuild) = 0;
+
+    const TransferFunction *getXF() const;
+    
+    Volume      *const volume = 0;
+    const DevGroup::SP devices;
+  };
+
+
+
+
+
+  struct VolumeAccel;
+  
+  /*! a *volume* is a scalar field with a transfer function applied to
+      it; it's main job is to create something that can intersect a
+      ray with that scalars-plus-transferfct thingy, for which it will
+      use some kind of volume accelerator that implements the
+      scalar-field type specific stuff (eg, traverse a bvh over
+      elements, or look up a 3d texture, etc) */
+  struct Volume : public barney_api::Volume
+  {
+    template<typename SFSampler>
+    struct DD {
+      inline __rtc_device
+      vec4f sampleAndMap(vec3f point, bool dbg=false) const
+      {
+        float f = sfSampler.sample(point,dbg);
+        if (isnan(f)) return vec4f(0.f);
+        vec4f mapped = xf.map(f,dbg);
+        return mapped;
+      }
+      
+      ScalarField::DD        sfCommon;
+      typename SFSampler::DD sfSampler;
+      TransferFunction::DD   xf;
+    };
+    
+    template<typename SFSampler>
+    DD<SFSampler> getDD(Device *device, std::shared_ptr<SFSampler> sampler)
+    {
+      DD<SFSampler> dd;
+      dd.sfCommon = sf->getDD(device);
+      dd.sfSampler = sampler->getDD(device);
+      dd.xf = xf.getDD(device);
+      return dd;
+    }
+
+    typedef std::shared_ptr<Volume> SP;
+    
+    Volume(ScalarField::SP sf);
+
+    /*! pretty-printer for printf-debugging */
+    std::string toString() const override
+    { return "Volume{}"; }
+
+    static SP create(ScalarField::SP sf)
+    {
+      return std::make_shared<Volume>(sf);
+    }
+    
+    /*! (re-)build the accel structure for this volume, probably after
+        changes to transfer functoin (or later, scalar field) */
+    virtual void build(bool full_rebuild);
+    
+    void setXF(const range1f &domain,
+               const bn_float4 *values,
+               int numValues,
+               float baseDensity) override;
+               
+    ScalarField::SP  sf;
+    VolumeAccel::SP  accel;
+    TransferFunction xf;
+    DevGroup::SP const devices;
+    
+    struct PLD {
+      std::vector<rtc::Group *> generatedGroups;
+      std::vector<rtc::Geom *>  generatedGeoms;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+    // std::vector<OWLGroup> generatedGroups;
+  };
+
+
+
+
   /*! helper class that performs woodcock sampling over a given
       parameter range, for a given sample'able volume type */
   struct Woodcock {
-    template<typename VolumeSampler>
-    static inline __device__
+    template<typename VolumeDD>
+    static inline __rtc_device
+    bool sampleRangeT(vec4f &sample,
+                      const VolumeDD &sfSampler,
+                      vec3f org, vec3f dir,
+                      range1f &tRange,
+                      float majorant,
+                      uint32_t &rngSeed,
+                      bool dbg=false) 
+    {
+      LCG<4> &rand = (LCG<4> &)rngSeed;
+      float t = tRange.lower;
+      while (true) {
+        float dt = - logf(1.f-rand())/majorant;
+        t += dt;
+        if (t >= tRange.upper)
+          return false;
+
+        sample = sfSampler.sampleAndMap(t,dbg);
+        // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
+        //                 t,
+        //                 P.x,P.y,P.z,
+        //                 sample.x,
+        //                 sample.y,
+        //                 sample.z,
+        //                 sample.w);
+        if (sample.w >= rand()*majorant) {
+          tRange.upper = t;
+          return true;
+        }
+      }
+    }
+
+    template<typename VolumeDD>
+    static inline __rtc_device
     bool sampleRange(vec4f &sample,
-                     const VolumeSampler &volume,
+                     const VolumeDD &sfSampler,
                      vec3f org, vec3f dir,
                      range1f &tRange,
                      float majorant,
                      uint32_t &rngSeed,
-                     bool dbg=false)
+                     bool dbg=false) 
     {
       LCG<4> &rand = (LCG<4> &)rngSeed;
       float t = tRange.lower;
@@ -55,7 +181,7 @@ namespace barney {
           return false;
 
         vec3f P = org+t*dir;
-        sample = volume.sampleAndMap(P,dbg);
+        sample = sfSampler.sampleAndMap(P,dbg);
         // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
         //                 t,
         //                 P.x,P.y,P.z,
@@ -70,124 +196,15 @@ namespace barney {
       }
     }
   };
+
+
+
   
-  struct VolumeAccel {
-    /*! one particular problem of _volume_ accels is that due to
-        changes to the transfer function the number of 'valid'
-        (owl-)prims in a given group can change over successive
-        builds. one option to handle that is to always rebuild
-        everything form scratch, but that is expensive. Instead, we
-        have this function to allow a given volume to specify whether
-        it wants a full rebuild (either because it doesn't have nay
-        special pass for refitting, or because it's the first time
-        this thing is ever built, etc - UpdateMode::FULL_REBUILD), or
-        whether it is fine with refitting (UpdateMode::REFIT)). The
-        third update mode - "BUILD_THEN_REFIT" - allows a volume accel
-        to request a full rebuild _and_ a additional refit after that;
-        this is in order to allow enabling all prims in the initial
-        build, and then disabling all majorant-zero ones in a second
-        pass. 
-
-        Note: If any one of the voluems in a group request either
-        full_rebuild or build_then_refit, then all prims will have
-        their 'build(fullRebuild)' method called with rebuild==true;
-        if any one of the volumes in a group request either refit or
-        build_then_refit, then build will be called (possibly a second
-        time!) with fullRebuild==false. In particular, this does mean
-        that some geometries will have their build called twice - once
-        with fullRebuild true, once with false - even if _they_ have
-        not asked for that kind of pass */
-    typedef enum { FULL_REBUILD, BUILD_THEN_REFIT, REFIT,
-      HAS_ITS_OWN_GROUP } UpdateMode;
-    
-    typedef std::shared_ptr<VolumeAccel> SP;
-
-    /*! device data for a volume accel - takes the device data for the
-        underlying scalar field, and 'adds' a transfer function (and
-        then gets the ability to sample field and map with xf */
-    template<typename ScalarFieldSampler>
-    struct DD : public ScalarFieldSampler::DD {
-      using Inherited = typename ScalarFieldSampler::DD;
-      
-      inline __device__
-      vec4f sampleAndMap(vec3f point, bool dbg=false) const
-      {
-        float f = this->sample(point,dbg);
-        if (isnan(f)) return vec4f(0.f);
-        vec4f mapped = xf.map(f,dbg);
-        return Inherited::mapColor(mapped,point,f);
-      }
-
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        Inherited::addVars(vars,base);
-        TransferFunction::DD::addVars(vars,base+OWL_OFFSETOF(DD,xf));
-      }
-      
-      TransferFunction::DD xf;
-    };
-    
-    VolumeAccel(ScalarField *sf, Volume *volume);
-
-    virtual void setVariables(OWLGeom geom);
-    
-    virtual UpdateMode updateMode()
-    { return FULL_REBUILD; }
-
-    virtual void build(bool full_rebuild) = 0;
-
-    OWLContext getOWL() const;
-    const TransferFunction *getXF() const;
-    
-    ScalarField *const sf = 0;
-    Volume      *const volume = 0;
-    DevGroup    *const devGroup;
-  };
-  
-  /*! a *volume* is a scalar field with a transfer function applied to
-      it; it's main job is to create something that can intersect a
-      ray with that scalars-plus-transferfct thingy, for which it will
-      use some kind of volume accelerator that implements the
-      scalar-field type specific stuff (eg, traverse a bvh over
-      elements, or look up a 3d texture, etc) */
-  struct Volume : public Object
+  inline VolumeAccel::VolumeAccel(Volume *volume)
+    : volume(volume),
+      devices(volume->devices)
   {
-    typedef std::shared_ptr<Volume> SP;
-    
-    Volume(ScalarField::SP sf);
-
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Volume{}"; }
-
-    VolumeAccel::UpdateMode updateMode() { return accel->updateMode(); }
-
-    static SP create(ScalarField::SP sf) { return std::make_shared<Volume>(sf); }
-    
-    /*! (re-)build the accel structure for this volume, probably after
-        changes to transfer functoin (or later, scalar field) */
-    virtual void build(bool full_rebuild);
-    
-    void setXF(const range1f &domain,
-               const std::vector<vec4f> &values,
-               float baseDensity)
-    { xf.set(domain,values,baseDensity); }
-               
-    ScalarField::SP  sf;
-    VolumeAccel::SP  accel;
-    TransferFunction xf;
-    DevGroup        *const devGroup;
-    
-    std::vector<OWLGroup> generatedGroups;
-  };
-
-
-  inline VolumeAccel::VolumeAccel(ScalarField *sf, Volume *volume)
-    : sf(sf), volume(volume), devGroup(sf->getDevGroup())
-  {
-    assert(sf);
     assert(volume);
-    assert(devGroup);
-    // assert(sf->devGroup);  
+    assert(volume->sf);
   }
 }

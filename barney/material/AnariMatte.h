@@ -16,41 +16,47 @@
 
 #pragma once
 
+#include "barney/common/barney-common.h"
+#include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/packedBSDF/NVisii.h"
 #include "barney/render/HitAttributes.h"
 #include "barney/material/Material.h"
 
-namespace barney {
+namespace BARNEY_NS {
   namespace render {
       
     struct AnariMatte : public HostMaterial {      
       struct DD {
-#ifdef __CUDA_ARCH__
-        inline __device__
+#if RTC_DEVICE_CODE
+        inline __rtc_device
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
 #endif
         PossiblyMappedParameter::DD color;
       };
-      AnariMatte(Context *context, int slot) : HostMaterial(context,slot) {}
+      AnariMatte(SlotContext *context) : HostMaterial(context) {}
       virtual ~AnariMatte() = default;
 
-      bool setString(const std::string &member, const std::string &value) override;
-      bool set3f(const std::string &member, const vec3f &value) override;
-      bool set4f(const std::string &member, const vec4f &value) override;
-      bool setObject(const std::string &member, const Object::SP &value) override;
+      bool setString(const std::string &member,
+                     const std::string &value) override;
+      bool set3f(const std::string &member,
+                 const vec3f &value) override;
+      bool set4f(const std::string &member,
+                 const vec4f &value) override;
+      bool setObject(const std::string &member,
+                     const Object::SP &value) override;
       
       std::string toString() const override { return "AnariMatte"; }
       
-      void createDD(DeviceMaterial &dd, int deviceID) const override;
+      DeviceMaterial getDD(Device *device) override;
       
       PossiblyMappedParameter color = vec3f(.8f);
     };
       
   
-#ifdef __CUDA_ARCH__
-    inline __device__
+#if RTC_DEVICE_CODE
+    inline __rtc_device
     PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData,
                                           const Sampler::DD *samplers,
                                           bool dbg) const
@@ -58,7 +64,7 @@ namespace barney {
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
 
-      float4 baseColor = this->color.eval(hitData,samplers,dbg);
+      vec4f baseColor = this->color.eval(hitData,samplers,dbg);
 
       // not anari-conformant, but useful: if geometry _has_ a color
       // attribute, use it, no matter whether our input is point to it
@@ -73,7 +79,6 @@ namespace barney {
       bsdf.roughness = 1.f;
       return bsdf;
     }
-#endif
-    
+#endif    
   }
 }

@@ -14,12 +14,20 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/volume/StructuredData.h"
 #include "barney/Context.h"
+#include "barney/volume/StructuredData.h"
+#include "barney/common/Texture.h"
+#include "rtcore/ComputeInterface.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  extern "C" char StructuredData_ptx[];
+  RTC_IMPORT_USER_GEOM(/*file*/StructuredData,/*name*/StructuredMC,
+                       /*geomtype device data */
+                       MCVolumeAccel<StructuredDataSampler>::DD,false,false);
+  RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
+
+
+  // extern "C" char StructuredData_ptx[];
 
   /*! how many cells (in each dimension) will go into a macro
       cell. eg, a value of 8 will mean that eachmacrocell covers 8x8x8
@@ -29,117 +37,96 @@ namespace barney {
       actual cells */
   enum { cellsPerMC = 8 };
 
-  __global__
-  void computeMCs(MCGrid::DD mcGrid,
-                  vec3i numScalars,
-                  cudaTextureObject_t texNN)
-  {
-    vec3i mcID = vec3i(threadIdx) + vec3i(blockIdx) * vec3i(blockDim);
-    if (mcID.x >= mcGrid.dims.x) return;
-    if (mcID.y >= mcGrid.dims.y) return;
-    if (mcID.z >= mcGrid.dims.z) return;
-
-    range1f scalarRange;
-    for (int iiz=0;iiz<=cellsPerMC;iiz++)
-      for (int iiy=0;iiy<=cellsPerMC;iiy++)
-        for (int iix=0;iix<=cellsPerMC;iix++) {
-          vec3i scalarID = mcID*int(cellsPerMC) + vec3i(iix,iiy,iiz);
-          if (scalarID.x >= numScalars.x) continue;
-          if (scalarID.y >= numScalars.y) continue;
-          if (scalarID.z >= numScalars.z) continue;
-          float f = tex3D<float>(texNN,scalarID.x,scalarID.y,scalarID.z);
-          scalarRange.extend(f);
-        }
-    int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
-    mcGrid.scalarRanges[mcIdx] = scalarRange;
-  }
+  /*! compute kernel that computes macro-cell information for a 3D
+      structured data grid */
+  struct StructuredData_ComputeMCs {
+    /* kernel CODE */
+    inline __rtc_device void run(const rtc::ComputeInterface &rtCore)
+    {
+      vec3i mcID
+        = vec3i(rtCore.getThreadIdx())
+        + vec3i(rtCore.getBlockIdx())
+        * vec3i(rtCore.getBlockDim());
+      if (mcID.x >= mcGrid.dims.x) return;
+      if (mcID.y >= mcGrid.dims.y) return;
+      if (mcID.z >= mcGrid.dims.z) return;
+        
+      range1f scalarRange;
+      for (int iiz=0;iiz<=cellsPerMC;iiz++)
+        for (int iiy=0;iiy<=cellsPerMC;iiy++)
+          for (int iix=0;iix<=cellsPerMC;iix++) {
+            vec3i scalarID = mcID*int(cellsPerMC) + vec3i(iix,iiy,iiz);
+            if (scalarID.x >= numScalars.x) continue;
+            if (scalarID.y >= numScalars.y) continue;
+            if (scalarID.z >= numScalars.z) continue;
+            float f = rtc::tex3D<float>(scalars,
+                                   (float)scalarID.x,
+                                   (float)scalarID.y,
+                                   (float)scalarID.z);
+            scalarRange.extend(f);
+          }
+      int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
+      mcGrid.scalarRanges[mcIdx] = scalarRange;
+    }
+      
+    /* kernel ARGS */
+    MCGrid::DD mcGrid;
+    vec3i numScalars;
+    rtc::device::TextureObject scalars;
+  };
   
-  StructuredData::StructuredData(Context *context, int slot)
-    : ScalarField(context,slot)
-  {}
+  StructuredData::StructuredData(Context *context,
+                                 const DevGroup::SP &devices)
+    : ScalarField(context,devices)
+  {
+    perLogical.resize(devices->numLogical);
+    for (auto device : *devices)
+      getPLD(device)->computeMCs
+        = createCompute_StructuredData_computeMCs(device->rtc);
+  }
 
 
   void StructuredData::buildMCs(MCGrid &mcGrid) 
   {
     vec3i mcDims = divRoundUp(numCells,vec3i(cellsPerMC));
     mcGrid.resize(mcDims);
-    vec3i blockSize(4);
-    vec3i numBlocks = divRoundUp(mcDims,blockSize);
+    vec3ui blockSize(4);
+    vec3ui numBlocks = divRoundUp(vec3ui(mcDims),blockSize);
     mcGrid.gridOrigin = worldBounds.lower;
     mcGrid.gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
-    for (auto dev : getDevices()) {
-    // for (int lDevID=0;lDevID<devGroup->size();lDevID++) {
-    //   auto dev = devGroup->devices[lDevID];
-      SetActiveGPU forDuration(dev);
-      CHECK_CUDA_LAUNCH(computeMCs,
-                        (const dim3&)numBlocks,(const dim3&)blockSize,0,0,
-                        //
-                        mcGrid.getDD(dev),numScalars,
-                        texture->getDD(dev).texObjNN);
-      // computeMCs<<<(const dim3&)numBlocks,(const dim3&)blockSize>>>
-      //   (mcGrid.getDD(dev),numScalars,
-      //    texture->getDD(dev).texObjNN);
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      StructuredData_ComputeMCs args = {
+        mcGrid.getDD(device),
+        numScalars,
+        textureNN->getDD(device)
+      };
+      pld->computeMCs->launch(numBlocks,blockSize,
+                              &args);
     }
-    BARNEY_CUDA_SYNC_CHECK();
+    for (auto device : *devices)
+      device->sync();
   }
   
-  void StructuredData::setVariables(OWLGeom geom)
+  StructuredDataSampler::DD StructuredDataSampler::getDD(Device *device)
   {
-    ScalarField::setVariables(geom);
-    
-    for (auto dev : getDevices()) {
-      cudaTextureObject_t tex = texture->getDD(dev).texObj;
-      owlGeomSetRaw(geom,"tex3D",&tex,dev->owlID);
-    }
-    if (colorMapTexture)
-      for (auto dev : getDevices()) {
-        //int lDevID=0;lDevID<devGroup->devices.size();lDevID++) {
-        cudaTextureObject_t tex = colorMapTexture->getDD(dev).texObj;
-        owlGeomSetRaw(geom,"colorMapTex3D",&tex,dev->owlID);
-      }
-    owlGeomSet3f(geom,"cellGridOrigin",
-                 gridOrigin.x,
-                 gridOrigin.y,
-                 gridOrigin.z);
-    owlGeomSet3f(geom,"cellGridSpacing",
-                 gridSpacing.x,
-                 gridSpacing.y,
-                 gridSpacing.z);
-    owlGeomSet3i(geom,"numCells",
-                 numCells.x,
-                 numCells.y,
-                 numCells.z);
+    DD dd;
+    dd.texObj = sf->texture->getDD(device);
+    dd.cellGridOrigin = sf->gridOrigin;
+    dd.cellGridSpacing = sf->gridSpacing;
+    dd.numCells = sf->numCells;
+    return dd;
   }
   
   VolumeAccel::SP StructuredData::createAccel(Volume *volume) 
   {
-    const char *methodFromEnv = getenv("BARNEY_STRUCTURED");
-    const std::string method = methodFromEnv ? methodFromEnv : "DDA";
-    if (method != "DDA") {
-      return std::make_shared<MCRTXVolumeAccel<StructuredDataSampler>::Host>
-        (this,volume,StructuredData_ptx);
-    } else {
-      return std::make_shared<MCDDAVolumeAccel<StructuredDataSampler>::Host>
-        (this,volume,StructuredData_ptx);
-    }
+    auto sampler = std::make_shared<StructuredDataSampler>(this);
+    return std::make_shared<MCVolumeAccel<StructuredDataSampler>>
+      (volume,
+       createGeomType_StructuredMC,
+       sampler);
   }
   
-  void StructuredData::DD::addVars(std::vector<OWLVarDecl> &vars, int base)
-  {
-    ScalarField::DD::addVars(vars,base);
-    vars.push_back
-      ({"tex3D",OWL_USER_TYPE(cudaTextureObject_t),base+OWL_OFFSETOF(DD,texObj)});
-    vars.push_back
-      ({"cellGridOrigin",OWL_FLOAT3,base+OWL_OFFSETOF(DD,cellGridOrigin)});
-    vars.push_back
-      ({"cellGridSpacing",OWL_FLOAT3,base+OWL_OFFSETOF(DD,cellGridSpacing)});
-    vars.push_back
-      ({"numCells",OWL_INT3,base+OWL_OFFSETOF(DD,numCells)});
-    vars.push_back
-      ({"colorMapTex3D",OWL_USER_TYPE(cudaTextureObject_t),
-         base+OWL_OFFSETOF(DD,colorMappingTexObj)});
-  }
-
   // ==================================================================
   bool StructuredData::set3f(const std::string &member,
                              const vec3f &value) 
@@ -171,12 +158,19 @@ namespace barney {
   bool StructuredData::setObject(const std::string &member,
                                  const Object::SP &value) 
   {
-    if (member == "texture") {
-      texture = value->as<Texture3D>();
-      return true;
-    }
-    if (member == "textureColorMap") {
-      colorMapTexture = value->as<Texture3D>();
+    if (member == "textureData") {
+      scalars = value->as<TextureData>();
+      BNTextureAddressMode addressModes[3] = {
+        BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP
+      };
+      texture = std::make_shared<Texture>((Context*)context,scalars,
+                                          BN_TEXTURE_LINEAR,
+                                          addressModes,
+                                          BN_COLOR_SPACE_LINEAR);
+      textureNN = std::make_shared<Texture>((Context*)context,scalars,
+                                            BN_TEXTURE_NEAREST,
+                                            addressModes,
+                                            BN_COLOR_SPACE_LINEAR);
       return true;
     }
     return false;
@@ -189,5 +183,6 @@ namespace barney {
     worldBounds.upper = gridOrigin + gridSpacing * vec3f(numCells);
   }
   
+  RTC_EXPORT_COMPUTE3D(StructuredData_computeMCs,StructuredData_ComputeMCs);
 }
 

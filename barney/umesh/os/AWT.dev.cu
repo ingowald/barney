@@ -16,607 +16,587 @@
 
 #include <owl/owl_device.h>
 #include "barney/umesh/os/AWT.h"
+#include "rtcore/TraceInterface.h"
 
-// #define AWT_SAMPLE_MODE 1
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
-#ifndef AWT_THRESHOLD
-#  define AWT_THRESHOLD 8
-#endif
+enum { AWT_STACK_DEPTH = 64 };
 
-// #if AWT_SAMPLE_MODE
-// # ifndef AWT_THRESHOLD
-// #  define AWT_THRESHOLD 
-// # endif
-// #endif
+// #define AWT_SAMPLE_THRESHOLD 4.f
+// #define JOINT_FIRST_STEP 1
 
-#if 0
-namespace barney {
-  namespace device {
-  OPTIX_BOUNDS_PROGRAM(UMeshAWTBounds)(const void *geomData,                
-                                       owl::common::box3f &primBounds,  
-                                       const int32_t primID)
+namespace BARNEY_NS {
+
+  inline __rtc_device
+  bool verySmall(range1f r)
   {
-    const auto &self = *(const UMeshAWT::DD *)geomData;
-    box4f bounds;
-    int root = self.roots[primID];
-    int rootChild = root & 0x3;
-    int rootNode  = root >> 2;
-    // int begin = self.nodes[rootNode].child[rootChild].offset;
-    bounds = self.nodes[rootNode].bounds[rootChild];
-    // if (self.xf.values == 0) {
-    //   for (int i=begin;i<end;i++)
-    //     bounds.extend(self.eltBounds(self.elements[i]));
-    //   self.nodes[rootNode].bounds[rootChild] = bounds;
-    // }
-    // else 
-    //   bounds = self.nodes[rootNode].bounds[rootChild];
-    primBounds = getBox(bounds);
-    // printf("bounds prog %i root %i:%i\n",primID,rootNode,rootChild);
-    range1f range = getRange(bounds);
-    if (self.xf.values) {
-      float majorant = self.xf.majorant(range);
-      self.nodes[rootNode].majorant[rootChild] = majorant;
-      if (majorant == 0.f) {
-        // swap(primBounds.lower,primBounds.upper);
-        primBounds = box3f();
-        // printf("leaf CULLED\n");
-      }
-      
-      
-      // else
-      //   printf("active node (%f %f %f)(%f %f %f)\n",
-      //          primBounds.lower.x,
-      //          primBounds.lower.y,
-      //          primBounds.lower.z,
-      //          primBounds.upper.x,
-      //          primBounds.upper.y,
-      //          primBounds.upper.z);
-    }
+    float l = r.span();
+    return l >= 0.f && l < 1e-5f * r.upper;
   }
   
+  struct AWTPrograms {
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &rt)
+    {}
 
-  OPTIX_CLOSEST_HIT_PROGRAM(UMeshAWTCH)()
-  {
-    auto &ray = owl::getPRD<Ray>();
-    auto &self = owl::getProgramData<UMeshAWT::DD>();
-    int primID = optixGetPrimitiveIndex();
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &rt)
+    {}
+
+    static inline __rtc_device
+    void bounds(const rtc::TraceInterface &rt,
+                const void *geomData,
+                owl::common::box3f &bounds,  
+                const int32_t primID)
+    { 
+      const AWTAccel::DD &geom = *(const AWTAccel::DD *)geomData;
+      bounds = geom.mesh.worldBounds;
+
+      printf("BOUNDS (%f %f %f)(%f %f %f)\n",
+             bounds.lower.x,
+             bounds.lower.y,
+             bounds.lower.z,
+             bounds.upper.x,
+             bounds.upper.y,
+             bounds.upper.z);
     
-    float t = optixGetRayTmax();
-
-    vec3f P = ray.org + t * ray.dir;
-    // if (ray.dbg)
-    //   printf("CENTRAL DIFF prim %i at %f %f %f\n",
-    //          primID,
-    //          P.x,P.y,P.z);
-
-    // vec3f N = normalize(ray.dir);
-    ray.setVolumeHit(P,t,vec3f(1.f));
-    // ray.hadHit = 1;
-    // ray.hit.N = vec3f(0.f);
-    // ray.hit.P = P;
-  }
-
-// #if AWT_SAMPLE_MODE
-//   struct AWTSamples {
-//     enum { max_samples = 4*AWT_THRESHOLD };
-//     float t[max_samples];
-//     int count = 0;
-//   };
-
-
-//   inline __device__
-//   float intersectLeaf(Ray &ray,
-//                       AWTSamples &samples,
-//                       bool inSampleMode,
-//                       float majorant,
-//                       range1f &inputLeafRange,
-//                       const UMeshObjectSpace::DD &self,
-//                       int begin,
-//                       int end)
-//   {
-//     bool dbg = ray.dbg;
-//     LCG<4> &rand = (LCG<4> &)ray.rngSeed;
-//     int numStepsTaken = 0, numSamplesTaken = 0, numRangesComputed = 0, numSamplesRejected = 0;
-//     ElementIntersector isec(self,ray,inputLeafRange);
-//     // use prim box only to find candidates (similar to ray tracing
-//     // for triangles), but each ray then intersects each prim
-//     // individually.
-    
-//     int it = begin;
-//     Element hit_elt;
-//     float hit_t = BARNEY_INF;
-//     while (it < end) {
-//       // find next prim:
-//       int next = it++;
-//       if (!isec.setElement(self.elements[next]))
-//         continue;
-
-//       if (inSampleMode) {
-//         for (int i=0;i<samples.count;i++) {
-//           float t = samples.t[i];
-//           if (t < isec.leafRange.lower || t >= min(hit_t,isec.leafRange.upper))
-//             continue;
-//           vec3f P = ray.org + t * ray.dir;
-//           isec.sampleAndMap(P,dbg);
-//           float r = rand();
-//           bool accept = (isec.mapped.w > r*majorant);
-//           if (!accept) {
-//             continue;
-//           }
-//           hit_t = t;
-//           hit_elt = isec.element;
-//           isec.leafRange.upper = hit_t;
-          
-//           ray.hit.baseColor = getPos(isec.mapped);
-//           break;
-//         }
-//         continue;
-//       } 
       
-//       // check for GEOMETRIC overlap of ray and prim
-//       numRangesComputed++;
-//       if (!isec.computeElementRange())
-//         continue;
+    }
 
-//       // compute majorant for given overlap range
-//       float majorant = isec.computeRangeMajorant();
-//       if (majorant == 0.f)
-//         continue;
-      
-//       float t = isec.elementTRange.lower;
-//       while (true) {
-//         float dt = - logf(1-rand())/(majorant);
-//         t += dt;
-//         numStepsTaken++;
-//         if (t >= isec.elementTRange.upper)
-//           break;
-
-//         vec3f P = ray.org + t * ray.dir;
-//         numSamplesTaken++;
-//         isec.sampleAndMap(P,dbg);
-//         float r = rand();
-//         bool accept = (isec.mapped.w > r*majorant);
-//         if (!accept) {
-//           numSamplesRejected++;
-//           continue;
-//         }
-        
-//         hit_t = t;
-//         hit_elt = isec.element;
-//         isec.leafRange.upper = hit_t;
-
-//         ray.hit.baseColor = getPos(isec.mapped);
-//         break;
-//       }
-//     }
-//     return hit_t;
-//   }
-    
-// #endif
-
-
-  struct __barney_align(16) AWTSegment {
-    AWTNode::NodeRef node;
-// #if AWT_SAMPLE_MODE
-//     half    majorant;
-//     bool    inSampleMode;
-// #else
-    float   majorant;
-// #endif
-    range1f range;
+    static inline __rtc_device
+    void intersect(rtc::TraceInterface &ti);
   };
 
-// #if AWT_SAMPLE_MODE
-//   inline __device__
-//   void checkSwitchingToSampleMode(LCG<4> &rand,
-//                                   AWTSegment &segment,
-//                                   AWTSamples &samples,
-//                                   AWTSegment *&stackPtr)
-//   {
-//     if (segment.inSampleMode)
-//       // ALREADY in sample mode...
-//       return;
-//     float expected_dt
-//       = - logf(.5f)/((float)segment.majorant);
-//     float expectedNumSteps
-//       = (segment.range.upper-segment.range.lower) / expected_dt;
-//     if (expectedNumSteps > (float)AWT_THRESHOLD)
-//       return;
-
-//     // oh-kay .... let's do it! let's switch to sample mode!
-//     segment.inSampleMode = true;
-//     samples.count = 0;
-//     float t = segment.range.lower;
-//     while (true) {
-//       float dt = - logf(1-rand())/((float)segment.majorant);
-//       t += dt;
-//       if (t > segment.range.upper)
-//         break;
-//       samples.t[samples.count++] = t;
-//       if (samples.count == samples.max_samples) {
-//         *stackPtr++ = { segment.node,segment.majorant,true,
-//                         { t,segment.range.upper } };
-//         break;
-//       }
-//     }
-//     if (samples.count == 0)
-//       return;
-//     segment.range.lower = samples.t[0];
-//     segment.range.upper = samples.t[samples.count-1];
-//   }
-// #else
-  inline __device__
-  bool switchToSampleMode(AWTSegment &segment)
-  {
-    float expected_dt
-      = - logf(.5f)/((float)segment.majorant);
-    float expectedNumSteps
-      = (segment.range.upper-segment.range.lower) / expected_dt;
-    if (expectedNumSteps > (float)AWT_THRESHOLD)
-      return false;
-    return true;
-  }
-// #endif
-
-  inline __device__ void orderSegments(AWTSegment &a,
-                                       AWTSegment &b)
-  {
-    if (a.range.lower < b.range.lower) {
-      AWTSegment c = a;
-      a = b;
-      b = c;
-    }
-  }
-  inline __device__
-  bool shortEnoughForSampling(AWTSegment segment)
-  { return false; }
-
-// #if AWT_SAMPLE_MODE
-//   inline __device__
-//   range1f clampToSamples(range1f range, const AWTSamples &samples)
-//   {
-//     range1f clamped = { BARNEY_INF,-BARNEY_INF };
-//     for (int i=0;i<samples.count;i++) {
-//       float t = samples.t[i];
-//       if (t >= range.lower && t <= range.upper)
-//         clamped.extend(t);
-//     }
-//     if (clamped.upper < clamped.lower)
-//       clamped = { BARNEY_INF, BARNEY_INF };
-//     return clamped;
-//   }
-// #endif
-
-  inline __device__ bool inside(const box4f box,
-                                const vec3f P)
-  {
-    return !(P.x < box.lower.x |
-             P.y < box.lower.y |
-             P.z < box.lower.z |
-             P.x > box.upper.x |
-             P.y > box.upper.y |
-             P.z > box.upper.z);
-  }
   
-  inline __device__
-  float findSample(const UMeshField::DD *mesh,
-                   const AWTNode *nodes,
-                   AWTNode::NodeRef nodeRef,
-                   vec3f P,
-                   bool dbg=false)
-  {
-    AWTNode::NodeRef stackBase[32];
-    AWTNode::NodeRef *stackPtr = stackBase;
-    // if (dbg) printf("findsample %f %f %f\n",P.x,P.y,P.z);
-    while (true) {
-      // if (dbg) printf("noderef %i %i\n",nodeRef.offset,nodeRef.count);
-      while (nodeRef.count == 0) {
-        auto node = nodes[nodeRef.offset];
-        AWTNode::NodeRef next; next.offset = 0;
-#pragma unroll
-        for (int c=0;c<4;c++) {
-          if (node.majorant[c] == 0.f)
-            continue;
-          if (!inside(node.bounds[c],P))
-            continue;
-          if (next.offset == 0)
-            next = node.child[c];
-          else {
-            // if (dbg) printf("pushing to %i\n",int(stackPtr-stackBase));
-            *stackPtr++ = node.child[c];
-          }
-        }
-        if (next.offset == 0)
-          { nodeRef.count = 0; break; }
-        else
-          { nodeRef = next; continue; }
-      }
-
-      // do leaf
-      for (int i=0;i<nodeRef.count;i++) {
-        auto elt = mesh->elements[nodeRef.offset+i];
-        // if (dbg) printf("sampling element %i tet %i\n",nodeRef.offset+i,elt.ID);
-        float retVal = NAN;
-        if (mesh->eltScalar(retVal,elt,P)) {
-          // if (dbg) printf("sample found %f\n",retVal);
-          return retVal;
-        }
-      }
-
-      if (stackPtr == stackBase) {
-        // if (dbg) printf("no sample found\n");
-        return NAN;
-      }
-
-      // if (dbg) printf("popping from %i\n",int(stackPtr-stackBase));
-      nodeRef = *--stackPtr;
-    }
-  }
-
-  OPTIX_INTERSECT_PROGRAM(UMeshAWTIsec)()
-  {
-    
-    const int primID = optixGetPrimitiveIndex();
-    const auto &self
-      = owl::getProgramData<typename UMeshAWT::DD>();
-    auto &ray
-      = owl::getPRD<Ray>();
-    // if (ray.dbg == false) return;
-
-    // bool dbg = false;//ray.dbg;
-
-// #if PRINT_BALLOT
-//     int numActive = __popc(__ballot(1));
-//     if (ray.dbg)
-//       printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ isec #%i on geom %lx, leaf %i, numActive = %i\n",
-//              ray.numIsecsThisRay++,
-//              (void *)&self,primID,numActive);
-// #endif
-    
-    
-     // if (!ray.dbg) return;
-    AWTSegment segment;
-    int root = self.roots[primID];
-    int rootChild = root & 0x3;
-    int rootNode  = root >> 2;
-    // int begin = self.nodes[rootNode].child[rootChild].offset;
-    // int end = begin + self.nodes[rootNode].child[rootChild].count;
-    box3f bounds = getBox(self.nodes[rootNode].bounds[rootChild]);
-    // float majorant = self.nodes[rootNode].majorant[rootChild];
-
-    segment.range.lower = optixGetRayTmin();
-    segment.range.upper = optixGetRayTmax();
-    segment.node = self.nodes[rootNode].child[rootChild];
-    segment.majorant = self.nodes[rootNode].majorant[rootChild];
-// #if AWT_SAMPLE_MODE
-//     segment.inSampleMode = false;
-// #endif
-    float hit_t = segment.range.upper;
-    vec3f org = ray.org;
-    vec3f dir = ray.dir;
-    bool isHittingTheBox
-      = boxTest(segment.range.lower,segment.range.upper,bounds,org,dir);
-
-    if (!isHittingTheBox) 
-      return;
-
-// #if AWT_SAMPLE_MODE
-//     AWTSamples samples;
-// #endif    
-    LCG<4> &rand = (LCG<4> &)ray.rngSeed;
-    AWTSegment stackBase[32];
-    AWTSegment *stackPtr = stackBase;
-    bool haveValidSegment = true;
-    // if (dbg)
-    //   printf("====================================\n");
-    while (true) {
-      bool inSamplingMode = false;
-      while (true) {
-        if (!haveValidSegment) {
-          while (stackPtr > stackBase) {
-            segment = *--stackPtr;
-            if (segment.range.lower >= hit_t) 
-              continue;
-            // we FOUND something to pop!
-            segment.range.upper = min(segment.range.upper,hit_t);
-            haveValidSegment = true;
-            break;
-          }
-        }
-        // we'd STILL need to pop from stack, but stack is empty .... we're done.
-        if (!haveValidSegment) 
-          break;
-
-        if (switchToSampleMode(segment)) {
-          inSamplingMode = true;
-          break;
-        }
-        
-        if (segment.node.count != 0)
-          /* leaf! (even though not in samplign mode...) */
-          break;
-        
-// #if AWT_SAMPLE_MODE
-        // checkSwitchingToSampleMode(rand,segment,samples,stackPtr);
-        // #else
-// #endif
-        
-        auto node = self.nodes[segment.node.offset];
-        
-        AWTSegment childSeg[4];
-#pragma unroll(4)
-        for (int c=0;c<4;c++) {
-          float tt0 = segment.range.lower;
-          float tt1 = segment.range.upper;
-          childSeg[c]
-            = { node.child[c], 
-// #if AWT_SAMPLE_MODE
-//             segment.inSampleMode
-//             ?(float)segment.majorant
-//             :node.majorant[c],
-//             segment.inSampleMode,
-// #else
-            node.majorant[c],
-// #endif
-            range1f{ BARNEY_INF, BARNEY_INF } };
-          if (node.majorant[c] == 0.f) {
-          } else if (!boxTest(tt0,tt1,node.bounds[c],org,dir)) {
-            // do nothing -- we didn't hit, just leave the range.lwoer at inf
-          } else {
-            // we DID hit the box
-            childSeg[c].range = range1f{ tt0, tt1 };
-// #if AWT_SAMPLE_MODE
-//             // ... but may still miss any samples
-//             if (segment.inSampleMode) {
-//               childSeg[c].range
-//                 = clampToSamples(childSeg[c].range,samples);
-//             } 
-// #endif
-          }
-        }
-
-        orderSegments(childSeg[0],childSeg[1]);
-        orderSegments(childSeg[1],childSeg[2]);
-        orderSegments(childSeg[2],childSeg[3]);
-
-        orderSegments(childSeg[0],childSeg[1]);
-        orderSegments(childSeg[1],childSeg[2]);
-
-        orderSegments(childSeg[0],childSeg[1]);
-
-        if (childSeg[0].range.lower < hit_t) *stackPtr++ = childSeg[0];
-        if (childSeg[1].range.lower < hit_t) *stackPtr++ = childSeg[1];
-        if (childSeg[2].range.lower < hit_t) *stackPtr++ = childSeg[2];
-        
-        if (childSeg[3].range.lower >= hit_t) {
-          haveValidSegment = false;
-        } else {
-          segment = childSeg[3];
-        }
-      }
-
-      // if we reached here we either couldn't go any further down the
-      // tree, or decided not to. in total there's three optoins how
-      // this could have come about:
-      //
-      // a) traversal reached a node where none of the children are
-      // valid; we can't go down and ned to pop.
-      //
-      // b) we've reached a valid leaf, and need to do (object-space)
-      // leaf interseciton with the primitmives there.
-      //
-      // c) we've reached an inner node that _may_ have children, but
-      // where we decided that it's small enough to just sample the
-      // entire range
-      //
-      
-      if (!haveValidSegment) 
-        // option 'a' - we know the ray doesn't ahve a valid segment,
-        // so nothing to do here.
-        break;
-
-      // if (dbg)
-      //   printf("----------- reached segment %f %f node %i %i, samplemode = %i\n",
-      //          segment.range.lower,segment.range.upper,
-      //          segment.node.offset,
-      //          segment.node.count,
-      //          int(inSamplingMode));
-      if (inSamplingMode) {
-        // woodcock:
-        float t        = segment.range.lower;
-        float majorant = segment.majorant;
-        // LCG<4> &rand = (LCG<4> &)rngSeed;
-        while (true) {
-          float dt = - logf(1.f-rand())/majorant;
-          t += dt;
-          if (t >= segment.range.upper)
-          break;
-
-          vec3f P = org+t*dir;
-          float f = findSample(&self,
-                               self.nodes,segment.node,P
-                               // ,ray.dbg
-                               );
-          if (isnan(f))
-          continue;
-          
-          vec4f sample = self.xf.map(f);
-          // if (dbg)
-          //   printf("DID find sample %f at %f, mapped %f %f %f: %f\n",
-          //          f,t,sample.x,sample.y,sample.z,sample.w);
-          if (sample.w >= rand()*majorant) {
-            hit_t = t;
-            ray.setVolumeHit(P,t,getPos(sample));
-            break;
-          }
-        }
+  /*! approximates a cubic function defined through four points (at
+    t=0, t=1/3, t=2/3, and 1=1.f) with corresponding values of f0,
+    f1, f2, and f3 */
+  struct Cubic {
+    inline __rtc_device float eval(float t, bool dbg=false) const
+    {
+      t = tRange.span()==0.f
+        ? 0.f
+        : ((t-tRange.lower)/tRange.span());
+      t = 3.f*t;
+      float _f0, _f1;
+      if (t >= 2.f) {
+        _f0 = f2;
+        _f1 = f3;
+        t -= 2.f;
+      } else if (t >= 1.f) {
+        _f0 = f1;
+        _f1 = f2;
+        t -= 1.f;
       } else {
-        // leaf, but NOT sampling mode
-        range1f range = segment.range;
-        if (hit_t < range.upper)
-          printf("RANGE TOO FAR\n");
-        // segment.range.upper = min(segment.range.upper,hit_t);
-        hit_t = intersectLeaf(ray,range,self,
-                              segment.node.offset,
-                              segment.node.offset+segment.node.count
-                              // ,dbg
-                              );
+        _f0 = f0;
+        _f1 = f1;
       }
-      haveValidSegment = false;
+      return (1.f-t)*_f0 + t*_f1;
     }
-  
+    range1f tRange;
+    float f0, f1, f2, f3;
+  };
 
-      
-    // #if AWT_SAMPLE_MODE
-      
-    //       if (segment.node.count) {
-    //         // optoin 'b' - do intersection on the leaf
-    //         // if (dbg)
-        
-    // // #if PRINT_BALLOT
-    // //         float expected_dt = - logf(.5f)/((float)segment.majorant);
-    // //         float expectedNumSteps = (segment.range.upper-segment.range.lower) / expected_dt;
-    // //         if (ray.dbg)
-    // //           printf("LEAF, expected num steps %f\n",expectedNumSteps);
-    // // #endif
+  inline __rtc_device
+  void clip(range1f &range,
+            vec4f _a, vec4f _b, vec4f _c,
+            const vec3f &org,
+            const vec3f &dir)
+  {
+    vec3f a = getPos(_a);
+    vec3f b = getPos(_b);
+    vec3f c = getPos(_c);
+    vec3f N = cross(b-a,c-a);
+    float NdotD = dot(N,dir);
+    if (NdotD == 0.f) {
+      if (dot(org - a,N) < 0.f)
+        range = { +BARNEY_INF, -BARNEY_INF };
+      return;
+    }
+    float plane_t = - dot(org - a, N) / NdotD;
+    if (NdotD < 0.f)
+      range.upper = min(range.upper,plane_t);
+    else
+      range.lower = max(range.lower,plane_t);
+  }
 
-    //         //   printf("LEAF %i cnt %i\n",segment.node.offset,segment.node.count);
-    // #if AWT_SAMPLE_MODE
-    //         float leaf_t = intersectLeaf(ray,samples,
-    //                                      segment.inSampleMode,
-    //                                      segment.majorant,
-    //                                      segment.range,self,
-    //                                      segment.node.offset,
-    //                                      segment.node.offset+segment.node.count);
-    // #else
-    //         float leaf_t = intersectLeaf(ray,samples,segment.range,
-    //                                      self,
-    //                                      segment.node.offset,
-    //                                      segment.node.offset+segment.node.count);
-    // #endif
-    //         hit_t = min(hit_t,leaf_t);
-    //         haveValidSegment = false;
-    //         // if (dbg) printf("new t %f leaf %f\n",hit_t,leaf_t);
-    //       } else {
-    //         // option 'c' - we're sampling .... not yet implemented
-    //         printf("sampling!?\n");
-    //       }
+  inline __rtc_device
+  float evalToPlane(vec3f P, 
+                    vec3f a, vec3f b, vec3f c)
+  {
+    vec3f N = cross(b-a,c-a);
+    return dot(P-a,N);
+  }
   
-    //
-    //
-    // TODO: if expected num steps is small enough, just sample
-    // isntead of doing per-element intersection
-    //
-  
-    if (hit_t < optixGetRayTmax())  {
-      // ray.hadHit = true;
-      // ray.tMax = hit_t;
-      // ray.hit.P = ray.org + hit_t * ray.dir;
-      // ray.hit.N = vec3f(0.f);
-      // ray.setVolumeHit(ray.org + hit_t * ray.dir,hit_t,
-      optixReportIntersection(hit_t, 0);
+  inline __rtc_device
+  float eval(vec3f P, 
+             vec4f _a, vec4f _b, vec4f _c, vec4f _d)
+  {
+    vec3f v0 = getPos(_a);
+    vec3f v1 = getPos(_b);
+    vec3f v2 = getPos(_c);
+    vec3f v3 = getPos(_d);
+      
+    float f3 = evalToPlane(P,v0,v1,v2);
+    float f2 = evalToPlane(P,v0,v3,v1);
+    float f1 = evalToPlane(P,v0,v2,v3);
+    float f0 = evalToPlane(P,v1,v3,v2);
+    return
+      (f0*_a.w + f1*_b.w + f2*_c.w + f3*_d.w)
+      / (f0+f1+f2+f3);
+  }
+    
+  inline __rtc_device
+  Cubic cubicFromTet(const UMeshField::DD &mesh,
+                     Element elt,
+                     const vec3f &org,
+                     const vec3f &dir,
+                     range1f initRange,
+                     bool dbg
+                     )
+  {
+    Cubic cubic;
+    cubic.tRange = initRange;
+    
+    // printf("tet ofs0 %i\n",elt.ofs0);
+    vec4i tet = *(const vec4i *)&mesh.indices[elt.ofs0];
+    // printf("tet ofs0 %i -> %i %i %i %i\n",elt.ofs0,
+    //        tet.x,tet.y,tet.z,tet.w);
+    vec4f v0 = rtc::load(((float4*)mesh.vertices)[tet.x]);
+    vec4f v1 = rtc::load(((float4*)mesh.vertices)[tet.y]);
+    vec4f v2 = rtc::load(((float4*)mesh.vertices)[tet.z]);
+    vec4f v3 = rtc::load(((float4*)mesh.vertices)[tet.w]);
+    clip(cubic.tRange,v0,v1,v2,org,dir);
+    clip(cubic.tRange,v0,v3,v1,org,dir);
+    clip(cubic.tRange,v0,v2,v3,org,dir);
+    clip(cubic.tRange,v1,v3,v2,org,dir);
+    if (dbg)
+      printf("clipped range %f %f\n",
+             cubic.tRange.lower,cubic.tRange.upper);
+    if (cubic.tRange.lower <= cubic.tRange.upper) {
+      vec3f P0 = org+cubic.tRange.lower*dir;
+      vec3f P1 = org+cubic.tRange.upper*dir;
+      cubic.f0 = eval(P0,v0,v1,v2,v3);
+      cubic.f3 = eval(P1,v0,v1,v2,v3);
+      cubic.f1 = lerp_l(1.f/3.f,cubic.f0,cubic.f3);
+      cubic.f2 = lerp_l(2.f/3.f,cubic.f0,cubic.f3);
+    }
+    if (dbg)
+      printf("got cubic corners %f %f %f %f f's %f %f %f %f\n",
+             v0.w,
+             v1.w,
+             v2.w,
+             v3.w,
+             cubic.f0,
+             cubic.f1,
+             cubic.f2,
+             cubic.f3);
+    return cubic;
+  }
+
+  struct CubicSampler {
+    inline __rtc_device
+    CubicSampler(const Cubic &cubic,
+                 const TransferFunction::DD &xf)
+      : cubic(cubic),xf(xf)
+    {}
+    inline __rtc_device
+    vec4f sampleAndMap(float t, bool dbg=false) const
+    {
+      float f = cubic.eval(t,dbg);
+      if (dbg)
+        printf("cubic sampling at t=%f in %f %f -> scalar %f\n",t,
+               cubic.tRange.lower,cubic.tRange.upper,f);
+      if (isnan(f)) return vec4f(0.f);
+      vec4f mapped = xf.map(f,dbg);
+      if (dbg)
+        printf("mapping %f -> %f %f %f:%f\n",f,
+               mapped.x,mapped.y,mapped.z,mapped.w);
+      return mapped;
+    }
+    
+    const Cubic &cubic;
+    const TransferFunction::DD &xf;
+  };
+
+  inline __rtc_device
+  bool woodcockSampleJFS(vec4f &sample,
+                         CubicSampler &sfSampler,
+                         vec3f org,
+                         vec3f dir,
+                         range1f &tRange,
+                         float majorant,
+#if JOINT_FIRST_STEP
+                         range1f jfsRange,
+                         float jfsMajorant,
+#endif
+                         uint32_t &rngSeed,
+                         bool dbg=false)
+  {
+    LCG<4> &rand = (LCG<4> &)rngSeed;
+    float t = tRange.lower;
+
+#if JOINT_FIRST_STEP
+    if (t >= tRange.upper)
+      return false;
+      
+    if (tRange.lower == jfsRange.lower)
+      {
+        sample = sfSampler.sampleAndMap(t,dbg);
+        if (sample.w >= rand()*jfsMajorant) {
+          tRange.upper = t;
+          return true;
+        }
+      }
+#endif
+    
+    
+    while (true) {
+      float dt = - logf(1.f-rand())/majorant;
+      t += dt;
+      
+      if (t >= tRange.upper)
+        return false;
+      
+      sample = sfSampler.sampleAndMap(t,dbg);
+      if (sample.w >= rand()*majorant) {
+        tRange.upper = t;
+        return true;
+      }
     }
   }
-}
-}
+
+        
+  inline __rtc_device
+  void intersectPrim(const AWTAccel::DD &self,
+                     vec4f &acceptedSample,
+                     range1f tRange,
+                     float parentMajorant,
+                     vec3f org,
+                     vec3f dir,
+                     float &tHit,
+                     int primID,
+                     uint32_t &rng,
+                     bool dbg=false)
+  {
+    Cubic cubic
+      = cubicFromTet(self.mesh,self.mesh.elements[primID],org,dir,
+                     tRange,
+                     dbg);
+    if (dbg)
+      printf("tet %i %f %f\n",primID,cubic.tRange.lower,cubic.tRange.upper);
+    
+    if (cubic.tRange.lower > cubic.tRange.upper)
+      return;
+    
+    if (dbg)
+      printf("VALID TET\n");
+    
+    vec4f sample;
+    CubicSampler cubicSampler(cubic,self.xf);
+#ifdef AWT_SAMPLE_THRESHOLD
+    if (tRange.lower == tRange.upper) {
+      LCG<4> &rand = (LCG<4> &)rng;
+      float t = tRange.lower;
+      sample = cubicSampler.sampleAndMap(t,dbg);
+      if (sample.w >= rand()*parentMajorant) {
+        tHit = t;
+        acceptedSample = sample;
+      }
+      return;
+    }
 #endif
+    range1f tetRange = {
+      min(cubic.f0,cubic.f3),
+      max(cubic.f0,cubic.f3)
+    };
+    float majorant = self.xf.majorant(tetRange);
+    // if (majorant == 0.f) return;
+
+    if (dbg)
+      printf("->woodcock range %f %f majorant %f\n",
+             cubic.tRange.lower,
+             cubic.tRange.upper,
+             majorant);
+    if (woodcockSampleJFS(sample,cubicSampler,
+                          org,dir,cubic.tRange,
+                          majorant,
+#if JOINT_FIRST_STEP
+                          jfsRange,
+                          jfsMajorant,
+#endif
+                          rng,dbg)
+        // Woodcock::sampleRangeT(sample,cubicSampler,
+        //                        org,dir,cubic.tRange,
+        //                        majorant,rng,dbg)
+        ) {
+      tHit = cubic.tRange.upper;
+      acceptedSample = sample;
+      if (dbg)
+        printf("ACCEPTED at %f, sample %f %f %f\n",
+               tHit,sample.x,sample.y,sample.z);
+    }
+    
+  }
+  
+  
+  struct __barney_align(16) StackEntry {
+    AWTNode::NodeRef ref; // 1 dword
+    float   majorant;     // 1 dword
+    range1f tRange;       // 2 dwords
+  };
+
+  // template<typename T>
+  // inline __rtc_device
+  // void swap(T &a, T &b)
+  // {
+  //   T c = a; a = b; b = c;
+  // }
+    
+  template<bool ascending>
+  inline __rtc_device
+  void order(StackEntry *childEntry, int a, int b)
+  {
+    if (ascending  && childEntry[a].tRange.lower <= childEntry[b].tRange.lower ||
+        !ascending && childEntry[a].tRange.lower >= childEntry[b].tRange.lower)
+      return;
+    swap(childEntry[a],childEntry[b]);
+  }
+  
+  template<int N>
+  inline __rtc_device
+  void sort(StackEntry *childEntry);
+  
+  template<>
+  inline __rtc_device
+  void sort<4>(StackEntry *childEntry)
+  {
+    order<true>(childEntry,0,1);
+    order<true>(childEntry,1,2);
+    order<true>(childEntry,2,3);
+    order<true>(childEntry,0,1);
+    order<true>(childEntry,1,2);
+    order<true>(childEntry,0,1);
+  }
+
+  inline __rtc_device
+  void AWTPrograms::intersect(rtc::TraceInterface &ti)
+  {
+    using BARNEY_NS::render::boxTest;
+    
+    StackEntry stackBase[AWT_STACK_DEPTH];
+    StackEntry *stack = stackBase;
+    
+    const void *pd = ti.getProgramData();
+    
+    const AWTAccel::DD &self = *(AWTAccel::DD*)pd;
+    Ray &ray = *(Ray*)ti.getPRD();
+#ifdef NDEBUG
+    bool dbg = false;
+#else
+    bool dbg = ray.dbg;
+#endif
+
+    vec3f org = ti.getObjectRayOrigin();
+    vec3f dir = ti.getObjectRayDirection();
+    // if (!ray.dbg) return;
+    
+    if (dbg) {
+      printf("=========== ray at awt ===========\n");
+      printf("org %f %f %f\n",org.x,org.y,org.z);
+      printf("dir %f %f %f\n",dir.x,dir.y,dir.z);
+      printf("self domain %f %f\n",
+             self.xf.domain.lower,self.xf.domain.upper);
+    }
+    // else
+    //   return;
+    
+    StackEntry curr;
+    vec4f sample;
+    float tHit = ti.getRayTmax();
+    curr.tRange = { 1e-6f, tHit };
+    
+    if (!boxTest(org,dir,
+                                 curr.tRange.lower,curr.tRange.upper,
+                 self.mesh.worldBounds)) {
+      // doesn't even overlap the bounding box... 
+      if (dbg)
+        printf(" -> clip out %f %f\n",curr.tRange.lower,curr.tRange.upper);
+      return;
+    }
+
+    if (dbg) {
+      vec3f P = org + curr.tRange.lower*dir;
+      printf("ENTERING at %f, pos %f %f %f\n",
+             curr.tRange.lower,
+             P.x,P.y,P.z);
+    }
+    curr.majorant = self.xf.baseDensity;
+    curr.ref = { 0,0 };
+    *stack++ = curr;
+
+    // bool done = false;
+    while (1) {
+      /* repeat until we REACH A LEAF */
+      while (1) {
+        /* repeat until we successfully POPPED SOMETHING */
+        while (1) {
+          if (dbg) printf("popping at depth %i\n",
+                              int(stack-stackBase));
+          if (stack == stackBase) {
+            if (tHit < ray.tMax) {
+              ray.setVolumeHit(org+tHit*dir,
+                               tHit,(const vec3f&)sample);
+            }
+            return;
+            // done = true;
+            // break;
+          } 
+
+          curr = *--stack;
+          curr.tRange.upper = min(curr.tRange.upper,tHit);
+          if (dbg)
+            printf("@ %i:%i, range %f %f maj %f\n",
+                   curr.ref.offset,
+                   curr.ref.count,
+                   curr.tRange.lower,
+                   curr.tRange.upper,
+                   curr.majorant);
+          if (curr.tRange.lower >= tHit)
+            continue;
+            
+          break;
+        }
+        // we did POP SOMETHING
+        if (curr.ref.count)
+          break;
+
+#ifdef AWT_SAMPLE_THRESHOLD
+        float tLen = curr.tRange.span();
+        if (tLen > 0.f) {
+          float expectedNumSteps
+            = tLen// * self.xf.baseDensity
+            * curr.majorant;
+          if (expectedNumSteps <= AWT_SAMPLE_THRESHOLD) {
+            LCG<4> &rand = (LCG<4> &)ray.rngSeed;
+            float dt0 = - logf(1.f-rand())/curr.majorant;
+            curr.tRange.lower += dt0;
+            if (curr.tRange.lower >= curr.tRange.upper)
+              continue;
+            
+            *stack++ = curr;
+            curr.tRange.upper = curr.tRange.lower;
+          }
+        }
+#endif
+
+        
+        AWTNode node = self.awtNodes[curr.ref.offset];
+        StackEntry childEntry[AWT_NODE_WIDTH];
+        for (int i=0;i<AWT_NODE_WIDTH;i++) {
+          childEntry[i].ref = node.child[i].nodeRef;
+          childEntry[i].majorant
+            =
+#ifdef AWT_SAMPLE_THRESHOLD
+            (curr.tRange.lower == curr.tRange.upper)
+            ? curr.majorant
+            :
+#endif
+            node.child[i].majorant;
+          childEntry[i].tRange = curr.tRange;
+          
+          if (node.child[i].majorant == 0.f
+              ||
+              !node.child[i].nodeRef.valid()
+              ||
+              !boxTest(org,dir,
+                       childEntry[i].tRange.lower,
+                       childEntry[i].tRange.upper,
+                       node.child[i].bounds)) 
+            childEntry[i].tRange.lower = BARNEY_INF;
+
+          if ((curr.tRange.lower < curr.tRange.upper) &&
+              verySmall(childEntry[i].tRange)) {
+            // printf("box test collapsed to veeeery small value [%f %f] (%.10f -> %.10f)\n",
+            //        childEntry[i].tRange.lower,childEntry[i].tRange.upper,
+            //        curr.tRange.span(),childEntry[i].tRange.span());
+            childEntry[i].tRange.lower = nextafter(childEntry[i].tRange.lower,-1.f);
+            childEntry[i].tRange.upper = nextafter(childEntry[i].tRange.upper,BARNEY_INF);
+          }
+              
+          if (dbg) {
+            // printf(" box %i (%f %f %f)(%f %f %f)\n",
+            //        i,
+            //        node.child[i].bounds.lower.x,
+            //        node.child[i].bounds.lower.y,
+            //        node.child[i].bounds.lower.z,
+            //        node.child[i].bounds.upper.x,
+            //        node.child[i].bounds.upper.y,
+            //        node.child[i].bounds.upper.z);
+            printf(" child %2i box (%5.1f %5.1f %5.1f)(%5.1f %5.1f %5.1f) range %5.1f %5.1f\n",
+                   i,
+                   node.child[i].bounds.lower.x,
+                   node.child[i].bounds.lower.y,
+                   node.child[i].bounds.lower.z,
+                   node.child[i].bounds.upper.x,
+                   node.child[i].bounds.upper.y,
+                   node.child[i].bounds.upper.z,
+                   childEntry[i].tRange.lower,
+                   childEntry[i].tRange.upper);
+          }
+        }
+        sort<AWT_NODE_WIDTH>(childEntry);
+        for (int i=AWT_NODE_WIDTH-1;i>=0;--i) {
+          if (childEntry[i].majorant > 0.f
+              &&
+              childEntry[i].tRange.lower < tHit) {//ray.tMax) {
+            if (dbg)
+              printf("pushing depth %i, node %i:%i dist %f\n",
+                   int(stack-stackBase),
+                   childEntry[i].ref.offset,
+                   childEntry[i].ref.count,
+                   childEntry[i].tRange.lower);
+if (stack - stackBase >= AWT_STACK_DEPTH)
+printf("STACK OVERFLOW!\n");
+            *stack++ = childEntry[i];
+          }
+        }
+      }
+
+      /* we're at a leaf */
+      // if (ray.dbg)
+      //   printf("----------- leaf len %f!\n",curr.tRange.span());
+      
+#if JOINT_FIRST_STEP
+      LCG<4> &rand = (LCG<4> &)ray.rngSeed;
+      float dt0 = - logf(1.f-rand())/curr.majorant;
+      curr.tRange.lower += dt0;
+      if (curr.tRange.lower > curr.tRange.upper)
+        continue;
+#endif
+
+      for (int i=0;i<curr.ref.count;i++) {
+        curr.tRange.upper = min(curr.tRange.upper,tHit);
+        intersectPrim(self,sample,
+                      curr.tRange,
+                      curr.majorant,
+                      org,dir,tHit,self.primIDs[curr.ref.offset+i],
+                      ray.rngSeed,dbg);
+        curr.tRange.upper = min(curr.tRange.upper,tHit);
+      }
+    }
+// #else
+//       for (int i=0;i<curr.ref.count;i++)
+//         intersectPrim(self,sample,
+//                       org,dir,tHit,self.primIDs[curr.ref.offset+i],
+//                       ray.rngSeed,dbg);
+// #endif
+    // if (tHit < ray.tMax) {
+    //   ray.setVolumeHit(org+tHit*dir,
+    //                    tHit,(const vec3f&)sample);
+    // }
+  }
+  
+} // ::barney
+
+RTC_EXPORT_USER_GEOM(AWT,BARNEY_NS::AWTPrograms,false,false);

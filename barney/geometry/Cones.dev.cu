@@ -16,6 +16,7 @@
 
 #include "barney/geometry/Cones.h"
 #include "owl/owl_device.h"
+#include "rtcore/TraceInterface.h"
 
 namespace barney {
   

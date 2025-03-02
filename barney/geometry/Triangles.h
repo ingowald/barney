@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct ModelSlot;
 
@@ -45,7 +45,7 @@ namespace barney {
       // const vec4f *vertexAttribute[5];
     };
     
-    Triangles(Context *context, int slot);
+    Triangles(Context *context, DevGroup::SP devices);
     virtual ~Triangles();
     
     /*! pretty-printer for printf-debugging */
@@ -55,21 +55,16 @@ namespace barney {
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     void commit() override;
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setData(const std::string &member,
+                 const barney_api::Data::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
-
-    static OWLGeomType createGeomType(DevGroup *devGroup);
 
     PODData::SP vertices;
     PODData::SP indices;
     PODData::SP normals;
+    // TODO: do we still need this in times of ANARI?
     PODData::SP texcoords;
-    // PODData::SP vertexAttribute0;
-    // PODData::SP vertexAttribute1;
-    // PODData::SP vertexAttribute2;
-    // PODData::SP vertexAttribute3;
-    // PODData::SP vertexAttribute4;
   };
 
 }

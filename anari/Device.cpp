@@ -223,12 +223,20 @@ namespace barney_device {
 
   // Helper/other functions and data members ////////////////////////////////////
 
-  BarneyDevice::BarneyDevice(ANARILibrary l) : helium::BaseDevice(l)
+  std::vector<std::string> splitString(std::string s, const char delim)
   {
-    m_state = std::make_unique<BarneyGlobalState>(this_device());
-    deviceCommitParameters();
+    std::vector<std::string> res;
+    while (true) {
+      int pos = s.find(delim);
+      if (pos == s.npos)
+        break;
+      res.push_back(s.substr(0,pos));
+      s = s.substr(pos+1);
+    }
+    res.push_back(s);
+    return res;
   }
-
+  
   static void default_statusFunc(const void * /*userData*/,
                                  ANARIDevice /*device*/,
                                  ANARIObject source,
@@ -252,6 +260,40 @@ namespace barney_device {
     // Ignore INFO/DEBUG messages
   }
 
+  BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
+    : helium::BaseDevice(l),
+      deviceType(subType)
+  {
+    // anari::DeviceImpl::m_defaultStatusCB = default_statusFunc;
+    // anari::DeviceImpl::m_defaultStatusCBUserPtr = nullptr;
+    
+    std::vector<std::string> subTypeFlags = splitString(subType,',');
+    for (auto flag : subTypeFlags) {
+      if (flag == "cpu")
+        { m_cudaDevice = -1; continue; }
+      if (flag == "default") {
+#if BARNEY_MPI
+        comm = MPI_COMM_WORLD; 
+#endif
+        continue;
+      }
+#if BARNEY_MPI
+      if (flag == "local")
+        { comm = 0; continue; }
+      if (flag == "mpi")
+        { comm = MPI_COMM_WORLD; continue; }
+#endif
+      std::cout << "un-recognized feature '" << flag << "' on device subtype" << std::endl;
+      // reportMessage(ANARI_SEVERITY_WARNING,
+      //               "un-recognized feature '%s' on device subtype",
+      //               flag.c_str());
+
+    }
+    
+    m_state = std::make_unique<BarneyGlobalState>(this_device());
+    deviceCommitParameters();
+  }
+
   BarneyDevice::BarneyDevice()
     : helium::BaseDevice(default_statusFunc,nullptr)
   {
@@ -267,16 +309,17 @@ namespace barney_device {
   {
     ANARIDevice dev = 0;
     try {
-      int numGPUs = 0;
-      bnCountAvailableDevice(&numGPUs);
-      if (numGPUs == 0)
-        throw std::runtime_error("#barney/anari: cannot create device - no GPUs?");
+      // int numGPUs = 0;
+      // bnCountAvailableDevice(&numGPUs);
+      // if (numGPUs == 0)
+      //   throw std::runtime_error("#barney/anari: cannot create device - no GPUs?");
       dev = (ANARIDevice )new BarneyDevice();
       return dev;
     } catch(std::exception &err) {
       std::cerr << "#banari: exception creating anari 'barney' GPU device: "
                 << err.what() << std::endl;
-      throw;
+  //    throw;
+      return 0;
     }
   }
 
@@ -285,7 +328,7 @@ namespace barney_device {
   BarneyDevice::~BarneyDevice()
   {
     auto &state = *deviceState();
-    state.commitBufferClear();
+    state.commitBuffer.clear();
     reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
   }
 
@@ -300,29 +343,53 @@ namespace barney_device {
 
     try {
 #if BARNEY_MPI
-      int mpiInitialized = 0;
-      MPI_Initialized(&mpiInitialized);
-      if (!mpiInitialized)
-        MPI_Init(nullptr, nullptr);
-      int rank, size;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      if (comm != 0) {
+        int mpiInitialized = 0;
+        MPI_Initialized(&mpiInitialized);
+        if (!mpiInitialized)
+          MPI_Init(nullptr, nullptr);
+        int rank, size;
+        MPI_Comm_rank(comm, &rank);
+        MPI_Comm_size(comm, &size);
 
-      state.context = bnMPIContextCreate(MPI_COMM_WORLD, &rank, 1, nullptr, 0);
+        if (m_cudaDevice >= 0)
+          state.context
+            = bnMPIContextCreate(comm, &rank, 1, &m_cudaDevice,1);
+        else
+          state.context
+            = bnMPIContextCreate(comm, &rank, 1, nullptr, 0);
 
-      auto &info = state.bnInfo;
-      bnMPIQueryHardware(&info, MPI_COMM_WORLD);
-      reportMessage(ANARI_SEVERITY_DEBUG, "BNHardwareInfo:");
-      reportMessage(ANARI_SEVERITY_DEBUG, "    numRanks: %i", info.numRanks);
-      reportMessage(ANARI_SEVERITY_DEBUG, "    numHosts: %i", info.numHosts);
-      reportMessage(
-                    ANARI_SEVERITY_DEBUG, "    numGPUsThisRank: %i", info.numGPUsThisRank);
-      reportMessage(
-                    ANARI_SEVERITY_DEBUG, "    numGPUsThisHost: %i", info.numGPUsThisHost);
-      reportMessage(
-                    ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
-      reportMessage(ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
+        auto &info = state.bnInfo;
+        bnMPIQueryHardware(&info, MPI_COMM_WORLD);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "BNHardwareInfo:");
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numRanks: %i", info.numRanks);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numHosts: %i", info.numHosts);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numGPUsThisRank: %i", info.numGPUsThisRank);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numGPUsThisHost: %i", info.numGPUsThisHost);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
+      } else
+        reportMessage
+          (ANARI_SEVERITY_DEBUG,
+           "app passed null communicator, falling back to local rendering");
 #else
-      state.context = bnContextCreate();
+      if (m_cudaDevice >= 0)
+        reportMessage
+          (ANARI_SEVERITY_DEBUG, "using cuda device #%i", m_cudaDevice);
+      int zero = 0;
+      if (m_cudaDevice >= 0)
+        state.context = bnContextCreate(&zero,1,&m_cudaDevice,1);
+      else if (m_cudaDevice == -1)
+        state.context = bnContextCreate(&zero,1,&m_cudaDevice,1);
+      else
+        state.context = bnContextCreate(&zero,1,nullptr,-1);
       std::memset(&state.bnInfo, 0, sizeof(state.bnInfo));
 #endif
       reportMessage(
@@ -331,7 +398,7 @@ namespace barney_device {
       m_initialized = true;
     } catch (const std::exception &err) {
       std::cerr << "#banari: ran into some kind of exception in barney device init"
-                << std::endl;
+                << err.what() << std::endl;
     }
   }
 
@@ -341,10 +408,15 @@ namespace barney_device {
 
     bool allowInvalidSurfaceMaterials = state.allowInvalidSurfaceMaterials;
 
+    m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
+    if (m_cudaDevice != -2)
+      std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
+ 
     state.allowInvalidSurfaceMaterials =
       getParam<bool>("allowInvalidMaterials", true);
-    state.invalidMaterialColor = getParam<math::float4>(
-                                                        "invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
+    state.invalidMaterialColor
+      = getParam<math::float4>
+      ("invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
 
     if (allowInvalidSurfaceMaterials != state.allowInvalidSurfaceMaterials)
       state.objectUpdates.lastSceneChange = helium::newTimeStamp();
@@ -352,8 +424,10 @@ namespace barney_device {
     helium::BaseDevice::deviceCommitParameters();
   }
 
-  int BarneyDevice::deviceGetProperty(
-                                      const char *name, ANARIDataType type, void *mem, uint64_t size)
+  int BarneyDevice::deviceGetProperty(const char *name,
+                                      ANARIDataType type,
+                                      void *mem,
+                                      uint64_t size)
   {
     std::string_view prop = name;
     if (prop == "extension" && type == ANARI_STRING_LIST) {

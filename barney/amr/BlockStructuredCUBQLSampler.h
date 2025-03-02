@@ -21,8 +21,9 @@
 #include "barney/common/CUBQL.h"
 #include "cuBQL/traversal/fixedBoxQuery.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
+#if 0
   /*! a umesh scalar field, with a CUBQL bvh sampler */
   struct BlockStructuredCUBQLSampler {
     enum { BVH_WIDTH = 4 };
@@ -32,11 +33,11 @@ namespace barney {
     struct DD : public BlockStructuredField::DD {
       inline __device__ float sample(vec3f P, bool dbg = false) const;
 
-      static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      {
-        BlockStructuredField::DD::addVars(vars,base);
-        vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
-      }
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base)
+      // {
+      //   BlockStructuredField::DD::addVars(vars,base);
+      //   vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
+      // }
   
       node_t  *bvhNodes;
     };
@@ -96,6 +97,7 @@ namespace barney {
     // traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
   }
+#endif
   
 }
 

@@ -18,7 +18,7 @@
 
 #include "barney/geometry/Geometry.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   /*! A geometry made of multiple "capsules", where each capsule is
       "pill-like" shape obtained by linearly connecting two
@@ -43,7 +43,7 @@ namespace barney {
       const vec2i *indices;
     };
     
-    Capsules(Context *context, int slot);
+    Capsules(Context *context, DevGroup::SP devices);
     virtual ~Capsules() = default;
     
     /*! pretty-printer for printf-debugging */
@@ -52,11 +52,9 @@ namespace barney {
     
     void commit() override;
     
-    static OWLGeomType createGeomType(DevGroup *devGroup);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
-    bool setData(const std::string &member, const Data::SP &value) override;
+    bool setData(const std::string &member, const barney_api::Data::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 

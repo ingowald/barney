@@ -16,9 +16,10 @@
 
 #pragma once
 
+#include "barney/Object.h"
 #include "barney/ModelSlot.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct BlockStructuredField : public ScalarField
   {
@@ -87,7 +88,7 @@ namespace barney {
 
     struct DD : public ScalarField::DD {
 
-      static void addVars(std::vector<OWLVarDecl> &vars, int base);
+      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
       
       /* compute basis function contribution of given block at point P, and add
          that to 'sumWeightedValues' and 'sumWeights'. returns true if P is
@@ -111,7 +112,7 @@ namespace barney {
     };
 
     // std::vector<OWLVarDecl> getVarDecls(uint32_t myOfs) override;
-    void setVariables(OWLGeom geom) override;
+    // void setVariables(OWLGeom geom) override;
 
     void buildMCs(MCGrid &macroCells) override;
     
@@ -119,7 +120,7 @@ namespace barney {
       d_primRanges is non-null - the primitmives ranges. d_primBounds
       and d_primRanges (if non-null) must be pre-allocated and
       writeaable on specified device */
-    void computeBlockFilterDomains(const Device::SP &device,
+    void computeBlockFilterDomains(Device *device,
                                    box3f *d_primBounds,
                                    range1f *d_primRanges=0);
 
@@ -129,7 +130,7 @@ namespace barney {
                          std::vector<int> &blockOffsets,
                          std::vector<float> &blockScalars);
                      
-    DD getDD(const Device::SP &device);
+    DD getDD(Device *device);
 
     VolumeAccel::SP createAccel(Volume *volume) override;
 
@@ -140,12 +141,12 @@ namespace barney {
     std::vector<uint32_t> blockIDs;
     std::vector<range1f>  valueRanges;
 
-    OWLBuffer blockBoundsBuffer  = 0;
-    OWLBuffer blockLevelsBuffer  = 0;
-    OWLBuffer blockOffsetsBuffer = 0;
-    OWLBuffer blockScalarsBuffer = 0;
-    OWLBuffer blockIDsBuffer     = 0;
-    OWLBuffer valueRangesBuffer  = 0;
+    rtc::Buffer *blockBoundsBuffer  = 0;
+    rtc::Buffer *blockLevelsBuffer  = 0;
+    rtc::Buffer *blockOffsetsBuffer = 0;
+    rtc::Buffer *blockScalarsBuffer = 0;
+    rtc::Buffer *blockIDsBuffer     = 0;
+    rtc::Buffer *valueRangesBuffer  = 0;
   };
 
   /* compute basis function contribution of given block at point P, and add

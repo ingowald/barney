@@ -18,7 +18,7 @@
 
 #include "barney/light/Light.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
   struct PointLight : public Light {
     struct DD : public Light::DD {
@@ -28,7 +28,10 @@ namespace barney {
     };
     
     typedef std::shared_ptr<PointLight> SP;
-    PointLight(Context *context, int slot) : Light(context,slot) {}
+    PointLight(Context *context,
+               const DevGroup::SP &devices)
+      : Light(context,devices)
+    {}
     
     DD getDD(const affine3f &instanceXfm) const;
     

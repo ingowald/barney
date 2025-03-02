@@ -1,5 +1,5 @@
 // // ======================================================================== //
-// // Copyright 2023-2023 Ingo Wald                                            //
+// // Copyright 2023-2025 Ingo Wald                                            //
 // //                                                                          //
 // // Licensed under the Apache License, Version 2.0 (the "License");          //
 // // you may not use this file except in compliance with the License.         //
@@ -14,11 +14,24 @@
 // // limitations under the License.                                           //
 // // ======================================================================== //
 
-// #include "barney/MultiPass.h"
-// #include "barney/Group.h"
+// #pragma once
+
+// #include "rtcore/common/Backend.h"
 
 // namespace barney {
-
-//   void MultiPass::Instances::instantiate(Group *group, const affine3f &xfm)
-//   { for (const auto &obj : group->multiPassObjects) this->push_back({obj,xfm}); }
+//   namespace embree {
+//     struct EmbreeBackend;
+    
+//     struct EmbreeBackend : public rtc::Backend {
+//       EmbreeBackend();
+//       virtual ~EmbreeBackend();
+//       // void setActiveGPU(int physicalID) override;
+//       // int  getActiveGPU() override;
+//       rtc::Device *createDevice(int gpuID) override;
+//     };
+    
+//   }
 // }
+
+  
+  

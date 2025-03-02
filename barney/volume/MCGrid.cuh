@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2023 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,50 +14,57 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+/*! \file MCGrid.cuh Helper functions for building macro-cell grids,
+  basically to allow for atomic min/max updates when 'rasterizing'
+  primitives into a grid */
 #pragma once
 
 #include "barney/volume/MCGrid.h"
 #include "barney/common/barney-common.h"
+#include "rtcore/ComputeInterface.h"
 
-namespace barney {
+namespace BARNEY_NS {
 
-  inline __device__
-  float fatomicMin(float *addr, float value)
-  {
-    float old = *addr, assumed;
-    if(old <= value) return old;
-    do {
-      assumed = old;
-      old = atomicCAS((unsigned int*)addr,
-                      __float_as_int(assumed),
-                      __float_as_int(value));
-    } while(old!=assumed);
-    return old;
-  }
+#if RTC_DEVICE_CODE
+  // -----------------------------------------------------------------------------
+  // INTERFACE
+  // -----------------------------------------------------------------------------
 
-  inline __device__
-  float fatomicMax(float *addr, float value)
-  {
-    float old = *addr, assumed;
-    if(old >= value) return old;
-    do {
-      assumed = old;
-      old = atomicCAS((unsigned int*)addr,
-                      __float_as_int(assumed),
-                      __float_as_int(value));
-    } while(old!=assumed);
-    return old;
-  }
-  
-  inline __device__
+  inline __rtc_device
   int project(float f,
-              const interval<float> range,
+              const range1f range,
+              int dim);
+
+  /*! projects a given position into a grid defined by world-space
+      'bounds' and dimensions 'dims', and return the cell that this
+      world-sapce point projects to */
+  inline __rtc_device
+  vec3i project(const vec3f &pos,
+                const box3f &bounds,
+                const vec3i &dims);
+
+  /*! rasters a given 4D-(space-and-value)-primitive into the given
+      grid; computing all grid cells that this prim covers, and doing,
+      for each cell, an atomin min/max based on the prim's value range
+      (its min/max .w values) */
+  inline __rtc_device
+  void rasterBox(MCGrid::DD grid,
+                 const box3f worldBounds,
+                 const box4f primBounds4);
+
+  // -----------------------------------------------------------------------------
+  // IMPLEMENTATION
+  // -----------------------------------------------------------------------------
+
+  inline __rtc_device
+  int project(float f,
+              const range1f range,
               int dim)
   {
     return max(0,min(dim-1,int(dim*(f-range.lower)/(range.upper-range.lower))));
   }
 
-  inline __device__
+  inline __rtc_device
   vec3i project(const vec3f &pos,
                 const box3f &bounds,
                 const vec3i &dims)
@@ -67,11 +74,10 @@ namespace barney {
                  project(pos.z,{bounds.lower.z,bounds.upper.z},dims.z));
   }
 
-  inline __device__
+  inline __rtc_device
   void rasterBox(MCGrid::DD grid,
                  const box3f worldBounds,
-                 const box4f primBounds4,
-                 bool dbg=false)
+                 const box4f primBounds4)
   {
     box3f pb = box3f(vec3f(primBounds4.lower),
                      vec3f(primBounds4.upper));
@@ -93,12 +99,12 @@ namespace barney {
             + iy * grid.dims.x
             + iz * grid.dims.x * grid.dims.y;
           auto &cell = grid.scalarRanges[cellID];
-          fatomicMin(&cell.lower,primBounds4.lower.w);
-          fatomicMax(&cell.upper,primBounds4.upper.w);
+          rtc::fatomicMin(&cell.lower,primBounds4.lower.w);
+          rtc::fatomicMax(&cell.upper,primBounds4.upper.w);
         }
   }
 
-  inline __device__
+  inline __rtc_device
   void rasterBox(MCGrid::DD grid,
                  const box4f primBounds4)
   {
@@ -122,9 +128,10 @@ namespace barney {
             + iy * grid.dims.x
             + iz * grid.dims.x * grid.dims.y;
           auto &cell = grid.scalarRanges[cellID];
-          fatomicMin(&cell.lower,primBounds4.lower.w);
-          fatomicMax(&cell.upper,primBounds4.upper.w);
+          rtc::fatomicMin(&cell.lower,primBounds4.lower.w);
+          rtc::fatomicMax(&cell.upper,primBounds4.upper.w);
         }
   }
+#endif
   
 }
