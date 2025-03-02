@@ -34,6 +34,12 @@ namespace BARNEY_NS {
     {
       auto &ray = *(Ray *)rt.getPRD();
 
+#if NDEBUG
+      bool dbg = false;
+#else
+      bool dbg = ray.dbg;
+#endif
+      
       auto &self = *(Triangles::DD*)rt.getProgramData();
       const float u = rt.getTriangleBarycentrics().x;
       const float v = rt.getTriangleBarycentrics().y;
@@ -77,9 +83,9 @@ namespace BARNEY_NS {
       auto interpolator
         = [&](const GeometryAttribute::DD &attrib) -> vec4f
         {
-          const vec4f value_a = attrib.fromArray.valueAt(triangle.x);
-          const vec4f value_b = attrib.fromArray.valueAt(triangle.y);
-          const vec4f value_c = attrib.fromArray.valueAt(triangle.z);
+          const vec4f value_a = attrib.fromArray.valueAt(triangle.x,dbg);
+          const vec4f value_b = attrib.fromArray.valueAt(triangle.y,dbg);
+          const vec4f value_c = attrib.fromArray.valueAt(triangle.z,dbg);
           const vec4f ret = (1.f-u-v)*value_a + u*value_b + v*value_c;
           return ret;
         };
@@ -89,18 +95,11 @@ namespace BARNEY_NS {
         = OptixGlobals::get(rt).materials[self.materialID];
       PackedBSDF bsdf
         = material.createBSDF(hitData,OptixGlobals::get(rt).samplers,ray.dbg);
-#if 0
-      float opacity
-        = material.getOpacity(hitData,OptixGlobals::get(rt).samplers,ray.dbg);
-#else
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);
-#endif
-    
       if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
         rt.ignoreIntersection();
-        // optixIgnoreIntersection();
         return;
       }
       else {

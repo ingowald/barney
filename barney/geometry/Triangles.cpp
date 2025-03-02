@@ -22,27 +22,12 @@ namespace BARNEY_NS {
 
   RTC_IMPORT_TRIANGLES_GEOM(Triangles,Triangles,Triangles::DD,true,false);
 
-  // extern "C" char Triangles_ptx[];
-
   Triangles::Triangles(Context *context, DevGroup::SP devices)
     : Geometry(context,devices)
   {}
   
   Triangles::~Triangles()
   {}
-  
-  // rtc::GeomType *Triangles::createGeomType(rtc::Device *device,
-  //                                          const void *)
-  // {
-  //   if (Context::logging())
-  //     std::cout << OWL_TERMINAL_GREEN
-  //               << "creating 'Triangles' geometry type"
-  //               << OWL_TERMINAL_DEFAULT << std::endl;
-  //   return device->createTrianglesGeomType("Triangles_ptx",
-  //                                          "Triangles",
-  //                                          sizeof(Triangles::DD),
-  //                                          /*ah*/true,/*ch*/false);
-  // }
   
   /*! handle data arrays for vertices, indices, normals, etc; note
       that 'general' geometry attributes of the ANARI material system

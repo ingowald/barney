@@ -42,8 +42,10 @@ macro(set_library_properties tgt)
     POSITION_INDEPENDENT_CODE    ON
     CUDA_USE_STATIC_CUDA_RUNTIME ON
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
-    CXX_VISIBILITY_PRESET  default
-    CUDA_VISIBILITY_PRESET default
+    CXX_VISIBILITY_PRESET  hidden
+    CUDA_VISIBILITY_PRESET hidden
+#    CXX_VISIBILITY_PRESET  default
+#    CUDA_VISIBILITY_PRESET default
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
@@ -248,6 +250,7 @@ if (BARNEY_BACKEND_OPTIX)
   if (BARNEY_MPI)
     add_library(barney_mpi_optix ${MPI_SOURCES})
     target_link_libraries(barney_mpi_optix PUBLIC barney_optix MPI::MPI_CXX)
+    set_library_properties(barney_mpi_optix)
   endif()
 endif()
 

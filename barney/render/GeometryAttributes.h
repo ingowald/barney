@@ -88,9 +88,7 @@ namespace BARNEY_NS {
         return vec4f(v.x,v.y,v.z,1.f);
       }
       case BN_FLOAT4: {
-        return rtc::load(*(const rtc::float4*)ptr);
-        // const float4 v = ((const float4 *)ptr)[i];   
-        // return (const vec4f&)v;
+        return rtc::load(((const rtc::float4*)ptr)[i]);
       }
       default:
         return vec4f(0.f,0.f,0.f,0.f);
