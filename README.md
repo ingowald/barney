@@ -166,6 +166,25 @@ device.
 
 # Version History
 
+## v0.9.0
+
+- major rework that allows 'rtcore' abstraction and multiple backends
+- support both optix and embree (cpu only) backends
+- completely reworked cmake build system (and in particular how stuff
+  gets linked)
+- reworked install/export/import system, exporting both `barney` and
+  `barney_mpi`; should always get used through `find_package(barney)`
+  and then linked as import target(s) `barney::barney` and (if found)
+  `barney::barney_mpi`
+- anari device split into `anari_library_barney` and
+  `anari_library_barney_mpi`
+- version used for pynari backend that works on all of
+  linux/windows/mac and both cpu/gpu
+  
+Known limitations/issues:
+- AMR support currently disabled
+- umesh support only support cubql sampler
+
 ## v0.8.0
 
 - updated to latest anari 0.12 SDK
