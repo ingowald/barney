@@ -119,10 +119,11 @@ namespace BARNEY_NS {
     cell's value range through the given transfer function */
   void MCGrid::computeMajorants(TransferFunction *xf)
   {
+#ifndef NDEBUG
     std::cout << "-------------------------" << std::endl;
     std::cout << "(re-)computing majorants!" << std::endl;
     std::cout << "-------------------------" << std::endl;
-      
+#endif
     assert(xf);
     assert(dims.x > 0);
     assert(dims.y > 0);

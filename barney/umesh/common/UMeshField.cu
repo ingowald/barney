@@ -23,6 +23,10 @@
 
 namespace BARNEY_NS {
 
+  RTC_IMPORT_USER_GEOM(/*file*/UMeshMC,/*name*/UMeshMC,
+                       /*geomtype device data */
+                       MCVolumeAccel<UMeshCUBQLSampler>::DD,false,false);
+  
   UMeshField::PLD *UMeshField::getPLD(Device *device) 
   {
     assert(device);
@@ -437,7 +441,7 @@ namespace BARNEY_NS {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if BARNEY_HAVE_CUDA || 1
+#if 0
     assert(0);
     return {};
     // return std::make_shared<AWTAccel>(volume,this);
@@ -446,10 +450,8 @@ namespace BARNEY_NS {
       = std::make_shared<UMeshCUBQLSampler>(this);
     return std::make_shared<MCVolumeAccel<UMeshCUBQLSampler>>
       (volume,
-       sampler,
-       /* it's in mc/UMeshMC.dev.cu */
-       "UMeshMC_ptx",
-       "UMeshMC");
+       createGeomType_UMeshMC,
+       sampler);
 #endif
   }
 
