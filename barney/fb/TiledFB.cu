@@ -94,7 +94,7 @@ namespace BARNEY_NS {
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles
       = device
-      ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
+      ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalIndex),
                    device->globalIndexStep)
       : 0;
     auto rtc = device->rtc;
@@ -111,9 +111,10 @@ namespace BARNEY_NS {
       device->globalIndex,
       device->globalIndexStep
     };
-    device->setTileCoords
-      ->launch(divRoundUp(numActiveTiles,1024),1024,
-               &args);
+    if (numActiveTiles > 0)
+      device->setTileCoords
+        ->launch(divRoundUp(numActiveTiles,1024),1024,
+                 &args);
   }
 
   // ==================================================================

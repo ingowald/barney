@@ -97,7 +97,6 @@ namespace BARNEY_NS {
     hostOwnedHandles.clear();
 
     perSlot.clear();
-    std::cout << "going to kill off devices ..." << std::endl;
     for (auto &device : *devices) {
       delete device;
       device = 0;

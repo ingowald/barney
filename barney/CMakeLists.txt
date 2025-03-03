@@ -211,6 +211,8 @@ set(MPI_SOURCES
   fb/DistFB.cpp
   MPIContext.h
   MPIContext.cpp
+  common/MPIWrappers.h
+  common/MPIWrappers.cpp
 )
 
 set(DEVICE_PROGRAM_SOURCES
@@ -346,8 +348,9 @@ if (BARNEY_MPI)
     #    barney_config
     $<BUILD_INTERFACE:barney_config>
   )
-  set_library_properties(barney_mpi)
-  
+  set_library_properties(barney_mpi) 
+  target_compile_definitions(barney_mpi PRIVATE -DBARNEY_MPI=1)
+ 
   # ------------------------------------------------------------------
   # barney_mpi_static
   # ------------------------------------------------------------------

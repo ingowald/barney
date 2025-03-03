@@ -17,6 +17,11 @@
 #include "barney/LocalContext.h"
 #include "barney/fb/LocalFB.h"
 
+
+#if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
+# error "should not have both backends on at the same time!?"
+#endif
+
 namespace barney_api {
 #if BARNEY_RTC_EMBREE
   extern "C" {

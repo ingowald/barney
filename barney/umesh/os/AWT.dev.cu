@@ -162,10 +162,10 @@ namespace BARNEY_NS {
     vec4i tet = *(const vec4i *)&mesh.indices[elt.ofs0];
     // printf("tet ofs0 %i -> %i %i %i %i\n",elt.ofs0,
     //        tet.x,tet.y,tet.z,tet.w);
-    vec4f v0 = rtc::load(((float4*)mesh.vertices)[tet.x]);
-    vec4f v1 = rtc::load(((float4*)mesh.vertices)[tet.y]);
-    vec4f v2 = rtc::load(((float4*)mesh.vertices)[tet.z]);
-    vec4f v3 = rtc::load(((float4*)mesh.vertices)[tet.w]);
+    vec4f v0 = rtc::load(((rtc::float4*)mesh.vertices)[tet.x]);
+    vec4f v1 = rtc::load(((rtc::float4*)mesh.vertices)[tet.y]);
+    vec4f v2 = rtc::load(((rtc::float4*)mesh.vertices)[tet.z]);
+    vec4f v3 = rtc::load(((rtc::float4*)mesh.vertices)[tet.w]);
     clip(cubic.tRange,v0,v1,v2,org,dir);
     clip(cubic.tRange,v0,v3,v1,org,dir);
     clip(cubic.tRange,v0,v2,v3,org,dir);

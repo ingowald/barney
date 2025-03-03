@@ -59,6 +59,9 @@
 #if BARNEY_RTC_OPTIX
 #  define BARNEY_NS barney_optix
 #endif
+#if BARNEY_RTC_EMBREE
+#  define BARNEY_NS barney_embree
+#endif
 
 
 

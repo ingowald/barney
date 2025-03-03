@@ -23,6 +23,11 @@
 # define LOG_API_ENTRY /**/
 #endif
 
+
+#if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
+# error "should not have both backends on at the same time!?"
+#endif
+
 namespace BARNEY_NS {
 
   MPIContext::MPIContext(const barney_api::mpi::Comm &worldComm,
@@ -36,7 +41,6 @@ namespace BARNEY_NS {
       world(worldComm),
       workers(workersComm)
   {
-    PING;
     bool dbg = false;
 
     if (dbg) {
@@ -272,7 +276,6 @@ namespace BARNEY_NS {
     done (false) */
   bool MPIContext::forwardRays()
   {
-    // PING; PRINT(numDifferentModelSlots); exit(0);
     int numDevices = devices->size();
     std::vector<MPI_Request> allRequests;
 
@@ -361,91 +364,20 @@ namespace BARNEY_NS {
     return (numTimesForwarded % numDifferentModelSlots) != 0;
   }
 
-  BARNEY_API
-  void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
-  {
-    LOG_API_ENTRY;
-
-    assert(_hardware);
-    BNHardwareInfo &hardware = *_hardware;
-
-    assert(_comm != MPI_COMM_NULL);
-    barney_api::mpi::Comm comm(_comm);
-
-    hardware.numRanks = comm.size;
-    char hostName[MPI_MAX_PROCESSOR_NAME];
-    memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
-    int hostNameLen = 0;
-    BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen));
-
-    std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
-    memset(recvBuf.data(),0,recvBuf.size());
-
-    // ------------------------------------------------------------------
-    // determine which (world) rank lived on which host, and assign
-    // GPUSs
-    // ------------------------------------------------------------------
-    BN_MPI_CALL(Allgather(hostName,
-                          MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
-                          recvBuf.data(),
-                          /* PER rank size */MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
-                          comm.comm));
-    std::vector<std::string>  hostNames;
-    std::map<std::string,int> ranksOnHost;
-    for (int i=0;i<comm.size;i++)  {
-      std::string host_i = recvBuf.data()+i*MPI_MAX_PROCESSOR_NAME;
-      hostNames.push_back(host_i);
-      ranksOnHost[host_i] ++;
-    }
-
-    hardware.numRanksThisHost = ranksOnHost[hostName];
-    hardware.numHosts         = ranksOnHost.size();
-
-    // ------------------------------------------------------------------
-    // count how many other ranks are already on this same node
-    // ------------------------------------------------------------------
-    BN_MPI_CALL(Barrier(comm.comm));
-    int localRank = 0;
-    for (int i=0;i<comm.rank;i++)
-      if (hostNames[i] == hostName)
-        localRank++;
-    BN_MPI_CALL(Barrier(comm.comm));
-    hardware.localRank = localRank;
-    hardware.numRanksThisHost = ranksOnHost[hostName];
-
-    // ------------------------------------------------------------------
-    // assign a GPU to this rank
-    // ------------------------------------------------------------------
-    int numGPUsOnThisHost = 0;
-#if BARNEY_RTC_OPTIX
-    cudaGetDeviceCount(&numGPUsOnThisHost);
-#endif
-    // cudaGetDeviceCount(&numGPUsOnThisHost);
-    // if (numGPUsOnThisHost == 0)
-    //   throw std::runtime_error("no barney-capable devices on this rank!");
-    hardware.numGPUsThisHost = numGPUsOnThisHost;
-    hardware.numGPUsThisRank
-      = comm.allReduceMin(hardware.numGPUsThisHost == 0
-                          ? 0
-                          : std::max(hardware.numGPUsThisHost/
-                                     hardware.numRanksThisHost,
-                                     1));
-  }
-
   extern "C" {
-# if BARNEY_BACKEND_EMBREE
+# if BARNEY_RTC_EMBREE
     barney_api::Context *
     createMPIContext_embree(barney_api::mpi::Comm world,
                             barney_api::mpi::Comm workers,
                             bool isActiveWorker,
                             const std::vector<int> &dgIDs)
     {
-      std::vector<int> gpuIDs = { 0 };
+      std::vector<int> gpuIDs = { 0 }; 
       return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
-                                       gpuIDs,dgIDs);
+                                       dgIDs,gpuIDs);
     }
 # endif
-# if BARNEY_BACKEND_OPTIX
+# if BARNEY_RTC_OPTIX
     barney_api::Context *
     createMPIContext_optix(barney_api::mpi::Comm world,
                            barney_api::mpi::Comm workers,
@@ -454,7 +386,7 @@ namespace BARNEY_NS {
                            const std::vector<int> &gpuIDs)
     {
       return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
-                                       gpuIDs,dgIDs);
+                                       dgIDs,gpuIDs);
     }
 # endif
   }

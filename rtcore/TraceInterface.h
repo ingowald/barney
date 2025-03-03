@@ -32,6 +32,7 @@ namespace rtc {
 # include "rtcore/embree/TraceInterface.h"
 namespace rtc {
   using rtc::embree::TraceInterface;
+  using namespace rtc::embree;
 }
 #endif
 

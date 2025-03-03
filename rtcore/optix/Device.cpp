@@ -168,8 +168,10 @@ namespace rtc {
       BARNEY_CUDA_CALL(StreamSynchronize(/*inherited!*/device->stream));
       
       owlParamsSetRaw(lp,"raw",kernelData,0);
-      owlAsyncLaunch2D(rg,dims.x,dims.y,lp);
-      device->activeTraceStreams.push_back(lpStream);
+      if (dims.x > 0 && dims.y > 0) {
+        owlAsyncLaunch2D(rg,dims.x,dims.y,lp);
+        device->activeTraceStreams.push_back(lpStream);
+      }
     }
     
     // ==================================================================
