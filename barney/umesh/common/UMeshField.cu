@@ -19,7 +19,7 @@
 #include "barney/Context.h"
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
-// #include "barney/umesh/os/AWT.h"
+#include "barney/umesh/os/AWT.h"
 
 namespace BARNEY_NS {
 
@@ -441,10 +441,8 @@ namespace BARNEY_NS {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if 0
-    assert(0);
-    return {};
-    // return std::make_shared<AWTAccel>(volume,this);
+#if 1
+    return std::make_shared<AWTAccel>(volume,this);
 #else
     auto sampler
       = std::make_shared<UMeshCUBQLSampler>(this);

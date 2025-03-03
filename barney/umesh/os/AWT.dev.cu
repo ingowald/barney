@@ -585,18 +585,8 @@ printf("STACK OVERFLOW!\n");
         curr.tRange.upper = min(curr.tRange.upper,tHit);
       }
     }
-// #else
-//       for (int i=0;i<curr.ref.count;i++)
-//         intersectPrim(self,sample,
-//                       org,dir,tHit,self.primIDs[curr.ref.offset+i],
-//                       ray.rngSeed,dbg);
-// #endif
-    // if (tHit < ray.tMax) {
-    //   ray.setVolumeHit(org+tHit*dir,
-    //                    tHit,(const vec3f&)sample);
-    // }
   }
   
-} // ::barney
+  RTC_EXPORT_USER_GEOM(AWT,AWTAccel::DD,AWTPrograms,false,false);
+} // ::BARNEY_NS
 
-RTC_EXPORT_USER_GEOM(AWT,BARNEY_NS::AWTPrograms,false,false);

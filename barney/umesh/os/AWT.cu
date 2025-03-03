@@ -15,40 +15,19 @@
 // ======================================================================== //
 
 #include "barney/umesh/os/AWT.h"
-#if 0
+#if 1
 #include <cuBQL/bvh.h>
 #if BARNEY_HAVE_CUDA
 # include <cuBQL/builder/cuda/wide_gpu_builder.h>
 #endif
-
-/*! defines the 'createGeomType_AWT()' function */
-RTC_IMPORT_USER_GEOM(AWT,BARNEY_NS::AWTAccel::DD,false,false);
 
 namespace BARNEY_NS {
   
   RTC_IMPORT_COMPUTE1D(copyNodes);
   RTC_IMPORT_COMPUTE1D(computeMajorants);
 
-
-  // struct ClearMajorants {
-  //   AWTNode       *awtNodes;
-  //   RefitInfo     *parents,
-  //   int            numNodes;
-
-  //   template<typename CI>
-  //   inline __rtc_device void run(const CI &ci)
-  //   {
-  //     int nodeID = ci.launchIndex().x;
-  //     if (nodeID >= numNodes) return;
-
-  //     parents[nodeID].numRefits = 0;
-  //     auto &node = awtNodes[nodeID];
-  //     for (int childID=0;childID<AWT_NODE_WIDTH;childID++) {
-  //       auto &child = node.child[childID];
-  //       child.majorant = 0.f;
-  //     }
-  //   }
-  // };
+  /*! defines the 'createGeomType_AWT()' function */
+  RTC_IMPORT_USER_GEOM(/*file*/AWT,/*name*/AWT,AWTAccel::DD,false,false);
 
   struct ComputeMajorants {
     AWTNode       *awtNodes;
@@ -60,7 +39,7 @@ namespace BARNEY_NS {
 
     inline __rtc_device void run(const rtc::ComputeInterface &ci)
     {
-#if 0
+#if 1
       int tid = ci.launchIndex().x;
       int nodeID = tid / AWT_NODE_WIDTH;
       if (nodeID >= numNodes) return;
@@ -126,7 +105,7 @@ namespace BARNEY_NS {
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci)
     {
-#if 0
+#if 1
       int tid = ci.launchIndex().x;
       if (tid >= numNodes) return;
 
