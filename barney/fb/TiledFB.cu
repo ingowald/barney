@@ -140,8 +140,8 @@ namespace BARNEY_NS {
 
     vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
     vec4f org = color;
-    float scale = reduce_max(color);
-    color *= 1.f/scale;
+    float scale = reduce_max((const vec3f&)color);
+    (vec3f&)color *= 1.f/scale;
     compressedTiles[tileID].scale[pixelID] = scale;
     compressedTiles[tileID].normal[pixelID]
       .set(accumTiles[tileID].normal[pixelID]);
