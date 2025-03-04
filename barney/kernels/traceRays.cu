@@ -41,10 +41,6 @@ namespace BARNEY_NS {
         dd.samplers  = ctx->samplerRegistry->getDD(device);
         // dd.globalIndex = device->globalIndex;
         if (dd.numRays == 0 || dd.world == 0) {
-#ifndef NDEBUG
-          printf("optix launch with world = %p and numrays %i\n",
-                 (int*)dd.world,dd.numRays);
-#endif
         } else {
           int bs = 1024;
           int nb = divRoundUp(dd.numRays,bs);
