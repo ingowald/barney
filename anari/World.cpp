@@ -138,6 +138,11 @@ void World::buildBarneyModel()
   std::vector<BNGroup> barneyGroups;
   std::vector<BNTransform> barneyTransforms;
 
+#ifndef NDEBUG
+  std::cout << "banari.buildbarneyModel()" << std::endl;
+  std::cout << "m_instances.size() is " << m_instances.size() << std::endl;
+#endif
+  
   groups.reserve(m_instances.size());
   barneyGroups.resize(m_instances.size(), nullptr);
   barneyTransforms.reserve(m_instances.size());
@@ -145,9 +150,16 @@ void World::buildBarneyModel()
   for (auto inst : m_instances) {
     barneyTransforms.push_back(*inst->barneyTransform());
     groups.push_back(inst->group());
+#ifndef NDEBUG
+    std::cout << " - " << (int*)inst->group() << std::endl;
+#endif
   }
 
+  
   for (size_t i = 0; i < groups.size(); i++) {
+#ifndef NDEBUG
+    std::cout << " - " << (int*)groups[i] << " barney group " << (int*)barneyGroups[i] << std::endl;
+#endif
     if (barneyGroups[i] != nullptr)
       continue;
     auto *g = groups[i];
@@ -157,7 +169,13 @@ void World::buildBarneyModel()
         barneyGroups[j] = bg;
     }
   }
-
+  
+#ifndef NDEBUG
+  std::cout << "got barney groups:" << std::endl;
+  for (auto bg : barneyGroups) 
+    std::cout << " - " << (int*)bg << std::endl;
+#endif
+  
   if (barneyTransforms.size() != barneyGroups.size()) {
     reportMessage(ANARI_SEVERITY_FATAL_ERROR,
         "Barney transforms and groups are different sizes!");

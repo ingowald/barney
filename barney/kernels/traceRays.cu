@@ -29,7 +29,10 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
-    for (auto model : globalModel->modelSlots)
+    for (auto model : globalModel->modelSlots) {
+#ifndef NDEBUG
+      std::cout << "tracing rays, into model " << (int*)model.get() << std::endl;
+#endif
       for (auto device : *model->devices) {
         SetActiveGPU forDuration(device);
         render::OptixGlobals dd;
@@ -37,6 +40,9 @@ namespace BARNEY_NS {
         dd.rays      = device->rayQueue->traceAndShadeReadQueue;
         dd.numRays   = device->rayQueue->numActive;
         dd.world     = model->getInstanceAccel(device);
+#ifndef NDEBUG
+        std::cout << "model's instance accel is " << (int*)dd.world << std::endl;
+#endif
         dd.materials = ctx->materialRegistry->getDD(device);
         dd.samplers  = ctx->samplerRegistry->getDD(device);
         // dd.globalIndex = device->globalIndex;
@@ -52,6 +58,7 @@ namespace BARNEY_NS {
                                     &dd);
         }
       }
+    }
     
     // ------------------------------------------------------------------
     // ... and sync 'til all are done

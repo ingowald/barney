@@ -132,6 +132,10 @@ namespace BARNEY_NS {
     std::vector<affine3f> rtcTransforms;
     EnvMapLight::SP envMapLight;
 
+#ifndef NDEBUG
+    std::cout << "barney model is getting built" <<std::endl;
+    std::cout << " model has " << instances.groups.size() << " groups" << std::endl;
+#endif
     // ==================================================================
     // generate all lights's "raw" data. note this is NOT per device
     // (yet), even though the use of 'DD's seems to imply so. this
@@ -182,6 +186,9 @@ namespace BARNEY_NS {
       
       for (int i=0;i<instances.groups.size();i++) {
         Group *group = instances.groups[i].get();
+#ifndef NDEBUG
+        std::cout << " group #" << i << " is " << (int*)group << std::endl;
+#endif
         if (!group) continue;
         Group::PLD *groupPLD = group->getPLD(device);
       
@@ -193,6 +200,10 @@ namespace BARNEY_NS {
           rtcGroups.push_back(groupPLD->volumeGeomsGroup);
           rtcTransforms.push_back(instances.xfms[i]);
         }
+#ifndef NDEBUG
+        std::cout << "  ... has triangles group " << (int *)groupPLD->triangleGeomGroup << std::endl;
+#endif
+
         if (groupPLD->triangleGeomGroup) {
           rtcGroups.push_back(groupPLD->triangleGeomGroup);
           rtcTransforms.push_back(instances.xfms[i]);
@@ -208,9 +219,18 @@ namespace BARNEY_NS {
         device->rtc->freeGroup(pld->instanceGroup);
         pld->instanceGroup = 0;
       }
+#ifndef NDEBUG
+      std::cout << "asking rtc to create instance group over "
+                << rtcGroups.size() << " groups" << std::endl;
+      for (auto g : rtcGroups)
+        std::cout << " - " << (int*)g << std::endl;
+#endif
       pld->instanceGroup
         = device->rtc->createInstanceGroup(rtcGroups,
                                            rtcTransforms);
+#ifndef NDEBUG
+      std::cout << "--> got rtr instance group " << (int*)pld->instanceGroup << std::endl;
+#endif
       if (pld->instanceGroup)
         pld->instanceGroup->buildAccel();
     }

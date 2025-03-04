@@ -213,13 +213,24 @@ namespace rtc {
       std::vector<OWLGroup> owls;
       for (auto group : groups)
         owls.push_back(((Group *)group)->owl);
+
+#ifndef NDEBUG
+      std::cout << "optix: creating instance group with these owl geom groups:" << std::endl;
+      for (auto owl : owls)
+        std::cout << " " << (int*)owl << std::endl;
+#endif
+      
       OWLGroup g
         = owlInstanceGroupCreate(owl,
                                  owls.size(),
                                  owls.data(),
                                  nullptr,
                                  (const float *)xfms.data());
-      return new Group(this,g);
+      Group *gg = new Group(this,g);
+#ifndef NDEBUG
+      std::cout << "--> got rtc group " << (int*)gg << " over owl group " << (int*)g << std::endl;
+#endif
+      return gg;
     }
 
   }
