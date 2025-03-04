@@ -40,10 +40,17 @@ namespace BARNEY_NS {
         dd.materials = ctx->materialRegistry->getDD(device);
         dd.samplers  = ctx->samplerRegistry->getDD(device);
         // dd.globalIndex = device->globalIndex;
-        int bs = 1024;
-        int nb = divRoundUp(dd.numRays,bs);
-        device->traceRays->launch(vec2i(nb,bs),
-                                  &dd);
+        if (dd.numRays == 0 || dd.world == 0) {
+#ifndef NDEBUG
+          printf("optix launch with world = %p and numrays %i\n",
+                 (int*)dd.world,dd.numRays);
+#endif
+        } else {
+          int bs = 1024;
+          int nb = divRoundUp(dd.numRays,bs);
+          device->traceRays->launch(vec2i(nb,bs),
+                                    &dd);
+        }
       }
     
     // ------------------------------------------------------------------

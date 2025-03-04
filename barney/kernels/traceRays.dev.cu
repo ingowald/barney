@@ -41,6 +41,7 @@ namespace BARNEY_NS {
         * ti.getLaunchIndex().y;
         
       auto &lp = OptixGlobals::get(ti);
+      if (lp.world == 0) return ;
 
       if (rayID >= lp.numRays)
         return;
