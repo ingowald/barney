@@ -53,12 +53,13 @@ namespace BARNEY_NS {
 
   void Device::syncPipelineAndSBT()
   {
-    if (programsDirty) {
-      if (Context::logging())
-        std::cout << "rebuilding ray tracing programs and pipeline..." << std::endl;
-      rtc->buildPipeline();
-      programsDirty = false;
-    }
+    rtc->buildPipeline();
+    // if (programsDirty) {
+    //   if (Context::logging())
+    //     std::cout << "rebuilding ray tracing programs and pipeline..." << std::endl;
+    //   rtc->buildPipeline();
+    //   programsDirty = false;
+    // }
     if (sbtDirty) {
       rtc->buildSBT();
       sbtDirty = false;

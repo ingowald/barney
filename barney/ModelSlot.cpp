@@ -199,10 +199,16 @@ namespace BARNEY_NS {
         Group::PLD *groupPLD = group->getPLD(device);
       
         if (groupPLD->userGeomGroup) {
+#ifndef NDEBUG
+	  std::cout << "  ... adding user geoms group " << (int *)groupPLD->userGeomGroup << std::endl;
+#endif
           rtcGroups.push_back(groupPLD->userGeomGroup);
           rtcTransforms.push_back(instances.xfms[i]);
         }
         if (groupPLD->volumeGeomsGroup) {
+#ifndef NDEBUG
+	  std::cout << "  ... adding volume geoms group " << (int *)groupPLD->volumeGeomsGroup << std::endl;
+#endif
           rtcGroups.push_back(groupPLD->volumeGeomsGroup);
           rtcTransforms.push_back(instances.xfms[i]);
         }
@@ -217,6 +223,9 @@ namespace BARNEY_NS {
 
         for (auto group : groupPLD->volumeGroups) {
           rtcGroups.push_back(group);
+#ifndef NDEBUG
+	  std::cout << "  ... adding volume group " << (int *)group << std::endl;
+#endif
           rtcTransforms.push_back(instances.xfms[i]);
         }
       }

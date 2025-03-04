@@ -71,7 +71,7 @@ namespace BARNEY_NS {
     void restoreActive(int old) const  { rtc->restoreActive(old); }
     void syncPipelineAndSBT();
     
-    bool programsDirty = true;
+    // bool programsDirty = true;
     bool sbtDirty = true;
     
     GeomTypeRegistry geomTypes;

@@ -24,7 +24,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
-#if 0
+#if 1
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/ 
@@ -37,7 +37,6 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 # define BARNEY_ENTER(fct) try {                                 \
   if (0) std::cout << "@bn.entering " << fct << std::endl;       \
   
-
 
 # define BARNEY_LEAVE(fct,retValue)                                     \
   } catch (std::exception &e) {                                         \
@@ -332,8 +331,10 @@ namespace barney_api {
                               const char *ignoreForNow)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);    
     Context *context = checkGet(_context);
     std::shared_ptr<Renderer> renderer = context->createRenderer();
+    assert((int*)cudaGetLastError() == 0);
     return (BNRenderer)context->initReference(renderer);
   }
 
@@ -364,6 +365,7 @@ namespace barney_api {
     assert(object);
     Context *context = object->getContext();
     assert(context);
+    PING; return;
     context->releaseHostReference(object->shared_from_this());
   }
   
@@ -535,9 +537,11 @@ namespace barney_api {
                       const void *items)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
     Context *context = checkGet(_context);
     std::shared_ptr<Data> data
       = context->createData(slot,dataType,numItems,items);
+    assert((int*)cudaGetLastError() == 0);
     return (BNData)context->initReference(data);
   }
 
@@ -648,6 +652,7 @@ namespace barney_api {
   {
     LOG_API_ENTRY;
     BARNEY_ENTER(__PRETTY_FUNCTION__);
+    assert((int*)cudaGetLastError() == 0);
     Context *context = checkGet(_context);
     std::shared_ptr<Group>
       group = context->createGroup(slot,
@@ -669,6 +674,7 @@ namespace barney_api {
     //             << "... going to return null group." << std::endl;
     //   return BNGroup{0};
     // }
+    assert((int*)cudaGetLastError() == 0);
     BARNEY_LEAVE(__PRETTY_FUNCTION__,0);
   }
 
@@ -676,12 +682,15 @@ namespace barney_api {
   void  bnGroupBuild(BNGroup group)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
     BARNEY_ENTER(__PRETTY_FUNCTION__);
     if (!group) {
       std::cerr << "@barney(WARNING): bnGroupBuild with null group - ignoring this, but this is is an app error that should be fixed, and is only likely to cause issues later on" << std::endl;
       return;
     }
+    assert((int*)cudaGetLastError() == 0);
     checkGet(group)->build();
+    assert((int*)cudaGetLastError() == 0);
     BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
@@ -691,8 +700,10 @@ namespace barney_api {
   {
     BARNEY_ENTER(__PRETTY_FUNCTION__);
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
     checkGet(model)->build(slot);
     // checkGet(model,slot)->build();
+    assert((int*)cudaGetLastError() == 0);
     BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
@@ -700,7 +711,11 @@ namespace barney_api {
   void bnCommit(BNObject target)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
+    PRINT(target);
+    PRINT(((barney_api::Object*)target)->toString());
     checkGet(target)->commit();
+    assert((int*)cudaGetLastError() == 0);
   }
   
               
@@ -832,9 +847,11 @@ namespace barney_api {
                                     int owningRank)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
     Context *context = checkGet(_context);
     std::shared_ptr<FrameBuffer> fb
       = context->createFrameBuffer(owningRank);
+    assert((int*)cudaGetLastError() == 0);
     return (BNFrameBuffer)context->initReference(fb);
   }
 
@@ -844,7 +861,9 @@ namespace barney_api {
                            uint32_t channels)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
     checkGet(fb)->resize(vec2i{sizeX,sizeY},channels);
+    assert((int*)cudaGetLastError() == 0);
   }
 
   BARNEY_API
@@ -854,7 +873,9 @@ namespace barney_api {
                          BNDataType requestedFormat)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
     checkGet(fb)->read(channel,hostPtr,requestedFormat);
+    assert((int*)cudaGetLastError() == 0);
   }
   
   BARNEY_API
@@ -862,6 +883,7 @@ namespace barney_api {
                                 BNFrameBufferChannel channel)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
     return checkGet(fb)->getPointer(channel);
   }
   
@@ -869,7 +891,9 @@ namespace barney_api {
   BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)
   {
+    assert((int*)cudaGetLastError() == 0);
     checkGet(fb)->resetAccumulation();
+    assert((int*)cudaGetLastError() == 0);
   }
   
   BARNEY_API
@@ -878,6 +902,7 @@ namespace barney_api {
                 BNCamera   camera,
                 BNFrameBuffer fb)
   {
+    assert((int*)cudaGetLastError() == 0);
     // static double t_first = getCurrentTime();
     // static double t_sum = 0.;
     
@@ -888,6 +913,7 @@ namespace barney_api {
 
     // t_sum += (t1-t0);
     // printf("time in %f\n",float((t_sum / (t1 - t_first))));
+    assert((int*)cudaGetLastError() == 0);
   }
 
   BARNEY_API
@@ -905,6 +931,7 @@ namespace barney_api {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
+    assert((int*)cudaGetLastError() == 0);
     if (getenv("BARNEY_FORCE_CPU")) {
 	    static int negOne = -1;
 	    _gpuIDs = &negOne;
