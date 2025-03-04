@@ -42,6 +42,8 @@ namespace BARNEY_NS {
         dd.world     = model->getInstanceAccel(device);
 #ifndef NDEBUG
         std::cout << "model's instance accel is " << (int*)dd.world << std::endl;
+        if (dd.world == 0)
+          exit(0);
 #endif
         dd.materials = ctx->materialRegistry->getDD(device);
         dd.samplers  = ctx->samplerRegistry->getDD(device);
