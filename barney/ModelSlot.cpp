@@ -211,7 +211,8 @@ namespace BARNEY_NS {
       pld->instanceGroup
         = device->rtc->createInstanceGroup(rtcGroups,
                                            rtcTransforms);
-      pld->instanceGroup->buildAccel();
+      if (pld->instanceGroup)
+        pld->instanceGroup->buildAccel();
     }
   }
 

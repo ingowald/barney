@@ -58,6 +58,8 @@ namespace BARNEY_NS {
     rtc::device::AccelHandle getInstanceAccel(Device *device)
     {
       auto *pld = getPLD(device);
+      if (!pld || !pld->instanceGroup)
+        return 0;
       assert(pld);
       assert(pld->instanceGroup);
       return pld->instanceGroup->getDD();
