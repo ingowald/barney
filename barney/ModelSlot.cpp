@@ -51,10 +51,16 @@ namespace BARNEY_NS {
                                const affine3f *xfms,
                                int numUserInstances)
   {
+#ifndef NDEBUG
+    std::cout << "barney model setinstances " << numUserInstances <<std::endl;
+#endif
     instances.groups.resize(numUserInstances);
     instances.xfms.resize(numUserInstances);
     for (int i=0;i<numUserInstances;i++) {
       auto g = groups[i];
+#ifndef NDEBUG
+      std::cout << " - " << (int*)g <<std::endl;
+#endif
       instances.groups[i]
         = g
         ? g->shared_from_this()->as<Group>()
