@@ -133,8 +133,12 @@ void Frame::renderFrame()
   auto start = std::chrono::steady_clock::now();
 
   auto *state = deviceState();
-  if (state->commitBuffer.flush())
+  state->commitBuffer.flush();
+
+  if (m_lastCommitFlush < state->commitBuffer.lastFlush()) {
+    m_lastCommitFlush = helium::newTimeStamp();
     bnAccumReset(m_bnFrameBuffer);
+  }
 
   if (!isValid()) {
     reportMessage(
@@ -186,13 +190,11 @@ void *Frame::map(std::string_view channel,
     return m_depthBuffer;
   } else if (channel == "channel.colorGPU") {
     *pixelType = ANARI_FLOAT32_VEC4;
-    return bnFrameBufferGetPointer(m_bnFrameBuffer,
-                                   BN_FB_COLOR);
+    return bnFrameBufferGetPointer(m_bnFrameBuffer, BN_FB_COLOR);
     return m_colorBuffer;
   } else if (channel == "channel.depthGPU") {
     *pixelType = ANARI_FLOAT32;
-    return bnFrameBufferGetPointer(m_bnFrameBuffer,
-                                   BN_FB_DEPTH);
+    return bnFrameBufferGetPointer(m_bnFrameBuffer, BN_FB_DEPTH);
   }
 
   *width = 0;

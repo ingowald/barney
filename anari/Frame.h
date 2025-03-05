@@ -63,6 +63,7 @@ struct Frame : public helium::BaseFrame
   helium::ChangeObserverPtr<Renderer> m_renderer;
   helium::IntrusivePtr<Camera> m_camera;
   helium::IntrusivePtr<World> m_world;
+  helium::TimeStamp m_lastCommitFlush{0};
 
   mutable float m_duration{0.f};
 
