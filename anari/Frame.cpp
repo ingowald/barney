@@ -180,8 +180,8 @@ void *Frame::map(std::string_view channel,
   *height = m_frameData.size.y;
 
   if (channel == "channel.color") {
-    bnFrameBufferRead(
-        m_bnFrameBuffer, BN_FB_COLOR, m_colorBuffer, toBarney(m_colorType));
+    bnFrameBufferRead(m_bnFrameBuffer, BN_FB_COLOR,
+                      m_colorBuffer, toBarney(m_colorType));
     *pixelType = m_colorType;
     return m_colorBuffer;
   } else if (channel == "channel.depth" && m_depthBuffer) {
@@ -189,9 +189,10 @@ void *Frame::map(std::string_view channel,
     *pixelType = ANARI_FLOAT32;
     return m_depthBuffer;
   } else if (channel == "channel.colorGPU") {
+    bnFrameBufferRead(m_bnFrameBuffer, BN_FB_COLOR,
+                      nullptr, BN_FLOAT4);
     *pixelType = ANARI_FLOAT32_VEC4;
     return bnFrameBufferGetPointer(m_bnFrameBuffer, BN_FB_COLOR);
-    return m_colorBuffer;
   } else if (channel == "channel.depthGPU") {
     *pixelType = ANARI_FLOAT32;
     return bnFrameBufferGetPointer(m_bnFrameBuffer, BN_FB_DEPTH);

@@ -253,6 +253,10 @@ namespace BARNEY_NS {
     device->sync();
   }
 
+  /*! "finalize" and read the frame buffer. If this function gets
+      called with a null hostPtr we will still finalize the frame
+      buffer and run the denoiser, just not copy it to host; the
+      result can then be read by framebuffergetpointer() */
   void FrameBuffer::read(BNFrameBufferChannel channel,
                          void *hostPtr,
                          BNDataType requestedFormat)
@@ -287,6 +291,12 @@ namespace BARNEY_NS {
       }
       dirty = false;
     }
+
+    if (!hostPtr) {
+      device->rtc->sync();
+      return;
+    }
+    
     if (channel == BN_FB_DEPTH && hostPtr && linearDepth) {
       if (requestedFormat != BN_FLOAT)
         throw std::runtime_error("can only read depth channel as BN_FLOAT format");
@@ -298,8 +308,6 @@ namespace BARNEY_NS {
       return;
     }
 
-    if (!hostPtr) return;
-    
     if (channel != BN_FB_COLOR)
       throw std::runtime_error("trying to read un-known channel!?");
 
