@@ -19,10 +19,14 @@
 #include "barney/Context.h"
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
-// #include "barney/umesh/os/AWT.h"
+#include "barney/umesh/os/AWT.h"
 
 namespace BARNEY_NS {
 
+  RTC_IMPORT_USER_GEOM(/*file*/UMeshMC,/*name*/UMeshMC,
+                       /*geomtype device data */
+                       MCVolumeAccel<UMeshCUBQLSampler>::DD,false,false);
+  
   UMeshField::PLD *UMeshField::getPLD(Device *device) 
   {
     assert(device);
@@ -363,7 +367,6 @@ namespace BARNEY_NS {
   
   void UMeshField::commit()
   {
-    PING;
     assert(indices);
     assert(vertices);
     assert(elementOffsets);
@@ -437,19 +440,15 @@ namespace BARNEY_NS {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if BARNEY_HAVE_CUDA || 1
-    assert(0);
-    return {};
-    // return std::make_shared<AWTAccel>(volume,this);
+#if 0
+    return std::make_shared<AWTAccel>(volume,this);
 #else
     auto sampler
       = std::make_shared<UMeshCUBQLSampler>(this);
     return std::make_shared<MCVolumeAccel<UMeshCUBQLSampler>>
       (volume,
-       sampler,
-       /* it's in mc/UMeshMC.dev.cu */
-       "UMeshMC_ptx",
-       "UMeshMC");
+       createGeomType_UMeshMC,
+       sampler);
 #endif
   }
 

@@ -146,8 +146,9 @@ namespace rtc {
       OWLContext      owl = 0;
 
       void sync();
-      
+
       std::vector<cudaStream_t> activeTraceStreams;
+      bool programsDirty = true;
     };
 
   }

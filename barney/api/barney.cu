@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -37,7 +37,6 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 # define BARNEY_ENTER(fct) try {                                 \
   if (0) std::cout << "@bn.entering " << fct << std::endl;       \
   
-
 
 # define BARNEY_LEAVE(fct,retValue)                                     \
   } catch (std::exception &e) {                                         \
@@ -385,41 +384,6 @@ namespace barney_api {
     delete (Context *)context;
   }
 
-#if 0
-  BARNEY_API
-  BNGeom bnTriangleMeshCreate(BNContext context,
-                              int slot,
-                              const BNMaterialHelper *material,
-                              const int3 *indices,
-                              int numIndices,
-                              const float3 *vertices,
-                              int numVertices,
-                              const float3 *normals,
-                              const float2 *texcoords)
-  {
-    LOG_API_ENTRY;
-    BNGeom mesh = bnGeometryCreate(context,slot,"triangles");
-    
-    BNData _vertices = bnDataCreate(context,slot,BN_FLOAT3,numVertices,vertices);
-    bnSetAndRelease(mesh,"vertices",_vertices);
-    
-    BNData _indices  = bnDataCreate(context,slot,BN_INT3,numIndices,indices);
-    bnSetAndRelease(mesh,"indices",_indices);
-    
-    if (normals) {
-      BNData _normals  = bnDataCreate(context,slot,BN_FLOAT3,normals?numVertices:0,normals);
-      bnSetAndRelease(mesh,"normals",_normals);
-    }
-    
-    if (texcoords) {
-      BNData _texcoords  = bnDataCreate(context,slot,BN_FLOAT2,texcoords?numVertices:0,texcoords);
-      bnSetAndRelease(mesh,"texcoords",_texcoords);
-    }
-    bnAssignMaterial(mesh,material);
-    bnCommit(mesh);
-    return mesh;
-  }  
-#endif
   BARNEY_API
   BNScalarField bnScalarFieldCreate(BNContext _context,
                                     int slot,
@@ -443,14 +407,6 @@ namespace barney_api {
     return (BNGeom)context->initReference(geom);
   }
 
-  // BARNEY_API
-  // void bnCountAvailableDevice(int *numGPUs)
-  // {
-  //   if (!numGPUs) return;
-  //   *numGPUs = rtc::Backend::getDeviceCount();
-  // }
-
-  
   BARNEY_API
   BNMaterial bnMaterialCreate(BNContext _context,
                               int slot,
@@ -484,7 +440,6 @@ namespace barney_api {
     if (!camera) return 0;
     return (BNCamera)context->initReference(camera);
   }
-
 
   BARNEY_API
   void bnVolumeSetXF(BNVolume volume,
@@ -542,103 +497,6 @@ namespace barney_api {
   }
 
 
-#if 0
-  BARNEY_API
-  BNScalarField bnStructuredDataCreate(BNContext context,
-                                       int slot,
-                                       int3 dims,
-                                       BNDataType type,
-                                       const void *scalars,
-                                       float3 gridOrigin,
-                                       float3 gridSpacing)
-  {
-    BNScalarField sf
-      = bnScalarFieldCreate(context,slot,"structured");
-    BNTexture3D texture
-      = bnTexture3DCreate(context,slot,type,
-                          dims.x,dims.y,dims.z,scalars,
-                          BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
-    bnSetObject(sf,"texture",texture);
-    bnRelease(texture);
-    bnSet3ic(sf,"dims",dims);
-    bnSet3fc(sf,"gridOrigin",gridOrigin);
-    bnSet3fc(sf,"gridSpacing",gridSpacing);
-    bnCommit(sf);
-    return sf;
-  }
-#endif
-  
-//   BARNEY_API
-//   BNScalarField bnUMeshCreate(BNContext context,
-//                               int slot,
-//                               // vertices, 4 floats each (3 floats position,
-//                               // 4th float scalar value)
-//                               const bn_float4  *vertices,
-//                               int            numVertices,
-//                               const int     *indices,
-//                               int            numIndices,
-//                               const int     *elementOffsets,
-//                               int            numElements,
-//                               const float3 *domainOrNull    
-//                               )
-//   {
-//     box3f domain
-//       = domainOrNull
-//       ? *(const box3f*)domainOrNull
-//       : box3f();
-
-// #if 1
-//     BARNEY_NYI();
-// #else
-//     ScalarField::SP sf = 
-//       UMeshField::create(checkGet(context),slot,
-//                          (const vec4f*)vertices,numVertices,
-//                          indices,numIndices,
-//                          elementOffsets,
-//                          numElements,
-//                          domain);
-//     return (BNScalarField)checkGet(context)->initReference(sf);
-// #endif
-//   }
-  
-//   BARNEY_API
-//   BNScalarField bnBlockStructuredAMRCreate(BNContext context,
-//                                            int slot,
-//                                            /*TODO:const float *cellWidths,*/
-//                                            // block bounds, 6 ints each (3 for min,
-//                                            // 3 for max corner)
-//                                            const int *_blockBounds, int numBlocks,
-//                                            // refinement level, per block,
-//                                            // finest is level 0,
-//                                            const int *_blockLevels,
-//                                            // offsets into blockData array
-//                                            const int *_blockOffsets,
-//                                            // block scalars
-//                                            const float *_blockScalars,
-//                                            int numBlockScalars)
-//   {
-// #if 1
-//     BARNEY_NYI();
-// #else
-//     std::cout << "#bn: copying 'amr' from app ..." << std::endl;
-//     std::vector<box3i> blockBounds(numBlocks);
-//     std::vector<int>   blockLevels(numBlocks);
-//     std::vector<int>   blockOffsets(numBlocks);
-//     std::vector<float> blockScalars(numBlockScalars);
-//     memcpy(blockBounds.data(),_blockBounds,blockBounds.size()*sizeof(blockBounds[0]));
-//     memcpy(blockLevels.data(),_blockLevels,blockLevels.size()*sizeof(blockLevels[0]));
-//     memcpy(blockOffsets.data(),_blockOffsets,blockOffsets.size()*sizeof(blockOffsets[0]));
-//     memcpy(blockScalars.data(),_blockScalars,blockScalars.size()*sizeof(blockScalars[0]));
-//     ScalarField::SP sf =
-//       std::make_shared<BlockStructuredField>(checkGet(context),slot,
-//                                              blockBounds,
-//                                              blockLevels,
-//                                              blockOffsets,
-//                                              blockScalars);
-//     return (BNScalarField)checkGet(context)->initReference(sf);
-// #endif
-//   }
-
 
   BARNEY_API
   BNGroup bnGroupCreate(BNContext _context,
@@ -653,22 +511,7 @@ namespace barney_api {
       group = context->createGroup(slot,
                                    (Geometry **)geoms,numGeoms,
                                    (Volume **)volumes,numVolumes);
-    // auto devices = context->getDevices(slot);
-    // std::vector<Geometry::SP> _geoms;
-    // for (int i=0;i<numGeoms;i++)
-    //   _geoms.push_back(checkGet(geoms[i])->as<Geometry>());
-    // std::vector<Volume::SP> _volumes;
-    // for (int i=0;i<numVolumes;i++)
-    //   _volumes.push_back(checkGet(volumes[i])->as<Volume>());
-    // Group::SP group
-    //   = std::make_shared<Group>(context,devices,
-    //                             _geoms,_volumes);
     return (BNGroup)context->initReference(group);
-    // } catch (std::runtime_error error) {
-    //   std::cerr << "@barney: Error in creating group: " << error.what()
-    //             << "... going to return null group." << std::endl;
-    //   return BNGroup{0};
-    // }
     BARNEY_LEAVE(__PRETTY_FUNCTION__,0);
   }
 
@@ -678,7 +521,9 @@ namespace barney_api {
     LOG_API_ENTRY;
     BARNEY_ENTER(__PRETTY_FUNCTION__);
     if (!group) {
+#ifndef NDEBUG
       std::cerr << "@barney(WARNING): bnGroupBuild with null group - ignoring this, but this is is an app error that should be fixed, and is only likely to cause issues later on" << std::endl;
+#endif
       return;
     }
     checkGet(group)->build();
@@ -692,7 +537,6 @@ namespace barney_api {
     BARNEY_ENTER(__PRETTY_FUNCTION__);
     LOG_API_ENTRY;
     checkGet(model)->build(slot);
-    // checkGet(model,slot)->build();
     BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
@@ -702,7 +546,6 @@ namespace barney_api {
     LOG_API_ENTRY;
     checkGet(target)->commit();
   }
-  
               
   BARNEY_API
   void bnSetString(BNObject target, const char *param, const char *value)
@@ -906,11 +749,11 @@ namespace barney_api {
   {
     LOG_API_ENTRY;
     if (getenv("BARNEY_FORCE_CPU")) {
-	    static int negOne = -1;
-	    _gpuIDs = &negOne;
-	    numGPUs = 1;
+      static int negOne = -1;
+      _gpuIDs = &negOne;
+      numGPUs = 1;
     }
-
+    
     try {
       // ------------------------------------------------------------------
       // create vector of data groups; if actual specified by user we
@@ -1036,11 +879,16 @@ namespace barney_api {
                                )
   {
     LOG_API_ENTRY;
+    if (getenv("BARNEY_FORCE_CPU")) {
+	    static int negOne = -1;
+	    _gpuIDs = &negOne;
+	    numGPUs = 1;
+    }
 
     mpi::Comm world(_comm);
-
     if (world.size == 1) {
-      // std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
+      // std::cout << "#bn: MPIContextInit, but only one rank - using
+      // local context" << std::endl;
       return bnContextCreate(dataRanksOnThisContext,
                              numDataRanksOnThisContext == 0
                              ? 1 : numDataRanksOnThisContext,
@@ -1086,6 +934,7 @@ namespace barney_api {
       // gpu IDs _are_ specified by user - use them, or fail
       assert(numGPUs > 0);
       if (numGPUs == 1 && _gpuIDs[0] == -1) {
+        
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createMPIContext_embree(world,
                                                   workers,
@@ -1141,5 +990,78 @@ namespace barney_api {
       ("cannot find GPUs for otpix backend, but cpu backend not compiled in");
 # endif
   }
+
+
+  BARNEY_API
+  void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
+  {
+    LOG_API_ENTRY;
+
+    assert(_hardware);
+    BNHardwareInfo &hardware = *_hardware;
+
+    assert(_comm != MPI_COMM_NULL);
+    barney_api::mpi::Comm comm(_comm);
+
+    hardware.numRanks = comm.size;
+    char hostName[MPI_MAX_PROCESSOR_NAME];
+    memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
+    int hostNameLen = 0;
+    BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen));
+
+    std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
+    memset(recvBuf.data(),0,recvBuf.size());
+
+    // ------------------------------------------------------------------
+    // determine which (world) rank lived on which host, and assign
+    // GPUSs
+    // ------------------------------------------------------------------
+    BN_MPI_CALL(Allgather(hostName,
+                          MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
+                          recvBuf.data(),
+                          /* PER rank size */MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
+                          comm.comm));
+    std::vector<std::string>  hostNames;
+    std::map<std::string,int> ranksOnHost;
+    for (int i=0;i<comm.size;i++)  {
+      std::string host_i = recvBuf.data()+i*MPI_MAX_PROCESSOR_NAME;
+      hostNames.push_back(host_i);
+      ranksOnHost[host_i] ++;
+    }
+
+    hardware.numRanksThisHost = ranksOnHost[hostName];
+    hardware.numHosts         = ranksOnHost.size();
+
+    // ------------------------------------------------------------------
+    // count how many other ranks are already on this same node
+    // ------------------------------------------------------------------
+    BN_MPI_CALL(Barrier(comm.comm));
+    int localRank = 0;
+    for (int i=0;i<comm.rank;i++)
+      if (hostNames[i] == hostName)
+        localRank++;
+    BN_MPI_CALL(Barrier(comm.comm));
+    hardware.localRank = localRank;
+    hardware.numRanksThisHost = ranksOnHost[hostName];
+
+    // ------------------------------------------------------------------
+    // assign a GPU to this rank
+    // ------------------------------------------------------------------
+    int numGPUsOnThisHost = 0;
+#if BARNEY_BACKEND_OPTIX
+    cudaGetDeviceCount(&numGPUsOnThisHost);
+#endif
+    // cudaGetDeviceCount(&numGPUsOnThisHost);
+    // if (numGPUsOnThisHost == 0)
+    //   throw std::runtime_error("no barney-capable devices on this rank!");
+    hardware.numGPUsThisHost = numGPUsOnThisHost;
+    hardware.numGPUsThisRank
+      = comm.allReduceMin(hardware.numGPUsThisHost == 0
+                          ? 0
+                          : std::max(hardware.numGPUsThisHost/
+                                     hardware.numRanksThisHost,
+                                     1));
+  }
+  
 #endif
 } // ::owl

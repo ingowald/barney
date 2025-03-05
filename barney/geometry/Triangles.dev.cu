@@ -89,12 +89,12 @@ namespace BARNEY_NS {
           const vec4f ret = (1.f-u-v)*value_a + u*value_b + v*value_c;
           return ret;
         };
-      self.setHitAttributes(hitData,interpolator,ray.dbg);
+      self.setHitAttributes(hitData,interpolator,dbg);
 
       const DeviceMaterial &material
         = OptixGlobals::get(rt).materials[self.materialID];
       PackedBSDF bsdf
-        = material.createBSDF(hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+        = material.createBSDF(hitData,OptixGlobals::get(rt).samplers,dbg);
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);

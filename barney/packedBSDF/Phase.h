@@ -80,7 +80,7 @@ namespace BARNEY_NS {
         float z = (1.f-2.f*r2);
         float density = ONE_OVER_FOUR_PI;
         scatter.pdf = density;
-        scatter.f_r = (const vec3f&)albedo;// * density;
+        scatter.f_r = (const vec3f&)albedo * density;
         scatter.dir = vec3f(x,y,z);
         scatter.type = ScatterResult::VOLUME;
       }

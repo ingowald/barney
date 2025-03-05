@@ -65,67 +65,11 @@ namespace BARNEY_NS {
       device->sbtDirty = true;
       auto pld = getPLD(device);
       if (pld->instanceGroup) {
-        // owlGroupRelease(instances.group);
         device->rtc->freeGroup(pld->instanceGroup);
         pld->instanceGroup = 0;
       }
     }
   }
-  
-  // Group *ModelSlot::createGroup(const std::vector<Geometry::SP> &geoms,
-  //                               const std::vector<Volume::SP> &volumes)
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Group>(this,geoms,volumes));
-  // }
-
-  // Volume *ModelSlot::createVolume(ScalarField::SP sf)
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Volume>(devGroup.get(),sf));
-  // }
-
-  // ModelSlot::SP ModelSlot::create(GlobalModel *model, int localID)
-  // {
-  //   ModelSlot::SP slot = std::make_shared<ModelSlot>(model,localID);
-  //   return slot;
-  // }
-
-  // render::HostMaterial::SP ModelSlot::getDefaultMaterial()
-  // {
-  //   if (!defaultMaterial) {
-  //     defaultMaterial
-  //       = render::HostMaterial::create(this,"AnariMatte");
-  //     defaultMaterial->commit();
-  //   }
-  //   return defaultMaterial;
-  // }
-  
-  // Data *ModelSlot::createData(BNDataType dataType,
-  //                             size_t numItems,
-  //                             const void *items)
-  // {
-  //   return getContext()->initReference(Data::create(this,dataType,numItems,items));
-  // }
-  
-  // Light *ModelSlot::createLight(const std::string &type)
-  // {
-  //   return getContext()->initReference(Light::create(this,type));
-  // }
-
-  // Texture *Context::createTexture(BNTexelFormat texelFormat,
-  //                                 int slot,
-  //                                 vec2i size,
-  //                                 const void *texels,
-  //                                 BNTextureFilterMode  filterMode,
-  //                                 BNTextureAddressMode addressMode,
-  //                                 BNTextureColorSpace  colorSpace)
-  // {
-  //   return initReference(std::make_shared<Texture>
-  //                        (this,slot,
-  //                         texelFormat,size,texels,
-  //                         filterMode,addressMode,colorSpace));
-  // }
 
   void ModelSlot::build()
   {
@@ -193,6 +137,7 @@ namespace BARNEY_NS {
           rtcGroups.push_back(groupPLD->volumeGeomsGroup);
           rtcTransforms.push_back(instances.xfms[i]);
         }
+
         if (groupPLD->triangleGeomGroup) {
           rtcGroups.push_back(groupPLD->triangleGeomGroup);
           rtcTransforms.push_back(instances.xfms[i]);
@@ -211,7 +156,8 @@ namespace BARNEY_NS {
       pld->instanceGroup
         = device->rtc->createInstanceGroup(rtcGroups,
                                            rtcTransforms);
-      pld->instanceGroup->buildAccel();
+      if (pld->instanceGroup)
+        pld->instanceGroup->buildAccel();
     }
   }
 

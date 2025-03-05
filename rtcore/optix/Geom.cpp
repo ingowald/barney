@@ -71,7 +71,9 @@ namespace rtc {
 
     GeomType::GeomType(optix::Device *device)
       : device(device)
-    {}
+    {
+      device->programsDirty = true;
+    }
     
     GeomType::~GeomType()
     {

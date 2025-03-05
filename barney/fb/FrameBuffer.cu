@@ -94,33 +94,23 @@ namespace BARNEY_NS {
   {
     Device *device = getDenoiserDevice();
     if (denoisedColor) {
-      // BARNEY_CUDA_CALL(Free(denoisedColor));
       device->rtc->freeMem(denoisedColor);
       denoisedColor = 0;
     }
     if (linearColor) {
-      // BARNEY_CUDA_CALL(Free(linearColor));
       device->rtc->freeMem(linearColor);
       linearColor = 0;
     }
-    // if (linearAlpha) {
-    //   device->rtc->freeMem(linearAlpha);
-    //   // BARNEY_CUDA_CALL(Free(linearAlpha));
-    //   linearAlpha = 0;
-    // }
     if (linearDepth) {
       device->rtc->freeMem(linearDepth);
-      // BARNEY_CUDA_CALL(Free(linearDepth));
       linearDepth = 0;
     }
     if (linearNormal) {
       device->rtc->freeMem(linearNormal);
-      // BARNEY_CUDA_CALL(Free(linearNormal));
       linearNormal = 0;
     }
   }
 
-  // #if 1
   struct ToFixed8 {
     uint32_t *out;
     vec4f *in;
@@ -151,36 +141,7 @@ namespace BARNEY_NS {
     out[idx] = make_rgba(v);
   }
 #endif
-  // #else
-  //   template<bool SRGB>
-  //   __global__
-  //   void toFixed8(uint32_t *out,
-  //                 vec4f *in,
-  //                 vec2i numPixels)
-  //   {
-  //     int ix = threadIdx.x+blockIdx.x*blockDim.x;
-  //     if (ix >= numPixels.x) return;
-  //     int iy = threadIdx.y+blockIdx.y*blockDim.y;
-  //     if (iy >= numPixels.y) return;
-  //     int idx = ix+numPixels.x*iy;
 
-  //     vec4f v = in[idx];
-  //     v.x = clamp(v.x);
-  //     v.y = clamp(v.y);
-  //     v.z = clamp(v.z);
-  //     if (SRGB) {
-  //       // this doesn't make sense - the color channel has ALREADY been
-  //       // gamma-corrected in tonemap()!?
-  //       v.x = linear_to_srgb(v.x);
-  //       v.y = linear_to_srgb(v.y);
-  //       v.z = linear_to_srgb(v.z);
-  //     }
-  //     out[idx] = make_rgba(v);
-  //     // out[idx] = make_rgba8(v);
-  //   }
-  // #endif
-
-  // #if 1
   struct ToneMap {
     vec4f *color;
     vec2i numPixels;
@@ -209,39 +170,11 @@ namespace BARNEY_NS {
     v.y = sqrtf(v.y);
     v.z = sqrtf(v.z);
 #else
-    // v.x = linear_to_srgb(v.x);
-    // v.y = linear_to_srgb(v.y);
-    // v.z = linear_to_srgb(v.z);
+    /* nothing - leave as is */
 #endif
     color[idx] = v;
   }
 #endif
-  // #else
-  //   __global__ void toneMap(vec4f *color, vec2i numPixels)
-  //   {
-  //     int ix = threadIdx.x+blockIdx.x*blockDim.x;
-  //     if (ix >= numPixels.x) return;
-  //     int iy = threadIdx.y+blockIdx.y*blockDim.y;
-  //     if (iy >= numPixels.y) return;
-  //     int idx = ix+numPixels.x*iy;
-
-  //     vec4f v = color[idx];
-  // #if 0
-  //     v.x = linear_to_srgb(v.x);
-  //     v.y = linear_to_srgb(v.y);
-  //     v.z = linear_to_srgb(v.z);
-  // #elif 1
-  //     v.x = sqrtf(v.x);
-  //     v.y = sqrtf(v.y);
-  //     v.z = sqrtf(v.z);
-  // #else
-  //     // v.x = linear_to_srgb(v.x);
-  //     // v.y = linear_to_srgb(v.y);
-  //     // v.z = linear_to_srgb(v.z);
-  // #endif
-  //     color[idx] = v;
-  //   }
-  // #endif
 
   void FrameBuffer::finalizeTiles()
   {
@@ -260,43 +193,6 @@ namespace BARNEY_NS {
     }
   }
 
-  // __global__ void g_unpackTiles(vec2i numPixels,
-  //                               vec3f *colors,
-  //                               float *alphas,
-  //                               vec3f *normals,
-  //                               float *depths,
-  //                               CompressedTile *tiles,
-  //                               TileDesc *descs)
-  // {
-  //   int tileIdx = blockIdx.x;
-
-  //   const CompressedTile &tile = tiles[tileIdx];
-  //   const TileDesc        desc = descs[tileIdx];
-    
-  //   int subIdx = threadIdx.x;
-  //   int iix = subIdx % tileSize;
-  //   int iiy = subIdx / tileSize;
-  //   int ix = desc.lower.x + iix;
-  //   int iy = desc.lower.y + iiy;
-  //   if (ix >= numPixels.x) return;
-  //   if (iy >= numPixels.y) return;
-  //   int idx = ix + numPixels.x*iy;
-
-  //   uint32_t rgba8 = tile.rgba[subIdx];
-  //   vec4f rgba = from_8bit(rgba8);
-  //   float alpha = rgba.w;
-  //   float scale = float(tile.scale[subIdx]);
-  //   vec3f color = vec3f(rgba.x,rgba.y,rgba.z)*scale;
-  //   vec3f normal = tile.normal[subIdx].get3f();
-  //   float depth = tile.depth[subIdx];
-
-  //   colors[idx] = color;
-  //   alphas[idx] = alpha;
-  //   depths[idx] = depth;
-  //   normals[idx] = normal;
-  // }
-  
-  
   struct UnpackTiles {
     vec2i numPixels;
     rtc::float4 *out_rgba;
@@ -357,6 +253,10 @@ namespace BARNEY_NS {
     device->sync();
   }
 
+  /*! "finalize" and read the frame buffer. If this function gets
+      called with a null hostPtr we will still finalize the frame
+      buffer and run the denoiser, just not copy it to host; the
+      result can then be read by framebuffergetpointer() */
   void FrameBuffer::read(BNFrameBufferChannel channel,
                          void *hostPtr,
                          BNDataType requestedFormat)
@@ -391,6 +291,12 @@ namespace BARNEY_NS {
       }
       dirty = false;
     }
+
+    if (!hostPtr) {
+      device->rtc->sync();
+      return;
+    }
+    
     if (channel == BN_FB_DEPTH && hostPtr && linearDepth) {
       if (requestedFormat != BN_FLOAT)
         throw std::runtime_error("can only read depth channel as BN_FLOAT format");
@@ -402,8 +308,6 @@ namespace BARNEY_NS {
       return;
     }
 
-    if (!hostPtr) return;
-    
     if (channel != BN_FB_COLOR)
       throw std::runtime_error("trying to read un-known channel!?");
 
@@ -450,13 +354,11 @@ namespace BARNEY_NS {
     if (isOwner) {
       auto rtc = getDenoiserDevice()->rtc;
       int np = numPixels.x*numPixels.y;
-      denoisedColor = (vec4f*)rtc->allocMem(np*sizeof(*denoisedColor));
+      denoisedColor = (vec4f *)rtc->allocMem(np*sizeof(*denoisedColor));
       linearDepth   = (float *)rtc->allocMem(np*sizeof(*linearDepth));
       linearColor   = (vec4f *)rtc->allocMem(np*sizeof(*linearColor));
       linearNormal  = (vec3f *)rtc->allocMem(np*sizeof(*linearNormal));
       
-      // if (!denoiser) denoiser = Denoiser::create(this);
-      // denoiser->resize();
       if (denoiser)
         denoiser->resize(numPixels);
     }
@@ -476,7 +378,6 @@ namespace BARNEY_NS {
     assert(pld);
     return pld->tiledFB.get();
   }
-
 
   void *FrameBuffer::getPointer(BNFrameBufferChannel channel)
   {
@@ -500,4 +401,3 @@ namespace BARNEY_NS {
   RTC_EXPORT_COMPUTE1D(unpackTiles,UnpackTiles);
 }
   
-// RTC_DECLARE_COMPUTE(copyPixels,barney::CopyPixels);

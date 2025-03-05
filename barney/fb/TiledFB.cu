@@ -94,7 +94,7 @@ namespace BARNEY_NS {
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles
       = device
-      ? divRoundUp(numTiles.x*numTiles.y - device->globalIndex,
+      ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalIndex),
                    device->globalIndexStep)
       : 0;
     auto rtc = device->rtc;
@@ -111,9 +111,10 @@ namespace BARNEY_NS {
       device->globalIndex,
       device->globalIndexStep
     };
-    device->setTileCoords
-      ->launch(divRoundUp(numActiveTiles,1024),1024,
-               &args);
+    if (numActiveTiles > 0)
+      device->setTileCoords
+        ->launch(divRoundUp(numActiveTiles,1024),1024,
+                 &args);
   }
 
   // ==================================================================
@@ -139,8 +140,8 @@ namespace BARNEY_NS {
 
     vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
     vec4f org = color;
-    float scale = reduce_max(color);
-    color *= 1.f/scale;
+    float scale = reduce_max((const vec3f&)color);
+    (vec3f&)color *= 1.f/scale;
     compressedTiles[tileID].scale[pixelID] = scale;
     compressedTiles[tileID].normal[pixelID]
       .set(accumTiles[tileID].normal[pixelID]);

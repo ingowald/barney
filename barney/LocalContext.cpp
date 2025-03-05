@@ -17,6 +17,11 @@
 #include "barney/LocalContext.h"
 #include "barney/fb/LocalFB.h"
 
+
+#if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
+# error "should not have both backends on at the same time!?"
+#endif
+
 namespace barney_api {
 #if BARNEY_RTC_EMBREE
   extern "C" {
@@ -37,7 +42,8 @@ namespace barney_api {
       std::vector<int> gpuIDs;
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
-      return new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+      Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+      return ctx;
     }
   } 
 #endif

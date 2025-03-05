@@ -70,6 +70,7 @@ namespace rtc {
     // ==================================================================
     void Device::buildPipeline() 
     {
+      if (!programsDirty) return;
       owlBuildPipeline(owl);
     }
       
@@ -110,27 +111,6 @@ namespace rtc {
     void Device::freeGeomType(GeomType *gt)
     { assert(gt); delete gt; }
     
-    // GeomType *
-    // Device::createTrianglesGeomType(const char *ptxName,
-    //                                 const char *typeName,
-    //                                 size_t sizeOfDD,
-    //                                 bool has_ah,
-    //                                 bool has_ch)
-    // {
-    //   return new TrianglesGeomType(this,ptxName,typeName,sizeOfDD,has_ah,has_ch);
-    // }
-    
-    // GeomType *
-    // Device::createUserGeomType(const char *ptxName,
-    //                            const char *typeName,
-    //                            size_t sizeOfDD,
-    //                            bool has_ah,
-    //                            bool has_ch)
-    // {
-    //   return new UserGeomType(this,ptxName,typeName,sizeOfDD,has_ah,has_ch);
-    // }
-    
-    
     // ==================================================================
     // kernels
     // ==================================================================
@@ -159,6 +139,7 @@ namespace rtc {
       };
       lp = owlParamsCreate(device->owl,sizeOfLP,lp_args,-1);
       lpStream = owlParamsGetCudaStream(lp,0);
+      device->programsDirty = true;
     }
     
     void TraceKernel2D::launch(vec2i dims,
@@ -168,8 +149,10 @@ namespace rtc {
       BARNEY_CUDA_CALL(StreamSynchronize(/*inherited!*/device->stream));
       
       owlParamsSetRaw(lp,"raw",kernelData,0);
-      owlAsyncLaunch2D(rg,dims.x,dims.y,lp);
-      device->activeTraceStreams.push_back(lpStream);
+      if (dims.x > 0 && dims.y > 0) {
+        owlAsyncLaunch2D(rg,dims.x,dims.y,lp);
+        device->activeTraceStreams.push_back(lpStream);
+      }
     }
     
     // ==================================================================
@@ -211,13 +194,15 @@ namespace rtc {
       std::vector<OWLGroup> owls;
       for (auto group : groups)
         owls.push_back(((Group *)group)->owl);
+
       OWLGroup g
         = owlInstanceGroupCreate(owl,
                                  owls.size(),
                                  owls.data(),
                                  nullptr,
                                  (const float *)xfms.data());
-      return new Group(this,g);
+      Group *gg = new Group(this,g);
+      return gg;
     }
 
   }

@@ -774,10 +774,22 @@ namespace BARNEY_NS {
 #else
       bool dbg = path.dbg;
 #endif
-      
-      float alpha
+
+      /* note(iw): IMHO pixels that did _not_ hit any geometry should
+         have an alpha value of 0, even if they did comptue a 'color'
+         from the env map. However, TSD blends its renderd image over
+         a black background, in which case that blends away background
+         pixels, so for now turn that off. The "right" fix for this
+         would be for TSD to handle alpha properly. */
+#define COMPUTE_PROPER_ALPHA_CHANNEL 0
+      float alpha 
         = (generation == 0)
-        ? (path.hadHit()? 1.f : path.missColor.w)
+        ?
+#if COMPUTE_PROPER_ALPHA_CHANNEL
+        (path.hadHit()? 1.f : path.missColor.w)
+#else
+        1.f
+#endif
         : 0.f;
 #if DENOISE
       vec3f incomingN

@@ -81,7 +81,6 @@ namespace BARNEY_NS {
       
       geom->setVertices(verticesBuffer,numVertices);
       geom->setIndices(indicesBuffer,numIndices);
-      
       Triangles::DD dd;
       Geometry::writeDD(dd,device);
       dd.vertices  = (vec3f*)vertices->getDD(device);

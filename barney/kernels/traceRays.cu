@@ -29,7 +29,7 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
-    for (auto model : globalModel->modelSlots)
+    for (auto model : globalModel->modelSlots) {
       for (auto device : *model->devices) {
         SetActiveGPU forDuration(device);
         render::OptixGlobals dd;
@@ -39,18 +39,26 @@ namespace BARNEY_NS {
         dd.world     = model->getInstanceAccel(device);
         dd.materials = ctx->materialRegistry->getDD(device);
         dd.samplers  = ctx->samplerRegistry->getDD(device);
-        // dd.globalIndex = device->globalIndex;
-        int bs = 1024;
-        int nb = divRoundUp(dd.numRays,bs);
-        device->traceRays->launch(vec2i(nb,bs),
-                                  &dd);
+        if (dd.numRays == 0 || dd.world == 0) {
+          /* iw - it's perfectly valid for an app to 'render' a model
+             that's empty, so it's possible that dd.world is 0. Just
+             skip calling the trace kernel, which may not like getting
+             called with size 0 */
+        } else {
+          int bs = 1024;
+          int nb = divRoundUp(dd.numRays,bs);
+          device->traceRays->launch(vec2i(nb,bs),
+                                    &dd);
+        }
       }
+    }
     
     // ------------------------------------------------------------------
     // ... and sync 'til all are done
     // ------------------------------------------------------------------
     syncCheckAll();
   }
-}
+  
+} // ::BARNEY_NS
 
  

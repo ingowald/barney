@@ -93,9 +93,9 @@ set(HOST_SOURCES
   umesh/common/UMeshField.cu
   umesh/mc/UMeshCUBQLSampler.h
   umesh/mc/UMeshCUBQLSampler.cu
-
-#  umesh/os/AWT.cu
-#  umesh/os/AWT.h
+ 
+  umesh/os/AWT.cu
+  umesh/os/AWT.h
   
   # *structured* volumes
   volume/StructuredData.h
@@ -211,6 +211,8 @@ set(MPI_SOURCES
   fb/DistFB.cpp
   MPIContext.h
   MPIContext.cpp
+  common/MPIWrappers.h
+  common/MPIWrappers.cpp
 )
 
 set(DEVICE_PROGRAM_SOURCES
@@ -220,7 +222,7 @@ set(DEVICE_PROGRAM_SOURCES
   geometry/Capsules.dev.cu
   volume/StructuredData.dev.cu
   umesh/mc/UMeshMC.dev.cu
-  #  umesh/os/AWT.dev.cu
+  umesh/os/AWT.dev.cu
   amr/BlockStructuredMC.dev.cu
   kernels/traceRays.dev.cu
 )
@@ -346,8 +348,9 @@ if (BARNEY_MPI)
     #    barney_config
     $<BUILD_INTERFACE:barney_config>
   )
-  set_library_properties(barney_mpi)
-  
+  set_library_properties(barney_mpi) 
+  target_compile_definitions(barney_mpi PRIVATE -DBARNEY_MPI=1)
+ 
   # ------------------------------------------------------------------
   # barney_mpi_static
   # ------------------------------------------------------------------
