@@ -21,10 +21,10 @@
 
 namespace rtc {
   namespace optix {
-
+    
 #if OPTIX_VERSION >= 80000
     
-      Optix8Denoiser::Optix8Denoiser(Device *device)
+    Optix8Denoiser::Optix8Denoiser(Device *device)
       : Denoiser(device)
     {
       SetActiveGPU forDuration(device);
