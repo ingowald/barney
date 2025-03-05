@@ -71,25 +71,11 @@ namespace rtc {
     void Device::buildPipeline() 
     {
       if (!programsDirty) return;
-      std::cout << "==================================================================" << std::endl;
-      std::cout << "==================================================================" << std::endl;
-      std::cout << "==================================================================" << std::endl;
-      PING;
-      std::cout << "==================================================================" << std::endl;
-      std::cout << "==================================================================" << std::endl;
-      std::cout << "==================================================================" << std::endl;
       owlBuildPipeline(owl);
     }
       
     void Device::buildSBT() 
     {
-      std::cout << "==================================================================" << std::endl;
-      std::cout << "==================================================================" << std::endl;
-      std::cout << "==================================================================" << std::endl;
-      PING;
-      std::cout << "==================================================================" << std::endl;
-      std::cout << "==================================================================" << std::endl;
-      std::cout << "==================================================================" << std::endl;
       owlBuildSBT(owl);
     }
       
@@ -124,27 +110,6 @@ namespace rtc {
     
     void Device::freeGeomType(GeomType *gt)
     { assert(gt); delete gt; }
-    
-    // GeomType *
-    // Device::createTrianglesGeomType(const char *ptxName,
-    //                                 const char *typeName,
-    //                                 size_t sizeOfDD,
-    //                                 bool has_ah,
-    //                                 bool has_ch)
-    // {
-    //   return new TrianglesGeomType(this,ptxName,typeName,sizeOfDD,has_ah,has_ch);
-    // }
-    
-    // GeomType *
-    // Device::createUserGeomType(const char *ptxName,
-    //                            const char *typeName,
-    //                            size_t sizeOfDD,
-    //                            bool has_ah,
-    //                            bool has_ch)
-    // {
-    //   return new UserGeomType(this,ptxName,typeName,sizeOfDD,has_ah,has_ch);
-    // }
-    
     
     // ==================================================================
     // kernels
@@ -230,12 +195,6 @@ namespace rtc {
       for (auto group : groups)
         owls.push_back(((Group *)group)->owl);
 
-#ifndef NDEBUG
-      std::cout << "optix: creating instance group with these owl geom groups:" << std::endl;
-      for (auto owl : owls)
-        std::cout << " " << (int*)owl << std::endl;
-#endif
-      
       OWLGroup g
         = owlInstanceGroupCreate(owl,
                                  owls.size(),
@@ -243,9 +202,6 @@ namespace rtc {
                                  nullptr,
                                  (const float *)xfms.data());
       Group *gg = new Group(this,g);
-#ifndef NDEBUG
-      std::cout << "--> got rtc group " << (int*)gg << " over owl group " << (int*)g << std::endl;
-#endif
       return gg;
     }
 

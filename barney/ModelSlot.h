@@ -43,8 +43,6 @@ namespace BARNEY_NS {
     /*! pretty-printer for printf-debugging */
     std::string toString() const override { return "barney::ModelSlot"; }
     
-    // static SP create(GlobalModel *model, int localID);
-
     void setInstances(barney_api::Group **groups,
                       const affine3f *xfms,
                       int numInstances);
@@ -52,7 +50,6 @@ namespace BARNEY_NS {
     struct {
       std::vector<Group::SP> groups;
       std::vector<affine3f>  xfms;
-      //      OWLGroup group = 0;
     } instances;
 
     rtc::device::AccelHandle getInstanceAccel(Device *device)
@@ -60,8 +57,6 @@ namespace BARNEY_NS {
       auto *pld = getPLD(device);
       if (!pld || !pld->instanceGroup)
         return 0;
-      assert(pld);
-      assert(pld->instanceGroup);
       return pld->instanceGroup->getDD();
     }
     struct PLD {

@@ -24,7 +24,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
-#if 1
+#if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/ 
@@ -331,10 +331,8 @@ namespace barney_api {
                               const char *ignoreForNow)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);    
     Context *context = checkGet(_context);
     std::shared_ptr<Renderer> renderer = context->createRenderer();
-    assert((int*)cudaGetLastError() == 0);
     return (BNRenderer)context->initReference(renderer);
   }
 
@@ -365,7 +363,6 @@ namespace barney_api {
     assert(object);
     Context *context = object->getContext();
     assert(context);
-    PING; return;
     context->releaseHostReference(object->shared_from_this());
   }
   
@@ -387,41 +384,6 @@ namespace barney_api {
     delete (Context *)context;
   }
 
-#if 0
-  BARNEY_API
-  BNGeom bnTriangleMeshCreate(BNContext context,
-                              int slot,
-                              const BNMaterialHelper *material,
-                              const int3 *indices,
-                              int numIndices,
-                              const float3 *vertices,
-                              int numVertices,
-                              const float3 *normals,
-                              const float2 *texcoords)
-  {
-    LOG_API_ENTRY;
-    BNGeom mesh = bnGeometryCreate(context,slot,"triangles");
-    
-    BNData _vertices = bnDataCreate(context,slot,BN_FLOAT3,numVertices,vertices);
-    bnSetAndRelease(mesh,"vertices",_vertices);
-    
-    BNData _indices  = bnDataCreate(context,slot,BN_INT3,numIndices,indices);
-    bnSetAndRelease(mesh,"indices",_indices);
-    
-    if (normals) {
-      BNData _normals  = bnDataCreate(context,slot,BN_FLOAT3,normals?numVertices:0,normals);
-      bnSetAndRelease(mesh,"normals",_normals);
-    }
-    
-    if (texcoords) {
-      BNData _texcoords  = bnDataCreate(context,slot,BN_FLOAT2,texcoords?numVertices:0,texcoords);
-      bnSetAndRelease(mesh,"texcoords",_texcoords);
-    }
-    bnAssignMaterial(mesh,material);
-    bnCommit(mesh);
-    return mesh;
-  }  
-#endif
   BARNEY_API
   BNScalarField bnScalarFieldCreate(BNContext _context,
                                     int slot,
@@ -445,14 +407,6 @@ namespace barney_api {
     return (BNGeom)context->initReference(geom);
   }
 
-  // BARNEY_API
-  // void bnCountAvailableDevice(int *numGPUs)
-  // {
-  //   if (!numGPUs) return;
-  //   *numGPUs = rtc::Backend::getDeviceCount();
-  // }
-
-  
   BARNEY_API
   BNMaterial bnMaterialCreate(BNContext _context,
                               int slot,
@@ -486,7 +440,6 @@ namespace barney_api {
     if (!camera) return 0;
     return (BNCamera)context->initReference(camera);
   }
-
 
   BARNEY_API
   void bnVolumeSetXF(BNVolume volume,
@@ -537,111 +490,12 @@ namespace barney_api {
                       const void *items)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
     Context *context = checkGet(_context);
     std::shared_ptr<Data> data
       = context->createData(slot,dataType,numItems,items);
-    assert((int*)cudaGetLastError() == 0);
     return (BNData)context->initReference(data);
   }
 
-
-#if 0
-  BARNEY_API
-  BNScalarField bnStructuredDataCreate(BNContext context,
-                                       int slot,
-                                       int3 dims,
-                                       BNDataType type,
-                                       const void *scalars,
-                                       float3 gridOrigin,
-                                       float3 gridSpacing)
-  {
-    BNScalarField sf
-      = bnScalarFieldCreate(context,slot,"structured");
-    BNTexture3D texture
-      = bnTexture3DCreate(context,slot,type,
-                          dims.x,dims.y,dims.z,scalars,
-                          BN_TEXTURE_LINEAR,BN_TEXTURE_CLAMP);
-    bnSetObject(sf,"texture",texture);
-    bnRelease(texture);
-    bnSet3ic(sf,"dims",dims);
-    bnSet3fc(sf,"gridOrigin",gridOrigin);
-    bnSet3fc(sf,"gridSpacing",gridSpacing);
-    bnCommit(sf);
-    return sf;
-  }
-#endif
-  
-//   BARNEY_API
-//   BNScalarField bnUMeshCreate(BNContext context,
-//                               int slot,
-//                               // vertices, 4 floats each (3 floats position,
-//                               // 4th float scalar value)
-//                               const bn_float4  *vertices,
-//                               int            numVertices,
-//                               const int     *indices,
-//                               int            numIndices,
-//                               const int     *elementOffsets,
-//                               int            numElements,
-//                               const float3 *domainOrNull    
-//                               )
-//   {
-//     box3f domain
-//       = domainOrNull
-//       ? *(const box3f*)domainOrNull
-//       : box3f();
-
-// #if 1
-//     BARNEY_NYI();
-// #else
-//     ScalarField::SP sf = 
-//       UMeshField::create(checkGet(context),slot,
-//                          (const vec4f*)vertices,numVertices,
-//                          indices,numIndices,
-//                          elementOffsets,
-//                          numElements,
-//                          domain);
-//     return (BNScalarField)checkGet(context)->initReference(sf);
-// #endif
-//   }
-  
-//   BARNEY_API
-//   BNScalarField bnBlockStructuredAMRCreate(BNContext context,
-//                                            int slot,
-//                                            /*TODO:const float *cellWidths,*/
-//                                            // block bounds, 6 ints each (3 for min,
-//                                            // 3 for max corner)
-//                                            const int *_blockBounds, int numBlocks,
-//                                            // refinement level, per block,
-//                                            // finest is level 0,
-//                                            const int *_blockLevels,
-//                                            // offsets into blockData array
-//                                            const int *_blockOffsets,
-//                                            // block scalars
-//                                            const float *_blockScalars,
-//                                            int numBlockScalars)
-//   {
-// #if 1
-//     BARNEY_NYI();
-// #else
-//     std::cout << "#bn: copying 'amr' from app ..." << std::endl;
-//     std::vector<box3i> blockBounds(numBlocks);
-//     std::vector<int>   blockLevels(numBlocks);
-//     std::vector<int>   blockOffsets(numBlocks);
-//     std::vector<float> blockScalars(numBlockScalars);
-//     memcpy(blockBounds.data(),_blockBounds,blockBounds.size()*sizeof(blockBounds[0]));
-//     memcpy(blockLevels.data(),_blockLevels,blockLevels.size()*sizeof(blockLevels[0]));
-//     memcpy(blockOffsets.data(),_blockOffsets,blockOffsets.size()*sizeof(blockOffsets[0]));
-//     memcpy(blockScalars.data(),_blockScalars,blockScalars.size()*sizeof(blockScalars[0]));
-//     ScalarField::SP sf =
-//       std::make_shared<BlockStructuredField>(checkGet(context),slot,
-//                                              blockBounds,
-//                                              blockLevels,
-//                                              blockOffsets,
-//                                              blockScalars);
-//     return (BNScalarField)checkGet(context)->initReference(sf);
-// #endif
-//   }
 
 
   BARNEY_API
@@ -652,29 +506,12 @@ namespace barney_api {
   {
     LOG_API_ENTRY;
     BARNEY_ENTER(__PRETTY_FUNCTION__);
-    assert((int*)cudaGetLastError() == 0);
     Context *context = checkGet(_context);
     std::shared_ptr<Group>
       group = context->createGroup(slot,
                                    (Geometry **)geoms,numGeoms,
                                    (Volume **)volumes,numVolumes);
-    // auto devices = context->getDevices(slot);
-    // std::vector<Geometry::SP> _geoms;
-    // for (int i=0;i<numGeoms;i++)
-    //   _geoms.push_back(checkGet(geoms[i])->as<Geometry>());
-    // std::vector<Volume::SP> _volumes;
-    // for (int i=0;i<numVolumes;i++)
-    //   _volumes.push_back(checkGet(volumes[i])->as<Volume>());
-    // Group::SP group
-    //   = std::make_shared<Group>(context,devices,
-    //                             _geoms,_volumes);
     return (BNGroup)context->initReference(group);
-    // } catch (std::runtime_error error) {
-    //   std::cerr << "@barney: Error in creating group: " << error.what()
-    //             << "... going to return null group." << std::endl;
-    //   return BNGroup{0};
-    // }
-    assert((int*)cudaGetLastError() == 0);
     BARNEY_LEAVE(__PRETTY_FUNCTION__,0);
   }
 
@@ -682,15 +519,14 @@ namespace barney_api {
   void  bnGroupBuild(BNGroup group)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
     BARNEY_ENTER(__PRETTY_FUNCTION__);
     if (!group) {
+#ifndef NDEBUG
       std::cerr << "@barney(WARNING): bnGroupBuild with null group - ignoring this, but this is is an app error that should be fixed, and is only likely to cause issues later on" << std::endl;
+#endif
       return;
     }
-    assert((int*)cudaGetLastError() == 0);
     checkGet(group)->build();
-    assert((int*)cudaGetLastError() == 0);
     BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
@@ -700,10 +536,7 @@ namespace barney_api {
   {
     BARNEY_ENTER(__PRETTY_FUNCTION__);
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
     checkGet(model)->build(slot);
-    // checkGet(model,slot)->build();
-    assert((int*)cudaGetLastError() == 0);
     BARNEY_LEAVE(__PRETTY_FUNCTION__,);
   }
   
@@ -711,13 +544,8 @@ namespace barney_api {
   void bnCommit(BNObject target)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
-    PRINT(target);
-    PRINT(((barney_api::Object*)target)->toString());
     checkGet(target)->commit();
-    assert((int*)cudaGetLastError() == 0);
   }
-  
               
   BARNEY_API
   void bnSetString(BNObject target, const char *param, const char *value)
@@ -847,11 +675,9 @@ namespace barney_api {
                                     int owningRank)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
     Context *context = checkGet(_context);
     std::shared_ptr<FrameBuffer> fb
       = context->createFrameBuffer(owningRank);
-    assert((int*)cudaGetLastError() == 0);
     return (BNFrameBuffer)context->initReference(fb);
   }
 
@@ -861,9 +687,7 @@ namespace barney_api {
                            uint32_t channels)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
     checkGet(fb)->resize(vec2i{sizeX,sizeY},channels);
-    assert((int*)cudaGetLastError() == 0);
   }
 
   BARNEY_API
@@ -873,9 +697,7 @@ namespace barney_api {
                          BNDataType requestedFormat)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
     checkGet(fb)->read(channel,hostPtr,requestedFormat);
-    assert((int*)cudaGetLastError() == 0);
   }
   
   BARNEY_API
@@ -883,7 +705,6 @@ namespace barney_api {
                                 BNFrameBufferChannel channel)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
     return checkGet(fb)->getPointer(channel);
   }
   
@@ -891,9 +712,7 @@ namespace barney_api {
   BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)
   {
-    assert((int*)cudaGetLastError() == 0);
     checkGet(fb)->resetAccumulation();
-    assert((int*)cudaGetLastError() == 0);
   }
   
   BARNEY_API
@@ -902,7 +721,6 @@ namespace barney_api {
                 BNCamera   camera,
                 BNFrameBuffer fb)
   {
-    assert((int*)cudaGetLastError() == 0);
     // static double t_first = getCurrentTime();
     // static double t_sum = 0.;
     
@@ -913,7 +731,6 @@ namespace barney_api {
 
     // t_sum += (t1-t0);
     // printf("time in %f\n",float((t_sum / (t1 - t_first))));
-    assert((int*)cudaGetLastError() == 0);
   }
 
   BARNEY_API
@@ -931,13 +748,12 @@ namespace barney_api {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
-    assert((int*)cudaGetLastError() == 0);
     if (getenv("BARNEY_FORCE_CPU")) {
-	    static int negOne = -1;
-	    _gpuIDs = &negOne;
-	    numGPUs = 1;
+      static int negOne = -1;
+      _gpuIDs = &negOne;
+      numGPUs = 1;
     }
-
+    
     try {
       // ------------------------------------------------------------------
       // create vector of data groups; if actual specified by user we

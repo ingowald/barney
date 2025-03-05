@@ -37,14 +37,12 @@ namespace barney_api {
     Context *createContext_optix(const std::vector<int> &dgIDs,
                                  int numGPUs, const int *_gpuIDs)
     {
-      assert((int*)cudaGetLastError() == 0);
       if (numGPUs == -1)
         cudaGetDeviceCount(&numGPUs);
       std::vector<int> gpuIDs;
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
       Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
-      assert((int*)cudaGetLastError() == 0);
       return ctx;
     }
   } 

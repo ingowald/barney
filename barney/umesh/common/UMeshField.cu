@@ -367,7 +367,6 @@ namespace BARNEY_NS {
   
   void UMeshField::commit()
   {
-    PING;
     assert(indices);
     assert(vertices);
     assert(elementOffsets);
@@ -441,7 +440,7 @@ namespace BARNEY_NS {
   
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
-#if 1
+#if 0
     return std::make_shared<AWTAccel>(volume,this);
 #else
     auto sampler

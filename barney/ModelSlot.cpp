@@ -51,16 +51,10 @@ namespace BARNEY_NS {
                                const affine3f *xfms,
                                int numUserInstances)
   {
-#ifndef NDEBUG
-    std::cout << "barney model setinstances " << numUserInstances <<std::endl;
-#endif
     instances.groups.resize(numUserInstances);
     instances.xfms.resize(numUserInstances);
     for (int i=0;i<numUserInstances;i++) {
       auto g = groups[i];
-#ifndef NDEBUG
-      std::cout << " - " << (int*)g <<std::endl;
-#endif
       instances.groups[i]
         = g
         ? g->shared_from_this()->as<Group>()
@@ -71,77 +65,17 @@ namespace BARNEY_NS {
       device->sbtDirty = true;
       auto pld = getPLD(device);
       if (pld->instanceGroup) {
-        // owlGroupRelease(instances.group);
         device->rtc->freeGroup(pld->instanceGroup);
         pld->instanceGroup = 0;
       }
     }
   }
-  
-  // Group *ModelSlot::createGroup(const std::vector<Geometry::SP> &geoms,
-  //                               const std::vector<Volume::SP> &volumes)
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Group>(this,geoms,volumes));
-  // }
-
-  // Volume *ModelSlot::createVolume(ScalarField::SP sf)
-  // {
-  //   return getContext()->initReference
-  //     (std::make_shared<Volume>(devGroup.get(),sf));
-  // }
-
-  // ModelSlot::SP ModelSlot::create(GlobalModel *model, int localID)
-  // {
-  //   ModelSlot::SP slot = std::make_shared<ModelSlot>(model,localID);
-  //   return slot;
-  // }
-
-  // render::HostMaterial::SP ModelSlot::getDefaultMaterial()
-  // {
-  //   if (!defaultMaterial) {
-  //     defaultMaterial
-  //       = render::HostMaterial::create(this,"AnariMatte");
-  //     defaultMaterial->commit();
-  //   }
-  //   return defaultMaterial;
-  // }
-  
-  // Data *ModelSlot::createData(BNDataType dataType,
-  //                             size_t numItems,
-  //                             const void *items)
-  // {
-  //   return getContext()->initReference(Data::create(this,dataType,numItems,items));
-  // }
-  
-  // Light *ModelSlot::createLight(const std::string &type)
-  // {
-  //   return getContext()->initReference(Light::create(this,type));
-  // }
-
-  // Texture *Context::createTexture(BNTexelFormat texelFormat,
-  //                                 int slot,
-  //                                 vec2i size,
-  //                                 const void *texels,
-  //                                 BNTextureFilterMode  filterMode,
-  //                                 BNTextureAddressMode addressMode,
-  //                                 BNTextureColorSpace  colorSpace)
-  // {
-  //   return initReference(std::make_shared<Texture>
-  //                        (this,slot,
-  //                         texelFormat,size,texels,
-  //                         filterMode,addressMode,colorSpace));
-  // }
 
   void ModelSlot::build()
   {
     std::vector<affine3f> rtcTransforms;
     EnvMapLight::SP envMapLight;
 
-#ifndef NDEBUG
-    std::cout << "barney model is getting built" <<std::endl;
-    std::cout << " model has " << instances.groups.size() << " groups" << std::endl;
-#endif
     // ==================================================================
     // generate all lights's "raw" data. note this is NOT per device
     // (yet), even though the use of 'DD's seems to imply so. this
@@ -192,29 +126,17 @@ namespace BARNEY_NS {
       
       for (int i=0;i<instances.groups.size();i++) {
         Group *group = instances.groups[i].get();
-#ifndef NDEBUG
-        std::cout << " group #" << i << " is " << (int*)group << std::endl;
-#endif
         if (!group) continue;
         Group::PLD *groupPLD = group->getPLD(device);
       
         if (groupPLD->userGeomGroup) {
-#ifndef NDEBUG
-	  std::cout << "  ... adding user geoms group " << (int *)groupPLD->userGeomGroup << std::endl;
-#endif
           rtcGroups.push_back(groupPLD->userGeomGroup);
           rtcTransforms.push_back(instances.xfms[i]);
         }
         if (groupPLD->volumeGeomsGroup) {
-#ifndef NDEBUG
-	  std::cout << "  ... adding volume geoms group " << (int *)groupPLD->volumeGeomsGroup << std::endl;
-#endif
           rtcGroups.push_back(groupPLD->volumeGeomsGroup);
           rtcTransforms.push_back(instances.xfms[i]);
         }
-#ifndef NDEBUG
-        std::cout << "  ... has triangles group " << (int *)groupPLD->triangleGeomGroup << std::endl;
-#endif
 
         if (groupPLD->triangleGeomGroup) {
           rtcGroups.push_back(groupPLD->triangleGeomGroup);
@@ -223,9 +145,6 @@ namespace BARNEY_NS {
 
         for (auto group : groupPLD->volumeGroups) {
           rtcGroups.push_back(group);
-#ifndef NDEBUG
-	  std::cout << "  ... adding volume group " << (int *)group << std::endl;
-#endif
           rtcTransforms.push_back(instances.xfms[i]);
         }
       }
@@ -234,18 +153,9 @@ namespace BARNEY_NS {
         device->rtc->freeGroup(pld->instanceGroup);
         pld->instanceGroup = 0;
       }
-#ifndef NDEBUG
-      std::cout << "asking rtc to create instance group over "
-                << rtcGroups.size() << " groups" << std::endl;
-      for (auto g : rtcGroups)
-        std::cout << " - " << (int*)g << std::endl;
-#endif
       pld->instanceGroup
         = device->rtc->createInstanceGroup(rtcGroups,
                                            rtcTransforms);
-#ifndef NDEBUG
-      std::cout << "--> got rtr instance group " << (int*)pld->instanceGroup << std::endl;
-#endif
       if (pld->instanceGroup)
         pld->instanceGroup->buildAccel();
     }

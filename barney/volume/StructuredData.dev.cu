@@ -31,14 +31,13 @@ namespace BARNEY_NS {
                 owl::common::box3f &bounds,  
                 const int32_t primID) 
     {
-      bounds = box3f();
-      // MCVolumeAccel<StructuredDataSampler>::boundsProg(ti,geomData,bounds,primID);
+      MCVolumeAccel<StructuredDataSampler>::boundsProg(ti,geomData,bounds,primID);
     }
     
     static inline __rtc_device
     void intersect(rtc::TraceInterface &ti)
     {
-      // MCVolumeAccel<StructuredDataSampler>::isProg(ti);
+      MCVolumeAccel<StructuredDataSampler>::isProg(ti);
     }
     
     static inline __rtc_device
