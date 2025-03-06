@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include <owl/owl_device.h>
 #include "barney/umesh/os/AWT.h"
+#include "rtcore/TraceInterface.h"
 #include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
