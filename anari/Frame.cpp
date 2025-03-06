@@ -135,7 +135,7 @@ void Frame::renderFrame()
   auto *state = deviceState();
   state->commitBuffer.flush();
 
-  if (m_lastCommitFlush < state->commitBuffer.lastFlush()) {
+  if (m_lastCommitFlush < state->commitBuffer.lastObjectFinalization()) {
     m_lastCommitFlush = helium::newTimeStamp();
     bnAccumReset(m_bnFrameBuffer);
   }
