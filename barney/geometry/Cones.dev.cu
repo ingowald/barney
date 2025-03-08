@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/geometry/Cones.h"
-#include "owl/owl_device.h"
 #include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);

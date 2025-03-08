@@ -57,6 +57,7 @@ namespace BARNEY_NS {
       Geometry::writeDD(dd,device);
       dd.vertices  = (vec4f*)(vertices?vertices->getDD(device):0);
       dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
+      dd.radii     = (float*)(radii?radii->getDD(device):0);
       // done:
       geom->setDD(&dd);
     }
