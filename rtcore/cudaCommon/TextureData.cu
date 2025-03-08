@@ -26,6 +26,7 @@ namespace rtc {
                              const void *texels)
       : device(device), dims(dims), format(format)
     {
+      SetActiveGPU forDuration(device);
       cudaChannelFormatDesc desc;
       size_t sizeOfScalar;
       size_t numScalarsPerTexel;
@@ -96,6 +97,7 @@ namespace rtc {
 
     TextureData::~TextureData()
     {
+      SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL_NOTHROW(FreeArray(array));
       array = 0;
     }

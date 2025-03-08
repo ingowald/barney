@@ -29,7 +29,7 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<Cones> SP;
 
     struct DD : public Geometry::DD {
-      const vec3f *vertices;
+      const vec4f *vertices;
       const vec2i *indices;
       const float *radii;
     };
@@ -43,8 +43,6 @@ namespace BARNEY_NS {
     
     void commit() override;
     
-    // static OWLGeomType createGeomType(DevGroup *devGroup);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     bool setData(const std::string &member, const Data::SP &value) override;
@@ -57,7 +55,6 @@ namespace BARNEY_NS {
     PODData::SP radii;
     bool colorPerVertex  = 0;
     bool radiusPerVertex = 0;
-    
   };
 
-}
+} // ::BARNEY_NS

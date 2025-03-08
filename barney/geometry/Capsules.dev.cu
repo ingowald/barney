@@ -85,15 +85,6 @@ namespace BARNEY_NS {
       hadHit = true;
     }
 
-    // // backside:
-    // t = (+sqrtf(h) - k1) / k2;
-    // y = m1 - ra * rr + t * m2;
-    // if (y > 0.f && y < d2 && t < hit_t) {
-    //   hit_t = t;
-    //   isec_normal = normalize(d2 * (oa + t * rd) - ba * y);
-    //   hadHit = true;
-    // }
-
     // Caps. 
     float h1 = m3 * m3 - m5 + ra * ra;
     if (h1 > 0.f) {
@@ -102,7 +93,6 @@ namespace BARNEY_NS {
         hit_t = t;
         isec_normal = normalize((ro + t * rd - pa) / ra);
         hadHit = true;
-        // isec_normal = normalize((oa + t * rd) / ra);
       }
     }
 #if 1
@@ -131,11 +121,8 @@ namespace BARNEY_NS {
   }
 
   struct CapsulesPrograms {
-    /*! boudns program for a single capsule, computes as bbox of the two
+    /*! bounds program for a single capsule, computes as bbox of the two
       end-cap spheres */
-    // OPTIX_BOUNDS_PROGRAM(CapsulesBounds)(const void *geomData,
-    //                                      owl::common::box3f &bounds,  
-    //                                      const int32_t primID)
     static inline __rtc_device
     void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
@@ -166,15 +153,22 @@ namespace BARNEY_NS {
       move-your-origin trick to improve numerical robustness and call
       quielez intersector. Unlike regular optix is programs this
       _will_ modify the ray and store the hit point if an intersection
-      is found */
+      is found
+
+      note(iw) this code will NOT properly handle alpha: alpha
+      currently gets evaluated only on the point where the ray
+      _enters_ the capsule; if that gets evaluated as alpha the ray
+      gets rejected even if it might have a non-alpha hit on the back
+      side.
+    */
     static inline __rtc_device
     void intersect(rtc::TraceInterface &rt)
     {
       const int primID
         = rt.getPrimitiveIndex();
       const auto &self
-        = *(Capsules::DD*)rt.getProgramData();//owl::getProgramData<Capsules::DD>();
-      Ray &ray    = *(Ray*)rt.getPRD();//getPRD<Ray>();
+        = *(Capsules::DD*)rt.getProgramData();
+      Ray &ray    = *(Ray*)rt.getPRD();
 
       const vec2i idx = self.indices[primID];
 
@@ -197,22 +191,9 @@ namespace BARNEY_NS {
                    t0,t1,
                    bb)) return;
 
-#if 1
       render::HitAttributes hitData;
       const DeviceMaterial &material
         = OptixGlobals::get(rt).materials[self.materialID];
-      PackedBSDF bsdf
-        = material.createBSDF(hitData,OptixGlobals::get(rt).samplers,ray.dbg);
-      float opacity
-        = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                          ray.dir,hitData.worldNormal,ray.dbg);
-      if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
-        // optixIgnoreIntersection();
-        return;
-      }
-#endif
-    
-    
     
       // move just a little bit less in case the ray enters the box just
       // where it touches the prim
@@ -288,6 +269,14 @@ namespace BARNEY_NS {
       // trigger the anari attribute evaluation
       self.setHitAttributes(hitData,interpolator,ray.dbg);
 
+      PackedBSDF bsdf
+        = material.createBSDF(hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+      float opacity
+        = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
+                          ray.dir,hitData.worldNormal,ray.dbg);
+      if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) 
+        return;
+      
       // ... store the hit in the ray, rqs-style ...
       // const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
       material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
@@ -298,7 +287,7 @@ namespace BARNEY_NS {
   };
   
   RTC_EXPORT_USER_GEOM(Capsules,Capsules::DD,CapsulesPrograms,false,false);
-}
+} // ::BARNEY_NS
 
 
 

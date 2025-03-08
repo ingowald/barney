@@ -112,8 +112,8 @@ set(HOST_SOURCES
   geometry/Capsules.cpp
   geometry/Spheres.h
   geometry/Spheres.cpp
-  #  geometry/Cones.h
-  #  geometry/Cones.cpp
+  geometry/Cones.h
+  geometry/Cones.cpp
   # volume data 
   volume/Volume.h
   volume/Volume.cpp
@@ -220,6 +220,7 @@ set(DEVICE_PROGRAM_SOURCES
   geometry/Triangles.dev.cu
   geometry/Cylinders.dev.cu
   geometry/Capsules.dev.cu
+  geometry/Cones.dev.cu
   volume/StructuredData.dev.cu
   umesh/mc/UMeshMC.dev.cu
   umesh/os/AWT.dev.cu

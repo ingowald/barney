@@ -40,10 +40,8 @@ namespace BARNEY_NS {
   {
     if (type == "spheres")
       return std::make_shared<Spheres>(context,devices);
-#if 0
     if (type == "cones")
       return std::make_shared<Cones>(context,devices);
-#endif
     if (type == "cylinders")
       return std::make_shared<Cylinders>(context,devices);
     if (type == "capsules")
