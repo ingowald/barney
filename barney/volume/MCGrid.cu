@@ -28,6 +28,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
+      SetActiveGPU forDuration(device);
       
       pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
       pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
@@ -152,6 +153,7 @@ namespace BARNEY_NS {
     size_t numCells = owl::common::volume(dims);
     
     for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
       rtc->freeBuffer(pld->majorantsBuffer);

@@ -42,7 +42,7 @@ namespace BARNEY_NS {
     : mesh(mesh),
       devices(mesh->devices)
   {
-    perLogical.resize(devices->size());
+    perLogical.resize(devices->numLogical);
   }
 
   UMeshCUBQLSampler::PLD *UMeshCUBQLSampler::getPLD(Device *device) 
@@ -66,13 +66,16 @@ namespace BARNEY_NS {
     int numElements = mesh->numElements;
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
-      if (pld->bvhNodes != 0)
+      if (pld->bvhNodes != 0) {
         /* BVH already built! */
         continue;
+      }
 
       std::cout << "------------------------------------------" << std::endl;
       std::cout << "building UMeshCUBQL BVH!" << std::endl;
       std::cout << "------------------------------------------" << std::endl;
+      
+      SetActiveGPU forDuration(device);
       
       bvh_t bvh;
       box3f *primBounds
@@ -82,18 +85,24 @@ namespace BARNEY_NS {
       mesh->computeElementBBs(device,
                               primBounds,valueRanges);
       device->rtc->sync();
+
       
-      SetActiveGPU forDuration(device);
 #if BARNEY_RTC_EMBREE
       cuBQL::cpu::spatialMedian(bvh,
                                 (const cuBQL::box_t<float,3>*)primBounds,
                                 numElements,
                                 cuBQL::BuildConfig());
 #else
+      /*! iw - make sure to have cubql use regular device memory, not
+          async mallocs; else we may allocate all memory on the first
+          gpu */
+      cuBQL::DeviceMemoryResource memResource;
       cuBQL::gpuBuilder(bvh,
                         (const cuBQL::box_t<float,3>*)primBounds,
                         numElements,
-                        cuBQL::BuildConfig());
+                        cuBQL::BuildConfig(),
+                        0,
+                        memResource);
 #endif
       device->rtc->sync();
       device->rtc->freeMem(primBounds);
@@ -121,7 +130,7 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rtc->freeMem(reorderedElements);
 
-      // "save the node"
+      // "save the nodes"
       pld->bvhNodes
         = (node_t *)device->rtc->allocMem(bvh.numNodes*sizeof(node_t));
       device->rtc->copy(pld->bvhNodes,bvh.nodes,bvh.numNodes*sizeof(node_t));
@@ -131,7 +140,7 @@ namespace BARNEY_NS {
 #if BARNEY_RTC_EMBREE
       cuBQL::cpu::freeBVH(bvh);
 #else
-      cuBQL::cuda::free(bvh,0);
+      cuBQL::cuda::free(bvh,0,memResource);
 #endif      
       std::cout << OWL_TERMINAL_LIGHT_GREEN
                 << "#bn.umesh: cubql bvh built ..."

@@ -43,7 +43,6 @@ namespace BARNEY_NS {
       bvh nodes */
     struct PLD {
       node_t *bvhNodes = 0;
-      // bvh_t bvh;
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
@@ -74,11 +73,8 @@ namespace BARNEY_NS {
   inline __rtc_device
   bool UMeshCUBQLSampler::Traversal::leaf(vec3f P, int offset, int count)
   {
-    // if (dbg) printf("at leaf %i %i\n",offset,count);
     for (int i=0;i<count;i++) {
       auto elt = mesh->elements[offset+i];
-      // if (dbg) printf("elt type %i id %i, mesh %p\n",
-      //                 elt.type,elt.ofs0,mesh);
       if (mesh->eltScalar(retVal,elt,P,dbg))
         return false;
     }
@@ -99,9 +95,8 @@ namespace BARNEY_NS {
     bvh_t bvh;
     bvh.nodes = bvhNodes;
     bvh.primIDs = nullptr;
-    
+
     auto lambda = [&]
-      // __rtc_device
       (const uint32_t *primIDs, int numPrims)
     {
       if (traversal.leaf(P,int(primIDs - bvh.primIDs), numPrims))
@@ -113,6 +108,6 @@ namespace BARNEY_NS {
     return traversal.retVal;
   }
   
-} // ::barney
+} // ::BARNEY_NS
 
 

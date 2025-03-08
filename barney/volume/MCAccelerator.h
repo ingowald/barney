@@ -90,6 +90,8 @@ namespace BARNEY_NS {
     mcGrid.computeMajorants(&volume->xf);
     
     for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      
       // build our own internal per-device data: one geom, and one
       // group that contains it.
       PLD *pld = getPLD(device);

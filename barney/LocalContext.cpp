@@ -86,6 +86,8 @@ namespace BARNEY_NS {
       return false;
     }
 
+    // syncCheckAll();
+    
     const int numDevices = (int)devices->size();
     const int dgSize = numDevices / numSlots;
     std::vector<int> numCopied(numDevices);
