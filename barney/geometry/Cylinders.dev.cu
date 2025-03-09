@@ -212,8 +212,6 @@ namespace BARNEY_NS {
         cap_t1 = max(cap_t_v0,cap_t_v1);
       }
       
-      // bool onCap_t0 = cap_t0 >= tube_t0;
-      // bool onCap_t1 = cap_t1 <= tube_t1;
       const float t0 = max(cap_t0,tube_t0);
       const float t1 = min(cap_t1,tube_t1);
       if (t0 > t1) return;
@@ -244,9 +242,8 @@ namespace BARNEY_NS {
 
       float lerp_t
         = dot(objectP-v0,v1-v0)
-        / (length(objectP-v0)*length(v1-v0));
+        / (dot(v1-v0,v1-v0));
       lerp_t = max(0.f,min(1.f,lerp_t));
-
 
       auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
       {
