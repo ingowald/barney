@@ -137,8 +137,6 @@ set(HOST_SOURCES
   kernels/shadeRays.cu
   kernels/traceRays.cu
   # all the barney "plumbing" stuff on the host
-  DeviceContext.h
-  DeviceContext.cpp
   Context.h
   Context.cpp
   DeviceGroup.h

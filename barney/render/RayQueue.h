@@ -24,19 +24,11 @@ namespace BARNEY_NS {
   
   struct RayQueue {
     RayQueue(Device *device);
-    //   : device(device)
-    // {
-    //   // BARNEY_CUDA_CALL(MallocHost((void **)&h_numActive,sizeof(int)));
-    //   BARNEY_NYI();
-    // }
     ~RayQueue();
     int readNumActive();
     /*! how many rays are active in the *READ* queue */
     int numActiveRays() const;
     
-    // {
-    //   // BARNEY_CUDA_CALL(FreeHost(h_numActive));
-    // }
     int *h_numActive = 0;
 
     /*! the read queue, where local kernels operating on rays (trace
@@ -50,21 +42,13 @@ namespace BARNEY_NS {
       (ie, ray gen and shading) will write their rays into */
     Ray *receiveAndShadeWriteQueue = nullptr;
 
-    // int readNumActive() {
-    //   BARNEY_NYI();
-    //   // BARNEY_CUDA_CALL(MemcpyAsync(h_numActive,_d_nextWritePos,sizeof(int),
-    //   //                              cudaMemcpyDeviceToHost,
-    //   //                              device->launchStream));
-    //   // BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
-    //   // return *h_numActive;
-    // }
     /*! current write position in the write queue (during shading and
       ray generation) */
     int *_d_nextWritePos  = 0;
     
     /*! how many rays are active in the *READ* queue */
     int  numActive = 0;
-    int  size     = 0;
+    int  size      = 0;
 
     Device *device = 0;
 

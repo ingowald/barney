@@ -158,13 +158,10 @@ namespace BARNEY_NS {
 #endif
       double _t0 = getCurrentTime();
       generateRays(camera,renderer,fb);
-      for (auto dev : *devices) dev->sync();
 
       for (int generation=0;true;generation++) {
         traceRaysGlobally(model);
-        // do we need this here?
-        for (auto dev : *devices) dev->sync();
-
+        
         shadeRaysLocally(renderer, model, fb, generation);
         // no sync required here, shadeRays syncs itself.
         
@@ -174,13 +171,10 @@ namespace BARNEY_NS {
                  generation,prettyNumber(numActiveGlobally).c_str());
         if (numActiveGlobally > 0)
           continue;
-
-                 
     
         break;
       }
       ++ fb->accumID;
-
     }
   }
 
@@ -341,6 +335,5 @@ namespace BARNEY_NS {
     return BaseData::create(this,getDevices(slot),dataType,numItems,items);
   }
   
-  
-}
+} // ::BARNEY_NS
 

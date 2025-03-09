@@ -236,13 +236,13 @@ namespace BARNEY_NS {
       return;
     }
 
-    std::cout << "------------------------------------------" << std::endl;
-    std::cout << "rebuilding ENTIRE mc grid!!!!" << std::endl;
-    std::cout << "------------------------------------------" << std::endl;
+    // std::cout << "------------------------------------------" << std::endl;
+    // std::cout << "rebuilding ENTIRE mc grid!!!!" << std::endl;
+    // std::cout << "------------------------------------------" << std::endl;
     
     float maxWidth = reduce_max(worldBounds.size());//getBox(worldBounds).size());
     int MC_GRID_SIZE
-      = 200 + int(sqrtf(elementOffsets->count/10.f));
+      = 200 + int(sqrtf(elementOffsets->count/100.f));
     vec3i dims = 1+vec3i(worldBounds.size() * ((MC_GRID_SIZE-1) / maxWidth));
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.um: building initial macro cell grid of " << dims << " MCs"
@@ -328,7 +328,6 @@ namespace BARNEY_NS {
                                      box3f   *d_primBounds,
                                      range1f *d_primRanges)
   {
-
     UMeshComputeElementBBs args = {
       /* kernel ARGS */
       // box3f         *d_primBounds;
@@ -342,20 +341,6 @@ namespace BARNEY_NS {
     int nb = divRoundUp(numElements,bs);
     device->umeshComputeElementBBs->launch(nb,bs,&args);
     device->sync();
-// #if 1
-//     BARNEY_NYI();
-// #else
-//     assert(device);
-//     SetActiveGPU forDuration(device);
-//     int bs = 1024;
-//     int nb = divRoundUp(int(elements.size()),bs);
-//     CHECK_CUDA_LAUNCH(g_computeElementBoundingBoxes,
-//                       nb,bs,0,0,
-//                       d_primBounds,d_primRanges,getDD(device));
-//     // g_computeElementBoundingBoxes
-//     //   <<<nb,bs>>>(d_primBounds,d_primRanges,getDD(device));
-//     BARNEY_CUDA_SYNC_CHECK();
-// #endif
   }
 
   UMeshField::UMeshField(Context *context, 
@@ -377,6 +362,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       PLD *pld = getPLD(device); 
       auto rtc = device->rtc;
+      SetActiveGPU forDuration(device);
       
       int numElements = (int)elementOffsets->count;
       int numIndices  = (int)indices->count;
@@ -408,15 +394,16 @@ namespace BARNEY_NS {
     }
     
     for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
       device->sync();
+      // in case of having multiple devices this will repeately
+      // download the same value; that's ok.
       PLD *pld = getPLD(device); 
+      device->rtc->copy(&worldBounds,
+                        pld->pWorldBounds,
+                        sizeof(worldBounds));
+      device->sync();
     }
-    std::cout << "#bn.umesh: copying down world bounds"
-              << std::endl;
-    Device *anyDev = (*devices)[0];
-    anyDev->rtc->copy(&worldBounds,
-                      getPLD(anyDev)->pWorldBounds,
-                      sizeof(worldBounds));
   }
   
 

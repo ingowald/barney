@@ -53,17 +53,15 @@ namespace rtc {
       owl = 0;
     }
 
-
-
     void Device::sync()
     {
       cuda_common::Device::sync();
       for (auto s : activeTraceStreams) {
         cudaStreamSynchronize(s);
+        assert(cudaGetLastError() == 0);
       }
       activeTraceStreams.clear();
     }
-    
     
     // ==================================================================
     // rtcore/pipeline stuff
@@ -79,8 +77,6 @@ namespace rtc {
       owlBuildSBT(owl);
     }
       
-    
-
     // ==================================================================
     // buffer
     // ==================================================================

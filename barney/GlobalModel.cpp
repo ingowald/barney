@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -20,7 +20,6 @@ namespace BARNEY_NS {
 
   GlobalModel::GlobalModel(Context *context)
     : barney_api::Model(context)
-    // : barney_api::SlottedObject(context,context->devices)
   {
     for (int slot=0;slot<context->perSlot.size();slot++) {
       assert(context->perSlot[slot].devices);

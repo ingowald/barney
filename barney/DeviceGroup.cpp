@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/DeviceGroup.h"
-#include "barney/DeviceContext.h"
 #include "barney/render/OptixGlobals.h"
 #include "barney/Context.h"
 

@@ -50,7 +50,11 @@ namespace BARNEY_NS {
     bool forwardRays() override;
 
     // for debugging ...
-    void barrier(bool warn=true) override { if (warn) PING; workers.barrier(); usleep(100); }
+    void barrier(bool warn=true) override {
+      if (warn) PING;
+      workers.barrier();
+      if (warn) usleep(100);
+    }
     
 
     /*! returns how many rays are active in all ray queues, across all

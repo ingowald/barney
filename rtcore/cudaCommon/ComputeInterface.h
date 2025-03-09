@@ -202,6 +202,7 @@ namespace rtc {
                 const void *ddPtr) override                             \
     {                                                                   \
       ::rtc::cuda_common::SetActiveGPU forDuration(device);             \
+      if (nb > 0)                                                       \
       _barney_cuda_kernel_##name<<<nb,bs,0,device->stream>>>            \
         (*(const className*)ddPtr);                                     \
     }                                                                   \
@@ -227,6 +228,7 @@ namespace rtc {
                 const void *ddPtr) override                             \
     {                                                                   \
       ::rtc::cuda_common::SetActiveGPU forDuration(device);             \
+      if (nb.x > 0 && nb.y > 0)                                         \
       _barney_cuda_kernel_##name                                        \
         <<<{nb.x,nb.y},{bs.x,bs.y},0,device->stream>>>                  \
         (*(const className*)ddPtr);                                     \
@@ -253,6 +255,7 @@ namespace rtc {
                 const void *ddPtr) override                             \
     {                                                                   \
       ::rtc::cuda_common::SetActiveGPU forDuration(device);             \
+      if (nb.x > 0 && nb.y > 0 && nb.z > 0)                             \
       _barney_cuda_kernel_##name                                        \
         <<<{nb.x,nb.y,nb.z},{bs.x,bs.y,bs.z},0,device->stream>>>        \
         (*(const className*)ddPtr);                                     \

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -28,33 +28,8 @@
 #include "rtcore/Frontend.h"
 #include "rtcore/ComputeInterface.h"
 
-// #include "barney/barney.h"
-// #if BARNEY_HAVE_CUDA
-// // #include "barney/common/cuda-helper.h"
-// #include <owl/owl.h>
-// #include <cuda_runtime.h>
-// #endif
-// #ifdef __CUDACC__
-// #include <cuda/std/limits>
-// #endif
-// #if BARNEY_HAVE_CUDA
-// #include <cuda.h>
-// #endif
-
 #define __barney_align(a) OWL_ALIGN(a)
 
-
-
-// #ifdef __VECTOR_TYPES_H__
-// // cuda/vector_types.h will define these types
-// #else
-// struct float2 { float x,y; };
-// struct float3 { float x,y,z; };
-// struct float4 { float x,y,z,w; };
-// struct int2 { int x,y; };
-// struct int3 { int x,y,z; };
-// struct int4 { int x,y,z,w; };
-// #endif
 
 #if BARNEY_RTC_OPTIX
 #  define BARNEY_NS barney_optix
@@ -63,30 +38,19 @@
 #  define BARNEY_NS barney_embree
 #endif
 
-
-
 namespace BARNEY_NS {
-  // using namespace barney::rtc;
   
   using namespace owl::common;
   typedef owl::common::interval<float> range1f;
   using Random = LCG<8>;
-
-  //  using rtc::load;
   
   template<typename T>
   inline __both__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }
 
-  // inline __both__ vec4f make_vec4f(float4 v) { return vec4f(v.x,v.y,v.z,v.w); }
-  
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
   inline __both__ vec3f getPos(vec4f v)
   {return vec3f{v.x,v.y,v.z}; }
-
-  /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
-  // inline __both__ vec3f getPos(float4 v)
-  // {return vec3f{v.x,v.y,v.z}; }
 
   /*! helper function to extrace 3f spatial component from 4f point-plus-scalar */
   inline __both__ box3f getBox(box4f bb)

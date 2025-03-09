@@ -210,7 +210,6 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
-      device->rayQueue->resetWriteQueue();
     }
   }
   
