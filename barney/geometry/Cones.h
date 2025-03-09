@@ -29,7 +29,7 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<Cones> SP;
 
     struct DD : public Geometry::DD {
-      const vec4f *vertices;
+      const vec3f *vertices;
       const vec2i *indices;
       const float *radii;
     };
@@ -49,12 +49,9 @@ namespace BARNEY_NS {
     /*! @} */
     // ------------------------------------------------------------------
 
-    PODData::SP colors;
     PODData::SP vertices;
     PODData::SP indices;
     PODData::SP radii;
-    bool colorPerVertex  = 0;
-    bool radiusPerVertex = 0;
   };
 
 } // ::BARNEY_NS

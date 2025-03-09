@@ -347,6 +347,12 @@ void Cone::setBarneyParameters(BNGeom geom, BNContext context)
       bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertices);
   bnSetAndRelease(geom, "vertices", _vertices);
 
+  addAttribute(geom, context, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, context, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, context, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, context, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, context, m_attributes[4], "primitive.color");
+
   addAttribute(geom, context, m_vertexAttributes[0], "vertex.attribute0");
   addAttribute(geom, context, m_vertexAttributes[1], "vertex.attribute1");
   addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
