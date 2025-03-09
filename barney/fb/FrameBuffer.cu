@@ -16,16 +16,12 @@
 
 #include "barney/common/barney-common.h"
 #include "barney/fb/FrameBuffer.h"
-// #include <cuda_runtime.h>
 #if BARNEY_HAVE_OIDN
 # include <OpenImageDenoise/oidn.h>
 #endif
 
 namespace BARNEY_NS {
 
-  // inline __device__ float saturate(float f, float lo=0.f, float hi=1.f)
-  // { return max(lo,min(f,hi)); }
-  
   inline __rtc_device float from_8bit(uint8_t v) {
     return float(v) * (1.f/255.f);
   }
@@ -264,7 +260,7 @@ namespace BARNEY_NS {
     if (!isOwner) return;
 
     Device *device = getDenoiserDevice();
-
+    SetActiveGPU forDuration(device);
     if (dirty) {
       
       // -----------------------------------------------------------------------------
@@ -323,8 +319,10 @@ namespace BARNEY_NS {
       vec2ui bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,false };
       device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
+      BARNEY_CUDA_SYNC_CHECK();
       device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
       device->rtc->freeMem(asFixed8);
+      BARNEY_CUDA_SYNC_CHECK();
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
       uint32_t *asFixed8

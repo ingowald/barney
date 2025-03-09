@@ -4,9 +4,7 @@
 target_include_directories(barney_config INTERFACE
   ${PROJECT_SOURCE_DIR}
   )
-#if (NOT BARNEY_HAVE_CUDA)
 target_link_libraries(barney_config INTERFACE owl-config)
-#endif()
 
 
 # ==================================================================
@@ -20,9 +18,6 @@ set_property(TARGET barney_rtc_config PROPERTY
 
 # ==================================================================
 add_library(barney_rtc_common INTERFACE
-#  common/Backend.cpp
-#  common/RTCore.cpp
-#  rtc.cpp
   )
 target_link_libraries(barney_rtc_common INTERFACE barney_rtc_config)
 
@@ -191,6 +186,10 @@ if (BARNEY_BACKEND_OPTIX)
     )
   target_compile_definitions(barney_rtc_optix
     PUBLIC -DBARNEY_RTC_OPTIX=1)
+  if (BARNEY_DISABLE_DENOISING)
+    target_compile_definitions(barney_rtc_optix
+      PUBLIC -DOPTIX_DISABLE_DENOISING=1)
+  endif()
 else()
   add_library(barney_rtc_optix INTERFACE) # DUMMY!
 endif()

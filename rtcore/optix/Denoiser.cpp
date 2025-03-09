@@ -146,7 +146,6 @@ namespace rtc {
          (CUdeviceptr)denoiserScratch,
          denoiserSizes.withoutOverlapScratchSizeInBytes
          );
-      BARNEY_CUDA_SYNC_CHECK();
     }
     
 #endif

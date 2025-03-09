@@ -85,8 +85,6 @@ namespace BARNEY_NS {
       // no more trace rounds required: return false
       return false;
     }
-
-    // syncCheckAll();
     
     const int numDevices = (int)devices->size();
     const int dgSize = numDevices / numSlots;
@@ -98,10 +96,10 @@ namespace BARNEY_NS {
       int nextID = (devID + dgSize) % numDevices;
       auto nextDev = (*devices)[nextID];
 
-      int count = nextDev->rayQueue->numActive;
+      int count = device->rayQueue->numActive;
       numCopied[nextID] = count;
-      Ray *src = nextDev->rayQueue->traceAndShadeReadQueue;
-      Ray *dst = device->rayQueue->receiveAndShadeWriteQueue;
+      Ray *src = device->rayQueue->traceAndShadeReadQueue;
+      Ray *dst = nextDev->rayQueue->receiveAndShadeWriteQueue;
       device->rtc->copyAsync(dst,src,count*sizeof(Ray));
     }
 
@@ -111,7 +109,7 @@ namespace BARNEY_NS {
       device->rayQueue->swap();
       device->rayQueue->numActive = numCopied[devID];
     }
-
+    
     ++numTimesForwarded;
     return (numTimesForwarded % numSlots) != 0;
   }
@@ -126,11 +124,9 @@ namespace BARNEY_NS {
 
     // render all tiles, in tile format and writing into accum buffer
     renderTiles(renderer,model,camera,fb);
-    syncCheckAll();
 
     // convert all tiles from accum to RGBA
     finalizeTiles(fb);
-    syncCheckAll();
 
     // ------------------------------------------------------------------
     // done rendering, let the frame buffer know about it, so it can

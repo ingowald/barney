@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,9 +16,6 @@
 
 #include "barney/fb/TiledFB.h"
 #include "barney/fb/FrameBuffer.h"
-// #include <optix.h>
-// #include <optix_function_table.h>
-// #include <optix_stubs.h>
 
 namespace BARNEY_NS {
 

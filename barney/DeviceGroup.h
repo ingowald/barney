@@ -17,8 +17,6 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
-// #include "rtcore/common/Backend.h"
-// #include "rtcore/common/RTCore.h"
 #include "rtcore/Frontend.h"
 
 namespace BARNEY_NS {
@@ -27,7 +25,6 @@ namespace BARNEY_NS {
   struct RayQueue;
   
   typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *device);
-                                                        // const void  *callbackData);
   
   struct GeomTypeRegistry {
     GeomTypeRegistry(rtc::Device *device);
@@ -39,8 +36,6 @@ namespace BARNEY_NS {
 
   
   struct Device {
-    // typedef std::shared_ptr<Device> SP;
-    
     Device(rtc::Device *rtc,
            int contextRank,
            int contextSize,

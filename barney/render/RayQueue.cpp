@@ -21,27 +21,22 @@ namespace BARNEY_NS {
   RayQueue::RayQueue(Device *device)
     : device(device)
   {
-    // BARNEY_CUDA_CALL(MallocHost((void **)&h_numActive,sizeof(int)));
     auto rtc = device->rtc;
     h_numActive = (int*)rtc->allocHost(sizeof(int));
   }
     
   RayQueue::~RayQueue()
   {
-    // BARNEY_CUDA_CALL(FreeHost(h_numActive));
     auto rtc = device->rtc;
     rtc->freeHost(h_numActive);
   }
 
   int RayQueue::readNumActive()
   {
+    SetActiveGPU forDuration(device);
     auto rtc = device->rtc;
     rtc->copyAsync(h_numActive,_d_nextWritePos,sizeof(int));
     rtc->sync();
-    // BARNEY_CUDA_CALL(MemcpyAsync(h_numActive,_d_nextWritePos,sizeof(int),
-    //                              cudaMemcpyDeviceToHost,
-    //                              device->launchStream));
-    // BARNEY_CUDA_CALL(StreamSynchronize(device->launchStream));
     numActive = *h_numActive;
     return *h_numActive;
   }
@@ -54,8 +49,10 @@ namespace BARNEY_NS {
     
   void RayQueue::resetWriteQueue()
   {
+    SetActiveGPU forDuration(device);
     auto rtc = device->rtc;
     rtc->memsetAsync(_d_nextWritePos,0,sizeof(int));
+    rtc->sync();
   }
     
   void RayQueue::swap()

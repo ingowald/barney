@@ -14,7 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DeviceContext.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/render/World.h"
@@ -24,7 +23,6 @@
 
 namespace BARNEY_NS {
   namespace render {
-
 
 #define SCI_VIS_MODE 0
     
@@ -678,7 +676,8 @@ namespace BARNEY_NS {
 #endif
       }
       
-      if (scatterResult.type == ScatterResult::DIFFUSE) {
+      if (scatterResult.type == ScatterResult::DIFFUSE ||
+          scatterResult.type == ScatterResult::VOLUME) {
         if (path.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES) {
           path.tMax = -1.f;
           return;
@@ -904,8 +903,11 @@ namespace BARNEY_NS {
       for (auto device : *world->devices) {
         SetActiveGPU forDuration(device);
         RayQueue *rayQueue = device->rayQueue;
+        device->rayQueue->resetWriteQueue();
+        
         TiledFB *devFB     = fb->getFor(device);
         int numRays        = rayQueue->numActive;
+        if (numRays == 0) continue;
         int bs = 128;
         int nb = divRoundUp(numRays,bs);
         World::DD devWorld
@@ -935,7 +937,6 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
-      device->rayQueue->resetWriteQueue();
     }
   }
   
