@@ -238,6 +238,12 @@ void Cylinder::setBarneyParameters(BNGeom geom, BNContext context)
   addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
   addAttribute(geom, context, m_vertexAttributes[3], "vertex.attribute3");
   addAttribute(geom, context, m_vertexAttributes[4], "vertex.color");
+
+  addAttribute(geom, context, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, context, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, context, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, context, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, context, m_attributes[4], "primitive.color");
 }
 
 bool Cylinder::isValid() const

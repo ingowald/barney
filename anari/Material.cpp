@@ -73,8 +73,9 @@ inline void setBNMaterialHelper(BNMaterial m,
     bnSetObject(m, p, s);
   } else if (!mp.attribute.empty())
     bnSetString(m, p, mp.attribute.c_str());
-  else
+  else {
     setBNMaterialUniform(m, p, mp.value);
+  }
 }
 
 // Material definitions ///////////////////////////////////////////////////////
