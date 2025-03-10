@@ -79,6 +79,7 @@ namespace BARNEY_NS {
       const DeviceMaterial &material
         = OptixGlobals::get(rt).materials[self.materialID];
       hitData.t = ray.tMax;
+      float ray_tmin = rt.getRayTmin();
       
       vec3f ro  = rt.getObjectRayOrigin();
       vec3f rd  = rt.getObjectRayDirection();
@@ -124,11 +125,10 @@ namespace BARNEY_NS {
         return ret;
       };
 
-      
       if (m1 < 0.0f) {
         if (length2(oa * m3 - rd * m1) < (ra * ra * m3 * m3)) {
           float t = -m1 / m3;
-          if (t < hitData.t) {
+          if (t > ray_tmin && t < hitData.t) {
             lerp_t = 0.f;
             vec3f N = normalize(-ba * inversesqrt(m0));
             vec3f P = (vec3f)ro+t*rd;
@@ -157,7 +157,7 @@ namespace BARNEY_NS {
         if (length2(ob * m3 - rd * m2) < (rb * rb * m3 * m3)) {
           lerp_t = 1.f;
           float t = -m2 / m3;
-          if (t < hitData.t) {
+          if (t > ray_tmin && t < hitData.t) {
             vec3f N = normalize(ba * inversesqrt(m0));
             vec3f P = (vec3f)ro+t*rd;
 
@@ -198,7 +198,7 @@ namespace BARNEY_NS {
 
       const float t = (-k1 - sqrtf(h)) / k2;
       const float y = m1 + t * m3;
-      if (y > 0.0f && y < m0 && t < hitData.t) {
+      if (y > 0.0f && y < m0 && t > ray_tmin && t < hitData.t) {
         vec3f N = normalize(m0 * (m0 * (oa + t * rd) + rr * ba * ra) - ba * hy * y);
         vec3f P = (vec3f)ro+t*rd;
         lerp_t = y / m0;
