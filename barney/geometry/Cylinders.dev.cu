@@ -157,7 +157,7 @@ namespace BARNEY_NS {
       const auto &self
         = *(Cylinders::DD*)rt.getProgramData();
       Ray &ray    = *(Ray*)rt.getPRD();
-      // bool dbg = ray.dbg;
+      bool dbg = 0; //ray.dbg;
       
       const vec2i idx = self.indices[primID];
       const vec3f v0  = self.vertices[idx.x];
@@ -270,6 +270,11 @@ namespace BARNEY_NS {
         return ret;
       };
 
+      if (dbg)
+        printf("hit normal %f %f %f\n",
+               objectN.x,
+               objectN.y,
+               objectN.z);
       render::HitAttributes hitData;
       hitData.objectPosition  = objectP;
       hitData.worldPosition   = rt.transformPointFromObjectToWorldSpace(objectP);

@@ -20,6 +20,12 @@
 # include <OpenImageDenoise/oidn.h>
 #endif
 
+/*! iw - IMHO tone mapping SHOULD be part of the renderer, but ANARI
+    currently doesn't specify any tone mapping operations, and the
+    frame buffer formats as specified assume that it's NOT tone mapped
+    (or at best, has srgb conversion), so turn it off for now */
+#define DO_TONE_MAPPING 0
+
 namespace BARNEY_NS {
 
   inline __rtc_device float from_8bit(uint8_t v) {
@@ -128,8 +134,6 @@ namespace BARNEY_NS {
     v.y = clamp(v.y);
     v.z = clamp(v.z);
     if (SRGB) {
-      // this doesn't make sense - the color channel has ALREADY been
-      // gamma-corrected in tonemap()!?
       v.x = linear_to_srgb(v.x);
       v.y = linear_to_srgb(v.y);
       v.z = linear_to_srgb(v.z);
@@ -276,6 +280,7 @@ namespace BARNEY_NS {
                       this->linearNormal,blendFactor);
       }
 
+#if DO_TONE_MAPPING
       // -----------------------------------------------------------------------------
       // tone map (denoised) frame buffer
       // -----------------------------------------------------------------------------
@@ -285,6 +290,7 @@ namespace BARNEY_NS {
         device->toneMap->launch(divRoundUp(vec2ui(numPixels),bs),bs,
                                 &args);
       }
+#endif
       dirty = false;
     }
 
@@ -319,10 +325,8 @@ namespace BARNEY_NS {
       vec2ui bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,false };
       device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
-      //BARNEY_CUDA_SYNC_CHECK();
       device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
       device->rtc->freeMem(asFixed8);
-      //BARNEY_CUDA_SYNC_CHECK();
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
       uint32_t *asFixed8

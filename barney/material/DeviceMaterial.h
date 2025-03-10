@@ -62,7 +62,7 @@ namespace BARNEY_NS {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      if (dbg) printf("devicematerial type %i\n",(int)type);
+      // if (dbg) printf("devicematerial type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)
@@ -70,24 +70,11 @@ namespace BARNEY_NS {
 #ifndef NDEBUG
       printf("#bn: DeviceMaterial::createBSDF encountered an invalid "
              "device material type (%i); most likely this is the app"
-             " not having properly committed its material\n",(int)type);
+             " not having properly committed its material\n",(int)type);CY
 #endif
       return packedBSDF::Invalid();
     }
 
-    // inline __rtc_device
-    // float DeviceMaterial::getOpacity(const HitAttributes &hitData,
-    //                                  const Sampler::DD *samplers,
-    //                                  bool dbg) const
-    // {
-    //   PackedBSDF bsdf = createBSDF(hitData,samplers,dbg);
-    //   return bsdf.getOpacity(hitData);
-    //   // if (type == TYPE_AnariPBR)
-    //   //   return anariPBR.getOpacity(isShadowRay,
-    //   //                              hitData,samplers,dbg);
-    //   // return 1.f;
-    // }
-    
     inline __rtc_device
     void DeviceMaterial::setHit(Ray &ray,
                                 const HitAttributes &hitData,
