@@ -201,13 +201,15 @@ namespace BARNEY_NS {
 
       float cap_t0 = -1e20f;
       float cap_t1 = +1e20f;
+      float cap_t_v0 = cap_t0;
+      float cap_t_v1 = cap_t1;
       if (sd == 0.f) {
         if (dot(ray_org-v0,v1-v0) < 0.f) return;
         if (dot(ray_org-v1,v0-v1) < 0.f) return;
       } else {
         const float rsd = 1.f/(sd);
-        const float cap_t_v0 = sf * rsd;
-        const float cap_t_v1 = cap_t_v0 + s2 * rsd;
+        cap_t_v0 = sf * rsd;
+        cap_t_v1 = cap_t_v0 + s2 * rsd;
         cap_t0 = min(cap_t_v0,cap_t_v1);
         cap_t1 = max(cap_t_v0,cap_t_v1);
       }
