@@ -150,14 +150,14 @@ namespace BARNEY_NS {
   
     static inline __rtc_device
     void intersect(rtc::TraceInterface &rt)
-    // OPTIX_INTERSECT_PROGRAM(CylindersIsec)()
     {
       // capped
       const int primID
-        = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
+        = rt.getPrimitiveIndex();
       const auto &self
-        = *(Cylinders::DD*)rt.getProgramData();//owl::getProgramData<Cylinders::DD>();
+        = *(Cylinders::DD*)rt.getProgramData();
       Ray &ray    = *(Ray*)rt.getPRD();
+      // bool dbg = ray.dbg;
       
       const vec2i idx = self.indices[primID];
       const vec3f v0  = self.vertices[idx.x];
@@ -166,11 +166,11 @@ namespace BARNEY_NS {
       const float radius
         = self.radii[primID];
       
-      const vec3f ray_org  = rt.getObjectRayOrigin();//optixGetObjectRayOrigin();
-      const vec3f ray_dir  = rt.getObjectRayDirection();//optixGetObjectRayDirection();
-      float hit_t      = rt.getRayTmax();//optixGetRayTmax();
-      const float ray_tmin = rt.getRayTmin();//optixGetRayTmin();
-      const float ray_tmax = rt.getRayTmax();//optixGetRayTmax();
+      const vec3f ray_org  = rt.getObjectRayOrigin();
+      const vec3f ray_dir  = rt.getObjectRayDirection();
+      float hit_t      = rt.getRayTmax();
+      const float ray_tmin = rt.getRayTmin();
+      const float ray_tmax = rt.getRayTmax();
     
       const vec3f d = ray_dir;
       const vec3f s = v1 - v0; // axis
@@ -227,8 +227,8 @@ namespace BARNEY_NS {
         if (t0 == cap_t0) {
           objectN
             = (cap_t0 == cap_t_v0)
-            ? s
-            : -s;
+            ? -s
+            : s;
         } else {
           objectN = (td * d - fp - hit_surf_u * s);          
         }
@@ -242,8 +242,8 @@ namespace BARNEY_NS {
         if (t0 == cap_t1) {
           objectN
             = (cap_t0 == cap_t_v0)
-            ? s
-            : -s;
+            ? -s
+            : s;
         } else {
           objectN = (td * d - fp - hit_surf_u * s);          
         }
