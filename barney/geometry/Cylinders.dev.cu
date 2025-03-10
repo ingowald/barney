@@ -223,7 +223,7 @@ namespace BARNEY_NS {
         td *= -1.f;
         float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
         objectN
-          = (t0 == cap_t0)
+          = (t0 == cap_t_v0)
           ? s
           : (td * d - fp - hit_surf_u * s);
       
@@ -231,7 +231,7 @@ namespace BARNEY_NS {
         ray.tMax = t1;
         float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
         objectN
-          = (t1 == cap_t1)
+          = (t1 == cap_t_v1)
           ? -s
           : (td * d - fp - hit_surf_u * s);
       } else
@@ -257,7 +257,7 @@ namespace BARNEY_NS {
       hitData.objectPosition  = objectP;
       hitData.worldPosition   = rt.transformPointFromObjectToWorldSpace(objectP);
       hitData.objectNormal    = normalize(objectN);
-      hitData.worldNormal     = normalize(rt.transformNormalFromObjectToWorldSpace(objectN));
+      hitData.worldNormal     = normalize(rt.transformNormalFromObjectToWorldSpace(hitData.objectNormal));
       hitData.primID          = primID;
       hitData.t               = t_hit;
     
