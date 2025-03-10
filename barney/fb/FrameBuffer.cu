@@ -319,10 +319,10 @@ namespace BARNEY_NS {
       vec2ui bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,false };
       device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
-      BARNEY_CUDA_SYNC_CHECK();
+      //BARNEY_CUDA_SYNC_CHECK();
       device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
       device->rtc->freeMem(asFixed8);
-      BARNEY_CUDA_SYNC_CHECK();
+      //BARNEY_CUDA_SYNC_CHECK();
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
       uint32_t *asFixed8
