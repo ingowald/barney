@@ -254,12 +254,12 @@ namespace BARNEY_NS {
       };
 
       render::HitAttributes hitData;
-      hitData.worldPosition   = rt.transformPointFromObjectToWorldSpace(objectP);
       hitData.objectPosition  = objectP;
-      hitData.worldNormal     = objectN;
-      hitData.objectNormal    = rt.transformNormalFromObjectToWorldSpace(objectN);
+      hitData.worldPosition   = rt.transformPointFromObjectToWorldSpace(objectP);
+      hitData.objectNormal    = objectN;
+      hitData.worldNormal     = rt.transformNormalFromObjectToWorldSpace(objectN);
       hitData.primID          = primID;
-      hitData.t               = t_hit;;
+      hitData.t               = t_hit;
     
       self.setHitAttributes(hitData,interpolator,ray.dbg);
 
