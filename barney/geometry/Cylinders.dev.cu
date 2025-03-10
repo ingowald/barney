@@ -224,18 +224,33 @@ namespace BARNEY_NS {
         ray.tMax = t0;
         td *= -1.f;
         float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-        objectN
-          = (t0 == cap_t_v0)
-          ? s
-          : (td * d - fp - hit_surf_u * s);
-      
+        if (t0 == cap_t0) {
+          objectN
+            = (cap_t0 == cap_t_v0)
+            ? s
+            : -s;
+        } else {
+          objectN = (td * d - fp - hit_surf_u * s);          
+        }
+        // objectN
+        //   = (t0 == cap_t0)
+        //   ? s
+        //   : (td * d - fp - hit_surf_u * s);
       } else if (ray_tmin <= t1 && t1 <= ray_tmax) {
         ray.tMax = t1;
         float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-        objectN
-          = (t1 == cap_t_v1)
-          ? -s
-          : (td * d - fp - hit_surf_u * s);
+        if (t0 == cap_t1) {
+          objectN
+            = (cap_t0 == cap_t_v0)
+            ? s
+            : -s;
+        } else {
+          objectN = (td * d - fp - hit_surf_u * s);          
+        }
+        // objectN
+        //   = (t1 == cap_t1)
+        //   ? -s
+        //   : (td * d - fp - hit_surf_u * s);
       } else
         return;
 
