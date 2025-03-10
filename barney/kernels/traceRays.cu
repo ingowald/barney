@@ -53,7 +53,7 @@ namespace BARNEY_NS {
                                       &dd);
         }
         device->rtc->sync();
-        BARNEY_CUDA_SYNC_CHECK();
+        //BARNEY_CUDA_SYNC_CHECK();
       }
     }
     

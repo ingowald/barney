@@ -94,16 +94,6 @@ namespace BARNEY_NS {
     this->material = mat;
   }
     
-  
-  
-  // void Geometry::addVars(std::vector<OWLVarDecl> &vars, int base)
-  // {
-  //   vars.push_back({"materialID",OWL_INT,OWL_OFFSETOF(DD,materialID)});
-  //   vars.push_back({"attributes",OWL_USER_TYPE(GeometryAttributes::DD),
-  //       OWL_OFFSETOF(DD,attributes)});
-  // }
-  
-
   void Geometry::writeDD(Geometry::DD &dd,
                          Device *device)
   {

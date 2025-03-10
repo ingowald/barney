@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/geometry/Cones.h"
-#include "owl/owl_device.h"
 #include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
@@ -80,6 +79,7 @@ namespace BARNEY_NS {
       const DeviceMaterial &material
         = OptixGlobals::get(rt).materials[self.materialID];
       hitData.t = ray.tMax;
+      float ray_tmin = rt.getRayTmin();
       
       vec3f ro  = rt.getObjectRayOrigin();
       vec3f rd  = rt.getObjectRayDirection();
@@ -112,62 +112,73 @@ namespace BARNEY_NS {
         const vec4f value_a = attrib.fromArray.valueAt(idx.x);
         const vec4f value_b = attrib.fromArray.valueAt(idx.y);
         const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
+        // printf("lerp (%i) %f %f %f and (%i) %f %f %f f %f\n",
+        //        idx.x,
+        //        value_a.x,
+        //        value_a.y,
+        //        value_a.z,
+        //        idx.y,
+        //        value_b.x,
+        //        value_b.y,
+        //        value_b.z,
+        //        lerp_t);
         return ret;
       };
 
-      
       if (m1 < 0.0f) {
         if (length2(oa * m3 - rd * m1) < (ra * ra * m3 * m3)) {
-          lerp_t = 0.f;
           float t = -m1 / m3;
-          if (t < hitData.t) {
-          vec3f N = normalize(-ba * inversesqrt(m0));
-          vec3f P = (vec3f)ro+t*rd;
+          if (t > ray_tmin && t < hitData.t) {
+            lerp_t = 0.f;
+            vec3f N = normalize(-ba * inversesqrt(m0));
+            vec3f P = (vec3f)ro+t*rd;
 
-          hitData.primID          = primID;
-          hitData.t               = t;
-          hitData.objectPosition  = P;
-          hitData.objectNormal    = normalize(N);
-          hitData.worldPosition
-            = rt.transformPointFromObjectToWorldSpace(P);
-          hitData.worldNormal
-            = normalize(rt.transformNormalFromObjectToWorldSpace(N));
+            hitData.primID          = primID;
+            hitData.t               = t;
+            hitData.objectPosition  = P;
+            hitData.objectNormal    = N;
+            hitData.worldPosition
+              = rt.transformPointFromObjectToWorldSpace(P);
+            hitData.worldNormal
+              = normalize(rt.transformNormalFromObjectToWorldSpace(N));
           
-          // trigger the anari attribute evaluation
-          self.setHitAttributes(hitData,interpolator,ray.dbg);
+            // trigger the anari attribute evaluation
+            self.setHitAttributes(hitData,interpolator,ray.dbg);
           
-          // ... store the hit in the ray, rqs-style ...
-          material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+            // ... store the hit in the ray, rqs-style ...
+            material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
           
-          // .... and let optix know we did have a hit.
-          rt.reportIntersection(hitData.t, 0);
+            // .... and let optix know we did have a hit.
+            rt.reportIntersection(hitData.t, 0);
+            return;
           }
         }
       } else if (m2 > 0.0f) {
-        lerp_t = 1.f;
         if (length2(ob * m3 - rd * m2) < (rb * rb * m3 * m3)) {
+          lerp_t = 1.f;
           float t = -m2 / m3;
-          if (t < hitData.t) {
-          vec3f N = normalize(ba * inversesqrt(m0));
-          vec3f P = (vec3f)ro+t*rd;
+          if (t > ray_tmin && t < hitData.t) {
+            vec3f N = normalize(ba * inversesqrt(m0));
+            vec3f P = (vec3f)ro+t*rd;
 
-          hitData.primID          = primID;
-          hitData.t               = t;
-          hitData.objectPosition  = P;
-          hitData.objectNormal    = normalize(N);
-          hitData.worldPosition
-            = rt.transformPointFromObjectToWorldSpace(P);
-          hitData.worldNormal
-            = normalize(rt.transformNormalFromObjectToWorldSpace(N));
+            hitData.primID          = primID;
+            hitData.t               = t;
+            hitData.objectPosition  = P;
+            hitData.objectNormal    = N;
+            hitData.worldPosition
+              = rt.transformPointFromObjectToWorldSpace(P);
+            hitData.worldNormal
+              = normalize(rt.transformNormalFromObjectToWorldSpace(N));
                     
-          // trigger the anari attribute evaluation
-          self.setHitAttributes(hitData,interpolator,ray.dbg);
+            // trigger the anari attribute evaluation
+            self.setHitAttributes(hitData,interpolator,ray.dbg);
           
-          // ... store the hit in the ray, rqs-style ...
-          material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+            // ... store the hit in the ray, rqs-style ...
+            material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
           
-          // .... and let optix know we did have a hit.
-          rt.reportIntersection(hitData.t, 0);
+            // .... and let optix know we did have a hit.
+            rt.reportIntersection(hitData.t, 0);
+            return;
           }
         }
       }
@@ -185,17 +196,18 @@ namespace BARNEY_NS {
       if (h < 0.0f)
         return;
 
-      const float t = (-k1 - sqrt(h)) / k2;
+      const float t = (-k1 - sqrtf(h)) / k2;
       const float y = m1 + t * m3;
-      if (y > 0.0f && y < m0 && t < hitData.t) {
+      if (y > 0.0f && y < m0 && t > ray_tmin && t < hitData.t) {
         vec3f N = normalize(m0 * (m0 * (oa + t * rd) + rr * ba * ra) - ba * hy * y);
         vec3f P = (vec3f)ro+t*rd;
         lerp_t = y / m0;
-
+        //lerp_t = dot(P-p1,p0-p1)/dot(p0-p1,p0-p1);
+        lerp_t = clamp(lerp_t,0.f,1.f);
         hitData.primID          = primID;
         hitData.t               = t;
         hitData.objectPosition  = P;
-        hitData.objectNormal    = normalize(N);
+        hitData.objectNormal    = N;
         hitData.worldPosition
           = rt.transformPointFromObjectToWorldSpace(P);
         hitData.worldNormal

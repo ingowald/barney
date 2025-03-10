@@ -230,7 +230,8 @@ namespace BARNEY_NS {
         pld->group->buildAccel();
         
         Volume::PLD *volumePLD = volume->getPLD(device);
-        volumePLD->generatedGroups = { pld->group };
+        volumePLD->generatedGroups.resize(1);
+        volumePLD->generatedGroups[0] = pld->group;
       }
       
       std::cout << "#AWT: re-computing majorants" << std::endl;
