@@ -200,7 +200,7 @@ namespace BARNEY_NS {
       const float sd = dot(s, d);
 
       float cap_t0 = -1e20f;
-      float cap_t1 = -1e20f;
+      float cap_t1 = +1e20f;
       if (sd == 0.f) {
         if (dot(ray_org-v0,v1-v0) < 0.f) return;
         if (dot(ray_org-v1,v0-v1) < 0.f) return;
@@ -256,8 +256,8 @@ namespace BARNEY_NS {
       render::HitAttributes hitData;
       hitData.objectPosition  = objectP;
       hitData.worldPosition   = rt.transformPointFromObjectToWorldSpace(objectP);
-      hitData.objectNormal    = objectN;
-      hitData.worldNormal     = rt.transformNormalFromObjectToWorldSpace(objectN);
+      hitData.objectNormal    = normalize(objectN);
+      hitData.worldNormal     = normalize(rt.transformNormalFromObjectToWorldSpace(objectN));
       hitData.primID          = primID;
       hitData.t               = t_hit;
     
