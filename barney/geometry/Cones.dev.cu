@@ -127,9 +127,9 @@ namespace BARNEY_NS {
       
       if (m1 < 0.0f) {
         if (length2(oa * m3 - rd * m1) < (ra * ra * m3 * m3)) {
-          lerp_t = 0.f;
           float t = -m1 / m3;
           if (t < hitData.t) {
+            lerp_t = 0.f;
             vec3f N = normalize(-ba * inversesqrt(m0));
             vec3f P = (vec3f)ro+t*rd;
 
@@ -150,11 +150,12 @@ namespace BARNEY_NS {
           
             // .... and let optix know we did have a hit.
             rt.reportIntersection(hitData.t, 0);
+            return;
           }
         }
       } else if (m2 > 0.0f) {
-        lerp_t = 1.f;
         if (length2(ob * m3 - rd * m2) < (rb * rb * m3 * m3)) {
+          lerp_t = 1.f;
           float t = -m2 / m3;
           if (t < hitData.t) {
             vec3f N = normalize(ba * inversesqrt(m0));
@@ -177,6 +178,7 @@ namespace BARNEY_NS {
           
             // .... and let optix know we did have a hit.
             rt.reportIntersection(hitData.t, 0);
+            return;
           }
         }
       }
@@ -200,7 +202,7 @@ namespace BARNEY_NS {
         vec3f N = normalize(m0 * (m0 * (oa + t * rd) + rr * ba * ra) - ba * hy * y);
         vec3f P = (vec3f)ro+t*rd;
         lerp_t = y / m0;
-        lerp_t = dot(P-p1,p0-p1)/dot(p0-p1,p0-p1);
+        //lerp_t = dot(P-p1,p0-p1)/dot(p0-p1,p0-p1);
         lerp_t = clamp(lerp_t,0.f,1.f);
         hitData.primID          = primID;
         hitData.t               = t;
