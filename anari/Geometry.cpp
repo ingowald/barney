@@ -699,6 +699,7 @@ void Triangle::setBarneyParameters(BNGeom geom, BNContext context)
 
   if (m_vertexNormal) {
     const bn_float3 *normals = (const bn_float3 *)m_vertexNormal->data();
+
     BNData _normals =
         bnDataCreate(context, slot, BN_FLOAT3, numVertices, normals);
     bnSetAndRelease(geom, "normals", _normals);

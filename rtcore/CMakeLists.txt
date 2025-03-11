@@ -137,32 +137,6 @@ else()
   add_library(barney_rtc_cuda_common INTERFACE) # DUMMY!
 endif()
 
-# ==================================================================
-# if (BARNEY_BACKEND_CUDA)
-#   message("ENabling CUDA backend")
-#   add_library(barney_rtc_cuda STATIC
-#     cuda/CUDACommon.cu
-#     )
-#   target_link_libraries(barney_rtc_cuda PUBLIC 
-#     barney_rtc_config
-# #    barney_rtc_common
-#     )
-#  set_target_properties(barney_rtc_cuda
-#   PROPERTIES
-#   CUDA_SEPARABLE_COMPILATION ON
-#   CXX_VISIBILITY_PRESET default
-#   CUDA_VISIBILITY_PRESET default
-#   POSITION_INDEPENDENT_CODE ON
-#   CUDA_USE_STATIC_CUDA_RUNTIME ON
-#   CUDA_SEPARABLE_COMPILATION ON
-#   POSITION_INDEPENDENT_CODE ON
-#   CUDA_RESOLVE_DEVICE_SYMBOLS ON
-#   CUDA_USE_STATIC_CUDA_RUNTIME ON
-# )
-
-# else()
-#   add_library(barney_rtc_cuda INTERFACE) # DUMMY!
-# endif()
 
 # ==================================================================
 if (BARNEY_BACKEND_OPTIX)
@@ -195,6 +169,10 @@ else()
 endif()
 
 
+
+
+# ==================================================================
+# ==================================================================
 add_library(barney_rtc INTERFACE
   )
 if (BARNEY_BACKEND_OPTIX)

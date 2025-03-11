@@ -169,8 +169,9 @@ void HDRILight::setBarneyParameters()
   // cuda textures have to be float4, not float3, so barney only
   // supports float3, too
   std::vector<math::float4> asFloat4(width * height);
-  for (int i = 0; i < width * height; i++)
+  for (int i = 0; i < width * height; i++) {
     (math::float3 &)asFloat4[i] = radianceValues[i];
+  }
 
   BNTexture texture = bnTexture2DCreate(getContext(),
       0, // model,slot,
