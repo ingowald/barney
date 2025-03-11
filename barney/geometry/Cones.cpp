@@ -55,8 +55,9 @@ namespace BARNEY_NS {
 
       Cones::DD dd;
       Geometry::writeDD(dd,device);
-      dd.vertices  = (vec4f*)(vertices?vertices->getDD(device):0);
+      dd.vertices  = (vec3f*)(vertices?vertices->getDD(device):0);
       dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
+      dd.radii     = (float*)(radii?radii->getDD(device):0);
       // done:
       geom->setDD(&dd);
     }
@@ -66,10 +67,6 @@ namespace BARNEY_NS {
   {
     if (Geometry::setData(member,value))
       return true;
-    if (member == "colors") {
-      colors = value->as<PODData>();
-      return true;
-    }
     if (member == "vertices") {
       vertices = value->as<PODData>();
       return true;

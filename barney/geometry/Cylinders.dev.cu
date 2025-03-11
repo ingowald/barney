@@ -150,14 +150,14 @@ namespace BARNEY_NS {
   
     static inline __rtc_device
     void intersect(rtc::TraceInterface &rt)
-    // OPTIX_INTERSECT_PROGRAM(CylindersIsec)()
     {
       // capped
       const int primID
-        = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
+        = rt.getPrimitiveIndex();
       const auto &self
-        = *(Cylinders::DD*)rt.getProgramData();//owl::getProgramData<Cylinders::DD>();
+        = *(Cylinders::DD*)rt.getProgramData();
       Ray &ray    = *(Ray*)rt.getPRD();
+      bool dbg = 0; //ray.dbg;
       
       const vec2i idx = self.indices[primID];
       const vec3f v0  = self.vertices[idx.x];
@@ -166,11 +166,11 @@ namespace BARNEY_NS {
       const float radius
         = self.radii[primID];
       
-      const vec3f ray_org  = rt.getObjectRayOrigin();//optixGetObjectRayOrigin();
-      const vec3f ray_dir  = rt.getObjectRayDirection();//optixGetObjectRayDirection();
-      float hit_t      = rt.getRayTmax();//optixGetRayTmax();
-      const float ray_tmin = rt.getRayTmin();//optixGetRayTmin();
-      const float ray_tmax = rt.getRayTmax();//optixGetRayTmax();
+      const vec3f ray_org  = rt.getObjectRayOrigin();
+      const vec3f ray_dir  = rt.getObjectRayDirection();
+      float hit_t      = rt.getRayTmax();
+      const float ray_tmin = rt.getRayTmin();
+      const float ray_tmax = rt.getRayTmax();
     
       const vec3f d = ray_dir;
       const vec3f s = v1 - v0; // axis
@@ -200,20 +200,20 @@ namespace BARNEY_NS {
       const float sd = dot(s, d);
 
       float cap_t0 = -1e20f;
-      float cap_t1 = -1e20f;
+      float cap_t1 = +1e20f;
+      float cap_t_v0 = cap_t0;
+      float cap_t_v1 = cap_t1;
       if (sd == 0.f) {
         if (dot(ray_org-v0,v1-v0) < 0.f) return;
         if (dot(ray_org-v1,v0-v1) < 0.f) return;
       } else {
         const float rsd = 1.f/(sd);
-        const float cap_t_v0 = sf * rsd;
-        const float cap_t_v1 = cap_t_v0 + s2 * rsd;
+        cap_t_v0 = sf * rsd;
+        cap_t_v1 = cap_t_v0 + s2 * rsd;
         cap_t0 = min(cap_t_v0,cap_t_v1);
         cap_t1 = max(cap_t_v0,cap_t_v1);
       }
       
-      // bool onCap_t0 = cap_t0 >= tube_t0;
-      // bool onCap_t1 = cap_t1 <= tube_t1;
       const float t0 = max(cap_t0,tube_t0);
       const float t1 = min(cap_t1,tube_t1);
       if (t0 > t1) return;
@@ -224,18 +224,33 @@ namespace BARNEY_NS {
         ray.tMax = t0;
         td *= -1.f;
         float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-        objectN
-          = (t0 == cap_t0)
-          ? s
-          : (td * d - fp - hit_surf_u * s);
-      
+        if (t0 == cap_t0) {
+          objectN
+            = (cap_t0 == cap_t_v0)
+            ? -s
+            : s;
+        } else {
+          objectN = (td * d - fp - hit_surf_u * s);          
+        }
+        // objectN
+        //   = (t0 == cap_t0)
+        //   ? s
+        //   : (td * d - fp - hit_surf_u * s);
       } else if (ray_tmin <= t1 && t1 <= ray_tmax) {
         ray.tMax = t1;
         float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
-        objectN
-          = (t1 == cap_t1)
-          ? -s
-          : (td * d - fp - hit_surf_u * s);
+        if (t0 == cap_t1) {
+          objectN
+            = (cap_t0 == cap_t_v0)
+            ? -s
+            : s;
+        } else {
+          objectN = (td * d - fp - hit_surf_u * s);          
+        }
+        // objectN
+        //   = (t1 == cap_t1)
+        //   ? -s
+        //   : (td * d - fp - hit_surf_u * s);
       } else
         return;
 
@@ -244,9 +259,8 @@ namespace BARNEY_NS {
 
       float lerp_t
         = dot(objectP-v0,v1-v0)
-        / (length(objectP-v0)*length(v1-v0));
+        / (dot(v1-v0,v1-v0));
       lerp_t = max(0.f,min(1.f,lerp_t));
-
 
       auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
       {
@@ -256,13 +270,18 @@ namespace BARNEY_NS {
         return ret;
       };
 
+      if (dbg)
+        printf("hit normal %f %f %f\n",
+               objectN.x,
+               objectN.y,
+               objectN.z);
       render::HitAttributes hitData;
-      hitData.worldPosition   = rt.transformPointFromObjectToWorldSpace(objectP);
       hitData.objectPosition  = objectP;
-      hitData.worldNormal     = objectN;
-      hitData.objectNormal    = rt.transformNormalFromObjectToWorldSpace(objectN);
+      hitData.worldPosition   = rt.transformPointFromObjectToWorldSpace(objectP);
+      hitData.objectNormal    = normalize(objectN);
+      hitData.worldNormal     = normalize(rt.transformNormalFromObjectToWorldSpace(hitData.objectNormal));
       hitData.primID          = primID;
-      hitData.t               = t_hit;;
+      hitData.t               = t_hit;
     
       self.setHitAttributes(hitData,interpolator,ray.dbg);
 

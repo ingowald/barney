@@ -48,6 +48,44 @@ struct Sphere : public Geometry
   float m_globalRadius{0.f};
 };
 
+struct Cylinder : public Geometry
+{
+  Cylinder(BarneyGlobalState *s);
+  void commitParameters() override;
+  void finalize() override;
+  bool isValid() const override;
+
+  void setBarneyParameters(BNGeom geom, BNContext context) override;
+  const char *bnSubtype() const override;
+  box3 bounds() const override;
+
+ private:
+  helium::ChangeObserverPtr<Array1D> m_index;
+  helium::ChangeObserverPtr<Array1D> m_radius;
+  helium::ChangeObserverPtr<Array1D> m_vertexPosition;
+  float m_globalRadius{0.f};
+  std::vector<math::uint2> m_generatedIndices;
+  std::vector<float> m_generatedRadii;
+};
+
+struct Cone : public Geometry
+{
+  Cone(BarneyGlobalState *s);
+  void commitParameters() override;
+  void finalize() override;
+  bool isValid() const override;
+
+  void setBarneyParameters(BNGeom geom, BNContext context) override;
+  const char *bnSubtype() const override;
+  box3 bounds() const override;
+
+ private:
+  helium::ChangeObserverPtr<Array1D> m_index;
+  helium::ChangeObserverPtr<Array1D> m_vertexPosition;
+  helium::ChangeObserverPtr<Array1D> m_vertexRadius;
+  std::vector<math::uint2> m_generatedIndices;
+};
+
 struct Curve : public Geometry
 {
   Curve(BarneyGlobalState *s);
@@ -64,6 +102,25 @@ struct Curve : public Geometry
   helium::ChangeObserverPtr<Array1D> m_vertexPosition;
   helium::ChangeObserverPtr<Array1D> m_vertexRadius;
   float m_globalRadius{0.f};
+};
+
+struct Quad : public Geometry
+{
+  Quad(BarneyGlobalState *s);
+  void commitParameters() override;
+  void finalize() override;
+  bool isValid() const override;
+
+  void setBarneyParameters(BNGeom geom, BNContext context) override;
+  const char *bnSubtype() const override;
+  box3 bounds() const override;
+
+ private:
+  helium::ChangeObserverPtr<Array1D> m_index;
+  helium::ChangeObserverPtr<Array1D> m_vertexPosition;
+  helium::ChangeObserverPtr<Array1D> m_vertexNormal;
+  std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
+  std::vector<int> m_generatedIndices;
 };
 
 struct Triangle : public Geometry
