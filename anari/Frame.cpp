@@ -64,7 +64,7 @@ BNDataType toBarney(anari::DataType type)
   case ANARI_FLOAT32_VEC4:
     return BN_FLOAT4;
   }
-  throw std::runtime_error("toBarney: anari data type %i not handled yet");
+  return BN_DATA_UNDEFINED;
 }
 
 void Frame::commitParameters()
