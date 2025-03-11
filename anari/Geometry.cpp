@@ -43,6 +43,8 @@ Geometry *Geometry::createInstance(
     return new Cone(s);
   if (subtype == "curve")
     return new Curve(s);
+  if (subtype == "quad")
+    return new Quad(s);
   if (subtype == "triangle")
     return new Triangle(s);
   if (subtype == "triangles")
@@ -501,6 +503,140 @@ box3 Curve::bounds() const
     float r = *(m_vertexRadius->beginAs<float>() + i);
     result.insert(math::float3{v.x - r, v.y - r, v.z - r});
     result.insert(math::float3{v.x + r, v.y + r, v.z + r});
+  }
+  return result;
+}
+
+// Quad //
+
+Quad::Quad(BarneyGlobalState *s)
+    : Geometry(s), m_index(this), m_vertexPosition(this), m_vertexNormal(this)
+{}
+
+void Quad::commitParameters()
+{
+  Geometry::commitParameters();
+  m_index = getParamObject<Array1D>("primitive.index");
+  m_vertexPosition = getParamObject<Array1D>("vertex.position");
+  m_vertexNormal = getParamObject<Array1D>("vertex.normal");
+  m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+  m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+  m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+  m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+  m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+}
+
+void Quad::finalize()
+{
+  if (!m_vertexPosition) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'vertex.position' on triangle geometry");
+    return;
+  }
+
+  m_generatedIndices.clear();
+  if (!m_index) {
+    size_t numQuads = m_vertexPosition->totalSize() / 4;
+    for (size_t i = 0; i < numQuads; ++i) {
+      // tri1
+      m_generatedIndices.push_back(int(i * 4));
+      m_generatedIndices.push_back(int(i * 4 + 1));
+      m_generatedIndices.push_back(int(i * 4 + 2));
+      // tri2
+      m_generatedIndices.push_back(int(i * 4));
+      m_generatedIndices.push_back(int(i * 4 + 2));
+      m_generatedIndices.push_back(int(i * 4 + 3));
+    }
+  } else {
+    for (size_t i = 0; i < m_index->totalSize(); ++i) {
+      math::uint4 index = *(m_index->beginAs<math::uint4>() + i);
+      // tri1
+      m_generatedIndices.push_back(int(index.x));
+      m_generatedIndices.push_back(int(index.y));
+      m_generatedIndices.push_back(int(index.z));
+      // tri2
+      m_generatedIndices.push_back(int(index.x));
+      m_generatedIndices.push_back(int(index.z));
+      m_generatedIndices.push_back(int(index.w));
+    }
+  }
+}
+
+bool Quad::isValid() const
+{
+  return m_vertexPosition;
+}
+
+void Quad::setBarneyParameters(BNGeom geom, BNContext context)
+{
+  int slot = 0;
+  int numVertices = (int)m_vertexPosition->totalSize();
+  int numIndices = (int)(m_generatedIndices.size() / 3);
+  const bn_float3 *vertices = (const bn_float3 *)m_vertexPosition->data();
+  const bn_int3 *indices = (const bn_int3 *)m_generatedIndices.data();
+
+  BNData _vertices =
+      bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertices);
+  bnSetAndRelease(geom, "vertices", _vertices);
+
+  BNData _indices = bnDataCreate(context, slot, BN_INT3, numIndices, indices);
+  bnSetAndRelease(geom, "indices", _indices);
+
+  if (m_vertexNormal) {
+    const bn_float3 *normals = (const bn_float3 *)m_vertexNormal->data();
+    BNData _normals =
+        bnDataCreate(context, slot, BN_FLOAT3, numVertices, normals);
+    bnSetAndRelease(geom, "normals", _normals);
+  }
+
+  addAttribute(geom, context, m_attributes[0], "primitive.attribute0");
+  addAttribute(geom, context, m_attributes[1], "primitive.attribute1");
+  addAttribute(geom, context, m_attributes[2], "primitive.attribute2");
+  addAttribute(geom, context, m_attributes[3], "primitive.attribute3");
+  addAttribute(geom, context, m_attributes[4], "primitive.color");
+
+  addAttribute(geom, context, m_vertexAttributes[0], "vertex.attribute0");
+  addAttribute(geom, context, m_vertexAttributes[1], "vertex.attribute1");
+  addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
+  addAttribute(geom, context, m_vertexAttributes[3], "vertex.attribute3");
+  addAttribute(geom, context, m_vertexAttributes[4], "vertex.color");
+
+  bnCommit(geom);
+}
+
+const char *Quad::bnSubtype() const
+{
+  return "triangles";
+}
+
+box3 Quad::bounds() const
+{
+  if (!isValid())
+    return {};
+
+  box3 result;
+  if (m_index) {
+    std::for_each(m_index->beginAs<math::uint4>(),
+        m_index->beginAs<math::uint4>() + m_index->totalSize(),
+        [&](math::uint4 index) {
+          math::float3 v1 =
+              *(m_vertexPosition->beginAs<math::float3>() + index.x);
+          math::float3 v2 =
+              *(m_vertexPosition->beginAs<math::float3>() + index.y);
+          math::float3 v3 =
+              *(m_vertexPosition->beginAs<math::float3>() + index.z);
+          math::float3 v4 =
+              *(m_vertexPosition->beginAs<math::float3>() + index.w);
+          result.insert(v1);
+          result.insert(v2);
+          result.insert(v3);
+          result.insert(v4);
+        });
+  } else {
+    std::for_each(m_vertexPosition->beginAs<math::float3>(),
+        m_vertexPosition->beginAs<math::float3>()
+            + m_vertexPosition->totalSize(),
+        [&](math::float3 v) { result.insert(v); });
   }
   return result;
 }

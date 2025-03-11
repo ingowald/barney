@@ -104,6 +104,25 @@ struct Curve : public Geometry
   float m_globalRadius{0.f};
 };
 
+struct Quad : public Geometry
+{
+  Quad(BarneyGlobalState *s);
+  void commitParameters() override;
+  void finalize() override;
+  bool isValid() const override;
+
+  void setBarneyParameters(BNGeom geom, BNContext context) override;
+  const char *bnSubtype() const override;
+  box3 bounds() const override;
+
+ private:
+  helium::ChangeObserverPtr<Array1D> m_index;
+  helium::ChangeObserverPtr<Array1D> m_vertexPosition;
+  helium::ChangeObserverPtr<Array1D> m_vertexNormal;
+  std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
+  std::vector<int> m_generatedIndices;
+};
+
 struct Triangle : public Geometry
 {
   Triangle(BarneyGlobalState *s);
