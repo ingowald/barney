@@ -18,7 +18,8 @@ product in any way, shape, or form.
 Barney is not a stand-alone "renderer" or "vis-tool"; it is a library
 with an API, and needs other applications to build towards it. As
 such, it is never "run" on its own; it also needs to be run from another
-application (e.g., `hayStack`, at http://github.org/ingowald/hayStack).
+application (e.g., `hayStack`, at http://github.org/ingowald/hayStack),
+or from any application that supports the ANARI API (see https://www.khronos.org/anari/).
 
 
 ## Dependencies for building Barney
@@ -39,33 +40,99 @@ Barney requires the following additional tools and/or packages to build:
   requires a CUDA-aware MPI, for *building* this should not matter. We 
   typically develop under and test with OpenMPI 4.1.6.
 
-## Building Barney
+## Building Barney - no ANARI
 
-Barney is built via CMake. Eventually this is going to result in some
-"installable" set of shadred library and header files; however, for
-now (where it is still chaging very rapidly) the only truly
-recommended way of building barney is as a git submodule, within the
-application using it.
+Barney is built via CMake, using the cmake build/install procedure
+that works on all of Linux, Windows, and Mac; but how to build it depends
+on whether you want to build _just_ barney, or also (more likely) the
+"Banari" ANARI device through which ANARI apps can use it.
 
-In that case, all the application should do is include in the parent app's `CMakeList.txt` as follows:
+## Building Barney - no ANARI
 
-    add_subdirectory(<path to barney> EXCLUDE_FROM_ALL)
+For native barney apps - ie, that do not want to use ANARI - you
+can build without the ANARI SDK as follows:
+
+``` bash
+cd barney
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=<same-install-dir-as-anari> [options]
+cmake --build .. [ --config Release ]
+cmake --install .. [ --config Release ]
+```
+
+Two notes for windows builds:
+
+	- The "linux-like" calls to `cmake ...` etc will also work under windows, in
+	both cmd.exe and powershell. You can of course also use the cmake and VS gui's, but you *will* have to then run the install target.
 	
-Barney's CMake scripts the use "modern cmake", so all include paths,
-compile definitions, etc, will be pulled by 'linking' to the
-respective 'barney` and `barney_mpi` targets:
+	- On windows you should specify the `--config Release` (or `Debug`, if you prefer) for both build and install; under Linux you can ignore this. For an ANARI build (see below) oyu want to use the same config as used for the ANARI SDK.
 
-- for single-node/multi-gpu (but possibly still multi-gpu
-  data-parallel!) rendering, use:
+In the cmake config step, you may specify the following options:
+   
 
-        target_link_libraries(endUserApp PUBLIC barney)
-	
-- for MPI-parallel, multi-node (and possibly *also* multi-gpu) rendering, use: 
-  data-parallel!) rendering, use:
+- `-DOptiX_INSTALL_DIR=<path to optix>` . You can also set an env
+  variable of the same name.
 
-        target_link_libraries(endUserApp PUBLIC barney_mpi)
+- `-DBARNEY_BACKEND_EMBREE=ON` Enables (slower) CPU rendering without
+  a GPU. Off by deault
 
-The `barney_mpi` dependency will automatically pull in the cmake `MPI::MPI_CXX` dependency.
+- `-DBARNEY_BACKEND_OPTIX=OFF` Optix is on by default, this will turn
+  it off.
+
+- `-DBARNEY_DISABLE_DENOISING=ON` Denoising is on by default (assuming
+  a suitable denoiser can be found), this will turn it off
+
+- `-DBARNEY_MPI=ON` Controls whether `barney_mpi` and
+  `libanari_library_barney_mpi` will be build. Off by default,
+  requires an appropriate (cuda aware!) MPI
+
+## Building Barney - *with* ANARI
+
+The ANARI build of barney works in pretty much the same way (and with
+the same options), but requires a pre-built and installed `ANARI-SDK` from
+https://github.com/KhronosGroup/ANARI-SDK. As to the time of this writing,
+you need ANARI SDK version 0.13.2 (or `next_release` branch)
+
+First, build and install the ANARI SDK:
+
+``` bash
+cd ANARI-SDK
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=<install-dir>
+cmake --build .. [ --config Release ]
+cmake --install .. [ --config Release ]
+```
+
+Then, build barney as described above, using same install dir:
+``` bash
+cd barney
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=<same-install-dir-as-anari> [options]
+cmake --build .. [ --config Release ]
+cmake --install .. [ --config Release ]
+```
+
+To install into a different install dir than ANARI (you probably shouldn't?):
+``` bash
+cd barney
+mkdir build
+cd build
+cmake .. \
+   -DCMAKE_INSTALL_PREFIX=<same-install-dir-as-anari> \
+   -DCMAKE_PREFIX_PATH=<anari-install-dir>,<whatever-other_paths> \
+   [options]
+cmake --build .. [ --config Release ]
+cmake --install .. [ --config Release ]
+```
+
+This accepts the same options as above. Note the command-line cmake build/install 
+calls will also work on windows (though of course you can also use cmake-gui
+and visual studio gui if you prefer so).
+
+
 
 # Examples of Supported Geometry and Volume Types 
 

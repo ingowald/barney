@@ -1,12 +1,30 @@
+set(CMAKE_CXX_VISIBILITY_PRESET  hidden)
+set(CMAKE_CUDA_VISIBILITY_PRESET hidden)
+
+macro(rtc_library_properties tgt)
+  set_target_properties(${tgt}
+    PROPERTIES
+    CUDA_SEPARABLE_COMPILATION   ON
+    POSITION_INDEPENDENT_CODE    ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+    CXX_VISIBILITY_PRESET  hidden
+    CUDA_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+  )
+if (APPLE)
+  set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
+else()
+  set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+endmacro()
 
 # ==================================================================
 
 target_include_directories(barney_config INTERFACE
   ${PROJECT_SOURCE_DIR}
   )
-#if (NOT BARNEY_HAVE_CUDA)
 target_link_libraries(barney_config INTERFACE owl-config)
-#endif()
 
 
 # ==================================================================
@@ -20,9 +38,6 @@ set_property(TARGET barney_rtc_config PROPERTY
 
 # ==================================================================
 add_library(barney_rtc_common INTERFACE
-#  common/Backend.cpp
-#  common/RTCore.cpp
-#  rtc.cpp
   )
 target_link_libraries(barney_rtc_common INTERFACE barney_rtc_config)
 
@@ -65,23 +80,38 @@ if (BARNEY_BACKEND_EMBREE)
   option(EMBREE_TUTORIALS_GLFW           "" OFF)
   set(EMBREE_TASKING_SYSTEM "INTERNAL" CACHE STRING "" FORCE)
   set(EMBREE_MAX_INSTANCE_LEVEL_COUNT "1" CACHE STRING "" FORCE)
-
+  set(EMBREE_API_NAMESPACE embree_for_barney CACHE STRING "" FORCE)
   add_subdirectory(../submodules/embree builddir_rtc_embree EXCLUDE_FROM_ALL)
   add_library(embree_local INTERFACE)
   target_link_libraries(embree_local INTERFACE embree tasking)
+  rtc_library_properties(embree)
+  rtc_library_properties(tasking)
+  rtc_library_properties(sys)
   target_compile_definitions(embree_local INTERFACE TASKING_INTERNAL)
   target_include_directories(embree_local INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/
+    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common
+  )
+  target_include_directories(embree PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/
+    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common
+  )
+  target_include_directories(tasking PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/
+    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common
+  )
   if (WIN32)
     target_compile_options(embree_local 
       INTERFACE
       /D__SSE__ /D__SSE2__ /D__SSE3__ /D__SSSE3__ /D__SSE4_1__ /D__SSE4_2__
       )
+      rtc_library_properties(embree_local)
   elseif(COMPILE_FOR_ARM)
     target_compile_options(embree_local INTERFACE -flax-vector-conversions -fsigned-char)
   endif()
 
-  add_library(barney_rtc_embree OBJECT #STATIC
+#  add_library(barney_rtc_embree OBJECT #STATIC
+  add_library(barney_rtc_embree STATIC
     embree/Float16.cpp
     embree/EmbreeBackend.cpp
     embree/Compute.cpp
@@ -101,11 +131,11 @@ if (BARNEY_BACKEND_EMBREE)
     )
   target_compile_definitions(barney_rtc_embree
     PUBLIC -DBARNEY_RTC_EMBREE=1)
-
+  rtc_library_properties(barney_rtc_embree)
   if (BARNEY_OIDN_CPU)
     target_link_libraries(barney_rtc_embree PUBLIC OpenImageDenoise)
   endif()
-  target_link_libraries(barney_config INTERFACE embree_local)
+#  target_link_libraries(barney_config INTERFACE embree_local)
 else()
   add_library(barney_rtc_embree INTERFACE
     # dummy
@@ -138,36 +168,11 @@ set_target_properties(barney_rtc_cuda_common
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_USE_STATIC_CUDA_RUNTIME ON
   )
+  rtc_library_properties(barney_rtc_cuda_common)
 else()
   add_library(barney_rtc_cuda_common INTERFACE) # DUMMY!
 endif()
 
-# ==================================================================
-# if (BARNEY_BACKEND_CUDA)
-#   message("ENabling CUDA backend")
-#   add_library(barney_rtc_cuda STATIC
-#     cuda/CUDACommon.cu
-#     )
-#   target_link_libraries(barney_rtc_cuda PUBLIC 
-#     barney_rtc_config
-# #    barney_rtc_common
-#     )
-#  set_target_properties(barney_rtc_cuda
-#   PROPERTIES
-#   CUDA_SEPARABLE_COMPILATION ON
-#   CXX_VISIBILITY_PRESET default
-#   CUDA_VISIBILITY_PRESET default
-#   POSITION_INDEPENDENT_CODE ON
-#   CUDA_USE_STATIC_CUDA_RUNTIME ON
-#   CUDA_SEPARABLE_COMPILATION ON
-#   POSITION_INDEPENDENT_CODE ON
-#   CUDA_RESOLVE_DEVICE_SYMBOLS ON
-#   CUDA_USE_STATIC_CUDA_RUNTIME ON
-# )
-
-# else()
-#   add_library(barney_rtc_cuda INTERFACE) # DUMMY!
-# endif()
 
 # ==================================================================
 if (BARNEY_BACKEND_OPTIX)
@@ -191,11 +196,20 @@ if (BARNEY_BACKEND_OPTIX)
     )
   target_compile_definitions(barney_rtc_optix
     PUBLIC -DBARNEY_RTC_OPTIX=1)
+  rtc_library_properties(barney_rtc_optix)
+  if (BARNEY_DISABLE_DENOISING)
+    target_compile_definitions(barney_rtc_optix
+      PUBLIC -DOPTIX_DISABLE_DENOISING=1)
+  endif()
 else()
   add_library(barney_rtc_optix INTERFACE) # DUMMY!
 endif()
 
 
+
+
+# ==================================================================
+# ==================================================================
 add_library(barney_rtc INTERFACE
   )
 if (BARNEY_BACKEND_OPTIX)

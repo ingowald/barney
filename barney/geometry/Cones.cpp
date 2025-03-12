@@ -16,85 +16,67 @@
 
 #include "barney/geometry/Cones.h"
 #include "barney/ModelSlot.h"
-
-RTC_IMPORT_USER_GEOM_TYPE(Cones);
+#include "barney/Context.h"
 
 namespace BARNEY_NS {
+
+  RTC_IMPORT_USER_GEOM(Cones,Cones,Cones::DD,false,false);
 
   Cones::Cones(Context *context, DevGroup::SP devices)
     : Geometry(context,devices)
   {}
 
-#if 0
-  OWLGeomType Cones::createGeomType(DevGroup *devGroup)
-  {
-    if (DevGroup::logging())
-    std::cout << OWL_TERMINAL_GREEN
-              << "creating 'Cones' geometry type"
-              << OWL_TERMINAL_DEFAULT << std::endl;
-    
-    std::vector<OWLVarDecl> params
-      = {
-      { "radii", OWL_BUFPTR, OWL_OFFSETOF(DD,radii) },
-      { "vertices", OWL_BUFPTR, OWL_OFFSETOF(DD,vertices) },
-      { "indices", OWL_BUFPTR, OWL_OFFSETOF(DD,indices) },
-    };
-    Geometry::addVars(params,0);
-    OWLModule module = owlModuleCreate
-      (devGroup->owl,Cones_ptx);
-    OWLGeomType gt = owlGeomTypeCreate
-      (devGroup->owl,OWL_GEOM_USER,sizeof(Cones::DD),
-       params.data(), (int)params.size());
-    owlGeomTypeSetBoundsProg(gt,module,"ConesBounds");
-    owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,"ConesIsec");
-    owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,"ConesCH");
-    owlBuildPrograms(devGroup->owl);
-    
-    return gt;
-  }
-#endif
-  
   void Cones::commit()
   {
-    if (userGeoms.empty()) {
-      OWLGeomType gt = getDevGroup()->getOrCreateGeomTypeFor
-        ("Cones",Cones::createGeomType);
-      OWLGeom geom = owlGeomCreate(getDevGroup()->owl,gt);
-      userGeoms.push_back(geom);
+    if (!vertices || vertices->count == 0) {
+      std::cout << OWL_TERMINAL_RED
+                << "#bn.cones: warning - empty vertices array"
+                << OWL_TERMINAL_DEFAULT
+                << std::endl;
+      return;
     }
-    OWLGeom geom = userGeoms[0];
-    
-    Geometry::commit();
-    owlGeomSetBuffer(geom,"vertices",vertices?vertices->owl:0);
-    owlGeomSetBuffer(geom,"indices",indices?indices->owl:0);
-    owlGeomSetBuffer(geom,"radii",radii?radii->owl:0);
-    int numIndices = indices->count;
-    owlGeomSetPrimCount(geom,numIndices);
-    material->setDeviceDataOn(geom);
+    for (auto device : *devices) {
+      auto rtc = device->rtc;
+      PLD *pld = getPLD(device);
+      if (pld->userGeoms.empty()) {
+        rtc::GeomType *gt
+          = device->geomTypes.get(createGeomType_Cones);
+        rtc::Geom *geom = gt->createGeom();
+        pld->userGeoms = { geom };
+      }
+      rtc::Geom *geom = pld->userGeoms[0];
+
+      int numCones
+        = indices
+        ? indices->count
+        : (vertices->count/2);
+      assert(vertices);
+      geom->setPrimCount(numCones);
+
+      Cones::DD dd;
+      Geometry::writeDD(dd,device);
+      dd.vertices  = (vec3f*)(vertices?vertices->getDD(device):0);
+      dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
+      dd.radii     = (float*)(radii?radii->getDD(device):0);
+      // done:
+      geom->setDD(&dd);
+    }
   } 
   
   bool Cones::setData(const std::string &member, const Data::SP &value)
   {
     if (Geometry::setData(member,value))
       return true;
-    if (member == "colors") {
-      colors = value->as<PODData>();
-      return true;
-    }
     if (member == "vertices") {
       vertices = value->as<PODData>();
-      PRINT(vertices->count);
       return true;
     }
     if (member == "indices") {
       indices = value->as<PODData>();
-      PRINT(indices);
-      PRINT(indices->count);
       return true;
     }
     if (member == "radii") {
       radii = value->as<PODData>();
-      PRINT(radii->count);
       return true;
     }
     return false;

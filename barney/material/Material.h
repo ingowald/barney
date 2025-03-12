@@ -38,11 +38,6 @@ namespace BARNEY_NS {
       { type = VALUE; value = vec4f(v,0.f,0.f,1.f); }
       
       struct DD {
-        // inline DD() {}
-        // inline DD(DD &&other)
-        // { memcpy(this,&other,sizeof(other)); }
-        // inline DD &operator=(const DD &other)
-        // { memcpy(this,&other,sizeof(other)); return *this; }
 #if RTC_DEVICE_CODE
         inline __rtc_device
         vec4f eval(const HitAttributes &hitData,

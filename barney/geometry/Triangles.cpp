@@ -87,6 +87,7 @@ namespace BARNEY_NS {
       dd.indices   = (vec3i*)indices->getDD(device);
       dd.normals   = (vec3f*)(normals?normals->getDD(device):0);
       dd.texcoords = (vec2f*)(texcoords?texcoords->getDD(device):0);
+
       // done:
       geom->setDD(&dd);
     }

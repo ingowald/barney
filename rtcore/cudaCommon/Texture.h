@@ -32,7 +32,8 @@ namespace rtc {
       rtc::device::TextureObject getDD() const
       { return (const rtc::device::TextureObject&)textureObject; }
 
-      TextureData *const data;
+      Device             *const device;
+      TextureData        *const data;
       cudaTextureObject_t textureObject;
     };
     

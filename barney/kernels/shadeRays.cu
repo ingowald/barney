@@ -14,7 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/DeviceContext.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/render/World.h"
@@ -24,7 +23,6 @@
 
 namespace BARNEY_NS {
   namespace render {
-
 
 #define SCI_VIS_MODE 0
     
@@ -85,9 +83,11 @@ namespace BARNEY_NS {
         u[i] = random();
         v[i] = random();
         float lightArea = light.area;
+#ifndef NDEBUG
         if (lightArea < 0.f)
           printf("INVALID NEGATIVE LIGHT AREA on light %i/%i : %f\n",
                  lID[i],world.numQuadLights,lightArea);
+#endif
         vec3f LN = light.normal;
         vec3f LP = light.corner + u[i]*light.edge0 + v[i]*light.edge1;
         vec3f lightDir = LP - P;
@@ -100,24 +100,30 @@ namespace BARNEY_NS {
         if (weight <= 1e-3f) continue;
         weight *= -dot(lightDir,LN);
         if (weight <= 1e-3f) continue;
+#ifndef NDEBUG
         if (lightArea == 0.f || reduce_max(light.emission) == 0)
           printf("invalid light! %f : %f %f %f\n",
                  lightArea,
                  light.emission.x,
                  light.emission.y,
                  light.emission.z);
+#endif
         weight *= (1.f/(lightDist*lightDist)) * lightArea * reduce_max(light.emission);
+#ifndef NDEBUG
         if (isnan(sumWeights) || weight < 0.f)
           printf("area lights: weight[%i:%i] is nan or negative: dist  %f area %f emission %f %f %f\n",
                  i,lID[i],lightDist,lightArea,
                  light.emission.x,
                  light.emission.y,
                  light.emission.z);
+#endif
         sumWeights += weight;
         weights[i] = weight;
       }
+#ifndef NDEBUG
       if (isnan(sumWeights))
         printf("area lights: sumWeights is nan!\n");
+#endif
       if (sumWeights == 0.f) return false;
       float r = random()*sumWeights;
       int i=0;
@@ -138,9 +144,11 @@ namespace BARNEY_NS {
       ls.pdf
         = weights[i]/sumWeights
         * (float(RESERVOIR_SIZE)/float(world.numQuadLights));
+#ifndef NDEBUG
       if (ls.pdf <= 0.f)
         printf("invalid area light PDF %f from i %i weight %f sum %f\n",
                ls.pdf,i,weights[i],sumWeights);
+#endif
       return true;
     }
 
@@ -171,11 +179,10 @@ namespace BARNEY_NS {
         
         vec3f lightDir = -light.direction;
         float weight = dot(lightDir,N);
-        if (1 && dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
+        if (dbg) printf("light #%i, dir %f %f %f weight %f\n",lID[i],lightDir.x,lightDir.y,lightDir.z,weight);
         if (weight <= 1e-3f) continue;
         weight *= reduce_max(light_radiance);
         if (weight <= 1e-3f) continue;
-        // if (0 && dbg) printf("radiance %f %f color %f %f %f weight %f\n",light.radiance.x,light.radiance.y,light.radiance.z,weight);
         weights[i] = weight;
         sumWeights += weight;
       }
@@ -281,7 +288,6 @@ namespace BARNEY_NS {
       dlsWeight *= 1.f/sumWeights;
       
       float r = random();
-      // if (dbg) printf("r %f els %f dls %f\n",r, elsWeight,dlsWeight);
       if (r <= alsWeight) {
         ls = als;
         ls.pdf *= alsWeight;
@@ -302,9 +308,6 @@ namespace BARNEY_NS {
         lightIsDirLight = true;
 # endif
       }
-      // if (dbg)
-      //   printf(" light weights %f %f\n",
-      //          alsWeight,dlsWeight);
       if (isnan(ls.pdf) || (ls.pdf <= 0.f)) return false;
       
       return true;
@@ -401,8 +404,6 @@ namespace BARNEY_NS {
       bool dbg = path.dbg;
 #endif
       
-      bool fire = dbg;//0 && (path.pixelID == 969722);
-
       if (dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
                pathDepth,
@@ -491,7 +492,7 @@ namespace BARNEY_NS {
           const vec3f fromEnv = radianceFromEnv(world,renderer,path);
           fragment = (vec3f)path.throughput * fromEnv * (float)path.misWeight;
 
-          if (fire || fire)
+          if (dbg)
             printf("bounce ray hits env light: tp %f %f %f misweight %f fromEnv %f %f %f\n",
                    (float)path.throughput.x,
                    (float)path.throughput.y,
@@ -573,7 +574,7 @@ namespace BARNEY_NS {
                  ls.pdf,
                  reduce_max(ls.radiance)/ls.pdf);
         EvalRes f_r
-          = bsdf.eval(dg,ls.direction,fire);
+          = bsdf.eval(dg,ls.direction,dbg);
         if (dbg) printf("eval light res %f %f %f: %f\n",
                         f_r.value.x,
                         f_r.value.y,
@@ -591,7 +592,7 @@ namespace BARNEY_NS {
             * f_r.value
             * ls.radiance
             * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)));
-          if (fire) {
+          if (dbg) {
             printf(" -> inc tp %f %f %f, dot %f\n",
                    incomingThroughput.x,
                    incomingThroughput.y,
@@ -653,7 +654,7 @@ namespace BARNEY_NS {
       path.tMax = BARNEY_INF;
       
       ScatterResult scatterResult;
-      bsdf.scatter(scatterResult,dg,random,fire || 0 && path.dbg);
+      bsdf.scatter(scatterResult,dg,random,dbg);
 #ifndef NDEBUG
       if (scatterResult.type == ScatterResult::INVALID)
         printf("broken BSDF, doesn't set scatter type!\n");
@@ -675,7 +676,8 @@ namespace BARNEY_NS {
 #endif
       }
       
-      if (scatterResult.type == ScatterResult::DIFFUSE) {
+      if (scatterResult.type == ScatterResult::DIFFUSE ||
+          scatterResult.type == ScatterResult::VOLUME) {
         if (path.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES) {
           path.tMax = -1.f;
           return;
@@ -855,14 +857,9 @@ namespace BARNEY_NS {
       fragment = min(fragment,vec3f(clampMax));
 
       if (accumID == 0 && generation == 0) {
-        if (dbg) printf("init frag %f %f %f\n",
-                             fragment.x,fragment.y,fragment.z);
         valueToAccumInto = vec4f(fragment.x,fragment.y,
                                  fragment.z,alpha);
-        if (dbg) printf("valueToAcc %f %f %f %f\n",
-                             valueToAccumInto.x,valueToAccumInto.y,valueToAccumInto.z,valueToAccumInto.w);
       } else {
-        if (dbg) printf("adding frag %f %f %f\n",fragment.x,fragment.y,fragment.z);
         if (generation == 0 && alpha) 
           rt.atomicAdd(&valueToAccumInto.w,alpha);
 
@@ -906,8 +903,11 @@ namespace BARNEY_NS {
       for (auto device : *world->devices) {
         SetActiveGPU forDuration(device);
         RayQueue *rayQueue = device->rayQueue;
+        device->rayQueue->resetWriteQueue();
+        
         TiledFB *devFB     = fb->getFor(device);
         int numRays        = rayQueue->numActive;
+        if (numRays == 0) continue;
         int bs = 128;
         int nb = divRoundUp(numRays,bs);
         World::DD devWorld
@@ -937,7 +937,6 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rayQueue->swap();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
-      device->rayQueue->resetWriteQueue();
     }
   }
   

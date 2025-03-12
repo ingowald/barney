@@ -47,9 +47,13 @@ namespace BARNEY_NS {
         } else {
           int bs = 1024;
           int nb = divRoundUp(dd.numRays,bs);
-          device->traceRays->launch(vec2i(nb,bs),
-                                    &dd);
+          if (nb)
+            device->traceRays->launch(/* bs,nb intentionally inverted: always have 1024 in width: */
+                                      vec2i(bs,nb),
+                                      &dd);
         }
+        device->rtc->sync();
+        //BARNEY_CUDA_SYNC_CHECK();
       }
     }
     

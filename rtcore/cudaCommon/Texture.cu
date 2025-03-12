@@ -40,14 +40,17 @@ namespace rtc {
       case BORDER:
         return cudaAddressModeBorder;
       };
-      // just to make teh compiler happy:
+      // just to make the compiler happy:
       return cudaAddressModeMirror;
     }
 
     Texture::Texture(TextureData *data,
                      const TextureDesc &desc)
-      : data(data)//, desc(desc)
+      : data(data),
+        device(data->device)
     {
+      SetActiveGPU forDuration(device);
+        
       cudaResourceDesc resourceDesc;
       memset(&resourceDesc,0,sizeof(resourceDesc));
       resourceDesc.resType         = cudaResourceTypeArray;
@@ -55,15 +58,15 @@ namespace rtc {
       
       cudaTextureDesc textureDesc;
       memset(&textureDesc,0,sizeof(textureDesc));
-      textureDesc.addressMode[0] = toCUDA(desc.addressMode[0]);
-      textureDesc.addressMode[1] = toCUDA(desc.addressMode[1]);
-      textureDesc.addressMode[2] = toCUDA(desc.addressMode[2]);
-      textureDesc.filterMode     = toCUDA(desc.filterMode);
-      textureDesc.readMode       = data->readMode;
-      textureDesc.borderColor[0] = desc.borderColor.x;
-      textureDesc.borderColor[1] = desc.borderColor.y;
-      textureDesc.borderColor[2] = desc.borderColor.z;
-      textureDesc.borderColor[3] = desc.borderColor.w;
+      textureDesc.addressMode[0]   = toCUDA(desc.addressMode[0]);
+      textureDesc.addressMode[1]   = toCUDA(desc.addressMode[1]);
+      textureDesc.addressMode[2]   = toCUDA(desc.addressMode[2]);
+      textureDesc.filterMode       = toCUDA(desc.filterMode);
+      textureDesc.readMode         = data->readMode;
+      textureDesc.borderColor[0]   = desc.borderColor.x;
+      textureDesc.borderColor[1]   = desc.borderColor.y;
+      textureDesc.borderColor[2]   = desc.borderColor.z;
+      textureDesc.borderColor[3]   = desc.borderColor.w;
       textureDesc.normalizedCoords = desc.normalizedCoords;
       
       BARNEY_CUDA_CALL(CreateTextureObject(&textureObject,
@@ -73,6 +76,7 @@ namespace rtc {
 
     Texture::~Texture()
     {
+      SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL_NOTHROW(DestroyTextureObject(textureObject));
       textureObject = 0;
     }

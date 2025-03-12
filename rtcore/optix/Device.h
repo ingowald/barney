@@ -51,6 +51,9 @@ namespace rtc {
     struct Device : public cuda_common::Device {
       Device(int physicalGPU);
       virtual ~Device();
+
+      std::string toString() const
+      { return "optix::Device(physical="+std::to_string(physicalID)+")"; }
       
       void destroy();
 

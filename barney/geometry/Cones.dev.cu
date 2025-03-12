@@ -15,64 +15,85 @@
 // ======================================================================== //
 
 #include "barney/geometry/Cones.h"
-#include "owl/owl_device.h"
 #include "rtcore/TraceInterface.h"
 
-namespace barney {
+RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
+
+namespace BARNEY_NS {
+  using namespace BARNEY_NS::render;
+
+  inline __rtc_device float sqrt(float f) { return sqrtf(f); }
+  inline __rtc_device float inversesqrt(float f) { return 1./sqrtf(f); }
+  inline __rtc_device float length2(vec3f v) { return dot(v,v); }
   
-  OPTIX_BOUNDS_PROGRAM(ConesBounds)(const void *geomData,
-                                        owl::common::box3f &bounds,  
-                                        const int32_t primID)
-  {
-    auto &self = *(Cones::DD*)geomData;
-    const vec2i pidx
-      = self.indices
-      ? self.indices[primID]
-      : (2 * primID + vec2i(0, 1));
+  struct ConesPrograms {
+    /*! bounding box program */
+    static inline __rtc_device
+    void bounds(const rtc::TraceInterface &rt,
+                const void *geomData,
+                owl::common::box3f &bounds,  
+                const int32_t primID)
+    {
+      auto &self = *(Cones::DD*)geomData;
+      const vec2i pidx
+        = self.indices
+        ? self.indices[primID]
+        : (2 * primID + vec2i(0, 1));
     
-    const auto pa = self.vertices[pidx.x];
-    const auto pb = self.vertices[pidx.y];
+      const vec3f pa = (const vec3f&)self.vertices[pidx.x];
+      const vec3f pb = (const vec3f&)self.vertices[pidx.y];
     
-    const float ra = self.radii[pidx.x];
-    const float rb = self.radii[pidx.y];
-    box3f aBox(pa-ra,pa+ra);
-    box3f bBox(pb-ra,pb+rb);
-    
-    bounds.lower = min(aBox.lower,bBox.lower);
-    bounds.upper = max(aBox.upper,bBox.upper);
-  }
-
-  OPTIX_CLOSEST_HIT_PROGRAM(ConesCH)()
-  {
-    /* nothign - already set in isec */
-  }
-
-  inline __device__ float sqrt(float f) { return sqrtf(f); }
-  inline __device__ float inversesqrt(float f) { return 1./sqrtf(f); }
-  inline __device__ float length2(vec3f v) { return dot(v,v); }
-  
-  /*! largely stolen from VisRTX */
-  OPTIX_INTERSECT_PROGRAM(ConesIsec)()
-  {
-    auto &ray = owl::getPRD<Ray>();
-    auto &self = owl::getProgramData<Cones::DD>();
-    int primID = optixGetPrimitiveIndex();
-    
-    float t_hit = optixGetRayTmax();
-
-    vec3f ro = optixGetObjectRayOrigin();
-    vec3f rd = optixGetObjectRayDirection();
-    
-    const vec2i pidx
-      = self.indices
-      ? self.indices[primID]
-      : (2 * primID + vec2i(0, 1));
-    
-      const auto p0 = self.vertices[pidx.x];
-      const auto p1 = self.vertices[pidx.y];
-
       const float ra = self.radii[pidx.x];
       const float rb = self.radii[pidx.y];
+      box3f aBox(pa-ra,pa+ra);
+      box3f bBox(pb-ra,pb+rb);
+    
+      bounds.lower = min(aBox.lower,bBox.lower);
+      bounds.upper = max(aBox.upper,bBox.upper);
+    }
+
+    /*! closest-hit program - doesn't do anything because we do all the
+      work in IS prog, but needs to exist to make optix happy */
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &rt)
+    {
+      /* nothing - already set in isec */
+    }
+    
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &rt)
+    {
+      /* nothing - already set in isec */
+    }
+  
+    /*! largely stolen from VisRTX */
+    static inline __rtc_device
+    void intersect(rtc::TraceInterface &rt)
+    {
+      Ray &ray    = *(Ray*)rt.getPRD();
+      const auto &self
+        = *(Cones::DD*)rt.getProgramData();
+      int primID = rt.getPrimitiveIndex();
+        
+      render::HitAttributes hitData;
+      const DeviceMaterial &material
+        = OptixGlobals::get(rt).materials[self.materialID];
+      hitData.t = ray.tMax;
+      float ray_tmin = rt.getRayTmin();
+      
+      vec3f ro  = rt.getObjectRayOrigin();
+      vec3f rd  = rt.getObjectRayDirection();
+    
+      const vec2i idx
+        = self.indices
+        ? self.indices[primID]
+        : (2 * primID + vec2i(0, 1));
+    
+      const auto p0 = (const vec3f &)self.vertices[idx.x];
+      const auto p1 = (const vec3f &)self.vertices[idx.y];
+
+      const float ra = self.radii[idx.x];
+      const float rb = self.radii[idx.y];
 
       const vec3f ba = p1 - p0;
       const vec3f oa = ro - p0;
@@ -83,30 +104,85 @@ namespace barney {
       const float m2 = dot(ob, ba);
       const float m3 = dot(rd, ba);
 
+      float lerp_t = 0.f;
+
+      // interpolator for anari-style color/attribute interpolation
+      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
+      {
+        const vec4f value_a = attrib.fromArray.valueAt(idx.x);
+        const vec4f value_b = attrib.fromArray.valueAt(idx.y);
+        const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
+        // printf("lerp (%i) %f %f %f and (%i) %f %f %f f %f\n",
+        //        idx.x,
+        //        value_a.x,
+        //        value_a.y,
+        //        value_a.z,
+        //        idx.y,
+        //        value_b.x,
+        //        value_b.y,
+        //        value_b.z,
+        //        lerp_t);
+        return ret;
+      };
+
       if (m1 < 0.0f) {
         if (length2(oa * m3 - rd * m1) < (ra * ra * m3 * m3)) {
-          // reportIntersection(-m1 / m3, -ba * inversesqrt(m0), 0.f);
           float t = -m1 / m3;
-          vec3f N = normalize(-ba * inversesqrt(m0));
-        vec3f P = (vec3f)optixGetWorldRayOrigin()+t*(vec3f)optixGetWorldRayDirection();
-          // float u = 0.f;
-          vec3f geometryColor(NAN,NAN,NAN);
-          ray.setHit(P,N,t,self.material,vec2f(NAN),geometryColor);
-          optixReportIntersection(t,0);
+          if (t > ray_tmin && t < hitData.t) {
+            lerp_t = 0.f;
+            vec3f N = normalize(-ba * inversesqrt(m0));
+            vec3f P = (vec3f)ro+t*rd;
+
+            hitData.primID          = primID;
+            hitData.t               = t;
+            hitData.objectPosition  = P;
+            hitData.objectNormal    = N;
+            hitData.worldPosition
+              = rt.transformPointFromObjectToWorldSpace(P);
+            hitData.worldNormal
+              = normalize(rt.transformNormalFromObjectToWorldSpace(N));
+          
+            // trigger the anari attribute evaluation
+            self.setHitAttributes(hitData,interpolator,ray.dbg);
+          
+            // ... store the hit in the ray, rqs-style ...
+            material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+          
+            // .... and let optix know we did have a hit.
+            rt.reportIntersection(hitData.t, 0);
+            return;
+          }
         }
       } else if (m2 > 0.0f) {
         if (length2(ob * m3 - rd * m2) < (rb * rb * m3 * m3)) {
-          // reportIntersection(-m2 / m3, ba * inversesqrt(m0), 1.f);
+          lerp_t = 1.f;
           float t = -m2 / m3;
-          vec3f N = normalize(ba * inversesqrt(m0));
-        vec3f P = (vec3f)optixGetWorldRayOrigin()+t*(vec3f)optixGetWorldRayDirection();
-          // float u = 1.f;
-          vec3f geometryColor(NAN,NAN,NAN);
-          ray.setHit(P,N,t,self.material,vec2f(NAN),geometryColor);
-          optixReportIntersection(t,0);
+          if (t > ray_tmin && t < hitData.t) {
+            vec3f N = normalize(ba * inversesqrt(m0));
+            vec3f P = (vec3f)ro+t*rd;
+
+            hitData.primID          = primID;
+            hitData.t               = t;
+            hitData.objectPosition  = P;
+            hitData.objectNormal    = N;
+            hitData.worldPosition
+              = rt.transformPointFromObjectToWorldSpace(P);
+            hitData.worldNormal
+              = normalize(rt.transformNormalFromObjectToWorldSpace(N));
+                    
+            // trigger the anari attribute evaluation
+            self.setHitAttributes(hitData,interpolator,ray.dbg);
+          
+            // ... store the hit in the ray, rqs-style ...
+            material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+          
+            // .... and let optix know we did have a hit.
+            rt.reportIntersection(hitData.t, 0);
+            return;
+          }
         }
       }
-
+      
       const float m4 = dot(rd, oa);
       const float m5 = dot(oa, oa);
       const float rr = ra - rb;
@@ -120,16 +196,35 @@ namespace barney {
       if (h < 0.0f)
         return;
 
-      const float t = (-k1 - sqrt(h)) / k2;
+      const float t = (-k1 - sqrtf(h)) / k2;
       const float y = m1 + t * m3;
-      if (y > 0.0f && y < m0) {
+      if (y > 0.0f && y < m0 && t > ray_tmin && t < hitData.t) {
         vec3f N = normalize(m0 * (m0 * (oa + t * rd) + rr * ba * ra) - ba * hy * y);
-        vec3f P = (vec3f)optixGetWorldRayOrigin()+t*(vec3f)optixGetWorldRayDirection();
-        // float u = y / m0;
-        vec3f geometryColor(NAN,NAN,NAN);
-        ray.setHit(P,N,t,self.material,vec2f(NAN),geometryColor);
-        optixReportIntersection(t,0);
+        vec3f P = (vec3f)ro+t*rd;
+        lerp_t = y / m0;
+        //lerp_t = dot(P-p1,p0-p1)/dot(p0-p1,p0-p1);
+        lerp_t = clamp(lerp_t,0.f,1.f);
+        hitData.primID          = primID;
+        hitData.t               = t;
+        hitData.objectPosition  = P;
+        hitData.objectNormal    = N;
+        hitData.worldPosition
+          = rt.transformPointFromObjectToWorldSpace(P);
+        hitData.worldNormal
+          = normalize(rt.transformNormalFromObjectToWorldSpace(N));
+        
+        // trigger the anari attribute evaluation
+        self.setHitAttributes(hitData,interpolator,ray.dbg);
+        
+        // ... store the hit in the ray, rqs-style ...
+        material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+        
+        // .... and let optix know we did have a hit.
+        rt.reportIntersection(hitData.t, 0);
       }
-  }
-}
+    }
+  };
+  
+  RTC_EXPORT_USER_GEOM(Cones,Cones::DD,ConesPrograms,false,false);
+} // ::BARNEY_NS
 

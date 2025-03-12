@@ -20,22 +20,6 @@
 #ifdef __GNUC__
 #   include <unistd.h>
 #endif
-// inline void barneyRaise_impl(std::string str)
-// {
-//   fprintf(stderr,"%s\n",str.c_str());
-// #ifdef WIN32
-//   if (IsDebuggerPresent())
-//     DebugBreak();
-//   else
-//     throw std::runtime_error(str);
-// #else
-// #ifndef NDEBUG
-//   std::string bt = ::detail::backtrace();
-//   fprintf(stderr,"%s\n",bt.c_str());
-// #endif
-//   raise(SIGINT);
-// #endif
-// }
 
 #ifdef _WIN32
 #include <windows.h>

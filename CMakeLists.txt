@@ -16,7 +16,7 @@
 
 set(BARNEY_VERSION_MAJOR 0)
 set(BARNEY_VERSION_MINOR 9)
-set(BARNEY_VERSION_PATCH 0)
+set(BARNEY_VERSION_PATCH 4)
 
 cmake_minimum_required(VERSION 3.12)
 
@@ -27,6 +27,7 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.18)
 endif()
 cmake_policy(SET CMP0079 NEW)
 cmake_policy(SET CMP0076 NEW)
+cmake_policy(SET CMP0063 NEW)
 
 #if (WIN32)
 #  # MPI is off by default on windows. whoever wants to use mpi under windows

@@ -43,21 +43,15 @@ namespace BARNEY_NS {
     
     void commit() override;
     
-    // static OWLGeomType createGeomType(DevGroup *devGroup);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     bool setData(const std::string &member, const Data::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
-    PODData::SP colors;
     PODData::SP vertices;
     PODData::SP indices;
     PODData::SP radii;
-    bool colorPerVertex  = 0;
-    bool radiusPerVertex = 0;
-    
   };
 
-}
+} // ::BARNEY_NS

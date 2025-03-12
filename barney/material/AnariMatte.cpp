@@ -50,8 +50,10 @@ namespace BARNEY_NS {
     {
       if (HostMaterial::setString(member,value)) return true;
 
-      if (member == "color") 
-        { color.set(value); return true; }
+      if (member == "color") {
+        color.set(value);
+        return true;
+      }
       
       return false;
     }
