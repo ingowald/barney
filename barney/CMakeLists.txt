@@ -274,21 +274,26 @@ if (BARNEY_BACKEND_EMBREE)
 
   # ----------- barney_embree -----------
   add_library(barney_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
-  target_link_libraries(barney_embree_programs PUBLIC barney_config barney_rtc_embree)
-  target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
+  target_link_libraries(barney_embree_programs PRIVATE barney_config barney_rtc_embree)
+  target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1 -DBARNEY_RTC_EMBREE=1)
   set_library_properties(barney_embree_programs)
 
   add_library(barney_embree STATIC ${HOST_SOURCES})
-  target_link_libraries(barney_embree PUBLIC barney_config barney_rtc_embree)
+  target_link_libraries(barney_embree PUBLIC barney_config)
+  target_link_libraries(barney_embree PRIVATE barney_rtc_embree)
   target_link_libraries(barney_embree PRIVATE
     barney_embree_programs
     barney_config
     $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
+  target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_RTC_EMBREE=1)
   set_library_properties(barney_embree)
 
   if (BARNEY_MPI)
     add_library(barney_mpi_embree ${MPI_SOURCES})
+    target_compile_definitions(barney_mpi_embree PRIVATE -DBARNEY_RTC_EMBREE=1)
+    target_link_libraries(barney_mpi_embree PUBLIC barney_config embree_local)
     target_link_libraries(barney_mpi_embree PRIVATE barney_embree MPI::MPI_CXX)
+    set_library_properties(barney_mpi_embree)
   endif()
 
   # # ----------- barney_embree -----------
@@ -380,11 +385,17 @@ if (BARNEY_BACKEND_OPTIX)
 endif()
 # link embree backend (if enabled) to all frontends
 if (BARNEY_BACKEND_EMBREE)
-  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_embree>)
-  target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_embree>)
+  target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree>)
+  target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree>)
   if (BARNEY_MPI)
-    target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_embree>)
-    target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_embree>)
+    target_link_libraries(barney_mpi PRIVATE
+      $<BUILD_INTERFACE:barney_mpi_embree>)
+    target_link_libraries(barney_mpi_static PRIVATE
+      $<BUILD_INTERFACE:barney_mpi_embree>)
   endif()
+endif()
+set_library_properties(barney)
+if (BARNEY_MPI)
+  set_library_properties(barney_mpi)
 endif()
 

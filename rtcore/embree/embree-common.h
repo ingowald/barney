@@ -25,6 +25,7 @@
 namespace rtc {
   namespace embree {
 
+    using namespace embree_for_barney;
     using namespace owl::common;    
     
     // ------------------------------------------------------------------
