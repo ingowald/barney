@@ -90,6 +90,10 @@ if (BARNEY_BACKEND_EMBREE)
   target_compile_definitions(embree_local INTERFACE TASKING_INTERNAL)
   target_include_directories(embree_local INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common)
+  target_include_directories(embree PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common)
+  target_include_directories(tasking PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common)
   if (WIN32)
     target_compile_options(embree_local 
       INTERFACE
