@@ -348,6 +348,14 @@ void bnSetInstances(BNModel model,
                     BNTransform *instanceTransforms,
                     int numInstances);
 
+/*! allows for setting one of 5 attribute arrays for the given slot's
+    model. */
+BARNEY_API
+void bnSetInstanceAttributes(BNModel model,
+                             int whichSlot,
+                             int whichAttribute,
+                             BNData data);
+
 // ==================================================================
 // scene content
 // ==================================================================

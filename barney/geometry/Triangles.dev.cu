@@ -34,6 +34,7 @@ namespace BARNEY_NS {
     {
       auto &ray = *(Ray *)rt.getPRD();
 
+      const World::DD &world = OptixGlobals::get(rt).world;
 #if NDEBUG
       bool dbg = false;
 #else
@@ -44,6 +45,7 @@ namespace BARNEY_NS {
       const float u = rt.getTriangleBarycentrics().x;
       const float v = rt.getTriangleBarycentrics().y;
       int primID = rt.getPrimitiveIndex();
+      int instID = rt.getInstanceIndex();
       vec3i triangle = self.indices[primID];
       vec3f v0 = self.vertices[triangle.x];
       vec3f v1 = self.vertices[triangle.y];
@@ -77,6 +79,7 @@ namespace BARNEY_NS {
       hitData.objectPosition  = osP;
       hitData.objectNormal    = osN;
       hitData.primID          = primID;
+      hitData.instID          = instID;
       hitData.t               = rt.getRayTmax();
       hitData.isShadowRay     = ray.isShadowRay;
 
@@ -89,12 +92,12 @@ namespace BARNEY_NS {
           const vec4f ret = (1.f-u-v)*value_a + u*value_b + v*value_c;
           return ret;
         };
-      self.setHitAttributes(hitData,interpolator,dbg);
+      self.setHitAttributes(hitData,interpolator,world,dbg);
 
       const DeviceMaterial &material
-        = OptixGlobals::get(rt).materials[self.materialID];
+        = world.materials[self.materialID];
       PackedBSDF bsdf
-        = material.createBSDF(hitData,OptixGlobals::get(rt).samplers,dbg);
+        = material.createBSDF(hitData,world.samplers,dbg);
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);
@@ -103,7 +106,7 @@ namespace BARNEY_NS {
         return;
       }
       else {
-        material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+        material.setHit(ray,hitData,world.samplers,ray.dbg);
       }
     }
   };

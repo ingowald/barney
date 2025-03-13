@@ -24,7 +24,7 @@
 namespace BARNEY_NS {
   namespace render {
 
-#define SCI_VIS_MODE 0
+#define SCI_VIS_MODE 1
     
 #define MAX_DIFFUSE_BOUNCES 3
     

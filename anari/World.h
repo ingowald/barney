@@ -37,6 +37,7 @@ struct World : public Object
   std::vector<Instance *> m_instances;
 
   BNModel m_barneyModel{nullptr};
+  std::array<BNData,Instance::Attributes::count> m_attributesData;
   helium::TimeStamp m_lastBarneyModelBuild{0};
 };
 

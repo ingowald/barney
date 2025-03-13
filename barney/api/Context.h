@@ -214,6 +214,9 @@ namespace barney_api {
                               Group **groups,
                               const affine3f *xfms,
                               int numInstances) = 0;
+    virtual void setInstanceAttributes(int slot,
+                                       int which,
+                                       Data::SP data) = 0;
     virtual void build(int slot) = 0;
     virtual void render(Renderer *renderer,
                         Camera *camera,
@@ -225,18 +228,6 @@ namespace barney_api {
     virtual ~Texture() = default;
   };
 
-  // struct Geometry : public Object {
-  //   virtual ~Geometry() = default;
-  // };
-  
-  // struct Volume : public Object {
-  //   virtual ~Volume() = default;
-  // };
-  
-  // struct ScalarField : public Object {
-  //   virtual ~Volume() = default;
-  // };
-  
   struct Context {
     virtual ~Context() = default;
 

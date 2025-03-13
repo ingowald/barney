@@ -52,10 +52,15 @@ namespace BARNEY_NS {
                       const affine3f *xfms,
                       int numInstances) override
     { getSlot(slot)->setInstances(groups,xfms,numInstances); }
+
+    void setInstanceAttributes(int slot,
+                               int which,
+                               Data::SP data) override
+    { getSlot(slot)->setInstanceAttributes(which,data?data->as<PODData>():PODData::SP{}); }
     
     void build(int slot) override
     { getSlot(slot)->build(); }
       
   };
 
-}
+} // ::BARNEY_NS

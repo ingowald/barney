@@ -70,15 +70,13 @@ namespace BARNEY_NS {
       dd.samplers  = slotContext->samplerRegistry->getDD(device);
       dd.materials = slotContext->materialRegistry->getDD(device);
 
+      for (int i=0;i<5;i++)
+        dd.instanceAttributes[i]
+          = instanceAttributes[i]
+          ? (const rtc::float4*)instanceAttributes[i]->getDD(device)
+          : nullptr;
       return dd;
     }
-
-
-    // const Sampler::DD *SamplerRegistry::getPointer(int owlDeviceID) const
-    // {
-    //   // return (Sampler::DD *)owlBufferGetPointer(buffer,owlDeviceID);
-    //   return (Sampler::DD *)owlBufferGetPointer(buffer,owlDeviceID);
-    // }    
 
     void World::set(const std::vector<QuadLight::DD> &quadLights)
     {

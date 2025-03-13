@@ -64,7 +64,6 @@ Geometry *Geometry::createInstance(
 
 void Geometry::commitParameters()
 {
-  m_attributes[0] = getParamObject<Array1D>("primitive.attribute0");
   m_attributes[1] = getParamObject<Array1D>("primitive.attribute1");
   m_attributes[2] = getParamObject<Array1D>("primitive.attribute2");
   m_attributes[3] = getParamObject<Array1D>("primitive.attribute3");
