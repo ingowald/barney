@@ -161,7 +161,7 @@ namespace barney_device {
       const Group *ag = inst->group();
       if (!ag) continue;
       BNGroup bg = 0;
-      if (barneyGroupForAnariGroup.find(ag) != barneyGroupForAnariGroup.end()) 
+      if (barneyGroupForAnariGroup.find(ag) == barneyGroupForAnariGroup.end()) 
         barneyGroupForAnariGroup[ag] = bg = ag->makeBarneyGroup(getContext());
       else
         bg = barneyGroupForAnariGroup[ag];

@@ -107,9 +107,13 @@ namespace BARNEY_NS {
     {
       switch(in.scope) {
       case GeometryAttribute::INVALID:
+        /* if the _geometry_ doesn't have an attribute set, it can
+           still come from an instance */
         if (instanceAttribute)
           out = rtc::load(instanceAttribute[hit.instID]);
-        /* nothing - leave default */
+        else 
+          /* nothing - leave default */
+          ;
         break;
       case GeometryAttribute::CONSTANT:
         out = rtc::load(in.value);

@@ -70,7 +70,7 @@ namespace BARNEY_NS {
 #ifndef NDEBUG
       printf("#bn: DeviceMaterial::createBSDF encountered an invalid "
              "device material type (%i); most likely this is the app"
-             " not having properly committed its material\n",(int)type);CY
+             " not having properly committed its material\n",(int)type);
 #endif
       return packedBSDF::Invalid();
     }

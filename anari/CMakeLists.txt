@@ -65,8 +65,8 @@ INTERFACE
 add_library(anari_library_barney SHARED ${BANARI_SOURCES})
 target_link_libraries(anari_library_barney PRIVATE
   $<BUILD_INTERFACE:banari-config>
-#  barney
-  barney_static
+#  barney_static
+  barney
   anari::helium
   anari::anari
 )
@@ -75,7 +75,8 @@ if (BARNEY_MPI)
   add_library(anari_library_barney_mpi SHARED ${BANARI_SOURCES})
   target_link_libraries(anari_library_barney_mpi PRIVATE
     $<BUILD_INTERFACE:banari-config>
-    barney_mpi_static
+#    barney_mpi_static
+    barney_mpi
     anari::helium
     anari::anari
   )

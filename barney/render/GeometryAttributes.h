@@ -47,8 +47,11 @@ namespace BARNEY_NS {
         };
         int/*Scope*/         scope;
       };
-        
-      vec4f       constant { 0.f,0.f,0.f,1.f };
+
+      /*! initialize host-side 'constant' value to 'NAN' to indicate
+          that they have not (yet) been set. This allows to then set
+          the device-side scopt to 'invalid' for such values */
+      vec4f       constant { NAN,NAN,NAN,NAN };
       PODData::SP perPrim   = 0;
       PODData::SP perVertex = 0;
     };

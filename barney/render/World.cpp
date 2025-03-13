@@ -109,7 +109,6 @@ namespace BARNEY_NS {
       this->envMapLight.light = envMapLight;
       this->envMapLight.xfm = xfm;
     }
-      
     
-  }
-}
+  } // ::BARNEY_NS::render
+} // ::BARNEY_NS

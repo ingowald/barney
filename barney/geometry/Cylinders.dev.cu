@@ -120,8 +120,11 @@ namespace BARNEY_NS {
         = *(Cylinders::DD*)rt.getProgramData();
       const World::DD &world = OptixGlobals::get(rt).world;
       Ray &ray    = *(Ray*)rt.getPRD();
-      bool dbg = 0; //ray.dbg;
-      
+#ifdef NDEBUG
+      bool dbg = 0;
+#else
+      bool dbg = ray.dbg;
+#endif      
       const vec2i idx = self.indices[primID];
       const vec3f v0  = self.vertices[idx.x];
       const vec3f v1  = self.vertices[idx.y];
@@ -238,7 +241,7 @@ namespace BARNEY_NS {
       hitData.primID          = primID;
       hitData.instID          = instID;
       hitData.t               = t_hit;
-    
+
       self.setHitAttributes(hitData,interpolator,world,ray.dbg);
 
       const DeviceMaterial &material
