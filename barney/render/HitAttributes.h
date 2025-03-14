@@ -47,13 +47,14 @@ namespace BARNEY_NS {
       
       vec4f color;
       vec4f attribute[numAttributes];
-      vec3f  worldPosition;
-      vec3f  objectPosition;
-      vec3f  worldNormal;
-      vec3f  objectNormal;
-      int    primID;
-      float  t;
-      bool   isShadowRay = false;
+      vec3f worldPosition;
+      vec3f objectPosition;
+      vec3f worldNormal;
+      vec3f objectNormal;
+      int   primID;
+      int   instID;
+      float t;
+      bool  isShadowRay = false;
     };
 
     inline __rtc_device HitAttributes::HitAttributes()

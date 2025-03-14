@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Light.h"
+#include "barney_math.h"
 // std
 #include <iostream>
 

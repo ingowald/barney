@@ -129,6 +129,9 @@ namespace rtc {
       inline __device__ int getPrimitiveIndex() const
       { return optixGetPrimitiveIndex(); }
       
+      inline __device__ int getInstanceIndex() const
+      { return optixGetInstanceIndex(); }
+      
       inline __device__ float getRayTmax() const
       { return optixGetRayTmax(); }
       

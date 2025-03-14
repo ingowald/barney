@@ -90,6 +90,21 @@ namespace barney_device {
     o << "(" << v.x << "," << v.y << "," << v.z << ")";
     return o;
   }
+  inline std::ostream &operator<<(std::ostream &o, bn_float4 v)
+  {
+    o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")";
+    return o;
+  }
+  inline std::ostream &operator<<(std::ostream &o, anari::math::float3 v)
+  {
+    o << "(" << v.x << "," << v.y << "," << v.z << ")";
+    return o;
+  }
+  inline std::ostream &operator<<(std::ostream &o, anari::math::float4 v)
+  {
+    o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")";
+    return o;
+  }
 } // namespace barney_device
 
 ///////////////////////////////////////////////////////////////////////////////

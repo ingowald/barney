@@ -52,7 +52,7 @@ namespace BARNEY_NS {
       if (dir.y == 0.f) dir.y = 1e-6f;
       if (dir.z == 0.f) dir.z = 1e-6f;
 
-      ti.traceRay(lp.world,
+      ti.traceRay(lp.accel,
                   ray.org,
                   dir,
                   0.f,ray.tMax,
