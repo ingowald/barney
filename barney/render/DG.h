@@ -49,20 +49,20 @@ namespace BARNEY_NS {
     };
 
     struct EvalRes {
-      inline __both__ EvalRes() {}
-      inline __both__ EvalRes(vec3f v, float p) : value(v),pdf(p) {}
-      static inline __both__ EvalRes zero() { return { vec3f(0.f),0.f }; }
-      inline __both__ bool valid() const    { return pdf > 0.f; };// && !isinf(pdf) }
+      inline __rtc_device EvalRes() {}
+      inline __rtc_device EvalRes(vec3f v, float p) : value(v),pdf(p) {}
+      static inline __rtc_device EvalRes zero() { return { vec3f(0.f),0.f }; }
+      inline __rtc_device bool valid() const    { return pdf > 0.f; };// && !isinf(pdf) }
       vec3f value;
       float pdf;
     };
 
 
     struct SampleRes {
-      // inline __both__ SampleRes() {}
-      // inline __both__ SampleRes(vec3f v, float p) : value(v),pdf(p) {}
-      static inline __both__ SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
-      inline __both__ bool valid() const    { return pdf > 0.f; };// && !isinf(pdf); }
+      // inline __rtc_device SampleRes() {}
+      // inline __rtc_device SampleRes(vec3f v, float p) : value(v),pdf(p) {}
+      static inline __rtc_device SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
+      inline __rtc_device bool valid() const    { return pdf > 0.f; };// && !isinf(pdf); }
       vec3f weight;
       vec3f wi;
       int   type;
@@ -80,7 +80,7 @@ namespace BARNEY_NS {
         GLOSSY,
         VOLUME,
       } Type;
-      inline __both__ bool valid() const    { return pdf > 0.f; }
+      inline __rtc_device bool valid() const    { return pdf > 0.f; }
 
       vec3f f_r;
       vec3f dir;
@@ -92,7 +92,7 @@ namespace BARNEY_NS {
     };
 
 
-    inline __both__
+    inline __rtc_device
     vec3f sampleCosineWeightedHemisphere(vec3f Ns, Random &random)
     {
       while (1) {
@@ -102,33 +102,33 @@ namespace BARNEY_NS {
       }
     }
 
-    inline __both__ float pbrt_clampf(float f, float lo, float hi)
+    inline __rtc_device float pbrt_clampf(float f, float lo, float hi)
     { return max(lo,min(hi,f)); }
 
-    inline __both__ float pbrtSphericalTheta(const vec3f &v)
+    inline __rtc_device float pbrtSphericalTheta(const vec3f &v)
     {
       return acosf(pbrt_clampf(v.z, -1.f, 1.f));
     }
 
-    inline __both__ float pbrtSphericalPhi(const vec3f &v)
+    inline __rtc_device float pbrtSphericalPhi(const vec3f &v)
     {
       float p = atan2f(v.y, v.x);
       return (p < 0.f) ? (p + float(2.f * M_PI)) : p;
     }
 
-    inline __both__
+    inline __rtc_device
     float luminance(vec3f c)
     {
       return 0.212671f*c.x + 0.715160f*c.y + 0.072169f*c.z;
     }
     
-    inline __both__
+    inline __rtc_device
     vec3f reflect(vec3f v, vec3f n)
     {
       return v - (2.f*dot(v,n))*n;
     }
     
-    inline __both__
+    inline __rtc_device
     vec3f refract(vec3f v, vec3f n, float eta)
     {
       float dotValue = dot(n,v);
@@ -138,12 +138,12 @@ namespace BARNEY_NS {
         : vec3f(0.f);
     }
 
-    inline __both__
+    inline __rtc_device
     bool all_zero(vec3f v) { return v.x==0 && v.y==0 && v.z == 0; }
     
 
 
-    inline __both__
+    inline __rtc_device
     vec3f cartesian(float phi, float sinTheta, float cosTheta)
     {
       float sinPhi, cosPhi;
@@ -160,7 +160,7 @@ namespace BARNEY_NS {
                    cosTheta);
     }
 
-    inline __both__
+    inline __rtc_device
     vec3f cartesian(const float phi, const float cosTheta)
     {
       return cartesian(phi, cos2sin(cosTheta), cosTheta);
@@ -169,7 +169,7 @@ namespace BARNEY_NS {
 
 
 
-    inline __both__
+    inline __rtc_device
     vec3f cosineSampleHemisphere(const vec2f s)
     {
       const float phi = TWO_PI * s.x;
@@ -178,13 +178,13 @@ namespace BARNEY_NS {
       return cartesian(phi, sinTheta, cosTheta);
     }
 
-    inline __both__
+    inline __rtc_device
     float cosineSampleHemispherePDF(const vec3f &dir)
     {
       return dir.z * ONE_OVER_PI;
     }
 
-    inline __both__
+    inline __rtc_device
     float cosineSampleHemispherePDF(float cosTheta)
     {
       return cosTheta * ONE_OVER_PI;

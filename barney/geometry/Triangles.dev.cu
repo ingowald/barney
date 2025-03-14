@@ -58,8 +58,8 @@ namespace BARNEY_NS {
           + (      v) * self.normals[triangle.z];
         Ns = normalize(Ns);
 
-        if (dot(Ns,(vec3f)rt.getObjectRayDirection()) > 0.f)
-          Ns = n;
+        // if (dot(Ns,(vec3f)rt.getObjectRayDirection()) > 0.f)
+        //   Ns = n;
         
         n = Ns;
       }
@@ -106,7 +106,7 @@ namespace BARNEY_NS {
         return;
       }
       else {
-        material.setHit(ray,hitData,world.samplers,ray.dbg);
+        material.setHit(ray,hitData,world.samplers,dbg);
       }
     }
   };

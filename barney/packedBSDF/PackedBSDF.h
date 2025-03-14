@@ -21,6 +21,7 @@
 #include "barney/packedBSDF/NVisii.h"
 #include "barney/packedBSDF/fromOSPRay/Glass.h"
 #include "barney/packedBSDF/Phase.h"
+#include "barney/packedBSDF/Lambertian.h"
 
 namespace BARNEY_NS {
   namespace render {
@@ -35,14 +36,16 @@ namespace BARNEY_NS {
         /* phase function */
         TYPE_Phase,
         TYPE_Glass,
+        TYPE_Lambertian,
         TYPE_NVisii
       } Type;
       struct Data {
         union {
-          packedBSDF::Phase  phase;
+          packedBSDF::Phase      phase;
+          packedBSDF::Lambertian lambertian;
           // packedBSDF::VisRTX visRTX;
-          packedBSDF::Glass  glass;
-          packedBSDF::NVisii nvisii;
+          packedBSDF::Glass      glass;
+          packedBSDF::NVisii     nvisii;
         };
       } data;
 
@@ -59,6 +62,8 @@ namespace BARNEY_NS {
       { type = TYPE_NVisii; data.nvisii = nvisii; }
       inline __rtc_device PackedBSDF(const packedBSDF::Glass  &glass)
       { type = TYPE_Glass; data.glass = glass; }
+      inline __rtc_device PackedBSDF(const packedBSDF::Lambertian  &lambertian)
+      { type = TYPE_Lambertian; data.lambertian = lambertian; }
       
       inline __rtc_device
       EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
@@ -90,6 +95,8 @@ namespace BARNEY_NS {
         return data.nvisii.eval(dg,w_i,dbg);
       if (type == TYPE_Glass)
         return data.glass.eval(dg,w_i,dbg);
+      if (type == TYPE_Lambertian)
+        return data.lambertian.eval(dg,w_i,dbg);
       return EvalRes();
     }
     
@@ -100,6 +107,8 @@ namespace BARNEY_NS {
         return data.nvisii.pdf(dg,w_i,dbg);
       if (type == TYPE_Glass)
         return data.glass.pdf(dg,w_i,dbg);
+      if (type == TYPE_Lambertian)
+        return data.lambertian.pdf(dg,w_i,dbg);
       if (type == TYPE_Phase)
         return data.phase.pdf(dg,w_i,dbg);
       return 0.f;
@@ -133,6 +142,8 @@ namespace BARNEY_NS {
         return data.nvisii.scatter(scatter,dg,random,dbg);
       if (type == TYPE_Glass)
         return data.glass.scatter(scatter,dg,random,dbg);
+      if (type == TYPE_Lambertian)
+        return data.lambertian.scatter(scatter,dg,random,dbg);
     }
     
   }
