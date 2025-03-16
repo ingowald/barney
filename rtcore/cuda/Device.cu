@@ -14,33 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-/*! \file rtcore/TraceInterface.h \brief Defines the interface with
-    which pipeline/device programs (closest hit, anythit, etc) can
-    talk to to the ray tracing pipeline (eg, to ask for primitive ID,
-    call ignoreIntersction(), etc */
+#include "rtcore/cuda/Device.h"
 
-#pragma once
-
-#if BARNEY_RTC_OPTIX
-# include "rtcore/optix/TraceInterface.h"
 namespace rtc {
-  using rtc::optix::TraceInterface;
-}
-#endif
+  namespace cuda {
 
-#if BARNEY_RTC_EMBREE
-# include "rtcore/embree/TraceInterface.h"
-namespace rtc {
-  using rtc::embree::TraceInterface;
-  using namespace rtc::embree;
+  }
 }
-#endif
-
-#if BARNEY_RTC_CUDA
-# include "rtcore/cuda/TraceInterface.h"
-namespace rtc {
-  using rtc::cuda::TraceInterface;
-  using namespace rtc::cuda;
-}
-#endif
-

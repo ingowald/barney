@@ -37,6 +37,13 @@
 #if BARNEY_RTC_EMBREE
 #  define BARNEY_NS barney_embree
 #endif
+#if BARNEY_RTC_CUDA
+#  define BARNEY_NS barney_cuda
+#endif
+
+#ifndef BARNEY_NS
+# error "no backend defined !?"
+#endif
 
 namespace BARNEY_NS {
   

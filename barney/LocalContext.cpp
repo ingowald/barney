@@ -47,6 +47,21 @@ namespace barney_api {
     }
   } 
 #endif
+#if BARNEY_RTC_CUDA
+  extern "C" {
+    Context *createContext_cuda(const std::vector<int> &dgIDs,
+                                 int numGPUs, const int *_gpuIDs)
+    {
+      if (numGPUs == -1)
+        cudaGetDeviceCount(&numGPUs);
+      std::vector<int> gpuIDs;
+      for (int i=0;i<numGPUs;i++)
+        gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
+      Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+      return ctx;
+    }
+  } 
+#endif
 }
 
 namespace BARNEY_NS {

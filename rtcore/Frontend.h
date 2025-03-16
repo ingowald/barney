@@ -95,3 +95,44 @@ namespace rtc {
 // # endif
 }
 #endif
+
+
+
+
+
+#if BARNEY_RTC_CUDA
+# include "rtcore/cuda/Device.h"
+# include "rtcore/cuda/Geom.h" 
+# include "rtcore/cuda/Group.h" 
+# include "rtcore/cudaCommon/Texture.h"
+# include "rtcore/cudaCommon/TextureData.h"
+# include "rtcore/cudaCommon/ComputeKernel.h"
+
+namespace rtc {
+  namespace cuda {
+    /*! forward declaration to allow defining functions with it - only
+        device programs should ever include the 'real'
+        rtcore/TraceInterface.h */
+    struct TraceInterface;
+  }
+  using namespace rtc::cuda;
+
+  using rtc::cuda_common::ComputeKernel1D;
+  using rtc::cuda_common::ComputeKernel2D;
+  using rtc::cuda_common::ComputeKernel3D;
+
+  using rtc::cuda_common::float2;
+  using rtc::cuda_common::float3;
+  using rtc::cuda_common::float4;
+  using rtc::cuda_common::int2;
+  using rtc::cuda_common::int3;
+  using rtc::cuda_common::int4;
+  
+  using rtc::cuda_common::load;
+
+  using rtc::cuda::TraceInterface;
+
+# define RTC_DEVICE_CODE 1
+  
+}
+#endif

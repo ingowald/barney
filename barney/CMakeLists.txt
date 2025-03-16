@@ -290,22 +290,34 @@ if (BARNEY_BACKEND_EMBREE)
     add_library(barney_mpi_embree ${MPI_SOURCES})
     target_link_libraries(barney_mpi_embree PRIVATE barney_embree MPI::MPI_CXX)
   endif()
+endif()
+    
 
-  # # ----------- barney_embree -----------
-  # add_library(barney_embree_host STATIC ${HOST_SOURCES})
-  # target_link_libraries(barney_embree PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
 
-  # target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
-  # target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
-  # target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
-  # target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
-  # target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
-  # target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
+# ------------------------------------------------------------------
+# cuda backend: instantiates all the barney classes, device
+# programs, etcpp - except the api itself - in an cuda configuration
+# that'll run on the gpu, but without requiring optix
+# ------------------------------------------------------------------
+if (BARNEY_BACKEND_CUDA)
+  # ----------- barney_cuda -----------
+  add_library(barney_cuda_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
+  target_link_libraries(barney_cuda_programs PUBLIC barney_config barney_rtc_cuda)
+  target_compile_definitions(barney_cuda_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
+  set_library_properties(barney_cuda_programs)
 
-  # if (BARNEY_MPI)
-  #   add_library(barney_mpi_embree STATIC ${MPI_SOURCES})
-  #   target_link_libraries(barney_mpi_embree PUBLIC barney_embree)
-  # endif()
+  add_library(barney_cuda STATIC ${HOST_SOURCES})
+  target_link_libraries(barney_cuda PUBLIC barney_config barney_rtc_cuda)
+  target_link_libraries(barney_cuda PRIVATE
+    barney_cuda_programs
+    barney_config
+    $<BUILD_INTERFACE:cuBQL_cuda_float3_static>)
+  set_library_properties(barney_cuda)
+
+  if (BARNEY_MPI)
+    add_library(barney_mpi_cuda ${MPI_SOURCES})
+    target_link_libraries(barney_mpi_cuda PRIVATE barney_cuda MPI::MPI_CXX)
+  endif()
 endif()
     
 
@@ -385,6 +397,15 @@ if (BARNEY_BACKEND_EMBREE)
   if (BARNEY_MPI)
     target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_embree>)
     target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_embree>)
+  endif()
+endif()
+# link cuda backend (if enabled) to all frontends
+if (BARNEY_BACKEND_CUDA)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_cuda>)
+  target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_cuda>)
+  if (BARNEY_MPI)
+    target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
+    target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
   endif()
 endif()
 

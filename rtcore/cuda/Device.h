@@ -14,33 +14,38 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-/*! \file rtcore/TraceInterface.h \brief Defines the interface with
-    which pipeline/device programs (closest hit, anythit, etc) can
-    talk to to the ray tracing pipeline (eg, to ask for primitive ID,
-    call ignoreIntersction(), etc */
-
 #pragma once
 
-#if BARNEY_RTC_OPTIX
-# include "rtcore/optix/TraceInterface.h"
-namespace rtc {
-  using rtc::optix::TraceInterface;
-}
-#endif
+#include "rtcore/cudaCommon/Device.h"
 
-#if BARNEY_RTC_EMBREE
-# include "rtcore/embree/TraceInterface.h"
 namespace rtc {
-  using rtc::embree::TraceInterface;
-  using namespace rtc::embree;
-}
-#endif
+  namespace cuda {
 
-#if BARNEY_RTC_CUDA
-# include "rtcore/cuda/TraceInterface.h"
-namespace rtc {
-  using rtc::cuda::TraceInterface;
-  using namespace rtc::cuda;
-}
-#endif
+    using cuda_common::Texture;
+    using cuda_common::TextureData;
+    using cuda_common::SetActiveGPU;
 
+    struct Buffer;
+    struct Device;
+    struct Geom;
+    struct GeomType;
+    
+    struct TraceKernel2D {
+      TraceKernel2D(Device *device,
+                    const std::string &ptxCode,
+                    const std::string &kernelName,
+                    size_t sizeOfLP);
+      void launch(vec2i launchDims,
+                  const void *kernelData);
+      Device *const device;
+    };
+    
+    struct Device : public cuda_common::Device{
+      Device(int physicalGPU)
+        : cuda_common::Device(physicalGPU)
+      {}
+      
+    };
+
+  }
+}

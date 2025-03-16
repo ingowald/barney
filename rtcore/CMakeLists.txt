@@ -195,6 +195,30 @@ else()
 endif()
 
 
+# ==================================================================
+if (BARNEY_BACKEND_CUDA)
+  message("ENabling native cuda backend")
+  add_library(barney_rtc_cuda STATIC
+    cuda/Device.h
+    cuda/Device.cu
+    )
+  target_link_libraries(barney_rtc_cuda PUBLIC
+    barney_rtc_config
+    barney_rtc_cuda_common
+    owl_static
+    )
+  target_compile_definitions(barney_rtc_cuda
+    PUBLIC -DBARNEY_RTC_CUDA=1)
+else()
+  add_library(barney_rtc_cuda INTERFACE) # DUMMY!
+endif()
+
+
+
+
+
+# ==================================================================
+# ==================================================================
 add_library(barney_rtc INTERFACE
   )
 if (BARNEY_BACKEND_OPTIX)
@@ -202,6 +226,9 @@ if (BARNEY_BACKEND_OPTIX)
 endif()
 if (BARNEY_BACKEND_EMBREE)
   target_link_libraries(barney_rtc INTERFACE barney_rtc_embree)
+endif()
+if (BARNEY_BACKEND_CUDA)
+  target_link_libraries(barney_rtc INTERFACE barney_rtc_cuda)
 endif()
 
 

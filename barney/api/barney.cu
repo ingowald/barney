@@ -58,6 +58,11 @@ namespace barney_api {
     createContext_optix(const std::vector<int> &dgIDs,
                         int numGPUs, const int *gpuIDs);
 #endif
+#if BARNEY_BACKEND_CUDA
+    barney_api::Context *
+    createContext_cuda(const std::vector<int> &dgIDs,
+                       int numGPUs, const int *gpuIDs);
+#endif
 #if BARNEY_MPI
 # if BARNEY_BACKEND_EMBREE
     barney_api::Context *
@@ -792,6 +797,8 @@ namespace barney_api {
       if (_gpuIDs != nullptr) {
 #if BARNEY_BACKEND_OPTIX
         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
+#elif BARNEY_BACKEND_CUDA
+        return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
 #else
         throw std::runtime_error
           ("explicitly asked for GPU backend, "
@@ -810,6 +817,15 @@ namespace barney_api {
         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
       } catch (std::exception &e) {
         std::cerr << "#barney(warn): could not create optix backend (reason: "
+                  << e.what() << ")" << std::endl;
+      }
+#endif
+      
+#if BARNEY_BACKEND_CUDA
+      try {
+        return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
+      } catch (std::exception &e) {
+        std::cerr << "#barney(warn): could not create cuda backend (reason: "
                   << e.what() << ")" << std::endl;
       }
 #endif
