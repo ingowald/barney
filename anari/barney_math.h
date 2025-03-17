@@ -14,6 +14,7 @@
 // std
 #include <cmath>
 #include <cstring> // for std::memcpy()
+#include <iostream>
 #ifdef __CUDACC__
 #include <cuda/std/limits>
 #endif
@@ -84,6 +85,11 @@ namespace barney_device {
     math::int3 lower, upper;
   };
 
+  inline std::ostream &operator<<(std::ostream &o, bn_float3 v)
+  {
+    o << "(" << v.x << "," << v.y << "," << v.z << ")";
+    return o;
+  }
 } // namespace barney_device
 
 ///////////////////////////////////////////////////////////////////////////////

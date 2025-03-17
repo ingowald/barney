@@ -100,7 +100,7 @@ namespace BARNEY_NS {
         std::cout << "#bn: creating (at least one of) material type '" << type << "'" << std::endl;
       }
 #endif
-      if (type == "AnariMatte")
+      if (type == "AnariMatte" || type == "matte")
         return std::make_shared<AnariMatte>(slotContext); 
       if (type == "physicallyBased" || type == "AnariPBR")
         return std::make_shared<AnariPBR>(slotContext); 

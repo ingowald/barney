@@ -16,31 +16,47 @@
 
 #pragma once
 
-#include "rtcore/common/rtcore-common.h"
-#include "embree4/rtcore.h"
+#include "rtcore/cuda/Device.h"
+#include "rtcore/cuda/Buffer.h"
 
-#define __rtc_device /* ignore - for embree device we use all cpu */
-#define __rtc_both /* ignore - for embree device we use all cpu */
-    
 namespace rtc {
-  namespace embree {
+  namespace cuda {
 
-    using namespace embree_for_barney;
-    using namespace owl::common;    
+    struct GeomType;
     
-    // ------------------------------------------------------------------
-    // cuda vector types - we may NOT use the cuda vector types EVEN
-    // IF CUDA IS AVAILABLE, because the cuda vector types have
-    // alignemnt, and these here do not - meaning that if some files
-    // were to get compiled by nvcc and others by gcc/msvc we get
-    // nasty differences is interpreting the same types in differnt ways
-    // ------------------------------------------------------------------
-    struct float3 { float x; float y; float z; };
-    struct float4 { float x; float y; float z; float w; };
+    struct Geom {
+      Geom(GeomType *gt);
+      virtual ~Geom();
+      void setDD(const void *dd);
 
-    inline vec3f load(const ::rtc::embree::float3 &v) { return (const vec3f&)v; }
-    inline vec4f load(const ::rtc::embree::float4 &v) { return (const vec4f&)v; }
+      virtual void setPrimCount(int primCount) = 0;
+      virtual void setVertices(Buffer *vertices, int numVertices) = 0;
+      virtual void setIndices(Buffer *indices, int numIndices) = 0;
+      
+      GeomType *const gt;
+    };
+
+    struct TrianglesGeom : public cuda::Geom {
+      TrianglesGeom(GeomType *gt);
+      
+      void setPrimCount(int primCount) override { assert(0); }
+      void setVertices(Buffer *vertices, int numVertices) override;
+      void setIndices(Buffer *indices, int numIndices) override;
+
+      Buffer *vertices = 0;
+      int numVertices = 0;
+      Buffer *indices = 0;
+      int numIndices = 0;
+    };
+    struct UserGeom : public cuda::Geom {
+      UserGeom(GeomType *gt);
+      
+      void setPrimCount(int primCount);
+      void setVertices(Buffer *vertices, int numVertices) override
+      { assert(0); }
+      void setIndices(Buffer *indices, int numIndices) override
+      { assert(0); }
+    };
     
   }
 }
-

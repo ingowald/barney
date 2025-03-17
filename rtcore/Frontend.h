@@ -97,13 +97,12 @@ namespace rtc {
 #endif
 
 
-
-
-
 #if BARNEY_RTC_CUDA
 # include "rtcore/cuda/Device.h"
 # include "rtcore/cuda/Geom.h" 
+# include "rtcore/cuda/GeomType.h" 
 # include "rtcore/cuda/Group.h" 
+# include "rtcore/cuda/TraceKernel.h" 
 # include "rtcore/cudaCommon/Texture.h"
 # include "rtcore/cudaCommon/TextureData.h"
 # include "rtcore/cudaCommon/ComputeKernel.h"
@@ -132,7 +131,9 @@ namespace rtc {
 
   using rtc::cuda::TraceInterface;
 
-# define RTC_DEVICE_CODE 1
+# ifdef __CUDACC__
+#  define RTC_DEVICE_CODE 1
+# endif
   
 }
 #endif
