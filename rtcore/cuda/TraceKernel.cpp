@@ -14,24 +14,25 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
 #include "rtcore/cuda/Device.h"
+#include "rtcore/cuda/TraceKernel.h"
 
 namespace rtc {
   namespace cuda {
 
-    struct Buffer {
-      Buffer(Device *device,
-             size_t numBytes,
-             const void *initValues);
-      virtual ~Buffer();
-      
-      void *getDD() const { return d_data; }
-      void upload(const void *data, size_t numBytes, size_t offset=0);
-      void *d_data = 0;
-      Device *const device;
-    };
+    TraceKernel2D::TraceKernel2D(Device *device,
+                                 size_t sizeOfLP,
+                                 TraceLaunchFct traceLaunchFct)
+      : device(device),
+        sizeOfLP(sizeOfLP),
+        traceLaunchFct(traceLaunchFct)
+    {}
+        
+    void TraceKernel2D::launch(vec2i launchDims,
+                               const void *kernelData)
+    {
+      traceLaunchFct(device,launchDims,kernelData);
+    }
     
   }
 }

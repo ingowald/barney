@@ -14,24 +14,55 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
 #include "rtcore/cuda/Device.h"
+#include "rtcore/cuda/Geom.h"
+#include "rtcore/cuda/GeomType.h"
 
 namespace rtc {
   namespace cuda {
 
-    struct Buffer {
-      Buffer(Device *device,
-             size_t numBytes,
-             const void *initValues);
-      virtual ~Buffer();
+    Geom::Geom(GeomType *gt)
+      : gt(gt),
+        data(gt->sizeOfDD)
+    {}
+    
+    Geom::~Geom()
+    {}
+    
+    void Geom::setDD(const void *dd)
+    {
+      memcpy(data.data(),dd,data.size());
+    }
+
+
+
+    TrianglesGeom::TrianglesGeom(GeomType *gt)
+      : Geom(gt)
+    {}
       
-      void *getDD() const { return d_data; }
-      void upload(const void *data, size_t numBytes, size_t offset=0);
-      void *d_data = 0;
-      Device *const device;
-    };
+    void TrianglesGeom::setVertices(Buffer *vertices,
+                                    int numVertices)
+    {
+      this->vertices = vertices;
+      this->numVertices = numVertices;
+    }
+      
+    void TrianglesGeom::setIndices(Buffer *indices,
+                                   int numIndices)
+    {
+      this->indices = indices;
+      this->numIndices = numIndices;
+    }
+
+
+    UserGeom::UserGeom(GeomType *gt)
+      : Geom(gt)
+    {}
+      
+    void UserGeom::setPrimCount(int primCount)
+    {
+      this->primCount = primCount;
+    }
     
   }
 }

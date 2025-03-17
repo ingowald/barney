@@ -14,71 +14,57 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "rtcore/cudaCommon/Device.h"
 #include "rtcore/cuda/Device.h"
 #include "rtcore/cuda/Group.h"
-#include "rtcore/cuda/Geom.h"
-#include "rtcore/cuda/GeomType.h"
-#include "rtcore/cuda/Buffer.h"
 
 namespace rtc {
   namespace cuda {
 
-    Device::~Device()
-    {
-    }
+    Group::Group(Device *device)
+      : device(device)
+    {}
     
-    void Device::freeGroup(Group *g)
-    { delete g; }
+    Group::~Group()
+    {}
 
-    Denoiser *Device::createDenoiser()
-    { return nullptr; }
-
-    Buffer *Device::createBuffer(size_t numBytes,
-                                 const void *initValues)
+    InstanceGroup::InstanceGroup(Device *device,
+                                 const std::vector<Group *> &groups,
+                                 const std::vector<affine3f> &xfms)
+      : Group(device)
     {
-      return new Buffer(this,numBytes,initValues);
-    }
-
-    void Device::freeBuffer(Buffer *b)
-    {
-      delete b;
+      PING; throw std::runtime_error("not implemented");
     }
 
-    void Device::freeGeomType(GeomType *gt)
-    {
-      delete gt;
-    }
-
-    void Device::freeGeom(Geom *g)
-    {
-      delete g;
-    }
-      
-    Group *
-    Device::createTrianglesGroup(const std::vector<Geom *> &geoms)
-    {
-      return new TrianglesGeomGroup(this,geoms);
-    }
-      
-    Group *
-    Device::createUserGeomsGroup(const std::vector<Geom *> &geoms)
-    {
-      return new UserGeomGroup(this,geoms);
-    }
-    
-    Group *
-    Device::createInstanceGroup(const std::vector<Group *> &groups,
-                                const std::vector<affine3f> &xfms)
-    {
-      return new InstanceGroup(this,groups,xfms);
-    }
-
-    void Device::buildPipeline()
+    void InstanceGroup::buildAccel() 
     {
       PING; throw std::runtime_error("not implemented");
     }
     
-    void Device::buildSBT()
+    GeomGroup::GeomGroup(Device *device)
+      : Group(device)
+    {}
+
+    TrianglesGeomGroup::TrianglesGeomGroup(Device *device,
+                                           const std::vector<Geom *> &geoms)
+      : GeomGroup(device)
+    {
+      PING; throw std::runtime_error("not implemented");
+    }
+
+    void TrianglesGeomGroup::buildAccel() 
+    {
+      PING; throw std::runtime_error("not implemented");
+    }
+    
+    UserGeomGroup::UserGeomGroup(Device *device,
+                                 const std::vector<Geom *> &geoms)
+      : GeomGroup(device)
+    {
+      PING; throw std::runtime_error("not implemented");
+    }
+
+    void UserGeomGroup::buildAccel() 
     {
       PING; throw std::runtime_error("not implemented");
     }

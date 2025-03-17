@@ -34,6 +34,7 @@ namespace rtc {
       virtual void setIndices(Buffer *indices, int numIndices) = 0;
       
       GeomType *const gt;
+      std::vector<uint8_t> data;
     };
 
     struct TrianglesGeom : public cuda::Geom {
@@ -56,6 +57,8 @@ namespace rtc {
       { assert(0); }
       void setIndices(Buffer *indices, int numIndices) override
       { assert(0); }
+
+      int primCount = 0;
     };
     
   }

@@ -212,6 +212,16 @@ if (BARNEY_BACKEND_CUDA)
   add_library(barney_rtc_cuda STATIC
     cuda/Device.h
     cuda/Device.cu
+    cuda/Buffer.h
+    cuda/Buffer.cpp
+    cuda/Group.h
+    cuda/Group.cpp
+    cuda/Geom.h
+    cuda/Geom.cpp
+    cuda/TraceKernel.h
+    cuda/TraceKernel.cpp
+    cuda/GeomType.h
+    cuda/GeomType.cpp
     )
   target_link_libraries(barney_rtc_cuda PUBLIC
     barney_rtc_config

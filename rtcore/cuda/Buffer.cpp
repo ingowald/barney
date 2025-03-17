@@ -14,24 +14,34 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
 #include "rtcore/cuda/Device.h"
+#include "rtcore/cuda/Buffer.h"
+#include "rtcore/cudaCommon/Device.h"
 
 namespace rtc {
   namespace cuda {
 
-    struct Buffer {
-      Buffer(Device *device,
-             size_t numBytes,
-             const void *initValues);
-      virtual ~Buffer();
-      
-      void *getDD() const { return d_data; }
-      void upload(const void *data, size_t numBytes, size_t offset=0);
-      void *d_data = 0;
-      Device *const device;
-    };
+    Buffer::Buffer(Device *device,
+                   size_t numBytes,
+                   const void *initValues)
+      : device(device)
+    {
+      SetActiveGPU forDuration(device);
+      BARNEY_CUDA_CALL(Malloc((void**)&d_data,numBytes));
+      if (initValues)
+        BARNEY_CUDA_CALL(Memcpy(d_data,initValues,numBytes,cudaMemcpyDefault));
+    }
+
+    Buffer::~Buffer()
+    {
+      cudaFree(d_data);
+    }
     
+    void Buffer::upload(const void *data, size_t numBytes, size_t offset)
+    {
+      SetActiveGPU forDuration(device);
+      BARNEY_CUDA_CALL(Memcpy(((char *)d_data)+offset,data,numBytes,cudaMemcpyDefault));
+    }
+      
   }
 }

@@ -14,24 +14,47 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
 #include "rtcore/cuda/Device.h"
+#include "rtcore/cuda/GeomType.h"
+#include "rtcore/cuda/Geom.h"
 
 namespace rtc {
   namespace cuda {
 
-    struct Buffer {
-      Buffer(Device *device,
-             size_t numBytes,
-             const void *initValues);
-      virtual ~Buffer();
-      
-      void *getDD() const { return d_data; }
-      void upload(const void *data, size_t numBytes, size_t offset=0);
-      void *d_data = 0;
-      Device *const device;
-    };
+    GeomType::GeomType(Device *device,
+                       size_t sizeOfDD)
+      : device(device), sizeOfDD(sizeOfDD)
+    {
+    }
     
+    UserGeomType::UserGeomType(Device *device,
+                   size_t sizeOfDD,
+                   BoundsProg bounds,
+                   IntersectProg intersect,
+                   AHProg ah,
+                   CHProg ch)
+      : GeomType(device,sizeOfDD)
+    {
+    }
+    
+    TrianglesGeomType::TrianglesGeomType(Device *device,
+                        size_t sizeOfDD,
+                        AHProg ah,
+                        CHProg ch)
+      : GeomType(device,sizeOfDD)
+    {
+    }
+
+
+    Geom *UserGeomType::createGeom()
+    {
+      return new UserGeom(this);
+    }
+    
+    Geom *TrianglesGeomType::createGeom()
+    {
+      return new TrianglesGeom(this);
+    }
+
   }
 }

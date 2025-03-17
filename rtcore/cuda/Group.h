@@ -21,22 +21,38 @@
 namespace rtc {
   namespace cuda {
 
+    struct Device;
+    
     struct Group {
-      virtual rtc::device::AccelHandle getDD() const = 0;
+      Group(Device *device);
+      virtual ~Group();
       virtual void buildAccel() = 0;
-      virtual void refitAccel() = 0;
+      virtual void refitAccel() { buildAccel(); }
+      rtc::device::AccelHandle getDD() const { return (rtc::device::AccelHandle)d_accel; }
+
+      Device *const device;
+      void *d_accel = 0;
     };
 
     struct InstanceGroup : public Group {
+      InstanceGroup(Device *device,
+                    const std::vector<Group *> &groups,
+                    const std::vector<affine3f> &xfms);
+      void buildAccel() override;
     };
     
     struct GeomGroup : public Group {
+      GeomGroup(Device *device);
     };
 
     struct TrianglesGeomGroup : public GeomGroup {
+      TrianglesGeomGroup(Device *device, const std::vector<Geom *> &geoms);
+      void buildAccel() override;
     };
     
     struct UserGeomGroup : public GeomGroup {
+      UserGeomGroup(Device *device, const std::vector<Geom *> &geoms);
+      void buildAccel() override;
     };
     
   }

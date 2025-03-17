@@ -31,8 +31,9 @@ namespace rtc {
       void launch(vec2i launchDims,
                   const void *kernelData);
       
-      Device *const device;
+      Device        *const device;
       TraceLaunchFct const traceLaunchFct;
+      size_t         const sizeOfLP;
     };
     
   }
