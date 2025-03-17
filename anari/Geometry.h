@@ -24,7 +24,9 @@ struct Geometry : public Object
   virtual box3 bounds() const = 0;
 
  protected:
-  std::array<helium::IntrusivePtr<Array1D>, 5> m_attributes;
+  void setAttributes(BNContext context, BNGeom geom);
+  std::array<math::float4, 5>                  m_constantAttributes;
+  std::array<helium::IntrusivePtr<Array1D>, 5> m_primitiveAttributes;
   std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
 };
 
@@ -119,7 +121,6 @@ struct Quad : public Geometry
   helium::ChangeObserverPtr<Array1D> m_index;
   helium::ChangeObserverPtr<Array1D> m_vertexPosition;
   helium::ChangeObserverPtr<Array1D> m_vertexNormal;
-  std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
   std::vector<int> m_generatedIndices;
 };
 
@@ -138,7 +139,6 @@ struct Triangle : public Geometry
   helium::ChangeObserverPtr<Array1D> m_index;
   helium::ChangeObserverPtr<Array1D> m_vertexPosition;
   helium::ChangeObserverPtr<Array1D> m_vertexNormal;
-  std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
   std::vector<int> m_generatedIndices;
 };
 

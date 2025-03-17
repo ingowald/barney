@@ -65,13 +65,13 @@ namespace BARNEY_NS {
                          Device *device);
     void writeDD(Geometry::DD &dd,
                 Device *device);
-    
-    // void setAttributesOn(OWLGeom geom);
 
     bool set1f(const std::string &member,
                const float &value) override;
     bool set3f(const std::string &member,
                const vec3f &value) override;
+    bool set4f(const std::string &member,
+               const vec4f &value) override;
     bool setData(const std::string &member,
                  const barney_api::Data::SP &value) override;
     bool setObject(const std::string &member,
