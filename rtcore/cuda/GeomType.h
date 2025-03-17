@@ -49,6 +49,11 @@ namespace rtc {
                    AHProg ah,
                    CHProg ch);
       Geom *createGeom() override;
+
+      BoundsProg const bounds;
+      IntersectProg const intersect;
+      AHProg const ah;
+      CHProg const ch;
     };
 
     struct TrianglesGeomType : public GeomType {
@@ -57,6 +62,9 @@ namespace rtc {
                         AHProg ah,
                         CHProg ch);
       Geom *createGeom() override;
+
+      AHProg const ah;
+      CHProg const ch;
     };
   }
 }

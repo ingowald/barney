@@ -18,6 +18,7 @@
 
 #include "rtcore/cuda/Device.h"
 #include "rtcore/cuda/Buffer.h"
+#include "rtcore/cuda/GeomType.h"
 
 namespace rtc {
   namespace cuda {
@@ -38,6 +39,12 @@ namespace rtc {
     };
 
     struct TrianglesGeom : public cuda::Geom {
+      struct SBTHeader {
+        AHProg ah;
+        CHProg ch;
+        const vec3f *vertices;
+        const vec3i *indices;
+      };
       TrianglesGeom(GeomType *gt);
       
       void setPrimCount(int primCount) override { assert(0); }

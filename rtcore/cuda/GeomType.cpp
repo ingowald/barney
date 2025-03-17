@@ -33,18 +33,21 @@ namespace rtc {
                    IntersectProg intersect,
                    AHProg ah,
                    CHProg ch)
-      : GeomType(device,sizeOfDD)
-    {
-    }
+      : GeomType(device,sizeOfDD),
+        bounds(bounds),
+        intersect(intersect),
+        ah(ah),
+        ch(ch)
+    {}
     
     TrianglesGeomType::TrianglesGeomType(Device *device,
                         size_t sizeOfDD,
                         AHProg ah,
                         CHProg ch)
-      : GeomType(device,sizeOfDD)
-    {
-    }
-
+      : GeomType(device,sizeOfDD),
+        ah(ah),
+        ch(ch)
+    {}
 
     Geom *UserGeomType::createGeom()
     {

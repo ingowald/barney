@@ -17,6 +17,7 @@
 #pragma once
 
 #include "rtcore/cudaCommon/Device.h"
+#include <cuBQL/bvh.h>
 
 namespace rtc {
   namespace cuda {
@@ -32,6 +33,7 @@ namespace rtc {
 
       Device *const device;
       void *d_accel = 0;
+      cuBQL::bvh3f::Node *bvhNodes = 0;
     };
 
     struct InstanceGroup : public Group {
@@ -42,7 +44,17 @@ namespace rtc {
     };
     
     struct GeomGroup : public Group {
-      GeomGroup(Device *device);
+      struct Prim { int geomID; int primID; };
+        
+      GeomGroup(Device *device,
+                const std::vector<Geom *> &geoms);
+      const std::vector<Geom *> geoms;
+
+      uint8_t *sbt   = 0;
+      size_t   sbtEntrySize = 0;
+      
+      int    numPrims = 0;
+      Prim  *prims    = 0;
     };
 
     struct TrianglesGeomGroup : public GeomGroup {

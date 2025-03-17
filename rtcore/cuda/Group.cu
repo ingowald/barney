@@ -1,0 +1,220 @@
+// ======================================================================== //
+// Copyright 2023-2025 Ingo Wald                                            //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#include "rtcore/cudaCommon/Device.h"
+#include "rtcore/cuda/Device.h"
+#include "rtcore/cuda/Group.h"
+#include "rtcore/cuda/Geom.h"
+
+namespace rtc {
+  namespace cuda {
+
+    Group::Group(Device *device)
+      : device(device)
+    {}
+    
+    Group::~Group()
+    {}
+
+    InstanceGroup::InstanceGroup(Device *device,
+                                 const std::vector<Group *> &groups,
+                                 const std::vector<affine3f> &xfms)
+      : Group(device)
+    {
+      PING; throw std::runtime_error("not implemented");
+    }
+
+    void InstanceGroup::buildAccel() 
+    {
+      PING; throw std::runtime_error("not implemented");
+    }
+    
+    GeomGroup::GeomGroup(Device *device,
+                         const std::vector<Geom *> &geoms)
+      : Group(device),
+        geoms(geoms)
+    {}
+
+    TrianglesGeomGroup::TrianglesGeomGroup(Device *device,
+                                           const std::vector<Geom *> &geoms)
+      : GeomGroup(device, geoms)
+    {}
+
+    __global__
+    void writePrims(GeomGroup::Prim *prims,
+                    int meshID,
+                    int count)
+    {
+      int tid = threadIdx.x+blockIdx.x*blockDim.x;
+      if (tid >= count) return;
+      prims[tid] = { meshID,tid };
+    }
+
+    __global__
+    void createTriangleBounds(box3f *primBounds,
+                              const uint8_t *groupSBT,
+                              size_t sbtEntrySize,
+                              GeomGroup::Prim *prims,
+                              int numPrims)
+    {
+      int tid = threadIdx.x+blockIdx.x*blockDim.x;
+      if (tid >= numPrims) return;
+
+      GeomGroup::Prim prim = prims[tid];
+      int primID = prim.primID;
+      const uint8_t *mySBT = groupSBT + prim.geomID * sbtEntrySize;
+      const TrianglesGeom::SBTHeader *header = (const TrianglesGeom::SBTHeader *)mySBT;
+      vec3i idx = header->indices[primID];
+      vec3f v0 = header->vertices[idx.x];
+      vec3f v1 = header->vertices[idx.y];
+      vec3f v2 = header->vertices[idx.z];
+      box3f bb = box3f(v0).including(v1).including(v2);
+      primBounds[tid] = bb;
+    }
+
+    __global__
+    void reorderPrims(GeomGroup::Prim *out,
+                      GeomGroup::Prim *in,
+                      const uint32_t *primIDs,
+                      int numPrims)
+    {
+      int tid = threadIdx.x+blockIdx.x*blockDim.x;
+      if (tid >= numPrims) return;
+      out[tid] = in[primIDs[tid]];
+    }
+    
+    void TrianglesGeomGroup::buildAccel() 
+    {
+      SetActiveGPU forDuration(device);
+
+      // ------------------------------------------------------------------
+      // compute SBT entry size
+      // ------------------------------------------------------------------
+      sbtEntrySize = 0;
+      size_t align = sizeof(float4);
+      for (int i=0;i<geoms.size();i++) {
+        TrianglesGeom *geom = (TrianglesGeom *)geoms[i];
+        sbtEntrySize = std::max(sbtEntrySize,geom->gt->sizeOfDD);
+        sbtEntrySize = align*divRoundUp(sbtEntrySize,align);
+      }
+      sbtEntrySize += sizeof(TrianglesGeom::SBTHeader);
+
+      // ------------------------------------------------------------------
+      // write SBT, and upload
+      // ------------------------------------------------------------------
+      std::vector<uint8_t> hostSBT(geoms.size()*sbtEntrySize);
+      uint8_t *sbtPointer = hostSBT.data();
+      for (int i=0;i<geoms.size();i++) {
+        TrianglesGeom *geom = (TrianglesGeom *)geoms[i];
+        TrianglesGeom::SBTHeader *header
+          = (TrianglesGeom::SBTHeader *)sbtPointer;
+        header->ah = ((TrianglesGeomType*)geom->gt)->ah;
+        header->ch = ((TrianglesGeomType*)geom->gt)->ch;
+        header->vertices = (const vec3f*)geom->vertices->getDD();
+        header->indices  = (const vec3i*)geom->indices->getDD();
+        memcpy(sbtPointer+sizeof(TrianglesGeom::SBTHeader),
+               geom->data.data(),geom->data.size());
+        sbtPointer += sbtEntrySize;
+      }
+      if (sbt) BARNEY_CUDA_CALL(Free(sbt));
+      BARNEY_CUDA_CALL(Malloc((void**)&sbt,hostSBT.size()));
+      BARNEY_CUDA_CALL(Memcpy(sbt,hostSBT.data(),hostSBT.size(),cudaMemcpyDefault));
+      
+      // ------------------------------------------------------------------
+      // count prims and alloc geom/prim descriptors
+      // ------------------------------------------------------------------
+      numPrims = 0;
+      for (int i=0;i<geoms.size();i++) {
+        TrianglesGeom *geom = (TrianglesGeom *)geoms[i];
+        numPrims += geom->numIndices;
+      }
+      if (prims) BARNEY_CUDA_CALL(Free(prims));
+      BARNEY_CUDA_CALL(Malloc((void**)&prims,numPrims*sizeof(Prim)));
+
+      // ------------------------------------------------------------------
+      // write geom/prim descriptors
+      // ------------------------------------------------------------------
+      size_t ofs = 0;
+      for (int i=0;i<geoms.size();i++) {
+        TrianglesGeom *geom = (TrianglesGeom *)geoms[i];
+        int count = geom->numIndices;
+        writePrims<<<divRoundUp(count,1024),1024,0,device->stream>>>
+          (prims,i,count);
+        ofs += count;
+      }
+
+      device->sync();
+
+      // ------------------------------------------------------------------
+      // alloc and write triangle bboxes 
+      // ------------------------------------------------------------------
+      box3f *primBounds = 0;
+      BARNEY_CUDA_CALL(Malloc((void**)&primBounds,numPrims*sizeof(box3f)));
+      
+      createTriangleBounds
+        <<<divRoundUp(numPrims,1024),1024,0,device->stream>>>
+        (primBounds,sbt,sbtEntrySize,prims,numPrims);
+      
+      device->sync();
+      
+      // ------------------------------------------------------------------
+      // build the bvh
+      // ------------------------------------------------------------------
+      if (this->bvhNodes) {
+        BARNEY_CUDA_CALL(Free(this->bvhNodes));
+        this->bvhNodes = 0;
+      }
+      cuBQL::bvh3f bvh;
+      cuBQL::DeviceMemoryResource memResource;
+      cuBQL::gpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)primBounds,
+                        numPrims,
+                        cuBQL::BuildConfig(),
+                        device->stream,
+                        memResource);
+      device->sync();
+      BARNEY_CUDA_CALL(Free(primBounds));
+      
+      // ------------------------------------------------------------------
+      // reorder prims, store bvh, and release what we no longer need
+      // ------------------------------------------------------------------
+      this->bvhNodes = bvh.nodes;
+      GeomGroup::Prim *reorderedPrims = 0;
+      BARNEY_CUDA_CALL(Malloc((void**)&reorderedPrims,numPrims*sizeof(GeomGroup::Prim)));
+      reorderPrims
+        <<<divRoundUp(numPrims,1024),1024,0,device->stream>>>
+        (reorderedPrims,prims,bvh.primIDs,numPrims);
+      
+      device->sync();
+      BARNEY_CUDA_CALL(Free(prims));
+      this->prims = reorderedPrims;
+
+      BARNEY_CUDA_CALL(Free(bvh.primIDs));
+    }
+    
+    UserGeomGroup::UserGeomGroup(Device *device,
+                                     const std::vector<Geom *> &geoms)
+        : GeomGroup(device, geoms)
+        {}
+
+      void UserGeomGroup::buildAccel() 
+      {
+        PING; throw std::runtime_error("not implemented");
+      }
+
+    
+    }
+  }

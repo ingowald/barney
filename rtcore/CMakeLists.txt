@@ -215,7 +215,7 @@ if (BARNEY_BACKEND_CUDA)
     cuda/Buffer.h
     cuda/Buffer.cpp
     cuda/Group.h
-    cuda/Group.cpp
+    cuda/Group.cu
     cuda/Geom.h
     cuda/Geom.cpp
     cuda/TraceKernel.h
