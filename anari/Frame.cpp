@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Frame.h"
-#if 1
 // std
 #include <algorithm>
 #include <chrono>
@@ -10,19 +9,6 @@
 // cuda
 #if BANARI_HAVE_CUDA
 # include <cuda_runtime.h>
-#endif
-
-#ifndef PRINT
-#define PRINT(var) std::cout << #var << "=" << var << std::endl;
-#ifdef __WIN32__
-#define PING                                                            \
-  std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__     \
-  << std::endl;
-#else
-#define PING                                                            \
-  std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ \
-  << std::endl;
-#endif
 #endif
 
 namespace barney_device {
@@ -87,32 +73,21 @@ namespace barney_device {
     }
 
     if (!m_camera) {
-      reportMessage(
-                    ANARI_SEVERITY_WARNING, "missing required parameter 'camera' on frame");
+      reportMessage(ANARI_SEVERITY_WARNING, "missing required parameter 'camera' on frame");
     }
 
     if (!m_world) {
-      reportMessage(
-                    ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
+      reportMessage(ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
     }
 
     const auto &size = m_frameData.size;
     const auto numPixels = size.x * size.y;
-
-    // m_colorBuffer =
-    //   new uint32_t[numPixels * (m_colorType == ANARI_FLOAT32_VEC4 ? 4 : 1)];
-    // if (m_depthType == ANARI_FLOAT32)
-    //   m_depthBuffer = new float[numPixels];
 
     bnFrameBufferResize(m_bnFrameBuffer,
                         size.x,
                         size.y,
                         (uint32_t)BN_FB_COLOR
                         | (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
-    // bnSet1i(m_bnFrameBuffer,
-    //         "showCrosshairs",
-    //         m_renderer ? int(m_renderer->crosshairs()) : false);
-    // bnCommit(m_bnFrameBuffer);
   }
 
   bool Frame::getProperty(
@@ -176,14 +151,6 @@ namespace barney_device {
   {
     wait();
 
-#if BANARI_HAVE_CUDA
-    // m_colorBuffer =
-    //   new uint32_t[numPixels * (m_colorType == ANARI_FLOAT32_VEC4 ? 4 : 1)];
-    // if (m_depthType == ANARI_FLOAT32)
-    //   m_depthBuffer = new float[numPixels];
-    
-#endif
-    
     *width = m_frameData.size.x;
     *height = m_frameData.size.y;
     int numPixels = *width * *height;
@@ -212,11 +179,12 @@ namespace barney_device {
       if (m_colorBuffer)
         throw std::runtime_error
           ("trying to map color buffer, but color buffer already mapped");
-      cudaMalloc((void**)&m_colorBuffer,numPixels*sizeof(float));
+      cudaMalloc((void**)&m_colorBuffer,numPixels*
+                 (m_colorType == ANARI_FLOAT32_VEC4 ? sizeof(math::float4) : sizeof(uint32_t))
+                 );
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_COLOR,
                         m_colorBuffer, toBarney(m_colorType));
       return m_colorBuffer;
-      // return bnFrameBufferGetPointer(m_bnFrameBuffer, BN_FB_COLOR);
 #else
       return nullptr;
 #endif
@@ -229,7 +197,6 @@ namespace barney_device {
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_depthBuffer, BN_FLOAT);
       *pixelType = ANARI_FLOAT32;
       return m_depthBuffer;
-      // return bnFrameBufferGetPointer(m_bnFrameBuffer, BN_FB_DEPTH);
 #else
       return nullptr;
 #endif
@@ -260,7 +227,6 @@ namespace barney_device {
       m_depthBuffer = 0;
 #endif
     }    
-    // no-op
   }
 
   int Frame::frameReady(ANARIWaitMask m)
@@ -296,4 +262,3 @@ namespace barney_device {
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Frame *);
-#endif
