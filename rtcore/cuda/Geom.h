@@ -30,6 +30,21 @@ namespace rtc {
       virtual ~Geom();
       void setDD(const void *dd);
 
+      struct SBTHeader {
+        AHProg ah;
+        CHProg ch;
+        union {
+          struct {
+            const vec3f *vertices;
+            const vec3i *indices;
+          } triangles;
+          struct {
+            BoundsProg    bounds;
+            IntersectProg intersect;
+          } user;
+        };
+      };
+      
       virtual void setPrimCount(int primCount) = 0;
       virtual void setVertices(Buffer *vertices, int numVertices) = 0;
       virtual void setIndices(Buffer *indices, int numIndices) = 0;
@@ -39,12 +54,6 @@ namespace rtc {
     };
 
     struct TrianglesGeom : public cuda::Geom {
-      struct SBTHeader {
-        AHProg ah;
-        CHProg ch;
-        const vec3f *vertices;
-        const vec3i *indices;
-      };
       TrianglesGeom(GeomType *gt);
       
       void setPrimCount(int primCount) override { assert(0); }

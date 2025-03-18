@@ -82,7 +82,16 @@ namespace rtc {
   }
 }
 
-#define RTC_IMPORT_TRACE2D(fileNameBase,kernelName,sizeOfLP)                          \
-  ::rtc::TraceKernel2D *createTrace_##kernelName(rtc::Device *device) \
+#define RTC_IMPORT_TRACE2D(fileNameBase,name,sizeOfLP)          \
+  void rtc_cuda_launch_##name(rtc::Device *device,              \
+                              vec2i dims,                       \
+                              const void *lpData);              \
+                                                                \
+  ::rtc::TraceKernel2D *createTrace_##name(rtc::Device *device) \
+  {                                                             \
+    return new ::rtc::cuda::TraceKernel2D                       \
+      (device,sizeOfLP,rtc_cuda_launch_##name);                 \
+  }                                                             \
+    
 
 

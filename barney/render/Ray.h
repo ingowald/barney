@@ -61,10 +61,10 @@ namespace BARNEY_NS {
       /*! the actual hit point, in 3D float coordinates (rather than
         implicitly through org+tMax*dir), for numerical robustness
         issues */
-      vec3f       P;
+      vec3f    P;
       // vec3h       Le;
       vec3h    throughput;
-      vec3h       N;
+      vec3h    N;
       union {
         PackedBSDF::Data hitBSDF;
         /*! the background color for primary rays that didn't have any intersection.
@@ -74,25 +74,10 @@ namespace BARNEY_NS {
       };
     };
   
-    // struct RayQueue {
-    //   Ray *traceAndShadeReadQueue  = nullptr;
-      
-    //   /*! the queue where local kernels that write *new* rays
-    //     (ie, ray gen and shading) will write their rays into */
-    //   Ray *receiveAndShadeWriteQueue = nullptr;
-      
-    //   /*! current write position in the write queue (during shading and
-    //     ray generation) */
-    //   int *d_nextWritePos  = 0;
-    //   int  numActive = 0;
-    //   int  size     = 0;
-    // };
-
     inline __rtc_device PackedBSDF Ray::getBSDF() const
     {
       return PackedBSDF((PackedBSDF::Type)bsdfType,hitBSDF);
     }
-    
     
     inline __rtc_device void Ray::setHit(vec3f P, vec3f N, float t,
                                        const PackedBSDF &packedBSDF)

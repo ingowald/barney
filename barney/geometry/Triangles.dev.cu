@@ -27,13 +27,15 @@ namespace BARNEY_NS {
       
     static inline __rtc_device
     void closestHit(rtc::TraceInterface &rt)
-    {}
+    {
+      printf("CLOSEST!\n");
+    }
 
     static inline __rtc_device
     void anyHit(rtc::TraceInterface &rt)
     {
       auto &ray = *(Ray *)rt.getPRD();
-
+      
 #if NDEBUG
       bool dbg = false;
 #else

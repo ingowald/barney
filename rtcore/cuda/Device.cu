@@ -75,12 +75,10 @@ namespace rtc {
 
     void Device::buildPipeline()
     {
-      PING; throw std::runtime_error("not implemented");
     }
     
     void Device::buildSBT()
     {
-      PING; throw std::runtime_error("not implemented");
     }
 
     

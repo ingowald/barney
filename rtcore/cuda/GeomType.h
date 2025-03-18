@@ -91,13 +91,25 @@ namespace rtc {
 
 
 #define RTC_EXPORT_TRIANGLES_GEOM(name,DD,Programs,has_ah,has_ch)       \
+  __global__                                                            \
+  void rtc_cuda_writeAddresses_##name(rtc::Geom::SBTHeader *h)          \
+  {                                                                     \
+    h->ah = has_ah?Programs::anyHit:0;                                  \
+    h->ch = has_ch?Programs::closestHit:0;                              \
+  }                                                                     \
   rtc::GeomType *createGeomType_##name(rtc::Device *device)             \
   {                                                                     \
+    ::rtc::SetActiveGPU forDuration(device);                            \
+    rtc::Geom::SBTHeader *h;                                            \
+    cudaMalloc((void **)&h,sizeof(*h));                                 \
+    rtc_cuda_writeAddresses_##name<<<1,32>>>(h);                        \
+    device->sync();                                                     \
+    rtc::Geom::SBTHeader hh;                                            \
+    cudaMemcpy(&hh,h,sizeof(hh),cudaMemcpyDefault);                     \
     return new rtc::cuda::TrianglesGeomType                             \
       (device,                                                          \
        sizeof(DD),                                                      \
-       has_ah?Programs::anyHit:0,                                       \
-       has_ch?Programs::closestHit:0);                                  \
+       hh.ah,                                                           \
+       hh.ch);                                                          \
   }
-
 

@@ -76,7 +76,7 @@ namespace BARNEY_NS {
                   unsigned(iy+fbSize.y*accumID));
 
       ray.org  = camera.lens_00;
-      
+
       float pixel_u = ((accumID == 0) ? .5f : rand());
       float pixel_v = ((accumID == 0) ? .5f : rand());
       float image_u = ((ix+pixel_u)/float(fbSize.x));
@@ -128,7 +128,7 @@ namespace BARNEY_NS {
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              
-      if (0 && ray.dbg)
+      if (1 && ray.dbg)
         printf("======================\nspawned %f %f %f dir %f %f %f\n",
                ray.org.x,
                ray.org.y,
@@ -160,7 +160,7 @@ namespace BARNEY_NS {
                                bgColor.y,
                                bgColor.z);
       ray.throughput = vec3f(1.f);
-    
+
       int pos = rt.atomicAdd(d_count,1);
       rayQueue[pos] = ray;
     }

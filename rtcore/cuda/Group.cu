@@ -32,16 +32,11 @@ namespace rtc {
     InstanceGroup::InstanceGroup(Device *device,
                                  const std::vector<Group *> &groups,
                                  const std::vector<affine3f> &xfms)
-      : Group(device)
-    {
-      PING; throw std::runtime_error("not implemented");
-    }
+      : Group(device),
+        groups(groups),
+        xfms(xfms)
+    {}
 
-    void InstanceGroup::buildAccel() 
-    {
-      PING; throw std::runtime_error("not implemented");
-    }
-    
     GeomGroup::GeomGroup(Device *device,
                          const std::vector<Geom *> &geoms)
       : Group(device),
@@ -60,7 +55,10 @@ namespace rtc {
     {
       int tid = threadIdx.x+blockIdx.x*blockDim.x;
       if (tid >= count) return;
-      prims[tid] = { meshID,tid };
+      GeomGroup::Prim prim;
+      prim.geomID = meshID;
+      prim.primID = tid;
+      prims[tid] = prim;
     }
 
     __global__
@@ -77,11 +75,12 @@ namespace rtc {
       int primID = prim.primID;
       const uint8_t *mySBT = groupSBT + prim.geomID * sbtEntrySize;
       const TrianglesGeom::SBTHeader *header = (const TrianglesGeom::SBTHeader *)mySBT;
-      vec3i idx = header->indices[primID];
-      vec3f v0 = header->vertices[idx.x];
-      vec3f v1 = header->vertices[idx.y];
-      vec3f v2 = header->vertices[idx.z];
-      box3f bb = box3f(v0).including(v1).including(v2);
+      vec3i idx = header->triangles.indices[primID];
+      vec3f v0 = header->triangles.vertices[idx.x];
+      vec3f v1 = header->triangles.vertices[idx.y];
+      vec3f v2 = header->triangles.vertices[idx.z];
+      box3f bb = box3f().including(v0).including(v1).including(v2);
+
       primBounds[tid] = bb;
     }
 
@@ -95,6 +94,98 @@ namespace rtc {
       if (tid >= numPrims) return;
       out[tid] = in[primIDs[tid]];
     }
+
+    __global__
+    void computeInstanceBounds(box3f *instBounds,
+                               InstanceGroup::InstanceRecord *instances,
+                               int numInstances)
+    {
+      int tid = threadIdx.x+blockIdx.x*blockDim.x;
+      if (tid >= numInstances) return;
+
+      box3f bounds;
+      InstanceGroup::InstanceRecord inst = instances[tid];
+      bounds = (const box3f&)inst.group.bvhNodes[0].bounds;
+      instBounds[tid] = xfmBounds(inst.objectToWorldXfm,bounds);
+    }
+
+    void InstanceGroup::buildAccel() 
+    {
+      SetActiveGPU forDuration(device);
+
+      // ------------------------------------------------------------------
+      // create and upload instance records
+      // ------------------------------------------------------------------
+      int numInstances = groups.size();
+      std::vector<InstanceRecord> h_instances(numInstances);
+      for (int instID=0;instID<numInstances;instID++) {
+        auto &inst = h_instances[instID];
+        inst.group = ((GeomGroup*)groups[instID])->getRecord();
+        inst.worldToObjectXfm = rcp(xfms[instID]);
+        inst.objectToWorldXfm = xfms[instID];
+      }
+      if (d_instanceRecords) {
+        BARNEY_CUDA_CALL(Free(d_instanceRecords));
+        d_instanceRecords = 0;
+      }
+      BARNEY_CUDA_CALL(Malloc((void **)&d_instanceRecords,
+                              numInstances*sizeof(InstanceRecord)));
+      BARNEY_CUDA_CALL(Memcpy(d_instanceRecords,h_instances.data(),
+                              numInstances*sizeof(InstanceRecord),
+                              cudaMemcpyDefault));
+      h_instances.clear();
+      device->sync();
+      
+      // ------------------------------------------------------------------
+      // compute bounds for bvh constuction
+      // ------------------------------------------------------------------
+      box3f *instBounds = 0;
+      BARNEY_CUDA_CALL(Malloc((void **)&instBounds,
+                              numInstances*sizeof(box3f)));
+      computeInstanceBounds<<<divRoundUp(numInstances,1024),1024,0,device->stream>>>
+        (instBounds,d_instanceRecords,numInstances);
+      device->sync();
+
+      // ------------------------------------------------------------------
+      // build the bvh
+      // ------------------------------------------------------------------
+      cuBQL::DeviceMemoryResource memResource;
+      if (bvh.nodes) {
+        cuBQL::cuda::free(bvh,device->stream,memResource);
+        bvh.nodes = 0;
+        bvh.primIDs = 0;
+      }
+      cuBQL::BuildConfig buildConfig;
+      buildConfig.maxAllowedLeafSize = 1;
+      cuBQL::gpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)instBounds,
+                        numInstances,
+                        buildConfig,
+                        device->stream,
+                        memResource);
+      device->sync();
+      BARNEY_CUDA_CALL(Free(instBounds));
+      
+      // ------------------------------------------------------------------
+      // allocate device descriptor
+      // ------------------------------------------------------------------
+      DeviceRecord dd;
+      dd.bvh.nodes = bvh.nodes;
+      dd.bvh.primIDs = bvh.primIDs;
+      bvh.nodes = 0;
+      bvh.primIDs = 0;
+      dd.instanceRecords = d_instanceRecords;
+
+      if (!d_deviceRecord)
+        BARNEY_CUDA_CALL(Malloc((void **)&d_deviceRecord,
+                                sizeof(DeviceRecord)));
+      BARNEY_CUDA_CALL(Memcpy(d_deviceRecord,&dd,
+                              sizeof(DeviceRecord),
+                              cudaMemcpyDefault));
+      device->sync();
+      d_accel = d_deviceRecord;
+    }
+    
     
     void TrianglesGeomGroup::buildAccel() 
     {
@@ -123,8 +214,10 @@ namespace rtc {
           = (TrianglesGeom::SBTHeader *)sbtPointer;
         header->ah = ((TrianglesGeomType*)geom->gt)->ah;
         header->ch = ((TrianglesGeomType*)geom->gt)->ch;
-        header->vertices = (const vec3f*)geom->vertices->getDD();
-        header->indices  = (const vec3i*)geom->indices->getDD();
+        header->triangles.vertices = (const vec3f*)geom->vertices->getDD();
+        header->triangles.indices  = (const vec3i*)geom->indices->getDD();
+        assert(header->triangles.vertices);
+        assert(header->triangles.indices);
         memcpy(sbtPointer+sizeof(TrianglesGeom::SBTHeader),
                geom->data.data(),geom->data.size());
         sbtPointer += sbtEntrySize;
@@ -139,6 +232,7 @@ namespace rtc {
       numPrims = 0;
       for (int i=0;i<geoms.size();i++) {
         TrianglesGeom *geom = (TrianglesGeom *)geoms[i];
+        assert(geom->numIndices);
         numPrims += geom->numIndices;
       }
       if (prims) BARNEY_CUDA_CALL(Free(prims));
@@ -152,7 +246,7 @@ namespace rtc {
         TrianglesGeom *geom = (TrianglesGeom *)geoms[i];
         int count = geom->numIndices;
         writePrims<<<divRoundUp(count,1024),1024,0,device->stream>>>
-          (prims,i,count);
+          (prims+ofs,i,count);
         ofs += count;
       }
 
@@ -179,10 +273,12 @@ namespace rtc {
       }
       cuBQL::bvh3f bvh;
       cuBQL::DeviceMemoryResource memResource;
+      cuBQL::BuildConfig buildConfig;
+      buildConfig.maxAllowedLeafSize = 4;
       cuBQL::gpuBuilder(bvh,
                         (const cuBQL::box_t<float,3>*)primBounds,
                         numPrims,
-                        cuBQL::BuildConfig(),
+                        buildConfig,
                         device->stream,
                         memResource);
       device->sync();
@@ -206,15 +302,30 @@ namespace rtc {
     }
     
     UserGeomGroup::UserGeomGroup(Device *device,
-                                     const std::vector<Geom *> &geoms)
-        : GeomGroup(device, geoms)
-        {}
+                                 const std::vector<Geom *> &geoms)
+      : GeomGroup(device, geoms)
+    {}
 
-      void UserGeomGroup::buildAccel() 
-      {
-        PING; throw std::runtime_error("not implemented");
-      }
-
-    
+    void UserGeomGroup::buildAccel() 
+    {
+      PING; throw std::runtime_error("not implemented");
     }
+
+    GeomGroup::DeviceRecord TrianglesGeomGroup::getRecord() 
+    {
+      DeviceRecord record;
+      record.isTrianglesGroup = true;
+      record.sbtEntrySize = sbtEntrySize;
+      record.sbt = sbt;
+      record.prims = prims;
+      record.bvhNodes = bvhNodes;
+      return record;
+    }
+    
+    GeomGroup::DeviceRecord UserGeomGroup::getRecord() 
+    {
+      PING; throw std::runtime_error("not implemented");
+    }
+    
   }
+}

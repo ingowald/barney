@@ -39,7 +39,7 @@ namespace BARNEY_NS {
         = ti.getLaunchIndex().x
         + ti.getLaunchDims().x
         * ti.getLaunchIndex().y;
-        
+
       auto &lp = OptixGlobals::get(ti);
 
       if (rayID >= lp.numRays)
@@ -52,10 +52,13 @@ namespace BARNEY_NS {
       if (dir.y == 0.f) dir.y = 1e-6f;
       if (dir.z == 0.f) dir.z = 1e-6f;
 
+      // if (!ray.dbg) return;
+
       ti.traceRay(lp.world,
                   ray.org,
                   dir,
-                  0.f,ray.tMax,
+                  ray.dbg?-1.f:0.f,
+                  ray.tMax,
                   /* PRD */
                   (void *)&ray);
     }

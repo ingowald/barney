@@ -28,12 +28,14 @@ namespace rtc {
       TraceKernel2D(Device *device,
                     size_t sizeOfLP,
                     TraceLaunchFct traceLaunchFct);
+      ~TraceKernel2D();
       void launch(vec2i launchDims,
                   const void *kernelData);
       
       Device        *const device;
       TraceLaunchFct const traceLaunchFct;
       size_t         const sizeOfLP;
+      void          *d_lpData = 0;
     };
     
   }

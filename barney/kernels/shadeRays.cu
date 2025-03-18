@@ -397,6 +397,16 @@ namespace BARNEY_NS {
 
       const bool  hadNoIntersection  = !path.hadHit();
       const vec3f incomingThroughput = path.throughput;
+#if 0
+      fragment = randomColor(path.dbg_primID);
+      if (path.dbg)
+        printf("HIT %i t %f\n",
+               path.dbg_primID,
+               path.tMax);
+      shadowRay.tMax = -1.f;
+      path.tMax = -1.f;
+      return;
+#endif
       
 #ifdef NDEBUG
       bool dbg = false;
@@ -470,9 +480,7 @@ namespace BARNEY_NS {
           // ----------------------------------------------------------------
           // PRIMARY ray that didn't hit anything -> background
           // ----------------------------------------------------------------
-          // fragment = path.missColor;
           fragment = primaryRayMissColor(world,renderer,path);
-          // fragment = path.throughput * backgroundOrEnv(world,path);
 
           if (dbg)
             printf("miss primary %f %f %f -> %f %f %f\n",

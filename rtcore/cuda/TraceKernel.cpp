@@ -26,12 +26,23 @@ namespace rtc {
       : device(device),
         sizeOfLP(sizeOfLP),
         traceLaunchFct(traceLaunchFct)
-    {}
+    {
+      BARNEY_CUDA_CALL(Malloc((void **)&d_lpData,sizeOfLP));
+    }
+
+    TraceKernel2D::~TraceKernel2D()
+    {
+      cudaFree(d_lpData);
+    }
+
         
     void TraceKernel2D::launch(vec2i launchDims,
                                const void *kernelData)
     {
-      traceLaunchFct(device,launchDims,kernelData);
+      ::rtc::cuda_common::SetActiveGPU forDuration(device);   
+      BARNEY_CUDA_CALL(Memcpy(d_lpData,kernelData,
+                              sizeOfLP,cudaMemcpyDefault));
+      traceLaunchFct(device,launchDims,d_lpData);
     }
     
   }

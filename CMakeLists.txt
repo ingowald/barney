@@ -149,7 +149,7 @@ target_include_directories(barney_config INTERFACE
 # configure which backend(s) to build
 # ------------------------------------------------------------------
 if (BARNEY_HAVE_CUDA)
-  option(BARNEY_BACKEND_CUDA "Enable Cuda Backend?" ON)
+  option(BARNEY_BACKEND_CUDA "Enable (native-)CUDA Backend?" OFF)
   option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)
   option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" OFF)
 else()
@@ -188,7 +188,6 @@ endif()
 
 if (NOT (TARGET cuBQL))
   if (BARNEY_HAVE_CUDA)
-    #set(CMAKE_CUDA_ARCHITECTURES native)
   else()
     set(CUBQL_DISABLE_CUDA ON)
   endif()
@@ -203,14 +202,11 @@ endif()
 if (BARNEY_CUBQL_HOST)
   target_compile_definitions(barney_config INTERFACE -DBARNEY_CUBQL_HOST=1)
   target_link_libraries(barney_config INTERFACE cuBQL)
-#  set(CUBQL_LIBS cuBQL_cpu_float3_static)
-else()
-#  set(CUBQL_LIBS cuBQL_cpu_float3_static cuBQL_cuda_float3)
 endif()
 target_link_libraries(barney_config
   INTERFACE
   cuBQL
-  )
+)
 
 
 # ------------------------------------------------------------------
@@ -219,7 +215,6 @@ target_link_libraries(barney_config
 message("configuring rtcore")
 add_subdirectory(rtcore)
   
-
 
 # ------------------------------------------------------------------
 # barney system, api, and mpi stuff
