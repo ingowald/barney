@@ -123,4 +123,18 @@ namespace anari {
   ANARI_TYPEFOR_DEFINITION(barney_device::box3i);
 #endif
 
+#ifndef PRINT
+#define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+#define PING                                                            \
+  std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__     \
+  << std::endl;
+#else
+#define PING                                                            \
+  std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ \
+  << std::endl;
+#endif
+#endif
+
+  
 } // namespace anari
