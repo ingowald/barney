@@ -84,6 +84,14 @@ endif()
 
 
 if (BARNEY_HAVE_CUDA)
+  target_compile_definitions(anari_library_barney PRIVATE -DBANARI_HAVE_CUDA=1)
+  if (BARNEY_MPI)
+    target_compile_definitions(anari_library_barney_mpi PRIVATE -DBANARI_HAVE_CUDA=1)
+  endif()
+endif()
+
+
+if (BARNEY_HAVE_CUDA)
   set_source_files_properties(World.cpp
     PROPERTIES
     LANGUAGE CUDA
