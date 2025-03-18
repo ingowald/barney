@@ -184,6 +184,7 @@ namespace barney_device {
                  );
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_COLOR,
                         m_colorBuffer, toBarney(m_colorType));
+      *pixelType = m_colorType;
       return m_colorBuffer;
 #else
       return nullptr;

@@ -316,6 +316,7 @@ namespace BARNEY_NS {
     switch(requestedFormat) {
     case BN_FLOAT4: 
     case BN_FLOAT4_RGBA: {
+      PING;
       device->rtc->copy(appMemory,denoisedColor,
                         numPixels.x*numPixels.y*sizeof(vec4f));
     } break;
