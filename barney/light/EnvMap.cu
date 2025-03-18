@@ -169,9 +169,15 @@ namespace BARNEY_NS {
 
   void EnvMapLight::commit()
   {
+#if 1
+    toWorld.vz = -normalize(params.up);
+    toWorld.vy = -normalize(cross(toWorld.vz,params.direction));
+    toWorld.vx = normalize(cross(toWorld.vy,toWorld.vz));
+#else
     toWorld.vz = normalize(params.up);
     toWorld.vy = normalize(cross(toWorld.vz,params.direction));
     toWorld.vx = normalize(cross(toWorld.vy,toWorld.vz));
+#endif
     toLocal    = rcp(toWorld);
     assert(params.texture);
     texture    = params.texture;
