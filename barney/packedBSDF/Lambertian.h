@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,9 +25,9 @@ namespace BARNEY_NS {
       /*! implements a homogenous phase function that scatters equally
           in all directions, with given average reflectance and
           color */
-      struct Phase {
-        inline Phase() = default;
-        inline __rtc_device Phase(vec3f color, float avg_reflectance=.7f);
+      struct Lambertian {
+        inline Lambertian() = default;
+        inline __rtc_device Lambertian(vec3f color, float avg_reflectance=1.f);
 
         inline __rtc_device
         float pdf(DG dg, vec3f wi, bool dbg) const;
@@ -45,44 +45,45 @@ namespace BARNEY_NS {
       };
 
       inline __rtc_device
-      Phase::Phase(vec3f color, float avg_reflectance)
-      {
-        (vec3f&)this->albedo = avg_reflectance * color;
+      float Lambertian::pdf(DG dg, vec3f wi, bool dbg) const
+      { 
+        vec3f N = dg.Ng;
+        if (dot(wi,N) < 0.f) N = -N;
+        
+        float cosThetaI = max(dot(wi, N), 0.f);
+        float pdf = cosineSampleHemispherePDF(cosThetaI);
+        return pdf;
       }
-      
-      inline __rtc_device
-      float Phase::pdf(DG dg, vec3f wi, bool dbg) const
-      { return ONE_OVER_FOUR_PI; }
         
       inline __rtc_device
-      EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
+      EvalRes Lambertian::eval(DG dg, vec3f wi, bool dbg) const
       {
-        float density = ONE_OVER_FOUR_PI;
-        return EvalRes(//density*
-                       (const vec3f&)albedo,density);
+        vec3f N = dg.Ng;
+        if (dot(wi,N) < 0.f) N = -N;
+        
+        float cosThetaI = max(dot(wi, dg.Ns), 0.f);
+        float pdf = cosineSampleHemispherePDF(cosThetaI);
+        return EvalRes(rtc::load(albedo) * ONE_OVER_PI * cosThetaI,pdf);
       }
 
       /*! simple omnidirectional phase function - scatter into any
         random direction */
       inline __rtc_device
-      void Phase::scatter(ScatterResult &scatter,
+      void Lambertian::scatter(ScatterResult &scatter,
                           const render::DG &dg,
                           Random &random,
                           bool dbg) const
       {
-        // see global illumination compendium, page 19
-        float r1 = random();
-        float r2 = random(); 
-        // float phi = two_pi*r1;
-        // float theta = acosf(1.f-2.f*r2);
-        float x = cosf(TWO_PI*r1)*sqrtf(r2*(1.f-r2));
-        float y = sinf(TWO_PI*r1)*sqrtf(r2*(1.f-r2));
-        float z = (1.f-2.f*r2);
-        float density = ONE_OVER_FOUR_PI;
-        scatter.pdf = density;
-        scatter.f_r = (const vec3f&)albedo * density;
-        scatter.dir = vec3f(x,y,z);
-        scatter.type = ScatterResult::VOLUME;
+        vec3f N = dg.Ng;
+        if (dot(dg.wo,N) < 0.f) N = -N;
+        
+        vec2f s(random(),random());
+        vec3f localDir = cosineSampleHemisphere(s);
+
+        scatter.dir = owl::common::xfmVector(owl::common::frame(N),localDir);
+        scatter.pdf = cosineSampleHemispherePDF(localDir);
+        scatter.f_r  = rtc::load(albedo);
+        scatter.type = ScatterResult::DIFFUSE;
       }
       
     }

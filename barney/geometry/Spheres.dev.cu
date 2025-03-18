@@ -58,7 +58,9 @@ namespace BARNEY_NS {
     {
       auto &ray = *(Ray*)rt.getPRD();
       auto &self = *(Spheres::DD*)rt.getProgramData();
+      const World::DD &world = OptixGlobals::get(rt).world;
       int primID = rt.getPrimitiveIndex();
+      int instID = rt.getInstanceIndex();
 
 #ifdef NDEBUG
       bool dbg = false;
@@ -99,6 +101,7 @@ namespace BARNEY_NS {
       hitData.worldNormal     = normalize(worldN);
       hitData.objectNormal    = normalize(objectN);
       hitData.primID          = primID;
+      hitData.instID          = instID;
       hitData.t               = t_hit;
       if (self.colors)
         (vec3f&)hitData.color = self.colors[primID];
@@ -109,11 +112,11 @@ namespace BARNEY_NS {
         vec4f v = attrib.fromArray.valueAt(hitData.primID,dbg);
         return v;
       };
-      self.setHitAttributes(hitData,interpolator,dbg);
+      self.setHitAttributes(hitData,interpolator,world,dbg);
 
       const DeviceMaterial &material
-        = OptixGlobals::get(rt).materials[self.materialID];
-      material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,dbg);
+        = world.materials[self.materialID];
+      material.setHit(ray,hitData,world.samplers,dbg);
     }
   
     static inline __rtc_device

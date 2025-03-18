@@ -42,21 +42,21 @@ namespace BARNEY_NS {
 
     struct Lambert : public BSDF {
 
-      inline __both__
+      inline __rtc_device
       Lambert(vec3f R, bool dbg = false)
         : BSDF(R)
       {}
       inline Lambert(const Lambert &) = default;
       // { Lambert l; l.init(R); return l; }
 
-      // static inline __both__
+      // static inline __rtc_device
       // Lambert create(vec3f R, bool dbg = false)
       // { Lambert l; l.init(R); return l; }
                      
-      // inline __both__ void init(vec3f R, bool dbg = false)
+      // inline __rtc_device void init(vec3f R, bool dbg = false)
       // { BSDF::init(R); }
         
-      inline __both__
+      inline __rtc_device
       EvalRes eval(DG dg, vec3f wi, bool dbg = false) const
       {
         EvalRes res;

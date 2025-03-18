@@ -20,8 +20,9 @@
 #include "barney/render/Ray.h"
 #include "barney/render/HitAttributes.h"
 #include "barney/render/GeometryAttributes.h"
-#include "barney/render/OptixGlobals.h"
 #include "barney/material/Material.h"
+#include "barney/render/OptixGlobals.h"
+#include "barney/render/World.h"
 
 namespace BARNEY_NS {
   
@@ -38,6 +39,7 @@ namespace BARNEY_NS {
       inline __rtc_device
       void setHitAttributes(render::HitAttributes &hit,
                             const InterpolatePerVertex &interpolate,
+                            const render::World::DD &world,
                             bool dbg=false) const;
 
       render::GeometryAttributes::DD attributes;
@@ -52,8 +54,6 @@ namespace BARNEY_NS {
                                DevGroup::SP devices,
                                const std::string &type);
     
-    // static void addVars(std::vector<OWLVarDecl> &vars, int base);
-    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "Geometry{}"; }
@@ -65,13 +65,13 @@ namespace BARNEY_NS {
                          Device *device);
     void writeDD(Geometry::DD &dd,
                 Device *device);
-    
-    // void setAttributesOn(OWLGeom geom);
 
     bool set1f(const std::string &member,
                const float &value) override;
     bool set3f(const std::string &member,
                const vec3f &value) override;
+    bool set4f(const std::string &member,
+               const vec4f &value) override;
     bool setData(const std::string &member,
                  const barney_api::Data::SP &value) override;
     bool setObject(const std::string &member,
@@ -97,15 +97,23 @@ namespace BARNEY_NS {
   inline __rtc_device
   void Geometry::DD::setHitAttributes(render::HitAttributes &hit,
                                       const InterpolatePerVertex &interpolate,
+                                      const render::World::DD &world,
                                       bool dbg) const
   {
     auto set = [&](vec4f &out,
                    const GeometryAttribute::DD &in,
+                   const rtc::float4 *instanceAttribute,
                    bool dbg=false)
     {
       switch(in.scope) {
       case GeometryAttribute::INVALID:
-        /* nothing - leave default */
+        /* if the _geometry_ doesn't have an attribute set, it can
+           still come from an instance */
+        if (instanceAttribute)
+          out = rtc::load(instanceAttribute[hit.instID]);
+        else 
+          /* nothing - leave default */
+          ;
         break;
       case GeometryAttribute::CONSTANT:
         out = rtc::load(in.value);
@@ -122,9 +130,9 @@ namespace BARNEY_NS {
     for (int i=0;i<attributes.count;i++) {
       vec4f     &out = hit.attribute[i];
       const auto &in  = this->attributes.attribute[i];
-      set(out,in);
+      set(out,in,world.instanceAttributes[i]);
     }
-    set(hit.color,this->attributes.colorAttribute,dbg);
+    set(hit.color,this->attributes.colorAttribute,world.instanceAttributes[4],dbg);
   }
   
 }

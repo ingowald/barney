@@ -36,10 +36,11 @@ namespace BARNEY_NS {
         auto ctx     = model->slotContext;
         dd.rays      = device->rayQueue->traceAndShadeReadQueue;
         dd.numRays   = device->rayQueue->numActive;
-        dd.world     = model->getInstanceAccel(device);
-        dd.materials = ctx->materialRegistry->getDD(device);
-        dd.samplers  = ctx->samplerRegistry->getDD(device);
-        if (dd.numRays == 0 || dd.world == 0) {
+        dd.world     = model->world->getDD(device);
+        dd.accel     = model->getInstanceAccel(device);
+        // dd.materials = ctx->materialRegistry->getDD(device);
+        // dd.samplers  = ctx->samplerRegistry->getDD(device);
+        if (dd.numRays == 0 || dd.accel == 0) {
           /* iw - it's perfectly valid for an app to 'render' a model
              that's empty, so it's possible that dd.world is 0. Just
              skip calling the trace kernel, which may not like getting

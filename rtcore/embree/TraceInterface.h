@@ -23,6 +23,7 @@ namespace rtc {
       vec3i getLaunchIndex() const;
       vec2f getTriangleBarycentrics() const;
       int getPrimitiveIndex() const;
+      int getInstanceIndex() const;
       float getRayTmax() const;
       float getRayTmin() const;
       vec3f getObjectRayDirection() const;

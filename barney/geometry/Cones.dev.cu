@@ -73,11 +73,15 @@ namespace BARNEY_NS {
       Ray &ray    = *(Ray*)rt.getPRD();
       const auto &self
         = *(Cones::DD*)rt.getProgramData();
-      int primID = rt.getPrimitiveIndex();
+      const int primID = rt.getPrimitiveIndex();
+      const int instID = rt.getInstanceIndex();
+      const World::DD &world = OptixGlobals::get(rt).world;
         
       render::HitAttributes hitData;
+      hitData.primID          = primID;
+      hitData.instID          = instID;
       const DeviceMaterial &material
-        = OptixGlobals::get(rt).materials[self.materialID];
+        = OptixGlobals::get(rt).world.materials[self.materialID];
       hitData.t = ray.tMax;
       float ray_tmin = rt.getRayTmin();
       
@@ -133,7 +137,6 @@ namespace BARNEY_NS {
             vec3f N = normalize(-ba * inversesqrt(m0));
             vec3f P = (vec3f)ro+t*rd;
 
-            hitData.primID          = primID;
             hitData.t               = t;
             hitData.objectPosition  = P;
             hitData.objectNormal    = N;
@@ -143,10 +146,10 @@ namespace BARNEY_NS {
               = normalize(rt.transformNormalFromObjectToWorldSpace(N));
           
             // trigger the anari attribute evaluation
-            self.setHitAttributes(hitData,interpolator,ray.dbg);
+            self.setHitAttributes(hitData,interpolator,world,ray.dbg);
           
             // ... store the hit in the ray, rqs-style ...
-            material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+            material.setHit(ray,hitData,world.samplers,ray.dbg);
           
             // .... and let optix know we did have a hit.
             rt.reportIntersection(hitData.t, 0);
@@ -161,7 +164,6 @@ namespace BARNEY_NS {
             vec3f N = normalize(ba * inversesqrt(m0));
             vec3f P = (vec3f)ro+t*rd;
 
-            hitData.primID          = primID;
             hitData.t               = t;
             hitData.objectPosition  = P;
             hitData.objectNormal    = N;
@@ -171,10 +173,10 @@ namespace BARNEY_NS {
               = normalize(rt.transformNormalFromObjectToWorldSpace(N));
                     
             // trigger the anari attribute evaluation
-            self.setHitAttributes(hitData,interpolator,ray.dbg);
+            self.setHitAttributes(hitData,interpolator,world,ray.dbg);
           
             // ... store the hit in the ray, rqs-style ...
-            material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+            material.setHit(ray,hitData,world.samplers,ray.dbg);
           
             // .... and let optix know we did have a hit.
             rt.reportIntersection(hitData.t, 0);
@@ -214,10 +216,10 @@ namespace BARNEY_NS {
           = normalize(rt.transformNormalFromObjectToWorldSpace(N));
         
         // trigger the anari attribute evaluation
-        self.setHitAttributes(hitData,interpolator,ray.dbg);
+        self.setHitAttributes(hitData,interpolator,world,ray.dbg);
         
         // ... store the hit in the ray, rqs-style ...
-        material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+        material.setHit(ray,hitData,world.samplers,ray.dbg);
         
         // .... and let optix know we did have a hit.
         rt.reportIntersection(hitData.t, 0);

@@ -62,7 +62,7 @@ namespace BARNEY_NS {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      // if (dbg) printf("devicematerial type %i\n",(int)type);
+      if (dbg) printf("devicematerial type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)

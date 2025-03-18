@@ -23,11 +23,12 @@ namespace BARNEY_NS {
   {
     DD dd;
     dd.direction = normalize(xfmVector(instanceXfm,direction));
+    // dd.direction = normalize(vec3f(-1,-1,-1));
     dd.color = color;
     dd.radiance
       = isnan(irradiance)
       ? radiance
-      : (irradiance * ONE_OVER_FOUR_PI);
+      : irradiance; //(irradiance * ONE_OVER_FOUR_PI);
     // dd.irradiance = irradiance;
     return dd;
   }

@@ -93,7 +93,6 @@ namespace BARNEY_NS {
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
       const float clampRange = .1f;
-      
       bsdf.baseColor = (const vec3f&)baseColor;
       bsdf.metallic = metallic.x;
       bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
@@ -104,6 +103,14 @@ namespace BARNEY_NS {
         ;
       
       bsdf.ior = ior.x;
+      if (dbg) printf("created nvisii bsdf base %f %f %f met %f base rough %f ior %f alpha %f\n",
+                      (float)bsdf.baseColor.x,
+                      (float)bsdf.baseColor.y,
+                      (float)bsdf.baseColor.z,
+                      (float)bsdf.metallic,
+                      (float)bsdf.roughness,
+                      (float)bsdf.ior,
+                      (float)bsdf.alpha);
       return bsdf;
     }
 #endif

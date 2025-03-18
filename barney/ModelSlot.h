@@ -46,6 +46,7 @@ namespace BARNEY_NS {
     void setInstances(barney_api::Group **groups,
                       const affine3f *xfms,
                       int numInstances);
+    void setInstanceAttributes(int attributeID, const PODData::SP &data);
 
     struct {
       std::vector<Group::SP> groups;
@@ -59,6 +60,7 @@ namespace BARNEY_NS {
         return 0;
       return pld->instanceGroup->getDD();
     }
+    
     struct PLD {
       rtc::Group *instanceGroup = 0;
     };
@@ -73,7 +75,7 @@ namespace BARNEY_NS {
     int            const slotID;
     GlobalModel   *const model;
     SlotContext   *const slotContext;
-    render::World::SP world;
+    render::World::SP    world;
 
   };
   

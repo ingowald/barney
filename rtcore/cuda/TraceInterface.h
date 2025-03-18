@@ -67,6 +67,9 @@ namespace rtc {
       inline __device__ int getPrimitiveIndex() const
       { return current.primID; }
       
+      inline __device__ int getInstanceIndex() const
+      { return current.instID; }
+      
       inline __device__ float getRayTmax() const
       { return current.tMax; }
       

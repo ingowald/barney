@@ -33,27 +33,6 @@ namespace BARNEY_NS {
     struct DeviceMaterial;
     struct HostMaterial;
 
-// #define DEFAULT_RADIANCE_FROM_ENV .8f
-
-    // struct QuadLight {
-    //   vec3f corner, edge0, edge1, emission;
-    //   /*! normal of this lights source; this could obviously be derived
-    //     from cross(edge0,edge1), but is handle to have in a
-    //     renderer */
-    //   vec3f normal;
-    //   /*! area of this lights source; this could obviously be derived
-    //     from cross(edge0,edge1), but is handle to have in a
-    //     renderer */
-    //   float area;
-    // };
-
-    // struct DirLight {
-    //   std::string toString();
-    //   vec3f direction;
-    //   vec3f radiance;
-    // };
-
-  
     /*! the rendering/path racing related part of a model that describes
       global render settings like light sources, background, envmap,
       etc */
@@ -68,7 +47,7 @@ namespace BARNEY_NS {
         
         const DeviceMaterial *materials;
         const Sampler::DD    *samplers;
-        
+        const rtc::float4    *instanceAttributes[5];
         EnvMapLight::DD       envMapLight;
       };
       struct {
@@ -82,7 +61,9 @@ namespace BARNEY_NS {
       void set(const std::vector<QuadLight::DD> &quadLights);
       void set(const std::vector<DirLight::DD> &dirLights);
       void set(EnvMapLight::SP envMapLight, const affine3f &xfm);
-
+      
+      PODData::SP instanceAttributes[5];
+      
       DD getDD(Device *device);
 
       struct PLD {

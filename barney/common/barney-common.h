@@ -30,12 +30,20 @@
 
 #define __barney_align(a) OWL_ALIGN(a)
 
-
-#if BARNEY_RTC_OPTIX
+#if BARNEY_MPI
+# if BARNEY_RTC_OPTIX
+#  define BARNEY_MPI_NS barney_optix
+# endif
+# if BARNEY_RTC_EMBREE
+#  define BARNEY_MPI_NS barney_embree
+# endif
+#else
+# if BARNEY_RTC_OPTIX
 #  define BARNEY_NS barney_optix
-#endif
-#if BARNEY_RTC_EMBREE
+# endif
+# if BARNEY_RTC_EMBREE
 #  define BARNEY_NS barney_embree
+# endif
 #endif
 #if BARNEY_RTC_CUDA
 #  define BARNEY_NS barney_cuda
