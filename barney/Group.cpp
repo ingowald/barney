@@ -92,8 +92,10 @@ namespace BARNEY_NS {
   
   void Group::build()
   {
+      PING;BARNEY_CUDA_SYNC_CHECK();
     freeAllGeoms();
 
+      PING;BARNEY_CUDA_SYNC_CHECK();
     // ==================================================================
     // triangles and user geoms - for now always rebuild
     // ==================================================================
@@ -104,6 +106,7 @@ namespace BARNEY_NS {
         geom->build();
       }
       
+      PING;BARNEY_CUDA_SYNC_CHECK();
       // now, do our stuff on a per-device basis
       for (auto device : *devices) {
         PLD *myPLD = getPLD(device);
@@ -115,22 +118,28 @@ namespace BARNEY_NS {
             myPLD->userGeoms.push_back(g);
         }
         
+      PING;BARNEY_CUDA_SYNC_CHECK();
         if (!myPLD->userGeoms.empty()) {
           myPLD->userGeomGroup
             = device->rtc->createUserGeomsGroup(myPLD->userGeoms);
+      PING;BARNEY_CUDA_SYNC_CHECK();
           myPLD->userGeomGroup->buildAccel();
+      PING;BARNEY_CUDA_SYNC_CHECK();
         }
         
+      PING;BARNEY_CUDA_SYNC_CHECK();
         if (!myPLD->triangleGeoms.empty()) {
           myPLD->triangleGeomGroup
             = device->rtc->createTrianglesGroup(myPLD->triangleGeoms);
           myPLD->triangleGeomGroup->buildAccel();
         }
+      PING;BARNEY_CUDA_SYNC_CHECK();
       }
     }
     // ==================================================================
     // volumes - these may need two passes
     // ==================================================================
+      PING;BARNEY_CUDA_SYNC_CHECK();
     {
       bool needRefit = false;
       bool needRebuild = false;
@@ -166,6 +175,7 @@ namespace BARNEY_NS {
         if (volume)
           volume->build(true);
 
+      PING;BARNEY_CUDA_SYNC_CHECK();
       // ------------------------------------------------------------------
       // now that all volumes (and their accels) have been built, go
       // over all those and gather the generated volume geoms and
@@ -191,6 +201,7 @@ namespace BARNEY_NS {
         if (!myPLD->volumeGeoms.empty())
           printf("todo: build volume geoms group, and add it to root\n");
       }
+      PING;BARNEY_CUDA_SYNC_CHECK();
     }
   }
   

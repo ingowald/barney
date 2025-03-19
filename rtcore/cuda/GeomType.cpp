@@ -29,7 +29,8 @@ namespace rtc {
     
     UserGeomType::UserGeomType(Device *device,
                    size_t sizeOfDD,
-                   BoundsProg bounds,
+                   BoundsKernel bounds,
+                   // BoundsProg bounds,
                    IntersectProg intersect,
                    AHProg ah,
                    CHProg ch)

@@ -39,7 +39,9 @@ namespace rtc {
             const vec3i *indices;
           } triangles;
           struct {
-            BoundsProg    bounds;
+            // boundsprog is axed - we handle bounds as a complete kernel
+            // jujst like for optix backend.
+            //BoundsProg    bounds;
             IntersectProg intersect;
           } user;
         };

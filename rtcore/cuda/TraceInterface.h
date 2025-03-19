@@ -122,7 +122,7 @@ namespace rtc {
       
       // ray/traversal state:
       void  *prd;
-      void  *geomData;
+      const void  *geomData;
       float  tMin;
       Geom::SBTHeader *acceptedSBT;
       struct {
@@ -445,38 +445,31 @@ namespace rtc {
             vec3f v2 = header->triangles.vertices[indices.z];
             if (!intersectTriangle(v0,v1,v2))
               continue;
-            if (dbg)
-              printf("HIT TRI %i @ %f\n",
-                     current.primID,current.tMax);
-            rejectThisHit = false;
-            if (dbg)
-              printf("AH is %p\n",header->ah);
-            if (header->ah) {
-              header->ah(*this);
-              if (dbg)
-                printf("DONE ah\n");
-            }
-            if (!rejectThisHit) {
-              accepted.tMax = current.tMax;
-              accepted.primID = current.primID;
-              accepted.instID = current.instID;
-              accepted.triangleBarycentrics = current.triangleBarycentrics;
-              acceptedSBT = header;
-            }
           } else {
-            printf("user geom isec not implemented...\n");
+            header->user.intersect(*this);
+            if (current.tMax >= accepted.tMax)
+              continue;
+          }
+          rejectThisHit = false;
+          if (header->ah) header->ah(*this);
+          if (!rejectThisHit) {
+            accepted.tMax = current.tMax;
+            accepted.primID = current.primID;
+            accepted.instID = current.instID;
+            accepted.triangleBarycentrics = current.triangleBarycentrics;
+            acceptedSBT = header;
           }
         }
         nodeID = -1;
       }
-#if 0
-                if (dbg)
-      printf("accepted ...%p\n",acceptedSBT);
+#if 1
+      if (dbg)
+        printf("accepted ...%p\n",acceptedSBT);
       if (acceptedSBT && acceptedSBT->ch) {
         current = accepted;
         this->geomData = (acceptedSBT+1);
-                if (dbg)
-        printf("accepted CH ...%p\n",acceptedSBT->ch);
+        if (dbg)
+          printf("accepted CH ...%p\n",acceptedSBT->ch);
         acceptedSBT->ch(*this);
       }
 #endif
@@ -548,3 +541,92 @@ namespace rtc {
     rtc_cuda_run_##name<<<nb,bs>>>(ti);                         \
   }                                                             \
   
+
+
+#define RTC_EXPORT_USER_GEOM(name,DD,type,has_ah,has_ch)                \
+                                                                        \
+  __device__ void                                                       \
+  _rtc_cuda_boundsFunc__##name(const void *geom,                        \
+                               owl::common::box3f &result,              \
+                               int primID)                              \
+  {                                                                     \
+    ::rtc::cuda::TraceInterface ti;                                     \
+    type::bounds(ti,geom,result,primID);                                \
+  }                                                                     \
+  __global__ void                                                       \
+  _rtc_cuda_boundsFuncKernel__##name(const void *geom,                  \
+                                     owl::common::box3f *boundsArray,   \
+                                     int numPrims)                      \
+  {                                                                     \
+    uint32_t blockIndex                                                 \
+      = blockIdx.x                                                      \
+      + blockIdx.y * gridDim.x                                          \
+      + blockIdx.z * gridDim.x * gridDim.y;                             \
+    uint32_t primID                                                     \
+      = threadIdx.x + blockDim.x*threadIdx.y                            \
+      + blockDim.x*blockDim.y*blockIndex;                               \
+    if (primID < numPrims) {                                            \
+      _rtc_cuda_boundsFunc__##name(geom,boundsArray[primID],primID);    \
+    }                                                                   \
+  }                                                                     \
+  extern "C" void                                                       \
+  _rtc_cuda_writeBounds__##name(rtc::cuda::Device *device,              \
+                                const void *geom,                       \
+                                owl::common::box3f *boundsArray,        \
+                                int numPrims)                           \
+  {                                                                     \
+    if (numPrims == 0) return;                                          \
+    int bs = 1024;                                                      \
+    int nb = divRoundUp(numPrims,bs);                                   \
+    _rtc_cuda_boundsFuncKernel__##name<<<nb,bs,0,device->stream>>>      \
+      (geom,boundsArray,numPrims);                                      \
+  }                                                                     \
+  __global__                                                            \
+  void rtc_cuda_writeAddresses_##name(rtc::Geom::SBTHeader *h)          \
+  {                                                                     \
+    h->ah = has_ah?type::anyHit:0;                                      \
+    h->ch = has_ch?type::closestHit:0;                                  \
+    h->user.intersect = type::intersect;                                \
+  }                                                                     \
+  rtc::GeomType *createGeomType_##name(rtc::Device *device)             \
+  {                                                                     \
+    ::rtc::SetActiveGPU forDuration(device);                            \
+    rtc::Geom::SBTHeader *h;                                            \
+    cudaMalloc((void **)&h,sizeof(*h));                                 \
+    rtc_cuda_writeAddresses_##name<<<1,32>>>(h);                        \
+    device->sync();                                                     \
+    rtc::Geom::SBTHeader hh;                                            \
+    cudaMemcpy(&hh,h,sizeof(hh),cudaMemcpyDefault);                     \
+    return new rtc::cuda::UserGeomType                                  \
+      (device,                                                          \
+       sizeof(DD),                                                      \
+       _rtc_cuda_writeBounds__##name,                                   \
+       hh.user.intersect,                                               \
+       hh.ah,                                                           \
+       hh.ch                                                            \
+       );                                                               \
+  }
+
+    
+#define RTC_EXPORT_TRIANGLES_GEOM(name,DD,Programs,has_ah,has_ch)       \
+  __global__                                                            \
+  void rtc_cuda_writeAddresses_##name(rtc::Geom::SBTHeader *h)          \
+  {                                                                     \
+    h->ah = has_ah?Programs::anyHit:0;                                  \
+    h->ch = has_ch?Programs::closestHit:0;                              \
+  }                                                                     \
+  rtc::GeomType *createGeomType_##name(rtc::Device *device)             \
+  {                                                                     \
+    ::rtc::SetActiveGPU forDuration(device);                            \
+    rtc::Geom::SBTHeader *h;                                            \
+    cudaMalloc((void **)&h,sizeof(*h));                                 \
+    rtc_cuda_writeAddresses_##name<<<1,32>>>(h);                        \
+    device->sync();                                                     \
+    rtc::Geom::SBTHeader hh;                                            \
+    cudaMemcpy(&hh,h,sizeof(hh),cudaMemcpyDefault);                     \
+    return new rtc::cuda::TrianglesGeomType                             \
+      (device,                                                          \
+       sizeof(DD),                                                      \
+       hh.ah,                                                           \
+       hh.ch);                                                          \
+  }

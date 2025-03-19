@@ -28,12 +28,14 @@ namespace rtc {
     {
       SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL(Malloc((void**)&d_data,numBytes));
+      PING; PRINT(numBytes); PRINT(d_data);
       if (initValues)
         BARNEY_CUDA_CALL(Memcpy(d_data,initValues,numBytes,cudaMemcpyDefault));
     }
 
     Buffer::~Buffer()
     {
+      PING; PRINT(d_data);
       cudaFree(d_data);
     }
     
