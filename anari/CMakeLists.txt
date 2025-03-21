@@ -144,8 +144,7 @@ install(TARGETS# barney
 )
 endif()
 
-file(GLOB DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "visrtx_*.json")
-list(APPEND DEVICE_JSONS "barney_device.json")
+file(GLOB DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
 
 foreach(file ${DEVICE_JSONS})
   file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file} INPUT ${file})
@@ -167,4 +166,4 @@ if (BARNEY_MPI)
     JSON_EXTENSION_FILES ${DEVICE_JSONS}
   )
 endif()
-  
+

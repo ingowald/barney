@@ -174,7 +174,7 @@ namespace barney_device {
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_depthBuffer, BN_FLOAT);
       *pixelType = ANARI_FLOAT32;
       return m_depthBuffer;
-    } else if (channel == "channel.colorGPU") {
+    } else if (channel == "channel.colorCUDA") {
 #if BANARI_HAVE_CUDA
       if (m_colorBuffer)
         throw std::runtime_error
@@ -189,7 +189,7 @@ namespace barney_device {
 #else
       return nullptr;
 #endif
-    } else if (channel == "channel.depthGPU") {
+    } else if (channel == "channel.depthCUDA") {
 #if BANARI_HAVE_CUDA
       if (m_depthBuffer)
         throw std::runtime_error
@@ -217,17 +217,17 @@ namespace barney_device {
     } else if (channel == "channel.depth" && m_depthBuffer) {
       if (m_depthBuffer) delete[] m_depthBuffer;
       m_depthBuffer = 0;
-    } else if (channel == "channel.colorGPU") {
+    } else if (channel == "channel.colorCUDA") {
 #if BANARI_HAVE_CUDA
       if (m_colorBuffer) cudaFree(m_colorBuffer);
       m_colorBuffer = 0;
 #endif
-    } else if (channel == "channel.depthGPU") {
+    } else if (channel == "channel.depthCUDA") {
 #if BANARI_HAVE_CUDA
       if (m_depthBuffer) cudaFree(m_depthBuffer);
       m_depthBuffer = 0;
 #endif
-    }    
+    }
   }
 
   int Frame::frameReady(ANARIWaitMask m)
