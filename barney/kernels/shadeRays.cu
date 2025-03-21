@@ -33,6 +33,9 @@ namespace BARNEY_NS {
 #define USE_MIS 1
 
 
+#define CLAMP_F_R 3.f
+
+
 #if RTC_DEVICE_CODE
     inline __rtc_device float square(float f) { return f*f; }
   
@@ -219,7 +222,7 @@ namespace BARNEY_NS {
       if (world.envMapLight.texture)
         ls = world.envMapLight.sample(random,dbg);
       else {
-#if 1
+#if 0
         ls.direction = randomDirection(random);
         ls.radiance  = renderer.ambientRadiance;
         if (dot(ls.direction,N) < 0.f) ls.direction = -ls.direction;
@@ -302,6 +305,8 @@ namespace BARNEY_NS {
       dlsWeight *= 1.f/sumWeights;
       
       float r = random();
+      if (dbg) printf(" light sample %f in cdf %f %f %f\n",
+                      r,alsWeight,elsWeight,dlsWeight);
       if (r <= alsWeight) {
         ls = als;
         ls.pdf *= alsWeight;
@@ -315,12 +320,12 @@ namespace BARNEY_NS {
 # endif
 #endif
       } else {
-        if (dbg) printf(" ->  picked DIR light sample\n");
         ls = dls;
         ls.pdf *= dlsWeight;
 # if USE_MIS
         lightIsDirLight = true;
 # endif
+        if (dbg) printf(" ->  picked DIR light sample, dls weight %f pdf %f\n",dlsWeight,ls.pdf);
       }
       if (isnan(ls.pdf) || (ls.pdf <= 0.f)) return false;
       
@@ -607,6 +612,9 @@ namespace BARNEY_NS {
             printf(" no f_r, killing shadow ray\n");
           shadowRay.tMax = -1.f;
         } else {
+#ifdef CLAMP_F_R
+          f_r.value = min(f_r.value,vec3f(CLAMP_F_R));
+#endif
           vec3f tp_sr
             = (incomingThroughput)
             * (1.f/ls.pdf)
@@ -615,6 +623,8 @@ namespace BARNEY_NS {
             // * ONE_OVER_PI
             * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)))
             ;
+
+          
           if (dbg) {
             printf(" -> inc tp %f %f %f, dot %f\n",
                    incomingThroughput.x,
@@ -717,6 +727,10 @@ namespace BARNEY_NS {
                frontFacingSurfaceOffset.z); 
       path.org
         = dg.P + scatterResult.offsetDirection * offsetEpsilon*frontFacingSurfaceOffset;
+// #ifdef CLAMP_F_R
+//       scatterResult.f_r = min(scatterResult.f_r,vec3f(100.f));
+// #endif
+
       if (dbg)
         printf("path scattered, bsdf in scatter dir is %f %f %f, pdf %f\n",
                (float)scatterResult.f_r.x, 

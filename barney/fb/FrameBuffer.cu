@@ -274,7 +274,7 @@ namespace BARNEY_NS {
         device->rtc->copy(this->denoisedColor,this->linearColor,
                           numPixels.x*numPixels.y*sizeof(vec4f));
       } else {
-        float blendFactor = accumID / (accumID+200.f); 
+        float blendFactor = (accumID-1) / (accumID+20.f); 
         denoiser->run(this->denoisedColor,
                       this->linearColor,
                       this->linearNormal,blendFactor);

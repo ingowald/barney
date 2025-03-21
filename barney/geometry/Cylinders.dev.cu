@@ -214,6 +214,7 @@ namespace BARNEY_NS {
 
       vec3f objectP = ray_org + ray.tMax * ray_dir;
       float t_hit = ray.tMax;
+      objectP = objectP + 1e-4f * normalize(objectN);
 
       float lerp_t
         = dot(objectP-v0,v1-v0)
