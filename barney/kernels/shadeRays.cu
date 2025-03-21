@@ -45,7 +45,8 @@ namespace BARNEY_NS {
     inline __rtc_device
     float safe_eps(float f, vec3f v)
     {
-      return max(f,1e-5f*reduce_max(abs(v)));
+      // return 1e-4f;
+      return max(f,1e-6f*reduce_max(abs(v)));
     }
 
     
