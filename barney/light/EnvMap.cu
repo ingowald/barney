@@ -142,7 +142,6 @@ namespace BARNEY_NS {
   }
 #endif
   
-  /*! TODO not yet applying xfm!!! */
   EnvMapLight::DD EnvMapLight::getDD(Device *device,
                                      const affine3f &xfm) 
   {
@@ -161,7 +160,7 @@ namespace BARNEY_NS {
       dd.cdf_y = 0;
       dd.allCDFs_x = 0;
     }
-      
+    dd.scale   = params.scale;
     dd.toWorld = toWorld;
     dd.toLocal = toLocal;
     return dd;
@@ -169,9 +168,15 @@ namespace BARNEY_NS {
 
   void EnvMapLight::commit()
   {
+#if 1
+    toWorld.vz = -normalize(params.up);
+    toWorld.vy = -normalize(cross(toWorld.vz,params.direction));
+    toWorld.vx = normalize(cross(toWorld.vy,toWorld.vz));
+#else
     toWorld.vz = normalize(params.up);
     toWorld.vy = normalize(cross(toWorld.vz,params.direction));
     toWorld.vx = normalize(cross(toWorld.vy,toWorld.vz));
+#endif
     toLocal    = rcp(toWorld);
     assert(params.texture);
     texture    = params.texture;
@@ -239,37 +244,6 @@ namespace BARNEY_NS {
   }
   
   
-  bool EnvMapLight::set2i(const std::string &member,
-                          const vec2i &value) 
-  {
-    return false;
-  }
-
-  bool EnvMapLight::set3f(const std::string &member,
-                          const vec3f &value) 
-  {
-    if (member == "direction") {
-      params.direction = value;
-      return true;
-    }
-    if (member == "up") {
-      params.up = value;
-      return true;
-    }
-    return false;
-  }
-
-  bool EnvMapLight::setObject(const std::string &member,
-                              const Object::SP &value) 
-  {
-    if (member == "texture") {
-      params.texture = value->as<Texture>();
-      return true;
-    }
-    return false;
-  }
-
-
   EnvMapLight::EnvMapLight(Context *context,
                 const DevGroup::SP &devices)
     : Light(context,devices)
@@ -293,6 +267,60 @@ namespace BARNEY_NS {
     
   }
 
+  bool EnvMapLight::set1f(const std::string &member,
+                          const float &value) 
+  {
+    if (Light::set1f(member,value))
+      return true;
+    
+    if (member == "scale") {
+      params.scale = value;
+      return true;
+    }
+
+    return false;
+  }
+
+  bool EnvMapLight::set2i(const std::string &member,
+                          const vec2i &value) 
+  {
+    if (Light::set2i(member,value))
+      return true;
+    
+    return false;
+  }
+
+  bool EnvMapLight::set3f(const std::string &member,
+                          const vec3f &value) 
+  {
+    if (Light::set3f(member,value))
+      return true;
+    
+    if (member == "direction") {
+      params.direction = value;
+      return true;
+    }
+    if (member == "up") {
+      params.up = value;
+      return true;
+    }
+
+    return false;
+  }
+
+  bool EnvMapLight::setObject(const std::string &member,
+                              const Object::SP &value) 
+  {
+    if (Light::setObject(member,value))
+      return true;
+    
+    if (member == "texture") {
+      params.texture = value->as<Texture>();
+      return true;
+    }
+    return false;
+  }
+  
   RTC_EXPORT_COMPUTE2D(computeWeights_xy,ComputeWeights_xy);
   RTC_EXPORT_COMPUTE1D(computeCDFs_doLine,ComputeCDFs_doLine);
   RTC_EXPORT_COMPUTE1D(normalize_cdf_y,Normalize_cdf_y);

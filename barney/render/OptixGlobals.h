@@ -22,6 +22,7 @@
 #if BARNEY_DEVICE_PROGRAM
 # include "rtcore/TraceInterface.h"
 #endif
+#include "barney/render/World.h"
 
 namespace BARNEY_NS {
   namespace render {
@@ -43,17 +44,19 @@ namespace BARNEY_NS {
       int                    numRays;
       
       /*! this device's world to trace rays into */
-      rtc::device::AccelHandle  world;
+      rtc::device::AccelHandle  accel;
+      World::DD                 world;
+      // rtc::float4              *instanceAttributes[5];
       
-      /*! global list of samplers, to allow calling samplers during
-          anyhit material evaluation */
-      Sampler::DD           *samplers;
+      // /*! global list of samplers, to allow calling samplers during
+      //     anyhit material evaluation */
+      // Sampler::DD           *samplers;
       
-      /*! global list of materials, to allow anyhit material
-          evaluation */
-      DeviceMaterial        *materials;
+      // /*! global list of materials, to allow anyhit material
+      //     evaluation */
+      // DeviceMaterial        *materials;
       
-      // int                    globalIndex;
+      // // int                    globalIndex;
     };
   }
 }

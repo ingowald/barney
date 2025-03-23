@@ -164,10 +164,11 @@ namespace BARNEY_NS {
     static inline __rtc_device
     void intersect(rtc::TraceInterface &rt)
     {
-      const int primID
-        = rt.getPrimitiveIndex();
+      const int primID = rt.getPrimitiveIndex();
+      const int instID = rt.getInstanceIndex();
       const auto &self
         = *(Capsules::DD*)rt.getProgramData();
+      const World::DD &world = OptixGlobals::get(rt).world;
       Ray &ray    = *(Ray*)rt.getPRD();
 
       const vec2i idx = self.indices[primID];
@@ -193,7 +194,7 @@ namespace BARNEY_NS {
 
       render::HitAttributes hitData;
       const DeviceMaterial &material
-        = OptixGlobals::get(rt).materials[self.materialID];
+        = OptixGlobals::get(rt).world.materials[self.materialID];
     
       // move just a little bit less in case the ray enters the box just
       // where it touches the prim
@@ -248,6 +249,7 @@ namespace BARNEY_NS {
 
       // set up hit data for anari hit attributes
       hitData.primID          = primID;
+      hitData.instID          = instID;
       hitData.t               = hit_t;
       hitData.objectPosition  = objectP;
       hitData.objectNormal    = normalize(objectN);
@@ -267,10 +269,10 @@ namespace BARNEY_NS {
       hitData.worldPosition += surfOfs_eps * hitData.worldNormal;
 
       // trigger the anari attribute evaluation
-      self.setHitAttributes(hitData,interpolator,ray.dbg);
+      self.setHitAttributes(hitData,interpolator,world,ray.dbg);
 
       PackedBSDF bsdf
-        = material.createBSDF(hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+        = material.createBSDF(hitData,OptixGlobals::get(rt).world.samplers,ray.dbg);
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);
@@ -279,7 +281,7 @@ namespace BARNEY_NS {
       
       // ... store the hit in the ray, rqs-style ...
       // const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
-      material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+      material.setHit(ray,hitData,world.samplers,ray.dbg);
 
       // .... and let optix know we did have a hit.
       rt.reportIntersection(hit_t, 0);

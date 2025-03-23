@@ -326,13 +326,21 @@ configure_cuda_source(api/barney.cu)
 # barney
 # ------------------------------------------------------------------
 add_library(barney SHARED api/barney.cu)
-target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_config>)
+target_link_libraries(barney PUBLIC
+  $<BUILD_INTERFACE:barney_config>
+)
 set_library_properties(barney)
+target_include_directories(barney PUBLIC
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 # ------------------------------------------------------------------
 # barney_static
 # ------------------------------------------------------------------
 add_library(barney_static STATIC api/barney.cu)
+target_include_directories(barney_static PUBLIC
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 target_compile_definitions(barney_static PUBLIC -Dbarney_STATIC=1)
 target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_config>)
@@ -352,6 +360,9 @@ if (BARNEY_MPI)
     #    barney_config
     $<BUILD_INTERFACE:barney_config>
   )
+  target_include_directories(barney_mpi PUBLIC
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  )
   set_library_properties(barney_mpi) 
   target_compile_definitions(barney_mpi PRIVATE -DBARNEY_MPI=1)
  
@@ -364,6 +375,9 @@ if (BARNEY_MPI)
   target_link_libraries(barney_mpi_static PUBLIC
     #   barney_config
     $<BUILD_INTERFACE:barney_config>
+  )
+  target_include_directories(barney_mpi_static PUBLIC
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
   set_library_properties(barney_mpi_static)
 endif()

@@ -53,6 +53,7 @@ namespace BARNEY_NS {
           /*! for path tracer: tracks whether we are, or aren't, in a
             refractable medium */
           uint64_t isInMedium : 1;
+          uint64_t isSpecular : 1;
           uint64_t isShadowRay: 1;
           uint64_t dbg        : 1;
         };

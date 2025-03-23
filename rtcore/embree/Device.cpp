@@ -48,6 +48,8 @@ namespace rtc {
     { return triangleBarycentrics; }
     int TraceInterface::getPrimitiveIndex() const
     { return primID; }
+    int TraceInterface::getInstanceIndex() const
+    { return instID; }
     float TraceInterface::getRayTmax() const
     { return embreeRay->tfar; }
     float TraceInterface::getRayTmin() const

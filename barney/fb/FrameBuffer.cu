@@ -258,7 +258,7 @@ namespace BARNEY_NS {
       buffer and run the denoiser, just not copy it to host; the
       result can then be read by framebuffergetpointer() */
   void FrameBuffer::read(BNFrameBufferChannel channel,
-                         void *hostPtr,
+                         void *appMemory,
                          BNDataType requestedFormat)
   {
     if (!isOwner) return;
@@ -274,7 +274,7 @@ namespace BARNEY_NS {
         device->rtc->copy(this->denoisedColor,this->linearColor,
                           numPixels.x*numPixels.y*sizeof(vec4f));
       } else {
-        float blendFactor = accumID / (accumID+200.f); 
+        float blendFactor = (accumID-1) / (accumID+20.f); 
         denoiser->run(this->denoisedColor,
                       this->linearColor,
                       this->linearNormal,blendFactor);
@@ -294,17 +294,17 @@ namespace BARNEY_NS {
       dirty = false;
     }
 
-    if (!hostPtr) {
+    if (!appMemory) {
       device->rtc->sync();
       return;
     }
     
-    if (channel == BN_FB_DEPTH && hostPtr && linearDepth) {
+    if (channel == BN_FB_DEPTH && appMemory && linearDepth) {
       if (requestedFormat != BN_FLOAT)
         throw std::runtime_error("can only read depth channel as BN_FLOAT format");
       if (!linearDepth)
         throw std::runtime_error("requesting to read depth channel, but didn't create one");
-      device->rtc->copy(hostPtr,linearDepth,
+      device->rtc->copy(appMemory,linearDepth,
                         numPixels.x*numPixels.y*sizeof(float));
       device->rtc->sync();
       return;
@@ -316,7 +316,7 @@ namespace BARNEY_NS {
     switch(requestedFormat) {
     case BN_FLOAT4: 
     case BN_FLOAT4_RGBA: {
-      device->rtc->copy(hostPtr,denoisedColor,
+      device->rtc->copy(appMemory,denoisedColor,
                         numPixels.x*numPixels.y*sizeof(vec4f));
     } break;
     case BN_UFIXED8_RGBA: {
@@ -325,7 +325,7 @@ namespace BARNEY_NS {
       vec2ui bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,false };
       device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
-      device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
+      device->rtc->copy(appMemory,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
       device->rtc->freeMem(asFixed8);
     } break;
     case BN_UFIXED8_RGBA_SRGB: {
@@ -334,7 +334,7 @@ namespace BARNEY_NS {
       vec2ui bs(8,8);
       ToFixed8 args = { asFixed8,denoisedColor,numPixels,true };
       device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
-      device->rtc->copy(hostPtr,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
+      device->rtc->copy(appMemory,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
       device->rtc->freeMem(asFixed8);
     } break;
     default:

@@ -27,8 +27,7 @@ namespace BARNEY_NS {
     dd.radiance
       = isnan(irradiance)
       ? radiance
-      : (irradiance * ONE_OVER_FOUR_PI);
-    // dd.irradiance = irradiance;
+      : irradiance;
     return dd;
   }
 
@@ -59,11 +58,19 @@ namespace BARNEY_NS {
     }
     if (member == "radiance") {
       /* if - this is _not_ ANARI spec */
-      color = value;
-      radiance = 1.f;
+      std::cout << "#barney: WARNING - using float3 values for light (ir)radiance is deprecated" << std::endl;
+      radiance = reduce_max(value);
+      color = value/radiance;;
       return true;
     }
-    return false;
+    if (member == "irradiance") {
+      /* if - this is _not_ ANARI spec */
+      std::cout << "#barney: WARNING - using float3 values for light (ir)radiance is deprecated" << std::endl;
+      irradiance = reduce_max(value);
+      color = value/irradiance;
+      return true;
+    }
+    return false; 
   }
   
 }

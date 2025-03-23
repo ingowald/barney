@@ -336,6 +336,23 @@ namespace barney_api {
     return (BNRenderer)context->initReference(renderer);
   }
 
+  /*! allows for setting one of 5 attribute arrays for the given slot's
+    model. */
+  BARNEY_API
+  void bnSetInstanceAttributes(BNModel model,
+                               int slot,
+                               int attributeID,
+                               BNData value)
+  {
+    LOG_API_ENTRY;
+    Data::SP data
+      = value
+      ? ((Data *)value)->shared_from_this()->as<Data>()
+      : Data::SP{};
+    checkGet(model)->setInstanceAttributes(slot,attributeID,data);
+  }
+
+  
   BARNEY_API
   void bnSetInstances(BNModel model,
                       int slot,
@@ -348,11 +365,6 @@ namespace barney_api {
                                   (Group **)_groups,
                                   (const affine3f *)xfms,
                                   numInstances);
-    // std::vector<Group::SP> groups;
-    // for (int i=0;i<numInstances;i++) {
-    //   groups.push_back(checkGetSP(_groups[i]));
-    // }
-    // checkGet(model,slot)->setInstances(groups,(const affine3f *)xfms);
   }
   
   BARNEY_API
@@ -557,7 +569,11 @@ namespace barney_api {
   BARNEY_API
   void bnSetData(BNObject target, const char *param, BNData value)
   {
-    if (!checkGet(target)->setData(checkGet(param),checkGetSP(value)))
+    Data::SP data
+      = value
+      ? checkGetSP(value)
+      : Data::SP{};
+    if (!checkGet(target)->setData(checkGet(param),data))
       checkGet(target)->warn_unsupported_member(param,"BNData");
   }
 

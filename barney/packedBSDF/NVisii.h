@@ -26,18 +26,18 @@
 namespace BARNEY_NS {
   namespace render {
 
-      inline __both__ float pow2(float f) { return f*f; }
-      inline __both__ float pow5(float f) { return pow2(pow2(f))*f; }
-      inline __both__ float mix(float a, float b, float f) { return (1.f-f)*a + f*b; }
-      inline __both__ vec3f mix(vec3f a, vec3f b, vec3f f)
+      inline __rtc_device float pow2(float f) { return f*f; }
+      inline __rtc_device float pow5(float f) { return pow2(pow2(f))*f; }
+      inline __rtc_device float mix(float a, float b, float f) { return (1.f-f)*a + f*b; }
+      inline __rtc_device vec3f mix(vec3f a, vec3f b, vec3f f)
       { return vec3f(mix(a.x,b.x,f.x),mix(a.y,b.y,f.y),mix(a.z,b.z,f.z)); }
-      inline __both__ float heaviside(float f) { return (f<0.f)?0.f:1.f; }
+      inline __rtc_device float heaviside(float f) { return (f<0.f)?0.f:1.f; }
 
     
     namespace packedBSDF {
       namespace nvisii {
         using LCGRand = Random;
-        inline __both__ float lcg_randomf(Random &r) { return r(); }
+        inline __rtc_device float lcg_randomf(Random &r) { return r(); }
 
 #define DISNEY_DIFFUSE_BRDF 0
 #define DISNEY_GLOSSY_BRDF 1
@@ -67,12 +67,12 @@ namespace BARNEY_NS {
         };
 
         inline
-        __both__ bool same_hemisphere(const vec3f &w_o, const vec3f &w_i, const vec3f &n) {
+        __rtc_device bool same_hemisphere(const vec3f &w_o, const vec3f &w_i, const vec3f &n) {
           return dot(w_o, n) * dot(w_i, n) > 0.f;
         } 
 
         inline
-        __both__ bool relative_ior(const vec3f &w_o, const vec3f &n, float ior, float &eta_o, float &eta_i)
+        __rtc_device bool relative_ior(const vec3f &w_o, const vec3f &n, float ior, float &eta_o, float &eta_i)
         {
           bool entering = dot(w_o, n) > 0.f;
           eta_i = entering ? 1.f : ior;
@@ -83,7 +83,7 @@ namespace BARNEY_NS {
         // Sample the hemisphere using a cosine weighted distribution,
         // returns a vector in a hemisphere oriented about (0, 0, 1)
         inline
-        __both__ vec3f cos_sample_hemisphere(vec2f u) {
+        __rtc_device vec3f cos_sample_hemisphere(vec2f u) {
           vec2f s = 2.f * u - vec2f(1.f);
           vec2f d;
           float radius = 0.f;
@@ -104,19 +104,19 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ vec3f spherical_dir(float sin_theta, float cos_theta, float phi) {
+        __rtc_device vec3f spherical_dir(float sin_theta, float cos_theta, float phi) {
           return vec3f{ sin_theta * cosf(phi), sin_theta * sinf(phi), cos_theta };
         }
 
         inline
-        __both__ float power_heuristic(float n_f, float pdf_f, float n_g, float pdf_g) {
+        __rtc_device float power_heuristic(float n_f, float pdf_f, float n_g, float pdf_g) {
           float f = n_f * pdf_f;
           float g = n_g * pdf_g;
           return (f * f) / (f * f + g * g);
         }
 
         inline
-        __both__ float schlick_weight(float cos_theta) {
+        __rtc_device float schlick_weight(float cos_theta) {
           return powf(saturate(1.f - cos_theta), 5.f);
         }
 
@@ -125,7 +125,7 @@ namespace BARNEY_NS {
         // eta_i: material on incident side's ior
         // eta_t: material on transmitted side's ior
         inline
-        __both__ float fresnel_dielectric(float cos_theta_i, float eta_i, float eta_t) {
+        __rtc_device float fresnel_dielectric(float cos_theta_i, float eta_i, float eta_t) {
           float g = pow2(eta_t) / pow2(eta_i) - 1.f + pow2(cos_theta_i);
           if (g < 0.f) {
             return 1.f;
@@ -137,7 +137,7 @@ namespace BARNEY_NS {
         // D_GTR1: Generalized Trowbridge-Reitz with gamma=1
         // Burley notes eq. 4
         inline
-        __both__ float gtr_1(float cos_theta_h, float alpha) {
+        __rtc_device float gtr_1(float cos_theta_h, float alpha) {
           if (alpha >= 1.f) {
             return (float)M_1_PI;
           }
@@ -148,43 +148,48 @@ namespace BARNEY_NS {
         // D_GTR2: Generalized Trowbridge-Reitz with gamma=2
         // Burley notes eq. 8
         inline
-        __both__ float gtr_2(float cos_theta_h, float alpha, bool dbg=0)
+        __rtc_device float gtr_2(float cos_theta_h, float alpha, bool dbg=0)
         {
           float alpha_sqr = alpha * alpha;
           float den1 = 1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h;
           float den2 = max(den1, SMALL_EPSILON);
-          return (float)M_1_PI * alpha_sqr / den2;
+          float ret = (float)M_1_PI * 1.f / den2;
+          // float ret = (float)M_1_PI * alpha_sqr / den2;
+          if (dbg)
+            printf("gtr_2 alpha %f cos_theta_h %f den1 %f den2 %f ret %f\n",
+                   alpha,cos_theta_h,den1,den2,ret);
+          return ret;
         }
 
         // D_GTR2 Anisotropic: Anisotropic generalized Trowbridge-Reitz with gamma=2
         // Burley notes eq. 13
         inline
-        __both__ float gtr_2_aniso(float h_dot_n, float h_dot_x, float h_dot_y, vec2f alpha) {
+        __rtc_device float gtr_2_aniso(float h_dot_n, float h_dot_x, float h_dot_y, vec2f alpha) {
           return (float)M_1_PI / max((alpha.x * alpha.y * pow2(pow2(h_dot_x / alpha.x) + pow2(h_dot_y / alpha.y) + h_dot_n * h_dot_n)), SMALL_EPSILON);
         }
 
         inline
-        __both__ float smith_shadowing_ggx(float n_dot_o, float alpha_g) {
+        __rtc_device float smith_shadowing_ggx(float n_dot_o, float alpha_g) {
           float a = alpha_g * alpha_g;
           float b = n_dot_o * n_dot_o;
           return 1.f / (n_dot_o + sqrtf(a + b - a * b));
         }
 
         inline
-        __both__ float smith_shadowing_ggx_aniso(float n_dot_o, float o_dot_x, float o_dot_y, vec2f alpha) {
+        __rtc_device float smith_shadowing_ggx_aniso(float n_dot_o, float o_dot_x, float o_dot_y, vec2f alpha) {
           return 1.f / (n_dot_o + sqrtf(pow2(o_dot_x * alpha.x) + pow2(o_dot_y * alpha.y) + pow2(n_dot_o)));
         }
 
         // Sample a reflection direction the hemisphere oriented along n and spanned by v_x, v_y using the random samples in s
         inline
-        __both__ vec3f sample_lambertian_dir(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const vec2f &s) {
+        __rtc_device vec3f sample_lambertian_dir(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const vec2f &s) {
           const vec3f hemi_dir = normalize(cos_sample_hemisphere(s));
           return hemi_dir.x * v_x + hemi_dir.y * v_y + hemi_dir.z * n;
         }
 
         // Sample the microfacet normal vectors for the various microfacet distributions
         inline
-        __both__ vec3f sample_gtr_1_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const vec2f &s) {
+        __rtc_device vec3f sample_gtr_1_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const vec2f &s) {
           float phi_h = 2.f * (float)M_PI * s.x;
           float alpha_sqr = alpha * alpha;
           float cos_theta_h_sqr = (1.f - pow(alpha_sqr, 1.f - s.y)) / (1.f - alpha_sqr);
@@ -195,7 +200,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ vec3f sample_gtr_2_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const vec2f &s) {
+        __rtc_device vec3f sample_gtr_2_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, float alpha, const vec2f &s) {
           float phi_h = 2.f * (float)M_PI * s.x;
           float cos_theta_h_sqr = (1.f - s.y) / (1.f + (alpha * alpha - 1.f) * s.y);
           float cos_theta_h = sqrtf(cos_theta_h_sqr);
@@ -205,14 +210,14 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ vec3f sample_gtr_2_aniso_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const vec2f &alpha, const vec2f &s) {
+        __rtc_device vec3f sample_gtr_2_aniso_h(const vec3f &n, const vec3f &v_x, const vec3f &v_y, const vec2f &alpha, const vec2f &s) {
           float x = 2.f * (float)M_PI * s.x;
           vec3f w_h = sqrtf(s.y / (1.f - s.y)) * (alpha.x * cosf(x) * v_x + alpha.y * sinf(x) * v_y) + n;
           return normalize(w_h);
         }
 
         inline
-        __both__ float lambertian_pdf(const vec3f &w_i, const vec3f &n) {
+        __rtc_device float lambertian_pdf(const vec3f &w_i, const vec3f &n) {
           float d = dot(w_i, n);
           if (d > 0.f) {
             return d * (float)M_1_PI;
@@ -221,7 +226,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ float gtr_1_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, const vec3f &n, float alpha) {
+        __rtc_device float gtr_1_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, const vec3f &n, float alpha) {
           if (!same_hemisphere(w_o, w_i, n)) {
             return 0.f;
           }
@@ -231,7 +236,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ float gtr_2_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, const vec3f &n, float alpha) {
+        __rtc_device float gtr_2_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, const vec3f &n, float alpha) {
           if (!same_hemisphere(w_o, w_i, n)) {
             return 0.f;
           }
@@ -241,7 +246,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ float gtr_2_transmission_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &n, float transmission_roughness, float ior)
+        __rtc_device float gtr_2_transmission_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &n, float transmission_roughness, float ior)
         {
           float alpha = max(MIN_ALPHA, transmission_roughness * transmission_roughness);
 
@@ -291,7 +296,7 @@ namespace BARNEY_NS {
           // return 1.f;
         }
 
-        // __both__ float gtr_2_transmission_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &n,
+        // __rtc_device float gtr_2_transmission_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &n,
         // 	float alpha, float ior)
         // {
         // 	if (same_hemisphere(w_o, w_i, n)) {
@@ -320,7 +325,7 @@ namespace BARNEY_NS {
         // }
 
         inline
-        __both__ float gtr_2_aniso_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, const vec3f &n,
+        __rtc_device float gtr_2_aniso_pdf(const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, const vec3f &n,
                                          const vec3f &v_x, const vec3f &v_y, const vec2f alpha)
         {
           if (!same_hemisphere(w_o, w_i, n)) {
@@ -331,7 +336,7 @@ namespace BARNEY_NS {
           return d * cos_theta_h / (4.f * dot(w_o, w_h));
         }
 
-        inline __both__
+        inline __rtc_device
         vec3f disney_diffuse_color(const DisneyMaterial &mat,
                                    const vec3f &n,
                                    const vec3f &w_o,
@@ -342,14 +347,14 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ vec3f disney_subsurface_color(const DisneyMaterial &mat, const vec3f &n,
+        __rtc_device vec3f disney_subsurface_color(const DisneyMaterial &mat, const vec3f &n,
                                                   const vec3f &w_o, const vec3f &w_i)
         {
           return mat.subsurface_color;
         }
 
         inline
-        __both__ void disney_diffuse(const DisneyMaterial &mat, const vec3f &n,
+        __rtc_device void disney_diffuse(const DisneyMaterial &mat, const vec3f &n,
                                        const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, vec3f &bsdf, vec3f &color)
         {
           float n_dot_o = fabs(dot(w_o, n));
@@ -363,7 +368,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ void disney_subsurface(const DisneyMaterial &mat, const vec3f &n,
+        __rtc_device void disney_subsurface(const DisneyMaterial &mat, const vec3f &n,
                                           const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, vec3f &bsdf, vec3f &color) {
           float n_dot_o = fabs(dot(w_o, n));
           float n_dot_i = fabs(dot(w_i, n));
@@ -379,7 +384,7 @@ namespace BARNEY_NS {
 
         // Eavg in the algorithm is fitted into this
         inline
-        __both__ float AverageEnergy(float rough){
+        __rtc_device float AverageEnergy(float rough){
           float smoothness = 1.f - rough;
           float r = -0.0761947f - 0.383026f * smoothness;
           r = 1.04997f + smoothness * r;
@@ -390,12 +395,12 @@ namespace BARNEY_NS {
         // multiple scattering...
         // Favg in the algorithm is fitted into this
         inline
-        __both__ vec3f AverageFresnel(vec3f specularColor){
+        __rtc_device vec3f AverageFresnel(vec3f specularColor){
           return specularColor + (vec3f(1.f) - specularColor) * (1.0f / 21.0f);
         }
 
 #if 0
-        inline __both__ vec3f
+        inline __rtc_device vec3f
         disney_multiscatter(const DisneyMaterial &mat,
                             const vec3f &n,
                             const vec3f &w_o,
@@ -432,7 +437,7 @@ namespace BARNEY_NS {
         }
 #endif
 
-        // __both__ float G(vec3f i, vec3f o, vec3f h, float alpha)
+        // __rtc_device float G(vec3f i, vec3f o, vec3f h, float alpha)
         // {
         // 	alpha = 1.f - alpha;
         // 	// Roughly follows Eq 23 from Microfacet Models for Refraction.
@@ -440,7 +445,7 @@ namespace BARNEY_NS {
         // 	return smith_shadowing_ggx(fabs(dot(i, h)), alpha) * smith_shadowing_ggx(fabs(dot(o, h)), alpha);
         // }
 
-        // __both__ float D(vec3f m, vec3f n, float alpha)
+        // __rtc_device float D(vec3f m, vec3f n, float alpha)
         // {
         // 	// alpha = 1.f - alpha;
         // 	// float alpha_sqr = alpha * alpha;
@@ -457,7 +462,7 @@ namespace BARNEY_NS {
         // 	// return gtr_2(fabs(dot(n, w_ht)), alpha);
         // }
 
-        // __both__ float F(vec3f i, vec3f m, float eta_t, float eta_i)
+        // __rtc_device float F(vec3f i, vec3f m, float eta_t, float eta_i)
         // {
         // 	// From Eq 22 of Microfacet Models for Refraction
         // 	float c = fabs(dot(i, m));
@@ -470,7 +475,7 @@ namespace BARNEY_NS {
         // 	return f;
         // }
 
-        inline __both__
+        inline __rtc_device
         vec3f disney_microfacet_reflection_color(const DisneyMaterial &mat,
                                                   const vec3f &n,
                                                   
@@ -488,7 +493,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ vec3f
+        __rtc_device vec3f
         disney_microfacet_isotropic(const DisneyMaterial &mat,
                                     const vec3f &n,
                                     const vec3f &w_o,
@@ -512,15 +517,15 @@ namespace BARNEY_NS {
           float g_i = smith_shadowing_ggx(fabs(dot(n, w_i)), alpha);
           float g_o = smith_shadowing_ggx(fabs(dot(n, w_o)), alpha);
           float g   = g_i * g_o;
-          // if (dbg)
-          //   printf("microfacet_iso spec %f %f %f d %f f %f %f %f g %f (%f %f)\n",
-          //          spec.x,spec.y,spec.z,
-          //          d,f.x,f.y,f.z,g,g_i,g_o);
+          if (dbg)
+            printf("microfacet_iso spec %f %f %f d %f f %f %f %f g %f (%f %f)\n",
+                    spec.x,spec.y,spec.z,
+                    d,f.x,f.y,f.z,g,g_i,g_o);
           return d * f * g;
         }
 
         inline
-        __both__ vec3f disney_microfacet_transmission_color(const DisneyMaterial &mat, const vec3f &n,
+        __rtc_device vec3f disney_microfacet_transmission_color(const DisneyMaterial &mat, const vec3f &n,
                                                                const vec3f &w_o, const vec3f &w_i, const vec3f &w_h)
         {	
           // Approximate absorption
@@ -529,7 +534,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ void
+        __rtc_device void
         disney_microfacet_transmission_isotropic(const DisneyMaterial &mat,
                                                  const vec3f &n,
 
@@ -597,7 +602,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ vec3f disney_microfacet_anisotropic(const DisneyMaterial &mat, const vec3f &n,
+        __rtc_device vec3f disney_microfacet_anisotropic(const DisneyMaterial &mat, const vec3f &n,
                                                         const vec3f &w_o, const vec3f &w_i, const vec3f &w_h, const vec3f &v_x, const vec3f &v_y)
         {
           float lum = luminance(mat.base_color);
@@ -617,7 +622,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ float disney_clear_coat(const DisneyMaterial &mat, const vec3f &n,
+        __rtc_device float disney_clear_coat(const DisneyMaterial &mat, const vec3f &n,
                                            const vec3f &w_o, const vec3f &w_i, const vec3f &w_h)
         {
           float alpha = lerp_r(0.1f, MIN_ALPHA, mat.clearcoat_gloss);
@@ -628,7 +633,7 @@ namespace BARNEY_NS {
         }
 
         inline
-        __both__ vec3f disney_sheen(const DisneyMaterial &mat, const vec3f &n,
+        __rtc_device vec3f disney_sheen(const DisneyMaterial &mat, const vec3f &n,
                                        const vec3f &w_o, const vec3f &w_i, const vec3f &w_h)
         {
           float lum = luminance(mat.base_color);
@@ -652,7 +657,7 @@ namespace BARNEY_NS {
          * @param pdf The returned probability of this sample
          */
         inline
-        __both__ void disney_brdf(
+        __rtc_device void disney_brdf(
                                     const DisneyMaterial &mat, 
                                     const vec3f &g_n,
                                     const vec3f &s_n,
@@ -692,17 +697,18 @@ namespace BARNEY_NS {
             gloss = disney_microfacet_anisotropic(mat, b_n, w_o, w_i, w_h, v_x, v_y);
               // gloss = gloss + disney_multiscatter(mat, n, w_o, w_i, GGX_E_LOOKUP, GGX_E_AVG_LOOKUP);
           }
+          
 	
-          // if (dbg) printf("nvis gloss %f %f %f\n",gloss.x,gloss.y,gloss.z);
-          // if (dbg) printf("nvis diffuse bsdf %f %f %f color %f %f %f, (1-metal)*(1-spec) %f\n",
-          //                 diffuse_bsdf.x,
-          //                 diffuse_bsdf.y,
-          //                 diffuse_bsdf.z,
-          //                 diffuse_color.x,
-          //                 diffuse_color.y,
-          //                 diffuse_color.z,
-          //                 (1.f - mat.metallic) * (1.f - mat.specular_transmission)
-          //                 );
+          if (dbg) printf("nvis gloss %f %f %f\n",gloss.x,gloss.y,gloss.z);
+          if (dbg) printf("nvis diffuse bsdf %f %f %f color %f %f %f, (1-metal)*(1-spec) %f\n",
+                          diffuse_bsdf.x,
+                          diffuse_bsdf.y,
+                          diffuse_bsdf.z,
+                          diffuse_color.x,
+                          diffuse_color.y,
+                          diffuse_color.z,
+                          (1.f - mat.metallic) * (1.f - mat.specular_transmission)
+                          );
 
           vec3f flat = lerp_r(diffuse_bsdf * diffuse_color, 
                                subsurface_bsdf * subsurface_color, 
@@ -734,7 +740,7 @@ namespace BARNEY_NS {
          * @param pdf The returned probability of this sample
          */
         inline
-        __both__ void disney_pdf(
+        __rtc_device void disney_pdf(
                                    const DisneyMaterial &mat, 
                                    const vec3f &g_n,
                                    const vec3f &s_n,
@@ -857,7 +863,7 @@ namespace BARNEY_NS {
          * @param bsdf The throughput of all brdfs in the sampled direction
          */
         inline
-        __both__ void sample_disney_brdf(
+        __rtc_device void sample_disney_brdf(
                                            const DisneyMaterial &mat,
                                            LCGRand &rng,
                                            const vec3f &g_n, const vec3f &s_n, const vec3f &b_n, 
@@ -1025,7 +1031,7 @@ namespace BARNEY_NS {
       }
       
       struct NVisii {
-        inline __both__
+        inline __rtc_device
         nvisii::DisneyMaterial unpack() const {
           nvisii::DisneyMaterial mat;
           mat.base_color = (vec3f)baseColor;
@@ -1046,8 +1052,8 @@ namespace BARNEY_NS {
           mat.alpha = alpha;
           return mat;
         }
-        inline __both__ vec3f getAlbedo(bool dbg) const;
-        inline __both__
+        inline __rtc_device vec3f getAlbedo(bool dbg) const;
+        inline __rtc_device
         float getOpacity(bool isShadowRay,
                          bool isInMedium,
                          vec3f rayDir,
@@ -1056,13 +1062,13 @@ namespace BARNEY_NS {
         {
           return (float)alpha;
         }
-        inline __both__ EvalRes eval(DG dg, vec3f wi, bool dbg) const;
-        inline __both__ float pdf(DG dg, vec3f wi, bool dbg) const;
-        inline __both__ void scatter(ScatterResult &scatter,
+        inline __rtc_device EvalRes eval(DG dg, vec3f wi, bool dbg) const;
+        inline __rtc_device float pdf(DG dg, vec3f wi, bool dbg) const;
+        inline __rtc_device void scatter(ScatterResult &scatter,
                                        const render::DG &dg,
                                        Random &random,
                                        bool dbg) const;
-        inline __both__ void setDefaults()
+        inline __rtc_device void setDefaults()
         {
         //   	this->base_color = vec4(.8, .8, .8, 1.0);
 	// this->subsurface_radius = vec4(1.0, .2, .1, 1.0);
@@ -1127,7 +1133,7 @@ namespace BARNEY_NS {
 	half alpha;
       };
 
-      inline __both__ vec3f NVisii::getAlbedo(bool dbg) const
+      inline __rtc_device vec3f NVisii::getAlbedo(bool dbg) const
       {
         vec3f baseColor = this->baseColor;
         // if (dbg) printf("visrtx::getalbedo %f %f %f\n",
@@ -1137,7 +1143,7 @@ namespace BARNEY_NS {
         return baseColor;
       }
 
-      inline __both__ void NVisii::scatter(ScatterResult &scatter,
+      inline __rtc_device void NVisii::scatter(ScatterResult &scatter,
                                              const render::DG &dg,
                                              Random &rng,
                                              bool dbg) const
@@ -1160,7 +1166,7 @@ namespace BARNEY_NS {
          * @param bsdf The throughput of all brdfs in the sampled direction
          */
         // inline
-        // __both__ void sample_disney_brdf(
+        // __rtc_device void sample_disney_brdf(
         //                                    const DisneyMaterial &mat,
         //                                    LCGRand &rng,
         //                                    const vec3f &g_n, const vec3f &s_n, const vec3f &b_n, 
@@ -1232,7 +1238,7 @@ namespace BARNEY_NS {
                         );
       }
 
-      inline __both__ EvalRes NVisii::eval(DG dg, vec3f wi, bool dbg) const
+      inline __rtc_device EvalRes NVisii::eval(DG dg, vec3f wi, bool dbg) const
       {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
@@ -1258,12 +1264,13 @@ namespace BARNEY_NS {
         vec3f bsdf;
         disney_brdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, bsdf,dbg);
         EvalRes ret;
+        if (dbg) printf("nvisii bsdf %f %f %f\n",bsdf.x,bsdf.y,bsdf.z);
         ret.value = vec3f(bsdf);
         disney_pdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, ret.pdf,dbg);
         return ret;
       }
 
-      inline __both__ float NVisii::pdf(DG dg, vec3f wi, bool dbg) const
+      inline __rtc_device float NVisii::pdf(DG dg, vec3f wi, bool dbg) const
       {
         using namespace nvisii;
         DisneyMaterial mat = unpack();

@@ -61,22 +61,27 @@ namespace BARNEY_NS {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
+      vec4f baseColor = this->color.eval(hitData,samplers,dbg);
+# if 1
+      float reflectance = .65f;
+      packedBSDF::Lambertian bsdf;
+      (vec3f&)bsdf.albedo = reflectance * (const vec3f&)baseColor;
+      if (dbg) printf("created lambertian %f %f %f\n",
+                      bsdf.albedo.x,
+                      bsdf.albedo.y,
+                      bsdf.albedo.z);
+# else
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
-
-      vec4f baseColor = this->color.eval(hitData,samplers,dbg);
-
-      // not anari-conformant, but useful: if geometry _has_ a color
-      // attribute, use it, no matter whether our input is point to it
-      // or not:
-      // if (!isnan(hitData.color.x)) 
-      //   baseColor = hitData.color;
 
       bsdf.baseColor = (const vec3f&)baseColor;
 
       bsdf.specular = 0.f;
-      bsdf.metallic = 0.f;
+      bsdf.metallic = 0.0f;
       bsdf.roughness = 1.f;
+      bsdf.ior = 1.f;
+      // bsdf.alpha = baseColor.w;
+# endif
       return bsdf;
     }
 #endif    

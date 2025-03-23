@@ -41,9 +41,9 @@ namespace BARNEY_NS {
 #endif
       linear3f            toWorld;
       linear3f            toLocal;
-      // cudaTextureObject_t texture;
-      rtc::device::TextureObject texture = 0;
+      rtc::TextureObject  texture = 0;
       vec2i               dims;
+      float               scale;
       const float        *cdf_y = 0;
       const float        *allCDFs_x = 0;
     };
@@ -56,31 +56,16 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     void commit() override;
+    bool set1f(const std::string &member, const float &value) override;
     bool set2i(const std::string &member, const vec2i &value) override;
     bool set3f(const std::string &member, const vec3f &value) override;
-    // bool set4x3f(const std::string &member, const affine3f &value) override;
     bool setObject(const std::string &member, const Object::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
 
   private:
-    // helper class that computes the CDFs in x and y, for importance
-    // sampling the map
     void computeCDFs();
-  public:
-    struct {
-      vec3f       direction { 1.f, 0.f, 0.f };
-      vec3f       up        { 0.f, 0.f, 1.f };
-      Texture::SP texture;
-    } params;
-    Texture::SP texture;
-
-    linear3f   toWorld;
-    linear3f   toLocal;
-    // OWLTexture texture = 0;
-    // OWLBuffer  cdf_y;
-    // OWLBuffer  allCDFs_x;
-
+  public: // =========== PLD STUFF ===========
     struct PLD {
       rtc::Buffer  *cdf_y = 0;
       rtc::Buffer  *allCDFs_x = 0;
@@ -92,7 +77,20 @@ namespace BARNEY_NS {
 
     PLD *getPLD(Device *);
     std::vector<PLD> perLogical;
-    vec2i      dims;
+    
+  public: // =========== parameters ===========
+    struct {
+      Texture::SP texture;
+      vec3f       direction { 1.f, 0.f, 0.f };
+      vec3f       up        { 0.f, 0.f, 1.f };
+      float       scale = 1.f;
+    } params;
+    Texture::SP texture;
+
+    linear3f   toWorld;
+    linear3f   toLocal;
+    
+    vec2i      dims{-1,-1};
   };
 
 
@@ -114,16 +112,12 @@ namespace BARNEY_NS {
   int sampleCDF(const float *cdf, int N, float v,
                 float &pdf, bool dbg = false)
   {
-    // if (dbg) printf("****** sampling sdf with %i items, v = %f\n",N,v);
     int begin = 0;
     int end   = N;
     while ((end - begin) > 1) {
       int mid = (begin+end)/2;
       float f_mid = cdf[mid-1];
 
-      // if (dbg)
-      //   printf("[%i %i] -> %i -> %f\n",
-      //          begin,end,mid,f_mid);
       if (v < f_mid)
         end = mid;
       else
@@ -161,15 +155,14 @@ namespace BARNEY_NS {
 
     float rel_y = (pixel.y+.5f) / dims.y;
     const float theta = ONE_PI * rel_y;
-    // pdf *= (ONE_PI/sinf(theta));
-
-    // return pdf;
 
     return pdf_x * pdf_y * 1.f/(TWO_PI*ONE_PI*sinf(theta));
   }
   
   inline __rtc_device float pbrt_clampf(float f, float lo, float hi)
-  { return max(lo,min(hi,f)); }
+  {
+    return max(lo,min(hi,f));
+  }
   
   inline __rtc_device float pbrtSphericalTheta(const vec3f &v)
   {
@@ -237,13 +230,9 @@ namespace BARNEY_NS {
     float r_y = r();
     float r_x = r();
     float pdf_y;
-    // if (dbg) printf(" *** sampling cdf (w/ r=%f) in y\n",r_y);
     int iy = sampleCDF(cdf_y,dims.y,r_y,pdf_y,dbg);
-    // if (dbg) printf("found iy %i, pdf %f/%f\n",iy,pdf_y,pdf_y*dims.y);
     float pdf_x;
-    // if (dbg) printf(" *** sampling cdf (w/ r=%f)in x for y=%i\n",r_x,iy);
     int ix = sampleCDF(allCDFs_x+dims.x*iy,dims.x,r_x,pdf_x,dbg);
-    // if (dbg) printf("found ix %i, pdf %f/%f\n",ix,pdf_x,pdf_x*dims.x);
 
 #if 1
     float sx = (ix+r())/dims.x;
@@ -254,25 +243,11 @@ namespace BARNEY_NS {
 #endif
     vec4f fromTex = rtc::tex2D<vec4f>(texture,sx,sy);
     Light::Sample sample;
-    sample.radiance = (vec3f&)fromTex;
+    sample.radiance = scale * (vec3f&)fromTex;
     sample.direction = uvToWorld(sx,sy);
-    // sample.direction = pixelToWorld({ix,iy});
-     // if (dbg) printf("found pixel %i %i -> maxrad %f, world %f %f %f\n",
-     //                 ix,iy,
-     //                 reduce_max(sample.radiance),
-     //                 sample.direction.x,
-     //                 sample.direction.y,
-     //                 sample.direction.z);
-
-    // pdf_x *= dims.x;
-    // pdf_y *= dims.y;
-
-    // *(dims.x*dims.y)
-      // *ONE_OVER_FOUR_PI;
-    // float rel_y = (iy+.5f) / dims.y;
+    
     float rel_y = sy;
     const float theta = ONE_PI * rel_y;
-    // sample.pdf *= (ONE_PI/sinf(theta));
     sample.pdf
       = pdf_x*pdf_y
       * 1.f/(TWO_PI*ONE_PI*sinf(theta));

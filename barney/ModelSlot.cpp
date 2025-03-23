@@ -71,6 +71,13 @@ namespace BARNEY_NS {
     }
   }
 
+  void ModelSlot::setInstanceAttributes(int which,
+                                       const PODData::SP &data)
+  {
+    assert(which >= 0 && which < 5);
+    world->instanceAttributes[which] = data;
+  }
+  
   void ModelSlot::build()
   {
     std::vector<affine3f> rtcTransforms;

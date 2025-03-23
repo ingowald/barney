@@ -33,6 +33,9 @@ namespace BARNEY_NS {
 #define USE_MIS 1
 
 
+#define CLAMP_F_R 3.f
+
+
 #if RTC_DEVICE_CODE
     inline __rtc_device float square(float f) { return f*f; }
   
@@ -42,7 +45,8 @@ namespace BARNEY_NS {
     inline __rtc_device
     float safe_eps(float f, vec3f v)
     {
-      return max(f,1e-5f*reduce_max(abs(v)));
+      // return 1e-4f;
+      return max(f,1e-6f*reduce_max(abs(v)));
     }
 
     
@@ -162,7 +166,7 @@ namespace BARNEY_NS {
                          bool dbg)
     {
       if (world.numDirLights == 0) return false;
-      static const int RESERVOIR_SIZE = 8;
+      static const int RESERVOIR_SIZE = 2;
       int   lID[RESERVOIR_SIZE];
       float weights[RESERVOIR_SIZE];
       float sumWeights = 0.f;
@@ -219,10 +223,18 @@ namespace BARNEY_NS {
       if (world.envMapLight.texture)
         ls = world.envMapLight.sample(random,dbg);
       else {
+#if 0
+        ls.direction = randomDirection(random);
+        ls.radiance  = renderer.ambientRadiance;
+        if (dot(ls.direction,N) < 0.f) ls.direction = -ls.direction;
+        ls.pdf       = ONE_OVER_TWO_PI;
+        ls.distance  = BARNEY_INF;
+#else
         ls.direction = randomDirection(random);
         ls.radiance  = renderer.ambientRadiance;
         ls.pdf       = ONE_OVER_FOUR_PI;
         ls.distance  = BARNEY_INF;
+#endif
       }
       return true;
     }
@@ -241,7 +253,7 @@ namespace BARNEY_NS {
                       bool dbg)
     {
 #if USE_MIS
-# if 1
+# if 0
       // huh ... not sure this is correct; setting this to true means
       // we'll always compute MIS weights for shadow and bounce ray as
       // if there was only an env-map light; even though we may
@@ -260,6 +272,12 @@ namespace BARNEY_NS {
         = (sampleEnvLight(els,world,renderer,P,Ng,random,dbg)
            ? (reduce_max(els.radiance)/els.pdf)
            : 0.f);
+      if (dbg)
+        printf("els rad %f %f %f pdf %f\n",
+               els.radiance.x,
+               els.radiance.y,
+               els.radiance.z,
+               els.pdf);
       // = world.envMapLight.sample(random,dbg);
 #else
       float elsWeight = 0.f;
@@ -288,6 +306,8 @@ namespace BARNEY_NS {
       dlsWeight *= 1.f/sumWeights;
       
       float r = random();
+      if (dbg) printf(" light sample %f in cdf %f %f %f\n",
+                      r,alsWeight,elsWeight,dlsWeight);
       if (r <= alsWeight) {
         ls = als;
         ls.pdf *= alsWeight;
@@ -301,12 +321,12 @@ namespace BARNEY_NS {
 # endif
 #endif
       } else {
-        if (dbg) printf(" ->  picked DIR light sample\n");
         ls = dls;
         ls.pdf *= dlsWeight;
 # if USE_MIS
         lightIsDirLight = true;
 # endif
+        if (dbg) printf(" ->  picked DIR light sample, dls weight %f pdf %f\n",dlsWeight,ls.pdf);
       }
       if (isnan(ls.pdf) || (ls.pdf <= 0.f)) return false;
       
@@ -359,8 +379,7 @@ namespace BARNEY_NS {
         vec2f uv(phi * inv2Pi, theta * invPi);
 
         vec4f color = rtc::tex2D<vec4f>(env.texture,uv.x,uv.y);
-        float envLightPower = 1.f;
-        return envLightPower*vec3f(color.x,color.y,color.z);
+        return env.scale*vec3f(color.x,color.y,color.z);
       } else {
         return renderer.ambientRadiance;
       }
@@ -454,13 +473,15 @@ namespace BARNEY_NS {
       }
 
       vec3f Ng = path.getN();
+      if (dbg) printf("path.N %f %f %f\n",Ng.x,Ng.y,Ng.z);
       const bool  isVolumeHit        = (Ng == vec3f(0.f));
       if (!isVolumeHit)
         Ng = normalize(Ng);
       const bool  hitWasOnFront      = dot((vec3f)path.dir,Ng) < 0.f;
-      vec3f Ngff = Ng;
-      if (!hitWasOnFront)
-        Ngff = - Ng;
+      vec3f Ngff
+        = hitWasOnFront
+        ?   Ng
+        : - Ng;
 
       if (hadNoIntersection) {
         // ==================================================================
@@ -502,7 +523,10 @@ namespace BARNEY_NS {
                    fromEnv.y,
                    fromEnv.z);
 # else
-          fragment = vec3f(0.f);
+          fragment
+            = path.isSpecular
+            ? radianceFromEnv(world,renderer,path)
+            : vec3f(0.f);
 # endif
 #else
           const vec3f fromEnv = radianceFromEnv(world,renderer,path);
@@ -544,7 +568,7 @@ namespace BARNEY_NS {
       // normal */
       const float offsetEpsilon = safe_eps(EPS,dg.P);
       vec3f frontFacingSurfaceOffset
-        = offsetEpsilon*(isVolumeHit?dg.wo:Ngff);
+        = (isVolumeHit?dg.wo:Ngff);
 
       // ==================================================================
       // FIRST, let us look at generating any shadow rays, if
@@ -557,6 +581,8 @@ namespace BARNEY_NS {
       bool lightNeedsMIS = false;
       bool lightIsDirLight = false;
 #endif
+      if (dbg)
+        printf("sampling lights with N %f %f %f\n",Ngff.x,Ngff.y,Ngff.z);
       if (sampleLights(ls,world,renderer,dg.P,Ngff,random,
 #if USE_MIS
                        lightNeedsMIS,
@@ -586,12 +612,19 @@ namespace BARNEY_NS {
             printf(" no f_r, killing shadow ray\n");
           shadowRay.tMax = -1.f;
         } else {
+#ifdef CLAMP_F_R
+          f_r.value = min(f_r.value,vec3f(CLAMP_F_R));
+#endif
           vec3f tp_sr
             = (incomingThroughput)
             * (1.f/ls.pdf)
             * f_r.value
             * ls.radiance
-            * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)));
+            // * ONE_OVER_PI
+            * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)))
+            ;
+
+          
           if (dbg) {
             printf(" -> inc tp %f %f %f, dot %f\n",
                    incomingThroughput.x,
@@ -613,7 +646,7 @@ namespace BARNEY_NS {
           }
           shadowRay.makeShadowRay
             (/* thrghhpt */tp_sr,
-             /* surface: */dg.P + frontFacingSurfaceOffset,
+             /* surface: */dg.P + offsetEpsilon*frontFacingSurfaceOffset,
              /* to light */ls.direction,
              /* length   */ls.distance * (1.f-2.f*offsetEpsilon));
           shadowRay.rngSeed = path.rngSeed + 1; random();
@@ -684,15 +717,20 @@ namespace BARNEY_NS {
         } else
           path.numDiffuseBounces = path.numDiffuseBounces + 1;
       }
+      path.isSpecular = (scatterResult.type == ScatterResult::SPECULAR);
       
       if (dbg)
         printf("offsetting into sign %f, direction %f %f %f\n",
                scatterResult.offsetDirection,
                frontFacingSurfaceOffset.x,
                frontFacingSurfaceOffset.y,
-               frontFacingSurfaceOffset.z);
+               frontFacingSurfaceOffset.z); 
       path.org
-        = dg.P + scatterResult.offsetDirection * frontFacingSurfaceOffset;
+        = dg.P + scatterResult.offsetDirection * offsetEpsilon*frontFacingSurfaceOffset;
+// #ifdef CLAMP_F_R
+//       scatterResult.f_r = min(scatterResult.f_r,vec3f(100.f));
+// #endif
+
       if (dbg)
         printf("path scattered, bsdf in scatter dir is %f %f %f, pdf %f\n",
                (float)scatterResult.f_r.x, 
@@ -704,8 +742,9 @@ namespace BARNEY_NS {
       
       vec3f scatterFactor
         = scatterResult.f_r
-        * (isVolumeHit?1.f:fabsf(dot(dg.Ng,path.dir)))
-        / (isinf(scatterResult.pdf)? 1.f : (scatterResult.pdf + 1e-10f));
+        // * (isVolumeHit?1.f:fabsf(dot(dg.Ng,path.dir)))
+        // * ONE_OVER_PI
+        / (isinf(scatterResult.pdf)? 1.f : (ONE_PI*scatterResult.pdf + 1e-10f));
       
 #if 1
       // uhhhh.... this is TOTALLY wrong, but let's limit how much

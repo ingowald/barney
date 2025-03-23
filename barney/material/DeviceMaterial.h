@@ -62,7 +62,7 @@ namespace BARNEY_NS {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      // if (dbg) printf("devicematerial type %i\n",(int)type);
+      if (dbg) printf("devicematerial type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)
@@ -70,7 +70,7 @@ namespace BARNEY_NS {
 #ifndef NDEBUG
       printf("#bn: DeviceMaterial::createBSDF encountered an invalid "
              "device material type (%i); most likely this is the app"
-             " not having properly committed its material\n",(int)type);CY
+             " not having properly committed its material\n",(int)type);
 #endif
       return packedBSDF::Invalid();
     }

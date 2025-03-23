@@ -116,6 +116,53 @@ namespace BARNEY_NS {
   
   bool Geometry::set3f(const std::string &member, const vec3f &value)
   {
+    if (member == "attribute0") {
+      attributes.attribute[0].constant = vec4f(value.x,value.y,value.z,1.f);
+      return true;
+    }
+    if (member == "attribute1") {
+      attributes.attribute[1].constant = vec4f(value.x,value.y,value.z,1.f);
+      return true;
+    }
+    if (member == "attribute2") {
+      attributes.attribute[2].constant = vec4f(value.x,value.y,value.z,1.f);
+      return true;
+    }
+    if (member == "attribute3") {
+      attributes.attribute[3].constant = vec4f(value.x,value.y,value.z,1.f);
+      return true;
+    }
+    if (member == "color") {
+      attributes.colorAttribute.constant = vec4f(value.x,value.y,value.z,1.f);
+      return true;
+    }
+    
+    return false;
+  }
+  
+  bool Geometry::set4f(const std::string &member, const vec4f &value)
+  {
+    if (member == "attribute0") {
+      attributes.attribute[0].constant = value;
+      return true;
+    }
+    if (member == "attribute1") {
+      attributes.attribute[1].constant = value;
+      return true;
+    }
+    if (member == "attribute2") {
+      attributes.attribute[2].constant = value;
+      return true;
+    }
+    if (member == "attribute3") {
+      attributes.attribute[3].constant = value;
+      return true;
+    }
+    if (member == "color") {
+      attributes.colorAttribute.constant = value;
+      return true;
+    }
+    
     return false;
   }
   
@@ -162,6 +209,7 @@ namespace BARNEY_NS {
       attributes.colorAttribute.perVertex = value->as<PODData>();
       return true;
     }
+    
     return false;
   }
   

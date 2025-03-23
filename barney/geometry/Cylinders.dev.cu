@@ -78,45 +78,7 @@ namespace BARNEY_NS {
     return false;
   }
   
-  // OPTIX_INTERSECT_PROGRAM(basicTubes_intersect)()
-  // {
-  //   const int primID = optixGetPrimitiveIndex();
-  //   const auto& self
-  //     = owl::getProgramData<TubesGeom>();
-
-  //   owl::Ray ray(optixGetWorldRayOrigin(),
-  //                optixGetWorldRayDirection(),
-  //                optixGetRayTmin(),
-  //                optixGetRayTmax());
-  //   const Link link = self.links[primID];
-  //   if (link.prev < 0) return;
-
-  //   float tmp_hit_t = ray.tmax;
-
-  //   vec3f pb, pa; float ra, rb;
-  //   pa = link.pos;
-  //   ra = link.rad;
-  //   if (link.prev >= 0) {
-  //     rb = self.links[link.prev].rad;
-  //     pb = self.links[link.prev].pos;
-  //     vec3f normal;
-
-  //     if (intersectRoundedCone(pa, pb, ra,rb, ray, tmp_hit_t, normal))
-  //       {
-  //         if (optixReportIntersection(tmp_hit_t, primID)) {
-  //           PerRayData& prd = owl::getPRD<PerRayData>();
-  //           prd.linkID = primID;
-  //           prd.t = tmp_hit_t;
-  //           prd.isec_normal = normal;
-  //         }
-  //       }
-  //   }
-  // }
-
   struct CylindersPrograms {
-  // OPTIX_BOUNDS_PROGRAM(CylindersBounds)(const void *geomData,
-  //                                       owl::common::box3f &bounds,  
-  //                                       const int32_t primID)
 
     static inline __rtc_device
     void bounds(const rtc::TraceInterface &rt,
@@ -152,13 +114,17 @@ namespace BARNEY_NS {
     void intersect(rtc::TraceInterface &rt)
     {
       // capped
-      const int primID
-        = rt.getPrimitiveIndex();
+      const int primID = rt.getPrimitiveIndex();
+      const int instID = rt.getInstanceIndex();
       const auto &self
         = *(Cylinders::DD*)rt.getProgramData();
+      const World::DD &world = OptixGlobals::get(rt).world;
       Ray &ray    = *(Ray*)rt.getPRD();
-      bool dbg = 0; //ray.dbg;
-      
+#ifdef NDEBUG
+      bool dbg = 0;
+#else
+      bool dbg = ray.dbg;
+#endif      
       const vec2i idx = self.indices[primID];
       const vec3f v0  = self.vertices[idx.x];
       const vec3f v1  = self.vertices[idx.y];
@@ -232,10 +198,6 @@ namespace BARNEY_NS {
         } else {
           objectN = (td * d - fp - hit_surf_u * s);          
         }
-        // objectN
-        //   = (t0 == cap_t0)
-        //   ? s
-        //   : (td * d - fp - hit_surf_u * s);
       } else if (ray_tmin <= t1 && t1 <= ray_tmax) {
         ray.tMax = t1;
         float hit_surf_u = (ray.tMax * sd - sf) * 1.f/(s2);
@@ -247,15 +209,12 @@ namespace BARNEY_NS {
         } else {
           objectN = (td * d - fp - hit_surf_u * s);          
         }
-        // objectN
-        //   = (t1 == cap_t1)
-        //   ? -s
-        //   : (td * d - fp - hit_surf_u * s);
       } else
         return;
 
       vec3f objectP = ray_org + ray.tMax * ray_dir;
       float t_hit = ray.tMax;
+      objectP = objectP + 1e-4f * normalize(objectN);
 
       float lerp_t
         = dot(objectP-v0,v1-v0)
@@ -281,13 +240,14 @@ namespace BARNEY_NS {
       hitData.objectNormal    = normalize(objectN);
       hitData.worldNormal     = normalize(rt.transformNormalFromObjectToWorldSpace(hitData.objectNormal));
       hitData.primID          = primID;
+      hitData.instID          = instID;
       hitData.t               = t_hit;
-    
-      self.setHitAttributes(hitData,interpolator,ray.dbg);
+
+      self.setHitAttributes(hitData,interpolator,world,ray.dbg);
 
       const DeviceMaterial &material
-        = OptixGlobals::get(rt).materials[self.materialID];
-      material.setHit(ray,hitData,OptixGlobals::get(rt).samplers,ray.dbg);
+        = OptixGlobals::get(rt).world.materials[self.materialID];
+      material.setHit(ray,hitData,OptixGlobals::get(rt).world.samplers,ray.dbg);
     
       rt.reportIntersection(ray.tMax, 0);
     }
