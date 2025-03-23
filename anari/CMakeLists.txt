@@ -32,7 +32,6 @@ set(BANARI_SOURCES
   Group.cpp
   Instance.cpp
   Library.cpp
-  Light.cpp
   Material.cpp
   Object.cpp
   Renderer.cpp
@@ -41,6 +40,16 @@ set(BANARI_SOURCES
   Surface.cpp
   Volume.cpp
   World.cpp
+  # -----------
+  light/Light.h
+  light/Light.cpp
+  light/HDRI.h
+  light/HDRI.cpp
+  light/Directional.h
+  light/Directional.cpp
+  light/Point.h
+  light/Point.cpp
+  # -----------
   ${DUMMY_CU}
   )
 

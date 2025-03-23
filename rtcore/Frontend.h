@@ -52,9 +52,6 @@ namespace rtc {
 # ifdef __CUDACC__
 #  define RTC_DEVICE_CODE 1
 # endif
-// # if !BARNEY_DEVICE_PROGRAM
-//   struct TraceInterface;
-// # endif
 }
 #endif
 
@@ -97,6 +94,9 @@ namespace rtc {
 #endif
 
 
+namespace rtc {
+  using device::TextureObject;
+}
 
 
 

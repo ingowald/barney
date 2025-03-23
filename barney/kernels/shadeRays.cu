@@ -379,8 +379,7 @@ namespace BARNEY_NS {
         vec2f uv(phi * inv2Pi, theta * invPi);
 
         vec4f color = rtc::tex2D<vec4f>(env.texture,uv.x,uv.y);
-        float envLightPower = 1.f;
-        return envLightPower*vec3f(color.x,color.y,color.z);
+        return env.scale*vec3f(color.x,color.y,color.z);
       } else {
         return renderer.ambientRadiance;
       }
