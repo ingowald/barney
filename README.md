@@ -25,9 +25,18 @@ or from any application that supports the ANARI API (see https://www.khronos.org
 
 ## Dependencies for building Barney
 
-Barney requires the following additional tools and/or packages to build:
+Barney is primarily intended for interactive (multi-)GPU rendering,
+but can also be built in a non-GPU configuration. Similarly, one of
+barney's most important features is MPI-based data parallel rendering,
+but can absolutely also be built---and used--without MPI. As such,
+dependencies depend on what exactly needs to get built:
+
+One way or another, barney requires:
 
 - `cmake`, for building
+-  a c++-20 compliant c++ compiler (gcc on linux, visual studio on windows, clang on mac)
+
+For CUDA/OptiX Acceleration, it also requires:
 
 - `CUDA`, version 12 and up.
 
@@ -37,9 +46,12 @@ Barney requires the following additional tools and/or packages to build:
 - `OptiX`, as part of OWL. See documentation in OWL (https://github.com/owl-project/owl) for 
    where to get, and how to best install for OWL to easily find it)
    
-- For data parallel multi-*node* rendering: MPI. *Running* barney
+For MPI-based data-parallel rendering:
+
+- Building requires a working MPI install. *Running* barney
   requires a CUDA-aware MPI, for *building* this should not matter. We 
-  typically develop under and test with OpenMPI 4.1.6.
+  typically develop under---and test with OpenMPI---4.1.6 or 5.0, but
+  users have reported working with other MPI flavors such as  MPICH.
 
 ## Building Barney - no ANARI
 
