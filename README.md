@@ -164,48 +164,61 @@ data, in different input scalar types), and on the right,
 'scivis2011', a unstructured mesh volume type inside a
 semi-transparent triangular surface.
 
-![](jpg/collage-volumes.jpg)
+![](samples/collage-volumes.jpg)
 
 
 # ANARI / BARNARI
 
 Though `barney` is not *limited to* ANARI (it is its own library, with
-its own API), it can also be configured to build a (still every much
-experimental!) `ANARI` "device" that exposes some of barney's
-functionality. Once enabled in the cmake build, this builds a
-`libanari_library_barney.so` that implemnets an ANARI device, and that
-any ANARI-capable renderer can then load as the `"barney`" device.
+its own API), it will also, by default build a (by now reasonably
+complete!) `ANARI` "device" that exposes most of barney's
+functionality to applications using the ANARI API. If enabled in the
+cmake build (it's on by default)---and properly installed via `make
+install` or `cmake --install`---this builds a implements an ANARI
+device that any ANARI app can load as a ANARI device named
+`"barney"`. If barney is built with MPI support for MPI-based
+data-parallel ray tracing it will also build a ANARI `"barney_mpi"`
+device as well. 
 
 Note: To distinguish between the (general) ANARI *API* and the
 specific barney-based implementation of this API we typically refer to
 this implementation as the `(B)ANARI` device, or simply as `banari`.
-
-Disclaimer: if barney is still experimental, `banari` is even more so!
-Not all `barney` functionality is exposed in `banari`, nor is every ANARI 
-feature supported by `banari` - and even for the features that *are* supported, 
-there may be some significant memory- or compute-overhead when going through this
-device.
 
 ## Building BANARI:
 
 - dependencies: `libgtk-3-dev`
 
 - need to get, build, *and install* the ANARI-SDK:
-  `git@github.com:KhronosGroup/ANARI-SDK`. Note the SDK *must*
-  be installed for barney to properly find it.
+  `https://github.com/KhronosGroup/ANARI-SDK`. Note the SDK *must* be
+  installed for barney to properly find it.
 
-- need to enable the `BARNEY_BUILD_ANARI` flag in barney's cmake
-  config
+- build barney as described above. `BUILD_ANARI` should be on by
+  default, so unless explictily disabled this should also build the
+  banari device.
 
-- build `barney/anari` device in BARNEY build dir (not in haystack)
+## Using BANARI:
 
-- add `barney/bin` dir (or whatever your build dir is called) to
-  `LD_LIBRARY_PATH`, or link `libanari_library_baryney.so` into current dir
+The barney devices should be easily usably by any existing ANARI
+application by simply loading the `"barney"` device. For those apps
+that respect the `ANARI_LIBRARY` environment variable convention you
+sohld also be able to just set `ANARI_LIBRARY=barney`, and have the
+app load the `"default"` device. 
 
-- `export ANARI_LIBRARY=barney`
-
+For data-parallel rendering across multiple collaborating ranks use
+`"barney_mpi"`instead. Also see
+https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://arxiv.org/abs/2407.00179&ved=2ahUKEwj2rPmKuqGMAxVLJUQIHVIvFSsQFnoECBoQAQ&usg=AOvVaw0z7wpXQQyZwSdPhd6effC8
+for the conventions on how to properly use data-parallel ANARI (which
+barney implements).
 
 # Version History
+
+## v0.9.2, 0.9.4, and 0.9.4: 
+
+- various stability fixes and bug fixes in particular relating to
+  materials, path tracing, and lighting, as well as on multi-device
+  rendering
+- closed various missing gaps wrt anari specs (missing formats,
+  unsupported parameters, etc)
 
 ## v0.9.0
 
