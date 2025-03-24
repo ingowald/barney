@@ -138,59 +138,32 @@ and visual studio gui if you prefer so).
 
 ## Triangle Meshes (including Instances and Color- and Opacity Textures)
 
-Example: PBRT landscape in `miniScene` (http://github.com/ingowald/miniScene) format:
+Example: PBRT landscape in `miniScene` (http://github.com/ingowald/miniScene) format, 
+the 'embree headlight', and the TSDViewer 'TestORB'; all rendering
+with HDRI env-map lighting.
 
-![](jpg/ls-collage.jpg)
-
-Working:
-
-- Image textures and texture coordinates are supported
-
-- Alpha texturing for fully-transparent textures is supported (alpha
-  channel, or dedicated alpha texture)
-
-- Instancing is fully supported
-
-Missing/incomplete:
-
-- Material model is still very basic; reflection, refraction etc are not yet supported.
+![](samples/collage-triangles.jpg)
 
 ## Non-Triangular Surface Types for Sci-Vis
 
-- prototypical support for ANARI-style `spheres` geometry (x,y,z,radius per sphere)
-
-(README need updating)
-
-- prototypical support for ANARI-style `cylinders` geometry (xyzradius for each endpoint)
-
-(README need updating)
+Supporting most(all?) of the ANARI non-triangular geometry types: Here
+various examples with capsules, spheres, cylinders, cones, and curves.
+![](samples/collage-usergeom.jpg)
 
 
-## Structured Volume Data
+## Volume Data
 
 Structured Volume Data (`float`, `uint8` and `uint16` are supported,
 and any volume can be distributed across different ranks by each rank
 having different porions of that volume. `Barney` being intended for
 sci-vis, every volume can have its own transfer function.
 
-![](jpg/structured-collage.jpg)
+Here examples 'chest' and 'kingsnake' (both regular structuctured
+data, in different input scalar types), and on the right,
+'scivis2011', a unstructured mesh volume type inside a
+semi-transparent triangular surface.
 
-a) `Engine` (`256x256x128_uint8`), Dell XPS Laptop
-
-b) `rot-strat` (`4096x4096x4096_float`) data-parallel on 8x `RTX8000` (4 nodes, 2 GPUs each)
-
-c) same, with a very dense transfer function:
-
-## Unstructured-Mesh Data
-
-- some first light exists, README needs updating.
-
-
-## Block-Structed AMR Data
-
-- some first light exists, README needs updating.
-
-
+![](jpg/collage-volumes.jpg)
 
 
 # ANARI / BARNARI
