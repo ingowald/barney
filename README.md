@@ -1,6 +1,6 @@
 ![](samples/collage-triangles.jpg)
 
-# Barney - A OptiX/CUDA Accelerated Path Tracer for High-Quality (and optionally Data-Parallel) Sci-Vis Rendering
+# Barney - A ANARI-Compliant, GPU-Accelerated Path Tracer for High-Quality (and optionally Data-Parallel) Sci-Vis Rendering
 
 DISCLAIMER: Barney is a first prototype of a possibly-to-be data
 parallel ray/path tracer for sci-vis content. It can actually do quite
@@ -212,7 +212,7 @@ barney implements).
 
 # Version History
 
-## v0.9.2, 0.9.4, and 0.9.4: 
+## v0.9.2, 0.9.4, and 0.9.6: 
 
 - various stability fixes and bug fixes in particular relating to
   materials, path tracing, and lighting, as well as on multi-device
