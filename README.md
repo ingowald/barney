@@ -1,6 +1,6 @@
 ![](samples/collage-triangles.jpg)
 
-# Barney - A OptiX-CUDA Accelerated Path Tracer for Data-Parallel Sci-Vis Rendering
+# Barney - A OptiX/CUDA Accelerated Path Tracer for High-Quality (and optionally Data-Parallel) Sci-Vis Rendering
 
 DISCLAIMER: Barney is a first prototype of a possibly-to-be data
 parallel ray/path tracer for sci-vis content. It can actually do quite
