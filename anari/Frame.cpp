@@ -13,7 +13,9 @@
 
 namespace barney_device {
 
-  Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
+  Frame::Frame(BarneyGlobalState *s)
+    : helium::BaseFrame(s),
+      m_renderer(this)
   {
     m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
   }
@@ -27,8 +29,13 @@ namespace barney_device {
 
   bool Frame::isValid() const
   {
-    return m_renderer && m_renderer->isValid() && m_camera && m_camera->isValid()
-      && m_world && m_world->isValid();
+    return
+      m_renderer &&
+      m_renderer->isValid() &&
+      m_camera &&
+      m_camera->isValid() &&
+      m_world &&
+      m_world->isValid();
   }
 
   BarneyGlobalState *Frame::deviceState() const
@@ -55,12 +62,17 @@ namespace barney_device {
 
   void Frame::commitParameters()
   {
-    m_renderer = getParamObject<Renderer>("renderer");
-    m_camera = getParamObject<Camera>("camera");
-    m_world = getParamObject<World>("world");
-    m_colorType = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
-    m_depthType = getParam<anari::DataType>("channel.depth", ANARI_UNKNOWN);
-    m_frameData.size = getParam<math::uint2>("size", math::uint2(10, 10));
+    m_renderer        = getParamObject<Renderer>("renderer");
+    m_camera          = getParamObject<Camera>("camera");
+    m_world           = getParamObject<World>("world");
+    m_colorType       = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
+    m_depthType       = getParam<anari::DataType>("channel.depth", ANARI_UNKNOWN);
+    m_size            = getParam<math::uint2>("size", math::uint2(10, 10));
+    m_enableDenoising = getParam<int>("enableDenoising",1);
+
+    if (m_bnFrameBuffer) {
+      bnSet1i(m_bnFrameBuffer,"enableDenoising",m_enableDenoising);
+    }
   }
 
   void Frame::finalize()
@@ -80,7 +92,7 @@ namespace barney_device {
       reportMessage(ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
     }
 
-    const auto &size = m_frameData.size;
+    const auto &size = m_size;
     const auto numPixels = size.x * size.y;
 
     bnFrameBufferResize(m_bnFrameBuffer,
@@ -90,8 +102,10 @@ namespace barney_device {
                         | (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
   }
 
-  bool Frame::getProperty(
-                          const std::string_view &name, ANARIDataType type, void *ptr, uint32_t flags)
+  bool Frame::getProperty(const std::string_view &name,
+                          ANARIDataType type,
+                          void *ptr,
+                          uint32_t flags)
   {
     if (type == ANARI_FLOAT32 && name == "duration") {
       if (flags & ANARI_WAIT)
@@ -116,8 +130,8 @@ namespace barney_device {
     }
 
     if (!isValid()) {
-      reportMessage(
-                    ANARI_SEVERITY_ERROR, "skipping render of incomplete frame object");
+      reportMessage(ANARI_SEVERITY_ERROR,
+                    "skipping render of incomplete frame object");
       reportMessage(ANARI_SEVERITY_DEBUG,
                     "    renderer(%p) - isValid:(%i)",
                     m_renderer.get(),
@@ -151,8 +165,8 @@ namespace barney_device {
   {
     wait();
 
-    *width = m_frameData.size.x;
-    *height = m_frameData.size.y;
+    *width = m_size.x;
+    *height = m_size.y;
     int numPixels = *width * *height;
 
     if (channel == "channel.color") {

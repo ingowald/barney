@@ -165,6 +165,15 @@ anari_generate_queries(
   JSON_EXTENSION_FILES ${DEVICE_JSONS}
 )
 if (BARNEY_MPI)
+  set_target_properties(anari_library_barney_mpi
+    PROPERTIES
+    CXX_VISIBILITY_PRESET  hidden
+    CUDA_VISIBILITY_PRESET hidden
+    CUDA_SEPARABLE_COMPILATION   ON
+    POSITION_INDEPENDENT_CODE    ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+  )
   anari_generate_queries(
     DEVICE_TARGET anari_library_barney_mpi
     CPP_NAMESPACE barney_device

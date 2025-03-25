@@ -50,7 +50,7 @@ namespace BARNEY_NS {
       vec3f v0 = self.vertices[triangle.x];
       vec3f v1 = self.vertices[triangle.y];
       vec3f v2 = self.vertices[triangle.z];
-      vec3f n = cross(v1-v0,v2-v0);
+      vec3f n = normalize(cross(v1-v0,v2-v0));
       if (self.normals) {
         vec3f Ns
           = (1.f-u-v) * self.normals[triangle.x]

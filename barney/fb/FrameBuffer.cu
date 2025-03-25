@@ -89,6 +89,10 @@ namespace BARNEY_NS {
       showCrosshairs = value;
       return true;
     }
+    if (member == "enableDenoising") {
+      enableDenoising = value;
+      return true;
+    }
     return false;
   }
 
@@ -270,7 +274,7 @@ namespace BARNEY_NS {
       // -----------------------------------------------------------------------------
       // (HDR) denoising
       // -----------------------------------------------------------------------------
-      if (!denoiser) {
+      if (!denoiser || !enableDenoising) {
         device->rtc->copy(this->denoisedColor,this->linearColor,
                           numPixels.x*numPixels.y*sizeof(vec4f));
       } else {
