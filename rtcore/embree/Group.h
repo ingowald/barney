@@ -71,16 +71,18 @@ namespace rtc {
   
     struct InstanceGroup : public Group {
       InstanceGroup(Device *device,
-                    const std::vector<Group *> &groups,
-                    const std::vector<affine3f>     &xfms);
+                    const std::vector<Group *>  &groups,
+                    const std::vector<int>      &instIDs,
+                    const std::vector<affine3f> &xfms);
 
       GeomGroup *getGroup(int groupID);
       
       void buildAccel() override;
     
-      std::vector<Group*> groups;
-      std::vector<affine3f>    xfms;
-      std::vector<affine3f>    inverseXfms;
+      std::vector<Group*>   groups;
+      std::vector<affine3f> xfms;
+      std::vector<affine3f> inverseXfms;
+      std::vector<int>      instIDs;
     };
     
   }

@@ -41,6 +41,8 @@ namespace BARNEY_NS {
     {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }
     void freeResources();
 
+    bool needHitIDs() const { return linearObjID || linearInstID || linearPrimID; }
+    
     void finalizeTiles();
     void finalizeFrame();
     virtual void ownerGatherCompressedTiles() = 0;
@@ -63,8 +65,6 @@ namespace BARNEY_NS {
     
     std::vector<PLD> perLogical;
 
-    void *getPointer(BNFrameBufferChannel channel) override;
-    
     /*! on owner, take the 'gatheredTilesOnOwner', and unpack them into
         linear color, depth, alpha, and normal channels, so denoiser
         can then run on it */
@@ -85,6 +85,10 @@ namespace BARNEY_NS {
     vec4f *linearColor = 0;
     float *linearDepth = 0;
     vec3f *linearNormal = 0;
+
+    int *linearPrimID = 0;
+    int *linearObjID  = 0;
+    int *linearInstID = 0;
     
     vec2i numPixels = {-1,-1};
 

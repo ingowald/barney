@@ -98,8 +98,8 @@ namespace barney_device {
     bnFrameBufferResize(m_bnFrameBuffer,
                         size.x,
                         size.y,
-                        (uint32_t)BN_FB_COLOR
-                        | (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
+                        (uint32_t)BN_FB_COLOR |
+                        (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
   }
 
   bool Frame::getProperty(const std::string_view &name,

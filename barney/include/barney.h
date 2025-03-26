@@ -20,9 +20,19 @@
 #define BARNEY_VERSION_MINOR @BARNEY_VERSION_MINOR@
 #define BARNEY_VERSION_PATCH @BARNEY_VERSION_PATCH@
 
+/*! whether the cuda/optix backend has been included in this build */
 #cmakedefine01 BARNEY_BACKEND_OPTIX
+
+/*! whether the native-cuda backend has been included in this build */
 #cmakedefine01 BARNEY_BACKEND_CUDA
+
+/*! whether the embree backend has been included in this build */
 #cmakedefine01 BARNEY_BACKEND_EMBREE
+
+/*! whether this build of barney has support for MPI based rendering;
+    i.e., wether barney/barney_mpi.h and (if anari is enabled)
+    anari_library_barney_mpi exist */
+#cmakedefine01 BARNEY_HAVE_MPI
 
 #include <cstdint>
 #include <cstddef>
@@ -87,8 +97,11 @@ struct BNTransform {
 };
 
 typedef enum {
-  BN_FB_COLOR = (1<<0),
-  BN_FB_DEPTH = (1<<1),
+  BN_FB_COLOR  = (1<<0),
+  BN_FB_DEPTH  = (1<<1),
+  BN_FB_PRIMID = (1<<2),
+  BN_FB_INSTID = (1<<3),
+  BN_FB_OBJID  = (1<<4),
 } BNFrameBufferChannel;
 
 typedef enum {
@@ -326,15 +339,6 @@ void bnFrameBufferRead(BNFrameBuffer fb,
                        void *pointerToReadDataInto,
                        BNDataType requiredFormat);
 
-/*! returns a pointer to the internal frame buffer, for the specified
-    channel type. Note that this is likely going to be a device
-    pointer, and may or may not be readable on the host; but that in
-    case of using a cpu backend it may also be a host pointer and only
-    be accessible there. */
-BARNEY_API
-void *bnFrameBufferGetPointer(BNFrameBuffer fb,
-                              BNFrameBufferChannel channelToRead);
-
 BARNEY_API
 void bnRender(BNRenderer    renderer,
               BNModel       model,
@@ -353,7 +357,7 @@ void bnSetInstances(BNModel model,
 BARNEY_API
 void bnSetInstanceAttributes(BNModel model,
                              int whichSlot,
-                             int whichAttribute,
+                             const char *attributeName,
                              BNData data);
 
 // ==================================================================

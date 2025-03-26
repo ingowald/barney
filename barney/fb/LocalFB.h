@@ -34,13 +34,6 @@ namespace BARNEY_NS {
     
     void ownerGatherCompressedTiles() override;
     void resize(vec2i size, uint32_t channels) override;
-    
-    // struct {
-    //   /*! list of *all* ranks' tileOffset, gathered (only at master) */
-    //   int numActiveTiles = 0;
-    //   CompressedTile       *compressedTiles = 0;
-    //   TileDesc        *tileDescs = 0;
-    // } rank0gather;
   };
 
   // ==================================================================

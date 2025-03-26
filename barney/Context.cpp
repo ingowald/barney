@@ -113,11 +113,11 @@ namespace BARNEY_NS {
     return numActive;
   }
  
-  void Context::traceRaysGlobally(GlobalModel *model)
+  void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
     while (true) {
-      traceRaysLocally(model);
-      const bool needMoreTracing = forwardRays();
+      traceRaysLocally(model, rngSeed, needHitIDs);
+      const bool needMoreTracing = forwardRays(needHitIDs);
       if (needMoreTracing)
         continue;
       break;
@@ -152,17 +152,19 @@ namespace BARNEY_NS {
     
     // iw - todo: add wave-front-merging here.
     for (int p=0;p<renderer->pathsPerPixel;p++) {
-#if 0
-      std::cout << "====================== resetting accumid" << std::endl;
-      fb->accumID = 0;
-#endif
+
+      std::cout << "#################### RENDER ######################" << std::endl;
       double _t0 = getCurrentTime();
+      std::cout << "==================== new pixel wave ======================" << std::endl;
       generateRays(camera,renderer,fb);
 
       for (int generation=0;true;generation++) {
-        traceRaysGlobally(model);
+        std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
+        bool needHitIDs = fb->needHitIDs() && generation==0;
+        uint32_t rngSeed = fb->accumID*16+generation;
+        traceRaysGlobally(model,rngSeed,needHitIDs);
         
-        shadeRaysLocally(renderer, model, fb, generation);
+        shadeRaysLocally(renderer, model, fb, generation, rngSeed);
         // no sync required here, shadeRays syncs itself.
         
         const int numActiveGlobally = numRaysActiveGlobally();

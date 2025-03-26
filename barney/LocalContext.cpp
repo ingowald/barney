@@ -75,7 +75,7 @@ namespace BARNEY_NS {
     return numRaysActiveLocally();
   }
 
-  bool LocalContext::forwardRays()
+  bool LocalContext::forwardRays(bool needHitIDs)
   {
     const int numSlots = (int)perSlot.size();
     if (numSlots == 1) {
@@ -98,15 +98,18 @@ namespace BARNEY_NS {
 
       int count = device->rayQueue->numActive;
       numCopied[nextID] = count;
-      Ray *src = device->rayQueue->traceAndShadeReadQueue;
-      Ray *dst = nextDev->rayQueue->receiveAndShadeWriteQueue;
-      device->rtc->copyAsync(dst,src,count*sizeof(Ray));
+      auto &src = device->rayQueue->traceAndShadeReadQueue;
+      auto &dst = nextDev->rayQueue->receiveAndShadeWriteQueue;
+      std::cout << "#### COPYING RAYS " << src.rays << " -> " << dst.rays << " #=" << count << std::endl;
+      device->rtc->copyAsync(dst.rays,src.rays,count*sizeof(Ray));
+      if (needHitIDs)
+        device->rtc->copyAsync(dst.hitIDs,src.hitIDs,count*sizeof(*dst.hitIDs));
     }
 
     for (auto device : *devices) {
       int devID = device->contextRank;
       device->sync();
-      device->rayQueue->swap();
+      device->rayQueue->swapAfterCycle(numTimesForwarded % numSlots, numSlots);
       device->rayQueue->numActive = numCopied[devID];
     }
     
@@ -127,7 +130,7 @@ namespace BARNEY_NS {
 
     // convert all tiles from accum to RGBA
     finalizeTiles(fb);
-
+    
     // ------------------------------------------------------------------
     // done rendering, let the frame buffer know about it, so it can
     // do whatever needs doing with the latest finalized tiles

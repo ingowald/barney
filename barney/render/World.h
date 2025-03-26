@@ -44,11 +44,13 @@ namespace BARNEY_NS {
         const QuadLight::DD *quadLights    = nullptr;
         int                  numDirLights  = 0;
         const DirLight::DD  *dirLights     = nullptr;
+        int                 *instIDToUserInstID = 0;
         
         const DeviceMaterial *materials;
         const Sampler::DD    *samplers;
         const rtc::float4    *instanceAttributes[5];
         EnvMapLight::DD       envMapLight;
+        uint32_t              rngSeed;
       };
       struct {
         EnvMapLight::SP light;
@@ -63,13 +65,14 @@ namespace BARNEY_NS {
       void set(EnvMapLight::SP envMapLight, const affine3f &xfm);
       
       PODData::SP instanceAttributes[5];
+      PODData::SP instanceUserIDs;
       
-      DD getDD(Device *device);
+      DD getDD(Device *device, int rngSeed);
 
       struct PLD {
-        rtc::Buffer *quadLightsBuffer = 0;
+        QuadLight::DD *quadLights = 0;
         int numQuadLights = 0;
-        rtc::Buffer *dirLightsBuffer = 0;
+        DirLight::DD *dirLights = 0;
         int numDirLights = 0;
       };
       PLD *getPLD(Device *device);

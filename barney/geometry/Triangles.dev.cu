@@ -26,26 +26,27 @@ namespace BARNEY_NS {
   struct TrianglesPrograms {
       
     static inline __rtc_device
-    void closestHit(rtc::TraceInterface &rt)
+    void closestHit(rtc::TraceInterface &ti)
     {}
 
     static inline __rtc_device
-    void anyHit(rtc::TraceInterface &rt)
+    void anyHit(rtc::TraceInterface &ti)
     {
-      auto &ray = *(Ray *)rt.getPRD();
+      auto &ray = *(Ray *)ti.getPRD();
 
-      const World::DD &world = OptixGlobals::get(rt).world;
+      const OptixGlobals &globals = OptixGlobals::get(ti);
+      const World::DD &world = globals.world;
 #if NDEBUG
       bool dbg = false;
 #else
       bool dbg = ray.dbg;
 #endif
       
-      auto &self = *(Triangles::DD*)rt.getProgramData();
-      const float u = rt.getTriangleBarycentrics().x;
-      const float v = rt.getTriangleBarycentrics().y;
-      int primID = rt.getPrimitiveIndex();
-      int instID = rt.getInstanceIndex();
+      auto &self = *(Triangles::DD*)ti.getProgramData();
+      const float u = ti.getTriangleBarycentrics().x;
+      const float v = ti.getTriangleBarycentrics().y;
+      int primID = ti.getPrimitiveIndex();
+      int instID = ti.getInstanceID();
       vec3i triangle = self.indices[primID];
       vec3f v0 = self.vertices[triangle.x];
       vec3f v1 = self.vertices[triangle.y];
@@ -57,21 +58,17 @@ namespace BARNEY_NS {
           + (    u  ) * self.normals[triangle.y]
           + (      v) * self.normals[triangle.z];
         Ns = normalize(Ns);
-
-        // if (dot(Ns,(vec3f)rt.getObjectRayDirection()) > 0.f)
-        //   Ns = n;
-        
         n = Ns;
       }
       const vec3f osN = normalize(n);
-      n = rt.transformNormalFromObjectToWorldSpace(n);
+      n = ti.transformNormalFromObjectToWorldSpace(n);
       n = normalize(n);
 
       // ------------------------------------------------------------------
       // get texture coordinates
       // ------------------------------------------------------------------
       const vec3f osP  = (1.f-u-v)*v0 + u*v1 + v*v2;
-      vec3f P  = rt.transformPointFromObjectToWorldSpace(osP);
+      vec3f P  = ti.transformPointFromObjectToWorldSpace(osP);
 
       render::HitAttributes hitData;
       hitData.worldPosition   = P;
@@ -80,7 +77,7 @@ namespace BARNEY_NS {
       hitData.objectNormal    = osN;
       hitData.primID          = primID;
       hitData.instID          = instID;
-      hitData.t               = rt.getRayTmax();
+      hitData.t               = ti.getRayTmax();
       hitData.isShadowRay     = ray.isShadowRay;
 
       auto interpolator
@@ -101,16 +98,34 @@ namespace BARNEY_NS {
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);
-      if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
-        rt.ignoreIntersection();
-        return;
+      if (opacity < 1.f) {
+        int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+        Random rng(hash(rayID,
+                        ti.getRTCInstanceIndex(),
+                        ti.getGeometryIndex(),
+                        ti.getPrimitiveIndex(),
+                        world.rngSeed));
+        if (rng() > opacity) {
+          ti.ignoreIntersection();
+          return;
+        }
       }
-      else {
-        material.setHit(ray,hitData,world.samplers,dbg);
+      if (globals.hitIDs) {
+        const int rayID
+          = ti.getLaunchIndex().x
+          + ti.getLaunchDims().x
+          * ti.getLaunchIndex().y;
+        globals.hitIDs[rayID].primID = primID;
+        globals.hitIDs[rayID].instID
+          = world.instIDToUserInstID
+          ? world.instIDToUserInstID[instID]
+          : instID;
+        globals.hitIDs[rayID].objID  = self.userID;
       }
+      material.setHit(ray,hitData,world.samplers,dbg);
     }
   };
-
+  
   RTC_EXPORT_TRIANGLES_GEOM(Triangles,Triangles::DD,TrianglesPrograms,true,false);
 }
 

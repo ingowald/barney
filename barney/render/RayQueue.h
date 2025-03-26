@@ -18,9 +18,26 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/render/Ray.h"
+#include "barney/render/HitIDs.h"
 
 namespace BARNEY_NS {
   using render::Ray;
+  using render::PathState;
+
+  struct SingleQueue {
+    void alloc(rtc::Device *rtc, int size);
+    void free(rtc::Device *rtc);
+    
+    /*! the actual rays, will all need to be sent every cycle */
+    Ray   *rays   = nullptr;
+    
+    /*! must be sent over the network, but only for generation 0 */
+    HitIDs *hitIDs = nullptr;
+    
+    /*! information we track per ray, but which will NOT be sent over
+      the network */
+    PathState *states = nullptr;
+  };
   
   struct RayQueue {
     RayQueue(Device *device);
@@ -36,11 +53,11 @@ namespace BARNEY_NS {
       becasue both shade and trace can actually modify trays (and
       thus, strictly speaking, are 'writing' to those rays), but
       haven't yet found a better name */
-    Ray *traceAndShadeReadQueue  = nullptr;
+    SingleQueue traceAndShadeReadQueue;
 
     /*! the queue where local kernels that write *new* rays
       (ie, ray gen and shading) will write their rays into */
-    Ray *receiveAndShadeWriteQueue = nullptr;
+    SingleQueue receiveAndShadeWriteQueue;
 
     /*! current write position in the write queue (during shading and
       ray generation) */
@@ -53,8 +70,17 @@ namespace BARNEY_NS {
     Device *device = 0;
 
     void resetWriteQueue();
-      
-    void swap();
+
+    /*! swap the two ray queues, where the just received queue becomes
+        the new trace queue, etc
+
+        - primID/instID/objID need ONLY be sent along for the first generation
+
+        - shade info will always remain on the rank that generated.
+    */
+    void swapAfterShade();
+    void swapAfterGeneration();
+    void swapAfterCycle(int cycleID, int numCycles);
 
     void reserve(int requiredSize);
     void resize(int newSize);

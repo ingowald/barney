@@ -33,6 +33,17 @@ namespace BARNEY_NS {
     xf.set(domain,values,baseDensity);
   }
 
+  bool Volume::set1i(const std::string &member,
+                     const int   &value) 
+  {
+    if (member == "userID") {
+      userID = value;
+      return true; 
+    } 
+    
+    return false;
+  }
+  
   inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
   { assert(s); return s; }
   

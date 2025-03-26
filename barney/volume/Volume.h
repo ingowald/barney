@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <array>
-
+#include "barney/common/barney-common.h"
 #include "barney/Object.h"
 #include "barney/volume/TransferFunction.h"
 #include "barney/volume/ScalarField.h"
+#include <array>
 
 namespace BARNEY_NS {
 
@@ -75,6 +75,7 @@ namespace BARNEY_NS {
       ScalarField::DD        sfCommon;
       typename SFSampler::DD sfSampler;
       TransferFunction::DD   xf;
+      int                    userID;
     };
     
     template<typename SFSampler>
@@ -84,6 +85,7 @@ namespace BARNEY_NS {
       dd.sfCommon = sf->getDD(device);
       dd.sfSampler = sampler->getDD(device);
       dd.xf = xf.getDD(device);
+      dd.userID = userID;
       return dd;
     }
 
@@ -108,11 +110,14 @@ namespace BARNEY_NS {
                const bn_float4 *values,
                int numValues,
                float baseDensity) override;
+    bool set1i(const std::string &member,
+               const int   &value) override;
                
     ScalarField::SP  sf;
     VolumeAccel::SP  accel;
     TransferFunction xf;
     DevGroup::SP const devices;
+    int userID = 0;
     
     struct PLD {
       std::vector<rtc::Group *> generatedGroups;
@@ -120,48 +125,14 @@ namespace BARNEY_NS {
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
-    // std::vector<OWLGroup> generatedGroups;
   };
 
 
 
-
+  
   /*! helper class that performs woodcock sampling over a given
       parameter range, for a given sample'able volume type */
   struct Woodcock {
-    template<typename VolumeDD>
-    static inline __rtc_device
-    bool sampleRangeT(vec4f &sample,
-                      const VolumeDD &sfSampler,
-                      vec3f org, vec3f dir,
-                      range1f &tRange,
-                      float majorant,
-                      uint32_t &rngSeed,
-                      bool dbg=false) 
-    {
-      LCG<4> &rand = (LCG<4> &)rngSeed;
-      float t = tRange.lower;
-      while (true) {
-        float dt = - logf(1.f-rand())/majorant;
-        t += dt;
-        if (t >= tRange.upper)
-          return false;
-
-        sample = sfSampler.sampleAndMap(t,dbg);
-        // if (dbg) printf("sample at t %f, P= %f %f %f -> %f %f %f : %f\n",
-        //                 t,
-        //                 P.x,P.y,P.z,
-        //                 sample.x,
-        //                 sample.y,
-        //                 sample.z,
-        //                 sample.w);
-        if (sample.w >= rand()*majorant) {
-          tRange.upper = t;
-          return true;
-        }
-      }
-    }
-
     template<typename VolumeDD>
     static inline __rtc_device
     bool sampleRange(vec4f &sample,
@@ -169,10 +140,9 @@ namespace BARNEY_NS {
                      vec3f org, vec3f dir,
                      range1f &tRange,
                      float majorant,
-                     uint32_t &rngSeed,
+                     Random &rand,
                      bool dbg=false) 
     {
-      LCG<4> &rand = (LCG<4> &)rngSeed;
       float t = tRange.lower;
       while (true) {
         float dt = - logf(1.f-rand())/majorant;

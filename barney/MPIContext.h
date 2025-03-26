@@ -47,7 +47,7 @@ namespace BARNEY_NS {
     /*! forward rays (during global trace); returns if _after_ that
         forward the rays need more tracing (true) or whether they're
         done (false) */
-    bool forwardRays() override;
+    bool forwardRays(bool needHitIDs) override;
 
     // for debugging ...
     void barrier(bool warn=true) override {

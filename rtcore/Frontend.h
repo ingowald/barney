@@ -49,6 +49,8 @@ namespace rtc {
   using rtc::cuda_common::load;
 
   using rtc::optix::TraceInterface;
+  using ::rtc::device::TextureObject;
+  
 # ifdef __CUDACC__
 #  define RTC_DEVICE_CODE 1
 # endif
@@ -58,6 +60,7 @@ namespace rtc {
 
 
 #if BARNEY_RTC_EMBREE
+# include "rtcore/common/rtcore-common.h"
 # include "rtcore/embree/Device.h"
 # include "rtcore/embree/Geom.h" 
 # include "rtcore/embree/GeomType.h" 
@@ -84,19 +87,16 @@ namespace rtc {
   using rtc::embree::tex2D;
   using rtc::embree::tex3D;
   using rtc::embree::TraceInterface;
+  using ::rtc::device::TextureObject;
 
 # define RTC_DEVICE_CODE 1
-  
-// # if !BARNEY_DEVICE_PROGRAM
-//   struct TraceInterface;
-// # endif
 }
 #endif
 
 
-namespace rtc {
-  using device::TextureObject;
-}
+// namespace rtc {
+//   using ::rtc::device::TextureObject;
+// }
 
 
 

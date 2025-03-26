@@ -177,7 +177,6 @@ namespace barney_api {
 
     virtual void  resetAccumulation() = 0;
     virtual void  resize(vec2i newSize, uint32_t channels) = 0;
-    virtual void *getPointer(BNFrameBufferChannel channel) = 0;
     virtual void  read(BNFrameBufferChannel channel,
                        void *hostPtrToReadInto,
                        BNDataType requestedFormat) = 0;
@@ -215,7 +214,7 @@ namespace barney_api {
                               const affine3f *xfms,
                               int numInstances) = 0;
     virtual void setInstanceAttributes(int slot,
-                                       int which,
+                                       const std::string &which,
                                        Data::SP data) = 0;
     virtual void build(int slot) = 0;
     virtual void render(Renderer *renderer,

@@ -21,14 +21,22 @@
 
 namespace BARNEY_NS {
   namespace render {
+    /* path state/shade info that does _not_ go over the network */
     
+    struct PathState {
+      vec3h    throughput;
+      int32_t  pixelID;
+      float    misWeight;
+      int      numDiffuseBounces;
+      uint32_t rngSeed;
+    };
     struct Ray {
       inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo);
       inline __rtc_device PackedBSDF getBSDF() const;
       inline __rtc_device void setHit(vec3f P, vec3f N, float t,
                                     const PackedBSDF &packedBSDF);
       
-      inline __rtc_device void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len);
+      // inline __rtc_device void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len);
       inline __rtc_device bool hadHit() const { return bsdfType != PackedBSDF::NONE; }
       inline __rtc_device void clearHit(float newTMax = BARNEY_INF)
       { bsdfType = PackedBSDF::NONE; tMax = newTMax; }
@@ -40,32 +48,24 @@ namespace BARNEY_NS {
       vec3f    org;
       vec3f    dir;
       float    tMax;
-      uint32_t rngSeed;
 
-      union {
-        struct {
-          uint64_t misWeightBits:16;
-          uint64_t pixelID      :27;
-          /*! type of bsdf in the hitBSDF; if this is set to NONE the
-            ray didn't have any hit yet */
-          uint64_t bsdfType         : 3;
-          uint64_t numDiffuseBounces: 2;
-          /*! for path tracer: tracks whether we are, or aren't, in a
-            refractable medium */
-          uint64_t isInMedium : 1;
-          uint64_t isSpecular : 1;
-          uint64_t isShadowRay: 1;
-          uint64_t dbg        : 1;
-        };
-        half     misWeight;
-      };
       /*! the actual hit point, in 3D float coordinates (rather than
         implicitly through org+tMax*dir), for numerical robustness
         issues */
       vec3f       P;
-      // vec3h       Le;
-      vec3h    throughput;
       vec3h       N;
+      struct {
+        /*! type of bsdf in the hitBSDF; if this is set to NONE the
+          ray didn't have any hit yet */
+        uint64_t bsdfType   : 3;
+        // uint64_t numDiffuseBounces: 4;
+        /*! for path tracer: tracks whether we are, or aren't, in a
+          refractable medium */
+        uint16_t isInMedium : 1;
+        uint16_t isSpecular : 1;
+        uint16_t isShadowRay: 1;
+        uint16_t dbg        : 1;
+      };
       union {
         PackedBSDF::Data hitBSDF;
         /*! the background color for primary rays that didn't have any intersection.
@@ -75,20 +75,6 @@ namespace BARNEY_NS {
       };
     };
   
-    // struct RayQueue {
-    //   Ray *traceAndShadeReadQueue  = nullptr;
-      
-    //   /*! the queue where local kernels that write *new* rays
-    //     (ie, ray gen and shading) will write their rays into */
-    //   Ray *receiveAndShadeWriteQueue = nullptr;
-      
-    //   /*! current write position in the write queue (during shading and
-    //     ray generation) */
-    //   int *d_nextWritePos  = 0;
-    //   int  numActive = 0;
-    //   int  size     = 0;
-    // };
-
     inline __rtc_device PackedBSDF Ray::getBSDF() const
     {
       return PackedBSDF((PackedBSDF::Type)bsdfType,hitBSDF);
@@ -114,14 +100,16 @@ namespace BARNEY_NS {
     }
 
     inline __rtc_device
-    void Ray::makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len)
+    void makeShadowRay(Ray &ray,
+                       PathState &state,
+                       vec3f _tp, vec3f _org, vec3f _dir, float len)
     {
-      this->bsdfType = PackedBSDF::NONE;
-      this->isShadowRay = true;
-      this->dir = _dir;
-      this->org = _org;
-      this->throughput = _tp;
-      this->tMax = len;
+      ray.bsdfType = PackedBSDF::NONE;
+      ray.isShadowRay = true;
+      ray.dir = _dir;
+      ray.org = _org;
+      ray.tMax = len;
+      state.throughput = _tp;
     }
 
     inline __rtc_device void Ray::packNormal(vec3f N)

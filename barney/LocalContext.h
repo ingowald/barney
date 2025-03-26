@@ -40,7 +40,7 @@ namespace BARNEY_NS {
     /*! forward rays (during global trace); returns if _after_ that
         forward the rays need more tracing (true) or whether they're
         done (false) */
-    bool forwardRays() override;
+    bool forwardRays(bool needHitIDs) override;
 
     /*! returns how many rays are active in all ray queues, across all
         devices and, where applicable, across all ranks */

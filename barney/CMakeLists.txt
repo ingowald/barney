@@ -292,7 +292,7 @@ if (BARNEY_BACKEND_EMBREE)
     add_library(barney_mpi_embree ${MPI_SOURCES})
     target_compile_definitions(barney_mpi_embree PRIVATE -DBARNEY_RTC_EMBREE=1)
     target_link_libraries(barney_mpi_embree PUBLIC barney_config embree_local)
-    target_link_libraries(barney_mpi_embree PRIVATE barney_embree MPI::MPI_CXX)
+    target_link_libraries(barney_mpi_embree PUBLIC barney_embree MPI::MPI_CXX)
     set_library_properties(barney_mpi_embree)
   endif()
 

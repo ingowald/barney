@@ -23,6 +23,7 @@
 # include "rtcore/TraceInterface.h"
 #endif
 #include "barney/render/World.h"
+#include "barney/render/HitIDs.h"
 
 namespace BARNEY_NS {
   namespace render {
@@ -39,6 +40,8 @@ namespace BARNEY_NS {
 
       /*! the current ray queue for the traceRays() kernel */
       Ray                   *rays;
+      /*! info for primid/geomid/instid info; may be null if not required */
+      HitIDs                *hitIDs;
       
       /*! number of ryas in the queue */
       int                    numRays;
@@ -46,17 +49,6 @@ namespace BARNEY_NS {
       /*! this device's world to trace rays into */
       rtc::device::AccelHandle  accel;
       World::DD                 world;
-      // rtc::float4              *instanceAttributes[5];
-      
-      // /*! global list of samplers, to allow calling samplers during
-      //     anyhit material evaluation */
-      // Sampler::DD           *samplers;
-      
-      // /*! global list of materials, to allow anyhit material
-      //     evaluation */
-      // DeviceMaterial        *materials;
-      
-      // // int                    globalIndex;
     };
   }
 }

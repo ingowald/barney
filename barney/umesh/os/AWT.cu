@@ -17,7 +17,7 @@
 #include "barney/umesh/os/AWT.h"
 #if 1
 #include <cuBQL/bvh.h>
-#if BARNEY_HAVE_CUDA
+#if RTC_HAVE_CUDA
 # include <cuBQL/builder/cuda/wide_gpu_builder.h>
 #endif
 
@@ -151,16 +151,16 @@ namespace BARNEY_NS {
 
   void AWTAccel::build(bool full_rebuild)
   {
-#if BARNEY_HAVE_CUDA
+#if RTC_HAVE_CUDA
     for (auto device : *devices) {
       auto pld = getPLD(device);
       UMeshField::PLD *meshPLD = mesh->getPLD(device);
       auto rtc = device->rtc;
 
       if (pld->copyNodes == 0) {
-        pld->copyNodes        //= rtc->createCompute("copyNodes");
+        pld->copyNodes
           = createCompute_copyNodes(rtc);
-        pld->computeMajorants //= rtc->createCompute("computeMajorants");
+        pld->computeMajorants
           = createCompute_computeMajorants(rtc);
       }
       
@@ -212,8 +212,8 @@ namespace BARNEY_NS {
         device->sync();
         pld->primIDs = bvh.primIDs;
         bvh.primIDs = 0;
-        cuBQL::cuda::free(bvh);
 
+        cuBQL::cuda::free(bvh);
         // rtc->copy(meshPLD->elements,tempElements,numElements*sizeof(Element));
         rtc->sync();
         // rtc->freeMem(tempElements);
@@ -268,6 +268,7 @@ namespace BARNEY_NS {
     dd.awtNodes = pld->awtNodes;
     dd.xf       = this->volume->xf.getDD(device);
     dd.primIDs  = pld->primIDs;
+    dd.userID   = volume->userID;
     return dd;
   }
 

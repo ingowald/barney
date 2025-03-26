@@ -50,13 +50,14 @@ namespace BARNEY_NS {
 
 
   struct AWTAccel : public VolumeAccel  {
-    struct DD 
+    struct DD
     {
       // box3f                 bounds;
       UMeshField::DD        mesh;
       TransferFunction::DD  xf;
       AWTNode              *awtNodes;
       uint32_t             *primIDs;
+      int                   userID;
     };
 
     struct PLD {

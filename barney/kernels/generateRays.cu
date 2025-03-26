@@ -49,7 +49,7 @@ namespace BARNEY_NS {
       int *d_count;
       /*! pointer to device-side ray queue to write
         newly generated raysinto */
-      Ray *rayQueue;
+      SingleQueue rayQueue;
       /*! tile descriptors for the tiles that the
         frame buffer owns on this device; rays
         should only get generated for these tiles */
@@ -70,8 +70,9 @@ namespace BARNEY_NS {
       int iy = (lPixelID / tileSize) + tileOffset.y;
 
       Ray ray;
-      ray.misWeight = 0.f;
-      ray.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
+      PathState state;
+      state.misWeight = 0.f;
+      state.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
 
@@ -120,9 +121,8 @@ namespace BARNEY_NS {
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
-      ray.rngSeed     = rand.state;
       ray.tMax        = 1e30f;
-      ray.numDiffuseBounces = 0;
+      state.numDiffuseBounces = 0;
       if (0 && ray.dbg)
         printf("-------------------------------------------------------\n");
       // if (ray.dbg)
@@ -159,10 +159,12 @@ namespace BARNEY_NS {
                                bgColor.x,
                                bgColor.y,
                                bgColor.z);
-      ray.throughput = vec3f(1.f);
+      state.throughput = vec3f(1.f);
     
       int pos = rt.atomicAdd(d_count,1);
-      rayQueue[pos] = ray;
+      rayQueue.rays[pos] = ray;
+      rayQueue.states[pos] = state;
+      rayQueue.hitIDs[pos] = {-1,-1,-1};
     }
 #endif
   }  
@@ -198,6 +200,9 @@ namespace BARNEY_NS {
         devFB->tileDescs,
         enablePerRayDebug,
       };
+      std::cout << "GENERATING RAYS\n  into " << device->rayQueue->receiveAndShadeWriteQueue.rays
+                << " + " << device->rayQueue->receiveAndShadeWriteQueue.states
+                << std::endl;
       device->generateRays->launch(devFB->numActiveTiles,
                                    pixelsPerTile,
                                    &args);
@@ -208,7 +213,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       device->rtc->sync();
-      device->rayQueue->swap();
+      device->rayQueue->swapAfterGeneration();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
     }
   }

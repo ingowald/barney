@@ -18,6 +18,7 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/common/half.h"
+#include "barney/render/HitIDs.h"
 
 namespace BARNEY_NS {
 
@@ -55,9 +56,12 @@ namespace BARNEY_NS {
   enum { pixelsPerTile = tileSize*tileSize };
 
   struct AccumTile {
-    vec4f accum[pixelsPerTile];
+    vec4f  accum[pixelsPerTile];
     float  depth[pixelsPerTile];
     vec3f  normal[pixelsPerTile];
+    int    primID[pixelsPerTile];
+    int    objID[pixelsPerTile];
+    int    instID[pixelsPerTile];
   };
   struct CompressedTile {
     uint32_t         rgba[pixelsPerTile];
@@ -89,9 +93,9 @@ namespace BARNEY_NS {
     vec2i numTiles        = { 0, 0 };
     int   numActiveTiles  = 0;
     /*! lower-left pixel coordinate for given tile ... */
-    TileDesc  *tileDescs  = 0;
-    AccumTile *accumTiles = 0;
-    CompressedTile *compressedTiles = 0;
+    TileDesc        *tileDescs  = 0;
+    AccumTile       *accumTiles = 0;
+    CompressedTile  *compressedTiles = 0;
     FrameBuffer *const owner;
     Device      *const device;
   };

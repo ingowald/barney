@@ -156,6 +156,7 @@ namespace barney_device {
       them */
     std::map<const Group*,BNGroup> barneyGroupForAnariGroup;
     std::vector<math::float4> attributes[Instance::Attributes::count];
+    std::vector<int> instIDs;
     for (auto inst : m_instances) {
       if (!inst) continue;
       const Group *ag = inst->group();
@@ -169,6 +170,7 @@ namespace barney_device {
       if (!bg) continue;
 
       BNTransform bt;
+      instIDs.push_back(inst->m_id);
       inst->writeTransform(&bt);
       barneyTransforms.push_back(bt);
       barneyGroups.push_back(bg);
@@ -202,8 +204,12 @@ namespace barney_device {
         = bnDataCreate(getContext(),0,BN_FLOAT4,
                        attributes[i].size(),attributes[i].data());
     }
-    for (int i=0;i<Instance::Attributes::count;i++) 
-      bnSetInstanceAttributes(m_barneyModel,0,i,m_attributesData[i]);
+    for (int i=0;i<Instance::Attributes::count;i++) {
+      std::string attribName = std::string("attribute")+std::to_string(i);
+      bnSetInstanceAttributes(m_barneyModel,0,
+                              attribName.c_str(),
+                              m_attributesData[i]);
+    }
   
     bnBuild(m_barneyModel, 0);
 

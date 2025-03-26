@@ -21,8 +21,7 @@ namespace BARNEY_NS {
   LocalFB::LocalFB(Context *context,
                    const DevGroup::SP &devices)
     : FrameBuffer(context, devices, true)
-  {
-  }
+  {}
 
   void LocalFB::resize(vec2i size,
                        uint32_t channels)

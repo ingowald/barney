@@ -138,17 +138,17 @@ namespace BARNEY_NS {
                       FrameBuffer *fb);
     
     /*! have each *local* GPU trace its current wave-front of rays */
-    void traceRaysLocally(GlobalModel *model);
+    void traceRaysLocally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
     
     /*! trace all rays currently in a ray queue, including forwarding
       if and where applicable, untile every ray in the ray queue as
       found its intersection */
-    void traceRaysGlobally(GlobalModel *model);
+    void traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
 
     /*! forward rays (during global trace); returns if _after_ that
       forward the rays need more tracing (true) or whether they're
       done (false) */
-    virtual bool forwardRays() = 0;
+    virtual bool forwardRays(bool needHitIDs) = 0;
 
     /*! returns how many rays are active in all ray queues, across all
       devices and, where applicable, across all ranks */
@@ -161,7 +161,8 @@ namespace BARNEY_NS {
     void shadeRaysLocally(Renderer *renderer,
                           GlobalModel *model,
                           FrameBuffer *fb,
-                          int generation);
+                          int generation,
+                          uint32_t rngSeed);
     void finalizeTiles(FrameBuffer *fb);
     
     void renderTiles(Renderer *renderer,
