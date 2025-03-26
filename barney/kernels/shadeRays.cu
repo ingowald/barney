@@ -973,11 +973,16 @@ namespace BARNEY_NS {
           rayQueue->_d_nextWritePos,
           generation,
         };
-        std::cout << "SHADING " << std::endl
-                  << "  from " << rayQueue->traceAndShadeReadQueue.rays
-                  << " + " << rayQueue->traceAndShadeReadQueue.states << std::endl
-                  << "  to   " << rayQueue->receiveAndShadeWriteQueue.rays
-                  << " + " << rayQueue->receiveAndShadeWriteQueue.states << std::endl;
+        if (FromEnv::get()->logQueues) {
+          std::stringstream ss;
+          ss << "#bn: ## ray queue kernel SHADE " << std::endl
+             << "  from " << rayQueue->traceAndShadeReadQueue.rays
+             << " + " << rayQueue->traceAndShadeReadQueue.states << std::endl
+             << "  to   " << rayQueue->receiveAndShadeWriteQueue.rays
+             << " + " << rayQueue->receiveAndShadeWriteQueue.states << std::endl;
+          std::cout << ss.str();
+        }
+        
           
         device->shadeRays->launch(nb,bs,&args);
       }

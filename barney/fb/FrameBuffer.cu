@@ -288,7 +288,7 @@ namespace BARNEY_NS {
       // -----------------------------------------------------------------------------
       // (HDR) denoising
       // -----------------------------------------------------------------------------
-      if (!denoiser || !enableDenoising) {
+      if (!denoiser || !enableDenoising || FromEnv::get()->skipDenoising) {
         device->rtc->copy(this->denoisedColor,this->linearColor,
                           numPixels.x*numPixels.y*sizeof(vec4f));
       } else {

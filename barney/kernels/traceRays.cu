@@ -43,8 +43,12 @@ namespace BARNEY_NS {
         dd.world     = model->world->getDD(device,rngSeed);
         dd.accel     = model->getInstanceAccel(device);
 
-        std::cout << "TRACING into " << dd.rays << std::endl;
-        std::cout << "hit ids " << dd.hitIDs << " need = " << int(needHitIDs) << std::endl;
+        if (FromEnv::get()->logQueues) {
+          std::stringstream ss;
+          ss << "#bn: ## ray queue kernel TRACE rays " << dd.rays << std::endl;
+          ss << "#bn: ## ray queue kernel TRACE hit ids " << dd.hitIDs << " need = " << int(needHitIDs) << std::endl;
+          std::cout << ss.str();
+        }
 
 
         if (dd.numRays == 0 || dd.accel == 0) {

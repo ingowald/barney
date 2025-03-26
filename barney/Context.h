@@ -41,6 +41,14 @@ namespace BARNEY_NS {
     struct DeviceMaterial;    
   };
 
+  struct FromEnv {
+    FromEnv();
+    static const FromEnv *get();
+    bool logQueues = false;
+    bool skipDenoising = false;
+    bool logConfig = false;
+  };
+
   struct SlotContext {
     Context *context;
     int modelRankInThisSlot;//dataGroupID;

@@ -41,7 +41,7 @@ namespace BARNEY_NS {
       world(worldComm),
       workers(workersComm)
   {
-    bool dbg = false;
+    bool dbg = FromEnv::get()->logConfig;
 
     if (dbg) {
       std::stringstream ss;
@@ -76,7 +76,8 @@ namespace BARNEY_NS {
     if (dbg) {
       std::stringstream ss;
       ss << "bn." << workers.rank << ": ";
-      ss << "num workers " << numWorkers << "/" << workers.size << std::endl;
+      ss << "num workers active/total " << numWorkers << "/" << workers.size << std::endl;
+      std::cout << ss.str();
     }
 
     if (isActiveWorker) {
@@ -88,6 +89,7 @@ namespace BARNEY_NS {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
         ss << "num devices " << numDevicesPerWorker << " DGs " << numSlotsPerWorker << std::endl << std::flush;
+        std::cout << ss.str();
       }
 
       // ------------------------------------------------------------------

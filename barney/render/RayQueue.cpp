@@ -14,7 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "RayQueue.h"
+#include "barney/render/RayQueue.h"
+#include "barney/Context.h"
 
 namespace BARNEY_NS {
 
@@ -55,13 +56,14 @@ namespace BARNEY_NS {
     rtc->copyAsync(h_numActive,_d_nextWritePos,sizeof(int));
     rtc->sync();
     numActive = *h_numActive;
+    if (FromEnv::get()->logQueues)
+      printf("#bn: ## ray queue read numactive %i\n",numActive);
     return *h_numActive;
   }
     
   /*! how many rays are active in the *READ* queue */
   int RayQueue::numActiveRays() const
   {
-    PING; PRINT(numActive);
     return numActive;
   }
     
@@ -75,7 +77,8 @@ namespace BARNEY_NS {
     
   void RayQueue::swapAfterGeneration()
   {
-    PING;
+    if (FromEnv::get()->logQueues)
+      printf("#bn: ## ray queue swap (after generation)\n");
     std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
     std::swap(receiveAndShadeWriteQueue.states, traceAndShadeReadQueue.states);
     std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
@@ -83,13 +86,15 @@ namespace BARNEY_NS {
 
   void RayQueue::swapAfterCycle(int cycleID, int numCycles)
   {
-    PING;
+    if (FromEnv::get()->logQueues)
+      printf("#bn: ## ray queue swap after cycle (cycle %i/%i)\n",cycleID,numCycles);
     std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
     std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
   }
   void RayQueue::swapAfterShade()
   {
-    PING;
+    if (FromEnv::get()->logQueues)
+      printf("#bn: ## ray queue swap after cycle (after shade)\n");
     std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
     std::swap(receiveAndShadeWriteQueue.states, traceAndShadeReadQueue.states);
     std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);

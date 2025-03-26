@@ -200,9 +200,14 @@ namespace BARNEY_NS {
         devFB->tileDescs,
         enablePerRayDebug,
       };
-      std::cout << "GENERATING RAYS\n  into " << device->rayQueue->receiveAndShadeWriteQueue.rays
-                << " + " << device->rayQueue->receiveAndShadeWriteQueue.states
-                << std::endl;
+      if (FromEnv::get()->logQueues) {
+        std::stringstream ss;
+        ss  << "#bn: ## ray queue op GENERATE " << device->rayQueue->receiveAndShadeWriteQueue.rays
+            << " + " << device->rayQueue->receiveAndShadeWriteQueue.states
+            << std::endl;
+        std::cout << ss.str();
+      }
+      
       device->generateRays->launch(devFB->numActiveTiles,
                                    pixelsPerTile,
                                    &args);
