@@ -44,8 +44,6 @@ macro(set_library_properties tgt)
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
     CXX_VISIBILITY_PRESET  hidden
     CUDA_VISIBILITY_PRESET hidden
-#    CXX_VISIBILITY_PRESET  default
-#    CUDA_VISIBILITY_PRESET default
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
@@ -295,22 +293,6 @@ if (BARNEY_BACKEND_EMBREE)
     target_link_libraries(barney_mpi_embree PUBLIC barney_embree MPI::MPI_CXX)
     set_library_properties(barney_mpi_embree)
   endif()
-
-  # # ----------- barney_embree -----------
-  # add_library(barney_embree_host STATIC ${HOST_SOURCES})
-  # target_link_libraries(barney_embree PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
-
-  # target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
-  # target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
-  # target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
-  # target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
-  # target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
-  # target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
-
-  # if (BARNEY_MPI)
-  #   add_library(barney_mpi_embree STATIC ${MPI_SOURCES})
-  #   target_link_libraries(barney_mpi_embree PUBLIC barney_embree)
-  # endif()
 endif()
     
 
