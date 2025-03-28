@@ -111,7 +111,6 @@ namespace barney_device {
     if (m_channelTypes.instID == ANARI_UINT32)
       requiredChannels |= BN_FB_INSTID;
 
-    PING; PRINT((int*)requiredChannels);
     bnFrameBufferResize(m_bnFrameBuffer,
                         toBarney(m_channelTypes.color),
                         size.x,
