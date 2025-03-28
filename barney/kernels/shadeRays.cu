@@ -20,6 +20,7 @@
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
 #include "rtcore/ComputeInterface.h"
+#include "barney/render/RayQueue.h"
 
 namespace BARNEY_NS {
   namespace render {
@@ -928,9 +929,11 @@ namespace BARNEY_NS {
           : accumTiles[tileID].depth[tileOfs];
         if (accumID == 0 || incomingZ < fbZ) {
           accumTiles[tileID].depth[tileOfs]  = incomingZ;
-          accumTiles[tileID].primID[tileOfs] = readQueue.hitIDs[tid].primID;
-          accumTiles[tileID].objID[tileOfs] = readQueue.hitIDs[tid].objID;
-          accumTiles[tileID].instID[tileOfs] = readQueue.hitIDs[tid].instID;
+          if (readQueue.hitIDs) {
+            accumTiles[tileID].primID[tileOfs] = readQueue.hitIDs[tid].primID;
+            accumTiles[tileID].objID[tileOfs]  = readQueue.hitIDs[tid].objID;
+            accumTiles[tileID].instID[tileOfs] = readQueue.hitIDs[tid].instID;
+          }
           accumTiles[tileID].normal[tileOfs] = incomingN;
         }
       }

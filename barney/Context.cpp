@@ -18,20 +18,15 @@
 #include "barney/DeviceGroup.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/GlobalModel.h"
+#include "barney/render/RayQueue.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
+#include "barney/Camera.h"
+#include "barney/render/Renderer.h"
 
 namespace BARNEY_NS {
-  
-// #ifdef NDEBUG
-//   FromEnv::FromEnv() {}
-//   const FromEnv *FromEnv::get() {
-//     // all const, anyway:
-//     static FromEnv singleton;
-//     return &singleton;
-//   }
-// #else
+
   FromEnv::FromEnv()
   {
     const char *e = getenv("BARNEY_CONFIG");
@@ -172,6 +167,7 @@ namespace BARNEY_NS {
  
   void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
+    PING; PRINT((int)needHitIDs);
     while (true) {
       traceRaysLocally(model, rngSeed, needHitIDs);
       const bool needMoreTracing = forwardRays(needHitIDs);
@@ -186,9 +182,9 @@ namespace BARNEY_NS {
     fb->finalizeTiles();
   }
 
-  void Context::renderTiles(Renderer *renderer,
+  void Context::renderTiles(Renderer    *renderer,
                             GlobalModel *model,
-                            const Camera::DD &camera,
+                            Camera      *camera,
                             FrameBuffer *fb)
   {
     if (!isActiveWorker)
@@ -210,8 +206,10 @@ namespace BARNEY_NS {
       for (int generation=0;true;generation++) {
         if (FromEnv::get()->logQueues) 
           std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
-          
-        bool needHitIDs = fb->needHitIDs() && generation==0;
+
+        PING; PRINT(generation);
+        bool needHitIDs = fb->needHitIDs() && (generation==0);
+        PRINT((int)needHitIDs);
         uint32_t rngSeed = fb->accumID*16+generation;
         traceRaysGlobally(model,rngSeed,needHitIDs);
         

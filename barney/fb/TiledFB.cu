@@ -16,9 +16,136 @@
 
 #include "barney/fb/TiledFB.h"
 #include "barney/fb/FrameBuffer.h"
+#include "barney/common/math.h"
 
 namespace BARNEY_NS {
 
+  RTC_IMPORT_COMPUTE1D(setTileCoords);
+  RTC_IMPORT_COMPUTE1D(linearizeColorAndNormal);
+  RTC_IMPORT_COMPUTE1D(linearizeAuxChannel);
+
+  struct LinearizeColorAndNormal {
+    /* ARGS */
+    void      *out_rgba;
+    BNDataType colorFormat;
+    vec3f     *out_normal;
+    float      accumScale;
+    TileDesc  *descs;
+    AccumTile *tiles;
+    vec2i      numPixels;
+      
+    /* CODE */
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &ci)
+    {
+      int tileIdx = ci.getBlockIdx().x;
+      TileDesc desc   = descs[tileIdx];
+      AccumTile *tile = &tiles[tileIdx];
+      
+      int subIdx = ci.getThreadIdx().x;
+      int iix = subIdx % tileSize;
+      int iiy = subIdx / tileSize;
+      int ix = desc.lower.x + iix;
+      int iy = desc.lower.y + iiy;
+      if (ix >= numPixels.x) return;
+      if (iy >= numPixels.y) return;
+      int idx = ix + numPixels.x*iy;
+
+      vec4f color = tile->accum[subIdx] * accumScale;
+      if (colorFormat == BN_FLOAT4) 
+        ((vec4f*)out_rgba)[idx] = color;
+      else if (colorFormat == BN_UFIXED8_RGBA) 
+        ((uint32_t*)out_rgba)[idx] = make_rgba(color);
+      else if (colorFormat == BN_UFIXED8_RGBA_SRGB) 
+        ((uint32_t*)out_rgba)[idx] = make_rgba(linear_to_srgb(color));
+      else
+        // unsupported type!?
+        ;
+      if (out_normal)
+        out_normal[idx] = tile->normal[subIdx];
+    }
+  };
+
+  /*! take this GPU's tiles, and write those tiles' color (and
+    optionally normal) channels into the linear frame buffers
+    provided. The linearColor is guaranteed to be non-null, and to
+    be numPixels.x*numPixels.y vec4fs; linearNormal may be
+    null. Linear buffers may live on another GPU, but are
+    guaranteed to be on the same node. */
+  void TiledFB::linearizeColorAndNormal(void *linearColor,
+                                        BNDataType colorFormat,
+                                        vec3f *linearNormal,
+                                        float  accumScale)
+  {
+    SetActiveGPU forDuration(device);
+    LinearizeColorAndNormal args={linearColor,colorFormat,
+                                  linearNormal,accumScale,
+                                  tileDescs,accumTiles,
+                                  numPixels};
+    linearizeColorAndNormalKernel
+      ->launch(numActiveTiles,pixelsPerTile,&args);       
+  }
+
+
+
+
+  struct LinearizeAuxChannel {
+    /* ARGS */
+    void                *linearOut;
+    BNFrameBufferChannel whichChannel;
+    TileDesc  *descs;
+    AccumTile *tiles;
+    vec2i      numPixels;
+      
+    /* CODE */
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &ci)
+    {
+      int tileIdx = ci.getBlockIdx().x;
+      TileDesc desc   = descs[tileIdx];
+      AccumTile *tile = &tiles[tileIdx];
+      
+      int subIdx = ci.getThreadIdx().x;
+      int iix = subIdx % tileSize;
+      int iiy = subIdx / tileSize;
+      int ix = desc.lower.x + iix;
+      int iy = desc.lower.y + iiy;
+      if (ix >= numPixels.x) return;
+      if (iy >= numPixels.y) return;
+      int idx = ix + numPixels.x*iy;
+      
+      switch (whichChannel) {
+      case BN_FB_PRIMID: 
+        ((uint32_t*)linearOut)[idx] = tile->primID[subIdx];
+        break;
+      case BN_FB_OBJID: 
+        ((uint32_t*)linearOut)[idx] = tile->objID[subIdx];
+        break;
+      case BN_FB_INSTID: 
+        ((uint32_t*)linearOut)[idx] = tile->instID[subIdx];
+        break;
+      default:
+        printf("LinearizeAuxChannel not implemented for channel #%i\n",
+               whichChannel);
+      }
+    }
+  };
+
+  void TiledFB::linearizeAuxChannel(void *linearChannel,
+                                    BNFrameBufferChannel whichChannel)
+  {
+    SetActiveGPU forDuration(device);
+    LinearizeAuxChannel args={linearChannel,whichChannel,
+                              tileDescs,accumTiles,
+                              numPixels};
+    linearizeAuxChannelKernel
+      ->launch(numActiveTiles,pixelsPerTile,&args);       
+  }
+
+
+
+
+  
   TiledFB::SP TiledFB::create(Device *device, FrameBuffer *owner)
   {
     return std::make_shared<TiledFB>(device, owner);
@@ -27,10 +154,21 @@ namespace BARNEY_NS {
   TiledFB::TiledFB(Device *device, FrameBuffer *owner)
     : device(device),
       owner(owner)
-  {}
+  {
+    setTileCoords
+      = createCompute_setTileCoords(device->rtc);
+    linearizeColorAndNormalKernel
+      = createCompute_linearizeColorAndNormal(device->rtc);
+    linearizeAuxChannelKernel
+      = createCompute_linearizeAuxChannel(device->rtc);
+  }
 
   TiledFB::~TiledFB()
-  { free(); }
+  {
+    free();
+    delete setTileCoords;
+    delete linearizeColorAndNormalKernel;
+  }
 
   void TiledFB::free()
   {
@@ -39,10 +177,10 @@ namespace BARNEY_NS {
       device->rtc->freeMem(accumTiles);
       accumTiles = nullptr;
     }
-    if (compressedTiles) {
-      device->rtc->freeMem(compressedTiles);
-      compressedTiles = nullptr;
-    }
+    // if (compressedTiles) {
+    //   device->rtc->freeMem(compressedTiles);
+    //   compressedTiles = nullptr;
+    // }
     if (tileDescs) {
       device->rtc->freeMem(tileDescs);
       tileDescs = nullptr;
@@ -97,8 +235,8 @@ namespace BARNEY_NS {
     auto rtc = device->rtc;
     accumTiles
       = (AccumTile *)rtc->allocMem(numActiveTiles * sizeof(AccumTile));
-    compressedTiles
-      = (CompressedTile *)rtc->allocMem(numActiveTiles * sizeof(CompressedTile));
+    // compressedTiles
+    //   = (CompressedTile *)rtc->allocMem(numActiveTiles * sizeof(CompressedTile));
     tileDescs
       = (TileDesc *)rtc->allocMem(numActiveTiles * sizeof(TileDesc));
     SetTileCoords args = {
@@ -109,14 +247,14 @@ namespace BARNEY_NS {
       device->globalIndexStep
     };
     if (numActiveTiles > 0)
-      device->setTileCoords
+      setTileCoords
         ->launch(divRoundUp(numActiveTiles,1024),1024,
                  &args);
   }
 
   // ==================================================================
 
-
+#if 0
   struct CompressTiles {
     CompressedTile *compressedTiles;
     AccumTile      *accumTiles;
@@ -149,8 +287,6 @@ namespace BARNEY_NS {
 
     compressedTiles[tileID].rgba[pixelID]
       = rgba32;
-    compressedTiles[tileID].depth[pixelID]
-      = accumTiles[tileID].depth[pixelID];
   }
 #endif
   
@@ -159,8 +295,8 @@ namespace BARNEY_NS {
     pixels) */
   void TiledFB::finalizeTiles_launch()
   {
-    SetActiveGPU forDuration(device);
     if (numActiveTiles > 0) {
+      SetActiveGPU forDuration(device);
       CompressTiles args = {
         compressedTiles,
         accumTiles,
@@ -174,8 +310,11 @@ namespace BARNEY_NS {
     }
   }
   
-  RTC_EXPORT_COMPUTE1D(setTileCoords,SetTileCoords);
   RTC_EXPORT_COMPUTE1D(compressTiles,CompressTiles);
+#endif
+  RTC_EXPORT_COMPUTE1D(setTileCoords,SetTileCoords);
+  RTC_EXPORT_COMPUTE1D(linearizeColorAndNormal,LinearizeColorAndNormal);
+  RTC_EXPORT_COMPUTE1D(linearizeAuxChannel,LinearizeAuxChannel);
 }
 
 

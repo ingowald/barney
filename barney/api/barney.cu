@@ -699,11 +699,12 @@ namespace barney_api {
 
   BARNEY_API
   void bnFrameBufferResize(BNFrameBuffer fb,
+                           BNDataType colorFormat,
                            int sizeX, int sizeY,
                            uint32_t channels)
   {
     LOG_API_ENTRY;
-    checkGet(fb)->resize(vec2i{sizeX,sizeY},channels);
+    checkGet(fb)->resize(colorFormat,vec2i{sizeX,sizeY},channels);
   }
 
   BARNEY_API

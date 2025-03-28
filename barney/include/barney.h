@@ -131,8 +131,6 @@ typedef enum {
 
   BN_UFIXED16,
   
-  BN_FLOAT4_RGBA,
-  
   BN_RAW_DATA_BASE
 } BNDataType;
 
@@ -330,6 +328,7 @@ void bnAccumReset(BNFrameBuffer fb);
 
 BARNEY_API
 void bnFrameBufferResize(BNFrameBuffer fb,
+                         BNDataType colorFormat,
                          int sizeX, int sizeY,
                          uint32_t requiredChannels BN_IF_CPP( = BN_FB_COLOR));
 

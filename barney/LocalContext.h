@@ -32,9 +32,9 @@ namespace BARNEY_NS {
     std::string toString() const override
     { return "LocalFB{}"; }
 
-    void render(Renderer *renderer,
+    void render(Renderer    *renderer,
                 GlobalModel *model,
-                const Camera::DD &camera,
+                Camera      *camera,
                 FrameBuffer *fb) override;
 
     /*! forward rays (during global trace); returns if _after_ that

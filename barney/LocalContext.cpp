@@ -16,7 +16,7 @@
 
 #include "barney/LocalContext.h"
 #include "barney/fb/LocalFB.h"
-
+#include "barney/render/RayQueue.h"
 
 #if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
 # error "should not have both backends on at the same time!?"
@@ -119,7 +119,7 @@ namespace BARNEY_NS {
 
   void LocalContext::render(Renderer    *renderer,
                             GlobalModel *model,
-                            const Camera::DD &camera,
+                            Camera      *camera,
                             FrameBuffer *fb)
   {
     assert(model);

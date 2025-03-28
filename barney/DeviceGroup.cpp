@@ -17,15 +17,14 @@
 #include "barney/DeviceGroup.h"
 #include "barney/render/OptixGlobals.h"
 #include "barney/Context.h"
+#include "barney/render/RayQueue.h"
 
 namespace BARNEY_NS {
 
-  RTC_IMPORT_COMPUTE1D(setTileCoords);
-  RTC_IMPORT_COMPUTE1D(compressTiles);
-  RTC_IMPORT_COMPUTE1D(unpackTiles);
+  // RTC_IMPORT_COMPUTE1D(compressTiles);
+  // RTC_IMPORT_COMPUTE1D(unpackTiles);
     
-  RTC_IMPORT_COMPUTE2D(toneMap);
-  RTC_IMPORT_COMPUTE2D(toFixed8);
+  // RTC_IMPORT_COMPUTE2D(toFixed8);
   RTC_IMPORT_COMPUTE1D(generateRays);
   RTC_IMPORT_COMPUTE1D(shadeRays);
 
@@ -78,23 +77,19 @@ namespace BARNEY_NS {
       geomTypes(rtc)
   {
     rayQueue = new RayQueue(this);
-    setTileCoords
-      // = rtc->createCompute("setTileCoords");
-      = createCompute_setTileCoords(rtc);
-    compressTiles
-      // = rtc->createCompute("compressTiles");
-      = createCompute_compressTiles(rtc);
-    unpackTiles
-      = createCompute_unpackTiles(rtc);
+    // setTileCoords
+    //   // = rtc->createCompute("setTileCoords");
+    //   = createCompute_setTileCoords(rtc);
+    // compressTiles
+    //   // = rtc->createCompute("compressTiles");
+    //   = createCompute_compressTiles(rtc);
+    // unpackTiles
+    //   = createCompute_unpackTiles(rtc);
     
-    toneMap
-      = createCompute_toneMap(rtc);
-    toFixed8
-      = createCompute_toFixed8(rtc);
-    generateRays
-      = createCompute_generateRays(rtc);
-    shadeRays
-      = createCompute_shadeRays(rtc);
+    // toneMap
+    //   = createCompute_toneMap(rtc);
+    // toFixed8
+    //   = createCompute_toFixed8(rtc);
 
     // umesh related:
     umeshCreateElements 
@@ -106,6 +101,10 @@ namespace BARNEY_NS {
     umeshComputeElementBBs
       = createCompute_umeshComputeElementBBs(rtc);
       
+    generateRays
+      = createCompute_generateRays(rtc);
+    shadeRays
+      = createCompute_shadeRays(rtc);
     traceRays
       = createTrace_traceRays(rtc);
   }

@@ -23,56 +23,32 @@ namespace BARNEY_NS {
     : FrameBuffer(context, devices, true)
   {}
 
-  void LocalFB::resize(vec2i size,
+  void LocalFB::resize(BNDataType colorFormat,
+                       vec2i size,
                        uint32_t channels)
   {
     Device *frontDev = getDenoiserDevice();
     auto rtc = frontDev->rtc;
-    FrameBuffer::resize(size,channels);
+    FrameBuffer::resize(colorFormat,size,channels);
     
-    if (gatheredTilesOnOwner.compressedTiles)
-      rtc->freeMem(gatheredTilesOnOwner.compressedTiles);
-    if (gatheredTilesOnOwner.tileDescs)
-      rtc->freeMem(gatheredTilesOnOwner.tileDescs);
-  
-    // do NOT set active device - it's whatever the app used!
-    // SetActiveDevice forDuration(perDev[0]->device);
-    int sumTiles = 0;
-    for (auto device : *devices)
-      sumTiles += getFor(device)->numActiveTiles;
+    if (onOwner.tileDescs)
+      rtc->freeMem(onOwner.tileDescs);
 
-    gatheredTilesOnOwner.numActiveTiles = sumTiles;
-    gatheredTilesOnOwner.compressedTiles
-      = (CompressedTile *)rtc->allocMem(sumTiles*sizeof(CompressedTile));
-    gatheredTilesOnOwner.tileDescs
-      = (TileDesc *)rtc->allocMem(sumTiles*sizeof(TileDesc));
-    sumTiles = 0;
+    onOwner.sumTiles = 0;
+    for (auto device : *devices)
+      onOwner.sumTiles += getFor(device)->numActiveTiles;
+
+    onOwner.tileDescs
+      = (TileDesc *)rtc->allocMem(onOwner.sumTiles*sizeof(TileDesc));
+    TileDesc *dst = onOwner.tileDescs;
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       auto devFB = getFor(device);
-      device->rtc->copyAsync(gatheredTilesOnOwner.tileDescs+sumTiles,
+      device->rtc->copyAsync(dst,
                              devFB->tileDescs,
                              devFB->numActiveTiles*sizeof(TileDesc));
-      sumTiles += devFB->numActiveTiles;
+      dst += devFB->numActiveTiles;
     }
-    for (auto device : *devices)
-      device->sync();
-  }
-  
-  void LocalFB::ownerGatherCompressedTiles()
-  {
-    // do NOT set active device - it's whatever the app used!
-    // SetActiveDevice forDuration(perDev[0]->device);
-    int sumTiles = 0;
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      auto devFB = getFor(device);
-      device->rtc->copyAsync(gatheredTilesOnOwner.compressedTiles+sumTiles,
-                             devFB->compressedTiles,
-                             devFB->numActiveTiles*sizeof(CompressedTile));
-      sumTiles += devFB->numActiveTiles;
-    }
-    gatheredTilesOnOwner.numActiveTiles = sumTiles;
     
     for (auto device : *devices)
       device->sync();
@@ -82,8 +58,37 @@ namespace BARNEY_NS {
   {
     auto frontDev = getDenoiserDevice();
     SetActiveGPU forDuration(frontDev);
-    frontDev->rtc->freeMem(gatheredTilesOnOwner.compressedTiles);
-    frontDev->rtc->freeMem(gatheredTilesOnOwner.tileDescs);
+    // frontDev->rtc->freeMem(.compressedTiles);
+    frontDev->rtc->freeMem(onOwner.tileDescs);
+  }
+
+  /*! gather color (and optionally, if not null) linear normal, from
+    all GPUs (and ranks). lienarColor and lienarNormal are
+    device-writeable 2D linear arrays of numPixel size;
+    linearcolor may be null. */
+  void LocalFB::gatherColorChannel(/*float4 or rgba8*/void *linearColor,
+                                   BNDataType gatherType,
+                                   vec3f *linearNormal)
+  {
+    float accumScale = 1.f/accumID;
+    for (auto device : *devices) {
+      getFor(device)->linearizeColorAndNormal
+        (linearColor,gatherType,linearNormal,accumScale);
+    }
+    for (auto device : *devices)
+      device->rtc->sync();
+  }
+
+  /*! read one of the auxiliary (not color or normal) buffers into
+    the given app memory; this will at the least incur some
+    reformatting from tiles to linear (if local node), possibly
+    some gpu-gpu transfer (local node w/ more than one gpu) and
+    possibly some mpi communication (distFB) */
+  void LocalFB::gatherAuxChannel(void *stagingArea,
+                                 BNFrameBufferChannel whichChannel) 
+  {
+    for (auto device : *devices)
+      getFor(device)->linearizeAuxChannel(stagingArea,whichChannel);
   }
   
-}
+} // ::BARNEY_NS

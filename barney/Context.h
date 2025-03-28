@@ -17,23 +17,18 @@
 #pragma once
 
 #include "barney/api/Context.h"
-#include "barney/render/Ray.h"
-#include "barney/geometry/Geometry.h"
-#include "barney/Camera.h"
-// #include "barney/DeviceContext.h"
-#include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
-#include "barney/render/Renderer.h"
 #include <set>
-#include "barney/render/RayQueue.h"
 
 namespace BARNEY_NS {
   using namespace owl::common;
-  using render::Ray;
   
   struct FrameBuffer;
   struct GlobalModel;
-
+  struct Camera;
+  struct Renderer;
+  struct Geometry;
+  
   namespace render {
     struct HostMaterial;
     struct SamplerRegistry;
@@ -141,7 +136,7 @@ namespace BARNEY_NS {
     virtual void barrier(bool warn=true) {}
     
     /*! generate a new wave-front of rays */
-    void generateRays(const Camera::DD &camera,
+    void generateRays(Camera *camera,
                       Renderer *renderer,
                       FrameBuffer *fb);
     
@@ -175,15 +170,13 @@ namespace BARNEY_NS {
     
     void renderTiles(Renderer *renderer,
                      GlobalModel *model,
-                     const Camera::DD &camera,
+                     Camera      *camera,
                      FrameBuffer *fb);
     
     virtual void render(Renderer    *renderer,
                         GlobalModel *model,
-                        const Camera::DD &camera, 
+                        Camera      *camera,
                         FrameBuffer *fb) = 0;
-
-    // std::vector<barney::DeviceGroup::SP> barneys;
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
 
@@ -204,10 +197,7 @@ namespace BARNEY_NS {
     
     int contextSize() const;
 
-    // std::mutex mutex;
-    // std::map<Object::SP,int> hostOwnedHandles;
     const bool isActiveWorker;
-    // std::set<std::string> alreadyWarned;
 
     SlotContext *getSlot(int slot);
     std::vector<SlotContext> perSlot;

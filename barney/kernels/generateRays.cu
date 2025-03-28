@@ -20,6 +20,8 @@
 #include "barney/common/barney-common.h"
 #include "barney/DeviceGroup.h"
 #include "barney/render/Ray.h"
+#include "barney/render/RayQueue.h"
+#include "barney/Camera.h"
 #include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
 #include "rtcore/ComputeInterface.h"
@@ -169,7 +171,7 @@ namespace BARNEY_NS {
 #endif
   }  
   
-  void Context::generateRays(const Camera::DD &camera,
+  void Context::generateRays(Camera *camera,
                              Renderer *renderer,
                              FrameBuffer *fb)
   {
@@ -185,13 +187,14 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
+    Camera::DD cameraDD = camera->getDD();
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       TiledFB *devFB = fb->getFor(device);
       device->rayQueue->resetWriteQueue();
       render::GenerateRays args = {
         /* variable args */
-        camera,
+        cameraDD,
         renderer->getDD(device),
         accumID,
         fb->numPixels,
