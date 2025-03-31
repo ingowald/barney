@@ -60,10 +60,6 @@ namespace BARNEY_NS {
 
   struct CompressedNormalTile {
     CompressedNormal normal[pixelsPerTile];
-  }
-  
-  struct ExtraChannelTile {
-    union { uint32_t ui; float f; } data[pixelsPerTile];
   };
   
   struct DistFB : public FrameBuffer {
@@ -72,28 +68,76 @@ namespace BARNEY_NS {
     DistFB(MPIContext *context,
            const DevGroup::SP &devices,
            int owningRank);
-    virtual ~DistFB() = default;
     
-    void resize(vec2i size, uint32_t channels) override;
+    virtual ~DistFB();
 
-    void ownerGatherCompressedTiles() override;
+    struct PLD {
+      /* can get tile descs and and accumtiles from
+         FrameBuffer::PLD->tiledfb */
+      struct {
+        CompressedColorTile  *compressedColorTiles = 0;
+        CompressedNormalTile *compressedNormalTiles = 0;
+      } localSend;
+      rtc::ComputeKernel1D *compressTiles = 0;
+      rtc::ComputeKernel1D *unpackTiles = 0;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
     
+    /*! resize frame buffer to given number of pixels and the
+        indicated types of channels; color will only ever get queries
+        in 'colorFormat'. Channels is a bitmask compoosed of
+        or'ed-together BN_FB_xyz channel flags; only those bits that
+        are set may get queried by the application (ie those that are
+        not set do not have to be stored or even computed */
+    void resize(BNDataType colorFormat,
+                vec2i size,
+                uint32_t channels) override;
+
+    /*! gather color (and optionally, if not null) linear normal, from
+        all GPUs (and ranks). lienarColor and lienarNormal are
+        device-writeable 2D linear arrays of numPixel size;
+        linearcolor may be null. */
+    void gatherColorChannel(/*float4 or rgba8*/void *linearColor,
+                            BNDataType gatherType,
+                            vec3f *linearNormal) override;
+      
+    /*! read one of the auxiliary (not color or normal) buffers into
+      the given (device-writeable) staging area; this will at the
+      least incur some reformatting from tiles to linear (if local
+      node), possibly some gpu-gpu transfer (local node w/ more than
+      one gpu) and possibly some mpi communication (distFB) */
+    void gatherAuxChannel(BNFrameBufferChannel channel) override;
+    void writeAuxChannel(void *stagingArea,
+                         BNFrameBufferChannel channel) override;
+
+    /*! allocated whatever temporary tile memory we may have allocated */
+    void freeChannelData();
+    
+    /*! @{ _receive_ staging area for gathering tiles from all
+        clients; for every tile that any client sends, this has a
+        linear array on rank/gpu 0/0 that will be able to store those,
+        then there to be decompressed or reformatted as requried for
+        final output. Only gpu 0/0 should store those buffers */
     struct {
-      CompressedTile   *compressedTiles = 0;
-      ExtraChannelTile *extraChannelTiles = 0;
-      TileDesc         *tileDescs       = 0;
-      int               numActiveTiles  = 0;
+      CompressedColorTile  *compressedColorTiles  = 0;
+      CompressedNormalTile *compressedNormalTiles = 0;
+      AuxTiles              auxChannelTiles;
+      TileDesc             *tileDescs         = 0;
+      int                   numActiveTiles    = 0;
     } gatheredTilesOnOwner;
+    /*! @} */
+
     struct {
       std::vector<int> numTilesOnGPU;
       std::vector<int> firstTileOnGPU;
       int numGPUs;
     } ownerGather;
     // (world)rank that owns this frame buffer
-    const int owningRank;
+    const int  owningRank;
     const bool isOwner;
     const bool ownerIsWorker;
-    CompressedTile  *compressedTiles = 0;
+    bool needNormals;
     MPIContext *context;
   };
 

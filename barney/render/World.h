@@ -51,6 +51,7 @@ namespace BARNEY_NS {
         const rtc::float4    *instanceAttributes[5];
         EnvMapLight::DD       envMapLight;
         uint32_t              rngSeed;
+        uint32_t              rank;
       };
       struct {
         EnvMapLight::SP light;

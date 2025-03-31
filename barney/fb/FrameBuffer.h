@@ -66,8 +66,9 @@ namespace BARNEY_NS {
       reformatting from tiles to linear (if local node), possibly
       some gpu-gpu transfer (local node w/ more than one gpu) and
       possibly some mpi communication (distFB) */
-    virtual void gatherAuxChannel(void *stagingArea,
-                                  BNFrameBufferChannel channel) = 0;
+    virtual void gatherAuxChannel(BNFrameBufferChannel channel) = 0;
+    virtual void writeAuxChannel(void *stagingArea,
+                                 BNFrameBufferChannel channel) = 0;
     
     /*! read given frame buffer channel into given application memory
         (which may be either host or device memory), in requested
@@ -77,12 +78,12 @@ namespace BARNEY_NS {
               void *appDataPtr,
               BNDataType requestedFormat) override;
 
-    struct {
-      /*! _all_ tile descriptors across all GPUs - either all GPUs in
-        single node (if run non-mpi) or across all nodes */
-      TileDesc *tileDescs       = 0;
-      int       sumTiles = 0;
-    } onOwner;
+    // struct {
+    //   /*! _all_ tile descriptors across all GPUs - either all GPUs in
+    //     single node (if run non-mpi) or across all nodes */
+    //   TileDesc *tileDescs       = 0;
+    //   int       sumTiles = 0;
+    // } onOwner;
     
 
     TiledFB *getFor(Device *device);
@@ -92,11 +93,6 @@ namespace BARNEY_NS {
     PLD *getPLD(Device *device);
     
     std::vector<PLD> perLogical;
-
-    /*! on owner, take the 'gatheredTilesOnOwner', and unpack them into
-        linear color, depth, alpha, and normal channels, so denoiser
-        can then run on it */
-    void unpackTiles();
 
     /*! staging area for gathering/writing pixels into, will be Nx*Ny
         pixels of type as provided specified during resize. This may

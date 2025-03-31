@@ -31,17 +31,6 @@
 namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE2D(linearToFixed8);
 
-  inline __rtc_device float from_8bit(uint8_t v) {
-    return float(v) * (1.f/255.f);
-  }
-  
-  inline __rtc_device vec4f from_8bit(uint32_t v) {
-    return vec4f(from_8bit(uint8_t((v >> 0)&0xff)),
-                 from_8bit(uint8_t((v >> 8)&0xff)),
-                 from_8bit(uint8_t((v >> 16)&0xff)),
-                 from_8bit(uint8_t((v >> 24)&0xff)));
-  }
-  
   inline __rtc_device uint32_t _make_8bit(const float f)
   {
     return min(255,max(0,int(f*256.f)));
@@ -89,7 +78,7 @@ namespace BARNEY_NS {
   
   bool FrameBuffer::needHitIDs() const
   {
-    PING; PRINT((int*)channels); return channels & (BN_FB_PRIMID|BN_FB_INSTID|BN_FB_OBJID);
+    return channels & (BN_FB_PRIMID|BN_FB_INSTID|BN_FB_OBJID);
   }
 
   bool FrameBuffer::set1i(const std::string &member, const int &value)
@@ -146,16 +135,7 @@ namespace BARNEY_NS {
   {}
   
   void FrameBuffer::finalizeFrame()
-  {}
-
-  /*! gather color (and normal, if required for denoising),
-    (re-)format into a linear buffer, perform denoising (if
-    required), convert to requested format, and copy to the
-    application pointed provided */
-  void FrameBuffer::readColorChannel(void *appMemory,
-                                     BNDataType requestedFormat)
   {
-    assert(requestedFormat == colorChannelFormat);
     Device *device = getDenoiserDevice();
     SetActiveGPU forDuration(device);
     
@@ -177,14 +157,56 @@ namespace BARNEY_NS {
     BNDataType gatherType
       = doDenoising
       ? BN_FLOAT4
-      : requestedFormat;
-
+      : colorChannelFormat;
     // this is virtual, and will incur either device copies or mpi
     // pack-gather-unpack
     gatherColorChannel(colorCopyTarget,gatherType,normalCopyTarget);
+    if (channels & BN_FB_DEPTH)
+      gatherAuxChannel(BN_FB_DEPTH);
+    if (channels & BN_FB_PRIMID)
+      gatherAuxChannel(BN_FB_PRIMID);
+    if (channels & BN_FB_OBJID)
+      gatherAuxChannel(BN_FB_OBJID);
+    if (channels & BN_FB_INSTID)
+      gatherAuxChannel(BN_FB_INSTID);
+  }
+
+  /*! gather color (and normal, if required for denoising),
+    (re-)format into a linear buffer, perform denoising (if
+    required), convert to requested format, and copy to the
+    application pointed provided */
+  void FrameBuffer::readColorChannel(void *appMemory,
+                                     BNDataType requestedFormat)
+  {
+    printf("@@@@@@@@@@@@@@@@@@@@@@ %i/%i readcolorchannel\n",
+           context->myRank(),context->mySize());
+    
+    assert(requestedFormat == colorChannelFormat);
+    Device *device = getDenoiserDevice();
+    SetActiveGPU forDuration(device);
+    
+    /* first, figure out whether we do denoising, and where to write
+       color and normals to. fi we do denoisign this will (ahve to) go
+       into the respective inputs of the denoiser; otherwise, we write
+       color directly into our linearbuffer, and won't write normal at
+       all */
+    bool doDenoising = denoiser != 0 && enableDenoising;
+    PING; PRINT((int)doDenoising);
+    // void *colorCopyTarget
+    //   = doDenoising
+    //   ? denoiser->in_rgba
+    //   : linearColorChannel;
+    // vec3f *normalCopyTarget
+    //   = doDenoising
+    //   ? denoiser->in_normal
+    //   : nullptr;
+    // BNDataType gatherType
+    //   = doDenoising
+    //   ? BN_FLOAT4
+    //   : requestedFormat;
+
 
     if (doDenoising) {
-
       /* run denoiser - this will write pixels in float4 format to
          denoiser->out_rgba */
       float blendFactor = (accumID-1) / (accumID+20.f); 
@@ -247,7 +269,7 @@ namespace BARNEY_NS {
         channel == BN_FB_INSTID ||
         channel == BN_FB_OBJID) {
       PING; PRINT((int)channel);
-      gatherAuxChannel(linearAuxChannel,channel);
+      writeAuxChannel(linearAuxChannel,channel);
       device->rtc->copy(appMemory,linearAuxChannel,
                         numPixels.x*numPixels.y*sizeof(uint32_t));
       return;
@@ -256,73 +278,6 @@ namespace BARNEY_NS {
     throw std::runtime_error("un-handled frame buffer channel/format combination "
                              +to_string(channel)
                              +" "+to_string(requestedFormat));
-    // if (channel == BN_FB_COLOR && dirty) {
-    //   // -----------------------------------------------------------------------------
-    //   // (HDR) denoising
-    //   // -----------------------------------------------------------------------------
-    //   if (!denoiser || !enableDenoising || FromEnv::get()->skipDenoising) {
-    //     device->rtc->copy(this->denoisedColor,this->linearColor,
-    //                       numPixels.x*numPixels.y*sizeof(vec4f));
-    //   } else {
-    //     float blendFactor = (accumID-1) / (accumID+20.f); 
-    //     denoiser->run(this->denoisedColor,
-    //                   this->linearColor,
-    //                   this->linearNormal,blendFactor);
-    //   }
-    //   dirty = false;
-    // }
-
-    // if (!appMemory) {
-    //   device->rtc->sync();
-    //   return;
-    // }
-    
-    // if (channel == BN_FB_DEPTH && appMemory && linearDepth) {
-    //   if (requestedFormat != BN_FLOAT)
-    //     throw std::runtime_error("can only read depth channel as BN_FLOAT format");
-    //   if (!linearDepth)
-    //     throw std::runtime_error("requesting to read depth channel, but didn't create one");
-    //   device->rtc->copy(appMemory,linearDepth,
-    //                     numPixels.x*numPixels.y*sizeof(float));
-    //   device->rtc->sync();
-    //   return;
-    // }
-
-    // if (channel == BN_FB_PRIMID) {
-    //   device->rtc->copy(appMemory,linearChannelStagingArea,
-    //                     numPixels.x*numPixels.y*sizeof(uint32_t));
-    //   return;
-    // }
-    
-    // switch(requestedFormat) {
-    // case BN_FLOAT4: 
-    // case BN_FLOAT4_RGBA: {
-    //   device->rtc->copy(appMemory,denoisedColor,
-    //                     numPixels.x*numPixels.y*sizeof(vec4f));
-    // } break;
-    // case BN_UFIXED8_RGBA: {
-    //   uint32_t *asFixed8
-    //     = (uint32_t*)device->rtc->allocMem(numPixels.x*numPixels.y*sizeof(uint32_t));
-    //   vec2ui bs(8,8);
-    //   ToFixed8 args = { asFixed8,denoisedColor,numPixels,false };
-    //   device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
-    //   device->rtc->copy(appMemory,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
-    //   device->rtc->freeMem(asFixed8);
-    // } break;
-    // case BN_UFIXED8_RGBA_SRGB: {
-    //   uint32_t *asFixed8
-    //     = (uint32_t*)device->rtc->allocMem(numPixels.x*numPixels.y*sizeof(uint32_t));
-    //   vec2ui bs(8,8);
-    //   ToFixed8 args = { asFixed8,denoisedColor,numPixels,true };
-    //   device->toFixed8->launch(divRoundUp(vec2ui(numPixels),bs),bs,&args);
-    //   device->rtc->copy(appMemory,asFixed8,numPixels.x*numPixels.y*sizeof(uint32_t));
-    //   device->rtc->freeMem(asFixed8);
-    // } break;
-    // default:
-    //   throw std::runtime_error("requested to read color channel in un-supported format #"
-    //                            +std::to_string((int)requestedFormat));
-    // };
-    device->rtc->sync();
   }
   
   void FrameBuffer::resize(BNDataType colorFormat,
@@ -333,7 +288,7 @@ namespace BARNEY_NS {
     this->colorChannelFormat = colorFormat;
     
     for (auto device : *devices)
-      getFor(device)->resize(size);
+      getFor(device)->resize(channels,size);
     
     freeResources();
     numPixels = size;

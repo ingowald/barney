@@ -799,6 +799,7 @@ namespace BARNEY_NS {
       World::DD world;
       Renderer::DD renderer;
       AccumTile *accumTiles;
+      AuxTiles   auxTiles;
       int accumID;
       SingleQueue readQueue;
       int numRays;
@@ -909,7 +910,22 @@ namespace BARNEY_NS {
       if (accumID == 0 && generation == 0) {
         valueToAccumInto = vec4f(fragment.x,fragment.y,
                                  fragment.z,alpha);
+
+        // write aux buffers (depth, normal, hitIDs
+        accumTiles[tileID].normal[tileOfs] = incomingN;
+        if (auxTiles.depth) 
+          auxTiles.depth[tileID] . f[tileOfs] = incomingZ;
+        if (auxTiles.primID)
+          auxTiles.primID[tileID].ui[tileOfs] = readQueue.hitIDs[tid].primID;
+        if (auxTiles.objID)
+          auxTiles.objID[tileID] .ui[tileOfs] = readQueue.hitIDs[tid].objID;
+        if (auxTiles.instID)
+          auxTiles.instID[tileID].ui[tileOfs] = readQueue.hitIDs[tid].instID;
+        
       } else {
+        // we're either an accumluated frame, or a non-primary bounce
+        // of the first frame; either way we'll accumulate color and
+        // ignore anything else.
         if (generation == 0 && alpha > 0.f) 
           rt.atomicAdd(&valueToAccumInto.w,alpha);
 
@@ -919,23 +935,6 @@ namespace BARNEY_NS {
           rt.atomicAdd(&valueToAccumInto.y,fragment.y);
         if (fragment.z > 0.f)
           rt.atomicAdd(&valueToAccumInto.z,fragment.z);
-      }
-
-      // write aux buffers (depth and 
-      if (generation == 0) {
-        float fbZ
-          = (accumID == 0)
-          ? INFINITY
-          : accumTiles[tileID].depth[tileOfs];
-        if (accumID == 0 || incomingZ < fbZ) {
-          accumTiles[tileID].depth[tileOfs]  = incomingZ;
-          if (readQueue.hitIDs) {
-            accumTiles[tileID].primID[tileOfs] = readQueue.hitIDs[tid].primID;
-            accumTiles[tileID].objID[tileOfs]  = readQueue.hitIDs[tid].objID;
-            accumTiles[tileID].instID[tileOfs] = readQueue.hitIDs[tid].instID;
-          }
-          accumTiles[tileID].normal[tileOfs] = incomingN;
-        }
       }
     }
 #endif
@@ -969,6 +968,7 @@ namespace BARNEY_NS {
         render::PathTraceKernel args = {
           devWorld,devRenderer,
           devFB->accumTiles,
+          devFB->auxTiles,
           (int)fb->accumID,
           rayQueue->traceAndShadeReadQueue,
           numRays,

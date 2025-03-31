@@ -84,8 +84,13 @@ namespace BARNEY_NS {
     reformatting from tiles to linear (if local node), possibly
     some gpu-gpu transfer (local node w/ more than one gpu) and
     possibly some mpi communication (distFB) */
-  void LocalFB::gatherAuxChannel(void *stagingArea,
-                                 BNFrameBufferChannel whichChannel) 
+  void LocalFB::gatherAuxChannel(BNFrameBufferChannel whichChannel)
+  {
+    /* nothing to do , we can always write from tiledFBs */
+  }
+  
+  void LocalFB::writeAuxChannel(void *stagingArea,
+                                BNFrameBufferChannel whichChannel) 
   {
     for (auto device : *devices)
       getFor(device)->linearizeAuxChannel(stagingArea,whichChannel);

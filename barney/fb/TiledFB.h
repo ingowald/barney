@@ -26,14 +26,26 @@ namespace BARNEY_NS {
   
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
+
+  struct AuxChannelTile {
+    union { uint32_t ui[pixelsPerTile]; float f[pixelsPerTile]; };
+  };
+  
   
   struct AccumTile {
     vec4f  accum[pixelsPerTile];
-    float  depth[pixelsPerTile];
+    // float  depth[pixelsPerTile];
     vec3f  normal[pixelsPerTile];
-    int    primID[pixelsPerTile];
-    int    objID[pixelsPerTile];
-    int    instID[pixelsPerTile];
+    // int    primID[pixelsPerTile];
+    // int    objID[pixelsPerTile];
+    // int    instID[pixelsPerTile];
+  };
+
+  struct AuxTiles {
+    AuxChannelTile *depth  = 0;
+    AuxChannelTile *primID = 0;
+    AuxChannelTile *instID = 0;
+    AuxChannelTile *objID  = 0;
   };
 
   /*! describes the lower-left corner of each logical tile */
@@ -48,7 +60,8 @@ namespace BARNEY_NS {
     TiledFB(Device *device, FrameBuffer *owner);
     virtual ~TiledFB();
 
-    void resize(vec2i newSize);
+    void resize(uint32_t channels,
+                vec2i newSize);
     void free();
 
     /*! take this GPU's tiles, and write those tiles' color (and
@@ -62,6 +75,18 @@ namespace BARNEY_NS {
                                  vec3f *linearNormal,
                                  float  accumScale);
 
+    /*! linearize given array's aux tiles, on given device. this can be
+      used either for local GPUs on a single node, or on the owner
+      after it reveived all worker tiles */
+    static void linearizeAuxTiles(Device *device,
+                                  rtc::ComputeKernel1D *linearizeAuxChannelKernel,
+                                  void *linearOut,
+                                  vec2i numPixels,
+                                  AuxChannelTile *tilesIn,
+                                  TileDesc       *descsIn,
+                                  int numTiles);
+
+    /*! linearize _this gpu's_ channels */
     void linearizeAuxChannel(void *linearChannel,
                              BNFrameBufferChannel whichChannel);
     
@@ -79,6 +104,7 @@ namespace BARNEY_NS {
     /*! lower-left pixel coordinate for given tile ... */
     TileDesc          *tileDescs  = 0;
     AccumTile         *accumTiles = 0;
+    AuxTiles           auxTiles;
 
     rtc::ComputeKernel1D *setTileCoords = 0;
     rtc::ComputeKernel1D *linearizeColorAndNormalKernel = 0;

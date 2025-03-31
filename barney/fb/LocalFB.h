@@ -57,8 +57,17 @@ namespace BARNEY_NS {
       least incur some reformatting from tiles to linear (if local
       node), possibly some gpu-gpu transfer (local node w/ more than
       one gpu) and possibly some mpi communication (distFB) */
-    void gatherAuxChannel(void *stagingArea,
+    void gatherAuxChannel(BNFrameBufferChannel channel) override;
+    void writeAuxChannel(void *stagingArea,
                           BNFrameBufferChannel channel) override;
+
+    struct {
+      /*! _all_ tile descriptors across all GPUs - either all GPUs in
+        single node (if run non-mpi) or across all nodes */
+      TileDesc *tileDescs       = 0;
+      int       sumTiles = 0;
+    } onOwner;
+    
   };
 
 }

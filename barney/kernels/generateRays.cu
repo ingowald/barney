@@ -99,12 +99,16 @@ namespace BARNEY_NS {
         vec3f pointOnImagePlane
           = D * (camera.focusDistance / fabsf(dot(D,lensNormal)));
         float lu, lv;
-        while (true) {
-          lu = 2.f*rand()-1.f;
-          lv = 2.f*rand()-1.f;
-          float f = lu*lu+lv*lv;
-          if (f > 1.f) continue;
-          break;
+        if (accumID == 0) {
+          lu = lv = 0.f;
+        } else {
+          while (true) {
+            lu = 2.f*rand()-1.f;
+            lv = 2.f*rand()-1.f;
+            float f = lu*lu+lv*lv;
+            if (f > 1.f) continue;
+            break;
+          }
         }
         vec3f lensOffset
           = (camera.apertureRadius * lu) * lens_du
@@ -166,7 +170,7 @@ namespace BARNEY_NS {
       int pos = rt.atomicAdd(d_count,1);
       rayQueue.rays[pos] = ray;
       rayQueue.states[pos] = state;
-      rayQueue.hitIDs[pos] = {-1,-1,-1};
+      rayQueue.hitIDs[pos] = {INFINITY,-1,-1,-1};
     }
 #endif
   }  

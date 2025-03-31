@@ -45,8 +45,30 @@ namespace BARNEY_NS {
       auto &self = *(Triangles::DD*)ti.getProgramData();
       const float u = ti.getTriangleBarycentrics().x;
       const float v = ti.getTriangleBarycentrics().y;
-      int primID = ti.getPrimitiveIndex();
-      int instID = ti.getInstanceID();
+      int primID    = ti.getPrimitiveIndex();
+      int instID    = ti.getInstanceID();
+      float depth   = ti.getRayTmax();
+
+      // ------------------------------------------------------------------
+      if (globals.hitIDs) {
+        /* ID buffer rendering writes IDs no matter what transparency */
+        const int rayID
+          = ti.getLaunchIndex().x
+          + ti.getLaunchDims().x
+          * ti.getLaunchIndex().y;
+        if (depth < globals.hitIDs[rayID].depth) {
+          globals.hitIDs[rayID].primID = primID;
+          globals.hitIDs[rayID].instID
+            = world.instIDToUserInstID
+            ? world.instIDToUserInstID[instID]
+            : instID;
+          globals.hitIDs[rayID].objID  = self.userID;
+          globals.hitIDs[rayID].depth  = depth;
+        }
+      }
+      // ------------------------------------------------------------------
+
+      
       vec3i triangle = self.indices[primID];
       vec3f v0 = self.vertices[triangle.x];
       vec3f v1 = self.vertices[triangle.y];
@@ -77,7 +99,7 @@ namespace BARNEY_NS {
       hitData.objectNormal    = osN;
       hitData.primID          = primID;
       hitData.instID          = instID;
-      hitData.t               = ti.getRayTmax();
+      hitData.t               = depth;
       hitData.isShadowRay     = ray.isShadowRay;
 
       auto interpolator
@@ -109,18 +131,6 @@ namespace BARNEY_NS {
           ti.ignoreIntersection();
           return;
         }
-      }
-      if (globals.hitIDs) {
-        const int rayID
-          = ti.getLaunchIndex().x
-          + ti.getLaunchDims().x
-          * ti.getLaunchIndex().y;
-        globals.hitIDs[rayID].primID = primID;
-        globals.hitIDs[rayID].instID
-          = world.instIDToUserInstID
-          ? world.instIDToUserInstID[instID]
-          : instID;
-        globals.hitIDs[rayID].objID  = self.userID;
       }
       material.setHit(ray,hitData,world.samplers,dbg);
     }

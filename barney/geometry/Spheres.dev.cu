@@ -17,6 +17,7 @@
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Spheres.h"
 #include "rtcore/TraceInterface.h"
+#include "barney/render/HitIDs.h"
 
 // #include "owl/owl_device.h"
 
@@ -118,18 +119,6 @@ namespace BARNEY_NS {
       const DeviceMaterial &material
         = world.materials[self.materialID];
       material.setHit(ray,hitData,world.samplers,dbg);
-      if (globals.hitIDs) {
-        const int rayID
-          = ti.getLaunchIndex().x
-          + ti.getLaunchDims().x
-          * ti.getLaunchIndex().y;
-        globals.hitIDs[rayID].primID = primID;
-        globals.hitIDs[rayID].instID
-          = world.instIDToUserInstID
-          ? world.instIDToUserInstID[instID]
-          : instID;
-        globals.hitIDs[rayID].objID  = self.userID;
-      }
     }
   
     static inline __rtc_device
@@ -182,12 +171,42 @@ namespace BARNEY_NS {
         if (temp < hit_t && temp > tmin) 
           hit_t = temp;
       }
+      
+
+      
       if (hit_t < t_max) {
         // "abuse" ray.P to store local sphere coordinate
         vec3f osPositionOfHit = /*shifted!*/org + /*shifted!*/hit_t*dir;
         ray.P = osPositionOfHit;
       
         hit_t += t_move;
+
+        // ------------------------------------------------------------------
+        const OptixGlobals &globals = OptixGlobals::get(ti);
+        if (globals.hitIDs) {
+          /* ID buffer rendering writes IDs no matter what transparency */
+          const World::DD &world = globals.world;
+          float depth = hit_t;
+          int instID    = ti.getInstanceID();
+        
+          const int rayID
+            = ti.getLaunchIndex().x
+            + ti.getLaunchDims().x
+            * ti.getLaunchIndex().y;
+          if (depth < globals.hitIDs[rayID].depth) {
+            globals.hitIDs[rayID].primID = primID;
+            globals.hitIDs[rayID].instID
+              = world.instIDToUserInstID
+              ? world.instIDToUserInstID[instID]
+              : instID;
+            globals.hitIDs[rayID].instID
+              = 13+world.rank;
+            globals.hitIDs[rayID].objID  = self.userID;
+            globals.hitIDs[rayID].depth  = depth;
+          }
+        }
+        // ------------------------------------------------------------------
+
         ti.reportIntersection(hit_t, 0);
       }
     }

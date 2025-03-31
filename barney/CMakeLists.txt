@@ -204,7 +204,7 @@ set(HOST_SOURCES
 # all the source that eventually go into barney_mpi
 set(MPI_SOURCES
   fb/DistFB.h
-  fb/DistFB.cpp
+  fb/DistFB.cu
   MPIContext.h
   MPIContext.cpp
   common/MPIWrappers.h

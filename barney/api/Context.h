@@ -236,6 +236,10 @@ namespace barney_api {
   struct Context {
     virtual ~Context() = default;
 
+    virtual int myRank() = 0;
+    virtual int mySize() = 0;
+    
+    
     // ------------------------------------------------------------------
     // virtual object factory interface
     // ------------------------------------------------------------------

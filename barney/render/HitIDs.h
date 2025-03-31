@@ -17,8 +17,13 @@
 #pragma once
 
 namespace BARNEY_NS {
-  
+
+  /*! HitIDs are used for a special "ID pass" that computes the
+      closest intersection along a (primary) ray, WITHOUT any opacity
+      or transparency taken into effect. As such it requires its own
+      depth value */
   struct HitIDs {
+    float depth = INFINITY;
     int primID = -1;
     int instID = -1;
     int objID  = -1;

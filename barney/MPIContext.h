@@ -36,7 +36,7 @@ namespace BARNEY_NS {
 
     void render(Renderer    *renderer,
                 GlobalModel *model,
-                const Camera::DD &camera,
+                Camera      *camera,
                 FrameBuffer *fb) override;
 
     /*! gives, for a given worker rank, the rank that this same rank
@@ -48,7 +48,7 @@ namespace BARNEY_NS {
         forward the rays need more tracing (true) or whether they're
         done (false) */
     bool forwardRays(bool needHitIDs) override;
-
+    
     // for debugging ...
     void barrier(bool warn=true) override {
       if (warn) PING;
@@ -60,6 +60,9 @@ namespace BARNEY_NS {
     /*! returns how many rays are active in all ray queues, across all
         devices and, where applicable, across all ranks */
     int numRaysActiveGlobally() override;
+
+    int myRank() override { return world.rank; }
+    int mySize() override { return world.size; }
     
     int gpusPerWorker;
     int numDifferentModelSlots = -1;

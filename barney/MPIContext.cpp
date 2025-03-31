@@ -16,6 +16,7 @@
 
 #include "barney/MPIContext.h"
 #include "barney/fb/DistFB.h"
+#include "barney/render/RayQueue.h"
 
 #if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
@@ -258,7 +259,7 @@ namespace BARNEY_NS {
   
   void MPIContext::render(Renderer    *renderer,
                           GlobalModel *model,
-                          const Camera::DD &camera,
+                          Camera      *camera,
                           FrameBuffer *_fb)
   {
     DistFB *fb = (DistFB *)_fb;

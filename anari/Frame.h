@@ -59,7 +59,17 @@ namespace barney_device {
       int        *instID{nullptr};
       int        *objID{nullptr};
     } m_channelBuffers;
-
+    struct {
+      /* for performance warnings; initialize all to 'true' so they
+         won't throw a perf warning on first time renderframe */
+      bool color = true;
+      bool depth = true;
+      bool primID = true;
+      bool instID = true;
+      bool objID = true;
+    } m_didMapChannel;
+    bool m_lastFrameWasFirstFrame = true;
+    
     struct {
       anari::DataType color{ANARI_UNKNOWN};
       anari::DataType depth{ANARI_UNKNOWN};

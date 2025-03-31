@@ -46,7 +46,9 @@ namespace BARNEY_NS {
         devices and, where applicable, across all ranks */
     int numRaysActiveGlobally() override;
     
-    
+    int myRank() override { return 0; }
+    int mySize() override { return 1; }
+
     /*! create a frame buffer object suitable to this context */
     std::shared_ptr<barney_api::FrameBuffer>
     createFrameBuffer(int owningRank) override;

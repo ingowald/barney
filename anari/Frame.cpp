@@ -140,9 +140,11 @@ namespace barney_device {
     auto *state = deviceState();
     state->commitBuffer.flush();
 
+    bool firstFrame = 0;
     if (m_lastCommitFlush < state->commitBuffer.lastObjectFinalization()) {
       m_lastCommitFlush = helium::newTimeStamp();
       bnAccumReset(m_bnFrameBuffer);
+      firstFrame = true;
     }
 
     if (!isValid()) {
@@ -165,10 +167,37 @@ namespace barney_device {
 
     auto model = m_world->makeCurrent();
 
+    if (m_lastFrameWasFirstFrame &&
+        m_channelTypes.depth != ANARI_UNKNOWN &&
+        !m_didMapChannel.depth)
+      reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                    "last frame had a depth buffer request, but never mapped it");
+    if (m_lastFrameWasFirstFrame &&
+        m_channelTypes.primID != ANARI_UNKNOWN &&
+        !m_didMapChannel.primID)
+      reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                    "last frame had a primID buffer request, but never mapped it");
+    if (m_lastFrameWasFirstFrame &&
+        m_channelTypes.objID != ANARI_UNKNOWN &&
+        !m_didMapChannel.objID)
+      reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                    "last frame had a objID buffer request, but never mapped it");
+    if (m_lastFrameWasFirstFrame &&
+        m_channelTypes.instID != ANARI_UNKNOWN &&
+        !m_didMapChannel.instID)
+      reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                    "last frame had a instID buffer request, but never mapped it");
+    
     bnRender(m_renderer->barneyRenderer,
              model,
              m_camera->barneyCamera(),
              m_bnFrameBuffer);
+    m_lastFrameWasFirstFrame = firstFrame;
+
+    m_didMapChannel.depth = false;
+    m_didMapChannel.primID = false;
+    m_didMapChannel.instID = false;
+    m_didMapChannel.objID = false;
 
     auto end = std::chrono::steady_clock::now();
     m_duration = std::chrono::duration<float>(end - start).count();
@@ -201,15 +230,16 @@ namespace barney_device {
       m_channelBuffers.depth =
         new float[numPixels];
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_channelBuffers.depth, BN_FLOAT);
+      m_didMapChannel.depth = true;
       *pixelType = ANARI_FLOAT32;
       return m_channelBuffers.depth;
     } else if (channel == "channel.primitiveId") {
       if (m_channelBuffers.primID)
         throw std::runtime_error
           ("trying to map channel.primitiveId, but seems already mapped");
-      m_channelBuffers.primID =
-        new int[numPixels];
+      m_channelBuffers.primID = new int[numPixels];
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_PRIMID, m_channelBuffers.primID, BN_INT);
+      m_didMapChannel.primID = true;
       *pixelType = ANARI_UINT32;
       return m_channelBuffers.primID;
     } else if (channel == "channel.objectId") {
@@ -219,15 +249,16 @@ namespace barney_device {
       m_channelBuffers.objID =
         new int[numPixels];
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_OBJID, m_channelBuffers.objID, BN_INT);
+      m_didMapChannel.objID = true;
       *pixelType = ANARI_UINT32;
       return m_channelBuffers.objID;
     } else if (channel == "channel.instanceId") {
       if (m_channelBuffers.instID)
         throw std::runtime_error
           ("trying to map channel.instanceId, but seems already mapped");
-      m_channelBuffers.instID =
-        new int[numPixels];
+      m_channelBuffers.instID = new int[numPixels];
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_INSTID, m_channelBuffers.instID, BN_INT);
+      m_didMapChannel.instID = true;
       *pixelType = ANARI_UINT32;
       return m_channelBuffers.instID;
     } else if (channel == "channel.colorCUDA") {

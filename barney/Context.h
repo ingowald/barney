@@ -180,8 +180,6 @@ namespace BARNEY_NS {
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
 
-
-    
     /*! helper function to print a warning when app tries to create an
         object of certain kind and type that barney does not
         support */
