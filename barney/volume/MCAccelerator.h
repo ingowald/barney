@@ -158,18 +158,23 @@ namespace BARNEY_NS {
     const void *pd = ti.getProgramData();
            
     const DD &self = *(typename MCVolumeAccel<SFSampler>::DD*)pd;
+    // ray in world space
     Ray &ray = *(Ray*)ti.getPRD();
     
     box3f bounds = self.volume.sfCommon.worldBounds;
     range1f tRange = { ti.getRayTmin(), ti.getRayTmax() };
     
-    if (!boxTest(ray,tRange,bounds))
-      return;
-    
-    // ray in world space
+    // ray in object space
     vec3f obj_org = ti.getObjectRayOrigin();
     vec3f obj_dir = ti.getObjectRayDirection();
 
+    auto objRay = ray;
+    objRay.org = obj_org;
+    objRay.dir = obj_dir;
+
+    if (!boxTest(objRay,tRange,bounds))
+      return;
+    
     // ------------------------------------------------------------------
     // compute ray in macro cell grid space 
     // ------------------------------------------------------------------
