@@ -103,6 +103,7 @@ namespace rtc {
 # include "rtcore/cudaCommon/Texture.h"
 # include "rtcore/cudaCommon/TextureData.h"
 # include "rtcore/cudaCommon/ComputeKernel.h"
+# include "rtcore/cudaCommon/ComputeInterface.h"
 
 namespace rtc {
   namespace cuda {
@@ -126,9 +127,16 @@ namespace rtc {
   
   using rtc::cuda_common::load;
 
+  using rtc::cuda_common::tex1D;
+  using rtc::cuda_common::tex2D;
+  using rtc::cuda_common::tex3D;
+  
   using rtc::cuda::TraceInterface;
 
 # ifdef __CUDACC__
+#  define RTC_DEVICE_CODE 1
+# endif
+# ifdef __HIP_ARCH__
 #  define RTC_DEVICE_CODE 1
 # endif
   

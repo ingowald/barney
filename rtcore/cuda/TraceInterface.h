@@ -538,7 +538,9 @@ namespace rtc {
     vec2i nb = divRoundUp(dims,bs);                             \
     ::rtc::cuda::TraceInterface ti;                             \
     ti.lpData = lpData;                                         \
-    rtc_cuda_run_##name<<<nb,bs>>>(ti);                         \
+    rtc_cuda_run_##name                                         \
+      <<<dim3{(unsigned)nb.x,(unsigned)nb.y,(unsigned)1},       \
+      dim3{(unsigned)bs.x,(unsigned)bs.y,(unsigned)1}>>>(ti);   \
   }                                                             \
   
 

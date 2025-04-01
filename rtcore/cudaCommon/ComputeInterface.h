@@ -51,13 +51,13 @@ namespace rtc {
     
     struct ComputeInterface
     {
-#ifdef __CUDACC__    
+#if defined(__CUDACC__) || defined(__HIPCC__)
       inline __device__ vec3ui launchIndex() const
       {
         return getThreadIdx() + getBlockIdx() * getBlockDim();
       }
       inline __device__ vec3ui getThreadIdx() const
-      { return threadIdx; }
+      { return vec3ui(threadIdx.x,threadIdx.y,threadIdx.z); }
       inline __device__ vec3ui getBlockDim() const
       { return {blockDim.x,blockDim.y,blockDim.z}; }
       inline __device__ vec3ui getBlockIdx() const
@@ -72,7 +72,7 @@ namespace rtc {
     // ==================================================================
     // INLINE IMPLEMENTATION
     // ==================================================================
-#ifdef __CUDACC__
+#if defined(__CUDA_ARCH__) || defined(__HIP_ARCH__)
 
     // ------------------------------------------------------------------
     // cuda texturing
@@ -230,7 +230,9 @@ namespace rtc {
       ::rtc::cuda_common::SetActiveGPU forDuration(device);             \
       if (nb.x > 0 && nb.y > 0)                                         \
       _barney_cuda_kernel_##name                                        \
-        <<<{nb.x,nb.y},{bs.x,bs.y},0,device->stream>>>                  \
+        <<<dim3{(unsigned)nb.x,(unsigned)nb.y,1u},                                 \
+        dim3{(unsigned)bs.x,(unsigned)bs.y,1u},                                              \
+        0,device->stream>>>                                             \
         (*(const className*)ddPtr);                                     \
     }                                                                   \
     rtc::Device *const device;                                          \
@@ -257,7 +259,9 @@ namespace rtc {
       ::rtc::cuda_common::SetActiveGPU forDuration(device);             \
       if (nb.x > 0 && nb.y > 0 && nb.z > 0)                             \
       _barney_cuda_kernel_##name                                        \
-        <<<{nb.x,nb.y,nb.z},{bs.x,bs.y,bs.z},0,device->stream>>>        \
+        <<<dim3{(unsigned)nb.x,(unsigned)nb.y,(unsigned)nb.z},          \
+        dim3{(unsigned)bs.x,(unsigned)bs.y,(unsigned)bs.z},             \
+        0,device->stream>>>                                             \
         (*(const className*)ddPtr);                                     \
     }                                                                   \
     rtc::Device *const device;                                          \

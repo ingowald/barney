@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
-#if BARNEY_RTC_EMBREE
+#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
 # include "cuBQL/builder/cpu.h"
 #else
 # include "cuBQL/builder/cuda.h"
@@ -87,7 +87,7 @@ namespace BARNEY_NS {
       device->rtc->sync();
 
       
-#if BARNEY_RTC_EMBREE
+#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
       cuBQL::cpu::spatialMedian(bvh,
                                 (const cuBQL::box_t<float,3>*)primBounds,
                                 numElements,
@@ -137,7 +137,7 @@ namespace BARNEY_NS {
       device->rtc->sync();
       
       // ... and kill whatever else cubql may have in the bvh
-#if BARNEY_RTC_EMBREE
+#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
       cuBQL::cpu::freeBVH(bvh);
 #else
       cuBQL::cuda::free(bvh,0,memResource);

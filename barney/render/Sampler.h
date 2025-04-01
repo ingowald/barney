@@ -50,7 +50,7 @@ namespace BARNEY_NS {
       struct DD {
 #if RTC_DEVICE_CODE
         inline __both__ DD() {}
-        inline __rtc_device DD(DD &&other) { memcpy(this,&other,sizeof(other)); }
+        inline __both__ DD(DD &&other) { memcpy(this,&other,sizeof(other)); }
         inline __rtc_device
         vec4f eval(const HitAttributes &inputs, bool dbg) const;
 #endif

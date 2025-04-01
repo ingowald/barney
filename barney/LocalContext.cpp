@@ -38,7 +38,7 @@ namespace barney_api {
                                  int numGPUs, const int *_gpuIDs)
     {
       if (numGPUs == -1)
-        cudaGetDeviceCount(&numGPUs);
+        BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
       std::vector<int> gpuIDs;
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
@@ -53,7 +53,7 @@ namespace barney_api {
                                  int numGPUs, const int *_gpuIDs)
     {
       if (numGPUs == -1)
-        cudaGetDeviceCount(&numGPUs);
+        BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
       std::vector<int> gpuIDs;
       for (int i=0;i<numGPUs;i++)
         gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);

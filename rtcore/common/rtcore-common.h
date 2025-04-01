@@ -10,6 +10,10 @@
 #include <sstream>
 #include "barney/barney.h"
 
+#ifdef BARNEY_HAVE_HIP
+# include "hip/hip_runtime.h"
+# include "hip/driver_types.h"
+#endif
 
 #include "owl/common/math/AffineSpace.h"
 #include "owl/common/math/random.h"

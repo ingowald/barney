@@ -33,9 +33,10 @@
 
 #pragma once
 
+#include "barney/common/barney-common.h"
+#include "barney/common/half.h"
 #include "barney/common/Texture.h"
 #include "barney/common/Data.h"
-#include "barney/common/half.h"
 #include "barney/common/math.h"
 
 namespace BARNEY_NS {
@@ -49,7 +50,7 @@ namespace BARNEY_NS {
     };
 
     struct EvalRes {
-      inline __rtc_device EvalRes() {}
+      inline __both__ EvalRes() {}
       inline __rtc_device EvalRes(vec3f v, float p) : value(v),pdf(p) {}
       static inline __rtc_device EvalRes zero() { return { vec3f(0.f),0.f }; }
       inline __rtc_device bool valid() const    { return pdf > 0.f; };// && !isinf(pdf) }

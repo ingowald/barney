@@ -70,7 +70,7 @@ namespace rtc {
     struct UserGeom : public cuda::Geom {
       UserGeom(GeomType *gt);
       
-      void setPrimCount(int primCount);
+      void setPrimCount(int primCount) override;
       void setVertices(Buffer *vertices, int numVertices) override
       { assert(0); }
       void setIndices(Buffer *indices, int numIndices) override

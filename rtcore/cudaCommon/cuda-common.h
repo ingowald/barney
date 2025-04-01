@@ -19,7 +19,10 @@
 #include "rtcore/common/rtcore-common.h"
 #if BARNEY_HAVE_HIP
 # include "hip/hip_runtime.h"
-
+#define __CUDA_ARCH__ 1
+# define cudaSetDevice hipSetDevice
+# define cudaGetDevice hipGetDevice
+# define cudaGetDeviceCount hipGetDeviceCount
 # define cudaMalloc hipMalloc
 # define cudaMallocManaged hipMallocManaged
 # define cudaMallocAsync hipMallocAsync
@@ -32,6 +35,15 @@
 # define cudaSuccess hipSuccess
 # define cudaGetLastError hipGetLastError
 # define cudaDeviceSynchronize hipDeviceSynchronize
+# define cudaStream_t hipStream_t
+# define cudaStreamCreate hipStreamCreate
+# define cudaTextureObject_t hipTextureObject_t
+# define cudaArray_t hipArray_t
+# define cudaTextureReadMode hipTextureReadMode
+# define CUDART_INF INFINITY
+# define CUDART_INF_F ((float)INFINITY)
+# define CUDART_NAN NAN
+# define CUDART_NAN_F ((float)NAN)
 #else
 # include <cuda_runtime.h>
 # ifdef __CUDACC__

@@ -13,14 +13,17 @@
 #define ONE_OVER_TWO_PI (1.f/TWO_PI)
 #define ONE_OVER_FOUR_PI (1.f/FOUR_PI)
 
-
-#ifdef __CUDA_ARCH__
+#if BARNEY_HAVE_HIP
+# define BARNEY_INF INFINITY
+#elif defined(__CUDA_ARCH__)
 # define BARNEY_INF ::cuda::std::numeric_limits<float>::infinity()
 #else
 # define BARNEY_INF std::numeric_limits<float>::infinity()
 #endif
 
 namespace BARNEY_NS {
+  using owl::common::min;
+  
   inline __both__ float sqr(float f) { return f*f; }
   inline __both__ float cos2sin(const float f) { return sqrtf(max(0.f, 1.f - sqr(f))); }
   inline __both__ float sin2cos(const float f) { return cos2sin(f); }

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "barney/common/barney-common.h"
 #include "barney/DeviceGroup.h"
 #include "barney/volume/Volume.h"
 #include "barney/volume/MCGrid.h"
@@ -208,7 +209,9 @@ namespace BARNEY_NS {
                 if (majorant == 0.f) return true;
                 
                 vec4f   sample = 0.f;
-                range1f tRange = {t0,min(t1,ray.tMax)};
+                float lo = t0;
+                float hi = ::owl::common::min(t1,ray.tMax);
+                range1f tRange = {lo,hi};
                 if (!Woodcock::sampleRange(sample,self.volume,
                                            obj_org,obj_dir,
                                            tRange,majorant,ray.rngSeed,

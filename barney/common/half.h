@@ -20,9 +20,10 @@
     types etc that it should have had in the first place */
 
 #include "barney/common/barney-common.h"
-#if BARNEY_HAVE_CUDA
+#ifdef __CUDACC__
 #include <cuda_fp16.h>
-#elif BARNEY_HAVE_HIP
+#elif defined(__HIPCC__)
+#  include "hip/hip_fp16.h"
 #else
 #  include "rtcore/embree/Float16.h"
 typedef float16_t half;

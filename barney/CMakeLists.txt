@@ -64,11 +64,17 @@ endmacro()
 macro(configure_cuda_source src)
   if (USE_HIP)
     get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cpp") OR
-        ("${ext}" STREQUAL ".cu") OR
+    if (("${ext}" STREQUAL ".cu") OR
         ("${ext}" STREQUAL ".dev.cu"))
       message("setting language of ${src} to HIP")
       set_source_files_properties(${src} PROPERTIES LANGUAGE HIP)
+#      set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-D__HIPCC__=1")
+      set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-D__HIPCC__=1;-D__HIP_ARCH__=1")
+    endif()
+    if (("${ext}" STREQUAL ".cpp"))
+      message("setting language of ${src} to HIP")
+      set_source_files_properties(${src} PROPERTIES LANGUAGE HIP)
+      set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-D__HIPCC__=1")
     endif()
   elseif (NOT BARNEY_HAVE_CUDA)
     get_filename_component(ext "${src}" EXT)
@@ -97,6 +103,45 @@ endmacro()
 
 # define all the host-side sources
 set(HOST_SOURCES
+
+  # all the barney "plumbing" stuff on the host
+  Context.h
+  Context.cpp
+  DeviceGroup.h
+  DeviceGroup.cpp
+  LocalContext.h
+  LocalContext.cpp
+  Object.h
+  Object.cpp
+  Camera.h
+  Camera.cu
+  # all frame buffer related stuff (DistFB in barney_mpi)
+  fb/FrameBuffer.h
+  fb/FrameBuffer.cu
+  fb/LocalFB.h
+  fb/LocalFB.cpp
+  fb/TiledFB.h
+  fb/TiledFB.cu
+  # model/group/data group handling
+  GlobalModel.h
+  GlobalModel.cpp
+  render/Renderer.h
+  render/Renderer.cpp
+  Group.h
+  Group.cpp
+  render/GeometryAttributes.h
+  render/GeometryAttributes.cpp
+
+
+  # samplers
+  render/Sampler.h
+  render/Sampler.cpp
+  
+  # actual device kernels for CUDA ray gen and shading
+  kernels/generateRays.cu
+  kernels/shadeRays.cu
+  kernels/traceRays.cu
+  
   umesh/common/UMeshField.h
   umesh/common/UMeshField.cu
   umesh/mc/UMeshCUBQLSampler.h
@@ -134,44 +179,8 @@ set(HOST_SOURCES
   volume/MCGrid.cu
   volume/MCAccelerator.h
   
-  # samplers
-  render/Sampler.h
-  render/Sampler.cpp
-  
   common/barney-common.h
   
-  # actual device kernels for CUDA ray gen and shading
-  kernels/generateRays.cu
-  kernels/shadeRays.cu
-  kernels/traceRays.cu
-  # all the barney "plumbing" stuff on the host
-  Context.h
-  Context.cpp
-  DeviceGroup.h
-  DeviceGroup.cpp
-  LocalContext.h
-  LocalContext.cpp
-  Object.h
-  Object.cpp
-  Camera.h
-  Camera.cu
-  # all frame buffer related stuff (DistFB in barney_mpi)
-  fb/FrameBuffer.h
-  fb/FrameBuffer.cu
-  fb/LocalFB.h
-  fb/LocalFB.cpp
-  fb/TiledFB.h
-  fb/TiledFB.cu
-  # model/group/data group handling
-  GlobalModel.h
-  GlobalModel.cpp
-  render/Renderer.h
-  render/Renderer.cpp
-  Group.h
-  Group.cpp
-  render/GeometryAttributes.h
-  render/GeometryAttributes.cpp
-
   render/RayQueue.h
   render/RayQueue.cpp
   render/World.h
