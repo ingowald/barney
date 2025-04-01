@@ -32,7 +32,6 @@ set(BANARI_SOURCES
   Group.cpp
   Instance.cpp
   Library.cpp
-  Light.cpp
   Material.cpp
   Object.cpp
   Renderer.cpp
@@ -41,6 +40,16 @@ set(BANARI_SOURCES
   Surface.cpp
   Volume.cpp
   World.cpp
+  # -----------
+  light/Light.h
+  light/Light.cpp
+  light/HDRI.h
+  light/HDRI.cpp
+  light/Directional.h
+  light/Directional.cpp
+  light/Point.h
+  light/Point.cpp
+  # -----------
   ${DUMMY_CU}
   )
 
@@ -66,7 +75,6 @@ add_library(anari_library_barney SHARED ${BANARI_SOURCES})
 target_link_libraries(anari_library_barney PRIVATE
   $<BUILD_INTERFACE:banari-config>
   barney_static
-#  barney
   anari::helium
   anari::anari
 )
@@ -76,7 +84,6 @@ if (BARNEY_MPI)
   target_link_libraries(anari_library_barney_mpi PRIVATE
     $<BUILD_INTERFACE:banari-config>
     barney_mpi_static
-#    barney_mpi
     anari::helium
     anari::anari
   )
@@ -144,8 +151,7 @@ install(TARGETS# barney
 )
 endif()
 
-file(GLOB DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "visrtx_*.json")
-list(APPEND DEVICE_JSONS "barney_device.json")
+file(GLOB DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
 
 foreach(file ${DEVICE_JSONS})
   file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file} INPUT ${file})
@@ -159,6 +165,15 @@ anari_generate_queries(
   JSON_EXTENSION_FILES ${DEVICE_JSONS}
 )
 if (BARNEY_MPI)
+  set_target_properties(anari_library_barney_mpi
+    PROPERTIES
+    CXX_VISIBILITY_PRESET  hidden
+    CUDA_VISIBILITY_PRESET hidden
+    CUDA_SEPARABLE_COMPILATION   ON
+    POSITION_INDEPENDENT_CODE    ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+  )
   anari_generate_queries(
     DEVICE_TARGET anari_library_barney_mpi
     CPP_NAMESPACE barney_device
@@ -167,4 +182,4 @@ if (BARNEY_MPI)
     JSON_EXTENSION_FILES ${DEVICE_JSONS}
   )
 endif()
-  
+

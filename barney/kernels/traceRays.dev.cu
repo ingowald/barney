@@ -52,6 +52,19 @@ namespace BARNEY_NS {
       if (dir.y == 0.f) dir.y = 1e-6f;
       if (dir.z == 0.f) dir.z = 1e-6f;
 
+#ifdef NDEBUG
+      bool dbg = false;
+#else
+      bool dbg = ray.dbg;
+#endif
+      if (dbg)
+        printf("$$$$$$$$$$$$$$$$$$$$$$ Tracing %f %f %f dir %f %f %f\n",
+               ray.org.x,
+               ray.org.y,
+               ray.org.x,
+               ray.dir.x,
+               ray.dir.y,
+               ray.dir.x);
       ti.traceRay(lp.accel,
                   ray.org,
                   dir,

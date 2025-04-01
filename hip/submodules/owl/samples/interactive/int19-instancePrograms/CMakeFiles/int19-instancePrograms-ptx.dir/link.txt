@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libint19-instancePrograms-ptx.a "CMakeFiles/int19-instancePrograms-ptx.dir/Release/int19-instancePrograms-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libint19-instancePrograms-ptx.a

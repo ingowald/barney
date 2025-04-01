@@ -357,7 +357,7 @@ namespace barney_device {
             = bnMPIContextCreate(comm, &rank, 1, &m_cudaDevice,1);
         else
           state.context
-            = bnMPIContextCreate(comm, &rank, 1, nullptr, 0);
+            = bnMPIContextCreate(comm, &rank, 1, nullptr, -1);
 
         auto &info = state.bnInfo;
         bnMPIQueryHardware(&info, MPI_COMM_WORLD);

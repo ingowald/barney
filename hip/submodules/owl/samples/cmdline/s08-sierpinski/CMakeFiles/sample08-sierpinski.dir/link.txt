@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG "CMakeFiles/sample08-sierpinski.dir/hostCode.cpp.o" -o ../../../../../sample08-sierpinski  -Wl,-rpath,/home/wald/GITLAB/barney/hip ../../../../../libsample08-sierpinski-ptx.a ../../../../../libowl.so /usr/local/cuda-12.8/targets/x86_64-linux/lib/libcudart_static.a -ldl /usr/lib/x86_64-linux-gnu/librt.a /usr/lib/x86_64-linux-gnu/libtbb.so.12.11 

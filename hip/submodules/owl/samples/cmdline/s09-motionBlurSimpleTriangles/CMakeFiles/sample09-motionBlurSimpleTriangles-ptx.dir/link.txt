@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libsample09-motionBlurSimpleTriangles-ptx.a "CMakeFiles/sample09-motionBlurSimpleTriangles-ptx.dir/Release/sample09-motionBlurSimpleTriangles-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libsample09-motionBlurSimpleTriangles-ptx.a

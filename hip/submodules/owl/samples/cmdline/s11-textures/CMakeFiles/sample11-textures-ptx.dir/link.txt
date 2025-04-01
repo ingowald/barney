@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libsample11-textures-ptx.a "CMakeFiles/sample11-textures-ptx.dir/Release/sample11-textures-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libsample11-textures-ptx.a

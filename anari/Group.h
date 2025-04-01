@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "Light.h"
+#include "light/Light.h"
 #include "Surface.h"
 #include "Volume.h"
 // std
@@ -11,23 +11,23 @@
 
 namespace barney_device {
 
-struct Group : public Object
-{
-  Group(BarneyGlobalState *s);
-  ~Group() override;
+  struct Group : public Object
+  {
+    Group(BarneyGlobalState *s);
+    ~Group() override;
 
-  void commitParameters() override;
-  void markFinalized() override;
+    void commitParameters() override;
+    void markFinalized() override;
 
-  BNGroup makeBarneyGroup(BNContext context) const;
+    BNGroup makeBarneyGroup(BNContext context) const;
 
-  box3 bounds() const;
+    box3 bounds() const;
 
- private:
-  helium::ChangeObserverPtr<ObjectArray> m_surfaceData;
-  helium::ChangeObserverPtr<ObjectArray> m_volumeData;
-  helium::ChangeObserverPtr<ObjectArray> m_lightData;
-};
+  private:
+    helium::ChangeObserverPtr<ObjectArray> m_surfaceData;
+    helium::ChangeObserverPtr<ObjectArray> m_volumeData;
+    helium::ChangeObserverPtr<ObjectArray> m_lightData;
+  };
 
 } // namespace barney_device
 

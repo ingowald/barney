@@ -153,7 +153,12 @@ namespace BARNEY_NS {
           float alpha_sqr = alpha * alpha;
           float den1 = 1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h;
           float den2 = max(den1, SMALL_EPSILON);
-          return (float)M_1_PI * alpha_sqr / den2;
+          float ret = (float)M_1_PI * 1.f / den2;
+          // float ret = (float)M_1_PI * alpha_sqr / den2;
+          if (dbg)
+            printf("gtr_2 alpha %f cos_theta_h %f den1 %f den2 %f ret %f\n",
+                   alpha,cos_theta_h,den1,den2,ret);
+          return ret;
         }
 
         // D_GTR2 Anisotropic: Anisotropic generalized Trowbridge-Reitz with gamma=2
@@ -512,10 +517,10 @@ namespace BARNEY_NS {
           float g_i = smith_shadowing_ggx(fabs(dot(n, w_i)), alpha);
           float g_o = smith_shadowing_ggx(fabs(dot(n, w_o)), alpha);
           float g   = g_i * g_o;
-          // if (dbg)
-          //   printf("microfacet_iso spec %f %f %f d %f f %f %f %f g %f (%f %f)\n",
-          //          spec.x,spec.y,spec.z,
-          //          d,f.x,f.y,f.z,g,g_i,g_o);
+          if (dbg)
+            printf("microfacet_iso spec %f %f %f d %f f %f %f %f g %f (%f %f)\n",
+                    spec.x,spec.y,spec.z,
+                    d,f.x,f.y,f.z,g,g_i,g_o);
           return d * f * g;
         }
 
@@ -692,17 +697,18 @@ namespace BARNEY_NS {
             gloss = disney_microfacet_anisotropic(mat, b_n, w_o, w_i, w_h, v_x, v_y);
               // gloss = gloss + disney_multiscatter(mat, n, w_o, w_i, GGX_E_LOOKUP, GGX_E_AVG_LOOKUP);
           }
+          
 	
-          // if (dbg) printf("nvis gloss %f %f %f\n",gloss.x,gloss.y,gloss.z);
-          // if (dbg) printf("nvis diffuse bsdf %f %f %f color %f %f %f, (1-metal)*(1-spec) %f\n",
-          //                 diffuse_bsdf.x,
-          //                 diffuse_bsdf.y,
-          //                 diffuse_bsdf.z,
-          //                 diffuse_color.x,
-          //                 diffuse_color.y,
-          //                 diffuse_color.z,
-          //                 (1.f - mat.metallic) * (1.f - mat.specular_transmission)
-          //                 );
+          if (dbg) printf("nvis gloss %f %f %f\n",gloss.x,gloss.y,gloss.z);
+          if (dbg) printf("nvis diffuse bsdf %f %f %f color %f %f %f, (1-metal)*(1-spec) %f\n",
+                          diffuse_bsdf.x,
+                          diffuse_bsdf.y,
+                          diffuse_bsdf.z,
+                          diffuse_color.x,
+                          diffuse_color.y,
+                          diffuse_color.z,
+                          (1.f - mat.metallic) * (1.f - mat.specular_transmission)
+                          );
 
           vec3f flat = lerp_r(diffuse_bsdf * diffuse_color, 
                                subsurface_bsdf * subsurface_color, 
@@ -1258,6 +1264,7 @@ namespace BARNEY_NS {
         vec3f bsdf;
         disney_brdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, bsdf,dbg);
         EvalRes ret;
+        if (dbg) printf("nvisii bsdf %f %f %f\n",bsdf.x,bsdf.y,bsdf.z);
         ret.value = vec3f(bsdf);
         disney_pdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, ret.pdf,dbg);
         return ret;

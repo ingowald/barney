@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libsample06-rtow-mixedGeometries-ptx.a "CMakeFiles/sample06-rtow-mixedGeometries-ptx.dir/Release/sample06-rtow-mixedGeometries-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libsample06-rtow-mixedGeometries-ptx.a

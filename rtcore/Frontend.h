@@ -52,9 +52,6 @@ namespace rtc {
 # ifdef __CUDACC__
 #  define RTC_DEVICE_CODE 1
 # endif
-// # if !BARNEY_DEVICE_PROGRAM
-//   struct TraceInterface;
-// # endif
 }
 #endif
 
@@ -97,6 +94,7 @@ namespace rtc {
 #endif
 
 
+<<<<<<< HEAD
 #if BARNEY_RTC_CUDA
 # include "rtcore/cuda/Device.h"
 # include "rtcore/cuda/Geom.h" 
@@ -106,6 +104,11 @@ namespace rtc {
 # include "rtcore/cudaCommon/Texture.h"
 # include "rtcore/cudaCommon/TextureData.h"
 # include "rtcore/cudaCommon/ComputeKernel.h"
+=======
+namespace rtc {
+  using device::TextureObject;
+}
+>>>>>>> devel
 
 namespace rtc {
   namespace cuda {

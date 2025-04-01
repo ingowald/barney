@@ -19,7 +19,7 @@
             "khr_material_physically_based",
             "khr_spatial_field_structured_regular",
             "khr_volume_transfer_function1d",
-            "visrtx_cuda_output_buffers"
+            "nv_frame_buffers_cuda"
         ]
     },
     "objects": [

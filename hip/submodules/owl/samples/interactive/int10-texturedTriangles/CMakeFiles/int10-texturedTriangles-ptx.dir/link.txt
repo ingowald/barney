@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libint10-texturedTriangles-ptx.a "CMakeFiles/int10-texturedTriangles-ptx.dir/Release/int10-texturedTriangles-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libint10-texturedTriangles-ptx.a

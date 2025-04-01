@@ -18,10 +18,6 @@
 
 #include "barney/Context.h"
 #include "barney/fb/TiledFB.h"
-// #ifdef BARNEY_BACKEND_OPTIX
-// #include <optix.h>
-// #include <optix_stubs.h>
-// #endif
 
 namespace BARNEY_NS {
 
@@ -93,9 +89,22 @@ namespace BARNEY_NS {
     vec2i numPixels = {-1,-1};
 
     Device *getDenoiserDevice() const;
-    rtc::Denoiser *denoiser;
-    // Denoiser::SP denoiser;
 
+    /*! points to the rtc denoiser object we've created. Can be null
+        if denoising is disabled in cmake, or if the given rtc backend
+        doesn't support denoising (eg, old optix version, oidn not
+        found during compiling, etc). Also see \see
+        enableDenoising. */
+    rtc::Denoiser *denoiser = 0;
+
+    /*! whether to "in principle" do denoising. Denoising will still
+     require an rtc backend that does have a denoiser (\see denoiser
+     field), but this allows a user to disable denoising at runtime */
+    bool enableDenoising = 1;
+
+    /*! how many samples per pixels have already been accumulated in
+        this frame buffer's accumulation buffer. Note this is counted
+        in *samples*, not *frames*. */
     uint32_t    accumID = 0;
     const bool  isOwner;
     bool  showCrosshairs = false;
