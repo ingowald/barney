@@ -36,7 +36,7 @@ namespace rtc {
     Buffer::~Buffer()
     {
       PING; PRINT(d_data);
-      cudaFree(d_data);
+      BARNEY_CUDA_CALL_NOTHROW(Free(d_data));
     }
     
     void Buffer::upload(const void *data, size_t numBytes, size_t offset)

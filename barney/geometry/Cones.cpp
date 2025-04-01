@@ -36,7 +36,6 @@ namespace BARNEY_NS {
       return;
     }
     for (auto device : *devices) {
-      auto rtc = device->rtc;
       PLD *pld = getPLD(device);
       if (pld->userGeoms.empty()) {
         rtc::GeomType *gt

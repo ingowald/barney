@@ -22,6 +22,7 @@
 #include "barney/common/barney-common.h"
 #if BARNEY_HAVE_CUDA
 #include <cuda_fp16.h>
+#elif BARNEY_HAVE_HIP
 #else
 #  include "rtcore/embree/Float16.h"
 typedef float16_t half;

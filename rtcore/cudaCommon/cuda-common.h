@@ -17,10 +17,27 @@
 #pragma once
 
 #include "rtcore/common/rtcore-common.h"
-#include <cuda_runtime.h>
-#ifdef __CUDACC__
-# include <cuda/std/limits>
-# include <cuda.h>
+#if BARNEY_HAVE_HIP
+# include "hip/hip_runtime.h"
+
+# define cudaMalloc hipMalloc
+# define cudaMallocManaged hipMallocManaged
+# define cudaMallocAsync hipMallocAsync
+# define cudaFreeAsync hipFreeAsync
+# define cudaMemcpy hipMemcpy
+# define cudaFree hipFree
+# define cudaError_t hipError_t
+# define cudaGetErrorString hipGetErrorString
+# define cudaMemcpyDefault hipMemcpyDefault
+# define cudaSuccess hipSuccess
+# define cudaGetLastError hipGetLastError
+# define cudaDeviceSynchronize hipDeviceSynchronize
+#else
+# include <cuda_runtime.h>
+# ifdef __CUDACC__
+#  include <cuda/std/limits>
+#  include <cuda.h>
+# endif
 #endif
 #include "cuda-helper.h"
 

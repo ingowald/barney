@@ -53,7 +53,6 @@ namespace BARNEY_NS {
     World::DD World::getDD(Device *device) 
     {
       PLD *pld = getPLD(device);
-      auto rtc = device->rtc;
       DD dd;
       dd.quadLights
         = (QuadLight::DD *)pld->quadLightsBuffer->getDD();

@@ -141,8 +141,8 @@ namespace BARNEY_NS {
     // ==================================================================
       PING;BARNEY_CUDA_SYNC_CHECK();
     {
-      bool needRefit = false;
-      bool needRebuild = false;
+      // bool needRefit = false;
+      // bool needRebuild = false;
       
       // ------------------------------------------------------------------
       // clear all pld data
@@ -183,7 +183,6 @@ namespace BARNEY_NS {
       // ------------------------------------------------------------------
       for (auto device : *devices) {
         PLD *myPLD = getPLD(device);
-        auto rtc = device->rtc;
         for (auto volume : volumes) {
           Volume::PLD *volumePLD = volume->getPLD(device);
           // gather all geoms from this group (if any)

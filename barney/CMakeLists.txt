@@ -62,7 +62,15 @@ endmacro()
 # backends; but if there's no cuda vailable we have to change the
 # language to CPP else cmake will just skip these sources.
 macro(configure_cuda_source src)
-  if (NOT BARNEY_HAVE_CUDA)
+  if (USE_HIP)
+    get_filename_component(ext "${src}" EXT)
+    if (("${ext}" STREQUAL ".cpp") OR
+        ("${ext}" STREQUAL ".cu") OR
+        ("${ext}" STREQUAL ".dev.cu"))
+      message("setting language of ${src} to HIP")
+      set_source_files_properties(${src} PROPERTIES LANGUAGE HIP)
+    endif()
+  elseif (NOT BARNEY_HAVE_CUDA)
     get_filename_component(ext "${src}" EXT)
     if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
       message("setting language of ${src} to CXX")
@@ -313,15 +321,23 @@ if (BARNEY_BACKEND_CUDA)
 
   add_library(barney_cuda STATIC ${HOST_SOURCES})
   target_link_libraries(barney_cuda PUBLIC barney_config barney_rtc_cuda)
-  target_link_libraries(barney_cuda PRIVATE
-    barney_cuda_programs
-    barney_config
-    $<BUILD_INTERFACE:cuBQL_cuda_float3_static>)
+  if (TARGET cuBQL_cuda_float3_static)
+    target_link_libraries(barney_cuda PRIVATE
+      barney_cuda_programs
+      barney_config
+      $<BUILD_INTERFACE:cuBQL_cuda_float3_static>)
+  endif()
   set_library_properties(barney_cuda)
 
   if (BARNEY_MPI)
     add_library(barney_mpi_cuda ${MPI_SOURCES})
     target_link_libraries(barney_mpi_cuda PRIVATE barney_cuda MPI::MPI_CXX)
+  endif()
+
+  if (USE_HIP)
+    foreach(f ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
+      configure_cuda_source(${f})
+      endforeach()
   endif()
 endif()
     

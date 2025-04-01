@@ -83,35 +83,5 @@ namespace rtc {
 
 
 
-// #define RTC_EXPORT_USER_GEOM(name,DD,Programs,has_ah,has_ch)    \
-//   __global__                                                            \
-//   void rtc_cuda_writeAddresses_##name(rtc::Geom::SBTHeader *h)          \
-//   {                                                                     \
-//     printf("ADDRESSES %p %p\n", Programs::intersect, Programs::bounds); \
-//     h->ah = has_ah?Programs::anyHit:0;                                  \
-//     h->ch = has_ch?Programs::closestHit:0;                              \
-//     h->user.intersect = Programs::intersect;                            \
-//     h->user.bounds = Programs::bounds;                                  \
-//   }                                                                     \
-//   rtc::GeomType *createGeomType_##name(rtc::Device *device)             \
-//   {                                                                     \
-//     ::rtc::SetActiveGPU forDuration(device);                            \
-//     rtc::Geom::SBTHeader *h;                                            \
-//     cudaMalloc((void **)&h,sizeof(*h));                                 \
-//     rtc_cuda_writeAddresses_##name<<<1,32>>>(h);                        \
-//     device->sync();                                                     \
-//     rtc::Geom::SBTHeader hh;                                            \
-//     cudaMemcpy(&hh,h,sizeof(hh),cudaMemcpyDefault);                     \
-//     PING; PRINT(sizeof(DD));                                            \
-//     return new rtc::cuda::UserGeomType                                  \
-//       (device,                                                          \
-//        sizeof(DD),                                                      \
-//        hh.user.bounds,                                                  \
-//        hh.user.intersect,                                               \
-//        hh.ah,                                                           \
-//        hh.ch                                                            \
-//        );                                                               \
-//   }
-
 
 

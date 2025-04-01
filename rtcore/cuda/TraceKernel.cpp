@@ -32,7 +32,7 @@ namespace rtc {
 
     TraceKernel2D::~TraceKernel2D()
     {
-      cudaFree(d_lpData);
+      BARNEY_CUDA_CALL_NOTHROW(Free(d_lpData));
     }
 
         

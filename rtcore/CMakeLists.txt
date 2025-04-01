@@ -226,11 +226,20 @@ if (BARNEY_BACKEND_CUDA)
   target_link_libraries(barney_rtc_cuda PUBLIC
     barney_rtc_config
     barney_rtc_cuda_common
-    owl_static
+#    owl_static
     )
   target_compile_definitions(barney_rtc_cuda
     PUBLIC -DBARNEY_RTC_CUDA=1)
   rtc_library_properties(barney_rtc_cuda)
+
+  if (USE_HIP)
+    set_source_files_properties(cuda/Buffer.cpp PROPERTIES LANGUAGE HIP)
+    set_source_files_properties(cuda/Geom.cpp PROPERTIES LANGUAGE HIP)
+    set_source_files_properties(cuda/GeomType.cpp PROPERTIES LANGUAGE HIP)
+    set_source_files_properties(cuda/TraceKernel.cpp PROPERTIES LANGUAGE HIP)
+    
+  endif()
+  
 else()
   add_library(barney_rtc_cuda INTERFACE) # DUMMY!
 endif()

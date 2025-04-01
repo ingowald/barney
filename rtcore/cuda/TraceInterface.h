@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <owl/owl.h>
+// #include <owl/owl.h>
 #include "rtcore/cudaCommon/ComputeInterface.h"
 #include "rtcore/cuda/TraceKernel.h"
 
@@ -592,11 +592,11 @@ namespace rtc {
   {                                                                     \
     ::rtc::SetActiveGPU forDuration(device);                            \
     rtc::Geom::SBTHeader *h;                                            \
-    cudaMalloc((void **)&h,sizeof(*h));                                 \
+    BARNEY_CUDA_CALL(Malloc((void **)&h,sizeof(*h)));                   \
     rtc_cuda_writeAddresses_##name<<<1,32>>>(h);                        \
     device->sync();                                                     \
     rtc::Geom::SBTHeader hh;                                            \
-    cudaMemcpy(&hh,h,sizeof(hh),cudaMemcpyDefault);                     \
+    BARNEY_CUDA_CALL(Memcpy(&hh,h,sizeof(hh),cudaMemcpyDefault));       \
     return new rtc::cuda::UserGeomType                                  \
       (device,                                                          \
        sizeof(DD),                                                      \
@@ -619,11 +619,11 @@ namespace rtc {
   {                                                                     \
     ::rtc::SetActiveGPU forDuration(device);                            \
     rtc::Geom::SBTHeader *h;                                            \
-    cudaMalloc((void **)&h,sizeof(*h));                                 \
+    BARNEY_CUDA_CALL(Malloc((void **)&h,sizeof(*h)));                   \
     rtc_cuda_writeAddresses_##name<<<1,32>>>(h);                        \
     device->sync();                                                     \
     rtc::Geom::SBTHeader hh;                                            \
-    cudaMemcpy(&hh,h,sizeof(hh),cudaMemcpyDefault);                     \
+    BARNEY_CUDA_CALL(Memcpy(&hh,h,sizeof(hh),cudaMemcpyDefault));       \
     return new rtc::cuda::TrianglesGeomType                             \
       (device,                                                          \
        sizeof(DD),                                                      \
