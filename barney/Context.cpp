@@ -167,7 +167,6 @@ namespace BARNEY_NS {
  
   void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
-    PING; PRINT((int)needHitIDs);
     while (true) {
       traceRaysLocally(model, rngSeed, needHitIDs);
       const bool needMoreTracing = forwardRays(needHitIDs);
@@ -207,9 +206,7 @@ namespace BARNEY_NS {
         if (FromEnv::get()->logQueues) 
           std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
 
-        PING; PRINT(generation);
         bool needHitIDs = fb->needHitIDs() && (generation==0);
-        PRINT((int)needHitIDs);
         uint32_t rngSeed = fb->accumID*16+generation;
         traceRaysGlobally(model,rngSeed,needHitIDs);
         

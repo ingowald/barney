@@ -28,7 +28,6 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed,
                                  bool needHitIDs)
   {
-    PING; PRINT((int)needHitIDs);
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
@@ -42,7 +41,6 @@ namespace BARNEY_NS {
           = needHitIDs
           ? device->rayQueue->traceAndShadeReadQueue.hitIDs
           : 0;
-        PING; PRINT(dd.hitIDs);
         dd.numRays   = device->rayQueue->numActive;
         dd.world     = model->world->getDD(device,rngSeed);
         dd.accel     = model->getInstanceAccel(device);

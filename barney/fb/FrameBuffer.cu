@@ -22,12 +22,6 @@
 # include <OpenImageDenoise/oidn.h>
 #endif
 
-/*! iw - IMHO tone mapping SHOULD be part of the renderer, but ANARI
-    currently doesn't specify any tone mapping operations, and the
-    frame buffer formats as specified assume that it's NOT tone mapped
-    (or at best, has srgb conversion), so turn it off for now */
-#define DO_TONE_MAPPING 0
-
 namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE2D(linearToFixed8);
 
@@ -145,7 +139,6 @@ namespace BARNEY_NS {
        color directly into our linearbuffer, and won't write normal at
        all */
     bool doDenoising = denoiser != 0 && enableDenoising;
-    PING; PRINT((int)doDenoising);
     void *colorCopyTarget
       = doDenoising
       ? denoiser->in_rgba
@@ -178,9 +171,6 @@ namespace BARNEY_NS {
   void FrameBuffer::readColorChannel(void *appMemory,
                                      BNDataType requestedFormat)
   {
-    printf("@@@@@@@@@@@@@@@@@@@@@@ %i/%i readcolorchannel\n",
-           context->myRank(),context->mySize());
-    
     assert(requestedFormat == colorChannelFormat);
     Device *device = getDenoiserDevice();
     SetActiveGPU forDuration(device);
@@ -191,19 +181,6 @@ namespace BARNEY_NS {
        color directly into our linearbuffer, and won't write normal at
        all */
     bool doDenoising = denoiser != 0 && enableDenoising;
-    PING; PRINT((int)doDenoising);
-    // void *colorCopyTarget
-    //   = doDenoising
-    //   ? denoiser->in_rgba
-    //   : linearColorChannel;
-    // vec3f *normalCopyTarget
-    //   = doDenoising
-    //   ? denoiser->in_normal
-    //   : nullptr;
-    // BNDataType gatherType
-    //   = doDenoising
-    //   ? BN_FLOAT4
-    //   : requestedFormat;
 
 
     if (doDenoising) {
@@ -238,12 +215,10 @@ namespace BARNEY_NS {
         = (requestedFormat == BN_FLOAT4)
         ? sizeof(vec4f)
         : sizeof(uint32_t);
-      PING; PRINT(appMemory);
       device->rtc->copy(appMemory,linearColorChannel,
                         numPixels.x*numPixels.y*sizeOfPixel);
     }
     device->rtc->sync();
-    PING;
   }
 
   /*! "finalize" and read the frame buffer. If this function gets
@@ -268,7 +243,6 @@ namespace BARNEY_NS {
     if (channel == BN_FB_PRIMID ||
         channel == BN_FB_INSTID ||
         channel == BN_FB_OBJID) {
-      PING; PRINT((int)channel);
       writeAuxChannel(linearAuxChannel,channel);
       device->rtc->copy(appMemory,linearAuxChannel,
                         numPixels.x*numPixels.y*sizeof(uint32_t));
