@@ -53,10 +53,7 @@ TransferFunction1D::TransferFunction1D(BarneyGlobalState *s)
 
 bool TransferFunction1D::isValid() const
 {
-  bool isValid = m_field && m_field->isValid() && m_colorData
-      && (m_opacityData || !needsOpacityData);
-
-  return isValid;
+  return m_field && m_field->isValid();
 }
 
 void TransferFunction1D::commitParameters()
@@ -65,7 +62,11 @@ void TransferFunction1D::commitParameters()
   m_field = getParamObject<SpatialField>("value");
   m_valueRange = getParam<box1>("valueRange", box1{0.f, 1.f});
   m_colorData = getParamObject<helium::Array1D>("color");
+  m_uniformColor = math::float4(1.f);
+  getParam("color", ANARI_FLOAT32_VEC3, &m_uniformColor);
+  getParam("color", ANARI_FLOAT32_VEC4, &m_uniformColor);
   m_opacityData = getParamObject<helium::Array1D>("opacity");
+  m_uniformOpacity = getParam<float>("opacity", 1.f) * m_uniformColor.w;
   m_densityScale = getParam<float>("unitDistance", 1.f);
 }
 
@@ -77,64 +78,54 @@ void TransferFunction1D::finalize()
     return;
   }
 
-  if (!m_colorData) {
-    reportMessage(ANARI_SEVERITY_WARNING,
-        "no color data provided to transferFunction1D volume");
-    return;
-  }
-
   m_bounds = m_field->bounds();
 
-  if (m_colorData->elementType() == ANARI_FLOAT32_VEC4) {
-    // k, that's the same format we want, too:
-    size_t tfSize = m_colorData->size();
-    m_rgbaMap.resize(tfSize);
-    auto *colorData = m_colorData->beginAs<math::float4>();
-    std::copy(colorData, colorData + tfSize, m_rgbaMap.begin());
-    needsOpacityData = false;
-  } else if (m_colorData->elementType() == ANARI_FLOAT32_VEC3) {
-    if (!m_opacityData) {
-      reportMessage(ANARI_SEVERITY_WARNING,
-          "transferFunction1D volume has float3 color data, but no opacity data set");
-      return;
+  size_t numColorChannels{4};
+  if (m_colorData) { // TODO: more types
+    if (m_colorData->elementType() == ANARI_FLOAT32_VEC3)
+      numColorChannels = 3;
+  }
+
+  float *colorData = m_colorData ? (float *)m_colorData->data() : nullptr;
+  float *opacityData = m_opacityData ? (float *)m_opacityData->data() : nullptr;
+
+  size_t numColors = m_colorData ? m_colorData->size() : 1;
+  size_t numOpacities = m_opacityData ? m_opacityData->size() : 1;
+  size_t tfSize = std::max(numColors, numOpacities);
+
+  m_rgbaMap.resize(tfSize);
+  for (size_t i=0; i<tfSize; ++i) {
+    float colorPos = tfSize > 1 ? (float(i)/(tfSize-1))*(numColors-1) : 0.f;
+    float colorFrac = colorPos-floorf(colorPos);
+
+    math::float4 color0(m_uniformColor.xyz(), m_uniformOpacity);
+    math::float4 color1(m_uniformColor.xyz(), m_uniformOpacity);
+    if (colorData) {
+      if (numColorChannels == 3) {
+        math::float3 *colors = (math::float3 *)colorData;
+        color0 = math::float4(colors[int(floorf(colorPos))], m_uniformOpacity);
+        color1 = math::float4(colors[int(ceilf(colorPos))], m_uniformOpacity);
+      }
+      else if (numColorChannels == 4) {
+        math::float4 *colors = (math::float4 *)colorData;
+        color0 = colors[int(floorf(colorPos))];
+        color1 = colors[int(ceilf(colorPos))];
+      }
     }
-    needsOpacityData = true;
 
-    size_t tfSize = std::max(m_colorData->size(), m_opacityData->size());
-    m_rgbaMap.resize(tfSize);
+    math::float4 color = (1.f-colorFrac)*color0 + colorFrac*color1;
 
-    auto *opacityData = m_opacityData->beginAs<float>();
-    auto *colorData = m_colorData->beginAs<math::float3>();
-    for (int i = 0; i < tfSize; i++) {
-      float colorPos = tfSize > 1
-          ? (float(i) / (tfSize - 1)) * (m_colorData->size() - 1)
-          : 0.f;
-      float colorFrac = colorPos - floorf(colorPos);
-
-      math::float3 color0 = colorData[int(floorf(colorPos))];
-      math::float3 color1 = colorData[int(ceilf(colorPos))];
-      math::float3 color =
-          math::float3(math::lerp(color0.x, color1.x, colorFrac),
-              math::lerp(color0.y, color1.y, colorFrac),
-              math::lerp(color0.z, color1.z, colorFrac));
-
-      float alphaPos = tfSize > 1
-          ? (float(i) / (tfSize - 1)) * (m_opacityData->size() - 1)
-          : 0.f;
-      float alphaFrac = alphaPos - floorf(alphaPos);
+    if (opacityData) {
+      float alphaPos = tfSize > 1 ? (float(i)/(tfSize-1))*(numOpacities-1) : 0.f;
+      float alphaFrac = alphaPos-floorf(alphaPos);
 
       float alpha0 = opacityData[int(floorf(alphaPos))];
       float alpha1 = opacityData[int(ceilf(alphaPos))];
-      float alpha = math::lerp(alpha0, alpha1, alphaFrac);
 
-      m_rgbaMap[i] = math::float4(color.x, color.y, color.z, alpha);
+      color.w *= (1.f-alphaFrac)*alpha0 + alphaFrac*alpha1;
     }
 
-  } else {
-    reportMessage(ANARI_SEVERITY_WARNING,
-        "opacity data provided to transfer function in a "
-        "format that is neither float3 nor float4?");
-    return;
+    m_rgbaMap[i] = color;
   }
 
   setBarneyParameters();
