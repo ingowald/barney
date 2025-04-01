@@ -225,6 +225,16 @@ namespace rtc {
       return vf * 1.f/255.f;
     }
 
+    template<>
+    vec4f getTexel<unsigned char>(TextureData *data,
+                                  const rtc::TextureDesc &desc,
+                                  int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      unsigned char v = ((const unsigned char*)data->data.data())[idx];
+      vec4f  vf = vec4f(v);
+      return vf * 1.f/255.f;
+    }
 
     
     template<typename T>
@@ -435,6 +445,9 @@ namespace rtc {
                                   rtc::TextureDesc desc)
     {
       switch (data->format) {
+      case rtc::UCHAR:
+        return createSampler<unsigned char>(data,desc);
+        break;
       case rtc::UCHAR4:
         return createSampler<vec4uc>(data,desc);
         break;

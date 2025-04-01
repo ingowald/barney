@@ -47,6 +47,10 @@ namespace BARNEY_NS {
       Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
       if (member == "baseColor") 
         { baseColor.set(sampler); return true; }
+      if (member == "metallic") 
+        { metallic.set(sampler); return true; }
+      if (member == "roughness") 
+        { roughness.set(sampler); return true; }
       
       return false;
     }
