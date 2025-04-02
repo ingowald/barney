@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#define CUBQL_GPU_BUILDER_IMPLEMENTATION 1
+
 #include "rtcore/cudaCommon/Device.h"
 #include "rtcore/cuda/Device.h"
 #include "rtcore/cuda/Group.h"
@@ -21,6 +23,9 @@
 
 #define BARNEY_DEVICE_PROGRAM 1
 #include "rtcore/cuda/TraceInterface.h"
+
+#include "cuBQL/bvh.h"
+#include "cuBQL/builder/cuda.h"
 
 namespace rtc {
   namespace cuda {

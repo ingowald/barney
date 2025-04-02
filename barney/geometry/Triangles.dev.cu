@@ -28,12 +28,13 @@ namespace BARNEY_NS {
     static inline __rtc_device
     void closestHit(rtc::TraceInterface &rt)
     {
-      printf("CLOSEST!\n");
+      // printf("CLOSEST!\n");
     }
 
     static inline __rtc_device
     void anyHit(rtc::TraceInterface &rt)
     {
+      
       auto &ray = *(Ray *)rt.getPRD();
 
       const World::DD &world = OptixGlobals::get(rt).world;
@@ -69,6 +70,7 @@ namespace BARNEY_NS {
       n = rt.transformNormalFromObjectToWorldSpace(n);
       n = normalize(n);
 
+      // if (dbg) printf("======================================================= TRI AH\n");
       // ------------------------------------------------------------------
       // get texture coordinates
       // ------------------------------------------------------------------
@@ -86,7 +88,7 @@ namespace BARNEY_NS {
       hitData.isShadowRay     = ray.isShadowRay;
 
       auto interpolator
-        = [&](const GeometryAttribute::DD &attrib) -> vec4f
+        = [triangle,u,v,dbg](const GeometryAttribute::DD &attrib) -> vec4f
         {
           const vec4f value_a = attrib.fromArray.valueAt(triangle.x,dbg);
           const vec4f value_b = attrib.fromArray.valueAt(triangle.y,dbg);
@@ -96,20 +98,29 @@ namespace BARNEY_NS {
         };
       self.setHitAttributes(hitData,interpolator,world,dbg);
 
+      // if (dbg) printf("matid %i, world mat %lx\n",self.materialID,world.materials); 
       const DeviceMaterial &material
         = world.materials[self.materialID];
+      
+      // if (dbg) printf("creating bsdf\n");  
+      // if (dbg) printf("creating bsdf type %i\n",int(material.type));  
       PackedBSDF bsdf
         = material.createBSDF(hitData,world.samplers,dbg);
+#if 1
+      material.setHit(ray,hitData,world.samplers,dbg);
+#else
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);
-      if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) {
+      Random rng(ray.rngSeed);
+      if (opacity < 1.f && rng() < 1.f-opacity) {
         rt.ignoreIntersection();
         return;
       }
       else {
         material.setHit(ray,hitData,world.samplers,dbg);
       }
+#endif
     }
   };
 

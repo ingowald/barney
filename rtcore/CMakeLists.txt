@@ -153,6 +153,11 @@ if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
     cudaCommon/TextureData.cu
     cudaCommon/cuda-helper.cpp
     )
+  if (USE_HIP)
+    set_source_files_properties(cudaCommon/Device.cu PROPERTIES LANGUAGE HIP)
+    set_source_files_properties(cudaCommon/Texture.cu PROPERTIES LANGUAGE HIP)
+    set_source_files_properties(cudaCommon/TextureData.cu PROPERTIES LANGUAGE HIP)
+  endif()
   target_link_libraries(barney_rtc_cuda_common PUBLIC
     barney_rtc_config
     )
@@ -235,9 +240,10 @@ if (BARNEY_BACKEND_CUDA)
   if (USE_HIP)
     set_source_files_properties(cuda/Buffer.cpp PROPERTIES LANGUAGE HIP)
     set_source_files_properties(cuda/Geom.cpp PROPERTIES LANGUAGE HIP)
+    set_source_files_properties(cuda/Device.cu PROPERTIES LANGUAGE HIP)
+    set_source_files_properties(cuda/Group.cu PROPERTIES LANGUAGE HIP)
     set_source_files_properties(cuda/GeomType.cpp PROPERTIES LANGUAGE HIP)
     set_source_files_properties(cuda/TraceKernel.cpp PROPERTIES LANGUAGE HIP)
-    
   endif()
   
 else()

@@ -55,11 +55,17 @@ namespace rtc {
       
       inline __device__ vec3i getLaunchDims()  const
       {
-        return (const vec3i&)blockDim * (const vec3i &)gridDim;
+        return vec3i(blockDim.x*gridDim.x,
+                     blockDim.y*gridDim.y,
+                     blockDim.z*gridDim.z);
       }
       
       inline __device__ vec3i getLaunchIndex() const
-      { return (const vec3i&)threadIdx + (const vec3i&)blockIdx*(const vec3i&)blockDim; }
+      {
+        return vec3i(threadIdx.x+blockIdx.x*blockDim.x,
+                     threadIdx.y+blockIdx.y*blockDim.y,
+                     threadIdx.z+blockIdx.z*blockDim.z);
+      }
 
       inline __device__ vec2f getTriangleBarycentrics() const
       { return current.triangleBarycentrics; }
@@ -276,41 +282,41 @@ namespace rtc {
       const bvh3f::Node *nodes = model->bvh.nodes;
       int nodeID = 0;
       float node_t0=tMin, node_t1 = accepted.tMax;
-      if (dbg)
-        printf("root bounds (%f %f %f)(%f %f %f)\n",
-               nodes->bounds.lower.x,
-               nodes->bounds.lower.y,
-               nodes->bounds.lower.z,
-               nodes->bounds.upper.x,
-               nodes->bounds.upper.y,
-               nodes->bounds.upper.z);
+      // if (dbg)
+      //   printf("root bounds (%f %f %f)(%f %f %f)\n",
+      //          nodes->bounds.lower.x,
+      //          nodes->bounds.lower.y,
+      //          nodes->bounds.lower.z,
+      //          nodes->bounds.upper.x,
+      //          nodes->bounds.upper.y,
+      //          nodes->bounds.upper.z);
       if (!boxTest(node_t0,node_t1,nodes[0].bounds,org,dir)) {
-        if (dbg)
-          printf("MISS root box\n");
+        // if (dbg)
+        //   printf("MISS root box\n");
         return;
       }
 
-      if (dbg)
-        printf("did hit world box. starting trav\n");
+      // if (dbg)
+      //   printf("did hit world box. starting trav\n");
       bool done = false;
       bool inTopLevel = true;
       while (true) {
         while (true) {
           while (nodeID == -1) {
-            if (dbg)
-              printf("!!! popping from stack, stack depth %i %i\n",
-                     int(stackPtr-stackBase),int(stackBase-topLevelStackBase));
+            // if (dbg)
+            //   printf("!!! popping from stack, stack depth %i %i\n",
+            //          int(stackPtr-stackBase),int(stackBase-topLevelStackBase));
             if (stackPtr == topLevelStackBase) {
-              if (dbg)
-                printf(">>>>>>>>>>> hit bottom of stack, done\n");
+              // if (dbg)
+              //   printf(">>>>>>>>>>> hit bottom of stack, done\n");
               done = true;
               break;
             }
             
             if (stackPtr == stackBase) {
               // going back to parent
-              if (dbg)
-                printf(">>>>>>>>>>> hit bottom of GEOM stack, back to instance stack\n");
+              // if (dbg)
+              //   printf(">>>>>>>>>>> hit bottom of GEOM stack, back to instance stack\n");
               org = world.org;
               dir = world.dir;
               currentInstance = 0;
@@ -320,23 +326,23 @@ namespace rtc {
               inTopLevel = true;
             }
             --stackPtr;
-            if (dbg)
-              printf("dist on stack: %f\n",stackPtr->dist);
+            // if (dbg)
+            //   printf("dist on stack: %f\n",stackPtr->dist);
             if (stackPtr->dist > accepted.tMax)
               continue;
             nodeID = stackPtr->node;
-            if (dbg)
-              printf("POPPED %i\n",nodeID);
+            // if (dbg)
+            //   printf("POPPED %i\n",nodeID);
           }
           if (done) break;
 
           const bvh3f::Node *node = &nodes[nodeID];          
-          if (dbg)
-            printf("=========== at node %i addr %p, %i:%i\n",
-                   nodeID,
-                   node,
-                   (int)node->admin.offset,
-                   (int)node->admin.count);
+          // if (dbg)
+          //   printf("=========== at node %i addr %p, %i:%i\n",
+          //          nodeID,
+          //          node,
+          //          (int)node->admin.offset,
+          //          (int)node->admin.count);
           // node is a valid node, and we know we've hit its bounds
           if (node->admin.count == 0) {
             uint32_t child = node->admin.offset;
@@ -345,16 +351,16 @@ namespace rtc {
             float far0 =accepted.tMax;
             float far1 =accepted.tMax;
             nodeID = -1;
-            if (dbg)
-              printf("checking child 0 (# %i)...\n",child+0);
+            // if (dbg)
+            //   printf("checking child 0 (# %i)...\n",child+0);
             boxTest(near0,far0,nodes[child+0].bounds,org,dir);
-            if (dbg)
-              printf("-> %f %f, %s\n",near0,far0,near0<far0?"HIT":"miss");
-            if (dbg)
-              printf("checking child 1 (# %i...\n",child+1);
+            // if (dbg)
+            //   printf("-> %f %f, %s\n",near0,far0,near0<far0?"HIT":"miss");
+            // if (dbg)
+            //   printf("checking child 1 (# %i...\n",child+1);
             boxTest(near1,far1,nodes[child+1].bounds,org,dir);
-            if (dbg)
-              printf("-> %f %f %s\n",near1,far1,near1<far1?"HIT":"miss");
+            // if (dbg)
+            //   printf("-> %f %f %s\n",near1,far1,near1<far1?"HIT":"miss");
             
             if (near0 <= far0) {
               nodeID = child+0;
@@ -424,13 +430,17 @@ namespace rtc {
         }
         if (done)
           break;
-        
+
+        // if (dbg)
+        //   printf("starting on isec, instance %lx\n",currentInstance);
         // GEOM instance leaf
         GeomGroup::DeviceRecord *group 
           = (GeomGroup::DeviceRecord *)&currentInstance->group;
         GeomGroup::Prim *prims = group->prims;
         const bvh3f::Node *node = nodes+nodeID;
+        // if (dbg) printf("node %i\n",nodeID);
         for (int primNo=0;primNo<node->admin.count;primNo++) {
+          // if (dbg) printf("primno %i\n",primNo);
           GeomGroup::Prim prim = prims[node->admin.offset+primNo];
           current.primID = prim.primID;
           current.tMax = accepted.tMax;
@@ -439,19 +449,27 @@ namespace rtc {
             = (Geom::SBTHeader *)geomSBT;
           this->geomData = (header+1);
           if (group->isTrianglesGroup) {
+            // if (dbg) printf("primid %i\n",prim.primID);
             vec3i indices = header->triangles.indices[prim.primID];
             vec3f v0 = header->triangles.vertices[indices.x];
             vec3f v1 = header->triangles.vertices[indices.y];
             vec3f v2 = header->triangles.vertices[indices.z];
+            // if (dbg) printf("intersecting tri (%f %f %f) (%f %f %f) (%f %f %f)\n",
+            //                 v0.x,v0.y,v0.z,
+            //                 v1.x,v1.y,v1.z,
+            //                 v2.x,v2.y,v2.z);
             if (!intersectTriangle(v0,v1,v2))
               continue;
           } else {
+            // if (dbg) printf("usec isec\n");
             header->user.intersect(*this);
             if (current.tMax >= accepted.tMax)
               continue;
           }
           rejectThisHit = false;
+          if (dbg) printf("calling ah %lx\n",header->ah);
           if (header->ah) header->ah(*this);
+          if (dbg) printf("reject ? %i\n",(int)rejectThisHit);
           if (!rejectThisHit) {
             accepted.tMax = current.tMax;
             accepted.primID = current.primID;
@@ -524,24 +542,24 @@ namespace rtc {
 
 #define RTC_DECLARE_GLOBALS(ignore) /* ignore */
 
-#define RTC_EXPORT_TRACE2D(name,Class)                          \
-  __global__                                                    \
-  void rtc_cuda_run_##name(::rtc::cuda::TraceInterface ti)      \
-  {                                                             \
-    Class::run(ti);                                             \
-  }                                                             \
-  void rtc_cuda_launch_##name(rtc::Device *device,              \
-                              vec2i dims,                       \
-                              const void *lpData)               \
-  {                                                             \
-    vec2i bs(8,8);                                              \
-    vec2i nb = divRoundUp(dims,bs);                             \
-    ::rtc::cuda::TraceInterface ti;                             \
-    ti.lpData = lpData;                                         \
-    rtc_cuda_run_##name                                         \
-      <<<dim3{(unsigned)nb.x,(unsigned)nb.y,(unsigned)1},       \
-      dim3{(unsigned)bs.x,(unsigned)bs.y,(unsigned)1}>>>(ti);   \
-  }                                                             \
+#define RTC_EXPORT_TRACE2D(name,Class)                                 \
+  __global__                                                           \
+  void rtc_cuda_run_##name(::rtc::cuda::TraceInterface ti)             \
+  {                                                                    \
+    Class::run(ti);                                                    \
+  }                                                                    \
+  void rtc_cuda_launch_##name(rtc::Device *device,                     \
+                              vec2i dims,                              \
+                              const void *lpData)                      \
+  {                                                                    \
+    vec2i bs(16,16);                                                     \
+    vec2i nb = divRoundUp(dims,bs);                                    \
+    ::rtc::cuda::TraceInterface ti;                                    \
+    ti.lpData = lpData;                                                \
+    rtc_cuda_run_##name                                                \
+      <<<dim3{(unsigned)nb.x,(unsigned)nb.y,(unsigned)1},              \
+      dim3{(unsigned)bs.x,(unsigned)bs.y,(unsigned)1}>>>(ti);          \
+  }                                                                    \
   
 
 

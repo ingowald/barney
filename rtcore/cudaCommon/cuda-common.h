@@ -20,25 +20,65 @@
 #if BARNEY_HAVE_HIP
 # include "hip/hip_runtime.h"
 #define __CUDA_ARCH__ 1
+# define cudaArray_t hipArray_t
+# define cudaStream_t hipStream_t
+# define cudaError_t hipError_t
+# define cudaEvent_t hipEvent_t
+# define cudaEventCreate hipEventCreate
+# define cudaEventRecord hipEventRecord
+# define cudaEventSynchronize hipEventSynchronize
+# define cudaEventDestroy hipEventDestroy
+# define cudaTextureFilterMode hipTextureFilterMode
+# define cudaChannelFormatDesc hipChannelFormatDesc
+# define cudaTextureAddressMode hipTextureAddressMode
+# define cudaFilterModeLinear hipFilterModeLinear
+# define cudaFilterModePoint hipFilterModePoint
+# define cudaAddressModeMirror hipAddressModeMirror
+# define cudaAddressModeClamp hipAddressModeClamp
+# define cudaAddressModeWrap hipAddressModeWrap
+# define cudaAddressModeBorder hipAddressModeBorder
+# define cudaReadModeNormalizedFloat hipReadModeNormalizedFloat
+# define cudaReadModeElementType hipReadModeElementType
+# define cudaCreateChannelDesc hipCreateChannelDesc
+# define cudaChanneFormatlDesc hipChanneFormatlDesc
+# define cudaExtent hipExtent
+# define cudaMemset hipMemset
+# define cudaMemsetAsync hipMemsetAsync
+# define cudaAddressModifier hipAddressModifier
+# define cudaResourceTypeArray hipResourceTypeArray
+# define cudaTextureDesc hipTextureDesc
+# define cudaResourceDesc hipResourceDesc
+# define cudaMemcpyAsync hipMemcpyAsync
+# define cudaMemcpy3DParms hipMemcpy3DParms
+# define cudaMemcpyHostToDevice hipMemcpyHostToDevice
+# define cudaMemcpyDeviceToHost hipMemcpyDeviceToHost
 # define cudaSetDevice hipSetDevice
 # define cudaGetDevice hipGetDevice
 # define cudaGetDeviceCount hipGetDeviceCount
 # define cudaMalloc hipMalloc
+# define cudaMallocHost hipHostMalloc
+# define cudaMallocArray hipMallocArray
+# define cudaMalloc3DArray hipMalloc3DArray
 # define cudaMallocManaged hipMallocManaged
 # define cudaMallocAsync hipMallocAsync
+# define make_cudaPitchedPtr make_hipPitchedPtr
 # define cudaFreeAsync hipFreeAsync
+# define cudaCreateTextureObject hipCreateTextureObject
+# define cudaDestroyTextureObject hipDestroyTextureObject
 # define cudaMemcpy hipMemcpy
+# define cudaMemcpy3D hipMemcpy3D
+# define cudaMemcpy2DToArray hipMemcpy2DToArray
 # define cudaFree hipFree
-# define cudaError_t hipError_t
+# define cudaFreeArray hipFreeArray
+# define cudaFreeHost hipFreeHost
 # define cudaGetErrorString hipGetErrorString
 # define cudaMemcpyDefault hipMemcpyDefault
 # define cudaSuccess hipSuccess
 # define cudaGetLastError hipGetLastError
 # define cudaDeviceSynchronize hipDeviceSynchronize
-# define cudaStream_t hipStream_t
 # define cudaStreamCreate hipStreamCreate
+# define cudaStreamSynchronize hipStreamSynchronize
 # define cudaTextureObject_t hipTextureObject_t
-# define cudaArray_t hipArray_t
 # define cudaTextureReadMode hipTextureReadMode
 # define CUDART_INF INFINITY
 # define CUDART_INF_F ((float)INFINITY)
@@ -75,8 +115,8 @@ namespace rtc {
     
     inline __both__ vec3f load(const float3 &v)
     { return vec3f(v.x,v.y,v.z); }
-    inline __both__ vec4f load(const float4 &v)
-    { return vec4f(v.x,v.y,v.z,v.w); }
+    inline __both__ vec4f load(const float4 &vv)
+    { float4 v = vv; return vec4f(v.x,v.y,v.z,v.w); }
     
   }
 }

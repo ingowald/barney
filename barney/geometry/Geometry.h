@@ -116,7 +116,8 @@ namespace BARNEY_NS {
           ;
         break;
       case GeometryAttribute::CONSTANT:
-        out = rtc::load(in.value);
+        out = in.value;
+        // out = rtc::load(in.value);
         break;
       case GeometryAttribute::PER_PRIM:
         out = in.fromArray.valueAt(hit.primID);

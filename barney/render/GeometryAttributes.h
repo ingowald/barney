@@ -38,13 +38,13 @@ namespace BARNEY_NS {
       typedef enum { INVALID, CONSTANT, PER_PRIM, PER_VERTEX  } Scope;
         
       struct DD {
-        union {
+        // union {
           /*! careful - this requires alignment, which means that the
               follwing value - even if just a int - will also require
               16 bytes, every time */
-          rtc::float4        value;
+          vec4f        value;
           AttributeArray::DD fromArray;
-        };
+        // };
         int/*Scope*/         scope;
       };
 
@@ -91,7 +91,8 @@ namespace BARNEY_NS {
         return vec4f(v.x,v.y,v.z,1.f);
       }
       case BN_FLOAT4: {
-        return rtc::load(((const rtc::float4*)ptr)[i]);
+        return ((const vec4f *)ptr)[i];
+        // return rtc::load(((const rtc::float4*)ptr)[i]);
       }
       default:
         return vec4f(0.f,0.f,0.f,0.f);

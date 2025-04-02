@@ -332,10 +332,13 @@ if (BARNEY_BACKEND_CUDA)
   target_link_libraries(barney_cuda PUBLIC barney_config barney_rtc_cuda)
   if (TARGET cuBQL_cuda_float3_static)
     target_link_libraries(barney_cuda PRIVATE
-      barney_cuda_programs
-      barney_config
-      $<BUILD_INTERFACE:cuBQL_cuda_float3_static>)
+      $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
+      )
   endif()
+  target_link_libraries(barney_cuda PRIVATE
+    barney_cuda_programs
+    barney_config
+    )
   set_library_properties(barney_cuda)
 
   if (BARNEY_MPI)

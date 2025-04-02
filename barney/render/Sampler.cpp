@@ -230,18 +230,18 @@ namespace BARNEY_NS {
       dd.inAttribute = (AttributeKind)inAttribute;
 
       (vec4f&)dd.outTransform.offset = outOffset;
-      memcpy(&dd.outTransform.mat,&outTransform,sizeof(outTransform));
+      memcpy(&dd.outTransform.mat_x,&outTransform,sizeof(outTransform));
       
-      (vec4f&)dd.image.inTransform.offset = inOffset;
-      memcpy(&dd.image.inTransform.mat,&inTransform,sizeof(inTransform));
+      (vec4f&)dd.inTransform.offset = inOffset;
+      memcpy(&dd.inTransform.mat_x,&inTransform,sizeof(inTransform));
 
       PLD *pld = getPLD(device);
       if (!pld->rtcTexture) {
         std::cout << "WARN: NO TEXTURE DATA ON IMAGE SAMPLER!" << std::endl;
-        dd.image.texture = 0;
+        dd.texture = 0;
       } else {
-        dd.image.texture = pld->rtcTexture->getDD();
-        dd.image.numChannels = textureData->numChannels;
+        dd.texture = pld->rtcTexture->getDD();
+        dd.numChannels = textureData->numChannels;
       }
       return dd;
     }
@@ -251,7 +251,7 @@ namespace BARNEY_NS {
       Sampler::DD dd;
       dd.type = Sampler::TRANSFORM;
       (vec4f&)dd.outTransform.offset = outOffset;
-      memcpy(&dd.outTransform.mat,&outTransform,sizeof(outTransform));
+      memcpy(&dd.outTransform.mat_x,&outTransform,sizeof(outTransform));
       return dd;
     }
 

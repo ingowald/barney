@@ -38,7 +38,8 @@ namespace rtc {
     struct GeomType
     {
       GeomType(Device *device, size_t sizeOfDD);
-               
+      virtual ~GeomType() = default;
+      
       virtual Geom *createGeom() = 0;
                
       Device *const device;

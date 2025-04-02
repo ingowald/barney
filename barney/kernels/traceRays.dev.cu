@@ -65,6 +65,9 @@ namespace BARNEY_NS {
                ray.dir.x,
                ray.dir.y,
                ray.dir.x);
+
+      // if (!dbg) return;
+      
       ti.traceRay(lp.accel,
                   ray.org,
                   dir,

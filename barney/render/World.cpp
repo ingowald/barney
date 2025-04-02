@@ -30,6 +30,7 @@ namespace BARNEY_NS {
     {
       perLogical.resize(devices->numLogical);
       for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
         PLD *pld = getPLD(device);
         auto rtc = device->rtc;
         pld->quadLightsBuffer
@@ -68,7 +69,9 @@ namespace BARNEY_NS {
       
       dd.samplers  = slotContext->samplerRegistry->getDD(device);
       dd.materials = slotContext->materialRegistry->getDD(device);
-
+      PING; PRINT(dd.samplers);
+      PRINT(dd.materials);
+      
       for (int i=0;i<5;i++)
         dd.instanceAttributes[i]
           = instanceAttributes[i]
@@ -80,6 +83,7 @@ namespace BARNEY_NS {
     void World::set(const std::vector<QuadLight::DD> &quadLights)
     {
       for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
         auto pld = getPLD(device);
         auto rtc = device->rtc;
         rtc->freeBuffer(pld->quadLightsBuffer);
@@ -93,6 +97,7 @@ namespace BARNEY_NS {
     void World::set(const std::vector<DirLight::DD> &dirLights)
     {
       for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
         auto pld = getPLD(device);
         auto rtc = device->rtc;
         rtc->freeBuffer(pld->dirLightsBuffer);

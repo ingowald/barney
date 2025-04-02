@@ -26,6 +26,7 @@ namespace BARNEY_NS {
 
   void Context::traceRaysLocally(GlobalModel *globalModel)
   {
+    PING;
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
@@ -57,6 +58,8 @@ namespace BARNEY_NS {
         device->rtc->sync();
       }
     }
+
+    PING;
     
     // ------------------------------------------------------------------
     // ... and sync 'til all are done

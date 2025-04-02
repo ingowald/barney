@@ -76,6 +76,7 @@ namespace BARNEY_NS {
                                         const Sampler::DD *samplers,
                                         bool dbg) const
     {
+      if (dbg) printf("anaripbr::createdbsdf\n");
       vec4f baseColor = this->baseColor.eval(hitData,samplers,dbg);
       vec4f metallic = this->metallic.eval(hitData,samplers,dbg);
       vec4f opacity = this->opacity.eval(hitData,samplers,dbg);

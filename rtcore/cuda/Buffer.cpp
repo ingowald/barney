@@ -26,6 +26,8 @@ namespace rtc {
                    const void *initValues)
       : device(device)
     {
+      if (numBytes == 0) return;
+      
       SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL(Malloc((void**)&d_data,numBytes));
       PING; PRINT(numBytes); PRINT(d_data);
@@ -35,12 +37,14 @@ namespace rtc {
 
     Buffer::~Buffer()
     {
+      if (!d_data) return;
       PING; PRINT(d_data);
       BARNEY_CUDA_CALL_NOTHROW(Free(d_data));
     }
     
     void Buffer::upload(const void *data, size_t numBytes, size_t offset)
     {
+      if (!d_data) return;
       SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL(Memcpy(((char *)d_data)+offset,data,numBytes,cudaMemcpyDefault));
     }
