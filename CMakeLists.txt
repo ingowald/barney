@@ -52,7 +52,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
-project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX HIP)
+project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 
 option(USE_HIP "Use HIP?" ON)
 
@@ -65,6 +65,7 @@ mark_as_advanced(USE_HIP)
 
 if (USE_HIP)
   set(BARNEY_HAVE_CUDA OFF)
+  enable_language(HIP)
 elseif (NOT BARNEY_DISABLE_CUDA) 
   include(CheckLanguage)
   check_language(CUDA)

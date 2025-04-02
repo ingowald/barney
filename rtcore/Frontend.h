@@ -127,18 +127,15 @@ namespace rtc {
   
   using rtc::cuda_common::load;
 
+  using rtc::cuda::TraceInterface;
+
+#if RTC_DEVICE_CODE
   using rtc::cuda_common::tex1D;
   using rtc::cuda_common::tex2D;
   using rtc::cuda_common::tex3D;
-  
-  using rtc::cuda::TraceInterface;
-
-# ifdef __CUDACC__
-#  define RTC_DEVICE_CODE 1
-# endif
-# ifdef __HIP_ARCH__
-#  define RTC_DEVICE_CODE 1
-# endif
+  using rtc::cuda_common::fatomicMin;
+  using rtc::cuda_common::fatomicMax;
+#endif
   
 }
 #endif

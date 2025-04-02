@@ -34,6 +34,7 @@ namespace rtc {
     inline __device__ void fatomicMin(float *addr, float value);
     inline __device__ void fatomicMax(float *addr, float value);
 
+#if RTC_DEVICE_CODE
     /* texturing wrappers; can only be instantiated for 'flaot' and
        'vec4f' types */
     template<typename T> inline __device__
@@ -48,10 +49,11 @@ namespace rtc {
        'vec4f' types */
     template<typename T> inline __device__
     T tex3D(rtc::device::TextureObject to, float x, float y, float z);
+#endif
     
     struct ComputeInterface
     {
-#if defined(__CUDACC__) || defined(__HIPCC__)
+#if RTC_DEVICE_CODE
       inline __device__ vec3ui launchIndex() const
       {
         return getThreadIdx() + getBlockIdx() * getBlockDim();
@@ -72,7 +74,7 @@ namespace rtc {
     // ==================================================================
     // INLINE IMPLEMENTATION
     // ==================================================================
-#if defined(__CUDA_ARCH__) || defined(__HIP_ARCH__)
+#if RTC_DEVICE_CODE
 
     // ------------------------------------------------------------------
     // cuda texturing

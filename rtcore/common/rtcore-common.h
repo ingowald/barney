@@ -15,6 +15,13 @@
 # include "hip/driver_types.h"
 #endif
 
+# ifdef __CUDACC__
+#  define RTC_DEVICE_CODE 1
+# endif
+# ifdef __HIP_ARCH__
+#  define RTC_DEVICE_CODE 1
+# endif
+
 #include "owl/common/math/AffineSpace.h"
 #include "owl/common/math/random.h"
 
