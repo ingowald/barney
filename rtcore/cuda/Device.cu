@@ -69,9 +69,10 @@ namespace rtc {
     
     Group *
     Device::createInstanceGroup(const std::vector<Group *> &groups,
+                                const std::vector<int>      &instIDs,
                                 const std::vector<affine3f> &xfms)
     {
-      return new InstanceGroup(this,groups,xfms);
+      return new InstanceGroup(this,groups,instIDs,xfms);
     }
 
     void Device::buildPipeline()

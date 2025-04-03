@@ -69,8 +69,8 @@ void Surface::setBarneyParameters()
 {
   if (!isValid() || !m_bnGeom)
     return;
-  bnSetObject(
-      m_bnGeom, "material", m_material->getBarneyMaterial(getContext()));
+  bnSetObject(m_bnGeom, "material", m_material->getBarneyMaterial(getContext()));
+  bnSet1i(m_bnGeom,"userID",m_id);
   m_geometry->setBarneyParameters(m_bnGeom, getContext());
   bnCommit(m_bnGeom);
 }

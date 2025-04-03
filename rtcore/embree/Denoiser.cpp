@@ -33,21 +33,28 @@ namespace rtc {
 
     DenoiserOIDN::~DenoiserOIDN()
     {
+      freeMem();
       oidnReleaseFilter(filter);
       oidnReleaseDevice(oidnDevice);
+    }
+
+    void DenoiserOIDN::freeMem()
+    {
+      if (out_rgba)  { free(out_rgba);  out_rgba = 0; }
+      if (in_rgba)   { free(in_rgba);   in_rgba = 0; }
+      if (in_normal) { free(in_normal); in_normal = 0; }
     }
     
     void DenoiserOIDN::resize(vec2i size)
     {
+      freeMem();
+      out_rgba  = (vec4f*)malloc(size.x*size.y*sizeof(vec4f));
+      in_rgba   = (vec4f*)malloc(size.x*size.y*sizeof(vec4f));
+      in_normal = (vec3f*)malloc(size.x*size.y*sizeof(vec3f));
       this->numPixels = size;
     }
     
-    void DenoiserOIDN::run(// output
-                       vec4f *out_rgba,
-                       // input channels
-                       vec4f *in_rgba,
-                       vec3f *in_normal,
-                       float blendFactor)
+    void DenoiserOIDN::run(float blendFactor)
     {
       oidnSetSharedFilterImage(filter,"color",in_rgba,
                                OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,

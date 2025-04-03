@@ -20,6 +20,7 @@
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
 #include "rtcore/ComputeInterface.h"
+#include "barney/render/RayQueue.h"
 
 namespace BARNEY_NS {
   namespace render {
@@ -404,69 +405,62 @@ namespace BARNEY_NS {
 
     /*! ugh - that should all go into material::AnariPhysical .... */
     inline __rtc_device
-    void bounce(const World::DD &world,
+    void bounce(int rayID,
+                const World::DD &world,
                 const Renderer::DD &renderer,
                 vec3f &fragment,
-                Ray &path,
+                Ray &ray,
+                PathState &state,
                 Ray &shadowRay,
+                PathState &shadowState,
                 int pathDepth)
     {
       
       const float EPS = 1e-4f;
 
-      const bool  hadNoIntersection  = !path.hadHit();
-      const vec3f incomingThroughput = path.throughput;
-#if 0
-      fragment = randomColor(path.dbg_primID);
-      if (path.dbg)
-        printf("HIT %i t %f\n",
-               path.dbg_primID,
-               path.tMax);
-      shadowRay.tMax = -1.f;
-      path.tMax = -1.f;
-      return;
-#endif
+      const bool  hadNoIntersection  = !ray.hadHit();
+      const vec3f incomingThroughput = state.throughput;
       
 #ifdef NDEBUG
       bool dbg = false;
 #else
-      bool dbg = path.dbg;
+      bool dbg = ray.dbg;
 #endif
       
       if (dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
                pathDepth,
-               path.org.x,
-               path.org.y,
-               path.org.z,
-               (float)path.dir.x,
-               (float)path.dir.y,
-               (float)path.dir.z,
-               path.tMax,
-               (float)path.throughput.x,
-               (float)path.throughput.y,
-               (float)path.throughput.z,
-               int(hadNoIntersection),(int)path.bsdfType);
+               ray.org.x,
+               ray.org.y,
+               ray.org.z,
+               (float)ray.dir.x,
+               (float)ray.dir.y,
+               (float)ray.dir.z,
+               ray.tMax,
+               (float)state.throughput.x,
+               (float)state.throughput.y,
+               (float)state.throughput.z,
+               int(hadNoIntersection),(int)ray.bsdfType);
       
-      if (path.isShadowRay) {
+      if (ray.isShadowRay) {
         // ==================================================================
         // shadow ray = all we have to do is add carried radiance if it
         // reached the light, and discards
         // ==================================================================
                  
         if (hadNoIntersection) {
-          // fragment = clamp((vec3f)path.throughput,vec3f(0.f),vec3f(1.f));
+          // fragment = clamp((vec3f)state.throughput,vec3f(0.f),vec3f(1.f));
           fragment =
 # if USE_MIS
-            (float)path.misWeight *
+            (float)state.misWeight *
 #endif
-            (vec3f)path.throughput;
+            (vec3f)state.throughput;
           if (dbg)
             printf("_shadow_ ray reaches light: tp %f %f %f misweight %f frag %f %f %f\n",
-                   (float)path.throughput.x,
-                   (float)path.throughput.y,
-                   (float)path.throughput.z,
-                   (float)path.misWeight,
+                   (float)state.throughput.x,
+                   (float)state.throughput.y,
+                   (float)state.throughput.z,
+                   (float)state.misWeight,
                    fragment.x,
                    fragment.y,
                    fragment.z);
@@ -478,16 +472,16 @@ namespace BARNEY_NS {
 
         // this path is done.
         shadowRay.tMax = -1.f;
-        path.tMax = -1.f;
+        ray.tMax = -1.f;
         return;
       }
 
-      vec3f Ng = path.getN();
-      if (dbg) printf("path.N %f %f %f\n",Ng.x,Ng.y,Ng.z);
+      vec3f Ng = ray.getN();
+      if (dbg) printf("ray.N %f %f %f\n",Ng.x,Ng.y,Ng.z);
       const bool  isVolumeHit        = (Ng == vec3f(0.f));
       if (!isVolumeHit)
         Ng = normalize(Ng);
-      const bool  hitWasOnFront      = dot((vec3f)path.dir,Ng) < 0.f;
+      const bool  hitWasOnFront      = dot((vec3f)ray.dir,Ng) < 0.f;
       vec3f Ngff
         = hitWasOnFront
         ?   Ng
@@ -501,13 +495,13 @@ namespace BARNEY_NS {
           // ----------------------------------------------------------------
           // PRIMARY ray that didn't hit anything -> background
           // ----------------------------------------------------------------
-          fragment = primaryRayMissColor(world,renderer,path);
+          fragment = primaryRayMissColor(world,renderer,ray);
 
           if (dbg)
             printf("miss primary %f %f %f -> %f %f %f\n",
-                   path.missColor.x,
-                   path.missColor.y,
-                   path.missColor.z,
+                   ray.missColor.x,
+                   ray.missColor.y,
+                   ray.missColor.z,
                    fragment.x,fragment.y,fragment.z);
         } else {
           // ----------------------------------------------------------------
@@ -518,21 +512,21 @@ namespace BARNEY_NS {
           // with the path's carried throughput.
 #if ENV_LIGHT_SAMPLING
 # if USE_MIS
-          const vec3f fromEnv = radianceFromEnv(world,renderer,path);
-          fragment = (vec3f)path.throughput * fromEnv * (float)path.misWeight;
+          const vec3f fromEnv = radianceFromEnv(world,renderer,ray);
+          fragment = (vec3f)state.throughput * fromEnv * (float)state.misWeight;
 
           if (dbg)
             printf("bounce ray hits env light: tp %f %f %f misweight %f fromEnv %f %f %f\n",
-                   (float)path.throughput.x,
-                   (float)path.throughput.y,
-                   (float)path.throughput.z,
-                   (float)path.misWeight,
+                   (float)state.throughput.x,
+                   (float)state.throughput.y,
+                   (float)state.throughput.z,
+                   (float)state.misWeight,
                    fromEnv.x,
                    fromEnv.y,
                    fromEnv.z);
 # else
           fragment
-            = path.isSpecular
+            = ray.isSpecular
             ? radianceFromEnv(world,renderer,path)
             : vec3f(0.f);
 # endif
@@ -543,11 +537,11 @@ namespace BARNEY_NS {
                    fromEnv.x,
                    fromEnv.y,
                    fromEnv.z);
-          fragment = path.throughput * fromEnv;
+          fragment = state.throughput * fromEnv;
 #endif
         }
         // no outgoing rays; this path is done.
-        path.tMax = -1.f;
+        ray.tMax = -1.f;
         return;
       }
     
@@ -557,17 +551,17 @@ namespace BARNEY_NS {
       // contribution at this hit point (if any), and generate secondary
       // ray and shadow ray (if applicable), with proper weights.
       // ==================================================================    
-      Random &random = (Random &)path.rngSeed;
-      const PackedBSDF bsdf = path.getBSDF();
+      Random random(world.rngSeed,rayID);
+      const PackedBSDF bsdf = ray.getBSDF();
       // bool doTransmission = false;
-      // =  ((float)path.mini.transmission > 0.f)
-      // && (random() < (float)path.mini.transmission);
+      // =  ((float)ray.mini.transmission > 0.f)
+      // && (random() < (float)ray.mini.transmission);
       render::DG dg;
-      dg.P  = path.P;
+      dg.P  = ray.P;
       dg.Ng = Ng;
       dg.Ns = Ng;
-      dg.wo = -normalize((vec3f)path.dir);
-      dg.insideMedium = path.isInMedium;
+      dg.wo = -normalize((vec3f)ray.dir);
+      dg.insideMedium = ray.isInMedium;
 
       // if the ray is a volume hit we want it offset it into the
       // direction the ray came from (otherwise we have a chance of
@@ -652,16 +646,17 @@ namespace BARNEY_NS {
                    tp_sr.y,
                    tp_sr.z);
           }
-          shadowRay.makeShadowRay
-            (/* thrghhpt */tp_sr,
+          makeShadowRay
+            (shadowRay,shadowState,
+             /* thrghhpt */tp_sr,
              /* surface: */dg.P + offsetEpsilon*frontFacingSurfaceOffset,
              /* to light */ls.direction,
              /* length   */ls.distance * (1.f-2.f*offsetEpsilon));
-          shadowRay.rngSeed = path.rngSeed + 1; random();
-          shadowRay.dbg = path.dbg;
-          shadowRay.pixelID = path.pixelID;
+          // shadowRay.rngSeed = ray.rngSeed + 1; random();
+          shadowRay.dbg = ray.dbg;
+          shadowState.pixelID = state.pixelID;
             
-          shadowRay.misWeight = 1.f;
+          shadowState.misWeight = 1.f;
 #if USE_MIS
           if (!lightIsDirLight && lightNeedsMIS) {
             float pdf_lightRay_lightDir
@@ -669,12 +664,12 @@ namespace BARNEY_NS {
             float pdf_scatterRay_lightDir
               = bsdf.pdf(dg,ls.direction);
             // compute MIS weight weight that shadow direction
-            shadowRay.misWeight
+            shadowState.misWeight
               = pdf_lightRay_lightDir
               / (pdf_lightRay_lightDir + pdf_scatterRay_lightDir + 1e-10f);
             // and if it's too small for any reason, kill the shadow
             // ray
-            if ((float)shadowRay.misWeight < 1e-5f)
+            if ((float)shadowState.misWeight < 1e-5f)
               shadowRay.tMax  = -1.f;
           }
 #endif
@@ -687,12 +682,12 @@ namespace BARNEY_NS {
 
       // if we exceeded max depth we die, one way or another.
       if (pathDepth >= MAX_PATH_DEPTH) {
-        path.tMax = -1.f;
+        ray.tMax = -1.f;
         return;
       }
       // now per default, "create" a valid scatter ray.
-      path.clearHit();
-      path.tMax = BARNEY_INF;
+      ray.clearHit();
+      ray.tMax = BARNEY_INF;
       
       ScatterResult scatterResult;
       bsdf.scatter(scatterResult,dg,random,dbg);
@@ -709,7 +704,7 @@ namespace BARNEY_NS {
       if (scatterResult.type == ScatterResult::VOLUME) {
 #if SCI_VIS_MODE
         // sci vis mode: volumes do shadow, but nothing more
-        path.tMax = -1.f;
+        ray.tMax = -1.f;
         return;
 #else
         // treat volume scatter like a diffuse scatter.
@@ -719,13 +714,13 @@ namespace BARNEY_NS {
       
       if (scatterResult.type == ScatterResult::DIFFUSE ||
           scatterResult.type == ScatterResult::VOLUME) {
-        if (path.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES) {
-          path.tMax = -1.f;
+        if (state.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES) {
+          ray.tMax = -1.f;
           return;
         } else
-          path.numDiffuseBounces = path.numDiffuseBounces + 1;
+          state.numDiffuseBounces = state.numDiffuseBounces + 1;
       }
-      path.isSpecular = (scatterResult.type == ScatterResult::SPECULAR);
+      ray.isSpecular = (scatterResult.type == ScatterResult::SPECULAR);
       
       if (dbg)
         printf("offsetting into sign %f, direction %f %f %f\n",
@@ -733,7 +728,7 @@ namespace BARNEY_NS {
                frontFacingSurfaceOffset.x,
                frontFacingSurfaceOffset.y,
                frontFacingSurfaceOffset.z); 
-      path.org
+      ray.org
         = dg.P + scatterResult.offsetDirection * offsetEpsilon*frontFacingSurfaceOffset;
 // #ifdef CLAMP_F_R
 //       scatterResult.f_r = min(scatterResult.f_r,vec3f(100.f));
@@ -745,12 +740,12 @@ namespace BARNEY_NS {
                (float)scatterResult.f_r.y, 
                (float)scatterResult.f_r.z,
                scatterResult.pdf);
-      path.dir
+      ray.dir
         = normalize(scatterResult.dir);
       
       vec3f scatterFactor
         = scatterResult.f_r
-        // * (isVolumeHit?1.f:fabsf(dot(dg.Ng,path.dir)))
+        // * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ray.dir)))
         // * ONE_OVER_PI
         / (isinf(scatterResult.pdf)? 1.f : (ONE_PI*scatterResult.pdf + 1e-10f));
       
@@ -763,65 +758,67 @@ namespace BARNEY_NS {
       scatterFactor = min(scatterFactor,vec3f(1.5f));
 #endif
 
-      path.throughput
-        = path.throughput * scatterFactor;
+      state.throughput
+        = state.throughput * scatterFactor;
       if (dbg && scatterResult.changedMedium)
         printf("path DID change medium\n");
       if (scatterResult.changedMedium)
-        path.isInMedium = !path.isInMedium;
+        ray.isInMedium = !ray.isInMedium;
       
       if (dbg)
         printf("scatter dir %f %f %f tp %f %f %f\n",
-               (float)path.dir.x,
-               (float)path.dir.y,
-               (float)path.dir.z,
-               (float)path.throughput.x,
-               (float)path.throughput.y,
-               (float)path.throughput.z);
+               (float)ray.dir.x,
+               (float)ray.dir.y,
+               (float)ray.dir.z,
+               (float)state.throughput.x,
+               (float)state.throughput.y,
+               (float)state.throughput.z);
       
       
 #if USE_MIS
       if (lightNeedsMIS && !isinf(scatterResult.pdf)) {
-        float pdf_scatterRay_scatterDir = bsdf.pdf(dg,path.dir);
-        float pdf_lightRay_scatterDir   = world.envMapLight.pdf(path.dir);
+        float pdf_scatterRay_scatterDir = bsdf.pdf(dg,ray.dir);
+        float pdf_lightRay_scatterDir   = world.envMapLight.pdf(ray.dir);
         
-        path.misWeight
+        state.misWeight
           = pdf_scatterRay_scatterDir
           / (pdf_scatterRay_scatterDir + pdf_lightRay_scatterDir);
       } else {
-        path.misWeight = 1.f;
+        state.misWeight = 1.f;
       }
 #endif
     }
 #endif // device code  
 
-    struct ShadeRaysKernel {
+    struct PathTraceKernel {
       inline __rtc_device
       void run(const rtc::ComputeInterface &rt);
       
       World::DD world;
       Renderer::DD renderer;
       AccumTile *accumTiles;
+      AuxTiles   auxTiles;
       int accumID;
-      Ray *readQueue;
+      SingleQueue readQueue;
       int numRays;
-      Ray *writeQueue;
+      SingleQueue writeQueue;
       int *d_nextWritePos;
       int generation;
     };
 
 #if RTC_DEVICE_CODE
     inline __rtc_device
-    void ShadeRaysKernel::run(const rtc::ComputeInterface &rt)
+    void PathTraceKernel::run(const rtc::ComputeInterface &rt)
     {
       int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
       if (tid >= numRays) return;
 
-      Ray path = readQueue[tid];
+      Ray ray = readQueue.rays[tid];
+      PathState state = readQueue.states[tid];
 #ifdef NDEBUG
       bool dbg = false;
 #else
-      bool dbg = path.dbg;
+      bool dbg = ray.dbg;
 #endif
 
       /* note(iw): IMHO pixels that did _not_ hit any geometry should
@@ -835,49 +832,54 @@ namespace BARNEY_NS {
         = (generation == 0)
         ?
 #if COMPUTE_PROPER_ALPHA_CHANNEL
-        (path.hadHit()? 1.f : path.missColor.w)
+        (ray.hadHit()? 1.f : ray.missColor.w)
 #else
         1.f
 #endif
         : 0.f;
-#if DENOISE
+      float incomingZ = ray.tMax;
       vec3f incomingN
-        = path.hadHit()
-        ? path.getN()
+        = ray.hadHit()
+        ? ray.getN()
         : vec3f(0.f);
-      if (incomingN == vec3f(0.f))
-        incomingN = vec3f(1.f,0.f,0.f);
-#endif
+      // if (incomingN == vec3f(0.f))
+      //   incomingN = vec3f(1.f,0.f,0.f);
       // what we'll add into the frame buffer
       vec3f fragment = 0.f;
-      float z = path.tMax;
       // create a (potential) shadow ray, and init to 'invalid'
       Ray shadowRay;
+      PathState shadowState;
       shadowRay.tMax = -1.f;
       
       // bounce that ray on the scene, possibly generating a) a fragment
       // to add to frame buffer; b) a outgoing ray (in-place
       // modification of 'path'); and/or c) a shadow ray
-      bounce(world,renderer,
+      bounce(tid,
+             world,renderer,
              fragment,
-             path,shadowRay,
+             ray,state,
+             shadowRay,shadowState,
              generation);
     
       // write shadow and bounce ray(s), if any were generated
       if (dbg)
-        printf("path.tmax %f shadowray.tmax %f frag %f %f %f\n",
-               path.tMax,shadowRay.tMax,
+        printf("ray.tmax %f shadowray.tmax %f frag %f %f %f\n",
+               ray.tMax,shadowRay.tMax,
                fragment.x,fragment.y,fragment.z);
       if (shadowRay.tMax > 0.f) {
-        writeQueue[rt.atomicAdd(d_nextWritePos,1)] = shadowRay;
+        int pos = rt.atomicAdd(d_nextWritePos,1);
+        writeQueue.rays[pos] = shadowRay;
+        writeQueue.states[pos] = shadowState;
       }
-      if (path.tMax > 0.f) {
-        writeQueue[rt.atomicAdd(d_nextWritePos,1)] = path;
+      if (ray.tMax > 0.f) {
+        int pos = rt.atomicAdd(d_nextWritePos,1);
+        writeQueue.rays[pos] = ray;
+        writeQueue.states[pos] = state;
       }
 
       // and write the shade fragment, if generated
-      int tileID  = int(path.pixelID / pixelsPerTile);
-      int tileOfs = int(path.pixelID % pixelsPerTile);
+      int tileID  = int(state.pixelID / pixelsPerTile);
+      int tileOfs = int(state.pixelID % pixelsPerTile);
       vec4f &valueToAccumInto
         = accumTiles[tileID].accum[tileOfs];
 
@@ -906,8 +908,23 @@ namespace BARNEY_NS {
       if (accumID == 0 && generation == 0) {
         valueToAccumInto = vec4f(fragment.x,fragment.y,
                                  fragment.z,alpha);
+
+        // write aux buffers (depth, normal, hitIDs
+        accumTiles[tileID].normal[tileOfs] = incomingN;
+        if (auxTiles.depth) 
+          auxTiles.depth[tileID] . f[tileOfs] = incomingZ;
+        if (auxTiles.primID)
+          auxTiles.primID[tileID].ui[tileOfs] = readQueue.hitIDs[tid].primID;
+        if (auxTiles.objID)
+          auxTiles.objID[tileID] .ui[tileOfs] = readQueue.hitIDs[tid].objID;
+        if (auxTiles.instID)
+          auxTiles.instID[tileID].ui[tileOfs] = readQueue.hitIDs[tid].instID;
+        
       } else {
-        if (generation == 0 && alpha) 
+        // we're either an accumluated frame, or a non-primary bounce
+        // of the first frame; either way we'll accumulate color and
+        // ignore anything else.
+        if (generation == 0 && alpha > 0.f) 
           rt.atomicAdd(&valueToAccumInto.w,alpha);
 
         if (fragment.x > 0.f)
@@ -916,23 +933,6 @@ namespace BARNEY_NS {
           rt.atomicAdd(&valueToAccumInto.y,fragment.y);
         if (fragment.z > 0.f)
           rt.atomicAdd(&valueToAccumInto.z,fragment.z);
-#if DENOISE
-        if (incomingN.x > 0.f)
-          rt.atomicAdd(&valueToAccumNormalInto.x,incomingN.x);
-        if (incomingN.y > 0.f)
-          rt.atomicAdd(&valueToAccumNormalInto.y,incomingN.y);
-        if (incomingN.z > 0.f)
-          rt.atomicAdd(&valueToAccumNormalInto.z,incomingN.z);
-#endif
-      }
-
-      // and for apps that need a depth buffer, write z
-      if (generation == 0) {
-        float &tile_z = accumTiles[tileID].depth[tileOfs];
-        if (accumID == 0) 
-          tile_z = z;
-        else
-          tile_z = min(tile_z,z);
       }
     }
 #endif
@@ -943,7 +943,8 @@ namespace BARNEY_NS {
   void Context::shadeRaysLocally(Renderer *renderer,
                                  GlobalModel *model,
                                  FrameBuffer *fb,
-                                 int generation)
+                                 int generation,
+                                 uint32_t rngSeed)
   {
     for (auto slotModel : model->modelSlots) {
       World *world = slotModel->world.get();
@@ -958,13 +959,14 @@ namespace BARNEY_NS {
         int bs = 128;
         int nb = divRoundUp(numRays,bs);
         World::DD devWorld
-          = world->getDD(device);
+          = world->getDD(device,rngSeed);
         Renderer::DD devRenderer
           = renderer->getDD(device);
 
-        render::ShadeRaysKernel args = {
+        render::PathTraceKernel args = {
           devWorld,devRenderer,
           devFB->accumTiles,
+          devFB->auxTiles,
           (int)fb->accumID,
           rayQueue->traceAndShadeReadQueue,
           numRays,
@@ -972,6 +974,17 @@ namespace BARNEY_NS {
           rayQueue->_d_nextWritePos,
           generation,
         };
+        if (FromEnv::get()->logQueues) {
+          std::stringstream ss;
+          ss << "#bn: ## ray queue kernel SHADE " << std::endl
+             << "  from " << rayQueue->traceAndShadeReadQueue.rays
+             << " + " << rayQueue->traceAndShadeReadQueue.states << std::endl
+             << "  to   " << rayQueue->receiveAndShadeWriteQueue.rays
+             << " + " << rayQueue->receiveAndShadeWriteQueue.states << std::endl;
+          std::cout << ss.str();
+        }
+        
+          
         device->shadeRays->launch(nb,bs,&args);
       }
     }
@@ -982,11 +995,11 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       device->rtc->sync();
-      device->rayQueue->swap();
+      device->rayQueue->swapAfterShade();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
     }
   }
   
-  RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::ShadeRaysKernel);
+  RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::PathTraceKernel);
 }
 

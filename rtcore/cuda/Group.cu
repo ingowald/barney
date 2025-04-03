@@ -38,10 +38,12 @@ namespace rtc {
     {}
 
     InstanceGroup::InstanceGroup(Device *device,
-                                 const std::vector<Group *> &groups,
+                                 const std::vector<Group *>  &groups,
+                                 const std::vector<int>      &instanceIDs,
                                  const std::vector<affine3f> &xfms)
       : Group(device),
         groups(groups),
+        instanceIDs(instanceIDs),
         xfms(xfms)
     {}
 
@@ -173,6 +175,7 @@ namespace rtc {
         inst.group = ((GeomGroup*)groups[instID])->getRecord();
         inst.worldToObjectXfm = rcp(xfms[instID]);
         inst.objectToWorldXfm = xfms[instID];
+        inst.ID = instanceIDs.empty()?instID:instanceIDs[instID];
       }
       if (d_instanceRecords) {
         BARNEY_CUDA_CALL(Free(d_instanceRecords));

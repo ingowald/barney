@@ -36,15 +36,17 @@ namespace rtc {
     
     void *Device::allocMem(size_t numBytes)
     {
+      if (!numBytes) return nullptr;
       SetActiveGPU forDuration(this);
       void *ptr = 0;
-      BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
-      assert(ptr);
+        BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
+        assert(ptr);
       return ptr;
     }
     
     void *Device::allocHost(size_t numBytes) 
     {
+      if (!numBytes) return nullptr;
       SetActiveGPU forDuration(this);
       void *ptr = 0;
       BARNEY_CUDA_CALL(MallocHost(&ptr,numBytes));
@@ -53,25 +55,29 @@ namespace rtc {
       
     void Device::freeHost(void *mem) 
     {
+      if (!mem) return;
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(FreeHost(mem));
     }
       
     void Device::freeMem(void *mem) 
     {
+      if (!mem) return;
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(Free(mem));
     }
       
-    void Device::memsetAsync(void *mem,int value, size_t size) 
+    void Device::memsetAsync(void *mem,int value, size_t numBytes) 
     {
+      if (numBytes == 0) return;
       SetActiveGPU forDuration(this);
-      BARNEY_CUDA_CALL(MemsetAsync(mem,value,size,stream));
+      BARNEY_CUDA_CALL(MemsetAsync(mem,value,numBytes,stream));
     }
       
 
     void Device::copyAsync(void *dst, const void *src, size_t numBytes) 
     {
+      if (numBytes == 0) return;
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
     }

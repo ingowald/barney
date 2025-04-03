@@ -54,7 +54,7 @@ namespace BARNEY_NS {
     { getSlot(slot)->setInstances(groups,xfms,numInstances); }
 
     void setInstanceAttributes(int slot,
-                               int which,
+                               const std::string &which,
                                Data::SP data) override
     { getSlot(slot)->setInstanceAttributes(which,data?data->as<PODData>():PODData::SP{}); }
     

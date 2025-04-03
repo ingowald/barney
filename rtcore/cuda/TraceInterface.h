@@ -69,11 +69,17 @@ namespace rtc {
 
       inline __device__ vec2f getTriangleBarycentrics() const
       { return current.triangleBarycentrics; }
+
+      inline __device__ int getGeometryIndex() const
+      { return current.geomID; }
       
       inline __device__ int getPrimitiveIndex() const
       { return current.primID; }
       
-      inline __device__ int getInstanceIndex() const
+      inline __device__ int getInstanceID() const
+      { return currentInstance->ID; }
+      
+      inline __device__ int getRTCInstanceIndex() const
       { return current.instID; }
       
       inline __device__ float getRayTmax() const
@@ -134,6 +140,7 @@ namespace rtc {
       struct {
         vec2f  triangleBarycentrics;
         int    primID;
+        int    geomID;
         int    instID;
         float  tMax;
       } current, accepted;
@@ -443,6 +450,7 @@ namespace rtc {
           // if (dbg) printf("primno %i\n",primNo);
           GeomGroup::Prim prim = prims[node->admin.offset+primNo];
           current.primID = prim.primID;
+          current.geomID = prim.geomID;
           current.tMax = accepted.tMax;
           uint8_t *geomSBT = group->sbt + prim.geomID  * group->sbtEntrySize;
           Geom::SBTHeader *header
@@ -473,6 +481,7 @@ namespace rtc {
           if (!rejectThisHit) {
             accepted.tMax = current.tMax;
             accepted.primID = current.primID;
+            accepted.geomID = current.geomID;
             accepted.instID = current.instID;
             accepted.triangleBarycentrics = current.triangleBarycentrics;
             acceptedSBT = header;

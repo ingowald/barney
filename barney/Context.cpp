@@ -18,12 +18,64 @@
 #include "barney/DeviceGroup.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/GlobalModel.h"
+#include "barney/render/RayQueue.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
+#include "barney/Camera.h"
+#include "barney/render/Renderer.h"
 
 namespace BARNEY_NS {
 
+  FromEnv::FromEnv()
+  {
+    const char *e = getenv("BARNEY_CONFIG");
+    if (!e) return;
+    std::vector<std::string> components;
+    std::string es = e;
+    while (true) {
+      int p = es.find(":");
+      if (p == es.npos) {
+        components.push_back(es);
+        break;
+        }
+      components.push_back(es.substr(0,p));
+      es = es.substr(p+1);
+    }
+    std::map<std::string,std::string> keyValue;
+    for (auto comp : components) {
+      int p = comp.find("=");
+      if (p == comp.npos) {
+        keyValue[comp] = "";
+      } else {
+        keyValue[comp.substr(0,p)] = comp.substr(p+1);
+      }
+    }
+    for (auto kv : keyValue) {
+      const std::string key = kv.first;
+      const std::string value = kv.second;
+      
+      std::cout << "#barney.config " << key << " = '" << value << "'" << std::endl;
+      if (key == "LOG_QUEUES")
+        logQueues = true;
+      else if (key == "SKIP_DENOISING")
+        skipDenoising = true;
+      else if (key == "LOG_CONFIG")
+        logConfig = true;
+      else
+        throw std::runtime_error("unknown/unrecognized config key");
+    }
+  }
+  const FromEnv *FromEnv::get()
+  {
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    static FromEnv *singleton = 0;
+    if (!singleton) singleton = new FromEnv;
+    return singleton;
+  }
+  
+// #endif
   
   Context::Context(const std::vector<int> &dataGroupIDs,
                    const std::vector<int> &gpuIDs,
@@ -113,11 +165,11 @@ namespace BARNEY_NS {
     return numActive;
   }
  
-  void Context::traceRaysGlobally(GlobalModel *model)
+  void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
     while (true) {
-      traceRaysLocally(model);
-      const bool needMoreTracing = forwardRays();
+      traceRaysLocally(model, rngSeed, needHitIDs);
+      const bool needMoreTracing = forwardRays(needHitIDs);
       if (needMoreTracing)
         continue;
       break;
@@ -129,19 +181,9 @@ namespace BARNEY_NS {
     fb->finalizeTiles();
   }
 
-  bool logGenerations()
-  {
-    static int value = -1;
-    if (value == -1) {
-      char *e = getenv("BARNEY_LOG_GENERATIONS");
-      value = (e && std::stoi(e) != 0);
-    }
-    return value != 0;
-  }
-  
-  void Context::renderTiles(Renderer *renderer,
+  void Context::renderTiles(Renderer    *renderer,
                             GlobalModel *model,
-                            const Camera::DD &camera,
+                            Camera      *camera,
                             FrameBuffer *fb)
   {
     if (!isActiveWorker)
@@ -152,21 +194,27 @@ namespace BARNEY_NS {
 
     // iw - todo: add wave-front-merging here.
     for (int p=0;p<renderer->pathsPerPixel;p++) {
-#if 0
-      std::cout << "====================== resetting accumid" << std::endl;
-      fb->accumID = 0;
-#endif
+
+      if (FromEnv::get()->logQueues) 
+        std::cout << "#################### RENDER ######################" << std::endl;
       double _t0 = getCurrentTime();
+      if (FromEnv::get()->logQueues) 
+        std::cout << "==================== new pixel wave ======================" << std::endl;
       generateRays(camera,renderer,fb);
 
       for (int generation=0;true;generation++) {
-        traceRaysGlobally(model);
+        if (FromEnv::get()->logQueues) 
+          std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
+
+        bool needHitIDs = fb->needHitIDs() && (generation==0);
+        uint32_t rngSeed = fb->accumID*16+generation;
+        traceRaysGlobally(model,rngSeed,needHitIDs);
         
-        shadeRaysLocally(renderer, model, fb, generation);
+        shadeRaysLocally(renderer, model, fb, generation, rngSeed);
         // no sync required here, shadeRays syncs itself.
         
         const int numActiveGlobally = numRaysActiveGlobally();
-        if (globalIndex == 0 && logGenerations())
+        if (FromEnv::get()->logQueues)
           printf("#generation %i num active %s after bounce\n",
                  generation,prettyNumber(numActiveGlobally).c_str());
         if (numActiveGlobally > 0)

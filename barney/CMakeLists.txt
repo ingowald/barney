@@ -44,8 +44,6 @@ macro(set_library_properties tgt)
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
     CXX_VISIBILITY_PRESET  hidden
     CUDA_VISIBILITY_PRESET hidden
-#    CXX_VISIBILITY_PRESET  default
-#    CUDA_VISIBILITY_PRESET default
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
@@ -223,7 +221,7 @@ set(HOST_SOURCES
 # all the source that eventually go into barney_mpi
 set(MPI_SOURCES
   fb/DistFB.h
-  fb/DistFB.cpp
+  fb/DistFB.cu
   MPIContext.h
   MPIContext.cpp
   common/MPIWrappers.h
@@ -309,7 +307,7 @@ if (BARNEY_BACKEND_EMBREE)
     add_library(barney_mpi_embree ${MPI_SOURCES})
     target_compile_definitions(barney_mpi_embree PRIVATE -DBARNEY_RTC_EMBREE=1)
     target_link_libraries(barney_mpi_embree PUBLIC barney_config embree_local)
-    target_link_libraries(barney_mpi_embree PRIVATE barney_embree MPI::MPI_CXX)
+    target_link_libraries(barney_mpi_embree PUBLIC barney_embree MPI::MPI_CXX)
     set_library_properties(barney_mpi_embree)
   endif()
 endif()

@@ -14,7 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "RayQueue.h"
+#include "barney/render/RayQueue.h"
+#include "barney/Context.h"
 
 namespace BARNEY_NS {
 
@@ -31,6 +32,23 @@ namespace BARNEY_NS {
     rtc->freeHost(h_numActive);
   }
 
+  void SingleQueue::alloc(rtc::Device *rtc, int size)
+  {
+    rays = (Ray *)rtc->allocMem(size*sizeof(Ray));
+    states = (PathState *)rtc->allocMem(size*sizeof(PathState));
+    hitIDs = (HitIDs *)rtc->allocMem(size*sizeof(HitIDs));
+  }
+  
+  void SingleQueue::free(rtc::Device *rtc)
+  {
+    if (rays) rtc->freeMem(rays);
+    if (hitIDs) rtc->freeMem(hitIDs);
+    if (states) rtc->freeMem(states);
+    rays   = 0;
+    hitIDs = 0;
+    states = 0;
+  }
+  
   int RayQueue::readNumActive()
   {
     SetActiveGPU forDuration(device);
@@ -38,6 +56,8 @@ namespace BARNEY_NS {
     rtc->copyAsync(h_numActive,_d_nextWritePos,sizeof(int));
     rtc->sync();
     numActive = *h_numActive;
+    if (FromEnv::get()->logQueues)
+      printf("#bn: ## ray queue read numactive %i\n",numActive);
     return *h_numActive;
   }
     
@@ -55,11 +75,31 @@ namespace BARNEY_NS {
     rtc->sync();
   }
     
-  void RayQueue::swap()
+  void RayQueue::swapAfterGeneration()
   {
-    std::swap(receiveAndShadeWriteQueue, traceAndShadeReadQueue);
+    if (FromEnv::get()->logQueues)
+      printf("#bn: ## ray queue swap (after generation)\n");
+    std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
+    std::swap(receiveAndShadeWriteQueue.states, traceAndShadeReadQueue.states);
+    std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
   }
 
+  void RayQueue::swapAfterCycle(int cycleID, int numCycles)
+  {
+    if (FromEnv::get()->logQueues)
+      printf("#bn: ## ray queue swap after cycle (cycle %i/%i)\n",cycleID,numCycles);
+    std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
+    std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
+  }
+  void RayQueue::swapAfterShade()
+  {
+    if (FromEnv::get()->logQueues)
+      printf("#bn: ## ray queue swap after cycle (after shade)\n");
+    std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
+    std::swap(receiveAndShadeWriteQueue.states, traceAndShadeReadQueue.states);
+    std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
+  }
+  
   void RayQueue::reserve(int requiredSize)
   {
     assert(this);
@@ -71,17 +111,20 @@ namespace BARNEY_NS {
   {
     SetActiveGPU forDuration(device);
     auto rtc = device->rtc;
-    if (traceAndShadeReadQueue)
-      rtc->freeMem(traceAndShadeReadQueue);
-    if (receiveAndShadeWriteQueue)
-      rtc->freeMem(receiveAndShadeWriteQueue);
+    traceAndShadeReadQueue.free(rtc);
+    receiveAndShadeWriteQueue.free(rtc);
+    // if (traceAndShadeReadQueue.rays) 
+    //   rtc->freeMem(traceAndShadeReadQueue);
+    // if (receiveAndShadeWriteQueue)
+    //   rtc->freeMem(receiveAndShadeWriteQueue);
 
-    if (!_d_nextWritePos) {
+    if (!_d_nextWritePos) 
       _d_nextWritePos = (int*)rtc->allocMem(sizeof(int)); 
-    }
 
-    traceAndShadeReadQueue = (Ray*)rtc->allocMem(newSize*sizeof(Ray));
-    receiveAndShadeWriteQueue = (Ray*)rtc->allocMem(newSize*sizeof(Ray));
+    // traceAndShadeReadQueue = (Ray*)rtc->allocMem(newSize*sizeof(Ray));
+    // receiveAndShadeWriteQueue = (Ray*)rtc->allocMem(newSize*sizeof(Ray));
+    traceAndShadeReadQueue.alloc(rtc,newSize);
+    receiveAndShadeWriteQueue.alloc(rtc,newSize);
         
     size = newSize;
 

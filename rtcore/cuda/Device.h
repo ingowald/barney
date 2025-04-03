@@ -55,6 +55,7 @@ namespace rtc {
 
       Group *
       createInstanceGroup(const std::vector<Group *> &groups,
+                          const std::vector<int>      &instIDs,
                           const std::vector<affine3f> &xfms);
 
       void freeGroup(Group *);
@@ -72,11 +73,12 @@ namespace rtc {
       Denoiser(Device* device) : device(device) {}
       ~Denoiser() = default;
       void resize(vec2i dims) {}
-      void run(vec4f* out_rgba,
-               vec4f* in_rgba,
-               vec3f* in_normal,
-               float blendFactor) {}
+      void run(float blendFactor) {}
       Device* const device;
+
+      vec4f *in_rgba = 0;
+      vec4f *out_rgba = 0;
+      vec3f *in_normal = 0;
     };
     
   }

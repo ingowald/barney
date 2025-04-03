@@ -19,14 +19,32 @@
 #include "rtcore/common/rtcore-common.h"
 #if BARNEY_HAVE_HIP
 # include "hip/hip_runtime.h"
-#define __CUDA_ARCH__ 1
 # define cudaArray_t hipArray_t
 # define cudaStream_t hipStream_t
+# define cudaError hipError_t
 # define cudaError_t hipError_t
 # define cudaEvent_t hipEvent_t
+# define cudaDevAttrMaxGridDimX hipDeviceAttributeMaxGridDimX
+# define cudaDevAttrMaxGridDimY hipDeviceAttributeMaxGridDimY
+# define cudaDevAttrMaxGridDimZ hipDeviceAttributeMaxGridDimZ
+# define cudaDevAttrComputeCapabilityMinor hipDeviceAttributeComputeCapabilityMinor
+# define cudaDevAttrComputeCapabilityMajor hipDeviceAttributeComputeCapabilityMajor
+# define cudaDevAttrUnifiedAddressing hipDeviceAttributeUnifiedAddressing
+# define cudaDevAttrMultiProcessorCount hipDeviceAttributeMultiprocessorCount
+# define cudaDevAttrMaxSharedMemoryPerBlock hipDeviceAttributeMaxSharedMemoryPerBlock
+# define cudaDeviceAttr hipDeviceAttribute_t
+# define cudaErrorNotSupported hipErrorNotSupported
+# define cudaErrorUnknown hipErrorUnknown
+# define cudaErrorNoDevice hipErrorNoDevice
+# define cudaErrorInvalidDevice hipErrorInvalidDevice
+# define cudaSuccess hipSuccess
+# define cudaPeekAtLastError hipPeekAtLastError
+# define cudaGetErrorName hipGetErrorName
 # define cudaEventCreate hipEventCreate
+# define cudaEventQuery hipEventQuery
 # define cudaEventRecord hipEventRecord
 # define cudaEventSynchronize hipEventSynchronize
+# define cudaDeviceGetAttribute hipDeviceGetAttribute
 # define cudaEventDestroy hipEventDestroy
 # define cudaTextureFilterMode hipTextureFilterMode
 # define cudaChannelFormatDesc hipChannelFormatDesc
@@ -95,6 +113,8 @@
 
 #define __rtc_device __device__
 #define __rtc_both   __device__ __host__
+
+#define RTC_HAVE_CUDA 1
 
 namespace rtc {
   namespace cuda_common {

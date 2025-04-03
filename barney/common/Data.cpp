@@ -57,9 +57,6 @@ namespace BARNEY_NS {
     case BN_UFIXED8_RGBA:
       return rtc::UCHAR4;
       
-    case BN_FLOAT4_RGBA:
-      return rtc::FLOAT4;
-      
     default: throw std::runtime_error
         ("un-recognized barney data type #"
          +std::to_string((int)type));
@@ -100,6 +97,20 @@ namespace BARNEY_NS {
     };
   }
 
+  std::string to_string(BNFrameBufferChannel channel)
+  {
+    switch(channel) {
+    case BN_FB_COLOR:  return "BN_FB_COLOR";
+    case BN_FB_DEPTH:  return "BN_FB_DEPTH";
+    case BN_FB_PRIMID: return "BN_FB_PRIMID";
+    case BN_FB_INSTID: return "BN_FB_INSTID";
+    case BN_FB_OBJID:  return "BN_FB_OBJID";
+    default:
+      throw std::runtime_error
+        ("#bn internal error: to_string not implemented for "
+         "numerical BNFrameBufferChannel #"+std::to_string(int(channel)));
+    };
+  }
   
   
   size_t owlSizeOf(BNDataType type)

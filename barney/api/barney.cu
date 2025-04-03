@@ -346,7 +346,7 @@ namespace barney_api {
   BARNEY_API
   void bnSetInstanceAttributes(BNModel model,
                                int slot,
-                               int attributeID,
+                               const char *whichAttribute,
                                BNData value)
   {
     LOG_API_ENTRY;
@@ -354,7 +354,7 @@ namespace barney_api {
       = value
       ? ((Data *)value)->shared_from_this()->as<Data>()
       : Data::SP{};
-    checkGet(model)->setInstanceAttributes(slot,attributeID,data);
+    checkGet(model)->setInstanceAttributes(slot,whichAttribute,data);
   }
 
   
@@ -704,11 +704,12 @@ namespace barney_api {
 
   BARNEY_API
   void bnFrameBufferResize(BNFrameBuffer fb,
+                           BNDataType colorFormat,
                            int sizeX, int sizeY,
                            uint32_t channels)
   {
     LOG_API_ENTRY;
-    checkGet(fb)->resize(vec2i{sizeX,sizeY},channels);
+    checkGet(fb)->resize(colorFormat,vec2i{sizeX,sizeY},channels);
   }
 
   BARNEY_API
@@ -721,15 +722,6 @@ namespace barney_api {
     checkGet(fb)->read(channel,hostPtr,requestedFormat);
   }
   
-  BARNEY_API
-  void *bnFrameBufferGetPointer(BNFrameBuffer fb,
-                                BNFrameBufferChannel channel)
-  {
-    LOG_API_ENTRY;
-    return checkGet(fb)->getPointer(channel);
-  }
-  
-
   BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)
   {

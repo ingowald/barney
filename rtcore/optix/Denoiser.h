@@ -27,10 +27,10 @@ namespace rtc {
       Denoiser(Device* device) : device(device) {}
       virtual ~Denoiser() = default;
       virtual void resize(vec2i dims) = 0;
-      virtual void run(vec4f* out_rgba,
-                       vec4f* in_rgba,
-                       vec3f* in_normal,
-                       float blendFactor) = 0;
+      virtual void run(float blendFactor) = 0;
+      vec4f *out_rgba  = 0;
+      vec4f *in_rgba   = 0;
+      vec3f *in_normal = 0;
       Device* const device;
     };
 
@@ -41,11 +41,8 @@ namespace rtc {
       Optix8Denoiser(Device *device);
       virtual ~Optix8Denoiser();
       void resize(vec2i dims) override;
-      void run(vec4f *out_rgba,
-               vec4f *in_rgba,
-               vec3f *in_normal,
-               float blendFactor) override;
-
+      void run(float blendFactor) override;
+      
       vec2i                numPixels;
       OptixDenoiser        denoiser = {};
       OptixDenoiserOptions denoiserOptions;

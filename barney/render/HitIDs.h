@@ -16,46 +16,17 @@
 
 #pragma once
 
-#include "rtcore/embree/Device.h"
+namespace BARNEY_NS {
 
-#if BARNEY_OIDN_CPU
-# include <OpenImageDenoise/oidn.h>
-#endif
-
-namespace rtc {
-  namespace embree {
-
-    struct Denoiser {
-      Denoiser(Device *device) : rtc(device) {}
-      virtual ~Denoiser() = default;
-      virtual void resize(vec2i dims) = 0;
-      virtual void run(float blendFactor) = 0;
-
-      vec4f *out_rgba  = 0;
-      vec4f *in_rgba   = 0;
-      vec3f *in_normal = 0;
-                             
-      Device *const rtc;
-    };
-    
-#if BARNEY_OIDN_CPU
-    /*! oidn-based CPU denoiser */
-    struct DenoiserOIDN : public Denoiser
-    {
-      DenoiserOIDN(Device *device);
-      virtual ~DenoiserOIDN();
-      
-      void resize(vec2i size) override;
-      void run(float blendFactor) override;
-      
-    private:
-      void freeMem();
-
-      vec2i         numPixels { 0,0 };
-      
-      OIDNDevice oidnDevice = 0;
-      OIDNFilter filter = 0;
-    };
-#endif
-  }
-}
+  /*! HitIDs are used for a special "ID pass" that computes the
+      closest intersection along a (primary) ray, WITHOUT any opacity
+      or transparency taken into effect. As such it requires its own
+      depth value */
+  struct HitIDs {
+    float depth = INFINITY;
+    int primID = -1;
+    int instID = -1;
+    int objID  = -1;
+  };
+  
+} // ::BARNEY_NS

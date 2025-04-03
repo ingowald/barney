@@ -43,6 +43,7 @@ namespace BARNEY_NS {
                             bool dbg=false) const;
 
       render::GeometryAttributes::DD attributes;
+      int userID;
       int materialID;
     };
     
@@ -66,6 +67,8 @@ namespace BARNEY_NS {
     void writeDD(Geometry::DD &dd,
                 Device *device);
 
+    bool set1i(const std::string &member,
+               const int   &value) override;
     bool set1f(const std::string &member,
                const float &value) override;
     bool set3f(const std::string &member,
@@ -91,6 +94,7 @@ namespace BARNEY_NS {
     render::HostMaterial::SP material;
 
     render::GeometryAttributes attributes;
+    int userID = 0;
   };
 
   template<typename InterpolatePerVertex>

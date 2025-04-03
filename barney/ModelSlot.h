@@ -46,11 +46,12 @@ namespace BARNEY_NS {
     void setInstances(barney_api::Group **groups,
                       const affine3f *xfms,
                       int numInstances);
-    void setInstanceAttributes(int attributeID, const PODData::SP &data);
+    void setInstanceAttributes(const std::string &which, const PODData::SP &data);
 
     struct {
       std::vector<Group::SP> groups;
       std::vector<affine3f>  xfms;
+      std::vector<int>       userIDs;
     } instances;
 
     rtc::device::AccelHandle getInstanceAccel(Device *device)

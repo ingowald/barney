@@ -71,6 +71,7 @@ namespace rtc {
         affine3f worldToObjectXfm;
         affine3f objectToWorldXfm;
         GeomGroup::DeviceRecord group;
+        uint32_t ID;
       };
       struct DeviceRecord {
         struct {
@@ -81,7 +82,8 @@ namespace rtc {
       };
       
       InstanceGroup(Device *device,
-                    const std::vector<Group *> &groups,
+                    const std::vector<Group *>  &groups,
+                    const std::vector<int>      &instanceIDs,
                     const std::vector<affine3f> &xfms);
       void buildAccel() override;
 
@@ -89,6 +91,7 @@ namespace rtc {
       InstanceRecord *d_instanceRecords = 0;
       bvh3f bvh = { 0,0,0,0 };
       const std::vector<Group *>  groups;
+      const std::vector<int>      instanceIDs;
       const std::vector<affine3f> xfms;
     };
     

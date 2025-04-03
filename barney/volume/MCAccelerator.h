@@ -21,6 +21,8 @@
 #include "barney/volume/Volume.h"
 #include "barney/volume/MCGrid.h"
 #include "barney/volume/DDA.h"
+#include "barney/render/World.h"
+#include "barney/render/OptixGlobals.h"
 
 namespace BARNEY_NS {
   using render::Ray;
@@ -159,6 +161,7 @@ namespace BARNEY_NS {
     const void *pd = ti.getProgramData();
            
     const DD &self = *(typename MCVolumeAccel<SFSampler>::DD*)pd;
+    const render::World::DD &world = render::OptixGlobals::get(ti).world;
     // ray in world space
     Ray &ray = *(Ray*)ti.getPRD();
     
@@ -195,6 +198,14 @@ namespace BARNEY_NS {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
+    int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+    // BARNEY_NS::Random
+    Random rng(hash(rayID,
+                    ti.getRTCInstanceIndex(),
+                    ti.getGeometryIndex(),
+                    ti.getPrimitiveIndex(),
+                    world.rngSeed));
+
     // printf("isec\n");
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
@@ -209,13 +220,14 @@ namespace BARNEY_NS {
                 if (majorant == 0.f) return true;
                 
                 vec4f   sample = 0.f;
-                float lo = t0;
-                float hi = ::owl::common::min(t1,ray.tMax);
-                range1f tRange = {lo,hi};
-                if (!Woodcock::sampleRange(sample,self.volume,
-                                           obj_org,obj_dir,
-                                           tRange,majorant,ray.rngSeed,
-                                           ray.dbg)) 
+                range1f tRange = {t0,min(t1,ray.tMax)};
+                if (!Woodcock::sampleRange(sample,
+                                           self.volume,
+                                           obj_org,
+                                           obj_dir,
+                                           tRange,
+                                           majorant,
+                                           rng)) 
                   return true;
                 
                 vec3f P = ray.org + tRange.upper*ray.dir;

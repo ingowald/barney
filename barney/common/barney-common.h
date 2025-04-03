@@ -86,6 +86,28 @@ namespace BARNEY_NS {
   inline __both__ range1f getRange(box4f bb)
   { return range1f{bb.lower.w,bb.upper.w}; }
 
+  inline __both__ uint64_t hash(uint32_t v)
+  {
+    const uint64_t FNV_offset_basis = 0xcbf29ce484222325ULL;
+    const uint64_t FNV_prime = 0x100000001b3ULL;
+    return FNV_offset_basis ^ v * FNV_prime;
+  }
+  inline __both__ uint64_t hash(uint64_t h, uint32_t v)
+  {
+    const uint64_t FNV_prime = 0x100000001b3ULL;
+    return h * FNV_prime ^ v;
+  }
+  
+  inline __both__ uint64_t hash(uint32_t v0, uint32_t v1)
+  { return hash(hash(v0),v1); }
+  
+  inline __both__ uint64_t hash(uint32_t v0, uint32_t v1, uint32_t v2)
+  { return hash(hash(v0,v1),v2); }
+  inline __both__ uint64_t hash(uint32_t v0, uint32_t v1, uint32_t v2, uint32_t v3)
+  { return hash(hash(v0,v1,v2),v3); }
+  inline __both__ uint64_t hash(uint32_t v0, uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4)
+  { return hash(hash(v0,v1,v2,v3),v4); }
+  
 }
 
 #define BARNEY_NYI() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not yet implemented")

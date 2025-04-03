@@ -141,7 +141,8 @@ namespace rtc {
       createUserGeomsGroup(const std::vector<Geom *> &geoms);
 
       Group *
-      createInstanceGroup(const std::vector<Group *> &groups,
+      createInstanceGroup(const std::vector<Group *>  &groups,
+                          const std::vector<int>      &instIDs,
                           const std::vector<affine3f> &xfms);
 
       void freeGroup(Group *);

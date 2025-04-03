@@ -23,6 +23,7 @@ namespace BARNEY_NS {
   rtc::DataType toRTC(BNDataType format);
   
   std::string to_string(BNDataType type);
+  std::string to_string(BNFrameBufferChannel type);
   size_t owlSizeOf(BNDataType type);
   
   struct BaseData : public barney_api::Data {//SlottedObject {

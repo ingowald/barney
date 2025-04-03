@@ -138,13 +138,13 @@ namespace BARNEY_NS {
     /*! closest-hit program - doesn't do anything because we do all the
       work in IS prog, but needs to exist to make optix happy */
     static inline __rtc_device
-    void closestHit(rtc::TraceInterface &rt)
+    void closestHit(rtc::TraceInterface &ti)
     {
       /* nothing - already set in isec */
     }
     
     static inline __rtc_device
-    void anyHit(rtc::TraceInterface &rt)
+    void anyHit(rtc::TraceInterface &ti)
     {
       /* nothing - already set in isec */
     }
@@ -162,14 +162,15 @@ namespace BARNEY_NS {
       side.
     */
     static inline __rtc_device
-    void intersect(rtc::TraceInterface &rt)
+    void intersect(rtc::TraceInterface &ti)
     {
-      const int primID = rt.getPrimitiveIndex();
-      const int instID = rt.getInstanceIndex();
+      const int primID = ti.getPrimitiveIndex();
+      const int instID = ti.getInstanceID();
       const auto &self
-        = *(Capsules::DD*)rt.getProgramData();
-      const World::DD &world = OptixGlobals::get(rt).world;
-      Ray &ray    = *(Ray*)rt.getPRD();
+        = *(Capsules::DD*)ti.getProgramData();
+      const OptixGlobals &globals = OptixGlobals::get(ti);
+      const World::DD &world = globals.world;
+      Ray &ray    = *(Ray*)ti.getPRD();
 
       const vec2i idx = self.indices[primID];
 
@@ -178,8 +179,8 @@ namespace BARNEY_NS {
       const vec4f v1 = self.vertices[idx.y];
 
       // ray from optix: this is an IS prog so this is _object_ space
-      vec3f ray_org  = rt.getObjectRayOrigin();
-      vec3f ray_dir  = rt.getObjectRayDirection();
+      vec3f ray_org  = ti.getObjectRayOrigin();
+      vec3f ray_dir  = ti.getObjectRayDirection();
       float len_dir = length(ray_dir);
       vec3f objectN;
 
@@ -194,7 +195,7 @@ namespace BARNEY_NS {
 
       render::HitAttributes hitData;
       const DeviceMaterial &material
-        = OptixGlobals::get(rt).world.materials[self.materialID];
+        = OptixGlobals::get(ti).world.materials[self.materialID];
     
       // move just a little bit less in case the ray enters the box just
       // where it touches the prim
@@ -254,9 +255,9 @@ namespace BARNEY_NS {
       hitData.objectPosition  = objectP;
       hitData.objectNormal    = normalize(objectN);
       hitData.worldPosition
-        = rt.transformPointFromObjectToWorldSpace(objectP);
+        = ti.transformPointFromObjectToWorldSpace(objectP);
       hitData.worldNormal
-        = normalize(rt.transformNormalFromObjectToWorldSpace(objectN));
+        = normalize(ti.transformNormalFromObjectToWorldSpace(objectN));
 
       // compute a stable epsilon for surface offsetting
       float surfOfs_eps = 1.f;
@@ -272,19 +273,41 @@ namespace BARNEY_NS {
       self.setHitAttributes(hitData,interpolator,world,ray.dbg);
 
       PackedBSDF bsdf
-        = material.createBSDF(hitData,OptixGlobals::get(rt).world.samplers,ray.dbg);
+        = material.createBSDF(hitData,OptixGlobals::get(ti).world.samplers,ray.dbg);
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);
-      if (opacity < 1.f && ((Random &)ray.rngSeed)() < 1.f-opacity) 
-        return;
+      if (opacity < 1.f) {
+        int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+        Random rng(hash(rayID,
+                        instID,
+                        ti.getGeometryIndex(),
+                        ti.getPrimitiveIndex(),
+                        world.rngSeed));
+        if (rng() > opacity) {
+          ti.ignoreIntersection();
+          return;
+        }
+      }
       
       // ... store the hit in the ray, rqs-style ...
       // const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
       material.setHit(ray,hitData,world.samplers,ray.dbg);
+      if (globals.hitIDs) {
+        const int rayID
+          = ti.getLaunchIndex().x
+          + ti.getLaunchDims().x
+          * ti.getLaunchIndex().y;
+        globals.hitIDs[rayID].primID = primID;
+        globals.hitIDs[rayID].instID
+          = world.instIDToUserInstID
+          ? world.instIDToUserInstID[instID]
+          : instID;
+        globals.hitIDs[rayID].objID  = self.userID;
+      }
 
       // .... and let optix know we did have a hit.
-      rt.reportIntersection(hit_t, 0);
+      ti.reportIntersection(hit_t, 0);
     }
   };
   
