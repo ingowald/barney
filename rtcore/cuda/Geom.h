@@ -22,7 +22,7 @@
 
 namespace rtc {
   namespace cuda {
-
+    
     struct GeomType;
     
     struct Geom {
@@ -55,7 +55,7 @@ namespace rtc {
       std::vector<uint8_t> data;
     };
 
-    struct TrianglesGeom : public cuda::Geom {
+    struct TrianglesGeom : public Geom {
       TrianglesGeom(GeomType *gt);
       
       void setPrimCount(int primCount) override { assert(0); }
@@ -67,7 +67,8 @@ namespace rtc {
       Buffer *indices = 0;
       int numIndices = 0;
     };
-    struct UserGeom : public cuda::Geom {
+  
+    struct UserGeom : public Geom {
       UserGeom(GeomType *gt);
       
       void setPrimCount(int primCount) override;

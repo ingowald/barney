@@ -20,7 +20,7 @@
 
 namespace rtc {
   namespace cuda {
-
+    
     Buffer::Buffer(Device *device,
                    size_t numBytes,
                    const void *initValues)
@@ -48,6 +48,6 @@ namespace rtc {
       SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL(Memcpy(((char *)d_data)+offset,data,numBytes,cudaMemcpyDefault));
     }
-      
+
   }
 }

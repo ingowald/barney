@@ -20,8 +20,6 @@
 
 namespace rtc {
   namespace cuda_common {
-
-    struct TextureData;
     
     struct Texture
     {
@@ -29,8 +27,8 @@ namespace rtc {
               const TextureDesc &desc);
       virtual ~Texture();
       
-      rtc::device::TextureObject getDD() const
-      { return (const rtc::device::TextureObject&)textureObject; }
+      TextureObject getDD() const
+      { return (const TextureObject&)textureObject; }
 
       Device             *const device;
       TextureData        *const data;

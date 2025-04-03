@@ -15,8 +15,7 @@
 // ======================================================================== //
 
 #include "barney/umesh/os/AWT.h"
-#include "rtcore/TraceInterface.h"
-#include "rtcore/TraceInterface.h"
+#include "rtcore/ProgramInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
@@ -37,6 +36,7 @@ namespace BARNEY_NS {
   }
   
   struct AWTPrograms {
+#if RTC_DEVICE_CODE
     static inline __rtc_device
     void closestHit(rtc::TraceInterface &ti)
     {
@@ -83,12 +83,13 @@ namespace BARNEY_NS {
     
       
     }
-
+    
     static inline __rtc_device
     void intersect(rtc::TraceInterface &ti);
+#endif
   };
-
   
+#if RTC_DEVICE_CODE
   /*! approximates a cubic function defined through four points (at
     t=0, t=1/3, t=2/3, and 1=1.f) with corresponding values of f0,
     f1, f2, and f3 */
@@ -445,7 +446,7 @@ namespace BARNEY_NS {
     curr.tRange = { 1e-6f, tHit };
     
     if (!boxTest(org,dir,
-                                 curr.tRange.lower,curr.tRange.upper,
+                 curr.tRange.lower,curr.tRange.upper,
                  self.mesh.worldBounds)) {
       // doesn't even overlap the bounding box... 
       if (dbg)
@@ -470,7 +471,7 @@ namespace BARNEY_NS {
         /* repeat until we successfully POPPED SOMETHING */
         while (1) {
           if (dbg) printf("popping at depth %i\n",
-                              int(stack-stackBase));
+                          int(stack-stackBase));
           if (stack == stackBase) {
             if (tHit < ray.tMax) {
               ray.setVolumeHit(org+tHit*dir,
@@ -579,12 +580,12 @@ namespace BARNEY_NS {
               childEntry[i].tRange.lower < tHit) {//ray.tMax) {
             if (dbg)
               printf("pushing depth %i, node %i:%i dist %f\n",
-                   int(stack-stackBase),
-                   childEntry[i].ref.offset,
-                   childEntry[i].ref.count,
-                   childEntry[i].tRange.lower);
-if (stack - stackBase >= AWT_STACK_DEPTH)
-printf("STACK OVERFLOW!\n");
+                     int(stack-stackBase),
+                     childEntry[i].ref.offset,
+                     childEntry[i].ref.count,
+                     childEntry[i].tRange.lower);
+            if (stack - stackBase >= AWT_STACK_DEPTH)
+              printf("STACK OVERFLOW!\n");
             *stack++ = childEntry[i];
           }
         }
@@ -612,6 +613,7 @@ printf("STACK OVERFLOW!\n");
       }
     }
   }
+#endif
   
   RTC_EXPORT_USER_GEOM(AWT,AWTAccel::DD,AWTPrograms,false,false);
 } // ::BARNEY_NS

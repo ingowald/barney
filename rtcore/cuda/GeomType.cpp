@@ -20,20 +20,19 @@
 
 namespace rtc {
   namespace cuda {
-
+    
     GeomType::GeomType(Device *device,
                        size_t sizeOfDD)
       : device(device), sizeOfDD(sizeOfDD)
-    {
-    }
+    {}
     
     UserGeomType::UserGeomType(Device *device,
-                   size_t sizeOfDD,
-                   BoundsKernel bounds,
-                   // BoundsProg bounds,
-                   IntersectProg intersect,
-                   AHProg ah,
-                   CHProg ch)
+                               size_t sizeOfDD,
+                               BoundsKernel bounds,
+                               // BoundsProg bounds,
+                               IntersectProg intersect,
+                               AHProg ah,
+                               CHProg ch)
       : GeomType(device,sizeOfDD),
         bounds(bounds),
         intersect(intersect),
@@ -42,9 +41,9 @@ namespace rtc {
     {}
     
     TrianglesGeomType::TrianglesGeomType(Device *device,
-                        size_t sizeOfDD,
-                        AHProg ah,
-                        CHProg ch)
+                                         size_t sizeOfDD,
+                                         AHProg ah,
+                                         CHProg ch)
       : GeomType(device,sizeOfDD),
         ah(ah),
         ch(ch)

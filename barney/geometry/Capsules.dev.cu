@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/geometry/Capsules.h"
-#include "rtcore/TraceInterface.h"
+#include "rtcore/ProgramInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
@@ -121,6 +121,7 @@ namespace BARNEY_NS {
   }
 
   struct CapsulesPrograms {
+#if RTC_DEVICE_CODE
     /*! bounds program for a single capsule, computes as bbox of the two
       end-cap spheres */
     static inline __rtc_device
@@ -309,6 +310,7 @@ namespace BARNEY_NS {
       // .... and let optix know we did have a hit.
       ti.reportIntersection(hit_t, 0);
     }
+#endif
   };
   
   RTC_EXPORT_USER_GEOM(Capsules,Capsules::DD,CapsulesPrograms,false,false);

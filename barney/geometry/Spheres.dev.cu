@@ -16,7 +16,7 @@
 
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Spheres.h"
-#include "rtcore/TraceInterface.h"
+#include "rtcore/ProgramInterface.h"
 #include "barney/render/HitIDs.h"
 
 // #include "owl/owl_device.h"
@@ -40,10 +40,8 @@ namespace BARNEY_NS {
   
   
   struct SpheresPrograms {
-    
-    static
-    inline
-    __rtc_device
+#if RTC_DEVICE_CODE 
+    static inline __rtc_device
     void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
@@ -212,6 +210,7 @@ namespace BARNEY_NS {
         ti.reportIntersection(hit_t, 0);
       }
     }
+#endif
   };
   RTC_EXPORT_USER_GEOM(Spheres,Spheres::DD,SpheresPrograms,false,true);
 }

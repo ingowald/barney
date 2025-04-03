@@ -39,7 +39,7 @@ namespace rtc {
     void TraceKernel2D::launch(vec2i launchDims,
                                const void *kernelData)
     {
-      ::rtc::cuda_common::SetActiveGPU forDuration(device);   
+      SetActiveGPU forDuration(device);   
       BARNEY_CUDA_CALL(Memcpy(d_lpData,kernelData,
                               sizeOfLP,cudaMemcpyDefault));
       traceLaunchFct(device,launchDims,d_lpData);

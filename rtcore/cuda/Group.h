@@ -21,9 +21,9 @@
 
 namespace rtc {
   namespace cuda {
-
-    using cuBQL::bvh3f;
     
+    using cuBQL::bvh3f;
+
     struct Device;
     
     struct Group {
@@ -31,7 +31,7 @@ namespace rtc {
       virtual ~Group();
       virtual void buildAccel() = 0;
       virtual void refitAccel() { buildAccel(); }
-      rtc::device::AccelHandle getDD() const { return (rtc::device::AccelHandle)d_accel; }
+      AccelHandle getDD() const { return (AccelHandle)d_accel; }
 
       Device *const device;
       void *d_accel = 0;

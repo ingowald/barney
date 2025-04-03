@@ -16,7 +16,7 @@
 
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Triangles.h"
-#include "rtcore/TraceInterface.h"
+#include "rtcore/ProgramInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
@@ -24,7 +24,7 @@ namespace BARNEY_NS {
   using namespace BARNEY_NS::render;
     
   struct TrianglesPrograms {
-      
+#if RTC_DEVICE_CODE
     static inline __rtc_device
     void closestHit(rtc::TraceInterface &rt)
     {}
@@ -141,6 +141,7 @@ namespace BARNEY_NS {
       }
       material.setHit(ray,hitData,world.samplers,dbg);
     }
+#endif
   };
   
   RTC_EXPORT_TRIANGLES_GEOM(Triangles,Triangles::DD,TrianglesPrograms,true,false);

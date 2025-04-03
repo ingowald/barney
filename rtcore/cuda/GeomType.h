@@ -20,13 +20,10 @@
 
 namespace rtc {
   namespace cuda {
+  
     struct Geom;
     struct TraceInterface;
     
-    // typedef void (*BoundsProg)(const TraceInterface &,
-    //                            const void *dd,
-    //                            box3f &bounds,
-    //                            int primID);
     typedef void (*BoundsKernel)(Device *device,
                                  const void *dd,
                                  box3f *boundsArray,
@@ -54,6 +51,7 @@ namespace rtc {
                    IntersectProg intersect,
                    AHProg ah,
                    CHProg ch);
+      virtual ~UserGeomType() = default;
       Geom *createGeom() override;
 
       BoundsKernel const bounds;
@@ -68,6 +66,7 @@ namespace rtc {
                         size_t sizeOfDD,
                         AHProg ah,
                         CHProg ch);
+      virtual ~TrianglesGeomType() = default;
       Geom *createGeom() override;
 
       AHProg const ah;
@@ -75,12 +74,6 @@ namespace rtc {
     };
   }
 }
-
-#define RTC_IMPORT_USER_GEOM(moduleName,typeName,DD,has_ah,has_ch)      \
-  extern ::rtc::GeomType *createGeomType_##typeName(::rtc::Device *);
-
-#define RTC_IMPORT_TRIANGLES_GEOM(moduleName,typeName,DD,has_ah,has_ch) \
-  extern rtc::GeomType *createGeomType_##typeName(rtc::Device *);
 
 
 

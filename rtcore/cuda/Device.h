@@ -20,18 +20,31 @@
 
 namespace rtc {
   namespace cuda {
-
-    using cuda_common::Texture;
-    using cuda_common::TextureData;
+    
     using cuda_common::SetActiveGPU;
-
+  
     struct Buffer;
     struct Device;
     struct Geom;
     struct GeomType;
     struct Group;
     struct Denoiser;
+
+    struct TraceKernel2D;
+
+    using rtc::cuda_common::Texture;
+    using rtc::cuda_common::TextureData;
     
+    using cuda_common::float2;
+    using cuda_common::float3;
+    using cuda_common::float4;
+    using cuda_common::int2;
+    using cuda_common::int3;
+    using cuda_common::int4;
+    using cuda_common::load;
+  
+    using cuda_common::TextureObject;
+  
     struct Device : public cuda_common::Device{
       Device(int physicalGPU)
         : cuda_common::Device(physicalGPU)
@@ -80,20 +93,10 @@ namespace rtc {
       vec4f *out_rgba = 0;
       vec3f *in_normal = 0;
     };
-    
+
+    rtc::AccelHandle getAccelHandle(Group *ig);
   }
 }
 
-#define RTC_IMPORT_TRACE2D(fileNameBase,name,sizeOfLP)          \
-  void rtc_cuda_launch_##name(rtc::Device *device,              \
-                              vec2i dims,                       \
-                              const void *lpData);              \
-                                                                \
-  ::rtc::TraceKernel2D *createTrace_##name(rtc::Device *device) \
-  {                                                             \
-    return new ::rtc::cuda::TraceKernel2D                       \
-      (device,sizeOfLP,rtc_cuda_launch_##name);                 \
-  }                                                             \
-    
 
 

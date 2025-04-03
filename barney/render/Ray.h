@@ -31,12 +31,12 @@ namespace BARNEY_NS {
       uint32_t rngSeed;
     };
     struct Ray {
+#if RTC_DEVICE_CODE
       inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo);
       inline __rtc_device PackedBSDF getBSDF() const;
       inline __rtc_device void setHit(vec3f P, vec3f N, float t,
                                     const PackedBSDF &packedBSDF);
       
-      // inline __rtc_device void makeShadowRay(vec3f _tp, vec3f _org, vec3f _dir, float len);
       inline __rtc_device bool hadHit() const { return bsdfType != PackedBSDF::NONE; }
       inline __rtc_device void clearHit(float newTMax = BARNEY_INF)
       { bsdfType = PackedBSDF::NONE; tMax = newTMax; }
@@ -44,7 +44,7 @@ namespace BARNEY_NS {
       inline __rtc_device void packNormal(vec3f N);
       inline __rtc_device vec3f unpackNormal() const;
       inline __rtc_device vec3f getN() const  { return unpackNormal(); }
-      
+#endif      
       vec3f    org;
       vec3f    dir;
       float    tMax;
@@ -75,6 +75,7 @@ namespace BARNEY_NS {
       };
     };
   
+#if RTC_DEVICE_CODE
     inline __rtc_device PackedBSDF Ray::getBSDF() const
     {
       return PackedBSDF((PackedBSDF::Type)bsdfType,hitBSDF);
@@ -170,5 +171,7 @@ namespace BARNEY_NS {
                                  {box.upper.x,box.upper.y,box.upper.z}),
                      org,dir);
     }
+#endif
+    
   }  
 }

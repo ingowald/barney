@@ -21,6 +21,7 @@
 #if BARNEY_HAVE_OIDN
 # include <OpenImageDenoise/oidn.h>
 #endif
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE2D(linearToFixed8);
@@ -106,7 +107,9 @@ namespace BARNEY_NS {
     vec4f    *in;
     vec2i numPixels;
     bool SRGB;
+#if RTC_DEVICE_CODE
     __rtc_device void run(const rtc::ComputeInterface &ci);
+#endif
   };
   
 #if RTC_DEVICE_CODE

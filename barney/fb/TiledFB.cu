@@ -17,6 +17,7 @@
 #include "barney/fb/TiledFB.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/common/math.h"
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 
@@ -33,7 +34,8 @@ namespace BARNEY_NS {
     TileDesc  *descs;
     AccumTile *tiles;
     vec2i      numPixels;
-      
+
+#if RTC_DEVICE_CODE
     /* CODE */
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci)
@@ -64,6 +66,7 @@ namespace BARNEY_NS {
       if (out_normal)
         out_normal[idx] = tile->normal[subIdx];
     }
+#endif
   };
 
 
@@ -96,7 +99,8 @@ namespace BARNEY_NS {
     vec2i           numPixels;
     AuxChannelTile *aux;
     TileDesc       *descs;
-    
+
+#if RTC_DEVICE_CODE
     /* CODE */
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci)
@@ -133,6 +137,7 @@ namespace BARNEY_NS {
       //          whichChannel);
       // }
     }
+#endif
   };
 
   /*! linearize given array's aux tiles, on given device. this can be
@@ -178,12 +183,6 @@ namespace BARNEY_NS {
     linearizeAuxTiles(device,linearizeAuxChannelKernel,
                         linearChannel,numPixels,
                         aux,tileDescs,numActiveTiles);
-    // SetActiveGPU forDuration(device);
-    // LinearizeAuxChannel args={linearChannel,whichChannel,
-    //                           tileDescs,accumTiles,auxTiles,
-    //                           numPixels};
-    // linearizeAuxChannelKernel
-    //   ->launch(numActiveTiles,pixelsPerTile,&args);       
   }
 
 
@@ -246,8 +245,10 @@ namespace BARNEY_NS {
     int globalIndexStep;
 
     /* kernel CODE */
+#if RTC_DEVICE_CODE
     inline __rtc_device
     void run(const rtc::ComputeInterface &rtCore);
+#endif
   };
 
 #if RTC_DEVICE_CODE
@@ -311,64 +312,6 @@ namespace BARNEY_NS {
 
   // ==================================================================
 
-// #if 0
-//   struct CompressTiles {
-//     CompressedTile *compressedTiles;
-//     AccumTile      *accumTiles;
-//     float           accumScale;
-//     int             globalIdx;
-//     int             globalIdxStep;
-
-//     inline __rtc_device
-//     void run(const rtc::ComputeInterface &rtCore);
-//   };
-
-// #if RTC_DEVICE_CODE
-//   inline __rtc_device
-//   void CompressTiles::run(const rtc::ComputeInterface &rtCore)
-//   { 
-//     int pixelID = rtCore.getThreadIdx().x;
-//     int tileID  = rtCore.getBlockIdx().x;
-
-//     vec4f color = vec4f(accumTiles[tileID].accum[pixelID])*accumScale;
-//     vec4f org = color;
-//     float scale = reduce_max((const vec3f&)color);
-//     (vec3f&)color *= 1.f/scale;
-//     compressedTiles[tileID].scale[pixelID] = scale;
-//     compressedTiles[tileID].normal[pixelID]
-//       .set(accumTiles[tileID].normal[pixelID]);
-
-      
-//     uint32_t rgba32
-//       = make_rgba(color);
-
-//     compressedTiles[tileID].rgba[pixelID]
-//       = rgba32;
-//   }
-// #endif
-  
-//   /*! write this tiledFB's tiles into given "compressed" frame buffer
-//     (i.e., a plain 2D array of numPixels.x*numPixels.y RGBA8
-//     pixels) */
-//   void TiledFB::finalizeTiles_launch()
-//   {
-//     if (numActiveTiles > 0) {
-//       SetActiveGPU forDuration(device);
-//       CompressTiles args = {
-//         compressedTiles,
-//         accumTiles,
-//         1.f/(owner->accumID),
-//         device->globalIndex,
-//         device->globalIndexStep,
-//       };
-//       device->compressTiles
-//         ->launch(numActiveTiles,pixelsPerTile,
-//                  &args);       
-//     }
-//   }
-  
-//   RTC_EXPORT_COMPUTE1D(compressTiles,CompressTiles);
-// #endif
   RTC_EXPORT_COMPUTE1D(setTileCoords,SetTileCoords);
   RTC_EXPORT_COMPUTE1D(linearizeColorAndNormal,LinearizeColorAndNormal);
   RTC_EXPORT_COMPUTE1D(linearizeAuxChannel,LinearizeAuxChannel);

@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
-#include "rtcore/Frontend.h"
+#include "rtcore/AppInterface.h"
 
 namespace BARNEY_NS {
   

@@ -25,7 +25,7 @@
 #endif
 
 // automatically generated, in build dir
-#include "rtcore/Frontend.h"
+#include "rtcore/AppInterface.h"
 #include "barney/api/common.h"
 #include <owl/common/owl-common.h>
 #include <owl/common/math/box.h>
@@ -35,7 +35,7 @@
 # define OWL_DISABLE_TBB
 #endif
 #include <owl/common/parallel/parallel_for.h>
-#include "rtcore/ComputeInterface.h"
+// #include "rtcore/ComputeInterface.h"
 
 #define __barney_align(a) OWL_ALIGN(a)
 

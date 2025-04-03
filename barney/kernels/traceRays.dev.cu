@@ -28,10 +28,13 @@ namespace BARNEY_NS {
   namespace render {
 
     struct TraceRays {
+#if RTC_DEVICE_CODE
       inline __rtc_device static 
       void run(rtc::TraceInterface &ti);
+#endif
     };
 
+#if RTC_DEVICE_CODE
     inline __rtc_device 
     void TraceRays::run(rtc::TraceInterface &ti)
     {
@@ -76,8 +79,9 @@ namespace BARNEY_NS {
                   /* PRD */
                   (void *)&ray);
     }
+#endif
+    
   }
-  
   RTC_EXPORT_TRACE2D(traceRays,render::TraceRays);
 }
 

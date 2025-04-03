@@ -22,10 +22,12 @@
 
 namespace rtc {
   namespace cuda {
-
+    
+    rtc::AccelHandle getAccelHandle(Group *ig)
+    { return ig->getDD(); }
+    
     Device::~Device()
-    {
-    }
+    {}
     
     void Device::freeGroup(Group *g)
     { delete g; }
@@ -83,6 +85,5 @@ namespace rtc {
     {
     }
 
-    
-  }
+  }    
 }

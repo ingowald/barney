@@ -191,7 +191,7 @@ namespace BARNEY_NS {
       device->rtc->freeTextureData(getPLD(device)->rtc);
   }
 
-  rtc::device::TextureObject
+  rtc::TextureObject
   Texture::getTextureObject(Device *device) 
   {
     auto pld = getPLD(device);

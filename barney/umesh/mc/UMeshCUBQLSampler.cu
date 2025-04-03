@@ -20,6 +20,7 @@
 #else
 # include "cuBQL/builder/cuda.h"
 #endif
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 
@@ -28,7 +29,8 @@ namespace BARNEY_NS {
     Element        *in;
     const uint32_t *primIDs;
     int             numElements;
-    
+
+#if RTC_DEVICE_CODE
     inline __rtc_device void run(const rtc::ComputeInterface &ci)
     {
       int li = ci.launchIndex().x;
@@ -36,6 +38,7 @@ namespace BARNEY_NS {
 
       out[li] = in[primIDs[li]];
     }
+#endif
   };
   
   UMeshCUBQLSampler::UMeshCUBQLSampler(UMeshField *mesh)

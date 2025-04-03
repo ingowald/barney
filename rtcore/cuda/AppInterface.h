@@ -14,53 +14,42 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#pragma once
+
 #include "rtcore/cuda/Device.h"
+#include "rtcore/cuda/Buffer.h"
+#include "rtcore/cudaCommon/ComputeKernel.h"
+#include "rtcore/cuda/TraceKernel.h"
+// for setPrimCount etc
 #include "rtcore/cuda/Geom.h"
-#include "rtcore/cuda/GeomType.h"
+// for buildAccel
+#include "rtcore/cuda/Group.h"
+// for createTexture
+#include "rtcore/cudaCommon/TextureData.h"
+// for getDD
+#include "rtcore/cudaCommon/Texture.h"
 
 namespace rtc {
   namespace cuda {
+
+    using rtc::cuda_common::ComputeKernel1D;
+    using rtc::cuda_common::ComputeKernel2D;
+    using rtc::cuda_common::ComputeKernel3D;
     
-    Geom::Geom(GeomType *gt)
-      : gt(gt),
-        data(gt->sizeOfDD)
-    {}
-    
-    Geom::~Geom()
-    {}
-    
-    void Geom::setDD(const void *dd)
-    {
-      memcpy(data.data(),dd,data.size());
-    }
-
-    TrianglesGeom::TrianglesGeom(GeomType *gt)
-      : Geom(gt)
-    {}
-      
-    void TrianglesGeom::setVertices(Buffer *vertices,
-                                    int numVertices)
-    {
-      this->vertices = vertices;
-      this->numVertices = numVertices;
-    }
-      
-    void TrianglesGeom::setIndices(Buffer *indices,
-                                   int numIndices)
-    {
-      this->indices = indices;
-      this->numIndices = numIndices;
-    }
-
-
-    UserGeom::UserGeom(GeomType *gt)
-      : Geom(gt)
-    {}
-      
-    void UserGeom::setPrimCount(int primCount)
-    {
-      this->primCount = primCount;
-    }
-
+    using rtc::cuda_common::Texture;
+    using rtc::cuda_common::TextureData;
   }
 }
+
+#define RTC_IMPORT_USER_GEOM(moduleName,typeName,DD,has_ah,has_ch)      \
+  extern ::rtc::cuda::GeomType *createGeomType_##typeName(::rtc::Device *);
+
+#define RTC_IMPORT_TRIANGLES_GEOM(moduleName,typeName,DD,has_ah,has_ch) \
+  extern rtc::cuda::GeomType *createGeomType_##typeName(rtc::Device *);
+
+
+
+
+
+
+  

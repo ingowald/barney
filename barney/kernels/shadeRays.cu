@@ -19,8 +19,8 @@
 #include "barney/render/World.h"
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
-#include "rtcore/ComputeInterface.h"
 #include "barney/render/RayQueue.h"
+#include "rtcore/TraceInterface.h"
 
 namespace BARNEY_NS {
   namespace render {
@@ -791,8 +791,10 @@ namespace BARNEY_NS {
 #endif // device code  
 
     struct PathTraceKernel {
+#ifdef RTC_DEVICE_CODE
       inline __rtc_device
       void run(const rtc::ComputeInterface &rt);
+#endif
       
       World::DD world;
       Renderer::DD renderer;

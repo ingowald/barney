@@ -29,10 +29,10 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<Renderer> SP;
 
     struct DD {
-      vec4f               bgColor;
-      rtc::device::TextureObject bgTexture;
-      float               ambientRadiance;
-      int                 pathsPerPixel;
+      vec4f              bgColor;
+      rtc::TextureObject bgTexture;
+      float              ambientRadiance;
+      int                pathsPerPixel;
     };
     
     Renderer(Context *context);

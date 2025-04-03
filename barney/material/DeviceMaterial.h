@@ -19,7 +19,6 @@
 #include "barney/render/Ray.h"
 #include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/render/HitAttributes.h"
-// #include "barney/render/device/GeometryAttributes.h"
 #include "barney/material/AnariMatte.h"
 #include "barney/material/AnariPBR.h"
 

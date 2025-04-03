@@ -27,6 +27,7 @@ namespace BARNEY_NS {
   inline __rtc_device float length2(vec3f v) { return dot(v,v); }
   
   struct ConesPrograms {
+#if RTC_DEVICE_CODE
     /*! bounding box program */
     static inline __rtc_device
     void bounds(const rtc::TraceInterface &ti,
@@ -226,6 +227,7 @@ namespace BARNEY_NS {
         ti.reportIntersection(hitData.t, 0);
       }
     }
+#endif
   };
   
   RTC_EXPORT_USER_GEOM(Cones,Cones::DD,ConesPrograms,false,false);

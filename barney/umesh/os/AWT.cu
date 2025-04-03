@@ -20,6 +20,7 @@
 #if RTC_HAVE_CUDA
 # include <cuBQL/builder/cuda/wide_gpu_builder.h>
 #endif
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
   
@@ -37,6 +38,7 @@ namespace BARNEY_NS {
     UMeshField::DD mesh;
     TransferFunction::DD xf;
 
+#if RTC_DEVICE_CODE
     inline __rtc_device void run(const rtc::ComputeInterface &ci)
     {
 #if 1
@@ -91,6 +93,7 @@ namespace BARNEY_NS {
       }
 #endif
     }
+#endif
   };
 
   struct CopyNodes {
@@ -102,6 +105,7 @@ namespace BARNEY_NS {
     Element *in_elements;
     uint32_t *primIDs;
 
+#if RTC_DEVICE_CODE
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci)
     {
@@ -139,6 +143,7 @@ namespace BARNEY_NS {
       out_infos[tid].numNotDone = numActive;
 #endif
     }
+#endif
   };
 
   AWTAccel::AWTAccel(Volume *volume,

@@ -15,10 +15,10 @@
 # include "hip/driver_types.h"
 #endif
 
-# ifdef __CUDACC__
+# ifdef __CUDA_ARCH__
 #  define RTC_DEVICE_CODE 1
 # endif
-# ifdef __HIP_ARCH__
+# ifdef __HIP_DEVICE_COMPILE__
 #  define RTC_DEVICE_CODE 1
 # endif
 
@@ -30,11 +30,6 @@ namespace rtc {
   using namespace owl::common;
     
   using range1f = interval<float>;
-  
-  namespace device {
-    typedef struct _OpaqueAccel   *AccelHandle;
-    typedef struct _OpaqueTextureObject *TextureObject;
-  };
   
   typedef enum {
     UCHAR,
@@ -74,6 +69,8 @@ namespace rtc {
     ColorSpace colorSpace = COLOR_SPACE_LINEAR;
   };
 
+  typedef struct _TextureObject *TextureObject;
+  typedef struct _AccelHandle *AccelHandle;
 }
 
 

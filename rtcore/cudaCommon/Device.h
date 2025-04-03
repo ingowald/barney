@@ -21,6 +21,8 @@
 namespace rtc {
   namespace cuda_common {
 
+    using rtc::TextureObject;
+    
     struct Device;
     struct Texture;
     struct TextureData;

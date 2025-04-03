@@ -23,6 +23,9 @@
 #include "barney/volume/DDA.h"
 #include "barney/render/World.h"
 #include "barney/render/OptixGlobals.h"
+#if RTC_DEVICE_CODE
+# include "rtcore/TraceInterface.h"
+#endif
 
 namespace BARNEY_NS {
   using render::Ray;
@@ -63,7 +66,7 @@ namespace BARNEY_NS {
     
     void build(bool full_rebuild) override;
     
-#if BARNEY_DEVICE_PROGRAM
+#if RTC_DEVICE_CODE
     /*! optix bounds prog for this class of accels */
     static inline __rtc_device
     void boundsProg(const rtc::TraceInterface &ti,
@@ -142,7 +145,7 @@ namespace BARNEY_NS {
   // device progs: macro-cell accel with DDA traversal
   // ------------------------------------------------------------------
 
-#if BARNEY_DEVICE_PROGRAM
+#if RTC_DEVICE_CODE
   template<typename SFSampler>
   inline __rtc_device
   void MCVolumeAccel<SFSampler>::boundsProg(const rtc::TraceInterface &ti,

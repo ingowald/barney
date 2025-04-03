@@ -208,8 +208,7 @@ namespace BARNEY_NS {
           if (pld->rtcTexture)
             device->rtc->freeTexture(pld->rtcTexture);
           pld->rtcTexture
-            = textureData->getPLD(device)->rtc
-            ->createTexture(desc);
+            = textureData->getPLD(device)->rtc->createTexture(desc);
         };
       }
 

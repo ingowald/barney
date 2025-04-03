@@ -54,12 +54,12 @@ namespace BARNEY_NS {
       std::vector<int>       userIDs;
     } instances;
 
-    rtc::device::AccelHandle getInstanceAccel(Device *device)
+    rtc::AccelHandle getInstanceAccel(Device *device)
     {
       auto *pld = getPLD(device);
       if (!pld || !pld->instanceGroup)
         return 0;
-      return pld->instanceGroup->getDD();
+      return rtc::getAccelHandle(pld->instanceGroup);
     }
     
     struct PLD {

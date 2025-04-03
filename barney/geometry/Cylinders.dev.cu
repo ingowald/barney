@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/geometry/Cylinders.h"
-#include "rtcore/TraceInterface.h"
+#include "rtcore/ProgramInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
@@ -79,7 +79,7 @@ namespace BARNEY_NS {
   }
   
   struct CylindersPrograms {
-
+#if RTC_DEVICE_CODE
     static inline __rtc_device
     void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
@@ -265,6 +265,7 @@ namespace BARNEY_NS {
     
       ti.reportIntersection(ray.tMax, 0);
     }
+#endif
   };
   
   RTC_EXPORT_USER_GEOM(Cylinders,Cylinders::DD,CylindersPrograms,false,false);  

@@ -51,6 +51,7 @@ namespace BARNEY_NS {
 
       Type type;
 
+#if RTC_DEVICE_CODE
       inline __rtc_device PackedBSDF();
       inline __rtc_device PackedBSDF(Type type, Data data)
         : type(type), data(data) {}
@@ -83,9 +84,10 @@ namespace BARNEY_NS {
                        vec3f rayDir,
                        vec3f Ng,
                        bool dbg=false) const;
+#endif
     };
 
-
+#if RTC_DEVICE_CODE
     inline __rtc_device
     EvalRes PackedBSDF::eval(render::DG dg, vec3f w_i, bool dbg) const
     {
@@ -145,6 +147,6 @@ namespace BARNEY_NS {
       if (type == TYPE_Lambertian)
         return data.lambertian.scatter(scatter,dg,random,dbg);
     }
-    
+#endif
   }
 }

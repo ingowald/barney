@@ -20,7 +20,9 @@
 
 namespace rtc {
   namespace cuda {
-
+    
+    struct Device;
+  
     struct Buffer {
       Buffer(Device *device,
              size_t numBytes,
@@ -32,6 +34,6 @@ namespace rtc {
       void *d_data = 0;
       Device *const device;
     };
-    
+
   }
 }

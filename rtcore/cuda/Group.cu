@@ -29,7 +29,7 @@
 
 namespace rtc {
   namespace cuda {
-
+    
     Group::Group(Device *device)
       : device(device)
     {}
@@ -93,47 +93,6 @@ namespace rtc {
 
       primBounds[tid] = bb;
     }
-
-//     __global__
-//     void createUserGeomBounds(TraceInterface ti,
-//                               box3f *primBounds,
-//                               const uint8_t *groupSBT,
-//                               size_t sbtEntrySize,
-//                               GeomGroup::Prim *prims,
-//                               int numPrims)
-//     {
-//       int tid = threadIdx.x+blockIdx.x*blockDim.x;
-// #if 1
-//       primBounds[tid] = box3f(vec3f(-1.f),vec3f(+1.f));
-//       return;
-// #else
-
-//       for (int i=0;i<1024;i++) {
-//         __syncthreads();
-//         if (tid != i) continue;
-
-//         printf("tid %i %i/%i\n",i,tid,numPrims);
-//         if (tid >= numPrims) { printf("SKIP\n"); continue;}
-//         // if (tid >= numPrims) return;
-
-//         GeomGroup::Prim prim = prims[tid];
-//         int primID = prim.primID;
-//         printf("geomid:primid %i:%i\n",prim.geomID,prim.primID);
-//         const uint8_t *mySBT = groupSBT + prim.geomID * sbtEntrySize;
-
-//         // const TraceInterface ti = {};
-//         const Geom::SBTHeader *header = (const Geom::SBTHeader *)mySBT;
-//         const void *geomData = header+1;
-//         box3f bb;
-//         printf("hededr %p geom %p boundsprog %p\n",header,geomData,
-//                header->user.bounds);
-//         header->user.bounds(ti,geomData,bb,primID);
-//         printf("writing primboudns %f\
-// n",bb.lower.x);
-//         primBounds[tid] = bb;
-//       }
-// #endif
-//     }
     
     __global__
     void reorderPrims(GeomGroup::Prim *out,
@@ -507,6 +466,6 @@ namespace rtc {
       record.bvhNodes = bvhNodes;
       return record;
     }
-    
+
   }
 }

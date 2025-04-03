@@ -17,27 +17,32 @@
 #include "barney/geometry/Attributes.dev.h"
 #include "barney/volume/StructuredData.h"
 #include "barney/volume/MCAccelerator.h"
-#include "rtcore/TraceInterface.h"
+#include "rtcore/ProgramInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
 namespace BARNEY_NS {
 
   struct MCAccel_Structured_Programs {
-    
     static inline __rtc_device
     void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
-                const int32_t primID) 
+                const int32_t primID)
     {
-      MCVolumeAccel<StructuredDataSampler>::boundsProg(ti,geomData,bounds,primID);
+#if RTC_DEVICE_CODE
+      MCVolumeAccel<StructuredDataSampler>
+        ::boundsProg(ti,geomData,bounds,primID);
+#endif
     }
     
     static inline __rtc_device
     void intersect(rtc::TraceInterface &ti)
     {
-      MCVolumeAccel<StructuredDataSampler>::isProg(ti);
+#if RTC_DEVICE_CODE
+      MCVolumeAccel<StructuredDataSampler>
+        ::isProg(ti);
+#endif
     }
     
     static inline __rtc_device
@@ -48,6 +53,7 @@ namespace BARNEY_NS {
     void anyHit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
   };
+  
   
   RTC_EXPORT_USER_GEOM(StructuredMC,
                        typename MCVolumeAccel<StructuredDataSampler>::DD,

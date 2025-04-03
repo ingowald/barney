@@ -19,7 +19,6 @@
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
 #include "barney/common/mat4.h"
-#include "rtcore/Frontend.h"
 #include <stack>
 
 namespace BARNEY_NS {
@@ -68,9 +67,9 @@ namespace BARNEY_NS {
         vec4f eval(const HitAttributes &inputs, bool dbg) const;
 #endif
         // image only:
-        AttributeTransform         inTransform;
-        rtc::device::TextureObject texture;
-        uint8_t                    numChannels;
+        AttributeTransform inTransform;
+        rtc::TextureObject texture;
+        uint8_t            numChannels;
         
         // all types
         uint8_t type=INVALID;
