@@ -745,7 +745,7 @@ namespace BARNEY_NS {
       
       vec3f scatterFactor
         = scatterResult.f_r
-        * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ray.dir)))
+        // * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ray.dir)))
         // * ONE_OVER_PI
         / (isinf(scatterResult.pdf)? 1.f : (//ONE_PI*
                                             scatterResult.pdf + 1e-10f));
