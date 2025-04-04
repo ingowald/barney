@@ -21,6 +21,7 @@
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
 #include "barney/render/RayQueue.h"
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 

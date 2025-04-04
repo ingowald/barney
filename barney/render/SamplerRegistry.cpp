@@ -52,7 +52,7 @@ namespace BARNEY_NS {
     void SamplerRegistry::grow()
     {
       PING;
-      size_t oldNumBytes = numReserved * sizeof(Sampler::DD) + 4096;
+      size_t oldNumBytes = numReserved * sizeof(Sampler::DD);
       numReserved *= 2;
       PRINT(numReserved);
       size_t newNumBytes = numReserved * sizeof(Sampler::DD) + 4096;
@@ -68,6 +68,7 @@ namespace BARNEY_NS {
         Sampler::DD *oldMem = pld->memory;
         pld->memory = (Sampler::DD*)rtc->allocMem(newNumBytes);
         PING; PRINT((int*)pld->memory);
+        PRINT((int*)oldMem); PRINT(oldNumBytes);
         rtc->copy(pld->memory,oldMem,oldNumBytes);
         rtc->freeMem(oldMem);
       }

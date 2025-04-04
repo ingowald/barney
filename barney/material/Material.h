@@ -121,11 +121,6 @@ namespace BARNEY_NS {
         return hitData.get(attribute,dbg);
       } 
       if (type == SAMPLER) {
-        if (samplerID < 0) return vec4f(0.f,0.f,0.f,1.f);
-        if (samplerID != 0) {
-          printf("SAMPLER %i\n",samplerID);
-          return vec4f(0.f);
-        }
         return samplers[samplerID].eval(hitData,dbg);
       }
       return vec4f(0.f,0.f,0.f,1.f);
