@@ -286,11 +286,13 @@ namespace BARNEY_NS {
                         ti.getPrimitiveIndex(),
                         world.rngSeed));
         if (rng() > opacity) {
-          ti.ignoreIntersection();
+          // ti.ignoreIntersection();
           return;
         }
       }
       
+      // .... let optix know we did have a hit.
+      ti.reportIntersection(hit_t, 0);
       // ... store the hit in the ray, rqs-style ...
       // const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
       material.setHit(ray,hitData,world.samplers,ray.dbg);
@@ -307,8 +309,6 @@ namespace BARNEY_NS {
         globals.hitIDs[rayID].objID  = self.userID;
       }
 
-      // .... and let optix know we did have a hit.
-      ti.reportIntersection(hit_t, 0);
     }
 #endif
   };

@@ -182,6 +182,7 @@ namespace BARNEY_NS {
         hit_t += t_move;
 
         // ------------------------------------------------------------------
+        ti.reportIntersection(hit_t, 0);
         const OptixGlobals &globals = OptixGlobals::get(ti);
         if (globals.hitIDs) {
           /* ID buffer rendering writes IDs no matter what transparency */
@@ -207,7 +208,6 @@ namespace BARNEY_NS {
         }
         // ------------------------------------------------------------------
 
-        ti.reportIntersection(hit_t, 0);
       }
     }
 #endif
