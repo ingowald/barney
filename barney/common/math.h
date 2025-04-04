@@ -70,6 +70,7 @@ namespace BARNEY_NS {
 
   inline __both__ float lerp_l(float factor, float a, float b) { return (1.f-factor)*a+factor*b; }
   inline __both__ vec3f lerp_l(vec3f factor, vec3f a, vec3f b) { return (1.f-factor)*a+factor*b; }
+  inline __both__ vec4f lerp_l(vec4f factor, vec4f a, vec4f b) { return (1.f-factor)*a+factor*b; }
 
   inline __both__ vec3f lerp_r(box3f box, vec3f f)
   { return lerp_l(f,box.lower,box.upper); }

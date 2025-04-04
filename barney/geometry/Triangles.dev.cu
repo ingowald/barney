@@ -135,7 +135,7 @@ namespace BARNEY_NS {
                         ti.getPrimitiveIndex(),
                         world.rngSeed));
         if (rng() > opacity) {
-          ti.ignoreIntersection();
+          // ti.ignoreIntersection();
           return;
         }
       }

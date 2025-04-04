@@ -97,18 +97,18 @@ namespace rtc {
       vec3f hi = ((const vec3f &)bb.upper - org) * rcp(dir);
       vec3f nr = min(lo,hi);
       vec3f fr = max(lo,hi);
-#if 0
-      printf("box %f %f %f : %f %f %f\n",
-             bb.lower.x,
-             bb.lower.y,
-             bb.lower.z,
-             bb.upper.x,
-             bb.upper.y,
-             bb.upper.z);
-      printf("t0 %f (%f %f %f) t1  %f (%f %f %f)\n",
-             t0,nr.x,nr.y,nr.z,
-             t1,fr.x,fr.y,fr.z);
-#endif
+// #if 0
+//       printf("box %f %f %f : %f %f %f\n",
+//              bb.lower.x,
+//              bb.lower.y,
+//              bb.lower.z,
+//              bb.upper.x,
+//              bb.upper.y,
+//              bb.upper.z);
+//       printf("t0 %f (%f %f %f) t1  %f (%f %f %f)\n",
+//              t0,nr.x,nr.y,nr.z,
+//              t1,fr.x,fr.y,fr.z);
+// #endif
       t0 = max(t0,reduce_max(nr));
       t1 = min(t1,reduce_min(fr));
       return t0 <= t1;
@@ -132,15 +132,15 @@ namespace rtc {
         t0 = 0.f;
       }
 
-      if (dbg)
-        printf("================================= TRACING %f %f %f : %f %f %f : %f\n",
-               org.x,
-               org.y,
-               org.z,
-               dir.x,
-               dir.y,
-               dir.z,
-               t1);
+      // if (dbg)
+      //   printf("================================= TRACING %f %f %f : %f %f %f : %f\n",
+      //          org.x,
+      //          org.y,
+      //          org.z,
+      //          dir.x,
+      //          dir.y,
+      //          dir.z,
+      //          t1);
       struct StackEntry {
         uint32_t node;
         float    dist;
@@ -257,11 +257,11 @@ namespace rtc {
                   stackPtr->dist = near1;
                   stackPtr->node = child+1;
                 }
-                if (dbg)
-                  printf("PUSHING %i @ %f\n",stackPtr->node,stackPtr->dist);
+                // if (dbg)
+                //   printf("PUSHING %i @ %f\n",stackPtr->node,stackPtr->dist);
                 ++stackPtr;
                 if ((stackPtr - topLevelStackBase) >= STACK_DEPTH) {
-                  printf("STACK OVERFLOW!!!!\n");
+                  // printf("STACK OVERFLOW!!!!\n");
                   return;
                 }
               } else {
@@ -273,13 +273,13 @@ namespace rtc {
           if (done) break;
           // leaf - either to or bottom...
           if (inTopLevel) {
-            if (node->admin.count != 1)
-              printf("MORE THAN ONE INSTANCE!?");
-            if (dbg)
-              printf("########### hit INSTANCE leaf %p, %i:%i\n",
-                     node,
-                     (int)node->admin.offset,
-                     (int)node->admin.count);
+            // if (node->admin.count != 1)
+            //   printf("MORE THAN ONE INSTANCE!?");
+            // if (dbg)
+            //   printf("########### hit INSTANCE leaf %p, %i:%i\n",
+            //          node,
+            //          (int)node->admin.offset,
+            //          (int)node->admin.count);
             current.instID = model->bvh.primIDs[node->admin.offset];
             currentInstance = model->instanceRecords+current.instID;
             org = object.org = xfmPoint(currentInstance->worldToObjectXfm,world.org);
@@ -292,21 +292,21 @@ namespace rtc {
             stackBase = stackPtr;
             inTopLevel = false;
               
-            if (dbg)
-              printf(">> NEW RAY %f %f %f : %f %f %f\n",
-                     org.x,
-                     org.y,
-                     org.z,
-                     dir.x,
-                     dir.y,
-                     dir.z);
+            // if (dbg)
+            //   printf(">> NEW RAY %f %f %f : %f %f %f\n",
+            //          org.x,
+            //          org.y,
+            //          org.z,
+            //          dir.x,
+            //          dir.y,
+            //          dir.z);
             
           } else {
-            if (dbg)
-              printf("########### hit GEOM leaf %i, %i:%i\n",
-                     nodeID,
-                     (int)node->admin.offset,
-                     (int)node->admin.count);
+            // if (dbg)
+            //   printf("########### hit GEOM leaf %i, %i:%i\n",
+            //          nodeID,
+            //          (int)node->admin.offset,
+            //          (int)node->admin.count);
             break;
           }
         }
@@ -363,18 +363,18 @@ namespace rtc {
         nodeID = -1;
       }
 #if 1
-      if (dbg)
-        printf("accepted ...%p\n",acceptedSBT);
+      // if (dbg)
+      //   printf("accepted ...%p\n",acceptedSBT);
       if (acceptedSBT && acceptedSBT->ch) {
         current = accepted;
         this->geomData = (acceptedSBT+1);
-        if (dbg)
-          printf("accepted CH ...%p\n",acceptedSBT->ch);
+        // if (dbg)
+        //   printf("accepted CH ...%p\n",acceptedSBT->ch);
         acceptedSBT->ch(*this);
       }
 #endif
-      if (dbg)
-        printf("done\n");
+      // if (dbg)
+      //   printf("done\n");
     }
     
     inline __device__

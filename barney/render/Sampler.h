@@ -19,6 +19,7 @@
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
 #include "barney/common/mat4.h"
+#include "barney/common/math.h"
 #include <stack>
 #if RTC_DEVICE_CODE
 # include "rtcore/ComputeInterface.h"
@@ -180,9 +181,10 @@ namespace BARNEY_NS {
                              bool dbg) const
     {
       // dbg = true;
-      // if (dbg) printf("evaluting sampler %p texture %p\n",this,
-      //                 (void*)texture);
+       // printf("evaluating sampler %p texture %p\n",this,
+       //                 (void*)texture);
       vec4f in  = inputs.get((AttributeKind)inAttribute);
+      return in;
       // if (dbg) {
       //   printf("sampler: %lx\n",(size_t)&this->inTransform.mat_x);
       //   // printf("sampler: %lx\n",(size_t)&this->inTransform.mat_x);
@@ -204,6 +206,36 @@ namespace BARNEY_NS {
       // if (dbg) printf("in is %f %f %f %f\n",in.x,in.y,in.z,in.w);
       if (type != TRANSFORM) {
         vec4f coord = inTransform.applyTo(in);
+#if 1
+        if (type == IMAGE1D) {
+          vec4f fromTex = rtc::tex1D<vec4f>(texture,coord.x);
+          if (numChannels == 1) {
+            fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
+          } else if (numChannels == 2) {
+            fromTex.z = 0.f; fromTex.w = 1.f;
+          } else if (numChannels == 3) {
+            fromTex.w = 1.f;
+          }
+          return outTransform.applyTo(fromTex);
+        }
+        if (type == IMAGE2D) {
+          // if (dbg) printf("sampling 2d texture %p at %f %f\n",
+          //                 (int*)texture,coord.x,coord.y);
+          // if ((int)(size_t)texture > 0)
+          vec4f fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
+          if (numChannels == 1) {
+            fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
+          } else if (numChannels == 2) {
+            fromTex.z = 0.f; fromTex.w = 1.f;
+          } else if (numChannels == 3) {
+            fromTex.w = 1.f;
+          }
+          return outTransform.applyTo(fromTex);
+          // return fromTex;
+        }
+        // return outTransform.applyTo(coord);
+        return coord;
+#else
         // if (dbg) printf("coord is %f %f %f %f\n",coord.x,coord.y,coord.z,coord.w);
         vec4f fromTex = vec4f(0.f);
         if (type == IMAGE1D) {
@@ -222,12 +254,10 @@ namespace BARNEY_NS {
         // if (dbg) printf("fromTex is %f %f %f %f\n",fromTex.x,fromTex.y,fromTex.z,fromTex.w);
         in.x = fromTex.x;
         
-        if (numChannels >= 1) in.y = fromTex.y;
-        if (numChannels >= 2) in.z = fromTex.z;
-        if (numChannels >= 3) in.w = fromTex.w;
-        if (dbg) printf("numchan %i -> %f %f %f %f\n",
-                        numChannels,
-                        in.x,in.y,in.z,in.w);
+        if (numChannels > 1) in.y = fromTex.y;
+        if (numChannels > 2) in.z = fromTex.z;
+        if (numChannels > 3) in.w = fromTex.w;
+#endif
       }
       vec4f out = outTransform.applyTo(in);
       return out;
