@@ -18,6 +18,7 @@
 #if 1
 #include <cuBQL/bvh.h>
 #if RTC_HAVE_CUDA
+# include <cuBQL/builder/cuda.h>
 # include <cuBQL/builder/cuda/wide_gpu_builder.h>
 #endif
 #include "rtcore/ComputeInterface.h"
