@@ -186,7 +186,6 @@ namespace BARNEY_NS {
     
     void TextureSampler::commit() 
     {
-      // PRINT(rtcTexture);
       for (auto device : *devices) {
         PLD *pld = getPLD(device);
         if (pld->rtcTexture)

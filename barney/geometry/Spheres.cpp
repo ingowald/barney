@@ -38,7 +38,6 @@ namespace BARNEY_NS {
           = device->geomTypes.get(createGeomType_Spheres);
         rtc::Geom *geom = gt->createGeom();
         geom->setPrimCount(numOrigins);
-        PRINT(numOrigins);
         pld->userGeoms.push_back(geom);
       }
       rtc::Geom *geom = pld->userGeoms[0];
@@ -46,7 +45,6 @@ namespace BARNEY_NS {
       Spheres::DD dd;
       Geometry::writeDD(dd,device);
       dd.origins = (vec3f*)(origins->getDD(device));
-      PING; PRINT(dd.origins);
       dd.radii   = (float*)(radii?radii->getDD(device):0);
       dd.colors  = (vec3f*)(colors?colors->getDD(device):0);
       dd.defaultRadius = defaultRadius;
