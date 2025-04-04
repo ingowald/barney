@@ -169,6 +169,12 @@ namespace BARNEY_NS {
                                bgColor.z);
       state.throughput = vec3f(1.f);
       int pos = rt.atomicAdd(d_count,1);
+
+      if (ray.dbg) {
+        printf("ray %i is DEBUG \n",pos);
+      }
+      ray.dbg_i = pos;
+      
       rayQueue.rays[pos] = ray;
       rayQueue.states[pos] = state;
       rayQueue.hitIDs[pos] = {INFINITY,-1,-1,-1};

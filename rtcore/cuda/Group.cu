@@ -401,6 +401,8 @@ namespace rtc {
       cuBQL::DeviceMemoryResource memResource;
       cuBQL::BuildConfig buildConfig;
       buildConfig.maxAllowedLeafSize = 4;
+      buildConfig.enableSAH();
+      // buildConfig.makeLeafThreshold = 4;
       cuBQL::gpuBuilder(bvh,
                         (const cuBQL::box_t<float,3>*)primBounds,
                         numPrims,

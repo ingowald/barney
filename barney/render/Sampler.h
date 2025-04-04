@@ -184,7 +184,7 @@ namespace BARNEY_NS {
        // printf("evaluating sampler %p texture %p\n",this,
        //                 (void*)texture);
       vec4f in  = inputs.get((AttributeKind)inAttribute);
-      return in;
+      // return in;
       // if (dbg) {
       //   printf("sampler: %lx\n",(size_t)&this->inTransform.mat_x);
       //   // printf("sampler: %lx\n",(size_t)&this->inTransform.mat_x);

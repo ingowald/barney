@@ -198,11 +198,8 @@ namespace rtc {
                   stackPtr->dist = near1;
                   stackPtr->node = child+1;
                 }
-                // if (dbg)
-                //   printf("PUSHING %i @ %f\n",stackPtr->node,stackPtr->dist);
                 ++stackPtr;
                 if ((stackPtr - topLevelStackBase) >= STACK_DEPTH) {
-                  // printf("STACK OVERFLOW!!!!\n");
                   return;
                 }
               } else {
@@ -214,13 +211,6 @@ namespace rtc {
           if (done) break;
           // leaf - either to or bottom...
           if (inTopLevel) {
-            // if (node->admin.count != 1)
-            //   printf("MORE THAN ONE INSTANCE!?");
-            // if (dbg)
-            //   printf("########### hit INSTANCE leaf %p, %i:%i\n",
-            //          node,
-            //          (int)node->admin.offset,
-            //          (int)node->admin.count);
             current.instID = model->bvh.primIDs[node->admin.offset];
             currentInstance = model->instanceRecords+current.instID;
             org = object.org = xfmPoint(currentInstance->worldToObjectXfm,world.org);
@@ -232,38 +222,18 @@ namespace rtc {
             nodeID = 0;
             stackBase = stackPtr;
             inTopLevel = false;
-              
-            // if (dbg)
-            //   printf(">> NEW RAY %f %f %f : %f %f %f\n",
-            //          org.x,
-            //          org.y,
-            //          org.z,
-            //          dir.x,
-            //          dir.y,
-            //          dir.z);
-            
           } else {
-            // if (dbg)
-            //   printf("########### hit GEOM leaf %i, %i:%i\n",
-            //          nodeID,
-            //          (int)node->admin.offset,
-            //          (int)node->admin.count);
             break;
           }
         }
         if (done)
           break;
 
-        // if (dbg)
-        //   printf("starting on isec, instance %lx\n",currentInstance);
-        // GEOM instance leaf
         GeomGroup::DeviceRecord *group 
           = (GeomGroup::DeviceRecord *)&currentInstance->group;
         GeomGroup::Prim *prims = group->prims;
         const bvh3f::Node *node = nodes+nodeID;
-        // if (dbg) printf("node %i\n",nodeID);
         for (int primNo=0;primNo<node->admin.count;primNo++) {
-          // if (dbg) printf("primno %i\n",primNo);
           GeomGroup::Prim prim = prims[node->admin.offset+primNo];
           current.primID = prim.primID;
           current.geomID = prim.geomID;
@@ -273,19 +243,13 @@ namespace rtc {
             = (Geom::SBTHeader *)geomSBT;
           this->geomData = (header+1);
           if (group->isTrianglesGroup) {
-            // if (dbg) printf("primid %i\n",prim.primID);
             vec3i indices = header->triangles.indices[prim.primID];
             vec3f v0 = header->triangles.vertices[indices.x];
             vec3f v1 = header->triangles.vertices[indices.y];
             vec3f v2 = header->triangles.vertices[indices.z];
-            // if (dbg) printf("intersecting tri (%f %f %f) (%f %f %f) (%f %f %f)\n",
-            //                 v0.x,v0.y,v0.z,
-            //                 v1.x,v1.y,v1.z,
-            //                 v2.x,v2.y,v2.z);
             if (!intersectTriangle(v0,v1,v2))
               continue;
           } else {
-            // if (dbg) printf("usec isec\n");
             header->user.intersect(*this);
             if (current.tMax >= accepted.tMax)
               continue;
@@ -304,18 +268,12 @@ namespace rtc {
         nodeID = -1;
       }
 #if 1
-      // if (dbg)
-      //   printf("accepted ...%p\n",acceptedSBT);
       if (acceptedSBT && acceptedSBT->ch) {
         current = accepted;
         this->geomData = (acceptedSBT+1);
-        // if (dbg)
-        //   printf("accepted CH ...%p\n",acceptedSBT->ch);
         acceptedSBT->ch(*this);
       }
 #endif
-      // if (dbg)
-      //   printf("done\n");
     }
     
     inline __device__
