@@ -312,7 +312,7 @@ namespace BARNEY_NS {
     }
 #endif
   };
-  
+
   RTC_EXPORT_USER_GEOM(Capsules,Capsules::DD,CapsulesPrograms,false,false);
 } // ::BARNEY_NS
 

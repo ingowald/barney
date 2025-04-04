@@ -82,6 +82,7 @@ namespace BARNEY_NS {
 #endif
     
   }
+  
   RTC_EXPORT_TRACE2D(traceRays,render::TraceRays);
 }
 

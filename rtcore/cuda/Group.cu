@@ -121,7 +121,6 @@ namespace rtc {
 
     void InstanceGroup::buildAccel() 
     {
-      PING;
       SetActiveGPU forDuration(device);
 
       // ------------------------------------------------------------------

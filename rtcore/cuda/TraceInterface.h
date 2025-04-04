@@ -422,7 +422,7 @@ namespace rtc {
   }
 }
 
-#if RTC_DEVIC_CODE
+#if RTC_DEVICE_CODE
 # define RTC_CUDA_TRACEKERNEL(name,Class)                       \
   __global__                                                    \
   void rtc_cuda_run_##name(::rtc::cuda::TraceInterface ti)      \
