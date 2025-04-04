@@ -17,23 +17,27 @@
 #pragma once
 
 #include "rtcore/optix/Device.h"
-#include <owl/owl.h>
+#include "rtcore/optix/Buffer.h"
+#include "rtcore/cudaCommon/ComputeKernel.h"
+// for setPrimCount etc
+#include "rtcore/optix/Geom.h"
+// for buildAccel
+#include "rtcore/optix/Group.h"
+// for createTexture
+#include "rtcore/cudaCommon/TextureData.h"
+// for getDD
+#include "rtcore/cudaCommon/Texture.h"
+#include "rtcore/optix/Denoiser.h"
 
 namespace rtc {
   namespace optix {
-    struct Device;
 
-    struct Group {
-      Group(optix::Device *device, OWLGroup owlGroup);
-      virtual ~Group() { owlGroupRelease(owl); }
-      
-      rtc::AccelHandle getDD() const;
-      void buildAccel();
-      void refitAccel();
-      
-      OWLGroup const owl;
-      optix::Device *const device;
-    };
-
+    using rtc::cuda_common::ComputeKernel1D;
+    using rtc::cuda_common::ComputeKernel2D;
+    using rtc::cuda_common::ComputeKernel3D;
+    
+    using rtc::cuda_common::Texture;
+    using rtc::cuda_common::TextureData;
   }
 }
+

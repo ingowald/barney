@@ -19,7 +19,8 @@
 #include "barney/material/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/HitAttributes.h"
-#if RTC_DEVICE_CODE
+// #if RTC_DEVICE_CODE
+#if BARNEY_DEVICE_PROGRAM
 # include "rtcore/TraceInterface.h"
 #endif
 #include "barney/render/World.h"
@@ -33,7 +34,8 @@ namespace BARNEY_NS {
         be marshalled there, but the 'get()' method can only be
         available in device programs */
     struct OptixGlobals {
-#if RTC_DEVICE_CODE
+#if BARNEY_DEVICE_PROGRAM
+// #if RTC_DEVICE_CODE
       static inline __rtc_device
       const OptixGlobals &get(const rtc::TraceInterface &dev);
 #endif
@@ -56,7 +58,8 @@ namespace BARNEY_NS {
 namespace BARNEY_NS {
   namespace render {
 
-#if RTC_DEVICE_CODE
+// #if RTC_DEVICE_CODE
+#if BARNEY_DEVICE_PROGRAM
     inline __rtc_device
     const OptixGlobals &OptixGlobals::get(const rtc::TraceInterface &ti)
     {

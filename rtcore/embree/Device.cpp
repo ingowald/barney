@@ -112,7 +112,7 @@ namespace rtc {
     }
 
     
-    void TraceInterface::traceRay(rtc::device::AccelHandle world,
+    void TraceInterface::traceRay(rtc::AccelHandle world,
                                   vec3f rayOrigin,
                                   vec3f rayDirection,
                                   float tmin,

@@ -8,3 +8,13 @@
 # include "cuda/ComputeInterface.h"
 namespace rtc { using namespace rtc::cuda; }
 #endif
+
+#if BARNEY_RTC_OPTIX
+# include "optix/ComputeInterface.h"
+namespace rtc { using namespace rtc::optix; }
+#endif
+
+#if BARNEY_RTC_EMBREE
+# include "embree/ComputeInterface.h"
+namespace rtc { using namespace rtc::embree; }
+#endif

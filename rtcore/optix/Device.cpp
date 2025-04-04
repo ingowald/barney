@@ -26,6 +26,9 @@
 namespace rtc {
   namespace optix {
     
+    rtc::AccelHandle getAccelHandle(Group *ig)
+    { return ig->getDD(); }
+    
     Device::Device(int physicalGPU)
       : cuda_common::Device(physicalGPU)
     {

@@ -19,89 +19,23 @@
 #include <owl/owl.h>
 #include "rtcore/cudaCommon/ComputeInterface.h"
 
-#if !BARNEY_DEVICE_PROGRAM
-# error "RTcore.h should only ever be included by device programs"
-#endif
-
-#define RTC_DECLARE_GLOBALS(Type)                                       \
-  extern "C" __constant__ Type optixLaunchParams;                       \
-  inline __device__ const void *rtc::optix::getLaunchParamsPointer()    \
-  { return &optixLaunchParams; }                                        \
-  
-
-
-#define RTC_EXPORT_USER_GEOM(name,DD,type,has_ah,has_ch)                \
-                                                                        \
-  extern "C" __global__                                                 \
-  void __closesthit__##name() {                                         \
-    ::rtc::optix::TraceInterface rtcore;                                \
-    type::closestHit(rtcore);                                           \
-  }                                                                     \
-                                                                        \
-  extern "C" __global__                                                 \
-  void __anyhit__##name() {                                             \
-    ::rtc::optix::TraceInterface rtcore;                                \
-    type::anyHit(rtcore);                                               \
-  }                                                                     \
-                                                                        \
-  extern "C" __global__                                                 \
-  void __intersection__##name() {                                       \
-    ::rtc::optix::TraceInterface rtcore;                                \
-    type::intersect(rtcore);                                            \
-  }                                                                     \
-                                                                        \
-  __device__ void __boundsFunc__##name(const void *geom,                \
-                                       owl::common::box3f &result,      \
-                                       int primID)                      \
-  {                                                                     \
-    ::rtc::optix::TraceInterface rtcore;                                \
-    type::bounds(rtcore,geom,result,primID);                            \
-  }                                                                     \
-  extern "C" __global__                                                 \
-  void __boundsFuncKernel__##name(const void *geom,                     \
-                                  owl::common::box3f *boundsArray,      \
-                                  int numPrims)                         \
-  {                                                                     \
-    uint32_t blockIndex                                                 \
-      = blockIdx.x                                                      \
-      + blockIdx.y * gridDim.x                                          \
-      + blockIdx.z * gridDim.x * gridDim.y;                             \
-    uint32_t primID                                                     \
-      = threadIdx.x + blockDim.x*threadIdx.y                            \
-      + blockDim.x*blockDim.y*blockIndex;                               \
-    if (primID < numPrims) {                                            \
-      __boundsFunc__##name(geom,boundsArray[primID],primID);            \
-    }                                                                   \
-  }                                                                     \
-                                                                        \
-    
-  
-#define RTC_EXPORT_TRIANGLES_GEOM(name,DD,type,has_ah,has_ch)   \
-                                                                \
-  extern "C" __global__                                         \
-  void __closesthit__##name() {                                 \
-    ::rtc::optix::TraceInterface rtcore;                        \
-    type::closestHit(rtcore);                                   \
-  }                                                             \
-                                                                \
-  extern "C" __global__                                         \
-  void __anyhit__##name() {                                     \
-    ::rtc::optix::TraceInterface rtcore;                        \
-    type::anyHit(rtcore);                                       \
-  }                                                             \
-  
-  
-
 namespace rtc {
   namespace optix {
 
     using namespace rtc::cuda_common;
+
+#ifdef __CUDACC__
+    inline __device__
+    const void *getLaunchParamsPointer();
+#endif
     
     /*! the interface that pipeline programs use to talk to / query
       data from the ray tracing core */
-    inline __device__ const void *getLaunchParamsPointer();
     struct TraceInterface {
 #ifdef __CUDACC__
+      inline __device__ const void *getLPData() const
+      { return getLaunchParamsPointer(); }
+      
       inline __device__ void ignoreIntersection() const
       { optixIgnoreIntersection(); }
       
@@ -113,9 +47,6 @@ namespace rtc {
       
       inline __device__ const void *getProgramData() const
       { return (const void *)optixGetSbtDataPointer(); }
-      
-      inline __device__ const void *getLPData() const
-      { return getLaunchParamsPointer(); }
       
       inline __device__ vec3i getLaunchDims()  const
       { return optixGetLaunchDimensions(); }
@@ -181,7 +112,7 @@ namespace rtc {
       { return optixTransformVectorFromWorldToObjectSpace(v); }
       
       
-      inline __device__ void traceRay(rtc::device::AccelHandle world,
+      inline __device__ void traceRay(rtc::AccelHandle world,
                                       vec3f org,
                                       vec3f dir,
                                       float t0,
@@ -210,6 +141,77 @@ namespace rtc {
       }
 #endif
     };
-    
+
   }
 }
+
+
+#define RTC_DECLARE_GLOBALS(Type)                                       \
+  extern "C" __constant__ Type optixLaunchParams;                       \
+  inline __device__ const void *rtc::optix::getLaunchParamsPointer()    \
+  { return &optixLaunchParams; }                                        \
+    
+
+
+#define RTC_EXPORT_USER_GEOM(name,DD,type,has_ah,has_ch)                \
+                                                                        \
+  extern "C" __global__                                                 \
+  void __closesthit__##name() {                                         \
+    ::rtc::optix::TraceInterface rtcore;                                \
+    type::closestHit(rtcore);                                           \
+  }                                                                     \
+                                                                        \
+  extern "C" __global__                                                 \
+  void __anyhit__##name() {                                             \
+    ::rtc::optix::TraceInterface rtcore;                                \
+    type::anyHit(rtcore);                                               \
+  }                                                                     \
+                                                                        \
+  extern "C" __global__                                                 \
+  void __intersection__##name() {                                       \
+    ::rtc::optix::TraceInterface rtcore;                                \
+    type::intersect(rtcore);                                            \
+  }                                                                     \
+                                                                        \
+  __device__ void __boundsFunc__##name(const void *geom,                \
+                                       owl::common::box3f &result,      \
+                                       int primID)                      \
+  {                                                                     \
+    ::rtc::optix::TraceInterface rtcore;                                \
+    type::bounds(rtcore,geom,result,primID);                            \
+  }                                                                     \
+  extern "C" __global__                                                 \
+  void __boundsFuncKernel__##name(const void *geom,                     \
+                                  owl::common::box3f *boundsArray,      \
+                                  int numPrims)                         \
+  {                                                                     \
+    uint32_t blockIndex                                                 \
+      = blockIdx.x                                                      \
+      + blockIdx.y * gridDim.x                                          \
+      + blockIdx.z * gridDim.x * gridDim.y;                             \
+    uint32_t primID                                                     \
+      = threadIdx.x + blockDim.x*threadIdx.y                            \
+      + blockDim.x*blockDim.y*blockIndex;                               \
+    if (primID < numPrims) {                                            \
+      __boundsFunc__##name(geom,boundsArray[primID],primID);            \
+    }                                                                   \
+  }                                                                     \
+                                                                        \
+    
+  
+#define RTC_EXPORT_TRIANGLES_GEOM(name,DD,type,has_ah,has_ch)   \
+                                                                \
+  extern "C" __global__                                         \
+  void __closesthit__##name() {                                 \
+    ::rtc::optix::TraceInterface rtcore;                        \
+    type::closestHit(rtcore);                                   \
+  }                                                             \
+                                                                \
+  extern "C" __global__                                         \
+  void __anyhit__##name() {                                     \
+    ::rtc::optix::TraceInterface rtcore;                        \
+    type::anyHit(rtcore);                                       \
+  }                                                             \
+  
+  
+

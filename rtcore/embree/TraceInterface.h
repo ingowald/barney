@@ -33,7 +33,7 @@ namespace rtc {
       vec3f transformNormalFromWorldToObjectSpace(vec3f v) const;
       vec3f transformPointFromWorldToObjectSpace(vec3f v) const;
       vec3f transformVectorFromWorldToObjectSpace(vec3f v) const;
-      void  traceRay(rtc::device::AccelHandle world,
+      void  traceRay(rtc::AccelHandle world,
                      vec3f org,
                      vec3f dir,
                      float t0,

@@ -65,8 +65,9 @@ namespace BARNEY_NS {
       GeomTypeCreationFct const creatorFct;
     
     void build(bool full_rebuild) override;
-    
-#if RTC_DEVICE_CODE
+
+#if BARNEY_DEVICE_PROGRAM
+// #if RTC_DEVICE_CODE
     /*! optix bounds prog for this class of accels */
     static inline __rtc_device
     void boundsProg(const rtc::TraceInterface &ti,
@@ -145,7 +146,7 @@ namespace BARNEY_NS {
   // device progs: macro-cell accel with DDA traversal
   // ------------------------------------------------------------------
 
-#if RTC_DEVICE_CODE
+#if BARNEY_DEVICE_PROGRAM && RTC_DEVICE_CODE
   template<typename SFSampler>
   inline __rtc_device
   void MCVolumeAccel<SFSampler>::boundsProg(const rtc::TraceInterface &ti,

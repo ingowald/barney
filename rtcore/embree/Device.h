@@ -18,6 +18,8 @@
 
 #include "rtcore/embree/embree-common.h"
 
+#define RTC_DEVICE_CODE 1
+
 namespace rtc {
   namespace embree {
 
