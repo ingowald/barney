@@ -101,7 +101,6 @@ namespace barney_device {
     const auto numPixels = size.x * size.y;
 
     uint32_t requiredChannels = BN_FB_COLOR;
-    PRINT(m_channelTypes.objID);
     if (m_channelTypes.depth == ANARI_FLOAT32)
       requiredChannels |= BN_FB_DEPTH;
     if (m_channelTypes.primID == ANARI_UINT32)
