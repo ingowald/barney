@@ -180,7 +180,6 @@ namespace BARNEY_NS {
                              Renderer *renderer,
                              FrameBuffer *fb)
   {
-    PING;
     auto getPerRayDebug = [&]()
     {
       const char *fromEnv = getenv("BARNEY_DBG_RENDER");
@@ -231,7 +230,6 @@ namespace BARNEY_NS {
       device->rayQueue->numActive = device->rayQueue->readNumActive();
       PRINT(device->rayQueue->numActive);
     }
-    PING;
   }
   
   RTC_EXPORT_COMPUTE1D(generateRays,BARNEY_NS::render::GenerateRays);
