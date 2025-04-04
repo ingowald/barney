@@ -29,10 +29,11 @@ namespace rtc {
     
     struct SetActiveGPU {
       inline SetActiveGPU(const Device *device);
+      inline SetActiveGPU(int gpuID);
       inline ~SetActiveGPU();
     private:
       int savedActiveDeviceID = -1;
-      const Device *const savedDevice;
+      // const Device *const savedDevice;
     };
 
     /*! base class for cuda-based device(s) - unlike optix/device and
@@ -77,16 +78,32 @@ namespace rtc {
       int const physicalID;
     };
 
+    /*! enable peer access between these gpus, and return truea if
+        successful, else if at least one pair does not work */
+    bool enablePeerAccess(const std::vector<int> &gpuIDs);
+    
     inline SetActiveGPU::SetActiveGPU(const Device *device)
-      : savedDevice(device)
     {
-      if (!device) return;
-      savedActiveDeviceID = device->setActive();
+      if (device) 
+        savedActiveDeviceID = device->setActive();
+      else 
+        BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+    }
+
+    inline SetActiveGPU::SetActiveGPU(int gpuID)
+      // : savedDevice(null)
+    {
+      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      BARNEY_CUDA_CHECK(cudaSetDevice(gpuID));
     }
 
     inline SetActiveGPU::~SetActiveGPU()
     {
-      savedDevice->restoreActive(savedActiveDeviceID);
+      BARNEY_CUDA_CALL_NOTHROW(SetDevice(savedActiveDeviceID));
+      // if (savedDevice) 
+      //   savedDevice->restoreActive(savedActiveDeviceID);
+      // else
+        
     }
     
   }

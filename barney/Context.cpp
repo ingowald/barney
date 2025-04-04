@@ -110,6 +110,8 @@ namespace BARNEY_NS {
     std::vector<std::vector<int>> gpuInSlot(numSlots);
     perSlot.resize(numSlots);
     std::vector<Device *> allDevices;
+
+    std::vector<int> gpuIDsToEnablePeerAccessFor;
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
       std::vector<int> contextRanks;
       auto &dg = perSlot[lmsIdx];
@@ -121,6 +123,7 @@ namespace BARNEY_NS {
         contextRanks.push_back(localRank);
         int gpuID = gpuIDs[localRank];
         rtc::Device *rtc = new rtc::Device(gpuID);
+        gpuIDsToEnablePeerAccessFor.push_back(gpuID);
         Device *device
           = new Device(rtc,
                        (int)allDevices.size(),
@@ -135,6 +138,7 @@ namespace BARNEY_NS {
         = std::make_shared<DevGroup>(slotDevices,(int)allDevices.size());
     }
     this->devices = std::make_shared<DevGroup>(allDevices,(int)allDevices.size());
+    havePeerAccess = rtc::enablePeerAccess(gpuIDsToEnablePeerAccessFor);
 
     for (auto &dg : perSlot)
       dg.materialRegistry
@@ -143,6 +147,7 @@ namespace BARNEY_NS {
       dg.samplerRegistry
         = std::make_shared<render::SamplerRegistry>(dg.devices);
   }
+
   
   Context::~Context()
   {

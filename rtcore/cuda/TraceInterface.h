@@ -126,11 +126,11 @@ namespace rtc {
       if (fabsf(dir.y) < 1e-6f) dir.y = 1e-6f;
       if (fabsf(dir.z) < 1e-6f) dir.z = 1e-6f;
             
-      bool dbg = false;
-      if (t0 < 0.f) {
-        dbg= true;
-        t0 = 0.f;
-      }
+      // bool dbg = false;
+      // if (t0 < 0.f) {
+      //   dbg= true;
+      //   t0 = 0.f;
+      // }
 
       // if (dbg)
       //   printf("================================= TRACING %f %f %f : %f %f %f : %f\n",

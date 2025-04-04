@@ -141,7 +141,7 @@ namespace BARNEY_NS {
        into the respective inputs of the denoiser; otherwise, we write
        color directly into our linearbuffer, and won't write normal at
        all */
-    bool doDenoising = denoiser != 0 && enableDenoising;
+    bool doDenoising = (denoiser != 0) && enableDenoising;
     void *colorCopyTarget
       = doDenoising
       ? denoiser->in_rgba

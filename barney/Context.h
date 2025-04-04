@@ -197,6 +197,10 @@ namespace BARNEY_NS {
 
     const bool isActiveWorker;
 
+    /*! whether we have successfully enabled peer access across all
+        GPUs (eg, to allow tiledFB to write to gpu 0 linear fb */
+    bool havePeerAccess = false;
+    
     SlotContext *getSlot(int slot);
     std::vector<SlotContext> perSlot;
     DevGroup::SP devices;
