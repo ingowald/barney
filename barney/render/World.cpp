@@ -68,8 +68,6 @@ namespace BARNEY_NS {
       
       dd.samplers  = slotContext->samplerRegistry->getDD(device);
       dd.materials = slotContext->materialRegistry->getDD(device);
-      PING; PRINT(dd.samplers);
-      PRINT(dd.materials);
       
       for (int i=0;i<5;i++)
         dd.instanceAttributes[i]
