@@ -22,11 +22,10 @@
 #include "rtcore/cuda/Group.h"
 
 #include "rtcore/cuda/ProgramInterface.h"
-// #include "rtcore/cuda/ComputeInterface.h"
+#include "rtcore/cudaCommon/Device.h"
 
 namespace rtc {
   namespace cuda {
-    
 
     inline __device__
     bool TraceInterface::intersectTriangle(const vec3f v0,
@@ -97,18 +96,6 @@ namespace rtc {
       vec3f hi = ((const vec3f &)bb.upper - org) * rcp(dir);
       vec3f nr = min(lo,hi);
       vec3f fr = max(lo,hi);
-// #if 0
-//       printf("box %f %f %f : %f %f %f\n",
-//              bb.lower.x,
-//              bb.lower.y,
-//              bb.lower.z,
-//              bb.upper.x,
-//              bb.upper.y,
-//              bb.upper.z);
-//       printf("t0 %f (%f %f %f) t1  %f (%f %f %f)\n",
-//              t0,nr.x,nr.y,nr.z,
-//              t1,fr.x,fr.y,fr.z);
-// #endif
       t0 = max(t0,reduce_max(nr));
       t1 = min(t1,reduce_min(fr));
       return t0 <= t1;
@@ -125,22 +112,6 @@ namespace rtc {
       if (fabsf(dir.x) < 1e-6f) dir.x = 1e-6f;
       if (fabsf(dir.y) < 1e-6f) dir.y = 1e-6f;
       if (fabsf(dir.z) < 1e-6f) dir.z = 1e-6f;
-            
-      // bool dbg = false;
-      // if (t0 < 0.f) {
-      //   dbg= true;
-      //   t0 = 0.f;
-      // }
-
-      // if (dbg)
-      //   printf("================================= TRACING %f %f %f : %f %f %f : %f\n",
-      //          org.x,
-      //          org.y,
-      //          org.z,
-      //          dir.x,
-      //          dir.y,
-      //          dir.z,
-      //          t1);
       struct StackEntry {
         uint32_t node;
         float    dist;
@@ -164,41 +135,22 @@ namespace rtc {
       const bvh3f::Node *nodes = model->bvh.nodes;
       int nodeID = 0;
       float node_t0=tMin, node_t1 = accepted.tMax;
-      // if (dbg)
-      //   printf("root bounds (%f %f %f)(%f %f %f)\n",
-      //          nodes->bounds.lower.x,
-      //          nodes->bounds.lower.y,
-      //          nodes->bounds.lower.z,
-      //          nodes->bounds.upper.x,
-      //          nodes->bounds.upper.y,
-      //          nodes->bounds.upper.z);
       if (!boxTest(node_t0,node_t1,nodes[0].bounds,org,dir)) {
-        // if (dbg)
-        //   printf("MISS root box\n");
         return;
       }
 
-      // if (dbg)
-      //   printf("did hit world box. starting trav\n");
       bool done = false;
       bool inTopLevel = true;
       while (true) {
         while (true) {
           while (nodeID == -1) {
-            // if (dbg)
-            //   printf("!!! popping from stack, stack depth %i %i\n",
-            //          int(stackPtr-stackBase),int(stackBase-topLevelStackBase));
             if (stackPtr == topLevelStackBase) {
-              // if (dbg)
-              //   printf(">>>>>>>>>>> hit bottom of stack, done\n");
               done = true;
               break;
             }
             
             if (stackPtr == stackBase) {
               // going back to parent
-              // if (dbg)
-              //   printf(">>>>>>>>>>> hit bottom of GEOM stack, back to instance stack\n");
               org = world.org;
               dir = world.dir;
               currentInstance = 0;
@@ -208,24 +160,13 @@ namespace rtc {
               inTopLevel = true;
             }
             --stackPtr;
-            // if (dbg)
-            //   printf("dist on stack: %f\n",stackPtr->dist);
             if (stackPtr->dist > accepted.tMax)
               continue;
             nodeID = stackPtr->node;
-            // if (dbg)
-            //   printf("POPPED %i\n",nodeID);
           }
           if (done) break;
 
           const bvh3f::Node *node = &nodes[nodeID];          
-          // if (dbg)
-          //   printf("=========== at node %i addr %p, %i:%i\n",
-          //          nodeID,
-          //          node,
-          //          (int)node->admin.offset,
-          //          (int)node->admin.count);
-          // node is a valid node, and we know we've hit its bounds
           if (node->admin.count == 0) {
             uint32_t child = node->admin.offset;
             float near0=tMin;
@@ -447,7 +388,8 @@ namespace rtc {
     ti.lpData = lpData;                                         \
     rtc_cuda_run_##name                                         \
       <<<dim3{(unsigned)nb.x,(unsigned)nb.y,(unsigned)1},       \
-      dim3{(unsigned)bs.x,(unsigned)bs.y,(unsigned)1}>>>(ti);   \
+      dim3{(unsigned)bs.x,(unsigned)bs.y,(unsigned)1},          \
+      0,device->stream>>>(ti);                                  \
   }                                                             \
   
 

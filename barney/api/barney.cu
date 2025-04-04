@@ -734,7 +734,6 @@ namespace barney_api {
                 BNCamera   camera,
                 BNFrameBuffer fb)
   {
-    LOG_API_ENTRY;
     // static double t_first = getCurrentTime();
     // static double t_sum = 0.;
     

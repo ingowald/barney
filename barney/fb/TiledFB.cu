@@ -87,7 +87,7 @@ namespace BARNEY_NS {
                                   tileDescs,accumTiles,
                                   numPixels};
     linearizeColorAndNormalKernel
-      ->launch(numActiveTiles,pixelsPerTile,&args);       
+      ->launch(numActiveTiles,pixelsPerTile,&args);
   }
 
 

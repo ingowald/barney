@@ -29,6 +29,8 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed,
                                  bool needHitIDs)
   {
+    double t0 = getCurrentTime();
+    
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
@@ -68,7 +70,6 @@ namespace BARNEY_NS {
                                       vec2i(bs,nb),
                                       &dd);
         }
-        device->rtc->sync();
       }
     }
 

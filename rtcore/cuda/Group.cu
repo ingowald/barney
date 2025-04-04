@@ -139,7 +139,6 @@ namespace rtc {
         BARNEY_CUDA_CALL(Free(d_instanceRecords));
         d_instanceRecords = 0;
       }
-      PING;
       BARNEY_CUDA_CALL(Malloc((void **)&d_instanceRecords,
                               numInstances*sizeof(InstanceRecord)));
       BARNEY_CUDA_CALL(Memcpy(d_instanceRecords,h_instances.data(),
@@ -151,7 +150,6 @@ namespace rtc {
       // ------------------------------------------------------------------
       // compute bounds for bvh constuction
       // ------------------------------------------------------------------
-      PING;
       box3f *instBounds = 0;
       BARNEY_CUDA_CALL(Malloc((void **)&instBounds,
                               numInstances*sizeof(box3f)));
@@ -178,7 +176,6 @@ namespace rtc {
                         memResource);
       device->sync();
       BARNEY_CUDA_CALL(Free(instBounds));
-      PING;
       
       // ------------------------------------------------------------------
       // allocate device descriptor
@@ -198,7 +195,6 @@ namespace rtc {
                               cudaMemcpyDefault));
       device->sync();
       d_accel = d_deviceRecord;
-      PING;
     }
     
     
@@ -321,7 +317,6 @@ namespace rtc {
 
     void UserGeomGroup::buildAccel() 
     {
-      PING; BARNEY_CUDA_SYNC_CHECK();
       SetActiveGPU forDuration(device);
 
       // ------------------------------------------------------------------
@@ -336,7 +331,6 @@ namespace rtc {
       }
       sbtEntrySize += sizeof(Geom::SBTHeader);
 
-      PING; BARNEY_CUDA_SYNC_CHECK();
       // ------------------------------------------------------------------
       // write SBT, and upload
       // ------------------------------------------------------------------
@@ -365,15 +359,11 @@ namespace rtc {
       for (int i=0;i<geoms.size();i++) {
         UserGeom *geom = (UserGeom *)geoms[i];
         numPrims += geom->primCount;
-        PING;
-        PRINT(geom->primCount);
       }
-      PING; PRINT(numPrims);
       
       if (prims) BARNEY_CUDA_CALL(Free(prims));
       BARNEY_CUDA_CALL(Malloc((void**)&prims,numPrims*sizeof(Prim)));
 
-      PING; BARNEY_CUDA_SYNC_CHECK();
       // ------------------------------------------------------------------
       // write geom/prim descriptors and bounding boxes
       // ------------------------------------------------------------------
@@ -398,10 +388,8 @@ namespace rtc {
         ofs += count;
       }
 
-      PING; BARNEY_CUDA_SYNC_CHECK();
       device->sync();
 
-      PING; BARNEY_CUDA_SYNC_CHECK();
       // ------------------------------------------------------------------
       // build the bvh
       // ------------------------------------------------------------------

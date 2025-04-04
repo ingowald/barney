@@ -46,7 +46,8 @@ namespace rtc {
         : physicalID(physicalGPU)
       {
         int saved = setActive();
-        BARNEY_CUDA_CALL(StreamCreate(&stream));
+        BARNEY_CUDA_CALL(StreamCreateWithFlags(&stream,cudaStreamNonBlocking));
+        // BARNEY_CUDA_CALL(StreamCreate(&stream));
         restoreActive(saved);
       }
       
