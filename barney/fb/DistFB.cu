@@ -43,7 +43,9 @@ namespace BARNEY_NS {
     CompressedNormalTile *in_normal;
     TileDesc             *descs;
     
+#if RTC_DEVICE_CODE
     __rtc_device void run(const rtc::ComputeInterface &ci);
+#endif
   };
 
 #if RTC_DEVICE_CODE
@@ -95,7 +97,9 @@ namespace BARNEY_NS {
     AccumTile            *localTiles;
     float                 accumScale;
     
+#if RTC_DEVICE_CODE
     __rtc_device void run(const rtc::ComputeInterface &ci);
+#endif
   };
 
 #if RTC_DEVICE_CODE

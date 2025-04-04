@@ -46,6 +46,9 @@
 # if BARNEY_RTC_EMBREE
 #  define BARNEY_MPI_NS barney_embree
 # endif
+# if BARNEY_RTC_CUDA
+#  define BARNEY_MPI_NS barney_cuda
+# endif
 #else
 # if BARNEY_RTC_OPTIX
 #  define BARNEY_NS barney_optix
@@ -53,13 +56,9 @@
 # if BARNEY_RTC_EMBREE
 #  define BARNEY_NS barney_embree
 # endif
-#endif
-#if BARNEY_RTC_CUDA
+# if BARNEY_RTC_CUDA
 #  define BARNEY_NS barney_cuda
-#endif
-
-#ifndef BARNEY_NS
-# error "no backend defined !?"
+# endif
 #endif
 
 namespace BARNEY_NS {
