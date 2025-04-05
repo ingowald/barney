@@ -57,15 +57,14 @@ namespace BARNEY_NS {
       struct {
         /*! type of bsdf in the hitBSDF; if this is set to NONE the
           ray didn't have any hit yet */
-        uint64_t bsdfType   : 4;
-        // uint64_t numDiffuseBounces: 4;
+        uint16_t bsdfType   : 4;
+        // uint16_t numDiffuseBounces: 4;
         /*! for path tracer: tracks whether we are, or aren't, in a
           refractable medium */
-        uint64_t isInMedium : 1;
-        uint64_t isSpecular : 1;
-        uint64_t isShadowRay: 1;
-        uint64_t dbg        : 1;
-        uint64_t dbg_i : 24;
+        uint16_t isInMedium : 1;
+        uint16_t isSpecular : 1;
+        uint16_t isShadowRay: 1;
+        uint16_t dbg        : 1;
       };
       union {
         PackedBSDF::Data hitBSDF;
