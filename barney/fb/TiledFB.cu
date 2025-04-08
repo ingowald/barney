@@ -274,7 +274,6 @@ namespace BARNEY_NS {
   void TiledFB::resize(uint32_t channels,
                        vec2i newSize)
   {
-    PING;
     free();
     SetActiveGPU forDuration(device);
 
@@ -309,7 +308,6 @@ namespace BARNEY_NS {
       setTileCoords
         ->launch(divRoundUp(numActiveTiles,1024),1024,
                  &args);
-    PING;
   }
 
   // ==================================================================
