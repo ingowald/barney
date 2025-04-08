@@ -127,9 +127,11 @@ namespace BARNEY_NS {
         Device *device
           = new Device(rtc,
                        (int)allDevices.size(),
-                       (int)gpuIDs.size(),
-                       globalIndex*numSlots+lmsIdx,
-                       globalIndexStep*numSlots);
+                       (int)gpuIDs.size()
+                       // ,
+                       // globalIndex*numSlots+lmsIdx,
+                       // globalIndexStep*numSlots
+                       );
         slotDevices.push_back(device);
         allDevices.push_back(device);
         dg.gpuIDs.push_back(gpuID);
@@ -173,6 +175,9 @@ namespace BARNEY_NS {
   void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
     while (true) {
+      if (FromEnv::get()->logQueues) 
+        std::cout << "----- glob-trace -> locally) "
+                  << " -----------" << std::endl;
       traceRaysLocally(model, rngSeed, needHitIDs);
       const bool needMoreTracing = forwardRays(needHitIDs);
       if (needMoreTracing)
@@ -213,11 +218,20 @@ namespace BARNEY_NS {
 
         bool needHitIDs = fb->needHitIDs() && (generation==0);
         uint32_t rngSeed = fb->accumID*16+generation;
+        if (FromEnv::get()->logQueues) 
+          std::cout << "----- trace (glob) " << generation
+                    << " -----------" << std::endl;
         traceRaysGlobally(model,rngSeed,needHitIDs);
         
+        if (FromEnv::get()->logQueues) 
+          std::cout << "----- shade " << generation
+                    << " -----------" << std::endl;
         shadeRaysLocally(renderer, model, fb, generation, rngSeed);
         // no sync required here, shadeRays syncs itself.
         
+        if (FromEnv::get()->logQueues) 
+          std::cout << "----- shade " << generation
+                    << " -----------" << std::endl;
         const int numActiveGlobally = numRaysActiveGlobally();
         if (FromEnv::get()->logQueues)
           printf("#generation %i num active %s after bounce\n",

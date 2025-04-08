@@ -24,7 +24,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
-#if 0
+#if 1
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/ 
@@ -738,7 +738,9 @@ namespace barney_api {
     // static double t_sum = 0.;
     
     // double t0 = getCurrentTime();
-    // LOG_API_ENTRY;
+    static int numCalls = 0;
+    if (++numCalls < 10)
+      LOG_API_ENTRY;
     checkGet(model)->render(checkGet(renderer),checkGet(camera),checkGet(fb));
     // double t1 = getCurrentTime();
 
@@ -954,6 +956,7 @@ namespace barney_api {
     BNHardwareInfo hardware;
     bnMPIQueryHardware(&hardware,_comm);
 
+    PING; PRINT(_gpuIDs); PRINT(numGPUs);
     if (_gpuIDs) {
       // gpu IDs _are_ specified by user - use them, or fail
       assert(numGPUs > 0);
@@ -970,8 +973,10 @@ namespace barney_api {
            "but cpu/embree backend not compiled in");
 # endif
       }
+      PING;
 #if BARNEY_BACKEND_OPTIX
       std::vector<int> gpuIDs = {_gpuIDs,_gpuIDs+numGPUs};
+      PING;
       return (BNContext)createMPIContext_optix(world,
                                                workers,
                                                isActiveWorker,

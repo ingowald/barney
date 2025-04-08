@@ -69,7 +69,12 @@ namespace BARNEY_NS {
   LocalContext::LocalContext(const std::vector<int> &dataGroupIDs,
                              const std::vector<int> &gpuIDs)
     : Context(dataGroupIDs,gpuIDs,0,1)
-  {}
+  {
+    for (int i=0;i<devices->size();i++) {
+      (*devices)[i]->globalRank = i;
+      (*devices)[i]->globalSize = devices->size();
+    }
+  }
 
   LocalContext::~LocalContext()
   {

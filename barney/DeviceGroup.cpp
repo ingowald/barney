@@ -67,13 +67,15 @@ namespace BARNEY_NS {
 
   Device::Device(rtc::Device *rtc,
                  int contextRank,
-                 int contextSize,
-                 int globalIndex,
-                 int globalIndexStep)
+                 int contextSize// ,
+                 // int globalIndex,
+                 // int globalIndexStep
+                 )
     : contextRank(contextRank),
       contextSize(contextSize),
-      globalIndex(globalIndex),
-      globalIndexStep(globalIndexStep),rtc(rtc),
+      // globalIndex(globalIndex),
+      // globalIndexStep(globalIndexStep),
+      rtc(rtc),
       geomTypes(rtc)
   {
     rayQueue = new RayQueue(this);

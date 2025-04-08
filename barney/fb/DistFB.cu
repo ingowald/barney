@@ -364,6 +364,7 @@ namespace BARNEY_NS {
       isOwner(context->world.rank == owningRank),
       ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
   {
+    PING;
     perLogical.resize(devices->size());
     if (isOwner) {
       ownerGather.numGPUs = context->numWorkers * context->gpusPerWorker;
@@ -378,6 +379,7 @@ namespace BARNEY_NS {
       pld->compressTiles = createCompute_compressTiles(device->rtc);
       pld->unpackTiles = createCompute_unpackTiles(device->rtc);
     }
+    PING;
   }
 
   DistFB::~DistFB()
@@ -455,8 +457,10 @@ namespace BARNEY_NS {
                       vec2i size,
                       uint32_t channels)
   {
+    PING;
     freeChannelData();
     FrameBuffer::resize(colorFormat, size, channels);
+    PING;
 
     // ------------------------------------------------------------------
     /* check if we need to have a normal channelf ro deonising (on
@@ -541,20 +545,6 @@ namespace BARNEY_NS {
 
       Device *frontDev = getDenoiserDevice();
       
-      // if (gatheredTilesOnOwner.compressedColorTiles) {
-      //   frontDev->rtc->freeMem(gatheredTilesOnOwner.compressedColorTiles);
-      //   gatheredTilesOnOwner.compressedColorTiles = 0;
-      // }
-      // if (gatheredTilesOnOwner.compressedNormalTiles) {
-      //   frontDev->rtc->freeMem(gatheredTilesOnOwner.compressedNormalTiles);
-      //   gatheredTilesOnOwner.compressedNormalTiles = 0;
-      // }
-      
-      // if (gatheredTilesOnOwner.tileDescs) {
-      //   frontDev->rtc->freeMem(gatheredTilesOnOwner.tileDescs);
-      //   gatheredTilesOnOwner.tileDescs = 0;
-      // }
-      
       gatheredTilesOnOwner.compressedColorTiles
         = (CompressedColorTile *)frontDev->rtc->allocMem
         (sumTiles*sizeof(*gatheredTilesOnOwner.compressedColorTiles));
@@ -576,7 +566,7 @@ namespace BARNEY_NS {
       if (channels & BN_FB_OBJID)
         gatheredTilesOnOwner.auxChannelTiles.objID
           = (AuxChannelTile*)frontDev->rtc->allocMem(sumTiles*sizeof(AuxChannelTile));
-      
+
       gatheredTilesOnOwner.tileDescs
         = (TileDesc *)frontDev->rtc->allocMem
         (sumTiles*sizeof(*gatheredTilesOnOwner.tileDescs));
@@ -585,7 +575,7 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     // trigger all sends and receives - for gpu descs
     // ------------------------------------------------------------------
-    if (isOwner) 
+    if (isOwner)  {
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
         int rankOfGPU = ggID / context->gpusPerWorker;
         int localID   = ggID % context->gpusPerWorker;
@@ -594,6 +584,7 @@ namespace BARNEY_NS {
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
       }
+    }
 
     if (context->isActiveWorker)
       for (auto device : *devices)  {
@@ -614,6 +605,7 @@ namespace BARNEY_NS {
     if (context->isActiveWorker)
       for (int localID=0;localID<tilesOnGPU.size();localID++)
         context->world.wait(send_requests[localID]);
+    PING;
   }
 
   // void DistFB::ownerGatherCompressedTiles()
