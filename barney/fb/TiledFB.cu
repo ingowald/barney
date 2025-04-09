@@ -87,7 +87,7 @@ namespace BARNEY_NS {
                                   tileDescs,accumTiles,
                                   numPixels};
     linearizeColorAndNormalKernel
-      ->launch(numActiveTiles,pixelsPerTile,&args);       
+      ->launch(numActiveTiles,pixelsPerTile,&args);
   }
 
 
@@ -281,8 +281,8 @@ namespace BARNEY_NS {
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTiles
       = device
-      ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalIndex),
-                   device->globalIndexStep)
+      ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalRank),
+                   device->globalSize)
       : 0;
     auto rtc = device->rtc;
     accumTiles
@@ -301,8 +301,8 @@ namespace BARNEY_NS {
       tileDescs,
       numActiveTiles,
       numTiles,
-      device->globalIndex,
-      device->globalIndexStep
+      device->globalRank,
+      device->globalSize
     };
     if (numActiveTiles > 0)
       setTileCoords

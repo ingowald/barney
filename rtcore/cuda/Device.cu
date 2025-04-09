@@ -65,7 +65,6 @@ namespace rtc {
     Group *
     Device::createUserGeomsGroup(const std::vector<Geom *> &geoms)
     {
-      PING;
       return new UserGeomGroup(this,geoms);
     }
     

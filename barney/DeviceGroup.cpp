@@ -67,29 +67,18 @@ namespace BARNEY_NS {
 
   Device::Device(rtc::Device *rtc,
                  int contextRank,
-                 int contextSize,
-                 int globalIndex,
-                 int globalIndexStep)
+                 int contextSize// ,
+                 // int globalIndex,
+                 // int globalIndexStep
+                 )
     : contextRank(contextRank),
       contextSize(contextSize),
-      globalIndex(globalIndex),
-      globalIndexStep(globalIndexStep),rtc(rtc),
+      // globalIndex(globalIndex),
+      // globalIndexStep(globalIndexStep),
+      rtc(rtc),
       geomTypes(rtc)
   {
     rayQueue = new RayQueue(this);
-    // setTileCoords
-    //   // = rtc->createCompute("setTileCoords");
-    //   = createCompute_setTileCoords(rtc);
-    // compressTiles
-    //   // = rtc->createCompute("compressTiles");
-    //   = createCompute_compressTiles(rtc);
-    // unpackTiles
-    //   = createCompute_unpackTiles(rtc);
-    
-    // toneMap
-    //   = createCompute_toneMap(rtc);
-    // toFixed8
-    //   = createCompute_toFixed8(rtc);
 
     // umesh related:
     umeshCreateElements 
@@ -108,51 +97,5 @@ namespace BARNEY_NS {
     traceRays
       = createTrace_traceRays(rtc);
   }
-    
-  
-#if 0
-  DevGroup::DevGroup(int lmsIdx,
-                     const std::vector<int> &contextRanks,
-                     int contextSize,
-                     const std::vector<int> &gpuIDs,
-                     int globalIndex,
-                     int globalIndexStep)
-    : lmsIdx(lmsIdx)
-  {
-    auto backend = rtc::Backend::get();
-    rtc = backend->createDevGroup(gpuIDs);
-    
-    for (int localID=0;localID<gpuIDs.size();localID++) {
-      assert(localID < rtc->devices.size());
-      assert(localID < contextRanks.size());
-      devices.push_back
-        (std::make_shared<Device>(this,
-                                  rtc->devices[localID],
-                                  contextRanks[localID],
-                                  contextSize,
-                                  // gpuIDs[localID],localID,
-                                  (int)(globalIndex*gpuIDs.size())+localID,
-                                  (int)(globalIndexStep*gpuIDs.size())));
-    }
-
-    setTileCoordsKernel
-      = rtc->createCompute("setTileCoords");
-    compressTilesKernel
-      = rtc->createCompute("compressTiles");
-    generateRaysKernel
-      = rtc->createCompute("generateRays");
-    shadeRaysKernel
-      = rtc->createCompute("shadeRays");
-    traceRaysKernel
-      = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
-  }
-#endif
-
-  // DevGroup::~DevGroup()
-  // {
-  //   std::cout << "DEVGROUP DESTROYING context " << (int*)rtc << std::endl;
-  //   rtc->destroy();
-  //   rtc = nullptr;
-  // }
   
 }

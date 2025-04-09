@@ -58,7 +58,7 @@ namespace BARNEY_NS {
         /*! type of bsdf in the hitBSDF; if this is set to NONE the
           ray didn't have any hit yet */
         uint16_t bsdfType   : 4;
-        // uint64_t numDiffuseBounces: 4;
+        // uint16_t numDiffuseBounces: 4;
         /*! for path tracer: tracks whether we are, or aren't, in a
           refractable medium */
         uint16_t isInMedium : 1;

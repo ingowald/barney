@@ -352,6 +352,7 @@ namespace barney_device {
         MPI_Comm_rank(comm, &rank);
         MPI_Comm_size(comm, &size);
 
+        PING; PRINT(m_cudaDevice);
         if (m_cudaDevice >= 0)
           state.context
             = bnMPIContextCreate(comm, &rank, 1, &m_cudaDevice,1);

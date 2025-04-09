@@ -36,12 +36,11 @@ namespace BARNEY_NS {
 
       const OptixGlobals &globals = OptixGlobals::get(ti);
       const World::DD &world = globals.world;
-#if NDEBUG
+#ifdef NDEBUG
       bool dbg = false;
 #else
       bool dbg = ray.dbg;
 #endif
-      
       auto &self = *(Triangles::DD*)ti.getProgramData();
       const float u = ti.getTriangleBarycentrics().x;
       const float v = ti.getTriangleBarycentrics().y;
@@ -127,6 +126,7 @@ namespace BARNEY_NS {
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);
+      
       if (opacity < 1.f) {
         int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
         Random rng(hash(rayID,

@@ -30,7 +30,6 @@ namespace rtc {
       
       SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL(Malloc((void**)&d_data,numBytes));
-      PING; PRINT(numBytes); PRINT(d_data);
       if (initValues)
         BARNEY_CUDA_CALL(Memcpy(d_data,initValues,numBytes,cudaMemcpyDefault));
     }
@@ -38,7 +37,6 @@ namespace rtc {
     Buffer::~Buffer()
     {
       if (!d_data) return;
-      PING; PRINT(d_data);
       BARNEY_CUDA_CALL_NOTHROW(Free(d_data));
     }
     

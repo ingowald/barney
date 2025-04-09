@@ -49,7 +49,7 @@ namespace BARNEY_NS {
         return;
         
       Ray &ray = lp.rays[rayID];
-        
+
       vec3f dir = ray.dir;
       if (dir.x == 0.f) dir.x = 1e-6f;
       if (dir.y == 0.f) dir.y = 1e-6f;
@@ -58,23 +58,13 @@ namespace BARNEY_NS {
 #ifdef NDEBUG
       bool dbg = false;
 #else
-      bool dbg = ray.dbg;
+      bool dbg = 0 != (int)ray.dbg;
 #endif
-      if (dbg)
-        printf("$$$$$$$$$$$$$$$$$$$$$$ Tracing %f %f %f dir %f %f %f\n",
-               ray.org.x,
-               ray.org.y,
-               ray.org.x,
-               ray.dir.x,
-               ray.dir.y,
-               ray.dir.x);
 
-      // if (!dbg) return;
-      
       ti.traceRay(lp.accel,
                   ray.org,
                   dir,
-                  ray.dbg?-1.f:0.f,
+                  0.f,
                   ray.tMax,
                   /* PRD */
                   (void *)&ray);
@@ -82,7 +72,7 @@ namespace BARNEY_NS {
 #endif
     
   }
+  
   RTC_EXPORT_TRACE2D(traceRays,render::TraceRays);
 }
 
- 

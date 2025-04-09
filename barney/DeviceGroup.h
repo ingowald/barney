@@ -38,9 +38,7 @@ namespace BARNEY_NS {
   struct Device {
     Device(rtc::Device *rtc,
            int contextRank,
-           int contextSize,
-           int globalIndex,
-           int globalIndexStep);
+           int contextSize);
     
     /*! rank and size in the *LOCAL NODE*'s context; ie, these are NOT
         physical Device IDs (a context can use a subset of gpus, as
@@ -49,8 +47,8 @@ namespace BARNEY_NS {
         either */
     int                const contextRank;
     int                const contextSize;
-    int                const globalIndex;
-    int                const globalIndexStep;
+    int                globalRank = -1;
+    int                globalSize = -1;
     
     void sync() { rtc->sync(); }
     

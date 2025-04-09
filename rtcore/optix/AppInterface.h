@@ -32,6 +32,8 @@
 namespace rtc {
   namespace optix {
 
+    using rtc::cuda_common::enablePeerAccess;
+    
     using rtc::cuda_common::ComputeKernel1D;
     using rtc::cuda_common::ComputeKernel2D;
     using rtc::cuda_common::ComputeKernel3D;

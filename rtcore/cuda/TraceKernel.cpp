@@ -40,8 +40,8 @@ namespace rtc {
                                const void *kernelData)
     {
       SetActiveGPU forDuration(device);   
-      BARNEY_CUDA_CALL(Memcpy(d_lpData,kernelData,
-                              sizeOfLP,cudaMemcpyDefault));
+      BARNEY_CUDA_CALL(MemcpyAsync(d_lpData,kernelData,
+                                   sizeOfLP,cudaMemcpyDefault,device->stream));
       traceLaunchFct(device,launchDims,d_lpData);
     }
     

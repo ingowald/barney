@@ -18,7 +18,8 @@
 # ifdef __CUDA_ARCH__
 #  define RTC_DEVICE_CODE 1
 # endif
-# ifdef __HIP_DEVICE_COMPILE__
+# ifdef __HIPCC__
+// # ifdef __HIP_DEVICE_COMPILE__
 #  define RTC_DEVICE_CODE 1
 # endif
 

@@ -43,7 +43,7 @@ namespace BARNEY_NS {
     bool AnariPBR::setObject(const std::string &member, const Object::SP &value) 
     {
       if (HostMaterial::setObject(member,value)) return true;
-
+      
       Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
       if (member == "baseColor") 
         { baseColor.set(sampler); return true; }

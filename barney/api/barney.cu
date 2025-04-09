@@ -734,12 +734,13 @@ namespace barney_api {
                 BNCamera   camera,
                 BNFrameBuffer fb)
   {
-    LOG_API_ENTRY;
     // static double t_first = getCurrentTime();
     // static double t_sum = 0.;
     
     // double t0 = getCurrentTime();
-    // LOG_API_ENTRY;
+    static int numCalls = 0;
+    if (++numCalls < 10)
+      LOG_API_ENTRY;
     checkGet(model)->render(checkGet(renderer),checkGet(camera),checkGet(fb));
     // double t1 = getCurrentTime();
 

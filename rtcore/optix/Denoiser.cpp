@@ -66,7 +66,8 @@ namespace rtc {
     {
       this->numPixels = numPixels;
       SetActiveGPU forDuration(device);
-    
+
+      PING; PRINT(numPixels);
       denoiserSizes.overlapWindowSizeInPixels = 0;
       optixDenoiserComputeMemoryResources(/*const OptixDenoiser */
                                           denoiser,
