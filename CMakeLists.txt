@@ -54,18 +54,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 
-option(USE_HIP "Use HIP?" OFF)
+option(USE_EXP "Experimental Pluggable Backend" OFF)
+mark_as_advanced(USE_EXP)
 
-#if (USE_HIP)
-#  set(CMAKE_HIP_ARCHITECTURES "native")
-#  enable_language(HIP)
-#endif()
-
-mark_as_advanced(USE_HIP)
-
-if (USE_HIP)
-  set(BARNEY_HAVE_CUDA OFF)
-  enable_language(HIP)
+if (USE_EXP)
+  include(rtcore/exp_external_backends)
 elseif (NOT BARNEY_DISABLE_CUDA) 
   include(CheckLanguage)
   check_language(CUDA)
@@ -155,20 +148,15 @@ target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
 )
-if (USE_HIP)
-  target_compile_definitions(barney_config INTERFACE -DBARNEY_HAVE_HIP=1)
-endif()
-
 # ------------------------------------------------------------------
 
 
 # ------------------------------------------------------------------
 # configure which backend(s) to build
 # ------------------------------------------------------------------
-if (USE_HIP)
-  set(BARNEY_BACKEND_CUDA ON)
-  set(BARNEY_BACKEND_OPTIX OFF)
-  set(BARNEY_BACKEND_EMBREE OFF)
+if (USE_EXP)
+  # leave it to the external plugins to configure themselves - not
+  # currently working
 elseif (BARNEY_HAVE_CUDA)
   option(BARNEY_BACKEND_CUDA "Enable (native-)CUDA Backend?" OFF)
   option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)

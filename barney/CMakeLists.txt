@@ -42,9 +42,6 @@ macro(set_library_properties tgt)
     POSITION_INDEPENDENT_CODE    ON
     CUDA_USE_STATIC_CUDA_RUNTIME ON
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
-    HIP_SEPARABLE_COMPILATION   ON
-    HIP_USE_STATIC_CUDA_RUNTIME ON
-    HIP_RESOLVE_DEVICE_SYMBOLS  ON
     CXX_VISIBILITY_PRESET  hidden
     CUDA_VISIBILITY_PRESET hidden
   )
@@ -63,21 +60,7 @@ endmacro()
 # backends; but if there's no cuda vailable we have to change the
 # language to CPP else cmake will just skip these sources.
 macro(configure_cuda_source src)
-  if (USE_HIP)
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR
-        ("${ext}" STREQUAL ".dev.cu"))
-      message("setting language of ${src} to HIP")
-      set_source_files_properties(${src} PROPERTIES LANGUAGE HIP)
-      set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-D__HIPCC__=1")
-#      set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-D__HIPCC__=1;-D__HIP_ARCH__=1")
-    endif()
-    if (("${ext}" STREQUAL ".cpp"))
-      message("setting language of ${src} to HIP")
-      set_source_files_properties(${src} PROPERTIES LANGUAGE HIP)
-      set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-D__HIPCC__=1")
-    endif()
-  elseif (NOT BARNEY_HAVE_CUDA)
+if (NOT BARNEY_HAVE_CUDA)
     get_filename_component(ext "${src}" EXT)
     if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
       message("setting language of ${src} to CXX")
@@ -346,12 +329,6 @@ if (BARNEY_BACKEND_CUDA)
     add_library(barney_mpi_cuda ${MPI_SOURCES})
     target_link_libraries(barney_mpi_cuda PUBLIC barney_cuda MPI::MPI_CXX)
     set_library_properties(barney_mpi_cuda)
-  endif()
-
-  if (USE_HIP)
-    foreach(f ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
-      configure_cuda_source(${f})
-      endforeach()
   endif()
 endif()
     

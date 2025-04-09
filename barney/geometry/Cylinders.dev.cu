@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/geometry/Cylinders.h"
-#include "rtcore/ProgramInterface.h"
+#include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

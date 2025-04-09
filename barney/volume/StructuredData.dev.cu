@@ -14,10 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/geometry/Attributes.dev.h"
 #include "barney/volume/StructuredData.h"
 #include "barney/volume/MCAccelerator.h"
-#include "rtcore/ProgramInterface.h"
+#include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

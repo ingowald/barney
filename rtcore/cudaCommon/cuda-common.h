@@ -17,97 +17,10 @@
 #pragma once
 
 #include "rtcore/common/rtcore-common.h"
-#if BARNEY_HAVE_HIP
-# include "hip/hip_runtime.h"
-# define cudaArray_t hipArray_t
-# define cudaStream_t hipStream_t
-# define cudaError hipError_t
-# define cudaError_t hipError_t
-# define cudaEvent_t hipEvent_t
-# define cudaDevAttrMaxGridDimX hipDeviceAttributeMaxGridDimX
-# define cudaDevAttrMaxGridDimY hipDeviceAttributeMaxGridDimY
-# define cudaDevAttrMaxGridDimZ hipDeviceAttributeMaxGridDimZ
-# define cudaDevAttrComputeCapabilityMinor hipDeviceAttributeComputeCapabilityMinor
-# define cudaDevAttrComputeCapabilityMajor hipDeviceAttributeComputeCapabilityMajor
-# define cudaDevAttrUnifiedAddressing hipDeviceAttributeUnifiedAddressing
-# define cudaDevAttrMultiProcessorCount hipDeviceAttributeMultiprocessorCount
-# define cudaDevAttrMaxSharedMemoryPerBlock hipDeviceAttributeMaxSharedMemoryPerBlock
-# define cudaDeviceAttr hipDeviceAttribute_t
-# define cudaErrorNotSupported hipErrorNotSupported
-# define cudaErrorUnknown hipErrorUnknown
-# define cudaErrorNoDevice hipErrorNoDevice
-# define cudaErrorInvalidDevice hipErrorInvalidDevice
-# define cudaSuccess hipSuccess
-# define cudaPeekAtLastError hipPeekAtLastError
-# define cudaGetErrorName hipGetErrorName
-# define cudaEventCreate hipEventCreate
-# define cudaEventQuery hipEventQuery
-# define cudaEventRecord hipEventRecord
-# define cudaEventSynchronize hipEventSynchronize
-# define cudaDeviceGetAttribute hipDeviceGetAttribute
-# define cudaEventDestroy hipEventDestroy
-# define cudaTextureFilterMode hipTextureFilterMode
-# define cudaChannelFormatDesc hipChannelFormatDesc
-# define cudaTextureAddressMode hipTextureAddressMode
-# define cudaFilterModeLinear hipFilterModeLinear
-# define cudaFilterModePoint hipFilterModePoint
-# define cudaAddressModeMirror hipAddressModeMirror
-# define cudaAddressModeClamp hipAddressModeClamp
-# define cudaAddressModeWrap hipAddressModeWrap
-# define cudaAddressModeBorder hipAddressModeBorder
-# define cudaReadModeNormalizedFloat hipReadModeNormalizedFloat
-# define cudaReadModeElementType hipReadModeElementType
-# define cudaCreateChannelDesc hipCreateChannelDesc
-# define cudaChanneFormatlDesc hipChanneFormatlDesc
-# define cudaExtent hipExtent
-# define cudaMemset hipMemset
-# define cudaMemsetAsync hipMemsetAsync
-# define cudaAddressModifier hipAddressModifier
-# define cudaResourceTypeArray hipResourceTypeArray
-# define cudaTextureDesc hipTextureDesc
-# define cudaResourceDesc hipResourceDesc
-# define cudaMemcpyAsync hipMemcpyAsync
-# define cudaMemcpy3DParms hipMemcpy3DParms
-# define cudaMemcpyHostToDevice hipMemcpyHostToDevice
-# define cudaMemcpyDeviceToHost hipMemcpyDeviceToHost
-# define cudaSetDevice hipSetDevice
-# define cudaGetDevice hipGetDevice
-# define cudaGetDeviceCount hipGetDeviceCount
-# define cudaMalloc hipMalloc
-# define cudaMallocHost hipHostMalloc
-# define cudaMallocArray hipMallocArray
-# define cudaMalloc3DArray hipMalloc3DArray
-# define cudaMallocManaged hipMallocManaged
-# define cudaMallocAsync hipMallocAsync
-# define make_cudaPitchedPtr make_hipPitchedPtr
-# define cudaFreeAsync hipFreeAsync
-# define cudaCreateTextureObject hipCreateTextureObject
-# define cudaDestroyTextureObject hipDestroyTextureObject
-# define cudaMemcpy hipMemcpy
-# define cudaMemcpy3D hipMemcpy3D
-# define cudaMemcpy2DToArray hipMemcpy2DToArray
-# define cudaFree hipFree
-# define cudaFreeArray hipFreeArray
-# define cudaFreeHost hipFreeHost
-# define cudaGetErrorString hipGetErrorString
-# define cudaMemcpyDefault hipMemcpyDefault
-# define cudaSuccess hipSuccess
-# define cudaGetLastError hipGetLastError
-# define cudaDeviceSynchronize hipDeviceSynchronize
-# define cudaStreamCreate hipStreamCreate
-# define cudaStreamSynchronize hipStreamSynchronize
-# define cudaTextureObject_t hipTextureObject_t
-# define cudaTextureReadMode hipTextureReadMode
-# define CUDART_INF INFINITY
-# define CUDART_INF_F ((float)INFINITY)
-# define CUDART_NAN NAN
-# define CUDART_NAN_F ((float)NAN)
-#else
-# include <cuda_runtime.h>
-# ifdef __CUDACC__
-#  include <cuda/std/limits>
-#  include <cuda.h>
-# endif
+#include <cuda_runtime.h>
+#ifdef __CUDACC__
+# include <cuda/std/limits>
+# include <cuda.h>
 #endif
 #include "cuda-helper.h"
 

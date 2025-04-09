@@ -14,9 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Triangles.h"
-#include "rtcore/ProgramInterface.h"
+#include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
@@ -116,13 +115,8 @@ namespace BARNEY_NS {
       const DeviceMaterial &material
         = world.materials[self.materialID];
       
-      // if (dbg) printf("creating bsdf\n");  
-      // if (dbg) printf("creating bsdf type %i\n",int(material.type));  
       PackedBSDF bsdf
         = material.createBSDF(hitData,world.samplers,dbg);
-// #if 1
-//       material.setHit(ray,hitData,world.samplers,dbg);
-// #else
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);

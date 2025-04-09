@@ -10,16 +10,7 @@
 #include <sstream>
 #include "barney/barney.h"
 
-#ifdef BARNEY_HAVE_HIP
-# include "hip/hip_runtime.h"
-# include "hip/driver_types.h"
-#endif
-
 # ifdef __CUDA_ARCH__
-#  define RTC_DEVICE_CODE 1
-# endif
-# ifdef __HIPCC__
-// # ifdef __HIP_DEVICE_COMPILE__
 #  define RTC_DEVICE_CODE 1
 # endif
 

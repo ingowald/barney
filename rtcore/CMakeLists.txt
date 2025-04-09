@@ -135,11 +135,8 @@ if (BARNEY_BACKEND_EMBREE)
   if (BARNEY_OIDN_CPU)
     target_link_libraries(barney_rtc_embree PUBLIC OpenImageDenoise)
   endif()
-#  target_link_libraries(barney_config INTERFACE embree_local)
 else()
-  add_library(barney_rtc_embree INTERFACE
-    # dummy
-    )
+  add_library(barney_rtc_embree INTERFACE)
 endif()
 
 # ==================================================================
@@ -153,11 +150,6 @@ if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
     cudaCommon/TextureData.cu
     cudaCommon/cuda-helper.cpp
     )
-  if (USE_HIP)
-    set_source_files_properties(cudaCommon/Device.cu PROPERTIES LANGUAGE HIP)
-    set_source_files_properties(cudaCommon/Texture.cu PROPERTIES LANGUAGE HIP)
-    set_source_files_properties(cudaCommon/TextureData.cu PROPERTIES LANGUAGE HIP)
-  endif()
   target_link_libraries(barney_rtc_cuda_common PUBLIC
     barney_rtc_config
     )
@@ -175,7 +167,7 @@ set_target_properties(barney_rtc_cuda_common
   )
   rtc_library_properties(barney_rtc_cuda_common)
 else()
-  add_library(barney_rtc_cuda_common INTERFACE) # DUMMY!
+  add_library(barney_rtc_cuda_common INTERFACE)
 endif()
 
 
@@ -207,7 +199,9 @@ if (BARNEY_BACKEND_OPTIX)
       PUBLIC -DOPTIX_DISABLE_DENOISING=1)
   endif()
 else()
-  add_library(barney_rtc_optix INTERFACE) # DUMMY!
+  # dummy "no-op" library; empty, but it exists, so code below can
+  # just link to it without having to do any checking
+  add_library(barney_rtc_optix INTERFACE) 
 endif()
 
 
@@ -231,30 +225,21 @@ if (BARNEY_BACKEND_CUDA)
   target_link_libraries(barney_rtc_cuda PUBLIC
     barney_rtc_config
     barney_rtc_cuda_common
-#    owl_static
     )
   target_compile_definitions(barney_rtc_cuda
     PUBLIC -DBARNEY_RTC_CUDA=1)
   rtc_library_properties(barney_rtc_cuda)
 
-  if (USE_HIP)
-    set_source_files_properties(cuda/Buffer.cpp PROPERTIES LANGUAGE HIP)
-    set_source_files_properties(cuda/Geom.cpp PROPERTIES LANGUAGE HIP)
-    set_source_files_properties(cuda/Device.cu PROPERTIES LANGUAGE HIP)
-    set_source_files_properties(cuda/Group.cu PROPERTIES LANGUAGE HIP)
-    set_source_files_properties(cuda/GeomType.cpp PROPERTIES LANGUAGE HIP)
-    set_source_files_properties(cuda/TraceKernel.cpp PROPERTIES LANGUAGE HIP)
-  endif()
-  
 else()
-  add_library(barney_rtc_cuda INTERFACE) # DUMMY!
+  # dummy "no-op" library; empty, but it exists, so code below can
+  # just link to it without having to do any checking
+  add_library(barney_rtc_cuda INTERFACE)
 endif()
 
 
 # ==================================================================
 # ==================================================================
-add_library(barney_rtc INTERFACE
-  )
+add_library(barney_rtc INTERFACE)
 if (BARNEY_BACKEND_OPTIX)
   target_link_libraries(barney_rtc INTERFACE barney_rtc_optix)
 endif()
