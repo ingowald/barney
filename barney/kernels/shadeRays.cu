@@ -756,7 +756,7 @@ namespace BARNEY_NS {
       // makes fireflies go away (well, makes them go 'less', but can
       // lose a lot of envergy if the brdf sample code isn't close to
       // the actual brdf.
-      scatterFactor = min(scatterFactor,vec3f(2.5f));
+      scatterFactor = min(scatterFactor,vec3f(1.5f));
 #endif
 
       state.throughput
