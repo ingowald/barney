@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libint17-curveMaterials-ptx.a "CMakeFiles/int17-curveMaterials-ptx.dir/Release/int17-curveMaterials-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libint17-curveMaterials-ptx.a

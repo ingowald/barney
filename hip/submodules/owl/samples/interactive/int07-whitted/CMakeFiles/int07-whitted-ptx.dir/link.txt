@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libint07-whitted-ptx.a "CMakeFiles/int07-whitted-ptx.dir/Release/int07-whitted-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libint07-whitted-ptx.a

@@ -1,1 +1,0 @@
--I/home/wald/GITLAB/barney/submodules/owl -I/home/wald/GITLAB/barney/submodules/owl/owl/include -isystem "/home/wald/Projects/NVIDIA-OptiX-SDK-8.0.0-linux64-x86_64/include" -isystem "/usr/local/cuda/targets/x86_64-linux/include"

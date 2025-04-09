@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libint11-rotatingBoxes-ptx.a "CMakeFiles/int11-rotatingBoxes-ptx.dir/Release/int11-rotatingBoxes-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libint11-rotatingBoxes-ptx.a

@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libint18-spherePrimitives-ptx.a "CMakeFiles/int18-spherePrimitives-ptx.dir/Release/int18-spherePrimitives-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libint18-spherePrimitives-ptx.a

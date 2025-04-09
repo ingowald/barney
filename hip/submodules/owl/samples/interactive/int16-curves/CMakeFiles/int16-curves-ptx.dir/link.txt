@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libint16-curves-ptx.a "CMakeFiles/int16-curves-ptx.dir/Release/int16-curves-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libint16-curves-ptx.a

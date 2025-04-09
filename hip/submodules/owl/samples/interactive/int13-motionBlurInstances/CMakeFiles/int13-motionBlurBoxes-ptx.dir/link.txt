@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libint13-motionBlurBoxes-ptx.a "CMakeFiles/int13-motionBlurBoxes-ptx.dir/Release/int13-motionBlurBoxes-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libint13-motionBlurBoxes-ptx.a

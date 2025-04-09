@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libint14-motionBlurAabbs-ptx.a "CMakeFiles/int14-motionBlurAabbs-ptx.dir/Release/int14-motionBlurAabbs-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libint14-motionBlurAabbs-ptx.a

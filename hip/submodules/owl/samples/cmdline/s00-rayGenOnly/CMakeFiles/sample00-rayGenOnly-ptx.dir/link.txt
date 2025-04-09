@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libsample00-rayGenOnly-ptx.a "CMakeFiles/sample00-rayGenOnly-ptx.dir/Release/sample00-rayGenOnly-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libsample00-rayGenOnly-ptx.a

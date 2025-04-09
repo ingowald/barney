@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libsample10-launch3D-ptx.a "CMakeFiles/sample10-launch3D-ptx.dir/Release/sample10-launch3D-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libsample10-launch3D-ptx.a

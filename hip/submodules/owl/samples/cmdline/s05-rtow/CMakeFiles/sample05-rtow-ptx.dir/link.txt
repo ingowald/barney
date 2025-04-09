@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libsample05-rtow-ptx.a "CMakeFiles/sample05-rtow-ptx.dir/Release/sample05-rtow-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libsample05-rtow-ptx.a

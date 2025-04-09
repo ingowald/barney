@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../../libint15-cookBilliardScene-ptx.a "CMakeFiles/int15-cookBilliardScene-ptx.dir/Release/int15-cookBilliardScene-ptx.cpp.o"
-/usr/bin/ranlib ../../../../../libint15-cookBilliardScene-ptx.a
