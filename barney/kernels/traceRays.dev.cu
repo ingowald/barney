@@ -28,10 +28,13 @@ namespace BARNEY_NS {
   namespace render {
 
     struct TraceRays {
+#if RTC_DEVICE_CODE
       inline __rtc_device static 
       void run(rtc::TraceInterface &ti);
+#endif
     };
 
+#if RTC_DEVICE_CODE
     inline __rtc_device 
     void TraceRays::run(rtc::TraceInterface &ti)
     {
@@ -39,14 +42,14 @@ namespace BARNEY_NS {
         = ti.getLaunchIndex().x
         + ti.getLaunchDims().x
         * ti.getLaunchIndex().y;
-        
+
       auto &lp = OptixGlobals::get(ti);
 
       if (rayID >= lp.numRays)
         return;
         
       Ray &ray = lp.rays[rayID];
-        
+
       vec3f dir = ray.dir;
       if (dir.x == 0.f) dir.x = 1e-6f;
       if (dir.y == 0.f) dir.y = 1e-6f;
@@ -55,26 +58,21 @@ namespace BARNEY_NS {
 #ifdef NDEBUG
       bool dbg = false;
 #else
-      bool dbg = ray.dbg;
+      bool dbg = 0 != (int)ray.dbg;
 #endif
-      if (dbg)
-        printf("$$$$$$$$$$$$$$$$$$$$$$ Tracing %f %f %f dir %f %f %f\n",
-               ray.org.x,
-               ray.org.y,
-               ray.org.x,
-               ray.dir.x,
-               ray.dir.y,
-               ray.dir.x);
+
       ti.traceRay(lp.accel,
                   ray.org,
                   dir,
-                  0.f,ray.tMax,
+                  0.f,
+                  ray.tMax,
                   /* PRD */
                   (void *)&ray);
     }
+#endif
+    
   }
   
   RTC_EXPORT_TRACE2D(traceRays,render::TraceRays);
 }
 
- 

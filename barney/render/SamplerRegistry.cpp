@@ -26,15 +26,22 @@ namespace BARNEY_NS {
       numReserved = 1;
       perLogical.resize(devices->numLogical);
       
-      for (auto device : *devices)
-        getPLD(device)->buffer
-          = device->rtc->createBuffer(numReserved*sizeof(Sampler::DD));
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        getPLD(device)->memory
+          = (Sampler::DD*)device->rtc->allocMem(numReserved*sizeof(Sampler::DD));
+
+        if (size_t(getPLD(device)->memory) % 16)
+          throw std::runtime_error("sampler mem not aligned...");
+      }
     }
 
     SamplerRegistry::~SamplerRegistry()
     {
-      for (auto device : *devices)
-        device->rtc->freeBuffer(getPLD(device)->buffer);
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        device->rtc->freeMem(getPLD(device)->memory);
+      }
     }
      
     SamplerRegistry::PLD *SamplerRegistry::getPLD(Device *device)
@@ -46,22 +53,20 @@ namespace BARNEY_NS {
     {
       size_t oldNumBytes = numReserved * sizeof(Sampler::DD);
       numReserved *= 2;
-      size_t newNumBytes = numReserved * sizeof(Sampler::DD);
+      size_t newNumBytes = numReserved * sizeof(Sampler::DD)+128;
       
       for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
         // ------------------------------------------------------------------
         // save old samplers
         // ------------------------------------------------------------------
         PLD *pld = getPLD(device);
-        rtc::Buffer *oldBuffer = pld->buffer;
         auto rtc = device->rtc;
         
-        rtc::Buffer *newBuffer
-          = rtc->createBuffer(newNumBytes);
-        rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
-        rtc->sync();
-        rtc->freeBuffer(oldBuffer);
-        pld->buffer = newBuffer;
+        Sampler::DD *oldMem = pld->memory;
+        pld->memory = (Sampler::DD*)rtc->allocMem(newNumBytes);
+        rtc->copy(pld->memory,oldMem,oldNumBytes);
+        rtc->freeMem(oldMem);
       }
     }
 
@@ -86,11 +91,12 @@ namespace BARNEY_NS {
                                 const Sampler::DD &dd,
                                 Device *device)
     {
+      SetActiveGPU forDuration(device);
       size_t offset = samplerID*sizeof(dd);
-      getPLD(device)->buffer->upload(&dd,sizeof(dd),offset);
+      assert(samplerID >= 0 && samplerID < nextFree);
+      device->rtc->copy(((uint8_t*)getPLD(device)->memory)+offset,
+                        &dd,sizeof(dd));
     }
-
-    
     
   }
 }

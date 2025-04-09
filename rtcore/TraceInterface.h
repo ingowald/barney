@@ -23,16 +23,13 @@
 
 #if BARNEY_RTC_OPTIX
 # include "rtcore/optix/TraceInterface.h"
-namespace rtc {
-  using rtc::optix::TraceInterface;
-}
 #endif
 
 #if BARNEY_RTC_EMBREE
 # include "rtcore/embree/TraceInterface.h"
-namespace rtc {
-  using rtc::embree::TraceInterface;
-  using namespace rtc::embree;
-}
+#endif
+
+#if BARNEY_RTC_CUDA
+# include "rtcore/cuda/TraceInterface.h"
 #endif
 

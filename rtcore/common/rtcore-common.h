@@ -10,6 +10,9 @@
 #include <sstream>
 #include "barney/barney.h"
 
+# ifdef __CUDA_ARCH__
+#  define RTC_DEVICE_CODE 1
+# endif
 
 #include "owl/common/math/AffineSpace.h"
 #include "owl/common/math/random.h"
@@ -19,11 +22,6 @@ namespace rtc {
   using namespace owl::common;
     
   using range1f = interval<float>;
-  
-  namespace device {
-    typedef struct _OpaqueAccel   *AccelHandle;
-    typedef struct _OpaqueTextureObject *TextureObject;
-  };
   
   typedef enum {
     UCHAR,
@@ -63,6 +61,8 @@ namespace rtc {
     ColorSpace colorSpace = COLOR_SPACE_LINEAR;
   };
 
+  typedef struct _TextureObject *TextureObject;
+  typedef struct _AccelHandle *AccelHandle;
 }
 
 

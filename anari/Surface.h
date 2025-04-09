@@ -8,34 +8,34 @@
 
 namespace barney_device {
 
-struct Surface : public Object
-{
-  Surface(BarneyGlobalState *s);
-  ~Surface() override;
+  struct Surface : public Object
+  {
+    Surface(BarneyGlobalState *s);
+    ~Surface() override;
 
-  void commitParameters() override;
-  void finalize() override;
-  void markFinalized() override;
+    void commitParameters() override;
+    void finalize() override;
+    void markFinalized() override;
 
-  uint32_t id() const;
-  const Geometry *geometry() const;
-  const Material *material() const;
+    uint32_t id() const;
+    const Geometry *geometry() const;
+    const Material *material() const;
 
-  BNGeom getBarneyGeom(BNContext context);
+    BNGeom getBarneyGeom(BNContext context);
 
-  bool isValid() const override;
+    bool isValid() const override;
 
- private:
-  void setBarneyParameters();
-  void cleanup();
+  private:
+    void setBarneyParameters();
+    void cleanup();
 
-  uint32_t m_id{~0u};
-  helium::IntrusivePtr<Geometry> m_geometry;
-  helium::IntrusivePtr<Material> m_material;
+    uint32_t m_id{~0u};
+    helium::IntrusivePtr<Geometry> m_geometry;
+    helium::IntrusivePtr<Material> m_material;
 
-  BNGeom m_bnGeom{nullptr};
-  BNMaterial m_bnMat{nullptr};
-};
+    BNGeom m_bnGeom{nullptr};
+    BNMaterial m_bnMat{nullptr};
+  };
 
 } // namespace barney_device
 

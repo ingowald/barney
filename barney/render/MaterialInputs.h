@@ -21,6 +21,8 @@
 namespace BARNEY_NS {
   namespace render {
     namespace device {
+
+      xxxx
       
       struct MaterialInput {
         typedef enum { VALUE, ATTRIBUTE, SAMPLER, UNDEFINED } Type;

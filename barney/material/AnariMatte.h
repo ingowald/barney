@@ -54,7 +54,6 @@ namespace BARNEY_NS {
       PossiblyMappedParameter color = vec3f(.8f);
     };
       
-  
 #if RTC_DEVICE_CODE
     inline __rtc_device
     PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData,

@@ -58,6 +58,11 @@ namespace barney_api {
     createContext_optix(const std::vector<int> &dgIDs,
                         int numGPUs, const int *gpuIDs);
 #endif
+#if BARNEY_BACKEND_CUDA
+    barney_api::Context *
+    createContext_cuda(const std::vector<int> &dgIDs,
+                       int numGPUs, const int *gpuIDs);
+#endif
 #if BARNEY_MPI
 # if BARNEY_BACKEND_EMBREE
     barney_api::Context *
@@ -341,7 +346,7 @@ namespace barney_api {
   BARNEY_API
   void bnSetInstanceAttributes(BNModel model,
                                int slot,
-                               int attributeID,
+                               const char *whichAttribute,
                                BNData value)
   {
     LOG_API_ENTRY;
@@ -349,7 +354,7 @@ namespace barney_api {
       = value
       ? ((Data *)value)->shared_from_this()->as<Data>()
       : Data::SP{};
-    checkGet(model)->setInstanceAttributes(slot,attributeID,data);
+    checkGet(model)->setInstanceAttributes(slot,whichAttribute,data);
   }
 
   
@@ -699,11 +704,12 @@ namespace barney_api {
 
   BARNEY_API
   void bnFrameBufferResize(BNFrameBuffer fb,
+                           BNDataType colorFormat,
                            int sizeX, int sizeY,
                            uint32_t channels)
   {
     LOG_API_ENTRY;
-    checkGet(fb)->resize(vec2i{sizeX,sizeY},channels);
+    checkGet(fb)->resize(colorFormat,vec2i{sizeX,sizeY},channels);
   }
 
   BARNEY_API
@@ -716,15 +722,6 @@ namespace barney_api {
     checkGet(fb)->read(channel,hostPtr,requestedFormat);
   }
   
-  BARNEY_API
-  void *bnFrameBufferGetPointer(BNFrameBuffer fb,
-                                BNFrameBufferChannel channel)
-  {
-    LOG_API_ENTRY;
-    return checkGet(fb)->getPointer(channel);
-  }
-  
-
   BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)
   {
@@ -741,7 +738,9 @@ namespace barney_api {
     // static double t_sum = 0.;
     
     // double t0 = getCurrentTime();
-    // LOG_API_ENTRY;
+    static int numCalls = 0;
+    if (++numCalls < 10)
+      LOG_API_ENTRY;
     checkGet(model)->render(checkGet(renderer),checkGet(camera),checkGet(fb));
     // double t1 = getCurrentTime();
 
@@ -808,6 +807,8 @@ namespace barney_api {
       if (_gpuIDs != nullptr) {
 #if BARNEY_BACKEND_OPTIX
         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
+#elif BARNEY_BACKEND_CUDA
+        return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
 #else
         throw std::runtime_error
           ("explicitly asked for GPU backend, "
@@ -826,6 +827,15 @@ namespace barney_api {
         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
       } catch (std::exception &e) {
         std::cerr << "#barney(warn): could not create optix backend (reason: "
+                  << e.what() << ")" << std::endl;
+      }
+#endif
+      
+#if BARNEY_BACKEND_CUDA
+      try {
+        return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
+      } catch (std::exception &e) {
+        std::cerr << "#barney(warn): could not create cuda backend (reason: "
                   << e.what() << ")" << std::endl;
       }
 #endif

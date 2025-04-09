@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libsample08-sierpinski-ptx.a "CMakeFiles/sample08-sierpinski-ptx.dir/Release/sample08-sierpinski-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libsample08-sierpinski-ptx.a

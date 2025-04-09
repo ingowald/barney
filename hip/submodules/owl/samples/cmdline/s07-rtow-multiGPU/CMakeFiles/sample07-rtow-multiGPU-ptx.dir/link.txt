@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libsample07-rtow-multiGPU-ptx.a "CMakeFiles/sample07-rtow-multiGPU-ptx.dir/Release/sample07-rtow-multiGPU-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libsample07-rtow-multiGPU-ptx.a

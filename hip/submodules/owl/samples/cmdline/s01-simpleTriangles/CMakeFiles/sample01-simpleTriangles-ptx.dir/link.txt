@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libsample01-simpleTriangles-ptx.a "CMakeFiles/sample01-simpleTriangles-ptx.dir/Release/sample01-simpleTriangles-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libsample01-simpleTriangles-ptx.a

@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../../../libint12-switchingTextureSets-ptx.a "CMakeFiles/int12-switchingTextureSets-ptx.dir/Release/int12-switchingTextureSets-ptx.cpp.o"
+/usr/bin/ranlib ../../../../../libint12-switchingTextureSets-ptx.a

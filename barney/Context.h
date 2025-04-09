@@ -17,28 +17,31 @@
 #pragma once
 
 #include "barney/api/Context.h"
-#include "barney/render/Ray.h"
-#include "barney/geometry/Geometry.h"
-#include "barney/Camera.h"
-// #include "barney/DeviceContext.h"
-#include "barney/fb/TiledFB.h"
 #include "barney/Object.h"
-#include "barney/render/Renderer.h"
 #include <set>
-#include "barney/render/RayQueue.h"
 
 namespace BARNEY_NS {
   using namespace owl::common;
-  using render::Ray;
   
   struct FrameBuffer;
   struct GlobalModel;
-
+  struct Camera;
+  struct Renderer;
+  struct Geometry;
+  
   namespace render {
     struct HostMaterial;
     struct SamplerRegistry;
     struct MaterialRegistry;
     struct DeviceMaterial;    
+  };
+
+  struct FromEnv {
+    FromEnv();
+    static const FromEnv *get();
+    bool logQueues = false;
+    bool skipDenoising = false;
+    bool logConfig = false;
   };
 
   struct SlotContext {
@@ -133,22 +136,22 @@ namespace BARNEY_NS {
     virtual void barrier(bool warn=true) {}
     
     /*! generate a new wave-front of rays */
-    void generateRays(const Camera::DD &camera,
+    void generateRays(Camera *camera,
                       Renderer *renderer,
                       FrameBuffer *fb);
     
     /*! have each *local* GPU trace its current wave-front of rays */
-    void traceRaysLocally(GlobalModel *model);
+    void traceRaysLocally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
     
     /*! trace all rays currently in a ray queue, including forwarding
       if and where applicable, untile every ray in the ray queue as
       found its intersection */
-    void traceRaysGlobally(GlobalModel *model);
+    void traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
 
     /*! forward rays (during global trace); returns if _after_ that
       forward the rays need more tracing (true) or whether they're
       done (false) */
-    virtual bool forwardRays() = 0;
+    virtual bool forwardRays(bool needHitIDs) = 0;
 
     /*! returns how many rays are active in all ray queues, across all
       devices and, where applicable, across all ranks */
@@ -161,25 +164,22 @@ namespace BARNEY_NS {
     void shadeRaysLocally(Renderer *renderer,
                           GlobalModel *model,
                           FrameBuffer *fb,
-                          int generation);
+                          int generation,
+                          uint32_t rngSeed);
     void finalizeTiles(FrameBuffer *fb);
     
     void renderTiles(Renderer *renderer,
                      GlobalModel *model,
-                     const Camera::DD &camera,
+                     Camera      *camera,
                      FrameBuffer *fb);
     
     virtual void render(Renderer    *renderer,
                         GlobalModel *model,
-                        const Camera::DD &camera, 
+                        Camera      *camera,
                         FrameBuffer *fb) = 0;
-
-    // std::vector<barney::DeviceGroup::SP> barneys;
 
     void ensureRayQueuesLargeEnoughFor(FrameBuffer *fb);
 
-
-    
     /*! helper function to print a warning when app tries to create an
         object of certain kind and type that barney does not
         support */
@@ -195,11 +195,12 @@ namespace BARNEY_NS {
     
     int contextSize() const;
 
-    // std::mutex mutex;
-    // std::map<Object::SP,int> hostOwnedHandles;
     const bool isActiveWorker;
-    // std::set<std::string> alreadyWarned;
 
+    /*! whether we have successfully enabled peer access across all
+        GPUs (eg, to allow tiledFB to write to gpu 0 linear fb */
+    bool havePeerAccess = false;
+    
     SlotContext *getSlot(int slot);
     std::vector<SlotContext> perSlot;
     DevGroup::SP devices;

@@ -36,7 +36,6 @@ namespace BARNEY_NS {
     
     namespace packedBSDF {
       namespace nvisii {
-        using LCGRand = Random;
         inline __rtc_device float lcg_randomf(Random &r) { return r(); }
 
 #define DISNEY_DIFFUSE_BRDF 0
@@ -865,7 +864,7 @@ namespace BARNEY_NS {
         inline
         __rtc_device void sample_disney_brdf(
                                            const DisneyMaterial &mat,
-                                           LCGRand &rng,
+                                           Random &rng,
                                            const vec3f &g_n, const vec3f &s_n, const vec3f &b_n, 
                                            const vec3f &v_x, const vec3f &v_y,
                                            const vec3f &w_o,

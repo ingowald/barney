@@ -82,7 +82,6 @@ namespace BARNEY_NS {
     case BN_FLOAT4:
     case BN_INT4:
     case BN_UFIXED8_RGBA:
-    case BN_FLOAT4_RGBA:
       return 4;
     default:
       BARNEY_NYI();
@@ -192,7 +191,7 @@ namespace BARNEY_NS {
       device->rtc->freeTextureData(getPLD(device)->rtc);
   }
 
-  rtc::device::TextureObject
+  rtc::TextureObject
   Texture::getTextureObject(Device *device) 
   {
     auto pld = getPLD(device);

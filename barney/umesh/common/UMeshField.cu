@@ -20,6 +20,9 @@
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
 #include "barney/umesh/os/AWT.h"
+#if RTC_DEVICE_CODE
+# include "rtcore/TraceInterface.h"
+#endif
 
 namespace BARNEY_NS {
 
@@ -124,8 +127,10 @@ namespace BARNEY_NS {
     UMeshField::DD mesh;
     MCGrid::DD     grid;
 
+#if RTC_DEVICE_CODE
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
+#endif
   };
 
 #if RTC_DEVICE_CODE
@@ -159,7 +164,9 @@ namespace BARNEY_NS {
     int     *elementOffsets;
     box3f   *d_worldBounds;
 
+#if RTC_DEVICE_CODE
     inline __rtc_device void run(const rtc::ComputeInterface &ci);
+#endif
   };
 
 #if RTC_DEVICE_CODE
@@ -279,8 +286,10 @@ namespace BARNEY_NS {
     range1f       *d_primRanges;
     UMeshField::DD mesh;
 
+#if RTC_DEVICE_CODE
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
+#endif
   };
 
 #if RTC_DEVICE_CODE

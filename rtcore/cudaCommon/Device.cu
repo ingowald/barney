@@ -36,15 +36,17 @@ namespace rtc {
     
     void *Device::allocMem(size_t numBytes)
     {
+      if (!numBytes) return nullptr;
       SetActiveGPU forDuration(this);
       void *ptr = 0;
-      BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
-      assert(ptr);
+        BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
+        assert(ptr);
       return ptr;
     }
     
     void *Device::allocHost(size_t numBytes) 
     {
+      if (!numBytes) return nullptr;
       SetActiveGPU forDuration(this);
       void *ptr = 0;
       BARNEY_CUDA_CALL(MallocHost(&ptr,numBytes));
@@ -53,25 +55,29 @@ namespace rtc {
       
     void Device::freeHost(void *mem) 
     {
+      if (!mem) return;
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(FreeHost(mem));
     }
       
     void Device::freeMem(void *mem) 
     {
+      if (!mem) return;
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(Free(mem));
     }
       
-    void Device::memsetAsync(void *mem,int value, size_t size) 
+    void Device::memsetAsync(void *mem,int value, size_t numBytes) 
     {
+      if (numBytes == 0) return;
       SetActiveGPU forDuration(this);
-      BARNEY_CUDA_CALL(MemsetAsync(mem,value,size,stream));
+      BARNEY_CUDA_CALL(MemsetAsync(mem,value,numBytes,stream));
     }
       
 
     void Device::copyAsync(void *dst, const void *src, size_t numBytes) 
     {
+      if (numBytes == 0) return;
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
     }
@@ -106,7 +112,66 @@ namespace rtc {
       SetActiveGPU forDuration(device);
       return new Texture(this,desc);
     }    
-    
+
+    /*! enable peer access between these gpus, and return truea if
+        successful, else if at least one pair does not work */
+    bool enablePeerAccess(const std::vector<int> &gpuIDs)
+    {
+#define LOG(a) ss << "#bn." << a << std::endl;
+
+      std::stringstream ss;
+      ss << "enabling peer access ('.'=self, '+'=can access other device)" << std::endl;
+ 
+     
+      int deviceCount = (int)gpuIDs.size();
+      LOG("found " << deviceCount << " CUDA capable devices");
+      for (auto gpuID : gpuIDs) {
+        cudaDeviceProp prop;
+        BARNEY_CUDA_CALL(GetDeviceProperties(&prop, gpuID));
+        LOG(" - device #" << gpuID << " : " << prop.name);
+      }
+      LOG("enabling peer access:");
+      
+      bool successful = true;
+      for (auto gpuID : gpuIDs) {
+        std::stringstream ss;
+        SetActiveGPU forLifeTime(gpuID);
+        ss << " - device #" << gpuID << " : ";
+        int cuda_i = gpuID;
+        int i = gpuID;
+        for (int j=0;j<deviceCount;j++) {
+          if (j == i) {
+            ss << " ."; 
+          } else {
+            int cuda_j = gpuIDs[j];
+            int canAccessPeer = 0;
+            cudaError_t rc = cudaDeviceCanAccessPeer(&canAccessPeer, cuda_i,cuda_j);
+            if (rc != cudaSuccess)
+              throw std::runtime_error("cuda error in cudaDeviceCanAccessPeer: "
+                                       +std::to_string(rc));
+            if (!canAccessPeer) {
+              // huh. this can happen if you have differnt device
+              // types (in my case, a 2070 and a rtx 8000).
+              // nvm - yup, this isn't an error. Expect certain configs to not allow peer access.
+              // disabling this, as it's concerning end users.
+              // std::cerr << "cannot not enable peer access!? ... skipping..." << std::endl;
+              successful = false;
+              continue;
+            }
+            
+            rc = cudaDeviceEnablePeerAccess(cuda_j,/* flags - must be 0 */0);
+            if (rc == cudaErrorPeerAccessAlreadyEnabled) {
+              cudaGetLastError();
+            } else if (rc != cudaSuccess)
+              throw std::runtime_error("cuda error in cudaDeviceEnablePeerAccess: "
+                                       +std::to_string(rc));
+            ss << " +";
+          }
+        }
+        LOG(ss.str());
+      }
+      return successful;
+    }
   }
 }
 

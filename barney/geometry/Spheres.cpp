@@ -32,7 +32,6 @@ namespace BARNEY_NS {
 
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
-      auto rtc = device->rtc;
       if (pld->userGeoms.empty()) {
         int numOrigins = (int)origins->count;
         rtc::GeomType *gt

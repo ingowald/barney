@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/volume/MCGrid.h"
-
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE3D(clearMCs)
@@ -39,12 +39,12 @@ namespace BARNEY_NS {
         = createCompute_clearMCs(device->rtc);
     }
   }
-                            
 
   struct ClearMCs {
     /* kernel ARGS */
     MCGrid::DD grid;
 
+#if RTC_DEVICE_CODE
     /* kernel CODE */
     inline __rtc_device
     void run(const rtc::ComputeInterface &rtCore)
@@ -65,6 +65,7 @@ namespace BARNEY_NS {
       int ii = ix + grid.dims.x*(iy + grid.dims.y*(iz));
       grid.scalarRanges[ii] = { +BARNEY_INF, -BARNEY_INF };
     }
+#endif
   };
   
   /*! re-set all cells' ranges to "infinite empty" */
@@ -89,6 +90,7 @@ namespace BARNEY_NS {
     MCGrid::DD grid;
     TransferFunction::DD xf;
     
+#if RTC_DEVICE_CODE                            
     /* kernel CODE */
     inline __rtc_device
     void run(const rtc::ComputeInterface &rtCore)
@@ -114,6 +116,7 @@ namespace BARNEY_NS {
 
       grid.majorants[mcIdx] = maj;
     }
+#endif
   };
   
   /*! recompute all macro cells' majorant value by remap each such

@@ -19,7 +19,6 @@
 #include "barney/render/Ray.h"
 #include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/render/HitAttributes.h"
-// #include "barney/render/device/GeometryAttributes.h"
 #include "barney/material/AnariMatte.h"
 #include "barney/material/AnariPBR.h"
 
@@ -62,7 +61,6 @@ namespace BARNEY_NS {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      if (dbg) printf("devicematerial type %i\n",(int)type);
       if (type == TYPE_AnariMatte)
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)

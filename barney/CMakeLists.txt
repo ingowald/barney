@@ -44,8 +44,6 @@ macro(set_library_properties tgt)
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
     CXX_VISIBILITY_PRESET  hidden
     CUDA_VISIBILITY_PRESET hidden
-#    CXX_VISIBILITY_PRESET  default
-#    CUDA_VISIBILITY_PRESET default
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
@@ -62,7 +60,7 @@ endmacro()
 # backends; but if there's no cuda vailable we have to change the
 # language to CPP else cmake will just skip these sources.
 macro(configure_cuda_source src)
-  if (NOT BARNEY_HAVE_CUDA)
+if (NOT BARNEY_HAVE_CUDA)
     get_filename_component(ext "${src}" EXT)
     if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
       message("setting language of ${src} to CXX")
@@ -89,6 +87,45 @@ endmacro()
 
 # define all the host-side sources
 set(HOST_SOURCES
+
+  # all the barney "plumbing" stuff on the host
+  Context.h
+  Context.cpp
+  DeviceGroup.h
+  DeviceGroup.cpp
+  LocalContext.h
+  LocalContext.cpp
+  Object.h
+  Object.cpp
+  Camera.h
+  Camera.cu
+  # all frame buffer related stuff (DistFB in barney_mpi)
+  fb/FrameBuffer.h
+  fb/FrameBuffer.cu
+  fb/LocalFB.h
+  fb/LocalFB.cpp
+  fb/TiledFB.h
+  fb/TiledFB.cu
+  # model/group/data group handling
+  GlobalModel.h
+  GlobalModel.cpp
+  render/Renderer.h
+  render/Renderer.cpp
+  Group.h
+  Group.cpp
+  render/GeometryAttributes.h
+  render/GeometryAttributes.cpp
+
+
+  # samplers
+  render/Sampler.h
+  render/Sampler.cpp
+  
+  # actual device kernels for CUDA ray gen and shading
+  kernels/generateRays.cu
+  kernels/shadeRays.cu
+  kernels/traceRays.cu
+  
   umesh/common/UMeshField.h
   umesh/common/UMeshField.cu
   umesh/mc/UMeshCUBQLSampler.h
@@ -126,44 +163,8 @@ set(HOST_SOURCES
   volume/MCGrid.cu
   volume/MCAccelerator.h
   
-  # samplers
-  render/Sampler.h
-  render/Sampler.cpp
-  
   common/barney-common.h
   
-  # actual device kernels for CUDA ray gen and shading
-  kernels/generateRays.cu
-  kernels/shadeRays.cu
-  kernels/traceRays.cu
-  # all the barney "plumbing" stuff on the host
-  Context.h
-  Context.cpp
-  DeviceGroup.h
-  DeviceGroup.cpp
-  LocalContext.h
-  LocalContext.cpp
-  Object.h
-  Object.cpp
-  Camera.h
-  Camera.cu
-  # all frame buffer related stuff (DistFB in barney_mpi)
-  fb/FrameBuffer.h
-  fb/FrameBuffer.cu
-  fb/LocalFB.h
-  fb/LocalFB.cpp
-  fb/TiledFB.h
-  fb/TiledFB.cu
-  # model/group/data group handling
-  GlobalModel.h
-  GlobalModel.cpp
-  render/Renderer.h
-  render/Renderer.cpp
-  Group.h
-  Group.cpp
-  render/GeometryAttributes.h
-  render/GeometryAttributes.cpp
-
   render/RayQueue.h
   render/RayQueue.cpp
   render/World.h
@@ -206,7 +207,7 @@ set(HOST_SOURCES
 # all the source that eventually go into barney_mpi
 set(MPI_SOURCES
   fb/DistFB.h
-  fb/DistFB.cpp
+  fb/DistFB.cu
   MPIContext.h
   MPIContext.cpp
   common/MPIWrappers.h
@@ -292,25 +293,43 @@ if (BARNEY_BACKEND_EMBREE)
     add_library(barney_mpi_embree ${MPI_SOURCES})
     target_compile_definitions(barney_mpi_embree PRIVATE -DBARNEY_RTC_EMBREE=1)
     target_link_libraries(barney_mpi_embree PUBLIC barney_config embree_local)
-    target_link_libraries(barney_mpi_embree PRIVATE barney_embree MPI::MPI_CXX)
+    target_link_libraries(barney_mpi_embree PUBLIC barney_embree MPI::MPI_CXX)
     set_library_properties(barney_mpi_embree)
   endif()
+endif()
+    
 
-  # # ----------- barney_embree -----------
-  # add_library(barney_embree_host STATIC ${HOST_SOURCES})
-  # target_link_libraries(barney_embree PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
 
-  # target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
-  # target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
-  # target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
-  # target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree_host>)
-  # target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree_programs>)
-  # target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
+# ------------------------------------------------------------------
+# cuda backend: instantiates all the barney classes, device
+# programs, etcpp - except the api itself - in an cuda configuration
+# that'll run on the gpu, but without requiring optix
+# ------------------------------------------------------------------
+if (BARNEY_BACKEND_CUDA)
+  # ----------- barney_cuda -----------
+  add_library(barney_cuda_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
+  target_link_libraries(barney_cuda_programs PUBLIC barney_config barney_rtc_cuda)
+  target_compile_definitions(barney_cuda_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
+  set_library_properties(barney_cuda_programs)
 
-  # if (BARNEY_MPI)
-  #   add_library(barney_mpi_embree STATIC ${MPI_SOURCES})
-  #   target_link_libraries(barney_mpi_embree PUBLIC barney_embree)
-  # endif()
+  add_library(barney_cuda STATIC ${HOST_SOURCES})
+  target_link_libraries(barney_cuda PUBLIC barney_config barney_rtc_cuda)
+  if (TARGET cuBQL_cuda_float3_static)
+    target_link_libraries(barney_cuda PRIVATE
+      $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
+      )
+  endif()
+  target_link_libraries(barney_cuda PRIVATE
+    barney_cuda_programs
+    barney_config
+    )
+  set_library_properties(barney_cuda)
+
+  if (BARNEY_MPI)
+    add_library(barney_mpi_cuda ${MPI_SOURCES})
+    target_link_libraries(barney_mpi_cuda PUBLIC barney_cuda MPI::MPI_CXX)
+    set_library_properties(barney_mpi_cuda)
+  endif()
 endif()
     
 
@@ -408,8 +427,23 @@ if (BARNEY_BACKEND_EMBREE)
       $<BUILD_INTERFACE:barney_mpi_embree>)
   endif()
 endif()
+
+# link cuda backend (if enabled) to all frontends
+if (BARNEY_BACKEND_CUDA)
+  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_cuda>)
+  target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_cuda>)
+  if (BARNEY_MPI)
+    target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
+    target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
+  endif()
+endif()
+
+
+
+# ##################################################################
+# final lib properties
+# ##################################################################
 set_library_properties(barney)
 if (BARNEY_MPI)
   set_library_properties(barney_mpi)
 endif()
-

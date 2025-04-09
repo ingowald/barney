@@ -14,11 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/geometry/Attributes.dev.h"
 #include "barney/geometry/Spheres.h"
+#include "barney/render/HitIDs.h"
 #include "rtcore/TraceInterface.h"
-
-// #include "owl/owl_device.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
@@ -39,13 +37,13 @@ namespace BARNEY_NS {
   
   
   struct SpheresPrograms {
-    
+#if RTC_DEVICE_CODE 
     static inline __rtc_device
     void bounds(const rtc::TraceInterface &rt,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
-    { 
+    {
       const Spheres::DD &geom = *(const Spheres::DD *)geomData;
       vec3f origin = geom.origins[primID];
       float radius = geom.radii?geom.radii[primID]:geom.defaultRadius;
@@ -54,13 +52,14 @@ namespace BARNEY_NS {
     }
     
     static inline __rtc_device
-    void closestHit(rtc::TraceInterface &rt)
+    void closestHit(rtc::TraceInterface &ti)
     {
-      auto &ray = *(Ray*)rt.getPRD();
-      auto &self = *(Spheres::DD*)rt.getProgramData();
-      const World::DD &world = OptixGlobals::get(rt).world;
-      int primID = rt.getPrimitiveIndex();
-      int instID = rt.getInstanceIndex();
+      auto &ray = *(Ray*)ti.getPRD();
+      auto &self = *(Spheres::DD*)ti.getProgramData();
+      const OptixGlobals &globals = OptixGlobals::get(ti);
+      const World::DD &world = globals.world;
+      int primID = ti.getPrimitiveIndex();
+      int instID = ti.getInstanceID();
 
 #ifdef NDEBUG
       bool dbg = false;
@@ -68,14 +67,14 @@ namespace BARNEY_NS {
       bool dbg = ray.dbg;
 #endif
       
-      float t_hit = rt.getRayTmax(); 
+      float t_hit = ti.getRayTmax(); 
 
-      vec3f org = rt.getWorldRayOrigin(); 
-      vec3f dir = rt.getWorldRayDirection();
+      vec3f org = ti.getWorldRayOrigin(); 
+      vec3f dir = ti.getWorldRayDirection();
       /*! isec code has temporarily stored object-space hit position
         in ray.P, see below! */
       vec3f objectP = ray.P;
-      vec3f worldP = rt.transformPointFromObjectToWorldSpace(objectP);
+      vec3f worldP = ti.transformPointFromObjectToWorldSpace(objectP);
       
       vec3f objectCenter
         = self.origins[primID];
@@ -92,7 +91,7 @@ namespace BARNEY_NS {
       objectP = objectCenter + (objectRadius+eps)*objectN;
     
       vec3f worldN
-        = rt.transformVectorFromObjectToWorldSpace(objectN);
+        = ti.transformVectorFromObjectToWorldSpace(objectN);
 
       render::HitAttributes hitData;
       hitData.worldPosition   = worldP;
@@ -120,36 +119,36 @@ namespace BARNEY_NS {
     }
   
     static inline __rtc_device
-    void anyHit(rtc::TraceInterface &rt)
+    void anyHit(rtc::TraceInterface &ti)
     {
       /* nothing - already set in isec */
     }
   
     static inline __rtc_device
-    void intersect(rtc::TraceInterface &rt)
+    void intersect(rtc::TraceInterface &ti)
     {
-      const int primID = rt.getPrimitiveIndex();//optixGetPrimitiveIndex();
-      const auto &self = *(const Spheres::DD*)rt.getProgramData();
+      const int primID = ti.getPrimitiveIndex();//optixGetPrimitiveIndex();
+      const auto &self = *(const Spheres::DD*)ti.getProgramData();
       // = owl::getProgramData<Spheres::DD>();
-      auto &ray = *(Ray*)rt.getPRD();//owl::getPRD<Ray>();
+      auto &ray = *(Ray*)ti.getPRD();//owl::getPRD<Ray>();
       
       vec3f center = self.origins[primID];
       float radius = self.radii?self.radii[primID]:self.defaultRadius;
       
       // with "move the origin" trick; see Ray Tracing Gems 2
       // const vec3f old_org  = optixGetObjectRayOrigin();
-      const vec3f old_org  = rt.getObjectRayOrigin();
+      const vec3f old_org  = ti.getObjectRayOrigin();
       // const vec3f dir  = optixGetObjectRayDirection();
-      const vec3f dir  = rt.getObjectRayDirection();
+      const vec3f dir  = ti.getObjectRayDirection();
       vec3f org = old_org;
       float t_move = max(0.f,length(center - old_org)-3.f*radius);
       org = org + t_move * dir;
-      float t_max = rt.getRayTmax() - t_move;
+      float t_max = ti.getRayTmax() - t_move;
       if (t_max < 0.f) return;
     
       float hit_t = t_max;
 
-      float tmin = max(0.f,rt.getRayTmin()-t_move);
+      float tmin = max(0.f,ti.getRayTmin()-t_move);
       const vec3f oc = org - center;
       const float a = dot(dir,dir);
       const float b = dot(oc, dir);
@@ -169,6 +168,9 @@ namespace BARNEY_NS {
         if (temp < hit_t && temp > tmin) 
           hit_t = temp;
       }
+      
+
+      
       if (hit_t < t_max) {
         // "abuse" ray.P to store local sphere coordinate
         vec3f osPositionOfHit = /*shifted!*/org + /*shifted!*/hit_t*dir;
@@ -176,20 +178,36 @@ namespace BARNEY_NS {
       
         hit_t += t_move;
 
-        // vec3f P = old_org + hit_t * dir;
-        // vec3f N = normalize(P-center);
-        // P = optixTransformPointFromObjectToWorldSpace(center + radius * N);
-        // N = optixTransformNormalFromObjectToWorldSpace(N);
-        // vec3f geometryColor = NAN;
-        // if (self.colors)
-        //   geometryColor = self.colors[primID];
-      
-        // ray.setHit(P,N,hit_t,self.material,vec2f(NAN),geometryColor);
+        // ------------------------------------------------------------------
+        ti.reportIntersection(hit_t, 0);
+        const OptixGlobals &globals = OptixGlobals::get(ti);
+        if (globals.hitIDs) {
+          /* ID buffer rendering writes IDs no matter what transparency */
+          const World::DD &world = globals.world;
+          float depth = hit_t;
+          int instID    = ti.getInstanceID();
+        
+          const int rayID
+            = ti.getLaunchIndex().x
+            + ti.getLaunchDims().x
+            * ti.getLaunchIndex().y;
+          if (depth < globals.hitIDs[rayID].depth) {
+            globals.hitIDs[rayID].primID = primID;
+            globals.hitIDs[rayID].instID
+              = world.instIDToUserInstID
+              ? world.instIDToUserInstID[instID]
+              : instID;
+            globals.hitIDs[rayID].instID
+              = 13+world.rank;
+            globals.hitIDs[rayID].objID  = self.userID;
+            globals.hitIDs[rayID].depth  = depth;
+          }
+        }
+        // ------------------------------------------------------------------
 
-        // optixReportIntersection(hit_t, 0);
-        rt.reportIntersection(hit_t, 0);
       }
     }
+#endif
   };
   RTC_EXPORT_USER_GEOM(Spheres,Spheres::DD,SpheresPrograms,false,true);
 }

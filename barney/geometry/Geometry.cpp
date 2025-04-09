@@ -61,6 +61,17 @@ namespace BARNEY_NS {
     perLogical.resize(devices->numLogical);
   }
 
+  bool Geometry::set1i(const std::string &member,
+                     const int   &value) 
+  {
+    if (member == "userID") {
+      userID = value;
+      return true; 
+    } 
+    
+    return false;
+  }
+  
   Geometry::~Geometry()
   {
     for (auto device : *devices) {
@@ -98,6 +109,7 @@ namespace BARNEY_NS {
                          Device *device)
   {
     setAttributesOn(dd,device);
+    dd.userID     = userID;
     dd.attributes = attributes.getDD(device);
     dd.materialID = getMaterial()->materialID;
   }  

@@ -18,57 +18,41 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/common/half.h"
+#include "barney/render/HitIDs.h"
 
 namespace BARNEY_NS {
-
-  struct FrameBuffer;
   
-  /*! for now, do a 48 bit half3 representation; shoul eventually go
-      to 32 or 16, but lets at least try how much this really helps in
-      the denoiser */
-  struct CompressedNormal {
-    inline __both__ vec4f get4f() const
-    { vec3f v = get(); return vec4f(v.x,v.y,v.z,0.f); }
-    inline __both__ vec3f get3f() const
-    { vec3f v = get(); return vec3f(v.x,v.y,v.z); }
-    inline __both__ void set(vec3f v) {
-      if (v == vec3f(0.f)) { x = y = z = 0; return; }
-      v = normalize(v);
-      x = encode(v.x);
-      y = encode(v.y);
-      z = encode(v.z);
-    }
-    inline __both__ vec3f get() const { return vec3f(decode(x),decode(y),decode(z)); }
-  private:
-    inline __both__ int8_t encode(float f) const {
-      f = clamp(f*128.f,-127.f,+127.f);
-      return int8_t(f);
-    }
-    inline __both__ float decode(int8_t i) const {
-      if (i==0) return 0.f;
-      return (i<0) ? (i-.5f)*(1.f/128.f) : (i+.5f)*(1.f/128.f);
-    }
-    int8_t x,y,z;
-  };
+  struct FrameBuffer;
   
   enum { tileSize = 32 };
   enum { pixelsPerTile = tileSize*tileSize };
 
+  struct AuxChannelTile {
+    union { uint32_t ui[pixelsPerTile]; float f[pixelsPerTile]; };
+  };
+  
+  
   struct AccumTile {
-    vec4f accum[pixelsPerTile];
-    float  depth[pixelsPerTile];
+    vec4f  accum[pixelsPerTile];
+    // float  depth[pixelsPerTile];
     vec3f  normal[pixelsPerTile];
+    // int    primID[pixelsPerTile];
+    // int    objID[pixelsPerTile];
+    // int    instID[pixelsPerTile];
   };
-  struct CompressedTile {
-    uint32_t         rgba[pixelsPerTile];
-    half             scale[pixelsPerTile];
-    CompressedNormal normal[pixelsPerTile];
-    half             depth[pixelsPerTile];
+
+  struct AuxTiles {
+    AuxChannelTile *depth  = 0;
+    AuxChannelTile *primID = 0;
+    AuxChannelTile *instID = 0;
+    AuxChannelTile *objID  = 0;
   };
+
+  /*! describes the lower-left corner of each logical tile */
   struct TileDesc {
     vec2i lower;
   };
-
+  
   struct TiledFB {
     typedef std::shared_ptr<TiledFB> SP;
     static SP create(Device *device, FrameBuffer *owner);
@@ -76,22 +60,56 @@ namespace BARNEY_NS {
     TiledFB(Device *device, FrameBuffer *owner);
     virtual ~TiledFB();
 
-    void resize(vec2i newSize);
+    void resize(uint32_t channels,
+                vec2i newSize);
     void free();
 
-    void finalizeTiles_launch();
+    /*! take this GPU's tiles, and write those tiles' color (and
+        optionally normal) channels into the linear frame buffers
+        provided. The linearColor is guaranteed to be non-null, and to
+        be numPixels.x*numPixels.y vec4fs; linearNormal may be
+        null. Linear buffers may live on another GPU, but are
+        guaranteed to be on the same node. */
+    void linearizeColorAndNormal(void  *linearColor,
+                                 BNDataType format,
+                                 vec3f *linearNormal,
+                                 float  accumScale);
 
+    /*! linearize given array's aux tiles, on given device. this can be
+      used either for local GPUs on a single node, or on the owner
+      after it reveived all worker tiles */
+    static void linearizeAuxTiles(Device *device,
+                                  rtc::ComputeKernel1D *linearizeAuxChannelKernel,
+                                  void *linearOut,
+                                  vec2i numPixels,
+                                  AuxChannelTile *tilesIn,
+                                  TileDesc       *descsIn,
+                                  int numTiles);
+
+    /*! linearize _this gpu's_ channels */
+    void linearizeAuxChannel(void *linearChannel,
+                             BNFrameBufferChannel whichChannel);
+    
     /*! number of (valid) pixels */
     vec2i numPixels       = { 0,0 };
-
+    
     /*! number of tiles to cover the entire frame buffer; some on the
-      right/bottom may be partly filled */
+      right/bottom may be partly filled, and this particlar GPUs instance
+      will only own some of those tiles */
     vec2i numTiles        = { 0, 0 };
+    
+    /*! number of tiles that this GPU owns */
     int   numActiveTiles  = 0;
+    
     /*! lower-left pixel coordinate for given tile ... */
-    TileDesc  *tileDescs  = 0;
-    AccumTile *accumTiles = 0;
-    CompressedTile *compressedTiles = 0;
+    TileDesc          *tileDescs  = 0;
+    AccumTile         *accumTiles = 0;
+    AuxTiles           auxTiles;
+
+    rtc::ComputeKernel1D *setTileCoords = 0;
+    rtc::ComputeKernel1D *linearizeColorAndNormalKernel = 0;
+    rtc::ComputeKernel1D *linearizeAuxChannelKernel = 0;
+    
     FrameBuffer *const owner;
     Device      *const device;
   };

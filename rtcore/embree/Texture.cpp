@@ -171,9 +171,9 @@ namespace rtc {
 
 
 
-    rtc::device::TextureObject Texture::getDD() const
+    rtc::TextureObject Texture::getDD() const
     {
-      return (const rtc::device::TextureObject &)sampler;
+      return (const rtc::TextureObject &)sampler;
     }
     
     template<typename T, int FILTER_MODE>
@@ -469,17 +469,17 @@ namespace rtc {
       sampler = createSampler(data,desc);
     }
 
-    __both__ float tex2D1f(rtc::device::TextureObject to,
+    __both__ float tex2D1f(rtc::TextureObject to,
                            float x, float y)
     { return ((TextureSampler *)to)->tex2D({x,y}).x; }
     
-    __both__ float tex3D1f(rtc::device::TextureObject to,
+    __both__ float tex3D1f(rtc::TextureObject to,
                            float x, float y, float z)
     {
       return ((TextureSampler *)to)->tex3D({x,y,z}).x;
     }
     
-    __both__ vec4f tex2D4f(rtc::device::TextureObject to,
+    __both__ vec4f tex2D4f(rtc::TextureObject to,
                             float x, float y)
     {
       // PING;
@@ -488,7 +488,7 @@ namespace rtc {
       return v;
     }
 
-    __both__ vec4f tex3D4f(rtc::device::TextureObject to,
+    __both__ vec4f tex3D4f(rtc::TextureObject to,
                            float x, float y, float z)
     { return ((TextureSampler *)to)->tex3D({x,y,z}); }
     

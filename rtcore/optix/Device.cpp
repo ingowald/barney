@@ -26,6 +26,9 @@
 namespace rtc {
   namespace optix {
     
+    rtc::AccelHandle getAccelHandle(Group *ig)
+    { return ig->getDD(); }
+    
     Device::Device(int physicalGPU)
       : cuda_common::Device(physicalGPU)
     {
@@ -184,8 +187,9 @@ namespace rtc {
     }
 
     Group *
-    Device::createInstanceGroup(const std::vector<Group *> &groups,
-                                  const std::vector<affine3f> &xfms)
+    Device::createInstanceGroup(const std::vector<Group *>  &groups,
+                                const std::vector<int>      &instIDs,
+                                const std::vector<affine3f> &xfms)
     {
       std::vector<OWLGroup> owls;
       for (auto group : groups)
@@ -195,7 +199,7 @@ namespace rtc {
         = owlInstanceGroupCreate(owl,
                                  owls.size(),
                                  owls.data(),
-                                 nullptr,
+                                 (const uint32_t*)instIDs.data(),
                                  (const float *)xfms.data());
       Group *gg = new Group(this,g);
       return gg;

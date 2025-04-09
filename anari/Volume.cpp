@@ -45,6 +45,11 @@ void Volume::cleanup()
   }
 }
 
+  void Volume::commitParameters()
+  {
+    m_id = getParam<uint32_t>("id", ~0u);
+  }
+
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 TransferFunction1D::TransferFunction1D(BarneyGlobalState *s)
@@ -148,6 +153,7 @@ void TransferFunction1D::setBarneyParameters()
   if (!isValid() || !m_bnVolume)
     return;
   BNVolume vol = getBarneyVolume(getContext());
+  bnSet1i(vol,"userID",m_id);
   bnVolumeSetXF(vol,
       (bn_float2 &)m_valueRange,
       (const bn_float4 *)m_rgbaMap.data(),

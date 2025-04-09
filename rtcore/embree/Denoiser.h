@@ -29,10 +29,12 @@ namespace rtc {
       Denoiser(Device *device) : rtc(device) {}
       virtual ~Denoiser() = default;
       virtual void resize(vec2i dims) = 0;
-      virtual void run(vec4f* out_rgba,
-                       vec4f* in_rgba,
-                       vec3f* in_normal,
-                       float blendFactor) = 0;
+      virtual void run(float blendFactor) = 0;
+
+      vec4f *out_rgba  = 0;
+      vec4f *in_rgba   = 0;
+      vec3f *in_normal = 0;
+                             
       Device *const rtc;
     };
     
@@ -44,15 +46,13 @@ namespace rtc {
       virtual ~DenoiserOIDN();
       
       void resize(vec2i size) override;
-      void run(// output
-               vec4f *out_rgba,
-               // input channels
-               vec4f *in_rgba,
-               vec3f *in_normal,
-               float blendFactor) override;
+      void run(float blendFactor) override;
       
-      vec2i         numPixels { 0,0 };
+    private:
+      void freeMem();
 
+      vec2i         numPixels { 0,0 };
+      
       OIDNDevice oidnDevice = 0;
       OIDNFilter filter = 0;
     };

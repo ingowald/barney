@@ -135,11 +135,8 @@ if (BARNEY_BACKEND_EMBREE)
   if (BARNEY_OIDN_CPU)
     target_link_libraries(barney_rtc_embree PUBLIC OpenImageDenoise)
   endif()
-#  target_link_libraries(barney_config INTERFACE embree_local)
 else()
-  add_library(barney_rtc_embree INTERFACE
-    # dummy
-    )
+  add_library(barney_rtc_embree INTERFACE)
 endif()
 
 # ==================================================================
@@ -170,7 +167,7 @@ set_target_properties(barney_rtc_cuda_common
   )
   rtc_library_properties(barney_rtc_cuda_common)
 else()
-  add_library(barney_rtc_cuda_common INTERFACE) # DUMMY!
+  add_library(barney_rtc_cuda_common INTERFACE)
 endif()
 
 
@@ -202,21 +199,55 @@ if (BARNEY_BACKEND_OPTIX)
       PUBLIC -DOPTIX_DISABLE_DENOISING=1)
   endif()
 else()
-  add_library(barney_rtc_optix INTERFACE) # DUMMY!
+  # dummy "no-op" library; empty, but it exists, so code below can
+  # just link to it without having to do any checking
+  add_library(barney_rtc_optix INTERFACE) 
 endif()
 
 
+# ==================================================================
+if (BARNEY_BACKEND_CUDA)
+  message("ENabling native cuda backend")
+  add_library(barney_rtc_cuda STATIC
+    cuda/Device.h
+    cuda/Device.cu
+    cuda/Buffer.h
+    cuda/Buffer.cpp
+    cuda/Group.h
+    cuda/Group.cu
+    cuda/Geom.h
+    cuda/Geom.cpp
+    cuda/TraceKernel.h
+    cuda/TraceKernel.cpp
+    cuda/GeomType.h
+    cuda/GeomType.cpp
+    )
+  target_link_libraries(barney_rtc_cuda PUBLIC
+    barney_rtc_config
+    barney_rtc_cuda_common
+    )
+  target_compile_definitions(barney_rtc_cuda
+    PUBLIC -DBARNEY_RTC_CUDA=1)
+  rtc_library_properties(barney_rtc_cuda)
+
+else()
+  # dummy "no-op" library; empty, but it exists, so code below can
+  # just link to it without having to do any checking
+  add_library(barney_rtc_cuda INTERFACE)
+endif()
 
 
 # ==================================================================
 # ==================================================================
-add_library(barney_rtc INTERFACE
-  )
+add_library(barney_rtc INTERFACE)
 if (BARNEY_BACKEND_OPTIX)
   target_link_libraries(barney_rtc INTERFACE barney_rtc_optix)
 endif()
 if (BARNEY_BACKEND_EMBREE)
   target_link_libraries(barney_rtc INTERFACE barney_rtc_embree)
+endif()
+if (BARNEY_BACKEND_CUDA)
+  target_link_libraries(barney_rtc INTERFACE barney_rtc_cuda)
 endif()
 
 

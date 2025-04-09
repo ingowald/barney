@@ -27,6 +27,8 @@
 #define __rtc_device __device__
 #define __rtc_both   __device__ __host__
 
+#define RTC_HAVE_CUDA 1
+
 namespace rtc {
   namespace cuda_common {
 
@@ -46,8 +48,8 @@ namespace rtc {
     
     inline __both__ vec3f load(const float3 &v)
     { return vec3f(v.x,v.y,v.z); }
-    inline __both__ vec4f load(const float4 &v)
-    { return vec4f(v.x,v.y,v.z,v.w); }
+    inline __both__ vec4f load(const float4 &vv)
+    { float4 v = vv; return vec4f(v.x,v.y,v.z,v.w); }
     
   }
 }

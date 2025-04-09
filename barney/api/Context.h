@@ -169,6 +169,10 @@ namespace barney_api {
     virtual ~Data() = default;
   };
 
+  /*! object that handles a frame buffer object; in particular, the
+      ability to let the renderer accumulate pixel samples, and to let
+      the app 'read' different channels of the rendered frame buffer
+      no matter on which gpu and/or rank they got written to */
   struct FrameBuffer : public Object {
     inline FrameBuffer(Context *context)
       : Object(context)
@@ -176,8 +180,9 @@ namespace barney_api {
     virtual ~FrameBuffer() = default;
 
     virtual void  resetAccumulation() = 0;
-    virtual void  resize(vec2i newSize, uint32_t channels) = 0;
-    virtual void *getPointer(BNFrameBufferChannel channel) = 0;
+    virtual void  resize(BNDataType colorFormat,
+                         vec2i size,
+                         uint32_t channels) = 0;
     virtual void  read(BNFrameBufferChannel channel,
                        void *hostPtrToReadInto,
                        BNDataType requestedFormat) = 0;
@@ -215,7 +220,7 @@ namespace barney_api {
                               const affine3f *xfms,
                               int numInstances) = 0;
     virtual void setInstanceAttributes(int slot,
-                                       int which,
+                                       const std::string &which,
                                        Data::SP data) = 0;
     virtual void build(int slot) = 0;
     virtual void render(Renderer *renderer,
@@ -231,6 +236,10 @@ namespace barney_api {
   struct Context {
     virtual ~Context() = default;
 
+    virtual int myRank() = 0;
+    virtual int mySize() = 0;
+    
+    
     // ------------------------------------------------------------------
     // virtual object factory interface
     // ------------------------------------------------------------------

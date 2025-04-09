@@ -71,11 +71,25 @@ namespace BARNEY_NS {
     }
   }
 
-  void ModelSlot::setInstanceAttributes(int which,
-                                       const PODData::SP &data)
+  void ModelSlot::setInstanceAttributes(const std::string &which,
+                                        const PODData::SP &data)
   {
-    assert(which >= 0 && which < 5);
-    world->instanceAttributes[which] = data;
+    // assert(which >= 0 && which < 5);
+    if (which == "instID")
+      world->instanceUserIDs = data;
+    else if (which == "attribute0")
+      world->instanceAttributes[0] = data;
+    else if (which == "attribute1")
+      world->instanceAttributes[1] = data;
+    else if (which == "attribute2")
+      world->instanceAttributes[2] = data;
+    else if (which == "attribute3")
+      world->instanceAttributes[3] = data;
+    else if (which == "attribute4" || which == "color")
+      world->instanceAttributes[4] = data;
+    else
+      std::cout << "#barney: un-recognized instance attribute '" << which << "'" << std::endl;
+      ;
   }
   
   void ModelSlot::build()
@@ -126,11 +140,12 @@ namespace BARNEY_NS {
     // list transform array
     // ==================================================================
     
+    std::vector<int>          inputInstIDs;
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       std::vector<affine3f>     rtcTransforms;
       std::vector<rtc::Group *> rtcGroups;
-      
+      bool firstDevice = (device == (*devices)[0]);
       for (int i=0;i<instances.groups.size();i++) {
         Group *group = instances.groups[i].get();
         if (!group) continue;
@@ -139,20 +154,30 @@ namespace BARNEY_NS {
         if (groupPLD->userGeomGroup) {
           rtcGroups.push_back(groupPLD->userGeomGroup);
           rtcTransforms.push_back(instances.xfms[i]);
+          if (firstDevice)
+            inputInstIDs.push_back(i);
+          // if (!instances.userIDs.empty())
+          //   userIDs.push_back(instances.userIDs[i]);
         }
         if (groupPLD->volumeGeomsGroup) {
           rtcGroups.push_back(groupPLD->volumeGeomsGroup);
           rtcTransforms.push_back(instances.xfms[i]);
+          if (firstDevice)
+            inputInstIDs.push_back(i);
         }
 
         if (groupPLD->triangleGeomGroup) {
           rtcGroups.push_back(groupPLD->triangleGeomGroup);
           rtcTransforms.push_back(instances.xfms[i]);
+          if (firstDevice)
+            inputInstIDs.push_back(i);
         }
-
+        
         for (auto group : groupPLD->volumeGroups) {
           rtcGroups.push_back(group);
           rtcTransforms.push_back(instances.xfms[i]);
+          if (firstDevice)
+            inputInstIDs.push_back(i);
         }
       }
   
@@ -162,6 +187,7 @@ namespace BARNEY_NS {
       }
       pld->instanceGroup
         = device->rtc->createInstanceGroup(rtcGroups,
+                                           inputInstIDs,
                                            rtcTransforms);
       if (pld->instanceGroup)
         pld->instanceGroup->buildAccel();

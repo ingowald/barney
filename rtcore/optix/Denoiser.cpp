@@ -52,13 +52,22 @@ namespace rtc {
         BARNEY_CUDA_CALL_NOTHROW(Free(denoiserState));
         denoiserState = 0;
       }
+      if (in_rgba) {
+        BARNEY_CUDA_CALL_NOTHROW(Free(in_rgba));
+        in_rgba = 0;
+      }
+      if (in_normal) {
+        BARNEY_CUDA_CALL_NOTHROW(Free(in_normal));
+        in_normal = 0;
+      }
     }
     
     void Optix8Denoiser::resize(vec2i numPixels)
     {
       this->numPixels = numPixels;
       SetActiveGPU forDuration(device);
-    
+
+      PING; PRINT(numPixels);
       denoiserSizes.overlapWindowSizeInPixels = 0;
       optixDenoiserComputeMemoryResources(/*const OptixDenoiser */
                                           denoiser,
@@ -69,18 +78,44 @@ namespace rtc {
                                           // OptixDenoiserSizes* returnSizes
                                           &denoiserSizes
                                           );
+      // --------------------------------------------
       if (denoiserScratch) {
         BARNEY_CUDA_CALL(Free(denoiserScratch));
         denoiserScratch = 0;
       }
       BARNEY_CUDA_CALL(Malloc(&denoiserScratch,
                               denoiserSizes.withoutOverlapScratchSizeInBytes));
+      
+      // --------------------------------------------
       if (denoiserState) {
         BARNEY_CUDA_CALL(Free(denoiserState));
         denoiserState = 0;
       }
       BARNEY_CUDA_CALL(Malloc(&denoiserState,
                               denoiserSizes.stateSizeInBytes));
+      // --------------------------------------------
+      if (in_rgba) {
+        BARNEY_CUDA_CALL(Free(in_rgba));
+        in_rgba = 0;
+      }
+      BARNEY_CUDA_CALL(Malloc(&in_rgba,
+                              numPixels.x*numPixels.y*sizeof(*in_rgba)));
+      // --------------------------------------------
+      if (out_rgba) {
+        BARNEY_CUDA_CALL(Free(out_rgba));
+        out_rgba = 0;
+      }
+      BARNEY_CUDA_CALL(Malloc(&out_rgba,
+                              numPixels.x*numPixels.y*sizeof(*out_rgba)));
+      // --------------------------------------------
+      if (in_normal) {
+        BARNEY_CUDA_CALL(Free(in_normal));
+        in_normal = 0;
+      }
+      BARNEY_CUDA_CALL(Malloc(&in_normal,
+                              numPixels.x*numPixels.y*sizeof(*in_normal)));
+      // --------------------------------------------
+      
       optixDenoiserSetup(// OptixDenoiser denoiser,
                          denoiser,
                          // CUstream      stream,
@@ -100,12 +135,7 @@ namespace rtc {
                          );
     }
     
-    void Optix8Denoiser::run(// output
-                       vec4f *out_rgba,
-                       // input channels
-                       vec4f *in_rgba,
-                       vec3f *in_normal,
-                       float blendFactor)
+    void Optix8Denoiser::run(float blendFactor)
     {
       SetActiveGPU forDuration(device);
       OptixDenoiserLayer layer = {};

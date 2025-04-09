@@ -17,7 +17,7 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
-#include "rtcore/Frontend.h"
+#include "rtcore/AppInterface.h"
 
 namespace BARNEY_NS {
   
@@ -38,9 +38,7 @@ namespace BARNEY_NS {
   struct Device {
     Device(rtc::Device *rtc,
            int contextRank,
-           int contextSize,
-           int globalIndex,
-           int globalIndexStep);
+           int contextSize);
     
     /*! rank and size in the *LOCAL NODE*'s context; ie, these are NOT
         physical Device IDs (a context can use a subset of gpus, as
@@ -49,8 +47,8 @@ namespace BARNEY_NS {
         either */
     int                const contextRank;
     int                const contextSize;
-    int                const globalIndex;
-    int                const globalIndexStep;
+    int                globalRank = -1;
+    int                globalSize = -1;
     
     void sync() { rtc->sync(); }
     
@@ -72,11 +70,9 @@ namespace BARNEY_NS {
     rtc::Device *const rtc;
     rtc::ComputeKernel1D *generateRays = 0;
     rtc::ComputeKernel1D *shadeRays = 0;
-    rtc::ComputeKernel2D *toneMap = 0;
-    rtc::ComputeKernel2D *toFixed8 = 0;
-    rtc::ComputeKernel1D *setTileCoords = 0;
-    rtc::ComputeKernel1D *compressTiles = 0;
-    rtc::ComputeKernel1D *unpackTiles = 0;
+    // rtc::ComputeKernel2D *toFixed8 = 0;
+    // rtc::ComputeKernel1D *compressTiles = 0;
+    // rtc::ComputeKernel1D *unpackTiles = 0;
 
     // umesh related:
     rtc::ComputeKernel1D *umeshCreateElements = 0;

@@ -19,8 +19,11 @@
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
 #include "barney/common/mat4.h"
-#include "rtcore/Frontend.h"
+#include "barney/common/math.h"
 #include <stack>
+#if RTC_DEVICE_CODE
+# include "rtcore/ComputeInterface.h"
+#endif
 
 namespace BARNEY_NS {
   struct TextureData;
@@ -30,40 +33,52 @@ namespace BARNEY_NS {
     struct SamplerRegistry;
     
     struct AttributeTransform {
-      inline __rtc_device vec4f applyTo(vec4f in, bool dbg) const;
+      inline __rtc_device vec4f applyTo(const vec4f &in) const;
       
-      rtc::float4 mat[4];
-      rtc::float4 offset;
+      // rtc::float4 mat[4];
+      // rtc::float4 offset;
+      vec4f mat_x;
+      vec4f mat_y;
+      vec4f mat_z;
+      vec4f mat_w;
+      vec4f offset;
     };
     
     struct Sampler : public barney_api::Sampler {
       typedef std::shared_ptr<Sampler> SP;
       
       typedef enum {
+        INVALID=0,
         TRANSFORM,
         IMAGE1D,
         IMAGE2D,
         IMAGE3D,
-        INVALID=-1
       } Type;
 
       struct DD {
 #if RTC_DEVICE_CODE
-        inline __rtc_device DD() {}
-        inline __rtc_device DD(DD &&other) { memcpy(this,&other,sizeof(other)); }
+        inline __both__ DD() {}
+        inline __both__ DD(const DD &other) {
+          type = other.type;
+          numChannels = other.numChannels;
+          texture = other.texture;
+          inAttribute = other.inAttribute;
+          inTransform = other.inTransform;
+          outTransform = other.outTransform;
+          // memcpy(this,&other,sizeof(other));
+        }
         inline __rtc_device
         vec4f eval(const HitAttributes &inputs, bool dbg) const;
 #endif
-        Type type=INVALID;
-        AttributeKind      inAttribute;
+        // image only:
+        AttributeTransform inTransform;
+        rtc::TextureObject texture;
+        uint8_t            numChannels;
+        
+        // all types
+        uint8_t type=INVALID;
+        uint8_t       inAttribute;
         AttributeTransform outTransform;
-        union {
-          struct {
-            AttributeTransform         inTransform;
-            rtc::device::TextureObject texture;
-            int                        numChannels;
-          } image;
-        };
       };
 
       virtual DD getDD(Device *device) = 0;
@@ -146,15 +161,19 @@ namespace BARNEY_NS {
     
 #if RTC_DEVICE_CODE
     inline __rtc_device
-    vec4f AttributeTransform::applyTo(vec4f in,
-                                       bool dbg) const
+    vec4f AttributeTransform::applyTo(const vec4f &in) const
     {
-      vec4f out = rtc::load(offset);
-      out = out + in.x * rtc::load(mat[0]);
-      out = out + in.y * rtc::load(mat[1]);
-      out = out + in.z * rtc::load(mat[2]);
-      out = out + in.w * rtc::load(mat[3]);
-      return (const vec4f&)out;
+      // vec4f out = rtc::load(offset);
+      // out = out + in.x * rtc::load(mat[0]);
+      // out = out + in.y * rtc::load(mat[1]);
+      // out = out + in.z * rtc::load(mat[2]);
+      // out = out + in.w * rtc::load(mat[3]);
+      vec4f out = offset;
+      out = out + in.x * mat_x;
+      out = out + in.y * mat_y;
+      out = out + in.z * mat_z;
+      out = out + in.w * mat_w;
+      return out;
     }
     
     inline __rtc_device
@@ -162,34 +181,85 @@ namespace BARNEY_NS {
                              bool dbg) const
     {
       // dbg = true;
-      if (dbg) printf("evaluting sampler %p texture %p\n",this,
-                      (void*)image.texture);
-      vec4f in  = inputs.get(inAttribute);
-      if (dbg) printf("in is %f %f %f %f\n",in.x,in.y,in.z,in.w);
+       // printf("evaluating sampler %p texture %p\n",this,
+       //                 (void*)texture);
+      vec4f in  = inputs.get((AttributeKind)inAttribute);
+      // return in;
+      // if (dbg) {
+      //   printf("sampler: %lx\n",(size_t)&this->inTransform.mat_x);
+      //   // printf("sampler: %lx\n",(size_t)&this->inTransform.mat_x);
+      //   // printf("v %f %f %f %f %f %i\n",
+      //   //        inTransform.mat_x.x,
+      //   //        inTransform.mat_x.x,
+      //   //        inTransform.mat_x.x,
+      //   //        inTransform.mat_x.x,
+      //   //        inTransform.mat_x.x,
+      //   //        // inTransform.mat_y.x,
+      //   //        // inTransform.mat_z.x,
+      //   //        // inTransform.mat_w.w,
+      //   //        // inTransform.offset.w,
+      //   //        (int)numChannels
+      //   //        );
+      //   // printf("v %lx\n",&inTransform.mat_x.x);
+      // }
+      // return in;
+      // if (dbg) printf("in is %f %f %f %f\n",in.x,in.y,in.z,in.w);
       if (type != TRANSFORM) {
-        vec4f coord = image.inTransform.applyTo(in,dbg);
-        if (dbg) printf("coord is %f %f %f %f\n",coord.x,coord.y,coord.z,coord.w);
-        vec4f fromTex;
-        if (type == IMAGE1D)
-          fromTex = rtc::tex1D<vec4f>(image.texture,coord.x);
-        else if (type == IMAGE2D) {
-          if (dbg) printf("sampling 2d texture %p at %f %f\n",
-                          (int*)image.texture,coord.x,coord.y);
-          fromTex = rtc::tex2D<vec4f>(image.texture,coord.x,coord.y);
-        } else
-          fromTex = rtc::tex3D<vec4f>(image.texture,coord.x,coord.y,coord.z);
-
-        if (dbg) printf("fromTex is %f %f %f %f\n",fromTex.x,fromTex.y,fromTex.z,fromTex.w);
+        vec4f coord = inTransform.applyTo(in);
+#if 1
+        if (type == IMAGE1D) {
+          vec4f fromTex = rtc::tex1D<vec4f>(texture,coord.x);
+          if (numChannels == 1) {
+            fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
+          } else if (numChannels == 2) {
+            fromTex.z = 0.f; fromTex.w = 1.f;
+          } else if (numChannels == 3) {
+            fromTex.w = 1.f;
+          }
+          return outTransform.applyTo(fromTex);
+        }
+        if (type == IMAGE2D) {
+          // if (dbg) printf("sampling 2d texture %p at %f %f\n",
+          //                 (int*)texture,coord.x,coord.y);
+          // if ((int)(size_t)texture > 0)
+          vec4f fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
+          if (numChannels == 1) {
+            fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
+          } else if (numChannels == 2) {
+            fromTex.z = 0.f; fromTex.w = 1.f;
+          } else if (numChannels == 3) {
+            fromTex.w = 1.f;
+          }
+          return outTransform.applyTo(fromTex);
+          // return fromTex;
+        }
+        // return outTransform.applyTo(coord);
+        return coord;
+#else
+        // if (dbg) printf("coord is %f %f %f %f\n",coord.x,coord.y,coord.z,coord.w);
+        vec4f fromTex = vec4f(0.f);
+        if (type == IMAGE1D) {
+          fromTex = rtc::tex1D<vec4f>(texture,coord.x);
+        } else if (type == IMAGE2D) {
+          // if (dbg) printf("sampling 2d texture %p at %f %f\n",
+          //                 (int*)texture,coord.x,coord.y);
+          // if ((int)(size_t)texture > 0)
+          fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
+          // (vec3f&)fromTex = randomColor((int)(size_t)texture);
+          fromTex.w = 1.f;
+        } else {
+          // fromTex = rtc::tex3D<vec4f>(texture,coord.x,coord.y,coord.z);
+        }
+        
+        // if (dbg) printf("fromTex is %f %f %f %f\n",fromTex.x,fromTex.y,fromTex.z,fromTex.w);
         in.x = fromTex.x;
-
-        if (image.numChannels >= 1) in.y = fromTex.y;
-        if (image.numChannels >= 2) in.z = fromTex.z;
-        if (image.numChannels >= 3) in.w = fromTex.w;
-        if (dbg) printf("numchan %i -> %f %f %f %f\n",
-                        image.numChannels,
-                        in.x,in.y,in.z,in.w);
+        
+        if (numChannels > 1) in.y = fromTex.y;
+        if (numChannels > 2) in.z = fromTex.z;
+        if (numChannels > 3) in.w = fromTex.w;
+#endif
       }
-      vec4f out = outTransform.applyTo(in,dbg);
+      vec4f out = outTransform.applyTo(in);
       return out;
     }
 #endif

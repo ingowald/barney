@@ -20,6 +20,8 @@
 #include "barney/common/barney-common.h"
 #include "barney/DeviceGroup.h"
 #include "barney/render/Ray.h"
+#include "barney/render/RayQueue.h"
+#include "barney/Camera.h"
 #include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
 #include "rtcore/ComputeInterface.h"
@@ -32,7 +34,9 @@ namespace BARNEY_NS {
       the list of tiles to generate rays for is passed in 'tileDescs';
       there will be one cuda block per tile */
     struct GenerateRays {
+#if RTC_DEVICE_CODE
       __rtc_device void run(const rtc::ComputeInterface &rtcore);
+#endif
       
       Camera::DD camera;
       Renderer::DD renderer;
@@ -49,7 +53,7 @@ namespace BARNEY_NS {
       int *d_count;
       /*! pointer to device-side ray queue to write
         newly generated raysinto */
-      Ray *rayQueue;
+      SingleQueue rayQueue;
       /*! tile descriptors for the tiles that the
         frame buffer owns on this device; rays
         should only get generated for these tiles */
@@ -70,13 +74,14 @@ namespace BARNEY_NS {
       int iy = (lPixelID / tileSize) + tileOffset.y;
 
       Ray ray;
-      ray.misWeight = 0.f;
-      ray.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
+      PathState state;
+      state.misWeight = 0.f;
+      state.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
 
       ray.org  = camera.lens_00;
-      
+
       float pixel_u = ((accumID == 0) ? .5f : rand());
       float pixel_v = ((accumID == 0) ? .5f : rand());
       float image_u = ((ix+pixel_u)/float(fbSize.x));
@@ -96,12 +101,16 @@ namespace BARNEY_NS {
         vec3f pointOnImagePlane
           = D * (camera.focusDistance / fabsf(dot(D,lensNormal)));
         float lu, lv;
-        while (true) {
-          lu = 2.f*rand()-1.f;
-          lv = 2.f*rand()-1.f;
-          float f = lu*lu+lv*lv;
-          if (f > 1.f) continue;
-          break;
+        if (accumID == 0) {
+          lu = lv = 0.f;
+        } else {
+          while (true) {
+            lu = 2.f*rand()-1.f;
+            lv = 2.f*rand()-1.f;
+            float f = lu*lu+lv*lv;
+            if (f > 1.f) continue;
+            break;
+          }
         }
         vec3f lensOffset
           = (camera.apertureRadius * lu) * lens_du
@@ -120,15 +129,14 @@ namespace BARNEY_NS {
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
-      ray.rngSeed     = rand.state;
       ray.tMax        = 1e30f;
-      ray.numDiffuseBounces = 0;
+      state.numDiffuseBounces = 0;
       if (0 && ray.dbg)
         printf("-------------------------------------------------------\n");
       // if (ray.dbg)
       //   printf("  # generating INTO %lx\n",rayQueue);
              
-      if (0 && ray.dbg)
+      if (1 && ray.dbg)
         printf("======================\nspawned %f %f %f dir %f %f %f\n",
                ray.org.x,
                ray.org.y,
@@ -159,15 +167,17 @@ namespace BARNEY_NS {
                                bgColor.x,
                                bgColor.y,
                                bgColor.z);
-      ray.throughput = vec3f(1.f);
-    
+      state.throughput = vec3f(1.f);
       int pos = rt.atomicAdd(d_count,1);
-      rayQueue[pos] = ray;
+      
+      rayQueue.rays[pos] = ray;
+      rayQueue.states[pos] = state;
+      rayQueue.hitIDs[pos] = {INFINITY,-1,-1,-1};
     }
 #endif
   }  
   
-  void Context::generateRays(const Camera::DD &camera,
+  void Context::generateRays(Camera *camera,
                              Renderer *renderer,
                              FrameBuffer *fb)
   {
@@ -183,13 +193,14 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
+    Camera::DD cameraDD = camera->getDD();
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       TiledFB *devFB = fb->getFor(device);
       device->rayQueue->resetWriteQueue();
       render::GenerateRays args = {
         /* variable args */
-        camera,
+        cameraDD,
         renderer->getDD(device),
         accumID,
         fb->numPixels,
@@ -198,6 +209,14 @@ namespace BARNEY_NS {
         devFB->tileDescs,
         enablePerRayDebug,
       };
+      if (FromEnv::get()->logQueues) {
+        std::stringstream ss;
+        ss  << "#bn: ## ray queue op GENERATE " << device->rayQueue->receiveAndShadeWriteQueue.rays
+            << " + " << device->rayQueue->receiveAndShadeWriteQueue.states
+            << std::endl;
+        std::cout << ss.str();
+      }
+      
       device->generateRays->launch(devFB->numActiveTiles,
                                    pixelsPerTile,
                                    &args);
@@ -208,7 +227,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       device->rtc->sync();
-      device->rayQueue->swap();
+      device->rayQueue->swapAfterGeneration();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
     }
   }

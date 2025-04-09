@@ -20,12 +20,17 @@
 #include "barney/ModelSlot.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
-// #include "rtcore/ComputeInterface.h"
+#include "barney/render/RayQueue.h"
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 
-  void Context::traceRaysLocally(GlobalModel *globalModel)
+  void Context::traceRaysLocally(GlobalModel *globalModel,
+                                 uint32_t rngSeed,
+                                 bool needHitIDs)
   {
+    double t0 = getCurrentTime();
+    
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
@@ -34,12 +39,23 @@ namespace BARNEY_NS {
         SetActiveGPU forDuration(device);
         render::OptixGlobals dd;
         auto ctx     = model->slotContext;
-        dd.rays      = device->rayQueue->traceAndShadeReadQueue;
+        dd.rays      = device->rayQueue->traceAndShadeReadQueue.rays;
+        dd.hitIDs
+          = needHitIDs
+          ? device->rayQueue->traceAndShadeReadQueue.hitIDs
+          : 0;
         dd.numRays   = device->rayQueue->numActive;
-        dd.world     = model->world->getDD(device);
+        dd.world     = model->world->getDD(device,rngSeed);
         dd.accel     = model->getInstanceAccel(device);
-        // dd.materials = ctx->materialRegistry->getDD(device);
-        // dd.samplers  = ctx->samplerRegistry->getDD(device);
+
+        if (FromEnv::get()->logQueues) {
+          std::stringstream ss;
+          ss << "#bn: ## ray queue kernel TRACE rays " << dd.rays << std::endl;
+          ss << "#bn: ## ray queue kernel TRACE hit ids " << dd.hitIDs << " need = " << int(needHitIDs) << std::endl;
+          std::cout << ss.str();
+        }
+
+
         if (dd.numRays == 0 || dd.accel == 0) {
           /* iw - it's perfectly valid for an app to 'render' a model
              that's empty, so it's possible that dd.world is 0. Just
@@ -48,16 +64,15 @@ namespace BARNEY_NS {
         } else {
           int bs = 1024;
           int nb = divRoundUp(dd.numRays,bs);
-          if (nb)
-            device->traceRays->launch(/* bs,nb intentionally inverted: always have 1024 in width: */
+          if (nb) 
+            device->traceRays->launch(/* bs,nb intentionally inverted:
+                                         always have 1024 in width: */
                                       vec2i(bs,nb),
                                       &dd);
         }
-        device->rtc->sync();
-        //BARNEY_CUDA_SYNC_CHECK();
       }
     }
-    
+
     // ------------------------------------------------------------------
     // ... and sync 'til all are done
     // ------------------------------------------------------------------

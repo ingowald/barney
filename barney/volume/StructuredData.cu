@@ -40,6 +40,7 @@ namespace BARNEY_NS {
   /*! compute kernel that computes macro-cell information for a 3D
       structured data grid */
   struct StructuredData_ComputeMCs {
+#if RTC_DEVICE_CODE
     /* kernel CODE */
     inline __rtc_device void run(const rtc::ComputeInterface &rtCore)
     {
@@ -68,11 +69,11 @@ namespace BARNEY_NS {
       int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
       mcGrid.scalarRanges[mcIdx] = scalarRange;
     }
-      
+#endif      
     /* kernel ARGS */
     MCGrid::DD mcGrid;
     vec3i numScalars;
-    rtc::device::TextureObject scalars;
+    rtc::TextureObject scalars;
   };
   
   StructuredData::StructuredData(Context *context,

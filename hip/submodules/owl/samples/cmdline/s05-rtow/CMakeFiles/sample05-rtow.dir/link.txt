@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG "CMakeFiles/sample05-rtow.dir/hostCode.cpp.o" -o ../../../../../sample05-rtow  -Wl,-rpath,/home/wald/GITLAB/barney/hip ../../../../../libsample05-rtow-ptx.a ../../../../../libowl.so /usr/local/cuda-12.8/targets/x86_64-linux/lib/libcudart_static.a -ldl /usr/lib/x86_64-linux-gnu/librt.a /usr/lib/x86_64-linux-gnu/libtbb.so.12.11 

@@ -19,6 +19,9 @@
 #include "barney/DeviceGroup.h"
 #include "barney/volume/TransferFunction.h"
 #include "barney/common/math.h"
+#if RTC_DEVICE_CODE
+# include "rtcore/ComputeInterface.h"
+#endif
 
 namespace BARNEY_NS {
 
@@ -99,7 +102,7 @@ namespace BARNEY_NS {
     void computeMajorants(TransferFunction *xf);
 
     /*! checks if this macro-cell grid has already been
-        allocated/built - mostly for sanity checking nd debugging */
+      allocated/built - mostly for sanity checking nd debugging */
     inline bool built() const { return (dims != vec3i(0)); }
 
     struct PLD {

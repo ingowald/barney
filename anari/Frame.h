@@ -50,11 +50,33 @@ namespace barney_device {
     bool        m_enableDenoising {true};
     math::uint2 m_size            { 0,0 };
 
-    uint32_t   *m_colorBuffer{nullptr};
-    float      *m_depthBuffer{nullptr};
+    struct {
+      // color cold be uint or float4; if float4 we just allocate
+      // 4uints and store in those
+      uint32_t   *color{nullptr};
+      float      *depth{nullptr};
+      int        *primID{nullptr};
+      int        *instID{nullptr};
+      int        *objID{nullptr};
+    } m_channelBuffers;
+    struct {
+      /* for performance warnings; initialize all to 'true' so they
+         won't throw a perf warning on first time renderframe */
+      bool color = true;
+      bool depth = true;
+      bool primID = true;
+      bool instID = true;
+      bool objID = true;
+    } m_didMapChannel;
+    bool m_lastFrameWasFirstFrame = true;
     
-    anari::DataType m_colorType{ANARI_UNKNOWN};
-    anari::DataType m_depthType{ANARI_UNKNOWN};
+    struct {
+      anari::DataType color{ANARI_UNKNOWN};
+      anari::DataType depth{ANARI_UNKNOWN};
+      anari::DataType primID{ANARI_UNKNOWN};
+      anari::DataType instID{ANARI_UNKNOWN};
+      anari::DataType objID{ANARI_UNKNOWN};
+    } m_channelTypes;
 
     helium::ChangeObserverPtr<Renderer> m_renderer;
     helium::IntrusivePtr<Camera>        m_camera;

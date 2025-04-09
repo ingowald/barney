@@ -61,7 +61,6 @@ namespace BARNEY_NS {
   void Triangles::commit() 
   {
     for (auto device : *devices) {
-      auto rtc = device->rtc;
       PLD *pld = getPLD(device);
       if (pld->triangleGeoms.empty()) {
         rtc::GeomType *gt
