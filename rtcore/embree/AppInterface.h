@@ -6,4 +6,14 @@
 #include "rtcore/embree/ComputeKernel.h"
 #include "rtcore/embree/Denoiser.h"
 
+namespace rtc {
+  namespace embree {
+    
+    inline bool enablePeerAccess(const std::vector<int> &IDs)
+    { /* ignore / no-op on embree backend */; return true; }
+
+  }
+}
+
+    
 

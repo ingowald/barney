@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,9 +17,8 @@
 #pragma once
 
 #include "barney/render/DG.h"
-// #include "packedBSDFs/VisRTX.h"
 #include "barney/packedBSDF/NVisii.h"
-#include "barney/packedBSDF/fromOSPRay/Glass.h"
+#include "barney/packedBSDF/Glass.h"
 #include "barney/packedBSDF/Phase.h"
 #include "barney/packedBSDF/Lambertian.h"
 
@@ -43,7 +42,6 @@ namespace BARNEY_NS {
         union {
           packedBSDF::Phase      phase;
           packedBSDF::Lambertian lambertian;
-          // packedBSDF::VisRTX visRTX;
           packedBSDF::Glass      glass;
           packedBSDF::NVisii     nvisii;
         };

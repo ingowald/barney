@@ -58,15 +58,16 @@ namespace BARNEY_NS {
       float pdf;
     };
 
-
+    /* TODO merge with ScatterResult - this is leftovers from ospray glass import */
     struct SampleRes {
-      // inline __rtc_device SampleRes() {}
-      // inline __rtc_device SampleRes(vec3f v, float p) : value(v),pdf(p) {}
-      static inline __rtc_device SampleRes zero() { return { vec3f(0.f), vec3f(0.f), 0, 0.f }; }
-      inline __rtc_device bool valid() const    { return pdf > 0.f; };// && !isinf(pdf); }
+      typedef enum { INVALID, DIFFUSE_REFLECTION, SPECULAR_REFLECTION, SPECULAR_TRANSMISSION } Type;
+      
+      static inline __rtc_device SampleRes zero()
+      { return { vec3f(0.f), vec3f(0.f), INVALID, 0.f }; }
+      inline __rtc_device bool valid() const    { return pdf > 0.f; };
       vec3f weight;
       vec3f wi;
-      int   type;
+      Type  type;
       float pdf;
     };
 

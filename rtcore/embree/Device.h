@@ -140,18 +140,6 @@ namespace rtc {
       // geomtype stuff
       // ------------------------------------------------------------------
       
-      // GeomType *createUserGeomType(const char *ptxName,
-      //                                   const char *typeName,
-      //                                   size_t sizeOfDD,
-      //                                   bool has_ah,
-      //                                   bool has_ch);
-      
-      // GeomType *createTrianglesGeomType(const char *ptxName,
-      //                                        const char *typeName,
-      //                                        size_t sizeOfDD,
-      //                                        bool has_ah,
-      //                                        bool has_ch);
-      
       void freeGeomType(GeomType *);
 
       // ------------------------------------------------------------------
