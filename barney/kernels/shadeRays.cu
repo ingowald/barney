@@ -25,7 +25,7 @@
 namespace BARNEY_NS {
   namespace render {
 
-#define SCI_VIS_MODE 0
+#define SCI_VIS_MODE 1
     
 #define MAX_DIFFUSE_BOUNCES 3
     
@@ -531,7 +531,7 @@ namespace BARNEY_NS {
             : vec3f(0.f);
 # endif
 #else
-          const vec3f fromEnv = radianceFromEnv(world,renderer,path);
+          const vec3f fromEnv = radianceFromEnv(world,renderer,ray);
           if (dbg)
             printf("fromenv %f %f %f\n",
                    fromEnv.x,
@@ -746,7 +746,7 @@ namespace BARNEY_NS {
       vec3f scatterFactor
         = scatterResult.f_r
         // * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ray.dir)))
-        // * ONE_OVER_PI
+        * ONE_OVER_PI
         / (isinf(scatterResult.pdf)? 1.f : (//ONE_PI*
                                             scatterResult.pdf + 1e-10f));
       

@@ -27,6 +27,8 @@ namespace barney_api {
   extern "C" {
     Context *createContext_embree(const std::vector<int> &dgIDs)
     {
+      if (FromEnv::get()->logBackend)
+        std::cout << "#bn: creating *embree (cpu)* context" << std::endl;
       std::vector<int> gpuIDs = { 0 };
       return new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
     }
@@ -37,6 +39,8 @@ namespace barney_api {
     Context *createContext_optix(const std::vector<int> &dgIDs,
                                  int numGPUs, const int *_gpuIDs)
     {
+      if (FromEnv::get()->logBackend)
+        std::cout << "#bn: creating *optix* context" << std::endl;
       if (numGPUs == -1)
         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
       std::vector<int> gpuIDs;
@@ -52,6 +56,8 @@ namespace barney_api {
     Context *createContext_cuda(const std::vector<int> &dgIDs,
                                  int numGPUs, const int *_gpuIDs)
     {
+      if (FromEnv::get()->logBackend)
+        std::cout << "#bn: creating *(native-)cuda* context" << std::endl;
       if (numGPUs == -1)
         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
       std::vector<int> gpuIDs;

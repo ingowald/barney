@@ -22,6 +22,7 @@
 
 namespace BARNEY_NS {
   using namespace owl::common;
+  using barney_api::FromEnv;
   
   struct FrameBuffer;
   struct GlobalModel;
@@ -34,14 +35,6 @@ namespace BARNEY_NS {
     struct SamplerRegistry;
     struct MaterialRegistry;
     struct DeviceMaterial;    
-  };
-
-  struct FromEnv {
-    FromEnv();
-    static const FromEnv *get();
-    bool logQueues = false;
-    bool skipDenoising = false;
-    bool logConfig = false;
   };
 
   struct SlotContext {

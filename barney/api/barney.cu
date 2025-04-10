@@ -48,6 +48,56 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 
 namespace barney_api {
 
+  FromEnv::FromEnv()
+  {
+    const char *e = getenv("BARNEY_CONFIG");
+    if (!e) return;
+    std::vector<std::string> components;
+    std::string es = e;
+    while (true) {
+      int p = es.find(":");
+      if (p == es.npos) {
+        components.push_back(es);
+        break;
+        }
+      components.push_back(es.substr(0,p));
+      es = es.substr(p+1);
+    }
+    std::map<std::string,std::string> keyValue;
+    for (auto comp : components) {
+      int p = comp.find("=");
+      if (p == comp.npos) {
+        keyValue[comp] = "";
+      } else {
+        keyValue[comp.substr(0,p)] = comp.substr(p+1);
+      }
+    }
+    for (auto kv : keyValue) {
+      const std::string key = kv.first;
+      const std::string value = kv.second;
+      
+      std::cout << "#barney.config " << key << " = '" << value << "'" << std::endl;
+      if (key == "LOG_QUEUES")
+        logQueues = true;
+      else if (key == "SKIP_DENOISING")
+        skipDenoising = true;
+      else if (key == "LOG_CONFIG")
+        logConfig = true;
+      else if (key == "LOG_BACKEND")
+        logBackend = true;
+      else
+        throw std::runtime_error("unknown/unrecognized config key");
+    }
+  }
+  const FromEnv *FromEnv::get()
+  {
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    static FromEnv *singleton = 0;
+    if (!singleton) singleton = new FromEnv;
+    return singleton;
+  }
+  
   extern "C" {
 #if BARNEY_BACKEND_EMBREE
     barney_api::Context *
@@ -764,10 +814,25 @@ namespace barney_api {
   {
     LOG_API_ENTRY;
     if (getenv("BARNEY_FORCE_CPU")) {
+      if (FromEnv::get()->logBackend) {
+        std::cout << "#bn. found BARNEY_FORCE_CPU flag." << std::endl;
+      }
       static int negOne = -1;
       _gpuIDs = &negOne;
       numGPUs = 1;
     }
+
+    if (FromEnv::get()->logBackend) {
+      std::cout << "#bn. creating context over numGPUs = " << numGPUs << " gpu IDs ";
+      if (_gpuIDs == nullptr)
+        std::cout << "<null>" << std::endl;
+      else {
+        for (int i=0;i<numGPUs;i++)
+          std::cout << _gpuIDs[i] << " ";
+        std::cout << std::endl;
+      }
+    }
+    
     
     try {
       // ------------------------------------------------------------------

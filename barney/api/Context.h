@@ -336,16 +336,6 @@ namespace barney_api {
     std::map<Object::SP,int> hostOwnedHandles;
   };
 
-// #if BARNEY_BACKEND_EMBREE
-//   extern "C"
-//   Context *createContext_embree(const std::vector<int> &dgIDs);
-// #endif
-// #if BARNEY_BACKEND_OPTIX
-//   extern "C"
-//   Context *createContext_optix(const std::vector<int> &dgIDs,
-//                                int numGPUs, const int *gpuIDs);
-// #endif
-
   /*! pretty-printer for printf-debugging */
   inline std::string Object::toString() const
   { return "<Object>"; }
@@ -374,8 +364,6 @@ namespace barney_api {
     // context->
       alreadyWarned.insert(key);
   }
-
-
 
   inline void Context::releaseHostReference(Object::SP object)
   {
@@ -407,5 +395,13 @@ namespace barney_api {
     it->second++;
   }
 
+  struct FromEnv {
+    FromEnv();
+    static const FromEnv *get();
+    bool logQueues = false;
+    bool skipDenoising = false;
+    bool logConfig = false;
+    bool logBackend = false;
+  };
   
 }

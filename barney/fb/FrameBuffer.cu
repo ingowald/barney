@@ -189,7 +189,7 @@ namespace BARNEY_NS {
     if (doDenoising) {
       /* run denoiser - this will write pixels in float4 format to
          denoiser->out_rgba */
-      float blendFactor = (accumID-1) / (accumID+20.f); 
+      float blendFactor = (accumID-1) / (accumID+100.f); 
       denoiser->run(blendFactor);
 
       switch(requestedFormat) {
