@@ -27,14 +27,14 @@ namespace BARNEY_NS {
 
 #define SCI_VIS_MODE 1
     
-#define MAX_DIFFUSE_BOUNCES 3
+#define MAX_DIFFUSE_BOUNCES 2
     
 #define ENV_LIGHT_SAMPLING 1
 
 #define USE_MIS 1
 
 
-#define CLAMP_F_R 3.f
+#define CLAMP_F_R 13.f
 
 
 #if RTC_DEVICE_CODE
@@ -745,8 +745,8 @@ namespace BARNEY_NS {
       
       vec3f scatterFactor
         = scatterResult.f_r
-        // * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ray.dir)))
-        * ONE_OVER_PI
+        * (isVolumeHit?1.f:fabsf(dot(dg.Ng,normalize(ray.dir))))
+        // * ONE_OVER_PI
         / (isinf(scatterResult.pdf)? 1.f : (//ONE_PI*
                                             scatterResult.pdf + 1e-10f));
       
@@ -756,7 +756,7 @@ namespace BARNEY_NS {
       // makes fireflies go away (well, makes them go 'less', but can
       // lose a lot of envergy if the brdf sample code isn't close to
       // the actual brdf.
-      scatterFactor = min(scatterFactor,vec3f(1.5f));
+      scatterFactor = min(scatterFactor,vec3f(2.5f));
 #endif
 
       state.throughput

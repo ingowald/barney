@@ -65,7 +65,7 @@ namespace BARNEY_NS {
       float reflectance = .85f;
       packedBSDF::Lambertian bsdf;
       (vec3f&)bsdf.albedo = reflectance * (const vec3f&)baseColor
-        // * (ONE_OVER_PI)
+        * (ONE_OVER_PI)
         ;
       if (dbg) printf("created lambertian %f %f %f\n",
                       bsdf.albedo.x,
