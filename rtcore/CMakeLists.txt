@@ -195,6 +195,7 @@ if (BARNEY_BACKEND_OPTIX)
     PUBLIC -DBARNEY_RTC_OPTIX=1)
   rtc_library_properties(barney_rtc_optix)
   if (BARNEY_DISABLE_DENOISING)
+    message("DISabling optix denoising")
     target_compile_definitions(barney_rtc_optix
       PUBLIC -DOPTIX_DISABLE_DENOISING=1)
   endif()
