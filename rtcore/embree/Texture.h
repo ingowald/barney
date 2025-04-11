@@ -62,7 +62,7 @@ namespace rtc {
     {
       Texture(TextureData *const data,
               const rtc::TextureDesc &desc);
-      rtc::device::TextureObject getDD() const;
+      rtc::TextureObject getDD() const;
 
       TextureSampler *sampler = 0;
     };

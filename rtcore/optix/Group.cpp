@@ -25,11 +25,11 @@ namespace rtc {
         owl(owl)
     {}
     
-    rtc::device::AccelHandle Group::getDD() const
+    rtc::AccelHandle Group::getDD() const
     {
       OptixTraversableHandle handle
         = owlGroupGetTraversable(owl,0);
-      return (const rtc::device::AccelHandle &)handle;
+      return (const rtc::AccelHandle &)handle;
     }
     
     void Group::buildAccel()

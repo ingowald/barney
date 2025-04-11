@@ -17,7 +17,6 @@
 #pragma once
 
 #include "barney/Object.h"
-#include "rtcore/Frontend.h"
 
 namespace BARNEY_NS {
 
@@ -65,8 +64,8 @@ namespace BARNEY_NS {
             BNTextureColorSpace  colorSpace);
     virtual ~Texture() = default;
 
-    rtc::device::TextureObject getTextureObject(Device *device);
-    rtc::device::TextureObject getDD(Device *device)
+    rtc::TextureObject getTextureObject(Device *device);
+    rtc::TextureObject getDD(Device *device)
     { return getTextureObject(device); }
 
     struct PLD {
@@ -83,37 +82,5 @@ namespace BARNEY_NS {
     TextureData::SP data;
     DevGroup::SP    const devices;
   };
-
-  // struct Texture3D : public SlottedObject {
-  //   typedef std::shared_ptr<Texture3D> SP;
-
-  //   struct DD {
-  //     rtc::device::TextureObject texObj;
-  //     rtc::device::TextureObject texObjNN;
-  //   };
-
-  //   Texture3D(Context *context,
-  //             const DevGroup::SP &devices,
-  //             TextureData::SP data,
-  //             BNTextureFilterMode  filterMode,
-  //             BNTextureAddressMode addressMode);
-  //   virtual ~Texture3D() = default;
-    
-  //   struct PLD {
-  //     rtc::Texture *rtcTexture = 0;
-  //     rtc::Texture *rtcTextureNN = 0;
-  //   };
-    
-  //   PLD *getPLD(Device *device);
-  //   std::vector<PLD> perLogical;
-    
-  //   /*! pretty-printer for printf-debugging */
-  //   std::string toString() const override
-  //   { return "Texture3D{}"; }
-
-  //   DD getDD(Device *device);
-  // private:
-  //   TextureData::SP data;
-  // };
 
 }

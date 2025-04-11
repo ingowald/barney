@@ -171,9 +171,9 @@ namespace rtc {
 
 
 
-    rtc::device::TextureObject Texture::getDD() const
+    rtc::TextureObject Texture::getDD() const
     {
-      return (const rtc::device::TextureObject &)sampler;
+      return (const rtc::TextureObject &)sampler;
     }
     
     template<typename T, int FILTER_MODE>
@@ -225,6 +225,16 @@ namespace rtc {
       return vf * 1.f/255.f;
     }
 
+    template<>
+    vec4f getTexel<unsigned char>(TextureData *data,
+                                  const rtc::TextureDesc &desc,
+                                  int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      unsigned char v = ((const unsigned char*)data->data.data())[idx];
+      vec4f  vf = vec4f(v);
+      return vf * 1.f/255.f;
+    }
 
     
     template<typename T>
@@ -435,6 +445,9 @@ namespace rtc {
                                   rtc::TextureDesc desc)
     {
       switch (data->format) {
+      case rtc::UCHAR:
+        return createSampler<unsigned char>(data,desc);
+        break;
       case rtc::UCHAR4:
         return createSampler<vec4uc>(data,desc);
         break;
@@ -456,17 +469,17 @@ namespace rtc {
       sampler = createSampler(data,desc);
     }
 
-    __both__ float tex2D1f(rtc::device::TextureObject to,
+    __both__ float tex2D1f(rtc::TextureObject to,
                            float x, float y)
     { return ((TextureSampler *)to)->tex2D({x,y}).x; }
     
-    __both__ float tex3D1f(rtc::device::TextureObject to,
+    __both__ float tex3D1f(rtc::TextureObject to,
                            float x, float y, float z)
     {
       return ((TextureSampler *)to)->tex3D({x,y,z}).x;
     }
     
-    __both__ vec4f tex2D4f(rtc::device::TextureObject to,
+    __both__ vec4f tex2D4f(rtc::TextureObject to,
                             float x, float y)
     {
       // PING;
@@ -475,7 +488,7 @@ namespace rtc {
       return v;
     }
 
-    __both__ vec4f tex3D4f(rtc::device::TextureObject to,
+    __both__ vec4f tex3D4f(rtc::TextureObject to,
                            float x, float y, float z)
     { return ((TextureSampler *)to)->tex3D({x,y,z}); }
     

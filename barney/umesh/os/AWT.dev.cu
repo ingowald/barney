@@ -16,7 +16,6 @@
 
 #include "barney/umesh/os/AWT.h"
 #include "rtcore/TraceInterface.h"
-#include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 
@@ -26,7 +25,9 @@ enum { AWT_STACK_DEPTH = 64 };
 // #define JOINT_FIRST_STEP 1
 
 namespace BARNEY_NS {
-
+  using render::OptixGlobals;
+  using render::World;
+  
   inline __rtc_device
   bool verySmall(range1f r)
   {
@@ -35,16 +36,36 @@ namespace BARNEY_NS {
   }
   
   struct AWTPrograms {
+#if RTC_DEVICE_CODE
     static inline __rtc_device
-    void closestHit(rtc::TraceInterface &rt)
+    void closestHit(rtc::TraceInterface &ti)
+    {
+      const OptixGlobals &globals = OptixGlobals::get(ti);
+      const AWTAccel::DD &self = *(AWTAccel::DD*)ti.getProgramData();
+
+      int primID = ti.getPrimitiveIndex();
+      int instID = ti.getInstanceID();
+      const World::DD &world = globals.world;
+      if (globals.hitIDs) {
+        const int rayID
+          = ti.getLaunchIndex().x
+          + ti.getLaunchDims().x
+          * ti.getLaunchIndex().y;
+        globals.hitIDs[rayID].primID = primID;
+        globals.hitIDs[rayID].instID
+          = world.instIDToUserInstID
+          ? world.instIDToUserInstID[instID]
+          : instID;
+        globals.hitIDs[rayID].objID  = self.userID;
+      }
+    }
+
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &ti)
     {}
 
     static inline __rtc_device
-    void anyHit(rtc::TraceInterface &rt)
-    {}
-
-    static inline __rtc_device
-    void bounds(const rtc::TraceInterface &rt,
+    void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -62,12 +83,13 @@ namespace BARNEY_NS {
     
       
     }
-
+    
     static inline __rtc_device
     void intersect(rtc::TraceInterface &ti);
+#endif
   };
-
   
+#if RTC_DEVICE_CODE
   /*! approximates a cubic function defined through four points (at
     t=0, t=1/3, t=2/3, and 1=1.f) with corresponding values of f0,
     f1, f2, and f3 */
@@ -230,10 +252,9 @@ namespace BARNEY_NS {
                          range1f jfsRange,
                          float jfsMajorant,
 #endif
-                         uint32_t &rngSeed,
+                         Random &rand,
                          bool dbg=false)
   {
-    LCG<4> &rand = (LCG<4> &)rngSeed;
     float t = tRange.lower;
 
 #if JOINT_FIRST_STEP
@@ -276,7 +297,7 @@ namespace BARNEY_NS {
                      vec3f dir,
                      float &tHit,
                      int primID,
-                     uint32_t &rng,
+                     Random &rng,
                      bool dbg=false)
   {
     Cubic cubic
@@ -383,13 +404,21 @@ namespace BARNEY_NS {
   void AWTPrograms::intersect(rtc::TraceInterface &ti)
   {
     using BARNEY_NS::render::boxTest;
+
+    const render::World::DD &world = render::OptixGlobals::get(ti).world;
+    int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+    // BARNEY_NS::Random
+    Random rng(hash(rayID,
+                    ti.getRTCInstanceIndex(),
+                    ti.getGeometryIndex(),
+                    ti.getPrimitiveIndex(),
+                    world.rngSeed));
+    
     
     StackEntry stackBase[AWT_STACK_DEPTH];
     StackEntry *stack = stackBase;
     
-    const void *pd = ti.getProgramData();
-    
-    const AWTAccel::DD &self = *(AWTAccel::DD*)pd;
+    const AWTAccel::DD &self = *(AWTAccel::DD*)ti.getProgramData();
     Ray &ray = *(Ray*)ti.getPRD();
 #ifdef NDEBUG
     bool dbg = false;
@@ -417,7 +446,7 @@ namespace BARNEY_NS {
     curr.tRange = { 1e-6f, tHit };
     
     if (!boxTest(org,dir,
-                                 curr.tRange.lower,curr.tRange.upper,
+                 curr.tRange.lower,curr.tRange.upper,
                  self.mesh.worldBounds)) {
       // doesn't even overlap the bounding box... 
       if (dbg)
@@ -442,7 +471,7 @@ namespace BARNEY_NS {
         /* repeat until we successfully POPPED SOMETHING */
         while (1) {
           if (dbg) printf("popping at depth %i\n",
-                              int(stack-stackBase));
+                          int(stack-stackBase));
           if (stack == stackBase) {
             if (tHit < ray.tMax) {
               ray.setVolumeHit(org+tHit*dir,
@@ -478,8 +507,7 @@ namespace BARNEY_NS {
             = tLen// * self.xf.baseDensity
             * curr.majorant;
           if (expectedNumSteps <= AWT_SAMPLE_THRESHOLD) {
-            LCG<4> &rand = (LCG<4> &)ray.rngSeed;
-            float dt0 = - logf(1.f-rand())/curr.majorant;
+            float dt0 = - logf(1.f-rng())/curr.majorant;
             curr.tRange.lower += dt0;
             if (curr.tRange.lower >= curr.tRange.upper)
               continue;
@@ -552,12 +580,12 @@ namespace BARNEY_NS {
               childEntry[i].tRange.lower < tHit) {//ray.tMax) {
             if (dbg)
               printf("pushing depth %i, node %i:%i dist %f\n",
-                   int(stack-stackBase),
-                   childEntry[i].ref.offset,
-                   childEntry[i].ref.count,
-                   childEntry[i].tRange.lower);
-if (stack - stackBase >= AWT_STACK_DEPTH)
-printf("STACK OVERFLOW!\n");
+                     int(stack-stackBase),
+                     childEntry[i].ref.offset,
+                     childEntry[i].ref.count,
+                     childEntry[i].tRange.lower);
+            if (stack - stackBase >= AWT_STACK_DEPTH)
+              printf("STACK OVERFLOW!\n");
             *stack++ = childEntry[i];
           }
         }
@@ -568,7 +596,6 @@ printf("STACK OVERFLOW!\n");
       //   printf("----------- leaf len %f!\n",curr.tRange.span());
       
 #if JOINT_FIRST_STEP
-      LCG<4> &rand = (LCG<4> &)ray.rngSeed;
       float dt0 = - logf(1.f-rand())/curr.majorant;
       curr.tRange.lower += dt0;
       if (curr.tRange.lower > curr.tRange.upper)
@@ -581,11 +608,12 @@ printf("STACK OVERFLOW!\n");
                       curr.tRange,
                       curr.majorant,
                       org,dir,tHit,self.primIDs[curr.ref.offset+i],
-                      ray.rngSeed,dbg);
+                      rng,dbg);
         curr.tRange.upper = min(curr.tRange.upper,tHit);
       }
     }
   }
+#endif
   
   RTC_EXPORT_USER_GEOM(AWT,AWTAccel::DD,AWTPrograms,false,false);
 } // ::BARNEY_NS

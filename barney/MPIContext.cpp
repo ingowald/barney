@@ -16,6 +16,7 @@
 
 #include "barney/MPIContext.h"
 #include "barney/fb/DistFB.h"
+#include "barney/render/RayQueue.h"
 
 #if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
@@ -41,7 +42,7 @@ namespace BARNEY_NS {
       world(worldComm),
       workers(workersComm)
   {
-    bool dbg = false;
+    bool dbg = FromEnv::get()->logConfig;
 
     if (dbg) {
       std::stringstream ss;
@@ -76,7 +77,8 @@ namespace BARNEY_NS {
     if (dbg) {
       std::stringstream ss;
       ss << "bn." << workers.rank << ": ";
-      ss << "num workers " << numWorkers << "/" << workers.size << std::endl;
+      ss << "num workers active/total " << numWorkers << "/" << workers.size << std::endl;
+      std::cout << ss.str();
     }
 
     if (isActiveWorker) {
@@ -84,10 +86,21 @@ namespace BARNEY_NS {
       int numDevicesPerWorker = contextSize();//(int)devices.size();
       int numWorkers = workers.size;
 
+      int _globalID = workers.rank*numDevicesPerWorker;
+      for (auto device : *devices) {
+        device->globalRank = _globalID++;
+        device->globalSize = numWorkers * numDevicesPerWorker;
+      }
+      
       if (dbg) {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
-        ss << "num devices " << numDevicesPerWorker << " DGs " << numSlotsPerWorker << std::endl << std::flush;
+        ss << "num devices " << numDevicesPerWorker
+           << " (";
+        for (auto device : *devices)
+          ss << " " << device->globalRank;
+        ss << " ) DGs " << numSlotsPerWorker << std::endl << std::flush;
+        std::cout << ss.str();
       }
 
       // ------------------------------------------------------------------
@@ -201,35 +214,49 @@ namespace BARNEY_NS {
       dataGroupCount.clear();
       std::vector<int> islandOfGlobal(numDevicesGlobally);
       for (int i=0;i<numDevicesGlobally;i++) {
-        if (i >= islandOfGlobal.size())
-          throw std::runtime_error("invalid islandofglobal access....");
         islandOfGlobal[i]
           = dataGroupCount[dataOnGlobal[i]]++;
+      }
+      if (dbg) {
+        std::stringstream ss;
+        ss << "bn." << workers.rank << ": ";
+        ss << "islandranks globally: ";
+        for (auto d : islandOfGlobal) ss << d << " ";
+        std::cout << ss.str() << std::endl;
       }
 
       for (auto &slot : perSlot) {
         for (auto device : *devices) {
           int localID  = device->contextRank;
-          int myGlobal = device->globalIndex;
+          int myGlobal = device->globalRank;
           int myDG     = slot.modelRankInThisSlot;//dataOnGlobal[myGlobal];
           int myIsland = islandOfGlobal[myGlobal];
           int nextDG   = (myDG+1) % numDifferentModelSlots;
           int prevDG   = (myDG+numDifferentModelSlots-1) % numDifferentModelSlots;
+          std::stringstream ss;
+          ss << "#bn " << myRank() << "." << localID << " (=" << myGlobal
+             << ") looking for DG link "
+             << prevDG << "->" << myDG << "->" << nextDG
+             << " (for island " << myIsland << ")" << std::endl;
           for (int peerGlobal=0;peerGlobal<numDevicesGlobally;peerGlobal++) {
+            ss << " peer " << peerGlobal << " has island " << islandOfGlobal[peerGlobal] << " dg " << dataOnGlobal[peerGlobal] << std::endl;
             if (islandOfGlobal[peerGlobal] != myIsland)
               continue;
             if (dataOnGlobal[peerGlobal] == nextDG) {
               // *found* the global next
               device->rqs.recvWorkerRank  = peerGlobal / numDevicesPerWorker;
               device->rqs.recvWorkerLocal = peerGlobal % numDevicesPerWorker;
+              ss << " FOUND next " << device->rqs.recvWorkerRank << "." << device->rqs.recvWorkerLocal << std::endl;
             }
             if (dataOnGlobal[peerGlobal] == prevDG) {
               // *found* the global prev
               device->rqs.sendWorkerRank  = peerGlobal / numDevicesPerWorker;
               device->rqs.sendWorkerLocal = peerGlobal % numDevicesPerWorker;
+              ss << " FOUND prev " << device->rqs.sendWorkerRank << "." << device->rqs.sendWorkerLocal << std::endl;
             }
           }
           if (dbg)
+            std::cout << ss.str();
             std::cout << "local device " << localID << " recvs from device " << device->rqs.recvWorkerRank << "." << device->rqs.recvWorkerLocal << ", and sends to " <<
               device->rqs.sendWorkerRank << "." << device->rqs.recvWorkerLocal << std::endl;
         }
@@ -256,7 +283,7 @@ namespace BARNEY_NS {
   
   void MPIContext::render(Renderer    *renderer,
                           GlobalModel *model,
-                          const Camera::DD &camera,
+                          Camera      *camera,
                           FrameBuffer *_fb)
   {
     DistFB *fb = (DistFB *)_fb;
@@ -274,11 +301,16 @@ namespace BARNEY_NS {
   /*! forward rays (during global trace); returns if _after_ that
     forward the rays need more tracing (true) or whether they're
     done (false) */
-  bool MPIContext::forwardRays()
+  bool MPIContext::forwardRays(bool needHitIDs)
   {
     int numDevices = devices->size();
     std::vector<MPI_Request> allRequests;
 
+    if (FromEnv::get()->logQueues) 
+      std::cout << "----- forwardRays (numSLots = "
+                << numDifferentModelSlots << ")"
+                << " -----------" << std::endl;
+    
     syncCheckAll();
     if (numDifferentModelSlots == 1) {
       // do NOT copy or swap. rays are in trace queue, which is also
@@ -299,6 +331,17 @@ namespace BARNEY_NS {
 
       MPI_Request sendReq, recvReq;
       numOutgoing[device->contextRank] = device->rayQueue->numActive;
+
+      if (FromEnv::get()->logQueues) {
+        std::stringstream ss;
+        ss << "#" << myRank() << "." << device->contextRank << ":" << std::endl;
+        ss << "  sends " << numOutgoing[device->contextRank] << " to "
+           <<  device->rqs.sendWorkerRank << "."
+           << device->rqs.sendWorkerLocal << std::endl;
+        ss << "  recvs from " << device->rqs.recvWorkerRank << "." << device->rqs.recvWorkerLocal << std::endl;
+        std::cout << ss.str();
+      }
+      
       workers.recv(device->rqs.recvWorkerRank,
                    device->rqs.recvWorkerLocal,
                    &numIncoming[device->contextRank],1,recvReq);
@@ -311,7 +354,12 @@ namespace BARNEY_NS {
 
     // allStatuses.resize(allRequests.size());
     // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
+    if (FromEnv::get()->logQueues)
+      std::cout << "before waitall" << std::endl;
     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    if (FromEnv::get()->logQueues)
+      std::cout << "after waitall" << std::endl;
+    
     // barrier(false);
     // for (int i=0;i<allStatuses.size();i++) {
     //   auto &status = allStatuses[i];
@@ -326,23 +374,44 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     for (auto device : *devices) {
       numOutgoing[device->contextRank] = device->rayQueue->numActive;
+      if (FromEnv::get()->logQueues)
+        std::cout << myRank() << ": numOutgoing[" << device->contextRank
+                  << "] = " << device->rayQueue->numActive << std::endl;
       MPI_Request sendReq, recvReq;
       workers.recv(device->rqs.recvWorkerRank,
                    device->rqs.recvWorkerLocal,
-                   device->rayQueue->receiveAndShadeWriteQueue,
+                   device->rayQueue->receiveAndShadeWriteQueue.rays,
                    numIncoming[device->contextRank],
                    recvReq);
       workers.send(device->rqs.sendWorkerRank,
                    device->rqs.sendWorkerLocal,
-                   device->rayQueue->traceAndShadeReadQueue,
+                   device->rayQueue->traceAndShadeReadQueue.rays,
                    numOutgoing[device->contextRank],
                    sendReq);
       allRequests.push_back(sendReq);
       allRequests.push_back(recvReq);
+      if (needHitIDs) {
+        workers.recv(device->rqs.recvWorkerRank,
+                     device->rqs.recvWorkerLocal,
+                     device->rayQueue->receiveAndShadeWriteQueue.hitIDs,
+                     numIncoming[device->contextRank],
+                     recvReq);
+        workers.send(device->rqs.sendWorkerRank,
+                     device->rqs.sendWorkerLocal,
+                     device->rayQueue->traceAndShadeReadQueue.hitIDs,
+                     numOutgoing[device->contextRank],
+                     sendReq);
+        allRequests.push_back(sendReq);
+        allRequests.push_back(recvReq);
+      }
     }
     // allStatuses.resize(allRequests.size());
     // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
+    if (FromEnv::get()->logQueues)
+      std::cout << "2nd waitall" << std::endl;
     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
+    if (FromEnv::get()->logQueues)
+      std::cout << "after 2nd waitall" << std::endl;
     // barrier(false);
     // for (int i=0;i<allStatuses.size();i++) {
     //   auto &status = allStatuses[i];
@@ -356,7 +425,8 @@ namespace BARNEY_NS {
     // now all rays should be exchanged -- swap queues
     // ------------------------------------------------------------------
     for (auto device : *devices) {
-      device->rayQueue->swap();
+      device->rayQueue->swapAfterCycle(numTimesForwarded  % numDifferentModelSlots,
+                                       numDifferentModelSlots);
       device->rayQueue->numActive = numIncoming[device->contextRank];
     }
 

@@ -27,9 +27,10 @@ namespace BARNEY_NS {
   inline __rtc_device float length2(vec3f v) { return dot(v,v); }
   
   struct ConesPrograms {
+#if RTC_DEVICE_CODE
     /*! bounding box program */
     static inline __rtc_device
-    void bounds(const rtc::TraceInterface &rt,
+    void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -55,38 +56,39 @@ namespace BARNEY_NS {
     /*! closest-hit program - doesn't do anything because we do all the
       work in IS prog, but needs to exist to make optix happy */
     static inline __rtc_device
-    void closestHit(rtc::TraceInterface &rt)
+    void closestHit(rtc::TraceInterface &ti)
     {
       /* nothing - already set in isec */
     }
     
     static inline __rtc_device
-    void anyHit(rtc::TraceInterface &rt)
+    void anyHit(rtc::TraceInterface &ti)
     {
       /* nothing - already set in isec */
     }
   
     /*! largely stolen from VisRTX */
     static inline __rtc_device
-    void intersect(rtc::TraceInterface &rt)
+    void intersect(rtc::TraceInterface &ti)
     {
-      Ray &ray    = *(Ray*)rt.getPRD();
+      Ray &ray    = *(Ray*)ti.getPRD();
       const auto &self
-        = *(Cones::DD*)rt.getProgramData();
-      const int primID = rt.getPrimitiveIndex();
-      const int instID = rt.getInstanceIndex();
-      const World::DD &world = OptixGlobals::get(rt).world;
+        = *(Cones::DD*)ti.getProgramData();
+      const int primID = ti.getPrimitiveIndex();
+      const int instID = ti.getInstanceID();
+      const OptixGlobals &globals = OptixGlobals::get(ti);
+      const World::DD &world = globals.world;
         
       render::HitAttributes hitData;
       hitData.primID          = primID;
       hitData.instID          = instID;
       const DeviceMaterial &material
-        = OptixGlobals::get(rt).world.materials[self.materialID];
+        = world.materials[self.materialID];
       hitData.t = ray.tMax;
-      float ray_tmin = rt.getRayTmin();
+      float ray_tmin = ti.getRayTmin();
       
-      vec3f ro  = rt.getObjectRayOrigin();
-      vec3f rd  = rt.getObjectRayDirection();
+      vec3f ro  = ti.getObjectRayOrigin();
+      vec3f rd  = ti.getObjectRayDirection();
     
       const vec2i idx
         = self.indices
@@ -141,9 +143,9 @@ namespace BARNEY_NS {
             hitData.objectPosition  = P;
             hitData.objectNormal    = N;
             hitData.worldPosition
-              = rt.transformPointFromObjectToWorldSpace(P);
+              = ti.transformPointFromObjectToWorldSpace(P);
             hitData.worldNormal
-              = normalize(rt.transformNormalFromObjectToWorldSpace(N));
+              = normalize(ti.transformNormalFromObjectToWorldSpace(N));
           
             // trigger the anari attribute evaluation
             self.setHitAttributes(hitData,interpolator,world,ray.dbg);
@@ -152,7 +154,7 @@ namespace BARNEY_NS {
             material.setHit(ray,hitData,world.samplers,ray.dbg);
           
             // .... and let optix know we did have a hit.
-            rt.reportIntersection(hitData.t, 0);
+            ti.reportIntersection(hitData.t, 0);
             return;
           }
         }
@@ -168,9 +170,9 @@ namespace BARNEY_NS {
             hitData.objectPosition  = P;
             hitData.objectNormal    = N;
             hitData.worldPosition
-              = rt.transformPointFromObjectToWorldSpace(P);
+              = ti.transformPointFromObjectToWorldSpace(P);
             hitData.worldNormal
-              = normalize(rt.transformNormalFromObjectToWorldSpace(N));
+              = normalize(ti.transformNormalFromObjectToWorldSpace(N));
                     
             // trigger the anari attribute evaluation
             self.setHitAttributes(hitData,interpolator,world,ray.dbg);
@@ -179,7 +181,7 @@ namespace BARNEY_NS {
             material.setHit(ray,hitData,world.samplers,ray.dbg);
           
             // .... and let optix know we did have a hit.
-            rt.reportIntersection(hitData.t, 0);
+            ti.reportIntersection(hitData.t, 0);
             return;
           }
         }
@@ -211,9 +213,9 @@ namespace BARNEY_NS {
         hitData.objectPosition  = P;
         hitData.objectNormal    = N;
         hitData.worldPosition
-          = rt.transformPointFromObjectToWorldSpace(P);
+          = ti.transformPointFromObjectToWorldSpace(P);
         hitData.worldNormal
-          = normalize(rt.transformNormalFromObjectToWorldSpace(N));
+          = normalize(ti.transformNormalFromObjectToWorldSpace(N));
         
         // trigger the anari attribute evaluation
         self.setHitAttributes(hitData,interpolator,world,ray.dbg);
@@ -222,9 +224,10 @@ namespace BARNEY_NS {
         material.setHit(ray,hitData,world.samplers,ray.dbg);
         
         // .... and let optix know we did have a hit.
-        rt.reportIntersection(hitData.t, 0);
+        ti.reportIntersection(hitData.t, 0);
       }
     }
+#endif
   };
   
   RTC_EXPORT_USER_GEOM(Cones,Cones::DD,ConesPrograms,false,false);

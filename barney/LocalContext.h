@@ -32,21 +32,23 @@ namespace BARNEY_NS {
     std::string toString() const override
     { return "LocalFB{}"; }
 
-    void render(Renderer *renderer,
+    void render(Renderer    *renderer,
                 GlobalModel *model,
-                const Camera::DD &camera,
+                Camera      *camera,
                 FrameBuffer *fb) override;
 
     /*! forward rays (during global trace); returns if _after_ that
         forward the rays need more tracing (true) or whether they're
         done (false) */
-    bool forwardRays() override;
+    bool forwardRays(bool needHitIDs) override;
 
     /*! returns how many rays are active in all ray queues, across all
         devices and, where applicable, across all ranks */
     int numRaysActiveGlobally() override;
     
-    
+    int myRank() override { return 0; }
+    int mySize() override { return 1; }
+
     /*! create a frame buffer object suitable to this context */
     std::shared_ptr<barney_api::FrameBuffer>
     createFrameBuffer(int owningRank) override;

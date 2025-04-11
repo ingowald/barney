@@ -83,7 +83,7 @@ namespace BARNEY_NS {
       vec4f transmission = this->transmission.eval(hitData,samplers,dbg);
       vec4f ior = this->ior.eval(hitData,samplers,dbg);
 #if 1
-      if (ior.x != 1.f && transmission.x >= 1e-3f) {
+      if (ior.x != 1.f && (transmission.x >= 1e-3f || opacity.x < 1.f)) {
         packedBSDF::Glass bsdf;
         bsdf.ior = ior.x;
         (vec3f&)bsdf.attenuation = vec3f(1.f);

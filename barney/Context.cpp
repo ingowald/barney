@@ -18,13 +18,18 @@
 #include "barney/DeviceGroup.h"
 #include "barney/fb/FrameBuffer.h"
 #include "barney/GlobalModel.h"
+#include "barney/render/RayQueue.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
+#include "barney/Camera.h"
+#include "barney/render/Renderer.h"
 
-namespace BARNEY_NS {
-
+namespace barney_api {
+}  
+// #endif
   
+namespace BARNEY_NS {
   Context::Context(const std::vector<int> &dataGroupIDs,
                    const std::vector<int> &gpuIDs,
                    int globalIndex,
@@ -58,6 +63,8 @@ namespace BARNEY_NS {
     std::vector<std::vector<int>> gpuInSlot(numSlots);
     perSlot.resize(numSlots);
     std::vector<Device *> allDevices;
+
+    std::vector<int> gpuIDsToEnablePeerAccessFor;
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
       std::vector<int> contextRanks;
       auto &dg = perSlot[lmsIdx];
@@ -69,12 +76,15 @@ namespace BARNEY_NS {
         contextRanks.push_back(localRank);
         int gpuID = gpuIDs[localRank];
         rtc::Device *rtc = new rtc::Device(gpuID);
+        gpuIDsToEnablePeerAccessFor.push_back(gpuID);
         Device *device
           = new Device(rtc,
                        (int)allDevices.size(),
-                       (int)gpuIDs.size(),
-                       globalIndex*numSlots+lmsIdx,
-                       globalIndexStep*numSlots);
+                       (int)gpuIDs.size()
+                       // ,
+                       // globalIndex*numSlots+lmsIdx,
+                       // globalIndexStep*numSlots
+                       );
         slotDevices.push_back(device);
         allDevices.push_back(device);
         dg.gpuIDs.push_back(gpuID);
@@ -83,6 +93,7 @@ namespace BARNEY_NS {
         = std::make_shared<DevGroup>(slotDevices,(int)allDevices.size());
     }
     this->devices = std::make_shared<DevGroup>(allDevices,(int)allDevices.size());
+    havePeerAccess = rtc::enablePeerAccess(gpuIDsToEnablePeerAccessFor);
 
     for (auto &dg : perSlot)
       dg.materialRegistry
@@ -91,6 +102,7 @@ namespace BARNEY_NS {
       dg.samplerRegistry
         = std::make_shared<render::SamplerRegistry>(dg.devices);
   }
+
   
   Context::~Context()
   {
@@ -113,11 +125,14 @@ namespace BARNEY_NS {
     return numActive;
   }
  
-  void Context::traceRaysGlobally(GlobalModel *model)
+  void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
     while (true) {
-      traceRaysLocally(model);
-      const bool needMoreTracing = forwardRays();
+      if (FromEnv::get()->logQueues) 
+        std::cout << "----- glob-trace -> locally) "
+                  << " -----------" << std::endl;
+      traceRaysLocally(model, rngSeed, needHitIDs);
+      const bool needMoreTracing = forwardRays(needHitIDs);
       if (needMoreTracing)
         continue;
       break;
@@ -129,19 +144,9 @@ namespace BARNEY_NS {
     fb->finalizeTiles();
   }
 
-  bool logGenerations()
-  {
-    static int value = -1;
-    if (value == -1) {
-      char *e = getenv("BARNEY_LOG_GENERATIONS");
-      value = (e && std::stoi(e) != 0);
-    }
-    return value != 0;
-  }
-  
-  void Context::renderTiles(Renderer *renderer,
+  void Context::renderTiles(Renderer    *renderer,
                             GlobalModel *model,
-                            const Camera::DD &camera,
+                            Camera      *camera,
                             FrameBuffer *fb)
   {
     if (!isActiveWorker)
@@ -149,24 +154,39 @@ namespace BARNEY_NS {
 
     for (auto device : *devices)
       device->syncPipelineAndSBT();
-    
+
     // iw - todo: add wave-front-merging here.
     for (int p=0;p<renderer->pathsPerPixel;p++) {
-#if 0
-      std::cout << "====================== resetting accumid" << std::endl;
-      fb->accumID = 0;
-#endif
+
+      if (FromEnv::get()->logQueues) 
+        std::cout << "#################### RENDER ######################" << std::endl;
       double _t0 = getCurrentTime();
+      if (FromEnv::get()->logQueues) 
+        std::cout << "==================== new pixel wave ======================" << std::endl;
       generateRays(camera,renderer,fb);
 
       for (int generation=0;true;generation++) {
-        traceRaysGlobally(model);
+        if (FromEnv::get()->logQueues) 
+          std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
+
+        bool needHitIDs = fb->needHitIDs() && (generation==0);
+        uint32_t rngSeed = fb->accumID*16+generation;
+        if (FromEnv::get()->logQueues) 
+          std::cout << "----- trace (glob) " << generation
+                    << " -----------" << std::endl;
+        traceRaysGlobally(model,rngSeed,needHitIDs);
         
-        shadeRaysLocally(renderer, model, fb, generation);
+        if (FromEnv::get()->logQueues) 
+          std::cout << "----- shade " << generation
+                    << " -----------" << std::endl;
+        shadeRaysLocally(renderer, model, fb, generation, rngSeed);
         // no sync required here, shadeRays syncs itself.
         
+        if (FromEnv::get()->logQueues) 
+          std::cout << "----- shade " << generation
+                    << " -----------" << std::endl;
         const int numActiveGlobally = numRaysActiveGlobally();
-        if (globalIndex == 0 && logGenerations())
+        if (FromEnv::get()->logQueues)
           printf("#generation %i num active %s after bounce\n",
                  generation,prettyNumber(numActiveGlobally).c_str());
         if (numActiveGlobally > 0)

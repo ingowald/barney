@@ -41,13 +41,17 @@ namespace BARNEY_NS {
                 owl::common::box3f &bounds,  
                 const int32_t primID)
     {
+#if RTC_DEVICE_CODE
       MCVolumeAccel<UMeshCUBQLSampler>::boundsProg(ti,geomData,bounds,primID);
+#endif
     }
 
     static inline __rtc_device
     void intersect(rtc::TraceInterface &ti)
     {
+#if RTC_DEVICE_CODE
       MCVolumeAccel<UMeshCUBQLSampler>::isProg(ti);
+#endif
     }
     
     static inline __rtc_device

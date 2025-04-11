@@ -51,19 +51,19 @@ namespace rtc {
       RTCRayHit *rayHit = (RTCRayHit*)args->rayhit;
       unsigned int primID = args->primID;
       unsigned int geomID = args->geomID;
-      int instID = args->context->instID[0];
+      int instIdx = args->context->instID[0];
       TraceInterface *ti = (TraceInterface *)args->context;
       ti->primID = primID;
       ti->geomID = geomID;
-      ti->instID = instID;
+      ti->instIdx = instIdx;
       ti->geomData = user->programData.data();
       ti->embreeRay = &rayHit->ray;
       ti->embreeHit = &rayHit->hit;
 
       InstanceGroup *ig = ti->world;
-      Group *group = (embree::Group*)ig->groups[instID];
-      ti->objectToWorldXfm = &ig->xfms[instID];
-      ti->worldToObjectXfm = &ig->inverseXfms[instID];
+      Group *group = (embree::Group*)ig->groups[instIdx];
+      ti->objectToWorldXfm = &ig->xfms[instIdx];
+      ti->worldToObjectXfm = &ig->inverseXfms[instIdx];
       
       UserGeomType *type = (UserGeomType *)user->type;
       /* set to 'no hit found' - this is NOT the ray.tmax value that
@@ -81,7 +81,7 @@ namespace rtc {
           // "accept" this hit
           rayHit->hit.primID    = ti->primID;
           rayHit->hit.geomID    = ti->geomID;
-          rayHit->hit.instID[0] = ti->instID;
+          rayHit->hit.instID[0] = ti->instIdx;
           args->valid[0] = -1;
         } else {
           ti->embreeRay->tfar = save_t;
@@ -91,11 +91,13 @@ namespace rtc {
     }
 
     InstanceGroup::InstanceGroup(Device *device,
-                                 const std::vector<Group *> &groups,
-                                 const std::vector<affine3f>     &xfms)
+                                 const std::vector<Group *>  &groups,
+                                 const std::vector<int>      &instIDs,
+                                 const std::vector<affine3f> &xfms)
       : Group(device),
         groups(groups),
-        xfms(xfms)
+        xfms(xfms),
+        instIDs(instIDs)
     {}
 
     void UserGeomGroup::buildAccel() 
@@ -204,15 +206,15 @@ namespace rtc {
       for (auto &xfm : inverseXfms) xfm = rcp(xfm);
     
       embreeScene = rtcNewScene(device->embreeDevice);
-      for (int instID=0;instID<groups.size();instID++) {
-        embree::Group *group = (embree::Group *)groups[instID];
+      for (int instIdx=0;instIdx<groups.size();instIdx++) {
+        embree::Group *group = (embree::Group *)groups[instIdx];
         RTCGeometry geom
           = rtcNewGeometry(device->embreeDevice,RTC_GEOMETRY_TYPE_INSTANCE);
         assert(group);
         assert(group->embreeScene);
         rtcSetGeometryInstancedScene(geom,group->embreeScene);
         rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,
-                                &xfms[instID]);
+                                &xfms[instIdx]);
               
         rtcAttachGeometry(embreeScene,geom);
         rtcCommitGeometry(geom);

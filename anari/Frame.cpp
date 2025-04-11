@@ -13,7 +13,9 @@
 
 namespace barney_device {
 
-  Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
+  Frame::Frame(BarneyGlobalState *s)
+    : helium::BaseFrame(s),
+      m_renderer(this)
   {
     m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
   }
@@ -27,8 +29,13 @@ namespace barney_device {
 
   bool Frame::isValid() const
   {
-    return m_renderer && m_renderer->isValid() && m_camera && m_camera->isValid()
-      && m_world && m_world->isValid();
+    return
+      m_renderer &&
+      m_renderer->isValid() &&
+      m_camera &&
+      m_camera->isValid() &&
+      m_world &&
+      m_world->isValid();
   }
 
   BarneyGlobalState *Frame::deviceState() const
@@ -55,12 +62,20 @@ namespace barney_device {
 
   void Frame::commitParameters()
   {
-    m_renderer = getParamObject<Renderer>("renderer");
-    m_camera = getParamObject<Camera>("camera");
-    m_world = getParamObject<World>("world");
-    m_colorType = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
-    m_depthType = getParam<anari::DataType>("channel.depth", ANARI_UNKNOWN);
-    m_frameData.size = getParam<math::uint2>("size", math::uint2(10, 10));
+    m_renderer        = getParamObject<Renderer>("renderer");
+    m_camera          = getParamObject<Camera>("camera");
+    m_world           = getParamObject<World>("world");
+    m_channelTypes.color  = getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
+    m_channelTypes.depth  = getParam<anari::DataType>("channel.depth", ANARI_UNKNOWN);
+    m_channelTypes.primID = getParam<anari::DataType>("channel.primitiveId", ANARI_UNKNOWN);
+    m_channelTypes.instID = getParam<anari::DataType>("channel.instanceId", ANARI_UNKNOWN);
+    m_channelTypes.objID  = getParam<anari::DataType>("channel.objectId", ANARI_UNKNOWN);
+    m_size            = getParam<math::uint2>("size", math::uint2(10, 10));
+    m_enableDenoising = getParam<int>("enableDenoising",1);
+
+    if (m_bnFrameBuffer) {
+      bnSet1i(m_bnFrameBuffer,"enableDenoising",m_enableDenoising);
+    }
   }
 
   void Frame::finalize()
@@ -73,25 +88,39 @@ namespace barney_device {
     }
 
     if (!m_camera) {
-      reportMessage(ANARI_SEVERITY_WARNING, "missing required parameter 'camera' on frame");
+      reportMessage(ANARI_SEVERITY_WARNING,
+                    "missing required parameter 'camera' on frame");
     }
 
     if (!m_world) {
-      reportMessage(ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
+      reportMessage(ANARI_SEVERITY_WARNING,
+                    "missing required parameter 'world' on frame");
     }
 
-    const auto &size = m_frameData.size;
+    const auto &size = m_size;
     const auto numPixels = size.x * size.y;
 
+    uint32_t requiredChannels = BN_FB_COLOR;
+    if (m_channelTypes.depth == ANARI_FLOAT32)
+      requiredChannels |= BN_FB_DEPTH;
+    if (m_channelTypes.primID == ANARI_UINT32)
+      requiredChannels |= BN_FB_PRIMID;
+    if (m_channelTypes.objID == ANARI_UINT32)
+      requiredChannels |= BN_FB_OBJID;
+    if (m_channelTypes.instID == ANARI_UINT32)
+      requiredChannels |= BN_FB_INSTID;
+
     bnFrameBufferResize(m_bnFrameBuffer,
+                        toBarney(m_channelTypes.color),
                         size.x,
                         size.y,
-                        (uint32_t)BN_FB_COLOR
-                        | (uint32_t)((m_depthType == ANARI_FLOAT32) ? BN_FB_DEPTH : 0));
+                        requiredChannels);
   }
 
-  bool Frame::getProperty(
-                          const std::string_view &name, ANARIDataType type, void *ptr, uint32_t flags)
+  bool Frame::getProperty(const std::string_view &name,
+                          ANARIDataType type,
+                          void *ptr,
+                          uint32_t flags)
   {
     if (type == ANARI_FLOAT32 && name == "duration") {
       if (flags & ANARI_WAIT)
@@ -110,14 +139,16 @@ namespace barney_device {
     auto *state = deviceState();
     state->commitBuffer.flush();
 
+    bool firstFrame = 0;
     if (m_lastCommitFlush < state->commitBuffer.lastObjectFinalization()) {
       m_lastCommitFlush = helium::newTimeStamp();
       bnAccumReset(m_bnFrameBuffer);
+      firstFrame = true;
     }
 
     if (!isValid()) {
-      reportMessage(
-                    ANARI_SEVERITY_ERROR, "skipping render of incomplete frame object");
+      reportMessage(ANARI_SEVERITY_ERROR,
+                    "skipping render of incomplete frame object");
       reportMessage(ANARI_SEVERITY_DEBUG,
                     "    renderer(%p) - isValid:(%i)",
                     m_renderer.get(),
@@ -135,10 +166,37 @@ namespace barney_device {
 
     auto model = m_world->makeCurrent();
 
+    if (m_lastFrameWasFirstFrame &&
+        m_channelTypes.depth != ANARI_UNKNOWN &&
+        !m_didMapChannel.depth)
+      reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                    "last frame had a depth buffer request, but never mapped it");
+    if (m_lastFrameWasFirstFrame &&
+        m_channelTypes.primID != ANARI_UNKNOWN &&
+        !m_didMapChannel.primID)
+      reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                    "last frame had a primID buffer request, but never mapped it");
+    if (m_lastFrameWasFirstFrame &&
+        m_channelTypes.objID != ANARI_UNKNOWN &&
+        !m_didMapChannel.objID)
+      reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                    "last frame had a objID buffer request, but never mapped it");
+    if (m_lastFrameWasFirstFrame &&
+        m_channelTypes.instID != ANARI_UNKNOWN &&
+        !m_didMapChannel.instID)
+      reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                    "last frame had a instID buffer request, but never mapped it");
+    
     bnRender(m_renderer->barneyRenderer,
              model,
              m_camera->barneyCamera(),
              m_bnFrameBuffer);
+    m_lastFrameWasFirstFrame = firstFrame;
+
+    m_didMapChannel.depth = false;
+    m_didMapChannel.primID = false;
+    m_didMapChannel.instID = false;
+    m_didMapChannel.objID = false;
 
     auto end = std::chrono::steady_clock::now();
     m_duration = std::chrono::duration<float>(end - start).count();
@@ -151,56 +209,88 @@ namespace barney_device {
   {
     wait();
 
-    *width = m_frameData.size.x;
-    *height = m_frameData.size.y;
+    *width = m_size.x;
+    *height = m_size.y;
     int numPixels = *width * *height;
-
     if (channel == "channel.color") {
-      if (m_colorBuffer)
+      if (m_channelBuffers.color)
         throw std::runtime_error
           ("trying to map color buffer, but color buffer already mapped");
-      m_colorBuffer =
-        new uint32_t[numPixels * (m_colorType == ANARI_FLOAT32_VEC4 ? 4 : 1)];
+      m_channelBuffers.color =
+        new uint32_t[numPixels * (m_channelTypes.color == ANARI_FLOAT32_VEC4 ? 4 : 1)];
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_COLOR,
-                        m_colorBuffer, toBarney(m_colorType));
-      *pixelType = m_colorType;
-      return m_colorBuffer;
-    } else if (channel == "channel.depth" && m_depthBuffer) {
-      if (m_depthBuffer)
+                        m_channelBuffers.color, toBarney(m_channelTypes.color));
+      *pixelType = m_channelTypes.color;
+      return m_channelBuffers.color;
+    } else if (channel == "channel.depth") {
+      if (m_channelBuffers.depth)
         throw std::runtime_error
           ("trying to map depth buffer, but depth buffer already mapped");
-      m_depthBuffer =
+      m_channelBuffers.depth =
         new float[numPixels];
-      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_depthBuffer, BN_FLOAT);
+      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_channelBuffers.depth, BN_FLOAT);
+      m_didMapChannel.depth = true;
       *pixelType = ANARI_FLOAT32;
-      return m_depthBuffer;
+      return m_channelBuffers.depth;
+    } else if (channel == "channel.primitiveId") {
+      if (m_channelBuffers.primID)
+        throw std::runtime_error
+          ("trying to map channel.primitiveId, but seems already mapped");
+      m_channelBuffers.primID = new int[numPixels];
+      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_PRIMID, m_channelBuffers.primID, BN_INT);
+      m_didMapChannel.primID = true;
+      *pixelType = ANARI_UINT32;
+      return m_channelBuffers.primID;
+    } else if (channel == "channel.objectId") {
+      if (m_channelBuffers.objID)
+        throw std::runtime_error
+          ("trying to map channel.objectId, but seems already mapped");
+      m_channelBuffers.objID =
+        new int[numPixels];
+      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_OBJID, m_channelBuffers.objID, BN_INT);
+      m_didMapChannel.objID = true;
+      *pixelType = ANARI_UINT32;
+      return m_channelBuffers.objID;
+    } else if (channel == "channel.instanceId") {
+      if (m_channelBuffers.instID)
+        throw std::runtime_error
+          ("trying to map channel.instanceId, but seems already mapped");
+      m_channelBuffers.instID = new int[numPixels];
+      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_INSTID, m_channelBuffers.instID, BN_INT);
+      m_didMapChannel.instID = true;
+      *pixelType = ANARI_UINT32;
+      return m_channelBuffers.instID;
     } else if (channel == "channel.colorCUDA") {
 #if BANARI_HAVE_CUDA
-      if (m_colorBuffer)
+      if (m_channelBuffers.color)
         throw std::runtime_error
           ("trying to map color buffer, but color buffer already mapped");
-      cudaMalloc((void**)&m_colorBuffer,numPixels*
-                 (m_colorType == ANARI_FLOAT32_VEC4 ? sizeof(math::float4) : sizeof(uint32_t))
+      cudaMalloc((void**)&m_channelBuffers.color,numPixels*
+                 (m_channelTypes.color == ANARI_FLOAT32_VEC4 ? sizeof(math::float4) : sizeof(uint32_t))
                  );
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_COLOR,
-                        m_colorBuffer, toBarney(m_colorType));
-      *pixelType = m_colorType;
-      return m_colorBuffer;
+                        m_channelBuffers.color, toBarney(m_channelTypes.color));
+      *pixelType = m_channelTypes.color;
+      return m_channelBuffers.color;
 #else
       return nullptr;
 #endif
     } else if (channel == "channel.depthCUDA") {
 #if BANARI_HAVE_CUDA
-      if (m_depthBuffer)
+      if (m_channelBuffers.depth)
         throw std::runtime_error
           ("trying to map depth buffer, but depth buffer already mapped");
-      cudaMalloc((void**)&m_depthBuffer,numPixels*sizeof(float));
-      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_depthBuffer, BN_FLOAT);
+      cudaMalloc((void**)&m_channelBuffers.depth,numPixels*sizeof(float));
+      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_channelBuffers.depth, BN_FLOAT);
       *pixelType = ANARI_FLOAT32;
-      return m_depthBuffer;
+      return m_channelBuffers.depth;
 #else
       return nullptr;
 #endif
+    } else {
+      reportMessage(ANARI_SEVERITY_WARNING,
+                    "trying to map unsupported/unrecognized channel type '%s'",
+                    std::string(channel).c_str());
     }
 
     *width = 0;
@@ -212,20 +302,29 @@ namespace barney_device {
   void Frame::unmap(std::string_view channel)
   {
     if (channel == "channel.color") {
-      if (m_colorBuffer) delete[] m_colorBuffer;
-      m_colorBuffer = 0;
-    } else if (channel == "channel.depth" && m_depthBuffer) {
-      if (m_depthBuffer) delete[] m_depthBuffer;
-      m_depthBuffer = 0;
+      if (m_channelBuffers.color) delete[] m_channelBuffers.color;
+      m_channelBuffers.color = 0;
+    } else if (channel == "channel.depth" && m_channelBuffers.depth) {
+      if (m_channelBuffers.depth) delete[] m_channelBuffers.depth;
+      m_channelBuffers.depth = 0;
+    } else if (channel == "channel.primitiveId" && m_channelBuffers.primID) {
+      if (m_channelBuffers.primID) delete[] m_channelBuffers.primID;
+      m_channelBuffers.primID = 0;
+    } else if (channel == "channel.objectId" && m_channelBuffers.objID) {
+      if (m_channelBuffers.objID) delete[] m_channelBuffers.objID;
+      m_channelBuffers.objID = 0;
+    } else if (channel == "channel.instanceId" && m_channelBuffers.instID) {
+      if (m_channelBuffers.instID) delete[] m_channelBuffers.instID;
+      m_channelBuffers.instID = 0;
     } else if (channel == "channel.colorCUDA") {
 #if BANARI_HAVE_CUDA
-      if (m_colorBuffer) cudaFree(m_colorBuffer);
-      m_colorBuffer = 0;
+      if (m_channelBuffers.color) cudaFree(m_channelBuffers.color);
+      m_channelBuffers.color = 0;
 #endif
     } else if (channel == "channel.depthCUDA") {
 #if BANARI_HAVE_CUDA
-      if (m_depthBuffer) cudaFree(m_depthBuffer);
-      m_depthBuffer = 0;
+      if (m_channelBuffers.depth) cudaFree(m_channelBuffers.depth);
+      m_channelBuffers.depth = 0;
 #endif
     }
   }
@@ -254,10 +353,14 @@ namespace barney_device {
 
   void Frame::cleanup()
   {
-    delete[] m_colorBuffer;
-    delete[] m_depthBuffer;
-    m_colorBuffer = nullptr;
-    m_depthBuffer = nullptr;
+    delete[] m_channelBuffers.color;
+    m_channelBuffers.color = nullptr;
+    
+    delete[] m_channelBuffers.depth;
+    m_channelBuffers.depth = nullptr;
+    
+    delete[] m_channelBuffers.primID;
+    m_channelBuffers.primID = nullptr;
   }
 
 } // namespace barney_device

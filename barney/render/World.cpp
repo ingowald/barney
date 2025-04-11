@@ -30,12 +30,11 @@ namespace BARNEY_NS {
     {
       perLogical.resize(devices->numLogical);
       for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
         PLD *pld = getPLD(device);
         auto rtc = device->rtc;
-        pld->quadLightsBuffer
-          = rtc->createBuffer(sizeof(QuadLight::DD));
-        pld->dirLightsBuffer
-          = rtc->createBuffer(sizeof(DirLight::DD));
+        pld->quadLights = 0;
+        pld->dirLights = 0;
       }
     }
     
@@ -50,26 +49,26 @@ namespace BARNEY_NS {
       return &perLogical[device->contextRank];
     }
     
-    World::DD World::getDD(Device *device) 
+    World::DD World::getDD(Device *device, int rngSeed) 
     {
       PLD *pld = getPLD(device);
-      auto rtc = device->rtc;
       DD dd;
       dd.quadLights
-        = (QuadLight::DD *)pld->quadLightsBuffer->getDD();
+        = (QuadLight::DD *)pld->quadLights;
       dd.numQuadLights = pld->numQuadLights;
       dd.dirLights
-        = (DirLight::DD *)pld->dirLightsBuffer->getDD();
+        = (DirLight::DD *)pld->dirLights;
       dd.numDirLights = pld->numDirLights;
-      
+      dd.rngSeed = rngSeed;
       dd.envMapLight
         = envMapLight.light
         ? envMapLight.light->getDD(device,envMapLight.xfm)
         : EnvMapLight::DD{};
+      dd.rank = slotContext->context->myRank();
       
       dd.samplers  = slotContext->samplerRegistry->getDD(device);
       dd.materials = slotContext->materialRegistry->getDD(device);
-
+      
       for (int i=0;i<5;i++)
         dd.instanceAttributes[i]
           = instanceAttributes[i]
@@ -81,12 +80,13 @@ namespace BARNEY_NS {
     void World::set(const std::vector<QuadLight::DD> &quadLights)
     {
       for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
         auto pld = getPLD(device);
         auto rtc = device->rtc;
-        rtc->freeBuffer(pld->quadLightsBuffer);
-        pld->quadLightsBuffer
-          = rtc->createBuffer(quadLights.size()*sizeof(quadLights[0]),
-                              quadLights.data());
+        rtc->freeMem(pld->quadLights);
+        size_t numBytes = quadLights.size()*sizeof(quadLights[0]);
+        pld->quadLights = (QuadLight::DD*)rtc->allocMem(numBytes);
+        rtc->copy(pld->quadLights,quadLights.data(),numBytes);
         pld->numQuadLights = (int)quadLights.size();
       }
     }
@@ -94,12 +94,13 @@ namespace BARNEY_NS {
     void World::set(const std::vector<DirLight::DD> &dirLights)
     {
       for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
         auto pld = getPLD(device);
         auto rtc = device->rtc;
-        rtc->freeBuffer(pld->dirLightsBuffer);
-        pld->dirLightsBuffer
-          = rtc->createBuffer(dirLights.size()*sizeof(dirLights[0]),
-                              dirLights.data());
+        rtc->freeMem(pld->dirLights);
+        size_t numBytes = dirLights.size()*sizeof(dirLights[0]);
+        pld->dirLights = (DirLight::DD*)rtc->allocMem(numBytes);
+        rtc->copy(pld->dirLights,dirLights.data(),numBytes);
         pld->numDirLights = (int)dirLights.size();
       }
     }

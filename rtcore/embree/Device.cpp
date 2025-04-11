@@ -30,38 +30,7 @@ namespace rtc {
     // ------------------------------------------------------------------
     // rt core interface
     // ------------------------------------------------------------------
-    void TraceInterface::ignoreIntersection() 
-    { ignoreThisHit = true;  }
-    void TraceInterface::reportIntersection(float t, int i)
-    { isec_t = t;  }
-    void *TraceInterface::getPRD() const
-    { return prd; }
-    const void *TraceInterface::getProgramData() const
-    { return geomData; }
-    const void *TraceInterface::getLPData() const
-    { return lpData; }
-    vec3i TraceInterface::getLaunchDims()  const
-    { return launchDimensions; }
-    vec3i TraceInterface::getLaunchIndex() const
-    { return launchIndex; }
-    vec2f TraceInterface::getTriangleBarycentrics() const
-    { return triangleBarycentrics; }
-    int TraceInterface::getPrimitiveIndex() const
-    { return primID; }
-    int TraceInterface::getInstanceIndex() const
-    { return instID; }
-    float TraceInterface::getRayTmax() const
-    { return embreeRay->tfar; }
-    float TraceInterface::getRayTmin() const
-    { return embreeRay->tnear; }
-    vec3f TraceInterface::getObjectRayDirection() const
-    { return *(vec3f*)&embreeRay->dir_x; }
-    vec3f TraceInterface::getObjectRayOrigin() const
-    { return *(vec3f*)&embreeRay->org_x; }
-    vec3f TraceInterface::getWorldRayDirection() const
-    { return worldDirection; }
-    vec3f TraceInterface::getWorldRayOrigin() const
-    { return worldOrigin; }
+    
     vec3f TraceInterface::transformNormalFromObjectToWorldSpace(vec3f v) const
     {
       return xfmVector(objectToWorldXfm->l,
@@ -107,33 +76,29 @@ namespace rtc {
       assert(args->N == 1);
       int* valid = args->valid;
       if (valid[0] != -1) return;
-      // const RTCRayQueryContext* context = (const RTCRayQueryContext*) args->context;
+      
       RTCRay* ray = (RTCRay*)args->ray;
       RTCHit* hit = (RTCHit*)args->hit;
   
-      // TraceInterface *ti2 = (TraceInterface *)TraceInterface::get();//args->context;
       TraceInterface *ti = (TraceInterface *)args->context;
 
       int primID = hit->primID;
       int geomID = hit->geomID;
-      int instID = hit->instID[0];
+      int instIdx = hit->instID[0];
 
       InstanceGroup *ig = ti->world;
-      GeomGroup *group = ig->getGroup(instID);
+      GeomGroup *group = ig->getGroup(instIdx);
       Geom *geom = (Geom*)group->getGeom(geomID);
       GeomType *gt = geom->type;
       if (gt->ah) {
         ti->geomData = (void*)geom->programData.data();
         ti->ignoreThisHit = false;
-        // int saved_primID = ti->primID;
-        // int saved_geomID = ti->geomID;
-        // int saved_instID = ti->instID;
         ti->primID = primID;
         ti->geomID = geomID;
-        ti->instID = instID;
+        ti->instIdx = instIdx;
         ti->triangleBarycentrics = { hit->u,hit->v };
-        ti->objectToWorldXfm = &ig->xfms[instID];
-        ti->worldToObjectXfm = &ig->inverseXfms[instID];
+        ti->objectToWorldXfm = &ig->xfms[instIdx];
+        ti->worldToObjectXfm = &ig->inverseXfms[instIdx];
         ti->embreeRay = ray;
         ti->embreeHit = hit;
     
@@ -147,27 +112,26 @@ namespace rtc {
     }
 
     
-    void TraceInterface::traceRay(rtc::device::AccelHandle world,
+    void TraceInterface::traceRay(rtc::AccelHandle world,
                                   vec3f rayOrigin,
                                   vec3f rayDirection,
                                   float tmin,
                                   float tmax,
                                   void *prdPtr) 
     {
-      // perThreadTraceInterface = this;
       InstanceGroup *ig = (InstanceGroup *)world;
       RTCScene embreeScene = ig->embreeScene;
       assert(embreeScene);
 
       RTCRayHit rayHit;
   
-      TraceInterface *ti = this;//TraceInterface::get();
-      // LaunchContext *lc = LaunchContext::get();
+      TraceInterface *ti = this;
       ti->world = ig;
 
       ti->worldOrigin = rayOrigin;
       ti->worldDirection = rayDirection;
       ti->prd = prdPtr;
+      ti->instIDs = ig->instIDs.data();
 
       rayHit.ray.org_x = rayOrigin.x;        // x coordinate of ray origin
       rayHit.ray.org_y = rayOrigin.y;        // y coordinate of ray origin
@@ -213,9 +177,9 @@ namespace rtc {
     
         int primID = rayHit.hit.primID;
         int geomID = rayHit.hit.geomID;
-        int instID = rayHit.hit.instID[0];
+        int instIdx = rayHit.hit.instID[0];
     
-        GeomGroup *group = (GeomGroup *)ig->groups[instID];
+        GeomGroup *group = (GeomGroup *)ig->groups[instIdx];
         Geom *geom = (Geom *)group->geoms[geomID];
         GeomType *gt = geom->type;
         if (gt->ch) {
@@ -223,10 +187,10 @@ namespace rtc {
           ti->geomData = (void*)geom->programData.data();
           ti->primID = primID;
           ti->geomID = geomID;
-          ti->instID = instID;
+          ti->instIdx = instIdx;
           ti->triangleBarycentrics = { rayHit.hit.u,rayHit.hit.v };
-          ti->objectToWorldXfm = &ig->xfms[instID];
-          ti->worldToObjectXfm = &ig->inverseXfms[instID];
+          ti->objectToWorldXfm = &ig->xfms[instIdx];
+          ti->worldToObjectXfm = &ig->inverseXfms[instIdx];
           ti->embreeRay = &rayHit.ray;
           ti->embreeHit = &rayHit.hit;
     
@@ -284,9 +248,10 @@ namespace rtc {
     { return new UserGeomGroup(this,geoms); }
       
     Group *
-    Device::createInstanceGroup(const std::vector<Group *> &groups,
+    Device::createInstanceGroup(const std::vector<Group *>  &groups,
+                                const std::vector<int>      &instIDs,
                                 const std::vector<affine3f> &xfms) 
-    { return new InstanceGroup(this,groups,xfms); }
+    { return new InstanceGroup(this,groups,instIDs,xfms); }
     
     void Device::freeGroup(Group *group) 
     { delete group; }
@@ -299,23 +264,6 @@ namespace rtc {
     { delete geom; }
 
 
-    // GeomType *Device::createTrianglesGeomType(const char */*ignore*/,
-    //                                           size_t sizeOfDD,
-    //                                           bool has_ah,
-    //                                           bool has_ch)
-    // {
-    //   return new TrianglesGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
-    // }
-    
-    // GeomType *Device::createUserGeomType(const char */*ignore*/,
-    //                                           const char *typeName,
-    //                                           size_t sizeOfDD,
-    //                                           bool has_ah,
-    //                                           bool has_ch)
-    // {
-    //   return new UserGeomType(this,typeName,sizeOfDD,has_ah,has_ch);
-    // }
-    
     void Device::freeGeomType(GeomType *gt) 
     {
       delete gt;
@@ -347,14 +295,6 @@ namespace rtc {
     {
       delete (Buffer*)buffer;
     }
-    
-    // Compute *Device::createCompute(const std::string &name) 
-    // { return new Compute(this,name); }
-    
-    
-    // Trace *Device::createTrace(const std::string &name,
-    //                                 size_t rayGenSize) 
-    // { return new Trace(this,name); }
     
     void Device::buildPipeline()
     {}

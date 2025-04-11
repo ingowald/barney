@@ -29,17 +29,17 @@ namespace rtc {
 
 
     template<typename T>
-    inline __rtc_device T tex1D(rtc::device::TextureObject to,
+    inline __rtc_device T tex1D(rtc::TextureObject to,
                             float x);
     
     template<>
-    inline __rtc_device float tex1D<float>(rtc::device::TextureObject to,
+    inline __rtc_device float tex1D<float>(rtc::TextureObject to,
                                        float x)
     {
       return ((TextureSampler *)to)->tex1D(x).x;
     }
     template<>
-    inline __rtc_device vec4f tex1D<vec4f>(rtc::device::TextureObject to,
+    inline __rtc_device vec4f tex1D<vec4f>(rtc::TextureObject to,
                                        float x)
     {
       return ((TextureSampler *)to)->tex1D(x);
@@ -49,18 +49,18 @@ namespace rtc {
 
     
     template<typename T>
-    inline __rtc_device T tex2D(rtc::device::TextureObject to,
+    inline __rtc_device T tex2D(rtc::TextureObject to,
                             float x, float y);
 
     template<>
-    inline __rtc_device float tex2D<float>(rtc::device::TextureObject to,
+    inline __rtc_device float tex2D<float>(rtc::TextureObject to,
                                        float x, float y)
     {
       return ((TextureSampler *)to)->tex2D({x,y}).x;
     }
 
     template<>
-    inline __rtc_device vec4f tex2D<vec4f>(rtc::device::TextureObject to,
+    inline __rtc_device vec4f tex2D<vec4f>(rtc::TextureObject to,
                                          float x, float y)
     {
       return ((TextureSampler *)to)->tex2D({x,y});
@@ -70,12 +70,12 @@ namespace rtc {
 
     
     template<typename T>
-    inline __rtc_device T tex3D(rtc::device::TextureObject to,
+    inline __rtc_device T tex3D(rtc::TextureObject to,
                                        float x, float y, float z);
     
     template<>
     inline __rtc_device
-    float tex3D<float>(rtc::device::TextureObject to,
+    float tex3D<float>(rtc::TextureObject to,
                        float x, float y, float z)
     {
       return ((TextureSampler *)to)->tex3D({x,y,z}).x;
@@ -84,7 +84,7 @@ namespace rtc {
 
     template<>
     inline __rtc_device
-    vec4f tex3D<vec4f>(rtc::device::TextureObject to,
+    vec4f tex3D<vec4f>(rtc::TextureObject to,
                        float x, float y, float z)
     {
       return ((TextureSampler *)to)->tex3D({x,y,z});
@@ -118,46 +118,6 @@ namespace rtc {
       vec3ui gridDim;
     };
     
-    
-    // struct Compute : public rtc::Compute
-    // {
-    //   typedef void (*ComputeFct)(ComputeInterface &,
-    //                              const void *dd);
-
-    //   Compute(Device *device, const std::string &name);
-
-    //   void launch(int numBlocks,
-    //               int blockSize,
-    //               const void *dd) override;
-      
-    //   void launch(vec2i numBlocks,
-    //               vec2i blockSize,
-    //               const void *dd) override;
-      
-    //   void launch(vec3i numBlocks,
-    //               vec3i blockSize,
-    //                       const void *dd) override;
-
-    //   std::string const name;
-    //   ComputeFct computeFct = 0;
-    // };
-    
-    // struct Trace : public rtc::Trace
-    // {
-    //   typedef void (*TraceFct)(TraceInterface &);
-    //   Trace(Device *device,
-    //         const std::string &name);
-      
-    //   void launch(vec2i launchDims,
-    //               const void *dd) override;
-    //   void launch(int launchDims,
-    //               const void *dd) override;
-      
-    //   void sync() override
-    //   { /* no-op */ }
-    //   TraceFct traceFct = 0;
-    // };
-
 
 
     inline int atomicCAS(int *ptr, int _expected, int newValue)

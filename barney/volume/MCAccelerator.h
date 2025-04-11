@@ -16,10 +16,16 @@
 
 #pragma once
 
+#include "barney/common/barney-common.h"
 #include "barney/DeviceGroup.h"
 #include "barney/volume/Volume.h"
 #include "barney/volume/MCGrid.h"
 #include "barney/volume/DDA.h"
+#include "barney/render/World.h"
+#include "barney/render/OptixGlobals.h"
+#if RTC_DEVICE_CODE
+# include "rtcore/TraceInterface.h"
+#endif
 
 namespace BARNEY_NS {
   using render::Ray;
@@ -59,8 +65,9 @@ namespace BARNEY_NS {
       GeomTypeCreationFct const creatorFct;
     
     void build(bool full_rebuild) override;
-    
+
 #if BARNEY_DEVICE_PROGRAM
+// #if RTC_DEVICE_CODE
     /*! optix bounds prog for this class of accels */
     static inline __rtc_device
     void boundsProg(const rtc::TraceInterface &ti,
@@ -139,7 +146,7 @@ namespace BARNEY_NS {
   // device progs: macro-cell accel with DDA traversal
   // ------------------------------------------------------------------
 
-#if BARNEY_DEVICE_PROGRAM
+#if BARNEY_DEVICE_PROGRAM && RTC_DEVICE_CODE
   template<typename SFSampler>
   inline __rtc_device
   void MCVolumeAccel<SFSampler>::boundsProg(const rtc::TraceInterface &ti,
@@ -158,18 +165,24 @@ namespace BARNEY_NS {
     const void *pd = ti.getProgramData();
            
     const DD &self = *(typename MCVolumeAccel<SFSampler>::DD*)pd;
+    const render::World::DD &world = render::OptixGlobals::get(ti).world;
+    // ray in world space
     Ray &ray = *(Ray*)ti.getPRD();
     
     box3f bounds = self.volume.sfCommon.worldBounds;
     range1f tRange = { ti.getRayTmin(), ti.getRayTmax() };
     
-    if (!boxTest(ray,tRange,bounds))
-      return;
-    
-    // ray in world space
+    // ray in object space
     vec3f obj_org = ti.getObjectRayOrigin();
     vec3f obj_dir = ti.getObjectRayDirection();
 
+    auto objRay = ray;
+    objRay.org = obj_org;
+    objRay.dir = obj_dir;
+
+    if (!boxTest(objRay,tRange,bounds))
+      return;
+    
     // ------------------------------------------------------------------
     // compute ray in macro cell grid space 
     // ------------------------------------------------------------------
@@ -189,6 +202,14 @@ namespace BARNEY_NS {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
+    int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+    // BARNEY_NS::Random
+    Random rng(hash(rayID,
+                    ti.getRTCInstanceIndex(),
+                    ti.getGeometryIndex(),
+                    ti.getPrimitiveIndex(),
+                    world.rngSeed));
+
     // printf("isec\n");
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
@@ -204,10 +225,13 @@ namespace BARNEY_NS {
                 
                 vec4f   sample = 0.f;
                 range1f tRange = {t0,min(t1,ray.tMax)};
-                if (!Woodcock::sampleRange(sample,self.volume,
-                                           obj_org,obj_dir,
-                                           tRange,majorant,ray.rngSeed,
-                                           ray.dbg)) 
+                if (!Woodcock::sampleRange(sample,
+                                           self.volume,
+                                           obj_org,
+                                           obj_dir,
+                                           tRange,
+                                           majorant,
+                                           rng)) 
                   return true;
                 
                 vec3f P = ray.org + tRange.upper*ray.dir;

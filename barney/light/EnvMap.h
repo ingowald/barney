@@ -19,6 +19,9 @@
 #include "barney/light/Light.h"
 #include "barney/DeviceGroup.h"
 #include "barney/common/math.h"
+#if RTC_DEVICE_CODE
+# include "rtcore/ComputeInterface.h"
+#endif
 
 namespace BARNEY_NS {
 
@@ -28,6 +31,7 @@ namespace BARNEY_NS {
                 const DevGroup::SP &devices);
 
     struct DD {
+// #if BARNEY_DEVICE_PROGRAM
 #if RTC_DEVICE_CODE
       inline __rtc_device float pdf(vec3f dir, bool dbg=false) const;
       inline __rtc_device Light::Sample sample(Random &r, bool dbg=false) const;
@@ -96,6 +100,7 @@ namespace BARNEY_NS {
 
 
 #if RTC_DEVICE_CODE
+// #if BARNEY_DEVICE_PROGRAM
   inline __rtc_device
   float cdfGetPDF(int position, const float *cdf, int N)
   {

@@ -29,9 +29,9 @@ namespace rtc {
       void refitAccel() { buildAccel(); }
       virtual void buildAccel() = 0;
       
-      rtc::device::AccelHandle getDD() const
+      rtc::AccelHandle getDD() const
       {
-        rtc::device::AccelHandle dd;
+        rtc::AccelHandle dd;
         (const void *&)dd = (const void *)this;
         return dd;
       }
@@ -39,6 +39,9 @@ namespace rtc {
       Device *const device;
     };
     
+    inline rtc::AccelHandle getAccelHandle(Group *g)
+    { return g->getDD(); }
+
     struct GeomGroup : public Group {
       GeomGroup(Device *device,
                 const std::vector<Geom *> &geoms)
@@ -71,16 +74,18 @@ namespace rtc {
   
     struct InstanceGroup : public Group {
       InstanceGroup(Device *device,
-                    const std::vector<Group *> &groups,
-                    const std::vector<affine3f>     &xfms);
+                    const std::vector<Group *>  &groups,
+                    const std::vector<int>      &instIDs,
+                    const std::vector<affine3f> &xfms);
 
       GeomGroup *getGroup(int groupID);
       
       void buildAccel() override;
     
-      std::vector<Group*> groups;
-      std::vector<affine3f>    xfms;
-      std::vector<affine3f>    inverseXfms;
+      std::vector<Group*>   groups;
+      std::vector<affine3f> xfms;
+      std::vector<affine3f> inverseXfms;
+      std::vector<int>      instIDs;
     };
     
   }

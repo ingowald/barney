@@ -79,9 +79,9 @@ namespace BARNEY_NS {
   }
   
   struct CylindersPrograms {
-
+#if RTC_DEVICE_CODE
     static inline __rtc_device
-    void bounds(const rtc::TraceInterface &rt,
+    void bounds(const rtc::TraceInterface &ti,
                 const void *geomData,
                 owl::common::box3f &bounds,  
                 const int32_t primID)
@@ -99,27 +99,29 @@ namespace BARNEY_NS {
     }
   
     static inline __rtc_device
-    void closestHit(rtc::TraceInterface &rt)
+    void closestHit(rtc::TraceInterface &ti)
     {
       /* nothing - already set in isec */
     }
   
     static inline __rtc_device
-    void anyHit(rtc::TraceInterface &rt)
+    void anyHit(rtc::TraceInterface &ti)
     {
       /* nothing - already set in isec */
     }
   
     static inline __rtc_device
-    void intersect(rtc::TraceInterface &rt)
+    void intersect(rtc::TraceInterface &ti)
     {
       // capped
-      const int primID = rt.getPrimitiveIndex();
-      const int instID = rt.getInstanceIndex();
+      const int primID = ti.getPrimitiveIndex();
+      const int instID = ti.getInstanceID();
       const auto &self
-        = *(Cylinders::DD*)rt.getProgramData();
-      const World::DD &world = OptixGlobals::get(rt).world;
-      Ray &ray    = *(Ray*)rt.getPRD();
+        = *(Cylinders::DD*)ti.getProgramData();
+      Ray &ray    = *(Ray*)ti.getPRD();
+
+      const OptixGlobals &globals = OptixGlobals::get(ti);
+      const World::DD &world = globals.world;
 #ifdef NDEBUG
       bool dbg = 0;
 #else
@@ -132,11 +134,11 @@ namespace BARNEY_NS {
       const float radius
         = self.radii[primID];
       
-      const vec3f ray_org  = rt.getObjectRayOrigin();
-      const vec3f ray_dir  = rt.getObjectRayDirection();
-      float hit_t      = rt.getRayTmax();
-      const float ray_tmin = rt.getRayTmin();
-      const float ray_tmax = rt.getRayTmax();
+      const vec3f ray_org  = ti.getObjectRayOrigin();
+      const vec3f ray_dir  = ti.getObjectRayDirection();
+      float hit_t      = ti.getRayTmax();
+      const float ray_tmin = ti.getRayTmin();
+      const float ray_tmax = ti.getRayTmax();
     
       const vec3f d = ray_dir;
       const vec3f s = v1 - v0; // axis
@@ -236,9 +238,9 @@ namespace BARNEY_NS {
                objectN.z);
       render::HitAttributes hitData;
       hitData.objectPosition  = objectP;
-      hitData.worldPosition   = rt.transformPointFromObjectToWorldSpace(objectP);
+      hitData.worldPosition   = ti.transformPointFromObjectToWorldSpace(objectP);
       hitData.objectNormal    = normalize(objectN);
-      hitData.worldNormal     = normalize(rt.transformNormalFromObjectToWorldSpace(hitData.objectNormal));
+      hitData.worldNormal     = normalize(ti.transformNormalFromObjectToWorldSpace(hitData.objectNormal));
       hitData.primID          = primID;
       hitData.instID          = instID;
       hitData.t               = t_hit;
@@ -246,11 +248,24 @@ namespace BARNEY_NS {
       self.setHitAttributes(hitData,interpolator,world,ray.dbg);
 
       const DeviceMaterial &material
-        = OptixGlobals::get(rt).world.materials[self.materialID];
-      material.setHit(ray,hitData,OptixGlobals::get(rt).world.samplers,ray.dbg);
+        = world.materials[self.materialID];
+      material.setHit(ray,hitData,world.samplers,ray.dbg);
+      if (globals.hitIDs) {
+        const int rayID
+          = ti.getLaunchIndex().x
+          + ti.getLaunchDims().x
+          * ti.getLaunchIndex().y;
+        globals.hitIDs[rayID].primID = primID;
+        globals.hitIDs[rayID].instID
+          = world.instIDToUserInstID
+          ? world.instIDToUserInstID[instID]
+          : instID;
+        globals.hitIDs[rayID].objID  = self.userID;
+      }
     
-      rt.reportIntersection(ray.tMax, 0);
+      ti.reportIntersection(ray.tMax, 0);
     }
+#endif
   };
   
   RTC_EXPORT_USER_GEOM(Cylinders,Cylinders::DD,CylindersPrograms,false,false);  

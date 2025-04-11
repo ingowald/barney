@@ -27,7 +27,7 @@ namespace rtc {
       Group(optix::Device *device, OWLGroup owlGroup);
       virtual ~Group() { owlGroupRelease(owl); }
       
-      rtc::device::AccelHandle getDD() const;
+      rtc::AccelHandle getDD() const;
       void buildAccel();
       void refitAccel();
       

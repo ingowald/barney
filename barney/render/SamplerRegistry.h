@@ -37,14 +37,14 @@ namespace BARNEY_NS {
       void setDD(int samplerID, const Sampler::DD &, Device *device);
 
       Sampler::DD *getDD(Device *device) 
-      { return (Sampler::DD *)getPLD(device)->buffer->getDD(); }
+      { return (Sampler::DD *)getPLD(device)->memory; }
 
       int numReserved = 0;
       int nextFree = 0;
       std::stack<int> reusableIDs;
       
       struct PLD {
-        rtc::Buffer    *buffer = 0;
+        Sampler::DD *memory = 0;
       };
       PLD *getPLD(Device *);
       std::vector<PLD> perLogical;

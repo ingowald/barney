@@ -17,6 +17,7 @@
 #include "barney/light/EnvMap.h"
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 
@@ -31,11 +32,13 @@ namespace BARNEY_NS {
     called with one thread per pixel, in a 2d launch */
   struct ComputeWeights_xy {
     float *allLines_cdf_x;
-    rtc::device::TextureObject texture;
+    rtc::TextureObject texture;
     vec2i textureDims;
-    
+
+#if RTC_DEVICE_CODE
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
+#endif
   };
   
   /*! this kernel does one thread per line, then this one thread does
@@ -46,8 +49,10 @@ namespace BARNEY_NS {
     float *allLines_cdf_x;
     vec2i textureDims;
 
+#if RTC_DEVICE_CODE
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
+#endif
   };
 
   
@@ -57,8 +62,10 @@ namespace BARNEY_NS {
     const float *allLines_cdf_x;
     vec2i        textureDims;
     
+#if RTC_DEVICE_CODE
     inline __rtc_device
     void run(const rtc::ComputeInterface &ci);
+#endif
   };
 
 

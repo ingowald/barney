@@ -18,10 +18,6 @@
 
 #include "barney/Context.h"
 #include "barney/fb/TiledFB.h"
-// #ifdef BARNEY_BACKEND_OPTIX
-// #include <optix.h>
-// #include <optix_stubs.h>
-// #endif
 
 namespace BARNEY_NS {
 
@@ -38,26 +34,57 @@ namespace BARNEY_NS {
     std::string toString() const override
     { return "<FrameBuffer(base)>"; }
 
-    bool set1i(const std::string &member, const int &value) override;
-
-    void resize(vec2i size, uint32_t channels) override;
+    /*! resize frame buffer to given number of pixels and the
+        indicated types of channels; color will only ever get queries
+        in 'colorFormat'. Channels is a bitmask compoosed of
+        or'ed-together BN_FB_xyz channel flags; only those bits that
+        are set may get queried by the application (ie those that are
+        not set do not have to be stored or even computed */
+    void resize(BNDataType colorFormat,
+                vec2i size,
+                uint32_t channels) override;
     void resetAccumulation() override
     {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }
     void freeResources();
 
+    bool needHitIDs() const;
+    
     void finalizeTiles();
     void finalizeFrame();
-    virtual void ownerGatherCompressedTiles() = 0;
 
+    /*! gather color (and optionally, if not null) linear normal, from
+        all GPUs (and ranks). lienarColor and lienarNormal are
+        device-writeable 2D linear arrays of numPixel size;
+        linearcolor may be null. */
+    virtual void gatherColorChannel(/*float4 or rgba8*/void *linearColor,
+                                    BNDataType gatherType,
+                                    // can be null:
+                                    vec3f *linearNormal) = 0;
+    
+    /*! read one of the auxiliary (not color or normal) buffers into
+      the given app memory; this will at the least incur some
+      reformatting from tiles to linear (if local node), possibly
+      some gpu-gpu transfer (local node w/ more than one gpu) and
+      possibly some mpi communication (distFB) */
+    virtual void gatherAuxChannel(BNFrameBufferChannel channel) = 0;
+    virtual void writeAuxChannel(void *stagingArea,
+                                 BNFrameBufferChannel channel) = 0;
+    
+    /*! read given frame buffer channel into given application memory
+        (which may be either host or device memory), in requested
+        format. Requeseted color format (currently) has to match the
+        color channel format specified during resize() */
     void read(BNFrameBufferChannel channel,
-              void *hostPtr,
+              void *appDataPtr,
               BNDataType requestedFormat) override;
 
-    struct {
-      CompressedTile *compressedTiles     = 0;
-      TileDesc       *tileDescs      = 0;
-      int             numActiveTiles = 0;
-    } gatheredTilesOnOwner;
+    // struct {
+    //   /*! _all_ tile descriptors across all GPUs - either all GPUs in
+    //     single node (if run non-mpi) or across all nodes */
+    //   TileDesc *tileDescs       = 0;
+    //   int       sumTiles = 0;
+    // } onOwner;
+    
 
     TiledFB *getFor(Device *device);
     struct PLD {
@@ -67,36 +94,58 @@ namespace BARNEY_NS {
     
     std::vector<PLD> perLogical;
 
-    void *getPointer(BNFrameBufferChannel channel) override;
+    /*! staging area for gathering/writing pixels into, will be Nx*Ny
+        pixels of type as provided specified during resize. This may
+        point to either float4 or rgba8 depending on requested
+        format */
+    void *linearColorChannel = 0;
     
-    /*! on owner, take the 'gatheredTilesOnOwner', and unpack them into
-        linear color, depth, alpha, and normal channels, so denoiser
-        can then run on it */
-    void unpackTiles();
+    /*! staging area for re-assembling any other channel; note this
+        may store either float or uint32 data */
+    void *linearAuxChannel = 0;
     
-    /*! if true, then we have already gathered, re-arranged, possibly
-        denoised, tone mapped, etcpp whatever tiles the various
-        devices may have accumulated so far, and we can simply copy
-        pixels to the app */
-    bool dirty = false;
-    /*! compressed color buffer, in array-(not tiled) order, after
-        denoising - only on owner. All denoiser implementations will
-        generate exactly this format, so the compressed bnFrameBufferRead()
-        can then just copy from this format */
-
-    vec4f *denoisedColor = 0;
-    
-    vec4f *linearColor = 0;
-    float *linearDepth = 0;
-    vec3f *linearNormal = 0;
-    
-    vec2i numPixels = {-1,-1};
+    /*! the channels we're supposed to have (as asked for on the latest resize()) */
+    uint32_t   channels = 0;
+    BNDataType colorChannelFormat = BN_DATA_UNDEFINED;
+    vec2i      numPixels = {-1,-1};
 
     Device *getDenoiserDevice() const;
-    rtc::Denoiser *denoiser;
-    // Denoiser::SP denoiser;
 
+    /*! gather color (and normal, if required for denoising),
+      (re-)format into a linear buffer, perform denoising (if
+      required), convert to requested format, and copy to the
+      application pointed provided */
+    void readColorChannel(void *appMemory,
+                          BNDataType requestedFormat);
+
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    bool set1i(const std::string &member, const int &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+
+    
+    /*! points to the rtc denoiser object we've created. Can be null
+        if denoising is disabled in cmake, or if the given rtc backend
+        doesn't support denoising (eg, old optix version, oidn not
+        found during compiling, etc). Also see \see
+        enableDenoising. */
+    rtc::Denoiser *denoiser = 0;
+
+    /*! whether to "in principle" do denoising. Denoising will still
+     require an rtc backend that does have a denoiser (\see denoiser
+     field), but this allows a user to disable denoising at runtime */
+    bool enableDenoising = 1;
+
+    /*! how many samples per pixels have already been accumulated in
+        this frame buffer's accumulation buffer. Note this is counted
+        in *samples*, not *frames*. */
     uint32_t    accumID = 0;
+
+    /*! kernel that converts from a linear device-side float4 format
+        to a linear device-side ufixed8 format */
+    rtc::ComputeKernel2D *linear_toFixed8 = 0;
+    
     const bool  isOwner;
     bool  showCrosshairs = false;
     DevGroup::SP const devices;

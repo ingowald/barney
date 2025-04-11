@@ -43,7 +43,7 @@ namespace BARNEY_NS {
     assert(fb);
     Context *context = (Context *)this->context;
     context->ensureRayQueuesLargeEnoughFor(fb);
-    context->render((Renderer*)renderer,this,camera->getDD(),fb);
+    context->render((Renderer*)renderer,this,camera,fb);
   }
 
 }

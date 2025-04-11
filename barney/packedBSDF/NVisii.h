@@ -36,7 +36,6 @@ namespace BARNEY_NS {
     
     namespace packedBSDF {
       namespace nvisii {
-        using LCGRand = Random;
         inline __rtc_device float lcg_randomf(Random &r) { return r(); }
 
 #define DISNEY_DIFFUSE_BRDF 0
@@ -153,8 +152,8 @@ namespace BARNEY_NS {
           float alpha_sqr = alpha * alpha;
           float den1 = 1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h;
           float den2 = max(den1, SMALL_EPSILON);
-          float ret = (float)M_1_PI * 1.f / den2;
-          // float ret = (float)M_1_PI * alpha_sqr / den2;
+          // float ret = (float)M_1_PI * 1.f / den2;
+          float ret = (float)M_1_PI * alpha_sqr / den2;
           if (dbg)
             printf("gtr_2 alpha %f cos_theta_h %f den1 %f den2 %f ret %f\n",
                    alpha,cos_theta_h,den1,den2,ret);
@@ -865,7 +864,7 @@ namespace BARNEY_NS {
         inline
         __rtc_device void sample_disney_brdf(
                                            const DisneyMaterial &mat,
-                                           LCGRand &rng,
+                                           Random &rng,
                                            const vec3f &g_n, const vec3f &s_n, const vec3f &b_n, 
                                            const vec3f &v_x, const vec3f &v_y,
                                            const vec3f &w_o,
@@ -942,7 +941,7 @@ namespace BARNEY_NS {
             type_pdf = transmission_weight;
             sampled_bsdf = DISNEY_TRANSMISSION_BRDF;
           }
-          type_pdf *= 3.f;
+          // type_pdf *= 3.f;
 #else
           const float type_pdf = 1.f;
             // Randomly pick a brdf to sample
@@ -1020,7 +1019,7 @@ namespace BARNEY_NS {
           if (dbg) printf("-> got pdf %f\n",pdf);
 
 // #if 1
-//           pdf *= type_pdf / 4.f;
+          // pdf *= type_pdf / 4.f;
           // pdf *= type_pdf;
 // #endif
           

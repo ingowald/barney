@@ -17,15 +17,10 @@
 #include "barney/DeviceGroup.h"
 #include "barney/render/OptixGlobals.h"
 #include "barney/Context.h"
+#include "barney/render/RayQueue.h"
 
 namespace BARNEY_NS {
 
-  RTC_IMPORT_COMPUTE1D(setTileCoords);
-  RTC_IMPORT_COMPUTE1D(compressTiles);
-  RTC_IMPORT_COMPUTE1D(unpackTiles);
-    
-  RTC_IMPORT_COMPUTE2D(toneMap);
-  RTC_IMPORT_COMPUTE2D(toFixed8);
   RTC_IMPORT_COMPUTE1D(generateRays);
   RTC_IMPORT_COMPUTE1D(shadeRays);
 
@@ -35,8 +30,12 @@ namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE1D(umeshReorderElements);
   RTC_IMPORT_COMPUTE1D(umeshComputeElementBBs);
 
-  RTC_IMPORT_TRACE2D(/*traceRays.cu*/traceRays,/*ray gen name */traceRays,/*launch params data type*/sizeof(BARNEY_NS::render::OptixGlobals));
-
+  RTC_IMPORT_TRACE2D
+  (/*traceRays.cu*/traceRays,
+   /*ray gen name */traceRays,
+   /*launch params data type*/sizeof(BARNEY_NS::render::OptixGlobals)
+   );
+  
   
   GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
     : device(device)
@@ -68,33 +67,18 @@ namespace BARNEY_NS {
 
   Device::Device(rtc::Device *rtc,
                  int contextRank,
-                 int contextSize,
-                 int globalIndex,
-                 int globalIndexStep)
+                 int contextSize// ,
+                 // int globalIndex,
+                 // int globalIndexStep
+                 )
     : contextRank(contextRank),
       contextSize(contextSize),
-      globalIndex(globalIndex),
-      globalIndexStep(globalIndexStep),rtc(rtc),
+      // globalIndex(globalIndex),
+      // globalIndexStep(globalIndexStep),
+      rtc(rtc),
       geomTypes(rtc)
   {
     rayQueue = new RayQueue(this);
-    setTileCoords
-      // = rtc->createCompute("setTileCoords");
-      = createCompute_setTileCoords(rtc);
-    compressTiles
-      // = rtc->createCompute("compressTiles");
-      = createCompute_compressTiles(rtc);
-    unpackTiles
-      = createCompute_unpackTiles(rtc);
-    
-    toneMap
-      = createCompute_toneMap(rtc);
-    toFixed8
-      = createCompute_toFixed8(rtc);
-    generateRays
-      = createCompute_generateRays(rtc);
-    shadeRays
-      = createCompute_shadeRays(rtc);
 
     // umesh related:
     umeshCreateElements 
@@ -106,54 +90,12 @@ namespace BARNEY_NS {
     umeshComputeElementBBs
       = createCompute_umeshComputeElementBBs(rtc);
       
+    generateRays
+      = createCompute_generateRays(rtc);
+    shadeRays
+      = createCompute_shadeRays(rtc);
     traceRays
       = createTrace_traceRays(rtc);
   }
-    
-  
-#if 0
-  DevGroup::DevGroup(int lmsIdx,
-                     const std::vector<int> &contextRanks,
-                     int contextSize,
-                     const std::vector<int> &gpuIDs,
-                     int globalIndex,
-                     int globalIndexStep)
-    : lmsIdx(lmsIdx)
-  {
-    auto backend = rtc::Backend::get();
-    rtc = backend->createDevGroup(gpuIDs);
-    
-    for (int localID=0;localID<gpuIDs.size();localID++) {
-      assert(localID < rtc->devices.size());
-      assert(localID < contextRanks.size());
-      devices.push_back
-        (std::make_shared<Device>(this,
-                                  rtc->devices[localID],
-                                  contextRanks[localID],
-                                  contextSize,
-                                  // gpuIDs[localID],localID,
-                                  (int)(globalIndex*gpuIDs.size())+localID,
-                                  (int)(globalIndexStep*gpuIDs.size())));
-    }
-
-    setTileCoordsKernel
-      = rtc->createCompute("setTileCoords");
-    compressTilesKernel
-      = rtc->createCompute("compressTiles");
-    generateRaysKernel
-      = rtc->createCompute("generateRays");
-    shadeRaysKernel
-      = rtc->createCompute("shadeRays");
-    traceRaysKernel
-      = rtc->createTrace("traceRays",sizeof(barney::render::OptixGlobals));
-  }
-#endif
-
-  // DevGroup::~DevGroup()
-  // {
-  //   std::cout << "DEVGROUP DESTROYING context " << (int*)rtc << std::endl;
-  //   rtc->destroy();
-  //   rtc = nullptr;
-  // }
   
 }

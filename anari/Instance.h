@@ -39,6 +39,7 @@ namespace barney_device {
     /*! attributes for that instance, if specified. if not specifies
         this will be a null pointer */
     Attributes *attributes = 0;
+    int m_id = ~0;
   private:
     math::mat4 m_transform;
     helium::IntrusivePtr<Group> m_group;

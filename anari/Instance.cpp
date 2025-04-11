@@ -28,6 +28,7 @@ namespace barney_device {
     getParam("attribute2",ANARI_FLOAT32_VEC4, (void *)&attributes.values[2]);
     getParam("attribute3",ANARI_FLOAT32_VEC4, (void *)&attributes.values[3]);
     getParam("color",     ANARI_FLOAT32_VEC4, (void *)&attributes.values[4]);
+    m_id = getParam("id",~0);
     
     if (isnan(attributes.values[0].x) &&
         isnan(attributes.values[1].x) &&

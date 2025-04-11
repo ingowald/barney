@@ -55,7 +55,7 @@ namespace barney_device {
     }
 
     BNTexture texture = bnTexture2DCreate(getContext(), 0,
-                                          BN_FLOAT4_RGBA,
+                                          BN_FLOAT4,
                                           width,
                                           height,
                                           asFloat4.data(),

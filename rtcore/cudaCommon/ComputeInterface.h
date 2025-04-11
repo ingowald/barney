@@ -34,30 +34,32 @@ namespace rtc {
     inline __device__ void fatomicMin(float *addr, float value);
     inline __device__ void fatomicMax(float *addr, float value);
 
+// #if RTC_DEVICE_CODE
     /* texturing wrappers; can only be instantiated for 'flaot' and
        'vec4f' types */
     template<typename T> inline __device__
-    T tex1D(rtc::device::TextureObject to, float x);
+    T tex1D(rtc::TextureObject to, float x);
     
     /* texturing wrappers; can only be instantiated for 'flaot' and
        'vec4f' types */
     template<typename T> inline __device__
-    T tex2D(rtc::device::TextureObject to, float x, float y);
+    T tex2D(rtc::TextureObject to, float x, float y);
 
     /* texturing wrappers; can only be instantiated for 'flaot' and
        'vec4f' types */
     template<typename T> inline __device__
-    T tex3D(rtc::device::TextureObject to, float x, float y, float z);
+    T tex3D(rtc::TextureObject to, float x, float y, float z);
+// #endif
     
     struct ComputeInterface
     {
-#ifdef __CUDACC__    
+#if RTC_DEVICE_CODE
       inline __device__ vec3ui launchIndex() const
       {
         return getThreadIdx() + getBlockIdx() * getBlockDim();
       }
       inline __device__ vec3ui getThreadIdx() const
-      { return threadIdx; }
+      { return vec3ui(threadIdx.x,threadIdx.y,threadIdx.z); }
       inline __device__ vec3ui getBlockDim() const
       { return {blockDim.x,blockDim.y,blockDim.z}; }
       inline __device__ vec3ui getBlockIdx() const
@@ -72,21 +74,21 @@ namespace rtc {
     // ==================================================================
     // INLINE IMPLEMENTATION
     // ==================================================================
-#ifdef __CUDACC__
+#if RTC_DEVICE_CODE
 
     // ------------------------------------------------------------------
     // cuda texturing
     // ------------------------------------------------------------------
 
     template<> inline __device__
-    float tex2D<float>(rtc::device::TextureObject to, float x, float y)
+    float tex2D<float>(rtc::TextureObject to, float x, float y)
     {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       return ::tex2D<float>(texObj,x,y);
     }
 
     template<> inline __device__
-    float tex3D<float>(rtc::device::TextureObject to, float x, float y, float z)
+    float tex3D<float>(rtc::TextureObject to, float x, float y, float z)
     {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       float f= ::tex3D<float>(texObj,x,y,z);
@@ -94,7 +96,7 @@ namespace rtc {
     }
 
     template<> inline __device__
-    vec4f tex1D<vec4f>(rtc::device::TextureObject to, float x)
+    vec4f tex1D<vec4f>(rtc::TextureObject to, float x)
     {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       ::float4 v = ::tex1D<::float4>(texObj,x);
@@ -102,7 +104,7 @@ namespace rtc {
     }
     
     template<> inline __device__
-    vec4f tex2D<vec4f>(rtc::device::TextureObject to, float x, float y)
+    vec4f tex2D<vec4f>(rtc::TextureObject to, float x, float y)
     {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       ::float4 v = ::tex2D<::float4>(texObj,x,y);
@@ -110,7 +112,7 @@ namespace rtc {
     }
 
     template<> inline __device__
-    vec4f tex3D<vec4f>(rtc::device::TextureObject to, float x, float y, float z)
+    vec4f tex3D<vec4f>(rtc::TextureObject to, float x, float y, float z)
     {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       ::float4 v = ::tex3D<::float4>(texObj,x,y,z);
@@ -185,12 +187,21 @@ namespace rtc {
 }
 
 
-#define RTC_EXPORT_COMPUTE1D(name,className)                            \
+
+#if RTC_DEVICE_CODE
+# define RTC_CUDA_KERNEL(name,className)                                \
   __global__ void _barney_cuda_kernel_##name(className dd)              \
   {                                                                     \
     rtc::cuda_common::ComputeInterface ci;                              \
     dd.run(ci);                                                         \
-  }                                                                     \
+  }                                                                     
+#else
+# define RTC_CUDA_KERNEL(name,className)                                \
+  __global__ void _barney_cuda_kernel_##name(className dd);
+#endif
+
+#define RTC_EXPORT_COMPUTE1D(name,className)                            \
+  RTC_CUDA_KERNEL(name,className)                                       \
   struct _barney_cuda_compute1D_##name                                  \
     : public rtc::cuda_common::ComputeKernel1D                          \
   {                                                                     \
@@ -212,11 +223,7 @@ namespace rtc {
   { return new _barney_cuda_compute1D_##name(dev); }                    \
   
 #define RTC_EXPORT_COMPUTE2D(name,className)                            \
-  __global__ void _barney_cuda_kernel_##name(className dd)              \
-  {                                                                     \
-    rtc::cuda_common::ComputeInterface ci;                              \
-    dd.run(ci);                                                         \
-  }                                                                     \
+  RTC_CUDA_KERNEL(name,className)                                       \
   struct _barney_cuda_compute2D_##name                                  \
     : public rtc::cuda_common::ComputeKernel2D                          \
   {                                                                     \
@@ -230,7 +237,9 @@ namespace rtc {
       ::rtc::cuda_common::SetActiveGPU forDuration(device);             \
       if (nb.x > 0 && nb.y > 0)                                         \
       _barney_cuda_kernel_##name                                        \
-        <<<{nb.x,nb.y},{bs.x,bs.y},0,device->stream>>>                  \
+        <<<dim3{(unsigned)nb.x,(unsigned)nb.y,1u},                      \
+        dim3{(unsigned)bs.x,(unsigned)bs.y,1u},                         \
+        0,device->stream>>>                                             \
         (*(const className*)ddPtr);                                     \
     }                                                                   \
     rtc::Device *const device;                                          \
@@ -239,11 +248,7 @@ namespace rtc {
   { return new _barney_cuda_compute2D_##name(dev); }                    \
 
 #define RTC_EXPORT_COMPUTE3D(name,className)                            \
-  __global__ void _barney_cuda_kernel_##name(className dd)              \
-  {                                                                     \
-    rtc::cuda_common::ComputeInterface ci;                              \
-    dd.run(ci);                                                         \
-  }                                                                     \
+  RTC_CUDA_KERNEL(name,className)                                       \
   struct _barney_cuda_compute3D_##name                                  \
     : public rtc::cuda_common::ComputeKernel3D                          \
   {                                                                     \
@@ -257,7 +262,9 @@ namespace rtc {
       ::rtc::cuda_common::SetActiveGPU forDuration(device);             \
       if (nb.x > 0 && nb.y > 0 && nb.z > 0)                             \
       _barney_cuda_kernel_##name                                        \
-        <<<{nb.x,nb.y,nb.z},{bs.x,bs.y,bs.z},0,device->stream>>>        \
+        <<<dim3{(unsigned)nb.x,(unsigned)nb.y,(unsigned)nb.z},          \
+        dim3{(unsigned)bs.x,(unsigned)bs.y,(unsigned)bs.z},             \
+        0,device->stream>>>                                             \
         (*(const className*)ddPtr);                                     \
     }                                                                   \
     rtc::Device *const device;                                          \

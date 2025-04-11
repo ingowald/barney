@@ -54,7 +54,6 @@ namespace BARNEY_NS {
       PossiblyMappedParameter color = vec3f(.8f);
     };
       
-  
 #if RTC_DEVICE_CODE
     inline __rtc_device
     PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData,
@@ -63,9 +62,11 @@ namespace BARNEY_NS {
     {
       vec4f baseColor = this->color.eval(hitData,samplers,dbg);
 # if 1
-      float reflectance = .65f;
+      float reflectance = .85f;
       packedBSDF::Lambertian bsdf;
-      (vec3f&)bsdf.albedo = reflectance * (const vec3f&)baseColor;
+      (vec3f&)bsdf.albedo = reflectance * (const vec3f&)baseColor
+        * (ONE_OVER_PI)
+        ;
       if (dbg) printf("created lambertian %f %f %f\n",
                       bsdf.albedo.x,
                       bsdf.albedo.y,

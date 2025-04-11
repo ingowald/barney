@@ -16,7 +16,7 @@
 
 set(BARNEY_VERSION_MAJOR 0)
 set(BARNEY_VERSION_MINOR 9)
-set(BARNEY_VERSION_PATCH 6)
+set(BARNEY_VERSION_PATCH 8)
 
 cmake_minimum_required(VERSION 3.12)
 
@@ -47,12 +47,19 @@ endif()
 set(CMAKE_BUILD_TYPE_INIT "Release")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+
+
+
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 
-option(BARNEY_DISABLE_CUDA "Explicitly DISable CUDA even if available?" OFF)
-if (NOT BARNEY_DISABLE_CUDA) 
+option(USE_EXP "Experimental Pluggable Backend" OFF)
+mark_as_advanced(USE_EXP)
+
+if (USE_EXP)
+  include(rtcore/exp_external_backends)
+elseif (NOT BARNEY_DISABLE_CUDA) 
   include(CheckLanguage)
   check_language(CUDA)
   if (CMAKE_CUDA_COMPILER)
@@ -140,16 +147,18 @@ target_link_libraries(barney_config
 target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
-  )
-
+)
 # ------------------------------------------------------------------
 
 
 # ------------------------------------------------------------------
 # configure which backend(s) to build
 # ------------------------------------------------------------------
-if (BARNEY_HAVE_CUDA)
-  option(BARNEY_BACKEND_CUDA "Enable Cuda Backend?" ON)
+if (USE_EXP)
+  # leave it to the external plugins to configure themselves - not
+  # currently working
+elseif (BARNEY_HAVE_CUDA)
+  option(BARNEY_BACKEND_CUDA "Enable (native-)CUDA Backend?" OFF)
   option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)
   option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" OFF)
 else()
@@ -188,7 +197,6 @@ endif()
 
 if (NOT (TARGET cuBQL))
   if (BARNEY_HAVE_CUDA)
-    #set(CMAKE_CUDA_ARCHITECTURES native)
   else()
     set(CUBQL_DISABLE_CUDA ON)
   endif()
@@ -203,14 +211,11 @@ endif()
 if (BARNEY_CUBQL_HOST)
   target_compile_definitions(barney_config INTERFACE -DBARNEY_CUBQL_HOST=1)
   target_link_libraries(barney_config INTERFACE cuBQL)
-#  set(CUBQL_LIBS cuBQL_cpu_float3_static)
-else()
-#  set(CUBQL_LIBS cuBQL_cpu_float3_static cuBQL_cuda_float3)
 endif()
 target_link_libraries(barney_config
   INTERFACE
   cuBQL
-  )
+)
 
 
 # ------------------------------------------------------------------
@@ -219,7 +224,6 @@ target_link_libraries(barney_config
 message("configuring rtcore")
 add_subdirectory(rtcore)
   
-
 
 # ------------------------------------------------------------------
 # barney system, api, and mpi stuff

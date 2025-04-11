@@ -26,16 +26,19 @@ namespace rtc {
   namespace cuda_common {
 
     struct ComputeKernel1D {
+      virtual ~ComputeKernel1D() = default;
       virtual void launch(unsigned int nb, unsigned int bs,
                           const void *pKernelData) = 0;
     };
     
     struct ComputeKernel2D {
+      virtual ~ComputeKernel2D() = default;
       virtual void launch(vec2ui nb, vec2ui bs,
                           const void *pKernelData) = 0;
     };
     
     struct ComputeKernel3D {
+      virtual ~ComputeKernel3D() = default;
       virtual void launch(vec3ui nb, vec3ui bs,
                           const void *pKernelData) = 0;
     };

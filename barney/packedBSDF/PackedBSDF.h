@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,9 +17,8 @@
 #pragma once
 
 #include "barney/render/DG.h"
-// #include "packedBSDFs/VisRTX.h"
 #include "barney/packedBSDF/NVisii.h"
-#include "barney/packedBSDF/fromOSPRay/Glass.h"
+#include "barney/packedBSDF/Glass.h"
 #include "barney/packedBSDF/Phase.h"
 #include "barney/packedBSDF/Lambertian.h"
 
@@ -43,7 +42,6 @@ namespace BARNEY_NS {
         union {
           packedBSDF::Phase      phase;
           packedBSDF::Lambertian lambertian;
-          // packedBSDF::VisRTX visRTX;
           packedBSDF::Glass      glass;
           packedBSDF::NVisii     nvisii;
         };
@@ -51,6 +49,7 @@ namespace BARNEY_NS {
 
       Type type;
 
+#if RTC_DEVICE_CODE
       inline __rtc_device PackedBSDF();
       inline __rtc_device PackedBSDF(Type type, Data data)
         : type(type), data(data) {}
@@ -83,9 +82,10 @@ namespace BARNEY_NS {
                        vec3f rayDir,
                        vec3f Ng,
                        bool dbg=false) const;
+#endif
     };
 
-
+#if RTC_DEVICE_CODE
     inline __rtc_device
     EvalRes PackedBSDF::eval(render::DG dg, vec3f w_i, bool dbg) const
     {
@@ -145,6 +145,6 @@ namespace BARNEY_NS {
       if (type == TYPE_Lambertian)
         return data.lambertian.scatter(scatter,dg,random,dbg);
     }
-    
+#endif
   }
 }

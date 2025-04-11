@@ -21,7 +21,7 @@
 
 namespace rtc {
   namespace optix {
-    
+        
     using rtc::cuda_common::SetActiveGPU;
 
     struct Device;
@@ -31,8 +31,20 @@ namespace rtc {
     struct Geom;
     struct GeomType;
 
-    using rtc::cuda_common::TextureData;
     using rtc::cuda_common::Texture;
+    using rtc::cuda_common::TextureData;
+    
+    using cuda_common::float2;
+    using cuda_common::float3;
+    using cuda_common::float4;
+    using cuda_common::int2;
+    using cuda_common::int3;
+    using cuda_common::int4;
+    using cuda_common::load;
+  
+    using cuda_common::TextureObject;
+
+    rtc::AccelHandle getAccelHandle(Group *ig);
     
     struct TraceKernel2D {
       TraceKernel2D(Device *device,
@@ -141,7 +153,8 @@ namespace rtc {
       createUserGeomsGroup(const std::vector<Geom *> &geoms);
 
       Group *
-      createInstanceGroup(const std::vector<Group *> &groups,
+      createInstanceGroup(const std::vector<Group *>  &groups,
+                          const std::vector<int>      &instIDs,
                           const std::vector<affine3f> &xfms);
 
       void freeGroup(Group *);

@@ -18,6 +18,8 @@
 
 #include "rtcore/embree/embree-common.h"
 
+#define RTC_DEVICE_CODE 1
+
 namespace rtc {
   namespace embree {
 
@@ -48,8 +50,6 @@ namespace rtc {
           kernelFct(kernelFct)
       {}
       
-      //               const std::string &ptxCode,
-      //               const std::string &kernelName);
       void launch(vec2i launchDims,
                   const void *kernelData);
       TraceKernelFct const kernelFct;
@@ -64,14 +64,6 @@ namespace rtc {
 
       void destroy();
  
-      // /*! returns a string that describes what kind of compute device
-      //     this is (eg, "cuda" vs "cpu" */
-      // std::string computeType() const { return "cpu"; }
-      
-      // /*! returns a string that describes what kind of compute device
-      //     this is (eg, "optix" vs "embree" */
-      // std::string traceType() const { return "embree"; }
-     
       // ==================================================================
       // basic compute stuff
       // ==================================================================
@@ -82,19 +74,19 @@ namespace rtc {
       { memcpy(dst,src,numBytes); }
       
       void *allocHost(size_t numBytes)
-      { return malloc(numBytes); }
+      { return numBytes?malloc(numBytes):0; }
       
       void freeHost(void *mem)
-      { free(mem); }
+      { if(mem) free(mem); }
       
       void memsetAsync(void *mem,int value, size_t size)
-      { memset(mem,value,size); }
+      { if (size) memset(mem,value,size); }
       
       void *allocMem(size_t numBytes)
-      { return malloc(numBytes); }
+      { return numBytes?malloc(numBytes):nullptr; }
       
       void freeMem(void *mem)
-      { free(mem); }
+      { if (mem) free(mem); }
       
       void sync()
       {/*no-op*/}
@@ -117,10 +109,6 @@ namespace rtc {
       // ==================================================================
       // kernels
       // ==================================================================
-      // Compute *createCompute(const std::string &name);
-      
-      // Trace *createTrace(const std::string &name,
-      //                         size_t rayGenSize);
 
       // ==================================================================
       // buffer stuff
@@ -152,18 +140,6 @@ namespace rtc {
       // geomtype stuff
       // ------------------------------------------------------------------
       
-      // GeomType *createUserGeomType(const char *ptxName,
-      //                                   const char *typeName,
-      //                                   size_t sizeOfDD,
-      //                                   bool has_ah,
-      //                                   bool has_ch);
-      
-      // GeomType *createTrianglesGeomType(const char *ptxName,
-      //                                        const char *typeName,
-      //                                        size_t sizeOfDD,
-      //                                        bool has_ah,
-      //                                        bool has_ch);
-      
       void freeGeomType(GeomType *);
 
       // ------------------------------------------------------------------
@@ -182,7 +158,8 @@ namespace rtc {
       createUserGeomsGroup(const std::vector<Geom *> &geoms);
       
       Group *
-      createInstanceGroup(const std::vector<Group *> &groups,
+      createInstanceGroup(const std::vector<Group *>  &groups,
+                          const std::vector<int>      &instIDs,
                           const std::vector<affine3f> &xfms);
       
       void freeGroup(Group *group);
