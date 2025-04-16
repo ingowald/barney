@@ -60,6 +60,15 @@
           "description": "ambient light intensity"
         },
         {
+          "name": "denoise",
+          "types": [
+            "ANARI_BOOL"
+          ],
+          "tags": [],
+          "default": true,
+          "description": "denoise image"
+        },
+        {
           "name": "crosshairs",
           "types": [
             "ANARI_BOOL"

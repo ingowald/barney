@@ -17,6 +17,7 @@ struct Renderer : public Object
   void finalize() override;
 
   bool crosshairs() const;
+  bool denoise() const;
   bool isValid() const override;
 
   BNRenderer barneyRenderer{nullptr};
@@ -27,6 +28,7 @@ struct Renderer : public Object
   int m_pixelSamples{1};
   float m_ambientRadiance{0.8f};
   bool m_crosshairs{false};
+  bool m_denoise{true};
   anari::math::float4 m_background{0.f, 0.f, 0.f, 1.f};
   helium::ChangeObserverPtr<Array2D> m_backgroundImage;
 };
