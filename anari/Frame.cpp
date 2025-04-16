@@ -263,8 +263,8 @@ void *Frame::map(std::string_view channel,
     m_didMapChannel.instID = true;
     *pixelType = ANARI_UINT32;
     return m_channelBuffers.instID;
-  } else if (channel == "channel.colorCUDA") {
 #if BANARI_HAVE_CUDA
+  } else if (channel == "channel.colorCUDA") {
     if (m_channelBuffers.color)
       throw std::runtime_error(
           "trying to map color buffer, but color buffer already mapped");
@@ -278,11 +278,8 @@ void *Frame::map(std::string_view channel,
         toBarney(m_channelTypes.color));
     *pixelType = m_channelTypes.color;
     return m_channelBuffers.color;
-#else
-    return nullptr;
-#endif
-  } else if (channel == "channel.depthCUDA") {
-#if BANARI_HAVE_CUDA
+  } else if (channel == "channel.depthCUDA"
+      && m_channelTypes.depth == ANARI_FLOAT32) {
     if (m_channelBuffers.depth)
       throw std::runtime_error(
           "trying to map depth buffer, but depth buffer already mapped");
@@ -291,8 +288,36 @@ void *Frame::map(std::string_view channel,
         m_bnFrameBuffer, BN_FB_DEPTH, m_channelBuffers.depth, BN_FLOAT);
     *pixelType = ANARI_FLOAT32;
     return m_channelBuffers.depth;
-#else
-    return nullptr;
+  } else if (channel == "channel.primitiveIdCUDA"
+      && m_channelTypes.primID == ANARI_UINT32) {
+    if (m_channelBuffers.primID)
+      throw std::runtime_error(
+          "trying to map primitiveId buffer, but buffer already mapped");
+    cudaMalloc((void **)&m_channelBuffers.primID, numPixels * sizeof(uint32_t));
+    bnFrameBufferRead(
+        m_bnFrameBuffer, BN_FB_PRIMID, m_channelBuffers.primID, BN_INT);
+    *pixelType = ANARI_UINT32;
+    return m_channelBuffers.primID;
+  } else if (channel == "channel.objectIdCUDA"
+      && m_channelTypes.objID == ANARI_UINT32) {
+    if (m_channelBuffers.objID)
+      throw std::runtime_error(
+          "trying to map objectId buffer, but buffer already mapped");
+    cudaMalloc((void **)&m_channelBuffers.objID, numPixels * sizeof(uint32_t));
+    bnFrameBufferRead(
+        m_bnFrameBuffer, BN_FB_OBJID, m_channelBuffers.objID, BN_INT);
+    *pixelType = ANARI_UINT32;
+    return m_channelBuffers.objID;
+  } else if (channel == "channel.instanceIdCUDA"
+      && m_channelTypes.instID == ANARI_UINT32) {
+    if (m_channelBuffers.instID)
+      throw std::runtime_error(
+          "trying to map instanceId buffer, but buffer already mapped");
+    cudaMalloc((void **)&m_channelBuffers.instID, numPixels * sizeof(uint32_t));
+    bnFrameBufferRead(
+        m_bnFrameBuffer, BN_FB_INSTID, m_channelBuffers.instID, BN_INT);
+    *pixelType = ANARI_UINT32;
+    return m_channelBuffers.instID;
 #endif
   } else {
     reportMessage(ANARI_SEVERITY_WARNING,
@@ -339,6 +364,24 @@ void Frame::unmap(std::string_view channel)
     if (m_channelBuffers.depth)
       cudaFree(m_channelBuffers.depth);
     m_channelBuffers.depth = 0;
+#endif
+  } else if (channel == "channel.primitiveIdCUDA") {
+#if BANARI_HAVE_CUDA
+    if (m_channelBuffers.primID)
+      cudaFree(m_channelBuffers.primID);
+    m_channelBuffers.primID = 0;
+#endif
+  } else if (channel == "channel.objectIdCUDA") {
+#if BANARI_HAVE_CUDA
+    if (m_channelBuffers.objID)
+      cudaFree(m_channelBuffers.objID);
+    m_channelBuffers.objID = 0;
+#endif
+  } else if (channel == "channel.instanceIdCUDA") {
+#if BANARI_HAVE_CUDA
+    if (m_channelBuffers.instID)
+      cudaFree(m_channelBuffers.instID);
+    m_channelBuffers.instID = 0;
 #endif
   }
 }
