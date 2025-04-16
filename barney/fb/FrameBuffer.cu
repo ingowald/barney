@@ -44,7 +44,7 @@ namespace BARNEY_NS {
       (a << 24);
     return ret;
   }
-  
+
   FrameBuffer::FrameBuffer(Context *context,
                            const DevGroup::SP &devices,
                            const bool isOwner)
@@ -70,7 +70,7 @@ namespace BARNEY_NS {
     freeResources();
     denoiser = 0;
   }
-  
+
   bool FrameBuffer::needHitIDs() const
   {
     return channels & (BN_FB_PRIMID|BN_FB_INSTID|BN_FB_OBJID);
@@ -111,7 +111,7 @@ namespace BARNEY_NS {
     __rtc_device void run(const rtc::ComputeInterface &ci);
 #endif
   };
-  
+
 #if RTC_DEVICE_CODE
   __rtc_device void LinearToFixed8::run(const rtc::ComputeInterface &ci)
   {
@@ -122,7 +122,7 @@ namespace BARNEY_NS {
     int idx = ix+numPixels.x*iy;
     vec4f v = in[idx];
     v = saturate(v);
-    if (SRGB) 
+    if (SRGB)
       (vec3f&)v = linear_to_srgb((vec3f&)v);
     out[idx] = make_rgba(v);
   }
@@ -130,12 +130,12 @@ namespace BARNEY_NS {
 
   void FrameBuffer::finalizeTiles()
   {}
-  
+
   void FrameBuffer::finalizeFrame()
   {
     Device *device = getDenoiserDevice();
     SetActiveGPU forDuration(device);
-    
+
     /* first, figure out whether we do denoising, and where to write
        color and normals to. fi we do denoisign this will (ahve to) go
        into the respective inputs of the denoiser; otherwise, we write
@@ -177,7 +177,7 @@ namespace BARNEY_NS {
     assert(requestedFormat == colorChannelFormat);
     Device *device = getDenoiserDevice();
     SetActiveGPU forDuration(device);
-    
+
     /* first, figure out whether we do denoising, and where to write
        color and normals to. fi we do denoisign this will (ahve to) go
        into the respective inputs of the denoiser; otherwise, we write
@@ -189,7 +189,7 @@ namespace BARNEY_NS {
     if (doDenoising) {
       /* run denoiser - this will write pixels in float4 format to
          denoiser->out_rgba */
-      float blendFactor = (accumID-1) / (accumID+100.f); 
+      float blendFactor = (accumID-1) / (accumID+100.f);
       denoiser->run(blendFactor);
 
       switch(requestedFormat) {
@@ -197,7 +197,7 @@ namespace BARNEY_NS {
         device->rtc->copy(appMemory,denoiser->out_rgba,
                           numPixels.x*numPixels.y*sizeof(vec4f));
       } break;
-      case BN_UFIXED8_RGBA: 
+      case BN_UFIXED8_RGBA:
       case BN_UFIXED8_RGBA_SRGB: {
         bool srgb = (requestedFormat == BN_UFIXED8_RGBA_SRGB);
         vec2ui bs(8,8);
@@ -243,30 +243,32 @@ namespace BARNEY_NS {
       return;
     }
 
-    if (channel == BN_FB_PRIMID ||
+    if (channel == BN_FB_DEPTH ||
+        channel == BN_FB_PRIMID ||
         channel == BN_FB_INSTID ||
         channel == BN_FB_OBJID) {
       writeAuxChannel(linearAuxChannel,channel);
+      // NOTE: depth + id buffers happen to be the same bytes-per-pixel
       device->rtc->copy(appMemory,linearAuxChannel,
                         numPixels.x*numPixels.y*sizeof(uint32_t));
       return;
     }
-    
+
     throw std::runtime_error("un-handled frame buffer channel/format combination "
                              +to_string(channel)
                              +" "+to_string(requestedFormat));
   }
-  
+
   void FrameBuffer::resize(BNDataType colorFormat,
                            vec2i size,
                            uint32_t channels)
   {
     this->channels = channels;
     this->colorChannelFormat = colorFormat;
-    
+
     for (auto device : *devices)
       getFor(device)->resize(channels,size);
-    
+
     freeResources();
     numPixels = size;
 
@@ -274,26 +276,26 @@ namespace BARNEY_NS {
       = (colorFormat == BN_FLOAT4)
       ? sizeof(vec4f)
       : sizeof(uint32_t);
-    
+
     if (isOwner) {
       auto rtc = getDenoiserDevice()->rtc;
       int np = numPixels.x*numPixels.y;
       linearColorChannel = rtc->allocMem(np*sizeOfPixel);
       linearAuxChannel   = rtc->allocMem(np*sizeof(uint32_t));
-      
+
       if (denoiser)
         denoiser->resize(numPixels);
     }
   }
-    
-  FrameBuffer::PLD *FrameBuffer::getPLD(Device *device) 
+
+  FrameBuffer::PLD *FrameBuffer::getPLD(Device *device)
   {
     assert(device);
     assert(device->contextRank >= 0);
     assert(device->contextRank < perLogical.size());
     return &perLogical[device->contextRank];
   }
-  
+
   TiledFB *FrameBuffer::getFor(Device *device)
   {
     auto pld = getPLD(device);
@@ -305,7 +307,7 @@ namespace BARNEY_NS {
   {
     return (*devices)[0];
   }
-  
+
   RTC_EXPORT_COMPUTE2D(linearToFixed8,LinearToFixed8);
 }
-  
+
