@@ -91,7 +91,7 @@ namespace barney_device {
             m_constantAttributes[4].y,
             m_constantAttributes[4].z,
             m_constantAttributes[4].w);
-    
+
     addAttribute(geom, context, m_vertexAttributes[0], "vertex.attribute0");
     addAttribute(geom, context, m_vertexAttributes[1], "vertex.attribute1");
     addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
@@ -104,7 +104,7 @@ namespace barney_device {
     addAttribute(geom, context, m_primitiveAttributes[3], "primitive.attribute3");
     addAttribute(geom, context, m_primitiveAttributes[4], "primitive.color");
   }
-  
+
   void Geometry::commitParameters()
   {
     math::float4 invalidAttr(NAN,NAN,NAN,NAN);
@@ -114,7 +114,7 @@ namespace barney_device {
     m_constantAttributes[3] = getParam<math::float4>("attribute3",invalidAttr);
     m_constantAttributes[4] = getParam<math::float4>("color",invalidAttr);
 
-    m_primitiveAttributes[0] = getParamObject<Array1D>("primitive.attribute1");
+    m_primitiveAttributes[0] = getParamObject<Array1D>("primitive.attribute0");
     m_primitiveAttributes[1] = getParamObject<Array1D>("primitive.attribute1");
     m_primitiveAttributes[2] = getParamObject<Array1D>("primitive.attribute2");
     m_primitiveAttributes[3] = getParamObject<Array1D>("primitive.attribute3");
@@ -148,6 +148,11 @@ namespace barney_device {
     m_vertexPosition = getParamObject<Array1D>("vertex.position");
     m_vertexRadius = getParamObject<Array1D>("vertex.radius");
     m_globalRadius = getParam<float>("radius", 0.01f);
+    m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+    m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+    m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+    m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+    m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
   }
 
   void Sphere::finalize()

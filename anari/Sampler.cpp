@@ -51,6 +51,17 @@ void Image1D::commitParameters()
 {
   Sampler::commitParameters();
   m_image = getParamObject<helium::Array1D>("image");
+  m_inAttribute = getParamString("inAttribute", "attribute0");
+  m_linearFilter = getParamString("filter", "linear") != "nearest";
+  m_wrapMode = toBarneyAddressMode(getParamString("wrapMode", "clampToEdge"));
+  m_inTransform = math::identity;
+  getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
+  m_inOffset =
+      getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+  m_outTransform = math::identity;
+  getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
+  m_outOffset =
+      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
 }
 
 bool Image1D::isValid() const
@@ -58,7 +69,58 @@ bool Image1D::isValid() const
   return m_image;
 }
 
-void Image1D::createBarneySampler(BNContext context) {}
+void Image1D::createBarneySampler(BNContext context)
+{
+  // ------------------------------------------------------------------
+  // first, create 2D cuda array of texels. these barney objects
+  // SHOULD actually live with their respective image array...
+  // ------------------------------------------------------------------
+  int width = m_image->size();
+  int height = 1;
+  std::vector<uint32_t> texels;
+  if (!convert_to_rgba8(m_image, texels)) {
+    std::stringstream ss;
+    ss << "unsupported texel type: " << anari::toString(m_image->elementType());
+    std::string str = ss.str();
+    fprintf(stderr, "%s\n", str.c_str());
+    texels.resize(width * height);
+  }
+
+  if (m_bnTextureData)
+    bnRelease(m_bnTextureData);
+  m_bnTextureData = bnTextureData2DCreate(
+      context, 0, BN_UFIXED8_RGBA, width, height, texels.data());
+
+  // ------------------------------------------------------------------
+  // now, create sampler over those texels
+  // ------------------------------------------------------------------
+
+  m_bnSampler = bnSamplerCreate(context, 0 /*slot*/, "texture2D");
+  bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
+
+  BNTextureFilterMode filterMode =
+      m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
+
+  bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
+  bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode);
+  bnSet1i(m_bnSampler, "wrapMode1", (int)BN_TEXTURE_CLAMP);
+  bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
+  bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
+  bnSet4f(m_bnSampler,
+      "inOffset",
+      m_inOffset.x,
+      m_inOffset.y,
+      m_inOffset.z,
+      m_inOffset.w);
+  bnSet4f(m_bnSampler,
+      "outOffset",
+      m_outOffset.x,
+      m_outOffset.y,
+      m_outOffset.z,
+      m_outOffset.w);
+  bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
+  bnCommit(m_bnSampler);
+}
 
 // Image2D //
 
