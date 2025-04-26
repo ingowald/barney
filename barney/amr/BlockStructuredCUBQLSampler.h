@@ -23,42 +23,54 @@
 
 namespace BARNEY_NS {
 
-#if 0
-  /*! a umesh scalar field, with a CUBQL bvh sampler */
-  struct BlockStructuredCUBQLSampler {
+  struct BlockStructuredField;
+  
+  /*! a block structured amr scalar field, with a CUBQL bvh sampler */
+  struct BlockStructuredCUBQLSampler : public ScalarFieldSampler {
     enum { BVH_WIDTH = 4 };
     using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
     using node_t = typename bvh_t::Node;
     
     struct DD : public BlockStructuredField::DD {
       inline __device__ float sample(vec3f P, bool dbg = false) const;
-
-      // static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      // {
-      //   BlockStructuredField::DD::addVars(vars,base);
-      //   vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
-      // }
   
       node_t  *bvhNodes;
     };
+    DD getDD(Device *device);
 
-    struct Host {
-      Host(ScalarField *sf) : field((BlockStructuredField *)sf) {}
-
-      /*! builds the string that allows for properly matching optix
-          device progs for this type */
-      inline std::string getTypeString() const { return "BlockStructured"; }
-
-      void build(bool full_rebuild);
-
-      void setVariables(OWLGeom geom)
-      {
-        owlGeomSetBuffer(geom,"sampler.bvhNodes",bvhNodesBuffer);
-      }
-      
-      OWLBuffer   bvhNodesBuffer = 0;
-      BlockStructuredField *const field;
+    /*! per-device data - parent store the bs-amr field, we just store the
+      bvh nodes */
+    struct PLD {
+      node_t *bvhNodes = 0;
     };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+
+    // /*! for-cubql traversal state that we can use with a cubql
+    //   traversal call back */
+    // struct Traversal {
+    //   inline __rtc_device
+    //   Traversal(const BlockStructuredCUBQLSampler::DD *const mesh, bool dbg);
+      
+    //   inline __rtc_device bool
+    //   leaf(vec3f P, int offset, int count);
+      
+    //   const BlockStructuredCUBQLSampler::DD *const mesh;
+      
+    //   float retVal = NAN;
+    //   bool const dbg;
+    // };
+    
+    BlockStructuredCUBQLSampler(BlockStructuredField *mesh);
+    
+    /*! builds the string that allows for properly matching optix
+      device progs for this type */
+    inline static std::string typeName() { return "BlockStructured_CUBQL"; }
+
+    void build() override;
+
+    BlockStructuredField *const field;
+    const DevGroup::SP devices;
   };
 
   struct BlockStructuredSamplerPTD {
@@ -79,6 +91,7 @@ namespace BARNEY_NS {
     float sumWeightedValues = 0.f;
   };
   
+#if 0
   inline __device__
   float BlockStructuredCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {

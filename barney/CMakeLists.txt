@@ -133,6 +133,9 @@ set(HOST_SOURCES
  
   umesh/os/AWT.cu
   umesh/os/AWT.h
+
+  amr/BlockStructuredCUBQLSampler.cu
+  amr/BlockStructuredField.cu
   
   # *structured* volumes
   volume/StructuredData.h

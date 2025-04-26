@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023++ Ingo Wald                                               //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -24,6 +24,13 @@
 
 namespace BARNEY_NS {
 
+  RTC_IMPORT_USER_GEOM(/*file*/BlockStructuredMC,
+                       /*name*/BlockStructuredMC,
+                       /*geomtype device data */
+                       MCVolumeAccel<BlockStructuredCUBQLSampler>::DD,false,false);
+                       // MCVolumeAccel<BlockStructuredSampler>::DD,false,false);
+  RTC_IMPORT_COMPUTE3D(BlockStructuredMC_computeMCs);
+  
 #if 0
   extern "C" char BlockStructuredMC_ptx[];
 
