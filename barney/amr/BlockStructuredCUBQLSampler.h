@@ -32,35 +32,21 @@ namespace BARNEY_NS {
     using node_t = typename bvh_t::Node;
     
     struct DD : public BlockStructuredField::DD {
+#if RTC_DEVICE_CODE
       inline __device__ float sample(vec3f P, bool dbg = false) const;
-  
-      node_t  *bvhNodes;
+#endif
+      bvh_t bvh;
     };
     DD getDD(Device *device);
 
     /*! per-device data - parent store the bs-amr field, we just store the
       bvh nodes */
     struct PLD {
-      node_t *bvhNodes = 0;
+      bvh_t bvh = { 0,0 };
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
 
-    // /*! for-cubql traversal state that we can use with a cubql
-    //   traversal call back */
-    // struct Traversal {
-    //   inline __rtc_device
-    //   Traversal(const BlockStructuredCUBQLSampler::DD *const mesh, bool dbg);
-      
-    //   inline __rtc_device bool
-    //   leaf(vec3f P, int offset, int count);
-      
-    //   const BlockStructuredCUBQLSampler::DD *const mesh;
-      
-    //   float retVal = NAN;
-    //   bool const dbg;
-    // };
-    
     BlockStructuredCUBQLSampler(BlockStructuredField *mesh);
     
     /*! builds the string that allows for properly matching optix
@@ -72,46 +58,39 @@ namespace BARNEY_NS {
     BlockStructuredField *const field;
     const DevGroup::SP devices;
   };
-
+  
   struct BlockStructuredSamplerPTD {
     inline __device__ BlockStructuredSamplerPTD(const BlockStructuredCUBQLSampler::DD *field)
       : field(field)
     {}
-    inline __device__ bool leaf(vec3f P, int offset, int count)
+#if RTC_DEVICE_CODE
+    inline __device__ void visitBrick(vec3f P, int primID)
     {
-      for (int i=0;i<count;i++) {
-        auto blockID = field->blockIDs[offset+i];
-        field->addBasisFunctions(sumWeightedValues,sumWeights,blockID,P);
-      }
-      return true;
+      field->addBasisFunctions(sumWeightedValues,sumWeights,primID,P);
     }
-
+#endif
     const BlockStructuredCUBQLSampler::DD *const field;
+    
     float sumWeights = 0.f;
     float sumWeightedValues = 0.f;
   };
   
-#if 0
+#if RTC_DEVICE_CODE
   inline __device__
   float BlockStructuredCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
     BlockStructuredSamplerPTD ptd(this);
 
-    bvh_t bvh;
-    bvh.nodes = bvhNodes;
-    bvh.primIDs = nullptr;
-    auto lambda = [&](const uint32_t *primIDs, int numPrimsInLeaf) -> int {
-      int offset = primIDs - bvh.primIDs;
-      ptd.leaf(P,offset,numPrimsInLeaf);
+    auto lambda = [&](const uint32_t primID) -> int {
+      ptd.visitBrick(P,primID);
       return CUBQL_CONTINUE_TRAVERSAL;
     };
     cuBQL::box3f box; box.lower = box.upper = P;
-    cuBQL::fixedBoxQuery::forEachLeaf(lambda,bvh,box);
+    cuBQL::fixedBoxQuery::forEachPrim(lambda,bvh,box);
     // traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
   }
-#endif
-  
+#endif  
 }
 
 

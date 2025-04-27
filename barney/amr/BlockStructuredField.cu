@@ -19,9 +19,6 @@
 #include "barney/volume/MCGrid.cuh"
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
 
-#define BUFFER_CREATE owlDeviceBufferCreate
-// #define BUFFER_CREATE owlManagedMemoryBufferCreate
-
 namespace BARNEY_NS {
 
   RTC_IMPORT_USER_GEOM(/*file*/BlockStructuredMC,
@@ -29,32 +26,50 @@ namespace BARNEY_NS {
                        /*geomtype device data */
                        MCVolumeAccel<BlockStructuredCUBQLSampler>::DD,false,false);
                        // MCVolumeAccel<BlockStructuredSampler>::DD,false,false);
-  RTC_IMPORT_COMPUTE3D(BlockStructuredMC_computeMCs);
-  
-#if 0
-  extern "C" char BlockStructuredMC_ptx[];
+  RTC_IMPORT_COMPUTE1D(BSField_mcRasterBlocks);
+  RTC_IMPORT_COMPUTE1D(BSField_computeElementBBs);
 
   enum { MC_GRID_SIZE = 128 };
 
-  __global__ void rasterBlocks(MCGrid::DD grid,
-                               BlockStructuredField::DD field)
+  BlockStructuredField::PLD *BlockStructuredField::getPLD(Device *device) 
   {
-    const int tIdx = blockIdx.x*blockDim.x + threadIdx.x;
-    if (tIdx > field.numBlocks) return;
+    assert(device);
+    assert(device->contextRank >= 0);
+    assert(device->contextRank < perLogical.size());
+    return &perLogical[device->contextRank];
+  }
 
-    const BlockStructuredField::Block &blk = field.getBlock(tIdx);
+  /*! block structured field, rastering its blocks into a macro-cell grid */
+  struct BSField_mcRasterBlocks {
+    /* kernel data */
+    BlockStructuredField::DD field;
+    MCGrid::DD               grid;
 
-    vec3i numCells = blk.numCells();
+#if RTC_DEVICE_CODE
+  /*! block structured field, rastering its blocks into a macro-cell grid */
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &ci);
+#endif
+  };
 
-    auto linearIndex = [numCells](const int x, const int y, const int z) {
-                         return z*numCells.y*numCells.x + y*numCells.x + x;
-                       };
+
+#if RTC_DEVICE_CODE
+  /*! block structured field, rastering its blocks into a macro-cell grid */
+  inline __rtc_device
+  void BSField_mcRasterBlocks::run(const rtc::ComputeInterface &ci)
+  {
+    const int tIdx = ci.getBlockIdx().x*ci.getBlockDim().x + ci.getThreadIdx().x;
+    if (tIdx >= field.numBlocks) return;
+
+    const Block block = Block::getFrom(field,tIdx);
+
+    vec3i numCells = block.dims;
 
     for (int z=0;z<numCells.z;z++) {
       for (int y=0;y<numCells.y;y++) {
         for (int x=0;x<numCells.x;x++) {
-          const box3f cb3 = blk.cellBounds(vec3i(x,y,z));
-          const float scalar = field.blockScalars[blk.scalarOffset + linearIndex(x,y,z)];
+          const box3f cb3 = block.cellBounds({x,y,z});
+          const float scalar = block.getScalar({x,y,z});
           const box4f cellBounds(vec4f(cb3.lower,scalar),
                                  vec4f(cb3.upper,scalar));
           rasterBox(grid,getBox(field.worldBounds),cellBounds);
@@ -62,6 +77,7 @@ namespace BARNEY_NS {
       }
     }
   }
+#endif
 
   void BlockStructuredField::buildMCs(MCGrid &grid)
   {
@@ -85,194 +101,116 @@ namespace BARNEY_NS {
     grid.gridSpacing = worldBounds.size() * rcp(vec3f(dims));
     
     grid.clearCells();
+
+    int numBlocks = perBlock.origins->count;
     
-    const vec3i bs = 4;
-    const vec3i nb = divRoundUp(dims,bs);
-    for (auto dev : getDevices()) {
-      SetActiveGPU forDuration(dev);
-      auto d_field = getDD(dev);
-      auto d_grid = grid.getDD(dev);
-      CHECK_CUDA_LAUNCH(rasterBlocks,
-                        divRoundUp(int(blockIDs.size()),1024),1024,0,0,
-                        //
-                        d_grid,d_field);
-      // rasterBlocks
-      //   <<<divRoundUp(int(blockIDs.size()),1024),1024>>>
-      //   (d_grid,d_field);
-      BARNEY_CUDA_SYNC_CHECK();
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+
+      BSField_mcRasterBlocks kernelData(this->getDD(device),grid.getDD(device));
+      getPLD(device)->mcRasterBlocks->launch
+        (divRoundUp(numBlocks,1024),1024,&kernelData);
+    }
+    
+    for (auto device : *devices) 
+      device->sync();
+  }
+  
+
+  BlockStructuredField::~BlockStructuredField()
+  {}
+    
+
+  
+  BlockStructuredField::BlockStructuredField(Context *context,
+                                             const DevGroup::SP &devices)
+    : ScalarField(context,devices)
+  {
+    perLogical.resize(devices->numLogical);
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      pld->mcRasterBlocks
+        = createCompute_BSField_mcRasterBlocks(device->rtc);
+      pld->computeElementBBs
+        = createCompute_BSField_computeElementBBs(device->rtc);
     }
   }
 
-
-  /*! computes - ON CURRENT DEVICE - the given mesh's block filter domains
-      and per-block scalar ranges, and writes those into givne
-      pre-allocated device mem location */
-  __global__
-  void g_computeBlockFilterDomains(box3f *d_primBounds,
-                                   range1f *d_primRanges,
-                                   BlockStructuredField::DD field)
-  {
-    int tid = threadIdx.x + blockIdx.x*blockDim.x;
-    if (tid >= field.numBlocks) return;
-
-    auto block = field.getBlock(tid);
-    box4f eb = block.filterDomain();
-    d_primBounds[tid] = getBox(eb);
-    if (d_primRanges) d_primRanges[tid] = getRange(eb);
-  }
-
-  /*! computes, on specified device, the bounding boxes and - if
-    d_primRanges is non-null - the primitmives ranges. d_primBounds
-    and d_primRanges (if non-null) must be pre-allocated and
-    writeaable on specified device */
-  void BlockStructuredField::computeBlockFilterDomains(const Device::SP &device,
-                                                       box3f *d_primBounds,
-                                                       range1f *d_primRanges)
-  {
-    SetActiveGPU forDuration(device);
-    int bs = 1024;
-    int nb = divRoundUp(int(blockIDs.size()),bs);
-    CHECK_CUDA_LAUNCH(g_computeBlockFilterDomains,
-                      nb,bs,0,0,
-                      d_primBounds,d_primRanges,getDD(device));
-    // g_computeBlockFilterDomains
-    //   <<<nb,bs>>>(d_primBounds,d_primRanges,getDD(device));
-    BARNEY_CUDA_SYNC_CHECK();
-  }
-
-  BlockStructuredField::BlockStructuredField(Context *context, int slot,
-                                             std::vector<box3i> &_blockBounds,
-                                             std::vector<int> &_blockLevels,
-                                             std::vector<int> &_blockOffsets,
-                                             std::vector<float> &_blockScalars)
-    : ScalarField(context,slot),
-      blockBounds(std::move(_blockBounds)),
-      blockLevels(std::move(_blockLevels)),
-      blockOffsets(std::move(_blockOffsets)),
-      blockScalars(std::move(_blockScalars))
-  {
-    size_t numBlocks = blockBounds.size();
-    blockIDs.resize(numBlocks);
-    valueRanges.resize(numBlocks);
-
-    for (size_t blockID=0;blockID<numBlocks;++blockID) {
-      Block block;
-      block.ID = (int)blockID;
-      block.bounds = blockBounds[blockID];
-      block.level = blockLevels[blockID];
-      block.scalarOffset = blockOffsets[blockID];
-      block.valueRange = range1f();
-
-      int numScalars = block.numCells().x*block.numCells().y*block.numCells().z;
-      for (int s=0;s<numScalars;++s) {
-        float f = blockScalars[block.scalarOffset+s];
-        block.valueRange.extend(f);
-      }
-
-      blockIDs[blockID] = block.ID;
-      valueRanges[blockID] = block.valueRange;
-      worldBounds.extend(getBox(block.worldBounds()));
-    }
-    PRINT(worldBounds);
-    assert(!valueRanges.empty());
-    assert(!blockIDs.empty());
-
-    blockBoundsBuffer
-      = BUFFER_CREATE(getOWL(),
-                              OWL_USER_TYPE(box3i),
-                              blockBounds.size(),
-                              blockBounds.data());
-
-    blockLevelsBuffer
-      = BUFFER_CREATE(getOWL(),
-                              OWL_INT,
-                              blockLevels.size(),
-                              blockLevels.data());
-
-    blockOffsetsBuffer
-      = BUFFER_CREATE(getOWL(),
-                              OWL_INT,
-                              blockOffsets.size(),
-                              blockOffsets.data());
-
-    blockScalarsBuffer
-      = BUFFER_CREATE(getOWL(),
-                              OWL_FLOAT,
-                              blockScalars.size(),
-                              blockScalars.data());
-
-    blockIDsBuffer
-      = BUFFER_CREATE(getOWL(),
-                              OWL_UINT,
-                              blockIDs.size(),
-                              blockIDs.data());
-    valueRangesBuffer
-      = BUFFER_CREATE(getOWL(),
-                              OWL_USER_TYPE(range1f),
-                              valueRanges.size(),
-                              valueRanges.data());
-  }
-
-  BlockStructuredField::DD BlockStructuredField::getDD(const Device::SP &device)
+  BlockStructuredField::DD BlockStructuredField::getDD(Device *device)
   {
     BlockStructuredField::DD dd;
-    int devID = device->owlID;
 
-    dd.blockBounds  = (const box3i    *)owlBufferGetPointer(blockBoundsBuffer,devID);
-    dd.blockLevels  = (const int      *)owlBufferGetPointer(blockLevelsBuffer,devID);
-    dd.blockOffsets = (const int      *)owlBufferGetPointer(blockOffsetsBuffer,devID);
-    dd.blockScalars = (const float    *)owlBufferGetPointer(blockScalarsBuffer,devID);
-    dd.blockIDs     = (const uint32_t *)owlBufferGetPointer(blockIDsBuffer,devID);
-    dd.valueRanges  = (const range1f  *)owlBufferGetPointer(valueRangesBuffer,devID);
-    dd.numBlocks    = (int)blockIDs.size();
-    dd.worldBounds  = worldBounds;
+    dd.perBlock.origins = (const vec3i *)perBlock.origins->getDD(device);
+    dd.perBlock.dims    = (const vec3i *)perBlock.dims->getDD(device);
+    dd.perBlock.levels  = (const int   *)perBlock.levels->getDD(device);
+    dd.perBlock.offsets = (const int   *)perBlock.offsets->getDD(device);
+
+    dd.perLevel.refinements = (const int *)perLevel.refinements->getDD(device);
+    
+    dd.scalars      = (const float *)scalars->getDD(device);
+    dd.numBlocks    = perBlock.origins->count;
 
     return dd;
   }
 
-  void BlockStructuredField::setVariables(OWLGeom geom)
-  {
-    ScalarField::setVariables(geom);
-    
-    // ------------------------------------------------------------------
-    owlGeomSetBuffer(geom,"field.blockBounds",blockBoundsBuffer);
-    owlGeomSetBuffer(geom,"field.blockLevels",blockLevelsBuffer);
-    owlGeomSetBuffer(geom,"field.blockOffsets",blockOffsetsBuffer);
-    owlGeomSetBuffer(geom,"field.blockScalars",blockScalarsBuffer);
-    owlGeomSetBuffer(geom,"field.blockIDs",blockIDsBuffer);
-    owlGeomSetBuffer(geom,"field.valueRanges",valueRangesBuffer);
-  }
-  
-  void BlockStructuredField::DD::addVars(std::vector<OWLVarDecl> &vars, int myOfs)
-  {
-    ScalarField::DD::addVars(vars,myOfs);
-    std::vector<OWLVarDecl> mine = 
-      {
-       { "field.blockBounds",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockBounds) },
-       { "field.blockLevels",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockLevels) },
-       { "field.blockOffsets",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockOffsets) },
-       { "field.blockScalars",   OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockScalars) },
-       { "field.blockIDs",       OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,blockIDs) },
-       { "field.valueRanges",    OWL_BUFPTR, myOfs+OWL_OFFSETOF(DD,valueRanges) },
-      };
-    for (auto var : mine)
-      vars.push_back(var);
-  }
-
   VolumeAccel::SP BlockStructuredField::createAccel(Volume *volume)
   {
-    const char *methodFromEnv = getenv("BARNEY_AMR");
-    std::string method = (methodFromEnv ? methodFromEnv : "DDA");
+    auto sampler
+      = std::make_shared<BlockStructuredCUBQLSampler>(this);
+    return std::make_shared<MCVolumeAccel<BlockStructuredCUBQLSampler>>
+      (volume,
+       createGeomType_BlockStructuredMC,
+       sampler);
+  }
 
-    if (method == "DDA" || method == "MCDDA")
-      return std::make_shared<MCDDAVolumeAccel<BlockStructuredCUBQLSampler>::Host>
-        (this,volume,BlockStructuredMC_ptx);
 
-    if (method == "MCRTX")
-      return std::make_shared<MCRTXVolumeAccel<BlockStructuredCUBQLSampler>::Host>
-        (this,volume,BlockStructuredMC_ptx);
-    
-    throw std::runtime_error("unknown BARNEY_AMR accelerator method");
+  struct BSField_computeElementBBs {
+    /* kernel ARGS */
+    box3f         *d_primBounds;
+    range1f       *d_primRanges;
+    BlockStructuredField::DD field;
+
+#if RTC_DEVICE_CODE
+    inline __rtc_device
+    void run(const rtc::ComputeInterface &ci);
+#endif
+  };
+
+#if RTC_DEVICE_CODE
+  /* kernel FUNCTION */
+  inline __rtc_device
+  void BSField_computeElementBBs::run(const rtc::ComputeInterface &ci)
+  {
+    const int tid = ci.launchIndex().x;
+    if (tid >= field.numBlocks) return;
+
+    Block block = Block::getFrom(field,tid);
+    d_primBounds[tid] = block.getDomain();
+    if (d_primRanges) printf("value ranges not implemented for bsfield");
   }
 #endif
+    
+  /*! computes, on specified device, the bounding boxes and - if
+    d_primRanges is non-null - the primitmives ranges. d_primBounds
+    and d_primRanges (if non-null) must be pre-allocated and
+    writeaable on specified device */
+  void BlockStructuredField::computeElementBBs(Device  *device,
+                                               box3f   *d_primBounds,
+                                               range1f *d_primRanges)
+  {
+    BSField_computeElementBBs args = {
+      /* kernel ARGS */
+      d_primBounds,
+      d_primRanges,
+      getDD(device)
+    };
+    int bs = 128;
+    int nb = divRoundUp(numBlocks,bs);
+    getPLD(device)->computeElementBBs->launch(nb,bs,&args);
+    device->sync();
+  }
+
+  RTC_EXPORT_COMPUTE1D(BSField_mcRasterBlocks,BSField_mcRasterBlocks);
+  RTC_EXPORT_COMPUTE1D(BSField_computeElementBBs,BSField_computeElementBBs);
 }

@@ -42,6 +42,9 @@ namespace BARNEY_NS {
   {
     typedef std::shared_ptr<UMeshField> SP;
 
+    UMeshField(Context *context,
+               const DevGroup::SP &devices);
+
     virtual ~UMeshField()
     {}
     
@@ -114,9 +117,6 @@ namespace BARNEY_NS {
                            box3f   *d_primBounds,
                            range1f *d_primRanges=0);
     
-    UMeshField(Context *context,
-               const DevGroup::SP &devices);
-
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
     void commit() override;

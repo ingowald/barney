@@ -941,6 +941,7 @@ namespace BARNEY_NS {
             type_pdf = transmission_weight;
             sampled_bsdf = DISNEY_TRANSMISSION_BRDF;
           }
+          type_pdf = type_pdf;
           // type_pdf *= 3.f;
 #else
           const float type_pdf = 1.f;
