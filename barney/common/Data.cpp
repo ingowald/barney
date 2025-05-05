@@ -48,6 +48,18 @@ namespace BARNEY_NS {
     case BN_INT4:
       return rtc::INT4;
       
+    case BN_LONG:
+      return rtc::LONG;
+      
+    case BN_LONG2:
+      return rtc::LONG2;
+      
+    case BN_LONG3:
+      return rtc::LONG3;
+      
+    case BN_LONG4:
+      return rtc::LONG4;
+      
     case BN_UFIXED8:
       return rtc::UCHAR;
       
@@ -74,6 +86,7 @@ namespace BARNEY_NS {
       return "BN_OBJECT";
     case BN_TEXTURE:
       return "BN_TEXTURE";
+
     case BN_INT:
       return "BN_INT";
     case BN_INT2:
@@ -82,6 +95,16 @@ namespace BARNEY_NS {
       return "BN_INT3";
     case BN_INT4:
       return "BN_INT4";
+
+    case BN_LONG:
+      return "BN_LONG";
+    case BN_LONG2:
+      return "BN_LONG2";
+    case BN_LONG3:
+      return "BN_LONG3";
+    case BN_LONG4:
+      return "BN_LONG4";
+      
     case BN_FLOAT:
       return "BN_FLOAT";
     case BN_FLOAT2:
@@ -124,6 +147,7 @@ namespace BARNEY_NS {
       return sizeof(vec3f);
     case BN_FLOAT4:
       return sizeof(vec4f);
+
     case BN_INT:
       return sizeof(int);
     case BN_INT2:
@@ -132,6 +156,16 @@ namespace BARNEY_NS {
       return sizeof(vec3i);
     case BN_INT4:
       return sizeof(vec4i);
+
+    case BN_LONG:
+      return sizeof(uint64_t);
+    case BN_LONG2:
+      return sizeof(vec2l);
+    case BN_LONG3:
+      return sizeof(vec3l);
+    case BN_LONG4:
+      return sizeof(vec4l);
+
     default:
       throw std::runtime_error
         ("#bn internal error: owlSizeOf() not implemented for "
@@ -201,6 +235,10 @@ namespace BARNEY_NS {
     case BN_INT2:
     case BN_INT3:
     case BN_INT4:
+    case BN_LONG:
+    case BN_LONG2:
+    case BN_LONG3:
+    case BN_LONG4:
     case BN_FLOAT:
     case BN_FLOAT2:
     case BN_FLOAT3:

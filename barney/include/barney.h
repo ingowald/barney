@@ -125,6 +125,13 @@ typedef enum {
   BN_FLOAT3,
   BN_FLOAT4,
 
+  /*! int64_t */
+  BN_LONG,
+  /*! int2 */
+  BN_LONG2,
+  BN_LONG3,
+  BN_LONG4,
+  
   BN_UFIXED8,
   BN_UFIXED8_RGBA,
   BN_UFIXED8_RGBA_SRGB,

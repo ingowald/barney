@@ -16,3 +16,7 @@ namespace rtc {
 #endif
   }
 }
+
+# define __rtc_global __global__
+# define __rtc_launch(myRTC,kernel,nb,bs,...)                           \
+  { rtc::optix::SetActiveGPU forDuration(myRTC); kernel<<<nb,bs,0,myRTC->stream>>>(rtc::optix::ComputeInterface(), __VA_ARGS__); }
