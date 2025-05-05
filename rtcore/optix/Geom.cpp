@@ -97,6 +97,7 @@ namespace rtc {
       
       const char *ptx = ptxCode.c_str();
       // = (const char *)rtc::getSymbol(ptxName);//+"_ptx");
+      PING;
       OWLModule module = owlModuleCreate
         (device->owl,ptx);
       if (has_ch)
@@ -107,7 +108,9 @@ namespace rtc {
         owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
                              typeName.c_str());
       // ahFctName.c_str());//"TrianglesAH");
+      PING;
       owlBuildPrograms(device->owl);
+      PING;
       owlModuleRelease(module);
     }
 
@@ -127,6 +130,7 @@ namespace rtc {
       
       const char *ptx = ptxCode.c_str();
 
+      PING;
       OWLModule module = owlModuleCreate
         (device->owl,ptx);
       if (has_ch)
@@ -139,7 +143,9 @@ namespace rtc {
                                typeName.c_str());
       owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,
                                   typeName.c_str());
+      PING;
       owlBuildPrograms(device->owl);
+      PING;
       owlModuleRelease(module);
     }
     

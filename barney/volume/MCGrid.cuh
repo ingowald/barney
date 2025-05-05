@@ -81,9 +81,9 @@ namespace BARNEY_NS {
   {
     box3f pb = box3f(vec3f(primBounds4.lower),
                      vec3f(primBounds4.upper));
-    if (pb.lower.x >= pb.upper.x) return;
-    if (pb.lower.y >= pb.upper.y) return;
-    if (pb.lower.z >= pb.upper.z) return;
+    if (pb.lower.x > pb.upper.x) return;
+    if (pb.lower.y > pb.upper.y) return;
+    if (pb.lower.z > pb.upper.z) return;
 
     vec3i lo = vec3i((pb.lower-grid.gridOrigin)*rcp(grid.gridSpacing));
     vec3i hi = vec3i((pb.upper-grid.gridOrigin)*rcp(grid.gridSpacing));

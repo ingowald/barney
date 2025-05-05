@@ -61,16 +61,15 @@ namespace BARNEY_NS {
       std::cout << "------------------------------------------" << std::endl;
       std::cout << "building BlockStructuredCUBQL BVH!" << std::endl;
       std::cout << "------------------------------------------" << std::endl;
-      
+
       SetActiveGPU forDuration(device);
-      
+
       box3f *primBounds
         = (box3f*)device->rtc->allocMem(numPrims*sizeof(box3f));
       range1f *valueRanges
         = (range1f*)device->rtc->allocMem(numPrims*sizeof(range1f));
       field->computeElementBBs(device,primBounds,valueRanges);
       device->rtc->sync();
-      
 #if BARNEY_RTC_EMBREE || defined(__HIPCC__)
       cuBQL::cpu::spatialMedian(bvh,
                                 (const cuBQL::box_t<float,3>*)primBounds,

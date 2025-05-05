@@ -33,7 +33,7 @@ namespace BARNEY_NS {
     
     struct DD : public BlockStructuredField::DD {
 #if RTC_DEVICE_CODE
-      inline __device__ float sample(vec3f P, bool dbg = false) const;
+      inline __rtc_device float sample(vec3f P, bool dbg = false) const;
 #endif
       bvh_t bvh;
     };
@@ -60,11 +60,11 @@ namespace BARNEY_NS {
   };
   
   struct BlockStructuredSamplerPTD {
-    inline __device__ BlockStructuredSamplerPTD(const BlockStructuredCUBQLSampler::DD *field)
+    inline __rtc_device BlockStructuredSamplerPTD(const BlockStructuredCUBQLSampler::DD *field)
       : field(field)
     {}
 #if RTC_DEVICE_CODE
-    inline __device__ void visitBrick(vec3f P, int primID)
+    inline __rtc_device void visitBrick(vec3f P, int primID)
     {
       field->addBasisFunctions(sumWeightedValues,sumWeights,primID,P);
     }
@@ -76,7 +76,7 @@ namespace BARNEY_NS {
   };
   
 #if RTC_DEVICE_CODE
-  inline __device__
+  inline __rtc_device
   float BlockStructuredCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
     BlockStructuredSamplerPTD ptd(this);

@@ -114,6 +114,11 @@ namespace BARNEY_NS {
 
       const float maj = xf.majorant(scalarRange);
 
+      // if (mcIdx % 1235 == 0 || mcID == vec3i(125,123,4)) {
+      //   printf("cell %i %i %i dims %i %i %i: %f,%f ->%f\n",
+      //          ix,iy,iz,grid.dims.x,grid.dims.y,grid.dims.z,scalarRange.lower,scalarRange.upper,maj);
+      // }
+
       grid.majorants[mcIdx] = maj;
     }
 #endif

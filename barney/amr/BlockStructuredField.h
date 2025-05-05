@@ -28,14 +28,13 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<BlockStructuredField> SP;
 
     struct PLD {
-      rtc::ComputeKernel1D *mcRasterBlocks = 0;
-      rtc::ComputeKernel1D *computeElementBBs = 0;
+      // rtc::ComputeKernel1D *mcRasterBlocks = 0;
+      // rtc::ComputeKernel1D *computeElementBBs = 0;
       Block *blocks;
       float *scalars;
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
-    
     
     struct DD : public ScalarField::DD {
 
@@ -44,7 +43,7 @@ namespace BARNEY_NS {
          that to 'sumWeightedValues' and 'sumWeights'. returns true if P is
          inside the block *filter domain*, false if outside (in which case the
          out params are not defined) */
-      inline __device__ bool addBasisFunctions(float &sumWeightedValues,
+      inline __rtc_device bool addBasisFunctions(float &sumWeightedValues,
                                              float &sumWeights,
                                              uint32_t bid,
                                              vec3f P) const;
@@ -54,7 +53,7 @@ namespace BARNEY_NS {
         const vec3i *origins;
         const vec3i *dims;
         const int   *levels;
-        const int   *offsets;
+        const uint64_t *offsets;
       } perBlock;
       struct {
         const int   *refinements;
@@ -62,6 +61,20 @@ namespace BARNEY_NS {
       int numBlocks;
     };
 
+    BlockStructuredField(Context *context,
+                         const DevGroup::SP &devices);
+    virtual ~BlockStructuredField() override;
+    
+    DD getDD(Device *device);
+    
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool setData(const std::string &member,
+                 const std::shared_ptr<Data> &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+    
     void buildMCs(MCGrid &macroCells) override;
     
     /*! computes, on specified device, the array of bounding box and
@@ -71,19 +84,13 @@ namespace BARNEY_NS {
                            box3f *d_primBounds,
                            range1f *d_primRanges);
     
-    BlockStructuredField(Context *context,
-                         const DevGroup::SP &devices);
-    virtual ~BlockStructuredField() override;
-    
-    DD getDD(Device *device);
-
     VolumeAccel::SP createAccel(Volume *volume) override;
 
     struct {
       PODData::SP/*3i*/ origins    = 0;
       PODData::SP/*3i*/ dims       = 0;
       PODData::SP/*1i*/ levels     = 0;
-      PODData::SP/*1i*/ offsets    = 0;
+      PODData::SP/*1l*/ offsets    = 0;
     } perBlock;
     struct {
       PODData::SP/*1i*/ refinements = 0;
@@ -97,11 +104,12 @@ namespace BARNEY_NS {
   {
 #if RTC_DEVICE_CODE
     static
-    inline __device__ Block getFrom(const BlockStructuredField::DD &dd, int blockID);
+    inline __rtc_device Block getFrom(const BlockStructuredField::DD &dd, int blockID, bool dbg=false);
     
-    inline __device__ float getScalar(const vec3i cellID) const;
-    inline __device__ box3f cellBounds(const vec3i cellID) const;
-    inline __device__ box3f getDomain() const;
+    inline __rtc_device float getScalar(const vec3i cellID) const;
+    inline __rtc_device box3f cellBounds(const vec3i cellID) const;
+    inline __rtc_device box3f getDomain() const;
+    inline __rtc_device range1f getValueRange() const;
 #endif
     vec3i origin;
     vec3i dims;
@@ -116,7 +124,7 @@ namespace BARNEY_NS {
      that to 'sumWeightedValues' and 'sumWeights'. returns true if P is inside
      the block *filter domain*, false if outside (in which case the out params
      are not defined) */
-  inline __device__
+  inline __rtc_device
   bool BlockStructuredField::DD::addBasisFunctions(float &sumWeightedValues,
                                                    float &sumWeights,
                                                    uint32_t bid,
@@ -204,7 +212,7 @@ namespace BARNEY_NS {
     return true;
   }
 
-  inline __device__
+  inline __rtc_device
   float Block::getScalar(const vec3i cellID) const
   {
     const int idx
@@ -215,16 +223,25 @@ namespace BARNEY_NS {
     return scalars[idx];
   }
 
-  inline __device__
+  inline __rtc_device
   box3f Block::cellBounds(const vec3i cellID) const
   {
     box3f cb;
     cb.lower = (vec3f(origin+cellID)-.5f)*cellSize;
-    cb.upper = cb.lower + cellSize;
+    cb.upper = cb.lower + 2.f*cellSize;
     return cb;
   }
 
-  inline __device__
+  inline __rtc_device
+  range1f Block::getValueRange() const
+  {
+    range1f range;
+    for (int i=0;i<dims.x*dims.y*dims.z;i++)
+      range.extend(scalars[i]);
+    return range;
+  }
+  
+  inline __rtc_device
   box3f Block::getDomain() const
   {
     box3f cb;
@@ -233,16 +250,30 @@ namespace BARNEY_NS {
     return cb;
   }
 
-  inline __device__
-  Block Block::getFrom(const BlockStructuredField::DD &dd, int blockID)
+  inline __rtc_device
+  Block Block::getFrom(const BlockStructuredField::DD &dd, int blockID, bool dbg)
   {
+    // if (blockID == 13000) dbg = true;
     Block block;
     block.origin   = dd.perBlock.origins[blockID];
     block.dims     = dd.perBlock.dims[blockID];
     block.level    = dd.perBlock.levels[blockID];
-    block.cellSize = ldexpf(1.f,-dd.perLevel.refinements[block.level]);
-    //powf(0.5f,dd.perLevel.refinements[block.level]);
+    block.cellSize = 1.f/dd.perLevel.refinements[block.level];
+    // printf("offset %li\n",dd.perBlock.offsets[blockID]);
     block.scalars  = dd.scalars+dd.perBlock.offsets[blockID];
+
+    // dbg = blockID < 10 || blockID >= 227200;
+    // if (dbg) {
+    //   box3f dom = block.getDomain();
+    //   printf("dom (%f %f %f) (%f %f %f) cs %f\n",
+    //          dom.lower.x,
+    //          dom.lower.y,
+    //          dom.lower.z,
+    //          dom.upper.x,
+    //          dom.upper.y,
+    //          dom.upper.z,
+    //          block.cellSize);
+    // }
     return block;
   }
 #endif
