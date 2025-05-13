@@ -130,7 +130,6 @@ namespace rtc {
       
       const char *ptx = ptxCode.c_str();
 
-      PING;
       OWLModule module = owlModuleCreate
         (device->owl,ptx);
       if (has_ch)
@@ -143,9 +142,7 @@ namespace rtc {
                                typeName.c_str());
       owlGeomTypeSetIntersectProg(gt,/*ray type*/0,module,
                                   typeName.c_str());
-      PING;
       owlBuildPrograms(device->owl);
-      PING;
       owlModuleRelease(module);
     }
     

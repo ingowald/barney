@@ -126,7 +126,7 @@ namespace BARNEY_NS {
       numCopied[nextID] = count;
       auto &src = device->rayQueue->traceAndShadeReadQueue;
       auto &dst = nextDev->rayQueue->receiveAndShadeWriteQueue;
-      std::cout << "#### COPYING RAYS " << src.rays << " -> " << dst.rays << " #=" << count << std::endl;
+      // std::cout << "#### COPYING RAYS " << src.rays << " -> " << dst.rays << " #=" << count << std::endl;
       device->rtc->copyAsync(dst.rays,src.rays,count*sizeof(Ray));
       if (needHitIDs)
         device->rtc->copyAsync(dst.hitIDs,src.hitIDs,count*sizeof(*dst.hitIDs));
