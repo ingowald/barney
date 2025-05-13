@@ -27,7 +27,11 @@ namespace BARNEY_NS {
 
   void Context::traceRaysLocally(GlobalModel *globalModel,
                                  uint32_t rngSeed,
-                                 bool needHitIDs)
+                                 bool needHitIDs
+#if OVERLAP_TRACE_AND_SEND
+                                 , int which
+#endif
+                                 )
   {
     double t0 = getCurrentTime();
     
@@ -78,6 +82,7 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     syncCheckAll();
   }
+#endif
   
 } // ::BARNEY_NS
 

@@ -18,6 +18,7 @@
 
 #include "barney/common/barney-common.h"
 #include "rtcore/AppInterface.h"
+#include <array>
 
 namespace BARNEY_NS {
   
@@ -54,10 +55,17 @@ namespace BARNEY_NS {
     
     /* for ray queue cycling - who to cycle with */
     struct {
+#if OVERLAP_TRACE_AND_SEND
+      /* this stores _global_ IDs, so each int encodes both rank and
+         local device ID */
+      std::vector<int> peersInCycle;
+      std::vector<int> nThPeerInCycle;
+#else
       int sendWorkerRank  = -1;
       int sendWorkerLocal = -1;
       int recvWorkerRank  = -1;
       int recvWorkerLocal = -1;
+#endif
     } rqs;
 
     int  setActive() const { return rtc->setActive(); }
@@ -81,7 +89,12 @@ namespace BARNEY_NS {
     rtc::ComputeKernel1D *umeshComputeElementBBs = 0;
     
     rtc::TraceKernel2D *traceRays = 0;
+#if OVERLAP_TRACE_AND_SEND
+    RayQueue     *rayQueues[2] = {0,0};
+#else
     RayQueue     *rayQueue = 0;
+#endif
+    
   };
   
   /*! stolen from owl/Device: helper class that will set the

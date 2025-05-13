@@ -46,6 +46,9 @@ namespace BARNEY_NS {
       /*! full frame buffer size, to check if a given
         tile's pixel ID is still valid */
       vec2i fbSize;
+#if OVERLAP_TRACE_AND_SEND
+      int cycle;
+#endif
       /*! pointer to a device-side int that tracks the
         next write position in the 'write' ray
         queue; can be atomically incremented on the
@@ -67,6 +70,9 @@ namespace BARNEY_NS {
     {
       // ------------------------------------------------------------------
       int tileID   = rt.getBlockIdx().x;
+#if OVERLAP_TRACE_AND_SEND
+      if (tileID % 2 != cycle) return;
+#endif
       int lPixelID = rt.getThreadIdx().x;
 
       vec2i tileOffset = tileDescs[tileID].lower;
@@ -194,25 +200,36 @@ namespace BARNEY_NS {
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
     Camera::DD cameraDD = camera->getDD();
+#if OVERLAP_TRACE_AND_SEND
+    for (int cycle=0;cycle<2;cycle++)
+#endif
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       TiledFB *devFB = fb->getFor(device);
-      device->rayQueue->resetWriteQueue();
+#if OVERLAP_TRACE_AND_SEND
+      RayQueue *rayQueue = device->rayQueues[cycle];
+#else
+      RayQueue *rayQueue = device->rayQueue;
+#endif
+      rayQueue->resetWriteQueue();
       render::GenerateRays args = {
         /* variable args */
         cameraDD,
         renderer->getDD(device),
         accumID,
         fb->numPixels,
-        device->rayQueue->_d_nextWritePos,
-        device->rayQueue->receiveAndShadeWriteQueue,
+#if OVERLAP_TRACE_AND_SEND
+        cycle,
+#endif
+        rayQueue->_d_nextWritePos,
+        rayQueue->receiveAndShadeWriteQueue,
         devFB->tileDescs,
         enablePerRayDebug,
       };
       if (FromEnv::get()->logQueues) {
         std::stringstream ss;
-        ss  << "#bn: ## ray queue op GENERATE " << device->rayQueue->receiveAndShadeWriteQueue.rays
-            << " + " << device->rayQueue->receiveAndShadeWriteQueue.states
+        ss  << "#bn: ## ray queue op GENERATE " << rayQueue->receiveAndShadeWriteQueue.rays
+            << " + " << rayQueue->receiveAndShadeWriteQueue.states
             << std::endl;
         std::cout << ss.str();
       }
@@ -224,11 +241,19 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     // wait for all GPUs' completion
     // ------------------------------------------------------------------
+#if OVERLAP_TRACE_AND_SEND
+    for (int cycle=0;cycle<2;cycle++)
+#endif
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       device->rtc->sync();
-      device->rayQueue->swapAfterGeneration();
-      device->rayQueue->numActive = device->rayQueue->readNumActive();
+#if OVERLAP_TRACE_AND_SEND
+      RayQueue *rayQueue = device->rayQueues[cycle];
+#else
+      RayQueue *rayQueue = device->rayQueue;
+#endif
+      rayQueue->swapAfterGeneration();
+      rayQueue->numActive = rayQueue->readNumActive();
     }
   }
   

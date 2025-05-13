@@ -44,10 +44,15 @@ namespace BARNEY_NS {
     std::vector<int> worldRankOfWorker;
     std::vector<int> workerRankOfWorldRank;
 
+#if OVERLAP_TRACE_AND_SEND
+    void traceAndForward(GlobalModel *model, uint32_t rngSeed, bool needHitIDs,
+                         int stage, int which) override;
+#else
     /*! forward rays (during global trace); returns if _after_ that
         forward the rays need more tracing (true) or whether they're
         done (false) */
     bool forwardRays(bool needHitIDs) override;
+#endif
     
     // for debugging ...
     void barrier(bool warn=true) override {
@@ -63,6 +68,12 @@ namespace BARNEY_NS {
 
     int myRank() override { return world.rank; }
     int mySize() override { return world.size; }
+
+#if OVERLAP_TRACE_AND_SEND
+    struct {
+      std::vector<MPI_Request> mpiRequests;
+    } rqs;
+#endif
     
     int gpusPerWorker;
     int numDifferentModelSlots = -1;

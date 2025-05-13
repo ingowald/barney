@@ -37,11 +37,16 @@ namespace BARNEY_NS {
                 Camera      *camera,
                 FrameBuffer *fb) override;
 
+#if OVERLAP_TRACE_AND_SEND
+    void traceAndForward(GlobalModel *model, uint32_t rngSeed, bool needHitIDs,
+                         int stage, int which) override;
+#else
     /*! forward rays (during global trace); returns if _after_ that
         forward the rays need more tracing (true) or whether they're
         done (false) */
     bool forwardRays(bool needHitIDs) override;
-
+#endif
+    
     /*! returns how many rays are active in all ray queues, across all
         devices and, where applicable, across all ranks */
     int numRaysActiveGlobally() override;

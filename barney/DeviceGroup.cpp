@@ -78,8 +78,12 @@ namespace BARNEY_NS {
       rtc(rtc),
       geomTypes(rtc)
   {
+#if OVERLAP_TRACE_AND_SEND
+    for (int i=0;i<2;i++) 
+      rayQueues[i] = new RayQueue(this);
+#else
     rayQueue = new RayQueue(this);
-
+#endif
     // umesh related:
     umeshCreateElements 
       = createCompute_umeshCreateElements(rtc);

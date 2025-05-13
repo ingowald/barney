@@ -81,9 +81,6 @@ namespace BARNEY_NS {
           = new Device(rtc,
                        (int)allDevices.size(),
                        (int)gpuIDs.size()
-                       // ,
-                       // globalIndex*numSlots+lmsIdx,
-                       // globalIndexStep*numSlots
                        );
         slotDevices.push_back(device);
         allDevices.push_back(device);
@@ -117,6 +114,8 @@ namespace BARNEY_NS {
   
   /*! returns how many rays are active in all ray queues, across all
     devices and, where applicable, across all ranks */
+#if OVERLAP_TRACE_AND_SEND
+#else
   int Context::numRaysActiveLocally()
   {
     int numActive = 0;
@@ -124,9 +123,16 @@ namespace BARNEY_NS {
       numActive += device->rayQueue->numActiveRays();
     return numActive;
   }
+#endif
  
   void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
+#if OVERLAP_TRACE_AND_SEND
+    for (int i=0;i<islandSize;i++) {
+      traceAndForward(model,rngSeed,needHitIDs,i,0);
+      traceAndForward(model,rngSeed,needHitIDs,i,1);
+    }
+#else
     while (true) {
       if (FromEnv::get()->logQueues) 
         std::cout << "----- glob-trace -> locally) "
@@ -137,6 +143,7 @@ namespace BARNEY_NS {
         continue;
       break;
     }
+#endif
   }
 
   void Context::finalizeTiles(FrameBuffer *fb)
@@ -163,8 +170,9 @@ namespace BARNEY_NS {
       double _t0 = getCurrentTime();
       if (FromEnv::get()->logQueues) 
         std::cout << "==================== new pixel wave ======================" << std::endl;
-      generateRays(camera,renderer,fb);
 
+      generateRays(camera,renderer,fb);
+      
       for (int generation=0;true;generation++) {
         if (FromEnv::get()->logQueues) 
           std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
@@ -216,10 +224,22 @@ namespace BARNEY_NS {
 
     for (auto device : *devices) {
       assert(device);
+#if OVERLAP_TRACE_AND_SEND
+      int tilesThisDevices = fb->getFor(device)->numActiveTiles;
+      int maxTilesAnyDevice = tilesThisDevices+1;
+      int maxTilesAnyQueue = (maxTilesAnyDevice+1)/2;
+      int upperBoundOnNumRays
+        = /*ray+shadow*/2
+        * /* max tiles/rank/queue*/maxTilesAnyQueue
+        * BARNEY_NS::pixelsPerTile;
+      device->rayQueues[0]->reserve(upperBoundOnNumRays);
+      device->rayQueues[1]->reserve(upperBoundOnNumRays);
+#else
       int upperBoundOnNumRays
         = 2 * (fb->getFor(device)->numActiveTiles+1) * BARNEY_NS::pixelsPerTile;
       assert(device->rayQueue);
       device->rayQueue->reserve(upperBoundOnNumRays);
+#endif
     }
   }
 

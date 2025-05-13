@@ -16,6 +16,12 @@
 
 message("CMAKE_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}")
 
+option(BARNEY_OVERLAP_SEND_AND_TRACE "Overlap Send and Trace" ON)
+target_compile_definitions(barney_config
+  INTERFACE
+  -DOVERLAP_TRACE_AND_SEND=1
+)
+
 if(MSVC) # That's also clang-cl
   # /bigobj is needed for bigger binding projects due to the limit to 64k
   # addressable sections

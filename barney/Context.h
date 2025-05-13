@@ -144,11 +144,24 @@ namespace BARNEY_NS {
     /*! forward rays (during global trace); returns if _after_ that
       forward the rays need more tracing (true) or whether they're
       done (false) */
-    virtual bool forwardRays(bool needHitIDs) = 0;
+#if OVERLAP_TRACE_AND_SEND
+    virtual void traceAndForward(GlobalModel *model, uint32_t rngSeed, bool needHitIDs,
+                                 int stage, int which) = 0;
+    // virtual bool forwardRays_request(bool needHitIDs, int which) = 0;
+    // virtual bool forwardRays_wait(bool needHitIDs, int which) = 0;
 
+    std::vector<std::array<int,2>> numActiveRays;
+    int islandSize = -1;
+#else
+    virtual bool forwardRays(bool needHitIDs) = 0;
+#endif
+
+#if OVERLAP_TRACE_AND_SEND
+#else
     /*! returns how many rays are active in all ray queues, across all
       devices and, where applicable, across all ranks */
     int numRaysActiveLocally();
+#endif
 
     /*! returns how many rays are active in all ray queues, across all
       devices and, where applicable, across all ranks */

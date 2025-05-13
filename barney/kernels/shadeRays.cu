@@ -949,58 +949,73 @@ namespace BARNEY_NS {
                                  int generation,
                                  uint32_t rngSeed)
   {
-    for (auto slotModel : model->modelSlots) {
-      World *world = slotModel->world.get();
-      for (auto device : *world->devices) {
-        SetActiveGPU forDuration(device);
-        RayQueue *rayQueue = device->rayQueue;
-        device->rayQueue->resetWriteQueue();
+#if OVERLAP_TRACE_AND_SEND
+    for (int cycle=0;cycle<2;cycle++) {
+#endif
+      for (auto slotModel : model->modelSlots) {
+        World *world = slotModel->world.get();
+        for (auto device : *world->devices) {
+          SetActiveGPU forDuration(device);
+#if OVERLAP_TRACE_AND_SEND
+          RayQueue *rayQueue = device->rayQueues[cycle];
+#else
+          RayQueue *rayQueue = device->rayQueue;
+#endif
+          rayQueue->resetWriteQueue();
         
-        TiledFB *devFB     = fb->getFor(device);
-        int numRays        = rayQueue->numActive;
-        if (numRays == 0) continue;
-        int bs = 128;
-        int nb = divRoundUp(numRays,bs);
-        World::DD devWorld
-          = world->getDD(device,rngSeed);
-        Renderer::DD devRenderer
-          = renderer->getDD(device);
+          TiledFB *devFB     = fb->getFor(device);
+          int numRays        = rayQueue->numActive;
+          if (numRays == 0) continue;
+          int bs = 128;
+          int nb = divRoundUp(numRays,bs);
+          World::DD devWorld
+            = world->getDD(device,rngSeed);
+          Renderer::DD devRenderer
+            = renderer->getDD(device);
 
-        render::PathTraceKernel args = {
-          devWorld,devRenderer,
-          devFB->accumTiles,
-          devFB->auxTiles,
-          (int)fb->accumID,
-          rayQueue->traceAndShadeReadQueue,
-          numRays,
-          rayQueue->receiveAndShadeWriteQueue,
-          rayQueue->_d_nextWritePos,
-          generation,
-        };
-        if (FromEnv::get()->logQueues) {
-          std::stringstream ss;
-          ss << "#bn: ## ray queue kernel SHADE " << std::endl
-             << "  from " << rayQueue->traceAndShadeReadQueue.rays
-             << " + " << rayQueue->traceAndShadeReadQueue.states << std::endl
-             << "  to   " << rayQueue->receiveAndShadeWriteQueue.rays
-             << " + " << rayQueue->receiveAndShadeWriteQueue.states << std::endl;
-          std::cout << ss.str();
-        }
+          render::PathTraceKernel args = {
+            devWorld,devRenderer,
+            devFB->accumTiles,
+            devFB->auxTiles,
+            (int)fb->accumID,
+            rayQueue->traceAndShadeReadQueue,
+            numRays,
+            rayQueue->receiveAndShadeWriteQueue,
+            rayQueue->_d_nextWritePos,
+            generation,
+          };
+          if (FromEnv::get()->logQueues) {
+            std::stringstream ss;
+            ss << "#bn: ## ray queue kernel SHADE " << std::endl
+               << "  from " << rayQueue->traceAndShadeReadQueue.rays
+               << " + " << rayQueue->traceAndShadeReadQueue.states << std::endl
+               << "  to   " << rayQueue->receiveAndShadeWriteQueue.rays
+               << " + " << rayQueue->receiveAndShadeWriteQueue.states << std::endl;
+            std::cout << ss.str();
+          }
         
           
-        device->shadeRays->launch(nb,bs,&args);
+          device->shadeRays->launch(nb,bs,&args);
+        }
       }
-    }
 
-    // ------------------------------------------------------------------
-    // wait for kernel to complete, and swap queues 
-    // ------------------------------------------------------------------
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      device->rtc->sync();
-      device->rayQueue->swapAfterShade();
-      device->rayQueue->numActive = device->rayQueue->readNumActive();
+      // ------------------------------------------------------------------
+      // wait for kernel to complete, and swap queues 
+      // ------------------------------------------------------------------
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        device->rtc->sync();
+#if OVERLAP_TRACE_AND_SEND
+        RayQueue *rayQueue = device->rayQueues[cycle];
+#else
+        RayQueue *rayQueue = device->rayQueue;
+#endif
+        rayQueue->swapAfterShade();
+        rayQueue->numActive = rayQueue->readNumActive();
+      }
+#if OVERLAP_TRACE_AND_SEND
     }
+#endif
   }
   
   RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::PathTraceKernel);

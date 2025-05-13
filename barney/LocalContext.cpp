@@ -98,9 +98,15 @@ namespace BARNEY_NS {
     devices and, where applicable, across all ranks */
   int LocalContext::numRaysActiveGlobally()
   {
+#if OVERLAP_TRACE_AND_SEND
+    BARNEY_NYI();
+#else
     return numRaysActiveLocally();
+#endif
   }
 
+#if OVERLAP_TRACE_AND_SEND
+#else
   bool LocalContext::forwardRays(bool needHitIDs)
   {
     const int numSlots = (int)perSlot.size();
@@ -142,7 +148,8 @@ namespace BARNEY_NS {
     ++numTimesForwarded;
     return (numTimesForwarded % numSlots) != 0;
   }
-
+#endif
+  
   void LocalContext::render(Renderer    *renderer,
                             GlobalModel *model,
                             Camera      *camera,

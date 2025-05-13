@@ -195,13 +195,10 @@ namespace BARNEY_NS {
         std::cout << ss.str() << std::endl;
       }
       int numDevicesGlobally = numDevicesPerWorker*workers.size;
-      std::vector<int> dataOnGlobal(numDevicesGlobally+1);
-      dataOnGlobal[numDevicesGlobally] = 0x3723;
+      std::vector<int> dataOnGlobal(numDevicesGlobally);
       workers.allGather(dataOnGlobal.data(),
                         myDataOnLocal.data(),
                         myDataOnLocal.size());
-      if (dataOnGlobal[numDevicesGlobally] != 0x3723)
-        throw std::runtime_error("mpi gather overrun");
       dataOnGlobal.resize(numDevicesGlobally);
       if (dbg) {
         std::stringstream ss;
@@ -225,6 +222,20 @@ namespace BARNEY_NS {
         std::cout << ss.str() << std::endl;
       }
 
+#if OVERLAP_TRACE_AND_SEND
+      BARNEY_NYI();
+      for (auto device : *devices) {
+        int myIsland = islandOfGlobal[device->globalRank];
+        for (int i=0;i<numDevicesGlobally;i++) {
+          if (islandOfGlobal[i] == myIsland)
+            device->rqs.peersInCycle.push_back(i);
+
+          int nThPeerAfterMe = (device->globalRank+i)%numDevicesGlobally;
+          if (islandOfGlobal[nThPeerAfterMe] == myIsland)
+            device->rqs.nThPeerInCycle.push_back(nThPeerAfterMe);
+        }
+      }
+#else
       for (auto &slot : perSlot) {
         for (auto device : *devices) {
           int localID  = device->contextRank;
@@ -261,6 +272,7 @@ namespace BARNEY_NS {
               device->rqs.sendWorkerRank << "." << device->rqs.recvWorkerLocal << std::endl;
         }
       }
+#endif
     }
     barrier(false);
   }
@@ -270,14 +282,6 @@ namespace BARNEY_NS {
   MPIContext::createFrameBuffer(int owningRank)
   {
     return std::make_shared<DistFB>(this,devices,owningRank);
-  }
-
-  /*! returns how many rays are active in all ray queues, across all
-    devices and, where applicable, across all ranks */
-  int MPIContext::numRaysActiveGlobally()
-  {
-    assert(isActiveWorker);
-    return workers.allReduceAdd(numRaysActiveLocally());
   }
 
   
@@ -296,6 +300,90 @@ namespace BARNEY_NS {
     // do whatever needs doing with the latest finalized tiles
     // ------------------------------------------------------------------
     fb->finalizeFrame();
+  }
+
+#if OVERLAP_TRACE_AND_SEND
+  /*! returns how many rays are active in all ray queues, across all
+    devices and, where applicable, across all ranks */
+  int MPIContext::numRaysActiveGlobally()
+  {
+    // std::vector<MPI_Request> requests;
+    std::vector<std::array<int,2>> myCounts;
+    myCounts.reserve(gpusPerWorker);
+    for (auto device : *devices) 
+      myCounts.push_back
+        ({ device->rayQueues[0]->numActive,
+           device->rayQueues[1]->numActive} );
+    
+    std::vector<std::array<int,2>> allCounts(world.size*gpusPerWorker);
+    BN_MPI_CALL(Allgather(myCounts.data(), 2*myCounts.size(),MPI_INT,
+                          allCounts.data(),2*myCounts.size(),MPI_INT,
+                          world.comm));
+    this->numActiveRays = allCounts;
+    // for (auto device : *devices)
+    //   device->queueCounts = allCounts;
+
+    int sum = 0;
+    for (auto p : allCounts)
+      sum += (p[0] + p[1]);
+    return sum;
+  }
+
+  void MPIContext::traceAndForward(GlobalModel *model,
+                                   uint32_t rngSeed,
+                                   bool needHitIDs,
+                                   int stage,
+                                   int which)
+  {
+    if (!rqs.mpiRequests.empty()) {
+      BN_MPI_CALL(Waitall((int)rqs.mpiRequests.size(),
+                          rqs.mpiRequests.data(),
+                          MPI_STATUSES_IGNORE));
+      rqs.mpiRequests.clear();
+    }
+    
+    if (stage < islandSize) {
+      traceRaysLocally(model,rngSeed,needHitIDs,stage,which);
+
+      for (auto device : *devices) {
+        if (islandSize > 0) {
+          int globalRank = device->globalRank;
+          int numIncoming = rayCounts[device->nThPeerInCycle[stage]][which];
+          int recvRank  = device->rqs.nThPeerInCycle[1] / gpusPerWorker;
+          int recvLocal = device->rqs.nThPeerInCycle[1] % gpusPerWorker;
+          MPI_Request recvReq;
+          workers.recv(recvRank,
+                       recvLocal,
+                       device->rayQueues[which]->receiveAndShadeWriteQueue.rays,
+                       numIncoming,
+                       recvReq);
+          rqs.mpiRequests.push_back(recvReq);
+        
+          int sendRank  = device->rqs.nThPeerInCycle[islandSize-1] / gpusPerWorker;
+          int sendLocal = device->rqs.nThPeerInCycle[islandSize-1] % gpusPerWorker;
+          int numOutgoing = device->rayQueues[which]->numActive;
+          MPI_Request sendReq;
+          workers.send(sendRank,
+                       sendLocal,
+                       device->rayQueues[which]->traceAndShadeReadQueue.rays,
+                       numOutgoing,
+                       sendReq);
+          rqs.mpiRequests.push_back(sendReq);
+        }
+        // device->rayQueue->swapAfterCycle(numTimesForwarded % numSlots, numSlots);
+        device->rayQueues[which]->swapAfterCycle(stage, islandSize);
+        device->rayQueues[which]->numActive = numIncoming;
+      }
+    }
+  }
+  
+#else
+  /*! returns how many rays are active in all ray queues, across all
+    devices and, where applicable, across all ranks */
+  int MPIContext::numRaysActiveGlobally()
+  {
+    assert(isActiveWorker);
+    return workers.allReduceAdd(numRaysActiveLocally());
   }
 
   /*! forward rays (during global trace); returns if _after_ that
@@ -433,7 +521,8 @@ namespace BARNEY_NS {
     ++numTimesForwarded;
     return (numTimesForwarded % numDifferentModelSlots) != 0;
   }
-
+#endif
+  
   extern "C" {
 # if BARNEY_RTC_EMBREE
     barney_api::Context *
