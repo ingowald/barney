@@ -28,7 +28,6 @@ namespace BARNEY_NS {
 
   void Spheres::commit()
   {
-    PING;
     if (!origins) return;
 
     for (auto device : *devices) {
