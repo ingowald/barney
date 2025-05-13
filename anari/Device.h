@@ -128,6 +128,9 @@ namespace barney_device {
         is created with subtype "local" it will default to 0 */
     MPI_Comm comm = MPI_COMM_WORLD;
 #endif
+    BarneyDevice *tetherDevice = 0;
+    int           tetherIndex  = 0;
+    int           tetherCount  = 0;
   };
 
 } // namespace barney_device

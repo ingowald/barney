@@ -41,11 +41,19 @@ namespace barney_api {
     {
       if (FromEnv::get()->logBackend)
         std::cout << "#bn: creating *optix* context" << std::endl;
-      if (numGPUs == -1)
-        BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
       std::vector<int> gpuIDs;
-      for (int i=0;i<numGPUs;i++)
-        gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
+      if (numGPUs == -1) {
+        BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
+        int n = std::max(1,numGPUs/int(dgIDs.size()));
+        for (int i=0;i<n*dgIDs.size();i++)
+          gpuIDs.push_back(i%numGPUs);
+        numGPUs = n*dgIDs.size();
+      }
+      else
+        for (int i=0;i<numGPUs;i++)
+          gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:(i%numGPUs));
+      PING;
+      PRINT(numGPUs);
       Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
       return ctx;
     }
@@ -126,7 +134,7 @@ namespace BARNEY_NS {
       numCopied[nextID] = count;
       auto &src = device->rayQueue->traceAndShadeReadQueue;
       auto &dst = nextDev->rayQueue->receiveAndShadeWriteQueue;
-      std::cout << "#### COPYING RAYS " << src.rays << " -> " << dst.rays << " #=" << count << std::endl;
+      // std::cout << "#### COPYING RAYS " << src.rays << " -> " << dst.rays << " #=" << count << std::endl;
       device->rtc->copyAsync(dst.rays,src.rays,count*sizeof(Ray));
       if (needHitIDs)
         device->rtc->copyAsync(dst.hitIDs,src.hitIDs,count*sizeof(*dst.hitIDs));

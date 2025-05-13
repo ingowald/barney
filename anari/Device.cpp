@@ -291,7 +291,7 @@ namespace barney_device {
     }
     
     m_state = std::make_unique<BarneyGlobalState>(this_device());
-    deviceCommitParameters();
+    // deviceCommitParameters();
   }
 
   BarneyDevice::BarneyDevice()
@@ -405,8 +405,27 @@ namespace barney_device {
 
   void BarneyDevice::deviceCommitParameters()
   {
+    PING;
     auto &state = *deviceState();
 
+    if (!m_initialized) {
+      std::cout << "#banari: FIRST-TIME device initialization:" << std::endl;
+      // BarneyDevice *tetherDevice = 0;
+      // int           tetherIndex  = 0;
+      // int           tetherCount  = 0;
+      tetherIndex = getParam<int>("tetherIndex", tetherIndex);
+      tetherCount = getParam<int>("tetherCount", tetherCount);
+      PING; 
+      auto tetherDev = getParam<anari::Device>("tetherDevice", (anari::Device)0);
+      PING;
+      tetherDevice = (BarneyDevice *)tetherDev;
+        // = tetherDev
+        // ? (BarneyDevice*)(anari::Device *)tetherDev
+      PING;
+      PRINT(tetherDevice);
+      if (tetherDevice) PRINT(tetherDevice->tetherCount);
+    }
+    
     bool allowInvalidSurfaceMaterials = state.allowInvalidSurfaceMaterials;
 
     m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
