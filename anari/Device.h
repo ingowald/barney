@@ -118,6 +118,7 @@ namespace barney_device {
         'leave it to barney', '-1' means 'use cpu', any value >= 0
         means 'use this specific gpu */
     int  m_cudaDevice = -2;
+    int  m_dataGroupID = -1;
     const std::string deviceType = "default";
 #if BARNEY_MPI
     /*! communicator to use for barney data-parallel rendering, set as

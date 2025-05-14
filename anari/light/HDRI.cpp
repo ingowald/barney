@@ -38,6 +38,9 @@ namespace barney_device {
     if (!m_bnLight)
       return;
 
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+    
     bnSet3fc(m_bnLight, "direction", m_direction);
     bnSet3fc(m_bnLight, "up",        m_up);
     bnSet1f (m_bnLight, "scale",     m_scale);
@@ -54,7 +57,7 @@ namespace barney_device {
       (math::float3 &)asFloat4[i] = radianceValues[i];
     }
 
-    BNTexture texture = bnTexture2DCreate(getContext(), 0,
+    BNTexture texture = bnTexture2DCreate(context,slot,
                                           BN_FLOAT4,
                                           width,
                                           height,

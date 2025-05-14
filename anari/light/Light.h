@@ -18,7 +18,7 @@ namespace barney_device {
     virtual void commitParameters() override;
     void finalize() override;
 
-    BNLight getBarneyLight(BNContext context);
+    BNLight getBarneyLight();
 
   protected:
     virtual const char *bnSubtype() const = 0;

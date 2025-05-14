@@ -69,8 +69,11 @@ bool Image1D::isValid() const
   return m_image;
 }
 
-void Image1D::createBarneySampler(BNContext context)
+void Image1D::createBarneySampler()
 {
+  int slot = deviceState()->slot;
+  auto context = deviceState()->tether->context;
+  
   // ------------------------------------------------------------------
   // first, create 2D cuda array of texels. these barney objects
   // SHOULD actually live with their respective image array...
@@ -89,13 +92,13 @@ void Image1D::createBarneySampler(BNContext context)
   if (m_bnTextureData)
     bnRelease(m_bnTextureData);
   m_bnTextureData = bnTextureData2DCreate(
-      context, 0, BN_UFIXED8_RGBA, width, height, texels.data());
+      context, slot, BN_UFIXED8_RGBA, width, height, texels.data());
 
   // ------------------------------------------------------------------
   // now, create sampler over those texels
   // ------------------------------------------------------------------
 
-  m_bnSampler = bnSamplerCreate(context, 0 /*slot*/, "texture2D");
+  m_bnSampler = bnSamplerCreate(context, slot, "texture2D");
   bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
 
   BNTextureFilterMode filterMode =
@@ -151,17 +154,20 @@ bool Image2D::isValid() const
   return m_image;
 }
 
-BNSampler Sampler::getBarneySampler(BNContext context)
+BNSampler Sampler::getBarneySampler()
 {
   if (!isValid())
     return {};
   if (!m_bnSampler)
-    createBarneySampler(context);
+    createBarneySampler();
   return m_bnSampler;
 }
 
-void Image2D::createBarneySampler(BNContext context)
+void Image2D::createBarneySampler()
 {
+  int slot = deviceState()->slot;
+  auto context = deviceState()->tether->context;
+  
   // ------------------------------------------------------------------
   // first, create 2D cuda array of texels. these barney objects
   // SHOULD actually live with their respective image array...
@@ -180,13 +186,13 @@ void Image2D::createBarneySampler(BNContext context)
   if (m_bnTextureData)
     bnRelease(m_bnTextureData);
   m_bnTextureData = bnTextureData2DCreate(
-      context, 0, BN_UFIXED8_RGBA, width, height, texels.data());
+      context, slot, BN_UFIXED8_RGBA, width, height, texels.data());
 
   // ------------------------------------------------------------------
   // now, create sampler over those texels
   // ------------------------------------------------------------------
 
-  m_bnSampler = bnSamplerCreate(context, 0 /*slot*/, "texture2D");
+  m_bnSampler = bnSamplerCreate(context, slot, "texture2D");
   bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
 
   BNTextureFilterMode filterMode =
@@ -230,7 +236,7 @@ void TransformSampler::commitParameters()
       getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
 }
 
-void TransformSampler::createBarneySampler(BNContext context) {}
+void TransformSampler::createBarneySampler() {}
 
 } // namespace barney_device
 

@@ -50,10 +50,13 @@ const Material *Surface::material() const
   return m_material.ptr;
 }
 
-BNGeom Surface::getBarneyGeom(BNContext context)
+BNGeom Surface::getBarneyGeom()
 {
+  int slot = deviceState()->slot;
+  auto context = deviceState()->tether->context;
+  
   cleanup();
-  m_bnGeom = bnGeometryCreate(context, 0, m_geometry->bnSubtype());
+  m_bnGeom = bnGeometryCreate(context, slot, m_geometry->bnSubtype());
   setBarneyParameters();
 
   return m_bnGeom;
@@ -69,9 +72,9 @@ void Surface::setBarneyParameters()
 {
   if (!isValid() || !m_bnGeom)
     return;
-  bnSetObject(m_bnGeom, "material", m_material->getBarneyMaterial(getContext()));
+  bnSetObject(m_bnGeom, "material", m_material->getBarneyMaterial());
   bnSet1i(m_bnGeom,"userID",m_id);
-  m_geometry->setBarneyParameters(m_bnGeom, getContext());
+  m_geometry->setBarneyParameters(m_bnGeom);
   bnCommit(m_bnGeom);
 }
 

@@ -45,10 +45,10 @@ BarneyGlobalState *Object::deviceState() const
   return (BarneyGlobalState *)helium::BaseObject::m_state;
 }
 
-BNContext Object::getContext() const
-{
-  return deviceState()->context;
-}
+// BNContext Object::getContext() const
+// {
+//   return deviceState()->context;
+// }
 
 // UnknownObject definitions //////////////////////////////////////////////////
 
