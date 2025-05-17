@@ -30,6 +30,34 @@ namespace BARNEY_NS {
       int      numDiffuseBounces;
       uint32_t rngSeed;
     };
+
+#if SINGLE_CYCLE_RQS
+    struct RayOnly {
+      vec3f    org;
+      vec3f    dir;
+      float    tMax;
+      struct {
+        uint32_t isInMedium : 1;
+        uint32_t isSpecular : 1;
+        uint32_t isShadowRay: 1;
+        uint32_t dbg        : 1;
+      };
+    };
+
+    struct HitOnly {
+      float tHit;
+      /*! the actual hit point, in 3D float coordinates (rather than
+        implicitly through org+tMax*dir), for numerical robustness
+        issues */
+      vec3f       P;
+      vec3h       N;
+      /*! type of bsdf in the hitBSDF; if this is set to NONE the
+        ray didn't have any hit yet */
+      uint16_t bsdfType   : 4;
+      PackedBSDF::Data hitBSDF;
+    };
+#endif
+    
     struct Ray {
 #if RTC_DEVICE_CODE
       inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo);

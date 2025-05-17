@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/umesh/os/AWT.h"
-#if 1
 #include <cuBQL/bvh.h>
 #if RTC_HAVE_CUDA
 # include <cuBQL/builder/cuda.h>
@@ -30,6 +29,9 @@ namespace BARNEY_NS {
 
   /*! defines the 'createGeomType_AWT()' function */
   RTC_IMPORT_USER_GEOM(/*file*/AWT,/*name*/AWT,AWTAccel::DD,false,false);
+
+  AWTAccel::PLD *AWTAccel::getPLD(Device *device) 
+  { return &perLogical[device->contextRank()]; } 
 
   struct ComputeMajorants {
     AWTNode       *awtNodes;
@@ -282,6 +284,3 @@ namespace BARNEY_NS {
   RTC_EXPORT_COMPUTE1D(computeMajorants,ComputeMajorants);
 }
 
-
-
-#endif

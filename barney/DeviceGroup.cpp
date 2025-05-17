@@ -71,15 +71,14 @@ namespace BARNEY_NS {
                  // int globalIndex,
                  // int globalIndexStep
                  )
-    : contextRank(contextRank),
-      contextSize(contextSize),
-      // globalIndex(globalIndex),
-      // globalIndexStep(globalIndexStep),
-      rtc(rtc),
+    : rtc(rtc),
       geomTypes(rtc)
   {
     rayQueue = new RayQueue(this);
 
+    gpuInNode.rank = contextRank;
+    gpuInNode.size = contextSize;
+    
     // umesh related:
     umeshCreateElements 
       = createCompute_umeshCreateElements(rtc);
