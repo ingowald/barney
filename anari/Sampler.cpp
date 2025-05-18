@@ -76,6 +76,8 @@ namespace barney_device {
   { 
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
+    if (m_bnTextureData)
+      bnRelease(m_bnTextureData);
     // ------------------------------------------------------------------
     // first, create 2D cuda array of texels. these barney objects
     // SHOULD actually live with their respective image array...
@@ -90,11 +92,18 @@ namespace barney_device {
       fprintf(stderr, "%s\n", str.c_str());
       texels.resize(width * height);
     }
-    if (m_bnTextureData)
-      bnRelease(m_bnTextureData);
-    m_bnTextureData = bnTextureData2DCreate(context, slot,
-                                            BN_UFIXED8_RGBA, width, height,
-                                            texels.data());
+    if (m_image->elementType() == ANARI_FLOAT32_VEC4) {
+      const anari::math::float4 *colors
+        = (const anari::math::float4 *)m_image->data();
+      m_bnTextureData = bnTextureData2DCreate(context, slot,
+                                              BN_FLOAT4, width, height,
+                                              colors);
+    } else
+    {
+      m_bnTextureData = bnTextureData2DCreate(context, slot,
+                                              BN_UFIXED8_RGBA, width, height,
+                                              texels.data());
+    }
     
     m_bnSampler = bnSamplerCreate(context, slot, "texture2D");
     bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
