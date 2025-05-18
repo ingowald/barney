@@ -69,8 +69,13 @@ namespace barney_device {
     return m_image;
   }
 
-  void Image1D::createBarneySampler(BNContext context)
-  {
+
+  
+  
+  void Image1D::createBarneySampler()
+  { 
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
     // ------------------------------------------------------------------
     // first, create 2D cuda array of texels. these barney objects
     // SHOULD actually live with their respective image array...
@@ -85,18 +90,18 @@ namespace barney_device {
       fprintf(stderr, "%s\n", str.c_str());
       texels.resize(width * height);
     }
-
     if (m_bnTextureData)
       bnRelease(m_bnTextureData);
-    m_bnTextureData = bnTextureData2DCreate(
-                                            context, 0, BN_UFIXED8_RGBA, width, height, texels.data());
+    m_bnTextureData = bnTextureData2DCreate(context, slot,
+                                            BN_UFIXED8_RGBA, width, height,
+                                            texels.data());
+    
+    m_bnSampler = bnSamplerCreate(context, slot, "texture2D");
+    bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
 
     // ------------------------------------------------------------------
     // now, create sampler over those texels
     // ------------------------------------------------------------------
-
-    m_bnSampler = bnSamplerCreate(context, 0 /*slot*/, "texture2D");
-    bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
 
     BNTextureFilterMode filterMode =
       m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
@@ -125,7 +130,7 @@ namespace barney_device {
   // Image2D //
 
   Image2D::Image2D(BarneyGlobalState *s) : Sampler(s) {}
-
+  
   Image2D::~Image2D() = default;
 
   void Image2D::commitParameters()
@@ -151,17 +156,20 @@ namespace barney_device {
     return m_image;
   }
 
-  BNSampler Sampler::getBarneySampler(BNContext context)
+  BNSampler Sampler::getBarneySampler()
   {
     if (!isValid())
       return {};
     if (!m_bnSampler)
-      createBarneySampler(context);
+      createBarneySampler();
     return m_bnSampler;
   }
 
-  void Image2D::createBarneySampler(BNContext context)
+  void Image2D::createBarneySampler()
   {
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+  
     // ------------------------------------------------------------------
     // first, create 2D cuda array of texels. these barney objects
     // SHOULD actually live with their respective image array...
@@ -179,59 +187,14 @@ namespace barney_device {
 
     if (m_bnTextureData)
       bnRelease(m_bnTextureData);
-    m_bnTextureData = bnTextureData2DCreate(
-                                            context, 0, BN_UFIXED8_RGBA, width, height, texels.data());
+    m_bnTextureData = bnTextureData2DCreate(context, slot,
+                                            BN_UFIXED8_RGBA, width, height,
+                                            texels.data());
 
-    // ------------------------------------------------------------------
-    // now, create sampler over those texels
-    // ------------------------------------------------------------------
-
-    m_bnSampler = bnSamplerCreate(context, 0 /*slot*/, "texture2D");
+    m_bnSampler = bnSamplerCreate(context, slot, "texture2D");
     bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
-
-    BNTextureFilterMode filterMode =
-      m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
-
-    bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
-    bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode1);
-    bnSet1i(m_bnSampler, "wrapMode1", (int)m_wrapMode2);
-    bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
-    bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
-    bnSet4f(m_bnSampler,
-            "inOffset",
-            m_inOffset.x,
-            m_inOffset.y,
-            m_inOffset.z,
-            m_inOffset.w);
-    bnSet4f(m_bnSampler,
-            "outOffset",
-            m_outOffset.x,
-            m_outOffset.y,
-            m_outOffset.z,
-            m_outOffset.w);
-    bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
-    bnCommit(m_bnSampler);
   }
-
-  // TransformSampler //
-
-  TransformSampler::TransformSampler(BarneyGlobalState *s) : Sampler(s) {}
-
-  TransformSampler::~TransformSampler() = default;
-
-  void TransformSampler::commitParameters()
-  {
-    Sampler::commitParameters();
-    m_inAttribute = getParamString("inAttribute", "attribute0");
-    m_outTransform = math::identity;
-    getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
-    getParam("transform", ANARI_FLOAT32_MAT4, &m_outTransform);
-    m_outOffset =
-      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
-  }
-
-  void TransformSampler::createBarneySampler(BNContext context) {}
-
+  
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Sampler *);

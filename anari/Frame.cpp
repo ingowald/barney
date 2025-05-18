@@ -36,14 +36,16 @@ static BNDataType toBarney(anari::DataType type)
 
 Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
 {
-  m_bnFrameBuffer = bnFrameBufferCreate(s->context, 0);
+  if (s->slot == 0)
+    m_bnFrameBuffer = bnFrameBufferCreate(s->tether->context, 0);
 }
 
 Frame::~Frame()
 {
   wait();
   cleanup();
-  bnRelease(m_bnFrameBuffer);
+  if (m_bnFrameBuffer)
+    bnRelease(m_bnFrameBuffer);
 }
 
 bool Frame::isValid() const
@@ -99,6 +101,8 @@ void Frame::finalize()
         ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
   }
 
+  if (deviceState()->slot == 0) {
+
   const auto &size = m_size;
   const auto numPixels = size.x * size.y;
 
@@ -112,14 +116,17 @@ void Frame::finalize()
   if (m_channelTypes.instID == ANARI_UINT32)
     requiredChannels |= BN_FB_INSTID;
 
-  bnSet1i(m_bnFrameBuffer, "enableDenoising", denoise);
-  bnCommit(m_bnFrameBuffer);
-
-  bnFrameBufferResize(m_bnFrameBuffer,
-      toBarney(m_channelTypes.color),
-      size.x,
-      size.y,
-      requiredChannels);
+  if (m_bnFrameBuffer) {
+    bnSet1i(m_bnFrameBuffer, "enableDenoising", denoise);
+    bnCommit(m_bnFrameBuffer);
+    
+    bnFrameBufferResize(m_bnFrameBuffer,
+                        toBarney(m_channelTypes.color),
+                        size.x,
+                        size.y,
+                        requiredChannels);
+  }
+  }
 }
 
 bool Frame::getProperty(
@@ -145,7 +152,8 @@ void Frame::renderFrame()
   bool firstFrame = 0;
   if (m_lastCommitFlush < state->commitBuffer.lastObjectFinalization()) {
     m_lastCommitFlush = helium::newTimeStamp();
-    bnAccumReset(m_bnFrameBuffer);
+    if (m_bnFrameBuffer && state->slot == 0)
+      bnAccumReset(m_bnFrameBuffer);
     firstFrame = true;
   }
 
@@ -186,12 +194,13 @@ void Frame::renderFrame()
     reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
         "last frame had a instID buffer request, but never mapped it");
 
-  bnRender(m_renderer->barneyRenderer,
-      model,
-      m_camera->barneyCamera(),
-      m_bnFrameBuffer);
-  m_lastFrameWasFirstFrame = firstFrame;
-
+  if (state->slot == 0) {
+    bnRender(m_renderer->barneyRenderer,
+             model,
+             m_camera->barneyCamera(),
+             m_bnFrameBuffer);
+    m_lastFrameWasFirstFrame = firstFrame;
+  }
   m_didMapChannel.depth = false;
   m_didMapChannel.primID = false;
   m_didMapChannel.instID = false;
@@ -208,6 +217,7 @@ void *Frame::map(std::string_view channel,
 {
   wait();
 
+  if (deviceState()->slot != 0) { PING; return nullptr; }
   *width = m_size.x;
   *height = m_size.y;
   int numPixels = *width * *height;

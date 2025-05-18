@@ -18,13 +18,13 @@ namespace barney_device {
 
     void markFinalized() override;
 
-    BNVolume getBarneyVolume(BNContext context);
+    BNVolume getBarneyVolume();
 
     virtual box3 bounds() const = 0;
     void commitParameters() override;
 
   protected:
-    virtual BNVolume createBarneyVolume(BNContext context) = 0;
+    virtual BNVolume createBarneyVolume() = 0;
     virtual void setBarneyParameters() = 0;
     void cleanup();
 
@@ -42,7 +42,7 @@ namespace barney_device {
     void finalize() override;
     bool isValid() const override;
 
-    BNVolume createBarneyVolume(BNContext context) override;
+    BNVolume createBarneyVolume() override;
 
     box3 bounds() const override;
 

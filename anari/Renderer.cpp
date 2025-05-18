@@ -8,7 +8,7 @@ namespace barney_device {
 Renderer::Renderer(BarneyGlobalState *s)
     : Object(ANARI_RENDERER, s), m_backgroundImage(this)
 {
-  barneyRenderer = bnRendererCreate(deviceState()->context, "default");
+  barneyRenderer = bnRendererCreate(deviceState()->tether->context, "default");
 }
 
 Renderer::~Renderer()
@@ -39,7 +39,7 @@ void Renderer::finalize()
     const bn_float4 *texels
       = (const bn_float4 *)m_backgroundImage->data();
     barneyBackgroundImage
-      = bnTexture2DCreate(deviceState()->context,-1,
+      = bnTexture2DCreate(deviceState()->tether->context,-1,
                           BN_FLOAT4,sx,sy,
                           texels,
                           BN_TEXTURE_LINEAR,

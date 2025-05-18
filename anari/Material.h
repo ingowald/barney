@@ -18,7 +18,7 @@ struct Material : public Object
 
   void finalize() override;
 
-  BNMaterial getBarneyMaterial(BNContext context);
+  BNMaterial getBarneyMaterial();
 
  protected:
   virtual const char *bnSubtype() const = 0;

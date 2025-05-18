@@ -19,7 +19,7 @@ namespace barney_device {
     void commitParameters() override;
     void markFinalized() override;
 
-    BNGroup makeBarneyGroup(BNContext context) const;
+    BNGroup makeBarneyGroup() const;
 
     box3 bounds() const;
 

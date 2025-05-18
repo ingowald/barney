@@ -12,126 +12,126 @@
 
 namespace barney_device {
 
-struct SpatialField : public Object
-{
-  SpatialField(BarneyGlobalState *s);
-  ~SpatialField() override;
-
-  static SpatialField *createInstance(
-      std::string_view subtype, BarneyGlobalState *s);
-
-  void markFinalized() override;
-
-  virtual BNScalarField createBarneyScalarField(BNContext context) const = 0;
-
-  void cleanup()
+  struct SpatialField : public Object
   {
-    if (m_bnField) {
-      bnRelease(m_bnField);
-      m_bnField = nullptr;
+    SpatialField(BarneyGlobalState *s);
+    ~SpatialField() override;
+
+    static SpatialField *createInstance(std::string_view subtype,
+                                        BarneyGlobalState *s);
+
+    void markFinalized() override;
+
+    virtual BNScalarField createBarneyScalarField() const = 0;
+
+    void cleanup()
+    {
+      if (m_bnField) {
+        bnRelease(m_bnField);
+        m_bnField = nullptr;
+      }
     }
-  }
 
-  BNScalarField getBarneyScalarField(BNContext context)
+    BNScalarField getBarneyScalarField()
+    {
+      if (!isValid())
+        return {};
+      if (!m_bnField)
+        m_bnField = createBarneyScalarField();
+      return m_bnField;
+    }
+
+    virtual box3 bounds() const = 0;
+
+    BNScalarField m_bnField = 0;
+  };
+
+  // Subtypes ///////////////////////////////////////////////////////////////////
+
+  struct UnstructuredField : public SpatialField
   {
-    if (!isValid())
-      return {};
-    if (!m_bnField)
-      m_bnField = createBarneyScalarField(context);
-    return m_bnField;
-  }
+    UnstructuredField(BarneyGlobalState *s);
 
-  virtual box3 bounds() const = 0;
+    void commitParameters() override;
+    void finalize() override;
 
-  BNScalarField m_bnField = 0;
-};
+    BNScalarField createBarneyScalarField() const override;
 
-// Subtypes ///////////////////////////////////////////////////////////////////
+    box3 bounds() const override;
 
-struct UnstructuredField : public SpatialField
-{
-  UnstructuredField(BarneyGlobalState *s);
+  private:
+    struct Parameters
+    {
+      helium::IntrusivePtr<helium::Array1D> vertexPosition;
+      helium::IntrusivePtr<helium::Array1D> vertexData;
+      helium::IntrusivePtr<helium::Array1D> index;
+      helium::IntrusivePtr<helium::Array1D> cellType;
+      helium::IntrusivePtr<helium::Array1D> cellBegin;
+    } m_params;
 
-  void commitParameters() override;
-  void finalize() override;
+    std::vector<math::float4> m_vertices;
+    /* barney requires index offsets to be in ascending order, so this
+       is an array of the element indices in sequential order of
+       elements (because the anari array odesn't have that requirement,
+       so let's make sure to fix it) */
+    std::vector<int> m_indices;
+    std::vector<int> m_elementOffsets;
 
-  BNScalarField createBarneyScalarField(BNContext context) const override;
+    box3 m_bounds;
+  };
 
-  box3 bounds() const override;
-
- private:
-  struct Parameters
+  struct BlockStructuredField : public SpatialField
   {
-    helium::IntrusivePtr<helium::Array1D> vertexPosition;
-    helium::IntrusivePtr<helium::Array1D> vertexData;
-    helium::IntrusivePtr<helium::Array1D> index;
-    helium::IntrusivePtr<helium::Array1D> cellType;
-    helium::IntrusivePtr<helium::Array1D> cellBegin;
-  } m_params;
+    BlockStructuredField(BarneyGlobalState *s);
+    void commitParameters() override;
+    void finalize() override;
 
-  std::vector<math::float4> m_vertices;
-  /* barney requires index offsets to be in ascending order, so this
-     is an array of the element indices in sequential order of
-     elements (because the anari array odesn't have that requirement,
-     so let's make sure to fix it) */
-  std::vector<int> m_indices;
-  std::vector<int> m_elementOffsets;
+    BNScalarField createBarneyScalarField() const override;
 
-  box3 m_bounds;
-};
+    box3 bounds() const override;
 
-struct BlockStructuredField : public SpatialField
-{
-  BlockStructuredField(BarneyGlobalState *s);
-  void commitParameters() override;
-  void finalize() override;
+    struct Parameters
+    {
+      helium::IntrusivePtr<helium::Array1D> cellWidth;
+      helium::IntrusivePtr<helium::Array1D> blockBounds;
+      helium::IntrusivePtr<helium::Array1D> blockLevel;
+      helium::IntrusivePtr<helium::ObjectArray> blockData;
+    } m_params;
 
-  BNScalarField createBarneyScalarField(BNContext context) const override;
+    std::vector<int> m_generatedBlockBounds;
+    std::vector<int> m_generatedBlockLevels;
+    std::vector<int> m_generatedBlockOffsets;
+    std::vector<float> m_generatedBlockScalars;
 
-  box3 bounds() const override;
+    box3 m_bounds;
+  };
 
-  struct Parameters
+  struct StructuredRegularField : public SpatialField
   {
-    helium::IntrusivePtr<helium::Array1D> cellWidth;
-    helium::IntrusivePtr<helium::Array1D> blockBounds;
-    helium::IntrusivePtr<helium::Array1D> blockLevel;
-    helium::IntrusivePtr<helium::ObjectArray> blockData;
-  } m_params;
+    StructuredRegularField(BarneyGlobalState *s);
+    void commitParameters() override;
+    void finalize() override;
 
-  std::vector<int> m_generatedBlockBounds;
-  std::vector<int> m_generatedBlockLevels;
-  std::vector<int> m_generatedBlockOffsets;
-  std::vector<float> m_generatedBlockScalars;
+    BNScalarField createBarneyScalarField() const override;
 
-  box3 m_bounds;
-};
+    box3 bounds() const override;
+    bool isValid() const override;
 
-struct StructuredRegularField : public SpatialField
-{
-  StructuredRegularField(BarneyGlobalState *s);
-  void commitParameters() override;
-  void finalize() override;
+    math::uint3 m_dims{0u};
+    math::float3 m_origin;
+    math::float3 m_spacing;
+    math::float3 m_coordUpperBound;
 
-  BNScalarField createBarneyScalarField(BNContext context) const override;
+    std::vector<float> m_generatedCellWidths;
+    std::vector<int> m_generatedBlockBounds;
+    std::vector<int> m_generatedBlockLevels;
+    std::vector<int> m_generatedBlockOffsets;
+    std::vector<float> m_generatedBlockScalars;
 
-  box3 bounds() const override;
-  bool isValid() const override;
-
-  math::uint3 m_dims{0u};
-  math::float3 m_origin;
-  math::float3 m_spacing;
-  math::float3 m_coordUpperBound;
-
-  std::vector<float> m_generatedCellWidths;
-  std::vector<int> m_generatedBlockBounds;
-  std::vector<int> m_generatedBlockLevels;
-  std::vector<int> m_generatedBlockOffsets;
-  std::vector<float> m_generatedBlockScalars;
-
-  helium::IntrusivePtr<helium::Array3D> m_data;
-};
+    helium::IntrusivePtr<helium::Array3D> m_data;
+  };
 
 } // namespace barney_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(
-    barney_device::SpatialField *, ANARI_SPATIAL_FIELD);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::SpatialField *,
+                                    ANARI_SPATIAL_FIELD);
