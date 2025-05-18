@@ -279,8 +279,6 @@ namespace barney_device {
     : helium::BaseDevice(default_statusFunc,nullptr)
   {
     m_state = std::make_unique<BarneyGlobalState>(this_device());
-    // deviceCommitParameters();
-    PING;
   }
 
   /*! helper entry-point for _directly_ creating a banari device
@@ -316,18 +314,15 @@ namespace barney_device {
 
   void BarneyDevice::initDevice()
   {
-    PING;
     if (m_initialized)
       return;
 
     reportMessage(ANARI_SEVERITY_DEBUG, "initializing barney device (%p)", this);
 
-    PING;
     auto state = deviceState();
 
     try {
       int rank = 0, size = 1;
-      PING;
 #if BARNEY_MPI
       if (comm != 0) {
         int mpiInitialized = 0;
@@ -341,37 +336,6 @@ namespace barney_device {
           (ANARI_SEVERITY_DEBUG,
            "app passed null communicator, falling back to local rendering");
 #endif
-      // #if BARNEY_MPI
-      //       if (comm != 0) {
-      //         PING; PRINT(m_cudaDevice);
-      //         if (m_cudaDevice >= 0)
-      //           state.tether->context
-      //             = bnMPIContextCreate(comm, &rank, 1, &m_cudaDevice,1);
-      //         else
-      //           state.tether->context
-      //             = bnMPIContextCreate(comm, &rank, 1, nullptr, -1);
-
-      //         auto &info = state.bnInfo;
-      //         bnMPIQueryHardware(&info, MPI_COMM_WORLD);
-      //         reportMessage
-      //           (ANARI_SEVERITY_DEBUG, "BNHardwareInfo:");
-      //         reportMessage
-      //           (ANARI_SEVERITY_DEBUG, "    numRanks: %i", info.numRanks);
-      //         reportMessage
-      //           (ANARI_SEVERITY_DEBUG, "    numHosts: %i", info.numHosts);
-      //         reportMessage
-      //           (ANARI_SEVERITY_DEBUG, "    numGPUsThisRank: %i", info.numGPUsThisRank);
-      //         reportMessage
-      //           (ANARI_SEVERITY_DEBUG, "    numGPUsThisHost: %i", info.numGPUsThisHost);
-      //         reportMessage
-      //           (ANARI_SEVERITY_DEBUG, "    numRanksThisHost: %i", info.numRanksThisHost);
-      //         reportMessage
-      //           (ANARI_SEVERITY_DEBUG, "    localRank: %i", info.localRank);
-      //       } else
-      //         reportMessage
-      //           (ANARI_SEVERITY_DEBUG,
-      //            "app passed null communicator, falling back to local rendering");
-      // #else
       std::vector<int> gpuIDs;
       int *_gpuIDs   = nullptr;
       int  _gpuCount = -1;
@@ -386,7 +350,6 @@ namespace barney_device {
         // leave empty, init with barney gpu list with {nullptr,-1}
       }
 
-      PING;
       std::vector<int> dgIDs;
       if (state->tether->devices[0]->m_dataGroupID >= 0) {
         for (auto dev : state->tether->devices) {
@@ -402,7 +365,6 @@ namespace barney_device {
       reportMessage
         (ANARI_SEVERITY_DEBUG, "using cuda device #%i", m_cudaDevice);
 
-      PING;
 #if BARNEY_MPI
       if (comm)
         state->tether->context
@@ -433,7 +395,6 @@ namespace barney_device {
 
   void BarneyDevice::deviceCommitParameters()
   {
-    PING;
     auto state = deviceState();
 
     m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
@@ -444,23 +405,12 @@ namespace barney_device {
     if (m_cudaDevice != -2)
       std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
 
-    PING; PRINT(state->tether);
     if (!state->tether) {
-      // BarneyDevice *tetherDevice = 0;
-      // int           tetherIndex  = 0;
-      // int           tetherCount  = 0;
       tetherIndex = getParam<int>("tetherIndex", tetherIndex);
       tetherCount = getParam<int>("tetherCount", tetherCount);
       state->slot = tetherIndex;
-      // PING; 
       auto tetherDev = getParam<anari::Device>("tetherDevice", (anari::Device)0);
-      // PING;
       tetherDevice = (BarneyDevice *)tetherDev;
-      // = tetherDev
-      // ? (BarneyDevice*)(anari::Device *)tetherDev
-      // PING;
-      // PRINT(tetherDevice);
-      // if (tetherDevice) PRINT(tetherDevice->tetherCount);
       
       assert(tetherCount > 0);
       assert(tetherIndex >= 0);
@@ -483,20 +433,14 @@ namespace barney_device {
         state->tether->devices.resize(tetherCount);
         state->tether->devices[0] = this;
       }
-      PING;
       if (state->tether->allDevicesPresent()) {
-        PING;
         assert(state->tether->context == 0 &&
                "only last device to tether should create the barney context");
         initDevice();
       }
-      PING;
     }
     
-    PING;
     bool allowInvalidSurfaceMaterials = state->allowInvalidSurfaceMaterials;
-
-    PING;
  
     state->allowInvalidSurfaceMaterials =
       getParam<bool>("allowInvalidMaterials", true);
@@ -507,9 +451,7 @@ namespace barney_device {
     if (allowInvalidSurfaceMaterials != state->allowInvalidSurfaceMaterials)
       state->objectUpdates.lastSceneChange = helium::newTimeStamp();
 
-    PING;
     helium::BaseDevice::deviceCommitParameters();
-    PING;
   }
 
   int BarneyDevice::deviceGetProperty(const char *name,

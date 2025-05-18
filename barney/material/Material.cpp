@@ -57,7 +57,6 @@ namespace BARNEY_NS {
 
     void PossiblyMappedParameter::set(const vec4f &v)
     {
-      PING;
       type    = VALUE;
       sampler = {};
       value   = v;
@@ -65,14 +64,12 @@ namespace BARNEY_NS {
 
     void PossiblyMappedParameter::set(Sampler::SP s)
     {
-      PING;
       type = SAMPLER;
       sampler   = s;
     }
 
     void PossiblyMappedParameter::set(const std::string &attributeName)
     {
-      PING;
       sampler = {};
       type    = ATTRIBUTE;
       attribute = parseAttribute(attributeName);

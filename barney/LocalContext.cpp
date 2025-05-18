@@ -52,8 +52,6 @@ namespace barney_api {
       else
         for (int i=0;i<numGPUs;i++)
           gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:(i%numGPUs));
-      PING;
-      PRINT(numGPUs);
       Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
       return ctx;
     }

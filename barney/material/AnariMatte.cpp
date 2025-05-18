@@ -36,7 +36,6 @@ namespace BARNEY_NS {
       Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
       if (member == "color") {
         color.set(sampler);
-        std::cout << "SET COLOR SAMPLER" << std::endl;
         return true;
       }
       
