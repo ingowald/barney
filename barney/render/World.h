@@ -50,7 +50,7 @@ namespace BARNEY_NS {
         const Sampler::DD    *samplers;
         const rtc::float4    *instanceAttributes[5];
         EnvMapLight::DD       envMapLight;
-        uint32_t              rngSeed;
+        // uint32_t              rngSeed;
         uint32_t              rank;
       };
       struct {
@@ -68,7 +68,8 @@ namespace BARNEY_NS {
       PODData::SP instanceAttributes[5];
       PODData::SP instanceUserIDs;
       
-      DD getDD(Device *device, int rngSeed);
+      DD getDD(Device *device// , int rngSeed
+               );
 
       struct PLD {
         QuadLight::DD *quadLights = 0;

@@ -202,13 +202,16 @@ namespace BARNEY_NS {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
-    int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
-    // BARNEY_NS::Random
-    Random rng(hash(rayID,
-                    ti.getRTCInstanceIndex(),
-                    ti.getGeometryIndex(),
-                    ti.getPrimitiveIndex(),
-                    world.rngSeed));
+    // Random rng(ray.rngSeed++);
+    Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
+                                     ti.getGeometryIndex(),
+                                     ti.getPrimitiveIndex())));
+    // int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+    // Random rng(hash(rayID,
+    //                 ti.getRTCInstanceIndex(),
+    //                 ti.getGeometryIndex(),
+    //                 ti.getPrimitiveIndex(),
+    //                 world.rngSeed));
 
     // printf("isec\n");
     dda::dda3(dda_org,dda_dir,tRange.upper,

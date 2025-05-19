@@ -1,16 +1,17 @@
-https://www.shadertoy.com/view/md3BDs
+// https://www.shadertoy.com/view/md3BDs
 
 // ---8<----------------------------------------------------------------------
 // Random number generator
 
 // https://www.pcg-random.org/
-uint pcg(uint v)
+inline __rtc_device uint32_t pcg(uint32_t v)
 {
-	uint state = v * 747796405u + 2891336453u;
-	uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+	uint32_t state = v * 747796405u + 2891336453u;
+	uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
 	return (word >> 22u) ^ word;
 }
 
+#if 0
 uvec2 pcg2d(uvec2 v)
 {
     v = v * 1664525u + 1013904223u;
@@ -111,3 +112,4 @@ vec3 rand3()
     seed = pcg3d(seed);
     return vec3(seed) * (1.0 / float(0xffffffffu));
 }
+#endif

@@ -79,6 +79,11 @@ namespace BARNEY_NS {
       state.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
+#if NEW_RNG
+      ray.rngSeed.value = hash(ix,iy,accumID);
+#else
+      ray.rngSeed.seed(ix+fbSize.x*accumID,iy+fbSize.y*accumID);
+#endif
 
       ray.org  = camera.lens_00;
 
@@ -122,7 +127,9 @@ namespace BARNEY_NS {
       }
       ray.dir = ray_dir;
       
-      bool crossHair_x = (ix == fbSize.x/2);
+      bool crossHair_x = (ix == fbSize.x/2
+                          // -32
+                          );
       bool crossHair_y = (iy == fbSize.y/2);
  
       ray.dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);

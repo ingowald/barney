@@ -17,6 +17,7 @@
 #include "barney/fb/FrameBuffer.h"
 #include "barney/fb/TiledFB.h"
 #include "barney/render/World.h"
+#include "barney/render/DG.h"
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
 #include "barney/render/RayQueue.h"
@@ -27,7 +28,7 @@ namespace BARNEY_NS {
 
 #define SCI_VIS_MODE 1
     
-#define MAX_DIFFUSE_BOUNCES 2
+#define MAX_DIFFUSE_BOUNCES 1
     
 #define ENV_LIGHT_SAMPLING 1
 
@@ -51,19 +52,6 @@ namespace BARNEY_NS {
     }
 
     
-    inline __rtc_device
-    vec3f randomDirection(Random &rng)
-    {
-      vec3f v;
-      while (true) {
-        v.x = 1.f-2.f*rng();
-        v.y = 1.f-2.f*rng();
-        v.z = 1.f-2.f*rng();
-        if (dot(v,v) <= 1.f)
-          return normalize(v);
-      }
-    }
-
     inline __rtc_device
     bool sampleAreaLights(Light::Sample &ls,
                           const render::World::DD &world,
@@ -551,7 +539,8 @@ namespace BARNEY_NS {
       // contribution at this hit point (if any), and generate secondary
       // ray and shadow ray (if applicable), with proper weights.
       // ==================================================================    
-      Random random(world.rngSeed,rayID);
+      Random random(ray.rngSeed.next((const uint32_t&)ray.tMax));//rayID,ray.rngSeed);
+      // Random random(ray.rngSeed.next((const uint32_t&)ray.tMax));//rayID,ray.rngSeed);
       const PackedBSDF bsdf = ray.getBSDF();
       // bool doTransmission = false;
       // =  ((float)ray.mini.transmission > 0.f)
@@ -652,7 +641,12 @@ namespace BARNEY_NS {
              /* surface: */dg.P + offsetEpsilon*frontFacingSurfaceOffset,
              /* to light */ls.direction,
              /* length   */ls.distance * (1.f-2.f*offsetEpsilon));
-          // shadowRay.rngSeed = ray.rngSeed + 1; random();
+          shadowRay.rngSeed = ray.rngSeed;// + 1; random();
+          ray.rngSeed.next((const uint32_t&)ray.tMax);
+                  // Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
+                  //                        ti.getGeometryIndex(),
+                  //                        ti.getPrimitiveIndex())));
+
           shadowRay.dbg = ray.dbg;
           shadowState.pixelID = state.pixelID;
             
@@ -962,7 +956,8 @@ namespace BARNEY_NS {
         int bs = 128;
         int nb = divRoundUp(numRays,bs);
         World::DD devWorld
-          = world->getDD(device,rngSeed);
+          = world->getDD(device// ,rngSeed
+                         );
         Renderer::DD devRenderer
           = renderer->getDD(device);
 
@@ -993,7 +988,7 @@ namespace BARNEY_NS {
     }
 
     // ------------------------------------------------------------------
-    // wait for kernel to complete, and swap queues 
+    // wait for kernel to complete, and swap queues
     // ------------------------------------------------------------------
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);

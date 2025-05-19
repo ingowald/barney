@@ -114,8 +114,8 @@ namespace BARNEY_NS {
                                             const Sampler::DD *samplers,
                                             bool dbg) const
     {
-      if (dbg) printf("mappedparam.eval, type %i\n",type);
       if (type == VALUE) {
+        if (dbg) printf("mappedparam.eval, val %f %f %f %f\n",value.x,value.y,value.z,value.w);
         return isnan(value.x) ? vec4f(0.f,0.f,0.f,1.f) : rtc::load(value);
       }
       if (type == ATTRIBUTE) {
