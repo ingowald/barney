@@ -69,7 +69,6 @@ namespace BARNEY_NS {
                                          always have 1024 in width: */
                                       vec2i(bs,nb),
                                       &dd);
-          BARNEY_CUDA_SYNC_CHECK();
         }
       }
     }

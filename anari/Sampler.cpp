@@ -185,23 +185,32 @@ namespace barney_device {
     // ------------------------------------------------------------------
     int width = m_image->size().x;
     int height = m_image->size().y;
-    std::vector<uint32_t> texels;
-    if (!convert_to_rgba8(m_image, texels)) {
-      std::stringstream ss;
-      ss << "unsupported texel type: " << anari::toString(m_image->elementType());
-      std::string str = ss.str();
-      fprintf(stderr, "%s\n", str.c_str());
-      texels.resize(width * height);
-    }
-
     if (m_bnTextureData)
       bnRelease(m_bnTextureData);
-    m_bnTextureData = bnTextureData2DCreate(context, slot,
-                                            BN_UFIXED8_RGBA, width, height,
-                                            texels.data());
-
+    
+    if (m_image->elementType() == ANARI_FLOAT32_VEC4) {
+      const anari::math::float4 *colors
+        = (const anari::math::float4 *)m_image->data();
+      m_bnTextureData = bnTextureData2DCreate(context, slot,
+                                              BN_FLOAT4, width, height,
+                                              colors);
+    } else {
+      std::vector<uint32_t> texels;
+      if (!convert_to_rgba8(m_image, texels)) {
+        std::stringstream ss;
+        ss << "unsupported texel type: " << anari::toString(m_image->elementType());
+        std::string str = ss.str();
+        fprintf(stderr, "%s\n", str.c_str());
+        texels.resize(width * height);
+      }
+      m_bnTextureData = bnTextureData2DCreate(context, slot,
+                                              BN_UFIXED8_RGBA, width, height,
+                                              texels.data());
+    }
+      
     m_bnSampler = bnSamplerCreate(context, slot, "texture2D");
     bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
+    bnCommit(m_bnSampler);
   }
   
 } // namespace barney_device

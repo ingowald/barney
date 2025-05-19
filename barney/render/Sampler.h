@@ -174,6 +174,7 @@ namespace BARNEY_NS {
     vec4f Sampler::DD::eval(const HitAttributes &inputs,
                              bool dbg) const
     {
+      if (dbg) printf("sampler type %i\n",type);
       vec4f in  = inputs.get((AttributeKind)inAttribute);
       if (type != TRANSFORM) {
         vec4f coord = inTransform.applyTo(in);
@@ -189,6 +190,7 @@ namespace BARNEY_NS {
           return outTransform.applyTo(fromTex);
         }
         if (type == IMAGE2D) {
+          if (dbg) printf("image2d sampler %li %f %f\n",(uint64_t&)texture,coord.x,coord.y);
           vec4f fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
           if (numChannels == 1) {
             fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
