@@ -39,8 +39,9 @@ namespace rtc {
       if (!numBytes) return nullptr;
       SetActiveGPU forDuration(this);
       void *ptr = 0;
-        BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
-        assert(ptr);
+      // BARNEY_CUDA_CALL(MallocManaged((void **)&ptr,numBytes));
+      BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
+      assert(ptr);
       return ptr;
     }
     

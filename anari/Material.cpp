@@ -104,9 +104,6 @@ BNMaterial Material::getBarneyMaterial()
   int slot = deviceState()->slot;
   auto context = deviceState()->tether->context;
 
-  PING; PRINT(slot);
-  PRINT(context);
-  
   if (!m_bnMat) 
     m_bnMat = bnMaterialCreate(context, slot, bnSubtype());
   setBarneyParameters();

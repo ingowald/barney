@@ -406,20 +406,24 @@ namespace BARNEY_NS {
     using BARNEY_NS::render::boxTest;
 
     const render::World::DD &world = render::OptixGlobals::get(ti).world;
-    int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
-    // BARNEY_NS::Random
-    Random rng(hash(rayID,
-                    ti.getRTCInstanceIndex(),
-                    ti.getGeometryIndex(),
-                    ti.getPrimitiveIndex(),
-                    world.rngSeed));
+    const AWTAccel::DD &self = *(AWTAccel::DD*)ti.getProgramData();
+    Ray &ray = *(Ray*)ti.getPRD();
+    // int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+    // // BARNEY_NS::Random
+    // Random rng(hash(rayID,
+    //                 ti.getRTCInstanceIndex(),
+    //                 ti.getGeometryIndex(),
+    //                 ti.getPrimitiveIndex(),
+    //                 world.rngSeed));
+    // Random rng(ray.rngSeed++);
+    Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
+                                     ti.getGeometryIndex(),
+                                     ti.getPrimitiveIndex())));
     
     
     StackEntry stackBase[AWT_STACK_DEPTH];
     StackEntry *stack = stackBase;
     
-    const AWTAccel::DD &self = *(AWTAccel::DD*)ti.getProgramData();
-    Ray &ray = *(Ray*)ti.getPRD();
 #ifdef NDEBUG
     bool dbg = false;
 #else

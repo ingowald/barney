@@ -122,12 +122,20 @@ namespace BARNEY_NS {
                           ray.dir,hitData.worldNormal,ray.dbg);
       
       if (opacity < 1.f) {
-        int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
-        Random rng(hash(rayID,
-                        ti.getRTCInstanceIndex(),
-                        ti.getGeometryIndex(),
-                        ti.getPrimitiveIndex(),
-                        world.rngSeed));
+        // int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+        ray.rngSeed.next((const uint32_t&)osP.x);
+        ray.rngSeed.next((const uint32_t&)osP.y);
+        ray.rngSeed.next((const uint32_t&)osP.z);
+        Random rng(ray.rngSeed.next(290374));
+        // Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
+        //                                  ti.getGeometryIndex(),
+        //                                  ti.getPrimitiveIndex())));
+                   // Random rng(ray.rngSeed++);
+        // hash(rayID,
+                        // ti.getRTCInstanceIndex(),
+                        // ti.getGeometryIndex(),
+                        // ti.getPrimitiveIndex(),
+                        // world.rngSeed));
         if (rng() > opacity) {
           ti.ignoreIntersection();
           return;

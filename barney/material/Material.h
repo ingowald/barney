@@ -115,12 +115,14 @@ namespace BARNEY_NS {
                                             bool dbg) const
     {
       if (type == VALUE) {
+        if (dbg) printf("mappedparam.eval, val %f %f %f %f\n",value.x,value.y,value.z,value.w);
         return isnan(value.x) ? vec4f(0.f,0.f,0.f,1.f) : rtc::load(value);
       }
       if (type == ATTRIBUTE) {
         return hitData.get(attribute,dbg);
       } 
       if (type == SAMPLER) {
+        if (dbg) printf("mappedparam.eval, sampler\n");
         return samplers[samplerID].eval(hitData,dbg);
       }
       return vec4f(0.f,0.f,0.f,1.f);

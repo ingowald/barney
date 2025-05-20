@@ -77,6 +77,11 @@ namespace BARNEY_NS {
                                         bool dbg) const
     {
       vec4f baseColor = this->baseColor.eval(hitData,samplers,dbg);
+      if (dbg) printf("basecolor eval %f %f %f %f\n",
+                      baseColor.x,
+                      baseColor.y,
+                      baseColor.z,
+                      baseColor.w);
       vec4f metallic = this->metallic.eval(hitData,samplers,dbg);
       vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
       vec4f roughness = this->roughness.eval(hitData,samplers,dbg);

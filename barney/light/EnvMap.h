@@ -22,6 +22,11 @@
 #if RTC_DEVICE_CODE
 # include "rtcore/ComputeInterface.h"
 #endif
+#include "barney/render/DG.h"
+
+/*! for debugging only - if enabled the envmap light will return a
+    constant radiance no matter what map was specified */
+// #define FORCE_CONSTANT_ENV 1
 
 namespace BARNEY_NS {
 
@@ -31,11 +36,10 @@ namespace BARNEY_NS {
                 const DevGroup::SP &devices);
 
     struct DD {
-// #if BARNEY_DEVICE_PROGRAM
 #if RTC_DEVICE_CODE
       inline __rtc_device float pdf(vec3f dir, bool dbg=false) const;
       inline __rtc_device Light::Sample sample(Random &r, bool dbg=false) const;
-      inline __rtc_device vec3f  eval(vec3f dir, bool dbg=false) const;
+      // inline __rtc_device vec3f  eval(vec3f dir, bool dbg=false) const;
       /*! converts from a given pixel's coordinates into the
           world-space vector that poitns to the center of that
           pixel */
@@ -142,6 +146,10 @@ namespace BARNEY_NS {
   inline __rtc_device float
   EnvMapLight::DD::pdf(vec3f dir, bool dbg) const
   {
+#if FORCE_CONSTANT_ENV
+      return ONE_OVER_FOUR_PI;
+#endif
+  
     if (!texture)
       // if we don't have a texture barney will use a env-map light
       // with constant ambient radiance; the pdf of that will be a
@@ -230,6 +238,13 @@ namespace BARNEY_NS {
   inline __rtc_device Light::Sample
   EnvMapLight::DD::sample(Random &r, bool dbg) const
   {
+    Light::Sample sample;
+#if FORCE_CONSTANT_ENV
+    sample.direction = render::randomDirection(r);
+    sample.radiance = vec3f(1.f);
+    sample.pdf = ONE_OVER_FOUR_PI;
+    return sample;
+#endif
     if (!texture) return {};
 
     float r_y = r();
@@ -247,7 +262,6 @@ namespace BARNEY_NS {
     float sy = (iy+.5f)/dims.y;
 #endif
     vec4f fromTex = rtc::tex2D<vec4f>(texture,sx,sy);
-    Light::Sample sample;
     sample.radiance = scale * (vec3f&)fromTex;
     sample.direction = uvToWorld(sx,sy);
     
