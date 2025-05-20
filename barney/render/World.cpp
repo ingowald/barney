@@ -44,9 +44,9 @@ namespace BARNEY_NS {
     World::PLD *World::getPLD(Device *device)
     {
       assert(device);
-      assert(device->contextRank >= 0);
-      assert(device->contextRank < perLogical.size());
-      return &perLogical[device->contextRank];
+      assert(device->contextRank() >= 0);
+      assert(device->contextRank() < perLogical.size());
+      return &perLogical[device->contextRank()];
     }
     
     World::DD World::getDD(Device *device// , int rngSeed

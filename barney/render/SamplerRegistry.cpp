@@ -46,7 +46,7 @@ namespace BARNEY_NS {
      
     SamplerRegistry::PLD *SamplerRegistry::getPLD(Device *device)
     {
-      return &perLogical[device->contextRank];
+      return &perLogical[device->contextRank()];
     }
     
     void SamplerRegistry::grow()

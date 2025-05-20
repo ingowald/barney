@@ -179,9 +179,9 @@ namespace BARNEY_NS {
     TextureSampler::PLD *TextureSampler::getPLD(Device *device) 
     {
       assert(device);
-      assert(device->contextRank >= 0);
-      assert(device->contextRank < perLogical.size());
-      return &perLogical[device->contextRank];
+      assert(device->contextRank() >= 0);
+      assert(device->contextRank() < perLogical.size());
+      return &perLogical[device->contextRank()];
     }
     
     void TextureSampler::commit() 

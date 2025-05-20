@@ -219,9 +219,9 @@ namespace BARNEY_NS {
   PODData::PLD *PODData::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
   
   BaseData::SP BaseData::create(Context *context,

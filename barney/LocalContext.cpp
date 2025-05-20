@@ -111,7 +111,8 @@ namespace BARNEY_NS {
 
     // now assign, for each device, it's recv and send devices
     for (int myID=0;myID=devices->size();myID++) {
-      auto myDev = (*devices)[myID]; assert(dev);
+      auto myDev = (*devices)[myID]; assert(myDev);
+      auto &rqs = myDev->rqs;
       const int myIsland = myDev->islandInWorld.rank;
       const int sizeOfIsland = myDev->gpuInIsland.size;
       const int myRankInIsland = myDev->gpuInIsland.rank;
@@ -123,7 +124,7 @@ namespace BARNEY_NS {
       rqs.recvWorkerRank = 0;
           
       for (int otherID=0;otherID=devices->size();otherID++) {
-        auto otherDev = (*devices)[otherID]; assert(dev);
+        auto otherDev = (*devices)[otherID]; assert(myDev);
         const int otherIsland = otherDev->islandInWorld.rank;
         const int otherRankInIsland = otherDev->gpuInIsland.rank;
         if (myIsland != otherIsland)
@@ -135,15 +136,15 @@ namespace BARNEY_NS {
     }
     
     // do some sanity checking here:
+    auto dev0 = (*devices)[0];
     for (auto dev : *devices) {
       const int sizeOfIsland = dev->gpuInIsland.size;
-      assert(sizeOfMyIsland == numDifferentDGs.size());
       // - all islands have to have the same num GPUs
       assert(dev->gpuInIsland.size == dev0->gpuInIsland.size);
       // - every gpu has to have a send peer in rqs.sendlocal
-      assert(dev->sendWorkerLocal >= 0);
+      assert(dev->rqs.sendWorkerLocal >= 0);
       // - every gpu has to have a recv peer in rqs.recvlocal
-      assert(dev->recvWorkerLocal >= 0);
+      assert(dev->rqs.recvWorkerLocal >= 0);
     }
   }
 
@@ -184,7 +185,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       int devID = device->contextRank();
       SetActiveGPU forDuration(device);
-
+      auto &rqs = device->rqs;
       // // int nextID = (devID + dgSize) % numDevices;
       // int nextID = -1;
       // for (int otherID=0;otherID<device->gpuInNode.size;otherID++) {
@@ -206,7 +207,7 @@ namespace BARNEY_NS {
     }
 
     for (auto device : *devices) {
-      int devID = device->contextRank;
+      int devID = device->contextRank();
       device->sync();
       device->rayQueue->swapAfterCycle(numTimesForwarded % numSlots, numSlots);
       device->rayQueue->numActive = numCopied[devID];

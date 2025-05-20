@@ -33,9 +33,9 @@ namespace BARNEY_NS {
   UMeshField::PLD *UMeshField::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
 
 #if RTC_DEVICE_CODE

@@ -21,7 +21,7 @@
 namespace BARNEY_NS {
 
   Volume::PLD *Volume::getPLD(Device *device)
-  { return &perLogical[device->contextRank]; }
+  { return &perLogical[device->contextRank()]; }
 
   void Volume::setXF(const range1f &domain,
                      const bn_float4 *_values,

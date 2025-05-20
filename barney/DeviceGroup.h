@@ -61,6 +61,8 @@ namespace BARNEY_NS {
         multiple ranks in an MPI call (for a signel node this will be
         the same as contextRank/Size */
     PeerGroup allGPUsGlobally;
+    int globalRank() const { return allGPUsGlobally.rank; }
+    int globalSize() const { return allGPUsGlobally.size; }
     // int                globalRank = -1;
     // int                globalSize = -1;
     

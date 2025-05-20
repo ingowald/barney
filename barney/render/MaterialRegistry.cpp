@@ -23,7 +23,7 @@ namespace BARNEY_NS {
   namespace render {
 
     MaterialRegistry::PLD *MaterialRegistry::getPLD(Device *device)
-    { return &perLogical[device->contextRank]; }
+    { return &perLogical[device->contextRank()]; }
     
     MaterialRegistry::MaterialRegistry(const DevGroup::SP &devices)
       : devices(devices)

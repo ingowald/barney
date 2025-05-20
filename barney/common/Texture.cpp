@@ -24,17 +24,17 @@ namespace BARNEY_NS {
   TextureData::PLD *TextureData::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
   
   Texture::PLD *Texture::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
 
   rtc::ColorSpace toRTC(BNTextureColorSpace mode)

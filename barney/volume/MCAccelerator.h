@@ -44,7 +44,7 @@ namespace BARNEY_NS {
       rtc::Group *group = 0;
     };
     PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; } 
+    { return &perLogical[device->contextRank()]; } 
     std::vector<PLD> perLogical;
 
     DD getDD(Device *device)
@@ -58,16 +58,12 @@ namespace BARNEY_NS {
     MCVolumeAccel(Volume *volume,
                   GeomTypeCreationFct creatorFct,
                   const std::shared_ptr<SFSampler> &sfSampler);
-      // ,
-      //             const std::string &embeddedPTXStringName,
-      //             const std::string &programsTypeName);
 
       GeomTypeCreationFct const creatorFct;
     
     void build(bool full_rebuild) override;
 
 #if BARNEY_DEVICE_PROGRAM
-// #if RTC_DEVICE_CODE
     /*! optix bounds prog for this class of accels */
     static inline __rtc_device
     void boundsProg(const rtc::TraceInterface &ti,
@@ -77,7 +73,6 @@ namespace BARNEY_NS {
     /*! optix isec prog for this class of accels */
     static inline __rtc_device
     void isProg(rtc::TraceInterface &ti);
-    /*! optix closest-hit prog for this class of accels */
 #endif
     
     MCGrid       mcGrid;
