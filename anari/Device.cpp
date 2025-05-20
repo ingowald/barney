@@ -407,7 +407,7 @@ namespace barney_device {
 
     if (!state->tether) {
       tetherIndex = getParam<int>("tetherIndex", tetherIndex);
-      tetherCount = getParam<int>("tetherCount", tetherCount);
+      tetherCount = getParam<int>("tetherCount", 1);
       state->slot = tetherIndex;
       auto tetherDev = getParam<anari::Device>("tetherDevice", (anari::Device)0);
       tetherDevice = (BarneyDevice *)tetherDev;
