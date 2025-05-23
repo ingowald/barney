@@ -41,6 +41,9 @@ BNCamera Camera::barneyCamera() const
 
 Perspective::Perspective(BarneyGlobalState *s) : Camera(s)
 {
+  assert(deviceState());
+  assert(deviceState()->tether);
+  assert(deviceState()->tether->context);
   m_barneyCamera = bnCameraCreate(deviceState()->tether->context, "perspective");
 }
 

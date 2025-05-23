@@ -109,7 +109,7 @@ namespace barney_device {
                           ANARIDataType type,
                           void *mem,
                           uint64_t size) override;
-    BarneyGlobalState *deviceState() const;
+    BarneyGlobalState *deviceState(bool commitOnDemand=true);
 
     bool m_initialized{false};
     
@@ -129,6 +129,7 @@ namespace barney_device {
         is created with subtype "local" it will default to 0 */
     MPI_Comm comm = MPI_COMM_WORLD;
 #endif
+    bool          hasBeenCommitted = false;
     BarneyDevice *tetherDevice = 0;
     int           tetherIndex  = 0;
     int           tetherCount  = 0;

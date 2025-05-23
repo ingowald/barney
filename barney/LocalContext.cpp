@@ -84,24 +84,24 @@ namespace BARNEY_NS {
   {
     std::map<int,int> numGPUsInIsland;
     std::map<int,int> numUsesOfDG;
-    
+
     for (int i=0;i<devices->size();i++) {
       auto dev = (*devices)[i]; assert(dev);
       dev->allGPUsGlobally.rank = i;
       dev->allGPUsGlobally.size = devices->size();
       dev->gpuInNode.rank = i;
       dev->gpuInNode.size = devices->size();
-      const int myDG = dataGroupIDs[i];
+      const int myDG = dataGroupIDs[i % dataGroupIDs.size()];
       const int myIsland = numUsesOfDG[myDG]++;
-      const int rankInMyIsland = numGPUsInIsland[dev->islandInWorld.rank];
       dev->islandInWorld.rank = myIsland;
+      const int rankInMyIsland = numGPUsInIsland[dev->islandInWorld.rank]++;
       dev->gpuInIsland.rank   = rankInMyIsland;
     }
     // now we know how often every DG and island got used, so now we
     // know num islands, and thus the size of each island.
     for (int i=0;i<devices->size();i++) {
       auto dev = (*devices)[i]; assert(dev);
-      int myDG           = dataGroupIDs[i];
+      int myDG           = dataGroupIDs[i % dataGroupIDs.size()];
       int numIslands     = numUsesOfDG[myDG];
       int myIsland       = dev->islandInWorld.rank;
       int sizeOfMyIsland = numGPUsInIsland[myIsland];
@@ -110,7 +110,7 @@ namespace BARNEY_NS {
     }
 
     // now assign, for each device, it's recv and send devices
-    for (int myID=0;myID=devices->size();myID++) {
+    for (int myID=0;myID<devices->size();myID++) {
       auto myDev = (*devices)[myID]; assert(myDev);
       auto &rqs = myDev->rqs;
       const int myIsland = myDev->islandInWorld.rank;
@@ -123,7 +123,7 @@ namespace BARNEY_NS {
       rqs.sendWorkerRank = 0;
       rqs.recvWorkerRank = 0;
           
-      for (int otherID=0;otherID=devices->size();otherID++) {
+      for (int otherID=0;otherID<devices->size();otherID++) {
         auto otherDev = (*devices)[otherID]; assert(myDev);
         const int otherIsland = otherDev->islandInWorld.rank;
         const int otherRankInIsland = otherDev->gpuInIsland.rank;

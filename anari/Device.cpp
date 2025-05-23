@@ -245,9 +245,6 @@ namespace barney_device {
     : helium::BaseDevice(l),
       deviceType(subType)
   {
-    // anari::DeviceImpl::m_defaultStatusCB = default_statusFunc;
-    // anari::DeviceImpl::m_defaultStatusCBUserPtr = nullptr;
-    
     std::vector<std::string> subTypeFlags = splitString(subType,',');
     for (auto flag : subTypeFlags) {
       if (flag == "cpu")
@@ -395,8 +392,12 @@ namespace barney_device {
 
   void BarneyDevice::deviceCommitParameters()
   {
-    auto state = deviceState();
-
+    auto state = deviceState(false);
+    if (state->hasBeenCommitted) {
+      reportMessage(ANARI_SEVERITY_DEBUG, "device committed more than once!");
+    } else {
+      state->hasBeenCommitted = true;
+    }
     m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
     m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
 #if BARNEY_MPI
@@ -470,9 +471,13 @@ namespace barney_device {
     return 0;
   }
 
-  BarneyGlobalState *BarneyDevice::deviceState() const
+  BarneyGlobalState *BarneyDevice::deviceState(bool commitOnDemand) 
   {
-    return (BarneyGlobalState *)helium::BaseDevice::m_state.get();
+    BarneyGlobalState *state
+      = (BarneyGlobalState *)helium::BaseDevice::m_state.get();
+    if (commitOnDemand && !state->hasBeenCommitted)
+      deviceCommitParameters();
+    return state;
   }
 
 } // namespace barney_device

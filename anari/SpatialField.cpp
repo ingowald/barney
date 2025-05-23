@@ -147,10 +147,14 @@ namespace barney_device {
     m_params.cellBegin = getParamObject<helium::Array1D>("cell.begin");
     if (!m_params.cellBegin) // some older apps use "cell.index"
       m_params.cellBegin = getParamObject<helium::Array1D>("cell.index");
+    PING;
+    PRINT(m_params.cellType);
+    PRINT(m_params.cellType->size());
   }
 
   void UnstructuredField::finalize()
   {
+    PING;
     if (!m_params.vertexPosition) {
       reportMessage(ANARI_SEVERITY_WARNING,
                     "missing required parameter 'vertex.position' on unstructured spatial field");
@@ -158,6 +162,7 @@ namespace barney_device {
     }
 
     if (!m_params.vertexData) { // currently vertex data only!
+    PING;
       reportMessage(ANARI_SEVERITY_WARNING,
                     "missing required parameter 'vertex.data' on unstructured spatial field");
       return;
@@ -186,6 +191,7 @@ namespace barney_device {
     m_vertices.clear();
     m_elementOffsets.clear();
 
+    PING;
     auto *vertexPosition = m_params.vertexPosition->beginAs<math::float3>();
     int numVertices =
       int(m_params.vertexPosition->endAs<math::float3>() - vertexPosition);
@@ -209,6 +215,7 @@ namespace barney_device {
       return;
     }
 
+    PING;
     uint32_t *cellBegin32{nullptr};
     uint64_t *cellBegin64{nullptr};
     if (m_params.cellBegin && m_params.cellBegin->elementType() == ANARI_UINT32)
@@ -217,10 +224,13 @@ namespace barney_device {
              && m_params.cellBegin->elementType() == ANARI_UINT64)
       cellBegin64 = (uint64_t *)m_params.cellBegin->beginAs<uint64_t>();
 
+    PING; PRINT(m_params.cellType);
     auto *cellType = m_params.cellType->beginAs<uint8_t>();
-
+    PRINT(cellType);
     size_t numCells = m_params.cellType->size(); // endAs<uint64_t>() - index;
     // this isn't fully spec'ed yet
+    PING;
+    PRINT(numCells);
     enum
       {
         _ANARI_TET = 0,
@@ -235,11 +245,14 @@ namespace barney_device {
         _VTK_WEDGE = 13,
         _VTK_PYR = 14
       };
+    
     for (int cellIdx = 0; cellIdx < (int)numCells; cellIdx++) {
       int thisOffset = (int)m_indices.size();
       m_elementOffsets.push_back(thisOffset);
       uint8_t type = cellType[cellIdx];
+      PRINT(type);
       int numToCopy = -1;
+      PRINT(numToCopy);
       switch (type) {
       case _ANARI_TET:
         numToCopy = 4;
@@ -277,6 +290,8 @@ namespace barney_device {
           m_indices.push_back((int)index64[inputBegin + i]);
       }
     }
+    PING; PRINT(m_indices.size());
+    PRINT(m_elementOffsets.size());
   }
 
   BNScalarField UnstructuredField::createBarneyScalarField() const

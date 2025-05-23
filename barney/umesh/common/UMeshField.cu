@@ -372,8 +372,9 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device); 
       auto rtc = device->rtc;
       SetActiveGPU forDuration(device);
-      
+
       int numElements = (int)elementOffsets->count;
+      PING; PRINT(numElements);
       int numIndices  = (int)indices->count;
       if (pld->elements)
         rtc->freeMem(pld->elements);

@@ -70,6 +70,8 @@ namespace barney_device {
         B (and vice versa) */
     int nextUniqueModelID = 0;
     // Helper methods //
+    
+    bool          hasBeenCommitted = false;
 
     BarneyGlobalState(ANARIDevice d);
     void markSceneChanged();
