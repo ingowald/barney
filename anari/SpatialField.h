@@ -64,18 +64,11 @@ namespace barney_device {
     {
       helium::IntrusivePtr<helium::Array1D> vertexPosition;
       helium::IntrusivePtr<helium::Array1D> vertexData;
+      helium::IntrusivePtr<helium::Array1D> cellData;
       helium::IntrusivePtr<helium::Array1D> index;
       helium::IntrusivePtr<helium::Array1D> cellType;
       helium::IntrusivePtr<helium::Array1D> cellBegin;
     } m_params;
-
-    std::vector<math::float4> m_vertices;
-    /* barney requires index offsets to be in ascending order, so this
-       is an array of the element indices in sequential order of
-       elements (because the anari array odesn't have that requirement,
-       so let's make sure to fix it) */
-    std::vector<int> m_indices;
-    std::vector<int> m_elementOffsets;
 
     box3 m_bounds;
   };

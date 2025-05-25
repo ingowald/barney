@@ -93,15 +93,6 @@ namespace BARNEY_NS {
     rtc::Device *const rtc;
     rtc::ComputeKernel1D *generateRays = 0;
     rtc::ComputeKernel1D *shadeRays = 0;
-    // rtc::ComputeKernel2D *toFixed8 = 0;
-    // rtc::ComputeKernel1D *compressTiles = 0;
-    // rtc::ComputeKernel1D *unpackTiles = 0;
-
-    // umesh related:
-    rtc::ComputeKernel1D *umeshCreateElements = 0;
-    rtc::ComputeKernel1D *umeshRasterElements = 0;
-    rtc::ComputeKernel1D *umeshReorderElements = 0;
-    rtc::ComputeKernel1D *umeshComputeElementBBs = 0;
     
     rtc::TraceKernel2D *traceRays = 0;
     RayQueue     *rayQueue = 0;

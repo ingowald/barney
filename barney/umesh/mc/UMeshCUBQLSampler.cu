@@ -24,23 +24,6 @@
 
 namespace BARNEY_NS {
 
-  struct UMeshReorderElements {
-    Element        *out;
-    Element        *in;
-    const uint32_t *primIDs;
-    int             numElements;
-
-#if RTC_DEVICE_CODE
-    inline __rtc_device void run(const rtc::ComputeInterface &ci)
-    {
-      int li = ci.launchIndex().x;
-      if (li >= numElements) return;
-
-      out[li] = in[primIDs[li]];
-    }
-#endif
-  };
-  
   UMeshCUBQLSampler::UMeshCUBQLSampler(UMeshField *mesh)
     : mesh(mesh),
       devices(mesh->devices)
@@ -60,18 +43,23 @@ namespace BARNEY_NS {
   {
     DD dd;
     (UMeshField::DD &)dd = mesh->getDD(device);
-    dd.bvhNodes = getPLD(device)->bvhNodes;
+    dd.bvh = getPLD(device)->bvh;
     return dd;
   }
 
   void UMeshCUBQLSampler::build()
   {
-    int numElements = mesh->numElements;
+    int numCells = mesh->numCells;
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
-      if (pld->bvhNodes != 0) {
+      if (pld->bvh.nodes != 0) {
         /* BVH already built! */
         continue;
+// #if BARNEY_RTC_EMBREE || defined(__HIPCC__)
+//       cuBQL::cpu::freeBVH(bvh);
+// #else
+//       cuBQL::cuda::free(bvh,0,memResource);
+// #endif      
       }
 
       std::cout << "------------------------------------------" << std::endl;
@@ -80,29 +68,27 @@ namespace BARNEY_NS {
       
       SetActiveGPU forDuration(device);
       
-      bvh_t bvh;
       box3f *primBounds
-        = (box3f*)device->rtc->allocMem(numElements*sizeof(box3f));
+        = (box3f*)device->rtc->allocMem(numCells*sizeof(box3f));
       range1f *valueRanges
-        = (range1f*)device->rtc->allocMem(numElements*sizeof(range1f));
+        = (range1f*)device->rtc->allocMem(numCells*sizeof(range1f));
       mesh->computeElementBBs(device,
                               primBounds,valueRanges);
       device->rtc->sync();
 
-      
 #if BARNEY_RTC_EMBREE || defined(__HIPCC__)
       cuBQL::cpu::spatialMedian(bvh,
                                 (const cuBQL::box_t<float,3>*)primBounds,
-                                numElements,
+                                numCells,
                                 cuBQL::BuildConfig());
 #else
       /*! iw - make sure to have cubql use regular device memory, not
-          async mallocs; else we may allocate all memory on the first
-          gpu */
+        async mallocs; else we may allocate all memory on the first
+        gpu */
       cuBQL::DeviceMemoryResource memResource;
-      cuBQL::gpuBuilder(bvh,
+      cuBQL::gpuBuilder(pld->bvh,
                         (const cuBQL::box_t<float,3>*)primBounds,
-                        numElements,
+                        numCells,
                         cuBQL::BuildConfig(),
                         0,
                         memResource);
@@ -110,47 +96,10 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rtc->freeMem(primBounds);
       device->rtc->freeMem(valueRanges);
-    
-      Element *reorderedElements
-        = (Element *)device->rtc->allocMem(numElements*sizeof(Element));
-      UMeshReorderElements args =
-        {
-          // Element  *out;
-          reorderedElements,
-          // Element  *in;
-          mesh->getPLD(device)->elements,
-          // uint32_t *primIDs;
-          bvh.primIDs,
-          // int numElements;
-          numElements
-        };
-      int bs = 128;
-      int nb = divRoundUp(numElements,bs);
-      device->umeshReorderElements->launch(nb,bs,&args);
-      device->rtc->copy(mesh->getPLD(device)->elements,
-                        reorderedElements,
-                        numElements*sizeof(Element));
-      device->rtc->sync();
-      device->rtc->freeMem(reorderedElements);
-
-      // "save the nodes"
-      pld->bvhNodes
-        = (node_t *)device->rtc->allocMem(bvh.numNodes*sizeof(node_t));
-      device->rtc->copy(pld->bvhNodes,bvh.nodes,bvh.numNodes*sizeof(node_t));
-      device->rtc->sync();
-      
-      // ... and kill whatever else cubql may have in the bvh
-#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
-      cuBQL::cpu::freeBVH(bvh);
-#else
-      cuBQL::cuda::free(bvh,0,memResource);
-#endif      
       std::cout << OWL_TERMINAL_LIGHT_GREEN
                 << "#bn.umesh: cubql bvh built ..."
                 << OWL_TERMINAL_DEFAULT << std::endl;
     }
   }
-  
-  RTC_EXPORT_COMPUTE1D(umeshReorderElements,BARNEY_NS::UMeshReorderElements);
 }
 

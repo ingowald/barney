@@ -184,39 +184,19 @@ namespace BARNEY_NS {
     vec3f mcGridOrigin  = self.mcGrid.gridOrigin;
     vec3f mcGridSpacing = self.mcGrid.gridSpacing;
 
-    // printf("grid %f %f %f / %f %f %f\n",
-    //        mcGridOrigin.x,
-    //        mcGridOrigin.y,
-    //        mcGridOrigin.z,
-    //        mcGridSpacing.x,
-    //        mcGridSpacing.y,
-    //        mcGridSpacing.z);
     vec3f dda_org = obj_org;
     vec3f dda_dir = obj_dir;
 
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
-    // Random rng(ray.rngSeed++);
     Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
                                      ti.getGeometryIndex(),
                                      ti.getPrimitiveIndex())));
-    // int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
-    // Random rng(hash(rayID,
-    //                 ti.getRTCInstanceIndex(),
-    //                 ti.getGeometryIndex(),
-    //                 ti.getPrimitiveIndex(),
-    //                 world.rngSeed));
-
-    // printf("isec\n");
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
               {
-                // printf("dda %i %i %i \n",
-                //        cellIdx.x,
-                //        cellIdx.y,
-                //        cellIdx.z);
                 const float majorant = self.mcGrid.majorant(cellIdx);
                 
                 if (majorant == 0.f) return true;
@@ -229,7 +209,8 @@ namespace BARNEY_NS {
                                            obj_dir,
                                            tRange,
                                            majorant,
-                                           rng)) 
+                                           rng,
+                                           ray.dbg)) 
                   return true;
                 
                 vec3f P = ray.org + tRange.upper*ray.dir;
