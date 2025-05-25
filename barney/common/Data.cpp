@@ -24,40 +24,45 @@ namespace BARNEY_NS {
   rtc::DataType toRTC(BNDataType type)
   {
     switch (type) {
-    case BN_FLOAT:
-      return rtc::FLOAT;
+    case BN_FLOAT32:      return rtc::FLOAT;
+    case BN_FLOAT32_VEC2: return rtc::FLOAT2;
+    case BN_FLOAT32_VEC3: return rtc::FLOAT3;
+    case BN_FLOAT32_VEC4: return rtc::FLOAT4;
       
-    case BN_FLOAT2:
-      return rtc::FLOAT2;
+    case BN_FLOAT64:      
+    case BN_FLOAT64_VEC2: 
+    case BN_FLOAT64_VEC3: 
+    case BN_FLOAT64_VEC4:
+      throw std::runtime_error("rtc does not yet support doubles");
       
-    case BN_FLOAT3:
-      return rtc::FLOAT3;
-      
-    case BN_FLOAT4:
-      return rtc::FLOAT4;
-      
-    case BN_INT:
+    case BN_INT32:
+    case BN_UINT32:
       return rtc::INT;
       
-    case BN_INT2:
+    case BN_INT32_VEC2:
+    case BN_UINT32_VEC2:
       return rtc::INT2;
       
-    case BN_INT3:
+    case BN_INT32_VEC3:
+    case BN_UINT32_VEC3:
       return rtc::INT3;
       
-    case BN_INT4:
+    case BN_INT32_VEC4:
+    case BN_UINT32_VEC4:
       return rtc::INT4;
       
-    case BN_LONG:
+
+
+    case BN_INT64:
       return rtc::LONG;
       
-    case BN_LONG2:
+    case BN_INT64_VEC2:
       return rtc::LONG2;
       
-    case BN_LONG3:
+    case BN_INT64_VEC3:
       return rtc::LONG3;
       
-    case BN_LONG4:
+    case BN_INT64_VEC4:
       return rtc::LONG4;
       
     case BN_UFIXED8:
@@ -87,32 +92,46 @@ namespace BARNEY_NS {
     case BN_TEXTURE:
       return "BN_TEXTURE";
 
-    case BN_INT:
-      return "BN_INT";
-    case BN_INT2:
-      return "BN_INT2";
-    case BN_INT3:
-      return "BN_INT3";
-    case BN_INT4:
-      return "BN_INT4";
+    case BN_INT8:      return "BN_INT8";
+    case BN_INT8_VEC2: return "BN_INT8_VEC2";
+    case BN_INT8_VEC3: return "BN_INT8_VEC3";
+    case BN_INT8_VEC4: return "BN_INT8_VEC4";
 
-    case BN_LONG:
-      return "BN_LONG";
-    case BN_LONG2:
-      return "BN_LONG2";
-    case BN_LONG3:
-      return "BN_LONG3";
-    case BN_LONG4:
-      return "BN_LONG4";
-      
-    case BN_FLOAT:
-      return "BN_FLOAT";
-    case BN_FLOAT2:
-      return "BN_FLOAT2";
-    case BN_FLOAT3:
-      return "BN_FLOAT3";
-    case BN_FLOAT4:
-      return "BN_FLOAT4";
+    case BN_UINT8:      return "BN_UINT8";
+    case BN_UINT8_VEC2: return "BN_UINT8_VEC2";
+    case BN_UINT8_VEC3: return "BN_UINT8_VEC3";
+    case BN_UINT8_VEC4: return "BN_UINT8_VEC4";
+
+    case BN_INT32:      return "BN_INT32";
+    case BN_INT32_VEC2: return "BN_INT32_VEC2";
+    case BN_INT32_VEC3: return "BN_INT32_VEC3";
+    case BN_INT32_VEC4: return "BN_INT32_VEC4";
+
+    case BN_UINT32:      return "BN_UINT32";
+    case BN_UINT32_VEC2: return "BN_UINT32_VEC2";
+    case BN_UINT32_VEC3: return "BN_UINT32_VEC3";
+    case BN_UINT32_VEC4: return "BN_UINT32_VEC4";
+
+    case BN_INT64:      return "BN_INT64";
+    case BN_INT64_VEC2: return "BN_INT64_VEC2";
+    case BN_INT64_VEC3: return "BN_INT64_VEC3";
+    case BN_INT64_VEC4: return "BN_INT64_VEC4";
+
+    case BN_UINT64:      return "BN_UINT64";
+    case BN_UINT64_VEC2: return "BN_UINT64_VEC2";
+    case BN_UINT64_VEC3: return "BN_UINT64_VEC3";
+    case BN_UINT64_VEC4: return "BN_UINT64_VEC4";
+
+    case BN_FLOAT32:      return "BN_FLOAT32";
+    case BN_FLOAT32_VEC2: return "BN_FLOAT32_VEC2";
+    case BN_FLOAT32_VEC3: return "BN_FLOAT32_VEC3";
+    case BN_FLOAT32_VEC4: return "BN_FLOAT32_VEC4";
+
+    case BN_FLOAT64:      return "BN_FLOAT64";
+    case BN_FLOAT64_VEC2: return "BN_FLOAT64_VEC2";
+    case BN_FLOAT64_VEC3: return "BN_FLOAT64_VEC3";
+    case BN_FLOAT64_VEC4: return "BN_FLOAT64_VEC4";
+
     default:
       throw std::runtime_error
         ("#bn internal error: to_string not implemented for "
@@ -139,33 +158,49 @@ namespace BARNEY_NS {
   size_t owlSizeOf(BNDataType type)
   {
     switch (type) {
-    case BN_FLOAT:
-      return sizeof(float);
-    case BN_FLOAT2:
-      return sizeof(vec2f);
-    case BN_FLOAT3:
-      return sizeof(vec3f);
-    case BN_FLOAT4:
-      return sizeof(vec4f);
+    case BN_FLOAT32:      return sizeof(float);
+    case BN_FLOAT32_VEC2: return sizeof(vec2f);
+    case BN_FLOAT32_VEC3: return sizeof(vec3f);
+    case BN_FLOAT32_VEC4: return sizeof(vec4f);
 
-    case BN_INT:
-      return sizeof(int);
-    case BN_INT2:
-      return sizeof(vec2i);
-    case BN_INT3:
-      return sizeof(vec3i);
-    case BN_INT4:
-      return sizeof(vec4i);
+    case BN_INT8:      return sizeof(int8_t);
+    case BN_INT8_VEC2: return sizeof(vec2c);
+    case BN_INT8_VEC3: return sizeof(vec3c);
+    case BN_INT8_VEC4: return sizeof(vec4c);
 
-    case BN_LONG:
-      return sizeof(uint64_t);
-    case BN_LONG2:
+    case BN_UINT8:      return sizeof(uint8_t);
+    case BN_UINT8_VEC2: return sizeof(vec2uc);
+    case BN_UINT8_VEC3: return sizeof(vec3uc);
+    case BN_UINT8_VEC4: return sizeof(vec4uc);
+
+    case BN_INT32:      return sizeof(int32_t);
+    case BN_INT32_VEC2: return sizeof(vec2i);
+    case BN_INT32_VEC3: return sizeof(vec3i);
+    case BN_INT32_VEC4: return sizeof(vec4i);
+
+    case BN_UINT32:      return sizeof(uint32_t);
+    case BN_UINT32_VEC2: return sizeof(vec2ui);
+    case BN_UINT32_VEC3: return sizeof(vec3ui);
+    case BN_UINT32_VEC4: return sizeof(vec4ui);
+
+    case BN_INT64:
+      return sizeof(int64_t);
+    case BN_INT64_VEC2:
       return sizeof(vec2l);
-    case BN_LONG3:
+    case BN_INT64_VEC3:
       return sizeof(vec3l);
-    case BN_LONG4:
+    case BN_INT64_VEC4:
       return sizeof(vec4l);
 
+    case BN_UINT64:
+      return sizeof(uint64_t);
+    case BN_UINT64_VEC2:
+      return sizeof(vec2ul);
+    case BN_UINT64_VEC3:
+      return sizeof(vec3ul);
+    case BN_UINT64_VEC4:
+      return sizeof(vec4ul);
+      
     default:
       throw std::runtime_error
         ("#bn internal error: owlSizeOf() not implemented for "
@@ -219,9 +254,9 @@ namespace BARNEY_NS {
   PODData::PLD *PODData::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
   
   BaseData::SP BaseData::create(Context *context,
@@ -231,18 +266,38 @@ namespace BARNEY_NS {
                                 const void *items)
   {
     switch(type) {
-    case BN_INT:
-    case BN_INT2:
-    case BN_INT3:
-    case BN_INT4:
-    case BN_LONG:
-    case BN_LONG2:
-    case BN_LONG3:
-    case BN_LONG4:
-    case BN_FLOAT:
-    case BN_FLOAT2:
-    case BN_FLOAT3:
-    case BN_FLOAT4:
+    case BN_INT8:
+    case BN_INT8_VEC2:
+    case BN_INT8_VEC3:
+    case BN_INT8_VEC4:
+    case BN_UINT8:
+    case BN_UINT8_VEC2:
+    case BN_UINT8_VEC3:
+    case BN_UINT8_VEC4:
+    case BN_INT32:
+    case BN_INT32_VEC2:
+    case BN_INT32_VEC3:
+    case BN_INT32_VEC4:
+    case BN_UINT32:
+    case BN_UINT32_VEC2:
+    case BN_UINT32_VEC3:
+    case BN_UINT32_VEC4:
+    case BN_INT64:
+    case BN_INT64_VEC2:
+    case BN_INT64_VEC3:
+    case BN_INT64_VEC4:
+    case BN_UINT64:
+    case BN_UINT64_VEC2:
+    case BN_UINT64_VEC3:
+    case BN_UINT64_VEC4:
+    case BN_FLOAT32:
+    case BN_FLOAT32_VEC2:
+    case BN_FLOAT32_VEC3:
+    case BN_FLOAT32_VEC4:
+    case BN_FLOAT64:
+    case BN_FLOAT64_VEC2:
+    case BN_FLOAT64_VEC3:
+    case BN_FLOAT64_VEC4:
       return std::make_shared<PODData>
         (context,devices,type,numItems,items);
     case BN_OBJECT:

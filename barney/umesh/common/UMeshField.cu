@@ -19,8 +19,9 @@
 #include "barney/Context.h"
 #include "barney/umesh/mc/UMeshCUBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
-#include "barney/umesh/os/AWT.h"
+// #include "barney/umesh/os/AWT.h"
 #if RTC_DEVICE_CODE
+# include "rtcore/ComputeInterface.h"
 # include "rtcore/TraceInterface.h"
 #endif
 
@@ -33,9 +34,9 @@ namespace BARNEY_NS {
   UMeshField::PLD *UMeshField::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
 
 #if RTC_DEVICE_CODE
@@ -120,113 +121,36 @@ namespace BARNEY_NS {
     bb.extend(d);
     rasterBox(grid,bb);
   }
-#endif
   
-  struct UMeshRasterElements {
-    /* kernel data */
-    UMeshField::DD mesh;
-    MCGrid::DD     grid;
-
-#if RTC_DEVICE_CODE
-    inline __rtc_device
-    void run(const rtc::ComputeInterface &ci);
-#endif
-  };
-
-#if RTC_DEVICE_CODE
-  inline __rtc_device
-  void UMeshRasterElements::run(const rtc::ComputeInterface &ci)
+  __rtc_global void umeshRasterCells(rtc::ComputeInterface ci,
+                                     UMeshField::DD mesh,
+                                     MCGrid::DD grid)
   {
-    const int eltIdx = ci.launchIndex().x;
-    if (eltIdx >= mesh.numElements) return;    
+    const int cellIdx = ci.launchIndex().x;
+    if (cellIdx >= mesh.numCells) return;    
 
-    auto elt = mesh.elements[eltIdx];
-    if (elt.type == Element::TET) {
-      const vec4i indices = *(const vec4i *)&mesh.indices[elt.ofs0];
-      vec4f a = rtc::load(mesh.vertices[indices.x]);
-      vec4f b = rtc::load(mesh.vertices[indices.y]);
-      vec4f c = rtc::load(mesh.vertices[indices.z]);
-      vec4f d = rtc::load(mesh.vertices[indices.w]);
+    auto cellType = mesh.cellTypes[cellIdx];
+    if (cellType == _VTK_TET || cellType == _ANARI_TET) {
+      uint32_t ofs0 = mesh.cellOffsets[cellIdx];
+      const vec4i indices = *(const vec4i *)&mesh.indices[ofs0];
+      int sidx_x = mesh.scalarsArePerVertex ? indices.x : cellIdx;
+      int sidx_y = mesh.scalarsArePerVertex ? indices.y : cellIdx;
+      int sidx_z = mesh.scalarsArePerVertex ? indices.z : cellIdx;
+      int sidx_w = mesh.scalarsArePerVertex ? indices.w : cellIdx;
+      vec4f a(mesh.vertices[indices.x],mesh.scalars[sidx_x]);
+      vec4f b(mesh.vertices[indices.y],mesh.scalars[sidx_y]);
+      vec4f c(mesh.vertices[indices.z],mesh.scalars[sidx_z]);
+      vec4f d(mesh.vertices[indices.w],mesh.scalars[sidx_w]);
       rasterTet<5>(grid,a,b,c,d);
     } else {
-      const box4f eltBounds = mesh.eltBounds(elt);
+      const box4f eltBounds = mesh.cellBounds(cellIdx);
       rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
     }
   }
-#endif
-
-  /*! KERNEL that creates an elements[] array from the
-      elementOffsets[] array */
-  struct UMeshCreateElements {
-    /*! kernel ARGS */
-    UMeshField::DD dd;
-    int      numIndices;
-    int     *elementOffsets;
-    box3f   *d_worldBounds;
-
-#if RTC_DEVICE_CODE
-    inline __rtc_device void run(const rtc::ComputeInterface &ci);
-#endif
-  };
-
-#if RTC_DEVICE_CODE
-    /*! kernel CODE */
-  inline __rtc_device void UMeshCreateElements::run(const rtc::ComputeInterface &ci)
-    {
-      int tid = ci.launchIndex().x;
-      if (tid >= dd.numElements) return;
-
-      int begin = elementOffsets[tid];
-      int end
-        = (tid == (dd.numElements-1))
-        ? numIndices
-        : elementOffsets[tid+1];
-      Element &elt = ((Element *)dd.elements)[tid];
-
-      elt.ofs0 = begin;
-      switch (end-begin) {
-      case 4:
-        elt.type = Element::TET;
-        break;
-      case 5:
-        elt.type = Element::PYR;
-        break;
-      case 6:
-        elt.type = Element::WED;
-        break;
-      case 8:
-        elt.type = Element::HEX;
-        break;
-      default:
-        printf("@bn.umesh: invalid element with indices range [%i...%i)\n",
-               begin,end);
-      }
-
-      box4f bounds = dd.eltBounds(elt);
-
-      rtc::fatomicMin(&d_worldBounds->lower.x,bounds.lower.x);
-      rtc::fatomicMin(&d_worldBounds->lower.y,bounds.lower.y);
-      rtc::fatomicMin(&d_worldBounds->lower.z,bounds.lower.z); 
-      rtc::fatomicMax(&d_worldBounds->upper.x,bounds.upper.x);
-      rtc::fatomicMax(&d_worldBounds->upper.y,bounds.upper.y);
-      rtc::fatomicMax(&d_worldBounds->upper.z,bounds.upper.z); 
-      // if (tid < 10) {
-      //   printf("(%i) bounds (%f %f %f)(%f %f %f)->(%f %f %f)(%f %f %f)\n",
-      //          tid,
-      //          bounds.lower.x,
-      //          bounds.lower.y,
-      //          bounds.lower.z,
-      //          bounds.upper.x,
-      //          bounds.upper.y,
-      //          bounds.upper.z,
-      //          d_worldBounds->lower.x,
-      //          d_worldBounds->lower.y,
-      //          d_worldBounds->lower.z,
-      //          d_worldBounds->upper.x,
-      //          d_worldBounds->upper.y,
-      //          d_worldBounds->upper.z);
-      // }
-    }
+#else
+  __rtc_global void umeshRasterCells(rtc::ComputeInterface ci,
+                                     UMeshField::DD mesh,
+                                     MCGrid::DD grid);
 #endif
   
   void UMeshField::buildMCs(MCGrid &grid)
@@ -249,7 +173,7 @@ namespace BARNEY_NS {
     
     float maxWidth = reduce_max(worldBounds.size());//getBox(worldBounds).size());
     int MC_GRID_SIZE
-      = 200 + int(sqrtf(elementOffsets->count/100.f));
+      = 200 + int(sqrtf(cellOffsets->count/100.f));
     vec3i dims = 1+vec3i(worldBounds.size() * ((MC_GRID_SIZE-1) / maxWidth));
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.um: building initial macro cell grid of " << dims << " MCs"
@@ -263,64 +187,86 @@ namespace BARNEY_NS {
     
     grid.clearCells();
     
-    const int bs = 128;
-    const int nb = divRoundUp(numElements,bs);
-    for (auto device : *devices) {
-      UMeshRasterElements args = {
-        getDD(device),
-        grid.getDD(device)
-      };
-      device->umeshRasterElements->launch(nb,bs,&args);
-    }
+    for (auto device : *devices) 
+      __rtc_launch(device->rtc,
+                   umeshRasterCells,
+                   divRoundUp(numCells,128),128,
+                   getDD(device),grid.getDD(device));
     for (auto device : *devices)
       device->sync();
+    
+    // const int bs = 128;
+    // const int nb = divRoundUp(numCells,bs);
+    // for (auto device : *devices) {
+    //   UMeshRasterElements args = {
+    //     getDD(device),
+    //     grid.getDD(device)
+    //   };
+    //   device->umeshRasterElements->launch(nb,bs,&args);
+    // }
+    // for (auto device : *devices)
+    //   device->sync();
   }
     
   
-  /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds and
-    per-prim scalar ranges, and writes those into givne
-    pre-allocated device mem location */
-  struct UMeshComputeElementBBs {
-    /* kernel ARGS */
-    box3f         *d_primBounds;
-    range1f       *d_primRanges;
-    UMeshField::DD mesh;
+//   /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds and
+//     per-prim scalar ranges, and writes those into givne
+//     pre-allocated device mem location */
+//   struct UMeshComputeElementBBs {
+//     /* kernel ARGS */
+//     box3f         *d_primBounds;
+//     range1f       *d_primRanges;
+//     UMeshField::DD mesh;
 
-#if RTC_DEVICE_CODE
-    inline __rtc_device
-    void run(const rtc::ComputeInterface &ci);
-#endif
-  };
+// #if RTC_DEVICE_CODE
+//     inline __rtc_device
+//     void run(const rtc::ComputeInterface &ci);
+// #endif
+//   };
 
-#if RTC_DEVICE_CODE
-    /* kernel FUNCTION */
-    inline __rtc_device
-    void UMeshComputeElementBBs::run(const rtc::ComputeInterface &ci)
-    {
-      const int tid = ci.launchIndex().x;
-      if (tid >= mesh.numElements) return;
+// #if RTC_DEVICE_CODE
+//     /* kernel FUNCTION */
+//     inline __rtc_device
+//     void UMeshComputeElementBBs::run(const rtc::ComputeInterface &ci)
+//     {
+//       const int tid = ci.launchIndex().x;
+//       if (tid >= mesh.numCells) return;
       
-      auto elt = mesh.elements[tid];
-      box4f eb = mesh.eltBounds(elt);
-      d_primBounds[tid] = getBox(eb);
-      if (d_primRanges) d_primRanges[tid] = getRange(eb);
-    }
-#endif
+//       auto elt = mesh.elements[tid];
+//       box4f eb = mesh.eltBounds(elt);
+//       d_primBounds[tid] = getBox(eb);
+//       if (d_primRanges) d_primRanges[tid] = getRange(eb);
+//     }
+// #endif
   
   bool UMeshField::setData(const std::string &member,
                            const std::shared_ptr<Data> &value)
   {
     if (ScalarField::setData(member,value)) return true;
 
-    if (member == "elementOffsets") {
-      elementOffsets = value->as<PODData>();
+    if (member == "cell.index") {
+      cellOffsets = value->as<PODData>();
       return true;
     }
-    if (member == "vertices") {
+    if (member == "cell.type") {
+      cellTypes = value->as<PODData>();
+      return true;
+    }
+    if (member == "cell.data") {
+      scalars = value->as<PODData>();
+      scalarsArePerVertex = false;
+      return true;
+    }
+    if (member == "vertex.position") {
       vertices = value->as<PODData>();
       return true;
     }
-    if (member == "indices") {
+    if (member == "vertex.data") {
+      scalars = value->as<PODData>();
+      scalarsArePerVertex = true;
+      return true;
+    }
+    if (member == "index") {
       indices = value->as<PODData>();
       return true;
     }
@@ -328,6 +274,21 @@ namespace BARNEY_NS {
     return false;
   }
     
+  
+
+  __rtc_global 
+  void umeshComputeElementBBs(rtc::ComputeInterface ci,
+                              UMeshField::DD mesh,
+                              box3f   *d_primBounds,
+                              range1f *d_primRanges)
+  {
+    const int tid = ci.launchIndex().x;
+    if (tid >= mesh.numCells) return;
+    
+    box4f eb = mesh.cellBounds(tid);
+    d_primBounds[tid] = getBox(eb);
+    if (d_primRanges) d_primRanges[tid] = getRange(eb);
+  }
   
   /*! computes, on specified device, the bounding boxes and - if
     d_primRanges is non-null - the primitmives ranges. d_primBounds
@@ -337,69 +298,63 @@ namespace BARNEY_NS {
                                      box3f   *d_primBounds,
                                      range1f *d_primRanges)
   {
-    UMeshComputeElementBBs args = {
-      /* kernel ARGS */
-      // box3f         *d_primBounds;
-      d_primBounds,
-      // range1f       *d_primRanges;
-      d_primRanges,
-      // UMeshField::DD mesh;
-      getDD(device)
-    };
-    int bs = 128;
-    int nb = divRoundUp(numElements,bs);
-    device->umeshComputeElementBBs->launch(nb,bs,&args);
-    device->sync();
+    __rtc_launch(device->rtc,umeshComputeElementBBs,
+                 divRoundUp(numCells,128),128,
+                 getDD(device),d_primBounds,d_primRanges);
+    device->rtc->sync();
   }
 
+  
   UMeshField::UMeshField(Context *context, 
                          const DevGroup::SP   &devices)
     : ScalarField(context,devices)
   {
     perLogical.resize(devices->numLogical);
   }
+
+  __rtc_global
+  void computeWorldBounds(rtc::ComputeInterface ci,
+                          UMeshField::DD mesh,
+                          box3f *pWorldBounds)
+  {
+    int tid = ci.launchIndex().x;
+    if (tid >= mesh.numCells)
+      return;
+    box4f bounds = mesh.cellBounds(tid);
+    rtc::fatomicMin(&pWorldBounds->lower.x,bounds.lower.x);
+    rtc::fatomicMin(&pWorldBounds->lower.y,bounds.lower.y);
+    rtc::fatomicMin(&pWorldBounds->lower.z,bounds.lower.z); 
+    rtc::fatomicMax(&pWorldBounds->upper.x,bounds.upper.x);
+    rtc::fatomicMax(&pWorldBounds->upper.y,bounds.upper.y);
+    rtc::fatomicMax(&pWorldBounds->upper.z,bounds.upper.z); 
+  }
   
   void UMeshField::commit()
   {
     assert(indices);
     assert(vertices);
-    assert(elementOffsets);
+    assert(cellOffsets);
+    assert(cellTypes);
+    assert(scalars);
     
-    std::cout << "#bn.umesh: computing device-side elements[] representation"
-              << std::endl;
-    this->numElements = (int)elementOffsets->count;
+    this->numCells = (int)cellOffsets->count;
     for (auto device : *devices) {
       PLD *pld = getPLD(device); 
       auto rtc = device->rtc;
       SetActiveGPU forDuration(device);
-      
-      int numElements = (int)elementOffsets->count;
-      int numIndices  = (int)indices->count;
-      if (pld->elements)
-        rtc->freeMem(pld->elements);
-      if (pld->pWorldBounds)
-        rtc->freeMem(pld->pWorldBounds);
-      
-      pld->pWorldBounds
-        = (box3f*)rtc->allocMem(sizeof(box3f));
-      pld->elements
-        = (Element*)rtc->allocMem(numElements*sizeof(Element));
 
+      int numCells = (int)cellOffsets->count;
+      assert(numCells > 0);
+      int numIndices  = (int)indices->count;
+      if (!pld->pWorldBounds) {
+        pld->pWorldBounds
+          = (box3f*)rtc->allocMem(sizeof(box3f));
+      }
       box3f emptyBox;
       rtc->copy(pld->pWorldBounds,&emptyBox,sizeof(emptyBox));
-      UMeshCreateElements args = {
-        // UMeshField::DD dd;
-        // int      numIndices;
-        // int     *elementOffsets;
-        // box3f   *d_worldBounds;
-        getDD(device),
-        numIndices,
-        (int*)elementOffsets->getDD(device),
-        pld->pWorldBounds
-      };
-      int bs = 128;
-      int nb = divRoundUp(numElements,bs);
-      device->umeshCreateElements->launch(nb,bs,&args);
+      __rtc_launch(rtc,computeWorldBounds,
+                   divRoundUp(numCells,128),128,
+                   getDD(device),pld->pWorldBounds);
     }
     
     for (auto device : *devices) {
@@ -412,6 +367,7 @@ namespace BARNEY_NS {
                         pld->pWorldBounds,
                         sizeof(worldBounds));
       device->sync();
+      assert(!worldBounds.empty());
     }
   }
   
@@ -422,15 +378,17 @@ namespace BARNEY_NS {
     UMeshField::DD dd;
     assert(vertices);
     assert(indices);
-    assert(getPLD(device)->elements);
     (ScalarField::DD &)dd = ScalarField::getDD(device);
-    dd.vertices = (rtc::float4 *)vertices->getDD(device);
-    dd.indices  = (int    *)indices->getDD(device);
-    dd.elements = (Element*)getPLD(device)->elements;
-    dd.numElements = (int)elementOffsets->count;
+    dd.vertices    = (const vec3f *)vertices->getDD(device);
+    dd.scalars     = (const float *)scalars->getDD(device);
+    dd.indices     = (const int   *)indices->getDD(device);
+    dd.cellOffsets = (const int   *)cellOffsets->getDD(device);
+    dd.cellTypes   = (const uint8_t *)cellTypes->getDD(device);
+    dd.scalarsArePerVertex = scalarsArePerVertex;
+    dd.numCells    = (int)cellOffsets->count;
+    assert(dd.numCells > 0);
     assert(dd.vertices);
     assert(dd.indices);
-    assert(dd.elements);
     return dd;
   }
   
@@ -447,10 +405,6 @@ namespace BARNEY_NS {
        sampler);
 #endif
   }
-
-  RTC_EXPORT_COMPUTE1D(umeshRasterElements,UMeshRasterElements);
-  RTC_EXPORT_COMPUTE1D(umeshCreateElements,UMeshCreateElements);
-  RTC_EXPORT_COMPUTE1D(umeshComputeElementBBs,UMeshComputeElementBBs);
 }
 
 

@@ -195,10 +195,10 @@ namespace BARNEY_NS {
         default:
           throw std::runtime_error("unsupported aux channel in sending aux!?");
         };
-        context->world.send(owningRank,device->contextRank,
+        context->world.send(owningRank,device->contextRank(),
                             aux_send,
                             tiledFB->numActiveTiles,
-                            send_requests[device->contextRank]);
+                            send_requests[device->contextRank()]);
       }
     }
     // ------------------------------------------------------------------
@@ -211,7 +211,7 @@ namespace BARNEY_NS {
     
     if (context->isActiveWorker)
       for (auto device : *devices)
-        context->world.wait(send_requests[device->contextRank]);
+        context->world.wait(send_requests[device->contextRank()]);
   }
 
 
@@ -307,15 +307,15 @@ namespace BARNEY_NS {
         auto tiledFB = getFor(device);
         auto pld = getPLD(device);
         device->sync();
-        context->world.send(owningRank,device->contextRank,
+        context->world.send(owningRank,device->contextRank(),
                             pld->localSend.compressedColorTiles,
                             tiledFB->numActiveTiles,
-                            send_requests[device->contextRank]);
+                            send_requests[device->contextRank()]);
         if (needNormals)
-          context->world.send(owningRank,device->contextRank,
+          context->world.send(owningRank,device->contextRank(),
                               pld->localSend.compressedNormalTiles,
                               tiledFB->numActiveTiles,
-                              send_requests[devices->size()+device->contextRank]);
+                              send_requests[devices->size()+device->contextRank()]);
       }
     }
     // ------------------------------------------------------------------
@@ -328,7 +328,7 @@ namespace BARNEY_NS {
     
     if (context->isActiveWorker)
       for (auto device : *devices)
-        context->world.wait(send_requests[device->contextRank]);
+        context->world.wait(send_requests[device->contextRank()]);
     
     // ------------------------------------------------------------------
     // all (packed) tiles received; unpack (on owner only)
@@ -393,9 +393,9 @@ namespace BARNEY_NS {
   DistFB::PLD *DistFB::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
   
   void DistFB::freeChannelData()
@@ -478,7 +478,7 @@ namespace BARNEY_NS {
       SetActiveGPU forDuration(device);
       
       TiledFB *tiledFB = getFor(device);
-      tilesOnGPU[device->contextRank]
+      tilesOnGPU[device->contextRank()]
         = tiledFB->numActiveTiles;
       
       auto pld = getPLD(device);
@@ -585,10 +585,10 @@ namespace BARNEY_NS {
     if (context->isActiveWorker)
       for (auto device : *devices)  {
         context->world.send(owningRank,
-                            device->contextRank,
+                            device->contextRank(),
                             getFor(device)->tileDescs,
-                            tilesOnGPU[device->contextRank],
-                            send_requests[device->contextRank]);
+                            tilesOnGPU[device->contextRank()],
+                            send_requests[device->contextRank()]);
       }
 
     // ------------------------------------------------------------------
@@ -602,55 +602,6 @@ namespace BARNEY_NS {
       for (int localID=0;localID<tilesOnGPU.size();localID++)
         context->world.wait(send_requests[localID]);
   }
-
-  // void DistFB::ownerGatherCompressedTiles()
-  // {
-  //   std::vector<MPI_Request> recv_requests((needNormals?(2:1))*ownerGather.numGPUs);
-  //   std::vector<MPI_Request> send_requests((needNormals?(2:1))*devices->size());
-  //   // ------------------------------------------------------------------
-  //   // trigger all sends and receives - for gpu descs
-  //   // ------------------------------------------------------------------
-  //   if (isOwner) 
-  //     for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-  //       int rankOfGPU = ggID / context->gpusPerWorker;
-  //       int localID   = ggID % context->gpusPerWorker;
-  //       context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-  //                           gatheredTilesOnOwner.compressedColorTiles
-  //                           +ownerGather.firstTileOnGPU[ggID],
-  //                           ownerGather.numTilesOnGPU[ggID],
-  //                           recv_requests[ggID]);
-  //       if (needNormals)
-  //         context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-  //                             gatheredTilesOnOwner.compressedNormalTiles
-  //                             +ownerGather.firstTileOnGPU[ggID],
-  //                             ownerGather.numTilesOnGPU[ggID],
-  //                             recv_requests[ownerGather.numGPUs+ggID]);
-  //     }
-
-  //   if (context->isActiveWorker)
-  //     for (auto device : *devices) {
-  //       context->world.send(owningRank,device->contextRank,
-  //                           getPLD(device)->tiledFB->compressedColorTiles,
-  //                           getPLD(device)->tiledFB->numActiveTiles,
-  //                           send_requests[device->contextRank]);
-  //       if (needNormals)
-  //         context->world.send(owningRank,device->contextRank,
-  //                             getPLD(device)->tiledFB->compressedNormalTiles,
-  //                             getPLD(device)->tiledFB->numActiveTiles,
-  //                             send_requests[devices->size()+device->contextRank]);
-  //     }
-
-  //   // ------------------------------------------------------------------
-  //   // and wait for those to complete
-  //   // ------------------------------------------------------------------
-  //   if (isOwner)
-  //     for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
-  //       context->world.wait(recv_requests[ggID]);
-    
-  //   if (context->isActiveWorker)
-  //     for (auto device : *devices)
-  //       context->world.wait(send_requests[device->contextRank]);
-  // }
   
   RTC_EXPORT_COMPUTE1D(unpackTiles,UnpackTiles);
   RTC_EXPORT_COMPUTE1D(compressTiles,CompressTiles);

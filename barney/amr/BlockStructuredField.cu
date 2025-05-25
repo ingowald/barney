@@ -35,9 +35,9 @@ namespace BARNEY_NS {
   BlockStructuredField::PLD *BlockStructuredField::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
 
 #if RTC_DEVICE_CODE

@@ -71,8 +71,7 @@ namespace BARNEY_NS {
       int           numNodes   = 0;
       box3f         bounds;
     };
-    PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; } 
+    PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
 
     DD getDD(Device *device);

@@ -147,4 +147,5 @@ namespace BARNEY_NS {
     }
 #endif
   }
+  using render::PackedBSDF;
 }

@@ -142,6 +142,7 @@ namespace barney_device {
 
     m_params.vertexPosition = getParamObject<helium::Array1D>("vertex.position");
     m_params.vertexData = getParamObject<helium::Array1D>("vertex.data");
+    m_params.cellData = getParamObject<helium::Array1D>("cell.data");
     m_params.index = getParamObject<helium::Array1D>("index");
     m_params.cellType = getParamObject<helium::Array1D>("cell.type");
     m_params.cellBegin = getParamObject<helium::Array1D>("cell.begin");
@@ -152,130 +153,99 @@ namespace barney_device {
   void UnstructuredField::finalize()
   {
     if (!m_params.vertexPosition) {
-      reportMessage(ANARI_SEVERITY_WARNING,
-                    "missing required parameter 'vertex.position' on unstructured spatial field");
+      reportMessage
+        (ANARI_SEVERITY_WARNING,
+         "missing required parameter 'vertex.position' "
+         "on unstructured spatial field");
+      return;
+    }
+    if (m_params.vertexPosition->elementType() != ANARI_FLOAT32_VEC3) {
+      reportMessage
+        (ANARI_SEVERITY_WARNING,
+         "'unstructured::vertex.position' must be ANARI_FLOAT32_VEC3 (is %i) ",
+         m_params.vertexPosition->elementType());
       return;
     }
 
-    if (!m_params.vertexData) { // currently vertex data only!
-      reportMessage(ANARI_SEVERITY_WARNING,
-                    "missing required parameter 'vertex.data' on unstructured spatial field");
+    if (!m_params.vertexData && !m_params.cellData) { 
+      reportMessage
+        (ANARI_SEVERITY_WARNING,
+         "missing required parameter 'vertex.data' OR"
+         " 'cell.data' on unstructured spatial field");
+      return;
+    }
+
+    if (m_params.vertexData && m_params.cellData) { 
+      reportMessage
+        (ANARI_SEVERITY_WARNING,
+         "cannot have both 'cell.data' and 'vertex.data' "
+         "on unstructured spatial field");
       return;
     }
 
     if (!m_params.index) {
-      reportMessage(ANARI_SEVERITY_WARNING,
-                    "missing required parameter 'index' on unstructured spatial field");
+      reportMessage
+        (ANARI_SEVERITY_WARNING,
+         "missing required parameter 'index' on unstructured spatial field");
       return;
     }
-
+    
     if (!m_params.cellType) {
-      reportMessage(ANARI_SEVERITY_WARNING,
-                    "missing required parameter 'cell.type' on unstructured spatial field");
+      reportMessage
+        (ANARI_SEVERITY_WARNING,
+         "missing required parameter 'cell.type' on unstructured spatial field");
       return;
     }
-
+    
     if (!m_params.cellBegin) {
-      reportMessage(ANARI_SEVERITY_WARNING,
-                    "missing required parameter 'cell.begin' on unstructured spatial field");
+      reportMessage
+        (ANARI_SEVERITY_WARNING,
+         "missing required parameter 'cell.begin' on unstructured spatial field");
       return;
     }
 
     m_bounds.invalidate();
-    m_indices.clear();
-    m_vertices.clear();
-    m_elementOffsets.clear();
 
-    auto *vertexPosition = m_params.vertexPosition->beginAs<math::float3>();
-    int numVertices =
-      int(m_params.vertexPosition->endAs<math::float3>() - vertexPosition);
-    auto *vertexData = m_params.vertexData->beginAs<float>();
-    m_vertices.resize(numVertices);
-    for (int i = 0; i < numVertices; i++) {
-      (math::float3 &)m_vertices[i] = vertexPosition[i];
-      m_bounds.insert(vertexPosition[i]);
-      m_vertices[i].w = vertexData[i];
-    }
+    auto *vertexPositions
+      = m_params.vertexPosition->beginAs<math::float3>();
+    int numVertices
+      = m_params.vertexPosition->size();
+    auto *vertexData = m_params.vertexData
+      ? m_params.vertexData->beginAs<float>()
+      : nullptr;
+    auto *cellData = m_params.cellData
+      ? m_params.cellData->beginAs<float>()
+      : nullptr;
+    int numScalars = cellData
+      ? m_params.cellData->size()
+      : m_params.vertexData->size();
+    
+    for (int i = 0; i < numVertices; i++) 
+      m_bounds.insert(vertexPositions[i]);
 
     uint32_t *index32{nullptr};
-    uint64_t *index64{nullptr};
+    // uint64_t *index64{nullptr};
     if (m_params.index->elementType() == ANARI_UINT32)
       index32 = (uint32_t *)m_params.index->beginAs<uint32_t>();
     else if (m_params.index->elementType() == ANARI_UINT64)
-      index64 = (uint64_t *)m_params.index->beginAs<uint64_t>();
+      //      index64 = (uint64_t *)m_params.index->beginAs<uint64_t>();
+      reportMessage(ANARI_SEVERITY_ERROR,
+                    "'unstructured:index' - we only support 32-bit indices");
     else {
       reportMessage(ANARI_SEVERITY_ERROR,
                     "parameter 'index' on unstructured spatial field has wrong element type");
       return;
     }
-
-    uint32_t *cellBegin32{nullptr};
-    uint64_t *cellBegin64{nullptr};
-    if (m_params.cellBegin && m_params.cellBegin->elementType() == ANARI_UINT32)
-      cellBegin32 = (uint32_t *)m_params.cellBegin->beginAs<uint32_t>();
-    else if (m_params.cellBegin
-             && m_params.cellBegin->elementType() == ANARI_UINT64)
-      cellBegin64 = (uint64_t *)m_params.cellBegin->beginAs<uint64_t>();
-
-    auto *cellType = m_params.cellType->beginAs<uint8_t>();
-
-    size_t numCells = m_params.cellType->size(); // endAs<uint64_t>() - index;
-    // this isn't fully spec'ed yet
-    enum
-      {
-        _ANARI_TET = 0,
-        _ANARI_HEX = 1,
-        _ANARI_WEDGE = 2,
-        _ANARI_PYR = 3
-      };
-    enum
-      {
-        _VTK_TET = 10,
-        _VTK_HEX = 12,
-        _VTK_WEDGE = 13,
-        _VTK_PYR = 14
-      };
-    for (int cellIdx = 0; cellIdx < (int)numCells; cellIdx++) {
-      int thisOffset = (int)m_indices.size();
-      m_elementOffsets.push_back(thisOffset);
-      uint8_t type = cellType[cellIdx];
-      int numToCopy = -1;
-      switch (type) {
-      case _ANARI_TET:
-        numToCopy = 4;
-        break;
-      case _ANARI_HEX:
-        numToCopy = 8;
-        break;
-      case _ANARI_WEDGE:
-        numToCopy = 6;
-        break;
-      case _ANARI_PYR:
-        numToCopy = 5;
-        break;
-      case _VTK_TET:
-        numToCopy = 4;
-        break;
-      case _VTK_HEX:
-        numToCopy = 8;
-        break;
-      case _VTK_WEDGE:
-        numToCopy = 6;
-        break;
-      case _VTK_PYR:
-        numToCopy = 5;
-        break;
-      default:
-        throw std::runtime_error("buggy/invalid unstructured element type!?");
-      };
-      int inputBegin =
-        int(cellBegin32 ? cellBegin32[cellIdx] : cellBegin64[cellIdx]);
-      for (int i = 0; i < numToCopy; i++) {
-        if (index32)
-          m_indices.push_back(index32[inputBegin + i]);
-        else
-          m_indices.push_back((int)index64[inputBegin + i]);
-      }
+    if (m_params.cellBegin->elementType() == ANARI_UINT32)
+      index32 = (uint32_t *)m_params.index->beginAs<uint32_t>();
+    else if (m_params.cellBegin->elementType() == ANARI_UINT64)
+      //      index64 = (uint64_t *)m_params.index->beginAs<uint64_t>();
+      reportMessage(ANARI_SEVERITY_ERROR,
+                    "'unstructured:index' - we only support 32-bit indices");
+    else {
+      reportMessage(ANARI_SEVERITY_ERROR,
+                    "parameter 'index' on unstructured spatial field has wrong element type");
+      return;
     }
   }
 
@@ -284,64 +254,76 @@ namespace barney_device {
     std::cout
       << "=================================================================="
       << std::endl;
-    std::cout << "BANARI: CREATING UMESH OF " << m_elementOffsets.size()
+    std::cout << "BANARI: CREATING UMESH OF " << m_params.cellBegin->size()
               << " elements" << std::endl;
     std::cout
       << "=================================================================="
       << std::endl;
 
-#if 1
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
     
-    BNData verticesData = bnDataCreate(context,
-                                       slot,
-                                       BN_FLOAT4,
-                                       m_vertices.size(),
-                                       (const bn_float4 *)m_vertices.data());
-    BNData indicesData = bnDataCreate(context,
-                                      slot,
-                                      BN_INT,
-                                      m_indices.size(),
-                                      (const int *)m_indices.data());
-    BNData elementOffsetsData = bnDataCreate(context,
-                                             slot,
-                                             BN_INT,
-                                             m_elementOffsets.size(),
-                                             (const int *)m_elementOffsets.data());
+    auto *vertexPositions
+      = m_params.vertexPosition->beginAs<math::float3>();
+    int numVertices
+      = m_params.vertexPosition->endAs<math::float3>()
+      - m_params.vertexPosition->beginAs<math::float3>();
+
+    auto *vertexData = m_params.vertexData
+      ? m_params.vertexData->beginAs<float>()
+      : nullptr;
+    auto *cellData = m_params.cellData
+      ? m_params.cellData->beginAs<float>()
+      : nullptr;
+    assert(vertexData || cellData);
+    int numScalars = cellData
+      ? m_params.cellData->size()
+      : m_params.vertexData->size();
+    
+    BNData verticesData
+      = bnDataCreate(context,
+                     slot,
+                     BN_FLOAT3,
+                     numVertices, 
+                     vertexPositions);
+    BNData scalarsData
+      = bnDataCreate(context,
+                     slot,
+                     BN_FLOAT,
+                     numScalars, 
+                     vertexData ? vertexData : cellData);
+    BNData indicesData
+      = bnDataCreate(context,
+                     slot,
+                     BN_INT,
+                     m_params.index->size(),
+                     (const int *)m_params.index->data());
+    BNData cellTypeData
+      = bnDataCreate(context,
+                     slot,
+                     BN_UINT8,
+                     m_params.cellType->size(),
+                     (const int *)m_params.cellType->data());
+    BNData elementOffsetsData
+      = bnDataCreate(context,
+                     slot,
+                     BN_INT,
+                     m_params.cellBegin->size(),
+                     (const int *)m_params.cellBegin->data());
     BNScalarField sf = bnScalarFieldCreate(context, slot, "unstructured");
-    bnSetData(sf, "vertices", verticesData);
-    bnSetData(sf, "indices", indicesData);
-    bnSetData(sf, "elementOffsets", elementOffsetsData);
+    bnSetData(sf, "vertex.position", verticesData);
+    if (vertexData) {
+      // this will atomatically set cell.data to 0 on barney side
+      bnSetData(sf, "vertex.data", scalarsData);
+    } else {
+      // this will atomatically set vertex.data to 0 on barney side
+      bnSetData(sf, "cell.data",   scalarsData);
+    }
+    bnSetData(sf, "index", indicesData);
+    bnSetData(sf, "cell.index", elementOffsetsData);
+    bnSetData(sf, "cell.type", cellTypeData);
     bnCommit(sf);
     return sf;
-#else
-    return bnUMeshCreate(context,
-                         slot,
-                         (const bn_float4 *)m_vertices.data(),
-                         m_vertices.size(),
-                         m_indices.data(),
-                         m_indices.size(),
-                         m_elementOffsets.data(),
-                         m_elementOffsets.size(),
-                         // m_generatedVertices.data(),
-                         // m_generatedVertices.size() / 4,
-                         // m_generatedTets.data(),
-                         // m_generatedTets.size() / 4,
-                         // m_generatedPyrs.data(),
-                         // m_generatedPyrs.size() / 5,
-                         // m_generatedWedges.data(),
-                         // m_generatedWedges.size() / 6,
-                         // m_generatedHexes.data(),
-                         // m_generatedHexes.size() / 8,
-                         // m_generatedGridOffsets.size(),
-                         // m_generatedGridOffsets.data(),
-                         // m_generatedGridDims.data(),
-                         // m_generatedGridDomains.data(),
-                         // m_generatedGridScalars.data(),
-                         // m_generatedGridScalars.size()
-                         nullptr);
-#endif
   }
 
   box3 UnstructuredField::bounds() const

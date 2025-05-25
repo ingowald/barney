@@ -26,8 +26,8 @@ namespace BARNEY_NS {
                        MCVolumeAccel<StructuredDataSampler>::DD,false,false);
   RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
 
-
-  // extern "C" char StructuredData_ptx[];
+  StructuredData::PLD *StructuredData::getPLD(Device *device) 
+  { return &perLogical[device->contextRank()]; } 
 
   /*! how many cells (in each dimension) will go into a macro
       cell. eg, a value of 8 will mean that eachmacrocell covers 8x8x8

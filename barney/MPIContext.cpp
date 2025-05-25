@@ -88,8 +88,8 @@ namespace BARNEY_NS {
 
       int _globalID = workers.rank*numDevicesPerWorker;
       for (auto device : *devices) {
-        device->globalRank = _globalID++;
-        device->globalSize = numWorkers * numDevicesPerWorker;
+        device->allGPUsGlobally.rank = _globalID++;
+        device->allGPUsGlobally.size = numWorkers * numDevicesPerWorker;
       }
       
       if (dbg) {
@@ -98,7 +98,7 @@ namespace BARNEY_NS {
         ss << "num devices " << numDevicesPerWorker
            << " (";
         for (auto device : *devices)
-          ss << " " << device->globalRank;
+          ss << " " << device->globalRank();
         ss << " ) DGs " << numSlotsPerWorker << std::endl << std::flush;
         std::cout << ss.str();
       }
@@ -183,10 +183,7 @@ namespace BARNEY_NS {
       std::vector<int> myDataOnLocal(devices->numLogical);
       for (auto slot : perSlot) 
         for (auto device : *slot.devices)
-          myDataOnLocal[device->contextRank] = slot.modelRankInThisSlot;
-      // for (int i=0;i<devices->size();i++)
-      //   myDataOnLocal[i]
-      //     = perSlot[(*devices)[i]->device->devGroup->lmsIdx].modelRankInThisSlot;
+          myDataOnLocal[device->contextRank()] = slot.modelRankInThisSlot;
       if (dbg) {
         std::stringstream ss;
         ss << "bn." << workers.rank << ": ";
@@ -227,9 +224,9 @@ namespace BARNEY_NS {
 
       for (auto &slot : perSlot) {
         for (auto device : *devices) {
-          int localID  = device->contextRank;
-          int myGlobal = device->globalRank;
-          int myDG     = slot.modelRankInThisSlot;//dataOnGlobal[myGlobal];
+          int localID  = device->contextRank();
+          int myGlobal = device->globalRank();
+          int myDG     = slot.modelRankInThisSlot;
           int myIsland = islandOfGlobal[myGlobal];
           int nextDG   = (myDG+1) % numDifferentModelSlots;
           int prevDG   = (myDG+numDifferentModelSlots-1) % numDifferentModelSlots;
@@ -330,12 +327,12 @@ namespace BARNEY_NS {
       auto &rays = *device->rayQueue;
 
       MPI_Request sendReq, recvReq;
-      numOutgoing[device->contextRank] = device->rayQueue->numActive;
+      numOutgoing[device->contextRank()] = device->rayQueue->numActive;
 
       if (FromEnv::get()->logQueues) {
         std::stringstream ss;
-        ss << "#" << myRank() << "." << device->contextRank << ":" << std::endl;
-        ss << "  sends " << numOutgoing[device->contextRank] << " to "
+        ss << "#" << myRank() << "." << device->contextRank() << ":" << std::endl;
+        ss << "  sends " << numOutgoing[device->contextRank()] << " to "
            <<  device->rqs.sendWorkerRank << "."
            << device->rqs.sendWorkerLocal << std::endl;
         ss << "  recvs from " << device->rqs.recvWorkerRank << "." << device->rqs.recvWorkerLocal << std::endl;
@@ -344,10 +341,10 @@ namespace BARNEY_NS {
       
       workers.recv(device->rqs.recvWorkerRank,
                    device->rqs.recvWorkerLocal,
-                   &numIncoming[device->contextRank],1,recvReq);
+                   &numIncoming[device->contextRank()],1,recvReq);
       workers.send(device->rqs.sendWorkerRank,
                    device->rqs.sendWorkerLocal,
-                   &numOutgoing[device->contextRank],1,sendReq);
+                   &numOutgoing[device->contextRank()],1,sendReq);
       allRequests.push_back(sendReq);
       allRequests.push_back(recvReq);
     }
@@ -373,20 +370,20 @@ namespace BARNEY_NS {
     // exchange actual rays
     // ------------------------------------------------------------------
     for (auto device : *devices) {
-      numOutgoing[device->contextRank] = device->rayQueue->numActive;
+      numOutgoing[device->contextRank()] = device->rayQueue->numActive;
       if (FromEnv::get()->logQueues)
-        std::cout << myRank() << ": numOutgoing[" << device->contextRank
+        std::cout << myRank() << ": numOutgoing[" << device->contextRank()
                   << "] = " << device->rayQueue->numActive << std::endl;
       MPI_Request sendReq, recvReq;
       workers.recv(device->rqs.recvWorkerRank,
                    device->rqs.recvWorkerLocal,
                    device->rayQueue->receiveAndShadeWriteQueue.rays,
-                   numIncoming[device->contextRank],
+                   numIncoming[device->contextRank()],
                    recvReq);
       workers.send(device->rqs.sendWorkerRank,
                    device->rqs.sendWorkerLocal,
                    device->rayQueue->traceAndShadeReadQueue.rays,
-                   numOutgoing[device->contextRank],
+                   numOutgoing[device->contextRank()],
                    sendReq);
       allRequests.push_back(sendReq);
       allRequests.push_back(recvReq);
@@ -394,12 +391,12 @@ namespace BARNEY_NS {
         workers.recv(device->rqs.recvWorkerRank,
                      device->rqs.recvWorkerLocal,
                      device->rayQueue->receiveAndShadeWriteQueue.hitIDs,
-                     numIncoming[device->contextRank],
+                     numIncoming[device->contextRank()],
                      recvReq);
         workers.send(device->rqs.sendWorkerRank,
                      device->rqs.sendWorkerLocal,
                      device->rayQueue->traceAndShadeReadQueue.hitIDs,
-                     numOutgoing[device->contextRank],
+                     numOutgoing[device->contextRank()],
                      sendReq);
         allRequests.push_back(sendReq);
         allRequests.push_back(recvReq);
@@ -427,7 +424,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       device->rayQueue->swapAfterCycle(numTimesForwarded  % numDifferentModelSlots,
                                        numDifferentModelSlots);
-      device->rayQueue->numActive = numIncoming[device->contextRank];
+      device->rayQueue->numActive = numIncoming[device->contextRank()];
     }
 
     ++numTimesForwarded;

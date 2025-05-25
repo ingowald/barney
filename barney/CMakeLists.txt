@@ -131,8 +131,8 @@ set(HOST_SOURCES
   umesh/mc/UMeshCUBQLSampler.h
   umesh/mc/UMeshCUBQLSampler.cu
  
-  umesh/os/AWT.cu
-  umesh/os/AWT.h
+#  umesh/os/AWT.cu
+#  umesh/os/AWT.h
 
   amr/BlockStructuredCUBQLSampler.cu
   amr/BlockStructuredField.cu
@@ -225,7 +225,7 @@ set(DEVICE_PROGRAM_SOURCES
   geometry/Cones.dev.cu
   volume/StructuredData.dev.cu
   umesh/mc/UMeshMC.dev.cu
-  umesh/os/AWT.dev.cu
+#  umesh/os/AWT.dev.cu
   amr/BlockStructuredMC.dev.cu
   kernels/traceRays.dev.cu
 )

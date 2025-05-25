@@ -127,12 +127,12 @@ namespace BARNEY_NS {
       }
       ray.dir = ray_dir;
       
-      bool crossHair_x = (ix == fbSize.x/2);
-      bool crossHair_y = (iy == fbSize.y/2);
 
 #ifdef NDEBUG
       ray.dbg         = 0;
 #else
+      bool crossHair_x = (ix == fbSize.x/2);
+      bool crossHair_y = (iy == fbSize.y/2);
       ray.dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
 #endif
       ray.clearHit();

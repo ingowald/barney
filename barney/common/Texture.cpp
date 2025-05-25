@@ -24,17 +24,17 @@ namespace BARNEY_NS {
   TextureData::PLD *TextureData::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
   
   Texture::PLD *Texture::getPLD(Device *device) 
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
 
   rtc::ColorSpace toRTC(BNTextureColorSpace mode)
@@ -71,16 +71,19 @@ namespace BARNEY_NS {
     case BN_UFIXED16:
       return 1;
       
-    case BN_FLOAT2:
-    case BN_INT2:
+    case BN_FLOAT32_VEC2:
+    case BN_INT32_VEC2:
+    case BN_UINT32_VEC2:
       return 2;
       
-    case BN_FLOAT3:
-    case BN_INT3:
+    case BN_FLOAT32_VEC3:
+    case BN_INT32_VEC3:
+    case BN_UINT32_VEC3:
       return 3;
       
-    case BN_FLOAT4:
-    case BN_INT4:
+    case BN_FLOAT32_VEC4:
+    case BN_INT32_VEC4:
+    case BN_UINT32_VEC4:
     case BN_UFIXED8_RGBA:
       return 4;
     default:

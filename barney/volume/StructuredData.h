@@ -77,8 +77,7 @@ namespace BARNEY_NS {
     struct PLD {
       rtc::ComputeKernel3D *computeMCs = 0;
     };
-    PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; } 
+    PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
     
     BNDataType scalarType = BN_DATA_UNDEFINED;

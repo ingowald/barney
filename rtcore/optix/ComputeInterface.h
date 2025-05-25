@@ -4,7 +4,7 @@
 
 namespace rtc {
   namespace optix {
-#if RTC_DEVICE_CODE
+#ifdef __CUDACC__
     using cuda_common::ComputeInterface;
     
     using cuda_common::tex1D;

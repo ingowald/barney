@@ -62,8 +62,7 @@ namespace BARNEY_NS {
     struct PLD {
       rtc::Buffer        *valuesBuffer = 0;
     };
-    PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; } 
+    PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
     
     range1f             domain = { 0.f, 1.f };

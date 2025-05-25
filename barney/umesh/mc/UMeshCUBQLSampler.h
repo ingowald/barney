@@ -35,28 +35,17 @@ namespace BARNEY_NS {
     struct DD : public UMeshField::DD {
       inline __rtc_device float sample(vec3f P, bool dbg = false) const;
       
-      node_t  *bvhNodes;
+      bvh_t bvh;
     };
     DD getDD(Device *device);
     
     /*! per-device data - parent store the umesh, we just store the
       bvh nodes */
     struct PLD {
-      node_t *bvhNodes = 0;
+      bvh_t bvh = { 0,0,0,0 };
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
-    
-    /*! for-cubql traversal state that we can use with a cubql
-      traversal call back */
-    struct Traversal {
-      inline __rtc_device Traversal(const UMeshCUBQLSampler::DD *const mesh, bool dbg);
-      inline __rtc_device bool leaf(vec3f P, int offset, int count);
-      
-      const UMeshCUBQLSampler::DD *const mesh;
-      float retVal = NAN;
-      bool const dbg;
-    };
     
     UMeshCUBQLSampler(UMeshField *mesh);
     
@@ -71,41 +60,20 @@ namespace BARNEY_NS {
   };
   
   inline __rtc_device
-  bool UMeshCUBQLSampler::Traversal::leaf(vec3f P, int offset, int count)
-  {
-    for (int i=0;i<count;i++) {
-      auto elt = mesh->elements[offset+i];
-      if (mesh->eltScalar(retVal,elt,P,dbg))
-        return false;
-    }
-    return true;
-  }
-
-  inline __rtc_device
-  UMeshCUBQLSampler::Traversal::Traversal(const UMeshCUBQLSampler::DD *const mesh,
-                                          bool dbg)
-    : mesh(mesh), dbg(dbg)
-  {}
-  
-  inline __rtc_device
   float UMeshCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
-    UMeshCUBQLSampler::Traversal traversal(this,dbg);
     typename bvh_t::box_t box; box.lower = box.upper = to_cubql(P);
-    bvh_t bvh;
-    bvh.nodes = bvhNodes;
-    bvh.primIDs = nullptr;
 
-    auto lambda = [&]
-      (const uint32_t *primIDs, int numPrims)
+    float retVal = NAN;
+    auto lambda = [this,P,&retVal,dbg]
+      (const uint32_t primID)
     {
-      if (traversal.leaf(P,int(primIDs - bvh.primIDs), numPrims))
-        return CUBQL_CONTINUE_TRAVERSAL;
-      else
+      if (this->eltScalar(retVal,primID,P,dbg))
         return CUBQL_TERMINATE_TRAVERSAL;
+      return CUBQL_CONTINUE_TRAVERSAL;
     };
-    cuBQL::fixedBoxQuery::forEachLeaf(lambda,bvh,box);
-    return traversal.retVal;
+    cuBQL::fixedBoxQuery::forEachPrim(lambda,bvh,box);
+    return retVal;
   }
   
 } // ::BARNEY_NS
