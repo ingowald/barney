@@ -212,6 +212,42 @@ namespace barney_device {
     bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
     bnCommit(m_bnSampler);
   }
+
+
+  /// Transform ///
+  TransformSampler::TransformSampler(BarneyGlobalState *s)
+    : Sampler(s)
+  {
+  }
+  
+  TransformSampler::~TransformSampler() = default;
+  
+  void TransformSampler::commitParameters()
+  {
+    Sampler::commitParameters();
+    m_outTransform = math::identity;
+    getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
+    m_outOffset =
+      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    m_inAttribute = getParamString("inAttribute", "attribute0");
+  }
+  
+  void TransformSampler::createBarneySampler()
+  {
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+    m_bnSampler = bnSamplerCreate(context, slot, "transform");
+    bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
+    bnSet4f(m_bnSampler,
+            "outOffset",
+            m_outOffset.x,
+            m_outOffset.y,
+            m_outOffset.z,
+            m_outOffset.w);
+    bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
+    bnCommit(m_bnSampler);
+    bnCommit(m_bnSampler);
+  }
   
 } // namespace barney_device
 

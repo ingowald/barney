@@ -85,7 +85,7 @@ namespace BARNEY_NS {
       ptd.visitBrick(P,primID);
       return CUBQL_CONTINUE_TRAVERSAL;
     };
-    cuBQL::box3f box; box.lower = box.upper = P;
+    cuBQL::box3f box; box.lower = box.upper = (const cuBQL::vec3f &)P;
     cuBQL::fixedBoxQuery::forEachPrim(lambda,bvh,box);
     // traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
