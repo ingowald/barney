@@ -47,7 +47,6 @@ namespace BARNEY_NS {
       device->rtc->copyAsync(dst,
                              devFB->tileDescs,
                              devFB->numActiveTilesThisGPU*sizeof(TileDesc));
-      PRINT(devFB->numActiveTilesThisGPU);
       dst += devFB->numActiveTilesThisGPU;
     }
     
