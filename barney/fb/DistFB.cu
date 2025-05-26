@@ -197,7 +197,7 @@ namespace BARNEY_NS {
         };
         context->world.send(owningRank,device->contextRank(),
                             aux_send,
-                            tiledFB->numActiveTiles,
+                            tiledFB->numActiveTilesThisGPU,
                             send_requests[device->contextRank()]);
       }
     }
@@ -300,7 +300,7 @@ namespace BARNEY_NS {
           tiledFB->accumTiles,
           accumScale
         };
-        pld->compressTiles->launch(tiledFB->numActiveTiles,pixelsPerTile,&kernel);
+        pld->compressTiles->launch(tiledFB->numActiveTilesThisGPU,pixelsPerTile,&kernel);
       }
       for (auto device : *devices) {
         SetActiveGPU forDuration(device);
@@ -309,12 +309,12 @@ namespace BARNEY_NS {
         device->sync();
         context->world.send(owningRank,device->contextRank(),
                             pld->localSend.compressedColorTiles,
-                            tiledFB->numActiveTiles,
+                            tiledFB->numActiveTilesThisGPU,
                             send_requests[device->contextRank()]);
         if (needNormals)
           context->world.send(owningRank,device->contextRank(),
                               pld->localSend.compressedNormalTiles,
-                              tiledFB->numActiveTiles,
+                              tiledFB->numActiveTilesThisGPU,
                               send_requests[devices->size()+device->contextRank()]);
       }
     }
@@ -479,16 +479,16 @@ namespace BARNEY_NS {
       
       TiledFB *tiledFB = getFor(device);
       tilesOnGPU[device->contextRank()]
-        = tiledFB->numActiveTiles;
+        = tiledFB->numActiveTilesThisGPU;
       
       auto pld = getPLD(device);
       pld->localSend.compressedColorTiles
         = (CompressedColorTile*)device->rtc->allocMem
-        (tiledFB->numActiveTiles*sizeof(CompressedColorTile));
+        (tiledFB->numActiveTilesThisGPU*sizeof(CompressedColorTile));
       if (needNormals) 
         pld->localSend.compressedNormalTiles
           = (CompressedNormalTile*)device->rtc->allocMem
-          (tiledFB->numActiveTiles*sizeof(CompressedNormalTile));
+          (tiledFB->numActiveTilesThisGPU*sizeof(CompressedNormalTile));
     }
     
     std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);

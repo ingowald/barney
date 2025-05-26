@@ -215,7 +215,8 @@ namespace BARNEY_NS {
       return;
     
     for (auto device : *devices) {
-      int numTilesInFrame        = fb->getFor(device)->numActiveTiles;
+      auto devFB = fb->getFor(device);
+      int numTilesInFrame        = devFB->numTiles.x*devFB->numTiles.y;
       int numGPUsThatRenderTiles = device->allGPUsGlobally.size;
       int maxTilesOnAnyGPU       = divRoundUp(numTilesInFrame,
                                               numGPUsThatRenderTiles);

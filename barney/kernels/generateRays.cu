@@ -226,7 +226,7 @@ namespace BARNEY_NS {
         std::cout << ss.str();
       }
       
-      device->generateRays->launch(devFB->numActiveTiles,
+      device->generateRays->launch(devFB->numActiveTilesThisGPU,
                                    pixelsPerTile,
                                    &args);
     }

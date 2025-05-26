@@ -106,6 +106,8 @@ namespace BARNEY_NS {
 #endif
                         )
   {
+    if (newSize <= size) return;
+    
     SetActiveGPU forDuration(device);
     auto rtc = device->rtc;
     traceAndShadeReadQueue.free(rtc);

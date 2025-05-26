@@ -36,7 +36,7 @@ namespace BARNEY_NS {
 
     onOwner.sumTiles = 0;
     for (auto device : *devices)
-      onOwner.sumTiles += getFor(device)->numActiveTiles;
+      onOwner.sumTiles += getFor(device)->numActiveTilesThisGPU;
 
     onOwner.tileDescs
       = (TileDesc *)rtc->allocMem(onOwner.sumTiles*sizeof(TileDesc));
@@ -46,8 +46,9 @@ namespace BARNEY_NS {
       auto devFB = getFor(device);
       device->rtc->copyAsync(dst,
                              devFB->tileDescs,
-                             devFB->numActiveTiles*sizeof(TileDesc));
-      dst += devFB->numActiveTiles;
+                             devFB->numActiveTilesThisGPU*sizeof(TileDesc));
+      PRINT(devFB->numActiveTilesThisGPU);
+      dst += devFB->numActiveTilesThisGPU;
     }
     
     for (auto device : *devices)
@@ -58,7 +59,6 @@ namespace BARNEY_NS {
   {
     auto frontDev = getDenoiserDevice();
     SetActiveGPU forDuration(frontDev);
-    // frontDev->rtc->freeMem(.compressedTiles);
     frontDev->rtc->freeMem(onOwner.tileDescs);
   }
 
