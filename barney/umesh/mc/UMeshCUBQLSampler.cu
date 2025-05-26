@@ -77,7 +77,7 @@ namespace BARNEY_NS {
       device->rtc->sync();
 
 #if BARNEY_RTC_EMBREE || defined(__HIPCC__)
-      cuBQL::cpu::spatialMedian(bvh,
+      cuBQL::cpu::spatialMedian(pld->bvh,
                                 (const cuBQL::box_t<float,3>*)primBounds,
                                 numCells,
                                 cuBQL::BuildConfig());
