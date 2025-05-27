@@ -80,7 +80,7 @@ namespace BARNEY_NS {
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
 #if NEW_RNG
-      ray.rngSeed.value = hash(ix,iy,accumID);
+      ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
 #else
       ray.rngSeed.seed(ix+fbSize.x*accumID,iy+fbSize.y*accumID);
 #endif
@@ -181,7 +181,7 @@ namespace BARNEY_NS {
       
       rayQueue.rays[pos] = ray;
       rayQueue.states[pos] = state;
-      rayQueue.hitIDs[pos] = {INFINITY,-1,-1,-1};
+      rayQueue.hitIDs[pos] = {BARNEY_INF,-1,-1,-1};
     }
 #endif
   }  
