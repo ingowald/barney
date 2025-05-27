@@ -256,7 +256,7 @@ namespace barney_device {
     if (!m_index) {
       m_generatedIndices.resize(m_vertexPosition->totalSize() / 2);
       for (size_t i = 0; i < m_generatedIndices.size(); ++i) {
-        m_generatedIndices[i] = math::uint2(i * 2, i * 2 + 1);
+        m_generatedIndices[i] = math::uint2((uint32_t)i * 2, (uint32_t)i * 2 + 1);
       }
     }
 
@@ -371,7 +371,7 @@ namespace barney_device {
     if (!m_index) {
       m_generatedIndices.resize(m_vertexPosition->totalSize() / 2);
       for (size_t i = 0; i < m_generatedIndices.size(); ++i) {
-        m_generatedIndices[i] = math::uint2(i * 2, i * 2 + 1);
+        m_generatedIndices[i] = math::uint2((uint32_t)i * 2, (uint32_t)i * 2 + 1);
       }
     }
   }

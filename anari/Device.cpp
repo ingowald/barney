@@ -208,7 +208,7 @@ namespace barney_device {
   {
     std::vector<std::string> res;
     while (true) {
-      int pos = s.find(delim);
+      size_t pos = s.find(delim);
       if (pos == s.npos)
         break;
       res.push_back(s.substr(0,pos));
@@ -342,7 +342,7 @@ namespace barney_device {
           gpuIDs.push_back(dev->m_cudaDevice);
         }
         _gpuIDs = gpuIDs.data();
-        _gpuCount = gpuIDs.size();
+        _gpuCount = (int)gpuIDs.size();
       } else {
         // leave empty, init with barney gpu list with {nullptr,-1}
       }
@@ -357,7 +357,7 @@ namespace barney_device {
         dgIDs = { rank };
       }
       int *_dgIDs   = dgIDs.data();
-      int  _dgCount = dgIDs.size();
+      int  _dgCount = (int)dgIDs.size();
       
       reportMessage
         (ANARI_SEVERITY_DEBUG, "using cuda device #%i", m_cudaDevice);

@@ -82,7 +82,7 @@ namespace barney_device {
     // first, create 2D cuda array of texels. these barney objects
     // SHOULD actually live with their respective image array...
     // ------------------------------------------------------------------
-    int width = m_image->size();
+    int width = (int)m_image->size();
     int height = 1;
     std::vector<uint32_t> texels;
     if (!convert_to_rgba8(m_image, texels)) {

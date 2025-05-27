@@ -209,7 +209,7 @@ namespace barney_device {
     auto *vertexPositions
       = m_params.vertexPosition->beginAs<math::float3>();
     int numVertices
-      = m_params.vertexPosition->size();
+      = (int)m_params.vertexPosition->size();
     auto *vertexData = m_params.vertexData
       ? m_params.vertexData->beginAs<float>()
       : nullptr;
@@ -266,8 +266,9 @@ namespace barney_device {
     auto *vertexPositions
       = m_params.vertexPosition->beginAs<math::float3>();
     int numVertices
-      = m_params.vertexPosition->endAs<math::float3>()
-      - m_params.vertexPosition->beginAs<math::float3>();
+      = (int)m_params.vertexPosition->size();
+    // endAs<math::float3>()
+    //   - m_params.vertexPosition->beginAs<math::float3>();
 
     auto *vertexData = m_params.vertexData
       ? m_params.vertexData->beginAs<float>()
@@ -276,9 +277,9 @@ namespace barney_device {
       ? m_params.cellData->beginAs<float>()
       : nullptr;
     assert(vertexData || cellData);
-    int numScalars = cellData
-      ? m_params.cellData->size()
-      : m_params.vertexData->size();
+    int numScalars = (int)(cellData
+                           ? m_params.cellData->size()
+                           : m_params.vertexData->size());
     
     BNData verticesData
       = bnDataCreate(context,

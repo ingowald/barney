@@ -85,7 +85,7 @@ namespace BARNEY_NS {
     std::map<int,int> numGPUsInIsland;
     std::map<int,int> numUsesOfDG;
 
-    for (int i=0;i<devices->size();i++) {
+    for (int i=0;i<(int)devices->size();i++) {
       auto dev = (*devices)[i]; assert(dev);
       dev->allGPUsGlobally.rank = i;
       dev->allGPUsGlobally.size = devices->size();
@@ -99,7 +99,7 @@ namespace BARNEY_NS {
     }
     // now we know how often every DG and island got used, so now we
     // know num islands, and thus the size of each island.
-    for (int i=0;i<devices->size();i++) {
+    for (int i=0;i<(int)devices->size();i++) {
       auto dev = (*devices)[i]; assert(dev);
       int myDG           = dataGroupIDs[i % dataGroupIDs.size()];
       int numIslands     = numUsesOfDG[myDG];
@@ -110,7 +110,7 @@ namespace BARNEY_NS {
     }
 
     // now assign, for each device, it's recv and send devices
-    for (int myID=0;myID<devices->size();myID++) {
+    for (int myID=0;myID<(int)devices->size();myID++) {
       auto myDev = (*devices)[myID]; assert(myDev);
       auto &rqs = myDev->rqs;
       const int myIsland = myDev->islandInWorld.rank;

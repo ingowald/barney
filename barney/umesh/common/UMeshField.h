@@ -194,7 +194,7 @@ namespace BARNEY_NS {
       ;
     }
     box4f bb;
-    for (int i=0;i<numVertices;i++) {
+    for (uint32_t i=0;i<numVertices;i++) {
       int vtxIdx = indices[offset++];
       vec4f v(vertices[vtxIdx],scalars[scalarsArePerVertex?vtxIdx:cellIdx]);
       bb.extend(v);

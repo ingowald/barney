@@ -98,7 +98,7 @@ namespace BARNEY_NS {
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.amr: building initial macro cell grid"
               << OWL_TERMINAL_DEFAULT << std::endl;
-    numBlocks = perBlock.origins->count;
+    numBlocks = (int)perBlock.origins->count;
 
     // =============================================================================
     // compute macro cell grid dims
@@ -174,7 +174,7 @@ namespace BARNEY_NS {
     
     dd.scalars      = (const float *)scalars->getDD(device);
     
-    dd.numBlocks    = perBlock.origins->count;
+    dd.numBlocks    = (int)perBlock.origins->count;
 
     return dd;
   }
@@ -327,7 +327,7 @@ namespace BARNEY_NS {
     assert(perBlock.levels);
     assert(perBlock.offsets);
 
-    numBlocks = perBlock.origins->count;
+    numBlocks = (int)perBlock.origins->count;
     assert(numBlocks > 0);
     assert(perBlock.dims->count == numBlocks);
     assert(perBlock.offsets->count == numBlocks);
