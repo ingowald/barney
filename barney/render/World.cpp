@@ -44,12 +44,13 @@ namespace BARNEY_NS {
     World::PLD *World::getPLD(Device *device)
     {
       assert(device);
-      assert(device->contextRank >= 0);
-      assert(device->contextRank < perLogical.size());
-      return &perLogical[device->contextRank];
+      assert(device->contextRank() >= 0);
+      assert(device->contextRank() < perLogical.size());
+      return &perLogical[device->contextRank()];
     }
     
-    World::DD World::getDD(Device *device, int rngSeed) 
+    World::DD World::getDD(Device *device// , int rngSeed
+                           ) 
     {
       PLD *pld = getPLD(device);
       DD dd;
@@ -59,7 +60,7 @@ namespace BARNEY_NS {
       dd.dirLights
         = (DirLight::DD *)pld->dirLights;
       dd.numDirLights = pld->numDirLights;
-      dd.rngSeed = rngSeed;
+      // dd.rngSeed = rngSeed;
       dd.envMapLight
         = envMapLight.light
         ? envMapLight.light->getDD(device,envMapLight.xfm)

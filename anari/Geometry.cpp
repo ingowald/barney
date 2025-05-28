@@ -14,14 +14,14 @@ namespace barney_device {
 
   static void addAttribute(BNGeom geom,
                            BNContext context,
-                           // int slot,
+                           int slot,
                            const helium::IntrusivePtr<Array1D> &attribute,
                            const std::string &name)
   {
     if (!attribute)
       return;
 
-    BNData attr = makeBarneyData(context, 0 /*slot*/, attribute);
+    BNData attr = makeBarneyData(context, slot, attribute);
     if (attr) {
       bnSetData(geom, name.c_str(), attr);
       bnRelease(attr);
@@ -64,8 +64,11 @@ namespace barney_device {
     return (Geometry *)new UnknownObject(ANARI_GEOMETRY, s);
   }
 
-  void Geometry::setAttributes(BNContext context, BNGeom geom)
+  void Geometry::setAttributes(BNGeom geom)
   {
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+    
     bnSet4f(geom,"attribute0",
             m_constantAttributes[0].x,
             m_constantAttributes[0].y,
@@ -91,20 +94,20 @@ namespace barney_device {
             m_constantAttributes[4].y,
             m_constantAttributes[4].z,
             m_constantAttributes[4].w);
-    
-    addAttribute(geom, context, m_vertexAttributes[0], "vertex.attribute0");
-    addAttribute(geom, context, m_vertexAttributes[1], "vertex.attribute1");
-    addAttribute(geom, context, m_vertexAttributes[2], "vertex.attribute2");
-    addAttribute(geom, context, m_vertexAttributes[3], "vertex.attribute3");
-    addAttribute(geom, context, m_vertexAttributes[4], "vertex.color");
 
-    addAttribute(geom, context, m_primitiveAttributes[0], "primitive.attribute0");
-    addAttribute(geom, context, m_primitiveAttributes[1], "primitive.attribute1");
-    addAttribute(geom, context, m_primitiveAttributes[2], "primitive.attribute2");
-    addAttribute(geom, context, m_primitiveAttributes[3], "primitive.attribute3");
-    addAttribute(geom, context, m_primitiveAttributes[4], "primitive.color");
+    addAttribute(geom, context, slot, m_vertexAttributes[0], "vertex.attribute0");
+    addAttribute(geom, context, slot, m_vertexAttributes[1], "vertex.attribute1");
+    addAttribute(geom, context, slot, m_vertexAttributes[2], "vertex.attribute2");
+    addAttribute(geom, context, slot, m_vertexAttributes[3], "vertex.attribute3");
+    addAttribute(geom, context, slot, m_vertexAttributes[4], "vertex.color");
+
+    addAttribute(geom, context, slot, m_primitiveAttributes[0], "primitive.attribute0");
+    addAttribute(geom, context, slot, m_primitiveAttributes[1], "primitive.attribute1");
+    addAttribute(geom, context, slot, m_primitiveAttributes[2], "primitive.attribute2");
+    addAttribute(geom, context, slot, m_primitiveAttributes[3], "primitive.attribute3");
+    addAttribute(geom, context, slot, m_primitiveAttributes[4], "primitive.color");
   }
-  
+
   void Geometry::commitParameters()
   {
     math::float4 invalidAttr(NAN,NAN,NAN,NAN);
@@ -114,7 +117,7 @@ namespace barney_device {
     m_constantAttributes[3] = getParam<math::float4>("attribute3",invalidAttr);
     m_constantAttributes[4] = getParam<math::float4>("color",invalidAttr);
 
-    m_primitiveAttributes[0] = getParamObject<Array1D>("primitive.attribute1");
+    m_primitiveAttributes[0] = getParamObject<Array1D>("primitive.attribute0");
     m_primitiveAttributes[1] = getParamObject<Array1D>("primitive.attribute1");
     m_primitiveAttributes[2] = getParamObject<Array1D>("primitive.attribute2");
     m_primitiveAttributes[3] = getParamObject<Array1D>("primitive.attribute3");
@@ -148,6 +151,11 @@ namespace barney_device {
     m_vertexPosition = getParamObject<Array1D>("vertex.position");
     m_vertexRadius = getParamObject<Array1D>("vertex.radius");
     m_globalRadius = getParam<float>("radius", 0.01f);
+    m_vertexAttributes[0] = getParamObject<Array1D>("vertex.attribute0");
+    m_vertexAttributes[1] = getParamObject<Array1D>("vertex.attribute1");
+    m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
+    m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
+    m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
   }
 
   void Sphere::finalize()
@@ -159,9 +167,11 @@ namespace barney_device {
     }
   }
 
-  void Sphere::setBarneyParameters(BNGeom geom, BNContext context)
+  void Sphere::setBarneyParameters(BNGeom geom)
   {
-    int slot = 0;
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+    
     BNData origins = bnDataCreate(context,
                                   slot,
                                   BN_FLOAT3,
@@ -178,7 +188,7 @@ namespace barney_device {
     } else
       bnSet1f(geom, "radius", m_globalRadius);
 
-    setAttributes(context,geom);
+    setAttributes(geom);
   }
 
   bool Sphere::isValid() const
@@ -246,7 +256,7 @@ namespace barney_device {
     if (!m_index) {
       m_generatedIndices.resize(m_vertexPosition->totalSize() / 2);
       for (size_t i = 0; i < m_generatedIndices.size(); ++i) {
-        m_generatedIndices[i] = math::uint2(i * 2, i * 2 + 1);
+        m_generatedIndices[i] = math::uint2((uint32_t)i * 2, (uint32_t)i * 2 + 1);
       }
     }
 
@@ -259,9 +269,11 @@ namespace barney_device {
     }
   }
 
-  void Cylinder::setBarneyParameters(BNGeom geom, BNContext context)
+  void Cylinder::setBarneyParameters(BNGeom geom)
   {
-    int slot = 0;
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+
     int numVertices = (int)m_vertexPosition->totalSize();
     int numIndices =
       m_index ? (int)m_index->size() : (int)m_generatedIndices.size();
@@ -281,7 +293,7 @@ namespace barney_device {
       bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertices);
     bnSetAndRelease(geom, "vertices", _vertices);
 
-    setAttributes(context,geom);
+    setAttributes(geom);
   }
 
   bool Cylinder::isValid() const
@@ -359,14 +371,16 @@ namespace barney_device {
     if (!m_index) {
       m_generatedIndices.resize(m_vertexPosition->totalSize() / 2);
       for (size_t i = 0; i < m_generatedIndices.size(); ++i) {
-        m_generatedIndices[i] = math::uint2(i * 2, i * 2 + 1);
+        m_generatedIndices[i] = math::uint2((uint32_t)i * 2, (uint32_t)i * 2 + 1);
       }
     }
   }
 
-  void Cone::setBarneyParameters(BNGeom geom, BNContext context)
+  void Cone::setBarneyParameters(BNGeom geom)
   {
-    int slot = 0;
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+
     int numVertices = (int)m_vertexPosition->totalSize();
     int numIndices =
       m_index ? (int)m_index->size() : (int)m_generatedIndices.size();
@@ -385,7 +399,7 @@ namespace barney_device {
       bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertices);
     bnSetAndRelease(geom, "vertices", _vertices);
 
-    setAttributes(context,geom);
+    setAttributes(geom);
   }
 
   bool Cone::isValid() const
@@ -461,9 +475,11 @@ namespace barney_device {
     }
   }
 
-  void Curve::setBarneyParameters(BNGeom geom, BNContext context)
+  void Curve::setBarneyParameters(BNGeom geom)
   {
-    int slot = 0;
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+
     assert(m_vertexRadius->totalSize() == m_vertexPosition->totalSize());
     int numVertices =
       (int)std::min(m_vertexRadius->totalSize(), m_vertexPosition->totalSize());
@@ -501,7 +517,7 @@ namespace barney_device {
                                   context, slot, BN_INT2, index.size(), (const int *)index.data());
     bnSetData(geom, "indices", indices);
 
-    setAttributes(context,geom);
+    setAttributes(geom);
   }
 
   bool Curve::isValid() const
@@ -589,9 +605,11 @@ namespace barney_device {
     return m_vertexPosition;
   }
 
-  void Quad::setBarneyParameters(BNGeom geom, BNContext context)
+  void Quad::setBarneyParameters(BNGeom geom)
   {
-    int slot = 0;
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+
     int numVertices = (int)m_vertexPosition->totalSize();
     int numIndices = (int)(m_generatedIndices.size() / 3);
     const bn_float3 *vertices = (const bn_float3 *)m_vertexPosition->data();
@@ -611,7 +629,7 @@ namespace barney_device {
       bnSetAndRelease(geom, "normals", _normals);
     }
 
-    setAttributes(context,geom);
+    setAttributes(geom);
   }
 
   const char *Quad::bnSubtype() const
@@ -690,9 +708,11 @@ namespace barney_device {
     return m_vertexPosition;
   }
 
-  void Triangle::setBarneyParameters(BNGeom geom, BNContext context)
+  void Triangle::setBarneyParameters(BNGeom geom)
   {
-    int slot = 0;
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+
     int numVertices = (int)m_vertexPosition->totalSize();
     int numIndices =
       m_index ? (int)m_index->size() : (int)(m_generatedIndices.size() / 3);
@@ -715,7 +735,7 @@ namespace barney_device {
       bnSetAndRelease(geom, "normals", _normals);
     }
 
-    setAttributes(context,geom);
+    setAttributes(geom);
   }
 
   const char *Triangle::bnSubtype() const

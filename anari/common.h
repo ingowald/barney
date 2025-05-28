@@ -10,15 +10,6 @@
 #include <iostream>
 #include <cassert>
 
-#ifndef PRINT
-# define PRINT(var) std::cout << #var << "=" << var << std::endl;
-#ifdef _WIN32
-# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
-#else
-# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
-#endif
-#endif
-
 namespace barney_device {
 
 enum Attribute {

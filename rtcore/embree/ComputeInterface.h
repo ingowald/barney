@@ -185,7 +185,27 @@ namespace rtc {
       } 
     }
 
-
+  template<typename TASK_T>
+  inline void serial_for(int nTasks, TASK_T&& taskFunction)
+  {
+    for (int taskIndex = 0; taskIndex < nTasks; ++taskIndex) {
+      taskFunction(taskIndex);
+    }
+  }
+  
     
   }
 }
+
+# define __rtc_global static
+# define __rtc_launch(dev,kernel,nb,bs,...)                         \
+  rtc::embree::serial_for(nb,[&](int taskID) {                      \
+    rtc::embree::ComputeInterface ci;                           \
+    ci.gridDim = {(unsigned)nb,1u,1u};                          \
+    ci.blockDim = {(unsigned)bs,1u,1u};                         \
+    ci.blockIdx = {(unsigned)taskID,0u,0u};                     \
+    ci.threadIdx = {0u,0u,0u};                                  \
+    for (ci.threadIdx.x=0;ci.threadIdx.x<bs;ci.threadIdx.x++){  \
+      kernel(ci,__VA_ARGS__);                                   \
+    }                                                           \
+  });

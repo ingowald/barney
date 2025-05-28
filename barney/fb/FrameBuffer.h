@@ -78,22 +78,14 @@ namespace BARNEY_NS {
               void *appDataPtr,
               BNDataType requestedFormat) override;
 
-    // struct {
-    //   /*! _all_ tile descriptors across all GPUs - either all GPUs in
-    //     single node (if run non-mpi) or across all nodes */
-    //   TileDesc *tileDescs       = 0;
-    //   int       sumTiles = 0;
-    // } onOwner;
-    
-
     TiledFB *getFor(Device *device);
     struct PLD {
       TiledFB::SP tiledFB;
     };
     PLD *getPLD(Device *device);
-    
-    std::vector<PLD> perLogical;
 
+    std::vector<PLD> perLogical;
+    
     /*! staging area for gathering/writing pixels into, will be Nx*Ny
         pixels of type as provided specified during resize. This may
         point to either float4 or rgba8 depending on requested

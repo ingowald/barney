@@ -53,7 +53,8 @@ namespace rtc {
     
     struct ComputeInterface
     {
-#if RTC_DEVICE_CODE
+// #if RTC_DEVICE_CODE
+#ifdef __CUDACC__
       inline __device__ vec3ui launchIndex() const
       {
         return getThreadIdx() + getBlockIdx() * getBlockDim();
@@ -74,8 +75,8 @@ namespace rtc {
     // ==================================================================
     // INLINE IMPLEMENTATION
     // ==================================================================
-#if RTC_DEVICE_CODE
-
+// #if RTC_DEVICE_CODE
+#ifdef __CUDACC__
     // ------------------------------------------------------------------
     // cuda texturing
     // ------------------------------------------------------------------

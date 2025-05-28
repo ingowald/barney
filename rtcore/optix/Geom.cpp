@@ -96,17 +96,14 @@ namespace rtc {
                              sizeOfDD,vars,-1);
       
       const char *ptx = ptxCode.c_str();
-      // = (const char *)rtc::getSymbol(ptxName);//+"_ptx");
       OWLModule module = owlModuleCreate
         (device->owl,ptx);
       if (has_ch)
         owlGeomTypeSetClosestHit(gt,/*ray type*/0,module,
                                  typeName.c_str());
-      // chFctName.c_str());//"TrianglesCH");
       if (has_ah)
         owlGeomTypeSetAnyHit(gt,/*ray type*/0,module,
                              typeName.c_str());
-      // ahFctName.c_str());//"TrianglesAH");
       owlBuildPrograms(device->owl);
       owlModuleRelease(module);
     }

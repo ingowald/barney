@@ -87,7 +87,7 @@ namespace BARNEY_NS {
                                   tileDescs,accumTiles,
                                   numPixels};
     linearizeColorAndNormalKernel
-      ->launch(numActiveTiles,pixelsPerTile,&args);
+      ->launch(numActiveTilesThisGPU,pixelsPerTile,&args);
   }
 
 
@@ -182,7 +182,7 @@ namespace BARNEY_NS {
     };
     linearizeAuxTiles(device,linearizeAuxChannelKernel,
                         linearChannel,numPixels,
-                        aux,tileDescs,numActiveTiles);
+                        aux,tileDescs,numActiveTilesThisGPU);
   }
 
 
@@ -279,16 +279,16 @@ namespace BARNEY_NS {
 
     numPixels = newSize;
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
-    numActiveTiles
+    numActiveTilesThisGPU
       = device
-      ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalRank),
-                   device->globalSize)
+      ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalRank()),
+                   device->globalSize())
       : 0;
     auto rtc = device->rtc;
     accumTiles
-      = (AccumTile *)rtc->allocMem(numActiveTiles * sizeof(AccumTile));
+      = (AccumTile *)rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
     auto alloc = [&](AuxChannelTile *&tiles) 
-    { tiles = (AuxChannelTile *)rtc->allocMem(numActiveTiles*sizeof(*tiles)); };
+    { tiles = (AuxChannelTile *)rtc->allocMem(numActiveTilesThisGPU*sizeof(*tiles)); };
 
     if (channels & BN_FB_PRIMID) alloc(auxTiles.primID);
     if (channels & BN_FB_INSTID) alloc(auxTiles.instID);
@@ -296,17 +296,17 @@ namespace BARNEY_NS {
     if (channels & BN_FB_DEPTH)  alloc(auxTiles.depth);
     
     tileDescs
-      = (TileDesc *)rtc->allocMem(numActiveTiles * sizeof(TileDesc));
+      = (TileDesc *)rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
     SetTileCoords args = {
       tileDescs,
-      numActiveTiles,
+      numActiveTilesThisGPU,
       numTiles,
-      device->globalRank,
-      device->globalSize
+      device->globalRank(),
+      device->globalSize()
     };
-    if (numActiveTiles > 0)
+    if (numActiveTilesThisGPU > 0)
       setTileCoords
-        ->launch(divRoundUp(numActiveTiles,1024),1024,
+        ->launch(divRoundUp(numActiveTilesThisGPU,1024),1024,
                  &args);
   }
 

@@ -114,17 +114,64 @@ typedef enum {
   /*! BNTexture */
   BN_TEXTURE,
   BN_TEXTURE_3D,
-  /*! int32_t */
-  BN_INT,
-  /*! int2 */
-  BN_INT2,
-  BN_INT3,
-  BN_INT4,
-  BN_FLOAT,
-  BN_FLOAT2,
-  BN_FLOAT3,
-  BN_FLOAT4,
+  /*! scalar types */
+  BN_INT8,
+  BN_INT8_VEC2,
+  BN_INT8_VEC3,
+  BN_INT8_VEC4,
+  BN_UINT8,
+  BN_UINT8_VEC2,
+  BN_UINT8_VEC3,
+  BN_UINT8_VEC4,
+  BN_INT16,
+  BN_INT16_VEC2,
+  BN_INT16_VEC3,
+  BN_INT16_VEC4,
+  BN_UINT16,
+  BN_UINT16_VEC2,
+  BN_UINT16_VEC3,
+  BN_UINT16_VEC4,
+  BN_INT32,
+  BN_INT32_VEC2,
+  BN_INT32_VEC3,
+  BN_INT32_VEC4,
+  BN_UINT32,
+  BN_UINT32_VEC2,
+  BN_UINT32_VEC3,
+  BN_UINT32_VEC4,
+  BN_INT64,
+  BN_INT64_VEC2,
+  BN_INT64_VEC3,
+  BN_INT64_VEC4,
+  BN_UINT64,
+  BN_UINT64_VEC2,
+  BN_UINT64_VEC3,
+  BN_UINT64_VEC4,
+  BN_FLOAT32,
+  BN_FLOAT32_VEC2,
+  BN_FLOAT32_VEC3,
+  BN_FLOAT32_VEC4,
+  BN_FLOAT64,
+  BN_FLOAT64_VEC2,
+  BN_FLOAT64_VEC3,
+  BN_FLOAT64_VEC4,
+  /* DEPRECATED - USED BN_INT32_VEC<N> */BN_INT=BN_INT32,
+  /* DEPRECATED - USED BN_INT32_VEC<N> */BN_INT2 = BN_INT32_VEC2, 
+  /* DEPRECATED - USED BN_INT32_VEC<N> */BN_INT3 = BN_INT32_VEC3,
+  /* DEPRECATED - USED BN_INT32_VEC<N> */BN_INT4 = BN_INT32_VEC4,
+  /* DEPRECATED - USED BN_FLOAT32 */BN_FLOAT = BN_FLOAT32,
+  /* DEPRECATED - USED BN_FLOAT32_VEC<N> */BN_FLOAT2 = BN_FLOAT32_VEC2,
+  /* DEPRECATED - USED BN_FLOAT32_VEC<N> */BN_FLOAT3 = BN_FLOAT32_VEC3,
+  /* DEPRECATED - USED BN_FLOAT32_VEC<N> */BN_FLOAT4 = BN_FLOAT32_VEC4,
 
+  
+  /*! int64_t */
+    /* DEPRECATED - USED BN_INT64 */BN_LONG=BN_INT64,
+  /*! int2 */
+  /* DEPRECATED - USED BN_INT64_VEC<N> */BN_LONG2=BN_INT64_VEC2,
+  /* DEPRECATED - USED BN_INT64_VEC<N> */BN_LONG3=BN_INT64_VEC3,
+  /* DEPRECATED - USED BN_INT64_VEC<N> */BN_LONG4=BN_INT64_VEC4,
+  
   BN_UFIXED8,
   BN_UFIXED8_RGBA,
   BN_UFIXED8_RGBA_SRGB,
@@ -133,6 +180,17 @@ typedef enum {
   
   BN_RAW_DATA_BASE
 } BNDataType;
+
+/*! supported element types for unstructured mesh scalar field
+    type. Currently this uses VTK numbering of element types; if or
+    when anari decides to use some other numbering of its own this
+    will change to anari numbering */
+typedef enum {
+  BN_UNSTRUCTURED_TET = 10,
+  BN_UNSTRUCTURED_HEX = 12,
+  BN_UNSTRUCTURED_PRISM = 13,
+  BN_UNSTRUCTURED_PYRAMID = 14
+} BNUnstructuredElementType;
 
 /*! currently supported texture filter modes */
 typedef enum {

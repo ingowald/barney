@@ -24,18 +24,11 @@ namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE1D(generateRays);
   RTC_IMPORT_COMPUTE1D(shadeRays);
 
-  // umesh related:
-  RTC_IMPORT_COMPUTE1D(umeshCreateElements);
-  RTC_IMPORT_COMPUTE1D(umeshRasterElements);
-  RTC_IMPORT_COMPUTE1D(umeshReorderElements);
-  RTC_IMPORT_COMPUTE1D(umeshComputeElementBBs);
-
   RTC_IMPORT_TRACE2D
   (/*traceRays.cu*/traceRays,
    /*ray gen name */traceRays,
    /*launch params data type*/sizeof(BARNEY_NS::render::OptixGlobals)
    );
-  
   
   GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
     : device(device)
@@ -71,25 +64,14 @@ namespace BARNEY_NS {
                  // int globalIndex,
                  // int globalIndexStep
                  )
-    : contextRank(contextRank),
-      contextSize(contextSize),
-      // globalIndex(globalIndex),
-      // globalIndexStep(globalIndexStep),
-      rtc(rtc),
+    : rtc(rtc),
       geomTypes(rtc)
   {
     rayQueue = new RayQueue(this);
 
-    // umesh related:
-    umeshCreateElements 
-      = createCompute_umeshCreateElements(rtc);
-    umeshRasterElements 
-      = createCompute_umeshRasterElements(rtc);
-    umeshReorderElements 
-      = createCompute_umeshReorderElements(rtc);
-    umeshComputeElementBBs
-      = createCompute_umeshComputeElementBBs(rtc);
-      
+    gpuInNode.rank = contextRank;
+    gpuInNode.size = contextSize;
+    
     generateRays
       = createCompute_generateRays(rtc);
     shadeRays

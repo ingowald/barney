@@ -98,8 +98,8 @@ namespace BARNEY_NS {
       will only own some of those tiles */
     vec2i numTiles        = { 0, 0 };
     
-    /*! number of tiles that this GPU owns */
-    int   numActiveTiles  = 0;
+    /*! number of tiles that ***this GPU*** owns */
+    int   numActiveTilesThisGPU  = 0;
     
     /*! lower-left pixel coordinate for given tile ... */
     TileDesc          *tileDescs  = 0;

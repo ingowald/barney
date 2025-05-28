@@ -32,6 +32,11 @@ namespace rtc {
     INT3,
     INT4,
       
+    LONG,
+    LONG2,
+    LONG3,
+    LONG4,
+      
     FLOAT,
     FLOAT2,
     FLOAT3,

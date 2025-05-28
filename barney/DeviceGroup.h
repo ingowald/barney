@@ -34,21 +34,44 @@ namespace BARNEY_NS {
     rtc::Device *const device;    
   };
 
+  /*! mpi-like descriptor of a group of peers, enumerating them by
+      'rank' (=0,1,2...size-1) and giving total num peers in 'size' */
+  struct PeerGroup {
+    int rank = -1;
+    int size = -1;
+  };
+
   
   struct Device {
     Device(rtc::Device *rtc,
            int contextRank,
            int contextSize);
     
-    /*! rank and size in the *LOCAL NODE*'s context; ie, these are NOT
-        physical Device IDs (a context can use a subset of gpus, as
-        well as oversubscribe some!); and they are *not* the 'global'
-        device IDs that MPI-wide ray queue cycling would argue about,
-        either */
-    int                const contextRank;
-    int                const contextSize;
-    int                globalRank = -1;
-    int                globalSize = -1;
+    /*! describes this device's place with the *LOCAL NODE*'s context;
+        ie, these are NOT physical Device IDs (a context can use a
+        subset of gpus, as well as oversubscribe some!); and they are
+        *not* the 'global' device IDs that MPI-wide ray queue cycling
+        would argue about, either */
+    // int                const contextRank;
+    // int                const contextSize;
+    PeerGroup gpuInNode;
+    int contextRank() const { return gpuInNode.rank; }
+    
+    /*! rank and size of the *GLOBAL* context; i.e., possibly across
+        multiple ranks in an MPI call (for a signel node this will be
+        the same as contextRank/Size */
+    PeerGroup allGPUsGlobally;
+    int globalRank() const { return allGPUsGlobally.rank; }
+    int globalSize() const { return allGPUsGlobally.size; }
+    // int                globalRank = -1;
+    // int                globalSize = -1;
+    
+    /*! describes this device's island's place in the world */
+    PeerGroup islandInWorld;
+
+    /*! describes this device's place within the island/cycle that it
+        is in */
+    PeerGroup gpuInIsland;
     
     void sync() { rtc->sync(); }
     
@@ -70,15 +93,6 @@ namespace BARNEY_NS {
     rtc::Device *const rtc;
     rtc::ComputeKernel1D *generateRays = 0;
     rtc::ComputeKernel1D *shadeRays = 0;
-    // rtc::ComputeKernel2D *toFixed8 = 0;
-    // rtc::ComputeKernel1D *compressTiles = 0;
-    // rtc::ComputeKernel1D *unpackTiles = 0;
-
-    // umesh related:
-    rtc::ComputeKernel1D *umeshCreateElements = 0;
-    rtc::ComputeKernel1D *umeshRasterElements = 0;
-    rtc::ComputeKernel1D *umeshReorderElements = 0;
-    rtc::ComputeKernel1D *umeshComputeElementBBs = 0;
     
     rtc::TraceKernel2D *traceRays = 0;
     RayQueue     *rayQueue = 0;

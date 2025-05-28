@@ -79,6 +79,11 @@ namespace BARNEY_NS {
       state.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
+#if NEW_RNG
+      ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
+#else
+      ray.rngSeed.seed(ix+fbSize.x*accumID,iy+fbSize.y*accumID);
+#endif
 
       ray.org  = camera.lens_00;
 
@@ -122,10 +127,14 @@ namespace BARNEY_NS {
       }
       ray.dir = ray_dir;
       
+
+#ifdef NDEBUG
+      ray.dbg         = 0;
+#else
       bool crossHair_x = (ix == fbSize.x/2);
       bool crossHair_y = (iy == fbSize.y/2);
- 
       ray.dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
+#endif
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
@@ -172,7 +181,7 @@ namespace BARNEY_NS {
       
       rayQueue.rays[pos] = ray;
       rayQueue.states[pos] = state;
-      rayQueue.hitIDs[pos] = {INFINITY,-1,-1,-1};
+      rayQueue.hitIDs[pos] = {BARNEY_INF,-1,-1,-1};
     }
 #endif
   }  
@@ -217,7 +226,7 @@ namespace BARNEY_NS {
         std::cout << ss.str();
       }
       
-      device->generateRays->launch(devFB->numActiveTiles,
+      device->generateRays->launch(devFB->numActiveTilesThisGPU,
                                    pixelsPerTile,
                                    &args);
     }

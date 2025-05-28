@@ -182,7 +182,7 @@ namespace BARNEY_NS {
 
 
   inline __rtc_device
-  void wedgeInterpolationFunctions(float *pcoords/*[3]*/, float *sf/*[6]*/)
+  void primsInterpolationFunctions(float *pcoords/*[3]*/, float *sf/*[6]*/)
   {
     sf[0] = (1.f - pcoords[0] - pcoords[1]) * (1.f - pcoords[2]);
     sf[1] = pcoords[0] * (1.f - pcoords[2]);
@@ -193,7 +193,7 @@ namespace BARNEY_NS {
   }
 
   inline __rtc_device
-  void wedgeInterpolationDerivs(float *pcoords/*[3]*/, float *derivs/*[18]*/)
+  void primsInterpolationDerivs(float *pcoords/*[3]*/, float *derivs/*[18]*/)
   {
     // r-derivatives
     derivs[0] = -1.f + pcoords[2];
@@ -221,7 +221,7 @@ namespace BARNEY_NS {
   }
 
   inline  __rtc_device
-  bool intersectWedgeEXT(float &value,
+  bool intersectPrismEXT(float &value,
                          const vec3f &P,
                          const vec4f _v0,
                          const vec4f _v1,
@@ -231,10 +231,10 @@ namespace BARNEY_NS {
                          const vec4f _v5)
   {
 
-    #define WEDGE_DIVERGED               1e6f
-    #define WEDGE_MAX_ITERATION          10
-    #define WEDGE_CONVERGED              1e-4f
-    #define WEDGE_OUTSIDE_CELL_TOLERANCE 1e-6f
+    #define PRIMS_DIVERGED               1e6f
+    #define PRIMS_MAX_ITERATION          10
+    #define PRIMS_CONVERGED              1e-4f
+    #define PRIMS_OUTSIDE_CELL_TOLERANCE 1e-6f
 
     const bool assumeInside = false;
     const float determinantTolerance = 1e-6f;
@@ -246,11 +246,11 @@ namespace BARNEY_NS {
 
     bool converged = false;
     for (int iteration = 0;
-         !converged && (iteration < WEDGE_MAX_ITERATION);
+         !converged && (iteration < PRIMS_MAX_ITERATION);
          iteration++) {
       // Calculate element interpolation functions and derivatives
-      wedgeInterpolationFunctions(pcoords, weights);
-      wedgeInterpolationDerivs(pcoords, derivs);
+      primsInterpolationFunctions(pcoords, weights);
+      primsInterpolationDerivs(pcoords, derivs);
 
       // Calculate newton functions
       vec3f fcol = 0.f, rcol = 0.f, scol = 0.f, tcol = 0.f;
@@ -280,12 +280,12 @@ namespace BARNEY_NS {
       pcoords[2] = pcoords[2] - d2;
 
       // Convergence/divergence test - if neither, repeat
-      if ((fabsf(d0) < WEDGE_CONVERGED) & (fabsf(d1) < WEDGE_CONVERGED) &
-          (fabsf(d2) < WEDGE_CONVERGED)) {
+      if ((fabsf(d0) < PRIMS_CONVERGED) & (fabsf(d1) < PRIMS_CONVERGED) &
+          (fabsf(d2) < PRIMS_CONVERGED)) {
         converged = true;
-      } else if ((fabsf(pcoords[0]) > WEDGE_DIVERGED) |
-                 (fabsf(pcoords[1]) > WEDGE_DIVERGED) |
-                 (fabsf(pcoords[2]) > WEDGE_DIVERGED)) {
+      } else if ((fabsf(pcoords[0]) > PRIMS_DIVERGED) |
+                 (fabsf(pcoords[1]) > PRIMS_DIVERGED) |
+                 (fabsf(pcoords[2]) > PRIMS_DIVERGED)) {
         return false;
       }
     }
@@ -294,8 +294,8 @@ namespace BARNEY_NS {
       return false;
     }
 
-    const float lowerlimit = 0.f - WEDGE_OUTSIDE_CELL_TOLERANCE;
-    const float upperlimit = 1.f + WEDGE_OUTSIDE_CELL_TOLERANCE;
+    const float lowerlimit = 0.f - PRIMS_OUTSIDE_CELL_TOLERANCE;
+    const float upperlimit = 1.f + PRIMS_OUTSIDE_CELL_TOLERANCE;
     if (assumeInside || (pcoords[0] >= lowerlimit && pcoords[0] <= upperlimit &&
                          pcoords[1] >= lowerlimit && pcoords[1] <= upperlimit &&
                          pcoords[2] >= lowerlimit && pcoords[2] <= upperlimit &&

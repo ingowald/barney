@@ -55,7 +55,7 @@ namespace barney_api {
     std::vector<std::string> components;
     std::string es = e;
     while (true) {
-      int p = es.find(":");
+      size_t p = es.find(":");
       if (p == es.npos) {
         components.push_back(es);
         break;
@@ -65,7 +65,7 @@ namespace barney_api {
     }
     std::map<std::string,std::string> keyValue;
     for (auto comp : components) {
-      int p = comp.find("=");
+      size_t p = comp.find("=");
       if (p == comp.npos) {
         keyValue[comp] = "";
       } else {

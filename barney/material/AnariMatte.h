@@ -60,6 +60,7 @@ namespace BARNEY_NS {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
+      if (dbg) printf("anarimatte createbsdf\n");
       vec4f baseColor = this->color.eval(hitData,samplers,dbg);
 # if 1
       float reflectance = .85f;

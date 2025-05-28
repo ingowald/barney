@@ -62,8 +62,7 @@ namespace BARNEY_NS {
     struct PLD {
       rtc::Buffer        *valuesBuffer = 0;
     };
-    PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank]; } 
+    PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
     
     range1f             domain = { 0.f, 1.f };
@@ -107,6 +106,8 @@ namespace BARNEY_NS {
   inline __rtc_device
   float TransferFunction::DD::majorant(range1f r, bool dbg) const
   {
+    if (r.lower > r.upper) return 0.f;
+    
     float f_lo = (r.lower-domain.lower)/domain.span();
     float f_hi = (r.upper-domain.lower)/domain.span();
     f_lo = clamp(f_lo,0.f,1.f);

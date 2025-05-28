@@ -45,12 +45,12 @@ namespace BARNEY_NS {
       }
       rtc::Geom *geom = pld->userGeoms[0];
 
-      int numCones
+      size_t numCones
         = indices
         ? indices->count
         : (vertices->count/2);
       assert(vertices);
-      geom->setPrimCount(numCones);
+      geom->setPrimCount((int)numCones);
 
       Cones::DD dd;
       Geometry::writeDD(dd,device);

@@ -192,5 +192,19 @@ namespace BARNEY_NS {
       return cosTheta * ONE_OVER_PI;
     }
 
+    inline __rtc_device
+    vec3f randomDirection(Random &rng)
+    {
+      vec3f v;
+      while (true) {
+        v.x = 1.f-2.f*rng();
+        v.y = 1.f-2.f*rng();
+        v.z = 1.f-2.f*rng();
+        if (dot(v,v) <= 1.f)
+          return normalize(v);
+      }
+    }
+
+    
   }
 }

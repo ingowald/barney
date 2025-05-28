@@ -690,7 +690,8 @@ namespace BARNEY_NS {
           disney_subsurface(mat, b_n, w_o, w_i, w_h, subsurface_bsdf, subsurface_color);
           vec3f gloss;
           if (mat.anisotropy == 0.f) {
-            gloss = disney_microfacet_isotropic(mat, b_n, w_o, w_i, w_h, dbg);
+            gloss =
+              disney_microfacet_isotropic(mat, b_n, w_o, w_i, w_h, dbg);
             // gloss = gloss + disney_multiscatter(mat, n, w_o, w_i, GGX_E_LOOKUP, GGX_E_AVG_LOOKUP);
           } else {
             gloss = disney_microfacet_anisotropic(mat, b_n, w_o, w_i, w_h, v_x, v_y);
@@ -712,12 +713,12 @@ namespace BARNEY_NS {
           vec3f flat = lerp_r(diffuse_bsdf * diffuse_color, 
                                subsurface_bsdf * subsurface_color, 
                                mat.flatness);
-          // if (dbg) printf("BRDF: flat %f %f %f\n",flat.x,flat.y,flat.z);
-          // if (dbg) printf("BRDF: 1-met %f 1-spec %f sheen %f %f %f coat %f gloss %f %f %f aniso %f\n",1.f-mat.metallic,1.f-mat.specular_transmission,
-          //                 sheen.x,sheen.y,sheen.z,
-          //                 coat,
-          //                 gloss.x,gloss.y,gloss.z,
-          //                 mat.anisotropy);
+          if (dbg) printf("BRDF: flat %f %f %f\n",flat.x,flat.y,flat.z);
+          if (dbg) printf("BRDF: 1-met %f 1-spec %f sheen %f %f %f coat %f gloss %f %f %f aniso %f\n",1.f-mat.metallic,1.f-mat.specular_transmission,
+                          sheen.x,sheen.y,sheen.z,
+                          coat,
+                          gloss.x,gloss.y,gloss.z,
+                           mat.anisotropy);
           
           
           bsdf = (flat
@@ -771,13 +772,15 @@ namespace BARNEY_NS {
           float sum_weights = diffuse_weight+glossy_weight
             +clearcoat_weight+transmission_weight;
           if (sum_weights == 0.f) {
-            printf("no importance sampling weights...\n");
+            // printf("no importance sampling weights...\n");
             pdf = 0.f;
             return;
           }
                    
           float scale_weights
-            = 1.f/sum_weights;
+            = 1.f
+            // /sum_weights
+            ;
           diffuse_weight      *= scale_weights;
           glossy_weight       *= scale_weights;
           clearcoat_weight    *= scale_weights;
@@ -941,6 +944,7 @@ namespace BARNEY_NS {
             type_pdf = transmission_weight;
             sampled_bsdf = DISNEY_TRANSMISSION_BRDF;
           }
+          type_pdf = type_pdf;
           // type_pdf *= 3.f;
 #else
           const float type_pdf = 1.f;

@@ -279,12 +279,16 @@ namespace BARNEY_NS {
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg);
       if (opacity < 1.f) {
-        int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
-        Random rng(hash(rayID,
-                        instID,
-                        ti.getGeometryIndex(),
-                        ti.getPrimitiveIndex(),
-                        world.rngSeed));
+        Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
+                                         ti.getGeometryIndex(),
+                                         ti.getPrimitiveIndex())));
+        // Random rng(ray.rngSeed++);
+        // int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
+        // Random rng(hash(rayID,
+        //                 instID,
+        //                 ti.getGeometryIndex(),
+        //                 ti.getPrimitiveIndex(),
+        //                 world.rngSeed));
         if (rng() > opacity) {
           // ti.ignoreIntersection();
           return;

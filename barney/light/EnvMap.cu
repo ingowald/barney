@@ -26,7 +26,7 @@ namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE1D(normalize_cdf_y);
   
   EnvMapLight::PLD *EnvMapLight::getPLD(Device *device)
-  { return &perLogical[device->contextRank]; }
+  { return &perLogical[device->contextRank()]; }
 
   /*! computes an importance sampling weight for each pixel; gets
     called with one thread per pixel, in a 2d launch */

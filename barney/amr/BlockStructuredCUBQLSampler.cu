@@ -15,73 +15,86 @@
 // ======================================================================== //
 
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
+#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
+# include "cuBQL/builder/cpu.h"
+#else
+# include "cuBQL/builder/cuda.h"
+#endif
+#include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 
-#if 0
-  void BlockStructuredCUBQLSampler::Host::build(bool full_rebuild)
+  BlockStructuredCUBQLSampler::BlockStructuredCUBQLSampler(BlockStructuredField *field)
+    : field(field),
+      devices(field->devices)
   {
-    if (bvhNodesBuffer) {
-      std::cout <<" bvh already built" << std::endl;
-      return;
-    }
-    
-    auto devGroup = field->getDevGroup();
-    SetActiveGPU forDuration(devGroup->devices[0]);
-    
-    BARNEY_CUDA_SYNC_CHECK();
-    
-    if (bvhNodesBuffer != 0) {
-      std::cout << "cubql bvh already built..." << std::endl;
-      return;
-    }
+    perLogical.resize(devices->numLogical);
+  }
 
-    bvh_t bvh;
-
-    // this initially builds ONLY on first GPU!
-    box3f *d_primBounds = 0;
-    BARNEY_CUDA_SYNC_CHECK();
-    BARNEY_CUDA_CALL(MallocManaged(&d_primBounds,
-                                   field->blockIDs.size()*sizeof(box3f)));
-    BARNEY_CUDA_SYNC_CHECK();
-
-    field->computeBlockFilterDomains(devGroup->devices[0],d_primBounds);
-    BARNEY_CUDA_SYNC_CHECK();
-    
-    cuBQL::BuildConfig buildConfig;
-    buildConfig.makeLeafThreshold = 7;
-#if BARNEY_CUBQL_HOST
-    cuBQL::cpu::spatialMedian(bvh,
-                               (const cuBQL::box_t<float,3>*)d_primBounds,
-                               (uint32_t)field->blockIDs.size(),
-                               buildConfig);
-#else
-    static cuBQL::ManagedMemMemoryResource managedMem;
-    cuBQL::gpuBuilder(bvh,
-                      (const cuBQL::box_t<float,3>*)d_primBounds,
-                      (uint32_t)field->blockIDs.size(),
-                      buildConfig,
-                      (cudaStream_t)0,
-                      managedMem);
-#endif
-    std::vector<uint32_t> reorderedElements(field->blockIDs.size());
-    for (int i=0;i<field->blockIDs.size();i++) {
-      reorderedElements[i] = field->blockIDs[bvh.primIDs[i]];
-    }
-    field->blockIDs = reorderedElements;
-    owlBufferUpload(field->blockIDsBuffer,reorderedElements.data());
-    BARNEY_CUDA_CALL(Free(d_primBounds));
-
-    bvhNodesBuffer
-      = owlDeviceBufferCreate(devGroup->owl,OWL_USER_TYPE(node_t),
-                              bvh.numNodes,bvh.nodes);
-#if BARNEY_CUBQL_HOST
-    cuBQL::cpu::freeBVH(bvh);
-#else
-    cuBQL::free(bvh,0,managedMem);
-#endif
-    std::cout << "cubql bvh built ..." << std::endl;
+  BlockStructuredCUBQLSampler::PLD *BlockStructuredCUBQLSampler::getPLD(Device *device) 
+  {
+    assert(device);
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
   
+  BlockStructuredCUBQLSampler::DD BlockStructuredCUBQLSampler::getDD(Device *device)
+  {
+    DD dd;
+    (BlockStructuredField::DD &)dd = field->getDD(device);
+    dd.bvh = getPLD(device)->bvh;
+    return dd;
+  }
+
+  void BlockStructuredCUBQLSampler::build()
+  {
+    int numPrims = field->numBlocks;
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      bvh_t &bvh = pld->bvh;
+      if (bvh.nodes != nullptr) {
+        /* BVH already built! */
+        continue;
+      }
+
+      std::cout << "------------------------------------------" << std::endl;
+      std::cout << "building BlockStructuredCUBQL BVH!" << std::endl;
+      std::cout << "------------------------------------------" << std::endl;
+
+      SetActiveGPU forDuration(device);
+
+      box3f *primBounds
+        = (box3f*)device->rtc->allocMem(numPrims*sizeof(box3f));
+      range1f *valueRanges
+        = (range1f*)device->rtc->allocMem(numPrims*sizeof(range1f));
+      field->computeElementBBs(device,primBounds,valueRanges);
+      device->rtc->sync();
+#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
+      cuBQL::cpu::spatialMedian(bvh,
+                                (const cuBQL::box_t<float,3>*)primBounds,
+                                numPrims,
+                                cuBQL::BuildConfig());
+#else
+      /*! make sure to have cubql use regular device memory, not async
+        mallocs; else we may allocate all memory on the first gpu */
+      cuBQL::DeviceMemoryResource memResource;
+      cuBQL::gpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)primBounds,
+                        numPrims,
+                        cuBQL::BuildConfig(),
+                        0,
+                        memResource);
 #endif
+      device->rtc->sync();
+      device->rtc->freeMem(primBounds);
+      device->rtc->freeMem(valueRanges);
+    
+      std::cout << OWL_TERMINAL_LIGHT_GREEN
+                << "#bn.bsfield: cubql bvh built ..."
+                << OWL_TERMINAL_DEFAULT << std::endl;
+    }
+  }
+  
 }
+  

@@ -28,18 +28,16 @@ namespace BARNEY_NS {
       return dd;
     }
 
-    /*! need wants to accept: 
-
-      "color" = <Sampler>
-     */
     bool AnariMatte::setObject(const std::string &member,
                                const Object::SP &value) 
     {
       if (HostMaterial::setObject(member,value)) return true;
 
       Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
-      if (member == "color") 
-        { color.set(sampler); return true; }
+      if (member == "color") {
+        color.set(sampler);
+        return true;
+      }
       
       return false;
     }

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "barney/common/math.h"
+
 namespace BARNEY_NS {
 
   /*! HitIDs are used for a special "ID pass" that computes the
@@ -23,7 +25,7 @@ namespace BARNEY_NS {
       or transparency taken into effect. As such it requires its own
       depth value */
   struct HitIDs {
-    float depth = INFINITY;
+    float depth = BARNEY_INF;
     int primID = -1;
     int instID = -1;
     int objID  = -1;

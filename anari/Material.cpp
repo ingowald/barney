@@ -61,15 +61,11 @@ inline void setBNMaterialUniform(BNMaterial m, const char *p, math::float4 v)
 
 template <typename T>
 inline void setBNMaterialHelper(BNMaterial m,
-    const char *p,
-    MaterialParameter<T> &mp,
-    BNContext context // ,
-    // int slot
-)
+                                const char *p,
+                                MaterialParameter<T> &mp)
 {
   if (mp.sampler) {
-    BNSampler s = mp.sampler->getBarneySampler(context // , 0
-    );
+    BNSampler s = mp.sampler->getBarneySampler();
     bnSetObject(m, p, s);
   } else if (!mp.attribute.empty())
     bnSetString(m, p, mp.attribute.c_str());
@@ -103,10 +99,13 @@ void Material::finalize()
   setBarneyParameters();
 }
 
-BNMaterial Material::getBarneyMaterial(BNContext context)
+BNMaterial Material::getBarneyMaterial()
 {
-  if (!m_bnMat)
-    m_bnMat = bnMaterialCreate(context, 0, bnSubtype());
+  int slot = deviceState()->slot;
+  auto context = deviceState()->tether->context;
+
+  if (!m_bnMat) 
+    m_bnMat = bnMaterialCreate(context, slot, bnSubtype());
   setBarneyParameters();
   return m_bnMat;
 }
@@ -149,7 +148,7 @@ void Matte::setBarneyParameters()
   if (!m_bnMat)
     return;
 
-  setBNMaterialHelper(m_bnMat, "color", m_color, getContext());
+  setBNMaterialHelper(m_bnMat, "color", m_color);//, getContext());
   bnCommit(m_bnMat);
 }
 
@@ -186,16 +185,17 @@ void PhysicallyBased::setBarneyParameters()
   if (!m_bnMat)
     return;
 
-  auto context = getContext();
+  // auto context = deviceState()->tether->context;//getContext();
+  // int slot = deviceState()->slot;
 
-  setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor, context);
-  setBNMaterialHelper(m_bnMat, "emissive", m_emissive, context);
-  setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor, context);
-  setBNMaterialHelper(m_bnMat, "metallic", m_metallic, context);
-  setBNMaterialHelper(m_bnMat, "roughness", m_roughness, context);
-  setBNMaterialHelper(m_bnMat, "specular", m_specular, context);
-  setBNMaterialHelper(m_bnMat, "transmission", m_transmission, context);
-  setBNMaterialHelper(m_bnMat, "opacity", m_opacity, context);
+  setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor);
+  setBNMaterialHelper(m_bnMat, "emissive", m_emissive);
+  setBNMaterialHelper(m_bnMat, "specularColor", m_specularColor);
+  setBNMaterialHelper(m_bnMat, "metallic", m_metallic);
+  setBNMaterialHelper(m_bnMat, "roughness", m_roughness);
+  setBNMaterialHelper(m_bnMat, "specular", m_specular);
+  setBNMaterialHelper(m_bnMat, "transmission", m_transmission);
+  setBNMaterialHelper(m_bnMat, "opacity", m_opacity);
 
   bnSet1f(m_bnMat, "ior", m_ior);
   bnCommit(m_bnMat);

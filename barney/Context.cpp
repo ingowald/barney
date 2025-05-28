@@ -213,13 +213,25 @@ namespace BARNEY_NS {
   {
     if (!isActiveWorker)
       return;
-
+    
     for (auto device : *devices) {
-      assert(device);
+      auto devFB = fb->getFor(device);
+      int numTilesInFrame        = devFB->numTiles.x*devFB->numTiles.y;
+      int numGPUsThatRenderTiles = device->allGPUsGlobally.size;
+      int maxTilesOnAnyGPU       = divRoundUp(numTilesInFrame,
+                                              numGPUsThatRenderTiles);
+      int numGPUsInIsland        = device->gpuInIsland.size;
+    
       int upperBoundOnNumRays
-        = 2 * (fb->getFor(device)->numActiveTiles+1) * BARNEY_NS::pixelsPerTile;
+        = maxTilesOnAnyGPU * /* max two rays per pixel*/2 * BARNEY_NS::pixelsPerTile;
+      int maxRaysInIsland
+        = numGPUsInIsland * maxTilesOnAnyGPU;
       assert(device->rayQueue);
-      device->rayQueue->reserve(upperBoundOnNumRays);
+      device->rayQueue->resize(upperBoundOnNumRays
+#if SINGLE_CYCLE_RQS
+                               ,maxRaysInIsland
+#endif
+                               );
     }
   }
 

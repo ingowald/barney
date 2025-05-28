@@ -100,19 +100,26 @@ namespace BARNEY_NS {
     std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
   }
   
-  void RayQueue::reserve(int requiredSize)
+  void RayQueue::resize(int newSize
+#if SINGLE_CYCLE_RQS
+                        , int maxRaysAcrossAllRanks
+#endif
+                        )
   {
-    assert(this);
-    if (size >= requiredSize) return;
-    resize(requiredSize);
-  }
+    if (newSize <= size) return;
     
-  void RayQueue::resize(int newSize)
-  {
     SetActiveGPU forDuration(device);
     auto rtc = device->rtc;
     traceAndShadeReadQueue.free(rtc);
     receiveAndShadeWriteQueue.free(rtc);
+
+#if SINGLE_CYCLE_RQS
+    if (rqs.raysOnly) rtc->freeMem(rqs.raysOnly);
+    if (rqs.hitsOnly) rtc->freeMem(rqs.hitsOnly);
+    rqs.raysOnly = (RayOnly*)rtc->allocMem(maxRaysAcrossAllRanks*sizeof(RayOnly));
+    rqs.hitsOnly = (HitOnly*)rtc->allocMem(maxRaysAcrossAllRanks*sizeof(HitOnly));
+#endif
+    
     // if (traceAndShadeReadQueue.rays) 
     //   rtc->freeMem(traceAndShadeReadQueue);
     // if (receiveAndShadeWriteQueue)

@@ -45,7 +45,7 @@ namespace BARNEY_NS {
           ? device->rayQueue->traceAndShadeReadQueue.hitIDs
           : 0;
         dd.numRays   = device->rayQueue->numActive;
-        dd.world     = model->world->getDD(device,rngSeed);
+        dd.world     = model->world->getDD(device);//,rngSeed);
         dd.accel     = model->getInstanceAccel(device);
 
         if (FromEnv::get()->logQueues) {

@@ -27,7 +27,7 @@ struct Object : public helium::BaseObject
   void finalize() override;
   bool isValid() const override;
 
-  BNContext getContext() const;
+  // BNContext getContext() const;
   BarneyGlobalState *deviceState() const;
 };
 

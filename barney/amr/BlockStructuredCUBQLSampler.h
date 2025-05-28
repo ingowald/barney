@@ -23,82 +23,74 @@
 
 namespace BARNEY_NS {
 
-#if 0
-  /*! a umesh scalar field, with a CUBQL bvh sampler */
-  struct BlockStructuredCUBQLSampler {
+  struct BlockStructuredField;
+  
+  /*! a block structured amr scalar field, with a CUBQL bvh sampler */
+  struct BlockStructuredCUBQLSampler : public ScalarFieldSampler {
     enum { BVH_WIDTH = 4 };
     using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
     using node_t = typename bvh_t::Node;
     
     struct DD : public BlockStructuredField::DD {
-      inline __device__ float sample(vec3f P, bool dbg = false) const;
-
-      // static void addVars(std::vector<OWLVarDecl> &vars, int base)
-      // {
-      //   BlockStructuredField::DD::addVars(vars,base);
-      //   vars.push_back({"sampler.bvhNodes",OWL_BUFPTR,base+OWL_OFFSETOF(DD,bvhNodes)});
-      // }
-  
-      node_t  *bvhNodes;
+#if RTC_DEVICE_CODE
+      inline __rtc_device float sample(vec3f P, bool dbg = false) const;
+#endif
+      bvh_t bvh;
     };
+    DD getDD(Device *device);
 
-    struct Host {
-      Host(ScalarField *sf) : field((BlockStructuredField *)sf) {}
-
-      /*! builds the string that allows for properly matching optix
-          device progs for this type */
-      inline std::string getTypeString() const { return "BlockStructured"; }
-
-      void build(bool full_rebuild);
-
-      void setVariables(OWLGeom geom)
-      {
-        owlGeomSetBuffer(geom,"sampler.bvhNodes",bvhNodesBuffer);
-      }
-      
-      OWLBuffer   bvhNodesBuffer = 0;
-      BlockStructuredField *const field;
+    /*! per-device data - parent store the bs-amr field, we just store the
+      bvh nodes */
+    struct PLD {
+      bvh_t bvh = { 0,0 };
     };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+
+    BlockStructuredCUBQLSampler(BlockStructuredField *mesh);
+    
+    /*! builds the string that allows for properly matching optix
+      device progs for this type */
+    inline static std::string typeName() { return "BlockStructured_CUBQL"; }
+
+    void build() override;
+
+    BlockStructuredField *const field;
+    const DevGroup::SP devices;
   };
-
+  
   struct BlockStructuredSamplerPTD {
-    inline __device__ BlockStructuredSamplerPTD(const BlockStructuredCUBQLSampler::DD *field)
+    inline __rtc_device BlockStructuredSamplerPTD(const BlockStructuredCUBQLSampler::DD *field)
       : field(field)
     {}
-    inline __device__ bool leaf(vec3f P, int offset, int count)
+#if RTC_DEVICE_CODE
+    inline __rtc_device void visitBrick(vec3f P, int primID)
     {
-      for (int i=0;i<count;i++) {
-        auto blockID = field->blockIDs[offset+i];
-        field->addBasisFunctions(sumWeightedValues,sumWeights,blockID,P);
-      }
-      return true;
+      field->addBasisFunctions(sumWeightedValues,sumWeights,primID,P);
     }
-
+#endif
     const BlockStructuredCUBQLSampler::DD *const field;
+    
     float sumWeights = 0.f;
     float sumWeightedValues = 0.f;
   };
   
-  inline __device__
+#if RTC_DEVICE_CODE
+  inline __rtc_device
   float BlockStructuredCUBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
     BlockStructuredSamplerPTD ptd(this);
 
-    bvh_t bvh;
-    bvh.nodes = bvhNodes;
-    bvh.primIDs = nullptr;
-    auto lambda = [&](const uint32_t *primIDs, int numPrimsInLeaf) -> int {
-      int offset = primIDs - bvh.primIDs;
-      ptd.leaf(P,offset,numPrimsInLeaf);
+    auto lambda = [&](const uint32_t primID) -> int {
+      ptd.visitBrick(P,primID);
       return CUBQL_CONTINUE_TRAVERSAL;
     };
-    cuBQL::box3f box; box.lower = box.upper = P;
-    cuBQL::fixedBoxQuery::forEachLeaf(lambda,bvh,box);
+    cuBQL::box3f box; box.lower = box.upper = (const cuBQL::vec3f &)P;
+    cuBQL::fixedBoxQuery::forEachPrim(lambda,bvh,box);
     // traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
   }
-#endif
-  
+#endif  
 }
 
 

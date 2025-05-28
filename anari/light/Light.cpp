@@ -44,9 +44,12 @@ namespace barney_device {
     setBarneyParameters();
   }
 
-  BNLight Light::getBarneyLight(BNContext context)
+  BNLight Light::getBarneyLight()
   {
-    m_bnLight = bnLightCreate(getContext(), 0, bnSubtype());
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+    
+    m_bnLight = bnLightCreate(context,slot,bnSubtype());
     setBarneyParameters();
     return m_bnLight;
   }

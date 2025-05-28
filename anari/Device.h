@@ -109,7 +109,7 @@ namespace barney_device {
                           ANARIDataType type,
                           void *mem,
                           uint64_t size) override;
-    BarneyGlobalState *deviceState() const;
+    BarneyGlobalState *deviceState(bool commitOnDemand=true);
 
     bool m_initialized{false};
     
@@ -118,6 +118,7 @@ namespace barney_device {
         'leave it to barney', '-1' means 'use cpu', any value >= 0
         means 'use this specific gpu */
     int  m_cudaDevice = -2;
+    int  m_dataGroupID = -1;
     const std::string deviceType = "default";
 #if BARNEY_MPI
     /*! communicator to use for barney data-parallel rendering, set as
@@ -128,6 +129,10 @@ namespace barney_device {
         is created with subtype "local" it will default to 0 */
     MPI_Comm comm = MPI_COMM_WORLD;
 #endif
+    bool          hasBeenCommitted = false;
+    BarneyDevice *tetherDevice = 0;
+    int           tetherIndex  = 0;
+    int           tetherCount  = 0;
   };
 
 } // namespace barney_device

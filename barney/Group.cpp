@@ -22,9 +22,9 @@ namespace BARNEY_NS {
   Group::PLD *Group::getPLD(Device *device)
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
 
 
@@ -87,6 +87,9 @@ namespace BARNEY_NS {
         rtc->freeGroup(pld->userGeomGroup);
         pld->userGeomGroup = 0;
       }
+      pld->userGeoms.clear();
+      pld->triangleGeoms.clear();
+      pld->volumeGeoms.clear();
     }
   }
   

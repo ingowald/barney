@@ -26,9 +26,9 @@ namespace BARNEY_NS {
   ModelSlot::PLD *ModelSlot::getPLD(Device *device)
   {
     assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
+    assert(device->contextRank() >= 0);
+    assert(device->contextRank() < perLogical.size());
+    return &perLogical[device->contextRank()];
   }
 
   ModelSlot::ModelSlot(GlobalModel *_model,

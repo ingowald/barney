@@ -23,21 +23,26 @@ namespace barney_device {
     // never any public ref to these objects
     m_zeroGroup->refDec(helium::RefType::PUBLIC);
     m_zeroInstance->refDec(helium::RefType::PUBLIC);
+
+    uniqueID = deviceState()->nextUniqueModelID++;
   }
 
   World::~World()
   {
-    if (m_barneyModel) {
-      bnRelease(m_barneyModel);
-      m_barneyModel = 0;
-    }
+    // if (m_barneyModel) {
+    //   bnRelease(m_barneyModel);
+    //   m_barneyModel = 0;
+    // }
     auto *state = deviceState();
-    if (state->currentWorld   == this)
-      state->currentWorld = nullptr;
+    // if (state->currentWorld   == this)
+    //   state->currentWorld = nullptr;
+    state->tether->releaseModel(uniqueID);
   }
 
-  bool World::getProperty(
-                          const std::string_view &name, ANARIDataType type, void *ptr, uint32_t flags)
+  bool World::getProperty(const std::string_view &name,
+                          ANARIDataType type,
+                          void *ptr,
+                          uint32_t flags)
   {
     if (name == "bounds" && type == ANARI_FLOAT32_BOX3) {
       if (flags & ANARI_WAIT) {
@@ -120,29 +125,42 @@ namespace barney_device {
   BNModel World::makeCurrent()
   {
     auto *state = deviceState();
-  
-    if (state->currentWorld != this) {
-      if (m_barneyModel)
-        bnRelease(m_barneyModel);
-      m_barneyModel = nullptr;
-      m_lastBarneyModelBuild = 0;
-      m_barneyModel = bnModelCreate(state->context);
-      assert(m_barneyModel);
-      state->currentWorld = this;
-    }
 
-    assert(m_barneyModel);
-    if (state->objectUpdates.lastSceneChange > m_lastBarneyModelBuild)
-      buildBarneyModel();
+    // auto barneyModel = state->tether->getModel(uniqueID);
+    buildBarneyModel();
+    auto barneyModel = state->tether->getModel(uniqueID);
+    return barneyModel->model;
+    // if (state->currentWorld != this) {
+    //   if (barneyModel)
+    //     bnRelease(m_barneyModel);
+    //   m_barneyModel = nullptr;
+    //   m_lastBarneyModelBuild = 0;
+    //   m_barneyModel = bnModelCreate(state->context);
+    //   assert(m_barneyModel);
+    //   state->currentWorld = this;
+    // }
 
-    assert(m_barneyModel);
-    return m_barneyModel;
+    // assert(m_barneyModel);
+    // if (state->objectUpdates.lastSceneChange > m_lastBarneyModelBuild)
+    //   buildBarneyModel();
+
+    // assert(m_barneyModel);
+    // return m_barneyModel;
   }
 
   void World::buildBarneyModel()
   {
+    auto *state = deviceState();
+    if (state->objectUpdates.lastSceneChange <= m_lastBarneyModelBuild)
+      return;
+      
     reportMessage(ANARI_SEVERITY_DEBUG, "barney::World rebuilding model");
 
+    auto barneyModel = state->tether->getModel(uniqueID)->model;
+    
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+    
     std::vector<const Group *> groups;
     std::vector<BNGroup> barneyGroups;
     std::vector<BNTransform> barneyTransforms;
@@ -163,7 +181,7 @@ namespace barney_device {
       if (!ag) continue;
       BNGroup bg = 0;
       if (barneyGroupForAnariGroup.find(ag) == barneyGroupForAnariGroup.end()) 
-        barneyGroupForAnariGroup[ag] = bg = ag->makeBarneyGroup(getContext());
+        barneyGroupForAnariGroup[ag] = bg = ag->makeBarneyGroup();
       else
         bg = barneyGroupForAnariGroup[ag];
 
@@ -184,9 +202,9 @@ namespace barney_device {
         }
     }
 
-    assert(m_barneyModel);
-    bnSetInstances(m_barneyModel,
-                   0,
+    assert(barneyModel);
+    bnSetInstances(barneyModel,
+                   slot,
                    barneyGroups.data(),
                    barneyTransforms.data(),
                    (int)barneyGroups.size());
@@ -201,17 +219,17 @@ namespace barney_device {
       }
     
       m_attributesData[i]
-        = bnDataCreate(getContext(),0,BN_FLOAT4,
+        = bnDataCreate(context,slot,BN_FLOAT4,
                        attributes[i].size(),attributes[i].data());
     }
     for (int i=0;i<Instance::Attributes::count;i++) {
       std::string attribName = std::string("attribute")+std::to_string(i);
-      bnSetInstanceAttributes(m_barneyModel,0,
+      bnSetInstanceAttributes(barneyModel,slot,
                               attribName.c_str(),
                               m_attributesData[i]);
     }
   
-    bnBuild(m_barneyModel, 0);
+    bnBuild(barneyModel, slot);
 
     for (auto it : barneyGroupForAnariGroup)
       bnRelease(it.second);

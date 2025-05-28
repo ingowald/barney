@@ -18,18 +18,67 @@
 
 #include "barney/common/half.h"
 #include "barney/packedBSDF/PackedBSDF.h"
+#include "barney/common/random.h"
 
 namespace BARNEY_NS {
   namespace render {
     /* path state/shade info that does _not_ go over the network */
+
+#define NEW_RNG 1
+    
+    struct RNGSeed {
+      inline __rtc_device void seed(uint32_t a, uint32_t b)
+      {
+        value = pcg(pcg(a) ^ pcg(b));
+      }
+      
+      inline __rtc_device uint32_t next(uint32_t hash)
+      {
+        const uint32_t FNV_PRIME = 16777619;
+#if NEW_RNG
+        value = pcg(value * FNV_PRIME ^ hash);
+#else
+        value = value * FNV_PRIME ^ hash;
+#endif
+        return value;
+      }
+      uint32_t value;
+    };
     
     struct PathState {
       vec3h    throughput;
       int32_t  pixelID;
       float    misWeight;
       int      numDiffuseBounces;
-      uint32_t rngSeed;
     };
+
+#if SINGLE_CYCLE_RQS
+    struct RayOnly {
+      vec3f    org;
+      vec3f    dir;
+      float    tMax;
+      struct {
+        uint32_t isInMedium : 1;
+        uint32_t isSpecular : 1;
+        uint32_t isShadowRay: 1;
+        uint32_t dbg        : 1;
+      };
+    };
+
+    struct HitOnly {
+      float tHit;
+      /*! the actual hit point, in 3D float coordinates (rather than
+        implicitly through org+tMax*dir), for numerical robustness
+        issues */
+      vec3f       P;
+      vec3h       N;
+      /*! type of bsdf in the hitBSDF; if this is set to NONE the
+        ray didn't have any hit yet */
+      uint16_t bsdfType   : 4;
+      PackedBSDF::Data hitBSDF;
+    };
+#endif
+    
     struct Ray {
 #if RTC_DEVICE_CODE
       inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo);
@@ -48,6 +97,7 @@ namespace BARNEY_NS {
       vec3f    org;
       vec3f    dir;
       float    tMax;
+      RNGSeed rngSeed;
 
       /*! the actual hit point, in 3D float coordinates (rather than
         implicitly through org+tMax*dir), for numerical robustness

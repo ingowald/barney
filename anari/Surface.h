@@ -21,7 +21,7 @@ namespace barney_device {
     const Geometry *geometry() const;
     const Material *material() const;
 
-    BNGeom getBarneyGeom(BNContext context);
+    BNGeom getBarneyGeom();
 
     bool isValid() const override;
 
