@@ -416,12 +416,16 @@ namespace barney_device {
       assert(tetherCount > 0);
       assert(tetherIndex >= 0);
       assert(tetherIndex < tetherCount);
-      
+
+#ifndef NDEBUG
       std::cout << "#banari: FIRST-TIME device initialization slot "
-                << tetherIndex << "/" << tetherCount
-                << " in tethered dev " << tetherDevice << std::endl;
+                 << tetherIndex << "/" << tetherCount
+                 << " in tethered dev " << tetherDevice << std::endl;
+#endif
       if (tetherDevice) {
-        std::cout << " -> tethering to primary" << std::endl;
+#ifndef NDEBUG
+        std::cout << "#banari -> tethering to primary" << std::endl;
+#endif
         state->tether = tetherDevice->deviceState()->tether;
         assert(state->tether);
         assert(tetherCount == state->tether->devices.size());
