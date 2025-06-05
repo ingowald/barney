@@ -25,6 +25,8 @@ if(MSVC) # That's also clang-cl
     PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
 endif()
 
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
+
 add_library(barney_config_ptx INTERFACE)
 target_link_libraries(barney_config_ptx
   INTERFACE

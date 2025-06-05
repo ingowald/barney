@@ -39,7 +39,7 @@ namespace BARNEY_NS {
     return &perLogical[device->contextRank()];
   }
 
-#if RTC_DEVICE_CODE
+// #if RTC_DEVICE_CODE
   inline __rtc_device float length3(vec4f v)
   { return length(getPos(v)); }
   
@@ -147,11 +147,11 @@ namespace BARNEY_NS {
       rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
     }
   }
-#else
-  __rtc_global void umeshRasterCells(rtc::ComputeInterface ci,
-                                     UMeshField::DD mesh,
-                                     MCGrid::DD grid);
-#endif
+// #else
+//   __rtc_global void umeshRasterCells(rtc::ComputeInterface ci,
+//                                      UMeshField::DD mesh,
+//                                      MCGrid::DD grid);
+// #endif
   
   void UMeshField::buildMCs(MCGrid &grid)
   {
