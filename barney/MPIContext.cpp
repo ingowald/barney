@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/MPIContext.h"
-#include "barney/fb/DistFB.h"
+#include "barney/fb/MPIDistFB.h"
 #include "barney/render/RayQueue.h"
 
 #if 0
@@ -266,7 +266,7 @@ namespace BARNEY_NS {
   std::shared_ptr<barney_api::FrameBuffer>
   MPIContext::createFrameBuffer(int owningRank)
   {
-    return std::make_shared<DistFB>(this,devices,owningRank);
+    return std::make_shared<MPIDistFB>(this,devices,owningRank);
   }
 
   /*! returns how many rays are active in all ray queues, across all

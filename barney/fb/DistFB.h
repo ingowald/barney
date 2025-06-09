@@ -17,7 +17,6 @@
 #pragma once
 
 #include "barney/fb/FrameBuffer.h"
-#include "barney/common/MPIWrappers.h"
 
 namespace BARNEY_NS {
 
@@ -60,6 +59,10 @@ namespace BARNEY_NS {
 
   struct CompressedNormalTile {
     CompressedNormal normal[pixelsPerTile];
+  };
+
+  struct GatherAbstraction {
+    virtual void ownerPrepareReceive(int numRequests) = 0;
   };
   
   struct DistFB : public FrameBuffer {

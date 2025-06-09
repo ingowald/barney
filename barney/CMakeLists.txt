@@ -104,8 +104,16 @@ set(HOST_SOURCES
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
   fb/FrameBuffer.cu
-  fb/LocalFB.h
-  fb/LocalFB.cpp
+  fb/DistFB.h
+  fb/DistFB.cu
+  fb/MultiGPUDistFB.h
+  fb/MultiGPUDistFB.cu
+  fb/PeerAccessFB.h
+  fb/PeerAccessFB.cpp
+  
+  fb/DistFB.h
+  fb/DistFB.cu
+
   fb/TiledFB.h
   fb/TiledFB.cu
   # model/group/data group handling
@@ -211,8 +219,8 @@ set(HOST_SOURCES
 
 # all the source that eventually go into barney_mpi
 set(MPI_SOURCES
-  fb/DistFB.h
-  fb/DistFB.cu
+  fb/MPIDistFB.h
+  fb/MPIDistFB.cu
   MPIContext.h
   MPIContext.cpp
   common/MPIWrappers.h

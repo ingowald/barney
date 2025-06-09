@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "barney/fb/DistFB.h"
-#include "barney/MPIContext.h"
 #include "rtcore/ComputeInterface.h"
 #include "barney/common/math.h"
 

@@ -68,25 +68,31 @@ namespace BARNEY_NS {
     switch(dataType) {
     case BN_FLOAT:
     case BN_UFIXED8:
+    case BN_UINT8:
     case BN_UFIXED16:
       return 1;
       
     case BN_FLOAT32_VEC2:
     case BN_INT32_VEC2:
+    case BN_UINT8_VEC2:
     case BN_UINT32_VEC2:
       return 2;
       
     case BN_FLOAT32_VEC3:
     case BN_INT32_VEC3:
+    case BN_UINT8_VEC3:
     case BN_UINT32_VEC3:
       return 3;
       
     case BN_FLOAT32_VEC4:
     case BN_INT32_VEC4:
     case BN_UINT32_VEC4:
+    case BN_UINT8_VEC4:
     case BN_UFIXED8_RGBA:
       return 4;
     default:
+      PING;
+      PRINT(std::to_string(dataType));
       BARNEY_NYI();
     };
   }
