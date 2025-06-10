@@ -21,55 +21,6 @@
 
 namespace BARNEY_NS {
 
-  // RTC_IMPORT_COMPUTE1D(setTileCoords);
-  // RTC_IMPORT_COMPUTE1D(linearizeColorAndNormal);
-  // RTC_IMPORT_COMPUTE1D(linearizeAuxChannel);
-
-//   struct LinearizeColorAndNormal {
-//     /* ARGS */
-//     void      *out_rgba;
-//     BNDataType colorFormat;
-//     vec3f     *out_normal;
-//     float      accumScale;
-//     TileDesc  *descs;
-//     AccumTile *tiles;
-//     vec2i      numPixels;
-
-// #if RTC_DEVICE_CODE
-//     /* CODE */
-//     inline __rtc_device
-//     void run(const rtc::ComputeInterface &ci)
-//     {
-//       int tileIdx = ci.getBlockIdx().x;
-//       TileDesc desc   = descs[tileIdx];
-//       AccumTile *tile = &tiles[tileIdx];
-      
-//       int subIdx = ci.getThreadIdx().x;
-//       int iix = subIdx % tileSize;
-//       int iiy = subIdx / tileSize;
-//       int ix = desc.lower.x + iix;
-//       int iy = desc.lower.y + iiy;
-//       if (ix >= numPixels.x) return;
-//       if (iy >= numPixels.y) return;
-//       int idx = ix + numPixels.x*iy;
-
-//       vec4f color = tile->accum[subIdx] * accumScale;
-//       if (colorFormat == BN_FLOAT4) 
-//         ((vec4f*)out_rgba)[idx] = color;
-//       else if (colorFormat == BN_UFIXED8_RGBA) 
-//         ((uint32_t*)out_rgba)[idx] = make_rgba(color);
-//       else if (colorFormat == BN_UFIXED8_RGBA_SRGB) 
-//         ((uint32_t*)out_rgba)[idx] = make_rgba(linear_to_srgb(color));
-//       else
-//         // unsupported type!?
-//         ;
-//       if (out_normal)
-//         out_normal[idx] = tile->normal[subIdx];
-//     }
-// #endif
-//   };
-
-
   __rtc_global
   void linearizeColorAndNormalKernel(const rtc::ComputeInterface &ci,
                                      void      *out_rgba,
@@ -82,8 +33,9 @@ namespace BARNEY_NS {
   {
     int tileIdx = ci.getBlockIdx().x;
     TileDesc desc   = descs[tileIdx];
+    
     AccumTile *tile = &tiles[tileIdx];
-      
+
     int subIdx = ci.getThreadIdx().x;
     int iix = subIdx % tileSize;
     int iiy = subIdx / tileSize;
@@ -94,6 +46,7 @@ namespace BARNEY_NS {
     int idx = ix + numPixels.x*iy;
 
     vec4f color = tile->accum[subIdx] * accumScale;
+
     if (colorFormat == BN_FLOAT4) 
       ((vec4f*)out_rgba)[idx] = color;
     else if (colorFormat == BN_UFIXED8_RGBA) 
@@ -103,6 +56,7 @@ namespace BARNEY_NS {
     else
       // unsupported type!?
       ;
+    
     if (out_normal)
       out_normal[idx] = tile->normal[subIdx];
   }
@@ -120,9 +74,10 @@ namespace BARNEY_NS {
                                         float  accumScale)
   {
     SetActiveGPU forDuration(appDevice?appDevice:device);
-    if (appDevice) 
-      appDevice->rtc->copy(appTileDescs,tileDescs,
-                           numActiveTilesThisGPU*sizeof(*appTileDescs));
+    if (appDevice) {
+      appDevice->rtc->copyAsync(appAccumTiles,accumTiles,
+                                numActiveTilesThisGPU*sizeof(*appAccumTiles));
+    }
     __rtc_launch(// device
                  (appDevice?appDevice:device)->rtc,
                  // kernel
@@ -210,7 +165,9 @@ namespace BARNEY_NS {
     };
     linearizeAuxTiles(appDevice?appDevice:device,
                       linearChannel,numPixels,
-                      aux,tileDescs,numActiveTilesThisGPU);
+                      aux,
+                      appDevice?appTileDescs:tileDescs,
+                      numActiveTilesThisGPU);
   }
 
   
@@ -229,7 +186,7 @@ namespace BARNEY_NS {
                    Device *appDevice,
                    FrameBuffer *owner)
     : device(device),
-      appDevice(appDevice),
+      appDevice(appDevice==device?nullptr:appDevice),
       owner(owner)
   {}
 
@@ -258,13 +215,13 @@ namespace BARNEY_NS {
     freeAndSetNull(device,auxTiles.depth);
 
     if (appDevice) {
-      SetActiveGPU forDuration(device);
-      freeAndSetNull(device,appTileDescs);
-      freeAndSetNull(device,appAccumTiles);
-      freeAndSetNull(device,appAuxTiles.primID);
-      freeAndSetNull(device,appAuxTiles.instID);
-      freeAndSetNull(device,appAuxTiles.objID);
-      freeAndSetNull(device,appAuxTiles.depth);
+      SetActiveGPU forDuration(appDevice);
+      freeAndSetNull(appDevice,appTileDescs);
+      freeAndSetNull(appDevice,appAccumTiles);
+      freeAndSetNull(appDevice,appAuxTiles.primID);
+      freeAndSetNull(appDevice,appAuxTiles.instID);
+      freeAndSetNull(appDevice,appAuxTiles.objID);
+      freeAndSetNull(appDevice,appAuxTiles.depth);
     }
   }
 
@@ -299,32 +256,43 @@ namespace BARNEY_NS {
       ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalRank()),
                    device->globalSize())
       : 0;
-    auto rtc = device->rtc;
+    // ------------------------------------------------------------------
+    // accum tiles
+    // ------------------------------------------------------------------
     accumTiles
-      = (AccumTile *)rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
-    if (appDevice) {
-    }
-    auto alloc = [&](AuxChannelTile *&tiles) 
-    { tiles = (AuxChannelTile *)rtc->allocMem(numActiveTilesThisGPU*sizeof(*tiles)); };
-
-    if (channels & BN_FB_PRIMID) alloc(auxTiles.primID);
-    if (channels & BN_FB_INSTID) alloc(auxTiles.instID);
-    if (channels & BN_FB_OBJID)  alloc(auxTiles.objID);
-    if (channels & BN_FB_DEPTH)  alloc(auxTiles.depth);
+      = (AccumTile *)device->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
     if (appDevice) {
       SetActiveGPU forDuration(appDevice);
-      if (channels & BN_FB_PRIMID) alloc(appAuxTiles.primID);
-      if (channels & BN_FB_INSTID) alloc(appAuxTiles.instID);
-      if (channels & BN_FB_OBJID)  alloc(appAuxTiles.objID);
-      if (channels & BN_FB_DEPTH)  alloc(appAuxTiles.depth);
+      appAccumTiles
+        = (AccumTile *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
+    }
+    // ------------------------------------------------------------------
+    // aux channel tiles
+    // ------------------------------------------------------------------
+    auto alloc = [&](Device *device, AuxChannelTile *&tiles) 
+    { tiles = (AuxChannelTile *)device->rtc->allocMem(numActiveTilesThisGPU*sizeof(*tiles)); };
+
+    if (channels & BN_FB_PRIMID) alloc(device,auxTiles.primID);
+    if (channels & BN_FB_INSTID) alloc(device,auxTiles.instID);
+    if (channels & BN_FB_OBJID)  alloc(device,auxTiles.objID);
+    if (channels & BN_FB_DEPTH)  alloc(device,auxTiles.depth);
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      if (channels & BN_FB_PRIMID) alloc(appDevice,appAuxTiles.primID);
+      if (channels & BN_FB_INSTID) alloc(appDevice,appAuxTiles.instID);
+      if (channels & BN_FB_OBJID)  alloc(appDevice,appAuxTiles.objID);
+      if (channels & BN_FB_DEPTH)  alloc(appDevice,appAuxTiles.depth);
     }
     
+    // ------------------------------------------------------------------
+    // tile descs
+    // ------------------------------------------------------------------
     tileDescs
-      = (TileDesc *)rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
+      = (TileDesc *)device->rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
     if (appDevice) {
       SetActiveGPU forDuration(appDevice);
       appTileDescs
-        = (TileDesc *)rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
+        = (TileDesc *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
     }
     __rtc_launch(//device
                  device->rtc,
@@ -339,7 +307,8 @@ namespace BARNEY_NS {
                  device->globalRank(),
                  device->globalSize());
     if (appTileDescs)
-      rtc->copy(appTileDescs,tileDescs,numActiveTilesThisGPU * sizeof(TileDesc));
+      device->rtc->copyAsync(appTileDescs,tileDescs,
+                             numActiveTilesThisGPU * sizeof(TileDesc));
   }
 
 }

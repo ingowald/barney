@@ -154,6 +154,7 @@ namespace BARNEY_NS {
       = doDenoising
       ? BN_FLOAT4
       : colorChannelFormat;
+
     // this is virtual, and will incur either device copies or mpi
     // pack-gather-unpack
     gatherColorChannel(colorCopyTarget,gatherType,normalCopyTarget);

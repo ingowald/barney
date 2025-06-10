@@ -101,7 +101,7 @@ namespace BARNEY_NS {
         will be null. if not, this will be the primary rtcore device,
         in case we ever need to copy stuff to that primary gpu (eg, for
         final frame buffer) */
-    rtc::Device  *primaryDeviceIfNoPeerAccess = 0;
+    // rtc::Device  *primaryDeviceIfNoPeerAccess = 0;
   };
   
   /*! stolen from owl/Device: helper class that will set the

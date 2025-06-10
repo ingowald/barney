@@ -219,10 +219,8 @@ namespace BARNEY_NS {
 
     // render all tiles, in tile format and writing into accum buffer
     renderTiles(renderer,model,camera,fb);
-
     // convert all tiles from accum to RGBA
     finalizeTiles(fb);
-    
     // ------------------------------------------------------------------
     // done rendering, let the frame buffer know about it, so it can
     // do whatever needs doing with the latest finalized tiles
