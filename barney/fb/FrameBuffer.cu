@@ -56,7 +56,7 @@ namespace BARNEY_NS {
     perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
       getPLD(device)->tiledFB
-        = TiledFB::create(device,this);
+        = TiledFB::create(device,context->deviceWeNeedToCopyToForFBMap,this);
     }
 
     Device *device = getDenoiserDevice();
@@ -154,6 +154,7 @@ namespace BARNEY_NS {
       = doDenoising
       ? BN_FLOAT4
       : colorChannelFormat;
+
     // this is virtual, and will incur either device copies or mpi
     // pack-gather-unpack
     gatherColorChannel(colorCopyTarget,gatherType,normalCopyTarget);

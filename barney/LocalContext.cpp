@@ -186,13 +186,6 @@ namespace BARNEY_NS {
       int devID = device->contextRank();
       SetActiveGPU forDuration(device);
       auto &rqs = device->rqs;
-      // // int nextID = (devID + dgSize) % numDevices;
-      // int nextID = -1;
-      // for (int otherID=0;otherID<device->gpuInNode.size;otherID++) {
-      //   auto other = (*devices)[otherID];
-      //   if (other->islandInWorld.rank == (device->islandInWorld.rank+1)%
-      //   if
-      //     }
       int nextID = rqs.recvWorkerLocal;
       auto nextDev = (*devices)[nextID];
 
@@ -200,7 +193,6 @@ namespace BARNEY_NS {
       numCopied[nextID] = count;
       auto &src = device->rayQueue->traceAndShadeReadQueue;
       auto &dst = nextDev->rayQueue->receiveAndShadeWriteQueue;
-      // std::cout << "#### COPYING RAYS " << src.rays << " -> " << dst.rays << " #=" << count << std::endl;
       device->rtc->copyAsync(dst.rays,src.rays,count*sizeof(Ray));
       if (needHitIDs)
         device->rtc->copyAsync(dst.hitIDs,src.hitIDs,count*sizeof(*dst.hitIDs));
@@ -227,10 +219,8 @@ namespace BARNEY_NS {
 
     // render all tiles, in tile format and writing into accum buffer
     renderTiles(renderer,model,camera,fb);
-
     // convert all tiles from accum to RGBA
     finalizeTiles(fb);
-    
     // ------------------------------------------------------------------
     // done rendering, let the frame buffer know about it, so it can
     // do whatever needs doing with the latest finalized tiles

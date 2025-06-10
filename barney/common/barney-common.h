@@ -66,7 +66,7 @@ namespace BARNEY_NS {
   using namespace owl::common;
   typedef owl::common::interval<float> range1f;
   using Random = LCG<8>;
-  
+
   template<typename T>
   inline __both__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }

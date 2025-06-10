@@ -14,14 +14,12 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define RTC_DEVICE_CODE 1
 #include "rtcore/ComputeInterface.h"
 
 #include "barney/amr/BlockStructuredField.h"
 #include "barney/Context.h"
 #include "barney/volume/MCGrid.cuh"
 #include "barney/amr/BlockStructuredCUBQLSampler.h"
-
 
 namespace BARNEY_NS {
 
@@ -117,20 +115,10 @@ namespace BARNEY_NS {
     grid.clearCells();
 
     for (auto device : *devices) {
-#if 1
       __rtc_launch(device->rtc,
                    BSField_rasterGrids,
                    divRoundUp(numBlocks,1024),1024,
                    this->getDD(device),grid.getDD(device));
-                   
-                   
-#else
-      SetActiveGPU forDuration(device);
-
-      BSField_mcRasterBlocks kernelData(this->getDD(device),grid.getDD(device));
-      getPLD(device)->mcRasterBlocks->launch
-        (divRoundUp(numBlocks,1024),1024,&kernelData);
-#endif
     }
     
     for (auto device : *devices) 
@@ -148,14 +136,6 @@ namespace BARNEY_NS {
     : ScalarField(context,devices)
   {
     perLogical.resize(devices->numLogical);
-    // for (auto device : *devices) {
-    //   SetActiveGPU forDuration(device);
-    //   PLD *pld = getPLD(device);
-    //   pld->mcRasterBlocks
-    //     = createCompute_BSField_mcRasterBlocks(device->rtc);
-    //   pld->computeElementBBs
-    //     = createCompute_BSField_computeElementBBs(device->rtc);
-    // }
   }
 
   BlockStructuredField::DD BlockStructuredField::getDD(Device *device)
@@ -342,18 +322,15 @@ namespace BARNEY_NS {
       auto rtc = dev->rtc;
       box3f *d_worldBounds = (box3f *)rtc->allocMem(sizeof(box3f));
       rtc->copy(d_worldBounds,&worldBounds,sizeof(worldBounds));
-      // PING;
-      // PRINT(numBlocks);
-      __rtc_launch(rtc,computeWorldBounds,
+      __rtc_launch(// dev and kernel
+                   rtc,computeWorldBounds,
+                   // launch config
                    divRoundUp(numBlocks,128),128,
+                   // kernel args
                    d_worldBounds,getDD(dev));
       rtc->sync();
       rtc->copy(&worldBounds,d_worldBounds,sizeof(worldBounds));
-      // PRINT(worldBounds);
     }
     
   }
-
-  // RTC_EXPORT_COMPUTE1D(BSField_mcRasterBlocks,BSField_mcRasterBlocks);
-  // RTC_EXPORT_COMPUTE1D(BSField_computeElementBBs,BSField_computeElementBBs);
 }
