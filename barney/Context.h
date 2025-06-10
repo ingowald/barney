@@ -197,6 +197,14 @@ namespace BARNEY_NS {
     SlotContext *getSlot(int slot);
     std::vector<SlotContext> perSlot;
     DevGroup::SP devices;
+    /*! 'usually' we can rely on all GPUs having peer-(write-)access
+        to the memory location that the app wants to have the frame
+        buffer read into; but for some hardware configs there is no
+        peer access, and non-primary GPUs have to first copy to that
+        primary gpu. If this variabel is null, we assume that every
+        gpu can just write; if not, we'll have to first create staging
+        copies on that device */
+    Device *deviceWeNeedToCopyToForFBMap = nullptr;
     int const globalIndex;
   };
   

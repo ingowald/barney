@@ -239,7 +239,6 @@ namespace BARNEY_NS {
     
     auto device = getDenoiserDevice();
     TiledFB::linearizeAuxTiles(device,
-                               getFor(device)->linearizeAuxChannelKernel,
                                stagingArea,numPixels,
                                inTiles,
                                gatheredTilesOnOwner.tileDescs,

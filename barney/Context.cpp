@@ -92,8 +92,13 @@ namespace BARNEY_NS {
       dg.devices
         = std::make_shared<DevGroup>(slotDevices,(int)allDevices.size());
     }
-    this->devices = std::make_shared<DevGroup>(allDevices,(int)allDevices.size());
+    devices = std::make_shared<DevGroup>(allDevices,(int)allDevices.size());
     havePeerAccess = rtc::enablePeerAccess(gpuIDsToEnablePeerAccessFor);
+    if (!havePeerAccess) {
+      for (int i=0;i<allDevices.size();i++)
+        allDevices[i]->primaryDeviceIfNoPeerAccess
+          = allDevices[0]->rtc;
+    }
 
     for (auto &dg : perSlot)
       dg.materialRegistry

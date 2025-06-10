@@ -96,6 +96,12 @@ namespace BARNEY_NS {
     
     rtc::TraceKernel2D *traceRays = 0;
     RayQueue     *rayQueue = 0;
+
+    /*! if this device does have peer access to the primary GPU, this
+        will be null. if not, this will be the primary rtcore device,
+        in case we ever need to copy stuff to that primary gpu (eg, for
+        final frame buffer) */
+    rtc::Device  *primaryDeviceIfNoPeerAccess = 0;
   };
   
   /*! stolen from owl/Device: helper class that will set the
