@@ -120,100 +120,6 @@ namespace BARNEY_NS {
   }
 #endif
   
-  /*! read one of the auxiliary (not color or normal) buffers into
-    the given (device-writeable) staging area; this will at the
-    least incur some reformatting from tiles to linear (if local
-    node), possibly some gpu-gpu transfer (local node w/ more than
-    one gpu) and possibly some mpi communication (distFB) */
-  void DistFB::gatherAuxChannel(BNFrameBufferChannel channel)
-  {
-    // ------------------------------------------------------------------
-    // gather all (packed) tiles from all clients
-    // ------------------------------------------------------------------
-    std::vector<MPI_Request> recv_requests(isOwner
-                                           ?ownerGather.numGPUs
-                                           :0);
-    std::vector<MPI_Request> send_requests(context->isActiveWorker
-                                           ?devices->size()
-                                           :0);
-    // ------------------------------------------------------------------
-    // trigger all sends and receives - for gpu descs
-    // ------------------------------------------------------------------
-    if (isOwner) {
-      AuxChannelTile *aux_recv = 0;
-      switch(channel) {
-      case BN_FB_DEPTH:
-        aux_recv = gatheredTilesOnOwner.auxChannelTiles.depth;
-        break;
-      case BN_FB_PRIMID:
-        aux_recv = gatheredTilesOnOwner.auxChannelTiles.primID;
-        break;
-      case BN_FB_INSTID:
-        aux_recv = gatheredTilesOnOwner.auxChannelTiles.instID;
-        break;
-      case BN_FB_OBJID:
-        aux_recv = gatheredTilesOnOwner.auxChannelTiles.objID;
-        break;
-      default:
-        throw std::runtime_error("unsupported aux channel in sending aux!?");
-      };
-      /* OWNER: create receive requests for all compressed tiles from
-         all ranks. this also include the ones we send from our own
-         GPUs, so do NOT wait here */
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / context->gpusPerWorker;
-        int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            aux_recv+ownerGather.firstTileOnGPU[ggID],
-                            ownerGather.numTilesOnGPU[ggID],
-                            recv_requests[ggID]);
-      }
-    }
-    
-    if (context->isActiveWorker) {
-      /* worker: compress all local tiles (on all gpus), and trigger
-         send requests to transfer those to master */
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        auto tiledFB = getFor(device);
-        auto pld = getPLD(device);
-        AuxChannelTile *aux_send = 0;
-        switch(channel) {
-        case BN_FB_DEPTH:
-          aux_send = tiledFB->auxTiles.depth;
-          break;
-        case BN_FB_PRIMID:
-          aux_send = tiledFB->auxTiles.primID;
-          break;
-        case BN_FB_INSTID:
-          aux_send = tiledFB->auxTiles.instID;
-          break;
-        case BN_FB_OBJID:
-          aux_send = tiledFB->auxTiles.objID;
-          break;
-        default:
-          throw std::runtime_error("unsupported aux channel in sending aux!?");
-        };
-        context->world.send(owningRank,device->contextRank(),
-                            aux_send,
-                            tiledFB->numActiveTilesThisGPU,
-                            send_requests[device->contextRank()]);
-      }
-    }
-    // ------------------------------------------------------------------
-    // wait for all send/recv requests to complete - master should
-    // then have all tiles from all gpus, in compressed form
-    // ------------------------------------------------------------------
-    if (isOwner)
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
-        context->world.wait(recv_requests[ggID]);
-    
-    if (context->isActiveWorker)
-      for (auto device : *devices)
-        context->world.wait(send_requests[device->contextRank()]);
-  }
-
-
 
   /*! read one of the auxiliary (not color or normal) buffers into
     the given (device-writeable) staging area; this will at the
@@ -246,132 +152,23 @@ namespace BARNEY_NS {
     device->sync();
   }
   
-  /*! gather color (and optionally, if not null) linear normal, from
-    all GPUs (and ranks). lienarColor and lienarNormal are
-    device-writeable 2D linear arrays of numPixel size;
-    linearcolor may be null. */
-  void DistFB::gatherColorChannel(/*float4 or rgba8*/void *linearColor,
-                                  BNDataType gatherType,
-                                  vec3f *linearNormal)
-  {
-    // ------------------------------------------------------------------
-    // gather all (packed) tiles from all clients
-    // ------------------------------------------------------------------
-    std::vector<MPI_Request> recv_requests(isOwner
-                                           ?((needNormals?2:1)*ownerGather.numGPUs)
-                                           :0);
-    std::vector<MPI_Request> send_requests((needNormals?2:1)*devices->size());
-    // ------------------------------------------------------------------
-    // trigger all sends and receives - for gpu descs
-    // ------------------------------------------------------------------
-    if (isOwner) {
-      /* OWNER: create receive requests for all compressed tiles from
-         all ranks. this also include the ones we send from our own
-         GPUs, so do NOT wait here */
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / context->gpusPerWorker;
-        int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            gatheredTilesOnOwner.compressedColorTiles
-                            +ownerGather.firstTileOnGPU[ggID],
-                            ownerGather.numTilesOnGPU[ggID],
-                            recv_requests[ggID]);
-        if (needNormals)
-          context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                              gatheredTilesOnOwner.compressedNormalTiles
-                              +ownerGather.firstTileOnGPU[ggID],
-                              ownerGather.numTilesOnGPU[ggID],
-                              recv_requests[ownerGather.numGPUs+ggID]);
-      }
-    }
-    
-    if (context->isActiveWorker) {
-      /* worker: compress all local tiles (on all gpus), and trigger
-         send requests to transfer those to master */
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        auto tiledFB = getFor(device);
-        auto pld = getPLD(device);
-        float accumScale = 1.f/accumID;
-        CompressTiles kernel = {
-          pld->localSend.compressedColorTiles,
-          pld->localSend.compressedNormalTiles,
-          tiledFB->accumTiles,
-          accumScale
-        };
-        pld->compressTiles->launch(tiledFB->numActiveTilesThisGPU,pixelsPerTile,&kernel);
-      }
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        auto tiledFB = getFor(device);
-        auto pld = getPLD(device);
-        device->sync();
-        context->world.send(owningRank,device->contextRank(),
-                            pld->localSend.compressedColorTiles,
-                            tiledFB->numActiveTilesThisGPU,
-                            send_requests[device->contextRank()]);
-        if (needNormals)
-          context->world.send(owningRank,device->contextRank(),
-                              pld->localSend.compressedNormalTiles,
-                              tiledFB->numActiveTilesThisGPU,
-                              send_requests[devices->size()+device->contextRank()]);
-      }
-    }
-    // ------------------------------------------------------------------
-    // wait for all send/recv requests to complete - master should
-    // then have all tiles from all gpus, in compressed form
-    // ------------------------------------------------------------------
-    if (isOwner)
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
-        context->world.wait(recv_requests[ggID]);
-    
-    if (context->isActiveWorker)
-      for (auto device : *devices)
-        context->world.wait(send_requests[device->contextRank()]);
-    
-    // ------------------------------------------------------------------
-    // all (packed) tiles received; unpack (on owner only)
-    // ------------------------------------------------------------------
-    if (isOwner) {
-      UnpackTiles args = {
-        numPixels,
-        linearColor,
-        gatherType,
-        linearNormal,
-        gatheredTilesOnOwner.compressedColorTiles,
-        gatheredTilesOnOwner.compressedNormalTiles,
-        gatheredTilesOnOwner.tileDescs
-      };
-      auto device = getDenoiserDevice();
-      SetActiveGPU forDuration(device);
-      getPLD(device)->unpackTiles->launch(gatheredTilesOnOwner.numActiveTiles,
-                                          pixelsPerTile,
-                                          &args);
-      device->sync();
-    }
-  }
-
   
-  DistFB::DistFB(MPIContext *context,
+  DistFB::DistFB(Context *context,
                  const DevGroup::SP &devices,
                  int owningRank)
     : FrameBuffer(context,
                   devices,
-                  owningRank == context->world.rank),
+                  owningRank == context->worldRank()),
       context(context),
-      owningRank(owningRank),
-      isOwner(context->world.rank == owningRank),
-      ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
+      owningRank(owningRank)
   {
     perLogical.resize(devices->size());
-    if (isOwner) {
-      ownerGather.numGPUs = context->numWorkers * context->gpusPerWorker;
+    ownerGather.numGPUs = context->numWorkers() * context->gpusPerWorker;
+    if (isOwner) 
       ownerGather.numTilesOnGPU.resize(ownerGather.numGPUs);
-    }
-    else {
-      ownerGather.numGPUs = context->numWorkers * context->gpusPerWorker;
-      ownerGather.numTilesOnGPU.resize(0);
-    }
+    else 
+      ownerGather.numTilesOnGPU.clear();
+
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       pld->compressTiles = createCompute_compressTiles(device->rtc);
@@ -447,9 +244,6 @@ namespace BARNEY_NS {
     }
   }
 
-
-
-  
   void DistFB::resize(BNDataType colorFormat,
                       vec2i size,
                       uint32_t channels)
@@ -458,15 +252,17 @@ namespace BARNEY_NS {
     FrameBuffer::resize(colorFormat, size, channels);
 
     // ------------------------------------------------------------------
-    /* check if we need to have a normal channelf ro deonising (on
+    /* check if we need to have a normal channel for deonising (on
        owner), and communicate this to all workers */
     // ------------------------------------------------------------------
-    if (isOwner) {
-      this->needNormals = denoiser != 0;
-      context->world.bc_send(&this->needNormals,sizeof(this->needNormals));
-    } else {
-      context->world.bc_recv(&this->needNormals,sizeof(this->needNormals));
-    }
+
+    this->needNormals = broadcast(/*sender*/isOwner,/*value*/denoiser != 0);
+    // if (isOwner) {
+    //   this->needNormals = denoiser != 0;
+    //   // context->world.bc_send(&this->needNormals,sizeof(this->needNormals));
+    // } else {
+    //   context->world.bc_recv(&this->needNormals,sizeof(this->needNormals));
+    // }
     
     // ------------------------------------------------------------------
     /* allocate compressed tiles mem - one for each tiles in the
@@ -489,44 +285,8 @@ namespace BARNEY_NS {
           = (CompressedNormalTile*)device->rtc->allocMem
           (tiledFB->numActiveTilesThisGPU*sizeof(CompressedNormalTile));
     }
-    
-    std::vector<MPI_Request> recv_requests(ownerGather.numGPUs);
-    std::vector<MPI_Request> send_requests(tilesOnGPU.size());
-    
-    // ------------------------------------------------------------------
-    // trigger all sends and receives - for gpu tile count
-    // ------------------------------------------------------------------
-    if (isOwner) {
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / context->gpusPerWorker;
-        int localID   = ggID % context->gpusPerWorker;
+    ownerGather.numTilesOnGPU = gather(isOwner,tilesOnGPU);
 
-        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            &ownerGather.numTilesOnGPU[ggID],1,
-                            recv_requests[ggID]);
-      }
-    }
-
-    if (context->isActiveWorker) {
-      for (int localID=0;localID<tilesOnGPU.size();localID++) {
-        context->world.send(owningRank,localID,
-                            &tilesOnGPU[localID],1,
-                            send_requests[localID]);
-      }
-    }    
-
-    // ------------------------------------------------------------------
-    // and wait for those to complete
-    // ------------------------------------------------------------------
-    if (isOwner)
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
-        context->world.wait(recv_requests[ggID]);
-    
-    if (context->isActiveWorker)
-      for (int localID=0;localID<tilesOnGPU.size();localID++)
-        context->world.wait(send_requests[localID]);    
-
-    // ------------------------------------------------------------------
     // ------------------------------------------------------------------
 
     if (isOwner) {
@@ -570,37 +330,223 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     // trigger all sends and receives - for gpu descs
     // ------------------------------------------------------------------
-    if (isOwner)  {
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / context->gpusPerWorker;
-        int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-                            gatheredTilesOnOwner.tileDescs+ownerGather.firstTileOnGPU[ggID],
-                            ownerGather.numTilesOnGPU[ggID],
-                            recv_requests[ggID]);
+    std::vector<void *> sendAddresses;
+    if (context->isActiveWorker)
+      for (auto device : *devices)
+        sendAddresses.push_back(getFor(device)->tileDescs);
+    void *recvAddress
+      = isOwner
+      ? gatheredTilesOnOwner.tileDescs
+      : nullptr;
+    gatherPerTilePerGPU(recvAddress,sizeof(TileDesc),
+                        sendAddresses);
+  }
+
+
+
+  /*! read one of the auxiliary (not color or normal) buffers into
+    the given (device-writeable) staging area; this will at the
+    least incur some reformatting from tiles to linear (if local
+    node), possibly some gpu-gpu transfer (local node w/ more than
+    one gpu) and possibly some mpi communication (distFB) */
+  void DistFB::gatherAuxChannel(BNFrameBufferChannel channel)
+  {
+    // // ------------------------------------------------------------------
+    // // gather all packed) tiles from all clients
+    // // ------------------------------------------------------------------
+    // std::vector<MPI_Request> recv_requests(isOwner
+    //                                        ?ownerGather.numGPUs
+    //                                        :0);
+    // std::vector<MPI_Request> send_requests(context->isActiveWorker
+    //                                        ?devices->size()
+    //                                        :0);
+    AuxChannelTile *aux_recv = 0;
+    if (isOwner) {
+      switch(channel) {
+      case BN_FB_DEPTH:
+        aux_recv = gatheredTilesOnOwner.auxChannelTiles.depth;
+        break;
+      case BN_FB_PRIMID:
+        aux_recv = gatheredTilesOnOwner.auxChannelTiles.primID;
+        break;
+      case BN_FB_INSTID:
+        aux_recv = gatheredTilesOnOwner.auxChannelTiles.instID;
+        break;
+      case BN_FB_OBJID:
+        aux_recv = gatheredTilesOnOwner.auxChannelTiles.objID;
+        break;
+      default:
+        throw std::runtime_error("unsupported aux channel in sending aux!?");
+      };
+      // /* OWNER: create receive requests for all compressed tiles from
+      //    all ranks. this also include the ones we send from our own
+      //    GPUs, so do NOT wait here */
+      // for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
+      //   int rankOfGPU = ggID / context->gpusPerWorker;
+      //   int localID   = ggID % context->gpusPerWorker;
+      //   context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+      //                       aux_recv+ownerGather.firstTileOnGPU[ggID],
+      //                       ownerGather.numTilesOnGPU[ggID],
+      //                       recv_requests[ggID]);
+      // }
+    }
+    
+    std::vector<void *> sendAddresses;
+    if (context->isActiveWorker) {
+      /* worker: compress all local tiles (on all gpus), and trigger
+         send requests to transfer those to master */
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        auto tiledFB = getFor(device);
+        auto pld = getPLD(device);
+        AuxChannelTile *aux_send = 0;
+        switch(channel) {
+        case BN_FB_DEPTH:
+          aux_send = tiledFB->auxTiles.depth;
+          break;
+        case BN_FB_PRIMID:
+          aux_send = tiledFB->auxTiles.primID;
+          break;
+        case BN_FB_INSTID:
+          aux_send = tiledFB->auxTiles.instID;
+          break;
+        case BN_FB_OBJID:
+          aux_send = tiledFB->auxTiles.objID;
+          break;
+        default:
+          throw std::runtime_error("unsupported aux channel in sending aux!?");
+        };
+        sendAddresses.push_back(aux_send);
+        // context->world.send(owningRank,device->contextRank(),
+        //                     aux_send,
+        //                     tiledFB->numActiveTilesThisGPU,
+        //                     send_requests[device->contextRank()]);
+      }
+    }
+    gatherPerTilePerGPU(aux_recv,
+                        sizeof(AuxChannelTile),
+                        sendAddresses);
+  }
+  
+  
+
+  /*! gather color (and optionally, if not null) linear normal, from
+    all GPUs (and ranks). lienarColor and lienarNormal are
+    device-writeable 2D linear arrays of numPixel size;
+    linearcolor may be null. */
+  void DistFB::gatherColorChannel(/*float4 or rgba8*/
+                                  void *linearColor,
+                                  BNDataType gatherType,
+                                  vec3f *linearNormal)
+  {
+    // ------------------------------------------------------------------
+    // gather all (packed) tiles from all clients
+    // ------------------------------------------------------------------
+    // std::vector<MPI_Request> recv_requests(isOwner
+    //                                        ?((needNormals?2:1)*ownerGather.numGPUs)
+    //                                        :0);
+    // std::vector<MPI_Request> send_requests((needNormals?2:1)*devices->size());
+    
+    // if (isOwner) {
+    //   /* OWNER: create receive requests for all compressed tiles from
+    //      all ranks. this also include the ones we send from our own
+    //      GPUs, so do NOT wait here */
+    //   for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
+    //     int rankOfGPU = ggID / context->gpusPerWorker;
+    //     int localID   = ggID % context->gpusPerWorker;
+    //     context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+    //                         gatheredTilesOnOwner.compressedColorTiles
+    //                         +ownerGather.firstTileOnGPU[ggID],
+    //                         ownerGather.numTilesOnGPU[ggID],
+    //                         recv_requests[ggID]);
+    //     if (needNormals)
+    //       context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+    //                           gatheredTilesOnOwner.compressedNormalTiles
+    //                           +ownerGather.firstTileOnGPU[ggID],
+    //                           ownerGather.numTilesOnGPU[ggID],
+    //                           recv_requests[ownerGather.numGPUs+ggID]);
+    //   }
+    // }
+    
+    std::vector<void *> sendAddressesColors;
+    std::vector<void *> sendAddressesNormals;
+    if (context->isActiveWorker) {
+      /* worker: compress all local tiles (on all gpus), and trigger
+         send requests to transfer those to master */
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        auto tiledFB = getFor(device);
+        auto pld = getPLD(device);
+        float accumScale = 1.f/accumID;
+        CompressTiles kernel = {
+          pld->localSend.compressedColorTiles,
+          pld->localSend.compressedNormalTiles,
+          tiledFB->accumTiles,
+          accumScale
+        };
+        pld->compressTiles->launch(tiledFB->numActiveTilesThisGPU,pixelsPerTile,&kernel);
+      }
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        auto tiledFB = getFor(device);
+        auto pld = getPLD(device);
+        device->sync();
+        sendAddressesColors.push_back(pld->localSend.compressedColorTiles);
+        // context->world.send(owningRank,device->contextRank(),
+        //                     pld->localSend.compressedColorTiles,
+        //                     tiledFB->numActiveTilesThisGPU,
+        //                     send_requests[device->contextRank()]);
+        if (needNormals)
+          sendAddressesColors.push_back(pld->localSend.compressedNormalTiles);
+          // context->world.send(owningRank,device->contextRank(),
+          //                     pld->localSend.compressedNormalTiles,
+          //                     tiledFB->numActiveTilesThisGPU,
+          //                     send_requests[devices->size()+device->contextRank()]);
       }
     }
 
-    if (context->isActiveWorker)
-      for (auto device : *devices)  {
-        context->world.send(owningRank,
-                            device->contextRank(),
-                            getFor(device)->tileDescs,
-                            tilesOnGPU[device->contextRank()],
-                            send_requests[device->contextRank()]);
-      }
-
-    // ------------------------------------------------------------------
-    // and wait for those to complete
-    // ------------------------------------------------------------------
-    if (isOwner)
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
-        context->world.wait(recv_requests[ggID]);
+    gatherPerTilePerGPU(isOwner?gatheredTilesOnOwner.compressedColorTiles:nullptr,
+                        sizeof(*gatheredTilesOnOwner.compressedColorTiles),
+                        sendAddressesColors);
+    if (needNormals) 
+      gatherPerTilePerGPU(isOwner?gatheredTilesOnOwner.compressedNormalTiles:nullptr,
+                          sizeof(*gatheredTilesOnOwner.compressedNormalTiles),
+                          sendAddressesNormals);
     
-    if (context->isActiveWorker)
-      for (int localID=0;localID<tilesOnGPU.size();localID++)
-        context->world.wait(send_requests[localID]);
+    // // ------------------------------------------------------------------
+    // // wait for all send/recv requests to complete - master should
+    // // then have all tiles from all gpus, in compressed form
+    // // ------------------------------------------------------------------
+    // if (isOwner)
+    //   for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
+    //     context->world.wait(recv_requests[ggID]);
+    
+    // if (context->isActiveWorker)
+    //   for (auto device : *devices)
+    //     context->world.wait(send_requests[device->contextRank()]);
+    
+    // ------------------------------------------------------------------
+    // all (packed) tiles received; unpack (on owner only)
+    // ------------------------------------------------------------------
+    if (isOwner) {
+      UnpackTiles args = {
+        numPixels,
+        linearColor,
+        gatherType,
+        linearNormal,
+        gatheredTilesOnOwner.compressedColorTiles,
+        gatheredTilesOnOwner.compressedNormalTiles,
+        gatheredTilesOnOwner.tileDescs
+      };
+      auto device = getDenoiserDevice();
+      SetActiveGPU forDuration(device);
+      getPLD(device)->unpackTiles->launch(gatheredTilesOnOwner.numActiveTiles,
+                                          pixelsPerTile,
+                                          &args);
+      device->sync();
+    }
   }
+  
   
   RTC_EXPORT_COMPUTE1D(unpackTiles,UnpackTiles);
   RTC_EXPORT_COMPUTE1D(compressTiles,CompressTiles);

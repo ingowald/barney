@@ -55,41 +55,36 @@ namespace BARNEY_NS {
     world.assertValid();
     workers.assertValid();
 
-
-
     workerRankOfWorldRank.resize(world.size);
     world.allGather(workerRankOfWorldRank.data(),
                     isActiveWorker?workers.rank:-1);
     worldRankOfWorker.resize(workers.size);
-    numWorkers = 0;
     for (int i=0;i<workerRankOfWorldRank.size();i++)
       if (workerRankOfWorldRank[i] != -1) {
         if (workerRankOfWorldRank[i] >= workers.size)
           throw std::runtime_error("Invalid worker rank!?");
         worldRankOfWorker[workerRankOfWorldRank[i]] = i;
-        numWorkers++;
       }
-    workers.size = numWorkers;
 
     gpusPerWorker = world.allReduceMax(int(gpuIDs.size()));
-    numWorkers = world.allReduceAdd(isActiveWorker?1:0);
+    if (isActiveWorker && gpuIDs.size() != gpuIDs.size())
+      throw std::runtime_error("found workers with different numbers of GPUs!?");
 
     if (dbg) {
       std::stringstream ss;
       ss << "bn." << workers.rank << ": ";
-      ss << "num workers active/total " << numWorkers << "/" << workers.size << std::endl;
+      ss << "num workers active/total " << numWorkers() << "/" << workers.size << std::endl;
       std::cout << ss.str();
     }
 
     if (isActiveWorker) {
       int numSlotsPerWorker = (int)perSlot.size();
       int numDevicesPerWorker = contextSize();//(int)devices.size();
-      int numWorkers = workers.size;
 
       int _globalID = workers.rank*numDevicesPerWorker;
       for (auto device : *devices) {
         device->allGPUsGlobally.rank = _globalID++;
-        device->allGPUsGlobally.size = numWorkers * numDevicesPerWorker;
+        device->allGPUsGlobally.size = numWorkers() * numDevicesPerWorker;
       }
       
       if (dbg) {
@@ -111,7 +106,7 @@ namespace BARNEY_NS {
       workers.allGather(numModelSlotsOnWorker.data(),numSlotsPerWorker);
       if (numModelSlotsOnWorker[workers.size] != 0x290374)
         throw std::runtime_error("mpi buffer overwrite!");
-      for (int i=0;i<numWorkers;i++)
+      for (int i=0;i<numWorkers();i++)
         if (numModelSlotsOnWorker[i] != numSlotsPerWorker)
           throw std::runtime_error
             ("worker rank "+std::to_string(i)+
@@ -129,7 +124,7 @@ namespace BARNEY_NS {
                         devices->numLogical);//(int)devices.size());
       if (numDevicesOnWorker[workers.size] != 0x290375)
         throw std::runtime_error("mpi buffer overwrite!");
-      for (int i=0;i<numWorkers;i++)
+      for (int i=0;i<numWorkers();i++)
         if (numDevicesOnWorker[i] != devices->size())
           throw std::runtime_error
             ("worker rank "+std::to_string(i)+
@@ -231,7 +226,7 @@ namespace BARNEY_NS {
           int nextDG   = (myDG+1) % numDifferentModelSlots;
           int prevDG   = (myDG+numDifferentModelSlots-1) % numDifferentModelSlots;
           std::stringstream ss;
-          ss << "#bn " << myRank() << "." << localID << " (=" << myGlobal
+          ss << "#bn " << worldRank() << "." << localID << " (=" << myGlobal
              << ") looking for DG link "
              << prevDG << "->" << myDG << "->" << nextDG
              << " (for island " << myIsland << ")" << std::endl;
@@ -331,7 +326,7 @@ namespace BARNEY_NS {
 
       if (FromEnv::get()->logQueues) {
         std::stringstream ss;
-        ss << "#" << myRank() << "." << device->contextRank() << ":" << std::endl;
+        ss << "#" << worldRank() << "." << device->contextRank() << ":" << std::endl;
         ss << "  sends " << numOutgoing[device->contextRank()] << " to "
            <<  device->rqs.sendWorkerRank << "."
            << device->rqs.sendWorkerLocal << std::endl;
@@ -372,7 +367,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       numOutgoing[device->contextRank()] = device->rayQueue->numActive;
       if (FromEnv::get()->logQueues)
-        std::cout << myRank() << ": numOutgoing[" << device->contextRank()
+        std::cout << worldRank() << ": numOutgoing[" << device->contextRank()
                   << "] = " << device->rayQueue->numActive << std::endl;
       MPI_Request sendReq, recvReq;
       workers.recv(device->rqs.recvWorkerRank,

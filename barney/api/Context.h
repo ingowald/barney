@@ -236,8 +236,11 @@ namespace barney_api {
   struct Context {
     virtual ~Context() = default;
 
-    virtual int myRank() = 0;
-    virtual int mySize() = 0;
+    virtual int workerRank() = 0;
+    virtual int workerSize() = 0;
+    virtual int worldRank() = 0;
+    virtual int worldSize() = 0;
+    inline int numWorkers() { return workerSize(); }
     
     
     // ------------------------------------------------------------------

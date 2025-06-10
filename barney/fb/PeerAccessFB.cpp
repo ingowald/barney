@@ -14,16 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/fb/LocalFB.h"
+#include "barney/fb/PeerAccessFB.h"
 
 namespace BARNEY_NS {
   
-  LocalFB::LocalFB(Context *context,
+  PeerAccessFB::PeerAccessFB(Context *context,
                    const DevGroup::SP &devices)
     : FrameBuffer(context, devices, true)
   {}
 
-  void LocalFB::resize(BNDataType colorFormat,
+  void PeerAccessFB::resize(BNDataType colorFormat,
                        vec2i size,
                        uint32_t channels)
   {
@@ -54,7 +54,7 @@ namespace BARNEY_NS {
       device->sync();
   }
   
-  LocalFB::~LocalFB()
+  PeerAccessFB::~PeerAccessFB()
   {
     auto frontDev = getDenoiserDevice();
     SetActiveGPU forDuration(frontDev);
@@ -65,7 +65,7 @@ namespace BARNEY_NS {
     all GPUs (and ranks). lienarColor and lienarNormal are
     device-writeable 2D linear arrays of numPixel size;
     linearcolor may be null. */
-  void LocalFB::gatherColorChannel(/*float4 or rgba8*/void *linearColor,
+  void PeerAccessFB::gatherColorChannel(/*float4 or rgba8*/void *linearColor,
                                    BNDataType gatherType,
                                    vec3f *linearNormal)
   {
@@ -83,12 +83,12 @@ namespace BARNEY_NS {
     reformatting from tiles to linear (if local node), possibly
     some gpu-gpu transfer (local node w/ more than one gpu) and
     possibly some mpi communication (distFB) */
-  void LocalFB::gatherAuxChannel(BNFrameBufferChannel whichChannel)
+  void PeerAccessFB::gatherAuxChannel(BNFrameBufferChannel whichChannel)
   {
     /* nothing to do , we can always write from tiledFBs */
   }
   
-  void LocalFB::writeAuxChannel(void *stagingArea,
+  void PeerAccessFB::writeAuxChannel(void *stagingArea,
                                 BNFrameBufferChannel whichChannel) 
   {
     for (auto device : *devices)

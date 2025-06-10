@@ -20,7 +20,7 @@
 
 namespace BARNEY_NS {
 
-  struct MPIContext;
+  // struct MPIContext;
 
   /*! for now, do a 48 bit half3 representation; shoul eventually go
       to 32 or 16, but lets at least try how much this really helps in
@@ -68,7 +68,7 @@ namespace BARNEY_NS {
   struct DistFB : public FrameBuffer {
     typedef std::shared_ptr<DistFB> SP;
 
-    DistFB(MPIContext *context,
+    DistFB(Context *context,
            const DevGroup::SP &devices,
            int owningRank);
     
@@ -138,10 +138,19 @@ namespace BARNEY_NS {
     } ownerGather;
     // (world)rank that owns this frame buffer
     const int  owningRank;
-    const bool isOwner;
-    const bool ownerIsWorker;
     bool needNormals;
-    MPIContext *context;
+    // MPIContext *context;
+    Context *const context;
+
+    virtual int broadcast(bool isSender, int value) = 0;
+    virtual std::vector<int> gather(bool isSender, const std::vector<int> &values) = 0;
+
+    virtual void gatherPerTilePerGPU(/* where to receive into, should
+                                        only be non-null for exactly
+                                        one rank */
+                                     void *whereToReceive,
+                                     size_t perTileSize,
+                                     const std::vector<void *> sendDataPerGPU) = 0;
   };
 
 }

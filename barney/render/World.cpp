@@ -65,7 +65,7 @@ namespace BARNEY_NS {
         = envMapLight.light
         ? envMapLight.light->getDD(device,envMapLight.xfm)
         : EnvMapLight::DD{};
-      dd.rank = slotContext->context->myRank();
+      dd.rank = slotContext->context->workerRank();
       
       dd.samplers  = slotContext->samplerRegistry->getDD(device);
       dd.materials = slotContext->materialRegistry->getDD(device);

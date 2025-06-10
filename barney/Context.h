@@ -56,7 +56,7 @@ namespace BARNEY_NS {
             int globalIndex,
             int globalIndexStep);
     virtual ~Context();
-    
+
     /*! create a frame buffer object suitable to this context */
     // virtual FrameBuffer *createFB(int owningRank) = 0;
     std::shared_ptr<barney_api::Model>
@@ -198,6 +198,7 @@ namespace BARNEY_NS {
     std::vector<SlotContext> perSlot;
     DevGroup::SP devices;
     int const globalIndex;
+    int gpusPerWorker = 0;
   };
   
 

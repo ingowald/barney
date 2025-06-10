@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "barney/LocalContext.h"
-#include "barney/fb/LocalFB.h"
+#include "barney/fb/PeerAccessFB.h"
 #include "barney/render/RayQueue.h"
 
 #if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
@@ -82,6 +82,7 @@ namespace BARNEY_NS {
                              const std::vector<int> &gpuIDs)
     : Context(dataGroupIDs,gpuIDs,0,1)
   {
+    this->gpusPerWorker = gpuIDs.size();
     std::map<int,int> numGPUsInIsland;
     std::map<int,int> numUsesOfDG;
 
@@ -157,7 +158,7 @@ namespace BARNEY_NS {
   std::shared_ptr<barney_api::FrameBuffer> LocalContext::createFrameBuffer(int owningRank)
   {
     assert(owningRank == 0);
-    return std::make_shared<LocalFB>(this,devices);
+    return std::make_shared<PeerAccessFB>(this,devices);
   }
 
   /*! returns how many rays are active in all ray queues, across all

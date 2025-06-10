@@ -22,17 +22,23 @@
 namespace BARNEY_NS {
 
   /*! implements a frame buffer for a single 'local' node where all
-      GPUs can be seen/accessed directly on the current node. */
-  struct LocalFB : public FrameBuffer {
-    typedef std::shared_ptr<LocalFB> SP;
+      GPUs can be seen/accessed directly on the current node via peer
+      access, and where we do not have to explicitly gather tiles on
+      gpu 0 before doing finalization. peer access is _generally_
+      available on most multi-gpu platforms, but on some machines with
+      different GPUs of different generations cuda won't allow peer
+      access between gpus (so _this_ frame buffer implementation will
+      not work for those). */
+  struct PeerAccessFB : public FrameBuffer {
+    typedef std::shared_ptr<PeerAccessFB> SP;
 
-    LocalFB(Context *context,
+    PeerAccessFB(Context *context,
             const DevGroup::SP &devices);
-    virtual ~LocalFB();
+    virtual ~PeerAccessFB();
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
-    { return "LocalFB{}"; }
+    { return "PeerAccessFB{}"; }
 
     /*! resize frame buffer to given number of pixels and the
         indicated types of channels; color will only ever get queries

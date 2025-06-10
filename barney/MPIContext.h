@@ -49,28 +49,28 @@ namespace BARNEY_NS {
         done (false) */
     bool forwardRays(bool needHitIDs) override;
     
-    // for debugging ...
-    void barrier(bool warn=true) override {
-      if (warn) PING;
-      workers.barrier();
-      if (warn) usleep(100);
-    }
+    // // for debugging ...
+    // void barrier(bool warn=true) override {
+    //   if (warn) PING;
+    //   workers.barrier();
+    //   if (warn) usleep(100);
+    // }
     
 
     /*! returns how many rays are active in all ray queues, across all
         devices and, where applicable, across all ranks */
     int numRaysActiveGlobally() override;
 
-    int myRank() override { return world.rank; }
-    int mySize() override { return world.size; }
-    
-    int gpusPerWorker;
+    int worldRank() override { return world.rank; }
+    int worldSize() override { return world.size; }
+    int workerRank() override { return workers.rank; }
+    int workerSize() override { return workers.size; }
+
     int numDifferentModelSlots = -1;
     int numTimesForwarded = 0;
     
     barney_api::mpi::Comm world;
     barney_api::mpi::Comm workers;
-    int numWorkers;
   };
 
 }
