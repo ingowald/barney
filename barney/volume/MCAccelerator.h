@@ -213,7 +213,8 @@ namespace BARNEY_NS {
                                            ray.dbg)) 
                   return true;
                 
-                vec3f P = ray.org + tRange.upper*ray.dir;
+                vec3f P_obj = obj_org + tRange.upper * obj_dir;
+                vec3f P = ti.transformPointFromObjectToWorldSpace(P_obj);
                 ray.setVolumeHit(P,
                                  tRange.upper,
                                  getPos(sample));
