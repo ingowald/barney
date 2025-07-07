@@ -42,6 +42,7 @@ namespace barney_device {
   bool World::getProperty(const std::string_view &name,
                           ANARIDataType type,
                           void *ptr,
+                          uint64_t size,
                           uint32_t flags)
   {
     if (name == "bounds" && type == ANARI_FLOAT32_BOX3) {
@@ -58,7 +59,7 @@ namespace barney_device {
       return true;
     }
 
-    return Object::getProperty(name, type, ptr, flags);
+    return Object::getProperty(name, type, ptr, size, flags);
   }
 
   void World::commitParameters()
@@ -153,18 +154,18 @@ namespace barney_device {
     auto *state = deviceState();
     if (state->objectUpdates.lastSceneChange <= m_lastBarneyModelBuild)
       return;
-      
+
     reportMessage(ANARI_SEVERITY_DEBUG, "barney::World rebuilding model");
 
     auto barneyModel = state->tether->getModel(uniqueID)->model;
-    
+
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
-    
+
     std::vector<const Group *> groups;
     std::vector<BNGroup> barneyGroups;
     std::vector<BNTransform> barneyTransforms;
-  
+
     groups.reserve(m_instances.size());
     barneyGroups.reserve(m_instances.size());
     barneyTransforms.reserve(m_instances.size());
@@ -180,7 +181,7 @@ namespace barney_device {
       const Group *ag = inst->group();
       if (!ag) continue;
       BNGroup bg = 0;
-      if (barneyGroupForAnariGroup.find(ag) == barneyGroupForAnariGroup.end()) 
+      if (barneyGroupForAnariGroup.find(ag) == barneyGroupForAnariGroup.end())
         barneyGroupForAnariGroup[ag] = bg = ag->makeBarneyGroup();
       else
         bg = barneyGroupForAnariGroup[ag];
@@ -217,7 +218,7 @@ namespace barney_device {
         bnRelease(m_attributesData[i]);
         m_attributesData[i] = 0;
       }
-    
+
       m_attributesData[i]
         = bnDataCreate(context,slot,BN_FLOAT4,
                        attributes[i].size(),attributes[i].data());
@@ -228,15 +229,15 @@ namespace barney_device {
                               attribName.c_str(),
                               m_attributesData[i]);
     }
-  
+
     bnBuild(barneyModel, slot);
 
     for (auto it : barneyGroupForAnariGroup)
       bnRelease(it.second);
-  
+
     m_lastBarneyModelBuild = helium::newTimeStamp();
   }
-  
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::World *);

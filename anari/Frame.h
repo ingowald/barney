@@ -25,6 +25,7 @@ namespace barney_device {
     bool getProperty(const std::string_view &name,
                      ANARIDataType type,
                      void *ptr,
+                     uint64_t size,
                      uint32_t flags) override;
 
     void commitParameters() override;
@@ -69,7 +70,7 @@ namespace barney_device {
       bool objID = true;
     } m_didMapChannel;
     bool m_lastFrameWasFirstFrame = true;
-    
+
     struct {
       anari::DataType color{ANARI_UNKNOWN};
       anari::DataType depth{ANARI_UNKNOWN};
@@ -81,7 +82,7 @@ namespace barney_device {
     helium::ChangeObserverPtr<Renderer> m_renderer;
     helium::IntrusivePtr<Camera>        m_camera;
     helium::IntrusivePtr<World>         m_world;
-    
+
     helium::TimeStamp m_lastCommitFlush{0};
 
     mutable float m_duration{0.f};
