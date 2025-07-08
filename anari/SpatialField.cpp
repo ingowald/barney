@@ -77,7 +77,7 @@ namespace barney_device {
 
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
-    
+
     BNDataType barneyType;
     switch (m_data->elementType()) {
     case ANARI_FLOAT32:
@@ -167,7 +167,7 @@ namespace barney_device {
       return;
     }
 
-    if (!m_params.vertexData && !m_params.cellData) { 
+    if (!m_params.vertexData && !m_params.cellData) {
       reportMessage
         (ANARI_SEVERITY_WARNING,
          "missing required parameter 'vertex.data' OR"
@@ -175,7 +175,7 @@ namespace barney_device {
       return;
     }
 
-    if (m_params.vertexData && m_params.cellData) { 
+    if (m_params.vertexData && m_params.cellData) {
       reportMessage
         (ANARI_SEVERITY_WARNING,
          "cannot have both 'cell.data' and 'vertex.data' "
@@ -189,14 +189,14 @@ namespace barney_device {
          "missing required parameter 'index' on unstructured spatial field");
       return;
     }
-    
+
     if (!m_params.cellType) {
       reportMessage
         (ANARI_SEVERITY_WARNING,
          "missing required parameter 'cell.type' on unstructured spatial field");
       return;
     }
-    
+
     if (!m_params.cellBegin) {
       reportMessage
         (ANARI_SEVERITY_WARNING,
@@ -219,8 +219,8 @@ namespace barney_device {
     int numScalars = cellData
       ? m_params.cellData->size()
       : m_params.vertexData->size();
-    
-    for (int i = 0; i < numVertices; i++) 
+
+    for (int i = 0; i < numVertices; i++)
       m_bounds.insert(vertexPositions[i]);
 
     uint32_t *index32{nullptr};
@@ -262,7 +262,7 @@ namespace barney_device {
 
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
-    
+
     auto *vertexPositions
       = m_params.vertexPosition->beginAs<math::float3>();
     int numVertices
@@ -280,19 +280,14 @@ namespace barney_device {
     int numScalars = (int)(cellData
                            ? m_params.cellData->size()
                            : m_params.vertexData->size());
-    
-    BNData verticesData
-      = bnDataCreate(context,
-                     slot,
-                     BN_FLOAT3,
-                     numVertices, 
-                     vertexPositions);
-    BNData scalarsData
-      = bnDataCreate(context,
-                     slot,
-                     BN_FLOAT,
-                     numScalars, 
-                     vertexData ? vertexData : cellData);
+
+    BNData verticesData =
+        bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertexPositions);
+    BNData scalarsData = bnDataCreate(context,
+        slot,
+        BN_FLOAT,
+        numScalars,
+        vertexData ? vertexData : cellData);
     BNData indicesData
       = bnDataCreate(context,
                      slot,
@@ -330,6 +325,12 @@ namespace barney_device {
   box3 UnstructuredField::bounds() const
   {
     return m_bounds;
+  }
+
+  bool UnstructuredField::isValid() const
+  {
+    return m_params.vertexPosition && m_params.index && m_params.cellBegin
+        && m_params.cellType && (m_params.vertexData || m_params.cellData);
   }
 
   // BlockStructuredField //
