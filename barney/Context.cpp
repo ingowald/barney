@@ -30,6 +30,45 @@ namespace barney_api {
 // #endif
   
 namespace BARNEY_NS {
+  WorkerTopo::WorkerTopo(const std::vector<Device> &devices)
+    : allDevices(devices),
+      islandOf(devices.size()),
+      islandRankOf(devices.size())
+  {
+    std::map<int,int> useCountOfDG;
+    for (int gid=0;gid<(int)devices.size();gid++) {
+      Device dev = devices[gid];
+      assert(dev.dataRank >= -1);
+      if (dev.dataRank == -1) {
+        islandOf[gid] = -1;
+        islandRankOf[gid] = -1;
+      } else {
+        int islandID = useCountOfDG[dev.dataRank]++;
+        islandOf[gid] = islandID;
+        if (islands.size() <= islandID) islands.resize(islandID+1);
+        islandRankOf[gid] = islands[islandID].size();
+        islands[islandID].push_back(gid);
+      }
+    }
+    // some final sanity checks ...
+    assert(islands.size() > 0);
+    for (auto &island : islands) assert(island.size() == islands[0].size());
+  }
+
+  int WorkerTopo::islandSize() const
+  { return islands[0].size(); }
+  
+  /*! finds ID of device that lived on diven worker:local */
+  int WorkerTopo::find(int worker, int local)
+  {
+    for (int i=0;i<allDevices.size();i++) {
+      if (allDevices[i].worker == worker &&
+          allDevices[i].local == local)
+        return i;
+    }
+    throw std::runtime_error("could not find given device!?");
+  }
+
   Context::Context(const std::vector<LocalSlot> &localSlots,
                    WorkerTopo::SP topo)
     : barney_api::Context(localSlots),
@@ -218,7 +257,7 @@ namespace BARNEY_NS {
     found its intersection */
   void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
-    globalTraceStrategy->traceRays(model,rngSeed,needHitIDs);
+    globalTraceImpl->traceRays(model,rngSeed,needHitIDs);
   }
 
   std::shared_ptr<barney_api::Model> Context::createModel()

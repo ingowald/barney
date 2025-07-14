@@ -90,6 +90,11 @@ endmacro()
 # define all the host-side sources
 set(HOST_SOURCES
 
+  globalTrace/RQSBase.h
+  globalTrace/RQSBase.cpp
+  globalTrace/RQSLocal.h
+  globalTrace/RQSLocal.cu
+  
   # all the barney "plumbing" stuff on the host
   Context.h
   Context.cpp
@@ -97,8 +102,6 @@ set(HOST_SOURCES
   DeviceGroup.cpp
   LocalContext.h
   LocalContext.cpp
-  LocalCycleTraceStrategy.h
-  LocalCycleTraceStrategy.cu
   Object.h
   Object.cpp
   Camera.h
@@ -217,8 +220,8 @@ set(MPI_SOURCES
   fb/DistFB.cu
   MPIContext.h
   MPIContext.cpp
-  MPICycleTraceStrategy.h
-  MPICycleTraceStrategy.cu
+  globalTrace/RQSMPI.h
+  globalTrace/RQSMPI.cu
   common/MPIWrappers.h
   common/MPIWrappers.cpp
 )

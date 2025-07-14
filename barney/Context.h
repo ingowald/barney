@@ -50,7 +50,7 @@ namespace BARNEY_NS {
     std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
   };
 
-  struct GlobalTraceStrategy;
+  struct GlobalTraceImpl;
 
   struct WorkerTopo {
     typedef std::shared_ptr<WorkerTopo> SP;
@@ -68,6 +68,9 @@ namespace BARNEY_NS {
 
     /*! num GPUs per island */
     int islandSize() const;
+    
+    /*! finds ID of device that lived on diven worker:local */
+    int find(int worker, int local);
     
     std::vector<Device> allDevices;
     std::vector<std::vector<int>> islands;
@@ -256,11 +259,11 @@ namespace BARNEY_NS {
         copies on that device */
     Device *deviceWeNeedToCopyToForFBMap = nullptr;
     // int const globalIndex;
-    GlobalTraceStrategy *globalTraceStrategy = 0;
+    GlobalTraceImpl *globalTraceImpl = 0;
   };
 
-  struct GlobalTraceStrategy {
-    GlobalTraceStrategy(Context *context)
+  struct GlobalTraceImpl {
+    GlobalTraceImpl(Context *context)
       : context(context)
     {}
     

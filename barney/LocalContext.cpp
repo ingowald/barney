@@ -16,7 +16,7 @@
 
 #include "barney/LocalContext.h"
 #include "barney/fb/LocalFB.h"
-#include "barney/LocalCycleTraceStrategy.h"
+#include "barney/globalTrace/RQSLocal.h"
 #include "barney/render/RayQueue.h"
 
 #if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
@@ -54,6 +54,24 @@ namespace barney_api {
       // else
       //   for (int i=0;i<numGPUs;i++)
       //     gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:(i%numGPUs));
+
+#define ALLOW_OVERSUBSCRIBE 1
+#if ALLOW_OVERSUBSCRIBE
+      std::vector<int> fakeIDs;
+      if (numGPUs < numDGs) {
+        for (int i=0;i<numDGs;i++)  {
+          int ID
+            = gpuIDs
+            ? gpuIDs[i%numGPUs]
+            : (i%numGPUs)
+            ;
+          fakeIDs.push_back(ID);
+        }
+        gpuIDs = (const int *)fakeIDs.data();
+        numGPUs = numDGs;
+      }
+#endif
+
       if (numGPUs < numDGs)
         throw std::runtime_error
           ("not enough CUDA GPUs for requested number of data groups!");
@@ -92,6 +110,22 @@ namespace barney_api {
 }
 
 namespace BARNEY_NS {
+  WorkerTopo::SP
+  LocalContext::makeTopo(const std::vector<LocalSlot> &localSlots)
+  {
+    std::vector<WorkerTopo::Device> devices;
+    for (auto ls : localSlots) {
+      for (auto gpuID : ls.gpuIDs) {
+        WorkerTopo::Device dev;
+        dev.local = devices.size();
+        dev.worker = 0;
+        dev.dataRank = ls.dataRank;
+        devices.push_back(dev);
+      }
+    }
+    return std::make_shared<WorkerTopo>(devices);
+  }
+
   LocalContext::LocalContext(const std::vector<LocalSlot> &localSlots)
     : Context(localSlots,
               makeTopo(localSlots))
@@ -162,7 +196,7 @@ namespace BARNEY_NS {
       assert(dev->rqs.recvWorkerLocal >= 0);
     }
 #endif
-    globalTraceStrategy = new LocalCycleTraceStrategy(this);
+    globalTraceImpl = new RQSLocal(this);
   }
 
   LocalContext::~LocalContext()

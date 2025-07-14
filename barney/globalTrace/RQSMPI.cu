@@ -1,34 +1,21 @@
-// ======================================================================== //
-// Copyright 2023-2025 Ingo Wald                                            //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2025 Ingo Wald
+// SPDX-License-Identifier: Apache-2.0
 
-#include "barney/MPICycleTraceStrategy.h"
+#include "barney/globalTrace/RQSMPI.h"
 #include "barney/render/RayQueue.h"
 #include "barney/MPIContext.h"
 
 namespace BARNEY_NS {
 
-  MPICycleTraceStrategy::MPICycleTraceStrategy(MPIContext *context)
-      : RayQueueCycleTraceStrategy(context),
+  RQSMPI::RQSMPI(MPIContext *context)
+      : RQSBase(context),
         context(context)
     {}
   
   /*! forward rays (during global trace); returns if _after_ that
     forward the rays need more tracing (true) or whether they're
     done (false) */
-  bool MPICycleTraceStrategy::forwardRays(bool needHitIDs)
+  bool RQSMPI::forwardRays(bool needHitIDs)
   {
     auto topo = context->topo; assert(topo);
     auto &workers = context->workers;
@@ -61,8 +48,6 @@ namespace BARNEY_NS {
       int sendWorkerLocal = pld.sendPartner->local;
       int recvWorkerRank  = pld.recvPartner->worker;
       int recvWorkerLocal = pld.recvPartner->local;
-
-      auto &rays = *device->rayQueue;
 
       MPI_Request sendReq, recvReq;
       numOutgoing[device->localRank()] = device->rayQueue->numActive;
