@@ -102,6 +102,8 @@ namespace BARNEY_NS {
   
   void RayQueue::resize(int newSize)
   {
+    PING; PRINT(newSize);
+    
     if (newSize <= size) return;
     
     SetActiveGPU forDuration(device);

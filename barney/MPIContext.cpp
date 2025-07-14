@@ -18,6 +18,7 @@
 #include "barney/fb/DistFB.h"
 #include "barney/render/RayQueue.h"
 #include "barney/globalTrace/RQSMPI.h"
+#include "barney/globalTrace/All2all.h"
 
 #if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
@@ -293,7 +294,10 @@ namespace BARNEY_NS {
     barrier(false);
 #endif
 
-    globalTraceImpl = new RQSMPI(this);
+    if (FromEnv::enabled("all2all"))
+      globalTraceImpl = new MPIAll2all(this);
+    else
+      globalTraceImpl = new RQSMPI(this);
   }
 
   /*! create a frame buffer object suitable to this context */

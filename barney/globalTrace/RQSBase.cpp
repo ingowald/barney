@@ -34,6 +34,7 @@ namespace BARNEY_NS {
   
   void RQSBase::resize(int maxRaysPerRayGenOrShadeLaunch) 
   {
+    PING;
     for (auto device : *context->devices)
       device->rayQueue->resize(maxRaysPerRayGenOrShadeLaunch);
   }

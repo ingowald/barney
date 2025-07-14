@@ -1,33 +1,18 @@
-// ======================================================================== //
-// Copyright 2023-2025 Ingo Wald                                            //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2025 Ingo Wald
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include "barney/Context.h"
+#include "barney/render/Ray.h"
 
-namespace barney {
+namespace BARNEY_NS {
+
+  using render::RayOnly;
+  using render::HitOnly;
   
-  struct MPIAll2AllTraceStrategy : public GlobalTraceStrategy
+  struct MPIAll2all : public GlobalTraceImpl
   {
-    struct GlobalDevice {
-      int rank;
-      int local;
-      int dgID;
-      int island;
-    };
     struct PLD {
       struct {
         RayOnly *raysOnly = 0;
@@ -39,18 +24,10 @@ namespace barney {
       } perIslandPeer;
       int numRemoteRaysReceived;
     };
-    struct Island {
-      std::vector<int> globalIDs;
-    };
-    std::vector<GlobalDevice> globalDevices;
-    std::vector<Island>       islands;
-    std::vector<int>          raysOnGlobalDevice;
     
-    MPIAll2AllTraceStrategy(Context *context)
-      : GlobalTraceStrategy(context)
-    {}
+    MPIAll2all(Context *context);
     void resize(int maxRaysPerRayGenOrShadeLaunch) override;
-    void traceRays() override;
+    void traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs) override;
 
     // ====================== helper fcts ======================
 

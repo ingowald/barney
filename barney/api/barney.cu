@@ -63,9 +63,13 @@ namespace barney_api {
       components.push_back(es.substr(0,p));
       es = es.substr(p+1);
     }
+    PING;
+    PRINT(components.size());
     std::map<std::string,std::string> keyValue;
     for (auto comp : components) {
+      PRINT(comp);
       size_t p = comp.find("=");
+      PRINT(p);
       if (p == comp.npos) {
         keyValue[comp] = "";
       } else {
@@ -77,6 +81,12 @@ namespace barney_api {
       const std::string value = kv.second;
       
       std::cout << "#barney.config " << key << " = '" << value << "'" << std::endl;
+
+      if (value == "on" || value == "ON" || value == "1")
+        boolValues[key] = 1;
+      else if (value == "off" || value == "OFF" || value == "0")
+        boolValues[key] = 0;
+      
       if (key == "LOG_QUEUES")
         logQueues = true;
       else if (key == "SKIP_DENOISING")
@@ -86,7 +96,8 @@ namespace barney_api {
       else if (key == "LOG_BACKEND")
         logBackend = true;
       else
-        throw std::runtime_error("unknown/unrecognized config key");
+        std::cout << "warning - unknown/unrecognized BARNEY_CONFIG key... "
+                  << "I assume you know what you're doing" << std::endl;
     }
   }
   const FromEnv *FromEnv::get()

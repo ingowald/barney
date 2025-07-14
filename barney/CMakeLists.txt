@@ -222,6 +222,8 @@ set(MPI_SOURCES
   MPIContext.cpp
   globalTrace/RQSMPI.h
   globalTrace/RQSMPI.cu
+  globalTrace/All2all.h
+  globalTrace/All2all.cu
   common/MPIWrappers.h
   common/MPIWrappers.cpp
 )

@@ -405,6 +405,17 @@ namespace barney_api {
   struct FromEnv {
     FromEnv();
     static const FromEnv *get();
+
+    static bool enabled(const std::string &key)
+    {
+      auto &boolValues = get()->boolValues;
+      auto it = boolValues.find(key);
+      if (it == boolValues.end()) return false;
+      return it->second;
+    }
+    
+    std::map<std::string,bool> boolValues;
+    
     bool logQueues = false;
     bool skipDenoising = false;
     bool logConfig = false;
