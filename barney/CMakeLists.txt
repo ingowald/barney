@@ -97,6 +97,8 @@ set(HOST_SOURCES
   DeviceGroup.cpp
   LocalContext.h
   LocalContext.cpp
+  LocalCycleTraceStrategy.h
+  LocalCycleTraceStrategy.cu
   Object.h
   Object.cpp
   Camera.h
@@ -215,6 +217,8 @@ set(MPI_SOURCES
   fb/DistFB.cu
   MPIContext.h
   MPIContext.cpp
+  MPICycleTraceStrategy.h
+  MPICycleTraceStrategy.cu
   common/MPIWrappers.h
   common/MPIWrappers.cpp
 )

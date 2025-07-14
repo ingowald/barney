@@ -24,7 +24,7 @@ namespace barney_api {
   
   struct Context;
   struct Data;
-  
+
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
   struct Object : public std::enable_shared_from_this<Object> {
@@ -233,7 +233,14 @@ namespace barney_api {
     virtual ~Texture() = default;
   };
 
+
+  struct LocalSlot {
+    int dataRank;
+    std::vector<int> gpuIDs;
+  };
+  
   struct Context {
+    Context(const std::vector<LocalSlot> &localSlot) {};
     virtual ~Context() = default;
 
     virtual int myRank() = 0;

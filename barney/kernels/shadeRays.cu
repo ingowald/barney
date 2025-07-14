@@ -785,27 +785,39 @@ namespace BARNEY_NS {
     }
 #endif // device code  
 
-    struct PathTraceKernel {
-#ifdef RTC_DEVICE_CODE
-      inline __rtc_device
-      void run(const rtc::ComputeInterface &rt);
-#endif
+//     struct PathTraceKernel {
+// #ifdef RTC_DEVICE_CODE
+//       inline __rtc_device
+//       void run(const rtc::ComputeInterface &rt);
+// #endif
       
-      World::DD world;
-      Renderer::DD renderer;
-      AccumTile *accumTiles;
-      AuxTiles   auxTiles;
-      int accumID;
-      SingleQueue readQueue;
-      int numRays;
-      SingleQueue writeQueue;
-      int *d_nextWritePos;
-      int generation;
-    };
+//       World::DD world;
+//       Renderer::DD renderer;
+//       AccumTile *accumTiles;
+//       AuxTiles   auxTiles;
+//       int accumID;
+//       SingleQueue readQueue;
+//       int numRays;
+//       SingleQueue writeQueue;
+//       int *d_nextWritePos;
+//       int generation;
+//     };
 
 #if RTC_DEVICE_CODE
-    inline __rtc_device
-    void PathTraceKernel::run(const rtc::ComputeInterface &rt)
+    // inline __rtc_device
+    // void PathTraceKernel::run
+    __rtc_global void _shadeRays(const rtc::ComputeInterface &rt,
+      World::DD world,
+      Renderer::DD renderer,
+      AccumTile *accumTiles,
+      AuxTiles   auxTiles,
+      int accumID,
+      SingleQueue readQueue,
+      int numRays,
+      SingleQueue writeQueue,
+      int *d_nextWritePos,
+      int generation
+                              )
     {
       int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
       if (tid >= numRays) return;
@@ -961,17 +973,17 @@ namespace BARNEY_NS {
         Renderer::DD devRenderer
           = renderer->getDD(device);
 
-        render::PathTraceKernel args = {
-          devWorld,devRenderer,
-          devFB->accumTiles,
-          devFB->auxTiles,
-          (int)fb->accumID,
-          rayQueue->traceAndShadeReadQueue,
-          numRays,
-          rayQueue->receiveAndShadeWriteQueue,
-          rayQueue->_d_nextWritePos,
-          generation,
-        };
+        // render::PathTraceKernel args = {
+        //   devWorld,devRenderer,
+        //   devFB->accumTiles,
+        //   devFB->auxTiles,
+        //   (int)fb->accumID,
+        //   rayQueue->traceAndShadeReadQueue,
+        //   numRays,
+        //   rayQueue->receiveAndShadeWriteQueue,
+        //   rayQueue->_d_nextWritePos,
+        //   generation,
+        // };
         if (FromEnv::get()->logQueues) {
           std::stringstream ss;
           ss << "#bn: ## ray queue kernel SHADE " << std::endl
@@ -983,7 +995,24 @@ namespace BARNEY_NS {
         }
         
           
-        device->shadeRays->launch(nb,bs,&args);
+        // device->shadeRays->launch(nb,bs,&args);
+        __rtc_launch(//device
+                     device->rtc,
+                     //kernel
+                     _shadeRays,
+                     //config
+                     nb,bs,
+          //args
+          devWorld,devRenderer,
+          devFB->accumTiles,
+          devFB->auxTiles,
+          (int)fb->accumID,
+          rayQueue->traceAndShadeReadQueue,
+          numRays,
+          rayQueue->receiveAndShadeWriteQueue,
+          rayQueue->_d_nextWritePos,
+          generation
+                     );
       }
     }
 
@@ -998,6 +1027,6 @@ namespace BARNEY_NS {
     }
   }
   
-  RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::PathTraceKernel);
+  // RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::PathTraceKernel);
 }
 

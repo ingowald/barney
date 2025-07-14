@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2023-2024 Ingo Wald                                            //
+// Copyright 2023-2025 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,35 +16,23 @@
 
 #pragma once
 
-#include "barney/Context.h"
+#include "barney/LocalCycleTraceStrategy.h"
 
 namespace BARNEY_NS {
-
-  /*! a barney context for "local"-node rendering - no MPI */
-  struct LocalContext : public Context {
+  struct MPIContext;
+  
+  struct MPICycleTraceStrategy : public RayQueueCycleTraceStrategy
+  {
+    MPICycleTraceStrategy(MPIContext *context);
     
-    LocalContext(const std::vector<LocalSlot> &localSlots);
-
-    virtual ~LocalContext();
-
-    static WorkerTopo::SP makeTopo(const std::vector<LocalSlot> &localSlots);
+    /*! forward rays (during global trace); returns true if _after_
+      that forward the rays need more tracing (true) or whether
+      they're done (false) */
+    bool forwardRays(bool needHitIDs) override;
+    // int numDifferentModelSlots = -1;
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "LocalFB{}"; }
-
-    int numRaysActiveGlobally() override;
-    
-    void render(Renderer    *renderer,
-                GlobalModel *model,
-                Camera      *camera,
-                FrameBuffer *fb) override;
-
-    int myRank() override { return 0; }
-    int mySize() override { return 1; }
-
-    /*! create a frame buffer object suitable to this context */
-    std::shared_ptr<barney_api::FrameBuffer>
-    createFrameBuffer(int owningRank) override;
+    MPIContext *const context;
   };
+      
 }
+

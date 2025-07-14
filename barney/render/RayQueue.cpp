@@ -100,11 +100,7 @@ namespace BARNEY_NS {
     std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
   }
   
-  void RayQueue::resize(int newSize
-#if SINGLE_CYCLE_RQS
-                        , int maxRaysAcrossAllRanks
-#endif
-                        )
+  void RayQueue::resize(int newSize)
   {
     if (newSize <= size) return;
     
@@ -113,13 +109,6 @@ namespace BARNEY_NS {
     traceAndShadeReadQueue.free(rtc);
     receiveAndShadeWriteQueue.free(rtc);
 
-#if SINGLE_CYCLE_RQS
-    if (rqs.raysOnly) rtc->freeMem(rqs.raysOnly);
-    if (rqs.hitsOnly) rtc->freeMem(rqs.hitsOnly);
-    rqs.raysOnly = (RayOnly*)rtc->allocMem(maxRaysAcrossAllRanks*sizeof(RayOnly));
-    rqs.hitsOnly = (HitOnly*)rtc->allocMem(maxRaysAcrossAllRanks*sizeof(HitOnly));
-#endif
-    
     // if (traceAndShadeReadQueue.rays) 
     //   rtc->freeMem(traceAndShadeReadQueue);
     // if (receiveAndShadeWriteQueue)

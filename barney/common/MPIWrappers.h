@@ -56,7 +56,7 @@ namespace barney_api {
           would have rank 0 get a communicator that contains only
           itself, and all others get a communicator that contains all
           other former ranks */
-      Comm split(int color);
+      Comm split(int color) const;
       
       inline operator MPI_Comm() { return comm; }
       void  assertValid() const;

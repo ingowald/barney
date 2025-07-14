@@ -43,9 +43,7 @@ namespace BARNEY_NS {
 
   
   struct Device {
-    Device(rtc::Device *rtc,
-           int contextRank,
-           int contextSize);
+    Device(rtc::Device *rtc);
     
     /*! describes this device's place with the *LOCAL NODE*'s context;
         ie, these are NOT physical Device IDs (a context can use a
@@ -54,34 +52,42 @@ namespace BARNEY_NS {
         would argue about, either */
     // int                const contextRank;
     // int                const contextSize;
-    PeerGroup gpuInNode;
-    int contextRank() const { return gpuInNode.rank; }
+    // PeerGroup gpuInNode;
+    // int contextRank() const { return gpuInNode.rank; }
     
     /*! rank and size of the *GLOBAL* context; i.e., possibly across
         multiple ranks in an MPI call (for a signel node this will be
         the same as contextRank/Size */
     PeerGroup allGPUsGlobally;
+    PeerGroup allGPUsLocally;
     int globalRank() const { return allGPUsGlobally.rank; }
     int globalSize() const { return allGPUsGlobally.size; }
+
+    int localRank() const { return allGPUsLocally.rank; }
+    int localSize() const { return allGPUsLocally.size; }
+
+    // DEPRECATED!
+    int contextRank() const { return localRank(); }
+    
     // int                globalRank = -1;
     // int                globalSize = -1;
     
-    /*! describes this device's island's place in the world */
-    PeerGroup islandInWorld;
+    // /*! describes this device's island's place in the world */
+    // PeerGroup islandInWorld;
 
-    /*! describes this device's place within the island/cycle that it
-        is in */
-    PeerGroup gpuInIsland;
+    // /*! describes this device's place within the island/cycle that it
+    //     is in */
+    // PeerGroup gpuInIsland;
     
     void sync() { rtc->sync(); }
     
     /* for ray queue cycling - who to cycle with */
-    struct {
-      int sendWorkerRank  = -1;
-      int sendWorkerLocal = -1;
-      int recvWorkerRank  = -1;
-      int recvWorkerLocal = -1;
-    } rqs;
+    // struct {
+    //   int sendWorkerRank  = -1;
+    //   int sendWorkerLocal = -1;
+    //   int recvWorkerRank  = -1;
+    //   int recvWorkerLocal = -1;
+    // } rqs;
 
     int  setActive() const { return rtc->setActive(); }
     void restoreActive(int old) const  { rtc->restoreActive(old); }
@@ -91,8 +97,8 @@ namespace BARNEY_NS {
     
     GeomTypeRegistry geomTypes;
     rtc::Device *const rtc;
-    rtc::ComputeKernel1D *generateRays = 0;
-    rtc::ComputeKernel1D *shadeRays = 0;
+    // rtc::ComputeKernel1D *generateRays = 0;
+    // rtc::ComputeKernel1D *shadeRays = 0;
     
     rtc::TraceKernel2D *traceRays = 0;
     RayQueue     *rayQueue = 0;

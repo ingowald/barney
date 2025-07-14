@@ -365,11 +365,11 @@ namespace BARNEY_NS {
   {
     perLogical.resize(devices->size());
     if (isOwner) {
-      ownerGather.numGPUs = context->numWorkers * context->gpusPerWorker;
+      ownerGather.numGPUs = context->numWorkers() * context->gpusPerWorker;
       ownerGather.numTilesOnGPU.resize(ownerGather.numGPUs);
     }
     else {
-      ownerGather.numGPUs = context->numWorkers * context->gpusPerWorker;
+      ownerGather.numGPUs = context->numWorkers() * context->gpusPerWorker;
       ownerGather.numTilesOnGPU.resize(0);
     }
     for (auto device : *devices) {

@@ -117,17 +117,13 @@ namespace barney_api {
 # if BARNEY_BACKEND_EMBREE
     barney_api::Context *
     createMPIContext_embree(barney_api::mpi::Comm world,
-                            barney_api::mpi::Comm workers,
-                            bool isActiveWorker,
                             const std::vector<int> &dgIDs);
 # endif
 # if BARNEY_BACKEND_OPTIX
     barney_api::Context *
     createMPIContext_optix(barney_api::mpi::Comm world,
-                           barney_api::mpi::Comm workers,
-                           bool isActiveWorker,
                            const std::vector<int> &dgIDs,
-                           const std::vector<int> &gpuIDs);
+                           int numGPUs, const int *gpuIDs);
 # endif
 #endif
   }
@@ -1008,8 +1004,8 @@ namespace barney_api {
          : rank*numDataRanksOnThisContext+i);
 
     // check if we're an active worker
-    bool isActiveWorker = !dataGroupIDs.empty();
-    mpi::Comm workers = world.split(isActiveWorker);
+    // bool isActiveWorker = !dataGroupIDs.empty();
+    // mpi::Comm workers = world.split(isActiveWorker);
     
     // ------------------------------------------------------------------
     // create list of GPUs to use for this rank. if specified by user
@@ -1028,8 +1024,8 @@ namespace barney_api {
         
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createMPIContext_embree(world,
-                                                  workers,
-                                                  isActiveWorker,
+                                                  // workers,
+                                                  // isActiveWorker,
                                                   dataGroupIDs);
 # else
         throw std::runtime_error
@@ -1038,12 +1034,12 @@ namespace barney_api {
 # endif
       }
 #if BARNEY_BACKEND_OPTIX
-      std::vector<int> gpuIDs = {_gpuIDs,_gpuIDs+numGPUs};
+      // std::vector<int> gpuIDs = {_gpuIDs,_gpuIDs+numGPUs};
       return (BNContext)createMPIContext_optix(world,
-                                               workers,
-                                               isActiveWorker,
+                                               // workers,
+                                               // isActiveWorker,
                                                dataGroupIDs,
-                                               gpuIDs);
+                                               numGPUs,_gpuIDs);
 #else
       throw std::runtime_error("explicitly asked for gpus to use, "
                                "but optix backend not compiled in");
@@ -1062,10 +1058,12 @@ namespace barney_api {
         gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
                           + i) % hardware.numGPUsThisHost);
       return (BNContext)createMPIContext_optix(world,
-                                               workers,
-                                               isActiveWorker,
+                                               // workers,
+                                               // isActiveWorker,
                                                dataGroupIDs,
-                                               gpuIDs);
+                                               numGPUs,_gpuIDs);
+                                               // dataGroupIDs,
+                                               // gpuIDs);
     } catch (std::exception &e) {
       std::cout << "#barney: could not create optix context" << std::endl;
     }

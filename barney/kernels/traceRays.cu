@@ -55,7 +55,6 @@ namespace BARNEY_NS {
           std::cout << ss.str();
         }
 
-
         if (dd.numRays == 0 || dd.accel == 0) {
           /* iw - it's perfectly valid for an app to 'render' a model
              that's empty, so it's possible that dd.world is 0. Just
@@ -64,7 +63,7 @@ namespace BARNEY_NS {
         } else {
           int bs = 1024;
           int nb = divRoundUp(dd.numRays,bs);
-          if (nb) 
+          if (nb)
             device->traceRays->launch(/* bs,nb intentionally inverted:
                                          always have 1024 in width: */
                                       vec2i(bs,nb),

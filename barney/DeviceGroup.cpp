@@ -58,9 +58,10 @@ namespace BARNEY_NS {
   {}
 
 
-  Device::Device(rtc::Device *rtc,
-                 int contextRank,
-                 int contextSize// ,
+  Device::Device(rtc::Device *rtc
+                 // ,
+                 // int contextRank,
+                 // int contextSize// ,
                  // int globalIndex,
                  // int globalIndexStep
                  )
@@ -69,15 +70,15 @@ namespace BARNEY_NS {
   {
     rayQueue = new RayQueue(this);
 
-    gpuInNode.rank = contextRank;
-    gpuInNode.size = contextSize;
+    // gpuInNode.rank = contextRank;
+    // gpuInNode.size = contextSize;
     
-    generateRays
-      = createCompute_generateRays(rtc);
-    shadeRays
-      = createCompute_shadeRays(rtc);
-    traceRays
-      = createTrace_traceRays(rtc);
+    // generateRays
+    //   = createCompute_generateRays(rtc);
+    // shadeRays
+    //   = createCompute_shadeRays(rtc);
+     traceRays
+       = createTrace_traceRays(rtc);
   }
   
 }

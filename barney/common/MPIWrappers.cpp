@@ -137,7 +137,7 @@ namespace barney_api {
       would have rank 0 get a communicator that contains only
       itself, and all others get a communicator that contains all
       other former ranks */
-    Comm Comm::split(int color)
+    Comm Comm::split(int color) const
     {
       MPI_Comm newComm;
       BN_MPI_CALL(Comm_split(comm,color,rank,&newComm));
