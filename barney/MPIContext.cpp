@@ -32,17 +32,47 @@
 
 namespace BARNEY_NS {
 
+  WorkerTopo::SP
+  MPIContext::makeTopo(const barney_api::mpi::Comm &worldComm,
+                       const barney_api::mpi::Comm &workerComm,
+                       const std::vector<LocalSlot> &localSlots)
+  {
+    std::vector<WorkerTopo::Device> devices;
+    for (auto ls : localSlots) {
+      for (auto gpuID : ls.gpuIDs) {
+        WorkerTopo::Device dev;
+        dev.local = devices.size();
+        dev.worker = workerComm.rank;
+        dev.worldRank = worldComm.rank;
+        dev.dataRank = ls.dataRank;
+        devices.push_back(dev);
+      }
+    }
+    int myCount = devices.size();
+    int allCount = worldComm.allReduceAdd(myCount);
+
+    std::vector<WorkerTopo::Device> allDevices(allCount);
+    worldComm.allGather(allDevices.data(),
+                        devices.data(),
+                        myCount,
+                        sizeof(WorkerTopo::Device));
+    
+    return std::make_shared<WorkerTopo>(allDevices);
+  }
+
+  
   inline bool isPassiveNode(const std::vector<LocalSlot> &localSlots)
   { return localSlots.size() == 1 && localSlots[0].dataRank == -1; }
   
   MPIContext::MPIContext(const barney_api::mpi::Comm &worldComm,
+                         const barney_api::mpi::Comm &workerComm,
                          const std::vector<LocalSlot> &localSlots)
-    : Context(localSlots,makeTopo(worldComm,localSlots)),
+    : Context(localSlots,makeTopo(worldComm,workerComm,localSlots)),
       // dataGroupIDs,gpuIDs,
       //         isActiveWorker?workersComm.rank:0,
       //         isActiveWorker?workersComm.size:1),
       world(worldComm),
-      workers(worldComm.split(!isPassiveNode(localSlots)))
+      workers(workerComm) //worldComm.split(!isPassiveNode(localSlots)))
   {
     bool dbg = FromEnv::get()->logConfig;
 #if 0
@@ -268,9 +298,9 @@ namespace BARNEY_NS {
 
   /*! create a frame buffer object suitable to this context */
   std::shared_ptr<barney_api::FrameBuffer>
-  MPIContext::createFrameBuffer(int owningRank)
+  MPIContext::createFrameBuffer()
   {
-    return std::make_shared<DistFB>(this,devices,owningRank);
+    return std::make_shared<DistFB>(this,devices);
   }
 
   /*! returns how many rays are active in all ray queues, across all
@@ -347,8 +377,10 @@ namespace BARNEY_NS {
           slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
         }
       }
-      
-      return new BARNEY_NS::MPIContext(world,localSlots);
+
+      barney_api::mpi::Comm workers
+        = world.split(!isPassiveNode(localSlots));
+      return new BARNEY_NS::MPIContext(world,workers,localSlots);
       //                                  dgIDs,gpuIDs);
     }
 # endif

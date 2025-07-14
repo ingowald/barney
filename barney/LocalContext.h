@@ -45,6 +45,6 @@ namespace BARNEY_NS {
 
     /*! create a frame buffer object suitable to this context */
     std::shared_ptr<barney_api::FrameBuffer>
-    createFrameBuffer(int owningRank) override;
+    createFrameBuffer() override;
   };
 }

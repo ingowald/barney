@@ -144,6 +144,8 @@ namespace BARNEY_NS {
     
     DevGroup(const std::vector<Device*> &devices,
              int numLogical);
+
+    Device *get(int idx) { return (*this)[idx]; }
     
       /*! *TOTAL* number of logical devices in the context;
       *NOT* how many devices there are in this group. */

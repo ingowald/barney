@@ -119,6 +119,7 @@ namespace BARNEY_NS {
         WorkerTopo::Device dev;
         dev.local = devices.size();
         dev.worker = 0;
+        dev.worldRank = 0;
         dev.dataRank = ls.dataRank;
         devices.push_back(dev);
       }
@@ -205,9 +206,8 @@ namespace BARNEY_NS {
        classes' destrcutors get called !*/
   }
 
-  std::shared_ptr<barney_api::FrameBuffer> LocalContext::createFrameBuffer(int owningRank)
+  std::shared_ptr<barney_api::FrameBuffer> LocalContext::createFrameBuffer()
   {
-    assert(owningRank == 0);
     return std::make_shared<LocalFB>(this,devices);
   }
 

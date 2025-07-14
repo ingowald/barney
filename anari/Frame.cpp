@@ -37,7 +37,7 @@ static BNDataType toBarney(anari::DataType type)
 Frame::Frame(BarneyGlobalState *s) : helium::BaseFrame(s), m_renderer(this)
 {
   if (s->slot == 0)
-    m_bnFrameBuffer = bnFrameBufferCreate(s->tether->context, 0);
+    m_bnFrameBuffer = bnFrameBufferCreate(s->tether->context);
 }
 
 Frame::~Frame()

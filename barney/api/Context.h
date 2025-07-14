@@ -263,7 +263,7 @@ namespace barney_api {
     createCamera(const std::string &type) = 0;
 
     virtual std::shared_ptr<FrameBuffer>
-    createFrameBuffer(int owningRank) = 0;
+    createFrameBuffer() = 0;
 
     // ----------- slotted object types -----------
     

@@ -158,16 +158,23 @@ namespace BARNEY_NS {
       default:
         throw std::runtime_error("unsupported aux channel in sending aux!?");
       };
+
       /* OWNER: create receive requests for all compressed tiles from
          all ranks. this also include the ones we send from our own
          GPUs, so do NOT wait here */
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / context->gpusPerWorker;
-        int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        auto thisDev = &context->topo->allDevices[ggID];
+        context->world.recv(thisDev->worldRank,
+                            thisDev->local,
                             aux_recv+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
+        // int rankOfGPU = ggID / context->gpusPerWorker;
+        // int localID   = ggID % context->gpusPerWorker;
+        // context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        //                     aux_recv+ownerGather.firstTileOnGPU[ggID],
+        //                     ownerGather.numTilesOnGPU[ggID],
+        //                     recv_requests[ggID]);
       }
     }
     
@@ -269,19 +276,31 @@ namespace BARNEY_NS {
          all ranks. this also include the ones we send from our own
          GPUs, so do NOT wait here */
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / context->gpusPerWorker;
-        int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        auto thisDev = &context->topo->allDevices[ggID];
+        context->world.recv(thisDev->worldRank,thisDev->local,
                             gatheredTilesOnOwner.compressedColorTiles
                             +ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
         if (needNormals)
-          context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+          context->world.recv(thisDev->worldRank,thisDev->local,
                               gatheredTilesOnOwner.compressedNormalTiles
                               +ownerGather.firstTileOnGPU[ggID],
                               ownerGather.numTilesOnGPU[ggID],
                               recv_requests[ownerGather.numGPUs+ggID]);
+        // int rankOfGPU = ggID / context->gpusPerWorker;
+        // int localID   = ggID % context->gpusPerWorker;
+        // context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        //                     gatheredTilesOnOwner.compressedColorTiles
+        //                     +ownerGather.firstTileOnGPU[ggID],
+        //                     ownerGather.numTilesOnGPU[ggID],
+        //                     recv_requests[ggID]);
+        // if (needNormals)
+        //   context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        //                       gatheredTilesOnOwner.compressedNormalTiles
+        //                       +ownerGather.firstTileOnGPU[ggID],
+        //                       ownerGather.numTilesOnGPU[ggID],
+        //                       recv_requests[ownerGather.numGPUs+ggID]);
       }
     }
     
@@ -353,23 +372,24 @@ namespace BARNEY_NS {
 
   
   DistFB::DistFB(MPIContext *context,
-                 const DevGroup::SP &devices,
-                 int owningRank)
+                 const DevGroup::SP &devices)
     : FrameBuffer(context,
                   devices,
-                  owningRank == context->world.rank),
+                  context->world.rank==0),
       context(context),
-      owningRank(owningRank),
-      isOwner(context->world.rank == owningRank),
-      ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
+      isOwner(context->world.rank == owningRank)
+    // ,
+    //   ownerIsWorker(context->workerRankOfWorldRank[context->world.rank] != -1)
   {
-    perLogical.resize(devices->size());
+    perLogical.resize(devices->numLogical);
     if (isOwner) {
-      ownerGather.numGPUs = context->numWorkers() * context->gpusPerWorker;
+      ownerGather.numGPUs = context->topo->allDevices.size();
+      // ownerGather.numGPUs = context->numWorkers() * context->gpusPerWorker;
       ownerGather.numTilesOnGPU.resize(ownerGather.numGPUs);
     }
     else {
-      ownerGather.numGPUs = context->numWorkers() * context->gpusPerWorker;
+      ownerGather.numGPUs = context->topo->allDevices.size();
+      // ownerGather.numGPUs = context->numWorkers() * context->gpusPerWorker;
       ownerGather.numTilesOnGPU.resize(0);
     }
     for (auto device : *devices) {
@@ -498,21 +518,32 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     if (isOwner) {
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / context->gpusPerWorker;
-        int localID   = ggID % context->gpusPerWorker;
-
-        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        auto thisDev = &context->topo->allDevices[ggID];
+        context->world.recv(thisDev->worldRank,thisDev->local,
                             &ownerGather.numTilesOnGPU[ggID],1,
                             recv_requests[ggID]);
+        // int rankOfGPU = ggID / context->gpusPerWorker;
+        // int localID   = ggID % context->gpusPerWorker;
+
+        // context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        //                     &ownerGather.numTilesOnGPU[ggID],1,
+        //                     recv_requests[ggID]);
       }
     }
 
     if (context->isActiveWorker) {
       for (int localID=0;localID<tilesOnGPU.size();localID++) {
+        
+        TiledFB *tiledFB = getFor(context->devices->get(localID));
         context->world.send(owningRank,localID,
-                            &tilesOnGPU[localID],1,
+                            &tiledFB->numActiveTilesThisGPU,1,
                             send_requests[localID]);
       }
+      // for (int localID=0;localID<tilesOnGPU.size();localID++) {
+      //   context->world.send(owningRank,localID,
+      //                       &tilesOnGPU[localID],1,
+      //                       send_requests[localID]);
+      // }
     }    
 
     // ------------------------------------------------------------------
@@ -572,12 +603,17 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     if (isOwner)  {
       for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
-        int rankOfGPU = ggID / context->gpusPerWorker;
-        int localID   = ggID % context->gpusPerWorker;
-        context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        auto thisDev = &context->topo->allDevices[ggID];
+        context->world.recv(thisDev->worldRank,thisDev->local,
                             gatheredTilesOnOwner.tileDescs+ownerGather.firstTileOnGPU[ggID],
                             ownerGather.numTilesOnGPU[ggID],
                             recv_requests[ggID]);
+        // int rankOfGPU = ggID / context->gpusPerWorker;
+        // int localID   = ggID % context->gpusPerWorker;
+        // context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
+        //                     gatheredTilesOnOwner.tileDescs+ownerGather.firstTileOnGPU[ggID],
+        //                     ownerGather.numTilesOnGPU[ggID],
+        //                     recv_requests[ggID]);
       }
     }
 
@@ -586,7 +622,8 @@ namespace BARNEY_NS {
         context->world.send(owningRank,
                             device->contextRank(),
                             getFor(device)->tileDescs,
-                            tilesOnGPU[device->contextRank()],
+                            getFor(device)->numActiveTilesThisGPU,
+                            // tilesOnGPU[device->contextRank()],
                             send_requests[device->contextRank()]);
       }
 

@@ -738,13 +738,12 @@ namespace barney_api {
 
   
   BARNEY_API
-  BNFrameBuffer bnFrameBufferCreate(BNContext _context,
-                                    int owningRank)
+  BNFrameBuffer bnFrameBufferCreate(BNContext _context)
   {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
     std::shared_ptr<FrameBuffer> fb
-      = context->createFrameBuffer(owningRank);
+      = context->createFrameBuffer();
     return (BNFrameBuffer)context->initReference(fb);
   }
 

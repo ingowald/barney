@@ -58,6 +58,8 @@ namespace BARNEY_NS {
       /* the worker rank that this device lives on - '0' if local
          rendering, and mpi rank in 'workers' mpi goup if mpi */
       int worker;
+      /*! the _global_ world-commm rank of this device */
+      int worldRank;
       /*! the local device index for the worker that this device is
         on */
       int local;

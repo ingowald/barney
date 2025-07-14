@@ -75,6 +75,8 @@ namespace barney_api {
 
       void allGather(int *allValues, int myValue);
       void allGather(int *allValues, const int *myValues, int numMyValues);
+      void allGather(void *allValues, const void *myValues,
+                     int numMyValues, size_t sizeOfValue) const;
       
       /*! master-side of a gather where clietn gathers a fixed number
           of itmes from each rank */
@@ -134,6 +136,9 @@ namespace barney_api {
       // BN_MPI_CALL(Send(buffer,numItems*sizeof(T),MPI_BYTE,
       //                  toRank,tag,comm),
       //             "Isend");
+      assert(toRank >= 0);
+      assert(toRank < size);
+      assert(size > 0);
       BN_MPI_CALL(Isend(buffer,
                         numItems*sizeof(T),MPI_BYTE,
                         // 1,MPI_INT,

@@ -25,14 +25,16 @@ namespace BARNEY_NS {
   struct MPIContext : public Context
   {
     MPIContext(const barney_api::mpi::Comm &worldComm,
+               const barney_api::mpi::Comm &workersComm,
                const std::vector<LocalSlot> &localSlots);
 
     static WorkerTopo::SP makeTopo(const barney_api::mpi::Comm &worldComm,
+                                   const barney_api::mpi::Comm &workersComm,
                                    const std::vector<LocalSlot> &localSlots);
     
     /*! create a frame buffer object suitable to this context */
     std::shared_ptr<barney_api::FrameBuffer>
-    createFrameBuffer(int owningRank) override;
+    createFrameBuffer() override;
 
     void render(Renderer    *renderer,
                 GlobalModel *model,
@@ -41,8 +43,8 @@ namespace BARNEY_NS {
 
     /*! gives, for a given worker rank, the rank that this same rank
         has in the parent 'world' communicator */
-    std::vector<int> worldRankOfWorker;
-    std::vector<int> workerRankOfWorldRank;
+    // std::vector<int> worldRankOfWorker;
+    // std::vector<int> workerRankOfWorldRank;
 
     // for debugging ...
     void barrier(bool warn=true) override {
