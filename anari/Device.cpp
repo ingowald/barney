@@ -273,7 +273,6 @@ BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
   }
 
   m_state = std::make_unique<BarneyGlobalState>(this_device());
-  // deviceCommitParameters();
 }
 
 BarneyDevice::BarneyDevice() : helium::BaseDevice(default_statusFunc, nullptr)
@@ -393,6 +392,8 @@ void BarneyDevice::initDevice()
 
 void BarneyDevice::deviceCommitParameters()
 {
+  helium::BaseDevice::deviceCommitParameters();
+
   auto state = deviceState(false);
   if (state->hasBeenCommitted) {
     reportMessage(ANARI_SEVERITY_DEBUG, "device committed more than once!");
@@ -444,18 +445,6 @@ void BarneyDevice::deviceCommitParameters()
       initDevice();
     }
   }
-
-  bool allowInvalidSurfaceMaterials = state->allowInvalidSurfaceMaterials;
-
-  state->allowInvalidSurfaceMaterials =
-      getParam<bool>("allowInvalidMaterials", true);
-  state->invalidMaterialColor = getParam<math::float4>(
-      "invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
-
-  if (allowInvalidSurfaceMaterials != state->allowInvalidSurfaceMaterials)
-    state->objectUpdates.lastSceneChange = helium::newTimeStamp();
-
-  helium::BaseDevice::deviceCommitParameters();
 }
 
 int BarneyDevice::deviceGetProperty(const char *name,
