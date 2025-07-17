@@ -31,13 +31,7 @@ namespace BARNEY_NS {
       pld.recvPartner = &topo->allDevices[myPrev];
     }
   }
-  
-  void RQSBase::resize(int maxRaysPerRayGenOrShadeLaunch) 
-  {
-    PING;
-    for (auto device : *context->devices)
-      device->rayQueue->resize(maxRaysPerRayGenOrShadeLaunch);
-  }
+
 
   void RQSBase::traceRays(GlobalModel *model,
                           uint32_t rngSeed,

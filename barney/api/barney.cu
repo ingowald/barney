@@ -749,7 +749,7 @@ namespace barney_api {
 
   
   BARNEY_API
-  BNFrameBuffer bnFrameBufferCreate(BNContext _context)
+  BNFrameBuffer bnFrameBufferCreate(BNContext _context, int deprecated)
   {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);

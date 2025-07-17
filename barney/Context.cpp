@@ -287,10 +287,10 @@ namespace BARNEY_NS {
       = maxTilesOnAnyGPU * /* max two rays per pixel*/2 * BARNEY_NS::pixelsPerTile;
     // int maxRaysInIsland
     //   = numGPUsInIsland * maxTilesOnAnyGPU;
-    // for (auto device : *devices) {
-    //   assert(device->rayQueue);
-    //   device->rayQueue->resize(upperBoundOnNumRays);
-    // }
+    for (auto device : *devices) {
+      assert(device->rayQueue);
+      device->rayQueue->resize(upperBoundOnNumRays);
+    }
     
   }
 

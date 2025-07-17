@@ -24,6 +24,8 @@ namespace BARNEY_NS {
   {
     auto rtc = device->rtc;
     h_numActive = (int*)rtc->allocHost(sizeof(int));
+
+    // resize(rayQueueSize);
   }
     
   RayQueue::~RayQueue()
@@ -102,8 +104,6 @@ namespace BARNEY_NS {
   
   void RayQueue::resize(int newSize)
   {
-    PING; PRINT(newSize);
-    
     if (newSize <= size) return;
     
     SetActiveGPU forDuration(device);

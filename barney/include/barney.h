@@ -248,7 +248,7 @@ BNCamera      bnCameraCreate(BNContext context,
   allowed to read the frame buffer's content. For non-mpi rendering,
   owningRank should be 0 */
 BARNEY_API
-BNFrameBuffer bnFrameBufferCreate(BNContext context);
+BNFrameBuffer bnFrameBufferCreate(BNContext context, int deprecated=0);
 
 BARNEY_API
 BNModel       bnModelCreate(BNContext ctx);

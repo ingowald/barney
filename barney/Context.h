@@ -25,6 +25,10 @@ namespace BARNEY_NS {
   using barney_api::FromEnv;
   using barney_api::LocalSlot;
   
+  enum { tileSize = 32 };
+  enum { pixelsPerTile = tileSize*tileSize };
+  enum { rayQueueSize = 4*1024*1024 };
+
   struct FrameBuffer;
   struct GlobalModel;
   struct Camera;
@@ -269,8 +273,10 @@ namespace BARNEY_NS {
       : context(context)
     {}
     
-    virtual void resize(int maxRaysPerRayGenOrShadeLaunch) = 0;
-    virtual void traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs) = 0;
+    virtual void traceRays(GlobalModel *model,
+                           uint32_t rngSeed,
+                           bool needHitIDs) = 0;
+    // virtual int maxRaysWeCanHandle() = 0;
     
     Context *const context;
   };

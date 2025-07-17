@@ -18,15 +18,18 @@ namespace BARNEY_NS {
         RayOnly *raysOnly = 0;
         HitOnly *hitsOnly = 0;
       } send, recv;
+      int currentSize = 0;
       struct {
         std::vector<int> rayCount;
         std::vector<int> rayOffset;
       } perIslandPeer;
       int numRemoteRaysReceived;
     };
+    PLD *getPLD(Device *device);
+
+    std::vector<PLD> perLogical;
     
     MPIAll2all(Context *context);
-    void resize(int maxRaysPerRayGenOrShadeLaunch) override;
     void traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs) override;
 
     // ====================== helper fcts ======================
@@ -56,6 +59,10 @@ namespace BARNEY_NS {
     // step 5: merge all the received hits back with the rays that
     // spawend them, and write them into local ray queue.
     void mergeReceivedHitsWithOriginalRays();
+
+    // maintenance: make sure that our own queus are big enough for
+    // whatever ray queues barney local uses.
+    void ensureAllOurQueuesAreLargeEnough();
   };
 }
 

@@ -357,6 +357,7 @@ namespace BARNEY_NS {
       SetActiveGPU forDuration(device);
       TiledFB *devFB = fb->getFor(device);
       device->rayQueue->resetWriteQueue();
+
       // render::GenerateRays args = {
       //   /* variable args */
       //   cameraDD,

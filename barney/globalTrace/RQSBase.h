@@ -23,8 +23,9 @@ namespace BARNEY_NS {
     
     RQSBase(Context *context);
 
-    void resize(int maxRaysPerRayGenOrShadeLaunch) override;
-    void traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs) override;
+    void traceRays(GlobalModel *model,
+                   uint32_t rngSeed,
+                   bool needHitIDs) override;
 
     /*! forward rays (during global trace); returns if _after_ that
       forward the rays need more tracing (true) or whether they're
