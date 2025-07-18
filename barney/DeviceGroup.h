@@ -18,6 +18,7 @@
 
 #include "barney/common/barney-common.h"
 #include "rtcore/AppInterface.h"
+#include "barney/WorkerTopo.h"
 
 namespace BARNEY_NS {
   
@@ -40,34 +41,29 @@ namespace BARNEY_NS {
     int rank = -1;
     int size = -1;
   };
-
   
   struct Device {
-    Device(rtc::Device *rtc);
-    
-    /*! describes this device's place with the *LOCAL NODE*'s context;
-        ie, these are NOT physical Device IDs (a context can use a
-        subset of gpus, as well as oversubscribe some!); and they are
-        *not* the 'global' device IDs that MPI-wide ray queue cycling
-        would argue about, either */
-    // int                const contextRank;
-    // int                const contextSize;
-    // PeerGroup gpuInNode;
-    // int contextRank() const { return gpuInNode.rank; }
-    
-    /*! rank and size of the *GLOBAL* context; i.e., possibly across
-        multiple ranks in an MPI call (for a signel node this will be
-        the same as contextRank/Size */
-    PeerGroup allGPUsGlobally;
-    PeerGroup allGPUsLocally;
-    int globalRank() const { return allGPUsGlobally.rank; }
-    int globalSize() const { return allGPUsGlobally.size; }
+    Device(rtc::Device *rtc,
+           const WorkerTopo *topo,
+           int localRank);
 
-    int localRank() const { return allGPUsLocally.rank; }
-    int localSize() const { return allGPUsLocally.size; }
+    int globalRank() const;
+    int globalSize() const;
+
+    int localRank() const;
+    int localSize() const;
 
     // DEPRECATED!
-    int contextRank() const { return localRank(); }
+    int contextRank() const;
+    
+    // int globalRank() const { return allGPUsGlobally.rank; }
+    // int globalSize() const { return allGPUsGlobally.size; }
+
+    // int localRank() const { return allGPUsLocally.rank; }
+    // int localSize() const { return allGPUsLocally.size; }
+
+    // // DEPRECATED!
+    // int contextRank() const { return localRank(); }
     
     // int                globalRank = -1;
     // int                globalSize = -1;
@@ -103,11 +99,11 @@ namespace BARNEY_NS {
     rtc::TraceKernel2D *traceRays = 0;
     RayQueue     *rayQueue = 0;
 
-    /*! if this device does have peer access to the primary GPU, this
-        will be null. if not, this will be the primary rtcore device,
-        in case we ever need to copy stuff to that primary gpu (eg, for
-        final frame buffer) */
-    // rtc::Device  *primaryDeviceIfNoPeerAccess = 0;
+
+    /*! the _global_ device ID within the worker topo */
+    int const _localRank;
+    int const _globalRank;
+    const WorkerTopo *const topo;
   };
   
   /*! stolen from owl/Device: helper class that will set the

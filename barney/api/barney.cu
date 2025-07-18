@@ -63,13 +63,9 @@ namespace barney_api {
       components.push_back(es.substr(0,p));
       es = es.substr(p+1);
     }
-    PING;
-    PRINT(components.size());
     std::map<std::string,std::string> keyValue;
     for (auto comp : components) {
-      PRINT(comp);
       size_t p = comp.find("=");
-      PRINT(p);
       if (p == comp.npos) {
         keyValue[comp] = "";
       } else {
@@ -95,6 +91,8 @@ namespace barney_api {
         logConfig = true;
       else if (key == "LOG_BACKEND")
         logBackend = true;
+      else if (key == "LOG_TOPO")
+        logTopo = true;
       else
         std::cout << "warning - unknown/unrecognized BARNEY_CONFIG key... "
                   << "I assume you know what you're doing" << std::endl;

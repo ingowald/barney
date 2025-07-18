@@ -30,45 +30,6 @@ namespace barney_api {
 // #endif
   
 namespace BARNEY_NS {
-  WorkerTopo::WorkerTopo(const std::vector<Device> &devices)
-    : allDevices(devices),
-      islandOf(devices.size()),
-      islandRankOf(devices.size())
-  {
-    std::map<int,int> useCountOfDG;
-    for (int gid=0;gid<(int)devices.size();gid++) {
-      Device dev = devices[gid];
-      assert(dev.dataRank >= -1);
-      if (dev.dataRank == -1) {
-        islandOf[gid] = -1;
-        islandRankOf[gid] = -1;
-      } else {
-        int islandID = useCountOfDG[dev.dataRank]++;
-        islandOf[gid] = islandID;
-        if (islands.size() <= islandID) islands.resize(islandID+1);
-        islandRankOf[gid] = islands[islandID].size();
-        islands[islandID].push_back(gid);
-      }
-    }
-    // some final sanity checks ...
-    assert(islands.size() > 0);
-    for (auto &island : islands) assert(island.size() == islands[0].size());
-  }
-
-  int WorkerTopo::islandSize() const
-  { return islands[0].size(); }
-  
-  /*! finds ID of device that lived on diven worker:local */
-  int WorkerTopo::find(int worker, int local)
-  {
-    for (int i=0;i<allDevices.size();i++) {
-      if (allDevices[i].worker == worker &&
-          allDevices[i].local == local)
-        return i;
-    }
-    throw std::runtime_error("could not find given device!?");
-  }
-
   Context::Context(const std::vector<LocalSlot> &localSlots,
                    WorkerTopo::SP topo)
     : barney_api::Context(localSlots),
@@ -131,8 +92,10 @@ namespace BARNEY_NS {
         // allDevices.push_back(ld);
         // contextRanks.push_back(localRank);
         rtc::Device *rtc = new rtc::Device(gpuID);
-        Device *device
-          = new Device(rtc);
+        int nextLocal = allLocalDevices.size();
+        Device *device 
+          = new Device(rtc,topo.get(),nextLocal);
+          
         slotDevices.push_back(device);
         allLocalDevices.push_back(device);
         dg.gpuIDs.push_back(gpuID);
@@ -142,12 +105,12 @@ namespace BARNEY_NS {
     }
 
     // topo = std::make_shared<WorkerTopo>(allDevices);
-    for (int i=0;i<allLocalDevices.size();i++) {
-      allLocalDevices[i]->allGPUsGlobally
-        = { i,(int)allLocalDevices.size() };
-      allLocalDevices[i]->allGPUsLocally
-        = { i,(int)allLocalDevices.size() };
-    }
+    // for (int i=0;i<allLocalDevices.size();i++) {
+    //   allLocalDevices[i]->allGPUsGlobally
+    //     = { i,(int)allLocalDevices.size() };
+    //   allLocalDevices[i]->allGPUsLocally
+    //     = { i,(int)allLocalDevices.size() };
+    // }
     devices = std::make_shared<DevGroup>
       (allLocalDevices,(int)allLocalDevices.size());
     // havePeerAccess = rtc::enablePeerAccess(gpuIDsToEnablePeerAccessFor);
@@ -278,11 +241,10 @@ namespace BARNEY_NS {
     auto dev0 = (*devices)[0];
     auto devFB = fb->getFor(dev0);
     int numTilesInFrame        = devFB->numTiles.x*devFB->numTiles.y;
-    int numGPUsThatRenderTiles = dev0->allGPUsGlobally.size;
+    int numGPUsThatRenderTiles = topo->numWorkerDevices;
     int maxTilesOnAnyGPU       = divRoundUp(numTilesInFrame,
                                             numGPUsThatRenderTiles);
-    int numGPUsInIsland        = topo->islandSize();
-    
+    PRINT(maxTilesOnAnyGPU);
     int upperBoundOnNumRays
       = maxTilesOnAnyGPU * /* max two rays per pixel*/2 * BARNEY_NS::pixelsPerTile;
     // int maxRaysInIsland

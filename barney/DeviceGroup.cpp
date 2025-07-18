@@ -58,27 +58,35 @@ namespace BARNEY_NS {
   {}
 
 
-  Device::Device(rtc::Device *rtc
-                 // ,
-                 // int contextRank,
-                 // int contextSize// ,
-                 // int globalIndex,
-                 // int globalIndexStep
-                 )
+  Device::Device(rtc::Device *rtc,
+                 const WorkerTopo *topo,
+                 int localRank)
     : rtc(rtc),
-      geomTypes(rtc)
+      geomTypes(rtc),
+      topo(topo),
+      _localRank(localRank),
+      _globalRank(topo->myOffset+localRank)
   {
+    assert(_localRank == topo->allDevices[_globalRank].local); 
     rayQueue = new RayQueue(this);
-
-    // gpuInNode.rank = contextRank;
-    // gpuInNode.size = contextSize;
-    
-    // generateRays
-    //   = createCompute_generateRays(rtc);
-    // shadeRays
-    //   = createCompute_shadeRays(rtc);
-     traceRays
-       = createTrace_traceRays(rtc);
+    traceRays
+      = createTrace_traceRays(rtc);
   }
+
+  int Device::globalRank() const
+  { return _globalRank; }
+  
+  int Device::globalSize() const
+  { return topo->allDevices.size(); }
+  
+  int Device::localRank() const
+  { return _localRank; }
+  
+  int Device::localSize() const
+  { return topo->myCount; }
+  
+  // DEPRECATED!
+  int Device::contextRank() const
+  { return localRank(); }
   
 }

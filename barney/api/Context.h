@@ -416,10 +416,11 @@ namespace barney_api {
     
     std::map<std::string,bool> boolValues;
     
-    bool logQueues = false;
+    bool logQueues  = false;
     bool skipDenoising = false;
-    bool logConfig = false;
+    bool logConfig  = false;
     bool logBackend = false;
+    bool logTopo    = false;
   };
   
 }

@@ -124,7 +124,7 @@ namespace BARNEY_NS {
         devices.push_back(dev);
       }
     }
-    return std::make_shared<WorkerTopo>(devices);
+    return std::make_shared<WorkerTopo>(devices,0,devices.size());
   }
 
   LocalContext::LocalContext(const std::vector<LocalSlot> &localSlots)

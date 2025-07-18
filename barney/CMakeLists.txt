@@ -96,6 +96,8 @@ set(HOST_SOURCES
   globalTrace/RQSLocal.cu
   
   # all the barney "plumbing" stuff on the host
+  WorkerTopo.h
+  WorkerTopo.cpp
   Context.h
   Context.cpp
   DeviceGroup.h

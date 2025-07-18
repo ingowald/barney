@@ -19,6 +19,7 @@
 #include "barney/api/Context.h"
 #include "barney/Object.h"
 #include <set>
+#include "barney/WorkerTopo.h"
 
 namespace BARNEY_NS {
   using namespace owl::common;
@@ -56,39 +57,6 @@ namespace BARNEY_NS {
 
   struct GlobalTraceImpl;
 
-  struct WorkerTopo {
-    typedef std::shared_ptr<WorkerTopo> SP;
-    struct Device {
-      /* the worker rank that this device lives on - '0' if local
-         rendering, and mpi rank in 'workers' mpi goup if mpi */
-      int worker;
-      /*! the _global_ world-commm rank of this device */
-      int worldRank;
-      /*! the local device index for the worker that this device is
-        on */
-      int local;
-      /*! the data rank that this gpu holds */
-      int dataRank;
-    };
-    WorkerTopo(const std::vector<Device> &devices);
-
-    /*! num GPUs per island */
-    int islandSize() const;
-    
-    /*! finds ID of device that lived on diven worker:local */
-    int find(int worker, int local);
-    
-    std::vector<Device> allDevices;
-    std::vector<std::vector<int>> islands;
-    
-    /*! gives, for each logical device, the island it is in */
-    std::vector<int> islandOf;
-    
-    /*! gives, for each logical device, the how many'eth device in its
-        island it is */
-    std::vector<int> islandRankOf;
-  };
-  
   // struct LogicalDevice {
   //   /* the worker rank that this device lives on - '0' if local
   //      rendering, and mpi rank in 'workers' mpi goup if mpi */

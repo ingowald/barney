@@ -57,8 +57,12 @@ namespace BARNEY_NS {
                         devices.data(),
                         myCount,
                         sizeof(WorkerTopo::Device));
-    
-    return std::make_shared<WorkerTopo>(allDevices);
+    int myOfs = 0;
+    for (myOfs=0;myOfs<allDevices.size();myOfs++)
+      if (allDevices[myOfs].worldRank == worldComm.rank)
+        break;
+      
+    return std::make_shared<WorkerTopo>(allDevices,myOfs,myCount);
   }
 
   
