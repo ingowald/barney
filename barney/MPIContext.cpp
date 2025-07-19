@@ -298,10 +298,12 @@ namespace BARNEY_NS {
     barrier(false);
 #endif
 
-    if (FromEnv::enabled("all2all"))
+    if (FromEnv::enabled("all2all")) {
+      std::cout << "ENABLING ALL2ALL!" << std::endl;
       globalTraceImpl = new MPIAll2all(this);
-    else
+    } else {
       globalTraceImpl = new RQSMPI(this);
+    }
   }
 
   /*! create a frame buffer object suitable to this context */

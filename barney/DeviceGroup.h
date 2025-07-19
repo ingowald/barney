@@ -47,6 +47,8 @@ namespace BARNEY_NS {
            const WorkerTopo *topo,
            int localRank);
 
+    int worldRank() const;
+
     int globalRank() const;
     int globalSize() const;
 

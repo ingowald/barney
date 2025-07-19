@@ -85,6 +85,9 @@ namespace BARNEY_NS {
   int Device::localSize() const
   { return topo->myCount; }
   
+  int Device::worldRank() const
+  { return topo->allDevices[_globalRank].worldRank; }
+  
   // DEPRECATED!
   int Device::contextRank() const
   { return localRank(); }

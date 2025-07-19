@@ -49,6 +49,8 @@ namespace BARNEY_NS {
     
     /*! gives, for each logical device, the island it is in */
     std::vector<int> islandOf;
+
+    int worldRank() const { return _worldRank; }
     
     /*! gives, for each logical device, the how many'eth device in its
       island it is */

@@ -63,6 +63,7 @@ namespace BARNEY_NS {
         } else {
           int bs = 1024;
           int nb = divRoundUp(dd.numRays,bs);
+          // printf("(mr%i) tracing numrays %i\n",myRank(),dd.numRays);
           if (nb)
             device->traceRays->launch(/* bs,nb intentionally inverted:
                                          always have 1024 in width: */

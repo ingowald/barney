@@ -220,6 +220,7 @@ namespace BARNEY_NS {
     found its intersection */
   void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
+    printf("(mr%i) traceRaysGlobally\n",myRank());
     globalTraceImpl->traceRays(model,rngSeed,needHitIDs);
   }
 
@@ -244,11 +245,8 @@ namespace BARNEY_NS {
     int numGPUsThatRenderTiles = topo->numWorkerDevices;
     int maxTilesOnAnyGPU       = divRoundUp(numTilesInFrame,
                                             numGPUsThatRenderTiles);
-    PRINT(maxTilesOnAnyGPU);
     int upperBoundOnNumRays
       = maxTilesOnAnyGPU * /* max two rays per pixel*/2 * BARNEY_NS::pixelsPerTile;
-    // int maxRaysInIsland
-    //   = numGPUsInIsland * maxTilesOnAnyGPU;
     for (auto device : *devices) {
       assert(device->rayQueue);
       device->rayQueue->resize(upperBoundOnNumRays);

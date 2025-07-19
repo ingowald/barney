@@ -8,20 +8,26 @@
 
 namespace BARNEY_NS {
 
+  struct MPIContext;
   using render::RayOnly;
   using render::HitOnly;
+  using render::Ray;
   
   struct MPIAll2all : public GlobalTraceImpl
   {
+    
     struct PLD {
       struct {
         RayOnly *raysOnly = 0;
         HitOnly *hitsOnly = 0;
       } send, recv;
+      Ray *stagedRayQueue = 0;
+      Ray *savedOriginalRayQueue;
+      int  savedOriginalRayCount;
       int currentSize = 0;
       struct {
         std::vector<int> rayCount;
-        std::vector<int> rayOffset;
+        // std::vector<int> rayOffset;
       } perIslandPeer;
       int numRemoteRaysReceived;
     };
@@ -29,7 +35,7 @@ namespace BARNEY_NS {
 
     std::vector<PLD> perLogical;
     
-    MPIAll2all(Context *context);
+    MPIAll2all(MPIContext *context);
     void traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs) override;
 
     // ====================== helper fcts ======================
@@ -42,19 +48,14 @@ namespace BARNEY_NS {
     // device within the same island as the broadcasting device. at
     // end of this stage every device shold have a local copy of all
     // the rays that any other device on the same island has.
-    void stageLocalRaySends();
-    void stageRemoteRayReceives();
-    void executeRaySendsAndReceives();
+    void sendAndReceiveRays();
 
     // step 3: trace all rays on each device
-    void stageReceivedRaysIntoLocalRayQueues();
-    void traceAllReceivedRaysInLocalRayQueues();
+    void traceAllReceivedRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
 
     // step 4: send all traced hits back to devices that originally
-    // sent the rays
-    void stageLocalHitSends();
-    void stageRemoteHitReceives();
-    void executeHitSendsAndReceives();
+    // sent the rays, and correspondingly receive those from others
+    void sendAndReceiveHits();
 
     // step 5: merge all the received hits back with the rays that
     // spawend them, and write them into local ray queue.
@@ -63,6 +64,7 @@ namespace BARNEY_NS {
     // maintenance: make sure that our own queus are big enough for
     // whatever ray queues barney local uses.
     void ensureAllOurQueuesAreLargeEnough();
+    MPIContext *const context;
   };
 }
 
