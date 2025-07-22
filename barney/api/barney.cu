@@ -708,21 +708,19 @@ namespace barney_api {
       checkGet(target)->warn_unsupported_member(param,"vec4f");
   }
 
-# ifdef __VECTOR_TYPES__
-  BARNEY_API
-  void bnSet3fc(BNObject target, const char *param, float3 value)
-  {
-    if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
-      checkGet(target)->warn_unsupported_member(param,"vec3f");
-  }
+  // BARNEY_API
+  // void bnSet3fc(BNObject target, const char *param, float3 value)
+  // {
+  //   if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
+  //     checkGet(target)->warn_unsupported_member(param,"vec3f");
+  // }
 
-  BARNEY_API
-  void bnSet4fc(BNObject target, const char *param, float4 value)
-  {
-    if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
-      checkGet(target)->warn_unsupported_member(param,"vec4f");
-  }
-#endif
+  // BARNEY_API
+  // void bnSet4fc(BNObject target, const char *param, float4 value)
+  // {
+  //   if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
+  //     checkGet(target)->warn_unsupported_member(param,"vec4f");
+  // }
   
   BARNEY_API
   void bnSet4x3fv(BNObject target, const char *param, const BNTransform *transform)
