@@ -41,6 +41,7 @@ namespace BARNEY_NS {
       if (FromEnv::get()->logQueues) 
         std::cout << "----- glob-trace -> locally) "
                   << " -----------" << std::endl;
+
       context->traceRaysLocally(model, rngSeed, needHitIDs);
       const bool needMoreTracing = forwardRays(needHitIDs);
       if (needMoreTracing)

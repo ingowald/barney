@@ -305,6 +305,8 @@ namespace BARNEY_NS {
     found its intersection */
   void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
+    // if (myRank() == 0) printf("globaltrace....\n");
+    
     if (FromEnv::get()->logQueues) 
       printf("(mr%i) traceRaysGlobally\n",myRank());
     globalTraceImpl->traceRays(model,rngSeed,needHitIDs);

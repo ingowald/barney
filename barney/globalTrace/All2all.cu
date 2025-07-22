@@ -555,7 +555,7 @@ namespace BARNEY_NS {
   
   void MPIAll2all::traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
-    // double t0 = getCurrentTime();
+    double t0 = getCurrentTime();
     for (auto device : *context->devices) {
       SetActiveGPU forDuration(device);
       {
@@ -606,6 +606,7 @@ namespace BARNEY_NS {
         assert(rc == 0);
       }
     }
+    double t1 = getCurrentTime();
     
     traceAllReceivedRays(model,rngSeed,needHitIDs);
     for (auto device : *context->devices) {
@@ -632,7 +633,6 @@ namespace BARNEY_NS {
         assert(rc == 0);
       }
     }
-    // double t1 = getCurrentTime();
     mergeReceivedHitsWithOriginalRays();    
     for (auto device : *context->devices) {
       SetActiveGPU forDuration(device);
@@ -646,6 +646,6 @@ namespace BARNEY_NS {
       }
     }
 
-    // if (context->myRank() == 0) PRINT(t1-t0);
+    // if (context->myRank() == 0) PRINT(prettyDouble(t1-t0));
   }
 }
