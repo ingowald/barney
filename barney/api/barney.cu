@@ -786,7 +786,7 @@ namespace barney_api {
   {
     // static double t_first = getCurrentTime();
     // static double t_sum = 0.;
-    
+
     // double t0 = getCurrentTime();
     static int numCalls = 0;
     if (++numCalls < 10)
