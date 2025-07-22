@@ -86,7 +86,7 @@ namespace barney_api {
       else if (key == "LOG_BACKEND")
         logBackend = true;
       else
-        throw std::runtime_error("unknown/unrecognized config key");
+        std::cerr << "Warning: unknown/unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
     }
   }
   const FromEnv *FromEnv::get()
@@ -1067,7 +1067,7 @@ namespace barney_api {
                                                dataGroupIDs,
                                                gpuIDs);
     } catch (std::exception &e) {
-      std::cout << "#barney: could not create optix context" << std::endl;
+      std::cout << "#barney: could not create optix context (" << e.what() << ")" << std::endl;
     }
 #endif
     

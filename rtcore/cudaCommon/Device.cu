@@ -138,13 +138,15 @@ namespace rtc {
         std::stringstream ss;
         SetActiveGPU forLifeTime(gpuID);
         ss << " - device #" << gpuID << " : ";
-        int cuda_i = gpuID;
-        int i = gpuID;
+        int cuda_i = gpuID; 
         for (int j=0;j<deviceCount;j++) {
-          if (j == i) {
+          // PRINT(j);
+          // PRINT(i);
+          // PRINT(deviceCount);
+          int cuda_j = gpuIDs[j];
+          if (cuda_j == cuda_j) {
             ss << " ."; 
           } else {
-            int cuda_j = gpuIDs[j];
             int canAccessPeer = 0;
             cudaError_t rc = cudaDeviceCanAccessPeer(&canAccessPeer, cuda_i,cuda_j);
             if (rc != cudaSuccess)
@@ -169,8 +171,9 @@ namespace rtc {
             ss << " +";
           }
         }
-        LOG(ss.str());
+        // LOG(ss.str());
       }
+      std::cout << ss.str();
       return successful;
     }
   }
