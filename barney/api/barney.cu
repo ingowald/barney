@@ -1058,7 +1058,7 @@ namespace barney_api {
       if (hardware.numGPUsThisRank == 0)
         throw std::runtime_error("don't have any GPUs on this node");
 
-      std::vector<int> gpuIDs;      
+      std::vector<int> gpuIDs;
       for (int i=0;i<hardware.numGPUsThisRank;i++)
         gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
                           + i) % hardware.numGPUsThisHost);
@@ -1066,7 +1066,8 @@ namespace barney_api {
                                                // workers,
                                                // isActiveWorker,
                                                dataGroupIDs,
-                                               numGPUs,_gpuIDs);
+                                               gpuIDs.size(),gpuIDs.data());
+                                               // numGPUs,_gpuIDs);
                                                // dataGroupIDs,
                                                // gpuIDs);
     } catch (std::exception &e) {

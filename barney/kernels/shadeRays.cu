@@ -453,9 +453,9 @@ namespace BARNEY_NS {
                    fragment.y,
                    fragment.z);
           if (dbg) printf("shadow miss, frag %f %f %f\n",
-                                    fragment.x,
-                                    fragment.y,
-                                    fragment.z);
+                          fragment.x,
+                          fragment.y,
+                          fragment.z);
         }
 
         // this path is done.
@@ -643,9 +643,9 @@ namespace BARNEY_NS {
              /* length   */ls.distance * (1.f-2.f*offsetEpsilon));
           shadowRay.rngSeed = ray.rngSeed;// + 1; random();
           ray.rngSeed.next((const uint32_t&)ray.tMax);
-                  // Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
-                  //                        ti.getGeometryIndex(),
-                  //                        ti.getPrimitiveIndex())));
+          // Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
+          //                        ti.getGeometryIndex(),
+          //                        ti.getPrimitiveIndex())));
 
           shadowRay.dbg = ray.dbg;
           shadowState.pixelID = state.pixelID;
@@ -724,9 +724,9 @@ namespace BARNEY_NS {
                frontFacingSurfaceOffset.z); 
       ray.org
         = dg.P + scatterResult.offsetDirection * offsetEpsilon*frontFacingSurfaceOffset;
-// #ifdef CLAMP_F_R
-//       scatterResult.f_r = min(scatterResult.f_r,vec3f(100.f));
-// #endif
+      // #ifdef CLAMP_F_R
+      //       scatterResult.f_r = min(scatterResult.f_r,vec3f(100.f));
+      // #endif
 
       if (dbg)
         printf("path scattered, bsdf in scatter dir is %f %f %f, pdf %f\n",
@@ -785,39 +785,39 @@ namespace BARNEY_NS {
     }
 #endif // device code  
 
-//     struct PathTraceKernel {
-// #ifdef RTC_DEVICE_CODE
-//       inline __rtc_device
-//       void run(const rtc::ComputeInterface &rt);
-// #endif
+    //     struct PathTraceKernel {
+    // #ifdef RTC_DEVICE_CODE
+    //       inline __rtc_device
+    //       void run(const rtc::ComputeInterface &rt);
+    // #endif
       
-//       World::DD world;
-//       Renderer::DD renderer;
-//       AccumTile *accumTiles;
-//       AuxTiles   auxTiles;
-//       int accumID;
-//       SingleQueue readQueue;
-//       int numRays;
-//       SingleQueue writeQueue;
-//       int *d_nextWritePos;
-//       int generation;
-//     };
+    //       World::DD world;
+    //       Renderer::DD renderer;
+    //       AccumTile *accumTiles;
+    //       AuxTiles   auxTiles;
+    //       int accumID;
+    //       SingleQueue readQueue;
+    //       int numRays;
+    //       SingleQueue writeQueue;
+    //       int *d_nextWritePos;
+    //       int generation;
+    //     };
 
 #if RTC_DEVICE_CODE
     // inline __rtc_device
     // void PathTraceKernel::run
     __rtc_global void _shadeRays(const rtc::ComputeInterface &rt,
-      World::DD world,
-      Renderer::DD renderer,
-      AccumTile *accumTiles,
-      AuxTiles   auxTiles,
-      int accumID,
-      SingleQueue readQueue,
-      int numRays,
-      SingleQueue writeQueue,
-      int *d_nextWritePos,
-      int generation
-                              )
+                                 World::DD world,
+                                 Renderer::DD renderer,
+                                 AccumTile *accumTiles,
+                                 AuxTiles   auxTiles,
+                                 int accumID,
+                                 SingleQueue readQueue,
+                                 int numRays,
+                                 SingleQueue writeQueue,
+                                 int *d_nextWritePos,
+                                 int generation
+                                 )
     {
       int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
       if (tid >= numRays) return;
@@ -936,6 +936,8 @@ namespace BARNEY_NS {
         if (generation == 0 && alpha > 0.f) 
           rt.atomicAdd(&valueToAccumInto.w,alpha);
 
+        // printf("frag %f %f %f:%f\n",
+        //        fragment.x,fragment.y,fragment.z,alpha);
         if (fragment.x > 0.f)
           rt.atomicAdd(&valueToAccumInto.x,fragment.x);
         if (fragment.y > 0.f)
@@ -955,6 +957,18 @@ namespace BARNEY_NS {
                                  int generation,
                                  uint32_t rngSeed)
   {
+    auto context = this;
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     for (auto slotModel : model->modelSlots) {
       World *world = slotModel->world.get();
       for (auto device : *world->devices) {
@@ -1002,17 +1016,28 @@ namespace BARNEY_NS {
                      _shadeRays,
                      //config
                      nb,bs,
-          //args
-          devWorld,devRenderer,
-          devFB->accumTiles,
-          devFB->auxTiles,
-          (int)fb->accumID,
-          rayQueue->traceAndShadeReadQueue,
-          numRays,
-          rayQueue->receiveAndShadeWriteQueue,
-          rayQueue->_d_nextWritePos,
-          generation
+                     //args
+                     devWorld,devRenderer,
+                     devFB->accumTiles,
+                     devFB->auxTiles,
+                     (int)fb->accumID,
+                     rayQueue->traceAndShadeReadQueue,
+                     numRays,
+                     rayQueue->receiveAndShadeWriteQueue,
+                     rayQueue->_d_nextWritePos,
+                     generation
                      );
+      }
+    }
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
       }
     }
 
@@ -1024,9 +1049,25 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rayQueue->swapAfterShade();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
+
+      // printf("#mr%i: num active after shade %i\n",
+      //        device->globalRank(),
+      //        device->rayQueue->numActive);
     }
+
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+    
   }
   
-  // RTC_EXPORT_COMPUTE1D(shadeRays,BARNEY_NS::render::PathTraceKernel);
 }
 

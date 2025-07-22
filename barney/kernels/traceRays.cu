@@ -29,15 +29,38 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed,
                                  bool needHitIDs)
   {
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+    
+    assert(!needHitIDs);
     double t0 = getCurrentTime();
     
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
+    render::OptixGlobals dd;
     for (auto model : globalModel->modelSlots) {
       for (auto device : *model->devices) {
         SetActiveGPU forDuration(device);
-        render::OptixGlobals dd;
+
+        {
+          auto rc = cudaGetLastError();
+          if (rc) {
+            PING; PRINT(rc);
+            PRINT(cudaGetErrorString(rc));
+          }
+          assert(rc == 0);
+        }
+        
         auto ctx     = model->slotContext;
         dd.rays      = device->rayQueue->traceAndShadeReadQueue.rays;
         dd.hitIDs
@@ -63,7 +86,6 @@ namespace BARNEY_NS {
         } else {
           int bs = 1024;
           int nb = divRoundUp(dd.numRays,bs);
-          // printf("(mr%i) tracing numrays %i\n",myRank(),dd.numRays);
           if (nb)
             device->traceRays->launch(/* bs,nb intentionally inverted:
                                          always have 1024 in width: */

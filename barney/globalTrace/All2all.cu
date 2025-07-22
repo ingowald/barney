@@ -17,13 +17,16 @@ namespace BARNEY_NS {
   {
     int tid = ci.launchIndex().x;
     if (tid >= N) return;
-    
+
     rayOnly[tid].org = rayQueue[tid].org;
     rayOnly[tid].dir = rayQueue[tid].dir;
     rayOnly[tid].tMax = rayQueue[tid].tMax;
     rayOnly[tid].isInMedium = rayQueue[tid].isInMedium;
     rayOnly[tid].isSpecular = rayQueue[tid].isSpecular;
     rayOnly[tid].isShadowRay = rayQueue[tid].isShadowRay;
+    rayOnly[tid].dbg = rayQueue[tid].dbg;
+    if (rayOnly[tid].dbg)
+      printf("rayOnly[%i] is debug ray\n",tid);
   }
 
   __rtc_global
@@ -45,9 +48,9 @@ namespace BARNEY_NS {
 
   
   /*! given the set of rays we've recevied across all the differnet
-      peers, reformat them into the classical 'barney::render::Ray'
-      format, and put them into the rayqueue that the tracekernel
-      would expect */
+    peers, reformat them into the classical 'barney::render::Ray'
+    format, and put them into the rayqueue that the tracekernel
+    would expect */
   __rtc_global
   void buildStagedRayQueue(const rtc::ComputeInterface &ci,
                            Ray *rayQueue,
@@ -63,7 +66,17 @@ namespace BARNEY_NS {
     rayQueue[tid].isInMedium = rayOnly[tid].isInMedium;
     rayQueue[tid].isSpecular = rayOnly[tid].isSpecular;
     rayQueue[tid].isShadowRay = rayOnly[tid].isShadowRay;
-    rayQueue[tid].bsdfType = PackedBSDF::NONE; 
+    rayQueue[tid].dbg = rayOnly[tid].dbg;
+    rayQueue[tid].bsdfType = PackedBSDF::NONE;
+    if (rayOnly[tid].dbg)
+      printf("dbg ray at pos %i, org %f %f %f dir %f %f %f tmax %f\n",tid,
+             rayQueue[tid].org.x,
+             rayQueue[tid].org.y,
+             rayQueue[tid].org.z,
+             rayQueue[tid].dir.x,
+             rayQueue[tid].dir.y,
+             rayQueue[tid].dir.z,
+             rayQueue[tid].tMax);
   }
   
   __rtc_global
@@ -135,8 +148,8 @@ namespace BARNEY_NS {
     }
   }
 
-    // step 1: have all ranks exchange which (global) device has how
-    // many rays (needed to set up the send/receives)
+  // step 1: have all ranks exchange which (global) device has how
+  // many rays (needed to set up the send/receives)
   void MPIAll2all::exchangeHowManyRaysEachDeviceHas()
   {
     auto &world = context->world;
@@ -190,6 +203,17 @@ namespace BARNEY_NS {
   
   void MPIAll2all::traceAllReceivedRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     auto &world = context->world;
     auto topo = context->topo;
 
@@ -207,7 +231,19 @@ namespace BARNEY_NS {
     }
     
     for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+    for (auto device : *context->devices) {
       PLD *pld = getPLD(device);
+      
       device->rtc->sync();
       // receiveAndShadeWriteQueue
       pld->savedOriginalRayCount = device->rayQueue->numActive;
@@ -216,6 +252,17 @@ namespace BARNEY_NS {
       device->rayQueue->numActive = pld->numRemoteRaysReceived;
     }
 
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     assert(needHitIDs == false); // not implemented right now
     context->traceRaysLocally(model,rngSeed,needHitIDs);
     // world.barrier(); sleep(context->myRank()); PING;
@@ -224,20 +271,65 @@ namespace BARNEY_NS {
 
   void MPIAll2all::sendAndReceiveRays()
   {
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     auto &world = context->world;
     auto topo = context->topo;
 
     for (auto device : *context->devices) {
       SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
       PLD *pld = getPLD(device);
       int numRays = device->rayQueue->numActive;
+      int bs = 128;
+      int nb = divRoundUp(numRays,bs);
+      // printf("#bm%i launching createRayOnly[%i] on %p\n",
+      //        numRays,device->rayQueue->traceAndShadeReadQueue.rays);
       __rtc_launch(device->rtc,
                    createRayOnly,
-                   divRoundUp(numRays,128),128,
+                   nb,bs,
                    // args
                    pld->send.raysOnly,
                    device->rayQueue->traceAndShadeReadQueue.rays,
                    numRays);
+
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+      
+    }
+
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
     }
     
     std::vector<MPI_Request> requests;
@@ -255,14 +347,18 @@ namespace BARNEY_NS {
         int peerIslandRank = topo->islandRankOf[peer];
         int recvCount = pld->perIslandPeer.rayCount[peerIslandRank];
         if (peer == device->_globalRank) {
-          device->rtc->copyAsync(pld->recv.raysOnly+recvOfs,
-                                 pld->send.raysOnly,
-                                 recvCount*sizeof(RayOnly));
+          if (recvCount > 0) {
+            device->rtc->copyAsync(pld->recv.raysOnly+recvOfs,
+                                   pld->send.raysOnly,
+                                   recvCount*sizeof(RayOnly));
+          }
         } else {
-          MPI_Request req;
-          world.recv(peerDev.worldRank,peerDev.local,
-                     pld->recv.raysOnly+recvOfs,recvCount,req);
-          requests.push_back(req);
+          if (recvCount) {
+            MPI_Request req;
+            world.recv(peerDev.worldRank,peerDev.local,
+                       pld->recv.raysOnly+recvOfs,recvCount,req);
+            requests.push_back(req);
+          }
         }
         recvOfs += recvCount;
         // world.send(peerDev.worldRank,peerDev.local,
@@ -282,15 +378,28 @@ namespace BARNEY_NS {
         
         if (peer == device->_globalRank) {
         } else {
-          world.send(peerDev.worldRank,peerDev.local,
-                     pld->send.raysOnly,myRayCount,req);
-          requests.push_back(req);
+          if (myRayCount) {
+            world.send(peerDev.worldRank,peerDev.local,
+                       pld->send.raysOnly,myRayCount,req);
+            requests.push_back(req);
+          }
         }
       }
       pld->numRemoteRaysReceived = recvOfs;
     }
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
   }
 
 
@@ -328,9 +437,10 @@ namespace BARNEY_NS {
         int sendCount = pld->perIslandPeer.rayCount[peerIslandRank];
         int recvCount = myRayCount;
         if (peer == device->globalRank()) {
-          device->rtc->copyAsync(pld->recv.hitsOnly+recvOfs,
-                                 pld->send.hitsOnly+sendOfs,
-                                 recvCount*sizeof(HitOnly));
+          if (recvCount > 0)
+            device->rtc->copyAsync(pld->recv.hitsOnly+recvOfs,
+                                   pld->send.hitsOnly+sendOfs,
+                                   recvCount*sizeof(HitOnly));
         } else {
           world.recv(peerDev.worldRank,peerDev.local,
                      pld->recv.hitsOnly+recvOfs,recvCount,req);
@@ -344,7 +454,7 @@ namespace BARNEY_NS {
         // requests.push_back(req);
         // sendOfs += sendCount;
       }
-        sendOfs = 0;
+      sendOfs = 0;
       for (auto peer : peers) {
         auto &peerDev = topo->allDevices[peer];
         MPI_Request req;
@@ -373,10 +483,33 @@ namespace BARNEY_NS {
   // spawend them, and write them into local ray queue.
   void MPIAll2all::mergeReceivedHitsWithOriginalRays()
   {
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     auto &world = context->world;
     auto topo = context->topo;
     int islandSize = context->topo->islandSize();
 
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+    
     for (auto device : *context->devices) {
       SetActiveGPU forDuration(device);
       PLD *pld = getPLD(device);
@@ -393,23 +526,125 @@ namespace BARNEY_NS {
       device->rayQueue->traceAndShadeReadQueue.rays = pld->savedOriginalRayQueue;
     }
 
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     for (auto device : *context->devices)
       device->rtc->sync();
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
   }
 
   
   void MPIAll2all::traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
     // double t0 = getCurrentTime();
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     ensureAllOurQueuesAreLargeEnough();
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+
     exchangeHowManyRaysEachDeviceHas();
 
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+    
     sendAndReceiveRays();
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+    
     traceAllReceivedRays(model,rngSeed,needHitIDs);
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     
     sendAndReceiveHits();
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
     // double t1 = getCurrentTime();
     mergeReceivedHitsWithOriginalRays();    
+    for (auto device : *context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
 
     // if (context->myRank() == 0) PRINT(t1-t0);
   }

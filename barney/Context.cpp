@@ -165,12 +165,38 @@ namespace BARNEY_NS {
                             Camera      *camera,
                             FrameBuffer *fb)
   {
+    auto _context = this;
     if (!isActiveWorker)
       return;
 
+    for (auto device : *_context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+    
     for (auto device : *devices)
       device->syncPipelineAndSBT();
 
+    for (auto device : *_context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+        auto rc = cudaGetLastError();
+        if (rc) {
+          PING; PRINT(rc);
+          PRINT(cudaGetErrorString(rc));
+        }
+        assert(rc == 0);
+      }
+    }
+
+      
     // iw - todo: add wave-front-merging here.
     for (int p=0;p<renderer->pathsPerPixel;p++) {
 
@@ -179,8 +205,32 @@ namespace BARNEY_NS {
       double _t0 = getCurrentTime();
       if (FromEnv::get()->logQueues) 
         std::cout << "==================== new pixel wave ======================" << std::endl;
+      for (auto device : *_context->devices) {
+        SetActiveGPU forDuration(device);
+        {
+          auto rc = cudaGetLastError();
+          if (rc) {
+            PING; PRINT(rc);
+            PRINT(cudaGetErrorString(rc));
+          }
+          assert(rc == 0);
+        }
+      }
+      
       generateRays(camera,renderer,fb);
 
+      for (auto device : *_context->devices) {
+        SetActiveGPU forDuration(device);
+        {
+          auto rc = cudaGetLastError();
+          if (rc) {
+            PING; PRINT(rc);
+            PRINT(cudaGetErrorString(rc));
+          }
+          assert(rc == 0);
+        }
+      }
+      
       for (int generation=0;true;generation++) {
         if (FromEnv::get()->logQueues) 
           std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
@@ -191,12 +241,36 @@ namespace BARNEY_NS {
           std::cout << "----- trace (glob) " << generation
                     << " -----------" << std::endl;
         traceRaysGlobally(model,rngSeed,needHitIDs);
+
+        for (auto device : *_context->devices) {
+          SetActiveGPU forDuration(device);
+          {
+            auto rc = cudaGetLastError();
+            if (rc) {
+              PING; PRINT(rc);
+              PRINT(cudaGetErrorString(rc));
+            }
+            assert(rc == 0);
+          }
+        }
         
         if (FromEnv::get()->logQueues) 
           std::cout << "----- shade " << generation
                     << " -----------" << std::endl;
         shadeRaysLocally(renderer, model, fb, generation, rngSeed);
         // no sync required here, shadeRays syncs itself.
+
+        for (auto device : *_context->devices) {
+          SetActiveGPU forDuration(device);
+          {
+            auto rc = cudaGetLastError();
+            if (rc) {
+              PING; PRINT(rc);
+              PRINT(cudaGetErrorString(rc));
+            }
+            assert(rc == 0);
+          }
+        }
         
         if (FromEnv::get()->logQueues) 
           std::cout << "----- shade " << generation
@@ -211,6 +285,17 @@ namespace BARNEY_NS {
         break;
       }
       ++ fb->accumID;
+      for (auto device : *_context->devices) {
+        SetActiveGPU forDuration(device);
+        {
+          auto rc = cudaGetLastError();
+          if (rc) {
+            PING; PRINT(rc);
+            PRINT(cudaGetErrorString(rc));
+          }
+          assert(rc == 0);
+        }
+      }
     }
   }
 
