@@ -118,6 +118,7 @@ namespace rtc {
         successful, else if at least one pair does not work */
     bool enablePeerAccess(const std::vector<int> &gpuIDs)
     {
+      if (gpuIDs.size() == 1) return true;
 #define LOG(a) ss << "#bn." << a << std::endl;
 
       std::stringstream ss;
@@ -135,23 +136,22 @@ namespace rtc {
       
       bool successful = true;
       for (auto gpuID : gpuIDs) {
-        std::stringstream ss;
         SetActiveGPU forLifeTime(gpuID);
         ss << " - device #" << gpuID << " : ";
         int cuda_i = gpuID; 
         for (int j=0;j<deviceCount;j++) {
-          // PRINT(j);
-          // PRINT(i);
-          // PRINT(deviceCount);
           int cuda_j = gpuIDs[j];
-          if (cuda_j == cuda_j) {
+          if (cuda_i == cuda_j) {
             ss << " ."; 
           } else {
             int canAccessPeer = 0;
             cudaError_t rc = cudaDeviceCanAccessPeer(&canAccessPeer, cuda_i,cuda_j);
-            if (rc != cudaSuccess)
+            if (rc != cudaSuccess) {
+              PRINT(rc);
+              PRINT(std::to_string(rc));
               throw std::runtime_error("cuda error in cudaDeviceCanAccessPeer: "
                                        +std::to_string(rc));
+            }
             if (!canAccessPeer) {
               // huh. this can happen if you have differnt device
               // types (in my case, a 2070 and a rtx 8000).
@@ -171,6 +171,7 @@ namespace rtc {
             ss << " +";
           }
         }
+        ss << "\n";
         // LOG(ss.str());
       }
       std::cout << ss.str();
