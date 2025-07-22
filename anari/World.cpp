@@ -19,6 +19,8 @@ namespace barney_device {
     m_zeroGroup = new Group(s);
     m_zeroInstance = new Instance(s);
     m_zeroInstance->setParamDirect("group", m_zeroGroup.ptr);
+    m_zeroInstance->commitParameters();
+    m_zeroInstance->finalize();
 
     // never any public ref to these objects
     m_zeroGroup->refDec(helium::RefType::PUBLIC);
@@ -104,9 +106,7 @@ namespace barney_device {
     m_zeroInstance->setParam("id", getParam<uint32_t>("id", ~0u));
 
     m_zeroGroup->commitParameters();
-    m_zeroInstance->commitParameters();
     m_zeroGroup->finalize();
-    m_zeroInstance->finalize();
 
     m_instances.clear();
 
