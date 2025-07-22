@@ -254,8 +254,7 @@ namespace BARNEY_NS {
         auto &peerDev = topo->allDevices[peer];
         int peerIslandRank = topo->islandRankOf[peer];
         int recvCount = pld->perIslandPeer.rayCount[peerIslandRank];
-        if (peerDev.worldRank == myRank()//peer == device->globalRank()
-            ) {
+        if (peer == device->_globalRank) {
           device->rtc->copyAsync(pld->recv.raysOnly+recvOfs,
                                  pld->send.raysOnly,
                                  recvCount*sizeof(RayOnly));
@@ -281,8 +280,7 @@ namespace BARNEY_NS {
         // requests.push_back(req);
         // recvOfs += recvCount;
         
-        if (peerDev.worldRank == myRank()//peer == device->globalRank()
-            ) {
+        if (peer == device->_globalRank) {
         } else {
           world.send(peerDev.worldRank,peerDev.local,
                      pld->send.raysOnly,myRayCount,req);
@@ -329,8 +327,7 @@ namespace BARNEY_NS {
         int peerIslandRank = topo->islandRankOf[peer];
         int sendCount = pld->perIslandPeer.rayCount[peerIslandRank];
         int recvCount = myRayCount;
-        if (peerDev.worldRank == myRank()//peer == device->globalRank()
-            ) {
+        if (peer == device->globalRank()) {
           device->rtc->copyAsync(pld->recv.hitsOnly+recvOfs,
                                  pld->send.hitsOnly+sendOfs,
                                  recvCount*sizeof(HitOnly));
@@ -359,8 +356,7 @@ namespace BARNEY_NS {
         // requests.push_back(req);
         // recvOfs += recvCount;
 
-        if (peerDev.worldRank == myRank()//peer == device->globalRank()
-            ) {
+        if (peer == device->globalRank()) {
         } else {
           world.send(peerDev.worldRank,peerDev.local,
                      pld->send.hitsOnly+sendOfs,sendCount,req);
