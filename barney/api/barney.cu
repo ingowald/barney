@@ -94,8 +94,7 @@ namespace barney_api {
       else if (key == "LOG_TOPO")
         logTopo = true;
       else
-        std::cout << "warning - unknown/unrecognized BARNEY_CONFIG key... "
-                  << "I assume you know what you're doing" << std::endl;
+        std::cerr << "Warning: unknown/unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
     }
   }
   const FromEnv *FromEnv::get()
@@ -1071,7 +1070,7 @@ namespace barney_api {
                                                // dataGroupIDs,
                                                // gpuIDs);
     } catch (std::exception &e) {
-      std::cout << "#barney: could not create optix context" << std::endl;
+      std::cout << "#barney: could not create optix context (" << e.what() << ")" << std::endl;
     }
 #endif
     

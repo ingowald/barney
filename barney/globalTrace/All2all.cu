@@ -400,7 +400,7 @@ namespace BARNEY_NS {
   
   void MPIAll2all::traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
-    double t0 = getCurrentTime();
+    // double t0 = getCurrentTime();
     ensureAllOurQueuesAreLargeEnough();
     exchangeHowManyRaysEachDeviceHas();
 
@@ -408,9 +408,9 @@ namespace BARNEY_NS {
     traceAllReceivedRays(model,rngSeed,needHitIDs);
     
     sendAndReceiveHits();
-    double t1 = getCurrentTime();
+    // double t1 = getCurrentTime();
     mergeReceivedHitsWithOriginalRays();    
 
-    if (context->myRank() == 0) PRINT(t1-t0);
+    // if (context->myRank() == 0) PRINT(t1-t0);
   }
 }
