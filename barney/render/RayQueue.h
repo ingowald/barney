@@ -24,10 +24,8 @@ namespace BARNEY_NS {
 
   using render::Ray;
   using render::PathState;
-#if SINGLE_CYCLE_RQS
   using render::RayOnly;
   using render::HitOnly;
-#endif
 
   struct SingleQueue {
     void alloc(rtc::Device *rtc, int size);

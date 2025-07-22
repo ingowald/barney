@@ -251,6 +251,8 @@ namespace BARNEY_NS {
 
     numPixels = newSize;
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
+    PRINT(device->globalRank());
+    PRINT(device->globalSize());
     numActiveTilesThisGPU
       = device
       ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalRank()),

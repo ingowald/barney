@@ -150,12 +150,6 @@ target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
 )
 # ------------------------------------------------------------------
-option(BARNEY_SINGLE_CYCLE_RQS "Single Cycle RQS" OFF)
-if (BARNEY_SINGLE_CYCLE_RQS)
-  target_compile_definitions(barney_config INTERFACE -DSINGLE_CYCLE_RQS=1)
-endif()
-
-# ------------------------------------------------------------------
 # configure which backend(s) to build
 # ------------------------------------------------------------------
 if (USE_EXP)

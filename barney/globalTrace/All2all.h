@@ -69,13 +69,3 @@ namespace BARNEY_NS {
 }
 
 
-#if SINGLE_CYCLE_RQS
-                        , int maxRaysAcrossAllRanks
-#endif
-#if SINGLE_CYCLE_RQS
-    if (rqs.raysOnly) rtc->freeMem(rqs.raysOnly);
-    if (rqs.hitsOnly) rtc->freeMem(rqs.hitsOnly);
-    rqs.raysOnly = (RayOnly*)rtc->allocMem(maxRaysAcrossAllRanks*sizeof(RayOnly));
-    rqs.hitsOnly = (HitOnly*)rtc->allocMem(maxRaysAcrossAllRanks*sizeof(HitOnly));
-#endif
-    
