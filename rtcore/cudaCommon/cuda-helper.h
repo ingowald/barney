@@ -49,10 +49,11 @@ inline void sleep(unsigned int seconds)
 }
 #endif
 
-
+#ifdef NDEBUG
 #define BARNEY_RAISE(MSG) throw std::runtime_error("fatal barney cuda error ... ")
-// #define BARNEY_RAISE(MSG) ::barneyRaise_impl(MSG);
-
+#else
+#define BARNEY_RAISE(MSG) { std::cerr << MSG << std::endl; assert(0); }
+#endif
 
 
 #define BARNEY_CUDA_CHECK( call )                                              \

@@ -69,9 +69,6 @@ namespace BARNEY_NS {
       int tileID   = rt.getBlockIdx().x;
       int lPixelID = rt.getThreadIdx().x;
 
-      if (rt.getThreadIdx().x == 0 && rt.getThreadIdx().y == 0)
-        printf("generaterays(tileid %i)\n",tileID);
-      
       vec2i tileOffset = tileDescs[tileID].lower;
       int ix = (lPixelID % tileSize) + tileOffset.x;
       int iy = (lPixelID / tileSize) + tileOffset.y;
@@ -202,7 +199,6 @@ namespace BARNEY_NS {
     
     assert(fb);
     int accumID=fb->accumID;
-    PING; PRINT(accumID);
     // ------------------------------------------------------------------
     // launch all GPUs to do their stuff
     // ------------------------------------------------------------------
@@ -211,7 +207,6 @@ namespace BARNEY_NS {
       SetActiveGPU forDuration(device);
       TiledFB *devFB = fb->getFor(device);
       device->rayQueue->resetWriteQueue();
-      PRINT(devFB->numActiveTilesThisGPU);
       render::GenerateRays args = {
         /* variable args */
         cameraDD,
