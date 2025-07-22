@@ -220,7 +220,6 @@ void *Frame::map(std::string_view channel,
   wait();
 
   if (deviceState()->slot != 0) {
-    PING;
     return nullptr;
   }
   *width = m_size.x;

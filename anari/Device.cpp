@@ -403,7 +403,22 @@ void BarneyDevice::deviceCommitParameters()
   m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
   m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
 #if BARNEY_MPI
-  (void *&)comm = getParam<void *>("worldCommunicator", 0);
+  static_assert(sizeof(void*) == sizeof(MPI_Comm),
+                "we assume an MPI_Comm to be a pointer type, seems for this MPI implementation that's not the case. Pls let the developers know what MPI flavor and version you're using so this can be fixed.");
+  uint64_t passedComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);//MPI_COMM_WORLD);
+  if (passedComm) {
+    printf("#banari.mpi: got passed a pointer to a MPI communicator, going to use this.\n");
+    comm = *(MPI_Comm *)passedComm;
+  } else
+    comm = MPI_COMM_WORLD;
+  // (void *&)comm = getParam<void *>("communicator", (void*)0);//MPI_COMM_WORLD);
+  if (comm) {
+    int rank, size;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&size);
+    printf("#banari.mpi: running data parallel on rank %i size %i\n",
+           rank,size);
+  }
 #endif
   if (m_cudaDevice != -2)
     std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;

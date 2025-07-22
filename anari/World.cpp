@@ -185,7 +185,6 @@ namespace barney_device {
         barneyGroupForAnariGroup[ag] = bg = ag->makeBarneyGroup();
       else
         bg = barneyGroupForAnariGroup[ag];
-
       if (!bg) continue;
 
       BNTransform bt;
