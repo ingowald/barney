@@ -53,6 +53,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
+include(GNUInstallDirs)
 
 option(USE_EXP "Experimental Pluggable Backend" OFF)
 mark_as_advanced(USE_EXP)

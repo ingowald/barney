@@ -58,6 +58,7 @@ namespace barney_device {
     BNScalarField createBarneyScalarField() const override;
 
     box3 bounds() const override;
+    bool isValid() const override;
 
   private:
     struct Parameters

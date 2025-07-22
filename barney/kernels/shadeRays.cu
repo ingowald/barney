@@ -191,7 +191,7 @@ namespace BARNEY_NS {
       ls.distance
         = BARNEY_INF;
       ls.radiance
-        = light.radiance;
+        = light.color*light.radiance;
       ls.pdf
         = weights[i]/sumWeights
         * (float(RESERVOIR_SIZE)/float(world.numDirLights));

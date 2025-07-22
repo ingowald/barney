@@ -16,6 +16,7 @@ namespace barney_device {
     bool getProperty(const std::string_view &name,
                      ANARIDataType type,
                      void *ptr,
+                     uint64_t size,
                      uint32_t flags) override;
 
     void commitParameters() override;
@@ -38,7 +39,7 @@ namespace barney_device {
 
     // BNModel m_barneyModel{nullptr};
     int uniqueID = -1;
-    
+
     BNData m_attributesData[Instance::Attributes::count] = {0,0,0,0,0};
     helium::TimeStamp m_lastBarneyModelBuild{0};
   };

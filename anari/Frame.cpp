@@ -102,35 +102,37 @@ void Frame::finalize()
   }
 
   if (deviceState()->slot == 0) {
+    const auto &size = m_size;
+    const auto numPixels = size.x * size.y;
 
-  const auto &size = m_size;
-  const auto numPixels = size.x * size.y;
+    uint32_t requiredChannels = BN_FB_COLOR;
+    if (m_channelTypes.depth == ANARI_FLOAT32)
+      requiredChannels |= BN_FB_DEPTH;
+    if (m_channelTypes.primID == ANARI_UINT32)
+      requiredChannels |= BN_FB_PRIMID;
+    if (m_channelTypes.objID == ANARI_UINT32)
+      requiredChannels |= BN_FB_OBJID;
+    if (m_channelTypes.instID == ANARI_UINT32)
+      requiredChannels |= BN_FB_INSTID;
 
-  uint32_t requiredChannels = BN_FB_COLOR;
-  if (m_channelTypes.depth == ANARI_FLOAT32)
-    requiredChannels |= BN_FB_DEPTH;
-  if (m_channelTypes.primID == ANARI_UINT32)
-    requiredChannels |= BN_FB_PRIMID;
-  if (m_channelTypes.objID == ANARI_UINT32)
-    requiredChannels |= BN_FB_OBJID;
-  if (m_channelTypes.instID == ANARI_UINT32)
-    requiredChannels |= BN_FB_INSTID;
+    if (m_bnFrameBuffer) {
+      bnSet1i(m_bnFrameBuffer, "enableDenoising", denoise);
+      bnCommit(m_bnFrameBuffer);
 
-  if (m_bnFrameBuffer) {
-    bnSet1i(m_bnFrameBuffer, "enableDenoising", denoise);
-    bnCommit(m_bnFrameBuffer);
-    
-    bnFrameBufferResize(m_bnFrameBuffer,
-                        toBarney(m_channelTypes.color),
-                        size.x,
-                        size.y,
-                        requiredChannels);
-  }
+      bnFrameBufferResize(m_bnFrameBuffer,
+          toBarney(m_channelTypes.color),
+          size.x,
+          size.y,
+          requiredChannels);
+    }
   }
 }
 
-bool Frame::getProperty(
-    const std::string_view &name, ANARIDataType type, void *ptr, uint32_t flags)
+bool Frame::getProperty(const std::string_view &name,
+    ANARIDataType type,
+    void *ptr,
+    uint64_t size,
+    uint32_t flags)
 {
   if (type == ANARI_FLOAT32 && name == "duration") {
     if (flags & ANARI_WAIT)
@@ -196,9 +198,9 @@ void Frame::renderFrame()
 
   if (state->slot == 0) {
     bnRender(m_renderer->barneyRenderer,
-             model,
-             m_camera->barneyCamera(),
-             m_bnFrameBuffer);
+        model,
+        m_camera->barneyCamera(),
+        m_bnFrameBuffer);
     m_lastFrameWasFirstFrame = firstFrame;
   }
   m_didMapChannel.depth = false;
@@ -217,7 +219,9 @@ void *Frame::map(std::string_view channel,
 {
   wait();
 
-  if (deviceState()->slot != 0) { PING; return nullptr; }
+  if (deviceState()->slot != 0) {
+    return nullptr;
+  }
   *width = m_size.x;
   *height = m_size.y;
   int numPixels = *width * *height;

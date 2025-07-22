@@ -24,8 +24,11 @@ void Object::finalize()
   // no-op
 }
 
-bool Object::getProperty(
-    const std::string_view &name, ANARIDataType type, void *ptr, uint32_t flags)
+bool Object::getProperty(const std::string_view &name,
+    ANARIDataType type,
+    void *ptr,
+    uint64_t size,
+    uint32_t flags)
 {
   if (name == "valid" && type == ANARI_BOOL) {
     helium::writeToVoidP(ptr, isValid());
