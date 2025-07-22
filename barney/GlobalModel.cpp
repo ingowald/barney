@@ -37,7 +37,7 @@ namespace BARNEY_NS {
                            barney_api::Camera      *_camera,
                            barney_api::FrameBuffer *_fb)
   {
-    if (context->myRank() == 0)
+    if (context->myRank() == 0 && FromEnv::get()->logQueues) 
       std::cout << "============================================ new frame\n";
     assert(context);
     FrameBuffer *fb = (FrameBuffer *)_fb;
