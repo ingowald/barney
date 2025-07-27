@@ -162,15 +162,15 @@ void Frame::renderFrame()
   if (!isValid()) {
     reportMessage(
         ANARI_SEVERITY_ERROR, "skipping render of incomplete frame object");
-    reportMessage(ANARI_SEVERITY_DEBUG,
+    reportMessage(ANARI_SEVERITY_ERROR,//_DEBUG,
         "    renderer(%p) - isValid:(%i)",
         m_renderer.get(),
         m_renderer ? m_renderer->isValid() : 0);
-    reportMessage(ANARI_SEVERITY_DEBUG,
+    reportMessage(ANARI_SEVERITY_ERROR,//_DEBUG,
         "    world(%p) - isValid:(%i)",
         m_world.ptr,
         m_world ? m_world->isValid() : 0);
-    reportMessage(ANARI_SEVERITY_DEBUG,
+    reportMessage(ANARI_SEVERITY_ERROR,//_DEBUG,
         "    camera(%p) - isValid:(%i)",
         m_camera.ptr,
         m_camera ? m_camera->isValid() : 0);
