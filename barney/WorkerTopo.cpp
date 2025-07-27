@@ -25,7 +25,7 @@ namespace BARNEY_NS {
       islandOf(devices.size()),
       islandRankOf(devices.size()),
       physicalHostIndexOf(devices.size()),
-      physicalDeviceIndexOf(devices.size()),
+      // physicalDeviceIndexOf(devices.size()),
       myOffset(myOffset),
       myCount(myCount),
       _worldRank(devices[myOffset].worldRank)
@@ -53,7 +53,7 @@ namespace BARNEY_NS {
         islandRankOf[gid] = islands[islandID].size();
         islands[islandID].push_back(gid);
       }
-      physicalDeviceIndexOf[gid] = nextPhysialGPUInHostHash[dev.hostNameHash]++;
+      // physicalDeviceIndexOf[gid] = nextPhysialGPUInHostHash[dev.hostNameHash]++;
       if (physicalHostIndexOfHostHash.find(dev.hostNameHash) ==
           physicalHostIndexOfHostHash.end())
         physicalHostIndexOfHostHash[dev.hostNameHash]
@@ -74,6 +74,7 @@ namespace BARNEY_NS {
          << " island size " << islandSize() << std::endl;
       for (int gid=0;gid<(int)devices.size();gid++) {
         ss << toString(gid,tag);
+        ss << "\n";
       }
       std::cout << ss.str();
     }
@@ -97,7 +98,8 @@ namespace BARNEY_NS {
     // ss << " local=" << dev.local;
     ss << " dataColor=" << dev.dataRank;
     ss << " island=" << islandOf[gid] << "(rank " << islandRankOf[gid] << ")";
-    ss << " logical=" << physicalHostIndexOf[gid] << ":" << physicalDeviceIndexOf[gid];
+    ss << " hostIdx=" << physicalHostIndexOf[gid];
+    // ss << " host:gpuOfs=" << physicalHostIndexOf[gid] << ":" << physicalDeviceIndexOf[gid];
     ss << " phys=" << (int*)dev.hostNameHash << ":" << (int*)dev.physicalDeviceHash;
     return ss.str();
   }

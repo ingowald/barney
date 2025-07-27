@@ -43,7 +43,7 @@ namespace BARNEY_NS {
            << "\n device { " << topo->toString(gid) << "}"
            << "\n sendsTo { " << topo->toString(pld->sendPartner->gid) << " }" 
            << "\n recvsFrom { " << topo->toString(pld->recvPartner->gid) << " }" 
-           << std::endl;
+           << "\n";
       }
       std::cout << ss.str();
     }

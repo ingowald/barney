@@ -27,12 +27,12 @@ namespace BARNEY_NS {
     int numGlobal;
     int numHosts;
     
-    RayOnly *raysOnly[2];
-    HitOnly *hitsOnly[2];
+    RayOnly *raysOnly[2] = { 0, 0 };
+    HitOnly *hitsOnly[2] = { 0, 0 };
     int currentReservedSize = 0;
     Ray *stagedRayQueue = 0;
-    Ray *savedOriginalRayQueue;
-    int  savedOriginalRayCount;
+    // Ray *savedOriginalRayQueue;
+    // int  savedOriginalRayCount;
     struct {
       int numRaysReceived;
     } intraNodes, bothStages;

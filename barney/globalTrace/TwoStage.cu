@@ -17,9 +17,9 @@ namespace BARNEY_NS {
   
   __rtc_global
   void reduceReceivedHitsKernel_intraNode(const rtc::ComputeInterface &ci,
-                                    HitOnly *hitOnly,
-                                    int nRays,
-                                    int reduceFactor)
+                                          HitOnly *hitOnly,
+                                          int nRays,
+                                          int reduceFactor)
   {
     int tid = ci.launchIndex().x;
     if (tid >= nRays) return;
@@ -100,7 +100,6 @@ namespace BARNEY_NS {
       numHosts = std::max(numHosts,topo->physicalHostIndexOf[gid]+1);
     }
     gpusPerHost = gpuCountInHost.begin()->second;
-    PING; PRINT(gpusPerHost);
     for (auto count : gpuCountInHost)
       if (count.second != gpusPerHost)
         throw std::runtime_error
@@ -109,7 +108,24 @@ namespace BARNEY_NS {
 
     this->hostIdx = myGID / gpusPerHost;
     this->gpuIdx = myGID % gpusPerHost;
-    numHosts = numGlobal / gpusPerHost;
+    this->numHosts = numGlobal / gpusPerHost;
+
+    if (FromEnv::get()->logTopo) {
+      world.barrier();
+      if (context->myRank() == 0) {
+        std::cout << "=========== TwoStage All2all ===========" << std::endl;
+        std::cout << "- num MPI ranks (w/ one gpu each) " << numGlobal << std::endl;
+        std::cout << "- detected num physical hosts " << numHosts << std::endl;
+        std::cout << "- detected num (active) GPUs per host " << gpusPerHost << std::endl;
+        for (int h=0;h<numHosts;h++)
+          for (int g=0;g<gpusPerHost;g++) {
+            std::cout << "- gpu on rank " << (h*gpusPerHost+g)
+                      << " is logical " << h << ":" << g << " {"
+                      << topo->toString(h*gpusPerHost+g) << "}" << std::endl;
+          }
+      }
+      world.barrier();
+    }
   }
 
 
@@ -119,8 +135,10 @@ namespace BARNEY_NS {
     size_t ourRequiredQueueSize
       = device->rayQueue->size * numGlobal;
     if (ourRequiredQueueSize > currentReservedSize) {
-      std::cout << "resizing ray queues from " << currentReservedSize
-                << " to " << ourRequiredQueueSize << std::endl;
+      if (FromEnv::get()->logQueues) {
+        std::cout << "resizing ray queues from " << currentReservedSize
+                  << " to " << ourRequiredQueueSize << std::endl;
+      }
       for (int i=0;i<2;i++)
         if (raysOnly[i]) rtc->freeMem(raysOnly[i]);
       for (int i=0;i<2;i++)
@@ -146,11 +164,26 @@ namespace BARNEY_NS {
     auto &world = context->world;
 
     int myRayCount = device->rayQueue->numActive;
-    BN_MPI_CALL(Alltoall(/* sendbuf */&myRayCount,
-                         /* OUR count */1,MPI_INT,
-                         /*recvbuf*/rayCounts.data(),
-                         1,MPI_INT,
-                         world.comm));
+    world.barrier();
+    // BN_MPI_CALL(Alltoall(/* sendbuf */&myRayCount,
+    //                      /* OUR count */1,MPI_INT,
+    //                      /*recvbuf*/rayCounts.data(),
+    //                      1,MPI_INT,
+    //                      world.comm));
+    world.allGather(rayCounts.data(),&myRayCount,1);
+
+    
+    if (FromEnv::get()->logQueues)  {
+      for (int i=0;i<numGlobal;i++) {
+        world.barrier();
+        if (myGID == i) {
+          std::cout << "ray counts (" << rayCounts.size() << "):";
+          for (auto rc : rayCounts) std::cout << " " << rc;
+          std::cout << std::endl;
+        }
+        world.barrier();
+      }
+    }
   }
   
   
@@ -181,22 +214,41 @@ namespace BARNEY_NS {
 
     device->rtc->sync();
 
+    world.barrier();
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
     for (int h=0;h<numHosts;h++) {
       MPI_Request req;
+      // PRINT(h);
+      // PRINT(numHosts);
+      // PRINT(gpuIdx);
+      // PRINT(h*gpusPerHost+gpuIdx);
+      // PRINT(rayCounts.size());
+      // PRINT(rayCounts[h*gpusPerHost+gpuIdx]);
+      int recvCount = rayCounts[h*gpusPerHost+gpuIdx];
+      if (FromEnv::get()->logQueues) 
+        printf("splat-cross r%i receiving %i from %i (q 0->1)\n",
+               myGID,recvCount,h*gpusPerHost+gpuIdx);
       world.recv(h*gpusPerHost+gpuIdx,0,raysOnly[1]+recvOfs,
-                 rayCounts[h*gpusPerHost+gpuIdx],req);
-      recvOfs += rayCounts[h*gpusPerHost+gpuIdx];
+                 recvCount,req);
+      recvOfs += recvCount;
       requests.push_back(req);
     }
     intraNodes.numRaysReceived = recvOfs;
+    if (FromEnv::get()->logQueues) 
+      printf("splat-cross r%i total received %i\n",
+             myGID,intraNodes.numRaysReceived);
     
+    world.barrier();
     for (int h=0;h<numHosts;h++) {
       MPI_Request req;
+      if (FromEnv::get()->logQueues) 
+        printf("splat-cross r%i sending %i to %i (q 0->1)\n",
+               myGID,myRayCount,h*gpusPerHost+gpuIdx);
       world.send(h*gpusPerHost+gpuIdx,0,raysOnly[0],myRayCount,req);
       requests.push_back(req);
     }
+    world.barrier();
     
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
@@ -210,6 +262,7 @@ namespace BARNEY_NS {
   void TwoStage::sendAndReceiveRays_intraNode()
   {
     auto &world = context->world;
+    world.barrier();
 
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
@@ -218,6 +271,9 @@ namespace BARNEY_NS {
       int raysOnPeer = 0;
       for (int h=0;h<numHosts;h++)
         raysOnPeer += rayCounts[h*gpusPerHost+g];
+      if (FromEnv::get()->logQueues) 
+        printf("splat-intra r%i receiving %i from %i (q 1->0)\n",
+               myGID,raysOnPeer,hostIdx*gpusPerHost+g);
       world.recv(hostIdx*gpusPerHost+g,0,
                  raysOnly[0]+recvOfs,raysOnPeer,
                  req);
@@ -225,17 +281,27 @@ namespace BARNEY_NS {
       requests.push_back(req);
     }
     bothStages.numRaysReceived = recvOfs;
+    if (FromEnv::get()->logQueues) 
+      printf("splat-intra r%i total received %i\n",
+             myGID,bothStages.numRaysReceived);
 
+    world.barrier();
+    
     int numRaysWeHave = 0;
     for (int h=0;h<numHosts;h++)
       numRaysWeHave += rayCounts[h*gpusPerHost+gpuIdx];
     for (int g=0;g<gpusPerHost;g++) {
       MPI_Request req;
+      if (FromEnv::get()->logQueues) 
+        printf("splat-intra r%i sending %i to %i (q 1->0)\n",
+               myGID,numRaysWeHave,hostIdx*gpusPerHost+g);
       world.send(hostIdx*gpusPerHost+g,0,
                  raysOnly[1],numRaysWeHave,
                  req);
       requests.push_back(req);
     }
+
+    world.barrier();
     
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
@@ -247,18 +313,31 @@ namespace BARNEY_NS {
                            uint32_t rngSeed,
                            bool needHitIDs) 
   {
+
+    // std::cout << "==================================================================\n";
+    world.barrier();
     assert(needHitIDs == false); // not implemented right now
+    world.barrier();
     ensureAllOurQueuesAreLargeEnough();
+    world.barrier();
     exchangeHowManyRaysEachDeviceHas();
+    world.barrier();
     sendAndReceiveRays_crossNodes();
+    world.barrier();
     sendAndReceiveRays_intraNode();
+    world.barrier();
 
     traceAllReceivedRays(model,rngSeed,needHitIDs);
+    world.barrier();
 
     exchangeHits_intraNode();
+    world.barrier();
     reduceHits_intraNode();
+    world.barrier();
     exchangeHits_crossNodes();
+    world.barrier();
     reduceHits_crossNodes();
+    world.barrier();
   }
 
 
@@ -268,6 +347,9 @@ namespace BARNEY_NS {
   {
     SetActiveGPU forDuration(device);
     int numRaysWeHaveTotal = bothStages.numRaysReceived;
+    if (FromEnv::get()->logQueues) 
+      printf("buildlocalrays r%i total rays %i (q0)\n",
+             myGID,numRaysWeHaveTotal);
     __rtc_launch(device->rtc,
                  buildStagedRayQueue,
                  divRoundUp(numRaysWeHaveTotal,1024),1024,
@@ -283,9 +365,16 @@ namespace BARNEY_NS {
     device->rayQueue->traceAndShadeReadQueue.rays = stagedRayQueue;
     device->rayQueue->numActive = numRaysWeHaveTotal;
 
+    if (FromEnv::get()->logQueues) 
+      printf("localtrace r%i total rays %i\n",
+             myGID,numRaysWeHaveTotal);
     context->traceRaysLocally(model,rngSeed,needHitIDs);
-
     device->rtc->sync();
+    
+    
+    if (FromEnv::get()->logQueues) 
+      printf("buildhits r%i total rays %i (q0)\n",
+             myGID,numRaysWeHaveTotal);
     __rtc_launch(device->rtc,
                  buildHitsOnly,
                  divRoundUp(numRaysWeHaveTotal,1024),1024,
@@ -307,9 +396,12 @@ namespace BARNEY_NS {
       MPI_Request req;
       int recvCount = 0;
       for (int h=0;h<numHosts;h++)
-        recvCount += rayCounts[h*gpusPerHost+g];
+        recvCount += rayCounts[h*gpusPerHost+gpuIdx];
       world.recv(hostIdx*gpusPerHost+g,0,
                  hitsOnly[1]+recvOfs,recvCount,req);
+      if (FromEnv::get()->logQueues) 
+        printf("xchg-intra r%i receiving %i from %i (q0->1)\n",
+               myGID,recvCount,hostIdx*gpusPerHost+g);
       requests.push_back(req);
       recvOfs += recvCount;
     }
@@ -317,12 +409,15 @@ namespace BARNEY_NS {
     // and matching sends
     int sendOfs = 0;
     for (int g=0;g<gpusPerHost;g++) {
-      MPI_Request req;
       int sendCount = 0;
       for (int h=0;h<numHosts;h++)
         sendCount += rayCounts[h*gpusPerHost+g];
+      MPI_Request req;
       world.send(hostIdx*gpusPerHost+g,0,
                  hitsOnly[0]+sendOfs,sendCount,req);
+      if (FromEnv::get()->logQueues) 
+        printf("xchg-intra r%i sending %i to %i (q0->1)\n",
+               myGID,sendCount,hostIdx*gpusPerHost+g);
       requests.push_back(req);
       sendOfs += sendCount;
     }
@@ -339,6 +434,11 @@ namespace BARNEY_NS {
     for (int h=0;h<numHosts;h++)
       numUniqueRaysThisGPU += rayCounts[h*gpusPerHost+g];
 
+    if (FromEnv::get()->logQueues) 
+      printf("r%i intra-reducing %i sets of %i hits (q1)\n",
+             myGID,
+             gpusPerHost,
+             numUniqueRaysThisGPU);
     __rtc_launch(device->rtc,
                  reduceReceivedHitsKernel_intraNode,
                  divRoundUp(numUniqueRaysThisGPU,128),128,
@@ -346,6 +446,7 @@ namespace BARNEY_NS {
                  hitsOnly[1],
                  numUniqueRaysThisGPU,
                  gpusPerHost);
+    device->rtc->sync();
   }
   
   void TwoStage::exchangeHits_crossNodes()
@@ -355,6 +456,10 @@ namespace BARNEY_NS {
     int recvCount = rayCounts[hostIdx*gpusPerHost+gpuIdx];
     for (int h=0;h<numHosts;h++) {
       MPI_Request req;
+
+      if (FromEnv::get()->logQueues) 
+        printf("xchg-intra r%i receiving %i from %i (q1->0)\n",
+               myGID,recvCount,h*gpusPerHost+gpuIdx);
       world.recv(h*gpusPerHost+gpuIdx,0,
                  hitsOnly[0]+recvOfs,recvCount,req);
       requests.push_back(req);
@@ -366,6 +471,9 @@ namespace BARNEY_NS {
     for (int h=0;h<numHosts;h++) {
       MPI_Request req;
       int sendCount = rayCounts[h*gpusPerHost+gpuIdx];
+      if (FromEnv::get()->logQueues) 
+        printf("xchg-intra r%i sending %i to %i (q1->0)\n",
+               myGID,sendCount,h*gpusPerHost+gpuIdx);
       world.send(h*gpusPerHost+gpuIdx,0,
                  hitsOnly[1]+sendOfs,sendCount,req);
       requests.push_back(req);
@@ -380,6 +488,9 @@ namespace BARNEY_NS {
   {
     SetActiveGPU forDuration(device);
     int numUniqueRaysThisGPU = rayCounts[hostIdx*gpusPerHost+gpuIdx];
+    if (FromEnv::get()->logQueues) 
+      printf("r%i cross-reducing %i sets of %i hits (q0)\n",
+             myGID,numHosts,numUniqueRaysThisGPU);
     __rtc_launch(device->rtc,
                  reduceReceivedHitsKernel_crossNodes,
                  divRoundUp(numUniqueRaysThisGPU,128),128,
@@ -388,6 +499,7 @@ namespace BARNEY_NS {
                  hitsOnly[0],
                  numUniqueRaysThisGPU,
                  numHosts);
+    device->rtc->sync();
   }
   
 }

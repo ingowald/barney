@@ -19,6 +19,7 @@
 #include "barney/render/RayQueue.h"
 #include "barney/globalTrace/RQSMPI.h"
 #include "barney/globalTrace/All2all.h"
+#include "barney/globalTrace/TwoStage.h"
 
 #if 0
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
@@ -84,7 +85,10 @@ namespace BARNEY_NS {
       workers(workerComm) //worldComm.split(!isPassiveNode(localSlots)))
   {
     bool dbg = FromEnv::get()->logConfig;
-    if (FromEnv::enabled("all2all")) {
+    if (FromEnv::enabled("two-stage")) {
+      std::cout << "ENABLING TwoStage!" << std::endl;
+      globalTraceImpl = new TwoStage(this);
+    } else if (FromEnv::enabled("all2all")) {
       std::cout << "ENABLING ALL2ALL!" << std::endl;
       globalTraceImpl = new MPIAll2all(this);
     } else {

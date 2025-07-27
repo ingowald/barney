@@ -88,7 +88,7 @@ namespace BARNEY_NS {
       properties like PCI bus ID etc, NOT based on the cuda device
       numbering (and thus, shold be totally independent of slum
       setting CUDA_VISIBLE_DEVICES */
-    std::vector<int> physicalDeviceIndexOf;
+    // std::vector<int> physicalDeviceIndexOf;
 
     /*! gives, for each logical device, the how many'eth device in its
       island it is */

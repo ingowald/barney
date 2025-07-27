@@ -29,18 +29,6 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed,
                                  bool needHitIDs)
   {
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      {
-        auto rc = cudaGetLastError();
-        if (rc) {
-          PING; PRINT(rc);
-          PRINT(cudaGetErrorString(rc));
-        }
-        assert(rc == 0);
-      }
-    }
-    
     assert(!needHitIDs);
     double t0 = getCurrentTime();
     
@@ -51,16 +39,6 @@ namespace BARNEY_NS {
     for (auto model : globalModel->modelSlots) {
       for (auto device : *model->devices) {
         SetActiveGPU forDuration(device);
-
-        {
-          auto rc = cudaGetLastError();
-          if (rc) {
-            PING; PRINT(rc);
-            PRINT(cudaGetErrorString(rc));
-          }
-          assert(rc == 0);
-        }
-        
         auto ctx     = model->slotContext;
         dd.rays      = device->rayQueue->traceAndShadeReadQueue.rays;
         dd.hitIDs
