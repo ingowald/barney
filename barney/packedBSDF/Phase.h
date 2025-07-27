@@ -58,7 +58,7 @@ namespace BARNEY_NS {
       EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
       {
         float density = ONE_OVER_FOUR_PI;
-        return EvalRes(//density*
+        return EvalRes(density*
                        (const vec3f&)albedo,density);
       }
 
