@@ -164,7 +164,7 @@ namespace BARNEY_NS {
     auto &world = context->world;
 
     int myRayCount = device->rayQueue->numActive;
-    world.barrier();
+    // world.barrier();
     // BN_MPI_CALL(Alltoall(/* sendbuf */&myRayCount,
     //                      /* OUR count */1,MPI_INT,
     //                      /*recvbuf*/rayCounts.data(),
@@ -214,7 +214,7 @@ namespace BARNEY_NS {
 
     device->rtc->sync();
 
-    world.barrier();
+    // world.barrier();
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
     for (int h=0;h<numHosts;h++) {
@@ -239,7 +239,7 @@ namespace BARNEY_NS {
       printf("splat-cross r%i total received %i\n",
              myGID,intraNodes.numRaysReceived);
     
-    world.barrier();
+    // world.barrier();
     for (int h=0;h<numHosts;h++) {
       MPI_Request req;
       if (FromEnv::get()->logQueues) 
@@ -248,7 +248,7 @@ namespace BARNEY_NS {
       world.send(h*gpusPerHost+gpuIdx,0,raysOnly[0],myRayCount,req);
       requests.push_back(req);
     }
-    world.barrier();
+    // world.barrier();
     
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
@@ -262,7 +262,7 @@ namespace BARNEY_NS {
   void TwoStage::sendAndReceiveRays_intraNode()
   {
     auto &world = context->world;
-    world.barrier();
+    // world.barrier();
 
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
@@ -285,7 +285,7 @@ namespace BARNEY_NS {
       printf("splat-intra r%i total received %i\n",
              myGID,bothStages.numRaysReceived);
 
-    world.barrier();
+    // world.barrier();
     
     int numRaysWeHave = 0;
     for (int h=0;h<numHosts;h++)
@@ -301,7 +301,7 @@ namespace BARNEY_NS {
       requests.push_back(req);
     }
 
-    world.barrier();
+    // world.barrier();
     
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
@@ -315,29 +315,29 @@ namespace BARNEY_NS {
   {
 
     // std::cout << "==================================================================\n";
-    world.barrier();
+    // world.barrier();
     assert(needHitIDs == false); // not implemented right now
-    world.barrier();
+    // world.barrier();
     ensureAllOurQueuesAreLargeEnough();
-    world.barrier();
+    // world.barrier();
     exchangeHowManyRaysEachDeviceHas();
-    world.barrier();
+    // world.barrier();
     sendAndReceiveRays_crossNodes();
-    world.barrier();
+    // world.barrier();
     sendAndReceiveRays_intraNode();
-    world.barrier();
+    // world.barrier();
 
     traceAllReceivedRays(model,rngSeed,needHitIDs);
-    world.barrier();
+    // world.barrier();
 
     exchangeHits_intraNode();
-    world.barrier();
+     // world.barrier();
     reduceHits_intraNode();
-    world.barrier();
+    // world.barrier();
     exchangeHits_crossNodes();
-    world.barrier();
+    // world.barrier();
     reduceHits_crossNodes();
-    world.barrier();
+    // world.barrier();
   }
 
 
