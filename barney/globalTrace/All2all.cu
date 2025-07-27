@@ -159,6 +159,8 @@ namespace BARNEY_NS {
     std::vector<MPI_Request> requests;
     for (auto device : *context->devices) {
       auto pld = getPLD(device);
+      int myGID = device->globalRank();
+      auto &ourDev  = topo->allDevices[myGID];
       pld->perIslandPeer.rayCount.resize(islandSize);
 
       /* iw: use reference here, to make sure the send doesn't use a stack temp */
@@ -170,14 +172,15 @@ namespace BARNEY_NS {
         MPI_Request req;
         // world.send(peerDev.worldRank,peerDev.local,&myRayCount,1,req);
         // requests.push_back(req);
-        world.recv(peerDev.worldRank,peerDev.local,
+        world.recv(peerDev.worldRank,(ourDev.local << 8) + peerDev.local,
                    &pld->perIslandPeer.rayCount[topo->islandRankOf[peer]],1,req);
         requests.push_back(req);
       }
       for (auto peer : peers) {
         auto &peerDev = topo->allDevices[peer];
         MPI_Request req;
-        world.send(peerDev.worldRank,peerDev.local,&myRayCount,1,req);
+        world.send(peerDev.worldRank,(peerDev.local << 8) + ourDev.local,
+                   &myRayCount,1,req);
         requests.push_back(req);
         // world.recv(peerDev.worldRank,peerDev.local,
         //            &pld->perIslandPeer.rayCount[topo->islandRankOf[peer]],1,req);
@@ -214,7 +217,7 @@ namespace BARNEY_NS {
         assert(rc == 0);
       }
     }
-    auto &world = context->world;
+    // auto &world = context->world;
     auto topo = context->topo;
 
     for (auto device : *context->devices) {
@@ -336,6 +339,8 @@ namespace BARNEY_NS {
     for (auto device : *context->devices) {
       device->rtc->sync();
       auto pld = getPLD(device);
+      int myGID = device->globalRank();
+      auto &ourDev  = topo->allDevices[myGID];
 
       pld->numRemoteRaysReceived = 0;      
       int myRayCount = device->rayQueue->numActive;
@@ -355,7 +360,7 @@ namespace BARNEY_NS {
         } else {
           if (recvCount) {
             MPI_Request req;
-            world.recv(peerDev.worldRank,peerDev.local,
+            world.recv(peerDev.worldRank,(ourDev.local << 8) + peerDev.local,
                        pld->recv.raysOnly+recvOfs,recvCount,req);
             requests.push_back(req);
           }
@@ -379,7 +384,7 @@ namespace BARNEY_NS {
         if (peer == device->_globalRank) {
         } else {
           if (myRayCount) {
-            world.send(peerDev.worldRank,peerDev.local,
+            world.send(peerDev.worldRank,(peerDev.local << 8) + ourDev.local,
                        pld->send.raysOnly,myRayCount,req);
             requests.push_back(req);
           }
@@ -402,7 +407,6 @@ namespace BARNEY_NS {
     }
   }
 
-
   void MPIAll2all::sendAndReceiveHits()
   {
     auto &world = context->world;
@@ -424,6 +428,8 @@ namespace BARNEY_NS {
     for (auto device : *context->devices) {
       device->rtc->sync();
       auto pld = getPLD(device);
+      int myGID = device->globalRank();
+      auto &ourDev  = topo->allDevices[myGID];
 
       int myRayCount = pld->savedOriginalRayCount;
       const std::vector<int> &peers
@@ -442,7 +448,7 @@ namespace BARNEY_NS {
                                    pld->send.hitsOnly+sendOfs,
                                    recvCount*sizeof(HitOnly));
         } else {
-          world.recv(peerDev.worldRank,peerDev.local,
+          world.recv(peerDev.worldRank,(ourDev.local << 8)+peerDev.local,
                      pld->recv.hitsOnly+recvOfs,recvCount,req);
           requests.push_back(req);
         }
@@ -460,7 +466,7 @@ namespace BARNEY_NS {
         MPI_Request req;
         int peerIslandRank = topo->islandRankOf[peer];
         int sendCount = pld->perIslandPeer.rayCount[peerIslandRank];
-        int recvCount = myRayCount;
+        // int recvCount = myRayCount;
         // world.recv(peerDev.worldRank,peerDev.local,
         //            pld->recv.hitsOnly+recvOfs,recvCount,req);
         // requests.push_back(req);
@@ -468,7 +474,7 @@ namespace BARNEY_NS {
 
         if (peer == device->globalRank()) {
         } else {
-          world.send(peerDev.worldRank,peerDev.local,
+          world.send(peerDev.worldRank,(peerDev.local << 8)+ourDev.local,
                      pld->send.hitsOnly+sendOfs,sendCount,req);
           requests.push_back(req);
         }
@@ -494,7 +500,7 @@ namespace BARNEY_NS {
         assert(rc == 0);
       }
     }
-    auto &world = context->world;
+    // auto &world = context->world;
     auto topo = context->topo;
     int islandSize = context->topo->islandSize();
 
@@ -648,4 +654,6 @@ namespace BARNEY_NS {
 
     // if (context->myRank() == 0) PRINT(prettyDouble(t1-t0));
   }
+
+  
 }

@@ -36,6 +36,7 @@ namespace BARNEY_NS {
       isActiveWorker(!localSlots.empty() && localSlots[0].dataRank >= 0),
       topo(topo)
   {
+    
     assert(!localSlots.empty());
     for (int i=0;i<(int)localSlots.size();i++) {
       assert(localSlots[i].dataRank >= 0 ||

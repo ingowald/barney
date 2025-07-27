@@ -15,7 +15,6 @@ namespace BARNEY_NS {
   
   struct MPIAll2all : public GlobalTraceImpl
   {
-    
     struct PLD {
       struct {
         RayOnly *raysOnly = 0;
@@ -66,6 +65,7 @@ namespace BARNEY_NS {
     void ensureAllOurQueuesAreLargeEnough();
     MPIContext *const context;
   };
+
 }
 
 

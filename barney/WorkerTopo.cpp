@@ -24,12 +24,17 @@ namespace BARNEY_NS {
     : allDevices(devices),
       islandOf(devices.size()),
       islandRankOf(devices.size()),
+      physicalHostIndexOf(devices.size()),
+      physicalDeviceIndexOf(devices.size()),
       myOffset(myOffset),
       myCount(myCount),
       _worldRank(devices[myOffset].worldRank)
   {
     numWorkerDevices = 0;
     std::map<int,int> useCountOfDG;
+    std::map<size_t,int> nextPhysialGPUInHostHash;
+    std::map<size_t,int> physicalHostIndexOfHostHash;
+    
     for (int gid=0;gid<(int)devices.size();gid++) {
       Device dev = devices[gid];
       assert(dev.dataRank >= -1);
@@ -44,6 +49,12 @@ namespace BARNEY_NS {
         islandRankOf[gid] = islands[islandID].size();
         islands[islandID].push_back(gid);
       }
+      physicalDeviceIndexOf[gid] = nextPhysialGPUInHostHash[dev.hostNameHash]++;
+      if (physicalHostIndexOfHostHash.find(dev.hostNameHash) ==
+          physicalHostIndexOfHostHash.end())
+        physicalHostIndexOfHostHash[dev.hostNameHash]
+          = physicalHostIndexOfHostHash.size();
+      physicalHostIndexOf[gid] = physicalHostIndexOfHostHash[dev.hostNameHash];
     }
     // some final sanity checks ...
     assert(islands.size() > 0);
@@ -58,19 +69,43 @@ namespace BARNEY_NS {
       ss << tag << "num islands " << islands.size()
          << " island size " << islandSize() << std::endl;
       for (int gid=0;gid<(int)devices.size();gid++) {
-        const auto &dev = allDevices[gid];
-        ss << tag << "topo: dev " << gid << ":";
-        ss << " worker=" << dev.worker;
-        ss << " worldRank=" << dev.worldRank;
-        ss << " local=" << dev.local;
-        ss << " dataRank=" << dev.dataRank;
-        ss << " island=" << islandOf[gid];
-        ss << " islandRank=" << islandOf[gid];
+        ss << toString(gid,tag);
       }
       std::cout << ss.str();
     }
+    
+    if (anyGpuIsOverSubscribed())
+      std::cout << "#bn: WARNING - at least one physical GPU is over-subcribed!" << std::endl;
   }
 
+  std::string WorkerTopo::toString(int gid, const std::string &tag) const
+  {
+    assert(gid >= 0 && gid < allDevices.size());
+    std::stringstream ss;
+    const auto &dev = allDevices[gid];
+    ss << tag << "topo: dev " << gid << ":";
+    ss << " worker=" << dev.worker;
+    ss << " worldRank=" << dev.worldRank;
+    ss << " local=" << dev.local;
+    ss << " dataRank=" << dev.dataRank;
+    ss << " island=" << islandOf[gid];
+    ss << " islandRank=" << islandRankOf[gid];
+    ss << " physicalHost=" << physicalHostIndexOf[gid];
+    ss << " physicalDevice=" << physicalDeviceIndexOf[gid];
+    return ss.str();
+  }
+  
+  bool WorkerTopo::anyGpuIsOverSubscribed() const
+  {
+    std::map<std::pair<size_t,size_t>,int> useCount;
+    for (auto device : allDevices)
+      useCount[{device.hostNameHash,device.physicalDeviceHash}]++;
+
+    for (auto uc : useCount)
+      if (uc.second != 1) return true;
+    return false;
+  }
+  
   int WorkerTopo::islandSize() const
   { return islands[0].size(); }
   

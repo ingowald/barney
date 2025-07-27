@@ -110,6 +110,17 @@ namespace barney_api {
 }
 
 namespace BARNEY_NS {
+  size_t getHostNameHash()
+  {
+    char hostName[256];
+    gethostname(hostName,256);
+    size_t hash = 0;
+    size_t FNV_PRIME = 0x00000100000001b3ull;
+    for (int i=0;hostName[i];i++)
+      hash = hash * FNV_PRIME ^ hostName[i];
+    return hash;
+  }
+  
   WorkerTopo::SP
   LocalContext::makeTopo(const std::vector<LocalSlot> &localSlots)
   {
@@ -121,6 +132,8 @@ namespace BARNEY_NS {
         dev.worker = 0;
         dev.worldRank = 0;
         dev.dataRank = ls.dataRank;
+        dev.hostNameHash = getHostNameHash();
+        dev.physicalDeviceHash = rtc::getPhysicalDeviceHash(gpuID);
         devices.push_back(dev);
       }
     }

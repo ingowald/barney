@@ -33,6 +33,8 @@
 
 namespace BARNEY_NS {
 
+  size_t getHostNameHash();
+  
   WorkerTopo::SP
   MPIContext::makeTopo(const barney_api::mpi::Comm &worldComm,
                        const barney_api::mpi::Comm &workerComm,
@@ -46,6 +48,8 @@ namespace BARNEY_NS {
         dev.worker = workerComm.rank;
         dev.worldRank = worldComm.rank;
         dev.dataRank = ls.dataRank;
+        dev.hostNameHash = getHostNameHash();
+        dev.physicalDeviceHash = rtc::getPhysicalDeviceHash(gpuID);
         devices.push_back(dev);
       }
     }
@@ -80,224 +84,6 @@ namespace BARNEY_NS {
       workers(workerComm) //worldComm.split(!isPassiveNode(localSlots)))
   {
     bool dbg = FromEnv::get()->logConfig;
-#if 0
-    if (dbg) {
-      std::stringstream ss;
-      ss << "#bn." << workers.rank << " data group IDs ";
-      for (auto dgID : dataGroupIDs)
-        ss << dgID << " ";
-      ss << std::endl;
-      std::cout << ss.str();
-    }
-    world.assertValid();
-    workers.assertValid();
-
-    workerRankOfWorldRank.resize(world.size);
-    world.allGather(workerRankOfWorldRank.data(),
-                    isActiveWorker?workers.rank:-1);
-    worldRankOfWorker.resize(workers.size);
-    // int numWorkers = 0;
-    // for (int i=0;i<workerRankOfWorldRank.size();i++)
-    //   if (workerRankOfWorldRank[i] != -1) {
-    //     if (workerRankOfWorldRank[i] >= workers.size)
-    //       throw std::runtime_error("Invalid worker rank!?");
-    //     worldRankOfWorker[workerRankOfWorldRank[i]] = i;
-    //     // numWorkers++;
-    //   }
-    // workers.size = numWorkers;
-
-    gpusPerWorker = world.allReduceMax(int(gpuIDs.size()));
-    // numWorkers = world.allReduceAdd(isActiveWorker?1:0);
-
-    // if (dbg) {
-    //   std::stringstream ss;
-    //   ss << "bn." << workers.rank << ": ";
-    //   ss << "num workers active/total " << numWorkers() << "/" << workers.size << std::endl;
-    //   std::cout << ss.str();
-    // }
-
-    if (isActiveWorker) {
-      int numSlotsPerWorker = (int)perSlot.size();
-      int numDevicesPerWorker = contextSize();//(int)devices.size();
-      int numWorkers = workers.size;
-
-      int _globalID = workers.rank*numDevicesPerWorker;
-      for (auto device : *devices) {
-        device->allGPUsGlobally.rank = _globalID++;
-        device->allGPUsGlobally.size = numWorkers * numDevicesPerWorker;
-      }
-      
-      if (dbg) {
-        std::stringstream ss;
-        ss << "bn." << workers.rank << ": ";
-        ss << "num devices " << numDevicesPerWorker
-           << " (";
-        for (auto device : *devices)
-          ss << " " << device->globalRank();
-        ss << " ) DGs " << numSlotsPerWorker << std::endl << std::flush;
-        std::cout << ss.str();
-      }
-
-      // ------------------------------------------------------------------
-      // sanity check - make sure all workers have same num data groups
-      // ------------------------------------------------------------------
-      std::vector<int> numModelSlotsOnWorker(workers.size+1);
-      numModelSlotsOnWorker[workers.size] = 0x290374;
-      workers.allGather(numModelSlotsOnWorker.data(),numSlotsPerWorker);
-      if (numModelSlotsOnWorker[workers.size] != 0x290374)
-        throw std::runtime_error("mpi buffer overwrite!");
-      for (int i=0;i<numWorkers;i++)
-        if (numModelSlotsOnWorker[i] != numSlotsPerWorker)
-          throw std::runtime_error
-            ("worker rank "+std::to_string(i)+
-             " has different number of data groups ("+
-             std::to_string(numModelSlotsOnWorker[i])+
-             " than worker rank "+std::to_string(workers.rank)+
-             " ("+std::to_string(numSlotsPerWorker)+")");
-
-      // ------------------------------------------------------------------
-      // sanity check - make sure all workers have same num devices
-      // ------------------------------------------------------------------
-      std::vector<int> numDevicesOnWorker(workers.size+1);
-      numDevicesOnWorker[workers.size] = 0x290375;
-      workers.allGather(numDevicesOnWorker.data(),
-                        devices->numLogical);//(int)devices.size());
-      if (numDevicesOnWorker[workers.size] != 0x290375)
-        throw std::runtime_error("mpi buffer overwrite!");
-      for (int i=0;i<numWorkers;i++)
-        if (numDevicesOnWorker[i] != devices->size())
-          throw std::runtime_error
-            ("worker rank "+std::to_string(i)+
-             " has different number of data groups ("+
-             std::to_string(numDevicesOnWorker[i])+
-             " than worker rank "+std::to_string(workers.rank)+
-             " ("+std::to_string(devices->size())+")");
-      int numDevicesTotal = numDevicesOnWorker[0] * workers.size;
-
-      // ------------------------------------------------------------------
-      // gather who has which data(groups)
-      // ------------------------------------------------------------------
-      std::vector<int> allModelSlots(workers.size*numSlotsPerWorker+1);
-      allModelSlots[workers.size*numSlotsPerWorker] = 0x8628;
-      workers.allGather(allModelSlots.data(),
-                        dataGroupIDs.data(),
-                        dataGroupIDs.size());
-      if (allModelSlots[workers.size*numSlotsPerWorker] != 0x8628)
-        throw std::runtime_error("mpi buffer overwrite!");
-      allModelSlots.resize(workers.size*numSlotsPerWorker);
-
-      // ------------------------------------------------------------------
-      // sanity check: data groups are numbered 0,1,2 .... and each
-      // data group appears same number of times.
-      // ------------------------------------------------------------------
-      std::map<int,int> dataGroupCount;
-      int maxModelSlotID = -1;
-      for (int i=0;i<allModelSlots.size();i++) {
-        int dgID_i = allModelSlots[i];
-        if (dgID_i < 0)
-          throw std::runtime_error
-            ("invalid data group ID ("+std::to_string(dgID_i)+")");
-        maxModelSlotID = std::max(maxModelSlotID,dgID_i);
-        dataGroupCount[dgID_i]++;
-      }
-      // numDifferentModelSlots = dataGroupCount.size();
-      // if (maxModelSlotID >= numDifferentModelSlots)
-      //   throw std::runtime_error("data group IDs not numbered sequentially");
-
-      int numIslands = dataGroupCount[0];
-      for (auto dgc : dataGroupCount)
-        if (dgc.second != numIslands)
-          throw std::runtime_error
-            ("some data groups used more often than others!?");
-
-      // ------------------------------------------------------------------
-      // for each local device, find which othe rdevice has 'next'
-      // data group to cycle with. we already sanity checked that
-      // there's symmetry in num devices, num data groups, etc.
-      // ------------------------------------------------------------------
-      std::vector<int> myDataOnLocal(devices->numLogical);
-      for (auto slot : perSlot) 
-        for (auto device : *slot.devices)
-          myDataOnLocal[device->contextRank()] = slot.modelRankInThisSlot;
-      if (dbg) {
-        std::stringstream ss;
-        ss << "bn." << workers.rank << ": ";
-        ss << "*my* data ranks locally (myDataOnLocal): ";
-        for (auto d : myDataOnLocal) ss << d << " ";
-        std::cout << ss.str() << std::endl;
-      }
-      int numDevicesGlobally = numDevicesPerWorker*workers.size;
-      std::vector<int> dataOnGlobal(numDevicesGlobally+1);
-      dataOnGlobal[numDevicesGlobally] = 0x3723;
-      workers.allGather(dataOnGlobal.data(),
-                        myDataOnLocal.data(),
-                        myDataOnLocal.size());
-      if (dataOnGlobal[numDevicesGlobally] != 0x3723)
-        throw std::runtime_error("mpi gather overrun");
-      dataOnGlobal.resize(numDevicesGlobally);
-      if (dbg) {
-        std::stringstream ss;
-        ss << "bn." << workers.rank << ": ";
-        ss << "*all* data ranks globally  (dataOnGlobal): ";
-        for (auto d : dataOnGlobal) ss << d << " ";
-        std::cout << ss.str() << std::endl;
-      }
-
-#if 0
-      dataGroupCount.clear();
-      std::vector<int> islandOfGlobal(numDevicesGlobally);
-      for (int i=0;i<numDevicesGlobally;i++) {
-        islandOfGlobal[i]
-          = dataGroupCount[dataOnGlobal[i]]++;
-      }
-      if (dbg) {
-        std::stringstream ss;
-        ss << "bn." << workers.rank << ": ";
-        ss << "islandranks globally: ";
-        for (auto d : islandOfGlobal) ss << d << " ";
-        std::cout << ss.str() << std::endl;
-      }
-      for (auto &slot : perSlot) {
-        for (auto device : *devices) {
-          int localID  = device->contextRank();
-          int myGlobal = device->globalRank();
-          int myDG     = slot.modelRankInThisSlot;
-          int myIsland = islandOfGlobal[myGlobal];
-          int nextDG   = (myDG+1) % numDifferentModelSlots;
-          int prevDG   = (myDG+numDifferentModelSlots-1) % numDifferentModelSlots;
-          std::stringstream ss;
-          ss << "#bn " << myRank() << "." << localID << " (=" << myGlobal
-             << ") looking for DG link "
-             << prevDG << "->" << myDG << "->" << nextDG
-             << " (for island " << myIsland << ")" << std::endl;
-          for (int peerGlobal=0;peerGlobal<numDevicesGlobally;peerGlobal++) {
-            ss << " peer " << peerGlobal << " has island " << islandOfGlobal[peerGlobal] << " dg " << dataOnGlobal[peerGlobal] << std::endl;
-            if (islandOfGlobal[peerGlobal] != myIsland)
-              continue;
-            if (dataOnGlobal[peerGlobal] == nextDG) {
-              // *found* the global next
-              device->rqs.recvWorkerRank  = peerGlobal / numDevicesPerWorker;
-              device->rqs.recvWorkerLocal = peerGlobal % numDevicesPerWorker;
-              ss << " FOUND next " << device->rqs.recvWorkerRank << "." << device->rqs.recvWorkerLocal << std::endl;
-            }
-            if (dataOnGlobal[peerGlobal] == prevDG) {
-              // *found* the global prev
-              device->rqs.sendWorkerRank  = peerGlobal / numDevicesPerWorker;
-              device->rqs.sendWorkerLocal = peerGlobal % numDevicesPerWorker;
-              ss << " FOUND prev " << device->rqs.sendWorkerRank << "." << device->rqs.sendWorkerLocal << std::endl;
-            }
-          }
-          if (dbg)
-            std::cout << ss.str();
-            std::cout << "local device " << localID << " recvs from device " << device->rqs.recvWorkerRank << "." << device->rqs.recvWorkerLocal << ", and sends to " <<
-              device->rqs.sendWorkerRank << "." << device->rqs.recvWorkerLocal << std::endl;
-        }
-      }
-#endif
-    }
-    barrier(false);
-#endif
-
     if (FromEnv::enabled("all2all")) {
       std::cout << "ENABLING ALL2ALL!" << std::endl;
       globalTraceImpl = new MPIAll2all(this);
