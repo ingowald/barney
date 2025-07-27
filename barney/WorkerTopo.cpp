@@ -30,6 +30,10 @@ namespace BARNEY_NS {
       myCount(myCount),
       _worldRank(devices[myOffset].worldRank)
   {
+    for (int gid=0;gid<(int)allDevices.size();gid++) {
+      WorkerTopo::Device &dev = allDevices[gid];
+      dev.gid = gid;
+    }
     numWorkerDevices = 0;
     std::map<int,int> useCountOfDG;
     std::map<size_t,int> nextPhysialGPUInHostHash;
@@ -83,15 +87,18 @@ namespace BARNEY_NS {
     assert(gid >= 0 && gid < allDevices.size());
     std::stringstream ss;
     const auto &dev = allDevices[gid];
-    ss << tag << "topo: dev " << gid << ":";
-    ss << " worker=" << dev.worker;
-    ss << " worldRank=" << dev.worldRank;
-    ss << " local=" << dev.local;
-    ss << " dataRank=" << dev.dataRank;
-    ss << " island=" << islandOf[gid];
-    ss << " islandRank=" << islandRankOf[gid];
-    ss << " physicalHost=" << physicalHostIndexOf[gid];
-    ss << " physicalDevice=" << physicalDeviceIndexOf[gid];
+    ss << tag << "gid=" << gid << "("
+       << dev.worldRank
+       << "."
+       << dev.local
+       << "):";
+    // ss << " worker=" << dev.worker;
+    // ss << " worldRank=" << dev.worldRank;
+    // ss << " local=" << dev.local;
+    ss << " dataColor=" << dev.dataRank;
+    ss << " island=" << islandOf[gid] << "(rank " << islandRankOf[gid] << ")";
+    ss << " logical=" << physicalHostIndexOf[gid] << ":" << physicalDeviceIndexOf[gid];
+    ss << " phys=" << (int*)dev.hostNameHash << ":" << (int*)dev.physicalDeviceHash;
     return ss.str();
   }
   

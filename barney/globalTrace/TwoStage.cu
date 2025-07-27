@@ -10,24 +10,29 @@
 namespace BARNEY_NS {
 
   __rtc_global
-  void reduceReceivedHits_intraNode(const rtc::ComputeInterface &ci,
-                                    HitOnly *hitOnlyOut,
-                                    HitOnly *hitOnlyIn,
+  void buildHitsOnly(const rtc::ComputeInterface &ci,
+                     HitOnly *hitOnly,
+                     Ray *rayQueue,
+                     int N);
+  
+  __rtc_global
+  void reduceReceivedHitsKernel_intraNode(const rtc::ComputeInterface &ci,
+                                    HitOnly *hitOnly,
                                     int nRays,
                                     int reduceFactor)
   {
     int tid = ci.launchIndex().x;
     if (tid >= nRays) return;
 
-    HitOnly reduced = hitOnlyIn[tid];
+    HitOnly reduced = hitOnly[tid];
     for (int peer=1;peer<reduceFactor;peer++) {
-      HitOnly *hit = hitOnlyAllIn+peer*nRays+tid;
+      HitOnly *hit = hitOnly+peer*nRays+tid;
       
-      if (hit->tHit >= ray.tMax) continue;
+      if (hit->tHit >= reduced.tHit) continue;
       
       reduced = *hit;
     }
-    hitOnlyOut[tid] = reduced;
+    hitOnly[tid] = reduced;
   }
   
   __rtc_global
@@ -71,22 +76,20 @@ namespace BARNEY_NS {
     : GlobalTraceImpl(context),
       context(context),
       world(context->world),
+      topo(context->topo.get())
   {
     if (context->devices->size() != 1)
       throw std::runtime_error
         ("twostage all2all currently only works for one device per rank");
     this->device = context->devices->get(0);
     
-    topo = context->topo;
     if (topo->islands.size() != 1)
       throw std::runtime_error
         ("twostage all2all currently only works for a single island");
       
     myGID = device->globalRank();
-    myDev = &topo->allDevices[myGID];
-    myHost = topo->physicalHostIndexOf[myGID];
     numGlobal = topo->allDevices.size();
-    rayCountOf.resize(numGlobal);
+    rayCounts.resize(numGlobal);
 
     // sanity check that all physical nodes have same number of GPUs
     std::map<size_t,int> gpuCountInHost;
@@ -114,26 +117,26 @@ namespace BARNEY_NS {
   {
     auto rtc = device->rtc;
     size_t ourRequiredQueueSize
-      = device->rayQueue->size * numGlobal
-      if (ourRequiredQueueSize > currentReservedSize) {
-        std::cout << "resizing ray queues from " << currentReservedSize
-        << " to " << ourRequiredQueueSize << std::endl;
-        for (int i=0;i<2;i++)
-          if (raysOnly[i]) rtc->freeMem(raysOnly[i]);
-        for (int i=0;i<2;i++)
-          if (hitsOnly[i]) rtc->freeMem(hitsOnly[i]);
+      = device->rayQueue->size * numGlobal;
+    if (ourRequiredQueueSize > currentReservedSize) {
+      std::cout << "resizing ray queues from " << currentReservedSize
+                << " to " << ourRequiredQueueSize << std::endl;
+      for (int i=0;i<2;i++)
+        if (raysOnly[i]) rtc->freeMem(raysOnly[i]);
+      for (int i=0;i<2;i++)
+        if (hitsOnly[i]) rtc->freeMem(hitsOnly[i]);
       
-        if (stagedRayQueue) rtc->freeMem(stagedRayQueue);
+      if (stagedRayQueue) rtc->freeMem(stagedRayQueue);
       
-        size_t N = ourRequiredQueueSize;
-        for (int i=0;i<2;i++)
-          raysOnly[i] = (RayOnly*)rtc->allocMem(N*sizeof(RayOnly));
-        for (int i=0;i<2;i++)
-          hitsOnly[i] = (HitOnly*)rtc->allocMem(N*sizeof(HitOnly));
-        stagedRayQueue = (Ray *)rtc->allocMem(N*sizeof(Ray));
+      size_t N = ourRequiredQueueSize;
+      for (int i=0;i<2;i++)
+        raysOnly[i] = (RayOnly*)rtc->allocMem(N*sizeof(RayOnly));
+      for (int i=0;i<2;i++)
+        hitsOnly[i] = (HitOnly*)rtc->allocMem(N*sizeof(HitOnly));
+      stagedRayQueue = (Ray *)rtc->allocMem(N*sizeof(Ray));
       
-        currentReservedSize = N;
-      }
+      currentReservedSize = N;
+    }
   }
 
   // step 1: have all ranks exchange which (global) device has how
@@ -143,11 +146,11 @@ namespace BARNEY_NS {
     auto &world = context->world;
 
     int myRayCount = device->rayQueue->numActive;
-    BN_MPI_CALL(All2all(/* sendbuf */&myRayCount,
-                        /* OUR count */1,MPI_INT,
-                        /*recvbuf*/rayCounts.data(),
-                        1,MPI_INT,
-                        world.comm));
+    BN_MPI_CALL(Alltoall(/* sendbuf */&myRayCount,
+                         /* OUR count */1,MPI_INT,
+                         /*recvbuf*/rayCounts.data(),
+                         1,MPI_INT,
+                         world.comm));
   }
   
   
@@ -215,7 +218,7 @@ namespace BARNEY_NS {
       int raysOnPeer = 0;
       for (int h=0;h<numHosts;h++)
         raysOnPeer += rayCounts[h*gpusPerHost+g];
-      world.recv(hostIdx*gpusPerHost+g,
+      world.recv(hostIdx*gpusPerHost+g,0,
                  raysOnly[0]+recvOfs,raysOnPeer,
                  req);
       recvOfs += raysOnPeer;
@@ -256,8 +259,6 @@ namespace BARNEY_NS {
     reduceHits_intraNode();
     exchangeHits_crossNodes();
     reduceHits_crossNodes();
-    
-    mergeReceivedHitsWithOriginalRays();    
   }
 
 
@@ -277,17 +278,17 @@ namespace BARNEY_NS {
     
     device->rtc->sync();
     
-    savedOriginalRayCount = device->rayQueue->numActive;
-    savedOriginalRayQueue = device->rayQueue->traceAndShadeReadQueue.rays;
-    auto device->rayQueue->traceAndShadeReadQueue.rays = stagedRayQueue;
-    auto device->rayQueue->numActive = numRaysWeHaveTotal;
+    auto savedOriginalRayCount = device->rayQueue->numActive;
+    auto savedOriginalRayQueue = device->rayQueue->traceAndShadeReadQueue.rays;
+    device->rayQueue->traceAndShadeReadQueue.rays = stagedRayQueue;
+    device->rayQueue->numActive = numRaysWeHaveTotal;
 
     context->traceRaysLocally(model,rngSeed,needHitIDs);
 
     device->rtc->sync();
     __rtc_launch(device->rtc,
                  buildHitsOnly,
-                 divRoundUp(numRemoteRaysReceived,1024),1024,
+                 divRoundUp(numRaysWeHaveTotal,1024),1024,
                  // args
                  hitsOnly[0],
                  stagedRayQueue,
@@ -306,8 +307,8 @@ namespace BARNEY_NS {
       MPI_Request req;
       int recvCount = 0;
       for (int h=0;h<numHosts;h++)
-        recvCount += rayCount[h*gpusPerHost+g];
-      world.recv(peerDev.worldRank,0,
+        recvCount += rayCounts[h*gpusPerHost+g];
+      world.recv(hostIdx*gpusPerHost+g,0,
                  hitsOnly[1]+recvOfs,recvCount,req);
       requests.push_back(req);
       recvOfs += recvCount;
@@ -319,8 +320,8 @@ namespace BARNEY_NS {
       MPI_Request req;
       int sendCount = 0;
       for (int h=0;h<numHosts;h++)
-        sendCount += rayCount[h*gpusPerHost+g];
-      world.send(peerDev.worldRank,0,
+        sendCount += rayCounts[h*gpusPerHost+g];
+      world.send(hostIdx*gpusPerHost+g,0,
                  hitsOnly[0]+sendOfs,sendCount,req);
       requests.push_back(req);
       sendOfs += sendCount;
@@ -332,17 +333,17 @@ namespace BARNEY_NS {
 
   void TwoStage::reduceHits_intraNode()
   {
+    SetActiveGPU forDuration(device);
     int g = gpuIdx;
     int numUniqueRaysThisGPU = 0;
     for (int h=0;h<numHosts;h++)
-      numUniqueRaysThisGPU += rayCount[h*gpusPerHost+g];
+      numUniqueRaysThisGPU += rayCounts[h*gpusPerHost+g];
 
     __rtc_launch(device->rtc,
                  reduceReceivedHitsKernel_intraNode,
                  divRoundUp(numUniqueRaysThisGPU,128),128,
                  // args
-                 savedOriginalRayQueue,
-                 recv.hitsOnly[1],
+                 hitsOnly[1],
                  numUniqueRaysThisGPU,
                  gpusPerHost);
   }
@@ -351,7 +352,7 @@ namespace BARNEY_NS {
   {
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
-    int recvCount = numRays[hostIdx*gpusPerHost+gpuIdx];
+    int recvCount = rayCounts[hostIdx*gpusPerHost+gpuIdx];
     for (int h=0;h<numHosts;h++) {
       MPI_Request req;
       world.recv(h*gpusPerHost+gpuIdx,0,
@@ -377,8 +378,8 @@ namespace BARNEY_NS {
   
   void TwoStage::reduceHits_crossNodes()
   {
-    int g = gpuIdx;
-    int numUniqueRaysThisGPU = rayCount[hostIdx*gpusPerHost+gpuIdx];
+    SetActiveGPU forDuration(device);
+    int numUniqueRaysThisGPU = rayCounts[hostIdx*gpusPerHost+gpuIdx];
     __rtc_launch(device->rtc,
                  reduceReceivedHitsKernel_crossNodes,
                  divRoundUp(numUniqueRaysThisGPU,128),128,

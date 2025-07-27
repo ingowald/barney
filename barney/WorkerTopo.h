@@ -23,6 +23,12 @@ namespace BARNEY_NS {
   struct WorkerTopo {
     typedef std::shared_ptr<WorkerTopo> SP;
     struct Device {
+      /*! the global linear ID of this device; this is the same as its
+          index in the 'allDevices[]' vector. it'll be filled in by
+          WorkerTopo constructor, so does not have to be set in the
+          vector used to construct that WorkerTopo */
+      int gid;
+      
       /* the worker rank that this device lives on - '0' if local
          rendering, and mpi rank in 'workers' mpi goup if mpi */
       int worker;

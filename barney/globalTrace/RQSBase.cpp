@@ -26,10 +26,28 @@ namespace BARNEY_NS {
         [(myIslandRank+1) % islandSize];
       int myPrev = topo->islands[myIsland]
         [(myIslandRank+islandSize-1) % islandSize];
-      
+
+      pld.myDev       = &topo->allDevices[myDev];
       pld.sendPartner = &topo->allDevices[myNext];
       pld.recvPartner = &topo->allDevices[myPrev];
     }
+    
+    if (FromEnv::get()->logTopo) {
+      std::stringstream ss;
+      for (int localIdx=0;localIdx<context->devices->size();localIdx++) {
+        auto device = context->devices->get(localIdx);
+        auto pld = getPLD(device);
+        int gid = pld->myDev->gid;
+        ss << "#bn.rqs(" << context->myRank() << "." << localIdx << "):"
+           << " island " << topo->islandOf[gid]
+           << "\n device { " << topo->toString(gid) << "}"
+           << "\n sendsTo { " << topo->toString(pld->sendPartner->gid) << " }" 
+           << "\n recvsFrom { " << topo->toString(pld->recvPartner->gid) << " }" 
+           << std::endl;
+      }
+      std::cout << ss.str();
+    }
+    
   }
 
 

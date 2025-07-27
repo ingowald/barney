@@ -14,6 +14,7 @@ namespace BARNEY_NS {
   struct RQSBase : public GlobalTraceImpl
   {
     struct PLD {
+      const WorkerTopo::Device *myDev;
       const WorkerTopo::Device *sendPartner;
       const WorkerTopo::Device *recvPartner;
     };

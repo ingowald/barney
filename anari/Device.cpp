@@ -335,7 +335,7 @@ void BarneyDevice::initDevice()
 #endif
     std::vector<int> gpuIDs;
     int *_gpuIDs = nullptr;
-    int _gpuCount = -1;
+    int _gpuCount = /* will be -1 by default*/m_gpuCount;
     if (state->tether->devices[0]->m_cudaDevice >= 0) {
       for (auto dev : state->tether->devices) {
         assert(dev->m_cudaDevice >= 0);
@@ -344,7 +344,7 @@ void BarneyDevice::initDevice()
       _gpuIDs = gpuIDs.data();
       _gpuCount = (int)gpuIDs.size();
     } else {
-      // leave empty, init with barney gpu list with {nullptr,-1}
+      // leave _gpuIDs to nullptr -> allow barney to select which ones to use
     }
 
     std::vector<int> dgIDs;
@@ -401,6 +401,12 @@ void BarneyDevice::deviceCommitParameters()
     state->hasBeenCommitted = true;
   }
   m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
+  /* max gpus to use. this only makes sense for barney (and even then,
+     the better solutoin would be for the app to provide proper list
+     of devices! '-1' means 'no limit, use whatever you find; but even
+     that only applies if 'cudaDevice' < 0. If 'cudaDevice' is >= 0,
+     the gpus indicated in there will be used. */
+  m_gpuCount = getParam<int>("maxGpuCount", m_gpuCount);
   m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
 #if BARNEY_MPI
   static_assert(sizeof(void*) == sizeof(MPI_Comm),

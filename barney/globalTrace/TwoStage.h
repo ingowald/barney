@@ -37,7 +37,6 @@ namespace BARNEY_NS {
       int numRaysReceived;
     } intraNodes, bothStages;
     WorkerTopo *topo;
-    WorkerTopo::Device *myDev;
     const Device *device;
     MPIContext *const context;
     std::vector<int> rayCounts;
@@ -47,7 +46,7 @@ namespace BARNEY_NS {
     
     void ensureAllOurQueuesAreLargeEnough();
     void exchangeHowManyRaysEachDeviceHas();    
-    void sendAndReceiveRays_interNodes();
+    void sendAndReceiveRays_crossNodes();
     void sendAndReceiveRays_intraNode();
     void exchangeHits_crossNodes();
     void exchangeHits_intraNode();
