@@ -71,7 +71,8 @@ namespace barney_device {
     getParam("color", ANARI_FLOAT32_VEC4, &m_uniformColor);
     m_opacityData = getParamObject<helium::Array1D>("opacity");
     m_uniformOpacity = getParam<float>("opacity", 1.f) * m_uniformColor.w;
-    m_densityScale = getParam<float>("unitDistance", 1.f);
+    m_densityScale = // 8.f*
+      getParam<float>("unitDistance", 1.f);
   }
 
   void TransferFunction1D::finalize()
