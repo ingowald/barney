@@ -130,7 +130,7 @@ namespace BARNEY_NS {
         for (int h=0;h<numHosts;h++)
           for (int g=0;g<gpusPerHost;g++) {
             std::cout << "- gpu on rank " << (rankOf(h,g))
-                      << " is logical " << h << ":" << g << " {"
+                      << " is logical h" << h << "g" << g << " {"
                       << topo->toString(rankOf(h,g)) << "}" << std::endl;
           }
       }
