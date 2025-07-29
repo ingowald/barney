@@ -107,7 +107,13 @@ namespace BARNEY_NS {
 
 #if 1
     this->hostIdx = topo->physicalHostIndexOf[myGID];
+# if 1
+    // allows oversubscription - we enumerate based on (host:process)
+    // instead of (host.physialGPU)
+    this->gpuIdx = topo->rankOnHost[myGID];
+# else
     this->gpuIdx = topo->physicalGpuIndexOf[myGID];
+# endif
     _rankOf.resize(numGlobal);
 
     std::vector<int> gidOfRank(numGlobal);
@@ -117,8 +123,8 @@ namespace BARNEY_NS {
 #else
     this->hostIdx = myGID / gpusPerHost;
     this->gpuIdx = myGID % gpusPerHost;
-    this->numHosts = numGlobal / gpusPerHost;
 #endif
+    this->numHosts = numGlobal / gpusPerHost;
 
     if (FromEnv::get()->logTopo) {
       world.barrier();
@@ -180,20 +186,27 @@ namespace BARNEY_NS {
     //                      /*recvbuf*/rayCounts.data(),
     //                      1,MPI_INT,
     //                      world.comm));
+    // PING; world.barrier(); PING;
     world.allGather(rayCounts.data(),&myRayCount,1);
 
     
     if (FromEnv::get()->logQueues)  {
-      for (int i=0;i<numGlobal;i++) {
-        world.barrier();
-        if (myGID == i) {
-          std::cout << "ray counts (" << rayCounts.size() << "):";
-          for (auto rc : rayCounts) std::cout << " " << rc;
-          std::cout << std::endl;
-        }
-        world.barrier();
+      if (myGID == 0) {
+        std::cout << "ray counts (" << rayCounts.size() << "):";
+        for (auto rc : rayCounts) std::cout << " " << rc;
+        std::cout << std::endl;
       }
+      // for (int i=0;i<numGlobal;i++) {
+      //   world.barrier();
+      //   if (myGID == i) {
+      //     std::cout << "ray counts (" << rayCounts.size() << "):";
+      //     for (auto rc : rayCounts) std::cout << " " << rc;
+      //     std::cout << std::endl;
+      //   }
+      //   world.barrier();
+      // }
     }
+    // PING; world.barrier(); PING;
   }
   
   
@@ -203,7 +216,7 @@ namespace BARNEY_NS {
   */
   void TwoStage::sendAndReceiveRays_crossNodes()
   {
-    auto &world = context->world;
+    // PING; world.barrier(); PING;
     
     // -----------------------------------------------------------------------------
     // first, create 'raysOnly[]' array, for each local device
@@ -256,6 +269,7 @@ namespace BARNEY_NS {
     
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
+    // PING; world.barrier(); PING;
   }
   
 
@@ -265,8 +279,7 @@ namespace BARNEY_NS {
   */
   void TwoStage::sendAndReceiveRays_intraNode()
   {
-    auto &world = context->world;
-    // world.barrier();
+    // PING; world.barrier(); PING;
 
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
@@ -290,6 +303,7 @@ namespace BARNEY_NS {
              myGID,bothStages.numRaysReceived);
 
     // world.barrier();
+    // PING; world.barrier(); PING;
     
     int numRaysWeHave = 0;
     for (int h=0;h<numHosts;h++)
@@ -306,9 +320,11 @@ namespace BARNEY_NS {
     }
 
     // world.barrier();
+    // PING; world.barrier(); PING;
     
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
+    // PING; world.barrier(); PING;
   }
 
   
@@ -349,6 +365,8 @@ namespace BARNEY_NS {
                                       uint32_t rngSeed,
                                       bool needHitIDs)
   {
+    // PING; world.barrier(); PING;
+    
     SetActiveGPU forDuration(device);
     int numRaysWeHaveTotal = bothStages.numRaysReceived;
     if (FromEnv::get()->logQueues) 
@@ -390,6 +408,9 @@ namespace BARNEY_NS {
     
     device->rayQueue->numActive = savedOriginalRayCount;
     device->rayQueue->traceAndShadeReadQueue.rays = savedOriginalRayQueue;
+
+    // PING; world.barrier(); PING;
+    
   }
   
   void TwoStage::exchangeHits_intraNode()

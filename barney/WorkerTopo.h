@@ -90,6 +90,9 @@ namespace BARNEY_NS {
       setting CUDA_VISIBLE_DEVICES */
     std::vector<int> physicalGpuIndexOf;
 
+    /*! the how-many'eth rank on the given physical host this is */
+    std::vector<int> rankOnHost;
+
     /*! gives, for each logical device, the how many'eth device in its
       island it is */
     std::vector<int> islandRankOf;
