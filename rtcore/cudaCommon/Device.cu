@@ -184,7 +184,7 @@ namespace rtc {
     {
       cudaDeviceProp props;
       cudaError_t rc = cudaGetDeviceProperties(&props, gpuID);
-      if (rc != CUDA_SUCCESS)
+      if (rc != cudaSuccess)
         throw std::runtime_error("could not query cuda Device properties");
       return ((props.pciDomainID * 256 + props.pciBusID) * 256) + props.pciDeviceID;
     }

@@ -40,7 +40,7 @@ namespace BARNEY_NS {
     const Device *device;
     MPIContext *const context;
     std::vector<int> rayCounts;
-    
+
     TwoStage(MPIContext *context);
     void traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs) override;
     
@@ -54,6 +54,9 @@ namespace BARNEY_NS {
     void reduceHits_intraNode();
     void reduceHits_crossNodes();
 
+    int rankOf(int hostIdx, int gpuIdx)
+    { return _rankOf[hostIdx*gpusPerHost+gpuIdx]; }
+    std::vector<int> _rankOf;
 
     // step 3: trace all rays on each device
     void traceAllReceivedRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
