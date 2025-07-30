@@ -52,7 +52,6 @@ namespace BARNEY_NS {
       int      numDiffuseBounces;
     };
 
-#if SINGLE_CYCLE_RQS
     struct RayOnly {
       vec3f    org;
       vec3f    dir;
@@ -77,7 +76,6 @@ namespace BARNEY_NS {
       uint16_t bsdfType   : 4;
       PackedBSDF::Data hitBSDF;
     };
-#endif
     
     struct Ray {
 #if RTC_DEVICE_CODE

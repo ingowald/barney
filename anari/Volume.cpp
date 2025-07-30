@@ -72,6 +72,7 @@ namespace barney_device {
     m_opacityData = getParamObject<helium::Array1D>("opacity");
     m_uniformOpacity = getParam<float>("opacity", 1.f) * m_uniformColor.w;
     m_densityScale = // 8.f*
+      40.f*
       getParam<float>("unitDistance", 1.f);
   }
 

@@ -19,11 +19,17 @@
 #include "barney/api/Context.h"
 #include "barney/Object.h"
 #include <set>
+#include "barney/WorkerTopo.h"
 
 namespace BARNEY_NS {
   using namespace owl::common;
   using barney_api::FromEnv;
+  using barney_api::LocalSlot;
   
+  enum { tileSize = 32 };
+  enum { pixelsPerTile = tileSize*tileSize };
+  enum { rayQueueSize = 4*1024*1024 };
+
   struct FrameBuffer;
   struct GlobalModel;
   struct Camera;
@@ -48,14 +54,33 @@ namespace BARNEY_NS {
     std::shared_ptr<render::SamplerRegistry>  samplerRegistry = 0;
     std::shared_ptr<render::MaterialRegistry> materialRegistry = 0;
   };
-  
+
+  struct GlobalTraceImpl;
+
+  // struct LogicalDevice {
+  //   /* the worker rank that this device lives on - '0' if local
+  //      rendering, and mpi rank in 'workers' mpi goup if mpi */
+  //   int worker;
+  //   /*! the local device index for the worker that this device is
+  //     on */
+  //   int local;
+  //   /*! the data rank that this gpu holds */
+  //   int dataRank;
+  // };
+
   struct Context : public barney_api::Context
   {
-    Context(const std::vector<int> &dataGroupIDs,
-            const std::vector<int> &gpuIDs,
-            int globalIndex,
-            int globalIndexStep);
+    Context(const std::vector<LocalSlot> &localSlots,
+            WorkerTopo::SP topo);
+    // Context(const std::vector<int> &dataGroupIDs,
+    //         const std::vector<int> &gpuIDs,
+    //         int globalIndex,
+    //         int globalIndexStep);
     virtual ~Context();
+
+    //    std::vector<LogicalDevice> logicalDevices;
+    WorkerTopo::SP const topo;
+    // int numDifferentModelSlots = -1;
     
     /*! create a frame buffer object suitable to this context */
     // virtual FrameBuffer *createFB(int owningRank) = 0;
@@ -141,19 +166,6 @@ namespace BARNEY_NS {
       found its intersection */
     void traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
 
-    /*! forward rays (during global trace); returns if _after_ that
-      forward the rays need more tracing (true) or whether they're
-      done (false) */
-    virtual bool forwardRays(bool needHitIDs) = 0;
-
-    /*! returns how many rays are active in all ray queues, across all
-      devices and, where applicable, across all ranks */
-    int numRaysActiveLocally();
-
-    /*! returns how many rays are active in all ray queues, across all
-      devices and, where applicable, across all ranks */
-    virtual int numRaysActiveGlobally() = 0;
-
     void shadeRaysLocally(Renderer *renderer,
                           GlobalModel *model,
                           FrameBuffer *fb,
@@ -185,6 +197,21 @@ namespace BARNEY_NS {
       else 
         return getSlot(slot)->devices;
     }
+
+    /*! returns how many rays are active in all ray queues, across all
+      devices and, where applicable, across all ranks. We use this to
+      compute how many rays are active globally, which in turn we need
+      to determine if at least one gpu on any rank still has some
+      active rays that need to bounced (even if we locally do not) */
+    int numRaysActiveLocally();
+    
+    /*! returns how many rays are active in all ray queues, across all
+      devices and, where applicable, across all ranks. We use this to
+      decide whether we can terminate a frame, or need more bounces - we
+      may actually need to enter another bounce even if *we* do not have
+      any rays */
+    virtual int numRaysActiveGlobally() = 0;
+    
     
     int contextSize() const;
 
@@ -205,10 +232,25 @@ namespace BARNEY_NS {
         gpu can just write; if not, we'll have to first create staging
         copies on that device */
     Device *deviceWeNeedToCopyToForFBMap = nullptr;
-    int const globalIndex;
+    // int const globalIndex;
+    GlobalTraceImpl *globalTraceImpl = 0;
   };
-  
 
+  struct GlobalTraceImpl {
+    GlobalTraceImpl(Context *context)
+      : context(context)
+    {}
+    
+    virtual void traceRays(GlobalModel *model,
+                           uint32_t rngSeed,
+                           bool needHitIDs) = 0;
+    // virtual int maxRaysWeCanHandle() = 0;
+    
+    Context *const context;
+  };
+
+  
+  
   // ==================================================================
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
@@ -222,6 +264,7 @@ namespace BARNEY_NS {
     for (auto device : *devices)
       device->sync();
   }
-    
+
+
 }
 

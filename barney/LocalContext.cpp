@@ -16,6 +16,7 @@
 
 #include "barney/LocalContext.h"
 #include "barney/fb/LocalFB.h"
+#include "barney/globalTrace/RQSLocal.h"
 #include "barney/render/RayQueue.h"
 
 #if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
@@ -37,22 +38,54 @@ namespace barney_api {
 #if BARNEY_RTC_OPTIX
   extern "C" {
     Context *createContext_optix(const std::vector<int> &dgIDs,
-                                 int numGPUs, const int *_gpuIDs)
+                                 int numGPUs, const int *gpuIDs)
     {
       if (FromEnv::get()->logBackend)
         std::cout << "#bn: creating *optix* context" << std::endl;
-      std::vector<int> gpuIDs;
+      // std::vector<int> gpuIDs;
+      int numDGs = dgIDs.size();
       if (numGPUs == -1) {
         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
-        int n = std::max(1,numGPUs/int(dgIDs.size()));
-        for (int i=0;i<n*dgIDs.size();i++)
-          gpuIDs.push_back(i%numGPUs);
-        numGPUs = n*dgIDs.size();
+        // int n = std::max(1,numGPUs/int(dgIDs.size()));
+        // for (int i=0;i<n*dgIDs.size();i++)
+        //   gpuIDs.push_back(i%numGPUs);
+        // numGPUs = n*numGDdgIDs.size();
       }
-      else
-        for (int i=0;i<numGPUs;i++)
-          gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:(i%numGPUs));
-      Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+      // else
+      //   for (int i=0;i<numGPUs;i++)
+      //     gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:(i%numGPUs));
+
+#define ALLOW_OVERSUBSCRIBE 1
+#if ALLOW_OVERSUBSCRIBE
+      std::vector<int> fakeIDs;
+      if (numGPUs < numDGs) {
+        for (int i=0;i<numDGs;i++)  {
+          int ID
+            = gpuIDs
+            ? gpuIDs[i%numGPUs]
+            : (i%numGPUs)
+            ;
+          fakeIDs.push_back(ID);
+        }
+        gpuIDs = (const int *)fakeIDs.data();
+        numGPUs = numDGs;
+      }
+#endif
+
+      if (numGPUs < numDGs)
+        throw std::runtime_error
+          ("not enough CUDA GPUs for requested number of data groups!");
+      int gpusPerDG = numGPUs / numDGs;
+      std::vector<LocalSlot> localSlots(dgIDs.size());
+      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+        LocalSlot &slot = localSlots[lsIdx];
+        slot.dataRank = dgIDs[lsIdx];
+        for (int j=0;j<gpusPerDG;j++) {
+          int idx = lsIdx*gpusPerDG+j;
+          slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
+        }
+      }
+      Context *ctx = new BARNEY_NS::LocalContext(localSlots);
       return ctx;
     }
   } 
@@ -77,11 +110,41 @@ namespace barney_api {
 }
 
 namespace BARNEY_NS {
-
-  LocalContext::LocalContext(const std::vector<int> &dataGroupIDs,
-                             const std::vector<int> &gpuIDs)
-    : Context(dataGroupIDs,gpuIDs,0,1)
+  size_t getHostNameHash()
   {
+    char hostName[256];
+    gethostname(hostName,256);
+    size_t hash = 0;
+    size_t FNV_PRIME = 0x00000100000001b3ull;
+    for (int i=0;hostName[i];i++)
+      hash = hash * FNV_PRIME ^ hostName[i];
+    return hash;
+  }
+  
+  WorkerTopo::SP
+  LocalContext::makeTopo(const std::vector<LocalSlot> &localSlots)
+  {
+    std::vector<WorkerTopo::Device> devices;
+    for (auto ls : localSlots) {
+      for (auto gpuID : ls.gpuIDs) {
+        WorkerTopo::Device dev;
+        dev.local = devices.size();
+        dev.worker = 0;
+        dev.worldRank = 0;
+        dev.dataRank = ls.dataRank;
+        dev.hostNameHash = getHostNameHash();
+        dev.physicalDeviceHash = rtc::getPhysicalDeviceHash(gpuID);
+        devices.push_back(dev);
+      }
+    }
+    return std::make_shared<WorkerTopo>(devices,0,devices.size());
+  }
+
+  LocalContext::LocalContext(const std::vector<LocalSlot> &localSlots)
+    : Context(localSlots,
+              makeTopo(localSlots))
+  {
+#if 0
     std::map<int,int> numGPUsInIsland;
     std::map<int,int> numUsesOfDG;
 
@@ -146,6 +209,8 @@ namespace BARNEY_NS {
       // - every gpu has to have a recv peer in rqs.recvlocal
       assert(dev->rqs.recvWorkerLocal >= 0);
     }
+#endif
+    globalTraceImpl = new RQSLocal(this);
   }
 
   LocalContext::~LocalContext()
@@ -154,9 +219,8 @@ namespace BARNEY_NS {
        classes' destrcutors get called !*/
   }
 
-  std::shared_ptr<barney_api::FrameBuffer> LocalContext::createFrameBuffer(int owningRank)
+  std::shared_ptr<barney_api::FrameBuffer> LocalContext::createFrameBuffer()
   {
-    assert(owningRank == 0);
     return std::make_shared<LocalFB>(this,devices);
   }
 
@@ -165,48 +229,6 @@ namespace BARNEY_NS {
   int LocalContext::numRaysActiveGlobally()
   {
     return numRaysActiveLocally();
-  }
-
-  bool LocalContext::forwardRays(bool needHitIDs)
-  {
-    const int numSlots = (int)perSlot.size();
-    if (numSlots == 1) {
-      // do NOT copy or swap. rays are in trace queue, which is also
-      // the shade read queue, so nothing to do.
-      //
-      // no more trace rounds required: return false
-      return false;
-    }
-    
-    const int numDevices = (int)devices->size();
-    // const int dgSize = numDevices / numSlots;
-    // const int dgSize = 
-    std::vector<int> numCopied(numDevices);
-    for (auto device : *devices) {
-      int devID = device->contextRank();
-      SetActiveGPU forDuration(device);
-      auto &rqs = device->rqs;
-      int nextID = rqs.recvWorkerLocal;
-      auto nextDev = (*devices)[nextID];
-
-      int count = device->rayQueue->numActive;
-      numCopied[nextID] = count;
-      auto &src = device->rayQueue->traceAndShadeReadQueue;
-      auto &dst = nextDev->rayQueue->receiveAndShadeWriteQueue;
-      device->rtc->copyAsync(dst.rays,src.rays,count*sizeof(Ray));
-      if (needHitIDs)
-        device->rtc->copyAsync(dst.hitIDs,src.hitIDs,count*sizeof(*dst.hitIDs));
-    }
-
-    for (auto device : *devices) {
-      int devID = device->contextRank();
-      device->sync();
-      device->rayQueue->swapAfterCycle(numTimesForwarded % numSlots, numSlots);
-      device->rayQueue->numActive = numCopied[devID];
-    }
-    
-    ++numTimesForwarded;
-    return (numTimesForwarded % numSlots) != 0;
   }
 
   void LocalContext::render(Renderer    *renderer,

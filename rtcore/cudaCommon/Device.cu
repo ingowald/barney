@@ -177,6 +177,19 @@ namespace rtc {
       std::cout << ss.str();
       return successful;
     }
+
+    /*! get a unique hash for a given physical device. for cuda
+        devices we do this by computing a hash from pci bus ID etc */
+    size_t getPhysicalDeviceHash(int gpuID)
+    {
+      cudaDeviceProp props;
+      cudaError_t rc = cudaGetDeviceProperties(&props, gpuID);
+      if (rc != cudaSuccess)
+        throw std::runtime_error("could not query cuda Device properties");
+      return ((props.pciDomainID * 256 + props.pciBusID) * 256) + props.pciDeviceID;
+    }
+    
   }
 }
 
+ 

@@ -150,7 +150,6 @@ target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
 )
 # ------------------------------------------------------------------
-# ------------------------------------------------------------------
 # configure which backend(s) to build
 # ------------------------------------------------------------------
 if (USE_EXP)

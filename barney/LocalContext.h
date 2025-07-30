@@ -23,36 +23,28 @@ namespace BARNEY_NS {
   /*! a barney context for "local"-node rendering - no MPI */
   struct LocalContext : public Context {
     
-    LocalContext(const std::vector<int> &dataGroupIDs,
-                 const std::vector<int> &gpuIDs);
+    LocalContext(const std::vector<LocalSlot> &localSlots);
 
     virtual ~LocalContext();
 
+    static WorkerTopo::SP makeTopo(const std::vector<LocalSlot> &localSlots);
+    
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "LocalFB{}"; }
 
+    int numRaysActiveGlobally() override;
+    
     void render(Renderer    *renderer,
                 GlobalModel *model,
                 Camera      *camera,
                 FrameBuffer *fb) override;
 
-    /*! forward rays (during global trace); returns if _after_ that
-        forward the rays need more tracing (true) or whether they're
-        done (false) */
-    bool forwardRays(bool needHitIDs) override;
-
-    /*! returns how many rays are active in all ray queues, across all
-        devices and, where applicable, across all ranks */
-    int numRaysActiveGlobally() override;
-    
     int myRank() override { return 0; }
     int mySize() override { return 1; }
 
     /*! create a frame buffer object suitable to this context */
     std::shared_ptr<barney_api::FrameBuffer>
-    createFrameBuffer(int owningRank) override;
-
-    int numTimesForwarded = 0;
+    createFrameBuffer() override;
   };
 }

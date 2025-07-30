@@ -77,6 +77,12 @@ namespace barney_api {
       const std::string value = kv.second;
       
       std::cout << "#barney.config " << key << " = '" << value << "'" << std::endl;
+
+      if (value == "on" || value == "ON" || value == "1")
+        boolValues[key] = 1;
+      else if (value == "off" || value == "OFF" || value == "0")
+        boolValues[key] = 0;
+      
       if (key == "LOG_QUEUES")
         logQueues = true;
       else if (key == "SKIP_DENOISING")
@@ -85,6 +91,8 @@ namespace barney_api {
         logConfig = true;
       else if (key == "LOG_BACKEND")
         logBackend = true;
+      else if (key == "LOG_TOPO")
+        logTopo = true;
       else
         std::cerr << "Warning: unknown/unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
     }
@@ -117,17 +125,13 @@ namespace barney_api {
 # if BARNEY_BACKEND_EMBREE
     barney_api::Context *
     createMPIContext_embree(barney_api::mpi::Comm world,
-                            barney_api::mpi::Comm workers,
-                            bool isActiveWorker,
                             const std::vector<int> &dgIDs);
 # endif
 # if BARNEY_BACKEND_OPTIX
     barney_api::Context *
     createMPIContext_optix(barney_api::mpi::Comm world,
-                           barney_api::mpi::Comm workers,
-                           bool isActiveWorker,
                            const std::vector<int> &dgIDs,
-                           const std::vector<int> &gpuIDs);
+                           int numGPUs, const int *gpuIDs);
 # endif
 #endif
   }
@@ -703,21 +707,19 @@ namespace barney_api {
       checkGet(target)->warn_unsupported_member(param,"vec4f");
   }
 
-# ifdef __VECTOR_TYPES__
-  BARNEY_API
-  void bnSet3fc(BNObject target, const char *param, float3 value)
-  {
-    if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
-      checkGet(target)->warn_unsupported_member(param,"vec3f");
-  }
+  // BARNEY_API
+  // void bnSet3fc(BNObject target, const char *param, float3 value)
+  // {
+  //   if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
+  //     checkGet(target)->warn_unsupported_member(param,"vec3f");
+  // }
 
-  BARNEY_API
-  void bnSet4fc(BNObject target, const char *param, float4 value)
-  {
-    if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
-      checkGet(target)->warn_unsupported_member(param,"vec4f");
-  }
-#endif
+  // BARNEY_API
+  // void bnSet4fc(BNObject target, const char *param, float4 value)
+  // {
+  //   if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
+  //     checkGet(target)->warn_unsupported_member(param,"vec4f");
+  // }
   
   BARNEY_API
   void bnSet4x3fv(BNObject target, const char *param, const BNTransform *transform)
@@ -742,13 +744,12 @@ namespace barney_api {
 
   
   BARNEY_API
-  BNFrameBuffer bnFrameBufferCreate(BNContext _context,
-                                    int owningRank)
+  BNFrameBuffer bnFrameBufferCreate(BNContext _context, int deprecated)
   {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
     std::shared_ptr<FrameBuffer> fb
-      = context->createFrameBuffer(owningRank);
+      = context->createFrameBuffer();
     return (BNFrameBuffer)context->initReference(fb);
   }
 
@@ -1008,8 +1009,8 @@ namespace barney_api {
          : rank*numDataRanksOnThisContext+i);
 
     // check if we're an active worker
-    bool isActiveWorker = !dataGroupIDs.empty();
-    mpi::Comm workers = world.split(isActiveWorker);
+    // bool isActiveWorker = !dataGroupIDs.empty();
+    // mpi::Comm workers = world.split(isActiveWorker);
     
     // ------------------------------------------------------------------
     // create list of GPUs to use for this rank. if specified by user
@@ -1028,8 +1029,8 @@ namespace barney_api {
         
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createMPIContext_embree(world,
-                                                  workers,
-                                                  isActiveWorker,
+                                                  // workers,
+                                                  // isActiveWorker,
                                                   dataGroupIDs);
 # else
         throw std::runtime_error
@@ -1038,12 +1039,12 @@ namespace barney_api {
 # endif
       }
 #if BARNEY_BACKEND_OPTIX
-      std::vector<int> gpuIDs = {_gpuIDs,_gpuIDs+numGPUs};
+      // std::vector<int> gpuIDs = {_gpuIDs,_gpuIDs+numGPUs};
       return (BNContext)createMPIContext_optix(world,
-                                               workers,
-                                               isActiveWorker,
+                                               // workers,
+                                               // isActiveWorker,
                                                dataGroupIDs,
-                                               gpuIDs);
+                                               numGPUs,_gpuIDs);
 #else
       throw std::runtime_error("explicitly asked for gpus to use, "
                                "but optix backend not compiled in");
@@ -1057,15 +1058,18 @@ namespace barney_api {
       if (hardware.numGPUsThisRank == 0)
         throw std::runtime_error("don't have any GPUs on this node");
 
-      std::vector<int> gpuIDs;      
+      std::vector<int> gpuIDs;
       for (int i=0;i<hardware.numGPUsThisRank;i++)
         gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
                           + i) % hardware.numGPUsThisHost);
       return (BNContext)createMPIContext_optix(world,
-                                               workers,
-                                               isActiveWorker,
+                                               // workers,
+                                               // isActiveWorker,
                                                dataGroupIDs,
-                                               gpuIDs);
+                                               gpuIDs.size(),gpuIDs.data());
+                                               // numGPUs,_gpuIDs);
+                                               // dataGroupIDs,
+                                               // gpuIDs);
     } catch (std::exception &e) {
       std::cout << "#barney: could not create optix context (" << e.what() << ")" << std::endl;
     }

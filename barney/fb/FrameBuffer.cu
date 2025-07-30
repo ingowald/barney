@@ -49,10 +49,14 @@ namespace BARNEY_NS {
                            const DevGroup::SP &devices,
                            const bool isOwner)
     : barney_api::FrameBuffer(context),
-      //SlottedObject(context,devices),
       isOwner(isOwner),
       devices(devices)
   {
+    if (FromEnv::get()->explicitlyDisabled("denoising")) {
+      if (context->myRank() == 0)
+        std::cout << "#bn: denoising explicitly disabled in env-config." << std::endl;
+      enableDenoising = false;
+    }
     perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
       getPLD(device)->tiledFB

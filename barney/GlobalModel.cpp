@@ -37,6 +37,21 @@ namespace BARNEY_NS {
                            barney_api::Camera      *_camera,
                            barney_api::FrameBuffer *_fb)
   {
+    auto _context = (BARNEY_NS::Context *)this->context;
+    for (auto device : *_context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+      auto rc = cudaGetLastError();
+      if (rc) {
+        PING; PRINT(rc);
+        PRINT(cudaGetErrorString(rc));
+      }
+      assert(rc == 0);
+      }
+    }
+    
+    if (context->myRank() == 0 && FromEnv::get()->logQueues) 
+      std::cout << "============================================ new frame\n";
     assert(context);
     FrameBuffer *fb = (FrameBuffer *)_fb;
     Camera *camera = (Camera *)_camera;
@@ -44,6 +59,19 @@ namespace BARNEY_NS {
     Context *context = (Context *)this->context;
     context->ensureRayQueuesLargeEnoughFor(fb);
     context->render((Renderer*)renderer,this,camera,fb);
+
+    for (auto device : *_context->devices) {
+      SetActiveGPU forDuration(device);
+      {
+      auto rc = cudaGetLastError();
+      if (rc) {
+        PING; PRINT(rc);
+        PRINT(cudaGetErrorString(rc));
+      }
+      assert(rc == 0);
+      }
+    }
+    
   }
 
 }

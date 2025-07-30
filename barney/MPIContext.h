@@ -26,13 +26,15 @@ namespace BARNEY_NS {
   {
     MPIContext(const barney_api::mpi::Comm &worldComm,
                const barney_api::mpi::Comm &workersComm,
-               bool isActiveWorker,
-               const std::vector<int> &dataGroupIDs,
-               const std::vector<int> &gpuIDs);
+               const std::vector<LocalSlot> &localSlots);
 
+    static WorkerTopo::SP makeTopo(const barney_api::mpi::Comm &worldComm,
+                                   const barney_api::mpi::Comm &workersComm,
+                                   const std::vector<LocalSlot> &localSlots);
+    
     /*! create a frame buffer object suitable to this context */
     std::shared_ptr<barney_api::FrameBuffer>
-    createFrameBuffer(int owningRank) override;
+    createFrameBuffer() override;
 
     void render(Renderer    *renderer,
                 GlobalModel *model,
@@ -41,14 +43,9 @@ namespace BARNEY_NS {
 
     /*! gives, for a given worker rank, the rank that this same rank
         has in the parent 'world' communicator */
-    std::vector<int> worldRankOfWorker;
-    std::vector<int> workerRankOfWorldRank;
+    // std::vector<int> worldRankOfWorker;
+    // std::vector<int> workerRankOfWorldRank;
 
-    /*! forward rays (during global trace); returns if _after_ that
-        forward the rays need more tracing (true) or whether they're
-        done (false) */
-    bool forwardRays(bool needHitIDs) override;
-    
     // for debugging ...
     void barrier(bool warn=true) override {
       if (warn) PING;
@@ -65,12 +62,12 @@ namespace BARNEY_NS {
     int mySize() override { return world.size; }
     
     int gpusPerWorker;
-    int numDifferentModelSlots = -1;
-    int numTimesForwarded = 0;
+
+    int numWorkers() const { return workers.size; }
     
     barney_api::mpi::Comm world;
     barney_api::mpi::Comm workers;
-    int numWorkers;
+    // int numWorkers;
   };
 
 }

@@ -66,8 +66,7 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<DistFB> SP;
 
     DistFB(MPIContext *context,
-           const DevGroup::SP &devices,
-           int owningRank);
+           const DevGroup::SP &devices);
     
     virtual ~DistFB();
 
@@ -134,9 +133,9 @@ namespace BARNEY_NS {
       int numGPUs;
     } ownerGather;
     // (world)rank that owns this frame buffer
-    const int  owningRank;
+    const int  owningRank = 0;
     const bool isOwner;
-    const bool ownerIsWorker;
+    // const bool ownerIsWorker;
     bool needNormals;
     MPIContext *context;
   };
