@@ -9,10 +9,43 @@
 
 namespace BARNEY_NS {
 
+  extern void (*profHook)();
+  
+  std::vector<std::tuple<double,double,int,const char *>> kernelTimes;
+  
+#define ENTER() const double prof_t0 = getCurrentTime();
+#define LEAVE(count,name)                                   \
+  const double prof_t1 = getCurrentTime();                    \
+  kernelTimes.push_back(std::make_tuple<double,double,int,const char *>((double)prof_t0,(double)prof_t1,(int)count,(const char *)name));
+
+  int prof_rank;
+
+  void twoStageProfHook()
+  {
+    std::stringstream ss;
+    static double t00 = std::get<0>(kernelTimes[0]);
+    for (auto kernel : kernelTimes) {
+      double t0 = std::get<0>(kernel)-t00;
+      double t1 = std::get<1>(kernel)-t00;
+      int numItems = std::get<2>(kernel);
+      const char *name = std::get<3>(kernel);
+
+      ss << "r" << prof_rank << " [" << prettyDouble(t0) << "s.."
+         << prettyDouble(t1) << "s = "
+         << prettyDouble(t1-t0) << "s]: "
+         << prettyNumber(numItems) << " items in "
+         << name
+         << " -> " << prettyDouble(1000000.f*(t1-t0)/numItems) << "s per mio items"
+         << std::endl;
+    }
+    kernelTimes.clear();
+    std::cout << ss.str();
+  }
+  
   __rtc_global
   void buildHitsOnly(const rtc::ComputeInterface &ci,
-                     HitOnly *hitOnly,
-                     Ray *rayQueue,
+                      HitOnly *hitOnly,
+                      Ray *rayQueue,
                      int N);
   
   __rtc_global
@@ -33,6 +66,7 @@ namespace BARNEY_NS {
       reduced = *hit;
     }
     hitOnly[tid] = reduced;
+    
   }
   
   __rtc_global
@@ -44,7 +78,7 @@ namespace BARNEY_NS {
   {
     int tid = ci.launchIndex().x;
     if (tid >= nRays) return;
-
+    
     Ray ray = rayQueueThisRank[tid];
     for (int peer=0;peer<reduceFactor;peer++) {
       HitOnly *hit = hitOnlyAllRanks+peer*nRays+tid;
@@ -78,6 +112,9 @@ namespace BARNEY_NS {
       world(context->world),
       topo(context->topo.get())
   {
+    prof_rank = world.rank;
+    profHook = twoStageProfHook;
+    
     if (context->devices->size() != 1)
       throw std::runtime_error
         ("twostage all2all currently only works for one device per rank");
@@ -162,7 +199,7 @@ namespace BARNEY_NS {
       
       if (stagedRayQueue) rtc->freeMem(stagedRayQueue);
       
-      size_t N = ourRequiredQueueSize;
+      size_t N = ourRequiredQueueSize+1024;
       for (int i=0;i<2;i++)
         raysOnly[i] = (RayOnly*)rtc->allocMem(N*sizeof(RayOnly));
       for (int i=0;i<2;i++)
@@ -177,8 +214,8 @@ namespace BARNEY_NS {
   // many rays (needed to set up the send/receives)
   void TwoStage::exchangeHowManyRaysEachDeviceHas()
   {
-    auto &world = context->world;
-
+    ENTER();
+    
     int myRayCount = device->rayQueue->numActive;
     // world.barrier();
     // BN_MPI_CALL(Alltoall(/* sendbuf */&myRayCount,
@@ -207,6 +244,7 @@ namespace BARNEY_NS {
       // }
     }
     // PING; world.barrier(); PING;
+    LEAVE(1,"exchangeHowManyRaysEachDeviceHas");
   }
   
   
@@ -216,6 +254,7 @@ namespace BARNEY_NS {
   */
   void TwoStage::sendAndReceiveRays_crossNodes()
   {
+    ENTER();
     // PING; world.barrier(); PING;
     
     // -----------------------------------------------------------------------------
@@ -270,6 +309,7 @@ namespace BARNEY_NS {
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
     // PING; world.barrier(); PING;
+    LEAVE(recvOfs,"sendAndReceiveRays_crossNodes");
   }
   
 
@@ -279,6 +319,7 @@ namespace BARNEY_NS {
   */
   void TwoStage::sendAndReceiveRays_intraNode()
   {
+    ENTER();
     // PING; world.barrier(); PING;
 
     std::vector<MPI_Request> requests;
@@ -325,6 +366,7 @@ namespace BARNEY_NS {
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
     // PING; world.barrier(); PING;
+    LEAVE(recvOfs,"sendAndReceiveRays_intraNode");
   }
 
   
@@ -333,7 +375,6 @@ namespace BARNEY_NS {
                            uint32_t rngSeed,
                            bool needHitIDs) 
   {
-
     // std::cout << "==================================================================\n";
     // world.barrier();
     assert(needHitIDs == false); // not implemented right now
@@ -369,43 +410,53 @@ namespace BARNEY_NS {
     
     SetActiveGPU forDuration(device);
     int numRaysWeHaveTotal = bothStages.numRaysReceived;
-    if (FromEnv::get()->logQueues) 
-      printf("buildlocalrays r%i total rays %i (q0)\n",
-             myGID,numRaysWeHaveTotal);
-    __rtc_launch(device->rtc,
-                 buildStagedRayQueue,
-                 divRoundUp(numRaysWeHaveTotal,1024),1024,
-                 // args
-                 stagedRayQueue,
-                 raysOnly[0],
-                 numRaysWeHaveTotal);
-    
-    device->rtc->sync();
+    {
+      ENTER();
+      if (FromEnv::get()->logQueues) 
+        printf("buildlocalrays r%i total rays %i (q0)\n",
+               myGID,numRaysWeHaveTotal);
+      __rtc_launch(device->rtc,
+                   buildStagedRayQueue,
+                   divRoundUp(numRaysWeHaveTotal,1024),1024,
+                   // args
+                   stagedRayQueue,
+                   raysOnly[0],
+                   numRaysWeHaveTotal);
+      
+      device->rtc->sync();
+      LEAVE(numRaysWeHaveTotal,"buildStagedRayQueue");
+    }
     
     auto savedOriginalRayCount = device->rayQueue->numActive;
     auto savedOriginalRayQueue = device->rayQueue->traceAndShadeReadQueue.rays;
     device->rayQueue->traceAndShadeReadQueue.rays = stagedRayQueue;
     device->rayQueue->numActive = numRaysWeHaveTotal;
 
-    if (FromEnv::get()->logQueues) 
-      printf("localtrace r%i total rays %i\n",
-             myGID,numRaysWeHaveTotal);
-    context->traceRaysLocally(model,rngSeed,needHitIDs);
-    device->rtc->sync();
-    
+    {
+      ENTER()
+        if (FromEnv::get()->logQueues) 
+          printf("localtrace r%i total rays %i\n",
+                 myGID,numRaysWeHaveTotal);
+      context->traceRaysLocally(model,rngSeed,needHitIDs);
+      device->rtc->sync();
+      LEAVE(numRaysWeHaveTotal,"localTrace");
+    }
     
     if (FromEnv::get()->logQueues) 
       printf("buildhits r%i total rays %i (q0)\n",
              myGID,numRaysWeHaveTotal);
-    __rtc_launch(device->rtc,
-                 buildHitsOnly,
-                 divRoundUp(numRaysWeHaveTotal,1024),1024,
-                 // args
-                 hitsOnly[0],
-                 stagedRayQueue,
-                 numRaysWeHaveTotal);
-    device->rtc->sync();
-    
+    {
+      ENTER();
+      __rtc_launch(device->rtc,
+                   buildHitsOnly,
+                   divRoundUp(numRaysWeHaveTotal,1024),1024,
+                   // args
+                   hitsOnly[0],
+                   stagedRayQueue,
+                   numRaysWeHaveTotal);
+      device->rtc->sync();
+      LEAVE(numRaysWeHaveTotal,"buildHitsOnly");
+    }
     device->rayQueue->numActive = savedOriginalRayCount;
     device->rayQueue->traceAndShadeReadQueue.rays = savedOriginalRayQueue;
 
@@ -415,6 +466,7 @@ namespace BARNEY_NS {
   
   void TwoStage::exchangeHits_intraNode()
   {
+    ENTER();
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
     for (int g=0;g<gpusPerHost;g++) {
@@ -448,11 +500,13 @@ namespace BARNEY_NS {
     }
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
+    LEAVE(recvOfs,"exchangeHits_intraNode");
   }
 
 
   void TwoStage::reduceHits_intraNode()
   {
+    ENTER();
     SetActiveGPU forDuration(device);
     int g = gpuIdx;
     int numUniqueRaysThisGPU = 0;
@@ -472,10 +526,12 @@ namespace BARNEY_NS {
                  numUniqueRaysThisGPU,
                  gpusPerHost);
     device->rtc->sync();
+    LEAVE(numUniqueRaysThisGPU*gpusPerHost,"reduceHits_intraNode");
   }
   
   void TwoStage::exchangeHits_crossNodes()
   {
+    ENTER();
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
     int recvCount = rayCounts[rankOf(hostIdx,gpuIdx)];
@@ -507,10 +563,12 @@ namespace BARNEY_NS {
     
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
+    LEAVE(recvOfs,"exchangeHits_crossNodes");
   }
   
   void TwoStage::reduceHits_crossNodes()
   {
+    ENTER();
     SetActiveGPU forDuration(device);
     int numUniqueRaysThisGPU = rayCounts[rankOf(hostIdx,gpuIdx)];
     if (FromEnv::get()->logQueues) 
@@ -525,6 +583,7 @@ namespace BARNEY_NS {
                  numUniqueRaysThisGPU,
                  numHosts);
     device->rtc->sync();
+    LEAVE(numUniqueRaysThisGPU*numHosts,"reduceHits_crossNodes");
   }
   
 }
