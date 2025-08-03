@@ -16,22 +16,42 @@ namespace BARNEY_NS {
   {
     auto topo = context->topo;
     int islandSize = topo->islandSize();
+    bool minimizeNetworkHops = FromEnv::enabled("minimize-hops");
     for (int local = 0; local < perLogical.size(); local++) {
       auto &pld = perLogical[local];
       int myDev = topo->find(context->myRank(),local);
       int myIsland = topo->islandOf[myDev];
       int myIslandRank = topo->islandRankOf[myDev];
-
-      int myNext = topo->islands[myIsland]
-        [(myIslandRank+1) % islandSize];
-      int myPrev = topo->islands[myIsland]
-        [(myIslandRank+islandSize-1) % islandSize];
-
+      int myNext=-1;
+      int myPrev=-1;
+      
+      if (minimizeNetworkHops) {
+        std::vector<std::tuple</*host*/int,/*gpu*/int,/*devID*/int>> devsInIsland;
+        for (int devID=0; devID<topo->allDevices.size(); devID++) {
+          auto dev = topo->allDevices[devID];
+          if (topo->islandOf[devID] == myIsland)
+            devsInIsland.push_back({
+                topo->physicalHostIndexOf[devID],
+                topo->physicalGpuIndexOf[devID],
+                devID});
+        }
+        assert(devsInIsland.size() == islandSize);
+        int myIdx = 0;
+        while (std::get<2>(devsInIsland[myIdx]) != myIdx) ++myIdx;
+        myNext = std::get<2>(devsInIsland[(myIdx+1)%islandSize]);
+        myPrev = std::get<2>(devsInIsland[(myIdx+islandSize-1)%islandSize]);
+      } else {
+        myNext = topo->islands[myIsland]
+          [(myIslandRank+1) % islandSize];
+        myPrev = topo->islands[myIsland]
+          [(myIslandRank+islandSize-1) % islandSize];
+      }
+      
       pld.myDev       = &topo->allDevices[myDev];
       pld.sendPartner = &topo->allDevices[myNext];
       pld.recvPartner = &topo->allDevices[myPrev];
     }
-    
+  
     if (FromEnv::get()->logTopo) {
       std::stringstream ss;
       for (int localIdx=0;localIdx<context->devices->size();localIdx++) {
