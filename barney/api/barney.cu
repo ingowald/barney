@@ -131,7 +131,12 @@ namespace barney_api {
     barney_api::Context *
     createMPIContext_optix(barney_api::mpi::Comm world,
                            const std::vector<int> &dgIDs,
+<<<<<<< HEAD
                            int numGPUs, const int *gpuIDs);
+=======
+                           const std::vector<int> &gpuIDs,
+                           bool userSuppliedGpuListWasEmpty);
+>>>>>>> devel
 # endif
 #endif
   }
@@ -976,6 +981,7 @@ namespace barney_api {
 	    _gpuIDs = &negOne;
 	    numGPUs = 1;
     }
+    const bool userSuppliedGpuListWasEmpty = (_gpuIDs == nullptr);
 
     mpi::Comm world(_comm);
     if (world.size == 1) {
@@ -991,6 +997,7 @@ namespace barney_api {
                              _gpuIDs,
                              numGPUs);
     }
+
 
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
@@ -1044,7 +1051,12 @@ namespace barney_api {
                                                // workers,
                                                // isActiveWorker,
                                                dataGroupIDs,
+<<<<<<< HEAD
                                                numGPUs,_gpuIDs);
+=======
+                                               gpuIDs,
+                             userSuppliedGpuListWasEmpty);
+>>>>>>> devel
 #else
       throw std::runtime_error("explicitly asked for gpus to use, "
                                "but optix backend not compiled in");
@@ -1066,10 +1078,15 @@ namespace barney_api {
                                                // workers,
                                                // isActiveWorker,
                                                dataGroupIDs,
+<<<<<<< HEAD
                                                gpuIDs.size(),gpuIDs.data());
                                                // numGPUs,_gpuIDs);
                                                // dataGroupIDs,
                                                // gpuIDs);
+=======
+                                               gpuIDs,
+                             userSuppliedGpuListWasEmpty);
+>>>>>>> devel
     } catch (std::exception &e) {
       std::cout << "#barney: could not create optix context (" << e.what() << ")" << std::endl;
     }

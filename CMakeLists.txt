@@ -129,6 +129,7 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 # ------------------------------------------------------------------
 if (BARNEY_HAVE_CUDA)
   set(OWL_CUDA_STATIC ON)
+  set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 else()
   add_library(owl-config INTERFACE)

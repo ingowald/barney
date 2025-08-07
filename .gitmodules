@@ -7,3 +7,6 @@
 [submodule "submodules/embree"]
 	path = submodules/embree
 	url = https://github.com/embree/embree
+[submodule "submodules/optix"]
+	path = submodules/optix
+	url = https://github.com/NVIDIA/optix-dev
