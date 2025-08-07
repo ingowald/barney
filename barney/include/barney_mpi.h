@@ -35,6 +35,6 @@ BNContext bnMPIContextCreate(MPI_Comm comm,
                              int  numGPUs=-1
                              );
 
-BARNEY_API
-void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
+// BARNEY_API
+// void  bnMPIQueryHardware(BNHardwareInfo *hardware, MPI_Comm comm);
 
