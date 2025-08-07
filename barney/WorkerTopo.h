@@ -58,6 +58,7 @@ namespace BARNEY_NS {
 
     std::string toString(int gid, const std::string &tag="") const;
     bool anyGpuIsOverSubscribed() const;
+    bool isDataParallel() const;
     
     /*! num GPUs per island */
     int islandSize() const;

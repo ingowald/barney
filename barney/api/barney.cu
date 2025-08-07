@@ -131,12 +131,7 @@ namespace barney_api {
     barney_api::Context *
     createMPIContext_optix(barney_api::mpi::Comm world,
                            const std::vector<int> &dgIDs,
-<<<<<<< HEAD
                            int numGPUs, const int *gpuIDs);
-=======
-                           const std::vector<int> &gpuIDs,
-                           bool userSuppliedGpuListWasEmpty);
->>>>>>> devel
 # endif
 #endif
   }
@@ -1026,9 +1021,6 @@ namespace barney_api {
     // has four GPUs the first rank will take 0 and 1; and the second
     // one will take 2 and 3.
     // ------------------------------------------------------------------
-    BNHardwareInfo hardware;
-    bnMPIQueryHardware(&hardware,_comm);
-
     if (_gpuIDs) {
       // gpu IDs _are_ specified by user - use them, or fail
       assert(numGPUs > 0);
@@ -1046,61 +1038,15 @@ namespace barney_api {
 # endif
       }
 #if BARNEY_BACKEND_OPTIX
-      // std::vector<int> gpuIDs = {_gpuIDs,_gpuIDs+numGPUs};
       return (BNContext)createMPIContext_optix(world,
-                                               // workers,
-                                               // isActiveWorker,
                                                dataGroupIDs,
-<<<<<<< HEAD
                                                numGPUs,_gpuIDs);
-=======
-                                               gpuIDs,
-                             userSuppliedGpuListWasEmpty);
->>>>>>> devel
 #else
       throw std::runtime_error("explicitly asked for gpus to use, "
                                "but optix backend not compiled in");
 #endif
     }
-
-    
-    // user did NOT request any GPUs, it's up to us. 
-#if BARNEY_BACKEND_OPTIX
-    try {
-      if (hardware.numGPUsThisRank == 0)
-        throw std::runtime_error("don't have any GPUs on this node");
-
-      std::vector<int> gpuIDs;
-      for (int i=0;i<hardware.numGPUsThisRank;i++)
-        gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
-                          + i) % hardware.numGPUsThisHost);
-      return (BNContext)createMPIContext_optix(world,
-                                               // workers,
-                                               // isActiveWorker,
-                                               dataGroupIDs,
-<<<<<<< HEAD
-                                               gpuIDs.size(),gpuIDs.data());
-                                               // numGPUs,_gpuIDs);
-                                               // dataGroupIDs,
-                                               // gpuIDs);
-=======
-                                               gpuIDs,
-                             userSuppliedGpuListWasEmpty);
->>>>>>> devel
-    } catch (std::exception &e) {
-      std::cout << "#barney: could not create optix context (" << e.what() << ")" << std::endl;
-    }
-#endif
-    
-# if BARNEY_BACKEND_EMBREE
-    return (BNContext)createMPIContext_embree(world,
-                                              workers,
-                                              isActiveWorker,
-                                              dataGroupIDs);
-# else
-    throw std::runtime_error
-      ("cannot find GPUs for otpix backend, but cpu backend not compiled in");
-# endif
+    throw std::runtime_error("barney mpi-parallel without a list of GPUs is no longer supporteed");
   }
 
 

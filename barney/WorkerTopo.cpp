@@ -95,6 +95,11 @@ namespace BARNEY_NS {
       std::cout << "#bn: WARNING - at least one physical GPU is over-subcribed!" << std::endl;
   }
 
+  bool WorkerTopo::isDataParallel() const
+  {
+    return islandSize() != 1;
+  }
+  
   std::string WorkerTopo::toString(int gid, const std::string &tag) const
   {
     assert(gid >= 0 && gid < allDevices.size());

@@ -26,19 +26,8 @@ namespace BARNEY_NS {
   {
     MPIContext(const barney_api::mpi::Comm &worldComm,
                const barney_api::mpi::Comm &workersComm,
-<<<<<<< HEAD
-               const std::vector<LocalSlot> &localSlots);
-=======
-               bool isActiveWorker,
-               const std::vector<int> &dataGroupIDs,
-               const std::vector<int> &gpuIDs,
-               /*! for sanity checking: this is true if
-                   bnMPIContextCraete() was initially called with an
-                   empty list of GPU IDs - eventually we'll probably
-                   disallow this anyway, but for noww let's use this
-                   to print some warning(s) */
+               const std::vector<LocalSlot> &localSlots,
                bool userSuppliedGpuListWasEmpty);
->>>>>>> devel
 
     static WorkerTopo::SP makeTopo(const barney_api::mpi::Comm &worldComm,
                                    const barney_api::mpi::Comm &workersComm,
