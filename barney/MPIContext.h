@@ -28,7 +28,13 @@ namespace BARNEY_NS {
                const barney_api::mpi::Comm &workersComm,
                bool isActiveWorker,
                const std::vector<int> &dataGroupIDs,
-               const std::vector<int> &gpuIDs);
+               const std::vector<int> &gpuIDs,
+               /*! for sanity checking: this is true if
+                   bnMPIContextCraete() was initially called with an
+                   empty list of GPU IDs - eventually we'll probably
+                   disallow this anyway, but for noww let's use this
+                   to print some warning(s) */
+               bool userSuppliedGpuListWasEmpty);
 
     /*! create a frame buffer object suitable to this context */
     std::shared_ptr<barney_api::FrameBuffer>

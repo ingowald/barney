@@ -127,7 +127,8 @@ namespace barney_api {
                            barney_api::mpi::Comm workers,
                            bool isActiveWorker,
                            const std::vector<int> &dgIDs,
-                           const std::vector<int> &gpuIDs);
+                           const std::vector<int> &gpuIDs,
+                           bool userSuppliedGpuListWasEmpty);
 # endif
 #endif
   }
@@ -975,6 +976,7 @@ namespace barney_api {
 	    _gpuIDs = &negOne;
 	    numGPUs = 1;
     }
+    const bool userSuppliedGpuListWasEmpty = (_gpuIDs == nullptr);
 
     mpi::Comm world(_comm);
     if (world.size == 1) {
@@ -990,6 +992,7 @@ namespace barney_api {
                              _gpuIDs,
                              numGPUs);
     }
+
 
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
@@ -1043,7 +1046,8 @@ namespace barney_api {
                                                workers,
                                                isActiveWorker,
                                                dataGroupIDs,
-                                               gpuIDs);
+                                               gpuIDs,
+                             userSuppliedGpuListWasEmpty);
 #else
       throw std::runtime_error("explicitly asked for gpus to use, "
                                "but optix backend not compiled in");
@@ -1065,7 +1069,8 @@ namespace barney_api {
                                                workers,
                                                isActiveWorker,
                                                dataGroupIDs,
-                                               gpuIDs);
+                                               gpuIDs,
+                             userSuppliedGpuListWasEmpty);
     } catch (std::exception &e) {
       std::cout << "#barney: could not create optix context (" << e.what() << ")" << std::endl;
     }

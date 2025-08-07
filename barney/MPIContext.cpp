@@ -35,7 +35,13 @@ namespace BARNEY_NS {
                          const barney_api::mpi::Comm &workersComm,
                          bool isActiveWorker,
                          const std::vector<int> &dataGroupIDs,
-                         const std::vector<int> &gpuIDs)
+                         const std::vector<int> &gpuIDs,
+                         /*! for sanity checking: this is true if
+                           bnMPIContextCraete() was initially called with an
+                           empty list of GPU IDs - eventually we'll probably
+                           disallow this anyway, but for noww let's use this
+                           to print some warning(s) */
+                         bool userSuppliedGpuListWasEmpty)
     : Context(dataGroupIDs,gpuIDs,
               isActiveWorker?workersComm.rank:0,
               isActiveWorker?workersComm.size:1),
@@ -169,6 +175,18 @@ namespace BARNEY_NS {
       if (maxModelSlotID >= numDifferentModelSlots)
         throw std::runtime_error("data group IDs not numbered sequentially");
 
+      bool weDoDataParallelRendering = numDifferentModelSlots;
+      if (weDoDataParallelRendering && userSuppliedGpuListWasEmpty && world.rank == 0) {
+        std::cerr << "#bn.mpi: WARNING - barney is run in 'true' data parallel mode" << std::endl;
+        std::cerr << "#bn.mpi: (i.e., across multiple nodes and/or GPUs, w/ different data)," << std::endl;
+        std::cerr << "#bn.mpi: but user did NOT provide an explicit list of GPU IDs," << std::endl;
+        std::cerr << "#bn.mpi: for barney to use. THIS IS A BAD IDEA (and will likely" << std::endl;
+        std::cerr << "#bn.mpi: soon be disallowed). This app using barney _should_" << std::endl;
+        std::cerr << "#bn.mpi: tell barney exactly what GPUs to use." << std::endl;
+      }
+        
+        
+      
       int numIslands = dataGroupCount[0];
       for (auto dgc : dataGroupCount)
         if (dgc.second != numIslands)
@@ -450,10 +468,12 @@ namespace BARNEY_NS {
                            barney_api::mpi::Comm workers,
                            bool isActiveWorker,
                            const std::vector<int> &dgIDs,
-                           const std::vector<int> &gpuIDs)
+                           const std::vector<int> &gpuIDs,
+                           bool userSuppliedGpuListWasEmpty)
     {
       return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
-                                       dgIDs,gpuIDs);
+                                       dgIDs,gpuIDs,
+                                       userSuppliedGpuListWasEmpty);
     }
 # endif
   }
