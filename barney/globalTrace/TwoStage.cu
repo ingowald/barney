@@ -12,12 +12,19 @@ namespace BARNEY_NS {
   extern void (*profHook)();
   
   std::vector<std::tuple<double,double,int,const char *>> kernelTimes;
-  
-#define ENTER() const double prof_t0 = getCurrentTime();
-#define LEAVE(count,name)                                   \
-  const double prof_t1 = getCurrentTime();                    \
-  kernelTimes.push_back(std::make_tuple<double,double,int,const char *>((double)prof_t0,(double)prof_t1,(int)count,(const char *)name));
 
+#define TWO_STAGE_PROFILE 0
+  
+#if TWO_STAGE_PROFILE
+# define ENTER() /* nothing */
+# define LEAVE() /* nothing */
+#else
+# define ENTER() const double prof_t0 = getCurrentTime();
+# define LEAVE(count,name)                                    \
+  const double prof_t1 = getCurrentTime();                              \
+  kernelTimes.push_back(std::make_tuple<double,double,int,const char *>((double)prof_t0,(double)prof_t1,(int)count,(const char *)name));
+#endif
+  
   int prof_rank;
 
   void twoStageProfHook()
@@ -113,7 +120,9 @@ namespace BARNEY_NS {
       topo(context->topo.get())
   {
     prof_rank = world.rank;
+#if TWO_STAGE_PROFILE
     profHook = twoStageProfHook;
+#endif
     
     if (context->devices->size() != 1)
       throw std::runtime_error
@@ -217,13 +226,6 @@ namespace BARNEY_NS {
     ENTER();
     
     int myRayCount = device->rayQueue->numActive;
-    // world.barrier();
-    // BN_MPI_CALL(Alltoall(/* sendbuf */&myRayCount,
-    //                      /* OUR count */1,MPI_INT,
-    //                      /*recvbuf*/rayCounts.data(),
-    //                      1,MPI_INT,
-    //                      world.comm));
-    // PING; world.barrier(); PING;
     world.allGather(rayCounts.data(),&myRayCount,1);
 
     
@@ -233,17 +235,7 @@ namespace BARNEY_NS {
         for (auto rc : rayCounts) std::cout << " " << rc;
         std::cout << std::endl;
       }
-      // for (int i=0;i<numGlobal;i++) {
-      //   world.barrier();
-      //   if (myGID == i) {
-      //     std::cout << "ray counts (" << rayCounts.size() << "):";
-      //     for (auto rc : rayCounts) std::cout << " " << rc;
-      //     std::cout << std::endl;
-      //   }
-      //   world.barrier();
-      // }
     }
-    // PING; world.barrier(); PING;
     LEAVE(1,"exchangeHowManyRaysEachDeviceHas");
   }
   
@@ -255,7 +247,6 @@ namespace BARNEY_NS {
   void TwoStage::sendAndReceiveRays_crossNodes()
   {
     ENTER();
-    // PING; world.barrier(); PING;
     
     // -----------------------------------------------------------------------------
     // first, create 'raysOnly[]' array, for each local device
@@ -276,7 +267,6 @@ namespace BARNEY_NS {
 
     device->rtc->sync();
 
-    // world.barrier();
     std::vector<MPI_Request> requests;
     int recvOfs = 0;
     for (int h=0;h<numHosts;h++) {
@@ -295,7 +285,6 @@ namespace BARNEY_NS {
       printf("splat-cross r%i total received %i\n",
              myGID,intraNodes.numRaysReceived);
     
-    // world.barrier();
     for (int h=0;h<numHosts;h++) {
       MPI_Request req;
       if (FromEnv::get()->logQueues) 
@@ -304,7 +293,6 @@ namespace BARNEY_NS {
       world.send(rankOf(h,gpuIdx),0,raysOnly[0],myRayCount,req);
       requests.push_back(req);
     }
-    // world.barrier();
     
     BN_MPI_CALL(Waitall(requests.size(),requests.data(),MPI_STATUSES_IGNORE));
     requests.clear();
@@ -375,30 +363,18 @@ namespace BARNEY_NS {
                            uint32_t rngSeed,
                            bool needHitIDs) 
   {
-    // std::cout << "==================================================================\n";
-    // world.barrier();
     assert(needHitIDs == false); // not implemented right now
-    // world.barrier();
     ensureAllOurQueuesAreLargeEnough();
-    // world.barrier();
     exchangeHowManyRaysEachDeviceHas();
-    // world.barrier();
     sendAndReceiveRays_crossNodes();
-    // world.barrier();
     sendAndReceiveRays_intraNode();
-    // world.barrier();
 
     traceAllReceivedRays(model,rngSeed,needHitIDs);
-    // world.barrier();
 
     exchangeHits_intraNode();
-     // world.barrier();
     reduceHits_intraNode();
-    // world.barrier();
     exchangeHits_crossNodes();
-    // world.barrier();
     reduceHits_crossNodes();
-    // world.barrier();
   }
 
 

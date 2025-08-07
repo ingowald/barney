@@ -16,7 +16,7 @@ namespace BARNEY_NS {
   {
     auto topo = context->topo;
     int islandSize = topo->islandSize();
-    bool minimizeNetworkHops = FromEnv::enabled("minimize-hops");
+    bool minimizeNetworkHops = FromEnv::enabled("opt_mpi");
     for (int local = 0; local < perLogical.size(); local++) {
       auto &pld = perLogical[local];
       int myDev = topo->find(context->myRank(),local);
