@@ -166,6 +166,43 @@ namespace BARNEY_NS {
   // ==================================================================
   // IMPLEMENTATION
   // ==================================================================
+
+  // inline __rtc_device void checkOrientation(int faceID,
+  //                                      vec3f *hex,
+  //                                      vec3f center,
+  //                                      int ia, int ib, int ic, int id
+  //                                      )
+  // {
+  //   vec3f a = hex[ia];
+  //   vec3f b = hex[ib];
+  //   vec3f c = hex[ic];
+  //   vec3f d = hex[id];
+  //   vec3f N0 = cross(b-a,c-a);
+  //   vec3f N1 = cross(c-a,d-a);
+  //   if (dot(N0,N0) == 0.f) printf("zero normal\n");
+  //   if (dot(N1,N1) == 0.f) printf("zero normal\n");
+  //   N0 = normalize(N0);
+  //   N1 = normalize(N1);
+  //   if (dot(N0,N1) < .98f) printf("broken face\n");
+  //   if (dot(center-a,N0) < 0.f) printf("correct face orientation\n");
+  //   // if (dot(center-a,N0) > 0.f) printf("broken face orientation\n");
+  // }
+  
+  
+  // inline __rtc_device void checkOrientation(vec3f *hex)
+  // {
+  //   vec3f center = 1.f/8.f*(hex[0]+hex[1]+
+  //                           hex[2]+hex[3]+
+  //                           hex[4]+hex[5]+
+  //                           hex[6]+hex[7]);
+  //   checkOrientation(0,hex,center,0,1,5,4);
+  //   checkOrientation(1,hex,center,1,2,6,5);
+  //   checkOrientation(2,hex,center,2,3,7,6);
+  //   checkOrientation(3,hex,center,3,0,4,7);
+  //   checkOrientation(4,hex,center,4,5,6,7);
+  //   checkOrientation(5,hex,center,0,3,2,1);
+  // }
+  
   
   inline __rtc_device
   box4f UMeshField::DD::cellBounds(uint32_t cellIdx) const
@@ -193,6 +230,18 @@ namespace BARNEY_NS {
     default:
       ;
     }
+// #if 1
+//     if (numVertices == 8) {
+//       vec3f vv[8];
+//       for (uint32_t i=0;i<numVertices;i++) {
+//         int vtxIdx = indices[offset++];
+//         // vec4f v(vertices[vtxIdx],scalars[scalarsArePerVertex?vtxIdx:cellIdx]);
+//         vv[i] = vertices[vtxIdx];//v;
+//       }
+//       checkOrientation(vv);
+//     }
+// #endif
+    
     box4f bb;
     for (uint32_t i=0;i<numVertices;i++) {
       int vtxIdx = indices[offset++];

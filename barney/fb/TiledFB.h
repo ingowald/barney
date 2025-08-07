@@ -19,14 +19,12 @@
 #include "barney/DeviceGroup.h"
 #include "barney/common/half.h"
 #include "barney/render/HitIDs.h"
+#include "barney/Context.h"
 
 namespace BARNEY_NS {
   
   struct FrameBuffer;
   
-  enum { tileSize = 32 };
-  enum { pixelsPerTile = tileSize*tileSize };
-
   struct AuxChannelTile {
     union { uint32_t ui[pixelsPerTile]; float f[pixelsPerTile]; };
   };

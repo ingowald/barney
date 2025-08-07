@@ -18,6 +18,7 @@
 
 #include "barney/common/barney-common.h"
 #include "rtcore/AppInterface.h"
+#include "barney/WorkerTopo.h"
 
 namespace BARNEY_NS {
   
@@ -40,48 +41,51 @@ namespace BARNEY_NS {
     int rank = -1;
     int size = -1;
   };
-
   
   struct Device {
     Device(rtc::Device *rtc,
-           int contextRank,
-           int contextSize);
+           const WorkerTopo *topo,
+           int localRank);
+
+    int worldRank() const;
+
+    int globalRank() const;
+    int globalSize() const;
+
+    int localRank() const;
+    int localSize() const;
+
+    // DEPRECATED!
+    int contextRank() const;
     
-    /*! describes this device's place with the *LOCAL NODE*'s context;
-        ie, these are NOT physical Device IDs (a context can use a
-        subset of gpus, as well as oversubscribe some!); and they are
-        *not* the 'global' device IDs that MPI-wide ray queue cycling
-        would argue about, either */
-    // int                const contextRank;
-    // int                const contextSize;
-    PeerGroup gpuInNode;
-    int contextRank() const { return gpuInNode.rank; }
+    // int globalRank() const { return allGPUsGlobally.rank; }
+    // int globalSize() const { return allGPUsGlobally.size; }
+
+    // int localRank() const { return allGPUsLocally.rank; }
+    // int localSize() const { return allGPUsLocally.size; }
+
+    // // DEPRECATED!
+    // int contextRank() const { return localRank(); }
     
-    /*! rank and size of the *GLOBAL* context; i.e., possibly across
-        multiple ranks in an MPI call (for a signel node this will be
-        the same as contextRank/Size */
-    PeerGroup allGPUsGlobally;
-    int globalRank() const { return allGPUsGlobally.rank; }
-    int globalSize() const { return allGPUsGlobally.size; }
     // int                globalRank = -1;
     // int                globalSize = -1;
     
-    /*! describes this device's island's place in the world */
-    PeerGroup islandInWorld;
+    // /*! describes this device's island's place in the world */
+    // PeerGroup islandInWorld;
 
-    /*! describes this device's place within the island/cycle that it
-        is in */
-    PeerGroup gpuInIsland;
+    // /*! describes this device's place within the island/cycle that it
+    //     is in */
+    // PeerGroup gpuInIsland;
     
     void sync() { rtc->sync(); }
     
     /* for ray queue cycling - who to cycle with */
-    struct {
-      int sendWorkerRank  = -1;
-      int sendWorkerLocal = -1;
-      int recvWorkerRank  = -1;
-      int recvWorkerLocal = -1;
-    } rqs;
+    // struct {
+    //   int sendWorkerRank  = -1;
+    //   int sendWorkerLocal = -1;
+    //   int recvWorkerRank  = -1;
+    //   int recvWorkerLocal = -1;
+    // } rqs;
 
     int  setActive() const { return rtc->setActive(); }
     void restoreActive(int old) const  { rtc->restoreActive(old); }
@@ -91,17 +95,17 @@ namespace BARNEY_NS {
     
     GeomTypeRegistry geomTypes;
     rtc::Device *const rtc;
-    rtc::ComputeKernel1D *generateRays = 0;
-    rtc::ComputeKernel1D *shadeRays = 0;
+    // rtc::ComputeKernel1D *generateRays = 0;
+    // rtc::ComputeKernel1D *shadeRays = 0;
     
     rtc::TraceKernel2D *traceRays = 0;
     RayQueue     *rayQueue = 0;
 
-    /*! if this device does have peer access to the primary GPU, this
-        will be null. if not, this will be the primary rtcore device,
-        in case we ever need to copy stuff to that primary gpu (eg, for
-        final frame buffer) */
-    // rtc::Device  *primaryDeviceIfNoPeerAccess = 0;
+
+    /*! the _global_ device ID within the worker topo */
+    int const _localRank;
+    int const _globalRank;
+    const WorkerTopo *const topo;
   };
   
   /*! stolen from owl/Device: helper class that will set the
@@ -138,6 +142,8 @@ namespace BARNEY_NS {
     
     DevGroup(const std::vector<Device*> &devices,
              int numLogical);
+
+    Device *get(int idx) { return (*this)[idx]; }
     
       /*! *TOTAL* number of logical devices in the context;
       *NOT* how many devices there are in this group. */

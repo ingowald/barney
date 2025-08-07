@@ -125,6 +125,15 @@ namespace barney_api {
       BN_MPI_CALL(Allgather(myValues,numMyValues,MPI_INT,allValues,numMyValues,MPI_INT,comm));
     }
     
+    void Comm::allGather(void *allValues, const void *myValues,
+                         int numMyValues, size_t sizeOfValue) const
+    {
+      BN_MPI_CALL(Allgather(myValues,numMyValues*sizeOfValue,MPI_BYTE,
+                            allValues,numMyValues*sizeOfValue,MPI_BYTE,
+                            comm));
+    }
+
+    
     /*! free/close this communicator */
     void Comm::free()
     {
@@ -137,7 +146,7 @@ namespace barney_api {
       would have rank 0 get a communicator that contains only
       itself, and all others get a communicator that contains all
       other former ranks */
-    Comm Comm::split(int color)
+    Comm Comm::split(int color) const
     {
       MPI_Comm newComm;
       BN_MPI_CALL(Comm_split(comm,color,rank,&newComm));

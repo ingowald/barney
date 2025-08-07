@@ -115,7 +115,7 @@ namespace BARNEY_NS {
       rtc::ComputeKernel3D *clearMCs = 0;
     };
     PLD *getPLD(Device *device) 
-    { return &perLogical[device->contextRank()]; } 
+    { return &perLogical[device->localRank()]; } 
     std::vector<PLD> perLogical;
 
     

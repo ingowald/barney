@@ -47,9 +47,21 @@ namespace BARNEY_NS {
 
       if (rayID >= lp.numRays)
         return;
-        
+      
       Ray &ray = lp.rays[rayID];
 
+      // if (lp.numRays == 1) {
+      //   printf("ONE RAY!!!!, rayID %i\n",rayID);
+        
+      //   printf("org %f %f %f\n",
+      //          ray.org.x, ray.org.x, ray.org.z);
+      //   printf("dir %f %f %f\n",
+      //          ray.dir.x, ray.dir.x, ray.dir.z);
+      //   printf("tmax %f\n",
+      //          ray.tMax);
+      // }
+      
+      
       vec3f dir = ray.dir;
       if (dir.x == 0.f) dir.x = 1e-6f;
       if (dir.y == 0.f) dir.y = 1e-6f;

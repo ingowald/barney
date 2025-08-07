@@ -24,7 +24,7 @@ namespace barney_api {
   
   struct Context;
   struct Data;
-  
+
   /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
   struct Object : public std::enable_shared_from_this<Object> {
@@ -233,7 +233,14 @@ namespace barney_api {
     virtual ~Texture() = default;
   };
 
+
+  struct LocalSlot {
+    int dataRank;
+    std::vector<int> gpuIDs;
+  };
+  
   struct Context {
+    Context(const std::vector<LocalSlot> &localSlot) {};
     virtual ~Context() = default;
 
     virtual int myRank() = 0;
@@ -256,7 +263,7 @@ namespace barney_api {
     createCamera(const std::string &type) = 0;
 
     virtual std::shared_ptr<FrameBuffer>
-    createFrameBuffer(int owningRank) = 0;
+    createFrameBuffer() = 0;
 
     // ----------- slotted object types -----------
     
@@ -398,10 +405,35 @@ namespace barney_api {
   struct FromEnv {
     FromEnv();
     static const FromEnv *get();
-    bool logQueues = false;
+
+    static bool enabled(const std::string &key)
+    {
+      auto &boolValues = get()->boolValues;
+      auto it = boolValues.find(key);
+      if (it == boolValues.end()) return false;
+      return it->second;
+    }
+    /*! allows for querying whether a value _was_ set _and_ set to
+        false. E.g, 'denoising=0' will return true for
+        explicitDisabled("denosing"); "denoising=1' would return false
+        (because it's _en_abled, not disabled), and 'denoising' not
+        set at all would return false (because it hasn't even been
+        set, and thus not explicitly disabled */
+    static bool explicitlyDisabled(const std::string &key)
+    {
+      auto &boolValues = get()->boolValues;
+      auto it = boolValues.find(key);
+      if (it == boolValues.end()) return false;
+      return !it->second;
+    }
+    
+    std::map<std::string,bool> boolValues;
+    
+    bool logQueues  = false;
     bool skipDenoising = false;
-    bool logConfig = false;
+    bool logConfig  = false;
     bool logBackend = false;
+    bool logTopo    = false;
   };
   
 }

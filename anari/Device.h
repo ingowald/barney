@@ -120,6 +120,7 @@ struct BarneyDevice : public helium::BaseDevice
       means 'use this specific gpu */
   int m_cudaDevice = -2;
   int m_dataGroupID = -1;
+  int m_gpuCount = -1;
   const std::string deviceType = "default";
 #if BARNEY_MPI
   /*! communicator to use for barney data-parallel rendering, set as

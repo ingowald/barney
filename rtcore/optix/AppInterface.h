@@ -33,6 +33,7 @@ namespace rtc {
   namespace optix {
 
     using rtc::cuda_common::enablePeerAccess;
+    using rtc::cuda_common::getPhysicalDeviceHash;
     
     using rtc::cuda_common::ComputeKernel1D;
     using rtc::cuda_common::ComputeKernel2D;
@@ -40,6 +41,7 @@ namespace rtc {
     
     using rtc::cuda_common::Texture;
     using rtc::cuda_common::TextureData;
+
   }
 }
 
