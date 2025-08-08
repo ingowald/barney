@@ -33,13 +33,13 @@ namespace BARNEY_NS {
     Ray *stagedRayQueue = 0;
     // Ray *savedOriginalRayQueue;
     // int  savedOriginalRayCount;
-    struct {
-      int numRaysReceived;
-    } intraNodes, bothStages;
     WorkerTopo *topo;
     const Device *device;
     MPIContext *const context;
     std::vector<int> rayCounts;
+    const bool logTopo;
+    const bool logQueues;
+    const bool opt_mpi;
 
     TwoStage(MPIContext *context);
     void traceRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs) override;
@@ -62,6 +62,23 @@ namespace BARNEY_NS {
     void traceAllReceivedRays(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
 
     barney_api::mpi::Comm &world;
+
+    // only used for opt_mpi variant:
+    // struct {
+    //   int numRaysReceived;
+    // } bothStages;
+    struct {
+      int sumRaysReceived;
+      // opt_mpi only:
+      barney_api::mpi::Comm comm;
+      std::vector<int> rayCounts;
+    } intraNode;
+    struct {
+      int sumRaysReceived;
+      // opt_mpi only:
+      barney_api::mpi::Comm comm;
+      std::vector<int> rayCounts;
+    } crossNodes;
   };
 
 }
