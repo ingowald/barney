@@ -124,71 +124,16 @@ namespace BARNEY_NS {
                           FrameBuffer *_fb)
   {
     auto _context = this;
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
     DistFB *fb = (DistFB *)_fb;
     if (isActiveWorker) {
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
       renderTiles(renderer,model,camera,fb);
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
       finalizeTiles(fb);
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
     }
     // ------------------------------------------------------------------
     // done rendering, let the frame buffer know about it, so it can
     // do whatever needs doing with the latest finalized tiles
     // ------------------------------------------------------------------
     fb->finalizeFrame();
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
   }
 
   extern "C" {

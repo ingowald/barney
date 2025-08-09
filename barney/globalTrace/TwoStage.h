@@ -36,7 +36,9 @@ namespace BARNEY_NS {
     WorkerTopo *topo;
     const Device *device;
     MPIContext *const context;
-    std::vector<int> rayCounts;
+    struct {
+      std::vector<int> rayCounts;
+    } global;
     const bool logTopo;
     const bool logQueues;
     const bool opt_mpi;

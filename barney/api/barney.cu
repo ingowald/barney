@@ -83,18 +83,18 @@ namespace barney_api {
       else if (value == "off" || value == "OFF" || value == "0")
         boolValues[key] = 0;
       
-      if (key == "LOG_QUEUES")
+      if (key == "LOG_QUEUES" || key == "log_queues")
         logQueues = true;
       else if (key == "SKIP_DENOISING")
         skipDenoising = true;
-      else if (key == "LOG_CONFIG")
+      else if (key == "LOG_CONFIG" || key == "log_config")
         logConfig = true;
       else if (key == "LOG_BACKEND")
         logBackend = true;
-      else if (key == "LOG_TOPO")
+      else if (key == "LOG_TOPO" || key == "log_topo")
         logTopo = true;
       else
-        std::cerr << "Warning: unknown/unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
+        std::cerr << "Warning: unknown or unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
     }
   }
   const FromEnv *FromEnv::get()
