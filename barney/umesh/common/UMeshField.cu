@@ -285,7 +285,6 @@ namespace BARNEY_NS {
     rtc::fatomicMax(&pWorldBounds->upper.x,bounds.upper.x);
     rtc::fatomicMax(&pWorldBounds->upper.y,bounds.upper.y);
     rtc::fatomicMax(&pWorldBounds->upper.z,bounds.upper.z); 
-    if (tid < 10) { PRINT(bounds); PRINT(*pWorldBounds); }
   }
   
   void UMeshField::commit()
