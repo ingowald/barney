@@ -144,9 +144,19 @@ namespace BARNEY_NS {
                             bool isActiveWorker,
                             const std::vector<int> &dgIDs)
     {
-      std::vector<int> gpuIDs = { 0 }; 
-      return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
-                                       dgIDs,gpuIDs);
+      if (FromEnv::get()->logBackend)
+        std::cout << "#bn: creating *embree (cpu)* context" << std::endl;
+      assert(dgIDs.size() == 1);
+      std::vector<LocalSlot> localSlots(dgIDs.size());
+      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+        LocalSlot &slot = localSlots[lsIdx];
+        slot.dataRank = dgIDs[lsIdx];
+        slot.gpuIDs = { 0 };
+      }
+      return new BARNEY_NS::MPIContext(world,workers,localSlots,false);
+      // std::vector<int> gpuIDs = { 0 }; 
+      // return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
+      //                                  dgIDs,gpuIDs);
     }
 # endif
 # if BARNEY_RTC_OPTIX

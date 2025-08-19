@@ -856,7 +856,13 @@ namespace barney_api {
       // single GPU with ID=-1 (ie, numGPUs=1,gpuIDs={-1}). If so,
       // create a CPU device if possible.
       // ------------------------------------------------------------------
-      if (numGPUs == 1 && _gpuIDs[0] == -1) {
+      if (
+#if BARNEY_BACKEND_EMBREE && !BARNEY_BACKEND_OPTIX
+          1
+#else
+          numGPUs == 1 && _gpuIDs[0] == -1          
+#endif
+          ) {
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createContext_embree(dataGroupIDs);
 # else
@@ -1022,7 +1028,13 @@ namespace barney_api {
     if (_gpuIDs) {
       // gpu IDs _are_ specified by user - use them, or fail
       assert(numGPUs > 0);
-      if (numGPUs == 1 && _gpuIDs[0] == -1) {
+      if (
+#if BARNEY_BACKEND_EMBREE && !BARNEY_BACKEND_OPTIX
+          1
+#else
+          numGPUs == 1 && _gpuIDs[0] == -1          
+#endif
+          ) {
         
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createMPIContext_embree(world,

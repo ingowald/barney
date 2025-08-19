@@ -30,8 +30,14 @@ namespace barney_api {
     {
       if (FromEnv::get()->logBackend)
         std::cout << "#bn: creating *embree (cpu)* context" << std::endl;
-      std::vector<int> gpuIDs = { 0 };
-      return new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+      assert(dgIDs.size() == 1);
+      std::vector<LocalSlot> localSlots(dgIDs.size());
+      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+        LocalSlot &slot = localSlots[lsIdx];
+        slot.dataRank = dgIDs[lsIdx];
+        slot.gpuIDs = { 0 };
+      }
+      return new BARNEY_NS::LocalContext(localSlots);
     }
   }
 #endif
@@ -46,14 +52,7 @@ namespace barney_api {
       int numDGs = dgIDs.size();
       if (numGPUs == -1) {
         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
-        // int n = std::max(1,numGPUs/int(dgIDs.size()));
-        // for (int i=0;i<n*dgIDs.size();i++)
-        //   gpuIDs.push_back(i%numGPUs);
-        // numGPUs = n*numGDdgIDs.size();
       }
-      // else
-      //   for (int i=0;i<numGPUs;i++)
-      //     gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:(i%numGPUs));
 
 #define ALLOW_OVERSUBSCRIBE 1
 #if ALLOW_OVERSUBSCRIBE

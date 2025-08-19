@@ -31,9 +31,9 @@
 #include <owl/common/math/box.h>
 #include <owl/common/math/AffineSpace.h>
 #include <owl/common/math/random.h>
-#ifdef __CUDACC__
+// #ifdef __CUDACC__
 # define OWL_DISABLE_TBB
-#endif
+// #endif
 #include <owl/common/parallel/parallel_for.h>
 // #include "rtcore/ComputeInterface.h"
 
