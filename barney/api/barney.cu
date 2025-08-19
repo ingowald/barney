@@ -83,18 +83,18 @@ namespace barney_api {
       else if (value == "off" || value == "OFF" || value == "0")
         boolValues[key] = 0;
       
-      if (key == "LOG_QUEUES")
+      if (key == "LOG_QUEUES" || key == "log_queues")
         logQueues = true;
       else if (key == "SKIP_DENOISING")
         skipDenoising = true;
-      else if (key == "LOG_CONFIG")
+      else if (key == "LOG_CONFIG" || key == "log_config")
         logConfig = true;
       else if (key == "LOG_BACKEND")
         logBackend = true;
-      else if (key == "LOG_TOPO")
+      else if (key == "LOG_TOPO" || key == "log_topo")
         logTopo = true;
       else
-        std::cerr << "Warning: unknown/unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
+        std::cerr << "Warning: unknown or unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
     }
   }
   const FromEnv *FromEnv::get()
@@ -856,7 +856,13 @@ namespace barney_api {
       // single GPU with ID=-1 (ie, numGPUs=1,gpuIDs={-1}). If so,
       // create a CPU device if possible.
       // ------------------------------------------------------------------
-      if (numGPUs == 1 && _gpuIDs[0] == -1) {
+      if (
+#if BARNEY_BACKEND_EMBREE && !BARNEY_BACKEND_OPTIX
+          1
+#else
+          numGPUs == 1 && _gpuIDs[0] == -1          
+#endif
+          ) {
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createContext_embree(dataGroupIDs);
 # else
@@ -1022,7 +1028,13 @@ namespace barney_api {
     if (_gpuIDs) {
       // gpu IDs _are_ specified by user - use them, or fail
       assert(numGPUs > 0);
-      if (numGPUs == 1 && _gpuIDs[0] == -1) {
+      if (
+#if BARNEY_BACKEND_EMBREE && !BARNEY_BACKEND_OPTIX
+          1
+#else
+          numGPUs == 1 && _gpuIDs[0] == -1          
+#endif
+          ) {
         
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createMPIContext_embree(world,

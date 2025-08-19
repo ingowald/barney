@@ -30,6 +30,7 @@ namespace BARNEY_NS {
       } perIslandPeer;
       int numRemoteRaysReceived;
     };
+    
     PLD *getPLD(Device *device);
 
     std::vector<PLD> perLogical;
@@ -64,6 +65,10 @@ namespace BARNEY_NS {
     // whatever ray queues barney local uses.
     void ensureAllOurQueuesAreLargeEnough();
     MPIContext *const context;
+    // if set, we'll do all sends/recvs within a single mpi_all2all
+    // call, instead of doing N indiviusal isends and N
+    // indiv. irecvs. only works for one gpu per rank.
+    bool opt_mpi;
   };
 
 }

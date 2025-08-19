@@ -124,71 +124,16 @@ namespace BARNEY_NS {
                           FrameBuffer *_fb)
   {
     auto _context = this;
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
     DistFB *fb = (DistFB *)_fb;
     if (isActiveWorker) {
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
       renderTiles(renderer,model,camera,fb);
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
       finalizeTiles(fb);
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
     }
     // ------------------------------------------------------------------
     // done rendering, let the frame buffer know about it, so it can
     // do whatever needs doing with the latest finalized tiles
     // ------------------------------------------------------------------
     fb->finalizeFrame();
-    for (auto device : *_context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-      auto rc = cudaGetLastError();
-      if (rc) {
-        PING; PRINT(rc);
-        PRINT(cudaGetErrorString(rc));
-      }
-      assert(rc == 0);
-      }
-    }
   }
 
   extern "C" {
@@ -199,9 +144,19 @@ namespace BARNEY_NS {
                             bool isActiveWorker,
                             const std::vector<int> &dgIDs)
     {
-      std::vector<int> gpuIDs = { 0 }; 
-      return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
-                                       dgIDs,gpuIDs);
+      if (FromEnv::get()->logBackend)
+        std::cout << "#bn: creating *embree (cpu)* context" << std::endl;
+      assert(dgIDs.size() == 1);
+      std::vector<LocalSlot> localSlots(dgIDs.size());
+      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+        LocalSlot &slot = localSlots[lsIdx];
+        slot.dataRank = dgIDs[lsIdx];
+        slot.gpuIDs = { 0 };
+      }
+      return new BARNEY_NS::MPIContext(world,workers,localSlots,false);
+      // std::vector<int> gpuIDs = { 0 }; 
+      // return new BARNEY_NS::MPIContext(world,workers,isActiveWorker,
+      //                                  dgIDs,gpuIDs);
     }
 # endif
 # if BARNEY_RTC_OPTIX

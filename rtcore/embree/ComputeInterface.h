@@ -30,17 +30,17 @@ namespace rtc {
 
     template<typename T>
     inline __rtc_device T tex1D(rtc::TextureObject to,
-                            float x);
+                                float x);
     
     template<>
     inline __rtc_device float tex1D<float>(rtc::TextureObject to,
-                                       float x)
+                                           float x)
     {
       return ((TextureSampler *)to)->tex1D(x).x;
     }
     template<>
     inline __rtc_device vec4f tex1D<vec4f>(rtc::TextureObject to,
-                                       float x)
+                                           float x)
     {
       return ((TextureSampler *)to)->tex1D(x);
     }
@@ -50,18 +50,18 @@ namespace rtc {
     
     template<typename T>
     inline __rtc_device T tex2D(rtc::TextureObject to,
-                            float x, float y);
+                                float x, float y);
 
     template<>
     inline __rtc_device float tex2D<float>(rtc::TextureObject to,
-                                       float x, float y)
+                                           float x, float y)
     {
       return ((TextureSampler *)to)->tex2D({x,y}).x;
     }
 
     template<>
     inline __rtc_device vec4f tex2D<vec4f>(rtc::TextureObject to,
-                                         float x, float y)
+                                           float x, float y)
     {
       return ((TextureSampler *)to)->tex2D({x,y});
     }
@@ -71,7 +71,7 @@ namespace rtc {
     
     template<typename T>
     inline __rtc_device T tex3D(rtc::TextureObject to,
-                                       float x, float y, float z);
+                                float x, float y, float z);
     
     template<>
     inline __rtc_device
@@ -118,88 +118,42 @@ namespace rtc {
       vec3ui gridDim;
     };
     
-
-
-    inline int atomicCAS(int *ptr, int _expected, int newValue)
-    {
-      int expected = _expected;
-      ((std::atomic<int>*)ptr)->compare_exchange_weak(expected,newValue);
-      return expected;
-    }
-  
     inline
     void fatomicMin(float *addr, float value)
     {
-      float old = *(volatile float *)addr;
-      if(old <= value) return;
-
-      int _expected = (const int &)old;
-      int _desired  = (const int &)value;
-      while (true) {
-        uint32_t _found = atomicCAS((int*)addr,_expected,_desired);
-        if (_found == _expected)
-          // write went though; we _did_ write the new mininm and
-          // are done.
-          return;
-        // '_expected' changed, so write did not go through, and
-        // somebody else wrote something new to that location.
-        old = (const float &)_found;
-        if (old <= value)
-          // somebody else wrote something that's already smaller
-          // than what we have ... leave it be, and done.
-          return;
-        else {
-          // somebody else wrote something, but ours is _still_ smaller.
-          _expected = _found;
-          continue;
-        }
-      } 
+      float current = *(volatile float *)addr;
+      while (current > value) {
+        bool wasChanged
+          = ((std::atomic<int>*)addr)->compare_exchange_weak((int&)current,(int&)value);
+        if (wasChanged) break;
+      }
     }
 
     inline
     void fatomicMax(float *addr, float value)
     {
-      float old = *(volatile float *)addr;
-      if(old >= value) return;
-
-      int _expected = (const int &)old;
-      int _desired  = (const int &)value;
-      while (true) {
-        uint32_t _found = atomicCAS((int*)addr,_expected,_desired);
-        if (_found == _expected)
-          // write went though; we _did_ write the new mininm and
-          // are done.
-          return;
-        // '_expected' changed, so write did not go through, and
-        // somebody else wrote something new to that location.
-        old = (const float &)_found;
-        if (old >= value)
-          // somebody else wrote something that's already smaller
-          // than what we have ... leave it be, and done.
-          return;
-        else {
-          // somebody else wrote something, but ours is _still_ smaller.
-          _expected = _found;
-          continue;
-        }
-      } 
+      float current = *(volatile float *)addr;
+      while (current < value) {
+        bool wasChanged
+          = ((std::atomic<int>*)addr)->compare_exchange_weak((int&)current,(int&)value);
+        if (wasChanged) break;
+      }
     }
 
-  template<typename TASK_T>
-  inline void serial_for(int nTasks, TASK_T&& taskFunction)
-  {
-    for (int taskIndex = 0; taskIndex < nTasks; ++taskIndex) {
-      taskFunction(taskIndex);
+    template<typename TASK_T>
+    inline void serial_for(int nTasks, TASK_T&& taskFunction)
+    {
+      for (int taskIndex = 0; taskIndex < nTasks; ++taskIndex) {
+        taskFunction(taskIndex);
+      }
     }
-  }
-  
     
   }
 }
 
-# define __rtc_global static
-# define __rtc_launch(dev,kernel,nb,bs,...)                         \
-  rtc::embree::serial_for(nb,[&](int taskID) {                      \
+# define __rtc_global /*static*/
+# define __rtc_launch(dev,kernel,nb,bs,...)                     \
+  rtc::embree::serial_for(nb,[&](int taskID) {                  \
     rtc::embree::ComputeInterface ci;                           \
     ci.gridDim = {(unsigned)nb,1u,1u};                          \
     ci.blockDim = {(unsigned)bs,1u,1u};                         \

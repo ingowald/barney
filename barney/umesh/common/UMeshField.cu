@@ -166,6 +166,7 @@ namespace BARNEY_NS {
       // initial grid already built
       return;
     }
+    assert(!worldBounds.empty());
 
     // std::cout << "------------------------------------------" << std::endl;
     // std::cout << "rebuilding ENTIRE mc grid!!!!" << std::endl;
@@ -194,51 +195,8 @@ namespace BARNEY_NS {
                    getDD(device),grid.getDD(device));
     for (auto device : *devices)
       device->sync();
-    
-    // const int bs = 128;
-    // const int nb = divRoundUp(numCells,bs);
-    // for (auto device : *devices) {
-    //   UMeshRasterElements args = {
-    //     getDD(device),
-    //     grid.getDD(device)
-    //   };
-    //   device->umeshRasterElements->launch(nb,bs,&args);
-    // }
-    // for (auto device : *devices)
-    //   device->sync();
   }
     
-  
-//   /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds and
-//     per-prim scalar ranges, and writes those into givne
-//     pre-allocated device mem location */
-//   struct UMeshComputeElementBBs {
-//     /* kernel ARGS */
-//     box3f         *d_primBounds;
-//     range1f       *d_primRanges;
-//     UMeshField::DD mesh;
-
-// #if RTC_DEVICE_CODE
-//     inline __rtc_device
-//     void run(const rtc::ComputeInterface &ci);
-// #endif
-//   };
-
-// #if RTC_DEVICE_CODE
-//     /* kernel FUNCTION */
-//     inline __rtc_device
-//     void UMeshComputeElementBBs::run(const rtc::ComputeInterface &ci)
-//     {
-//       const int tid = ci.launchIndex().x;
-//       if (tid >= mesh.numCells) return;
-      
-//       auto elt = mesh.elements[tid];
-//       box4f eb = mesh.eltBounds(elt);
-//       d_primBounds[tid] = getBox(eb);
-//       if (d_primRanges) d_primRanges[tid] = getRange(eb);
-//     }
-// #endif
-  
   bool UMeshField::setData(const std::string &member,
                            const std::shared_ptr<Data> &value)
   {
@@ -327,6 +285,7 @@ namespace BARNEY_NS {
     rtc::fatomicMax(&pWorldBounds->upper.x,bounds.upper.x);
     rtc::fatomicMax(&pWorldBounds->upper.y,bounds.upper.y);
     rtc::fatomicMax(&pWorldBounds->upper.z,bounds.upper.z); 
+    if (tid < 10) { PRINT(bounds); PRINT(*pWorldBounds); }
   }
   
   void UMeshField::commit()

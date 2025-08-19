@@ -10,7 +10,7 @@ namespace BARNEY_NS {
   RQSMPI::RQSMPI(MPIContext *context)
       : RQSBase(context),
         context(context)
-    {}
+  {}
   
   /*! forward rays (during global trace); returns if _after_ that
     forward the rays need more tracing (true) or whether they're
