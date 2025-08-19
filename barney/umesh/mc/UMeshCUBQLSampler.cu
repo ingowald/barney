@@ -62,9 +62,9 @@ namespace BARNEY_NS {
 // #endif      
       }
 
-      std::cout << "------------------------------------------" << std::endl;
-      std::cout << "building UMeshCUBQL BVH!" << std::endl;
-      std::cout << "------------------------------------------" << std::endl;
+      // std::cout << "------------------------------------------" << std::endl;
+      // std::cout << "building UMeshCUBQL BVH!" << std::endl;
+      // std::cout << "------------------------------------------" << std::endl;
       
       SetActiveGPU forDuration(device);
       
@@ -96,9 +96,9 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rtc->freeMem(primBounds);
       device->rtc->freeMem(valueRanges);
-      std::cout << OWL_TERMINAL_LIGHT_GREEN
-                << "#bn.umesh: cubql bvh built ..."
-                << OWL_TERMINAL_DEFAULT << std::endl;
+      // std::cout << OWL_TERMINAL_LIGHT_GREEN
+      //           << "#bn.umesh: cubql bvh built ..."
+      //           << OWL_TERMINAL_DEFAULT << std::endl;
     }
   }
 }

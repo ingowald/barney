@@ -236,22 +236,11 @@ void UnstructuredField::finalize()
 
 BNScalarField UnstructuredField::createBarneyScalarField() const
 {
-  std::cout
-      << "=================================================================="
-      << std::endl;
-  std::cout << "BANARI: CREATING UMESH OF " << m_params.cellBegin->size()
-            << " elements" << std::endl;
-  std::cout
-      << "=================================================================="
-      << std::endl;
-
   int slot = deviceState()->slot;
   auto context = deviceState()->tether->context;
 
   auto *vertexPositions = m_params.vertexPosition->beginAs<math::float3>();
   int numVertices = (int)m_params.vertexPosition->size();
-  // endAs<math::float3>()
-  //   - m_params.vertexPosition->beginAs<math::float3>();
 
   auto *vertexData =
       m_params.vertexData ? m_params.vertexData->beginAs<float>() : nullptr;

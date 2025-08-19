@@ -57,7 +57,6 @@ namespace barney_device {
 
     int slot = -1;
 
-    // BNHardwareInfo bnInfo;
     std::shared_ptr<Tether> tether;
 
     /*! created models get consecutive IDs, which allows us for

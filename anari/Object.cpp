@@ -8,63 +8,63 @@
 
 namespace barney_device {
 
-// Object definitions /////////////////////////////////////////////////////////
+  // Object definitions /////////////////////////////////////////////////////////
 
-Object::Object(ANARIDataType type, BarneyGlobalState *s)
+  Object::Object(ANARIDataType type, BarneyGlobalState *s)
     : helium::BaseObject(type, s)
-{}
+  {}
 
-void Object::commitParameters()
-{
-  // no-op
-}
+  void Object::commitParameters()
+  {
+    // no-op
+  }
 
-void Object::finalize()
-{
-  // no-op
-}
+  void Object::finalize()
+  {
+    // no-op
+  }
 
-bool Object::getProperty(const std::string_view &name,
-    ANARIDataType type,
-    void *ptr,
-    uint64_t size,
-    uint32_t flags)
-{
-  if (name == "valid" && type == ANARI_BOOL) {
-    helium::writeToVoidP(ptr, isValid());
+  bool Object::getProperty(const std::string_view &name,
+                           ANARIDataType type,
+                           void *ptr,
+                           uint64_t size,
+                           uint32_t flags)
+  {
+    if (name == "valid" && type == ANARI_BOOL) {
+      helium::writeToVoidP(ptr, isValid());
+      return true;
+    }
+
+    return false;
+  }
+
+  bool Object::isValid() const
+  {
     return true;
   }
 
-  return false;
-}
+  BarneyGlobalState *Object::deviceState() const
+  {
+    return (BarneyGlobalState *)helium::BaseObject::m_state;
+  }
 
-bool Object::isValid() const
-{
-  return true;
-}
+  // BNContext Object::getContext() const
+  // {
+  //   return deviceState()->context;
+  // }
 
-BarneyGlobalState *Object::deviceState() const
-{
-  return (BarneyGlobalState *)helium::BaseObject::m_state;
-}
+  // UnknownObject definitions //////////////////////////////////////////////////
 
-// BNContext Object::getContext() const
-// {
-//   return deviceState()->context;
-// }
-
-// UnknownObject definitions //////////////////////////////////////////////////
-
-UnknownObject::UnknownObject(ANARIDataType type, BarneyGlobalState *s)
+  UnknownObject::UnknownObject(ANARIDataType type, BarneyGlobalState *s)
     : Object(type, s)
-{}
+  {}
 
-UnknownObject::~UnknownObject() = default;
+  UnknownObject::~UnknownObject() = default;
 
-bool UnknownObject::isValid() const
-{
-  return false;
-}
+  bool UnknownObject::isValid() const
+  {
+    return false;
+  }
 
 } // namespace barney_device
 

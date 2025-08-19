@@ -143,6 +143,10 @@ namespace BARNEY_NS {
                                              float t,
                                              vec3f albedo)
     {
+      if (this->dbg) printf("setting volume hit %f %f %f\n",
+                            albedo.x,
+                            albedo.y,
+                            albedo.z);
       setHit(P,vec3f(0.f),t,
              packedBSDF::Phase(albedo));
     }
