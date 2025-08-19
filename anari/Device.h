@@ -108,7 +108,8 @@ namespace barney_device {
     int deviceGetProperty(const char *name,
                           ANARIDataType type,
                           void *mem,
-                          uint64_t size) override;
+                          uint64_t size,
+                          uint32_t flags) override;
     BarneyGlobalState *deviceState(bool commitOnDemand=true);
 
     bool m_initialized{false};
