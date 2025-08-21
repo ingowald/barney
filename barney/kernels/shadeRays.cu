@@ -1000,7 +1000,7 @@ namespace BARNEY_NS {
         // };
         if (FromEnv::get()->logQueues) {
           std::stringstream ss;
-          ss << "#bn: ## ray queue kernel SHADE " << std::endl
+          ss << "#bn" << myRank() << ": ## ray queue kernel SHADE " << std::endl
              << "  from " << rayQueue->traceAndShadeReadQueue.rays
              << " + " << rayQueue->traceAndShadeReadQueue.states << std::endl
              << "  to   " << rayQueue->receiveAndShadeWriteQueue.rays

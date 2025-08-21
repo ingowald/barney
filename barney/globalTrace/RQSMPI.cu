@@ -17,6 +17,7 @@ namespace BARNEY_NS {
     done (false) */
   bool RQSMPI::forwardRays(bool needHitIDs)
   {
+    PING; PRINT(context->myRank());
     auto topo = context->topo; assert(topo);
     auto &workers = context->workers;
     int numDevices = context->devices->size();
@@ -158,6 +159,7 @@ namespace BARNEY_NS {
     }
 
     ++numTimesForwarded;
+    PING; PRINT(context->myRank());
     return (numTimesForwarded % topo->islandSize()) != 0;
   }
 
