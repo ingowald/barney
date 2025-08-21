@@ -51,8 +51,8 @@ namespace BARNEY_NS {
 
         if (FromEnv::get()->logQueues) {
           std::stringstream ss;
-          ss << "#bn: ## ray queue kernel TRACE rays " << dd.rays << std::endl;
-          ss << "#bn: ## ray queue kernel TRACE hit ids " << dd.hitIDs << " need = " << int(needHitIDs) << std::endl;
+          ss << "#bn(" << device->globalRank() << "): ## ray queue kernel TRACE rays " << dd.rays << std::endl;
+          ss << "#bn(" << device->globalRank() << "): ## ray queue kernel TRACE hit ids " << dd.hitIDs << " need = " << int(needHitIDs) << std::endl;
           std::cout << ss.str();
         }
 
@@ -82,6 +82,12 @@ namespace BARNEY_NS {
     // ... and sync 'til all are done
     // ------------------------------------------------------------------
     syncCheckAll();
+    if (FromEnv::get()->logQueues) {
+      std::stringstream ss;
+      ss << "#bn(" << myRank() << "): ## ray queue kernel TRACE DONE" << std::endl;
+      std::cout << ss.str();
+    }
+
   }
   
 } // ::BARNEY_NS
