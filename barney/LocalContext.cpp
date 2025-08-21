@@ -111,6 +111,12 @@ namespace barney_api {
 namespace BARNEY_NS {
   size_t getHostNameHash()
   {
+#if defined(_WIN32) || defined(__APPLE__)
+    // gethostname() is linux only, but this is only really required
+    // for MPI, anyway, so for mac and windows - which won't be used
+    // when using MPI - we can just as well return anything we like...
+    return 0;
+#else
     char hostName[256];
     gethostname(hostName,256);
     size_t hash = 0;
@@ -118,6 +124,7 @@ namespace BARNEY_NS {
     for (int i=0;hostName[i];i++)
       hash = hash * FNV_PRIME ^ hostName[i];
     return hash;
+#endif
   }
   
   WorkerTopo::SP

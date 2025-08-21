@@ -26,7 +26,7 @@
 namespace BARNEY_NS {
   namespace render {
 
-#define SCI_VIS_MODE 0
+#define SCI_VIS_MODE 1
     
 #define MAX_DIFFUSE_BOUNCES 1
     
@@ -958,17 +958,6 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed)
   {
     auto context = this;
-    for (auto device : *context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-        auto rc = cudaGetLastError();
-        if (rc) {
-          PING; PRINT(rc);
-          PRINT(cudaGetErrorString(rc));
-        }
-        assert(rc == 0);
-      }
-    }
     for (auto slotModel : model->modelSlots) {
       World *world = slotModel->world.get();
       for (auto device : *world->devices) {
@@ -1029,17 +1018,6 @@ namespace BARNEY_NS {
                      );
       }
     }
-    for (auto device : *context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-        auto rc = cudaGetLastError();
-        if (rc) {
-          PING; PRINT(rc);
-          PRINT(cudaGetErrorString(rc));
-        }
-        assert(rc == 0);
-      }
-    }
 
     // ------------------------------------------------------------------
     // wait for kernel to complete, and swap queues
@@ -1049,24 +1027,7 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rayQueue->swapAfterShade();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
-
-      // printf("#mr%i: num active after shade %i\n",
-      //        device->globalRank(),
-      //        device->rayQueue->numActive);
     }
-
-    for (auto device : *context->devices) {
-      SetActiveGPU forDuration(device);
-      {
-        auto rc = cudaGetLastError();
-        if (rc) {
-          PING; PRINT(rc);
-          PRINT(cudaGetErrorString(rc));
-        }
-        assert(rc == 0);
-      }
-    }
-    
   }
   
 }

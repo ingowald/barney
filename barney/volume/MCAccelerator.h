@@ -212,6 +212,11 @@ namespace BARNEY_NS {
                                            rng,
                                            ray.dbg)) 
                   return true;
+                if (ray.dbg) printf("woodcock hit sample %f %f %f:%f\n",
+                                    sample.x,
+                                    sample.y,
+                                    sample.z,
+                                    sample.w);
                 
                 vec3f P_obj = obj_org + tRange.upper * obj_dir;
                 vec3f P = ti.transformPointFromObjectToWorldSpace(P_obj);
