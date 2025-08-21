@@ -99,8 +99,10 @@ namespace barney_device {
                     });
     }
 
-    for (auto l : lights)
-      barneyLights.push_back(l->getBarneyLight());
+    for (auto l : lights) {
+      if (l->isValid())
+        barneyLights.push_back(l->getBarneyLight());
+    }
 
     BNData lightsData = nullptr;
     if (!barneyLights.empty()) {
