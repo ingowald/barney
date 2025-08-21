@@ -26,6 +26,10 @@ namespace BARNEY_NS {
       int myPrev=-1;
       
       if (minimizeNetworkHops) {
+        /* make a list of all devices that are in the same island as
+           we are - store that in a tuple with device gid last, and
+           host and gpu index is tuple slots 0 and 1, respectively,
+           such that we can then sort by order host->gpu->devID */
         std::vector<std::tuple</*host*/int,/*gpu*/int,/*devID*/int>> devsInIsland;
         for (int devID=0; devID<topo->allDevices.size(); devID++) {
           auto dev = topo->allDevices[devID];
@@ -36,8 +40,15 @@ namespace BARNEY_NS {
                 devID});
         }
         assert(devsInIsland.size() == islandSize);
+        /* sort the devsInIsland tuples. after this sort we should
+           have a list of all devices that is sorted such thatwe have
+           all those device on host 0 first, etc; and those on the
+           same host are sroted by gpu ID. In this order, devices that
+           ARE on the same host will appear next to each other in that
+           sorted list. */
+        std::sort(devsInIsland.begin(),devsInIsland.end());
         int myIdx = 0;
-        while (std::get<2>(devsInIsland[myIdx]) != myIdx) ++myIdx;
+        while (std::get<2>(devsInIsland[myIdx]) != myDev) ++myIdx;
         myNext = std::get<2>(devsInIsland[(myIdx+1)%islandSize]);
         myPrev = std::get<2>(devsInIsland[(myIdx+islandSize-1)%islandSize]);
       } else {

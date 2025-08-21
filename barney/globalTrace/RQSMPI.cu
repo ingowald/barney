@@ -17,7 +17,6 @@ namespace BARNEY_NS {
     done (false) */
   bool RQSMPI::forwardRays(bool needHitIDs)
   {
-    PING; PRINT(context->myRank());
     auto topo = context->topo; assert(topo);
     auto &workers = context->workers;
     int numDevices = context->devices->size();
@@ -77,10 +76,10 @@ namespace BARNEY_NS {
     // allStatuses.resize(allRequests.size());
     // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
     if (FromEnv::get()->logQueues)
-      std::cout << "before waitall" << std::endl;
+      std::cout << "bn(" << context->myRank() << ") before waitall" << std::endl;
     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
     if (FromEnv::get()->logQueues)
-      std::cout << "after waitall" << std::endl;
+      std::cout << "bn(" << context->myRank() << ") after waitall" << std::endl;
     
     // barrier(false);
     // for (int i=0;i<allStatuses.size();i++) {
@@ -133,21 +132,12 @@ namespace BARNEY_NS {
         allRequests.push_back(recvReq);
       }
     }
-    // allStatuses.resize(allRequests.size());
-    // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
     if (FromEnv::get()->logQueues)
-      std::cout << "2nd waitall" << std::endl;
+      std::cout << "bn(" << context->myRank() << ") 2nd waitall" << std::endl;
     BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
     if (FromEnv::get()->logQueues)
-      std::cout << "after 2nd waitall" << std::endl;
-    // barrier(false);
-    // for (int i=0;i<allStatuses.size();i++) {
-    //   auto &status = allStatuses[i];
-    //   if (status.MPI_ERROR != MPI_SUCCESS)
-    //     throw std::runtime_error("error in mpi send/recv status!?");
-    // }
+      std::cout << "bn(" << context->myRank() << ") after 2nd waitall" << std::endl; 
     allRequests.clear();
-    // allStatuses.clear();
 
     // ------------------------------------------------------------------
     // now all rays should be exchanged -- swap queues
@@ -159,7 +149,6 @@ namespace BARNEY_NS {
     }
 
     ++numTimesForwarded;
-    PING; PRINT(context->myRank());
     return (numTimesForwarded % topo->islandSize()) != 0;
   }
 

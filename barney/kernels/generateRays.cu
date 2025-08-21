@@ -371,7 +371,7 @@ namespace BARNEY_NS {
       // };
       if (FromEnv::get()->logQueues) {
         std::stringstream ss;
-        ss  << "#bn: ## ray queue op GENERATE " << device->rayQueue->receiveAndShadeWriteQueue.rays
+        ss  << "#bn(" << myRank() << "): ## ray queue op GENERATE " << device->rayQueue->receiveAndShadeWriteQueue.rays
             << " + " << device->rayQueue->receiveAndShadeWriteQueue.states
             << std::endl;
         std::cout << ss.str();

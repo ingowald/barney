@@ -91,7 +91,7 @@ namespace BARNEY_NS {
       std::cerr << "#bn.mpi: soon be disallowed). This app using barney _should_" << std::endl;
       std::cerr << "#bn.mpi: tell barney exactly what GPUs to use." << std::endl;
     }
-    if (FromEnv::enabled("two-stage")) {
+    if (FromEnv::enabled("two-stage") || FromEnv::enabled("two_stage")) {
       std::cout << "ENABLING TwoStage!" << std::endl;
       globalTraceImpl = new TwoStage(this);
     } else if (FromEnv::enabled("all2all")) {
