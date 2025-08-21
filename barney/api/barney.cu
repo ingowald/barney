@@ -77,16 +77,24 @@ namespace barney_api {
       const std::string value = kv.second;
       
       std::cout << "#barney.config " << key << " = '" << value << "'" << std::endl;
-      if (key == "LOG_QUEUES")
+
+      if (value == "on" || value == "ON" || value == "1")
+        boolValues[key] = 1;
+      else if (value == "off" || value == "OFF" || value == "0")
+        boolValues[key] = 0;
+      
+      if (key == "LOG_QUEUES" || key == "log_queues")
         logQueues = true;
       else if (key == "SKIP_DENOISING")
         skipDenoising = true;
-      else if (key == "LOG_CONFIG")
+      else if (key == "LOG_CONFIG" || key == "log_config")
         logConfig = true;
       else if (key == "LOG_BACKEND")
         logBackend = true;
+      else if (key == "LOG_TOPO" || key == "log_topo")
+        logTopo = true;
       else
-        throw std::runtime_error("unknown/unrecognized config key");
+        std::cerr << "Warning: unknown or unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
     }
   }
   const FromEnv *FromEnv::get()
@@ -117,17 +125,13 @@ namespace barney_api {
 # if BARNEY_BACKEND_EMBREE
     barney_api::Context *
     createMPIContext_embree(barney_api::mpi::Comm world,
-                            barney_api::mpi::Comm workers,
-                            bool isActiveWorker,
                             const std::vector<int> &dgIDs);
 # endif
 # if BARNEY_BACKEND_OPTIX
     barney_api::Context *
     createMPIContext_optix(barney_api::mpi::Comm world,
-                           barney_api::mpi::Comm workers,
-                           bool isActiveWorker,
                            const std::vector<int> &dgIDs,
-                           const std::vector<int> &gpuIDs);
+                           int numGPUs, const int *gpuIDs);
 # endif
 #endif
   }
@@ -703,21 +707,19 @@ namespace barney_api {
       checkGet(target)->warn_unsupported_member(param,"vec4f");
   }
 
-# ifdef __VECTOR_TYPES__
-  BARNEY_API
-  void bnSet3fc(BNObject target, const char *param, float3 value)
-  {
-    if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
-      checkGet(target)->warn_unsupported_member(param,"vec3f");
-  }
+  // BARNEY_API
+  // void bnSet3fc(BNObject target, const char *param, float3 value)
+  // {
+  //   if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
+  //     checkGet(target)->warn_unsupported_member(param,"vec3f");
+  // }
 
-  BARNEY_API
-  void bnSet4fc(BNObject target, const char *param, float4 value)
-  {
-    if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
-      checkGet(target)->warn_unsupported_member(param,"vec4f");
-  }
-#endif
+  // BARNEY_API
+  // void bnSet4fc(BNObject target, const char *param, float4 value)
+  // {
+  //   if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
+  //     checkGet(target)->warn_unsupported_member(param,"vec4f");
+  // }
   
   BARNEY_API
   void bnSet4x3fv(BNObject target, const char *param, const BNTransform *transform)
@@ -742,13 +744,12 @@ namespace barney_api {
 
   
   BARNEY_API
-  BNFrameBuffer bnFrameBufferCreate(BNContext _context,
-                                    int owningRank)
+  BNFrameBuffer bnFrameBufferCreate(BNContext _context, int deprecated)
   {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
     std::shared_ptr<FrameBuffer> fb
-      = context->createFrameBuffer(owningRank);
+      = context->createFrameBuffer();
     return (BNFrameBuffer)context->initReference(fb);
   }
 
@@ -786,7 +787,7 @@ namespace barney_api {
   {
     // static double t_first = getCurrentTime();
     // static double t_sum = 0.;
-    
+
     // double t0 = getCurrentTime();
     static int numCalls = 0;
     if (++numCalls < 10)
@@ -855,7 +856,13 @@ namespace barney_api {
       // single GPU with ID=-1 (ie, numGPUs=1,gpuIDs={-1}). If so,
       // create a CPU device if possible.
       // ------------------------------------------------------------------
-      if (numGPUs == 1 && _gpuIDs[0] == -1) {
+      if (
+#if BARNEY_BACKEND_EMBREE && !BARNEY_BACKEND_OPTIX
+          1
+#else
+          numGPUs == 1 && _gpuIDs[0] == -1          
+#endif
+          ) {
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createContext_embree(dataGroupIDs);
 # else
@@ -975,7 +982,6 @@ namespace barney_api {
 	    _gpuIDs = &negOne;
 	    numGPUs = 1;
     }
-
     mpi::Comm world(_comm);
     if (world.size == 1) {
       // std::cout << "#bn: MPIContextInit, but only one rank - using
@@ -990,6 +996,7 @@ namespace barney_api {
                              _gpuIDs,
                              numGPUs);
     }
+
 
     // ------------------------------------------------------------------
     // create vector of data groups; if actual specified by user we
@@ -1008,8 +1015,8 @@ namespace barney_api {
          : rank*numDataRanksOnThisContext+i);
 
     // check if we're an active worker
-    bool isActiveWorker = !dataGroupIDs.empty();
-    mpi::Comm workers = world.split(isActiveWorker);
+    // bool isActiveWorker = !dataGroupIDs.empty();
+    // mpi::Comm workers = world.split(isActiveWorker);
     
     // ------------------------------------------------------------------
     // create list of GPUs to use for this rank. if specified by user
@@ -1018,18 +1025,21 @@ namespace barney_api {
     // has four GPUs the first rank will take 0 and 1; and the second
     // one will take 2 and 3.
     // ------------------------------------------------------------------
-    BNHardwareInfo hardware;
-    bnMPIQueryHardware(&hardware,_comm);
-
     if (_gpuIDs) {
       // gpu IDs _are_ specified by user - use them, or fail
       assert(numGPUs > 0);
-      if (numGPUs == 1 && _gpuIDs[0] == -1) {
+      if (
+#if BARNEY_BACKEND_EMBREE && !BARNEY_BACKEND_OPTIX
+          1
+#else
+          numGPUs == 1 && _gpuIDs[0] == -1          
+#endif
+          ) {
         
 # if BARNEY_BACKEND_EMBREE
         return (BNContext)createMPIContext_embree(world,
-                                                  workers,
-                                                  isActiveWorker,
+                                                  // workers,
+                                                  // isActiveWorker,
                                                   dataGroupIDs);
 # else
         throw std::runtime_error
@@ -1038,121 +1048,89 @@ namespace barney_api {
 # endif
       }
 #if BARNEY_BACKEND_OPTIX
-      std::vector<int> gpuIDs = {_gpuIDs,_gpuIDs+numGPUs};
       return (BNContext)createMPIContext_optix(world,
-                                               workers,
-                                               isActiveWorker,
                                                dataGroupIDs,
-                                               gpuIDs);
+                                               numGPUs,_gpuIDs);
 #else
       throw std::runtime_error("explicitly asked for gpus to use, "
                                "but optix backend not compiled in");
 #endif
     }
-
-    
-    // user did NOT request any GPUs, it's up to us. 
-#if BARNEY_BACKEND_OPTIX
-    try {
-      if (hardware.numGPUsThisRank == 0)
-        throw std::runtime_error("don't have any GPUs on this node");
-
-      std::vector<int> gpuIDs;      
-      for (int i=0;i<hardware.numGPUsThisRank;i++)
-        gpuIDs.push_back((hardware.localRank*hardware.numGPUsThisRank
-                          + i) % hardware.numGPUsThisHost);
-      return (BNContext)createMPIContext_optix(world,
-                                               workers,
-                                               isActiveWorker,
-                                               dataGroupIDs,
-                                               gpuIDs);
-    } catch (std::exception &e) {
-      std::cout << "#barney: could not create optix context" << std::endl;
-    }
-#endif
-    
-# if BARNEY_BACKEND_EMBREE
-    return (BNContext)createMPIContext_embree(world,
-                                              workers,
-                                              isActiveWorker,
-                                              dataGroupIDs);
-# else
-    throw std::runtime_error
-      ("cannot find GPUs for otpix backend, but cpu backend not compiled in");
-# endif
+    PRINT(_gpuIDs);
+    throw std::runtime_error("barney mpi-parallel without a list of GPUs is no longer supporteed");
   }
 
 
-  BARNEY_API
-  void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
-  {
-    LOG_API_ENTRY;
+//   BARNEY_API
+//   void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
+//   {
+//     LOG_API_ENTRY;
 
-    assert(_hardware);
-    BNHardwareInfo &hardware = *_hardware;
+//     assert(_hardware);
+//     BNHardwareInfo &hardware = *_hardware;
 
-    assert(_comm != MPI_COMM_NULL);
-    barney_api::mpi::Comm comm(_comm);
+//     assert(_comm != MPI_COMM_NULL);
+//     barney_api::mpi::Comm comm(_comm);
 
-    hardware.numRanks = comm.size;
-    char hostName[MPI_MAX_PROCESSOR_NAME];
-    memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
-    int hostNameLen = 0;
-    BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen));
+//     hardware.numRanks = comm.size;
+//     char hostName[MPI_MAX_PROCESSOR_NAME];
+//     memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
+//     int hostNameLen = 0;
+//     BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen));
 
-    std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
-    memset(recvBuf.data(),0,recvBuf.size());
+//     std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
+//     memset(recvBuf.data(),0,recvBuf.size());
 
-    // ------------------------------------------------------------------
-    // determine which (world) rank lived on which host, and assign
-    // GPUSs
-    // ------------------------------------------------------------------
-    BN_MPI_CALL(Allgather(hostName,
-                          MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
-                          recvBuf.data(),
-                          /* PER rank size */MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
-                          comm.comm));
-    std::vector<std::string>  hostNames;
-    std::map<std::string,int> ranksOnHost;
-    for (int i=0;i<comm.size;i++)  {
-      std::string host_i = recvBuf.data()+i*MPI_MAX_PROCESSOR_NAME;
-      hostNames.push_back(host_i);
-      ranksOnHost[host_i] ++;
-    }
+//     // ------------------------------------------------------------------
+//     // determine which (world) rank lived on which host, and assign
+//     // GPUSs
+//     // ------------------------------------------------------------------
+//     BN_MPI_CALL(Allgather(hostName,
+//                           MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
+//                           recvBuf.data(),
+//                           /* PER rank size */MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
+//                           comm.comm));
+//     std::vector<std::string>  hostNames;
+//     std::map<std::string,int> ranksOnHost;
+//     for (int i=0;i<comm.size;i++)  {
+//       std::string host_i = recvBuf.data()+i*MPI_MAX_PROCESSOR_NAME;
+//       hostNames.push_back(host_i);
+//       ranksOnHost[host_i] ++;
+//     }
 
-    hardware.numRanksThisHost = ranksOnHost[hostName];
-    hardware.numHosts         = ranksOnHost.size();
+//     hardware.numRanksThisHost = ranksOnHost[hostName];
+//     hardware.numHosts         = ranksOnHost.size();
 
-    // ------------------------------------------------------------------
-    // count how many other ranks are already on this same node
-    // ------------------------------------------------------------------
-    BN_MPI_CALL(Barrier(comm.comm));
-    int localRank = 0;
-    for (int i=0;i<comm.rank;i++)
-      if (hostNames[i] == hostName)
-        localRank++;
-    BN_MPI_CALL(Barrier(comm.comm));
-    hardware.localRank = localRank;
-    hardware.numRanksThisHost = ranksOnHost[hostName];
+//     // ------------------------------------------------------------------
+//     // count how many other ranks are already on this same node
+//     // ------------------------------------------------------------------
+//     BN_MPI_CALL(Barrier(comm.comm));
+//     int localRank = 0;
+//     for (int i=0;i<comm.rank;i++)
+//       if (hostNames[i] == hostName)
+//         localRank++;
+//     BN_MPI_CALL(Barrier(comm.comm));
+//     hardware.localRank = localRank;
+//     hardware.numRanksThisHost = ranksOnHost[hostName];
 
-    // ------------------------------------------------------------------
-    // assign a GPU to this rank
-    // ------------------------------------------------------------------
-    int numGPUsOnThisHost = 0;
-#if BARNEY_BACKEND_OPTIX
-    cudaGetDeviceCount(&numGPUsOnThisHost);
-#endif
-    // cudaGetDeviceCount(&numGPUsOnThisHost);
-    // if (numGPUsOnThisHost == 0)
-    //   throw std::runtime_error("no barney-capable devices on this rank!");
-    hardware.numGPUsThisHost = numGPUsOnThisHost;
-    hardware.numGPUsThisRank
-      = comm.allReduceMin(hardware.numGPUsThisHost == 0
-                          ? 0
-                          : std::max(hardware.numGPUsThisHost/
-                                     hardware.numRanksThisHost,
-                                     1));
-  }
+//     // ------------------------------------------------------------------
+//     // assign a GPU to this rank
+//     // ------------------------------------------------------------------
+//     int numGPUsOnThisHost = 0;
+// #if BARNEY_BACKEND_OPTIX
+//     cudaGetDeviceCount(&numGPUsOnThisHost);
+// #endif
+//     // cudaGetDeviceCount(&numGPUsOnThisHost);
+//     // if (numGPUsOnThisHost == 0)
+//     //   throw std::runtime_error("no barney-capable devices on this rank!");
+//     hardware.numGPUsThisHost = numGPUsOnThisHost;
+//     hardware.numGPUsThisRank
+//       = comm.allReduceMin(hardware.numGPUsThisHost == 0
+//                           ? 0
+//                           : std::max(hardware.numGPUsThisHost/
+//                                      hardware.numRanksThisHost,
+//                                      1));
+//   }
   
 #endif
-} // ::owl
+} // ::barney_api

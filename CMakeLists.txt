@@ -53,6 +53,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
+include(GNUInstallDirs)
 
 option(USE_EXP "Experimental Pluggable Backend" OFF)
 mark_as_advanced(USE_EXP)
@@ -128,6 +129,7 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 # ------------------------------------------------------------------
 if (BARNEY_HAVE_CUDA)
   set(OWL_CUDA_STATIC ON)
+  set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 else()
   add_library(owl-config INTERFACE)
@@ -148,12 +150,6 @@ target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
 )
-# ------------------------------------------------------------------
-option(BARNEY_SINGLE_CYCLE_RQS "Single Cycle RQS" OFF)
-if (BARNEY_SINGLE_CYCLE_RQS)
-  target_compile_definitions(barney_config INTERFACE -DSINGLE_CYCLE_RQS=1)
-endif()
-
 # ------------------------------------------------------------------
 # configure which backend(s) to build
 # ------------------------------------------------------------------

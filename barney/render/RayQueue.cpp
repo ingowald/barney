@@ -24,6 +24,8 @@ namespace BARNEY_NS {
   {
     auto rtc = device->rtc;
     h_numActive = (int*)rtc->allocHost(sizeof(int));
+
+    // resize(rayQueueSize);
   }
     
   RayQueue::~RayQueue()
@@ -78,7 +80,8 @@ namespace BARNEY_NS {
   void RayQueue::swapAfterGeneration()
   {
     if (FromEnv::get()->logQueues)
-      printf("#bn: ## ray queue swap (after generation)\n");
+      printf("#bn(%i): ## ray queue swap (after generation)\n",
+             device->globalRank());
     std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
     std::swap(receiveAndShadeWriteQueue.states, traceAndShadeReadQueue.states);
     std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
@@ -87,24 +90,22 @@ namespace BARNEY_NS {
   void RayQueue::swapAfterCycle(int cycleID, int numCycles)
   {
     if (FromEnv::get()->logQueues)
-      printf("#bn: ## ray queue swap after cycle (cycle %i/%i)\n",cycleID,numCycles);
+      printf("#bn(%i): ## ray queue swap after cycle (cycle %i/%i)\n",
+             device->globalRank(),cycleID,numCycles);
     std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
     std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
   }
   void RayQueue::swapAfterShade()
   {
     if (FromEnv::get()->logQueues)
-      printf("#bn: ## ray queue swap after cycle (after shade)\n");
+      printf("#bn(%i): ## ray queue swap after cycle (after shade)\n",
+             device->globalRank());
     std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
     std::swap(receiveAndShadeWriteQueue.states, traceAndShadeReadQueue.states);
     std::swap(receiveAndShadeWriteQueue.hitIDs, traceAndShadeReadQueue.hitIDs);
   }
   
-  void RayQueue::resize(int newSize
-#if SINGLE_CYCLE_RQS
-                        , int maxRaysAcrossAllRanks
-#endif
-                        )
+  void RayQueue::resize(int newSize)
   {
     if (newSize <= size) return;
     
@@ -113,13 +114,6 @@ namespace BARNEY_NS {
     traceAndShadeReadQueue.free(rtc);
     receiveAndShadeWriteQueue.free(rtc);
 
-#if SINGLE_CYCLE_RQS
-    if (rqs.raysOnly) rtc->freeMem(rqs.raysOnly);
-    if (rqs.hitsOnly) rtc->freeMem(rqs.hitsOnly);
-    rqs.raysOnly = (RayOnly*)rtc->allocMem(maxRaysAcrossAllRanks*sizeof(RayOnly));
-    rqs.hitsOnly = (HitOnly*)rtc->allocMem(maxRaysAcrossAllRanks*sizeof(HitOnly));
-#endif
-    
     // if (traceAndShadeReadQueue.rays) 
     //   rtc->freeMem(traceAndShadeReadQueue);
     // if (receiveAndShadeWriteQueue)

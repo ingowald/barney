@@ -83,8 +83,7 @@ namespace barney_device {
 
   ANARICamera BarneyDevice::newCamera(const char *subtype)
   {
-    ANARICamera cam
-      = (ANARICamera)Camera::createInstance(subtype, deviceState());
+    ANARICamera cam = (ANARICamera)Camera::createInstance(subtype, deviceState());
     assert(cam);
     return cam;
   }
@@ -211,13 +210,13 @@ namespace barney_device {
       size_t pos = s.find(delim);
       if (pos == s.npos)
         break;
-      res.push_back(s.substr(0,pos));
-      s = s.substr(pos+1);
+      res.push_back(s.substr(0, pos));
+      s = s.substr(pos + 1);
     }
     res.push_back(s);
     return res;
   }
-  
+
   static void default_statusFunc(const void * /*userData*/,
                                  ANARIDevice /*device*/,
                                  ANARIObject source,
@@ -242,64 +241,44 @@ namespace barney_device {
   }
 
   BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
-    : helium::BaseDevice(l),
-      deviceType(subType)
+    : helium::BaseDevice(l), deviceType(subType)
   {
-    std::vector<std::string> subTypeFlags = splitString(subType,',');
+    std::vector<std::string> subTypeFlags = splitString(subType, ',');
     for (auto flag : subTypeFlags) {
-      if (flag == "cpu")
-        { m_cudaDevice = -1; continue; }
+      if (flag == "cpu") {
+        m_cudaDevice = -1;
+        continue;
+      }
       if (flag == "default") {
 #if BARNEY_MPI
-        comm = MPI_COMM_WORLD; 
+        comm = MPI_COMM_WORLD;
 #endif
         continue;
       }
 #if BARNEY_MPI
-      if (flag == "local")
-        { comm = 0; continue; }
-      if (flag == "mpi")
-        { comm = MPI_COMM_WORLD; continue; }
+      if (flag == "local") {
+        comm = 0;
+        continue;
+      }
+      if (flag == "mpi") {
+        comm = MPI_COMM_WORLD;
+        continue;
+      }
 #endif
-      std::cout << "un-recognized feature '" << flag << "' on device subtype" << std::endl;
+      std::cout << "un-recognized feature '" << flag << "' on device subtype"
+                << std::endl;
       // reportMessage(ANARI_SEVERITY_WARNING,
       //               "un-recognized feature '%s' on device subtype",
       //               flag.c_str());
-
     }
-    
-    m_state = std::make_unique<BarneyGlobalState>(this_device());
-    // deviceCommitParameters();
-  }
 
-  BarneyDevice::BarneyDevice()
-    : helium::BaseDevice(default_statusFunc,nullptr)
-  {
     m_state = std::make_unique<BarneyGlobalState>(this_device());
   }
 
-  /*! helper entry-point for _directly_ creating a banari device
-    without having to go through the dynamic-library
-    'anariLoadLibrary' mechanism. This is used in pynari, to allow
-    static linking of anari sdk */
-  extern "C" ANARIDevice createAnariDeviceBarney()
+  BarneyDevice::BarneyDevice() : helium::BaseDevice(default_statusFunc, nullptr)
   {
-    ANARIDevice dev = 0;
-    try {
-      // int numGPUs = 0;
-      // bnCountAvailableDevice(&numGPUs);
-      // if (numGPUs == 0)
-      //   throw std::runtime_error("#barney/anari: cannot create device - no GPUs?");
-      dev = (ANARIDevice )new BarneyDevice();
-      return dev;
-    } catch(std::exception &err) {
-      std::cerr << "#banari: exception creating anari 'barney' GPU device: "
-                << err.what() << std::endl;
-      //    throw;
-      return 0;
-    }
+    m_state = std::make_unique<BarneyGlobalState>(this_device());
   }
-
 
 
   BarneyDevice::~BarneyDevice()
@@ -344,7 +323,7 @@ namespace barney_device {
         _gpuIDs = gpuIDs.data();
         _gpuCount = (int)gpuIDs.size();
       } else {
-        // leave empty, init with barney gpu list with {nullptr,-1}
+        // leave _gpuIDs to nullptr -> allow barney to select which ones to use
       }
 
       std::vector<int> dgIDs;
@@ -358,7 +337,7 @@ namespace barney_device {
       }
       int *_dgIDs   = dgIDs.data();
       int  _dgCount = (int)dgIDs.size();
-      
+
       reportMessage
         (ANARI_SEVERITY_DEBUG, "using cuda device #%i", m_cudaDevice);
 
@@ -375,23 +354,29 @@ namespace barney_device {
                             _gpuIDs,_gpuCount);
 
       std::stringstream ss;
-      ss << "#banari rank " << rank << " (of " << size << ") creating context GPUs=(";
-      for (auto gpu : gpuIDs) ss << " " << gpu;
+      ss << "#banari rank " << rank << " (of " << size
+         << ") creating context GPUs=(";
+      for (auto gpu : gpuIDs)
+        ss << " " << gpu;
       ss << " ) and data groups=(";
-      for (auto dg : dgIDs) ss << " " << dg;
+      for (auto dg : dgIDs)
+        ss << " " << dg;
       ss << " )";
 
       std::cout << ss.str() << std::endl;
       reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
       m_initialized = true;
     } catch (const std::exception &err) {
-      std::cerr << "#banari: ran into some kind of exception in barney device init"
-                << err.what() << std::endl;
+      std::cerr
+        << "#banari: ran into some kind of exception in barney device init"
+        << err.what() << std::endl;
     }
   }
 
   void BarneyDevice::deviceCommitParameters()
   {
+    helium::BaseDevice::deviceCommitParameters();
+
     auto state = deviceState(false);
     if (state->hasBeenCommitted) {
       reportMessage(ANARI_SEVERITY_DEBUG, "device committed more than once!");
@@ -401,7 +386,25 @@ namespace barney_device {
     m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
     m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
 #if BARNEY_MPI
-    (void *&)comm = getParam<void *>("worldCommunicator",0);
+    static_assert(sizeof(void*) == sizeof(MPI_Comm),
+                  "we assume an MPI_Comm to be a pointer type, seems for this MPI "
+                  "implementation that's not the case. Pls let the developers know "
+                  "what MPI flavor and version you're using so this can be fixed.");
+    uint64_t passedComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
+    if (passedComm) {
+      printf("#banari.mpi: got passed a pointer to a MPI "
+             "communicator, going to use this.\n");
+      comm = *(MPI_Comm *)passedComm;
+    } else {
+      comm = MPI_COMM_WORLD;
+    }
+    if (comm) {
+      int rank, size;
+      MPI_Comm_rank(comm,&rank);
+      MPI_Comm_size(comm,&size);
+      printf("#banari.mpi: running data parallel on rank %i size %i\n",
+             rank,size);
+    }
 #endif
     if (m_cudaDevice != -2)
       std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
@@ -412,15 +415,15 @@ namespace barney_device {
       state->slot = tetherIndex;
       auto tetherDev = getParam<anari::Device>("tetherDevice", (anari::Device)0);
       tetherDevice = (BarneyDevice *)tetherDev;
-      
+
       assert(tetherCount > 0);
       assert(tetherIndex >= 0);
       assert(tetherIndex < tetherCount);
 
 #ifndef NDEBUG
       std::cout << "#banari: FIRST-TIME device initialization slot "
-                 << tetherIndex << "/" << tetherCount
-                 << " in tethered dev " << tetherDevice << std::endl;
+                << tetherIndex << "/" << tetherCount << " in tethered dev "
+                << tetherDevice << std::endl;
 #endif
       if (tetherDevice) {
 #ifndef NDEBUG
@@ -432,38 +435,49 @@ namespace barney_device {
         assert(state->tether->devices[tetherIndex] == nullptr);
         state->tether->devices[tetherIndex] = this;
       } else {
-        assert(tetherIndex == 0 &&
-               "first device has to be first to be created");
+        assert(tetherIndex == 0 && "first device has to be first to be created");
         state->tether = std::make_shared<Tether>();
         state->tether->devices.resize(tetherCount);
         state->tether->devices[0] = this;
       }
       if (state->tether->allDevicesPresent()) {
-        assert(state->tether->context == 0 &&
-               "only last device to tether should create the barney context");
+        assert(state->tether->context == 0
+               && "only last device to tether should create the barney context");
         initDevice();
       }
     }
-    
-    bool allowInvalidSurfaceMaterials = state->allowInvalidSurfaceMaterials;
- 
-    state->allowInvalidSurfaceMaterials =
-      getParam<bool>("allowInvalidMaterials", true);
-    state->invalidMaterialColor
-      = getParam<math::float4>
-      ("invalidMaterialColor", math::float4(1.f, 0.f, 1.f, 1.f));
 
-    if (allowInvalidSurfaceMaterials != state->allowInvalidSurfaceMaterials)
-      state->objectUpdates.lastSceneChange = helium::newTimeStamp();
-
-    helium::BaseDevice::deviceCommitParameters();
   }
+
+  /*! helper entry-point for _directly_ creating a banari device
+    without having to go through the dynamic-library
+    'anariLoadLibrary' mechanism. This is used in pynari, to allow
+    static linking of anari sdk */
+  extern "C" ANARIDevice createAnariDeviceBarney()
+  {
+    ANARIDevice dev = 0;
+    try {
+      // int numGPUs = 0;
+      // bnCountAvailableDevice(&numGPUs);
+      // if (numGPUs == 0)
+      //   throw std::runtime_error("#barney/anari: cannot create device - no
+      //   GPUs?");
+      dev = (ANARIDevice) new BarneyDevice();
+      return dev;
+    } catch (std::exception &err) {
+      std::cerr << "#banari: exception creating anari 'barney' GPU device: "
+                << err.what() << std::endl;
+      //    throw;
+      return 0;
+    }
+  }
+
 
   int BarneyDevice::deviceGetProperty(const char *name,
                                       ANARIDataType type,
                                       void *mem,
                                       uint64_t size,
-                                      uint32_t flags)
+                                      uint32_t mask)
   {
     std::string_view prop = name;
     if (prop == "extension" && type == ANARI_STRING_LIST) {
@@ -476,10 +490,10 @@ namespace barney_device {
     return 0;
   }
 
-  BarneyGlobalState *BarneyDevice::deviceState(bool commitOnDemand) 
+  BarneyGlobalState *BarneyDevice::deviceState(bool commitOnDemand)
   {
-    BarneyGlobalState *state
-      = (BarneyGlobalState *)helium::BaseDevice::m_state.get();
+    BarneyGlobalState *state =
+      (BarneyGlobalState *)helium::BaseDevice::m_state.get();
     if (commitOnDemand && !state->hasBeenCommitted)
       deviceCommitParameters();
     return state;

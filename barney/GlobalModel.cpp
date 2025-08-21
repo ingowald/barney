@@ -32,11 +32,16 @@ namespace BARNEY_NS {
 
   GlobalModel::~GlobalModel()
   {}
+
+  void (*profHook)() = nullptr;
   
   void GlobalModel::render(barney_api::Renderer *renderer,
                            barney_api::Camera      *_camera,
                            barney_api::FrameBuffer *_fb)
   {
+    auto _context = (BARNEY_NS::Context *)this->context;
+    if (context->myRank() == 0 && FromEnv::get()->logQueues) 
+      std::cout << "============================================ new frame\n";
     assert(context);
     FrameBuffer *fb = (FrameBuffer *)_fb;
     Camera *camera = (Camera *)_camera;
@@ -44,6 +49,8 @@ namespace BARNEY_NS {
     Context *context = (Context *)this->context;
     context->ensureRayQueuesLargeEnoughFor(fb);
     context->render((Renderer*)renderer,this,camera,fb);
+    if (profHook)
+      profHook();
   }
 
 }

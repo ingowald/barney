@@ -30,17 +30,20 @@ namespace barney_api {
 // #endif
   
 namespace BARNEY_NS {
-  Context::Context(const std::vector<int> &dataGroupIDs,
-                   const std::vector<int> &gpuIDs,
-                   int globalIndex,
-                   int globalIndexStep)
-    : isActiveWorker(!dataGroupIDs.empty()),
-      globalIndex(globalIndex)
+  Context::Context(const std::vector<LocalSlot> &localSlots,
+                   WorkerTopo::SP topo)
+    : barney_api::Context(localSlots),
+      isActiveWorker(!localSlots.empty() && localSlots[0].dataRank >= 0),
+      topo(topo)
   {
     
-    if (gpuIDs.empty())
-      throw std::runtime_error("error - no GPUs...");
-
+    assert(!localSlots.empty());
+    for (int i=0;i<(int)localSlots.size();i++) {
+      assert(localSlots[i].dataRank >= 0 ||
+             i == 0 && localSlots[i].dataRank == -1);
+      assert(!localSlots[i].gpuIDs.empty());
+    }
+    
     if (!isActiveWorker)  {
       // not an active worker: no device groups etc, just create a
       // single default device
@@ -49,52 +52,77 @@ namespace BARNEY_NS {
       return;
     }
 
-    if (gpuIDs.size() < dataGroupIDs.size())
-      throw std::runtime_error("not enough GPUs ("
-                               +std::to_string(gpuIDs.size())
-                               +") for requested num data groups ("
-                               +std::to_string(dataGroupIDs.size())
-                               +")");
-    if (gpuIDs.size() % dataGroupIDs.size())
-      throw std::runtime_error("requested num GPUs is not a multiple of "
-                               "requested num data groups");
-    int numSlots = (int)dataGroupIDs.size();
-    int gpusPerSlot = (int)gpuIDs.size() / numSlots;
-    std::vector<std::vector<int>> gpuInSlot(numSlots);
-    perSlot.resize(numSlots);
-    std::vector<Device *> allDevices;
 
-    std::vector<int> gpuIDsToEnablePeerAccessFor;
+    //   throw std::runtime_error("not enough GPUs ("
+    //                            +std::to_string(gpuIDs.size())
+    //                            +") for requested num data groups ("
+    //                            +std::to_string(dataGroupIDs.size())
+    //                            +")");
+    // if (gpuIDs.size() % dataGroupIDs.size())
+    //   throw std::runtime_error("requested num GPUs is not a multiple of "
+    //                            "requested num data groups");
+    // int numSlots = (int)dataGroupIDs.size();
+    // int gpusPerSlot = (int)gpuIDs.size() / numSlots;
+    // std::vector<std::vector<int>> gpuInSlot(numSlots);
+    // perSlot.resize(numSlots);
+    
+    std::vector<Device *> allLocalDevices;
+    // std::vector<WorkerTopo::Device> allDevices;
+
+    int numSlots = (int)localSlots.size();
+    perSlot.resize(numSlots);
+
+    havePeerAccess = true;
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
-      std::vector<int> contextRanks;
+      // std::vector<int> contextRanks;
+      auto &ls = localSlots[lmsIdx];
       auto &dg = perSlot[lmsIdx];
       dg.context = this;
-      dg.modelRankInThisSlot = dataGroupIDs[lmsIdx];
+      dg.modelRankInThisSlot = ls.dataRank;
+      // numDifferentModelSlots
+      //   = std::max(numDifferentModelSlots,dg.modelRankInThisSlot);
+      havePeerAccess
+        = havePeerAccess & rtc::enablePeerAccess(ls.gpuIDs);
+
       std::vector<Device *> slotDevices;
-      for (int j=0;j<gpusPerSlot;j++) {
-        int localRank = lmsIdx*gpusPerSlot+j;
-        contextRanks.push_back(localRank);
-        int gpuID = gpuIDs[localRank];
+      for (auto gpuID : ls.gpuIDs) {
+        // WorkerTopo::Device ld;
+        // ld.worker = 0;
+        // ld.local  = allLocalDevices.size();
+        // ld.dataRank = dg.modelRankInThisSlot;
+        // allDevices.push_back(ld);
+        // contextRanks.push_back(localRank);
         rtc::Device *rtc = new rtc::Device(gpuID);
-        gpuIDsToEnablePeerAccessFor.push_back(gpuID);
-        Device *device
-          = new Device(rtc,
-                       (int)allDevices.size(),
-                       (int)gpuIDs.size()
-                       // ,
-                       // globalIndex*numSlots+lmsIdx,
-                       // globalIndexStep*numSlots
-                       );
+        int nextLocal = allLocalDevices.size();
+        Device *device 
+          = new Device(rtc,topo.get(),nextLocal);
+          
         slotDevices.push_back(device);
-        allDevices.push_back(device);
+        allLocalDevices.push_back(device);
         dg.gpuIDs.push_back(gpuID);
       }
       dg.devices
-        = std::make_shared<DevGroup>(slotDevices,(int)allDevices.size());
+        = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
     }
-    this->devices = std::make_shared<DevGroup>(allDevices,(int)allDevices.size());
-    havePeerAccess = rtc::enablePeerAccess(gpuIDsToEnablePeerAccessFor);
 
+    // topo = std::make_shared<WorkerTopo>(allDevices);
+    // for (int i=0;i<allLocalDevices.size();i++) {
+    //   allLocalDevices[i]->allGPUsGlobally
+    //     = { i,(int)allLocalDevices.size() };
+    //   allLocalDevices[i]->allGPUsLocally
+    //     = { i,(int)allLocalDevices.size() };
+    // }
+    devices = std::make_shared<DevGroup>
+      (allLocalDevices,(int)allLocalDevices.size());
+    // havePeerAccess = rtc::enablePeerAccess(gpuIDsToEnablePeerAccessFor);
+    if (!havePeerAccess) {
+      std::cout << "don't have peer access between GPUs ... this is going to get interesting" << std::endl;
+      deviceWeNeedToCopyToForFBMap = allLocalDevices[0];
+      // for (int i=0;i<allDevices.size();i++)
+      //   allDevices[i]->primaryDeviceIfNoPeerAccess
+      //     = allDevices[0]->rtc;
+    }
+    
     for (auto &dg : perSlot)
       dg.materialRegistry
         = std::make_shared<render::MaterialRegistry>(dg.devices);
@@ -102,7 +130,6 @@ namespace BARNEY_NS {
       dg.samplerRegistry
         = std::make_shared<render::SamplerRegistry>(dg.devices);
   }
-
   
   Context::~Context()
   {
@@ -114,9 +141,12 @@ namespace BARNEY_NS {
       device = 0;
     }
   }
-  
+
   /*! returns how many rays are active in all ray queues, across all
-    devices and, where applicable, across all ranks */
+    devices and, where applicable, across all ranks. We use this to
+    decide whether we can terminate a frame, or need more bounces - we
+    may actually need to enter another bounce even if *we* do not have
+    any rays */
   int Context::numRaysActiveLocally()
   {
     int numActive = 0;
@@ -124,21 +154,8 @@ namespace BARNEY_NS {
       numActive += device->rayQueue->numActiveRays();
     return numActive;
   }
- 
-  void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
-  {
-    while (true) {
-      if (FromEnv::get()->logQueues) 
-        std::cout << "----- glob-trace -> locally) "
-                  << " -----------" << std::endl;
-      traceRaysLocally(model, rngSeed, needHitIDs);
-      const bool needMoreTracing = forwardRays(needHitIDs);
-      if (needMoreTracing)
-        continue;
-      break;
-    }
-  }
-
+  
+  
   void Context::finalizeTiles(FrameBuffer *fb)
   {
     fb->finalizeTiles();
@@ -149,6 +166,7 @@ namespace BARNEY_NS {
                             Camera      *camera,
                             FrameBuffer *fb)
   {
+    auto _context = this;
     if (!isActiveWorker)
       return;
 
@@ -160,11 +178,10 @@ namespace BARNEY_NS {
 
       if (FromEnv::get()->logQueues) 
         std::cout << "#################### RENDER ######################" << std::endl;
-      double _t0 = getCurrentTime();
+      // double _t0 = getCurrentTime();
       if (FromEnv::get()->logQueues) 
         std::cout << "==================== new pixel wave ======================" << std::endl;
       generateRays(camera,renderer,fb);
-
       for (int generation=0;true;generation++) {
         if (FromEnv::get()->logQueues) 
           std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
@@ -175,13 +192,13 @@ namespace BARNEY_NS {
           std::cout << "----- trace (glob) " << generation
                     << " -----------" << std::endl;
         traceRaysGlobally(model,rngSeed,needHitIDs);
-        
+
         if (FromEnv::get()->logQueues) 
           std::cout << "----- shade " << generation
                     << " -----------" << std::endl;
         shadeRaysLocally(renderer, model, fb, generation, rngSeed);
         // no sync required here, shadeRays syncs itself.
-        
+
         if (FromEnv::get()->logQueues) 
           std::cout << "----- shade " << generation
                     << " -----------" << std::endl;
@@ -198,6 +215,18 @@ namespace BARNEY_NS {
     }
   }
 
+    
+  /*! trace all rays currently in a ray queue, including forwarding
+    if and where applicable, untile every ray in the ray queue as
+    found its intersection */
+  void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
+  {
+    // if (myRank() == 0) printf("globaltrace....\n");
+    
+    if (FromEnv::get()->logQueues) 
+      printf("(mr%i) traceRaysGlobally\n",myRank());
+    globalTraceImpl->traceRays(model,rngSeed,needHitIDs);
+  }
 
   std::shared_ptr<barney_api::Model> Context::createModel()
   {
@@ -213,26 +242,20 @@ namespace BARNEY_NS {
   {
     if (!isActiveWorker)
       return;
-    
+
+    auto dev0 = (*devices)[0];
+    auto devFB = fb->getFor(dev0);
+    int numTilesInFrame        = devFB->numTiles.x*devFB->numTiles.y;
+    int numGPUsThatRenderTiles = topo->numWorkerDevices;
+    int maxTilesOnAnyGPU       = divRoundUp(numTilesInFrame,
+                                            numGPUsThatRenderTiles);
+    int upperBoundOnNumRays
+      = maxTilesOnAnyGPU * /* max two rays per pixel*/2 * BARNEY_NS::pixelsPerTile;
     for (auto device : *devices) {
-      auto devFB = fb->getFor(device);
-      int numTilesInFrame        = devFB->numTiles.x*devFB->numTiles.y;
-      int numGPUsThatRenderTiles = device->allGPUsGlobally.size;
-      int maxTilesOnAnyGPU       = divRoundUp(numTilesInFrame,
-                                              numGPUsThatRenderTiles);
-      int numGPUsInIsland        = device->gpuInIsland.size;
-    
-      int upperBoundOnNumRays
-        = maxTilesOnAnyGPU * /* max two rays per pixel*/2 * BARNEY_NS::pixelsPerTile;
-      int maxRaysInIsland
-        = numGPUsInIsland * maxTilesOnAnyGPU;
       assert(device->rayQueue);
-      device->rayQueue->resize(upperBoundOnNumRays
-#if SINGLE_CYCLE_RQS
-                               ,maxRaysInIsland
-#endif
-                               );
+      device->rayQueue->resize(upperBoundOnNumRays);
     }
+    
   }
 
   int Context::contextSize() const

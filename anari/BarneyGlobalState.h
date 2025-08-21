@@ -30,7 +30,7 @@ namespace barney_device {
   struct TetheredModel {
     BNModel model;
   };
-  
+
   /*! keeps info on multiple (banari-)devices that are tethered
       together onto a singel barney ncontext */
   struct Tether {
@@ -42,12 +42,12 @@ namespace barney_device {
     void releaseModel(int uniqueID);
     std::map<int,std::pair<int,std::shared_ptr<TetheredModel>>> activeModels;
     std::mutex mutex;
-    
+
     int numDevicesAlreadyTethered = 0;
     std::vector<BarneyDevice *> devices;
     int numReadyToRender = 0;
   };
-  
+
   struct BarneyGlobalState : public helium::BaseGlobalDeviceState
   {
     struct ObjectUpdates
@@ -55,12 +55,8 @@ namespace barney_device {
       helium::TimeStamp lastSceneChange{0};
     } objectUpdates;
 
-    // World *currentWorld{nullptr};
     int slot = -1;
-    bool allowInvalidSurfaceMaterials{true};
-    math::float4 invalidMaterialColor{1.f, 0.f, 1.f, 1.f};
 
-    // BNHardwareInfo bnInfo;
     std::shared_ptr<Tether> tether;
 
     /*! created models get consecutive IDs, which allows us for
@@ -69,9 +65,10 @@ namespace barney_device {
         the i'th model of A is always tethered with the i'th model of
         B (and vice versa) */
     int nextUniqueModelID = 0;
+
+    bool hasBeenCommitted = false;
+
     // Helper methods //
-    
-    bool          hasBeenCommitted = false;
 
     BarneyGlobalState(ANARIDevice d);
     void markSceneChanged();

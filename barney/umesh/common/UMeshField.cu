@@ -39,7 +39,6 @@ namespace BARNEY_NS {
     return &perLogical[device->contextRank()];
   }
 
-#if RTC_DEVICE_CODE
   inline __rtc_device float length3(vec4f v)
   { return length(getPos(v)); }
   
@@ -147,11 +146,6 @@ namespace BARNEY_NS {
       rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
     }
   }
-#else
-  __rtc_global void umeshRasterCells(rtc::ComputeInterface ci,
-                                     UMeshField::DD mesh,
-                                     MCGrid::DD grid);
-#endif
   
   void UMeshField::buildMCs(MCGrid &grid)
   {
@@ -166,11 +160,8 @@ namespace BARNEY_NS {
       // initial grid already built
       return;
     }
+    assert(!worldBounds.empty());
 
-    // std::cout << "------------------------------------------" << std::endl;
-    // std::cout << "rebuilding ENTIRE mc grid!!!!" << std::endl;
-    // std::cout << "------------------------------------------" << std::endl;
-    
     float maxWidth = reduce_max(worldBounds.size());//getBox(worldBounds).size());
     int MC_GRID_SIZE
       = 200 + int(sqrtf(cellOffsets->count/100.f));
@@ -180,10 +171,8 @@ namespace BARNEY_NS {
               << OWL_TERMINAL_DEFAULT << std::endl;
     grid.resize(dims);
     
-    grid.gridOrigin
-      = worldBounds.lower;
-    grid.gridSpacing
-      = worldBounds.size() * rcp(vec3f(dims));
+    grid.gridOrigin  = worldBounds.lower;
+    grid.gridSpacing = worldBounds.size() * rcp(vec3f(dims));
     
     grid.clearCells();
     
@@ -194,55 +183,13 @@ namespace BARNEY_NS {
                    getDD(device),grid.getDD(device));
     for (auto device : *devices)
       device->sync();
-    
-    // const int bs = 128;
-    // const int nb = divRoundUp(numCells,bs);
-    // for (auto device : *devices) {
-    //   UMeshRasterElements args = {
-    //     getDD(device),
-    //     grid.getDD(device)
-    //   };
-    //   device->umeshRasterElements->launch(nb,bs,&args);
-    // }
-    // for (auto device : *devices)
-    //   device->sync();
   }
     
-  
-//   /*! computes - ON CURRENT DEVICE - the given mesh's prim bounds and
-//     per-prim scalar ranges, and writes those into givne
-//     pre-allocated device mem location */
-//   struct UMeshComputeElementBBs {
-//     /* kernel ARGS */
-//     box3f         *d_primBounds;
-//     range1f       *d_primRanges;
-//     UMeshField::DD mesh;
-
-// #if RTC_DEVICE_CODE
-//     inline __rtc_device
-//     void run(const rtc::ComputeInterface &ci);
-// #endif
-//   };
-
-// #if RTC_DEVICE_CODE
-//     /* kernel FUNCTION */
-//     inline __rtc_device
-//     void UMeshComputeElementBBs::run(const rtc::ComputeInterface &ci)
-//     {
-//       const int tid = ci.launchIndex().x;
-//       if (tid >= mesh.numCells) return;
-      
-//       auto elt = mesh.elements[tid];
-//       box4f eb = mesh.eltBounds(elt);
-//       d_primBounds[tid] = getBox(eb);
-//       if (d_primRanges) d_primRanges[tid] = getRange(eb);
-//     }
-// #endif
-  
   bool UMeshField::setData(const std::string &member,
                            const std::shared_ptr<Data> &value)
   {
-    if (ScalarField::setData(member,value)) return true;
+    if (ScalarField::setData(member,value))
+      return true;
 
     if (member == "cell.index") {
       cellOffsets = value->as<PODData>();
@@ -274,8 +221,6 @@ namespace BARNEY_NS {
     return false;
   }
     
-  
-
   __rtc_global 
   void umeshComputeElementBBs(rtc::ComputeInterface ci,
                               UMeshField::DD mesh,

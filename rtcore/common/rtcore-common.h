@@ -10,7 +10,8 @@
 #include <sstream>
 #include "barney/barney.h"
 
-# ifdef __CUDA_ARCH__
+# ifdef __CUDACC__
+// # ifdef __CUDA_ARCH__
 #  define RTC_DEVICE_CODE 1
 # endif
 

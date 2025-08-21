@@ -12,6 +12,9 @@ namespace rtc {
     inline bool enablePeerAccess(const std::vector<int> &IDs)
     { /* ignore / no-op on embree backend */; return true; }
 
+    /*! get a unique hash for a given physical device. */
+    inline size_t getPhysicalDeviceHash(int gpuID) { return gpuID; }
+    
   }
 }
 

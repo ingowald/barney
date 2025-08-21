@@ -31,9 +31,9 @@
 #include <owl/common/math/box.h>
 #include <owl/common/math/AffineSpace.h>
 #include <owl/common/math/random.h>
-#ifdef __CUDACC__
+// #ifdef __CUDACC__
 # define OWL_DISABLE_TBB
-#endif
+// #endif
 #include <owl/common/parallel/parallel_for.h>
 // #include "rtcore/ComputeInterface.h"
 
@@ -66,7 +66,7 @@ namespace BARNEY_NS {
   using namespace owl::common;
   typedef owl::common::interval<float> range1f;
   using Random = LCG<8>;
-  
+
   template<typename T>
   inline __both__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }

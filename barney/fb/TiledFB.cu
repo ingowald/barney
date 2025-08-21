@@ -21,54 +21,46 @@
 
 namespace BARNEY_NS {
 
-  RTC_IMPORT_COMPUTE1D(setTileCoords);
-  RTC_IMPORT_COMPUTE1D(linearizeColorAndNormal);
-  RTC_IMPORT_COMPUTE1D(linearizeAuxChannel);
+  __rtc_global
+  void linearizeColorAndNormalKernel(const rtc::ComputeInterface &ci,
+                                     void      *out_rgba,
+                                     BNDataType colorFormat,
+                                     vec3f     *out_normal,
+                                     float      accumScale,
+                                     TileDesc  *descs,
+                                     AccumTile *tiles,
+                                     vec2i      numPixels)
+  {
+    int tileIdx = ci.getBlockIdx().x;
+    TileDesc desc   = descs[tileIdx];
+    
+    AccumTile *tile = &tiles[tileIdx];
 
-  struct LinearizeColorAndNormal {
-    /* ARGS */
-    void      *out_rgba;
-    BNDataType colorFormat;
-    vec3f     *out_normal;
-    float      accumScale;
-    TileDesc  *descs;
-    AccumTile *tiles;
-    vec2i      numPixels;
+    int subIdx = ci.getThreadIdx().x;
+    int iix = subIdx % tileSize;
+    int iiy = subIdx / tileSize;
+    int ix = desc.lower.x + iix;
+    int iy = desc.lower.y + iiy;
+    if (ix >= numPixels.x) return;
+    if (iy >= numPixels.y) return;
+    int idx = ix + numPixels.x*iy;
 
-#if RTC_DEVICE_CODE
-    /* CODE */
-    inline __rtc_device
-    void run(const rtc::ComputeInterface &ci)
-    {
-      int tileIdx = ci.getBlockIdx().x;
-      TileDesc desc   = descs[tileIdx];
-      AccumTile *tile = &tiles[tileIdx];
-      
-      int subIdx = ci.getThreadIdx().x;
-      int iix = subIdx % tileSize;
-      int iiy = subIdx / tileSize;
-      int ix = desc.lower.x + iix;
-      int iy = desc.lower.y + iiy;
-      if (ix >= numPixels.x) return;
-      if (iy >= numPixels.y) return;
-      int idx = ix + numPixels.x*iy;
+    vec4f color = tile->accum[subIdx] * accumScale;
 
-      vec4f color = tile->accum[subIdx] * accumScale;
-      if (colorFormat == BN_FLOAT4) 
-        ((vec4f*)out_rgba)[idx] = color;
-      else if (colorFormat == BN_UFIXED8_RGBA) 
-        ((uint32_t*)out_rgba)[idx] = make_rgba(color);
-      else if (colorFormat == BN_UFIXED8_RGBA_SRGB) 
-        ((uint32_t*)out_rgba)[idx] = make_rgba(linear_to_srgb(color));
-      else
-        // unsupported type!?
-        ;
-      if (out_normal)
-        out_normal[idx] = tile->normal[subIdx];
-    }
-#endif
-  };
-
+    if (colorFormat == BN_FLOAT4) 
+      ((vec4f*)out_rgba)[idx] = color;
+    else if (colorFormat == BN_UFIXED8_RGBA) 
+      ((uint32_t*)out_rgba)[idx] = make_rgba(color);
+    else if (colorFormat == BN_UFIXED8_RGBA_SRGB) 
+      ((uint32_t*)out_rgba)[idx] = make_rgba(linear_to_srgb(color));
+    else
+      // unsupported type!?
+      ;
+    
+    if (out_normal)
+      out_normal[idx] = tile->normal[subIdx];
+  }
+  
 
   /*! take this GPU's tiles, and write those tiles' color (and
     optionally normal) channels into the linear frame buffers
@@ -81,70 +73,54 @@ namespace BARNEY_NS {
                                         vec3f *linearNormal,
                                         float  accumScale)
   {
-    SetActiveGPU forDuration(device);
-    LinearizeColorAndNormal args={linearColor,colorFormat,
-                                  linearNormal,accumScale,
-                                  tileDescs,accumTiles,
-                                  numPixels};
-    linearizeColorAndNormalKernel
-      ->launch(numActiveTilesThisGPU,pixelsPerTile,&args);
+    SetActiveGPU forDuration(appDevice?appDevice:device);
+    if (appDevice) {
+      appDevice->rtc->copyAsync(appAccumTiles,accumTiles,
+                                numActiveTilesThisGPU*sizeof(*appAccumTiles));
+    }
+    __rtc_launch(// device
+                 (appDevice?appDevice:device)->rtc,
+                 // kernel
+                 linearizeColorAndNormalKernel,
+                 // launch config
+                 numActiveTilesThisGPU,pixelsPerTile,
+                 // args
+                 linearColor,
+                 colorFormat,
+                 linearNormal,
+                 accumScale,
+                 appDevice?appTileDescs:tileDescs,
+                 appDevice?appAccumTiles:accumTiles,
+                 numPixels);
   }
 
 
 
-
-  struct LinearizeAuxChannel {
-    /* ARGS */
-    void           *linearOut;
-    vec2i           numPixels;
-    AuxChannelTile *aux;
-    TileDesc       *descs;
-
-#if RTC_DEVICE_CODE
-    /* CODE */
-    inline __rtc_device
-    void run(const rtc::ComputeInterface &ci)
-    {
-      int        tileIdx = ci.getBlockIdx().x;
-      TileDesc   desc    = descs[tileIdx];
+  __rtc_global void linearizeAuxTilesKernel(const rtc::ComputeInterface &ci,
+                                            void           *linearOut,
+                                            vec2i           numPixels,
+                                            AuxChannelTile *aux,
+                                            TileDesc       *descs)
+  {
+    int        tileIdx = ci.getBlockIdx().x;
+    TileDesc   desc    = descs[tileIdx];
       
-      int subIdx = ci.getThreadIdx().x;
-      int iix = subIdx % tileSize;
-      int iiy = subIdx / tileSize;
-      int ix = desc.lower.x + iix;
-      int iy = desc.lower.y + iiy;
-      if (ix >= numPixels.x) return;
-      if (iy >= numPixels.y) return;
-      int idx = ix + numPixels.x*iy;
+    int subIdx = ci.getThreadIdx().x;
+    int iix = subIdx % tileSize;
+    int iiy = subIdx / tileSize;
+    int ix = desc.lower.x + iix;
+    int iy = desc.lower.y + iiy;
+    if (ix >= numPixels.x) return;
+    if (iy >= numPixels.y) return;
+    int idx = ix + numPixels.x*iy;
 
-      ((uint32_t*)linearOut)[idx] = aux[tileIdx].ui[subIdx];
-      
-      // switch (whichChannel) {
-      // case BN_FB_PRIMID: 
-      //   ((uint32_t*)linearOut)[idx] = aux.primID[tileIdx].ui[subIdx];
-      //   break;
-      // case BN_FB_OBJID: 
-      //   ((uint32_t*)linearOut)[idx] = aux.objID[tileIdx].ui[subIdx];
-      //   break;
-      // case BN_FB_INSTID: 
-      //   ((uint32_t*)linearOut)[idx] = aux.instID[tileIdx].ui[subIdx];
-      //   break;
-      // case BN_FB_DEPTH: 
-      //   ((float*)linearOut)[idx] = aux.depth[tileIdx].f[subIdx];
-      //   break;
-      // default:
-      //   printf("LinearizeAuxChannel not implemented for channel #%i\n",
-      //          whichChannel);
-      // }
-    }
-#endif
-  };
+    ((uint32_t*)linearOut)[idx] = aux[tileIdx].ui[subIdx];
+  }
 
   /*! linearize given array's aux tiles, on given device. this can be
-      used either for local GPUs on a single node, or on the owner
-      after it reveived all worker tiles */
+    used either for local GPUs on a single node, or on the owner
+    after it reveived all worker tiles */
   void TiledFB::linearizeAuxTiles(Device *device,
-                                  rtc::ComputeKernel1D *linearizeAuxChannelKernel,
                                   void *linearOut,
                                   vec2i numPixels,
                                   AuxChannelTile *tilesIn,
@@ -152,10 +128,17 @@ namespace BARNEY_NS {
                                   int numTiles)
   {
     SetActiveGPU forDuration(device);
-    LinearizeAuxChannel args={linearOut,numPixels,
-                              tilesIn,descsIn};
-    linearizeAuxChannelKernel
-      ->launch(numTiles,pixelsPerTile,&args);       
+    __rtc_launch(// device
+                 device->rtc,
+                 // kernel
+                 linearizeAuxTilesKernel,
+                 // launchDims
+                 numTiles,pixelsPerTile,
+                 // args
+                 linearOut,
+                 numPixels,
+                 tilesIn,
+                 descsIn);
   }
   
 
@@ -166,109 +149,98 @@ namespace BARNEY_NS {
     AuxChannelTile *aux = 0;
     switch(channel) {
     case BN_FB_DEPTH:
-      aux = auxTiles.depth;
+      aux = appDevice?appAuxTiles.depth:auxTiles.depth;
       break;
     case BN_FB_PRIMID:
-      aux = auxTiles.primID;
+      aux = appDevice?appAuxTiles.primID:auxTiles.primID;
       break;
     case BN_FB_INSTID:
-      aux = auxTiles.instID;
+      aux = appDevice?appAuxTiles.instID:auxTiles.instID;
       break;
     case BN_FB_OBJID:
-      aux = auxTiles.objID;
+      aux = appDevice?appAuxTiles.objID:auxTiles.objID;
       break;
     default:
       throw std::runtime_error("unsupported aux channel in sending aux!?");
     };
-    linearizeAuxTiles(device,linearizeAuxChannelKernel,
-                        linearChannel,numPixels,
-                        aux,tileDescs,numActiveTilesThisGPU);
+    linearizeAuxTiles(appDevice?appDevice:device,
+                      linearChannel,numPixels,
+                      aux,
+                      appDevice?appTileDescs:tileDescs,
+                      numActiveTilesThisGPU);
   }
-
-
-
 
   
-  TiledFB::SP TiledFB::create(Device *device, FrameBuffer *owner)
+  TiledFB::SP TiledFB::create(Device *device,
+                              /*! device for the gpu that the app
+                                  lives on, if different from current
+                                  GPU, and if no peer access is
+                                  available */
+                              Device *appDevice,
+                              FrameBuffer *owner)
   {
-    return std::make_shared<TiledFB>(device, owner);
+    return std::make_shared<TiledFB>(device, appDevice, owner);
   }
 
-  TiledFB::TiledFB(Device *device, FrameBuffer *owner)
+  TiledFB::TiledFB(Device *device,
+                   Device *appDevice,
+                   FrameBuffer *owner)
     : device(device),
+      appDevice(appDevice==device?nullptr:appDevice),
       owner(owner)
-  {
-    setTileCoords
-      = createCompute_setTileCoords(device->rtc);
-    linearizeColorAndNormalKernel
-      = createCompute_linearizeColorAndNormal(device->rtc);
-    linearizeAuxChannelKernel
-      = createCompute_linearizeAuxChannel(device->rtc);
-  }
+  {}
 
   TiledFB::~TiledFB()
   {
     free();
-    delete setTileCoords;
-    delete linearizeColorAndNormalKernel;
   }
 
+  template<typename T>
+  void freeAndSetNull(Device *device, T *&pMem)
+  {
+    if (pMem) {
+      device->rtc->freeMem(pMem);
+      pMem = nullptr;
+    }
+  }
+  
   void TiledFB::free()
   {
     SetActiveGPU forDuration(device);
-    if (tileDescs) {
-      device->rtc->freeMem(tileDescs);
-      tileDescs = nullptr;
+    freeAndSetNull(device,tileDescs);
+    freeAndSetNull(device,accumTiles);
+    freeAndSetNull(device,auxTiles.primID);
+    freeAndSetNull(device,auxTiles.instID);
+    freeAndSetNull(device,auxTiles.objID);
+    freeAndSetNull(device,auxTiles.depth);
+
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      freeAndSetNull(appDevice,appTileDescs);
+      freeAndSetNull(appDevice,appAccumTiles);
+      freeAndSetNull(appDevice,appAuxTiles.primID);
+      freeAndSetNull(appDevice,appAuxTiles.instID);
+      freeAndSetNull(appDevice,appAuxTiles.objID);
+      freeAndSetNull(appDevice,appAuxTiles.depth);
     }
-    if (accumTiles)  {
-      device->rtc->freeMem(accumTiles);
-      accumTiles = nullptr;
-    }
-    auto freeTiles = [&](AuxChannelTile *&tiles) {
-      if (tiles) {
-        device->rtc->freeMem(tiles);
-        tiles = 0;
-      }
-    };
-    freeTiles(auxTiles.primID);
-    freeTiles(auxTiles.instID);
-    freeTiles(auxTiles.objID);
-    freeTiles(auxTiles.depth);
   }
 
-  struct SetTileCoords {
-    /* kernel ARGS */
-    TileDesc *tileDescs;
-    int numActiveTiles;
-    vec2i numTiles;
-    int globalIndex;
-    int globalIndexStep;
-
-    /* kernel CODE */
-#if RTC_DEVICE_CODE
-    inline __rtc_device
-    void run(const rtc::ComputeInterface &rtCore);
-#endif
-  };
-
-#if RTC_DEVICE_CODE
-  /* kernel CODE */
-  inline __rtc_device
-  void SetTileCoords::run(const rtc::ComputeInterface &rtCore)
+  __rtc_global void setTileCoordsKernel(const rtc::ComputeInterface &ci,
+                                        TileDesc *tileDescs,
+                                        int numActiveTiles,
+                                        vec2i numTiles,
+                                        int globalIndex,
+                                        int globalIndexStep)
   {
-    int tid
-      = rtCore.getThreadIdx().x
-      + rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
-    if (tid >= numActiveTiles)
-      return;
-        
+    int tid = ci.launchIndex().x;
+    if (tid >= numActiveTiles) return;
+    
     int tileID = tid * globalIndexStep + globalIndex;
-        
+    
     int tile_x = tileID % numTiles.x;
     int tile_y = tileID / numTiles.x;
     tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
   }
-#endif
   
 
   void TiledFB::resize(uint32_t channels,
@@ -284,37 +256,61 @@ namespace BARNEY_NS {
       ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalRank()),
                    device->globalSize())
       : 0;
-    auto rtc = device->rtc;
+    // ------------------------------------------------------------------
+    // accum tiles
+    // ------------------------------------------------------------------
     accumTiles
-      = (AccumTile *)rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
-    auto alloc = [&](AuxChannelTile *&tiles) 
-    { tiles = (AuxChannelTile *)rtc->allocMem(numActiveTilesThisGPU*sizeof(*tiles)); };
+      = (AccumTile *)device->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      appAccumTiles
+        = (AccumTile *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
+    }
+    // ------------------------------------------------------------------
+    // aux channel tiles
+    // ------------------------------------------------------------------
+    auto alloc = [&](Device *device, AuxChannelTile *&tiles) 
+    { tiles = (AuxChannelTile *)device->rtc->allocMem(numActiveTilesThisGPU*sizeof(*tiles)); };
 
-    if (channels & BN_FB_PRIMID) alloc(auxTiles.primID);
-    if (channels & BN_FB_INSTID) alloc(auxTiles.instID);
-    if (channels & BN_FB_OBJID)  alloc(auxTiles.objID);
-    if (channels & BN_FB_DEPTH)  alloc(auxTiles.depth);
+    if (channels & BN_FB_PRIMID) alloc(device,auxTiles.primID);
+    if (channels & BN_FB_INSTID) alloc(device,auxTiles.instID);
+    if (channels & BN_FB_OBJID)  alloc(device,auxTiles.objID);
+    if (channels & BN_FB_DEPTH)  alloc(device,auxTiles.depth);
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      if (channels & BN_FB_PRIMID) alloc(appDevice,appAuxTiles.primID);
+      if (channels & BN_FB_INSTID) alloc(appDevice,appAuxTiles.instID);
+      if (channels & BN_FB_OBJID)  alloc(appDevice,appAuxTiles.objID);
+      if (channels & BN_FB_DEPTH)  alloc(appDevice,appAuxTiles.depth);
+    }
     
+    // ------------------------------------------------------------------
+    // tile descs
+    // ------------------------------------------------------------------
     tileDescs
-      = (TileDesc *)rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
-    SetTileCoords args = {
-      tileDescs,
-      numActiveTilesThisGPU,
-      numTiles,
-      device->globalRank(),
-      device->globalSize()
-    };
-    if (numActiveTilesThisGPU > 0)
-      setTileCoords
-        ->launch(divRoundUp(numActiveTilesThisGPU,1024),1024,
-                 &args);
+      = (TileDesc *)device->rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      appTileDescs
+        = (TileDesc *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
+    }
+    __rtc_launch(//device
+                 device->rtc,
+                 // kernel
+                 setTileCoordsKernel,
+                 // launch config,
+                 divRoundUp(numActiveTilesThisGPU,1024),1024,
+                 // args
+                 tileDescs,
+                 numActiveTilesThisGPU,
+                 numTiles,
+                 device->globalRank(),
+                 device->globalSize());
+    if (appTileDescs)
+      device->rtc->copyAsync(appTileDescs,tileDescs,
+                             numActiveTilesThisGPU * sizeof(TileDesc));
   }
 
-  // ==================================================================
-
-  RTC_EXPORT_COMPUTE1D(setTileCoords,SetTileCoords);
-  RTC_EXPORT_COMPUTE1D(linearizeColorAndNormal,LinearizeColorAndNormal);
-  RTC_EXPORT_COMPUTE1D(linearizeAuxChannel,LinearizeAuxChannel);
 }
 
 

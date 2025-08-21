@@ -49,14 +49,18 @@ namespace BARNEY_NS {
                            const DevGroup::SP &devices,
                            const bool isOwner)
     : barney_api::FrameBuffer(context),
-      //SlottedObject(context,devices),
       isOwner(isOwner),
       devices(devices)
   {
+    if (FromEnv::get()->explicitlyDisabled("denoising")) {
+      if (context->myRank() == 0)
+        std::cout << "#bn: denoising explicitly disabled in env-config." << std::endl;
+      enableDenoising = false;
+    }
     perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
       getPLD(device)->tiledFB
-        = TiledFB::create(device,this);
+        = TiledFB::create(device,context->deviceWeNeedToCopyToForFBMap,this);
     }
 
     Device *device = getDenoiserDevice();
@@ -154,6 +158,7 @@ namespace BARNEY_NS {
       = doDenoising
       ? BN_FLOAT4
       : colorChannelFormat;
+
     // this is virtual, and will incur either device copies or mpi
     // pack-gather-unpack
     gatherColorChannel(colorCopyTarget,gatherType,normalCopyTarget);

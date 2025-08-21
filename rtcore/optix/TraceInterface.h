@@ -24,7 +24,8 @@ namespace rtc {
 
     using namespace rtc::cuda_common;
 
-#ifdef __CUDACC__
+// #ifdef __CUDACC__
+#ifdef BARNEY_DEVICE_PROGRAM
     inline __device__
     const void *getLaunchParamsPointer();
 #endif
@@ -32,9 +33,11 @@ namespace rtc {
     /*! the interface that pipeline programs use to talk to / query
       data from the ray tracing core */
     struct TraceInterface {
-#ifdef __CUDACC__
+#ifdef BARNEY_DEVICE_PROGRAM
       inline __device__ const void *getLPData() const
       { return getLaunchParamsPointer(); }
+#endif
+#ifdef __CUDACC__
       
       inline __device__ void ignoreIntersection() const
       { optixIgnoreIntersection(); }

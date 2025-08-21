@@ -24,10 +24,18 @@ Camera *Camera::createInstance(std::string_view type, BarneyGlobalState *s)
 void Camera::commitParameters()
 {
   m_pos = getParam<math::float3>("position", math::float3(0.f, 0.f, 0.f));
+  if (isnan(m_pos.x+m_pos.y+m_pos.z))
+    reportMessage(ANARI_SEVERITY_ERROR, "app set camera.position to NAN coordinates");
+    
   m_dir = math::normalize(
       getParam<math::float3>("direction", math::float3(0.f, 0.f, 1.f)));
+  if (isnan(m_dir.x+m_dir.y+m_dir.z))
+    reportMessage(ANARI_SEVERITY_ERROR, "app set camera.direction to NAN coordinates");
+  
   m_up = math::normalize(
       getParam<math::float3>("up", math::float3(0.f, 1.f, 0.f)));
+  if (isnan(m_up.x+m_up.y+m_up.z))
+    reportMessage(ANARI_SEVERITY_ERROR, "app set camera.up to NAN coordinates");
   m_imageRegion = math::float4(0.f, 0.f, 1.f, 1.f);
   getParam("imageRegion", ANARI_FLOAT32_BOX2, &m_imageRegion);
 }

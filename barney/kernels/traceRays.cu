@@ -29,15 +29,16 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed,
                                  bool needHitIDs)
   {
+    assert(!needHitIDs);
     double t0 = getCurrentTime();
     
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------
+    render::OptixGlobals dd;
     for (auto model : globalModel->modelSlots) {
       for (auto device : *model->devices) {
         SetActiveGPU forDuration(device);
-        render::OptixGlobals dd;
         auto ctx     = model->slotContext;
         dd.rays      = device->rayQueue->traceAndShadeReadQueue.rays;
         dd.hitIDs
@@ -50,11 +51,10 @@ namespace BARNEY_NS {
 
         if (FromEnv::get()->logQueues) {
           std::stringstream ss;
-          ss << "#bn: ## ray queue kernel TRACE rays " << dd.rays << std::endl;
-          ss << "#bn: ## ray queue kernel TRACE hit ids " << dd.hitIDs << " need = " << int(needHitIDs) << std::endl;
+          ss << "#bn(" << device->globalRank() << "): ## ray queue kernel TRACE rays " << dd.rays << std::endl;
+          ss << "#bn(" << device->globalRank() << "): ## ray queue kernel TRACE hit ids " << dd.hitIDs << " need = " << int(needHitIDs) << std::endl;
           std::cout << ss.str();
         }
-
 
         if (dd.numRays == 0 || dd.accel == 0) {
           /* iw - it's perfectly valid for an app to 'render' a model
@@ -64,7 +64,12 @@ namespace BARNEY_NS {
         } else {
           int bs = 1024;
           int nb = divRoundUp(dd.numRays,bs);
-          if (nb) 
+
+          // if (myRank() == 0)
+          //   printf(" -> tracing %i\n",dd.numRays);
+      
+          
+          if (nb)
             device->traceRays->launch(/* bs,nb intentionally inverted:
                                          always have 1024 in width: */
                                       vec2i(bs,nb),
@@ -77,6 +82,12 @@ namespace BARNEY_NS {
     // ... and sync 'til all are done
     // ------------------------------------------------------------------
     syncCheckAll();
+    if (FromEnv::get()->logQueues) {
+      std::stringstream ss;
+      ss << "#bn(" << myRank() << "): ## ray queue kernel TRACE DONE" << std::endl;
+      std::cout << ss.str();
+    }
+
   }
   
 } // ::BARNEY_NS

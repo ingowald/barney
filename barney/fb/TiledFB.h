@@ -19,14 +19,12 @@
 #include "barney/DeviceGroup.h"
 #include "barney/common/half.h"
 #include "barney/render/HitIDs.h"
+#include "barney/Context.h"
 
 namespace BARNEY_NS {
   
   struct FrameBuffer;
   
-  enum { tileSize = 32 };
-  enum { pixelsPerTile = tileSize*tileSize };
-
   struct AuxChannelTile {
     union { uint32_t ui[pixelsPerTile]; float f[pixelsPerTile]; };
   };
@@ -55,9 +53,24 @@ namespace BARNEY_NS {
   
   struct TiledFB {
     typedef std::shared_ptr<TiledFB> SP;
-    static SP create(Device *device, FrameBuffer *owner);
+    static SP create(Device *device,
+                     /*! device for the gpu that the app
+                       lives on, if different from current
+                       GPU, and if no peer access is
+                       available */
+                     Device *appDevice,
+                     FrameBuffer *owner);
 
-    TiledFB(Device *device, FrameBuffer *owner);
+    TiledFB(Device *device,
+            /*! device on which the app runs and will do map(). if
+                null, this will be ignored, and the tile finalization
+                operations will just read from local device and write
+                to final frame buffer (assuming peer access to this
+                memory). If non null, the tiledFB will first copy
+                tiles to appDevice, and then run tile conversion
+                there. */
+            Device *appDevice,
+            FrameBuffer *owner);
     virtual ~TiledFB();
 
     void resize(uint32_t channels,
@@ -79,7 +92,6 @@ namespace BARNEY_NS {
       used either for local GPUs on a single node, or on the owner
       after it reveived all worker tiles */
     static void linearizeAuxTiles(Device *device,
-                                  rtc::ComputeKernel1D *linearizeAuxChannelKernel,
                                   void *linearOut,
                                   vec2i numPixels,
                                   AuxChannelTile *tilesIn,
@@ -102,16 +114,23 @@ namespace BARNEY_NS {
     int   numActiveTilesThisGPU  = 0;
     
     /*! lower-left pixel coordinate for given tile ... */
-    TileDesc          *tileDescs  = 0;
-    AccumTile         *accumTiles = 0;
+    TileDesc          *tileDescs     = 0;
+    TileDesc          *appTileDescs  = 0;
+    AccumTile         *accumTiles    = 0;
+    AccumTile         *appAccumTiles = 0;
     AuxTiles           auxTiles;
+    AuxTiles           appAuxTiles;
 
-    rtc::ComputeKernel1D *setTileCoords = 0;
-    rtc::ComputeKernel1D *linearizeColorAndNormalKernel = 0;
-    rtc::ComputeKernel1D *linearizeAuxChannelKernel = 0;
     
     FrameBuffer *const owner;
     Device      *const device;
+    
+    /*! device on which the app runs and will do map(). if null, this
+      will be ignored, and the tile finalization operations will just
+      read from local device and write to final frame buffer (assuming
+      peer access to this memory). If non null, the tiledFB will first
+      copy tiles to appDevice, and then run tile conversion there. */
+    Device      *const appDevice;
   };
 
 }

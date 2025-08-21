@@ -82,7 +82,11 @@ namespace rtc {
     /*! enable peer access between these gpus, and return truea if
         successful, else if at least one pair does not work */
     bool enablePeerAccess(const std::vector<int> &gpuIDs);
+
+    /*! get a unique hash for a given physical device. */
+    size_t getPhysicalDeviceHash(int gpuID);
     
+
     inline SetActiveGPU::SetActiveGPU(const Device *device)
     {
       if (device) 
@@ -106,6 +110,7 @@ namespace rtc {
       // else
         
     }
+
     
   }
 }

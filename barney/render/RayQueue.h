@@ -24,11 +24,9 @@ namespace BARNEY_NS {
 
   using render::Ray;
   using render::PathState;
-#if SINGLE_CYCLE_RQS
   using render::RayOnly;
   using render::HitOnly;
-#endif
-  
+
   struct SingleQueue {
     void alloc(rtc::Device *rtc, int size);
     void free(rtc::Device *rtc);
@@ -64,14 +62,6 @@ namespace BARNEY_NS {
       (ie, ray gen and shading) will write their rays into */
     SingleQueue receiveAndShadeWriteQueue;
 
-#if SINGLE_CYCLE_RQS
-    struct {
-      std::vector<int> rankCounts;
-      std::vector<int> rankOffsets;
-      RayOnly *raysOnly = 0;
-      HitOnly *hitsOnly = 0;
-    } rqs;
-#endif
     /*! current write position in the write queue (during shading and
       ray generation) */
     int *_d_nextWritePos  = 0;
@@ -95,12 +85,7 @@ namespace BARNEY_NS {
     void swapAfterGeneration();
     void swapAfterCycle(int cycleID, int numCycles);
 
-    void resize(int newSize
-#if SINGLE_CYCLE_RQS
-                , int maxRaysAcrossAllRanks
-#endif
-                );
-    
+    void resize(int newSize);
   };
 
 }
