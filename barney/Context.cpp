@@ -74,24 +74,15 @@ namespace BARNEY_NS {
 
     havePeerAccess = true;
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
-      // std::vector<int> contextRanks;
       auto &ls = localSlots[lmsIdx];
       auto &dg = perSlot[lmsIdx];
       dg.context = this;
       dg.modelRankInThisSlot = ls.dataRank;
-      // numDifferentModelSlots
-      //   = std::max(numDifferentModelSlots,dg.modelRankInThisSlot);
       havePeerAccess
         = havePeerAccess & rtc::enablePeerAccess(ls.gpuIDs);
 
       std::vector<Device *> slotDevices;
       for (auto gpuID : ls.gpuIDs) {
-        // WorkerTopo::Device ld;
-        // ld.worker = 0;
-        // ld.local  = allLocalDevices.size();
-        // ld.dataRank = dg.modelRankInThisSlot;
-        // allDevices.push_back(ld);
-        // contextRanks.push_back(localRank);
         rtc::Device *rtc = new rtc::Device(gpuID);
         int nextLocal = allLocalDevices.size();
         Device *device 
@@ -105,22 +96,11 @@ namespace BARNEY_NS {
         = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
     }
 
-    // topo = std::make_shared<WorkerTopo>(allDevices);
-    // for (int i=0;i<allLocalDevices.size();i++) {
-    //   allLocalDevices[i]->allGPUsGlobally
-    //     = { i,(int)allLocalDevices.size() };
-    //   allLocalDevices[i]->allGPUsLocally
-    //     = { i,(int)allLocalDevices.size() };
-    // }
     devices = std::make_shared<DevGroup>
       (allLocalDevices,(int)allLocalDevices.size());
-    // havePeerAccess = rtc::enablePeerAccess(gpuIDsToEnablePeerAccessFor);
     if (!havePeerAccess) {
       std::cout << "don't have peer access between GPUs ... this is going to get interesting" << std::endl;
       deviceWeNeedToCopyToForFBMap = allLocalDevices[0];
-      // for (int i=0;i<allDevices.size();i++)
-      //   allDevices[i]->primaryDeviceIfNoPeerAccess
-      //     = allDevices[0]->rtc;
     }
     
     for (auto &dg : perSlot)

@@ -134,7 +134,7 @@ namespace BARNEY_NS {
     for (auto ls : localSlots) {
       for (auto gpuID : ls.gpuIDs) {
         WorkerTopo::Device dev;
-        dev.local = devices.size();
+        dev.local = (int)devices.size();
         dev.worker = 0;
         dev.worldRank = 0;
         dev.dataRank = ls.dataRank;
@@ -143,7 +143,7 @@ namespace BARNEY_NS {
         devices.push_back(dev);
       }
     }
-    return std::make_shared<WorkerTopo>(devices,0,devices.size());
+    return std::make_shared<WorkerTopo>(devices,0,(int)devices.size());
   }
 
   LocalContext::LocalContext(const std::vector<LocalSlot> &localSlots)
