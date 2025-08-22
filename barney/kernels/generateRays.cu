@@ -73,11 +73,11 @@ namespace BARNEY_NS {
       state.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
-#if NEW_RNG
-      ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
-#else
-      ray.rngSeed.seed(ix+fbSize.x*accumID,iy+fbSize.y*accumID);
-#endif
+// #if NEW_RNG
+//       ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
+// #else
+      ray.rngSeed.seed(ix+fbSize.x*(accumID+1),3+iy+fbSize.y*(accumID+1));
+// #endif
 
       ray.org  = camera.lens_00;
 
@@ -132,6 +132,7 @@ namespace BARNEY_NS {
       ray.isShadowRay = false;
       ray.isInMedium  = false;
       ray.tMax        = 1e30f;
+      // ray.rngSeed     = rand.next;//state;
       state.numDiffuseBounces = 0;
       if (0 && ray.dbg)
         printf("-------------------------------------------------------\n");
