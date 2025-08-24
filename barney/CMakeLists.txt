@@ -62,7 +62,7 @@ endmacro()
 # backends; but if there's no cuda vailable we have to change the
 # language to CPP else cmake will just skip these sources.
 macro(configure_cuda_source src)
-if (NOT BARNEY_HAVE_CUDA)
+  if (NOT BARNEY_HAVE_CUDA)
     get_filename_component(ext "${src}" EXT)
     if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
       message("setting language of ${src} to CXX")
@@ -267,6 +267,10 @@ if (BARNEY_BACKEND_OPTIX)
     barney_rtc_optix
     $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
   )
+  set_property(
+    TARGET barney_optix 
+    APPEND
+    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
   if (BARNEY_MPI)
     add_library(barney_mpi_optix ${MPI_SOURCES})
     target_link_libraries(barney_mpi_optix PUBLIC barney_optix MPI::MPI_CXX)

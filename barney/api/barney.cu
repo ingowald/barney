@@ -133,6 +133,12 @@ namespace barney_api {
                            const std::vector<int> &dgIDs,
                            int numGPUs, const int *gpuIDs);
 # endif
+# if BARNEY_BACKEND_CUDA
+    barney_api::Context *
+    createMPIContext_cuda(barney_api::mpi::Comm world,
+                           const std::vector<int> &dgIDs,
+                           int numGPUs, const int *gpuIDs);
+# endif
 #endif
   }
   
