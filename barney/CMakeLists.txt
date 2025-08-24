@@ -349,7 +349,7 @@ if (BARNEY_BACKEND_CUDA)
 
   if (BARNEY_MPI)
     add_library(barney_mpi_cuda ${MPI_SOURCES})
-    target_link_libraries(barney_mpi_cuda PUBLIC barney_cuda MPI::MPI_CXX)
+    target_link_libraries(barney_mpi_cuda PRIVATE barney_cuda MPI::MPI_CXX)
     set_library_properties(barney_mpi_cuda)
   endif()
 endif()

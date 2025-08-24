@@ -30,7 +30,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 # define LOG_API_ENTRY /**/ 
 #endif
 
-#ifdef NDEBUG
+#ifdef NDEBUG 
 # define BARNEY_ENTER(fct) /* nothing */
 # define BARNEY_LEAVE(fct,retValue) /* nothing */
 #else
