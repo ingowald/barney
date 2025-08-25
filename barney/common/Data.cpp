@@ -318,11 +318,7 @@ namespace BARNEY_NS {
                                  const DevGroup::SP &devices,
                                  BNDataType type)
     : BaseData(context,devices,type)
-  {
-    // items.resize(numItems);
-    // for (int i=0;i<numItems;i++)
-    //   items[i] = (((Object **)_items)[i])->shared_from_this();
-  }
+  {}
 
   void ObjectRefsData::set(const void *_items, int count)
   {

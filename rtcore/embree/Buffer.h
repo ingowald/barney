@@ -29,7 +29,9 @@ namespace rtc {
       void upload(const void *hostPtr,
                   size_t numBytes,
                   size_t ofs = 0);
-      
+
+      void resize(size_t newNumBytes);
+
       void *getDD() const;
       void *mem = 0;
     };
