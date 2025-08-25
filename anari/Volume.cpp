@@ -84,8 +84,10 @@ namespace barney_device {
       return;
     }
 
+    PING; PRINT(m_field);
     m_bounds = m_field->bounds();
-
+    PING;
+    
     size_t numColorChannels{4};
     if (m_colorData) { // TODO: more types
       if (m_colorData->elementType() == ANARI_FLOAT32_VEC3)

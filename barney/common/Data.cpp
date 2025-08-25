@@ -210,26 +210,32 @@ namespace BARNEY_NS {
 
   BaseData::BaseData(Context *context,
              const DevGroup::SP &devices,
-             BNDataType type,
-             size_t numItems)
+             BNDataType type)
     : barney_api::Data(context),
       type(type),
-      count(numItems),
+      count(0),
       devices(devices)
   {}
 
 
+  void PODData::set(const void *_items, int count)
+  {
+    this->count = count;
+    for (auto device : *devices) {
+      getPLD(device)->rtcBuffer->resize(count*owlSizeOf(type));
+      getPLD(device)->rtcBuffer->upload(_items,count*owlSizeOf(type));
+    }
+  }
+
   PODData::PODData(Context *context,
                    const DevGroup::SP &devices,
-                   BNDataType type,
-                   size_t numItems,
-                   const void *_items)
-    : BaseData(context,devices,type,numItems)
+                   BNDataType type)
+    : BaseData(context,devices,type)
   {
     perLogical.resize(devices->numLogical);
     for (auto device : *devices) {
       getPLD(device)->rtcBuffer 
-        = device->rtc->createBuffer(numItems*owlSizeOf(type),_items);
+        = device->rtc->createBuffer(1);//*owlSizeOf(type),_items);
       assert(getPLD(device)->rtcBuffer);
     }
     for (auto device : *devices)
@@ -261,9 +267,7 @@ namespace BARNEY_NS {
   
   BaseData::SP BaseData::create(Context *context,
                                 const DevGroup::SP &devices,
-                                BNDataType type,
-                                size_t numItems,
-                                const void *items)
+                                BNDataType type)
   {
     switch(type) {
     case BN_INT8:
@@ -299,10 +303,10 @@ namespace BARNEY_NS {
     case BN_FLOAT64_VEC3:
     case BN_FLOAT64_VEC4:
       return std::make_shared<PODData>
-        (context,devices,type,numItems,items);
+        (context,devices,type);
     case BN_OBJECT:
       return std::make_shared<ObjectRefsData>
-        (context,devices,type,numItems,items);
+        (context,devices,type);
     default:
       throw std::runtime_error("un-implemented data type '"
                                +to_string(type)
@@ -312,13 +316,21 @@ namespace BARNEY_NS {
   
   ObjectRefsData::ObjectRefsData(Context *context,
                                  const DevGroup::SP &devices,
-                                 BNDataType type,
-                                 size_t numItems,
-                                 const void *_items)
-    : BaseData(context,devices,type,numItems)
+                                 BNDataType type)
+    : BaseData(context,devices,type)
   {
-    items.resize(numItems);
-    for (int i=0;i<numItems;i++)
+    // items.resize(numItems);
+    // for (int i=0;i<numItems;i++)
+    //   items[i] = (((Object **)_items)[i])->shared_from_this();
+  }
+
+  void ObjectRefsData::set(const void *_items, int count)
+  {
+    this->count = count;
+    items.resize(count);
+    for (int i=0;i<count;i++)
       items[i] = (((Object **)_items)[i])->shared_from_this();
   }
-};
+
+
+}

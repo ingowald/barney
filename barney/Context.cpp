@@ -363,11 +363,9 @@ namespace BARNEY_NS {
 
   std::shared_ptr<barney_api::Data>
   Context::createData(int slot,
-                      BNDataType dataType,
-                      size_t numItems,
-                      const void *items)
+                      BNDataType dataType)
   {
-    return BaseData::create(this,getDevices(slot),dataType,numItems,items);
+    return BaseData::create(this,getDevices(slot),dataType);
   }
   
 } // ::BARNEY_NS

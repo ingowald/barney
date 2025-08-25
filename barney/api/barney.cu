@@ -569,10 +569,21 @@ namespace barney_api {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
     std::shared_ptr<Data> data
-      = context->createData(slot,dataType,numItems,items);
+      = context->createData(slot,dataType);
+    data->set(items,numItems);
     return (BNData)context->initReference(data);
   }
 
+      BARNEY_API
+  void bnDataSet(BNData _data,
+                 size_t numItems,
+                 const void *items)
+  {
+    Data::SP data = checkGetSP(_data);
+    data->set(items,numItems);
+  }
+
+  
 
 
   BARNEY_API

@@ -79,59 +79,6 @@ namespace barney_api {
     Context *const context;
   };
     
-// a  /*! the base class for _any_ other type of object/actor in the
-//       barney class hierarchy */
-//   struct ParameterizedObject : public Object {
-    
-//     ParameterizedObject(Context *context) : Object(context) {}
-//     virtual ~ParameterizedObject() {}
-
-//     void warn_unsupported_member(const std::string &type,
-//                                  const std::string &member);
-
-//     // ------------------------------------------------------------------
-//     /*! @{ parameter set/commit interface */
-//     virtual void commit() {}
-//     virtual bool setObject(const std::string &member,
-//                            const Object::SP &value)
-//     { return false; }
-//     virtual bool setData(const std::string &member,
-//                          const std::shared_ptr<Data> &value)
-//     { return false; }
-//     virtual bool setString(const std::string &member,
-//                            const std::string &value)
-//     { return false; }
-//     virtual bool set1f(const std::string &member, const float &value) 
-//     { return false; }
-//     virtual bool set2f(const std::string &member, const vec2f &value) 
-//     { return false; }
-//     virtual bool set3f(const std::string &member, const vec3f &value) 
-//     { return false; }
-//     virtual bool set4f(const std::string &member, const vec4f &value) 
-//     { return false; }
-//     virtual bool set1i(const std::string &member, const int   &value) 
-//     { return false; }
-//     virtual bool set2i(const std::string &member, const vec2i &value) 
-//     { return false; }
-//     virtual bool set3i(const std::string &member, const vec3i &value) 
-//     { return false; }
-//     virtual bool set4i(const std::string &member, const vec4i &value) 
-//     { return false; }
-//     virtual bool set4x3f(const std::string &member, const affine3f &value) 
-//     { return false; }
-//     virtual bool set4x4f(const std::string &member, const vec4f *value) 
-//     { return false; }
-//     /*! @} */
-//     // ------------------------------------------------------------------
-//   };
-    
-
-
-
-  // struct Renderer : public Object {
-  //   virtual ~Renderer() = default;
-  // };
-
   struct Renderer : public Object {
     Renderer(Context *context) : Object(context) {}
     virtual ~Renderer() = default;
@@ -166,13 +113,16 @@ namespace barney_api {
   struct Data : public Object {
     Data(Context *context) : Object(context) {}
     typedef std::shared_ptr<Data> SP;
+    
     virtual ~Data() = default;
+    
+    virtual void set(const void *data, int count) = 0;
   };
 
   /*! object that handles a frame buffer object; in particular, the
-      ability to let the renderer accumulate pixel samples, and to let
-      the app 'read' different channels of the rendered frame buffer
-      no matter on which gpu and/or rank they got written to */
+    ability to let the renderer accumulate pixel samples, and to let
+    the app 'read' different channels of the rendered frame buffer no
+    matter on which gpu and/or rank they got written to */
   struct FrameBuffer : public Object {
     inline FrameBuffer(Context *context)
       : Object(context)
@@ -295,9 +245,7 @@ namespace barney_api {
 
     virtual std::shared_ptr<Data>
     createData(int slot,
-               BNDataType dataType,
-               size_t numItems,
-               const void *items) = 0;
+               BNDataType dataType) = 0;
     
     // ----------- implicitly slotted object types -----------
     

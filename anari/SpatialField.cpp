@@ -20,10 +20,8 @@ SpatialField *SpatialField::createInstance(
 {
   if (subtype == "unstructured")
     return new UnstructuredField(s);
-#if 0
-    else if (subtype == "amr")
-      return new BlockStructuredField(s);
-#endif
+  else if (subtype == "amr")
+    return new BlockStructuredField(s);
   else if (subtype == "structuredRegular")
     return new StructuredRegularField(s);
   else
