@@ -29,7 +29,12 @@ namespace BARNEY_NS {
     struct RNGSeed {
       inline __rtc_device void seed(uint32_t a, uint32_t b)
       {
+#if NEW_RNG
+        const uint32_t FNV_PRIME = 16777619;
+        value = pcg(pcg(a) * FNV_PRIME ^ pcg(b));
+#else
         value = pcg(pcg(a) ^ pcg(b));
+#endif
       }
       
       inline __rtc_device uint32_t next(uint32_t hash)
@@ -45,13 +50,13 @@ namespace BARNEY_NS {
       inline __rtc_device uint32_t next(uint64_t hash)
       {
         const uint32_t FNV_PRIME = 16777619;
-// #if NEW_RNG
-//         value = pcg(value * FNV_PRIME ^ (uint32_t)hash);
-//         value = pcg(value * FNV_PRIME ^ (uint32_t)(hash>>32));
-// #else
+#if NEW_RNG
+         value = pcg(value * FNV_PRIME ^ (uint32_t)hash);
+         value = pcg(value * FNV_PRIME ^ (uint32_t)(hash>>32));
+#else
         value = value * FNV_PRIME ^ (uint32_t)hash;
         value = value * FNV_PRIME ^ (uint32_t)(hash>>32);
-// #endif
+#endif
         return value;
       }
       uint32_t value;
@@ -73,6 +78,7 @@ namespace BARNEY_NS {
         uint32_t isSpecular : 1;
         uint32_t isShadowRay: 1;
         uint32_t dbg        : 1;
+        uint32_t crosshair  : 1;
       };
     };
 
@@ -124,8 +130,13 @@ namespace BARNEY_NS {
         uint16_t isInMedium : 1;
         uint16_t isSpecular : 1;
         uint16_t isShadowRay: 1;
-        uint16_t dbg        : 1;
+        uint16_t crosshair  : 1;
+        uint16_t _dbg       : 1;
       };
+      inline __rtc_device bool dbg() const {
+        return _dbg;
+      }
+      
       union {
         PackedBSDF::Data hitBSDF;
         /*! the background color for primary rays that didn't have any intersection.
@@ -155,7 +166,7 @@ namespace BARNEY_NS {
                                              float t,
                                              vec3f albedo)
     {
-      if (this->dbg) printf("setting volume hit %f %f %f\n",
+      if (this->dbg()) printf("setting volume hit %f %f %f\n",
                             albedo.x,
                             albedo.y,
                             albedo.z);

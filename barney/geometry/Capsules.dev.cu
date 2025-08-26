@@ -271,26 +271,18 @@ namespace BARNEY_NS {
       hitData.worldPosition += surfOfs_eps * hitData.worldNormal;
 
       // trigger the anari attribute evaluation
-      self.setHitAttributes(hitData,interpolator,world,ray.dbg);
+      self.setHitAttributes(hitData,interpolator,world,ray.dbg());
 
       PackedBSDF bsdf
-        = material.createBSDF(hitData,OptixGlobals::get(ti).world.samplers,ray.dbg);
+        = material.createBSDF(hitData,OptixGlobals::get(ti).world.samplers,ray.dbg());
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                          ray.dir,hitData.worldNormal,ray.dbg);
+                          ray.dir,hitData.worldNormal,ray.dbg());
       if (opacity < 1.f) {
         Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
                                          ti.getGeometryIndex(),
                                          ti.getPrimitiveIndex())));
-        // Random rng(ray.rngSeed++);
-        // int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
-        // Random rng(hash(rayID,
-        //                 instID,
-        //                 ti.getGeometryIndex(),
-        //                 ti.getPrimitiveIndex(),
-        //                 world.rngSeed));
         if (rng() > opacity) {
-          // ti.ignoreIntersection();
           return;
         }
       }
@@ -298,8 +290,7 @@ namespace BARNEY_NS {
       // .... let optix know we did have a hit.
       ti.reportIntersection(hit_t, 0);
       // ... store the hit in the ray, rqs-style ...
-      // const DeviceMaterial &material = OptixGlobals::get().materials[self.materialID];
-      material.setHit(ray,hitData,world.samplers,ray.dbg);
+      material.setHit(ray,hitData,world.samplers,ray.dbg());
       if (globals.hitIDs) {
         const int rayID
           = ti.getLaunchIndex().x
