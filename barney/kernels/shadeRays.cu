@@ -409,12 +409,7 @@ namespace BARNEY_NS {
       const bool  hadNoIntersection  = !ray.hadHit();
       const vec3f incomingThroughput = state.throughput;
       
-#ifdef NDEBUG
-      bool dbg = false;
-#else
-      bool dbg = ray.dbg;
-#endif
-      
+      bool dbg = ray.dbg();
       if (dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
                pathDepth,
@@ -437,7 +432,6 @@ namespace BARNEY_NS {
         // ==================================================================
                  
         if (hadNoIntersection) {
-          // fragment = clamp((vec3f)state.throughput,vec3f(0.f),vec3f(1.f));
           fragment =
 # if USE_MIS
             (float)state.misWeight *
@@ -647,7 +641,7 @@ namespace BARNEY_NS {
           //                        ti.getGeometryIndex(),
           //                        ti.getPrimitiveIndex())));
 
-          shadowRay.dbg = ray.dbg;
+          shadowRay._dbg = ray._dbg;
           shadowState.pixelID = state.pixelID;
             
           shadowState.misWeight = 1.f;
@@ -825,11 +819,10 @@ namespace BARNEY_NS {
       Ray ray = readQueue.rays[tid];
       PathState state = readQueue.states[tid];
 #ifdef NDEBUG
-      bool dbg = false;
+      enum { dbg = false };
 #else
-      bool dbg = ray.dbg;
+      bool dbg = ray.dbg();
 #endif
-
       /* note(iw): IMHO pixels that did _not_ hit any geometry should
          have an alpha value of 0, even if they did comptue a 'color'
          from the env map. However, TSD blends its renderd image over
@@ -870,6 +863,10 @@ namespace BARNEY_NS {
              shadowRay,shadowState,
              generation);
     
+      // if (ray.crosshair && !dbg) {
+      //   fragment = vec3f(1.f,0.f,0.f);
+      // }
+      
       // write shadow and bounce ray(s), if any were generated
       if (dbg)
         printf("ray.tmax %f shadowray.tmax %f frag %f %f %f\n",

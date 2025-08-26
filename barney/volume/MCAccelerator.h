@@ -163,6 +163,11 @@ namespace BARNEY_NS {
     const render::World::DD &world = render::OptixGlobals::get(ti).world;
     // ray in world space
     Ray &ray = *(Ray*)ti.getPRD();
+#ifdef NDEBUG
+    enum { dbg = false };
+#else
+    const bool dbg = ray.dbg();
+#endif
     
     box3f bounds = self.volume.sfCommon.worldBounds;
     range1f tRange = { ti.getRayTmin(), ti.getRayTmax() };
@@ -171,6 +176,14 @@ namespace BARNEY_NS {
     vec3f obj_org = ti.getObjectRayOrigin();
     vec3f obj_dir = ti.getObjectRayDirection();
 
+    if (dbg) {
+      printf("MCGrid isec %f %f %f\n",
+             obj_dir.x,
+             obj_dir.y,
+             obj_dir.z
+             );
+    }
+    
     auto objRay = ray;
     objRay.org = obj_org;
     objRay.dir = obj_dir;
@@ -190,6 +203,7 @@ namespace BARNEY_NS {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
+    uint32_t oldValue= ray.rngSeed.value;
     Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
                                      ti.getGeometryIndex(),
                                      ti.getPrimitiveIndex())));
@@ -210,13 +224,13 @@ namespace BARNEY_NS {
                                            tRange,
                                            majorant,
                                            rng,
-                                           ray.dbg)) 
+                                           dbg)) 
                   return true;
-                if (ray.dbg) printf("woodcock hit sample %f %f %f:%f\n",
-                                    sample.x,
-                                    sample.y,
-                                    sample.z,
-                                    sample.w);
+                if (dbg) printf("woodcock hit sample %f %f %f:%f\n",
+                                sample.x,
+                                sample.y,
+                                sample.z,
+                                sample.w);
                 
                 vec3f P_obj = obj_org + tRange.upper * obj_dir;
                 vec3f P = ti.transformPointFromObjectToWorldSpace(P_obj);

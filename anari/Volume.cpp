@@ -52,7 +52,7 @@ namespace barney_device {
   // Subtypes ///////////////////////////////////////////////////////////////////
 
   TransferFunction1D::TransferFunction1D(BarneyGlobalState *s)
-    : Volume(s), m_colorData(this), m_opacityData(this)
+    : Volume(s), m_field(this), m_colorData(this), m_opacityData(this)
   {}
 
   bool TransferFunction1D::isValid() const

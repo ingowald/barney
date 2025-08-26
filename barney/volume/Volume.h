@@ -128,7 +128,17 @@ namespace BARNEY_NS {
   };
 
 
-
+  inline __rtc_device float fastLog(float f)
+  {
+    f = (f-1.f)/(f+1.f);
+    float f2 = f*f;
+    float s = f;
+    f *= f2;
+    s += (1.f/3.f)*f;
+    f *= f2;
+    s += (1.f/5.f)*f;
+    return s+s;
+  }
   
   /*! helper class that performs woodcock sampling over a given
       parameter range, for a given sample'able volume type */
@@ -145,7 +155,9 @@ namespace BARNEY_NS {
     {
       float t = tRange.lower;
       while (true) {
-        float dt = - logf(1.f-rand())/majorant;
+        float r = rand();
+        float dt = - fastLog(1.f-r)/majorant;
+        // float dt = - logf(1.f-r)/majorant;
         t += dt;
         if (t >= tRange.upper)
           return false;
@@ -167,9 +179,6 @@ namespace BARNEY_NS {
     }
   };
 
-
-
-  
   inline VolumeAccel::VolumeAccel(Volume *volume)
     : volume(volume),
       devices(volume->devices)
