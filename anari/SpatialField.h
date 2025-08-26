@@ -117,12 +117,6 @@ namespace barney_device {
     math::float3 m_spacing;
     math::float3 m_coordUpperBound;
 
-    std::vector<float> m_generatedCellWidths;
-    std::vector<int> m_generatedBlockBounds;
-    std::vector<int> m_generatedBlockLevels;
-    std::vector<int> m_generatedBlockOffsets;
-    std::vector<float> m_generatedBlockScalars;
-
     helium::IntrusivePtr<helium::Array3D> m_data;
   };
 
