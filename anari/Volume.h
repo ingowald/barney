@@ -49,7 +49,7 @@ namespace barney_device {
   private:
     void setBarneyParameters() override;
 
-    helium::IntrusivePtr<SpatialField> m_field;
+    helium::ChangeObserverPtr<SpatialField> m_field;
 
     box3 m_bounds;
 

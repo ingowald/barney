@@ -63,13 +63,30 @@ namespace barney_device {
   private:
     struct Parameters
     {
-      helium::IntrusivePtr<helium::Array1D> vertexPosition;
-      helium::IntrusivePtr<helium::Array1D> vertexData;
-      helium::IntrusivePtr<helium::Array1D> cellData;
-      helium::IntrusivePtr<helium::Array1D> index;
-      helium::IntrusivePtr<helium::Array1D> cellType;
-      helium::IntrusivePtr<helium::Array1D> cellBegin;
+      Parameters(helium::BaseObject *observer)
+        : vertexPosition(observer),
+          vertexData(observer),
+          cellData(observer),
+          index(observer),
+          cellType(observer),
+          cellBegin(observer)
+      {}
+      helium::ChangeObserverPtr<helium::Array1D> vertexPosition;
+      helium::ChangeObserverPtr<helium::Array1D> vertexData;
+      helium::ChangeObserverPtr<helium::Array1D> cellData;
+      helium::ChangeObserverPtr<helium::Array1D> index;
+      helium::ChangeObserverPtr<helium::Array1D> cellType;
+      helium::ChangeObserverPtr<helium::Array1D> cellBegin;
     } m_params;
+
+    struct BarneyData
+    {
+      BNData vertices{nullptr};
+      BNData scalars{nullptr};
+      BNData indices{nullptr};
+      BNData cellType{nullptr};
+      BNData elementOffsets{nullptr};
+    } m_bnData;
 
     box3 m_bounds;
   };
@@ -86,11 +103,27 @@ namespace barney_device {
 
     struct Parameters
     {
-      helium::IntrusivePtr<helium::Array1D> refinementRatio;
-      helium::IntrusivePtr<helium::Array1D> blockBounds;
-      helium::IntrusivePtr<helium::Array1D> blockLevel;
-      helium::IntrusivePtr<helium::Array1D> data;
+      Parameters(helium::BaseObject *observer)
+        : refinementRatio(observer),
+          blockBounds(observer),
+          blockLevel(observer),
+          data(observer)
+      {}
+      helium::ChangeObserverPtr<helium::Array1D> refinementRatio;
+      helium::ChangeObserverPtr<helium::Array1D> blockBounds;
+      helium::ChangeObserverPtr<helium::Array1D> blockLevel;
+      helium::ChangeObserverPtr<helium::Array1D> data;
     } m_params;
+
+    struct BarneyData
+    {
+      BNData scalars{nullptr};
+      BNData blockOrigins{nullptr};
+      BNData blockDims{nullptr};
+      BNData blockLevels{nullptr};
+      BNData blockOffsets{nullptr};
+      BNData levelRefinements{nullptr};
+    } m_bnData;
 
     std::vector<math::int3> m_generatedBlockOrigins;
     std::vector<math::int3> m_generatedBlockDims;
@@ -117,7 +150,7 @@ namespace barney_device {
     math::float3 m_spacing;
     math::float3 m_coordUpperBound;
 
-    helium::IntrusivePtr<helium::Array3D> m_data;
+    helium::ChangeObserverPtr<helium::Array3D> m_data;
   };
 
 } // namespace barney_device
