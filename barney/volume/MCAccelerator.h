@@ -73,7 +73,7 @@ namespace BARNEY_NS {
     /*! optix isec prog for this class of accels */
     static inline __rtc_device
     void isProg(rtc::TraceInterface &ti);
-#endif
+#endif 
     
     MCGrid       mcGrid;
     const std::shared_ptr<SFSampler> sfSampler;

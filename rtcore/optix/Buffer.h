@@ -29,6 +29,9 @@ namespace rtc {
              const void *initData);
       void *getDD() const;
 
+      void resize(size_t newNumBytes)
+      { owlBufferResize(owl,newNumBytes); }
+      
       void upload(const void *hostPtr,
                   size_t numBytes,
                   size_t ofs = 0);

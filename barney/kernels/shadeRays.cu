@@ -957,7 +957,6 @@ namespace BARNEY_NS {
                                  int generation,
                                  uint32_t rngSeed)
   {
-    auto context = this;
     for (auto slotModel : model->modelSlots) {
       World *world = slotModel->world.get();
       for (auto device : *world->devices) {

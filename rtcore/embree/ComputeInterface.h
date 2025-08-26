@@ -19,13 +19,14 @@
 #include "rtcore/embree/Device.h"
 #include "rtcore/embree/Texture.h"
 #include <atomic>
+#include <thread>
+#include <barrier>
 
 namespace rtc {
   namespace embree {
 
     struct ComputeInterface;
     struct TraceInterface;
-
 
 
     template<typename T>
@@ -140,6 +141,36 @@ namespace rtc {
       }
     }
 
+    struct Task {
+      virtual void run(int) = 0;
+    };
+    template<typename T>
+    struct TaskWrapper : public Task {
+      TaskWrapper(const T &t) : t(t) {}
+      void run(int tid) override { t(tid); }
+      const T t;
+    };
+    
+    struct LaunchSystem {
+      LaunchSystem();
+      void launchAndWait(int numTotal, Task *task);
+      void threadFct();
+
+      std::vector<std::thread> threads;
+
+      struct {
+        volatile int total = 0;
+        std::atomic<int> taken;
+      } numJobs;
+      
+      Task *volatile task = 0;
+
+      std::mutex mutex;
+      std::barrier<void(*)() noexcept> barrier;
+    };
+
+    
+
     template<typename TASK_T>
     inline void serial_for(int nTasks, TASK_T&& taskFunction)
     {
@@ -151,6 +182,26 @@ namespace rtc {
   }
 }
 
+#if 1
+# define __rtc_global /*static*/
+# define __rtc_launch(dev,kernel,nb,bs,...)                             \
+  {                                                                     \
+    rtc::embree::LaunchSystem *ls = ((rtc::embree::Device *)dev)->ls;   \
+    int numTotal = nb;                                                  \
+    rtc::embree::TaskWrapper task([&](int taskID)                       \
+    {                                                                   \
+      rtc::embree::ComputeInterface ci;                                 \
+      ci.gridDim = {(unsigned)nb,1u,1u};                                \
+      ci.blockDim = {(unsigned)bs,1u,1u};                               \
+      ci.blockIdx = {(unsigned)taskID,0u,0u};                           \
+      ci.threadIdx = {0u,0u,0u};                                        \
+      for (ci.threadIdx.x=0;ci.threadIdx.x<bs;ci.threadIdx.x++){        \
+        kernel(ci,__VA_ARGS__);                                         \
+      }                                                                 \
+    });                                                                 \
+    ls->launchAndWait(numTotal,&task);                                  \
+  }                                               
+#else
 # define __rtc_global /*static*/
 # define __rtc_launch(dev,kernel,nb,bs,...)                     \
   rtc::embree::serial_for(nb,[&](int taskID) {                  \
@@ -163,3 +214,4 @@ namespace rtc {
       kernel(ci,__VA_ARGS__);                                   \
     }                                                           \
   });
+#endif

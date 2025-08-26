@@ -121,9 +121,7 @@ namespace BARNEY_NS {
 
     std::shared_ptr<barney_api::Data>
     createData(int slot,
-               BNDataType dataType,
-               size_t numItems,
-               const void *items) override;
+               BNDataType dataType) override;
     
     std::shared_ptr<barney_api::Camera>
     createCamera(const std::string &type) override;

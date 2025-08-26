@@ -3,6 +3,7 @@
 
 // std
 #include <cfloat>
+#include <numeric>
 // ours
 #include "Array.h"
 #include "SpatialField.h"
@@ -20,10 +21,8 @@ SpatialField *SpatialField::createInstance(
 {
   if (subtype == "unstructured")
     return new UnstructuredField(s);
-#if 0
-    else if (subtype == "amr")
-      return new BlockStructuredField(s);
-#endif
+  else if (subtype == "amr")
+    return new BlockStructuredField(s);
   else if (subtype == "structuredRegular")
     return new StructuredRegularField(s);
   else
@@ -305,10 +304,10 @@ BlockStructuredField::BlockStructuredField(BarneyGlobalState *s)
 void BlockStructuredField::commitParameters()
 {
   Object::commitParameters();
-  m_params.cellWidth = getParamObject<helium::Array1D>("cellWidth");
+  m_params.refinementRatio = getParamObject<helium::Array1D>("refinementRatio");
   m_params.blockBounds = getParamObject<helium::Array1D>("block.bounds");
   m_params.blockLevel = getParamObject<helium::Array1D>("block.level");
-  m_params.blockData = getParamObject<helium::ObjectArray>("block.data");
+  m_params.data = getParamObject<helium::Array1D>("data");
 }
 
 void BlockStructuredField::finalize()
@@ -325,46 +324,35 @@ void BlockStructuredField::finalize()
     return;
   }
 
-  if (!m_params.blockData) {
+  if (!m_params.data) {
     reportMessage(ANARI_SEVERITY_WARNING,
-        "missing required parameter 'block.data' on amr spatial field");
+        "missing required parameter 'data' on amr spatial field");
     return;
   }
 
-  size_t numBlocks = m_params.blockData->totalSize();
+  size_t numBlocks = m_params.blockLevel->totalSize();
   auto *blockBounds = m_params.blockBounds->beginAs<box3i>();
   auto *blockLevels = m_params.blockLevel->beginAs<int>();
-  auto *blockData = (helium::Array3D **)m_params.blockData->handlesBegin();
 
-  m_generatedBlockBounds.clear();
+  m_generatedBlockOrigins.clear();
+  m_generatedBlockDims.clear();
   m_generatedBlockLevels.clear();
   m_generatedBlockOffsets.clear();
-  m_generatedBlockScalars.clear();
 
   m_bounds.invalidate();
 
+  int maxLevel = 0;
   for (size_t i = 0; i < numBlocks; ++i) {
     const box3i bounds = *(blockBounds + i);
     const int level = *(blockLevels + i);
-    const helium::Array3D *bd = *(blockData + i);
 
-    m_generatedBlockBounds.push_back(bounds.lower.x);
-    m_generatedBlockBounds.push_back(bounds.lower.y);
-    m_generatedBlockBounds.push_back(bounds.lower.z);
-    m_generatedBlockBounds.push_back(bounds.upper.x);
-    m_generatedBlockBounds.push_back(bounds.upper.y);
-    m_generatedBlockBounds.push_back(bounds.upper.z);
+    math::int3 dims = bounds.upper - bounds.lower + math::int3(1);
+
+    m_generatedBlockOrigins.push_back(bounds.lower);
+    m_generatedBlockDims.push_back(dims);
     m_generatedBlockLevels.push_back(level);
-    m_generatedBlockOffsets.push_back((int)m_generatedBlockScalars.size());
-
-    for (unsigned z = 0; z < bd->size().z; ++z)
-      for (unsigned y = 0; y < bd->size().y; ++y)
-        for (unsigned x = 0; x < bd->size().x; ++x) {
-          size_t index =
-              z * size_t(bd->size().x) * bd->size().y + y * bd->size().x + x;
-          float f = bd->dataAs<float>()[index];
-          m_generatedBlockScalars.push_back(f);
-        }
+    m_generatedBlockOffsets.push_back(dims.x * size_t(dims.y) * dims.z);
+    maxLevel = std::max(maxLevel, level);
 
     box3 worldBounds;
     worldBounds.lower = math::float3(float(bounds.lower.x * (1 << level)),
@@ -375,6 +363,13 @@ void BlockStructuredField::finalize()
         float((bounds.upper.z + 1) * (1 << level)));
     m_bounds.insert(worldBounds);
   }
+
+  m_generatedRefinements.resize(maxLevel+1, 2);
+
+  std::exclusive_scan(m_generatedBlockOffsets.begin(),
+                      m_generatedBlockOffsets.end(),
+                      m_generatedBlockOffsets.begin(),
+                      0);
 }
 
 BNScalarField BlockStructuredField::createBarneyScalarField() const
@@ -386,18 +381,44 @@ BNScalarField BlockStructuredField::createBarneyScalarField() const
   std::cout
       << "=================================================================="
       << std::endl;
-#if 1
-  exit(0);
-#else
-  return bnBlockStructuredAMRCreate(context,
-      slot,
-      m_generatedBlockBounds.data(),
-      m_generatedBlockBounds.size() / 6,
-      m_generatedBlockLevels.data(),
-      m_generatedBlockOffsets.data(),
-      m_generatedBlockScalars.data(),
-      m_generatedBlockScalars.size());
-#endif
+
+  int slot = deviceState()->slot;
+  auto context = deviceState()->tether->context;
+
+  auto *scalars = m_params.data->beginAs<float>();
+  size_t numScalars = m_params.data->size();
+
+  size_t numBlocks = m_generatedBlockOrigins.size();
+  auto *blockOrigins = m_generatedBlockOrigins.data();
+  auto *blockDims = m_generatedBlockDims.data();
+  auto *blockLevels = m_generatedBlockLevels.data();
+  auto *blockOffsets = m_generatedBlockOffsets.data();
+
+  size_t numLevels = m_generatedRefinements.size();
+  auto *levelRefinements = m_generatedRefinements.data();
+
+  BNData scalarsData =
+      bnDataCreate(context, slot, BN_FLOAT32, numScalars, scalars);
+  BNData blockOriginsData =
+      bnDataCreate(context, slot, BN_INT32_VEC3, numBlocks, blockOrigins);
+  BNData blockDimsData =
+      bnDataCreate(context, slot, BN_INT32_VEC3, numBlocks, blockDims);
+  BNData blockLevelsData =
+      bnDataCreate(context, slot, BN_INT32, numBlocks, blockLevels);
+  BNData blockOffsetsData =
+      bnDataCreate(context, slot, BN_UINT64, numBlocks, blockOffsets);
+  BNData levelRefinementsData =
+      bnDataCreate(context, slot, BN_INT32, numLevels, levelRefinements);
+
+  BNScalarField sf = bnScalarFieldCreate(context, slot, "BlockStructuredAMR");
+  bnSetData(sf, "scalars", scalarsData);
+  bnSetData(sf, "grid.origins", blockOriginsData);
+  bnSetData(sf, "grid.dims", blockDimsData);
+  bnSetData(sf, "grid.levels", blockLevelsData);
+  bnSetData(sf, "grid.offsets", blockOffsetsData);
+  bnSetData(sf, "level.refinements", levelRefinementsData);
+  bnCommit(sf);
+  return sf;
 }
 
 box3 BlockStructuredField::bounds() const

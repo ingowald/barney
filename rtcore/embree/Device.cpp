@@ -27,6 +27,10 @@
 namespace rtc {
   namespace embree {
 
+    /*! get a unique hash for a given physical device. */
+    size_t getPhysicalDeviceHash(int gpuID)
+    { return (size_t)gpuID; }
+    
     // ------------------------------------------------------------------
     // rt core interface
     // ------------------------------------------------------------------

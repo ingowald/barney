@@ -86,16 +86,17 @@ namespace barney_device {
 
     struct Parameters
     {
-      helium::IntrusivePtr<helium::Array1D> cellWidth;
+      helium::IntrusivePtr<helium::Array1D> refinementRatio;
       helium::IntrusivePtr<helium::Array1D> blockBounds;
       helium::IntrusivePtr<helium::Array1D> blockLevel;
-      helium::IntrusivePtr<helium::ObjectArray> blockData;
+      helium::IntrusivePtr<helium::Array1D> data;
     } m_params;
 
-    std::vector<int> m_generatedBlockBounds;
+    std::vector<math::int3> m_generatedBlockOrigins;
+    std::vector<math::int3> m_generatedBlockDims;
     std::vector<int> m_generatedBlockLevels;
-    std::vector<int> m_generatedBlockOffsets;
-    std::vector<float> m_generatedBlockScalars;
+    std::vector<uint64_t> m_generatedBlockOffsets;
+    std::vector<int> m_generatedRefinements;
 
     box3 m_bounds;
   };

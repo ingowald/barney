@@ -160,10 +160,11 @@ namespace BARNEY_NS {
     this->gpuIdx = topo->rankOnHost[myGID];
     _rankOf.resize(numGlobal);
 
-    std::vector<int> gidOfRank(numGlobal);
-    world.allGather(gidOfRank.data(),&myGID,1);
+    std::vector<int> logicalGidOfRank(numGlobal);
+    int myLogicalGID = this->hostIdx * gpusPerHost + this->gpuIdx;
+    world.allGather(logicalGidOfRank.data(),&myLogicalGID,1);
     for (int r=0;r<numGlobal;r++)
-      _rankOf[gidOfRank[r]] = r;
+      _rankOf[logicalGidOfRank[r]] = r;
     this->numHosts = numGlobal / gpusPerHost;
 
     if (opt_mpi) {

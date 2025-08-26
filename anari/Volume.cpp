@@ -85,7 +85,7 @@ namespace barney_device {
     }
 
     m_bounds = m_field->bounds();
-
+    
     size_t numColorChannels{4};
     if (m_colorData) { // TODO: more types
       if (m_colorData->elementType() == ANARI_FLOAT32_VEC3)

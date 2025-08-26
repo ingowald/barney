@@ -30,17 +30,14 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<Data> SP;
 
     BaseData(Context *context,
-         const DevGroup::SP &devices,
-         BNDataType type,
-         size_t numItems);
+             const DevGroup::SP &devices,
+             BNDataType type);
     virtual ~BaseData() = default;
     
     static BaseData::SP create(Context *context,
                                const DevGroup::SP &devices,
-                               BNDataType type,
-                               size_t numItems,
-                               const void *items);
-    
+                               BNDataType type);
+
     BNDataType type  = BN_DATA_UNDEFINED;
     size_t     count = 0;
     DevGroup::SP const devices;
@@ -57,13 +54,12 @@ namespace BARNEY_NS {
         context itself, and spans all model slots */
     PODData(Context *context,
             const DevGroup::SP &devices,
-            BNDataType type,
-            size_t numItems,
-            const void *items);
+            BNDataType type);
     
     virtual ~PODData();
 
     const void *getDD(Device *device);
+    void set(const void *data, int count) override;
 
     struct PLD {
       rtc::Buffer *rtcBuffer   = 0;
@@ -79,9 +75,8 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<ObjectRefsData> SP;
     ObjectRefsData(Context *context,
                    const DevGroup::SP &devices,
-                   BNDataType type,
-                   size_t numItems,
-                   const void *items);
+                   BNDataType type);
+    void set(const void *data, int count) override;
     std::vector<Object::SP> items;
   };
 

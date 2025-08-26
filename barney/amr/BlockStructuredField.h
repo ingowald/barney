@@ -258,7 +258,7 @@ namespace BARNEY_NS {
     block.origin   = dd.perBlock.origins[blockID];
     block.dims     = dd.perBlock.dims[blockID];
     block.level    = dd.perBlock.levels[blockID];
-    block.cellSize = 1.f/dd.perLevel.refinements[block.level];
+    block.cellSize = (powf(dd.perLevel.refinements[block.level], block.level));
     // printf("offset %li\n",dd.perBlock.offsets[blockID]);
     block.scalars  = dd.scalars+dd.perBlock.offsets[blockID];
 

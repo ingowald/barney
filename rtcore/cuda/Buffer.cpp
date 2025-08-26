@@ -47,5 +47,13 @@ namespace rtc {
       BARNEY_CUDA_CALL(Memcpy(((char *)d_data)+offset,data,numBytes,cudaMemcpyDefault));
     }
 
+    void Buffer::resize(size_t numBytes)
+    {
+      SetActiveGPU forDuration(device);
+      if (d_data) 
+        BARNEY_CUDA_CALL(Free(d_data));
+      BARNEY_CUDA_CALL(Malloc((void**)&d_data,numBytes));
+    }
+    
   }
 }

@@ -15,8 +15,8 @@
 # ======================================================================== #
 
 set(BARNEY_VERSION_MAJOR 0)
-set(BARNEY_VERSION_MINOR 9)
-set(BARNEY_VERSION_PATCH 10)
+set(BARNEY_VERSION_MINOR 10)
+set(BARNEY_VERSION_PATCH 0)
 
 cmake_minimum_required(VERSION 3.12)
 

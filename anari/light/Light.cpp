@@ -21,8 +21,8 @@ namespace barney_device {
       return new Directional(s);
     else if (type == "hdri")
       return new HDRILight(s);
-    else if (type == "point")
-      return new PointLight(s);
+    // else if (type == "point")
+    //   return new PointLight(s);
     else
       return (Light *)new UnknownObject(ANARI_LIGHT, s);
   }

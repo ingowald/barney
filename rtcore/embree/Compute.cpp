@@ -26,34 +26,6 @@
 namespace rtc {
   namespace embree {
 
-    struct Task {
-      virtual void run(int) = 0;
-    };
-    template<typename T>
-    struct TaskWrapper : public Task {
-      TaskWrapper(const T &t) : t(t) {}
-      void run(int tid) override { t(tid); }
-      const T t;
-    };
-    
-    struct LaunchSystem {
-      LaunchSystem();
-      void launchAndWait(int numTotal, Task *task);
-      void threadFct();
-
-      std::vector<std::thread> threads;
-
-      struct {
-        volatile int total = 0;
-        std::atomic<int> taken;
-      } numJobs;
-      
-      Task *volatile task = 0;
-
-      std::mutex mutex;
-      std::barrier<void(*)() noexcept> barrier;
-    };
-
     int numThreads() {
       int nt = std::thread::hardware_concurrency();
 #if 0

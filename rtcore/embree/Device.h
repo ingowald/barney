@@ -26,6 +26,10 @@ namespace rtc {
     struct LaunchSystem;
     LaunchSystem *createLaunchSystem();
 
+
+    /*! get a unique hash for a given physical device. */
+    size_t getPhysicalDeviceHash(int gpuID);
+    
     struct Device;
     struct Denoiser;
     struct Group;

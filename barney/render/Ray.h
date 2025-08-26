@@ -42,6 +42,18 @@ namespace BARNEY_NS {
 #endif
         return value;
       }
+      inline __rtc_device uint32_t next(uint64_t hash)
+      {
+        const uint32_t FNV_PRIME = 16777619;
+// #if NEW_RNG
+//         value = pcg(value * FNV_PRIME ^ (uint32_t)hash);
+//         value = pcg(value * FNV_PRIME ^ (uint32_t)(hash>>32));
+// #else
+        value = value * FNV_PRIME ^ (uint32_t)hash;
+        value = value * FNV_PRIME ^ (uint32_t)(hash>>32);
+// #endif
+        return value;
+      }
       uint32_t value;
     };
     
