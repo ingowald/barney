@@ -137,7 +137,7 @@ namespace BARNEY_NS {
       ray.isInMedium  = false;
       ray.tMax        = 1e30f;
       // ray.rngSeed     = rand.next;//state;
-      state.numDiffuseBounces = 128;
+      state.numDiffuseBounces = 0;
       if (0 && ray.dbg())
         printf("-------------------------------------------------------\n");
              
