@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Frame.h"
+#include "Device.h"
 // std
 #include <algorithm>
 #include <chrono>
@@ -197,10 +198,23 @@ namespace barney_device {
                     "last frame had a instID buffer request, but never mapped it");
 
     if (state->slot == 0) {
-      bnRender(m_renderer->barneyRenderer,
-               model,
-               m_camera->barneyCamera(),
-               m_bnFrameBuffer);
+      auto &peers = state->tether->devices;
+      state->tether->numRenderCallsOutstanding = peers.size();
+      state->tether->deferredRenderCall.model = model;
+      state->tether->deferredRenderCall.renderer = m_renderer->barneyRenderer;
+      state->tether->deferredRenderCall.fb = m_bnFrameBuffer;
+      state->tether->deferredRenderCall.camera = m_camera->barneyCamera();
+      // bnRender(m_renderer->barneyRenderer,
+      //          model,
+      //          m_camera->barneyCamera(),
+      //          m_bnFrameBuffer);
+    }
+    if (--state->tether->numRenderCallsOutstanding == 0) {
+      bnRender(state->tether->deferredRenderCall.renderer,//m_renderer->barneyRenderer,
+               state->tether->deferredRenderCall.model,//model,
+               state->tether->deferredRenderCall.camera,//m_camera->barneyCamera(),
+               state->tether->deferredRenderCall.fb//m_bnFrameBuffer);
+               );
       m_lastFrameWasFirstFrame = firstFrame;
     }
     m_didMapChannel.depth = false;
