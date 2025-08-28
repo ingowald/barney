@@ -16,7 +16,7 @@ namespace barney_device {
     if (subtype == "transferFunction1D")
       return new TransferFunction1D(s);
     else
-      return (Volume *)new UnknownObject(ANARI_VOLUME, s);
+      return (Volume *)new UnknownObject(ANARI_VOLUME, subtype, s);
   }
 
   void Volume::markFinalized()
@@ -85,7 +85,7 @@ namespace barney_device {
     }
 
     m_bounds = m_field->bounds();
-    
+
     size_t numColorChannels{4};
     if (m_colorData) { // TODO: more types
       if (m_colorData->elementType() == ANARI_FLOAT32_VEC3)
@@ -141,7 +141,7 @@ namespace barney_device {
   {
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
-  
+
     return m_field
       ? bnVolumeCreate(context, slot, m_field->getBarneyScalarField())
       : BNVolume{};

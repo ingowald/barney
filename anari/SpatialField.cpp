@@ -26,7 +26,7 @@ SpatialField *SpatialField::createInstance(
   else if (subtype == "structuredRegular")
     return new StructuredRegularField(s);
   else
-    return (SpatialField *)new UnknownObject(ANARI_SPATIAL_FIELD, s);
+    return (SpatialField *)new UnknownObject(ANARI_SPATIAL_FIELD, subtype, s);
 }
 
 void SpatialField::markFinalized()
