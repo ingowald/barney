@@ -73,12 +73,10 @@ namespace BARNEY_NS {
                                         vec3f *linearNormal,
                                         float  accumScale)
   {
-    PING; PRINT(device); PRINT(appDevice);
     SetActiveGPU forDuration(appDevice?appDevice:device);
     if (appDevice) {
       appDevice->rtc->copyAsync(appAccumTiles,accumTiles,
                                 numActiveTilesThisGPU*sizeof(*appAccumTiles));
-      PING; PRINT(appAccumTiles); PRINT(accumTiles); PRINT(numActiveTilesThisGPU);
       appDevice->rtc->sync();
     }
     __rtc_launch(// device
@@ -171,7 +169,6 @@ namespace BARNEY_NS {
     default:
       throw std::runtime_error("unsupported aux channel in sending aux!?");
     };
-    PING; PRINT(loc_aux); PRINT(tgt_aux);
     if (loc_aux != tgt_aux)
       appDevice->rtc->copyAsync(tgt_aux,loc_aux,
                                 numActiveTilesThisGPU*sizeof(*tgt_aux));
@@ -261,9 +258,6 @@ namespace BARNEY_NS {
     free();
     SetActiveGPU forDuration(device);
 
-    std::cout << "-------------------------------------------------------" << std::endl;
-    PING; PRINT(device); PRINT(appDevice);
-     
     numPixels = newSize;
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTilesThisGPU
@@ -276,12 +270,10 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     accumTiles
       = (AccumTile *)device->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
-    PRINT(accumTiles);
     if (appDevice) {
       SetActiveGPU forDuration(appDevice);
       appAccumTiles
         = (AccumTile *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
-      PRINT(appAccumTiles);
     }
     // ------------------------------------------------------------------
     // aux channel tiles
@@ -289,7 +281,6 @@ namespace BARNEY_NS {
     auto alloc = [&](Device *device, AuxChannelTile *&tiles) 
     { tiles = (AuxChannelTile *)device->rtc->allocMem(numActiveTilesThisGPU*sizeof(*tiles)); };
 
-    PING; PRINT(channels); PRINT((int)(channels & BN_FB_DEPTH));
     if (channels & BN_FB_PRIMID) alloc(device,auxTiles.primID);
     if (channels & BN_FB_INSTID) alloc(device,auxTiles.instID);
     if (channels & BN_FB_OBJID)  alloc(device,auxTiles.objID);

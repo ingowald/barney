@@ -25,10 +25,6 @@
 #include "barney/Camera.h"
 #include "barney/render/Renderer.h"
 
-namespace barney_api {
-}  
-// #endif
-  
 namespace BARNEY_NS {
   Context::Context(const std::vector<LocalSlot> &localSlots,
                    WorkerTopo::SP topo)
@@ -52,27 +48,10 @@ namespace BARNEY_NS {
       return;
     }
 
-
-    //   throw std::runtime_error("not enough GPUs ("
-    //                            +std::to_string(gpuIDs.size())
-    //                            +") for requested num data groups ("
-    //                            +std::to_string(dataGroupIDs.size())
-    //                            +")");
-    // if (gpuIDs.size() % dataGroupIDs.size())
-    //   throw std::runtime_error("requested num GPUs is not a multiple of "
-    //                            "requested num data groups");
-    // int numSlots = (int)dataGroupIDs.size();
-    // int gpusPerSlot = (int)gpuIDs.size() / numSlots;
-    // std::vector<std::vector<int>> gpuInSlot(numSlots);
-    // perSlot.resize(numSlots);
-    
     std::vector<Device *> allLocalDevices;
-    // std::vector<WorkerTopo::Device> allDevices;
-
     int numSlots = (int)localSlots.size();
     perSlot.resize(numSlots);
 
-    PING;
     havePeerAccess = true;
 #if 1
     std::vector<int> allGPUs;
@@ -125,15 +104,11 @@ namespace BARNEY_NS {
         = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
     }
 #endif
-    PING;
-    PRINT((int)havePeerAccess);
-
     devices = std::make_shared<DevGroup>
       (allLocalDevices,(int)allLocalDevices.size());
     if (!havePeerAccess) {
       std::cout << "don't have peer access between GPUs ... this is going to get interesting" << std::endl;
       deviceWeNeedToCopyToForFBMap = allLocalDevices[0];
-      PING; PRINT(deviceWeNeedToCopyToForFBMap);
     }
     
     for (auto &dg : perSlot)

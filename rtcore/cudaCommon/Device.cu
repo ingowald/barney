@@ -136,10 +136,6 @@ namespace rtc {
       
       bool successful = true;
 
-      PING; PRINT(gpuIDs.size());
-      for (auto gpuID : gpuIDs) 
-        PRINT(gpuID);
-
       for (auto gpuID : gpuIDs) {
         SetActiveGPU forLifeTime(gpuID);
         ss << " - device #" << gpuID << " : ";
