@@ -72,7 +72,36 @@ namespace BARNEY_NS {
     int numSlots = (int)localSlots.size();
     perSlot.resize(numSlots);
 
+    PING;
     havePeerAccess = true;
+#if 1
+    std::vector<int> allGPUs;
+    for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
+      auto &ls = localSlots[lmsIdx];
+      auto &dg = perSlot[lmsIdx];
+      dg.context = this;
+      dg.modelRankInThisSlot = ls.dataRank;
+      for (auto g : ls.gpuIDs) allGPUs.push_back(g);
+      // havePeerAccess
+      //   = havePeerAccess & rtc::enablePeerAccess(ls.gpuIDs);
+
+      std::vector<Device *> slotDevices;
+      for (auto gpuID : ls.gpuIDs) {
+        rtc::Device *rtc = new rtc::Device(gpuID);
+        int nextLocal = allLocalDevices.size();
+        Device *device 
+          = new Device(rtc,topo.get(),nextLocal);
+          
+        slotDevices.push_back(device);
+        allLocalDevices.push_back(device);
+        dg.gpuIDs.push_back(gpuID);
+      }
+      dg.devices
+        = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
+    }
+    havePeerAccess
+      = havePeerAccess & rtc::enablePeerAccess(allGPUs);
+#else
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
       auto &ls = localSlots[lmsIdx];
       auto &dg = perSlot[lmsIdx];
@@ -95,12 +124,16 @@ namespace BARNEY_NS {
       dg.devices
         = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
     }
+#endif
+    PING;
+    PRINT((int)havePeerAccess);
 
     devices = std::make_shared<DevGroup>
       (allLocalDevices,(int)allLocalDevices.size());
     if (!havePeerAccess) {
       std::cout << "don't have peer access between GPUs ... this is going to get interesting" << std::endl;
       deviceWeNeedToCopyToForFBMap = allLocalDevices[0];
+      PING; PRINT(deviceWeNeedToCopyToForFBMap);
     }
     
     for (auto &dg : perSlot)

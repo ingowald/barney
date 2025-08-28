@@ -28,6 +28,13 @@ namespace BARNEY_NS {
                        uint32_t channels)
   {
     Device *frontDev = getDenoiserDevice();
+    PING; PRINT(frontDev);
+    for (auto device : *devices) {
+      auto devFB = getFor(device);
+      PRINT(device);
+      PRINT(devFB);
+    }
+    
     auto rtc = frontDev->rtc;
     FrameBuffer::resize(colorFormat,size,channels);
     
@@ -69,8 +76,11 @@ namespace BARNEY_NS {
                                    BNDataType gatherType,
                                    vec3f *linearNormal)
   {
+    PING; 
     float accumScale = 1.f/accumID;
     for (auto device : *devices) {
+      PRINT(device);
+      PRINT(linearColor);
       getFor(device)->linearizeColorAndNormal
         (linearColor,gatherType,linearNormal,accumScale);
     }

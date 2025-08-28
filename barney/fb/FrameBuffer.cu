@@ -58,6 +58,7 @@ namespace BARNEY_NS {
       enableDenoising = false;
     }
     perLogical.resize(devices->numLogical);
+    PING; PRINT(context->deviceWeNeedToCopyToForFBMap);
     for (auto device : *devices) {
       getPLD(device)->tiledFB
         = TiledFB::create(device,context->deviceWeNeedToCopyToForFBMap,this);
@@ -137,6 +138,7 @@ namespace BARNEY_NS {
 
   void FrameBuffer::finalizeFrame()
   {
+    PING;
     Device *device = getDenoiserDevice();
     SetActiveGPU forDuration(device);
 
@@ -159,6 +161,9 @@ namespace BARNEY_NS {
       ? BN_FLOAT4
       : colorChannelFormat;
 
+    PING; PRINT(device);
+    PRINT(colorCopyTarget);
+    
     // this is virtual, and will incur either device copies or mpi
     // pack-gather-unpack
     gatherColorChannel(colorCopyTarget,gatherType,normalCopyTarget);
@@ -179,6 +184,7 @@ namespace BARNEY_NS {
   void FrameBuffer::readColorChannel(void *appMemory,
                                      BNDataType requestedFormat)
   {
+    PING;
     assert(requestedFormat == colorChannelFormat);
     Device *device = getDenoiserDevice();
     SetActiveGPU forDuration(device);
@@ -225,6 +231,9 @@ namespace BARNEY_NS {
         : sizeof(uint32_t);
       device->rtc->copy(appMemory,linearColorChannel,
                         numPixels.x*numPixels.y*sizeOfPixel);
+      PING;
+      PRINT(appMemory);
+      PRINT(linearColorChannel);
     }
     device->rtc->sync();
   }

@@ -69,6 +69,7 @@ namespace barney_device {
       getParam<anari::DataType>("channel.color", ANARI_UNKNOWN);
     m_channelTypes.depth =
       getParam<anari::DataType>("channel.depth", ANARI_UNKNOWN);
+    PING; PRINT(m_channelTypes.depth); PRINT(ANARI_UNKNOWN);
     m_channelTypes.primID =
       getParam<anari::DataType>("channel.primitiveId", ANARI_UNKNOWN);
     m_channelTypes.instID =
@@ -102,12 +103,14 @@ namespace barney_device {
                     ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
     }
 
+    PRINT(deviceState()->slot);
     if (deviceState()->slot == 0) {
       const auto &size = m_size;
       const auto numPixels = size.x * size.y;
 
       uint32_t requiredChannels = BN_FB_COLOR;
-      if (m_channelTypes.depth == ANARI_FLOAT32)
+      PING; PRINT(m_channelTypes.depth); PRINT((int)ANARI_FLOAT32);
+      if (m_channelTypes.depth == ANARI_FLOAT32) 
         requiredChannels |= BN_FB_DEPTH;
       if (m_channelTypes.primID == ANARI_UINT32)
         requiredChannels |= BN_FB_PRIMID;
@@ -116,6 +119,7 @@ namespace barney_device {
       if (m_channelTypes.instID == ANARI_UINT32)
         requiredChannels |= BN_FB_INSTID;
 
+      PING; PRINT((int)(requiredChannels & BN_FB_DEPTH));
       if (m_bnFrameBuffer) {
         bnSet1i(m_bnFrameBuffer, "enableDenoising", denoise);
         bnCommit(m_bnFrameBuffer);
@@ -147,6 +151,8 @@ namespace barney_device {
 
   void Frame::renderFrame()
   {
+    PING;
+    PING;
     auto start = std::chrono::steady_clock::now();
 
     auto *state = deviceState();
@@ -175,6 +181,7 @@ namespace barney_device {
                     "    camera(%p) - isValid:(%i)",
                     m_camera.ptr,
                     m_camera ? m_camera->isValid() : 0);
+      PING;
       return;
     }
 
@@ -197,9 +204,11 @@ namespace barney_device {
       reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
                     "last frame had a instID buffer request, but never mapped it");
 
+    PING; PRINT(state->slot);
     if (state->slot == 0) {
       auto &peers = state->tether->devices;
       state->tether->numRenderCallsOutstanding = peers.size();
+      PRINT(state->tether->numRenderCallsOutstanding);
       state->tether->deferredRenderCall.model = model;
       state->tether->deferredRenderCall.renderer = m_renderer->barneyRenderer;
       state->tether->deferredRenderCall.fb = m_bnFrameBuffer;
@@ -209,7 +218,11 @@ namespace barney_device {
       //          m_camera->barneyCamera(),
       //          m_bnFrameBuffer);
     }
-    if (--state->tether->numRenderCallsOutstanding == 0) {
+    PRINT(state->tether->numRenderCallsOutstanding);
+    --state->tether->numRenderCallsOutstanding;
+    PRINT(state->tether->numRenderCallsOutstanding);
+    if (state->tether->numRenderCallsOutstanding == 0) {
+      PING; 
       bnRender(state->tether->deferredRenderCall.renderer,//m_renderer->barneyRenderer,
                state->tether->deferredRenderCall.model,//model,
                state->tether->deferredRenderCall.camera,//m_camera->barneyCamera(),
