@@ -107,7 +107,7 @@ namespace barney_device {
       const auto numPixels = size.x * size.y;
 
       uint32_t requiredChannels = BN_FB_COLOR;
-      if (m_channelTypes.depth == ANARI_FLOAT32)
+      if (m_channelTypes.depth == ANARI_FLOAT32) 
         requiredChannels |= BN_FB_DEPTH;
       if (m_channelTypes.primID == ANARI_UINT32)
         requiredChannels |= BN_FB_PRIMID;
@@ -204,16 +204,13 @@ namespace barney_device {
       state->tether->deferredRenderCall.renderer = m_renderer->barneyRenderer;
       state->tether->deferredRenderCall.fb = m_bnFrameBuffer;
       state->tether->deferredRenderCall.camera = m_camera->barneyCamera();
-      // bnRender(m_renderer->barneyRenderer,
-      //          model,
-      //          m_camera->barneyCamera(),
-      //          m_bnFrameBuffer);
     }
-    if (--state->tether->numRenderCallsOutstanding == 0) {
-      bnRender(state->tether->deferredRenderCall.renderer,//m_renderer->barneyRenderer,
-               state->tether->deferredRenderCall.model,//model,
-               state->tether->deferredRenderCall.camera,//m_camera->barneyCamera(),
-               state->tether->deferredRenderCall.fb//m_bnFrameBuffer);
+    --state->tether->numRenderCallsOutstanding;
+    if (state->tether->numRenderCallsOutstanding == 0) {
+      bnRender(state->tether->deferredRenderCall.renderer,
+               state->tether->deferredRenderCall.model,
+               state->tether->deferredRenderCall.camera,
+               state->tether->deferredRenderCall.fb
                );
       m_lastFrameWasFirstFrame = firstFrame;
     }

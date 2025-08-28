@@ -25,10 +25,6 @@
 #include "barney/Camera.h"
 #include "barney/render/Renderer.h"
 
-namespace barney_api {
-}  
-// #endif
-  
 namespace BARNEY_NS {
   Context::Context(const std::vector<LocalSlot> &localSlots,
                    WorkerTopo::SP topo)
@@ -52,27 +48,39 @@ namespace BARNEY_NS {
       return;
     }
 
-
-    //   throw std::runtime_error("not enough GPUs ("
-    //                            +std::to_string(gpuIDs.size())
-    //                            +") for requested num data groups ("
-    //                            +std::to_string(dataGroupIDs.size())
-    //                            +")");
-    // if (gpuIDs.size() % dataGroupIDs.size())
-    //   throw std::runtime_error("requested num GPUs is not a multiple of "
-    //                            "requested num data groups");
-    // int numSlots = (int)dataGroupIDs.size();
-    // int gpusPerSlot = (int)gpuIDs.size() / numSlots;
-    // std::vector<std::vector<int>> gpuInSlot(numSlots);
-    // perSlot.resize(numSlots);
-    
     std::vector<Device *> allLocalDevices;
-    // std::vector<WorkerTopo::Device> allDevices;
-
     int numSlots = (int)localSlots.size();
     perSlot.resize(numSlots);
 
     havePeerAccess = true;
+#if 1
+    std::vector<int> allGPUs;
+    for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
+      auto &ls = localSlots[lmsIdx];
+      auto &dg = perSlot[lmsIdx];
+      dg.context = this;
+      dg.modelRankInThisSlot = ls.dataRank;
+      for (auto g : ls.gpuIDs) allGPUs.push_back(g);
+      // havePeerAccess
+      //   = havePeerAccess & rtc::enablePeerAccess(ls.gpuIDs);
+
+      std::vector<Device *> slotDevices;
+      for (auto gpuID : ls.gpuIDs) {
+        rtc::Device *rtc = new rtc::Device(gpuID);
+        int nextLocal = allLocalDevices.size();
+        Device *device 
+          = new Device(rtc,topo.get(),nextLocal);
+          
+        slotDevices.push_back(device);
+        allLocalDevices.push_back(device);
+        dg.gpuIDs.push_back(gpuID);
+      }
+      dg.devices
+        = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
+    }
+    havePeerAccess
+      = havePeerAccess & rtc::enablePeerAccess(allGPUs);
+#else
     for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
       auto &ls = localSlots[lmsIdx];
       auto &dg = perSlot[lmsIdx];
@@ -95,7 +103,7 @@ namespace BARNEY_NS {
       dg.devices
         = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
     }
-
+#endif
     devices = std::make_shared<DevGroup>
       (allLocalDevices,(int)allLocalDevices.size());
     if (!havePeerAccess) {

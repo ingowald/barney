@@ -122,7 +122,7 @@ namespace rtc {
 #define LOG(a) ss << "#bn." << a << std::endl;
 
       std::stringstream ss;
-      ss << "enabling peer access ('.'=self, '+'=can access other device)" << std::endl;
+      ss << "enabling peer access ('.'=self, '+'=can access other device, '!'=can NOT peer access)" << std::endl;
  
      
       int deviceCount = (int)gpuIDs.size();
@@ -135,6 +135,7 @@ namespace rtc {
       LOG("enabling peer access:");
       
       bool successful = true;
+
       for (auto gpuID : gpuIDs) {
         SetActiveGPU forLifeTime(gpuID);
         ss << " - device #" << gpuID << " : ";
@@ -159,6 +160,7 @@ namespace rtc {
               // disabling this, as it's concerning end users.
               // std::cerr << "cannot not enable peer access!? ... skipping..." << std::endl;
               successful = false;
+              ss << " !"; 
               continue;
             }
             
