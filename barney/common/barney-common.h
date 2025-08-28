@@ -89,7 +89,7 @@ namespace BARNEY_NS {
   {
     const uint64_t FNV_offset_basis = 0xcbf29ce484222325ULL;
     const uint64_t FNV_prime = 0x100000001b3ULL;
-    return FNV_offset_basis ^ v * FNV_prime;
+    return FNV_offset_basis ^ FNV_prime * v;
   }
   inline __both__ uint64_t hash(uint64_t h, uint32_t v)
   {

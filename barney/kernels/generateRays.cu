@@ -74,9 +74,9 @@ namespace BARNEY_NS {
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
 // #if NEW_RNG
-//       ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
+      ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
 // #else
-      ray.rngSeed.seed(ix+fbSize.x*(accumID+1),3+iy+fbSize.y*(accumID+1));
+      // ray.rngSeed.seed(ix+fbSize.x*(accumID),iy+fbSize.y*(accumID));
 // #endif
 
       ray.org  = camera.lens_00;
@@ -122,22 +122,26 @@ namespace BARNEY_NS {
       ray.dir = ray_dir;
       
 #ifdef NDEBUG
-      ray.dbg         = 0;
+      // ray._dbg         = 0;
+      ray.crosshair   = 0;
 #else
-      bool crossHair_x = (ix == fbSize.x/2);
-      bool crossHair_y = (iy == fbSize.y/2);
-      ray.dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
+      bool crossHair_x = (ix == fbSize.x/2+4-5 + 16);
+      bool crossHair_y = (iy == fbSize.y/2+2-6 + 16);
+      ray._dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
+      ray.crosshair = enablePerRayDebug && (crossHair_x || crossHair_y);
 #endif
+
+      if (ray.dbg()) printf("initial ray seed %u\n",ray.rngSeed.value);
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
       ray.tMax        = 1e30f;
       // ray.rngSeed     = rand.next;//state;
       state.numDiffuseBounces = 0;
-      if (0 && ray.dbg)
+      if (0 && ray.dbg())
         printf("-------------------------------------------------------\n");
              
-      if (1 && ray.dbg)
+      if (1 && ray.dbg())
         printf("======================\nspawned %f %f %f dir %f %f %f\n",
                ray.org.x,
                ray.org.y,
@@ -163,7 +167,7 @@ namespace BARNEY_NS {
         bgColor = v;
       }
       (vec4f&)ray.missColor = bgColor;
-      if (0 && ray.dbg) printf("== spawn ray has bg tex %p bg color %f %f %f\n",
+      if (0 && ray.dbg()) printf("== spawn ray has bg tex %p bg color %f %f %f\n",
                                (void*)renderer.bgTexture,
                                bgColor.x,
                                bgColor.y,

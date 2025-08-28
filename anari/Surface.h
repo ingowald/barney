@@ -30,8 +30,8 @@ namespace barney_device {
     void cleanup();
 
     uint32_t m_id{~0u};
-    helium::IntrusivePtr<Geometry> m_geometry;
-    helium::IntrusivePtr<Material> m_material;
+    helium::ChangeObserverPtr<Geometry> m_geometry;
+    helium::ChangeObserverPtr<Material> m_material;
 
     BNGeom m_bnGeom{nullptr};
     BNMaterial m_bnMat{nullptr};

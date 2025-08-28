@@ -12,10 +12,28 @@
 
 namespace barney_device {
 
-using Array1D = helium::Array1D;
-using Array2D = helium::Array2D;
-using Array3D = helium::Array3D;
 using ObjectArray = helium::ObjectArray;
+
+#define DEFINE_BARNEY_ARRAY(DIM)                                               \
+  struct Array##DIM : public helium::Array##DIM                                \
+  {                                                                            \
+    Array##DIM(BarneyGlobalState *state,                                       \
+        const helium::Array##DIM##MemoryDescriptor &d);                        \
+    ~Array##DIM() override;                                                    \
+                                                                               \
+    void unmap() override;                                                     \
+                                                                               \
+    BNData barneyData();                                                       \
+                                                                               \
+   private:                                                                    \
+    BNData m_handle{nullptr};                                                  \
+  };
+
+DEFINE_BARNEY_ARRAY(1D)
+DEFINE_BARNEY_ARRAY(2D)
+DEFINE_BARNEY_ARRAY(3D)
+
+BNDataType anariToBarney(anari::DataType type);
 
 // Inlined definitions ////////////////////////////////////////////////////////
 
@@ -46,3 +64,7 @@ inline size_t getNumBytes(const std::vector<T> &v)
 }
 
 } // namespace barney_device
+
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array1D *, ANARI_ARRAY1D);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array2D *, ANARI_ARRAY2D);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array3D *, ANARI_ARRAY3D);

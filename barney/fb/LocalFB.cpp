@@ -28,6 +28,10 @@ namespace BARNEY_NS {
                        uint32_t channels)
   {
     Device *frontDev = getDenoiserDevice();
+    for (auto device : *devices) {
+      auto devFB = getFor(device);
+    }
+    
     auto rtc = frontDev->rtc;
     FrameBuffer::resize(colorFormat,size,channels);
     

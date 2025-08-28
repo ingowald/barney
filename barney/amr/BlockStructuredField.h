@@ -156,21 +156,21 @@ namespace BARNEY_NS {
           sumWeights += weight;
           sumWeightedValues += weight*scalar;
         }
-        if (idx_hi.x < block.dims.x) {
+        if (idx_hi.x >= 0 && idx_hi.x < block.dims.x) {
           const float scalar = block.getScalar({idx_hi.x,idx_lo.y,idx_lo.z});
           const float weight = (neg_frac.z)*(neg_frac.y)*(frac.x);
           sumWeights += weight;
           sumWeightedValues += weight*scalar;
         }
       }
-      if (idx_hi.y < block.dims.y) {
+      if (idx_hi.y >= 0 && idx_hi.y < block.dims.y) {
         if (idx_lo.x >= 0 && idx_lo.x < block.dims.x) {
           const float scalar = block.getScalar({idx_lo.x,idx_hi.y,idx_lo.z});
           const float weight = (neg_frac.z)*(frac.y)*(neg_frac.x);
           sumWeights += weight;
           sumWeightedValues += weight*scalar;
         }
-        if (idx_hi.x < block.dims.x) {
+        if (idx_hi.x >= 0 && idx_hi.x < block.dims.x) {
           const float scalar = block.getScalar({idx_hi.x,idx_hi.y,idx_lo.z});
           const float weight = (neg_frac.z)*(frac.y)*(frac.x);
           sumWeights += weight;
@@ -179,7 +179,7 @@ namespace BARNEY_NS {
       }
     }
         
-    if (idx_hi.z < block.dims.z) {
+    if (idx_hi.z >= 0 && idx_hi.z < block.dims.z) {
       if (idx_lo.y >= 0 && idx_lo.y < block.dims.y) {
         if (idx_lo.x >= 0 && idx_lo.x < block.dims.x) {
           const float scalar = block.getScalar({idx_lo.x,idx_lo.y,idx_hi.z});
@@ -194,14 +194,14 @@ namespace BARNEY_NS {
           sumWeightedValues += weight*scalar;
         }
       }
-      if (idx_hi.y < block.dims.y) {
+      if (idx_hi.y >= 0 && idx_hi.y < block.dims.y) {
         if (idx_lo.x >= 0 && idx_lo.x < block.dims.x) {
           const float scalar = block.getScalar({idx_lo.x,idx_hi.y,idx_hi.z});
           const float weight = (frac.z)*(frac.y)*(neg_frac.x);
           sumWeights += weight;
           sumWeightedValues += weight*scalar;
         }
-        if (idx_hi.x < block.dims.x) {
+        if (idx_hi.x >= 0 && idx_hi.x < block.dims.x) {
           const float scalar = block.getScalar({idx_hi.x,idx_hi.y,idx_hi.z});
           const float weight = (frac.z)*(frac.y)*(frac.x);
           sumWeights += weight;
@@ -258,7 +258,7 @@ namespace BARNEY_NS {
     block.origin   = dd.perBlock.origins[blockID];
     block.dims     = dd.perBlock.dims[blockID];
     block.level    = dd.perBlock.levels[blockID];
-    block.cellSize = 1.f/dd.perLevel.refinements[block.level];
+    block.cellSize = (powf(dd.perLevel.refinements[block.level], block.level));
     // printf("offset %li\n",dd.perBlock.offsets[blockID]);
     block.scalars  = dd.scalars+dd.perBlock.offsets[blockID];
 

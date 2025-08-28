@@ -8,11 +8,52 @@
 
 namespace barney_device {
 
-Sampler::Sampler(BarneyGlobalState *s) : Object(ANARI_SAMPLER, s) {}
+// Helper functions ///////////////////////////////////////////////////////////
+
+static BNTextureData makeBarneyTextureData(
+    BarneyGlobalState *state, helium::Array *input, int width, int height)
+{
+  int slot = state->slot;
+  auto context = state->tether->context;
+
+  if (input->elementType() == ANARI_FLOAT32_VEC4) {
+    return bnTextureData2DCreate(context,
+        slot,
+        BN_FLOAT4,
+        width,
+        height,
+        input->dataAs<anari::math::float4>());
+  } else {
+    std::vector<uint32_t> texels;
+    if (!convert_to_rgba8(input, texels)) {
+      std::stringstream ss;
+      ss << "unsupported texel type: " << anari::toString(input->elementType());
+      std::string str = ss.str();
+      fprintf(stderr, "%s\n", str.c_str());
+      return {};
+    }
+    return bnTextureData2DCreate(
+        context, slot, BN_UFIXED8_RGBA, width, height, texels.data());
+  }
+}
+
+// Sampler definitions ////////////////////////////////////////////////////////
+
+Sampler::Sampler(BarneyGlobalState *s, const char *barneySubtype)
+    : Object(ANARI_SAMPLER, s)
+{
+  int slot = deviceState()->slot;
+  auto context = deviceState()->tether->context;
+  m_bnSampler = bnSamplerCreate(context, slot, barneySubtype);
+}
 
 Sampler::~Sampler()
 {
-  cleanup();
+  bnRelease(m_bnSampler);
+  if (m_bnTextureData) {
+    bnRelease(m_bnTextureData);
+    m_bnTextureData = nullptr;
+  }
 }
 
 Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
@@ -24,26 +65,21 @@ Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
   else if (subtype == "transform")
     return new TransformSampler(s);
   else
-    return (Sampler *)new UnknownObject(ANARI_SAMPLER, s);
+    return (Sampler *)new UnknownObject(ANARI_SAMPLER, subtype, s);
 }
 
-void Sampler::cleanup()
+BNSampler Sampler::getBarneySampler()
 {
-  if (m_bnSampler) {
-    bnRelease(m_bnSampler);
-    m_bnSampler = nullptr;
-  }
-  if (m_bnTextureData) {
-    bnRelease(m_bnTextureData);
-    m_bnTextureData = nullptr;
-  }
+  if (!isValid())
+    return {};
+  return m_bnSampler;
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
 // Image1D //
 
-Image1D::Image1D(BarneyGlobalState *s) : Sampler(s) {}
+Image1D::Image1D(BarneyGlobalState *s) : Sampler(s, "texture2D") {}
 
 Image1D::~Image1D() = default;
 
@@ -69,38 +105,12 @@ bool Image1D::isValid() const
   return m_image;
 }
 
-void Image1D::createBarneySampler()
+void Image1D::finalize()
 {
-  int slot = deviceState()->slot;
-  auto context = deviceState()->tether->context;
   if (m_bnTextureData)
     bnRelease(m_bnTextureData);
-  // ------------------------------------------------------------------
-  // first, create 2D cuda array of texels. these barney objects
-  // SHOULD actually live with their respective image array...
-  // ------------------------------------------------------------------
-  int width = (int)m_image->size();
-  int height = 1;
-  std::vector<uint32_t> texels;
-  if (!convert_to_rgba8(m_image, texels)) {
-    std::stringstream ss;
-    ss << "unsupported texel type: " << anari::toString(m_image->elementType());
-    std::string str = ss.str();
-    fprintf(stderr, "%s\n", str.c_str());
-    texels.resize(width * height);
-  }
-  if (m_image->elementType() == ANARI_FLOAT32_VEC4) {
-    const anari::math::float4 *colors =
-        (const anari::math::float4 *)m_image->data();
-    m_bnTextureData =
-        bnTextureData2DCreate(context, slot, BN_FLOAT4, width, height, colors);
-  } else {
-    m_bnTextureData = bnTextureData2DCreate(
-        context, slot, BN_UFIXED8_RGBA, width, height, texels.data());
-  }
-
-  m_bnSampler = bnSamplerCreate(context, slot, "texture2D");
-  bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
+  m_bnTextureData =
+      makeBarneyTextureData(deviceState(), m_image.ptr, m_image->size(), 1);
 
   // ------------------------------------------------------------------
   // now, create sampler over those texels
@@ -127,12 +137,13 @@ void Image1D::createBarneySampler()
       m_outOffset.z,
       m_outOffset.w);
   bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
+  bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
   bnCommit(m_bnSampler);
 }
 
 // Image2D //
 
-Image2D::Image2D(BarneyGlobalState *s) : Sampler(s) {}
+Image2D::Image2D(BarneyGlobalState *s) : Sampler(s, "texture2D") {}
 
 Image2D::~Image2D() = default;
 
@@ -154,54 +165,13 @@ void Image2D::commitParameters()
       getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
 }
 
-bool Image2D::isValid() const
+void Image2D::finalize()
 {
-  return m_image;
-}
-
-BNSampler Sampler::getBarneySampler()
-{
-  if (!isValid())
-    return {};
-  if (!m_bnSampler)
-    createBarneySampler();
-  return m_bnSampler;
-}
-
-void Image2D::createBarneySampler()
-{
-  int slot = deviceState()->slot;
-  auto context = deviceState()->tether->context;
-
-  // ------------------------------------------------------------------
-  // first, create 2D cuda array of texels. these barney objects
-  // SHOULD actually live with their respective image array...
-  // ------------------------------------------------------------------
-  int width = m_image->size().x;
-  int height = m_image->size().y;
   if (m_bnTextureData)
     bnRelease(m_bnTextureData);
+  m_bnTextureData = makeBarneyTextureData(
+      deviceState(), m_image.ptr, m_image->size().x, m_image->size().y);
 
-  if (m_image->elementType() == ANARI_FLOAT32_VEC4) {
-    const anari::math::float4 *colors =
-        (const anari::math::float4 *)m_image->data();
-    m_bnTextureData =
-        bnTextureData2DCreate(context, slot, BN_FLOAT4, width, height, colors);
-  } else {
-    std::vector<uint32_t> texels;
-    if (!convert_to_rgba8(m_image, texels)) {
-      std::stringstream ss;
-      ss << "unsupported texel type: "
-         << anari::toString(m_image->elementType());
-      std::string str = ss.str();
-      fprintf(stderr, "%s\n", str.c_str());
-      texels.resize(width * height);
-    }
-    m_bnTextureData = bnTextureData2DCreate(
-        context, slot, BN_UFIXED8_RGBA, width, height, texels.data());
-  }
-
-  m_bnSampler = bnSamplerCreate(context, slot, "texture2D");
   BNTextureFilterMode filterMode =
       m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
   bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
@@ -225,8 +195,16 @@ void Image2D::createBarneySampler()
   bnCommit(m_bnSampler);
 }
 
+bool Image2D::isValid() const
+{
+  return m_image;
+}
+
 /// Transform ///
-TransformSampler::TransformSampler(BarneyGlobalState *s) : Sampler(s) {}
+
+TransformSampler::TransformSampler(BarneyGlobalState *s)
+    : Sampler(s, "transform")
+{}
 
 TransformSampler::~TransformSampler() = default;
 
@@ -240,11 +218,8 @@ void TransformSampler::commitParameters()
   m_inAttribute = getParamString("inAttribute", "attribute0");
 }
 
-void TransformSampler::createBarneySampler()
+void TransformSampler::finalize()
 {
-  int slot = deviceState()->slot;
-  auto context = deviceState()->tether->context;
-  m_bnSampler = bnSamplerCreate(context, slot, "transform");
   bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
   bnSet4f(m_bnSampler,
       "outOffset",
@@ -253,7 +228,6 @@ void TransformSampler::createBarneySampler()
       m_outOffset.z,
       m_outOffset.w);
   bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
-  bnCommit(m_bnSampler);
   bnCommit(m_bnSampler);
 }
 

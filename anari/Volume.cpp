@@ -16,7 +16,7 @@ namespace barney_device {
     if (subtype == "transferFunction1D")
       return new TransferFunction1D(s);
     else
-      return (Volume *)new UnknownObject(ANARI_VOLUME, s);
+      return (Volume *)new UnknownObject(ANARI_VOLUME, subtype, s);
   }
 
   void Volume::markFinalized()
@@ -52,7 +52,7 @@ namespace barney_device {
   // Subtypes ///////////////////////////////////////////////////////////////////
 
   TransferFunction1D::TransferFunction1D(BarneyGlobalState *s)
-    : Volume(s), m_colorData(this), m_opacityData(this)
+    : Volume(s), m_field(this), m_colorData(this), m_opacityData(this)
   {}
 
   bool TransferFunction1D::isValid() const
@@ -141,7 +141,7 @@ namespace barney_device {
   {
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
-  
+
     return m_field
       ? bnVolumeCreate(context, slot, m_field->getBarneyScalarField())
       : BNVolume{};

@@ -32,6 +32,12 @@ namespace rtc {
     {
       if (mem) free(mem);
     }
+
+    void Buffer::resize(size_t numBytes)
+    {
+      if (mem) free(mem);
+      mem = numBytes?malloc(numBytes):nullptr;
+    }
     
     void *Buffer::getDD() const
     {

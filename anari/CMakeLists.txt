@@ -24,6 +24,7 @@ else()
 endif()
 
 set(BANARI_SOURCES
+  Array.cpp
   BarneyGlobalState.cpp
   Camera.cpp
   Device.cpp

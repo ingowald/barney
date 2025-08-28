@@ -60,9 +60,8 @@ inline void setBNMaterialUniform(BNMaterial m, const char *p, math::float4 v)
 }
 
 template <typename T>
-inline void setBNMaterialHelper(BNMaterial m,
-                                const char *p,
-                                MaterialParameter<T> &mp)
+inline void setBNMaterialHelper(
+    BNMaterial m, const char *p, MaterialParameter<T> &mp)
 {
   if (mp.sampler) {
     BNSampler s = mp.sampler->getBarneySampler();
@@ -80,7 +79,9 @@ Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
 
 Material::~Material()
 {
-  cleanup();
+  if (m_bnMat)
+    bnRelease(m_bnMat);
+  m_bnMat = nullptr;
 }
 
 Material *Material::createInstance(
@@ -91,7 +92,7 @@ Material *Material::createInstance(
   else if (subtype == "physicallyBased")
     return new PhysicallyBased(s);
   else
-    return (Material *)new UnknownObject(ANARI_MATERIAL, s);
+    return (Material *)new UnknownObject(ANARI_MATERIAL, subtype, s);
 }
 
 void Material::finalize()
@@ -104,17 +105,10 @@ BNMaterial Material::getBarneyMaterial()
   int slot = deviceState()->slot;
   auto context = deviceState()->tether->context;
 
-  if (!m_bnMat) 
+  if (!m_bnMat)
     m_bnMat = bnMaterialCreate(context, slot, bnSubtype());
   setBarneyParameters();
   return m_bnMat;
-}
-
-void Material::cleanup()
-{
-  if (m_bnMat)
-    bnRelease(m_bnMat);
-  m_bnMat = nullptr;
 }
 
 // Subtypes ///////////////////////////////////////////////////////////////////
@@ -148,7 +142,7 @@ void Matte::setBarneyParameters()
   if (!m_bnMat)
     return;
 
-  setBNMaterialHelper(m_bnMat, "color", m_color);//, getContext());
+  setBNMaterialHelper(m_bnMat, "color", m_color);
   bnCommit(m_bnMat);
 }
 
@@ -184,9 +178,6 @@ void PhysicallyBased::setBarneyParameters()
 {
   if (!m_bnMat)
     return;
-
-  // auto context = deviceState()->tether->context;//getContext();
-  // int slot = deviceState()->slot;
 
   setBNMaterialHelper(m_bnMat, "baseColor", m_baseColor);
   setBNMaterialHelper(m_bnMat, "emissive", m_emissive);

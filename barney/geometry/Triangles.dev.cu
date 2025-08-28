@@ -38,7 +38,7 @@ namespace BARNEY_NS {
 #ifdef NDEBUG
       bool dbg = false;
 #else
-      bool dbg = ray.dbg;
+      bool dbg = ray.dbg();
 #endif
       auto &self = *(Triangles::DD*)ti.getProgramData();
       const float u = ti.getTriangleBarycentrics().x;
@@ -119,23 +119,13 @@ namespace BARNEY_NS {
         = material.createBSDF(hitData,world.samplers,dbg);
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                          ray.dir,hitData.worldNormal,ray.dbg);
+                          ray.dir,hitData.worldNormal,ray.dbg());
       
       if (opacity < 1.f) {
-        // int rayID = ti.getLaunchIndex().x+ti.getLaunchDims().x*ti.getLaunchIndex().y;
         ray.rngSeed.next((const uint32_t&)osP.x);
         ray.rngSeed.next((const uint32_t&)osP.y);
         ray.rngSeed.next((const uint32_t&)osP.z);
         Random rng(ray.rngSeed.next(290374u));
-        // Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
-        //                                  ti.getGeometryIndex(),
-        //                                  ti.getPrimitiveIndex())));
-                   // Random rng(ray.rngSeed++);
-        // hash(rayID,
-                        // ti.getRTCInstanceIndex(),
-                        // ti.getGeometryIndex(),
-                        // ti.getPrimitiveIndex(),
-                        // world.rngSeed));
         if (rng() > opacity) {
           ti.ignoreIntersection();
           return;

@@ -24,7 +24,7 @@ namespace BARNEY_NS {
     rayOnly[tid].isInMedium = rayQueue[tid].isInMedium;
     rayOnly[tid].isSpecular = rayQueue[tid].isSpecular;
     rayOnly[tid].isShadowRay = rayQueue[tid].isShadowRay;
-    rayOnly[tid].dbg = rayQueue[tid].dbg;
+    rayOnly[tid].dbg = rayQueue[tid]._dbg;
   }
 
   __rtc_global
@@ -64,7 +64,7 @@ namespace BARNEY_NS {
     rayQueue[tid].isInMedium = rayOnly[tid].isInMedium;
     rayQueue[tid].isSpecular = rayOnly[tid].isSpecular;
     rayQueue[tid].isShadowRay = rayOnly[tid].isShadowRay;
-    rayQueue[tid].dbg = rayOnly[tid].dbg;
+    rayQueue[tid]._dbg = rayOnly[tid].dbg;
     rayQueue[tid].bsdfType = PackedBSDF::NONE;
   }
   

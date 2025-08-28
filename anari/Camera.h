@@ -15,7 +15,7 @@ struct Camera : public Object
   virtual void commitParameters() override;
 
   static Camera *createInstance(
-      std::string_view type, BarneyGlobalState *state);
+      std::string_view subtype, BarneyGlobalState *state);
 
   math::float4 imageRegion() const;
 
