@@ -3,57 +3,51 @@
 
 #include "Device.h"
 // anari
-#include "BarneyDeviceQueries.h"
 #include "anari/backend/LibraryImpl.h"
 #include "anari_library_barney_export.h"
+#include "anari_library_barney_queries.h"
 
 namespace barney_device {
 
-  struct BarneyLibrary : public anari::LibraryImpl
-  {
-    BarneyLibrary(void *lib,
-                  ANARIStatusCallback defaultStatusCB,
-                  const void *statusCBPtr);
+struct BarneyLibrary : public anari::LibraryImpl
+{
+  BarneyLibrary(
+      void *lib, ANARIStatusCallback defaultStatusCB, const void *statusCBPtr);
 
-    ANARIDevice newDevice(const char *subtype) override;
-    const char **getDeviceExtensions(const char *deviceType) override;
-  };
+  ANARIDevice newDevice(const char *subtype) override;
+  const char **getDeviceExtensions(const char *deviceType) override;
+};
 
-  // Definitions ////////////////////////////////////////////////////////////////
+// Definitions ////////////////////////////////////////////////////////////////
 
-  BarneyLibrary::BarneyLibrary(void *lib,
-                               ANARIStatusCallback defaultStatusCB,
-                               const void *statusCBPtr)
+BarneyLibrary::BarneyLibrary(
+    void *lib, ANARIStatusCallback defaultStatusCB, const void *statusCBPtr)
     : anari::LibraryImpl(lib, defaultStatusCB, statusCBPtr)
-  {}
+{}
 
-  ANARIDevice BarneyLibrary::newDevice(const char *subType)
-  {
-    return (ANARIDevice) new BarneyDevice(this_library(),subType);
-  }
+ANARIDevice BarneyLibrary::newDevice(const char *subType)
+{
+  return (ANARIDevice) new BarneyDevice(this_library(), subType);
+}
 
-  const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
-  {
-    return query_extensions();
-  }
+const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
+{
+  return query_extensions();
+}
 
-  
 } // namespace barney_device
 
 // Define library entrypoint //////////////////////////////////////////////////
 #if BARNEY_MPI
-extern "C" 
-BARNEY_LIBRARY_INTERFACE
-ANARI_DEFINE_LIBRARY_ENTRYPOINT(barney_mpi, handle, scb, scbPtr)
+extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
+    barney_mpi, handle, scb, scbPtr)
 {
   return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
 }
 #else
-extern "C" 
-BARNEY_LIBRARY_INTERFACE
-ANARI_DEFINE_LIBRARY_ENTRYPOINT(barney, handle, scb, scbPtr)
+extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
+    barney, handle, scb, scbPtr)
 {
   return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
 }
 #endif
-
