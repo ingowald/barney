@@ -67,9 +67,9 @@ namespace BARNEY_NS {
       std::vector<Device *> slotDevices;
       for (auto gpuID : ls.gpuIDs) {
         rtc::Device *rtc = new rtc::Device(gpuID);
-        int nextLocal = allLocalDevices.size();
+        int numDevs = (int)allLocalDevices.size();
         Device *device 
-          = new Device(rtc,topo.get(),nextLocal);
+          = new Device(rtc,topo.get(),numDevs);
           
         slotDevices.push_back(device);
         allLocalDevices.push_back(device);

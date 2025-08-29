@@ -182,7 +182,6 @@ namespace rtc {
   }
 }
 
-#if 1
 # define __rtc_global /*static*/
 # define __rtc_launch(dev,kernel,nb,bs,...)                             \
   {                                                                     \
@@ -195,23 +194,10 @@ namespace rtc {
       ci.blockDim = {(unsigned)bs,1u,1u};                               \
       ci.blockIdx = {(unsigned)taskID,0u,0u};                           \
       ci.threadIdx = {0u,0u,0u};                                        \
-      for (ci.threadIdx.x=0;ci.threadIdx.x<bs;ci.threadIdx.x++){        \
+      for (ci.threadIdx.x=0;ci.threadIdx.x<(uint32_t)bs;ci.threadIdx.x++){ \
         kernel(ci,__VA_ARGS__);                                         \
       }                                                                 \
     });                                                                 \
     ls->launchAndWait(numTotal,&task);                                  \
   }                                               
-#else
-# define __rtc_global /*static*/
-# define __rtc_launch(dev,kernel,nb,bs,...)                     \
-  rtc::embree::serial_for(nb,[&](int taskID) {                  \
-    rtc::embree::ComputeInterface ci;                           \
-    ci.gridDim = {(unsigned)nb,1u,1u};                          \
-    ci.blockDim = {(unsigned)bs,1u,1u};                         \
-    ci.blockIdx = {(unsigned)taskID,0u,0u};                     \
-    ci.threadIdx = {0u,0u,0u};                                  \
-    for (ci.threadIdx.x=0;ci.threadIdx.x<bs;ci.threadIdx.x++){  \
-      kernel(ci,__VA_ARGS__);                                   \
-    }                                                           \
-  });
 #endif

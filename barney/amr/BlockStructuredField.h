@@ -253,27 +253,13 @@ namespace BARNEY_NS {
   inline __rtc_device
   Block Block::getFrom(const BlockStructuredField::DD &dd, int blockID, bool dbg)
   {
-    // if (blockID == 13000) dbg = true;
     Block block;
     block.origin   = dd.perBlock.origins[blockID];
     block.dims     = dd.perBlock.dims[blockID];
     block.level    = dd.perBlock.levels[blockID];
-    block.cellSize = (powf(dd.perLevel.refinements[block.level], block.level));
-    // printf("offset %li\n",dd.perBlock.offsets[blockID]);
+    block.cellSize = (int)(powf((float)dd.perLevel.refinements[block.level],
+                                (float)block.level));
     block.scalars  = dd.scalars+dd.perBlock.offsets[blockID];
-
-    // dbg = blockID < 10 || blockID >= 227200;
-    // if (dbg) {
-    //   box3f dom = block.getDomain();
-    //   printf("dom (%f %f %f) (%f %f %f) cs %f\n",
-    //          dom.lower.x,
-    //          dom.lower.y,
-    //          dom.lower.z,
-    //          dom.upper.x,
-    //          dom.upper.y,
-    //          dom.upper.z,
-    //          block.cellSize);
-    // }
     return block;
   }
 #endif
