@@ -200,4 +200,3 @@ namespace rtc {
     });                                                                 \
     ls->launchAndWait(numTotal,&task);                                  \
   }                                               
-#endif
