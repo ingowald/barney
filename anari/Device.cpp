@@ -11,7 +11,7 @@
 // std
 #include <cstring>
 
-#include "BarneyDeviceQueries.h"
+#include "anari_library_barney_queries.h"
 
 namespace barney_device {
 
