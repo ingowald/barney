@@ -353,19 +353,19 @@ namespace barney_device {
           = bnContextCreate(_dgIDs,_dgCount,
                             _gpuIDs,_gpuCount);
       if (size > 1) {
-      std::stringstream ss;
-      ss << "#banari rank " << rank << " (of " << size
-         << ") creating context GPUs=(";
-      for (auto gpu : gpuIDs)
-        ss << " " << gpu;
-      ss << " ) and data groups=(";
-      for (auto dg : dgIDs)
-        ss << " " << dg;
-      ss << " )";
-
-      std::cout << ss.str() << std::endl;
-      reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
-      )
+        std::stringstream ss;
+        ss << "#banari rank " << rank << " (of " << size
+           << ") creating context GPUs=(";
+        for (auto gpu : gpuIDs)
+          ss << " " << gpu;
+        ss << " ) and data groups=(";
+        for (auto dg : dgIDs)
+          ss << " " << dg;
+        ss << " )";
+        
+        std::cout << ss.str() << std::endl;
+        reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
+      }
       m_initialized = true;
     } catch (const std::exception &err) {
       std::cerr
