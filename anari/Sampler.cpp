@@ -110,7 +110,8 @@ void Image1D::finalize()
   if (m_bnTextureData)
     bnRelease(m_bnTextureData);
   m_bnTextureData =
-      makeBarneyTextureData(deviceState(), m_image.ptr, m_image->size(), 1);
+    makeBarneyTextureData(deviceState(), m_image.ptr,
+                          (int)m_image->size(), 1);
 
   // ------------------------------------------------------------------
   // now, create sampler over those texels

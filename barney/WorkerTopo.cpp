@@ -66,7 +66,7 @@ namespace BARNEY_NS {
       
       if (knownGpusInHost[dev.hostNameHash].find(dev.physicalDeviceHash) == 
           knownGpusInHost[dev.hostNameHash].end()) {
-        int newID = knownGpusInHost[dev.hostNameHash].size();
+        int newID = (int)knownGpusInHost[dev.hostNameHash].size();
         knownGpusInHost[dev.hostNameHash][dev.physicalDeviceHash] = newID;
       }
       physicalGpuIndexOf[gid]

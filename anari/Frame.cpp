@@ -199,7 +199,7 @@ namespace barney_device {
 
     if (state->slot == 0) {
       auto &peers = state->tether->devices;
-      state->tether->numRenderCallsOutstanding = peers.size();
+      state->tether->numRenderCallsOutstanding = (int)peers.size();
       state->tether->deferredRenderCall.model = model;
       state->tether->deferredRenderCall.renderer = m_renderer->barneyRenderer;
       state->tether->deferredRenderCall.fb = m_bnFrameBuffer;

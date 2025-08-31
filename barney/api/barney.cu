@@ -570,7 +570,7 @@ namespace barney_api {
     Context *context = checkGet(_context);
     std::shared_ptr<Data> data
       = context->createData(slot,dataType);
-    data->set(items,numItems);
+    data->set(items,(int)numItems);
     return (BNData)context->initReference(data);
   }
 
@@ -580,7 +580,7 @@ namespace barney_api {
                  const void *items)
   {
     Data::SP data = checkGetSP(_data);
-    data->set(items,numItems);
+    data->set(items,(int)numItems);
   }
 
   
