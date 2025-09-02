@@ -11,6 +11,7 @@ namespace barney_device {
   {
     Light::commitParameters();
     m_power = getParam<float>("power", 1.f);
+    m_position = getParam<math::float3>("position", math::float3(0.f,0.f,0.f));
     m_intensity = getParam<float>("intensity", NAN);
   }
 
@@ -23,7 +24,7 @@ namespace barney_device {
   {
     if (!m_bnLight)
       return;
-    bnSet3fc(m_bnLight, "direction", m_position);
+    bnSet3fc(m_bnLight, "position", m_position);
     bnSet3fc(m_bnLight, "color", m_color);
     bnSet1f(m_bnLight, "intensity", m_intensity);
     bnSet1f(m_bnLight, "power", m_power);

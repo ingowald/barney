@@ -211,6 +211,14 @@ namespace BARNEY_NS {
                          Random &random,
                          bool dbg)
     {
+      struct {
+        // constant term
+        const float c0 = 1.f;
+        // linear term
+        const float c1 = 0.f;
+        // square term
+        const float c2 = 0.f;
+      } /* fall-off costants */foc;
       if (world.numPointLights == 0) return false;
       static const int RESERVOIR_SIZE = 2;
       int   lID[RESERVOIR_SIZE];
@@ -223,10 +231,17 @@ namespace BARNEY_NS {
                      world.numPointLights-1);
         weights[i] = 0.f;
         light = world.pointLights[lID[i]];
-        vec3f light_radiance
-          = light.radianceTowards(P);
         
         vec3f lightDirection = light.position-P;
+        float dist = length(lightDirection);
+        float falloff = foc.c0 + foc.c1*dist + foc.c2*dist*dist;
+        lightDirection = normalize(lightDirection);
+
+        vec3f light_radiance
+          = light.radianceTowards(P)
+          * (1.f/falloff);
+        
+        // light_radiance *= (1.f/dist);
         float weight = dot(lightDirection,N);
         if (weight <= 1e-3f) continue;
         weight *= reduce_max(light_radiance);
@@ -243,10 +258,14 @@ namespace BARNEY_NS {
       light = world.pointLights[lID[i]];
       ls.direction
         = light.position-P;
+      float dist = length(ls.direction);
+      ls.direction = normalize(ls.direction);
+      float falloff = foc.c0 + foc.c1*dist + foc.c2*dist*dist;
       ls.distance
-        = BARNEY_INF;
+        = dist*.9999f;
       ls.radiance
-        = light.color*light.radianceTowards(P)
+        = light.radianceTowards(P)
+        * (1.f/falloff)
         * 1.f/(weights[i]/sumWeights
                * (float(RESERVOIR_SIZE)/float(world.numPointLights)));
       ls.pdf
@@ -272,7 +291,7 @@ namespace BARNEY_NS {
       if (world.envMapLight.texture)
         ls = world.envMapLight.sample(random,dbg);
       else {
-#if 0
+#if 1
         ls.direction = randomDirection(random);
         ls.radiance  = renderer.ambientRadiance;
         if (dot(ls.direction,N) < 0.f) ls.direction = -ls.direction;

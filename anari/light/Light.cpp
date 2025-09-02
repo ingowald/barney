@@ -23,8 +23,8 @@ Light *Light::createInstance(std::string_view subtype, BarneyGlobalState *s)
     return new Directional(s);
   if (subtype == "hdri")
     return new HDRILight(s);
-  // if (subtype == "point")
-  //   return new PointLight(s);
+  if (subtype == "point")
+    return new PointLight(s);
   else
     return (Light *)new UnknownObject(ANARI_LIGHT, subtype, s);
 }
