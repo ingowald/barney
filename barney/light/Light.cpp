@@ -38,6 +38,8 @@ namespace BARNEY_NS {
       return std::make_shared<DirLight>(context,devices);
     if (type == "quad")
       return std::make_shared<QuadLight>(context,devices);
+    if (type == "point")
+      return std::make_shared<PointLight>(context,devices);
     if (type == "envmap")
       return std::make_shared<EnvMapLight>(context,devices);
     
