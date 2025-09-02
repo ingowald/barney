@@ -125,7 +125,7 @@ namespace BARNEY_NS {
 #ifdef NDEBUG
       bool dbg = 0;
 #else
-      bool dbg = ray.dbg;
+      bool dbg = ray.dbg();
 #endif      
       const vec2i idx = self.indices[primID];
       const vec3f v0  = self.vertices[idx.x];
@@ -245,11 +245,11 @@ namespace BARNEY_NS {
       hitData.instID          = instID;
       hitData.t               = t_hit;
 
-      self.setHitAttributes(hitData,interpolator,world,ray.dbg);
+      self.setHitAttributes(hitData,interpolator,world,ray.dbg());
 
       const DeviceMaterial &material
         = world.materials[self.materialID];
-      material.setHit(ray,hitData,world.samplers,ray.dbg);
+      material.setHit(ray,hitData,world.samplers,ray.dbg());
       if (globals.hitIDs) {
         const int rayID
           = ti.getLaunchIndex().x

@@ -105,7 +105,7 @@ In the cmake config step, you may specify the following options:
 The ANARI build of barney works in pretty much the same way (and with
 the same options), but requires a pre-built and installed `ANARI-SDK` from
 https://github.com/KhronosGroup/ANARI-SDK. As to the time of this writing,
-you need ANARI SDK version 0.13.2 (or `next_release` branch)
+you need ANARI SDK version 0.15 (or `next_release` branch)
 
 First, build and install the ANARI SDK:
 
@@ -223,6 +223,16 @@ for the conventions on how to properly use data-parallel ANARI (which
 barney implements).
 
 # Version History
+
+## v0.10
+
+- major updated to MPI performance
+- support for multi-GPU data parallel ANARI using device tethering
+- more cuda-like kernel launches across both embree and CPU backends
+- updates as required for ANARI 0.15 
+- support for CUDA 13
+- performance fixes for threading on embree backend
+- various fixes throughout
 
 ## v0.9.2, 0.9.4, and 0.9.6: 
 

@@ -43,9 +43,15 @@ namespace barney_device {
     std::map<int,std::pair<int,std::shared_ptr<TetheredModel>>> activeModels;
     std::mutex mutex;
 
-    int numDevicesAlreadyTethered = 0;
+    int numRenderCallsOutstanding = 0;
+    struct {
+      BNCamera camera;
+      BNRenderer renderer;
+      BNFrameBuffer fb;
+      BNModel model;
+    } deferredRenderCall;
+
     std::vector<BarneyDevice *> devices;
-    int numReadyToRender = 0;
   };
 
   struct BarneyGlobalState : public helium::BaseGlobalDeviceState

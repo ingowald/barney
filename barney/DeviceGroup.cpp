@@ -77,7 +77,7 @@ namespace BARNEY_NS {
   { return _globalRank; }
   
   int Device::globalSize() const
-  { return topo->allDevices.size(); }
+  { return (int)topo->allDevices.size(); }
   
   int Device::localRank() const
   { return _localRank; }

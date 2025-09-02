@@ -433,6 +433,11 @@ BNData bnDataCreate(BNContext context,
                     size_t numItems,
                     const void *items);
 
+BARNEY_API
+void bnDataSet(BNData data,
+               size_t numItems,
+               const void *items);
+
 /*! creates a cudaArray2D of specified size and texels. Can be passed
   to a sampler to create a matching cudaTexture2D, or as a background
   image to a renderer */

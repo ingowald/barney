@@ -49,7 +49,7 @@ namespace barney_api {
       if (FromEnv::get()->logBackend)
         std::cout << "#bn: creating *optix* context" << std::endl;
       // std::vector<int> gpuIDs;
-      int numDGs = dgIDs.size();
+      int numDGs = (int)dgIDs.size();
       if (numGPUs == -1) {
         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
       }
@@ -92,18 +92,55 @@ namespace barney_api {
 #if BARNEY_RTC_CUDA
   extern "C" {
     Context *createContext_cuda(const std::vector<int> &dgIDs,
-                                 int numGPUs, const int *_gpuIDs)
+                                 int numGPUs, const int *gpuIDs)
     {
       if (FromEnv::get()->logBackend)
         std::cout << "#bn: creating *(native-)cuda* context" << std::endl;
-      if (numGPUs == -1)
+      int numDGs = dgIDs.size();
+      if (numGPUs == -1) {
         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
-      std::vector<int> gpuIDs;
-      for (int i=0;i<numGPUs;i++)
-        gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
-      Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+      }
+
+#if ALLOW_OVERSUBSCRIBE
+      std::vector<int> fakeIDs;
+      if (numGPUs < numDGs) {
+        for (int i=0;i<numDGs;i++)  {
+          int ID
+            = gpuIDs
+            ? gpuIDs[i%numGPUs]
+            : (i%numGPUs)
+            ;
+          fakeIDs.push_back(ID);
+        }
+        gpuIDs = (const int *)fakeIDs.data();
+        numGPUs = numDGs;
+      }
+#endif
+
+      if (numGPUs < numDGs)
+        throw std::runtime_error
+          ("not enough CUDA GPUs for requested number of data groups!");
+      int gpusPerDG = numGPUs / numDGs;
+      std::vector<LocalSlot> localSlots(dgIDs.size());
+      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+        LocalSlot &slot = localSlots[lsIdx];
+        slot.dataRank = dgIDs[lsIdx];
+        for (int j=0;j<gpusPerDG;j++) {
+          int idx = lsIdx*gpusPerDG+j;
+          slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
+        }
+      }
+      Context *ctx = new BARNEY_NS::LocalContext(localSlots);
       return ctx;
     }
+    //   if (numGPUs == -1)
+    //     BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
+    //   std::vector<int> gpuIDs;
+    //   for (int i=0;i<numGPUs;i++)
+    //     gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
+    //   Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+    //   return ctx;
+    // }
   } 
 #endif
 }
@@ -134,7 +171,7 @@ namespace BARNEY_NS {
     for (auto ls : localSlots) {
       for (auto gpuID : ls.gpuIDs) {
         WorkerTopo::Device dev;
-        dev.local = devices.size();
+        dev.local = (int)devices.size();
         dev.worker = 0;
         dev.worldRank = 0;
         dev.dataRank = ls.dataRank;
@@ -143,7 +180,7 @@ namespace BARNEY_NS {
         devices.push_back(dev);
       }
     }
-    return std::make_shared<WorkerTopo>(devices,0,devices.size());
+    return std::make_shared<WorkerTopo>(devices,0,(int)devices.size());
   }
 
   LocalContext::LocalContext(const std::vector<LocalSlot> &localSlots)

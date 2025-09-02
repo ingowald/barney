@@ -28,13 +28,13 @@ struct Object : public helium::BaseObject
   void finalize() override;
   bool isValid() const override;
 
-  // BNContext getContext() const;
   BarneyGlobalState *deviceState() const;
 };
 
 struct UnknownObject : public Object
 {
-  UnknownObject(ANARIDataType type, BarneyGlobalState *s);
+  UnknownObject(
+      ANARIDataType type, std::string_view subtype, BarneyGlobalState *s);
   ~UnknownObject() override;
   bool isValid() const override;
 };

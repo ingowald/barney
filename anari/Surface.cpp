@@ -5,7 +5,9 @@
 
 namespace barney_device {
 
-Surface::Surface(BarneyGlobalState *s) : Object(ANARI_SURFACE, s) {}
+Surface::Surface(BarneyGlobalState *s)
+    : Object(ANARI_SURFACE, s), m_geometry(this), m_material(this)
+{}
 
 Surface::~Surface()
 {
@@ -42,19 +44,19 @@ void Surface::markFinalized()
 
 const Geometry *Surface::geometry() const
 {
-  return m_geometry.ptr;
+  return m_geometry.get();
 }
 
 const Material *Surface::material() const
 {
-  return m_material.ptr;
+  return m_material.get();
 }
 
 BNGeom Surface::getBarneyGeom()
 {
   int slot = deviceState()->slot;
   auto context = deviceState()->tether->context;
-  
+
   cleanup();
   m_bnGeom = bnGeometryCreate(context, slot, m_geometry->bnSubtype());
   setBarneyParameters();
@@ -73,7 +75,7 @@ void Surface::setBarneyParameters()
   if (!isValid() || !m_bnGeom)
     return;
   bnSetObject(m_bnGeom, "material", m_material->getBarneyMaterial());
-  bnSet1i(m_bnGeom,"userID",m_id);
+  bnSet1i(m_bnGeom, "userID", m_id);
   m_geometry->setBarneyParameters(m_bnGeom);
   bnCommit(m_bnGeom);
 }

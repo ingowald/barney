@@ -30,7 +30,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 # define LOG_API_ENTRY /**/ 
 #endif
 
-#ifdef NDEBUG
+#ifdef NDEBUG 
 # define BARNEY_ENTER(fct) /* nothing */
 # define BARNEY_LEAVE(fct,retValue) /* nothing */
 #else
@@ -130,6 +130,12 @@ namespace barney_api {
 # if BARNEY_BACKEND_OPTIX
     barney_api::Context *
     createMPIContext_optix(barney_api::mpi::Comm world,
+                           const std::vector<int> &dgIDs,
+                           int numGPUs, const int *gpuIDs);
+# endif
+# if BARNEY_BACKEND_CUDA
+    barney_api::Context *
+    createMPIContext_cuda(barney_api::mpi::Comm world,
                            const std::vector<int> &dgIDs,
                            int numGPUs, const int *gpuIDs);
 # endif
@@ -563,10 +569,21 @@ namespace barney_api {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
     std::shared_ptr<Data> data
-      = context->createData(slot,dataType,numItems,items);
+      = context->createData(slot,dataType);
+    data->set(items,(int)numItems);
     return (BNData)context->initReference(data);
   }
 
+      BARNEY_API
+  void bnDataSet(BNData _data,
+                 size_t numItems,
+                 const void *items)
+  {
+    Data::SP data = checkGetSP(_data);
+    data->set(items,(int)numItems);
+  }
+
+  
 
 
   BARNEY_API

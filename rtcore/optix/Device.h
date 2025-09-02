@@ -168,7 +168,7 @@ namespace rtc {
     };
 
   }
-}
+} 
 
 
 #define RTC_IMPORT_USER_GEOM(moduleName,typeName,DDType,has_ah,has_ch)  \

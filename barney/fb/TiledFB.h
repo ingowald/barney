@@ -32,11 +32,7 @@ namespace BARNEY_NS {
   
   struct AccumTile {
     vec4f  accum[pixelsPerTile];
-    // float  depth[pixelsPerTile];
     vec3f  normal[pixelsPerTile];
-    // int    primID[pixelsPerTile];
-    // int    objID[pixelsPerTile];
-    // int    instID[pixelsPerTile];
   };
 
   struct AuxTiles {

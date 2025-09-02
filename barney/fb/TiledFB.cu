@@ -77,6 +77,7 @@ namespace BARNEY_NS {
     if (appDevice) {
       appDevice->rtc->copyAsync(appAccumTiles,accumTiles,
                                 numActiveTilesThisGPU*sizeof(*appAccumTiles));
+      appDevice->rtc->sync();
     }
     __rtc_launch(// device
                  (appDevice?appDevice:device)->rtc,
@@ -146,26 +147,34 @@ namespace BARNEY_NS {
   void TiledFB::linearizeAuxChannel(void *linearChannel,
                                     BNFrameBufferChannel channel)
   {
-    AuxChannelTile *aux = 0;
+    AuxChannelTile *tgt_aux = 0;
+    AuxChannelTile *loc_aux = 0;
     switch(channel) {
     case BN_FB_DEPTH:
-      aux = appDevice?appAuxTiles.depth:auxTiles.depth;
+      tgt_aux = appDevice?appAuxTiles.depth:auxTiles.depth;
+      loc_aux = auxTiles.depth;
       break;
     case BN_FB_PRIMID:
-      aux = appDevice?appAuxTiles.primID:auxTiles.primID;
+      tgt_aux = appDevice?appAuxTiles.primID:auxTiles.primID;
+      loc_aux = auxTiles.primID;
       break;
     case BN_FB_INSTID:
-      aux = appDevice?appAuxTiles.instID:auxTiles.instID;
+      tgt_aux = appDevice?appAuxTiles.instID:auxTiles.instID;
+      loc_aux = auxTiles.instID;
       break;
     case BN_FB_OBJID:
-      aux = appDevice?appAuxTiles.objID:auxTiles.objID;
+      tgt_aux = appDevice?appAuxTiles.objID:auxTiles.objID;
+      loc_aux = auxTiles.objID;
       break;
     default:
       throw std::runtime_error("unsupported aux channel in sending aux!?");
     };
+    if (loc_aux != tgt_aux)
+      appDevice->rtc->copyAsync(tgt_aux,loc_aux,
+                                numActiveTilesThisGPU*sizeof(*tgt_aux));
     linearizeAuxTiles(appDevice?appDevice:device,
                       linearChannel,numPixels,
-                      aux,
+                      tgt_aux,
                       appDevice?appTileDescs:tileDescs,
                       numActiveTilesThisGPU);
   }

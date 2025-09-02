@@ -64,7 +64,7 @@ namespace BARNEY_NS {
 #ifdef NDEBUG
       bool dbg = false;
 #else
-      bool dbg = ray.dbg;
+      bool dbg = ray.dbg();
 #endif
       
       float t_hit = ti.getRayTmax(); 

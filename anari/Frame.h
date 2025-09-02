@@ -88,6 +88,9 @@ namespace barney_device {
     mutable float m_duration{0.f};
 
     BNFrameBuffer m_bnFrameBuffer{nullptr};
+    // for device tethering, we need this to know whether all devices
+    // have 'checked in'
+    int m_numTimesRenderFrameHasBeenCalled = 0;
   };
 
 } // namespace barney_device

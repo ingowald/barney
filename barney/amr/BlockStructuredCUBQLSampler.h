@@ -87,7 +87,6 @@ namespace BARNEY_NS {
     };
     cuBQL::box3f box; box.lower = box.upper = (const cuBQL::vec3f &)P;
     cuBQL::fixedBoxQuery::forEachPrim(lambda,bvh,box);
-    // traverseCUQBL<BlockStructuredSamplerPTD>(bvhNodes,ptd,P,dbg);
     return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
   }
 #endif  

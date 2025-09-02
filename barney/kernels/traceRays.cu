@@ -29,7 +29,6 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed,
                                  bool needHitIDs)
   {
-    assert(!needHitIDs);
     double t0 = getCurrentTime();
     
     // ------------------------------------------------------------------

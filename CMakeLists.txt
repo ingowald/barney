@@ -15,8 +15,8 @@
 # ======================================================================== #
 
 set(BARNEY_VERSION_MAJOR 0)
-set(BARNEY_VERSION_MINOR 9)
-set(BARNEY_VERSION_PATCH 10)
+set(BARNEY_VERSION_MINOR 10)
+set(BARNEY_VERSION_PATCH 0)
 
 cmake_minimum_required(VERSION 3.12)
 
@@ -129,7 +129,14 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 # ------------------------------------------------------------------
 if (BARNEY_HAVE_CUDA)
   set(OWL_CUDA_STATIC ON)
-  set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
+    message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
+  if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
+    set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
+  elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../optix/include/optix.h")
+    message(" found ${CMAKE_CURRENT_LIST_DIR}/../optix")
+    set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/../optix)
+  else()
+  endif()
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
 else()
   add_library(owl-config INTERFACE)

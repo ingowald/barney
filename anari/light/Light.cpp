@@ -3,64 +3,59 @@
 
 #include "light/Light.h"
 #include "light/Directional.h"
-#include "light/Point.h"
 #include "light/HDRI.h"
+#include "light/Point.h"
 
 namespace barney_device {
 
-  Light::Light(BarneyGlobalState *s) : Object(ANARI_LIGHT, s) {}
+Light::Light(BarneyGlobalState *s) : Object(ANARI_LIGHT, s) {}
 
-  Light::~Light()
-  {
-    cleanup();
-  }
+Light::~Light()
+{
+  if (m_bnLight)
+    bnRelease(m_bnLight);
+  m_bnLight = nullptr;
+}
 
-  Light *Light::createInstance(std::string_view type, BarneyGlobalState *s)
-  {
-    if (type == "directional")
-      return new Directional(s);
-    else if (type == "hdri")
-      return new HDRILight(s);
-    // else if (type == "point")
-    //   return new PointLight(s);
-    else
-      return (Light *)new UnknownObject(ANARI_LIGHT, s);
-  }
+Light *Light::createInstance(std::string_view subtype, BarneyGlobalState *s)
+{
+  if (subtype == "directional")
+    return new Directional(s);
+  if (subtype == "hdri")
+    return new HDRILight(s);
+  // if (subtype == "point")
+  //   return new PointLight(s);
+  else
+    return (Light *)new UnknownObject(ANARI_LIGHT, subtype, s);
+}
 
-  void Light::markFinalized()
-  {
-    // NOTE: shouldn't need to override this to cause a BNContext rebuild...
-    deviceState()->markSceneChanged();
-    Object::markFinalized();
-  }
+void Light::markFinalized()
+{
+  // NOTE: shouldn't need to override this to cause a BNContext rebuild...
+  deviceState()->markSceneChanged();
+  Object::markFinalized();
+}
 
-  void Light::commitParameters()
-  {
-    m_color = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
-  }
+void Light::commitParameters()
+{
+  m_color = getParam<math::float3>("color", math::float3(1.f, 1.f, 1.f));
+}
 
-  void Light::finalize()
-  {
-    setBarneyParameters();
-  }
+void Light::finalize()
+{
+  setBarneyParameters();
+}
 
-  BNLight Light::getBarneyLight()
-  {
-    int slot = deviceState()->slot;
-    auto context = deviceState()->tether->context;
-    
-    m_bnLight = bnLightCreate(context,slot,bnSubtype());
-    setBarneyParameters();
-    return m_bnLight;
-  }
+BNLight Light::getBarneyLight()
+{
+  int slot = deviceState()->slot;
+  auto context = deviceState()->tether->context;
 
-  void Light::cleanup()
-  {
-    if (m_bnLight)
-      bnRelease(m_bnLight);
-    m_bnLight = nullptr;
-  }
+  m_bnLight = bnLightCreate(context, slot, bnSubtype());
+  setBarneyParameters();
+  return m_bnLight;
+}
 
-} // ::barney_device
+} // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Light *);
