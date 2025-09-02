@@ -152,8 +152,8 @@ namespace BARNEY_NS {
           float alpha_sqr = alpha * alpha;
           float den1 = 1.f + (alpha_sqr - 1.f) * cos_theta_h * cos_theta_h;
           float den2 = max(den1, SMALL_EPSILON);
-          // float ret = (float)M_1_PI * 1.f / den2;
-          float ret = (float)M_1_PI * alpha_sqr / den2;
+          float ret = (float)M_1_PI * 1.f / den2;
+          // float ret = (float)M_1_PI * alpha_sqr / den2;
           if (dbg)
             printf("gtr_2 alpha %f cos_theta_h %f den1 %f den2 %f ret %f\n",
                    alpha,cos_theta_h,den1,den2,ret);
@@ -689,7 +689,11 @@ namespace BARNEY_NS {
           vec3f subsurface_bsdf, subsurface_color;
           disney_subsurface(mat, b_n, w_o, w_i, w_h, subsurface_bsdf, subsurface_color);
           vec3f gloss;
-          if (mat.anisotropy == 0.f) {
+          if (
+#if 1
+              1 ||
+#endif
+              mat.anisotropy == 0.f) {
             gloss =
               disney_microfacet_isotropic(mat, b_n, w_o, w_i, w_h, dbg);
             // gloss = gloss + disney_multiscatter(mat, n, w_o, w_i, GGX_E_LOOKUP, GGX_E_AVG_LOOKUP);

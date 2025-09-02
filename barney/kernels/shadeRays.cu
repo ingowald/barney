@@ -191,10 +191,13 @@ namespace BARNEY_NS {
       ls.distance
         = BARNEY_INF;
       ls.radiance
-        = light.color*light.radiance;
+        = light.color*light.radiance
+        * 1.f/(weights[i]/sumWeights
+               * (float(RESERVOIR_SIZE)/float(world.numDirLights)));
       ls.pdf
-        = weights[i]/sumWeights
-        * (float(RESERVOIR_SIZE)/float(world.numDirLights));
+        = INFINITY;
+      // weights[i]/sumWeights
+      //   * (float(RESERVOIR_SIZE)/float(world.numDirLights));
       return weights[i] != 0.f;
     }
 
@@ -259,7 +262,7 @@ namespace BARNEY_NS {
       Light::Sample els;
       float elsWeight
         = (sampleEnvLight(els,world,renderer,P,Ng,random,dbg)
-           ? (reduce_max(els.radiance)/els.pdf)
+           ? (reduce_max(els.radiance)/*/els.pdf*/)
            : 0.f);
       if (dbg)
         printf("els rad %f %f %f pdf %f\n",
@@ -280,7 +283,7 @@ namespace BARNEY_NS {
       Light::Sample dls;
       float dlsWeight
         = (sampleDirLights(dls,world,renderer,P,Ng,random,dbg)
-           ? (reduce_max(dls.radiance)/dls.pdf)
+           ? (reduce_max(dls.radiance)/* /dls.pdf*/)
            : 0.f);
 
       if (dbg) printf("sampling lights dls %f els %f\n",
@@ -299,11 +302,13 @@ namespace BARNEY_NS {
                       r,alsWeight,elsWeight,dlsWeight);
       if (r <= alsWeight) {
         ls = als;
-        ls.pdf *= alsWeight;
+        //   ls.pdf *= alsWeight;
+        ls.radiance *= (1.f/alsWeight);
 #if ENV_LIGHT_SAMPLING
       } else if (r <= alsWeight+elsWeight) {
         ls = els;
-        ls.pdf *= elsWeight;
+        ls.radiance *= (1.f/elsWeight);
+        // ls.pdf *= elsWeight;
         if (dbg) printf(" ->  picked env light sample\n");
 # if USE_MIS
         lightNeedsMIS = true;
@@ -311,7 +316,8 @@ namespace BARNEY_NS {
 #endif
       } else {
         ls = dls;
-        ls.pdf *= dlsWeight;
+        ls.radiance *= (1.f/dlsWeight);
+        // ls.pdf *= dlsWeight;
 # if USE_MIS
         lightIsDirLight = true;
 # endif
@@ -583,7 +589,7 @@ namespace BARNEY_NS {
                  ls.radiance.y,
                  ls.radiance.z,
                  ls.pdf,
-                 reduce_max(ls.radiance)/ls.pdf);
+                 reduce_max(ls.radiance)/(isinf(ls.pdf)?1.f:ls.pdf));
         EvalRes f_r
           = bsdf.eval(dg,ls.direction,dbg);
         if (dbg) printf("eval light res %f %f %f: %f\n",
@@ -602,10 +608,10 @@ namespace BARNEY_NS {
 #endif
           vec3f tp_sr
             = (incomingThroughput)
-            * (1.f/ls.pdf)
+            * (isinf(ls.pdf)?1.f:rcp(ls.pdf))
             * f_r.value
             * ls.radiance
-            // * ONE_OVER_PI
+            * ONE_OVER_PI
             * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)))
             ;
 
