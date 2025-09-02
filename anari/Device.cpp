@@ -332,6 +332,7 @@ namespace barney_device {
         if (dgID == -1)
           // not set by user, use default of different data group ID per device
           dgID = rank * state->tether->devices.size() + dev->tetherIndex;
+        dgIDs.push_back(dgID);
       }
       int *_dgIDs   = dgIDs.data();
       int  _dgCount = (int)dgIDs.size();
