@@ -106,6 +106,7 @@ namespace BARNEY_NS {
     // ==================================================================
     std::vector<QuadLight::DD> quadLights;
     std::vector<DirLight::DD>  dirLights;
+    std::vector<PointLight::DD>  pointLights;
     std::pair<EnvMapLight::SP,affine3f> envLight;
     
     for (int i=0;i<instances.groups.size();i++) {
@@ -122,6 +123,10 @@ namespace BARNEY_NS {
           dirLights.push_back(dirLight->getDD(instances.xfms[i]));
           continue;
         }
+        if (PointLight::SP pointLight = light->as<PointLight>()) {
+          pointLights.push_back(pointLight->getDD(instances.xfms[i]));
+          continue;
+        }
         if (EnvMapLight::SP el = light->as<EnvMapLight>()) {
           envLight = {el,instances.xfms[i]};
           continue;
@@ -132,6 +137,9 @@ namespace BARNEY_NS {
     world->set(envLight.first,envLight.second);
     world->set(quadLights);
     world->set(dirLights);
+    world->set(pointLights);
+    PRINT(dirLights.size());
+    PRINT(pointLights.size());
   
     // ==================================================================
     // generate all (per device) instance lists. note each BGGroup can

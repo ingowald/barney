@@ -35,6 +35,7 @@ namespace BARNEY_NS {
         auto rtc = device->rtc;
         pld->quadLights = 0;
         pld->dirLights = 0;
+        pld->pointLights = 0;
       }
     }
     
@@ -49,8 +50,7 @@ namespace BARNEY_NS {
       return &perLogical[device->contextRank()];
     }
     
-    World::DD World::getDD(Device *device// , int rngSeed
-                           ) 
+    World::DD World::getDD(Device *device) 
     {
       PLD *pld = getPLD(device);
       DD dd;
@@ -60,7 +60,9 @@ namespace BARNEY_NS {
       dd.dirLights
         = (DirLight::DD *)pld->dirLights;
       dd.numDirLights = pld->numDirLights;
-      // dd.rngSeed = rngSeed;
+      dd.pointLights
+        = (PointLight::DD *)pld->pointLights;
+      dd.numPointLights = pld->numPointLights;
       dd.envMapLight
         = envMapLight.light
         ? envMapLight.light->getDD(device,envMapLight.xfm)
@@ -103,6 +105,20 @@ namespace BARNEY_NS {
         pld->dirLights = (DirLight::DD*)rtc->allocMem(numBytes);
         rtc->copy(pld->dirLights,dirLights.data(),numBytes);
         pld->numDirLights = (int)dirLights.size();
+      }
+    }
+
+    void World::set(const std::vector<PointLight::DD> &pointLights)
+    {
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        auto pld = getPLD(device);
+        auto rtc = device->rtc;
+        rtc->freeMem(pld->pointLights);
+        size_t numBytes = pointLights.size()*sizeof(pointLights[0]);
+        pld->pointLights = (PointLight::DD*)rtc->allocMem(numBytes);
+        rtc->copy(pld->pointLights,pointLights.data(),numBytes);
+        pld->numPointLights = (int)pointLights.size();
       }
     }
 
