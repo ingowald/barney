@@ -213,11 +213,11 @@ namespace BARNEY_NS {
     {
       struct {
         // constant term
-        const float c0 = 1.f;
+        const float c0 = 0.f;
         // linear term
         const float c1 = 0.f;
         // square term
-        const float c2 = 0.f;
+        const float c2 = 1.f;
       } /* fall-off costants */foc;
       if (world.numPointLights == 0) return false;
       static const int RESERVOIR_SIZE = 2;
