@@ -201,6 +201,63 @@ namespace BARNEY_NS {
       return weights[i] != 0.f;
     }
 
+
+    inline __rtc_device
+    bool samplePointLights(Light::Sample &ls,
+                         const World::DD &world,
+                         const Renderer::DD &renderer,
+                         const vec3f P,
+                         const vec3f N,
+                         Random &random,
+                         bool dbg)
+    {
+      if (world.numPointLights == 0) return false;
+      static const int RESERVOIR_SIZE = 2;
+      int   lID[RESERVOIR_SIZE];
+      float weights[RESERVOIR_SIZE];
+      float sumWeights = 0.f;
+      PointLight::DD light;
+    
+      for (int i=0;i<RESERVOIR_SIZE;i++) {
+        lID[i] = min(int(random()*world.numPointLights),
+                     world.numPointLights-1);
+        weights[i] = 0.f;
+        light = world.pointLights[lID[i]];
+        vec3f light_radiance
+          = light.radianceTowards(P);
+        
+        vec3f lightDirection = light.position-P;
+        float weight = dot(lightDirection,N);
+        if (weight <= 1e-3f) continue;
+        weight *= reduce_max(light_radiance);
+        if (weight <= 1e-3f) continue;
+        weights[i] = weight;
+        sumWeights += weight;
+      }
+      if (sumWeights == 0.f) return false;
+      float r = random()*sumWeights;
+      int i=0;
+      while (i<RESERVOIR_SIZE && r >= weights[i]) { r-= weights[i]; ++i; }
+      if (i == RESERVOIR_SIZE) return false;
+    
+      light = world.pointLights[lID[i]];
+      ls.direction
+        = light.position-P;
+      ls.distance
+        = BARNEY_INF;
+      ls.radiance
+        = light.color*light.radianceTowards(P)
+        * 1.f/(weights[i]/sumWeights
+               * (float(RESERVOIR_SIZE)/float(world.numPointLights)));
+      ls.pdf
+        = INFINITY;
+      // weights[i]/sumWeights
+      //   * (float(RESERVOIR_SIZE)/float(world.numDirLights));
+      return weights[i] != 0.f;
+    }
+
+
+
     inline __rtc_device
     bool sampleEnvLight(Light::Sample &ls,
                         const World::DD &world,
@@ -285,17 +342,23 @@ namespace BARNEY_NS {
         = (sampleDirLights(dls,world,renderer,P,Ng,random,dbg)
            ? (reduce_max(dls.radiance)/* /dls.pdf*/)
            : 0.f);
+      Light::Sample pls;
+      float plsWeight
+        = (samplePointLights(pls,world,renderer,P,Ng,random,dbg)
+           ? (reduce_max(pls.radiance)/* /dls.pdf*/)
+           : 0.f);
 
       if (dbg) printf("sampling lights dls %f els %f\n",
                       dlsWeight,elsWeight);
       
       float sumWeights
-        = alsWeight+dlsWeight+elsWeight;
+        = alsWeight+dlsWeight+elsWeight+plsWeight;
       if (sumWeights == 0.f) return false;
 
       elsWeight *= 1.f/sumWeights;
       alsWeight *= 1.f/sumWeights;
       dlsWeight *= 1.f/sumWeights;
+      plsWeight *= 1.f/sumWeights;
       
       float r = random();
       if (dbg) printf(" light sample %f in cdf %f %f %f\n",
@@ -314,6 +377,14 @@ namespace BARNEY_NS {
         lightNeedsMIS = true;
 # endif
 #endif
+      } else if (r <= alsWeight+elsWeight+plsWeight) {
+        ls = pls;
+        ls.radiance *= (1.f/plsWeight);
+        // ls.pdf *= dlsWeight;
+# if USE_MIS
+        lightIsDirLight = true;
+# endif
+        if (dbg) printf(" ->  picked POINT light sample, pls weight %f pdf %f\n",plsWeight,ls.pdf);
       } else {
         ls = dls;
         ls.radiance *= (1.f/dlsWeight);

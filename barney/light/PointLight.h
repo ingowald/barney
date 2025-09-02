@@ -16,12 +16,20 @@
 
 #pragma once
 
+#include "barney/common/math.h"
 #include "barney/light/Light.h"
 
 namespace BARNEY_NS {
 
   struct PointLight : public Light {
     struct DD : public Light::DD {
+      inline __rtc_device vec3f radianceTowards(vec3f P) const
+      {
+        if (isnan(intensity))
+          return color * power * ONE_OVER_FOUR_PI;
+        else
+          return color * intensity;
+      }
       vec3f position;
       float intensity;
       float power;
