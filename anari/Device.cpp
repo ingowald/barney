@@ -327,13 +327,11 @@ namespace barney_device {
       }
 
       std::vector<int> dgIDs;
-      if (state->tether->devices[0]->m_dataGroupID >= 0) {
-        for (auto dev : state->tether->devices) {
-          assert(dev->m_dataGroupID >= 0);
-          dgIDs.push_back(dev->m_dataGroupID);
-        }
-      } else {
-        dgIDs = { rank };
+      for (auto dev : state->tether->devices) {
+        int dgID = dev->m_dataGroupID;
+        if (dgID == -1)
+          // not set by user, use default of different data group ID per device
+          dgID = rank * state->tether->devices.size() + dev->tetherIndex;
       }
       int *_dgIDs   = dgIDs.data();
       int  _dgCount = (int)dgIDs.size();
