@@ -67,7 +67,8 @@ namespace BARNEY_NS {
     
     DD getDD(Device *device);
     VolumeAccel::SP createAccel(Volume *volume) override;
-    void buildMCs(MCGrid &macroCells) override;
+    IsoSurfaceAccel::SP createIsoAccel(IsoSurface *isoSurface) override;
+    MCGrid::SP buildMCs() override;
 
     TextureData::SP scalars;
     Texture::SP  texture;

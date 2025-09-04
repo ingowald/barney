@@ -147,9 +147,11 @@ namespace BARNEY_NS {
     }
   }
   
-  void UMeshField::buildMCs(MCGrid &grid)
+  MCGrid::SP UMeshField::buildMCs()
   {
-    buildInitialMacroCells(grid);
+    MCGrid::SP mcGrid = std::make_shared<MCGrid>(devices);
+    buildInitialMacroCells(*mcGrid);
+    return mcGrid;
   }
   
   /*! build *initial* macro-cell grid (ie, the scalar field min/max

@@ -36,6 +36,8 @@ Geometry *Geometry::createInstance(
 {
   if (subtype == "sphere")
     return new Sphere(s);
+  if (subtype == "isosurface")
+    return new IsoSurface(s);
   if (subtype == "cylinder")
     return new Cylinder(s);
   if (subtype == "cone")
@@ -133,6 +135,67 @@ void Geometry::markFinalized()
 
 // Subtypes ///////////////////////////////////////////////////////////////////
 
+// Isosurface //
+
+IsoSurface::IsoSurface(BarneyGlobalState *s)
+    : Geometry(s),
+      m_field(this),
+      m_isoValues(this)
+{}
+
+void IsoSurface::commitParameters()
+{
+  Geometry::commitParameters();
+  m_isoValue = getParam<float>("isovalue", (float)NAN);
+  m_isoValues = getParamObject<Array1D>("isovalues");
+  m_field = getParamObject<SpatialField>("field");
+}
+
+void IsoSurface::finalize()
+{
+  if (!m_field) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'field' on isosurface geometry");
+    return;
+  }
+  if (isnan(m_isoValue) && !m_isoValues) {
+    reportMessage(ANARI_SEVERITY_WARNING,
+        "missing required parameter 'isovalue' or 'isovalues' on isosurface geometry");
+    return;
+  }
+}
+
+void IsoSurface::setBarneyParameters(BNGeom geom)
+{
+  bnSet1f(geom, "isoValue", m_isoValue);
+  if (m_isoValues)
+    bnSetData(geom, "isoValues", m_isoValues->barneyData());
+  else
+    bnSetData(geom, "isoValues", (BNData)nullptr);
+  bnSetObject(geom, "scalarField", m_field->getBarneyScalarField());
+
+  setAttributes(geom);
+}
+
+bool IsoSurface::isValid() const
+{
+  return m_field && (m_isoValues || !isnan(m_isoValue));
+}
+
+const char *IsoSurface::bnSubtype() const
+{
+  return "iso_surface";
+}
+
+box3 IsoSurface::bounds() const
+{
+  if (!isValid())
+    return {};
+
+  return m_field->bounds();
+}
+
+  
 // Sphere //
 
 Sphere::Sphere(BarneyGlobalState *s)

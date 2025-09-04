@@ -85,13 +85,12 @@ namespace BARNEY_NS {
     rtc::fatomicMax(&pBounds->upper.z,bb.upper.z);
   }
   
-  void BlockStructuredField::buildMCs(MCGrid &grid)
+  MCGrid::SP BlockStructuredField::buildMCs()
   {
-    // PING;
-    if (grid.built()) {
-      // initial grid already built
-      return;
-    }
+    if (mcGrid) return mcGrid;
+
+    mcGrid = std::make_shared<MCGrid>(devices);
+    auto &grid = *mcGrid;
 
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.amr: building initial macro cell grid"
@@ -123,6 +122,8 @@ namespace BARNEY_NS {
     
     for (auto device : *devices) 
       device->sync();
+    
+    return mcGrid;
   }
   
 

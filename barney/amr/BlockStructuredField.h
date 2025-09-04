@@ -75,7 +75,7 @@ namespace BARNEY_NS {
     /*! @} */
     // ------------------------------------------------------------------
     
-    void buildMCs(MCGrid &macroCells) override;
+    MCGrid::SP buildMCs() override;
     
     /*! computes, on specified device, the array of bounding box and
         value ranges for cubql bvh consturction; one box and one value

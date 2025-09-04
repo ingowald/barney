@@ -18,13 +18,15 @@
 
 #include <array>
 
+#include "barney/volume/MCGrid.h"
 #include "barney/volume/Volume.h"
 
 namespace BARNEY_NS {
 
   struct Volume;
   struct VolumeAccel;
-  struct MCGrid;
+  struct IsoSurface;
+  struct IsoSurfaceAccel;
   struct ModelSlot;
 
   /*! abstracts any sort of scalar field (unstructured, amr,
@@ -50,10 +52,14 @@ namespace BARNEY_NS {
                                   const std::string &type);
 
     virtual std::shared_ptr<VolumeAccel> createAccel(Volume *volume) = 0;
+    virtual std::shared_ptr<IsoSurfaceAccel> createIsoAccel(IsoSurface *isoSurface)
+    { return {}; }
 
-    virtual void buildMCs(MCGrid &macroCells);
+    MCGrid::SP getMCs() { if (!mcGrid) mcGrid = buildMCs(); return mcGrid; }
+    virtual MCGrid::SP buildMCs();
 
-    box3f     worldBounds;
+    MCGrid::SP  mcGrid;
+    box3f       worldBounds;
     
     /*! a clipping box used to restrict whatever primitives the volume
         may be made up to down to a specific 3d box. e.g., if there's

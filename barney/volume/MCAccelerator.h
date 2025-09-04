@@ -18,8 +18,9 @@
 
 #include "barney/common/barney-common.h"
 #include "barney/DeviceGroup.h"
-#include "barney/volume/Volume.h"
 #include "barney/volume/MCGrid.h"
+#include "barney/volume/Volume.h"
+#include "barney/geometry/IsoSurface.h"
 #include "barney/volume/DDA.h"
 #include "barney/render/World.h"
 #include "barney/render/OptixGlobals.h"
@@ -36,7 +37,7 @@ namespace BARNEY_NS {
     struct DD 
     {
       Volume::DD<SFSampler> volume;
-      MCGrid::DD            mcGrid;
+      MajorantsGrid::DD     mcGrid;
     };
 
     struct PLD {
@@ -51,7 +52,7 @@ namespace BARNEY_NS {
     {
       DD dd;
       dd.volume = volume->getDD(device,sfSampler);
-      dd.mcGrid = mcGrid.getDD(device);
+      dd.mcGrid = majorantsGrid->getDD(device);
       return dd;
     }
 
@@ -75,21 +76,72 @@ namespace BARNEY_NS {
     void isProg(rtc::TraceInterface &ti);
 #endif 
     
-    MCGrid       mcGrid;
+    MajorantsGrid::SP majorantsGrid;
+    const std::shared_ptr<SFSampler> sfSampler;
+  };
+  
+  template<typename SFSampler>
+  struct MCIsoSurfaceAccel : public IsoSurfaceAccel 
+  {
+    struct DD 
+    {
+      SFSampler::DD     sf;
+      MajorantsGrid::DD mcGrid;
+    };
+    
+    struct PLD {
+      rtc::Geom  *geom  = 0;
+      rtc::Group *group = 0;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->contextRank()]; } 
+    std::vector<PLD> perLogical;
+    
+    DD getDD(Device *device)
+    {
+      DD dd;
+      dd.sf     = sfSampler->getDD(device);
+      dd.mcGrid = mcGrid->getDD(device);
+      return dd;
+    }
+    
+    MCIsoSurfaceAccel(IsoSurface *isoSurface,
+                      GeomTypeCreationFct creatorFct,
+                      const std::shared_ptr<SFSampler> &sfSampler);
+    
+    GeomTypeCreationFct const creatorFct;
+    
+    void build(bool full_rebuild) override;
+    
+#if BARNEY_DEVICE_PROGRAM
+    /*! optix bounds prog for this class of accels */
+    static inline __rtc_device
+    void boundsProg(const rtc::TraceInterface &ti,
+                    const void *geomData,
+                    owl::common::box3f &bounds,
+                    const int32_t primID);
+    /*! optix isec prog for this class of accels */
+    static inline __rtc_device
+    void isProg(rtc::TraceInterface &ti);
+#endif 
+    
+    MCGrid::SP       mcGrid;
     const std::shared_ptr<SFSampler> sfSampler;
   };
   
   // ==================================================================
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
-
+  
   template<typename SFSampler>
   void MCVolumeAccel<SFSampler>::build(bool full_rebuild) 
   {
+    if (!majorantsGrid) {
+      auto mcGrid = volume->sf->getMCs();
+      majorantsGrid = std::make_shared<MajorantsGrid>(mcGrid);
+    }
+    majorantsGrid->computeMajorants(&volume->xf);
     sfSampler->build();
-    if (mcGrid.dims.x == 0)
-      volume->sf->buildMCs(mcGrid);
-    mcGrid.computeMajorants(&volume->xf);
     
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
@@ -122,6 +174,7 @@ namespace BARNEY_NS {
         volumePLD->generatedGroups = { pld->group };
     }
   }
+
   
 
   template<typename SFSampler>
@@ -130,7 +183,6 @@ namespace BARNEY_NS {
                 GeomTypeCreationFct creatorFct,
                 const std::shared_ptr<SFSampler> &sfSampler)
     : VolumeAccel(volume),
-      mcGrid(volume->sf->devices),
       sfSampler(sfSampler),
       creatorFct(creatorFct)
   {

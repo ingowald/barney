@@ -87,18 +87,19 @@ namespace BARNEY_NS {
   }
 
 
-  void StructuredData::buildMCs(MCGrid &mcGrid) 
+  MCGrid::SP StructuredData::buildMCs() 
   {
+    MCGrid::SP mcGrid = std::make_shared<MCGrid>(devices);
     vec3i mcDims = divRoundUp(numCells,vec3i(cellsPerMC));
-    mcGrid.resize(mcDims);
+    mcGrid->resize(mcDims);
     vec3ui blockSize(4);
     vec3ui numBlocks = divRoundUp(vec3ui(mcDims),blockSize);
-    mcGrid.gridOrigin = worldBounds.lower;
-    mcGrid.gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
+    mcGrid->gridOrigin = worldBounds.lower;
+    mcGrid->gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       StructuredData_ComputeMCs args = {
-        mcGrid.getDD(device),
+        mcGrid->getDD(device),
         numScalars,
         textureNN->getDD(device)
       };
@@ -107,6 +108,7 @@ namespace BARNEY_NS {
     }
     for (auto device : *devices)
       device->sync();
+    return mcGrid;
   }
   
   StructuredDataSampler::DD StructuredDataSampler::getDD(Device *device)
