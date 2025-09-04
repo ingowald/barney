@@ -4,8 +4,36 @@
 #include "Device.h"
 // anari
 #include "anari/backend/LibraryImpl.h"
-#include "anari_library_barney_export.h"
-#include "anari_library_barney_queries.h"
+//#include "generated/anari_library_barney_export.h"
+
+#ifdef ANARI_LIBRARY_BARNEY_STATIC_DEFINE
+#  define BARNEY_LIBRARY_INTERFACE
+#  define ANARI_LIBRARY_BARNEY_NO_EXPORT
+#else
+#  ifndef BARNEY_LIBRARY_INTERFACE
+#    if defined(_MSC_VER)
+#      if defined(anari_library_barney_EXPORTS) || defined(anari_library_barney_mpi_EXPORTS)
+/* We are building this library */
+#        define BARNEY_LIBRARY_INTERFACE __declspec(dllexport)
+#      else
+/* We are using this library */
+#        define BARNEY_LIBRARY_INTERFACE /* __declspec(dllimport) */
+#      endif
+#    else
+#      if defined(anari_library_barney_EXPORTS) || defined(anari_library_barney_mpi_EXPORTS)
+/* We are building this library */
+#        define BARNEY_LIBRARY_INTERFACE __attribute__((visibility("default")))
+#      else
+/* We are using this library */
+#        define BARNEY_LIBRARY_INTERFACE __attribute__((visibility("default")))
+#      endif
+#    endif
+#  endif
+#endif
+
+
+
+#include "generated/anari_library_barney_queries.h"
 
 namespace barney_device {
 

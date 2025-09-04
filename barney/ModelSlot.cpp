@@ -138,8 +138,6 @@ namespace BARNEY_NS {
     world->set(quadLights);
     world->set(dirLights);
     world->set(pointLights);
-    PRINT(dirLights.size());
-    PRINT(pointLights.size());
   
     // ==================================================================
     // generate all (per device) instance lists. note each BGGroup can

@@ -13,6 +13,9 @@ endif()
 
 include(GNUInstallDirs)
 
+option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries" OFF)
+
+
 ## Device target ##
 
 if (BARNEY_HAVE_CUDA)
@@ -53,6 +56,9 @@ set(BANARI_SOURCES
   # -----------
   ${DUMMY_CU}
   )
+if (NOT BARNEY_AUTO_GENERATE_QUERIES)
+  LIST(APPEND BANARI_SOURCES generated/anari_library_barney_queries.cpp)
+endif()
 
 
 
@@ -158,13 +164,16 @@ foreach(file ${DEVICE_JSONS})
   file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file} INPUT ${file})
 endforeach()
 
+if (BARNEY_AUTO_GENERATE_QUERIES)
 anari_generate_queries(
   DEVICE_TARGET anari_library_barney
   CPP_NAMESPACE barney_device
   JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
   JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
   JSON_EXTENSION_FILES ${DEVICE_JSONS}
-)
+  )
+endif()
+
 if (BARNEY_MPI)
   set_target_properties(anari_library_barney_mpi
     PROPERTIES
@@ -174,13 +183,15 @@ if (BARNEY_MPI)
     POSITION_INDEPENDENT_CODE    ON
     CUDA_USE_STATIC_CUDA_RUNTIME ON
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
-  )
-  anari_generate_queries(
-    DEVICE_TARGET anari_library_barney_mpi
-    CPP_NAMESPACE barney_device
-    JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
-    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
-    JSON_EXTENSION_FILES ${DEVICE_JSONS}
-  )
+    )
+  if (BARNEY_AUTO_GENERATE_QUERIES)
+    anari_generate_queries(
+      DEVICE_TARGET anari_library_barney_mpi
+      CPP_NAMESPACE barney_device
+      JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
+      JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
+      JSON_EXTENSION_FILES ${DEVICE_JSONS}
+      )
+  endif()
 endif()
 

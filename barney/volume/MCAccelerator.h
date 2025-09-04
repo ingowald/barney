@@ -203,7 +203,6 @@ namespace BARNEY_NS {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
-    uint32_t oldValue= ray.rngSeed.value;
     Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
                                      ti.getGeometryIndex(),
                                      ti.getPrimitiveIndex())));

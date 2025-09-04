@@ -49,7 +49,6 @@ namespace BARNEY_NS {
       return true;
     if (member == "position") {
       position = value;
-      PING; PRINT(position);
       return true;
     }
     return false;
