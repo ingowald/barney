@@ -14,52 +14,80 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "barney/geometry/IsoSurfaces.h"
+#include "barney/geometry/IsoSurface.h"
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 
 namespace BARNEY_NS {
 
-  RTC_IMPORT_USER_GEOM(IsoSurfaces,IsoSurfaces,IsoSurfaces::DD,false,true);
+  // RTC_IMPORT_USER_GEOM(IsoSurface,IsoSurface,IsoSurface::DD,false,true);
+
+  IsoSurfaceAccel::IsoSurfaceAccel(IsoSurface *isoSurface)
+    : isoSurface(isoSurface),
+      devices(isoSurface->devices)
+  {}
   
-  IsoSurfaces::IsoSurfaces(Context *context, DevGroup::SP devices)
+  IsoSurface::IsoSurface(Context *context, DevGroup::SP devices)
     : Geometry(context,devices)
   {}
 
-  void IsoSurfaces::commit()
+  /*  ! (re-)build the accel structure for this volume, probably after
+      changes to transfer functoin (or later, scalar field) */
+  void IsoSurface::build()
+  {
+    PING;
+    if (!accel) {
+      PING;
+      return;
+    }
+    assert(accel);
+    accel->build();
+    // for (auto device : *devices)  {
+    //   PLD *thisPLD = getPLD(device);
+    //   IsoSurfaceAccel::PLD *accelPLD = accel->getPLD(device);
+    //   this->userGroups = accelPLD->
+    // }
+      // device->sbtDirty = true;
+  }
+  
+  void IsoSurface::commit()
   {
     if (!sf) return;
 
     if (!accel)
-      accel = sf->createAccel(this);
-    
-    for (auto device : *devices) {
-      PLD *pld = getPLD(device);
-      if (pld->userGeoms.empty()) {
-        rtc::GeomType *gt
-          = device->geomTypes.get(createGeomType_IsoSurfaces);
-        rtc::Geom *geom = gt->createGeom();
-        geom->setPrimCount(1);
-        pld->userGeoms.push_back(geom);
-      }
-      rtc::Geom *geom = pld->userGeoms[0];
+      accel = sf->createIsoAccel(this);
+
+    accel->build();
+    // for (auto device : *devices) {
+    //   PLD *pld = getPLD(device);
+    //   // pld->userGeoms  =
+    //   //   pld->group
+
+    //   // if (pld->userGeoms.empty()) {
+    //   //   rtc::GeomType *gt
+    //   //     = device->geomTypes.get(createGeomType_IsoSurface);
+    //   //   rtc::Geom *geom = gt->createGeom();
+    //   //   geom->setPrimCount(1);
+    //   //   pld->userGeoms.push_back(geom);
+    //   // }
+    //   // rtc::Geom *geom = pld->userGeoms[0];
       
-      IsoSurfaces::DD dd;
-      Geometry::writeDD(dd,device);
-      if (isoValues) {
-        dd.isoValues = (float*)isoValues->getDD(device);
-        dd.numIsoValues = isoValues->count;
-      } else {
-        dd.isoValues = nullptr;
-        dd.numIsoValues = 0;
-      }
-      dd.isoValue = isoValue;
-      // done:
-      geom->setDD(&dd);
-    }
+    //   // IsoSurface::DD dd;
+    //   // Geometry::writeDD(dd,device);
+    //   // if (isoValues) {
+    //   //   dd.isoValues = (float*)isoValues->getDD(device);
+    //   //   dd.numIsoValues = isoValues->count;
+    //   // } else {
+    //   //   dd.isoValues = nullptr;
+    //   //   dd.numIsoValues = 0;
+    //   // }
+    //   // dd.isoValue = isoValue;
+    //   // // done:
+    //   // geom->setDD(&dd);
+    // }
   } 
 
-  bool IsoSurfaces::set1f(const std::string &member, const float &value)
+  bool IsoSurface::set1f(const std::string &member, const float &value)
   {
     if (Geometry::set1f(member,value))
       return true;
@@ -70,23 +98,24 @@ namespace BARNEY_NS {
     return false;
   }
   
-  bool IsoSurfaces::setData(const std::string &member, const Data::SP &value)
+  bool IsoSurface::setData(const std::string &member, const Data::SP &value)
   {
     if (Geometry::setData(member,value))
       return true;
     if (member == "isoValues") {
-      isoValues = value->as<PODData>();
+      isoValues = value ? value->as<PODData>() : PODData::SP();
       return true;
     }
     return false;
   }
 
-  bool IsoSurfaces::setObject(const std::string &member, const Object::SP &value)
+  bool IsoSurface::setObject(const std::string &member, const Object::SP &value)
   {
     if (Geometry::setObject(member,value))
       return true;
-    if (member == "field") {
-      sf = value->as<SpatialField>();
+    if (member == "scalarField") {
+      sf = value->as<ScalarField>();
+      PING; PRINT(sf);
       return true;
     }
     return false;

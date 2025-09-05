@@ -85,8 +85,8 @@ namespace BARNEY_NS {
   {
     struct DD 
     {
-      SFSampler::DD     sf;
-      MajorantsGrid::DD mcGrid;
+      IsoSurface::DD<SFSampler> isoSurface;
+      MCGrid::DD mcGrid;
     };
     
     struct PLD {
@@ -100,7 +100,8 @@ namespace BARNEY_NS {
     DD getDD(Device *device)
     {
       DD dd;
-      dd.sf     = sfSampler->getDD(device);
+      dd.isoSurface = isoSurface->getDD(device,sfSampler);
+      // dd.sf     = sfSampler->getDD(device);
       dd.mcGrid = mcGrid->getDD(device);
       return dd;
     }
@@ -111,7 +112,7 @@ namespace BARNEY_NS {
     
     GeomTypeCreationFct const creatorFct;
     
-    void build(bool full_rebuild) override;
+    void build() override;
     
 #if BARNEY_DEVICE_PROGRAM
     /*! optix bounds prog for this class of accels */
@@ -175,6 +176,49 @@ namespace BARNEY_NS {
     }
   }
 
+
+
+  template<typename SFSampler>
+  void MCIsoSurfaceAccel<SFSampler>::build() 
+  {
+    mcGrid = isoSurface->sf->getMCs();
+    sfSampler->build();
+    PING;
+    
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      
+      // build our own internal per-device data: one geom, and one
+      // group that contains it.
+      PLD *pld = getPLD(device);
+      if (!pld->geom) {
+        rtc::GeomType *gt
+          = device->geomTypes.get(creatorFct);
+        // build a single-prim geometry, that single prim is our
+        // entire MC/DDA grid
+        pld->geom = gt->createGeom();
+        pld->geom->setPrimCount(1);
+      }
+      rtc::Geom *geom = pld->geom;
+      DD dd = getDD(device);
+      geom->setDD(&dd);
+      
+      IsoSurface::PLD *isoSurfacePLD = isoSurface->getPLD(device);
+      isoSurfacePLD->userGeoms = { geom };
+      // if (!pld->group) {
+      //   // now put that into a instantiable group, and build it.
+      //   pld->group = device->rtc->createUserGeomsGroup({geom});
+      // }
+      // pld->group->buildAccel();
+
+      // // now let the actual volume we're building know about the
+      // // group we just created
+      // IsoSurface::PLD *isoSurfacePLD = isoSurface->getPLD(device);
+      // if (isoSurfacePLD->generatedGroups.empty()) 
+      //   isoSurfacePLD->generatedGroups = { pld->group };
+    }
+  }
+  
   
 
   template<typename SFSampler>
@@ -189,6 +233,18 @@ namespace BARNEY_NS {
     perLogical.resize(devices->numLogical);
   }
 
+  template<typename SFSampler>
+  MCIsoSurfaceAccel<SFSampler>::
+  MCIsoSurfaceAccel(IsoSurface *isoSurface,
+                    GeomTypeCreationFct creatorFct,
+                    const std::shared_ptr<SFSampler> &sfSampler)
+    : IsoSurfaceAccel(isoSurface),
+      sfSampler(sfSampler),
+      creatorFct(creatorFct)
+  {
+    perLogical.resize(devices->numLogical);
+  }
+  
   // ------------------------------------------------------------------
   // device progs: macro-cell accel with DDA traversal
   // ------------------------------------------------------------------
@@ -205,6 +261,23 @@ namespace BARNEY_NS {
     bounds = self.volume.sfCommon.worldBounds;
   }
   
+  template<typename SFSampler>
+  inline __rtc_device
+  void MCIsoSurfaceAccel<SFSampler>::boundsProg(const rtc::TraceInterface &ti,
+                                                const void *geomData,
+                                                owl::common::box3f &bounds,
+                                                const int32_t primID)
+  {
+    const DD &self = *(DD*)geomData;
+    bounds = self.isoSurface.sfCommon.worldBounds;
+  }
+  
+  template<typename SFSampler>
+  inline __rtc_device
+  void MCIsoSurfaceAccel<SFSampler>::isProg(rtc::TraceInterface &ti)
+  {
+    printf("iso!\n");
+  }
   template<typename SFSampler>
   inline __rtc_device
   void MCVolumeAccel<SFSampler>::isProg(rtc::TraceInterface &ti)

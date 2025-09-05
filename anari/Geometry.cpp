@@ -34,6 +34,7 @@ Geometry::~Geometry() = default;
 Geometry *Geometry::createInstance(
     std::string_view subtype, BarneyGlobalState *s)
 {
+  PING; PRINT(subtype);
   if (subtype == "sphere")
     return new Sphere(s);
   if (subtype == "isosurface")

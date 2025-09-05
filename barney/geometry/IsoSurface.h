@@ -28,7 +28,10 @@ namespace BARNEY_NS {
 
     IsoSurfaceAccel(IsoSurface *isoSurface);
     
-    virtual void build(bool full_rebuild) = 0;
+    virtual void build() = 0;
+    
+    IsoSurface      *const isoSurface = 0;
+    const DevGroup::SP devices;
   };
   
   struct IsoSurface : public Geometry {
@@ -44,30 +47,45 @@ namespace BARNEY_NS {
       
       ScalarField::DD        sfCommon;
       typename SFSampler::DD sfSampler;
-      TransferFunction::DD   xf;
       int                    userID;
     };
 
     IsoSurface(Context *context, DevGroup::SP devices);
+
+    template<typename SFSampler>
+    DD<SFSampler> getDD(Device *device, std::shared_ptr<SFSampler> sampler)
+    {
+      DD<SFSampler> dd;
+      dd.sfCommon = sf->getDD(device);
+      dd.sfSampler = sampler->getDD(device);
+      // dd.xf = xf.getDD(device);
+      dd.userID = userID;
+      return dd;
+    }
+
     
     /*! pretty-printer for printf-debugging */
     std::string toString() const override
     { return "IsoSurface{}"; }
 
     void commit() override;
+    void build() override;
     
     // ------------------------------------------------------------------
     /*! @{ parameter set/commit interface */
-    bool set1f(const std::string &member, const float &value) override;
-    bool setData(const std::string &member, const barney_api::Data::SP &value) override;
-    bool setObject(const std::string &member, const Object::SP &value) override;
+    bool set1f(const std::string &member,
+               const float &value) override;
+    bool setData(const std::string &member,
+                 const barney_api::Data::SP &value) override;
+    bool setObject(const std::string &member,
+                   const Object::SP &value) override;
     /*! @} */
     // ------------------------------------------------------------------
     
     float            isoValue  = NAN;
     PODData::SP      isoValues = 0;
     ScalarField::SP  sf;
-    VolumeAccel::SP  accel;
+    IsoSurfaceAccel::SP  accel;
   };
   
 }

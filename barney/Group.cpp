@@ -116,6 +116,8 @@ namespace BARNEY_NS {
             myPLD->triangleGeoms.push_back(g);
           for (auto g : geomPLD->userGeoms)
             myPLD->userGeoms.push_back(g);
+          // for (auto g : geomPLD->userGroups)
+          //   myPLD->volumeGroups.push_back(g);
         }
         
         if (!myPLD->userGeoms.empty()) {
