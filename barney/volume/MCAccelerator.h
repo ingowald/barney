@@ -24,12 +24,14 @@
 #include "barney/volume/DDA.h"
 #include "barney/render/World.h"
 #include "barney/render/OptixGlobals.h"
+#include "barney/material/DeviceMaterial.h"
 #if RTC_DEVICE_CODE
 # include "rtcore/TraceInterface.h"
 #endif
 
 namespace BARNEY_NS {
   using render::Ray;
+  using render::DeviceMaterial;
  
   template<typename SFSampler>
   struct MCVolumeAccel : public VolumeAccel 
@@ -276,8 +278,203 @@ namespace BARNEY_NS {
   inline __rtc_device
   void MCIsoSurfaceAccel<SFSampler>::isProg(rtc::TraceInterface &ti)
   {
-    printf("iso!\n");
+    const void *pd = ti.getProgramData();
+           
+    const DD &self = *(typename MCIsoSurfaceAccel<SFSampler>::DD*)pd;
+    const render::World::DD &world = render::OptixGlobals::get(ti).world;
+    // ray in world space
+    Ray &ray = *(Ray*)ti.getPRD();
+#ifdef NDEBUG
+    const bool dbg = false;
+#else
+    const bool dbg = ray.dbg();
+#endif
+    
+    box3f bounds = self.isoSurface.sfCommon.worldBounds;
+    range1f tRange = { ti.getRayTmin(), ti.getRayTmax() };
+    if (dbg) printf(" TRANGE BEFORE BOX %f %f\n",tRange.lower,tRange.upper);
+    
+    // ray in object space
+    vec3f obj_org = ti.getObjectRayOrigin();
+    vec3f obj_dir = ti.getObjectRayDirection();
+
+    if (dbg) {
+      printf("MCIsoAccel isec %f %f %f mcgrid %i %i %i\n",
+             obj_dir.x,
+             obj_dir.y,
+             obj_dir.z,
+             self.mcGrid.dims.x,
+             self.mcGrid.dims.y,
+             self.mcGrid.dims.z
+             );
+    }
+    
+    auto objRay = ray;
+    objRay.org = obj_org;
+    objRay.dir = obj_dir;
+
+    if (!boxTest(objRay,tRange,bounds))
+      return;
+
+    if (dbg) printf(" TRANGE AFTER BOX %f %f\n",tRange.lower,tRange.upper);
+    
+    // ------------------------------------------------------------------
+    // compute ray in macro cell grid space 
+    // ------------------------------------------------------------------
+    vec3f mcGridOrigin  = self.mcGrid.gridOrigin;
+    vec3f mcGridSpacing = self.mcGrid.gridSpacing;
+
+    vec3f dda_org = obj_org;
+    vec3f dda_dir = obj_dir;
+
+    dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
+    dda_dir = dda_dir * rcp(mcGridSpacing);
+
+    Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
+                                     ti.getGeometryIndex(),
+                                     ti.getPrimitiveIndex())));
+    
+    float tHit = ray.tMax;
+    dda::dda3(dda_org,dda_dir,tRange.upper,
+              vec3ui(self.mcGrid.dims),
+              [&](const vec3i &cellIdx, float t0, float t1) -> bool
+              {
+                float _t0 = t0;
+                float _t1 = t1;
+                range1f tRange = range1f {t0,min(t1,ray.tMax)};
+                if (tRange.lower >= tRange.upper) return true;
+                
+                range1f valueRange = self.mcGrid.scalarRange(cellIdx);
+
+                if (dbg) printf("dda %i %i %i [%f %f] -> [%f %f]\n",
+                                cellIdx.x,
+                                cellIdx.y,
+                                cellIdx.z,
+                                tRange.lower,
+                                tRange.upper,
+                                valueRange.lower,
+                                valueRange.upper);
+                auto overlaps = [&](float isoValue)
+                {
+                  if (isnan(isoValue)) return false;
+                  if (isoValue < valueRange.lower || isoValue > valueRange.upper)
+                    return false;
+                  return true;
+                };
+                auto overlaps_any = [&]()
+                {
+                  if (overlaps(self.isoSurface.isoValue)) return true;
+                  return false;
+                };
+                auto intersect = [&](float isoValue)
+                {
+                  if (isnan(isoValue)) return;
+                  if (isoValue < valueRange.lower || isoValue > valueRange.upper)
+                    return;
+
+                  float t
+                    = (isoValue - valueRange.lower)
+                    / (valueRange.upper-valueRange.lower);
+                  t = lerp_l(t,tRange.lower,tRange.upper);
+                  tHit = min(tHit,t);
+                };
+                auto intersect_all = [&]()
+                {
+                  intersect(self.isoSurface.isoValue);
+                };
+                
+                if (!overlaps_any()) return true;
+
+                float tt1 = t0;
+                vec3f P = obj_org + tt1 * obj_dir;
+                float ff1 = self.isoSurface.sfSampler.sample(P,dbg);
+                int numSteps = 10; 
+                for (int i=1;i<=numSteps;i++) {
+                  float tt0 = tt1;
+                  float ff0 = ff1;
+                  tt1 = lerp_l(i/float(numSteps),_t0,_t1);
+                  P = obj_org + tt1 * obj_dir;
+                  ff1 = self.isoSurface.sfSampler.sample(P,dbg);
+                  
+                  valueRange.lower = ff0;
+                  valueRange.upper = ff1;
+                  // if (dbg)
+                  //   printf("i %i [%f %f] -> t's %f %f\n",i,_t0,_t1,tt0,tt1);
+                  tRange = range1f{tt0,tt1};
+
+                  if (isnan(ff0+ff1)) continue;
+                  
+                  if (dbg)
+                    printf(" ... t [%f %f] v [ %f %f ]\n",
+                           tRange.lower,
+                           tRange.upper,
+                           valueRange.lower,
+                           valueRange.upper);
+                  if (overlaps_any()) {
+                    intersect_all();
+                    if (tHit < ray.tMax) {
+                      return false;
+                    }
+                  }
+                }
+
+                return true;
+              },
+              /*NO debug:*/false
+              );
+    if (tHit >= ray.tMax) return;
+    
+    // ------------------------------------------------------------------
+    // get texture coordinates
+    // ------------------------------------------------------------------
+    const vec3f osP  = obj_org + tHit * obj_dir;
+    vec3f P  = ti.transformPointFromObjectToWorldSpace(osP);
+    vec3f osN = - normalize(obj_dir);
+    vec3f n   = - normalize(obj_dir);
+    int primID    = ti.getPrimitiveIndex();
+    int instID    = ti.getInstanceID();
+                
+    render::HitAttributes hitData;
+    hitData.worldPosition   = P;
+    hitData.worldNormal     = n;
+    hitData.objectPosition  = osP;
+    hitData.objectNormal    = osN;
+    hitData.primID          = primID;
+    hitData.instID          = instID;
+    hitData.t               = tHit;
+    hitData.isShadowRay     = ray.isShadowRay;
+    float u = 0.f;
+    float v = 0.f;
+    auto interpolator
+      = [u,v,dbg](const GeometryAttribute::DD &attrib) -> vec4f
+      {
+        return vec4f(1.f);
+      };
+    self.isoSurface.setHitAttributes(hitData,interpolator,world,dbg);
+
+    // if (dbg) printf("matid %i, world mat %lx\n",self.materialID,world.materials); 
+    const DeviceMaterial &material
+      = world.materials[self.isoSurface.materialID];
+      
+    PackedBSDF bsdf
+      = material.createBSDF(hitData,world.samplers,dbg);
+    float opacity
+      = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
+                        ray.dir,hitData.worldNormal,ray.dbg());
+    // opacity = .85f;
+    if (opacity < 1.f) {
+      ray.rngSeed.next((const uint32_t&)osP.x);
+      ray.rngSeed.next((const uint32_t&)osP.y);
+      ray.rngSeed.next((const uint32_t&)osP.z);
+      Random rng(ray.rngSeed.next(290374u));
+      if (rng() > opacity) {
+        // ti.ignoreIntersection();
+        return;
+      }
+    }
+    material.setHit(ray,hitData,world.samplers,dbg);
   }
+  
   template<typename SFSampler>
   inline __rtc_device
   void MCVolumeAccel<SFSampler>::isProg(rtc::TraceInterface &ti)
@@ -302,7 +499,7 @@ namespace BARNEY_NS {
     vec3f obj_dir = ti.getObjectRayDirection();
 
     if (dbg) {
-      printf("MCGrid isec %f %f %f\n",
+      printf("MCVolumeAccel isec %f %f %f\n",
              obj_dir.x,
              obj_dir.y,
              obj_dir.z

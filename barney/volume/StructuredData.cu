@@ -93,7 +93,7 @@ namespace BARNEY_NS {
     int tid = ci.launchIndex().x;
     if (tid >= mcDims.x*mcDims.y*mcDims.z) return;
     vec3i mcID(tid % mcDims.x,
-               (tid / mcDims.x) & mcDims.y,
+               (tid / mcDims.x) % mcDims.y,
                tid / (mcDims.x*mcDims.y));
     
     range1f scalarRange;
@@ -132,8 +132,10 @@ namespace BARNEY_NS {
 
   MCGrid::SP StructuredData::buildMCs() 
   {
+    PING;
     MCGrid::SP mcGrid = std::make_shared<MCGrid>(devices);
     vec3i mcDims = divRoundUp(numCells,vec3i(cellsPerMC));
+    PRINT(mcDims);
     mcGrid->resize(mcDims);
     // vec3ui blockSize(4);
     // vec3ui numBlocks = divRoundUp(vec3ui(mcDims),blockSize);
@@ -149,6 +151,7 @@ namespace BARNEY_NS {
       // pld->computeMCs->launch(numBlocks,blockSize,
       //                         &args);
       int lc = mcDims.x*mcDims.y*mcDims.z;
+      PRINT(lc);
       int bs = 128;
       int nb = divRoundUp(lc,bs);
       __rtc_launch(device->rtc,
@@ -158,8 +161,10 @@ namespace BARNEY_NS {
                    numScalars,
                    textureNN->getDD(device));
     }
+    PING;
     for (auto device : *devices)
       device->sync();
+    PING;
     return mcGrid;
   }
   
@@ -245,6 +250,8 @@ namespace BARNEY_NS {
   {
     worldBounds.lower = gridOrigin;
     worldBounds.upper = gridOrigin + gridSpacing * vec3f(numCells);
+    PRINT(numCells);
+    PRINT(worldBounds);
   }
   
   // RTC_EXPORT_COMPUTE3D(StructuredData_computeMCs,StructuredData_ComputeMCs);

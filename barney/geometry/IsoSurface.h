@@ -38,16 +38,18 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<IsoSurface> SP;
 
     template<typename SFSampler>
-    struct DD {
+    struct DD : public Geometry::DD {
       inline __rtc_device
       vec4f sample(vec3f point, bool dbg=false) const
       {
         return sfSampler.sample(point,dbg);
       }
-      
+
+      float                  isoValue;
+      float                 *isoValues;
+      int                    numIsoValues;
       ScalarField::DD        sfCommon;
       typename SFSampler::DD sfSampler;
-      int                    userID;
     };
 
     IsoSurface(Context *context, DevGroup::SP devices);
@@ -56,10 +58,13 @@ namespace BARNEY_NS {
     DD<SFSampler> getDD(Device *device, std::shared_ptr<SFSampler> sampler)
     {
       DD<SFSampler> dd;
+      Geometry::writeDD(dd,device);
       dd.sfCommon = sf->getDD(device);
       dd.sfSampler = sampler->getDD(device);
-      // dd.xf = xf.getDD(device);
-      dd.userID = userID;
+      dd.isoValue = isoValue;
+      dd.isoValues = (float *)(isoValues ? isoValues->getDD(device) : nullptr);
+      dd.numIsoValues = isoValues ? isoValues->count : 0;
+
       return dd;
     }
 

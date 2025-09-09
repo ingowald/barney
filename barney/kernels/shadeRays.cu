@@ -958,10 +958,12 @@ namespace BARNEY_NS {
              ray,state,
              shadowRay,shadowState,
              generation);
-    
-      // if (ray.crosshair && !dbg) {
-      //   fragment = vec3f(1.f,0.f,0.f);
-      // }
+
+#ifndef NDEBUG
+      if (ray.crosshair && !dbg) {
+        fragment = vec3f(1.f,0.f,0.f);
+      }
+#endif
       
       // write shadow and bounce ray(s), if any were generated
       if (dbg)

@@ -77,6 +77,8 @@ namespace BARNEY_NS {
       
       int numVertices = (int)vertices->count;
       int numIndices  = (int)indices->count;
+      if (numIndices == 0)
+        std::cout<< "WARNING - EMPTY TRI MESH" << std::endl;
       
       geom->setVertices(verticesBuffer,numVertices);
       geom->setIndices(indicesBuffer,numIndices);

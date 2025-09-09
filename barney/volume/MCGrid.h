@@ -52,6 +52,12 @@ namespace BARNEY_NS {
       vec3f    gridSpacing;
 
 #if RTC_DEVICE_CODE
+      inline __rtc_device
+      range1f scalarRange(vec3i cellID) const
+      {
+        return scalarRanges[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
+      }
+      
       inline __rtc_device int numCells() const
       { return dims.x*dims.y*dims.z; }
       
