@@ -67,18 +67,19 @@ namespace BARNEY_NS {
     
     DD getDD(Device *device);
     VolumeAccel::SP createAccel(Volume *volume) override;
-    void buildMCs(MCGrid &macroCells) override;
+    IsoSurfaceAccel::SP createIsoAccel(IsoSurface *isoSurface) override;
+    MCGrid::SP buildMCs() override;
 
     TextureData::SP scalars;
     Texture::SP  texture;
     Texture::SP  textureNN;
     // Texture3D::SP  colorMapTexture;
 
-    struct PLD {
-      rtc::ComputeKernel3D *computeMCs = 0;
-    };
-    PLD *getPLD(Device *device);
-    std::vector<PLD> perLogical;
+    // struct PLD {
+    //   // rtc::ComputeKernel3D *computeMCs = 0;
+    // };
+    // PLD *getPLD(Device *device);
+    // std::vector<PLD> perLogical;
     
     BNDataType scalarType = BN_DATA_UNDEFINED;
     vec3i numScalars  { 0,0,0 };

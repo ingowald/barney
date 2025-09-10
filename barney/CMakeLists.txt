@@ -163,6 +163,8 @@ set(HOST_SOURCES
   geometry/Spheres.cpp
   geometry/Cones.h
   geometry/Cones.cpp
+  geometry/IsoSurface.h
+  geometry/IsoSurface.cpp
   # volume data 
   volume/Volume.h
   volume/Volume.cpp

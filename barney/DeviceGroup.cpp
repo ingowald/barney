@@ -73,6 +73,11 @@ namespace BARNEY_NS {
       = createTrace_traceRays(rtc);
   }
 
+  Device::~Device()
+  {
+    delete rtc;
+  }
+
   int Device::globalRank() const
   { return _globalRank; }
   

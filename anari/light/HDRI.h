@@ -13,6 +13,7 @@ namespace barney_device {
   struct HDRILight : public Light
   {
     HDRILight(BarneyGlobalState *s);
+    ~HDRILight() override;
 
     void commitParameters() override;
     void finalize() override;

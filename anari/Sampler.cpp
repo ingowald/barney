@@ -49,6 +49,7 @@ Sampler::Sampler(BarneyGlobalState *s, const char *barneySubtype)
 
 Sampler::~Sampler()
 {
+  BANARI_TRACK_LEAKS(std::cout << "#banari: ~Sampler deconstructing" << std::endl);
   bnRelease(m_bnSampler);
   if (m_bnTextureData) {
     bnRelease(m_bnTextureData);

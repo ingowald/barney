@@ -79,6 +79,7 @@ Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
 
 Material::~Material()
 {
+  BANARI_TRACK_LEAKS(std::cout << "#banari: ~Material deconstructing" << std::endl);
   if (m_bnMat)
     bnRelease(m_bnMat);
   m_bnMat = nullptr;

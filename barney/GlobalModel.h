@@ -23,7 +23,7 @@ namespace BARNEY_NS {
 
   struct ModelSlot;
   
-  struct GlobalModel : public barney_api::Model {//SlottedObject {
+  struct GlobalModel : public barney_api::Model {
     typedef std::shared_ptr<GlobalModel> SP;
 
     static SP create(Context *ctx) { return std::make_shared<GlobalModel>(ctx); }

@@ -34,7 +34,8 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<EnvMapLight> SP;
     EnvMapLight(Context *context,
                 const DevGroup::SP &devices);
-
+    virtual ~EnvMapLight();
+    
     struct DD {
 #if RTC_DEVICE_CODE
       inline __rtc_device float pdf(vec3f dir, bool dbg=false) const;

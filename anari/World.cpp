@@ -26,19 +26,16 @@ namespace barney_device {
     m_zeroGroup->refDec(helium::RefType::PUBLIC);
     m_zeroInstance->refDec(helium::RefType::PUBLIC);
 
-    uniqueID = deviceState()->nextUniqueModelID++;
+    int uniqueModelID = deviceState()->nextUniqueModelID++;
+    tetheredModel = deviceState()->tether->getOrCreateTetheredModel(uniqueModelID);
   }
 
   World::~World()
   {
-    // if (m_barneyModel) {
-    //   bnRelease(m_barneyModel);
-    //   m_barneyModel = 0;
-    // }
     auto *state = deviceState();
-    // if (state->currentWorld   == this)
-    //   state->currentWorld = nullptr;
-    state->tether->releaseModel(uniqueID);
+    BANARI_TRACK_LEAKS(std::cout << "#banari: ~World deconstructing"
+                       << std::endl);
+    tetheredModel = {};
   }
 
   bool World::getProperty(const std::string_view &name,
@@ -129,8 +126,7 @@ namespace barney_device {
 
     // auto barneyModel = state->tether->getModel(uniqueID);
     buildBarneyModel();
-    auto barneyModel = state->tether->getModel(uniqueID);
-    return barneyModel->model;
+    return tetheredModel->model;
     // if (state->currentWorld != this) {
     //   if (barneyModel)
     //     bnRelease(m_barneyModel);
@@ -157,7 +153,7 @@ namespace barney_device {
 
     reportMessage(ANARI_SEVERITY_DEBUG, "barney::World rebuilding model");
 
-    auto barneyModel = state->tether->getModel(uniqueID)->model;
+    auto barneyModel = tetheredModel->model;
 
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;

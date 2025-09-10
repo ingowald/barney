@@ -84,13 +84,14 @@ namespace BARNEY_NS {
     void setMaterial(HostMaterial::SP);
 
     struct PLD {
-      std::vector<rtc::Geom *> triangleGeoms;
-      std::vector<rtc::Geom *> userGeoms;
+      std::vector<rtc::Geom *>  triangleGeoms;
+      std::vector<rtc::Geom *>  userGeoms;
+      // std::vector<rtc::Group *> generatedGroups;
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
     DevGroup::SP const devices;
-  private:
+  protected:
     render::HostMaterial::SP material;
 
     render::GeometryAttributes attributes;

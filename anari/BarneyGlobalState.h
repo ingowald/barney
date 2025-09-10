@@ -26,21 +26,28 @@ namespace barney_device {
   struct World;
 
   struct BarneyDevice;
-
-  struct TetheredModel {
-    BNModel model;
+  struct Tether;
+  
+  struct TetheredModel : public std::enable_shared_from_this<TetheredModel> {
+    typedef std::shared_ptr<TetheredModel> SP;
+    TetheredModel(Tether *tether, int uniqueID);
+    ~TetheredModel();
+    BNModel model = 0;
+    Tether *const tether;
+    int     const uniqueID;
   };
 
   /*! keeps info on multiple (banari-)devices that are tethered
       together onto a singel barney ncontext */
   struct Tether {
+    ~Tether();
+    
     BNContext context{nullptr};
 
     bool allDevicesPresent();
 
-    TetheredModel *getModel(int uniqueID);
-    void releaseModel(int uniqueID);
-    std::map<int,std::pair<int,std::shared_ptr<TetheredModel>>> activeModels;
+    TetheredModel::SP getOrCreateTetheredModel(int uniqueID);
+    std::map<int,TetheredModel*> activeModels;
     std::mutex mutex;
 
     int numRenderCallsOutstanding = 0;
@@ -77,6 +84,8 @@ namespace barney_device {
     // Helper methods //
 
     BarneyGlobalState(ANARIDevice d);
+    ~BarneyGlobalState();
+    
     void markSceneChanged();
   };
 

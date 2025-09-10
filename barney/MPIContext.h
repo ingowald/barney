@@ -28,7 +28,8 @@ namespace BARNEY_NS {
                const barney_api::mpi::Comm &workersComm,
                const std::vector<LocalSlot> &localSlots,
                bool userSuppliedGpuListWasEmpty);
-
+    virtual ~MPIContext();
+    
     static WorkerTopo::SP makeTopo(const barney_api::mpi::Comm &worldComm,
                                    const barney_api::mpi::Comm &workersComm,
                                    const std::vector<LocalSlot> &localSlots);

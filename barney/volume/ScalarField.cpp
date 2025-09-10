@@ -24,10 +24,11 @@
 
 namespace BARNEY_NS {
 
-  void ScalarField::buildMCs(MCGrid &macroCells)
+  MCGrid::SP ScalarField::buildMCs()
   {
     throw std::runtime_error
       ("this calar field type does not know how to build macro-cells");
+    return {};
   }
   
   ScalarField::ScalarField(Context *context,

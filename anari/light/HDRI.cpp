@@ -9,6 +9,12 @@ namespace barney_device {
     : Light(s)
   {}
 
+  HDRILight::~HDRILight()
+  {
+    BANARI_TRACK_LEAKS(std::cout << "#banari: ~HDRILight deconstructing"
+                       << std::endl);
+  }
+  
   void HDRILight::commitParameters()
   {
     Light::commitParameters();

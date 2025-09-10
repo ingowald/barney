@@ -39,10 +39,11 @@ namespace BARNEY_NS {
       map its scalar ranges through a transfer functoin to compute the
       majorants. */
   struct MCGrid {
+    typedef std::shared_ptr<MCGrid> SP;
+    
     /*! device data for this class - grid of per-cell ranges, grid of
       majorants, and dimensionality of grid */
     struct DD {
-      float   *majorants;
       // not actually exported to optix programs, only used by cuda
       // kernels
       range1f *scalarRanges;
@@ -51,6 +52,12 @@ namespace BARNEY_NS {
       vec3f    gridSpacing;
 
 #if RTC_DEVICE_CODE
+      inline __rtc_device
+      range1f scalarRange(vec3i cellID) const
+      {
+        return scalarRanges[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
+      }
+      
       inline __rtc_device int numCells() const
       { return dims.x*dims.y*dims.z; }
       
@@ -61,12 +68,6 @@ namespace BARNEY_NS {
         mcID.y = (linearID / dims.x) % dims.y;
         mcID.z = linearID / (dims.x*dims.y);
         return mcID;
-      }
-      
-      inline __rtc_device
-      float majorant(vec3i cellID) const
-      {
-        return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
       }
       
       /*! returns the bounding box of the given cell */
@@ -82,11 +83,11 @@ namespace BARNEY_NS {
       
       // static void addVars(std::vector<OWLVarDecl> &vars, int base);
     };
-    
+
     MCGrid(const DevGroup::SP &devices);
     
     /*! get cuda-usable device-data for given device ID (relative to
-        devices in the devgroup that this gris is in */
+      devices in the devgroup that this gris is in */
     DD getDD(Device *device);
 
     // void setVariables(OWLGeom geom);
@@ -97,10 +98,6 @@ namespace BARNEY_NS {
     /*! re-set all cells' ranges to "infinite empty" */
     void clearCells();
     
-    /*! given the current per-cell scalar ranges, map each such cell's
-        range through the transfer functoin to compute a majorant */
-    void computeMajorants(TransferFunction *xf);
-
     /*! checks if this macro-cell grid has already been
       allocated/built - mostly for sanity checking nd debugging */
     inline bool built() const { return (dims != vec3i(0)); }
@@ -108,11 +105,6 @@ namespace BARNEY_NS {
     struct PLD {
       /* buffer of range1f's, the min/max scalar values per cell */
       rtc::Buffer *scalarRangesBuffer = 0;
-      /* buffer of floats, the actual per-cell majorants */
-      rtc::Buffer *majorantsBuffer = 0;
-      
-      rtc::ComputeKernel3D *mapMCs = 0;
-      rtc::ComputeKernel3D *clearMCs = 0;
     };
     PLD *getPLD(Device *device) 
     { return &perLogical[device->localRank()]; } 
@@ -124,6 +116,46 @@ namespace BARNEY_NS {
     vec3f     gridSpacing;
     const DevGroup::SP devices;
   };
+
+
+  
+  struct MajorantsGrid {
+    typedef std::shared_ptr<MajorantsGrid> SP;
+    struct DD : public MCGrid::DD {
+      float *majorants;
+      
+      inline __rtc_device
+      float majorant(vec3i cellID) const
+      {
+        return majorants[cellID.x+dims.x*(cellID.y+dims.y*cellID.z)];
+      }
+    };
+
+    struct PLD {
+      /* buffer of floats, the actual per-cell majorants */
+      rtc::Buffer *majorantsBuffer = 0;
+    };
+    PLD *getPLD(Device *device) 
+    { return &perLogical[device->localRank()]; } 
+    std::vector<PLD> perLogical;
+    
+    MajorantsGrid(MCGrid::SP mcGrid);
+    
+    /*! given the current per-cell scalar ranges, map each such cell's
+        range through the transfer functoin to compute a majorant */
+    void computeMajorants(TransferFunction *xf);
+
+    /*! allocate memory for the given grid */
+    void resize(vec3i dims);
+    
+    /*! get cuda-usable device-data for given device ID (relative to
+      devices in the devgroup that this gris is in */
+    DD getDD(Device *device);
+    
+    MCGrid::SP const mcGrid;
+    const DevGroup::SP devices;
+  };
+    
   
 }
 

@@ -27,6 +27,7 @@ namespace rtc {
       Buffer(optix::Device *device,
              size_t size,
              const void *initData);
+      virtual ~Buffer();
       void *getDD() const;
 
       void resize(size_t newNumBytes)
