@@ -46,7 +46,8 @@ namespace BARNEY_NS {
     Device(rtc::Device *rtc,
            const WorkerTopo *topo,
            int localRank);
-
+    ~Device();
+    
     int worldRank() const;
 
     int globalRank() const;
@@ -58,35 +59,8 @@ namespace BARNEY_NS {
     // DEPRECATED!
     int contextRank() const;
     
-    // int globalRank() const { return allGPUsGlobally.rank; }
-    // int globalSize() const { return allGPUsGlobally.size; }
-
-    // int localRank() const { return allGPUsLocally.rank; }
-    // int localSize() const { return allGPUsLocally.size; }
-
-    // // DEPRECATED!
-    // int contextRank() const { return localRank(); }
-    
-    // int                globalRank = -1;
-    // int                globalSize = -1;
-    
-    // /*! describes this device's island's place in the world */
-    // PeerGroup islandInWorld;
-
-    // /*! describes this device's place within the island/cycle that it
-    //     is in */
-    // PeerGroup gpuInIsland;
-    
     void sync() { rtc->sync(); }
     
-    /* for ray queue cycling - who to cycle with */
-    // struct {
-    //   int sendWorkerRank  = -1;
-    //   int sendWorkerLocal = -1;
-    //   int recvWorkerRank  = -1;
-    //   int recvWorkerLocal = -1;
-    // } rqs;
-
     int  setActive() const { return rtc->setActive(); }
     void restoreActive(int old) const  { rtc->restoreActive(old); }
     void syncPipelineAndSBT();
@@ -95,12 +69,8 @@ namespace BARNEY_NS {
     
     GeomTypeRegistry geomTypes;
     rtc::Device *const rtc;
-    // rtc::ComputeKernel1D *generateRays = 0;
-    // rtc::ComputeKernel1D *shadeRays = 0;
-    
     rtc::TraceKernel2D *traceRays = 0;
     RayQueue     *rayQueue = 0;
-
 
     /*! the _global_ device ID within the worker topo */
     int const _localRank;

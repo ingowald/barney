@@ -38,6 +38,8 @@ namespace barney_device {
     auto *state = deviceState();
     // if (state->currentWorld   == this)
     //   state->currentWorld = nullptr;
+    std::cout << "# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
+    std::cout << "#banari: ~World deconstructing" << std::endl;
     state->tether->releaseModel(uniqueID);
   }
 

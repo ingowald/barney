@@ -45,7 +45,9 @@ namespace BARNEY_NS {
   }
 
   ModelSlot::~ModelSlot()
-  {}
+  {
+    PING;
+  }
   
   void ModelSlot::setInstances(barney_api::Group **groups,
                                const affine3f *xfms,

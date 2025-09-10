@@ -73,6 +73,12 @@ namespace BARNEY_NS {
       = createTrace_traceRays(rtc);
   }
 
+  Device::~Device()
+  {
+    std::cout << "#barney: device is deconstructing, releasing rtc" << std::endl;
+    delete rtc;
+  }
+
   int Device::globalRank() const
   { return _globalRank; }
   

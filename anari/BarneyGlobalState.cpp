@@ -8,10 +8,21 @@
 
 namespace barney_device {
 
+  Tether::~Tether()
+  {
+    std::cout << "#banari: tether destructing - releasing barney context" << std::endl;
+    if (context) { bnContextDestroy(context); context = 0; }
+  }
+
   BarneyGlobalState::BarneyGlobalState(ANARIDevice d)
     : helium::BaseGlobalDeviceState(d)
   {}
 
+  BarneyGlobalState::~BarneyGlobalState()
+  {
+    std::cout << "#banari: barneyglobalstate destructing - releasing tether" << std::endl;
+  }
+  
   void BarneyGlobalState::markSceneChanged()
   {
     objectUpdates.lastSceneChange = helium::newTimeStamp();
@@ -24,7 +35,7 @@ namespace barney_device {
     return true;
   }
 
-  TetheredModel *Tether::getModel(int uniqueID)
+  TetheredModel *Tether::getAndRefModel(int uniqueID)
   {
     std::lock_guard<std::mutex> lock(mutex);
     auto &pair = activeModels[uniqueID];
@@ -33,6 +44,7 @@ namespace barney_device {
       pair.second->model = bnModelCreate(context);
     }
     pair.first++;
+    std::cout << "#banari GETTING model ID " << uniqueID << " coun1 " << pair.first << std::endl;
     return pair.second.get();
   }
   
@@ -40,7 +52,9 @@ namespace barney_device {
   {
     std::lock_guard<std::mutex> lock(mutex);
     auto &tm = activeModels[uniqueID];
+    std::cout << "#banari: releasing model ID " << uniqueID << " count " << tm.first << std::endl;
     if (--tm.first == 0) {
+      std::cout << "#banari: tether releases barney model!" << std::endl;
       if (tm.second->model)
         bnRelease(tm.second->model);
       activeModels.erase(activeModels.find(uniqueID));

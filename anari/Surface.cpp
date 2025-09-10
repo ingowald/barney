@@ -11,6 +11,8 @@ Surface::Surface(BarneyGlobalState *s)
 
 Surface::~Surface()
 {
+  std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+  std::cout << "#banari: ~Surface deconstructing" << std::endl;
   cleanup();
 }
 

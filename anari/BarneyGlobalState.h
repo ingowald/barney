@@ -34,11 +34,13 @@ namespace barney_device {
   /*! keeps info on multiple (banari-)devices that are tethered
       together onto a singel barney ncontext */
   struct Tether {
+    ~Tether();
+    
     BNContext context{nullptr};
 
     bool allDevicesPresent();
 
-    TetheredModel *getModel(int uniqueID);
+    TetheredModel *getAndRefModel(int uniqueID);
     void releaseModel(int uniqueID);
     std::map<int,std::pair<int,std::shared_ptr<TetheredModel>>> activeModels;
     std::mutex mutex;
@@ -77,6 +79,8 @@ namespace barney_device {
     // Helper methods //
 
     BarneyGlobalState(ANARIDevice d);
+    ~BarneyGlobalState();
+    
     void markSceneChanged();
   };
 

@@ -283,6 +283,7 @@ namespace barney_device {
 
   BarneyDevice::~BarneyDevice()
   {
+    std::cout << "#banari: ~BarneyDevice is deconstructing" << std::endl;
     auto &state = *deviceState();
     state.commitBuffer.clear();
     reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);

@@ -37,6 +37,7 @@ namespace rtc {
 
     Device::~Device()
     {
+      std::cout << "#rtc::optix: device deconstructing" << std::endl; 
       destroy();
     }
 

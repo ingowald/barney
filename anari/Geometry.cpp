@@ -29,7 +29,9 @@ static void addAttribute(BNGeom geom,
 
 Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
 
-Geometry::~Geometry() = default;
+  Geometry::~Geometry() {
+    std::cout << "#banari::Geometry is dying" << std::endl;
+  }
 
 Geometry *Geometry::createInstance(
     std::string_view subtype, BarneyGlobalState *s)
