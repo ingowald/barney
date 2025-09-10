@@ -288,21 +288,21 @@ namespace BARNEY_NS {
     {
       /* in barney, the environment is either a explicit hdri map (in
          EnvMapLight); or a uniform brightness of 'renderer.ambientRadiance' */
-      if (world.envMapLight.texture)
+      if (world.envMapLight.texture) {
         ls = world.envMapLight.sample(random,dbg);
-      else {
-#if 1
+      } else {
         ls.direction = randomDirection(random);
-        ls.radiance  = renderer.ambientRadiance;
-        if (dot(ls.direction,N) < 0.f) ls.direction = -ls.direction;
-        ls.pdf       = ONE_OVER_TWO_PI;
         ls.distance  = BARNEY_INF;
-#else
-        ls.direction = randomDirection(random);
-        ls.radiance  = renderer.ambientRadiance;
-        ls.pdf       = ONE_OVER_FOUR_PI;
-        ls.distance  = BARNEY_INF;
-#endif
+        if (N != vec3f(0.f)) {
+          ls.radiance  = TWO_PI*renderer.ambientRadiance;
+          if (dot(ls.direction,N) < 0.f) ls.direction = -ls.direction;
+          ls.pdf       = ONE_OVER_TWO_PI;
+        } else {
+          ls.radiance  = FOUR_PI*renderer.ambientRadiance;
+          ls.pdf       = ONE_OVER_FOUR_PI;
+        }
+        if (dbg) printf("ambientrad %f\n",
+                        renderer.ambientRadiance);
       }
       return true;
     }
@@ -701,8 +701,8 @@ namespace BARNEY_NS {
             * (isinf(ls.pdf)?1.f:rcp(ls.pdf))
             * f_r.value
             * ls.radiance
-            * ONE_OVER_PI
-            * (isVolumeHit?1.f:fabsf(dot(dg.Ng,ls.direction)))
+            
+            * (isVolumeHit?1.f:(ONE_OVER_PI*fabsf(dot(dg.Ng,ls.direction))))
             ;
 
           
