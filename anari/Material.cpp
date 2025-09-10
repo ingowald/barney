@@ -79,7 +79,7 @@ Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
 
 Material::~Material()
 {
-  std::cout << "#pynari: ~Material deconstructing" << std::endl;
+  std::cout << "#banari: ~Material deconstructing" << std::endl;
   if (m_bnMat)
     bnRelease(m_bnMat);
   m_bnMat = nullptr;

@@ -244,6 +244,7 @@ namespace BARNEY_NS {
   
   PODData::~PODData()
   {
+    std::cout << "#barney: ~PODData is dying" << std::endl;
     for (auto device : *devices)
       device->rtc->freeBuffer(getPLD(device)->rtcBuffer);
   }

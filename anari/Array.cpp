@@ -13,6 +13,7 @@ namespace barney_device {
                                                                                \
   Array##DIM::~Array##DIM()                                                    \
   {                                                                            \
+    std::cout << "#banari: ~Array deconstructing" << std::endl;         \
     if (m_handle)                                                              \
       bnRelease(m_handle);                                                     \
   }                                                                            \

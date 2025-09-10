@@ -26,7 +26,13 @@ namespace rtc {
       : device(device)
     {
       // owl = owlManagedMemoryBufferCreate(device->owl,OWL_BYTE,size,initData);
+      PING; PRINT(size);
       owl = owlDeviceBufferCreate(device->owl,OWL_BYTE,size,initData);
+    }
+
+    Buffer::~Buffer()
+    {
+      owlBufferRelease(owl);
     }
     
     void *Buffer::getDD() const

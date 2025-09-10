@@ -9,6 +9,11 @@ namespace barney_device {
     : Light(s)
   {}
 
+  HDRILight::~HDRILight()
+  {
+    std::cout << "#banari: ~HDRILight deconstructing" << std::endl;
+  }
+  
   void HDRILight::commitParameters()
   {
     Light::commitParameters();

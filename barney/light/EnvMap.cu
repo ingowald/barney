@@ -200,6 +200,9 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
 
+      PING; PRINT(dims.y*sizeof(float)); PRINT(dims.x*dims.y*sizeof(float));
+      PRINT(pld->cdf_y);
+      PRINT(pld->allCDFs_x);
       if (pld->cdf_y)
         rtc->freeBuffer(pld->cdf_y);
       pld->cdf_y
@@ -271,9 +274,25 @@ namespace BARNEY_NS {
       pld->normalize_cdf_y
         = createCompute_normalize_cdf_y(rtc);
     }
-    
   }
 
+  EnvMapLight::~EnvMapLight()
+  {
+    std::cout << "#barney: ~EnvMapLight deconstructing" << std::endl;
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
+      PRINT(pld->cdf_y);
+      PRINT(pld->allCDFs_x);
+      if (pld->cdf_y)
+        rtc->freeBuffer(pld->cdf_y);
+      
+      if (pld->allCDFs_x)
+        rtc->freeBuffer(pld->allCDFs_x);
+    }
+  }
+
+  
   bool EnvMapLight::set1f(const std::string &member,
                           const float &value) 
   {

@@ -49,6 +49,7 @@ namespace BARNEY_NS {
     
     Sampler::~Sampler()
     {
+      std::cout << "#barney: ~Sampler deconstructing" << std::endl;
       samplerRegistry->release(samplerID);
     }
 
@@ -125,7 +126,15 @@ namespace BARNEY_NS {
     }
     
     TextureSampler::~TextureSampler()
-    {}
+    {
+      std::cout << "#barney: ~TextureSampler deconstructing" << std::endl;
+      for (auto device : *devices) {
+        PLD *pld = getPLD(device);
+        if (pld->rtcTexture)
+          device->rtc->freeTexture(pld->rtcTexture);
+        pld->rtcTexture = 0;
+      }
+    }
     
     bool TextureSampler::setObject(const std::string &member,
                                  const std::shared_ptr<Object> &value)

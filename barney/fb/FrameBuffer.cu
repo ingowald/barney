@@ -268,6 +268,7 @@ namespace BARNEY_NS {
                            vec2i size,
                            uint32_t channels)
   {
+    PING;
     this->channels = channels;
     this->colorChannelFormat = colorFormat;
 
@@ -291,6 +292,7 @@ namespace BARNEY_NS {
       if (denoiser)
         denoiser->resize(numPixels);
     }
+    PING;
   }
 
   FrameBuffer::PLD *FrameBuffer::getPLD(Device *device)

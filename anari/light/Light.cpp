@@ -12,6 +12,7 @@ Light::Light(BarneyGlobalState *s) : Object(ANARI_LIGHT, s) {}
 
 Light::~Light()
 {
+  std::cout << "#banari: ~Light deconstructing" << std::endl;
   if (m_bnLight)
     bnRelease(m_bnLight);
   m_bnLight = nullptr;
@@ -51,7 +52,8 @@ BNLight Light::getBarneyLight()
   int slot = deviceState()->slot;
   auto context = deviceState()->tether->context;
 
-  m_bnLight = bnLightCreate(context, slot, bnSubtype());
+  if (!m_bnLight)
+    m_bnLight = bnLightCreate(context, slot, bnSubtype());
   setBarneyParameters();
   return m_bnLight;
 }

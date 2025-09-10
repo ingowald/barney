@@ -26,9 +26,15 @@ namespace barney_device {
   struct World;
 
   struct BarneyDevice;
-
-  struct TetheredModel {
-    BNModel model;
+  struct Tether;
+  
+  struct TetheredModel : public std::enable_shared_from_this<TetheredModel> {
+    typedef std::shared_ptr<TetheredModel> SP;
+    TetheredModel(Tether *tether, int uniqueID);
+    ~TetheredModel();
+    BNModel model = 0;
+    Tether *const tether;
+    int     const uniqueID;
   };
 
   /*! keeps info on multiple (banari-)devices that are tethered
@@ -40,9 +46,8 @@ namespace barney_device {
 
     bool allDevicesPresent();
 
-    TetheredModel *getAndRefModel(int uniqueID);
-    void releaseModel(int uniqueID);
-    std::map<int,std::pair<int,std::shared_ptr<TetheredModel>>> activeModels;
+    TetheredModel::SP getOrCreateTetheredModel(int uniqueID);
+    std::map<int,TetheredModel*> activeModels;
     std::mutex mutex;
 
     int numRenderCallsOutstanding = 0;
