@@ -49,7 +49,8 @@ namespace BARNEY_NS {
     
     Sampler::~Sampler()
     {
-      std::cout << "#barney: ~Sampler deconstructing" << std::endl;
+      BN_TRACK_LEAKS(std::cout << "#barney: ~Sampler deconstructing"
+                     << std::endl);
       samplerRegistry->release(samplerID);
     }
 
@@ -127,7 +128,8 @@ namespace BARNEY_NS {
     
     TextureSampler::~TextureSampler()
     {
-      std::cout << "#barney: ~TextureSampler deconstructing" << std::endl;
+      BN_TRACK_LEAKS(std::cout << "#barney: ~TextureSampler deconstructing"
+                     << std::endl);
       for (auto device : *devices) {
         PLD *pld = getPLD(device);
         if (pld->rtcTexture)

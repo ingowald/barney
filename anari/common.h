@@ -10,6 +10,8 @@
 #include <iostream>
 #include <cassert>
 
+#define BANARI_TRACK_LEAKS(a) /* nothing */
+
 namespace barney_device {
 
 enum Attribute {

@@ -21,6 +21,8 @@
 #include <set>
 #include "barney/WorkerTopo.h"
 
+#define BN_TRACK_LEAKS(a) /* nothing */
+
 namespace BARNEY_NS {
   using namespace owl::common;
   using barney_api::FromEnv;

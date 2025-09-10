@@ -46,7 +46,12 @@ namespace BARNEY_NS {
 
   ModelSlot::~ModelSlot()
   {
-    PING;
+    for (auto device : *devices) {
+      auto pld = getPLD(device);
+      if (pld->instanceGroup) {
+        device->rtc->freeGroup(pld->instanceGroup);
+      }
+    }
   }
   
   void ModelSlot::setInstances(barney_api::Group **groups,

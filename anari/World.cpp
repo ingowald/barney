@@ -32,15 +32,9 @@ namespace barney_device {
 
   World::~World()
   {
-    // if (m_barneyModel) {
-    //   bnRelease(m_barneyModel);
-    //   m_barneyModel = 0;
-    // }
     auto *state = deviceState();
-    // if (state->currentWorld   == this)
-    //   state->currentWorld = nullptr;
-    std::cout << "# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
-    std::cout << "#banari: ~World deconstructing" << std::endl;
+    BANARI_TRACK_LEAKS(std::cout << "#banari: ~World deconstructing"
+                       << std::endl);
     tetheredModel = {};
   }
 

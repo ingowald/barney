@@ -267,9 +267,6 @@ namespace barney_device {
 #endif
       std::cout << "un-recognized feature '" << flag << "' on device subtype"
                 << std::endl;
-      // reportMessage(ANARI_SEVERITY_WARNING,
-      //               "un-recognized feature '%s' on device subtype",
-      //               flag.c_str());
     }
 
     m_state = std::make_unique<BarneyGlobalState>(this_device());
@@ -283,7 +280,8 @@ namespace barney_device {
 
   BarneyDevice::~BarneyDevice()
   {
-    std::cout << "#banari: ~BarneyDevice is deconstructing" << std::endl;
+    BANARI_TRACK_LEAKS(std::cout << "#banari: ~BarneyDevice is deconstructing"
+                       << std::endl);
     auto &state = *deviceState();
     state.commitBuffer.clear();
     reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);

@@ -31,9 +31,7 @@ namespace BARNEY_NS {
   }
 
   GlobalModel::~GlobalModel()
-  {
-    PING;
-  }
+  {}
 
   void (*profHook)() = nullptr;
   

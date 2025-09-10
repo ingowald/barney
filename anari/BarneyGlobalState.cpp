@@ -10,7 +10,8 @@ namespace barney_device {
 
   Tether::~Tether()
   {
-    std::cout << "#banari: tether destructing - releasing barney context" << std::endl;
+    BANARI_TRACK_LEAKS(std::cout << "#banari: tether destructing - "
+                       "releasing barney context" << std::endl);
     if (context) { bnContextDestroy(context); context = 0; }
   }
 
@@ -20,7 +21,8 @@ namespace barney_device {
 
   BarneyGlobalState::~BarneyGlobalState()
   {
-    std::cout << "#banari: barneyglobalstate destructing - releasing tether" << std::endl;
+    BANARI_TRACK_LEAKS(std::cout << "#banari: barneyglobalstate destructing"
+                       " - releasing tether" << std::endl);
   }
   
   void BarneyGlobalState::markSceneChanged()
@@ -39,11 +41,13 @@ namespace barney_device {
   {
     std::lock_guard<std::mutex> lock(mutex);
     if (activeModels.find(uniqueID) != activeModels.end()) {
-      std::cout << "#banari returning already created model " << uniqueID << std::endl;
+      BANARI_TRACK_LEAKS(std::cout << "#banari returning already created model "
+                         << uniqueID << std::endl);
       return activeModels[uniqueID]->shared_from_this();
     }
 
-    std::cout << "#banari creating new tethered model " << uniqueID << std::endl;
+    BANARI_TRACK_LEAKS(std::cout << "#banari creating new tethered model "
+                       << uniqueID << std::endl);
     TetheredModel::SP newModel = std::make_shared<TetheredModel>(this,uniqueID);
     return newModel;
   }
@@ -52,9 +56,11 @@ namespace barney_device {
     : tether(tether),
       uniqueID(uniqueID)
   {
-    std::cout << "#banari: creating new tetherd model ID " << uniqueID << std::endl;
+    BANARI_TRACK_LEAKS(std::cout << "#banari: creating new tetherd model ID "
+                       << uniqueID << std::endl);
     model = bnModelCreate(tether->context);
-    std::cout << "#banari: created new barney model " << (int*)model << std::endl;
+    BANARI_TRACK_LEAKS(std::cout << "#banari: created new barney model "
+                       << (int*)model << std::endl);
     
     // iw do NOT try to lock tether, it's already locked when it creates us!
     tether->activeModels[uniqueID] = this;
@@ -62,13 +68,13 @@ namespace barney_device {
   
   TetheredModel::~TetheredModel()
   {
-    std::cout << "#banari: tethered model is dying" << std::endl;
+    BANARI_TRACK_LEAKS(std::cout << "#banari: tethered model is dying" << std::endl);
     std::lock_guard<std::mutex> lock(tether->mutex);
     tether->activeModels.erase(tether->activeModels.find(uniqueID));
     
     if (model) {
-      std::cout << "#banari: releasing barney model handle ID "
-                << uniqueID << std::endl;
+      BANARI_TRACK_LEAKS(std::cout << "#banari: releasing barney model handle ID "
+                         << uniqueID << std::endl);
       bnRelease(model);
     }
   }

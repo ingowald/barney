@@ -27,10 +27,11 @@ static void addAttribute(BNGeom geom,
 
 // Base Geometry definitions //////////////////////////////////////////////////
 
-Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
+  Geometry::Geometry(BarneyGlobalState *s) : Object(ANARI_GEOMETRY, s) {}
 
-  Geometry::~Geometry() {
-    std::cout << "#banari::Geometry is dying" << std::endl;
+  Geometry::~Geometry()
+  {
+    BANARI_TRACK_LEAKS(std::cout << "#banari::Geometry is dying" << std::endl);
   }
 
 Geometry *Geometry::createInstance(

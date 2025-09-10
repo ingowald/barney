@@ -12,7 +12,8 @@ Light::Light(BarneyGlobalState *s) : Object(ANARI_LIGHT, s) {}
 
 Light::~Light()
 {
-  std::cout << "#banari: ~Light deconstructing" << std::endl;
+  BANARI_TRACK_LEAKS(std::cout << "#banari: ~Light deconstructing"
+                     << std::endl);
   if (m_bnLight)
     bnRelease(m_bnLight);
   m_bnLight = nullptr;

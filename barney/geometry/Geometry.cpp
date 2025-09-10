@@ -77,7 +77,8 @@ namespace BARNEY_NS {
   
   Geometry::~Geometry()
   {
-    std::cout << "#barney: ~Geometry deconstructing" << std::endl;
+    BN_TRACK_LEAKS(std::cout << "#barney: ~Geometry deconstructing"
+                   << std::endl);
     material = {};
     for (auto device : *devices) {
       PLD *pld = getPLD(device);

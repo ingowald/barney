@@ -75,7 +75,6 @@ namespace BARNEY_NS {
 
   Device::~Device()
   {
-    std::cout << "#barney: device is deconstructing, releasing rtc" << std::endl;
     delete rtc;
   }
 

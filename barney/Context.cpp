@@ -121,7 +121,6 @@ namespace BARNEY_NS {
   
   Context::~Context()
   {
-    PING;
     hostOwnedHandles.clear();
 
     perSlot.clear();
