@@ -151,7 +151,8 @@ namespace BARNEY_NS {
     /*! get cuda-usable device-data for given device ID (relative to
       devices in the devgroup that this gris is in */
     DD getDD(Device *device);
-    
+
+    vec3i dims { 0, 0, 0 };
     MCGrid::SP const mcGrid;
     const DevGroup::SP devices;
   };

@@ -27,10 +27,6 @@ namespace BARNEY_NS {
   RTC_IMPORT_USER_GEOM(/*file*/StructuredData,/*name*/StructuredMC_Iso,
                        /*geomtype device data */
                        MCIsoSurfaceAccel<StructuredDataSampler>::DD,false,false);
-  // RTC_IMPORT_COMPUTE3D(StructuredData_computeMCs);
-
-  // StructuredData::PLD *StructuredData::getPLD(Device *device) 
-  // { return &perLogical[device->contextRank()]; } 
 
   /*! how many cells (in each dimension) will go into a macro
       cell. eg, a value of 8 will mean that eachmacrocell covers 8x8x8
@@ -39,46 +35,6 @@ namespace BARNEY_NS {
       right/back/top one will only have 7x7x7 of its 8x8x8 covered by
       actual cells */
   enum { cellsPerMC = 8 };
-
-//   /*! compute kernel that computes macro-cell information for a 3D
-//       structured data grid */
-//   struct StructuredData_ComputeMCs {
-// #if RTC_DEVICE_CODE
-//     /* kernel CODE */
-//     inline __rtc_device void run(const rtc::ComputeInterface &rtCore)
-//     {
-//       vec3i mcID
-//         = vec3i(rtCore.getThreadIdx())
-//         + vec3i(rtCore.getBlockIdx())
-//         * vec3i(rtCore.getBlockDim());
-//       if (mcID.x >= mcGrid.dims.x) return;
-//       if (mcID.y >= mcGrid.dims.y) return;
-//       if (mcID.z >= mcGrid.dims.z) return;
-        
-//       range1f scalarRange;
-//       for (int iiz=0;iiz<=cellsPerMC;iiz++)
-//         for (int iiy=0;iiy<=cellsPerMC;iiy++)
-//           for (int iix=0;iix<=cellsPerMC;iix++) {
-//             vec3i scalarID = mcID*int(cellsPerMC) + vec3i(iix,iiy,iiz);
-//             if (scalarID.x >= numScalars.x) continue;
-//             if (scalarID.y >= numScalars.y) continue;
-//             if (scalarID.z >= numScalars.z) continue;
-//             float f = rtc::tex3D<float>(scalars,
-//                                    (float)scalarID.x,
-//                                    (float)scalarID.y,
-//                                    (float)scalarID.z);
-//             scalarRange.extend(f);
-//           }
-//       int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
-//       mcGrid.scalarRanges[mcIdx] = scalarRange;
-//     }
-// #endif      
-//     /* kernel ARGS */
-//     MCGrid::DD mcGrid;
-//     vec3i numScalars;
-//     rtc::TextureObject scalars;
-//   };
-
 
   /*! compute kernel that computes macro-cell information for a 3D
       structured data grid */
@@ -118,40 +74,22 @@ namespace BARNEY_NS {
   StructuredData::StructuredData(Context *context,
                                  const DevGroup::SP &devices)
     : ScalarField(context,devices)
-  {
-    // perLogical.resize(devices->numLogical);
-    // if (mcID.x >= mcGrid.dims.x) return;
-    // if (mcID.y >= mcGrid.dims.y) return;
-    // if (mcID.z >= mcGrid.dims.z) return;
-    
-    // for (auto device : *devices)
-    //   getPLD(device)->computeMCs
-    //     = createCompute_StructuredData_computeMCs(device->rtc);
-  }
+  {}
 
 
   MCGrid::SP StructuredData::buildMCs() 
   {
-    PING;
     MCGrid::SP mcGrid = std::make_shared<MCGrid>(devices);
     vec3i mcDims = divRoundUp(numCells,vec3i(cellsPerMC));
-    PRINT(mcDims);
     mcGrid->resize(mcDims);
-    // vec3ui blockSize(4);
-    // vec3ui numBlocks = divRoundUp(vec3ui(mcDims),blockSize);
     mcGrid->gridOrigin = worldBounds.lower;
     mcGrid->gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
     for (auto device : *devices) {
-      // PLD *pld = getPLD(device);
-      // StructuredData_ComputeMCs args = {
-      //   mcGrid->getDD(device),
-      //   numScalars,
-      //   textureNN->getDD(device)
-      // };
-      // pld->computeMCs->launch(numBlocks,blockSize,
-      //                         &args);
-      int lc = mcDims.x*mcDims.y*mcDims.z;
-      PRINT(lc);
+      size_t lc64 = (size_t)mcDims.x*(size_t)mcDims.y*(size_t)mcDims.z;
+      int lc = (int)lc64;
+      if (lc != lc64)
+        throw std::runtime_error("number of macrocells cannot be expressed in a 32-bit value");
+      
       int bs = 128;
       int nb = divRoundUp(lc,bs);
       __rtc_launch(device->rtc,
@@ -161,10 +99,8 @@ namespace BARNEY_NS {
                    numScalars,
                    textureNN->getDD(device));
     }
-    PING;
     for (auto device : *devices)
       device->sync();
-    PING;
     return mcGrid;
   }
   
@@ -172,9 +108,10 @@ namespace BARNEY_NS {
   {
     DD dd;
     dd.texObj = sf->texture->getDD(device);
-    dd.cellGridOrigin = sf->gridOrigin;
+    assert(dd.texObj);
+    dd.cellGridOrigin  = sf->gridOrigin;
     dd.cellGridSpacing = sf->gridSpacing;
-    dd.numCells = sf->numCells;
+    dd.numCells        = sf->numCells;
     return dd;
   }
   
@@ -250,10 +187,7 @@ namespace BARNEY_NS {
   {
     worldBounds.lower = gridOrigin;
     worldBounds.upper = gridOrigin + gridSpacing * vec3f(numCells);
-    PRINT(numCells);
-    PRINT(worldBounds);
   }
   
-  // RTC_EXPORT_COMPUTE3D(StructuredData_computeMCs,StructuredData_ComputeMCs);
 }
 

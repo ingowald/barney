@@ -24,8 +24,6 @@ namespace BARNEY_NS {
   struct TransferFunction : public SlottedObject {
     struct DD {
 
-      // static void addVars(std::vector<OWLVarDecl> &vars, int base);
-      
       /*! maps given scalar through this trnasfer function, and
         returns /opacity-times-density value for that scalar. scalars
         outside the specified domain get mapped to the boundary
@@ -56,8 +54,6 @@ namespace BARNEY_NS {
     void set(const range1f &domain,
              const std::vector<vec4f> &values,
              float baseDensity);
-    // std::vector<OWLVarDecl> getVarDecls(uint32_t myOffset);
-    // void setVariables(OWLGeom geom) const;
 
     struct PLD {
       rtc::Buffer        *valuesBuffer = 0;

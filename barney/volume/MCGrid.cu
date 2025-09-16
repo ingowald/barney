@@ -18,8 +18,6 @@
 #include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
-  // RTC_IMPORT_COMPUTE3D(clearMCs)
-  // RTC_IMPORT_COMPUTE3D(mapMCs)
 
   MajorantsGrid::MajorantsGrid(MCGrid::SP mcGrid)
     : mcGrid(mcGrid),
@@ -62,11 +60,11 @@ namespace BARNEY_NS {
   /*! re-set all cells' ranges to "infinite empty" */
   void MCGrid::clearCells()
   {
-    int numCells = dims.x*dims.y*dims.z;
-    int bs = 128;
-    int nb = divRoundUp(numCells,bs);
-    // const vec3ui bs = 4;
-    // const vec3ui nb = divRoundUp(vec3ui(dims),bs);
+    size_t numCells = owl::common::volume(dims);
+    const int bs = 1024;
+    // cuda num blocks
+    const int nb = (int)divRoundUp(numCells,(size_t)bs);
+    
     for (auto device : *devices) {
       auto d_grid = getDD(device);
       __rtc_launch(device->rtc,
@@ -87,11 +85,8 @@ namespace BARNEY_NS {
     int ix = ci.getThreadIdx().x
       +ci.getBlockIdx().x*ci.getBlockDim().x;
     if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
-    
     range1f scalarRange = grid.scalarRanges[ix];
-    
     const float maj = xf.majorant(scalarRange);
-    
     grid.majorants[ix] = maj;
   }
   
@@ -99,17 +94,24 @@ namespace BARNEY_NS {
     cell's value range through the given transfer function */
   void MajorantsGrid::computeMajorants(TransferFunction *xf)
   {
-#ifndef NDEBUG
-    std::cout << "-------------------------" << std::endl;
-    std::cout << "(re-)computing majorants!" << std::endl;
-    std::cout << "-------------------------" << std::endl;
-#endif
+// #ifndef NDEBUG
+//     std::cout << "-------------------------" << std::endl;
+//     std::cout << "(re-)computing majorants!" << std::endl;
+//     std::cout << "-------------------------" << std::endl;
+// #endif
+    if (dims != mcGrid->dims)
+      resize(mcGrid->dims); 
     assert(xf);
     auto dims = mcGrid->dims;
-    int numCells = dims.x*dims.y*dims.z;
-    const int bs = 128;
+    assert(dims.x > 0);
+    assert(dims.y > 0);
+    assert(dims.z > 0);
+    size_t numCells = owl::common::volume(dims);
+    const int bs = 1024;
     // cuda num blocks
-    const int nb = divRoundUp(numCells,bs);
+    const int nb = (int)divRoundUp(numCells,(size_t)bs);
+    for (auto device : *devices) 
+      device->sync();
     
     for (auto device : *devices) {
       auto d_xf = xf->getDD(device);
@@ -126,10 +128,13 @@ namespace BARNEY_NS {
   /*! allocate memory for the given grid */
   void MajorantsGrid::resize(vec3i dims)
   {
-    mcGrid->resize(dims);
     assert(dims.x > 0);
     assert(dims.y > 0);
     assert(dims.z > 0);
+    if (dims == this->dims)
+      return;
+    mcGrid->resize(dims);
+    this->dims = dims;
     size_t numCells = owl::common::volume(dims);
     
     for (auto device : *devices) {
@@ -148,6 +153,11 @@ namespace BARNEY_NS {
   /*! allocate memory for the given grid */
   void MCGrid::resize(vec3i dims)
   {
+    assert(dims.x > 0);
+    assert(dims.y > 0);
+    assert(dims.z > 0);
+    if (dims == this->dims)
+      return;
     this->dims = dims;
     size_t numCells = owl::common::volume(dims);
     for (auto device : *devices) {

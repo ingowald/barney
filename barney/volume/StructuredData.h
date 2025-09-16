@@ -73,14 +73,7 @@ namespace BARNEY_NS {
     TextureData::SP scalars;
     Texture::SP  texture;
     Texture::SP  textureNN;
-    // Texture3D::SP  colorMapTexture;
 
-    // struct PLD {
-    //   // rtc::ComputeKernel3D *computeMCs = 0;
-    // };
-    // PLD *getPLD(Device *device);
-    // std::vector<PLD> perLogical;
-    
     BNDataType scalarType = BN_DATA_UNDEFINED;
     vec3i numScalars  { 0,0,0 };
     vec3i numCells    { 0,0,0 }; 
@@ -88,7 +81,7 @@ namespace BARNEY_NS {
     vec3f gridSpacing { 1,1,1 };
   };
 
-  /*! sampler object for a StructreData object, using a 3d texture */
+  /*! sampler object for a StructuredData object, using a 3d texture */
   struct StructuredDataSampler : public ScalarFieldSampler {
     StructuredDataSampler(StructuredData *const sf)
       : sf(sf)
