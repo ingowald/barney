@@ -11,7 +11,7 @@
 // std
 #include <cstring>
 
-#include "BarneyDeviceQueries.h"
+#include "generated/anari_library_barney_queries.h"
 
 namespace barney_device {
 
@@ -267,9 +267,6 @@ namespace barney_device {
 #endif
       std::cout << "un-recognized feature '" << flag << "' on device subtype"
                 << std::endl;
-      // reportMessage(ANARI_SEVERITY_WARNING,
-      //               "un-recognized feature '%s' on device subtype",
-      //               flag.c_str());
     }
 
     m_state = std::make_unique<BarneyGlobalState>(this_device());
@@ -283,6 +280,8 @@ namespace barney_device {
 
   BarneyDevice::~BarneyDevice()
   {
+    BANARI_TRACK_LEAKS(std::cout << "#banari: ~BarneyDevice is deconstructing"
+                       << std::endl);
     auto &state = *deviceState();
     state.commitBuffer.clear();
     reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
@@ -327,13 +326,12 @@ namespace barney_device {
       }
 
       std::vector<int> dgIDs;
-      if (state->tether->devices[0]->m_dataGroupID >= 0) {
-        for (auto dev : state->tether->devices) {
-          assert(dev->m_dataGroupID >= 0);
-          dgIDs.push_back(dev->m_dataGroupID);
-        }
-      } else {
-        dgIDs = { rank };
+      for (auto dev : state->tether->devices) {
+        int dgID = dev->m_dataGroupID;
+        if (dgID == -1)
+          // not set by user, use default of different data group ID per device
+          dgID = rank * state->tether->devices.size() + dev->tetherIndex;
+        dgIDs.push_back(dgID);
       }
       int *_dgIDs   = dgIDs.data();
       int  _dgCount = (int)dgIDs.size();
@@ -352,19 +350,20 @@ namespace barney_device {
         state->tether->context
           = bnContextCreate(_dgIDs,_dgCount,
                             _gpuIDs,_gpuCount);
-
-      std::stringstream ss;
-      ss << "#banari rank " << rank << " (of " << size
-         << ") creating context GPUs=(";
-      for (auto gpu : gpuIDs)
-        ss << " " << gpu;
-      ss << " ) and data groups=(";
-      for (auto dg : dgIDs)
-        ss << " " << dg;
-      ss << " )";
-
-      std::cout << ss.str() << std::endl;
-      reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
+      if (size > 1) {
+        std::stringstream ss;
+        ss << "#banari rank " << rank << " (of " << size
+           << ") creating context GPUs=(";
+        for (auto gpu : gpuIDs)
+          ss << " " << gpu;
+        ss << " ) and data groups=(";
+        for (auto dg : dgIDs)
+          ss << " " << dg;
+        ss << " )";
+        
+        std::cout << ss.str() << std::endl;
+        reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
+      }
       m_initialized = true;
     } catch (const std::exception &err) {
       std::cerr

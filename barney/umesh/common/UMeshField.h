@@ -139,7 +139,7 @@ namespace BARNEY_NS {
     
     DD getDD(Device *device);
 
-    void buildMCs(MCGrid &macroCells) override;
+    MCGrid::SP buildMCs() override;
 
     VolumeAccel::SP createAccel(Volume *volume) override;
 

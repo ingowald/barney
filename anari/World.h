@@ -38,7 +38,8 @@ namespace barney_device {
     std::vector<Instance *> m_instances;
 
     // BNModel m_barneyModel{nullptr};
-    int uniqueID = -1;
+    // int uniqueID = -1;
+    TetheredModel::SP tetheredModel;
 
     BNData m_attributesData[Instance::Attributes::count] = {0,0,0,0,0};
     helium::TimeStamp m_lastBarneyModelBuild{0};

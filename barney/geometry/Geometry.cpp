@@ -23,6 +23,7 @@
 #include "barney/geometry/Cones.h"
 #include "barney/geometry/Cylinders.h"
 #include "barney/geometry/Capsules.h"
+#include "barney/geometry/IsoSurface.h"
 
 namespace BARNEY_NS {
 
@@ -40,6 +41,8 @@ namespace BARNEY_NS {
   {
     if (type == "spheres")
       return std::make_shared<Spheres>(context,devices);
+    if (type == "iso_surface")
+      return std::make_shared<IsoSurface>(context,devices);
     if (type == "cones")
       return std::make_shared<Cones>(context,devices);
     if (type == "cylinders")
@@ -74,6 +77,9 @@ namespace BARNEY_NS {
   
   Geometry::~Geometry()
   {
+    BN_TRACK_LEAKS(std::cout << "#barney: ~Geometry deconstructing"
+                   << std::endl);
+    material = {};
     for (auto device : *devices) {
       PLD *pld = getPLD(device);
       for (auto &geom : pld->triangleGeoms)

@@ -52,7 +52,7 @@ namespace BARNEY_NS {
         int islandID = useCountOfDG[dev.dataRank]++;
         islandOf[gid] = islandID;
         if (islands.size() <= islandID) islands.resize(islandID+1);
-        islandRankOf[gid] = islands[islandID].size();
+        islandRankOf[gid] = (int)islands[islandID].size();
         islands[islandID].push_back(gid);
       }
       rankOnHost[gid] = nextProcessOnHost[dev.hostNameHash]++;
@@ -66,7 +66,7 @@ namespace BARNEY_NS {
       
       if (knownGpusInHost[dev.hostNameHash].find(dev.physicalDeviceHash) == 
           knownGpusInHost[dev.hostNameHash].end()) {
-        int newID = knownGpusInHost[dev.hostNameHash].size();
+        int newID = (int)knownGpusInHost[dev.hostNameHash].size();
         knownGpusInHost[dev.hostNameHash][dev.physicalDeviceHash] = newID;
       }
       physicalGpuIndexOf[gid]
@@ -134,7 +134,7 @@ namespace BARNEY_NS {
   }
   
   int WorkerTopo::islandSize() const
-  { return islands[0].size(); }
+  { return (int)islands[0].size(); }
   
   /*! finds ID of device that lived on diven worker:local */
   int WorkerTopo::find(int worker, int local)

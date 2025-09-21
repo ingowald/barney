@@ -18,9 +18,21 @@
 #include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
-  RTC_IMPORT_COMPUTE3D(clearMCs)
-  RTC_IMPORT_COMPUTE3D(mapMCs)
 
+  MajorantsGrid::MajorantsGrid(MCGrid::SP mcGrid)
+    : mcGrid(mcGrid),
+      devices(mcGrid->devices)
+  {
+    perLogical.resize(devices->numLogical);
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
+      SetActiveGPU forDuration(device);
+      
+      pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
+    }
+  }
+  
   MCGrid::MCGrid(const DevGroup::SP &devices)
     : devices(devices)
   {
@@ -31,132 +43,97 @@ namespace BARNEY_NS {
       SetActiveGPU forDuration(device);
       
       pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
-      pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
-
-      pld->mapMCs
-        = createCompute_mapMCs(device->rtc);
-      pld->clearMCs
-        = createCompute_clearMCs(device->rtc);
     }
   }
 
-  struct ClearMCs {
-    /* kernel ARGS */
-    MCGrid::DD grid;
-
-#if RTC_DEVICE_CODE
-    /* kernel CODE */
-    inline __rtc_device
-    void run(const rtc::ComputeInterface &rtCore)
-    {
-      int ix = rtCore.getThreadIdx().x
-        +rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
-      if (ix >= grid.dims.x) return;
-      
-      int iy = rtCore.getThreadIdx().y
-        +rtCore.getBlockIdx().y*rtCore.getBlockDim().y;
-      if (iy >= grid.dims.y) return;
-      
-      int iz = rtCore.getThreadIdx().z
-        +rtCore.getBlockIdx().z*rtCore.getBlockDim().z;
-      if (iz >= grid.dims.z) return;
-      
-      
-      int ii = ix + grid.dims.x*(iy + grid.dims.y*(iz));
-      grid.scalarRanges[ii] = { +BARNEY_INF, -BARNEY_INF };
-    }
-#endif
-  };
+  /* kernel CODE */
+  __rtc_global
+  void clearMCs(const rtc::ComputeInterface &ci, MCGrid::DD grid)
+  {
+    int ix = ci.getThreadIdx().x
+      +ci.getBlockIdx().x*ci.getBlockDim().x;
+    if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
+    
+    grid.scalarRanges[ix] = { +BARNEY_INF, -BARNEY_INF };
+  }
   
   /*! re-set all cells' ranges to "infinite empty" */
   void MCGrid::clearCells()
   {
-    const vec3ui bs = 4;
-    const vec3ui nb = divRoundUp(vec3ui(dims),bs);
+    size_t numCells = owl::common::volume(dims);
+    const int bs = 1024;
+    // cuda num blocks
+    const int nb = (int)divRoundUp(numCells,(size_t)bs);
+    
     for (auto device : *devices) {
       auto d_grid = getDD(device);
-      ClearMCs args = { d_grid };
-      getPLD(device)->clearMCs->launch(nb,bs,&args);
+      __rtc_launch(device->rtc,
+                   clearMCs,
+                   nb,bs,
+                   d_grid);
     }
     for (auto device : *devices) 
       device->sync();
   }
   
-  /*! assuming the min/max of the raw data values are already set in a
-    macrocell, this updates the *mapped* min/amx values from a given
-    transfer function */
-  struct MapMCs {
-    /* kernel ARGS */
-    MCGrid::DD grid;
-    TransferFunction::DD xf;
     
-#if RTC_DEVICE_CODE                            
-    /* kernel CODE */
-    inline __rtc_device
-    void run(const rtc::ComputeInterface &rtCore)
-    {
-      int ix = rtCore.getThreadIdx().x
-        +rtCore.getBlockIdx().x*rtCore.getBlockDim().x;
-      if (ix >= grid.dims.x) return;
-      
-      int iy = rtCore.getThreadIdx().y
-        +rtCore.getBlockIdx().y*rtCore.getBlockDim().y;
-      if (iy >= grid.dims.y) return;
-      
-      int iz = rtCore.getThreadIdx().z
-        +rtCore.getBlockIdx().z*rtCore.getBlockDim().z;
-      if (iz >= grid.dims.z) return;
-      
-      vec3i mcID(ix,iy,iz);
-      
-      int mcIdx = mcID.x + grid.dims.x*(mcID.y + grid.dims.y*mcID.z);
-      range1f scalarRange = grid.scalarRanges[mcIdx];
-
-      const float maj = xf.majorant(scalarRange);
-
-      // if (mcIdx % 1235 == 0 || mcID == vec3i(125,123,4)) {
-      //   printf("cell %i %i %i dims %i %i %i: %f,%f ->%f\n",
-      //          ix,iy,iz,grid.dims.x,grid.dims.y,grid.dims.z,scalarRange.lower,scalarRange.upper,maj);
-      // }
-
-      grid.majorants[mcIdx] = maj;
-    }
-#endif
-  };
+  __rtc_global
+  void mapMCs(const rtc::ComputeInterface &ci,
+              MajorantsGrid::DD grid,
+              TransferFunction::DD xf)
+  {
+    int ix = ci.getThreadIdx().x
+      +ci.getBlockIdx().x*ci.getBlockDim().x;
+    if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
+    range1f scalarRange = grid.scalarRanges[ix];
+    const float maj = xf.majorant(scalarRange);
+    grid.majorants[ix] = maj;
+  }
   
   /*! recompute all macro cells' majorant value by remap each such
     cell's value range through the given transfer function */
-  void MCGrid::computeMajorants(TransferFunction *xf)
+  void MajorantsGrid::computeMajorants(TransferFunction *xf)
   {
-#ifndef NDEBUG
-    std::cout << "-------------------------" << std::endl;
-    std::cout << "(re-)computing majorants!" << std::endl;
-    std::cout << "-------------------------" << std::endl;
-#endif
+// #ifndef NDEBUG
+//     std::cout << "-------------------------" << std::endl;
+//     std::cout << "(re-)computing majorants!" << std::endl;
+//     std::cout << "-------------------------" << std::endl;
+// #endif
+    if (dims != mcGrid->dims)
+      resize(mcGrid->dims); 
     assert(xf);
+    auto dims = mcGrid->dims;
     assert(dims.x > 0);
     assert(dims.y > 0);
     assert(dims.z > 0);
-    const vec3ui bs = 4;
+    size_t numCells = owl::common::volume(dims);
+    const int bs = 1024;
     // cuda num blocks
-    const vec3ui nb = divRoundUp(vec3ui(dims),bs);
+    const int nb = (int)divRoundUp(numCells,(size_t)bs);
+    for (auto device : *devices) 
+      device->sync();
     
     for (auto device : *devices) {
       auto d_xf = xf->getDD(device);
       auto dd = getDD(device);
-      MapMCs args = { dd,d_xf };
-      getPLD(device)->mapMCs->launch(nb,bs,&args);
+      __rtc_launch(device->rtc,
+                   mapMCs,
+                   nb,bs,
+                   dd,d_xf);
     }
     for (auto device : *devices) 
       device->sync();
   }
   
   /*! allocate memory for the given grid */
-  void MCGrid::resize(vec3i dims)
+  void MajorantsGrid::resize(vec3i dims)
   {
     assert(dims.x > 0);
     assert(dims.y > 0);
     assert(dims.z > 0);
+    if (dims == this->dims)
+      return;
+    mcGrid->resize(dims);
     this->dims = dims;
     size_t numCells = owl::common::volume(dims);
     
@@ -165,10 +142,29 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
       rtc->freeBuffer(pld->majorantsBuffer);
-      rtc->freeBuffer(pld->scalarRangesBuffer);
       
       pld->majorantsBuffer
         = rtc->createBuffer(sizeof(float)*numCells);
+    }
+    for (auto device : *devices) 
+      device->sync();
+  }
+
+  /*! allocate memory for the given grid */
+  void MCGrid::resize(vec3i dims)
+  {
+    assert(dims.x > 0);
+    assert(dims.y > 0);
+    assert(dims.z > 0);
+    if (dims == this->dims)
+      return;
+    this->dims = dims;
+    size_t numCells = owl::common::volume(dims);
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
+      rtc->freeBuffer(pld->scalarRangesBuffer);
       pld->scalarRangesBuffer
         = rtc->createBuffer(sizeof(range1f)*numCells);
     }
@@ -184,8 +180,6 @@ namespace BARNEY_NS {
     
     MCGrid::DD dd;
     
-    dd.majorants
-      = (float *)pld->majorantsBuffer->getDD();
     dd.scalarRanges
       = (range1f*)pld->scalarRangesBuffer->getDD();
 
@@ -194,9 +188,21 @@ namespace BARNEY_NS {
     dd.gridSpacing = gridSpacing;
     return dd;
   }
+
+  /*! get cuda-usable device-data for given device ID (relative to
+    devices in the devgroup that this gris is in */
+  MajorantsGrid::DD MajorantsGrid::getDD(Device *device) 
+  {
+    MajorantsGrid::DD dd;
+
+    (MCGrid::DD&)dd = mcGrid->getDD(device);
+    
+    PLD *pld = getPLD(device);
+    dd.majorants
+      = (float *)pld->majorantsBuffer->getDD();
+    return dd;
+  }
   
-  RTC_EXPORT_COMPUTE3D(clearMCs,ClearMCs);
-  RTC_EXPORT_COMPUTE3D(mapMCs,MapMCs);
 } // ::barney
 
 

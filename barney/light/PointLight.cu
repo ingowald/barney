@@ -21,7 +21,7 @@ namespace BARNEY_NS {
   PointLight::DD PointLight::getDD(const affine3f &instanceXfm) const
   {
     DD dd;
-    dd.position  = xfmVector(instanceXfm,position);
+    dd.position  = xfmPoint(instanceXfm,position);
     dd.power     = power;
     dd.intensity = intensity;
     dd.color     = color;

@@ -210,7 +210,7 @@ void UnstructuredField::finalize()
   auto *cellData =
       m_params.cellData ? m_params.cellData->beginAs<float>() : nullptr;
   int numScalars =
-      cellData ? m_params.cellData->size() : m_params.vertexData->size();
+    int(cellData ? m_params.cellData->size() : m_params.vertexData->size());
 
   for (int i = 0; i < numVertices; i++)
     m_bounds.insert(vertexPositions[i]);
@@ -401,7 +401,7 @@ void BlockStructuredField::finalize()
   std::exclusive_scan(m_generatedBlockOffsets.begin(),
                       m_generatedBlockOffsets.end(),
                       m_generatedBlockOffsets.begin(),
-                      0);
+                      (uint64_t)0);
 
   //=======================================================
   // get (or create) and populate bn field

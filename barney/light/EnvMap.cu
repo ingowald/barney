@@ -192,7 +192,6 @@ namespace BARNEY_NS {
 
   void EnvMapLight::computeCDFs()
   {
-    // std::cout << "#bn: computing env-map CDFs" << std::endl;
     assert(texture);
     dims = texture->getDims();
     
@@ -271,9 +270,24 @@ namespace BARNEY_NS {
       pld->normalize_cdf_y
         = createCompute_normalize_cdf_y(rtc);
     }
-    
   }
 
+  EnvMapLight::~EnvMapLight()
+  {
+    BN_TRACK_LEAKS(std::cout << "#barney: ~EnvMapLight deconstructing"
+                   << std::endl);
+    for (auto device : *devices) {
+      PLD *pld = getPLD(device);
+      auto rtc = device->rtc;
+      if (pld->cdf_y)
+        rtc->freeBuffer(pld->cdf_y);
+      
+      if (pld->allCDFs_x)
+        rtc->freeBuffer(pld->allCDFs_x);
+    }
+  }
+
+  
   bool EnvMapLight::set1f(const std::string &member,
                           const float &value) 
   {

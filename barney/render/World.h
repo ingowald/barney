@@ -17,12 +17,10 @@
 #pragma once
 
 #include "barney/DeviceGroup.h"
-// #include "barney/material/Globals.h"
-// #include "barney/render/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
-// #include "barney/material/DeviceMaterial.h"
 #include "barney/light/EnvMap.h"
 #include "barney/light/DirLight.h"
+#include "barney/light/PointLight.h"
 #include "barney/light/QuadLight.h"
 
 namespace BARNEY_NS {
@@ -44,6 +42,8 @@ namespace BARNEY_NS {
         const QuadLight::DD *quadLights    = nullptr;
         int                  numDirLights  = 0;
         const DirLight::DD  *dirLights     = nullptr;
+        int                  numPointLights  = 0;
+        const PointLight::DD  *pointLights     = nullptr;
         int                 *instIDToUserInstID = 0;
         
         const DeviceMaterial *materials;
@@ -63,6 +63,7 @@ namespace BARNEY_NS {
 
       void set(const std::vector<QuadLight::DD> &quadLights);
       void set(const std::vector<DirLight::DD> &dirLights);
+      void set(const std::vector<PointLight::DD> &pointLights);
       void set(EnvMapLight::SP envMapLight, const affine3f &xfm);
       
       PODData::SP instanceAttributes[5];
@@ -76,6 +77,8 @@ namespace BARNEY_NS {
         int numQuadLights = 0;
         DirLight::DD *dirLights = 0;
         int numDirLights = 0;
+        PointLight::DD *pointLights = 0;
+        int numPointLights = 0;
       };
       PLD *getPLD(Device *device);
       

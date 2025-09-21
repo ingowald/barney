@@ -37,7 +37,7 @@ namespace BARNEY_NS {
 
   /*! projects a given position into a grid defined by world-space
       'bounds' and dimensions 'dims', and return the cell that this
-      world-sapce point projects to */
+      world-space point projects to */
   inline __rtc_device
   vec3i project(const vec3f &pos,
                 const box3f &bounds,
@@ -94,10 +94,10 @@ namespace BARNEY_NS {
     for (int iz=lo.z;iz<=hi.z;iz++)
       for (int iy=lo.y;iy<=hi.y;iy++)
         for (int ix=lo.x;ix<=hi.x;ix++) {
-          const int cellID
+          const size_t cellID
             = ix
-            + iy * grid.dims.x
-            + iz * grid.dims.x * grid.dims.y;
+            + iy * (size_t)grid.dims.x
+            + iz * (size_t)grid.dims.x * (size_t)grid.dims.y;
           auto &cell = grid.scalarRanges[cellID];
           rtc::fatomicMin(&cell.lower,primBounds4.lower.w);
           rtc::fatomicMax(&cell.upper,primBounds4.upper.w);
@@ -123,10 +123,10 @@ namespace BARNEY_NS {
     for (int iz=lo.z;iz<=hi.z;iz++)
       for (int iy=lo.y;iy<=hi.y;iy++)
         for (int ix=lo.x;ix<=hi.x;ix++) {
-          const int cellID
+          const size_t cellID
             = ix
-            + iy * grid.dims.x
-            + iz * grid.dims.x * grid.dims.y;
+            + iy * (size_t)grid.dims.x
+            + iz * (size_t)grid.dims.x * (size_t)grid.dims.y;
           auto &cell = grid.scalarRanges[cellID];
           rtc::fatomicMin(&cell.lower,primBounds4.lower.w);
           rtc::fatomicMax(&cell.upper,primBounds4.upper.w);

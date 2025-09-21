@@ -35,6 +35,11 @@
 namespace BARNEY_NS {
 
   size_t getHostNameHash();
+
+  MPIContext::~MPIContext()
+  {
+    PING;
+  }
   
   WorkerTopo::SP
   MPIContext::makeTopo(const barney_api::mpi::Comm &worldComm,

@@ -86,6 +86,8 @@ namespace BARNEY_NS {
 
     HostMaterial::~HostMaterial()
     {
+      BN_TRACK_LEAKS(std::cout << "#barney: ~HostMaterial deconstructing"
+                     << std::endl);
       materialRegistry->release(materialID);
     }
     

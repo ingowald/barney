@@ -49,7 +49,7 @@ namespace barney_api {
       if (FromEnv::get()->logBackend)
         std::cout << "#bn: creating *optix* context" << std::endl;
       // std::vector<int> gpuIDs;
-      int numDGs = dgIDs.size();
+      int numDGs = (int)dgIDs.size();
       if (numGPUs == -1) {
         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
       }

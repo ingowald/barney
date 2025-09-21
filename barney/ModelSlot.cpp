@@ -45,7 +45,14 @@ namespace BARNEY_NS {
   }
 
   ModelSlot::~ModelSlot()
-  {}
+  {
+    for (auto device : *devices) {
+      auto pld = getPLD(device);
+      if (pld->instanceGroup) {
+        device->rtc->freeGroup(pld->instanceGroup);
+      }
+    }
+  }
   
   void ModelSlot::setInstances(barney_api::Group **groups,
                                const affine3f *xfms,
@@ -106,6 +113,7 @@ namespace BARNEY_NS {
     // ==================================================================
     std::vector<QuadLight::DD> quadLights;
     std::vector<DirLight::DD>  dirLights;
+    std::vector<PointLight::DD>  pointLights;
     std::pair<EnvMapLight::SP,affine3f> envLight;
     
     for (int i=0;i<instances.groups.size();i++) {
@@ -122,6 +130,10 @@ namespace BARNEY_NS {
           dirLights.push_back(dirLight->getDD(instances.xfms[i]));
           continue;
         }
+        if (PointLight::SP pointLight = light->as<PointLight>()) {
+          pointLights.push_back(pointLight->getDD(instances.xfms[i]));
+          continue;
+        }
         if (EnvMapLight::SP el = light->as<EnvMapLight>()) {
           envLight = {el,instances.xfms[i]};
           continue;
@@ -132,6 +144,7 @@ namespace BARNEY_NS {
     world->set(envLight.first,envLight.second);
     world->set(quadLights);
     world->set(dirLights);
+    world->set(pointLights);
   
     // ==================================================================
     // generate all (per device) instance lists. note each BGGroup can

@@ -11,6 +11,8 @@ Surface::Surface(BarneyGlobalState *s)
 
 Surface::~Surface()
 {
+  BANARI_TRACK_LEAKS(std::cout << "#banari: ~Surface deconstructing"
+                     << std::endl);
   cleanup();
 }
 

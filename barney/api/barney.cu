@@ -570,7 +570,7 @@ namespace barney_api {
     Context *context = checkGet(_context);
     std::shared_ptr<Data> data
       = context->createData(slot,dataType);
-    data->set(items,numItems);
+    data->set(items,(int)numItems);
     return (BNData)context->initReference(data);
   }
 
@@ -580,7 +580,7 @@ namespace barney_api {
                  const void *items)
   {
     Data::SP data = checkGetSP(_data);
-    data->set(items,numItems);
+    data->set(items,(int)numItems);
   }
 
   
@@ -724,20 +724,6 @@ namespace barney_api {
       checkGet(target)->warn_unsupported_member(param,"vec4f");
   }
 
-  // BARNEY_API
-  // void bnSet3fc(BNObject target, const char *param, float3 value)
-  // {
-  //   if (!checkGet(target)->set3f(checkGet(param),(const vec3f&)value))
-  //     checkGet(target)->warn_unsupported_member(param,"vec3f");
-  // }
-
-  // BARNEY_API
-  // void bnSet4fc(BNObject target, const char *param, float4 value)
-  // {
-  //   if (!checkGet(target)->set4f(checkGet(param),(const vec4f&)value))
-  //     checkGet(target)->warn_unsupported_member(param,"vec4f");
-  // }
-  
   BARNEY_API
   void bnSet4x3fv(BNObject target, const char *param, const BNTransform *transform)
   {
@@ -933,41 +919,6 @@ namespace barney_api {
       return (BNContext)createContext_embree(dataGroupIDs);
 #endif
       throw std::runtime_error("could not generate _any_ backend?!");
-      
-#if 0
-      // ------------------------------------------------------------------
-      // create list of GPUs to use for this rank. if specified by user
-      // we use this; otherwise we use GPUs in order, split into groups
-      // according to how many ranks there are on this host. Ie, if host
-      // has four GPUs the first rank will take 0 and 1; and the second
-      // one will take 2 and 3.
-      // ------------------------------------------------------------------
-      std::vector<int> gpuIDs;
-      if (_gpuIDs) {
-        for (int i = 0;i < numGPUs;i++)
-          gpuIDs.push_back(_gpuIDs[i]);
-      }
-      else {
-        if (numGPUs < 1)
-          numGPUs = rtc::Backend::getDeviceCount();
-        // cudaGetDeviceCount(&numGPUs);
-        for (int i = 0;i < numGPUs;i++)
-          gpuIDs.push_back(i);
-      }
-      if (gpuIDs.empty())
-        throw std::runtime_error
-          ("no devices found!?");
-
-      if (gpuIDs.size() < numDataRanksOnThisContext) {
-        std::vector<int> replicatedIDs;
-        for (int i = 0;i < numDataRanksOnThisContext;i++)
-          replicatedIDs.push_back(gpuIDs[i % gpuIDs.size()]);
-        gpuIDs = replicatedIDs;
-      }
-
-      return (BNContext)new LocalContext(dataGroupIDs,
-                                         gpuIDs);
-#endif
     } 
     catch (const std::exception& e) {
       std::cerr << "error creating barney context : " << e.what() << std::endl;
@@ -1030,10 +981,6 @@ namespace barney_api {
         (dataRanksOnThisContext
          ? dataRanksOnThisContext[i]
          : rank*numDataRanksOnThisContext+i);
-
-    // check if we're an active worker
-    // bool isActiveWorker = !dataGroupIDs.empty();
-    // mpi::Comm workers = world.split(isActiveWorker);
     
     // ------------------------------------------------------------------
     // create list of GPUs to use for this rank. if specified by user
@@ -1073,81 +1020,8 @@ namespace barney_api {
                                "but optix backend not compiled in");
 #endif
     }
-    PRINT(_gpuIDs);
     throw std::runtime_error("barney mpi-parallel without a list of GPUs is no longer supporteed");
   }
 
-
-//   BARNEY_API
-//   void  bnMPIQueryHardware(BNHardwareInfo *_hardware, MPI_Comm _comm)
-//   {
-//     LOG_API_ENTRY;
-
-//     assert(_hardware);
-//     BNHardwareInfo &hardware = *_hardware;
-
-//     assert(_comm != MPI_COMM_NULL);
-//     barney_api::mpi::Comm comm(_comm);
-
-//     hardware.numRanks = comm.size;
-//     char hostName[MPI_MAX_PROCESSOR_NAME];
-//     memset(hostName,0,MPI_MAX_PROCESSOR_NAME);
-//     int hostNameLen = 0;
-//     BN_MPI_CALL(Get_processor_name(hostName,&hostNameLen));
-
-//     std::vector<char> recvBuf(MPI_MAX_PROCESSOR_NAME*comm.size);
-//     memset(recvBuf.data(),0,recvBuf.size());
-
-//     // ------------------------------------------------------------------
-//     // determine which (world) rank lived on which host, and assign
-//     // GPUSs
-//     // ------------------------------------------------------------------
-//     BN_MPI_CALL(Allgather(hostName,
-//                           MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
-//                           recvBuf.data(),
-//                           /* PER rank size */MPI_MAX_PROCESSOR_NAME,MPI_CHAR,
-//                           comm.comm));
-//     std::vector<std::string>  hostNames;
-//     std::map<std::string,int> ranksOnHost;
-//     for (int i=0;i<comm.size;i++)  {
-//       std::string host_i = recvBuf.data()+i*MPI_MAX_PROCESSOR_NAME;
-//       hostNames.push_back(host_i);
-//       ranksOnHost[host_i] ++;
-//     }
-
-//     hardware.numRanksThisHost = ranksOnHost[hostName];
-//     hardware.numHosts         = ranksOnHost.size();
-
-//     // ------------------------------------------------------------------
-//     // count how many other ranks are already on this same node
-//     // ------------------------------------------------------------------
-//     BN_MPI_CALL(Barrier(comm.comm));
-//     int localRank = 0;
-//     for (int i=0;i<comm.rank;i++)
-//       if (hostNames[i] == hostName)
-//         localRank++;
-//     BN_MPI_CALL(Barrier(comm.comm));
-//     hardware.localRank = localRank;
-//     hardware.numRanksThisHost = ranksOnHost[hostName];
-
-//     // ------------------------------------------------------------------
-//     // assign a GPU to this rank
-//     // ------------------------------------------------------------------
-//     int numGPUsOnThisHost = 0;
-// #if BARNEY_BACKEND_OPTIX
-//     cudaGetDeviceCount(&numGPUsOnThisHost);
-// #endif
-//     // cudaGetDeviceCount(&numGPUsOnThisHost);
-//     // if (numGPUsOnThisHost == 0)
-//     //   throw std::runtime_error("no barney-capable devices on this rank!");
-//     hardware.numGPUsThisHost = numGPUsOnThisHost;
-//     hardware.numGPUsThisRank
-//       = comm.allReduceMin(hardware.numGPUsThisHost == 0
-//                           ? 0
-//                           : std::max(hardware.numGPUsThisHost/
-//                                      hardware.numRanksThisHost,
-//                                      1));
-//   }
-  
 #endif
 } // ::barney_api
