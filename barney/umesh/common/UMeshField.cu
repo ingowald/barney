@@ -171,7 +171,6 @@ namespace BARNEY_NS {
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.um: building initial macro cell grid of " << dims << " MCs"
               << OWL_TERMINAL_DEFAULT << std::endl;
-    PING; PRINT(dims); PRINT(cellOffsets->count);
     grid.resize(dims);
     
     grid.gridOrigin  = worldBounds.lower;
