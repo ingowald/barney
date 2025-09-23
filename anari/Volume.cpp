@@ -71,9 +71,7 @@ namespace barney_device {
     getParam("color", ANARI_FLOAT32_VEC4, &m_uniformColor);
     m_opacityData = getParamObject<helium::Array1D>("opacity");
     m_uniformOpacity = getParam<float>("opacity", 1.f) * m_uniformColor.w;
-    m_densityScale = // 8.f*
-      40.f*
-      getParam<float>("unitDistance", 1.f);
+    m_unitDistance = getParam<float>("unitDistance", 1.f);
   }
 
   void TransferFunction1D::finalize()
@@ -83,6 +81,14 @@ namespace barney_device {
                     "no spatial field provided to transferFunction1D volume");
       return;
     }
+
+    if (m_unitDistance <= 0.f) {
+      reportMessage(ANARI_SEVERITY_WARNING,
+                    "invalid density scale calculated from 'unitDistance',"
+                    " setting to 1");
+      m_densityScale = 1.f;
+    } else
+      m_densityScale = 1.f / m_unitDistance;
 
     m_bounds = m_field->bounds();
 

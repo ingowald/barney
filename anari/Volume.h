@@ -54,6 +54,7 @@ namespace barney_device {
     box3 m_bounds;
 
     box1 m_valueRange{0.f, 1.f};
+    float m_unitDistance{1.f};
     float m_densityScale{1.f};
     math::float4 m_uniformColor{1.f, 1.f, 1.f, 1.f};
     float m_uniformOpacity{1.f};
