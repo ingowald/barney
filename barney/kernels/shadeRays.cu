@@ -629,7 +629,7 @@ namespace BARNEY_NS {
       // contribution at this hit point (if any), and generate secondary
       // ray and shadow ray (if applicable), with proper weights.
       // ==================================================================    
-      Random random(ray.rngSeed.next((const uint32_t&)ray.tMax));//rayID,ray.rngSeed);
+      Random random(ray.rngSeed,(const uint32_t&)ray.tMax);//rayID,ray.rngSeed);
       // Random random(ray.rngSeed.next((const uint32_t&)ray.tMax));//rayID,ray.rngSeed);
       const PackedBSDF bsdf = ray.getBSDF();
       // bool doTransmission = false;

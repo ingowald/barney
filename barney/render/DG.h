@@ -41,6 +41,7 @@
 
 namespace BARNEY_NS {
   namespace render {
+    using Random = BARNEY_NS::Random2;
     
     struct DG {
       vec3f Ng, Ns;

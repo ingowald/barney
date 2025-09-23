@@ -74,7 +74,8 @@ namespace BARNEY_NS {
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
 // #if NEW_RNG
-      ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
+      // ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
+      ray.rngSeed.seed(ix+accumID*fbSize.x,iy);
 // #else
       // ray.rngSeed.seed(ix+fbSize.x*(accumID),iy+fbSize.y*(accumID));
 // #endif
@@ -155,7 +156,6 @@ namespace BARNEY_NS {
         = enablePerRayDebug && (crossHair_x || crossHair_y);
 #endif
 
-      if (ray.dbg()) printf("initial ray seed %u\n",ray.rngSeed.value);
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;

@@ -125,7 +125,7 @@ namespace BARNEY_NS {
         ray.rngSeed.next((const uint32_t&)osP.x);
         ray.rngSeed.next((const uint32_t&)osP.y);
         ray.rngSeed.next((const uint32_t&)osP.z);
-        Random rng(ray.rngSeed.next(290374u));
+        Random rng(ray.rngSeed,290374u);
         if (rng() > opacity) {
           ti.ignoreIntersection();
           return;

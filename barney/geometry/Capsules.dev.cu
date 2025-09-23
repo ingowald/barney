@@ -279,9 +279,9 @@ namespace BARNEY_NS {
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                           ray.dir,hitData.worldNormal,ray.dbg());
       if (opacity < 1.f) {
-        Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
-                                         ti.getGeometryIndex(),
-                                         ti.getPrimitiveIndex())));
+        Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
+                                    ti.getGeometryIndex(),
+                                    ti.getPrimitiveIndex()));
         if (rng() > opacity) {
           return;
         }

@@ -65,8 +65,57 @@ namespace BARNEY_NS {
   
   using namespace owl::common;
   typedef owl::common::interval<float> range1f;
-  using Random = LCG<8>;
+  // using Random = LCG<8>;
 
+  struct RNGSeed {
+    inline __rtc_both void seed(uint32_t a, uint32_t b)
+    {
+      state ^= 2*a+1;
+      next();
+      state ^= 2*b;
+      next();
+    }
+      
+    inline __rtc_both uint32_t next()
+    {
+      uint64_t x = state;
+      uint64_t const multiplier = 6364136223846793005ull;
+      unsigned count = (unsigned)(x >> 61);
+      state = x * multiplier;
+      x ^= x >> 22;
+      return (uint32_t)(x >> (22 + count));	        
+    }
+    inline __rtc_both uint32_t next(uint32_t hash)
+    {
+      return next((uint64_t)hash);
+    }
+    inline __rtc_both uint32_t next(uint64_t hash)
+    {
+      state ^= (hash<<1);
+      // next((uint32_t)hash);
+      // next((uint32_t)(hash>>32));
+      return next();
+    }
+    uint64_t state = 0xcafef00dd15ea5e5u;
+  };
+  
+  struct Random2 : public RNGSeed {
+    inline __rtc_both Random2(uint32_t a,
+                              uint32_t b)
+    { seed(a,b); }
+    inline __rtc_both Random2(RNGSeed &seed,
+                              uint32_t b)
+    { this->state = seed.state; seed.next(); this->next(b ? b : 290374); }
+    inline __rtc_both Random2(RNGSeed &seed,
+                              uint64_t b)
+    { this->state = seed.state; seed.next(); this->next(b ? b : 290374); }
+    inline __rtc_both float operator()()
+    {
+      return (next() & 0x00FFFFFF) * (1.f / (float) 0x01000000);
+    };
+  };
+
+  
   template<typename T>
   inline __both__
   void swap(T &a, T &b) { T c = a; a = b; b = c; }
