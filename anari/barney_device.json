@@ -6,6 +6,7 @@
       "anari_core_1_0",
       "anari_core_objects_base_1_0",
       "khr_camera_perspective",
+      "khr_camera_orthographic",
       "khr_geometry_cone",
       "khr_geometry_cylinder",
       "khr_geometry_curve",

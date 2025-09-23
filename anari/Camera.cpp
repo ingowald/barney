@@ -17,6 +17,8 @@ Camera *Camera::createInstance(std::string_view subtype, BarneyGlobalState *s)
 {
   if (subtype == "perspective")
     return new Perspective(s);
+  if (subtype == "orthographic")
+    return new Orthographic(s);
   return (Camera *)new UnknownObject(ANARI_CAMERA, subtype, s);
 }
 
@@ -46,7 +48,39 @@ BNCamera Camera::barneyCamera() const
   return m_barneyCamera;
 }
 
-// Subtypes ///////////////////////////////////////////////////////////////////
+// orthographic ///////////////////////////////////////////////////////////////////
+
+Orthographic::Orthographic(BarneyGlobalState *s) : Camera(s)
+{
+  assert(deviceState());
+  assert(deviceState()->tether);
+  assert(deviceState()->tether->context);
+  m_barneyCamera =
+      bnCameraCreate(deviceState()->tether->context, "orthographic");
+}
+
+void Orthographic::commitParameters()
+{
+  Camera::commitParameters();
+  m_aspect = getParam<float>("aspect", 1.f);
+  m_height = getParam<float>("height", 1.f);
+  m_near   = getParam<float>("near", 1.f);
+  m_far    = getParam<float>("far", 1.f);
+}
+
+void Orthographic::finalize()
+{
+  bnSet3fc(m_barneyCamera, "up", m_up);
+  bnSet3fc(m_barneyCamera, "position", m_pos);
+  bnSet3fc(m_barneyCamera, "direction", m_dir);
+  bnSet1f(m_barneyCamera, "aspect", m_aspect);
+  bnSet1f(m_barneyCamera, "height", m_height);
+  bnSet1f(m_barneyCamera, "near", m_near);
+  bnSet1f(m_barneyCamera, "far", m_far);
+  bnCommit(m_barneyCamera);
+}
+
+// perspective ///////////////////////////////////////////////////////////////////
 
 Perspective::Perspective(BarneyGlobalState *s) : Camera(s)
 {
