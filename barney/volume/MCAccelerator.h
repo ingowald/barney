@@ -330,9 +330,15 @@ namespace BARNEY_NS {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
+#if 1
+    Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
+                                ti.getGeometryIndex(),
+                                ti.getPrimitiveIndex()));
+#else
     Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
                                      ti.getGeometryIndex(),
                                      ti.getPrimitiveIndex())));
+#endif
     
     float tHit = ray.tMax;
     dda::dda3(dda_org,dda_dir,tRange.upper,
@@ -463,10 +469,10 @@ namespace BARNEY_NS {
                         ray.dir,hitData.worldNormal,ray.dbg());
     // opacity = .85f;
     if (opacity < 1.f) {
-      ray.rngSeed.next((const uint32_t&)osP.x);
-      ray.rngSeed.next((const uint32_t&)osP.y);
-      ray.rngSeed.next((const uint32_t&)osP.z);
-      Random rng(ray.rngSeed.next(290374u));
+      // ray.rngSeed.next((const uint32_t&)osP.x);
+      // ray.rngSeed.next((const uint32_t&)osP.y);
+      // ray.rngSeed.next((const uint32_t&)osP.z);
+      // Random rng(ray.rngSeed,290374u);
       if (rng() > opacity) {
         // ti.ignoreIntersection();
         return;
@@ -525,9 +531,11 @@ namespace BARNEY_NS {
     dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
     dda_dir = dda_dir * rcp(mcGridSpacing);
 
-    Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
-                                     ti.getGeometryIndex(),
-                                     ti.getPrimitiveIndex())));
+    Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
+                                ti.getGeometryIndex(),0));
+    // Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
+    //                             ti.getGeometryIndex(),
+    //                             ti.getPrimitiveIndex()));
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
               [&](const vec3i &cellIdx, float t0, float t1) -> bool

@@ -70,7 +70,7 @@ namespace BARNEY_NS {
       ob = c;
       oc = d;
       od0 = a;
-      od1 = a;
+      od1 = b;
     } else if (lac >= maxLen) {
       oa = ac;
       ob = b;
@@ -166,7 +166,7 @@ namespace BARNEY_NS {
 
     float maxWidth = reduce_max(worldBounds.size());//getBox(worldBounds).size());
     int MC_GRID_SIZE
-      = 200 + int(sqrtf(cellOffsets->count/100.f));
+      = 200 + int(sqrtf(cellOffsets->count/1000.f));
     vec3i dims = 1+vec3i(worldBounds.size() * ((MC_GRID_SIZE-1) / maxWidth));
     std::cout << OWL_TERMINAL_BLUE
               << "#bn.um: building initial macro cell grid of " << dims << " MCs"

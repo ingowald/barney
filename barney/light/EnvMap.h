@@ -29,6 +29,7 @@
 // #define FORCE_CONSTANT_ENV 1
 
 namespace BARNEY_NS {
+  using Random = BARNEY_NS::Random2;
 
   struct EnvMapLight : public Light {
     typedef std::shared_ptr<EnvMapLight> SP;
