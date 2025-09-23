@@ -74,52 +74,65 @@ namespace BARNEY_NS {
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
 // #if NEW_RNG
-      ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
+      // ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
+      ray.rngSeed.seed(ix+accumID*fbSize.x,iy);
 // #else
       // ray.rngSeed.seed(ix+fbSize.x*(accumID),iy+fbSize.y*(accumID));
 // #endif
 
-      ray.org  = camera.lens_00;
 
       float pixel_u = ((accumID == 0) ? .5f : rand());
       float pixel_v = ((accumID == 0) ? .5f : rand());
       float image_u = ((ix+pixel_u)/float(fbSize.x));
       float image_v = ((iy+pixel_v)/float(fbSize.y));
       float aspect = fbSize.x / float(fbSize.y);
-      vec3f ray_dir
-        = camera.dir_00
-        + (1.f*aspect*(image_u - .5f)) * camera.dir_du
-        + (1.f*(image_v - .5f)) * camera.dir_dv;
+      if (camera.type == Camera::PERSPECTIVE) {
+        auto &perspective = camera.perspective;
+        ray.org  = perspective.lens_00;
+        vec3f ray_dir
+          = perspective.dir_00
+          + (1.f*aspect*(image_u - .5f)) * perspective.dir_du
+          + (1.f*(image_v - .5f)) * perspective.dir_dv;
       
-      if (camera.apertureRadius > 0.f) {
-        vec3f lens_du = normalize(camera.dir_du);
-        vec3f lens_dv = normalize(camera.dir_dv);
-        vec3f lensNormal  = cross(lens_du,lens_dv);
+        if (perspective.apertureRadius > 0.f) {
+          vec3f lens_du = normalize(perspective.dir_du);
+          vec3f lens_dv = normalize(perspective.dir_dv);
+          vec3f lensNormal  = cross(lens_du,lens_dv);
 
-        vec3f D = normalize(ray_dir);
-        vec3f pointOnImagePlane
-          = D * (camera.focusDistance / fabsf(dot(D,lensNormal)));
-        float lu, lv;
-        if (accumID == 0) {
-          lu = lv = 0.f;
-        } else {
-          while (true) {
-            lu = 2.f*rand()-1.f;
-            lv = 2.f*rand()-1.f;
-            float f = lu*lu+lv*lv;
-            if (f > 1.f) continue;
-            break;
+          vec3f D = normalize(ray_dir);
+          vec3f pointOnImagePlane
+            = D * (perspective.focusDistance / fabsf(dot(D,lensNormal)));
+          float lu, lv;
+          if (accumID == 0) {
+            lu = lv = 0.f;
+          } else {
+            while (true) {
+              lu = 2.f*rand()-1.f;
+              lv = 2.f*rand()-1.f;
+              float f = lu*lu+lv*lv;
+              if (f > 1.f) continue;
+              break;
+            }
           }
+          vec3f lensOffset
+            = (perspective.apertureRadius * lu) * lens_du
+            + (perspective.apertureRadius * lv) * lens_dv;
+          ray.org += lensOffset;
+          ray_dir = normalize(pointOnImagePlane - lensOffset);
+        } else {
+          ray_dir = normalize(ray_dir);
         }
-        vec3f lensOffset
-          = (camera.apertureRadius * lu) * lens_du
-          + (camera.apertureRadius * lv) * lens_dv;
-        ray.org += lensOffset;
-        ray_dir = normalize(pointOnImagePlane - lensOffset);
-      } else {
-        ray_dir = normalize(ray_dir);
+        ray.dir = ray_dir;
+      } else if (camera.type == Camera::ORTHOGRAPHIC) {
+        auto &orthographic = camera.orthographic;
+        ray.dir = normalize(orthographic.dir);
+        ray.org
+          = orthographic.org_00
+          + ((image_u-.5f)*orthographic.aspect*orthographic.height)
+          * orthographic.org_du
+          + ((image_v-.5f)*orthographic.height)
+          * orthographic.org_dv;
       }
-      ray.dir = ray_dir;
       
 #ifdef NDEBUG
       // ray._dbg         = 0;
@@ -143,7 +156,6 @@ namespace BARNEY_NS {
         = enablePerRayDebug && (crossHair_x || crossHair_y);
 #endif
 
-      if (ray.dbg()) printf("initial ray seed %u\n",ray.rngSeed.value);
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;

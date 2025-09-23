@@ -25,7 +25,9 @@ namespace BARNEY_NS {
     /* path state/shade info that does _not_ go over the network */
 
 #define NEW_RNG 1
-    
+
+#if 1
+#else
     struct RNGSeed {
       inline __rtc_device void seed(uint32_t a, uint32_t b)
       {
@@ -61,7 +63,8 @@ namespace BARNEY_NS {
       }
       uint32_t value;
     };
-    
+#endif
+
     struct PathState {
       vec3h    throughput;
       int32_t  pixelID;

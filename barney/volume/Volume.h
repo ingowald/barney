@@ -24,6 +24,7 @@
 
 namespace BARNEY_NS {
 
+  using Random = Random2;
   struct Volume;
   struct ScalarField;
   struct MCGrid;
