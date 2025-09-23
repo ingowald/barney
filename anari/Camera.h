@@ -46,6 +46,20 @@ struct Perspective : public Camera
   float m_apertureRadius = 0.f;
 };
 
+struct Orthographic : public Camera
+{
+  Orthographic(BarneyGlobalState *s);
+
+  void commitParameters() override;
+  void finalize() override;
+
+ private:
+  float m_aspect = 1.f;
+  float m_height = 0.f;
+  float m_near   = 0.f;
+  float m_far    = std::numeric_limits<float>::infinity();
+};
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Camera *, ANARI_CAMERA);

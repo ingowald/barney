@@ -925,7 +925,7 @@ namespace BARNEY_NS {
          a black background, in which case that blends away background
          pixels, so for now turn that off. The "right" fix for this
          would be for TSD to handle alpha properly. */
-#define COMPUTE_PROPER_ALPHA_CHANNEL 0
+#define COMPUTE_PROPER_ALPHA_CHANNEL 1
       float alpha 
         = (generation == 0)
         ?
