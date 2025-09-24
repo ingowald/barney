@@ -67,6 +67,10 @@ namespace BARNEY_NS {
   typedef owl::common::interval<float> range1f;
   // using Random = LCG<8>;
 
+  /*! divRoundUp, but always in 64-bits, to avoid type conflicts */
+  inline __rtc_both size_t dru(size_t a, size_t b)
+  { return (a+b-1)/b; }
+                                      
   struct RNGSeed {
     inline __rtc_both void seed(uint32_t a, uint32_t b)
     {
