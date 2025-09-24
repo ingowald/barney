@@ -63,7 +63,8 @@ namespace BARNEY_NS {
     size_t numCells = owl::common::volume(dims);
     const int bs = 1024;
     // cuda num blocks
-    const int nb = (int)divRoundUp(numCells,(size_t)bs);
+    // const int nb = (int)divRoundUp((size_t)numCells,(size_t)bs);
+    const int nb = (int)dru(numCells,bs);
     
     for (auto device : *devices) {
       auto d_grid = getDD(device);
@@ -109,7 +110,8 @@ namespace BARNEY_NS {
     size_t numCells = owl::common::volume(dims);
     const int bs = 1024;
     // cuda num blocks
-    const int nb = (int)divRoundUp(numCells,(size_t)bs);
+    // const int nb = (int)divRoundUp((size_t)numCells,(size_t)bs);
+    const int nb = (int)dru(numCells,bs);
     for (auto device : *devices) 
       device->sync();
     

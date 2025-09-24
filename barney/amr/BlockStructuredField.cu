@@ -116,7 +116,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) {
       __rtc_launch(device->rtc,
                    BSField_rasterGrids,
-                   divRoundUp(numBlocks,1024),1024,
+                   dru(numBlocks,1024),1024,
                    this->getDD(device),grid.getDD(device));
     }
     
