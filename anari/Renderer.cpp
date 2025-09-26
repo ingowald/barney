@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Renderer.h"
+#include "barney/common/DenoiserConfig.h"
 
 namespace barney_device {
 
@@ -21,7 +22,7 @@ void Renderer::commitParameters()
   m_pixelSamples = getParam<int>("pixelSamples", 1);
   m_ambientRadiance = getParam<float>("ambientRadiance", 1.f);
   m_crosshairs = getParam<bool>("crosshairs", false);
-  m_denoise = getParam<bool>("denoise", true);
+  m_denoise = getParam<bool>("denoise", BARNEY_NS::denoiser::ANARI_DENOISE_DEFAULT);
   m_background = getParam<math::float4>("background", math::float4(0, 0, 0, 1));
   m_backgroundImage = getParamObject<Array2D>("background");
 }

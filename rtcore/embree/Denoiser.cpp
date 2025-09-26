@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "rtcore/embree/Denoiser.h"
+#include "barney/common/DenoiserConfig.h"
 
 #if BARNEY_OIDN_CPU
 
@@ -28,7 +29,7 @@ namespace rtc {
         oidnNewDevice(OIDN_DEVICE_TYPE_CPU);
       oidnCommitDevice(oidnDevice);
       
-      filter = oidnNewFilter(oidnDevice,"RT");
+      filter = oidnNewFilter(oidnDevice, BARNEY_NS::denoiser::oidn::FILTER_TYPE_DEFAULT);
     }
 
     DenoiserOIDN::~DenoiserOIDN()
@@ -70,7 +71,7 @@ namespace rtc {
       oidnSetSharedFilterImage(filter,"output",out_rgba,
                                OIDN_FORMAT_FLOAT3,numPixels.x,numPixels.y,0,
                                sizeof(vec4f),0);
-      oidnSetFilterBool(filter,"hdr",true);
+      oidnSetFilterBool(filter, "hdr", BARNEY_NS::denoiser::oidn::HDR_MODE_DEFAULT);
       oidnCommitFilter(filter);
 
       

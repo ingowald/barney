@@ -18,6 +18,7 @@
 
 #include "barney/Context.h"
 #include "barney/fb/TiledFB.h"
+#include "barney/common/DenoiserConfig.h"
 
 namespace BARNEY_NS {
 
@@ -127,7 +128,7 @@ namespace BARNEY_NS {
     /*! whether to "in principle" do denoising. Denoising will still
      require an rtc backend that does have a denoiser (\see denoiser
      field), but this allows a user to disable denoising at runtime */
-    bool enableDenoising = 1;
+    bool enableDenoising = denoiser::FRAMEBUFFER_ENABLE_DENOISING_DEFAULT;
 
     /*! how many samples per pixels have already been accumulated in
         this frame buffer's accumulation buffer. Note this is counted

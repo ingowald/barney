@@ -177,6 +177,9 @@ if (BARNEY_BACKEND_OPTIX)
   add_library(barney_rtc_optix STATIC
     optix/Denoiser.h
     optix/Denoiser.cpp
+    optix/DenoiserUtils.h
+    optix/DenoiserUtils.cu
+    optix/DeviceBuffer.h
     optix/Device.h
     optix/Device.cpp
     optix/Group.h

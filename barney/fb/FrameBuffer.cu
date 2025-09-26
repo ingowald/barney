@@ -18,6 +18,7 @@
 #include "barney/common/math.h"
 #include "barney/common/Data.h"
 #include "barney/fb/FrameBuffer.h"
+#include "barney/common/DenoiserConfig.h"
 #if BARNEY_HAVE_OIDN
 # include <OpenImageDenoise/oidn.h>
 #endif
@@ -194,7 +195,7 @@ namespace BARNEY_NS {
     if (doDenoising) {
       /* run denoiser - this will write pixels in float4 format to
          denoiser->out_rgba */
-      float blendFactor = (accumID-1) / (accumID+100.f);
+      float blendFactor = denoiser::calculateBlendFactor(accumID);
       denoiser->run(blendFactor);
 
       switch(requestedFormat) {
@@ -288,8 +289,9 @@ namespace BARNEY_NS {
       linearColorChannel = rtc->allocMem(np*sizeOfPixel);
       linearAuxChannel   = rtc->allocMem(np*sizeof(uint32_t));
 
-      if (denoiser)
+      if (denoiser) {
         denoiser->resize(numPixels);
+      }
     }
   }
 

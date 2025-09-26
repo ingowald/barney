@@ -35,20 +35,62 @@ namespace rtc {
     };
 
 #if OPTIX_VERSION >= 80000
-    /*! denoising using optix 8 built-in denoiser. only available for
-        optix 8 or newer */
+    /*! Enhanced OptiX 8 denoiser implementation with RTX features
+        
+        Based on VisRTX implementation with improved memory management,
+        better pixel format handling, and sRGB support.
+        
+        Key features:
+        - Multiple pixel format support (FLOAT4, RGBA8, RGBA8_SRGB)
+        - Advanced memory management with proper error handling
+        - Temporal blending for animation sequences
+        - Performance instrumentation and memory reporting
+        - Backward compatibility with existing Barney code
+        
+        Usage patterns:
+        1. Legacy mode: FrameBuffer calls resize() + run() - uses internal buffers
+        2. Enhanced mode: External code calls setup() + launch() - uses external buffers
+        
+        Memory buffers:
+        - State: Persistent denoiser parameters across frames (~50MB for 1080p)
+        - Scratch: Temporary workspace during computation (~150MB for 1080p)  
+        - Pixel: Format conversion for non-FLOAT4 outputs (~8MB for 1080p)
+    */
     struct Optix8Denoiser : public Denoiser {
       Optix8Denoiser(Device *device);
       virtual ~Optix8Denoiser();
+      
+      // Legacy interface (used by FrameBuffer for backward compatibility)
       void resize(vec2i dims) override;
       void run(float blendFactor) override;
       
-      vec2i                numPixels;
-      OptixDenoiser        denoiser = {};
-      OptixDenoiserOptions denoiserOptions;
-      void                *denoiserScratch = 0;
-      void                *denoiserState   = 0;
-      OptixDenoiserSizes   denoiserSizes;
+      // Enhanced interface (inspired by VisRTX RTX denoiser)
+      void setup(vec2i size, void *pixelBuffer, int format);  ///< Configure with external buffer  
+      void cleanup();                                         ///< Clean up all allocated memory
+      void launch();                                          ///< Execute denoising with format conversion
+      void *mapColorBuffer();                                 ///< Get host-accessible output buffer
+      void *mapGPUColorBuffer();                              ///< Get GPU-accessible output buffer
+      
+      // Core OptiX denoiser objects and configuration
+      vec2i                numPixels;          ///< Current image dimensions
+      OptixDenoiser        denoiser = {};      ///< OptiX denoiser instance handle
+      OptixDenoiserOptions denoiserOptions;   ///< Configuration (guide layers, alpha mode)
+      OptixDenoiserParams  params = {};       ///< Runtime parameters (blend factor)
+      OptixDenoiserGuideLayer guideLayer = {}; ///< Guide images (albedo, normal, flow)
+      OptixDenoiserLayer   layer = {};        ///< Input/output image layer configuration
+      
+      // GPU memory buffers (allocated by OptiX based on image size)
+      void                *denoiserScratch = 0; ///< Temporary computation workspace
+      void                *denoiserState   = 0; ///< Persistent denoiser state across frames
+      OptixDenoiserSizes   denoiserSizes;     ///< Memory size requirements from OptiX
+      
+      // Enhanced memory management for multiple pixel formats
+      void                *m_pixelBuffer = nullptr; ///< External pixel buffer (FLOAT4 format)
+      int                  m_format = 0;           ///< Pixel format: 0=unknown, 1=float4, 2=uint32, 3=uint32_srgb
+      void                *m_uintPixels = nullptr;  ///< Converted output buffer for RGBA8 formats
+      
+    private:
+      void init();
     };
 #endif
     
