@@ -111,7 +111,7 @@ namespace BARNEY_NS {
         };
       self.setHitAttributes(hitData,interpolator,world,dbg);
 
-      // if (dbg) printf("matid %i, world mat %lx\n",self.materialID,world.materials); 
+      if (dbg) printf("matid %i, world mat %lx\n",self.materialID,world.materials); 
       const DeviceMaterial &material
         = world.materials[self.materialID];
       

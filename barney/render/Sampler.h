@@ -175,6 +175,11 @@ namespace BARNEY_NS {
                              bool dbg) const
     {
       vec4f in  = inputs.get((AttributeKind)inAttribute);
+      if (0 && dbg) printf("Sampler::eval in %f %f %f:%f\n",
+                      in.x,
+                      in.y,
+                      in.z,
+                      in.w);
       if (type != TRANSFORM) {
         vec4f coord = inTransform.applyTo(in);
         if (type == IMAGE1D) {
@@ -190,6 +195,12 @@ namespace BARNEY_NS {
         }
         if (type == IMAGE2D) {
           vec4f fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
+          if (0 && dbg) printf("Sampler::eval fromtex %f %f -> %f %f %f: %f\n",
+                          coord.x,coord.y,
+                          fromTex.x,
+                          fromTex.y,
+                          fromTex.z,
+                          fromTex.w);
           if (numChannels == 1) {
             fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
           } else if (numChannels == 2) {
