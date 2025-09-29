@@ -385,15 +385,11 @@ namespace barney_device {
     m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
     m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
 #if BARNEY_MPI
-    // static_assert(sizeof(void*) == sizeof(MPI_Comm),
-    //               "we assume an MPI_Comm to be a pointer type, seems for this MPI "
-    //               "implementation that's not the case. Pls let the developers know "
-    //               "what MPI flavor and version you're using so this can be fixed.");
     uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
     if (pointerToComm) {
       printf("#banari.mpi: got passed a pointer to a MPI "
              "communicator, going to use this.\n");
-      comm = *(MPI_Comm *)passedComm;
+      comm = *(MPI_Comm *)pointerToComm;
     } else {
       comm = MPI_COMM_WORLD;
     }
