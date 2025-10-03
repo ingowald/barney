@@ -111,7 +111,7 @@ void Geometry::setAttributes(BNGeom geom)
 void Geometry::commitParameters()
 {
   math::float4 invalidAttr(NAN, NAN, NAN, NAN);
-  m_constantAttributes[0] = getParam<math::float4>("attribute1", invalidAttr);
+  m_constantAttributes[0] = getParam<math::float4>("attribute0", invalidAttr);
   m_constantAttributes[1] = getParam<math::float4>("attribute1", invalidAttr);
   m_constantAttributes[2] = getParam<math::float4>("attribute2", invalidAttr);
   m_constantAttributes[3] = getParam<math::float4>("attribute3", invalidAttr);
