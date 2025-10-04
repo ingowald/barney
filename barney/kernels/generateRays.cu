@@ -138,19 +138,8 @@ namespace BARNEY_NS {
       // ray._dbg         = 0;
       ray.crosshair   = 0;
 #else
-# if 0
       bool crossHair_x = (ix == fbSize.x/2);
       bool crossHair_y = (iy == fbSize.y/2);
-# else
-#  if 0
-      // MISS
-      bool crossHair_x = (ix == 864);
-#  else
-      // HIT:
-      bool crossHair_x = (ix == 867);
-#  endif
-      bool crossHair_y = (iy == 205);
-# endif
       ray._dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
       ray.crosshair
         = enablePerRayDebug && (crossHair_x || crossHair_y);
