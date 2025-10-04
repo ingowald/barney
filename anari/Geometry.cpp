@@ -310,8 +310,11 @@ void Cylinder::finalize()
 
   m_generatedRadii.clear();
   if (!m_radius) {
-    m_generatedRadii.resize(m_vertexPosition->totalSize() / 2);
-    for (size_t i = 0; i < m_generatedRadii.size(); ++i) {
+    int numIndices =
+      m_index ? (int)m_index->size() : (int)m_generatedIndices.size();
+      
+    m_generatedRadii.resize(numIndices);
+    for (size_t i = 0; i < numIndices; ++i) {
       m_generatedRadii[i] = m_globalRadius;
     }
   }
