@@ -133,8 +133,8 @@ namespace BARNEY_NS {
     vec3f up        { 0, 1, 0 };
     float aspect    = 1.f;
     float height    = 1.f;
-    float near      = 0.f;
-    float far       = BARNEY_INF;
+    float ortho_near      = 0.f;
+    float ortho_far       = BARNEY_INF;
   };
   
   bool OrthographicCamera::set1f(const std::string &member, const float &value)
@@ -150,11 +150,11 @@ namespace BARNEY_NS {
       return true;
     }
     if (member == "near") {
-      near = value;
+      ortho_near = value;
       return true;
     }
     if (member == "far") {
-      far = value;
+      ortho_far = value;
       return true;
     }
     return false;
