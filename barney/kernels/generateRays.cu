@@ -138,7 +138,7 @@ namespace BARNEY_NS {
       // ray._dbg         = 0;
       ray.crosshair   = 0;
 #else
-# if 0
+# if 1
       bool crossHair_x = (ix == fbSize.x/2);
       bool crossHair_y = (iy == fbSize.y/2);
 # else

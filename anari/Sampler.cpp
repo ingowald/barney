@@ -108,41 +108,53 @@ bool Image1D::isValid() const
 
 void Image1D::finalize()
 {
-  if (m_bnTextureData)
+  if (m_bnTextureData) {
     bnRelease(m_bnTextureData);
-  m_bnTextureData =
-    makeBarneyTextureData(deviceState(), m_image.ptr,
-                          (int)m_image->size(), 1);
-
-  // ------------------------------------------------------------------
-  // now, create sampler over those texels
-  // ------------------------------------------------------------------
-
-  BNTextureFilterMode filterMode =
+    m_bnTextureData = 0;
+  }
+  if (!m_image) {
+    reportMessage(ANARI_SEVERITY_DEBUG,
+                  "Image1D::finalize() without a valid 'image' parameter");
+    if (m_bnTextureData)
+      bnRelease(m_bnTextureData);
+    if (m_bnSampler)
+      bnRelease(m_bnSampler);
+    m_bnTextureData = 0; 
+    m_bnSampler = 0;
+  } else {
+    m_bnTextureData
+      = makeBarneyTextureData(deviceState(), m_image.ptr,
+                              (int)m_image->size(), 1);
+    // ------------------------------------------------------------------
+    // now, create sampler over those texels
+    // ------------------------------------------------------------------
+  
+    BNTextureFilterMode filterMode =
       m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
-
-  bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
-  bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode);
-  bnSet1i(m_bnSampler, "wrapMode1", (int)BN_TEXTURE_CLAMP);
-  bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
-  bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
-  bnSet4f(m_bnSampler,
-      "inOffset",
-      m_inOffset.x,
-      m_inOffset.y,
-      m_inOffset.z,
-      m_inOffset.w);
-  bnSet4f(m_bnSampler,
-      "outOffset",
-      m_outOffset.x,
-      m_outOffset.y,
-      m_outOffset.z,
-      m_outOffset.w);
-  bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
-  bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
-  bnCommit(m_bnSampler);
+  
+    bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
+    bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode);
+    bnSet1i(m_bnSampler, "wrapMode1", (int)BN_TEXTURE_CLAMP);
+    bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
+    bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
+    bnSet4f(m_bnSampler,
+            "inOffset",
+            m_inOffset.x,
+            m_inOffset.y,
+            m_inOffset.z,
+            m_inOffset.w);
+    bnSet4f(m_bnSampler,
+            "outOffset",
+            m_outOffset.x,
+            m_outOffset.y,
+            m_outOffset.z,
+            m_outOffset.w);
+    bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
+    bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
+    bnCommit(m_bnSampler);
+  }
 }
-
+  
 // Image2D //
 
 Image2D::Image2D(BarneyGlobalState *s) : Sampler(s, "texture2D") {}
@@ -169,32 +181,46 @@ void Image2D::commitParameters()
 
 void Image2D::finalize()
 {
-  if (m_bnTextureData)
+  if (m_bnTextureData) {
     bnRelease(m_bnTextureData);
-  m_bnTextureData = makeBarneyTextureData(
-      deviceState(), m_image.ptr, m_image->size().x, m_image->size().y);
-
-  BNTextureFilterMode filterMode =
+    m_bnTextureData = 0;
+  }
+  if (!m_image) {
+    reportMessage(ANARI_SEVERITY_DEBUG,
+                  "Image2D::finalize() without a valid 'image' parameter");
+    if (m_bnTextureData)
+      bnRelease(m_bnTextureData);
+    if (m_bnSampler)
+      bnRelease(m_bnSampler);
+    m_bnTextureData = 0; 
+    m_bnSampler = 0;
+  } else {
+    m_bnTextureData
+      = makeBarneyTextureData(deviceState(), m_image.ptr,
+                              m_image->size().x, m_image->size().y);
+    
+    BNTextureFilterMode filterMode =
       m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
-  bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
-  bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode1);
-  bnSet1i(m_bnSampler, "wrapMode1", (int)m_wrapMode2);
-  bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
-  bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
-  bnSet4f(m_bnSampler,
-      "inOffset",
-      m_inOffset.x,
-      m_inOffset.y,
-      m_inOffset.z,
-      m_inOffset.w);
-  bnSet4f(m_bnSampler,
-      "outOffset",
-      m_outOffset.x,
-      m_outOffset.y,
-      m_outOffset.z,
-      m_outOffset.w);
-  bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
-  bnCommit(m_bnSampler);
+    bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
+    bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode1);
+    bnSet1i(m_bnSampler, "wrapMode1", (int)m_wrapMode2);
+    bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
+    bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
+    bnSet4f(m_bnSampler,
+            "inOffset",
+            m_inOffset.x,
+            m_inOffset.y,
+            m_inOffset.z,
+            m_inOffset.w);
+    bnSet4f(m_bnSampler,
+            "outOffset",
+            m_outOffset.x,
+            m_outOffset.y,
+            m_outOffset.z,
+            m_outOffset.w);
+    bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
+    bnCommit(m_bnSampler);
+  }
 }
 
 bool Image2D::isValid() const
