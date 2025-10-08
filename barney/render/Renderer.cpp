@@ -48,7 +48,7 @@ namespace BARNEY_NS {
     if (Object::setObject(member,value))
       return true;
     if (member == "bgTexture") {
-      staged.bgTexture = value->as<Texture>();
+      staged.bgTexture = value ? value->as<Texture>() : 0;
       return true;
     }
     return false;
