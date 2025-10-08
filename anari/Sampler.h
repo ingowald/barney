@@ -7,6 +7,7 @@
 #include "common.h"
 #include "helium/array/Array1D.h"
 #include "helium/array/Array2D.h"
+#include "helium/array/Array3D.h"
 
 namespace barney_device {
 
@@ -63,6 +64,27 @@ struct Image2D : public Sampler
   std::string m_inAttribute;
   BNTextureAddressMode m_wrapMode1{BN_TEXTURE_CLAMP};
   BNTextureAddressMode m_wrapMode2{BN_TEXTURE_CLAMP};
+  bool m_linearFilter{true};
+  math::mat4 m_inTransform{math::identity};
+  math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};
+  math::mat4 m_outTransform{math::identity};
+  math::float4 m_outOffset{0.f, 0.f, 0.f, 0.f};
+};
+
+struct Image3D : public Sampler
+{
+  Image3D(BarneyGlobalState *s);
+  ~Image3D() override;
+  void commitParameters() override;
+  void finalize() override;
+  bool isValid() const override;
+
+ private:
+  helium::IntrusivePtr<helium::Array3D> m_image;
+  std::string m_inAttribute;
+  BNTextureAddressMode m_wrapMode1{BN_TEXTURE_CLAMP};
+  BNTextureAddressMode m_wrapMode2{BN_TEXTURE_CLAMP};
+  BNTextureAddressMode m_wrapMode3{BN_TEXTURE_CLAMP};
   bool m_linearFilter{true};
   math::mat4 m_inTransform{math::identity};
   math::float4 m_inOffset{0.f, 0.f, 0.f, 0.f};

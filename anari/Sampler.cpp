@@ -5,42 +5,90 @@
 // std
 #include <cassert>
 #include <iostream>
+#include "Device.h"
+#if BARNEY_MPI
+#include <mpi.h>
+#endif
+
+#include "Array.h"
+#include "Frame.h"
+// std
+#include <cstring>
+
+#include "generated/anari_library_barney_queries.h"
+
 
 namespace barney_device {
 
-// Helper functions ///////////////////////////////////////////////////////////
+  // Helper functions ///////////////////////////////////////////////////////////
 
-static BNTextureData makeBarneyTextureData(
-    BarneyGlobalState *state, helium::Array *input, int width, int height)
-{
-  int slot = state->slot;
-  auto context = state->tether->context;
+  BNTextureData makeBarneyTextureData(Object *objectToReportErrorWith,
+                                      BarneyGlobalState *state,
+                                      helium::Array *input,
+                                      int width,
+                                      int height,
+                                      int depth=-1)
+  {
+    int slot = state->slot;
+    auto context = state->tether->context;
 
-  if (input->elementType() == ANARI_FLOAT32_VEC4) {
-    return bnTextureData2DCreate(context,
-        slot,
-        BN_FLOAT4,
-        width,
-        height,
-        input->dataAs<anari::math::float4>());
-  } else {
-    std::vector<uint32_t> texels;
-    if (!convert_to_rgba8(input, texels)) {
-      std::stringstream ss;
-      ss << "unsupported texel type: " << anari::toString(input->elementType());
-      std::string str = ss.str();
-      fprintf(stderr, "%s\n", str.c_str());
-      return {};
+    if (depth == -1) {
+      // this is 2D data
+      if (input->elementType() == ANARI_FLOAT32_VEC4) {
+        return bnTextureData2DCreate(context,
+                                     slot,
+                                     BN_FLOAT4,
+                                     width,
+                                     height,
+                                     input->dataAs<anari::math::float4>());
+      } else if (input->elementType() == ANARI_FLOAT32) {
+        return bnTextureData2DCreate(context,
+                                     slot,
+                                     BN_FLOAT,
+                                     width,
+                                     height,
+                                     input->dataAs<float>());
+      } else {
+        const std::string texelType = anari::toString(input->elementType());
+        std::vector<uint32_t> texels;
+        objectToReportErrorWith->reportMessage
+          (ANARI_SEVERITY_PERFORMANCE_WARNING,
+           "banari doing 2D texture format conversion (%s)",
+           texelType.c_str());
+        if (!convert_to_rgba8(input, texels)) {
+          objectToReportErrorWith->reportMessage
+            (ANARI_SEVERITY_ERROR,
+             "unsupported texel type in texture format conversion");
+          return {};
+        }
+        return bnTextureData2DCreate(context, slot, BN_UFIXED8_RGBA,
+                                     width, height, texels.data());
+      }
+    } else {
+      // this is 3D data
+      if (input->elementType() == ANARI_FLOAT32) {
+        return bnTextureData3DCreate(context,
+                                     slot,
+                                     BN_FLOAT,
+                                     width,
+                                     height,
+                                     depth,
+                                     input->dataAs<float>());
+      } else {
+        std::string texelType = anari::toString(input->elementType());
+        objectToReportErrorWith->reportMessage
+          (ANARI_SEVERITY_ERROR,
+           "unsupported type in creating image3D texture data (%s)",
+           texelType.c_str());
+        return {};
+      }
     }
-    return bnTextureData2DCreate(
-        context, slot, BN_UFIXED8_RGBA, width, height, texels.data());
   }
-}
 
 // Sampler definitions ////////////////////////////////////////////////////////
 
 Sampler::Sampler(BarneyGlobalState *s, const char *barneySubtype)
-    : Object(ANARI_SAMPLER, s)
+  : Object(ANARI_SAMPLER, s)
 {
   int slot = deviceState()->slot;
   auto context = deviceState()->tether->context;
@@ -63,6 +111,8 @@ Sampler *Sampler::createInstance(std::string_view subtype, BarneyGlobalState *s)
     return new Image1D(s);
   else if (subtype == "image2D")
     return new Image2D(s);
+  else if (subtype == "image3D")
+    return new Image3D(s);
   else if (subtype == "transform")
     return new TransformSampler(s);
   else
@@ -94,11 +144,11 @@ void Image1D::commitParameters()
   m_inTransform = math::identity;
   getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
   m_inOffset =
-      getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
   m_outTransform = math::identity;
   getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
   m_outOffset =
-      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
 }
 
 bool Image1D::isValid() const
@@ -111,7 +161,8 @@ void Image1D::finalize()
   if (m_bnTextureData)
     bnRelease(m_bnTextureData);
   m_bnTextureData =
-    makeBarneyTextureData(deviceState(), m_image.ptr,
+    makeBarneyTextureData(this,
+                          deviceState(), m_image.ptr,
                           (int)m_image->size(), 1);
 
   // ------------------------------------------------------------------
@@ -119,7 +170,7 @@ void Image1D::finalize()
   // ------------------------------------------------------------------
 
   BNTextureFilterMode filterMode =
-      m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
+    m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
 
   bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
   bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode);
@@ -127,17 +178,17 @@ void Image1D::finalize()
   bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
   bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
   bnSet4f(m_bnSampler,
-      "inOffset",
-      m_inOffset.x,
-      m_inOffset.y,
-      m_inOffset.z,
-      m_inOffset.w);
+          "inOffset",
+          m_inOffset.x,
+          m_inOffset.y,
+          m_inOffset.z,
+          m_inOffset.w);
   bnSet4f(m_bnSampler,
-      "outOffset",
-      m_outOffset.x,
-      m_outOffset.y,
-      m_outOffset.z,
-      m_outOffset.w);
+          "outOffset",
+          m_outOffset.x,
+          m_outOffset.y,
+          m_outOffset.z,
+          m_outOffset.w);
   bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
   bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
   bnCommit(m_bnSampler);
@@ -160,39 +211,40 @@ void Image2D::commitParameters()
   m_inTransform = math::identity;
   getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
   m_inOffset =
-      getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
   m_outTransform = math::identity;
   getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
   m_outOffset =
-      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
 }
 
 void Image2D::finalize()
 {
   if (m_bnTextureData)
     bnRelease(m_bnTextureData);
-  m_bnTextureData = makeBarneyTextureData(
-      deviceState(), m_image.ptr, m_image->size().x, m_image->size().y);
+  m_bnTextureData
+    = makeBarneyTextureData(this, deviceState(), m_image.ptr,
+                            m_image->size().x, m_image->size().y);
 
   BNTextureFilterMode filterMode =
-      m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
+    m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
   bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
   bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode1);
   bnSet1i(m_bnSampler, "wrapMode1", (int)m_wrapMode2);
   bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
   bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
   bnSet4f(m_bnSampler,
-      "inOffset",
-      m_inOffset.x,
-      m_inOffset.y,
-      m_inOffset.z,
-      m_inOffset.w);
+          "inOffset",
+          m_inOffset.x,
+          m_inOffset.y,
+          m_inOffset.z,
+          m_inOffset.w);
   bnSet4f(m_bnSampler,
-      "outOffset",
-      m_outOffset.x,
-      m_outOffset.y,
-      m_outOffset.z,
-      m_outOffset.w);
+          "outOffset",
+          m_outOffset.x,
+          m_outOffset.y,
+          m_outOffset.z,
+          m_outOffset.w);
   bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
   bnCommit(m_bnSampler);
 }
@@ -202,10 +254,74 @@ bool Image2D::isValid() const
   return m_image;
 }
 
+// Image3D //
+
+Image3D::Image3D(BarneyGlobalState *s) : Sampler(s, "texture3D") {}
+
+Image3D::~Image3D() = default;
+
+void Image3D::commitParameters()
+{
+  Sampler::commitParameters();
+  m_image = getParamObject<helium::Array3D>("image");
+  m_inAttribute = getParamString("inAttribute", "attribute0");
+  m_linearFilter = getParamString("filter", "linear") != "nearest";
+  m_wrapMode1 = toBarneyAddressMode(getParamString("wrapMode1", "clampToEdge"));
+  m_wrapMode2 = toBarneyAddressMode(getParamString("wrapMode2", "clampToEdge"));
+  m_wrapMode3 = toBarneyAddressMode(getParamString("wrapMode3", "clampToEdge"));
+  m_inTransform = math::identity;
+  getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
+  m_inOffset =
+    getParam<math::float4>("inOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+  m_outTransform = math::identity;
+  getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
+  m_outOffset =
+    getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+}
+
+void Image3D::finalize()
+{
+  if (m_bnTextureData)
+    bnRelease(m_bnTextureData);
+  m_bnTextureData = makeBarneyTextureData(this,
+                                          deviceState(), m_image.ptr,
+                                          m_image->size().x,
+                                          m_image->size().y,
+                                          m_image->size().z);
+
+  BNTextureFilterMode filterMode =
+    m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
+  bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
+  bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode1);
+  bnSet1i(m_bnSampler, "wrapMode1", (int)m_wrapMode2);
+  bnSet1i(m_bnSampler, "wrapMode2", (int)m_wrapMode3);
+  bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
+  bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
+  bnSet4f(m_bnSampler,
+          "inOffset",
+          m_inOffset.x,
+          m_inOffset.y,
+          m_inOffset.z,
+          m_inOffset.w);
+  bnSet4f(m_bnSampler,
+          "outOffset",
+          m_outOffset.x,
+          m_outOffset.y,
+          m_outOffset.z,
+          m_outOffset.w);
+  bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
+  bnCommit(m_bnSampler);
+}
+
+bool Image3D::isValid() const
+{
+  return m_image;
+}
+
 /// Transform ///
 
 TransformSampler::TransformSampler(BarneyGlobalState *s)
-    : Sampler(s, "transform")
+  : Sampler(s, "transform")
 {}
 
 TransformSampler::~TransformSampler() = default;
@@ -216,7 +332,7 @@ void TransformSampler::commitParameters()
   m_outTransform = math::identity;
   getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
   m_outOffset =
-      getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
+    getParam<math::float4>("outOffset", math::float4(0.f, 0.f, 0.f, 0.f));
   m_inAttribute = getParamString("inAttribute", "attribute0");
 }
 
@@ -224,11 +340,11 @@ void TransformSampler::finalize()
 {
   bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
   bnSet4f(m_bnSampler,
-      "outOffset",
-      m_outOffset.x,
-      m_outOffset.y,
-      m_outOffset.z,
-      m_outOffset.w);
+          "outOffset",
+          m_outOffset.x,
+          m_outOffset.y,
+          m_outOffset.z,
+          m_outOffset.w);
   bnSetString(m_bnSampler, "inAttribute", m_inAttribute.c_str());
   bnCommit(m_bnSampler);
 }
