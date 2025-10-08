@@ -175,35 +175,28 @@ namespace BARNEY_NS {
                              bool dbg) const
     {
       vec4f in  = inputs.get((AttributeKind)inAttribute);
+      vec4f out = in;
       if (type != TRANSFORM) {
         vec4f coord = inTransform.applyTo(in);
+        vec4f fromTex = coord;
         if (type == IMAGE1D) {
-          vec4f fromTex = rtc::tex1D<vec4f>(texture,coord.x);
-          if (numChannels == 1) {
-            fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
-          } else if (numChannels == 2) {
-            fromTex.z = 0.f; fromTex.w = 1.f;
-          } else if (numChannels == 3) {
-            fromTex.w = 1.f;
-          }
-          return outTransform.applyTo(fromTex);
+          fromTex = rtc::tex1D<vec4f>(texture,coord.x);
+        } else if (type == IMAGE3D) {
+          fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
+        } else if (type == IMAGE3D) {
+          fromTex = rtc::tex3D<vec4f>(texture,coord.x,coord.y,coord.z);
         }
-        if (type == IMAGE2D) {
-          vec4f fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
-          if (numChannels == 1) {
-            fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
-          } else if (numChannels == 2) {
-            fromTex.z = 0.f; fromTex.w = 1.f;
-          } else if (numChannels == 3) {
-            fromTex.w = 1.f;
-          }
-          return outTransform.applyTo(fromTex);
-        }
-        return coord;
+        if (numChannels <= 1) fromTex.y = 0.f;
+        if (numChannels <= 2) fromTex.z = 0.f;
+        if (numChannels <= 3) fromTex.w = 1.f;
+        out = fromTex;
       }
-      vec4f out = outTransform.applyTo(in);
-      return out;
+      return outTransform.applyTo(out);
     }
 #endif
+
+
+
+    
   }
 }
