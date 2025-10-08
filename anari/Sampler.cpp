@@ -74,6 +74,22 @@ namespace barney_device {
                                      height,
                                      depth,
                                      input->dataAs<float>());
+      } else if (input->elementType() == ANARI_UFIXED8) {
+        return bnTextureData3DCreate(context,
+                                     slot,
+                                     BN_UFIXED8,
+                                     width,
+                                     height,
+                                     depth,
+                                     input->dataAs<uint8_t>());
+      } else if (input->elementType() == ANARI_UFIXED16) {
+        return bnTextureData3DCreate(context,
+                                     slot,
+                                     BN_UFIXED16,
+                                     width,
+                                     height,
+                                     depth,
+                                     input->dataAs<uint8_t>());
       } else {
         std::string texelType = anari::toString(input->elementType());
         objectToReportErrorWith->reportMessage
