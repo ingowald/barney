@@ -189,12 +189,14 @@ namespace BARNEY_NS {
        color directly into our linearbuffer, and won't write normal at
        all */
     bool doDenoising = denoiser != 0 && enableDenoising;
-
-
     if (doDenoising) {
       /* run denoiser - this will write pixels in float4 format to
          denoiser->out_rgba */
       float blendFactor = (accumID-1) / (accumID+100.f);
+      // iw - denoiser (currently) doesn't have eaccess to device
+      // stream, so runs in default straem --> have to make sure that
+      // device stream is synced before we run it.
+      device->rtc->sync();
       denoiser->run(blendFactor);
 
       switch(requestedFormat) {

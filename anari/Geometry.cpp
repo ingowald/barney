@@ -111,7 +111,7 @@ void Geometry::setAttributes(BNGeom geom)
 void Geometry::commitParameters()
 {
   math::float4 invalidAttr(NAN, NAN, NAN, NAN);
-  m_constantAttributes[0] = getParam<math::float4>("attribute1", invalidAttr);
+  m_constantAttributes[0] = getParam<math::float4>("attribute0", invalidAttr);
   m_constantAttributes[1] = getParam<math::float4>("attribute1", invalidAttr);
   m_constantAttributes[2] = getParam<math::float4>("attribute2", invalidAttr);
   m_constantAttributes[3] = getParam<math::float4>("attribute3", invalidAttr);
@@ -310,8 +310,11 @@ void Cylinder::finalize()
 
   m_generatedRadii.clear();
   if (!m_radius) {
-    m_generatedRadii.resize(m_vertexPosition->totalSize() / 2);
-    for (size_t i = 0; i < m_generatedRadii.size(); ++i) {
+    int numIndices =
+      m_index ? (int)m_index->size() : (int)m_generatedIndices.size();
+      
+    m_generatedRadii.resize(numIndices);
+    for (size_t i = 0; i < numIndices; ++i) {
       m_generatedRadii[i] = m_globalRadius;
     }
   }

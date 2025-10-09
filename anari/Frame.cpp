@@ -159,7 +159,6 @@ namespace barney_device {
         bnAccumReset(m_bnFrameBuffer);
       firstFrame = true;
     }
-
     if (!isValid()) {
       reportMessage(
                     ANARI_SEVERITY_ERROR, "skipping render of incomplete frame object");

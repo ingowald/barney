@@ -158,12 +158,18 @@ namespace rtc {
       layer.output.data = (CUdeviceptr)out_rgba;
 
       OptixDenoiserParams denoiserParams = {};
-      denoiserParams.blendFactor      = blendFactor;
 
+      /// blend factor.
+      /// If set to 0 the output is 100% of the denoised input. If set to 1, the output is 100% of
+      /// the unmodified input. Values between 0 and 1 will linearly interpolate between the denoised
+      /// and unmodified input.
+      denoiserParams.blendFactor      = blendFactor;
+      // iw - this should at some point use the stream used for rendering/copy pixels
+      cudaStream_t denoiserStream = 0;
       optixDenoiserInvoke
         (
          denoiser,
-         0,
+         denoiserStream,
          &denoiserParams,
          (CUdeviceptr)denoiserState,
          denoiserSizes.stateSizeInBytes,
@@ -175,6 +181,7 @@ namespace rtc {
          (CUdeviceptr)denoiserScratch,
          denoiserSizes.withoutOverlapScratchSizeInBytes
          );
+      cudaStreamSynchronize(denoiserStream);
     }
     
 #endif

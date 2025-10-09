@@ -52,6 +52,13 @@ namespace rtc {
     };
 #endif
     
+    template<typename T>
+    void printDev(const char *text, const T *t)
+    {
+      T onHost;
+      cudaMemcpy(&onHost,t,sizeof(T),cudaMemcpyDefault);
+      std::cout << text << " : " << onHost << std::endl;
+    }
   }
 }
 

@@ -203,5 +203,48 @@ namespace BARNEY_NS {
                                        userSuppliedGpuListWasEmpty);
     }
 # endif
+
+
+# if BARNEY_RTC_CUDA
+    barney_api::Context *
+    createMPIContext_cuda(barney_api::mpi::Comm world,
+                           // barney_api::mpi::Comm workers,
+                           // bool isActiveWorker,
+                           const std::vector<int> &dgIDs,
+                           int numGPUs, const int *gpuIDs)
+    {
+      if (FromEnv::get()->logBackend)
+        std::cout << "#bn: creating *cuda* context" << std::endl;
+      // std::vector<int> gpuIDs;
+      bool userSuppliedGpuListWasEmpty = (gpuIDs == nullptr);
+      int numDGs = dgIDs.size();
+      if (numGPUs == -1) {
+        BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
+      }
+      if (numGPUs < numDGs)
+        throw std::runtime_error
+          ("not enough CUDA GPUs for requested number of data groups!");
+      if (numGPUs % numDGs != 0)
+        throw std::runtime_error
+          ("num GPUs not a multiple of num data groups on this rank!");
+      int gpusPerDG = numGPUs / numDGs;
+      std::vector<LocalSlot> localSlots(dgIDs.size());
+      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+        LocalSlot &slot = localSlots[lsIdx];
+        slot.dataRank = dgIDs[lsIdx];
+        for (int j=0;j<gpusPerDG;j++) {
+          int idx = lsIdx*gpusPerDG+j;
+          int gpuID = gpuIDs?gpuIDs[idx]:idx;
+          PING; PRINT(gpuID);
+          slot.gpuIDs.push_back(gpuID);
+        }
+      }
+
+      barney_api::mpi::Comm workers
+        = world.split(!isPassiveNode(localSlots));
+      return new BARNEY_NS::MPIContext(world,workers,localSlots,
+                                       userSuppliedGpuListWasEmpty);
+    }
+# endif
   }
 }

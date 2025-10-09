@@ -159,7 +159,8 @@ namespace BARNEY_NS {
   { return hash(hash(v0,v1,v2),v3); }
   inline __both__ uint64_t hash(uint32_t v0, uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4)
   { return hash(hash(v0,v1,v2,v3),v4); }
-  
+
+  // using rtc::optix::printDev;
 }
 
 #define BARNEY_NYI() throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not yet implemented")
