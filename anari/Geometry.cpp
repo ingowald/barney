@@ -496,6 +496,7 @@ void Curve::commitParameters()
   m_index = getParamObject<Array1D>("primitive.index");
   m_vertexPosition = getParamObject<Array1D>("vertex.position");
   m_vertexRadius = getParamObject<Array1D>("vertex.radius");
+  m_globalRadius = getParam<float>("radius", 0.01f);
 
   if (!m_vertexPosition) {
     reportMessage(ANARI_SEVERITY_WARNING,
@@ -518,15 +519,22 @@ void Curve::setBarneyParameters(BNGeom geom)
   int slot = deviceState()->slot;
   auto context = deviceState()->tether->context;
 
-  assert(m_vertexRadius->totalSize() == m_vertexPosition->totalSize());
-  int numVertices =
-      (int)std::min(m_vertexRadius->totalSize(), m_vertexPosition->totalSize());
+  int numVertices = (int)m_vertexPosition->totalSize();
   const bn_float3 *in_vertex = (const bn_float3 *)m_vertexPosition->data();
-  const float *in_radius = (const float *)m_vertexRadius->data();
+  
   std::vector<math::float4> vertex(numVertices);
-  for (int i = 0; i < numVertices; i++)
-    vertex[i] = math::float4(
-        in_vertex[i].x, in_vertex[i].y, in_vertex[i].z, in_radius[i]);
+  if (m_vertexRadius && m_vertexRadius->totalSize() > 0) {
+    assert(m_vertexRadius->totalSize() == m_vertexPosition->totalSize());
+    const float *in_radius = (const float *)m_vertexRadius->data();
+    for (int i = 0; i < numVertices; i++)
+      vertex[i] = math::float4(
+          in_vertex[i].x, in_vertex[i].y, in_vertex[i].z, in_radius[i]);
+  } else {
+    // Use global radius for all vertices
+    for (int i = 0; i < numVertices; i++)
+      vertex[i] = math::float4(
+          in_vertex[i].x, in_vertex[i].y, in_vertex[i].z, m_globalRadius);
+  }
 
   BNData vertices =
       bnDataCreate(context, slot, BN_FLOAT4, numVertices, vertex.data());

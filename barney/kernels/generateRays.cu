@@ -135,7 +135,7 @@ namespace BARNEY_NS {
       }
       
 #ifdef NDEBUG
-      // ray._dbg         = 0;
+      ray._dbg        = 0;
       ray.crosshair   = 0;
 #else
       bool crossHair_x = (ix == fbSize.x/2);
