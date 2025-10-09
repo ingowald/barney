@@ -1015,6 +1015,10 @@ namespace barney_api {
       return (BNContext)createMPIContext_optix(world,
                                                dataGroupIDs,
                                                numGPUs,_gpuIDs);
+#elif BARNEY_BACKEND_CUDA
+      return (BNContext)createMPIContext_cuda(world,
+                                              dataGroupIDs,
+                                              numGPUs,_gpuIDs);
 #else
       throw std::runtime_error("explicitly asked for gpus to use, "
                                "but optix backend not compiled in");

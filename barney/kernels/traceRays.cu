@@ -66,8 +66,6 @@ namespace BARNEY_NS {
 
           // if (myRank() == 0)
           //   printf(" -> tracing %i\n",dd.numRays);
-      
-          
           if (nb)
             device->traceRays->launch(/* bs,nb intentionally inverted:
                                          always have 1024 in width: */
