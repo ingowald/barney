@@ -133,6 +133,10 @@ namespace rtc {
       StackEntry *stackPtr = stackBase;
 
       const bvh3f::Node *nodes = model->bvh.nodes;
+      if (!nodes) {
+        // this node seems to not have any content
+        return;
+      }
       int nodeID = 0;
       float node_t0=tMin, node_t1 = accepted.tMax;
       if (!boxTest(node_t0,node_t1,nodes[0].bounds,org,dir)) {

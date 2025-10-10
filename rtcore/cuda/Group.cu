@@ -139,11 +139,13 @@ namespace rtc {
         BARNEY_CUDA_CALL(Free(d_instanceRecords));
         d_instanceRecords = 0;
       }
-      BARNEY_CUDA_CALL(Malloc((void **)&d_instanceRecords,
-                              numInstances*sizeof(InstanceRecord)));
-      BARNEY_CUDA_CALL(Memcpy(d_instanceRecords,h_instances.data(),
-                              numInstances*sizeof(InstanceRecord),
-                              cudaMemcpyDefault));
+      if (numInstances) {
+        BARNEY_CUDA_CALL(Malloc((void **)&d_instanceRecords,
+                                numInstances*sizeof(InstanceRecord)));
+        BARNEY_CUDA_CALL(Memcpy(d_instanceRecords,h_instances.data(),
+                                numInstances*sizeof(InstanceRecord),
+                                cudaMemcpyDefault));
+      }
       h_instances.clear();
       device->sync();
       
@@ -151,10 +153,12 @@ namespace rtc {
       // compute bounds for bvh constuction
       // ------------------------------------------------------------------
       box3f *instBounds = 0;
-      BARNEY_CUDA_CALL(Malloc((void **)&instBounds,
-                              numInstances*sizeof(box3f)));
-      computeInstanceBounds<<<divRoundUp(numInstances,1024),1024,0,device->stream>>>
-        (instBounds,d_instanceRecords,numInstances);
+      if (numInstances) {
+        BARNEY_CUDA_CALL(Malloc((void **)&instBounds,
+                                numInstances*sizeof(box3f)));
+        computeInstanceBounds<<<divRoundUp(numInstances,1024),1024,0,device->stream>>>
+          (instBounds,d_instanceRecords,numInstances);
+      }
       device->sync();
 
       // ------------------------------------------------------------------

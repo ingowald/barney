@@ -176,15 +176,7 @@ namespace BARNEY_NS {
                              bool dbg) const
     {
       vec4f in  = inputs.get((AttributeKind)inAttribute);
-<<<<<<< HEAD
-      if (0 && dbg) printf("Sampler::eval in %f %f %f:%f\n",
-                      in.x,
-                      in.y,
-                      in.z,
-                      in.w);
-=======
       vec4f out = in;
->>>>>>> iw/sampler3d
       if (type != TRANSFORM) {
         vec4f coord = inTransform.applyTo(in);
         vec4f fromTex = coord;
@@ -195,33 +187,12 @@ namespace BARNEY_NS {
         } else if (type == IMAGE3D) {
           fromTex = rtc::tex3D<vec4f>(texture,coord.x,coord.y,coord.z);
         }
-<<<<<<< HEAD
-        if (type == IMAGE2D) {
-          vec4f fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
-          if (0 && dbg) printf("Sampler::eval fromtex %f %f -> %f %f %f: %f\n",
-                          coord.x,coord.y,
-                          fromTex.x,
-                          fromTex.y,
-                          fromTex.z,
-                          fromTex.w);
-          if (numChannels == 1) {
-            fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
-          } else if (numChannels == 2) {
-            fromTex.z = 0.f; fromTex.w = 1.f;
-          } else if (numChannels == 3) {
-            fromTex.w = 1.f;
-          }
-          return outTransform.applyTo(fromTex);
-        }
-        return coord;
-=======
         // iw - numchannels == 0 can't happen, that's not a valid
         // value
         if (numChannels <= 1) fromTex.y = 0.f;
         if (numChannels <= 2) fromTex.z = 0.f;
         if (numChannels <= 3) fromTex.w = 1.f;
         out = fromTex;
->>>>>>> iw/sampler3d
       }
       return outTransform.applyTo(out);
     }
