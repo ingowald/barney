@@ -19,6 +19,8 @@ namespace barney_device {
   void Group::commitParameters()
   {
     m_surfaceData = getParamObject<ObjectArray>("surface");
+    PING;
+    PRINT(m_surfaceData);
     m_volumeData = getParamObject<ObjectArray>("volume");
     m_lightData = getParamObject<ObjectArray>("light");
   }
@@ -48,6 +50,7 @@ namespace barney_device {
                     m_surfaceData->handlesEnd(),
                     [&](auto *o) {
                       auto *s = (Surface *)o;
+                      PING; PRINT(s);
                       if (s && s->isValid())
                         surfaces.push_back(s);
                       else {

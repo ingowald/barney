@@ -68,6 +68,9 @@ BNGeom Surface::getBarneyGeom()
 
 bool Surface::isValid() const
 {
+  PING;
+  PRINT(m_geometry);
+  PRINT(m_material);
   return m_geometry && m_material && m_geometry->isValid()
       && m_material->isValid();
 }

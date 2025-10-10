@@ -64,6 +64,8 @@ namespace barney_device {
   void World::commitParameters()
   {
     m_zeroSurfaceData = getParamObject<ObjectArray>("surface");
+    PING;
+    PRINT(m_zeroSurfaceData);
     m_zeroVolumeData = getParamObject<ObjectArray>("volume");
     m_zeroLightData = getParamObject<ObjectArray>("light");
     m_instanceData = getParamObject<ObjectArray>("instance");
@@ -80,6 +82,9 @@ namespace barney_device {
       reportMessage(ANARI_SEVERITY_DEBUG,
                     "barney::World found %zu surfaces in zero instance",
                     m_zeroSurfaceData->size());
+      PING;
+      PRINT(m_zeroSurfaceData->size());
+      PRINT(getParamDirect("surface"));
       m_zeroGroup->setParamDirect("surface", getParamDirect("surface"));
     } else
       m_zeroGroup->removeParam("surface");
