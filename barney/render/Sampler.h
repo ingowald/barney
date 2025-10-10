@@ -117,10 +117,11 @@ namespace BARNEY_NS {
         : Sampler(slotContext)
       {}
       DD getDD(Device *device) override;
-      // void createDD(DD &dd, int devID) override;
-      // void freeDD(DD &dd, int devID) override;
     };
 
+    /*! sampler that operates on rtc-supported texture types; can
+        operate on 1D (for ANARI IMAGE1D sampler), 2D (ANARI IMAGE2D)
+        and 3D (ANARI IMAGE3D) textures */
     struct TextureSampler : public Sampler {
       TextureSampler(SlotContext *slotContext,
                      int numDims);
@@ -149,12 +150,12 @@ namespace BARNEY_NS {
       PLD *getPLD(Device *device);
       std::vector<PLD> perLogical;
       
-      mat4f inTransform { mat4f::identity() };
-      vec4f inOffset { 0.f, 0.f, 0.f, 0.f };
+      mat4f inTransform               { mat4f::identity()   };
+      vec4f inOffset                  { 0.f, 0.f, 0.f, 0.f  };
       BNTextureAddressMode wrapModes[3]
       = { BN_TEXTURE_WRAP, BN_TEXTURE_WRAP, BN_TEXTURE_WRAP };
-      BNTextureFilterMode filterMode = BN_TEXTURE_LINEAR;
-      const int   numDims=0;
+      BNTextureFilterMode  filterMode { BN_TEXTURE_LINEAR   };
+      const int            numDims;
       std::shared_ptr<TextureData> textureData{ 0 };
     };
     
@@ -175,24 +176,26 @@ namespace BARNEY_NS {
                              bool dbg) const
     {
       vec4f in  = inputs.get((AttributeKind)inAttribute);
+<<<<<<< HEAD
       if (0 && dbg) printf("Sampler::eval in %f %f %f:%f\n",
                       in.x,
                       in.y,
                       in.z,
                       in.w);
+=======
+      vec4f out = in;
+>>>>>>> iw/sampler3d
       if (type != TRANSFORM) {
         vec4f coord = inTransform.applyTo(in);
+        vec4f fromTex = coord;
         if (type == IMAGE1D) {
-          vec4f fromTex = rtc::tex1D<vec4f>(texture,coord.x);
-          if (numChannels == 1) {
-            fromTex.y = fromTex.z = 0.f; fromTex.w = 1.f;
-          } else if (numChannels == 2) {
-            fromTex.z = 0.f; fromTex.w = 1.f;
-          } else if (numChannels == 3) {
-            fromTex.w = 1.f;
-          }
-          return outTransform.applyTo(fromTex);
+          fromTex = rtc::tex1D<vec4f>(texture,coord.x);
+        } else if (type == IMAGE2D) {
+          fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
+        } else if (type == IMAGE3D) {
+          fromTex = rtc::tex3D<vec4f>(texture,coord.x,coord.y,coord.z);
         }
+<<<<<<< HEAD
         if (type == IMAGE2D) {
           vec4f fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
           if (0 && dbg) printf("Sampler::eval fromtex %f %f -> %f %f %f: %f\n",
@@ -211,10 +214,21 @@ namespace BARNEY_NS {
           return outTransform.applyTo(fromTex);
         }
         return coord;
+=======
+        // iw - numchannels == 0 can't happen, that's not a valid
+        // value
+        if (numChannels <= 1) fromTex.y = 0.f;
+        if (numChannels <= 2) fromTex.z = 0.f;
+        if (numChannels <= 3) fromTex.w = 1.f;
+        out = fromTex;
+>>>>>>> iw/sampler3d
       }
-      vec4f out = outTransform.applyTo(in);
-      return out;
+      return outTransform.applyTo(out);
     }
 #endif
-  }
-}
+
+
+
+    
+  } // ::BARNEY_NS::render
+} // ::BARNEY_NS

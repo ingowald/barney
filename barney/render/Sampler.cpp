@@ -57,11 +57,11 @@ namespace BARNEY_NS {
     Sampler::SP Sampler::create(SlotContext *context,
                                 const std::string &type)
     {
-      if (type == "texture1D")
+      if (type == "texture1D" || type == "image1D")
         return std::make_shared<TextureSampler>(context,1);
       if (type == "texture2D" || type == "image2D")
         return std::make_shared<TextureSampler>(context,2);
-      if (type == "texture3D")
+      if (type == "texture3D" || type == "image3D")
         return std::make_shared<TextureSampler>(context,3);
       if (type == "transform")
         return std::make_shared<TransformSampler>(context);
