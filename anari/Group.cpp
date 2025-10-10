@@ -62,15 +62,26 @@ namespace barney_device {
                     });
     }
 
-    for (auto s : surfaces)
-      barneyGeometries.push_back(s->getBarneyGeom());
+    PRINT(surfaces.size());
+    for (auto s : surfaces) {
+      PING; PRINT(s); 
+      auto bg = s->getBarneyGeom();
+      PING; PRINT((int*)bg);
+      barneyGeometries.push_back(bg);
+      PING;fflush(0);
+    }
+    PING;fflush(0);
 
     // Volumes //
 
+    PING; PRINT(m_volumeData);
     if (m_volumeData) {
-      std::for_each(
-                    m_volumeData->handlesBegin(), m_volumeData->handlesEnd(), [&](auto *o) {
+      PING;
+      std::for_each(m_volumeData->handlesBegin(),
+                    m_volumeData->handlesEnd(),
+                    [&](auto *o) {
                       auto *v = (Volume *)o;
+                      PRINT(v);
                       if (v && v->isValid())
                         volumes.push_back(v);
                       else {
@@ -81,9 +92,11 @@ namespace barney_device {
                       }
                     });
     }
-
+    
+    PING;
     for (auto v : volumes)
       barneyVolumes.push_back(v->getBarneyVolume());
+    PING;
 
     // Lights //
 
@@ -103,23 +116,27 @@ namespace barney_device {
     }
 
     for (auto l : lights) {
-      if (l->isValid())
+      if (l && l->isValid())
         barneyLights.push_back(l->getBarneyLight());
     }
 
+    PING;
     BNData lightsData = nullptr;
     if (!barneyLights.empty()) {
       lightsData = bnDataCreate(context, slot, BN_OBJECT,
                                 barneyLights.size(), barneyLights.data());
     }
+    PING;
 
     // Make barney group //
 
+    PING;
     BNGroup bg = bnGroupCreate(context,slot,
                                barneyGeometries.data(),
                                (int)barneyGeometries.size(),
                                barneyVolumes.data(),
                                (int)barneyVolumes.size());
+    PING;
     if (lightsData) {
       bnSetData(bg, "lights", lightsData);
       bnRelease(lightsData);

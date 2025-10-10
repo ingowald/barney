@@ -61,6 +61,7 @@ namespace BARNEY_NS {
     : barney_api::Geometry(context),
       devices(devices)
   {
+    PING; PRINT(this);
     perLogical.resize(devices->numLogical);
   }
 
@@ -77,6 +78,23 @@ namespace BARNEY_NS {
   
   Geometry::~Geometry()
   {
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PING;
+    PRINT(this);fflush(0);
     BN_TRACK_LEAKS(std::cout << "#barney: ~Geometry deconstructing"
                    << std::endl);
     material = {};

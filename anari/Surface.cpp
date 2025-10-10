@@ -59,8 +59,10 @@ BNGeom Surface::getBarneyGeom()
   int slot = deviceState()->slot;
   auto context = deviceState()->tether->context;
 
-  cleanup();
-  m_bnGeom = bnGeometryCreate(context, slot, m_geometry->bnSubtype());
+  if (!m_bnGeom) {
+    cleanup();
+    m_bnGeom = bnGeometryCreate(context, slot, m_geometry->bnSubtype());
+  }
   setBarneyParameters();
 
   return m_bnGeom;

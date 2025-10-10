@@ -356,14 +356,18 @@ namespace BARNEY_NS {
   {
     std::vector<Geometry::SP> geoms;
     std::vector<Volume::SP> volumes;
+    PING;
     for (int i=0;i<numGeoms;i++) {
       auto g = _geoms[i];
+      PRINT(g);
       if (g) geoms.push_back(g->as<Geometry>());
     }
+    PING;
     for (int i=0;i<numVolumes;i++) {
       auto g = _volumes[i];
       if (g) volumes.push_back(g->as<Volume>());
     }
+    PING;
     return std::make_shared<Group>(this,
                                    getDevices(slot),
                                    geoms,volumes);
