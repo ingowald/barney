@@ -24,7 +24,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 
 #define WARN_NOTIMPLEMENTED std::cout << " ## " << __PRETTY_FUNCTION__ << " not implemented yet ..." << std::endl;
 
-#if 0
+#if 1
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/ 
@@ -168,9 +168,9 @@ namespace barney_api {
   
   inline Object *checkGet(BNObject object)
   {
+    assert(object);
     if (!object) throw std::runtime_error
                    ("@barney: trying to use/access null object");
-    assert(object);
     return (Object *)object;
   }
 
@@ -285,6 +285,7 @@ namespace barney_api {
                                    texelFormat,
                                    vec3i(width,height,depth),
                                    texels);
+    PING; PRINT(td);
     return (BNTextureData)context->initReference(td);
   }
 
@@ -489,6 +490,7 @@ namespace barney_api {
                               int slot,
                               const char *type)
   {
+    LOG_API_ENTRY;
     Context *context = checkGet(_context);
     std::shared_ptr<Material> material
       = context->createMaterial(slot,type);
@@ -500,6 +502,7 @@ namespace barney_api {
                             int slot,
                             const char *type)
   {
+    LOG_API_ENTRY;
     Context *context = checkGet(_context);
     std::shared_ptr<Sampler> sampler
       = context->createSampler(slot,type);
@@ -511,6 +514,7 @@ namespace barney_api {
   BNCamera bnCameraCreate(BNContext _context,
                           const char *type)
   {
+    LOG_API_ENTRY;
     Context *context = checkGet(_context);
     std::shared_ptr<Camera> camera
       = context->createCamera(type);

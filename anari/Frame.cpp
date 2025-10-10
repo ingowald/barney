@@ -147,6 +147,7 @@ namespace barney_device {
 
   void Frame::renderFrame()
   {
+    PING;fflush(0);
     auto start = std::chrono::steady_clock::now();
 
     auto *state = deviceState();
@@ -178,7 +179,8 @@ namespace barney_device {
     }
 
     auto model = m_world->makeCurrent();
-
+    PRINT(model);
+    
     if (m_lastFrameWasFirstFrame && m_channelTypes.depth != ANARI_UNKNOWN
         && !m_didMapChannel.depth)
       reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
