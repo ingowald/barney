@@ -1,0 +1,5 @@
+#cmakedefine01 BARNEY_HAVE_CUDA
+#cmakedefine01 BARNEY_OIDN_CPU
+#cmakedefine01 BARNEY_OIDN_GPU
+
+#cmakedefine01 BARNEY_DISABLE_DENOISING

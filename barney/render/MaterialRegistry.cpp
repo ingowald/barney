@@ -1,0 +1,86 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+
+#include "barney/Context.h"
+#include "barney/material/DeviceMaterial.h"
+#include "barney/material/Material.h"
+#include "barney/render/MaterialRegistry.h"
+
+namespace BARNEY_NS {
+  namespace render {
+
+    MaterialRegistry::PLD *MaterialRegistry::getPLD(Device *device)
+    { return &perLogical[device->contextRank()]; }
+    
+    MaterialRegistry::MaterialRegistry(const DevGroup::SP &devices)
+      : devices(devices)
+    {
+      numReserved = 1;
+      perLogical.resize(devices->numLogical);
+      
+      for (auto device : *devices)
+        getPLD(device)->buffer
+          = device->rtc->createBuffer(numReserved*sizeof(DeviceMaterial));
+    }
+
+    MaterialRegistry::~MaterialRegistry()
+    {
+      // owlBufferRelease(buffer);
+      for (auto device : *devices)
+        device->rtc->freeBuffer(getPLD(device)->buffer);
+    }
+    
+    void MaterialRegistry::grow()
+    {
+      size_t oldNumBytes = numReserved * sizeof(DeviceMaterial);
+      numReserved *= 2;
+      size_t newNumBytes = numReserved * sizeof(DeviceMaterial);
+      for (auto device : *devices) {
+      // ------------------------------------------------------------------
+      // save old materials
+      // ------------------------------------------------------------------
+        PLD *pld = getPLD(device);
+        rtc::Buffer *oldBuffer = pld->buffer;
+        auto rtc = device->rtc;
+        
+        rtc::Buffer *newBuffer
+          = rtc->createBuffer(newNumBytes);
+        rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
+        rtc->sync();
+        rtc->freeBuffer(oldBuffer);
+        pld->buffer = newBuffer;
+      }
+    }
+
+    int MaterialRegistry::allocate()
+    {
+      if (!reusableIDs.empty()) {
+        int ID = reusableIDs.top();
+        reusableIDs.pop();
+        return ID;
+      }
+      if (nextFree == numReserved) grow();
+
+      return nextFree++;
+    }
+   
+    void MaterialRegistry::release(int nowReusableID)
+    {
+      reusableIDs.push(nowReusableID);
+    }
+  
+    void MaterialRegistry::setMaterial(int materialID,
+                                       const DeviceMaterial &dd,
+                                       Device *device)
+    {
+      // for (auto device : *devices) {
+        PLD *pld = getPLD(device);
+        pld->buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID);
+      // }
+    }
+
+
+    
+  }
+}

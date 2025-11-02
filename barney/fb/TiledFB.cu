@@ -1,0 +1,316 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+
+#include "barney/fb/TiledFB.h"
+#include "barney/fb/FrameBuffer.h"
+#include "barney/common/math.h"
+#include "rtcore/ComputeInterface.h"
+
+namespace BARNEY_NS {
+
+  __rtc_global
+  void linearizeColorAndNormalKernel(const rtc::ComputeInterface &ci,
+                                     void      *out_rgba,
+                                     BNDataType colorFormat,
+                                     vec3f     *out_normal,
+                                     float      accumScale,
+                                     TileDesc  *descs,
+                                     AccumTile *tiles,
+                                     vec2i      numPixels)
+  {
+    int tileIdx = ci.getBlockIdx().x;
+    TileDesc desc   = descs[tileIdx];
+    
+    AccumTile *tile = &tiles[tileIdx];
+
+    int subIdx = ci.getThreadIdx().x;
+    int iix = subIdx % tileSize;
+    int iiy = subIdx / tileSize;
+    int ix = desc.lower.x + iix;
+    int iy = desc.lower.y + iiy;
+    if (ix >= numPixels.x) return;
+    if (iy >= numPixels.y) return;
+    int idx = ix + numPixels.x*iy;
+
+    vec4f color = tile->accum[subIdx] * accumScale;
+
+    if (colorFormat == BN_FLOAT4) {
+      ((vec4f*)out_rgba)[idx] = color;
+    } else if (colorFormat == BN_UFIXED8_RGBA) {
+      ((uint32_t*)out_rgba)[idx] = make_rgba(color);
+    } else if (colorFormat == BN_UFIXED8_RGBA_SRGB)  {
+      ((uint32_t*)out_rgba)[idx] = make_rgba(linear_to_srgb(color));
+    } else
+      // unsupported type!?
+      ;
+    
+    if (out_normal)
+      out_normal[idx] = tile->normal[subIdx];
+  }
+  
+
+  /*! take this GPU's tiles, and write those tiles' color (and
+    optionally normal) channels into the linear frame buffers
+    provided. The linearColor is guaranteed to be non-null, and to
+    be numPixels.x*numPixels.y vec4fs; linearNormal may be
+    null. Linear buffers may live on another GPU, but are
+    guaranteed to be on the same node. */
+  void TiledFB::linearizeColorAndNormal(void *linearColor,
+                                        BNDataType colorFormat,
+                                        vec3f *linearNormal,
+                                        float  accumScale)
+  {
+    SetActiveGPU forDuration(appDevice?appDevice:device);
+    if (appDevice) {
+      appDevice->rtc->copyAsync(appAccumTiles,accumTiles,
+                                numActiveTilesThisGPU*sizeof(*appAccumTiles));
+      appDevice->rtc->sync();
+    }
+    __rtc_launch(// device
+                 (appDevice?appDevice:device)->rtc,
+                 // kernel
+                 linearizeColorAndNormalKernel,
+                 // launch config
+                 numActiveTilesThisGPU,pixelsPerTile,
+                 // args
+                 linearColor,
+                 colorFormat,
+                 linearNormal,
+                 accumScale,
+                 appDevice?appTileDescs:tileDescs,
+                 appDevice?appAccumTiles:accumTiles,
+                 numPixels);
+  }
+
+
+
+  __rtc_global void linearizeAuxTilesKernel(const rtc::ComputeInterface &ci,
+                                            void           *linearOut,
+                                            vec2i           numPixels,
+                                            AuxChannelTile *aux,
+                                            TileDesc       *descs)
+  {
+    int        tileIdx = ci.getBlockIdx().x;
+    TileDesc   desc    = descs[tileIdx];
+      
+    int subIdx = ci.getThreadIdx().x;
+    int iix = subIdx % tileSize;
+    int iiy = subIdx / tileSize;
+    int ix = desc.lower.x + iix;
+    int iy = desc.lower.y + iiy;
+    if (ix >= numPixels.x) return;
+    if (iy >= numPixels.y) return;
+    int idx = ix + numPixels.x*iy;
+
+    ((uint32_t*)linearOut)[idx] = aux[tileIdx].ui[subIdx];
+  }
+
+  /*! linearize given array's aux tiles, on given device. this can be
+    used either for local GPUs on a single node, or on the owner
+    after it reveived all worker tiles */
+  void TiledFB::linearizeAuxTiles(Device *device,
+                                  void *linearOut,
+                                  vec2i numPixels,
+                                  AuxChannelTile *tilesIn,
+                                  TileDesc       *descsIn,
+                                  int numTiles)
+  {
+    SetActiveGPU forDuration(device);
+    __rtc_launch(// device
+                 device->rtc,
+                 // kernel
+                 linearizeAuxTilesKernel,
+                 // launchDims
+                 numTiles,pixelsPerTile,
+                 // args
+                 linearOut,
+                 numPixels,
+                 tilesIn,
+                 descsIn);
+  }
+  
+
+    /*! linearize _this gpu's_ channels */
+  void TiledFB::linearizeAuxChannel(void *linearChannel,
+                                    BNFrameBufferChannel channel)
+  {
+    AuxChannelTile *tgt_aux = 0;
+    AuxChannelTile *loc_aux = 0;
+    switch(channel) {
+    case BN_FB_DEPTH:
+      tgt_aux = appDevice?appAuxTiles.depth:auxTiles.depth;
+      loc_aux = auxTiles.depth;
+      break;
+    case BN_FB_PRIMID:
+      tgt_aux = appDevice?appAuxTiles.primID:auxTiles.primID;
+      loc_aux = auxTiles.primID;
+      break;
+    case BN_FB_INSTID:
+      tgt_aux = appDevice?appAuxTiles.instID:auxTiles.instID;
+      loc_aux = auxTiles.instID;
+      break;
+    case BN_FB_OBJID:
+      tgt_aux = appDevice?appAuxTiles.objID:auxTiles.objID;
+      loc_aux = auxTiles.objID;
+      break;
+    default:
+      throw std::runtime_error("unsupported aux channel in sending aux!?");
+    };
+    if (loc_aux != tgt_aux)
+      appDevice->rtc->copyAsync(tgt_aux,loc_aux,
+                                numActiveTilesThisGPU*sizeof(*tgt_aux));
+    linearizeAuxTiles(appDevice?appDevice:device,
+                      linearChannel,numPixels,
+                      tgt_aux,
+                      appDevice?appTileDescs:tileDescs,
+                      numActiveTilesThisGPU);
+  }
+
+  
+  TiledFB::SP TiledFB::create(Device *device,
+                              /*! device for the gpu that the app
+                                  lives on, if different from current
+                                  GPU, and if no peer access is
+                                  available */
+                              Device *appDevice,
+                              FrameBuffer *owner)
+  {
+    return std::make_shared<TiledFB>(device, appDevice, owner);
+  }
+
+  TiledFB::TiledFB(Device *device,
+                   Device *appDevice,
+                   FrameBuffer *owner)
+    : device(device),
+      appDevice(appDevice==device?nullptr:appDevice),
+      owner(owner)
+  {}
+
+  TiledFB::~TiledFB()
+  {
+    free();
+  }
+
+  template<typename T>
+  void freeAndSetNull(Device *device, T *&pMem)
+  {
+    if (pMem) {
+      device->rtc->freeMem(pMem);
+      pMem = nullptr;
+    }
+  }
+  
+  void TiledFB::free()
+  {
+    SetActiveGPU forDuration(device);
+    freeAndSetNull(device,tileDescs);
+    freeAndSetNull(device,accumTiles);
+    freeAndSetNull(device,auxTiles.primID);
+    freeAndSetNull(device,auxTiles.instID);
+    freeAndSetNull(device,auxTiles.objID);
+    freeAndSetNull(device,auxTiles.depth);
+
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      freeAndSetNull(appDevice,appTileDescs);
+      freeAndSetNull(appDevice,appAccumTiles);
+      freeAndSetNull(appDevice,appAuxTiles.primID);
+      freeAndSetNull(appDevice,appAuxTiles.instID);
+      freeAndSetNull(appDevice,appAuxTiles.objID);
+      freeAndSetNull(appDevice,appAuxTiles.depth);
+    }
+  }
+
+  __rtc_global void setTileCoordsKernel(const rtc::ComputeInterface &ci,
+                                        TileDesc *tileDescs,
+                                        int numActiveTiles,
+                                        vec2i numTiles,
+                                        int globalIndex,
+                                        int globalIndexStep)
+  {
+    int tid = ci.launchIndex().x;
+    if (tid >= numActiveTiles) return;
+    
+    int tileID = tid * globalIndexStep + globalIndex;
+    
+    int tile_x = tileID % numTiles.x;
+    int tile_y = tileID / numTiles.x;
+    tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
+  }
+  
+
+  void TiledFB::resize(uint32_t channels,
+                       vec2i newSize)
+  {
+    free();
+    SetActiveGPU forDuration(device);
+
+    numPixels = newSize;
+    numTiles  = divRoundUp(numPixels,vec2i(tileSize));
+    numActiveTilesThisGPU
+      = device
+      ? divRoundUp(std::max(0,numTiles.x*numTiles.y - device->globalRank()),
+                   device->globalSize())
+      : 0;
+    // ------------------------------------------------------------------
+    // accum tiles
+    // ------------------------------------------------------------------
+    accumTiles
+      = (AccumTile *)device->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      appAccumTiles
+        = (AccumTile *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
+    }
+    // ------------------------------------------------------------------
+    // aux channel tiles
+    // ------------------------------------------------------------------
+    auto alloc = [&](Device *device, AuxChannelTile *&tiles) 
+    { tiles = (AuxChannelTile *)device->rtc->allocMem(numActiveTilesThisGPU*sizeof(*tiles)); };
+
+    if (channels & BN_FB_PRIMID) alloc(device,auxTiles.primID);
+    if (channels & BN_FB_INSTID) alloc(device,auxTiles.instID);
+    if (channels & BN_FB_OBJID)  alloc(device,auxTiles.objID);
+    if (channels & BN_FB_DEPTH)  alloc(device,auxTiles.depth);
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      if (channels & BN_FB_PRIMID) alloc(appDevice,appAuxTiles.primID);
+      if (channels & BN_FB_INSTID) alloc(appDevice,appAuxTiles.instID);
+      if (channels & BN_FB_OBJID)  alloc(appDevice,appAuxTiles.objID);
+      if (channels & BN_FB_DEPTH)  alloc(appDevice,appAuxTiles.depth);
+    }
+    
+    // ------------------------------------------------------------------
+    // tile descs
+    // ------------------------------------------------------------------
+    tileDescs
+      = (TileDesc *)device->rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
+    if (appDevice) {
+      SetActiveGPU forDuration(appDevice);
+      appTileDescs
+        = (TileDesc *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
+    }
+    __rtc_launch(//device
+                 device->rtc,
+                 // kernel
+                 setTileCoordsKernel,
+                 // launch config,
+                 divRoundUp(numActiveTilesThisGPU,1024),1024,
+                 // args
+                 tileDescs,
+                 numActiveTilesThisGPU,
+                 numTiles,
+                 device->globalRank(),
+                 device->globalSize());
+    if (appTileDescs)
+      device->rtc->copyAsync(appTileDescs,tileDescs,
+                             numActiveTilesThisGPU * sizeof(TileDesc));
+  }
+
+}
+
+
+
+
+  

@@ -1,0 +1,43 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+
+#pragma once
+
+#include "Geometry.h"
+#include "Material.h"
+
+namespace barney_device {
+
+  struct Surface : public Object
+  {
+    Surface(BarneyGlobalState *s);
+    ~Surface() override;
+
+    void commitParameters() override;
+    void finalize() override;
+    void markFinalized() override;
+
+    uint32_t id() const;
+    const Geometry *geometry() const;
+    const Material *material() const;
+
+    BNGeom getBarneyGeom();
+
+    bool isValid() const override;
+
+  private:
+    void setBarneyParameters();
+    void cleanup();
+
+    uint32_t m_id{~0u};
+    helium::ChangeObserverPtr<Geometry> m_geometry;
+    helium::ChangeObserverPtr<Material> m_material;
+
+    BNGeom m_bnGeom{nullptr};
+    BNMaterial m_bnMat{nullptr};
+  };
+
+} // namespace barney_device
+
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Surface *, ANARI_SURFACE);
