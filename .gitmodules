@@ -1,0 +1,12 @@
+[submodule "submodules/optix"]
+	path = submodules/optix
+	url = https://github.com/NVIDIA/optix-dev
+[submodule "submodules/cuBQL"]
+	path = submodules/cuBQL
+	url = https://github.com/NVIDIA/cuBQL
+[submodule "submodules/owl"]
+	path = submodules/owl
+	url = https://github.com/NVIDIA/owl
+[submodule "submodules/embree"]
+	path = submodules/embree
+	url = https://github.com/embree/embree
