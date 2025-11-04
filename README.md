@@ -108,10 +108,10 @@ For CUDA/OptiX Acceleration, it also requires:
 
 - `CUDA`, version 12 and up.
 
-- `OWL` (https://github.com/owl-project/owl). Note OWL gets pulled in as a git
+- `OWL` (https://github.com/NVIDIA/owl). Note OWL gets pulled in as a git
    submodule, no need to externally get and install.
 
-- `OptiX`, as part of OWL. See documentation in OWL (https://github.com/owl-project/owl) for 
+- `OptiX`, as part of OWL. See documentation in OWL (https://github.com/NVIDIA/owl) for 
    where to get, and how to best install for OWL to easily find it)
    
 For MPI-based data-parallel rendering:
