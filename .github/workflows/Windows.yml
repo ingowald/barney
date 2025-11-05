@@ -78,10 +78,6 @@ jobs:
           repository: "KhronosGroup/ANARI-SDK"
           path: ${{github.workspace}}/anari_sdk
 
-      - name: create install dir
-        run: |
-          mkdir ${{github.workspace}}\install
-
       - name: create shared install dir
         run: |
           mkdir ${{github.workspace}}\install
