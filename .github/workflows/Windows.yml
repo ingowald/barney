@@ -86,7 +86,7 @@ jobs:
         run: |
           mkdir ${{github.workspace}}\anari_sdk\build
           cd ${{github.workspace}}\anari_sdk\build
-          cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DBUILD_HELIDE_DEVICE=OFF -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=${{matrix.config}} -A x64 -G "${{ matrix.visual-studio }}"
+          cmake -DCMAKE_BUILD_TYPE=${{matrix.config}} -A x64 -G "${{ matrix.visual-studio }}" .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install -DBUILD_HELIDE_DEVICE=OFF -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF
 
       - name: build ANARI-SDK
         run: |
@@ -102,7 +102,7 @@ jobs:
         run: |
           mkdir ${{github.workspace}}\build
           cd ${{github.workspace}}\build
-          cmake .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install ${{ matrix.build_flags }} -DCMAKE_BUILD_TYPE=${{matrix.config}} -A x64 -G "${{ matrix.visual-studio }}"
+          cmake -A x64 -G "${{ matrix.visual-studio }}" .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\install ${{ matrix.build_flags }} -DCMAKE_BUILD_TYPE=${{matrix.config}}
 
       - name: build barney
         run: |
