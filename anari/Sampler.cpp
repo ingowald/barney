@@ -49,6 +49,13 @@ namespace barney_device {
                                      width,
                                      height,
                                      input->dataAs<float>());
+      } else if (input->elementType() == ANARI_UFIXED8_VEC4) {
+        return bnTextureData2DCreate(context,
+                                     slot,
+                                     BN_UFIXED8_RGBA,
+                                     width,
+                                     height,
+                                     input->data());
       } else {
         std::vector<uint32_t> texels;
         objectToReportErrorWith->reportMessage
