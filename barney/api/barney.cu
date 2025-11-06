@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 
+#include "rtcore/AppInterface.h"
 #include "barney/api/Context.h"
 #if BARNEY_MPI
 # include "barney/common/MPIWrappers.h"

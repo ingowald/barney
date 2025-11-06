@@ -183,10 +183,7 @@ namespace BARNEY_NS {
         = light.color*light.radiance
         * 1.f/(weights[i]/sumWeights
                * (float(RESERVOIR_SIZE)/float(world.numDirLights)));
-      ls.pdf
-        = INFINITY;
-      // weights[i]/sumWeights
-      //   * (float(RESERVOIR_SIZE)/float(world.numDirLights));
+      ls.pdf = BARNEY_INF;
       return weights[i] != 0.f;
     }
 
@@ -258,10 +255,7 @@ namespace BARNEY_NS {
         * (1.f/falloff)
         * 1.f/(weights[i]/sumWeights
                * (float(RESERVOIR_SIZE)/float(world.numPointLights)));
-      ls.pdf
-        = INFINITY;
-      // weights[i]/sumWeights
-      //   * (float(RESERVOIR_SIZE)/float(world.numDirLights));
+      ls.pdf = BARNEY_INF;
       return weights[i] != 0.f;
     }
 

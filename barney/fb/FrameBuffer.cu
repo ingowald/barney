@@ -158,10 +158,6 @@ namespace BARNEY_NS {
        color directly into our linearbuffer, and won't write normal at
        all */
     bool doDenoising = denoiser != 0 && enableDenoising;
-    BNDataType actualInternalColorFormat
-      = doDenoising
-      ? BN_FLOAT4
-      : colorChannelFormat;
     if (doDenoising) {
       /* run denoiser - this will write pixels in float4 format to
          denoiser->out_rgba */
@@ -223,7 +219,7 @@ namespace BARNEY_NS {
       int numPixels = this->numPixels.x * this->numPixels.y;
       if (channel == BN_FB_DEPTH) {
         for (int i=0;i<numPixels;i++)
-          ((float*)appMemory)[i] = INFINITY;
+          ((float*)appMemory)[i] = BARNEY_INF;
         return;
       }
       if (channel == BN_FB_DEPTH ||

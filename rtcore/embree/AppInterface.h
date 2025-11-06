@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "rtcore/embree/embree-common.h"
 #include "rtcore/embree/Device.h"
 #include "rtcore/embree/Buffer.h"
 #include "rtcore/embree/Group.h"
