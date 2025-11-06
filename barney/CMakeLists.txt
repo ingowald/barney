@@ -433,9 +433,9 @@ if (BARNEY_BACKEND_EMBREE)
   target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree>)
   target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree>)
   if (BARNEY_MPI)
-    target_link_libraries(barney_mpi PRIVATE
+    target_link_libraries(barney_mpi PUBLIC
       $<BUILD_INTERFACE:barney_mpi_embree>)
-    target_link_libraries(barney_mpi_static PRIVATE
+    target_link_libraries(barney_mpi_static PUBLIC
       $<BUILD_INTERFACE:barney_mpi_embree>)
   endif()
 endif()
