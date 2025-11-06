@@ -48,7 +48,7 @@ namespace BARNEY_NS {
       if (physicalHostIndexOfHostHash.find(dev.hostNameHash) ==
           physicalHostIndexOfHostHash.end())
         physicalHostIndexOfHostHash[dev.hostNameHash]
-          = physicalHostIndexOfHostHash.size();
+          = (int)physicalHostIndexOfHostHash.size();
       physicalHostIndexOf[gid]
         = physicalHostIndexOfHostHash[dev.hostNameHash];
       

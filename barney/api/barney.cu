@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 
+#include "rtcore/AppInterface.h"
 #include "barney/api/Context.h"
 #if BARNEY_MPI
 # include "barney/common/MPIWrappers.h"
@@ -999,7 +1000,7 @@ namespace barney_api {
     // ------------------------------------------------------------------
 
 #if BARNEY_BACKEND_EMBREE && !(BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX)
-    bool forceCPU = true;
+    // bool forceCPU = true;
 #else
     if (_gpuIDs && numGPUs == 1 && _gpuIDs[0] == -1) {
 # if BARNEY_BACKEND_EMBREE

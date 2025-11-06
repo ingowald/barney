@@ -303,7 +303,7 @@ if (BARNEY_BACKEND_EMBREE)
 
   if (BARNEY_MPI)
     add_library(barney_mpi_embree ${MPI_SOURCES})
-    target_compile_definitions(barney_mpi_embree PRIVATE -DBARNEY_RTC_EMBREE=1)
+    target_compile_definitions(barney_mpi_embree PUBLIC -DBARNEY_RTC_EMBREE=1)
     target_link_libraries(barney_mpi_embree PUBLIC barney_config embree_local)
     target_link_libraries(barney_mpi_embree PUBLIC barney_embree MPI::MPI_C)
     set_library_properties(barney_mpi_embree)
@@ -433,9 +433,9 @@ if (BARNEY_BACKEND_EMBREE)
   target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree>)
   target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree>)
   if (BARNEY_MPI)
-    target_link_libraries(barney_mpi PRIVATE
+    target_link_libraries(barney_mpi PUBLIC
       $<BUILD_INTERFACE:barney_mpi_embree>)
-    target_link_libraries(barney_mpi_static PRIVATE
+    target_link_libraries(barney_mpi_static PUBLIC
       $<BUILD_INTERFACE:barney_mpi_embree>)
   endif()
 endif()

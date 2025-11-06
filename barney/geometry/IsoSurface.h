@@ -51,7 +51,7 @@ namespace BARNEY_NS {
       dd.sfSampler = sampler->getDD(device);
       dd.isoValue = isoValue;
       dd.isoValues = (float *)(isoValues ? isoValues->getDD(device) : nullptr);
-      dd.numIsoValues = isoValues ? isoValues->count : 0;
+      dd.numIsoValues = int(isoValues ? isoValues->count : 0);
 
       return dd;
     }
