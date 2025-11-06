@@ -1,15 +1,14 @@
 name: Ubuntu
 
+#on:
+#  workflow_dispatch:
+
 on:
   workflow_dispatch:
-
-#  push:
-#    paths:
-#      - "**"
-#      - "!.github/**"
-#      - ".github/workflows/Ubuntu.yml"
-#      - ".github/action-scripts/install_cuda_ubuntu.sh"
-#      - "!*.md"
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -20,7 +19,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            cuda: "13.0"
+            cuda: "13.0.2"
             gcc: 13
             config: Release
             build_flags: 
@@ -30,22 +29,22 @@ jobs:
             config: Release
             build_flags: "-DBARNEY_BACKEND_EMBREE=ON -DBARNEY_BACKEND_OPTIX=OFF -DBARNEY_BACKEND_CUDA=OFF"
           - os: ubuntu-24.04
-            cuda: "13.0"
+            cuda: "13.0.2"
             gcc: 13
             config: Release
             build_flags: "-DBARNEY_BACKEND_EMBREE=OFF -DBARNEY_BACKEND_OPTIX=OFF -DBARNEY_BACKEND_CUDA=ON"
           - os: ubuntu-24.04
-            cuda: "12.6"
+            cuda: "12.6.0"
             gcc: 13
             config: Release
             build_flags: 
           - os: ubuntu-24.04
-            cuda: "12.6"
+            cuda: "12.6.0"
             gcc: 13
             config: Debug
             build_flags: 
           - os: ubuntu-22.04
-            cuda: "12.0"
+            cuda: "12.0.0"
             gcc: 11
             config: Release
             build_flags: 
@@ -60,10 +59,13 @@ jobs:
           submodules: true
 
       - name: Install CUDA
-        env:
+        if: contains(matrix.cuda, '.')
+        uses: Jimver/cuda-toolkit@master
+        id: cuda-toolkit
+        with:
           cuda: ${{ matrix.cuda }}
-        run: ./.github/action-scripts/install_cuda_ubuntu.sh
-        shell: bash
+          method: 'network'
+          log-file-suffix: '${{matrix.os}}-gcc${{matrix.gcc}}-config${{matrix.config}}.txt'
 
       # Specify the correct host compilers
       - name: Install/Select gcc and g++
