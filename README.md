@@ -3,8 +3,8 @@
 # Barney - A Multi-GPU (and optionally, Multi-Node) Implementation of the ANARI Rendering API
 
 Build Status:
-[![Windows](https://github.com/ingowald/barney/actions/workflows/Windows.yml/badge.svg)](https://github.com/ingowald/barney/actions/workflows/Windows.yml) 
-[![Ubuntu](https://github.com/ingowald/barney/actions/workflows/Ubuntu.yml/badge.svg)](https://github.com/ingowald/barney/actions/workflows/Ubuntu.yml)
+[![Windows](https://github.com/NVIDIA/barney/actions/workflows/Windows.yml/badge.svg)](https://github.com/NVIDIA/barney/actions/workflows/Windows.yml) 
+[![Ubuntu](https://github.com/NVIDIA/barney/actions/workflows/Ubuntu.yml/badge.svg)](https://github.com/NVIDIA/barney/actions/workflows/Ubuntu.yml)
 
 
 DISCLAIMER: Though Barney has by now reached a stage where it can be
