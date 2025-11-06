@@ -1000,7 +1000,7 @@ namespace barney_api {
     // ------------------------------------------------------------------
 
 #if BARNEY_BACKEND_EMBREE && !(BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX)
-    bool forceCPU = true;
+    // bool forceCPU = true;
 #else
     if (_gpuIDs && numGPUs == 1 && _gpuIDs[0] == -1) {
 # if BARNEY_BACKEND_EMBREE
