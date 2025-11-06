@@ -60,7 +60,7 @@ jobs:
           submodules: true
 
       - name: Install CUDA
-        if: !contains(matrix.cuda, 'none')
+        if: contains(matrix.cuda, '.')
         uses: Jimver/cuda-toolkit@master
         id: cuda-toolkit
         with:
