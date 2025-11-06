@@ -4,6 +4,7 @@ name: Ubuntu
 #  workflow_dispatch:
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
@@ -63,12 +64,8 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda }}
-
-#      - name: Install CUDA
-#        env:
-#          cuda: ${{ matrix.cuda }}
-#        run: ./.github/action-scripts/install_cuda_ubuntu.sh
-#        shell: bash
+          method: 'network'
+          log-file-suffix: '${{matrix.os}}-gcc${{matrix.gcc}}-config${{matrix.config}}.txt'
 
       # Specify the correct host compilers
       - name: Install/Select gcc and g++

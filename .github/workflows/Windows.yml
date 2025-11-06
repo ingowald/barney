@@ -1,9 +1,7 @@
 name: Windows
 
-#on:
-#  workflow_dispatch:
-
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
@@ -64,13 +62,6 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda }}
-
-#      - name: Install CUDA on Ubuntu systems
-#        if: contains(matrix.os, 'ubuntu')
-#        env:
-#          cuda: ${{ matrix.cuda }}
-#        run: .github/action-scripts/install-cuda-ubuntu.sh
-#        shell: bash
 
       - name: Checkout ANARI-SDK
         uses: actions/checkout@v5
