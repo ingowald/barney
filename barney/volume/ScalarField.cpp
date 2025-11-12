@@ -38,8 +38,9 @@ namespace BARNEY_NS {
       return std::make_shared<UMeshField>(context,devices);
     if (type == "BlockStructuredAMR")
       return std::make_shared<BlockStructuredField>(context,devices);
-    if (type == "NanoVDB")
+    if (type == "NanoVDB") {
       return std::make_shared<NanoVDBData>(context,devices);
+    }
     
     context->warn_unsupported_object("ScalarField",type);
     return {};

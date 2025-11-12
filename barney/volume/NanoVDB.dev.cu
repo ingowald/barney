@@ -22,16 +22,6 @@ namespace BARNEY_NS {
       MCVolumeAccel<NanoVDBDataSampler<T>>
         ::boundsProg(ti,geomData,bounds,primID);
 #endif
-      printf("BOUNDS %f %f %f : %f %f %f geomData %p geomData->f %f\n",
-             bounds.lower.x,
-             bounds.lower.y,
-             bounds.lower.z,
-             bounds.upper.x,
-             bounds.upper.y,
-             bounds.upper.z,
-             geomData,
-             *(float*)geomData
-             );
     }
     
     static inline __rtc_device
@@ -84,11 +74,13 @@ namespace BARNEY_NS {
     void anyHit(rtc::TraceInterface &ti)
     { /* nothing to do */ }
   };
-  
-
+   
   using NanoVDBMC_float = MCVolumeAccel<NanoVDBDataSampler<float>>;
+  typedef typename NanoVDBMC_float::DD bla;
+  typedef MCAccel_NanoVDB_Programs<float> blubb;
+  
   RTC_EXPORT_USER_GEOM(NanoVDBMC_float,
-                       typename NanoVDBMC::DD,
+                       typename NanoVDBMC_float::DD,
                        MCAccel_NanoVDB_Programs<float>,false,false);
   RTC_EXPORT_USER_GEOM(NanoVDBMC_Iso_float,
                        typename MCIsoSurfaceAccel<NanoVDBDataSampler<float>>::DD,
