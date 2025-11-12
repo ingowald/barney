@@ -40,13 +40,42 @@ namespace BARNEY_NS {
     if (mcID.x >= mcGrid.dims.x) return;
     if (mcID.y >= mcGrid.dims.y) return;
     if (mcID.z >= mcGrid.dims.z) return;
-    
+
+#if 0
     const box3f mcBounds(mcGrid.gridOrigin+vec3f(mcID)*mcGrid.gridSpacing,
                          mcGrid.gridOrigin+vec3f(mcID+1)*mcGrid.gridSpacing);
 
+    nanovdb::math::Vec3d world_lo = {
+      mcBounds.lower.x,
+      mcBounds.lower.y,
+      mcBounds.lower.z
+    };
+    nanovdb::math::Vec3d world_hi = {
+      mcBounds.upper.x,
+      mcBounds.upper.y,
+      mcBounds.upper.z
+    };
+# if 1
     nanovdb::CoordBBox bbox(
-        {(int)mcBounds.lower.x,(int)mcBounds.lower.y,(int)mcBounds.lower.z},
-        {(int)mcBounds.upper.x+1,(int)mcBounds.upper.y+1,(int)mcBounds.upper.z+1});
+                            {world_lo[0],world_lo[1],world_lo[2]},
+                            {world_hi[0],world_hi[1],world_hi[2]}
+                            );
+# else
+    nanovdb::math::Vec3d idx_lo = dd.nvdbGrid->worldToIndexF(world_lo);
+    nanovdb::math::Vec3d idx_hi = dd.nvdbGrid->worldToIndexF(world_hi);
+    nanovdb::CoordBBox bbox(
+                            {(int)idx_lo[0],(int)idx_lo[1],(int)idx_lo[2]},
+                            {(int)idx_hi[0]+1,(int)idx_hi[1]+1,(int)idx_hi[2]+1}
+                            );
+# endif
+#else
+    vec3i lo = dd.indexBounds.lower+(vec3i(mcID)*dd.gridSize) / mcGrid.dims;
+    vec3i hi = dd.indexBounds.lower+(vec3i(mcID+1)*dd.gridSize) / mcGrid.dims;
+    nanovdb::CoordBBox bbox({lo.x,lo.y,lo.z},
+                            {hi.x+1,hi.y+1,hi.z+1});
+#endif  
+        // {(int)mcBounds.lower.x,(int)mcBounds.lower.y,(int)mcBounds.lower.z},
+        // {(int)mcBounds.upper.x+1,(int)mcBounds.upper.y+1,(int)mcBounds.upper.z+1});
 
     // nanovdb::NanoGrid<float> *gridPtr = (nanovdb::NanoGrid<float> *)gridData;
     using GridType = typename nanovdb::Grid<nanovdb::NanoTree<float>>;
@@ -134,6 +163,7 @@ namespace BARNEY_NS {
     dd.voxelSize   = sf->voxelSize;
     assert(sf->data);
     dd.nvdbGrid    = (NVDBGridT*)sf->data->getDD(device);
+    PRINT((int*)dd.nvdbGrid);
     assert(dd.nvdbGrid);
     // dd.gridType = m_gridMetadata->gridType();
 
@@ -152,6 +182,7 @@ namespace BARNEY_NS {
     dd.gridType    = gridType;
     dd.gridSize    = gridSize;
     dd.gridData    = data->getDD(device);
+    dd.indexBounds = indexBounds;
     
     PING; PRINT(worldBounds);
     assert(dd.gridData);
@@ -284,6 +315,8 @@ namespace BARNEY_NS {
     worldBounds
       = box3f(vec3f(boundsMin[0], boundsMin[1], boundsMin[2]),
               vec3f(boundsMax[0], boundsMax[1], boundsMax[2]));
+    (nanovdb::CoordBBox&)indexBounds = gridMetadata->indexBBox();
+    PRINT(indexBounds);
     nanovdb::Vec3d nvVoxelSize = gridMetadata->voxelSize();
     voxelSize = vec3f((const vec3d&)nvVoxelSize);
     PING; PRINT(worldBounds);

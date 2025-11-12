@@ -34,6 +34,7 @@ namespace BARNEY_NS {
       // box3f worldBounds;
       vec3f voxelSize;
       vec3i gridSize;
+      box3i indexBounds;
       nanovdb::GridType gridType;
       const void *gridData;
       /* nothing */
@@ -79,6 +80,7 @@ namespace BARNEY_NS {
     // vec3f gridSpacing { 1,1,1 };
     PODData::SP data;
     // box3f worldBounds;
+    box3i indexBounds;
     vec3f voxelSize;
     vec3i gridSize;
     nanovdb::GridType gridType;
