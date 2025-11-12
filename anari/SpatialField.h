@@ -154,6 +154,24 @@ namespace barney_device {
     helium::ChangeObserverPtr<helium::Array3D> m_data;
   };
 
+  struct NanoVDBSpatialField : public SpatialField
+  {
+    NanoVDBSpatialField(BarneyGlobalState *s);
+    void commitParameters() override;
+    void finalize() override;
+
+    BNScalarField createBarneyScalarField() const override;
+
+    box3 bounds() const override;
+    bool isValid() const override;
+
+    std::string m_filter;
+    helium::ChangeObserverPtr<helium::Array1D> m_data;
+
+    box3 m_bounds;
+    math::float3 m_voxelSize;
+  };
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::SpatialField *,

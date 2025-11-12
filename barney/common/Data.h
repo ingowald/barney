@@ -46,12 +46,15 @@ namespace BARNEY_NS {
     
     virtual ~PODData();
 
+    size_t size() const { return numBytes; }
     const void *getDD(Device *device);
     void set(const void *data, int count) override;
+    void download(Device *device, void *hostPtr);
 
     struct PLD {
       rtc::Buffer *rtcBuffer   = 0;
     };
+    size_t numBytes = 0;
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
   };

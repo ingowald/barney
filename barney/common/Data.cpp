@@ -142,7 +142,6 @@ namespace BARNEY_NS {
     };
   }
   
-  
   size_t owlSizeOf(BNDataType type)
   {
     switch (type) {
@@ -205,10 +204,19 @@ namespace BARNEY_NS {
       devices(devices)
   {}
 
+  void PODData::download(Device *device, void *hostPtr)
+  {
+    void *d_ptr = getPLD(device)->rtcBuffer->getDD();
+    auto rtc = device->rtc;
+    rtc->copyAsync(hostPtr,d_ptr,numBytes);
+    rtc->sync();
+  }
+  
 
   void PODData::set(const void *_items, int count)
   {
     this->count = count;
+    this->numBytes = count*owlSizeOf(type);
     for (auto device : *devices) {
       getPLD(device)->rtcBuffer->resize(count*owlSizeOf(type));
       getPLD(device)->rtcBuffer->upload(_items,count*owlSizeOf(type));
