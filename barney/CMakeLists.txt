@@ -59,6 +59,18 @@ macro(configure_cuda_source src)
         set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
       endif()
     endif()
+  else()
+    get_filename_component(ext "${src}" EXT)
+    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+      set_source_files_properties(${src}
+        # -rdc=true is for relocatable code, can be resolved at link time.
+        PROPERTIES COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+      )
+    endif()
+#    set_property(
+#      TARGET barney_config
+#      APPEND
+#      PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
   endif()
 endmacro()
 
@@ -137,6 +149,9 @@ set(HOST_SOURCES
   # *structured* volumes
   volume/StructuredData.h
   volume/StructuredData.cu
+  # *NanoVB* volumes
+  volume/NanoVDB.h
+  volume/NanoVDB.cu
   
   # actual geometry types
   geometry/Geometry.h
@@ -229,6 +244,7 @@ set(DEVICE_PROGRAM_SOURCES
   geometry/Capsules.dev.cu
   geometry/Cones.dev.cu
   volume/StructuredData.dev.cu
+  volume/NanoVDB.dev.cu
   umesh/mc/UMeshMC.dev.cu
 #  umesh/os/AWT.dev.cu
   amr/BlockStructuredMC.dev.cu
@@ -236,7 +252,7 @@ set(DEVICE_PROGRAM_SOURCES
 )
 
 # ------------------------------------------------------------------
-# optix backend: instantiates all the barney classes, device
+# optix backend: instantiates all the barney classes,Data device
 # programs, etcpp - except the api itself - in a optix
 # configuration.
 # ------------------------------------------------------------------
@@ -261,12 +277,21 @@ if (BARNEY_BACKEND_OPTIX)
     TARGET barney_optix 
     APPEND
     PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
+  set_property(
+    TARGET barney_optix 
+    APPEND
+    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
   if (BARNEY_MPI)
     add_library(barney_mpi_optix ${MPI_SOURCES})
     target_link_libraries(barney_mpi_optix PUBLIC barney_optix MPI::MPI_C)
     set_library_properties(barney_mpi_optix)
   endif()
 endif()
+
+
+foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
+  configure_cuda_source(${src})
+endforeach()
 
 # ------------------------------------------------------------------
 # embree backend: instantiates all the barney classes, device
@@ -281,9 +306,6 @@ if (BARNEY_BACKEND_EMBREE)
   # non-embree backends; but if there's no cuda vailable we have to
   # change the language to CPP else cmake will just skip these
   # sources.
-  foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
-    configure_cuda_source(${src})
-  endforeach()
 
   # ----------- barney_embree -----------
   add_library(barney_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})  

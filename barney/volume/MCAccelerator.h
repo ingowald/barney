@@ -127,12 +127,16 @@ namespace BARNEY_NS {
   template<typename SFSampler>
   void MCVolumeAccel<SFSampler>::build(bool full_rebuild) 
   {
+    PING;
     if (!majorantsGrid) {
       auto mcGrid = volume->sf->getMCs();
       majorantsGrid = std::make_shared<MajorantsGrid>(mcGrid);
     }
+    PING;
     majorantsGrid->computeMajorants(&volume->xf);
+    PING;
     sfSampler->build();
+    PING;
     
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
@@ -150,20 +154,26 @@ namespace BARNEY_NS {
       }
       rtc::Geom *geom = pld->geom;
       DD dd = getDD(device);
+      PRINT(geom);
+      PRINT((box3f&)dd);
       geom->setDD(&dd);
-
+      
+      PING;
       if (!pld->group) {
         // now put that into a instantiable group, and build it.
         pld->group = device->rtc->createUserGeomsGroup({geom});
       }
+      PING;
       pld->group->buildAccel();
-
+      PING;
+      
       // now let the actual volume we're building know about the
       // group we just created
       Volume::PLD *volumePLD = volume->getPLD(device);
       if (volumePLD->generatedGroups.empty()) 
         volumePLD->generatedGroups = { pld->group };
     }
+    PING;
   }
 
 
