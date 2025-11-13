@@ -23,6 +23,11 @@ namespace rtc {
     
     void *Buffer::getDD() const
     { return (void*)owlBufferGetPointer(owl,0); }
+
+    void Buffer::resize(size_t newNumBytes)
+    {
+      owlBufferResize(owl,newNumBytes);
+    }
     
   }
 }

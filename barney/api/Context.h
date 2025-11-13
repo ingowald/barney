@@ -104,7 +104,7 @@ namespace barney_api {
     
     virtual ~Data() = default;
     
-    virtual void set(const void *data, int count) = 0;
+    virtual void set(const void *data, size_t count) = 0;
   };
 
   /*! object that handles a frame buffer object; in particular, the

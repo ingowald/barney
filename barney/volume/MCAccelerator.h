@@ -151,13 +151,13 @@ namespace BARNEY_NS {
       rtc::Geom *geom = pld->geom;
       DD dd = getDD(device);
       geom->setDD(&dd);
-
+      
       if (!pld->group) {
         // now put that into a instantiable group, and build it.
         pld->group = device->rtc->createUserGeomsGroup({geom});
       }
       pld->group->buildAccel();
-
+      
       // now let the actual volume we're building know about the
       // group we just created
       Volume::PLD *volumePLD = volume->getPLD(device);
@@ -279,7 +279,6 @@ namespace BARNEY_NS {
     
     box3f bounds = self.isoSurface.sfCommon.worldBounds;
     range1f tRange = { ti.getRayTmin(), ti.getRayTmax() };
-    if (dbg) printf(" TRANGE BEFORE BOX %f %f\n",tRange.lower,tRange.upper);
     
     // ray in object space
     vec3f obj_org = ti.getObjectRayOrigin();
@@ -303,8 +302,6 @@ namespace BARNEY_NS {
     if (!boxTest(objRay,tRange,bounds))
       return;
 
-    if (dbg) printf(" TRANGE AFTER BOX %f %f\n",tRange.lower,tRange.upper);
-    
     // ------------------------------------------------------------------
     // compute ray in macro cell grid space 
     // ------------------------------------------------------------------
@@ -391,8 +388,6 @@ namespace BARNEY_NS {
                   
                   valueRange.lower = ff0;
                   valueRange.upper = ff1;
-                  // if (dbg)
-                  //   printf("i %i [%f %f] -> t's %f %f\n",i,_t0,_t1,tt0,tt1);
                   tRange = range1f{tt0,tt1};
 
                   if (isnan(ff0+ff1)) continue;
@@ -445,7 +440,6 @@ namespace BARNEY_NS {
       };
     self.isoSurface.setHitAttributes(hitData,interpolator,world,dbg);
 
-    // if (dbg) printf("matid %i, world mat %lx\n",self.materialID,world.materials); 
     const DeviceMaterial &material
       = world.materials[self.isoSurface.materialID];
       
@@ -454,14 +448,8 @@ namespace BARNEY_NS {
     float opacity
       = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
                         ray.dir,hitData.worldNormal,ray.dbg());
-    // opacity = .85f;
     if (opacity < 1.f) {
-      // ray.rngSeed.next((const uint32_t&)osP.x);
-      // ray.rngSeed.next((const uint32_t&)osP.y);
-      // ray.rngSeed.next((const uint32_t&)osP.z);
-      // Random rng(ray.rngSeed,290374u);
       if (rng() > opacity) {
-        // ti.ignoreIntersection();
         return;
       }
     }
@@ -491,14 +479,6 @@ namespace BARNEY_NS {
     vec3f obj_org = ti.getObjectRayOrigin();
     vec3f obj_dir = ti.getObjectRayDirection();
 
-    if (dbg) {
-      printf("MCVolumeAccel isec %f %f %f\n",
-             obj_dir.x,
-             obj_dir.y,
-             obj_dir.z
-             );
-    }
-    
     auto objRay = ray;
     objRay.org = obj_org;
     objRay.dir = obj_dir;

@@ -335,7 +335,6 @@ namespace barney_device {
       }
 #endif
 
-
       if (m_cudaDevice == -2)
         reportMessage
           (ANARI_SEVERITY_DEBUG, "cudaDevice not explicitly set, leaving which GPU(s) to use to barney", m_cudaDevice);

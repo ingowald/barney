@@ -3,8 +3,8 @@
 
 
 set(BARNEY_VERSION_MAJOR 1)
-set(BARNEY_VERSION_MINOR 0)
-set(BARNEY_VERSION_PATCH 0)
+set(BARNEY_VERSION_MINOR 1)
+set(BARNEY_VERSION_PATCH 1)
 
 cmake_minimum_required(VERSION 3.24)
 
@@ -118,6 +118,8 @@ target_link_libraries(barney_config
 target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/nanovdb/include/>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
 )
 # ------------------------------------------------------------------
 # configure which backend(s) to build
