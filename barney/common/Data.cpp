@@ -213,7 +213,7 @@ namespace BARNEY_NS {
   }
   
 
-  void PODData::set(const void *_items, int count)
+  void PODData::set(const void *_items, size_t count)
   {
     this->count = count;
     this->numBytes = count*owlSizeOf(type);
@@ -317,7 +317,7 @@ namespace BARNEY_NS {
     : BaseData(context,devices,type)
   {}
 
-  void ObjectRefsData::set(const void *_items, int count)
+  void ObjectRefsData::set(const void *_items, size_t count)
   {
     this->count = count;
     items.resize(count);

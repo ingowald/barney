@@ -18,8 +18,7 @@ namespace rtc {
       virtual ~Buffer();
       void *getDD() const;
 
-      void resize(size_t newNumBytes)
-      { owlBufferResize(owl,newNumBytes); }
+      void resize(size_t newNumBytes);
       
       void upload(const void *hostPtr,
                   size_t numBytes,

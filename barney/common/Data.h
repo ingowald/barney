@@ -48,7 +48,7 @@ namespace BARNEY_NS {
 
     size_t size() const { return numBytes; }
     const void *getDD(Device *device);
-    void set(const void *data, int count) override;
+    void set(const void *data, size_t count) override;
     void download(Device *device, void *hostPtr);
 
     struct PLD {
@@ -67,7 +67,7 @@ namespace BARNEY_NS {
     ObjectRefsData(Context *context,
                    const DevGroup::SP &devices,
                    BNDataType type);
-    void set(const void *data, int count) override;
+    void set(const void *data, size_t count) override;
     std::vector<Object::SP> items;
   };
 

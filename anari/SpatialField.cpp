@@ -218,12 +218,7 @@ namespace barney_device {
                              gridHandle.data());
     assert(bd);
     assert(sf);
-    PING; PRINT(gridHandle.size());
     bnSetData(sf,"data",bd);
-    // bnSet3f(sf,"voxelSize",(float)voxelSize[0],(float)voxelSize[1],(float)voxelSize[2]);
-    // bnSet3f(sf,"worldBounds.lower",(float)boundsMin[0],(float)boundsMin[1],(float)boundsMin[2]);
-    // bnSet3f(sf,"worldBounds.upper",(float)boundsMax[0],(float)boundsMax[1],(float)boundsMax[2]);
-    // bnSetString(sf,"filter",m_filter.c_str());
     bnCommit(sf);
   }
 
