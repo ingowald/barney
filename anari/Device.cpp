@@ -357,11 +357,10 @@ namespace barney_device {
         _gpuIDs = gpuIDs.data();
         _gpuCount = (int)gpuIDs.size();
       } else {
-        // leave _gpuIDs to nullptr -> allow barney to select which ones to use
-
         // for MPI mode, for now let's set num GPUs to one because
         // that's what data parallel will almost certainly want.
-        _gpuIDs = nullptr;
+        if (m_cudaDevice >= 0)
+          _gpuIDs = &m_cudaDevice;
         _gpuCount = 1;
       }
 
