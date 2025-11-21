@@ -55,8 +55,9 @@ namespace BARNEY_NS {
         int waveID = g_waveID++;
         std::vector<Ray> host(dd.numRays);
         char fileName[1000];
-        sprintf(fileName,"dump_rays_wave%03.dray",waveID);
+        sprintf(fileName,"dump_rays_wave%03d.dray",waveID);
         std::ofstream out(fileName,std::ios::binary);
+        PRINT(fileName);
         cudaMemcpy(host.data(),dd.rays,host.size()*sizeof(host[0]),
                    cudaMemcpyDefault);
         cudaDeviceSynchronize();
