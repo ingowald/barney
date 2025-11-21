@@ -23,6 +23,8 @@
 #include "barney/render/RayQueue.h"
 #include "rtcore/ComputeInterface.h"
 
+#include <fstream>
+
 namespace BARNEY_NS {
 
   void Context::traceRaysLocally(GlobalModel *globalModel,
@@ -48,6 +50,31 @@ namespace BARNEY_NS {
         dd.world     = model->world->getDD(device);//,rngSeed);
         dd.accel     = model->getInstanceAccel(device);
 
+#if 1
+        static int g_waveID = 0;
+        int waveID = g_waveID++;
+        std::vector<Ray> host(dd.numRays);
+        char fileName[1000];
+        sprintf(fileName,"dump_rays_wave%03.dray",waveID);
+        std::ofstream out(fileName,std::ios::binary);
+        cudaMemcpy(host.data(),dd.rays,host.size()*sizeof(host[0]),
+                   cudaMemcpyDefault);
+        cudaDeviceSynchronize();
+        for (int i=0;i<dd.numRays;i++) {
+          struct { 
+            vec3d org;
+            double tMin;
+            vec3d dir;
+            double tMax;
+          } dray;
+          dray.org = vec3d(host[i].org);
+          dray.tMin = 0.f;
+          dray.dir = vec3d(host[i].dir);
+          dray.tMax = host[i].tMax;
+          out.write((char*)&dray,sizeof(dray));
+        }
+#endif
+        
         if (FromEnv::get()->logQueues) {
           std::stringstream ss;
           ss << "#bn(" << device->globalRank() << "): ## ray queue kernel TRACE rays " << dd.rays << std::endl;
