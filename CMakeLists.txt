@@ -103,7 +103,7 @@ if (BARNEY_HAVE_CUDA)
 else()
   add_library(owl-config INTERFACE)
   target_include_directories(owl-config INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/owl/include
+    ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
     )
 endif()
 # ------------------------------------------------------------------
