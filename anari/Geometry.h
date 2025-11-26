@@ -26,7 +26,7 @@ namespace barney_device {
     virtual box3 bounds() const = 0;
 
   protected:
-    void setAttributes(BNGeom geom);
+    virtual void setAttributes(BNGeom geom);
     std::array<math::float4, 5>                  m_constantAttributes;
     std::array<helium::IntrusivePtr<Array1D>, 5> m_primitiveAttributes;
     std::array<helium::IntrusivePtr<Array1D>, 5> m_vertexAttributes;
@@ -154,10 +154,13 @@ namespace barney_device {
     const char *bnSubtype() const override;
     box3 bounds() const override;
 
+    void setAttributes(BNGeom geom) override;
+    
   private:
     helium::ChangeObserverPtr<Array1D> m_index;
     helium::ChangeObserverPtr<Array1D> m_vertexPosition;
     helium::ChangeObserverPtr<Array1D> m_vertexNormal;
+    std::array<helium::IntrusivePtr<Array1D>, 6> m_faceVaryingAttributes;
     std::vector<int> m_generatedIndices;
   };
 

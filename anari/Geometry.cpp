@@ -95,17 +95,53 @@ namespace barney_device {
             m_constantAttributes[4].z,
             m_constantAttributes[4].w);
 
-    addAttribute(geom, context, slot, m_vertexAttributes[0], "vertex.attribute0", this);
-    addAttribute(geom, context, slot, m_vertexAttributes[1], "vertex.attribute1", this);
-    addAttribute(geom, context, slot, m_vertexAttributes[2], "vertex.attribute2", this);
-    addAttribute(geom, context, slot, m_vertexAttributes[3], "vertex.attribute3", this);
-    addAttribute(geom, context, slot, m_vertexAttributes[4], "vertex.color", this);
+    addAttribute(geom, context, slot,
+                 m_vertexAttributes[0], "vertex.attribute0", this);
+    addAttribute(geom, context, slot,
+                 m_vertexAttributes[1], "vertex.attribute1", this);
+    addAttribute(geom, context, slot,
+                 m_vertexAttributes[2], "vertex.attribute2", this);
+    addAttribute(geom, context, slot,
+                 m_vertexAttributes[3], "vertex.attribute3", this);
+    addAttribute(geom, context, slot,
+                 m_vertexAttributes[4], "vertex.color", this);
 
-    addAttribute(geom, context, slot, m_primitiveAttributes[0], "primitive.attribute0", this);
-    addAttribute(geom, context, slot, m_primitiveAttributes[1], "primitive.attribute1", this);
-    addAttribute(geom, context, slot, m_primitiveAttributes[2], "primitive.attribute2", this);
-    addAttribute(geom, context, slot, m_primitiveAttributes[3], "primitive.attribute3", this);
-    addAttribute(geom, context, slot, m_primitiveAttributes[4], "primitive.color", this);
+    addAttribute(geom, context, slot,
+                 m_primitiveAttributes[0], "primitive.attribute0", this);
+    addAttribute(geom, context, slot,
+                 m_primitiveAttributes[1], "primitive.attribute1", this);
+    addAttribute(geom, context, slot,
+                 m_primitiveAttributes[2], "primitive.attribute2", this);
+    addAttribute(geom, context, slot,
+                 m_primitiveAttributes[3], "primitive.attribute3", this);
+    addAttribute(geom, context, slot,
+                 m_primitiveAttributes[4], "primitive.color", this);
+  }
+
+  void Triangle::setAttributes(BNGeom geom)
+  {
+    Geometry::setAttributes(geom);
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+
+    addAttribute(geom, context, slot,
+                 m_faceVaryingAttributes[0],
+                 "faceVarying.attribute0", this);
+    addAttribute(geom, context, slot,
+                 m_faceVaryingAttributes[1],
+                 "faceVarying.attribute1", this);
+    addAttribute(geom, context, slot,
+                 m_faceVaryingAttributes[2],
+                 "faceVarying.attribute2", this);
+    addAttribute(geom, context, slot,
+                 m_faceVaryingAttributes[3],
+                 "faceVarying.attribute3", this);
+    addAttribute(geom, context, slot,
+                 m_faceVaryingAttributes[4],
+                 "faceVarying.color", this);
+    addAttribute(geom, context, slot,
+                 m_faceVaryingAttributes[5],
+                 "faceVarying.normal", this);
   }
 
   void Geometry::commitParameters()
@@ -726,6 +762,12 @@ namespace barney_device {
     m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
     m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
     m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+    m_faceVaryingAttributes[0] = getParamObject<Array1D>("faceVarying.attribute0");
+    m_faceVaryingAttributes[1] = getParamObject<Array1D>("faceVarying.attribute1");
+    m_faceVaryingAttributes[2] = getParamObject<Array1D>("faceVarying.attribute2");
+    m_faceVaryingAttributes[3] = getParamObject<Array1D>("faceVarying.attribute3");
+    m_faceVaryingAttributes[4] = getParamObject<Array1D>("faceVarying.color");
+    m_faceVaryingAttributes[5] = getParamObject<Array1D>("faceVarying.normal");
   }
 
   void Triangle::finalize()

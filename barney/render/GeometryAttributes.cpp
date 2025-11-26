@@ -14,7 +14,13 @@ namespace BARNEY_NS {
                      const GeometryAttribute &in,
                      const std::string &dbgName)
       {
-        if (in.perVertex) {
+        if (in.faceVarying) {
+          out.scope = GeometryAttribute::FACE_VARYING;
+          out.fromArray.type = in.faceVarying->type;
+          out.fromArray.ptr
+            = in.faceVarying->getDD(device);
+          out.fromArray.size = (int)in.faceVarying->count;
+        } else if (in.perVertex) {
           out.scope = GeometryAttribute::PER_VERTEX;
           out.fromArray.type = in.perVertex->type;
           out.fromArray.ptr
@@ -41,6 +47,8 @@ namespace BARNEY_NS {
       }
       set(attributes.colorAttribute,
           this->colorAttribute,"color");
+      set(attributes.normalAttribute,
+          this->normalAttribute,"normal");
       return attributes;
     }
     

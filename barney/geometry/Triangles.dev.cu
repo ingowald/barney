@@ -28,6 +28,7 @@ namespace BARNEY_NS {
 #else
       bool dbg = ray.dbg();
 #endif
+      if (dbg) printf("=======================================================\n");
       auto &self = *(Triangles::DD*)ti.getProgramData();
       const float u = ti.getTriangleBarycentrics().x;
       const float v = ti.getTriangleBarycentrics().y;
@@ -69,8 +70,8 @@ namespace BARNEY_NS {
         n = Ns;
       }
       const vec3f osN = normalize(n);
-      n = ti.transformNormalFromObjectToWorldSpace(n);
-      n = normalize(n);
+      // n = ti.transformNormalFromObjectToWorldSpace(n);
+      // n = normalize(n);
 
       // ------------------------------------------------------------------
       // get texture coordinates
@@ -80,24 +81,38 @@ namespace BARNEY_NS {
 
       render::HitAttributes hitData;
       hitData.worldPosition   = P;
-      hitData.worldNormal     = n;
+      // hitData.worldNormal     = n;
       hitData.objectPosition  = osP;
-      hitData.objectNormal    = osN;
+      hitData.objectNormal    = make_vec4f(osN);
       hitData.primID          = primID;
       hitData.instID          = instID;
       hitData.t               = depth;
       hitData.isShadowRay     = ray.isShadowRay;
 
+      if (dbg) printf("normal from geom %f %f %f\n",
+                      osN.x,osN.y,osN.z);
       auto interpolator
-        = [triangle,u,v,dbg](const GeometryAttribute::DD &attrib) -> vec4f
+        = [triangle,u,v,primID,dbg](const GeometryAttribute::DD &attrib,
+                                    bool faceVarying) -> vec4f
         {
-          const vec4f value_a = attrib.fromArray.valueAt(triangle.x,dbg);
-          const vec4f value_b = attrib.fromArray.valueAt(triangle.y,dbg);
-          const vec4f value_c = attrib.fromArray.valueAt(triangle.z,dbg);
+          vec3i indices
+            = faceVarying
+            ? (vec3i(3*primID)+vec3i(0,1,2))
+            : triangle;
+          const vec4f value_a = attrib.fromArray.valueAt(indices.x,dbg);
+          const vec4f value_b = attrib.fromArray.valueAt(indices.y,dbg);
+          const vec4f value_c = attrib.fromArray.valueAt(indices.z,dbg);
           const vec4f ret = (1.f-u-v)*value_a + u*value_b + v*value_c;
           return ret;
         };
       self.setHitAttributes(hitData,interpolator,world,dbg);
+      if (dbg) printf("normal from attributes %f %f %f\n",
+                      hitData.objectNormal.x,
+                      hitData.objectNormal.y,
+                      hitData.objectNormal.z);
+      hitData.worldNormal
+        = ti.transformNormalFromObjectToWorldSpace
+        ((const vec3f&)hitData.objectNormal);
 
       const DeviceMaterial &material
         = world.materials[self.materialID];

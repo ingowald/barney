@@ -23,7 +23,7 @@ namespace BARNEY_NS {
     };
       
     struct GeometryAttribute {
-      typedef enum { INVALID, CONSTANT, PER_PRIM, PER_VERTEX  } Scope;
+      typedef enum { INVALID, CONSTANT, PER_PRIM, PER_VERTEX, FACE_VARYING } Scope;
         
       struct DD {
         // union {
@@ -40,8 +40,9 @@ namespace BARNEY_NS {
           that they have not (yet) been set. This allows to then set
           the device-side scopt to 'invalid' for such values */
       vec4f       constant { NAN,NAN,NAN,NAN };
-      PODData::SP perPrim   = 0;
-      PODData::SP perVertex = 0;
+      PODData::SP perPrim     = 0;
+      PODData::SP perVertex   = 0;
+      PODData::SP faceVarying = 0;
     };
 
 
@@ -55,10 +56,12 @@ namespace BARNEY_NS {
         { return attribute[i]; }
         GeometryAttribute::DD attribute[numAttributes];
         GeometryAttribute::DD colorAttribute;
+        GeometryAttribute::DD normalAttribute;
       };
       DD getDD(Device *device);
       GeometryAttribute attribute[numAttributes];
       GeometryAttribute colorAttribute;
+      GeometryAttribute normalAttribute;
     };
   
       
@@ -79,8 +82,8 @@ namespace BARNEY_NS {
         return vec4f(v.x,v.y,v.z,1.f);
       }
       case BN_FLOAT4: {
-        return ((const vec4f *)ptr)[i];
-        // return rtc::load(((const rtc::float4*)ptr)[i]);
+        const vec4f v = ((const vec4f *)ptr)[i];
+        return v;
       }
       default:
         return vec4f(0.f,0.f,0.f,0.f);

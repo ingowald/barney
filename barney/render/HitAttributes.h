@@ -38,7 +38,9 @@ namespace BARNEY_NS {
       vec3f worldPosition;
       vec3f objectPosition;
       vec3f worldNormal;
-      vec3f objectNormal;
+      // this is a float*FOUR* because it can come from the attribute system
+      vec4f objectNormal;
+      // vec3f objectNormal;
       int   primID;
       int   instID;
       float t;

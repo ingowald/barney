@@ -211,10 +211,13 @@ namespace BARNEY_NS {
         / (dot(v1-v0,v1-v0));
       lerp_t = max(0.f,min(1.f,lerp_t));
 
-      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
+      auto interpolator = [&](const GeometryAttribute::DD &attrib,
+                              bool faceVarying) -> vec4f
       {
-        const vec4f value_a = attrib.fromArray.valueAt(idx.x);
-        const vec4f value_b = attrib.fromArray.valueAt(idx.y);
+        int idx_x = faceVarying ? 2*primID+0 : idx.x;
+        int idx_y = faceVarying ? 2*primID+1 : idx.y;
+        const vec4f value_a = attrib.fromArray.valueAt(idx_x);
+        const vec4f value_b = attrib.fromArray.valueAt(idx_y);
         const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
         return ret;
       };
@@ -227,8 +230,8 @@ namespace BARNEY_NS {
       render::HitAttributes hitData;
       hitData.objectPosition  = objectP;
       hitData.worldPosition   = ti.transformPointFromObjectToWorldSpace(objectP);
-      hitData.objectNormal    = normalize(objectN);
-      hitData.worldNormal     = normalize(ti.transformNormalFromObjectToWorldSpace(hitData.objectNormal));
+      hitData.objectNormal    = make_vec4f(normalize(objectN));
+      hitData.worldNormal     = normalize(ti.transformNormalFromObjectToWorldSpace((const vec3f&)hitData.objectNormal));
       hitData.primID          = primID;
       hitData.instID          = instID;
       hitData.t               = t_hit;

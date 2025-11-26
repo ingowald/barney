@@ -174,6 +174,7 @@ namespace BARNEY_NS {
     worldBounds
       = box3f(vec3f(boundsMin[0], boundsMin[1], boundsMin[2]),
               vec3f(boundsMax[0], boundsMax[1], boundsMax[2]));
+    PRINT(worldBounds);
     (nanovdb::CoordBBox&)indexBounds = gridMetadata->indexBBox();
     nanovdb::Vec3d nvVoxelSize = gridMetadata->voxelSize();
     voxelSize = vec3f((const vec3d&)nvVoxelSize);

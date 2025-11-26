@@ -86,14 +86,15 @@ namespace BARNEY_NS {
 
       hitData.objectPosition  = objectP;
       hitData.worldNormal     = normalize(worldN);
-      hitData.objectNormal    = normalize(objectN);
+      hitData.objectNormal    = make_vec4f(normalize(objectN));
       hitData.primID          = primID;
       hitData.instID          = instID;
       hitData.t               = t_hit;
       if (self.colors)
         (vec3f&)hitData.color = self.colors[primID];
     
-      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
+      auto interpolator = [&](const GeometryAttribute::DD &attrib,
+                              bool faceVarying) -> vec4f
       { // doesn't make sense, but anari sdk assumes for spheres
         // per-vtx is same as per-prim
         vec4f v = attrib.fromArray.valueAt(hitData.primID,dbg);

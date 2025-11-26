@@ -229,10 +229,13 @@ namespace BARNEY_NS {
       }
 
       // interpolator for anari-style color/attribute interpolation
-      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
+      auto interpolator = [&](const GeometryAttribute::DD &attrib,
+                              bool faceVarying) -> vec4f
       {
-        const vec4f value_a = attrib.fromArray.valueAt(idx.x);
-        const vec4f value_b = attrib.fromArray.valueAt(idx.y);
+        int idx_x = faceVarying ? 2*primID+0 : idx.x;
+        int idx_y = faceVarying ? 2*primID+1 : idx.y;
+        const vec4f value_a = attrib.fromArray.valueAt(idx_x);
+        const vec4f value_b = attrib.fromArray.valueAt(idx_y);
         const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
         return ret;
       };
@@ -242,11 +245,11 @@ namespace BARNEY_NS {
       hitData.instID          = instID;
       hitData.t               = hit_t;
       hitData.objectPosition  = objectP;
-      hitData.objectNormal    = normalize(objectN);
+      hitData.objectNormal    = make_vec4f(normalize(objectN));
       hitData.worldPosition
         = ti.transformPointFromObjectToWorldSpace(objectP);
       hitData.worldNormal
-        = normalize(ti.transformNormalFromObjectToWorldSpace(objectN));
+        = normalize(ti.transformNormalFromObjectToWorldSpace((const vec3f&)objectN));
 
       // compute a stable epsilon for surface offsetting
       float surfOfs_eps = 1.f;
