@@ -101,25 +101,20 @@ namespace BARNEY_NS {
       float lerp_t = 0.f;
 
       // interpolator for anari-style color/attribute interpolation
-      auto interpolator = [&](const GeometryAttribute::DD &attrib) -> vec4f
+      auto interpolator = [&](const GeometryAttribute::DD &attrib,
+                              bool faceVarying) -> vec4f
       {
-        const vec4f value_a = attrib.fromArray.valueAt(idx.x);
-        const vec4f value_b = attrib.fromArray.valueAt(idx.y);
+        int idx_x = faceVarying ? 2*primID+0 : idx.x;
+        int idx_y = faceVarying ? 2*primID+1 : idx.y;
+        
+        const vec4f value_a = attrib.fromArray.valueAt(idx_x);
+        const vec4f value_b = attrib.fromArray.valueAt(idx_y);
+        
         const vec4f ret = (1.f-lerp_t)*value_a + lerp_t*value_b;
-        // printf("lerp (%i) %f %f %f and (%i) %f %f %f f %f\n",
-        //        idx.x,
-        //        value_a.x,
-        //        value_a.y,
-        //        value_a.z,
-        //        idx.y,
-        //        value_b.x,
-        //        value_b.y,
-        //        value_b.z,
-        //        lerp_t);
         return ret;
       };
 
-      if (m1 < 0.0f) {
+      if (m1 < 0.f) {
         if (length2(oa * m3 - rd * m1) < (ra * ra * m3 * m3)) {
           float t = -m1 / m3;
           if (t > ray_tmin && t < hitData.t) {
@@ -129,7 +124,7 @@ namespace BARNEY_NS {
 
             hitData.t               = t;
             hitData.objectPosition  = P;
-            hitData.objectNormal    = N;
+            hitData.objectNormal    = make_vec4f(N);
             hitData.worldPosition
               = ti.transformPointFromObjectToWorldSpace(P);
             hitData.worldNormal
@@ -156,11 +151,11 @@ namespace BARNEY_NS {
 
             hitData.t               = t;
             hitData.objectPosition  = P;
-            hitData.objectNormal    = N;
+            hitData.objectNormal    = make_vec4f(N);
             hitData.worldPosition
               = ti.transformPointFromObjectToWorldSpace(P);
             hitData.worldNormal
-              = normalize(ti.transformNormalFromObjectToWorldSpace(N));
+              = normalize(ti.transformNormalFromObjectToWorldSpace((const vec3f&)N));
                     
             // trigger the anari attribute evaluation
             self.setHitAttributes(hitData,interpolator,world,ray.dbg());
@@ -199,11 +194,11 @@ namespace BARNEY_NS {
         hitData.primID          = primID;
         hitData.t               = t;
         hitData.objectPosition  = P;
-        hitData.objectNormal    = N;
+        hitData.objectNormal    = make_vec4f(N);
         hitData.worldPosition
           = ti.transformPointFromObjectToWorldSpace(P);
         hitData.worldNormal
-          = normalize(ti.transformNormalFromObjectToWorldSpace(N));
+          = normalize(ti.transformNormalFromObjectToWorldSpace((const vec3f&)N));
         
         // trigger the anari attribute evaluation
         self.setHitAttributes(hitData,interpolator,world,ray.dbg());

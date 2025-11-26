@@ -116,7 +116,10 @@ namespace BARNEY_NS {
         out = in.fromArray.valueAt(hit.primID);
         break;
       case GeometryAttribute::PER_VERTEX:
-        out = interpolate(in);
+        out = interpolate(in,/*faceVarying*/false);
+        break; 
+      case GeometryAttribute::FACE_VARYING:
+        out = interpolate(in,/*faceVarying*/true);
         break; 
       }
     };
@@ -127,6 +130,7 @@ namespace BARNEY_NS {
       set(out,in,world.instanceAttributes[i]);
     }
     set(hit.color,this->attributes.colorAttribute,world.instanceAttributes[4],dbg);
+    set(hit.objectNormal,this->attributes.normalAttribute,nullptr,dbg);
   }
   
 }

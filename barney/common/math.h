@@ -130,4 +130,7 @@ namespace BARNEY_NS {
       return min(hi, max(lo, f));
   }
 
+  inline __both__ vec4f make_vec4f(vec3f v, float w=1.f)
+  { return {v.x,v.y,v.z,w}; }
+
 }

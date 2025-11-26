@@ -174,6 +174,7 @@ namespace BARNEY_NS {
   
   bool Geometry::setData(const std::string &member, const Data::SP &value)
   {
+    // ----------- per prim -----------
     if (member == "primitive.attribute0") {
       attributes.attribute[0].perPrim = value->as<PODData>();
       return true;
@@ -194,7 +195,12 @@ namespace BARNEY_NS {
       attributes.colorAttribute.perPrim = value->as<PODData>();
       return true;
     }
-    
+    if (member == "primitive.normal") {
+      attributes.normalAttribute.perPrim = value->as<PODData>();
+      return true;
+    }
+
+    // ----------- per vertex -----------
     if (member == "vertex.attribute0") {
       attributes.attribute[0].perVertex = value->as<PODData>();
       return true;
@@ -213,6 +219,36 @@ namespace BARNEY_NS {
     }
     if (member == "vertex.color") {
       attributes.colorAttribute.perVertex = value->as<PODData>();
+      return true;
+    }
+    if (member == "vertex.normal") {
+      attributes.normalAttribute.perVertex = value->as<PODData>();
+      return true;
+    }
+
+    // ----------- per face-varying -----------
+    if (member == "faceVarying.attribute0") {
+      attributes.attribute[0].faceVarying = value->as<PODData>();
+      return true;
+    }
+    if (member == "faceVarying.attribute1") {
+      attributes.attribute[1].faceVarying = value->as<PODData>();
+      return true;
+    }
+    if (member == "faceVarying.attribute2") {
+      attributes.attribute[2].faceVarying = value->as<PODData>();
+      return true;
+    }
+    if (member == "faceVarying.attribute3") {
+      attributes.attribute[3].faceVarying = value->as<PODData>();
+      return true;
+    }
+    if (member == "faceVarying.color") {
+      attributes.colorAttribute.faceVarying = value->as<PODData>();
+      return true;
+    }
+    if (member == "faceVarying.normal") {
+      attributes.normalAttribute.faceVarying = value->as<PODData>();
       return true;
     }
     

@@ -426,7 +426,7 @@ namespace BARNEY_NS {
     hitData.worldPosition   = P;
     hitData.worldNormal     = n;
     hitData.objectPosition  = osP;
-    hitData.objectNormal    = osN;
+    hitData.objectNormal    = make_vec4f(osN);
     hitData.primID          = primID;
     hitData.instID          = instID;
     hitData.t               = tHit;
@@ -434,7 +434,8 @@ namespace BARNEY_NS {
     float u = 0.f;
     float v = 0.f;
     auto interpolator
-      = [u,v,dbg](const GeometryAttribute::DD &attrib) -> vec4f
+      = [u,v,dbg](const GeometryAttribute::DD &attrib,
+                  bool faceVarying) -> vec4f
       {
         return vec4f(1.f);
       };
