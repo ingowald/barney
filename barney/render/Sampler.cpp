@@ -109,7 +109,6 @@ namespace BARNEY_NS {
       }
     }
 
-    
     TextureSampler::TextureSampler(SlotContext *slotContext,
                                    int numDims)
       : Sampler(slotContext),

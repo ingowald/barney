@@ -163,15 +163,9 @@ namespace BARNEY_NS {
     vec4f Sampler::DD::eval(const HitAttributes &inputs,
                              bool dbg) const
     {
-      if (dbg) printf("sampler. eval type = %i\n",(int)type);
       vec4f in  = inputs.get((AttributeKind)inAttribute,dbg);
       vec4f out = in;
       if (type != TRANSFORM) {
-          if (dbg)
-        printf("in %f %f %f\n",
-               in.x,
-               in.y,
-               in.z);
         vec4f coord = inTransform.applyTo(in);
         vec4f fromTex = coord;
         if (type == IMAGE1D) {
@@ -180,15 +174,6 @@ namespace BARNEY_NS {
           fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
         } else if (type == IMAGE3D) {
           fromTex = rtc::tex3D<vec4f>(texture,coord.x,coord.y,coord.z);
-          if (dbg)
-            printf("tex3d ( %f %f %f) ->  %f %f %f\n",
-                   coord.x,
-                   coord.y,
-                   coord.z,
-                   fromTex.x,
-                   fromTex.y,
-                   fromTex.z
-                   );
         }
         // iw - numchannels == 0 can't happen, that's not a valid
         // value
@@ -197,7 +182,8 @@ namespace BARNEY_NS {
         if (numChannels <= 3) fromTex.w = 1.f;
         out = fromTex;
       }
-      return outTransform.applyTo(out);
+      auto ret = outTransform.applyTo(out);
+      return ret;
     }
 #endif
 
