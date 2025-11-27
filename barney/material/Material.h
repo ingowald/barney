@@ -110,7 +110,7 @@ namespace BARNEY_NS {
         return hitData.get(attribute,dbg);
       } 
       if (type == SAMPLER) {
-        if (dbg) printf("mappedparam.eval, sampler\n");
+        if (dbg) printf("mappedparam.eval, sampler ID %i\n",samplerID);
         return samplers[samplerID].eval(hitData,dbg);
       }
       return vec4f(0.f,0.f,0.f,1.f);

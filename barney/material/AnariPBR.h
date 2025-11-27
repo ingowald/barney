@@ -64,12 +64,14 @@ namespace BARNEY_NS {
                                         const Sampler::DD *samplers,
                                         bool dbg) const
     {
+      if (dbg) printf("createBSDF\n");
       vec4f baseColor = this->baseColor.eval(hitData,samplers,dbg);
       if (dbg) printf("basecolor eval %f %f %f %f\n",
                       baseColor.x,
                       baseColor.y,
                       baseColor.z,
                       baseColor.w);
+      if (dbg) printf("evaling metallic\n");
       vec4f metallic = this->metallic.eval(hitData,samplers,dbg);
       vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
       vec4f roughness = this->roughness.eval(hitData,samplers,dbg);
@@ -89,8 +91,8 @@ namespace BARNEY_NS {
       const float clampRange = .1f;
       bsdf.baseColor = (const vec3f&)baseColor;
       bsdf.metallic = metallic.x;
-      bsdf.roughness = clamp(roughness.x,clampRange,1.f-clampRange);
-      
+      bsdf.roughness = clamp(roughness.x,.001f,1.f-clampRange);
+
       bsdf.alpha = (1.f-transmission.x)
         * baseColor.w
         * opacity.x

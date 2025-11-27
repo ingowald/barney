@@ -283,10 +283,6 @@ namespace barney_device {
       bnRelease(m_bnTextureData);
       m_bnTextureData = 0;
     }
-    // if (m_bnSampler) {
-    //   bnRelease(m_bnSampler);
-    //   m_bnSampler = 0;
-    // }
     if (!m_image) {
       reportMessage(ANARI_SEVERITY_DEBUG,
                     "Image2D::finalize() without a valid 'image' parameter");
