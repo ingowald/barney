@@ -3,6 +3,7 @@
 
 #pragma once
 
+#if BARNEY_HAVE_NANOVDB
 #include "barney/ModelSlot.h"
 #include "barney/common/Texture.h"
 #include "barney/volume/MCAccelerator.h"
@@ -98,4 +99,5 @@ namespace BARNEY_NS {
 #endif
 }
 
+#endif
 

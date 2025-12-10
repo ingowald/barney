@@ -22,6 +22,23 @@ namespace BARNEY_NS {
       the list of tiles to generate rays for is passed in 'tileDescs';
       there will be one cuda block per tile */
 #if RTC_DEVICE_CODE
+    inline __rtc_device
+    vec3f uvToWorld(const affine3f &toWorld,
+                    float f_x,
+                    float f_y) 
+    {
+      const float phi   = TWO_PI * f_x;
+      const float theta = ONE_PI * f_y;
+      
+      vec3f dir;
+      dir.z = cosf(theta);
+      dir.x = cosf(phi)*sinf(theta);
+      dir.y = sinf(phi)*sinf(theta);
+      
+      return xfmVector(toWorld,dir);
+    }
+
+
     __rtc_global
     void _generateRays(const rtc::ComputeInterface &rt,
                        Camera::DD camera,
@@ -120,7 +137,13 @@ namespace BARNEY_NS {
           * orthographic.org_du
           + ((image_v-.5f)*orthographic.height)
           * orthographic.org_dv;
-      }
+      } else if (camera.type == Camera::OMNIDIRECTIONAL) {
+        auto &omni = camera.omni;
+        ray.org
+          = omni.toWorld.p;
+        ray.dir =
+          uvToWorld(omni.toWorld,image_u,image_v);
+       }
       
 #ifdef NDEBUG
       ray._dbg        = 0;

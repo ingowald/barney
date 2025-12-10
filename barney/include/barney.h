@@ -22,6 +22,11 @@
     anari_library_barney_mpi exist */
 #cmakedefine01 BARNEY_HAVE_MPI
 
+/*! whether this build of barney has support for the NanoVDB volume
+    type. NanoVDB takes a long while to compile, so can be
+    enabled/disabled by user */
+#cmakedefine01 BARNEY_HAVE_NANOVDB
+
 #include <cstdint>
 #include <cstddef>
 

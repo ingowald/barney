@@ -186,6 +186,74 @@ namespace BARNEY_NS {
     
 
   // ##################################################################
+
+  struct OmniCamera : public Camera {
+    OmniCamera(Context *owner)
+      : Camera(owner)
+    {}
+    virtual ~OmniCamera() = default;
+
+    // ------------------------------------------------------------------
+    /*! @{ parameter set/commit interface */
+    void commit() override;
+    bool set1f(const std::string &member, const float &value) override;
+    bool set3f(const std::string &member, const vec3f &value) override;
+    /*! @} */
+    // ------------------------------------------------------------------
+    
+    vec3f position  { 0, 0, 0 };
+    vec3f direction { 0, 0, 1 };
+    vec3f up        { 0, 1, 0 };
+    float aspect    = 1.f;
+    float height    = 1.f;
+    float ortho_near      = 0.f;
+    float ortho_far       = BARNEY_INF;
+  };
+  
+  bool OmniCamera::set1f(const std::string &member,
+                                    const float &value)
+  {
+    if (Camera::set1f(member,value))
+      return true;
+    return false;
+  }
+  
+  bool OmniCamera::set3f(const std::string &member,
+                                    const vec3f &value)
+  {
+    if (Camera::set3f(member,value))
+      return true;
+    if (member == "position") {
+      position = value;
+      return true;
+    }
+    if (member == "direction") {
+      direction = normalize(value);
+      return true;
+    }
+    if (member == "up") {
+      up = value;
+      return true;
+    }
+    return false;
+  }
+    
+  void OmniCamera::commit()
+  {
+    vec3f dir_00 = normalize(direction);
+
+    linear3f toWorld;
+    toWorld.vz = -normalize(up);
+    toWorld.vy = -normalize(cross(toWorld.vz,direction));
+    toWorld.vx = normalize(cross(toWorld.vy,toWorld.vz));
+
+    dd.type = Camera::OMNIDIRECTIONAL;
+    dd.omni.toWorld.l = toWorld;
+    dd.omni.toWorld.p = position;
+  }
+    
+
+  // ##################################################################
   Camera::SP Camera::create(Context *owner,
                             const std::string &type)
   {
@@ -193,6 +261,8 @@ namespace BARNEY_NS {
       return std::make_shared<PerspectiveCamera>(owner);
     if (type == "orthographic")
       return std::make_shared<OrthographicCamera>(owner);
+    if (type == "omni")
+      return std::make_shared<OmniCamera>(owner);
     
     owner->warn_unsupported_object("Camera",type);
     return {};

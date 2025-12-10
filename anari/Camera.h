@@ -8,58 +8,77 @@
 
 namespace barney_device {
 
-struct Camera : public Object
-{
-  Camera(BarneyGlobalState *s);
-  ~Camera() override;
+  /*! abstract base class for any anari camera type */
+  struct Camera : public Object
+  {
+    Camera(BarneyGlobalState *s);
+    ~Camera() override;
 
-  virtual void commitParameters() override;
+    virtual void commitParameters() override;
 
-  static Camera *createInstance(
-      std::string_view subtype, BarneyGlobalState *state);
+    static Camera *createInstance(std::string_view subtype,
+                                  BarneyGlobalState *state);
 
-  math::float4 imageRegion() const;
+    math::float4 imageRegion() const;
 
-  BNCamera barneyCamera() const;
+    BNCamera barneyCamera() const;
 
- protected:
-  math::float3 m_pos;
-  math::float3 m_dir;
-  math::float3 m_up;
-  math::float4 m_imageRegion;
+  protected:
+    math::float3 m_pos;
+    math::float3 m_dir;
+    math::float3 m_up;
+    math::float4 m_imageRegion;
 
-  BNCamera m_barneyCamera{nullptr};
-};
+    BNCamera m_barneyCamera{nullptr};
+  };
 
-// Subtypes ///////////////////////////////////////////////////////////////////
+  // Subtypes ///////////////////////////////////////////////////////////////////
 
-struct Perspective : public Camera
-{
-  Perspective(BarneyGlobalState *s);
+  /*! ANARI 'perspective' camera type */
+  struct Perspective : public Camera
+  {
+    Perspective(BarneyGlobalState *s);
 
-  void commitParameters() override;
-  void finalize() override;
+    void commitParameters() override;
+    void finalize() override;
 
- private:
-  float m_fovy{30.f};
-  float m_aspect{1.f};
-  float m_focusDistance = 0.f;
-  float m_apertureRadius = 0.f;
-};
+  private:
+    float m_fovy{30.f};
+    float m_aspect{1.f};
+    float m_focusDistance = 0.f;
+    float m_apertureRadius = 0.f;
+  };
 
-struct Orthographic : public Camera
-{
-  Orthographic(BarneyGlobalState *s);
+  /*! ANARI 'orthographic' camera type - implements an
+      orthographic/parallel projection camera. */
+  struct Orthographic : public Camera
+  {
+    Orthographic(BarneyGlobalState *s);
 
-  void commitParameters() override;
-  void finalize() override;
+    void commitParameters() override;
+    void finalize() override;
 
- private:
-  float m_aspect = 1.f;
-  float m_height = 0.f;
-  float m_near   = 0.f;
-  float m_far    = std::numeric_limits<float>::infinity();
-};
+  private:
+    float m_aspect = 1.f;
+    float m_height = 0.f;
+    float m_near   = 0.f;
+    float m_far    = std::numeric_limits<float>::infinity();
+  };
+
+  /*! ANARI 'omnidirectional' camera type - implements a camera type
+      that is the direct opposite of a envmap light source */
+  struct Omni : public Camera
+  {
+    Omni(BarneyGlobalState *s);
+
+    void commitParameters() override;
+    void finalize() override;
+
+  private:
+    /*! nothing yet - in theory the omni camera has a 'layout'
+      aprameter, but it can only take one value so we'll just ignore
+      it for now */
+  };
 
 } // namespace barney_device
 
