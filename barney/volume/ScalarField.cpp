@@ -39,7 +39,11 @@ namespace BARNEY_NS {
     if (type == "BlockStructuredAMR")
       return std::make_shared<BlockStructuredField>(context,devices);
     if (type == "NanoVDB") {
+#if BARNEY_HAVE_NANOVDB
       return std::make_shared<NanoVDBData>(context,devices);
+#else
+      throw std::runtime_error("NanoVDB geometry type not enabled in this build");
+#endif
     }
     
     context->warn_unsupported_object("ScalarField",type);

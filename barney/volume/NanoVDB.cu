@@ -2,6 +2,11 @@
 // & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+// include barney.h first, so we know whether BARNEY_HAVE_NANOVDB is set 
+#include "barney/barney.h"
+
+#if BARNEY_HAVE_NANOVDB
+
 #include "barney/Context.h"
 #include "barney/volume/NanoVDB.h"
 #include "barney/common/Texture.h"
@@ -53,7 +58,7 @@ namespace BARNEY_NS {
     int cellIdx = mcID.x + mcGrid.dims.x * (mcID.y + mcGrid.dims.y * (mcID.z));
     mcGrid.scalarRanges[cellIdx] = scalarRange;
   }
-
+  
   NanoVDBData::NanoVDBData(Context *context,
                            const DevGroup::SP &devices)
     : ScalarField(context,devices)
@@ -68,6 +73,7 @@ namespace BARNEY_NS {
 
   MCGrid::SP NanoVDBData::buildMCs() 
   {
+#if BARNEY_HAVE_NANOVDB
     MCGrid::SP mcGrid = std::make_shared<MCGrid>(devices);
 #if 1
     vec3i mcDims = divRoundUp(gridSize,vec3i(16));
@@ -94,6 +100,9 @@ namespace BARNEY_NS {
     for (auto device : *devices)
       device->sync();
     return mcGrid;
+#else
+    throw std::runtime_error("NanoVDB support not compiled in");
+#endif
   }
 
   template<typename T>
@@ -192,3 +201,4 @@ namespace BARNEY_NS {
   
 }
 
+#endif

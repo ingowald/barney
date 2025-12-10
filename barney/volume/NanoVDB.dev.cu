@@ -2,6 +2,9 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+// include barney.h first, so we know whether BARNEY_HAVE_NANOVDB is set 
+#include "barney/barney.h"
+#if BARNEY_HAVE_NANOVDB
 #include "barney/volume/NanoVDB.h"
 #include "barney/volume/MCAccelerator.h"
 #include "rtcore/TraceInterface.h"
@@ -88,4 +91,5 @@ namespace BARNEY_NS {
 }
 
 
+#endif
 

@@ -139,6 +139,7 @@ endif()
 
 # ==================================================================
 option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
+option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
 
 # ==================================================================
 if (BARNEY_DISABLE_DENOISING)
