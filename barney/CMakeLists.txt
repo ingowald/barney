@@ -134,13 +134,13 @@ set(HOST_SOURCES
   
   umesh/common/UMeshField.h
   umesh/common/UMeshField.cu
-  umesh/mc/UMeshCUBQLSampler.h
-  umesh/mc/UMeshCUBQLSampler.cu
+  umesh/mc/UMeshCuBQLSampler.h
+  umesh/mc/UMeshCuBQLSampler.cu
  
 #  umesh/os/AWT.cu
 #  umesh/os/AWT.h
 
-  amr/BlockStructuredCUBQLSampler.cu
+  amr/BlockStructuredCuBQLSampler.cu
   amr/BlockStructuredField.cu
   
   # *structured* volumes

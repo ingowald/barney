@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-
+// SPDX-FileCopyrightText:
+// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier:
+// Apache-2.0
 
 #pragma once
 
@@ -12,13 +13,6 @@
 # include "cuBQL/builder/cuda.h"
 #endif
 #include "cuBQL/traversal/shrinkingRadiusQuery.h"
-
-// #ifdef __CUDACC__
-// namespace cuBQL {
-//   using float3 = ::float3;
-//   using float4 = ::float4;
-// }
-// #endif
 
 namespace BARNEY_NS {
   

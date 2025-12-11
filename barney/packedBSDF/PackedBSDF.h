@@ -113,6 +113,8 @@ namespace BARNEY_NS {
         return data.glass.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
       if (type == TYPE_NVisii)
         return data.nvisii.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
+      if (type == TYPE_Lambertian)
+        return data.lambertian.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
       return 1.f;
     }
 

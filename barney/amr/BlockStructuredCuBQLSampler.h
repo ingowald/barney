@@ -1,20 +1,22 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText:
+// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier:
+// Apache-2.0
 
 
 #pragma once
 
 #include "barney/amr/BlockStructuredField.h"
 #include "barney/volume/MCAccelerator.h"
-#include "barney/common/CUBQL.h"
+#include "barney/common/CuBQL.h"
 #include "cuBQL/traversal/fixedBoxQuery.h"
 
 namespace BARNEY_NS {
 
   struct BlockStructuredField;
   
-  /*! a block structured amr scalar field, with a CUBQL bvh sampler */
-  struct BlockStructuredCUBQLSampler : public ScalarFieldSampler {
+  /*! a block structured amr scalar field, with a CuBQL bvh sampler */
+  struct BlockStructuredCuBQLSampler : public ScalarFieldSampler {
     enum { BVH_WIDTH = 4 };
     using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
     using node_t = typename bvh_t::Node;
@@ -35,11 +37,11 @@ namespace BARNEY_NS {
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
 
-    BlockStructuredCUBQLSampler(BlockStructuredField *mesh);
+    BlockStructuredCuBQLSampler(BlockStructuredField *mesh);
     
     /*! builds the string that allows for properly matching optix
       device progs for this type */
-    inline static std::string typeName() { return "BlockStructured_CUBQL"; }
+    inline static std::string typeName() { return "BlockStructured_CuBQL"; }
 
     void build() override;
 
@@ -48,7 +50,7 @@ namespace BARNEY_NS {
   };
   
   struct BlockStructuredSamplerPTD {
-    inline __rtc_device BlockStructuredSamplerPTD(const BlockStructuredCUBQLSampler::DD *field)
+    inline __rtc_device BlockStructuredSamplerPTD(const BlockStructuredCuBQLSampler::DD *field)
       : field(field)
     {}
 #if RTC_DEVICE_CODE
@@ -57,7 +59,7 @@ namespace BARNEY_NS {
       field->addBasisFunctions(sumWeightedValues,sumWeights,primID,P);
     }
 #endif
-    const BlockStructuredCUBQLSampler::DD *const field;
+    const BlockStructuredCuBQLSampler::DD *const field;
     
     float sumWeights = 0.f;
     float sumWeightedValues = 0.f;
@@ -65,7 +67,7 @@ namespace BARNEY_NS {
   
 #if RTC_DEVICE_CODE
   inline __rtc_device
-  float BlockStructuredCUBQLSampler::DD::sample(vec3f P, bool dbg) const
+  float BlockStructuredCuBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
     BlockStructuredSamplerPTD ptd(this);
 

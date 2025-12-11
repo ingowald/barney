@@ -55,7 +55,12 @@ namespace BARNEY_NS {
     
     DD getDD(Device *device);
     VolumeAccel::SP createAccel(Volume *volume) override;
+    
+    /*! creates an acceleration structure for a 'isoSurface' geometry
+        using this scalar field type */
     IsoSurfaceAccel::SP createIsoAccel(IsoSurface *isoSurface) override;
+    
+    /*! create, fill, and return a macrocell grid for this field */
     MCGrid::SP buildMCs() override;
 
     TextureData::SP scalars;

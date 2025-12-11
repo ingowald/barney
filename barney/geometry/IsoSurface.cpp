@@ -8,8 +8,6 @@
 
 namespace BARNEY_NS {
 
-  // RTC_IMPORT_USER_GEOM(IsoSurface,IsoSurface,IsoSurface::DD,false,true);
-
   IsoSurfaceAccel::IsoSurfaceAccel(IsoSurface *isoSurface)
     : isoSurface(isoSurface),
       devices(isoSurface->devices)
@@ -19,52 +17,31 @@ namespace BARNEY_NS {
     : Geometry(context,devices)
   {}
 
-  /*  ! (re-)build the accel structure for this volume, probably after
-      changes to transfer functoin (or later, scalar field) */
+  /*! (re-)build the accel structure for this volume, probably after
+    changes to transfer functoin (or later, scalar field) */
   void IsoSurface::build()
   {
-    if (!accel) {
+    if (!accel) 
       return;
-    }
-    assert(accel);
     accel->build();
   }
   
   void IsoSurface::commit()
   {
-    if (!sf) return;
+    if (!sf)
+      /* we don't have a scalar field attached - this is user error
+         but let's just irgnoe and skip */
+      return;
 
-    if (!accel)
+    if (!accel) {
       accel = sf->createIsoAccel(this);
+      if (!accel)
+        throw std::runtime_error
+          ("'isoSurface' geometry support not implemented for scalar "
+           "field of type '"+sf->toString()+"'");
+    }
 
     accel->build();
-    // for (auto device : *devices) {
-    //   PLD *pld = getPLD(device);
-    //   // pld->userGeoms  =
-    //   //   pld->group
-
-    //   // if (pld->userGeoms.empty()) {
-    //   //   rtc::GeomType *gt
-    //   //     = device->geomTypes.get(createGeomType_IsoSurface);
-    //   //   rtc::Geom *geom = gt->createGeom();
-    //   //   geom->setPrimCount(1);
-    //   //   pld->userGeoms.push_back(geom);
-    //   // }
-    //   // rtc::Geom *geom = pld->userGeoms[0];
-      
-    //   // IsoSurface::DD dd;
-    //   // Geometry::writeDD(dd,device);
-    //   // if (isoValues) {
-    //   //   dd.isoValues = (float*)isoValues->getDD(device);
-    //   //   dd.numIsoValues = isoValues->count;
-    //   // } else {
-    //   //   dd.isoValues = nullptr;
-    //   //   dd.numIsoValues = 0;
-    //   // }
-    //   // dd.isoValue = isoValue;
-    //   // // done:
-    //   // geom->setDD(&dd);
-    // }
   } 
 
   bool IsoSurface::set1f(const std::string &member, const float &value)
@@ -82,6 +59,7 @@ namespace BARNEY_NS {
   {
     if (Geometry::setData(member,value))
       return true;
+    
     if (member == "isoValues") {
       isoValues = value ? value->as<PODData>() : PODData::SP();
       return true;
@@ -95,7 +73,10 @@ namespace BARNEY_NS {
       return true;
     if (member == "scalarField") {
       sf = value->as<ScalarField>();
-      PING; PRINT(sf);
+      if (!sf)
+        throw std::runtime_error
+          ("'scalarField' value set on 'isoSurface' object "
+           "is not a scalar field");
       return true;
     }
     return false;
