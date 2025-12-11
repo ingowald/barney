@@ -1,5 +1,7 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText:
+// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier:
+// Apache-2.0
 
 
 #include "rtcore/ComputeInterface.h"
@@ -7,14 +9,14 @@
 #include "barney/amr/BlockStructuredField.h"
 #include "barney/Context.h"
 #include "barney/volume/MCGrid.cuh"
-#include "barney/amr/BlockStructuredCUBQLSampler.h"
+#include "barney/amr/BlockStructuredCuBQLSampler.h"
 
 namespace BARNEY_NS {
 
   RTC_IMPORT_USER_GEOM(/*file*/BlockStructuredMC,
                        /*name*/BlockStructuredMC,
                        /*geomtype device data */
-                       MCVolumeAccel<BlockStructuredCUBQLSampler>::DD,false,false);
+                       MCVolumeAccel<BlockStructuredCuBQLSampler>::DD,false,false);
 
   enum { MC_GRID_SIZE = 256 };
 
@@ -151,39 +153,14 @@ namespace BARNEY_NS {
   VolumeAccel::SP BlockStructuredField::createAccel(Volume *volume)
   {
     auto sampler
-      = std::make_shared<BlockStructuredCUBQLSampler>(this);
-    return std::make_shared<MCVolumeAccel<BlockStructuredCUBQLSampler>>
+      = std::make_shared<BlockStructuredCuBQLSampler>(this);
+    return std::make_shared<MCVolumeAccel<BlockStructuredCuBQLSampler>>
       (volume,
        createGeomType_BlockStructuredMC,
        sampler);
   }
 
-
-//   struct BSField_computeElementBBs {
-//     /* kernel ARGS */
-//     box3f         *d_primBounds;
-//     range1f       *d_primRanges;
-//     BlockStructuredField::DD field;
-
-// #if RTC_DEVICE_CODE
-//     inline __rtc_device
-//     void run(const rtc::ComputeInterface &ci);
-// #endif
-//   };
-
 #if RTC_DEVICE_CODE
-  // /* kernel FUNCTION */
-  // inline __rtc_device
-  // void BSField_computeElementBBs::run(const rtc::ComputeInterface &ci)
-  // {
-  //   const int tid = ci.launchIndex().x;
-  //   if (tid >= field.numBlocks) return;
-
-  //   Block block = Block::getFrom(field,tid);
-  //   d_primBounds[tid] = block.getDomain();
-  //   if (d_primRanges) d_primRanges[tid] = block.getValueRange();
-  // }
-
   __rtc_global
   void BSField_computeElementBBs(const rtc::ComputeInterface &ci,
                                  box3f         *d_primBounds,
@@ -234,7 +211,6 @@ namespace BARNEY_NS {
                                                box3f   *d_primBounds,
                                                range1f *d_primRanges)
   {
-#if 1
     int bs = 128;
     int nb = divRoundUp(numBlocks,bs);
     __rtc_launch(device->rtc, BSField_computeElementBBs,
@@ -242,17 +218,6 @@ namespace BARNEY_NS {
                  d_primBounds,
                  d_primRanges,
                  getDD(device));
-#else
-    BSField_computeElementBBs args = {
-      /* kernel ARGS */
-      d_primBounds,
-      d_primRanges,
-      getDD(device)
-    };
-    int bs = 128;
-    int nb = divRoundUp(numBlocks,bs);
-    getPLD(device)->computeElementBBs->launch(nb,bs,&args);
-#endif
     device->sync();
   }
 
@@ -302,9 +267,9 @@ namespace BARNEY_NS {
     assert(perBlock.offsets->count == numBlocks);
     assert(perBlock.levels->count == numBlocks);
 
-    // =============================================================================
+    // ==================================================================
     // compute world bounds
-    // =============================================================================
+    // ==================================================================
     {
       auto dev = (*devices)[0];
       SetActiveGPU forDuration(dev);

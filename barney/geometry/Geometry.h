@@ -18,6 +18,15 @@ namespace BARNEY_NS {
   using render::GeometryAttribute;
   using render::GeometryAttributes;
   using render::HostMaterial;
+
+  struct CutPlanes {
+    struct Plane { vec3f N; float d; };
+    Plane *planes;
+    int numPlanes;
+    /*! number of the specified list of planes that a 3D point has to
+        be on the "> 0" side of to be determined 'cut'. */
+    int cutThreshold;
+  };
   
   struct Geometry : public barney_api::Geometry {
     typedef std::shared_ptr<Geometry> SP;

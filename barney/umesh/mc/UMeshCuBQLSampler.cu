@@ -1,25 +1,22 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText:
+// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier:
+// Apache-2.0
 
 
-#include "barney/umesh/mc/UMeshCUBQLSampler.h"
-#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
-# include "cuBQL/builder/cpu.h"
-#else
-# include "cuBQL/builder/cuda.h"
-#endif
+#include "barney/umesh/mc/UMeshCuBQLSampler.h"
 #include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
 
-  UMeshCUBQLSampler::UMeshCUBQLSampler(UMeshField *mesh)
+  UMeshCuBQLSampler::UMeshCuBQLSampler(UMeshField *mesh)
     : mesh(mesh),
       devices(mesh->devices)
   {
     perLogical.resize(devices->numLogical);
   }
 
-  UMeshCUBQLSampler::PLD *UMeshCUBQLSampler::getPLD(Device *device) 
+  UMeshCuBQLSampler::PLD *UMeshCuBQLSampler::getPLD(Device *device) 
   {
     assert(device);
     assert(device->contextRank() >= 0);
@@ -27,7 +24,7 @@ namespace BARNEY_NS {
     return &perLogical[device->contextRank()];
   }
   
-  UMeshCUBQLSampler::DD UMeshCUBQLSampler::getDD(Device *device)
+  UMeshCuBQLSampler::DD UMeshCuBQLSampler::getDD(Device *device)
   {
     DD dd;
     (UMeshField::DD &)dd = mesh->getDD(device);
@@ -35,7 +32,7 @@ namespace BARNEY_NS {
     return dd;
   }
 
-  void UMeshCUBQLSampler::build()
+  void UMeshCuBQLSampler::build()
   {
     int numCells = mesh->numCells;
     for (auto device : *devices) {
@@ -43,15 +40,10 @@ namespace BARNEY_NS {
       if (pld->bvh.nodes != 0) {
         /* BVH already built! */
         continue;
-// #if BARNEY_RTC_EMBREE || defined(__HIPCC__)
-//       cuBQL::cpu::freeBVH(bvh);
-// #else
-//       cuBQL::cuda::free(bvh,0,memResource);
-// #endif      
       }
 
       // std::cout << "------------------------------------------" << std::endl;
-      // std::cout << "building UMeshCUBQL BVH!" << std::endl;
+      // std::cout << "building UMeshCuBQL BVH!" << std::endl;
       // std::cout << "------------------------------------------" << std::endl;
       
       SetActiveGPU forDuration(device);
@@ -84,10 +76,8 @@ namespace BARNEY_NS {
       device->rtc->sync();
       device->rtc->freeMem(primBounds);
       device->rtc->freeMem(valueRanges);
-      // std::cout << OWL_TERMINAL_LIGHT_GREEN
-      //           << "#bn.umesh: cubql bvh built ..."
-      //           << OWL_TERMINAL_DEFAULT << std::endl;
     }
   }
-}
+  
+} // ::barney
 

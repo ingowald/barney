@@ -1,11 +1,12 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-
+// SPDX-FileCopyrightText:
+// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier:
+// Apache-2.0
 
 #include "barney/common/barney-common.h"
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/Context.h"
-#include "barney/umesh/mc/UMeshCUBQLSampler.h"
+#include "barney/umesh/mc/UMeshCuBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
 // #include "barney/umesh/os/AWT.h"
 #if RTC_DEVICE_CODE
@@ -17,7 +18,10 @@ namespace BARNEY_NS {
 
   RTC_IMPORT_USER_GEOM(/*file*/UMeshMC,/*name*/UMeshMC,
                        /*geomtype device data */
-                       MCVolumeAccel<UMeshCUBQLSampler>::DD,false,false);
+                       MCVolumeAccel<UMeshCuBQLSampler>::DD,false,false);
+  RTC_IMPORT_USER_GEOM(/*file*/UMeshMC,/*name*/UMeshMC_Iso,
+                       /*geomtype device data */
+                       MCIsoSurfaceAccel<UMeshCuBQLSampler>::DD,false,false);
   
   UMeshField::PLD *UMeshField::getPLD(Device *device) 
   {
@@ -327,14 +331,23 @@ namespace BARNEY_NS {
     return dd;
   }
   
+  IsoSurfaceAccel::SP UMeshField::createIsoAccel(IsoSurface *isoSurface) 
+  {
+    auto sampler = std::make_shared<UMeshCuBQLSampler>(this);
+    return std::make_shared<MCIsoSurfaceAccel<UMeshCuBQLSampler>>
+      (isoSurface,
+       createGeomType_UMeshMC_Iso,
+       sampler);
+  }
+  
   VolumeAccel::SP UMeshField::createAccel(Volume *volume)
   {
 #if 0
     return std::make_shared<AWTAccel>(volume,this);
 #else
     auto sampler
-      = std::make_shared<UMeshCUBQLSampler>(this);
-    return std::make_shared<MCVolumeAccel<UMeshCUBQLSampler>>
+      = std::make_shared<UMeshCuBQLSampler>(this);
+    return std::make_shared<MCVolumeAccel<UMeshCuBQLSampler>>
       (volume,
        createGeomType_UMeshMC,
        sampler);

@@ -1,25 +1,23 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText:
+// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier:
+// Apache-2.0
 
 
-#include "barney/amr/BlockStructuredCUBQLSampler.h"
-#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
-# include "cuBQL/builder/cpu.h"
-#else
-# include "cuBQL/builder/cuda.h"
-#endif
-#include "rtcore/ComputeInterface.h"
+#include "barney/amr/BlockStructuredCuBQLSampler.h"
 
 namespace BARNEY_NS {
 
-  BlockStructuredCUBQLSampler::BlockStructuredCUBQLSampler(BlockStructuredField *field)
+  BlockStructuredCuBQLSampler
+  ::BlockStructuredCuBQLSampler(BlockStructuredField *field)
     : field(field),
       devices(field->devices)
   {
     perLogical.resize(devices->numLogical);
   }
 
-  BlockStructuredCUBQLSampler::PLD *BlockStructuredCUBQLSampler::getPLD(Device *device) 
+  BlockStructuredCuBQLSampler::PLD *
+  BlockStructuredCuBQLSampler::getPLD(Device *device) 
   {
     assert(device);
     assert(device->contextRank() >= 0);
@@ -27,7 +25,8 @@ namespace BARNEY_NS {
     return &perLogical[device->contextRank()];
   }
   
-  BlockStructuredCUBQLSampler::DD BlockStructuredCUBQLSampler::getDD(Device *device)
+  BlockStructuredCuBQLSampler::DD
+  BlockStructuredCuBQLSampler::getDD(Device *device)
   {
     DD dd;
     (BlockStructuredField::DD &)dd = field->getDD(device);
@@ -35,7 +34,7 @@ namespace BARNEY_NS {
     return dd;
   }
 
-  void BlockStructuredCUBQLSampler::build()
+  void BlockStructuredCuBQLSampler::build()
   {
     int numPrims = field->numBlocks;
     for (auto device : *devices) {
@@ -47,7 +46,7 @@ namespace BARNEY_NS {
       }
 
       std::cout << "------------------------------------------" << std::endl;
-      std::cout << "building BlockStructuredCUBQL BVH!" << std::endl;
+      std::cout << "building BlockStructuredCuBQL BVH!" << std::endl;
       std::cout << "------------------------------------------" << std::endl;
 
       SetActiveGPU forDuration(device);

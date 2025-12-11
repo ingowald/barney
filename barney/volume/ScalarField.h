@@ -39,11 +39,21 @@ namespace BARNEY_NS {
                                   const DevGroup::SP &devices,
                                   const std::string &type);
 
-    virtual std::shared_ptr<VolumeAccel> createAccel(Volume *volume) = 0;
-    virtual std::shared_ptr<IsoSurfaceAccel> createIsoAccel(IsoSurface *isoSurface)
+    /*! creates an acceleration structure for a 'volume' object using
+        this scalar field type */
+    virtual std::shared_ptr<VolumeAccel>
+    createAccel(Volume *volume) = 0;
+
+    /*! creates an acceleration structure for a 'isoSurface' geometry
+        using this scalar field type */
+    virtual std::shared_ptr<IsoSurfaceAccel>
+    createIsoAccel(IsoSurface *isoSurface)
     { return {}; }
 
-    MCGrid::SP getMCs() { if (!mcGrid) mcGrid = buildMCs(); return mcGrid; }
+    MCGrid::SP getMCs()
+    { if (!mcGrid) mcGrid = buildMCs(); return mcGrid; }
+
+    /*! create, fill, and return a macrocell grid for this field */
     virtual MCGrid::SP buildMCs();
 
     MCGrid::SP  mcGrid;
