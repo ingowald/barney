@@ -27,6 +27,12 @@
     enabled/disabled by user */
 #cmakedefine01 BARNEY_HAVE_NANOVDB
 
+/*! whether this build of barney has support for the NanoVDB volume
+    type. NanoVDB takes a long while to compile, so can be
+    enabled/disabled by user */
+#cmakedefine01 BARNEY_CUBQL_BVH_WIDTH
+
+
 #include <cstdint>
 #include <cstddef>
 

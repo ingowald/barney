@@ -60,6 +60,7 @@ namespace BARNEY_NS {
                       bsdf.albedo.x,
                       bsdf.albedo.y,
                       bsdf.albedo.z);
+      bsdf.alpha = baseColor.w;
 # else
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();

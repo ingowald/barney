@@ -15,7 +15,7 @@ namespace BARNEY_NS {
           color */
       struct Lambertian {
         inline Lambertian() = default;
-        inline __rtc_device Lambertian(vec3f color, float avg_reflectance=1.f);
+        // inline __rtc_device Lambertian(vec3f color, float avg_reflectance=1.f);
 
         inline __rtc_device
         float pdf(DG dg, vec3f wi, bool dbg) const;
@@ -28,8 +28,18 @@ namespace BARNEY_NS {
                      const render::DG &dg,
                      Random &random,
                      bool dbg) const;
+        inline __rtc_device
+        float getOpacity(bool isShadowRay,
+                         bool isInMedium,
+                         vec3f rayDir,
+                         vec3f Ng,
+                         bool dbg=false) const
+        {
+          return (float)alpha;
+        }
         
         rtc::float3 albedo;
+        float       alpha;
       };
 
       inline __rtc_device

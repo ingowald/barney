@@ -141,6 +141,10 @@ endif()
 option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
 option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
 
+option(BARNEY_USE_EXTERNAL_CUBQL "Use External CuBQL dir" OFF)
+set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")
+
+
 # ==================================================================
 if (BARNEY_DISABLE_DENOISING)
   set(BARNEY_DISABLE_OIDN ON)
@@ -171,7 +175,11 @@ if (NOT (TARGET cuBQL))
   else()
     set(CUBQL_DISABLE_CUDA ON)
   endif()
-  add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
+  if (BARNEY_USE_EXTERNAL_CUBQL)
+    add_subdirectory(../cuBQL EXCLUDE_FROM_ALL builddir_cuBQL)
+  else()
+    add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
+  endif()
 endif()
 
 if (BARNEY_HAVE_CUDA)
