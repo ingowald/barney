@@ -54,7 +54,6 @@ namespace BARNEY_NS {
   };
 
 
-
   struct MCIsoAccel_UMesh_Programs {
     static inline __rtc_device
     void bounds(const rtc::TraceInterface &ti,
