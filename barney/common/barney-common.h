@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include "barney/barney.h"
+#include "barney/barneyConfig.h"
+
 #if BARNEY_HAVE_HIP
 # define CUDART_INF INFINITY
 # define CUDART_INF_F ((float)INFINITY)
