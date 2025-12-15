@@ -62,10 +62,7 @@ namespace rtc {
         uint32_t ID;
       };
       struct DeviceRecord {
-        struct {
-          const bvh3f::Node *nodes;
-          const uint32_t    *primIDs;
-        } bvh;
+        cuBQL::bvh3f bvh;
         InstanceRecord *instanceRecords;
       };
       

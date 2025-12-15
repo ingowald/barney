@@ -22,12 +22,15 @@ namespace BARNEY_NS {
                               bool dbg) const;
 #endif
         PossiblyMappedParameter::DD color;
+        PossiblyMappedParameter::DD opacity;
       };
       AnariMatte(SlotContext *context) : HostMaterial(context) {}
       virtual ~AnariMatte() = default;
 
       bool setString(const std::string &member,
                      const std::string &value) override;
+      bool set1f(const std::string &member,
+                 const float &value) override;
       bool set3f(const std::string &member,
                  const vec3f &value) override;
       bool set4f(const std::string &member,
@@ -50,6 +53,7 @@ namespace BARNEY_NS {
     {
       if (dbg) printf("anarimatte createbsdf\n");
       vec4f baseColor = this->color.eval(hitData,samplers,dbg);
+      vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
 # if 1
       float reflectance = .85f;
       packedBSDF::Lambertian bsdf;
@@ -60,7 +64,7 @@ namespace BARNEY_NS {
                       bsdf.albedo.x,
                       bsdf.albedo.y,
                       bsdf.albedo.z);
-      bsdf.alpha = baseColor.w;
+      bsdf.alpha = baseColor.w * opacity.x;
 # else
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();

@@ -1,5 +1,14 @@
+
 #cmakedefine01 BARNEY_HAVE_CUDA
 #cmakedefine01 BARNEY_OIDN_CPU
 #cmakedefine01 BARNEY_OIDN_GPU
 
 #cmakedefine01 BARNEY_DISABLE_DENOISING
+
+/*! whether this build of barney has support for the NanoVDB volume
+    type. NanoVDB takes a long while to compile, so can be
+    enabled/disabled by user */
+//#cmakedefine BARNEY_CUBQL_BVH_WIDTH
+#define BARNEY_CUBQL_BVH_WIDTH ${BARNEY_CUBQL_BVH_WIDTH}
+
+

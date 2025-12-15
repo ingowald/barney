@@ -12,13 +12,26 @@
 #include "rtcore/cuda/ProgramInterface.h"
 #include "rtcore/cudaCommon/Device.h"
 
+#include <cuBQL/bvh.h>
+#include <cuBQL/math/Ray.h>
+#include <cuBQL/queries/triangleData/Triangle.h>
+#include <cuBQL/queries/triangleData/math/rayTriangleIntersections.h>
+#include <cuBQL/traversal/rayQueries.h>
+
 namespace rtc {
   namespace cuda {
 
-    inline __device__
+// #if BARNEY_CUBQL_BVH_WIDTH == 2
+    using bvh_t = cuBQL::bvh3f;
+// #else
+//     using bvh_t = cuBQL::WideBVH<float,3,BARNEY_CUBQL_BVH_WIDTH>;
+// #endif
+
+        inline __device__
     bool TraceInterface::intersectTriangle(const vec3f v0,
                                            const vec3f v1,
-                                           const vec3f v2)
+                                           const vec3f v2,
+                                           bool dbg)
     {
       vec3f e1 = v1-v0;
       vec3f e2 = v2-v0;
@@ -34,7 +47,8 @@ namespace rtc {
       // t = -dot(o-v0,N)/dot(d,N)
       float t = -dot(object.org-v0,N)/dot(object.dir,N);
 
-      // printf("ISEC t %f in [%f %f]\n",t,tMin,current.tMax);
+      if (dbg)
+        printf("ISEC t %f in [%f %f]\n",t,tMin,current.tMax);
       
       if (t <= 0.f || t >= current.tMax) return false;
 
@@ -66,14 +80,135 @@ namespace rtc {
       float u = det(Pu,Pv,e2u,e2v)/det(e1u,e1v,e2u,e2v);
       float v = det(e1u,e1v,Pu,Pv)/det(e1u,e1v,e2u,e2v);
 #endif
+    if (dbg)
+      printf("ISEC uv %f %f sum %f\n",u,v,u+v);
+      
       // printf("ISEC uv %f %f\n",u,v);
       if ((u < 0.f) || (v < 0.f) || ((u+v) >= 1.f)) return false;
 
       current.triangleBarycentrics = vec2f{ u,v };
       current.tMax = t;
+      if (dbg)
+        printf("HIT\n");
       return true;
     }
 
+
+#if 1
+    inline __device__
+    void TraceInterface::traceRay(rtc::AccelHandle _world,
+                                  vec3f org,
+                                  vec3f dir,
+                                  float t0,
+                                  float t1,
+                                  void *prdPtr)
+    {
+      using Triangle3f = cuBQL::triangle_t<float>;
+      using RayTriangleIntersection = cuBQL::RayTriangleIntersection_t<float>;
+      
+      if (fabsf(dir.x) < 1e-6f) dir.x = 1e-6f;
+      if (fabsf(dir.y) < 1e-6f) dir.y = 1e-6f;
+      if (fabsf(dir.z) < 1e-6f) dir.z = 1e-6f;
+
+      prd = prdPtr;
+      world.org = org;
+      world.dir = dir;
+      tMin = t0;
+      accepted.tMax = t1;
+      accepted.primID = -1;
+      accepted.instID = -1;
+      acceptedSBT = 0;
+      InstanceGroup::DeviceRecord *model
+        = (InstanceGroup::DeviceRecord *)_world;
+      
+      ::cuBQL::ray3f ray((const cuBQL::vec3f&)world.org,
+                         (const cuBQL::vec3f&)world.dir,
+                         t0,t1);
+                
+      auto intersectPrim = [&,this](uint32_t primIdx) -> float
+      {
+        GeomGroup::DeviceRecord *group 
+          = (GeomGroup::DeviceRecord *)&currentInstance->group;
+        GeomGroup::Prim *prims = group->prims;
+        GeomGroup::Prim prim = prims[primIdx];
+        current.primID = prim.primID;
+        current.geomID = prim.geomID;
+        current.tMax = accepted.tMax;
+        uint8_t *geomSBT = group->sbt + prim.geomID  * group->sbtEntrySize;
+        Geom::SBTHeader *header
+          = (Geom::SBTHeader *)geomSBT;
+        this->geomData = (header+1);
+        if (group->isTrianglesGroup) {
+          vec3i indices = header->triangles.indices[prim.primID];
+          vec3f v0 = header->triangles.vertices[indices.x];
+          vec3f v1 = header->triangles.vertices[indices.y];
+          vec3f v2 = header->triangles.vertices[indices.z];
+#if 1
+          if (!intersectTriangle(v0,v1,v2)) {
+            return accepted.tMax;
+          }
+#else
+          Triangle3f tri;
+          tri.a = (const cuBQL::vec3f&)v0;
+          tri.b = (const cuBQL::vec3f&)v1;
+          tri.c = (const cuBQL::vec3f&)v2;
+          RayTriangleIntersection isec;
+          bool hadHit = isec.compute(ray,tri,dbg);
+          if (dbg) printf("had hit %i\n",int(hadHit));
+          
+          if (!hadHit)
+            return accepted.tMax;
+          this->current.triangleBarycentrics.x = isec.u;
+          this->current.triangleBarycentrics.y = isec.v;
+          this->current.tMax = isec.t;
+#endif
+        } else {
+          header->user.intersect(*this);
+          if (current.tMax >= accepted.tMax)
+            return accepted.tMax;
+        }
+        rejectThisHit = false;
+        if (header->ah) header->ah(*this);
+        if (!rejectThisHit) {
+          accepted.tMax = current.tMax;
+          accepted.primID = current.primID;
+          accepted.geomID = current.geomID;
+          accepted.instID = current.instID;
+          accepted.triangleBarycentrics = current.triangleBarycentrics;
+          acceptedSBT = header;
+        }
+        return accepted.tMax;
+      };
+      auto enterBlas = [this,model]
+        (cuBQL::ray3f &out_ray,
+         cuBQL::bvh3f &out_bvh,
+         int instID) 
+      {
+        this->current.instID  = instID;
+        this->currentInstance = model->instanceRecords+current.instID;
+        this->object.org
+          = xfmPoint(currentInstance->worldToObjectXfm,world.org);
+        this->object.dir
+          = xfmVector(currentInstance->worldToObjectXfm,world.dir);
+        (vec3f&)out_ray.origin    = object.org;
+        (vec3f&)out_ray.direction = object.dir;
+        out_bvh = {0,0,0,0};
+        out_bvh.nodes = currentInstance->group.bvhNodes;
+      };
+      auto leaveBlas = [this]() -> void {
+        currentInstance = 0;
+      };
+      
+      ::cuBQL::shrinkingRayQuery::twoLevel::forEachPrim
+          (enterBlas,leaveBlas,intersectPrim,model->bvh,ray);
+      
+      if (acceptedSBT && acceptedSBT->ch) {
+        current = accepted;
+        this->geomData = (acceptedSBT+1);
+        acceptedSBT->ch(*this);
+      }
+    }
+#else
     inline __device__
     bool boxTest(float &t0, float &t1,
                  const cuBQL::box3f bb,
@@ -88,7 +223,9 @@ namespace rtc {
       t1 = min(t1,reduce_min(fr));
       return t0 <= t1;
     }
-    
+
+
+
     inline __device__
     void TraceInterface::traceRay(rtc::AccelHandle _world,
                                   vec3f org,
@@ -97,6 +234,9 @@ namespace rtc {
                                   float t1,
                                   void *prdPtr)
     {
+      bool dbg = *(int*)prdPtr;
+      
+      if (dbg) printf("TRACERAY #################################\n");
       if (fabsf(dir.x) < 1e-6f) dir.x = 1e-6f;
       if (fabsf(dir.y) < 1e-6f) dir.y = 1e-6f;
       if (fabsf(dir.z) < 1e-6f) dir.z = 1e-6f;
@@ -259,14 +399,13 @@ namespace rtc {
         }
         nodeID = -1;
       }
-#if 1
       if (acceptedSBT && acceptedSBT->ch) {
         current = accepted;
         this->geomData = (acceptedSBT+1);
         acceptedSBT->ch(*this);
       }
-#endif
     }
+#endif
     
     inline __device__
     vec3f TraceInterface::transformNormalFromObjectToWorldSpace(vec3f v) const

@@ -335,7 +335,10 @@ namespace BARNEY_NS {
                 if (tRange.lower >= tRange.upper) return true;
                 
                 range1f valueRange = self.mcGrid.scalarRange(cellIdx);
-
+                
+                // scalar values at begin/end of current ray segment
+                // (NOT sorted by value as valuerange is!)
+                float ff0 = 0.f, ff1 = 0.f;
                 if (dbg) printf("dda %i %i %i [%f %f] -> [%f %f]\n",
                                 cellIdx.x,
                                 cellIdx.y,
@@ -346,51 +349,36 @@ namespace BARNEY_NS {
                                 valueRange.upper);
                 auto overlaps = [&](float isoValue)
                 {
-                  if (isnan(isoValue)) return false;
-                  if (isoValue < valueRange.lower || isoValue > valueRange.upper)
-                    return false;
+                  return
+                    isoValue >= valueRange.lower &&
+                    isoValue <= valueRange.upper;
+                };
+                if (!overlaps(self.isoSurface.isoValue))
                   return true;
-                };
-                auto overlaps_any = [&]()
-                {
-                  if (overlaps(self.isoSurface.isoValue)) return true;
-                  return false;
-                };
+
                 auto intersect = [&](float isoValue)
                 {
-                  if (isnan(isoValue)) return;
-                  if (isoValue < valueRange.lower || isoValue > valueRange.upper)
-                    return;
-
-                  float t
-                    = (isoValue - valueRange.lower)
-                    / (valueRange.upper-valueRange.lower);
+                  float t = (isoValue - ff0) / (ff1-ff0);
                   t = lerp_l(t,tRange.lower,tRange.upper);
                   tHit = min(tHit,t);
                 };
-                auto intersect_all = [&]()
-                {
-                  intersect(self.isoSurface.isoValue);
-                };
-                
-                if (!overlaps_any()) return true;
+                  
 
                 float tt1 = t0;
                 vec3f P = obj_org + tt1 * obj_dir;
-                float ff1 = self.isoSurface.sfSampler.sample(P,dbg);
+                ff1 = self.isoSurface.sfSampler.sample(P,dbg);
                 int numSteps = 10; 
                 for (int i=1;i<=numSteps;i++) {
                   float tt0 = tt1;
-                  float ff0 = ff1;
+                  ff0 = ff1;
                   tt1 = lerp_l(i/float(numSteps),_t0,_t1);
                   P = obj_org + tt1 * obj_dir;
                   ff1 = self.isoSurface.sfSampler.sample(P,dbg);
+                  if (isnan(ff0) || isnan(ff1)) continue;
                   
-                  valueRange.lower = ff0;
-                  valueRange.upper = ff1;
+                  valueRange.lower = min(ff0,ff1);
+                  valueRange.upper = max(ff0,ff1);
                   tRange = range1f{tt0,tt1};
-
-                  if (isnan(ff0+ff1)) continue;
                   
                   if (dbg)
                     printf(" ... t [%f %f] v [ %f %f ]\n",
@@ -398,8 +386,8 @@ namespace BARNEY_NS {
                            tRange.upper,
                            valueRange.lower,
                            valueRange.upper);
-                  if (overlaps_any()) {
-                    intersect_all();
+                  if (overlaps(self.isoSurface.isoValue)) {
+                    intersect(self.isoSurface.isoValue);
                     if (tHit < ray.tMax) {
                       return false;
                     }
@@ -417,16 +405,45 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     const vec3f osP  = obj_org + tHit * obj_dir;
     vec3f P  = ti.transformPointFromObjectToWorldSpace(osP);
+#if 1
+    float delta
+      = length(bounds.size()) * .1f
+      / float(self.mcGrid.dims.x+self.mcGrid.dims.y+self.mcGrid.dims.z);
+    
+    float fP   = self.isoSurface.sfSampler.sample(osP);
+    float fPx0 = self.isoSurface.sfSampler.sample(osP+vec3f(-delta,0.f,0.f));
+    float fPx1 = self.isoSurface.sfSampler.sample(osP+vec3f(+delta,0.f,0.f));
+    float fPy0 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,-delta,0.f));
+    float fPy1 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,+delta,0.f));
+    float fPz0 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,0.f,-delta));
+    float fPz1 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,0.f,+delta));
+    float dx = 2.f;
+    float dy = 2.f;
+    float dz = 2.f;
+    if (isnan(fPx0)) { dx -= 1.f; fPx0 = fP; }
+    if (isnan(fPx1)) { dx -= 1.f; fPx1 = fP; }
+    if (isnan(fPy0)) { dy -= 1.f; fPy0 = fP; }
+    if (isnan(fPy1)) { dy -= 1.f; fPy1 = fP; }
+    if (isnan(fPz0)) { dz -= 1.f; fPz0 = fP; }
+    if (isnan(fPz1)) { dz -= 1.f; fPz1 = fP; }
+    vec3f osN(dx == 0.f ? 0.f : (fPx1-fPx0) / dx,
+              dy == 0.f ? 0.f : (fPy1-fPy0) / dy,
+              dz == 0.f ? 0.f : (fPz1-fPz0) / dz);
+    if (osN == vec3f(0.f))
+      osN = -normalize(obj_dir);
+    vec3f n = ti.transformNormalFromObjectToWorldSpace(osN);
+#else
     vec3f osN = - normalize(obj_dir);
     vec3f n   = - normalize(obj_dir);
+#endif
     int primID    = ti.getPrimitiveIndex();
     int instID    = ti.getInstanceID();
-                
+    
     render::HitAttributes hitData;
-    hitData.worldPosition   = P;
-    hitData.worldNormal     = n;
+    hitData.worldPosition   = ti.transformPointFromObjectToWorldSpace(osP);
+    hitData.worldNormal     = normalize(n);
     hitData.objectPosition  = osP;
-    hitData.objectNormal    = make_vec4f(osN);
+    hitData.objectNormal    = make_vec4f(normalize(osN));
     hitData.primID          = primID;
     hitData.instID          = instID;
     hitData.t               = tHit;
