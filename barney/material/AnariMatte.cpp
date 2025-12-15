@@ -21,8 +21,13 @@ namespace BARNEY_NS {
     {
       if (HostMaterial::setObject(member,value)) return true;
 
-      Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
       if (member == "color") {
+        Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
+        color.set(sampler);
+        return true;
+      }
+      if (member == "opacity") {
+        Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
         color.set(sampler);
         return true;
       }
@@ -40,6 +45,21 @@ namespace BARNEY_NS {
         color.set(value);
         return true;
       }
+      
+      if (member == "opacity") {
+        color.set(value);
+        return true;
+      }
+      
+      return false;
+    }
+    
+    bool AnariMatte::set1f(const std::string &member, const float &value) 
+    {
+      if (HostMaterial::set1f(member,value)) return true;
+      
+      if (member == "opacity")
+        { color.set(value); return true; }
       
       return false;
     }
