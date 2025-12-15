@@ -14,45 +14,6 @@ namespace BARNEY_NS {
 
 #define NEW_RNG 1
 
-#if 1
-#else
-    struct RNGSeed {
-      inline __rtc_device void seed(uint32_t a, uint32_t b)
-      {
-#if NEW_RNG
-        const uint32_t FNV_PRIME = 16777619;
-        value = pcg(pcg(a) * FNV_PRIME ^ pcg(b));
-#else
-        value = pcg(pcg(a) ^ pcg(b));
-#endif
-      }
-      
-      inline __rtc_device uint32_t next(uint32_t hash)
-      {
-        const uint32_t FNV_PRIME = 16777619;
-#if NEW_RNG
-        value = pcg(value * FNV_PRIME ^ hash);
-#else
-        value = value * FNV_PRIME ^ hash;
-#endif
-        return value;
-      }
-      inline __rtc_device uint32_t next(uint64_t hash)
-      {
-        const uint32_t FNV_PRIME = 16777619;
-#if NEW_RNG
-         value = pcg(value * FNV_PRIME ^ (uint32_t)hash);
-         value = pcg(value * FNV_PRIME ^ (uint32_t)(hash>>32));
-#else
-        value = value * FNV_PRIME ^ (uint32_t)hash;
-        value = value * FNV_PRIME ^ (uint32_t)(hash>>32);
-#endif
-        return value;
-      }
-      uint32_t value;
-    };
-#endif
-
     struct PathState {
       vec3h    throughput;
       int32_t  pixelID;
@@ -100,10 +61,11 @@ namespace BARNEY_NS {
       inline __rtc_device void packNormal(vec3f N);
       inline __rtc_device vec3f unpackNormal() const;
       inline __rtc_device vec3f getN() const  { return unpackNormal(); }
-#endif      
-      vec3f    org;
-      vec3f    dir;
-      float    tMax;
+#endif
+
+      vec3f   org;
+      vec3f   dir;
+      float   tMax;
       RNGSeed rngSeed;
 
       /*! the actual hit point, in 3D float coordinates (rather than

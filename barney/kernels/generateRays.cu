@@ -154,8 +154,8 @@ namespace BARNEY_NS {
       int dbg_target_x = fbSize.x/2;
       int dbg_target_y = fbSize.y/2;
       
-      // dbg_target_x = 400;
-      // dbg_target_y = 100;
+      // dbg_target_x += 230;
+      // dbg_target_y += 80;
       
       bool crossHair_x = (ix == dbg_target_x);
       bool crossHair_y = (iy == dbg_target_y);
@@ -208,7 +208,7 @@ namespace BARNEY_NS {
                                bgColor.w);
       state.throughput = 1.f;
       int pos = rt.atomicAdd(d_count,1);
-      
+
       rayQueue.rays[pos] = ray;
       rayQueue.states[pos] = state;
       rayQueue.hitIDs[pos] = {BARNEY_INF,-1,-1,-1};

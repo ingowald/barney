@@ -115,6 +115,7 @@ namespace rtc {
       // create and upload instance records
       // ------------------------------------------------------------------
       int numInstances = groups.size();
+      PRINT(numInstances);
       std::vector<InstanceRecord> h_instances(numInstances);
       for (int instID=0;instID<numInstances;instID++) {
         auto &inst = h_instances[instID];
@@ -302,6 +303,7 @@ namespace rtc {
       this->prims = reorderedPrims;
 
       BARNEY_CUDA_CALL(Free(bvh.primIDs));
+      bvh.primIDs = 0;
     }
     
 

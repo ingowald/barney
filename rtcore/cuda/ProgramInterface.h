@@ -112,7 +112,7 @@ namespace rtc {
                     void *prdPtr);
       
       inline __device__
-      bool intersectTriangle(const vec3f v0,const vec3f v1,const vec3f v2);
+      bool intersectTriangle(const vec3f v0,const vec3f v1,const vec3f v2, bool dbg=false);
       
       // launch params
       const void  *lpData;

@@ -487,7 +487,7 @@ namespace BARNEY_NS {
       const bool  hadNoIntersection  = !ray.hadHit();
       const vec3f incomingThroughput = state.throughput;
       
-      bool dbg = ray.dbg();
+      bool dbg = 0 && ray.dbg();
       if (dbg)
         printf("(%i) ------------------------------------------------------------------\n -> incoming %f %f %f dir %f %f %f t %f\n  tp %f %f %f ismiss %i, bsdf %i\n",
                pathDepth,
