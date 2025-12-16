@@ -24,7 +24,7 @@ namespace BARNEY_NS {
         PossiblyMappedParameter::DD color;
         PossiblyMappedParameter::DD opacity;
       };
-      AnariMatte(SlotContext *context) : HostMaterial(context) {}
+      AnariMatte(SlotContext *context);
       virtual ~AnariMatte() = default;
 
       bool setString(const std::string &member,
@@ -42,7 +42,8 @@ namespace BARNEY_NS {
       
       DeviceMaterial getDD(Device *device) override;
       
-      PossiblyMappedParameter color = vec3f(.8f);
+      PossiblyMappedParameter color   = vec3f(.8f);
+      PossiblyMappedParameter opacity = 1.f;
     };
       
 #if RTC_DEVICE_CODE
