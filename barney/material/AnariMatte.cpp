@@ -7,6 +7,10 @@
 
 namespace BARNEY_NS {
   namespace render {
+
+    AnariMatte::AnariMatte(SlotContext *context)
+      : HostMaterial(context)
+    {}
     
     DeviceMaterial AnariMatte::getDD(Device *device) 
     {
