@@ -77,7 +77,7 @@ namespace barney_device {
 
   private:
     MaterialParameter<math::float4> m_color;
-    MaterialParameter<float> m_opacity;
+    MaterialParameter<float>        m_opacity;
   };
 
   // ==================================================================
