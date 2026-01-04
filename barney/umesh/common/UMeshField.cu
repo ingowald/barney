@@ -8,7 +8,7 @@
 #include "barney/Context.h"
 #include "barney/umesh/mc/UMeshCuBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
-// #include "barney/umesh/os/AWT.h"
+#include "barney/umesh/mc/IconField.h"
 #if RTC_DEVICE_CODE
 # include "rtcore/ComputeInterface.h"
 # include "rtcore/TraceInterface.h"
@@ -344,6 +344,13 @@ namespace BARNEY_NS {
   {
 #if 0
     return std::make_shared<AWTAccel>(volume,this);
+#elif 1
+    auto sampler
+      = std::make_shared<IconMultiPassSampler>(this);
+    return std::make_shared<IconMultiPassAccel>
+      (volume,
+       // createGeomType_UMeshMC,
+       sampler);
 #else
     auto sampler
       = std::make_shared<UMeshCuBQLSampler>(this);

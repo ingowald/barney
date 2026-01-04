@@ -11,7 +11,10 @@
 #include <array>
 
 namespace BARNEY_NS {
-
+  namespace render {
+    struct Ray;
+  };
+  
   using Random = Random2;
   struct Volume;
   struct ScalarField;
@@ -38,6 +41,15 @@ namespace BARNEY_NS {
 
 
 
+  struct MultiPassObject {
+    typedef std::shared_ptr<MultiPassObject> SP;
+    virtual void trace(const render::World *world,
+                       const affine3f &instanceXfm,
+                       render::Ray *rays,
+                       int numRays) = 0;
+  };
+  
+    
 
 
   struct VolumeAccel;
@@ -111,6 +123,7 @@ namespace BARNEY_NS {
     struct PLD {
       std::vector<rtc::Group *> generatedGroups;
       std::vector<rtc::Geom *>  generatedGeoms;
+      std::vector<MultiPassObject::SP> generatedPasses;
     };
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;

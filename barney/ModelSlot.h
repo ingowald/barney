@@ -1,4 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 
@@ -17,7 +18,8 @@ namespace BARNEY_NS {
   struct Light;
 
   struct SlotContext;
-
+  struct ModelSlot;
+  
   struct ModelSlot : public SlottedObject {
     typedef std::shared_ptr<ModelSlot> SP;
 
@@ -41,6 +43,8 @@ namespace BARNEY_NS {
       std::vector<affine3f>  xfms;
       std::vector<int>       userIDs;
     } instances;
+
+    std::vector<std::pair<MultiPassObject::SP,affine3f>> additionalPasses;
 
     rtc::AccelHandle getInstanceAccel(Device *device)
     {

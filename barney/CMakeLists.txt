@@ -136,7 +136,8 @@ set(HOST_SOURCES
   umesh/common/UMeshField.cu
   umesh/mc/UMeshCuBQLSampler.h
   umesh/mc/UMeshCuBQLSampler.cu
- 
+  umesh/mc/IconField.h
+  umesh/mc/IconField.cu
 #  umesh/os/AWT.cu
 #  umesh/os/AWT.h
 
@@ -243,6 +244,7 @@ set(DEVICE_PROGRAM_SOURCES
   volume/StructuredData.dev.cu
   volume/NanoVDB.dev.cu
   umesh/mc/UMeshMC.dev.cu
+  umesh/mc/IconField.dev.cu
 #  umesh/os/AWT.dev.cu
   amr/BlockStructuredMC.dev.cu
   kernels/traceRays.dev.cu
