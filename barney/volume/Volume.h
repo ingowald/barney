@@ -39,18 +39,7 @@ namespace BARNEY_NS {
     const DevGroup::SP devices;
   };
 
-
-
-  struct MultiPassObject {
-    typedef std::shared_ptr<MultiPassObject> SP;
-    virtual void trace(const render::World *world,
-                       const affine3f &instanceXfm,
-                       render::Ray *rays,
-                       int numRays) = 0;
-  };
-  
-    
-
+  struct MultiPassObject;
 
   struct VolumeAccel;
   
@@ -124,7 +113,7 @@ namespace BARNEY_NS {
       std::vector<rtc::Group *> generatedGroups;
       std::vector<rtc::Geom *>  generatedGeoms;
     };
-    std::vector<MultiPassObject::SP> generatedPasses;
+    std::vector<std::shared_ptr<MultiPassObject>> generatedPasses;
     
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;

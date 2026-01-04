@@ -194,7 +194,9 @@ namespace BARNEY_NS {
   /*! trace all rays currently in a ray queue, including forwarding
     if and where applicable, untile every ray in the ray queue as
     found its intersection */
-  void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
+  void Context::traceRaysGlobally(GlobalModel *model,
+                                  uint32_t rngSeed,
+                                  bool needHitIDs)
   {
     // if (myRank() == 0) printf("globaltrace....\n");
     

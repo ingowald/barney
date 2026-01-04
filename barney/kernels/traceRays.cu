@@ -59,9 +59,24 @@ namespace BARNEY_NS {
                                          always have 1024 in width: */
                                       vec2i(bs,nb),
                                       &dd);
+          
+          // ------------------------------------------------------------------
+          // do all extra full-wave passes
+          // ------------------------------------------------------------------
+          for (auto pass : model->additionalPasses) {
+            pass.first->launch(device,
+                               dd.world,
+                               pass.second,
+                               dd.rays,dd.numRays);
+          }
         }
       }
+
+
+    
+      
     }
+
 
     // ------------------------------------------------------------------
     // ... and sync 'til all are done

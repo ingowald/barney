@@ -162,34 +162,39 @@ namespace BARNEY_NS {
       bool firstDevice = (device == (*devices)[0]);
       for (int i=0;i<instances.groups.size();i++) {
         Group *group = instances.groups[i].get();
+        const affine3f &xfm = instances.xfms[i];
         if (!group) continue;
         Group::PLD *groupPLD = group->getPLD(device);
       
         if (groupPLD->userGeomGroup) {
           rtcGroups.push_back(groupPLD->userGeomGroup);
-          rtcTransforms.push_back(instances.xfms[i]);
+          rtcTransforms.push_back(xfm);
           if (firstDevice)
             inputInstIDs.push_back(i);
           // if (!instances.userIDs.empty())
           //   userIDs.push_back(instances.userIDs[i]);
         }
+        PING;
+        PRINT(groupPLD->volumeGeomsGroup);
+        PRINT(groupPLD->volumeGroups.size());
+        
         if (groupPLD->volumeGeomsGroup) {
           rtcGroups.push_back(groupPLD->volumeGeomsGroup);
-          rtcTransforms.push_back(instances.xfms[i]);
+          rtcTransforms.push_back(xfm);
           if (firstDevice)
             inputInstIDs.push_back(i);
         }
 
         if (groupPLD->triangleGeomGroup) {
           rtcGroups.push_back(groupPLD->triangleGeomGroup);
-          rtcTransforms.push_back(instances.xfms[i]);
+          rtcTransforms.push_back(xfm);
           if (firstDevice)
             inputInstIDs.push_back(i);
         }
         
         for (auto group : groupPLD->volumeGroups) {
           rtcGroups.push_back(group);
-          rtcTransforms.push_back(instances.xfms[i]);
+          rtcTransforms.push_back(xfm);
           if (firstDevice)
             inputInstIDs.push_back(i);
         }

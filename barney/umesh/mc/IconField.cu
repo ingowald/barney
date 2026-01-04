@@ -59,12 +59,13 @@ namespace BARNEY_NS {
 #endif
   }
 
-  void IconMultiPassLaunch::trace(const render::World *world,
-                                  const affine3f &instanceXfm,
-                                  render::Ray *rays,
-                                  int numRays)
+  void IconMultiPassLaunch::launch(Device *device,
+                                   const render::World::DD &world,
+                                   const affine3f &instanceXfm,
+                                   render::Ray *rays,
+                                   int numRays)
   {
-    PING;
+    // PING;
   }
 
   IconMultiPassAccel::IconMultiPassAccel(Volume *volume,

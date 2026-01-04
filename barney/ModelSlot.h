@@ -8,6 +8,7 @@
 #include "barney/Group.h"
 #include "barney/material/Material.h"
 #include "barney/render/World.h"
+#include "barney/MultiPassObject.h"
 #include <set>
 
 namespace BARNEY_NS {

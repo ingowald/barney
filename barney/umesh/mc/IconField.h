@@ -50,10 +50,11 @@ namespace BARNEY_NS {
   /*! the class/object that does the actual optix launch for (each one
       of) our pass(es) */
   struct IconMultiPassLaunch : MultiPassObject {
-    void trace(const render::World *world,
-               const affine3f &instanceXfm,
-               render::Ray *rays,
-               int numRays) override;
+    void launch(Device *device,
+                const render::World::DD &world,
+                const affine3f &instanceXfm,
+                render::Ray *rays,
+                int numRays) override;
   };
 
   /*! the 'VolumeAccel' that barney requires each volume to be able to
