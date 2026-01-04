@@ -123,8 +123,9 @@ namespace BARNEY_NS {
     struct PLD {
       std::vector<rtc::Group *> generatedGroups;
       std::vector<rtc::Geom *>  generatedGeoms;
-      std::vector<MultiPassObject::SP> generatedPasses;
     };
+    std::vector<MultiPassObject::SP> generatedPasses;
+    
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
   };

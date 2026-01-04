@@ -68,7 +68,6 @@ namespace BARNEY_NS {
     OWLGroup volumeGeomsGroup  = 0;
 #endif
     DevGroup::SP const devices;
-    // std::vector<MultiPass::Object::SP> multiPassObjects;
   };
   
 }

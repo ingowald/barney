@@ -92,6 +92,8 @@ namespace BARNEY_NS {
     std::vector<affine3f> rtcTransforms;
     EnvMapLight::SP envMapLight;
 
+    additionalPasses = {};
+    
     // ==================================================================
     // generate all lights's "raw" data. note this is NOT per device
     // (yet), even though the use of 'DD's seems to imply so. this
@@ -103,27 +105,38 @@ namespace BARNEY_NS {
     std::vector<DirLight::DD>  dirLights;
     std::vector<PointLight::DD>  pointLights;
     std::pair<EnvMapLight::SP,affine3f> envLight;
-    
+
+    PING; PRINT(instances.groups.size());
     for (int i=0;i<instances.groups.size();i++) {
+      const affine3f &xfm = instances.xfms[i];
       Group *group = instances.groups[i].get();
+      PING; PRINT(group);
       if (!group) continue;
+
+      PING; PRINT(group->volumes.size());
+      for (auto &volume : group->volumes) {
+        PING; PRINT(volume->generatedPasses.size());
+        for (auto &pass : volume->generatedPasses)
+          additionalPasses.push_back({pass,xfm});
+      };
+      
       if (!group->lights) continue;
       for (auto &light : group->lights->items) {
         if (!light) continue;
         if (QuadLight::SP quadLight = light->as<QuadLight>()) {
-          quadLights.push_back(quadLight->getDD(instances.xfms[i]));
+          quadLights.push_back(quadLight->getDD(xfm));
           continue;
         } 
         if (DirLight::SP dirLight = light->as<DirLight>()) {
-          dirLights.push_back(dirLight->getDD(instances.xfms[i]));
+          dirLights.push_back(dirLight->getDD(xfm));
           continue;
         }
         if (PointLight::SP pointLight = light->as<PointLight>()) {
-          pointLights.push_back(pointLight->getDD(instances.xfms[i]));
+          pointLights.push_back(pointLight->getDD(xfm));
           continue;
         }
         if (EnvMapLight::SP el = light->as<EnvMapLight>()) {
-          envLight = {el,instances.xfms[i]};
+          envLight = {el,xfm};
           continue;
         }
         throw std::runtime_error("un-handled type of light!?");

@@ -19,7 +19,11 @@ namespace BARNEY_NS {
     }
     majorantsGrid->computeMajorants(&volume->xf);
     sfSampler->build();
+
+    auto thisPass = std::make_shared<IconMultiPassLaunch>();
+    volume->generatedPasses = { thisPass };
     
+#if 0
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
 
@@ -52,6 +56,7 @@ namespace BARNEY_NS {
       if (volumePLD->generatedGroups.empty()) 
         volumePLD->generatedGroups = { pld->group };
     }
+#endif
   }
 
   void IconMultiPassLaunch::trace(const render::World *world,
