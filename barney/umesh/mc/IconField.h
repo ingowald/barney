@@ -32,7 +32,16 @@ namespace BARNEY_NS {
       {
         return 0.f;
       };
+      rtc::AccelHandle triMeshAccel;
     };
+    
+    struct PLD {
+      rtc::Group *baseTrisTLAS = 0;
+      rtc::TraceKernel2D *rayGen = 0;
+    };
+    PLD *getPLD(Device *device);
+    std::vector<PLD> perLogical;
+    
 
     /*! the prd we use for the sample/query ray we're tracing */
     struct PRD {
@@ -45,27 +54,36 @@ namespace BARNEY_NS {
     void build() override;
 
     const DevGroup::SP devices;
+    UMeshField *const field;
   };
 
   /*! the class/object that does the actual optix launch for (each one
       of) our pass(es) */
   struct IconMultiPassLaunch : MultiPassObject {
+    IconMultiPassLaunch(IconMultiPassSampler::SP sampler)
+      : sampler(sampler)
+    {}
+    
     void launch(Device *device,
                 const render::World::DD &world,
                 const affine3f &instanceXfm,
                 render::Ray *rays,
                 int numRays) override;
+    
+    IconMultiPassSampler::SP const sampler;
   };
 
   /*! the 'VolumeAccel' that barney requires each volume to be able to
       create for each instance of a (anari-)volume being created. will
       actually create a IconMultiPassLaumch object */
   struct IconMultiPassAccel : public MCVolumeAccel<IconMultiPassSampler> {
-    
+
     IconMultiPassAccel(Volume *volume,
                        IconMultiPassSampler::SP sampler);
     
     void build(bool full_rebuild) override;
+    
+    IconMultiPassSampler::SP const sampler;
   };
 
   
