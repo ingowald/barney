@@ -285,9 +285,13 @@ namespace barney_device {
 
     if (m_params.vertexData && m_params.cellData) {
       reportMessage(ANARI_SEVERITY_WARNING,
-                    "cannot have both 'cell.data' and 'vertex.data' "
-                    "on unstructured spatial field");
-      return;
+                    "this ANARI program is setting *both* 'cell.data' "
+                    "*and* 'vertex.data' "
+                    "on an unstructured spatial field; this is legal "
+                    "in terms of the spec, but doesn't "
+                    "make much sense in terms of the data; so might "
+                    "indicate something is fishy in the application"
+                    );
     }
 
     if (!m_params.index) {
@@ -316,6 +320,12 @@ namespace barney_device {
       m_params.vertexData ? m_params.vertexData->beginAs<float>() : nullptr;
     auto *cellData =
       m_params.cellData ? m_params.cellData->beginAs<float>() : nullptr;
+
+    /* ANARI Spec: Sampled cell values can be specified either
+       per-vertex (via vertex.data) or per-cell (via cell.data). If
+       both arrays are explicitly set, vertex.data takes precedence */
+    if (vertexData) cellData = nullptr;
+    
     int numScalars =
       int(cellData ? m_params.cellData->size() : m_params.vertexData->size());
 
