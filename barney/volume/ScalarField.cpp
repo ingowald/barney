@@ -4,6 +4,7 @@
 
 #include "barney/volume/Volume.h"
 #include "barney/volume/ScalarField.h"
+#include "barney/volume/ScalarFieldRegistry.h"
 #include "barney/ModelSlot.h"
 #include "barney/Context.h"
 #include "barney/volume/StructuredData.h"
@@ -28,22 +29,52 @@ namespace BARNEY_NS {
       domain(domain)
   {}
 
+  // Register core barney scalar field types
+  namespace {
+    void registerBuiltinTypes() {
+      static bool registered = false;
+      if (registered) return;
+      registered = true;
+      
+      auto& registry = ScalarFieldRegistry::instance();
+      
+      registry.registerType("structured", 
+        [](Context* ctx, const DevGroup::SP& devs) { 
+          return std::make_shared<StructuredData>(ctx, devs); 
+        });
+      
+      registry.registerType("unstructured", 
+        [](Context* ctx, const DevGroup::SP& devs) { 
+          return std::make_shared<UMeshField>(ctx, devs); 
+        });
+      
+      registry.registerType("BlockStructuredAMR", 
+        [](Context* ctx, const DevGroup::SP& devs) { 
+          return std::make_shared<BlockStructuredField>(ctx, devs); 
+        });
+      
+      registry.registerType("NanoVDB", 
+        [](Context* ctx, const DevGroup::SP& devs) -> ScalarField::SP {
+#if BARNEY_HAVE_NANOVDB
+          return std::make_shared<NanoVDBData>(ctx, devs);
+#else
+          throw std::runtime_error("NanoVDB geometry type not enabled in this build");
+#endif
+        });
+    }
+  }
+
   ScalarField::SP ScalarField::create(Context *context,
                                       const DevGroup::SP &devices,
                                       const std::string &type)
   {
-    if (type == "structured")
-      return std::make_shared<StructuredData>(context,devices);
-    if (type == "unstructured")
-      return std::make_shared<UMeshField>(context,devices);
-    if (type == "BlockStructuredAMR")
-      return std::make_shared<BlockStructuredField>(context,devices);
-    if (type == "NanoVDB") {
-#if BARNEY_HAVE_NANOVDB
-      return std::make_shared<NanoVDBData>(context,devices);
-#else
-      throw std::runtime_error("NanoVDB geometry type not enabled in this build");
-#endif
+    // Ensure built-in types are registered
+    registerBuiltinTypes();
+    
+    // Try to create from registry (includes both built-in and plugin types)
+    auto field = ScalarFieldRegistry::instance().create(context, devices, type);
+    if (field) {
+      return field;
     }
     
     context->warn_unsupported_object("ScalarField",type);

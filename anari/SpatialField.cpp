@@ -42,8 +42,16 @@ namespace barney_device {
       return new BlockStructuredField(s);
     else if (subtype == "structuredRegular")
       return new StructuredRegularField(s);
-    else
+    else {
+      // Try to create a custom Barney scalar field by type name
+      // This supports custom field types registered via ScalarFieldRegistry
+      auto *customField = new CustomSpatialField(s, std::string(subtype));
+      if (customField->isValid()) {
+        return customField;
+      }
+      delete customField;
       return (SpatialField *)new UnknownObject(ANARI_SPATIAL_FIELD, subtype, s);
+    }
   }
 
   void SpatialField::markFinalized()
@@ -607,6 +615,197 @@ namespace barney_device {
   box3 BlockStructuredField::bounds() const
   {
     return m_bounds;
+  }
+
+  // CustomSpatialField //
+
+  CustomSpatialField::CustomSpatialField(BarneyGlobalState *s, const std::string &type)
+    : SpatialField(s), m_fieldType(type)
+  {
+  }
+
+  void CustomSpatialField::commitParameters()
+  {
+    Object::commitParameters();
+  }
+
+  void CustomSpatialField::finalize()
+  {
+    // Set bounds to a reasonable default sphere
+    const float radius = 1.0f;
+    m_bounds = box3(math::float3(-radius), math::float3(radius));
+    
+    // Ensure the Barney field is created before applying parameters
+    if (!m_bnField) {
+      m_bnField = createBarneyScalarField();
+      if (!m_bnField) {
+        return;
+      }
+    }
+    
+    // Apply parameters to the Barney field
+    applyParametersToField();
+  }
+
+  void CustomSpatialField::markFinalized()
+  {
+    // Call base class to mark scene as changed
+    SpatialField::markFinalized();
+  }
+
+  void CustomSpatialField::applyParametersToField()
+  {
+    if (!m_bnField)
+    {
+        return;
+    }
+    
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+    
+    // Iterate over all parameters and forward them to Barney
+    for (auto it = params_begin(); it != params_end(); ++it) {
+      const std::string& paramName = it->first;
+      ANARIDataType paramType = it->second.type();
+      
+      // Handle array parameters
+      if (paramType == ANARI_ARRAY3D) {
+        auto array = getParamObject<helium::Array3D>(paramName);
+        if (!array || !array->data()) {
+          continue;
+        }
+        
+        auto dims = array->size();
+        auto elemType = array->elementType();
+        
+        BNDataType barneyType;
+        switch (elemType) {
+          case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
+          case ANARI_INT32: barneyType = BN_INT; break;
+          case ANARI_UINT8:
+          case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
+          default:
+            continue;
+        }
+        
+        BNTextureData td = bnTextureData3DCreate(context, slot, barneyType,
+                                                  dims.x, dims.y, dims.z,
+                                                  array->data());
+        bnSetObject(m_bnField, paramName.c_str(), td);
+        bnRelease(td);
+      }
+      else if (paramType == ANARI_ARRAY2D) {
+        auto array = getParamObject<helium::Array2D>(paramName);
+        if (!array || !array->data()) {
+          continue;
+        }
+        
+        auto dims = array->size();
+        auto elemType = array->elementType();
+        
+        BNDataType barneyType;
+        switch (elemType) {
+          case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
+          case ANARI_INT32: barneyType = BN_INT; break;
+          case ANARI_UINT8:
+          case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
+          default:
+            continue;
+        }
+        
+        BNTextureData td = bnTextureData2DCreate(context, slot, barneyType,
+                                                  dims.x, dims.y,
+                                                  array->data());
+        bnSetObject(m_bnField, paramName.c_str(), td);
+        bnRelease(td);
+      }
+      else if (paramType == ANARI_ARRAY1D) {
+        auto array = getParamObject<helium::Array1D>(paramName);
+        if (!array || !array->data()) {
+          continue;
+        }
+        
+        auto elemType = array->elementType();
+        size_t numElements = array->totalSize();
+        
+        BNDataType barneyType;
+        switch (elemType) {
+          case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
+          case ANARI_INT32: barneyType = BN_INT; break;
+          case ANARI_UINT8:
+          case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
+          default:
+            continue;
+        }
+        
+        BNData data = bnDataCreate(context, slot, barneyType, numElements, array->data());
+        bnSetObject(m_bnField, paramName.c_str(), data);
+        bnRelease(data);
+      }
+      // Handle scalar parameters
+      else {
+        switch (paramType) {
+          case ANARI_FLOAT32:
+            bnSet1f(m_bnField, paramName.c_str(), getParam<float>(paramName, 0.0f));
+            break;
+          case ANARI_FLOAT32_VEC2: {
+            auto val = getParam<math::float2>(paramName, math::float2(0.0f));
+            bnSet2f(m_bnField, paramName.c_str(), val.x, val.y);
+            break;
+          }
+          case ANARI_FLOAT32_VEC3: {
+            auto val = getParam<math::float3>(paramName, math::float3(0.0f));
+            bnSet3f(m_bnField, paramName.c_str(), val.x, val.y, val.z);
+            break;
+          }
+          case ANARI_INT32:
+            bnSet1i(m_bnField, paramName.c_str(), getParam<int>(paramName, 0));
+            break;
+          case ANARI_UINT32:
+            bnSet1i(m_bnField, paramName.c_str(), (int)getParam<uint32_t>(paramName, 0));
+            break;
+          case ANARI_BOOL:
+            bnSet1i(m_bnField, paramName.c_str(), getParam<bool>(paramName, false) ? 1 : 0);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+    
+    // Commit the field with all parameters
+    bnCommit(m_bnField);
+  }
+
+  BNScalarField CustomSpatialField::createBarneyScalarField() const
+  {
+    int slot = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+    
+    // Create a Barney scalar field using the registered type name
+    BNScalarField sf = bnScalarFieldCreate(context, slot, m_fieldType.c_str());
+    
+    if (!sf) {
+      reportMessage(ANARI_SEVERITY_WARNING,
+                    "Failed to create Barney scalar field of type '%s' - field type not registered?",
+                    m_fieldType.c_str());
+    } else {
+      reportMessage(ANARI_SEVERITY_INFO,
+                    "Successfully created Barney scalar field of type '%s'",
+                    m_fieldType.c_str());
+    }
+    
+    return sf;
+  }
+
+  box3 CustomSpatialField::bounds() const
+  {
+    return m_bounds;
+  }
+
+  bool CustomSpatialField::isValid() const
+  {
+    return !m_fieldType.empty();
   }
 
 } // namespace barney_device

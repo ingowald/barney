@@ -219,6 +219,13 @@ endif()
 
 add_subdirectory(barney)
 
+# ------------------------------------------------------------------
+# External field plugins
+# ------------------------------------------------------------------
+if(DEFINED BARNEY_EXTERNAL_FIELDS_DIR AND EXISTS "${BARNEY_EXTERNAL_FIELDS_DIR}/CMakeLists.txt")
+  message("#barney: including external fields from ${BARNEY_EXTERNAL_FIELDS_DIR}")
+  add_subdirectory("${BARNEY_EXTERNAL_FIELDS_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/external_fields")
+endif()
 
 # ------------------------------------------------------------------
 # ANARI device
