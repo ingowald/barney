@@ -48,8 +48,6 @@ namespace rtc {
     FLOAT4,
       
     USHORT=40,
-    
-    // NUM_DATA_TYPES
   } DataType;
 
   typedef enum {
@@ -67,13 +65,13 @@ namespace rtc {
   struct TextureDesc {
     FilterMode filterMode = FILTER_MODE_LINEAR;
     AddressMode addressMode[3] = { CLAMP, CLAMP, CLAMP };
-    const vec4f borderColor = {0.f,0.f,0.f,0.f};
-    bool normalizedCoords = true;
-    ColorSpace colorSpace = COLOR_SPACE_LINEAR;
+    vec4f borderColor          = {0.f,0.f,0.f,0.f};
+    bool normalizedCoords      = true;
+    ColorSpace colorSpace      = COLOR_SPACE_LINEAR;
   };
 
   typedef struct _TextureObject *TextureObject;
-  typedef struct _AccelHandle *AccelHandle;
+  typedef struct _AccelHandle   *AccelHandle;
 }
 
 

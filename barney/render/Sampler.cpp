@@ -96,6 +96,8 @@ namespace BARNEY_NS {
 
       if (member == "outOffset")
         { outOffset = value; return true; }
+      if (member == "borderColor")
+        { borderColor = value; return true; }
 
       return false;
     }
@@ -204,6 +206,7 @@ namespace BARNEY_NS {
         desc.addressMode[0] = toRTC(wrapModes[0]);
         desc.addressMode[1] = toRTC(wrapModes[1]);
         desc.addressMode[2] = toRTC(wrapModes[2]);
+        desc.borderColor    = borderColor;
         for (auto device : *devices) {
           PLD *pld = getPLD(device);
           if (pld->rtcTexture)

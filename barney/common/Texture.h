@@ -46,7 +46,7 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<Texture> SP;
 
     Texture(Context *context,
-            TextureData::SP data, 
+            TextureData::SP data,
             BNTextureFilterMode  filterMode,
             BNTextureAddressMode addressModes[],
             BNTextureColorSpace  colorSpace);

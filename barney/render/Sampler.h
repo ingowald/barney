@@ -23,8 +23,6 @@ namespace BARNEY_NS {
     struct AttributeTransform {
       inline __rtc_device vec4f applyTo(const vec4f &in) const;
       
-      // rtc::float4 mat[4];
-      // rtc::float4 offset;
       vec4f mat_x;
       vec4f mat_y;
       vec4f mat_z;
@@ -97,6 +95,7 @@ namespace BARNEY_NS {
       int   inAttribute  { render::ATTRIBUTE_0 };
       mat4f outTransform { mat4f::identity() };
       vec4f outOffset    { 0.f, 0.f, 0.f, 0.f };
+      vec4f borderColor  { 0.f, 0.f, 0.f, 0.f };
       DevGroup::SP const devices;
     };
 

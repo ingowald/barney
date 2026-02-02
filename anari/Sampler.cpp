@@ -225,6 +225,11 @@ namespace barney_device {
     BNTextureFilterMode filterMode =
       m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
     bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
+    bnSet4f(m_bnSampler, "borderColor",
+            m_borderColor.x,
+            m_borderColor.y,
+            m_borderColor.z,
+            m_borderColor.w);
 
     bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
   }
