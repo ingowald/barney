@@ -82,10 +82,8 @@ INTERFACE
 add_library(anari_library_barney SHARED ${BANARI_SOURCES})
 target_link_libraries(anari_library_barney PRIVATE
   $<BUILD_INTERFACE:banari-config>
-  -Wl,--whole-archive
-  barney_static
-  -Wl,--no-whole-archive
-  -Wl,--export-dynamic
+  "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wl,--export-dynamic>
   anari::helium
 )
 
