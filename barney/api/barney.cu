@@ -702,9 +702,15 @@ namespace barney_api {
   }
 
   BARNEY_API
+  void bnSet2f(BNObject target, const char *param, float x, float y)
+  {
+    if (!checkGet(target)->set2f(checkGet(param),vec2f(x,y)))
+      checkGet(target)->warn_unsupported_member(param,"vec2f");
+  }
+
+  BARNEY_API
   void bnSet3f(BNObject target, const char *param, float x, float y, float z)
   {
-    LOG_API_ENTRY;
     if (!checkGet(target)->set3f(checkGet(param),vec3f(x,y,z)))
       checkGet(target)->warn_unsupported_member(param,"vec3f");
   }
