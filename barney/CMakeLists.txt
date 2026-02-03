@@ -440,8 +440,8 @@ endif()
 
 # link optix backend (if enabled) to all frontends
 if (BARNEY_BACKEND_OPTIX)
-  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_optix>)
-  target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_optix>)
+  target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_optix>)
+  target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_optix>)
   if (BARNEY_MPI)
     target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
     target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
@@ -461,8 +461,8 @@ endif()
 
 # link cuda backend (if enabled) to all frontends
 if (BARNEY_BACKEND_CUDA)
-  target_link_libraries(barney PUBLIC $<BUILD_INTERFACE:barney_cuda>)
-  target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_cuda>)
+  target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_cuda>)
+  target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_cuda>)
   if (BARNEY_MPI)
     target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
     target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
