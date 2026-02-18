@@ -73,6 +73,10 @@ namespace BARNEY_NS {
       device->rtc->freeMem(linearAuxChannel);
       linearAuxChannel = 0;
     }
+    if (linearNormalChannel) {
+      device->rtc->freeMem(linearNormalChannel);
+      linearNormalChannel = 0;
+    }
   }
 
   struct LinearToFixed8 {
@@ -115,14 +119,16 @@ namespace BARNEY_NS {
        color directly into our linearbuffer, and won't write normal at
        all */
     bool doDenoising = (denoiser != 0) && enableDenoising;
+    bool needNormalChannel = (channels & BN_FB_NORMAL) && linearNormalChannel;
     void *colorCopyTarget
       = doDenoising
       ? denoiser->in_rgba
       : linearColorChannel;
-    vec3f *normalCopyTarget
-      = doDenoising
-      ? denoiser->in_normal
-      : nullptr;
+    vec3f *normalCopyTarget = nullptr;
+    if (doDenoising)
+      normalCopyTarget = denoiser->in_normal;
+    else if (needNormalChannel)
+      normalCopyTarget = (vec3f*)linearNormalChannel;
     BNDataType gatherType
       = doDenoising
       ? BN_FLOAT4
@@ -131,6 +137,14 @@ namespace BARNEY_NS {
     // this is virtual, and will incur either device copies or mpi
     // pack-gather-unpack
     gatherColorChannel(colorCopyTarget,gatherType,normalCopyTarget);
+
+    // if denoising AND normal channel requested, copy normals from
+    // denoiser input to our linear buffer
+    if (doDenoising && needNormalChannel) {
+      device->rtc->copy(linearNormalChannel, denoiser->in_normal,
+                        numPixels.x*numPixels.y*sizeof(vec3f));
+    }
+
     if (channels & BN_FB_DEPTH)
       gatherAuxChannel(BN_FB_DEPTH);
     if (channels & BN_FB_PRIMID)
@@ -262,6 +276,13 @@ namespace BARNEY_NS {
       return;
     }
 
+    if (channel == BN_FB_NORMAL && linearNormalChannel) {
+      // normals were already linearized during finalizeFrame()
+      device->rtc->copy(appMemory,linearNormalChannel,
+                        numPixels.x*numPixels.y*sizeof(vec3f));
+      return;
+    }
+
     throw std::runtime_error("un-handled frame buffer channel/format combination "
                              +to_string(channel)
                              +" "+to_string(requestedFormat));
@@ -290,6 +311,8 @@ namespace BARNEY_NS {
       int np = numPixels.x*numPixels.y;
       linearColorChannel = rtc->allocMem(np*sizeOfPixel);
       linearAuxChannel   = rtc->allocMem(np*sizeof(uint32_t));
+      if (channels & BN_FB_NORMAL)
+        linearNormalChannel = rtc->allocMem(np*sizeof(vec3f));
 
       if (denoiser)
         denoiser->resize(numPixels);

@@ -76,6 +76,8 @@ namespace barney_device {
       getParam<anari::DataType>("channel.instanceId", ANARI_UNKNOWN);
     m_channelTypes.objID =
       getParam<anari::DataType>("channel.objectId", ANARI_UNKNOWN);
+    m_channelTypes.normal =
+      getParam<anari::DataType>("channel.normal", ANARI_UNKNOWN);
     m_size = getParam<math::uint2>("size", math::uint2(10, 10));
     m_enableDenoising = getParam<int>("enableDenoising", 0);
   }
@@ -116,6 +118,8 @@ namespace barney_device {
         requiredChannels |= BN_FB_OBJID;
       if (m_channelTypes.instID == ANARI_UINT32)
         requiredChannels |= BN_FB_INSTID;
+      if (m_channelTypes.normal == ANARI_FLOAT32_VEC3)
+        requiredChannels |= BN_FB_NORMAL;
 
       if (m_bnFrameBuffer) {
         bnSet1i(m_bnFrameBuffer, "enableDenoising", denoise);
@@ -284,6 +288,15 @@ namespace barney_device {
       m_didMapChannel.instID = true;
       *pixelType = ANARI_UINT32;
       return m_channelBuffers.instID;
+    } else if (channel == "channel.normal") {
+      if (m_channelBuffers.normal)
+        throw std::runtime_error
+          ("trying to map channel.normal, but seems already mapped");
+      m_channelBuffers.normal = new float[numPixels * 3];
+      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_NORMAL, m_channelBuffers.normal, BN_FLOAT3);
+      m_didMapChannel.normal = true;
+      *pixelType = ANARI_FLOAT32_VEC3;
+      return m_channelBuffers.normal;
 #if BANARI_HAVE_CUDA
     } else if (channel == "channel.colorCUDA") {
       if (m_channelBuffers.color)
@@ -335,6 +348,15 @@ namespace barney_device {
       bnFrameBufferRead(m_bnFrameBuffer, BN_FB_INSTID, m_channelBuffers.instID, BN_INT);
       *pixelType = ANARI_UINT32;
       return m_channelBuffers.instID;
+    } else if (channel == "channel.normalCUDA"
+               && m_channelTypes.normal == ANARI_FLOAT32_VEC3) {
+      if (m_channelBuffers.normal)
+        throw std::runtime_error
+          ("trying to map normal buffer, but buffer already mapped");
+      cudaMalloc((void **)&m_channelBuffers.normal, numPixels * 3 * sizeof(float));
+      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_NORMAL, m_channelBuffers.normal, BN_FLOAT3);
+      *pixelType = ANARI_FLOAT32_VEC3;
+      return m_channelBuffers.normal;
 #endif
     } else {
       reportMessage(ANARI_SEVERITY_WARNING,
@@ -370,6 +392,10 @@ namespace barney_device {
       if (m_channelBuffers.instID)
         delete[] m_channelBuffers.instID;
       m_channelBuffers.instID = 0;
+    } else if (channel == "channel.normal" && m_channelBuffers.normal) {
+      if (m_channelBuffers.normal)
+        delete[] m_channelBuffers.normal;
+      m_channelBuffers.normal = 0;
     } else if (channel == "channel.colorCUDA") {
 #if BANARI_HAVE_CUDA
       if (m_channelBuffers.color)
@@ -399,6 +425,12 @@ namespace barney_device {
       if (m_channelBuffers.instID)
         cudaFree(m_channelBuffers.instID);
       m_channelBuffers.instID = 0;
+#endif
+    } else if (channel == "channel.normalCUDA") {
+#if BANARI_HAVE_CUDA
+      if (m_channelBuffers.normal)
+        cudaFree(m_channelBuffers.normal);
+      m_channelBuffers.normal = 0;
 #endif
     }
   }
@@ -435,6 +467,9 @@ namespace barney_device {
 
     delete[] m_channelBuffers.primID;
     m_channelBuffers.primID = nullptr;
+
+    delete[] m_channelBuffers.normal;
+    m_channelBuffers.normal = nullptr;
   }
 
 } // namespace barney_device
