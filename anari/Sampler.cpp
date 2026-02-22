@@ -114,6 +114,23 @@ namespace barney_device {
                                      height,
                                      depth,
                                      input->dataAs<anari::math::float4>());
+      } else if (input->elementType() == ANARI_FLOAT32_VEC3) {
+        size_t N = width*size_t(height)*depth;
+        std::vector<anari::math::float4> converted(N);
+        const anari::math::float3 *in = input->dataAs<anari::math::float3>();
+        for (size_t i=0;i<N;i++) {
+          converted[i].x = in[i].x;
+          converted[i].y = in[i].y;
+          converted[i].z = in[i].z;
+          converted[i].w = 1.f;
+        }
+        return bnTextureData3DCreate(context,
+                                     slot,
+                                     BN_FLOAT32_VEC4,
+                                     width,
+                                     height,
+                                     depth,
+                                     converted.data());
       } else {
         std::vector<uint32_t> texels;
         objectToReportErrorWith->reportMessage
@@ -127,8 +144,8 @@ namespace barney_device {
             anari::toString(input->elementType()));
           return {};
         }
-        return bnTextureData2DCreate(context, slot, BN_UFIXED8_RGBA,
-                                     width, height, texels.data());
+        return bnTextureData3DCreate(context, slot, BN_UFIXED8_RGBA,
+                                     width, height, depth, texels.data());
       }
     }
   }
