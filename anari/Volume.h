@@ -24,12 +24,15 @@ namespace barney_device {
     virtual box3 bounds() const = 0;
     void commitParameters() override;
 
+    bool isVisible() const;
+
   protected:
     virtual BNVolume createBarneyVolume() = 0;
     virtual void setBarneyParameters() = 0;
     void cleanup();
 
     uint32_t m_id{~0u};
+    bool m_visible{true};
     BNVolume m_bnVolume{nullptr};
   };
 

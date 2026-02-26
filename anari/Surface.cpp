@@ -22,6 +22,7 @@ namespace barney_device {
     m_id = getParam<uint32_t>("id", ~0u);
     m_geometry = getParamObject<Geometry>("geometry");
     m_material = getParamObject<Material>("material");
+    m_visible = getParam<bool>("visible", true);
   }
 
   void Surface::finalize()
@@ -76,6 +77,11 @@ namespace barney_device {
       m_material &&
       m_geometry->isValid() &&
       m_material->isValid();
+  }
+
+  bool Surface::isVisible() const
+  {
+    return m_visible;
   }
 
   void Surface::setBarneyParameters()
