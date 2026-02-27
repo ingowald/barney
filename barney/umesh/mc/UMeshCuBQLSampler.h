@@ -55,6 +55,7 @@ namespace BARNEY_NS {
 
     float retVal = NAN;
     auto lambda = [this,P,&retVal,dbg]
+      // __rtc_device
       (const uint32_t primID)
     {
       if (this->eltScalar(retVal,primID,P,dbg))
