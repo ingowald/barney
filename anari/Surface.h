@@ -25,12 +25,14 @@ namespace barney_device {
     BNGeom getBarneyGeom();
 
     bool isValid() const override;
+    bool isVisible() const;
 
   private:
     void setBarneyParameters();
     void cleanup();
 
     uint32_t m_id{~0u};
+    bool m_visible{true};
     helium::ChangeObserverPtr<Geometry> m_geometry;
     helium::ChangeObserverPtr<Material> m_material;
 
