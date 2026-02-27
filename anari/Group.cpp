@@ -34,7 +34,7 @@ namespace barney_device {
   {
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
-  
+
     std::vector<BNGeom> barneyGeometries;
     std::vector<Surface *> surfaces;
     std::vector<BNVolume> barneyVolumes;
@@ -49,7 +49,7 @@ namespace barney_device {
                     m_surfaceData->handlesEnd(),
                     [&](auto *o) {
                       auto *s = (Surface *)o;
-                      if (s && s->isValid())
+                      if (s && s->isValid() && s->isVisible())
                         surfaces.push_back(s);
                       else {
                         reportMessage(ANARI_SEVERITY_WARNING,
@@ -72,7 +72,7 @@ namespace barney_device {
                     m_volumeData->handlesEnd(),
                     [&](auto *o) {
                       auto *v = (Volume *)o;
-                      if (v && v->isValid())
+                      if (v && v->isValid() && v->isVisible())
                         volumes.push_back(v);
                       else {
                         reportMessage(ANARI_SEVERITY_WARNING,
@@ -82,7 +82,7 @@ namespace barney_device {
                       }
                     });
     }
-    
+
     for (auto v : volumes)
       barneyVolumes.push_back(v->getBarneyVolume());
 

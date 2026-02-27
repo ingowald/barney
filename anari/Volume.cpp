@@ -48,6 +48,12 @@ namespace barney_device {
   void Volume::commitParameters()
   {
     m_id = getParam<uint32_t>("id", ~0u);
+    m_visible = getParam<bool>("visible", true);
+  }
+
+  bool Volume::isVisible() const
+  {
+    return m_visible;
   }
 
   // Subtypes ///////////////////////////////////////////////////////////////////
