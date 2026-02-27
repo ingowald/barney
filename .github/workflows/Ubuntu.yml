@@ -33,16 +33,6 @@ jobs:
             gcc: 13
             config: Release
             build_flags: "-DBARNEY_BACKEND_EMBREE=OFF -DBARNEY_BACKEND_OPTIX=OFF -DBARNEY_BACKEND_CUDA=ON"
-          - os: ubuntu-24.04
-            cuda: "12.6.0"
-            gcc: 13
-            config: Release
-            build_flags: 
-          - os: ubuntu-24.04
-            cuda: "12.6.0"
-            gcc: 13
-            config: Debug
-            build_flags: 
           - os: ubuntu-22.04
             cuda: "12.0.0"
             gcc: 11
