@@ -135,6 +135,20 @@ namespace BARNEY_NS {
           
             // ... store the hit in the ray, rqs-style ...
             material.setHit(ray,hitData,world.samplers,ray.dbg());
+
+            // write hit IDs for AOV channels
+            if (globals.hitIDs) {
+              const int rayID
+                = ti.getLaunchIndex().x
+                + ti.getLaunchDims().x
+                * ti.getLaunchIndex().y;
+              globals.hitIDs[rayID].primID = primID;
+              globals.hitIDs[rayID].instID
+                = world.instIDToUserInstID
+                ? world.instIDToUserInstID[instID]
+                : instID;
+              globals.hitIDs[rayID].objID  = self.userID;
+            }
           
             // .... and let optix know we did have a hit.
             ti.reportIntersection(hitData.t, 0);
@@ -162,6 +176,20 @@ namespace BARNEY_NS {
           
             // ... store the hit in the ray, rqs-style ...
             material.setHit(ray,hitData,world.samplers,ray.dbg());
+
+            // write hit IDs for AOV channels
+            if (globals.hitIDs) {
+              const int rayID
+                = ti.getLaunchIndex().x
+                + ti.getLaunchDims().x
+                * ti.getLaunchIndex().y;
+              globals.hitIDs[rayID].primID = primID;
+              globals.hitIDs[rayID].instID
+                = world.instIDToUserInstID
+                ? world.instIDToUserInstID[instID]
+                : instID;
+              globals.hitIDs[rayID].objID  = self.userID;
+            }
           
             // .... and let optix know we did have a hit.
             ti.reportIntersection(hitData.t, 0);
@@ -205,6 +233,20 @@ namespace BARNEY_NS {
         
         // ... store the hit in the ray, rqs-style ...
         material.setHit(ray,hitData,world.samplers,ray.dbg());
+
+        // write hit IDs for AOV channels
+        if (globals.hitIDs) {
+          const int rayID
+            = ti.getLaunchIndex().x
+            + ti.getLaunchDims().x
+            * ti.getLaunchIndex().y;
+          globals.hitIDs[rayID].primID = primID;
+          globals.hitIDs[rayID].instID
+            = world.instIDToUserInstID
+            ? world.instIDToUserInstID[instID]
+            : instID;
+          globals.hitIDs[rayID].objID  = self.userID;
+        }
         
         // .... and let optix know we did have a hit.
         ti.reportIntersection(hitData.t, 0);

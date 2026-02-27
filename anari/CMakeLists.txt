@@ -80,11 +80,24 @@ INTERFACE
 # device is requested
 # ==================================================================
 add_library(anari_library_barney SHARED ${BANARI_SOURCES})
-target_link_libraries(anari_library_barney PRIVATE
-  $<BUILD_INTERFACE:banari-config>
-  barney_static
-  anari::helium
-)
+
+if(WIN32)
+  target_link_libraries(anari_library_barney PRIVATE
+    $<BUILD_INTERFACE:banari-config>
+    barney_static
+    anari::helium
+  )
+  set_target_properties(anari_library_barney PROPERTIES
+    LINK_FLAGS "/WHOLEARCHIVE:barney_static"
+  )
+else()
+  target_link_libraries(anari_library_barney PRIVATE
+    $<BUILD_INTERFACE:banari-config>
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,barney_static>"
+    -Wl,--export-dynamic
+    anari::helium
+  )
+endif()
 
 if (BARNEY_MPI)
   add_library(anari_library_barney_mpi SHARED ${BANARI_SOURCES})

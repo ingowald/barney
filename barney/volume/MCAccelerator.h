@@ -472,6 +472,24 @@ namespace BARNEY_NS {
       }
     }
     material.setHit(ray,hitData,world.samplers,dbg);
+
+    // Write hit IDs for AOV channels
+    const render::OptixGlobals &globals = render::OptixGlobals::get(ti);
+    if (globals.hitIDs) {
+      const int rayID
+        = ti.getLaunchIndex().x
+        + ti.getLaunchDims().x
+        * ti.getLaunchIndex().y;
+      if (tHit < globals.hitIDs[rayID].depth) {
+        globals.hitIDs[rayID].primID = primID;
+        globals.hitIDs[rayID].instID
+          = globals.world.instIDToUserInstID
+          ? globals.world.instIDToUserInstID[instID]
+          : instID;
+        globals.hitIDs[rayID].objID  = self.isoSurface.userID;
+        globals.hitIDs[rayID].depth  = tHit;
+      }
+    }
   }
   
   template<typename SFSampler>
@@ -551,6 +569,25 @@ namespace BARNEY_NS {
                 ray.setVolumeHit(P,
                                  tRange.upper,
                                  getPos(sample));
+
+                // Write hit IDs for AOV channels on first non-transparent voxel
+                const render::OptixGlobals &globals = render::OptixGlobals::get(ti);
+                if (globals.hitIDs) {
+                  const int rayID
+                    = ti.getLaunchIndex().x
+                    + ti.getLaunchDims().x
+                    * ti.getLaunchIndex().y;
+                  if (tRange.upper < globals.hitIDs[rayID].depth) {
+                    globals.hitIDs[rayID].primID = ti.getPrimitiveIndex();
+                    globals.hitIDs[rayID].instID
+                      = globals.world.instIDToUserInstID
+                      ? globals.world.instIDToUserInstID[ti.getInstanceID()]
+                      : ti.getInstanceID();
+                    globals.hitIDs[rayID].objID  = self.volume.userID;
+                    globals.hitIDs[rayID].depth  = tRange.upper;
+                  }
+                }
+
                 ti.reportIntersection(tRange.upper, 0);
                 return false;
               },

@@ -172,6 +172,26 @@ namespace barney_device {
     math::float3 m_voxelSize;
   };
 
+  // Generic wrapper for custom Barney scalar field types
+  // This allows ANARI to use fields registered via ScalarFieldRegistry
+  struct CustomSpatialField : public SpatialField
+  {
+    CustomSpatialField(BarneyGlobalState *s, const std::string &type);
+    void commitParameters() override;
+    void finalize() override;
+    void markFinalized() override; // Apply parameters after field is created
+
+    BNScalarField createBarneyScalarField() const override;
+
+    box3 bounds() const override;
+    bool isValid() const override;
+
+    void applyParametersToField(); // Apply collected parameters to the Barney field
+
+    std::string m_fieldType;
+    box3 m_bounds;
+  };
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::SpatialField *,

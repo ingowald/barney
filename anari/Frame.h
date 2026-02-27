@@ -60,6 +60,7 @@ namespace barney_device {
       int        *primID{nullptr};
       int        *instID{nullptr};
       int        *objID{nullptr};
+      float      *normal{nullptr};
     } m_channelBuffers;
     struct {
       /* for performance warnings; initialize all to 'true' so they
@@ -69,6 +70,7 @@ namespace barney_device {
       bool primID = true;
       bool instID = true;
       bool objID = true;
+      bool normal = true;
     } m_didMapChannel;
     bool m_lastFrameWasFirstFrame = true;
 
@@ -78,6 +80,7 @@ namespace barney_device {
       anari::DataType primID{ANARI_UNKNOWN};
       anari::DataType instID{ANARI_UNKNOWN};
       anari::DataType objID{ANARI_UNKNOWN};
+      anari::DataType normal{ANARI_UNKNOWN};
     } m_channelTypes;
 
     helium::ChangeObserverPtr<Renderer> m_renderer;

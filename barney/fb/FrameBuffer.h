@@ -84,6 +84,9 @@ namespace BARNEY_NS {
         may store either float or uint32 data */
     void *linearAuxChannel = 0;
     
+    /*! staging area for the normal channel (vec3f per pixel) */
+    void *linearNormalChannel = 0;
+    
     /*! the channels we're supposed to have (as asked for on the latest resize()) */
     uint32_t   channels = 0;
     BNDataType colorChannelFormat = BN_DATA_UNDEFINED;
