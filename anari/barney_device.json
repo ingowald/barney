@@ -35,6 +35,7 @@
       "khr_renderer_ambient_light",
       "khr_renderer_background_color",
       "khr_renderer_background_image",
+      "khr_sampler_imagexd_clamp_to_border",
       "nv_frame_buffers_cuda"
     ]
   },

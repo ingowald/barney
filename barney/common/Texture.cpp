@@ -42,9 +42,9 @@ namespace BARNEY_NS {
   rtc::AddressMode toRTC(BNTextureAddressMode mode)
   {
     switch(mode) {
-    case BN_TEXTURE_WRAP: return rtc::WRAP;
+    case BN_TEXTURE_WRAP:   return rtc::WRAP;
     case BN_TEXTURE_MIRROR: return rtc::MIRROR;
-    case BN_TEXTURE_CLAMP: return rtc::CLAMP;
+    case BN_TEXTURE_CLAMP:  return rtc::CLAMP;
     case BN_TEXTURE_BORDER: return rtc::BORDER;
     default:
       BARNEY_INVALID_VALUE();
@@ -83,6 +83,7 @@ namespace BARNEY_NS {
 
   Texture::Texture(Context *context, 
                    TextureData::SP data,
+                   // const vec4f          borderColor,
                    BNTextureFilterMode  filterMode,
                    BNTextureAddressMode addressModes[],
                    BNTextureColorSpace  colorSpace)
@@ -93,7 +94,8 @@ namespace BARNEY_NS {
     perLogical.resize(devices->numLogical);
     rtc::TextureDesc desc;
     desc.filterMode     = toRTC(filterMode);
-
+    // desc.borderColor    = borderColor;
+    
     if (data->dims[2] > 0)
       desc.normalizedCoords = false;
 
@@ -110,51 +112,6 @@ namespace BARNEY_NS {
     }
   }
 
-#if 0
-  Texture3D::PLD *Texture3D::getPLD(Device *device) 
-  {
-    assert(device);
-    assert(device->contextRank >= 0);
-    assert(device->contextRank < perLogical.size());
-    return &perLogical[device->contextRank];
-  }
-  
-  Texture3D::Texture3D(Context *context,
-                       const DevGroup::SP &devices,
-                       TextureData::SP data,
-                       BNTextureFilterMode  filterMode,
-                       BNTextureAddressMode addressMode)
-    : SlottedObject(context,devices),
-      data(data)
-  {
-    perLogical.resize(devices->numLogical);
-    rtc::TextureDesc desc;
-    desc.addressMode[0] = toRTC(addressMode);
-    desc.addressMode[1] = toRTC(addressMode);
-    desc.addressMode[2] = toRTC(addressMode);
-    // we do 3d texturing in non-normalized colors so integer coordinate is cell ID
-    desc.normalizedCoords = false;
-    for (auto device : *devices) {
-      auto pld = getPLD(device);
-      desc.filterMode = rtc::FILTER_MODE_POINT;
-      pld->rtcTextureNN 
-        = data->getPLD(device)->rtc->createTexture(desc);
-      
-      desc.filterMode = toRTC(filterMode);
-      pld->rtcTexture
-        = data->getPLD(device)->rtc->createTexture(desc);
-    }
-  }
-
-  Texture3D::DD Texture3D::getDD(Device *device)
-  {
-    Texture3D::DD dd;
-    dd.texObj   = getPLD(device)->rtcTexture->getDD();
-    dd.texObjNN = getPLD(device)->rtcTextureNN->getDD();
-    return dd;
-  }
-#endif
-  
   TextureData::TextureData(Context *context,
                            const DevGroup::SP &devices,
                            BNDataType texelFormat,

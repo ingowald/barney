@@ -24,10 +24,6 @@ enum Attribute {
   Attribute0, Attribute1, Attribute2, Attribute3, Color, None=-1,
 };
 
-enum WrapMode {
-  Clamp, Wrap, Mirror,
-};
-
 inline Attribute toAttribute(std::string str) {
   if (str == "attribute0")
     return Attribute0;
@@ -44,17 +40,6 @@ inline Attribute toAttribute(std::string str) {
   return None;
 }
 
-inline WrapMode toWrapMode(std::string str) {
-  if (str == "clampToEdge")
-    return Clamp;
-  else if (str == "repeat")
-    return Wrap;
-  else if (str == "mirrorRepeat")
-    return Mirror;
-
-  return Clamp;
-}
-
 inline BNTextureAddressMode toBarneyAddressMode(std::string str) {
   if (str == "clampToEdge")
     return BN_TEXTURE_CLAMP;
@@ -62,6 +47,8 @@ inline BNTextureAddressMode toBarneyAddressMode(std::string str) {
     return BN_TEXTURE_WRAP;
   else if (str == "mirrorRepeat")
     return BN_TEXTURE_MIRROR;
+  else if (str == "clampToBorder")
+    return BN_TEXTURE_BORDER;
 
   return BN_TEXTURE_CLAMP;
 }

@@ -295,13 +295,9 @@ namespace barney_api {
   {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
-#if 1
     std::shared_ptr<TextureData> td
       = context->createTextureData(slot,texelFormat,
                                    vec3i(size_x,size_y,0),texels);
-    // BNTextureData td
-    //   = bnTextureData2DCreate(_context,slot,texelFormat,
-    //                           size_x,size_y,texels);
     BNTextureAddressMode addressModes[3] = {
       addressMode_x,addressMode_y,(BNTextureAddressMode)0
     };
@@ -311,21 +307,6 @@ namespace barney_api {
                                addressModes,
                                colorSpace);
     return (BNTexture2D)context->initReference(tex);
-#else
-    auto devices = context->getDevices(slot);
-    TextureData::SP td
-      = std::make_shared<TextureData>(context,devices,
-                                      texelFormat,
-                                      vec3i(size_x,size_y,0),
-                                      texels);
-    Texture::SP tex
-      = std::make_shared<Texture>(context,devices,
-                                  td,filterMode,
-                                  addressMode_x,addressMode_y,
-                                  colorSpace);
-    
-    return (BNTexture)context->initReference(tex);
-#endif
   }
 
   BARNEY_API
@@ -341,7 +322,6 @@ namespace barney_api {
   {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
-#if 1
     std::shared_ptr<TextureData> td
       = context->createTextureData(slot,texelFormat,
                                    vec3i(size_x,size_y,size_z),texels);
@@ -354,19 +334,6 @@ namespace barney_api {
                                addressModes,
                                BN_COLOR_SPACE_LINEAR);
     return (BNTexture3D)context->initReference(tex);
-#else
-    auto devices = context->getDevices(slot);
-    TextureData::SP td
-      = std::make_shared<TextureData>(context,devices,
-                                      texelFormat,
-                                      vec3i(size_x,size_y,size_z),
-                                      texels);
-    Texture3D::SP tex
-      = std::make_shared<Texture3D>(context,devices,
-                                    td,filterMode,addressMode);
-    
-    return (BNTexture3D)context->initReference(tex);
-#endif
   }
   
   // ------------------------------------------------------------------
