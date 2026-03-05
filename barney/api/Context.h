@@ -157,6 +157,9 @@ namespace barney_api {
                               Group **groups,
                               const affine3f *xfms,
                               int numInstances) = 0;
+    virtual void updateInstanceTransforms(int slot,
+                                          const affine3f *xfms,
+                                          int numInstances) = 0;
     virtual void setInstanceAttributes(int slot,
                                        const std::string &which,
                                        Data::SP data) = 0;
