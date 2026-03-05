@@ -7,6 +7,7 @@
 #include "rtcore/optix/Buffer.h"
 #include "rtcore/optix/Geom.h"
 #include "rtcore/optix/Group.h"
+#include <owl/InstanceGroup.h>
 #include <optix.h>
 #include <optix_function_table.h>
 #include <optix_stubs.h>
@@ -211,7 +212,10 @@ namespace rtc {
                                  owls.size(),
                                  owls.data(),
                                  (const uint32_t*)instIDs.data(),
-                                 (const float *)xfms.data());
+                                 (const float *)xfms.data(),
+                                 OWL_MATRIX_FORMAT_OWL,
+                                 owl::InstanceGroup::defaultBuildFlags
+                                 | OPTIX_BUILD_FLAG_ALLOW_UPDATE);
       Group *gg = new Group(this,g);
       return gg;
     }
