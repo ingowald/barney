@@ -25,7 +25,7 @@ void Renderer::commitParameters()
   m_denoise = getParam<bool>("denoise", true);
   m_background = getParam<math::float4>("background", math::float4(0, 0, 0, 1));
   m_backgroundImage = getParamObject<Array2D>("background");
-  m_cutPlane = getParam<math::float4>("cutPlane", math::float4(0, 0, 0, -1e30f));
+  m_cutPlane = getParam<math::float4>("cutPlane", math::float4(0, 0, 0, 0));
 }
 
 void Renderer::finalize()
