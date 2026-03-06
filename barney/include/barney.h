@@ -366,6 +366,12 @@ void bnFrameBufferRead(BNFrameBuffer fb,
                        void *pointerToReadDataInto,
                        BNDataType requiredFormat);
 
+/*! Return the actual framebuffer dimensions (may differ from resize
+    when e.g. AI upscaling forces even dimensions). Use for buffer
+    allocation and stride when mapping the color channel. */
+BARNEY_API
+void bnFrameBufferGetSize(BNFrameBuffer fb, int *sizeX, int *sizeY);
+
 BARNEY_API
 void bnRender(BNRenderer    renderer,
               BNModel       model,

@@ -740,7 +740,16 @@ namespace barney_api {
     LOG_API_ENTRY;
     checkGet(fb)->read(channel,hostPtr,requestedFormat);
   }
-  
+
+  BARNEY_API
+  void bnFrameBufferGetSize(BNFrameBuffer fb, int *sizeX, int *sizeY)
+  {
+    if (!sizeX || !sizeY) return;
+    vec2i np = checkGet(fb)->getNumPixels();
+    *sizeX = np.x;
+    *sizeY = np.y;
+  }
+
   BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)
   {

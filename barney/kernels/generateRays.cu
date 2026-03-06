@@ -257,7 +257,7 @@ namespace BARNEY_NS {
                    cameraDD,
                    renderer->getDD(device),
                    accumID,
-                   fb->numPixels,
+                   fb->renderPixels,
                    device->rayQueue->_d_nextWritePos,
                    device->rayQueue->receiveAndShadeWriteQueue,
                    devFB->tileDescs,
