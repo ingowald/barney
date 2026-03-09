@@ -6,6 +6,7 @@
 
 #include "Array.h"
 #include "Instance.h"
+#include <array>
 
 namespace barney_device {
 
@@ -27,7 +28,13 @@ namespace barney_device {
     void markFinalized() override;
 
   private:
+    using InstanceAttributes
+      = std::array<std::vector<math::float4>, Instance::Attributes::count>;
+
     void buildBarneyModel();
+    void uploadInstanceAttributes(const InstanceAttributes &attributes);
+    void fullRebuild();
+    void transformOnlyUpdate();
 
     helium::ChangeObserverPtr<ObjectArray> m_zeroSurfaceData;
     helium::ChangeObserverPtr<ObjectArray> m_zeroVolumeData;
@@ -39,8 +46,6 @@ namespace barney_device {
 
     std::vector<Instance *> m_instances;
 
-    // BNModel m_barneyModel{nullptr};
-    // int uniqueID = -1;
     TetheredModel::SP tetheredModel;
 
     BNData m_attributesData[Instance::Attributes::count] = {0,0,0,0,0};

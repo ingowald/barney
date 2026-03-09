@@ -5,7 +5,6 @@
 #include "World.h"
 // std
 #include <algorithm>
-#include <set>
 #include <map>
 
 namespace barney_device {
@@ -33,7 +32,6 @@ namespace barney_device {
 
   World::~World()
   {
-    auto *state = deviceState();
     BANARI_TRACK_LEAKS(std::cout << "#banari: ~World deconstructing"
                        << std::endl);
     tetheredModel = {};
@@ -122,7 +120,7 @@ namespace barney_device {
       m_instances.push_back(m_zeroInstance.ptr);
   }
 
-    void World::markFinalized()
+  void World::markFinalized()
   {
     deviceState()->markSceneChanged();
     Object::markFinalized();
@@ -131,10 +129,31 @@ namespace barney_device {
 
   BNModel World::makeCurrent()
   {
-    auto *state = deviceState();
-
     buildBarneyModel();
     return tetheredModel->model;
+  }
+
+  void World::uploadInstanceAttributes(const InstanceAttributes &attributes)
+  {
+    auto barneyModel = tetheredModel->model;
+    int  slot    = deviceState()->slot;
+    auto context = deviceState()->tether->context;
+
+    for (int i = 0; i < Instance::Attributes::count; i++) {
+      if (m_attributesData[i]) {
+        bnRelease(m_attributesData[i]);
+        m_attributesData[i] = 0;
+      }
+      m_attributesData[i] =
+        bnDataCreate(context, slot, BN_FLOAT4,
+                     attributes[i].size(), attributes[i].data());
+    }
+
+    for (int i = 0; i < Instance::Attributes::count; i++) {
+      std::string attribName = std::string("attribute") + std::to_string(i);
+      bnSetInstanceAttributes(barneyModel, slot,
+                              attribName.c_str(), m_attributesData[i]);
+    }
   }
 
   void World::buildBarneyModel()
@@ -143,86 +162,108 @@ namespace barney_device {
     if (state->objectUpdates.lastSceneChange <= m_lastBarneyModelBuild)
       return;
 
-    reportMessage(ANARI_SEVERITY_DEBUG, "barney::World rebuilding model");
+    bool structural =
+      m_lastBarneyModelBuild == 0
+      || state->objectUpdates.lastStructuralChange > m_lastBarneyModelBuild;
 
+    if (structural) {
+      reportMessage(ANARI_SEVERITY_DEBUG, "barney::World full model rebuild");
+      fullRebuild();
+    } else {
+      reportMessage(ANARI_SEVERITY_DEBUG, "barney::World transform-only update");
+      transformOnlyUpdate();
+    }
+
+    m_lastBarneyModelBuild = helium::newTimeStamp();
+  }
+
+  void World::fullRebuild()
+  {
     auto barneyModel = tetheredModel->model;
-
     int  slot    = deviceState()->slot;
-    auto context = deviceState()->tether->context;
 
-    std::vector<const Group *> groups;
-    std::vector<BNGroup>       barneyGroups;
-    std::vector<BNTransform>   barneyTransforms;
-
-    groups.reserve(m_instances.size());
+    std::vector<BNGroup>     barneyGroups;
+    std::vector<BNTransform> barneyTransforms;
+    InstanceAttributes attributes;
     barneyGroups.reserve(m_instances.size());
     barneyTransforms.reserve(m_instances.size());
 
-    /*! arrays for the attributes - by default these are empty, they get
-      created/filled on demand if/when we find instance(s) that have
-      them */
-    std::map<const Group*,BNGroup> barneyGroupForAnariGroup;
-    std::vector<math::float4> attributes[Instance::Attributes::count];
-    std::vector<int> instIDs;
+    std::map<const Group *, BNGroup> groupDedup;
+
     for (auto inst : m_instances) {
       if (!inst) continue;
       const Group *ag = inst->group();
       if (!ag) continue;
-      BNGroup bg = 0;
-      if (barneyGroupForAnariGroup.find(ag) == barneyGroupForAnariGroup.end())
-        barneyGroupForAnariGroup[ag] = bg = ag->makeBarneyGroup();
-      else
-        bg = barneyGroupForAnariGroup[ag];
-      if (!bg) continue;
+
+      auto [it, inserted] = groupDedup.try_emplace(ag, nullptr);
+      if (inserted)
+        it->second = ag->makeBarneyGroup();
+      BNGroup bg = it->second;
+      if (!bg)
+        continue;
 
       BNTransform bt;
-      instIDs.push_back(inst->m_id);
       inst->writeTransform(&bt);
       barneyTransforms.push_back(bt);
       barneyGroups.push_back(bg);
-      if (inst->attributes)
-        for (int i=0;i<Instance::Attributes::count;i++) {
-          if (isnan(inst->attributes->values[i].x)) continue;
-
-          while (attributes[i].size() < barneyTransforms.size())
-            attributes[i].push_back(math::float4(NAN));
-          attributes[i].back() = inst->attributes->values[i];
-        }
+      if (!inst->attributes)
+        continue;
+      for (int i = 0; i < Instance::Attributes::count; i++) {
+        if (isnan(inst->attributes->values[i].x))
+          continue;
+        while (attributes[i].size() < barneyTransforms.size())
+          attributes[i].push_back(math::float4(NAN));
+        attributes[i].back() = inst->attributes->values[i];
+      }
     }
 
     assert(barneyModel);
-    bnSetInstances(barneyModel,
-                   slot,
-                   barneyGroups.data(),
-                   barneyTransforms.data(),
+    bnSetInstances(barneyModel, slot,
+                   barneyGroups.data(), barneyTransforms.data(),
                    (int)barneyGroups.size());
 
-    for (int i=0;i<Instance::Attributes::count;i++) {
-      if (m_attributesData[i]) {
-        // one way or another, release existing attribute - either it
-        // doesn't exist any more (->free) or it might have changed size
-        // (-> need realloc anyway)
-        bnRelease(m_attributesData[i]);
-        m_attributesData[i] = 0;
-      }
+    for (auto &[_, bg] : groupDedup)
+      bnRelease(bg);
 
-      m_attributesData[i]
-        = bnDataCreate(context,slot,BN_FLOAT4,
-                       attributes[i].size(),attributes[i].data());
-    }
-    for (int i=0;i<Instance::Attributes::count;i++) {
-      std::string attribName = std::string("attribute")+std::to_string(i);
-      bnSetInstanceAttributes(barneyModel,slot,
-                              attribName.c_str(),
-                              m_attributesData[i]);
-    }
-
+    uploadInstanceAttributes(attributes);
     bnBuild(barneyModel, slot);
+  }
 
-    for (auto it : barneyGroupForAnariGroup)
-      bnRelease(it.second);
+  void World::transformOnlyUpdate()
+  {
+    auto barneyModel = tetheredModel->model;
+    int  slot    = deviceState()->slot;
 
-    m_lastBarneyModelBuild = helium::newTimeStamp();
+    std::vector<BNTransform> barneyTransforms;
+    InstanceAttributes attributes;
+    barneyTransforms.reserve(m_instances.size());
+    for (auto &a : attributes)
+      a.clear();
+
+    for (auto inst : m_instances) {
+      if (!inst) continue;
+      if (!inst->group()) continue;
+
+      BNTransform bt;
+      inst->writeTransform(&bt);
+      barneyTransforms.push_back(bt);
+
+      if (!inst->attributes)
+        continue;
+      for (int i = 0; i < Instance::Attributes::count; i++) {
+        if (isnan(inst->attributes->values[i].x))
+          continue;
+        while (attributes[i].size() < barneyTransforms.size())
+          attributes[i].push_back(math::float4(NAN));
+        attributes[i].back() = inst->attributes->values[i];
+      }
+    }
+
+    assert(barneyModel);
+    uploadInstanceAttributes(attributes);
+    bnUpdateInstanceTransforms(barneyModel, slot,
+                               barneyTransforms.data(),
+                               (int)barneyTransforms.size());
   }
 
 } // namespace barney_device

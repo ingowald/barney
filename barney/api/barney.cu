@@ -387,6 +387,18 @@ namespace barney_api {
                                   (const affine3f *)xfms,
                                   numInstances);
   }
+
+  BARNEY_API
+  void bnUpdateInstanceTransforms(BNModel model,
+                                  int slot,
+                                  BNTransform *xfms,
+                                  int numInstances)
+  {
+    LOG_API_ENTRY;
+    checkGet(model)->updateInstanceTransforms(slot,
+                                              (const affine3f *)xfms,
+                                              numInstances);
+  }
   
   BARNEY_API
   void  bnRelease(BNObject _object)

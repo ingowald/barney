@@ -385,6 +385,16 @@ void bnSetInstances(BNModel model,
                     BNTransform *instanceTransforms,
                     int numInstances);
 
+/*! update only the instance transforms for the given slot, reusing
+    existing group structures. This is much faster than bnSetInstances +
+    bnBuild when only transforms change (e.g., animation). The number of
+    instances must match what was previously set via bnSetInstances. */
+BARNEY_API
+void bnUpdateInstanceTransforms(BNModel model,
+                                int whichSlot,
+                                BNTransform *instanceTransforms,
+                                int numInstances);
+
 /*! allows for setting one of 5 attribute arrays for the given slot's
     model. */
 BARNEY_API
