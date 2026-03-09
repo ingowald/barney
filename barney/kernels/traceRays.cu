@@ -35,6 +35,7 @@ namespace BARNEY_NS {
         dd.numRays   = device->rayQueue->numActive;
         dd.world     = model->world->getDD(device);//,rngSeed);
         dd.accel     = model->getInstanceAccel(device);
+        dd.cutPlane  = activeCutPlane;
 
         if (FromEnv::get()->logQueues) {
           std::stringstream ss;
