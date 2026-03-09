@@ -31,9 +31,13 @@ namespace rtc {
     Denoiser *Device::createDenoiser()
     {
 #if !OPTIX_DISABLE_DENOISING && OPTIX_VERSION >= 80000
-      return new Optix8Denoiser(this);
+      auto *d = new Optix8Denoiser(this);
+      if (!d->available) {
+        delete d;
+        return nullptr;
+      }
+      return d;
 #else
-      // we only support optix 8 denoiser
       return nullptr;
 #endif
     }
