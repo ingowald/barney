@@ -148,6 +148,9 @@ namespace BARNEY_NS {
     for (auto device : *devices)
       device->syncPipelineAndSBT();
 
+    activeCutPlane = renderer->cutPlane;
+
+    // iw - todo: add wave-front-merging here.
     for (int p=0;p<renderer->pathsPerPixel;p++) {
 
       if (FromEnv::get()->logQueues) 
