@@ -17,10 +17,11 @@ namespace BARNEY_NS {
   
   struct GeomTypeRegistry {
     GeomTypeRegistry(rtc::Device *device);
+    ~GeomTypeRegistry();
     rtc::GeomType *get(GeomTypeCreationFct callback);
     std::map<GeomTypeCreationFct,rtc::GeomType *> geomTypes;
 
-    rtc::Device *const device;    
+    rtc::Device *const device;
   };
 
   /*! mpi-like descriptor of a group of peers, enumerating them by

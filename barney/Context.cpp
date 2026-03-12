@@ -110,6 +110,9 @@ namespace BARNEY_NS {
   {
     hostOwnedHandles.clear();
 
+    delete globalTraceImpl;
+    globalTraceImpl = 0;
+
     perSlot.clear();
     for (auto &device : *devices) {
       delete device;

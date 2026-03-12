@@ -232,7 +232,8 @@ namespace BARNEY_NS {
     GlobalTraceImpl(Context *context)
       : context(context)
     {}
-    
+    virtual ~GlobalTraceImpl() = default;
+
     virtual void traceRays(GlobalModel *model,
                            uint32_t rngSeed,
                            bool needHitIDs) = 0;
