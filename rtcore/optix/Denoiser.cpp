@@ -80,6 +80,10 @@ namespace rtc {
     Optix8Denoiser::~Optix8Denoiser()
     {
       SetActiveGPU forDuration(device);
+      if (denoiser) {
+        optixDenoiserDestroy(denoiser);
+        denoiser = {};
+      }
       if (denoiserScratch) {
         BARNEY_CUDA_CALL_NOTHROW(Free(denoiserScratch));
         denoiserScratch = 0;
@@ -99,6 +103,10 @@ namespace rtc {
       if (in_normal) {
         BARNEY_CUDA_CALL_NOTHROW(Free(in_normal));
         in_normal = 0;
+      }
+      if (out_rgba) {
+        BARNEY_CUDA_CALL_NOTHROW(Free(out_rgba));
+        out_rgba = 0;
       }
     }
     
