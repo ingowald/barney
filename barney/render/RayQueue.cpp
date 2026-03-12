@@ -19,6 +19,9 @@ namespace BARNEY_NS {
   RayQueue::~RayQueue()
   {
     auto rtc = device->rtc;
+    traceAndShadeReadQueue.free(rtc);
+    receiveAndShadeWriteQueue.free(rtc);
+    if (_d_nextWritePos) rtc->freeMem(_d_nextWritePos);
     rtc->freeHost(h_numActive);
   }
 
