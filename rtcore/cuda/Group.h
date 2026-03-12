@@ -46,6 +46,7 @@ namespace rtc {
       virtual DeviceRecord getRecord() = 0;
       GeomGroup(Device *device,
                 const std::vector<Geom *> &geoms);
+      ~GeomGroup();
       const std::vector<Geom *> geoms;
 
       uint8_t *sbt          = 0;
@@ -71,6 +72,7 @@ namespace rtc {
                     const std::vector<Group *>  &groups,
                     const std::vector<int>      &instanceIDs,
                     const std::vector<affine3f> &xfms);
+      ~InstanceGroup();
       void buildAccel() override;
       void setTransforms(const std::vector<affine3f> &newXfms) override;
 
