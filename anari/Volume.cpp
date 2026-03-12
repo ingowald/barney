@@ -10,7 +10,10 @@ namespace barney_device {
 
   Volume::Volume(BarneyGlobalState *s) : Object(ANARI_VOLUME, s) {}
 
-  Volume::~Volume() = default;
+  Volume::~Volume()
+  {
+    cleanup();
+  }
 
   Volume *Volume::createInstance(std::string_view subtype, BarneyGlobalState *s)
   {
