@@ -49,6 +49,7 @@ namespace BARNEY_NS {
     MCVolumeAccel(Volume *volume,
                   GeomTypeCreationFct creatorFct,
                   const std::shared_ptr<SFSampler> &sfSampler);
+    ~MCVolumeAccel() override;
 
       GeomTypeCreationFct const creatorFct;
     
@@ -99,7 +100,8 @@ namespace BARNEY_NS {
     MCIsoSurfaceAccel(IsoSurface *isoSurface,
                       GeomTypeCreationFct creatorFct,
                       const std::shared_ptr<SFSampler> &sfSampler);
-    
+    ~MCIsoSurfaceAccel() override;
+
     GeomTypeCreationFct const creatorFct;
     
     void build() override;
@@ -223,6 +225,23 @@ namespace BARNEY_NS {
   }
 
   template<typename SFSampler>
+  MCVolumeAccel<SFSampler>::~MCVolumeAccel()
+  {
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      if (pld->group) {
+        device->rtc->freeGroup(pld->group);
+        pld->group = 0;
+      }
+      if (pld->geom) {
+        device->rtc->freeGeom(pld->geom);
+        pld->geom = 0;
+      }
+    }
+  }
+
+  template<typename SFSampler>
   MCIsoSurfaceAccel<SFSampler>::
   MCIsoSurfaceAccel(IsoSurface *isoSurface,
                     GeomTypeCreationFct creatorFct,
@@ -232,6 +251,23 @@ namespace BARNEY_NS {
       creatorFct(creatorFct)
   {
     perLogical.resize(devices->numLogical);
+  }
+
+  template<typename SFSampler>
+  MCIsoSurfaceAccel<SFSampler>::~MCIsoSurfaceAccel()
+  {
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      if (pld->group) {
+        device->rtc->freeGroup(pld->group);
+        pld->group = 0;
+      }
+      if (pld->geom) {
+        device->rtc->freeGeom(pld->geom);
+        pld->geom = 0;
+      }
+    }
   }
   
   // ------------------------------------------------------------------

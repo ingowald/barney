@@ -22,8 +22,20 @@ namespace BARNEY_NS {
     }
   }
 
+  TransferFunction::~TransferFunction()
+  {
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      if (pld->valuesBuffer) {
+        device->rtc->freeBuffer(pld->valuesBuffer);
+        pld->valuesBuffer = 0;
+      }
+    }
+  }
+
   TransferFunction::PLD *TransferFunction::getPLD(Device *device)
-  { return &perLogical[device->contextRank()]; } 
+  { return &perLogical[device->contextRank()]; }
 
   void TransferFunction::set(const range1f &domain,
                              const std::vector<vec4f> &values,

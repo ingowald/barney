@@ -73,7 +73,8 @@ namespace BARNEY_NS {
     };
 
     MCGrid(const DevGroup::SP &devices);
-    
+    ~MCGrid();
+
     /*! get cuda-usable device-data for given device ID (relative to
       devices in the devgroup that this gris is in */
     DD getDD(Device *device);
@@ -128,7 +129,8 @@ namespace BARNEY_NS {
     std::vector<PLD> perLogical;
     
     MajorantsGrid(MCGrid::SP mcGrid);
-    
+    ~MajorantsGrid();
+
     /*! given the current per-cell scalar ranges, map each such cell's
         range through the transfer functoin to compute a majorant */
     void computeMajorants(TransferFunction *xf);

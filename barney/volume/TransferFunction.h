@@ -34,6 +34,7 @@ namespace BARNEY_NS {
 
     TransferFunction(Context *context,
                      const DevGroup::SP &devices);
+    ~TransferFunction();
 
     /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */

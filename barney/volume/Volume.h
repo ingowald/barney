@@ -27,6 +27,7 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<VolumeAccel> SP;
 
     VolumeAccel(Volume *volume);
+    virtual ~VolumeAccel() = default;
 
     virtual void build(bool full_rebuild) = 0;
 
