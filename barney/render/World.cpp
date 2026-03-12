@@ -28,7 +28,16 @@ namespace BARNEY_NS {
     }
     
     World::~World()
-    {}
+    {
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        PLD *pld = getPLD(device);
+        auto rtc = device->rtc;
+        if (pld->quadLights)  rtc->freeMem(pld->quadLights);
+        if (pld->dirLights)   rtc->freeMem(pld->dirLights);
+        if (pld->pointLights) rtc->freeMem(pld->pointLights);
+      }
+    }
 
     World::PLD *World::getPLD(Device *device)
     {
