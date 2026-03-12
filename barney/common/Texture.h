@@ -50,7 +50,7 @@ namespace BARNEY_NS {
             BNTextureFilterMode  filterMode,
             BNTextureAddressMode addressModes[],
             BNTextureColorSpace  colorSpace);
-    virtual ~Texture() = default;
+    virtual ~Texture();
 
     rtc::TextureObject getTextureObject(Device *device);
     rtc::TextureObject getDD(Device *device)
