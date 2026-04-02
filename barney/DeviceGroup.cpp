@@ -21,7 +21,14 @@ namespace BARNEY_NS {
   GeomTypeRegistry::GeomTypeRegistry(rtc::Device *device)
     : device(device)
   {}
-  
+
+  GeomTypeRegistry::~GeomTypeRegistry()
+  {
+    for (auto &pair : geomTypes)
+      if (pair.second)
+        device->freeGeomType(pair.second);
+  }
+
   rtc::GeomType *GeomTypeRegistry::get(GeomTypeCreationFct callBack)
   {
     if (geomTypes.find(callBack) == geomTypes.end()) {
@@ -63,6 +70,16 @@ namespace BARNEY_NS {
 
   Device::~Device()
   {
+    delete rayQueue;
+    delete traceRays;
+    // geomTypes uses device->freeGeomType(rtc), so must be cleared
+    // before rtc is deleted. (Member destructor order would destroy
+    // geomTypes after rtc since it's declared before rtc.)
+    for (auto &pair : geomTypes.geomTypes)
+      if (pair.second) {
+        rtc->freeGeomType(pair.second);
+        pair.second = 0;
+      }
     delete rtc;
   }
 

@@ -75,6 +75,10 @@ namespace BARNEY_NS {
         rtc->freeGroup(pld->userGeomGroup);
         pld->userGeomGroup = 0;
       }
+      if (pld->volumeGeomsGroup) {
+        rtc->freeGroup(pld->volumeGeomsGroup);
+        pld->volumeGeomsGroup = 0;
+      }
       pld->userGeoms.clear();
       pld->triangleGeoms.clear();
       pld->volumeGeoms.clear();

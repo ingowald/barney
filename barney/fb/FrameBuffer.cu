@@ -41,7 +41,10 @@ namespace BARNEY_NS {
   FrameBuffer::~FrameBuffer()
   {
     freeResources();
+    delete denoiser;
     denoiser = 0;
+    delete linear_toFixed8;
+    linear_toFixed8 = 0;
   }
 
   bool FrameBuffer::needHitIDs() const

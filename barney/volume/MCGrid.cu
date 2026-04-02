@@ -16,8 +16,20 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
       SetActiveGPU forDuration(device);
-      
+
       pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
+    }
+  }
+
+  MajorantsGrid::~MajorantsGrid()
+  {
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      if (pld->majorantsBuffer) {
+        device->rtc->freeBuffer(pld->majorantsBuffer);
+        pld->majorantsBuffer = 0;
+      }
     }
   }
   
@@ -29,8 +41,20 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       auto rtc = device->rtc;
       SetActiveGPU forDuration(device);
-      
+
       pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
+    }
+  }
+
+  MCGrid::~MCGrid()
+  {
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      if (pld->scalarRangesBuffer) {
+        device->rtc->freeBuffer(pld->scalarRangesBuffer);
+        pld->scalarRangesBuffer = 0;
+      }
     }
   }
 

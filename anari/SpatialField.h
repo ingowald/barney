@@ -52,6 +52,7 @@ namespace barney_device {
   struct UnstructuredField : public SpatialField
   {
     UnstructuredField(BarneyGlobalState *s);
+    ~UnstructuredField() override;
 
     void commitParameters() override;
     void finalize() override;
@@ -95,6 +96,7 @@ namespace barney_device {
   struct BlockStructuredField : public SpatialField
   {
     BlockStructuredField(BarneyGlobalState *s);
+    ~BlockStructuredField() override;
     void commitParameters() override;
     void finalize() override;
 

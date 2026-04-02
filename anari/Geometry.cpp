@@ -574,7 +574,7 @@ namespace barney_device {
 
     BNData vertices =
       bnDataCreate(context, slot, BN_FLOAT4, numVertices, vertex.data());
-    bnSetData(geom, "vertices", vertices);
+    bnSetAndRelease(geom, "vertices", vertices);
 
     int numIndices = (int)m_index->totalSize();
     std::vector<math::int2> index(numIndices);
@@ -597,7 +597,7 @@ namespace barney_device {
 
     BNData indices = bnDataCreate(
                                   context, slot, BN_INT2, index.size(), (const int *)index.data());
-    bnSetData(geom, "indices", indices);
+    bnSetAndRelease(geom, "indices", indices);
 
     setAttributes(geom);
   }

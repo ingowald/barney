@@ -15,7 +15,8 @@ namespace BARNEY_NS {
     typedef std::shared_ptr<IsoSurfaceAccel> SP;
 
     IsoSurfaceAccel(IsoSurface *isoSurface);
-    
+    virtual ~IsoSurfaceAccel() = default;
+
     virtual void build() = 0;
     
     IsoSurface      *const isoSurface = 0;
