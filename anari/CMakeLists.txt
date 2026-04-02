@@ -27,6 +27,7 @@ else()
   set(DUMMY_CU)
 endif()
 
+message("configuring library entrypoint, BARNEY_DEVICE_NAME = ${BARNEY_DEVICE_NAME}")
 configure_file(
   ${PROJECT_SOURCE_DIR}/Library_entryPoint.h.in
   Library_entryPoint.h
