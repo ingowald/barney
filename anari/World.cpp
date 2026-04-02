@@ -34,6 +34,15 @@ namespace barney_device {
   {
     BANARI_TRACK_LEAKS(std::cout << "#banari: ~World deconstructing"
                        << std::endl);
+
+    auto context = deviceState()->tether->context;
+    for (int i = 0; i < Instance::Attributes::count; i++) {
+      if (m_attributesData[i]) {
+        bnRelease(m_attributesData[i]);
+        m_attributesData[i] = 0;
+      }
+    }
+
     tetheredModel = {};
   }
 

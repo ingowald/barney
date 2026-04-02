@@ -476,6 +476,12 @@ namespace barney_device {
     delete[] m_channelBuffers.primID;
     m_channelBuffers.primID = nullptr;
 
+    delete[] m_channelBuffers.instID;
+    m_channelBuffers.instID = nullptr;
+
+    delete[] m_channelBuffers.objID;
+    m_channelBuffers.objID = nullptr;
+
     delete[] m_channelBuffers.normal;
     m_channelBuffers.normal = nullptr;
   }

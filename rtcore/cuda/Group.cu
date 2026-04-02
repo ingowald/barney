@@ -23,7 +23,11 @@ namespace rtc {
     {}
     
     Group::~Group()
-    {}
+    {
+      SetActiveGPU forDuration(device);
+      if (bvhNodes)
+        BARNEY_CUDA_CALL(Free(bvhNodes));
+    }
 
     InstanceGroup::InstanceGroup(Device *device,
                                  const std::vector<Group *>  &groups,
@@ -35,11 +39,33 @@ namespace rtc {
         xfms(xfms)
     {}
 
+    InstanceGroup::~InstanceGroup()
+    {
+      SetActiveGPU forDuration(device);
+      cuBQL::DeviceMemoryResource memResource;
+      if (bvh.nodes)
+        cuBQL::cuda::free(bvh,device->stream,memResource);
+      if (d_instanceRecords)
+        BARNEY_CUDA_CALL(Free(d_instanceRecords));
+      if (d_deviceRecord)
+        BARNEY_CUDA_CALL(Free(d_deviceRecord));
+    }
+
     GeomGroup::GeomGroup(Device *device,
                          const std::vector<Geom *> &geoms)
       : Group(device),
         geoms(geoms)
     {}
+
+    GeomGroup::~GeomGroup()
+    {
+      SetActiveGPU forDuration(device);
+      if (sbt)
+        BARNEY_CUDA_CALL(Free(sbt));
+      if (prims)
+        BARNEY_CUDA_CALL(Free(prims));
+      // bvhNodes is freed by ~Group()
+    }
 
     TrianglesGeomGroup::TrianglesGeomGroup(Device *device,
                                            const std::vector<Geom *> &geoms)
@@ -180,8 +206,6 @@ namespace rtc {
       DeviceRecord dd;
       dd.bvh.nodes = bvh.nodes;
       dd.bvh.primIDs = bvh.primIDs;
-      bvh.nodes = 0;
-      bvh.primIDs = 0;
       dd.instanceRecords = d_instanceRecords;
 
       if (!d_deviceRecord)

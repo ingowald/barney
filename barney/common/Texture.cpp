@@ -133,6 +133,18 @@ namespace BARNEY_NS {
     }
   }
 
+  Texture::~Texture()
+  {
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      if (pld->rtcTexture) {
+        device->rtc->freeTexture(pld->rtcTexture);
+        pld->rtcTexture = 0;
+      }
+    }
+  }
+
   TextureData::~TextureData()
   {
     for (auto device : *devices)
