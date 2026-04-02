@@ -66,6 +66,7 @@ const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
 
 } // namespace barney_device
 
+<<<<<<< HEAD
 // Define library entrypoint //////////////////////////////////////////////////
 
 #include "Library_entryPoint.h"
@@ -78,6 +79,9 @@ const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
 //                                                                 const void *scbPtr)
 // {}
 // #else
+=======
+// // Define library entrypoint //////////////////////////////////////////////////
+>>>>>>> 8adbb4f3c26e11881f13944f333b63063df2e879
 // #if BARNEY_MPI
 // extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
 //     barney_mpi, handle, scb, scbPtr)
@@ -91,4 +95,9 @@ const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
 //   return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
 // }
 // #endif
+<<<<<<< HEAD
 // #endif
+=======
+
+#include "Library_entryPoint.h"
+>>>>>>> 8adbb4f3c26e11881f13944f333b63063df2e879
