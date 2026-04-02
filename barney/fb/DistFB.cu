@@ -329,12 +329,18 @@ namespace BARNEY_NS {
     // then have all tiles from all gpus, in compressed form
     // ------------------------------------------------------------------
     if (isOwner)
-      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
         context->world.wait(recv_requests[ggID]);
+        if (needNormals)
+          context->world.wait(recv_requests[ownerGather.numGPUs+ggID]);
+      }
     
     if (context->isActiveWorker)
-      for (auto device : *devices)
+      for (auto device : *devices) {
         context->world.wait(send_requests[device->contextRank()]);
+        if (needNormals)
+          context->world.wait(send_requests[devices->size()+device->contextRank()]);
+      }
     
     // ------------------------------------------------------------------
     // all (packed) tiles received; unpack (on owner only)

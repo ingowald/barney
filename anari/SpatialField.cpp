@@ -375,15 +375,16 @@ namespace barney_device {
     BNScalarField sf = getBarneyScalarField();
 
     if (!m_bnData.vertices) {
-      m_bnData.vertices =
-        bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertexPositions);
+      m_bnData.vertices
+        = bnDataCreate(context, slot, BN_FLOAT3, numVertices, vertexPositions);
     } else {
       bnDataSet(m_bnData.vertices, numVertices, vertexPositions);
     }
-
+    
     if (!m_bnData.scalars) {
-      m_bnData.scalars = bnDataCreate(
-                                      context, slot, BN_FLOAT, numScalars, vertexData ? vertexData : cellData);
+      m_bnData.scalars
+        = bnDataCreate(context, slot, BN_FLOAT, numScalars,
+                       vertexData ? vertexData : cellData);
     } else {
       bnDataSet(m_bnData.scalars, numScalars, vertexData ? vertexData : cellData);
     }
@@ -395,9 +396,10 @@ namespace barney_device {
                                       m_params.index->size(),
                                       (const int *)m_params.index->data());
     } else {
-      bnDataSet(m_bnData.indices, m_params.index->size(), (const int *)m_params.index->data());
+      bnDataSet(m_bnData.indices, m_params.index->size(),
+                (const int *)m_params.index->data());
     }
-
+    
     if (!m_bnData.cellType) {
       m_bnData.cellType = bnDataCreate(context,
                                        slot,
@@ -405,7 +407,8 @@ namespace barney_device {
                                        m_params.cellType->size(),
                                        (const int *)m_params.cellType->data());
     } else {
-      bnDataSet(m_bnData.cellType, m_params.cellType->size(), (const int *)m_params.cellType->data());
+      bnDataSet(m_bnData.cellType, m_params.cellType->size(),
+                (const int *)m_params.cellType->data());
     }
 
     if (!m_bnData.elementOffsets) {
@@ -415,7 +418,8 @@ namespace barney_device {
                                              m_params.cellBegin->size(),
                                              (const int *)m_params.cellBegin->data());
     } else {
-      bnDataSet(m_bnData.elementOffsets, m_params.cellBegin->size(), (const int *)m_params.cellBegin->data());
+      bnDataSet(m_bnData.elementOffsets, m_params.cellBegin->size(),
+                (const int *)m_params.cellBegin->data());
     }
 
     bnSetData(sf, "vertex.position", m_bnData.vertices);
