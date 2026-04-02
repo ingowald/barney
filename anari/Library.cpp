@@ -66,17 +66,19 @@ const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
 
 } // namespace barney_device
 
-// Define library entrypoint //////////////////////////////////////////////////
-#if BARNEY_MPI
-extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
-    barney_mpi, handle, scb, scbPtr)
-{
-  return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
-}
-#else
-extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
-    barney, handle, scb, scbPtr)
-{
-  return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
-}
-#endif
+// // Define library entrypoint //////////////////////////////////////////////////
+// #if BARNEY_MPI
+// extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
+//     barney_mpi, handle, scb, scbPtr)
+// {
+//   return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
+// }
+// #else
+// extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
+//     barney, handle, scb, scbPtr)
+// {
+//   return (ANARILibrary) new barney_device::BarneyLibrary(handle, scb, scbPtr);
+// }
+// #endif
+
+#include "Library_entryPoint.h"

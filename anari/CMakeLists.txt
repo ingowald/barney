@@ -27,6 +27,11 @@ else()
   set(DUMMY_CU)
 endif()
 
+configure_file(
+  ${PROJECT_SOURCE_DIR}/Library_entryPoint.h.in
+  Library_entryPoint.h
+  )
+
 set(BANARI_SOURCES
   Array.cpp
   BarneyGlobalState.cpp
