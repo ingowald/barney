@@ -351,7 +351,8 @@ namespace BARNEY_NS {
           float fi = schlick_weight(n_dot_i);
           float fo = schlick_weight(n_dot_o);
           color = disney_diffuse_color(mat, n, w_o, w_i, w_h);
-          bsdf = (float)M_1_PI * lerp_r(1.f, fd90, fi) * lerp_r(1.f, fd90, fo);
+          bsdf = //(float)M_1_PI * 
+		 lerp_r(1.f, fd90, fi) * lerp_r(1.f, fd90, fo);
         }
 
         inline

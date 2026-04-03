@@ -365,6 +365,7 @@ namespace barney_device {
         // we're an independent device that didn't have any cuda gpu
         // explicitly attached to it.... which means we could in theory
         // use multiple GPU
+        std::cout << "#banari: enable_multiGPU = "<<m_enable_multiGPU << std::endl;
         if (m_enable_multiGPU) {
         } else {
           _gpuIDs = nullptr;
@@ -431,7 +432,7 @@ namespace barney_device {
     m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
 
     m_enable_multiGPU
-      = getParam<int>("automatic_multiGPU",m_enable_multiGPU);
+      = getParam<int>("enable_multiGPU",m_enable_multiGPU);
 #if BARNEY_MPI
     uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
     if (pointerToComm) {
