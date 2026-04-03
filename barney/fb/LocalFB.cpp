@@ -84,6 +84,8 @@ namespace BARNEY_NS {
   {
     for (auto device : *devices)
       getFor(device)->linearizeAuxChannel(stagingArea,whichChannel);
+    for (auto device : *devices)
+      device->sync();
   }
   
 } // ::BARNEY_NS
