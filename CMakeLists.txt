@@ -26,9 +26,6 @@ endif()
 set(CMAKE_BUILD_TYPE_INIT "Release")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-
-
-
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
@@ -36,6 +33,10 @@ include(GNUInstallDirs)
 
 option(USE_EXP "Experimental Pluggable Backend" OFF)
 mark_as_advanced(USE_EXP)
+
+set(BARNEY_DEVICE_NAME 
+  "barney" CACHE STRING
+  "Name of device to be built.")
 
 if (USE_EXP)
   include(rtcore/exp_external_backends)
@@ -240,28 +241,29 @@ add_subdirectory(anari)
 # ------------------------------------------------------------------
 
 set(BARNEY_CMAKE_INSTALL_DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}/cmake/barney-${BARNEY_VERSION}#${PROJECT_VERSION}
+  ${CMAKE_INSTALL_LIBDIR}/cmake/${BARNEY_DEVICE_NAME}-${BARNEY_VERSION}#${PROJECT_VERSION}
 )
 
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
   "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.cmake.in"
-  "${PROJECT_BINARY_DIR}/barneyConfig.cmake"
+  "${PROJECT_BINARY_DIR}/${BARNEY_DEVICE_NAME}Config.cmake"
   INSTALL_DESTINATION
   ${BARNEY_CMAKE_INSTALL_DESTINATION}
 )
 
 message("BARNEY_VERSION ${BARNEY_VERSION}")
 write_basic_package_version_file(
-    "barneyConfigVersion.cmake"
+#    "barneyConfigVersion.cmake"
+"${BARNEY_DEVICE_NAME}ConfigVersion.cmake"
     VERSION ${BARNEY_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/barneyConfig.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/barneyConfigVersion.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/${BARNEY_DEVICE_NAME}Config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/${BARNEY_DEVICE_NAME}ConfigVersion.cmake
   DESTINATION
   ${BARNEY_CMAKE_INSTALL_DESTINATION}
   )
@@ -275,15 +277,15 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
     PATTERN Findbarney.cmake EXCLUDE
 )
 
-set(BARNEY_INSTALL_TARGETS barney barney_static)
+set(BARNEY_INSTALL_TARGETS ${BARNEY_DEVICE_NAME} ${BARNEY_DEVICE_NAME}_static)
 if (TARGET barney_mpi)
-  list(APPEND BARNEY_INSTALL_TARGETS barney_mpi barney_mpi_static)
+  list(APPEND BARNEY_INSTALL_TARGETS ${BARNEY_DEVICE_NAME}_mpi ${BARNEY_DEVICE_NAME}_mpi_static)
 endif()
-if (TARGET anari_library_barney)
-  list(APPEND BARNEY_INSTALL_TARGETS anari_library_barney)
+if (TARGET anari_library_${BARNEY_DEVICE_NAME})
+  list(APPEND BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME})
 endif()
-if (TARGET anari_library_barney_mpi)
-  list(APPEND BARNEY_INSTALL_TARGETS anari_library_barney_mpi)
+if (TARGET anari_library_${BARNEY_DEVICE_NAME}_mpi)
+  list(APPEND BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME}_mpi)
 endif()
 
 install(
@@ -299,7 +301,7 @@ install(
 )
 install(EXPORT barney-config
   DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
-  NAMESPACE barney::
+  NAMESPACE ${BARNEY_DEVICE_NAME}::
   )
 
 # configures the public api

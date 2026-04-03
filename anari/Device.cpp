@@ -349,6 +349,9 @@ namespace barney_device {
       int *_gpuIDs   = nullptr;
       int  _gpuCount = -1;
       if (state->tether->devices[0]->m_cudaDevice >= 0) {
+        // first device DID have a cudadevice explicitly set; let's
+        // assume that app then explciitly sets cudaDevice for every
+        // other device, too, and let's use that list of GPUs.
         for (auto dev : state->tether->devices) {
           assert(dev->m_cudaDevice >= 0);
           gpuIDs.push_back(dev->m_cudaDevice);
@@ -356,11 +359,18 @@ namespace barney_device {
         _gpuIDs = gpuIDs.data();
         _gpuCount = (int)gpuIDs.size();
       } else {
-        // for MPI mode, for now let's set num GPUs to one because
-        // that's what data parallel will almost certainly want.
-        if (m_cudaDevice >= 0)
-          _gpuIDs = &m_cudaDevice;
-        _gpuCount = 1;
+        // first device did NOT have a cudadevice set - this means the
+        // app is NOT using explicit tethering (where it creates a
+        // (tethered) anari device for each gpu), which in turn means
+        // we're an independent device that didn't have any cuda gpu
+        // explicitly attached to it.... which means we could in theory
+        // use multiple GPU
+        std::cout << "#banari: enable_multiGPU = "<<m_enable_multiGPU << std::endl;
+        if (m_enable_multiGPU) {
+        } else {
+          _gpuIDs = nullptr;
+          _gpuCount = 1;
+        }
       }
 
       std::vector<int> dgIDs;
@@ -420,6 +430,9 @@ namespace barney_device {
     }
     m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
     m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
+
+    m_enable_multiGPU
+      = getParam<int>("enable_multiGPU",m_enable_multiGPU);
 #if BARNEY_MPI
     uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
     if (pointerToComm) {

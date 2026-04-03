@@ -304,27 +304,27 @@ if (BARNEY_BACKEND_EMBREE)
   # change the language to CPP else cmake will just skip these
   # sources.
 
-  # ----------- barney_embree -----------
-  add_library(barney_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
-  target_link_libraries(barney_embree_programs PRIVATE barney_config barney_rtc_embree)
-  target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1 -DBARNEY_RTC_EMBREE=1)
-  set_library_properties(barney_embree_programs)
+  # ----------- barney_backend_embree -----------
+  add_library(barney_backend_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
+  target_link_libraries(barney_backend_embree_programs PRIVATE barney_config barney_rtc_embree)
+  target_compile_definitions(barney_backend_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1 -DBARNEY_RTC_EMBREE=1)
+  set_library_properties(barney_backend_embree_programs)
 
-  add_library(barney_embree STATIC ${HOST_SOURCES})
-  target_link_libraries(barney_embree PUBLIC barney_config)
-  target_link_libraries(barney_embree PRIVATE barney_rtc_embree)
-  target_link_libraries(barney_embree PRIVATE
-    barney_embree_programs
+  add_library(barney_backend_embree STATIC ${HOST_SOURCES})
+  target_link_libraries(barney_backend_embree PUBLIC barney_config)
+  target_link_libraries(barney_backend_embree PRIVATE barney_rtc_embree)
+  target_link_libraries(barney_backend_embree PRIVATE
+    barney_backend_embree_programs
     barney_config
     $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
-  target_compile_definitions(barney_embree_programs PRIVATE -DBARNEY_RTC_EMBREE=1)
-  set_library_properties(barney_embree)
+  target_compile_definitions(barney_backend_embree_programs PRIVATE -DBARNEY_RTC_EMBREE=1)
+  set_library_properties(barney_backend_embree)
 
   if (BARNEY_MPI)
     add_library(barney_mpi_embree ${MPI_SOURCES})
     target_compile_definitions(barney_mpi_embree PUBLIC -DBARNEY_RTC_EMBREE=1)
     target_link_libraries(barney_mpi_embree PUBLIC barney_config embree_local)
-    target_link_libraries(barney_mpi_embree PUBLIC barney_embree MPI::MPI_C)
+    target_link_libraries(barney_mpi_embree PUBLIC barney_backend_embree MPI::MPI_C)
     set_library_properties(barney_mpi_embree)
   endif()
 endif()
@@ -375,26 +375,26 @@ configure_cuda_source(api/barney.cu)
 # ------------------------------------------------------------------
 # barney
 # ------------------------------------------------------------------
-add_library(barney SHARED api/barney.cu)
-target_link_libraries(barney PUBLIC
+add_library(${BARNEY_DEVICE_NAME} SHARED api/barney.cu)
+target_link_libraries(${BARNEY_DEVICE_NAME} PUBLIC
   $<BUILD_INTERFACE:barney_config>
 )
-set_library_properties(barney)
-target_include_directories(barney PUBLIC
+set_library_properties(${BARNEY_DEVICE_NAME})
+target_include_directories(${BARNEY_DEVICE_NAME} PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 # ------------------------------------------------------------------
 # barney_static
 # ------------------------------------------------------------------
-add_library(barney_static STATIC api/barney.cu)
-target_include_directories(barney_static PUBLIC
+add_library(${BARNEY_DEVICE_NAME}_static STATIC api/barney.cu)
+target_include_directories(${BARNEY_DEVICE_NAME}_static PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_compile_definitions(barney_static PUBLIC -Dbarney_STATIC=1)
-target_link_libraries(barney_static PUBLIC $<BUILD_INTERFACE:barney_config>)
-set_library_properties(barney_static)
+target_compile_definitions(${BARNEY_DEVICE_NAME}_static PUBLIC -Dbarney_STATIC=1)
+target_link_libraries(${BARNEY_DEVICE_NAME}_static PUBLIC $<BUILD_INTERFACE:barney_config>)
+set_library_properties(${BARNEY_DEVICE_NAME}_static)
 
 # =============================================================================
 # create frontends for barney_mpi and barney_mpi_static
@@ -403,33 +403,33 @@ if (BARNEY_MPI)
   # ------------------------------------------------------------------
   # barney_mpi
   # ------------------------------------------------------------------
-  add_library(barney_mpi SHARED
+  add_library(${BARNEY_DEVICE_NAME}_mpi SHARED
     api/barney.cu
   )
-  target_link_libraries(barney_mpi PUBLIC
+  target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC
     #    barney_config
     $<BUILD_INTERFACE:barney_config>
   )
-  target_include_directories(barney_mpi PUBLIC
+  target_include_directories(${BARNEY_DEVICE_NAME}_mpi PUBLIC
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
-  set_library_properties(barney_mpi) 
+  set_library_properties(${BARNEY_DEVICE_NAME}_mpi) 
   target_compile_definitions(barney_mpi PRIVATE -DBARNEY_MPI=1)
  
   # ------------------------------------------------------------------
   # barney_mpi_static
   # ------------------------------------------------------------------
-  add_library(barney_mpi_static STATIC api/barney.cu)
-  target_compile_definitions(barney_mpi_static PUBLIC
+  add_library(${BARNEY_DEVICE_NAME}_mpi_static STATIC api/barney.cu)
+  target_compile_definitions(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
     -Dbarney_mpi_STATIC=1 -DBARNEY_MPI=1)
-  target_link_libraries(barney_mpi_static PUBLIC
+  target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
     #   barney_config
     $<BUILD_INTERFACE:barney_config>
   )
-  target_include_directories(barney_mpi_static PUBLIC
+  target_include_directories(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
-  set_library_properties(barney_mpi_static)
+  set_library_properties(${BARNEY_DEVICE_NAME}_mpi_static)
 endif()
 
 
@@ -440,32 +440,32 @@ endif()
 
 # link optix backend (if enabled) to all frontends
 if (BARNEY_BACKEND_OPTIX)
-  target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_optix>)
-  target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_optix>)
+  target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_optix>)
+  target_link_libraries(${BARNEY_DEVICE_NAME}_static PRIVATE $<BUILD_INTERFACE:barney_optix>)
   if (BARNEY_MPI)
-    target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
-    target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
+    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
+    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
   endif()
 endif()
 # link embree backend (if enabled) to all frontends
 if (BARNEY_BACKEND_EMBREE)
-  target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_embree>)
-  target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_embree>)
+  target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_backend_embree>)
+  target_link_libraries(${BARNEY_DEVICE_NAME}_static PRIVATE $<BUILD_INTERFACE:barney_backend_embree>)
   if (BARNEY_MPI)
-    target_link_libraries(barney_mpi PUBLIC
+    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC
       $<BUILD_INTERFACE:barney_mpi_embree>)
-    target_link_libraries(barney_mpi_static PUBLIC
+    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
       $<BUILD_INTERFACE:barney_mpi_embree>)
   endif()
 endif()
 
 # link cuda backend (if enabled) to all frontends
 if (BARNEY_BACKEND_CUDA)
-  target_link_libraries(barney PRIVATE $<BUILD_INTERFACE:barney_cuda>)
-  target_link_libraries(barney_static PRIVATE $<BUILD_INTERFACE:barney_cuda>)
+  target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_cuda>)
+  target_link_libraries(${BARNEY_DEVICE_NAME}_static PRIVATE $<BUILD_INTERFACE:barney_cuda>)
   if (BARNEY_MPI)
-    target_link_libraries(barney_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
-    target_link_libraries(barney_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
+    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
+    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
   endif()
 endif()
 
@@ -474,7 +474,7 @@ endif()
 # ##################################################################
 # final lib properties
 # ##################################################################
-set_library_properties(barney)
+set_library_properties(${BARNEY_DEVICE_NAME})
 if (BARNEY_MPI)
-  set_library_properties(barney_mpi)
+  set_library_properties(${BARNEY_DEVICE_NAME}_mpi)
 endif()
