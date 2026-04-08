@@ -119,6 +119,7 @@ namespace barney_device {
 
       if (m_bnFrameBuffer) {
         bnSet1i(m_bnFrameBuffer, "denoise", m_renderer->denoise() ? 1 : 0);
+        bnSet1i(m_bnFrameBuffer, "fadeOutDenoiser", m_renderer->fadeOutDenoiser() ? 1 : 0);
         bnSet1i(m_bnFrameBuffer, "upscale", m_renderer->upscale() ? 1 : 0);
         bnCommit(m_bnFrameBuffer);
 

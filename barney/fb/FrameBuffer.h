@@ -37,7 +37,7 @@ namespace BARNEY_NS {
     void freeResources();
 
     bool needHitIDs() const;
-    
+
     void finalizeTiles();
     void finalizeFrame();
 
@@ -49,7 +49,7 @@ namespace BARNEY_NS {
                                     BNDataType gatherType,
                                     // can be null:
                                     vec3f *linearNormal) = 0;
-    
+
     /*! read one of the auxiliary (not color or normal) buffers into
       the given app memory; this will at the least incur some
       reformatting from tiles to linear (if local node), possibly
@@ -58,7 +58,7 @@ namespace BARNEY_NS {
     virtual void gatherAuxChannel(BNFrameBufferChannel channel) = 0;
     virtual void writeAuxChannel(void *stagingArea,
                                  BNFrameBufferChannel channel) = 0;
-    
+
     /*! read given frame buffer channel into given application memory
         (which may be either host or device memory), in requested
         format. Requeseted color format (currently) has to match the
@@ -74,17 +74,17 @@ namespace BARNEY_NS {
     PLD *getPLD(Device *device);
 
     std::vector<PLD> perLogical;
-    
+
     /*! staging area for gathering/writing pixels into, will be Nx*Ny
         pixels of type as provided specified during resize. This may
         point to either float4 or rgba8 depending on requested
         format */
     void *linearColorChannel = 0;
-    
+
     /*! staging area for re-assembling any other channel; note this
         may store either float or uint32 data */
     void *linearAuxChannel = 0;
-    
+
     /*! staging area for the normal channel (vec3f per pixel) */
     void *linearNormalChannel = 0;
 
@@ -96,7 +96,7 @@ namespace BARNEY_NS {
     /*! when upscaling, staging for 2x upscaled color (float4 at numPixels)
         before convert/copy to app (denoiser runs at half res, we upscale here) */
     void  *upscaledColorChannel = 0;
-    
+
     /*! the channels we're supposed to have (as asked for on the latest resize()) */
     uint32_t   channels = 0;
     BNDataType colorChannelFormat = BN_DATA_UNDEFINED;
@@ -121,7 +121,7 @@ namespace BARNEY_NS {
     /*! @} */
     // ------------------------------------------------------------------
 
-    
+
     /*! points to the rtc denoiser object we've created. Can be null
         if denoising is disabled in cmake, or if the given rtc backend
         doesn't support denoising (eg, old optix version, oidn not
@@ -133,6 +133,8 @@ namespace BARNEY_NS {
      require an rtc backend that does have a denoiser (\see denoiser
      field), but this allows a user to disable denoising at runtime */
     bool enableDenoising = 1;
+
+    bool fadeOutDenoiser = true;
 
     /*! whether to use OptiX AI 2x upscaling. When enabled, tiles
         render at half resolution and the denoiser upscales to the
@@ -147,7 +149,7 @@ namespace BARNEY_NS {
     /*! kernel that converts from a linear device-side float4 format
         to a linear device-side ufixed8 format */
     rtc::ComputeKernel2D *linear_toFixed8 = 0;
-    
+
     const bool  isOwner;
     bool  showCrosshairs = false;
     DevGroup::SP const devices;
