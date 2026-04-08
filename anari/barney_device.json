@@ -63,6 +63,15 @@
           "description": "denoise image"
         },
         {
+          "name": "upscale",
+          "types": [
+            "ANARI_BOOL"
+          ],
+          "tags": [],
+          "default": false,
+          "description": "upscale image"
+        },
+        {
           "name": "crosshairs",
           "types": [
             "ANARI_BOOL"

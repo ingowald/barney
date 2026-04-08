@@ -19,6 +19,7 @@ namespace barney_device {
 
     bool crosshairs() const;
     bool denoise() const;
+    bool upscale() const;
     bool isValid() const override;
 
     BNRenderer barneyRenderer{nullptr};
@@ -30,6 +31,7 @@ namespace barney_device {
     float m_ambientRadiance{0.8f};
     bool m_crosshairs{false};
     bool m_denoise{true};
+    bool m_upscale{false};
     anari::math::float4 m_background{0.f, 0.f, 0.f, 1.f};
     anari::math::float4 m_cutPlane{0.f, 0.f, 0.f, -1e30f};
     helium::ChangeObserverPtr<Array2D> m_backgroundImage;

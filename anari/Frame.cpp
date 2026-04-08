@@ -80,15 +80,12 @@ namespace barney_device {
       getParam<anari::DataType>("channel.normal", ANARI_UNKNOWN);
     m_size = getParam<math::uint2>("size", math::uint2(10, 10));
     m_displaySize = m_size;  /* updated in finalize() from actual FB when slot==0 */
-    m_enableDenoising = getParam<bool>("denoise", false);
-    m_enableUpscaling = getParam<bool>("upscale", false);
   }
 
   void Frame::finalize()
   {
     cleanup();
 
-    bool denoise = m_enableDenoising;
     if (!m_renderer) {
       reportMessage(ANARI_SEVERITY_WARNING,
                     "missing required parameter 'renderer' on frame");
@@ -109,7 +106,7 @@ namespace barney_device {
       const auto numPixels = size.x * size.y;
 
       uint32_t requiredChannels = BN_FB_COLOR;
-      if (m_channelTypes.depth == ANARI_FLOAT32) 
+      if (m_channelTypes.depth == ANARI_FLOAT32)
         requiredChannels |= BN_FB_DEPTH;
       if (m_channelTypes.primID == ANARI_UINT32)
         requiredChannels |= BN_FB_PRIMID;
@@ -121,8 +118,8 @@ namespace barney_device {
         requiredChannels |= BN_FB_NORMAL;
 
       if (m_bnFrameBuffer) {
-        bnSet1i(m_bnFrameBuffer, "denoise", denoise ? 1 : 0);
-        bnSet1i(m_bnFrameBuffer, "upscale", m_enableUpscaling ? 1 : 0);
+        bnSet1i(m_bnFrameBuffer, "denoise", m_renderer->denoise() ? 1 : 0);
+        bnSet1i(m_bnFrameBuffer, "upscale", m_renderer->upscale() ? 1 : 0);
         bnCommit(m_bnFrameBuffer);
 
         bnFrameBufferResize(m_bnFrameBuffer,
@@ -191,7 +188,7 @@ namespace barney_device {
     }
 
     auto model = m_world->makeCurrent();
-    
+
     if (m_lastFrameWasFirstFrame && m_channelTypes.depth != ANARI_UNKNOWN
         && !m_didMapChannel.depth)
       reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
