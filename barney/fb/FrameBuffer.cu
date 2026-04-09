@@ -62,6 +62,10 @@ namespace BARNEY_NS {
       enableDenoising = value;
       return true;
     }
+    if (member == "fadeOutDenoiser") {
+      fadeOutDenoiser = value;
+      return true;
+    }
     if (member == "upscale") {
       enableUpscaling = value;
       return true;
@@ -242,7 +246,7 @@ namespace BARNEY_NS {
 
     bool doDenoising = denoiser != 0 && (enableDenoising || enableUpscaling);
     if (doDenoising) {
-      float blendFactor = (accumID-1) / (accumID+100.f);
+      float blendFactor = fadeOutDenoiser ? (accumID-1) / (accumID+100.f) : 0.f;
       device->rtc->sync();
       denoiser->run(blendFactor);
 
@@ -295,7 +299,7 @@ namespace BARNEY_NS {
     device->rtc->sync();
   }
 
-  
+
   /*! "finalize" and read the frame buffer. If this function gets
       called with a null hostPtr we will still finalize the frame
       buffer and run the denoiser, just not copy it to host; the
@@ -337,7 +341,7 @@ namespace BARNEY_NS {
       }
       return;
     }
-    
+
     Device *device = getDenoiserDevice();
     SetActiveGPU forDuration(device);
 

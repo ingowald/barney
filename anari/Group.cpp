@@ -54,7 +54,6 @@ namespace barney_device {
                       else {
                         reportMessage(ANARI_SEVERITY_WARNING,
                                       "encountered invalid surface (%p)",
-                                      this,
                                       s);
                       }
                     });
@@ -77,7 +76,6 @@ namespace barney_device {
                       else {
                         reportMessage(ANARI_SEVERITY_WARNING,
                                       "encountered invalid volume (%p)",
-                                      this,
                                       v);
                       }
                     });
@@ -97,8 +95,7 @@ namespace barney_device {
                         lights.push_back(l);
                       else {
                         reportMessage(ANARI_SEVERITY_WARNING,
-                                      "encountered invalid volume (%p)",
-                                      this,
+                                      "encountered invalid light (%p)",
                                       l);
                       }
                     });

@@ -63,6 +63,24 @@
           "description": "denoise image"
         },
         {
+          "name": "fadeOutDenoiser",
+          "types": [
+            "ANARI_BOOL"
+          ],
+          "tags": [],
+          "default": true,
+          "description": "fade out denoiser during accumulation"
+        },
+        {
+          "name": "upscale",
+          "types": [
+            "ANARI_BOOL"
+          ],
+          "tags": [],
+          "default": false,
+          "description": "upscale image"
+        },
+        {
           "name": "crosshairs",
           "types": [
             "ANARI_BOOL"

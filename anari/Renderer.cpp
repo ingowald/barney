@@ -23,6 +23,8 @@ void Renderer::commitParameters()
   m_ambientRadiance = getParam<float>("ambientRadiance", 1.f);
   m_crosshairs = getParam<bool>("crosshairs", false);
   m_denoise = getParam<bool>("denoise", true);
+  m_fadeOutDenoiser = getParam<bool>("fadeOutDenoiser", true);
+  m_upscale = getParam<bool>("upscale", false);
   m_background = getParam<math::float4>("background", math::float4(0, 0, 0, 1));
   m_backgroundImage = getParamObject<Array2D>("background");
   m_cutPlane = getParam<math::float4>("cutPlane", math::float4(0, 0, 0, 0));
@@ -67,6 +69,16 @@ bool Renderer::crosshairs() const
 bool Renderer::denoise() const
 {
   return m_denoise;
+}
+
+bool Renderer::fadeOutDenoiser() const
+{
+  return m_fadeOutDenoiser;
+}
+
+bool Renderer::upscale() const
+{
+  return m_upscale;
 }
 
 bool Renderer::isValid() const
