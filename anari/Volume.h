@@ -52,8 +52,10 @@ namespace barney_device {
 
   private:
     void setBarneyParameters() override;
+    void invalidateBarneyVolumeIfFieldChanged();
 
     helium::ChangeObserverPtr<SpatialField> m_field;
+    const SpatialField *m_boundField{nullptr};
 
     box3 m_bounds;
 

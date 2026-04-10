@@ -38,4 +38,6 @@ Session.vim
 !*png/*.pdf
 .vs/
 samples/advanced/optix7course/models/
+.claude
+.codex
 
