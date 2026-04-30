@@ -18,6 +18,7 @@ namespace barney_device {
     ~Group() override;
 
     void commitParameters() override;
+    void finalize() override;
     void markFinalized() override;
 
     BNGroup makeBarneyGroup() const;

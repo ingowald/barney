@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Group.h"
 #include <iostream>
@@ -30,6 +30,10 @@ namespace barney_device {
     Object::markFinalized();
   }
 
+  void Group::finalize()
+  {}
+
+  
   BNGroup Group::makeBarneyGroup() const
   {
     int slot = deviceState()->slot;

@@ -172,8 +172,20 @@ namespace barney_device {
       return;
 
     bool structural =
+#if 1
+      // iw, 4/29/26 - the logic below is broken: if only the
+      // world::surface[] array changes, but neither of the groups or
+      // instaneces therein was changed, then the scnee is nor marked
+      // as structurally changed (because it's the group or instance
+      // commits that trigger that), but of course a different surface
+      // list _is_ a structural change. for now, let's not try to be
+      // clever and simply rebuild all.
+      true
+#else
       m_lastBarneyModelBuild == 0
-      || state->objectUpdates.lastStructuralChange > m_lastBarneyModelBuild;
+      || state->objectUpdates.lastStructuralChange > m_lastBarneyModelBuild
+#endif
+        ;
 
     if (structural) {
       reportMessage(ANARI_SEVERITY_DEBUG, "barney::World full model rebuild");
