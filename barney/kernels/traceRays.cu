@@ -17,6 +17,7 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed,
                                  bool needHitIDs)
   {
+    PING;
     double t0 = getCurrentTime();
     
     // ------------------------------------------------------------------
@@ -51,7 +52,7 @@ namespace BARNEY_NS {
              skip calling the trace kernel, which may not like getting
              called with size 0 */
         } else {
-          int bs = 128;
+          int bs = 64;
           int nb = divRoundUp(dd.numRays,bs);
 
           // if (myRank() == 0)
@@ -69,10 +70,12 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     // ... and sync 'til all are done
     // ------------------------------------------------------------------
+    PING;
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       device->rtc->sync();
     }
+    PING;
     if (FromEnv::get()->logQueues) {
       std::stringstream ss;
       ss << "#bn(" << myRank() << "): ## ray queue kernel TRACE DONE" << std::endl;

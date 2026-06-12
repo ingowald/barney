@@ -28,7 +28,7 @@ namespace BARNEY_NS {
 #else
       bool dbg = ray.dbg();
 #endif
-      if (dbg) printf("=======================================================\n");
+      // if (dbg) printf("=======================================================\n");
       auto &self = *(Triangles::DD*)ti.getProgramData();
       const float u = ti.getTriangleBarycentrics().x;
       const float v = ti.getTriangleBarycentrics().y;
@@ -36,6 +36,8 @@ namespace BARNEY_NS {
       int instID    = ti.getInstanceID();
       float depth   = ti.getRayTmax();
 
+      if (dbg) printf("anyhit tri\n");
+      
       // Cut-plane: reject hits on the invisible side
       if (OptixGlobals::hitOnInvisibleSide(globals, depth, ti)) {
         ti.ignoreIntersection();
@@ -43,6 +45,7 @@ namespace BARNEY_NS {
       }
 
       // ------------------------------------------------------------------
+      if (dbg) printf("hitIDs %i tri\n",(int)(size_t)globals.hitIDs);
       if (globals.hitIDs) {
         /* ID buffer rendering writes IDs no matter what transparency */
         const int rayID
@@ -127,8 +130,8 @@ namespace BARNEY_NS {
         = material.createBSDF(hitData,world.samplers,dbg);
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                          ray.dir,hitData.worldNormal,ray.dbg());
-      
+                          ray.dir,hitData.worldNormal,dbg);//ray.dbg());
+
       if (opacity < 1.f) {
         ray.rngSeed.next((const uint32_t&)osP.x);
         ray.rngSeed.next((const uint32_t&)osP.y);

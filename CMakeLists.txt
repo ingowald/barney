@@ -15,6 +15,9 @@ cmake_policy(SET CMP0079 NEW)
 cmake_policy(SET CMP0076 NEW)
 cmake_policy(SET CMP0063 NEW)
 
+
+set(CMAKE_HIP_FLAGS "-fgpu-rdc --hip-link ")
+
 option(BARNEY_MPI "Enable MPI Support" OFF)
 
 if (NOT (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR}))
@@ -28,7 +31,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
-project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
+set(CMAKE_HIP_ARCHITECTURES gfx1100)
+
+project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX HIP)
 include(GNUInstallDirs)
 
 option(USE_EXP "Experimental Pluggable Backend" OFF)
@@ -39,8 +44,8 @@ set(BARNEY_DEVICE_NAME
   "Name of device to be built.")
 
 if (USE_EXP)
-  include(rtcore/exp_external_backends)
-elseif (NOT BARNEY_DISABLE_CUDA) 
+  include(rtcore/exp_external_backends/config.cmake)
+elseif (NOT BARNEY_DISABLE_CUDA)
   include(CheckLanguage)
   check_language(CUDA)
   if (CMAKE_CUDA_COMPILER)

@@ -8,10 +8,10 @@
     types etc that it should have had in the first place */
 
 #include "barney/common/barney-common.h"
-#ifdef __CUDACC__
-#include <cuda_fp16.h>
-#elif defined(__HIPCC__)
+#if defined(__HIPCC__)
 #  include "hip/hip_fp16.h"
+#elif defined(__CUDACC__)
+#  include <cuda_fp16.h>
 #else
 #  include "rtcore/embree/Float16.h"
 typedef float16_t half;

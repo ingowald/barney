@@ -5,16 +5,23 @@
 set(CMAKE_CXX_VISIBILITY_PRESET  hidden)
 set(CMAKE_CUDA_VISIBILITY_PRESET hidden)
 
+set(RTCORE_SOURCES )
+
+    
 macro(rtc_library_properties tgt)
   set_target_properties(${tgt}
     PROPERTIES
-    CUDA_SEPARABLE_COMPILATION   ON
     POSITION_INDEPENDENT_CODE    ON
-    CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
     CXX_VISIBILITY_PRESET  hidden
-    CUDA_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON
+#    CUDA_SEPARABLE_COMPILATION   ON
+#    CUDA_USE_STATIC_CUDA_RUNTIME ON
+#    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+#    CUDA_VISIBILITY_PRESET hidden
+    HIP_SEPARABLE_COMPILATION   ON
+    HIP_USE_STATIC_HIP_RUNTIME ON
+    HIP_RESOLVE_DEVICE_SYMBOLS  ON
+#    HIP_VISIBILITY_PRESET hidden
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
@@ -40,11 +47,13 @@ set_property(TARGET barney_rtc_config PROPERTY
 
 
 
+
+
+
 # ==================================================================
 add_library(barney_rtc_common INTERFACE
   )
 target_link_libraries(barney_rtc_common INTERFACE barney_rtc_config)
-
 
 # ==================================================================
 if (BARNEY_BACKEND_EMBREE)
@@ -144,7 +153,7 @@ endif()
 
 # ==================================================================
 if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
-  add_library(barney_rtc_cuda_common STATIC
+  set(BACKEND_CUDA_COMMON_SOURCES
     cudaCommon/Device.h
     cudaCommon/Device.cu
     cudaCommon/Texture.h
@@ -153,26 +162,42 @@ if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
     cudaCommon/TextureData.cu
     cudaCommon/cuda-helper.cpp
     )
+  list(APPEND RTCORE_SOURCES ${BACKEND_CUDA_COMMON_SOURCES})
+
+#  add_library(barney_rtc_cuda_common OBJECT #STATIC
+  add_library(barney_rtc_cuda_common STATIC
+    ${BACKEND_CUDA_COMMON_SOURCES}
+  )
+  target_link_options(barney_rtc_cuda_common PUBLIC
+    "--hip-link;-fgpu-rdc"
+  )
+
   target_link_libraries(barney_rtc_cuda_common PUBLIC
     barney_rtc_config
     )
+  if (USE_EXP)
+    target_link_libraries(barney_rtc_cuda_common PUBLIC
+      rtcore_exp_config
+    )
+  endif()
 set_target_properties(barney_rtc_cuda_common
   PROPERTIES
-  CUDA_SEPARABLE_COMPILATION ON
   CXX_VISIBILITY_PRESET hidden
-  CUDA_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
-  CUDA_SEPARABLE_COMPILATION ON
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  CUDA_USE_STATIC_CUDA_RUNTIME ON
+#  POSITION_INDEPENDENT_CODE ON
+#  CUDA_SEPARABLE_COMPILATION ON
+#  CUDA_VISIBILITY_PRESET hidden
+#  CUDA_USE_STATIC_CUDA_RUNTIME ON
+#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  HIP_SEPARABLE_COMPILATION ON
+#  HIP_VISIBILITY_PRESET hidden
+HIP_USE_STATIC_HIP_RUNTIME ON
+HIP_RESOLVE_DEVICE_SYMBOLS ON
   )
   rtc_library_properties(barney_rtc_cuda_common)
 else()
   add_library(barney_rtc_cuda_common INTERFACE)
 endif()
-
 
 # ==================================================================
 if (BARNEY_BACKEND_OPTIX)
@@ -211,25 +236,37 @@ endif()
 
 # ==================================================================
 if (BARNEY_BACKEND_CUDA)
-  message("ENabling native cuda backend")
-  add_library(barney_rtc_cuda STATIC
+  set(BACKEND_CUDA_SOURCES
     cuda/Device.h
-    cuda/Device.cu
+    cuda/cudaDevice.cu
     cuda/Buffer.h
     cuda/Buffer.cpp
     cuda/Group.h
-    cuda/Group.cu
+    cuda/cudaGroup.cu
     cuda/Geom.h
     cuda/Geom.cpp
     cuda/TraceKernel.h
     cuda/TraceKernel.cpp
     cuda/GeomType.h
     cuda/GeomType.cpp
-    )
+  )
+  message("ENabling native cuda backend")
+#  add_library(barney_rtc_cuda OBJECT #STATIC
+  add_library(barney_rtc_cuda STATIC
+    ${BACKEND_CUDA_SOURCES}
+  )
+  list(APPEND RTCORE_SOURCES ${BACKEND_CUDA_SOURCES})
   target_link_libraries(barney_rtc_cuda PUBLIC
     barney_rtc_config
     barney_rtc_cuda_common
+  )
+  if (USE_EXP)
+    target_link_libraries(barney_rtc_cuda PUBLIC
+      rtcore_exp_config
     )
+  endif()
+
+  
   target_compile_definitions(barney_rtc_cuda
     PUBLIC -DBARNEY_RTC_CUDA=1)
   rtc_library_properties(barney_rtc_cuda)
@@ -256,3 +293,42 @@ endif()
 
 
 
+
+macro(configure_cuda_source src)
+  if(USE_EXP)
+    get_filename_component(ext "${src}" EXT)
+    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+      message("setting language of ${src} to ${EXP_LANGUAGE}")
+      set_source_files_properties(${src}
+        # -rdc=true is for relocatable code, can be resolved at link time.
+        PROPERTIES LANGUAGE ${EXP_LANGUAGE}
+        #COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+      )
+    endif()
+  elseif (NOT BARNEY_HAVE_CUDA)
+    get_filename_component(ext "${src}" EXT)
+    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+      message("setting language of ${src} to CXX")
+      set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
+      if (NOT WIN32)
+        set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
+      endif()
+    endif()
+  else()
+    get_filename_component(ext "${src}" EXT)
+    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+      set_source_files_properties(${src}
+        # -rdc=true is for relocatable code, can be resolved at link time.
+        PROPERTIES COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+      )
+    endif()
+#    set_property(
+#      TARGET barney_config
+#      APPEND
+#      PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+  endif()
+endmacro()
+
+foreach(src ${RTCORE_SOURCES})
+  configure_cuda_source(${src})
+endforeach()

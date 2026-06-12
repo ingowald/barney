@@ -21,6 +21,8 @@
 namespace rtc {
   namespace cuda {
 
+    inline __device__ float fabsf(float f) { return f < 0.f ? -f : f; }
+    inline __device__ float mmax(float a, float b) { return a>b ? a:b; }
 // #if BARNEY_CUBQL_BVH_WIDTH == 2
     using bvh_t = cuBQL::bvh3f;
 // #else
@@ -45,10 +47,12 @@ namespace rtc {
       // dot(td,N)+dot(o-v0,N)=0
       // t*dot(d,N) = -dot(o-v0,N)
       // t = -dot(o-v0,N)/dot(d,N)
-      float t = -dot(object.org-v0,N)/dot(object.dir,N);
+      float dd = dot(object.dir,N);
+      if (dd == 0.f) return false;
+      float t = -dot(object.org-v0,N)/dd;
 
-      if (dbg)
-        printf("ISEC t %f in [%f %f]\n",t,tMin,current.tMax);
+      // if (dbg)
+      //   printf("ISEC t %f in [%f %f]\n",t,tMin,current.tMax);
       
       if (t <= 0.f || t >= current.tMax) return false;
 
@@ -56,7 +60,7 @@ namespace rtc {
 
       float e1u,e2u,Pu;
       float e1v,e2v,Pv;
-      if (fabsf(N.x) >= max(fabsf(N.y),fabsf(N.z))) {
+      if (fabsf(N.x) >= mmax(fabsf(N.y),fabsf(N.z))) {
         e1u = e1.y; e2u = e2.y; Pu = P.y;
         e1v = e1.z; e2v = e2.z; Pv = P.z;
       } else if (fabsf(N.y) > fabsf(N.z)) {
@@ -80,21 +84,21 @@ namespace rtc {
       float u = det(Pu,Pv,e2u,e2v)/det(e1u,e1v,e2u,e2v);
       float v = det(e1u,e1v,Pu,Pv)/det(e1u,e1v,e2u,e2v);
 #endif
-    if (dbg)
-      printf("ISEC uv %f %f sum %f\n",u,v,u+v);
+    // if (dbg)
+    //   printf("ISEC uv %f %f sum %f\n",u,v,u+v);
       
       // printf("ISEC uv %f %f\n",u,v);
       if ((u < 0.f) || (v < 0.f) || ((u+v) >= 1.f)) return false;
 
       current.triangleBarycentrics = vec2f{ u,v };
       current.tMax = t;
-      if (dbg)
-        printf("HIT\n");
+      // if (dbg)
+      //   printf("HIT\n");
       return true;
     }
 
 
-#if 1
+// #if 1
     inline __device__
     void TraceInterface::traceRay(rtc::AccelHandle _world,
                                   vec3f org,
@@ -103,6 +107,8 @@ namespace rtc {
                                   float t1,
                                   void *prdPtr)
     {
+      bool dbg = *(int*)prdPtr;
+      if (dbg) printf("####################################################### TRACE\n");
       using Triangle3f = cuBQL::triangle_t<float>;
       using RayTriangleIntersection = cuBQL::RayTriangleIntersection_t<float>;
       
@@ -118,17 +124,19 @@ namespace rtc {
       accepted.primID = -1;
       accepted.instID = -1;
       acceptedSBT = 0;
+
       InstanceGroup::DeviceRecord *model
         = (InstanceGroup::DeviceRecord *)_world;
       
       ::cuBQL::ray3f ray((const cuBQL::vec3f&)world.org,
                          (const cuBQL::vec3f&)world.dir,
                          t0,t1);
-                
+
       auto intersectPrim = [&,this](uint32_t primIdx) -> float
       {
+        // if (dbg) printf("isecprim %i\n",primIdx);
         GeomGroup::DeviceRecord *group 
-          = (GeomGroup::DeviceRecord *)&currentInstance->group;
+          = (GeomGroup::DeviceRecord *)&this->currentInstance->group;
         GeomGroup::Prim *prims = group->prims;
         GeomGroup::Prim prim = prims[primIdx];
         current.primID = prim.primID;
@@ -143,7 +151,8 @@ namespace rtc {
           vec3f v0 = header->triangles.vertices[indices.x];
           vec3f v1 = header->triangles.vertices[indices.y];
           vec3f v2 = header->triangles.vertices[indices.z];
-#if 1
+
+#if 0
           if (!intersectTriangle(v0,v1,v2)) {
             return accepted.tMax;
           }
@@ -152,9 +161,29 @@ namespace rtc {
           tri.a = (const cuBQL::vec3f&)v0;
           tri.b = (const cuBQL::vec3f&)v1;
           tri.c = (const cuBQL::vec3f&)v2;
+
+          if (0 && dbg) {
+            printf("tri.a %f %f %f\n",tri.a.x,tri.a.y,tri.a.z);
+            printf("tri.b %f %f %f\n",tri.b.x,tri.b.y,tri.b.z);
+            printf("tri.c %f %f %f\n",tri.c.x,tri.c.y,tri.c.z);
+            printf("ray %f %f %f : %f %f %f\n",
+                   ray.origin.x,
+                   ray.origin.y,
+                   ray.origin.z,
+                   ray.direction.x,
+                   ray.direction.y,
+                   ray.direction.z);
+            cuBQL::box3f bb = cuBQL::box3f()
+              .including(tri.a)
+              .including(tri.b)
+              .including(tri.c);
+            printf("intesects box %i\n",
+                   (int)cuBQL::rayIntersectsBox(ray,(cuBQL::box3f&)bb));
+          }
+          
           RayTriangleIntersection isec;
           bool hadHit = isec.compute(ray,tri,dbg);
-          if (dbg) printf("had hit %i\n",int(hadHit));
+          if (0 && dbg) printf("had hit %i\n",int(hadHit));
           
           if (!hadHit)
             return accepted.tMax;
@@ -163,11 +192,13 @@ namespace rtc {
           this->current.tMax = isec.t;
 #endif
         } else {
-          header->user.intersect(*this);
+          if (header->user.intersect)
+            header->user.intersect(*this);
           if (current.tMax >= accepted.tMax)
             return accepted.tMax;
         }
         rejectThisHit = false;
+        //xxx
         if (header->ah) header->ah(*this);
         if (!rejectThisHit) {
           accepted.tMax = current.tMax;
@@ -179,7 +210,7 @@ namespace rtc {
         }
         return accepted.tMax;
       };
-      auto enterBlas = [this,model]
+      auto enterBlas = [&,this,model]
         (cuBQL::ray3f &out_ray,
          cuBQL::bvh3f &out_bvh,
          int instID) 
@@ -190,6 +221,22 @@ namespace rtc {
           = xfmPoint(currentInstance->worldToObjectXfm,world.org);
         this->object.dir
           = xfmVector(currentInstance->worldToObjectXfm,world.dir);
+        if (0 && dbg) {
+          printf("xfm world %f %f %f : %f %f %f\n",
+                 world.org.x,
+                 world.org.y,
+                 world.org.z,
+                 world.dir.x,
+                 world.dir.y,
+                 world.dir.z);
+          printf("xfm object %f %f %f : %f %f %f\n",
+                 object.org.x,
+                 object.org.y,
+                 object.org.z,
+                 object.dir.x,
+                 object.dir.y,
+                 object.dir.z);
+        }
         (vec3f&)out_ray.origin    = object.org;
         (vec3f&)out_ray.direction = object.dir;
         out_bvh = {0,0,0,0};
@@ -198,214 +245,216 @@ namespace rtc {
       auto leaveBlas = [this]() -> void {
         currentInstance = 0;
       };
-      
+
       ::cuBQL::shrinkingRayQuery::twoLevel::forEachPrim
           (enterBlas,leaveBlas,intersectPrim,model->bvh,ray);
-      
+
       if (acceptedSBT && acceptedSBT->ch) {
         current = accepted;
         this->geomData = (acceptedSBT+1);
         acceptedSBT->ch(*this);
       }
     }
-#else
-    inline __device__
-    bool boxTest(float &t0, float &t1,
-                 const cuBQL::box3f bb,
-                 vec3f org,
-                 vec3f dir)
-    {
-      vec3f lo = ((const vec3f &)bb.lower - org) * rcp(dir);
-      vec3f hi = ((const vec3f &)bb.upper - org) * rcp(dir);
-      vec3f nr = min(lo,hi);
-      vec3f fr = max(lo,hi);
-      t0 = max(t0,reduce_max(nr));
-      t1 = min(t1,reduce_min(fr));
-      return t0 <= t1;
-    }
+// #else
+//     inline __device__
+//     bool boxTest(float &t0, float &t1,
+//                  const cuBQL::box3f bb,
+//                  vec3f org,
+//                  vec3f dir)
+//     {
+//       vec3f lo = ((const vec3f &)bb.lower - org) * rcp(dir);
+//       vec3f hi = ((const vec3f &)bb.upper - org) * rcp(dir);
+//       vec3f nr = min(lo,hi);
+//       vec3f fr = max(lo,hi);
+//       t0 = max(t0,reduce_max(nr));
+//       t1 = min(t1,reduce_min(fr));
+//       return t0 <= t1;
+//     }
 
 
 
-    inline __device__
-    void TraceInterface::traceRay(rtc::AccelHandle _world,
-                                  vec3f org,
-                                  vec3f dir,
-                                  float t0,
-                                  float t1,
-                                  void *prdPtr)
-    {
-      bool dbg = *(int*)prdPtr;
+//     inline __device__
+//     void TraceInterface::traceRay(rtc::AccelHandle _world,
+//                                   vec3f org,
+//                                   vec3f dir,
+//                                   float t0,
+//                                   float t1,
+//                                   void *prdPtr)
+//     {
+//       bool dbg = false;//*(int*)prdPtr;
+// #if 0
       
-      if (dbg) printf("TRACERAY #################################\n");
-      if (fabsf(dir.x) < 1e-6f) dir.x = 1e-6f;
-      if (fabsf(dir.y) < 1e-6f) dir.y = 1e-6f;
-      if (fabsf(dir.z) < 1e-6f) dir.z = 1e-6f;
-      struct StackEntry {
-        uint32_t node;
-        float    dist;
-      };
-      prd = prdPtr;
-      world.org = org;
-      world.dir = dir;
-      tMin = t0;
-      accepted.tMax = t1;
-      accepted.primID = -1;
-      accepted.instID = -1;
-      acceptedSBT = 0;
-      InstanceGroup::DeviceRecord *model
-        = (InstanceGroup::DeviceRecord *)_world;
+//       // if (dbg) printf("TRACERAY #################################\n");
+//       if (fabs(dir.x) < 1e-6f) dir.x = 1e-6f;
+//       if (fabs(dir.y) < 1e-6f) dir.y = 1e-6f;
+//       if (fabs(dir.z) < 1e-6f) dir.z = 1e-6f;
+//       struct StackEntry {
+//         uint32_t node;
+//         float    dist;
+//       };
+//       prd = prdPtr;
+//       world.org = org;
+//       world.dir = dir;
+//       tMin = t0;
+//       accepted.tMax = t1;
+//       accepted.primID = -1;
+//       accepted.instID = -1;
+//       acceptedSBT = 0;
+//       InstanceGroup::DeviceRecord *model
+//         = (InstanceGroup::DeviceRecord *)_world;
 
-      enum { STACK_DEPTH = 64 };
-      StackEntry topLevelStackBase[STACK_DEPTH];
-      StackEntry *stackBase = topLevelStackBase;
-      StackEntry *stackPtr = stackBase;
+//       enum { STACK_DEPTH = 64 };
+//       StackEntry topLevelStackBase[STACK_DEPTH];
+//       StackEntry *stackBase = topLevelStackBase;
+//       StackEntry *stackPtr = stackBase;
 
-      const bvh3f::Node *nodes = model->bvh.nodes;
-      if (!nodes) {
-        // this node seems to not have any content
-        return;
-      }
-      int nodeID = 0;
-      float node_t0=tMin, node_t1 = accepted.tMax;
-      if (!boxTest(node_t0,node_t1,nodes[0].bounds,org,dir)) {
-        return;
-      }
+//       const bvh3f::Node *nodes = model->bvh.nodes;
+//       if (!nodes) {
+//         // this node seems to not have any content
+//         return;
+//       }
+//       int nodeID = 0;
+//       float node_t0=tMin, node_t1 = accepted.tMax;
+//       if (!boxTest(node_t0,node_t1,nodes[0].bounds,org,dir)) {
+//         return;
+//       }
 
-      bool done = false;
-      bool inTopLevel = true;
-      while (true) {
-        while (true) {
-          while (nodeID == -1) {
-            if (stackPtr == topLevelStackBase) {
-              done = true;
-              break;
-            }
+//       bool done = false;
+//       bool inTopLevel = true;
+//       while (true) {
+//         while (true) {
+//           while (nodeID == -1) {
+//             if (stackPtr == topLevelStackBase) {
+//               done = true;
+//               break;
+//             }
             
-            if (stackPtr == stackBase) {
-              // going back to parent
-              org = world.org;
-              dir = world.dir;
-              currentInstance = 0;
-              nodes = model->bvh.nodes;
-              stackBase = topLevelStackBase;
-              currentInstance = 0;
-              inTopLevel = true;
-            }
-            --stackPtr;
-            if (stackPtr->dist > accepted.tMax)
-              continue;
-            nodeID = stackPtr->node;
-          }
-          if (done) break;
+//             if (stackPtr == stackBase) {
+//               // going back to parent
+//               org = world.org;
+//               dir = world.dir;
+//               currentInstance = 0;
+//               nodes = model->bvh.nodes;
+//               stackBase = topLevelStackBase;
+//               currentInstance = 0;
+//               inTopLevel = true;
+//             }
+//             --stackPtr;
+//             if (stackPtr->dist > accepted.tMax)
+//               continue;
+//             nodeID = stackPtr->node;
+//           }
+//           if (done) break;
 
-          const bvh3f::Node *node = &nodes[nodeID];          
-          if (node->admin.count == 0) {
-            uint32_t child = node->admin.offset;
-            float near0=tMin;
-            float near1=tMin;
-            float far0 =accepted.tMax;
-            float far1 =accepted.tMax;
-            nodeID = -1;
-            // if (dbg)
-            //   printf("checking child 0 (# %i)...\n",child+0);
-            boxTest(near0,far0,nodes[child+0].bounds,org,dir);
-            // if (dbg)
-            //   printf("-> %f %f, %s\n",near0,far0,near0<far0?"HIT":"miss");
-            // if (dbg)
-            //   printf("checking child 1 (# %i...\n",child+1);
-            boxTest(near1,far1,nodes[child+1].bounds,org,dir);
-            // if (dbg)
-            //   printf("-> %f %f %s\n",near1,far1,near1<far1?"HIT":"miss");
+//           const bvh3f::Node *node = &nodes[nodeID];          
+//           if (node->admin.count == 0) {
+//             uint32_t child = node->admin.offset;
+//             float near0=tMin;
+//             float near1=tMin;
+//             float far0 =accepted.tMax;
+//             float far1 =accepted.tMax;
+//             nodeID = -1;
+//             // if (dbg)
+//             //   printf("checking child 0 (# %i)...\n",child+0);
+//             boxTest(near0,far0,nodes[child+0].bounds,org,dir);
+//             // if (dbg)
+//             //   printf("-> %f %f, %s\n",near0,far0,near0<far0?"HIT":"miss");
+//             // if (dbg)
+//             //   printf("checking child 1 (# %i...\n",child+1);
+//             boxTest(near1,far1,nodes[child+1].bounds,org,dir);
+//             // if (dbg)
+//             //   printf("-> %f %f %s\n",near1,far1,near1<far1?"HIT":"miss");
             
-            if (near0 <= far0) {
-              nodeID = child+0;
-            }
-            if (near1 <= far1) {
-              if (near0 <= far0) {
-                if (near1 <= near0) {
-                  stackPtr->dist = near0;
-                  stackPtr->node = child+0;
-                  nodeID = child+1;
-                } else {
-                  stackPtr->dist = near1;
-                  stackPtr->node = child+1;
-                }
-                ++stackPtr;
-                if ((stackPtr - topLevelStackBase) >= STACK_DEPTH) {
-                  return;
-                }
-              } else {
-                nodeID = child+1;
-              }
-            }
-            continue;
-          }
-          if (done) break;
-          // leaf - either to or bottom...
-          if (inTopLevel) {
-            current.instID = model->bvh.primIDs[node->admin.offset];
-            currentInstance = model->instanceRecords+current.instID;
-            org = object.org = xfmPoint(currentInstance->worldToObjectXfm,world.org);
-            dir = object.dir = xfmVector(currentInstance->worldToObjectXfm,world.dir);
-            if (fabsf(dir.x) < 1e-6f) dir.x = 1e-6f;
-            if (fabsf(dir.y) < 1e-6f) dir.y = 1e-6f;
-            if (fabsf(dir.z) < 1e-6f) dir.z = 1e-6f;
-            nodes = currentInstance->group.bvhNodes;
-            nodeID = 0;
-            stackBase = stackPtr;
-            inTopLevel = false;
-          } else {
-            break;
-          }
-        }
-        if (done)
-          break;
+//             if (near0 <= far0) {
+//               nodeID = child+0;
+//             }
+//             if (near1 <= far1) {
+//               if (near0 <= far0) {
+//                 if (near1 <= near0) {
+//                   stackPtr->dist = near0;
+//                   stackPtr->node = child+0;
+//                   nodeID = child+1;
+//                 } else {
+//                   stackPtr->dist = near1;
+//                   stackPtr->node = child+1;
+//                 }
+//                 ++stackPtr;
+//                 if ((stackPtr - topLevelStackBase) >= STACK_DEPTH) {
+//                   return;
+//                 }
+//               } else {
+//                 nodeID = child+1;
+//               }
+//             }
+//             continue;
+//           }
+//           if (done) break;
+//           // leaf - either to or bottom...
+//           if (inTopLevel) {
+//             current.instID = model->bvh.primIDs[node->admin.offset];
+//             currentInstance = model->instanceRecords+current.instID;
+//             org = object.org = xfmPoint(currentInstance->worldToObjectXfm,world.org);
+//             dir = object.dir = xfmVector(currentInstance->worldToObjectXfm,world.dir);
+//             if (fabsf(dir.x) < 1e-6f) dir.x = 1e-6f;
+//             if (fabsf(dir.y) < 1e-6f) dir.y = 1e-6f;
+//             if (fabsf(dir.z) < 1e-6f) dir.z = 1e-6f;
+//             nodes = currentInstance->group.bvhNodes;
+//             nodeID = 0;
+//             stackBase = stackPtr;
+//             inTopLevel = false;
+//           } else {
+//             break;
+//           }
+//         }
+//         if (done)
+//           break;
 
-        GeomGroup::DeviceRecord *group 
-          = (GeomGroup::DeviceRecord *)&currentInstance->group;
-        GeomGroup::Prim *prims = group->prims;
-        const bvh3f::Node *node = nodes+nodeID;
-        for (int primNo=0;primNo<node->admin.count;primNo++) {
-          GeomGroup::Prim prim = prims[node->admin.offset+primNo];
-          current.primID = prim.primID;
-          current.geomID = prim.geomID;
-          current.tMax = accepted.tMax;
-          uint8_t *geomSBT = group->sbt + prim.geomID  * group->sbtEntrySize;
-          Geom::SBTHeader *header
-            = (Geom::SBTHeader *)geomSBT;
-          this->geomData = (header+1);
-          if (group->isTrianglesGroup) {
-            vec3i indices = header->triangles.indices[prim.primID];
-            vec3f v0 = header->triangles.vertices[indices.x];
-            vec3f v1 = header->triangles.vertices[indices.y];
-            vec3f v2 = header->triangles.vertices[indices.z];
-            if (!intersectTriangle(v0,v1,v2))
-              continue;
-          } else {
-            header->user.intersect(*this);
-            if (current.tMax >= accepted.tMax)
-              continue;
-          }
-          rejectThisHit = false;
-          if (header->ah) header->ah(*this);
-          if (!rejectThisHit) {
-            accepted.tMax = current.tMax;
-            accepted.primID = current.primID;
-            accepted.geomID = current.geomID;
-            accepted.instID = current.instID;
-            accepted.triangleBarycentrics = current.triangleBarycentrics;
-            acceptedSBT = header;
-          }
-        }
-        nodeID = -1;
-      }
-      if (acceptedSBT && acceptedSBT->ch) {
-        current = accepted;
-        this->geomData = (acceptedSBT+1);
-        acceptedSBT->ch(*this);
-      }
-    }
-#endif
+//         GeomGroup::DeviceRecord *group 
+//           = (GeomGroup::DeviceRecord *)&currentInstance->group;
+//         GeomGroup::Prim *prims = group->prims;
+//         const bvh3f::Node *node = nodes+nodeID;
+//         for (int primNo=0;primNo<node->admin.count;primNo++) {
+//           GeomGroup::Prim prim = prims[node->admin.offset+primNo];
+//           current.primID = prim.primID;
+//           current.geomID = prim.geomID;
+//           current.tMax = accepted.tMax;
+//           uint8_t *geomSBT = group->sbt + prim.geomID  * group->sbtEntrySize;
+//           Geom::SBTHeader *header
+//             = (Geom::SBTHeader *)geomSBT;
+//           this->geomData = (header+1);
+//           if (group->isTrianglesGroup) {
+//             vec3i indices = header->triangles.indices[prim.primID];
+//             vec3f v0 = header->triangles.vertices[indices.x];
+//             vec3f v1 = header->triangles.vertices[indices.y];
+//             vec3f v2 = header->triangles.vertices[indices.z];
+//             if (!intersectTriangle(v0,v1,v2))
+//               continue;
+//           } else {
+//             header->user.intersect(*this);
+//             if (current.tMax >= accepted.tMax)
+//               continue;
+//           }
+//           rejectThisHit = false;
+//           if (header->ah) header->ah(*this);
+//           if (!rejectThisHit) {
+//             accepted.tMax = current.tMax;
+//             accepted.primID = current.primID;
+//             accepted.geomID = current.geomID;
+//             accepted.instID = current.instID;
+//             accepted.triangleBarycentrics = current.triangleBarycentrics;
+//             acceptedSBT = header;
+//           }
+//         }
+//         nodeID = -1;
+//       }
+//       if (acceptedSBT && acceptedSBT->ch) {
+//         current = accepted;
+//         this->geomData = (acceptedSBT+1);
+//         acceptedSBT->ch(*this);
+//       }
+// #endif
+//     }
+// #endif
     
     inline __device__
     vec3f TraceInterface::transformNormalFromObjectToWorldSpace(vec3f v) const

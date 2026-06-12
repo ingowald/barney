@@ -40,7 +40,7 @@ namespace rtc {
         // 24..28b
         uint32_t sbtEntrySize;
         // 28b..32b
-        bool isTrianglesGroup;
+        uint32_t/*bool*/ isTrianglesGroup;
       };
 
       virtual DeviceRecord getRecord() = 0;

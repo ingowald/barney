@@ -28,12 +28,12 @@ namespace BARNEY_NS {
     return &perLogical[device->contextRank()];
   }
 
-#if RTC_DEVICE_CODE
   __rtc_global
   void BSField_rasterGrids(const rtc::ComputeInterface &ci,
                            BlockStructuredField::DD field,
                            MCGrid::DD               grid)
   {
+#if RTC_DEVICE_CODE
     const int tid = ci.launchIndex().x;
     if (tid >= field.numBlocks) return;
 
@@ -53,14 +53,15 @@ namespace BARNEY_NS {
         }
       }
     }
-  }
 #endif
+  }
   
   __rtc_global
   void computeWorldBounds(const rtc::ComputeInterface &ci,
                           box3f *pBounds,
                           const BlockStructuredField::DD dd)
   {
+#if RTC_DEVICE_CODE
     int tid = ci.launchIndex().x;
     if (tid >= dd.numBlocks)
       return;
@@ -73,6 +74,7 @@ namespace BARNEY_NS {
     rtc::fatomicMax(&pBounds->upper.x,bb.upper.x);
     rtc::fatomicMax(&pBounds->upper.y,bb.upper.y);
     rtc::fatomicMax(&pBounds->upper.z,bb.upper.z);
+#endif
   }
   
   MCGrid::SP BlockStructuredField::buildMCs()
@@ -160,13 +162,13 @@ namespace BARNEY_NS {
        sampler);
   }
 
-#if RTC_DEVICE_CODE
   __rtc_global
   void BSField_computeElementBBs(const rtc::ComputeInterface &ci,
                                  box3f         *d_primBounds,
                                  range1f       *d_primRanges,
                                  BlockStructuredField::DD field)
   {
+#if RTC_DEVICE_CODE
     const int tid = ci.launchIndex().x;
     if (tid >= field.numBlocks) return;
 
@@ -200,8 +202,8 @@ namespace BARNEY_NS {
     }
     
     if (d_primRanges) d_primRanges[tid] = block.getValueRange();
-  }
 #endif
+  }
     
   /*! computes, on specified device, the bounding boxes and - if
     d_primRanges is non-null - the primitmives ranges. d_primBounds

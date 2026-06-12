@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+#define FORCE_HOST_BUILDER 1
+#define CUBQL_CPU_BUILDER_IMPLEMENTATION 1
 
 #define CUBQL_GPU_BUILDER_IMPLEMENTATION 1
 
@@ -15,6 +17,7 @@
 #include "cuBQL/bvh.h"
 #include "cuBQL/builder/cuda.h"
 
+
 namespace rtc {
   namespace cuda {
     
@@ -26,7 +29,7 @@ namespace rtc {
     {
       SetActiveGPU forDuration(device);
       if (bvhNodes)
-        BARNEY_CUDA_CALL(Free(bvhNodes));
+        BARNEY_CUDA_CALL_NOTHROW(Free(bvhNodes));
     }
 
     InstanceGroup::InstanceGroup(Device *device,
@@ -46,9 +49,9 @@ namespace rtc {
       if (bvh.nodes)
         cuBQL::cuda::free(bvh,device->stream,memResource);
       if (d_instanceRecords)
-        BARNEY_CUDA_CALL(Free(d_instanceRecords));
+        BARNEY_CUDA_CALL_NOTHROW(Free(d_instanceRecords));
       if (d_deviceRecord)
-        BARNEY_CUDA_CALL(Free(d_deviceRecord));
+        BARNEY_CUDA_CALL_NOTHROW(Free(d_deviceRecord));
     }
 
     GeomGroup::GeomGroup(Device *device,
@@ -61,9 +64,9 @@ namespace rtc {
     {
       SetActiveGPU forDuration(device);
       if (sbt)
-        BARNEY_CUDA_CALL(Free(sbt));
+        BARNEY_CUDA_CALL_NOTHROW(Free(sbt));
       if (prims)
-        BARNEY_CUDA_CALL(Free(prims));
+        BARNEY_CUDA_CALL_NOTHROW(Free(prims));
       // bvhNodes is freed by ~Group()
     }
 
@@ -140,8 +143,11 @@ namespace rtc {
 
     void InstanceGroup::buildAccel()
     {
+      PING;
       SetActiveGPU forDuration(device);
 
+      BARNEY_CUDA_SYNC_CHECK();
+      
       // ------------------------------------------------------------------
       // create and upload instance records
       // ------------------------------------------------------------------
@@ -191,14 +197,59 @@ namespace rtc {
       }
       cuBQL::BuildConfig buildConfig;
       buildConfig.maxAllowedLeafSize = 1;
+#if FORCE_HOST_BUILDER
+      PING;
+      BARNEY_CUDA_SYNC_CHECK();
+      int numPrims = numInstances;
+      PRINT(numInstances);
+      std::vector<cuBQL::box3f> h_boxes(numPrims);
+      BARNEY_CUDA_CALL(Memcpy(h_boxes.data(),
+                              instBounds,
+                              numPrims*sizeof(*instBounds),
+                              cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
+      PRINT(numInstances);
+      for (auto box : h_boxes)
+        PRINT(box);
+      cuBQL::cpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)h_boxes.data(),
+                        numPrims,
+                        buildConfig);
+      PRINT(bvh.numPrims);
+      PRINT(bvh.numNodes);
+      typedef typename cuBQL::BinaryBVH<float,3>::node_t node3f;
+      node3f *d_nodes;
+      BARNEY_CUDA_CALL(Malloc((void **)&d_nodes,
+                              bvh.numNodes*sizeof(*d_nodes)));
+      BARNEY_CUDA_CALL(Memcpy(d_nodes,bvh.nodes,
+                              bvh.numNodes*sizeof(*d_nodes),
+                              cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
+      uint32_t *d_primIDs;
+      BARNEY_CUDA_CALL(Malloc((void **)&d_primIDs,
+                              numPrims*sizeof(*d_primIDs)));
+      BARNEY_CUDA_CALL(Memcpy(d_primIDs,bvh.primIDs,
+                              numPrims*sizeof(*d_primIDs),
+                              cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
+
+      delete[] bvh.nodes; bvh.nodes = d_nodes;
+      delete[] bvh.primIDs; bvh.primIDs = d_primIDs;
+      
+      PING;
+#else
       cuBQL::gpuBuilder(bvh,
                         (const cuBQL::box_t<float,3>*)instBounds,
                         numInstances,
                         buildConfig,
                         device->stream,
                         memResource);
+#endif
+      PING;
       device->sync();
+      PING;
       BARNEY_CUDA_CALL(Free(instBounds));
+      PING;
       
       // ------------------------------------------------------------------
       // allocate device descriptor
@@ -216,11 +267,14 @@ namespace rtc {
                               cudaMemcpyDefault));
       device->sync();
       d_accel = d_deviceRecord;
+      PING;
     }
     
     
     void TrianglesGeomGroup::buildAccel() 
     {
+      BARNEY_CUDA_SYNC_CHECK();
+      PING;
       SetActiveGPU forDuration(device);
 
       // ------------------------------------------------------------------
@@ -238,6 +292,7 @@ namespace rtc {
       // ------------------------------------------------------------------
       // write SBT, and upload
       // ------------------------------------------------------------------
+      PING;
       std::vector<uint8_t> hostSBT(geoms.size()*sbtEntrySize);
       uint8_t *sbtPointer = hostSBT.data();
       for (int i=0;i<geoms.size();i++) {
@@ -257,6 +312,7 @@ namespace rtc {
       if (sbt) BARNEY_CUDA_CALL(Free(sbt));
       BARNEY_CUDA_CALL(Malloc((void**)&sbt,hostSBT.size()));
       BARNEY_CUDA_CALL(Memcpy(sbt,hostSBT.data(),hostSBT.size(),cudaMemcpyDefault));
+      PING;
       
       // ------------------------------------------------------------------
       // count prims and alloc geom/prim descriptors
@@ -270,6 +326,8 @@ namespace rtc {
       if (prims) BARNEY_CUDA_CALL(Free(prims));
       BARNEY_CUDA_CALL(Malloc((void**)&prims,numPrims*sizeof(Prim)));
 
+      BARNEY_CUDA_SYNC_CHECK();
+      PING;
       // ------------------------------------------------------------------
       // write geom/prim descriptors
       // ------------------------------------------------------------------
@@ -282,20 +340,26 @@ namespace rtc {
         ofs += count;
       }
 
+      BARNEY_CUDA_SYNC_CHECK();
       device->sync();
 
+      PING;
       // ------------------------------------------------------------------
       // alloc and write triangle bboxes 
       // ------------------------------------------------------------------
       box3f *primBounds = 0;
       BARNEY_CUDA_CALL(Malloc((void**)&primBounds,numPrims*sizeof(box3f)));
       
+      BARNEY_CUDA_SYNC_CHECK();
       createTriangleBounds
-        <<<divRoundUp(numPrims,1024),1024,0,device->stream>>>
+        <<<divRoundUp(numPrims,128),128,0,device->stream>>>
         (primBounds,sbt,sbtEntrySize,prims,numPrims);
       
+      BARNEY_CUDA_SYNC_CHECK();
       device->sync();
+      BARNEY_CUDA_SYNC_CHECK();
       
+      PING;
       // ------------------------------------------------------------------
       // build the bvh
       // ------------------------------------------------------------------
@@ -304,9 +368,50 @@ namespace rtc {
         this->bvhNodes = 0;
       }
       cuBQL::bvh3f bvh;
-      cuBQL::DeviceMemoryResource memResource;
       cuBQL::BuildConfig buildConfig;
+#if FORCE_HOST_BUILDER
+      PING;
+      BARNEY_CUDA_SYNC_CHECK();
+      std::vector<cuBQL::box3f> h_boxes(numPrims);
+      BARNEY_CUDA_CALL(Memcpy(h_boxes.data(),
+                              primBounds,
+                              numPrims*sizeof(*primBounds),
+                              cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
+      cuBQL::cpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)h_boxes.data(),
+                        numPrims,
+                        buildConfig);
+      PRINT(bvh.numPrims);
+      PRINT(bvh.numNodes);
+      typedef typename cuBQL::BinaryBVH<float,3>::node_t node3f;
+      node3f *d_nodes;
+      BARNEY_CUDA_CALL(Malloc((void **)&d_nodes,
+                              bvh.numNodes*sizeof(*d_nodes)));
+      BARNEY_CUDA_CALL(Memcpy(d_nodes,bvh.nodes,
+                              bvh.numNodes*sizeof(*d_nodes),
+                              cudaMemcpyDefault));
+      uint32_t *d_primIDs;
+      BARNEY_CUDA_CALL(Malloc((void **)&d_primIDs,
+                              numPrims*sizeof(*d_primIDs)));
+      BARNEY_CUDA_CALL(Memcpy(d_primIDs,bvh.primIDs,
+                              numPrims*sizeof(*d_primIDs),
+                              cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
+      delete[] bvh.nodes; bvh.nodes = d_nodes;
+      delete[] bvh.primIDs; bvh.primIDs = d_primIDs;
+      
+      // free(bvh.nodes); bvh.nodes = d_nodes;
+      // free(bvh.primIDs); bvh.primIDs = d_primIDs;
+      
+      PING;
+#else
       buildConfig.maxAllowedLeafSize = 4;
+      cuBQL::DeviceMemoryResource memResource;
+
+      PRINT(numPrims);
+      BARNEY_CUDA_SYNC_CHECK();
+      
       cuBQL::gpuBuilder(bvh,
                         (const cuBQL::box_t<float,3>*)primBounds,
                         numPrims,
@@ -314,7 +419,10 @@ namespace rtc {
                         device->stream,
                         memResource);
       device->sync();
+#endif
+      PING;
       BARNEY_CUDA_CALL(Free(primBounds));
+      PING;
       
       // ------------------------------------------------------------------
       // reorder prims, store bvh, and release what we no longer need
@@ -323,7 +431,7 @@ namespace rtc {
       GeomGroup::Prim *reorderedPrims = 0;
       BARNEY_CUDA_CALL(Malloc((void**)&reorderedPrims,numPrims*sizeof(GeomGroup::Prim)));
       reorderPrims
-        <<<divRoundUp(numPrims,1024),1024,0,device->stream>>>
+        <<<divRoundUp(numPrims,128),128,0,device->stream>>>
         (reorderedPrims,prims,bvh.primIDs,numPrims);
       
       device->sync();
@@ -332,6 +440,7 @@ namespace rtc {
 
       BARNEY_CUDA_CALL(Free(bvh.primIDs));
       bvh.primIDs = 0;
+      PING;
     }
     
 
@@ -425,6 +534,43 @@ namespace rtc {
       buildConfig.maxAllowedLeafSize = 4;
       buildConfig.enableSAH();
       // buildConfig.makeLeafThreshold = 4;
+#if FORCE_HOST_BUILDER
+      PING;
+      BARNEY_CUDA_SYNC_CHECK();
+      std::vector<cuBQL::box3f> h_boxes(numPrims);
+      BARNEY_CUDA_CALL(Memcpy(h_boxes.data(),
+                              primBounds,
+                              numPrims*sizeof(*primBounds),
+                              cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
+      cuBQL::cpuBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)h_boxes.data(),
+                        numPrims,
+                        buildConfig);
+      PRINT(bvh.numPrims);
+      PRINT(bvh.numNodes);
+      typedef typename cuBQL::BinaryBVH<float,3>::node_t node3f;
+      node3f *d_nodes;
+      BARNEY_CUDA_CALL(Malloc((void **)&d_nodes,
+                              bvh.numNodes*sizeof(*d_nodes)));
+      BARNEY_CUDA_CALL(Memcpy(d_nodes,bvh.nodes,
+                              bvh.numNodes*sizeof(*d_nodes),
+                              cudaMemcpyDefault));
+      uint32_t *d_primIDs;
+      BARNEY_CUDA_CALL(Malloc((void **)&d_primIDs,
+                              numPrims*sizeof(*d_primIDs)));
+      BARNEY_CUDA_CALL(Memcpy(d_primIDs,bvh.primIDs,
+                              numPrims*sizeof(*d_primIDs),
+                              cudaMemcpyDefault));
+
+      delete[] bvh.nodes; bvh.nodes = d_nodes;
+      delete[] bvh.primIDs; bvh.primIDs = d_primIDs;
+      
+      // free(bvh.nodes); bvh.nodes = d_nodes;
+      // free(bvh.primIDs); bvh.primIDs = d_primIDs;
+      
+      PING;
+#else
       cuBQL::gpuBuilder(bvh,
                         (const cuBQL::box_t<float,3>*)primBounds,
                         numPrims,
@@ -432,6 +578,8 @@ namespace rtc {
                         device->stream,
                         memResource);
       device->sync();
+#endif
+      PING;
       BARNEY_CUDA_CALL(Free(primBounds));
       
       // ------------------------------------------------------------------
@@ -447,6 +595,7 @@ namespace rtc {
       device->sync();
       BARNEY_CUDA_CALL(Free(prims));
       this->prims = reorderedPrims;
+      bvh.primIDs = 0;
 
       BARNEY_CUDA_CALL(Free(bvh.primIDs));
     }

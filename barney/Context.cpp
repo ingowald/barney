@@ -144,6 +144,7 @@ namespace BARNEY_NS {
                             Camera      *camera,
                             FrameBuffer *fb)
   {
+    PING;
     auto _context = this;
     if (!isActiveWorker)
       return;
@@ -191,7 +192,6 @@ namespace BARNEY_NS {
   void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
   {
     // if (myRank() == 0) printf("globaltrace....\n");
-    
     if (FromEnv::get()->logQueues) 
       printf("(mr%i) traceRaysGlobally\n",myRank());
     globalTraceImpl->traceRays(model,rngSeed,needHitIDs);

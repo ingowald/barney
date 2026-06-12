@@ -23,14 +23,22 @@ target_compile_definitions(barney_config_ptx
 )
 
 macro(set_library_properties tgt)
+  target_link_options(barney_rtc_cuda PUBLIC
+    "--hip-link;-fgpu-rdc"
+  )
+
   set_target_properties(${tgt}
     PROPERTIES
-    CUDA_SEPARABLE_COMPILATION   ON
     POSITION_INDEPENDENT_CODE    ON
+    CXX_VISIBILITY_PRESET  hidden
+    CUDA_SEPARABLE_COMPILATION   ON
     CUDA_USE_STATIC_CUDA_RUNTIME ON
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
-    CXX_VISIBILITY_PRESET  hidden
     CUDA_VISIBILITY_PRESET hidden
+    HIP_SEPARABLE_COMPILATION   ON
+    HIP_USE_STATIC_HIP_RUNTIME ON
+    HIP_RESOLVE_DEVICE_SYMBOLS  ON
+#    HIP_VISIBILITY_PRESET hidden
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
@@ -39,7 +47,6 @@ else()
 endif()
 endmacro()
 
-
 # in the barney backend all sources will only use host-side code, but
 # we can still compile them with nvcc if it's avaible - so _if_ nvcc
 # is available we leave the language for .cu files on 'cuda' in order
@@ -47,7 +54,18 @@ endmacro()
 # backends; but if there's no cuda vailable we have to change the
 # language to CPP else cmake will just skip these sources.
 macro(configure_cuda_source src)
-  if (NOT BARNEY_HAVE_CUDA)
+  if(USE_EXP)
+    get_filename_component(ext "${src}" EXT)
+    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+      message("setting language of ${src} to ${EXP_LANGUAGE}")
+      set_source_files_properties(${src}
+        # -rdc=true is for relocatable code, can be resolved at link time.
+        PROPERTIES LANGUAGE ${EXP_LANGUAGE}
+#        COMPILE_OPTIONS "-mprintf-kind=buffered"
+        #COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+      )
+    endif()
+  elseif (NOT BARNEY_HAVE_CUDA)
     get_filename_component(ext "${src}" EXT)
     if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
       message("setting language of ${src} to CXX")
@@ -338,12 +356,16 @@ endif()
 # ------------------------------------------------------------------
 if (BARNEY_BACKEND_CUDA)
   # ----------- barney_cuda -----------
-  add_library(barney_cuda_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
+#  add_library(barney_cuda_programs OBJECT#STATIC
+  add_library(barney_cuda_programs STATIC
+    ${DEVICE_PROGRAM_SOURCES})  
   target_link_libraries(barney_cuda_programs PUBLIC barney_config barney_rtc_cuda)
   target_compile_definitions(barney_cuda_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
   set_library_properties(barney_cuda_programs)
 
-  add_library(barney_cuda STATIC ${HOST_SOURCES})
+  add_library(barney_cuda STATIC
+#  add_library(barney_cuda OBJECT#STATIC
+    ${HOST_SOURCES})
   target_link_libraries(barney_cuda PUBLIC barney_config barney_rtc_cuda)
   if (TARGET cuBQL_cuda_float3_static)
     target_link_libraries(barney_cuda PRIVATE
@@ -378,6 +400,9 @@ configure_cuda_source(api/barney.cu)
 add_library(${BARNEY_DEVICE_NAME} SHARED api/barney.cu)
 target_link_libraries(${BARNEY_DEVICE_NAME} PUBLIC
   $<BUILD_INTERFACE:barney_config>
+  $<BUILD_INTERFACE:barney_rtc_cuda_common>
+  $<BUILD_INTERFACE:barney_rtc_cuda>
+  $<BUILD_INTERFACE:barney_cuda>
 )
 set_library_properties(${BARNEY_DEVICE_NAME})
 target_include_directories(${BARNEY_DEVICE_NAME} PUBLIC

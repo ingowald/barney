@@ -39,7 +39,7 @@ namespace BARNEY_NS {
       
       return xfmVector(toWorld,dir);
     }
-
+#endif
 
     __rtc_global
     void _generateRays(const rtc::ComputeInterface &rt,
@@ -65,6 +65,9 @@ namespace BARNEY_NS {
                        TileDesc *tileDescs,
                        bool enablePerRayDebug
                        )
+#if !RTC_DEVICE_CODE
+    ;
+#else
     {
       // ------------------------------------------------------------------
       int tileID   = rt.getBlockIdx().x;
@@ -147,7 +150,7 @@ namespace BARNEY_NS {
           uvToWorld(omni.toWorld,image_u,image_v);
        }
       
-#ifdef NDEBUG
+#if 0 //def NDEBUG
       ray._dbg        = 0;
       ray.crosshair   = 0;
 #else
@@ -165,11 +168,24 @@ namespace BARNEY_NS {
         = enablePerRayDebug && (crossHair_x || crossHair_y);
 #endif
 
+
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
       ray.tMax        = 1e30f;
-
+#ifdef NDEBUG
+#else
+      int B = 32;
+      if (ix < (dbg_target_x - B)
+          ||
+          ix >= (dbg_target_x + B)
+          ||
+          iy < (dbg_target_y - B)
+          ||
+          iy >= (dbg_target_y + B)
+          ) 
+        ray.tMax        = 0.f;
+#endif
       // Apply cutting plane (disabled if w < -1e28f)
       if (renderer.cutPlane.w > -1e28f) {
         vec3f N = vec3f(renderer.cutPlane.x,
@@ -300,6 +316,7 @@ namespace BARNEY_NS {
       device->rayQueue->swapAfterGeneration();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
     }
+    PING;
   }
   
 }

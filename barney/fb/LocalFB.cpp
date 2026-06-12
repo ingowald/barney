@@ -15,24 +15,29 @@ namespace BARNEY_NS {
                        vec2i size,
                        uint32_t channels)
   {
+    PING;
     Device *frontDev = getDenoiserDevice();
     for (auto device : *devices) {
       auto devFB = getFor(device);
     }
     
+    PING;
     auto rtc = frontDev->rtc;
     FrameBuffer::resize(colorFormat,size,channels);
     
     if (onOwner.tileDescs)
       rtc->freeMem(onOwner.tileDescs);
+    PING;
 
     onOwner.sumTiles = 0;
     for (auto device : *devices)
       onOwner.sumTiles += getFor(device)->numActiveTilesThisGPU;
 
+    PING;
     onOwner.tileDescs
       = (TileDesc *)rtc->allocMem(onOwner.sumTiles*sizeof(TileDesc));
     TileDesc *dst = onOwner.tileDescs;
+    PING;
     for (auto device : *devices) {
       SetActiveGPU forDuration(device);
       auto devFB = getFor(device);
@@ -42,8 +47,10 @@ namespace BARNEY_NS {
       dst += devFB->numActiveTilesThisGPU;
     }
     
+    PING;
     for (auto device : *devices)
       device->sync();
+    PING;
   }
   
   LocalFB::~LocalFB()

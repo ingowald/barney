@@ -248,6 +248,7 @@ namespace barney_device {
 
     uploadInstanceAttributes(attributes);
     bnBuild(barneyModel, slot);
+    PING;
   }
 
   void World::transformOnlyUpdate()

@@ -62,10 +62,12 @@ namespace BARNEY_NS {
       _localRank(localRank),
       _globalRank(topo->myOffset+localRank)
   {
+    PING;
     assert(_localRank == topo->allDevices[_globalRank].local); 
     rayQueue = new RayQueue(this);
     traceRays
       = createTrace_traceRays(rtc);
+    PING;
   }
 
   Device::~Device()

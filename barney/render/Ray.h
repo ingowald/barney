@@ -63,6 +63,8 @@ namespace BARNEY_NS {
       inline __rtc_device vec3f getN() const  { return unpackNormal(); }
 #endif
 
+      int hip_dbg;
+      
       vec3f   org;
       vec3f   dir;
       float   tMax;

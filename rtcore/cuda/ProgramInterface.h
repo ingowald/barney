@@ -120,6 +120,7 @@ namespace rtc {
       // ray/traversal state:
       void  *prd;
       const void  *geomData;
+      uint64_t debugValue = 0;
       float  tMin;
       Geom::SBTHeader *acceptedSBT;
       struct {
@@ -252,7 +253,8 @@ namespace rtc {
     device->sync();                                                     \
     rtc::Geom::SBTHeader hh;                                            \
     BARNEY_CUDA_CALL(Memcpy(&hh,h,sizeof(hh),cudaMemcpyDefault));       \
-    return new rtc::TrianglesGeomType                                   \
+    PING; PRINT((int*)hh.ah); PRINT((int*)hh.ch);                             \
+    return new rtc::TrianglesGeomType                                 \
       (device,                                                          \
        sizeof(DD),                                                      \
        hh.ah,                                                           \
