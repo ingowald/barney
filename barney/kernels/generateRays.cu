@@ -144,22 +144,23 @@ namespace BARNEY_NS {
           uvToWorld(omni.toWorld,image_u,image_v);
        }
       
-#ifdef NDEBUG
       ray._dbg        = 0;
       ray.crosshair   = 0;
+#ifdef NDEBUG
+      // debug prints and crosshairs always off
 #else
-      int dbg_target_x = fbSize.x/2;
-      int dbg_target_y = fbSize.y/2;
-      
-      // dbg_target_x += 230;
-      // dbg_target_y += 80;
-      
-      bool crossHair_x = (ix == dbg_target_x);
-      bool crossHair_y = (iy == dbg_target_y);
-
-      ray._dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
-      ray.crosshair
-        = enablePerRayDebug && (crossHair_x || crossHair_y);
+      if (enablePerRayDebug) {
+        int dbg_target_x = fbSize.x/2;
+        int dbg_target_y = fbSize.y/2;
+        
+        bool crossHair_x = (ix == dbg_target_x);
+        bool crossHair_y = (iy == dbg_target_y);
+        
+        ray._dbg
+          = (crossHair_x && crossHair_y);
+        ray.crosshair
+          = (crossHair_x || crossHair_y);
+      }
 #endif
 
 
@@ -167,19 +168,6 @@ namespace BARNEY_NS {
       ray.isShadowRay = false;
       ray.isInMedium  = false;
       ray.tMax        = 1e30f;
-#ifdef NDEBUG
-#else
-      int B = 32;
-      if (ix < (dbg_target_x - B)
-          ||
-          ix >= (dbg_target_x + B)
-          ||
-          iy < (dbg_target_y - B)
-          ||
-          iy >= (dbg_target_y + B)
-          ) 
-        ray.tMax        = 0.f;
-#endif
       // Apply cutting plane (disabled if w < -1e28f)
       if (renderer.cutPlane.w > -1e28f) {
         vec3f N = vec3f(renderer.cutPlane.x,

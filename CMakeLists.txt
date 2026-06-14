@@ -16,7 +16,7 @@ cmake_policy(SET CMP0076 NEW)
 cmake_policy(SET CMP0063 NEW)
 
 
-set(CMAKE_HIP_FLAGS "-fgpu-rdc --hip-link ")
+#DEP set(CMAKE_HIP_FLAGS "-fgpu-rdc --hip-link ")
 
 option(BARNEY_MPI "Enable MPI Support" OFF)
 
@@ -31,9 +31,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
-set(CMAKE_HIP_ARCHITECTURES gfx1100)
+#DEPset(CMAKE_HIP_ARCHITECTURES gfx1100)
 
-project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX HIP)
+project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX#DEP HIP
+)
 include(GNUInstallDirs)
 
 option(USE_EXP "Experimental Pluggable Backend" OFF)

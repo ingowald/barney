@@ -45,41 +45,30 @@ endmacro()
 # to let the same sources be properly compiled for non-embree
 # backends; but if there's no cuda vailable we have to change the
 # language to CPP else cmake will just skip these sources.
-macro(configure_cuda_source src)
-  if(USE_EXP)
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
-      message("setting language of ${src} to ${EXP_LANGUAGE}")
-      set_source_files_properties(${src}
-        # -rdc=true is for relocatable code, can be resolved at link time.
-        PROPERTIES LANGUAGE ${EXP_LANGUAGE}
-#        COMPILE_OPTIONS "-mprintf-kind=buffered"
-        #COMPILE_OPTIONS "--extended-lambda;-rdc=true"
-      )
-    endif()
-  elseif (NOT BARNEY_HAVE_CUDA)
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
-      message("setting language of ${src} to CXX")
-      set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
-      if (NOT WIN32)
-        set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
-      endif()
-    endif()
-  else()
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
-      set_source_files_properties(${src}
-        # -rdc=true is for relocatable code, can be resolved at link time.
-        PROPERTIES COMPILE_OPTIONS "--extended-lambda;-rdc=true"
-      )
-    endif()
-#    set_property(
-#      TARGET barney_config
-#      APPEND
-#      PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
-  endif()
-endmacro()
+# macro(configure_cuda_source src)
+#   if (NOT BARNEY_HAVE_CUDA)
+#     get_filename_component(ext "${src}" EXT)
+#     if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+#       message("setting language of ${src} to CXX")
+#       set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
+#       if (NOT WIN32)
+#         set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
+#       endif()
+#     endif()
+#   else()
+#     get_filename_component(ext "${src}" EXT)
+#     if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+#       set_source_files_properties(${src}
+#         # -rdc=true is for relocatable code, can be resolved at link time.
+#         PROPERTIES COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+#       )
+#     endif()
+# #    set_property(
+# #      TARGET barney_config
+# #      APPEND
+# #      PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+#   endif()
+# endmacro()
 
 
 

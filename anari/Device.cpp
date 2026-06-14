@@ -365,7 +365,6 @@ namespace barney_device {
         // we're an independent device that didn't have any cuda gpu
         // explicitly attached to it.... which means we could in theory
         // use multiple GPU
-        std::cout << "#banari: enable_multiGPU = "<<m_enable_multiGPU << std::endl;
         if (m_enable_multiGPU) {
         } else {
           _gpuIDs = nullptr;

@@ -14,14 +14,6 @@ macro(rtc_library_properties tgt)
     POSITION_INDEPENDENT_CODE    ON
     CXX_VISIBILITY_PRESET  hidden
     VISIBILITY_INLINES_HIDDEN ON
-#    CUDA_SEPARABLE_COMPILATION   ON
-#    CUDA_USE_STATIC_CUDA_RUNTIME ON
-#    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
-#    CUDA_VISIBILITY_PRESET hidden
-    HIP_SEPARABLE_COMPILATION   ON
-    HIP_USE_STATIC_HIP_RUNTIME ON
-    HIP_RESOLVE_DEVICE_SYMBOLS  ON
-#    HIP_VISIBILITY_PRESET hidden
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
@@ -164,12 +156,8 @@ if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
     )
   list(APPEND RTCORE_SOURCES ${BACKEND_CUDA_COMMON_SOURCES})
 
-#  add_library(barney_rtc_cuda_common OBJECT #STATIC
   add_library(barney_rtc_cuda_common STATIC
     ${BACKEND_CUDA_COMMON_SOURCES}
-  )
-  target_link_options(barney_rtc_cuda_common PUBLIC
-    "--hip-link;-fgpu-rdc"
   )
 
   target_link_libraries(barney_rtc_cuda_common PUBLIC
@@ -184,15 +172,6 @@ set_target_properties(barney_rtc_cuda_common
   PROPERTIES
   CXX_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
-#  POSITION_INDEPENDENT_CODE ON
-#  CUDA_SEPARABLE_COMPILATION ON
-#  CUDA_VISIBILITY_PRESET hidden
-#  CUDA_USE_STATIC_CUDA_RUNTIME ON
-#  CUDA_RESOLVE_DEVICE_SYMBOLS ON
-  HIP_SEPARABLE_COMPILATION ON
-#  HIP_VISIBILITY_PRESET hidden
-HIP_USE_STATIC_HIP_RUNTIME ON
-HIP_RESOLVE_DEVICE_SYMBOLS ON
   )
   rtc_library_properties(barney_rtc_cuda_common)
 else()
@@ -201,7 +180,6 @@ endif()
 
 # ==================================================================
 if (BARNEY_BACKEND_OPTIX)
-  message("ENabling optix backend")
   add_library(barney_rtc_optix STATIC
     optix/Denoiser.h
     optix/Denoiser.cpp
@@ -223,7 +201,6 @@ if (BARNEY_BACKEND_OPTIX)
     PUBLIC -DBARNEY_RTC_OPTIX=1)
   rtc_library_properties(barney_rtc_optix)
   if (BARNEY_DISABLE_DENOISING)
-    message("DISabling optix denoising")
     target_compile_definitions(barney_rtc_optix
       PUBLIC -DOPTIX_DISABLE_DENOISING=1)
   endif()
@@ -232,7 +209,6 @@ else()
   # just link to it without having to do any checking
   add_library(barney_rtc_optix INTERFACE) 
 endif()
-
 
 # ==================================================================
 if (BARNEY_BACKEND_CUDA)
@@ -250,8 +226,6 @@ if (BARNEY_BACKEND_CUDA)
     cuda/GeomType.h
     cuda/GeomType.cpp
   )
-  message("ENabling native cuda backend")
-#  add_library(barney_rtc_cuda OBJECT #STATIC
   add_library(barney_rtc_cuda STATIC
     ${BACKEND_CUDA_SOURCES}
   )
@@ -292,42 +266,30 @@ if (BARNEY_BACKEND_CUDA)
 endif()
 
 
-
-
-macro(configure_cuda_source src)
-  if(USE_EXP)
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
-      message("setting language of ${src} to ${EXP_LANGUAGE}")
-      set_source_files_properties(${src}
-        # -rdc=true is for relocatable code, can be resolved at link time.
-        PROPERTIES LANGUAGE ${EXP_LANGUAGE}
-        #COMPILE_OPTIONS "--extended-lambda;-rdc=true"
-      )
-    endif()
-  elseif (NOT BARNEY_HAVE_CUDA)
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
-      message("setting language of ${src} to CXX")
-      set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
-      if (NOT WIN32)
-        set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
+if (COMMAND configure_cuda_source)
+  # macro already defined
+else()
+  macro(configure_cuda_source src)
+    if (NOT BARNEY_HAVE_CUDA)
+      get_filename_component(ext "${src}" EXT)
+      if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+        message("setting language of ${src} to CXX")
+        set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
+        if (NOT WIN32)
+          set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
+        endif()
+      endif()
+    else()
+      get_filename_component(ext "${src}" EXT)
+      if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+        set_source_files_properties(${src}
+          # -rdc=true is for relocatable code, can be resolved at link time.
+          PROPERTIES COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+        )
       endif()
     endif()
-  else()
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
-      set_source_files_properties(${src}
-        # -rdc=true is for relocatable code, can be resolved at link time.
-        PROPERTIES COMPILE_OPTIONS "--extended-lambda;-rdc=true"
-      )
-    endif()
-#    set_property(
-#      TARGET barney_config
-#      APPEND
-#      PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
-  endif()
-endmacro()
+  endmacro()
+endif()
 
 foreach(src ${RTCORE_SOURCES})
   configure_cuda_source(${src})
