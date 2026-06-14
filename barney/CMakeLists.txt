@@ -23,10 +23,6 @@ target_compile_definitions(barney_config_ptx
 )
 
 macro(set_library_properties tgt)
-  target_link_options(barney_rtc_cuda PUBLIC
-    "--hip-link;-fgpu-rdc"
-  )
-
   set_target_properties(${tgt}
     PROPERTIES
     POSITION_INDEPENDENT_CODE    ON
@@ -35,10 +31,6 @@ macro(set_library_properties tgt)
     CUDA_USE_STATIC_CUDA_RUNTIME ON
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
     CUDA_VISIBILITY_PRESET hidden
-    HIP_SEPARABLE_COMPILATION   ON
-    HIP_USE_STATIC_HIP_RUNTIME ON
-    HIP_RESOLVE_DEVICE_SYMBOLS  ON
-#    HIP_VISIBILITY_PRESET hidden
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")

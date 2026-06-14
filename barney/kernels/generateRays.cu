@@ -83,13 +83,7 @@ namespace BARNEY_NS {
       state.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
-// #if NEW_RNG
-      // ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
       ray.rngSeed.seed(ix+accumID*fbSize.x,iy);
-// #else
-      // ray.rngSeed.seed(ix+fbSize.x*(accumID),iy+fbSize.y*(accumID));
-// #endif
-
 
       float pixel_u = ((accumID == 0) ? .5f : rand());
       float pixel_v = ((accumID == 0) ? .5f : rand());
@@ -150,7 +144,7 @@ namespace BARNEY_NS {
           uvToWorld(omni.toWorld,image_u,image_v);
        }
       
-#if 0 //def NDEBUG
+#ifdef NDEBUG
       ray._dbg        = 0;
       ray.crosshair   = 0;
 #else
