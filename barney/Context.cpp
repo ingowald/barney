@@ -144,7 +144,6 @@ namespace BARNEY_NS {
                             Camera      *camera,
                             FrameBuffer *fb)
   {
-    PING;
     auto _context = this;
     if (!isActiveWorker)
       return;

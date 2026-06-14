@@ -69,12 +69,8 @@ __global__ void add(float *a, float *b, float *c, int N)
       checkHip();
       int saved = setActive();
       BARNEY_CUDA_SYNC_CHECK();
-#if 1
-      PING; BARNEY_CUDA_CALL(StreamCreate(&stream)); PING;
-#else
       BARNEY_CUDA_CALL(StreamCreateWithFlags(&stream,cudaStreamNonBlocking));
       // BARNEY_CUDA_CALL(StreamCreate(&stream));
-#endif
       restoreActive(saved);
       BARNEY_CUDA_SYNC_CHECK();
       checkHip();
@@ -159,13 +155,11 @@ __global__ void add(float *a, float *b, float *c, int N)
 
     void Device::freeTextureData(TextureData *td)
     {
-      PING;
       if (td) delete td;
     }
     
     void Device::freeTexture(Texture *tex)
     {
-      PING;
       if (tex) delete tex;
     }
     
@@ -174,14 +168,12 @@ __global__ void add(float *a, float *b, float *c, int N)
                               rtc::DataType format,
                               const void *texels) 
     {
-      PING;
       SetActiveGPU forDuration(this);
       return new TextureData(this,dims,format,texels);
     }
 
     Texture *TextureData::createTexture(const TextureDesc &desc) 
     {
-      PING;
       SetActiveGPU forDuration(device);
       return new Texture(this,desc);
     }    
@@ -190,12 +182,6 @@ __global__ void add(float *a, float *b, float *c, int N)
         successful, else if at least one pair does not work */
     bool enablePeerAccess(const std::vector<int> &gpuIDs)
     {
-#if 1
-      PING;
-      PING;
-      return true;
-#endif
-      PING;
       if (gpuIDs.size() == 1) return true;
 #define LOG(a) ss << "#bn." << a << std::endl;
 

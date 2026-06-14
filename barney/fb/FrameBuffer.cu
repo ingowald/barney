@@ -389,19 +389,16 @@ namespace BARNEY_NS {
                            vec2i size,
                            uint32_t channels)
   {
-    PING;
     this->channels = channels;
     this->colorChannelFormat = colorFormat;
 
     freeResources();
-    PING;
 
     // display resolution - keep exactly as the app requested so the
     // ANARI frame reports the same size back and the pipeline's
     // block-copy fast path is used (no stride mismatch).
     numPixels = size;
 
-    PING;
     // when upscaling, render at half resolution (ceiling division so
     // that renderPixels covers at least numPixels/2 in each dim; the
     // upscale kernel clamps edge pixels with min()).
@@ -411,15 +408,11 @@ namespace BARNEY_NS {
       renderPixels = numPixels;
     }
 
-    PING;
     // tiles render at renderPixels
     for (auto device : *devices) {
-      PING;
       getFor(device)->resize(channels, renderPixels);
-      PING;
     }
 
-    PING;
     size_t sizeOfPixel
       = (colorFormat == BN_FLOAT4)
       ? sizeof(vec4f)
@@ -453,7 +446,6 @@ namespace BARNEY_NS {
         denoiser->resize(renderPixels);
       }
     }
-    PING;
   }
 
   FrameBuffer::PLD *FrameBuffer::getPLD(Device *device)

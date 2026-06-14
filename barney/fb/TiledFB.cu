@@ -196,16 +196,13 @@ namespace BARNEY_NS {
   void freeAndSetNull(Device *device, T *&pMem)
   {
     if (pMem) {
-      PING; PRINT(pMem);
       device->rtc->freeMem(pMem);
-      PING;
       pMem = nullptr;
     }
   }
   
   void TiledFB::free()
   {
-    PING;
     SetActiveGPU forDuration(device);
     freeAndSetNull(device,tileDescs);
     freeAndSetNull(device,accumTiles);
@@ -214,7 +211,6 @@ namespace BARNEY_NS {
     freeAndSetNull(device,auxTiles.objID);
     freeAndSetNull(device,auxTiles.depth);
 
-    PING;
     if (appDevice) {
       SetActiveGPU forDuration(appDevice);
       freeAndSetNull(appDevice,appTileDescs);
@@ -224,7 +220,6 @@ namespace BARNEY_NS {
       freeAndSetNull(appDevice,appAuxTiles.objID);
       freeAndSetNull(appDevice,appAuxTiles.depth);
     }
-    PING;
   }
 
   __rtc_global
@@ -266,14 +261,9 @@ namespace BARNEY_NS {
   void TiledFB::resize(uint32_t channels,
                        vec2i newSize)
   {
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
     free();
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
     SetActiveGPU forDuration(device);
 
-    PING;
     numPixels = newSize;
     numTiles  = divRoundUp(numPixels,vec2i(tileSize));
     numActiveTilesThisGPU
@@ -291,8 +281,6 @@ namespace BARNEY_NS {
       appAccumTiles
         = (AccumTile *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(AccumTile));
     }
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
     // ------------------------------------------------------------------
     // aux channel tiles
     // ------------------------------------------------------------------
@@ -301,7 +289,6 @@ namespace BARNEY_NS {
       assert(device);
       tiles = (AuxChannelTile *)device->rtc->allocMem
         (numActiveTilesThisGPU*sizeof(*tiles));
-      PRINT(numActiveTilesThisGPU*sizeof(*tiles));
     };
 
     if (channels & BN_FB_PRIMID) alloc(device,auxTiles.primID);
@@ -316,52 +303,16 @@ namespace BARNEY_NS {
       if (channels & BN_FB_DEPTH)  alloc(appDevice,appAuxTiles.depth);
     }
     
-    PING;
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
     // ------------------------------------------------------------------
     // tile descs
     // ------------------------------------------------------------------
-    PRINT(numActiveTilesThisGPU * sizeof(TileDesc));
-#if 1
     tileDescs
       = (TileDesc *)device->rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
-#else
-    BARNEY_CUDA_CALL(MallocManaged((void**)&tileDescs,
-                                   numActiveTilesThisGPU*sizeof(TileDesc)));
-#endif
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
     if (appDevice) {
-      PING;
-      BARNEY_CUDA_SYNC_CHECK();
       SetActiveGPU forDuration(appDevice);
-      PING;
-      BARNEY_CUDA_SYNC_CHECK();
       appTileDescs
         = (TileDesc *)appDevice->rtc->allocMem(numActiveTilesThisGPU * sizeof(TileDesc));
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
     }
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
-    PRINT(numActiveTilesThisGPU);
-    PRINT(numTiles);
-    PRINT(device->globalRank());
-    PRINT(device->globalSize());
-    PRINT(tileDescs);
-    BARNEY_CUDA_SYNC_CHECK();
-#if 1
-    int dev = -1;
-    BARNEY_CUDA_CALL(GetDevice(&dev));
-    PRINT(dev);
-    setTileCoordsKernel2<<<divRoundUp(numActiveTilesThisGPU,128),128>>>
-      (tileDescs,
-       numActiveTilesThisGPU,
-       numTiles, 
-       device->globalRank(),
-       device->globalSize());
-#else
     __rtc_launch(//device
                  device->rtc,
                  // kernel
@@ -374,14 +325,9 @@ namespace BARNEY_NS {
                  numTiles, 
                  device->globalRank(),
                  device->globalSize());
-#endif
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
     if (appTileDescs)
       device->rtc->copyAsync(appTileDescs,tileDescs,
                              numActiveTilesThisGPU * sizeof(TileDesc));
-    PING;
-    BARNEY_CUDA_SYNC_CHECK();
   }
 
 }

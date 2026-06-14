@@ -42,17 +42,6 @@ namespace BARNEY_NS {
       if (dir.x == 0.f) dir.x = 1e-6f;
       if (dir.y == 0.f) dir.y = 1e-6f;
       if (dir.z == 0.f) dir.z = 1e-6f;
-
-      ray.hip_dbg = int(ray.dbg());
-      // if (rayID > 100) return; // works
-      // if (rayID > 200) return; // workd
-      // if (rayID > 300) return;
-      // if (rayID > 400) return;
-      // if (rayID > 1000) return;
-      // if (rayID > 2000) return;
-      // if (rayID > 4000) return;
-      if (ray.hip_dbg) printf("traceRays.dev.cu $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
-      // if (!ray.hip_dbg) return;
       ti.traceRay(lp.accel,
                   ray.org,
                   dir,

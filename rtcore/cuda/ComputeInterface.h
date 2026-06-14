@@ -28,6 +28,5 @@ namespace rtc {
     if (nb)                                                             \
       kernel<<<nb,bs,0,myRTC->stream>>>                                 \
         (rtc::cuda::ComputeInterface(), __VA_ARGS__);                   \
-    PING; BARNEY_CUDA_SYNC_CHECK();                                      \
   }
   

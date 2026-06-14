@@ -316,7 +316,6 @@ namespace BARNEY_NS {
       device->rayQueue->swapAfterGeneration();
       device->rayQueue->numActive = device->rayQueue->readNumActive();
     }
-    PING;
   }
   
 }

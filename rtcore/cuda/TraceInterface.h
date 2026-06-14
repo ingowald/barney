@@ -107,8 +107,8 @@ namespace rtc {
                                   float t1,
                                   void *prdPtr)
     {
-      bool dbg = *(int*)prdPtr;
-      if (dbg) printf("####################################################### TRACE\n");
+      bool dbg = false;
+      
       using Triangle3f = cuBQL::triangle_t<float>;
       using RayTriangleIntersection = cuBQL::RayTriangleIntersection_t<float>;
       
