@@ -6,6 +6,7 @@
 
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/common/CUBQL.h"
+#include "barney/barneyConfig.h"
 #include "barney/render/Ray.h"
 
 namespace barney {
@@ -836,7 +837,15 @@ namespace barney {
         // ray.tMax = t;
         inputLeafRange.upper = min(inputLeafRange.upper,hit_t);
         vec3f P = ray.org + t * ray.dir;
+#if BARNEY_USE_MULTI_SCATTERING
+        ray.setVolumeHit(P,
+                         t,
+                         getPos(mapped),
+                         self.volume.anisotropy,
+                         self.volume.scatteringAlbedo);
+#else
         ray.setVolumeHit(P,t,getPos(mapped));
+#endif
         break;
       }
     }
@@ -881,7 +890,15 @@ namespace barney {
 
         isec.leafRange.upper = hit_t;
         hit_t = t;
+#if BARNEY_USE_MULTI_SCATTERING
+        ray.setVolumeHit(P,
+                         t,
+                         getPos(isec.mapped),
+                         self.volume.anisotropy,
+                         self.volume.scatteringAlbedo);
+#else
         ray.setVolumeHit(P,t,getPos(isec.mapped));
+#endif
         break;
       }
     } 

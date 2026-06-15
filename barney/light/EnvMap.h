@@ -162,29 +162,13 @@ namespace BARNEY_NS {
     return pdf_x * pdf_y * 1.f/(TWO_PI*ONE_PI*sinf(theta));
   }
   
-  inline __rtc_device float pbrt_clampf(float f, float lo, float hi)
-  {
-    return max(lo,min(hi,f));
-  }
-  
-  inline __rtc_device float pbrtSphericalTheta(const vec3f &v)
-  {
-    return acosf(pbrt_clampf(v.z, -1.f, 1.f));
-  }
-  
-  inline __rtc_device float pbrtSphericalPhi(const vec3f &v)
-  {
-    float p = atan2f(v.y, v.x);
-    return (p < 0.f) ? (p + float(2.f * M_PI)) : p;
-  }
-
   inline __rtc_device vec2i
   EnvMapLight::DD::worldToPixel(vec3f worldDir) const
   {
     vec3f localDir = xfmVector(toLocal,worldDir);
     
-    float theta = pbrtSphericalTheta(localDir);
-    float phi   = pbrtSphericalPhi(localDir);
+    float theta = render::sphericalTheta(localDir);
+    float phi   = render::sphericalPhi(localDir);
     const float invPi  = ONE_OVER_PI;
     const float inv2Pi = ONE_OVER_TWO_PI;
     vec2f uv(phi * inv2Pi, theta * invPi);

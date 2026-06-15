@@ -7,6 +7,7 @@
 #include "barney/common/half.h"
 #include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/common/random.h"
+#include "barney/barneyConfig.h"
 
 namespace BARNEY_NS {
   namespace render {
@@ -19,6 +20,9 @@ namespace BARNEY_NS {
       int32_t  pixelID;
       float    misWeight;
       int      numDiffuseBounces;
+#if BARNEY_USE_MULTI_SCATTERING
+      int      numVolumeBounces;
+#endif
     };
 
     struct RayOnly {
@@ -36,20 +40,26 @@ namespace BARNEY_NS {
 
     struct HitOnly {
       float tHit;
-      /*! the actual hit point, in 3D float coordinates (rather than
-        implicitly through org+tMax*dir), for numerical robustness
-        issues */
       vec3f       P;
       vec3h       N;
-      /*! type of bsdf in the hitBSDF; if this is set to NONE the
-        ray didn't have any hit yet */
       uint16_t bsdfType   : 4;
       PackedBSDF::Data hitBSDF;
     };
     
     struct Ray {
 #if RTC_DEVICE_CODE
+#if BARNEY_USE_MULTI_SCATTERING
+      inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo,
+                                            float anisotropy,
+                                            float scatteringAlbedo);
+      inline __rtc_device void setVolumeHitWithEmission(vec3f P, float t,
+                                                        vec3f albedo,
+                                                        float anisotropy,
+                                                        float scatteringAlbedo,
+                                                        vec3f emission);
+#else
       inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo);
+#endif
       inline __rtc_device PackedBSDF getBSDF() const;
       inline __rtc_device void setHit(vec3f P, vec3f N, float t,
                                     const PackedBSDF &packedBSDF);
@@ -68,18 +78,10 @@ namespace BARNEY_NS {
       float   tMax;
       RNGSeed rngSeed;
 
-      /*! the actual hit point, in 3D float coordinates (rather than
-        implicitly through org+tMax*dir), for numerical robustness
-        issues */
       vec3f       P;
       vec3h       N;
       struct {
-        /*! type of bsdf in the hitBSDF; if this is set to NONE the
-          ray didn't have any hit yet */
         uint16_t bsdfType   : 4;
-        // uint16_t numDiffuseBounces: 4;
-        /*! for path tracer: tracks whether we are, or aren't, in a
-          refractable medium */
         uint16_t isInMedium : 1;
         uint16_t isSpecular : 1;
         uint16_t isShadowRay: 1;
@@ -92,9 +94,6 @@ namespace BARNEY_NS {
       
       union {
         PackedBSDF::Data hitBSDF;
-        /*! the background color for primary rays that didn't have any intersection.
-          do not use float4 here since that might incur padding for alignment reasosn.
-         */
         bn_float4 missColor;
       };
     };
@@ -115,17 +114,40 @@ namespace BARNEY_NS {
       this->P         = P;
     }
     
+#if BARNEY_USE_MULTI_SCATTERING
+    inline __rtc_device void Ray::setVolumeHit(vec3f P,
+                                             float t,
+                                             vec3f albedo,
+                                             float anisotropy,
+                                             float scatteringAlbedo)
+    {
+      if (this->dbg()) printf("setting volume hit %f %f %f g=%f\n",
+                            albedo.x, albedo.y, albedo.z, anisotropy);
+      setHit(P, vec3f(0.f), t,
+             packedBSDF::Phase(albedo, scatteringAlbedo, anisotropy));
+    }
+
+    inline __rtc_device void Ray::setVolumeHitWithEmission(vec3f P,
+                                                           float t,
+                                                           vec3f albedo,
+                                                           float anisotropy,
+                                                           float scatteringAlbedo,
+                                                           vec3f emission)
+    {
+      packedBSDF::Phase phase(albedo, scatteringAlbedo, anisotropy);
+      (vec3f&)phase.emission = emission;
+      setHit(P, vec3f(0.f), t, phase);
+    }
+#else
     inline __rtc_device void Ray::setVolumeHit(vec3f P,
                                              float t,
                                              vec3f albedo)
     {
       if (this->dbg()) printf("setting volume hit %f %f %f\n",
-                            albedo.x,
-                            albedo.y,
-                            albedo.z);
-      setHit(P,vec3f(0.f),t,
-             packedBSDF::Phase(albedo));
+                            albedo.x, albedo.y, albedo.z);
+      setHit(P, vec3f(0.f), t, packedBSDF::Phase(albedo));
     }
+#endif
 
     inline __rtc_device
     void makeShadowRay(Ray &ray,

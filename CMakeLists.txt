@@ -141,6 +141,13 @@ endif()
 # ==================================================================
 option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
 option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
+option(BARNEY_USE_MULTI_SCATTERING
+  "Enable volumetric multi-scattering (HG phase, volume bounce tracking)"
+  OFF)
+
+if (BARNEY_USE_MULTI_SCATTERING)
+  message("#barney: BARNEY_USE_MULTI_SCATTERING=ON")
+endif()
 
 option(BARNEY_USE_EXTERNAL_CUBQL "Use External CuBQL dir" OFF)
 set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")

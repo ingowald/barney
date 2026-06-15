@@ -5,6 +5,7 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#include "barney/barneyConfig.h"
 #include "barney/DeviceGroup.h"
 #include "barney/volume/MCGrid.h"
 #include "barney/volume/Volume.h"
@@ -20,7 +21,7 @@
 namespace BARNEY_NS {
   using render::Ray;
   using render::DeviceMaterial;
- 
+
   template<typename SFSampler>
   struct MCVolumeAccel : public VolumeAccel 
   {
@@ -54,6 +55,12 @@ namespace BARNEY_NS {
       GeomTypeCreationFct const creatorFct;
     
     void build(bool full_rebuild) override;
+
+#if BARNEY_USE_MULTI_SCATTERING
+    void rebuildMajorantsOnly() override;
+
+    void refreshDeviceData() override;
+#endif
 
 #if BARNEY_DEVICE_PROGRAM
     /*! optix bounds prog for this class of accels */
@@ -126,6 +133,34 @@ namespace BARNEY_NS {
   // INLINE IMPLEMENTATION SECTION
   // ==================================================================
   
+#if BARNEY_USE_MULTI_SCATTERING
+  template<typename SFSampler>
+  void MCVolumeAccel<SFSampler>::rebuildMajorantsOnly()
+  {
+    if (!majorantsGrid)
+      return;
+    if (!volume->sf->mcGrid || !volume->sf->mcGrid->built())
+      return;
+    majorantsGrid->computeMajorants(volume);
+    refreshDeviceData();
+  }
+
+  template<typename SFSampler>
+  void MCVolumeAccel<SFSampler>::refreshDeviceData()
+  {
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      PLD *pld = getPLD(device);
+      if (!pld->geom)
+        continue;
+      DD dd = getDD(device);
+      pld->geom->setDD(&dd);
+    }
+    for (auto device : *devices)
+      device->sbtDirty = true;
+  }
+#endif
+
   template<typename SFSampler>
   void MCVolumeAccel<SFSampler>::build(bool full_rebuild) 
   {
@@ -133,7 +168,11 @@ namespace BARNEY_NS {
       auto mcGrid = volume->sf->getMCs();
       majorantsGrid = std::make_shared<MajorantsGrid>(mcGrid);
     }
+#if BARNEY_USE_MULTI_SCATTERING
+    majorantsGrid->computeMajorants(volume);
+#else
     majorantsGrid->computeMajorants(&volume->xf);
+#endif
     sfSampler->build();
     
     for (auto device : *devices) {
@@ -572,9 +611,6 @@ namespace BARNEY_NS {
 
     Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
                                 ti.getGeometryIndex(),0));
-    // Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
-    //                             ti.getGeometryIndex(),
-    //                             ti.getPrimitiveIndex()));
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
               [&](const vec3i &cellIdx, float t0, float t1) -> bool
@@ -602,9 +638,50 @@ namespace BARNEY_NS {
                 
                 vec3f P_obj = obj_org + tRange.upper * obj_dir;
                 vec3f P = ti.transformPointFromObjectToWorldSpace(P_obj);
+#if BARNEY_USE_MULTI_SCATTERING
+                vec3f tint = getPos(sample);
+                vec3f emission = vec3f(0.f);
+                float hitScatteringAlbedo = self.volume.scatteringAlbedo;
+                if (self.volume.principled.enabled) {
+                  float scalar = self.volume.sampleScalar(P_obj, dbg);
+                  vec3f sigma_s = principledSigmaS(scalar, self.volume.principled);
+                  vec3f sigma_a = principledSigmaA(scalar, self.volume.principled);
+                  vec4f tf = self.volume.xf.map(scalar, dbg);
+                  if (tf.w > 0.f) {
+                    sigma_s = sigma_s * tf.w;
+                    sigma_a = sigma_a * tf.w;
+                    tint = tint * getPos(tf);
+                  } else {
+                    sigma_s = vec3f(0.f);
+                    sigma_a = vec3f(0.f);
+                  }
+                  float sigma_t = reduce_max(sigma_s + sigma_a);
+                  if (sigma_t > 0.f) {
+                    float ms = reduce_max(sigma_s);
+                    tint = ms > 0.f ? sigma_s / ms : tint;
+                    hitScatteringAlbedo = reduce_max(sigma_s) / sigma_t;
+                  }
+                  emission = principledEmission(scalar, self.volume.principled);
+                }
+                if (reduce_max(emission) > 0.f) {
+                  ray.setVolumeHitWithEmission(P,
+                                               tRange.upper,
+                                               tint,
+                                               self.volume.anisotropy,
+                                               hitScatteringAlbedo,
+                                               emission);
+                } else {
+                  ray.setVolumeHit(P,
+                                   tRange.upper,
+                                   tint,
+                                   self.volume.anisotropy,
+                                   hitScatteringAlbedo);
+                }
+#else
                 ray.setVolumeHit(P,
                                  tRange.upper,
                                  getPos(sample));
+#endif
 
                 // Write hit IDs for AOV channels on first non-transparent voxel
                 const render::OptixGlobals &globals = render::OptixGlobals::get(ti);

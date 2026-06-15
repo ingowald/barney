@@ -466,8 +466,16 @@ namespace BARNEY_NS {
                           int(stack-stackBase));
           if (stack == stackBase) {
             if (tHit < ray.tMax) {
+#if BARNEY_USE_MULTI_SCATTERING
+              ray.setVolumeHit(org+tHit*dir,
+                               tHit,
+                               (const vec3f&)sample,
+                               self.anisotropy,
+                               self.scatteringAlbedo);
+#else
               ray.setVolumeHit(org+tHit*dir,
                                tHit,(const vec3f&)sample);
+#endif
             }
             return;
             // done = true;

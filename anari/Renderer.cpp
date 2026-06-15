@@ -3,6 +3,7 @@
 
 
 #include "Renderer.h"
+#include "barney/barneyConfig.h"
 
 namespace barney_device {
 
@@ -28,6 +29,10 @@ void Renderer::commitParameters()
   m_background = getParam<math::float4>("background", math::float4(0, 0, 0, 1));
   m_backgroundImage = getParamObject<Array2D>("background");
   m_cutPlane = getParam<math::float4>("cutPlane", math::float4(0, 0, 0, 0));
+#if BARNEY_USE_MULTI_SCATTERING
+  m_maxVolumeBounces = getParam<int>("maxVolumeBounces", 8);
+  m_volumeMultiScatter = getParam<bool>("volumeMultiScatter", false);
+#endif
 }
 
 void Renderer::finalize()
@@ -36,6 +41,10 @@ void Renderer::finalize()
   bnSet1i(barneyRenderer, "crosshairs", (int)m_crosshairs);
   bnSet1i(barneyRenderer, "pathsPerPixel", (int)m_pixelSamples);
   bnSet1f(barneyRenderer, "ambientRadiance", m_ambientRadiance);
+#if BARNEY_USE_MULTI_SCATTERING
+  bnSet1i(barneyRenderer, "maxVolumeBounces", m_maxVolumeBounces);
+  bnSet1i(barneyRenderer, "volumeMultiScatter", (int)m_volumeMultiScatter);
+#endif
   bnSet4f(barneyRenderer, "cutPlane",
           m_cutPlane.x, m_cutPlane.y, m_cutPlane.z, m_cutPlane.w);
 

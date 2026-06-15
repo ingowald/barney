@@ -93,15 +93,13 @@ namespace BARNEY_NS {
       }
     }
 
-    inline __rtc_device float pbrt_clampf(float f, float lo, float hi)
-    { return max(lo,min(hi,f)); }
-
-    inline __rtc_device float pbrtSphericalTheta(const vec3f &v)
+    /*! Spherical coordinates for unit direction v (theta = polar angle from +Z). */
+    inline __rtc_device float sphericalTheta(const vec3f &v)
     {
-      return acosf(pbrt_clampf(v.z, -1.f, 1.f));
+      return acosf(clamp(v.z, -1.f, 1.f));
     }
 
-    inline __rtc_device float pbrtSphericalPhi(const vec3f &v)
+    inline __rtc_device float sphericalPhi(const vec3f &v)
     {
       float p = atan2f(v.y, v.x);
       return (p < 0.f) ? (p + float(2.f * M_PI)) : p;

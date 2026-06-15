@@ -5,6 +5,8 @@
 
 #cmakedefine01 BARNEY_DISABLE_DENOISING
 
+#cmakedefine01 BARNEY_USE_MULTI_SCATTERING
+
 /*! whether this build of barney has support for the NanoVDB volume
     type. NanoVDB takes a long while to compile, so can be
     enabled/disabled by user */

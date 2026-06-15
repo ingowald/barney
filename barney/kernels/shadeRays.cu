@@ -10,17 +10,20 @@
 #include "barney/GlobalModel.h"
 #include "barney/render/RayQueue.h"
 #include "rtcore/TraceInterface.h"
+#include "barney/barneyConfig.h"
 
 namespace BARNEY_NS {
   namespace render {
 
-#define SCI_VIS_MODE 1
-    
 #define MAX_DIFFUSE_BOUNCES 1
     
 #define ENV_LIGHT_SAMPLING 1
 
 #define USE_MIS 1
+
+#if !BARNEY_USE_MULTI_SCATTERING
+#define SCI_VIS_MODE 1
+#endif
 
 
 #define CLAMP_F_R 13.f
@@ -439,8 +442,8 @@ namespace BARNEY_NS {
       auto &env = world.envMapLight;
       if (env.texture) {
         vec3f d = xfmVector(env.toLocal,normalize(ray.dir));
-        float theta = pbrtSphericalTheta(d);
-        float phi   = pbrtSphericalPhi(d);
+        float theta = sphericalTheta(d);
+        float phi   = sphericalPhi(d);
         const float invPi  = 1.f/(float)M_PI;
         const float inv2Pi = 1.f/(2.f* (float)M_PI);
         vec2f uv(phi * inv2Pi, theta * invPi);
@@ -607,6 +610,15 @@ namespace BARNEY_NS {
       Random random(ray.rngSeed,(const uint32_t&)ray.tMax);//rayID,ray.rngSeed);
       // Random random(ray.rngSeed.next((const uint32_t&)ray.tMax));//rayID,ray.rngSeed);
       const PackedBSDF bsdf = ray.getBSDF();
+
+#if BARNEY_USE_MULTI_SCATTERING
+      if (isVolumeHit && bsdf.type == PackedBSDF::TYPE_Phase) {
+        vec3f emission = (vec3f)bsdf.data.phase.emission;
+        if (reduce_max(emission) > 0.f)
+          fragment = incomingThroughput * emission;
+      }
+#endif
+
       // bool doTransmission = false;
       // =  ((float)ray.mini.transmission > 0.f)
       // && (random() < (float)ray.mini.transmission);
@@ -761,6 +773,17 @@ namespace BARNEY_NS {
         return;
       
       if (scatterResult.type == ScatterResult::VOLUME) {
+#if BARNEY_USE_MULTI_SCATTERING
+        if (!renderer.volumeMultiScatter) {
+          ray.tMax = -1.f;
+          return;
+        }
+        if (state.numVolumeBounces >= renderer.maxVolumeBounces) {
+          ray.tMax = -1.f;
+          return;
+        }
+        state.numVolumeBounces = state.numVolumeBounces + 1;
+#else
 #if SCI_VIS_MODE
         // sci vis mode: volumes do shadow, but nothing more
         ray.tMax = -1.f;
@@ -769,15 +792,20 @@ namespace BARNEY_NS {
         // treat volume scatter like a diffuse scatter.
         scatterResult.type = ScatterResult::DIFFUSE;
 #endif
+#endif
       }
       
+#if BARNEY_USE_MULTI_SCATTERING
+      if (scatterResult.type == ScatterResult::DIFFUSE) {
+#else
       if (scatterResult.type == ScatterResult::DIFFUSE ||
           scatterResult.type == ScatterResult::VOLUME) {
+#endif
         if (state.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES) {
           ray.tMax = -1.f;
           return;
-        } else
-          state.numDiffuseBounces = state.numDiffuseBounces + 1;
+        }
+        state.numDiffuseBounces = state.numDiffuseBounces + 1;
       }
       ray.isSpecular = (scatterResult.type == ScatterResult::SPECULAR);
       

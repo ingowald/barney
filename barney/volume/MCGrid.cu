@@ -3,6 +3,7 @@
 
 
 #include "barney/volume/MCGrid.h"
+#include "barney/volume/Volume.h"
 #include "rtcore/ComputeInterface.h"
 
 namespace BARNEY_NS {
@@ -93,25 +94,58 @@ namespace BARNEY_NS {
   __rtc_global
   void mapMCs(const rtc::ComputeInterface &ci,
               MajorantsGrid::DD grid,
-              TransferFunction::DD xf)
+              TransferFunction::DD xf
+#if BARNEY_USE_MULTI_SCATTERING
+              , PrincipledVolumeParams::DD principled
+#endif
+              )
   {
     int ix = ci.getThreadIdx().x
       +ci.getBlockIdx().x*ci.getBlockDim().x;
     if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
     range1f scalarRange = grid.scalarRanges[ix];
+#if BARNEY_USE_MULTI_SCATTERING
+    const float tfMaj = xf.majorant(scalarRange);
+    const float maj = principled.enabled
+      ? principledMajorant(scalarRange, principled) * tfMaj
+      : tfMaj;
+#else
     const float maj = xf.majorant(scalarRange);
+#endif
     grid.majorants[ix] = maj;
   }
   
-  /*! recompute all macro cells' majorant value by remap each such
-    cell's value range through the given transfer function */
+#if BARNEY_USE_MULTI_SCATTERING
+  void MajorantsGrid::computeMajorants(Volume *volume)
+  {
+    if (dims != mcGrid->dims)
+      resize(mcGrid->dims); 
+    assert(volume);
+    auto dims = mcGrid->dims;
+    assert(dims.x > 0);
+    assert(dims.y > 0);
+    assert(dims.z > 0);
+    size_t numCells = owl::common::volume(dims);
+    const int bs = 1024;
+    const int nb = (int)dru(numCells,bs);
+    for (auto device : *devices) 
+      device->sync();
+    
+    for (auto device : *devices) {
+      auto d_xf = volume->xf.getDD(device);
+      auto d_principled = volume->principled.getDD(device);
+      auto dd = getDD(device);
+      __rtc_launch(device->rtc,
+                   mapMCs,
+                   nb,bs,
+                   dd,d_xf,d_principled);
+    }
+    for (auto device : *devices) 
+      device->sync();
+  }
+#else
   void MajorantsGrid::computeMajorants(TransferFunction *xf)
   {
-// #ifndef NDEBUG
-//     std::cout << "-------------------------" << std::endl;
-//     std::cout << "(re-)computing majorants!" << std::endl;
-//     std::cout << "-------------------------" << std::endl;
-// #endif
     if (dims != mcGrid->dims)
       resize(mcGrid->dims); 
     assert(xf);
@@ -121,8 +155,6 @@ namespace BARNEY_NS {
     assert(dims.z > 0);
     size_t numCells = owl::common::volume(dims);
     const int bs = 1024;
-    // cuda num blocks
-    // const int nb = (int)divRoundUp((size_t)numCells,(size_t)bs);
     const int nb = (int)dru(numCells,bs);
     for (auto device : *devices) 
       device->sync();
@@ -138,6 +170,7 @@ namespace BARNEY_NS {
     for (auto device : *devices) 
       device->sync();
   }
+#endif
   
   /*! allocate memory for the given grid */
   void MajorantsGrid::resize(vec3i dims)
