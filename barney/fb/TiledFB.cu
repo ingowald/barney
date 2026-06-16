@@ -10,7 +10,7 @@
 namespace BARNEY_NS {
 
   __rtc_global
-  void linearizeColorAndNormalKernel(const rtc::ComputeInterface &ci,
+  void linearizeColorAndNormalKernel(rtc::ComputeInterface ci,
                                      void      *out_rgba,
                                      BNDataType colorFormat,
                                      vec3f     *out_normal,
@@ -85,7 +85,7 @@ namespace BARNEY_NS {
 
 
 
-  __rtc_global void linearizeAuxTilesKernel(const rtc::ComputeInterface &ci,
+  __rtc_global void linearizeAuxTilesKernel(rtc::ComputeInterface ci,
                                             void           *linearOut,
                                             vec2i           numPixels,
                                             AuxChannelTile *aux,
@@ -222,14 +222,32 @@ namespace BARNEY_NS {
     }
   }
 
-  __rtc_global void setTileCoordsKernel(const rtc::ComputeInterface &ci,
-                                        TileDesc *tileDescs,
-                                        int numActiveTiles,
-                                        vec2i numTiles,
-                                        int globalIndex,
-                                        int globalIndexStep)
+  __rtc_global
+  void setTileCoordsKernel(rtc::ComputeInterface ci,
+                           TileDesc *tileDescs,
+                           int numActiveTiles,
+                           vec2i numTiles,
+                           int globalIndex,
+                           int globalIndexStep)
   {
     int tid = ci.launchIndex().x;
+    if (tid >= numActiveTiles) return;
+    
+    int tileID = tid * globalIndexStep + globalIndex;
+    
+    int tile_x = tileID % numTiles.x;
+    int tile_y = tileID / numTiles.x;
+    tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
+  }
+  
+  __rtc_global
+  void setTileCoordsKernel2(TileDesc *tileDescs,
+                            int numActiveTiles,
+                            vec2i numTiles,
+                            int globalIndex,
+                            int globalIndexStep)
+  {
+    int tid = threadIdx.x+blockIdx.x*blockDim.x;//ci.launchIndex().x;
     if (tid >= numActiveTiles) return;
     
     int tileID = tid * globalIndexStep + globalIndex;
@@ -267,7 +285,11 @@ namespace BARNEY_NS {
     // aux channel tiles
     // ------------------------------------------------------------------
     auto alloc = [&](Device *device, AuxChannelTile *&tiles) 
-    { tiles = (AuxChannelTile *)device->rtc->allocMem(numActiveTilesThisGPU*sizeof(*tiles)); };
+    {
+      assert(device);
+      tiles = (AuxChannelTile *)device->rtc->allocMem
+        (numActiveTilesThisGPU*sizeof(*tiles));
+    };
 
     if (channels & BN_FB_PRIMID) alloc(device,auxTiles.primID);
     if (channels & BN_FB_INSTID) alloc(device,auxTiles.instID);
@@ -296,11 +318,11 @@ namespace BARNEY_NS {
                  // kernel
                  setTileCoordsKernel,
                  // launch config,
-                 divRoundUp(numActiveTilesThisGPU,1024),1024,
+                 divRoundUp(numActiveTilesThisGPU,128),128,
                  // args
                  tileDescs,
                  numActiveTilesThisGPU,
-                 numTiles,
+                 numTiles, 
                  device->globalRank(),
                  device->globalSize());
     if (appTileDescs)

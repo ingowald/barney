@@ -62,11 +62,12 @@ namespace BARNEY_NS {
     inline __rtc_device
     PackedBSDF AnariPBR::DD::createBSDF(const HitAttributes &hitData,
                                         const Sampler::DD *samplers,
-                                        bool dbg) const
+                                        bool _dbg) const
     {
+      bool dbg = 0;
       if (dbg) printf("createBSDF\n");
-      vec4f baseColor = this->baseColor.eval(hitData,samplers,dbg);
-      if (dbg) printf("basecolor eval %f %f %f %f\n",
+      vec4f baseColor = this->baseColor.eval(hitData,samplers,_dbg);
+      if (_dbg) printf("basecolor eval %f %f %f %f\n",
                       baseColor.x,
                       baseColor.y,
                       baseColor.z,
@@ -99,7 +100,7 @@ namespace BARNEY_NS {
         ;
       
       bsdf.ior = ior.x;
-      if (dbg) printf("created nvisii bsdf base %f %f %f met %f base rough %f ior %f alpha %f\n",
+      if (0 && dbg) printf("created nvisii bsdf base %f %f %f met %f base rough %f ior %f alpha %f\n",
                       (float)bsdf.baseColor.x,
                       (float)bsdf.baseColor.y,
                       (float)bsdf.baseColor.z,

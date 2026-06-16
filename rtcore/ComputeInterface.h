@@ -9,7 +9,12 @@
 
 #if BARNEY_RTC_CUDA
 # include "cuda/ComputeInterface.h"
-namespace rtc { using namespace rtc::cuda; }
+namespace rtc {
+  using namespace rtc::cuda;
+  // using namespace rtc::cuda_common;
+  // using rtc::cuda::Device;
+  using rtc::cuda::ComputeInterface;
+}
 #endif
 
 #if BARNEY_RTC_OPTIX

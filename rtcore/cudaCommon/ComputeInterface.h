@@ -50,9 +50,9 @@ namespace rtc {
       inline __device__ vec3ui getThreadIdx() const
       { return vec3ui(threadIdx.x,threadIdx.y,threadIdx.z); }
       inline __device__ vec3ui getBlockDim() const
-      { return {blockDim.x,blockDim.y,blockDim.z}; }
+      { return vec3ui(blockDim.x,blockDim.y,blockDim.z); }
       inline __device__ vec3ui getBlockIdx() const
-      { return {blockIdx.x,blockIdx.y,blockIdx.z}; }
+      { return vec3ui(blockIdx.x,blockIdx.y,blockIdx.z); }
       inline __device__ int atomicAdd(int *ptr, int inc) const
       { return ::atomicAdd(ptr,inc); }
       inline __device__ float atomicAdd(float *ptr, float inc) const

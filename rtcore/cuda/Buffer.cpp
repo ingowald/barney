@@ -20,6 +20,7 @@ namespace rtc {
       BARNEY_CUDA_CALL(Malloc((void**)&d_data,numBytes));
       if (initValues)
         BARNEY_CUDA_CALL(Memcpy(d_data,initValues,numBytes,cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
     }
 
     Buffer::~Buffer()
@@ -33,6 +34,7 @@ namespace rtc {
       if (!d_data) return;
       SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL(Memcpy(((char *)d_data)+offset,data,numBytes,cudaMemcpyDefault));
+      BARNEY_CUDA_SYNC_CHECK();
     }
 
     void Buffer::resize(size_t numBytes)
@@ -41,6 +43,7 @@ namespace rtc {
       if (d_data) 
         BARNEY_CUDA_CALL(Free(d_data));
       BARNEY_CUDA_CALL(Malloc((void**)&d_data,numBytes));
+      BARNEY_CUDA_SYNC_CHECK();
     }
     
   }

@@ -42,7 +42,6 @@ namespace BARNEY_NS {
       if (dir.x == 0.f) dir.x = 1e-6f;
       if (dir.y == 0.f) dir.y = 1e-6f;
       if (dir.z == 0.f) dir.z = 1e-6f;
-
       ti.traceRay(lp.accel,
                   ray.org,
                   dir,

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
-#ifdef __CUDACC__
+#if defined(__CUDACC__) && !defined(CUDART_INF)
 #include <cuda/std/limits>
 #endif
 #include <limits>
@@ -17,9 +17,10 @@
 #define ONE_OVER_TWO_PI (1.f/TWO_PI)
 #define ONE_OVER_FOUR_PI (1.f/FOUR_PI)
 
-#if BARNEY_HAVE_HIP
+#ifdef __HIPCC__
 # define BARNEY_INF INFINITY
 #elif defined(__CUDA_ARCH__)
+// # define BARNEY_INF INFINITY
 # define BARNEY_INF ::cuda::std::numeric_limits<float>::infinity()
 #else
 # define BARNEY_INF std::numeric_limits<float>::infinity()

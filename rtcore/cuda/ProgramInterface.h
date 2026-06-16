@@ -120,6 +120,7 @@ namespace rtc {
       // ray/traversal state:
       void  *prd;
       const void  *geomData;
+      uint64_t debugValue = 0;
       float  tMin;
       Geom::SBTHeader *acceptedSBT;
       struct {

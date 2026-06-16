@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-
 #include "rtcore/cuda/Device.h"
 #include "rtcore/cuda/Group.h"
 #include "rtcore/cuda/Geom.h"
@@ -10,7 +9,7 @@
 
 namespace rtc {
   namespace cuda {
-    
+
     rtc::AccelHandle getAccelHandle(Group *ig)
     { return ig->getDD(); }
     
