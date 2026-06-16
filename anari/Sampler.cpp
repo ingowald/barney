@@ -418,6 +418,58 @@ namespace barney_device {
     bnCommit(m_bnSampler);
   }
 
+  // Image1D //
+
+  Image1D::Image1D(BarneyGlobalState *s)
+    : TextureDataSampler(s, "texture2D")
+  {}
+
+  Image1D::~Image1D() = default;
+
+  void Image1D::commitParameters()
+  {
+    TextureDataSampler::commitParameters();
+    m_image = getParamObject<helium::Array1D>("image");
+    m_wrapMode = toBarneyAddressMode(getParamString("wrapMode", "clampToEdge"));
+  }
+
+  bool Image1D::isValid() const
+  {
+    return m_image;
+  }
+
+  // ------------------------------------------------------------------
+  // PrimitiveSampler
+  // ------------------------------------------------------------------
+  void PrimitiveSampler::finalize()
+  {
+    if (!m_array) {
+      reportMessage(ANARI_SEVERITY_DEBUG,
+                    "PrimitiveSampler::finalize() without a valid 'array' parameter");
+      return;
+    }
+    
+    int slot = state->slot;
+    auto context = state->tether->context;
+
+    if (m_bnArrayData) {
+      bnRelease(m_bnArrayData);
+      m_bnArrayData = 0;
+    }
+    std::vector<float4> colors;
+    
+    m_bnArrayData
+      = bnDataCreate(context,slot,BN_FLOAT4,colors.size(),colors.data());
+    // ------------------------------------------------------------------
+    // now, create sampler over those texels
+    // ------------------------------------------------------------------
+
+    TextureDataSampler::setBarneyParameters();
+    bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode);
+    bnSet1i(m_bnSampler, "wrapMode1", (int)BN_TEXTURE_CLAMP);
+    bnCommit(m_bnSampler);
+  }
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Sampler *);
