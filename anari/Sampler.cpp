@@ -420,27 +420,24 @@ namespace barney_device {
 
   // Image1D //
 
-  Image1D::Image1D(BarneyGlobalState *s)
-    : TextureDataSampler(s, "texture2D")
+  PrimitiveSampler::PrimitiveSampler(BarneyGlobalState *s)
+    : Sampler(s, "primitive")
   {}
 
-  Image1D::~Image1D() = default;
+  PrimitiveSampler::~PrimitiveSampler() = default;
 
-  void Image1D::commitParameters()
+  void PrimitiveSampler::commitParameters()
   {
-    TextureDataSampler::commitParameters();
-    m_image = getParamObject<helium::Array1D>("image");
-    m_wrapMode = toBarneyAddressMode(getParamString("wrapMode", "clampToEdge"));
+    Sampler::commitParameters();
+    m_array = getParamObject<helium::Array1D>("array");
+    m_offset = getParam<int>("offset",0);
   }
 
-  bool Image1D::isValid() const
+  bool PrimitiveSampler::isValid() const
   {
-    return m_image;
+    return m_array;
   }
 
-  // ------------------------------------------------------------------
-  // PrimitiveSampler
-  // ------------------------------------------------------------------
   void PrimitiveSampler::finalize()
   {
     if (!m_array) {
@@ -448,7 +445,8 @@ namespace barney_device {
                     "PrimitiveSampler::finalize() without a valid 'array' parameter");
       return;
     }
-    
+
+    auto state = deviceState();
     int slot = state->slot;
     auto context = state->tether->context;
 
@@ -456,17 +454,23 @@ namespace barney_device {
       bnRelease(m_bnArrayData);
       m_bnArrayData = 0;
     }
-    std::vector<float4> colors;
     
+    auto type = m_array->elementType();
+    switch(type) {
+    default: throw std::runtime_error
+        ("unsupported anari primitive sampler data type #"
+         +std::to_string((int)type));
+    }
+    std::vector<math::float4> colors;
     m_bnArrayData
       = bnDataCreate(context,slot,BN_FLOAT4,colors.size(),colors.data());
     // ------------------------------------------------------------------
     // now, create sampler over those texels
     // ------------------------------------------------------------------
-
-    TextureDataSampler::setBarneyParameters();
-    bnSet1i(m_bnSampler, "wrapMode0", (int)m_wrapMode);
-    bnSet1i(m_bnSampler, "wrapMode1", (int)BN_TEXTURE_CLAMP);
+    
+    Sampler::setBarneyParameters();
+    bnSetData(m_bnSampler, "data", m_bnArrayData);
+    bnSet1i(m_bnSampler, "offset", (int)m_offset);
     bnCommit(m_bnSampler);
   }
 

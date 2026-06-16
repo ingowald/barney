@@ -112,11 +112,12 @@ namespace barney_device {
     ~PrimitiveSampler() override;
     void commitParameters() override;
     void finalize() override;
-
+    bool isValid() const;
+    
   private:
     BNData m_bnArrayData;
     helium::IntrusivePtr<helium::Array1D> m_array;
-    int offset;
+    int m_offset;
   };
 
 } // namespace barney_device
