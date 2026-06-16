@@ -171,6 +171,7 @@ set_target_properties(barney_rtc_cuda_common
   PROPERTIES
   CXX_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS  ON
   )
   rtc_library_properties(barney_rtc_cuda_common)
 else()

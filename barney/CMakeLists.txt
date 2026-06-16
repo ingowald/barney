@@ -333,9 +333,9 @@ configure_cuda_source(api/barney.cu)
 add_library(${BARNEY_DEVICE_NAME} SHARED api/barney.cu)
 target_link_libraries(${BARNEY_DEVICE_NAME} PUBLIC
   $<BUILD_INTERFACE:barney_config>
-  $<BUILD_INTERFACE:barney_rtc_cuda_common>
-  $<BUILD_INTERFACE:barney_rtc_cuda>
-  $<BUILD_INTERFACE:barney_cuda>
+#  $<BUILD_INTERFACE:barney_rtc_cuda_common>
+#  $<BUILD_INTERFACE:barney_rtc_cuda>
+#  $<BUILD_INTERFACE:barney_cuda>
 )
 set_library_properties(${BARNEY_DEVICE_NAME})
 target_include_directories(${BARNEY_DEVICE_NAME} PUBLIC
