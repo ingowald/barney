@@ -6,6 +6,7 @@
 
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
+#include "barney/common/Data.h"
 #include "barney/common/mat4.h"
 #include "barney/common/math.h"
 #include <stack>
@@ -39,6 +40,7 @@ namespace BARNEY_NS {
         IMAGE1D,
         IMAGE2D,
         IMAGE3D,
+        PRIMITIVE,
       } Type;
 
       struct DD {
@@ -47,6 +49,8 @@ namespace BARNEY_NS {
         inline __both__ DD(const DD &other) {
           type = other.type;
           numChannels = other.numChannels;
+          array        = other.array;
+          offset       = other.offset;
           texture      = other.texture;
           inAttribute  = other.inAttribute;
           inTransform  = other.inTransform;
@@ -59,6 +63,10 @@ namespace BARNEY_NS {
         AttributeTransform inTransform;
         rtc::TextureObject texture;
         uint8_t            numChannels;
+
+        // primitive sampler only:
+        vec4f             *array;
+        int                offset;
         
         // all types
         uint8_t type=INVALID;
@@ -106,13 +114,31 @@ namespace BARNEY_NS {
       DD getDD(Device *device) override;
     };
 
+    struct PrimitiveSampler : public Sampler {
+      PrimitiveSampler(SlotContext *slotContext);
+      ~PrimitiveSampler() override;
+      
+      // ------------------------------------------------------------------
+      /*! @{ parameter set/commit interface */
+      bool setObject(const std::string &member,
+                     const std::shared_ptr<Object> &value) override;
+      bool set1i(const std::string &member, const int   &value) override;
+      void commit() override;
+      /*! @} */
+      // ------------------------------------------------------------------
+
+      DD getDD(Device *device) override;
+      PODData::SP arrayData;
+      int offset = 0;
+    };
+      
     /*! sampler that operates on rtc-supported texture types; can
         operate on 1D (for ANARI IMAGE1D sampler), 2D (ANARI IMAGE2D)
         and 3D (ANARI IMAGE3D) textures */
     struct TextureSampler : public Sampler {
       TextureSampler(SlotContext *slotContext,
                      int numDims);
-      virtual ~TextureSampler();
+      ~TextureSampler() override;
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */

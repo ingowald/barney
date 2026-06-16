@@ -176,6 +176,8 @@ namespace barney_device {
       return new Image3D(s);
     else if (subtype == "transform")
       return new TransformSampler(s);
+    else if (subtype == "primitive")
+      return new PrimitiveSampler(s);
     else
       return (Sampler *)new UnknownObject(ANARI_SAMPLER, subtype, s);
   }
