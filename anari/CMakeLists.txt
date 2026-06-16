@@ -104,8 +104,11 @@ else()
   target_link_libraries(anari_library_${BARNEY_DEVICE_NAME} PRIVATE
     $<BUILD_INTERFACE:banari-config>
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,${BARNEY_DEVICE_NAME}_static>"
-    -Wl,--export-dynamic
     anari::helium
+  )
+  # add --export-dynamic only on non-Darwin platforms using a generator expression
+  target_link_options(anari_library_${BARNEY_DEVICE_NAME} PRIVATE
+    $<$<NOT:$<PLATFORM_ID:Darwin>>:-Wl,--export-dynamic>
   )
 endif()
 
