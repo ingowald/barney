@@ -127,6 +127,13 @@ namespace BARNEY_NS {
   {
     auto _context = this;
     DistFB *fb = (DistFB *)_fb;
+
+    // iw - todo check perf impact of this; check if a allgather and
+    // local reduce would be faster
+    int lowest_accumID = workers.allReduceMin((int)fb->accumID);
+    if (lowest_accumID == 0 && fb->accumID != 0)
+      fb->resetAccumulation();
+  
     if (isActiveWorker) {
       renderTiles(renderer,model,camera,fb);
       finalizeTiles(fb);

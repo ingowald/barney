@@ -774,18 +774,10 @@ namespace barney_api {
                 BNCamera   camera,
                 BNFrameBuffer fb)
   {
-    // static double t_first = getCurrentTime();
-    // static double t_sum = 0.;
-
-    // double t0 = getCurrentTime();
     static int numCalls = 0;
     if (++numCalls < 10)
       LOG_API_ENTRY;
     checkGet(model)->render(checkGet(renderer),checkGet(camera),checkGet(fb));
-    // double t1 = getCurrentTime();
-
-    // t_sum += (t1-t0);
-    // printf("time in %f\n",float((t_sum / (t1 - t_first))));
   }
 
   BARNEY_API
