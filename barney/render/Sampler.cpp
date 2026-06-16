@@ -285,6 +285,19 @@ namespace BARNEY_NS {
       return false;
     }
     
+    Sampler::DD PrimitiveSampler::getDD(Device *device) 
+    {
+      Sampler::DD dd;
+      dd.type = Sampler::PRIMITIVE;
+
+      (vec4f&)dd.outTransform.offset = outOffset;
+      memcpy(&dd.outTransform.mat_x,&outTransform,sizeof(outTransform));
+      
+      dd.array = (vec4f*)arrayData->getPLD(device)->rtcBuffer->getDD();
+      dd.offset = offset;
+      
+      return dd;
+    }
     
   }
 }

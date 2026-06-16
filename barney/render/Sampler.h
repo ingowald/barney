@@ -123,7 +123,6 @@ namespace BARNEY_NS {
       bool setObject(const std::string &member,
                      const std::shared_ptr<Object> &value) override;
       bool set1i(const std::string &member, const int   &value) override;
-      void commit() override;
       /*! @} */
       // ------------------------------------------------------------------
 
@@ -188,6 +187,9 @@ namespace BARNEY_NS {
     vec4f Sampler::DD::eval(const HitAttributes &inputs,
                              bool dbg) const
     {
+      if (type == PRIMITIVE) {
+        return array[inputs.primID];
+      }
       vec4f in  = inputs.get((AttributeKind)inAttribute,dbg);
       vec4f out = in;
       if (type != TRANSFORM) {
