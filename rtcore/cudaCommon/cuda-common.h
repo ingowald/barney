@@ -5,14 +5,10 @@
 #pragma once
 
 #include "rtcore/common/rtcore-common.h"
-#if BARNEY_EXP
-# include "../exp_external_backends/common.h"
-#else
 #include <cuda_runtime.h>
 #ifdef __CUDACC__
 # include <cuda/std/limits>
 # include <cuda.h>
-#endif
 #endif
 #include "cuda-helper.h"
 
