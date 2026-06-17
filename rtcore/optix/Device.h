@@ -50,7 +50,7 @@ namespace rtc {
     
     struct Device : public cuda_common::Device {
       Device(int physicalGPU);
-      virtual ~Device();
+      ~Device() override;
 
       std::string toString() const
       { return "optix::Device(physical="+std::to_string(physicalID)+")"; }

@@ -49,8 +49,10 @@ namespace BARNEY_NS {
         inline __both__ DD(const DD &other) {
           type = other.type;
           numChannels = other.numChannels;
-          array        = other.array;
-          offset       = other.offset;
+          arrayData   = other.arrayData;
+          arrayOffset = other.arrayOffset;
+          arrayType   = other.arrayType;
+          
           texture      = other.texture;
           inAttribute  = other.inAttribute;
           inTransform  = other.inTransform;
@@ -65,8 +67,9 @@ namespace BARNEY_NS {
         uint8_t            numChannels;
 
         // primitive sampler only:
-        vec4f             *array;
-        int                offset;
+        void              *arrayData;
+        int                arrayOffset;
+        BNDataType         arrayType;
         
         // all types
         uint8_t type=INVALID;
@@ -75,6 +78,11 @@ namespace BARNEY_NS {
       };
 
       virtual DD getDD(Device *device) = 0;
+
+      /*! pretty-printer for printf-debugging */
+      std::string toString() const override
+      { return "Sampler<>"; }
+
       
       static Sampler::SP create(SlotContext *context,
                                 const std::string &type);
@@ -111,6 +119,8 @@ namespace BARNEY_NS {
       TransformSampler(SlotContext *slotContext)
         : Sampler(slotContext)
       {}
+      std::string toString() const override
+      { return "TransformSampler"; }
       DD getDD(Device *device) override;
     };
 
@@ -120,15 +130,21 @@ namespace BARNEY_NS {
       
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
-      bool setObject(const std::string &member,
-                     const std::shared_ptr<Object> &value) override;
+      bool setData(const std::string &member,
+                   const std::shared_ptr<Data> &value) override;
       bool set1i(const std::string &member, const int   &value) override;
       /*! @} */
       // ------------------------------------------------------------------
+      /*! pretty-printer for printf-debugging */
+      std::string toString() const override
+      { return "PrimitiveSampler"; }
+
 
       DD getDD(Device *device) override;
       PODData::SP arrayData;
-      int offset = 0;
+      // format of the entries in the array
+      BNDataType arrayType;
+      int        arrayOffset = 0;
     };
       
     /*! sampler that operates on rtc-supported texture types; can
@@ -188,20 +204,29 @@ namespace BARNEY_NS {
                              bool dbg) const
     {
       if (type == PRIMITIVE) {
-        return array[inputs.primID];
+        if (!arrayData)
+          return vec4f(0.f,0.f,0.f,1.f);
+          
+        if (arrayType == BN_UFIXED8_RGBA) {
+          vec4uc v = ((vec4uc*)arrayData)[arrayOffset+inputs.primID];
+          return vec4f(v)*(1.f/255.f);
+        }
+        return vec4f(0.f,0.f,0.f,1.f);
       }
       vec4f in  = inputs.get((AttributeKind)inAttribute,dbg);
       vec4f out = in;
       if (type != TRANSFORM) {
         vec4f coord = inTransform.applyTo(in);
         vec4f fromTex = coord;
-        if (type == IMAGE1D) {
+        if (type == IMAGE1D) { 
           fromTex = rtc::tex1D<vec4f>(texture,coord.x);
         } else if (type == IMAGE2D) {
           fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
         } else if (type == IMAGE3D) {
           fromTex = rtc::tex3D<vec4f>(texture,coord.x,coord.y,coord.z);
-        }
+        } else
+          return vec4f(1.f,0.f,0.f,1.f);
+
         // iw - numchannels == 0 can't happen, that's not a valid
         // value
         if (numChannels <= 1) fromTex.y = 0.f;

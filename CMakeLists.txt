@@ -1,10 +1,10 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+# CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-
 
 set(BARNEY_VERSION_MAJOR 1)
 set(BARNEY_VERSION_MINOR 1)
-set(BARNEY_VERSION_PATCH 2)
+set(BARNEY_VERSION_PATCH 6)
 
 cmake_minimum_required(VERSION 3.24)
 
@@ -15,8 +15,6 @@ cmake_policy(SET CMP0079 NEW)
 cmake_policy(SET CMP0076 NEW)
 cmake_policy(SET CMP0063 NEW)
 
-
-#DEP set(CMAKE_HIP_FLAGS "-fgpu-rdc --hip-link ")
 
 option(BARNEY_MPI "Enable MPI Support" OFF)
 
@@ -31,9 +29,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
-#DEPset(CMAKE_HIP_ARCHITECTURES gfx1100)
 
-project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX#DEP HIP
+project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX
 )
 include(GNUInstallDirs)
 
@@ -89,9 +86,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
-
 # ------------------------------------------------------------------
-# owl - even if we build only for cpu (we we wouldn't use the owl
+# owl - even if we build only for cpu (where we wouldn't use the owl
 # _library_) we'd still need the owl common classes ... so this
 # _always_ gets included first
 # ------------------------------------------------------------------
@@ -149,7 +145,7 @@ option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
 option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
 
 option(BARNEY_USE_EXTERNAL_CUBQL "Use External CuBQL dir" OFF)
-set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")
+#set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")
 
 
 # ==================================================================

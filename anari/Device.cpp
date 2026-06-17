@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Device.h"
 #if BARNEY_MPI
@@ -424,6 +424,7 @@ namespace barney_device {
     auto state = deviceState(false);
     if (state->hasBeenCommitted) {
       reportMessage(ANARI_SEVERITY_DEBUG, "device committed more than once!");
+      return;
     } else {
       state->hasBeenCommitted = true;
     }

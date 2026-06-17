@@ -115,9 +115,9 @@ namespace barney_device {
     bool isValid() const;
     
   private:
-    BNData m_bnArrayData;
+    BNData m_bnArrayData = 0;
     helium::IntrusivePtr<helium::Array1D> m_array;
-    int m_offset;
+    int m_offset = 0;
   };
 
 } // namespace barney_device

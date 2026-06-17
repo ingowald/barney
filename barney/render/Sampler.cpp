@@ -262,13 +262,15 @@ namespace BARNEY_NS {
     PrimitiveSampler::~PrimitiveSampler()
     {}
     
-    bool PrimitiveSampler::setObject(const std::string &member,
-                                 const std::shared_ptr<Object> &value)
+    bool PrimitiveSampler::setData(const std::string &member,
+                                   const std::shared_ptr<Data> &value)
     {
+      BARNEY_CUDA_SYNC_CHECK();
+      
       if (Sampler::setObject(member,value)) return true;
 
-      if (member == "array") {
-        arrayData = value->as<PODData>();
+      if (member == "arrayData") {
+        arrayData = value ? value->as<PODData>() : PODData::SP();
         return true;
       }
       
@@ -277,25 +279,36 @@ namespace BARNEY_NS {
 
     bool PrimitiveSampler::set1i(const std::string &member, const int   &value) 
     {
+      BARNEY_CUDA_SYNC_CHECK();
+
       if (Sampler::set1i(member,value)) return true;
 
-      if (member == "offset")
-        { offset = value; return true; }      
+      if (member == "arrayOffset")
+        { arrayOffset = value; return true; }      
+      if (member == "arrayType")
+        { arrayType = (BNDataType)value; return true; }      
 
       return false;
     }
     
     Sampler::DD PrimitiveSampler::getDD(Device *device) 
     {
+      BARNEY_CUDA_SYNC_CHECK();
+
       Sampler::DD dd;
       dd.type = Sampler::PRIMITIVE;
 
       (vec4f&)dd.outTransform.offset = outOffset;
       memcpy(&dd.outTransform.mat_x,&outTransform,sizeof(outTransform));
+
+      dd.arrayData
+        = arrayData
+        ? arrayData->getPLD(device)->rtcBuffer->getDD()
+        : 0;
+      dd.arrayOffset = arrayOffset;
+      dd.arrayType = arrayType;
       
-      dd.array = (vec4f*)arrayData->getPLD(device)->rtcBuffer->getDD();
-      dd.offset = offset;
-      
+      BARNEY_CUDA_SYNC_CHECK();
       return dd;
     }
     

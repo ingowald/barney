@@ -9,8 +9,6 @@
 namespace rtc {
   namespace cuda_common {
 
-    void hipCheck() { checkHip(); }
-
     SetActiveGPU::SetActiveGPU(const Device *device)
     {
       if (device)  {
@@ -20,65 +18,35 @@ namespace rtc {
       }
     }
 
- SetActiveGPU::SetActiveGPU(int gpuID)
+    SetActiveGPU::SetActiveGPU(int gpuID)
     {
       BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
       BARNEY_CUDA_CHECK(cudaSetDevice(gpuID));
     }
 
- SetActiveGPU::~SetActiveGPU()
+    SetActiveGPU::~SetActiveGPU()
     {
       BARNEY_CUDA_CALL_NOTHROW(SetDevice(savedActiveDeviceID));
-    }
-
-    
-    
-__global__ void add(float *a, float *b, float *c, int N)
-{
-  int tid = threadIdx.x+blockIdx.x*blockDim.x;
-  if (tid >= N) return;
-  c[tid] = a[tid]+b[tid];
-}
-
-    
-    void checkHip()
-    {
-      // int N = 1024;
-      // float *a = 0;
-      // float *b = 0;
-      // float *c = 0;
-      
-      // BARNEY_CUDA_CALL(MallocManaged((void**)&a,N*sizeof(float)));
-      // BARNEY_CUDA_CALL(MallocManaged((void**)&b,N*sizeof(float)));
-      // BARNEY_CUDA_CALL(MallocManaged((void**)&c,N*sizeof(float)));
-      // for (int i=0;i<N;i++)
-      //   a[i] = 128;
-      // for (int i=0;i<N;i++)
-      //   b[i] = i;
-      // add<<<divRoundUp(N,128),128>>>(a,b,c, N);
-      // BARNEY_CUDA_SYNC_CHECK();
-      
-      // BARNEY_CUDA_CALL(DeviceSynchronize());
-      // for (int i=0;(1<<i)<N;i++)
-      //   PRINT(c[1<<i]);
     }
     
     Device::Device(int physicalGPU)
       : physicalID(physicalGPU)
     {
-      checkHip();
-      int saved = setActive();
       BARNEY_CUDA_SYNC_CHECK();
+      
+      int saved = setActive();
       BARNEY_CUDA_CALL(StreamCreateWithFlags(&stream,cudaStreamNonBlocking));
       // BARNEY_CUDA_CALL(StreamCreate(&stream));
       restoreActive(saved);
-      BARNEY_CUDA_SYNC_CHECK();
-      checkHip();
+    }
+
+    Device::~Device()
+    {
+      cudaStreamDestroy(stream);
     }
     
     int Device::setActive() const
     {
-      BARNEY_CUDA_SYNC_CHECK();
       int oldActive = 0;
       BARNEY_CUDA_CHECK(cudaGetDevice(&oldActive));
       if (physicalID != oldActive) {
@@ -91,7 +59,6 @@ __global__ void add(float *a, float *b, float *c, int N)
     void Device::restoreActive(int oldActive) const
     {
       BARNEY_CUDA_CHECK(cudaSetDevice(oldActive)); 
-      BARNEY_CUDA_SYNC_CHECK();
     }
     
     void *Device::allocMem(size_t numBytes)
@@ -143,7 +110,6 @@ __global__ void add(float *a, float *b, float *c, int N)
       if (numBytes == 0) return;
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
-      BARNEY_CUDA_SYNC_CHECK();
     }
       
     void Device::sync() 
