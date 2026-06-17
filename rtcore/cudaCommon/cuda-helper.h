@@ -8,6 +8,7 @@
 #ifdef __GNUC__
 #   include <unistd.h>
 #endif
+#include "cuda_runtime.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -75,7 +76,8 @@ inline void sleep(unsigned int seconds)
 
 #define BARNEY_CUDA_SYNC_CHECK()                                       \
   {                                                             \
-    BARNEY_CUDA_CALL(DeviceSynchronize());                      \
+    cudaError_t rc0 = cudaDeviceSynchronize();                  \
+    assert(rc0 == cudaSuccess);                                 \
     cudaError_t rc = cudaGetLastError();                        \
     if (rc != cudaSuccess) {                                    \
       fprintf(stderr, "error (%s: line %d): %s\n",              \

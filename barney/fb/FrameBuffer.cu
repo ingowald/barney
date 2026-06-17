@@ -409,8 +409,9 @@ namespace BARNEY_NS {
     }
 
     // tiles render at renderPixels
-    for (auto device : *devices)
+    for (auto device : *devices) {
       getFor(device)->resize(channels, renderPixels);
+    }
 
     size_t sizeOfPixel
       = (colorFormat == BN_FLOAT4)

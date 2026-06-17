@@ -1,11 +1,12 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "barney/render/HitAttributes.h"
 #include "barney/Object.h"
+#include "barney/common/Data.h"
 #include "barney/common/mat4.h"
 #include "barney/common/math.h"
 #include <stack>
@@ -39,6 +40,7 @@ namespace BARNEY_NS {
         IMAGE1D,
         IMAGE2D,
         IMAGE3D,
+        PRIMITIVE,
       } Type;
 
       struct DD {
@@ -47,6 +49,10 @@ namespace BARNEY_NS {
         inline __both__ DD(const DD &other) {
           type = other.type;
           numChannels = other.numChannels;
+          arrayData   = other.arrayData;
+          arrayOffset = other.arrayOffset;
+          arrayType   = other.arrayType;
+          
           texture      = other.texture;
           inAttribute  = other.inAttribute;
           inTransform  = other.inTransform;
@@ -59,6 +65,11 @@ namespace BARNEY_NS {
         AttributeTransform inTransform;
         rtc::TextureObject texture;
         uint8_t            numChannels;
+
+        // primitive sampler only:
+        void              *arrayData;
+        int                arrayOffset;
+        BNDataType         arrayType;
         
         // all types
         uint8_t type=INVALID;
@@ -67,6 +78,11 @@ namespace BARNEY_NS {
       };
 
       virtual DD getDD(Device *device) = 0;
+
+      /*! pretty-printer for printf-debugging */
+      std::string toString() const override
+      { return "Sampler<>"; }
+
       
       static Sampler::SP create(SlotContext *context,
                                 const std::string &type);
@@ -103,16 +119,41 @@ namespace BARNEY_NS {
       TransformSampler(SlotContext *slotContext)
         : Sampler(slotContext)
       {}
+      std::string toString() const override
+      { return "TransformSampler"; }
       DD getDD(Device *device) override;
     };
 
+    struct PrimitiveSampler : public Sampler {
+      PrimitiveSampler(SlotContext *slotContext);
+      ~PrimitiveSampler() override;
+      
+      // ------------------------------------------------------------------
+      /*! @{ parameter set/commit interface */
+      bool setData(const std::string &member,
+                   const std::shared_ptr<Data> &value) override;
+      bool set1i(const std::string &member, const int   &value) override;
+      /*! @} */
+      // ------------------------------------------------------------------
+      /*! pretty-printer for printf-debugging */
+      std::string toString() const override
+      { return "PrimitiveSampler"; }
+
+
+      DD getDD(Device *device) override;
+      PODData::SP arrayData;
+      // format of the entries in the array
+      BNDataType arrayType;
+      int        arrayOffset = 0;
+    };
+      
     /*! sampler that operates on rtc-supported texture types; can
         operate on 1D (for ANARI IMAGE1D sampler), 2D (ANARI IMAGE2D)
         and 3D (ANARI IMAGE3D) textures */
     struct TextureSampler : public Sampler {
       TextureSampler(SlotContext *slotContext,
                      int numDims);
-      virtual ~TextureSampler();
+      ~TextureSampler() override;
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
@@ -162,25 +203,39 @@ namespace BARNEY_NS {
     vec4f Sampler::DD::eval(const HitAttributes &inputs,
                              bool dbg) const
     {
+      if (type == PRIMITIVE) {
+        if (!arrayData)
+          return vec4f(0.f,0.f,0.f,1.f);
+          
+        if (arrayType == BN_UFIXED8_RGBA) {
+          vec4uc v = ((vec4uc*)arrayData)[arrayOffset+inputs.primID];
+          return vec4f(v)*(1.f/255.f);
+        }
+        return vec4f(0.f,0.f,0.f,1.f);
+      }
       vec4f in  = inputs.get((AttributeKind)inAttribute,dbg);
       vec4f out = in;
-      if (type != TRANSFORM) {
-        vec4f coord = inTransform.applyTo(in);
-        vec4f fromTex = coord;
-        if (type == IMAGE1D) {
-          fromTex = rtc::tex1D<vec4f>(texture,coord.x);
-        } else if (type == IMAGE2D) {
-          fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
-        } else if (type == IMAGE3D) {
-          fromTex = rtc::tex3D<vec4f>(texture,coord.x,coord.y,coord.z);
-        }
-        // iw - numchannels == 0 can't happen, that's not a valid
-        // value
-        if (numChannels <= 1) fromTex.y = 0.f;
-        if (numChannels <= 2) fromTex.z = 0.f;
-        if (numChannels <= 3) fromTex.w = 1.f;
-        out = fromTex;
+      if (type == TRANSFORM) {
+        return outTransform.applyTo(out);
       }
+      
+      vec4f coord = inTransform.applyTo(in);
+      vec4f fromTex = coord;
+      if (type == IMAGE1D) { 
+        fromTex = rtc::tex1D<vec4f>(texture,coord.x);
+      } else if (type == IMAGE2D) {
+        fromTex = rtc::tex2D<vec4f>(texture,coord.x,coord.y);
+      } else if (type == IMAGE3D) {
+        fromTex = rtc::tex3D<vec4f>(texture,coord.x,coord.y,coord.z);
+      } else
+        return vec4f(1.f,0.f,0.f,1.f);
+      
+      // iw - numchannels == 0 can't happen, that's not a valid
+      // value
+      if (numChannels <= 1) fromTex.y = 0.f;
+      if (numChannels <= 2) fromTex.z = 0.f;
+      if (numChannels <= 3) fromTex.w = 1.f;
+      out = fromTex;
       auto ret = outTransform.applyTo(out);
       return ret;
     }

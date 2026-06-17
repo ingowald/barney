@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -124,7 +124,6 @@ namespace BARNEY_NS {
                              Random &random,
                              bool dbg) const
     {
-      if (dbg) printf(" => scatter ...\n");
       scatter.pdf = 0.f;
       if (type == TYPE_Phase)
         return data.phase.scatter(scatter,dg,random,dbg);

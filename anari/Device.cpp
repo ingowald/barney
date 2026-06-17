@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Device.h"
 #if BARNEY_MPI
@@ -365,7 +365,6 @@ namespace barney_device {
         // we're an independent device that didn't have any cuda gpu
         // explicitly attached to it.... which means we could in theory
         // use multiple GPU
-        std::cout << "#banari: enable_multiGPU = "<<m_enable_multiGPU << std::endl;
         if (m_enable_multiGPU) {
         } else {
           _gpuIDs = nullptr;
@@ -425,6 +424,7 @@ namespace barney_device {
     auto state = deviceState(false);
     if (state->hasBeenCommitted) {
       reportMessage(ANARI_SEVERITY_DEBUG, "device committed more than once!");
+      return;
     } else {
       state->hasBeenCommitted = true;
     }

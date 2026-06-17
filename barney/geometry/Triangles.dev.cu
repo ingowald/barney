@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/geometry/Triangles.h"
 #include "rtcore/TraceInterface.h"
@@ -28,7 +28,7 @@ namespace BARNEY_NS {
 #else
       bool dbg = ray.dbg();
 #endif
-      if (dbg) printf("=======================================================\n");
+      // if (dbg) printf("=======================================================\n");
       auto &self = *(Triangles::DD*)ti.getProgramData();
       const float u = ti.getTriangleBarycentrics().x;
       const float v = ti.getTriangleBarycentrics().y;
@@ -87,7 +87,6 @@ namespace BARNEY_NS {
 
       render::HitAttributes hitData;
       hitData.worldPosition   = P;
-      // hitData.worldNormal     = n;
       hitData.objectPosition  = osP;
       hitData.objectNormal    = make_vec4f(osN);
       hitData.primID          = primID;
@@ -95,8 +94,6 @@ namespace BARNEY_NS {
       hitData.t               = depth;
       hitData.isShadowRay     = ray.isShadowRay;
 
-      if (dbg) printf("normal from geom %f %f %f\n",
-                      osN.x,osN.y,osN.z);
       auto interpolator
         = [triangle,u,v,primID,dbg](const GeometryAttribute::DD &attrib,
                                     bool faceVarying) -> vec4f
@@ -112,10 +109,6 @@ namespace BARNEY_NS {
           return ret;
         };
       self.setHitAttributes(hitData,interpolator,world,dbg);
-      if (dbg) printf("normal from attributes %f %f %f\n",
-                      hitData.objectNormal.x,
-                      hitData.objectNormal.y,
-                      hitData.objectNormal.z);
       hitData.worldNormal
         = ti.transformNormalFromObjectToWorldSpace
         ((const vec3f&)hitData.objectNormal);
@@ -127,8 +120,8 @@ namespace BARNEY_NS {
         = material.createBSDF(hitData,world.samplers,dbg);
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                          ray.dir,hitData.worldNormal,ray.dbg());
-      
+                          ray.dir,hitData.worldNormal,dbg);
+
       if (opacity < 1.f) {
         ray.rngSeed.next((const uint32_t&)osP.x);
         ray.rngSeed.next((const uint32_t&)osP.y);

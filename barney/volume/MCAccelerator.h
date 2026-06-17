@@ -263,10 +263,9 @@ namespace BARNEY_NS {
         device->rtc->freeGroup(pld->group);
         pld->group = 0;
       }
-      if (pld->geom) {
-        device->rtc->freeGeom(pld->geom);
-        pld->geom = 0;
-      }
+      // iw - do NOT free the geom we created - geometries free their
+      // own geoms when they die, if we free here we'll get a double
+      // free.
     }
   }
   

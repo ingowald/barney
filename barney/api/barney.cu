@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/AppInterface.h"
 #include "barney/api/Context.h"
@@ -774,18 +774,10 @@ namespace barney_api {
                 BNCamera   camera,
                 BNFrameBuffer fb)
   {
-    // static double t_first = getCurrentTime();
-    // static double t_sum = 0.;
-
-    // double t0 = getCurrentTime();
     static int numCalls = 0;
     if (++numCalls < 10)
       LOG_API_ENTRY;
     checkGet(model)->render(checkGet(renderer),checkGet(camera),checkGet(fb));
-    // double t1 = getCurrentTime();
-
-    // t_sum += (t1-t0);
-    // printf("time in %f\n",float((t_sum / (t1 - t_first))));
   }
 
   BARNEY_API
@@ -802,6 +794,12 @@ namespace barney_api {
                             const int *_gpuIDs,
                             int  numGPUs)
   {
+#ifdef __CUDACC__
+    auto initial_rc = cudaGetLastError();
+    if (initial_rc != cudaSuccess)
+      printf("#barney WARNING: there seems to be a CUDA error state set _before_ the barney device is being created. This typically indicates an error in the application; I'm going to silently 'eat' this first error, but if the app will later set other error states this is almost certainly going to cause some issues\n");
+#endif
+
     LOG_API_ENTRY;
     if (getenv("BARNEY_FORCE_CPU")) {
       if (FromEnv::get()->logBackend) {

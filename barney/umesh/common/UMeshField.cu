@@ -31,6 +31,7 @@ namespace BARNEY_NS {
     return &perLogical[device->contextRank()];
   }
 
+#if RTC_DEVICE_CODE
   inline __rtc_device float length3(vec4f v)
   { return length(getPos(v)); }
   
@@ -112,11 +113,13 @@ namespace BARNEY_NS {
     bb.extend(d);
     rasterBox(grid,bb);
   }
+#endif
   
   __rtc_global void umeshRasterCells(rtc::ComputeInterface ci,
                                      UMeshField::DD mesh,
                                      MCGrid::DD grid)
   {
+#if RTC_DEVICE_CODE
     const int cellIdx = ci.launchIndex().x;
     if (cellIdx >= mesh.numCells) return;    
 
@@ -137,6 +140,7 @@ namespace BARNEY_NS {
       const box4f eltBounds = mesh.cellBounds(cellIdx);
       rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
     }
+#endif
   }
   
   MCGrid::SP UMeshField::buildMCs()
@@ -256,6 +260,7 @@ namespace BARNEY_NS {
                           UMeshField::DD mesh,
                           box3f *pWorldBounds)
   {
+#if RTC_DEVICE_CODE
     int tid = ci.launchIndex().x;
     if (tid >= mesh.numCells)
       return;
@@ -265,7 +270,8 @@ namespace BARNEY_NS {
     rtc::fatomicMin(&pWorldBounds->lower.z,bounds.lower.z); 
     rtc::fatomicMax(&pWorldBounds->upper.x,bounds.upper.x);
     rtc::fatomicMax(&pWorldBounds->upper.y,bounds.upper.y);
-    rtc::fatomicMax(&pWorldBounds->upper.z,bounds.upper.z); 
+    rtc::fatomicMax(&pWorldBounds->upper.z,bounds.upper.z);
+#endif
   }
   
   void UMeshField::commit()

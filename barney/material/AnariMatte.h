@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -52,7 +52,6 @@ namespace BARNEY_NS {
                                           const Sampler::DD *samplers,
                                           bool dbg) const
     {
-      if (dbg) printf("anarimatte createbsdf\n");
       vec4f baseColor = this->color.eval(hitData,samplers,dbg);
       vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
 # if 1
@@ -61,10 +60,6 @@ namespace BARNEY_NS {
       (vec3f&)bsdf.albedo = reflectance * (const vec3f&)baseColor
         * (ONE_OVER_PI)
         ;
-      if (dbg) printf("created lambertian %f %f %f\n",
-                      bsdf.albedo.x,
-                      bsdf.albedo.y,
-                      bsdf.albedo.z);
       bsdf.alpha = baseColor.w * opacity.x;
 # else
       packedBSDF::NVisii bsdf;
@@ -76,7 +71,6 @@ namespace BARNEY_NS {
       bsdf.metallic = 0.0f;
       bsdf.roughness = 1.f;
       bsdf.ior = 1.f;
-      // bsdf.alpha = baseColor.w;
 # endif
       return bsdf;
     }

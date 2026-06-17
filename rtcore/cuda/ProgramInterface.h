@@ -1,7 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
-
 
 #pragma once
 
@@ -120,6 +119,7 @@ namespace rtc {
       // ray/traversal state:
       void  *prd;
       const void  *geomData;
+      uint64_t debugValue = 0;
       float  tMin;
       Geom::SBTHeader *acceptedSBT;
       struct {

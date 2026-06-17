@@ -106,6 +106,20 @@ namespace barney_device {
   private:
   };
 
+  struct PrimitiveSampler : public Sampler
+  {
+    PrimitiveSampler(BarneyGlobalState *s);
+    ~PrimitiveSampler() override;
+    void commitParameters() override;
+    void finalize() override;
+    bool isValid() const;
+    
+  private:
+    BNData m_bnArrayData = 0;
+    helium::IntrusivePtr<helium::Array1D> m_array;
+    int m_offset = 0;
+  };
+
 } // namespace barney_device
 
 BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Sampler *, ANARI_SAMPLER);

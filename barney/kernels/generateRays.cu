@@ -39,7 +39,7 @@ namespace BARNEY_NS {
       
       return xfmVector(toWorld,dir);
     }
-
+#endif
 
     __rtc_global
     void _generateRays(const rtc::ComputeInterface &rt,
@@ -65,6 +65,9 @@ namespace BARNEY_NS {
                        TileDesc *tileDescs,
                        bool enablePerRayDebug
                        )
+#if !RTC_DEVICE_CODE
+    ;
+#else
     {
       // ------------------------------------------------------------------
       int tileID   = rt.getBlockIdx().x;
@@ -80,13 +83,7 @@ namespace BARNEY_NS {
       state.pixelID = tileID * (tileSize*tileSize) + rt.getThreadIdx().x;
       Random rand(unsigned(ix+fbSize.x*accumID),
                   unsigned(iy+fbSize.y*accumID));
-// #if NEW_RNG
-      // ray.rngSeed.value = (uint32_t)hash(ix,iy,accumID);
       ray.rngSeed.seed(ix+accumID*fbSize.x,iy);
-// #else
-      // ray.rngSeed.seed(ix+fbSize.x*(accumID),iy+fbSize.y*(accumID));
-// #endif
-
 
       float pixel_u = ((accumID == 0) ? .5f : rand());
       float pixel_v = ((accumID == 0) ? .5f : rand());
@@ -147,29 +144,30 @@ namespace BARNEY_NS {
           uvToWorld(omni.toWorld,image_u,image_v);
        }
       
-#ifdef NDEBUG
       ray._dbg        = 0;
       ray.crosshair   = 0;
+#ifdef NDEBUG
+      // debug prints and crosshairs always off
 #else
-      int dbg_target_x = fbSize.x/2;
-      int dbg_target_y = fbSize.y/2;
-      
-      // dbg_target_x += 230;
-      // dbg_target_y += 80;
-      
-      bool crossHair_x = (ix == dbg_target_x);
-      bool crossHair_y = (iy == dbg_target_y);
-
-      ray._dbg         = enablePerRayDebug && (crossHair_x && crossHair_y);
-      ray.crosshair
-        = enablePerRayDebug && (crossHair_x || crossHair_y);
+      if (enablePerRayDebug) {
+        int dbg_target_x = fbSize.x/2;
+        int dbg_target_y = fbSize.y/2;
+        
+        bool crossHair_x = (ix == dbg_target_x);
+        bool crossHair_y = (iy == dbg_target_y);
+        
+        ray._dbg
+          = (crossHair_x && crossHair_y);
+        ray.crosshair
+          = (crossHair_x || crossHair_y);
+      }
 #endif
+
 
       ray.clearHit();
       ray.isShadowRay = false;
       ray.isInMedium  = false;
       ray.tMax        = 1e30f;
-
       // Apply cutting plane (disabled if w < -1e28f)
       if (renderer.cutPlane.w > -1e28f) {
         vec3f N = vec3f(renderer.cutPlane.x,

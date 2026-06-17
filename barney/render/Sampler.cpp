@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/render/Sampler.h"
 #include "barney/common/Texture.h"
@@ -57,6 +57,8 @@ namespace BARNEY_NS {
         return std::make_shared<TextureSampler>(context,3);
       if (type == "transform")
         return std::make_shared<TransformSampler>(context);
+      if (type == "primitive")
+        return std::make_shared<PrimitiveSampler>(context);
       throw std::runtime_error("do not know what a '"+type+" sampler is !?");
     }
 
@@ -64,16 +66,12 @@ namespace BARNEY_NS {
     bool Sampler::setObject(const std::string &member,
                                  const std::shared_ptr<Object> &value)
     {
-      // if (SlottedObject::setObject(member,value)) return true;
-
       return false;
     }
         
     bool Sampler::setString(const std::string &member,
                             const std::string &value)
     {
-      // if (SlottedObject::setString(member,value)) return true;
-
       if (member == "inAttribute")
         { inAttribute = parseAttribute(value); return true; }
       
@@ -82,8 +80,6 @@ namespace BARNEY_NS {
 
     bool Sampler::set4x4f(const std::string &member, const vec4f *value)
     {
-      // if (SlottedObject::set4x4f(member,value)) return true;
-
       if (member == "outTransform")
         { outTransform = *(mat4f*)value; return true; }
       
@@ -92,8 +88,6 @@ namespace BARNEY_NS {
     
     bool Sampler::set4f(const std::string &member, const vec4f &value)
     {
-      // if (SlottedObject::set4f(member,value)) return true;
-
       if (member == "outOffset")
         { outOffset = value; return true; }
       if (member == "borderColor")
@@ -104,7 +98,6 @@ namespace BARNEY_NS {
 
     void Sampler::commit() 
     {
-      // SlottedObject::commit();
       for (auto device : *devices) {
         DD dd = getDD(device);
         samplerRegistry->setDD(samplerID,dd,device);
@@ -253,10 +246,66 @@ namespace BARNEY_NS {
     {
       Sampler::DD dd;
       dd.type = Sampler::TRANSFORM;
+      dd.inAttribute = (AttributeKind)inAttribute;
       (vec4f&)dd.outTransform.offset = outOffset;
       memcpy(&dd.outTransform.mat_x,&outTransform,sizeof(outTransform));
       return dd;
     }
 
+
+
+
+    PrimitiveSampler::PrimitiveSampler(SlotContext *slotContext)
+      : Sampler(slotContext)
+    {
+    }
+    
+    PrimitiveSampler::~PrimitiveSampler()
+    {}
+    
+    bool PrimitiveSampler::setData(const std::string &member,
+                                   const std::shared_ptr<Data> &value)
+    {
+      if (Sampler::setObject(member,value)) return true;
+
+      if (member == "arrayData") {
+        arrayData = value ? value->as<PODData>() : PODData::SP();
+        return true;
+      }
+      
+      return false;
+    }
+
+    bool PrimitiveSampler::set1i(const std::string &member, const int   &value) 
+    {
+      if (Sampler::set1i(member,value)) return true;
+
+      if (member == "arrayOffset")
+        { arrayOffset = value; return true; }      
+      if (member == "arrayType")
+        { arrayType = (BNDataType)value; return true; }      
+
+      return false;
+    }
+    
+    Sampler::DD PrimitiveSampler::getDD(Device *device) 
+    {
+      Sampler::DD dd;
+      dd.type = Sampler::PRIMITIVE;
+      dd.inAttribute = (AttributeKind)inAttribute;
+
+      (vec4f&)dd.outTransform.offset = outOffset;
+      memcpy(&dd.outTransform.mat_x,&outTransform,sizeof(outTransform));
+
+      dd.arrayData
+        = arrayData
+        ? arrayData->getPLD(device)->rtcBuffer->getDD()
+        : 0;
+      dd.arrayOffset = arrayOffset;
+      dd.arrayType = arrayType;
+      
+      return dd;
+    }
+    
   }
 }

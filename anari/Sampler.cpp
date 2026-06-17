@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Sampler.h"
 // std
@@ -176,6 +176,8 @@ namespace barney_device {
       return new Image3D(s);
     else if (subtype == "transform")
       return new TransformSampler(s);
+    else if (subtype == "primitive")
+      return new PrimitiveSampler(s);
     else
       return (Sampler *)new UnknownObject(ANARI_SAMPLER, subtype, s);
   }
@@ -192,26 +194,15 @@ namespace barney_device {
     Object::commitParameters();
 
     m_inAttribute = getParamString("inAttribute", "attribute0");
-    m_inOffset
-      = getParam<math::float4>("inOffset",    math::float4(0.f, 0.f, 0.f, 0.f));
     m_outOffset
       = getParam<math::float4>("outOffset",   math::float4(0.f, 0.f, 0.f, 0.f));
-    m_inTransform = math::identity;
-    getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
     m_outTransform = math::identity;
     getParam("outTransform", ANARI_FLOAT32_MAT4, &m_outTransform);
   }
   
   void Sampler::setBarneyParameters()
   {
-    bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
     bnSet4x4fv(m_bnSampler, "outTransform", (const bn_float4 *)&m_outTransform);
-    bnSet4f(m_bnSampler,
-            "inOffset",
-            m_inOffset.x,
-            m_inOffset.y,
-            m_inOffset.z,
-            m_inOffset.w);
     bnSet4f(m_bnSampler,
             "outOffset",
             m_outOffset.x,
@@ -247,6 +238,13 @@ namespace barney_device {
             m_borderColor.y,
             m_borderColor.z,
             m_borderColor.w);
+    bnSet4x4fv(m_bnSampler, "inTransform", (const bn_float4 *)&m_inTransform);
+    bnSet4f(m_bnSampler,
+            "inOffset",
+            m_inOffset.x,
+            m_inOffset.y,
+            m_inOffset.z,
+            m_inOffset.w);
 
     bnSetObject(m_bnSampler, "textureData", m_bnTextureData);
   }
@@ -257,6 +255,10 @@ namespace barney_device {
     m_linearFilter = getParamString("filter", "linear") != "nearest";
     m_borderColor
       = getParam<math::float4>("borderColor", math::float4(0.f, 0.f, 0.f, 0.f));
+    m_inOffset
+      = getParam<math::float4>("inOffset",    math::float4(0.f, 0.f, 0.f, 0.f));
+    m_inTransform = math::identity;
+    getParam("inTransform", ANARI_FLOAT32_MAT4, &m_inTransform);
   }
 
   // Image1D //
@@ -415,6 +417,71 @@ namespace barney_device {
   {
     Sampler::setBarneyParameters();
     
+    bnCommit(m_bnSampler);
+  }
+
+  // Image1D //
+
+  PrimitiveSampler::PrimitiveSampler(BarneyGlobalState *s)
+    : Sampler(s, "primitive")
+  {}
+
+  PrimitiveSampler::~PrimitiveSampler() = default;
+
+  void PrimitiveSampler::commitParameters()
+  {
+    Sampler::commitParameters();
+    m_array = getParamObject<helium::Array1D>("array");
+    m_offset = getParam<int>("offset",0);
+  }
+
+  bool PrimitiveSampler::isValid() const
+  {
+    return m_array;
+  }
+
+  void PrimitiveSampler::finalize()
+  {
+    if (!m_array) {
+      reportMessage(ANARI_SEVERITY_DEBUG,
+                    "PrimitiveSampler::finalize() without a valid 'array' parameter");
+      return;
+    }
+
+    auto state = deviceState();
+    int slot = state->slot;
+    auto context = state->tether->context;
+
+    if (m_bnArrayData) {
+      bnRelease(m_bnArrayData);
+      m_bnArrayData = 0;
+    }
+
+    BNDataType barneyType;
+    size_t sizeOfType;
+    auto type = m_array->elementType();
+    switch(type) {
+    case ANARI_UFIXED8_VEC4:
+      barneyType = BN_UFIXED8_RGBA;
+      sizeOfType = 4;
+      break;
+    default: throw std::runtime_error
+        ("unsupported anari primitive sampler data type #"
+         +std::to_string((int)type));
+    }
+    m_bnArrayData
+      = bnDataCreate(context,slot,barneyType,
+                     m_array->totalSize(),
+                     m_array->data()
+                     );
+    // ------------------------------------------------------------------
+    // now, create sampler over those texels
+    // ------------------------------------------------------------------
+    
+    bnSetData(m_bnSampler, "arrayData", m_bnArrayData);
+    bnSet1i(m_bnSampler, "arrayOffset", (int)m_offset);
+    bnSet1i(m_bnSampler, "arrayType", (int)barneyType);
+
     bnCommit(m_bnSampler);
   }
 

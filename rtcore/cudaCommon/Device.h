@@ -14,14 +14,16 @@ namespace rtc {
     struct Device;
     struct Texture;
     struct TextureData;
+
+    void checkHip();
+    void hipCheck();
     
     struct SetActiveGPU {
-      inline SetActiveGPU(const Device *device);
-      inline SetActiveGPU(int gpuID);
-      inline ~SetActiveGPU();
+      SetActiveGPU(const Device *device);
+      SetActiveGPU(int gpuID);
+      ~SetActiveGPU();
     private:
       int savedActiveDeviceID = -1;
-      // const Device *const savedDevice;
     };
 
     /*! base class for cuda-based device(s) - unlike optix/device and
@@ -30,14 +32,8 @@ namespace rtc {
         optix-based trace interface, and at some later time a
         dedicated cuda trace device */
     struct Device {
-      Device(int physicalGPU)
-        : physicalID(physicalGPU)
-      {
-        int saved = setActive();
-        BARNEY_CUDA_CALL(StreamCreateWithFlags(&stream,cudaStreamNonBlocking));
-        // BARNEY_CUDA_CALL(StreamCreate(&stream));
-        restoreActive(saved);
-      }
+      Device(int physicalGPU);
+      virtual ~Device();
       
       void copyAsync(void *dst, const void *src, size_t numBytes);
       void copy(void *dst, const void *src, size_t numBytes)
@@ -63,7 +59,7 @@ namespace rtc {
       void freeTextureData(TextureData *);
       void freeTexture(Texture *);
       
-      cudaStream_t stream;
+      cudaStream_t stream = 0;
       int const physicalID;
     };
 
@@ -75,30 +71,5 @@ namespace rtc {
     size_t getPhysicalDeviceHash(int gpuID);
     
 
-    inline SetActiveGPU::SetActiveGPU(const Device *device)
-    {
-      if (device) 
-        savedActiveDeviceID = device->setActive();
-      else 
-        BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-    }
-
-    inline SetActiveGPU::SetActiveGPU(int gpuID)
-      // : savedDevice(null)
-    {
-      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
-      BARNEY_CUDA_CHECK(cudaSetDevice(gpuID));
-    }
-
-    inline SetActiveGPU::~SetActiveGPU()
-    {
-      BARNEY_CUDA_CALL_NOTHROW(SetDevice(savedActiveDeviceID));
-      // if (savedDevice) 
-      //   savedDevice->restoreActive(savedActiveDeviceID);
-      // else
-        
-    }
-
-    
   }
 }

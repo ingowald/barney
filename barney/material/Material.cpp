@@ -1,4 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 
@@ -82,14 +83,14 @@ namespace BARNEY_NS {
     HostMaterial::SP HostMaterial::create(SlotContext *slotContext,
                                           const std::string &type)
     {
-#ifndef NDEBUG
-      static std::set<std::string> alreadyCreated;
-      if (alreadyCreated.find(type) == alreadyCreated.end()) {
-        alreadyCreated.insert(type);
-        if (Context::logging())
-        std::cout << "#bn: creating (at least one of) material type '" << type << "'" << std::endl;
-      }
-#endif
+// #ifndef NDEBUG
+//       static std::set<std::string> alreadyCreated;
+//       if (alreadyCreated.find(type) == alreadyCreated.end()) {
+//         alreadyCreated.insert(type);
+//         if (Context::logging())
+//           std::cout << "#bn: creating (at least one of) material type '" << type << "'" << std::endl;
+//       }
+// #endif
       if (type == "AnariMatte" || type == "matte")
         return std::make_shared<AnariMatte>(slotContext); 
       if (type == "physicallyBased" || type == "AnariPBR")

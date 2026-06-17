@@ -850,7 +850,6 @@ namespace BARNEY_NS {
     }
 #endif // device code  
 
-#if RTC_DEVICE_CODE
     __rtc_global void _shadeRays(const rtc::ComputeInterface &rt,
                                  World::DD world,
                                  Renderer::DD renderer,
@@ -863,6 +862,9 @@ namespace BARNEY_NS {
                                  int *d_nextWritePos,
                                  int generation
                                  )
+#if !RTC_DEVICE_CODE
+    ;
+#else
     {
       int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
       if (tid >= numRays) return;

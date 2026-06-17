@@ -51,7 +51,7 @@ namespace BARNEY_NS {
              skip calling the trace kernel, which may not like getting
              called with size 0 */
         } else {
-          int bs = 128;
+          int bs = 64;
           int nb = divRoundUp(dd.numRays,bs);
 
           // if (myRank() == 0)

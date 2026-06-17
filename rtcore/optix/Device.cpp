@@ -141,28 +141,9 @@ namespace rtc {
     void TraceKernel2D::launch(vec2i dims,
                                const void *kernelData)
     {
-      {
-        auto rc = cudaGetLastError();
-        if (rc) {
-          PING; PRINT(rc);
-          PRINT(cudaGetErrorString(rc));
-        }
-        assert(rc == 0);
-      }
-
-
       SetActiveGPU forDuration(device);
       BARNEY_CUDA_CALL(StreamSynchronize(/*inherited!*/device->stream));
 
-      {
-        auto rc = cudaGetLastError();
-        if (rc) {
-          PING; PRINT(rc);
-          PRINT(cudaGetErrorString(rc));
-        }
-        assert(rc == 0);
-      }
-      
       owlParamsSetRaw(lp,"raw",kernelData,0);
       if (dims.x > 0 && dims.y > 0) {
         owlAsyncLaunch2D(rg,dims.x,dims.y,lp);

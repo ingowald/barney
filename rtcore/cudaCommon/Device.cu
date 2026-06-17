@@ -9,17 +9,56 @@
 namespace rtc {
   namespace cuda_common {
 
+    SetActiveGPU::SetActiveGPU(const Device *device)
+    {
+      if (device)  {
+        savedActiveDeviceID = device->setActive();
+      } else {
+        BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      }
+    }
+
+    SetActiveGPU::SetActiveGPU(int gpuID)
+    {
+      BARNEY_CUDA_CHECK(cudaGetDevice(&savedActiveDeviceID));
+      BARNEY_CUDA_CHECK(cudaSetDevice(gpuID));
+    }
+
+    SetActiveGPU::~SetActiveGPU()
+    {
+      BARNEY_CUDA_CALL_NOTHROW(SetDevice(savedActiveDeviceID));
+    }
+    
+    Device::Device(int physicalGPU)
+      : physicalID(physicalGPU)
+    {
+      BARNEY_CUDA_SYNC_CHECK();
+      
+      int saved = setActive();
+      BARNEY_CUDA_CALL(StreamCreateWithFlags(&stream,cudaStreamNonBlocking));
+      // BARNEY_CUDA_CALL(StreamCreate(&stream));
+      restoreActive(saved);
+    }
+
+    Device::~Device()
+    {
+      cudaStreamDestroy(stream);
+    }
+    
     int Device::setActive() const
     {
       int oldActive = 0;
       BARNEY_CUDA_CHECK(cudaGetDevice(&oldActive));
-      BARNEY_CUDA_CHECK(cudaSetDevice(physicalID));
+      if (physicalID != oldActive) {
+        BARNEY_CUDA_CHECK(cudaSetDevice(physicalID));
+        BARNEY_CUDA_SYNC_CHECK();
+      }
       return oldActive;
     }
     
     void Device::restoreActive(int oldActive) const
     {
-      BARNEY_CUDA_CHECK(cudaSetDevice(oldActive));
+      BARNEY_CUDA_CHECK(cudaSetDevice(oldActive)); 
     }
     
     void *Device::allocMem(size_t numBytes)
@@ -30,6 +69,7 @@ namespace rtc {
       // BARNEY_CUDA_CALL(MallocManaged((void **)&ptr,numBytes));
       BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
       assert(ptr);
+      BARNEY_CUDA_SYNC_CHECK();
       return ptr;
     }
     
@@ -54,6 +94,7 @@ namespace rtc {
       if (!mem) return;
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(Free(mem));
+      BARNEY_CUDA_SYNC_CHECK();
     }
       
     void Device::memsetAsync(void *mem,int value, size_t numBytes) 
@@ -75,6 +116,7 @@ namespace rtc {
     {
       SetActiveGPU forDuration(this);
       BARNEY_CUDA_CALL(StreamSynchronize(stream));
+      BARNEY_CUDA_SYNC_CHECK();
     }
 
     void Device::freeTextureData(TextureData *td)
@@ -154,7 +196,7 @@ namespace rtc {
             
             rc = cudaDeviceEnablePeerAccess(cuda_j,/* flags - must be 0 */0);
             if (rc == cudaErrorPeerAccessAlreadyEnabled) {
-              cudaGetLastError();
+              auto ignore = cudaGetLastError();
             } else if (rc != cudaSuccess)
               throw std::runtime_error("cuda error in cudaDeviceEnablePeerAccess: "
                                        +std::to_string(rc));

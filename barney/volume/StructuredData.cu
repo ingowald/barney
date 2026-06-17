@@ -33,6 +33,7 @@ namespace BARNEY_NS {
                                  vec3i numScalars,
                                  rtc::TextureObject scalars)
   {
+#if RTC_DEVICE_CODE
     vec3i mcDims = mcGrid.dims;
     int tid = ci.launchIndex().x;
     if (tid >= mcDims.x*mcDims.y*mcDims.z) return;
@@ -56,6 +57,7 @@ namespace BARNEY_NS {
         }
     int mcIdx = mcID.x + mcGrid.dims.x*(mcID.y+mcGrid.dims.y*(mcID.z));
     mcGrid.scalarRanges[mcIdx] = scalarRange;
+#endif
   }
 
   

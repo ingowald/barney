@@ -72,13 +72,11 @@ namespace BARNEY_NS {
       PLD *pld = getPLD(device);
       for (auto &geom : pld->triangleGeoms)
         if (geom) {
-          // owlGeomRelease(geom);
           device->rtc->freeGeom(geom);
           geom = 0;
         }
       for (auto &geom : pld->userGeoms)
         if (geom) {
-          // owlGeomRelease(geom);
           device->rtc->freeGeom(geom);
           geom = 0;
         }

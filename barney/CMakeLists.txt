@@ -1,4 +1,5 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+# CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 if(MSVC) # That's also clang-cl
@@ -25,11 +26,11 @@ target_compile_definitions(barney_config_ptx
 macro(set_library_properties tgt)
   set_target_properties(${tgt}
     PROPERTIES
-    CUDA_SEPARABLE_COMPILATION   ON
     POSITION_INDEPENDENT_CODE    ON
+    CXX_VISIBILITY_PRESET  hidden
+    CUDA_SEPARABLE_COMPILATION   ON
     CUDA_USE_STATIC_CUDA_RUNTIME ON
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
-    CXX_VISIBILITY_PRESET  hidden
     CUDA_VISIBILITY_PRESET hidden
   )
 if (APPLE)
@@ -40,46 +41,9 @@ endif()
 endmacro()
 
 
-# in the barney backend all sources will only use host-side code, but
-# we can still compile them with nvcc if it's avaible - so _if_ nvcc
-# is available we leave the language for .cu files on 'cuda' in order
-# to let the same sources be properly compiled for non-embree
-# backends; but if there's no cuda vailable we have to change the
-# language to CPP else cmake will just skip these sources.
-macro(configure_cuda_source src)
-  if (NOT BARNEY_HAVE_CUDA)
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
-      message("setting language of ${src} to CXX")
-      set_source_files_properties(${src} PROPERTIES LANGUAGE CXX)
-      if (NOT WIN32)
-        set_source_files_properties(${src} PROPERTIES COMPILE_OPTIONS "-xc++")
-      endif()
-    endif()
-  else()
-    get_filename_component(ext "${src}" EXT)
-    if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
-      set_source_files_properties(${src}
-        # -rdc=true is for relocatable code, can be resolved at link time.
-        PROPERTIES COMPILE_OPTIONS "--extended-lambda;-rdc=true"
-      )
-    endif()
-#    set_property(
-#      TARGET barney_config
-#      APPEND
-#      PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
-  endif()
-endmacro()
-
-
-
-
-
-
-
 
 #############################################################################
-# main step - crete the actual 'backends'; ie, the 'instantiations' of
+# main step - create the actual 'backends'; ie, the 'instantiations' of
 # barney's actuall classes, algorithms, kernels, programs, etc, for a
 # given rtcore.
 #############################################################################
@@ -137,9 +101,6 @@ set(HOST_SOURCES
   umesh/mc/UMeshCuBQLSampler.h
   umesh/mc/UMeshCuBQLSampler.cu
  
-#  umesh/os/AWT.cu
-#  umesh/os/AWT.h
-
   amr/BlockStructuredCuBQLSampler.cu
   amr/BlockStructuredField.cu
   
@@ -188,8 +149,6 @@ set(HOST_SOURCES
   render/SamplerRegistry.h
   render/SamplerRegistry.cpp
   
-  #  material/Globals.h
-  #  material/Globals.cu
   ModelSlot.h
   ModelSlot.cpp
   # general csommon/data-related stuff
@@ -197,6 +156,7 @@ set(HOST_SOURCES
   common/Texture.cpp
   common/Data.h
   common/Data.cpp
+
   # lights
   light/Light.h
   light/Light.cpp
@@ -243,7 +203,6 @@ set(DEVICE_PROGRAM_SOURCES
   volume/StructuredData.dev.cu
   volume/NanoVDB.dev.cu
   umesh/mc/UMeshMC.dev.cu
-#  umesh/os/AWT.dev.cu
   amr/BlockStructuredMC.dev.cu
   kernels/traceRays.dev.cu
 )
@@ -329,8 +288,6 @@ if (BARNEY_BACKEND_EMBREE)
   endif()
 endif()
     
-
-
 # ------------------------------------------------------------------
 # cuda backend: instantiates all the barney classes, device
 # programs, etcpp - except the api itself - in an cuda configuration
@@ -338,12 +295,14 @@ endif()
 # ------------------------------------------------------------------
 if (BARNEY_BACKEND_CUDA)
   # ----------- barney_cuda -----------
-  add_library(barney_cuda_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
+  add_library(barney_cuda_programs STATIC
+    ${DEVICE_PROGRAM_SOURCES})  
   target_link_libraries(barney_cuda_programs PUBLIC barney_config barney_rtc_cuda)
   target_compile_definitions(barney_cuda_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
   set_library_properties(barney_cuda_programs)
 
-  add_library(barney_cuda STATIC ${HOST_SOURCES})
+  add_library(barney_cuda STATIC
+    ${HOST_SOURCES})
   target_link_libraries(barney_cuda PUBLIC barney_config barney_rtc_cuda)
   if (TARGET cuBQL_cuda_float3_static)
     target_link_libraries(barney_cuda PRIVATE
@@ -364,9 +323,6 @@ if (BARNEY_BACKEND_CUDA)
 endif()
     
 
-
-
-
 # =============================================================================
 # create frontends for barney and barney_static
 # =============================================================================
@@ -378,6 +334,9 @@ configure_cuda_source(api/barney.cu)
 add_library(${BARNEY_DEVICE_NAME} SHARED api/barney.cu)
 target_link_libraries(${BARNEY_DEVICE_NAME} PUBLIC
   $<BUILD_INTERFACE:barney_config>
+#  $<BUILD_INTERFACE:barney_rtc_cuda_common>
+#  $<BUILD_INTERFACE:barney_rtc_cuda>
+#  $<BUILD_INTERFACE:barney_cuda>
 )
 set_library_properties(${BARNEY_DEVICE_NAME})
 target_include_directories(${BARNEY_DEVICE_NAME} PUBLIC
@@ -407,7 +366,6 @@ if (BARNEY_MPI)
     api/barney.cu
   )
   target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC
-    #    barney_config
     $<BUILD_INTERFACE:barney_config>
   )
   target_include_directories(${BARNEY_DEVICE_NAME}_mpi PUBLIC
@@ -423,7 +381,6 @@ if (BARNEY_MPI)
   target_compile_definitions(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
     -Dbarney_mpi_STATIC=1 -DBARNEY_MPI=1)
   target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
-    #   barney_config
     $<BUILD_INTERFACE:barney_config>
   )
   target_include_directories(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
@@ -447,6 +404,7 @@ if (BARNEY_BACKEND_OPTIX)
     target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
   endif()
 endif()
+
 # link embree backend (if enabled) to all frontends
 if (BARNEY_BACKEND_EMBREE)
   target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_backend_embree>)
