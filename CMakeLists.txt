@@ -103,14 +103,14 @@ if (BARNEY_HAVE_CUDA)
   endif()
   set(OWL_BUILD_VIEWER OFF)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
+  if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS "1.2.8"))
+    message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
+endif()
 else()
   add_library(owl-config INTERFACE)
   target_include_directories(owl-config INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
   )
-endif()
-if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS "1.2.8"))
-  message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
 endif()
 # ------------------------------------------------------------------
 
