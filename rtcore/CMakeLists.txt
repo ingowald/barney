@@ -163,10 +163,10 @@ if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
   target_link_libraries(barney_rtc_cuda_common PUBLIC
     barney_rtc_config
     )
-  if (USE_EXP)
-    target_link_libraries(barney_rtc_cuda_common PUBLIC
-      rtcore_exp_config
-    )
+    if (TARGET rtcore_exp_config)
+      target_link_libraries(barney_rtc_cuda_common PUBLIC
+        rtcore_exp_config
+      )
   endif()
 set_target_properties(barney_rtc_cuda_common
   PROPERTIES

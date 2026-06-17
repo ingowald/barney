@@ -37,15 +37,18 @@ project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX#DEP HIP
 )
 include(GNUInstallDirs)
 
-option(USE_EXP "Experimental Pluggable Backend" OFF)
-mark_as_advanced(USE_EXP)
+set(BARNEY_RTC_EXT 
+  "" CACHE STRING
+  "Experimental/external rtcore config.")
+mark_as_advanced(USE_EXT)
 
 set(BARNEY_DEVICE_NAME 
   "barney" CACHE STRING
   "Name of device to be built.")
 
-if (USE_EXP)
-  include(rtcore/exp_external_backends/config.cmake)
+if ((NOT BARNEY_RTC_EXT STREQUAL "") AND (EXISTS "${BARNEY_RTC_EXT}"))
+  set(BARNEY_HAVE_EXT ON)
+  include(${BARNEY_RTC_EXT}/config.cmake)
 elseif (NOT BARNEY_DISABLE_CUDA)
   include(CheckLanguage)
   check_language(CUDA)
@@ -131,7 +134,7 @@ target_include_directories(barney_config INTERFACE
 # ------------------------------------------------------------------
 # configure which backend(s) to build
 # ------------------------------------------------------------------
-if (USE_EXP)
+if (BARNEY_HAVE_EXT)
   # leave it to the external plugins to configure themselves - not
   # currently working
 elseif (BARNEY_HAVE_CUDA)
