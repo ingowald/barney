@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/cuda/Device.h"
 #include "rtcore/cuda/Buffer.h"
@@ -43,7 +43,6 @@ namespace rtc {
       if (d_data) 
         BARNEY_CUDA_CALL(Free(d_data));
       BARNEY_CUDA_CALL(Malloc((void**)&d_data,numBytes));
-      BARNEY_CUDA_SYNC_CHECK();
     }
     
   }

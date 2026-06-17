@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -142,9 +142,6 @@ namespace BARNEY_NS {
           float den2 = max(den1, SMALL_EPSILON);
           float ret = (float)M_1_PI * 1.f / den2;
           // float ret = (float)M_1_PI * alpha_sqr / den2;
-          if (dbg)
-            printf("gtr_2 alpha %f cos_theta_h %f den1 %f den2 %f ret %f\n",
-                   alpha,cos_theta_h,den1,den2,ret);
           return ret;
         }
 
@@ -505,10 +502,6 @@ namespace BARNEY_NS {
           float g_i = smith_shadowing_ggx(fabs(dot(n, w_i)), alpha);
           float g_o = smith_shadowing_ggx(fabs(dot(n, w_o)), alpha);
           float g   = g_i * g_o;
-          if (dbg)
-            printf("microfacet_iso spec %f %f %f d %f f %f %f %f g %f (%f %f)\n",
-                    spec.x,spec.y,spec.z,
-                    d,f.x,f.y,f.z,g,g_i,g_o);
           return d * f * g;
         }
 
@@ -692,28 +685,9 @@ namespace BARNEY_NS {
           }
           
 	
-          if (dbg) printf("nvis gloss %f %f %f\n",gloss.x,gloss.y,gloss.z);
-          if (dbg) printf("nvis diffuse bsdf %f %f %f color %f %f %f, (1-metal)*(1-spec) %f\n",
-                          diffuse_bsdf.x,
-                          diffuse_bsdf.y,
-                          diffuse_bsdf.z,
-                          diffuse_color.x,
-                          diffuse_color.y,
-                          diffuse_color.z,
-                          (1.f - mat.metallic) * (1.f - mat.specular_transmission)
-                          );
-
           vec3f flat = lerp_r(diffuse_bsdf * diffuse_color, 
                                subsurface_bsdf * subsurface_color, 
                                mat.flatness);
-          if (dbg) printf("BRDF: flat %f %f %f\n",flat.x,flat.y,flat.z);
-          if (dbg) printf("BRDF: 1-met %f 1-spec %f sheen %f %f %f coat %f gloss %f %f %f aniso %f\n",1.f-mat.metallic,1.f-mat.specular_transmission,
-                          sheen.x,sheen.y,sheen.z,
-                          coat,
-                          gloss.x,gloss.y,gloss.z,
-                           mat.anisotropy);
-          
-          
           bsdf = (flat
                   * (1.f - mat.metallic) * (1.f - mat.specular_transmission)
                   + sheen + coat + gloss);// * fabs(dot(w_i, b_n));
@@ -765,7 +739,6 @@ namespace BARNEY_NS {
           float sum_weights = diffuse_weight+glossy_weight
             +clearcoat_weight+transmission_weight;
           if (sum_weights == 0.f) {
-            // printf("no importance sampling weights...\n");
             pdf = 0.f;
             return;
           }
@@ -828,8 +801,6 @@ namespace BARNEY_NS {
           // n_comp -= lerp_r(transmission_kludge, metallic_kludge, mat.metallic);
 
 #if IMPORTANCE_SAMPLE_BRDF
-          // if (dbg) printf("PDF diff %f micro %f trans %f coat %f\n",
-          //                 diffuse,microfacet,microfacet_transmission,clear_coat);
           pdf = (diffuse_weight*diffuse
                  + glossy_weight*microfacet
                  + clearcoat_weight*clear_coat
@@ -837,8 +808,6 @@ namespace BARNEY_NS {
 #else
           pdf = (diffuse + microfacet + microfacet_transmission + clear_coat) / n_comp;
 #endif
-          // if (dbg) printf(" nvis pdf diffuse %f microfacet %f clarcoat %f -> pdf %f\n",
-          //                 diffuse,microfacet,clear_coat);
         }
 
         /* 
@@ -908,7 +877,6 @@ namespace BARNEY_NS {
           float sum_weights = diffuse_weight+glossy_weight
             +clearcoat_weight+transmission_weight;
           if (sum_weights == 0.f) {
-            printf("no importance sampling weights...\n");
             pdf = 0.f;
             return;
           }
@@ -919,9 +887,6 @@ namespace BARNEY_NS {
           glossy_weight       *= scale_weights;
           clearcoat_weight    *= scale_weights;
           transmission_weight *= scale_weights;
-          // if (dbg) printf("scatter type weights %f %f %f %f\n",
-          //                 diffuse_weight,glossy_weight,clearcoat_weight,transmission_w
-          // eight);
           float type_rng = lcg_randomf(rng);
           float type_pdf = 0.f;
           if (type_rng < diffuse_weight) {
@@ -943,7 +908,6 @@ namespace BARNEY_NS {
           const float type_pdf = 1.f;
             // Randomly pick a brdf to sample
           if (mat.specular_transmission == 0.f) {
-            if (dbg) printf(" => scatter(1)\n");
             sampled_bsdf = lcg_randomf(rng) * 3.f;
             sampled_bsdf = clamp(sampled_bsdf, 0, 2);
           } else {
@@ -951,12 +915,10 @@ namespace BARNEY_NS {
             if (dot(w_o, b_n) > 0.f) {
               sampled_bsdf = lcg_randomf(rng) * 4.f;
               sampled_bsdf = clamp(sampled_bsdf, 0, 3);
-              // if (dbg) printf("-> sampled %i\n",sampled_bsdf);
             }
             else sampled_bsdf = DISNEY_TRANSMISSION_BRDF; 
           }
 #endif
-          if (dbg) printf(" => scatter type %i\n",sampled_bsdf);
 
           vec2f samples = vec2f(lcg_randomf(rng), lcg_randomf(rng));
           if (sampled_bsdf == DISNEY_DIFFUSE_BRDF) {
@@ -1013,16 +975,8 @@ namespace BARNEY_NS {
 	
           vec3f w_h = normalize(w_i + w_o);
           disney_pdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, pdf, dbg);
-          if (dbg) printf("-> got pdf %f\n",pdf);
-
-// #if 1
-          // pdf *= type_pdf / 4.f;
-          // pdf *= type_pdf;
-// #endif
           
-          if (dbg) printf("-> is-adjusted pdf %f\n",pdf);
           disney_brdf(mat, g_n, s_n, b_n, v_x, v_y, w_o, w_i, w_h, bsdf, dbg);
-          if (dbg) printf("-> got bsdf %f %f %f\n",bsdf.x,bsdf.y,bsdf.z);
         }
       }
       
@@ -1132,10 +1086,6 @@ namespace BARNEY_NS {
       inline __rtc_device vec3f NVisii::getAlbedo(bool dbg) const
       {
         vec3f baseColor = this->baseColor;
-        // if (dbg) printf("visrtx::getalbedo %f %f %f\n",
-        //                 (float)baseColor.x,
-        //                 (float)baseColor.y,
-        //                 (float)baseColor.z); 
         return baseColor;
       }
 
@@ -1194,13 +1144,6 @@ namespace BARNEY_NS {
          // * @param v_x The tangent vector
         vec3f v_x = normalize(cross(g_n,v_y));
 
-        // if (isnan(v_x) || isnan(v_y)) {
-        //   printf("============================ NAN ==============================\n");
-        //   printf("============================ NAN ==============================\n");
-        //   printf("============================ NAN ==============================\n");
-        //   printf("============================ NAN ==============================\n");
-        //   printf("============================ NAN ==============================\n");
-        // }
         // out:
         vec3f w_i;
         int    sampled_bsdf;
@@ -1209,15 +1152,6 @@ namespace BARNEY_NS {
         sample_disney_brdf(mat,rng,g_n,s_n,b_n,v_x,v_y,w_o,
                            // out:
                            w_i, pdf, sampled_bsdf, bsdf, dbg);
-        if (0 && dbg) printf(" -> nvis sampled type %i dir %f %f %f bsdf %f %f %f pdf %f\n",
-                        sampled_bsdf,
-                        w_i.x,
-                        w_i.y,
-                        w_i.z,
-                        bsdf.x,
-                        bsdf.y,
-                        bsdf.z,
-                        pdf);
         scatter.pdf = pdf;
         scatter.f_r = bsdf;
         scatter.dir = normalize(w_i);
@@ -1226,12 +1160,6 @@ namespace BARNEY_NS {
           ? ScatterResult::DIFFUSE
           : ScatterResult::GLOSSY;
 
-        if (dbg) printf(" => done scatter, f_r %f %f %f pdf %f\n",
-                        scatter.f_r.x,
-                        scatter.f_r.y,
-                        scatter.f_r.z,
-                        scatter.pdf
-                        );
       }
 
       inline __rtc_device EvalRes NVisii::eval(DG dg, vec3f wi, bool dbg) const
@@ -1260,7 +1188,6 @@ namespace BARNEY_NS {
         vec3f bsdf;
         disney_brdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, bsdf,dbg);
         EvalRes ret;
-        if (dbg) printf("nvisii bsdf %f %f %f\n",bsdf.x,bsdf.y,bsdf.z);
         ret.value = vec3f(bsdf);
         disney_pdf(mat, g_n,s_n,b_n,v_x, v_y,w_o,w_i, w_h, ret.pdf,dbg);
         return ret;

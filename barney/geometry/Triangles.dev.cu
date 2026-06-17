@@ -36,8 +36,6 @@ namespace BARNEY_NS {
       int instID    = ti.getInstanceID();
       float depth   = ti.getRayTmax();
 
-      if (dbg) printf("anyhit tri\n");
-      
       // Cut-plane: reject hits on the invisible side
       if (OptixGlobals::hitOnInvisibleSide(globals, depth, ti)) {
         ti.ignoreIntersection();
@@ -45,7 +43,6 @@ namespace BARNEY_NS {
       }
 
       // ------------------------------------------------------------------
-      if (dbg) printf("hitIDs %i tri\n",(int)(size_t)globals.hitIDs);
       if (globals.hitIDs) {
         /* ID buffer rendering writes IDs no matter what transparency */
         const int rayID
@@ -90,7 +87,6 @@ namespace BARNEY_NS {
 
       render::HitAttributes hitData;
       hitData.worldPosition   = P;
-      // hitData.worldNormal     = n;
       hitData.objectPosition  = osP;
       hitData.objectNormal    = make_vec4f(osN);
       hitData.primID          = primID;
@@ -98,8 +94,6 @@ namespace BARNEY_NS {
       hitData.t               = depth;
       hitData.isShadowRay     = ray.isShadowRay;
 
-      if (dbg) printf("normal from geom %f %f %f\n",
-                      osN.x,osN.y,osN.z);
       auto interpolator
         = [triangle,u,v,primID,dbg](const GeometryAttribute::DD &attrib,
                                     bool faceVarying) -> vec4f
@@ -115,10 +109,6 @@ namespace BARNEY_NS {
           return ret;
         };
       self.setHitAttributes(hitData,interpolator,world,dbg);
-      if (dbg) printf("normal from attributes %f %f %f\n",
-                      hitData.objectNormal.x,
-                      hitData.objectNormal.y,
-                      hitData.objectNormal.z);
       hitData.worldNormal
         = ti.transformNormalFromObjectToWorldSpace
         ((const vec3f&)hitData.objectNormal);
@@ -130,7 +120,7 @@ namespace BARNEY_NS {
         = material.createBSDF(hitData,world.samplers,dbg);
       float opacity
         = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                          ray.dir,hitData.worldNormal,dbg);//ray.dbg());
+                          ray.dir,hitData.worldNormal,dbg);
 
       if (opacity < 1.f) {
         ray.rngSeed.next((const uint32_t&)osP.x);

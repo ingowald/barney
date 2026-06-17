@@ -124,7 +124,6 @@ namespace BARNEY_NS {
                              Random &random,
                              bool dbg) const
     {
-      if (dbg) printf(" => scatter ...\n");
       scatter.pdf = 0.f;
       if (type == TYPE_Phase)
         return data.phase.scatter(scatter,dg,random,dbg);

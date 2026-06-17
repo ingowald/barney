@@ -4,7 +4,7 @@
 
 set(BARNEY_VERSION_MAJOR 1)
 set(BARNEY_VERSION_MINOR 1)
-set(BARNEY_VERSION_PATCH 7)
+set(BARNEY_VERSION_PATCH 8)
 
 cmake_minimum_required(VERSION 3.24)
 
@@ -14,7 +14,6 @@ cmake_policy(SET CMP0104 NEW)
 cmake_policy(SET CMP0079 NEW)
 cmake_policy(SET CMP0076 NEW)
 cmake_policy(SET CMP0063 NEW)
-
 
 option(BARNEY_MPI "Enable MPI Support" OFF)
 
@@ -30,8 +29,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 
-project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX
-)
+project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 include(GNUInstallDirs)
 
 set(BARNEY_RTC_EXT 
@@ -66,7 +64,7 @@ elseif (NOT BARNEY_DISABLE_CUDA)
     set(BARNEY_HAVE_CUDA OFF)
   endif()
 else()
-  message("explicitly disabling cuda")
+  message("explicitly disabling CUDA")
   set(BARNEY_HAVE_CUDA OFF)
   set(CMAKE_CUDA_ARCHITECTURES)
 endif()
@@ -159,8 +157,6 @@ option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
 option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
 
 option(BARNEY_USE_EXTERNAL_CUBQL "Use External CuBQL dir" OFF)
-#set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")
-
 
 # ==================================================================
 if (BARNEY_DISABLE_DENOISING)
@@ -224,7 +220,7 @@ add_subdirectory(rtcore)
 # barney system, api, and mpi stuff
 # ------------------------------------------------------------------
 if (BARNEY_MPI)
-  message("#barney: configuring mpi")
+  message("#barney: configuring MPI")
   find_package(MPI)
   if (MPI_FOUND)
     message("#barney: MPI found, including in default barney and banari builds")
@@ -271,7 +267,6 @@ configure_package_config_file(
 
 message("BARNEY_VERSION ${BARNEY_VERSION}")
 write_basic_package_version_file(
-#    "barneyConfigVersion.cmake"
 "${BARNEY_DEVICE_NAME}ConfigVersion.cmake"
     VERSION ${BARNEY_VERSION}
     COMPATIBILITY SameMajorVersion
