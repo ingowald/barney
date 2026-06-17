@@ -124,6 +124,14 @@ target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/nanovdb/include/>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
 )
+if (WIN32)
+  target_compile_definitions(barney_config INTERFACE -DNOMINMAX)
+  target_compile_options(barney_config INTERFACE
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
+  )
+endif()
+
+
 # ------------------------------------------------------------------
 # configure which backend(s) to build
 # ------------------------------------------------------------------
