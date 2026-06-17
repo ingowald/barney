@@ -1,7 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #define ANARI_BARNEY_MATH_DEFINITIONS 1
 

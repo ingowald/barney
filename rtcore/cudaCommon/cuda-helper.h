@@ -8,6 +8,7 @@
 #ifdef __GNUC__
 #   include <unistd.h>
 #endif
+#include "cuda_runtime.h"
 
 #ifdef _WIN32
 #include <windows.h>

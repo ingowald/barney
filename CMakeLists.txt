@@ -1,10 +1,10 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+# CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-
 
 set(BARNEY_VERSION_MAJOR 1)
 set(BARNEY_VERSION_MINOR 1)
-set(BARNEY_VERSION_PATCH 2)
+set(BARNEY_VERSION_PATCH 7)
 
 cmake_minimum_required(VERSION 3.24)
 
@@ -15,8 +15,6 @@ cmake_policy(SET CMP0079 NEW)
 cmake_policy(SET CMP0076 NEW)
 cmake_policy(SET CMP0063 NEW)
 
-
-#DEP set(CMAKE_HIP_FLAGS "-fgpu-rdc --hip-link ")
 
 option(BARNEY_MPI "Enable MPI Support" OFF)
 
@@ -31,9 +29,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # project command is required to come after cmake_minimum_required command.
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
-#DEPset(CMAKE_HIP_ARCHITECTURES gfx1100)
 
-project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX#DEP HIP
+project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX
 )
 include(GNUInstallDirs)
 
@@ -92,15 +89,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
-
 # ------------------------------------------------------------------
-# owl - even if we build only for cpu (we we wouldn't use the owl
+# owl - even if we build only for cpu (where we wouldn't use the owl
 # _library_) we'd still need the owl common classes ... so this
 # _always_ gets included first
 # ------------------------------------------------------------------
 if (BARNEY_HAVE_CUDA)
   set(OWL_CUDA_STATIC ON)
-    message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
+  message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
   if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
     set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
   elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../optix/include/optix.h")
@@ -110,11 +106,14 @@ if (BARNEY_HAVE_CUDA)
   endif()
   set(OWL_BUILD_VIEWER OFF)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
+  if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS "1.2.8"))
+    message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
+endif()
 else()
   add_library(owl-config INTERFACE)
   target_include_directories(owl-config INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
-    )
+  )
 endif()
 # ------------------------------------------------------------------
 
@@ -131,6 +130,14 @@ target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/nanovdb/include/>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
 )
+if (WIN32)
+  target_compile_definitions(barney_config INTERFACE -DNOMINMAX)
+  target_compile_options(barney_config INTERFACE
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
+  )
+endif()
+
+
 # ------------------------------------------------------------------
 # configure which backend(s) to build
 # ------------------------------------------------------------------
@@ -152,7 +159,7 @@ option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
 option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
 
 option(BARNEY_USE_EXTERNAL_CUBQL "Use External CuBQL dir" OFF)
-set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")
+#set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")
 
 
 # ==================================================================

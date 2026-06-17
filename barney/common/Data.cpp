@@ -120,6 +120,9 @@ namespace BARNEY_NS {
     case BN_FLOAT64_VEC3: return "BN_FLOAT64_VEC3";
     case BN_FLOAT64_VEC4: return "BN_FLOAT64_VEC4";
 
+    case BN_UFIXED8_RGBA: 
+      return "BN_UFIXED8_RGBA";
+      
     default:
       throw std::runtime_error
         ("#bn internal error: to_string not implemented for "
@@ -188,6 +191,9 @@ namespace BARNEY_NS {
       return sizeof(vec3ul);
     case BN_UINT64_VEC4:
       return sizeof(vec4ul);
+
+    case BN_UFIXED8_RGBA:
+      return sizeof(vec4uc);
       
     default:
       throw std::runtime_error
@@ -300,6 +306,7 @@ namespace BARNEY_NS {
     case BN_FLOAT64_VEC2:
     case BN_FLOAT64_VEC3:
     case BN_FLOAT64_VEC4:
+    case BN_UFIXED8_RGBA:
       return std::make_shared<PODData>
         (context,devices,type);
     case BN_OBJECT:

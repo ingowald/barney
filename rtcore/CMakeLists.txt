@@ -14,6 +14,10 @@ macro(rtc_library_properties tgt)
     POSITION_INDEPENDENT_CODE    ON
     CXX_VISIBILITY_PRESET  hidden
     VISIBILITY_INLINES_HIDDEN ON
+    CUDA_SEPARABLE_COMPILATION   ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+    CUDA_VISIBILITY_PRESET hidden
   )
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
@@ -115,7 +119,6 @@ if (BARNEY_BACKEND_EMBREE)
     target_compile_options(embree_local INTERFACE -flax-vector-conversions -fsigned-char)
   endif()
 
-#  add_library(barney_rtc_embree OBJECT #STATIC
   add_library(barney_rtc_embree STATIC
     embree/Float16.cpp
     embree/Compute.cpp
@@ -172,6 +175,7 @@ set_target_properties(barney_rtc_cuda_common
   PROPERTIES
   CXX_VISIBILITY_PRESET hidden
   POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS  ON
   )
   rtc_library_properties(barney_rtc_cuda_common)
 else()

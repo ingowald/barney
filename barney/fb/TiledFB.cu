@@ -240,24 +240,6 @@ namespace BARNEY_NS {
     tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
   }
   
-  __rtc_global
-  void setTileCoordsKernel2(TileDesc *tileDescs,
-                            int numActiveTiles,
-                            vec2i numTiles,
-                            int globalIndex,
-                            int globalIndexStep)
-  {
-    int tid = threadIdx.x+blockIdx.x*blockDim.x;//ci.launchIndex().x;
-    if (tid >= numActiveTiles) return;
-    
-    int tileID = tid * globalIndexStep + globalIndex;
-    
-    int tile_x = tileID % numTiles.x;
-    int tile_y = tileID / numTiles.x;
-    tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
-  }
-  
-
   void TiledFB::resize(uint32_t channels,
                        vec2i newSize)
   {

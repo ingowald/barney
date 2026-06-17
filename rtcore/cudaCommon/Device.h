@@ -19,12 +19,11 @@ namespace rtc {
     void hipCheck();
     
     struct SetActiveGPU {
- SetActiveGPU(const Device *device);
- SetActiveGPU(int gpuID);
- ~SetActiveGPU();
+      SetActiveGPU(const Device *device);
+      SetActiveGPU(int gpuID);
+      ~SetActiveGPU();
     private:
       int savedActiveDeviceID = -1;
-      // const Device *const savedDevice;
     };
 
     /*! base class for cuda-based device(s) - unlike optix/device and
@@ -34,6 +33,7 @@ namespace rtc {
         dedicated cuda trace device */
     struct Device {
       Device(int physicalGPU);
+      virtual ~Device();
       
       void copyAsync(void *dst, const void *src, size_t numBytes);
       void copy(void *dst, const void *src, size_t numBytes)
