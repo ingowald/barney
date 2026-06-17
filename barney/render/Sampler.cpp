@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/render/Sampler.h"
 #include "barney/common/Texture.h"
@@ -265,8 +265,6 @@ namespace BARNEY_NS {
     bool PrimitiveSampler::setData(const std::string &member,
                                    const std::shared_ptr<Data> &value)
     {
-      BARNEY_CUDA_SYNC_CHECK();
-      
       if (Sampler::setObject(member,value)) return true;
 
       if (member == "arrayData") {
@@ -279,8 +277,6 @@ namespace BARNEY_NS {
 
     bool PrimitiveSampler::set1i(const std::string &member, const int   &value) 
     {
-      BARNEY_CUDA_SYNC_CHECK();
-
       if (Sampler::set1i(member,value)) return true;
 
       if (member == "arrayOffset")
@@ -293,8 +289,6 @@ namespace BARNEY_NS {
     
     Sampler::DD PrimitiveSampler::getDD(Device *device) 
     {
-      BARNEY_CUDA_SYNC_CHECK();
-
       Sampler::DD dd;
       dd.type = Sampler::PRIMITIVE;
 
@@ -308,7 +302,6 @@ namespace BARNEY_NS {
       dd.arrayOffset = arrayOffset;
       dd.arrayType = arrayType;
       
-      BARNEY_CUDA_SYNC_CHECK();
       return dd;
     }
     
