@@ -4,7 +4,7 @@
 
 set(BARNEY_VERSION_MAJOR 1)
 set(BARNEY_VERSION_MINOR 1)
-set(BARNEY_VERSION_PATCH 6)
+set(BARNEY_VERSION_PATCH 7)
 
 cmake_minimum_required(VERSION 3.24)
 
@@ -93,7 +93,7 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 # ------------------------------------------------------------------
 if (BARNEY_HAVE_CUDA)
   set(OWL_CUDA_STATIC ON)
-    message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
+  message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
   if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
     set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
   elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../optix/include/optix.h")
@@ -107,7 +107,10 @@ else()
   add_library(owl-config INTERFACE)
   target_include_directories(owl-config INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
-    )
+  )
+endif()
+if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS "1.2.8"))
+  message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
 endif()
 # ------------------------------------------------------------------
 

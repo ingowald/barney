@@ -246,6 +246,7 @@ namespace BARNEY_NS {
     {
       Sampler::DD dd;
       dd.type = Sampler::TRANSFORM;
+      dd.inAttribute = (AttributeKind)inAttribute;
       (vec4f&)dd.outTransform.offset = outOffset;
       memcpy(&dd.outTransform.mat_x,&outTransform,sizeof(outTransform));
       return dd;
@@ -291,6 +292,7 @@ namespace BARNEY_NS {
     {
       Sampler::DD dd;
       dd.type = Sampler::PRIMITIVE;
+      dd.inAttribute = (AttributeKind)inAttribute;
 
       (vec4f&)dd.outTransform.offset = outOffset;
       memcpy(&dd.outTransform.mat_x,&outTransform,sizeof(outTransform));
