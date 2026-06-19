@@ -8,7 +8,7 @@
 #ifdef __GNUC__
 #   include <unistd.h>
 #endif
-#include "cuda_runtime.h"
+#include "rtcore/cudaCommon/cuda_to_hip.h"
 
 #ifdef _WIN32
 #include <windows.h>

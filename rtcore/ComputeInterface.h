@@ -17,6 +17,11 @@ namespace rtc {
 }
 #endif
 
+#if BARNEY_RTC_HIPRT
+# include "hiprt/ComputeInterface.h"
+namespace rtc { using namespace rtc::hiprt; }
+#endif
+
 #if BARNEY_RTC_OPTIX
 # include "optix/ComputeInterface.h"
 namespace rtc { using namespace rtc::optix; }

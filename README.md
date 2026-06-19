@@ -113,6 +113,16 @@ For CUDA/OptiX Acceleration, it also requires:
 
 - `OptiX`, as part of OWL. See documentation in OWL (https://github.com/NVIDIA/owl) for 
    where to get, and how to best install for OWL to easily find it)
+
+For AMD GPU (ROCm/HIP) Acceleration, it instead requires:
+
+- `ROCm` (https://rocm.docs.amd.com/), version 7 and up, which provides `hipcc`
+   and the HIP runtime. The same GPU code that builds for CUDA is compiled with
+   HIP; OptiX is NVIDIA-only and is not used in this configuration.
+
+- optionally, `HIPRT` (https://github.com/GPUOpen-LibrariesAndSDKs/HIPRT) for
+   hardware-accelerated ray traversal. Without it, barney uses its own
+   (cuBQL-based) software traversal.
    
 For MPI-based data-parallel rendering:
 
@@ -151,6 +161,13 @@ cmake --install .. [ --config Release ]
 
 By default Barney builds without MPI support; to enable this add
 `-DBARNEY_MPI=ON` to the cmake config command.
+
+To build for AMD GPUs with HIP/ROCm instead of CUDA/OptiX, add `-DUSE_HIP=ON`
+and select the target architecture with `-DCMAKE_HIP_ARCHITECTURES=<arch>` (for
+example `gfx90a` for CDNA2, or `gfx1100` for RDNA3); when left unset it defaults
+to `gfx90a`. To use HIPRT hardware traversal, also add `-DBARNEY_BACKEND_HIPRT=ON
+-Dhiprt_ROOT=<HIPRT-install>`. The CUDA/OptiX build is unchanged when `USE_HIP`
+is off.
 
 
 
