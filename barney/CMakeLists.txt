@@ -213,7 +213,7 @@ set(DEVICE_PROGRAM_SOURCES
 # configuration.
 # ------------------------------------------------------------------
 if (BARNEY_BACKEND_OPTIX)
-  add_library(barney_optix ${HOST_SOURCES})
+  add_library(barney_optix STATIC ${HOST_SOURCES})
   foreach(src  ${DEVICE_PROGRAM_SOURCES})
     get_filename_component(basename "${src}" NAME_WE)
     embed_ptx(
@@ -238,7 +238,7 @@ if (BARNEY_BACKEND_OPTIX)
     APPEND
     PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
   if (BARNEY_MPI)
-    add_library(barney_mpi_optix ${MPI_SOURCES})
+    add_library(barney_mpi_optix STATIC ${MPI_SOURCES})
     target_link_libraries(barney_mpi_optix PUBLIC barney_optix MPI::MPI_C)
     set_library_properties(barney_mpi_optix)
   endif()
