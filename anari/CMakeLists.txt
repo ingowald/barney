@@ -89,7 +89,7 @@ configure_file(
 # default shared-linkage for anari loader library to load when barney
 # device is requested
 # ==================================================================
-add_library(anari_library_${BARNEY_DEVICE_NAME} SHARED ${BANARI_SOURCES})
+add_library(anari_library_${BARNEY_DEVICE_NAME} ${BANARI_SOURCES})
 
 if(WIN32)
   target_link_libraries(anari_library_${BARNEY_DEVICE_NAME} PRIVATE
@@ -110,7 +110,7 @@ else()
 endif()
 
 if (BARNEY_MPI)
-  add_library(anari_library_${BARNEY_DEVICE_NAME}_mpi SHARED ${BANARI_SOURCES})
+  add_library(anari_library_${BARNEY_DEVICE_NAME}_mpi ${BANARI_SOURCES})
   target_link_libraries(anari_library_${BARNEY_DEVICE_NAME}_mpi PRIVATE
     $<BUILD_INTERFACE:banari-config>
     ${BARNEY_DEVICE_NAME}_mpi_static
