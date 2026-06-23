@@ -92,26 +92,79 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 # _library_) we'd still need the owl common classes ... so this
 # _always_ gets included first
 # ------------------------------------------------------------------
+option(BARNEY_USE_EXTERNAL_OWL "Use an installed OWL package instead of submodules/owl" OFF)
+
 if (BARNEY_HAVE_CUDA)
   set(OWL_CUDA_STATIC ON)
-  message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
-  if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
+  if (OptiX_INSTALL_DIR)
+    message(" using externally provided OptiX_INSTALL_DIR=${OptiX_INSTALL_DIR}")
+  elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
     set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
   elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../optix/include/optix.h")
     message(" found ${CMAKE_CURRENT_LIST_DIR}/../optix")
     set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/../optix)
-  else()
   endif()
   set(OWL_BUILD_VIEWER OFF)
-  add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
-  if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS "1.2.8"))
-    message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
-endif()
+  if (BARNEY_USE_EXTERNAL_OWL)
+    find_package(CUDAToolkit REQUIRED)
+    find_package(owl CONFIG REQUIRED)
+    include("${owl_DIR}/embed_ptx.cmake")
+
+    if (NOT TARGET OptiX::OptiX)
+      if (OptiX_INSTALL_DIR)
+        find_path(OptiX_ROOT_DIR NAMES include/optix.h PATHS ${OptiX_INSTALL_DIR})
+      elseif (DEFINED ENV{OptiX_INSTALL_DIR})
+        find_path(OptiX_ROOT_DIR NAMES include/optix.h PATHS $ENV{OptiX_INSTALL_DIR})
+      endif()
+      if (NOT OptiX_ROOT_DIR)
+        message(FATAL_ERROR "OptiX::OptiX is not defined and optix.h was not found")
+      endif()
+      add_library(OptiX::OptiX INTERFACE IMPORTED)
+      target_include_directories(OptiX::OptiX INTERFACE ${OptiX_ROOT_DIR}/include)
+    endif()
+
+    if (NOT TARGET owl::owl_static)
+      message(FATAL_ERROR "External OWL package did not provide owl::owl_static")
+    endif()
+    if (NOT TARGET owl_static)
+      add_library(owl_static ALIAS owl::owl_static)
+    endif()
+
+    get_filename_component(_barney_owl_prefix "${owl_DIR}/../../.." ABSOLUTE)
+    set(_barney_owl_include_dir "${_barney_owl_prefix}/include")
+    if (NOT EXISTS "${_barney_owl_include_dir}/owl/owl.h")
+      message(FATAL_ERROR "External OWL headers not found at ${_barney_owl_include_dir}")
+    endif()
+
+    if (NOT TARGET owl-config)
+      add_library(owl-config INTERFACE)
+      target_include_directories(owl-config INTERFACE ${_barney_owl_include_dir})
+      target_compile_definitions(owl-config INTERFACE OWL_CUDA_STATIC=1 OWL_HAVE_TBB=0)
+      target_link_libraries(owl-config INTERFACE
+        owl::owl_static
+        OptiX::OptiX
+        CUDA::cudart_static
+      )
+    endif()
+  else()
+    add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
+    if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS "1.2.8"))
+      message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
+    endif()
+  endif()
 else()
-  add_library(owl-config INTERFACE)
-  target_include_directories(owl-config INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
-  )
+  if (BARNEY_USE_EXTERNAL_OWL)
+    find_package(owl CONFIG REQUIRED)
+    get_filename_component(_barney_owl_prefix "${owl_DIR}/../../.." ABSOLUTE)
+    set(_barney_owl_include_dir "${_barney_owl_prefix}/include")
+    add_library(owl-config INTERFACE)
+    target_include_directories(owl-config INTERFACE ${_barney_owl_include_dir})
+  else()
+    add_library(owl-config INTERFACE)
+    target_include_directories(owl-config INTERFACE
+      ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
+      )
+  endif()
 endif()
 # ------------------------------------------------------------------
 
