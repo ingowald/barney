@@ -55,9 +55,8 @@ if ((NOT BARNEY_RTC_EXT STREQUAL "") AND (EXISTS "${BARNEY_RTC_EXT}"))
   include(${BARNEY_RTC_EXT}/config.cmake)
 elseif (USE_HIP)
   enable_language(HIP)
-  if (NOT DEFINED CMAKE_HIP_ARCHITECTURES OR CMAKE_HIP_ARCHITECTURES STREQUAL "")
-    set(CMAKE_HIP_ARCHITECTURES "gfx90a")
-  endif()
+  # enable_language(HIP) above auto-detects the host GPU arch (and errors on a
+  # no-GPU build host); pass -DCMAKE_HIP_ARCHITECTURES=... to override.
   message("#barney: building GPU code with HIP for CMAKE_HIP_ARCHITECTURES=${CMAKE_HIP_ARCHITECTURES}")
   # the cuda backend's GPU code is reused under HIP; OptiX is NVIDIA-only.
   set(BARNEY_HAVE_HIP ON)
