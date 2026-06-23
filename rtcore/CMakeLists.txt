@@ -7,7 +7,20 @@ set(CMAKE_CUDA_VISIBILITY_PRESET hidden)
 
 set(RTCORE_SOURCES )
 
-    
+# On AMD GPUs the cuda backend's .cu sources are compiled as HIP. Mark the
+# given sources LANGUAGE HIP so hipcc handles the device code (no effect on the
+# CUDA/OptiX build, where this macro is never invoked).
+macro(rtc_mark_hip_sources)
+  foreach(src ${ARGN})
+    get_filename_component(ext "${src}" EXT)
+    if (ext STREQUAL ".cu")
+      set_source_files_properties(${src} PROPERTIES
+        LANGUAGE HIP
+        COMPILE_OPTIONS "-fgpu-rdc")
+    endif()
+  endforeach()
+endmacro()
+
 macro(rtc_library_properties tgt)
   set_target_properties(${tgt}
     PROPERTIES
@@ -147,7 +160,13 @@ else()
 endif()
 
 # ==================================================================
-if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
+if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX OR BARNEY_BACKEND_HIPRT)
+  if (BARNEY_HAVE_HIP)
+    rtc_mark_hip_sources(
+      cudaCommon/Device.cu
+      cudaCommon/Texture.cu
+      cudaCommon/TextureData.cu)
+  endif()
   set(BACKEND_CUDA_COMMON_SOURCES
     cudaCommon/Device.h
     cudaCommon/Device.cu
@@ -216,6 +235,11 @@ endif()
 
 # ==================================================================
 if (BARNEY_BACKEND_CUDA)
+  if (BARNEY_HAVE_HIP)
+    rtc_mark_hip_sources(
+      cuda/cudaDevice.cu
+      cuda/cudaGroup.cu)
+  endif()
   set(BACKEND_CUDA_SOURCES
     cuda/Device.h
     cuda/cudaDevice.cu
@@ -257,6 +281,47 @@ endif()
 
 
 # ==================================================================
+if (BARNEY_BACKEND_HIPRT)
+  message("Enabling HIPRT hardware-RT backend")
+  # the hiprt backend's sources are HIP TUs (they launch kernels and pull in
+  # HIPRT's inline device traversal); compile them with hipcc and -fgpu-rdc so
+  # the function-pointer SBT device-links exactly as the software backend.
+  set_source_files_properties(
+    hiprt/Device.cpp
+    hiprt/Group.cpp
+    hiprt/Buffer.cpp
+    hiprt/Geom.cpp
+    hiprt/GeomType.cpp
+    hiprt/TraceKernel.cpp
+    PROPERTIES LANGUAGE HIP COMPILE_OPTIONS "-fgpu-rdc")
+  add_library(barney_rtc_hiprt STATIC
+    hiprt/Device.h
+    hiprt/Device.cpp
+    hiprt/Buffer.h
+    hiprt/Buffer.cpp
+    hiprt/Geom.h
+    hiprt/Geom.cpp
+    hiprt/GeomType.h
+    hiprt/GeomType.cpp
+    hiprt/Group.h
+    hiprt/Group.cpp
+    hiprt/TraceKernel.h
+    hiprt/TraceKernel.cpp
+    )
+  target_link_libraries(barney_rtc_hiprt PUBLIC
+    barney_rtc_config
+    barney_rtc_cuda_common
+    hiprt::hiprt
+    )
+  target_compile_definitions(barney_rtc_hiprt
+    PUBLIC -DBARNEY_RTC_HIPRT=1)
+  rtc_library_properties(barney_rtc_hiprt)
+else()
+  add_library(barney_rtc_hiprt INTERFACE)
+endif()
+
+
+# ==================================================================
 # ==================================================================
 add_library(barney_rtc INTERFACE)
 if (BARNEY_BACKEND_OPTIX)
@@ -268,13 +333,27 @@ endif()
 if (BARNEY_BACKEND_CUDA)
   target_link_libraries(barney_rtc INTERFACE barney_rtc_cuda)
 endif()
+if (BARNEY_BACKEND_HIPRT)
+  target_link_libraries(barney_rtc INTERFACE barney_rtc_hiprt)
+endif()
 
 
 if (COMMAND configure_cuda_source)
   # macro already defined
 else()
   macro(configure_cuda_source src)
-    if (NOT BARNEY_HAVE_CUDA)
+    if (BARNEY_HAVE_HIP)
+      # on AMD GPUs the same .cu/.dev.cu sources are compiled with hipcc;
+      # -fgpu-rdc gives relocatable device code so the function-pointer SBT
+      # dispatch resolves at device-link time (the analogue of nvcc -rdc=true).
+      get_filename_component(ext "${src}" EXT)
+      if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
+        set_source_files_properties(${src} PROPERTIES
+          LANGUAGE HIP
+          COMPILE_OPTIONS "-fgpu-rdc"
+        )
+      endif()
+    elseif (NOT BARNEY_HAVE_CUDA)
       get_filename_component(ext "${src}" EXT)
       if (("${ext}" STREQUAL ".cu") OR ("${ext}" STREQUAL ".dev.cu"))
         message("setting language of ${src} to CXX")

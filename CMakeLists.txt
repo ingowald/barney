@@ -32,18 +32,54 @@ set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERS
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 include(GNUInstallDirs)
 
-set(BARNEY_RTC_EXT 
+set(BARNEY_RTC_EXT
   "" CACHE STRING
   "Experimental/external rtcore config.")
 mark_as_advanced(USE_EXT)
 
-set(BARNEY_DEVICE_NAME 
+# barney's own cmake modules (e.g. Findhiprt.cmake for the HIPRT backend)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# AMD GPU support: compile barney's OptiX-free software ray-tracing backend
+# (rtcore/cuda + rtcore/cudaCommon) through HIP/ROCm. When USE_HIP is ON the
+# .cu sources are compiled with hipcc (LANGUAGE HIP); the CUDA/OptiX build is
+# unaffected (this whole path is inert unless USE_HIP is requested).
+option(USE_HIP "Build GPU code with HIP for AMD GPUs" OFF)
+
+set(BARNEY_DEVICE_NAME
   "barney" CACHE STRING
   "Name of device to be built.")
 
 if ((NOT BARNEY_RTC_EXT STREQUAL "") AND (EXISTS "${BARNEY_RTC_EXT}"))
   set(BARNEY_HAVE_EXT ON)
   include(${BARNEY_RTC_EXT}/config.cmake)
+elseif (USE_HIP)
+  enable_language(HIP)
+  if (NOT DEFINED CMAKE_HIP_ARCHITECTURES OR CMAKE_HIP_ARCHITECTURES STREQUAL "")
+    set(CMAKE_HIP_ARCHITECTURES "gfx90a")
+  endif()
+  message("#barney: building GPU code with HIP for CMAKE_HIP_ARCHITECTURES=${CMAKE_HIP_ARCHITECTURES}")
+  # the cuda backend's GPU code is reused under HIP; OptiX is NVIDIA-only.
+  set(BARNEY_HAVE_HIP ON)
+  set(BARNEY_HAVE_CUDA OFF)
+  set(CMAKE_CUDA_ARCHITECTURES)
+  if (WIN32)
+    # On Windows, CMake's Windows-Clang platform module injects -fuse-ld=lld-link
+    # into HIP link commands, but the AMD clang driver rejects it when doing HIP
+    # device-link (--hip-link); lld-link is the default host linker already.
+    set(CMAKE_HIP_USING_LINKER_DEFAULT "")
+  endif()
+
+  # Optional hardware-RT backend on AMD GPUs via AMD HIPRT. HIPRT supplies the
+  # BVH build + ray traversal (hardware-accelerated on RDNA2+, software on CDNA
+  # such as gfx90a); barney keeps its function-pointer shading dispatch. HIPRT
+  # is a discovered dependency (find via hiprt_ROOT / HIPRT_PATH), never
+  # vendored -- mirrors how barney finds OptiX/OIDN.
+  option(BARNEY_BACKEND_HIPRT "Enable HIPRT hardware-RT backend (AMD)?" OFF)
+  if (BARNEY_BACKEND_HIPRT)
+    find_package(hiprt REQUIRED)
+    message("#barney: HIPRT backend enabled (hiprt at ${hiprt_LIBRARY})")
+  endif()
 elseif (NOT BARNEY_DISABLE_CUDA)
   include(CheckLanguage)
   check_language(CUDA)
@@ -122,6 +158,16 @@ target_link_libraries(barney_config
   INTERFACE
   owl-config
   )
+if (BARNEY_HAVE_HIP)
+  # let the host (.cpp) translation units that include the backend's compat
+  # header (cuda_to_hip.h) select the HIP path; the .cu/HIP passes already see
+  # __HIPCC__, but plain-C++ TUs need this define.
+  target_compile_definitions(barney_config INTERFACE USE_HIP=1 BARNEY_HAVE_HIP=1)
+  # hip::host carries the ROCm include dirs and __HIP_PLATFORM_AMD__ so the
+  # host C++ TUs that call the hip runtime (hipMalloc/hipMemcpy/...) build.
+  find_package(hip REQUIRED)
+  target_link_libraries(barney_config INTERFACE hip::host)
+endif()
 target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
@@ -142,6 +188,19 @@ endif()
 if (BARNEY_HAVE_EXT)
   # leave it to the external plugins to configure themselves - not
   # currently working
+elseif (BARNEY_HAVE_HIP)
+  # on AMD GPUs the default is the OptiX-free software tracer (the cuda backend);
+  # OptiX has no HIP equivalent here, embree is the CPU fallback. When the HIPRT
+  # backend is requested it is the GPU backend instead (one rtc backend per
+  # build); cuda_common (textures) is still built because the HIPRT backend
+  # reuses it, exactly as the optix backend does.
+  if (BARNEY_BACKEND_HIPRT)
+    set(BARNEY_BACKEND_CUDA OFF)
+  else()
+    option(BARNEY_BACKEND_CUDA "Enable software-tracer GPU backend?" ON)
+  endif()
+  set(BARNEY_BACKEND_OPTIX OFF)
+  set(BARNEY_BACKEND_EMBREE OFF)
 elseif (BARNEY_HAVE_CUDA)
   option(BARNEY_BACKEND_CUDA "Enable (native-)CUDA Backend?" OFF)
   option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)
@@ -157,6 +216,9 @@ option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
 option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
 
 option(BARNEY_USE_EXTERNAL_CUBQL "Use External CuBQL dir" OFF)
+set(BARNEY_EXTERNAL_CUBQL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cuBQL" CACHE PATH
+  "Path to an external cuBQL source tree (when BARNEY_USE_EXTERNAL_CUBQL is ON)")
+set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")
 
 # ==================================================================
 if (BARNEY_DISABLE_DENOISING)
@@ -184,18 +246,21 @@ endif()
 # ------------------------------------------------------------------
 
 if (NOT (TARGET cuBQL))
-  if (BARNEY_HAVE_CUDA)
+  if (BARNEY_HAVE_HIP)
+    # build cuBQL's GPU code through HIP for the same arch(s) as barney
+    set(CUBQL_USE_HIP ON)
+  elseif (BARNEY_HAVE_CUDA)
   else()
     set(CUBQL_DISABLE_CUDA ON)
   endif()
   if (BARNEY_USE_EXTERNAL_CUBQL)
-    add_subdirectory(../cuBQL EXCLUDE_FROM_ALL builddir_cuBQL)
+    add_subdirectory(${BARNEY_EXTERNAL_CUBQL_DIR} EXCLUDE_FROM_ALL builddir_cuBQL)
   else()
     add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
   endif()
 endif()
 
-if (BARNEY_HAVE_CUDA)
+if (BARNEY_HAVE_CUDA OR BARNEY_HAVE_HIP)
   option(BARNEY_CUBQL_HOST "Use CUBQL host builder" OFF)
 else()
   set(BARNEY_CUBQL_HOST ON)

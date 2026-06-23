@@ -14,7 +14,7 @@
 #include <sstream>
 #include "barney/barney.h"
 
-# ifdef __CUDACC__
+# if defined(__CUDACC__) || defined(__HIPCC__)
 // # ifdef __CUDA_ARCH__
 #  define RTC_DEVICE_CODE 1
 # endif

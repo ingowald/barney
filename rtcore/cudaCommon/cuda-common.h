@@ -5,7 +5,7 @@
 #pragma once
 
 #include "rtcore/common/rtcore-common.h"
-#include <cuda_runtime.h>
+#include "rtcore/cudaCommon/cuda_to_hip.h"
 #ifdef __CUDACC__
 # include <cuda/std/limits>
 # include <cuda.h>

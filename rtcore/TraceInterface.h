@@ -21,3 +21,7 @@
 # include "rtcore/cuda/TraceInterface.h"
 #endif
 
+#if BARNEY_RTC_HIPRT
+# include "rtcore/hiprt/TraceInterface.h"
+#endif
+

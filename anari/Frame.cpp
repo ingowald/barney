@@ -89,16 +89,19 @@ namespace barney_device {
     if (!m_renderer) {
       reportMessage(ANARI_SEVERITY_WARNING,
                     "missing required parameter 'renderer' on frame");
+      return;
     }
 
     if (!m_camera) {
       reportMessage(
                     ANARI_SEVERITY_WARNING, "missing required parameter 'camera' on frame");
+      return;
     }
 
     if (!m_world) {
       reportMessage(
                     ANARI_SEVERITY_WARNING, "missing required parameter 'world' on frame");
+      return;
     }
 
     if (deviceState()->slot == 0) {

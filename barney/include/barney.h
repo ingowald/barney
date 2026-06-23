@@ -17,6 +17,9 @@
 /*! whether the embree backend has been included in this build */
 #cmakedefine01 BARNEY_BACKEND_EMBREE
 
+/*! whether the HIPRT (AMD hardware-RT) backend has been included in this build */
+#cmakedefine01 BARNEY_BACKEND_HIPRT
+
 /*! whether this build of barney has support for MPI based rendering;
     i.e., wether barney/barney_mpi.h and (if anari is enabled)
     anari_library_barney_mpi exist */

@@ -110,6 +110,11 @@ namespace barney_api {
     createContext_cuda(const std::vector<int> &dgIDs,
                        int numGPUs, const int *gpuIDs);
 #endif
+#if BARNEY_BACKEND_HIPRT
+    barney_api::Context *
+    createContext_hiprt(const std::vector<int> &dgIDs,
+                        int numGPUs, const int *gpuIDs);
+#endif
 #if BARNEY_MPI
 # if BARNEY_BACKEND_EMBREE
     barney_api::Context *
@@ -868,6 +873,8 @@ namespace barney_api {
         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
 #elif BARNEY_BACKEND_CUDA
         return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
+#elif BARNEY_BACKEND_HIPRT
+        return (BNContext)createContext_hiprt(dataGroupIDs,numGPUs,_gpuIDs);
 #else
         throw std::runtime_error
           ("explicitly asked for GPU backend, "
@@ -898,7 +905,16 @@ namespace barney_api {
                   << e.what() << ")" << std::endl;
       }
 #endif
-      
+
+#if BARNEY_BACKEND_HIPRT
+      try {
+        return (BNContext)createContext_hiprt(dataGroupIDs,numGPUs,_gpuIDs);
+      } catch (std::exception &e) {
+        std::cerr << "#barney(warn): could not create hiprt backend (reason: "
+                  << e.what() << ")" << std::endl;
+      }
+#endif
+
 # if BARNEY_BACKEND_EMBREE
       return (BNContext)createContext_embree(dataGroupIDs);
 #endif
