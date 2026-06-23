@@ -549,10 +549,16 @@ namespace barney_device {
 
     m_generatedRefinements.resize(maxLevel+1, 2);
 
-    std::exclusive_scan(m_generatedBlockOffsets.begin(),
-                        m_generatedBlockOffsets.end(),
-                        m_generatedBlockOffsets.begin(),
-                        (uint64_t)0);
+    // Manual in-place exclusive_scan to remain compatible with libstdc++
+    // < 9.0 (e.g. RHEL 8 system gcc 8.5, which NVHPC's nvc++ inherits).
+    {
+      uint64_t running = 0;
+      for (auto &v : m_generatedBlockOffsets) {
+        const uint64_t prev = running;
+        running += v;
+        v = prev;
+      }
+    }
 
     //=======================================================
     // get (or create) and populate bn field
