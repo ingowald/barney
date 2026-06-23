@@ -315,6 +315,33 @@ install(EXPORT barney-config
   NAMESPACE ${BARNEY_DEVICE_NAME}::
   )
 
+# LAVA-RayViz: barney's libbarney_static.a is a CMake STATIC library, which
+# means it does NOT bundle the object code of its PRIVATE deps. The shared
+# libbarney.so links them in directly, but a downstream STATIC consumer
+# (e.g. fully static rayviz binary) needs every transitive .a archive on
+# its link line. Install them alongside libbarney_static.a so the consumer
+# can name them. Uses install(FILES) rather than install(TARGETS ... EXPORT)
+# to avoid leaking these as part of the barney-config public target set.
+set(_BARNEY_INTERNAL_STATIC_TARGETS
+    barney_optix barney_mpi_optix
+    barney_rtc_optix barney_rtc_cuda_common
+    cuBQL_cuda_float3_static
+    barney-traceRays-ptx barney-Spheres-ptx barney-Triangles-ptx
+    barney-UMeshMC-ptx  barney-Capsules-ptx barney-Cylinders-ptx
+    barney-BlockStructuredMC-ptx barney-Cones-ptx
+    barney-StructuredData-ptx    barney-NanoVDB-ptx)
+foreach(_t ${_BARNEY_INTERNAL_STATIC_TARGETS})
+  if (TARGET ${_t})
+    install(FILES $<TARGET_FILE:${_t}> DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  endif()
+endforeach()
+# Ship the OWL static archive used by this Barney build as well. Depending
+# on configuration this target may come from submodules/owl or from an
+# external installed OWL package.
+if (TARGET owl_static)
+  install(FILES $<TARGET_FILE:owl_static> DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+
 # configures the public api
 configure_file(
   ${PROJECT_SOURCE_DIR}/barney/include/barney.h
