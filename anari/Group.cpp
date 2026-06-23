@@ -26,7 +26,26 @@ namespace barney_device {
 
   void Group::markFinalized()
   {
-    deviceState()->markStructuralSceneChanged();
+    const auto lastGroupFinalized = lastFinalized();
+    const bool surfaceChanged =
+      m_surfaceData.get() != m_lastFinalizedSurfaceData ||
+      (m_surfaceData && m_surfaceData->lastFinalized() > lastGroupFinalized);
+    const bool volumeChanged =
+      m_volumeData.get() != m_lastFinalizedVolumeData ||
+      (m_volumeData && m_volumeData->lastFinalized() > lastGroupFinalized);
+    const bool lightChanged =
+      m_lightData.get() != m_lastFinalizedLightData ||
+      (m_lightData && m_lightData->lastFinalized() > lastGroupFinalized);
+    const bool structural = surfaceChanged || volumeChanged || lightChanged;
+
+    m_lastFinalizedSurfaceData = m_surfaceData.get();
+    m_lastFinalizedVolumeData = m_volumeData.get();
+    m_lastFinalizedLightData = m_lightData.get();
+
+    if (structural)
+      deviceState()->markStructuralSceneChanged();
+    else
+      deviceState()->markSceneChanged();
     Object::markFinalized();
   }
 

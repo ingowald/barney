@@ -29,6 +29,10 @@ namespace barney_device {
     helium::ChangeObserverPtr<ObjectArray> m_surfaceData;
     helium::ChangeObserverPtr<ObjectArray> m_volumeData;
     helium::ChangeObserverPtr<ObjectArray> m_lightData;
+
+    ObjectArray *m_lastFinalizedSurfaceData{nullptr};
+    ObjectArray *m_lastFinalizedVolumeData{nullptr};
+    ObjectArray *m_lastFinalizedLightData{nullptr};
   };
 
 } // namespace barney_device
