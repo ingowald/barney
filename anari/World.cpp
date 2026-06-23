@@ -243,8 +243,10 @@ namespace barney_device {
                    barneyGroups.data(), barneyTransforms.data(),
                    (int)barneyGroups.size());
 
-    for (auto &[_, bg] : groupDedup)
-      bnRelease(bg);
+    // NOTE: do NOT bnRelease() these group handles — each anari Group now owns
+    // and caches its BNGroup (see Group::makeBarneyGroup), reusing it across
+    // rebuilds so unchanged groups are not reconstructed. The handle is released
+    // when the group's contents change or the group is destroyed.
 
     uploadInstanceAttributes(attributes);
     bnBuild(barneyModel, slot);

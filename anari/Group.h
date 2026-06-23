@@ -33,6 +33,20 @@ namespace barney_device {
     ObjectArray *m_lastFinalizedSurfaceData{nullptr};
     ObjectArray *m_lastFinalizedVolumeData{nullptr};
     ObjectArray *m_lastFinalizedLightData{nullptr};
+
+    // Cached barney group + the state it was built from. makeBarneyGroup()
+    // rebuilds (re-uploads geometry, rebuilds the BLAS) only when this group's
+    // own contents change — NOT on every World::fullRebuild(). markFinalized()
+    // marks the whole scene structural on any group commit, so without this an
+    // unrelated change (a light edit, or a cut-plane/overlay instance-transform
+    // move that re-commits the world) reconstructs every group's geometry.
+    // Keyed on the data arrays' lastFinalized() so it also works for the
+    // world's zero-instance group (finalized directly, not via markFinalized()).
+    mutable BNGroup m_barneyGroup{0};
+    mutable helium::TimeStamp m_barneyGroupBuiltAt{0};
+    mutable ObjectArray *m_barneyGroupSurfacePtr{nullptr};
+    mutable ObjectArray *m_barneyGroupVolumePtr{nullptr};
+    mutable ObjectArray *m_barneyGroupLightPtr{nullptr};
   };
 
 } // namespace barney_device

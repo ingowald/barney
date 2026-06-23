@@ -15,7 +15,11 @@ namespace barney_device {
       m_lightData(this)
   {}
 
-  Group::~Group() = default;
+  Group::~Group()
+  {
+    if (m_barneyGroup)
+      bnRelease(m_barneyGroup);
+  }
 
   void Group::commitParameters()
   {
@@ -55,6 +59,31 @@ namespace barney_device {
   
   BNGroup Group::makeBarneyGroup() const
   {
+    // Reuse the cached BNGroup unless THIS group's own contents changed.
+    // World::fullRebuild() calls makeBarneyGroup() for every instance's group,
+    // and markFinalized() flags the scene structural on any group commit, so
+    // without this an unrelated change (a light edit, or a cut-plane / overlay
+    // instance-transform move that re-commits the world) reconstructs every
+    // group's geometry + BLAS — the dominant cost of an overlay drag under MPI.
+    // Keyed on the data arrays' lastFinalized() so it also works for the
+    // world's zero-instance group (finalized directly).
+    const bool ptrChanged = m_surfaceData.get() != m_barneyGroupSurfacePtr
+                            || m_volumeData.get() != m_barneyGroupVolumePtr
+                            || m_lightData.get() != m_barneyGroupLightPtr;
+    helium::TimeStamp contentTS = lastFinalized();
+    if (m_surfaceData)
+      contentTS = std::max(contentTS, m_surfaceData->lastFinalized());
+    if (m_volumeData)
+      contentTS = std::max(contentTS, m_volumeData->lastFinalized());
+    if (m_lightData)
+      contentTS = std::max(contentTS, m_lightData->lastFinalized());
+    if (m_barneyGroup && !ptrChanged && m_barneyGroupBuiltAt >= contentTS)
+      return m_barneyGroup;
+    if (m_barneyGroup) {
+      bnRelease(m_barneyGroup);
+      m_barneyGroup = 0;
+    }
+
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
 
@@ -155,7 +184,12 @@ namespace barney_device {
                   barneyVolumes.size(),
                   barneyLights.size());
 
-    return bg;
+    m_barneyGroup = bg;
+    m_barneyGroupBuiltAt = helium::newTimeStamp();
+    m_barneyGroupSurfacePtr = m_surfaceData.get();
+    m_barneyGroupVolumePtr = m_volumeData.get();
+    m_barneyGroupLightPtr = m_lightData.get();
+    return m_barneyGroup;
   }
 
   box3 Group::bounds() const
