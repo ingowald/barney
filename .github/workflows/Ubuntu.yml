@@ -59,7 +59,7 @@ jobs:
           submodules: true
 
       - name: Install xmllint
-        run: sudo apt-get install libxml2
+        run: sudo apt-get install libxml2-dev
 
       - name: Install CUDA
         if: contains(matrix.cuda, '.')
