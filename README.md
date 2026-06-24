@@ -1,5 +1,6 @@
 ![](samples/collage-triangles.jpg)
 
+
 # Barney - A Multi-GPU (and optionally, Multi-Node) Implementation of the ANARI Rendering API
 
 Build Status:
