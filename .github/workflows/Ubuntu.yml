@@ -18,6 +18,16 @@ jobs:
       # explicit include-based build matrix, of known valid options
       matrix:
         include:
+          - os: ubuntu-26.04-arm
+            cuda: "13.3.0"
+            gcc: 15
+            config: Release
+            build_flags: "-DBARNEY_BACKEND_EMBREE=ON -DBARNEY_BACKEND_OPTIX=OFF -DBARNEY_BACKEND_CUDA=OFF"
+          - os: ubuntu-26.04
+            cuda: "13.3.0"
+            gcc: 15
+            config: Release
+            build_flags: 
           - os: ubuntu-24.04
             cuda: "13.0.2"
             gcc: 13
