@@ -56,6 +56,7 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda }}
+          method: 'local'
 
       - name: Checkout ANARI-SDK
         uses: actions/checkout@v5

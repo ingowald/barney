@@ -64,7 +64,7 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: ${{ matrix.cuda }}
-          method: 'network'
+          method: 'local'
           log-file-suffix: '${{matrix.os}}-gcc${{matrix.gcc}}-config${{matrix.config}}.txt'
 
       # Specify the correct host compilers
