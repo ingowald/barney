@@ -183,7 +183,8 @@ typedef enum {
   BN_UNSTRUCTURED_TET = 10,
   BN_UNSTRUCTURED_HEX = 12,
   BN_UNSTRUCTURED_PRISM = 13,
-  BN_UNSTRUCTURED_PYRAMID = 14
+  BN_UNSTRUCTURED_PYRAMID = 14,
+  BN_UNSTRUCTURED_POLYHEDRON = 42
 } BNUnstructuredElementType;
 
 /*! currently supported texture filter modes */
