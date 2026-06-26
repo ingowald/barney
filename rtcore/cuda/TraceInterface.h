@@ -252,6 +252,10 @@ namespace rtc {
       if (acceptedSBT && acceptedSBT->ch) {
         current = accepted;
         this->geomData = (acceptedSBT+1);
+        // Restore currentInstance for closestHit transform calls:
+        // leaveBlas() zeroed it, but closestHit needs it for
+        // object-to-world space transforms.
+        this->currentInstance = model->instanceRecords + accepted.instID;
         acceptedSBT->ch(*this);
       }
     }

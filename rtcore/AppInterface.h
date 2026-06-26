@@ -13,6 +13,11 @@
 namespace rtc { using namespace rtc::cuda; }
 #endif
 
+#if BARNEY_RTC_HIPRT
+# include "hiprt/AppInterface.h"
+namespace rtc { using namespace rtc::hiprt; }
+#endif
+
 #if BARNEY_RTC_OPTIX
 # include "optix/AppInterface.h"
 namespace rtc { using namespace rtc::optix; }

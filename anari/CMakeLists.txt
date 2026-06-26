@@ -97,9 +97,18 @@ if(WIN32)
     ${BARNEY_DEVICE_NAME}_static
     anari::helium
   )
-  set_target_properties(anari_library_${BARNEY_DEVICE_NAME} PROPERTIES
-    LINK_FLAGS "/WHOLEARCHIVE:${BARNEY_DEVICE_NAME}_static"
-  )
+  if (BARNEY_HAVE_HIP)
+    # When linking through the HIP device-link wrapper (clang++ --hip-link),
+    # /WHOLEARCHIVE must be passed via -Xlinker so clang forwards it to lld-link
+    # rather than treating it as an input file.
+    set_target_properties(anari_library_${BARNEY_DEVICE_NAME} PROPERTIES
+      LINK_FLAGS "-Xlinker /WHOLEARCHIVE:${BARNEY_DEVICE_NAME}_static.lib"
+    )
+  else()
+    set_target_properties(anari_library_${BARNEY_DEVICE_NAME} PROPERTIES
+      LINK_FLAGS "/WHOLEARCHIVE:${BARNEY_DEVICE_NAME}_static.lib"
+    )
+  endif()
 else()
   target_link_libraries(anari_library_${BARNEY_DEVICE_NAME} PRIVATE
     $<BUILD_INTERFACE:banari-config>
