@@ -169,7 +169,18 @@ namespace BARNEY_NS {
     cubic.tRange = initRange;
     
     // printf("tet ofs0 %i\n",elt.ofs0);
-    vec4i tet = *(const vec4i *)&mesh.indices[elt.ofs0];
+    if (elt.ofs0 < 0
+        || (long long)elt.ofs0 + 4 > (long long)mesh.numIndices) {
+      cubic.tRange = { +BARNEY_INF, -BARNEY_INF };
+      return cubic;
+    }
+    const int *ix = mesh.indices + elt.ofs0;
+    vec4i tet(ix[0], ix[1], ix[2], ix[3]);
+    if (tet.x < 0 || tet.x >= mesh.numVertices || tet.y < 0 || tet.y >= mesh.numVertices
+        || tet.z < 0 || tet.z >= mesh.numVertices || tet.w < 0 || tet.w >= mesh.numVertices) {
+      cubic.tRange = { +BARNEY_INF, -BARNEY_INF };
+      return cubic;
+    }
     // printf("tet ofs0 %i -> %i %i %i %i\n",elt.ofs0,
     //        tet.x,tet.y,tet.z,tet.w);
     vec4f v0 = rtc::load(((rtc::float4*)mesh.vertices)[tet.x]);
@@ -466,8 +477,16 @@ namespace BARNEY_NS {
                           int(stack-stackBase));
           if (stack == stackBase) {
             if (tHit < ray.tMax) {
+#if BARNEY_USE_MULTI_SCATTERING
+              ray.setVolumeHit(org+tHit*dir,
+                               tHit,
+                               (const vec3f&)sample,
+                               self.anisotropy,
+                               self.scatteringAlbedo);
+#else
               ray.setVolumeHit(org+tHit*dir,
                                tHit,(const vec3f&)sample);
+#endif
             }
             return;
             // done = true;

@@ -265,6 +265,10 @@ namespace BARNEY_NS {
     dd.xf       = this->volume->xf.getDD(device);
     dd.primIDs  = pld->primIDs;
     dd.userID   = volume->userID;
+#if BARNEY_USE_MULTI_SCATTERING
+    dd.anisotropy = volume->anisotropy;
+    dd.scatteringAlbedo = volume->scatteringAlbedo;
+#endif
     return dd;
   }
 

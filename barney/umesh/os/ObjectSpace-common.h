@@ -6,6 +6,7 @@
 
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/common/CUBQL.h"
+#include "barney/barneyConfig.h"
 #include "barney/render/Ray.h"
 
 namespace barney {
@@ -39,6 +40,14 @@ namespace barney {
       
     UMeshField *const mesh;
   };
+
+  /*! Connectivity and vertex pointers for object-space kernels live in
+      `volume.sfSampler` (UMeshCuBQLSampler::DD / UMeshField::DD). */
+  inline __both__ const BARNEY_NS::UMeshField::DD &
+  umeshOf(const UMeshObjectSpace::DD &dd)
+  {
+    return dd.volume.sfSampler;
+  }
   
   /*! the main function provided by this header file - intersecting a
     ray against a given leaf node in a object-space umesh bvh */
@@ -441,11 +450,21 @@ namespace barney {
   {
     if (elt.type != Element::TET) return false;
 
-    vec4i indices = (const vec4i &)dd.indices[elt.ofs0];
-    set(dd.vertices[indices.x],
-        dd.vertices[indices.y],
-        dd.vertices[indices.z],
-        dd.vertices[indices.w]);
+    const BARNEY_NS::UMeshField::DD &mesh = umeshOf(dd);
+    int ofs0 = elt.ofs0;
+    if (ofs0 < 0 || (long long)ofs0 + 4 > (long long)mesh.numIndices)
+      return false;
+    const int *ix = mesh.indices + ofs0;
+    vec4i indices(ix[0], ix[1], ix[2], ix[3]);
+    auto badVtx = [&](int v) { return v < 0 || v >= mesh.numVertices; };
+    if (badVtx(indices.x) || badVtx(indices.y) || badVtx(indices.z)
+        || badVtx(indices.w))
+      return false;
+
+    set(mesh.vertices[indices.x],
+        mesh.vertices[indices.y],
+        mesh.vertices[indices.z],
+        mesh.vertices[indices.w]);
 
     return true;
   }
@@ -497,45 +516,84 @@ namespace barney {
   bool ElementIntersector::setElement(Element elt)
   {
     element = elt;
+    const BARNEY_NS::UMeshField::DD &mesh = umeshOf(dd);
     switch (elt.type)
       {
       case Element::TET: {
-        vec4i indices = (const vec4i&)dd.indices[elt.ofs0];
-        v0 = dd.vertices[indices.x];
-        v1 = dd.vertices[indices.y];
-        v2 = dd.vertices[indices.z];
-        v3 = dd.vertices[indices.w];
+        int ofs0 = elt.ofs0;
+        if (ofs0 < 0 || (long long)ofs0 + 4 > (long long)mesh.numIndices)
+          return false;
+        const int *ix = mesh.indices + ofs0;
+        vec4i indices(ix[0], ix[1], ix[2], ix[3]);
+        auto badVtx = [&](int v) { return v < 0 || v >= mesh.numVertices; };
+        if (badVtx(indices.x) || badVtx(indices.y) || badVtx(indices.z)
+            || badVtx(indices.w))
+          return false;
+        v0 = mesh.vertices[indices.x];
+        v1 = mesh.vertices[indices.y];
+        v2 = mesh.vertices[indices.z];
+        v3 = mesh.vertices[indices.w];
       }
         break;
       case Element::PYR: {
-        ints5 indices = (const ints5&)dd.indices[elt.ofs0];
-        v0 = dd.vertices[indices[0]];
-        v1 = dd.vertices[indices[1]];
-        v2 = dd.vertices[indices[2]];
-        v3 = dd.vertices[indices[3]];
-        v4 = dd.vertices[indices[4]];
+        int ofs0 = elt.ofs0;
+        if (ofs0 < 0 || (long long)ofs0 + 5 > (long long)mesh.numIndices)
+          return false;
+        ints5 indices;
+        const int *src = mesh.indices + ofs0;
+        for (int k = 0; k < 5; k++)
+          indices[k] = src[k];
+        for (int k = 0; k < 5; k++) {
+          int v = indices[k];
+          if (v < 0 || v >= mesh.numVertices) return false;
+        }
+        v0 = mesh.vertices[indices[0]];
+        v1 = mesh.vertices[indices[1]];
+        v2 = mesh.vertices[indices[2]];
+        v3 = mesh.vertices[indices[3]];
+        v4 = mesh.vertices[indices[4]];
       }
         break;
       case Element::WED: {
-        ints6 indices = (const ints6&)dd.indices[elt.ofs0];
-        v0 = dd.vertices[indices[0]];
-        v1 = dd.vertices[indices[1]];
-        v2 = dd.vertices[indices[2]];
-        v3 = dd.vertices[indices[3]];
-        v4 = dd.vertices[indices[4]];
-        v5 = dd.vertices[indices[5]];
+        int ofs0 = elt.ofs0;
+        if (ofs0 < 0 || (long long)ofs0 + 6 > (long long)mesh.numIndices)
+          return false;
+        ints6 indices;
+        const int *src = mesh.indices + ofs0;
+        for (int k = 0; k < 6; k++)
+          indices[k] = src[k];
+        for (int k = 0; k < 6; k++) {
+          int v = indices[k];
+          if (v < 0 || v >= mesh.numVertices) return false;
+        }
+        v0 = mesh.vertices[indices[0]];
+        v1 = mesh.vertices[indices[1]];
+        v2 = mesh.vertices[indices[2]];
+        v3 = mesh.vertices[indices[3]];
+        v4 = mesh.vertices[indices[4]];
+        v5 = mesh.vertices[indices[5]];
       }
         break;
       case Element::HEX: {
-        ints8 indices = (const ints8&)dd.indices[elt.ofs0];
-        v0 = dd.vertices[indices[0]];
-        v1 = dd.vertices[indices[1]];
-        v2 = dd.vertices[indices[2]];
-        v3 = dd.vertices[indices[3]];
-        v4 = dd.vertices[indices[4]];
-        v5 = dd.vertices[indices[5]];
-        v6 = dd.vertices[indices[6]];
-        v7 = dd.vertices[indices[7]];
+        int ofs0 = elt.ofs0;
+        if (ofs0 < 0 || (long long)ofs0 + 8 > (long long)mesh.numIndices)
+          return false;
+        ints8 indices;
+        const int *src = mesh.indices + ofs0;
+        for (int k = 0; k < 8; k++)
+          indices[k] = src[k];
+        for (int k = 0; k < 8; k++) {
+          int v = indices[k];
+          if (v < 0 || v >= mesh.numVertices) return false;
+        }
+        v0 = mesh.vertices[indices[0]];
+        v1 = mesh.vertices[indices[1]];
+        v2 = mesh.vertices[indices[2]];
+        v3 = mesh.vertices[indices[3]];
+        v4 = mesh.vertices[indices[4]];
+        v5 = mesh.vertices[indices[5]];
+        v6 = mesh.vertices[indices[6]];
+        v7 = mesh.vertices[indices[7]];
       }
         break;
       default:
@@ -836,7 +894,15 @@ namespace barney {
         // ray.tMax = t;
         inputLeafRange.upper = min(inputLeafRange.upper,hit_t);
         vec3f P = ray.org + t * ray.dir;
+#if BARNEY_USE_MULTI_SCATTERING
+        ray.setVolumeHit(P,
+                         t,
+                         getPos(mapped),
+                         self.volume.anisotropy,
+                         self.volume.scatteringAlbedo);
+#else
         ray.setVolumeHit(P,t,getPos(mapped));
+#endif
         break;
       }
     }
@@ -881,7 +947,15 @@ namespace barney {
 
         isec.leafRange.upper = hit_t;
         hit_t = t;
+#if BARNEY_USE_MULTI_SCATTERING
+        ray.setVolumeHit(P,
+                         t,
+                         getPos(isec.mapped),
+                         self.volume.anisotropy,
+                         self.volume.scatteringAlbedo);
+#else
         ray.setVolumeHit(P,t,getPos(isec.mapped));
+#endif
         break;
       }
     } 

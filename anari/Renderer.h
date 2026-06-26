@@ -6,6 +6,7 @@
 
 #include "Array.h"
 #include "Object.h"
+#include "barney/barneyConfig.h"
 
 namespace barney_device {
 
@@ -36,6 +37,10 @@ namespace barney_device {
     bool m_upscale{false};
     anari::math::float4 m_background{0.f, 0.f, 0.f, 1.f};
     anari::math::float4 m_cutPlane{0.f, 0.f, 0.f, -1e30f};
+#if BARNEY_USE_MULTI_SCATTERING
+    int m_maxVolumeBounces{8};
+    bool m_volumeMultiScatter{false};
+#endif
     helium::ChangeObserverPtr<Array2D> m_backgroundImage;
   };
 

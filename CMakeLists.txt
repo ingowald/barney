@@ -6,6 +6,9 @@ set(BARNEY_VERSION_MAJOR 1)
 set(BARNEY_VERSION_MINOR 1)
 set(BARNEY_VERSION_PATCH 8)
 
+set(EXPECTED_OWL_VERSION "1.2.9")
+set(EXPECTED_CUBQL_VERSION "1.3.1")
+
 cmake_minimum_required(VERSION 3.24)
 
 set(CMAKE_CUDA_USE_STATIC_CUDA_RUNTIME ON)
@@ -139,7 +142,7 @@ if (BARNEY_HAVE_CUDA)
   endif()
   set(OWL_BUILD_VIEWER OFF)
   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
-  if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS "1.2.8"))
+  if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS ${EXPECTED_OWL_VERSION}))
     message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
 endif()
 else()
@@ -213,6 +216,13 @@ endif()
 # ==================================================================
 option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
 option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
+option(BARNEY_USE_MULTI_SCATTERING
+  "Enable volumetric multi-scattering (HG phase, volume bounce tracking)"
+  OFF)
+
+if (BARNEY_USE_MULTI_SCATTERING)
+  message("#barney: BARNEY_USE_MULTI_SCATTERING=ON")
+endif()
 
 option(BARNEY_USE_EXTERNAL_CUBQL "Use External CuBQL dir" OFF)
 set(BARNEY_EXTERNAL_CUBQL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cuBQL" CACHE PATH

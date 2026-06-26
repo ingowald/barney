@@ -6,12 +6,18 @@
 
 #include "barney/DeviceGroup.h"
 #include "barney/volume/TransferFunction.h"
+#include "barney/barneyConfig.h"
 #include "barney/common/math.h"
+#if BARNEY_USE_MULTI_SCATTERING
+#include "barney/volume/PrincipledVolume.h"
+#endif
 #if RTC_DEVICE_CODE
 # include "rtcore/ComputeInterface.h"
 #endif
 
 namespace BARNEY_NS {
+
+  struct Volume;
 
   /*! a grid of macro-cells, with each macro-cell storing both value
       range of the underlying field, and majorant after mapping
@@ -133,7 +139,11 @@ namespace BARNEY_NS {
 
     /*! given the current per-cell scalar ranges, map each such cell's
         range through the transfer functoin to compute a majorant */
+#if BARNEY_USE_MULTI_SCATTERING
+    void computeMajorants(Volume *volume);
+#else
     void computeMajorants(TransferFunction *xf);
+#endif
 
     /*! allocate memory for the given grid */
     void resize(vec3i dims);
