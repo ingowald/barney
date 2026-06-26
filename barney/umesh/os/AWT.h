@@ -6,6 +6,7 @@
 
 #include "barney/umesh/common/UMeshField.h"
 #include "barney/volume/Volume.h"
+#include "barney/barneyConfig.h"
 
 // #define AWT_DEFAULT_MAX_DEPTH 7
 #define AWT_NODE_WIDTH 4
@@ -46,6 +47,10 @@ namespace BARNEY_NS {
       AWTNode              *awtNodes;
       uint32_t             *primIDs;
       int                   userID;
+#if BARNEY_USE_MULTI_SCATTERING
+      float                 anisotropy;
+      float                 scatteringAlbedo;
+#endif
     };
 
     struct PLD {

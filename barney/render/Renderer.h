@@ -6,6 +6,7 @@
 
 #include "barney/Object.h"
 #include "barney/common/Texture.h"
+#include "barney/barneyConfig.h"
 
 namespace BARNEY_NS {
 
@@ -22,6 +23,10 @@ namespace BARNEY_NS {
       float              ambientRadiance;
       int                pathsPerPixel;
       vec4f              cutPlane;
+#if BARNEY_USE_MULTI_SCATTERING
+      int                maxVolumeBounces;
+      int                volumeMultiScatter;
+#endif
     };
     
     Renderer(Context *context);
@@ -52,6 +57,10 @@ namespace BARNEY_NS {
       float       ambientRadiance = 1.f;
       int         crosshairs      = 0;
       vec4f       cutPlane        = vec4f(0,0,0,-1e30f);
+#if BARNEY_USE_MULTI_SCATTERING
+      int         maxVolumeBounces = 8;
+      int         volumeMultiScatter = 1;
+#endif
     } staged;
     vec4f       bgColor         = vec4f(0,0,0,1.f);
     Texture::SP bgTexture       = 0;
@@ -59,6 +68,10 @@ namespace BARNEY_NS {
     float       ambientRadiance = 1.f;
     int         crosshairs      = 0;
     vec4f       cutPlane        = vec4f(0,0,0,-1e30f);
+#if BARNEY_USE_MULTI_SCATTERING
+    int         maxVolumeBounces = 8;
+    int         volumeMultiScatter = 1;
+#endif
   };
 
 }

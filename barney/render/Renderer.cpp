@@ -4,6 +4,7 @@
 
 #include "barney/render/Renderer.h"
 #include "barney/Context.h"
+#include "barney/barneyConfig.h"
 
 namespace BARNEY_NS {
 
@@ -29,6 +30,10 @@ namespace BARNEY_NS {
     pathsPerPixel   = staged.pathsPerPixel;
     bgTexture       = staged.bgTexture;
     cutPlane        = staged.cutPlane;
+#if BARNEY_USE_MULTI_SCATTERING
+    maxVolumeBounces = staged.maxVolumeBounces;
+    volumeMultiScatter = staged.volumeMultiScatter;
+#endif
   }
   
   bool Renderer::setObject(const std::string &member,
@@ -66,6 +71,16 @@ namespace BARNEY_NS {
       staged.crosshairs = value;
       return true;
     }
+#if BARNEY_USE_MULTI_SCATTERING
+    if (member == "maxVolumeBounces") {
+      staged.maxVolumeBounces = value;
+      return true;
+    }
+    if (member == "volumeMultiScatter") {
+      staged.volumeMultiScatter = value;
+      return true;
+    }
+#endif
     return false;
   }
   
@@ -94,6 +109,10 @@ namespace BARNEY_NS {
     dd.ambientRadiance = ambientRadiance;
     dd.pathsPerPixel = pathsPerPixel;
     dd.cutPlane = cutPlane;
+#if BARNEY_USE_MULTI_SCATTERING
+    dd.maxVolumeBounces = maxVolumeBounces;
+    dd.volumeMultiScatter = volumeMultiScatter;
+#endif
     return dd;
   }
   
