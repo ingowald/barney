@@ -22,7 +22,8 @@ namespace BARNEY_NS {
     _VTK_TET = 10,
     _VTK_HEX = 12,
     _VTK_PRISM = 13,
-    _VTK_PYR = 14
+    _VTK_PYR = 14,
+    _VTK_POLYHEDRON = 42
   };
 
   /*! scalar field represented by a unstructured mesh. can contain
@@ -90,12 +91,25 @@ namespace BARNEY_NS {
                      vec3f P, bool
                      dbg=false) const;
 
+      /* compute scalar of given polyhedron in umesh, at point P, and
+         return that in 'retVal'. returns true if P is inside the
+         element, false if outside (in which case retVal is not
+         defined). Containment uses +X ray parity over face fans (convex /
+         well-behaved cells; see `umesh_poly_stream`). Per-vertex scalars use
+         inverse-distance weights over face-stream corners. */
+      inline __rtc_device bool polyScalar(float &retVal,
+                                          uint32_t cellIdx,
+                                          vec3f P) const;
+
       const vec3f       *vertices;
       const float       *scalars;
       const int         *indices;
       const int         *cellOffsets;
       const uint8_t     *cellTypes;
       int                numCells;
+      int                numVertices;
+      int                numScalars;
+      int                numIndices;
       bool               scalarsArePerVertex;
     };
 
@@ -150,7 +164,103 @@ namespace BARNEY_NS {
     PLD *getPLD(Device *device);
     std::vector<PLD> perLogical;
   };
-  
+
+  /*! VTK_POLYHEDRON face stream: numFaces, then per face (n, i0..i_{n-1}).
+      All index reads stay within numIndices; faces/points capped; each
+      vertex index is validated before any vertices[]/scalars[] load.
+
+      Containment (`polyScalar`) uses +X ray parity over triangle fans; that
+      matches convex, consistently oriented polyhedra (typical CFD meshes).
+      Non-convex cells can classify inside/outside incorrectly. */
+  namespace umesh_poly_stream {
+    static constexpr int kMaxFaces = 8192;
+    static constexpr int kMaxPtsPerFace = 1024;
+
+    struct FaceStreamReader {
+      const int *indices;
+      int numIndices;
+      int numVertices;
+      int numScalars;
+      bool scalarsArePerVertex;
+      uint32_t cellIdx;
+      int pos;
+      int numFaces;
+      bool ok;
+
+      inline __rtc_device FaceStreamReader(const int *indices_,
+                                           int numIndices_,
+                                           int numVertices_,
+                                           int numScalars_,
+                                           bool scalarsArePerVertex_,
+                                           uint32_t cellIdx_,
+                                           int offset)
+          : indices(indices_),
+            numIndices(numIndices_),
+            numVertices(numVertices_),
+            numScalars(numScalars_),
+            scalarsArePerVertex(scalarsArePerVertex_),
+            cellIdx(cellIdx_),
+            pos(0),
+            numFaces(0),
+            ok(false)
+      {
+        if (offset < 0 || offset >= numIndices)
+          return;
+        pos = offset;
+        if (pos + 1 > numIndices)
+          return;
+        numFaces = indices[pos++];
+        if (numFaces <= 0 || numFaces > kMaxFaces)
+          return;
+        if (!scalarsArePerVertex) {
+          const int sci = (int)cellIdx;
+          if (sci < 0 || sci >= numScalars)
+            return;
+        }
+        ok = true;
+      }
+
+      inline __rtc_device bool faceBegin(int &numPts)
+      {
+        if (!ok)
+          return false;
+        if (pos + 1 > numIndices) {
+          ok = false;
+          return false;
+        }
+        numPts = indices[pos++];
+        if (numPts < 3 || numPts > kMaxPtsPerFace) {
+          ok = false;
+          return false;
+        }
+        if (pos + numPts > numIndices) {
+          ok = false;
+          return false;
+        }
+        return true;
+      }
+
+      inline __rtc_device bool readVertex(int &vtxIdx, int &scalarIdx)
+      {
+        if (!ok || pos >= numIndices) {
+          ok = false;
+          return false;
+        }
+        vtxIdx = indices[pos++];
+        if (vtxIdx < 0 || vtxIdx >= numVertices) {
+          ok = false;
+          return false;
+        }
+        scalarIdx = scalarsArePerVertex ? vtxIdx : (int)cellIdx;
+        if (scalarsArePerVertex && (scalarIdx < 0 || scalarIdx >= numScalars)) {
+          ok = false;
+          return false;
+        }
+        return true;
+      }
+    };
+  } // namespace umesh_poly_stream
+
   // ==================================================================
   // IMPLEMENTATION
   // ==================================================================
@@ -159,33 +269,74 @@ namespace BARNEY_NS {
   box4f UMeshField::DD::cellBounds(uint32_t cellIdx) const
   {
     uint32_t cellType = cellTypes[cellIdx];
-    uint32_t numVertices = 0;
-    uint32_t offset = cellOffsets[cellIdx];
+    int offset = cellOffsets[cellIdx];
+
+    if (cellType == _VTK_POLYHEDRON) {
+      umesh_poly_stream::FaceStreamReader stream(
+          indices,
+          numIndices,
+          numVertices,
+          numScalars,
+          scalarsArePerVertex,
+          cellIdx,
+          offset);
+      if (!stream.ok)
+        return box4f{};
+      box4f bb;
+      for (int f = 0; f < stream.numFaces; f++) {
+        int numPts = 0;
+        if (!stream.faceBegin(numPts))
+          return box4f{};
+        for (int p = 0; p < numPts; p++) {
+          int vtxIdx = 0, si = 0;
+          if (!stream.readVertex(vtxIdx, si))
+            return box4f{};
+          bb.extend(vec4f(vertices[vtxIdx], scalars[si]));
+        }
+      }
+      return bb;
+    }
+
+    uint32_t nv = 0;
     switch (cellType) {
     case _VTK_TET:
     case _ANARI_TET:
-      numVertices = 4;
+      nv = 4;
       break;
     case _VTK_PYR:
     case _ANARI_PYR:
-      numVertices = 5;
+      nv = 5;
       break;
     case _VTK_PRISM:
     case _ANARI_PRISM:
-      numVertices = 6;
+      nv = 6;
       break;
-    case _VTK_HEX: 
-    case _ANARI_HEX: 
-      numVertices = 8;
+    case _VTK_HEX:
+    case _ANARI_HEX:
+      nv = 8;
       break;
     default:
       ;
     }
 
     box4f bb;
-    for (uint32_t i=0;i<numVertices;i++) {
+    if (nv == 0)
+      return bb;
+    if (offset < 0
+        || (long long)offset + (long long)nv > (long long)numIndices)
+      return bb;
+    const int sci = scalarsArePerVertex ? 0 : (int)cellIdx;
+    if (!scalarsArePerVertex && (sci < 0 || sci >= numScalars))
+      return bb;
+
+    for (uint32_t i = 0; i < nv; i++) {
       int vtxIdx = indices[offset++];
-      vec4f v(vertices[vtxIdx],scalars[scalarsArePerVertex?vtxIdx:cellIdx]);
+      if (vtxIdx < 0 || vtxIdx >= numVertices)
+        return box4f{};
+      const int si = scalarsArePerVertex ? vtxIdx : sci;
+      if (scalarsArePerVertex && (si < 0 || si >= numScalars))
+        return box4f{};
+      vec4f v(vertices[vtxIdx], scalars[si]);
       bb.extend(v);
     }
     return bb;
@@ -217,8 +368,8 @@ namespace BARNEY_NS {
   {
     uint8_t cellType = cellTypes[cellIdx];
     switch (cellType) {
-    case _ANARI_TET: 
-    case _VTK_TET: 
+    case _ANARI_TET:
+    case _VTK_TET:
       return tetScalar(retVal,cellIdx,P,dbg);
     case _ANARI_PYR:
     case _VTK_PYR:
@@ -229,6 +380,8 @@ namespace BARNEY_NS {
     case _ANARI_HEX:
     case _VTK_HEX:
       return hexScalar(retVal,cellIdx,P,dbg);
+    case _VTK_POLYHEDRON:
+      return polyScalar(retVal,cellIdx,P);
     }
     return false;
   }
@@ -240,8 +393,23 @@ namespace BARNEY_NS {
                                  bool dbg) const
   {
     int ofs0 = cellOffsets[cellIdx];
-    vec4i indices = *(const vec4i *)&this->indices[ofs0];
-    
+    if (ofs0 < 0 || (long long)ofs0 + 4 > (long long)numIndices)
+      return false;
+    const int *ix = this->indices + ofs0;
+    vec4i indices(ix[0], ix[1], ix[2], ix[3]);
+    auto badVtx = [&](int v) { return v < 0 || v >= numVertices; };
+    if (badVtx(indices.x) || badVtx(indices.y) || badVtx(indices.z)
+        || badVtx(indices.w))
+      return false;
+    if (scalarsArePerVertex) {
+      auto badS = [&](int s) { return s < 0 || s >= numScalars; };
+      if (badS(indices.x) || badS(indices.y) || badS(indices.z)
+          || badS(indices.w))
+        return false;
+    } else if ((int)cellIdx >= numScalars) {
+      return false;
+    }
+
     vec4f v0(vertices[indices.x],scalars[scalarsArePerVertex?indices.x:cellIdx]);
     vec4f v1(vertices[indices.y],scalars[scalarsArePerVertex?indices.y:cellIdx]);
     vec4f v2(vertices[indices.z],scalars[scalarsArePerVertex?indices.z:cellIdx]);
@@ -271,7 +439,18 @@ namespace BARNEY_NS {
                                  vec3f P) const
   {
     int ofs0 = cellOffsets[cellIdx];
-    UMeshField::ints<5> indices = *(const UMeshField::ints<5> *)&this->indices[ofs0];
+    if (ofs0 < 0 || (long long)ofs0 + 5 > (long long)numIndices)
+      return false;
+    UMeshField::ints<5> indices;
+    const int *src = this->indices + ofs0;
+    for (int k = 0; k < 5; k++)
+      indices[k] = src[k];
+    for (int k = 0; k < 5; k++) {
+      int v = indices[k];
+      if (v < 0 || v >= numVertices) return false;
+      if (scalarsArePerVertex && (v < 0 || v >= numScalars)) return false;
+    }
+    if (!scalarsArePerVertex && (int)cellIdx >= numScalars) return false;
     vec4f v0(vertices[indices[0]],scalars[scalarsArePerVertex?indices[0]:cellIdx]);
     vec4f v1(vertices[indices[1]],scalars[scalarsArePerVertex?indices[1]:cellIdx]);
     vec4f v2(vertices[indices[2]],scalars[scalarsArePerVertex?indices[2]:cellIdx]);
@@ -286,8 +465,18 @@ namespace BARNEY_NS {
                                  vec3f P) const
   {
     int ofs0 = cellOffsets[cellIdx];
-    UMeshField::ints<6> indices
-      = *(const UMeshField::ints<6> *)&this->indices[ofs0];
+    if (ofs0 < 0 || (long long)ofs0 + 6 > (long long)numIndices)
+      return false;
+    UMeshField::ints<6> indices;
+    const int *src = this->indices + ofs0;
+    for (int k = 0; k < 6; k++)
+      indices[k] = src[k];
+    for (int k = 0; k < 6; k++) {
+      int v = indices[k];
+      if (v < 0 || v >= numVertices) return false;
+      if (scalarsArePerVertex && (v < 0 || v >= numScalars)) return false;
+    }
+    if (!scalarsArePerVertex && (int)cellIdx >= numScalars) return false;
     vec4f v0(vertices[indices[0]],scalars[scalarsArePerVertex?indices[0]:cellIdx]);
     vec4f v1(vertices[indices[1]],scalars[scalarsArePerVertex?indices[1]:cellIdx]);
     vec4f v2(vertices[indices[2]],scalars[scalarsArePerVertex?indices[2]:cellIdx]);
@@ -304,8 +493,18 @@ namespace BARNEY_NS {
                                  bool dbg) const
   {
     int ofs0 = cellOffsets[cellIdx];
-    UMeshField::ints<8> indices
-      = *(const UMeshField::ints<8> *)&this->indices[ofs0];
+    if (ofs0 < 0 || (long long)ofs0 + 8 > (long long)numIndices)
+      return false;
+    UMeshField::ints<8> indices;
+    const int *src = this->indices + ofs0;
+    for (int k = 0; k < 8; k++)
+      indices[k] = src[k];
+    for (int k = 0; k < 8; k++) {
+      int v = indices[k];
+      if (v < 0 || v >= numVertices) return false;
+      if (scalarsArePerVertex && (v < 0 || v >= numScalars)) return false;
+    }
+    if (!scalarsArePerVertex && (int)cellIdx >= numScalars) return false;
     vec4f v0(vertices[indices[0]],scalars[scalarsArePerVertex?indices[0]:cellIdx]);
     vec4f v1(vertices[indices[1]],scalars[scalarsArePerVertex?indices[1]:cellIdx]);
     vec4f v2(vertices[indices[2]],scalars[scalarsArePerVertex?indices[2]:cellIdx]);
@@ -316,5 +515,114 @@ namespace BARNEY_NS {
     vec4f v7(vertices[indices[7]],scalars[scalarsArePerVertex?indices[7]:cellIdx]);
     return intersectHexEXT(retVal, P, v0,v1,v2,v3,v4,v5,v6,v7, dbg);
   }
-  
+
+  inline __rtc_device
+  bool UMeshField::DD::polyScalar(float &retVal,
+                                  uint32_t cellIdx,
+                                  vec3f P) const
+  {
+    const int offset = cellOffsets[cellIdx];
+    umesh_poly_stream::FaceStreamReader stream(indices,
+                                               numIndices,
+                                               numVertices,
+                                               numScalars,
+                                               scalarsArePerVertex,
+                                               cellIdx,
+                                               offset);
+    if (!stream.ok)
+      return false;
+
+    // ---- point-in-polyhedron via ray casting along +X ----
+    int crossings = 0;
+    for (int f = 0; f < stream.numFaces; f++) {
+      int numPts = 0;
+      if (!stream.faceBegin(numPts))
+        return false;
+      int v0Idx = 0, si0 = 0;
+      if (!stream.readVertex(v0Idx, si0))
+        return false;
+      (void)si0;
+      int v1Idx = 0, si1 = 0;
+      if (!stream.readVertex(v1Idx, si1))
+        return false;
+      (void)si1;
+      vec3f a = vertices[v0Idx];
+      for (int t = 0; t < numPts - 2; t++) {
+        int v2Idx = 0, si2 = 0;
+        if (!stream.readVertex(v2Idx, si2))
+          return false;
+        (void)si2;
+        vec3f b = vertices[v1Idx];
+        vec3f c = vertices[v2Idx];
+        // Moller-Trumbore ray-triangle intersection (ray: P + t*(1,0,0))
+        vec3f e1 = b - a;
+        vec3f e2 = c - a;
+        // d x e2, where d = (1,0,0)
+        vec3f h = vec3f(0.f, -e2.z, e2.y);
+        float det = dot(e1, h);
+        if (fabsf(det) < 1e-12f) {
+          v1Idx = v2Idx;
+          continue;
+        }
+        float inv_det = 1.f / det;
+        vec3f s = P - a;
+        float u = inv_det * dot(s, h);
+        if (u < 0.f || u > 1.f) {
+          v1Idx = v2Idx;
+          continue;
+        }
+        vec3f q = cross(s, e1);
+        float v = inv_det * q.x; // dot((1,0,0), q)
+        if (v < 0.f || u + v > 1.f) {
+          v1Idx = v2Idx;
+          continue;
+        }
+        float ray_t = inv_det * dot(e2, q);
+        if (ray_t > 0.f)
+          crossings++;
+        v1Idx = v2Idx;
+      }
+    }
+
+    if ((crossings & 1) == 0)
+      return false;
+
+    // ---- scalar evaluation ----
+    if (!scalarsArePerVertex) {
+      retVal = scalars[cellIdx];
+      return true;
+    }
+
+    umesh_poly_stream::FaceStreamReader idwStream(indices,
+                                                numIndices,
+                                                numVertices,
+                                                numScalars,
+                                                scalarsArePerVertex,
+                                                cellIdx,
+                                                offset);
+    if (!idwStream.ok)
+      return false;
+    float weightSum = 0.f;
+    float valueSum = 0.f;
+    for (int f = 0; f < idwStream.numFaces; f++) {
+      int numPts = 0;
+      if (!idwStream.faceBegin(numPts))
+        return false;
+      for (int p = 0; p < numPts; p++) {
+        int vtxIdx = 0, si = 0;
+        if (!idwStream.readVertex(vtxIdx, si))
+          return false;
+        vec3f vp = vertices[vtxIdx];
+        float dist2 = dot(vp - P, vp - P);
+        float w = 1.f / fmaxf(dist2, 1e-20f);
+        weightSum += w;
+        valueSum += w * scalars[si];
+      }
+    }
+    if (weightSum <= 0.f)
+      return false;
+    retVal = valueSum / weightSum;
+    return true;
+  }
+
 }

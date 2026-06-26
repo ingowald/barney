@@ -125,17 +125,35 @@ namespace BARNEY_NS {
 
     auto cellType = mesh.cellTypes[cellIdx];
     if (cellType == _VTK_TET || cellType == _ANARI_TET) {
-      uint32_t ofs0 = mesh.cellOffsets[cellIdx];
-      const vec4i indices = *(const vec4i *)&mesh.indices[ofs0];
-      int sidx_x = mesh.scalarsArePerVertex ? indices.x : cellIdx;
-      int sidx_y = mesh.scalarsArePerVertex ? indices.y : cellIdx;
-      int sidx_z = mesh.scalarsArePerVertex ? indices.z : cellIdx;
-      int sidx_w = mesh.scalarsArePerVertex ? indices.w : cellIdx;
-      vec4f a(mesh.vertices[indices.x],mesh.scalars[sidx_x]);
-      vec4f b(mesh.vertices[indices.y],mesh.scalars[sidx_y]);
-      vec4f c(mesh.vertices[indices.z],mesh.scalars[sidx_z]);
-      vec4f d(mesh.vertices[indices.w],mesh.scalars[sidx_w]);
-      rasterTet<5>(grid,a,b,c,d);
+      const int ofs0 = mesh.cellOffsets[cellIdx];
+      if (ofs0 < 0
+          || (long long)ofs0 + 4 > (long long)mesh.numIndices)
+        return;
+      const int *ix = mesh.indices + ofs0;
+      const vec4i id(ix[0], ix[1], ix[2], ix[3]);
+      auto vtxOk = [&](int vi) {
+        return vi >= 0 && vi < mesh.numVertices;
+      };
+      if (!vtxOk(id.x) || !vtxOk(id.y) || !vtxOk(id.z) || !vtxOk(id.w))
+        return;
+      int sidx_x = mesh.scalarsArePerVertex ? id.x : cellIdx;
+      int sidx_y = mesh.scalarsArePerVertex ? id.y : cellIdx;
+      int sidx_z = mesh.scalarsArePerVertex ? id.z : cellIdx;
+      int sidx_w = mesh.scalarsArePerVertex ? id.w : cellIdx;
+      if (mesh.scalarsArePerVertex) {
+        if (sidx_x < 0 || sidx_x >= mesh.numScalars
+            || sidx_y < 0 || sidx_y >= mesh.numScalars
+            || sidx_z < 0 || sidx_z >= mesh.numScalars
+            || sidx_w < 0 || sidx_w >= mesh.numScalars)
+          return;
+      } else if (cellIdx < 0 || cellIdx >= mesh.numScalars) {
+        return;
+      }
+      vec4f a(mesh.vertices[id.x], mesh.scalars[sidx_x]);
+      vec4f b(mesh.vertices[id.y], mesh.scalars[sidx_y]);
+      vec4f c(mesh.vertices[id.z], mesh.scalars[sidx_z]);
+      vec4f d(mesh.vertices[id.w], mesh.scalars[sidx_w]);
+      rasterTet<5>(grid, a, b, c, d);
     } else {
       const box4f eltBounds = mesh.cellBounds(cellIdx);
       rasterBox(grid,getBox(mesh.worldBounds),eltBounds);
@@ -218,6 +236,53 @@ namespace BARNEY_NS {
 
     return false;
   }
+
+#if RTC_DEVICE_CODE
+  /*! cuBQL BVH build (refit_init) assumes finite, non-inverted prim boxes.
+      Invalid connectivity (e.g. OOB vertex indices) yields empty / ±inf
+      bounds from cellBounds — sanitize to a tiny finite box so the builder
+      does not corrupt GPU memory; sampling still rejects bad cells in
+      eltScalar / tetScalar. */
+  inline __rtc_device bool umeshFiniteF(float x)
+  {
+    return (x == x) && (fabsf(x) < 1e37f);
+  }
+
+  inline __rtc_device bool umeshPrimBoundsSafeForCuBQL(const box4f &eb)
+  {
+    const box3f pb = getBox(eb);
+    const range1f rw = getRange(eb);
+    if (pb.empty())
+      return false;
+    if (!umeshFiniteF(pb.lower.x) || !umeshFiniteF(pb.lower.y)
+        || !umeshFiniteF(pb.lower.z) || !umeshFiniteF(pb.upper.x)
+        || !umeshFiniteF(pb.upper.y) || !umeshFiniteF(pb.upper.z))
+      return false;
+    if (!umeshFiniteF(rw.lower) || !umeshFiniteF(rw.upper))
+      return false;
+    if (rw.lower > rw.upper)
+      return false;
+    return true;
+  }
+
+  inline __rtc_device box4f umeshSanitizePrimBoundsForCuBQL(const UMeshField::DD &mesh,
+                                                              const box4f &eb)
+  {
+    if (umeshPrimBoundsSafeForCuBQL(eb))
+      return eb;
+    const box3f &wb = mesh.worldBounds;
+    if (!wb.empty() && umeshFiniteF(wb.lower.x) && umeshFiniteF(wb.lower.y)
+        && umeshFiniteF(wb.lower.z) && umeshFiniteF(wb.upper.x)
+        && umeshFiniteF(wb.upper.y) && umeshFiniteF(wb.upper.z)) {
+      const vec3f mid = 0.5f * (wb.lower + wb.upper);
+      const float pad = 1e-3f;
+      const vec3f lo(mid.x - pad, mid.y - pad, mid.z - pad);
+      const vec3f hi(mid.x + pad, mid.y + pad, mid.z + pad);
+      return box4f(vec4f(lo, 0.f), vec4f(hi, 1.f));
+    }
+    return box4f(vec4f(0.f, 0.f, 0.f, 0.f), vec4f(1.f, 1.f, 1.f, 1.f));
+  }
+#endif
     
   __rtc_global 
   void umeshComputeElementBBs(rtc::ComputeInterface ci,
@@ -225,12 +290,14 @@ namespace BARNEY_NS {
                               box3f   *d_primBounds,
                               range1f *d_primRanges)
   {
+#if RTC_DEVICE_CODE
     const int tid = ci.launchIndex().x;
     if (tid >= mesh.numCells) return;
     
-    box4f eb = mesh.cellBounds(tid);
+    const box4f eb = umeshSanitizePrimBoundsForCuBQL(mesh, mesh.cellBounds(tid));
     d_primBounds[tid] = getBox(eb);
     if (d_primRanges) d_primRanges[tid] = getRange(eb);
+#endif
   }
   
   /*! computes, on specified device, the bounding boxes and - if
@@ -331,6 +398,9 @@ namespace BARNEY_NS {
     dd.cellTypes   = (const uint8_t *)cellTypes->getDD(device);
     dd.scalarsArePerVertex = scalarsArePerVertex;
     dd.numCells    = (int)cellOffsets->count;
+    dd.numVertices = (int)vertices->count;
+    dd.numScalars  = (int)scalars->count;
+    dd.numIndices  = (int)indices->count;
     assert(dd.numCells > 0);
     assert(dd.vertices);
     assert(dd.indices);
@@ -360,5 +430,4 @@ namespace BARNEY_NS {
 #endif
   }
 }
-
 
