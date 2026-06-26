@@ -33,6 +33,14 @@ macro(set_library_properties tgt)
     CUDA_RESOLVE_DEVICE_SYMBOLS  ON
     CUDA_VISIBILITY_PRESET hidden
   )
+if (BARNEY_HAVE_HIP)
+  # objects were compiled -fgpu-rdc, so the final device-link of this target
+  # (and anything that links it) must pass -fgpu-rdc too, otherwise hipcc skips
+  # the device link and the __hip_gpubin_handle symbols stay undefined.
+  set_target_properties(${tgt} PROPERTIES HIP_SEPARABLE_COMPILATION ON)
+  target_link_options(${tgt} PUBLIC -fgpu-rdc --hip-link)
+  target_compile_options(${tgt} PRIVATE $<$<COMPILE_LANGUAGE:HIP>:-fgpu-rdc>)
+endif()
 if (APPLE)
   set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
 else()
@@ -321,7 +329,35 @@ if (BARNEY_BACKEND_CUDA)
     set_library_properties(barney_mpi_cuda)
   endif()
 endif()
-    
+
+# ------------------------------------------------------------------
+# barney_hiprt: the same barney host + device programs compiled against the
+# HIPRT (hardware-RT) rtcore backend. Mirrors the barney_cuda instantiation;
+# HIPRT replaces the BVH build + traversal, barney keeps its function-pointer
+# program dispatch, so the program set device-links exactly as the software
+# backend (-fgpu-rdc, set by set_library_properties).
+# ------------------------------------------------------------------
+if (BARNEY_BACKEND_HIPRT)
+  add_library(barney_hiprt_programs STATIC ${DEVICE_PROGRAM_SOURCES})
+  target_link_libraries(barney_hiprt_programs PUBLIC barney_config barney_rtc_hiprt)
+  target_compile_definitions(barney_hiprt_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
+  set_library_properties(barney_hiprt_programs)
+
+  add_library(barney_hiprt STATIC ${HOST_SOURCES})
+  target_link_libraries(barney_hiprt PUBLIC barney_config barney_rtc_hiprt)
+  target_link_libraries(barney_hiprt PRIVATE
+    barney_hiprt_programs
+    barney_config
+    )
+  set_library_properties(barney_hiprt)
+
+  if (BARNEY_MPI)
+    add_library(barney_mpi_hiprt ${MPI_SOURCES})
+    target_link_libraries(barney_mpi_hiprt PUBLIC barney_hiprt MPI::MPI_C)
+    set_library_properties(barney_mpi_hiprt)
+  endif()
+endif()
+
 
 # =============================================================================
 # create frontends for barney and barney_static
@@ -424,6 +460,16 @@ if (BARNEY_BACKEND_CUDA)
   if (BARNEY_MPI)
     target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
     target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
+  endif()
+endif()
+
+# link hiprt backend (if enabled) to all frontends
+if (BARNEY_BACKEND_HIPRT)
+  target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_hiprt>)
+  target_link_libraries(${BARNEY_DEVICE_NAME}_static PRIVATE $<BUILD_INTERFACE:barney_hiprt>)
+  if (BARNEY_MPI)
+    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_hiprt>)
+    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_hiprt>)
   endif()
 endif()
 
