@@ -10,7 +10,7 @@
 #include <memory>
 #include <map>
 
-namespace barney_device {
+namespace BANARI_NS {
 
   inline void bnSetAndRelease(BNObject o, const char *n, BNObject v)
   {

@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Array.h"
 
-namespace barney_device {
+namespace BANARI_NS {
 
 #define DEFINE_BARNEY_ARRAY_IMPL(DIM)                                          \
   Array##DIM::Array##DIM(                                                      \

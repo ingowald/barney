@@ -8,7 +8,7 @@
 #include <mutex>
 #include <set>
 
-namespace barney_api {
+namespace BARNEY_NS {
   
   struct Context;
   struct Data;

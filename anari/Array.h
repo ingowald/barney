@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -11,58 +11,58 @@
 #include <helium/array/Array3D.h>
 #include <helium/array/ObjectArray.h>
 
-namespace barney_device {
+namespace BANARI_NS {
 
-using ObjectArray = helium::ObjectArray;
+  using ObjectArray = helium::ObjectArray;
 
-#define DEFINE_BARNEY_ARRAY(DIM)                                               \
-  struct Array##DIM : public helium::Array##DIM                                \
-  {                                                                            \
-    Array##DIM(BarneyGlobalState *state,                                       \
-        const helium::Array##DIM##MemoryDescriptor &d);                        \
-    ~Array##DIM() override;                                                    \
-                                                                               \
-    void unmap() override;                                                     \
-                                                                               \
-    BNData barneyData();                                                       \
-                                                                               \
-   private:                                                                    \
-    BNData m_handle{nullptr};                                                  \
+#define DEFINE_BARNEY_ARRAY(DIM)                                \
+  struct Array##DIM : public helium::Array##DIM                 \
+  {                                                             \
+    Array##DIM(BarneyGlobalState *state,                        \
+               const helium::Array##DIM##MemoryDescriptor &d);  \
+    ~Array##DIM() override;                                     \
+                                                                \
+    void unmap() override;                                      \
+                                                                \
+    BNData barneyData();                                        \
+                                                                \
+  private:                                                      \
+  BNData m_handle{nullptr};                                     \
   };
 
-DEFINE_BARNEY_ARRAY(1D)
-DEFINE_BARNEY_ARRAY(2D)
-DEFINE_BARNEY_ARRAY(3D)
+  DEFINE_BARNEY_ARRAY(1D)
+  DEFINE_BARNEY_ARRAY(2D)
+  DEFINE_BARNEY_ARRAY(3D)
 
-BNDataType anariToBarney(anari::DataType type);
+  BNDataType anariToBarney(anari::DataType type);
 
-// Inlined definitions ////////////////////////////////////////////////////////
+  // Inlined definitions ////////////////////////////////////////////////////////
 
-inline size_t getNumBytes(const helium::Array &arr)
-{
-  return arr.totalCapacity() * anari::sizeOf(arr.elementType());
-}
+  inline size_t getNumBytes(const helium::Array &arr)
+  {
+    return arr.totalCapacity() * anari::sizeOf(arr.elementType());
+  }
 
-inline size_t getNumBytes(const helium::IntrusivePtr<Array1D> &arr)
-{
-  return arr ? getNumBytes(*arr) : size_t(0);
-}
+  inline size_t getNumBytes(const helium::IntrusivePtr<Array1D> &arr)
+  {
+    return arr ? getNumBytes(*arr) : size_t(0);
+  }
 
-inline size_t getNumBytes(const helium::IntrusivePtr<Array2D> &arr)
-{
-  return arr ? getNumBytes(*arr) : size_t(0);
-}
+  inline size_t getNumBytes(const helium::IntrusivePtr<Array2D> &arr)
+  {
+    return arr ? getNumBytes(*arr) : size_t(0);
+  }
 
-inline size_t getNumBytes(const helium::IntrusivePtr<Array3D> &arr)
-{
-  return arr ? getNumBytes(*arr) : size_t(0);
-}
+  inline size_t getNumBytes(const helium::IntrusivePtr<Array3D> &arr)
+  {
+    return arr ? getNumBytes(*arr) : size_t(0);
+  }
 
-template <typename T>
-inline size_t getNumBytes(const std::vector<T> &v)
-{
-  return v.size() * sizeof(T);
-}
+  template <typename T>
+  inline size_t getNumBytes(const std::vector<T> &v)
+  {
+    return v.size() * sizeof(T);
+  }
 
 } // namespace barney_device
 

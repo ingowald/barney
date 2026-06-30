@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -47,11 +47,20 @@
 #  define BARNEY_INTERFACE
 #endif
 
-#ifdef __cplusplus
+#ifdef BARNEY_NS
+namespace BARNEY_NS {
+# define BARNEY_API /* bla */
+#else
+# ifdef __cplusplus
 #  define BARNEY_API extern "C" BARNEY_INTERFACE
+# else
+#  define BARNEY_API /* bla */
+# endif
+#endif
+  
+#ifdef __cplusplus
 #  define BN_IF_CPP(a) a
 #else
-#  define BARNEY_API /* bla */
 #  define BN_IF_CPP(a) /* ignore */
 #endif
 
@@ -550,3 +559,6 @@ inline void bnSet(BNObject o, const char *n, bn_int4 v)
 { bnSet4i(o,n,v.x,v.y,v.z,v.w); }
 #endif
 
+#ifdef BARNEY_NS
+}
+#endif

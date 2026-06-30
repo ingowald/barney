@@ -11,8 +11,8 @@
 #include <barrier>
 #include "rtcore/embree/TraceInterface.h"
 
-namespace rtc {
-  namespace embree {
+namespace BARNEY_NS {
+  namespace rtc {
 
     int numThreads() {
       int nt = std::thread::hardware_concurrency();

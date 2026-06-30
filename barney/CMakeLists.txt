@@ -2,52 +2,46 @@
 # CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+# "backend" variable gets set by parent dir, and is one of either
+# 'cpu', 'cuda', 'optix', 'hip' or 'hiprt'
+
+message("building barney w/ backend '${backend}'")
+include(../rtcore/${backend}.cmake)
+
+if (NOT (TARGET barney_rtc_${backend}))
+  # we have no rtcore config for this backend - either because it was
+  # disabled by user, or because it lacks something to build. cannot
+  # bild this backend, return.
+  message("#barney: no valid rtcore config found for backend '${backend}'")
+  return()
+endif()
+
+set(BARNEY_DEVICE_NAME ${BARNEY_PROJECT_NAME}_${backend})
+
+add_library(barney_config_${backend} INTERFACE)
+target_link_libraries(barney_config_${backend} INTERFACE barney_rtc_${backend})
+
 if(MSVC) # That's also clang-cl
   # /bigobj is needed for bigger binding projects due to the limit to 64k
   # addressable sections
   set_property(
-    TARGET barney_config
+    TARGET barney_config_${backend}
     APPEND
     PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
 endif()
 
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
-
-add_library(barney_config_ptx INTERFACE)
-target_link_libraries(barney_config_ptx
-  INTERFACE
-  barney_config
+target_include_directories(barney_config_${backend} INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/nanovdb/include/>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
 )
-target_compile_definitions(barney_config_ptx
-  INTERFACE
-  -DBARNEY_DEVICE_PROGRAM=1
-)
-
-macro(set_library_properties tgt)
-  set_target_properties(${tgt}
-    PROPERTIES
-    POSITION_INDEPENDENT_CODE    ON
-    CXX_VISIBILITY_PRESET  hidden
-    CUDA_SEPARABLE_COMPILATION   ON
-    CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
-    CUDA_VISIBILITY_PRESET hidden
+if (WIN32)
+  target_compile_definitions(barney_config_${backend} INTERFACE -DNOMINMAX)
+  target_compile_options(barney_config_${backend} INTERFACE
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
   )
-if (BARNEY_HAVE_HIP)
-  # objects were compiled -fgpu-rdc, so the final device-link of this target
-  # (and anything that links it) must pass -fgpu-rdc too, otherwise hipcc skips
-  # the device link and the __hip_gpubin_handle symbols stay undefined.
-  set_target_properties(${tgt} PROPERTIES HIP_SEPARABLE_COMPILATION ON)
-  target_link_options(${tgt} PUBLIC -fgpu-rdc --hip-link)
-  target_compile_options(${tgt} PRIVATE $<$<COMPILE_LANGUAGE:HIP>:-fgpu-rdc>)
 endif()
-if (APPLE)
-  set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
-else()
-  set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$ORIGIN")
-endif()
-endmacro()
-
 
 
 #############################################################################
@@ -77,6 +71,7 @@ set(HOST_SOURCES
   Object.cpp
   Camera.h
   Camera.cu
+  
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
   fb/FrameBuffer.cu
@@ -84,6 +79,7 @@ set(HOST_SOURCES
   fb/LocalFB.cpp
   fb/TiledFB.h
   fb/TiledFB.cu
+  
   # model/group/data group handling
   GlobalModel.h
   GlobalModel.cpp
@@ -93,7 +89,6 @@ set(HOST_SOURCES
   Group.cpp
   render/GeometryAttributes.h
   render/GeometryAttributes.cpp
-
 
   # samplers
   render/Sampler.h
@@ -159,6 +154,7 @@ set(HOST_SOURCES
   
   ModelSlot.h
   ModelSlot.cpp
+  
   # general csommon/data-related stuff
   common/Texture.h
   common/Texture.cpp
@@ -213,183 +209,31 @@ set(DEVICE_PROGRAM_SOURCES
   umesh/mc/UMeshMC.dev.cu
   amr/BlockStructuredMC.dev.cu
   kernels/traceRays.dev.cu
+  api/barney.cu
 )
 
-# ------------------------------------------------------------------
-# optix backend: instantiates all the barney classes,Data device
-# programs, etcpp - except the api itself - in a optix
-# configuration.
-# ------------------------------------------------------------------
-if (BARNEY_BACKEND_OPTIX)
-  add_library(barney_optix ${HOST_SOURCES})
-  foreach(src  ${DEVICE_PROGRAM_SOURCES})
-    get_filename_component(basename "${src}" NAME_WE)
-    embed_ptx(
-      OUTPUT_TARGET      barney-${basename}-ptx
-      PTX_LINK_LIBRARIES barney_config_ptx barney_rtc_optix
-      SOURCES            ${src}
-      )
-    target_link_libraries(barney_optix PRIVATE barney-${basename}-ptx)
-  endforeach()
-  set_library_properties(barney_optix)
-  target_link_libraries(barney_optix PUBLIC
-    barney_config
-    barney_rtc_optix
-    $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
-  )
-  set_property(
-    TARGET barney_optix 
-    APPEND
-    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
-  set_property(
-    TARGET barney_optix 
-    APPEND
-    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
-  if (BARNEY_MPI)
-    add_library(barney_mpi_optix ${MPI_SOURCES})
-    target_link_libraries(barney_mpi_optix PUBLIC barney_optix MPI::MPI_C)
-    set_library_properties(barney_mpi_optix)
-  endif()
-endif()
-
+# this will build a static library 'barney_device_programs' that
+# either contains the compiled device programs, or library containing
+# the precomiled ptx sources
+rtc_build_device_sources(barney_${backend}_programs
+  ${DEVICE_PROGRAM_SOURCES}
+)
 
 foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
-  configure_cuda_source(${src})
+  rtc_configure_source(${src})
 endforeach()
-
-# ------------------------------------------------------------------
-# embree backend: instantiates all the barney classes, device
-# programs, etcpp - except the api itself - in an embree configuration
-# that'll run on the host.
-# ------------------------------------------------------------------
-if (BARNEY_BACKEND_EMBREE)
-  # in the barney backend all sources will only use host-side code,
-  # but we can still compile them with nvcc if it's avaible - so
-  # _if_ nvcc is available we leave the language for .cu files on
-  # 'cuda' in order to let the same sources be properly compiled for
-  # non-embree backends; but if there's no cuda vailable we have to
-  # change the language to CPP else cmake will just skip these
-  # sources.
-
-  # ----------- barney_backend_embree -----------
-  add_library(barney_backend_embree_programs STATIC ${DEVICE_PROGRAM_SOURCES})  
-  target_link_libraries(barney_backend_embree_programs PRIVATE barney_config barney_rtc_embree)
-  target_compile_definitions(barney_backend_embree_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1 -DBARNEY_RTC_EMBREE=1)
-  set_library_properties(barney_backend_embree_programs)
-
-  add_library(barney_backend_embree STATIC ${HOST_SOURCES})
-  target_link_libraries(barney_backend_embree PUBLIC barney_config)
-  target_link_libraries(barney_backend_embree PRIVATE barney_rtc_embree)
-  target_link_libraries(barney_backend_embree PRIVATE
-    barney_backend_embree_programs
-    barney_config
-    $<BUILD_INTERFACE:cuBQL_cpu_float3_static>)
-  target_compile_definitions(barney_backend_embree_programs PRIVATE -DBARNEY_RTC_EMBREE=1)
-  set_library_properties(barney_backend_embree)
-
-  if (BARNEY_MPI)
-    add_library(barney_mpi_embree ${MPI_SOURCES})
-    target_compile_definitions(barney_mpi_embree PUBLIC -DBARNEY_RTC_EMBREE=1)
-    target_link_libraries(barney_mpi_embree PUBLIC barney_config embree_local)
-    target_link_libraries(barney_mpi_embree PUBLIC barney_backend_embree MPI::MPI_C)
-    set_library_properties(barney_mpi_embree)
-  endif()
-endif()
     
-# ------------------------------------------------------------------
-# cuda backend: instantiates all the barney classes, device
-# programs, etcpp - except the api itself - in an cuda configuration
-# that'll run on the gpu, but without requiring optix
-# ------------------------------------------------------------------
-if (BARNEY_BACKEND_CUDA)
-  # ----------- barney_cuda -----------
-  add_library(barney_cuda_programs STATIC
-    ${DEVICE_PROGRAM_SOURCES})  
-  target_link_libraries(barney_cuda_programs PUBLIC barney_config barney_rtc_cuda)
-  target_compile_definitions(barney_cuda_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
-  set_library_properties(barney_cuda_programs)
-
-  add_library(barney_cuda STATIC
-    ${HOST_SOURCES})
-  target_link_libraries(barney_cuda PUBLIC barney_config barney_rtc_cuda)
-  if (TARGET cuBQL_cuda_float3_static)
-    target_link_libraries(barney_cuda PRIVATE
-      $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
-      )
-  endif()
-  target_link_libraries(barney_cuda PRIVATE
-    barney_cuda_programs
-    barney_config
-    )
-  set_library_properties(barney_cuda)
-
-  if (BARNEY_MPI)
-    add_library(barney_mpi_cuda ${MPI_SOURCES})
-    target_link_libraries(barney_mpi_cuda PUBLIC barney_cuda MPI::MPI_C)
-    set_library_properties(barney_mpi_cuda)
-  endif()
-endif()
-
-# ------------------------------------------------------------------
-# barney_hiprt: the same barney host + device programs compiled against the
-# HIPRT (hardware-RT) rtcore backend. Mirrors the barney_cuda instantiation;
-# HIPRT replaces the BVH build + traversal, barney keeps its function-pointer
-# program dispatch, so the program set device-links exactly as the software
-# backend (-fgpu-rdc, set by set_library_properties).
-# ------------------------------------------------------------------
-if (BARNEY_BACKEND_HIPRT)
-  add_library(barney_hiprt_programs STATIC ${DEVICE_PROGRAM_SOURCES})
-  target_link_libraries(barney_hiprt_programs PUBLIC barney_config barney_rtc_hiprt)
-  target_compile_definitions(barney_hiprt_programs PRIVATE -DBARNEY_DEVICE_PROGRAM=1)
-  set_library_properties(barney_hiprt_programs)
-
-  add_library(barney_hiprt STATIC ${HOST_SOURCES})
-  target_link_libraries(barney_hiprt PUBLIC barney_config barney_rtc_hiprt)
-  target_link_libraries(barney_hiprt PRIVATE
-    barney_hiprt_programs
-    barney_config
-    )
-  set_library_properties(barney_hiprt)
-
-  if (BARNEY_MPI)
-    add_library(barney_mpi_hiprt ${MPI_SOURCES})
-    target_link_libraries(barney_mpi_hiprt PUBLIC barney_hiprt MPI::MPI_C)
-    set_library_properties(barney_mpi_hiprt)
-  endif()
-endif()
-
-
-# =============================================================================
-# create frontends for barney and barney_static
-# =============================================================================
-configure_cuda_source(api/barney.cu)
-
-# ------------------------------------------------------------------
-# barney
-# ------------------------------------------------------------------
-add_library(${BARNEY_DEVICE_NAME} SHARED api/barney.cu)
-target_link_libraries(${BARNEY_DEVICE_NAME} PUBLIC
-  $<BUILD_INTERFACE:barney_config>
-#  $<BUILD_INTERFACE:barney_rtc_cuda_common>
-#  $<BUILD_INTERFACE:barney_rtc_cuda>
-#  $<BUILD_INTERFACE:barney_cuda>
-)
-set_library_properties(${BARNEY_DEVICE_NAME})
-target_include_directories(${BARNEY_DEVICE_NAME} PUBLIC
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-
 # ------------------------------------------------------------------
 # barney_static
 # ------------------------------------------------------------------
-add_library(${BARNEY_DEVICE_NAME}_static STATIC api/barney.cu)
-target_include_directories(${BARNEY_DEVICE_NAME}_static PUBLIC
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+add_library(${BARNEY_DEVICE_NAME} STATIC
+  ${HOST_SOURCES}
 )
-
-target_compile_definitions(${BARNEY_DEVICE_NAME}_static PUBLIC -Dbarney_STATIC=1)
-target_link_libraries(${BARNEY_DEVICE_NAME}_static PUBLIC $<BUILD_INTERFACE:barney_config>)
-set_library_properties(${BARNEY_DEVICE_NAME}_static)
+target_link_libraries(${BARNEY_DEVICE_NAME} PUBLIC
+  $<BUILD_INTERFACE:barney_${backend}_programs>
+  $<BUILD_INTERFACE:barney_${backend}_config>
+)
+rtc_library_properties(${BARNEY_DEVICE_NAME})
 
 # =============================================================================
 # create frontends for barney_mpi and barney_mpi_static
@@ -398,87 +242,18 @@ if (BARNEY_MPI)
   # ------------------------------------------------------------------
   # barney_mpi
   # ------------------------------------------------------------------
-  add_library(${BARNEY_DEVICE_NAME}_mpi SHARED
-    api/barney.cu
+  add_library(${BARNEY_DEVICE_NAME}_mpi STATIC
+    ${HOST_SOURCES} ${MPI_SOURCES}
   )
   target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC
-    $<BUILD_INTERFACE:barney_config>
+    $<BUILD_INTERFACE:barney_${backend}_programs>
+    $<BUILD_INTERFACE:barney_${backend}_config>
   )
-  target_include_directories(${BARNEY_DEVICE_NAME}_mpi PUBLIC
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  rtc_library_properties(${BARNEY_DEVICE_NAME}_mpi) 
+  target_compile_definitions(${BARNEY_DEVICE_NAME}_mpi PRIVATE
+    -Dbarney_mpi_STATIC=1
+    -DBARNEY_MPI=1
   )
-  set_library_properties(${BARNEY_DEVICE_NAME}_mpi) 
-  target_compile_definitions(barney_mpi PRIVATE -DBARNEY_MPI=1)
- 
-  # ------------------------------------------------------------------
-  # barney_mpi_static
-  # ------------------------------------------------------------------
-  add_library(${BARNEY_DEVICE_NAME}_mpi_static STATIC api/barney.cu)
-  target_compile_definitions(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
-    -Dbarney_mpi_STATIC=1 -DBARNEY_MPI=1)
-  target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
-    $<BUILD_INTERFACE:barney_config>
-  )
-  target_include_directories(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  set_library_properties(${BARNEY_DEVICE_NAME}_mpi_static)
 endif()
 
 
-#############################################################################
-# last step - link all optix/embree backend(s) to all
-# mpi/nompi/static/shared frontends
-#############################################################################
-
-# link optix backend (if enabled) to all frontends
-if (BARNEY_BACKEND_OPTIX)
-  target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_optix>)
-  target_link_libraries(${BARNEY_DEVICE_NAME}_static PRIVATE $<BUILD_INTERFACE:barney_optix>)
-  if (BARNEY_MPI)
-    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
-    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_optix>)
-  endif()
-endif()
-
-# link embree backend (if enabled) to all frontends
-if (BARNEY_BACKEND_EMBREE)
-  target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_backend_embree>)
-  target_link_libraries(${BARNEY_DEVICE_NAME}_static PRIVATE $<BUILD_INTERFACE:barney_backend_embree>)
-  if (BARNEY_MPI)
-    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC
-      $<BUILD_INTERFACE:barney_mpi_embree>)
-    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
-      $<BUILD_INTERFACE:barney_mpi_embree>)
-  endif()
-endif()
-
-# link cuda backend (if enabled) to all frontends
-if (BARNEY_BACKEND_CUDA)
-  target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_cuda>)
-  target_link_libraries(${BARNEY_DEVICE_NAME}_static PRIVATE $<BUILD_INTERFACE:barney_cuda>)
-  if (BARNEY_MPI)
-    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
-    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_cuda>)
-  endif()
-endif()
-
-# link hiprt backend (if enabled) to all frontends
-if (BARNEY_BACKEND_HIPRT)
-  target_link_libraries(${BARNEY_DEVICE_NAME} PRIVATE $<BUILD_INTERFACE:barney_hiprt>)
-  target_link_libraries(${BARNEY_DEVICE_NAME}_static PRIVATE $<BUILD_INTERFACE:barney_hiprt>)
-  if (BARNEY_MPI)
-    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC $<BUILD_INTERFACE:barney_mpi_hiprt>)
-    target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC $<BUILD_INTERFACE:barney_mpi_hiprt>)
-  endif()
-endif()
-
-
-
-# ##################################################################
-# final lib properties
-# ##################################################################
-set_library_properties(${BARNEY_DEVICE_NAME})
-if (BARNEY_MPI)
-  set_library_properties(${BARNEY_DEVICE_NAME}_mpi)
-endif()

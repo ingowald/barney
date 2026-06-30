@@ -35,7 +35,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
   }
 #endif
 
-namespace barney_api {
+namespace BARNEY_NS {
 
   FromEnv::FromEnv()
   {
@@ -95,46 +95,46 @@ namespace barney_api {
     return singleton;
   }
   
-  extern "C" {
-#if BARNEY_BACKEND_EMBREE
-    barney_api::Context *
-    createContext_embree(const std::vector<int> &dgIDs);
-#endif
-#if BARNEY_BACKEND_OPTIX
-    barney_api::Context *
-    createContext_optix(const std::vector<int> &dgIDs,
-                        int numGPUs, const int *gpuIDs);
-#endif
-#if BARNEY_BACKEND_CUDA
-    barney_api::Context *
-    createContext_cuda(const std::vector<int> &dgIDs,
-                       int numGPUs, const int *gpuIDs);
-#endif
-#if BARNEY_BACKEND_HIPRT
-    barney_api::Context *
-    createContext_hiprt(const std::vector<int> &dgIDs,
-                        int numGPUs, const int *gpuIDs);
-#endif
-#if BARNEY_MPI
-# if BARNEY_BACKEND_EMBREE
-    barney_api::Context *
-    createMPIContext_embree(barney_api::mpi::Comm world,
-                            const std::vector<int> &dgIDs);
-# endif
-# if BARNEY_BACKEND_OPTIX
-    barney_api::Context *
-    createMPIContext_optix(barney_api::mpi::Comm world,
-                           const std::vector<int> &dgIDs,
-                           int numGPUs, const int *gpuIDs);
-# endif
-# if BARNEY_BACKEND_CUDA
-    barney_api::Context *
-    createMPIContext_cuda(barney_api::mpi::Comm world,
-                           const std::vector<int> &dgIDs,
-                           int numGPUs, const int *gpuIDs);
-# endif
-#endif
-  }
+//   extern "C" {
+// #if BARNEY_BACKEND_EMBREE
+//     barney_api::Context *
+//     createContext_embree(const std::vector<int> &dgIDs);
+// #endif
+// #if BARNEY_BACKEND_OPTIX
+//     barney_api::Context *
+//     createContext_optix(const std::vector<int> &dgIDs,
+//                         int numGPUs, const int *gpuIDs);
+// #endif
+// #if BARNEY_BACKEND_CUDA
+//     barney_api::Context *
+//     createContext_cuda(const std::vector<int> &dgIDs,
+//                        int numGPUs, const int *gpuIDs);
+// #endif
+// #if BARNEY_BACKEND_HIPRT
+//     barney_api::Context *
+//     createContext_hiprt(const std::vector<int> &dgIDs,
+//                         int numGPUs, const int *gpuIDs);
+// #endif
+// #if BARNEY_MPI
+// # if BARNEY_BACKEND_EMBREE
+//     barney_api::Context *
+//     createMPIContext_embree(barney_api::mpi::Comm world,
+//                             const std::vector<int> &dgIDs);
+// # endif
+// # if BARNEY_BACKEND_OPTIX
+//     barney_api::Context *
+//     createMPIContext_optix(barney_api::mpi::Comm world,
+//                            const std::vector<int> &dgIDs,
+//                            int numGPUs, const int *gpuIDs);
+// # endif
+// # if BARNEY_BACKEND_CUDA
+//     barney_api::Context *
+//     createMPIContext_cuda(barney_api::mpi::Comm world,
+//                            const std::vector<int> &dgIDs,
+//                            int numGPUs, const int *gpuIDs);
+// # endif
+// #endif
+//   }
   
   inline Context *checkGet(BNContext context)
   {
