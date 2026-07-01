@@ -53,6 +53,9 @@ namespace BARNEY_NS {
     MCGrid::SP getMCs()
     { if (!mcGrid) mcGrid = buildMCs(); return mcGrid; }
 
+    virtual MCGrid::SP getIsoMCs()
+    { return getMCs(); }
+
     /*! create, fill, and return a macrocell grid for this field */
     virtual MCGrid::SP buildMCs();
 

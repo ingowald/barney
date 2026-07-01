@@ -8,6 +8,7 @@
 
 #include "barney/amr/BlockStructuredField.h"
 #include "barney/Context.h"
+#include "barney/volume/MCAccelerator.h"
 #include "barney/volume/MCGrid.cuh"
 #include "barney/amr/BlockStructuredCuBQLSampler.h"
 
@@ -17,6 +18,10 @@ namespace BARNEY_NS {
                        /*name*/BlockStructuredMC,
                        /*geomtype device data */
                        MCVolumeAccel<BlockStructuredCuBQLSampler>::DD,false,false);
+  RTC_IMPORT_USER_GEOM(/*file*/BlockStructuredMC,
+                       /*name*/BlockStructuredMC_Iso,
+                       /*geomtype device data */
+                       MCIsoSurfaceAccel<BlockStructuredCuBQLSampler>::DD,false,false);
 
   enum { MC_GRID_SIZE = 256 };
 
@@ -29,29 +34,36 @@ namespace BARNEY_NS {
   }
 
   __rtc_global
-  void BSField_rasterGrids(const rtc::ComputeInterface &ci,
-                           BlockStructuredField::DD field,
-                           MCGrid::DD               grid)
+  void BSField_rasterMacroCells(const rtc::ComputeInterface &ci,
+                                BlockStructuredField::DD field,
+                                MCGrid::DD               grid)
   {
 #if RTC_DEVICE_CODE
     const int tid = ci.launchIndex().x;
-    if (tid >= field.numBlocks) return;
+    if (tid >= grid.numCells()) return;
 
-    const Block block = Block::getFrom(field,tid);
+    const vec3i cellID = grid.cellID(tid);
+    const vec3f lo = grid.gridOrigin + vec3f(cellID) * grid.gridSpacing;
+    const vec3f hi = lo + grid.gridSpacing;
 
-    vec3i numCells = block.dims;
-
-    const box3f worldBox = getBox(field.worldBounds);
-    for (int z=0;z<numCells.z;z++) {
-      for (int y=0;y<numCells.y;y++) {
-        for (int x=0;x<numCells.x;x++) {
-          const box3f cb3 = block.cellBounds({x,y,z});
-          const float scalar = block.getScalar({x,y,z});
-          const box4f cellBounds(vec4f(cb3.lower,scalar),
-                                 vec4f(cb3.upper,scalar));
-          rasterBox(grid,worldBox,cellBounds);
+    range1f range;
+    const vec3f size = hi - lo;
+    const int N = 6;
+    for (int iz = 0; iz <= N; ++iz) {
+      for (int iy = 0; iy <= N; ++iy) {
+        for (int ix = 0; ix <= N; ++ix) {
+          const vec3f P = lo + vec3f(ix / float(N), iy / float(N), iz / float(N)) * size;
+          const float v = sampleBlockStructuredAt(field, P);
+          if (!isnan(v))
+            range.extend(v);
         }
       }
+    }
+    if (!range.empty()) {
+      const float pad = max(0.05f, (range.upper - range.lower) * 0.25f);
+      range.lower -= pad;
+      range.upper += pad;
+      grid.scalarRanges[tid] = range;
     }
 #endif
   }
@@ -75,6 +87,81 @@ namespace BARNEY_NS {
     rtc::fatomicMax(&pBounds->upper.y,bb.upper.y);
     rtc::fatomicMax(&pBounds->upper.z,bb.upper.z);
 #endif
+  }
+  
+  __rtc_global
+  void BSField_rasterMacroCellsCoarsest(const rtc::ComputeInterface &ci,
+                                        BlockStructuredField::DD field,
+                                        MCGrid::DD               grid)
+  {
+#if RTC_DEVICE_CODE
+    const int tid = ci.launchIndex().x;
+    if (tid >= grid.numCells()) return;
+
+    const vec3i cellID = grid.cellID(tid);
+    const vec3f lo = grid.gridOrigin + vec3f(cellID) * grid.gridSpacing;
+    const vec3f hi = lo + grid.gridSpacing;
+
+    range1f range;
+    const vec3f size = hi - lo;
+    const int N = 6;
+    for (int iz = 0; iz <= N; ++iz) {
+      for (int iy = 0; iy <= N; ++iy) {
+        for (int ix = 0; ix <= N; ++ix) {
+          const vec3f P = lo + vec3f(ix / float(N), iy / float(N), iz / float(N)) * size;
+          const float v = sampleBlockStructuredAtCoarsest(field, P);
+          if (!isnan(v))
+            range.extend(v);
+        }
+      }
+    }
+    if (!range.empty()) {
+      const float pad = max(0.05f, (range.upper - range.lower) * 0.25f);
+      range.lower -= pad;
+      range.upper += pad;
+      grid.scalarRanges[tid] = range;
+    }
+#endif
+  }
+  
+  MCGrid::SP BlockStructuredField::getIsoMCs()
+  {
+    if (!mcIsoGrid)
+      mcIsoGrid = buildIsoMCs();
+    return mcIsoGrid;
+  }
+
+  MCGrid::SP BlockStructuredField::buildIsoMCs()
+  {
+    if (mcIsoGrid) return mcIsoGrid;
+
+    mcIsoGrid = std::make_shared<MCGrid>(devices);
+    auto &grid = *mcIsoGrid;
+
+    std::cout << OWL_TERMINAL_BLUE
+              << "#bn.amr: building iso macro cell grid (coarsest sampling)"
+              << OWL_TERMINAL_DEFAULT << std::endl;
+    numBlocks = (int)perBlock.origins->count;
+
+    float maxWidth = reduce_max(getBox(worldBounds).size());
+    vec3i dims = 1+vec3i(getBox(worldBounds).size() * ((MC_GRID_SIZE-1) / maxWidth));
+    grid.resize(dims);
+    grid.gridOrigin = worldBounds.lower;
+    grid.gridSpacing = worldBounds.size() * rcp(vec3f(dims));
+    grid.clearCells();
+
+    const int numMCCells = grid.dims.x * grid.dims.y * grid.dims.z;
+    for (auto device : *devices) {
+      __rtc_launch(device->rtc,
+                   BSField_rasterMacroCellsCoarsest,
+                   dru(numMCCells,1024),1024,
+                   this->getDD(device),grid.getDD(device));
+    }
+
+    for (auto device : *devices)
+      device->sync();
+
+    return mcIsoGrid;
   }
   
   MCGrid::SP BlockStructuredField::buildMCs()
@@ -105,10 +192,11 @@ namespace BARNEY_NS {
     
     grid.clearCells();
 
+    const int numMCCells = grid.dims.x * grid.dims.y * grid.dims.z;
     for (auto device : *devices) {
       __rtc_launch(device->rtc,
-                   BSField_rasterGrids,
-                   dru(numBlocks,1024),1024,
+                   BSField_rasterMacroCells,
+                   dru(numMCCells,1024),1024,
                    this->getDD(device),grid.getDD(device));
     }
     
@@ -159,6 +247,17 @@ namespace BARNEY_NS {
     return std::make_shared<MCVolumeAccel<BlockStructuredCuBQLSampler>>
       (volume,
        createGeomType_BlockStructuredMC,
+       sampler);
+  }
+
+  IsoSurfaceAccel::SP BlockStructuredField::createIsoAccel(IsoSurface *isoSurface)
+  {
+    auto sampler
+      = std::make_shared<BlockStructuredCuBQLSampler>(this);
+    sampler->useCoarsestForIso = true;
+    return std::make_shared<MCIsoSurfaceAccel<BlockStructuredCuBQLSampler>>
+      (isoSurface,
+       createGeomType_BlockStructuredMC_Iso,
        sampler);
   }
 
