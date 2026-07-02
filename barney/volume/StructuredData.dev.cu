@@ -1,10 +1,9 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/volume/StructuredData.h"
 #include "barney/volume/MCAccelerator.h"
-#include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

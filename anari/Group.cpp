@@ -6,8 +6,8 @@
 #include <iostream>
 #include "common.h"
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   Group::Group(BarneyGlobalState *s)
     : Object(ANARI_GROUP, s),
       m_surfaceData(this),
@@ -164,6 +164,6 @@ namespace barney_device {
     return result;
   }
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Group *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Group *);

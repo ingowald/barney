@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Material.h"
 #include "common.h"
 #include <iostream>
 
-namespace barney_device {
+namespace BANARI_NS {
 
   // Helper functions ///////////////////////////////////////////////////////////
 
@@ -195,6 +195,6 @@ namespace barney_device {
     bnCommit(m_bnMat);
   }
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Material *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Material *);

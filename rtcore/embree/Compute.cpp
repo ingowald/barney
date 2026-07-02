@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/embree/ComputeInterface.h"
 #include "rtcore/embree/ComputeKernel.h"
@@ -82,7 +82,7 @@ namespace BARNEY_NS {
     template<typename Kernel>
     void parallel_for_3D(Device *device, vec3ui dims, const Kernel &lambda)
     {
-      LaunchSystem *ls = ((embree::Device *)device)->ls;
+      LaunchSystem *ls = ((BARNEY_NS::rtc::Device *)device)->ls;
       int numTotal = dims.x*dims.y*dims.z;
       TaskWrapper task([&](int tid)
       {
@@ -105,7 +105,7 @@ namespace BARNEY_NS {
         (device,vec3ui(numBlocks,1,1),
          // (numBlocks,
          [&](vec3ui bid){
-           embree::ComputeInterface ci;
+           ComputeInterface ci;
            ci.gridDim = vec3ui(numBlocks,1u,1u);
            ci.blockIdx = bid;
            ci.blockDim = vec3ui(blockSize,1u,1u);
@@ -123,7 +123,7 @@ namespace BARNEY_NS {
         (device,vec3ui(numBlocks.x,numBlocks.y,1),
          // (numBlocks,
          [&](vec3ui bid){
-           embree::ComputeInterface ci;
+           ComputeInterface ci;
            ci.gridDim = vec3ui(numBlocks.x,numBlocks.y,1);
            ci.blockIdx = bid;
            ci.blockDim = vec3ui(blockSize.x,blockSize.y,1);
@@ -142,7 +142,7 @@ namespace BARNEY_NS {
         (device,numBlocks,
          // (numBlocks,
          [&](vec3ui bid){
-           embree::ComputeInterface ci;
+           ComputeInterface ci;
            ci.gridDim = vec3ui(numBlocks);
            ci.blockIdx = bid;
            ci.blockDim = vec3ui(blockSize);
@@ -163,7 +163,7 @@ namespace BARNEY_NS {
          [&](vec3ui bid) {
            int ix = bid.x;
            int iy = bid.y;
-           embree::TraceInterface ci;
+           TraceInterface ci;
            ci.launchIndex = vec3i(ix,iy,0);
            ci.launchDimensions = {launchDims.x,launchDims.y,1};
            ci.lpData = dd;

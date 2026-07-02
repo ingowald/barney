@@ -1,8 +1,6 @@
-// SPDX-FileCopyrightText:
-// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier:
-// Apache-2.0
-
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file MCGrid.cuh Helper functions for building macro-cell grids,
   basically to allow for atomic min/max updates when 'rasterizing'
@@ -11,7 +9,7 @@
 
 #include "barney/volume/MCGrid.h"
 #include "barney/common/barney-common.h"
-#include "rtcore/ComputeInterface.h"
+#include "barney_rtc.h"
 
 namespace BARNEY_NS {
 

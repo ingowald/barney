@@ -1,22 +1,23 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "barney/barney.h"
 #include "barney/barneyConfig.h"
 
-#if BARNEY_HAVE_HIP
-# define CUDART_INF INFINITY
-# define CUDART_INF_F ((float)INFINITY)
-# define CUDART_NAN NAN
-# define CUDART_NAN_F ((float)NAN)
-# include "hip/hip_runtime.h"
-#endif
+// #if BARNEY_HAVE_HIP
+// # define CUDART_INF INFINITY
+// # define CUDART_INF_F ((float)INFINITY)
+// # define CUDART_NAN NAN
+// # define CUDART_NAN_F ((float)NAN)
+// # include "hip/hip_runtime.h"
+// #endif
 
 // automatically generated, in build dir
-#include "rtcore/AppInterface.h"
+#include "barney_rtc.h"
+// #include "rtcore/AppInterface.h"
 #include "barney/api/common.h"
 #include <owl/common/owl-common.h>
 #include <owl/common/math/box.h>
@@ -30,27 +31,30 @@
 
 #define __barney_align(a) OWL_ALIGN(a)
 
-#if BARNEY_MPI
-# if BARNEY_RTC_OPTIX
-#  define BARNEY_MPI_NS barney_optix
-# endif
-# if BARNEY_RTC_EMBREE
-#  define BARNEY_MPI_NS barney_embree
-# endif
-# if BARNEY_RTC_CUDA
-#  define BARNEY_MPI_NS barney_cuda
-# endif
-#else
-# if BARNEY_RTC_OPTIX
-#  define BARNEY_NS barney_optix
-# endif
-# if BARNEY_RTC_EMBREE
-#  define BARNEY_NS barney_embree
-# endif
-# if BARNEY_RTC_CUDA
-#  define BARNEY_NS barney_cuda
-# endif
+#ifndef BARNEY_NS
+# error "BARNEY_NS is not defined - cmake should do this"
 #endif
+// #if BARNEY_MPI
+// # if BARNEY_RTC_OPTIX
+// #  define BARNEY_MPI_NS barney_optix
+// # endif
+// # if BARNEY_RTC_EMBREE
+// #  define BARNEY_MPI_NS barney_embree
+// # endif
+// # if BARNEY_RTC_CUDA
+// #  define BARNEY_MPI_NS barney_cuda
+// # endif
+// #else
+// # if BARNEY_RTC_OPTIX
+// #  define BARNEY_NS barney_optix
+// # endif
+// # if BARNEY_RTC_EMBREE
+// #  define BARNEY_NS barney_embree
+// # endif
+// # if BARNEY_RTC_CUDA
+// #  define BARNEY_NS barney_cuda
+// # endif
+// #endif
 
 namespace BARNEY_NS {
   

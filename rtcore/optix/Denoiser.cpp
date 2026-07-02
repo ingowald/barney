@@ -1,16 +1,15 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/optix/Denoiser.h"
 #include <optix.h>
-// #include <optix_function_table.h>
 #include <optix_stubs.h>
 #include <iostream>
 
-namespace rtc {
-  namespace optix {
-    
+namespace BARNEY_NS {
+  namespace rtc {
+
 #if OPTIX_VERSION >= 80000
     
     Optix8Denoiser::Optix8Denoiser(Device *device)

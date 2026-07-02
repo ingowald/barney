@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/optix/Geom.h"
 #include "rtcore/optix/Buffer.h"
 #include "rtcore/optix/Device.h"
 
-namespace rtc {
-  namespace optix {
+namespace BARNEY_NS {
+  namespace rtc {
 
     // ==================================================================
     // geom
@@ -57,7 +57,7 @@ namespace rtc {
                              numIndices,sizeof(int3),0);
     }
 
-    GeomType::GeomType(optix::Device *device)
+    GeomType::GeomType(Device *device)
       : device(device)
     {
       device->programsDirty = true;
@@ -69,7 +69,7 @@ namespace rtc {
       gt = 0;
     }
 
-    TrianglesGeomType::TrianglesGeomType(optix::Device *device,
+    TrianglesGeomType::TrianglesGeomType(Device *device,
                                          const std::string &ptxCode,
                                          const std::string &typeName,
                                          size_t sizeOfDD,
@@ -96,7 +96,7 @@ namespace rtc {
       owlModuleRelease(module);
     }
 
-    UserGeomType::UserGeomType(optix::Device *device,
+    UserGeomType::UserGeomType(Device *device,
                                const std::string &ptxCode,
                                const std::string &typeName,
                                size_t sizeOfDD,
@@ -130,13 +130,13 @@ namespace rtc {
     
     Geom *TrianglesGeomType::createGeom()
     {
-      OWLGeom geom = owlGeomCreate(((optix::Device*)device)->owl,this->gt);
+      OWLGeom geom = owlGeomCreate(((Device*)device)->owl,this->gt);
       return new TrianglesGeom(this,geom);
     }
 
     Geom *UserGeomType::createGeom()
     {
-      OWLGeom geom = owlGeomCreate(((optix::Device*)device)->owl,this->gt);
+      OWLGeom geom = owlGeomCreate(((Device*)device)->owl,this->gt);
       return new UserGeom(this,geom);
     }
       

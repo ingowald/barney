@@ -1,18 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "rtcore/optix/Device.h"
 #include <owl/owl.h>
 
-namespace rtc {
-  namespace optix {
+namespace BARNEY_NS {
+  namespace rtc {
+
     struct Device;
 
     struct Group {
-      Group(optix::Device *device, OWLGroup owlGroup);
+      Group(Device *device, OWLGroup owlGroup);
       virtual ~Group() { owlGroupRelease(owl); }
       
       rtc::AccelHandle getDD() const;
@@ -21,7 +22,7 @@ namespace rtc {
       void setTransforms(const std::vector<affine3f> &xfms);
       
       OWLGroup const owl;
-      optix::Device *const device;
+      Device *const device;
     };
 
   }

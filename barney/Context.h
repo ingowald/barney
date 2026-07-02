@@ -13,7 +13,6 @@
 
 namespace BARNEY_NS {
   using namespace owl::common;
-  using barney_api::FromEnv;
   using barney_api::LocalSlot;
   
   enum { tileSize = 32 };

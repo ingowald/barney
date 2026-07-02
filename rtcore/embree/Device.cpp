@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/embree/Device.h"
 #include "rtcore/embree/Texture.h"
@@ -12,9 +12,11 @@
 #include "rtcore/embree/TraceInterface.h"
 #include "rtcore/embree/ComputeInterface.h"
 
-namespace rtc {
-  namespace embree {
+namespace BARNEY_NS {
+  namespace rtc {
 
+    int physicalDeviceCount() { return 1; }
+    
     /*! get a unique hash for a given physical device. */
     size_t getPhysicalDeviceHash(int gpuID)
     { return (size_t)gpuID; }

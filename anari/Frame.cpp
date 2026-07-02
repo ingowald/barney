@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Frame.h"
 #include "Device.h"
@@ -13,8 +13,8 @@
 #include <cuda_runtime.h>
 #endif
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   // Helper functions ///////////////////////////////////////////////////////////
 
   static BNDataType toBarney(anari::DataType type)
@@ -489,4 +489,4 @@ namespace barney_device {
 
 } // namespace barney_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Frame *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Frame *);

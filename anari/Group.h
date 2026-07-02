@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -10,8 +10,8 @@
 // std
 #include <vector>
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   struct Group : public Object
   {
     Group(BarneyGlobalState *s);
@@ -31,6 +31,6 @@ namespace barney_device {
     helium::ChangeObserverPtr<ObjectArray> m_lightData;
   };
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Group *, ANARI_GROUP);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Group *, ANARI_GROUP);

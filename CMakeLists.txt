@@ -7,12 +7,28 @@
 # ------------------------------------------------------------------
 
 # ----------- enable/disable different devices we can build
-option(BARNEY_BACKEND_CUDA  "Build (native) CUDA Backend" ON)
-option(BARNEY_BACKEND_OPTIX "Build OptiX Backend"         ON)
-option(BARNEY_BACKEND_CPU   "Build CPU Backend"           ON)
-option(BARNEY_BACKEND_HIP   "Build CPU Backend"           ON)
-option(BARNEY_BACKEND_HIPRT "Build CPU Backend"           ON)
-option(BARNEY_MPI           "Enable MPI Support"          OFF)
+option(BARNEY_USE_HIP        "Use HIP instead of CUDA"     OFF)
+option(BARNEY_BACKEND_CUDA   "Build (native) CUDA Backend" OFF)
+option(BARNEY_BACKEND_OPTIX  "Build OptiX Backend"         ON)
+option(BARNEY_BACKEND_EMBREE "Build Embree/CPU Backend"    OFF)
+option(BARNEY_BACKEND_HIP    "Build HIP Backend"           OFF)
+option(BARNEY_BACKEND_HIPRT  "Build HIPRT Backend"         OFF)
+option(BARNEY_MPI            "Enable MPI Support"          OFF)
+
+# currently we wan't build both hip and cuda at the same time (mostly
+# due to this meaning we'd have to build two different versions of
+# cuBQL within the same cmake build dir), so let's disable the
+# respective backends based on whether hip is or isn't enabled
+mark_as_advanced(BARNEY_USE_HIP)
+if (BARNEY_USE_HIP)
+  set(CUBQL_USE_HIP ON)
+  set(BARNEY_BACKEND_OPTIX OFF)
+  set(BARNEY_BACKEND_CUDA OFF)
+else()
+  set(CUBQL_USE_HIP OFF)
+  set(BARNEY_BACKEND_HIP OFF)
+  set(BARNEY_BACKEND_HIPRT OFF)
+endif()
 
 # ------------------------------------------------------------------
 # cmake project/output config
@@ -45,7 +61,7 @@ set(CMAKE_BUILD_TYPE_INIT "Release")
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(BARNEY_PROJECT_NAME="barney")
+set(BARNEY_PROJECT_NAME "barney")
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 
 if (CMAKE_BUILD_TYPE)
@@ -53,6 +69,7 @@ if (CMAKE_BUILD_TYPE)
     "MinSizeRel" "RelWithDebInfo")
 endif()
 include(GNUInstallDirs)
+include(CheckLanguage)
 
 if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -85,27 +102,27 @@ option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries" OFF
 # _library_) we'd still need the owl common classes ... so this
 # _always_ gets included first
 # ------------------------------------------------------------------
-if (BARNEY_HAVE_CUDA)
-  set(OWL_CUDA_STATIC ON)
-  message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
-  if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
-    set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
-  elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../optix/include/optix.h")
-    message(" found ${CMAKE_CURRENT_LIST_DIR}/../optix")
-    set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/../optix)
-  else()
-  endif()
-  set(OWL_BUILD_VIEWER OFF)
-  add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
-  if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS ${EXPECTED_OWL_VERSION}))
-    message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
-endif()
-else()
-  add_library(owl-config INTERFACE)
-  target_include_directories(owl-config INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
-  )
-endif()
+# if (BARNEY_HAVE_CUDA)
+#   set(OWL_CUDA_STATIC ON)
+#   message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
+#   if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
+#     set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
+#   elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../optix/include/optix.h")
+#     message(" found ${CMAKE_CURRENT_LIST_DIR}/../optix")
+#     set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/../optix)
+#   else()
+#   endif()
+#   set(OWL_BUILD_VIEWER OFF)
+#   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
+#   if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS ${EXPECTED_OWL_VERSION}))
+#     message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
+# endif()
+# else()
+#   add_library(owl-config INTERFACE)
+#   target_include_directories(owl-config INTERFACE
+#     ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
+#   )
+# endif()
 # ------------------------------------------------------------------
 
 
@@ -143,30 +160,53 @@ endif()
 # rtcore/ if certain requirements are not met (eg, not having CUDA or
 # HIP compiler(s)
 # ------------------------------------------------------------------
-set(BARNEY_NS ${BARNEY_PROJECT_NAME})
+configure_file(
+  "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barneyConfig.h"
+)
+configure_file(
+  "${PROJECT_SOURCE_DIR}/barney/include/barney.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barney.h"
+)
+if (BARNEY_MPI)
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/barney/include/barney_mpi.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barney_mpi.h"
+  )
+endif()
+
+add_library(barney_config INTERFACE)
+target_include_directories(barney_config INTERFACE
+  ${CMAKE_CURRENT_LIST_DIR}
+  # for any owl::common stuff
+  ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
+  # for configure_file output:
+  ${CMAKE_CURRENT_BINARY_DIR}/include/ 
+)
+if (BARNEY_HAVE_NANOVDB)
+  target_include_directories(barney_config INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/3rdParty/nanovdb/include)
+endif()
+
+
 
 # build_barney(config device) -> tests if config exists as a target,
 # and if so build device (as well as device_mpi, if enabled) with this
 # config.
-macro(build_barney)
-  foreach(backend ${ARGN})
-    string(TOUPPER BARNEY_BACKEND_${backend} FLAG_NAME)
-    if (NOT (${FLAG_NAME}))
-      message("#barney: backend '${backend}' disabled by user request")
-    else()
-      add_subdirectory(barney build_barney_${backend})
-      add_subdirectory(anari  build_banari_${backend})
-    endif()
-  endforeach()
-endmacro()
+function(build_barney backend)
+  string(TOUPPER BARNEY_BACKEND_${backend} FLAG_NAME)
+  if (NOT (${FLAG_NAME}))
+    message("#barney: backend '${backend}' disabled by user request")
+  else()
+    add_subdirectory(barney build_barney_${backend})
+  endif()
+endfunction()
 
-build_barney(cpu)
+build_barney(embree)
 build_barney(cuda)
 build_barney(optix)
 build_barney(hip)
 build_barney(hiprt)
-
-
 
 # ==================================================================
 option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
@@ -192,7 +232,6 @@ set(BARNEY_CMAKE_INSTALL_DESTINATION
 )
 
 include(CMakePackageConfigHelpers)
-
 
 set(BARNEY_INSTALL_TARGETS)
 foreach(backend ${ARGN})

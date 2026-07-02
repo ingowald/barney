@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -8,8 +8,12 @@
 
 #define RTC_DEVICE_CODE 1
 
-namespace rtc {
-  namespace embree {
+#ifndef BARNEY_NS
+# error "BARNEY_NS not defined"
+#endif
+
+namespace BARNEY_NS {
+  namespace rtc {
 
     struct LaunchSystem;
     LaunchSystem *createLaunchSystem();
@@ -33,7 +37,7 @@ namespace rtc {
 
     struct TraceInterface;
     
-    typedef void (*TraceKernelFct)(rtc::embree::TraceInterface &);
+    typedef void (*TraceKernelFct)(BARNEY_NS::rtc::TraceInterface &);
     
     struct TraceKernel2D {
       TraceKernel2D(Device *device,
@@ -93,7 +97,7 @@ namespace rtc {
       {/*no-op*/}
 
       TextureData *createTextureData(vec3i dims,
-                                     rtc::DataType format,
+                                     BARNEY_NS::rtc::DataType format,
                                      const void *texels);
       void freeTextureData(TextureData *td);
       void freeTexture(Texture *tex);
@@ -159,15 +163,18 @@ namespace rtc {
       LaunchSystem *ls = 0;
       RTCDevice embreeDevice = 0;
     };
-    
+
+    int physicalDeviceCount();
   }
 }
 
 #define RTC_DECLARE_GLOBALS(ignore) /* ignore */
 
-#define RTC_IMPORT_TRACE2D(name,Class,sizeOfLP)                           \
-  ::rtc::TraceKernel2D *createTrace_##name(::rtc::Device *device);
+#define RTC_IMPORT_TRACE2D(name,Class,sizeOfLP)                         \
+  BARNEY_NS::rtc::TraceKernel2D *                                       \
+  createTrace_##name(BARNEY_NS::rtc::Device *device);
 
 #define RTC_EXPORT_TRACE2D(name,Class)                                  \
-  rtc::TraceKernel2D *createTrace_##name(rtc::Device *device)     \
-  { return new ::rtc::TraceKernel2D(device,Class::run); }
+  BARNEY_NS::rtc::TraceKernel2D *                                       \
+  createTrace_##name(BARNEY_NS::rtc::Device *device)                    \
+  { return new BARNEY_NS::rtc::TraceKernel2D(device,Class::run); }

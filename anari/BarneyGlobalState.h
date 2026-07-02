@@ -11,7 +11,7 @@
 #include <map>
 
 namespace BANARI_NS {
-
+    
   inline void bnSetAndRelease(BNObject o, const char *n, BNObject v)
   {
     bnSetObject(o,n,v);
@@ -39,7 +39,7 @@ namespace BANARI_NS {
   };
 
   /*! keeps info on multiple (banari-)devices that are tethered
-      together onto a singel barney ncontext */
+    together onto a singel barney ncontext */
   struct Tether {
     ~Tether();
     
@@ -75,10 +75,10 @@ namespace BANARI_NS {
     std::shared_ptr<Tether> tether;
 
     /*! created models get consecutive IDs, which allows us for
-        identifying which models created by which (tethered) device(s)
-        belong togther. Ie, if two devices A and B are tethered, then
-        the i'th model of A is always tethered with the i'th model of
-        B (and vice versa) */
+      identifying which models created by which (tethered) device(s)
+      belong togther. Ie, if two devices A and B are tethered, then
+      the i'th model of A is always tethered with the i'th model of
+      B (and vice versa) */
     int nextUniqueModelID = 0;
 
     bool hasBeenCommitted = false;
@@ -109,4 +109,4 @@ namespace BANARI_NS {
     ANARI_TYPEFOR_DEFINITION(type);             \
   }
 
-} // namespace barney_device
+}

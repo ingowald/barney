@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/cudaCommon/Device.h"
 #include "rtcore/cudaCommon/TextureData.h"
 #include "rtcore/cudaCommon/Texture.h"
 
-namespace rtc {
-  namespace cuda_common {
-
+namespace BARNEY_NS {
+  namespace rtc {
+    
     inline cudaTextureFilterMode toCUDA(FilterMode mode)
     {
       return (mode == FILTER_MODE_POINT)

@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "World.h"
 // std
 #include <algorithm>
 #include <map>
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   World::World(BarneyGlobalState *s)
     : Object(ANARI_WORLD, s),
       m_zeroSurfaceData(this),
@@ -185,7 +185,7 @@ namespace barney_device {
       m_lastBarneyModelBuild == 0
       || state->objectUpdates.lastStructuralChange > m_lastBarneyModelBuild
 #endif
-        ;
+      ;
 
     if (structural) {
       reportMessage(ANARI_SEVERITY_DEBUG, "barney::World full model rebuild");
@@ -287,6 +287,6 @@ namespace barney_device {
                                (int)barneyTransforms.size());
   }
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::World *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::World *);

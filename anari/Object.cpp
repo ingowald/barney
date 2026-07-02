@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Object.h"
 // std
 #include <atomic>
 #include <cstdarg>
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   // Object definitions /////////////////////////////////////////////////////////
 
   Object::Object(ANARIDataType type, BarneyGlobalState *s)
@@ -69,6 +69,6 @@ namespace barney_device {
     return false;
   }
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Object *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Object *);

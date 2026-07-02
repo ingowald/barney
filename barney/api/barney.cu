@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "rtcore/AppInterface.h"
+#include "barney_rtc.h"
 #include "barney/api/Context.h"
 #if BARNEY_MPI
 # include "barney/common/MPIWrappers.h"
@@ -36,7 +36,22 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 #endif
 
 namespace BARNEY_NS {
+  using namespace barney_api;
 
+  barney_api::Context *
+  createLocalContext(/*! how many data slots this context is to
+                       offer, and which part(s) of the
+                       distributed model data these slot(s)
+                       will hold */
+                     const int *dataRanksOnThisContext,
+                     int        numDataRanksOnThisContext,
+                     /*! which gpu(s) to use for this
+                       process. default is to distribute
+                       node's GPUs equally over all ranks on
+                       that given node */
+                     const int *gpuIDs,
+                     int  numGPUs);
+  
   FromEnv::FromEnv()
   {
     const char *e = getenv("BARNEY_CONFIG");
@@ -94,6 +109,38 @@ namespace BARNEY_NS {
     if (!singleton) singleton = new FromEnv;
     return singleton;
   }
+
+  BARNEY_API
+  BNContext bnContextCreate(/*! how many data slots this context is to
+                              offer, and which part(s) of the
+                              distributed model data these slot(s)
+                              will hold */
+                            const int *dataRanksOnThisContext,
+                            int        numDataRanksOnThisContext,
+                            /*! which gpu(s) to use for this
+                              process. default is to distribute
+                              node's GPUs equally over all ranks on
+                              that given node */
+                            const int *gpuIDs,
+                            int  numGPUs)
+  {
+    LOG_API_ENTRY;
+    if (FromEnv::get()->logBackend) {
+      std::cout << "#bn. creating context over numGPUs = " << numGPUs << " gpu IDs ";
+      if (gpuIDs == nullptr)
+        std::cout << "<null>" << std::endl;
+      else {
+        for (int i=0;i<numGPUs;i++)
+          std::cout << gpuIDs[i] << " ";
+        std::cout << std::endl;
+      }
+    }
+    return (BNContext)
+      createLocalContext(dataRanksOnThisContext,
+                         numDataRanksOnThisContext,
+                         gpuIDs,
+                         numGPUs);
+  }  
   
 //   extern "C" {
 // #if BARNEY_BACKEND_EMBREE
@@ -136,7 +183,7 @@ namespace BARNEY_NS {
 // #endif
 //   }
   
-  inline Context *checkGet(BNContext context)
+  inline barney_api::Context *checkGet(BNContext context)
   {
     assert(context);
     return (Context *)context;
@@ -785,256 +832,251 @@ namespace BARNEY_NS {
     checkGet(model)->render(checkGet(renderer),checkGet(camera),checkGet(fb));
   }
 
-  BARNEY_API
-  BNContext bnContextCreate(/*! how many data slots this context is to
-                              offer, and which part(s) of the
-                              distributed model data these slot(s)
-                              will hold */
-                            const int *dataRanksOnThisContext,
-                            int        numDataRanksOnThisContext,
-                            /*! which gpu(s) to use for this
-                              process. default is to distribute
-                              node's GPUs equally over all ranks on
-                              that given node */
-                            const int *_gpuIDs,
-                            int  numGPUs)
-  {
-#ifdef __CUDACC__
-    auto initial_rc = cudaGetLastError();
-    if (initial_rc != cudaSuccess)
-      printf("#barney WARNING: there seems to be a CUDA error state set _before_ the barney device is being created. This typically indicates an error in the application; I'm going to silently 'eat' this first error, but if the app will later set other error states this is almost certainly going to cause some issues\n");
-#endif
+//   BARNEY_API
+//   BNContext bnContextCreate(/*! how many data slots this context is to
+//                               offer, and which part(s) of the
+//                               distributed model data these slot(s)
+//                               will hold */
+//                             const int *dataRanksOnThisContext,
+//                             int        numDataRanksOnThisContext,
+//                             /*! which gpu(s) to use for this
+//                               process. default is to distribute
+//                               node's GPUs equally over all ranks on
+//                               that given node */
+//                             const int *_gpuIDs,
+//                             int  numGPUs)
+//   {
+// #ifdef __CUDACC__
+//     auto initial_rc = cudaGetLastError();
+//     if (initial_rc != cudaSuccess)
+//       printf("#barney WARNING: there seems to be a CUDA error state set _before_ the barney device is being created. This typically indicates an error in the application; I'm going to silently 'eat' this first error, but if the app will later set other error states this is almost certainly going to cause some issues\n");
+// #endif
 
-    LOG_API_ENTRY;
-    if (getenv("BARNEY_FORCE_CPU")) {
-      if (FromEnv::get()->logBackend) {
-        std::cout << "#bn. found BARNEY_FORCE_CPU flag." << std::endl;
-      }
-      static int negOne = -1;
-      _gpuIDs = &negOne;
-      numGPUs = 1;
-    }
+//     LOG_API_ENTRY;
+//     if (getenv("BARNEY_FORCE_CPU")) {
+//       if (FromEnv::get()->logBackend) {
+//         std::cout << "#bn. found BARNEY_FORCE_CPU flag." << std::endl;
+//       }
+//       static int negOne = -1;
+//       _gpuIDs = &negOne;
+//       numGPUs = 1;
+//     }
 
-    if (FromEnv::get()->logBackend) {
-      std::cout << "#bn. creating context over numGPUs = " << numGPUs << " gpu IDs ";
-      if (_gpuIDs == nullptr)
-        std::cout << "<null>" << std::endl;
-      else {
-        for (int i=0;i<numGPUs;i++)
-          std::cout << _gpuIDs[i] << " ";
-        std::cout << std::endl;
-      }
-    }
+//     if (FromEnv::get()->logBackend) {
+//       std::cout << "#bn. creating context over numGPUs = " << numGPUs << " gpu IDs ";
+//       if (_gpuIDs == nullptr)
+//         std::cout << "<null>" << std::endl;
+//       else {
+//         for (int i=0;i<numGPUs;i++)
+//           std::cout << _gpuIDs[i] << " ";
+//         std::cout << std::endl;
+//       }
+//     }
     
     
-    try {
-      // ------------------------------------------------------------------
-      // create vector of data groups; if actual specified by user we
-      // use those; otherwise we use IDs
-      // [0,1,...numModelSlotsOnThisHost)
-      // ------------------------------------------------------------------
-      assert(numDataRanksOnThisContext > 0);
-      std::vector<int> dataGroupIDs;
-      for (int i = 0;i < numDataRanksOnThisContext;i++)
-        dataGroupIDs.push_back
-          (dataRanksOnThisContext
-           ? dataRanksOnThisContext[i]
-           : i);
+//     try {
+//       // ------------------------------------------------------------------
+//       // create vector of data groups; if actual specified by user we
+//       // use those; otherwise we use IDs
+//       // [0,1,...numModelSlotsOnThisHost)
+//       // ------------------------------------------------------------------
+//       assert(numDataRanksOnThisContext > 0);
+//       std::vector<int> dataGroupIDs;
+//       for (int i = 0;i < numDataRanksOnThisContext;i++)
+//         dataGroupIDs.push_back
+//           (dataRanksOnThisContext
+//            ? dataRanksOnThisContext[i]
+//            : i);
 
-      // ------------------------------------------------------------------
-      // create a backend. logic is as follows:
-      //
-      // 1) user can _explicitly_ request a CPU device by asking for a
-      // single GPU with ID=-1 (ie, numGPUs=1,gpuIDs={-1}). If so,
-      // create a CPU device if possible.
-      // ------------------------------------------------------------------
-      if (
-#if BARNEY_BACKEND_EMBREE && !BARNEY_BACKEND_OPTIX
-          1
-#else
-          numGPUs == 1 && _gpuIDs && _gpuIDs[0] == -1          
-#endif
-          ) {
-# if BARNEY_BACKEND_EMBREE
-        return (BNContext)createContext_embree(dataGroupIDs);
-# else
-        throw std::runtime_error
-          ("explicitly asked for CPU backend, "
-           "but cpu/embree backend not compiled in");
-# endif
-      }
+//       // ------------------------------------------------------------------
+//       // create a backend. logic is as follows:
+//       //
+//       // 1) user can _explicitly_ request a CPU device by asking for a
+//       // single GPU with ID=-1 (ie, numGPUs=1,gpuIDs={-1}). If so,
+//       // create a CPU device if possible.
+//       // ------------------------------------------------------------------
+//       if (
+// #if BARNEY_BACKEND_EMBREE && !BARNEY_BACKEND_OPTIX
+//           1
+// #else
+//           numGPUs == 1 && _gpuIDs && _gpuIDs[0] == -1          
+// #endif
+//           ) {
+// # if BARNEY_BACKEND_EMBREE
+//         return (BNContext)createContext_embree(dataGroupIDs);
+// # else
+//         throw std::runtime_error
+//           ("explicitly asked for CPU backend, "
+//            "but cpu/embree backend not compiled in");
+// # endif
+//       }
 
-      // ------------------------------------------------------------------
-      // 2) if user did specify a list of GPUs, create a GPU backend,
-      // or return an error.
-      // ------------------------------------------------------------------
-      if (_gpuIDs != nullptr) {
-#if BARNEY_BACKEND_OPTIX
-        return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
-#elif BARNEY_BACKEND_CUDA
-        return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
-#elif BARNEY_BACKEND_HIPRT
-        return (BNContext)createContext_hiprt(dataGroupIDs,numGPUs,_gpuIDs);
-#else
-        throw std::runtime_error
-          ("explicitly asked for GPU backend, "
-           "but optix support not compiled in");
-#endif
-      }
+//       // ------------------------------------------------------------------
+//       // 2) if user did specify a list of GPUs, create a GPU backend,
+//       // or return an error.
+//       // ------------------------------------------------------------------
+//       if (_gpuIDs != nullptr) {
+// #if BARNEY_BACKEND_OPTIX
+//         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
+// #elif BARNEY_BACKEND_CUDA
+//         return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
+// #elif BARNEY_BACKEND_HIPRT
+//         return (BNContext)createContext_hiprt(dataGroupIDs,numGPUs,_gpuIDs);
+// #else
+//         throw std::runtime_error
+//           ("explicitly asked for GPU backend, "
+//            "but optix support not compiled in");
+// #endif
+//       }
 
-      // ------------------------------------------------------------------
-      // 3) if user did not specify an explicit GPU list, try to
-      // create a GPU backend, and fall back to embree if that doesn't
-      // work.
-      // ------------------------------------------------------------------
+//       // ------------------------------------------------------------------
+//       // 3) if user did not specify an explicit GPU list, try to
+//       // create a GPU backend, and fall back to embree if that doesn't
+//       // work.
+//       // ------------------------------------------------------------------
 
-#if BARNEY_BACKEND_OPTIX
-      try {
-        return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
-      } catch (std::exception &e) {
-        std::cerr << "#barney(warn): could not create optix backend (reason: "
-                  << e.what() << ")" << std::endl;
-      }
-#endif
+// #if BARNEY_BACKEND_OPTIX
+//       try {
+//         return (BNContext)createContext_optix(dataGroupIDs,numGPUs,_gpuIDs);
+//       } catch (std::exception &e) {
+//         std::cerr << "#barney(warn): could not create optix backend (reason: "
+//                   << e.what() << ")" << std::endl;
+//       }
+// #endif
       
-#if BARNEY_BACKEND_CUDA
-      try {
-        return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
-      } catch (std::exception &e) {
-        std::cerr << "#barney(warn): could not create cuda backend (reason: "
-                  << e.what() << ")" << std::endl;
-      }
-#endif
+// #if BARNEY_BACKEND_CUDA
+//       try {
+//         return (BNContext)createContext_cuda(dataGroupIDs,numGPUs,_gpuIDs);
+//       } catch (std::exception &e) {
+//         std::cerr << "#barney(warn): could not create cuda backend (reason: "
+//                   << e.what() << ")" << std::endl;
+//       }
+// #endif
 
-#if BARNEY_BACKEND_HIPRT
-      try {
-        return (BNContext)createContext_hiprt(dataGroupIDs,numGPUs,_gpuIDs);
-      } catch (std::exception &e) {
-        std::cerr << "#barney(warn): could not create hiprt backend (reason: "
-                  << e.what() << ")" << std::endl;
-      }
-#endif
+// #if BARNEY_BACKEND_HIPRT
+//       try {
+//         return (BNContext)createContext_hiprt(dataGroupIDs,numGPUs,_gpuIDs);
+//       } catch (std::exception &e) {
+//         std::cerr << "#barney(warn): could not create hiprt backend (reason: "
+//                   << e.what() << ")" << std::endl;
+//       }
+// #endif
 
-# if BARNEY_BACKEND_EMBREE
-      return (BNContext)createContext_embree(dataGroupIDs);
-#endif
-      throw std::runtime_error("could not generate _any_ backend?!");
-    } 
-    catch (const std::exception& e) {
-      std::cerr << "error creating barney context : " << e.what() << std::endl;
-      return 0;
-    }
-    return 0;
-  }
+// # if BARNEY_BACKEND_EMBREE
+//       return (BNContext)createContext_embree(dataGroupIDs);
+// #endif
+//       throw std::runtime_error("could not generate _any_ backend?!");
+//     } 
+//     catch (const std::exception& e) {
+//       std::cerr << "error creating barney context : " << e.what() << std::endl;
+//       return 0;
+//     }
+//     return 0;
+//   }
 
-#if BARNEY_MPI
-  BARNEY_API
-  BNContext bnMPIContextCreate(MPI_Comm _comm,
-                               /*! how many data slots this context is to
-                                 offer, and which part(s) of the
-                                 distributed model data these slot(s)
-                                 will hold */
-                               const int *dataRanksOnThisContext,
-                               int        numDataRanksOnThisContext,
-                               /*! which gpu(s) to use for this
-                                 process. default is to distribute
-                                 node's GPUs equally over all ranks on
-                                 that given node */
-                               const int *_gpuIDs,
-                               int  numGPUs
-                               )
-  {
-    LOG_API_ENTRY;
-    if (getenv("BARNEY_FORCE_CPU")) {
-	    static int negOne = -1;
-	    _gpuIDs = &negOne;
-	    numGPUs = 1;
-    }
-    int mpiIsAlreadyInitialized = false;
-    BN_MPI_CALL(Initialized(&mpiIsAlreadyInitialized));
-    if (!mpiIsAlreadyInitialized) {
-      std::cerr << "#barney: barney initialized in MPI mode, but MPI itself isn't initialized yet; falling back to local rendering" << std::endl;
-      return bnContextCreate(dataRanksOnThisContext,
-                             numDataRanksOnThisContext == 0
-                             ? 1 : numDataRanksOnThisContext,
-                             /*! which gpu(s) to use for this
-                               process. default is to distribute
-                               node's GPUs equally over all ranks on
-                               that given node */
-                             _gpuIDs,
-                             numGPUs);
-    }
-    mpi::Comm world(_comm);
-    if (world.size == 1) {
-      std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
-      if (_gpuIDs == nullptr && numGPUs == 1) {
-        static const int const_zero = 0;
-        _gpuIDs = &const_zero;
-      }
-      return bnContextCreate(dataRanksOnThisContext,
-                             numDataRanksOnThisContext == 0
-                             ? 1 : numDataRanksOnThisContext,
-                             /*! which gpu(s) to use for this
-                               process. default is to distribute
-                               node's GPUs equally over all ranks on
-                               that given node */
-                             _gpuIDs,
-                             numGPUs);
-    }
+// #if BARNEY_MPI
+//   BARNEY_API
+//   BNContext bnMPIContextCreate(MPI_Comm _comm,
+//                                /*! how many data slots this context is to
+//                                  offer, and which part(s) of the
+//                                  distributed model data these slot(s)
+//                                  will hold */
+//                                const int *dataRanksOnThisContext,
+//                                int        numDataRanksOnThisContext,
+//                                /*! which gpu(s) to use for this
+//                                  process. default is to distribute
+//                                  node's GPUs equally over all ranks on
+//                                  that given node */
+//                                const int *_gpuIDs,
+//                                int  numGPUs
+//                                )
+//   {
+//     LOG_API_ENTRY;
+//     int mpiIsAlreadyInitialized = false;
+//     BN_MPI_CALL(Initialized(&mpiIsAlreadyInitialized));
+//     if (!mpiIsAlreadyInitialized) {
+//       std::cerr << "#barney: barney initialized in MPI mode, but MPI itself isn't initialized yet; falling back to local rendering" << std::endl;
+//       return bnContextCreate(dataRanksOnThisContext,
+//                              numDataRanksOnThisContext == 0
+//                              ? 1 : numDataRanksOnThisContext,
+//                              /*! which gpu(s) to use for this
+//                                process. default is to distribute
+//                                node's GPUs equally over all ranks on
+//                                that given node */
+//                              _gpuIDs,
+//                              numGPUs);
+//     }
+//     mpi::Comm world(_comm);
+//     if (world.size == 1) {
+//       std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
+//       if (_gpuIDs == nullptr && numGPUs == 1) {
+//         static const int const_zero = 0;
+//         _gpuIDs = &const_zero;
+//       }
+//       return bnContextCreate(dataRanksOnThisContext,
+//                              numDataRanksOnThisContext == 0
+//                              ? 1 : numDataRanksOnThisContext,
+//                              /*! which gpu(s) to use for this
+//                                process. default is to distribute
+//                                node's GPUs equally over all ranks on
+//                                that given node */
+//                              _gpuIDs,
+//                              numGPUs);
+//     }
 
 
-    // ------------------------------------------------------------------
-    // create vector of data groups; if actual specified by user we
-    // use those; otherwise we use IDs
-    // [0,1,...numModelSlotsOnThisHost)
-    // ------------------------------------------------------------------
-    assert(/* data groups == 0 is allowed for passive nodes*/
-           numDataRanksOnThisContext >= 0);
-    std::vector<int> dataGroupIDs;
-    int rank;
-    MPI_Comm_rank(world, &rank);
-    for (int i=0;i<numDataRanksOnThisContext;i++)
-      dataGroupIDs.push_back
-        (dataRanksOnThisContext
-         ? dataRanksOnThisContext[i]
-         : rank*numDataRanksOnThisContext+i);
+//     // ------------------------------------------------------------------
+//     // create vector of data groups; if actual specified by user we
+//     // use those; otherwise we use IDs
+//     // [0,1,...numModelSlotsOnThisHost)
+//     // ------------------------------------------------------------------
+//     assert(/* data groups == 0 is allowed for passive nodes*/
+//            numDataRanksOnThisContext >= 0);
+//     std::vector<int> dataGroupIDs;
+//     int rank;
+//     MPI_Comm_rank(world, &rank);
+//     for (int i=0;i<numDataRanksOnThisContext;i++)
+//       dataGroupIDs.push_back
+//         (dataRanksOnThisContext
+//          ? dataRanksOnThisContext[i]
+//          : rank*numDataRanksOnThisContext+i);
     
-    // ------------------------------------------------------------------
-    // create list of GPUs to use for this rank. if specified by user
-    // we use this; otherwise we use GPUs in order, split into groups
-    // according to how many ranks there are on this host. Ie, if host
-    // has four GPUs the first rank will take 0 and 1; and the second
-    // one will take 2 and 3.
-    // ------------------------------------------------------------------
+//     // ------------------------------------------------------------------
+//     // create list of GPUs to use for this rank. if specified by user
+//     // we use this; otherwise we use GPUs in order, split into groups
+//     // according to how many ranks there are on this host. Ie, if host
+//     // has four GPUs the first rank will take 0 and 1; and the second
+//     // one will take 2 and 3.
+//     // ------------------------------------------------------------------
 
-#if BARNEY_BACKEND_EMBREE && !(BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX)
-    // bool forceCPU = true;
-#else
-    if (_gpuIDs && numGPUs == 1 && _gpuIDs[0] == -1) {
-# if BARNEY_BACKEND_EMBREE
-      return (BNContext)createMPIContext_embree(world,
-                                                dataGroupIDs);
-# else
-      throw std::runtime_error
-        ("explicitly asked for CPU backend, "
-         "but cpu/embree backend not compiled in");
-# endif
-    }
-#endif
+// #if BARNEY_BACKEND_EMBREE && !(BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX)
+//     // bool forceCPU = true;
+// #else
+//     if (_gpuIDs && numGPUs == 1 && _gpuIDs[0] == -1) {
+// # if BARNEY_BACKEND_EMBREE
+//       return (BNContext)createMPIContext_embree(world,
+//                                                 dataGroupIDs);
+// # else
+//       throw std::runtime_error
+//         ("explicitly asked for CPU backend, "
+//          "but cpu/embree backend not compiled in");
+// # endif
+//     }
+// #endif
 
-#if BARNEY_BACKEND_OPTIX
-    return (BNContext)createMPIContext_optix(world,
-                                             dataGroupIDs,
-                                             numGPUs,_gpuIDs);
-#elif BARNEY_BACKEND_CUDA
-    return (BNContext)createMPIContext_cuda(world,
-                                            dataGroupIDs,
-                                            numGPUs,_gpuIDs);
-#else
-    throw std::runtime_error("explicitly asked for gpus to use, "
-                             "but optix backend not compiled in");
-#endif
-  }
+// #if BARNEY_BACKEND_OPTIX
+//     return (BNContext)createMPIContext_optix(world,
+//                                              dataGroupIDs,
+//                                              numGPUs,_gpuIDs);
+// #elif BARNEY_BACKEND_CUDA
+//     return (BNContext)createMPIContext_cuda(world,
+//                                             dataGroupIDs,
+//                                             numGPUs,_gpuIDs);
+// #else
+//     throw std::runtime_error("explicitly asked for gpus to use, "
+//                              "but optix backend not compiled in");
+// #endif
+//   }
   
-#endif
+// #endif
 } // ::barney_api

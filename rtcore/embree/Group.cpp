@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/embree/Group.h"
 #include "rtcore/embree/Device.h"
@@ -9,8 +9,8 @@
 // 
 #include "rtcore/embree/TraceInterface.h"
 
-namespace rtc {
-  namespace embree {
+namespace BARNEY_NS {
+  namespace rtc {
 
     void virtualBoundsFunc(const struct RTCBoundsFunctionArguments* args)
     {
@@ -49,7 +49,7 @@ namespace rtc {
       ti->embreeHit = &rayHit->hit;
 
       InstanceGroup *ig = ti->world;
-      Group *group = (embree::Group*)ig->groups[instIdx];
+      Group *group = (BARNEY_NS::rtc::Group*)ig->groups[instIdx];
       ti->objectToWorldXfm = &ig->xfms[instIdx];
       ti->worldToObjectXfm = &ig->inverseXfms[instIdx];
       
@@ -95,7 +95,7 @@ namespace rtc {
         embreeScene = 0;
       }
 
-      embree::Device *device = (embree::Device *)this->device;
+      BARNEY_NS::rtc::Device *device = (BARNEY_NS::rtc::Device *)this->device;
       embreeScene = rtcNewScene(device->embreeDevice);
       for (auto geom : geoms) {
         UserGeom *user = (UserGeom *)geom;
@@ -131,7 +131,7 @@ namespace rtc {
         embreeScene = 0;
       }
     
-      embree::Device *device = (embree::Device *)this->device;
+      BARNEY_NS::rtc::Device *device = (BARNEY_NS::rtc::Device *)this->device;
       embreeScene = rtcNewScene(device->embreeDevice);
       for (auto geom : geoms) {
         TrianglesGeom *triangles = (TrianglesGeom *)geom;
@@ -185,7 +185,7 @@ namespace rtc {
 
     void InstanceGroup::buildAccel()
     {
-      embree::Device *device = (embree::Device *)this->device;
+      BARNEY_NS::rtc::Device *device = (BARNEY_NS::rtc::Device *)this->device;
       if (embreeScene) {
         rtcReleaseScene(embreeScene);
         embreeScene = 0;
@@ -200,7 +200,7 @@ namespace rtc {
     
       embreeScene = rtcNewScene(device->embreeDevice);
       for (int instIdx=0;instIdx<groups.size();instIdx++) {
-        embree::Group *group = (embree::Group *)groups[instIdx];
+        BARNEY_NS::rtc::Group *group = (BARNEY_NS::rtc::Group *)groups[instIdx];
         RTCGeometry geom
           = rtcNewGeometry(device->embreeDevice,RTC_GEOMETRY_TYPE_INSTANCE);
         assert(group);

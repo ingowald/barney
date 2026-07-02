@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 /*! \file rtcore/cudaCommon/ComputeKerne.h Defines basic abstraction
   for 1D, 2D, and 3D compute kernels, and the IMPORT macros to
@@ -10,8 +10,9 @@
 
 #include "rtcore/cudaCommon/cuda-common.h"
 
-namespace rtc {
-  namespace cuda_common {
+namespace BARNEY_NS {
+  namespace rtc {
+  // namespace cuda_common {
 
     struct ComputeKernel1D {
       virtual ~ComputeKernel1D() = default;

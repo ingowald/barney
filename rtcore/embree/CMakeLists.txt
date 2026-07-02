@@ -38,7 +38,8 @@ option(EMBREE_TUTORIALS_GLFW           "" OFF)
 set(EMBREE_TASKING_SYSTEM "INTERNAL" CACHE STRING "" FORCE)
 set(EMBREE_MAX_INSTANCE_LEVEL_COUNT "1" CACHE STRING "" FORCE)
 set(EMBREE_API_NAMESPACE embree_for_barney CACHE STRING "" FORCE)
-add_subdirectory(../submodules/embree builddir_rtc_embree EXCLUDE_FROM_ALL)
+add_subdirectory(${PROJECT_SOURCE_DIR}/submodules/embree
+  builddir_rtc_embree EXCLUDE_FROM_ALL)
 add_library(embree_local INTERFACE)
 target_link_libraries(embree_local INTERFACE embree tasking)
 rtc_library_properties(embree)
@@ -46,16 +47,16 @@ rtc_library_properties(tasking)
 rtc_library_properties(sys)
 target_compile_definitions(embree_local INTERFACE TASKING_INTERNAL)
 target_include_directories(embree_local INTERFACE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common
+  ${PROJECT_SOURCE_DIR}//submodules/embree/
+  ${PROJECT_SOURCE_DIR}//submodules/embree/common
 )
 target_include_directories(embree PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common
+  ${PROJECT_SOURCE_DIR}//submodules/embree/
+  ${PROJECT_SOURCE_DIR}//submodules/embree/common
 )
 target_include_directories(tasking PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/
-  ${CMAKE_CURRENT_SOURCE_DIR}/../submodules/embree/common
+  ${PROJECT_SOURCE_DIR}//submodules/embree/
+  ${PROJECT_SOURCE_DIR}//submodules/embree/common
 )
 if (WIN32)
   target_compile_options(embree_local 
@@ -70,33 +71,34 @@ elseif(COMPILE_FOR_ARM)
   )
 endif()
 
-message("adding barney_rtc_cpu")
-add_library(barney_rtc_cpu STATIC
-  embree/Float16.cpp
-  embree/Compute.cpp
-  embree/Device.cpp
-  embree/Buffer.cpp
-  embree/Texture.cpp
-  embree/GeomType.cpp
-  embree/Geom.cpp
-  embree/Triangles.cpp
-  embree/UserGeom.cpp
-  embree/Group.cpp
-  embree/Denoiser.cpp
+add_library(barney_rtc_embree STATIC
+  Float16.cpp
+  Compute.cpp
+  Device.cpp
+  Buffer.cpp
+  Texture.cpp
+  GeomType.cpp
+  Geom.cpp
+  Triangles.cpp
+  UserGeom.cpp
+  Group.cpp
+  Denoiser.cpp
 )
-
-target_link_libraries(barney_rtc_cpu PUBLIC
-#  barney_rtc_common
+target_compile_definitions(barney_rtc_embree PUBLIC
+  -DBARNEY_NS=${BARNEY_PROJECT_NAME}_${backend}
+)
+target_link_libraries(barney_rtc_embree PUBLIC
   embree_local
+  barney_config
 )
-target_compile_definitions(barney_rtc_cpu PUBLIC
-  -DBARNEY_NS=${BARNEY_NS}
+target_include_directories(barney_rtc_embree PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}
 )
-rtc_library_properties(barney_rtc_cpu)
-if (BARNEY_OIDN_CPU)
-  target_link_libraries(barney_rtc_cpu PUBLIC OpenImageDenoise)
+rtc_library_properties(barney_rtc_embree)
+if (BARNEY_OIDN_EMBREE)
+  target_link_libraries(barney_rtc_embree PUBLIC OpenImageDenoise)
 endif()
-target_link_libraries(barney_rtc_cpu PUBLIC
+target_link_libraries(barney_rtc_embree PUBLIC
   $<BUILD_INTERFACE:cuBQL_cpu_float3_static>
 )
 

@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "rtcore/optix/Device.h"
 
-namespace rtc {
-  namespace optix {
+namespace BARNEY_NS {
+  namespace rtc {
 
     /*! abstract interface to a denoiser. implementation(s) depend of
         which optix version and/or oidn are available */

@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -8,7 +8,7 @@
 #include "helium/array/Array1D.h"
 #include "helium/array/Array2D.h"
 
-namespace barney_device {
+namespace BANARI_NS {
 
   typedef helium::IntrusivePtr<helium::Array2D> Array2DPtr;
   struct HDRILight : public Light

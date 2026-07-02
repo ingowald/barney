@@ -7,9 +7,9 @@
 #include "rtcore/embree/Device.h"
 #include "rtcore/embree/GeomType.h"
 
-namespace rtc {
-  namespace embree {
-
+namespace BARNEY_NS {
+  namespace rtc {
+  
     struct InstanceGroup;
     
     struct TraceInterface {

@@ -1,16 +1,13 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "barney/material/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 #include "barney/render/HitAttributes.h"
-// #if RTC_DEVICE_CODE
-#if BARNEY_DEVICE_PROGRAM
-# include "rtcore/TraceInterface.h"
-#endif
+#include "barney_rtc.h"
 #include "barney/render/World.h"
 #include "barney/render/HitIDs.h"
 

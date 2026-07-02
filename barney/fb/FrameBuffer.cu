@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/common/barney-common.h"
 #include "barney/common/math.h"
@@ -9,7 +9,7 @@
 #if BARNEY_HAVE_OIDN
 # include <OpenImageDenoise/oidn.h>
 #endif
-#include "rtcore/ComputeInterface.h"
+#include "barney_rtc.h"
 
 namespace BARNEY_NS {
   RTC_IMPORT_COMPUTE2D(linearToFixed8);

@@ -55,10 +55,10 @@ endif()
 
 # helper 'interface-'library that contains common settings for both
 # static and shared anari
-add_library(banari-config INTERFACE)
-target_link_libraries(banari-config INTERFACE barney_config)
-set_target_properties(banari-config PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(banari-config
+add_library(banari-config-${backend} INTERFACE)
+target_link_libraries(banari-config-${backend} INTERFACE barney_config)
+set_target_properties(banari-config-${backend} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(banari-config-${backend}
   INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}/include
   ${CMAKE_CURRENT_LIST_DIR}
@@ -71,8 +71,8 @@ target_include_directories(banari-config
 # ==================================================================
 add_library(anari_library_${BARNEY_DEVICE_NAME} SHARED ${BANARI_SOURCES})
 target_link_libraries(anari_library_${BARNEY_DEVICE_NAME} PRIVATE
-  $<BUILD_INTERFACE:banari-config>
-  ${BARNEY_DEVICE_NAME}_static
+  $<BUILD_INTERFACE:banari-config-${backend}>
+  ${BARNEY_DEVICE_NAME}#_static
   anari::helium
 )
 rtc_library_properties(anari_library_${BARNEY_DEVICE_NAME})
@@ -83,10 +83,12 @@ rtc_library_properties(anari_library_${BARNEY_DEVICE_NAME})
 if (BARNEY_MPI)
   add_library(anari_library_${BARNEY_DEVICE_NAME}_mpi SHARED ${BANARI_SOURCES})
   target_link_libraries(anari_library_${BARNEY_DEVICE_NAME}_mpi PRIVATE
-    $<BUILD_INTERFACE:banari-config>
-    ${BARNEY_DEVICE_NAME}_mpi_static
+    $<BUILD_INTERFACE:banari-config-${backend}>
+    ${BARNEY_DEVICE_NAME}_mpi#_static
     anari::helium
   )
+  target_compile_definitions(anari_library_${BARNEY_DEVICE_NAME}_mpi PRIVATE
+    -DBANARI_NS=${BANARI_NS})
   rtc_library_properties(anari_library_${BARNEY_DEVICE_NAME}_mpi)
   set(BARNEY_INSTALL_TARGETS
     anari_library_${BARNEY_DEVICE_NAME}
@@ -105,6 +107,8 @@ if (APPLE)
 else()
   set_target_properties(anari_library_${BARNEY_DEVICE_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
+target_compile_definitions(anari_library_${BARNEY_DEVICE_NAME} PRIVATE
+  -DBANARI_NS=${BANARI_NS})
 
 file(GLOB DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.json")
 foreach(file ${DEVICE_JSONS})

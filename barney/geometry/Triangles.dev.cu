@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "barney/geometry/Triangles.h"
-#include "rtcore/TraceInterface.h"
+#include "barney_rtc.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

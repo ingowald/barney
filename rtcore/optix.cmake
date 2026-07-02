@@ -8,13 +8,69 @@
 # configuration.
 # ------------------------------------------------------------------
 
+check_language(CUDA)
+if (NOT CMAKE_CUDA_COMPILER)
+  set(BARNEY_HAVE_CUDA OFF)
+  set(CMAKE_CUDA_ARCHITECTURES)
+  message(AUTHOR_WARNING "#barney: no CUDA compiler found; disabling cuda/optix backend")
+  return()
+endif()
+
 enable_language(CUDA)
+set(BARNEY_HAVE_CUDA ON)
+
+if (WIN32)
+  set(BARNEY_CUDA_ARCHITECTURES_INIT "all-major")
+else()
+  set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
+endif()
+
+set(CMAKE_CUDA_ARCHITECTURES
+  "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
+  "Which CUDA architecture to build for")
+
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
+
+
+
+# ==================================================================
+# barney_config already has include dirs for owl (for owl::common
+# stuff), but for optix backend we need the full of owl
+# ==================================================================
+set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/../submodules/optix)
+set(OWL_BUILD_VIEWER OFF)
+set(OWL_CUDA_STATIC  ON)
+add_subdirectory(../submodules/owl builddir_owl EXCLUDE_FROM_ALL)
+if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS ${EXPECTED_OWL_VERSION}))
+  message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
+endif()
+
 
 macro(rtc_library_properties lib)
 endmacro()
 
+add_library(barney_config_ptx INTERFACE)
+target_link_libraries(barney_config_ptx INTERFACE barney_config)
+target_compile_definitions(barney_config_ptx INTERFACE -DBARNEY_DEVICE_PROGRAM=1)
+
 macro(rtc_build_device_sources libname)
-  add_library(${libname} STATIC ${ARGN})
+  add_library(${libname} INTERFACE)
+
+  set(DEVICE_PROGRAM_SOURCES ${ARGN})
+  foreach(src  ${DEVICE_PROGRAM_SOURCES})
+    get_filename_component(basename "${src}" NAME_WE)
+    embed_ptx(
+      OUTPUT_TARGET      barney_${basename}_ptx
+      PTX_LINK_LIBRARIES barney_config_ptx barney_rtc_optix owl::owl_static
+      SOURCES            ${src}
+    )
+    target_link_libraries(
+      ${libname}
+      INTERFACE
+      #PRIVATE
+      barney_${basename}_ptx)
+  endforeach()
+  
   rtc_library_properties(${libname})
 endmacro()
 
@@ -28,4 +84,8 @@ macro(rtc_configure_source)
     endif()
   endforeach()
 endmacro()
+
+
+#add_subdirectory(../submodules/cuBQL buildDir_cuBQL EXCLUDE_FROM_ALL)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/optix buildDir_rtc_optix)
 

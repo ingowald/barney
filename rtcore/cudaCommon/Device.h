@@ -1,75 +1,73 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "rtcore/cudaCommon/cuda-common.h"
 
-namespace rtc {
-  namespace cuda_common {
-
-    using rtc::TextureObject;
+namespace BARNEY_NS {
+  namespace rtc {
     
-    struct Device;
     struct Texture;
     struct TextureData;
+    
+    namespace cuda_common {
+    
+      /*! base class for cuda-based device(s) - unlike optix/device and
+        embree/device this is NOT a full device as it lacks trace
+        capability. will be subclassed by otpix device (which adds
+        optix-based trace interface, and at some later time a
+        dedicated cuda trace device */
+      struct Device {
+        Device(int physicalGPU);
+        virtual ~Device();
+      
+        void copyAsync(void *dst, const void *src, size_t numBytes);
+        void copy(void *dst, const void *src, size_t numBytes)
+        { copyAsync(dst,src,numBytes); sync(); }
+        void *allocHost(size_t numBytes);
+        void freeHost(void *mem);
+        void memsetAsync(void *mem,int value, size_t size);
+        void *allocMem(size_t numBytes);
+        void freeMem(void *mem);
+        void sync();
+      
+        /*! sets this gpu as active, and returns physical ID of GPU that
+          was active before */
+        int setActive() const;
+      
+        /*! restores the gpu whose ID was previously returend by setActive() */
+        void restoreActive(int oldActive) const;
 
-    void checkHip();
-    void hipCheck();
+        TextureData *createTextureData(vec3i dims,
+                                       rtc::DataType format,
+                                       const void *texels);
+      
+        void freeTextureData(TextureData *);
+        void freeTexture(Texture *);
+      
+        cudaStream_t stream = 0;
+        int const physicalID;
+      };
+    }
     
     struct SetActiveGPU {
-      SetActiveGPU(const Device *device);
+      SetActiveGPU(const cuda_common::Device *device);
       SetActiveGPU(int gpuID);
       ~SetActiveGPU();
     private:
       int savedActiveDeviceID = -1;
     };
 
-    /*! base class for cuda-based device(s) - unlike optix/device and
-        embree/device this is NOT a full device as it lacks trace
-        capability. will be subclassed by otpix device (which adds
-        optix-based trace interface, and at some later time a
-        dedicated cuda trace device */
-    struct Device {
-      Device(int physicalGPU);
-      virtual ~Device();
-      
-      void copyAsync(void *dst, const void *src, size_t numBytes);
-      void copy(void *dst, const void *src, size_t numBytes)
-      { copyAsync(dst,src,numBytes); sync(); }
-      void *allocHost(size_t numBytes);
-      void freeHost(void *mem);
-      void memsetAsync(void *mem,int value, size_t size);
-      void *allocMem(size_t numBytes);
-      void freeMem(void *mem);
-      void sync();
-      
-      /*! sets this gpu as active, and returns physical ID of GPU that
-        was active before */
-      int setActive() const;
-      
-      /*! restores the gpu whose ID was previously returend by setActive() */
-      void restoreActive(int oldActive) const;
-
-      TextureData *createTextureData(vec3i dims,
-                                     rtc::DataType format,
-                                     const void *texels);
-      
-      void freeTextureData(TextureData *);
-      void freeTexture(Texture *);
-      
-      cudaStream_t stream = 0;
-      int const physicalID;
-    };
-
     /*! enable peer access between these gpus, and return truea if
-        successful, else if at least one pair does not work */
+      successful, else if at least one pair does not work */
     bool enablePeerAccess(const std::vector<int> &gpuIDs);
 
     /*! get a unique hash for a given physical device. */
     size_t getPhysicalDeviceHash(int gpuID);
-    
 
+    int physicalDeviceCount();
+      
   }
 }

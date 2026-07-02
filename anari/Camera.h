@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "Object.h"
 
-namespace barney_device {
+namespace BANARI_NS {
 
   /*! abstract base class for any anari camera type */
   struct Camera : public Object
@@ -82,4 +82,4 @@ namespace barney_device {
 
 } // namespace barney_device
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Camera *, ANARI_CAMERA);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Camera *, ANARI_CAMERA);

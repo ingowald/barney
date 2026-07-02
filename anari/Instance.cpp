@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Instance.h"
 // anari
 #include <anari/anari_cpp/ext/linalg.h>
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   Instance::Instance(BarneyGlobalState *s) : Object(ANARI_INSTANCE, s) {}
 
   Instance::~Instance()
@@ -103,6 +103,6 @@ namespace barney_device {
     return result;
   }
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Instance *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Instance *);

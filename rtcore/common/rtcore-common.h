@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -22,56 +22,58 @@
 #include "owl/common/math/AffineSpace.h"
 #include "owl/common/math/random.h"
 
-namespace rtc {
+namespace BARNEY_NS {
+  namespace rtc {
   
-  using namespace owl::common;
+    using namespace owl::common;
     
-  using range1f = interval<float>;
+    using range1f = interval<float>;
   
-  typedef enum {
-    UCHAR=0,
-    UCHAR4,
+    typedef enum {
+      UCHAR=0,
+      UCHAR4,
 
-    INT=10,
-    INT2,
-    INT3,
-    INT4,
+      INT=10,
+      INT2,
+      INT3,
+      INT4,
       
-    LONG=20,
-    LONG2,
-    LONG3,
-    LONG4,
+      LONG=20,
+      LONG2,
+      LONG3,
+      LONG4,
       
-    FLOAT=30,
-    FLOAT2,
-    FLOAT3,
-    FLOAT4,
+      FLOAT=30,
+      FLOAT2,
+      FLOAT3,
+      FLOAT4,
       
-    USHORT=40,
-  } DataType;
+      USHORT=40,
+    } DataType;
 
-  typedef enum {
-    WRAP,CLAMP,BORDER,MIRROR,
-  } AddressMode;
+    typedef enum {
+      WRAP,CLAMP,BORDER,MIRROR,
+    } AddressMode;
       
-  typedef enum {
-    FILTER_MODE_POINT,FILTER_MODE_LINEAR,
-  } FilterMode;
+    typedef enum {
+      FILTER_MODE_POINT,FILTER_MODE_LINEAR,
+    } FilterMode;
     
-  typedef enum {
-    COLOR_SPACE_LINEAR, COLOR_SPACE_SRGB,
-  } ColorSpace;
+    typedef enum {
+      COLOR_SPACE_LINEAR, COLOR_SPACE_SRGB,
+    } ColorSpace;
   
-  struct TextureDesc {
-    FilterMode filterMode = FILTER_MODE_LINEAR;
-    AddressMode addressMode[3] = { CLAMP, CLAMP, CLAMP };
-    vec4f borderColor          = {0.f,0.f,0.f,0.f};
-    bool normalizedCoords      = true;
-    ColorSpace colorSpace      = COLOR_SPACE_LINEAR;
-  };
+    struct TextureDesc {
+      FilterMode filterMode = FILTER_MODE_LINEAR;
+      AddressMode addressMode[3] = { CLAMP, CLAMP, CLAMP };
+      vec4f borderColor          = {0.f,0.f,0.f,0.f};
+      bool normalizedCoords      = true;
+      ColorSpace colorSpace      = COLOR_SPACE_LINEAR;
+    };
 
-  typedef struct _TextureObject *TextureObject;
-  typedef struct _AccelHandle   *AccelHandle;
+    typedef struct _TextureObject *TextureObject;
+    typedef struct _AccelHandle   *AccelHandle;
+  }
 }
 
 

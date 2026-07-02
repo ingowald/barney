@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Camera.h"
 
-namespace barney_device {
+namespace BANARI_NS {
 
   Camera::Camera(BarneyGlobalState *s)
     : Object(ANARI_CAMERA, s)
@@ -145,6 +145,6 @@ namespace barney_device {
     bnCommit(m_barneyCamera);
   }
 
-} // namespace barney_device
+} // namespace BANARI_NS
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Camera *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Camera *);

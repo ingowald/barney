@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -8,8 +8,8 @@
 #include "Object.h"
 #include "SpatialField.h"
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   struct Geometry : public Object
   {
     Geometry(BarneyGlobalState *s);
@@ -164,6 +164,6 @@ namespace barney_device {
     std::vector<int> m_generatedIndices;
   };
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Geometry *, ANARI_GEOMETRY);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Geometry *, ANARI_GEOMETRY);

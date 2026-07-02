@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 // std
 #include <cfloat>
@@ -20,17 +20,16 @@
 #include <glm/ext/vector_float3.hpp>
 #include <glm/gtx/component_wise.hpp>
 
-
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   SpatialField::SpatialField(BarneyGlobalState *s)
     : Object(ANARI_SPATIAL_FIELD, s)
-  {}
+    {}
 
   SpatialField::~SpatialField()
-  {
-    cleanup();
-  }
+    {
+      cleanup();
+    }
 
   SpatialField *SpatialField::createInstance(std::string_view subtype,
                                              BarneyGlobalState *s)
@@ -69,7 +68,7 @@ namespace barney_device {
 
   StructuredRegularField::StructuredRegularField(BarneyGlobalState *s)
     : SpatialField(s), m_data(this)
-  {}
+    {}
 
   void StructuredRegularField::commitParameters()
   {
@@ -166,8 +165,8 @@ namespace barney_device {
   // NanoVDBSpatialField //
   NanoVDBSpatialField::NanoVDBSpatialField(BarneyGlobalState *s)
     : SpatialField(s), m_data(this)
-  {
-  }
+    {
+    }
   
   void NanoVDBSpatialField::commitParameters()
   {
@@ -259,13 +258,13 @@ namespace barney_device {
     : SpatialField(s), m_params(this) {}
 
   UnstructuredField::~UnstructuredField()
-  {
-    if (m_bnData.vertices)       bnRelease(m_bnData.vertices);
-    if (m_bnData.scalars)        bnRelease(m_bnData.scalars);
-    if (m_bnData.indices)        bnRelease(m_bnData.indices);
-    if (m_bnData.cellType)       bnRelease(m_bnData.cellType);
-    if (m_bnData.elementOffsets) bnRelease(m_bnData.elementOffsets);
-  }
+    {
+      if (m_bnData.vertices)       bnRelease(m_bnData.vertices);
+      if (m_bnData.scalars)        bnRelease(m_bnData.scalars);
+      if (m_bnData.indices)        bnRelease(m_bnData.indices);
+      if (m_bnData.cellType)       bnRelease(m_bnData.cellType);
+      if (m_bnData.elementOffsets) bnRelease(m_bnData.elementOffsets);
+    }
 
   void UnstructuredField::commitParameters()
   {
@@ -472,17 +471,17 @@ namespace barney_device {
 
   BlockStructuredField::BlockStructuredField(BarneyGlobalState *s)
     : SpatialField(s), m_params(this)
-  {}
+    {}
 
   BlockStructuredField::~BlockStructuredField()
-  {
-    if (m_bnData.scalars)          bnRelease(m_bnData.scalars);
-    if (m_bnData.blockOrigins)     bnRelease(m_bnData.blockOrigins);
-    if (m_bnData.blockDims)        bnRelease(m_bnData.blockDims);
-    if (m_bnData.blockLevels)      bnRelease(m_bnData.blockLevels);
-    if (m_bnData.blockOffsets)     bnRelease(m_bnData.blockOffsets);
-    if (m_bnData.levelRefinements) bnRelease(m_bnData.levelRefinements);
-  }
+    {
+      if (m_bnData.scalars)          bnRelease(m_bnData.scalars);
+      if (m_bnData.blockOrigins)     bnRelease(m_bnData.blockOrigins);
+      if (m_bnData.blockDims)        bnRelease(m_bnData.blockDims);
+      if (m_bnData.blockLevels)      bnRelease(m_bnData.blockLevels);
+      if (m_bnData.blockOffsets)     bnRelease(m_bnData.blockOffsets);
+      if (m_bnData.levelRefinements) bnRelease(m_bnData.levelRefinements);
+    }
 
   void BlockStructuredField::commitParameters()
   {
@@ -647,8 +646,8 @@ namespace barney_device {
 
   CustomSpatialField::CustomSpatialField(BarneyGlobalState *s, const std::string &type)
     : SpatialField(s), m_fieldType(type)
-  {
-  }
+    {
+    }
 
   void CustomSpatialField::commitParameters()
   {
@@ -682,9 +681,9 @@ namespace barney_device {
   void CustomSpatialField::applyParametersToField()
   {
     if (!m_bnField)
-    {
+      {
         return;
-    }
+      }
     
     int slot = deviceState()->slot;
     auto context = deviceState()->tether->context;
@@ -706,17 +705,17 @@ namespace barney_device {
         
         BNDataType barneyType;
         switch (elemType) {
-          case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
-          case ANARI_INT32: barneyType = BN_INT; break;
-          case ANARI_UINT8:
-          case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
-          default:
-            continue;
+        case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
+        case ANARI_INT32: barneyType = BN_INT; break;
+        case ANARI_UINT8:
+        case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
+        default:
+          continue;
         }
         
         BNTextureData td = bnTextureData3DCreate(context, slot, barneyType,
-                                                  dims.x, dims.y, dims.z,
-                                                  array->data());
+                                                 dims.x, dims.y, dims.z,
+                                                 array->data());
         bnSetObject(m_bnField, paramName.c_str(), td);
         bnRelease(td);
       }
@@ -731,17 +730,17 @@ namespace barney_device {
         
         BNDataType barneyType;
         switch (elemType) {
-          case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
-          case ANARI_INT32: barneyType = BN_INT; break;
-          case ANARI_UINT8:
-          case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
-          default:
-            continue;
+        case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
+        case ANARI_INT32: barneyType = BN_INT; break;
+        case ANARI_UINT8:
+        case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
+        default:
+          continue;
         }
         
         BNTextureData td = bnTextureData2DCreate(context, slot, barneyType,
-                                                  dims.x, dims.y,
-                                                  array->data());
+                                                 dims.x, dims.y,
+                                                 array->data());
         bnSetObject(m_bnField, paramName.c_str(), td);
         bnRelease(td);
       }
@@ -756,12 +755,12 @@ namespace barney_device {
         
         BNDataType barneyType;
         switch (elemType) {
-          case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
-          case ANARI_INT32: barneyType = BN_INT; break;
-          case ANARI_UINT8:
-          case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
-          default:
-            continue;
+        case ANARI_FLOAT32: barneyType = BN_FLOAT; break;
+        case ANARI_INT32: barneyType = BN_INT; break;
+        case ANARI_UINT8:
+        case ANARI_UFIXED8: barneyType = BN_UFIXED8; break;
+        default:
+          continue;
         }
         
         BNData data = bnDataCreate(context, slot, barneyType, numElements, array->data());
@@ -771,30 +770,30 @@ namespace barney_device {
       // Handle scalar parameters
       else {
         switch (paramType) {
-          case ANARI_FLOAT32:
-            bnSet1f(m_bnField, paramName.c_str(), getParam<float>(paramName, 0.0f));
-            break;
-          case ANARI_FLOAT32_VEC2: {
-            auto val = getParam<math::float2>(paramName, math::float2(0.0f));
-            bnSet2f(m_bnField, paramName.c_str(), val.x, val.y);
-            break;
-          }
-          case ANARI_FLOAT32_VEC3: {
-            auto val = getParam<math::float3>(paramName, math::float3(0.0f));
-            bnSet3f(m_bnField, paramName.c_str(), val.x, val.y, val.z);
-            break;
-          }
-          case ANARI_INT32:
-            bnSet1i(m_bnField, paramName.c_str(), getParam<int>(paramName, 0));
-            break;
-          case ANARI_UINT32:
-            bnSet1i(m_bnField, paramName.c_str(), (int)getParam<uint32_t>(paramName, 0));
-            break;
-          case ANARI_BOOL:
-            bnSet1i(m_bnField, paramName.c_str(), getParam<bool>(paramName, false) ? 1 : 0);
-            break;
-          default:
-            break;
+        case ANARI_FLOAT32:
+          bnSet1f(m_bnField, paramName.c_str(), getParam<float>(paramName, 0.0f));
+          break;
+        case ANARI_FLOAT32_VEC2: {
+          auto val = getParam<math::float2>(paramName, math::float2(0.0f));
+          bnSet2f(m_bnField, paramName.c_str(), val.x, val.y);
+          break;
+        }
+        case ANARI_FLOAT32_VEC3: {
+          auto val = getParam<math::float3>(paramName, math::float3(0.0f));
+          bnSet3f(m_bnField, paramName.c_str(), val.x, val.y, val.z);
+          break;
+        }
+        case ANARI_INT32:
+          bnSet1i(m_bnField, paramName.c_str(), getParam<int>(paramName, 0));
+          break;
+        case ANARI_UINT32:
+          bnSet1i(m_bnField, paramName.c_str(), (int)getParam<uint32_t>(paramName, 0));
+          break;
+        case ANARI_BOOL:
+          bnSet1i(m_bnField, paramName.c_str(), getParam<bool>(paramName, false) ? 1 : 0);
+          break;
+        default:
+          break;
         }
       }
     }
@@ -834,6 +833,6 @@ namespace barney_device {
     return !m_fieldType.empty();
   }
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::SpatialField *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::SpatialField *);

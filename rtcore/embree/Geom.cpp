@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/embree/Geom.h"
 
-namespace rtc {
-  namespace embree {
+namespace BARNEY_NS {
+  namespace rtc {
     
     Geom::Geom(GeomType *type)
       : type(type),

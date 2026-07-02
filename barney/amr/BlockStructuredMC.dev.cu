@@ -1,7 +1,6 @@
-// SPDX-FileCopyrightText:
-// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier:
-// Apache-2.0
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file BlockStructuredMC.dev.cu implements a macro-cell accelerated
     unstructured mesh data type.
@@ -16,7 +15,7 @@
 
 #include "barney/amr/BlockStructuredCuBQLSampler.h"
 #include "barney/volume/DDA.h"
-#include "rtcore/TraceInterface.h"
+#include "barney_rtc.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

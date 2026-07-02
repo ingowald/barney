@@ -7,8 +7,8 @@
 #include "BarneyGlobalState.h"
 #include "Frame.h"
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   Tether::~Tether()
   {
     BANARI_TRACK_LEAKS(std::cout << "#banari: tether destructing - "
@@ -87,4 +87,4 @@ namespace barney_device {
     }
   }
   
-} // namespace barney_device
+}

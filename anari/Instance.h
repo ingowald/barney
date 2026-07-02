@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "Group.h"
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   struct Instance : public Object
   {
     struct Attributes {
@@ -31,14 +31,14 @@ namespace barney_device {
     const Group *group() const;
 
     /*! writes the anari 4x4 matrix out into a barney-style 4x3
-        matrix, into the memory location indicated by the provided
-        pointer */
+      matrix, into the memory location indicated by the provided
+      pointer */
     void writeTransform(BNTransform *out) const;
 
     box3 bounds() const;
 
     /*! attributes for that instance, if specified. if not specifies
-        this will be a null pointer */
+      this will be a null pointer */
     Attributes *attributes = 0;
     int m_id = ~0;
   private:
@@ -47,6 +47,6 @@ namespace barney_device {
     const Group *m_previousGroup = nullptr;
   };
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Instance *, ANARI_INSTANCE);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Instance *, ANARI_INSTANCE);

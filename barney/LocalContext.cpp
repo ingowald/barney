@@ -1,181 +1,178 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/LocalContext.h"
 #include "barney/fb/LocalFB.h"
 #include "barney/globalTrace/RQSLocal.h"
 #include "barney/render/RayQueue.h"
-
-#if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
-# error "should not have both backends on at the same time!?"
-#endif
-
-namespace barney_api {
-#if BARNEY_RTC_EMBREE
-  extern "C" {
-    Context *createContext_embree(const std::vector<int> &dgIDs)
-    {
-      if (FromEnv::get()->logBackend)
-        std::cout << "#bn: creating *embree (cpu)* context" << std::endl;
-      assert(dgIDs.size() == 1);
-      std::vector<LocalSlot> localSlots(dgIDs.size());
-      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
-        LocalSlot &slot = localSlots[lsIdx];
-        slot.dataRank = dgIDs[lsIdx];
-        slot.gpuIDs = { 0 };
-      }
-      return new BARNEY_NS::LocalContext(localSlots);
-    }
-  }
-#endif
-#if BARNEY_RTC_OPTIX
-  extern "C" {
-    Context *createContext_optix(const std::vector<int> &dgIDs,
-                                 int numGPUs, const int *gpuIDs)
-    {
-      if (FromEnv::get()->logBackend)
-        std::cout << "#bn: creating *optix* context" << std::endl;
-      // std::vector<int> gpuIDs;
-      int numDGs = (int)dgIDs.size();
-      if (numGPUs == -1) {
-        BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
-      }
-
-#define ALLOW_OVERSUBSCRIBE 1
-#if ALLOW_OVERSUBSCRIBE
-      std::vector<int> fakeIDs;
-      if (numGPUs < numDGs) {
-        for (int i=0;i<numDGs;i++)  {
-          int ID
-            = gpuIDs
-            ? gpuIDs[i%numGPUs]
-            : (i%numGPUs)
-            ;
-          fakeIDs.push_back(ID);
-        }
-        gpuIDs = (const int *)fakeIDs.data();
-        numGPUs = numDGs;
-      }
-#endif
-
-      if (numGPUs < numDGs)
-        throw std::runtime_error
-          ("not enough CUDA GPUs for requested number of data groups!");
-      int gpusPerDG = numGPUs / numDGs;
-      std::vector<LocalSlot> localSlots(dgIDs.size());
-      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
-        LocalSlot &slot = localSlots[lsIdx];
-        slot.dataRank = dgIDs[lsIdx];
-        for (int j=0;j<gpusPerDG;j++) {
-          int idx = lsIdx*gpusPerDG+j;
-          slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
-        }
-      }
-      Context *ctx = new BARNEY_NS::LocalContext(localSlots);
-      return ctx;
-    }
-  } 
-#endif
-#if BARNEY_RTC_CUDA
-  extern "C" {
-    Context *createContext_cuda(const std::vector<int> &dgIDs,
-                                 int numGPUs, const int *gpuIDs)
-    {
-      if (FromEnv::get()->logBackend)
-        std::cout << "#bn: creating *(native-)cuda* context" << std::endl;
-      int numDGs = dgIDs.size();
-      if (numGPUs == -1) {
-        BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
-      }
-
-#if ALLOW_OVERSUBSCRIBE
-      std::vector<int> fakeIDs;
-      if (numGPUs < numDGs) {
-        for (int i=0;i<numDGs;i++)  {
-          int ID
-            = gpuIDs
-            ? gpuIDs[i%numGPUs]
-            : (i%numGPUs)
-            ;
-          fakeIDs.push_back(ID);
-        }
-        gpuIDs = (const int *)fakeIDs.data();
-        numGPUs = numDGs;
-      }
-#endif
-
-      if (numGPUs < numDGs)
-        throw std::runtime_error
-          ("not enough CUDA GPUs for requested number of data groups!");
-      int gpusPerDG = numGPUs / numDGs;
-      std::vector<LocalSlot> localSlots(dgIDs.size());
-      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
-        LocalSlot &slot = localSlots[lsIdx];
-        slot.dataRank = dgIDs[lsIdx];
-        for (int j=0;j<gpusPerDG;j++) {
-          int idx = lsIdx*gpusPerDG+j;
-          slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
-        }
-      }
-      Context *ctx = new BARNEY_NS::LocalContext(localSlots);
-      return ctx;
-    }
-    //   if (numGPUs == -1)
-    //     BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
-    //   std::vector<int> gpuIDs;
-    //   for (int i=0;i<numGPUs;i++)
-    //     gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
-    //   Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
-    //   return ctx;
-    // }
-  }
-#endif
-#if BARNEY_RTC_HIPRT
-  extern "C" {
-    Context *createContext_hiprt(const std::vector<int> &dgIDs,
-                                 int numGPUs, const int *gpuIDs)
-    {
-      if (FromEnv::get()->logBackend)
-        std::cout << "#bn: creating *hiprt (AMD hardware-RT)* context" << std::endl;
-      int numDGs = dgIDs.size();
-      if (numGPUs == -1) {
-        BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
-      }
-
-#if ALLOW_OVERSUBSCRIBE
-      std::vector<int> fakeIDs;
-      if (numGPUs < numDGs) {
-        for (int i=0;i<numDGs;i++)  {
-          int ID = gpuIDs ? gpuIDs[i%numGPUs] : (i%numGPUs);
-          fakeIDs.push_back(ID);
-        }
-        gpuIDs = (const int *)fakeIDs.data();
-        numGPUs = numDGs;
-      }
-#endif
-
-      if (numGPUs < numDGs)
-        throw std::runtime_error
-          ("not enough HIP GPUs for requested number of data groups!");
-      int gpusPerDG = numGPUs / numDGs;
-      std::vector<LocalSlot> localSlots(dgIDs.size());
-      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
-        LocalSlot &slot = localSlots[lsIdx];
-        slot.dataRank = dgIDs[lsIdx];
-        for (int j=0;j<gpusPerDG;j++) {
-          int idx = lsIdx*gpusPerDG+j;
-          slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
-        }
-      }
-      Context *ctx = new BARNEY_NS::LocalContext(localSlots);
-      return ctx;
-    }
-  }
-#endif
-}
+#include "barney/WorkerTopo.h"
 
 namespace BARNEY_NS {
+// #if BARNEY_RTC_EMBREE
+//   extern "C" {
+//     Context *createContext_embree(const std::vector<int> &dgIDs)
+//     {
+//       if (FromEnv::get()->logBackend)
+//         std::cout << "#bn: creating *embree (cpu)* context" << std::endl;
+//       assert(dgIDs.size() == 1);
+//       std::vector<LocalSlot> localSlots(dgIDs.size());
+//       for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+//         LocalSlot &slots_ = localSlots[lsIdx];
+//         slot.dataRank = dgIDs[lsIdx];
+//         slot.gpuIDs = { 0 };
+//       }
+//       return new BARNEY_NS::LocalContext(localSlots);
+//     }
+//   }
+// #endif
+// #if BARNEY_RTC_OPTIX
+//   extern "C" {
+//     Context *createContext_optix(const std::vector<int> &dgIDs,
+//                                  int numGPUs, const int *gpuIDs)
+//     {
+//       if (FromEnv::get()->logBackend)
+//         std::cout << "#bn: creating *optix* context" << std::endl;
+//       // std::vector<int> gpuIDs;
+//       int numDGs = (int)dgIDs.size();
+//       if (numGPUs == -1) {
+//         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
+//       }
+
+// #define ALLOW_OVERSUBSCRIBE 1
+// #if ALLOW_OVERSUBSCRIBE
+//       std::vector<int> fakeIDs;
+//       if (numGPUs < numDGs) {
+//         for (int i=0;i<numDGs;i++)  {
+//           int ID
+//             = gpuIDs
+//             ? gpuIDs[i%numGPUs]
+//             : (i%numGPUs)
+//             ;
+//           fakeIDs.push_back(ID);
+//         }
+//         gpuIDs = (const int *)fakeIDs.data();
+//         numGPUs = numDGs;
+//       }
+// #endif
+
+//       if (numGPUs < numDGs)
+//         throw std::runtime_error
+//           ("not enough CUDA GPUs for requested number of data groups!");
+//       int gpusPerDG = numGPUs / numDGs;
+//       std::vector<LocalSlot> localSlots(dgIDs.size());
+//       for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+//         LocalSlot &slot = localSlots[lsIdx];
+//         slot.dataRank = dgIDs[lsIdx];
+//         for (int j=0;j<gpusPerDG;j++) {
+//           int idx = lsIdx*gpusPerDG+j;
+//           slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
+//         }
+//       }
+//       Context *ctx = new BARNEY_NS::LocalContext(localSlots);
+//       return ctx;
+//     }
+//   } 
+// #endif
+// #if BARNEY_RTC_CUDA
+//   extern "C" {
+//     Context *createContext_cuda(const std::vector<int> &dgIDs,
+//                                  int numGPUs, const int *gpuIDs)
+//     {
+//       if (FromEnv::get()->logBackend)
+//         std::cout << "#bn: creating *(native-)cuda* context" << std::endl;
+//       int numDGs = dgIDs.size();
+//       if (numGPUs == -1) {
+//         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
+//       }
+
+// #if ALLOW_OVERSUBSCRIBE
+//       std::vector<int> fakeIDs;
+//       if (numGPUs < numDGs) {
+//         for (int i=0;i<numDGs;i++)  {
+//           int ID
+//             = gpuIDs
+//             ? gpuIDs[i%numGPUs]
+//             : (i%numGPUs)
+//             ;
+//           fakeIDs.push_back(ID);
+//         }
+//         gpuIDs = (const int *)fakeIDs.data();
+//         numGPUs = numDGs;
+//       }
+// #endif
+
+//       if (numGPUs < numDGs)
+//         throw std::runtime_error
+//           ("not enough CUDA GPUs for requested number of data groups!");
+//       int gpusPerDG = numGPUs / numDGs;
+//       std::vector<LocalSlot> localSlots(dgIDs.size());
+//       for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+//         LocalSlot &slot = localSlots[lsIdx];
+//         slot.dataRank = dgIDs[lsIdx];
+//         for (int j=0;j<gpusPerDG;j++) {
+//           int idx = lsIdx*gpusPerDG+j;
+//           slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
+//         }
+//       }
+//       Context *ctx = new BARNEY_NS::LocalContext(localSlots);
+//       return ctx;
+//     }
+//     //   if (numGPUs == -1)
+//     //     BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
+//     //   std::vector<int> gpuIDs;
+//     //   for (int i=0;i<numGPUs;i++)
+//     //     gpuIDs.push_back(_gpuIDs?_gpuIDs[i]:i);
+//     //   Context *ctx = new BARNEY_NS::LocalContext(dgIDs,gpuIDs);
+//     //   return ctx;
+//     // }
+//   }
+// #endif
+// #if BARNEY_RTC_HIPRT
+//   extern "C" {
+//     Context *createContext_hiprt(const std::vector<int> &dgIDs,
+//                                  int numGPUs, const int *gpuIDs)
+//     {
+//       if (FromEnv::get()->logBackend)
+//         std::cout << "#bn: creating *hiprt (AMD hardware-RT)* context" << std::endl;
+//       int numDGs = dgIDs.size();
+//       if (numGPUs == -1) {
+//         BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
+//       }
+
+// #if ALLOW_OVERSUBSCRIBE
+//       std::vector<int> fakeIDs;
+//       if (numGPUs < numDGs) {
+//         for (int i=0;i<numDGs;i++)  {
+//           int ID = gpuIDs ? gpuIDs[i%numGPUs] : (i%numGPUs);
+//           fakeIDs.push_back(ID);
+//         }
+//         gpuIDs = (const int *)fakeIDs.data();
+//         numGPUs = numDGs;
+//       }
+// #endif
+
+//       if (numGPUs < numDGs)
+//         throw std::runtime_error
+//           ("not enough HIP GPUs for requested number of data groups!");
+//       int gpusPerDG = numGPUs / numDGs;
+//       std::vector<LocalSlot> localSlots(dgIDs.size());
+//       for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+//         LocalSlot &slot = localSlots[lsIdx];
+//         slot.dataRank = dgIDs[lsIdx];
+//         for (int j=0;j<gpusPerDG;j++) {
+//           int idx = lsIdx*gpusPerDG+j;
+//           slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
+//         }
+//       }
+//       Context *ctx = new BARNEY_NS::LocalContext(localSlots);
+//       return ctx;
+//     }
+//   }
+// #endif
+// }
+
+// namespace BARNEY_NS {
   size_t getHostNameHash()
   {
 #if defined(_WIN32) || defined(__APPLE__)
@@ -317,4 +314,69 @@ namespace BARNEY_NS {
     fb->finalizeFrame();
   }
 
+
+  barney_api::Context *
+  createLocalContext(/*! how many data slots this context is to
+                       offer, and which part(s) of the
+                       distributed model data these slot(s)
+                       will hold */
+                     const int *dataRanksOnThisContext,
+                     int        numDataRanksOnThisContext,
+                     /*! which gpu(s) to use for this
+                       process. default is to distribute
+                       node's GPUs equally over all ranks on
+                       that given node */
+                     const int *gpuIDs,
+                     int  numGPUs)
+  {
+    assert(numDataRanksOnThisContext > 0);
+    std::vector<int> dgIDs;
+    for (int i = 0;i < numDataRanksOnThisContext;i++)
+      dgIDs.push_back
+        (dataRanksOnThisContext
+         ? dataRanksOnThisContext[i]
+         : i);
+
+    int numDGs = (int)dgIDs.size();
+    // if (numGPUs == -1) {
+    //   BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
+    // }
+    if (numGPUs == -1)
+      numGPUs = rtc::physicalDeviceCount();
+    
+#define ALLOW_OVERSUBSCRIBE 1
+#if ALLOW_OVERSUBSCRIBE
+    std::vector<int> fakeIDs;
+    if (numGPUs < numDGs) {
+      for (int i=0;i<numDGs;i++)  {
+        int ID
+          = gpuIDs
+          ? gpuIDs[i%numGPUs]
+          : (i%numGPUs)
+          ;
+        fakeIDs.push_back(ID);
+      }
+      gpuIDs = (const int *)fakeIDs.data();
+      numGPUs = numDGs;
+    }
+#endif
+    
+    if (numGPUs < numDGs)
+      throw std::runtime_error
+        ("not enough CUDA GPUs for requested number of data groups!");
+    int gpusPerDG = numGPUs / numDGs;
+    std::vector<LocalSlot> localSlots(dgIDs.size());
+    for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
+      LocalSlot &slot = localSlots[lsIdx];
+      slot.dataRank = dgIDs[lsIdx];
+      for (int j=0;j<gpusPerDG;j++) {
+        int idx = lsIdx*gpusPerDG+j;
+        slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
+      }
+    }
+    Context *ctx = new BARNEY_NS::LocalContext(localSlots);
+    assert(ctx);
+    return ctx;
+  }
+  
 }

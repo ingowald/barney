@@ -12,7 +12,7 @@
 #include <helium/array/ObjectArray.h>
 
 namespace BANARI_NS {
-
+    
   using ObjectArray = helium::ObjectArray;
 
 #define DEFINE_BARNEY_ARRAY(DIM)                                \
@@ -64,8 +64,8 @@ namespace BANARI_NS {
     return v.size() * sizeof(T);
   }
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array1D *, ANARI_ARRAY1D);
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array2D *, ANARI_ARRAY2D);
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Array3D *, ANARI_ARRAY3D);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Array1D *, ANARI_ARRAY1D);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Array2D *, ANARI_ARRAY2D);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Array3D *, ANARI_ARRAY3D);

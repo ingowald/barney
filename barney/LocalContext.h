@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -34,5 +34,6 @@ namespace BARNEY_NS {
     /*! create a frame buffer object suitable to this context */
     std::shared_ptr<barney_api::FrameBuffer>
     createFrameBuffer() override;
+
   };
 }

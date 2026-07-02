@@ -1,7 +1,6 @@
-// SPDX-FileCopyrightText:
-// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier:
-// Apache-2.0
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #include "barney/common/barney-common.h"
 #include "barney/umesh/common/UMeshField.h"
@@ -9,10 +8,11 @@
 #include "barney/umesh/mc/UMeshCuBQLSampler.h"
 #include "barney/volume/MCGrid.cuh"
 // #include "barney/umesh/os/AWT.h"
-#if RTC_DEVICE_CODE
-# include "rtcore/ComputeInterface.h"
-# include "rtcore/TraceInterface.h"
-#endif
+// #if RTC_DEVICE_CODE
+// # include "rtcore/ComputeInterface.h"
+// # include "rtcore/TraceInterface.h"
+// #endif
+#include "barney_rtc.h"
 
 namespace BARNEY_NS {
 

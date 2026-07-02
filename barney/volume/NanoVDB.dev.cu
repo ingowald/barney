@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,7 @@
 #if BARNEY_HAVE_NANOVDB
 #include "barney/volume/NanoVDB.h"
 #include "barney/volume/MCAccelerator.h"
-#include "rtcore/TraceInterface.h"
+#include "barney_rtc.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
 

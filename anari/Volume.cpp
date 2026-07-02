@@ -1,4 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Volume.h"
@@ -9,8 +10,8 @@
 #include <numeric>
 #endif
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
 #if BARNEY_USE_MULTI_SCATTERING
   namespace {
     inline float luminance(const math::float3 &c)
@@ -546,6 +547,6 @@ namespace barney_device {
 
 #endif
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Volume *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Volume *);

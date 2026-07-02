@@ -18,8 +18,7 @@
 
 #include "generated/anari_library_barney_queries.h"
 
-
-namespace barney_device {
+namespace BANARI_NS {
 
   // Helper functions /////////////////////////////////////////////////////////
 
@@ -487,4 +486,4 @@ namespace barney_device {
 
 } // namespace barney_device
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Sampler *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Sampler *);

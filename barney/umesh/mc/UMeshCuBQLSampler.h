@@ -1,7 +1,6 @@
-// SPDX-FileCopyrightText:
-// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier:
-// Apache-2.0
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -13,12 +12,7 @@ namespace BARNEY_NS {
   
   /*! a umesh scalar field, with a CuBQL bvh sampler */
   struct UMeshCuBQLSampler : public ScalarFieldSampler {
-#if 1
     using bvh_t  = cuBQL::BinaryBVH<float,3>;
-#else
-    enum { BVH_WIDTH = 4 };
-    using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
-#endif
     using node_t = typename bvh_t::Node;
     
     struct DD : public UMeshField::DD {

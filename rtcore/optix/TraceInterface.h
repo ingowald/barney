@@ -1,18 +1,17 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include <owl/owl.h>
 #include "rtcore/cudaCommon/ComputeInterface.h"
 
-namespace rtc {
-  namespace optix {
+namespace BARNEY_NS {
+  namespace rtc {
 
     using namespace rtc::cuda_common;
 
-// #ifdef __CUDACC__
 #ifdef BARNEY_DEVICE_PROGRAM
     inline __device__
     const void *getLaunchParamsPointer();
@@ -139,7 +138,7 @@ namespace rtc {
 
 #define RTC_DECLARE_GLOBALS(Type)                                       \
   extern "C" __constant__ Type optixLaunchParams;                       \
-  inline __device__ const void *rtc::optix::getLaunchParamsPointer()    \
+  inline __device__ const void *::BARNEY_NS::rtc::getLaunchParamsPointer() \
   { return &optixLaunchParams; }                                        \
     
 
@@ -148,19 +147,19 @@ namespace rtc {
                                                                         \
   extern "C" __global__                                                 \
   void __closesthit__##name() {                                         \
-    ::rtc::optix::TraceInterface rtcore;                                \
+    ::BARNEY_NS::rtc::TraceInterface rtcore;                            \
     type::closestHit(rtcore);                                           \
   }                                                                     \
                                                                         \
   extern "C" __global__                                                 \
   void __anyhit__##name() {                                             \
-    ::rtc::optix::TraceInterface rtcore;                                \
+    ::BARNEY_NS::rtc::TraceInterface rtcore;                            \
     type::anyHit(rtcore);                                               \
   }                                                                     \
                                                                         \
   extern "C" __global__                                                 \
   void __intersection__##name() {                                       \
-    ::rtc::optix::TraceInterface rtcore;                                \
+    ::BARNEY_NS::rtc::TraceInterface rtcore;                            \
     type::intersect(rtcore);                                            \
   }                                                                     \
                                                                         \
@@ -168,7 +167,7 @@ namespace rtc {
                                        owl::common::box3f &result,      \
                                        int primID)                      \
   {                                                                     \
-    ::rtc::optix::TraceInterface rtcore;                                \
+    ::BARNEY_NS::rtc::TraceInterface rtcore;                            \
     type::bounds(rtcore,geom,result,primID);                            \
   }                                                                     \
   extern "C" __global__                                                 \
@@ -194,13 +193,13 @@ namespace rtc {
                                                                 \
   extern "C" __global__                                         \
   void __closesthit__##name() {                                 \
-    ::rtc::optix::TraceInterface rtcore;                        \
+    ::BARNEY_NS::rtc::TraceInterface rtcore;                    \
     type::closestHit(rtcore);                                   \
   }                                                             \
                                                                 \
   extern "C" __global__                                         \
   void __anyhit__##name() {                                     \
-    ::rtc::optix::TraceInterface rtcore;                        \
+    ::BARNEY_NS::rtc::TraceInterface rtcore;                    \
     type::anyHit(rtcore);                                       \
   }                                                             \
   

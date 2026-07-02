@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -11,8 +11,8 @@
 // ours
 #include "Object.h"
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   struct SpatialField : public Object
   {
     SpatialField(BarneyGlobalState *s);
@@ -194,7 +194,7 @@ namespace barney_device {
     box3 m_bounds;
   };
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::SpatialField *,
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::SpatialField *,
                                     ANARI_SPATIAL_FIELD);

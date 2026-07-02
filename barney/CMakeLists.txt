@@ -16,10 +16,12 @@ if (NOT (TARGET barney_rtc_${backend}))
   return()
 endif()
 
+
 set(BARNEY_DEVICE_NAME ${BARNEY_PROJECT_NAME}_${backend})
 
 add_library(barney_config_${backend} INTERFACE)
 target_link_libraries(barney_config_${backend} INTERFACE barney_rtc_${backend})
+target_compile_definitions(barney_rtc_${backend} INTERFACE -DBARNEY_NS=${BARNEY_PROJECT_NAME}_${backend})
 
 if(MSVC) # That's also clang-cl
   # /bigobj is needed for bigger binding projects due to the limit to 64k
@@ -53,11 +55,6 @@ endif()
 # define all the host-side sources
 set(HOST_SOURCES
 
-  globalTrace/RQSBase.h
-  globalTrace/RQSBase.cpp
-  globalTrace/RQSLocal.h
-  globalTrace/RQSLocal.cu
-  
   # all the barney "plumbing" stuff on the host
   WorkerTopo.h
   WorkerTopo.cpp
@@ -180,6 +177,12 @@ set(HOST_SOURCES
   material/AnariPBR.cpp
   material/AnariMatte.h
   material/AnariMatte.cpp
+
+  # different traceRays() implementations
+  globalTrace/RQSBase.h
+  globalTrace/RQSBase.cpp
+  globalTrace/RQSLocal.h
+  globalTrace/RQSLocal.cu
 )
 
 # all the source that eventually go into barney_mpi
@@ -231,7 +234,7 @@ add_library(${BARNEY_DEVICE_NAME} STATIC
 )
 target_link_libraries(${BARNEY_DEVICE_NAME} PUBLIC
   $<BUILD_INTERFACE:barney_${backend}_programs>
-  $<BUILD_INTERFACE:barney_${backend}_config>
+  $<BUILD_INTERFACE:barney_config_${backend}>
 )
 rtc_library_properties(${BARNEY_DEVICE_NAME})
 
@@ -247,7 +250,7 @@ if (BARNEY_MPI)
   )
   target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC
     $<BUILD_INTERFACE:barney_${backend}_programs>
-    $<BUILD_INTERFACE:barney_${backend}_config>
+    $<BUILD_INTERFACE:barney_config_${backend}>
   )
   rtc_library_properties(${BARNEY_DEVICE_NAME}_mpi) 
   target_compile_definitions(${BARNEY_DEVICE_NAME}_mpi PRIVATE
@@ -257,3 +260,4 @@ if (BARNEY_MPI)
 endif()
 
 
+add_subdirectory(../anari  build_banari_${backend})

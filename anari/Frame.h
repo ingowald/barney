@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -12,8 +12,8 @@
 // std
 #include <vector>
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   struct Frame : public helium::BaseFrame
   {
     Frame(BarneyGlobalState *s);
@@ -51,7 +51,7 @@ namespace barney_device {
     bool        m_valid           {false};
     math::uint2 m_size            { 0,0 };
     /*! Actual framebuffer dimensions (from bnFrameBufferGetSize after
-        resize). Matches buffer layout so map() reports correct stride. */
+      resize). Matches buffer layout so map() reports correct stride. */
     math::uint2 m_displaySize     { 0,0 };
 
     struct {
@@ -99,6 +99,6 @@ namespace barney_device {
     int m_numTimesRenderFrameHasBeenCalled = 0;
   };
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Frame *, ANARI_FRAME);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Frame *, ANARI_FRAME);

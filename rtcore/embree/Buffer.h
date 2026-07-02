@@ -1,17 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "rtcore/embree/Device.h"
 
-namespace rtc {
-  namespace embree {
+namespace BARNEY_NS {
+  namespace rtc {
 
     struct Buffer
     {
-      Buffer(Device *device,size_t numBytes,const void *initMem);
+      Buffer(Device *device,
+             size_t numBytes,
+             const void *initMem);
       virtual ~Buffer();
 
       void upload(const void *hostPtr,

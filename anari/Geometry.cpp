@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "Geometry.h"
 #include "common.h"
@@ -9,8 +9,8 @@
 #include <iostream>
 #include <numeric>
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   // Helper functions ///////////////////////////////////////////////////////////
 
   static void addAttribute(BNGeom geom,
@@ -583,20 +583,9 @@ namespace barney_device {
       index[i] = math::int2(in_index[i], in_index[i] + 1);
     }
 
-#if 0
-    // dump geometry to create test cases:
-    std::cout << "std::vector<vec4f> vertices = {" << std::endl;
-    for (auto v : vertex)
-      std::cout << "{"<<v.x<<","<<v.y<<","<<v.z<<","<<v.w<<"}," << std::endl;
-    std::cout << "};" << std::endl;
-    std::cout << "std::vector<vec2i> index = {" << std::endl;
-    for (auto v : index)
-      std::cout << "{"<<v.x<<","<<v.y<<"}," << std::endl;
-    std::cout << "};" << std::endl;
-#endif
-
-    BNData indices = bnDataCreate(
-                                  context, slot, BN_INT2, index.size(), (const int *)index.data());
+    BNData indices = bnDataCreate(context, slot, BN_INT2,
+                                  index.size(),
+                                  (const int *)index.data());
     bnSetAndRelease(geom, "indices", indices);
 
     setAttributes(geom);
@@ -843,6 +832,6 @@ namespace barney_device {
     return result;
   }
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(barney_device::Geometry *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Geometry *);

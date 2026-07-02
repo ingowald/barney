@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "rtcore/optix/Device.h"
 #include "rtcore/optix/Denoiser.h"
@@ -12,9 +12,9 @@
 #include <optix_function_table.h>
 #include <optix_stubs.h>
 
-namespace rtc {
-  namespace optix {
-    
+namespace BARNEY_NS {
+  namespace rtc {
+
     rtc::AccelHandle getAccelHandle(Group *ig)
     { return ig->getDD(); }
     

@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -8,8 +8,9 @@
 #include "rtcore/optix/Buffer.h"
 #include <owl/owl.h>
 
-namespace rtc {
-  namespace optix {
+namespace BARNEY_NS {
+  namespace rtc {
+
     struct Device;
     
     struct GeomType;
@@ -27,7 +28,7 @@ namespace rtc {
       OWLGeom   const owl;
     };
 
-    struct TrianglesGeom : public optix::Geom {
+    struct TrianglesGeom : public Geom {
       TrianglesGeom(GeomType *gt, OWLGeom geom);
       
       void setPrimCount(int primCount) override { assert(0); }
@@ -36,7 +37,7 @@ namespace rtc {
       /*! only for user geoms */
       /*! can only get called on triangle type geoms */
     };
-    struct UserGeom : public optix::Geom {
+    struct UserGeom : public Geom {
       UserGeom(GeomType *gt, OWLGeom geom);
       
       void setPrimCount(int primCount);
@@ -47,17 +48,17 @@ namespace rtc {
     };
     
     struct GeomType {
-      GeomType(optix::Device *device);
+      GeomType(Device *device);
       virtual ~GeomType();
       
       virtual Geom *createGeom() = 0;
       
       OWLGeomType gt = 0;
-      optix::Device *const device;
+      Device *const device;
     };
     struct TrianglesGeomType : public GeomType
     {
-      TrianglesGeomType(optix::Device *device,
+      TrianglesGeomType(Device *device,
                         const std::string &ptxCode,
                         const std::string &typeName,
                         size_t sizeOfDD,
@@ -66,7 +67,7 @@ namespace rtc {
     };
     struct UserGeomType : public GeomType
     {
-      UserGeomType(optix::Device *device,
+      UserGeomType(Device *device,
                    const std::string &ptxCode,
                    const std::string &typeName,
                    size_t sizeOfDD,

@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -25,9 +25,14 @@
 #else
 # define BARNEY_INF INFINITY
 #endif
-  
-namespace barney_device {
 
+#ifndef BARNEY_NS
+# error "BARNEY_NS not defined"
+#endif
+
+namespace BANARI_NS {
+  using namespace BARNEY_NS;
+  
   namespace math = anari::math;
 
   /*! banari-only helper function to set a anari vector type */
@@ -113,20 +118,20 @@ namespace barney_device {
   }
 } // namespace barney_device
 
-///////////////////////////////////////////////////////////////////////////////
-// ANARITypeFor type trait mappings ///////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  // ANARITypeFor type trait mappings ///////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
 
 namespace anari {
 
-  ANARI_TYPEFOR_SPECIALIZATION(barney_device::box1, ANARI_FLOAT32_BOX1);
-  ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3, ANARI_FLOAT32_BOX3);
-  ANARI_TYPEFOR_SPECIALIZATION(barney_device::box3i, ANARI_INT32_BOX3);
+  ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::box1, ANARI_FLOAT32_BOX1);
+  ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::box3, ANARI_FLOAT32_BOX3);
+  ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::box3i, ANARI_INT32_BOX3);
 
 #ifdef ANARI_BARNEY_MATH_DEFINITIONS
-  ANARI_TYPEFOR_DEFINITION(barney_device::box1);
-  ANARI_TYPEFOR_DEFINITION(barney_device::box3);
-  ANARI_TYPEFOR_DEFINITION(barney_device::box3i);
+  ANARI_TYPEFOR_DEFINITION(BANARI_NS::box1);
+  ANARI_TYPEFOR_DEFINITION(BANARI_NS::box3);
+  ANARI_TYPEFOR_DEFINITION(BANARI_NS::box3i);
 #endif
 
 #ifndef PRINT
@@ -138,4 +143,4 @@ namespace anari {
 #endif
 #endif
 
-} // namespace anari
+}

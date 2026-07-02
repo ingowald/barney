@@ -9,7 +9,7 @@
 #include "helium/array/Array2D.h"
 #include "helium/array/Array3D.h"
 
-namespace barney_device {
+namespace BANARI_NS {
 
   struct Sampler : public Object
   {
@@ -36,7 +36,7 @@ namespace barney_device {
   };
 
   /*! base class for samplers that utilize a barney texturedata object
-      - i.e, image1/2/3D; does not have a direct ANARI equivalent */
+    - i.e, image1/2/3D; does not have a direct ANARI equivalent */
   struct TextureDataSampler : public Sampler {
     
     TextureDataSampler(BarneyGlobalState *s, const char *barneySubtype);
@@ -120,6 +120,6 @@ namespace barney_device {
     int m_offset = 0;
   };
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::Sampler *, ANARI_SAMPLER);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Sampler *, ANARI_SAMPLER);

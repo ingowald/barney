@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/fb/FrameBuffer.h"
 #include "barney/fb/TiledFB.h"
@@ -9,8 +9,8 @@
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
 #include "barney/render/RayQueue.h"
-#include "rtcore/TraceInterface.h"
 #include "barney/barneyConfig.h"
+#include "barney_rtc.h"
 
 namespace BARNEY_NS {
   namespace render {

@@ -10,8 +10,8 @@
 #define __rtc_device /* ignore - for embree device we use all cpu */
 #define __rtc_both /* ignore - for embree device we use all cpu */
     
-namespace rtc {
-  namespace embree {
+namespace BARNEY_NS {
+  namespace rtc {
 
     using namespace embree_for_barney;
     using namespace owl::common;    
@@ -26,8 +26,8 @@ namespace rtc {
     struct float3 { float x; float y; float z; };
     struct float4 { float x; float y; float z; float w; };
 
-    inline vec3f load(const ::rtc::embree::float3 &v) { return (const vec3f&)v; }
-    inline vec4f load(const ::rtc::embree::float4 &v) { return (const vec4f&)v; }
+    inline vec3f load(const BARNEY_NS::rtc::float3 &v) { return (const vec3f&)v; }
+    inline vec4f load(const BARNEY_NS::rtc::float4 &v) { return (const vec4f&)v; }
     
   }
 }

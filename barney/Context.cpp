@@ -355,6 +355,8 @@ namespace BARNEY_NS {
   {
     return BaseData::create(this,getDevices(slot),dataType);
   }
-  
+
+
+
 } // ::BARNEY_NS
 

@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -14,9 +14,7 @@
 #include "barney/render/World.h"
 #include "barney/render/OptixGlobals.h"
 #include "barney/material/DeviceMaterial.h"
-#if RTC_DEVICE_CODE
-# include "rtcore/TraceInterface.h"
-#endif
+#include "barney_rtc.h"
 
 namespace BARNEY_NS {
   using render::Ray;

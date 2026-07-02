@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -8,8 +8,8 @@
 #include "Instance.h"
 #include <array>
 
-namespace barney_device {
-
+namespace BANARI_NS {
+    
   struct World : public Object
   {
     World(BarneyGlobalState *s);
@@ -29,7 +29,7 @@ namespace barney_device {
 
   private:
     using InstanceAttributes
-      = std::array<std::vector<math::float4>, Instance::Attributes::count>;
+    = std::array<std::vector<math::float4>, Instance::Attributes::count>;
 
     void buildBarneyModel();
     void uploadInstanceAttributes(const InstanceAttributes &attributes);
@@ -52,6 +52,6 @@ namespace barney_device {
     helium::TimeStamp m_lastBarneyModelBuild{0};
   };
 
-} // namespace barney_device
+}
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(barney_device::World *, ANARI_WORLD);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::World *, ANARI_WORLD);

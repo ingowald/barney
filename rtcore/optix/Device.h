@@ -1,16 +1,14 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "rtcore/cudaCommon/Device.h"
 #include <owl/owl.h>
 
-namespace rtc {
-  namespace optix {
-        
-    using rtc::cuda_common::SetActiveGPU;
+namespace BARNEY_NS {
+  namespace rtc {
 
     struct Device;
     struct Denoiser;
@@ -19,18 +17,15 @@ namespace rtc {
     struct Geom;
     struct GeomType;
 
-    using rtc::cuda_common::Texture;
-    using rtc::cuda_common::TextureData;
-    
-    using cuda_common::float2;
-    using cuda_common::float3;
-    using cuda_common::float4;
-    using cuda_common::int2;
-    using cuda_common::int3;
-    using cuda_common::int4;
-    using cuda_common::load;
+    // using cuda_common::float2;
+    // using cuda_common::float3;
+    // using cuda_common::float4;
+    // using cuda_common::int2;
+    // using cuda_common::int3;
+    // using cuda_common::int4;
+    // using cuda_common::load;
   
-    using cuda_common::TextureObject;
+    // using cuda_common::TextureObject;
 
     rtc::AccelHandle getAccelHandle(Group *ig);
     
@@ -161,24 +156,27 @@ namespace rtc {
 
 #define RTC_IMPORT_USER_GEOM(moduleName,typeName,DDType,has_ah,has_ch)  \
   extern "C" char moduleName##_ptx[];                                   \
-  rtc::GeomType *createGeomType_##typeName(rtc::Device *device)         \
+  rtc::GeomType *                                                       \
+  createGeomType_##typeName(::BARNEY_NS::rtc::Device *device)           \
   {                                                                     \
-    return new rtc::optix::UserGeomType(device,                         \
-                                        moduleName##_ptx,               \
-                                        #typeName,                      \
-                                        sizeof(DDType),                 \
-                                        has_ah,has_ch);                 \
+    return new ::BARNEY_NS::rtc::UserGeomType(device,                   \
+                                              moduleName##_ptx,         \
+                                              #typeName,                \
+                                              sizeof(DDType),           \
+                                              has_ah,has_ch);           \
   }
 
 #define RTC_IMPORT_TRIANGLES_GEOM(moduleName,typeName,DDType,has_ah,has_ch) \
   extern "C" char moduleName##_ptx[];                                   \
-  rtc::GeomType *createGeomType_##typeName(rtc::Device *device)         \
+  ::BARNEY_NS::rtc::GeomType *                                          \
+  createGeomType_##typeName(rtc::Device *device)                        \
   {                                                                     \
-    return new rtc::optix::TrianglesGeomType(device,                    \
-                                             moduleName##_ptx,          \
-                                             #typeName,                 \
-                                             sizeof(DDType),            \
-                                             has_ah,has_ch);            \
+    return new ::BARNEY_NS::rtc::TrianglesGeomType                      \
+      (device,                                                          \
+       moduleName##_ptx,                                                \
+       #typeName,                                                       \
+       sizeof(DDType),                                                  \
+       has_ah,has_ch);                                                  \
   }
 
 
@@ -187,16 +185,18 @@ namespace rtc {
   extern "C"  __global__                                         \
   void __raygen__##name()                                        \
   {                                                              \
-    RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();      \
-    ::rtc::optix::TraceInterface rtcore;                         \
-    rg->run(rtcore);                                          \
+    RayGenType *rg = (RayGenType*)optixGetSbtDataPointer();          \
+    ::BARNEY_NS::rtc::TraceInterface rtcore;                         \
+    rg->run(rtcore);                                                 \
   }
 
-#define RTC_IMPORT_TRACE2D(fileNameBase,kernelName,sizeOfLP)          \
+#define RTC_IMPORT_TRACE2D(fileNameBase,kernelName,sizeOfLP)            \
   extern "C" char fileNameBase##_ptx[];                                 \
-  rtc::TraceKernel2D *createTrace_##kernelName(rtc::Device *device)     \
+  ::BARNEY_NS::rtc::TraceKernel2D *                                     \
+  createTrace_##kernelName(::BARNEY_NS::rtc::Device *device)            \
   {                                                                     \
-  return new rtc::TraceKernel2D(device,fileNameBase##_ptx,              \
-                                #kernelName,sizeOfLP);                   \
+    return new ::BARNEY_NS::rtc::TraceKernel2D                          \
+      (device,fileNameBase##_ptx,                                       \
+       #kernelName,sizeOfLP);                                           \
   }
 

@@ -14,8 +14,9 @@
 
 #include "generated/anari_library_barney_queries.h"
 
-namespace barney_device {
-
+namespace BANARI_NS {
+  using ::barney_device::query_extensions;
+  
   // Data Arrays ////////////////////////////////////////////////////////////////
 
   ANARIArray1D BarneyDevice::newArray1D(const void *appMemory,
@@ -287,7 +288,7 @@ namespace barney_device {
     m_state = std::make_unique<BarneyGlobalState>(this_device());
   }
 
-    BarneyDevice::BarneyDevice() : helium::BaseDevice(default_statusFunc, nullptr)
+  BarneyDevice::BarneyDevice() : helium::BaseDevice(default_statusFunc, nullptr)
   {
     m_state = std::make_unique<BarneyGlobalState>(this_device());
   }
@@ -540,4 +541,5 @@ namespace barney_device {
     return state;
   }
 
-} // namespace barney_device
+}
+

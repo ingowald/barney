@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -10,8 +10,8 @@
 #include <thread>
 #include <barrier>
 
-namespace rtc {
-  namespace embree {
+namespace BARNEY_NS {
+  namespace rtc {
 
     struct ComputeInterface;
     struct TraceInterface;
@@ -173,11 +173,12 @@ namespace rtc {
 # define __rtc_global /*static*/
 # define __rtc_launch(dev,kernel,nb,bs,...)                             \
   {                                                                     \
-    rtc::embree::LaunchSystem *ls = ((rtc::embree::Device *)dev)->ls;   \
+    BARNEY_NS::rtc::LaunchSystem *ls                                    \
+      = ((BARNEY_NS::rtc::Device *)dev)->ls;                            \
     int numTotal = nb;                                                  \
-    rtc::embree::TaskWrapper task([&](int taskID)                       \
+    BARNEY_NS::rtc::TaskWrapper task([&](int taskID)                    \
     {                                                                   \
-      rtc::embree::ComputeInterface ci;                                 \
+      BARNEY_NS::rtc::ComputeInterface ci;                              \
       ci.gridDim = {(unsigned)nb,1u,1u};                                \
       ci.blockDim = {(unsigned)bs,1u,1u};                               \
       ci.blockIdx = {(unsigned)taskID,0u,0u};                           \

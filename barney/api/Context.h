@@ -1,15 +1,21 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
-#include "barney/api/common.h"
+#include "barney/common/barney-common.h"
+// #include "barney/api/common.h"
 #include <mutex>
 #include <set>
 
+#ifndef BARNEY_NS
+# error "BARNEY_NS not defined"
+#endif
+
 namespace BARNEY_NS {
-  
+  namespace barney_api {
+    
   struct Context;
   struct Data;
 
@@ -342,7 +348,8 @@ namespace BARNEY_NS {
     // add one ref count:
     it->second++;
   }
-
+  }
+  
   struct FromEnv {
     FromEnv();
     static const FromEnv *get();
@@ -376,5 +383,5 @@ namespace BARNEY_NS {
     bool logBackend = false;
     bool logTopo    = false;
   };
-  
+
 }

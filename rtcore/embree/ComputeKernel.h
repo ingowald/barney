@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "rtcore/embree/Device.h"
 #include "rtcore/embree/ComputeInterface.h"
 
-namespace rtc {
-  namespace embree {
+namespace BARNEY_NS {
+  namespace rtc {
 
     struct ComputeKernel1D {
       // void (*launch)(unsigned int nb, unsigned int bs,
@@ -16,7 +16,7 @@ namespace rtc {
       void launch(unsigned int nb, unsigned int bs,
                   const void *pKernelData);
       Device *device;
-      void (*computeFct)(rtc::embree::ComputeInterface &ci,
+      void (*computeFct)(rtc::ComputeInterface &ci,
                         const void *pKernelData) = 0;
     };
     struct ComputeKernel2D {
@@ -28,7 +28,7 @@ namespace rtc {
       //                    const void *pKernelData)
       // { launch(vec2ui(nb),vec2ui(bs),pKernelData); }
       Device *device;
-      void (*computeFct)(rtc::embree::ComputeInterface &ci,
+      void (*computeFct)(rtc::ComputeInterface &ci,
                         const void *pKernelData) = 0;
     };
     struct ComputeKernel3D {
@@ -40,7 +40,7 @@ namespace rtc {
       //                    const void *pKernelData)
       // { launch(vec3ui(nb),vec3ui(bs),pKernelData); }
       Device *device;
-      void (*computeFct)(rtc::embree::ComputeInterface &ci,
+      void (*computeFct)(rtc::ComputeInterface &ci,
                         const void *pKernelData) = 0;
     };
 
@@ -49,7 +49,7 @@ namespace rtc {
 }
 
 #define RTC_EXPORT_COMPUTE1D(name,ClassName)                            \
-  void rtc_embree_compute_##name(rtc::embree::ComputeInterface &ci,     \
+  void rtc_embree_compute_##name(rtc::ComputeInterface &ci,     \
                                  const void *pData)                     \
   {                                                                     \
     ((ClassName *)pData)->run(ci);                                      \
@@ -59,7 +59,7 @@ namespace rtc {
   { return new rtc::ComputeKernel1D{dev,rtc_embree_compute_##name}; }   \
   
 #define RTC_EXPORT_COMPUTE2D(name,ClassName)                            \
-  void rtc_embree_compute_##name(rtc::embree::ComputeInterface &ci,     \
+  void rtc_embree_compute_##name(rtc::ComputeInterface &ci,     \
                                  const void *pData)                     \
   {                                                                     \
     ((ClassName *)pData)->run(ci);                                      \
@@ -69,7 +69,7 @@ namespace rtc {
   { return new rtc::ComputeKernel2D{dev,rtc_embree_compute_##name}; }   \
                                                                
 #define RTC_EXPORT_COMPUTE3D(name,ClassName)                            \
-  void rtc_embree_compute_##name(rtc::embree::ComputeInterface &ci,     \
+  void rtc_embree_compute_##name(rtc::ComputeInterface &ci,     \
                                  const void *pData)                     \
   {                                                                     \
     ((ClassName *)pData)->run(ci);                                      \
