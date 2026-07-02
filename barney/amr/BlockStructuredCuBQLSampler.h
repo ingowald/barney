@@ -26,7 +26,7 @@ namespace BARNEY_NS {
       inline __rtc_device float sample(vec3f P, bool dbg = false) const;
 #endif
       bvh_t bvh;
-      int useCoarsestForIso = 0;
+      int useCoarsestSampling = 0;
     };
     DD getDD(Device *device);
 
@@ -48,7 +48,7 @@ namespace BARNEY_NS {
 
     BlockStructuredField *const field;
     const DevGroup::SP devices;
-    bool useCoarsestForIso = false;
+    bool useCoarsestSampling = false;
   };
   
   struct BlockStructuredSamplerPTD {
@@ -71,7 +71,7 @@ namespace BARNEY_NS {
   inline __rtc_device
   float BlockStructuredCuBQLSampler::DD::sample(vec3f P, bool dbg) const
   {
-    if (useCoarsestForIso)
+    if (useCoarsestSampling)
       return sampleBlockStructuredAtCoarsest(*this, P);
     return sampleBlockStructuredAt(*this, P);
   }
@@ -79,7 +79,7 @@ namespace BARNEY_NS {
   inline __rtc_device vec3f
   amrSampleGrad(const BlockStructuredCuBQLSampler::DD &dd, vec3f P)
   {
-    if (dd.useCoarsestForIso)
+    if (dd.useCoarsestSampling)
       return sampleBlockStructuredGradCoarsest(dd, P);
     return sampleBlockStructuredGrad(dd, P);
   }

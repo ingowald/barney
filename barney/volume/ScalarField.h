@@ -56,6 +56,9 @@ namespace BARNEY_NS {
     virtual MCGrid::SP getIsoMCs()
     { return getMCs(); }
 
+    virtual MCGrid::SP getVolumeMCs()
+    { return getMCs(); }
+
     /*! create, fill, and return a macrocell grid for this field */
     virtual MCGrid::SP buildMCs();
 

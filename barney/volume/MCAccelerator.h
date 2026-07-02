@@ -166,7 +166,7 @@ namespace BARNEY_NS {
   void MCVolumeAccel<SFSampler>::build(bool full_rebuild) 
   {
     if (!majorantsGrid) {
-      auto mcGrid = volume->sf->getMCs();
+      auto mcGrid = volume->sf->getVolumeMCs();
       majorantsGrid = std::make_shared<MajorantsGrid>(mcGrid);
     }
 #if BARNEY_USE_MULTI_SCATTERING

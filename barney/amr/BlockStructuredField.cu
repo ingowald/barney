@@ -131,6 +131,11 @@ namespace BARNEY_NS {
     return mcIsoGrid;
   }
 
+  MCGrid::SP BlockStructuredField::getVolumeMCs()
+  {
+    return getIsoMCs();
+  }
+
   MCGrid::SP BlockStructuredField::buildIsoMCs()
   {
     if (mcIsoGrid) return mcIsoGrid;
@@ -244,6 +249,7 @@ namespace BARNEY_NS {
   {
     auto sampler
       = std::make_shared<BlockStructuredCuBQLSampler>(this);
+    sampler->useCoarsestSampling = true;
     return std::make_shared<MCVolumeAccel<BlockStructuredCuBQLSampler>>
       (volume,
        createGeomType_BlockStructuredMC,
@@ -254,7 +260,7 @@ namespace BARNEY_NS {
   {
     auto sampler
       = std::make_shared<BlockStructuredCuBQLSampler>(this);
-    sampler->useCoarsestForIso = true;
+    sampler->useCoarsestSampling = true;
     return std::make_shared<MCIsoSurfaceAccel<BlockStructuredCuBQLSampler>>
       (isoSurface,
        createGeomType_BlockStructuredMC_Iso,

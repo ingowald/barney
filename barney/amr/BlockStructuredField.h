@@ -67,6 +67,7 @@ namespace BARNEY_NS {
     MCGrid::SP buildMCs() override;
     MCGrid::SP buildIsoMCs();
     MCGrid::SP getIsoMCs() override;
+    MCGrid::SP getVolumeMCs() override;
     
     MCGrid::SP mcIsoGrid;
     
