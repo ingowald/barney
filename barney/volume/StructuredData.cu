@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/Context.h"
 #include "barney/volume/StructuredData.h"
 #include "barney/common/Texture.h"
-#include "rtcore/ComputeInterface.h"
+#include "barney_rtc.h"
 
 namespace BARNEY_NS {
 

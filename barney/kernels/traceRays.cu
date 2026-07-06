@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/render/OptixGlobals.h"
 #include "barney/Context.h"
@@ -9,7 +9,7 @@
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
 #include "barney/render/RayQueue.h"
-#include "rtcore/ComputeInterface.h"
+#include "barney_rtc.h"
 
 namespace BARNEY_NS {
 
@@ -17,8 +17,6 @@ namespace BARNEY_NS {
                                  uint32_t rngSeed,
                                  bool needHitIDs)
   {
-    double t0 = getCurrentTime();
-    
     // ------------------------------------------------------------------
     // launch all in parallel ...
     // ------------------------------------------------------------------

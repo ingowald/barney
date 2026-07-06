@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __CUDACC__
 __global__ void dummyKernel()
 {
   /* nothing */
@@ -18,3 +19,4 @@ extern "C" void dummy_anari()
 {
   dummyKernel<<<32, 32>>>();
 }
+#endif

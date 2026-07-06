@@ -8,28 +8,11 @@
 # configuration.
 # ------------------------------------------------------------------
 
-check_language(CUDA)
-if (NOT CMAKE_CUDA_COMPILER)
-  set(BARNEY_HAVE_CUDA OFF)
-  set(CMAKE_CUDA_ARCHITECTURES)
-  message(AUTHOR_WARNING "#barney: no CUDA compiler found; disabling cuda/optix backend")
-  return()
-endif()
-
-enable_language(CUDA)
-set(BARNEY_HAVE_CUDA ON)
-
 if (WIN32)
   set(BARNEY_CUDA_ARCHITECTURES_INIT "all-major")
 else()
   set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
 endif()
-
-set(CMAKE_CUDA_ARCHITECTURES
-  "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
-  "Which CUDA architecture to build for")
-
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
 
 
 
@@ -74,16 +57,19 @@ macro(rtc_build_device_sources libname)
   rtc_library_properties(${libname})
 endmacro()
 
-macro(rtc_configure_source)
-  foreach(src ${ARGN})
-    get_filename_component(ext "${src}" EXT)
-    if (ext STREQUAL ".cu")
-      set_source_files_properties(${src} PROPERTIES
-        LANGUAGE CUDA
-      )
-    endif()
-  endforeach()
-endmacro()
+# macro(rtc_configure_source)
+#   foreach(src ${ARGN})
+#     get_filename_component(ext "${src}" EXT)
+#       message("rtc_config_source ${src} -? ${ext}")
+#     if ((${ext} STREQUAL ".cu") OR (${ext} STREQUAL ".dev.cu"))
+#       message("rtc_config_source FOUND ${src}")
+#       set_source_files_properties(${src} PROPERTIES
+#         LANGUAGE ${BARNEY_DEVICE_LANGUAGE}
+#         COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+#       )
+#     endif()
+#   endforeach()
+# endmacro()
 
 
 #add_subdirectory(../submodules/cuBQL buildDir_cuBQL EXCLUDE_FROM_ALL)

@@ -11,7 +11,7 @@
 #include "barney/common/math.h"
 #include <stack>
 #if RTC_DEVICE_CODE
-# include "rtcore/ComputeInterface.h"
+#include "barney_rtc.h"
 #endif
 
 namespace BARNEY_NS {

@@ -1,17 +1,11 @@
-// SPDX-FileCopyrightText:
-// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier:
-// Apache-2.0
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include "barney/common/barney-common.h"
 #include "cuBQL/bvh.h"
-#if BARNEY_CUBQL_HOST
-# include "cuBQL/builder/cpu.h"
-#else
-# include "cuBQL/builder/cuda.h"
-#endif
 #include "cuBQL/traversal/shrinkingRadiusQuery.h"
 
 namespace BARNEY_NS {

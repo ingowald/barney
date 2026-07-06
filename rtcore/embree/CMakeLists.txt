@@ -10,6 +10,12 @@ else()
   set(COMPILE_FOR_ARM OFF)
 endif()
 
+find_package(embree 4.4.0)
+if (embree_FOUND)
+  message("found embree ... version ${EMBREE_VERSION}")
+else()
+
+set(EMBREE_GEOMETRY_CURVE OFF)
 option(EMBREE_GEOMETRY_CURVE          "" OFF)
 option(EMBREE_GEOMETRY_GRID           "" OFF)
 option(EMBREE_GEOMETRY_INSTANCE       "" ON)
@@ -70,6 +76,7 @@ elseif(COMPILE_FOR_ARM)
     -flax-vector-conversions -fsigned-char
   )
 endif()
+endif()
 
 add_library(barney_rtc_embree STATIC
   Float16.cpp
@@ -86,11 +93,23 @@ add_library(barney_rtc_embree STATIC
 )
 target_compile_definitions(barney_rtc_embree PUBLIC
   -DBARNEY_NS=${BARNEY_PROJECT_NAME}_${backend}
+  -DBARNEY_RTC_EMBREE=1
 )
-target_link_libraries(barney_rtc_embree PUBLIC
-  embree_local
-  barney_config
-)
+if (embree_FOUND)
+  target_compile_definitions(barney_rtc_embree PUBLIC
+    -DBARNEY_EXTERNAL_EMBREE=1
+  )
+  target_link_libraries(barney_rtc_embree PUBLIC
+    embree
+    barney_config
+  )
+else()
+  target_link_libraries(barney_rtc_embree PUBLIC
+    embree_local
+    barney_config
+  )
+endif()
+
 target_include_directories(barney_rtc_embree PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}
 )
@@ -102,14 +121,14 @@ target_link_libraries(barney_rtc_embree PUBLIC
   $<BUILD_INTERFACE:cuBQL_cpu_float3_static>
 )
 
-macro(rtc_configure_source)
-  foreach(src ${ARGN})
-    get_filename_component(ext "${src}" EXT)
-    if (ext STREQUAL ".cu")
-      set_source_files_properties(${src} PROPERTIES
-        LANGUAGE CXX
-      )
-    endif()
-  endforeach()
-endmacro()
+# macro(rtc_configure_source)
+#   foreach(src ${ARGN})
+#     get_filename_component(ext "${src}" EXT)
+#     if (ext STREQUAL ".cu")
+#       set_source_files_properties(${src} PROPERTIES
+#         LANGUAGE CXX
+#       )
+#     endif()
+#   endforeach()
+# endmacro()
 

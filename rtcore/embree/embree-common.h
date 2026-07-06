@@ -13,7 +13,11 @@
 namespace BARNEY_NS {
   namespace rtc {
 
+#if BARNEY_EXTERNAL_EMBREE
+    // using namespace embree;
+#else
     using namespace embree_for_barney;
+#endif
     using namespace owl::common;    
     
     // ------------------------------------------------------------------

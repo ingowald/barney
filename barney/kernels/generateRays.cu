@@ -1,8 +1,6 @@
-// SPDX-FileCopyrightText:
-// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier:
-// Apache-2.0
-
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #ifdef __CUDACC__
 # define OWL_DISABLE_TBB
@@ -14,7 +12,7 @@
 #include "barney/Camera.h"
 #include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
-#include "rtcore/ComputeInterface.h"
+#include "barney_rtc.h"
 
 namespace BARNEY_NS {
   namespace render {

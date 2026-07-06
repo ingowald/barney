@@ -11,24 +11,9 @@ option(BARNEY_USE_HIP        "Use HIP instead of CUDA"     OFF)
 option(BARNEY_BACKEND_CUDA   "Build (native) CUDA Backend" OFF)
 option(BARNEY_BACKEND_OPTIX  "Build OptiX Backend"         ON)
 option(BARNEY_BACKEND_EMBREE "Build Embree/CPU Backend"    OFF)
-option(BARNEY_BACKEND_HIP    "Build HIP Backend"           OFF)
+option(BARNEY_BACKEND_HIP    "Build HIP Backend"           ON)
 option(BARNEY_BACKEND_HIPRT  "Build HIPRT Backend"         OFF)
 option(BARNEY_MPI            "Enable MPI Support"          OFF)
-
-# currently we wan't build both hip and cuda at the same time (mostly
-# due to this meaning we'd have to build two different versions of
-# cuBQL within the same cmake build dir), so let's disable the
-# respective backends based on whether hip is or isn't enabled
-mark_as_advanced(BARNEY_USE_HIP)
-if (BARNEY_USE_HIP)
-  set(CUBQL_USE_HIP ON)
-  set(BARNEY_BACKEND_OPTIX OFF)
-  set(BARNEY_BACKEND_CUDA OFF)
-else()
-  set(CUBQL_USE_HIP OFF)
-  set(BARNEY_BACKEND_HIP OFF)
-  set(BARNEY_BACKEND_HIPRT OFF)
-endif()
 
 # ------------------------------------------------------------------
 # cmake project/output config
@@ -93,6 +78,96 @@ option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries" OFF
 
 
 
+
+# ==================================================================
+# check if there's any compile language conflicts in the
+# backends. currently we can't build both hip and cuda at the same
+# time (mostly due to this meaning we'd have to build two different
+# versions of cuBQL within the same cmake build dir), so let's disable
+# the respective backends based on whether hip is or isn't enabled
+# ==================================================================
+mark_as_advanced(BARNEY_USE_HIP)
+if (BARNEY_USE_HIP)
+  set(CUBQL_USE_HIP ON)
+  set(BARNEY_BACKEND_OPTIX OFF)
+  set(BARNEY_BACKEND_CUDA  OFF)
+else()
+  set(CUBQL_USE_HIP OFF)
+  set(BARNEY_BACKEND_HIP   OFF)
+  set(BARNEY_BACKEND_HIPRT OFF)
+endif()
+
+# ==================================================================
+# configure language(s): in theory we support either cuda, hip, or
+# cxx, BUT a) hip or cuda might not acutally be installed even if the
+# user requested it (we need to check this, and disable selected
+# backends if that's the case; and b) for the cpu backend we have to
+# know whether cuda/hip are available or not (because if it is the
+# respective 'device' source files have to be tagged as CUDA, and if
+# not, as CXX.
+# ==================================================================
+
+if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
+  check_language(CUDA)
+  if (CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    set(BARNEY_HAVE_CUDA ON)
+    set(CMAKE_CUDA_ARCHITECTURES
+      "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
+      "Which CUDA architecture to build for")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr --extended-lambda")
+    set(BARNEY_DEVICE_LANGUAGE CUDA)
+  else()
+    set(BARNEY_HAVE_CUDA OFF)
+    set(BARNEY_DEVICE_LANGUAGE CXX)
+    set(BARNEY_BACKEND_OPTIX OFF)
+    set(BARNEY_BACKEND_CUDA OFF)
+  endif()
+endif()
+
+if (BARNEY_BACKEND_HIP OR BARNEY_BACKEND_HIPRT)
+  check_language(HIP)
+  if (CMAKE_HIP_COMPILER)
+    enable_language(HIP)
+    set(BARNEY_DEVICE_LANGUAGE HIP)
+    set(BARNEY_HAVE_HIP ON)
+  else()
+    set(BARNEY_HAVE_HIP OFF)
+    set(BARNEY_DEVICE_LANGUAGE CXX)
+    set(BARNEY_BACKEND_HIP OFF)
+    set(BARNEY_BACKEND_HIPRT OFF)
+  endif()
+endif()
+
+macro(rtc_configure_source)
+  foreach(src ${ARGN})
+    get_filename_component(ext "${src}" EXT)
+    if ((${ext} STREQUAL ".cu") OR (${ext} STREQUAL ".dev.cu"))
+      if (BARNEY_HAVE_CUDA)
+        set_source_files_properties(${src} PROPERTIES
+          LANGUAGE CUDA
+          COMPILE_OPTIONS "--expt-relaxed-constexpr;--extended-lambda;-rdc=true"
+        )
+      elseif (BARNEY_HAVE_HIP)
+        set_source_files_properties(${src} PROPERTIES
+          LANGUAGE HIP
+          COMPILE_OPTIONS "-fgpu-rdc"
+        )
+      else ()
+        set_source_files_properties(${src} PROPERTIES
+          LANGUAGE CXX
+          #COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+        )
+      endif()
+    endif()
+  endforeach()
+endmacro()
+
+
+
+
+
+
 # ==================================================================
 # external projects
 # ==================================================================
@@ -130,6 +205,14 @@ option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries" OFF
 # cubql
 # ------------------------------------------------------------------
 
+if (BARNEY_HAVE_CUDA)
+  # nothing to config, cuda is default
+elseif (BARNEY_HAVE_HIP)
+  set(CUBQL_USE_HIP ON)
+else()
+  set(CUBQL_DISABLE_CUDA ON)
+endif()
+  
 add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
 
 # ------------------------------------------------------------------
