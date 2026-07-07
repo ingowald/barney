@@ -31,6 +31,7 @@ namespace BARNEY_NS {
     DD dd;
     (BlockStructuredField::DD &)dd = field->getDD(device);
     dd.bvh = getPLD(device)->bvh;
+    dd.useCoarsestSampling = useCoarsestSampling ? 1 : 0;
     return dd;
   }
 

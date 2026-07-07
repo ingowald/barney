@@ -16,6 +16,7 @@
 
 #include "barney/amr/BlockStructuredCuBQLSampler.h"
 #include "barney/volume/DDA.h"
+#include "barney/volume/MCAccelerator.h"
 #include "rtcore/TraceInterface.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
@@ -52,11 +53,47 @@ namespace BARNEY_NS {
     { /* nothing to do */ }
   };
 
+  struct BlockStructuredMC_Iso_Programs {
+    static inline __rtc_device
+    void bounds(const rtc::TraceInterface &ti,
+                const void *geomData,
+                owl::common::box3f &bounds,
+                const int32_t primID)
+    {
+#if RTC_DEVICE_CODE
+      MCIsoSurfaceAccel<BlockStructuredCuBQLSampler>
+        ::boundsProg(ti,geomData,bounds,primID);
+#endif
+    }
+
+    static inline __rtc_device
+    void intersect(rtc::TraceInterface &ti)
+    {
+#if RTC_DEVICE_CODE
+      MCIsoSurfaceAccel<BlockStructuredCuBQLSampler>
+        ::isProg(ti);
+#endif
+    }
+
+    static inline __rtc_device
+    void closestHit(rtc::TraceInterface &ti)
+    { /* nothing to do */ }
+
+    static inline __rtc_device
+    void anyHit(rtc::TraceInterface &ti)
+    { /* nothing to do */ }
+  };
+
   using BlockStructuredMC = MCVolumeAccel<BlockStructuredCuBQLSampler>;
+  using BlockStructuredMC_Iso = MCIsoSurfaceAccel<BlockStructuredCuBQLSampler>;
 
   RTC_EXPORT_USER_GEOM(BlockStructuredMC,
                        BlockStructuredMC::DD,
                        BlockStructuredMC_Programs,
+                       false,false);
+  RTC_EXPORT_USER_GEOM(BlockStructuredMC_Iso,
+                       BlockStructuredMC_Iso::DD,
+                       BlockStructuredMC_Iso_Programs,
                        false,false);
 }
 

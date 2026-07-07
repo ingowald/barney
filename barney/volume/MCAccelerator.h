@@ -11,6 +11,7 @@
 #include "barney/volume/Volume.h"
 #include "barney/geometry/IsoSurface.h"
 #include "barney/volume/DDA.h"
+#include "barney/amr/BlockStructuredField.h"
 #include "barney/render/World.h"
 #include "barney/render/OptixGlobals.h"
 #include "barney/material/DeviceMaterial.h"
@@ -165,7 +166,7 @@ namespace BARNEY_NS {
   void MCVolumeAccel<SFSampler>::build(bool full_rebuild) 
   {
     if (!majorantsGrid) {
-      auto mcGrid = volume->sf->getMCs();
+      auto mcGrid = volume->sf->getVolumeMCs();
       majorantsGrid = std::make_shared<MajorantsGrid>(mcGrid);
     }
 #if BARNEY_USE_MULTI_SCATTERING
@@ -212,7 +213,7 @@ namespace BARNEY_NS {
   template<typename SFSampler>
   void MCIsoSurfaceAccel<SFSampler>::build() 
   {
-    mcGrid = isoSurface->sf->getMCs();
+    mcGrid = isoSurface->sf->getIsoMCs();
     sfSampler->build();
     
     for (auto device : *devices) {
@@ -398,6 +399,7 @@ namespace BARNEY_NS {
                                      ti.getPrimitiveIndex())));
 #endif
     
+    const float isoValue = self.isoSurface.isoValue;
     float tHit = ray.tMax;
     dda::dda3(dda_org,dda_dir,tRange.upper,
               vec3ui(self.mcGrid.dims),
@@ -427,7 +429,9 @@ namespace BARNEY_NS {
                     isoValue >= valueRange.lower &&
                     isoValue <= valueRange.upper;
                 };
-                if (!overlaps(self.isoSurface.isoValue))
+
+                if (!valueRange.empty()
+                    && !overlaps(self.isoSurface.isoValue))
                   return true;
 
                 auto intersect = [&](float isoValue)
@@ -441,7 +445,7 @@ namespace BARNEY_NS {
                 float tt1 = t0;
                 vec3f P = obj_org + tt1 * obj_dir;
                 ff1 = self.isoSurface.sfSampler.sample(P,dbg);
-                int numSteps = 10; 
+                int numSteps = 20;
                 for (int i=1;i<=numSteps;i++) {
                   float tt0 = tt1;
                   ff0 = ff1;
@@ -479,37 +483,37 @@ namespace BARNEY_NS {
     // ------------------------------------------------------------------
     const vec3f osP  = obj_org + tHit * obj_dir;
     vec3f P  = ti.transformPointFromObjectToWorldSpace(osP);
-#if 1
-    float delta
-      = length(bounds.size()) * .1f
-      / float(self.mcGrid.dims.x+self.mcGrid.dims.y+self.mcGrid.dims.z);
-    
-    float fP   = self.isoSurface.sfSampler.sample(osP);
-    float fPx0 = self.isoSurface.sfSampler.sample(osP+vec3f(-delta,0.f,0.f));
-    float fPx1 = self.isoSurface.sfSampler.sample(osP+vec3f(+delta,0.f,0.f));
-    float fPy0 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,-delta,0.f));
-    float fPy1 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,+delta,0.f));
-    float fPz0 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,0.f,-delta));
-    float fPz1 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,0.f,+delta));
-    float dx = 2.f;
-    float dy = 2.f;
-    float dz = 2.f;
-    if (isnan(fPx0)) { dx -= 1.f; fPx0 = fP; }
-    if (isnan(fPx1)) { dx -= 1.f; fPx1 = fP; }
-    if (isnan(fPy0)) { dy -= 1.f; fPy0 = fP; }
-    if (isnan(fPy1)) { dy -= 1.f; fPy1 = fP; }
-    if (isnan(fPz0)) { dz -= 1.f; fPz0 = fP; }
-    if (isnan(fPz1)) { dz -= 1.f; fPz1 = fP; }
-    vec3f osN(dx == 0.f ? 0.f : (fPx1-fPx0) / dx,
-              dy == 0.f ? 0.f : (fPy1-fPy0) / dy,
-              dz == 0.f ? 0.f : (fPz1-fPz0) / dz);
-    if (osN == vec3f(0.f))
+    vec3f osN = amrSampleGrad(self.isoSurface.sfSampler, osP);
+    if (length(osN) < 1e-6f) {
+      float delta
+        = length(bounds.size()) * .1f
+        / float(self.mcGrid.dims.x+self.mcGrid.dims.y+self.mcGrid.dims.z);
+      
+      float fP   = self.isoSurface.sfSampler.sample(osP);
+      float fPx0 = self.isoSurface.sfSampler.sample(osP+vec3f(-delta,0.f,0.f));
+      float fPx1 = self.isoSurface.sfSampler.sample(osP+vec3f(+delta,0.f,0.f));
+      float fPy0 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,-delta,0.f));
+      float fPy1 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,+delta,0.f));
+      float fPz0 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,0.f,-delta));
+      float fPz1 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,0.f,+delta));
+      float dx = 2.f;
+      float dy = 2.f;
+      float dz = 2.f;
+      if (isnan(fPx0)) { dx -= 1.f; fPx0 = fP; }
+      if (isnan(fPx1)) { dx -= 1.f; fPx1 = fP; }
+      if (isnan(fPy0)) { dy -= 1.f; fPy0 = fP; }
+      if (isnan(fPy1)) { dy -= 1.f; fPy1 = fP; }
+      if (isnan(fPz0)) { dz -= 1.f; fPz0 = fP; }
+      if (isnan(fPz1)) { dz -= 1.f; fPz1 = fP; }
+      osN = vec3f(dx == 0.f ? 0.f : (fPx1-fPx0) / dx,
+                  dy == 0.f ? 0.f : (fPy1-fPy0) / dy,
+                  dz == 0.f ? 0.f : (fPz1-fPz0) / dz);
+    }
+    if (length(osN) < 1e-6f)
       osN = -normalize(obj_dir);
+    else
+      osN = normalize(osN);
     vec3f n = ti.transformNormalFromObjectToWorldSpace(osN);
-#else
-    vec3f osN = - normalize(obj_dir);
-    vec3f n   = - normalize(obj_dir);
-#endif
     int primID    = ti.getPrimitiveIndex();
     int instID    = ti.getInstanceID();
     
