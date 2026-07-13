@@ -49,7 +49,7 @@ namespace BARNEY_NS {
 
   bool FrameBuffer::needHitIDs() const
   {
-    return channels & (BN_FB_PRIMID|BN_FB_INSTID|BN_FB_OBJID);
+    return channels & (BN_FB_PRIMID|BN_FB_INSTID|BN_FB_OBJID|BN_FB_MOTION);
   }
 
   bool FrameBuffer::set1i(const std::string &member, const int &value)
@@ -99,6 +99,10 @@ namespace BARNEY_NS {
     if (upscaledColorChannel) {
       device->rtc->freeMem(upscaledColorChannel);
       upscaledColorChannel = 0;
+    }
+    if (linearMotionChannel) {
+      device->rtc->freeMem(linearMotionChannel);
+      linearMotionChannel = 0;
     }
   }
 
@@ -185,6 +189,28 @@ namespace BARNEY_NS {
   void FrameBuffer::finalizeTiles()
   {}
 
+  void FrameBuffer::resetAccumulation()
+  {
+    accumID = 0;
+    for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+      auto pld = getPLD(device);
+      if (!pld || !pld->tiledFB) continue;
+      auto &tfb = *pld->tiledFB;
+      if (tfb.auxTiles.motion) {
+        device->rtc->memsetAsync(tfb.auxTiles.motion, 0,
+                                 size_t(tfb.numActiveTilesThisGPU)
+                                 * sizeof(MotionChannelTile));
+      }
+      if (tfb.appAuxTiles.motion && tfb.appDevice) {
+        SetActiveGPU forDurationApp(tfb.appDevice);
+        tfb.appDevice->rtc->memsetAsync(tfb.appAuxTiles.motion, 0,
+                                        size_t(tfb.numActiveTilesThisGPU)
+                                        * sizeof(MotionChannelTile));
+      }
+    }
+  }
+
   void FrameBuffer::finalizeFrame()
   {
     Device *device = getDenoiserDevice();
@@ -231,6 +257,8 @@ namespace BARNEY_NS {
       gatherAuxChannel(BN_FB_OBJID);
     if (channels & BN_FB_INSTID)
       gatherAuxChannel(BN_FB_INSTID);
+    if (channels & BN_FB_MOTION)
+      gatherMotionChannel();
   }
 
   /*! gather color (and normal, if required for denoising),
@@ -380,6 +408,13 @@ namespace BARNEY_NS {
       return;
     }
 
+    if (channel == BN_FB_MOTION && linearMotionChannel) {
+      writeMotionChannel(linearMotionChannel);
+      device->rtc->copy(appMemory,linearMotionChannel,
+                        numPixels.x*numPixels.y*sizeof(vec2f));
+      return;
+    }
+
     throw std::runtime_error("un-handled frame buffer channel/format combination "
                              +to_string(channel)
                              +" "+to_string(requestedFormat));
@@ -428,6 +463,8 @@ namespace BARNEY_NS {
       linearAuxChannel   = rtc->allocMem(dpNP * sizeof(uint32_t));
       if (channels & BN_FB_NORMAL)
         linearNormalChannel = rtc->allocMem(dpNP * sizeof(vec3f));
+      if (channels & BN_FB_MOTION)
+        linearMotionChannel = rtc->allocMem(dpNP * sizeof(vec2f));
 
       // when upscaling, we need render-resolution staging buffers
       // for aux/normal (tile linearization writes at render res,

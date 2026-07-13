@@ -33,6 +33,7 @@ namespace barney_device {
 
     void buildBarneyModel();
     void uploadInstanceAttributes(const InstanceAttributes &attributes);
+    void uploadMotionDeltas();
     void fullRebuild();
     void transformOnlyUpdate();
 

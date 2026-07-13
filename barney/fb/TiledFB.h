@@ -16,18 +16,22 @@ namespace BARNEY_NS {
   struct AuxChannelTile {
     union { uint32_t ui[pixelsPerTile]; float f[pixelsPerTile]; };
   };
-  
-  
+
+  struct MotionChannelTile {
+    vec2f mv[pixelsPerTile];
+  };
+
   struct AccumTile {
     vec4f  accum[pixelsPerTile];
     vec3f  normal[pixelsPerTile];
   };
 
   struct AuxTiles {
-    AuxChannelTile *depth  = 0;
-    AuxChannelTile *primID = 0;
-    AuxChannelTile *instID = 0;
-    AuxChannelTile *objID  = 0;
+    AuxChannelTile    *depth  = 0;
+    AuxChannelTile    *primID = 0;
+    AuxChannelTile    *instID = 0;
+    AuxChannelTile    *objID  = 0;
+    MotionChannelTile *motion = 0;
   };
 
   /*! describes the lower-left corner of each logical tile */
@@ -81,6 +85,15 @@ namespace BARNEY_NS {
                                   AuxChannelTile *tilesIn,
                                   TileDesc       *descsIn,
                                   int numTiles);
+
+    /*! motion-channel equivalent of linearizeAuxTiles - unpacks
+        tiled vec2f motion vectors into a linear vec2f array */
+    static void linearizeMotionTiles(Device *device,
+                                     void *linearOut,
+                                     vec2i numPixels,
+                                     MotionChannelTile *tilesIn,
+                                     TileDesc          *descsIn,
+                                     int numTiles);
 
     /*! linearize _this gpu's_ channels */
     void linearizeAuxChannel(void *linearChannel,

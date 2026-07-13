@@ -247,6 +247,7 @@ namespace barney_device {
       bnRelease(bg);
 
     uploadInstanceAttributes(attributes);
+    uploadMotionDeltas();
     bnBuild(barneyModel, slot);
   }
 
@@ -285,6 +286,35 @@ namespace barney_device {
     bnUpdateInstanceTransforms(barneyModel, slot,
                                barneyTransforms.data(),
                                (int)barneyTransforms.size());
+    uploadMotionDeltas();
+  }
+
+  void World::uploadMotionDeltas()
+  {
+    bool anyMotion = false;
+    for (auto inst : m_instances) {
+      if (inst && inst->group() && inst->hasMotionTransform()) {
+        anyMotion = true;
+        break;
+      }
+    }
+    auto barneyModel = tetheredModel->model;
+    int  slot        = deviceState()->slot;
+    if (!anyMotion) {
+      bnSetInstanceMotionDeltas(barneyModel, slot, nullptr, 0);
+      return;
+    }
+    std::vector<BNTransform> deltas;
+    deltas.reserve(m_instances.size());
+    for (auto inst : m_instances) {
+      if (!inst || !inst->group()) continue;
+      BNTransform bt;
+      inst->writeMotionDelta(&bt);
+      deltas.push_back(bt);
+    }
+    bnSetInstanceMotionDeltas(barneyModel, slot,
+                              deltas.data(),
+                              (int)deltas.size());
   }
 
 } // namespace barney_device

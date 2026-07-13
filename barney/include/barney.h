@@ -99,6 +99,7 @@ typedef enum {
   BN_FB_INSTID = (1<<3),
   BN_FB_OBJID  = (1<<4),
   BN_FB_NORMAL = (1<<5),
+  BN_FB_MOTION = (1<<6),
 } BNFrameBufferChannel;
 
 typedef enum {
@@ -406,6 +407,19 @@ void bnSetInstanceAttributes(BNModel model,
                              int whichSlot,
                              const char *attributeName,
                              BNData data);
+
+/*! Set per-instance motion delta transforms for use by BN_FB_MOTION.
+    Each delta is prev_transform * inverse(curr_transform), i.e. the
+    world-space transform that maps a current-frame world point back to
+    where that same object-local point was in the previous frame. The
+    number of deltas must match the number of instances previously set
+    via bnSetInstances. If never called, or if a null pointer is passed,
+    no motion output is produced regardless of BN_FB_MOTION request. */
+BARNEY_API
+void bnSetInstanceMotionDeltas(BNModel model,
+                               int whichSlot,
+                               BNTransform *motionDeltas,
+                               int numInstances);
 
 // ==================================================================
 // scene content

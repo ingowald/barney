@@ -4,12 +4,42 @@
 
 #include "barney/Camera.h"
 #include "barney/Context.h"
+#include <cstring>
 
 namespace BARNEY_NS {
 
   Camera::Camera(Context *owner)
     : barney_api::Camera(owner)
   {}
+
+  bool Camera::set1i(const std::string &member, const int &value)
+  {
+    if (member == "motion.enabled") {
+      motionEnabled = (value != 0);
+      return true;
+    }
+    return false;
+  }
+
+  bool Camera::set4x4f(const std::string &member, const vec4f *value)
+  {
+    if (member == "motion.viewProjection") {
+      std::memcpy(motionCurrViewProj, value, 16 * sizeof(float));
+      return true;
+    }
+    if (member == "motion.previousViewProjection") {
+      std::memcpy(motionPrevViewProj, value, 16 * sizeof(float));
+      return true;
+    }
+    return false;
+  }
+
+  void Camera::commitMotionFields()
+  {
+    dd.haveMotionMatrices = motionEnabled;
+    std::memcpy(dd.currViewProj, motionCurrViewProj, 16 * sizeof(float));
+    std::memcpy(dd.prevViewProj, motionPrevViewProj, 16 * sizeof(float));
+  }
 
   // ##################################################################
 
@@ -97,6 +127,7 @@ namespace BARNEY_NS {
     dd.perspective.lens_00 = from;
     dd.perspective.focusDistance = focusDistance;
     dd.perspective.apertureRadius = apertureRadius;
+    commitMotionFields();
   }
     
 
@@ -182,6 +213,7 @@ namespace BARNEY_NS {
     dd.orthographic.org_dv  = dir_dv;
     dd.orthographic.height  = height;
     dd.orthographic.aspect  = aspect;
+    commitMotionFields();
   }
     
 
@@ -250,6 +282,7 @@ namespace BARNEY_NS {
     dd.type = Camera::OMNIDIRECTIONAL;
     dd.omni.toWorld.l = toWorld;
     dd.omni.toWorld.p = position;
+    commitMotionFields();
   }
     
 

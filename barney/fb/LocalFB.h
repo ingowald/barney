@@ -48,6 +48,7 @@ namespace BARNEY_NS {
     void gatherAuxChannel(BNFrameBufferChannel channel) override;
     void writeAuxChannel(void *stagingArea,
                           BNFrameBufferChannel channel) override;
+    void writeMotionChannel(void *stagingArea) override;
 
     struct {
       /*! _all_ tile descriptors across all GPUs - either all GPUs in

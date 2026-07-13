@@ -8,6 +8,7 @@
 #include "barney/render/DG.h"
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
+#include "barney/Camera.h"
 #include "barney/render/RayQueue.h"
 #include "rtcore/TraceInterface.h"
 #include "barney/barneyConfig.h"
@@ -881,6 +882,8 @@ namespace BARNEY_NS {
     __rtc_global void _shadeRays(const rtc::ComputeInterface &rt,
                                  World::DD world,
                                  Renderer::DD renderer,
+                                 Camera::DD camera,
+                                 vec2i fbSize,
                                  AccumTile *accumTiles,
                                  AuxTiles   auxTiles,
                                  int accumID,
@@ -1010,7 +1013,33 @@ namespace BARNEY_NS {
           auxTiles.objID[tileID] .ui[tileOfs] = readQueue.hitIDs[tid].objID;
         if (auxTiles.instID)
           auxTiles.instID[tileID].ui[tileOfs] = readQueue.hitIDs[tid].instID;
-        
+
+        if (auxTiles.motion && camera.haveMotionMatrices && incomingZ < 1e19f) {
+          const int instID = readQueue.hitIDs[tid].instID;
+          const vec3f world_hit  = ray.P;
+          const vec3f prev_world
+            = (world.motionDeltas
+               && instID >= 0
+               && instID < world.numMotionDeltas)
+              ? xfmPoint(world.motionDeltas[instID], world_hit)
+              : world_hit;
+
+          auto reproject = [](const float *m, vec3f p) {
+            const float x = m[0]*p.x + m[4]*p.y + m[ 8]*p.z + m[12];
+            const float y = m[1]*p.x + m[5]*p.y + m[ 9]*p.z + m[13];
+            const float w = m[3]*p.x + m[7]*p.y + m[11]*p.z + m[15];
+            const float invW = (w != 0.f) ? 1.f/w : 0.f;
+            return vec2f(x*invW, y*invW);
+          };
+          const vec2f curr_ndc = reproject(camera.currViewProj, world_hit);
+          const vec2f prev_ndc = reproject(camera.prevViewProj, prev_world);
+
+          const vec2f delta_ndc = 0.5f * (curr_ndc - prev_ndc);
+          auxTiles.motion[tileID].mv[tileOfs]
+            = vec2f(delta_ndc.x * (float)fbSize.x,
+                    delta_ndc.y * (float)fbSize.y);
+        }
+
       } else {
 #if 1
         if (generation == 0) {
@@ -1044,11 +1073,14 @@ namespace BARNEY_NS {
   
   void Context::shadeRaysLocally(Renderer *renderer,
                                  GlobalModel *model,
+                                 Camera *camera,
                                  FrameBuffer *fb,
                                  int generation,
                                  uint32_t rngSeed)
   {
     int slotIdx = 0;
+    const Camera::DD devCamera = camera->getDD();
+    const vec2i fbSize = fb->getNumPixels();
     for (auto slotModel : model->modelSlots) {
       World *world = slotModel->world.get();
       for (auto device : *world->devices) {
@@ -1083,6 +1115,8 @@ namespace BARNEY_NS {
                      nb,bs,
                      //args
                      devWorld,devRenderer,
+                     devCamera,
+                     fbSize,
                      devFB->accumTiles,
                      devFB->auxTiles,
                      (int)fb->accumID,

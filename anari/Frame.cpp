@@ -78,6 +78,8 @@ namespace barney_device {
       getParam<anari::DataType>("channel.objectId", ANARI_UNKNOWN);
     m_channelTypes.normal =
       getParam<anari::DataType>("channel.normal", ANARI_UNKNOWN);
+    m_channelTypes.motion =
+      getParam<anari::DataType>("channel.motion", ANARI_UNKNOWN);
     m_size = getParam<math::uint2>("size", math::uint2(10, 10));
     m_displaySize = m_size;  /* updated in finalize() from actual FB when slot==0 */
   }
@@ -119,6 +121,8 @@ namespace barney_device {
         requiredChannels |= BN_FB_INSTID;
       if (m_channelTypes.normal == ANARI_FLOAT32_VEC3)
         requiredChannels |= BN_FB_NORMAL;
+      if (m_channelTypes.motion == ANARI_FLOAT32_VEC2)
+        requiredChannels |= BN_FB_MOTION;
 
       if (m_bnFrameBuffer) {
         bnSet1i(m_bnFrameBuffer, "denoise", m_renderer->denoise() ? 1 : 0);
@@ -306,6 +310,16 @@ namespace barney_device {
       m_didMapChannel.normal = true;
       *pixelType = ANARI_FLOAT32_VEC3;
       return m_channelBuffers.normal;
+    } else if (channel == "channel.motion") {
+      if (m_channelBuffers.motion)
+        throw std::runtime_error
+          ("trying to map channel.motion, but seems already mapped");
+      m_channelBuffers.motion = new float[numPixels * 2];
+      bnFrameBufferRead(m_bnFrameBuffer, BN_FB_MOTION,
+                        m_channelBuffers.motion, BN_FLOAT32_VEC2);
+      m_didMapChannel.motion = true;
+      *pixelType = ANARI_FLOAT32_VEC2;
+      return m_channelBuffers.motion;
 #if BANARI_HAVE_CUDA
     } else if (channel == "channel.colorCUDA") {
       if (m_channelBuffers.color)
@@ -405,6 +419,10 @@ namespace barney_device {
       if (m_channelBuffers.normal)
         delete[] m_channelBuffers.normal;
       m_channelBuffers.normal = 0;
+    } else if (channel == "channel.motion" && m_channelBuffers.motion) {
+      if (m_channelBuffers.motion)
+        delete[] m_channelBuffers.motion;
+      m_channelBuffers.motion = 0;
     } else if (channel == "channel.colorCUDA") {
 #if BANARI_HAVE_CUDA
       if (m_channelBuffers.color)
@@ -485,6 +503,9 @@ namespace barney_device {
 
     delete[] m_channelBuffers.normal;
     m_channelBuffers.normal = nullptr;
+
+    delete[] m_channelBuffers.motion;
+    m_channelBuffers.motion = nullptr;
   }
 
 } // namespace barney_device

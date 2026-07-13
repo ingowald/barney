@@ -35,6 +35,16 @@ namespace barney_device {
         pointer */
     void writeTransform(BNTransform *out) const;
 
+    /*! world-space motion delta = prev_transform * inverse(curr_transform).
+        Returns identity if no motion.transform param was set (i.e. object
+        is stationary). Written into the BNTransform out param in the same
+        4x3 layout writeTransform() uses. */
+    void writeMotionDelta(BNTransform *out) const;
+
+    /*! true iff the app supplied a motion.transform param on this
+        instance (not just left it at the default of curr==prev). */
+    bool hasMotionTransform() const { return m_hasPrevTransform; }
+
     box3 bounds() const;
 
     /*! attributes for that instance, if specified. if not specifies
@@ -42,7 +52,9 @@ namespace barney_device {
     Attributes *attributes = 0;
     int m_id = ~0;
   private:
-    math::mat4 m_transform;
+    math::mat4  m_transform;
+    math::mat4  m_prevTransform;
+    bool        m_hasPrevTransform = false;
     helium::IntrusivePtr<Group> m_group;
     const Group *m_previousGroup = nullptr;
   };

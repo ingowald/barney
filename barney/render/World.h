@@ -33,7 +33,9 @@ namespace BARNEY_NS {
         int                  numPointLights  = 0;
         const PointLight::DD  *pointLights     = nullptr;
         int                 *instIDToUserInstID = 0;
-        
+        const affine3f      *motionDeltas       = nullptr;
+        int                  numMotionDeltas    = 0;
+
         const DeviceMaterial *materials;
         const Sampler::DD    *samplers;
         const rtc::float4    *instanceAttributes[5];
@@ -53,7 +55,8 @@ namespace BARNEY_NS {
       void set(const std::vector<DirLight::DD> &dirLights);
       void set(const std::vector<PointLight::DD> &pointLights);
       void set(EnvMapLight::SP envMapLight, const affine3f &xfm);
-      
+      void setMotionDeltas(const std::vector<affine3f> &deltas);
+
       PODData::SP instanceAttributes[5];
       PODData::SP instanceUserIDs;
       
@@ -67,6 +70,8 @@ namespace BARNEY_NS {
         int numDirLights = 0;
         PointLight::DD *pointLights = 0;
         int numPointLights = 0;
+        affine3f *motionDeltas = 0;
+        int numMotionDeltas = 0;
       };
       PLD *getPLD(Device *device);
       
