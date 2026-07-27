@@ -8,13 +8,13 @@
 
 namespace BARNEY_NS {
   namespace rtc {
-    
-    struct Device;
+
+    struct CudaDeviceBase;
     struct Texture;
     
-    struct TextureData// : public rtc::TextureData
+    struct TextureData
     {
-      TextureData(Device *device,
+      TextureData(CudaDeviceBase *device,
                   vec3i dims,
                   rtc::DataType format,
                   const void *texels);
@@ -23,11 +23,11 @@ namespace BARNEY_NS {
       Texture *
       createTexture(const rtc::TextureDesc &desc);
       
-      cudaArray_t array;
-      cudaTextureReadMode readMode;
-      const vec3i dims;
-      const DataType format;
-      Device *const device;
+      cudaArray_t           array;
+      cudaTextureReadMode   readMode;
+      const vec3i           dims;
+      const DataType        format;
+      CudaDeviceBase *const device;
     };
     
   }

@@ -5,8 +5,10 @@
 # "backend" variable gets set by parent dir, and is one of either
 # 'cpu', 'cuda', 'optix', 'hip' or 'hiprt'
 
-message("building barney w/ backend '${backend}'")
-include(../rtcore/${backend}.cmake)
+#message("building barney w/ backend '${backend}'")
+
+
+#include(../rtcore/${backend}.cmake)
 
 if (NOT (TARGET barney_rtc_${backend}))
   # we have no rtcore config for this backend - either because it was
@@ -17,33 +19,29 @@ if (NOT (TARGET barney_rtc_${backend}))
 endif()
 
 
-set(BARNEY_DEVICE_NAME ${BARNEY_PROJECT_NAME}_${backend})
+#target_link_libraries(barney_config_${backend} INTERFACE barney_rtc_${backend})
 
-add_library(barney_config_${backend} INTERFACE)
-target_link_libraries(barney_config_${backend} INTERFACE barney_rtc_${backend})
-target_compile_definitions(barney_rtc_${backend} INTERFACE -DBARNEY_NS=${BARNEY_PROJECT_NAME}_${backend})
-
-if(MSVC) # That's also clang-cl
+#if(MSVC) # That's also clang-cl
   # /bigobj is needed for bigger binding projects due to the limit to 64k
   # addressable sections
-  set_property(
-    TARGET barney_config_${backend}
-    APPEND
-    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
-endif()
+#  set_property(
+#    TARGET barney_config_${backend}
+#    APPEND
+#    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+#endif()
 
-target_include_directories(barney_config_${backend} INTERFACE
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/nanovdb/include/>
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
-)
-if (WIN32)
-  target_compile_definitions(barney_config_${backend} INTERFACE -DNOMINMAX)
-  target_compile_options(barney_config_${backend} INTERFACE
-    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
-  )
-endif()
+#target_include_directories(barney_config_${backend} INTERFACE
+#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
+#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/nanovdb/include/>
+#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
+#)
+#if (WIN32)
+#  target_compile_definitions(barney_config_${backend} INTERFACE -DNOMINMAX)
+#  target_compile_options(barney_config_${backend} INTERFACE
+#    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
+#  )
+#endif()
 
 
 #############################################################################
@@ -66,6 +64,8 @@ set(HOST_SOURCES
   LocalContext.cpp
   Object.h
   Object.cpp
+  FromEnv.h
+  FromEnv.cpp
   Camera.h
   Camera.cu
   
@@ -183,6 +183,24 @@ set(HOST_SOURCES
   globalTrace/RQSBase.cpp
   globalTrace/RQSLocal.h
   globalTrace/RQSLocal.cu
+
+  api/barney.cu
+)
+
+# all the source that eventually go into barney_mpi
+set(MPI_SOURCES
+  fb/DistFB.h
+  fb/DistFB.cu
+  MPIContext.h
+  MPIContext.cpp
+  globalTrace/RQSMPI.h
+  globalTrace/RQSMPI.cu
+  globalTrace/TwoStage.h
+  globalTrace/TwoStage.cu
+  globalTrace/All2all.h
+  globalTrace/All2all.cu
+  common/MPIWrappers.h
+  common/MPIWrappers.cpp
 )
 
 # all the source that eventually go into barney_mpi
@@ -212,7 +230,6 @@ set(DEVICE_PROGRAM_SOURCES
   umesh/mc/UMeshMC.dev.cu
   amr/BlockStructuredMC.dev.cu
   kernels/traceRays.dev.cu
-  api/barney.cu
 )
 
 # this will build a static library 'barney_device_programs' that
@@ -222,21 +239,22 @@ rtc_build_device_sources(barney_${backend}_programs
   ${DEVICE_PROGRAM_SOURCES}
 )
 
-foreach(src ${HOST_SOURCES} ${DEVICE_PROGRAM_SOURCES})
+foreach(src ${HOST_SOURCES} ${MPI_SOURCES} ${DEVICE_PROGRAM_SOURCES})
   rtc_configure_source(${src})
 endforeach()
-    
+
 # ------------------------------------------------------------------
 # barney_static
 # ------------------------------------------------------------------
-add_library(${BARNEY_DEVICE_NAME} STATIC
+add_library(${BARNEY_DEVICE_NAME}_static STATIC
   ${HOST_SOURCES}
 )
-target_link_libraries(${BARNEY_DEVICE_NAME} PUBLIC
+target_link_libraries(${BARNEY_DEVICE_NAME}_static PUBLIC
+  barney_rtc_${backend}  
   $<BUILD_INTERFACE:barney_${backend}_programs>
   $<BUILD_INTERFACE:barney_config_${backend}>
 )
-rtc_library_properties(${BARNEY_DEVICE_NAME})
+rtc_library_properties(${BARNEY_DEVICE_NAME}_static)
 
 # =============================================================================
 # create frontends for barney_mpi and barney_mpi_static
@@ -245,19 +263,21 @@ if (BARNEY_MPI)
   # ------------------------------------------------------------------
   # barney_mpi
   # ------------------------------------------------------------------
-  add_library(${BARNEY_DEVICE_NAME}_mpi STATIC
-    ${HOST_SOURCES} ${MPI_SOURCES}
+  add_library(${BARNEY_DEVICE_NAME}_mpi_static STATIC
+    #${HOST_SOURCES}
+    ${MPI_SOURCES}
   )
-  target_link_libraries(${BARNEY_DEVICE_NAME}_mpi PUBLIC
-    $<BUILD_INTERFACE:barney_${backend}_programs>
-    $<BUILD_INTERFACE:barney_config_${backend}>
+  target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
+    ${BARNEY_DEVICE_NAME}
+#    $<BUILD_INTERFACE:barney_${backend}_programs>
+#    $<BUILD_INTERFACE:barney_config_${backend}>
   )
-  rtc_library_properties(${BARNEY_DEVICE_NAME}_mpi) 
-  target_compile_definitions(${BARNEY_DEVICE_NAME}_mpi PRIVATE
-    -Dbarney_mpi_STATIC=1
-    -DBARNEY_MPI=1
-  )
+  rtc_library_properties(${BARNEY_DEVICE_NAME}_mpi_static) 
+#  target_compile_definitions(${BARNEY_DEVICE_NAME}_mpi PRIVATE
+#    -Dbarney_mpi_STATIC=1
+#    -DBARNEY_MPI=1
+#  )
 endif()
 
 
-add_subdirectory(../anari  build_banari_${backend})
+#add_subdirectory(../anari  build_banari_${backend})

@@ -228,7 +228,8 @@ namespace BANARI_NS {
                              gridHandle.data());
     assert(bd);
     assert(sf);
-    bnSetAndRelease(sf,"data",bd);
+    bnSetData(sf,"data",bd);
+    bnRelease(bd);
     bnCommit(sf);
   }
 

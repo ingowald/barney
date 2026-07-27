@@ -10,8 +10,6 @@
 namespace BARNEY_NS {
   namespace rtc {
 
-    using namespace rtc::cuda_common;
-
 #ifdef BARNEY_DEVICE_PROGRAM
     inline __device__
     const void *getLaunchParamsPointer();

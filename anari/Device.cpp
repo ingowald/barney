@@ -2,13 +2,13 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "Device.h"
-#if BARNEY_MPI
-#include <mpi.h>
-#endif
+#include "anari/Device.h"
+// #if BARNEY_MPI
+// #include <mpi.h>
+// #endif
 
-#include "Array.h"
-#include "Frame.h"
+#include "anari/Array.h"
+#include "anari/Frame.h"
 // std
 #include <cstring>
 
@@ -245,50 +245,51 @@ namespace BANARI_NS {
   BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
     : helium::BaseDevice(l), deviceType(subType)
   {
-    std::vector<std::string> subTypeFlags = splitString(subType, ',');
-    for (auto flag : subTypeFlags) {
-      if (flag == "cpu") {
-        m_cudaDevice = -1;
-        continue;
-      }
-      if (flag == "default") {
-#if BARNEY_MPI
-        comm = MPI_COMM_WORLD;
-#endif
-        continue;
-      }
-#if BARNEY_MPI
-      if (flag == "local") {
-        comm = 0;
-        continue;
-      }
-      if (flag == "mpi") {
-        comm = MPI_COMM_WORLD;
-        continue;
-      }
-#endif
-      std::cout << "un-recognized feature '" << flag << "' on device subtype"
-                << std::endl;
-    }
+//     std::vector<std::string> subTypeFlags = splitString(subType, ',');
+//     for (auto flag : subTypeFlags) {
+//       if (flag == "cpu") {
+//         m_cudaDevice = -1;
+//         continue;
+//       }
+//       if (flag == "default") {
+// #if BARNEY_MPI
+//         comm = MPI_COMM_WORLD;
+// #endif
+//         continue;
+//       }
+// #if BARNEY_MPI
+//       if (flag == "local") {
+//         comm = 0;
+//         continue;
+//       }
+//       if (flag == "mpi") {
+//         comm = MPI_COMM_WORLD;
+//         continue;
+//       }
+// #endif
+//       std::cout << "un-recognized feature '" << flag << "' on device subtype"
+//                 << std::endl;
+    // }
 
-#if BARNEY_MPI
-    if (comm) {
-      int initialized = false;
-      MPI_Initialized(&initialized);
-      if (!initialized) {
-        std::cout << "#barney: anari_barney device created in MPI mode (loaded from barney_mpi device in either mpi or default mode), but MPI not yet initialized. Doing so now, but this is not how it should be."
-                  << std::endl;
-        int required = MPI_THREAD_MULTIPLE;
-        int provided = 0;
-        MPI_Init_thread(nullptr,nullptr,required,&provided);
-      }
-    }
-#endif
+// #if BARNEY_MPI
+//     if (comm) {
+//       int initialized = false;
+//       MPI_Initialized(&initialized);
+//       if (!initialized) {
+//         std::cout << "#barney: anari_barney device created in MPI mode (loaded from barney_mpi device in either mpi or default mode), but MPI not yet initialized. Doing so now, but this is not how it should be."
+//                   << std::endl;
+//         int required = MPI_THREAD_MULTIPLE;
+//         int provided = 0;
+//         MPI_Init_thread(nullptr,nullptr,required,&provided);
+//       }
+//     }
+// #endif
     
     m_state = std::make_unique<BarneyGlobalState>(this_device());
   }
 
-  BarneyDevice::BarneyDevice() : helium::BaseDevice(default_statusFunc, nullptr)
+  BarneyDevice::BarneyDevice()
+    : helium::BaseDevice(default_statusFunc, nullptr)
   {
     m_state = std::make_unique<BarneyGlobalState>(this_device());
   }
@@ -301,10 +302,6 @@ namespace BANARI_NS {
     auto &state = *deviceState();
     state.commitBuffer.clear();
     reportMessage(ANARI_SEVERITY_DEBUG, "destroying barney device (%p)", this);
-#if BARNEY_MPI
-    if (commNeedsFree)
-      MPI_Comm_free(&comm);
-#endif
   }
 
   void BarneyDevice::initDevice()
@@ -316,106 +313,77 @@ namespace BANARI_NS {
 
     auto state = deviceState();
     
-    bool forceLocalRendering = false;
+    // bool forceLocalRendering = false;
 
-    try {
-      int rank = 0, size = 1;
-#if BARNEY_MPI
-      if (comm != 0) {
-        int mpiInitialized = 0;
-        MPI_Initialized(&mpiInitialized);
-        if (!mpiInitialized)
-          MPI_Init(nullptr, nullptr);
-        MPI_Comm_rank(comm, &rank);
-        MPI_Comm_size(comm, &size);
-      } else {
-        forceLocalRendering = true;
-        reportMessage
-          (ANARI_SEVERITY_DEBUG,
-           "app passed null communicator, falling back to local rendering");
-      }
-#endif
-
-      if (m_cudaDevice == -2)
-        reportMessage
-          (ANARI_SEVERITY_DEBUG, "cudaDevice not explicitly set, leaving which GPU(s) to use to barney", m_cudaDevice);
-      else if (m_cudaDevice == -1)
-        reportMessage
-          (ANARI_SEVERITY_DEBUG, "set cudaDevice explicitly set to -1 by user/app, this should force CPU rendering, ", m_cudaDevice);
-      else
-        reportMessage
-          (ANARI_SEVERITY_DEBUG, "using cuda device #%i", m_cudaDevice);
+    // int rank = 0, size = 1;
       
-      std::vector<int> gpuIDs;
-      int *_gpuIDs   = nullptr;
-      int  _gpuCount = -1;
-      if (state->tether->devices[0]->m_cudaDevice >= 0) {
-        // first device DID have a cudadevice explicitly set; let's
-        // assume that app then explciitly sets cudaDevice for every
-        // other device, too, and let's use that list of GPUs.
-        for (auto dev : state->tether->devices) {
-          assert(dev->m_cudaDevice >= 0);
-          gpuIDs.push_back(dev->m_cudaDevice);
-        }
-        _gpuIDs = gpuIDs.data();
-        _gpuCount = (int)gpuIDs.size();
-      } else {
-        // first device did NOT have a cudadevice set - this means the
-        // app is NOT using explicit tethering (where it creates a
-        // (tethered) anari device for each gpu), which in turn means
-        // we're an independent device that didn't have any cuda gpu
-        // explicitly attached to it.... which means we could in theory
-        // use multiple GPU
-        if (m_enable_multiGPU) {
-        } else {
-          _gpuIDs = nullptr;
-          _gpuCount = 1;
-        }
-      }
-
-      std::vector<int> dgIDs;
+    // non-mpi will just route this to a no-op, overloaded mpiDevice
+    // will do mpi_init()
+    initMPI();
+    
+    if (m_cudaDevice == -2)
+      reportMessage
+        (ANARI_SEVERITY_DEBUG, "cudaDevice not explicitly set, leaving which GPU(s) to use to barney", m_cudaDevice);
+    else if (m_cudaDevice == -1)
+      reportMessage
+        (ANARI_SEVERITY_DEBUG, "set cudaDevice explicitly set to -1 by user/app, this should force CPU rendering, ", m_cudaDevice);
+    else
+      reportMessage
+        (ANARI_SEVERITY_DEBUG, "using cuda device #%i", m_cudaDevice);
+      
+    std::vector<int> gpuIDs;
+    int *_gpuIDs   = nullptr;
+    int  _gpuCount = -1;
+    if (state->tether->devices[0]->m_cudaDevice >= 0) {
+      // first device DID have a cudadevice explicitly set; let's
+      // assume that app then explciitly sets cudaDevice for every
+      // other device, too, and let's use that list of GPUs.
       for (auto dev : state->tether->devices) {
-        int dgID = dev->m_dataGroupID;
-        if (dgID == -1)
-          // not set by user, use default of different data group ID per device
-          dgID = rank * state->tether->devices.size() + dev->tetherIndex;
-        dgIDs.push_back(dgID);
+        assert(dev->m_cudaDevice >= 0);
+        gpuIDs.push_back(dev->m_cudaDevice);
       }
-      int *_dgIDs   = dgIDs.data();
-      int  _dgCount = (int)dgIDs.size();
-
-
-#if BARNEY_MPI
-      if (comm && !forceLocalRendering)
-        state->tether->context
-          = bnMPIContextCreate(comm,
-                               _dgIDs,_dgCount,
-                               _gpuIDs,_gpuCount);
-      else
-#endif
-        state->tether->context
-          = bnContextCreate(_dgIDs,_dgCount,
-                            _gpuIDs,_gpuCount);
-      if (size > 1) {
-        std::stringstream ss;
-        ss << "#banari rank " << rank << " (of " << size
-           << ") creating context GPUs=(";
-        for (auto gpu : gpuIDs)
-          ss << " " << gpu;
-        ss << " ) and data groups=(";
-        for (auto dg : dgIDs)
-          ss << " " << dg;
-        ss << " )";
-        
-        std::cout << ss.str() << std::endl;
-        reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
+      _gpuIDs = gpuIDs.data();
+      _gpuCount = (int)gpuIDs.size();
+    } else {
+      // first device did NOT have a cudadevice set - this means the
+      // app is NOT using explicit tethering (where it creates a
+      // (tethered) anari device for each gpu), which in turn means
+      // we're an independent device that didn't have any cuda gpu
+      // explicitly attached to it.... which means we could in theory
+      // use multiple GPU
+      if (m_enable_multiGPU) {
+      } else {
+        _gpuIDs = nullptr;
+        _gpuCount = 1;
       }
-      m_initialized = true;
-    } catch (const std::exception &err) {
-      std::cerr
-        << "#banari: ran into some kind of exception in barney device init"
-        << err.what() << std::endl;
     }
+
+    std::vector<int> dgIDs;
+    for (auto dev : state->tether->devices) {
+      int dgID = dev->m_dataGroupID;
+      if (dgID == -1)
+        // not set by user, use default of different data group ID per device
+        dgID = multiNode.rank * state->tether->devices.size() + dev->tetherIndex;
+      dgIDs.push_back(dgID);
+    }
+    int *_dgIDs   = dgIDs.data();
+    int  _dgCount = (int)dgIDs.size();
+
+    if (multiNode.size > 1) {
+      std::stringstream ss;
+      ss << "#banari rank " << multiNode.rank << " (of " << multiNode.size
+         << ") creating context GPUs=(";
+      for (auto gpu : gpuIDs)
+        ss << " " << gpu;
+      ss << " ) and data groups=(";
+      for (auto dg : dgIDs)
+        ss << " " << dg;
+      ss << " )";
+        
+      std::cout << ss.str() << std::endl;
+      reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
+    }
+    m_initialized = true;
   }
 
   void BarneyDevice::deviceCommitParameters()
@@ -434,26 +402,26 @@ namespace BANARI_NS {
 
     m_enable_multiGPU
       = getParam<int>("enable_multiGPU",m_enable_multiGPU);
-#if BARNEY_MPI
-    uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
-    if (pointerToComm) {
-      printf("#banari.mpi: got passed a pointer to a MPI "
-             "communicator, going to use this.\n");
-      comm = *(MPI_Comm *)pointerToComm;
-      commNeedsFree = false;
-    } else {
-      std::cout << "#banari: Device started in MPI mode, but no MPI Communicator passed to it; started with a MPI_Comm_dup() of MPI_COMM_WORLD" << std::endl;
-      MPI_Comm_dup(MPI_COMM_WORLD, &comm);
-      commNeedsFree = true;
-    }
-    if (comm) {
-      int rank, size;
-      MPI_Comm_rank(comm,&rank);
-      MPI_Comm_size(comm,&size);
-      printf("#banari.mpi: running banari mpi device on rank %i size %i\n",
-             rank,size);
-    }
-#endif
+// #if BARNEY_MPI
+//     uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
+//     if (pointerToComm) {
+//       printf("#banari.mpi: got passed a pointer to a MPI "
+//              "communicator, going to use this.\n");
+//       comm = *(MPI_Comm *)pointerToComm;
+//       commNeedsFree = false;
+//     } else {
+//       std::cout << "#banari: Device started in MPI mode, but no MPI Communicator passed to it; started with a MPI_Comm_dup() of MPI_COMM_WORLD" << std::endl;
+//       MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+//       commNeedsFree = true;
+//     }
+//     if (comm) {
+//       int rank, size;
+//       MPI_Comm_rank(comm,&rank);
+//       MPI_Comm_size(comm,&size);
+//       printf("#banari.mpi: running banari mpi device on rank %i size %i\n",
+//              rank,size);
+//     }
+// #endif
     if (m_cudaDevice != -2)
       std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
 
@@ -474,16 +442,14 @@ namespace BANARI_NS {
                 << tetherDevice << std::endl;
 #endif
       if (tetherDevice) {
-#ifndef NDEBUG
-        std::cout << "#banari -> tethering to primary" << std::endl;
-#endif
         state->tether = tetherDevice->deviceState()->tether;
         assert(state->tether);
         assert(tetherCount == state->tether->devices.size());
         assert(state->tether->devices[tetherIndex] == nullptr);
         state->tether->devices[tetherIndex] = this;
       } else {
-        assert(tetherIndex == 0 && "first device has to be first to be created");
+        assert(tetherIndex == 0
+               && "first device has to be first to be created");
         state->tether = std::make_shared<Tether>();
         state->tether->devices.resize(tetherCount);
         state->tether->devices[0] = this;
@@ -541,5 +507,21 @@ namespace BANARI_NS {
     return state;
   }
 
+  BNContext BarneyDevice::createContext(std::vector<vec2i> &gpuIDsAndDataRank)
+  {
+    std::vector<int> dataRanks;
+    std::vector<int> gpuIDs;
+    for (auto in : gpuIDsAndDataRank) {
+      gpuIDs.push_back(in.x);
+      dataRanks.push_back(in.y);
+    }
+    BNContext ctx =
+      bnContextCreate(dataRanks.data(),
+                      dataRanks.size(),
+                      gpuIDs.data(),
+                      gpuIDs.size());
+    return ctx;
+  }
+  
 }
 

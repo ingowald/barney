@@ -10,15 +10,12 @@
 #include "barney/common/mat4.h"
 #include "barney/common/math.h"
 #include <stack>
-#if RTC_DEVICE_CODE
-#include "barney_rtc.h"
-#endif
 
 namespace BARNEY_NS {
-  struct TextureData;
-  struct SlotContext;
-
-  namespace render {
+  namespace native {
+    
+    struct TextureData;
+    struct SlotContext;
     struct SamplerRegistry;
     
     struct AttributeTransform {
@@ -31,7 +28,7 @@ namespace BARNEY_NS {
       vec4f offset;
     };
     
-    struct Sampler : public barney_api::Sampler {
+    struct Sampler : public Object {
       typedef std::shared_ptr<Sampler> SP;
       
       typedef enum {
@@ -108,7 +105,7 @@ namespace BARNEY_NS {
           samplerID when we die */
       const std::shared_ptr<SamplerRegistry> samplerRegistry;
       const int   samplerID;
-      int   inAttribute  { render::ATTRIBUTE_0 };
+      int   inAttribute  { ATTRIBUTE_0 };
       mat4f outTransform { mat4f::identity() };
       vec4f outOffset    { 0.f, 0.f, 0.f, 0.f };
       vec4f borderColor  { 0.f, 0.f, 0.f, 0.f };
@@ -240,9 +237,6 @@ namespace BARNEY_NS {
       return ret;
     }
 #endif
-
-
-
     
-  } // ::BARNEY_NS::render
+  } // ::BARNEY_NS::native
 } // ::BARNEY_NS

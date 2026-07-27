@@ -12,48 +12,45 @@ namespace BARNEY_NS {
     struct Texture;
     struct TextureData;
     
-    namespace cuda_common {
-    
-      /*! base class for cuda-based device(s) - unlike optix/device and
-        embree/device this is NOT a full device as it lacks trace
-        capability. will be subclassed by otpix device (which adds
-        optix-based trace interface, and at some later time a
-        dedicated cuda trace device */
-      struct Device {
-        Device(int physicalGPU);
-        virtual ~Device();
+    /*! base class for cuda-based device(s) - unlike optix/device and
+      embree/device this is NOT a full device as it lacks trace
+      capability. will be subclassed by otpix device (which adds
+      optix-based trace interface, and at some later time a
+      dedicated cuda trace device */
+    struct CudaDeviceBase {
+      CudaDeviceBase(int physicalGPU);
+      virtual ~CudaDeviceBase();
       
-        void copyAsync(void *dst, const void *src, size_t numBytes);
-        void copy(void *dst, const void *src, size_t numBytes)
-        { copyAsync(dst,src,numBytes); sync(); }
-        void *allocHost(size_t numBytes);
-        void freeHost(void *mem);
-        void memsetAsync(void *mem,int value, size_t size);
-        void *allocMem(size_t numBytes);
-        void freeMem(void *mem);
-        void sync();
+      void copyAsync(void *dst, const void *src, size_t numBytes);
+      void copy(void *dst, const void *src, size_t numBytes)
+      { copyAsync(dst,src,numBytes); sync(); }
+      void *allocHost(size_t numBytes);
+      void freeHost(void *mem);
+      void memsetAsync(void *mem,int value, size_t size);
+      void *allocMem(size_t numBytes);
+      void freeMem(void *mem);
+      void sync();
       
-        /*! sets this gpu as active, and returns physical ID of GPU that
-          was active before */
-        int setActive() const;
+      /*! sets this gpu as active, and returns physical ID of GPU that
+        was active before */
+      int setActive() const;
       
-        /*! restores the gpu whose ID was previously returend by setActive() */
-        void restoreActive(int oldActive) const;
+      /*! restores the gpu whose ID was previously returend by setActive() */
+      void restoreActive(int oldActive) const;
 
-        TextureData *createTextureData(vec3i dims,
-                                       rtc::DataType format,
-                                       const void *texels);
+      TextureData *createTextureData(vec3i dims,
+                                     rtc::DataType format,
+                                     const void *texels);
       
-        void freeTextureData(TextureData *);
-        void freeTexture(Texture *);
+      void freeTextureData(TextureData *);
+      void freeTexture(Texture *);
       
-        cudaStream_t stream = 0;
-        int const physicalID;
-      };
-    }
+      cudaStream_t stream = 0;
+      int const physicalID;
+    };
     
     struct SetActiveGPU {
-      SetActiveGPU(const cuda_common::Device *device);
+      SetActiveGPU(const CudaDeviceBase *device);
       SetActiveGPU(int gpuID);
       ~SetActiveGPU();
     private:

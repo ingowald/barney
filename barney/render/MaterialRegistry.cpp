@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/Context.h"
 #include "barney/material/DeviceMaterial.h"
@@ -8,7 +8,7 @@
 #include "barney/render/MaterialRegistry.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
 
     MaterialRegistry::PLD *MaterialRegistry::getPLD(Device *device)
     { return &perLogical[device->contextRank()]; }

@@ -9,11 +9,13 @@
 #include "cuBQL/traversal/shrinkingRadiusQuery.h"
 
 namespace BARNEY_NS {
+  namespace native {
+    
+    inline __rtc_both vec3f to_barney(cuBQL::vec3f v)
+    { return vec3f(v.x,v.y,v.z); }
   
-  inline __both__ vec3f to_barney(cuBQL::vec3f v)
-  { return vec3f(v.x,v.y,v.z); }
-  
-  inline __both__ cuBQL::vec3f to_cubql(vec3f v)
-  { return {v.x,v.y,v.z}; }
-  
+    inline __rtc_both cuBQL::vec3f to_cubql(vec3f v)
+    { return {v.x,v.y,v.z}; }
+
+  }
 } // ::barney

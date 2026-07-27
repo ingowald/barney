@@ -7,7 +7,7 @@
 // helium
 #include "helium/BaseDevice.h"
 
-#include "BarneyGlobalState.h"
+#include "anari/BarneyGlobalState.h"
 
 namespace BANARI_NS {
     
@@ -103,6 +103,9 @@ namespace BANARI_NS {
     BarneyDevice(ANARILibrary library, const std::string &subType = "default");
     ~BarneyDevice() override;
 
+    virtual BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank);
+    virtual void initMPI();
+    
   private:
     void initDevice();
     void deviceCommitParameters() override;
@@ -114,7 +117,7 @@ namespace BANARI_NS {
     BarneyGlobalState *deviceState(bool commitOnDemand=true);
 
     bool m_initialized{false};
-
+    
     /*! allows for setting which gpu to use. must be set before the
       first commit, and should not be changed after that. '-2' means
       'leave it to barney', '-1' means 'use cpu', any value >= 0
@@ -122,26 +125,18 @@ namespace BANARI_NS {
     int m_cudaDevice = -2;
     int m_dataGroupID = -1;
     /*! allows the app to say "use as many gpus as you can find", without */
-#if BARNEY_MPI
-    int m_enable_multiGPU = 0;
-#else
+// #if BARNEY_MPI
+//     int m_enable_multiGPU = 0;
+// #else
     int m_enable_multiGPU = 1;
-#endif
+// #endif
     const std::string deviceType = "default";
-#if BARNEY_MPI
-    /*! communicator to use for barney data-parallel rendering, set as
-      a uint64_t. If set to 0, we'll use local rendering even if mpi
-      support is compiled in, any other value will be interpreted as
-      a MPI_Comm type. If device gets created with subtype "mpi" or
-      "default", the default value for comm is MPI_COMM_WORLD, if it
-      is created with subtype "local" it will default to 0 */
-    MPI_Comm comm = MPI_COMM_WORLD;
-    bool     commNeedsFree = false;
-#endif
     bool hasBeenCommitted = false;
     BarneyDevice *tetherDevice = 0;
     int tetherIndex = 0;
     int tetherCount = 0;
+
+    struct { int rank=0, size=0; } multiNode;
   };
 
 }

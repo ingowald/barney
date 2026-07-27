@@ -9,11 +9,10 @@
 #include "barney/render/Renderer.h"
 #include "barney/GlobalModel.h"
 #include "barney/render/RayQueue.h"
-#include "barney/barneyConfig.h"
-#include "barney_rtc.h"
+#include "barney/FromEnv.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
 
 #define MAX_DIFFUSE_BOUNCES 1
     
@@ -24,7 +23,6 @@ namespace BARNEY_NS {
 #if !BARNEY_USE_MULTI_SCATTERING
 #define SCI_VIS_MODE 1
 #endif
-
 
 #define CLAMP_F_R 13.f
 
@@ -45,7 +43,7 @@ namespace BARNEY_NS {
     
     inline __rtc_device
     bool sampleAreaLights(Light::Sample &ls,
-                          const render::World::DD &world,
+                          const World::DD &world,
                           const vec3f P,
                           const vec3f N,
                           Random &random,
@@ -67,11 +65,11 @@ namespace BARNEY_NS {
         u[i] = random();
         v[i] = random();
         float lightArea = light.area;
-// #ifndef NDEBUG
-//         if (lightArea < 0.f)
-//           printf("INVALID NEGATIVE LIGHT AREA on light %i/%i : %f\n",
-//                  lID[i],world.numQuadLights,lightArea);
-// #endif
+        // #ifndef NDEBUG
+        //         if (lightArea < 0.f)
+        //           printf("INVALID NEGATIVE LIGHT AREA on light %i/%i : %f\n",
+        //                  lID[i],world.numQuadLights,lightArea);
+        // #endif
         vec3f LN = light.normal;
         vec3f LP = light.corner + u[i]*light.edge0 + v[i]*light.edge1;
         vec3f lightDir = LP - P;
@@ -85,30 +83,30 @@ namespace BARNEY_NS {
         if (weight <= 1e-3f) continue;
         weight *= -dot(lightDir,LN);
         if (weight <= 1e-3f) continue;
-// #ifndef NDEBUG
-//         if (lightArea == 0.f || reduce_max(light.emission) == 0)
-//           printf("invalid light! %f : %f %f %f\n",
-//                  lightArea,
-//                  light.emission.x,
-//                  light.emission.y,
-//                  light.emission.z);
-// #endif
+        // #ifndef NDEBUG
+        //         if (lightArea == 0.f || reduce_max(light.emission) == 0)
+        //           printf("invalid light! %f : %f %f %f\n",
+        //                  lightArea,
+        //                  light.emission.x,
+        //                  light.emission.y,
+        //                  light.emission.z);
+        // #endif
         weight *= (1.f/(lightDist*lightDist)) * lightArea * reduce_max(light.emission);
-// #ifndef NDEBUG
-//         if (isnan(sumWeights) || weight < 0.f)
-//           printf("area lights: weight[%i:%i] is nan or negative: dist  %f area %f emission %f %f %f\n",
-//                  i,lID[i],lightDist,lightArea,
-//                  light.emission.x,
-//                  light.emission.y,
-//                  light.emission.z);
-// #endif
+        // #ifndef NDEBUG
+        //         if (isnan(sumWeights) || weight < 0.f)
+        //           printf("area lights: weight[%i:%i] is nan or negative: dist  %f area %f emission %f %f %f\n",
+        //                  i,lID[i],lightDist,lightArea,
+        //                  light.emission.x,
+        //                  light.emission.y,
+        //                  light.emission.z);
+        // #endif
         sumWeights += weight;
         weights[i] = weight;
       }
-// #ifndef NDEBUG
-//       if (isnan(sumWeights))
-//         printf("area lights: sumWeights is nan!\n");
-// #endif
+      // #ifndef NDEBUG
+      //       if (isnan(sumWeights))
+      //         printf("area lights: sumWeights is nan!\n");
+      // #endif
       if (sumWeights == 0.f) return false;
       float r = random()*sumWeights;
       int i=0;
@@ -129,11 +127,11 @@ namespace BARNEY_NS {
       ls.pdf
         = weights[i]/sumWeights
         * (float(RESERVOIR_SIZE)/float(world.numQuadLights));
-// #ifndef NDEBUG
-//       if (ls.pdf <= 0.f)
-//         printf("invalid area light PDF %f from i %i weight %f sum %f\n",
-//                ls.pdf,i,weights[i],sumWeights);
-// #endif
+      // #ifndef NDEBUG
+      //       if (ls.pdf <= 0.f)
+      //         printf("invalid area light PDF %f from i %i weight %f sum %f\n",
+      //                ls.pdf,i,weights[i],sumWeights);
+      // #endif
       return true;
     }
 
@@ -193,12 +191,12 @@ namespace BARNEY_NS {
 
     inline __rtc_device
     bool samplePointLights(Light::Sample &ls,
-                         const World::DD &world,
-                         const Renderer::DD &renderer,
-                         const vec3f P,
-                         const vec3f N,
-                         Random &random,
-                         bool dbg)
+                           const World::DD &world,
+                           const Renderer::DD &renderer,
+                           const vec3f P,
+                           const vec3f N,
+                           Random &random,
+                           bool dbg)
     {
       struct {
         // constant term
@@ -622,7 +620,7 @@ namespace BARNEY_NS {
       // bool doTransmission = false;
       // =  ((float)ray.mini.transmission > 0.f)
       // && (random() < (float)ray.mini.transmission);
-      render::DG dg;
+      DG dg;
       dg.P  = ray.P;
       dg.Ng = Ng;
       dg.Ns = Ng;
@@ -794,19 +792,22 @@ namespace BARNEY_NS {
 #endif
 #endif
       }
-      
+
+      if (
 #if BARNEY_USE_MULTI_SCATTERING
-      if (scatterResult.type == ScatterResult::DIFFUSE) {
+          scatterResult.type == ScatterResult::DIFFUSE
 #else
-      if (scatterResult.type == ScatterResult::DIFFUSE ||
-          scatterResult.type == ScatterResult::VOLUME) {
+          scatterResult.type == ScatterResult::DIFFUSE ||
+          scatterResult.type == ScatterResult::VOLUME
 #endif
-        if (state.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES) {
-          ray.tMax = -1.f;
-          return;
+          )
+        {
+          if (state.numDiffuseBounces >= MAX_DIFFUSE_BOUNCES) {
+            ray.tMax = -1.f;
+            return;
+          }
+          state.numDiffuseBounces = state.numDiffuseBounces + 1;
         }
-        state.numDiffuseBounces = state.numDiffuseBounces + 1;
-      }
       ray.isSpecular = (scatterResult.type == ScatterResult::SPECULAR);
       
       if (dbg)
@@ -820,7 +821,7 @@ namespace BARNEY_NS {
       // #ifdef CLAMP_F_R
       //       scatterResult.f_r = min(scatterResult.f_r,vec3f(100.f));
       // #endif
-
+      
       if (dbg)
         printf("path scattered, bsdf in scatter dir is %f %f %f, pdf %f\n",
                (float)scatterResult.f_r.x, 
@@ -845,7 +846,7 @@ namespace BARNEY_NS {
       // the actual brdf.
       scatterFactor = min(scatterFactor,vec3f(2.5f));
 #endif
-
+      
       state.throughput
         = state.throughput * scatterFactor;
       if (dbg && scatterResult.changedMedium)
@@ -875,9 +876,9 @@ namespace BARNEY_NS {
         state.misWeight = 1.f;
       }
 #endif
-    }
-#endif // device code  
-
+    } /* bounce() */
+#endif // device code
+    
     __rtc_global void _shadeRays(const rtc::ComputeInterface &rt,
                                  World::DD world,
                                  Renderer::DD renderer,
@@ -1038,74 +1039,71 @@ namespace BARNEY_NS {
       }
     }
 #endif
-  }  
-  
-  using namespace render;
-  
-  void Context::shadeRaysLocally(Renderer *renderer,
-                                 GlobalModel *model,
-                                 FrameBuffer *fb,
-                                 int generation,
-                                 uint32_t rngSeed)
-  {
-    int slotIdx = 0;
-    for (auto slotModel : model->modelSlots) {
-      World *world = slotModel->world.get();
-      for (auto device : *world->devices) {
-        SetActiveGPU forDuration(device);
-        RayQueue *rayQueue = device->rayQueue;
-        device->rayQueue->resetWriteQueue();
+    
+    void Context::shadeRaysLocally(Renderer *renderer,
+                                   GlobalModel *model,
+                                   FrameBuffer *fb,
+                                   int generation,
+                                   uint32_t rngSeed)
+    {
+      int slotIdx = 0;
+      for (auto slotModel : model->modelSlots) {
+        World *world = slotModel->world.get();
+        for (auto device : *world->devices) {
+          SetActiveGPU forDuration(device);
+          RayQueue *rayQueue = device->rayQueue;
+          device->rayQueue->resetWriteQueue();
         
-        TiledFB *devFB     = fb->getFor(device);
-        int numRays        = rayQueue->numActive;
-        if (numRays == 0) continue;
-        int bs = 128;
-        int nb = divRoundUp(numRays,bs);
-        World::DD devWorld
-          = world->getDD(device);
-        Renderer::DD devRenderer
-          = renderer->getDD(device);
-        if (FromEnv::get()->logQueues) {
-          std::stringstream ss;
-          ss << "#bn" << myRank() << ": ## ray queue kernel SHADE " << std::endl
-             << "  from " << rayQueue->traceAndShadeReadQueue.rays
-             << " + " << rayQueue->traceAndShadeReadQueue.states << std::endl
-             << "  to   " << rayQueue->receiveAndShadeWriteQueue.rays
-             << " + " << rayQueue->receiveAndShadeWriteQueue.states << std::endl;
-          std::cout << ss.str();
+          TiledFB *devFB     = fb->getFor(device);
+          int numRays        = rayQueue->numActive;
+          if (numRays == 0) continue;
+          int bs = 128;
+          int nb = divRoundUp(numRays,bs);
+          World::DD devWorld
+            = world->getDD(device);
+          Renderer::DD devRenderer
+            = renderer->getDD(device);
+          if (FromEnv::get()->logQueues) {
+            std::stringstream ss;
+            ss << "#bn" << myRank() << ": ## ray queue kernel SHADE " << std::endl
+               << "  from " << rayQueue->traceAndShadeReadQueue.rays
+               << " + " << rayQueue->traceAndShadeReadQueue.states << std::endl
+               << "  to   " << rayQueue->receiveAndShadeWriteQueue.rays
+               << " + " << rayQueue->receiveAndShadeWriteQueue.states << std::endl;
+            std::cout << ss.str();
+          }
+        
+          __rtc_launch(//device
+                       device->rtc,
+                       //kernel
+                       _shadeRays,
+                       //config
+                       nb,bs,
+                       //args
+                       devWorld,devRenderer,
+                       devFB->accumTiles,
+                       devFB->auxTiles,
+                       (int)fb->accumID,
+                       rayQueue->traceAndShadeReadQueue,
+                       numRays,
+                       rayQueue->receiveAndShadeWriteQueue,
+                       rayQueue->_d_nextWritePos,
+                       generation
+                       );
         }
-        
-        __rtc_launch(//device
-                     device->rtc,
-                     //kernel
-                     _shadeRays,
-                     //config
-                     nb,bs,
-                     //args
-                     devWorld,devRenderer,
-                     devFB->accumTiles,
-                     devFB->auxTiles,
-                     (int)fb->accumID,
-                     rayQueue->traceAndShadeReadQueue,
-                     numRays,
-                     rayQueue->receiveAndShadeWriteQueue,
-                     rayQueue->_d_nextWritePos,
-                     generation
-                     );
+        slotIdx++;
       }
-      slotIdx++;
-    }
 
-    // ------------------------------------------------------------------
-    // wait for kernel to complete, and swap queues
-    // ------------------------------------------------------------------
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      device->rtc->sync();
-      device->rayQueue->swapAfterShade();
-      device->rayQueue->numActive = device->rayQueue->readNumActive();
+      // ------------------------------------------------------------------
+      // wait for kernel to complete, and swap queues
+      // ------------------------------------------------------------------
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        device->rtc->sync();
+        device->rayQueue->swapAfterShade();
+        device->rayQueue->numActive = device->rayQueue->readNumActive();
+      }
     }
+    
   }
-  
 }
-

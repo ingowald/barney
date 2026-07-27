@@ -4,34 +4,24 @@
 
 #pragma once
 
-// barney
-#include "barney/barney.h"
-#if BARNEY_MPI
-# include "barney/barney_mpi.h"
-#endif
-// anari
+#include "barney/common/barney-common.h"
 #include <helium/helium_math.h>
 #include <anari/anari_cpp.hpp>
 // std
 #include <cmath>
 #include <cstring> // for std::memcpy()
 #include <iostream>
-#ifdef __CUDACC__
-#include <cuda/std/limits>
-#endif
-
-#ifdef __CUDACC__
-# define BARNEY_INF ::cuda::std::numeric_limits<float>::infinity()
-#else
-# define BARNEY_INF INFINITY
-#endif
 
 #ifndef BARNEY_NS
 # error "BARNEY_NS not defined"
 #endif
+#ifndef BANARI_NS
+# error "BANARI_NS not defined"
+#endif
+
+#include "barney/common/math.h"
 
 namespace BANARI_NS {
-  using namespace BARNEY_NS;
   
   namespace math = anari::math;
 

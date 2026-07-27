@@ -12,10 +12,10 @@
 #include "barney/Camera.h"
 #include "barney/render/Renderer.h"
 #include "barney/fb/FrameBuffer.h"
-#include "barney_rtc.h"
+#include "barney/FromEnv.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
     /*! generates a new wave-front of rays, to be written to
       'rayQueue[]', at (atomically incrementable) positoin
       *d_count. This kernel operates on *tiles* (not complete frames);
@@ -240,67 +240,67 @@ namespace BARNEY_NS {
       rayQueue.hitIDs[pos] = {BARNEY_INF,-1,-1,-1};
     }
 #endif
-  }
   
-  void Context::generateRays(Camera *camera,
-                             Renderer *renderer,
-                             FrameBuffer *fb)
-  {
-    auto getPerRayDebug = [&]()
+    void Context::generateRays(Camera *camera,
+                               Renderer *renderer,
+                               FrameBuffer *fb)
     {
-      const char *fromEnv = getenv("BARNEY_DBG_RENDER");
-      return fromEnv && std::stoi(fromEnv);
-    };
-    static bool enablePerRayDebug = getPerRayDebug();
+      auto getPerRayDebug = [&]()
+      {
+        const char *fromEnv = getenv("BARNEY_DBG_RENDER");
+        return fromEnv && std::stoi(fromEnv);
+      };
+      static bool enablePerRayDebug = getPerRayDebug();
     
-    assert(fb);
-    int accumID=fb->accumID;
-    // ------------------------------------------------------------------
-    // launch all GPUs to do their stuff
-    // ------------------------------------------------------------------
-    Camera::DD cameraDD = camera->getDD();
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      TiledFB *devFB = fb->getFor(device);
-      device->rayQueue->resetWriteQueue();
+      assert(fb);
+      int accumID=fb->accumID;
+      // ------------------------------------------------------------------
+      // launch all GPUs to do their stuff
+      // ------------------------------------------------------------------
+      Camera::DD cameraDD = camera->getDD();
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        TiledFB *devFB = fb->getFor(device);
+        device->rayQueue->resetWriteQueue();
 
-      if (FromEnv::get()->logQueues) {
-        std::stringstream ss;
-        ss  << "#bn(" << myRank() << "): ## ray queue op GENERATE "
-            << device->rayQueue->receiveAndShadeWriteQueue.rays
-            << " + " << device->rayQueue->receiveAndShadeWriteQueue.states
-            << std::endl;
-        std::cout << ss.str();
+        if (FromEnv::get()->logQueues) {
+          std::stringstream ss;
+          ss  << "#bn(" << myRank() << "): ## ray queue op GENERATE "
+              << device->rayQueue->receiveAndShadeWriteQueue.rays
+              << " + " << device->rayQueue->receiveAndShadeWriteQueue.states
+              << std::endl;
+          std::cout << ss.str();
+        }
+
+        __rtc_launch(//device
+                     device->rtc,
+                     //kernel
+                     _generateRays,
+                     // launch config
+                     devFB->numActiveTilesThisGPU,pixelsPerTile,
+                     // args
+                     cameraDD,
+                     renderer->getDD(device),
+                     accumID,
+                     fb->renderPixels,
+                     device->rayQueue->_d_nextWritePos,
+                     device->rayQueue->receiveAndShadeWriteQueue,
+                     devFB->tileDescs,
+                     enablePerRayDebug
+                     );
       }
-
-      __rtc_launch(//device
-                   device->rtc,
-                   //kernel
-                   render::_generateRays,
-                   // launch config
-                   devFB->numActiveTilesThisGPU,pixelsPerTile,
-                   // args
-                   cameraDD,
-                   renderer->getDD(device),
-                   accumID,
-                   fb->renderPixels,
-                   device->rayQueue->_d_nextWritePos,
-                   device->rayQueue->receiveAndShadeWriteQueue,
-                   devFB->tileDescs,
-                   enablePerRayDebug
-                   );
+      // ------------------------------------------------------------------
+      // wait for all GPUs' completion
+      // ------------------------------------------------------------------
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        device->rtc->sync();
+        device->rayQueue->swapAfterGeneration();
+        device->rayQueue->numActive = device->rayQueue->readNumActive();
+      }
     }
-    // ------------------------------------------------------------------
-    // wait for all GPUs' completion
-    // ------------------------------------------------------------------
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      device->rtc->sync();
-      device->rayQueue->swapAfterGeneration();
-      device->rayQueue->numActive = device->rayQueue->readNumActive();
-    }
-  }
   
+  }
 }
 
 

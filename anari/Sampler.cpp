@@ -7,10 +7,6 @@
 #include <cassert>
 #include <iostream>
 #include "Device.h"
-#if BARNEY_MPI
-#include <mpi.h>
-#endif
-
 #include "Array.h"
 #include "Frame.h"
 // std

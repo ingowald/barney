@@ -4,17 +4,17 @@
 
 #pragma once
 
-#include "Object.h"
+#include "anari/Object.h"
 
 namespace BANARI_NS {
 
-  struct Light : public Object
+  struct Light : public BANARI_NS::Object
   {
     Light(BarneyGlobalState *s);
     ~Light() override;
 
-    static Light *createInstance(
-                                 std::string_view subtype, BarneyGlobalState *state);
+    static Light *createInstance(std::string_view subtype,
+                                 BarneyGlobalState *state);
 
     void markFinalized() override;
     virtual void commitParameters() override;

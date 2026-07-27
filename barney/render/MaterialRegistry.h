@@ -1,16 +1,14 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "barney/DeviceGroup.h"
-// #include "barney/material/Globals.h"
-// #include "barney/render/DeviceMaterial.h"
 #include "barney/render/Sampler.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
 
     struct DeviceMaterial;
     

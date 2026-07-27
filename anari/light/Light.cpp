@@ -2,10 +2,10 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "light/Light.h"
-#include "light/Directional.h"
-#include "light/HDRI.h"
-#include "light/Point.h"
+#include "anari/light/Light.h"
+#include "anari/light/Directional.h"
+#include "anari/light/HDRI.h"
+#include "anari/light/Point.h"
 
 namespace BANARI_NS {
 

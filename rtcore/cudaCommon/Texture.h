@@ -18,7 +18,7 @@ namespace BARNEY_NS {
       TextureObject getDD() const
       { return (const TextureObject&)textureObject; }
 
-      Device             *const device;
+      CudaDeviceBase     *const device;
       TextureData        *const data;
       cudaTextureObject_t textureObject;
     };

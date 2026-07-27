@@ -4,59 +4,59 @@
 
 #pragma once
 
-#define BARNEY_VERSION_MAJOR @BARNEY_VERSION_MAJOR@
-#define BARNEY_VERSION_MINOR @BARNEY_VERSION_MINOR@
-#define BARNEY_VERSION_PATCH @BARNEY_VERSION_PATCH@
-
-/*! whether the cuda/optix backend has been included in this build */
-#cmakedefine01 BARNEY_BACKEND_OPTIX
-
-/*! whether the native-cuda backend has been included in this build */
-#cmakedefine01 BARNEY_BACKEND_CUDA
-
-/*! whether the embree backend has been included in this build */
-#cmakedefine01 BARNEY_BACKEND_EMBREE
-
-/*! whether the HIPRT (AMD hardware-RT) backend has been included in this build */
-#cmakedefine01 BARNEY_BACKEND_HIPRT
-
-/*! whether this build of barney has support for MPI based rendering;
-    i.e., wether barney/barney_mpi.h and (if anari is enabled)
-    anari_library_barney_mpi exist */
-#cmakedefine01 BARNEY_HAVE_MPI
-
-/*! whether this build of barney has support for the NanoVDB volume
-    type. NanoVDB takes a long while to compile, so can be
-    enabled/disabled by user */
-#cmakedefine01 BARNEY_HAVE_NANOVDB
+// #define BARNEY_VERSION_MAJOR @BARNEY_VERSION_MAJOR@
+// #define BARNEY_VERSION_MINOR @BARNEY_VERSION_MINOR@
+// #define BARNEY_VERSION_PATCH @BARNEY_VERSION_PATCH@
 
 #include <cstdint>
 #include <cstddef>
 
-#ifdef _WIN32
-# if defined(barney_STATIC) || defined(barney_mpi_STATIC)
-#  define BARNEY_INTERFACE /* nothing */
-# elif defined(barney_EXPORTS) || defined(barney_mpi_EXPORTS)
-#  define BARNEY_INTERFACE __declspec(dllexport)
-# else
-#  define BARNEY_INTERFACE __declspec(dllimport)
-# endif
-#elif defined(__clang__) || defined(__GNUC__)
-#  define BARNEY_INTERFACE __attribute__((visibility("default")))
-#else
-#  define BARNEY_INTERFACE
+// #if @BARNEY_NATIVE@
+// // deprecated.... this currently will never be on
+// # ifdef _WIN32
+// #  if defined(barney_STATIC) || defined(barney_mpi_STATIC)
+// #   define BARNEY_INTERFACE /* nothing */
+// #  elif defined(barney_EXPORTS) || defined(barney_mpi_EXPORTS)
+// #   define BARNEY_INTERFACE __declspec(dllexport)
+// #  else
+// #   define BARNEY_INTERFACE __declspec(dllimport)
+// #  endif
+// # elif defined(__clang__) || defined(__GNUC__)
+// #   define BARNEY_INTERFACE __attribute__((visibility("default")))
+// # else
+// #   define BARNEY_INTERFACE
+// # endif
+// #endif
+
+
+// #ifdef BARNEY_NS
+// namespace BARNEY_NS {
+// # define BARNEY_API /* bla */
+// #else
+// # ifdef __cplusplus
+// #  define BARNEY_API extern "C" BARNEY_INTERFACE
+// # else
+// #  define BARNEY_API /* bla */
+// # endif
+// #endif
+
+#ifndef BARNEY_NS
+# error "BARNEY_NS not defined"
 #endif
 
-#ifdef BARNEY_NS
-namespace BARNEY_NS {
-# define BARNEY_API /* bla */
-#else
-# ifdef __cplusplus
-#  define BARNEY_API extern "C" BARNEY_INTERFACE
-# else
-#  define BARNEY_API /* bla */
-# endif
-#endif
+/* originally barney had its own extern C API, so all bnXyz()
+   functions had to be static extern C linkage, and woudl internally
+   route do different virtual backends. nowadays all API entrypoints
+   are through anari, and we're building different devices with
+   different configs; to allow those different devices to live within
+   the same app (or even .so file) all barney calls are now moved into
+   a device-specific namespace, and extern C may no onger get used
+   (extern linkage would remove the namespace mangling */
+# define BEGIN_BARNEY_NS namespace BARNEY_NS { 
+# define END_BARNEY_NS   } /* end BARNEY_NS */ 
+# define BARNEY_API /* nothing */
+
+BEGIN_BARNEY_NS
   
 #ifdef __cplusplus
 #  define BN_IF_CPP(a) a
@@ -559,6 +559,4 @@ inline void bnSet(BNObject o, const char *n, bn_int4 v)
 { bnSet4i(o,n,v.x,v.y,v.z,v.w); }
 #endif
 
-#ifdef BARNEY_NS
-}
-#endif
+END_BARNEY_NS

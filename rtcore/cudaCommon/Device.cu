@@ -86,14 +86,14 @@ namespace BARNEY_NS {
       return ((props.pciDomainID * 256 + props.pciBusID) * 256) + props.pciDeviceID;
     }
 
-    int physicalDeviceCount()
+    int physicalDeviceCount() 
     {
       int count = 0;
       BARNEY_CUDA_CALL(GetDeviceCount(&count));
       return count;
     }
       
-    SetActiveGPU::SetActiveGPU(const cuda_common::Device *device)
+    SetActiveGPU::SetActiveGPU(const CudaDeviceBase *device)
     {
       if (device)  {
         savedActiveDeviceID = device->setActive();
@@ -113,127 +113,125 @@ namespace BARNEY_NS {
       BARNEY_CUDA_CALL_NOTHROW(SetDevice(savedActiveDeviceID));
     }
     
-    namespace cuda_common {
-      Device::Device(int physicalGPU)
-        : physicalID(physicalGPU)
-      {
-        auto initial_rc = cudaGetLastError();
-        if (initial_rc != cudaSuccess)
-          printf("#barney WARNING: there seems to be a CUDA error state set _before_ the barney device is being created. This typically indicates an error in the application; I'm going to silently 'eat' this first error, but if the app will later set other error states this is almost certainly going to cause some issues\n");
+    CudaDeviceBase::CudaDeviceBase(int physicalGPU)
+      : physicalID(physicalGPU)
+    {
+      auto initial_rc = cudaGetLastError();
+      if (initial_rc != cudaSuccess)
+        printf("#barney WARNING: there seems to be a CUDA error state set _before_ the barney device is being created. This typically indicates an error in the application; I'm going to silently 'eat' this first error, but if the app will later set other error states this is almost certainly going to cause some issues\n");
       
-        BARNEY_CUDA_SYNC_CHECK();
+      BARNEY_CUDA_SYNC_CHECK();
       
-        int saved = setActive();
-        BARNEY_CUDA_CALL(StreamCreateWithFlags(&stream,cudaStreamNonBlocking));
-        // BARNEY_CUDA_CALL(StreamCreate(&stream));
-        restoreActive(saved);
-      }
-
-      Device::~Device()
-      {
-        cudaStreamDestroy(stream);
-      }
-    
-      int Device::setActive() const
-      {
-        int oldActive = 0;
-        BARNEY_CUDA_CHECK(cudaGetDevice(&oldActive));
-        if (physicalID != oldActive) {
-          BARNEY_CUDA_CHECK(cudaSetDevice(physicalID));
-          BARNEY_CUDA_SYNC_CHECK();
-        }
-        return oldActive;
-      }
-    
-      void Device::restoreActive(int oldActive) const
-      {
-        BARNEY_CUDA_CHECK(cudaSetDevice(oldActive)); 
-      }
-    
-      void *Device::allocMem(size_t numBytes)
-      {
-        if (!numBytes) return nullptr;
-        SetActiveGPU forDuration(this);
-        void *ptr = 0;
-        // BARNEY_CUDA_CALL(MallocManaged((void **)&ptr,numBytes));
-        BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
-        assert(ptr);
-        BARNEY_CUDA_SYNC_CHECK();
-        return ptr;
-      }
-    
-      void *Device::allocHost(size_t numBytes) 
-      {
-        if (!numBytes) return nullptr;
-        SetActiveGPU forDuration(this);
-        void *ptr = 0;
-        BARNEY_CUDA_CALL(MallocHost(&ptr,numBytes));
-        return ptr;
-      }
-      
-      void Device::freeHost(void *mem) 
-      {
-        if (!mem) return;
-        SetActiveGPU forDuration(this);
-        BARNEY_CUDA_CALL(FreeHost(mem));
-      }
-      
-      void Device::freeMem(void *mem) 
-      {
-        if (!mem) return;
-        SetActiveGPU forDuration(this);
-        BARNEY_CUDA_CALL(Free(mem));
-        BARNEY_CUDA_SYNC_CHECK();
-      }
-      
-      void Device::memsetAsync(void *mem,int value, size_t numBytes) 
-      {
-        if (numBytes == 0) return;
-        SetActiveGPU forDuration(this);
-        BARNEY_CUDA_CALL(MemsetAsync(mem,value,numBytes,stream));
-      }
-      
-
-      void Device::copyAsync(void *dst, const void *src, size_t numBytes) 
-      {
-        if (numBytes == 0) return;
-        SetActiveGPU forDuration(this);
-        BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
-      }
-      
-      void Device::sync() 
-      {
-        SetActiveGPU forDuration(this);
-        BARNEY_CUDA_CALL(StreamSynchronize(stream));
-        BARNEY_CUDA_SYNC_CHECK();
-      }
-
-      void Device::freeTextureData(TextureData *td)
-      {
-        if (td) delete td;
-      }
-    
-      void Device::freeTexture(Texture *tex)
-      {
-        if (tex) delete tex;
-      }
-    
-      TextureData *
-      Device::createTextureData(vec3i dims,
-                                rtc::DataType format,
-                                const void *texels) 
-      {
-        SetActiveGPU forDuration(this);
-        return new TextureData(this,dims,format,texels);
-      }
-
-      Texture *TextureData::createTexture(const TextureDesc &desc) 
-      {
-        SetActiveGPU forDuration(device);
-        return new Texture(this,desc);
-      }    
-
+      int saved = setActive();
+      BARNEY_CUDA_CALL(StreamCreateWithFlags(&stream,cudaStreamNonBlocking));
+      // BARNEY_CUDA_CALL(StreamCreate(&stream));
+      restoreActive(saved);
     }
+
+    CudaDeviceBase::~CudaDeviceBase()
+    {
+      cudaStreamDestroy(stream);
+    }
+    
+    int CudaDeviceBase::setActive() const
+    {
+      int oldActive = 0;
+      BARNEY_CUDA_CHECK(cudaGetDevice(&oldActive));
+      if (physicalID != oldActive) {
+        BARNEY_CUDA_CHECK(cudaSetDevice(physicalID));
+        BARNEY_CUDA_SYNC_CHECK();
+      }
+      return oldActive;
+    }
+    
+    void CudaDeviceBase::restoreActive(int oldActive) const
+    {
+      BARNEY_CUDA_CHECK(cudaSetDevice(oldActive)); 
+    }
+    
+    void *CudaDeviceBase::allocMem(size_t numBytes)
+    {
+      if (!numBytes) return nullptr;
+      SetActiveGPU forDuration(this);
+      void *ptr = 0;
+      // BARNEY_CUDA_CALL(MallocManaged((void **)&ptr,numBytes));
+      BARNEY_CUDA_CALL(Malloc((void **)&ptr,numBytes));
+      assert(ptr);
+      BARNEY_CUDA_SYNC_CHECK();
+      return ptr;
+    }
+    
+    void *CudaDeviceBase::allocHost(size_t numBytes) 
+    {
+      if (!numBytes) return nullptr;
+      SetActiveGPU forDuration(this);
+      void *ptr = 0;
+      BARNEY_CUDA_CALL(MallocHost(&ptr,numBytes));
+      return ptr;
+    }
+      
+    void CudaDeviceBase::freeHost(void *mem) 
+    {
+      if (!mem) return;
+      SetActiveGPU forDuration(this);
+      BARNEY_CUDA_CALL(FreeHost(mem));
+    }
+      
+    void CudaDeviceBase::freeMem(void *mem) 
+    {
+      if (!mem) return;
+      SetActiveGPU forDuration(this);
+      BARNEY_CUDA_CALL(Free(mem));
+      BARNEY_CUDA_SYNC_CHECK();
+    }
+      
+    void CudaDeviceBase::memsetAsync(void *mem,int value, size_t numBytes) 
+    {
+      if (numBytes == 0) return;
+      SetActiveGPU forDuration(this);
+      BARNEY_CUDA_CALL(MemsetAsync(mem,value,numBytes,stream));
+    }
+      
+
+    void CudaDeviceBase::copyAsync(void *dst, const void *src, size_t numBytes) 
+    {
+      if (numBytes == 0) return;
+      SetActiveGPU forDuration(this);
+      BARNEY_CUDA_CALL(MemcpyAsync(dst,src,numBytes,cudaMemcpyDefault,stream));
+    }
+      
+    void CudaDeviceBase::sync() 
+    {
+      SetActiveGPU forDuration(this);
+      BARNEY_CUDA_CALL(StreamSynchronize(stream));
+      BARNEY_CUDA_SYNC_CHECK();
+    }
+
+    void CudaDeviceBase::freeTextureData(TextureData *td)
+    {
+      if (td) delete td;
+    }
+    
+    void CudaDeviceBase::freeTexture(Texture *tex)
+    {
+      if (tex) delete tex;
+    }
+    
+    TextureData *
+    CudaDeviceBase::createTextureData(vec3i dims,
+                                      rtc::DataType format,
+                                      const void *texels) 
+    {
+      SetActiveGPU forDuration(this);
+      return new TextureData(this,dims,format,texels);
+    }
+
+    Texture *TextureData::createTexture(const TextureDesc &desc) 
+    {
+      SetActiveGPU forDuration(device);
+      return new Texture(this,desc);
+    }    
+
   }
 }
 

@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -8,7 +8,7 @@
 #include "barney/render/HitAttributes.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
     namespace fromOSPRAY {
       
       struct RefractionResult
@@ -87,7 +87,7 @@ namespace BARNEY_NS {
         {}
       
         inline __rtc_device
-        EvalRes eval(render::DG dg, vec3f wi, bool dbg=false) const
+        EvalRes eval(DG dg, vec3f wi, bool dbg=false) const
         { return EvalRes::zero(); }
 
         inline __rtc_device
@@ -192,7 +192,7 @@ namespace BARNEY_NS {
         inline __rtc_device float pdf(DG dg, vec3f wi, bool dbg) const;
         inline __rtc_device EvalRes eval(DG dg, vec3f wi, bool dbg) const;
         inline __rtc_device void scatter(ScatterResult &scatter,
-                                       const render::DG &dg,
+                                       const DG &dg,
                                        Random &random,
                                        bool dbg) const;
 
@@ -219,7 +219,7 @@ namespace BARNEY_NS {
       
       inline __rtc_device
       void Glass::scatter(ScatterResult &scatter,
-                          const render::DG &dg,
+                          const DG &dg,
                           Random &random,
                           bool dbg) const
       {

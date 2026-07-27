@@ -10,10 +10,9 @@
 #include "barney/render/MaterialRegistry.h"
 
 namespace BARNEY_NS {
-  struct SlotContext;
-  
-  namespace render {
+  namespace native {
 
+    struct SlotContext;
     struct DeviceMaterial;
     
     struct PossiblyMappedParameter {
@@ -55,9 +54,9 @@ namespace BARNEY_NS {
     };
 
     /*! barney 'virtual' material implementation that takes anari-like
-      material paramters, and then builder barney::render:: style
-      device materials to be put into the device geometries */
-    struct HostMaterial : public barney_api::Material {
+      material paramters, and then builder device materials to be put
+      into the device geometries */
+    struct HostMaterial : public Object {
       typedef std::shared_ptr<HostMaterial> SP;
 
       /*! pretty-printer for printf-debugging */

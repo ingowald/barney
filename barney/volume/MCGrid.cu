@@ -4,252 +4,253 @@
 
 #include "barney/volume/MCGrid.h"
 #include "barney/volume/Volume.h"
-#include "barney_rtc.h"
 
 namespace BARNEY_NS {
+  namespace native {
+    
+    MajorantsGrid::MajorantsGrid(MCGrid::SP mcGrid)
+      : mcGrid(mcGrid),
+        devices(mcGrid->devices)
+    {
+      perLogical.resize(devices->numLogical);
+      for (auto device : *devices) {
+        PLD *pld = getPLD(device);
+        auto rtc = device->rtc;
+        SetActiveGPU forDuration(device);
 
-  MajorantsGrid::MajorantsGrid(MCGrid::SP mcGrid)
-    : mcGrid(mcGrid),
-      devices(mcGrid->devices)
-  {
-    perLogical.resize(devices->numLogical);
-    for (auto device : *devices) {
-      PLD *pld = getPLD(device);
-      auto rtc = device->rtc;
-      SetActiveGPU forDuration(device);
-
-      pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
-    }
-  }
-
-  MajorantsGrid::~MajorantsGrid()
-  {
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      PLD *pld = getPLD(device);
-      if (pld->majorantsBuffer) {
-        device->rtc->freeBuffer(pld->majorantsBuffer);
-        pld->majorantsBuffer = 0;
+        pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
       }
     }
-  }
-  
-  MCGrid::MCGrid(const DevGroup::SP &devices)
-    : devices(devices)
-  {
-    perLogical.resize(devices->numLogical);
-    for (auto device : *devices) {
-      PLD *pld = getPLD(device);
-      auto rtc = device->rtc;
-      SetActiveGPU forDuration(device);
 
-      pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
-    }
-  }
-
-  MCGrid::~MCGrid()
-  {
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      PLD *pld = getPLD(device);
-      if (pld->scalarRangesBuffer) {
-        device->rtc->freeBuffer(pld->scalarRangesBuffer);
-        pld->scalarRangesBuffer = 0;
+    MajorantsGrid::~MajorantsGrid()
+    {
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        PLD *pld = getPLD(device);
+        if (pld->majorantsBuffer) {
+          device->rtc->freeBuffer(pld->majorantsBuffer);
+          pld->majorantsBuffer = 0;
+        }
       }
     }
-  }
+  
+    MCGrid::MCGrid(const DevGroup::SP &devices)
+      : devices(devices)
+    {
+      perLogical.resize(devices->numLogical);
+      for (auto device : *devices) {
+        PLD *pld = getPLD(device);
+        auto rtc = device->rtc;
+        SetActiveGPU forDuration(device);
 
-  /* kernel CODE */
-  __rtc_global
-  void clearMCs(const rtc::ComputeInterface &ci, MCGrid::DD grid)
-  {
-    int ix = ci.getThreadIdx().x
-      +ci.getBlockIdx().x*ci.getBlockDim().x;
-    if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
-    
-    grid.scalarRanges[ix] = { +BARNEY_INF, -BARNEY_INF };
-  }
-  
-  /*! re-set all cells' ranges to "infinite empty" */
-  void MCGrid::clearCells()
-  {
-    size_t numCells = owl::common::volume(dims);
-    const int bs = 1024;
-    // cuda num blocks
-    // const int nb = (int)divRoundUp((size_t)numCells,(size_t)bs);
-    const int nb = (int)dru(numCells,bs);
-    
-    for (auto device : *devices) {
-      auto d_grid = getDD(device);
-      __rtc_launch(device->rtc,
-                   clearMCs,
-                   nb,bs,
-                   d_grid);
+        pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
+      }
     }
-    for (auto device : *devices) 
-      device->sync();
-  }
+
+    MCGrid::~MCGrid()
+    {
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        PLD *pld = getPLD(device);
+        if (pld->scalarRangesBuffer) {
+          device->rtc->freeBuffer(pld->scalarRangesBuffer);
+          pld->scalarRangesBuffer = 0;
+        }
+      }
+    }
+
+    /* kernel CODE */
+    __rtc_global
+    void clearMCs(const rtc::ComputeInterface &ci, MCGrid::DD grid)
+    {
+      int ix = ci.getThreadIdx().x
+        +ci.getBlockIdx().x*ci.getBlockDim().x;
+      if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
+    
+      grid.scalarRanges[ix] = { +BARNEY_INF, -BARNEY_INF };
+    }
+  
+    /*! re-set all cells' ranges to "infinite empty" */
+    void MCGrid::clearCells()
+    {
+      size_t numCells = owl::common::volume(dims);
+      const int bs = 1024;
+      // cuda num blocks
+      // const int nb = (int)divRoundUp((size_t)numCells,(size_t)bs);
+      const int nb = (int)dru(numCells,bs);
+    
+      for (auto device : *devices) {
+        auto d_grid = getDD(device);
+        __rtc_launch(device->rtc,
+                     clearMCs,
+                     nb,bs,
+                     d_grid);
+      }
+      for (auto device : *devices) 
+        device->sync();
+    }
   
     
-  __rtc_global
-  void mapMCs(const rtc::ComputeInterface &ci,
-              MajorantsGrid::DD grid,
-              TransferFunction::DD xf
+    __rtc_global
+    void mapMCs(const rtc::ComputeInterface &ci,
+                MajorantsGrid::DD grid,
+                TransferFunction::DD xf
 #if BARNEY_USE_MULTI_SCATTERING
-              , PrincipledVolumeParams::DD principled
+                , PrincipledVolumeParams::DD principled
 #endif
-              )
-  {
-    int ix = ci.getThreadIdx().x
-      +ci.getBlockIdx().x*ci.getBlockDim().x;
-    if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
-    range1f scalarRange = grid.scalarRanges[ix];
+                )
+    {
+      int ix = ci.getThreadIdx().x
+        +ci.getBlockIdx().x*ci.getBlockDim().x;
+      if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
+      range1f scalarRange = grid.scalarRanges[ix];
 #if BARNEY_USE_MULTI_SCATTERING
-    const float tfMaj = xf.majorant(scalarRange);
-    const float maj = principled.enabled
-      ? principledMajorant(scalarRange, principled) * tfMaj
-      : tfMaj;
+      const float tfMaj = xf.majorant(scalarRange);
+      const float maj = principled.enabled
+        ? principledMajorant(scalarRange, principled) * tfMaj
+        : tfMaj;
 #else
-    const float maj = xf.majorant(scalarRange);
+      const float maj = xf.majorant(scalarRange);
 #endif
-    grid.majorants[ix] = maj;
-  }
+      grid.majorants[ix] = maj;
+    }
   
 #if BARNEY_USE_MULTI_SCATTERING
-  void MajorantsGrid::computeMajorants(Volume *volume)
-  {
-    if (dims != mcGrid->dims)
-      resize(mcGrid->dims); 
-    assert(volume);
-    auto dims = mcGrid->dims;
-    assert(dims.x > 0);
-    assert(dims.y > 0);
-    assert(dims.z > 0);
-    size_t numCells = owl::common::volume(dims);
-    const int bs = 1024;
-    const int nb = (int)dru(numCells,bs);
-    for (auto device : *devices) 
-      device->sync();
+    void MajorantsGrid::computeMajorants(Volume *volume)
+    {
+      if (dims != mcGrid->dims)
+        resize(mcGrid->dims); 
+      assert(volume);
+      auto dims = mcGrid->dims;
+      assert(dims.x > 0);
+      assert(dims.y > 0);
+      assert(dims.z > 0);
+      size_t numCells = owl::common::volume(dims);
+      const int bs = 1024;
+      const int nb = (int)dru(numCells,bs);
+      for (auto device : *devices) 
+        device->sync();
     
-    for (auto device : *devices) {
-      auto d_xf = volume->xf.getDD(device);
-      auto d_principled = volume->principled.getDD(device);
-      auto dd = getDD(device);
-      __rtc_launch(device->rtc,
-                   mapMCs,
-                   nb,bs,
-                   dd,d_xf,d_principled);
+      for (auto device : *devices) {
+        auto d_xf = volume->xf.getDD(device);
+        auto d_principled = volume->principled.getDD(device);
+        auto dd = getDD(device);
+        __rtc_launch(device->rtc,
+                     mapMCs,
+                     nb,bs,
+                     dd,d_xf,d_principled);
+      }
+      for (auto device : *devices) 
+        device->sync();
     }
-    for (auto device : *devices) 
-      device->sync();
-  }
 #else
-  void MajorantsGrid::computeMajorants(TransferFunction *xf)
-  {
-    if (dims != mcGrid->dims)
-      resize(mcGrid->dims); 
-    assert(xf);
-    auto dims = mcGrid->dims;
-    assert(dims.x > 0);
-    assert(dims.y > 0);
-    assert(dims.z > 0);
-    size_t numCells = owl::common::volume(dims);
-    const int bs = 1024;
-    const int nb = (int)dru(numCells,bs);
-    for (auto device : *devices) 
-      device->sync();
+    void MajorantsGrid::computeMajorants(TransferFunction *xf)
+    {
+      if (dims != mcGrid->dims)
+        resize(mcGrid->dims); 
+      assert(xf);
+      auto dims = mcGrid->dims;
+      assert(dims.x > 0);
+      assert(dims.y > 0);
+      assert(dims.z > 0);
+      size_t numCells = owl::common::volume(dims);
+      const int bs = 1024;
+      const int nb = (int)dru(numCells,bs);
+      for (auto device : *devices) 
+        device->sync();
     
-    for (auto device : *devices) {
-      auto d_xf = xf->getDD(device);
-      auto dd = getDD(device);
-      __rtc_launch(device->rtc,
-                   mapMCs,
-                   nb,bs,
-                   dd,d_xf);
+      for (auto device : *devices) {
+        auto d_xf = xf->getDD(device);
+        auto dd = getDD(device);
+        __rtc_launch(device->rtc,
+                     mapMCs,
+                     nb,bs,
+                     dd,d_xf);
+      }
+      for (auto device : *devices) 
+        device->sync();
     }
-    for (auto device : *devices) 
-      device->sync();
-  }
 #endif
   
-  /*! allocate memory for the given grid */
-  void MajorantsGrid::resize(vec3i dims)
-  {
-    assert(dims.x > 0);
-    assert(dims.y > 0);
-    assert(dims.z > 0);
-    if (dims == this->dims)
-      return;
-    mcGrid->resize(dims);
-    this->dims = dims;
-    size_t numCells = owl::common::volume(dims);
+    /*! allocate memory for the given grid */
+    void MajorantsGrid::resize(vec3i dims)
+    {
+      assert(dims.x > 0);
+      assert(dims.y > 0);
+      assert(dims.z > 0);
+      if (dims == this->dims)
+        return;
+      mcGrid->resize(dims);
+      this->dims = dims;
+      size_t numCells = owl::common::volume(dims);
     
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
-      PLD *pld = getPLD(device);
-      auto rtc = device->rtc;
-      rtc->freeBuffer(pld->majorantsBuffer);
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        PLD *pld = getPLD(device);
+        auto rtc = device->rtc;
+        rtc->freeBuffer(pld->majorantsBuffer);
       
-      pld->majorantsBuffer
-        = rtc->createBuffer(sizeof(float)*numCells);
+        pld->majorantsBuffer
+          = rtc->createBuffer(sizeof(float)*numCells);
+      }
+      for (auto device : *devices) 
+        device->sync();
     }
-    for (auto device : *devices) 
-      device->sync();
-  }
 
-  /*! allocate memory for the given grid */
-  void MCGrid::resize(vec3i dims)
-  {
-    assert(dims.x > 0);
-    assert(dims.y > 0);
-    assert(dims.z > 0);
-    if (dims == this->dims)
-      return;
-    this->dims = dims;
-    size_t numCells = owl::common::volume(dims);
-    for (auto device : *devices) {
-      SetActiveGPU forDuration(device);
+    /*! allocate memory for the given grid */
+    void MCGrid::resize(vec3i dims)
+    {
+      assert(dims.x > 0);
+      assert(dims.y > 0);
+      assert(dims.z > 0);
+      if (dims == this->dims)
+        return;
+      this->dims = dims;
+      size_t numCells = owl::common::volume(dims);
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        PLD *pld = getPLD(device);
+        auto rtc = device->rtc;
+        rtc->freeBuffer(pld->scalarRangesBuffer);
+        pld->scalarRangesBuffer
+          = rtc->createBuffer(sizeof(range1f)*numCells);
+      }
+      for (auto device : *devices) 
+        device->sync();
+    }
+  
+    /*! get cuda-usable device-data for given device ID (relative to
+      devices in the devgroup that this gris is in */
+    MCGrid::DD MCGrid::getDD(Device *device) 
+    {
       PLD *pld = getPLD(device);
-      auto rtc = device->rtc;
-      rtc->freeBuffer(pld->scalarRangesBuffer);
-      pld->scalarRangesBuffer
-        = rtc->createBuffer(sizeof(range1f)*numCells);
+    
+      MCGrid::DD dd;
+    
+      dd.scalarRanges
+        = (range1f*)pld->scalarRangesBuffer->getDD();
+
+      dd.dims = dims;
+      dd.gridOrigin = gridOrigin;
+      dd.gridSpacing = gridSpacing;
+      return dd;
     }
-    for (auto device : *devices) 
-      device->sync();
-  }
-  
-  /*! get cuda-usable device-data for given device ID (relative to
-    devices in the devgroup that this gris is in */
-  MCGrid::DD MCGrid::getDD(Device *device) 
-  {
-    PLD *pld = getPLD(device);
-    
-    MCGrid::DD dd;
-    
-    dd.scalarRanges
-      = (range1f*)pld->scalarRangesBuffer->getDD();
 
-    dd.dims = dims;
-    dd.gridOrigin = gridOrigin;
-    dd.gridSpacing = gridSpacing;
-    return dd;
-  }
+    /*! get cuda-usable device-data for given device ID (relative to
+      devices in the devgroup that this gris is in */
+    MajorantsGrid::DD MajorantsGrid::getDD(Device *device) 
+    {
+      MajorantsGrid::DD dd;
 
-  /*! get cuda-usable device-data for given device ID (relative to
-    devices in the devgroup that this gris is in */
-  MajorantsGrid::DD MajorantsGrid::getDD(Device *device) 
-  {
-    MajorantsGrid::DD dd;
-
-    (MCGrid::DD&)dd = mcGrid->getDD(device);
+      (MCGrid::DD&)dd = mcGrid->getDD(device);
     
-    PLD *pld = getPLD(device);
-    dd.majorants
-      = (float *)pld->majorantsBuffer->getDD();
-    return dd;
+      PLD *pld = getPLD(device);
+      dd.majorants
+        = (float *)pld->majorantsBuffer->getDD();
+      return dd;
+    }
+
   }
-  
 } // ::barney
 
 

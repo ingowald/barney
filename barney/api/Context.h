@@ -1,3 +1,5 @@
+DEPRECATED
+
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
@@ -19,60 +21,6 @@ namespace BARNEY_NS {
   struct Context;
   struct Data;
 
-  /*! the base class for _any_ other type of object/actor in the
-      barney class hierarchy */
-  struct Object : public std::enable_shared_from_this<Object> {
-    typedef std::shared_ptr<Object> SP;
-
-    Object(Context *context) : context(context) {};
-    virtual ~Object() {}
-
-    /*! dynamically cast to another (typically derived) class, e.g. to
-        check whether a given 'Geomery'-type object is actually a
-        Triangles-type geometry, etc */
-    template<typename T>
-    inline std::shared_ptr<T> as();
-    template<typename T>
-    inline std::shared_ptr<const T> as() const;
-    
-    /*! pretty-printer for printf-debugging */
-    virtual std::string toString() const;
-
-    void warn_unsupported_member(const std::string &type,
-                                 const std::string &member);
-
-    // ------------------------------------------------------------------
-    /*! @{ parameter set/commit interface */
-    virtual void commit() {}
-    virtual bool setObject(const std::string &member,
-                           const Object::SP &value)
-    { return false; }
-    virtual bool setData(const std::string &member,
-                         const std::shared_ptr<Data> &value)
-    { return false; }
-    virtual bool setString(const std::string &member,
-                           const std::string &value)
-    { return false; }
-    virtual bool set1f(const std::string &member, const float &value) { return false; }
-    virtual bool set2f(const std::string &member, const vec2f &value) { return false; }
-    virtual bool set3f(const std::string &member, const vec3f &value) { return false; }
-    virtual bool set4f(const std::string &member, const vec4f &value) { return false; }
-    virtual bool set1i(const std::string &member, const int   &value) { return false; }
-    virtual bool set2i(const std::string &member, const vec2i &value) { return false; }
-    virtual bool set3i(const std::string &member, const vec3i &value) { return false; }
-    virtual bool set4i(const std::string &member, const vec4i &value) { return false; }
-    virtual bool set4x3f(const std::string &member, const affine3f &value) { return false; }
-    virtual bool set4x4f(const std::string &member, const vec4f *value) { return false; }
-    /*! @} */
-    // ------------------------------------------------------------------
-
-    /*! returns the context that this object was created in */
-    Context *getContext() const { return context; }
-    
-    // NOT a shared pointer to avoid cyclical dependencies.
-    Context *const context;
-  };
-    
   struct Renderer : public Object {
     Renderer(Context *context) : Object(context) {}
     virtual ~Renderer() = default;
@@ -195,7 +143,6 @@ namespace BARNEY_NS {
     virtual int myRank() = 0;
     virtual int mySize() = 0;
     
-    
     // ------------------------------------------------------------------
     // virtual object factory interface
     // ------------------------------------------------------------------
@@ -259,35 +206,6 @@ namespace BARNEY_NS {
 
     
 
-    // ------------------------------------------------------------------
-    // object reference handling
-    // ------------------------------------------------------------------
-
-    template<typename T>
-    T *initReference(std::shared_ptr<T> sp)
-    {
-      if (!sp) return 0;
-      std::lock_guard<std::mutex> lock(mutex);
-      hostOwnedHandles[sp]++;
-      return sp.get();
-    }
-    
-    /*! decreases (the app's) reference count of said object by
-      one. if said refernce count falls to 0 the object handle gets
-      destroyed and may no longer be used by the app, and the object
-      referenced to by this handle may be removed (from the app's
-      point of view). Note the object referenced by this handle may
-      not get destroyed immediagtely if it had other indirect
-      references, such as, for example, a group still holding a
-      refernce to a geometry */
-    void releaseHostReference(std::shared_ptr<Object> object);
-    
-    /*! increases (the app's) reference count of said object byb
-        one */
-    void addHostReference(std::shared_ptr<Object> object);
-
-    std::mutex mutex;
-    std::map<Object::SP,int> hostOwnedHandles;
   };
 
   /*! pretty-printer for printf-debugging */

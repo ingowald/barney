@@ -7,8 +7,9 @@
 #include "barney/geometry/Geometry.h"
 
 namespace BARNEY_NS {
-
-  /*! A geometry made of multiple "capsules", where each capsule is
+  namespace native {
+    
+    /*! A geometry made of multiple "capsules", where each capsule is
       "pill-like" shape obtained by linearly connecting two
       spheres. Unlike cylinders both end-points of the capsule have
       their own radius that the rest of the shape linearly
@@ -22,32 +23,33 @@ namespace BARNEY_NS {
       position and radii for each capsule.
 
       `float3 vertices[]` position (.xyz) and radius (.w) of each vertex
-  */
-  struct Capsules : public Geometry {
-    typedef std::shared_ptr<Capsules> SP;
+    */
+    struct Capsules : public Geometry {
+      typedef std::shared_ptr<Capsules> SP;
 
-    struct DD : public Geometry::DD {
-      const vec4f *vertices;
-      const vec2i *indices;
+      struct DD : public Geometry::DD {
+        const vec4f *vertices;
+        const vec2i *indices;
+      };
+    
+      Capsules(Context *context, DevGroup::SP devices);
+      virtual ~Capsules() = default;
+    
+      /*! pretty-printer for printf-debugging */
+      std::string toString() const override
+      { return "Capsules{}"; }
+    
+      void commit() override;
+    
+      // ------------------------------------------------------------------
+      /*! @{ parameter set/commit interface */
+      bool setData(const std::string &member, const Data::SP &value) override;
+      /*! @} */
+      // ------------------------------------------------------------------
+
+      PODData::SP vertices;
+      PODData::SP indices;
     };
-    
-    Capsules(Context *context, DevGroup::SP devices);
-    virtual ~Capsules() = default;
-    
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Capsules{}"; }
-    
-    void commit() override;
-    
-    // ------------------------------------------------------------------
-    /*! @{ parameter set/commit interface */
-    bool setData(const std::string &member, const barney_api::Data::SP &value) override;
-    /*! @} */
-    // ------------------------------------------------------------------
 
-    PODData::SP vertices;
-    PODData::SP indices;
-  };
-
+  }
 }

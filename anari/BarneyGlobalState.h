@@ -10,19 +10,12 @@
 #include <memory>
 #include <map>
 
+#ifndef BANARI_NS
+# error BANARI_NS not defined
+#endif
+
 namespace BANARI_NS {
     
-  inline void bnSetAndRelease(BNObject o, const char *n, BNObject v)
-  {
-    bnSetObject(o,n,v);
-    bnRelease(v);
-  }
-  inline void bnSetAndRelease(BNObject o, const char *n, BNData v)
-  {
-    bnSetData(o,n,v);
-    bnRelease(v);
-  }
-
   struct Frame;
   struct World;
 

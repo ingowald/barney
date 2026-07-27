@@ -17,16 +17,6 @@ namespace BARNEY_NS {
     struct Geom;
     struct GeomType;
 
-    // using cuda_common::float2;
-    // using cuda_common::float3;
-    // using cuda_common::float4;
-    // using cuda_common::int2;
-    // using cuda_common::int3;
-    // using cuda_common::int4;
-    // using cuda_common::load;
-  
-    // using cuda_common::TextureObject;
-
     rtc::AccelHandle getAccelHandle(Group *ig);
     
     struct TraceKernel2D {
@@ -43,7 +33,7 @@ namespace BARNEY_NS {
       cudaStream_t lpStream;
     };
     
-    struct Device : public cuda_common::Device {
+    struct Device : public CudaDeviceBase {
       Device(int physicalGPU);
       ~Device() override;
 

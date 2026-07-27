@@ -7,33 +7,35 @@
 #include "barney/Context.h"
 
 namespace BARNEY_NS {
-
-  /*! a barney context for "local"-node rendering - no MPI */
-  struct LocalContext : public Context {
+  namespace native {
     
-    LocalContext(const std::vector<LocalSlot> &localSlots);
-
-    virtual ~LocalContext();
-
-    static WorkerTopo::SP makeTopo(const std::vector<LocalSlot> &localSlots);
+    /*! a barney context for "local"-node rendering - no MPI */
+    struct LocalContext : public Context {
     
-    /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "LocalFB{}"; }
+      LocalContext(const std::vector<LocalSlot> &localSlots);
 
-    int numRaysActiveGlobally() override;
+      virtual ~LocalContext();
+
+      static WorkerTopo::SP makeTopo(const std::vector<LocalSlot> &localSlots);
     
-    void render(Renderer    *renderer,
-                GlobalModel *model,
-                Camera      *camera,
-                FrameBuffer *fb) override;
+      /*! pretty-printer for printf-debugging */
+      std::string toString() const override
+      { return "LocalFB{}"; }
 
-    int myRank() override { return 0; }
-    int mySize() override { return 1; }
+      int numRaysActiveGlobally() override;
+    
+      void render(Renderer    *renderer,
+                  GlobalModel *model,
+                  Camera      *camera,
+                  FrameBuffer *fb) override;
 
-    /*! create a frame buffer object suitable to this context */
-    std::shared_ptr<barney_api::FrameBuffer>
-    createFrameBuffer() override;
+      int myRank() override { return 0; }
+      int mySize() override { return 1; }
 
-  };
+      /*! create a frame buffer object suitable to this context */
+      std::shared_ptr<FrameBuffer>
+      createFrameBuffer() override;
+    };
+
+  }
 }

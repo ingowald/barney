@@ -7,7 +7,8 @@
 #include "barney/Object.h"
 
 namespace BARNEY_NS {
-
+  namespace native {
+    
   rtc::ColorSpace toRTC(BNTextureColorSpace mode);
   rtc::FilterMode toRTC(BNTextureFilterMode mode);
   rtc::AddressMode toRTC(BNTextureAddressMode mode);
@@ -15,7 +16,7 @@ namespace BARNEY_NS {
   struct Device;
   struct Context;
   
-  struct TextureData : public barney_api::TextureData {
+  struct TextureData : public Object {
     typedef std::shared_ptr<TextureData> SP;
 
     struct PLD {
@@ -42,7 +43,7 @@ namespace BARNEY_NS {
   };
 
 
-  struct Texture : public barney_api::Texture {
+  struct Texture : public Object {
     typedef std::shared_ptr<Texture> SP;
 
     Texture(Context *context,
@@ -71,4 +72,5 @@ namespace BARNEY_NS {
     DevGroup::SP    const devices;
   };
 
+  }
 }

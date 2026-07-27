@@ -235,6 +235,33 @@ endif()
 # actual build config
 # ==================================================================
 
+add_library(barney_config INTERFACE)
+target_include_directories(barney_config INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
+#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/barney/include>
+  ${CMAKE_CURRENT_LIST_DIR}
+  # for any owl::common stuff
+  ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
+  ${CMAKE_CURRENT_LIST_DIR}/3rdParty/nanovdb/include
+)
+if (WIN32)
+  target_compile_definitions(barney_config INTERFACE -DNOMINMAX)
+  target_compile_options(barney_config INTERFACE
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
+  )
+endif()
+if(MSVC) # That's also clang-cl
+  # /bigobj is needed for bigger binding projects due to the limit to 64k
+  # addressable sections
+  set_property(
+    TARGET barney_config_${backend}
+    APPEND
+    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+endif()
+
+
 #------------------------------------------------------------------
 # include rtcore subdir - this will declare the different backend
 # configs. configs that are disabled via BARNEY_BACKEND_XYZ=OFF will
@@ -243,33 +270,28 @@ endif()
 # rtcore/ if certain requirements are not met (eg, not having CUDA or
 # HIP compiler(s)
 # ------------------------------------------------------------------
-configure_file(
-  "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barneyConfig.h"
-)
-configure_file(
-  "${PROJECT_SOURCE_DIR}/barney/include/barney.h"
-  "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barney.h"
-)
-if (BARNEY_MPI)
-  configure_file(
-    "${PROJECT_SOURCE_DIR}/barney/include/barney_mpi.h"
-    "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barney_mpi.h"
-  )
-endif()
+# configure_file(
+#   "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in"
+#   "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barneyConfig.h"
+# )
+# configure_file(
+#   "${PROJECT_SOURCE_DIR}/barney/include/barney.h"
+#   "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barney.h"
+# )
+# if (BARNEY_MPI)
+#   configure_file(
+#     "${PROJECT_SOURCE_DIR}/barney/include/barney_mpi.h"
+#     "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barney_mpi.h"
+#   )
+# endif()
 
-add_library(barney_config INTERFACE)
-target_include_directories(barney_config INTERFACE
-  ${CMAKE_CURRENT_LIST_DIR}
-  # for any owl::common stuff
-  ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
-  # for configure_file output:
-  ${CMAKE_CURRENT_BINARY_DIR}/include/ 
-)
-if (BARNEY_HAVE_NANOVDB)
-  target_include_directories(barney_config INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}/3rdParty/nanovdb/include)
-endif()
+# target_include_directories(barney_config INTERFACE
+#   ${CMAKE_CURRENT_LIST_DIR}
+#   # for any owl::common stuff
+#   ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
+#   # for configure_file output:
+#   ${CMAKE_CURRENT_BINARY_DIR}/include/ 
+# )
 
 
 
@@ -281,7 +303,23 @@ function(build_barney backend)
   if (NOT (${FLAG_NAME}))
     message("#barney: backend '${backend}' disabled by user request")
   else()
+    set(BARNEY_DEVICE_NAME ${BARNEY_PROJECT_NAME}_${backend})
+    add_library(barney_config_${backend} INTERFACE)
+    configure_file(
+      "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in"
+      "${CMAKE_CURRENT_BINARY_DIR}/barneyDeviceConfig.h"
+    )
+    target_include_directories(barney_config_${backend} INTERFACE
+      ${CMAKE_CURRENT_LIST_DIR}
+      # for any owl::common stuff
+      ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
+      # for configure_file output:
+      ${CMAKE_CURRENT_BINARY_DIR}/include/ 
+    )
+    
+    include(rtcore/${backend}.cmake)
     add_subdirectory(barney build_barney_${backend})
+    add_subdirectory(anari  build_banari_${backend})
   endif()
 endfunction()
 

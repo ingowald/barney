@@ -12,16 +12,15 @@
 #define IMPORTANCE_SAMPLE_BRDF 1
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
 
-      inline __rtc_device float pow2(float f) { return f*f; }
-      inline __rtc_device float pow5(float f) { return pow2(pow2(f))*f; }
-      inline __rtc_device float mix(float a, float b, float f) { return (1.f-f)*a + f*b; }
-      inline __rtc_device vec3f mix(vec3f a, vec3f b, vec3f f)
-      { return vec3f(mix(a.x,b.x,f.x),mix(a.y,b.y,f.y),mix(a.z,b.z,f.z)); }
-      inline __rtc_device float heaviside(float f) { return (f<0.f)?0.f:1.f; }
+    inline __rtc_device float pow2(float f) { return f*f; }
+    inline __rtc_device float pow5(float f) { return pow2(pow2(f))*f; }
+    inline __rtc_device float mix(float a, float b, float f) { return (1.f-f)*a + f*b; }
+    inline __rtc_device vec3f mix(vec3f a, vec3f b, vec3f f)
+    { return vec3f(mix(a.x,b.x,f.x),mix(a.y,b.y,f.y),mix(a.z,b.z,f.z)); }
+    inline __rtc_device float heaviside(float f) { return (f<0.f)?0.f:1.f; }
 
-    
     namespace packedBSDF {
       namespace nvisii {
         inline __rtc_device float lcg_randomf(Random &r) { return r(); }
@@ -1015,7 +1014,7 @@ namespace BARNEY_NS {
         inline __rtc_device EvalRes eval(DG dg, vec3f wi, bool dbg) const;
         inline __rtc_device float pdf(DG dg, vec3f wi, bool dbg) const;
         inline __rtc_device void scatter(ScatterResult &scatter,
-                                       const render::DG &dg,
+                                       const DG &dg,
                                        Random &random,
                                        bool dbg) const;
         inline __rtc_device void setDefaults()
@@ -1090,7 +1089,7 @@ namespace BARNEY_NS {
       }
 
       inline __rtc_device void NVisii::scatter(ScatterResult &scatter,
-                                             const render::DG &dg,
+                                             const DG &dg,
                                              Random &rng,
                                              bool dbg) const
       {

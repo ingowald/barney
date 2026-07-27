@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 // some functions taken from OSPRay, under this lincense:
 // ======================================================================== //
@@ -28,8 +28,8 @@
 #include "barney/common/math.h"
 
 namespace BARNEY_NS {
-  namespace render {
-    using Random = BARNEY_NS::Random2;
+  namespace native {
+    using Random = BARNEY_NS::native::Random2;
     
     struct DG {
       vec3f Ng, Ns;

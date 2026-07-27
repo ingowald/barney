@@ -1,14 +1,13 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "barney/render/DG.h"
-#include "barney/barneyConfig.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
     namespace packedBSDF {
 
 #if BARNEY_USE_MULTI_SCATTERING
@@ -26,7 +25,7 @@ namespace BARNEY_NS {
         
         inline __rtc_device
         void scatter(ScatterResult &scatter,
-                     const render::DG &dg,
+                     const DG &dg,
                      Random &random,
                      bool dbg) const;
 
@@ -100,7 +99,7 @@ namespace BARNEY_NS {
 
       inline __rtc_device
       void Phase::scatter(ScatterResult &scatter,
-                          const render::DG &dg,
+                          const DG &dg,
                           Random &random,
                           bool dbg) const
       {
@@ -128,7 +127,7 @@ namespace BARNEY_NS {
         
         inline __rtc_device
         void scatter(ScatterResult &scatter,
-                     const render::DG &dg,
+                     const DG &dg,
                      Random &random,
                      bool dbg) const;
         
@@ -155,7 +154,7 @@ namespace BARNEY_NS {
 
       inline __rtc_device
       void Phase::scatter(ScatterResult &scatter,
-                          const render::DG &dg,
+                          const DG &dg,
                           Random &random,
                           bool dbg) const
       {

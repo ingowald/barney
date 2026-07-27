@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -8,9 +8,7 @@
 #include "barney/render/Sampler.h"
 
 namespace BARNEY_NS {
-  struct ModelSlot;
-  
-  namespace render {
+  namespace native {
     
     struct SamplerRegistry {
       typedef std::shared_ptr<SamplerRegistry> SP;

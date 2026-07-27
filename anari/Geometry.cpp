@@ -10,7 +10,19 @@
 #include <numeric>
 
 namespace BANARI_NS {
-    
+
+  inline void bnSetAndRelease(BNObject o, const char *n, BNObject v)
+  {
+    bnSetObject(o,n,v);
+    bnRelease(v);
+  }
+  inline void bnSetAndRelease(BNObject o, const char *n, BNData v)
+  {
+    bnSetData(o,n,v);
+    bnRelease(v);
+  }
+
+  
   // Helper functions ///////////////////////////////////////////////////////////
 
   static void addAttribute(BNGeom geom,

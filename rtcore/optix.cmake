@@ -14,6 +14,9 @@ else()
   set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
 endif()
 
+set(CMAKE_CUDA_ARCHITECTURES
+  "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
+  "Which CUDA architecture to build for")
 
 
 # ==================================================================
@@ -23,20 +26,35 @@ endif()
 set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/../submodules/optix)
 set(OWL_BUILD_VIEWER OFF)
 set(OWL_CUDA_STATIC  ON)
-add_subdirectory(../submodules/owl builddir_owl EXCLUDE_FROM_ALL)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../submodules/owl builddir_owl EXCLUDE_FROM_ALL)
 if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS ${EXPECTED_OWL_VERSION}))
   message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
 endif()
 
 
-macro(rtc_library_properties lib)
-endmacro()
+function(rtc_library_properties lib)
+  set_target_properties(${lib}
+    PROPERTIES
+    POSITION_INDEPENDENT_CODE    ON
+    VISIBILITY_INLINES_HIDDEN    ON
+    CUDA_SEPARABLE_COMPILATION   ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+    CUDA_VISIBILITY_PRESET       hidden
+    CXX_VISIBILITY_PRESET        hidden
+  )
+  if (APPLE)
+    set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$loader_path")
+  else()
+    set_target_properties(${tgt} PROPERTIES INSTALL_RPATH "$ORIGIN")
+  endif()
+endfunction()
 
 add_library(barney_config_ptx INTERFACE)
 target_link_libraries(barney_config_ptx INTERFACE barney_config)
 target_compile_definitions(barney_config_ptx INTERFACE -DBARNEY_DEVICE_PROGRAM=1)
 
-macro(rtc_build_device_sources libname)
+function(rtc_build_device_sources libname)
   add_library(${libname} INTERFACE)
 
   set(DEVICE_PROGRAM_SOURCES ${ARGN})
@@ -55,7 +73,7 @@ macro(rtc_build_device_sources libname)
   endforeach()
   
   rtc_library_properties(${libname})
-endmacro()
+endfunction()
 
 # macro(rtc_configure_source)
 #   foreach(src ${ARGN})
@@ -73,5 +91,6 @@ endmacro()
 
 
 #add_subdirectory(../submodules/cuBQL buildDir_cuBQL EXCLUDE_FROM_ALL)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/optix buildDir_rtc_optix)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/cudaCommon)# buildDir_rtc_cudaCommon)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/optix)# buildDir_rtc_optix)
 

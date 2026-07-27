@@ -1,16 +1,15 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "barney/common/half.h"
 #include "barney/packedBSDF/PackedBSDF.h"
 #include "barney/common/random.h"
-#include "barney/barneyConfig.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
     /* path state/shade info that does _not_ go over the network */
 
 #define NEW_RNG 1

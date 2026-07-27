@@ -19,7 +19,7 @@ namespace BARNEY_NS {
     { return ig->getDD(); }
     
     Device::Device(int physicalGPU)
-      : cuda_common::Device(physicalGPU)
+      : CudaDeviceBase(physicalGPU)
     {
       owl = owlContextCreate(&physicalGPU,1);
     }
@@ -51,7 +51,7 @@ namespace BARNEY_NS {
 
     void Device::sync()
     {
-      cuda_common::Device::sync();
+      CudaDeviceBase::sync();
       for (auto s : activeTraceStreams) {
         cudaStreamSynchronize(s);
         auto rc = cudaGetLastError();

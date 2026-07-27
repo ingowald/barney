@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "light/Light.h"
+#include "anari/light/Light.h"
 
 namespace BANARI_NS {
 

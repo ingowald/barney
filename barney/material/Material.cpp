@@ -2,7 +2,6 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-
 #include "barney/Context.h"
 #include "barney/material/AnariPBR.h"
 #include "barney/material/AnariMatte.h"
@@ -10,7 +9,7 @@
 #include "barney/Context.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
     
     PossiblyMappedParameter::DD
     PossiblyMappedParameter::getDD(Device *device) 
@@ -65,7 +64,7 @@ namespace BARNEY_NS {
     }
     
     HostMaterial::HostMaterial(SlotContext *slotContext)
-      : barney_api::Material(slotContext->context),
+      : Object(slotContext->context),
         devices(slotContext->devices),
         materialRegistry(slotContext->materialRegistry),
         materialID(slotContext->materialRegistry->allocate())

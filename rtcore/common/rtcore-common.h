@@ -4,7 +4,9 @@
 
 #pragma once
 
-#include "barney/barneyConfig.h"
+// auto-generated config file that passes cmake variables
+#include "barneyDeviceConfig.h"
+
 #include <cstring>
 #include <cassert>
 #include <mutex>
@@ -12,15 +14,18 @@
 #include <map>
 #include <memory>
 #include <sstream>
-#include "barney/barney.h"
 
 # if defined(__CUDACC__) || defined(__HIPCC__)
 // # ifdef __CUDA_ARCH__
 #  define RTC_DEVICE_CODE 1
 # endif
 
-#include "owl/common/math/AffineSpace.h"
-#include "owl/common/math/random.h"
+#include <owl/common/owl-common.h>
+#include <owl/common/math/box.h>
+#include <owl/common/math/AffineSpace.h>
+#include <owl/common/math/random.h>
+
+#define __barney_align(a) OWL_ALIGN(a)
 
 namespace BARNEY_NS {
   namespace rtc {

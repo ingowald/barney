@@ -8,7 +8,7 @@
 #include "barney/material/Material.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
     
     struct AnariPBR : public HostMaterial {
       struct DD {

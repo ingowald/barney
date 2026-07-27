@@ -11,7 +11,7 @@
 #include "barney/packedBSDF/Lambertian.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
 
     namespace packedBSDF {
       struct Invalid { };
@@ -53,14 +53,14 @@ namespace BARNEY_NS {
       { type = TYPE_Lambertian; data.lambertian = lambertian; }
       
       inline __rtc_device
-      EvalRes eval(render::DG dg, vec3f w_i, bool dbg=false) const;
+      EvalRes eval(DG dg, vec3f w_i, bool dbg=false) const;
 
       inline __rtc_device
-      float pdf(render::DG dg, vec3f w_i, bool dbg=false) const;
+      float pdf(DG dg, vec3f w_i, bool dbg=false) const;
       
       inline __rtc_device
       void scatter(ScatterResult &scatter,
-                   const render::DG &dg,
+                   const DG &dg,
                    Random &random,
                    bool dbg=false) const;
       
@@ -75,7 +75,7 @@ namespace BARNEY_NS {
 
 #if RTC_DEVICE_CODE
     inline __rtc_device
-    EvalRes PackedBSDF::eval(render::DG dg, vec3f w_i, bool dbg) const
+    EvalRes PackedBSDF::eval(DG dg, vec3f w_i, bool dbg) const
     {
       if (type == TYPE_Phase)
         return data.phase.eval(dg,w_i,dbg);
@@ -89,7 +89,7 @@ namespace BARNEY_NS {
     }
     
     inline __rtc_device
-    float PackedBSDF::pdf(render::DG dg, vec3f w_i, bool dbg) const
+    float PackedBSDF::pdf(DG dg, vec3f w_i, bool dbg) const
     {
       if (type == TYPE_NVisii)
         return data.nvisii.pdf(dg,w_i,dbg);
@@ -120,7 +120,7 @@ namespace BARNEY_NS {
 
     inline __rtc_device
     void PackedBSDF::scatter(ScatterResult &scatter,
-                             const render::DG &dg,
+                             const DG &dg,
                              Random &random,
                              bool dbg) const
     {
@@ -136,5 +136,4 @@ namespace BARNEY_NS {
     }
 #endif
   }
-  using render::PackedBSDF;
 }

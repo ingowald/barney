@@ -9,31 +9,31 @@
 #include "barney/Context.h"
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
     
     AttributeKind parseAttribute(const std::string &attributeName)
     {
       if (attributeName == "attribute0")
-        return render::ATTRIBUTE_0; 
+        return ATTRIBUTE_0; 
       if (attributeName == "attribute1")
-        return render::ATTRIBUTE_1; 
+        return ATTRIBUTE_1; 
       if (attributeName == "attribute2")
-        return render::ATTRIBUTE_2; 
+        return ATTRIBUTE_2; 
       if (attributeName == "attribute3")
-        return render::ATTRIBUTE_3; 
+        return ATTRIBUTE_3; 
       if (attributeName == "worldPosition")
-        return render::WORLD_POSITION; 
+        return WORLD_POSITION; 
       if (attributeName == "objectPosition")
-        return render::OBJECT_POSITION; 
+        return OBJECT_POSITION; 
       if (attributeName == "color")
-        return render::COLOR; 
+        return COLOR; 
       
       throw std::runtime_error("@barney: invalid or unsupported attribute name '"
                                +attributeName+"'");
     }
 
     Sampler::Sampler(SlotContext *slotContext)
-      : barney_api::Sampler(slotContext->context),
+      : Object(slotContext->context),
         devices(slotContext->devices),
         samplerRegistry(slotContext->samplerRegistry),
         samplerID(slotContext->samplerRegistry->allocate())

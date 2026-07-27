@@ -8,12 +8,11 @@
 #include "barney/ModelSlot.h"
 #include "barney/render/SamplerRegistry.h"
 #include "barney/render/MaterialRegistry.h"
-#include "barney_rtc.h"
 
-RTC_DECLARE_GLOBALS(BARNEY_NS::render::OptixGlobals);
+RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);
 
 namespace BARNEY_NS {
-  namespace render {
+  namespace native {
 
     struct TraceRays {
 #if RTC_DEVICE_CODE
@@ -54,6 +53,6 @@ namespace BARNEY_NS {
     
   }
   
-  RTC_EXPORT_TRACE2D(traceRays,render::TraceRays);
+  RTC_EXPORT_TRACE2D(traceRays,native::TraceRays);
 }
 

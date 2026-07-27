@@ -36,6 +36,9 @@
 
 #include "generated/anari_library_barney_queries.h"
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 namespace BANARI_NS {
   using barney_device::query_extensions;
   
@@ -59,7 +62,13 @@ namespace BANARI_NS {
 
   ANARIDevice BarneyLibrary::newDevice(const char *subType)
   {
-    return (ANARIDevice) new BarneyDevice(this_library(), subType);
+    try {
+      return (ANARIDevice) new BarneyDevice(this_library(), subType);
+    } catch (std::exception &e) {
+      std::cout << "could not create barney device '" << TOSTRING(BARNEY_NS)
+                << ": " << e.what() << std::endl;
+      return (ANARIDevice)0;
+    }
   }
 
   const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
@@ -69,4 +78,4 @@ namespace BANARI_NS {
 
 } // namespace BANARI_NS
 
-#include "Library_entryPoint.h"
+//#include "Library_entryPoint.h"

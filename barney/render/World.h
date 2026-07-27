@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -12,10 +12,9 @@
 #include "barney/light/QuadLight.h"
 
 namespace BARNEY_NS {
-  struct SlotContext;
-  
-  namespace render {
+  namespace native {
 
+    struct SlotContext;
     struct DeviceMaterial;
     struct HostMaterial;
 

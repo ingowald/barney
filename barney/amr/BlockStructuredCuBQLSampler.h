@@ -10,74 +10,76 @@
 #include "cuBQL/traversal/fixedBoxQuery.h"
 
 namespace BARNEY_NS {
-
-  struct BlockStructuredField;
-  
-  /*! a block structured amr scalar field, with a CuBQL bvh sampler */
-  struct BlockStructuredCuBQLSampler : public ScalarFieldSampler {
-    enum { BVH_WIDTH = 4 };
-    using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
-    using node_t = typename bvh_t::Node;
+  namespace native {
     
-    struct DD : public BlockStructuredField::DD {
+    struct BlockStructuredField;
+  
+    /*! a block structured amr scalar field, with a CuBQL bvh sampler */
+    struct BlockStructuredCuBQLSampler : public ScalarFieldSampler {
+      enum { BVH_WIDTH = 4 };
+      using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
+      using node_t = typename bvh_t::Node;
+    
+      struct DD : public BlockStructuredField::DD {
 #if RTC_DEVICE_CODE
-      inline __rtc_device float sample(vec3f P, bool dbg = false) const;
+        inline __rtc_device float sample(vec3f P, bool dbg = false) const;
 #endif
-      bvh_t bvh;
-    };
-    DD getDD(Device *device);
+        bvh_t bvh;
+      };
+      DD getDD(Device *device);
 
-    /*! per-device data - parent store the bs-amr field, we just store the
-      bvh nodes */
-    struct PLD {
-      bvh_t bvh = { 0,0 };
-    };
-    PLD *getPLD(Device *device);
-    std::vector<PLD> perLogical;
+      /*! per-device data - parent store the bs-amr field, we just store the
+        bvh nodes */
+      struct PLD {
+        bvh_t bvh = { 0,0 };
+      };
+      PLD *getPLD(Device *device);
+      std::vector<PLD> perLogical;
 
-    BlockStructuredCuBQLSampler(BlockStructuredField *mesh);
+      BlockStructuredCuBQLSampler(BlockStructuredField *mesh);
     
-    /*! builds the string that allows for properly matching optix
-      device progs for this type */
-    inline static std::string typeName() { return "BlockStructured_CuBQL"; }
+      /*! builds the string that allows for properly matching optix
+        device progs for this type */
+      inline static std::string typeName() { return "BlockStructured_CuBQL"; }
 
-    void build() override;
+      void build() override;
 
-    BlockStructuredField *const field;
-    const DevGroup::SP devices;
-  };
+      BlockStructuredField *const field;
+      const DevGroup::SP devices;
+    };
   
-  struct BlockStructuredSamplerPTD {
-    inline __rtc_device BlockStructuredSamplerPTD(const BlockStructuredCuBQLSampler::DD *field)
-      : field(field)
-    {}
+    struct BlockStructuredSamplerPTD {
+      inline __rtc_device BlockStructuredSamplerPTD(const BlockStructuredCuBQLSampler::DD *field)
+        : field(field)
+      {}
 #if RTC_DEVICE_CODE
-    inline __rtc_device void visitBrick(vec3f P, int primID)
+      inline __rtc_device void visitBrick(vec3f P, int primID)
+      {
+        field->addBasisFunctions(sumWeightedValues,sumWeights,primID,P);
+      }
+#endif
+      const BlockStructuredCuBQLSampler::DD *const field;
+    
+      float sumWeights = 0.f;
+      float sumWeightedValues = 0.f;
+    };
+  
+#if RTC_DEVICE_CODE
+    inline __rtc_device
+    float BlockStructuredCuBQLSampler::DD::sample(vec3f P, bool dbg) const
     {
-      field->addBasisFunctions(sumWeightedValues,sumWeights,primID,P);
+      BlockStructuredSamplerPTD ptd(this);
+
+      auto lambda = [&](const uint32_t primID) -> int {
+        ptd.visitBrick(P,primID);
+        return CUBQL_CONTINUE_TRAVERSAL;
+      };
+      cuBQL::box3f box; box.lower = box.upper = (const cuBQL::vec3f &)P;
+      cuBQL::fixedBoxQuery::forEachPrim(lambda,bvh,box);
+      return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
     }
 #endif
-    const BlockStructuredCuBQLSampler::DD *const field;
-    
-    float sumWeights = 0.f;
-    float sumWeightedValues = 0.f;
-  };
-  
-#if RTC_DEVICE_CODE
-  inline __rtc_device
-  float BlockStructuredCuBQLSampler::DD::sample(vec3f P, bool dbg) const
-  {
-    BlockStructuredSamplerPTD ptd(this);
-
-    auto lambda = [&](const uint32_t primID) -> int {
-      ptd.visitBrick(P,primID);
-      return CUBQL_CONTINUE_TRAVERSAL;
-    };
-    cuBQL::box3f box; box.lower = box.upper = (const cuBQL::vec3f &)P;
-    cuBQL::fixedBoxQuery::forEachPrim(lambda,bvh,box);
-    return ptd.sumWeights == 0.f ? NAN : (ptd.sumWeightedValues  / ptd.sumWeights);
   }
-#endif  
 }
 
 
