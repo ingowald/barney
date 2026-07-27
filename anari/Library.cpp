@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "Device.h"
+#include "anari/Device.h"
 // anari
 #include "anari/backend/LibraryImpl.h"
 //#include "generated/anari_library_barney_export.h"
@@ -32,50 +32,51 @@
 #  endif
 #endif
 
-
-
 #include "generated/anari_library_barney_queries.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-namespace BANARI_NS {
-  using barney_device::query_extensions;
+namespace BARNEY_NS {
+  namespace anari {
+
+    using barney_device::query_extensions;
   
-  struct BarneyLibrary : public anari::LibraryImpl
-  {
-    BarneyLibrary(void *lib,
-                  ANARIStatusCallback defaultStatusCB,
-                  const void *statusCBPtr);
+    struct BarneyLibrary : public ::anari::LibraryImpl
+    {
+      BarneyLibrary(void *lib,
+                    ANARIStatusCallback defaultStatusCB,
+                    const void *statusCBPtr);
 
-    ANARIDevice newDevice(const char *subtype) override;
-    const char **getDeviceExtensions(const char *deviceType) override;
-  };
+      ANARIDevice newDevice(const char *subtype) override;
+      const char **getDeviceExtensions(const char *deviceType) override;
+    };
 
-  // Definitions ////////////////////////////////////////////////////////////////
+    // Definitions ////////////////////////////////////////////////////////////////
 
-  BarneyLibrary::BarneyLibrary(void *lib,
-                               ANARIStatusCallback defaultStatusCB,
-                               const void *statusCBPtr)
-    : anari::LibraryImpl(lib, defaultStatusCB, statusCBPtr)
-  {}
+    BarneyLibrary::BarneyLibrary(void *lib,
+                                 ANARIStatusCallback defaultStatusCB,
+                                 const void *statusCBPtr)
+      : ::anari::LibraryImpl(lib, defaultStatusCB, statusCBPtr)
+    {}
 
-  ANARIDevice BarneyLibrary::newDevice(const char *subType)
-  {
-    try {
-      return (ANARIDevice) new BarneyDevice(this_library(), subType);
-    } catch (std::exception &e) {
-      std::cout << "could not create barney device '" << TOSTRING(BARNEY_NS)
-                << ": " << e.what() << std::endl;
-      return (ANARIDevice)0;
+    ANARIDevice BarneyLibrary::newDevice(const char *subType)
+    {
+      try {
+        return (ANARIDevice) new BarneyDevice(this_library(), subType);
+      } catch (std::exception &e) {
+        std::cout << "could not create barney device '" << TOSTRING(BARNEY_NS)
+                  << ": " << e.what() << std::endl;
+        return (ANARIDevice)0;
+      }
     }
-  }
 
-  const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
-  {
-    return query_extensions();
-  }
+    const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
+    {
+      return query_extensions();
+    }
 
+  }
 } // namespace BANARI_NS
 
 //#include "Library_entryPoint.h"

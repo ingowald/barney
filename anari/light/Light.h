@@ -6,31 +6,33 @@
 
 #include "anari/Object.h"
 
-namespace BANARI_NS {
+namespace BARNEY_NS {
+  namespace anari {
 
-  struct Light : public BANARI_NS::Object
-  {
-    Light(BarneyGlobalState *s);
-    ~Light() override;
+    struct Light : public BARNEY_NS::anari::Object
+    {
+      Light(BarneyGlobalState *s);
+      ~Light() override;
 
-    static Light *createInstance(std::string_view subtype,
-                                 BarneyGlobalState *state);
+      static Light *createInstance(std::string_view subtype,
+                                   BarneyGlobalState *state);
 
-    void markFinalized() override;
-    virtual void commitParameters() override;
-    void finalize() override;
+      void markFinalized() override;
+      virtual void commitParameters() override;
+      void finalize() override;
 
-    BNLight getBarneyLight();
+      BNLight getBarneyLight();
 
-  protected:
-    virtual const char *bnSubtype() const = 0;
-    virtual void setBarneyParameters() = 0;
+    protected:
+      virtual const char *bnSubtype() const = 0;
+      virtual void setBarneyParameters() = 0;
 
-    math::float3 m_color{1.f, 1.f, 1.f};
+      math::float3 m_color{1.f, 1.f, 1.f};
 
-    BNLight m_bnLight{nullptr};
-  };
+      BNLight m_bnLight{nullptr};
+    };
 
+  }
 } // namespace BANARI_NS
 
-BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::Light *, ANARI_LIGHT);
+BARNEY_ANARI_TYPEFOR_SPECIALIZATION(BARNEY_NS::anari::Light *, ANARI_LIGHT);

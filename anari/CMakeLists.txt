@@ -71,7 +71,7 @@ endif()
 # static linkage (so it can be used in possibly multiple shared libraries)
 # ==================================================================
 add_library(anari_library_${BARNEY_DEVICE_NAME}_static STATIC ${BANARI_SOURCES})
-target_link_libraries(anari_library_${BARNEY_DEVICE_NAME}_static PRIVATE
+target_link_libraries(anari_library_${BARNEY_DEVICE_NAME}_static PUBLIC
   ${BARNEY_DEVICE_NAME}_static
   #$<BUILD_INTERFACE:barney_config_${backend}>
 #  $<BUILD_INTERFACE:banari-config-${backend}>
@@ -84,8 +84,9 @@ rtc_library_properties(anari_library_${BARNEY_DEVICE_NAME}_static)
 # containing only a single backend
 # ==================================================================
 add_library(anari_library_${BARNEY_DEVICE_NAME} SHARED Library.cpp)
-target_link_libraries(anari_library_${BARNEY_DEVICE_NAME} PRIVATE
-  anari_library_${BARNEY_DEVICE_NAME}_static)
+target_link_libraries(anari_library_${BARNEY_DEVICE_NAME} PUBLIC
+  anari_library_${BARNEY_DEVICE_NAME}_static
+)
 rtc_library_properties(anari_library_${BARNEY_DEVICE_NAME})
 
 #if (BARNEY_MPI)

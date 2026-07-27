@@ -5,6 +5,7 @@
 #pragma once
 
 #include "barney/common/barney-common.h"
+#include "barney/common/math.h"
 #include <helium/helium_math.h>
 #include <anari/anari_cpp.hpp>
 // std
@@ -15,122 +16,116 @@
 #ifndef BARNEY_NS
 # error "BARNEY_NS not defined"
 #endif
-#ifndef BANARI_NS
-# error "BANARI_NS not defined"
-#endif
 
-#include "barney/common/math.h"
-
-namespace BANARI_NS {
+namespace BARNEY_NS {
+  namespace anari {
   
-  namespace math = anari::math;
-
-  /*! banari-only helper function to set a anari vector type */
-  inline void bnSetVec(BNObject o, const char *n, math::int3 v)
-  { bnSet3i(o,n,v.x,v.y,v.z); }
+    // namespace math = ::anari::math;
+    namespace math { using namespace ::anari::math; }
+    using ::anari::DataType;
+    using ::anari::sizeOf;
+    using ::anari::toString;
+    using ::anari::radians;
+    using ::anari::degrees;
+    using ::anari::isObject;
+    using namespace owl::common;
+    
+    /*! banari-only helper function to set a anari vector type */
+    inline void bnSetVec(BNObject o, const char *n, math::int3 v)
+    { bnSet3i(o,n,v.x,v.y,v.z); }
   
-  /*! banari-only helper function to set a anari vector type */
-  inline void bnSetVec(BNObject o, const char *n, math::float3 v)
-  { bnSet3f(o,n,v.x,v.y,v.z); }
+    /*! banari-only helper function to set a anari vector type */
+    inline void bnSetVec(BNObject o, const char *n, math::float3 v)
+    { bnSet3f(o,n,v.x,v.y,v.z); }
 
-  /*! banari-only helper function to set a anari vector type */
-  inline void bnSetVec(BNObject o, const char *n, math::float4 v)
-  { bnSet4f(o,n,v.x,v.y,v.z,v.w); }
+    /*! banari-only helper function to set a anari vector type */
+    inline void bnSetVec(BNObject o, const char *n, math::float4 v)
+    { bnSet4f(o,n,v.x,v.y,v.z,v.w); }
 
   
-  struct box1
-  {
-    float lower, upper;
-    box1 &insert(float v)
+    struct box1
     {
-      lower = fminf(lower, v);
-      upper = fmaxf(upper, v);
-      return *this;
-    }
-  };
+      float lower, upper;
+      box1 &insert(float v)
+      {
+        lower = fminf(lower, v);
+        upper = fmaxf(upper, v);
+        return *this;
+      }
+    };
 
-  struct box3
-  {
-    math::float3 lower, upper;
-
-    box3() { invalidate(); }
-    box3(const math::float3 &l, const math::float3 &u) : lower(l), upper(u) {}
-
-    void invalidate()
+    struct box3
     {
-      lower = math::float3(BARNEY_INF, BARNEY_INF, BARNEY_INF);
-      upper = math::float3(-BARNEY_INF, -BARNEY_INF, -BARNEY_INF);
-    }
+      math::float3 lower, upper;
 
-    box3 &insert(math::float3 v)
+      box3() { invalidate(); }
+      box3(const math::float3 &l, const math::float3 &u) : lower(l), upper(u) {}
+
+      void invalidate()
+      {
+        lower = math::float3(BARNEY_INF, BARNEY_INF, BARNEY_INF);
+        upper = math::float3(-BARNEY_INF, -BARNEY_INF, -BARNEY_INF);
+      }
+
+      box3 &insert(math::float3 v)
+      {
+        lower.x = fminf(lower.x, v.x);
+        lower.y = fminf(lower.y, v.y);
+        lower.z = fminf(lower.z, v.z);
+        upper.x = fmaxf(upper.x, v.x);
+        upper.y = fmaxf(upper.y, v.y);
+        upper.z = fmaxf(upper.z, v.z);
+        return *this;
+      }
+
+      box3 &insert(const box3 b)
+      {
+        insert(b.lower);
+        insert(b.upper);
+        return *this;
+      }
+    };
+
+    struct box3i
     {
-      lower.x = fminf(lower.x, v.x);
-      lower.y = fminf(lower.y, v.y);
-      lower.z = fminf(lower.z, v.z);
-      upper.x = fmaxf(upper.x, v.x);
-      upper.y = fmaxf(upper.y, v.y);
-      upper.z = fmaxf(upper.z, v.z);
-      return *this;
-    }
+      math::int3 lower, upper;
+    };
 
-    box3 &insert(const box3 b)
+    inline std::ostream &operator<<(std::ostream &o, bn_float3 v)
     {
-      insert(b.lower);
-      insert(b.upper);
-      return *this;
+      o << "(" << v.x << "," << v.y << "," << v.z << ")";
+      return o;
     }
-  };
+    inline std::ostream &operator<<(std::ostream &o, bn_float4 v)
+    {
+      o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")";
+      return o;
+    }
+    inline std::ostream &operator<<(std::ostream &o, anari::math::float3 v)
+    {
+      o << "(" << v.x << "," << v.y << "," << v.z << ")";
+      return o;
+    }
+    inline std::ostream &operator<<(std::ostream &o, anari::math::float4 v)
+    {
+      o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")";
+      return o;
+    }
 
-  struct box3i
-  {
-    math::int3 lower, upper;
-  };
-
-  inline std::ostream &operator<<(std::ostream &o, bn_float3 v)
-  {
-    o << "(" << v.x << "," << v.y << "," << v.z << ")";
-    return o;
+    ///////////////////////////////////////////////////////////////////////////////
+    // ANARITypeFor type trait mappings ///////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////
   }
-  inline std::ostream &operator<<(std::ostream &o, bn_float4 v)
-  {
-    o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")";
-    return o;
-  }
-  inline std::ostream &operator<<(std::ostream &o, anari::math::float3 v)
-  {
-    o << "(" << v.x << "," << v.y << "," << v.z << ")";
-    return o;
-  }
-  inline std::ostream &operator<<(std::ostream &o, anari::math::float4 v)
-  {
-    o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")";
-    return o;
-  }
-} // namespace barney_device
-
-  ///////////////////////////////////////////////////////////////////////////////
-  // ANARITypeFor type trait mappings ///////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////
+}
 
 namespace anari {
-
-  ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::box1, ANARI_FLOAT32_BOX1);
-  ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::box3, ANARI_FLOAT32_BOX3);
-  ANARI_TYPEFOR_SPECIALIZATION(BANARI_NS::box3i, ANARI_INT32_BOX3);
-
-#ifdef ANARI_BARNEY_MATH_DEFINITIONS
-  ANARI_TYPEFOR_DEFINITION(BANARI_NS::box1);
-  ANARI_TYPEFOR_DEFINITION(BANARI_NS::box3);
-  ANARI_TYPEFOR_DEFINITION(BANARI_NS::box3i);
-#endif
-
-#ifndef PRINT
-# define PRINT(var) std::cout << #var << "=" << var << std::endl;
-#ifdef _WIN32
-# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
-#else
-# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
-#endif
-#endif
-
+  ANARI_TYPEFOR_SPECIALIZATION(BARNEY_NS::anari::box1, ANARI_FLOAT32_BOX1);
+  ANARI_TYPEFOR_SPECIALIZATION(BARNEY_NS::anari::box3, ANARI_FLOAT32_BOX3);
+  ANARI_TYPEFOR_SPECIALIZATION(BARNEY_NS::anari::box3i, ANARI_INT32_BOX3);
 }
+
+// #ifdef ANARI_BARNEY_MATH_DEFINITIONS
+// BARNEY_ANARI_TYPEFOR_DEFINITION(BARNEY_NS::anari::box1);
+// BARNEY_ANARI_TYPEFOR_DEFINITION(BARNEY_NS::anari::box3);
+// BARNEY_ANARI_TYPEFOR_DEFINITION(BARNEY_NS::anari::box3i);
+// #endif

@@ -4,29 +4,31 @@
 
 #pragma once
 
-#include "light/Light.h"
+#include "anari/light/Light.h"
 
-namespace BANARI_NS {
+namespace BARNEY_NS {
+  namespace anari {
 
-  struct PointLight : public Light
-  {
-    PointLight(BarneyGlobalState *s);
+    struct PointLight : public Light
+    {
+      PointLight(BarneyGlobalState *s);
 
-    void commitParameters() override;
+      void commitParameters() override;
 
-  private:
-    const char *bnSubtype() const override;
-    void setBarneyParameters() override;
+    private:
+      const char *bnSubtype() const override;
+      void setBarneyParameters() override;
 
-    math::float3 m_position{0.f, 0.f, 0.f};
+      math::float3 m_position{0.f, 0.f, 0.f};
 
-    /*! SPEC: the overall amount of light emitted by the light in a
-      direction, in W/sr */
-    float m_intensity = NAN;
+      /*! SPEC: the overall amount of light emitted by the light in a
+        direction, in W/sr */
+      float m_intensity = NAN;
 
-    /*! SPEC: the overall amount of light energy emitted, in W;
-      intensity takes precedence if also specified */
-    float m_power = 1.f;
-  };
-  
+      /*! SPEC: the overall amount of light energy emitted, in W;
+        intensity takes precedence if also specified */
+      float m_power = 1.f;
+    };
+
+  }
 } // ::barney_device

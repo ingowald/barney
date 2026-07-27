@@ -6,7 +6,7 @@
 
 #include "barney_rtc.h"
 #include "rtcore/common/rtcore-common.h"
-#include "barney/include/barney.h"
+#include "barney/include/barney-native.h"
  
 #ifndef BARNEY_NS
 # error "BARNEY_NS is not defined - cmake should do this"

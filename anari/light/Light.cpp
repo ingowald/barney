@@ -7,7 +7,8 @@
 #include "anari/light/HDRI.h"
 #include "anari/light/Point.h"
 
-namespace BANARI_NS {
+namespace BARNEY_NS {
+  namespace anari {
 
   Light::Light(BarneyGlobalState *s) : Object(ANARI_LIGHT, s) {}
 
@@ -59,6 +60,7 @@ namespace BANARI_NS {
     return m_bnLight;
   }
 
+}
 } // namespace BANARI_NS
 
-BARNEY_ANARI_TYPEFOR_DEFINITION(BANARI_NS::Light *);
+BARNEY_ANARI_TYPEFOR_DEFINITION(BARNEY_NS::anari::Light *);
