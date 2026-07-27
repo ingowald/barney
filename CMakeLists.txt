@@ -318,11 +318,13 @@ function(build_barney backend)
     )
     
     include(rtcore/${backend}.cmake)
-    add_subdirectory(barney build_barney_${backend})
-    add_subdirectory(anari  build_banari_${backend})
+    add_subdirectory(barney)# build_barney_${backend})
+    add_subdirectory(anari)#  build_banari_${backend})
+
   endif()
 endfunction()
 
+set(BARNEY_INSTALL_TARGETS)
 build_barney(embree)
 build_barney(cuda)
 build_barney(optix)
@@ -354,18 +356,20 @@ set(BARNEY_CMAKE_INSTALL_DESTINATION
 
 include(CMakePackageConfigHelpers)
 
-set(BARNEY_INSTALL_TARGETS)
-foreach(backend ${ARGN})
-  if (TARGET anari_library_${BARNEY_PLATFORM_NAME}_${backend})
-    list(APPEND BARNEY_INSTALL_TARGETS
-      anari_library_${BARNEY_PLATFORM_NAME}_${backend})
-  endif()
-  if (TARGET anari_library_${BARNEY_PLATFORM_NAME}_${backend}_mpi)
-    list(APPEND BARNEY_INSTALL_TARGETS
-      anari_library_${BARNEY_PLATFORM_NAME}_${backend}_mpi)
-  endif()
-endforeach()
+# set(BARNEY_INSTALL_TARGETS)
+# foreach(backend ${ARGN})
+#   if (TARGET anari_library_${BARNEY_PLATFORM_NAME}_${backend})
+#     list(APPEND BARNEY_INSTALL_TARGETS
+#       anari_library_${BARNEY_PLATFORM_NAME}_${backend})
+#   endif()
+#   if (TARGET anari_library_${BARNEY_PLATFORM_NAME}_${backend}_mpi)
+#     list(APPEND BARNEY_INSTALL_TARGETS
+#       anari_library_${BARNEY_PLATFORM_NAME}_${backend}_mpi)
+#   endif()
+# endforeach()
 
+# message("BARNEY_INSTALL_TARGETS  ${BARNEY_INSTALL_TARGETS}")
+ 
 install(
   TARGETS
   ${BARNEY_INSTALL_TARGETS}

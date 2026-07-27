@@ -1,15 +1,15 @@
-DEPRECATED
+// DEPRECATED
 
-#ifdef BARNEY_MPI
-extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
-    @BARNEY_DEVICE_NAME@_mpi, handle, scb, scbPtr)
-{
-  return (ANARILibrary) new @BANARI_NS@::BarneyLibrary(handle, scb, scbPtr);
-}
-#else
-extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
-    @BARNEY_DEVICE_NAME@, handle, scb, scbPtr)
-{
-  return (ANARILibrary) new @BANARI_NS@::BarneyLibrary(handle, scb, scbPtr);
-}
-#endif
+// #ifdef BARNEY_MPI
+// extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
+//     @BARNEY_DEVICE_NAME@_mpi, handle, scb, scbPtr)
+// {
+//   return (ANARILibrary) new @BANARI_NS@::BarneyLibrary(handle, scb, scbPtr);
+// }
+// #else
+// extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
+//     @BARNEY_DEVICE_NAME@, handle, scb, scbPtr)
+// {
+//   return (ANARILibrary) new @BANARI_NS@::BarneyLibrary(handle, scb, scbPtr);
+// }
+// #endif

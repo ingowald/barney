@@ -104,7 +104,7 @@ namespace BARNEY_NS {
       ~BarneyDevice() override;
 
       virtual BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank);
-      virtual void initMPI();
+      virtual void initMPI() { /* nothing by default, mpidev can override */};
     
     private:
       void initDevice();

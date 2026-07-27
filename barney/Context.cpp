@@ -122,6 +122,12 @@ namespace BARNEY_NS {
       }
     }
 
+     int Context::myRank()
+     { return 0; }
+    
+     int Context::mySize()
+     { return 1; }
+
     /*! returns how many rays are active in all ray queues, across all
       devices and, where applicable, across all ranks. We use this to
       decide whether we can terminate a frame, or need more bounces - we

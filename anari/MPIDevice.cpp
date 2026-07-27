@@ -12,46 +12,47 @@
 
 #include "generated/anari_library_barney_queries.h"
 
-namespace BANARI_NS {
-
-  struct BarneyMPIDevice : public BarneyDevice {
-    BarneyMPIDevice();
-    BarneyMPIDevice(ANARILibrary library, const std::string &subType = "default");
-    ~BarneyMPIDevice() override;
+namespace BARNEY_NS {
+  namespace anari {
     
-    BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank)
-    void initMPI() override;
+    struct BarneyMPIDevice : public BarneyDevice {
+      BarneyMPIDevice();
+      BarneyMPIDevice(ANARILibrary library, const std::string &subType = "default");
+      ~BarneyMPIDevice() override;
     
-    /*! communicator to use for barney data-parallel rendering, set as
-      a uint64_t. If set to 0, we'll use local rendering even if mpi
-      support is compiled in, any other value will be interpreted as
-      a MPI_Comm type. If device gets created with subtype "mpi" or
-      "default", the default value for comm is MPI_COMM_WORLD, if it
-      is created with subtype "local" it will default to 0 */
-    MPI_Comm comm = 0;//MPI_COMM_WORLD;
-    bool     commNeedsFree = false;
-  };
+      BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank);
+      void initMPI() override;
+    
+      /*! communicator to use for barney data-parallel rendering, set as
+        a uint64_t. If set to 0, we'll use local rendering even if mpi
+        support is compiled in, any other value will be interpreted as
+        a MPI_Comm type. If device gets created with subtype "mpi" or
+        "default", the default value for comm is MPI_COMM_WORLD, if it
+        is created with subtype "local" it will default to 0 */
+      MPI_Comm comm = 0;//MPI_COMM_WORLD;
+      bool     commNeedsFree = false;
+    };
   
-  BarneyMPIDevice::BarneyMPIDevice()
-    : BarneyDevice()
-  { m_enable_multiGPU = 0; }
+    BarneyMPIDevice::BarneyMPIDevice()
+      : BarneyDevice()
+    { m_enable_multiGPU = 0; }
   
-  BarneyMPIDevice::BarneyMPIDevice(ANARILibrary library,
-                                   const std::string &subType)
-    : BarneyDevice(library,subType)
-  {}
+    BarneyMPIDevice::BarneyMPIDevice(ANARILibrary library,
+                                     const std::string &subType)
+      : BarneyDevice(library,subType)
+    {}
   
-  BarneyMPIDevice::~BarneyMPIDevice()
-  {
-    if (commNeedsFree)
-      MPI_Comm_free(&comm);
-  }
+    BarneyMPIDevice::~BarneyMPIDevice()
+    {
+      if (commNeedsFree)
+        MPI_Comm_free(&comm);
+    }
 
-  BNContext BarneyMPIDevice::createContext()
-  {
-    if (comm) {
-      int initialized = false;
-      MPI_Initialized(&initialized);
+    BNContext BarneyMPIDevice::createContext()
+    {
+      if (comm) {
+        int initialized = false;
+        MPI_Initialized(&initialized);
       }
     }
   }
@@ -110,18 +111,19 @@ namespace BANARI_NS {
   BNContext BarneyMPIDevice::createContext()
   {
 #if BARNEY_MPI
-      if (comm && !forceLocalRendering)
-        state->tether->context
-          = bnMPIContextCreate(comm,
-                               _dgIDs,_dgCount,
-                               _gpuIDs,_gpuCount);
-      else
+    if (comm && !forceLocalRendering)
+      state->tether->context
+        = bnMPIContextCreate(comm,
+                             _dgIDs,_dgCount,
+                             _gpuIDs,_gpuCount);
+    else
 #endif
-        state->tether->context
-          = bnContextCreate(_dgIDs,_dgCount,
-                            _gpuIDs,_gpuCount);
+      state->tether->context
+        = bnContextCreate(_dgIDs,_dgCount,
+                          _gpuIDs,_gpuCount);
 
 #endif
   }
 
+}
 }
