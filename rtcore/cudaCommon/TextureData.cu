@@ -8,7 +8,7 @@
 namespace BARNEY_NS {
   namespace rtc {
     
-    TextureData::TextureData(Device *device,
+    TextureData::TextureData(CudaDeviceBase *device,
                              vec3i dims,
                              rtc::DataType format,
                              const void *texels)

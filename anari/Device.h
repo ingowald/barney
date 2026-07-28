@@ -118,11 +118,10 @@ namespace BARNEY_NS {
 
       bool m_initialized{false};
     
-      /*! allows for setting which gpu to use. must be set before the
-        first commit, and should not be changed after that. '-2' means
-        'leave it to barney', '-1' means 'use cpu', any value >= 0
-        means 'use this specific gpu */
-      int m_cudaDevice = -2;
+      /*! allows for setting which gpu to use. if set to -1 (the
+          default) this means "let backend decide" (so cuda or optix
+          might use more than one gpu).  */
+      int m_cudaDevice = -1;
       int m_dataGroupID = -1;
       /*! allows the app to say "use as many gpus as you can find", without */
       // #if BARNEY_MPI

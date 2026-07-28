@@ -309,6 +309,10 @@ function(build_barney backend)
       "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in"
       "${CMAKE_CURRENT_BINARY_DIR}/barneyDeviceConfig.h"
     )
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/anari/Library_entryPoint.h.in
+      ${CMAKE_CURRENT_BINARY_DIR}/Library_entryPoint.h
+    )
     target_include_directories(barney_config_${backend} INTERFACE
       ${CMAKE_CURRENT_LIST_DIR}
       # for any owl::common stuff

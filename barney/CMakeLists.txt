@@ -184,7 +184,7 @@ set(HOST_SOURCES
   globalTrace/RQSLocal.h
   globalTrace/RQSLocal.cu
 
-  api/barney.cu
+  barney.cu
 )
 
 # all the source that eventually go into barney_mpi

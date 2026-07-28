@@ -98,8 +98,7 @@ namespace BARNEY_NS {
 
     ANARISpatialField BarneyDevice::newSpatialField(const char *subtype)
     {
-      return (ANARISpatialField)SpatialField::createInstance(
-                                                             subtype, deviceState());
+      return (ANARISpatialField)SpatialField::createInstance(subtype, deviceState());
     }
 
     ANARISurface BarneyDevice::newSurface()
@@ -292,7 +291,9 @@ namespace BARNEY_NS {
     BarneyDevice::BarneyDevice()
       : helium::BaseDevice(default_statusFunc, nullptr)
     {
+      PING;
       m_state = std::make_unique<BarneyGlobalState>(this_device());
+      PING;
     }
 
 
@@ -307,11 +308,13 @@ namespace BARNEY_NS {
 
     void BarneyDevice::initDevice()
     {
+      PING; PRINT((int)m_initialized);
       if (m_initialized)
         return;
 
       reportMessage(ANARI_SEVERITY_DEBUG, "initializing barney device (%p)", this);
 
+      PING;
       auto state = deviceState();
     
       // bool forceLocalRendering = false;
@@ -322,29 +325,19 @@ namespace BARNEY_NS {
       // will do mpi_init()
       initMPI();
     
-      if (m_cudaDevice == -2)
-        reportMessage
-          (ANARI_SEVERITY_DEBUG, "cudaDevice not explicitly set, leaving which GPU(s) to use to barney", m_cudaDevice);
-      else if (m_cudaDevice == -1)
-        reportMessage
-          (ANARI_SEVERITY_DEBUG, "set cudaDevice explicitly set to -1 by user/app, this should force CPU rendering, ", m_cudaDevice);
-      else
-        reportMessage
-          (ANARI_SEVERITY_DEBUG, "using cuda device #%i", m_cudaDevice);
-      
       std::vector<int> gpuIDs;
-      int *_gpuIDs   = nullptr;
-      int  _gpuCount = -1;
+      PING;
       if (state->tether->devices[0]->m_cudaDevice >= 0) {
         // first device DID have a cudadevice explicitly set; let's
         // assume that app then explciitly sets cudaDevice for every
         // other device, too, and let's use that list of GPUs.
         for (auto dev : state->tether->devices) {
+          reportMessage(ANARI_SEVERITY_DEBUG,
+                        "adding requested GPU ID %i",
+                        dev->m_cudaDevice);
           assert(dev->m_cudaDevice >= 0);
           gpuIDs.push_back(dev->m_cudaDevice);
         }
-        _gpuIDs = gpuIDs.data();
-        _gpuCount = (int)gpuIDs.size();
       } else {
         // first device did NOT have a cudadevice set - this means the
         // app is NOT using explicit tethering (where it creates a
@@ -353,12 +346,16 @@ namespace BARNEY_NS {
         // explicitly attached to it.... which means we could in theory
         // use multiple GPU
         if (m_enable_multiGPU) {
+          int numGPUs = rtc::physicalDeviceCount();
+          for (int i=0;i<numGPUs;i++)
+            gpuIDs.push_back(i);
         } else {
-          _gpuIDs = nullptr;
-          _gpuCount = 1;
+          gpuIDs = {0};
         }
       }
 
+      PING;
+      
       std::vector<int> dgIDs;
       for (auto dev : state->tether->devices) {
         int dgID = dev->m_dataGroupID;
@@ -370,7 +367,7 @@ namespace BARNEY_NS {
       int *_dgIDs   = dgIDs.data();
       int  _dgCount = (int)dgIDs.size();
 
-      if (multiNode.size > 1) {
+      if (1 || multiNode.size > 1) {
         std::stringstream ss;
         ss << "#banari rank " << multiNode.rank << " (of " << multiNode.size
            << ") creating context GPUs=(";
@@ -384,6 +381,14 @@ namespace BARNEY_NS {
         std::cout << ss.str() << std::endl;
         reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
       }
+      PING;
+
+      assert(dgIDs.size() == gpuIDs.size());
+      std::vector<vec2i> gpuIDsAndDataRanks;
+      for (int i=0;i<dgIDs.size();i++)
+        gpuIDsAndDataRanks.push_back(vec2i{gpuIDs[i],dgIDs[i]});
+      state->tether->context = createContext(gpuIDsAndDataRanks);
+      
       m_initialized = true;
     }
 
@@ -510,6 +515,7 @@ namespace BARNEY_NS {
 
     BNContext BarneyDevice::createContext(std::vector<vec2i> &gpuIDsAndDataRank)
     {
+      PING;
       std::vector<int> dataRanks;
       std::vector<int> gpuIDs;
       for (auto in : gpuIDsAndDataRank) {

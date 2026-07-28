@@ -152,20 +152,20 @@ namespace BARNEY_NS {
       fb->finalizeFrame();
     }
 
-    Context *
-    createLocalContext(/*! how many data slots this context is to
-                         offer, and which part(s) of the
-                         distributed model data these slot(s)
-                         will hold */
-                       const int *dataRanksOnThisContext,
-                       int        numDataRanksOnThisContext,
-                       /*! which gpu(s) to use for this
-                         process. default is to distribute
-                         node's GPUs equally over all ranks on
-                         that given node */
-                       const int *gpuIDs,
-                       int  numGPUs)
+    Context *LocalContext::create(/*! how many data slots this context is to
+                                    offer, and which part(s) of the
+                                    distributed model data these slot(s)
+                                    will hold */
+                                  const int *dataRanksOnThisContext,
+                                  int        numDataRanksOnThisContext,
+                                  /*! which gpu(s) to use for this
+                                    process. default is to distribute
+                                    node's GPUs equally over all ranks on
+                                    that given node */
+                                  const int *gpuIDs,
+                                  int  numGPUs)
     {
+      PING;
       assert(numDataRanksOnThisContext > 0);
       std::vector<int> dgIDs;
       for (int i = 0;i < numDataRanksOnThisContext;i++)
@@ -197,7 +197,8 @@ namespace BARNEY_NS {
         numGPUs = numDGs;
       }
 #endif
-    
+
+      PING;
       if (numGPUs < numDGs)
         throw std::runtime_error
           ("not enough CUDA GPUs for requested number of data groups!");

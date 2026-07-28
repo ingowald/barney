@@ -5,11 +5,6 @@
 # "backend" variable gets set by parent dir, and is one of either
 # 'cpu', 'cuda', 'optix', 'hip' or 'hiprt'
 
-#message("configuring library entrypoint, BARNEY_DEVICE_NAME = ${BARNEY_DEVICE_NAME}")
-#configure_file(
-#  ${PROJECT_SOURCE_DIR}/anari/Library_entryPoint.h.in
-#  Library_entryPoint.h
-#)
 
 #set(BARNEY_INSTALL_TARGETS)
 set(BANARI_SOURCES
@@ -83,11 +78,10 @@ rtc_library_properties(anari_library_${BARNEY_DEVICE_NAME}_static)
 # the 'full' barney+anari, as a real shared loadable library, but
 # containing only a single backend
 # ==================================================================
-add_library(anari_library_${BARNEY_DEVICE_NAME} SHARED Library.cpp)
+add_library(anari_library_${BARNEY_DEVICE_NAME} SHARED SingleDeviceLibrary.cpp)
 target_link_libraries(anari_library_${BARNEY_DEVICE_NAME} PUBLIC
   anari_library_${BARNEY_DEVICE_NAME}_static
 )
-list(APPEND BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME})
 set_target_properties(anari_library_${BARNEY_DEVICE_NAME}
   PROPERTIES
   POSITION_INDEPENDENT_CODE    ON

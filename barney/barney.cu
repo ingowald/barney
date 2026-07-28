@@ -9,6 +9,7 @@
 #include "barney/light/Light.h"
 #include "barney/Camera.h"
 #include "barney/fb/FrameBuffer.h"
+#include "barney/LocalContext.h"
 
 static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this isn't going to work");
 
@@ -77,11 +78,14 @@ namespace BARNEY_NS {
         std::cout << std::endl;
       }
     }
-    return (BNContext)
-      createLocalContext(dataRanksOnThisContext,
-                         numDataRanksOnThisContext,
-                         gpuIDs,
-                         numGPUs);
+    BNContext ctx
+      = (BNContext)LocalContext::create(dataRanksOnThisContext,
+                                        numDataRanksOnThisContext,
+                                        gpuIDs,
+                                        numGPUs);
+    if (!ctx) throw std::runtime_error("could not create barney context");
+    PRINT(ctx);
+    return ctx;
   }  
   
   inline Context *checkGet(BNContext context)
@@ -298,6 +302,7 @@ namespace BARNEY_NS {
   {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
+    assert(context);
     std::shared_ptr<GlobalModel> model = context->createModel();
     return (BNModel)context->initReference(model);
   }

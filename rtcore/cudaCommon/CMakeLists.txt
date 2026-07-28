@@ -10,6 +10,7 @@
 add_library(barney_rtc_cudaCommon_${backend} STATIC
   Device.cu
   Texture.cu
+  TextureData.cu
   cuda-helper.cpp
 )
 target_link_libraries(barney_rtc_cudaCommon_${backend} PUBLIC

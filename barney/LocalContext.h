@@ -17,6 +17,18 @@ namespace BARNEY_NS {
       virtual ~LocalContext();
 
       static WorkerTopo::SP makeTopo(const std::vector<LocalSlot> &localSlots);
+      static Context *create(/*! how many data slots this context is to
+                               offer, and which part(s) of the
+                               distributed model data these slot(s)
+                               will hold */
+                             const int *dataRanksOnThisContext,
+                             int        numDataRanksOnThisContext,
+                             /*! which gpu(s) to use for this
+                               process. default is to distribute
+                               node's GPUs equally over all ranks on
+                               that given node */
+                             const int *gpuIDs,
+                             int  numGPUs);
     
       /*! pretty-printer for printf-debugging */
       std::string toString() const override

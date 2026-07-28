@@ -79,4 +79,8 @@ namespace BARNEY_NS {
   }
 } // namespace BANARI_NS
 
-//#include "Library_entryPoint.h"
+// have to have this in a auto-generated file because we have to get
+// cmake to insert BARNEY_DEVIEC_NAME - can't do that through #defines
+// because the entrypoint macro is itself a macro so it wont'
+// substitute recursively
+#include "Library_entryPoint.h"
