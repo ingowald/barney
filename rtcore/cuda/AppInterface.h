@@ -18,10 +18,10 @@
 #include "rtcore/cudaCommon/Texture.h"
 
 #define RTC_IMPORT_USER_GEOM(moduleName,typeName,DD,has_ah,has_ch)      \
-  extern ::rtc::cuda::GeomType *createGeomType_##typeName(::rtc::Device *);
+  extern rtc::GeomType *createGeomType_##typeName(rtc::Device *);
 
 #define RTC_IMPORT_TRIANGLES_GEOM(moduleName,typeName,DD,has_ah,has_ch) \
-  extern rtc::cuda::GeomType *createGeomType_##typeName(rtc::Device *);
+  extern rtc::GeomType *createGeomType_##typeName(rtc::Device *);
 
 
 

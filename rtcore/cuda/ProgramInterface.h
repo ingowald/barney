@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "rtcore/cuda/ComputeInterface.h"
+#include "rtcore/cudaCommon/ComputeInterface.h"
 #include "rtcore/cuda/Geom.h"
 
 namespace BARNEY_NS {

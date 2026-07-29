@@ -35,9 +35,9 @@ namespace BARNEY_NS {
                               vec2i dims,                       \
                               const void *lpData);              \
                                                                 \
-  ::rtc::TraceKernel2D *createTrace_##name(rtc::Device *device) \
+  rtc::TraceKernel2D *createTrace_##name(rtc::Device *device)   \
   {                                                             \
-    return new ::rtc::cuda::TraceKernel2D                       \
+    return new rtc::TraceKernel2D                               \
       (device,sizeOfLP,rtc_cuda_launch_##name);                 \
   }                                                             \
     

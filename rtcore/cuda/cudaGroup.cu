@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0/
 
 // #define FORCE_HOST_BUILDER 1
 // #define CUBQL_CPU_BUILDER_IMPLEMENTATION 1
@@ -17,9 +18,8 @@
 #include "cuBQL/bvh.h"
 #include "cuBQL/builder/cuda.h"
 
-
-namespace rtc {
-  namespace cuda {
+namespace BARNEY_NS {
+  namespace rtc {
     
     Group::Group(Device *device)
       : device(device)

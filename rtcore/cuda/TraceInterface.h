@@ -199,11 +199,12 @@ namespace BARNEY_NS {
 #define RTC_EXPORT_TRACE2D(name,Class)                          \
   RTC_CUDA_TRACEKERNEL(name,Class)                              \
   void rtc_cuda_launch_##name(rtc::Device *device,              \
-                              vec2i dims,                       \
+                              ::owl::common::vec2i dims,        \
                               const void *lpData)               \
   {                                                             \
-    vec2i bs(16,16);                                            \
-    vec2i nb = divRoundUp(dims,bs);                             \
+    ::owl::common::vec2i bs(16,16);                             \
+    ::owl::common::vec2i nb                                     \
+        = ::owl::common::divRoundUp(dims,bs);                   \
     rtc::TraceInterface ti;                                     \
     ti.lpData = lpData;                                         \
     rtc_cuda_run_##name                                         \
