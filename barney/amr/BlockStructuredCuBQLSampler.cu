@@ -56,7 +56,7 @@ namespace BARNEY_NS {
           = (range1f*)device->rtc->allocMem(numPrims*sizeof(range1f));
         field->computeElementBBs(device,primBounds,valueRanges);
         device->rtc->sync();
-#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
+#if BARNEY_RTC_CPU || defined(__HIPCC__)
         cuBQL::cpu::spatialMedian(bvh,
                                   (const cuBQL::box_t<float,3>*)primBounds,
                                   numPrims,

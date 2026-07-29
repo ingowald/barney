@@ -54,7 +54,7 @@ namespace BARNEY_NS {
                                 primBounds,valueRanges);
         device->rtc->sync();
 
-#if BARNEY_RTC_EMBREE || defined(__HIPCC__)
+#if BARNEY_RTC_CPU || defined(__HIPCC__)
         cuBQL::cpu::spatialMedian(pld->bvh,
                                   (const cuBQL::box_t<float,3>*)primBounds,
                                   numCells,

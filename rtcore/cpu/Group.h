@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "rtcore/embree/Triangles.h"
+#include "rtcore/cpu/Triangles.h"
 
 namespace BARNEY_NS {
   namespace rtc {

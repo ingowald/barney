@@ -14,7 +14,7 @@ message("enabling CPU backend (via embree)")
 function(rtc_library_properties lib)
 endfunction()
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/embree buildDir_rtc_embree)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/cpu)# buildDir_rtc_cpu)
 
 # macro(rtc_configure_source)
 #   foreach(src ${ARGN})
@@ -30,10 +30,10 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/embree buildDir_rtc_embree)
 
 
 function(rtc_build_device_sources libname)
-  message("rtc-embree: dev lib ${libname} adding device sourcess ${ARGN}")
+  message("rtc-cpu: dev lib ${libname} adding device sourcess ${ARGN}")
   add_library(${libname} STATIC ${ARGN})
   rtc_configure_source(${ARGN})
-  target_link_libraries(${libname} barney_rtc_embree)
+  target_link_libraries(${libname} barney_rtc_cpu)
   rtc_library_properties(${libname})
 endfunction()
 

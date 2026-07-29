@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "rtcore/embree/Buffer.h"
+#include "rtcore/cpu/Buffer.h"
 
 namespace BARNEY_NS {
   namespace rtc {

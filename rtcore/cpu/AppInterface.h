@@ -4,17 +4,15 @@
 
 #pragma once
 
-#include "rtcore/embree/embree-common.h"
-#include "rtcore/embree/Device.h"
-#include "rtcore/embree/Buffer.h"
-#include "rtcore/embree/Group.h"
-#include "rtcore/embree/ComputeKernel.h"
-#include "rtcore/embree/Denoiser.h"
+#include "rtcore/cpu/embree-common.h"
+#include "rtcore/cpu/Device.h"
+#include "rtcore/cpu/Buffer.h"
+#include "rtcore/cpu/Group.h"
+#include "rtcore/cpu/ComputeKernel.h"
+#include "rtcore/cpu/Denoiser.h"
 
 namespace BARNEY_NS {
   namespace rtc {
-// namespace rtc {
-//   namespace embree {
     
     inline bool enablePeerAccess(const std::vector<int> &IDs)
     { /* ignore / no-op on embree backend */; return true; }

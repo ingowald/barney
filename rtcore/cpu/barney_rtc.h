@@ -4,7 +4,10 @@
 
 #pragma once
 
-#include "rtcore/embree/AppInterface.h"
+// tell whoever includes us that we're the CPU backend
+#define BARNEY_RTC_CPU 1
+
+#include "rtcore/cpu/AppInterface.h"
 #define BARNEY_DEVICE_PROGRAM 1
-#include "rtcore/embree/TraceInterface.h"
+#include "rtcore/cpu/TraceInterface.h"
 

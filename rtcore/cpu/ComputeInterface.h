@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "rtcore/embree/Device.h"
-#include "rtcore/embree/Texture.h"
+#include "rtcore/cpu/Device.h"
+#include "rtcore/cpu/Texture.h"
 #include <atomic>
 #include <thread>
 #include <barrier>

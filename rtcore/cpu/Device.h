@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "rtcore/embree/embree-common.h"
+#include "rtcore/cpu/embree-common.h"
 
 #define RTC_DEVICE_CODE 1
 

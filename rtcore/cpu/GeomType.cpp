@@ -2,9 +2,9 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "rtcore/embree/GeomType.h"
-#include "rtcore/embree/Triangles.h"
-#include "rtcore/embree/UserGeom.h"
+#include "rtcore/cpu/GeomType.h"
+#include "rtcore/cpu/Triangles.h"
+#include "rtcore/cpu/UserGeom.h"
 
 namespace BARNEY_NS {
   namespace rtc {

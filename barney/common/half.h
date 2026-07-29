@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -13,12 +13,13 @@
 #elif defined(__CUDACC__)
 #  include <cuda_fp16.h>
 #else
-#  include "rtcore/embree/Float16.h"
+#  include "rtcore/cpu/Float16.h"
 typedef float16_t half;
 #endif
 
 namespace owl {
   namespace common  {
+    
     struct vec3h {
       inline __both__ operator vec3f () const;
       inline __both__ vec3h &operator=(vec3f v);

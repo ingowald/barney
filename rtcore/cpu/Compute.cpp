@@ -2,14 +2,14 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "rtcore/embree/ComputeInterface.h"
-#include "rtcore/embree/ComputeKernel.h"
+#include "rtcore/cpu/ComputeInterface.h"
+#include "rtcore/cpu/ComputeKernel.h"
 #include <owl/common/parallel/parallel_for.h>
 #include <mutex>
 #include <thread>
 #include <condition_variable>
 #include <barrier>
-#include "rtcore/embree/TraceInterface.h"
+#include "rtcore/cpu/TraceInterface.h"
 
 namespace BARNEY_NS {
   namespace rtc {

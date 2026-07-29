@@ -4,23 +4,29 @@
 
 #pragma once
 
-#include "rtcore/embree/Buffer.h"
-#include "rtcore/embree/Geom.h"
+#include "rtcore/cpu/Buffer.h"
+#include "rtcore/cpu/GeomType.h"
+#include "rtcore/cpu/Geom.h"
 
 namespace BARNEY_NS {
   namespace rtc {
 
-    struct UserGeom : public Geom
+    struct TrianglesGeomType;
+    
+    struct TrianglesGeom : public Geom
     {
-      UserGeom(UserGeomType *type);
-      
+      TrianglesGeom(TrianglesGeomType *type);
+
       /*! only for user geoms */
       void setPrimCount(int primCount) override;
       /*! can only get called on triangle type geoms */
       void setVertices(Buffer *vertices, int numVertices) override;
       void setIndices(Buffer *indices, int numIndices) override;
 
-      int primCount = 0;
+      int numVertices = 0;
+      int numIndices = 0;
+      vec3f *vertices = 0;
+      vec3i *indices = 0;
     };
     
   }

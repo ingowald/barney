@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "rtcore/embree/Geom.h"
+#include "rtcore/cpu/Geom.h"
 
 namespace BARNEY_NS {
   namespace rtc {

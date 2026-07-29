@@ -2,15 +2,15 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "rtcore/embree/Device.h"
-#include "rtcore/embree/Texture.h"
-#include "rtcore/embree/Buffer.h"
-#include "rtcore/embree/Triangles.h"
-#include "rtcore/embree/UserGeom.h"
-#include "rtcore/embree/Group.h"
-#include "rtcore/embree/Denoiser.h"
-#include "rtcore/embree/TraceInterface.h"
-#include "rtcore/embree/ComputeInterface.h"
+#include "rtcore/cpu/Device.h"
+#include "rtcore/cpu/Texture.h"
+#include "rtcore/cpu/Buffer.h"
+#include "rtcore/cpu/Triangles.h"
+#include "rtcore/cpu/UserGeom.h"
+#include "rtcore/cpu/Group.h"
+#include "rtcore/cpu/Denoiser.h"
+#include "rtcore/cpu/TraceInterface.h"
+#include "rtcore/cpu/ComputeInterface.h"
 
 namespace BARNEY_NS {
   namespace rtc {

@@ -10,7 +10,7 @@
 option(BARNEY_USE_HIP        "Use HIP instead of CUDA"     OFF)
 option(BARNEY_BACKEND_CUDA   "Build (native) CUDA Backend" OFF)
 option(BARNEY_BACKEND_OPTIX  "Build OptiX Backend"         ON)
-option(BARNEY_BACKEND_EMBREE "Build Embree/CPU Backend"    OFF)
+option(BARNEY_BACKEND_CPU    "Build Embree/CPU Backend"    OFF)
 option(BARNEY_BACKEND_HIP    "Build HIP Backend"           ON)
 option(BARNEY_BACKEND_HIPRT  "Build HIPRT Backend"         OFF)
 option(BARNEY_MPI            "Enable MPI Support"          OFF)
@@ -19,7 +19,7 @@ option(BARNEY_MPI            "Enable MPI Support"          OFF)
 # cmake project/output config
 # ------------------------------------------------------------------
 set(BARNEY_VERSION_MAJOR 1)
-set(BARNEY_VERSION_MINOR 2)
+set(BARNEY_VERSION_MINOR 3)
 set(BARNEY_VERSION_PATCH 0)
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 
@@ -329,7 +329,7 @@ function(build_barney backend)
 endfunction()
 
 set(BARNEY_INSTALL_TARGETS)
-build_barney(embree)
+build_barney(cpu)
 build_barney(cuda)
 build_barney(optix)
 build_barney(hip)

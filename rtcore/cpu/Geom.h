@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "rtcore/embree/GeomType.h"
-#include "rtcore/embree/Buffer.h"
+#include "rtcore/cpu/GeomType.h"
+#include "rtcore/cpu/Buffer.h"
 
 namespace BARNEY_NS {
   namespace rtc {

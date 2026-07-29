@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #include "barney/MPIContext.h"
 #include "barney/fb/DistFB.h"
@@ -13,11 +13,6 @@
 # define LOG_API_ENTRY std::cout << OWL_TERMINAL_BLUE << "#bn: " << __FUNCTION__ << OWL_TERMINAL_DEFAULT << std::endl;
 #else
 # define LOG_API_ENTRY /**/
-#endif
-
-
-#if defined(BARNEY_RTC_EMBREE) && defined(BARNEY_RTC_OPTIX)
-# error "should not have both backends on at the same time!?"
 #endif
 
 namespace BARNEY_NS {

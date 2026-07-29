@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "rtcore/embree/Denoiser.h"
+#include "rtcore/cpu/Denoiser.h"
 
 #if BARNEY_OIDN_CPU
 

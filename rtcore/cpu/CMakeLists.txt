@@ -79,7 +79,7 @@ elseif(COMPILE_FOR_ARM)
 endif()
 endif()
 
-add_library(barney_rtc_embree STATIC
+add_library(barney_rtc_cpu STATIC
   Float16.cpp
   Compute.cpp
   Device.cpp
@@ -92,33 +92,31 @@ add_library(barney_rtc_embree STATIC
   Group.cpp
   Denoiser.cpp
 )
-target_compile_definitions(barney_rtc_embree PUBLIC
-  -DBARNEY_NS=${BARNEY_PROJECT_NAME}_${backend}
-  -DBARNEY_RTC_EMBREE=1
-)
 if (embree_FOUND)
-  target_compile_definitions(barney_rtc_embree PUBLIC
+  target_compile_definitions(barney_rtc_cpu PUBLIC
     -DBARNEY_EXTERNAL_EMBREE=1
   )
-  target_link_libraries(barney_rtc_embree PUBLIC
+  target_link_libraries(barney_rtc_cpu PUBLIC
     embree
     barney_config
   )
 else()
-  target_link_libraries(barney_rtc_embree PUBLIC
+  target_link_libraries(barney_rtc_cpu PUBLIC
     embree_local
     barney_config
   )
 endif()
 
-target_include_directories(barney_rtc_embree PUBLIC
+# add current list dir so barney native can find/include barney_rtc.h
+# without having to know which rtc directory is being used.
+target_include_directories(barney_rtc_cpu PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}
 )
-rtc_library_properties(barney_rtc_embree)
+rtc_library_properties(barney_rtc_cpu)
 if (BARNEY_OIDN_EMBREE)
-  target_link_libraries(barney_rtc_embree PUBLIC OpenImageDenoise)
+  target_link_libraries(barney_rtc_cpu PUBLIC OpenImageDenoise)
 endif()
-target_link_libraries(barney_rtc_embree PUBLIC
+target_link_libraries(barney_rtc_cpu PUBLIC
   $<BUILD_INTERFACE:cuBQL_cpu_float3_static>
 )
 

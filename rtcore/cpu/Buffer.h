@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "rtcore/embree/Device.h"
+#include "rtcore/cpu/Device.h"
 
 namespace BARNEY_NS {
   namespace rtc {

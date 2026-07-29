@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "rtcore/embree/Device.h"
+#include "rtcore/cpu/Device.h"
 
 #if BARNEY_OIDN_CPU
 # include <OpenImageDenoise/oidn.h>
