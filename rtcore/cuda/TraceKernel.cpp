@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0/
 
 #include "rtcore/cuda/Device.h"
 #include "rtcore/cuda/TraceKernel.h"
 
-namespace rtc {
-  namespace cuda {
+namespace BARNEY_NS {
+  namespace rtc {
 
     TraceKernel2D::TraceKernel2D(Device *device,
                                  size_t sizeOfLP,

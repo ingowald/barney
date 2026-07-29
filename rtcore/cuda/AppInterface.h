@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
@@ -16,21 +16,6 @@
 #include "rtcore/cudaCommon/TextureData.h"
 // for getDD
 #include "rtcore/cudaCommon/Texture.h"
-
-namespace rtc {
-  namespace cuda {
-
-    using rtc::cuda_common::enablePeerAccess;
-    using rtc::cuda_common::getPhysicalDeviceHash;
-    
-    using rtc::cuda_common::ComputeKernel1D;
-    using rtc::cuda_common::ComputeKernel2D;
-    using rtc::cuda_common::ComputeKernel3D;
-    
-    using rtc::cuda_common::Texture;
-    using rtc::cuda_common::TextureData;
-  }
-}
 
 #define RTC_IMPORT_USER_GEOM(moduleName,typeName,DD,has_ah,has_ch)      \
   extern ::rtc::cuda::GeomType *createGeomType_##typeName(::rtc::Device *);

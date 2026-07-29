@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0/
 
 #include "rtcore/cuda/Device.h"
 #include "rtcore/cuda/Geom.h"
 #include "rtcore/cuda/GeomType.h"
 
-namespace rtc {
-  namespace cuda {
+namespace BARNEY_NS {
+  namespace rtc {
     
     Geom::Geom(GeomType *gt)
       : gt(gt),

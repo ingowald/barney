@@ -6,8 +6,8 @@
 
 #include "rtcore/cudaCommon/Device.h"
 
-namespace rtc {
-  namespace cuda {
+namespace BARNEY_NS {
+  namespace rtc {
     
     struct Device;
 

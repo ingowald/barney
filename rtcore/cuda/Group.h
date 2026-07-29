@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "rtcore/cudaCommon/Device.h"
 #include <cuBQL/bvh.h>
 
-namespace rtc {
-  namespace cuda {
+namespace BARNEY_NS {
+  namespace rtc {
     
     using cuBQL::bvh3f;
 

@@ -6,9 +6,9 @@
 #include "rtcore/cuda/Buffer.h"
 #include "rtcore/cudaCommon/Device.h"
 
-namespace rtc {
-  namespace cuda {
-    
+namespace BARNEY_NS {
+  namespace rtc {
+
     Buffer::Buffer(Device *device,
                    size_t numBytes,
                    const void *initValues)

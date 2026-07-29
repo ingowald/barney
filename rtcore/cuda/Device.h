@@ -1,16 +1,14 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
 #include "rtcore/cudaCommon/Device.h"
 
-namespace rtc {
-  namespace cuda {
-    
-    using cuda_common::SetActiveGPU;
-  
+namespace BARNEY_NS {
+  namespace rtc {
+
     struct Buffer;
     struct Device;
     struct Geom;
@@ -20,22 +18,9 @@ namespace rtc {
 
     struct TraceKernel2D;
 
-    using rtc::cuda_common::Texture;
-    using rtc::cuda_common::TextureData;
-    
-    using cuda_common::float2;
-    using cuda_common::float3;
-    using cuda_common::float4;
-    using cuda_common::int2;
-    using cuda_common::int3;
-    using cuda_common::int4;
-    using cuda_common::load;
-  
-    using cuda_common::TextureObject;
-  
-    struct Device : public cuda_common::Device{
+    struct Device : public CudaDeviceBase {
       Device(int physicalGPU)
-        : cuda_common::Device(physicalGPU)
+        : CudaDeviceBase(physicalGPU)
       {}
       virtual ~Device();
 

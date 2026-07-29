@@ -7,10 +7,8 @@
 #include "rtcore/cuda/ComputeInterface.h"
 #include "rtcore/cuda/Geom.h"
 
-namespace rtc {
-  namespace cuda {
-    
-    using rtc::cuda_common::ComputeInterface;
+namespace BARNEY_NS {
+  namespace rtc {
 
     struct Instance {
       affine3f objectToWorldXfm;
@@ -153,7 +151,7 @@ namespace rtc {
                                owl::common::box3f &result,              \
                                int primID)                              \
   {                                                                     \
-    ::rtc::TraceInterface ti;                                           \
+    rtc::TraceInterface ti;                                             \
     type::bounds(ti,geom,result,primID);                                \
   }                                                                     \
   __global__ void                                                       \
@@ -208,7 +206,7 @@ namespace rtc {
   }                                                                     \
   rtc::GeomType *createGeomType_##name(rtc::Device *device)             \
   {                                                                     \
-    ::rtc::SetActiveGPU forDuration(device);                            \
+    rtc::SetActiveGPU forDuration(device);                              \
     rtc::Geom::SBTHeader *h;                                            \
     BARNEY_CUDA_CALL(Malloc((void **)&h,sizeof(*h)));                   \
     rtc_cuda_writeAddresses_##name<<<1,32>>>(h);                        \
@@ -216,7 +214,7 @@ namespace rtc {
     rtc::Geom::SBTHeader hh;                                            \
     BARNEY_CUDA_CALL(Memcpy(&hh,h,sizeof(hh),cudaMemcpyDefault));       \
     BARNEY_CUDA_CALL(Free(h));                                          \
-    return new rtc::cuda::UserGeomType                                  \
+    return new rtc::UserGeomType                                        \
       (device,                                                          \
        sizeof(DD),                                                      \
        _rtc_cuda_writeBounds__##name,                                   \
@@ -245,7 +243,7 @@ namespace rtc {
   RTC_CUDA_TRIANGLES_WRITEADDR(name,Programs,has_ah,has_ch)             \
   rtc::GeomType *createGeomType_##name(rtc::Device *device)             \
   {                                                                     \
-    ::rtc::SetActiveGPU forDuration(device);                            \
+    rtc::SetActiveGPU forDuration(device);                              \
     rtc::Geom::SBTHeader *h;                                            \
     BARNEY_CUDA_CALL(Malloc((void **)&h,sizeof(*h)));                   \
     rtc_cuda_writeAddresses_##name<<<1,32>>>(h);                        \

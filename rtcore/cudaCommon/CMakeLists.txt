@@ -7,18 +7,21 @@
 # defines, and in particular different namespace - so we actually have
 # t have a different cmake target for each 'isntantiation' of this
 # code.
+find_package(CUDAToolkit REQUIRED)
+
 add_library(barney_rtc_cudaCommon_${backend} STATIC
   Device.cu
   Texture.cu
   TextureData.cu
-  cuda-helper.cpp
+#  cuda-helper.cpp
 )
 target_link_libraries(barney_rtc_cudaCommon_${backend} PUBLIC
   barney_config
   barney_config_${backend}
   #  $<BUILD_INTERFACE:cuBQL_cuda_float3_static>
   cuBQL
-  owl::owl_static
+  CUDA::cudart_static
+#  owl::owl_static
 )
 target_include_directories(barney_rtc_cudaCommon_${backend} PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}
