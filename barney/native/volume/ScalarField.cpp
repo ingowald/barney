@@ -2,15 +2,15 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/volume/Volume.h"
-#include "barney/volume/ScalarField.h"
-#include "barney/volume/ScalarFieldRegistry.h"
-#include "barney/ModelSlot.h"
-#include "barney/Context.h"
-#include "barney/volume/StructuredData.h"
-#include "barney/umesh/common/UMeshField.h"
-#include "barney/amr/BlockStructuredField.h"
-#include "barney/volume/NanoVDB.h"
+#include "native/volume/Volume.h"
+#include "native/volume/ScalarField.h"
+#include "native/volume/ScalarFieldRegistry.h"
+#include "native/ModelSlot.h"
+#include "native/Context.h"
+#include "native/volume/StructuredData.h"
+#include "native/umesh/common/UMeshField.h"
+#include "native/amr/BlockStructuredField.h"
+#include "native/volume/NanoVDB.h"
 
 namespace BARNEY_NS {
   namespace native {

@@ -2,9 +2,9 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/Context.h"
-#include "barney/volume/StructuredData.h"
-#include "barney/common/Texture.h"
+#include "native/Context.h"
+#include "native/volume/StructuredData.h"
+#include "native/common/Texture.h"
 #include "barney_rtc.h"
 
 namespace BARNEY_NS {

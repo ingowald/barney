@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/render/DG.h"
-#include "barney/render/HitAttributes.h"
+#include "native/render/DG.h"
+#include "native/render/HitAttributes.h"
 
 namespace BARNEY_NS {
   namespace native {

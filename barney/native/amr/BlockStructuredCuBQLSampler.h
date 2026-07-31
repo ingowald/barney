@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "barney/amr/BlockStructuredField.h"
-#include "barney/volume/MCAccelerator.h"
-#include "barney/common/CuBQL.h"
+#include "native/amr/BlockStructuredField.h"
+#include "native/volume/MCAccelerator.h"
+#include "native/common/CuBQL.h"
 #include "cuBQL/traversal/fixedBoxQuery.h"
 
 namespace BARNEY_NS {

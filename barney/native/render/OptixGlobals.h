@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "barney/material/DeviceMaterial.h"
-#include "barney/render/Sampler.h"
-#include "barney/render/HitAttributes.h"
+#include "native/material/DeviceMaterial.h"
+#include "native/render/Sampler.h"
+#include "native/render/HitAttributes.h"
 #include "barney_rtc.h"
-#include "barney/render/World.h"
-#include "barney/render/HitIDs.h"
+#include "native/render/World.h"
+#include "native/render/HitIDs.h"
 
 namespace BARNEY_NS {
   namespace native {

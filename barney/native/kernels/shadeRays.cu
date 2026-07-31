@@ -2,14 +2,14 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/fb/FrameBuffer.h"
-#include "barney/fb/TiledFB.h"
-#include "barney/render/World.h"
-#include "barney/render/DG.h"
-#include "barney/render/Renderer.h"
-#include "barney/GlobalModel.h"
-#include "barney/render/RayQueue.h"
-#include "barney/FromEnv.h"
+#include "native/fb/FrameBuffer.h"
+#include "native/fb/TiledFB.h"
+#include "native/render/World.h"
+#include "native/render/DG.h"
+#include "native/render/Renderer.h"
+#include "native/GlobalModel.h"
+#include "native/render/RayQueue.h"
+#include "native/FromEnv.h"
 
 namespace BARNEY_NS {
   namespace native {

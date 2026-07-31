@@ -2,10 +2,9 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/fb/TiledFB.h"
-#include "barney/fb/FrameBuffer.h"
-#include "barney/common/math.h"
-#include "barney_rtc.h"
+#include "native/fb/TiledFB.h"
+#include "native/fb/FrameBuffer.h"
+#include "native/common/math.h"
 
 namespace BARNEY_NS {
   namespace native {

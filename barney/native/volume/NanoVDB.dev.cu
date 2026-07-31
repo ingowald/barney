@@ -2,9 +2,9 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/volume/NanoVDB.h"
+#include "native/volume/NanoVDB.h"
 #if BARNEY_HAVE_NANOVDB
-#include "barney/volume/MCAccelerator.h"
+#include "native/volume/MCAccelerator.h"
 #include "barney_rtc.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);

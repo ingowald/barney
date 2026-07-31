@@ -2,14 +2,14 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/Context.h"
-#include "barney/FromEnv.h"
-#include "barney/GlobalModel.h"
-#include "barney/render/Renderer.h"
-#include "barney/light/Light.h"
-#include "barney/Camera.h"
-#include "barney/fb/FrameBuffer.h"
-#include "barney/LocalContext.h"
+#include "native/Context.h"
+#include "native/FromEnv.h"
+#include "native/GlobalModel.h"
+#include "native/render/Renderer.h"
+#include "native/light/Light.h"
+#include "native/Camera.h"
+#include "native/fb/FrameBuffer.h"
+#include "native/LocalContext.h"
 
 static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this isn't going to work");
 

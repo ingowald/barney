@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/packedBSDF/PackedBSDF.h"
-#include "barney/material/Material.h"
+#include "native/packedBSDF/PackedBSDF.h"
+#include "native/material/HostMaterial.h"
 
 namespace BARNEY_NS {
   namespace native {

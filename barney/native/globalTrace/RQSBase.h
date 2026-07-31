@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "barney/Context.h"
+#include "native/Context.h"
 
 namespace BARNEY_NS {
   namespace native {

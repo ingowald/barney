@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
-#include "barney/Object.h"
-#include "barney/volume/TransferFunction.h"
-#include "barney/volume/ScalarField.h"
+#include "native/common/barney-common.h"
+#include "native/Object.h"
+#include "native/volume/TransferFunction.h"
+#include "native/volume/ScalarField.h"
 #if BARNEY_USE_MULTI_SCATTERING
-#include "barney/volume/PrincipledVolume.h"
+#include "native/volume/PrincipledVolume.h"
 #endif
 #include <array>
 

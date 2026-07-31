@@ -2,16 +2,16 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/geometry/Geometry.h"
-#include "barney/ModelSlot.h"
-#include "barney/Context.h"
+#include "native/geometry/Geometry.h"
+#include "native/ModelSlot.h"
+#include "native/Context.h"
 
-#include "barney/geometry/Triangles.h"
-#include "barney/geometry/Spheres.h"
-#include "barney/geometry/Cones.h"
-#include "barney/geometry/Cylinders.h"
-#include "barney/geometry/Capsules.h"
-#include "barney/geometry/IsoSurface.h"
+#include "native/geometry/Triangles.h"
+#include "native/geometry/Spheres.h"
+#include "native/geometry/Cones.h"
+#include "native/geometry/Cylinders.h"
+#include "native/geometry/Capsules.h"
+#include "native/geometry/IsoSurface.h"
 
 namespace BARNEY_NS {
   namespace native {

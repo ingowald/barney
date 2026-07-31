@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "native/common/barney-common.h"
 #include "cuBQL/bvh.h"
 #include "cuBQL/traversal/shrinkingRadiusQuery.h"
 

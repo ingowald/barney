@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/Context.h"
-#include "barney/fb/FrameBuffer.h"
+#include "native/Context.h"
+#include "native/fb/FrameBuffer.h"
 
 namespace BARNEY_NS {
   namespace native {

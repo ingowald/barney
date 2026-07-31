@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/volume/TransferFunction.h"
+#include "native/volume/TransferFunction.h"
 
 namespace BARNEY_NS {
   namespace native {

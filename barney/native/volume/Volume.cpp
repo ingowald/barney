@@ -2,12 +2,12 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/volume/Volume.h"
-#include "barney/ModelSlot.h"
+#include "native/volume/Volume.h"
+#include "native/ModelSlot.h"
 #if BARNEY_USE_MULTI_SCATTERING
-#include "barney/common/math.h"
+#include "native/common/math.h"
 #else
-#include "barney/volume/ScalarField.h"
+#include "native/volume/ScalarField.h"
 #endif
 
 namespace BARNEY_NS {

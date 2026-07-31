@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "barney/light/Light.h"
-#include "barney/DeviceGroup.h"
-#include "barney/common/math.h"
-#include "barney/render/DG.h"
+#include "native/light/Light.h"
+#include "native/DeviceGroup.h"
+#include "native/common/math.h"
+#include "native/render/DG.h"
 
 /*! for debugging only - if enabled the envmap light will return a
   constant radiance no matter what map was specified */

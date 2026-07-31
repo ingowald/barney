@@ -244,7 +244,7 @@ namespace BARNEY_NS {
     }
 
     BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
-      : helium::BaseDevice(l), deviceType(subType)
+      : BARNEY_LIBRARY_NAME::BarneyBaseDevice(l), deviceType(subType)
     {
       //     std::vector<std::string> subTypeFlags = splitString(subType, ',');
       //     for (auto flag : subTypeFlags) {
@@ -290,7 +290,7 @@ namespace BARNEY_NS {
     }
 
     BarneyDevice::BarneyDevice()
-      : helium::BaseDevice(default_statusFunc, nullptr)
+      : BarneyBaseDevice(default_statusFunc, nullptr)
     {
       PING;
       m_state = std::make_unique<BarneyGlobalState>(this_device());
@@ -530,6 +530,12 @@ namespace BARNEY_NS {
                         gpuIDs.size());
       return ctx;
     }
+
+    const char **BarneyDevice::extensions() 
+    {
+      PING; return nullptr;
+    }
+    
 
 #define MAKE_EP \
     extern "C" BarneyDevice *createDevice_ ## BARNEY_LIBRARY_NAME ## _ ## BARNEY_BACKEND_NAME   \

@@ -2,8 +2,8 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/material/AnariPBR.h"
-#include "barney/material/DeviceMaterial.h"
+#include "native/material/AnariPBR.h"
+#include "native/material/DeviceMaterial.h"
 
 namespace BARNEY_NS {
   namespace native {

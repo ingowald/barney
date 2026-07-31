@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
-#include "barney/common/math.h"
+#include "native/common/barney-common.h"
+#include "native/common/math.h"
 #include <helium/helium_math.h>
 #include <anari/anari_cpp.hpp>
 // std

@@ -2,13 +2,13 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/light/Light.h"
-#include "barney/ModelSlot.h"
-#include "barney/Context.h"
+#include "native/light/Light.h"
+#include "native/ModelSlot.h"
+#include "native/Context.h"
 
-#include "barney/light/QuadLight.h"
-#include "barney/light/DirLight.h"
-#include "barney/light/EnvMap.h"
+#include "native/light/QuadLight.h"
+#include "native/light/DirLight.h"
+#include "native/light/EnvMap.h"
 
 namespace BARNEY_NS {
   namespace native {

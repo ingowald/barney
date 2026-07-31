@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/volume/MCGrid.h"
-#include "barney/volume/Volume.h"
+#include "native/volume/MCGrid.h"
+#include "native/volume/Volume.h"
 
 namespace BARNEY_NS {
   namespace native {

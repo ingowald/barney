@@ -8,7 +8,7 @@
 #include "native/render/Ray.h"
 #include "native/render/HitAttributes.h"
 #include "native/render/GeometryAttributes.h"
-#include "native/material/Material.h"
+#include "native/material/HostMaterial.h"
 #include "native/render/OptixGlobals.h"
 #include "native/render/World.h"
 

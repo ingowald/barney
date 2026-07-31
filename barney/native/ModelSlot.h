@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "barney/Group.h"
-#include "barney/material/Material.h"
-#include "barney/render/World.h"
+#include "native/Group.h"
+#include "native/material/HostMaterial.h"
+#include "native/render/World.h"
 #include <set>
 
 namespace BARNEY_NS {

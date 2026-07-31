@@ -13,8 +13,8 @@
   - uses macro cells and DDA traversal for domain traversal
 */
 
-#include "barney/amr/BlockStructuredCuBQLSampler.h"
-#include "barney/volume/DDA.h"
+#include "native/amr/BlockStructuredCuBQLSampler.h"
+#include "native/volume/DDA.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);
 

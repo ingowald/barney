@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "barney/volume/ScalarField.h"
+#include "native/volume/ScalarField.h"
 #include <functional>
 #include <map>
 #include <string>

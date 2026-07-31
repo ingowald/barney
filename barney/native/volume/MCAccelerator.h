@@ -4,15 +4,15 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
-#include "barney/DeviceGroup.h"
-#include "barney/volume/MCGrid.h"
-#include "barney/volume/Volume.h"
-#include "barney/geometry/IsoSurface.h"
-#include "barney/volume/DDA.h"
-#include "barney/render/World.h"
-#include "barney/render/OptixGlobals.h"
-#include "barney/material/DeviceMaterial.h"
+#include "native/common/barney-common.h"
+#include "native/DeviceGroup.h"
+#include "native/volume/MCGrid.h"
+#include "native/volume/Volume.h"
+#include "native/geometry/IsoSurface.h"
+#include "native/volume/DDA.h"
+#include "native/render/World.h"
+#include "native/render/OptixGlobals.h"
+#include "native/material/DeviceMaterial.h"
 
 namespace BARNEY_NS {
   namespace native {

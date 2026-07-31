@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/geometry/Cones.h"
+#include "native/geometry/Cones.h"
 #include "barney_rtc.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);

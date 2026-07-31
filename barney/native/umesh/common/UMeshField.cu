@@ -2,11 +2,11 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/common/barney-common.h"
-#include "barney/umesh/common/UMeshField.h"
-#include "barney/Context.h"
-#include "barney/umesh/mc/UMeshCuBQLSampler.h"
-#include "barney/volume/MCGrid.cuh"
+#include "native/common/barney-common.h"
+#include "native/umesh/common/UMeshField.h"
+#include "native/Context.h"
+#include "native/umesh/mc/UMeshCuBQLSampler.h"
+#include "native/volume/MCGrid.cuh"
 
 namespace BARNEY_NS {
   namespace native {

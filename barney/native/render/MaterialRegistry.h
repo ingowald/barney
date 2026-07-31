@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
-#include "barney/render/Sampler.h"
+#include "native/DeviceGroup.h"
+#include "native/render/Sampler.h"
 
 namespace BARNEY_NS {
   namespace native {

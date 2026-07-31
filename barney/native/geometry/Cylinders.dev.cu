@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/geometry/Cylinders.h"
+#include "native/geometry/Cylinders.h"
 #include "barney_rtc.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);

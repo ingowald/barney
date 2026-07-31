@@ -2,8 +2,8 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/Camera.h"
-#include "barney/Context.h"
+#include "native/Camera.h"
+#include "native/Context.h"
 
 namespace BARNEY_NS {
   namespace native {

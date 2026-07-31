@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/umesh/mc/UMeshCuBQLSampler.h"
+#include "native/umesh/mc/UMeshCuBQLSampler.h"
 
 namespace BARNEY_NS {
   namespace native {

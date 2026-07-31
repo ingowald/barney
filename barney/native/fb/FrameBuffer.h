@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/Context.h"
-#include "barney/fb/TiledFB.h"
+#include "native/Context.h"
+#include "native/fb/TiledFB.h"
 
 namespace BARNEY_NS {
   namespace native {

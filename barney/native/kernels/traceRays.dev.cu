@@ -2,12 +2,12 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/render/OptixGlobals.h"
-#include "barney/Context.h"
-#include "barney/GlobalModel.h"
-#include "barney/ModelSlot.h"
-#include "barney/render/SamplerRegistry.h"
-#include "barney/render/MaterialRegistry.h"
+#include "native/render/OptixGlobals.h"
+#include "native/Context.h"
+#include "native/GlobalModel.h"
+#include "native/ModelSlot.h"
+#include "native/render/SamplerRegistry.h"
+#include "native/render/MaterialRegistry.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);
 

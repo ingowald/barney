@@ -2,10 +2,10 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/amr/BlockStructuredField.h"
-#include "barney/Context.h"
-#include "barney/volume/MCGrid.cuh"
-#include "barney/amr/BlockStructuredCuBQLSampler.h"
+#include "native/amr/BlockStructuredField.h"
+#include "native/Context.h"
+#include "native/volume/MCGrid.cuh"
+#include "native/amr/BlockStructuredCuBQLSampler.h"
 
 namespace BARNEY_NS {
   namespace native {

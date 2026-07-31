@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
-#include "barney/packedBSDF/PackedBSDF.h"
-#include "barney/packedBSDF/NVisii.h"
-#include "barney/render/HitAttributes.h"
-#include "barney/material/Material.h"
+#include "native/common/barney-common.h"
+#include "native/packedBSDF/PackedBSDF.h"
+#include "native/packedBSDF/NVisii.h"
+#include "native/render/HitAttributes.h"
+#include "native/material/HostMaterial.h"
 
 namespace BARNEY_NS {
   namespace native {

@@ -13,8 +13,8 @@
   - uses macro cells and DDA traversal for domain traversal
 */
 
-#include "barney/umesh/mc/UMeshCuBQLSampler.h"
-#include "barney/volume/DDA.h"
+#include "native/umesh/mc/UMeshCuBQLSampler.h"
+#include "native/volume/DDA.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);
 

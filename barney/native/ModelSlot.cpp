@@ -2,12 +2,12 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/ModelSlot.h"
-#include "barney/GlobalModel.h"
-#include "barney/common/Data.h"
-#include "barney/common/Texture.h"
-#include "barney/light/Light.h"
-#include "barney/geometry/Geometry.h"
+#include "native/ModelSlot.h"
+#include "native/GlobalModel.h"
+#include "native/common/Data.h"
+#include "native/common/Texture.h"
+#include "native/light/Light.h"
+#include "native/geometry/Geometry.h"
 
 namespace BARNEY_NS {
   namespace native {

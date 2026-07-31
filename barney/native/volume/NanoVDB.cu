@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // include barney.h first, so we know whether BARNEY_HAVE_NANOVDB is set 
-#include "barney/volume/NanoVDB.h"
+#include "native/volume/NanoVDB.h"
 
 #if BARNEY_HAVE_NANOVDB
 
-#include "barney/Context.h"
-#include "barney/common/Texture.h"
-#include "barney/volume/MCGrid.cuh"
+#include "native/Context.h"
+#include "native/common/Texture.h"
+#include "native/volume/MCGrid.cuh"
 
 namespace BARNEY_NS {
   namespace native {

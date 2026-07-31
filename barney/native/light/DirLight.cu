@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "DirLight.h"
-#include "barney/common/math.h"
+#include "native/common/math.h"
 
 namespace BARNEY_NS {
   namespace native {

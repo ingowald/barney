@@ -2,9 +2,9 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/geometry/Capsules.h"
-#include "barney/ModelSlot.h"
-#include "barney/Context.h"
+#include "native/geometry/Capsules.h"
+#include "native/ModelSlot.h"
+#include "native/Context.h"
 
 namespace BARNEY_NS {
   namespace native {

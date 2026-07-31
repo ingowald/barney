@@ -2,8 +2,8 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/globalTrace/RQSLocal.h"
-#include "barney/render/RayQueue.h"
+#include "native/globalTrace/RQSLocal.h"
+#include "native/render/RayQueue.h"
 
 namespace BARNEY_NS {
   namespace native {

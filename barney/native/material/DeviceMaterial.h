@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "barney/render/Ray.h"
-#include "barney/packedBSDF/PackedBSDF.h"
-#include "barney/render/HitAttributes.h"
-#include "barney/material/AnariMatte.h"
-#include "barney/material/AnariPBR.h"
+#include "native/render/Ray.h"
+#include "native/packedBSDF/PackedBSDF.h"
+#include "native/render/HitAttributes.h"
+#include "native/material/AnariMatte.h"
+#include "native/material/AnariPBR.h"
 
 namespace BARNEY_NS {
   namespace native {

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/umesh/common/UMeshField.h"
-#include "barney/common/CuBQL.h"
+#include "native/umesh/common/UMeshField.h"
+#include "native/common/CuBQL.h"
 #include "cuBQL/traversal/fixedBoxQuery.h"
 
 namespace BARNEY_NS {

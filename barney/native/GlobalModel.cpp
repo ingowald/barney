@@ -2,8 +2,8 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/GlobalModel.h"
-#include "barney/FromEnv.h"
+#include "native/GlobalModel.h"
+#include "native/FromEnv.h"
 
 namespace BARNEY_NS {
   namespace native {

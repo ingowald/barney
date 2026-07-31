@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "barney/ModelSlot.h"
+#include "native/ModelSlot.h"
 /* all routines for point-element sampling/intersection - shold
    logically be part of this file, but kept in separate file because
    these were mostly imported from openvkl */
-#include "barney/umesh/common/ElementIntersection.h"
-#include "barney/volume/MCAccelerator.h"
+#include "native/umesh/common/ElementIntersection.h"
+#include "native/volume/MCAccelerator.h"
 
 namespace BARNEY_NS {
   namespace native {

@@ -5,14 +5,14 @@
 #ifdef __CUDACC__
 # define OWL_DISABLE_TBB
 #endif
-#include "barney/common/barney-common.h"
-#include "barney/DeviceGroup.h"
-#include "barney/render/Ray.h"
-#include "barney/render/RayQueue.h"
-#include "barney/Camera.h"
-#include "barney/render/Renderer.h"
-#include "barney/fb/FrameBuffer.h"
-#include "barney/FromEnv.h"
+#include "native/common/barney-common.h"
+#include "native/DeviceGroup.h"
+#include "native/render/Ray.h"
+#include "native/render/RayQueue.h"
+#include "native/Camera.h"
+#include "native/render/Renderer.h"
+#include "native/fb/FrameBuffer.h"
+#include "native/FromEnv.h"
 
 namespace BARNEY_NS {
   namespace native {

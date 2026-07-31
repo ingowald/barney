@@ -2,10 +2,10 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/Context.h"
-#include "barney/material/DeviceMaterial.h"
-#include "barney/material/Material.h"
-#include "barney/render/MaterialRegistry.h"
+#include "native/Context.h"
+#include "native/material/DeviceMaterial.h"
+#include "native/material/HostMaterial.h"
+#include "native/render/MaterialRegistry.h"
 
 namespace BARNEY_NS {
   namespace native {

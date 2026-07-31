@@ -184,8 +184,8 @@ set(HOST_SOURCES
   light/EnvMap.cu
 
   # materials
-  material/Material.h
-  material/Material.cpp
+  material/HostMaterial.h
+  material/HostMaterial.cpp
   material/AnariPBR.h
   material/AnariPBR.cpp
   material/AnariMatte.h

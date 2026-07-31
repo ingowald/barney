@@ -2,17 +2,17 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/Context.h"
-#include "barney/DeviceGroup.h"
-#include "barney/fb/FrameBuffer.h"
-#include "barney/GlobalModel.h"
-#include "barney/render/RayQueue.h"
-#include "barney/render/Sampler.h"
-#include "barney/render/SamplerRegistry.h"
-#include "barney/render/MaterialRegistry.h"
-#include "barney/Camera.h"
-#include "barney/render/Renderer.h"
-#include "barney/FromEnv.h"
+#include "native/Context.h"
+#include "native/DeviceGroup.h"
+#include "native/fb/FrameBuffer.h"
+#include "native/GlobalModel.h"
+#include "native/render/RayQueue.h"
+#include "native/render/Sampler.h"
+#include "native/render/SamplerRegistry.h"
+#include "native/render/MaterialRegistry.h"
+#include "native/Camera.h"
+#include "native/render/Renderer.h"
+#include "native/FromEnv.h"
 
 namespace BARNEY_NS {
   namespace native {

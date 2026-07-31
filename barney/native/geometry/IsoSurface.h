@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/geometry/Geometry.h"
-#include "barney/volume/Volume.h"
+#include "native/geometry/Geometry.h"
+#include "native/volume/Volume.h"
 
 namespace BARNEY_NS {
   namespace native {

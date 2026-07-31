@@ -2,8 +2,8 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/render/Renderer.h"
-#include "barney/Context.h"
+#include "native/render/Renderer.h"
+#include "native/Context.h"
 
 namespace BARNEY_NS {
   namespace native {

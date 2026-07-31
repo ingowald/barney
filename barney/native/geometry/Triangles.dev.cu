@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/geometry/Triangles.h"
+#include "native/geometry/Triangles.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);
 

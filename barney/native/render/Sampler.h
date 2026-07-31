@@ -4,11 +4,10 @@
 
 #pragma once
 
-#include "barney/render/HitAttributes.h"
-#include "barney/Object.h"
-#include "barney/common/Data.h"
-#include "barney/common/mat4.h"
-#include "barney/common/math.h"
+#include "native/render/HitAttributes.h"
+#include "native/Object.h"
+#include "native/common/Data.h"
+#include "native/common/math.h"
 #include <stack>
 
 namespace BARNEY_NS {

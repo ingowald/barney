@@ -2,11 +2,11 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/LocalContext.h"
-#include "barney/fb/LocalFB.h"
-#include "barney/globalTrace/RQSLocal.h"
-#include "barney/render/RayQueue.h"
-#include "barney/WorkerTopo.h"
+#include "native/LocalContext.h"
+#include "native/fb/LocalFB.h"
+#include "native/globalTrace/RQSLocal.h"
+#include "native/render/RayQueue.h"
+#include "native/WorkerTopo.h"
 
 namespace BARNEY_NS {
   namespace native {

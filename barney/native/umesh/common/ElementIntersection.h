@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
+#include "native/common/barney-common.h"
 
 namespace BARNEY_NS {
   namespace native {

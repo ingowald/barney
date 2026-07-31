@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
-#include "barney/common/half.h"
-#include "barney/render/HitIDs.h"
-#include "barney/Context.h"
+#include "native/DeviceGroup.h"
+#include "native/common/half.h"
+#include "native/render/HitIDs.h"
+#include "native/Context.h"
 
 namespace BARNEY_NS {
   namespace native {

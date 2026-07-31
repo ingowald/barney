@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "barney/geometry/Geometry.h"
-#include "barney/volume/Volume.h"
-// #include "barney/MultiPass.h"
-#include "barney/common/Data.h"
+#include "native/geometry/Geometry.h"
+#include "native/volume/Volume.h"
+// #include "native/MultiPass.h"
+#include "native/common/Data.h"
 
 namespace BARNEY_NS {
   namespace native {

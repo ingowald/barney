@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
-#include "barney/render/Sampler.h"
-#include "barney/light/EnvMap.h"
-#include "barney/light/DirLight.h"
-#include "barney/light/PointLight.h"
-#include "barney/light/QuadLight.h"
+#include "native/DeviceGroup.h"
+#include "native/render/Sampler.h"
+#include "native/light/EnvMap.h"
+#include "native/light/DirLight.h"
+#include "native/light/PointLight.h"
+#include "native/light/QuadLight.h"
 
 namespace BARNEY_NS {
   namespace native {

@@ -6,9 +6,9 @@
 
 #include "barney_rtc.h"
 #if BARNEY_HAVE_NANOVDB
-#include "barney/ModelSlot.h"
-#include "barney/common/Texture.h"
-#include "barney/volume/MCAccelerator.h"
+#include "native/ModelSlot.h"
+#include "native/common/Texture.h"
+#include "native/volume/MCAccelerator.h"
 // nanovdb
 #include <nanovdb/NanoVDB.h>
 #include "nanovdb/math/Math.h"

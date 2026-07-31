@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "barney/common/math.h"
+#include "native/common/math.h"
 
 namespace BARNEY_NS {
   namespace native {

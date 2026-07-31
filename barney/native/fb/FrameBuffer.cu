@@ -2,11 +2,11 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/common/barney-common.h"
-#include "barney/common/math.h"
-#include "barney/common/Data.h"
-#include "barney/fb/FrameBuffer.h"
-#include "barney/FromEnv.h"
+#include "native/common/barney-common.h"
+#include "native/common/math.h"
+#include "native/common/Data.h"
+#include "native/fb/FrameBuffer.h"
+#include "native/FromEnv.h"
 #if BARNEY_HAVE_OIDN
 # include <OpenImageDenoise/oidn.h>
 #endif

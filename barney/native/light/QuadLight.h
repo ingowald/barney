@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "barney/light/Light.h"
+#include "native/light/Light.h"
 
 namespace BARNEY_NS {
   namespace native {

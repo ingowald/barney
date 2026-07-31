@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/Object.h"
-#include "barney/ModelSlot.h"
+#include "native/Object.h"
+#include "native/ModelSlot.h"
 
 namespace BARNEY_NS {
   namespace native {

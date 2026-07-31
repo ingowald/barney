@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "barney/ModelSlot.h"
-#include "barney/common/Texture.h"
-#include "barney/volume/MCAccelerator.h"
+#include "native/ModelSlot.h"
+#include "native/common/Texture.h"
+#include "native/volume/MCAccelerator.h"
 
 namespace BARNEY_NS {
   namespace native {

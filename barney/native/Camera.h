@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "barney/common/barney-common.h"
-#include "barney/common/math.h"
-#include "barney/Object.h"
+#include "native/common/barney-common.h"
+#include "native/common/math.h"
+#include "native/Object.h"
 
 namespace BARNEY_NS {
   namespace native {

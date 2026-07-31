@@ -102,7 +102,7 @@ namespace BARNEY_LIBRARY_NAME {
       alreadyFound[deviceType] = nullptr;
       return nullptr;
     }
-    BaseDevice *base = (BaseDevice*)dev;
+    BarneyBaseDevice *base = (BarneyBaseDevice*)dev;
     alreadyFound[deviceType] = base->extensions();
 
     return alreadyFound[deviceType];

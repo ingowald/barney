@@ -7,8 +7,8 @@
   primitives into a grid */
 #pragma once
 
-#include "barney/volume/MCGrid.h"
-#include "barney/common/barney-common.h"
+#include "native/volume/MCGrid.h"
+#include "native/common/barney-common.h"
 #include "barney_rtc.h"
 
 namespace BARNEY_NS {

@@ -2,8 +2,8 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/volume/StructuredData.h"
-#include "barney/volume/MCAccelerator.h"
+#include "native/volume/StructuredData.h"
+#include "native/volume/MCAccelerator.h"
 
 RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);
 

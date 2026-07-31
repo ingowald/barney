@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "barney/render/DG.h"
-#include "barney/render/floatN.h"
+#include "native/render/DG.h"
+#include "native/render/floatN.h"
 
 #define MIN_ALPHA .002f
 #define SMALL_EPSILON 2e-10f

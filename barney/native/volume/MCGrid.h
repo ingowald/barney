@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "barney/DeviceGroup.h"
-#include "barney/volume/TransferFunction.h"
-#include "barney/common/math.h"
+#include "native/DeviceGroup.h"
+#include "native/volume/TransferFunction.h"
+#include "native/common/math.h"
 #if BARNEY_USE_MULTI_SCATTERING
-#include "barney/volume/PrincipledVolume.h"
+#include "native/volume/PrincipledVolume.h"
 #endif
 
 namespace BARNEY_NS {

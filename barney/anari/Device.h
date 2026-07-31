@@ -13,7 +13,7 @@ namespace BARNEY_NS {
   namespace anari {
     
     // struct BarneyDevice : public helium::BaseDevice
-    struct BarneyDevice : public BARNEY_LIBRARY_NAME::BaseDevice
+    struct BarneyDevice : public BARNEY_LIBRARY_NAME::BarneyBaseDevice
     {
       // Data Arrays //////////////////////////////////////////////////////////
 
@@ -107,7 +107,9 @@ namespace BARNEY_NS {
 
       virtual BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank);
       virtual void initMPI() { /* nothing by default, mpidev can override */};
-    
+
+      const char **extensions() override;
+
     private:
       void initDevice();
       void deviceCommitParameters() override;

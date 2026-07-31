@@ -2,7 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/render/GeometryAttributes.h"
+#include "native/render/GeometryAttributes.h"
 
 namespace BARNEY_NS {
   namespace native {

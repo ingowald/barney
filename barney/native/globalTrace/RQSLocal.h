@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "barney/globalTrace/RQSBase.h"
+#include "native/globalTrace/RQSBase.h"
 
 namespace BARNEY_NS {
   namespace native {

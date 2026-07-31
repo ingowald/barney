@@ -2,9 +2,9 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "barney/Object.h"
-#include "barney/Context.h"
-#include "barney/ModelSlot.h"
+#include "native/Object.h"
+#include "native/Context.h"
+#include "native/ModelSlot.h"
 
 namespace BARNEY_NS {
   namespace native {
