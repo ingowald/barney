@@ -46,7 +46,7 @@ set(CMAKE_BUILD_TYPE_INIT "Release")
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(BARNEY_PROJECT_NAME "barney")
+set(BARNEY_LIBRARY_NAME "bla_barney")
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 
 if (CMAKE_BUILD_TYPE)
@@ -236,12 +236,14 @@ endif()
 # ==================================================================
 
 add_library(barney_config INTERFACE)
+target_link_libraries(barney_config INTERFACE anari::helium)
 target_include_directories(barney_config INTERFACE
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
 #  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/barney/include>
   ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/barney
   # for any owl::common stuff
   ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
   ${CMAKE_CURRENT_LIST_DIR}/3rdParty/nanovdb/include
@@ -256,7 +258,7 @@ if(MSVC) # That's also clang-cl
   # /bigobj is needed for bigger binding projects due to the limit to 64k
   # addressable sections
   set_property(
-    TARGET barney_config_${backend}
+    TARGET barney_config
     APPEND
     PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
 endif()
@@ -293,47 +295,62 @@ endif()
 #   ${CMAKE_CURRENT_BINARY_DIR}/include/ 
 # )
 
+include(CMakePackageConfigHelpers)
+
+
+
+
 
 
 # build_barney(config device) -> tests if config exists as a target,
-# and if so build device (as well as device_mpi, if enabled) with this
-# config.
+# and if so build device (and mpi device, if enabled) with this
+# config. This builds only one device, specific to the given
+# ${backend}, and named barney_{backend}. in addition to the
+# respective 'full' anari library for that backend this also creates
+# some statically linkable library that contains only the anari
+# device, not the anari library or entrypoint,t hus allowing us to
+# link those same devices also the multi-device 'barney' library
 function(build_barney backend)
   string(TOUPPER BARNEY_BACKEND_${backend} FLAG_NAME)
   if (NOT (${FLAG_NAME}))
     message("#barney: backend '${backend}' disabled by user request")
   else()
-    set(BARNEY_DEVICE_NAME ${BARNEY_PROJECT_NAME}_${backend})
-    add_library(barney_config_${backend} INTERFACE)
-    configure_file(
-      "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in"
-      "${CMAKE_CURRENT_BINARY_DIR}/barneyDeviceConfig.h"
-    )
-    configure_file(
-      ${PROJECT_SOURCE_DIR}/anari/Library_entryPoint.h.in
-      ${CMAKE_CURRENT_BINARY_DIR}/Library_entryPoint.h
-    )
-    target_include_directories(barney_config_${backend} INTERFACE
-      ${CMAKE_CURRENT_LIST_DIR}
-      # for any owl::common stuff
-      ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
-      # for configure_file output:
-      ${CMAKE_CURRENT_BINARY_DIR}/include/ 
-    )
-    
-    include(rtcore/${backend}.cmake)
-    add_subdirectory(barney)# build_barney_${backend})
-    add_subdirectory(anari)#  build_banari_${backend})
-
+    add_subdirectory(barney build_barney_${backend})
+    # ==================================================================
+    # now finally, link the respective single-backend
+    # 'barney_{backend}' device to the multi-device 'barney' library,
+    # and use a compile defitnion to tell it which ones are available
+    # ==================================================================
+    target_link_libraries(barney PRIVATE
+      anari_library_${BARNEY_LIBRARY_NAME}_${backend}_static)
+    string(TOUPPER BACKEND ${backend})
+    target_compile_definitions(barney PRIVATE -DBARNEY_HAVE_${BACKEND}=1)
   endif()
 endfunction()
 
-set(BARNEY_INSTALL_TARGETS)
+# ==================================================================
+# this is the MULTI-device library; the ANARILibrary created by that
+# will link to each individual device built in this repo, and select
+# the best at runtime. The 'build_barney()' function will
+# automatically link each generated device to this multi-library
+# ==================================================================
+add_library(barney SHARED barney/anari/MultiDeviceLibrary.cpp)
+target_compile_definitions(barney PRIVATE -DBARNEY_LIBRARY_NAME=${BARNEY_LIBRARY_NAME})
+target_link_libraries(barney PRIVATE
+  barney_config
+)
+
+# ==================================================================
+# now, build - and link-add to multi-dev 'barney' - all possible
+# devices. those that lack dependencies or are disblaed by used will
+# simply exit-and-ignore.
+# ==================================================================
 build_barney(cpu)
 build_barney(cuda)
 build_barney(optix)
 build_barney(hip)
 build_barney(hiprt)
+
 
 # ==================================================================
 option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
@@ -358,22 +375,6 @@ set(BARNEY_CMAKE_INSTALL_DESTINATION
   ${CMAKE_INSTALL_LIBDIR}/cmake/barney-${BARNEY_VERSION}
 )
 
-include(CMakePackageConfigHelpers)
-
-# set(BARNEY_INSTALL_TARGETS)
-# foreach(backend ${ARGN})
-#   if (TARGET anari_library_${BARNEY_PLATFORM_NAME}_${backend})
-#     list(APPEND BARNEY_INSTALL_TARGETS
-#       anari_library_${BARNEY_PLATFORM_NAME}_${backend})
-#   endif()
-#   if (TARGET anari_library_${BARNEY_PLATFORM_NAME}_${backend}_mpi)
-#     list(APPEND BARNEY_INSTALL_TARGETS
-#       anari_library_${BARNEY_PLATFORM_NAME}_${backend}_mpi)
-#   endif()
-# endforeach()
-
-# message("BARNEY_INSTALL_TARGETS  ${BARNEY_INSTALL_TARGETS}")
- 
 install(
   TARGETS
   ${BARNEY_INSTALL_TARGETS}
