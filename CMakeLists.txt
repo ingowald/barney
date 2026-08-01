@@ -46,7 +46,6 @@ set(CMAKE_BUILD_TYPE_INIT "Release")
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(BARNEY_LIBRARY_NAME "bla_barney")
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
 
 if (CMAKE_BUILD_TYPE)
@@ -74,9 +73,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(anari 0.15.0 COMPONENTS code_gen)
 
 option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries" OFF)
-
-
-
 
 
 # ==================================================================
@@ -321,10 +317,11 @@ function(build_barney backend)
     # 'barney_{backend}' device to the multi-device 'barney' library,
     # and use a compile defitnion to tell it which ones are available
     # ==================================================================
-    target_link_libraries(barney PRIVATE
-      anari_library_${BARNEY_LIBRARY_NAME}_${backend}_static)
-    string(TOUPPER BACKEND ${backend})
-    target_compile_definitions(barney PRIVATE -DBARNEY_HAVE_${BACKEND}=1)
+    target_link_libraries(anari_library_barney PRIVATE
+      anari_library_barney_${backend}_static)
+    string(TOUPPER ${backend} BACKEND)
+    target_compile_definitions(anari_library_barney PRIVATE
+      -DBARNEY_BACKEND_${BACKEND}=1)
   endif()
 endfunction()
 
@@ -334,9 +331,11 @@ endfunction()
 # the best at runtime. The 'build_barney()' function will
 # automatically link each generated device to this multi-library
 # ==================================================================
-add_library(barney SHARED barney/anari/MultiDeviceLibrary.cpp)
-target_compile_definitions(barney PRIVATE -DBARNEY_LIBRARY_NAME=${BARNEY_LIBRARY_NAME})
-target_link_libraries(barney PRIVATE
+add_library(anari_library_barney SHARED
+  barney/anari/MultiDeviceLibrary.cpp)
+target_include_directories(anari_library_barney PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/)
+target_link_libraries(anari_library_barney PRIVATE
   barney_config
 )
 
@@ -375,9 +374,11 @@ set(BARNEY_CMAKE_INSTALL_DESTINATION
   ${CMAKE_INSTALL_LIBDIR}/cmake/barney-${BARNEY_VERSION}
 )
 
+# this installs the MULTI-library (ie, the 'barney' device that
+# internally switches to barney_cuda, barney_optix, etc)
 install(
   TARGETS
-  ${BARNEY_INSTALL_TARGETS}
+  anari_library_barney
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   NAMELINK_SKIP
   # on Windows put the dlls into bin

@@ -7,6 +7,7 @@
 #include "anari/BaseDevice.h"
 #include <map>
 #include <string>
+#include "owl/common/owl-common.h"
 
 #ifdef ANARI_LIBRARY_BARNEY_STATIC_DEFINE
 #  define BARNEY_LIBRARY_INTERFACE
@@ -33,10 +34,31 @@
 #  endif
 #endif
 
-#define STRINGIFY(x) #x
-#define TO_STRING(x) STRINGIFY(x)
+#if BARNEY_BACKEND_OPTIX
+// ------------------------------------------------------------------
+// defined in anari_library_barney_optix_static
+// ------------------------------------------------------------------
+extern "C"
+barney::BarneyBaseDevice *createDevice_barney_optix(ANARILibrary,const char *);
+#endif
 
-namespace BARNEY_LIBRARY_NAME {
+#if BARNEY_BACKEND_CUDA
+// ------------------------------------------------------------------
+// defined in anari_library_barney_cuda_static
+// ------------------------------------------------------------------
+extern "C"
+barney::BarneyBaseDevice *createDevice_barney_cuda(ANARILibrary,const char *);
+#endif
+
+#if BARNEY_BACKEND_CPU
+// ------------------------------------------------------------------
+// defined in anari_library_barney_cpu_static
+// ------------------------------------------------------------------
+extern "C"
+barney::BarneyBaseDevice *createDevice_barney_cpu(ANARILibrary,const char *);
+#endif
+
+namespace barney {
 
   struct BarneyMultiLibrary : public ::anari::LibraryImpl
   {
@@ -56,35 +78,24 @@ namespace BARNEY_LIBRARY_NAME {
     : ::anari::LibraryImpl(lib, defaultStatusCB, statusCBPtr)
   {}
 
-#if BARNEY_HAVE_OPTIX
-  ANARIDevice createDevice_#ANARI_LIBRARY_NAME#_optix(ANARILibrary,const char *);
-#endif
-#if BARNEY_HAVE_CPU
-  ANARIDevice createDevice_#ANARI_LIBRARY_NAME#_optix(ANARILibrary,const char *);
-#endif
   
   ANARIDevice BarneyMultiLibrary::newDevice(const char *subType)
   {
     ANARILibrary lib = this_library();
-#if BARNEY_HAVE_OPTIX
-    try { createDevice_#ANARI_LIBRARY_NAME#_optix(lib,subType); } catch (...) {};
+#if BARNEY_BACKEND_OPTIX
+    try { return (ANARIDevice)createDevice_barney_optix(lib,subType); }
+    catch (...) {};
 #endif
-#if BARNEY_HAVE_CPU
-    try { createDevice_#ANARI_LIBRARY_NAME#_cpu(lib,subType); } catch (...) {};
+#if BARNEY_BACKEND_CUDA
+    try { return (ANARIDevice)createDevice_barney_cuda(lib,subType); }
+    catch (...) {};
 #endif
-// #if BARNEY_HAVE_CUDA
-//     try { return createSingleLibraryDevice("cuda",subType); } catch (...) {};
-// #endif
-// #if BARNEY_HAVE_HIPRT
-//     try { return createSingleLibraryDevice("hiprt",subType); } catch (...) {};
-// #endif
-// #if BARNEY_HAVE_HIP
-//     try { return createSingleLibraryDevice("hip",subType); } catch (...) {};
-// #endif
-// #if BARNEY_HAVE_CPU
-//     try { return createSingleLibraryDevice("cpu",subType); } catch (...) {};
-// #endif
-    // reportMessage(ANARI_SEVERITY_DEBUG, "could not create _any_ barney device !?");
+#if BARNEY_BACKEND_CPU
+    try { return (ANARIDevice)createDevice_barney_cpu(lib,subType); }
+    catch (...) {};
+#endif
+    std::cout << "Warning- couldn't create _any_ barney backend device!?"
+              << std::endl;
     return (ANARIDevice)0;
   }
 
@@ -108,25 +119,30 @@ namespace BARNEY_LIBRARY_NAME {
     return alreadyFound[deviceType];
   }
 
-} // namespace BARNEY_LIBRARY_NAME
+    // /*! helper entry-point for _directly_ creating a banari device
+    //   without having to go through the dynamic-library
+    //   'anariLoadLibrary' mechanism. This is used in pynari, to allow
+    //   static linking of anari sdk */
+    // extern "C" ANARIDevice createAnariDeviceBarney()
+    // {
+    //   ANARIDevice dev = 0;
+    //   try {
+    //     dev = (ANARIDevice) new BarneyDevice();
+    //     return dev;
+    //   } catch (std::exception &err) {
+    //     std::cerr << "#banari: exception creating anari 'barney' GPU device: "
+    //               << err.what() << std::endl;
+    //     return 0;
+    //   }
+    // }
 
-// have to have this in a auto-generated file because we have to get
-// cmake to insert BARNEY_DEVIEC_NAME - can't do that through #defines
-// because the entrypoint macro is itself a macro so it wont'
-// substitute recursively
-// #include "Library_entryPoint_multi.h"
 
-#ifdef BARNEY_MPI
-should be off!?
-extern "C" BARNEY_LIBRARY_INTERFACE ANARI_DEFINE_LIBRARY_ENTRYPOINT(
-                                                                    @BARNEY_DEVICE_NAME@_mpi, handle, scb, scbPtr)
-{
-  return (ANARILibrary) new BARNEY_NS::anari::BarneyMultiLibrary(handle, scb, scbPtr);
-}
-#else
+  
+} // namespace barney
+
 extern "C" BARNEY_LIBRARY_INTERFACE
-ANARI_DEFINE_LIBRARY_ENTRYPOINT(BARNEY_LIBRARY_NAME, handle, scb, scbPtr)
+ANARI_DEFINE_LIBRARY_ENTRYPOINT(barney, handle, scb, scbPtr)
 {
-  return (ANARILibrary) new BARNEY_LIBRARY_NAME::BarneyMultiLibrary(handle, scb, scbPtr);
+  return (ANARILibrary) new barney::BarneyMultiLibrary(handle, scb, scbPtr);
 }
-#endif
+

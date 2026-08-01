@@ -5,7 +5,6 @@
 # "backend" variable gets set by parent dir, and is one of either
 # 'cpu', 'cuda', 'optix', 'hip' or 'hiprt'
 
-#set(BARNEY_INSTALL_TARGETS)
 set(BANARI_SOURCES
   Array.cpp
   BarneyGlobalState.cpp
@@ -93,6 +92,8 @@ set_target_properties(anari_library_${BARNEY_DEVICE_NAME}
   CUDA_VISIBILITY_PRESET       hidden
   CXX_VISIBILITY_PRESET        hidden
 )
+set(BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME})
+
 
 # json files that specify configs global to all of barney, no matter the backend
 file(GLOB COMMON_DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/json/common "*.json")
@@ -125,17 +126,18 @@ if (BARNEY_MPI)
       JSON_EXTENSION_FILES ${DEVICE_JSONS}
     )
   endif()
+  list(APPEND BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME}_mpi)
 endif()
 
-#message("anari BARNEY_INSTALL_TARGETS ${BARNEY_INSTALL_TARGETS}")
-#set(BARNEY_INSTALL_TARGETS ${BARNEY_INSTALL_TARGETS} PARENT_SCOPE)
-# install(
-#   TARGETS
-#   ${BARNEY_INSTALL_TARGETS}
-#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#   NAMELINK_SKIP
-#   # on Windows put the dlls into bin
-#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-#   # ... and the import lib into the devel package
-#   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-# )
+message("anari BARNEY_INSTALL_TARGETS ${BARNEY_INSTALL_TARGETS}")
+set(BARNEY_INSTALL_TARGETS ${BARNEY_INSTALL_TARGETS} PARENT_SCOPE)
+ install(
+   TARGETS
+   ${BARNEY_INSTALL_TARGETS}
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   NAMELINK_SKIP
+   # on Windows put the dlls into bin
+   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   # ... and the import lib into the devel package
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )

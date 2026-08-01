@@ -7,55 +7,6 @@
 # anari device, exactly the one as encoded in the name.
 # ==================================================================
 set(BARNEY_BACKEND_NAME ${backend})
-set(BARNEY_DEVICE_NAME "${BARNEY_LIBRARY_NAME}_${backend}")
-#add_library(barney_config_${backend} INTERFACE)
-#target_link_libraries(barney_config_${backend} INTERFACE barney_config)
-#configure_file( 
-#  "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in"
-#  "${CMAKE_CURRENT_BINARY_DIR}/barneyDeviceConfig.h"
-#)
-#configure_file(#
-#  ${PROJECT_SOURCE_DIR}/anari/Library_entryPoint.h.in
-#  ${CMAKE_CURRENT_BINARY_DIR}/Library_entryPoint.h
-#)
-
-
-
-#include(../rtcore/${backend}.cmake)
-
-#if (NOT (TARGET barney_rtc_${backend}))
-  # we have no rtcore config for this backend - either because it was
-  # disabled by user, or because it lacks something to build. cannot
-  # bild this backend, return.
-#  message("#barney: no valid rtcore config found for backend '${backend}'")
-#  return()
-#endif()
-
-
-#target_link_libraries(barney_config_${backend} INTERFACE barney_rtc_${backend})
-
-#if(MSVC) # That's also clang-cl
-  # /bigobj is needed for bigger binding projects due to the limit to 64k
-  # addressable sections
-#  set_property(
-#    TARGET barney_config_${backend}
-#    APPEND
-#    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
-#endif()
-
-#target_include_directories(barney_config_${backend} INTERFACE
-#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
-#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/nanovdb/include/>
-#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
-#)
-#if (WIN32)
-#  target_compile_definitions(barney_config_${backend} INTERFACE -DNOMINMAX)
-#  target_compile_options(barney_config_${backend} INTERFACE
-#    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
-#  )
-#endif()
-
 
 #############################################################################
 # main step - create the actual 'backends'; ie, the 'instantiations' of
@@ -259,15 +210,15 @@ endforeach()
 # ------------------------------------------------------------------
 # barney_static
 # ------------------------------------------------------------------
-add_library(${BARNEY_DEVICE_NAME}_static STATIC
+add_library(barney_${backend}_static STATIC
   ${HOST_SOURCES}
 )
-target_link_libraries(${BARNEY_DEVICE_NAME}_static PUBLIC
+target_link_libraries(barney_${backend}_static PUBLIC
   barney_rtc_${backend}  
   $<BUILD_INTERFACE:barney_${backend}_programs>
   $<BUILD_INTERFACE:barney_config_${backend}>
 )
-rtc_library_properties(${BARNEY_DEVICE_NAME}_static)
+rtc_library_properties(barney_${backend}_static)
 
 # =============================================================================
 # create frontends for barney_mpi and barney_mpi_static
@@ -276,20 +227,13 @@ if (BARNEY_MPI)
   # ------------------------------------------------------------------
   # barney_mpi
   # ------------------------------------------------------------------
-  add_library(${BARNEY_DEVICE_NAME}_mpi_static STATIC
-    #${HOST_SOURCES}
+  add_library(barney_${backend}_mpi_static STATIC
     ${MPI_SOURCES}
   )
-  target_link_libraries(${BARNEY_DEVICE_NAME}_mpi_static PUBLIC
-    ${BARNEY_DEVICE_NAME}
-#    $<BUILD_INTERFACE:barney_${backend}_programs>
-#    $<BUILD_INTERFACE:barney_config_${backend}>
+  target_link_libraries(barney_${backend}_mpi_static PUBLIC
+    barney_${backend}
   )
-  rtc_library_properties(${BARNEY_DEVICE_NAME}_mpi_static) 
-#  target_compile_definitions(${BARNEY_DEVICE_NAME}_mpi PRIVATE
-#    -Dbarney_mpi_STATIC=1
-#    -DBARNEY_MPI=1
-#  )
+  rtc_library_properties(barney_${backend}_mpi_static) 
 endif()
 
 

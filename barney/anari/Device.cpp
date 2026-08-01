@@ -2,6 +2,7 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "barneyDeviceConfig.h"
 #include "anari/Device.h"
 // #if BARNEY_MPI
 // #include <mpi.h>
@@ -9,7 +10,7 @@
 
 #include "anari/Array.h"
 #include "anari/Frame.h"
-#include "BaseDevice.h"
+#include "anari/BaseDevice.h"
 // std
 #include <cstring>
 
@@ -244,7 +245,7 @@ namespace BARNEY_NS {
     }
 
     BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
-      : BARNEY_LIBRARY_NAME::BarneyBaseDevice(l), deviceType(subType)
+      : barney::BarneyBaseDevice(l), deviceType(subType)
     {
       //     std::vector<std::string> subTypeFlags = splitString(subType, ',');
       //     for (auto flag : subTypeFlags) {
@@ -290,7 +291,7 @@ namespace BARNEY_NS {
     }
 
     BarneyDevice::BarneyDevice()
-      : BarneyBaseDevice(default_statusFunc, nullptr)
+      : barney::BarneyBaseDevice(default_statusFunc, nullptr)
     {
       PING;
       m_state = std::make_unique<BarneyGlobalState>(this_device());
@@ -470,24 +471,6 @@ namespace BARNEY_NS {
 
     }
 
-    /*! helper entry-point for _directly_ creating a banari device
-      without having to go through the dynamic-library
-      'anariLoadLibrary' mechanism. This is used in pynari, to allow
-      static linking of anari sdk */
-    extern "C" ANARIDevice createAnariDeviceBarney()
-    {
-      ANARIDevice dev = 0;
-      try {
-        dev = (ANARIDevice) new BarneyDevice();
-        return dev;
-      } catch (std::exception &err) {
-        std::cerr << "#banari: exception creating anari 'barney' GPU device: "
-                  << err.what() << std::endl;
-        return 0;
-      }
-    }
-
-
     int BarneyDevice::deviceGetProperty(const char *name,
                                         ANARIDataType type,
                                         void *mem,
@@ -537,12 +520,18 @@ namespace BARNEY_NS {
     }
     
 
-#define MAKE_EP \
-    extern "C" BarneyDevice *createDevice_ ## BARNEY_LIBRARY_NAME ## _ ## BARNEY_BACKEND_NAME   \
-    (ANARILibrary library, const char *subType)                         \
+// #define MAKE_EP(name)                                                   \
+//     extern "C" barney::BarneyBaseDevice *                               \
+//     createDevice_barney_##name                           \
+//     (ANARILibrary library, const char *subType)                         \
+//     { return new BarneyDevice(library,subType); }       
+    
+//     MAKE_EP(BARNEY_BACKEND_NAME)
+    
+    extern "C" barney::BarneyBaseDevice *                               
+    CREATE_DEVICE_FUNCTION_NAME                           
+    (ANARILibrary library, const char *subType)         
     { return new BarneyDevice(library,subType); }       
-
-    MAKE_EP
   }
 }
 
