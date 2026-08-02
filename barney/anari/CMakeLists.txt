@@ -63,26 +63,26 @@ endif()
 # the 'full' barney+anari, library+device, for a single backend, in
 # static linkage (so it can be used in possibly multiple shared libraries)
 # ==================================================================
-message("anari_library_${BARNEY_DEVICE_NAME}_static ")
-add_library(anari_library_${BARNEY_DEVICE_NAME}_static STATIC ${BANARI_SOURCES})
-target_link_libraries(anari_library_${BARNEY_DEVICE_NAME}_static PUBLIC
-  ${BARNEY_DEVICE_NAME}_static
+message("anari_library_barney_${backend}_static ")
+add_library(anari_library_barney_${backend}_static STATIC ${BANARI_SOURCES})
+target_link_libraries(anari_library_barney_${backend}_static PUBLIC
+  barney_${backend}_static
   #$<BUILD_INTERFACE:barney_config_${backend}>
 #  $<BUILD_INTERFACE:banari-config-${backend}>
   anari::helium
 )
-rtc_library_properties(anari_library_${BARNEY_DEVICE_NAME}_static)
+rtc_library_properties(anari_library_barney_${backend}_static)
 
 # ==================================================================
 # the 'full' barney+anari, as a real shared loadable library, but
 # containing only a single backend
 # ==================================================================
-message("anari_library_${BARNEY_DEVICE_NAME}")
-add_library(anari_library_${BARNEY_DEVICE_NAME} SHARED SingleDeviceLibrary.cpp)
-target_link_libraries(anari_library_${BARNEY_DEVICE_NAME} PUBLIC
-  anari_library_${BARNEY_DEVICE_NAME}_static
+message("anari_library_barney_${backend}")
+add_library(anari_library_barney_${backend} SHARED SingleDeviceLibrary.cpp)
+target_link_libraries(anari_library_barney_${backend} PUBLIC
+  anari_library_barney_${backend}_static
 )
-set_target_properties(anari_library_${BARNEY_DEVICE_NAME}
+set_target_properties(anari_library_barney_${backend}
   PROPERTIES
   POSITION_INDEPENDENT_CODE    ON
   VISIBILITY_INLINES_HIDDEN    ON
@@ -92,7 +92,7 @@ set_target_properties(anari_library_${BARNEY_DEVICE_NAME}
   CUDA_VISIBILITY_PRESET       hidden
   CXX_VISIBILITY_PRESET        hidden
 )
-set(BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME})
+set(BARNEY_INSTALL_TARGETS anari_library_barney_${backend})
 
 
 # json files that specify configs global to all of barney, no matter the backend
@@ -106,9 +106,9 @@ endforeach()
 
 if (BARNEY_AUTO_GENERATE_QUERIES)
   anari_generate_queries(
-    DEVICE_TARGET anari_library_${BARNEY_DEVICE_NAME}
+    DEVICE_TARGET anari_library_barney_${backend}
     # CPP_NAMESPACE BARNEY_DEVICE_NAME ${BANARI_NS}
-    CPP_NAMESPACE ${BARNEY_DEVICE_NAME}::anari
+    CPP_NAMESPACE barney_${backend}::anari
     JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
     JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
     JSON_EXTENSION_FILES ${BACKEND_DEVICE_JSONS} ${COMMON_DEVICE_JSONS}
@@ -118,15 +118,15 @@ endif()
 if (BARNEY_MPI)
   if (BARNEY_AUTO_GENERATE_QUERIES)
     anari_generate_queries(
-      DEVICE_TARGET anari_library_${BARNEY_DEVICE_NAME}_mpi
+      DEVICE_TARGET anari_library_barney_${backend}_mpi
       # CPP_NAMESPACE ${BANARI_NS}
-      CPP_NAMESPACE ${BARNEY_DEVICE_NAME}::anari
+      CPP_NAMESPACE barney_${backend}::anari
       JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
       JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
       JSON_EXTENSION_FILES ${DEVICE_JSONS}
     )
   endif()
-  list(APPEND BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME}_mpi)
+  list(APPEND BARNEY_INSTALL_TARGETS anari_library_barney_${backend}_mpi)
 endif()
 
 message("anari BARNEY_INSTALL_TARGETS ${BARNEY_INSTALL_TARGETS}")

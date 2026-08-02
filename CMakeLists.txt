@@ -386,4 +386,5 @@ install(
   # ... and the import lib into the devel package
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+rtc_library_properties(anari_library_barney)
 
